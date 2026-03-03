@@ -1,0 +1,12 @@
+# Progress: bmad-speckit-integration-TASKS 阶段5 (任务5.1～5.3)
+# Reference: docs/BMAD/bmad-speckit-integration-TASKS.md
+# Total stories: 3
+
+Current story: 3
+Completed: 3
+
+---
+# Story log
+US-001 [2026-03-02]: 任务5.1 整合pr-template-generator到Phase 5 - 完成。新增 Phase 5 章节，含 GAP-074 前置条件、5 选项、pr-template-generator 调用流程、强制人工审核界面示例。
+US-002 [2026-03-02]: 任务5.2 实现批量Push功能 - 完成。在选项[3]中增加前置条件检查、批量推送流程、错误处理、进度显示。
+US-003 [2026-03-02]: 任务5.3 实现强制人工审核界面 - 完成。新增单PR/批量审核界面Python实现、轮询超时24h、select_prs_to_merge UI交互、审核SLA约定。

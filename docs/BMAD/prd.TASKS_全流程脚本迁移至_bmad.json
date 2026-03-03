@@ -1,0 +1,14 @@
+{
+  "title": "TASKS_全流程脚本迁移至_bmad",
+  "source": "docs/BMAD/TASKS_全流程脚本迁移至_bmad.md",
+  "user_stories": [
+    { "id": "US1", "description": "阶段1: 创建目录 _bmad/scripts/bmad-speckit/python/, powershell/, templates/", "passes": true },
+    { "id": "US2", "description": "阶段2: 迁移 Python 脚本(3个)并验收 check_speckit_prerequisites", "passes": true },
+    { "id": "US3", "description": "阶段3: 迁移 PowerShell 脚本(7个)", "passes": true },
+    { "id": "US4", "description": "阶段4: 迁移模板 .speckit-state.yaml.template", "passes": true },
+    { "id": "US5", "description": "阶段5: 更新文档与引用(5.1-5.5 全量路径替换)", "passes": true },
+    { "id": "US6", "description": "阶段6: 更新测试路径并 pytest 通过", "passes": true },
+    { "id": "US7", "description": "阶段7: 验证与验收(7.1-7.6)", "passes": true }
+  ],
+  "updated": "2026-03-03T22:58+08:00"
+}

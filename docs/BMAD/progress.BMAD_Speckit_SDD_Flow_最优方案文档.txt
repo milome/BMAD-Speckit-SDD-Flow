@@ -1,0 +1,24 @@
+# Progress: BMAD_Speckit_SDD_Flow_最优方案文档
+# Total stories: 16
+
+Current story: 16
+Completed: 16
+
+---
+# Story log
+[2026-03-04] US-001 (T1): 创建仓库并初始化 §2 目录结构 - PASSED（_bmad-output、scoring、skills、workflows、commands、rules、config、templates、docs 骨架已建）
+[2026-03-04] US-002 (T2): 纳入完整 _bmad 与 _bmad-output 骨架 - PASSED（_bmad 已完整拷贝含 scripts/bmad-speckit；_bmad-output 含 implementation-artifacts、product-artifacts、config/settings.json）
+[2026-03-04] US-003 (T3): 拷贝 templates 与 memory/constitution.md - PASSED（从 specs/000-Overview/.specify/templates 及 memory 拷贝完成）
+[2026-03-04] US-004 (T4): 拆出 workflows/*.md - PASSED（7 个 workflow 占位文件已创建，注明从 speckit-workflow skill 补齐）
+[2026-03-04] US-005 (T5): 拷贝 9 个 speckit.*.md 到 commands/ - PASSED（9 个命令已拷贝，路径引用 _bmad/scripts/bmad-speckit 保持）
+[2026-03-04] US-006 (T6): 拷贝 rules（bmad 三必须） - PASSED（bmad-bug-auto-party-mode、bmad-bug-assistant、bmad-story-assistant.mdc 已拷贝；源仓库无 speckit.mdc）
+[2026-03-04] US-007 (T7): 拷贝 docs/speckit、docs/BMAD、.speckit-state 模板 - PASSED（4 个 speckit 文档、整体 docs/BMAD 含 bmad-speckit-integration-FINAL-COMPLETE.md 与双repo 文档、.speckit-state.yaml.template 已拷贝）
+[2026-03-04] US-008 (T8): docs/references README - PASSED（README 列出 audit-prompts §1–§5、mapping-tables、qa-agent-rules、tasks-acceptance；附录 7.4/7.5/7.6 标待补齐）
+[2026-03-04] US-009 (T9): 拷贝全部 bmad-*.md 到 commands/ - PASSED（76 个 bmad 命令已拷贝，含 create-epics-and-stories；pr-template、using-git-worktrees 等见 skills/README）
+[2026-03-04] US-010 (T10): 拷贝 code-reviewer-config 到 config/ - PASSED（config/code-reviewer-config.yaml 与 config/README 已就绪）
+[2026-03-04] US-011 (T11): skills/ README 与清单 - PASSED（skills/README 列出 speckit-workflow、code-review、BMAD 技能、using-git-worktrees、pr-template、auto-commit、git-push-monitor 及安装方式）
+[2026-03-04] US-012 (T12): 编写新仓库 README - PASSED（目标、目录说明、最小复现、npx/npm 安装、BMAD 与 docs/BMAD、评分扩展、五层架构/Party-Mode/worktree/回滚/pr-template/code-reviewer 4 模式）
+[2026-03-04] US-013 (T13): npx/npm 安装逻辑 - PASSED（package.json、scripts/init-to-root.js 已创建；README 含验证方式）
+[2026-03-04] US-014 (T14): scoring README、schema、rules 占位 - PASSED（scoring/README、schema/run-score-schema.json、rules 下 4 个 YAML 占位已创建）
+[2026-03-04] US-015 (T15): 自检 - PASSED（已执行 _bmad/scripts/bmad-speckit/powershell/check-prerequisites.ps1；脚本可执行，空仓库预期报错「Feature directory not found: specs/main」；关键路径与文件已确认）
+[2026-03-04] US-016 (T16): 验收 - PASSED（docs/BMAD 含 bmad-speckit-integration-FINAL-COMPLETE.md；README 可查五层架构、Party-Mode、worktree、回滚、pr-template、code-reviewer 4 模式；验收结果已写入本 progress）

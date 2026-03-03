@@ -1,0 +1,21 @@
+{
+  "name": "bmad-speckit-sdd-flow",
+  "version": "0.1.0",
+  "description": "BMAD + Speckit workflow and scoring skeleton; deploy _bmad, _bmad-output, commands, rules to project root",
+  "scripts": {
+    "postinstall": "node scripts/init-to-root.js",
+    "init": "node scripts/init-to-root.js"
+  },
+  "bin": {
+    "bmad-speckit-init": "scripts/init-to-root.js"
+  },
+  "files": [
+    "_bmad",
+    "_bmad-output",
+    "commands",
+    "rules",
+    "scripts"
+  ],
+  "keywords": ["bmad", "speckit", "cursor", "workflow"],
+  "license": "MIT"
+}

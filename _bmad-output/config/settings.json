@@ -1,0 +1,4 @@
+{
+  "worktree_granularity": "story-level",
+  "_comment": "See bmad-speckit-integration-FINAL-COMPLETE.md §4.4 for rollback and options (story-level | epic-level)"
+}

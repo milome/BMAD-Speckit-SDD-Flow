@@ -1,0 +1,51 @@
+﻿# Progress: TASKS_spec目录命名规则Gap
+
+Source: TASKS_spec目录命名规则Gap_2026-03-02.md
+Started: 2026-03-02
+
+---
+
+## Story Log
+
+### US-001 (T-SPEC-1) [2026-03-02]
+- 修改：speckit-workflow SKILL.md（SKILLS_ROOT + 项目 docs/speckit/skills）
+- 新增 §1.0 spec 目录路径约定（BMAD 与 standalone 双轨制）
+- 验收：grep 确认 §1.0 存在，含 BMAD 路径、slug 4 级来源、standalone、fallback
+
+### US-002 (T-SPEC-2) [2026-03-02]
+- 修改：_bmad/scripts/bmad-speckit/powershell/create-new-feature.ps1
+- 新增 -ModeBmad/-Epic/-Story/-Slug 参数及 BMAD 分支逻辑
+- 验收：RT-2 执行通过，创建 specs/epic-4/story-1-implement-base-cache/ 及 spec-E4-S1.md
+
+### US-003 (T-SPEC-3) [2026-03-02]
+- 新建：docs/BMAD/spec-index-mapping.md
+- 含映射表、选择规则
+
+### US-004 (T-SPEC-4) [2026-03-02]
+- 修改：bmad-story-assistant SKILL.md
+- 新增「spec 目录创建（路径须含 slug）」小节，位于前置检查之后、Dev Story实施流程之前
+
+---
+
+## 回归测试
+
+### RT-1 [2026-03-02]
+- 命令：create-new-feature.ps1 "RT-1 regression test"
+- 结果：成功，创建 specs/001-rt-1-regression-test/ 及 spec.md
+
+### RT-2 [2026-03-02]
+- 命令：create-new-feature.ps1 -ModeBmad -Epic 4 -Story 1 -Slug implement-base-cache
+- 结果：成功，输出 BRANCH_NAME/SPEC_FILE/SPEC_DIR，specs/epic-4/story-1-implement-base-cache/ 及 spec-E4-S1.md 存在
+
+### RT-3 [2026-03-02]
+- 验证：specs/015-indicator-system-refactor/ 存在，不受影响
+
+---
+
+## 回归测试结果 [2026-03-02]
+
+| 测试项 | 结果 | 说明 |
+|--------|------|------|
+| RT-1 | 通过 | create-new-feature.ps1 无参数 + feature 描述 → 创建 specs/001-xxx/（下一可用编号） |
+| RT-2 | 通过 | -ModeBmad -Epic 4 -Story 1 -Slug implement-base-cache → specs/epic-4/story-1-implement-base-cache/ 及 spec-E4-S1.md |
+| RT-3 | 通过 | specs/015-indicator-system-refactor/ 存在且不受影响 |

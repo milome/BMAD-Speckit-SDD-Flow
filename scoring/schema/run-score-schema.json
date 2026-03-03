@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RunScore",
+  "description": "Single run score output; one file per run or JSONL by stage",
+  "type": "object",
+  "properties": {
+    "run_id": { "type": "string", "description": "Unique run identifier" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "stage": { "enum": ["constitution", "spec", "plan", "tasks", "implement"] },
+    "dimensions": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "score": { "type": "number", "minimum": 0, "maximum": 100 },
+          "weight": { "type": "number", "minimum": 0, "maximum": 1 },
+          "pass": { "type": "boolean" }
+        }
+      }
+    },
+    "artifact_path": { "type": "string" },
+    "notes": { "type": "string" }
+  }
+}

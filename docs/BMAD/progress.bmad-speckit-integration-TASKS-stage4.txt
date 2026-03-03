@@ -1,0 +1,13 @@
+# Progress: bmad-speckit-integration-TASKS 阶段4 (任务4.1～4.4)
+# Reference: docs/BMAD/bmad-speckit-integration-TASKS.md
+# Total stories: 4
+
+Current story: 5
+Completed: 4
+
+---
+# Story log
+[US-001] 2026-03-02: 创建 .cursor/agents/code-reviewer-config.yaml，包含 code/prd/arch/pr 四种模式配置
+[US-002] 2026-03-02: 创建 {SKILLS_ROOT}/speckit-workflow/references/audit-prompts-prd.md
+[US-003] 2026-03-02: 创建 {SKILLS_ROOT}/speckit-workflow/references/audit-prompts-arch.md
+[US-004] 2026-03-02: 创建 {SKILLS_ROOT}/speckit-workflow/references/audit-prompts-pr.md

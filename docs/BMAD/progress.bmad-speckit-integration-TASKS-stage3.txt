@@ -1,0 +1,25 @@
+# Progress: bmad-speckit-integration-TASKS 阶段3 (任务3.1～3.7)
+# Reference: docs/BMAD/bmad-speckit-integration-TASKS.md
+# Total stories: 7
+
+Current story: 7
+Completed: 7
+
+---
+# Story log
+# (待子任务执行后追加)
+
+---
+US-001: 新增Adaptive Worktree策略 | 2026-03-02 | passes=true | 插入点：Overview与Directory Selection Process之间 | 验收：✓ 小节标题、Story/Epic级说明、自动检测逻辑、手动覆盖命令
+
+US-002: Epic级worktree创建流程 | 2026-03-02 | passes=true | 插入点：Safety Verification与Creation Steps之间 | 验收：✓ 5步骤、代码块、创建后检查清单
+
+US-003: Story分支管理 | 2026-03-02 | passes=true | 插入点：Report Location之后、Quick Reference之前 | 验收：✓ 创建/切换/合并命令、命名规范、分支状态跟踪
+
+US-004: 串行/并行模式切换 | 2026-03-02 | passes=true | 新增章节 | 验收：✓ 串行/并行流程、触发条件、冲突处理、模式切换逻辑、查询命令
+
+US-005: 冲突检测和解决审计 | 2026-03-02 | passes=true | 新增章节 | 验收：✓ 3检测时机、冲突分级、4步解决流程、审计模板、预防建议、统计JSON
+
+US-006: 回滚到Story级机制 | 2026-03-02 | passes=true | 新增章节 | 验收：✓ 3回滚场景、系统建议条件、数据迁移、验证清单、回滚限制
+
+US-007: BMAD-Speckit整合场景触发 | 2026-03-02 | passes=true | Integration章节内新增小节 | 验收：✓ Layer3、Story切换、模式切换、回滚4类触发说明

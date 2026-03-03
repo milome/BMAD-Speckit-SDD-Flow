@@ -1,0 +1,10 @@
+# progress.TASKS_全流程脚本迁移至_bmad
+# 按时间顺序追加完成记录（时间戳、US标识、验收结果）
+
+2026-03-03T22:46+08:00 | US1 | 目录 _bmad/scripts/bmad-speckit/python|powershell|templates 已创建，验收通过
+2026-03-03T22:47+08:00 | US2 | 3个 Python 脚本已复制，check_speckit_prerequisites.py --epic 4 --story 1 --project-root . 执行退出码 1（预期），验收通过
+2026-03-03T22:48+08:00 | US3 | 7个 PowerShell 脚本已复制到 _bmad/scripts/bmad-speckit/powershell/，验收通过
+2026-03-03T22:48+08:00 | US4 | .speckit-state.yaml.template 已复制到 _bmad/scripts/bmad-speckit/templates/，验收通过
+2026-03-03T22:55+08:00 | US5 | 文档与引用已更新：docs/BMAD、docs/speckit、specs 下 64 个 .cursor/commands、prd/progress、SKILL_PROCESS_IMPROVEMENT；全文检索仅剩 TASKS/ANALYSIS 内描述性提及，无可用旧路径
+2026-03-03T22:57+08:00 | US6 | tests/test_migrate_bmad_output_to_subdirs.py 脚本路径已改为 _bmad/.../python/...，tmp_path 复制目标已改为 _bmad/.../python/，pytest 4 passed
+2026-03-03T22:58+08:00 | US7 | 7.1 check_speckit_prerequisites 退出码 1（预期）；7.2 migrate_bmad_output --dry-run 退出码 0；7.3 migrate_planning_artifacts --dry-run 退出码 0；7.4 create-new-feature.ps1 可调用退出码 0；7.5 全文检索无可用旧路径；7.6 备份目录需用户执行 bmad-customization-backup 后自检
