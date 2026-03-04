@@ -1,0 +1,40 @@
+{
+  "featureStem": "speckit-ralph-prd-progress-timing",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "T1: commands/speckit.implement.md 插入步骤 3.5 ralph-method 强制前置",
+      "passes": true
+    },
+    {
+      "id": "US-002",
+      "title": "T2: 步骤 6 增加 Per-US tracking",
+      "passes": true
+    },
+    {
+      "id": "US-003",
+      "title": "T3: 步骤 8 扩展 progress 为 tasks [X] + prd/progress 同步更新",
+      "passes": true
+    },
+    {
+      "id": "US-004",
+      "title": "T4: commands 头部增加 ralph-method 与 speckit-workflow 引用",
+      "passes": true
+    },
+    {
+      "id": "US-005",
+      "title": "T5: bmad-story-assistant STORY-A3-DEV 强化 implement 时遵守 ralph 步骤",
+      "passes": true
+    },
+    {
+      "id": "US-006",
+      "title": "T6: audit-prompts §5 前增加执行阶段指引",
+      "passes": true
+    },
+    {
+      "id": "US-007",
+      "title": "T7: 回归验证 prd/progress 在任务前创建且 per-US 更新",
+      "passes": true
+    }
+  ]
+}

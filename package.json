@@ -9,7 +9,8 @@
     "test:scoring": "vitest run scoring",
     "accept:e1-s1": "npx ts-node scripts/accept-e1-s1.ts",
     "accept:e1-s2": "npx ts-node scripts/accept-e1-s2.ts",
-    "accept:e2-s1": "npx ts-node scripts/accept-e2-s1.ts"
+    "accept:e2-s1": "npx ts-node scripts/accept-e2-s1.ts",
+    "accept:e2-s2": "npx ts-node scripts/accept-e2-s2.ts"
   },
   "bin": {
     "bmad-speckit-init": "scripts/init-to-root.js"

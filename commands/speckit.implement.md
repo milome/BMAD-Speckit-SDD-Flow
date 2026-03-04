@@ -1,6 +1,8 @@
-﻿---
+---
 description: Execute the implementation plan by processing and executing all tasks defined in tasks.md
 ---
+
+**RALPH-METHOD 与 SPECKIT-WORKFLOW**：本命令执行 implement 时，须与 speckit-workflow SKILL §5.1 及 ralph-method SKILL 的 Mandatory Execution Rules 保持一致。若两者冲突，以 ralph-method 的「执行前创建」「每 US 完成即更新」为准。
 
 ## User Input
 
@@ -52,6 +54,14 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **IF EXISTS**: Read contracts/ for API specifications and test requirements
    - **IF EXISTS**: Read research.md for technical decisions and constraints
    - **IF EXISTS**: Read quickstart.md for integration scenarios
+
+3.5. **【ralph-method 强制前置】创建 prd 与 progress 追踪文件**：
+   - 若 FEATURE_DIR 或 `_bmad-output/implementation-artifacts/{epic}-{story}-{slug}/` 下不存在 `prd.{stem}.json` 与 `progress.{stem}.txt`，**必须**在开始执行任何任务前创建；
+   - stem 为 tasks 文档 stem（如 tasks-E2-S1.md → `E2-S1` 或 `tasks-E2-S1`；无 BMAD 上下文时用 tasks 文件名 stem）；
+   - prd 结构须符合 ralph-method schema，将 tasks 中的可验收任务映射为 US-001、US-002…；
+   - 产出路径：与 tasks 同目录，或 `_bmad-output/implementation-artifacts/{epic}-{story}-{slug}/`（BMAD 流程时）；
+   - **禁止**在未创建上述文件前开始编码或执行涉及生产代码的任务。
+   - 参考：speckit-workflow SKILL §5.1、ralph-method SKILL Mandatory Execution Rules。
 
 4. **Project Setup Verification**:
    - **REQUIRED**: Create/verify ignore files based on actual project setup:
@@ -108,6 +118,10 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **Respect dependencies**: Run sequential tasks in order, parallel tasks [P] can run together  
    - **Follow TDD approach**: Execute test tasks before their corresponding implementation tasks
    - **File-based coordination**: Tasks affecting the same files must run sequentially
+   - **Per-US tracking**：每完成一个可验收任务（对应 prd 中的一个 US），**必须立即**：
+     1. 更新 prd：将对应 userStory 的 `passes` 设为 `true`；
+     2. 更新 progress：追加一行带时间戳的 story log，格式 `[YYYY-MM-DD HH:MM] US-XXX: <title> - PASSED`；
+     3. 禁止在全部任务完成后才批量更新 prd/progress。
    - **Validation checkpoints**: Verify each phase completion before proceeding
 
 7. Implementation execution rules:
@@ -118,7 +132,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **Polish and validation**: Unit tests, performance optimization, documentation
 
 8. Progress tracking and error handling:
-   - Report progress after each completed task
+   - Report progress: 在 tasks.md 中标记 `[X]`；**同时**按 ralph-method 更新 prd（passes=true）与 progress（追加 story log）。
    - Halt execution if any non-parallel task fails
    - For parallel tasks [P], continue with successful tasks, report failed ones
    - Provide clear error messages with context for debugging

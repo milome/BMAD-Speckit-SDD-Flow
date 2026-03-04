@@ -805,7 +805,7 @@ prompt: |
   - BUGFIX/TASKS 文档：（由主 Agent 传入实际路径）
   - 项目根目录：{project-root}
 
-  **必须遵守**：ralph-method（执行前**必须**在 `_bmad-output/implementation-artifacts/{epic_num}-{story_num}-{slug}/` 创建 prd.{stem}.json 与 progress.{stem}.txt（stem 为 tasks 文档 stem）；每完成一个 US 必须更新 prd（passes=true）、progress（追加 story log）；按 US 顺序执行。**禁止**在未创建上述文件前开始编码）、TDD 红绿灯、speckit-workflow、禁止伪实现、失败用例须修或记、pytest 在项目根目录运行。
+  **必须遵守**：ralph-method（执行前**必须**在 `_bmad-output/implementation-artifacts/{epic_num}-{story_num}-{slug}/` 创建 prd.{stem}.json 与 progress.{stem}.txt（stem 为 tasks 文档 stem）；每完成一个 US 必须更新 prd（passes=true）、progress（追加 story log）；按 US 顺序执行。**禁止**在未创建上述文件前开始编码）、TDD 红绿灯、speckit-workflow、禁止伪实现、失败用例须修或记、pytest 在项目根目录运行。**implement 执行约束**：执行 implement（或等价执行 tasks）时，子 Agent 必须加载 speckit-workflow 与 ralph-method 技能，或至少遵守 commands/speckit.implement.md 中嵌入的 ralph 步骤（步骤 3.5、6、8）；不得仅凭「执行 tasks」的泛化理解而跳过 prd/progress 创建与 per-US 更新。
 
   请读取 ralph-method 技能与 speckit-workflow 技能，严格按照其规则执行。
 

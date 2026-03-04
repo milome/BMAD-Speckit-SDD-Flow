@@ -2,6 +2,7 @@
 
 **Epic**：E2 feature-eval-rules-authority  
 **Story ID**：2.2  
+**Slug**：eval-authority-doc  
 **描述**：产出 scoring/docs/SCORING_CRITERIA_AUTHORITATIVE.md，含 24 项内容，与 scoring/rules 一致且可追溯；须含题量表述；spec/tasks 须含 24 项与需求 §3.10 逐一核对清单以可验证。
 
 ---
@@ -10,14 +11,17 @@
 
 ### 1.1 本 Story 包含
 
-1. **权威文档产出**：scoring/docs/SCORING_CRITERIA_AUTHORITATIVE.md，含需求 §3.10 定义的 24 项内容
+1. **权威文档产出**：`scoring/docs/SCORING_CRITERIA_AUTHORITATIVE.md`，含需求 §3.10 定义的 24 项内容
 2. **题量表述**：区分已实现题数 vs 目标题池规模，与文档/产出一致
 3. **24 项逐一核对清单**：实施时须按下方「§2 24 项与需求 §3.10 逐一核对清单」逐项勾选验证
+4. **与 scoring/rules 一致性校验**：权威文档与 Story 2.1 产出的 YAML 规则版本号、文档修订日期对应，可追溯
 
 ### 1.2 本 Story 不包含
 
-- 评分规则 YAML 配置（由 Story 2.1 实现）
-- 全链路 Skill 编排与解析（由 Story 3.x 实现）
+- **评分规则 YAML 配置**：由 Story 2.1（eval-rules-yaml-config）实现
+- **全链路 Skill 编排与解析**：由 Story 3.1（eval-lifecycle-skill-def）、Story 3.2（eval-layer1-3-parser）、Story 3.3（eval-skill-scoring-write）实现
+- **一票否决与多次迭代规则实现**：由 Story 4.1（eval-veto-iteration-rules）实现
+- **AI 代码教练实现**：由 Story 4.2（eval-ai-coach）实现
 
 ---
 
@@ -60,6 +64,7 @@
 
 - 权威文档及产出须区分「已实现并验证的题数」与「目标题池规模」（如需求拆解目标 20+，全流程题池目标 50+）
 - 在文档与产出一致，避免与实现状态不符
+- 具体表述形式：可为独立章节或表格，明确列出「当前已实现并验证题数」「各环节目标题量」「全流程目标题池规模」，并注明更新日期
 
 ---
 
@@ -68,17 +73,73 @@
 | AC | 验收标准 | 验证方式 |
 |----|----------|----------|
 | AC-1 | scoring/docs/SCORING_CRITERIA_AUTHORITATIVE.md 产出，含 24 项内容 | 按 §2 核对清单逐项勾选，24 项全部通过 |
-| AC-2 | 权威文档与 scoring/rules 一致且可追溯 | 规则版本号、文档修订日期对应 |
+| AC-2 | 权威文档与 scoring/rules 一致且可追溯 | 规则版本号、文档修订日期对应；每项与 scoring/rules 中 item_id、veto_items 可映射 |
 | AC-3 | 含题量表述（已实现 vs 目标规模） | 文档中有明确章节或表格 |
 | AC-4 | spec/tasks 含 24 项逐一核对清单 | 本文档 §2 表格存在且可用于验收 |
+| AC-5 | 权威文档无禁止词表所列表述 | 全文检索，无「可选」「后续」「待定」等 |
+| AC-6 | 权威文档路径为 scoring/docs/SCORING_CRITERIA_AUTHORITATIVE.md | 文件存在且路径正确 |
 
 ---
 
-## 5. 依赖
+## 5. PRD 追溯
 
-- **前置 Story**：Story 2.1（eval-rules-yaml-config）。依赖 2.1 的 scoring/rules 结构与 YAML schema。
-- 依赖 Architecture 中权威文档与题量表述的约定（§9.4）。
+| PRD 需求 ID | 本 Story 覆盖内容 |
+|-------------|-------------------|
+| **REQ-3.13** | 评分标准权威文档：scoring/docs/SCORING_CRITERIA_AUTHORITATIVE.md，含 24 项内容；E2.2 spec/tasks 须含 24 项与需求 §3.10 逐一核对清单；与 scoring/rules 一致且可追溯；每项可验证 |
+| REQ-3.13a | 题量表述：区分已实现题数 vs 目标题池规模，文档与产出一致 |
+
+**覆盖说明**：REQ-3.13 为本 Story 核心需求，直接对应权威文档产出与 24 项核对清单；REQ-3.13a 对应 §3 题量表述要求。
 
 ---
 
-*本 Story 产出评分标准权威文档，为全体系评分提供人类可读的完整标准。*
+## 6. Architecture 约束
+
+| 约束项 | 说明 |
+|--------|------|
+| **权威文档路径** | 必须为 `scoring/docs/SCORING_CRITERIA_AUTHORITATIVE.md`（Architecture §9.1、§9.4） |
+| **与 scoring/rules 一致** | 权威文档为人类可读完整标准；scoring/rules/*.yaml 为机器可读配置；两者须一致且可追溯（规则版本号、文档修订日期对应） |
+| **题量表述** | 须区分「已实现并验证的题数」与「目标题池规模」，与 Architecture §9.4、需求 §3.9 一致 |
+| **24 项内容** | 必须完整覆盖需求 §3.10 定义的 24 项，不可缺项 |
+| **目录结构** | 须置于 scoring/docs/，与 Architecture §9.1 目录结构一致 |
+| **_bmad-output/config 关系** | 须在权威文档中说明与 scoring/rules 的加载优先级、覆盖规则（Architecture §2.3） |
+
+---
+
+## 7. 禁止词表合规
+
+本 Story 文档及产出物（含 SCORING_CRITERIA_AUTHORITATIVE.md）禁止使用以下表述：
+
+- 可选
+- 后续
+- 待定
+- 酌情
+- 视情况
+- 先实现
+- 或后续扩展
+
+**验证方式**：产出完成后对全文进行检索，确认无上述词汇；若有替代表述需要，须使用明确、可执行的表述。
+
+---
+
+## 8. 实施任务分解
+
+| Task ID | 任务描述 | 产出物 |
+|---------|----------|--------|
+| T1 | 创建 scoring/docs/ 目录（若不存在）并初始化 SCORING_CRITERIA_AUTHORITATIVE.md 骨架 | 目录及文档骨架 |
+| T2 | 编写权威文档核心内容：表 A、表 B、六环节权重、四能力维度、L1–L5、schema、检查项清单（对应 §2 第 1–10 项） | 文档章节 1–10 |
+| T3 | 编写权威文档扩展内容：Code Reviewer 整合、全链路 Skill 引用、AI 代码教练、Epic 综合评分、Epic 级一票否决、环节 1 维度表、环节 3–6 schema、报告结构、config 关系、Gaps 规则、阶梯扣分、schema 扩展、Epic veto 扩展（对应 §2 第 11–24 项） | 文档章节 11–24 |
+| T4 | 逐项核对 §2 清单 24 项，确保每项在文档中有对应章节或段落，勾选通过 | 核对清单全部勾选 |
+| T5 | 编写题量表述章节，明确「已实现题数」「目标题池规模」，与实现状态一致 | 题量表述章节或表格 |
+| T6 | 与 Story 2.1 产出的 scoring/rules 对照，确保 item_id、veto_items、权重与文档一致，注明规则版本号与文档修订日期 | 一致性校验记录或文档内引用 |
+| T7 | 全文禁止词表合规检查 | 检查通过记录 |
+
+---
+
+## 9. 依赖
+
+- **前置 Story**：Story 2.1（eval-rules-yaml-config）。依赖 2.1 的 scoring/rules 结构与 YAML schema；权威文档须与 2.1 产出的规则一致且可追溯。
+- **依赖需求与架构**：Architecture §9.4 权威文档与题量表述的约定；REQUIREMENTS §3.10 24 项定义。
+
+---
+
+*本 Story 产出评分标准权威文档，为全体系评分提供人类可读的完整标准，可审计、可版本化。*
