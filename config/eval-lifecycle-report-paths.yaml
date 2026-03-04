@@ -1,0 +1,28 @@
+# 各 stage 审计报告路径约定（Story 3.1 产出，供 Story 3.2、3.3 引用）
+# Architecture §5、§6
+
+version: "1.0"
+
+# prd、arch 阶段：与 audit-prompts-prd/arch 对应
+# 产出路径由 code-reviewer 或 bmad 工作流约定
+prd:
+  audit_prompt: audit-prompts-prd.md
+  report_path: 由 code-reviewer prd 模式产出路径约定
+arch:
+  audit_prompt: audit-prompts-arch.md
+  report_path: 由 code-reviewer arch 模式产出路径约定
+
+# Layer 3 Create Story 审计报告（Architecture §6、Story 3.2 一致）
+story:
+  report_path: _bmad-output/implementation-artifacts/{epic}-{story}-{slug}/AUDIT_Story_{epic}-{story}.md
+  filename_pattern: AUDIT_Story_{epic}-{story}.md
+  example: AUDIT_Story_3-1.md
+
+# Layer 4–5：speckit-workflow、audit-prompts.md §1–§5 约定
+layers_4_5:
+  specify: audit-prompts §1
+  plan: audit-prompts §2
+  gaps: audit-prompts §3
+  tasks: audit-prompts §4
+  implement: audit-prompts §5
+  post_impl: audit-prompts §5
