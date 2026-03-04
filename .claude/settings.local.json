@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest tests/test_timezone_awareness.py -v)",
+      "Bash(git checkout:*)",
+      "Bash(git stash pop:*)",
+      "Bash(git stash:*)",
+      "Bash(git fetch:*)",
+      "Bash(git rev-list:*)",
+      "Bash(git merge-base:*)",
+      "Bash(git merge:*)",
+      "Edit",
+      "Bash(python:*)",
+      "Bash(ls:*)",
+      "Bash(pip install:*)",
+      "Bash(where:*)",
+      "Bash(dir:*)",
+      "Bash(chcp:*)",
+      "Bash(PYTHONIOENCODING=utf-8 python:*)",
+      "Bash(rm:*)",
+      "Bash(powershell:*)",
+      "Bash(cat:*)",
+      "Bash(git commit:*)",
+      "Bash(findstr:*)",
+      "Bash(pip show:*)",
+      "Bash(git add:*)",
+      "Bash(cd:*)",
+      "Bash(git reset:*)",
+      "Bash(claude /plugin marketplace add:*)",
+      "Bash(claude config:*)",
+      "Bash(if [ -f \"ralph_history.txt\" ])",
+      "Bash(then echo \"EXISTS\")",
+      "Bash(else echo \"NOT_FOUND\")",
+      "Bash(fi)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

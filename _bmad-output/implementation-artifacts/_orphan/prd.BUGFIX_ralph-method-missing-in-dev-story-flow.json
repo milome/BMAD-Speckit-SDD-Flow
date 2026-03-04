@@ -1,0 +1,36 @@
+{
+  "title": "BUGFIX: Dev Story 执行流程未纳入 ralph-method 强制约束",
+  "stem": "BUGFIX_ralph-method-missing-in-dev-story-flow",
+  "userStories": [
+    {
+      "id": "US-001",
+      "description": "T1: speckit-workflow §5.1 执行流程新增 ralph-method 强制前置步骤（步骤 2）",
+      "acceptanceCriteria": "AC-1: 阅读 speckit-workflow SKILL.md §5.1，确认步骤存在且表述明确",
+      "passes": true
+    },
+    {
+      "id": "US-002",
+      "description": "T2: bmad-story-assistant STORY-A3-DEV 前置检查新增 prd/progress 验证；必须遵守段扩展 ralph-method",
+      "acceptanceCriteria": "AC-2: 阅读 bmad-story-assistant SKILL.md 阶段三模板，确认存在该要求",
+      "passes": true
+    },
+    {
+      "id": "US-003",
+      "description": "T3: audit-prompts.md §5 审计提示词新增 prd/progress 检查项",
+      "acceptanceCriteria": "AC-3: 阅读 audit-prompts.md §5，确认审计维度含 prd/progress 检查",
+      "passes": true
+    },
+    {
+      "id": "US-004",
+      "description": "T4: speckit-workflow §5 或 references 新增 tasks 与 prd 映射约定",
+      "acceptanceCriteria": "文档完整、可执行",
+      "passes": true
+    },
+    {
+      "id": "US-005",
+      "description": "T5: 回归验证 - 执行 Dev Story 1.1 或等效流程，确认 prd/progress 产出",
+      "acceptanceCriteria": "AC-4、AC-5、AC-6",
+      "passes": true
+    }
+  ]
+}

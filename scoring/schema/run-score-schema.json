@@ -1,24 +1,54 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "RunScore",
-  "description": "Single run score output; one file per run or JSONL by stage",
+  "description": "Single run score record; per spec §3.6",
   "type": "object",
+  "required": ["run_id", "scenario", "stage", "phase_score", "phase_weight", "check_items", "timestamp", "iteration_count", "iteration_records", "first_pass"],
   "properties": {
     "run_id": { "type": "string", "description": "Unique run identifier" },
-    "timestamp": { "type": "string", "format": "date-time" },
-    "stage": { "enum": ["constitution", "spec", "plan", "tasks", "implement"] },
-    "dimensions": {
+    "scenario": { "enum": ["real_dev", "eval_question"], "description": "real_dev | eval_question" },
+    "stage": {
+      "enum": ["prd", "arch", "epics", "story", "specify", "plan", "gaps", "tasks", "implement", "post_impl", "pr_review"],
+      "description": "BMAD stage"
+    },
+    "path_type": { "type": "string", "description": "Optional; full for both scenarios" },
+    "phase_score": { "type": "number", "description": "Score for phase 1-6" },
+    "phase_weight": { "type": "number", "minimum": 0, "maximum": 1, "description": "Phase weight e.g. 0.20" },
+    "check_items": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/CheckItem" },
+      "description": "Check item details"
+    },
+    "timestamp": { "type": "string", "format": "date-time", "description": "ISO 8601" },
+    "model_version": { "type": "string", "description": "Optional" },
+    "question_version": { "type": "string", "description": "Optional; required for eval_question" },
+    "iteration_count": { "type": "integer", "minimum": 0, "description": "0 = first pass" },
+    "iteration_records": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/IterationRecord" }
+    },
+    "first_pass": { "type": "boolean", "description": "true = 100% tier coefficient" }
+  },
+  "definitions": {
+    "CheckItem": {
       "type": "object",
-      "additionalProperties": {
-        "type": "object",
-        "properties": {
-          "score": { "type": "number", "minimum": 0, "maximum": 100 },
-          "weight": { "type": "number", "minimum": 0, "maximum": 1 },
-          "pass": { "type": "boolean" }
-        }
+      "required": ["item_id", "passed", "score_delta"],
+      "properties": {
+        "item_id": { "type": "string" },
+        "passed": { "type": "boolean" },
+        "score_delta": { "type": "number" },
+        "note": { "type": "string" }
       }
     },
-    "artifact_path": { "type": "string" },
-    "notes": { "type": "string" }
+    "IterationRecord": {
+      "type": "object",
+      "required": ["timestamp", "result", "severity"],
+      "properties": {
+        "timestamp": { "type": "string", "format": "date-time" },
+        "result": { "enum": ["pass", "fail"] },
+        "severity": { "enum": ["fatal", "serious", "normal", "minor"] },
+        "note": { "type": "string" }
+      }
+    }
   }
 }

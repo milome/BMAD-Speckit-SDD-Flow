@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "MiniMax-CodingPlan": {
+      "command": "uvx",
+      "args": [
+        "minimax-codingplan-mcp",
+        "-y"
+      ],
+      "env": {
+        "MINIMAX_API_KEY": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJHcm91cE5hbWUiOiJtaWxvbWUiLCJVc2VyTmFtZSI6Im1pbG9tZSIsIkFjY291bnQiOiIiLCJTdWJqZWN0SUQiOiIyMDA0MDcyMzUzNTg3Mjc0MTQzIiwiUGhvbmUiOiIxODYwMDI5MTgzMCIsIkdyb3VwSUQiOiIyMDA0MDcyMzUzNTgzMDc5ODM5IiwiUGFnZU5hbWUiOiIiLCJNYWlsIjoiIiwiQ3JlYXRlVGltZSI6IjIwMjUtMTItMjUgMjE6Mjc6NDAiLCJUb2tlblR5cGUiOjQsImlzcyI6Im1pbmltYXgifQ.R5q1Vt9XsdBK7NJCtJRod354_gJve6L_Oj197AbfjIssph_cQLvo8BzKq0m-6nfEV6PLtsGdeIPbQXpa1ec1fz3rbiVGQpccjcLb2Yk20NvDY0uH_4t6CM4XPqNKI5LsCGr9UX2b0qUi4zzrMHU0qNRp508O6tOnYCxdK6PaiNMRKc3j-GPphfgKweTfyxC-5E49SeBsnRzfp5J0StJy3eU4cGnAFVffTKMv5B_Nt2074hw8BmB38Dgr20oHRezjogEfyl1cEbaYLaYnoLJO5syp06MkgWqRdf13vcAZf6sTDqfVgjflHlHMaiPTZVFnqUKjK9AxpSGUi5sLNJFfww",
+        "MINIMAX_API_HOST": "https://api.minimax.chat"
+      }
+    }
+  }
+}

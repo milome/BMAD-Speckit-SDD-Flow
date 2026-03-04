@@ -310,15 +310,27 @@ Batch N: Task ... → 执行 → code-review审计 → 通过
 ### 5.1 执行流程
 
 1. **读取 tasks.md**（或 tasks-v*.md），识别所有未完成任务（`[ ]` 复选框）。
-2. **阅读前置文档**：需求文档、plan.md、IMPLEMENTATION_GAPS.md，理解技术架构与需求范围。
-3. **使用 TodoWrite** 创建任务追踪列表，首个任务标记 `in_progress`。
-4. **逐任务执行 TDD 循环**：
+2. **【ralph-method 强制前置】创建 prd 与 progress 追踪文件**：
+   - 若与 tasks 同目录或 `_bmad-output/implementation-artifacts/{epic}-{story}-{slug}/` 下不存在 `prd.{stem}.json` 与 `progress.{stem}.txt`，**必须**在开始执行任何任务前创建；
+   - stem 为 tasks 文档 stem（如 tasks-E1-S1 → `tasks-E1-S1`；无 BMAD 上下文时用 tasks 文件名 stem）；
+   - prd 结构须符合 ralph-method schema，将 tasks 中的可验收任务映射为 US-001、US-002…（或与 tasks 编号一一对应）；
+   - 产出路径：与 tasks 同目录，或 `_bmad-output/implementation-artifacts/{epic}-{story}-{slug}/`（BMAD 流程时）；
+   - **禁止**在未创建上述文件前开始编码或执行涉及生产代码的任务。
+3. **阅读前置文档**：需求文档、plan.md、IMPLEMENTATION_GAPS.md，理解技术架构与需求范围。
+4. **使用 TodoWrite** 创建任务追踪列表，首个任务标记 `in_progress`。
+5. **逐任务执行 TDD 循环**：
    - **红灯**：编写/补充覆盖当前任务验收标准的测试用例，运行确认**测试失败**（验证测试有效性）。
    - **绿灯**：编写最少量生产代码使测试通过。
    - **重构**：在测试保护下优化代码至符合最佳实践（SOLID、命名、解耦、性能），确保测试仍全部通过。重构至符合最佳实践后方可结束。
-5. **完成后立即更新** tasks.md 中的复选框 `[ ]` → `[x]`，TodoWrite 标记 `completed`。
-6. **检查点验证**：遇到检查点时验证所有前置任务已完成，执行回归测试。
-7. **循环**直至所有任务完成，禁止提前停止。
+6. **完成后立即更新** tasks.md 中的复选框 `[ ]` → `[x]`，TodoWrite 标记 `completed`。
+7. **检查点验证**：遇到检查点时验证所有前置任务已完成，执行回归测试。
+8. **循环**直至所有任务完成，禁止提前停止。
+
+### 5.1.1 tasks 与 prd 的映射约定
+
+- tasks 使用 T1、T2、T1.1、T1.2 等格式时：可将 T1 映射为 US-001，T1.1–T1.n 作为 US-001 的子任务；或按顶层任务 T1–T5 映射为 US-001–US-005；
+- prd 的 userStories 须与 tasks 中的可验收任务一一对应或可追溯；
+- 具体映射策略由执行 Agent 在生成 prd 时确定，但须保证 tasks 中每条可验收任务在 prd 中有对应 US 且验收标准一致。
 
 ### TDD红绿灯记录格式（与bmad-story-assistant统一）
 

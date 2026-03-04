@@ -779,6 +779,10 @@ prompt: |
      - 检查路径: specs/epic-{epic_num}/story-{story_num}-*/tasks-E{epic_num}-S{story_num}.md
      - 必须包含审计标记: <!-- AUDIT: PASSED by code-reviewer -->
 
+  5. 验证 ralph-method 追踪文件已创建或将在执行首步创建
+     - 检查路径: _bmad-output/implementation-artifacts/{epic_num}-{story_num}-*/prd.*.json 与 progress.*.txt
+     - 若不存在：子代理**必须**在开始执行 tasks 前，根据 tasks-E{epic_num}-S{story_num}.md 生成 prd 与 progress（符合 ralph-method schema），否则不得开始编码。
+
   如有任何一项不满足，立即返回错误：
   "前置检查失败: [具体原因]。请先完成 speckit-workflow 的完整流程（specify→plan→GAPS→tasks）。"
 
@@ -799,7 +803,7 @@ prompt: |
   - BUGFIX/TASKS 文档：（由主 Agent 传入实际路径）
   - 项目根目录：{project-root}
 
-  **必须遵守**：ralph-method、TDD 红绿灯、speckit-workflow、禁止伪实现、失败用例须修或记、pytest 在项目根目录运行。
+  **必须遵守**：ralph-method（执行前**必须**在 `_bmad-output/implementation-artifacts/{epic_num}-{story_num}-{slug}/` 创建 prd.{stem}.json 与 progress.{stem}.txt（stem 为 tasks 文档 stem）；每完成一个 US 必须更新 prd（passes=true）、progress（追加 story log）；按 US 顺序执行。**禁止**在未创建上述文件前开始编码）、TDD 红绿灯、speckit-workflow、禁止伪实现、失败用例须修或记、pytest 在项目根目录运行。
 
   请读取 ralph-method 技能与 speckit-workflow 技能，严格按照其规则执行。
 ```
