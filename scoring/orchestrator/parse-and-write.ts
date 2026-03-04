@@ -1,0 +1,62 @@
+/**
+ * Story 3.3: parseAndWriteScore 编排
+ * Story 4.1: 集成 applyTierAndVeto，在写入前应用 veto 与阶梯系数
+ */
+import * as fs from 'fs';
+import * as path from 'path';
+import { parseAuditReport } from '../parsers';
+import type { AuditStage } from '../parsers';
+import { writeScoreRecordSync } from '../writer';
+import type { WriteMode } from '../writer';
+import { applyTierAndVeto } from '../veto';
+
+export interface ParseAndWriteScoreOptions {
+  reportPath?: string;
+  content?: string;
+  stage: AuditStage;
+  runId: string;
+  scenario: 'real_dev' | 'eval_question';
+  writeMode: WriteMode;
+  dataPath?: string;
+}
+
+/**
+ * 解析审计报告并写入 scoring 存储。
+ * 写入前应用 veto 与阶梯系数（Story 4.1）；reportPath 与 content 二选一。
+ */
+export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Promise<void> {
+  const { stage, runId, scenario, writeMode, dataPath } = options;
+  let content = options.content;
+
+  if (options.reportPath) {
+    const reportPath = path.isAbsolute(options.reportPath)
+      ? options.reportPath
+      : path.resolve(process.cwd(), options.reportPath);
+    content = fs.readFileSync(reportPath, 'utf-8');
+  }
+
+  if (content == null || content === '') {
+    throw new Error('parseAndWriteScore: reportPath or content must be provided');
+  }
+
+  const record = await parseAuditReport({
+    content,
+    stage,
+    runId,
+    scenario,
+  });
+
+  const rawScore = record.phase_score;
+  const { phase_score, veto_triggered, tier_coefficient } = applyTierAndVeto(
+    { ...record, raw_phase_score: rawScore },
+    { rulesDir: path.join(process.cwd(), 'scoring', 'rules') }
+  );
+  const recordToWrite = {
+    ...record,
+    phase_score,
+    veto_triggered,
+    tier_coefficient,
+  };
+
+  writeScoreRecordSync(recordToWrite, writeMode, dataPath != null ? { dataPath } : undefined);
+}

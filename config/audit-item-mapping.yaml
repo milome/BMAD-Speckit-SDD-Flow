@@ -1,0 +1,119 @@
+# BUGFIX: 审计报告解析器 item_id 映射
+# 报告问题描述 → 标准 item_id；无匹配时 fallback 为 prd-issue-N / arch-issue-N / story-issue-N
+# 匹配逻辑：问题描述包含 text 或任一 patterns 时使用对应 item_id
+version: "1.0"
+
+prd:
+  empty_overall: "prd_overall"       # 问题清单为空
+  empty_dimensions: "prd_dimensions" # 从维度评分提取
+  dimensions:
+    - name: "需求完整性"
+      checks:
+        - text: "覆盖所有用户场景"
+          item_id: "prd_req_completeness_scenarios"
+          patterns: ["用户场景", "场景覆盖"]
+        - text: "边界条件明确"
+          item_id: "prd_req_completeness_boundary"
+          patterns: ["边界条件", "边界"]
+        - text: "异常流程考虑"
+          item_id: "prd_req_completeness_exception"
+          patterns: ["异常流程", "异常"]
+    - name: "可测试性"
+      checks:
+        - text: "验收标准明确"
+          item_id: "prd_testability_criteria"
+          patterns: ["验收标准", "AC"]
+        - text: "可验证"
+          item_id: "prd_testability_verifiable"
+          patterns: ["可验证"]
+        - text: "测试场景清晰"
+          item_id: "prd_testability_scenarios"
+          patterns: ["测试场景"]
+    - name: "一致性"
+      checks:
+        - text: "与Product Brief一致"
+          item_id: "prd_consistency_brief"
+          patterns: ["Product Brief", "PB"]
+        - text: "内部逻辑自洽"
+          item_id: "prd_consistency_logic"
+          patterns: ["逻辑自洽"]
+        - text: "术语统一"
+          item_id: "prd_consistency_terminology"
+          patterns: ["术语", "统一"]
+    - name: "可追溯性"
+      checks:
+        - text: "需求有唯一ID"
+          item_id: "prd_traceability_req_id"
+          patterns: ["唯一ID", "需求ID", "REQ-ID"]
+        - text: "核心逻辑错误"
+          item_id: "veto_core_logic"
+          patterns: ["核心逻辑", "逻辑错误"]
+        - text: "需求描述足够详细以便追溯"
+          item_id: "prd_traceability_detail"
+          patterns: ["追溯", "描述详细"]
+        - text: "依赖关系明确"
+          item_id: "prd_traceability_dependency"
+          patterns: ["依赖关系"]
+
+arch:
+  empty_overall: "arch_overall"
+  empty_dimensions: "arch_dimensions"
+  dimensions:
+    - name: "技术可行性"
+      checks:
+        - text: "方案可实现"
+          item_id: "arch_tech_feasibility_implementable"
+          patterns: ["可实现", "方案"]
+        - text: "技术选型合理"
+          item_id: "arch_tech_feasibility_choice"
+          patterns: ["技术选型", "选型"]
+        - text: "资源需求明确"
+          item_id: "arch_tech_feasibility_resource"
+          patterns: ["资源需求"]
+    - name: "扩展性"
+      checks:
+        - text: "未来3年可持续"
+          item_id: "arch_scalability_sustainability"
+          patterns: ["可持续", "3年"]
+        - text: "水平扩展能力"
+          item_id: "arch_scalability_horizontal"
+          patterns: ["水平扩展", "扩展能力"]
+        - text: "向后兼容"
+          item_id: "arch_scalability_compat"
+          patterns: ["向后兼容", "兼容"]
+    - name: "安全性"
+      checks:
+        - text: "威胁建模完整"
+          item_id: "arch_security_threat_model"
+          patterns: ["威胁建模", "ADR", "ADR示例"]
+        - text: "安全控制措施"
+          item_id: "arch_security_controls"
+          patterns: ["安全控制"]
+        - text: "数据保护"
+          item_id: "arch_security_data_protection"
+          patterns: ["数据保护"]
+    - name: "成本效益"
+      checks:
+        - text: "ROI合理"
+          item_id: "arch_cost_roi"
+          patterns: ["ROI", "投资回报"]
+        - text: "运维成本可控"
+          item_id: "arch_cost_ops"
+          patterns: ["运维成本"]
+        - text: "人力成本估算"
+          item_id: "arch_cost_human"
+          patterns: ["人力成本"]
+
+story:
+  empty_overall: "story_overall"
+  empty_dimensions: "story_overall"  # 从维度评分提取时同 overall
+  checks:
+    - text: "覆盖需求与 Epic"
+      item_id: "story_coverage_req"
+      patterns: ["需求覆盖", "Epic", "覆盖"]
+    - text: "可追溯性"
+      item_id: "story_traceability"
+      patterns: ["可追溯性", "追溯"]
+    - text: "可实施性"
+      item_id: "story_implementability"
+      patterns: ["可实施性", "实施"]
