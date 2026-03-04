@@ -90,7 +90,8 @@
 | REQ-3.10 | 版本追溯与存储：run_id、scenario、stage、phase_score、check_items、iteration_count、iteration_records、first_pass 等 schema | §3.6 完整 schema 实现 | P0 |
 | REQ-3.11 | 数据污染防护：题目来源与时间隔离、定期迭代题池、混淆变量校验、私有闭卷 | 四条防护措施可执行 | P1 |
 | REQ-3.12 | 评分规则版本与目录：scoring/rules/ 可版本化、可插拔；与 code-reviewer-config 通过 ref 衔接 | 多套方案（default、algorithm-heavy）可切换 | P0 |
-| REQ-3.13 | 评分标准权威文档：scoring/docs/SCORING_CRITERIA_AUTHORITATIVE.md，含 24 项内容 | 与 scoring/rules 一致且可追溯 | P0 |
+| REQ-3.13 | 评分标准权威文档：scoring/docs/SCORING_CRITERIA_AUTHORITATIVE.md，含 24 项内容；E2.2 spec/tasks 须含 24 项与需求 §3.10 逐一核对清单 | 与 scoring/rules 一致且可追溯；每项可验证 | P0 |
+| REQ-3.13a | 题量表述：区分已实现题数 vs 目标题池规模，文档与产出一致 | 权威文档及产出含题量表述，避免与实现状态不符 | P0 |
 | REQ-3.14 | 评分规则配置示例：环节 2/3/4、gaps、iteration_tier 的 YAML schema | 与 §3.11 一致 | P0 |
 | REQ-3.15 | Code Reviewer Skill 与需求整合：6 阶段↔六环节、触发时机、维度换算、输出与 scoring 存储衔接 | Epic 综合报告六部分结构、触发模式表 | P0 |
 | REQ-3.16 | 全链路 Code Reviewer Skill 独立与引用关系：引用 code-reviewer、audit-prompts、code-reviewer-config、scoring/rules | 与 speckit-workflow、bmad-story-assistant 协同 | P0 |

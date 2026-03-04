@@ -1,0 +1,27 @@
+# 环节 4：调试与 bug 修复
+# Architecture §9.2、REQUIREMENTS §3.11
+version: "1.0"
+stage: implement
+link_stage: [tasks, post_impl]
+link_环节: 4
+
+weights:
+  base:
+    fix_correctness: 40
+    no_regression: 30
+  bonus:
+    fix_efficiency: 15
+    documentation: 15
+
+items:
+  - id: fix_correctness
+    ref: code-reviewer-config#fix_correctness
+    deduct: 15
+  - id: no_regression
+    ref: code-reviewer-config#no_regression
+    deduct: 10
+
+veto_items:
+  - id: veto_compile_fail
+    ref: code-reviewer-config#veto_compile
+    consequence: stage_0_level_down

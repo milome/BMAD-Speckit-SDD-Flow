@@ -109,7 +109,7 @@ Story 完整标识为 `{epic_num}-{story_num}`，例如 Epic 4、Story 4.1 → `
 1. 发起 Create Story 子任务（epic_num=4, story_num=1）
 2. 产出 `_bmad-output/implementation-artifacts/4-1-<slug>/4-1-<slug>.md` 后，发起 Story 文档审计
 3. 审计通过后，发起 Dev Story 实施子任务，传入 TASKS 或 BUGFIX 文档路径
-4. 实施完成后，发起实施后审计（audit-prompts.md §5）
+4. 实施完成后，**必须**发起实施后审计（audit-prompts.md §5）（本步骤为必须，非可选）
 5. 审计通过即流程结束
 
 ### 示例 2：仅 Create Story + 审计（Epic 3、Story 2）
@@ -650,6 +650,8 @@ Layer 4: specify → 产出spec-E{epic}-S{story}.md（技术规格化Story内容
    - 审计：code-review §5，必须通过A/B级
    - 要求：严格按照[TDD-RED]→[TDD-GREEN]→[TDD-REFACTOR]格式记录
 
+6. **实施后审计（必须）**：子任务返回后，主 Agent 必须按阶段四发起实施后审计，禁止跳过。
+
 ### Worktree策略（修订版）
 
 **story_count 来源（GAP-005 修复；GAP-072 修复）**：按优先级取 (1) Epic 配置 `epic.story_count`；(2) Story 列表 `len(epic.stories)`；(3) 用户输入 `--story-count N`。**冲突处理**：若 (1) 与 (2) 不同，记录警告并采用 (1)。**story_count=0 时（GAP-022 修复）**：禁止创建 worktree，提示用户先完成 Epic/Story 规划；或采用 story-level 占位策略（单 Story 占位）。
@@ -806,6 +808,8 @@ prompt: |
   **必须遵守**：ralph-method（执行前**必须**在 `_bmad-output/implementation-artifacts/{epic_num}-{story_num}-{slug}/` 创建 prd.{stem}.json 与 progress.{stem}.txt（stem 为 tasks 文档 stem）；每完成一个 US 必须更新 prd（passes=true）、progress（追加 story log）；按 US 顺序执行。**禁止**在未创建上述文件前开始编码）、TDD 红绿灯、speckit-workflow、禁止伪实现、失败用例须修或记、pytest 在项目根目录运行。
 
   请读取 ralph-method 技能与 speckit-workflow 技能，严格按照其规则执行。
+
+  子任务返回后，主 Agent 必须发起阶段四实施后审计（STORY-A4-POSTAUDIT），禁止跳过。实施后审计为必须步骤，非可选。
 ```
 
 #### 3.3.1 子任务返回后兜底 cleanup（主 Agent 强制步骤）
@@ -821,6 +825,8 @@ prompt: |
 ---
 
 ## 阶段四：实施后审计（增强版）
+
+本阶段为**必须**步骤，非可选。主 Agent 在子任务返回后必须发起，不得跳过。
 
 ### 前置检查
 

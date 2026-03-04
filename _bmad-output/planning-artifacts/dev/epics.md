@@ -30,7 +30,7 @@
 | Story ID | 描述 | 依赖 | 预估工时 | 风险 |
 |----------|------|------|----------|------|
 | 2.1 | eval-rules-yaml-config：实现 scoring/rules 下环节 2/3/4 的 YAML schema，与 code-reviewer-config 通过 ref 衔接，veto_items、weights、items 结构，gaps-scoring.yaml、iteration-tier.yaml | E1.1 | 2d | 中 |
-| 2.2 | eval-authority-doc：产出 scoring/docs/SCORING_CRITERIA_AUTHORITATIVE.md，含 24 项内容（BMAD 五层、阶段→环节映射、检查项清单、一票否决、L1-L5、schema、Code Reviewer 整合、Epic 综合评分等），与 scoring/rules 一致且可追溯 | E2.1 | 2d | 低 |
+| 2.2 | eval-authority-doc：产出 scoring/docs/SCORING_CRITERIA_AUTHORITATIVE.md，含 24 项内容（BMAD 五层、阶段→环节映射、检查项清单、一票否决、L1-L5、schema、Code Reviewer 整合、Epic 综合评分等），与 scoring/rules 一致且可追溯；须含题量表述（区分已实现题数 vs 目标题池规模、与文档/产出一致）；spec/tasks 须含「24 项与需求 §3.10 逐一核对清单」以可验证 | E2.1 | 2d | 低 |
 
 ### Epic 3：feature-eval-lifecycle-skill
 
@@ -46,7 +46,7 @@
 |----------|------|------|----------|------|
 | 4.1 | eval-veto-iteration-rules：实现一票否决项与环节映射（OWASP Top 10、CWE-798、核心需求遗漏等）、角色一票否决权（批判审计员、AI 代码教练）、Epic 级一票否决 8 项条件、多次迭代阶梯式扣分（1 次 100%/2 次 80%/3 次 50%/≥4 次 0%）、致命/严重问题差异化 | E2.1 | 2d | 中 |
 | 4.2 | eval-ai-coach：实现 AI 代码教练定位、职责、人格、技能配置（引用全链路 Skill）、工作流、输出格式（summary/phase_scores/weak_areas/recommendations/iteration_passed）、一票否决权，禁止「面试」主导表述 | E3.3 | 1d | 低 |
-| 4.3 | eval-scenario-bmad-integration：实现场景区分（real_dev/eval_question）、两种场景均走 Layer 1→5 完整路径、各阶段迭代结束标准、轻量化三原则（同机执行、可选启用、最小侵入）、与 BMAD 五层 workflows 集成点 | E3.3 | 1d | 低 |
+| 4.3 | eval-scenario-bmad-integration：实现场景区分（real_dev/eval_question）、两种场景均走 Layer 1→5 完整路径、各阶段迭代结束标准、轻量化三原则（同机执行、可选启用、最小侵入）、数据污染防护（题目来源与时间隔离、定期迭代题池、混淆变量校验、私有闭卷与评测接口分离；操作要点与触发条件可置于 scoring/ 或项目 checklist）、与 BMAD 五层 workflows 集成点 | E3.3 | 1d | 低 |
 
 ---
 
@@ -58,7 +58,7 @@
 | REQ-2.1~2.5 | 1.1, 3.2, 4.3 |
 | REQ-3.1~3.10 | 1.1, 1.2, 2.1, 2.2, 4.1 |
 | REQ-3.11 | 4.3 |
-| REQ-3.12~3.17 | 2.1, 2.2, 3.1, 3.2, 3.3, 4.1, 4.2 |
+| REQ-3.12~3.17, REQ-3.13a | 2.1, 2.2, 3.1, 3.2, 3.3, 4.1, 4.2 |
 | REQ-4.1, REQ-5.1, REQ-5.2, REQ-6.1, REQ-6.2 | 2.2, 4.3 |
 
 ---
@@ -77,6 +77,8 @@
 | 审计产出→评分环节映射 | 3.2, 2.2 |
 | Layer 1–3 同机解析 | 3.2 |
 | 数据流、BMAD 集成点 | 3.3, 4.3 |
+| 数据污染防护（§3.7 四条） | 4.3 |
+| 题量表述（§3.9 已实现 vs 目标规模） | 2.2 |
 
 ---
 
