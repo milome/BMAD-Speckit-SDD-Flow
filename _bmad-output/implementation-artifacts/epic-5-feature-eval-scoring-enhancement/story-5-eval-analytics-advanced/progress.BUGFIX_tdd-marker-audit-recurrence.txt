@@ -73,3 +73,6 @@ BUGFIX ???????tdd-marker-audit-recurrence
 [2026-03-05] GAP-3 修复：migrate_bmad_output_to_subdirs.py 添加保留文件跳过逻辑（_SKIP_FILES + _SKIP_RETRO_RE） - PASSED
 [2026-03-05] GAP-4 修复：INSTALLATION_AND_MIGRATION_GUIDE.md 旧格式残留清除（Select-String 验收零结果） - PASSED
 [2026-03-05] GAP-2 说明：T-MIGRATE-01 dry-run 不显示迁移路径为预期行为——T-FS-01~06 已完成迁移，脚本 dry-run 验证的是逻辑正确性而非实际执行。 - NOTED
+[2026-03-05] T-SPEC-02 Round2-GAP 修复：epic-4/5 spec 文件旧路径全部清除，验收零结果 - PASSED
+[2026-03-05] T-SKILL-01 低风险修复：SKILL 文件名模式 262-263 行更新 - PASSED
+[2026-03-05] T-DOCS-01 低风险修复：描述性文字旧格式全部清除 - PASSED
