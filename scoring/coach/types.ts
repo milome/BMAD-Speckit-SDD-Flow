@@ -6,6 +6,8 @@ export interface CoachConfig {
   run_mode: CoachRunMode;
 }
 
+import type { RunScoreRecord } from '../writer/types';
+
 export interface CoachDiagnoseOptions {
   dataPath?: string;
   rulesDir?: string;
@@ -18,6 +20,8 @@ export interface CoachDiagnoseOptions {
   epicStoryCount?: number;
   passedStoryCount?: number;
   testStats?: { passed: number; total: number };
+  /** Story 6.2: 预筛选 records，非空时跳过 loadRunRecords */
+  records?: RunScoreRecord[];
 }
 
 import type { WeaknessCluster } from '../analytics/cluster-weaknesses';

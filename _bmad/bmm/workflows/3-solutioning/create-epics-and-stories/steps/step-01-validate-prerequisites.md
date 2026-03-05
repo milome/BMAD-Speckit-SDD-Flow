@@ -48,6 +48,7 @@ To validate that all required input documents exist and extract all requirements
 
 - 🎯 Focus ONLY on extracting and organizing requirements
 - 🚫 FORBIDDEN to start creating epics or stories in this step
+- 🚫 **Output path**: Write ONLY to `{outputFile}` (resolved as `{planning_artifacts}/{branch}/epics.md`). NEVER derive output filename from input PRD filename — e.g. if input is `prd.eval-ux-last-mile.md`, output MUST be `epics.md`, NOT `epics.eval-ux-last-mile.md`
 - 💬 Extract requirements from ALL available documents
 - 🚪 POPULATE the template sections exactly as needed
 

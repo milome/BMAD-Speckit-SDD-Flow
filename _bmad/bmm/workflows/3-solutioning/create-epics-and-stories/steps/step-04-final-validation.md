@@ -46,6 +46,7 @@ To validate complete coverage of all requirements and ensure stories are ready f
 
 - 🎯 Focus ONLY on validating complete requirements coverage
 - 🚫 FORBIDDEN to skip any validation checks
+- 🚫 **Output path**: Validate/save ONLY to `{outputFile}` (epics.md). NEVER create epics.{suffix}.md or derive output from input PRD filename
 - 💬 Validate FR coverage, story completeness, and dependencies
 - 🚪 ENSURE all stories are ready for development
 

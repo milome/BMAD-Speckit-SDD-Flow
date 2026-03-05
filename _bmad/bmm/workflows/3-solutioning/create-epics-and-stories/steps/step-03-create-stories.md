@@ -47,6 +47,7 @@ To generate all epics with their stories based on the approved epics_list, follo
 
 - 🎯 Generate stories for each epic following the template exactly
 - 🚫 FORBIDDEN to deviate from template structure
+- 🚫 **Output path**: Append ONLY to `{outputFile}` (epics.md). NEVER create epics.{suffix}.md or derive output from input PRD filename
 - 💬 Each story must have clear acceptance criteria
 - 🚪 ENSURE each story is completable by a single dev agent
 - 🔗 **CRITICAL: Stories MUST NOT depend on future stories within the same epic**

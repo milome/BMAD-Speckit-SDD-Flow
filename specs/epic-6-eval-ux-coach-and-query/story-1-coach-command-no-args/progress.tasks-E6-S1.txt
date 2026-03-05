@@ -1,0 +1,22 @@
+# Progress: tasks-E6-S1 Coach Command 无参数运行
+
+## 2026-03-06
+
+[TDD] 开始实施 T1-T4
+
+### T1 Discovery
+[TDD-RED] T1 编写 discovery.test.ts 用例 => 初始无 discovery.ts 故失败
+[TDD-GREEN] T1 实现 scoring/coach/discovery.ts => npm run test:scoring -- scoring/coach/__tests__/discovery.test.ts => 7 passed
+[TDD-REFACTOR] T1 无需重构 ✓
+
+### T2 Command 文档
+[TDD-REFACTOR] T2 新建 commands/bmad-coach.md、.cursor/commands/bmad-coach.md，无生产代码
+
+### T3 脚本扩展
+[TDD-RED] T3 coach-diagnose 无参时原 exit 1
+[TDD-GREEN] T3 扩展无 --run-id 分支，discovery → coachDiagnose → formatToMarkdown
+[TDD-REFACTOR] T3 移除 positional[0] 作为 format 回退，避免 --limit 1 被误解析为 format
+
+### T4 验收
+[TDD-GREEN] T4 npx ts-node scripts/coach-diagnose.ts 无参 => AC-1/AC-2/AC-3 通过；npm run test:scoring => 222 passed
+[TDD-REFACTOR] T4 无新增生产代码，集成验证完成 ✓

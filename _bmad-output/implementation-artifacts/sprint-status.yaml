@@ -33,6 +33,7 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
+# epics_source: _bmad-output/planning-artifacts/dev/epics.md (E1-E8 统一)
 generated: "2026-03-05"
 project: BMAD-Speckit-SDD-Flow
 project_key: NOKEY
@@ -50,7 +51,7 @@ development_status:
   2-2-eval-authority-doc: done
   epic-2-retrospective: optional
 
-  epic-3: in-progress
+  epic-3: done
   3-1-eval-lifecycle-skill-def: done
   3-2-eval-layer1-3-parser: done
   3-3-eval-skill-scoring-write: done
@@ -69,3 +70,24 @@ development_status:
   5-4-eval-analytics-clustering: done
   5-5-eval-analytics-advanced: done
   epic-5-retrospective: optional
+
+  # eval-ux-last-mile (E6→E7→E8)
+  epic-6: in-progress
+  6-1-coach-command-no-args: done
+  6-2-coach-epic-story-filter: done
+  6-3-scoring-query-layer: backlog
+  6-4-scores-command: backlog
+  6-5-bmad-eval-analytics-skill: backlog
+  epic-6-retrospective: optional
+
+  epic-7: backlog
+  7-1-dashboard-generator: backlog
+  7-2-sft-extract-command: backlog
+  7-3-sft-bmad-eval-analytics-skill: backlog
+  epic-7-retrospective: optional
+
+  epic-8: backlog
+  8-1-question-bank-structure-manifest: backlog
+  8-2-question-bank-list-add: backlog
+  8-3-question-bank-run-eval-integration: backlog
+  epic-8-retrospective: optional

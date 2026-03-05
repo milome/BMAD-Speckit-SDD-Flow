@@ -65,6 +65,15 @@ Before writing any output, resolve branch for planning-artifacts subdirectory:
 
 **Archive**: If `--archive` is passed, copy existing `{branch}/` to `_archive/{branch}/{date}-{seq}/` before writing.
 
-### 3. First Step EXECUTION
+### 3. Output Path Rule (MANDATORY — No Exceptions)
+
+- **Output file is ALWAYS** `{planning_artifacts}/{branch}/epics.md`
+- 🚫 **FORBIDDEN**: Never derive output filename from input PRD filename (e.g. if input is `prd.eval-ux-last-mile.md`, do NOT create `epics.eval-ux-last-mile.md`)
+- 🚫 **FORBIDDEN**: Never create `epics.{suffix}.md` or any variant other than `epics.md`
+- Downstream tools (create-new-feature.ps1, migrate_bmad_output_to_subdirs.py, bmad-story-assistant) read only from `epics.md`; using any other path breaks the pipeline
+
+### 4. First Step EXECUTION
 
 Read fully and follow: `{project-root}/_bmad/bmm/workflows/3-solutioning/create-epics-and-stories/steps/step-01-validate-prerequisites.md` to begin the workflow.
+
+---

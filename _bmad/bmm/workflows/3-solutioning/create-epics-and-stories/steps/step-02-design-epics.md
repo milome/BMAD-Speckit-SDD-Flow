@@ -47,6 +47,7 @@ To design and get approval for the epics_list that will organize all requirement
 
 - 🎯 Focus ONLY on creating the epics_list
 - 🚫 FORBIDDEN to create individual stories in this step
+- 🚫 **Output path**: Write ONLY to `{outputFile}` (epics.md). NEVER create epics.{suffix}.md or derive output from input PRD filename
 - 💬 Organize epics around user value, not technical layers
 - 🚪 GET explicit approval for the epics_list
 - 🔗 **CRITICAL: Each epic must be standalone and enable future epics without requiring future epics to function**

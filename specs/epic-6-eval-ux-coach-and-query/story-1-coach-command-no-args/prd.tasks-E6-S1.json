@@ -1,0 +1,29 @@
+{
+  "title": "Story 6.1 Coach Command 无参数运行",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Discovery 逻辑",
+      "acceptanceCriteria": ["discoverLatestRunId 扫描 *.json 与 scores.jsonl", "按 timestamp 取最新 N 条", "排除非评分 schema"],
+      "passes": true
+    },
+    {
+      "id": "US-002",
+      "title": "Command 文档",
+      "acceptanceCriteria": ["commands/bmad-coach.md 存在", "包含触发条件与调用流程"],
+      "passes": true
+    },
+    {
+      "id": "US-003",
+      "title": "脚本扩展",
+      "acceptanceCriteria": ["无 --run-id 时 discovery → coachDiagnose", "空数据提示", "截断提示"],
+      "passes": true
+    },
+    {
+      "id": "US-004",
+      "title": "测试与验收",
+      "acceptanceCriteria": ["discovery 单测", "端到端 npx ts-node scripts/coach-diagnose.ts 无参可执行"],
+      "passes": true
+    }
+  ]
+}

@@ -282,7 +282,16 @@ export async function coachDiagnose(
     return { error: 'run_not_found', run_id: runId };
   }
 
-  const records = loadRunRecords(normalizedRunId, options.dataPath);
+  let records: import('../writer/types').RunScoreRecord[];
+  if (options.records != null && options.records.length > 0) {
+    records = [...options.records].sort((a, b) => {
+      const ta = new Date(a.timestamp).getTime();
+      const tb = new Date(b.timestamp).getTime();
+      return ta - tb;
+    });
+  } else {
+    records = loadRunRecords(normalizedRunId, options.dataPath);
+  }
   if (records.length === 0) {
     return { error: 'run_not_found', run_id: normalizedRunId };
   }
