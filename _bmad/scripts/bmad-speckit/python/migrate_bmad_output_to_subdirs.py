@@ -25,6 +25,13 @@ from pathlib import Path
 # 解析 epic-story-slug 的正则：{epic}-{story}-{slug}，如 4-1-implement-base-cache
 EPIC_STORY_SLUG_RE = re.compile(r"^(\d+)-(\d+)-([a-zA-Z0-9_-]+)$")
 
+# 根层级保留文件（不迁移到 _orphan/）
+_SKIP_FILES: frozenset[str] = frozenset({
+    "sprint-status.yaml",
+    ".gitkeep",
+})
+_SKIP_RETRO_RE = re.compile(r"^epic-\d+-retro-.*\.md$")
+
 
 def get_epic_slug_from_epics_md(epic_num: str, project_root: Path) -> str | None:
     """从 _bmad-output/planning-artifacts/{branch}/epics.md 提取 epic slug。"""
@@ -93,14 +100,19 @@ def parse_epic_story_slug_from_filename(filename: str) -> str | None:
 
 
 def should_skip_file(path: Path, impl_artifacts: Path) -> bool:
-    """判断是否应跳过该文件"""
+    """判断是否应跳过该文件（不迁移）"""
     name = path.name
-    # 根目录文件
     if name.startswith("current_session_pids_") and name.endswith(".txt"):
         return True
     if path.is_dir():
         if name in ("bmad-customization-backups", "speckit-scripts-backups"):
             return True
+    # 根层级保留文件：sprint-status.yaml、.gitkeep
+    if name in _SKIP_FILES:
+        return True
+    # retro 文件：epic-*-retro-*.md
+    if _SKIP_RETRO_RE.match(name):
+        return True
     return False
 
 
