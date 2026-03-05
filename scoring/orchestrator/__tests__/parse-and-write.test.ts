@@ -345,6 +345,28 @@ PRD审计报告
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
+  it('E5-S5 T5.1: includes source_path in written record when artifactDocPath is passed', async () => {
+    const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
+    const tempDir = path.join(os.tmpdir(), `scoring-e5s5-srcpath-${Date.now()}`);
+    const runId = `test-srcpath-${Date.now()}`;
+
+    await parseAndWriteScore({
+      content,
+      stage: 'prd',
+      runId,
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+      artifactDocPath: '_bmad-output/implementation-artifacts/5-5/BUGFIX_something.md',
+      skipAutoHash: true,
+    });
+
+    const filePath = path.join(tempDir, `${runId}.json`);
+    const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    expect(written.source_path).toBe('_bmad-output/implementation-artifacts/5-5/BUGFIX_something.md');
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
   it('writes to jsonl when writeMode is jsonl', async () => {
     const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
     const tempDir = path.join(os.tmpdir(), `scoring-e3s3-jsonl-${Date.now()}`);

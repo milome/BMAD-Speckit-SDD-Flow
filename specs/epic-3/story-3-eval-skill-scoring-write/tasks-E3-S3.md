@@ -1,4 +1,4 @@
-# tasks-E3-S3：eval-skill-scoring-write 任务列表
+﻿# tasks-E3-S3：eval-skill-scoring-write 任务列表
 
 **Epic**：E3 feature-eval-lifecycle-skill  
 **Story ID**：3.3  
@@ -111,7 +111,7 @@ cd d:\Dev\BMAD-Speckit-SDD-Flow && npm run accept:e3-s3
 
 ---
 
-- [x] **T3.1** 创建 _bmad-output/implementation-artifacts/3-3-eval-skill-scoring-write/INTEGRATION.md：文档化协同点、入参约定
+- [x] **T3.1** 创建 _bmad-output/implementation-artifacts/epic-3-feature-eval-lifecycle-skill/story-3-eval-skill-scoring-write/INTEGRATION.md：文档化协同点、入参约定
 - [x] **T3.2** 创建 scripts/parse-and-write-score.ts：解析 --reportPath、--stage、--runId、--scenario、--writeMode、--dataPath，调用 parseAndWriteScore
 - [x] **T3.3** 创建 scripts/accept-e3-s3.ts：对 prd/arch/story 各调用 parseAndWriteScore 一次，校验 scoring/data 产出
 - [x] **T3.4** package.json 增加 `"accept:e3-s3": "npx ts-node scripts/accept-e3-s3.ts"`

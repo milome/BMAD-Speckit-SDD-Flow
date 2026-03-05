@@ -1,4 +1,4 @@
----
+﻿---
 name: speckit-workflow
 description: |
   完善 Speckit 开发流程：在 specify/plan/gaps/tasks 各阶段强制需求映射与审计闭环，
@@ -142,8 +142,8 @@ description: |
 
 ### 1.0.2 BMAD 产出与 _bmad-output 子目录对应
 
-speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-artifacts/{epic}-{story}-{slug}/`。
-当 spec 路径为 `specs/epic-{epic}/story-{story}-{slug}/` 时，对应 BMAD 子目录为 `_bmad-output/implementation-artifacts/{epic}-{story}-{slug}/`。
+speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/`。
+当 spec 路径为 `specs/epic-{epic}/story-{story}-{slug}/` 时，对应 BMAD 子目录为 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/`。
 
 ### 1.1 必须完成
 
@@ -156,8 +156,6 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 
 - 生成或更新 spec.md 后，**必须按 §0 约定调用 code-review 技能**，使用 **固定审计提示词**：[references/audit-prompts.md](references/audit-prompts.md) §1。
 - **仅在** code-review 审计报告结论为「完全覆盖、验证通过」时**可结束本步骤**。
-- #### 审计通过后评分写入触发（强制）
-  - 若 `scoring_write_control.enabled` 为 true：读取 config/scoring-trigger-modes.yaml；`branch_id=speckit_1_2_audit_pass`；scenario 从上下文取，缺省取 `scenario_default`；writeMode 按 `event_to_write_mode[event][scenario]` → `default`；调用 `parseAndWriteScore({ reportPath, stage: "story", runId, scenario, writeMode, question_version? })`；scenario=eval_question 时缺 question_version 则记 SCORE_WRITE_INPUT_INVALID 且不调用；失败**不阻断主流程**。
 - 若未通过：根据审计报告 **迭代修改 spec.md**（补全映射表、补全遗漏章节），**再次调用 code-review**，直至报告结论为通过。
 
 ---
@@ -184,8 +182,6 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 
 - 生成或更新 plan.md 后，**必须按 §0 约定调用 code-review 技能**，使用 **固定审计提示词**：[references/audit-prompts.md](references/audit-prompts.md) §2。
 - **仅在** code-review 审计报告结论为「完全覆盖、验证通过」时**可结束本步骤**。
-- #### 审计通过后评分写入触发（强制）
-  - 若 `scoring_write_control.enabled` 为 true：`branch_id=speckit_2_2_audit_pass`；scenario 从上下文取，缺省取 scenario_default；writeMode 按 event_to_write_mode 查表；调用 `parseAndWriteScore({ reportPath, stage: "story", runId, scenario, writeMode, question_version? })`；eval_question 缺 question_version 记 SCORE_WRITE_INPUT_INVALID 且不调用；失败不阻断主流程。
 - 若未通过：根据审计报告 **迭代修改 plan.md**，**再次调用 code-review**，直至报告结论为通过。
 - **嵌入步骤（当 plan 涉及多模块或复杂架构时须执行）**：在 plan 审计通过后、本步骤结束前，**须将 `/speckit.checklist` 或 `.speckit.checklist` 作为 §2.2 审计步骤的一部分**执行——生成质量检查清单，验证需求完整性、清晰度与一致性；若 checklist 发现问题，须迭代修改 plan.md 并**再次执行 code-review 审计**，直至 checklist 验证通过；不得以「可选」为由在应执行场景下跳过。
 
@@ -228,8 +224,6 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 
 - 生成或更新 IMPLEMENTATION_GAPS.md 后，**必须按 §0 约定调用 code-review 技能**，使用 **固定审计提示词**：[references/audit-prompts.md](references/audit-prompts.md) §3。
 - **仅在** code-review 审计报告结论为「完全覆盖、验证通过」时**可结束本步骤**。
-- #### 审计通过后评分写入触发（强制）
-  - 若 `scoring_write_control.enabled` 为 true：`branch_id=speckit_3_2_audit_pass`；scenario 从上下文取，缺省取 scenario_default；writeMode 按 event_to_write_mode 查表；调用 `parseAndWriteScore({ reportPath, stage: "story", runId, scenario, writeMode, question_version? })`；eval_question 缺 question_version 记 SCORE_WRITE_INPUT_INVALID 且不调用；失败不阻断主流程。
 - 若未通过：根据审计报告 **迭代修改 IMPLEMENTATION_GAPS.md**，**再次调用 code-review**，直至报告结论为通过。
 
 ---
@@ -254,8 +248,6 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 
 - 生成或更新 tasks.md 后，**必须按 §0 约定调用 code-review 技能**，使用 **固定审计提示词**：[references/audit-prompts.md](references/audit-prompts.md) §4。
 - **仅在** code-review 审计报告结论为「完全覆盖、验证通过」时**可结束本步骤**。
-- #### 审计通过后评分写入触发（强制）
-  - 审计通过 → 评分触发 → analyze 复核。若 `scoring_write_control.enabled` 为 true：`branch_id=speckit_4_2_audit_pass`；scenario 从上下文取，缺省取 scenario_default；writeMode 按 event_to_write_mode 查表；调用 `parseAndWriteScore({ reportPath, stage: "story", runId, scenario, writeMode, question_version? })`；eval_question 缺 question_version 记 SCORE_WRITE_INPUT_INVALID 且不调用；失败不阻断主流程。
 - 若未通过：根据审计报告 **迭代修改 tasks.md**，**再次调用 code-review**，直至报告结论为通过。
 - **嵌入步骤（当 tasks 数量≥10 或跨多 artifact 时须执行）**：在 tasks 审计通过后、本步骤结束前，**须将 `/speckit.analyze` 或 `.speckit.analyze` 作为 §4.2 审计步骤的一部分**执行——做跨 artifact 一致性分析（spec、plan、tasks 等对齐报告）；若 analyze 发现问题，须迭代修改 tasks.md 并**再次执行 code-review 审计**，直至 analyze 验证通过；不得以「可选」为由在应执行场景下跳过。
 
@@ -319,17 +311,17 @@ Batch N: Task ... → 执行 → code-review审计 → 通过
 
 1. **读取 tasks.md**（或 tasks-v*.md），识别所有未完成任务（`[ ]` 复选框）。
 2. **【ralph-method 强制前置】创建 prd 与 progress 追踪文件**：
-   - 若与 tasks 同目录或 `_bmad-output/implementation-artifacts/{epic}-{story}-{slug}/` 下不存在 `prd.{stem}.json` 与 `progress.{stem}.txt`，**必须**在开始执行任何任务前创建；
+   - 若与 tasks 同目录或 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/` 下不存在 `prd.{stem}.json` 与 `progress.{stem}.txt`，**必须**在开始执行任何任务前创建；
    - stem 为 tasks 文档 stem（如 tasks-E1-S1 → `tasks-E1-S1`；无 BMAD 上下文时用 tasks 文件名 stem）；
    - prd 结构须符合 ralph-method schema，将 tasks 中的可验收任务映射为 US-001、US-002…（或与 tasks 编号一一对应）；
-   - 产出路径：与 tasks 同目录，或 `_bmad-output/implementation-artifacts/{epic}-{story}-{slug}/`（BMAD 流程时）；
+   - 产出路径：与 tasks 同目录，或 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/`（BMAD 流程时）；
    - **禁止**在未创建上述文件前开始编码或执行涉及生产代码的任务。
 3. **阅读前置文档**：需求文档、plan.md、IMPLEMENTATION_GAPS.md，理解技术架构与需求范围。
 4. **使用 TodoWrite** 创建任务追踪列表，首个任务标记 `in_progress`。
 5. **逐任务执行 TDD 循环**：
    - **红灯**：编写/补充覆盖当前任务验收标准的测试用例，运行确认**测试失败**（验证测试有效性）。
    - **绿灯**：编写最少量生产代码使测试通过。
-   - **重构**：在测试保护下优化代码至符合最佳实践（SOLID、命名、解耦、性能），确保测试仍全部通过。重构至符合最佳实践后方可结束。
+   - **重构**：在测试保护下检查并优化代码质量（SOLID、命名、解耦、性能）。**无论是否有具体重构动作，均须在 progress 中记录 `[TDD-REFACTOR]` 一行**；无具体重构时写"无需重构 ✓"，集成任务写"无新增生产代码，各模块独立性已验证，无跨模块重构 ✓"。
 6. **完成后立即更新** tasks.md 中的复选框 `[ ]` → `[x]`，TodoWrite 标记 `completed`。
 7. **检查点验证**：遇到检查点时验证所有前置任务已完成，执行回归测试。
 8. **循环**直至所有任务完成，禁止提前停止。
@@ -355,7 +347,7 @@ Batch N: Task ... → 执行 → code-review审计 → 通过
 [实现要点摘要]
 
 **重构阶段（YYYY-MM-DD HH:MM）**
-[TDD-REFACTOR] TX [重构操作描述]
+[TDD-REFACTOR] TX [重构操作描述 | 无需重构 ✓ | 集成任务: 无新增生产代码，各模块独立性已验证 ✓]
 [优化点摘要]
 
 **更新ralph-method进度**
@@ -366,7 +358,7 @@ Batch N: Task ... → 执行 → code-review审计 → 通过
 **必填字段**:
 1. `[TDD-RED]` - 标记红灯阶段开始
 2. `[TDD-GREEN]` - 标记绿灯阶段完成
-3. `[TDD-REFACTOR]` - 标记重构阶段
+3. `[TDD-REFACTOR]` - 标记重构阶段（必须记录判断结果，无论是否有具体重构动作；禁止省略此行）
 4. `TX` - 时间戳前缀
 5. 测试命令和结果
 6. ralph-method进度更新
@@ -380,8 +372,6 @@ Batch N: Task ... → 执行 → code-review审计 → 通过
 
 - 执行 tasks.md 中的任务（TDD 红绿灯模式）后，**必须按 §0 约定调用 code-review 技能**，使用 **固定审计提示词**：[references/audit-prompts.md](references/audit-prompts.md) §5。
 - **仅在** code-review 审计报告结论为「完全覆盖、验证通过」时**可结束本步骤**。
-- #### 审计通过后评分写入触发（强制）
-  - 若 `scoring_write_control.enabled` 为 true：`branch_id=speckit_5_2_audit_pass`；scenario 从上下文取，缺省取 scenario_default；writeMode 按 event_to_write_mode 查表；调用 `parseAndWriteScore({ reportPath, stage: "story", runId, scenario, writeMode, question_version? })`；eval_question 缺 question_version 记 SCORE_WRITE_INPUT_INVALID 且不调用；失败不阻断主流程；**resultCode 必须进入审计证据**。
 - 若未通过：根据审计报告 **迭代执行 tasks.md 中审计未通过的任务**，**再次调用 code-review**，直至报告结论为通过。
 
 **集成与端到端测试执行（必须）**

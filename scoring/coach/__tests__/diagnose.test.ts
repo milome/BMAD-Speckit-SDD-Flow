@@ -109,6 +109,60 @@ describe('coachDiagnose fallback', () => {
     fs.rmSync(dataPath, { recursive: true, force: true });
   });
 
+  it('includes weakness_clusters when clusterWeaknesses finds failures (AC-B06-6)', async () => {
+    const runId = `coach-weakness-clusters-${Date.now()}`;
+    const dataPath = path.join(os.tmpdir(), `coach-weakness-clusters-${Date.now()}`);
+    fs.mkdirSync(dataPath, { recursive: true });
+    const rec1: RunScoreRecord = {
+      run_id: runId,
+      scenario: 'real_dev',
+      stage: 'spec',
+      phase_score: 70,
+      phase_weight: 0.25,
+      check_items: [
+        { item_id: 'item_repeat', passed: false, score_delta: -10 },
+      ],
+      timestamp: new Date().toISOString(),
+      iteration_count: 0,
+      iteration_records: [],
+      first_pass: true,
+    };
+    const rec2: RunScoreRecord = {
+      ...rec1,
+      stage: 'plan',
+      check_items: [
+        { item_id: 'item_repeat', passed: false, score_delta: -5 },
+      ],
+    };
+    fs.writeFileSync(
+      path.join(dataPath, `${runId}.json`),
+      JSON.stringify([rec1, rec2], null, 2),
+      'utf-8'
+    );
+
+    const result = await coachDiagnose(runId, {
+      dataPath,
+      requiredSkillPath: 'not/exist/skill.md',
+      forceSkillLoadError: true,
+    });
+    if ('error' in result) {
+      throw new Error(`unexpected error: ${result.error}`);
+    }
+    expect(Array.isArray(result.weak_areas)).toBe(true);
+    expect(result.weakness_clusters).toBeDefined();
+    expect(Array.isArray(result.weakness_clusters)).toBe(true);
+    if (result.weakness_clusters!.length > 0) {
+      const c = result.weakness_clusters![0];
+      expect(c).toHaveProperty('cluster_id');
+      expect(c).toHaveProperty('primary_item_ids');
+      expect(c).toHaveProperty('frequency');
+      expect(c).toHaveProperty('keywords');
+      expect(c).toHaveProperty('severity_distribution');
+      expect(c).toHaveProperty('affected_stages');
+    }
+    fs.rmSync(dataPath, { recursive: true, force: true });
+  });
+
   it('documents iteration_passed formula source from VETO_AND_ITERATION_RULES §3.4.2', () => {
     const sourcePath = path.resolve(process.cwd(), 'scoring', 'coach', 'diagnose.ts');
     const source = fs.readFileSync(sourcePath, 'utf-8');

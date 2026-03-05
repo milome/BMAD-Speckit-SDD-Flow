@@ -62,10 +62,10 @@ development_status:
   4-3-eval-scenario-bmad-integration: done
   epic-4-retrospective: done
 
-  epic-5: in-progress
+  epic-5: done
   5-1-eval-foundation-modules: done
   5-2-eval-scoring-rules-expansion: done
   5-3-eval-parser-llm-fallback: done
-  5-4-eval-analytics-clustering: ready-for-dev
-  5-5-eval-analytics-advanced: ready-for-dev
+  5-4-eval-analytics-clustering: done
+  5-5-eval-analytics-advanced: done
   epic-5-retrospective: optional

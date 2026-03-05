@@ -1,4 +1,4 @@
----
+﻿---
 name: bmad-code-reviewer-lifecycle
 description: |
   全链路 Code Reviewer Skill：编排 BMAD 工作流各 stage 的审计产出→解析→scoring 写入。
@@ -42,7 +42,7 @@ references:
 
 ## 报告路径约定
 
-详见 `config/eval-lifecycle-report-paths.yaml` 或 `_bmad-output/implementation-artifacts/3-1-eval-lifecycle-skill-def/CONTRACT_E3-S1-to-3.2-3.3.md`。
+详见 `config/eval-lifecycle-report-paths.yaml` 或 `_bmad-output/implementation-artifacts/epic-3-feature-eval-lifecycle-skill/story-1-eval-lifecycle-skill-def/CONTRACT_E3-S1-to-3.2-3.3.md`。
 
 ## 解析并写入（Story 3.3）
 

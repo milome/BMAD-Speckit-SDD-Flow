@@ -1,8 +1,8 @@
-# Spec E3-S3：eval-skill-scoring-write
+﻿# Spec E3-S3：eval-skill-scoring-write
 
 *Epic 3 Story 3：审计报告解析并写入 scoring 存储，与 speckit-workflow、bmad-story-assistant 协同*
 
-**原始需求文档**：`_bmad-output/implementation-artifacts/3-3-eval-skill-scoring-write/3-3-eval-skill-scoring-write.md`
+**原始需求文档**：`_bmad-output/implementation-artifacts/epic-3-feature-eval-lifecycle-skill/story-3-eval-skill-scoring-write/3-3-eval-skill-scoring-write.md`
 
 ---
 

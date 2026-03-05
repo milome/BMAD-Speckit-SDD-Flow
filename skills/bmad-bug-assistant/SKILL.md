@@ -1,4 +1,4 @@
----
+﻿---
 name: bmad-bug-assistant
 description: |
   BMAD Bug 助手：按「根因分析 → BUGFIX 文档 → 审计 → 任务列表补充 → 实施 → 实施后审计」执行 BUG 修复全流程。主 Agent 发起任一子任务时**必须**将本 skill 内该阶段的「完整 prompt 模板」整段复制并填入占位符后传入，禁止省略、概括或自行改写提示词；主 Agent 禁止直接修改生产代码，实施须通过 mcp_task 子代理。使用 party-mode 或 mcp_task generalPurpose 进行**至少 100 轮**多角色辩论（BUGFIX 产出最终方案与 §7 任务列表，属 party-mode step-02「生成最终方案和最终任务列表」场景），满足收敛条件（共识 + 近 2–3 轮无新 gap）再结束；审计优先 code-reviewer，回退 mcp_task。遵循 ralph-method、TDD 红绿灯、speckit-workflow。适用场景：用户报告 BUG、要求根因分析、生成/更新 BUGFIX 文档、补充 §7 任务列表、实施 BUGFIX。全程中文。
@@ -146,9 +146,9 @@ description: |
 **有 story 上下文的 BUGFIX**：
 | 产出 | 路径 |
 |------|------|
-| BUGFIX 文档 | `_bmad-output/implementation-artifacts/{epic}-{story}-{slug}/BUGFIX_{slug}.md` |
-| TASKS | `_bmad-output/implementation-artifacts/{epic}-{story}-{slug}/TASKS_BUGFIX_{slug}.md` |
-| prd、progress | `_bmad-output/implementation-artifacts/{epic}-{story}-{slug}/prd.BUGFIX_{slug}.json`、`progress.BUGFIX_{slug}.txt` |
+| BUGFIX 文档 | `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/BUGFIX_{slug}.md` |
+| TASKS | `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/TASKS_BUGFIX_{slug}.md` |
+| prd、progress | `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/prd.BUGFIX_{slug}.json`、`progress.BUGFIX_{slug}.txt` |
 
 **无 story 上下文的 BUGFIX**：
 | 产出 | 路径 |

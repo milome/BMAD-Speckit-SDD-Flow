@@ -35,13 +35,14 @@ async function main() {
   const baseCommitHash = args.baseCommitHash;
   const skipAutoHash = args.skipAutoHash === 'true';
   const sourceHashFilePath = args.sourceHashFilePath;
+  const artifactDocPath = args.artifactDocPath;
   const event = args.event ?? 'user_explicit_request';
   const skipTriggerCheck = args.skipTriggerCheck === 'true';
   const triggerStage = args.triggerStage ?? stage;
   const questionVersion = args.questionVersion;
 
   if (!reportPath) {
-    console.error('Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks] [--runId <id>] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--event <event>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>]');
+    console.error('Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks] [--runId <id>] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--event <event>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>]');
     process.exit(1);
   }
 
@@ -65,6 +66,7 @@ async function main() {
     baseCommitHash,
     skipAutoHash,
     sourceHashFilePath,
+    artifactDocPath,
     question_version: questionVersion,
   });
   console.log(`parseAndWriteScore: wrote record for runId=${runId}, stage=${stage}`);

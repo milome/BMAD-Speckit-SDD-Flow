@@ -1,4 +1,4 @@
-# tasks-E3-S1：eval-lifecycle-skill-def 任务列表
+﻿# tasks-E3-S1：eval-lifecycle-skill-def 任务列表
 
 **Epic**：E3 feature-eval-lifecycle-skill  
 **Story ID**：3.1  
@@ -101,7 +101,7 @@ test -f config/stage-mapping.yaml && grep -E "prd|arch|story" config/stage-mappi
 
 ### T3：定义各 stage 审计报告路径约定（AC-3）
 
-**产出物**：config/eval-lifecycle-report-paths.yaml 或 _bmad-output/implementation-artifacts/3-1-eval-lifecycle-skill-def/ 下文档，约定 prd/arch/story 报告路径；story 对应 `_bmad-output/implementation-artifacts/{epic}-{story}-{slug}/AUDIT_Story_{epic}-{story}.md`
+**产出物**：config/eval-lifecycle-report-paths.yaml 或 _bmad-output/implementation-artifacts/epic-3-feature-eval-lifecycle-skill/story-1-eval-lifecycle-skill-def/ 下文档，约定 prd/arch/story 报告路径；story 对应 `_bmad-output/implementation-artifacts/{epic}-{story}-{slug}/AUDIT_Story_{epic}-{story}.md`
 
 **验收标准**：
 - prd、arch 阶段报告路径与 audit-prompts-prd/arch 对应
@@ -110,7 +110,7 @@ test -f config/stage-mapping.yaml && grep -E "prd|arch|story" config/stage-mappi
 
 **验证命令**：
 ```bash
-grep -E "AUDIT_Story|audit-prompts" config/eval-lifecycle-report-paths.yaml 2>/dev/null || grep -E "AUDIT_Story|audit-prompts" _bmad-output/implementation-artifacts/3-1-eval-lifecycle-skill-def/*.md 2>/dev/null | head -5
+grep -E "AUDIT_Story|audit-prompts" config/eval-lifecycle-report-paths.yaml 2>/dev/null || grep -E "AUDIT_Story|audit-prompts" _bmad-output/implementation-artifacts/epic-3-feature-eval-lifecycle-skill/story-1-eval-lifecycle-skill-def/*.md 2>/dev/null | head -5
 ```
 
 ---
@@ -123,7 +123,7 @@ grep -E "AUDIT_Story|audit-prompts" config/eval-lifecycle-report-paths.yaml 2>/d
 
 ### T4：输出与 Story 3.2、3.3 的接口契约（AC-1,#2,#3）
 
-**产出物**：_bmad-output/implementation-artifacts/3-1-eval-lifecycle-skill-def/CONTRACT_E3-S1-to-3.2-3.3.md（或等效），文档化本 Story 产出、3.2 依赖、3.3 依赖
+**产出物**：_bmad-output/implementation-artifacts/epic-3-feature-eval-lifecycle-skill/story-1-eval-lifecycle-skill-def/CONTRACT_E3-S1-to-3.2-3.3.md（或等效），文档化本 Story 产出、3.2 依赖、3.3 依赖
 
 **验收标准**：
 - 文档化「本 Story 产出」：编排逻辑、stage 映射表、报告路径约定
@@ -132,7 +132,7 @@ grep -E "AUDIT_Story|audit-prompts" config/eval-lifecycle-report-paths.yaml 2>/d
 
 **验证命令**：
 ```bash
-test -f _bmad-output/implementation-artifacts/3-1-eval-lifecycle-skill-def/CONTRACT_E3-S1-to-3.2-3.3.md && grep -E "3\.2|3\.3|报告路径|触发" _bmad-output/implementation-artifacts/3-1-eval-lifecycle-skill-def/CONTRACT_E3-S1-to-3.2-3.3.md | head -5
+test -f _bmad-output/implementation-artifacts/epic-3-feature-eval-lifecycle-skill/story-1-eval-lifecycle-skill-def/CONTRACT_E3-S1-to-3.2-3.3.md && grep -E "3\.2|3\.3|报告路径|触发" _bmad-output/implementation-artifacts/epic-3-feature-eval-lifecycle-skill/story-1-eval-lifecycle-skill-def/CONTRACT_E3-S1-to-3.2-3.3.md | head -5
 ```
 
 ---
@@ -174,7 +174,7 @@ npx ts-node scripts/accept-e3-s1.ts
 - bmad-code-reviewer-lifecycle/SKILL.md（全局 %USERPROFILE%\.cursor\skills\ 或项目 skills）
 - config/stage-mapping.yaml
 - config/eval-lifecycle-report-paths.yaml（或 3-1 产出目录下等效）
-- _bmad-output/implementation-artifacts/3-1-eval-lifecycle-skill-def/CONTRACT_E3-S1-to-3.2-3.3.md
+- _bmad-output/implementation-artifacts/epic-3-feature-eval-lifecycle-skill/story-1-eval-lifecycle-skill-def/CONTRACT_E3-S1-to-3.2-3.3.md
 - scripts/accept-e3-s1.ts
 
 ---

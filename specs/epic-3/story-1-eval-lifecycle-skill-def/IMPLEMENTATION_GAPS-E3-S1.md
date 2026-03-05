@@ -1,4 +1,4 @@
-# IMPLEMENTATION_GAPS-E3-S1：eval-lifecycle-skill-def
+﻿# IMPLEMENTATION_GAPS-E3-S1：eval-lifecycle-skill-def
 
 **Epic**：E3 feature-eval-lifecycle-skill  
 **Story ID**：3.1  
@@ -50,7 +50,7 @@
 - **GAP-1.x**：创建 bmad-code-reviewer-lifecycle/SKILL.md（全局 `%USERPROFILE%\.cursor\skills\` 或项目 skills），含 name、description、references；引用关系表与 Architecture §2.2、§10.2 一致。
 - **GAP-2.x**：创建 config/stage-mapping.yaml（或 SKILL 内嵌）含表 A、表 B、触发模式表；验收脚本验证 prd/arch/story→环节映射。
 - **GAP-3.x**：创建 config/eval-lifecycle-report-paths.yaml 或等同文档，约定 prd/arch 报告路径、story 对应 AUDIT_Story_{epic}-{story}.md。
-- **GAP-4.1**：在 _bmad-output/implementation-artifacts/3-1-eval-lifecycle-skill-def/ 产出接口契约文档，明确向 3.2、3.3 提供的内容。
+- **GAP-4.1**：在 _bmad-output/implementation-artifacts/epic-3-feature-eval-lifecycle-skill/story-1-eval-lifecycle-skill-def/ 产出接口契约文档，明确向 3.2、3.3 提供的内容。
 - **GAP-5.1**：创建 scripts/accept-e3-s1.ts，覆盖 AC-1～AC-3。
 
 ---

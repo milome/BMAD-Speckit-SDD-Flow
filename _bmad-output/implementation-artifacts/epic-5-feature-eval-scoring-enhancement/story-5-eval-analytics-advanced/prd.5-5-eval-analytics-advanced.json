@@ -1,0 +1,57 @@
+{
+  "title": "Story 5.5: eval-analytics-advanced",
+  "stem": "5-5-eval-analytics-advanced",
+  "taskDescription": "B07 SFT 提取、B08 Prompt 优化建议、B09 规则自优化建议",
+  "projectContext": {
+    "framework": "TypeScript/Node",
+    "testCommand": "npm run test:scoring",
+    "buildCommand": "npx tsc --noEmit"
+  },
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "B07 schema 与参数 (T1)",
+      "description": "RunScoreRecord 新增 source_path；ParseAndWriteScoreOptions 新增 artifactDocPath；parse-and-write-score 支持 --artifactDocPath",
+      "acceptanceCriteria": ["AC-B07-schema"],
+      "priority": 1,
+      "passes": true,
+      "notes": "T1.1-T1.4"
+    },
+    {
+      "id": "US-002",
+      "title": "B07 SFT 提取核心 (T2)",
+      "description": "sft-extractor.ts、gitDiffBetween、extractSftDataset、analytics-sft-extract CLI、7 个单测",
+      "acceptanceCriteria": ["AC-B07-1", "AC-B07-2", "AC-B07-3", "AC-B07-4"],
+      "priority": 2,
+      "passes": true,
+      "notes": "T2.1-T2.6"
+    },
+    {
+      "id": "US-003",
+      "title": "B08 Prompt 优化建议 (T3)",
+      "description": "prompt-optimizer.ts、generatePromptSuggestions、analytics-prompt-optimize CLI、4 个单测",
+      "acceptanceCriteria": ["AC-B08-1", "AC-B08-2", "AC-B08-3"],
+      "priority": 3,
+      "passes": true,
+      "notes": "T3.1-T3.4"
+    },
+    {
+      "id": "US-004",
+      "title": "B09 规则自优化建议 (T4)",
+      "description": "rule-suggestion.ts、generateRuleSuggestions、analytics-rule-suggest CLI、4 个单测",
+      "acceptanceCriteria": ["AC-B09-1", "AC-B09-2", "AC-B09-3", "AC-B09-4"],
+      "priority": 4,
+      "passes": true,
+      "notes": "T4.1-T4.5"
+    },
+    {
+      "id": "US-005",
+      "title": "集成与回归 (T5)",
+      "description": "parse-and-write artifactDocPath 集成测试、CLI 验收、npm run test:scoring 全量回归",
+      "acceptanceCriteria": ["T5.1", "T5.2", "T5.3"],
+      "priority": 5,
+      "passes": true,
+      "notes": "T5.1-T5.3"
+    }
+  ]
+}

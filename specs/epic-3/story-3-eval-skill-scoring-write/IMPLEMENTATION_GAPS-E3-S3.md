@@ -1,4 +1,4 @@
-# IMPLEMENTATION_GAPS-E3-S3：eval-skill-scoring-write
+﻿# IMPLEMENTATION_GAPS-E3-S3：eval-skill-scoring-write
 
 **Epic**：E3 feature-eval-lifecycle-skill  
 **Story ID**：3.3  
@@ -44,7 +44,7 @@
 
 ### 3.3 GAP-3.x
 
-- 创建 _bmad-output/implementation-artifacts/3-3-eval-skill-scoring-write/INTEGRATION.md：文档化 speckit-workflow clarify/checklist/analyze 阶段完成后的调用时机、入参约定。
+- 创建 _bmad-output/implementation-artifacts/epic-3-feature-eval-lifecycle-skill/story-3-eval-skill-scoring-write/INTEGRATION.md：文档化 speckit-workflow clarify/checklist/analyze 阶段完成后的调用时机、入参约定。
 - 创建 scripts/parse-and-write-score.ts：解析 --reportPath、--stage 等，调用 parseAndWriteScore。
 
 ### 3.4 GAP-4.1

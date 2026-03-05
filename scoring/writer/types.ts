@@ -43,6 +43,8 @@ export interface RunScoreRecord {
   content_hash?: string;
   /** 被审计的源文件的 SHA-256 指纹，用于跨阶段版本锁定校验 */
   source_hash?: string;
+  /** 触发本次评分的源文档路径，如 BUGFIX 文档（B07 SFT 提取用） */
+  source_path?: string;
 }
 
 /**

@@ -20,12 +20,15 @@ export interface CoachDiagnoseOptions {
   testStats?: { passed: number; total: number };
 }
 
+import type { WeaknessCluster } from '../analytics/cluster-weaknesses';
+
 export interface CoachDiagnosisReport {
   summary: string;
   phase_scores: Record<string, number>;
   weak_areas: string[];
   recommendations: string[];
   iteration_passed: boolean;
+  weakness_clusters?: WeaknessCluster[];
 }
 
 export interface CoachRunNotFound {

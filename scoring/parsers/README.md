@@ -1,4 +1,4 @@
-# scoring/parsers
+﻿# scoring/parsers
 
 ## Story 2.1: 规则解析
 
@@ -13,7 +13,7 @@
 |------|------------|
 | prd | config/eval-lifecycle-report-paths.yaml 中 prd.report_path；由 code-reviewer prd 模式产出 |
 | arch | config/eval-lifecycle-report-paths.yaml 中 arch.report_path；由 code-reviewer arch 模式产出 |
-| story | `_bmad-output/implementation-artifacts/{epic}-{story}-{slug}/AUDIT_Story_{epic}-{story}.md` |
+| story | `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_Story_{epic}-{story}.md` |
 
 ### 解析入口
 

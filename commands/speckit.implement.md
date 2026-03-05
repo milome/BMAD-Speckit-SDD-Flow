@@ -56,10 +56,10 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **IF EXISTS**: Read quickstart.md for integration scenarios
 
 3.5. **【ralph-method 强制前置】创建 prd 与 progress 追踪文件**：
-   - 若 FEATURE_DIR 或 `_bmad-output/implementation-artifacts/{epic}-{story}-{slug}/` 下不存在 `prd.{stem}.json` 与 `progress.{stem}.txt`，**必须**在开始执行任何任务前创建；
+   - 若 FEATURE_DIR 或 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/` 下不存在 `prd.{stem}.json` 与 `progress.{stem}.txt`，**必须**在开始执行任何任务前创建；
    - stem 为 tasks 文档 stem（如 tasks-E2-S1.md → `E2-S1` 或 `tasks-E2-S1`；无 BMAD 上下文时用 tasks 文件名 stem）；
    - prd 结构须符合 ralph-method schema，将 tasks 中的可验收任务映射为 US-001、US-002…；
-   - 产出路径：与 tasks 同目录，或 `_bmad-output/implementation-artifacts/{epic}-{story}-{slug}/`（BMAD 流程时）；
+   - 产出路径：与 tasks 同目录，或 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/`（BMAD 流程时）；
    - **禁止**在未创建上述文件前开始编码或执行涉及生产代码的任务。
    - 参考：speckit-workflow SKILL §5.1、ralph-method SKILL Mandatory Execution Rules。
 

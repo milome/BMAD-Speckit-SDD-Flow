@@ -29,6 +29,8 @@ export interface ParseAndWriteScoreOptions {
   skipAutoHash?: boolean;
   /** 被审计源文件路径，用于计算 source_hash 并写入记录（B02） */
   sourceHashFilePath?: string;
+  /** 触发评分的源文档路径（如 BUGFIX 文档），写入 record 的 source_path（B07） */
+  artifactDocPath?: string;
 }
 
 function computeWeightedDimensionScore(scores: DimensionScore[]): number {
@@ -103,6 +105,7 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     ...(baseCommitHash != null ? { base_commit_hash: baseCommitHash } : {}),
     ...(contentHash != null ? { content_hash: contentHash } : {}),
     ...(sourceHash != null ? { source_hash: sourceHash } : {}),
+    ...(options.artifactDocPath != null ? { source_path: options.artifactDocPath } : {}),
   };
 
   writeScoreRecordSync(recordToWrite, writeMode, dataPath != null ? { dataPath } : undefined);

@@ -1,4 +1,4 @@
-# BMAD-Speckit-SDD-Flow 安装与迁移完整指南
+﻿# BMAD-Speckit-SDD-Flow 安装与迁移完整指南
 
 > **版本**：v1.0 | **最后更新**：2026-03-05 | **适用仓库**：[BMAD-Speckit-SDD-Flow](../README.md)
 
@@ -469,7 +469,7 @@ python "$env:USERPROFILE\.cursor\skills\bmad-customization-backup\scripts\apply_
 
 ### 4.5 _bmad-output 迁移
 
-现有项目的 `_bmad-output/implementation-artifacts/` 可能使用平铺结构（文件直接放在 `implementation-artifacts/` 下），需迁移到 Story 子目录结构。
+现有项目的 `_bmad-output/implementation-artifacts/` 可能使用平铺结构（文件直接放在 `implementation-artifacts/` 下），需迁移到两级层级结构（`epic-{N}-{slug}/story-{N}-{slug}/`）。
 
 ```powershell
 # 迁移平铺文件到 story 子目录（先 dry-run）
@@ -641,7 +641,7 @@ foreach ($skill in $requiredSkills) {
 | Tasks template | `templates/tasks-template.md` | speckit-workflow (tasks) |
 | Speckit workflows | `workflows/specify.md`, `plan.md`, `tasks.md`, `implement.md` | speckit-workflow |
 | Sprint status | `_bmad-output/implementation-artifacts/sprint-status.yaml` | bmad-story-assistant |
-| Implementation artifacts | `_bmad-output/implementation-artifacts/{epic}-{story}-{slug}/` | bmad-story-assistant, speckit-workflow |
+| Implementation artifacts | `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/` | bmad-story-assistant, speckit-workflow |
 | Speckit commands | `commands/speckit.*.md` | Cursor 命令系统 |
 | BMAD commands | `commands/bmad-*.md` | Cursor 命令系统 |
 | Cursor rules | `.cursor/rules/bmad-*.mdc` | Cursor IDE 自动加载 |
@@ -894,7 +894,7 @@ A: 运行迁移脚本：
 ```powershell
 python _bmad\scripts\bmad-speckit\python\migrate_bmad_output_to_subdirs.py --dry-run
 ```
-脚本会自动识别文件名中的 `{epic}-{story}-{slug}` 模式并创建子目录。先用 `--dry-run` 确认迁移计划，无误后去掉 `--dry-run` 执行。
+脚本会自动识别文件名中的 `{epic}-{story}-{slug}` 模式，并将文件迁移到两级层级结构（`epic-{N}-{epic-slug}/story-{N}-{slug}/`）；脚本会自动从 `_bmad-output/planning-artifacts/{branch}/epics.md` 提取 epic slug。先用 `--dry-run` 确认迁移计划，无误后去掉 `--dry-run` 执行。
 
 ---
 

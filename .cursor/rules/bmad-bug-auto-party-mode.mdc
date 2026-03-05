@@ -33,7 +33,7 @@ alwaysApply: true
    - 禁止凑轮次：每轮须有实质角色发言，不得空转。
 
 4. **产出 BUGFIX 文档**  
-   辩论收敛后，**必须**生成一份 BUGFIX 文档，包含：§1 现象/问题描述、§2 根因分析、§3 依据/参考（可选）、§4 修复方案、§5 流程/建议流程（可选）、§7 最终任务列表。路径：有 story 时 `_bmad-output/implementation-artifacts/{epic}-{story}-{slug}/BUGFIX_{slug}.md`；无 story 时 `_bmad-output/implementation-artifacts/_orphan/BUGFIX_{slug}.md`。格式与禁止词表等与 bmad-bug-assistant 约定一致。
+   辩论收敛后，**必须**生成一份 BUGFIX 文档，包含：§1 现象/问题描述、§2 根因分析、§3 依据/参考（可选）、§4 修复方案、§5 流程/建议流程（可选）、§7 最终任务列表。路径：有 story 时 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/BUGFIX_{slug}.md`；无 story 时 `_bmad-output/implementation-artifacts/_orphan/BUGFIX_{slug}.md`。格式与禁止词表等与 bmad-bug-assistant 约定一致。
 
 5. **禁止主 Agent 直接修改源代码**  
    主 Agent **不得**在会话中直接编辑生产代码以修复 bug。修复实施**须**通过子代理（如 mcp_task）或 BUGFIX 文档 §7 任务列表由用户/子代理执行；主 Agent 仅负责发起 party-mode、产出 BUGFIX、发起审计/实施子任务。

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-US-018 (T-BMAD-7): 迁移 _bmad-output/implementation-artifacts 平铺文件到 story 子目录
+US-018 (T-BMAD-7): 迁移 _bmad-output/implementation-artifacts 平铺文件到两级层级子目录
 
-按文件名解析 {epic}-{story}-{slug}，将平铺文件移动到对应子目录；
-若无法解析，移动到 _orphan/。支持 --dry-run。
+按文件名解析 {epic}-{story}-{slug}，将平铺文件移动到对应两级子目录
+epic-{N}-{epic-slug}/story-{N}-{slug}/；若无法解析，移动到 _orphan/。
+支持 --dry-run。epic-slug 从 _bmad-output/planning-artifacts/{branch}/epics.md 自动提取。
 
 用法:
   python migrate_bmad_output_to_subdirs.py [--project-root PATH] [--dry-run]
@@ -17,11 +18,35 @@ from __future__ import annotations
 
 import argparse
 import re
+import subprocess
 import sys
 from pathlib import Path
 
 # 解析 epic-story-slug 的正则：{epic}-{story}-{slug}，如 4-1-implement-base-cache
 EPIC_STORY_SLUG_RE = re.compile(r"^(\d+)-(\d+)-([a-zA-Z0-9_-]+)$")
+
+
+def get_epic_slug_from_epics_md(epic_num: str, project_root: Path) -> str | None:
+    """从 _bmad-output/planning-artifacts/{branch}/epics.md 提取 epic slug。"""
+    try:
+        branch = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            capture_output=True, text=True, cwd=project_root
+        ).stdout.strip() or "dev"
+    except Exception:
+        branch = "dev"
+    for b in [branch, "dev"]:
+        epics_md = project_root / "_bmad-output" / "planning-artifacts" / b / "epics.md"
+        if epics_md.exists():
+            text = epics_md.read_text(encoding="utf-8")
+            m = re.search(
+                rf"^#{{2,3}}\s+Epic\s+{re.escape(str(epic_num))}\s*[：:]\s*(.+)",
+                text, re.MULTILINE
+            )
+            if m:
+                title = m.group(1).strip()
+                return re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
+    return None
 
 
 def parse_epic_story_slug_from_filename(filename: str) -> str | None:
@@ -127,14 +152,21 @@ def run_migration(project_root: Path, dry_run: bool) -> int:
     for fp, subdir in files_to_migrate:
         by_subdir.setdefault(subdir, []).append(fp)
 
-    # 输出迁移计划
+    # 输出迁移计划（dry-run 段同步使用新路径逻辑）
     mode = "（dry-run，不实际移动）" if dry_run else "（将执行移动）"
     print(f"[migrate] 迁移计划 {mode}")
     print("-" * 40)
     for subdir in sorted(by_subdir.keys()):
-        target_dir = impl_artifacts / subdir
+        m2 = EPIC_STORY_SLUG_RE.match(subdir)
+        if m2:
+            epic_num2, story_num2, slug2 = m2.group(1), m2.group(2), m2.group(3)
+            epic_slug2 = get_epic_slug_from_epics_md(epic_num2, project_root)
+            epic_dir2 = f"epic-{epic_num2}-{epic_slug2}" if epic_slug2 else f"epic-{epic_num2}"
+            target_dir = impl_artifacts / epic_dir2 / f"story-{story_num2}-{slug2}"
+        else:
+            target_dir = impl_artifacts / subdir
         files = by_subdir[subdir]
-        print(f"  -> {subdir}/")
+        print(f"  -> {target_dir.relative_to(impl_artifacts)}/")
         for f in sorted(files):
             print(f"      {f.name}")
         print()
@@ -143,9 +175,17 @@ def run_migration(project_root: Path, dry_run: bool) -> int:
         print(f"[migrate] dry-run 完成，共 {len(files_to_migrate)} 个文件待迁移。")
         return 0
 
-    # 实际移动
+    # 实际移动（目标目录构建使用两级层级逻辑）
     for subdir, files in by_subdir.items():
-        target_dir = impl_artifacts / subdir
+        m = EPIC_STORY_SLUG_RE.match(subdir)
+        if m:
+            epic_num, story_num, slug_part = m.group(1), m.group(2), m.group(3)
+            epic_slug = get_epic_slug_from_epics_md(epic_num, project_root)
+            epic_dir = f"epic-{epic_num}-{epic_slug}" if epic_slug else f"epic-{epic_num}"
+            story_dir = f"story-{story_num}-{slug_part}"
+            target_dir = impl_artifacts / epic_dir / story_dir
+        else:
+            target_dir = impl_artifacts / subdir  # fallback: 保持原行为
         target_dir.mkdir(parents=True, exist_ok=True)
         for fp in files:
             dest = target_dir / fp.name
@@ -153,7 +193,7 @@ def run_migration(project_root: Path, dry_run: bool) -> int:
                 print(f"[migrate] 警告: 目标已存在，跳过: {dest}")
                 continue
             fp.rename(dest)
-            print(f"[migrate] 已移动: {fp.name} -> {subdir}/")
+            print(f"[migrate] 已移动: {fp.name} -> {target_dir.relative_to(impl_artifacts)}/")
 
     print(f"[migrate] 迁移完成，共 {len(files_to_migrate)} 个文件。")
     return 0

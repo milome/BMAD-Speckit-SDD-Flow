@@ -14,7 +14,7 @@ arch:
 
 # Layer 3 Create Story 审计报告（Architecture §6、Story 3.2 一致）
 story:
-  report_path: _bmad-output/implementation-artifacts/{epic}-{story}-{slug}/AUDIT_Story_{epic}-{story}.md
+  report_path: _bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_Story_{epic}-{story}.md
   filename_pattern: AUDIT_Story_{epic}-{story}.md
   example: AUDIT_Story_3-1.md
 

@@ -1,4 +1,4 @@
-# plan-E3-S3：eval-skill-scoring-write 实现方案
+﻿# plan-E3-S3：eval-skill-scoring-write 实现方案
 
 **Epic**：E3 feature-eval-lifecycle-skill  
 **Story ID**：3.3  
@@ -78,7 +78,7 @@
 
 ### 5.1 协同点文档
 
-- 产出 docs/speckit-eval-integration.md 或 _bmad-output/implementation-artifacts/3-3-eval-skill-scoring-write/INTEGRATION.md：
+- 产出 docs/speckit-eval-integration.md 或 _bmad-output/implementation-artifacts/epic-3-feature-eval-lifecycle-skill/story-3-eval-skill-scoring-write/INTEGRATION.md：
   - 在 speckit-workflow clarify/checklist/analyze 嵌入审计闭环中，stage 完成后的调用时机（例如 §1.2 spec 审计通过后、§2.2 plan 审计通过后等）。
   - 入参约定：run_id、scenario、stage、报告路径、writeMode 如何从工作流传入；报告路径由 epic、story、slug 解析的公式。
 

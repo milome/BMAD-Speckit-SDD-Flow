@@ -1,4 +1,4 @@
-# plan-E3-S1：eval-lifecycle-skill-def 实现方案
+﻿# plan-E3-S1：eval-lifecycle-skill-def 实现方案
 
 **Epic**：E3 feature-eval-lifecycle-skill  
 **Story ID**：3.1  
@@ -90,7 +90,7 @@
 | bmad-code-reviewer-lifecycle/SKILL.md | Skill 主描述（全局 skill 或项目 skills） |
 | config/stage-mapping.yaml | 表 A、表 B、触发模式表（可选） |
 | config/eval-lifecycle-report-paths.yaml | 报告路径约定（可选；也可在 SKILL 或 Story 文档中） |
-| _bmad-output/implementation-artifacts/3-1-eval-lifecycle-skill-def/ | 契约文档、stage 映射表（与 Story 产出同目录） |
+| _bmad-output/implementation-artifacts/epic-3-feature-eval-lifecycle-skill/story-1-eval-lifecycle-skill-def/ | 契约文档、stage 映射表（与 Story 产出同目录） |
 | scripts/accept-e3-s1.ts | 验收脚本 AC-1～AC-3 |
 
 ---

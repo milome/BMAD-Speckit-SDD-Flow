@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as veto from '../veto';
 import type { EpicStoryRecord } from '../veto';
+import { clusterWeaknesses } from '../analytics/cluster-weaknesses';
 import { loadCoachConfig } from './config';
 import { loadRunRecords } from './loader';
 import { loadForbiddenWords, validateForbiddenWords } from './forbidden';
@@ -339,12 +340,20 @@ export async function coachDiagnose(
     : `诊断完成（run_id=${normalizedRunId}）。未触发全链路 Skill 降级。`;
   const boundedSummary = `${summary} 角色边界：${persona.role}，仅消费既有 scoring 结果。`;
 
+  let weaknessClusters: CoachDiagnosisReport['weakness_clusters'];
+  try {
+    weaknessClusters = clusterWeaknesses(records);
+  } catch {
+    weaknessClusters = [];
+  }
+
   const report: CoachDiagnosisReport = {
     summary: boundedSummary,
     phase_scores: phaseScores,
     weak_areas: weakAreas,
     recommendations,
     iteration_passed: iterationPassed,
+    weakness_clusters: weaknessClusters,
   };
 
   const forbiddenWords = loadForbiddenWords(options.forbiddenWordsPath);
