@@ -8,7 +8,7 @@ description: |
 
 本技能用于在当前 worktree 下**记录与备份** `_bmad` 目录中的优化修改，并在新 worktree 重新安装 bmad-method 后**迁移**这些改动。
 
-**脚本位置**：本 skill 为全局 skill，脚本位于 `~/.cursor/skills/bmad-customization-backup/scripts/`（Windows：`%USERPROFILE%\.cursor\skills\bmad-customization-backup\scripts\`）。
+**脚本位置**：本 skill 为全局 skill，脚本位于 `{SKILLS_ROOT}/bmad-customization-backup/scripts/`（展开：Windows `%USERPROFILE%\.cursor\skills\`、macOS/Linux `~/.cursor/skills/`）。
 
 ## 前置条件
 
@@ -24,11 +24,11 @@ description: |
 1. 确认 `{project-root}/_bmad` 存在。
 2. 运行脚本备份（推荐）：
    ```bash
+   # macOS/Linux
    python ~/.cursor/skills/bmad-customization-backup/scripts/backup_bmad.py --project-root "{project-root}"
-   ```
-   Windows：
-   ```bash
-   python %USERPROFILE%\.cursor\skills\bmad-customization-backup\scripts\backup_bmad.py --project-root "{project-root}"
+
+   # Windows (PowerShell)
+   python "$HOME\.cursor\skills\bmad-customization-backup\scripts\backup_bmad.py" --project-root "{project-root}"
    ```
    或在项目根下（脚本会以 cwd 为 project-root）：
    ```bash
@@ -52,10 +52,14 @@ description: |
 2. 确定要使用的备份目录（例如 `_bmad-output/bmad-customization-backups/2026-02-27_14-30-00_bmad`）。若备份在其它 worktree 或机器，先将该目录拷贝到当前项目的 `_bmad-output/bmad-customization-backups/` 下。
 3. 运行应用脚本（建议先 `--dry-run`）：
    ```bash
+   # macOS/Linux
    python ~/.cursor/skills/bmad-customization-backup/scripts/apply_bmad_backup.py --backup-path "{path-to-backup-dir}" --project-root "{project-root}" --dry-run
    python ~/.cursor/skills/bmad-customization-backup/scripts/apply_bmad_backup.py --backup-path "{path-to-backup-dir}" --project-root "{project-root}"
+
+   # Windows (PowerShell)
+   python "$HOME\.cursor\skills\bmad-customization-backup\scripts\apply_bmad_backup.py" --backup-path "{path-to-backup-dir}" --project-root "{project-root}" --dry-run
+   python "$HOME\.cursor\skills\bmad-customization-backup\scripts\apply_bmad_backup.py" --backup-path "{path-to-backup-dir}" --project-root "{project-root}"
    ```
-   Windows 将 `~/.cursor/` 换为 `%USERPROFILE%\.cursor\`。
 4. 脚本会将备份目录中的文件覆盖到当前 `_bmad`，保留目录结构；若有冲突会按「覆盖」处理（见脚本说明）。
 5. **手动迁移**：将备份目录中除 `manifest.txt`、`BACKUP_README.md` 外的内容，按相对路径复制到当前 worktree 的 `_bmad/`，覆盖同名文件。
 

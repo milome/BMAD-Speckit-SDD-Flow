@@ -1,4 +1,4 @@
-﻿# BMAD-Speckit-SDD-Flow 安装与迁移完整指南
+# BMAD-Speckit-SDD-Flow 安装与迁移完整指南
 
 > **版本**：v1.0 | **最后更新**：2026-03-05 | **适用仓库**：[BMAD-Speckit-SDD-Flow](../README.md)
 
@@ -144,6 +144,14 @@ npm install --save-dev D:\Dev\BMAD-Speckit-SDD-Flow
 # 或者使用本地路径 link
 npm link D:\Dev\BMAD-Speckit-SDD-Flow
 ```
+
+#### 推荐：一键安装
+
+```powershell
+pwsh D:\Dev\BMAD-Speckit-SDD-Flow\scripts\setup.ps1 -Target D:\Dev\your-new-project
+```
+
+该脚本自动完成：核心目录部署 + `.cursor/` 同步 + 全局 Skills 安装 + 安装验证。
 
 `postinstall` 脚本 (`scripts/init-to-root.js`) 将自动复制以下目录到项目根：
 - `_bmad/` → `{项目根}/_bmad/`
@@ -292,6 +300,8 @@ Copy-Item -Recurse -Force "rules\*" ".cursor\rules\"
 ```
 
 ### 3.6 安装验证
+
+若使用 `setup.ps1` 安装，验证已内置。手动安装的验证步骤如下：
 
 ```powershell
 # 1. 运行前置条件检查

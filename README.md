@@ -2,7 +2,8 @@
 
 将 **BMAD + Speckit** 工作流与评分扩展骨架集中到独立仓库，便于克隆或通过 npx/npm 安装到项目根后，与现有 Cursor 技能（bmad、speckit-workflow）协同使用。
 
-**目标**：独立可运行的 Speckit 流程（constitution → spec → plan → GAPS → tasks → implement）、与审计闭环强绑定的步骤与审计 prompt、可复用脚本/模板/文档、评分扩展骨架。**目录**：`_bmad/`、`_bmad-output/`、`workflows/`、`commands/`、`rules/`、`config/`、`templates/`、`docs/`、`scoring/`、`skills/`。**最小复现**：克隆后可将 `commands/`、`rules/`、`_bmad`、`_bmad-output` 复制到项目根，或使用 npx 安装；详见 [docs/BMAD/bmad-speckit-integration-FINAL-COMPLETE.md](docs/BMAD/bmad-speckit-integration-FINAL-COMPLETE.md)。
+**目标**：独立可运行的 Speckit 流程（constitution → spec → plan → GAPS → tasks → implement）、与审计闭环强绑定的步骤与审计 prompt、可复用脚本/模板/文档、评分扩展骨架。**目录**：`_bmad/`、`_bmad-output/`、`workflows/`、`commands/`、`rules/`、`config/`、`templates/`、`docs/`、`scoring/`、`skills/`。**最小复现**：克隆后可将 `commands/`、`rules/`、`_bmad`、`_bmad-output` 复制到项目根，或使用 npx 安装；
+**一键安装**：`pwsh scripts/setup.ps1 -Target <项目路径>`（自动部署全部目录、同步 `.cursor/`、安装全局 Skills）；详见 [安装与迁移指南](docs/INSTALLATION_AND_MIGRATION_GUIDE.md)。
 
 下文为 **BMAD 与 Speckit 整合方案** 的流程总览与图示（含 Mermaid 模块图、架构图、流程图、时序图、泳道图），便于快速理解五层架构、决策点与审计链。完整规格与实施细节见 **docs/BMAD/bmad-speckit-integration-FINAL-COMPLETE.md**。
 

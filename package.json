@@ -5,6 +5,8 @@
   "scripts": {
     "postinstall": "node scripts/init-to-root.js",
     "init": "node scripts/init-to-root.js",
+    "setup": "pwsh scripts/setup.ps1",
+    "setup:full": "pwsh scripts/setup.ps1 -Full",
     "test": "vitest run",
     "test:scoring": "vitest run scoring",
     "accept:e1-s1": "npx ts-node scripts/accept-e1-s1.ts",
@@ -20,14 +22,18 @@
     "coach:diagnose": "npx ts-node scripts/coach-diagnose.ts"
   },
   "bin": {
-    "bmad-speckit-init": "scripts/init-to-root.js"
+    "bmad-speckit-init": "scripts/init-to-root.js",
+    "bmad-speckit-setup": "scripts/setup.ps1"
   },
   "files": [
     "_bmad",
     "_bmad-output",
     "commands",
     "rules",
-    "scripts"
+    "scripts",
+    "config",
+    "templates",
+    "workflows"
   ],
   "keywords": [
     "bmad",

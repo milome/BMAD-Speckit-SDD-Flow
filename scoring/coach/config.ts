@@ -1,10 +1,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import yaml from 'js-yaml';
 import type { CoachConfig } from './types';
 
 const DEFAULT_CONFIG: CoachConfig = {
-  required_skill_path: path.join(process.env.USERPROFILE || process.env.HOME || '', '.cursor', 'skills', 'bmad-code-reviewer-lifecycle', 'SKILL.md'),
+  required_skill_path: path.join(os.homedir(), '.cursor', 'skills', 'bmad-code-reviewer-lifecycle', 'SKILL.md'),
   auto_trigger_post_impl: false,
   run_mode: 'manual_or_post_impl',
 };
@@ -29,10 +30,14 @@ export function loadCoachConfig(configPath?: string): CoachConfig {
   }
 
   const rawPath = parsed.required_skill_path ?? DEFAULT_CONFIG.required_skill_path;
-  const expanded =
-    typeof rawPath === 'string' && rawPath.includes('%USERPROFILE%')
-      ? rawPath.replace(/%USERPROFILE%/g, process.env.USERPROFILE || process.env.HOME || '')
-      : rawPath;
+  let expanded = rawPath;
+  if (typeof rawPath === 'string') {
+    const home = os.homedir();
+    expanded = rawPath
+      .replace(/\{SKILLS_ROOT\}/g, path.join(home, '.cursor', 'skills'))
+      .replace(/%USERPROFILE%/g, home)
+      .replace(/~\//g, home + '/');
+  }
 
   return {
     required_skill_path: expanded,
