@@ -67,6 +67,7 @@ describe('parseAndWriteScore', () => {
       stage: 'story',
       runId,
       scenario: 'eval_question',
+      question_version: 'v1.0',
       writeMode: 'single_file',
       dataPath: tempDir,
     });
@@ -123,6 +124,28 @@ describe('parseAndWriteScore', () => {
     expect(written.phase_score).toBe(0);
     expect(written.tier_coefficient).toBeDefined();
     fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('throws when scenario=eval_question but question_version missing (Story 4.3)', async () => {
+    const content = fs.readFileSync(path.join(FIXTURES, 'sample-story-report.md'), 'utf-8');
+    const tempDir = path.join(os.tmpdir(), `scoring-e4s3-rej-${Date.now()}`);
+
+    await expect(
+      parseAndWriteScore({
+        content,
+        stage: 'story',
+        runId: `test-rej-${Date.now()}`,
+        scenario: 'eval_question',
+        writeMode: 'single_file',
+        dataPath: tempDir,
+      })
+    ).rejects.toThrow(/question_version.*必填/);
+
+    try {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    } catch {
+      // ignore
+    }
   });
 
   it('writes to jsonl when writeMode is jsonl', async () => {

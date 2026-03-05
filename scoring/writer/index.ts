@@ -3,7 +3,7 @@
  * Modes: single_file (overwrite {run_id}.json), jsonl (append scores.jsonl), both.
  */
 export type { RunScoreRecord, CheckItem, IterationRecord, WriteMode, WriteScoreRecordOptions } from './types';
-export { validateRunScoreRecord } from './validate';
+export { validateRunScoreRecord, validateScenarioConstraints } from './validate';
 export {
   ensureDataDir,
   writeSingleFile,

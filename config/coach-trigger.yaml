@@ -1,0 +1,5 @@
+# 全局 skill 路径（Windows: %USERPROFILE%\.cursor\skills\；跨平台: ~/.cursor/skills/）
+required_skill_path: "%USERPROFILE%/.cursor/skills/bmad-code-reviewer-lifecycle/SKILL.md"
+auto_trigger_post_impl: false
+run_mode: "manual_or_post_impl"
+

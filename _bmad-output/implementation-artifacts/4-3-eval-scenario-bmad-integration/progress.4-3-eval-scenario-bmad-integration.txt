@@ -1,0 +1,10 @@
+# Story 4.3 eval-scenario-bmad-integration progress
+
+## 2026-03-05
+
+- [x] US-001 场景区分与路径约束 [TDD-RED] 单测编写 → [TDD-GREEN] validateScenarioConstraints、writeScoreRecordSync 集成、path_type 默认、question_version 入参 → [TDD-REFACTOR] 无
+- [x] US-002 各阶段迭代结束标准
+- [x] US-003 轻量化三原则
+- [x] US-004 数据污染防护
+- [x] US-005 BMAD 集成点
+- [x] US-006 禁止词校验与验收脚本

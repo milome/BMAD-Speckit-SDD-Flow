@@ -6,7 +6,16 @@ import * as path from 'path';
 import yaml from 'js-yaml';
 
 const projectRoot = process.cwd();
-const skillPath = path.join(projectRoot, '_bmad', 'skills', 'bmad-code-reviewer-lifecycle', 'SKILL.md');
+// 全局 skill 优先；回退到项目 _bmad（兼容旧环境）
+const globalSkillPath = path.join(
+  process.env.USERPROFILE || process.env.HOME || '',
+  '.cursor',
+  'skills',
+  'bmad-code-reviewer-lifecycle',
+  'SKILL.md'
+);
+const legacySkillPath = path.join(projectRoot, '_bmad', 'skills', 'bmad-code-reviewer-lifecycle', 'SKILL.md');
+const skillPath = fs.existsSync(globalSkillPath) ? globalSkillPath : legacySkillPath;
 const stageMappingPath = path.join(projectRoot, 'config', 'stage-mapping.yaml');
 const reportPathsPath = path.join(projectRoot, 'config', 'eval-lifecycle-report-paths.yaml');
 

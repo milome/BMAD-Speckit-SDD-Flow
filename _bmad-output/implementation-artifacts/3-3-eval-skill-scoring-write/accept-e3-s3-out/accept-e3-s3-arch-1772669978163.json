@@ -1,0 +1,22 @@
+{
+  "run_id": "accept-e3-s3-arch-1772669978163",
+  "scenario": "real_dev",
+  "stage": "arch",
+  "phase_score": 100,
+  "phase_weight": 0.2,
+  "check_items": [
+    {
+      "item_id": "arch_security_threat_model",
+      "passed": false,
+      "score_delta": -2,
+      "note": "可补充更多ADR示例"
+    }
+  ],
+  "timestamp": "2026-03-05T00:19:38.163Z",
+  "iteration_count": 0,
+  "iteration_records": [],
+  "first_pass": true,
+  "veto_triggered": false,
+  "tier_coefficient": 1,
+  "path_type": "full"
+}

@@ -50,7 +50,7 @@
 
 ### T1：定义全链路 Skill 标识与引用声明（AC-1）
 
-**产出物**：_bmad/skills/bmad-code-reviewer-lifecycle/SKILL.md（或项目约定的 skills 目录），含 name、description、references；引用关系表与 Architecture §2.2、§10.2 一致
+**产出物**：bmad-code-reviewer-lifecycle/SKILL.md（全局 `%USERPROFILE%\.cursor\skills\bmad-code-reviewer-lifecycle\` 或项目 skills），含 name、description、references；引用关系表与 Architecture §2.2、§10.2 一致
 
 **验收标准**：
 - Skill 标识为 bmad-code-reviewer-lifecycle
@@ -60,12 +60,15 @@
 
 **验证命令**：
 ```bash
-test -f _bmad/skills/bmad-code-reviewer-lifecycle/SKILL.md && grep -E "code-reviewer|audit-prompts|code-reviewer-config|scoring/rules" _bmad/skills/bmad-code-reviewer-lifecycle/SKILL.md | head -5
+# 全局 skill 路径；~/.cursor/skills/（Unix）或 %USERPROFILE%\.cursor\skills\（Windows）
+SKILL_PATH="$HOME/.cursor/skills/bmad-code-reviewer-lifecycle/SKILL.md"
+test -f "$SKILL_PATH" || SKILL_PATH="${USERPROFILE:-$HOME}/.cursor/skills/bmad-code-reviewer-lifecycle/SKILL.md"
+test -f "$SKILL_PATH" && grep -E "code-reviewer|audit-prompts|code-reviewer-config|scoring/rules" "$SKILL_PATH" | head -5
 ```
 
 ---
 
-- [x] **T1.1** 创建 _bmad/skills/bmad-code-reviewer-lifecycle/ 目录（若不存在）
+- [x] **T1.1** 创建 bmad-code-reviewer-lifecycle/ 目录（全局 skill 或项目 skills）
 - [x] **T1.2** 创建 SKILL.md，含 name: bmad-code-reviewer-lifecycle、description、when_to_use
 - [x] **T1.3** 在 SKILL 中显式声明引用：code-reviewer、audit-prompts、code-reviewer-config、scoring/rules
 - [x] **T1.4** 输出引用关系表（SKILL 内嵌或独立文档），与 Architecture §2.2、§10.2 一致
@@ -168,7 +171,7 @@ npx ts-node scripts/accept-e3-s1.ts
 **运行验收**：`npx ts-node scripts/accept-e3-s1.ts` 或 `npm run accept:e3-s1`（若已配置）
 
 **产出路径**：
-- _bmad/skills/bmad-code-reviewer-lifecycle/SKILL.md
+- bmad-code-reviewer-lifecycle/SKILL.md（全局 %USERPROFILE%\.cursor\skills\ 或项目 skills）
 - config/stage-mapping.yaml
 - config/eval-lifecycle-report-paths.yaml（或 3-1 产出目录下等效）
 - _bmad-output/implementation-artifacts/3-1-eval-lifecycle-skill-def/CONTRACT_E3-S1-to-3.2-3.3.md

@@ -11,6 +11,8 @@
 #   -Json               Output in JSON format
 #   -RequireTasks       Require tasks.md to exist (for implementation phase)
 #   -IncludeTasks       Include tasks.md in AVAILABLE_DOCS list
+#   -RequireSprintStatus When set, require sprint-status.yaml in BMAD projects
+#                        (projects with _bmad-output/implementation-artifacts)
 #   -PathsOnly          Only output path variables (no validation)
 #   -Help, -h           Show help message
 
@@ -19,6 +21,7 @@ param(
     [switch]$Json,
     [switch]$RequireTasks,
     [switch]$IncludeTasks,
+    [switch]$RequireSprintStatus,
     [switch]$PathsOnly,
     [switch]$Help
 )
@@ -36,6 +39,7 @@ OPTIONS:
   -Json               Output in JSON format
   -RequireTasks       Require tasks.md to exist (for implementation phase)
   -IncludeTasks       Include tasks.md in AVAILABLE_DOCS list
+  -RequireSprintStatus Require sprint-status.yaml when project has BMAD structure
   -PathsOnly          Only output path variables (no prerequisite validation)
   -Help, -h           Show this help message
 
@@ -45,6 +49,9 @@ EXAMPLES:
   
   # Check implementation prerequisites (plan.md + tasks.md required)
   .\check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks
+  
+  # BMAD mode: also require sprint-status.yaml when _bmad-output exists
+  .\check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks -RequireSprintStatus
   
   # Get feature paths only (no validation)
   .\check-prerequisites.ps1 -PathsOnly
@@ -103,6 +110,19 @@ if ($RequireTasks -and -not (Test-Path $paths.TASKS -PathType Leaf)) {
     Write-Output "ERROR: tasks.md not found in $($paths.FEATURE_DIR)"
     Write-Output "Run /speckit.tasks first to create the task list."
     exit 1
+}
+
+# Require sprint-status.yaml when in BMAD mode (project has _bmad-output/implementation-artifacts)
+if ($RequireSprintStatus) {
+    $implArtifacts = Join-Path $paths.REPO_ROOT "_bmad-output/implementation-artifacts"
+    if (Test-Path $implArtifacts -PathType Container) {
+        $sprintStatusPath = Join-Path $implArtifacts "sprint-status.yaml"
+        if (-not (Test-Path $sprintStatusPath -PathType Leaf)) {
+            Write-Output "ERROR: sprint-status.yaml not found in $implArtifacts"
+            Write-Output "Run /bmad-bmm-sprint-planning first to generate sprint-status.yaml."
+            exit 1
+        }
+    }
 }
 
 # Build list of available documents

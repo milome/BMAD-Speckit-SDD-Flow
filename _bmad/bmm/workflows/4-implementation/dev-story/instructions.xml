@@ -76,40 +76,34 @@
       </check>
     </check>
 
-    <!-- Non-sprint story discovery -->
+    <!-- Non-sprint story discovery REMOVED when sprint_status absent (TASKS_sprint-planning-gate T3) -->
     <check if="{{sprint_status}} file does NOT exist">
-      <action>Search {implementation_artifacts} for stories directly</action>
-      <action>Find stories with "ready-for-dev" status in files</action>
-      <action>Look for story files matching pattern: *-*-*.md</action>
-      <action>Read each candidate story file to check Status section</action>
+      <output>sprint-status.yaml 不存在。请运行 `sprint-planning` 或提供要开发的 Story 文件路径。</output>
+      <output>
+        **Available Options:**
+        1. Run `sprint-planning` to initialize sprint tracking
+        2. Run `create-story` to create next story from epics
+        3. Specify the full path to the story file to develop
+      </output>
+      <ask>Choose option [1], [2], or [3], or provide story file path:</ask>
 
-      <check if="no ready-for-dev stories found in story files">
-        <output>📋 No ready-for-dev stories found
-
-          **Available Options:**
-          1. Run `create-story` to create next story from epics with comprehensive context
-          2. Run `*validate-create-story` to improve existing stories
-          3. Specify which story to develop
-        </output>
-        <ask>What would you like to do? Choose option [1], [2], or [3]:</ask>
-
-        <check if="user chooses '1'">
-          <action>HALT - Run create-story to create next story</action>
-        </check>
-
-        <check if="user chooses '2'">
-          <action>HALT - Run validate-create-story to improve existing stories</action>
-        </check>
-
-        <check if="user chooses '3'">
-          <ask>It's unclear what story you want developed. Please provide the full path to the story file:</ask>
-          <action>Store user-provided story path as {{story_path}}</action>
-          <action>Continue with provided story file</action>
-        </check>
+      <check if="user chooses '1'">
+        <action>HALT - Run sprint-planning first</action>
       </check>
 
-      <check if="ready-for-dev story found in files">
-        <action>Use discovered story file and extract story_key</action>
+      <check if="user chooses '2'">
+        <action>HALT - Run create-story first (sprint-planning recommended before create-story)</action>
+      </check>
+
+      <check if="user chooses '3'">
+        <ask>Provide the full path to the story file:</ask>
+        <action>Store user-provided story path as {{story_path}}</action>
+        <goto anchor="task_check" />
+      </check>
+
+      <check if="user provides story file path (explicit path to .md file)">
+        <action>Store user-provided story path as {{story_path}}</action>
+        <goto anchor="task_check" />
       </check>
     </check>
 

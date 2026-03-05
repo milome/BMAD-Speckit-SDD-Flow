@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { getScoringDataPath } from '../constants/path';
-import { validateRunScoreRecord } from './validate';
+import { validateRunScoreRecord, validateScenarioConstraints } from './validate';
 import type { RunScoreRecord, WriteMode, WriteScoreRecordOptions } from './types';
 
 const UTF8 = 'utf8';
@@ -53,6 +53,11 @@ export function writeScoreRecordSync(
   options?: WriteScoreRecordOptions
 ): void {
   validateRunScoreRecord(record);
+  const r = record as RunScoreRecord;
+  validateScenarioConstraints(r);
+  if (r.path_type == null || r.path_type === '') {
+    r.path_type = 'full';
+  }
   const dataPath = getDataPath(options);
   if (mode === 'single_file') {
     writeSingleFile(record, dataPath);

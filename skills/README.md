@@ -13,6 +13,7 @@
 | **bmad-standalone-tasks** | 按 TASKS/BUGFIX 文档执行未完成任务 | Cursor 全局 skill |
 | **bmad-customization-backup** | _bmad 定制备份与迁移 | Cursor 全局 skill |
 | **bmad-orchestrator** | BMAD 流程编排（若有） | Cursor 全局 skill |
+| **bmad-code-reviewer-lifecycle** | 全链路 Code Reviewer：审计→解析→scoring 写入；parseAndWriteScore | **全局 skill（必须）**；复制至 `%USERPROFILE%\.cursor\skills\bmad-code-reviewer-lifecycle\` 或 Cursor 全局 |
 | **using-git-worktrees** | Epic 级 worktree、串行/并行模式 | Cursor 全局 skill；FINAL-COMPLETE §4.1.3 |
 | **pr-template-generator** | Layer 5 PR 模板生成 | Cursor 全局 skill |
 | **auto-commit-utf8** | 中文提交、UTF-8 防乱码 | Cursor 全局 skill |

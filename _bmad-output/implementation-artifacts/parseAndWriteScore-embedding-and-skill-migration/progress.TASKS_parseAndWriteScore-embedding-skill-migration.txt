@@ -1,0 +1,17 @@
+# Progress: parseAndWriteScore-embedding-skill-migration
+# Total stories: 9
+
+Current story: 9
+Completed: 9
+
+---
+# Story log
+[2026-03-05] T01: scoring-trigger-modes.yaml version 1.1 + scoring_write_control - PASSED
+[2026-03-05] T02: call_mapping 7 keys - PASSED
+[2026-03-05] T03-T07: speckit-workflow §1.2-5.2 评分写入触发 - PASSED
+[2026-03-05] T08-T09: bmad-story-assistant §2.2/§4 评分写入触发 - PASSED
+[2026-03-05] T10: audit-prompts §5 4条强制检查 - PASSED
+[2026-03-05] T11: 验证锚点、npm run accept:e3-s3、resultCode 证据表 - PASSED
+[2026-03-05] T13: 迁移 bmad-code-reviewer-lifecycle 到 skills/ - PASSED
+[2026-03-05] T12: 发布到全局 .cursor/skills/ - PASSED
+[2026-03-05] T14: 更新所有引用为全局 skill 路径 - PASSED

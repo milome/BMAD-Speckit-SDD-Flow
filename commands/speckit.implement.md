@@ -2,7 +2,7 @@
 description: Execute the implementation plan by processing and executing all tasks defined in tasks.md
 ---
 
-**RALPH-METHOD 与 SPECKIT-WORKFLOW**：本命令执行 implement 时，须与 speckit-workflow SKILL §5.1 及 ralph-method SKILL 的 Mandatory Execution Rules 保持一致。若两者冲突，以 ralph-method 的「执行前创建」「每 US 完成即更新」为准。
+**RALPH-METHOD 与 SPECKIT-WORKFLOW**：本命令执行 implement 时，须与 speckit-workflow SKILL §5.1 及 ralph-method SKILL 的 Mandatory Execution Rules 保持一致。若两者冲突，以 ralph-method 的「执行前创建」「每 US 完成即更新」为准。**TDD 红绿灯**：progress 必须包含每任务的 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 记录，禁止省略；详见 speckit-workflow §5.1.1。
 
 ## User Input
 
@@ -14,7 +14,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Outline
 
-1. Run `_bmad/scripts/bmad-speckit/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+1. Run `_bmad/scripts/bmad-speckit/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks -RequireSprintStatus` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot"). **Note**: `-RequireSprintStatus` enforces sprint-planning前置 when the project has `_bmad-output/implementation-artifacts` (BMAD mode); standalone projects without this directory are unaffected.
 
 2. **Check checklists status** (if FEATURE_DIR/checklists/ exists):
    - Scan all checklist files in the checklists/ directory
@@ -120,7 +120,13 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **File-based coordination**: Tasks affecting the same files must run sequentially
    - **Per-US tracking**：每完成一个可验收任务（对应 prd 中的一个 US），**必须立即**：
      1. 更新 prd：将对应 userStory 的 `passes` 设为 `true`；
-     2. 更新 progress：追加一行带时间戳的 story log，格式 `[YYYY-MM-DD HH:MM] US-XXX: <title> - PASSED`；
+     2. 更新 progress：必须同时追加以下内容：
+        - story log：`[YYYY-MM-DD HH:MM] US-XXX: <title> - PASSED`；
+        - TDD 记录（涉及生产代码的任务必填，三行缺一不可）：
+          - `[TDD-RED] <任务ID> <验收命令> => N failed`（红灯：测试先失败）
+          - `[TDD-GREEN] <任务ID> <验收命令> => N passed`（绿灯：实现后通过）
+          - `[TDD-REFACTOR] <任务ID> [重构操作描述]`（必填：有重构则写具体操作；无则写「无重构（已符合最佳实践）」）
+        参考：speckit-workflow SKILL §5.1.1、task-execution-tdd.md；禁止省略 REFACTOR 阶段。
      3. 禁止在全部任务完成后才批量更新 prd/progress。
    - **Validation checkpoints**: Verify each phase completion before proceeding
 
@@ -132,7 +138,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **Polish and validation**: Unit tests, performance optimization, documentation
 
 8. Progress tracking and error handling:
-   - Report progress: 在 tasks.md 中标记 `[X]`；**同时**按 ralph-method 更新 prd（passes=true）与 progress（追加 story log）。
+   - Report progress: 在 tasks.md 中标记 `[X]`；**同时**按 ralph-method 更新 prd（passes=true）与 progress（追加 story log + TDD 三行记录，格式见步骤 6）。
    - Halt execution if any non-parallel task fails
    - For parallel tasks [P], continue with successful tasks, report failed ones
    - Provide clear error messages with context for debugging

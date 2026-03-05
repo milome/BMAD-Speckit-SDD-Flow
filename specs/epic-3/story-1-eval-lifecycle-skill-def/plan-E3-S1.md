@@ -19,7 +19,7 @@
 ### 2.1 采用 SKILL.md 格式
 
 - 与 Cursor/BMAD 技能体系一致，便于 Agent 或工作流加载
-- 位置：`_bmad/skills/bmad-code-reviewer-lifecycle/SKILL.md` 或项目内约定的 skills 目录
+- 位置：`%USERPROFILE%\.cursor\skills\bmad-code-reviewer-lifecycle\SKILL.md`（全局 skill）或项目内 `skills/`、`_bmad/skills/`
 
 ### 2.2 SKILL.md 必备章节
 
@@ -87,7 +87,7 @@
 
 | 路径 | 说明 |
 |------|------|
-| _bmad/skills/bmad-code-reviewer-lifecycle/SKILL.md | Skill 主描述（或项目约定的 skills 目录） |
+| bmad-code-reviewer-lifecycle/SKILL.md | Skill 主描述（全局 skill 或项目 skills） |
 | config/stage-mapping.yaml | 表 A、表 B、触发模式表（可选） |
 | config/eval-lifecycle-report-paths.yaml | 报告路径约定（可选；也可在 SKILL 或 Story 文档中） |
 | _bmad-output/implementation-artifacts/3-1-eval-lifecycle-skill-def/ | 契约文档、stage 映射表（与 Story 产出同目录） |

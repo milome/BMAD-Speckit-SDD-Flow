@@ -156,6 +156,8 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 
 - 生成或更新 spec.md 后，**必须按 §0 约定调用 code-review 技能**，使用 **固定审计提示词**：[references/audit-prompts.md](references/audit-prompts.md) §1。
 - **仅在** code-review 审计报告结论为「完全覆盖、验证通过」时**可结束本步骤**。
+- #### 审计通过后评分写入触发（强制）
+  - 若 `scoring_write_control.enabled` 为 true：读取 config/scoring-trigger-modes.yaml；`branch_id=speckit_1_2_audit_pass`；scenario 从上下文取，缺省取 `scenario_default`；writeMode 按 `event_to_write_mode[event][scenario]` → `default`；调用 `parseAndWriteScore({ reportPath, stage: "story", runId, scenario, writeMode, question_version? })`；scenario=eval_question 时缺 question_version 则记 SCORE_WRITE_INPUT_INVALID 且不调用；失败**不阻断主流程**。
 - 若未通过：根据审计报告 **迭代修改 spec.md**（补全映射表、补全遗漏章节），**再次调用 code-review**，直至报告结论为通过。
 
 ---
@@ -182,6 +184,8 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 
 - 生成或更新 plan.md 后，**必须按 §0 约定调用 code-review 技能**，使用 **固定审计提示词**：[references/audit-prompts.md](references/audit-prompts.md) §2。
 - **仅在** code-review 审计报告结论为「完全覆盖、验证通过」时**可结束本步骤**。
+- #### 审计通过后评分写入触发（强制）
+  - 若 `scoring_write_control.enabled` 为 true：`branch_id=speckit_2_2_audit_pass`；scenario 从上下文取，缺省取 scenario_default；writeMode 按 event_to_write_mode 查表；调用 `parseAndWriteScore({ reportPath, stage: "story", runId, scenario, writeMode, question_version? })`；eval_question 缺 question_version 记 SCORE_WRITE_INPUT_INVALID 且不调用；失败不阻断主流程。
 - 若未通过：根据审计报告 **迭代修改 plan.md**，**再次调用 code-review**，直至报告结论为通过。
 - **嵌入步骤（当 plan 涉及多模块或复杂架构时须执行）**：在 plan 审计通过后、本步骤结束前，**须将 `/speckit.checklist` 或 `.speckit.checklist` 作为 §2.2 审计步骤的一部分**执行——生成质量检查清单，验证需求完整性、清晰度与一致性；若 checklist 发现问题，须迭代修改 plan.md 并**再次执行 code-review 审计**，直至 checklist 验证通过；不得以「可选」为由在应执行场景下跳过。
 
@@ -224,6 +228,8 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 
 - 生成或更新 IMPLEMENTATION_GAPS.md 后，**必须按 §0 约定调用 code-review 技能**，使用 **固定审计提示词**：[references/audit-prompts.md](references/audit-prompts.md) §3。
 - **仅在** code-review 审计报告结论为「完全覆盖、验证通过」时**可结束本步骤**。
+- #### 审计通过后评分写入触发（强制）
+  - 若 `scoring_write_control.enabled` 为 true：`branch_id=speckit_3_2_audit_pass`；scenario 从上下文取，缺省取 scenario_default；writeMode 按 event_to_write_mode 查表；调用 `parseAndWriteScore({ reportPath, stage: "story", runId, scenario, writeMode, question_version? })`；eval_question 缺 question_version 记 SCORE_WRITE_INPUT_INVALID 且不调用；失败不阻断主流程。
 - 若未通过：根据审计报告 **迭代修改 IMPLEMENTATION_GAPS.md**，**再次调用 code-review**，直至报告结论为通过。
 
 ---
@@ -248,6 +254,8 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 
 - 生成或更新 tasks.md 后，**必须按 §0 约定调用 code-review 技能**，使用 **固定审计提示词**：[references/audit-prompts.md](references/audit-prompts.md) §4。
 - **仅在** code-review 审计报告结论为「完全覆盖、验证通过」时**可结束本步骤**。
+- #### 审计通过后评分写入触发（强制）
+  - 审计通过 → 评分触发 → analyze 复核。若 `scoring_write_control.enabled` 为 true：`branch_id=speckit_4_2_audit_pass`；scenario 从上下文取，缺省取 scenario_default；writeMode 按 event_to_write_mode 查表；调用 `parseAndWriteScore({ reportPath, stage: "story", runId, scenario, writeMode, question_version? })`；eval_question 缺 question_version 记 SCORE_WRITE_INPUT_INVALID 且不调用；失败不阻断主流程。
 - 若未通过：根据审计报告 **迭代修改 tasks.md**，**再次调用 code-review**，直至报告结论为通过。
 - **嵌入步骤（当 tasks 数量≥10 或跨多 artifact 时须执行）**：在 tasks 审计通过后、本步骤结束前，**须将 `/speckit.analyze` 或 `.speckit.analyze` 作为 §4.2 审计步骤的一部分**执行——做跨 artifact 一致性分析（spec、plan、tasks 等对齐报告）；若 analyze 发现问题，须迭代修改 tasks.md 并**再次执行 code-review 审计**，直至 analyze 验证通过；不得以「可选」为由在应执行场景下跳过。
 
@@ -372,6 +380,8 @@ Batch N: Task ... → 执行 → code-review审计 → 通过
 
 - 执行 tasks.md 中的任务（TDD 红绿灯模式）后，**必须按 §0 约定调用 code-review 技能**，使用 **固定审计提示词**：[references/audit-prompts.md](references/audit-prompts.md) §5。
 - **仅在** code-review 审计报告结论为「完全覆盖、验证通过」时**可结束本步骤**。
+- #### 审计通过后评分写入触发（强制）
+  - 若 `scoring_write_control.enabled` 为 true：`branch_id=speckit_5_2_audit_pass`；scenario 从上下文取，缺省取 scenario_default；writeMode 按 event_to_write_mode 查表；调用 `parseAndWriteScore({ reportPath, stage: "story", runId, scenario, writeMode, question_version? })`；eval_question 缺 question_version 记 SCORE_WRITE_INPUT_INVALID 且不调用；失败不阻断主流程；**resultCode 必须进入审计证据**。
 - 若未通过：根据审计报告 **迭代执行 tasks.md 中审计未通过的任务**，**再次调用 code-review**，直至报告结论为通过。
 
 **集成与端到端测试执行（必须）**

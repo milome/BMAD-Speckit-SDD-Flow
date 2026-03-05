@@ -41,8 +41,11 @@ date: 2026-02-26
 | Caravaggio 演示 | `bmad-agent-cis-presentation-master` | cis |
 | Murat 测试架构 | `bmad-agent-tea-tea` | tea |
 | 批判性审计员 | （仅 party-mode 内使用，无独立命令） | core |
+| AI Coach | （不在常规 `/bmad ask` 可见/自动调度列表） | scoring |
 
 **说明**：批判性审计员为 party-mode 专用角色，在决策/根因讨论中担任挑战者，主动质疑假设、发现 gaps。无 `bmad-agent-xxx` 命令，仅通过 `/bmad-party-mode` 参与讨论时由 Facilitator 选中。
+
+**AI Coach 边界**：AI Coach 为 `scoring` 模块受限角色，仅用于读取既有评分数据并输出短板诊断/改进建议。默认不进入常规 `/bmad ask` 列表，也不参与自动调度；仅在显式指定或 `coachDiagnose` 专属链路中调用。
 
 ---
 
@@ -452,6 +455,7 @@ date: 2026-02-26
 | 代码/文档审计 | 主 Agent 发起 mcp_task `code-reviewer` |
 | 探索代码库 | 主 Agent 发起 mcp_task `explore` |
 | 多角色讨论 | `/bmad-party-mode` |
+| AI Coach 评分诊断 | `npm run coach:diagnose -- --run-id=<id> --format=json|markdown`（或显式指定 `ai-coach`） |
 | 下一步做什么 | `/bmad-help` |
 | 技术文档/Mermaid | `/bmad-agent-bmm-tech-writer` |
 

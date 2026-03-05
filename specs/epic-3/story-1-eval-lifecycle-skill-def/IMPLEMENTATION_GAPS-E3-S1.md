@@ -17,7 +17,7 @@
 
 | 需求文档章节 | Gap ID | 需求要点 | 当前实现状态 | 缺失/偏差说明 |
 |-------------|--------|----------|-------------|---------------|
-| spec §2 / T1 | GAP-1.1 | Skill 标识 bmad-code-reviewer-lifecycle、引用声明（code-reviewer、audit-prompts、code-reviewer-config、scoring/rules） | 未实现 | 无 _bmad/skills/bmad-code-reviewer-lifecycle/SKILL.md 或等效；引用关系未在 Skill 中显式声明 |
+| spec §2 / T1 | GAP-1.1 | Skill 标识 bmad-code-reviewer-lifecycle、引用声明（code-reviewer、audit-prompts、code-reviewer-config、scoring/rules） | 未实现 | 无全局 skill（~/.cursor/skills/bmad-code-reviewer-lifecycle/SKILL.md 或 %USERPROFILE%\.cursor\skills\…）或等效；引用关系未在 Skill 中显式声明 |
 | spec §2 / T1 | GAP-1.2 | 引用关系表或 SKILL.md 与 Architecture §2.2、§10.2 一致 | 未实现 | 无引用关系表产出 |
 | spec §3 / T2 | GAP-2.1 | 表 A（BMAD Layer→阶段）、表 B（阶段→评分环节）落地 | 未实现 | 表 A、表 B 仅在 Architecture 文档中，无 config/stage-mapping.yaml 或 SKILL 内嵌 |
 | spec §3 / T2 | GAP-2.2 | 触发模式表落地（stage 审计产出完成、Story 状态变更、MR 创建、Epic 待验收、用户显式请求） | 未实现 | 触发模式表仅在 Architecture §10.3，无落地配置 |
@@ -47,7 +47,7 @@
 
 ## 4. 与 plan 的对应关系
 
-- **GAP-1.x**：创建 _bmad/skills/bmad-code-reviewer-lifecycle/SKILL.md（或项目约定 skills 目录），含 name、description、references；引用关系表与 Architecture §2.2、§10.2 一致。
+- **GAP-1.x**：创建 bmad-code-reviewer-lifecycle/SKILL.md（全局 `%USERPROFILE%\.cursor\skills\` 或项目 skills），含 name、description、references；引用关系表与 Architecture §2.2、§10.2 一致。
 - **GAP-2.x**：创建 config/stage-mapping.yaml（或 SKILL 内嵌）含表 A、表 B、触发模式表；验收脚本验证 prd/arch/story→环节映射。
 - **GAP-3.x**：创建 config/eval-lifecycle-report-paths.yaml 或等同文档，约定 prd/arch 报告路径、story 对应 AUDIT_Story_{epic}-{story}.md。
 - **GAP-4.1**：在 _bmad-output/implementation-artifacts/3-1-eval-lifecycle-skill-def/ 产出接口契约文档，明确向 3.2、3.3 提供的内容。

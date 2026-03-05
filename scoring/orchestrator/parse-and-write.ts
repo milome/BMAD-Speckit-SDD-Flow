@@ -18,6 +18,8 @@ export interface ParseAndWriteScoreOptions {
   scenario: 'real_dev' | 'eval_question';
   writeMode: WriteMode;
   dataPath?: string;
+  /** 评测题目版本；scenario=eval_question 时必填（Story 4.3） */
+  question_version?: string;
 }
 
 /**
@@ -56,6 +58,7 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     phase_score,
     veto_triggered,
     tier_coefficient,
+    ...(options.question_version != null ? { question_version: options.question_version } : {}),
   };
 
   writeScoreRecordSync(recordToWrite, writeMode, dataPath != null ? { dataPath } : undefined);

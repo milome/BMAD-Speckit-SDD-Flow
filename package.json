@@ -14,7 +14,10 @@
     "accept:e3-s1": "npx ts-node scripts/accept-e3-s1.ts",
     "accept:e3-s2": "npx ts-node scripts/accept-e3-s2.ts",
     "accept:e3-s3": "npx ts-node scripts/accept-e3-s3.ts",
-    "accept:e4-s1": "npx ts-node scripts/accept-e4-s1.ts"
+    "accept:e4-s1": "npx ts-node scripts/accept-e4-s1.ts",
+    "accept:e4-s2": "npx ts-node scripts/accept-e4-s2.ts",
+    "accept:e4-s3": "npx ts-node scripts/accept-e4-s3.ts",
+    "coach:diagnose": "npx ts-node scripts/coach-diagnose.ts"
   },
   "bin": {
     "bmad-speckit-init": "scripts/init-to-root.js"

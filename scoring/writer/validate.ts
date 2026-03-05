@@ -27,3 +27,20 @@ export function validateRunScoreRecord(record: unknown): asserts record is RunSc
     throw new Error(`RunScoreRecord validation failed: ${JSON.stringify(err)}`);
   }
 }
+
+/**
+ * 校验 record 符合场景约束（Story 4.3 spec §2.1）。
+ * - scenario 必为 real_dev | eval_question
+ * - scenario=eval_question 时 question_version 必填（非空字符串）
+ */
+export function validateScenarioConstraints(record: RunScoreRecord): void {
+  if (record.scenario !== 'real_dev' && record.scenario !== 'eval_question') {
+    throw new Error(`validateScenarioConstraints: scenario must be real_dev or eval_question, got ${record.scenario}`);
+  }
+  if (record.scenario === 'eval_question') {
+    const qv = record.question_version;
+    if (qv == null || (typeof qv === 'string' && qv.trim() === '')) {
+      throw new Error('validateScenarioConstraints: question_version 必填 when scenario=eval_question');
+    }
+  }
+}
