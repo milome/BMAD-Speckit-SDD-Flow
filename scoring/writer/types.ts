@@ -9,6 +9,12 @@ export interface CheckItem {
   note?: string;
 }
 
+export interface DimensionScore {
+  dimension: string;
+  weight: number;
+  score: number;
+}
+
 export interface IterationRecord {
   timestamp: string;
   result: 'pass' | 'fail';
@@ -27,6 +33,7 @@ export interface RunScoreRecord {
   iteration_count: number;
   iteration_records: IterationRecord[];
   first_pass: boolean;
+  dimension_scores?: DimensionScore[];
   path_type?: string;
   model_version?: string;
   question_version?: string;

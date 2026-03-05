@@ -5,9 +5,10 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
-import type { RunScoreRecord, CheckItem } from '../writer/types';
+import type { RunScoreRecord } from '../writer/types';
 import { PHASE_WEIGHTS } from '../constants/weights';
-import { resolveItemId, resolveEmptyItemId } from './audit-item-mapping';
+import { extractCheckItems, extractOverallGrade } from './audit-generic';
+import { llmStructuredExtract, mapLlmResultToCheckItems } from './llm-fallback';
 
 const GRADE_TO_SCORE: Record<string, number> = {
   A: 100,
@@ -60,12 +61,22 @@ export async function parsePrdReport(input: ParsePrdReportInput): Promise<RunSco
     throw new ParseError('Either content or reportPath must be provided');
   }
 
-  const grade = extractOverallGrade(content);
+  let grade = extractOverallGrade(content);
+  let checkItems: import('../writer/types').CheckItem[];
+
   if (!grade) {
-    throw new ParseError('Could not extract 总体评级 from PRD report');
+    if (process.env.SCORING_LLM_API_KEY) {
+      const llmResult = await llmStructuredExtract(content, 'prd');
+      grade = llmResult.grade;
+      checkItems = mapLlmResultToCheckItems(llmResult, 'prd');
+    } else {
+      throw new ParseError('Could not extract 总体评级 from PRD report');
+    }
+  } else {
+    checkItems = extractCheckItems(content, 'prd');
   }
-  const phaseScore = GRADE_TO_SCORE[grade] ?? 60;
-  const checkItems = extractCheckItemsFromPrd(content);
+
+  const phaseScore = GRADE_TO_SCORE[grade!] ?? 60;
 
   return {
     run_id: input.runId,
@@ -79,50 +90,4 @@ export async function parsePrdReport(input: ParsePrdReportInput): Promise<RunSco
     iteration_records: [],
     first_pass: true,
   };
-}
-
-function extractOverallGrade(content: string): string | null {
-  const m = content.match(/总体评级:\s*([ABCD])/);
-  return m ? m[1] : null;
-}
-
-function extractCheckItemsFromPrd(content: string): CheckItem[] {
-  const items: CheckItem[] = [];
-  const problemSection = content.match(/问题清单:\s*([\s\S]*?)(?=通过标准:|下一步行动:|$)/i);
-  if (!problemSection) return items;
-
-  const lines = problemSection[1].trim().split(/\n/).filter(Boolean);
-  let idx = 0;
-  for (const line of lines) {
-    const m = line.match(/^\d+\.\s*\[严重程度:([^\]]+)\]\s*(.+?)(?:\s+建议\s*|$)/);
-    if (m) {
-      const severity = m[1].trim();
-      const desc = m[2].trim();
-      const scoreDelta = severity === '高' ? -10 : severity === '中' ? -5 : -2;
-      const fallbackId = `prd-issue-${++idx}`;
-      items.push({
-        item_id: resolveItemId('prd', desc, fallbackId),
-        passed: false,
-        score_delta: scoreDelta,
-        note: desc,
-      });
-    }
-  }
-  if (items.length === 0 && lines.some((l) => /\(无\)|无$/.test(l))) {
-    items.push({
-      item_id: resolveEmptyItemId('prd', 'overall', 'prd-overall'),
-      passed: true,
-      score_delta: 0,
-      note: '问题清单为空',
-    });
-  }
-  if (items.length === 0) {
-    items.push({
-      item_id: resolveEmptyItemId('prd', 'dimensions', 'prd-dimensions'),
-      passed: true,
-      score_delta: 0,
-      note: '从维度评分提取',
-    });
-  }
-  return items;
 }

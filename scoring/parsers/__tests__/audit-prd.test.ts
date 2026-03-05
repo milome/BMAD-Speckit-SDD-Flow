@@ -1,11 +1,12 @@
 /**
  * T1: Layer 1 prd 审计报告解析器单元测试
  * AC-1: 注入样本 prd 报告，断言输出 schema 兼容
+ * T4.2: AC-B05-7 集成 - 正则失败 + LLM fallback
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs';
-import { parsePrdReport } from '../audit-prd';
+import { parsePrdReport, ParseError } from '../audit-prd';
 import type { RunScoreRecord } from '../../writer/types';
 import { validateRunScoreRecord } from '../../writer/validate';
 
@@ -77,6 +78,18 @@ PRD审计报告
     ).rejects.toThrow();
   });
 
+  it('TDD: reuses generic extractor when 问题清单 section is missing', async () => {
+    const content = `
+PRD审计报告
+============
+总体评级: B
+通过标准: -
+`;
+    const result = await parsePrdReport({ content, runId: 'r1', scenario: 'real_dev' });
+    expect(result.check_items.length).toBe(1);
+    expect(result.check_items[0].note).toBe('未发现问题清单段落');
+  });
+
   it('BUGFIX: maps problem descriptions to standard item_id when pattern matches', async () => {
     const content = `
 PRD审计报告
@@ -121,5 +134,62 @@ PRD审计报告
     const result = await parsePrdReport({ content, runId: 'r1', scenario: 'real_dev' });
     expect(result.check_items.length).toBe(1);
     expect(result.check_items[0].item_id).toBe('prd_overall');
+  });
+
+  describe('AC-B05-7: LLM fallback integration', () => {
+    const contentWithoutGrade = `
+PRD审计报告
+============
+审计对象: test
+（无总体评级段落）
+`;
+    const originalEnv = process.env;
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      process.env = { ...originalEnv };
+    });
+
+    it('正则失败 + 有 key + LLM 成功 → 返回 RunScoreRecord', async () => {
+      process.env.SCORING_LLM_API_KEY = 'test-key';
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          choices: [{
+            message: {
+              content: JSON.stringify({
+                grade: 'B',
+                issues: [{ severity: '高', description: '需求缺失' }],
+                veto_items: [],
+              }),
+            },
+          }],
+        }),
+      }));
+
+      const result = await parsePrdReport({
+        content: contentWithoutGrade,
+        runId: 'llm-fallback-test',
+        scenario: 'real_dev',
+      });
+
+      expect(result.stage).toBe('prd');
+      expect(result.phase_score).toBe(80);
+      expect(result.check_items.length).toBeGreaterThan(0);
+      expect(result.check_items[0].score_delta).toBe(-10);
+      validateRunScoreRecord(result);
+    });
+
+    it('正则失败 + 无 key → 抛 ParseError', async () => {
+      delete process.env.SCORING_LLM_API_KEY;
+
+      await expect(
+        parsePrdReport({
+          content: contentWithoutGrade,
+          runId: 'r1',
+          scenario: 'real_dev',
+        })
+      ).rejects.toThrow(ParseError);
+    });
   });
 });

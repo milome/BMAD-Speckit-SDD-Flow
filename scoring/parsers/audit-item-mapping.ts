@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import yaml from 'js-yaml';
 
-export type AuditStage = 'prd' | 'arch' | 'story';
+export type AuditStage = 'prd' | 'arch' | 'story' | 'spec' | 'plan' | 'tasks';
 
 interface MappingCheck {
   text?: string;
@@ -32,14 +32,21 @@ function loadMapping(): Record<string, StageMapping> {
   if (cachedMapping) return cachedMapping;
   const filePath = getMappingPath();
   if (!fs.existsSync(filePath)) {
-    cachedMapping = { prd: { checks: [] }, arch: { checks: [] }, story: { checks: [] } };
+    cachedMapping = {
+      prd: { checks: [] },
+      arch: { checks: [] },
+      story: { checks: [] },
+      spec: { checks: [] },
+      plan: { checks: [] },
+      tasks: { checks: [] },
+    };
     return cachedMapping;
   }
   const content = fs.readFileSync(filePath, 'utf-8');
   const doc = yaml.load(content) as Record<string, unknown>;
   const result: Record<string, StageMapping> = {};
 
-  for (const stage of ['prd', 'arch', 'story']) {
+  for (const stage of ['prd', 'arch', 'story', 'spec', 'plan', 'tasks']) {
     const stageDoc = doc[stage] as Record<string, unknown> | undefined;
     const checks: Array<{ patterns: string[]; item_id: string }> = [];
 

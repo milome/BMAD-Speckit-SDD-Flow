@@ -82,7 +82,27 @@ export function loadPhaseScoringYaml(
   const filePath = path.join(rulesDir, 'default', files[phase]);
   const content = fs.readFileSync(filePath, 'utf-8');
   const parsed = yaml.load(content) as PhaseScoringYaml;
-  validatePhaseScoringYaml(parsed);
+  validatePhaseScoringYaml(parsed, options?.configPath);
+  return parsed;
+}
+
+/**
+ * 加载 spec/plan/tasks 阶段 YAML（Story 5.2 B03）
+ */
+export function loadStageScoringYaml(
+  stage: 'spec' | 'plan' | 'tasks',
+  options?: { rulesDir?: string; configPath?: string }
+): PhaseScoringYaml {
+  const rulesDir = getRulesDir(options);
+  const files: Record<'spec' | 'plan' | 'tasks', string> = {
+    spec: 'spec-scoring.yaml',
+    plan: 'plan-scoring.yaml',
+    tasks: 'tasks-scoring.yaml',
+  };
+  const filePath = path.join(rulesDir, files[stage]);
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const parsed = yaml.load(content) as PhaseScoringYaml;
+  validatePhaseScoringYaml(parsed, options?.configPath);
   return parsed;
 }
 
@@ -117,7 +137,7 @@ export function loadIterationTierYaml(options?: { rulesDir?: string }): Iteratio
 /**
  * 校验环节 2/3/4 YAML 并解析所有 ref（确保 item_id 存在）
  */
-function validatePhaseScoringYaml(y: PhaseScoringYaml): void {
+function validatePhaseScoringYaml(y: PhaseScoringYaml, configPath?: string): void {
   if (!y.version || !y.stage || !y.link_stage || !y.weights || !y.items) {
     throw new Error('Invalid phase scoring YAML: missing version, stage, link_stage, weights, or items');
   }
@@ -128,7 +148,7 @@ function validatePhaseScoringYaml(y: PhaseScoringYaml): void {
     if (!REF_PATTERN.test(item.ref)) {
       throw new Error(`Invalid ref format: ${item.ref}, expected code-reviewer-config#item_id`);
     }
-    resolveRef(item.ref);
+    resolveRef(item.ref, configPath);
   }
   for (const v of y.veto_items ?? []) {
     if (!v.id || !v.ref || !v.consequence) {
@@ -137,7 +157,7 @@ function validatePhaseScoringYaml(y: PhaseScoringYaml): void {
     if (!REF_PATTERN.test(v.ref)) {
       throw new Error(`Invalid ref format: ${v.ref}`);
     }
-    resolveRef(v.ref);
+    resolveRef(v.ref, configPath);
   }
 }
 

@@ -5,6 +5,7 @@
 import * as path from 'path';
 import { parseAndWriteScore } from '../scoring/orchestrator';
 import { shouldWriteScore } from '../scoring/trigger/trigger-loader';
+import type { AuditStage } from '../scoring/parsers';
 
 function parseArgs(): Record<string, string> {
   const args: Record<string, string> = {};
@@ -25,7 +26,7 @@ function parseArgs(): Record<string, string> {
 async function main() {
   const args = parseArgs();
   const reportPath = args.reportPath;
-  const stage = (args.stage ?? 'prd') as 'prd' | 'arch' | 'story';
+  const stage = (args.stage ?? 'prd') as AuditStage;
   const runId = args.runId ?? `cli-${Date.now()}`;
   const scenario = (args.scenario ?? 'real_dev') as 'real_dev' | 'eval_question';
   const writeMode = (args.writeMode ?? 'single_file') as 'single_file' | 'jsonl' | 'both';
@@ -40,7 +41,7 @@ async function main() {
   const questionVersion = args.questionVersion;
 
   if (!reportPath) {
-    console.error('Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story] [--runId <id>] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--event <event>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>]');
+    console.error('Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks] [--runId <id>] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--event <event>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>]');
     process.exit(1);
   }
 

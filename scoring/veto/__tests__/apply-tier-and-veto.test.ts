@@ -26,6 +26,17 @@ function makeRecord(overrides: Partial<RunScoreRecord> & { raw_phase_score?: num
 }
 
 describe('applyTierAndVeto', () => {
+  it('supports spec-stage veto rules from spec-scoring.yaml', () => {
+    const r = makeRecord({
+      stage: 'spec',
+      check_items: [{ item_id: 'veto_core_unmapped', passed: false, score_delta: -10 }],
+      raw_phase_score: 80,
+    });
+    const out = applyTierAndVeto(r, opts);
+    expect(out.veto_triggered).toBe(true);
+    expect(out.phase_score).toBe(0);
+  });
+
   it('veto triggered -> phase_score=0', () => {
     const r = makeRecord({
       check_items: [{ item_id: 'veto_core_logic', passed: false, score_delta: -10 }],

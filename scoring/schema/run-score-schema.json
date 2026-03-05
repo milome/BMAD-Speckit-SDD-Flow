@@ -8,7 +8,7 @@
     "run_id": { "type": "string", "description": "Unique run identifier" },
     "scenario": { "enum": ["real_dev", "eval_question"], "description": "real_dev | eval_question" },
     "stage": {
-      "enum": ["prd", "arch", "epics", "story", "specify", "plan", "gaps", "tasks", "implement", "post_impl", "pr_review"],
+      "enum": ["prd", "arch", "epics", "story", "spec", "specify", "plan", "gaps", "tasks", "implement", "post_impl", "pr_review"],
       "description": "BMAD stage"
     },
     "path_type": { "type": "string", "description": "Optional; full for both scenarios" },
@@ -18,6 +18,11 @@
       "type": "array",
       "items": { "$ref": "#/definitions/CheckItem" },
       "description": "Check item details"
+    },
+    "dimension_scores": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/DimensionScore" },
+      "description": "Optional weighted dimension scores from audit report"
     },
     "timestamp": { "type": "string", "format": "date-time", "description": "ISO 8601" },
     "model_version": { "type": "string", "description": "Optional" },
@@ -51,6 +56,15 @@
         "result": { "enum": ["pass", "fail"] },
         "severity": { "enum": ["fatal", "serious", "normal", "minor"] },
         "note": { "type": "string" }
+      }
+    },
+    "DimensionScore": {
+      "type": "object",
+      "required": ["dimension", "weight", "score"],
+      "properties": {
+        "dimension": { "type": "string" },
+        "weight": { "type": "number" },
+        "score": { "type": "number" }
       }
     }
   }

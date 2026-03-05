@@ -4,6 +4,7 @@
  */
 export {
   loadPhaseScoringYaml,
+  loadStageScoringYaml,
   loadGapsScoringYaml,
   loadIterationTierYaml,
   resolveRef,
@@ -16,7 +17,13 @@ export {
   parsePrdReport,
   parseArchReport,
   parseStoryReport,
+  parseGenericReport,
+  extractOverallGrade,
+  extractCheckItems,
   ReportFileNotFoundError,
   ParseError,
 } from './audit-index';
 export type { ParseAuditReportOptions, AuditStage } from './audit-index';
+
+export { parseDimensionScores, stageToMode } from './dimension-parser';
+export type { DimensionScore, DimensionMode } from './dimension-parser';

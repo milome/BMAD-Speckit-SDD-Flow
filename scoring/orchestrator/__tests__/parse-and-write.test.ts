@@ -1,8 +1,9 @@
 /**
  * Story 3.3 T5.1: parseAndWriteScore 集成测试
  * 覆盖 prd/arch/story 三类报告，content 与 reportPath 输入
+ * T4.3: AC-B05-7 parseAuditReport/parseAndWriteScore 经 LLM fallback 的 E2E
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -245,6 +246,103 @@ describe('parseAndWriteScore', () => {
 
     fs.rmSync(tempDir1, { recursive: true, force: true });
     fs.rmSync(tempDir2, { recursive: true, force: true });
+  });
+
+  it('AC-B05-7 T4.3: parseAndWriteScore + LLM fallback when regex fails (e2e)', async () => {
+    const content = `
+PRD审计报告
+============
+（无总体评级段落，触发 LLM fallback）
+`;
+    const origKey = process.env.SCORING_LLM_API_KEY;
+    process.env.SCORING_LLM_API_KEY = 'test-key';
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        choices: [{
+          message: {
+            content: JSON.stringify({
+              grade: 'B',
+              issues: [],
+              veto_items: [],
+            }),
+          },
+        }],
+      }),
+    }));
+
+    try {
+      const tempDir = path.join(os.tmpdir(), `scoring-e5s3-llm-${Date.now()}`);
+      const runId = `test-llm-e2e-${Date.now()}`;
+
+      await parseAndWriteScore({
+        content,
+        stage: 'prd',
+        runId,
+        scenario: 'real_dev',
+        writeMode: 'single_file',
+        dataPath: tempDir,
+        skipAutoHash: true,
+      });
+
+      const filePath = path.join(tempDir, `${runId}.json`);
+      expect(fs.existsSync(filePath)).toBe(true);
+      const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      expect(written.run_id).toBe(runId);
+      expect(written.stage).toBe('prd');
+      expect(written.phase_score).toBe(80);
+
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    } finally {
+      vi.unstubAllGlobals();
+      if (origKey !== undefined) process.env.SCORING_LLM_API_KEY = origKey;
+      else delete process.env.SCORING_LLM_API_KEY;
+    }
+  });
+
+  it('overrides phase_score by dimension weighted score when dimensions exist (B11)', async () => {
+    const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report-with-dimensions.md'), 'utf-8');
+    const tempDir = path.join(os.tmpdir(), `scoring-e5s2-dim-${Date.now()}`);
+    const runId = `test-dim-${Date.now()}`;
+
+    await parseAndWriteScore({
+      content,
+      stage: 'spec',
+      runId,
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+      skipAutoHash: true,
+    });
+
+    const filePath = path.join(tempDir, `${runId}.json`);
+    const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    expect(written.phase_score).toBe(78);
+    expect(written.dimension_scores).toBeInstanceOf(Array);
+    expect(written.dimension_scores.length).toBe(4);
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('keeps grade-mapped phase_score when no dimensions found (B11 fallback)', async () => {
+    const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
+    const tempDir = path.join(os.tmpdir(), `scoring-e5s2-fallback-${Date.now()}`);
+    const runId = `test-fallback-${Date.now()}`;
+
+    await parseAndWriteScore({
+      content,
+      stage: 'spec',
+      runId,
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+      skipAutoHash: true,
+    });
+
+    const filePath = path.join(tempDir, `${runId}.json`);
+    const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    expect(written.phase_score).toBe(80);
+    expect(written.dimension_scores).toBeUndefined();
+    fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
   it('writes to jsonl when writeMode is jsonl', async () => {

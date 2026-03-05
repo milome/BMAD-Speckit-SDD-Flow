@@ -64,8 +64,8 @@ development_status:
 
   epic-5: in-progress
   5-1-eval-foundation-modules: done
-  5-2-eval-scoring-rules-expansion: backlog
-  5-3-eval-parser-llm-fallback: backlog
-  5-4-eval-analytics-clustering: backlog
-  5-5-eval-analytics-advanced: backlog
+  5-2-eval-scoring-rules-expansion: done
+  5-3-eval-parser-llm-fallback: done
+  5-4-eval-analytics-clustering: ready-for-dev
+  5-5-eval-analytics-advanced: ready-for-dev
   epic-5-retrospective: optional

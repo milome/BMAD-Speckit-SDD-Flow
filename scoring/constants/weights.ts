@@ -4,6 +4,11 @@
  */
 export const PHASE_WEIGHTS: readonly number[] = [0.2, 0.25, 0.25, 0.15, 0.1, 0.05];
 
+/** Story 5.2 B03: spec/plan/tasks 三阶段固定权重 */
+export const PHASE_WEIGHTS_SPEC = 0.2;
+export const PHASE_WEIGHTS_PLAN = 0.2;
+export const PHASE_WEIGHTS_TASKS = 0.2;
+
 /**
  * 各环节满分
  */

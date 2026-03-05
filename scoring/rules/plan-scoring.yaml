@@ -1,3 +1,29 @@
-# Placeholder: plan stage scoring dimensions (see §4.2)
-# stage: plan
-# dimensions: module coverage, dependencies, GAPS actionable
+version: "1.0"
+stage: plan
+link_stage: [plan, tasks]
+link_环节: 1
+
+weights:
+  base:
+    spec_coverage: 35
+    gap_definition: 35
+    risk_anticipation: 30
+
+items:
+  - id: module_coverage
+    ref: code-reviewer-config#spec_coverage
+    deduct: 10
+  - id: dependency_clarity
+    ref: code-reviewer-config#gap_definition
+    deduct: 8
+  - id: risk_plan
+    ref: code-reviewer-config#risk_anticipation
+    deduct: 8
+
+veto_items:
+  - id: veto_core_unmapped
+    ref: code-reviewer-config#veto_core_unmapped
+    consequence: gaps_pre_0_veto
+  - id: veto_gaps_conflict
+    ref: code-reviewer-config#veto_gaps_conflict
+    consequence: gaps_pre_0_veto

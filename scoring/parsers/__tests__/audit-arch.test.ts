@@ -1,10 +1,12 @@
 /**
  * T2: Layer 1 arch 审计报告解析器单元测试
+ * T4.2: AC-B05-7 LLM fallback integration
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs';
 import { parseArchReport } from '../audit-arch';
+import { ParseError } from '../audit-prd';
 import { validateRunScoreRecord } from '../../writer/validate';
 
 const FIXTURES = path.join(__dirname, 'fixtures');
@@ -82,5 +84,53 @@ Architecture审计报告
     const result = await parseArchReport({ content, runId: 'r1', scenario: 'real_dev' });
     expect(result.check_items.length).toBe(1);
     expect(result.check_items[0].item_id).toBe('arch_overall');
+  });
+
+  describe('AC-B05-7: LLM fallback integration', () => {
+    const contentWithoutGrade = `
+Architecture审计报告
+====================
+（无总体评级）
+`;
+    const originalEnv = process.env;
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      process.env = { ...originalEnv };
+    });
+
+    it('正则失败 + 有 key + LLM 成功 → 返回 RunScoreRecord', async () => {
+      process.env.SCORING_LLM_API_KEY = 'test-key';
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          choices: [{
+            message: {
+              content: JSON.stringify({
+                grade: 'B',
+                issues: [],
+                veto_items: [],
+              }),
+            },
+          }],
+        }),
+      }));
+
+      const result = await parseArchReport({
+        content: contentWithoutGrade,
+        runId: 'llm-arch',
+        scenario: 'real_dev',
+      });
+      expect(result.stage).toBe('arch');
+      expect(result.phase_score).toBe(80);
+      validateRunScoreRecord(result);
+    });
+
+    it('正则失败 + 无 key → 抛 ParseError', async () => {
+      delete process.env.SCORING_LLM_API_KEY;
+      await expect(
+        parseArchReport({ content: contentWithoutGrade, runId: 'r1', scenario: 'real_dev' })
+      ).rejects.toThrow(ParseError);
+    });
   });
 });

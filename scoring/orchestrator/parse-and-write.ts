@@ -5,12 +5,13 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
-import { parseAuditReport } from '../parsers';
+import { parseAuditReport, parseDimensionScores, stageToMode } from '../parsers';
 import type { AuditStage } from '../parsers';
 import { writeScoreRecordSync } from '../writer';
 import type { WriteMode } from '../writer';
 import { applyTierAndVeto } from '../veto';
 import { computeContentHash, computeStringHash, getGitHeadHash } from '../utils/hash';
+import type { DimensionScore } from '../writer/types';
 
 export interface ParseAndWriteScoreOptions {
   reportPath?: string;
@@ -28,6 +29,11 @@ export interface ParseAndWriteScoreOptions {
   skipAutoHash?: boolean;
   /** 被审计源文件路径，用于计算 source_hash 并写入记录（B02） */
   sourceHashFilePath?: string;
+}
+
+function computeWeightedDimensionScore(scores: DimensionScore[]): number {
+  const weighted = scores.reduce((sum, current) => sum + (current.score * current.weight) / 100, 0);
+  return Math.round(weighted * 100) / 100;
 }
 
 /**
@@ -57,9 +63,19 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     scenario,
   });
 
-  const rawScore = record.phase_score;
+  const dimensionScores = parseDimensionScores(content, stageToMode(stage));
+  const baseRecord =
+    dimensionScores.length > 0
+      ? {
+          ...record,
+          phase_score: computeWeightedDimensionScore(dimensionScores),
+          dimension_scores: dimensionScores,
+        }
+      : record;
+
+  const rawScore = baseRecord.phase_score;
   const { phase_score, veto_triggered, tier_coefficient } = applyTierAndVeto(
-    { ...record, raw_phase_score: rawScore },
+    { ...baseRecord, raw_phase_score: rawScore },
     { rulesDir: path.join(process.cwd(), 'scoring', 'rules') }
   );
 
@@ -79,7 +95,7 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
   }
 
   const recordToWrite = {
-    ...record,
+    ...baseRecord,
     phase_score,
     veto_triggered,
     tier_coefficient,

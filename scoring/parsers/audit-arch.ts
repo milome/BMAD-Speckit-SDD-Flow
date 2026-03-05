@@ -8,6 +8,8 @@ import * as path from 'path';
 import type { RunScoreRecord, CheckItem } from '../writer/types';
 import { PHASE_WEIGHTS } from '../constants/weights';
 import { ReportFileNotFoundError, ParseError } from './audit-prd';
+import { extractOverallGrade } from './audit-generic';
+import { llmStructuredExtract, mapLlmResultToCheckItems } from './llm-fallback';
 import { resolveItemId, resolveEmptyItemId } from './audit-item-mapping';
 
 const GRADE_TO_SCORE: Record<string, number> = {
@@ -42,12 +44,22 @@ export async function parseArchReport(input: ParseArchReportInput): Promise<RunS
     throw new ParseError('Either content or reportPath must be provided');
   }
 
-  const grade = content.match(/总体评级:\s*([ABCD])/)?.[1];
+  let grade = extractOverallGrade(content);
+  let checkItems: CheckItem[];
+
   if (!grade) {
-    throw new ParseError('Could not extract 总体评级 from Architecture report');
+    if (process.env.SCORING_LLM_API_KEY) {
+      const llmResult = await llmStructuredExtract(content, 'arch');
+      grade = llmResult.grade;
+      checkItems = mapLlmResultToCheckItems(llmResult, 'arch');
+    } else {
+      throw new ParseError('Could not extract 总体评级 from Architecture report');
+    }
+  } else {
+    checkItems = extractCheckItemsFromArch(content);
   }
+
   const phaseScore = GRADE_TO_SCORE[grade] ?? 60;
-  const checkItems = extractCheckItemsFromArch(content);
 
   return {
     run_id: input.runId,
