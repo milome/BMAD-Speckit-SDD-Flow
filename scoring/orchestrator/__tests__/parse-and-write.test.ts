@@ -148,6 +148,105 @@ describe('parseAndWriteScore', () => {
     }
   });
 
+  it('includes base_commit_hash and content_hash in written record (GAP-B01)', async () => {
+    const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
+    const tempDir = path.join(os.tmpdir(), `scoring-gapb01-${Date.now()}`);
+    const runId = `test-hash-${Date.now()}`;
+
+    await parseAndWriteScore({
+      content,
+      stage: 'prd',
+      runId,
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+    });
+
+    const filePath = path.join(tempDir, `${runId}.json`);
+    const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    expect(written.base_commit_hash).toBeDefined();
+    expect(typeof written.base_commit_hash).toBe('string');
+    expect(written.base_commit_hash.length).toBe(8);
+    expect(written.content_hash).toBeDefined();
+    expect(typeof written.content_hash).toBe('string');
+    expect(written.content_hash.length).toBe(64);
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('uses provided baseCommitHash when explicitly passed (GAP-B01)', async () => {
+    const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
+    const tempDir = path.join(os.tmpdir(), `scoring-gapb01-override-${Date.now()}`);
+    const runId = `test-hash-override-${Date.now()}`;
+
+    await parseAndWriteScore({
+      content,
+      stage: 'prd',
+      runId,
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+      baseCommitHash: 'abcd1234',
+    });
+
+    const filePath = path.join(tempDir, `${runId}.json`);
+    const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    expect(written.base_commit_hash).toBe('abcd1234');
+    expect(written.content_hash).toBeDefined();
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('omits hash fields when skipAutoHash is true and no explicit hash (GAP-B01)', async () => {
+    const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
+    const tempDir = path.join(os.tmpdir(), `scoring-gapb01-skip-${Date.now()}`);
+    const runId = `test-hash-skip-${Date.now()}`;
+
+    await parseAndWriteScore({
+      content,
+      stage: 'prd',
+      runId,
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+      skipAutoHash: true,
+    });
+
+    const filePath = path.join(tempDir, `${runId}.json`);
+    const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    expect(written.base_commit_hash).toBeUndefined();
+    expect(written.content_hash).toBeUndefined();
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('content_hash is deterministic for same content (GAP-B01)', async () => {
+    const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
+    const tempDir1 = path.join(os.tmpdir(), `scoring-gapb01-det1-${Date.now()}`);
+    const tempDir2 = path.join(os.tmpdir(), `scoring-gapb01-det2-${Date.now()}`);
+
+    await parseAndWriteScore({
+      content,
+      stage: 'prd',
+      runId: 'det-1',
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir1,
+    });
+    await parseAndWriteScore({
+      content,
+      stage: 'prd',
+      runId: 'det-2',
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir2,
+    });
+
+    const w1 = JSON.parse(fs.readFileSync(path.join(tempDir1, 'det-1.json'), 'utf-8'));
+    const w2 = JSON.parse(fs.readFileSync(path.join(tempDir2, 'det-2.json'), 'utf-8'));
+    expect(w1.content_hash).toBe(w2.content_hash);
+
+    fs.rmSync(tempDir1, { recursive: true, force: true });
+    fs.rmSync(tempDir2, { recursive: true, force: true });
+  });
+
   it('writes to jsonl when writeMode is jsonl', async () => {
     const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
     const tempDir = path.join(os.tmpdir(), `scoring-e3s3-jsonl-${Date.now()}`);

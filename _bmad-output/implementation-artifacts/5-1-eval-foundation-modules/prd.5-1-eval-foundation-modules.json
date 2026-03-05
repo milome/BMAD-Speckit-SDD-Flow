@@ -1,0 +1,56 @@
+{
+  "branchName": "ralph/eval-foundation-modules",
+  "taskDescription": "Story 5.1: B02 版本锁定、B04 触发加载器、B10 eval_question E2E、B12 Bugfix 回写、B13 Git 回退建议",
+  "projectContext": {
+    "framework": "TypeScript/Node",
+    "testCommand": "npm test",
+    "buildCommand": "npx tsc --noEmit"
+  },
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "B02 版本锁定 (T1)",
+      "description": "checkPreconditionHash、loadLatestRecordByStage；source_hash 集成",
+      "acceptanceCriteria": ["version-lock.ts 实现两个函数", "types/schema/parse-and-write 集成 source_hash", "7 个 version-lock 测试通过"],
+      "priority": 1,
+      "passes": true,
+      "notes": "T1.1-T1.6"
+    },
+    {
+      "id": "US-002",
+      "title": "B04 触发加载器 (T2)",
+      "description": "shouldWriteScore、loadTriggerConfig；scoring-trigger-modes.yaml 程序化加载",
+      "acceptanceCriteria": ["trigger-loader.ts 实现", "parse-and-write-score 集成 --event/--skipTriggerCheck", "7 个 trigger-loader 测试通过"],
+      "priority": 2,
+      "passes": true,
+      "notes": "T2.1-T2.3"
+    },
+    {
+      "id": "US-003",
+      "title": "B10 eval_question E2E (T3)",
+      "description": "parse → write → coach diagnose 全链路；eval-question-flow E2E 测试",
+      "acceptanceCriteria": ["fixture + eval-question-flow.test.ts 3 个 E2E", "content_hash/base_commit_hash 正确填充", "npm test 通过"],
+      "priority": 3,
+      "passes": true,
+      "notes": "T3.1-T3.4"
+    },
+    {
+      "id": "US-004",
+      "title": "B12 Bugfix 回写 (T4)",
+      "description": "writebackBugfixToStory；checkbox 变体解析",
+      "acceptanceCriteria": ["writeback.ts 实现", "6 个 writeback 测试通过"],
+      "priority": 4,
+      "passes": true,
+      "notes": "T4.1-T4.2"
+    },
+    {
+      "id": "US-005",
+      "title": "B13 Git 回退建议 (T5)",
+      "description": "suggestRollback；仅输出建议不执行 git",
+      "acceptanceCriteria": ["rollback.ts 实现", "4 个 rollback 测试通过"],
+      "priority": 5,
+      "passes": true,
+      "notes": "T5.1-T5.2"
+    }
+  ]
+}

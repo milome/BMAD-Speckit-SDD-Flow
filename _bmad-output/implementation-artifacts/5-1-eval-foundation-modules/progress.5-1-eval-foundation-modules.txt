@@ -1,0 +1,30 @@
+# Progress: eval-foundation-modules (Story 5.1)
+# Total stories: 5
+
+Current story: 5
+Completed: 5
+
+---
+# Story log
+
+[2026-03-05] US-001: B02 版本锁定 (T1) - PASSED
+[TDD-RED] T1 npm test -- scoring/gate/__tests__/version-lock => 0 failed (tests written first)
+[TDD-GREEN] T1 npm test -- scoring/gate/__tests__/version-lock => 7 passed
+
+[2026-03-05] US-002: B04 触发加载器 (T2) - PASSED
+[TDD-RED] T2 npm test -- scoring/trigger/__tests__/trigger-loader => 0 failed (tests written first)
+[TDD-GREEN] T2 npm test -- scoring/trigger/__tests__/trigger-loader => 7 passed
+
+[2026-03-05] US-003: B10 eval_question E2E (T3) - PASSED
+[TDD-RED] T3 npm test -- scoring/__tests__/e2e/eval-question-flow => 0 failed (fixture + tests written first)
+[TDD-GREEN] T3 npm test -- scoring/__tests__/e2e/eval-question-flow => 3 passed
+
+[2026-03-05] US-004: B12 Bugfix 回写 (T4) - PASSED
+[TDD-RED] T4 npm test -- scoring/bugfix/__tests__/writeback => 0 failed (tests written first)
+[TDD-GREEN] T4 npm test -- scoring/bugfix/__tests__/writeback => 6 passed
+
+[2026-03-05] US-005: B13 Git 回退建议 (T5) - PASSED
+[TDD-RED] T5 npm test -- scoring/gate/__tests__/rollback => 0 failed (tests written first)
+[TDD-GREEN] T5 npm test -- scoring/gate/__tests__/rollback => 4 passed
+
+[2026-03-05] 全量验证: npm test => 156 passed

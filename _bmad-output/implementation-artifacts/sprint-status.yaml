@@ -33,8 +33,8 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: "2026-03-04"
-project: micang-trader-015-indicator-system-refactor
+generated: "2026-03-05"
+project: BMAD-Speckit-SDD-Flow
 project_key: NOKEY
 tracking_system: file-system
 story_location: "{project-root}/_bmad-output/implementation-artifacts"
@@ -61,3 +61,11 @@ development_status:
   4-2-eval-ai-coach: done
   4-3-eval-scenario-bmad-integration: done
   epic-4-retrospective: done
+
+  epic-5: in-progress
+  5-1-eval-foundation-modules: done
+  5-2-eval-scoring-rules-expansion: backlog
+  5-3-eval-parser-llm-fallback: backlog
+  5-4-eval-analytics-clustering: backlog
+  5-5-eval-analytics-advanced: backlog
+  epic-5-retrospective: optional

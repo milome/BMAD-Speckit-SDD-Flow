@@ -30,6 +30,12 @@ export interface RunScoreRecord {
   path_type?: string;
   model_version?: string;
   question_version?: string;
+  /** 评分时 git HEAD 的 commit hash（修改前基线） */
+  base_commit_hash?: string;
+  /** 传入 parseAndWriteScore 的审计报告内容的 SHA-256（非源文件 hash） */
+  content_hash?: string;
+  /** 被审计的源文件的 SHA-256 指纹，用于跨阶段版本锁定校验 */
+  source_hash?: string;
 }
 
 /**
