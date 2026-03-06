@@ -314,6 +314,19 @@ export async function coachDiagnose(
     phaseScores[item.record.stage] = item.result.phase_score;
   }
 
+  const phaseIterationCounts: Record<string, number> = {};
+  const byStage = new Map<string, { record: typeof scored[0]['record']; timestamp: number }[]>();
+  for (const item of scored) {
+    const ts = new Date(item.record.timestamp).getTime();
+    const arr = byStage.get(item.record.stage) ?? [];
+    arr.push({ record: item.record, timestamp: ts });
+    byStage.set(item.record.stage, arr);
+  }
+  for (const [stage, arr] of byStage) {
+    const latest = arr.reduce((a, b) => (a.timestamp >= b.timestamp ? a : b));
+    phaseIterationCounts[stage] = latest.record.iteration_count ?? 0;
+  }
+
   const storyRecords: EpicStoryRecord[] = scored.map((item) => ({
     veto_triggered: item.result.veto_triggered,
     phase_score: item.result.phase_score,
@@ -343,7 +356,14 @@ export async function coachDiagnose(
   // 公式来源：scoring/docs/VETO_AND_ITERATION_RULES.md §3.4.2（AI 代码教练一票否决权）
   const iterationPassed = !epicVeto.triggered && !hasStageVeto && !hasFatalPhaseZero;
   const weakAreas = buildWeakAreas(phaseScores);
-  const recommendations = buildRecommendations(hasStageVeto, epicVeto.triggered, fallbackMode, persona);
+  let recommendations = buildRecommendations(hasStageVeto, epicVeto.triggered, fallbackMode, persona);
+  const hasHighIteration = Object.values(phaseIterationCounts).some((c) => c > 0);
+  if (hasHighIteration) {
+    recommendations = [
+      ...recommendations,
+      '建议关注高整改轮次 stage，提升一次通过率。',
+    ];
+  }
   const summary = fallbackMode
     ? `fallback 模式诊断完成（run_id=${normalizedRunId}）。已基于既有评分记录输出结果。`
     : `诊断完成（run_id=${normalizedRunId}）。未触发全链路 Skill 降级。`;
@@ -359,6 +379,7 @@ export async function coachDiagnose(
   const report: CoachDiagnosisReport = {
     summary: boundedSummary,
     phase_scores: phaseScores,
+    phase_iteration_counts: phaseIterationCounts,
     weak_areas: weakAreas,
     recommendations,
     iteration_passed: iterationPassed,

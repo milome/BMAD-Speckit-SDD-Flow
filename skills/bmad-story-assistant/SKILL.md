@@ -1,4 +1,4 @@
-﻿---
+---
 name: bmad-story-assistant
 description: |
   BMAD Story 助手：按 Epic/Story 编号执行完整的 Create Story → 审计 → Dev Story → 实施后审计 工作流。
@@ -95,6 +95,28 @@ Story 完整标识为 `{epic_num}-{story_num}`，例如 Epic 4、Story 4.1 → `
 **须先询问用户**：当验收/回归存在失败用例且拟列入正式排除时，主 Agent 或子代理必须**先向用户询问**「是否批准将以下用例列入正式排除清单」，用户明确批准后，方可创建或更新排除清单；若用户拒绝，必须进入修复流程，不得创建排除清单。
 
 **排除记录路径（Story 用）**：`_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{epic_num}-{story_num}-{slug}/EXCLUDED_TESTS_{epic_num}-{story_num}.md`。必备字段与可接受/不可接受判定与 bmad-bug-assistant「正式排除失败用例的规定」一致（用例 ID、排除理由、客观依据、本 Story 标识、审计结论）。
+
+---
+
+## § 何时可跳过 party-mode 与 code-review 补偿规则
+
+### 何时可跳过 party-mode（Create Story）
+
+**唯一允许条件**：用户**明确**说明「Story 已通过 party-mode 且审计通过，跳过 Create Story」时，可跳过阶段一、二。
+
+**禁止**：仅因 Epic/Story 文档已存在即跳过；可能由简单 bmad 命令生成、未经 party-mode 深入讨论的文档，**必须**执行 Create Story。
+
+### party-mode 跳过时 code-review 补偿规则
+
+当 party-mode 被跳过时，阶段二（Story 文档审计）需**补偿**缺失的深度，否则质量门控不足。
+
+| 情形 | 阶段二严格度 | 理由 |
+|------|--------------|------|
+| 无 party-mode 产出物（story 目录下无 `DEBATE_共识_*`、`party-mode 收敛纪要` 等） | **strict** | 补偿缺失的 party-mode 深度；连续 3 轮无 gap + 批判审计员 >50% |
+| 有 party-mode 产出物存在 | **standard** | 已有深度，验证即可；单次 + 批判审计员 |
+| 用户显式要求 strict | **strict** | 以用户为准 |
+
+**产出物检测**：主 Agent 在阶段二审计前，检查 story 目录是否存在 party-mode 产出物；若有且用户未强制 strict，则用 standard；若无或用户要求 strict，则用 strict。
 
 ---
 
@@ -513,6 +535,15 @@ Story 文档通常保存在：`_bmad-output/implementation-artifacts/epic-{epic_
 
 Story 文档生成后，**必须**发起审计子任务，使用 audit-prompts.md §5 精神（或适用于 Story 文档的审计提示词），迭代直至「完全覆盖、验证通过」。
 
+### 严格度选择（strict / standard）
+
+- **strict**：连续 3 轮无 gap + 批判审计员 >50%，引用 [audit-post-impl-rules.md](../speckit-workflow/references/audit-post-impl-rules.md)。
+- **standard**：单次 + 批判审计员，引用 [audit-prompts-critical-auditor-appendix.md](../speckit-workflow/references/audit-prompts-critical-auditor-appendix.md)。
+
+**选择逻辑**：
+- 若无 party-mode 产出物（story 目录下无 `DEBATE_共识_*`、`party-mode 收敛纪要` 等）或用户要求 strict → **strict**（补偿缺失的 party-mode 深度）。
+- 若有 party-mode 产出物存在且用户未强制 strict → **standard**（party-mode 已提供深度，验证即可）。
+
 ### 2.1 审计子代理优先顺序
 
 **说明**：`mcp_task` 的 `subagent_type` 目前仅支持 `generalPurpose`、`explore`、`shell`，**不支持** `code-reviewer`。
@@ -556,6 +587,9 @@ prompt: |
 ```
 
 若审计未通过，**根据报告执行**：若修改建议含「创建 Story X.Y」或「更新 Story X.Y」，主 Agent 须**先执行**该建议（发起 Create Story 或更新子任务），再再次发起对当前 Story 的审计；若仅需修改当前 Story 文档，则修改后再次发起审计。**禁止**仅修改当前 Story 文档即再审计，当修改建议含创建/更新其他 Story 时。每次审计均遵循 §2.1 的优先顺序（先 code-reviewer，失败则 generalPurpose）。
+
+#### 审计通过后评分写入触发（强制）
+- branch_id=bmad_story_stage2_audit_pass，event=story_status_change，triggerStage=bmad_story_stage2；要求审计子任务 prompt 中写明「审计通过后请将报告保存至 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{epic}-{story}-*/AUDIT_Story_{epic}-{story}_stage2.md`」；主 Agent 在收到通过结论后，若有 reportPath，运行 parse-and-write-score，**必须含 `--iteration-count {累计值}`**（执行审计循环的 Agent 在 pass 时传入本 stage fail 轮数；一次通过传 0；连续 3 轮无 gap 验证不计入）；stage=story；缺 question_version 时 eval_question 不调用；失败 non_blocking，记录 resultCode。
 
 ---
 
@@ -817,7 +851,11 @@ prompt: |
   `[TDD-GREEN] <任务ID> <验收命令> => N passed`
   交付前自检：对照 TASKS/Story 任务列表逐项检查——若该任务涉及生产代码，progress 中是否有 [TDD-RED] 与 [TDD-GREEN] 各至少一行？若否，补充后再交付。
 
-  请对 Story {epic_num}-{story_num} 执行 Dev Story 实施。**必须嵌套执行 speckit-workflow 完整流程**：specify → plan → GAPS → tasks → 执行。
+  请对 Story {epic_num}-{story_num} 执行 Dev Story 实施。
+
+  **各 stage 审计通过后落盘与 parseAndWriteScore 约束（强制）**：在 speckit 各阶段（specify/plan/GAPS/tasks/执行）审计通过时，子代理须（1）将审计报告保存至约定路径（见 speckit-workflow 各 §x.2 的「审计通过后评分写入触发」）；（2）运行 `npx ts-node scripts/parse-and-write-score.ts --reportPath <路径> --stage <spec|plan|tasks> --event stage_audit_complete --triggerStage speckit_1_2|speckit_2_2|speckit_3_2|speckit_4_2|speckit_5_2 --epic {epic_num} --story {story_num} --artifactDocPath <对应路径> --iteration-count {累计值}`（triggerStage 按阶段择一；**必须含 --iteration-count**，执行审计循环的 Agent 在 pass 时传入本 stage fail 轮数，一次通过传 0，连续 3 轮无 gap 不计入）；spec/plan/tasks 阶段 artifactDocPath 为对应 spec/plan/GAPS/tasks 文档路径；implement 阶段 artifactDocPath 可为 story 子目录下的实现主文档路径或留空由解析器从 reportPath 推导；（3）若调用失败，记录 resultCode 进审计证据，不阻断流程。epic_num、story_num 由主 Agent 传入。
+
+  **必须嵌套执行 speckit-workflow 完整流程**：specify → plan → GAPS → tasks → 执行。
 
   **上下文与路径**：
   - Story 文档：{project-root}/_bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{epic_num}-{story_num}-*/*.md
@@ -855,7 +893,13 @@ prompt: |
 
 ## 阶段四：实施后审计（增强版）
 
-本阶段为**必须**步骤，非可选。主 Agent 在子任务返回后必须发起，不得跳过。
+本阶段为**必须**步骤，非可选。主 Agent 在子任务返回后必须发起，不得跳过。**严格度：strict**，须遵循 [audit-post-impl-rules.md](../speckit-workflow/references/audit-post-impl-rules.md)（路径：`skills/speckit-workflow/references/audit-post-impl-rules.md`）。
+
+### 收敛条件（strict，必须）
+
+- **连续 3 轮无 gap**：连续 3 次审计结论均为「完全覆盖、验证通过」，且该 3 次报告中批判审计员结论段均注明「本轮无新 gap」。任一轮为「存在 gap」则从下一轮重新计数。
+- **批判审计员 >50%**：报告须包含「## 批判审计员结论」段落，该段落字数或条目数不少于报告其余部分；必填结构见 [audit-prompts-critical-auditor-appendix.md](../speckit-workflow/references/audit-prompts-critical-auditor-appendix.md)。
+- 主 Agent 在发起第 2、3 轮审计前，可输出「第 N 轮审计通过，继续验证…」以提示用户。
 
 ### 前置检查
 
@@ -889,6 +933,8 @@ prompt: |
 
 **通过（A/B级）**：
 - Story标记为完成
+- #### 审计通过后评分写入触发（强制）
+  - branch_id=bmad_story_stage4_audit_pass，event=story_status_change，triggerStage=bmad_story_stage4；报告路径 `_bmad-output/.../AUDIT_Story_{epic}-{story}_stage4.md`；主 Agent 在实施后审计通过后运行 parse-and-write-score，**必须含 `--iteration-count {累计值}`**（本 stage fail 轮数；一次通过传 0）；stage=tasks；异常记 SCORE_WRITE_CALL_EXCEPTION；主流程继续到完成选项。
 - 提供完成选项（见下文）
 
 **有条件通过（C级）**：

@@ -1,12 +1,14 @@
 /**
- * Story 5.5 B07: SFT 微调数据集提取
- * 从 phase_score≤60 的记录提取 instruction（BUGFIX §1+§4）与 git diff bad/good 代码对
+ * Story 5.5 B07 / Story 7.2: SFT 微调数据集提取
+ * 从 phase_score≤threshold 的记录提取 instruction（BUGFIX §1+§4）与 git diff bad/good 代码对
+ * Story 7.2 增强：has_code_pair、git diff 失败 fallback、去重、摘要、阈值可配置
  */
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
 import { getGitHeadHashFull } from '../utils/hash';
 import type { RunScoreRecord } from '../writer/types';
+import { parseEpicStoryFromRecord } from '../query';
 
 export interface SftEntry {
   instruction: string;
@@ -14,6 +16,19 @@ export interface SftEntry {
   output: string;
   source_run_id: string;
   base_commit_hash: string;
+  has_code_pair: boolean;
+  source_path?: string;
+}
+
+export interface SftExtractSummary {
+  n: number;
+  m: number;
+  k: number;
+  skipReasons: Record<string, number>;
+}
+
+export interface ExtractSftDatasetOptions {
+  threshold?: number;
 }
 
 const SECTION_1_RE = /## §1[^\n]*\n([\s\S]*?)(?=## §|$)/;
@@ -115,32 +130,73 @@ function loadRecordsFromDataPath(dataPath: string): RunScoreRecord[] {
   return records;
 }
 
+function dedupeEntries(entries: SftEntry[]): SftEntry[] {
+  const seen = new Set<string>();
+  return entries.filter((e) => {
+    const sp = e.source_path ?? '';
+    const key = `${e.source_run_id}|${e.base_commit_hash}|${sp}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function countUniqueStories(entries: SftEntry[]): number {
+  const keys = new Set<string>();
+  for (const e of entries) {
+    const pseudo: RunScoreRecord = {
+      run_id: e.source_run_id,
+      source_path: e.source_path,
+    } as RunScoreRecord;
+    const parsed = parseEpicStoryFromRecord(pseudo);
+    if (parsed) {
+      keys.add(`${parsed.epicId}.${parsed.storyId}`);
+    }
+  }
+  return keys.size;
+}
+
+function formatSummary(summary: SftExtractSummary): string {
+  const reasons =
+    Object.keys(summary.skipReasons).length > 0
+      ? Object.entries(summary.skipReasons)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join('; ')
+      : '无';
+  return `共提取 ${summary.n} 条，覆盖 ${summary.m} 个 Story；跳过 ${summary.k} 条（原因：${reasons}）`;
+}
+
 /**
  * 从 scoring data 提取 SFT 数据集。
- * 仅处理 phase_score≤60 且含 source_path、base_commit_hash 的记录。
+ * 仅处理 phase_score≤threshold 且含 source_path、base_commit_hash 的记录。
+ * git diff 失败时 fallback 为 instruction-only（has_code_pair: false）。
+ * 按 source_run_id+base_commit_hash+source_path 去重。
  */
 export async function extractSftDataset(
   dataPath?: string,
-  outputPath?: string
-): Promise<SftEntry[]> {
+  outputPath?: string,
+  options?: ExtractSftDatasetOptions
+): Promise<{ entries: SftEntry[]; summary: SftExtractSummary }> {
+  const threshold = options?.threshold ?? 60;
   const basePath = dataPath ?? path.join(process.cwd(), 'scoring', 'data');
   const outPath = outputPath ?? path.join(basePath, 'sft-dataset.jsonl');
   const records = loadRecordsFromDataPath(basePath);
   const cwd = process.cwd();
   const entries: SftEntry[] = [];
+  const skipReasons: Record<string, number> = {};
 
-  const lowScoreRecords = records.filter((r) => r.phase_score <= 60);
+  const lowScoreRecords = records.filter((r) => r.phase_score <= threshold);
 
   for (const rec of lowScoreRecords) {
     const sourcePath = (rec as RunScoreRecord & { source_path?: string }).source_path;
     const baseCommitHash = rec.base_commit_hash;
 
     if (!sourcePath) {
-      console.warn(`[sft-extractor] skip run_id=${rec.run_id}: no source_path`);
+      incSkip(skipReasons, '无 source_path');
       continue;
     }
     if (!baseCommitHash) {
-      console.warn(`[sft-extractor] skip run_id=${rec.run_id}: no base_commit_hash`);
+      incSkip(skipReasons, '无 base_commit_hash');
       continue;
     }
 
@@ -148,7 +204,7 @@ export async function extractSftDataset(
       ? sourcePath
       : path.resolve(cwd, sourcePath);
     if (!fs.existsSync(resolvedPath)) {
-      console.warn(`[sft-extractor] skip run_id=${rec.run_id}: source_path not found: ${resolvedPath}`);
+      incSkip(skipReasons, 'source_path 不存在');
       continue;
     }
 
@@ -156,13 +212,13 @@ export async function extractSftDataset(
     try {
       bugfixContent = fs.readFileSync(resolvedPath, 'utf-8');
     } catch {
-      console.warn(`[sft-extractor] skip run_id=${rec.run_id}: cannot read source_path`);
+      incSkip(skipReasons, '无法读取 source_path');
       continue;
     }
 
     const sections = extractBugfixSections(bugfixContent);
     if (!sections) {
-      console.warn(`[sft-extractor] skip run_id=${rec.run_id}: no §1 or §4 in BUGFIX`);
+      incSkip(skipReasons, '无 §1 或 §4');
       continue;
     }
     const instruction = [sections.s1, sections.s4].join('\n\n');
@@ -174,34 +230,65 @@ export async function extractSftDataset(
         stdio: ['pipe', 'pipe', 'pipe'],
       });
     } catch {
-      console.warn(`[sft-extractor] skip run_id=${rec.run_id}: base_commit_hash not verifiable: ${baseCommitHash}`);
+      incSkip(skipReasons, 'base_commit_hash 不可验证');
       continue;
     }
 
-    let diff: string;
+    let diff: string | null = null;
     try {
       diff = gitDiffBetween(baseCommitHash, 'HEAD', cwd);
     } catch {
-      console.warn(`[sft-extractor] skip run_id=${rec.run_id}: git diff failed`);
-      continue;
+      // fallback: instruction-only
     }
 
-    const { input, output } = parseDiffToInputOutput(diff);
-    entries.push({
-      instruction,
-      input,
-      output,
-      source_run_id: rec.run_id,
-      base_commit_hash: baseCommitHash,
-    });
+    if (diff == null || diff.trim() === '') {
+      entries.push({
+        instruction,
+        input: '',
+        output: '',
+        source_run_id: rec.run_id,
+        base_commit_hash: baseCommitHash,
+        has_code_pair: false,
+        source_path: sourcePath,
+      });
+    } else {
+      const { input, output } = parseDiffToInputOutput(diff);
+      const hasValidPair = input.length > 0 || output.length > 0;
+      entries.push({
+        instruction,
+        input,
+        output,
+        source_run_id: rec.run_id,
+        base_commit_hash: baseCommitHash,
+        has_code_pair: hasValidPair,
+        source_path: sourcePath,
+      });
+    }
   }
+
+  const deduped = dedupeEntries(entries);
+  const k = Object.values(skipReasons).reduce((a, b) => a + b, 0);
+  const m = countUniqueStories(deduped);
 
   const dir = path.dirname(outPath);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
-  const jsonlContent = entries.map((e) => JSON.stringify(e)).join('\n');
+  const jsonlContent = deduped.map((e) => JSON.stringify(e)).join('\n');
   if (jsonlContent) fs.writeFileSync(outPath, jsonlContent + '\n', 'utf-8');
 
-  return entries;
+  const summary: SftExtractSummary = {
+    n: deduped.length,
+    m,
+    k,
+    skipReasons,
+  };
+
+  return { entries: deduped, summary };
 }
+
+function incSkip(reasons: Record<string, number>, key: string): void {
+  reasons[key] = (reasons[key] ?? 0) + 1;
+}
+
+export { formatSummary };

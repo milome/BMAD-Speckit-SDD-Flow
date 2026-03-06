@@ -1,0 +1,10 @@
+{
+  "version": "1.0",
+  "stem": "tasks-E7-S1",
+  "userStories": [
+    { "id": "US-001", "title": "Command 文档与脚本骨架", "acceptance": "T1.1, T1.2", "passes": true },
+    { "id": "US-002", "title": "仪表盘计算与输出", "acceptance": "T2.1-T2.7", "passes": true },
+    { "id": "US-003", "title": "验收命令与同步", "acceptance": "T3.1, T3.2", "passes": true },
+    { "id": "US-004", "title": "测试与回归", "acceptance": "T4.1-T4.3", "passes": true }
+  ]
+}

@@ -232,6 +232,88 @@ describe('coachDiagnose fallback', () => {
     fs.rmSync(sandboxPath, { recursive: true, force: true });
   });
 
+  it('builds phase_iteration_counts from scored records; same stage多条时取timestamp最新record的iteration_count', async () => {
+    const runId = `coach-phase-iter-${Date.now()}`;
+    const dataPath = path.join(os.tmpdir(), `coach-phase-iter-${Date.now()}`);
+    fs.mkdirSync(dataPath, { recursive: true });
+    const rec1: RunScoreRecord = {
+      run_id: runId,
+      scenario: 'real_dev',
+      stage: 'spec',
+      phase_score: 80,
+      phase_weight: 0.25,
+      check_items: [{ item_id: 'functional_correctness', passed: true, score_delta: 0 }],
+      timestamp: '2026-03-06T10:00:00Z',
+      iteration_count: 2,
+      iteration_records: [],
+      first_pass: false,
+    };
+    const rec2: RunScoreRecord = {
+      ...rec1,
+      stage: 'spec',
+      timestamp: '2026-03-06T12:00:00Z',
+      iteration_count: 5,
+    };
+    const rec3: RunScoreRecord = {
+      ...rec1,
+      stage: 'plan',
+      timestamp: '2026-03-06T11:00:00Z',
+      iteration_count: 1,
+    };
+    fs.writeFileSync(
+      path.join(dataPath, `${runId}.json`),
+      JSON.stringify([rec1, rec2, rec3], null, 2),
+      'utf-8'
+    );
+
+    const result = await coachDiagnose(runId, {
+      dataPath,
+      requiredSkillPath: 'not/exist/skill.md',
+      forceSkillLoadError: true,
+    });
+    if ('error' in result) {
+      throw new Error(`unexpected error: ${result.error}`);
+    }
+    expect(result.phase_iteration_counts).toBeDefined();
+    expect(result.phase_iteration_counts!.spec).toBe(5);
+    expect(result.phase_iteration_counts!.plan).toBe(1);
+    fs.rmSync(dataPath, { recursive: true, force: true });
+  });
+
+  it('adds 高整改轮次 recommendation when any phase_iteration_count > 0 (US-010)', async () => {
+    const runId = `coach-high-iter-rec-${Date.now()}`;
+    const dataPath = path.join(os.tmpdir(), `coach-high-iter-rec-${Date.now()}`);
+    writeRecord(dataPath, runId, { iteration_count: 3 });
+
+    const result = await coachDiagnose(runId, {
+      dataPath,
+      requiredSkillPath: 'not/exist/skill.md',
+      forceSkillLoadError: true,
+    });
+    if ('error' in result) {
+      throw new Error(`unexpected error: ${result.error}`);
+    }
+    expect(result.recommendations).toContain('建议关注高整改轮次 stage，提升一次通过率。');
+    fs.rmSync(dataPath, { recursive: true, force: true });
+  });
+
+  it('does not add 高整改轮次 recommendation when all iteration_count are 0 (US-010)', async () => {
+    const runId = `coach-all-zero-iter-${Date.now()}`;
+    const dataPath = path.join(os.tmpdir(), `coach-all-zero-iter-${Date.now()}`);
+    writeRecord(dataPath, runId, { iteration_count: 0 });
+
+    const result = await coachDiagnose(runId, {
+      dataPath,
+      requiredSkillPath: 'not/exist/skill.md',
+      forceSkillLoadError: true,
+    });
+    if ('error' in result) {
+      throw new Error(`unexpected error: ${result.error}`);
+    }
+    expect(result.recommendations).not.toContain('建议关注高整改轮次 stage，提升一次通过率。');
+    fs.rmSync(dataPath, { recursive: true, force: true });
+  });
+
   it('falls back to minimum safe persona when external persona loading fails', async () => {
     const runId = `coach-persona-fallback-${Date.now()}`;
     const dataPath = path.join(os.tmpdir(), `coach-persona-fallback-${Date.now()}`);

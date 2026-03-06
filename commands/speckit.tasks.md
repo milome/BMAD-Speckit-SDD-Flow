@@ -1,4 +1,4 @@
-﻿---
+---
 description: Generate an actionable, dependency-ordered tasks.md for the feature based on available design artifacts.
 handoffs: 
   - label: Analyze For Consistency
@@ -7,7 +7,8 @@ handoffs:
     send: true
   - label: Implement Project
     agent: speckit.implement
-    prompt: Start the implementation in phases
+    prompt: |
+      Execute /speckit.implement in full. MANDATORY before any coding: create prd.{stem}.json and progress.{stem}.txt per ralph-method (step 3.5). Follow TDD red-green-refactor per task; update prd/progress per US (steps 6, 8). Load commands/speckit.implement.md and follow all steps including 3.5, 6, 8.
     send: true
 ---
 

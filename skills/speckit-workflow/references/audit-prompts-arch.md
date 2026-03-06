@@ -136,3 +136,9 @@ Tradeoff分析审计:
 - [ ] 架构设计是否满足PRD中的所有需求
 - [ ] 架构约束是否传递到下游文档
 - [ ] 技术方案与业务目标是否对齐
+
+---
+
+## 批判审计员检查（standard/strict 模式必须）
+
+审计时须同时执行批判审计员检查，输出格式见 [audit-prompts-critical-auditor-appendix.md](audit-prompts-critical-auditor-appendix.md)。

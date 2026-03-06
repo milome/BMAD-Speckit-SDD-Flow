@@ -23,11 +23,36 @@ function parseArgs(): Record<string, string> {
   return args;
 }
 
+/** 从 reportPath 解析 epic/story：正则 E6-S3 / e6-s3 或目录 story-6-3- */
+function parseEpicStoryFromPath(reportPath: string): { epic?: string; story?: string } {
+  if (!reportPath) return {};
+  const fileMatch = reportPath.match(/[Ee](\d+)[-_]?[Ss](\d+)/);
+  if (fileMatch) return { epic: fileMatch[1], story: fileMatch[2] };
+  const dirMatch = reportPath.match(/story-(\d+)-(\d+)/);
+  if (dirMatch) return { epic: dirMatch[1], story: dirMatch[2] };
+  return {};
+}
+
 async function main() {
   const args = parseArgs();
   const reportPath = args.reportPath;
   const stage = (args.stage ?? 'prd') as AuditStage;
-  const runId = args.runId ?? `cli-${Date.now()}`;
+  const epic = args.epic;
+  const story = args.story;
+
+  let runId = args.runId;
+  if (!runId) {
+    if (epic && story) {
+      runId = `dev-e${epic}-s${story}-${stage}-${Date.now()}`;
+    } else {
+      const parsed = parseEpicStoryFromPath(reportPath);
+      if (parsed.epic && parsed.story) {
+        runId = `dev-e${parsed.epic}-s${parsed.story}-${stage}-${Date.now()}`;
+      } else {
+        runId = `cli-${Date.now()}`;
+      }
+    }
+  }
   const scenario = (args.scenario ?? 'real_dev') as 'real_dev' | 'eval_question';
   const writeMode = (args.writeMode ?? 'single_file') as 'single_file' | 'jsonl' | 'both';
   const dataPath = args.dataPath;
@@ -40,9 +65,16 @@ async function main() {
   const skipTriggerCheck = args.skipTriggerCheck === 'true';
   const triggerStage = args.triggerStage ?? stage;
   const questionVersion = args.questionVersion;
+  const iterationCountRaw = args['iteration-count'] ?? args.iterationCount;
+  const iterationCountParsed =
+    iterationCountRaw != null ? parseInt(iterationCountRaw, 10) : undefined;
+  const iterationCount =
+    iterationCountParsed != null && !isNaN(iterationCountParsed)
+      ? iterationCountParsed
+      : undefined;
 
   if (!reportPath) {
-    console.error('Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks] [--runId <id>] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--event <event>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>]');
+    console.error('Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--event <event>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值');
     process.exit(1);
   }
 
@@ -68,6 +100,7 @@ async function main() {
     sourceHashFilePath,
     artifactDocPath,
     question_version: questionVersion,
+    iteration_count: iterationCount,
   });
   console.log(`parseAndWriteScore: wrote record for runId=${runId}, stage=${stage}`);
 }

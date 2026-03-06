@@ -1,0 +1,24 @@
+{
+  "branchName": "ralph/iteration-count-display",
+  "taskDescription": "迭代次数（iteration_count）在 Coach 与 Dashboard 中的展示",
+  "projectContext": {
+    "framework": "TypeScript, Vitest",
+    "testCommand": "npx vitest run",
+    "buildCommand": "npx tsc --noEmit"
+  },
+  "userStories": [
+    { "id": "US-001", "title": "CoachDiagnosisReport 新增 phase_iteration_counts", "description": "types.ts 新增 phase_iteration_counts?: Record<string, number>", "acceptanceCriteria": ["grep phase_iteration_counts scoring/coach/types.ts 命中", "npx tsc --noEmit 无错误"], "priority": 1, "passes": true, "notes": "" },
+    { "id": "US-002", "title": "diagnose.ts 构建 phase_iteration_counts", "description": "从 scored 构建，同 stage 取 timestamp 最新 record 的 iteration_count", "acceptanceCriteria": ["单测通过", "同 stage 多条时取最新"], "priority": 2, "passes": true, "notes": "" },
+    { "id": "US-005", "title": "展示前 sanitize iteration_count", "description": "Math.max(0, Math.round(??0))；NaN 时 0", "acceptanceCriteria": ["NaN/-1/1.7/{} 分别输出 0/0/2/0"], "priority": 3, "passes": true, "notes": "" },
+    { "id": "US-003", "title": "formatToMarkdown Phase Scores 扩展", "description": "有 phase_iteration_counts 时每行含「整改 N 轮」", "acceptanceCriteria": ["有则输出含整改轮次；无则保持原格式"], "priority": 4, "passes": true, "notes": "" },
+    { "id": "US-004", "title": "formatToMarkdown 新增各 Stage 整改轮次小节", "description": "新增「各 Stage 整改轮次」小节及说明", "acceptanceCriteria": ["全 0 与部分>0 输出正确", "含说明句"], "priority": 5, "passes": true, "notes": "" },
+    { "id": "US-009", "title": "Coach report 说明 phase_score 阶梯扣分", "description": "说明中加「phase_score 已按整改轮次应用阶梯扣分」", "acceptanceCriteria": ["format 输出含该句"], "priority": 6, "passes": true, "notes": "" },
+    { "id": "US-010", "title": "recommendations 增加高整改轮次建议", "description": "存在 iteration_count>0 时追加建议", "acceptanceCriteria": ["有>0 时含该句；全 0 时不含"], "priority": 7, "passes": true, "notes": "" },
+    { "id": "US-006", "title": "getHighIterationTop3", "description": "compute.ts 新增，按 iteration_count 降序取前 3", "acceptanceCriteria": ["多 records 返回降序前 3；全 0 返回 []"], "priority": 8, "passes": true, "notes": "" },
+    { "id": "US-007", "title": "DashboardData 与 format 增加高迭代小节", "description": "highIterTop3、format 高迭代 Top 3 小节", "acceptanceCriteria": ["format 含 highIterTop3；全 0 时「各 stage 均为一次通过」"], "priority": 9, "passes": true, "notes": "" },
+    { "id": "US-008", "title": "dashboard-generate 集成 getHighIterationTop3", "description": "脚本调用并传入 formatDashboardMarkdown", "acceptanceCriteria": ["npx ts-node scripts/dashboard-generate.ts 产出含高迭代小节"], "priority": 10, "passes": true, "notes": "" },
+    { "id": "US-011", "title": "文档说明迭代与 fallback", "description": "scoring/coach/README.md 或 scoring/README.md", "acceptanceCriteria": ["grep 整改轮次/iteration_count 命中"], "priority": 11, "passes": true, "notes": "" },
+    { "id": "US-012", "title": "Coach 单测全量验收", "description": "diagnose/format 单测覆盖 phase_iteration_counts", "acceptanceCriteria": ["npx vitest run scoring/coach 全通过"], "priority": 12, "passes": true, "notes": "" },
+    { "id": "US-013", "title": "Dashboard 单测全量验收", "description": "compute/format 单测覆盖 getHighIterationTop3、highIterTop3", "acceptanceCriteria": ["npx vitest run scoring/dashboard 全通过"], "priority": 13, "passes": true, "notes": "" }
+  ]
+}

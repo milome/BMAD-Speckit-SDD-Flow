@@ -1,0 +1,44 @@
+# Progress: DEBATE_parseAndWriteScore_集成点设计_100轮共识
+# Total stories: 12
+
+Current story: 12
+Completed: 12
+
+---
+# Story log
+[2026-03-06] INT-01: CLI 增加 --epic --story - PASSED
+  - parse-and-write-score.ts: parseArgs 支持 --epic/--story；runId 生成 dev-e{epic}-s{story}-{stage}-{ts}；Usage 补充
+  - 验收: npx ts-node ... --epic 6 --story 3 => run_id=dev-e6-s3-spec-*
+  - [TDD-RED] INT-01 无 --epic/--story 时 run_id=cli-*（或等价红灯描述）
+  - [TDD-GREEN] INT-01 npx ts-node ... --epic 6 --story 3 => run_id=dev-e6-s3-spec-*
+  - [TDD-REFACTOR] INT-01 无需重构 ✓
+
+[2026-03-06] INT-11: 从 reportPath 解析 epic/story - PASSED
+  - parseEpicStoryFromPath: 正则 [Ee](\d+)[-_]?[Ss](\d+) 或 story-(\d+)-(\d+)
+  - 验收: --reportPath specs/.../AUDIT_spec-E6-S3.md（无 --epic/--story）=> run_id=dev-e6-s3-spec-*
+  - [TDD-RED] INT-11 无 --epic/--story 且 reportPath 无 E/S 模式时 run_id=cli-*
+  - [TDD-GREEN] INT-11 --reportPath .../AUDIT_spec-E6-S3.md => run_id=dev-e6-s3-spec-*
+  - [TDD-REFACTOR] INT-11 无需重构 ✓
+
+[2026-03-06] INT-10: eval-lifecycle-report-paths speckit_report_paths - PASSED
+  - config/eval-lifecycle-report-paths.yaml 新增 speckit_report_paths: spec/plan/gaps/tasks/implement
+  - 验收: rg 有匹配
+
+[2026-03-06] INT-02: speckit-workflow §1.2 审计通过后触发 - PASSED
+[2026-03-06] INT-03: speckit-workflow §2.2 审计通过后触发 - PASSED
+[2026-03-06] INT-04: speckit-workflow §3.2 审计通过后触发 - PASSED
+[2026-03-06] INT-05: speckit-workflow §4.2 审计通过后触发 - PASSED
+[2026-03-06] INT-06: speckit-workflow §5.2 审计通过后触发 - PASSED
+
+[2026-03-06] INT-07: bmad-story-assistant §2.2 触发 - PASSED
+  - branch_id=bmad_story_stage2_audit_pass
+[2026-03-06] INT-08: bmad-story-assistant 阶段四触发 - PASSED
+  - branch_id=bmad_story_stage4_audit_pass
+[2026-03-06] INT-09: STORY-A3-DEV 约束段落 - PASSED
+  - 5 阶段落盘+CLI、resultCode 约束
+
+[2026-03-06] INT-12: 验证与回归 - PASSED
+  - rg speckit_1_2_audit_pass|parseAndWriteScore|审计通过后评分写入: 9+ 处
+  - npm run accept:e3-s3: PASS (all 3 stages)
+  - parse-and-write-score --stage plan (GAPS 兼容): dev-e6-s3-plan-*
+  - rg call_mapping config/scoring-trigger-modes.yaml: 7 键 (speckit_1_2~5_2, bmad_story_stage2/4)

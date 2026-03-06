@@ -29,6 +29,7 @@ import type { WeaknessCluster } from '../analytics/cluster-weaknesses';
 export interface CoachDiagnosisReport {
   summary: string;
   phase_scores: Record<string, number>;
+  phase_iteration_counts?: Record<string, number>;
   weak_areas: string[];
   recommendations: string[];
   iteration_passed: boolean;

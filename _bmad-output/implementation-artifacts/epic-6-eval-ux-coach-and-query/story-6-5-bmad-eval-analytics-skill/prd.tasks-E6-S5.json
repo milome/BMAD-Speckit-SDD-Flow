@@ -1,0 +1,8 @@
+{
+  "version": "1.0",
+  "stem": "tasks-E6-S5",
+  "userStories": [
+    { "id": "US-001", "title": "新建 skills/bmad-eval-analytics/SKILL.md，触发短语与复用 coach-diagnose 指引", "acceptance": "T1.1-T1.3", "passes": true },
+    { "id": "US-002", "title": "验收命令 npx ts-node scripts/coach-diagnose.ts 可执行", "acceptance": "T2.1, T2.2", "passes": true }
+  ]
+}

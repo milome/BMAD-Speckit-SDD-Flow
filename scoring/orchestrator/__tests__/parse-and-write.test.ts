@@ -7,7 +7,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
-import { parseAndWriteScore } from '../parse-and-write';
+import { parseAndWriteScore, validateIterationCount } from '../parse-and-write';
 
 const FIXTURES = path.join(__dirname, '../../parsers/__tests__/fixtures');
 
@@ -364,6 +364,63 @@ PRD审计报告
     const filePath = path.join(tempDir, `${runId}.json`);
     const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
     expect(written.source_path).toBe('_bmad-output/implementation-artifacts/5-5/BUGFIX_something.md');
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('overlays iteration_count and first_pass when iteration_count is passed (ITER-02)', async () => {
+    const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
+    const tempDir = path.join(os.tmpdir(), `scoring-iter-${Date.now()}`);
+    const runId = `test-iter-${Date.now()}`;
+
+    await parseAndWriteScore({
+      content,
+      stage: 'prd',
+      runId,
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+      skipAutoHash: true,
+      iteration_count: 1,
+    });
+
+    const filePath = path.join(tempDir, `${runId}.json`);
+    const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    expect(written.iteration_count).toBe(1);
+    expect(written.first_pass).toBe(false);
+    expect(written.tier_coefficient).toBe(0.8);
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('validateIterationCount: negative clamped to 0, non-integer rounded (ITER-04)', () => {
+    expect(validateIterationCount(-1)).toBe(0);
+    expect(validateIterationCount(-100)).toBe(0);
+    expect(validateIterationCount(1.4)).toBe(1);
+    expect(validateIterationCount(1.6)).toBe(2);
+    expect(validateIterationCount(0)).toBe(0);
+    expect(validateIterationCount(3)).toBe(3);
+  });
+
+  it('iteration_count=0 yields first_pass=true and tier 100% (ITER-02)', async () => {
+    const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
+    const tempDir = path.join(os.tmpdir(), `scoring-iter0-${Date.now()}`);
+    const runId = `test-iter0-${Date.now()}`;
+
+    await parseAndWriteScore({
+      content,
+      stage: 'prd',
+      runId,
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+      skipAutoHash: true,
+      iteration_count: 0,
+    });
+
+    const filePath = path.join(tempDir, `${runId}.json`);
+    const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    expect(written.iteration_count).toBe(0);
+    expect(written.first_pass).toBe(true);
+    expect(written.tier_coefficient).toBe(1);
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 

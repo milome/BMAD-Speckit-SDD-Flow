@@ -48,11 +48,37 @@ async function main() {
     }
   }
 
-  if (passed === 3) {
-    console.log('ACCEPT-E3-S3: PASS (all 3 stages)');
+  // ITER-07: iteration_count overlay 验收
+  const contentIter = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
+  const runIdIter = `accept-e3-s3-iter-${Date.now()}`;
+  await parseAndWriteScore({
+    content: contentIter,
+    stage: 'prd',
+    runId: runIdIter,
+    scenario: 'real_dev',
+    writeMode: 'single_file',
+    dataPath: TEMP_OUT,
+    skipAutoHash: true,
+    iteration_count: 1,
+  });
+  const filePathIter = path.join(TEMP_OUT, `${runIdIter}.json`);
+  if (fs.existsSync(filePathIter)) {
+    const writtenIter = JSON.parse(fs.readFileSync(filePathIter, 'utf-8'));
+    if (writtenIter.iteration_count === 1 && writtenIter.tier_coefficient === 0.8) {
+      console.log('  [PASS] iteration_count overlay (tier_coefficient=0.8)');
+      passed++;
+    } else {
+      console.error(`  [FAIL] iteration_count overlay - iteration_count=${writtenIter.iteration_count}, tier_coefficient=${writtenIter.tier_coefficient}`);
+    }
+  } else {
+    console.error('  [FAIL] iteration_count overlay - file not written');
+  }
+
+  if (passed === 4) {
+    console.log('ACCEPT-E3-S3: PASS (all 3 stages + iteration_count)');
     process.exit(0);
   } else {
-    console.error(`ACCEPT-E3-S3: FAIL (${passed}/3)`);
+    console.error(`ACCEPT-E3-S3: FAIL (${passed}/4)`);
     process.exit(1);
   }
 }

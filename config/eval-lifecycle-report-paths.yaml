@@ -18,6 +18,14 @@ story:
   filename_pattern: AUDIT_Story_{epic}-{story}.md
   example: AUDIT_Story_3-1.md
 
+# speckit-workflow 各阶段审计报告路径（与 call_mapping speckit_*_audit_pass 对应）
+speckit_report_paths:
+  spec: specs/epic-{epic}/story-{story}-{slug}/AUDIT_spec-E{epic}-S{story}.md
+  plan: specs/epic-{epic}/story-{story}-{slug}/AUDIT_plan-E{epic}-S{story}.md
+  gaps: specs/epic-{epic}/story-{story}-{slug}/AUDIT_GAPS-E{epic}-S{story}.md
+  tasks: specs/epic-{epic}/story-{story}-{slug}/AUDIT_tasks-E{epic}-S{story}.md
+  implement: _bmad-output/implementation-artifacts/epic-{epic}-*/story-{epic}-{story}-*/AUDIT_implement-E{epic}-S{story}.md
+
 # Layer 4–5：speckit-workflow、audit-prompts.md §1–§5 约定
 layers_4_5:
   specify: audit-prompts §1

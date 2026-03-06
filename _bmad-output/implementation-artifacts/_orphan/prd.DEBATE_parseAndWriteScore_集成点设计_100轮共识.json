@@ -1,0 +1,23 @@
+{
+  "branchName": "ralph/parseAndWriteScore-integration",
+  "taskDescription": "parseAndWriteScore 集成点设计：CLI 增强、路径约定、speckit/bmad-story 触发插入",
+  "projectContext": {
+    "framework": "Node.js, TypeScript",
+    "testCommand": "npm test",
+    "buildCommand": "npm run build"
+  },
+  "userStories": [
+    {"id": "INT-01", "title": "CLI 增加 --epic --story", "description": "parse-and-write-score.ts parseArgs 支持 --epic、--story；runId 生成 dev-e{epic}-s{story}-{stage}-{ts}；Usage 补充", "acceptanceCriteria": ["npx ts-node ... --epic 6 --story 3 检查 scoring/data run_id 含 dev-e6-s3-"], "priority": 1, "passes": true, "notes": ""},
+    {"id": "INT-11", "title": "从 reportPath 解析 epic/story", "description": "未传 --runId 时：--epic/--story 优先；否则 reportPath 正则或目录解析；均失败则 cli-{ts}", "acceptanceCriteria": ["--reportPath specs/epic-6/.../AUDIT_spec-E6-S3.md run_id 含 dev-e6-s3- 或 e6-s3"], "priority": 2, "passes": true, "notes": ""},
+    {"id": "INT-10", "title": "eval-lifecycle-report-paths speckit_report_paths", "description": "config 新增 speckit_report_paths 顶层 key，含 spec/plan/gaps/tasks/implement 5 个路径模板", "acceptanceCriteria": ["rg 有匹配"], "priority": 3, "passes": true, "notes": ""},
+    {"id": "INT-02", "title": "speckit-workflow §1.2 审计通过后触发", "description": "插入 speckit_1_2_audit_pass 评分写入触发段落", "acceptanceCriteria": ["rg speckit_1_2_audit_pass"], "priority": 4, "passes": true, "notes": ""},
+    {"id": "INT-03", "title": "speckit-workflow §2.2 审计通过后触发", "description": "插入 speckit_2_2_audit_pass", "acceptanceCriteria": ["rg speckit_2_2_audit_pass"], "priority": 5, "passes": true, "notes": ""},
+    {"id": "INT-04", "title": "speckit-workflow §3.2 审计通过后触发", "description": "插入 speckit_3_2_audit_pass", "acceptanceCriteria": ["rg speckit_3_2_audit_pass"], "priority": 6, "passes": true, "notes": ""},
+    {"id": "INT-05", "title": "speckit-workflow §4.2 审计通过后触发", "description": "插入 speckit_4_2_audit_pass", "acceptanceCriteria": ["rg speckit_4_2_audit_pass"], "priority": 7, "passes": true, "notes": ""},
+    {"id": "INT-06", "title": "speckit-workflow §5.2 审计通过后触发", "description": "插入 speckit_5_2_audit_pass", "acceptanceCriteria": ["rg speckit_5_2_audit_pass"], "priority": 8, "passes": true, "notes": ""},
+    {"id": "INT-07", "title": "bmad-story-assistant §2.2 触发", "description": "阶段二段末插入 bmad_story_stage2_audit_pass", "acceptanceCriteria": ["rg bmad_story_stage2_audit_pass"], "priority": 9, "passes": true, "notes": ""},
+    {"id": "INT-08", "title": "bmad-story-assistant 阶段四触发", "description": "审计结论处理 Story标记为完成之后插入 bmad_story_stage4_audit_pass", "acceptanceCriteria": ["rg bmad_story_stage4_audit_pass"], "priority": 10, "passes": true, "notes": ""},
+    {"id": "INT-09", "title": "STORY-A3-DEV 约束段落", "description": "5 阶段落盘+CLI、resultCode 约束", "acceptanceCriteria": ["rg parse-and-write-score|speckit_[1-5]_2"], "priority": 11, "passes": true, "notes": ""},
+    {"id": "INT-12", "title": "验证与回归", "description": "9+ 处 rg、accept:e3-s3、parse-and-write-score 调用、AUDIT_GAPS --stage plan", "acceptanceCriteria": ["npm run accept:e3-s3","rg call_mapping 含 7 键"], "priority": 12, "passes": true, "notes": ""}
+  ]
+}

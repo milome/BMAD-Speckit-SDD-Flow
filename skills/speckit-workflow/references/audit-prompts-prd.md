@@ -96,3 +96,9 @@ PRD审计报告
 - [ ] PRD中的需求是否有唯一ID
 - [ ] 需求描述是否足够详细以便追溯
 - [ ] 是否明确了与其他需求的依赖关系
+
+---
+
+## 批判审计员检查（standard/strict 模式必须）
+
+审计时须同时执行批判审计员检查，输出格式见 [audit-prompts-critical-auditor-appendix.md](audit-prompts-critical-auditor-appendix.md)。

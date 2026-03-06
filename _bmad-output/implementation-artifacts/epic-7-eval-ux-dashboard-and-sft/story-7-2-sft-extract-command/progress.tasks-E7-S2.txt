@@ -1,0 +1,29 @@
+# Story 7.2 SFT 提取 Command - 执行进度
+
+## 验收命令
+
+```bash
+npx ts-node scripts/sft-extract.ts
+```
+
+## 完成状态
+
+- [x] T1.1 commands/bmad-sft-extract.md
+- [x] T1.2 scripts/sft-extract.ts
+- [x] T2.1-T2.5 sft-extractor 增强（has_code_pair、fallback、去重、摘要、阈值）
+- [x] T3.1 验收命令通过
+- [x] T3.2 .cursor/commands/bmad-sft-extract.md 同步
+- [x] T4.1 sft-extractor.test.ts 扩展（10 用例通过）
+- [x] T4.2 集成验证
+
+## 产出物
+
+| 产出 | 路径 |
+|------|------|
+| spec | specs/epic-7-eval-ux-dashboard-and-sft/story-2-sft-extract-command/spec-E7-S2.md |
+| plan | specs/epic-7-eval-ux-dashboard-and-sft/story-2-sft-extract-command/plan-E7-S2.md |
+| GAPS | specs/epic-7-eval-ux-dashboard-and-sft/story-2-sft-extract-command/IMPLEMENTATION_GAPS-E7-S2.md |
+| tasks | specs/epic-7-eval-ux-dashboard-and-sft/story-2-sft-extract-command/tasks-E7-S2.md |
+| Command | commands/bmad-sft-extract.md |
+| CLI | scripts/sft-extract.ts |
+| 核心模块 | scoring/analytics/sft-extractor.ts |

@@ -1,5 +1,7 @@
 # Story 6.4：Scores Command
 
+Status: ready-for-dev
+
 **Epic**：6 eval-ux-coach-and-query  
 **Story**：6.4  
 **Slug**：scores-command  
@@ -15,6 +17,7 @@
 | REQ-UX-2.2 | epic_id/story_id 解析规则；无约定时调用方得到明确反馈 | 是（通过 6.3 或 fallback） | AC-2, AC-3, AC-4 |
 | REQ-UX-2.4 | Epic/Story 筛选范围仅针对 real_dev | 是 | scope 约束 |
 | REQ-UX-2.3 | 同 run_id+stage 去重 | 是（通过 6.3 或 fallback） | AC-1, AC-2, AC-3 |
+| Story 6.2 迁移 | coach-diagnose 复用 scoring/query/ | 是（增强任务） | AC-6 |
 
 ---
 
@@ -61,6 +64,11 @@
    - 无数据时：输出「暂无评分数据，请先完成至少一轮 Dev Story」
    - 无约定数据（Epic/Story 筛选无可解析记录）：输出「当前评分记录无可解析 Epic/Story，请确认 run_id 约定」
 
+7. **增强任务：迁移 coach-diagnose 复用 scoring/query/**  
+   - 将 Story 6.2 的 `scripts/coach-diagnose.ts` 中 `--epic`/`--story` 分支从 `filterByEpicStory`（scoring/coach/filter-epic-story.ts）迁移为复用 `scoring/query/` 的 `queryByEpic`、`queryByStory`
+   - 移除对 `scoring/coach/filter-epic-story.ts` 的依赖；改为 `import { queryByEpic, queryByStory } from '../scoring/query'`
+   - 保持 `/bmad-coach` 行为不变；验收：`npx ts-node scripts/coach-diagnose.ts --epic 3`、`--story 3.3` 输出与迁移前一致
+
 ### 3.2 非本 Story 范围
 
 | 功能 | 负责 Story | 说明 |
@@ -69,6 +77,7 @@
 | 仪表盘（总分、四维、短板 Top 3、Veto、趋势） | Story 7.1 | `/bmad-dashboard` |
 | bmad-eval-analytics Skill 自然语言触发 | Story 6.5 | 「帮我看看评分」等短语；本 Story 仅提供 Command 入口 |
 | 组合 queryByFilters API | GAP-024 | 归属 GAP-024，待排期 |
+| coach-diagnose `--epic/--story` 底层实现 | 本 Story 增强 | 由 filterByEpicStory（filter-epic-story.ts）迁移为复用 scoring/query/ |
 
 ---
 
@@ -81,6 +90,7 @@
 | AC-3 | Story 明细 | 存在 Story 3.3 数据 | 用户运行 `/bmad-scores --story 3.3` | 显示 Story 3.3 各阶段评分明细 |
 | AC-4 | 无约定数据 | 记录无 epic_id/story_id 可解析 | 用户运行 `--epic` 或 `--story` | 输出「当前评分记录无可解析 Epic/Story，请确认 run_id 约定」 |
 | AC-5 | 无数据 | scoring/data/ 为空或无评分记录 | 用户运行 `/bmad-scores` | 输出「暂无评分数据，请先完成至少一轮 Dev Story」 |
+| AC-6 | coach-diagnose 迁移 | Story 6.3 已完成 | 迁移后运行 `/bmad-coach --epic 3`、`--story 3.3` | 输出与迁移前一致；使用 scoring/query/ 而非 filterByEpicStory（filter-epic-story.ts） |
 
 ---
 
@@ -88,7 +98,8 @@
 
 ### 5.1 依赖 Story 6.3 的处理
 
-- **Story 6.3 已完成**：直接 import `scoring/query/` 的 `queryByEpic`、`queryByStory`、`queryLatest`，将返回的 `RunScoreRecord[]` 格式化为 Markdown 表格
+- **前置**：Story 6.3（scoring/query/）已完成，本 Story 直接采用复用 `scoring/query/` 路径
+- **Story 6.3 已完成的路径**：直接 import `scoring/query/` 的 `queryByEpic`、`queryByStory`、`queryLatest`，将返回的 `RunScoreRecord[]` 格式化为 Markdown 表格
 - **Story 6.3 未完成**：在 scores 脚本内实现 inline 逻辑：
   1. 调用 `getScoringDataPath()` 获取数据根
   2. 加载 `*.json`（排除非评分 schema）与 `scores.jsonl`
@@ -131,6 +142,10 @@
 - [ ] Task 3：验收与 Command 文档完善
   - [ ] Subtask 3.1：补充验收命令 `npx ts-node scripts/scores-summary.ts`、`--epic 3`、`--story 3.3`
   - [ ] Subtask 3.2：同步到 `.cursor/commands/`（若存在）
+- [ ] Task 4：迁移 coach-diagnose 复用 scoring/query/（增强任务）
+  - [ ] Subtask 4.1：将 `scripts/coach-diagnose.ts` 的 `--epic`/`--story` 分支从 filterByEpicStory 改为 queryByEpic、queryByStory
+  - [ ] Subtask 4.2：移除 filter-epic-story import；保持 coach-diagnose 输出与行为不变
+  - [ ] Subtask 4.3：验收 `npx ts-node scripts/coach-diagnose.ts --epic 3`、`--story 3.3` 与迁移前一致；`npm run test:scoring` 全部通过
 
 ---
 
@@ -148,6 +163,7 @@
 |------|------|----------|
 | Command | `commands/bmad-scores.md`、`.cursor/commands/bmad-scores.md` | 新建，参数说明与调用逻辑 |
 | 脚本 | `scripts/scores-summary.ts` 或 `scripts/bmad-scores.ts` | 新建，加载数据、筛选、表格格式化 |
+| 脚本（修改） | `scripts/coach-diagnose.ts` | 增强：`--epic`/`--story` 迁移为复用 scoring/query/ |
 | 条件引用 | `scoring/query/` | Story 6.3 已实现时复用 queryByEpic、queryByStory、queryLatest |
 
 ### 7.3 测试要求
@@ -171,6 +187,7 @@
 | 脚本 | `scripts/scores-summary.ts` 或 `scripts/bmad-scores.ts` |
 | 表格格式化 | `formatScoresToTable(records, mode)` 或等价函数 |
 | 验收命令 | `npx ts-node scripts/scores-summary.ts`、`--epic 3`、`--story 3.3` 可执行且输出符合 AC |
+| 迁移验证 | coach-diagnose `--epic 3`、`--story 3.3` 与迁移前行为一致 |
 
 ---
 

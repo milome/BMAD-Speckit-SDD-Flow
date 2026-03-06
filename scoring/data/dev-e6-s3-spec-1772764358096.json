@@ -1,0 +1,52 @@
+{
+  "run_id": "dev-e6-s3-spec-1772764358096",
+  "scenario": "real_dev",
+  "stage": "spec",
+  "phase_score": 81.55,
+  "phase_weight": 0.2,
+  "check_items": [
+    {
+      "item_id": "spec-issue-1",
+      "passed": false,
+      "score_delta": -10,
+      "note": "核心逻辑存在未覆盖场景"
+    },
+    {
+      "item_id": "spec-issue-2",
+      "passed": false,
+      "score_delta": -5,
+      "note": "需求追溯关系描述不够明确"
+    }
+  ],
+  "timestamp": "2026-03-06T02:32:38.101Z",
+  "iteration_count": 0,
+  "iteration_records": [],
+  "first_pass": true,
+  "dimension_scores": [
+    {
+      "dimension": "需求完整性",
+      "weight": 35,
+      "score": 85
+    },
+    {
+      "dimension": "可测试性",
+      "weight": 25,
+      "score": 80
+    },
+    {
+      "dimension": "一致性",
+      "weight": 25,
+      "score": 78
+    },
+    {
+      "dimension": "可追溯性",
+      "weight": 15,
+      "score": 82
+    }
+  ],
+  "veto_triggered": false,
+  "tier_coefficient": 1,
+  "base_commit_hash": "467f92ea",
+  "content_hash": "2e2c9efe216f25cfdb7aa619526c01fcad4734f3bdf476a4b63d0af37c96b55e",
+  "path_type": "full"
+}

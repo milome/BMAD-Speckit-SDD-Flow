@@ -123,7 +123,7 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 - 若未通过：注明「本轮存在 gap，不计数」，修复后再次发起本审计，直至连续 3 轮无 gap 收敛。
 ```
 
-- Main Agent: launch this mcp_task after Step 1 (and after any resume). If the report is "未通过"，主 Agent 通过再次发起实施子任务（或 resume）由子代理修复代码与 prd/progress；主 Agent 仅可做说明性/文档类编辑，不得编辑 prd.*.json、progress.*.txt 或生产代码。然后重新发起审计直至连续 3 轮无 gap 收敛。
+- Main Agent: launch this mcp_task after Step 1 (and after any resume). 主 Agent 在发起第 2、3 轮审计前，可输出「第 N 轮审计通过，继续验证…」以提示用户。If the report is "未通过"，主 Agent 通过再次发起实施子任务（或 resume）由子代理修复代码与 prd/progress；主 Agent 仅可做说明性/文档类编辑，不得编辑 prd.*.json、progress.*.txt 或生产代码。然后重新发起审计直至连续 3 轮无 gap 收敛。
 
 ---
 
@@ -146,6 +146,7 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 - **ralph-method**: Create/maintain prd + progress; naming and schema see ralph-method skill.  
 - **speckit-workflow**: TDD 红绿灯、15 条铁律、验收命令、架构忠实；审计须调用 code-review 技能.  
 - **audit-prompts §5**: 执行阶段审计；本技能内置的 6 项即为 §5 审计项。若项目存在 `_bmad/references/audit-prompts.md`，可对照其 §5 执行。逐项验证、完全覆盖、验证通过；批判审计员、3 轮无 gap 收敛.  
+- **audit-post-impl-rules**: 与 speckit-workflow、bmad-story-assistant 的实施后审计规则对齐。本技能 Step 2 已符合 audit-post-impl-rules（3 轮无 gap、批判审计员 >50%）。规则文件路径：`skills/speckit-workflow/references/audit-post-impl-rules.md`。  
 - **Prompt templates**: See `references/prompt-templates.md` for copy-paste prompts with placeholders.
 
 ## 错误与边界处理

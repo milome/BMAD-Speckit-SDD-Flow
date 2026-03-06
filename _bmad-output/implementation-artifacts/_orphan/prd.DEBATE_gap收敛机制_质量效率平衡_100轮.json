@@ -1,0 +1,24 @@
+{
+  "branchName": "ralph/gap-conv-debate",
+  "taskDescription": "Gap收敛机制与质量效率平衡 - DEBATE 100轮产出任务",
+  "projectContext": {
+    "framework": "BMAD skills / markdown",
+    "testCommand": "rg/grep 验收",
+    "buildCommand": "N/A"
+  },
+  "userStories": [
+    {"id": "GAP-CONV-01", "title": "新建 audit-prompts-critical-auditor-appendix.md", "description": "批判审计员段落格式、必填结构", "acceptanceCriteria": ["文件存在", "内容符合约定", "引用路径可解析"], "priority": 1, "passes": true},
+    {"id": "GAP-CONV-02", "title": "更新 audit-prompts §1-5 及 prd/arch/pr", "description": "各段末尾增加批判审计员引用", "acceptanceCriteria": ["rg 有匹配"], "priority": 2, "passes": true},
+    {"id": "GAP-CONV-03", "title": "新建 audit-post-impl-rules.md", "description": "实施后审计 strict 规则", "acceptanceCriteria": ["文件存在", "三处 skill 引用"], "priority": 3, "passes": true},
+    {"id": "GAP-CONV-04", "title": "bmad-story 阶段四改 strict", "description": "3轮无gap、批判审计员>50%", "acceptanceCriteria": ["阶段四描述含约定"], "priority": 4, "passes": true},
+    {"id": "GAP-CONV-05", "title": "bmad-story 阶段二 party-mode 产出物逻辑", "description": "strict/standard 选择", "acceptanceCriteria": ["阶段二描述含逻辑"], "priority": 5, "passes": true},
+    {"id": "GAP-CONV-06", "title": "speckit §5.2 改 strict", "description": "batch间=standard 仅最终=strict", "acceptanceCriteria": ["§5.2 含约定"], "priority": 6, "passes": true},
+    {"id": "GAP-CONV-07", "title": "speckit §1.2-§4.2 改 standard", "description": "单次+批判审计员", "acceptanceCriteria": ["各段含批判审计员"], "priority": 7, "passes": true},
+    {"id": "GAP-CONV-08", "title": "bmad-standalone-tasks 对齐说明", "description": "与 audit-post-impl-rules 对齐", "acceptanceCriteria": ["文档含对齐说明"], "priority": 8, "passes": true},
+    {"id": "GAP-CONV-09", "title": "文档化 party-mode 跳过与补偿规则", "description": "bmad-story-assistant 新增/扩展章节", "acceptanceCriteria": ["可检索到说明"], "priority": 9, "passes": true},
+    {"id": "GAP-CONV-10", "title": "audit_convergence 配置 (P1)", "description": "strict/standard/simple 配置", "acceptanceCriteria": ["配置生效", "项目级 simple 被拒绝"], "priority": 10, "passes": true},
+    {"id": "GAP-CONV-11", "title": "audit_mode 写入 (P1 Deferred)", "description": "parseAndWriteScore/progress 记录", "acceptanceCriteria": ["若实施则写入;否则标注 Deferred"], "priority": 11, "passes": true},
+    {"id": "GAP-CONV-12", "title": "审计报告格式校验 (P2)", "description": "批判审计员结论占比≥50%", "acceptanceCriteria": ["校验逻辑存在"], "priority": 12, "passes": true},
+    {"id": "GAP-CONV-13", "title": "3轮进行中用户提示 (P2)", "description": "第N轮审计通过继续验证", "acceptanceCriteria": ["三处 skill 含提示"], "priority": 13, "passes": true}
+  ]
+}

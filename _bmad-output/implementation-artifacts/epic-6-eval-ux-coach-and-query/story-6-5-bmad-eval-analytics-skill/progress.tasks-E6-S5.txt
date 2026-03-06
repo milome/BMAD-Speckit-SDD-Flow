@@ -1,0 +1,8 @@
+# Progress: Story 6.5 bmad-eval-analytics Skill
+
+## ralph-method 进度
+
+- prd.tasks-E6-S5.json: US-001~002 passes=true (完成)
+- 2026-03-06: T1 新建 skills/bmad-eval-analytics/SKILL.md，定义触发短语与 coach-diagnose 执行指引
+- 2026-03-06: T2 验收命令 npx ts-node scripts/coach-diagnose.ts 执行通过，输出 Coach 诊断 Markdown
+- T2.2「在 Cursor 中说短语」：自然语言触发验收需在 Cursor 加载 Skill 后人工验证，无自动化记录

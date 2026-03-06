@@ -31,6 +31,16 @@ export interface ParseAndWriteScoreOptions {
   sourceHashFilePath?: string;
   /** 触发评分的源文档路径（如 BUGFIX 文档），写入 record 的 source_path（B07） */
   artifactDocPath?: string;
+  /** 该 stage 审计未通过（fail）次数；0 表示一次通过；DEBATE 迭代次数作为评分因子 */
+  iteration_count?: number;
+}
+
+/**
+ * 校验并规范化 iteration_count：非负则 clamp 为 0，非整数则 Math.round。
+ */
+export function validateIterationCount(value: number): number {
+  if (value < 0) return 0;
+  return Math.round(value);
 }
 
 function computeWeightedDimensionScore(scores: DimensionScore[]): number {
@@ -66,7 +76,7 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
   });
 
   const dimensionScores = parseDimensionScores(content, stageToMode(stage));
-  const baseRecord =
+  let baseRecord =
     dimensionScores.length > 0
       ? {
           ...record,
@@ -74,6 +84,15 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
           dimension_scores: dimensionScores,
         }
       : record;
+
+  if (options.iteration_count != null) {
+    const validated = validateIterationCount(options.iteration_count);
+    baseRecord = {
+      ...baseRecord,
+      iteration_count: validated,
+      first_pass: validated === 0,
+    };
+  }
 
   const rawScore = baseRecord.phase_score;
   const { phase_score, veto_triggered, tier_coefficient } = applyTierAndVeto(

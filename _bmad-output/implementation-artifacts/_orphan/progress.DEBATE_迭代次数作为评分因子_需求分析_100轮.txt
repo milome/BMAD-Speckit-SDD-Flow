@@ -1,0 +1,45 @@
+# Progress: DEBATE_迭代次数作为评分因子_需求分析_100轮
+# Total stories: 8
+
+Current story: 8
+Completed: 8
+
+---
+# Story log
+
+[2026-03-06] US-001: ParseAndWriteScoreOptions 新增 iteration_count - PASSED
+[2026-03-06] US-002: overlay iteration_count 到 record 并设 first_pass - PASSED
+[2026-03-06] US-003: CLI 解析 --iteration-count 并入参 - PASSED
+[2026-03-06] US-004: validateIterationCount 校验与 overlay 调用 - PASSED
+[2026-03-06] US-005: speckit-workflow SKILL.md iteration_count 约束 - PASSED
+[2026-03-06] US-006: bmad-story-assistant SKILL.md iteration_count 约束 - PASSED
+[2026-03-06] US-007: accept-e3-s3 扩展 iteration_count 验收 - PASSED (npm run accept:e3-s3)
+[2026-03-06] US-008: 文档化子代理多轮 iteration_count 默认 0 - PASSED
+
+---
+# TDD 三项标记（涉及生产代码的 US）
+
+## US-001 ParseAndWriteScoreOptions 新增 iteration_count
+[TDD-RED] US-001 options.iteration_count 使用处类型检查 => 编译失败（属性未定义）
+[TDD-GREEN] US-001 npx tsc --noEmit => 通过
+[TDD-REFACTOR] US-001 无需重构 ✓
+
+## US-002 overlay iteration_count 到 record 并设 first_pass
+[TDD-RED] US-002 npm run test:scoring -- scoring/orchestrator => 1 failed（overlay 用例未实现）
+[TDD-GREEN] US-002 npm run test:scoring -- scoring/orchestrator => N passed
+[TDD-REFACTOR] US-002 无需重构 ✓
+
+## US-003 CLI 解析 --iteration-count 并入参
+[TDD-RED] US-003 npx ts-node scripts/parse-and-write-score.ts --help => 未列出 --iteration-count
+[TDD-GREEN] US-003 npx ts-node scripts/parse-and-write-score.ts --help => 含 --iteration-count；单测通过
+[TDD-REFACTOR] US-003 无需重构 ✓
+
+## US-004 validateIterationCount 校验与 overlay 调用
+[TDD-RED] US-004 npm run test:scoring (validateIterationCount 用例) => 1 failed
+[TDD-GREEN] US-004 npm run test:scoring => N passed
+[TDD-REFACTOR] US-004 无需重构 ✓
+
+## US-007 accept-e3-s3 扩展 iteration_count 验收
+[TDD-RED] US-007 npm run accept:e3-s3 (iteration_count 用例未实现) => 1 failed
+[TDD-GREEN] US-007 npm run accept:e3-s3 => N passed（含 iteration_count、tier_coefficient 断言）
+[TDD-REFACTOR] US-007 无需重构 ✓

@@ -12,7 +12,7 @@
 | PRD 需求 ID | 需求描述 | 本 Story 覆盖 | 验收对应 |
 |-------------|----------|---------------|----------|
 | REQ-UX-1.7 | 新建或扩展 Skill `bmad-eval-analytics`，用户可用自然语言触发 | 是 | AC-1 |
-| REQ-UX-1.7 | Skill 复用 Command 的 discoverLatestRunIds 等共享逻辑 | 是 | AC-3 |
+| REQ-UX-1.7 | Skill 复用 Command 的 discoverLatestRunId 等共享逻辑 | 是 | AC-3 |
 | REQ-UX-1.7 | 「最近一轮」以 timestamp 最近为准 | 是 | AC-2 |
 | REQ-UX-4.7 | 纳入 bmad-eval-analytics Skill（SFT 提取由 Story 7.3 负责） | partial | 本 Story 仅 Coach 相关，SFT 归属 7.3 |
 
@@ -34,7 +34,7 @@
    - 支持自然语言触发，如「帮我看看短板」「最近一轮的 Coach 报告」等短语
 
 2. **复用 Command 共享逻辑**  
-   - 复用 `discoverLatestRunIds` 与 `coachDiagnose` 调用  
+   - 复用 `scoring/coach/discovery.ts` 的 `discoverLatestRunId` 与 `coachDiagnose` 调用  
    - 不以独立实现 discovery 或 coach 逻辑；与 Story 6.1 的 Command 共享脚本/模块
 
 3. **timestamp 最近为准**  
@@ -53,6 +53,14 @@
 | SFT 提取自然语言触发（「提取微调数据集」） | Story 7.3 | 归属 Epic 7 |
 | `/bmad-coach --epic/--story` | Story 6.2 | 6.5 首版可仅支持「全部/最近一轮」；按 Epic/Story 筛选触发由 6.2 定义 |
 
+### 3.3 技术依赖与路径
+
+| 依赖 | 路径/来源 | 说明 |
+|------|-----------|------|
+| discoverLatestRunId | `scoring/coach/discovery.ts` | 按 timestamp 取最新 run_id，导出名为单数（非 discoverLatestRunIds） |
+| coachDiagnose | `scripts/coach-diagnose.ts` 或 `scoring/coach` | 与 Story 6.1 Command 共用，无 `--run-id` 时内部调用 discoverLatestRunId |
+| Skill 产出目录 | `skills/` | 项目 skills 根目录；本 Story 产出 `skills/bmad-eval-analytics/SKILL.md` |
+
 ---
 
 ## 4. 验收标准
@@ -61,7 +69,7 @@
 |---|----------|-------|------|------|
 | AC-1 | 自然语言触发 | bmad-eval-analytics Skill 已加载 | 用户说「帮我看看短板」 | Skill 调用 Coach 逻辑并输出诊断报告 |
 | AC-2 | 最近一轮 | 存在多条评分记录 | 用户说「最近一轮的 Coach 报告」 | 以 timestamp 最近为准，输出对应诊断 |
-| AC-3 | 共用逻辑 | — | Skill 被触发 | 复用 Command 的 discoverLatestRunIds 与 coachDiagnose 调用，无重复实现 |
+| AC-3 | 共用逻辑 | — | Skill 被触发 | 复用 Command 的 discoverLatestRunId 与 coachDiagnose 调用，无重复实现 |
 
 ---
 

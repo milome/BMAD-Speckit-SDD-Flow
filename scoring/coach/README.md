@@ -42,9 +42,17 @@ run_mode: "manual_or_post_impl"
 
 - `summary`
 - `phase_scores`
+- `phase_iteration_counts`：各 stage 的整改轮次（0=一次通过，≥1=审计未通过次数；通过后的多轮确认验证不计入）
 - `weak_areas`
 - `recommendations`
 - `iteration_passed`
+
+## 整改轮次（iteration_count）与 fallback
+
+- **含义**：`iteration_count` 表示该 stage 审计未通过次数；0 表示一次通过，≥1 表示整改次数。
+- **展示**： Coach 报告 Phase Scores 行扩展含「整改 N 轮」，并新增「各 Stage 整改轮次」小节；全 0 时显示「均为 0（一次通过）」。
+- **边界**：展示前对 NaN/负数/小数进行 sanitize；历史补录、eval 场景通常无迭代信息，`iteration_count` 为 0。
+- **sprint-status**：本需求不展示迭代次数，sprint-status 为进度追踪模块，与 Coach/Dashboard 解耦。
 
 ## 错误码与异常
 

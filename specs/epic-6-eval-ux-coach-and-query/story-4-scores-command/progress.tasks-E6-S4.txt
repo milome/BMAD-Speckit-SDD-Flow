@@ -1,0 +1,34 @@
+# Progress: Story 6.4 Scores Command
+# 2026-03-06 执行完成
+
+## T1.1 新建 commands/bmad-scores.md
+[TDD-GREEN] T1.1 创建完成
+[TDD-REFACTOR] 无需重构 ✓
+
+## T1.2 新建 scripts/scores-summary.ts
+[TDD-GREEN] T1.2 创建完成，复用 scoring/query、formatScoresToTable
+[TDD-REFACTOR] formatScoresToTable 抽取至 scoring/scores/format-table.ts ✓
+
+## T2.1-T2.4 查询、formatScoresToTable、反馈
+[TDD-GREEN] formatScoresToTable 三种 mode；无数据/无约定/无可筛选区分
+[TDD-REFACTOR] 无需重构 ✓
+
+## T3.1-T3.2 验收、.cursor/commands 同步
+[TDD-GREEN] 验收命令通过；bmad-scores.md 已同步至 .cursor/commands/
+[TDD-REFACTOR] 无需重构 ✓
+
+## T4.1-T4.4 coach-diagnose 迁移
+[TDD-GREEN] --epic/--story 改用 queryByEpic/queryByStory；使用 loadAndDedupeRecords 过滤 run_id 替代 loadRunRecords（因 run_id.json 可能不存在）
+[TDD-REFACTOR] 无需重构 ✓
+
+## T5.1-T5.2 测试与回归
+[TDD-GREEN] scoring/scores/__tests__/format-table.test.ts 6 tests passed；npm run test:scoring 271 passed
+[TDD-REFACTOR] 无需重构 ✓
+
+## 验收结果
+- npx ts-node scripts/scores-summary.ts ✓
+- npx ts-node scripts/scores-summary.ts --epic 3 ✓
+- npx ts-node scripts/scores-summary.ts --story 3.1 ✓
+- npx ts-node scripts/coach-diagnose.ts --epic 3 ✓
+- npx ts-node scripts/coach-diagnose.ts --story 3.1 ✓
+- npm run test:scoring ✓

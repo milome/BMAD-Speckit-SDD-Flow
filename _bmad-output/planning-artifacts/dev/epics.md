@@ -79,6 +79,7 @@
 | 7.1 | 仪表盘生成器：项目健康度总分、四维雷达图、短板 Top 3、Veto 统计、趋势，输出到 _bmad-output/dashboard.md | E6 | 1.5d | 低 |
 | 7.2 | SFT 提取 Command：/bmad-sft-extract 无参数、阈值可配置、git diff fallback、去重、JSONL 输出 | E5.5 | 1d | 中 |
 | 7.3 | SFT 纳入 bmad-eval-analytics Skill：自然语言触发「提取微调数据集」 | E7.2 | 0.5d | 低 |
+| 7.4 | Coach discovery 仅 real_dev：discovery/Coach 加 scenario 过滤，`--scenario real_dev` 或默认仅诊断 real_dev | E6 | 0.5d | 低 |
 
 ### Epic 8：eval-question-bank
 
@@ -616,6 +617,25 @@ E1-E4 (已完成)
 | # | Scenario | Given | When | Then |
 |---|----------|-------|------|------|
 | AC-1 | 自然语言触发 | bmad-eval-analytics Skill 已加载 | 用户说「提取微调数据集」 | Skill 调用 SFT 提取逻辑并输出摘要 |
+
+---
+
+### Story 7.4: Coach discovery 仅 real_dev
+
+**Summary:** discovery/Coach 加 scenario 过滤，无参或 `--scenario real_dev` 时仅诊断 real_dev 评分数据，排除 eval_question sample
+
+**As a** 日常开发者（Dev）  
+**I want to** 运行 `/bmad-coach` 时默认仅诊断 real_dev 的 run  
+**so that** eval_question 等 sample 不会被误选为「最新一轮」，诊断结果反映真实 Dev Story 产出
+
+**Acceptance Criteria:**
+
+| # | Scenario | Given | When | Then |
+|---|----------|-------|------|------|
+| AC-1 | 默认仅 real_dev | 存在 real_dev 与 eval_question 评分记录 | 用户运行 `/bmad-coach` 无参 | discovery 只考虑 scenario=real_dev，返回最新 real_dev run_id |
+| AC-2 | 显式指定 scenario | 存在多种 scenario 记录 | 用户运行 `--scenario real_dev` 或 `--scenario eval_question` | 仅诊断指定 scenario 的记录 |
+| AC-3 | 无 real_dev 数据 | 仅有 eval_question 记录 | 用户运行 `/bmad-coach` 默认 | 返回「暂无 real_dev 评分数据，请先完成至少一轮 Dev Story」 |
+| AC-4 | 向后兼容 | — | 用户显式 `--run-id=xxx` | 跳过 discovery，直接诊断指定 run_id（不校验 scenario） |
 
 ---
 
