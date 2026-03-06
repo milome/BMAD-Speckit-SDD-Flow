@@ -5,10 +5,15 @@ import * as os from 'os';
 import { discoverLatestRunId } from '../discovery';
 import type { RunScoreRecord } from '../../writer/types';
 
-function makeRecord(runId: string, stage: string, timestamp?: string): RunScoreRecord {
+function makeRecord(
+  runId: string,
+  stage: string,
+  timestamp?: string,
+  scenario: 'real_dev' | 'eval_question' = 'real_dev'
+): RunScoreRecord {
   return {
     run_id: runId,
-    scenario: 'real_dev',
+    scenario,
     stage,
     phase_score: 80,
     phase_weight: 0.2,
@@ -124,6 +129,82 @@ describe('discoverLatestRunId', () => {
     );
 
     const result = discoverLatestRunId(dataPath);
+    expect(result).toBeNull();
+
+    fs.rmSync(dataPath, { recursive: true, force: true });
+  });
+
+  it('filters by scenarioFilter real_dev: returns only real_dev latest', () => {
+    const runIdReal = `discovery-scenario-real-${Date.now()}`;
+    const runIdEval = `discovery-scenario-eval-${Date.now()}`;
+    const dataPath = path.join(os.tmpdir(), `discovery-scenario-${Date.now()}`);
+    fs.mkdirSync(dataPath, { recursive: true });
+    const tReal = '2026-01-03T00:00:00.000Z';
+    const tEval = '2026-01-05T00:00:00.000Z';
+    const lines = [
+      JSON.stringify(makeRecord(runIdReal, 'plan', tReal, 'real_dev')),
+      JSON.stringify(makeRecord(runIdEval, 'implement', tEval, 'eval_question')),
+    ].join('\n');
+    fs.writeFileSync(path.join(dataPath, 'scores.jsonl'), `${lines}\n`, 'utf-8');
+
+    const result = discoverLatestRunId(dataPath, 100, 'real_dev');
+    expect(result).not.toBeNull();
+    expect(result!.runId).toBe(runIdReal);
+
+    fs.rmSync(dataPath, { recursive: true, force: true });
+  });
+
+  it('filters by scenarioFilter eval_question: returns only eval_question latest', () => {
+    const runIdReal = `discovery-scenario-real2-${Date.now()}`;
+    const runIdEval = `discovery-scenario-eval2-${Date.now()}`;
+    const dataPath = path.join(os.tmpdir(), `discovery-scenario2-${Date.now()}`);
+    fs.mkdirSync(dataPath, { recursive: true });
+    const tReal = '2026-01-03T00:00:00.000Z';
+    const tEval = '2026-01-05T00:00:00.000Z';
+    const lines = [
+      JSON.stringify(makeRecord(runIdReal, 'plan', tReal, 'real_dev')),
+      JSON.stringify(makeRecord(runIdEval, 'implement', tEval, 'eval_question')),
+    ].join('\n');
+    fs.writeFileSync(path.join(dataPath, 'scores.jsonl'), `${lines}\n`, 'utf-8');
+
+    const result = discoverLatestRunId(dataPath, 100, 'eval_question');
+    expect(result).not.toBeNull();
+    expect(result!.runId).toBe(runIdEval);
+
+    fs.rmSync(dataPath, { recursive: true, force: true });
+  });
+
+  it('no scenarioFilter: returns latest across all scenarios (backward compatible)', () => {
+    const runIdReal = `discovery-noFilter-real-${Date.now()}`;
+    const runIdEval = `discovery-noFilter-eval-${Date.now()}`;
+    const dataPath = path.join(os.tmpdir(), `discovery-noFilter-${Date.now()}`);
+    fs.mkdirSync(dataPath, { recursive: true });
+    const tReal = '2026-01-03T00:00:00.000Z';
+    const tEval = '2026-01-05T00:00:00.000Z';
+    const lines = [
+      JSON.stringify(makeRecord(runIdReal, 'plan', tReal, 'real_dev')),
+      JSON.stringify(makeRecord(runIdEval, 'implement', tEval, 'eval_question')),
+    ].join('\n');
+    fs.writeFileSync(path.join(dataPath, 'scores.jsonl'), `${lines}\n`, 'utf-8');
+
+    const result = discoverLatestRunId(dataPath);
+    expect(result).not.toBeNull();
+    expect(result!.runId).toBe(runIdEval);
+
+    fs.rmSync(dataPath, { recursive: true, force: true });
+  });
+
+  it('scenarioFilter with no matching records returns null', () => {
+    const runIdEval = `discovery-only-eval-${Date.now()}`;
+    const dataPath = path.join(os.tmpdir(), `discovery-only-eval-${Date.now()}`);
+    fs.mkdirSync(dataPath, { recursive: true });
+    fs.writeFileSync(
+      path.join(dataPath, 'scores.jsonl'),
+      JSON.stringify(makeRecord(runIdEval, 'plan', undefined, 'eval_question')) + '\n',
+      'utf-8'
+    );
+
+    const result = discoverLatestRunId(dataPath, 100, 'real_dev');
     expect(result).toBeNull();
 
     fs.rmSync(dataPath, { recursive: true, force: true });

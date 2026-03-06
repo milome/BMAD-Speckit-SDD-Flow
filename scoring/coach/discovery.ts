@@ -88,13 +88,21 @@ function loadAllRecords(dataPath: string): RunScoreRecord[] {
  *
  * @param dataPath - 数据根路径（通常 getScoringDataPath()）
  * @param limit - 最多考虑的记录数，默认 100
+ * @param scenarioFilter - 可选。'real_dev' | 'eval_question' | 'all' | undefined
+ *   - undefined 或 'all'：不过滤 scenario（向后兼容）
+ *   - 'real_dev'：仅考虑 scenario=real_dev
+ *   - 'eval_question'：仅考虑 scenario=eval_question
  * @returns { runId, truncated } 或 null（无记录时）
  */
 export function discoverLatestRunId(
   dataPath: string,
-  limit: number = DEFAULT_LIMIT
+  limit: number = DEFAULT_LIMIT,
+  scenarioFilter?: 'real_dev' | 'eval_question' | 'all'
 ): { runId: string; truncated: boolean } | null {
-  const records = loadAllRecords(dataPath);
+  let records = loadAllRecords(dataPath);
+  if (scenarioFilter != null && scenarioFilter !== 'all') {
+    records = records.filter((r) => r.scenario === scenarioFilter);
+  }
   if (records.length === 0) return null;
 
   const sorted = records.sort((a, b) => {

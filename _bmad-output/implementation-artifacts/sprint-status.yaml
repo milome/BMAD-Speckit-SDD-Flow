@@ -72,18 +72,19 @@ development_status:
   epic-5-retrospective: optional
 
   # eval-ux-last-mile (E6→E7→E8)
-  epic-6: in-progress
+  epic-6: done
   6-1-coach-command-no-args: done
   6-2-coach-epic-story-filter: done
-  6-3-scoring-query-layer: backlog
-  6-4-scores-command: backlog
-  6-5-bmad-eval-analytics-skill: backlog
-  epic-6-retrospective: optional
+  6-3-scoring-query-layer: done
+  6-4-scores-command: done
+  6-5-bmad-eval-analytics-skill: done
+  epic-6-retrospective: done
 
-  epic-7: backlog
-  7-1-dashboard-generator: backlog
-  7-2-sft-extract-command: backlog
-  7-3-sft-bmad-eval-analytics-skill: backlog
+  epic-7: in-progress
+  7-1-dashboard-generator: done
+  7-2-sft-extract-command: done
+  7-3-sft-bmad-eval-analytics-skill: done
+  7-4-coach-discovery-real-dev-only: done
   epic-7-retrospective: optional
 
   epic-8: backlog

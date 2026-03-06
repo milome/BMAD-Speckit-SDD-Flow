@@ -8,8 +8,14 @@
  *   npx ts-node scripts/coach-diagnose.ts --limit 50          # discovery 最多考虑 50 条
  */
 import { coachDiagnose, discoverLatestRunId, formatToMarkdown } from '../scoring/coach';
-import { filterByEpicStory } from '../scoring/coach/filter-epic-story';
 import { getScoringDataPath } from '../scoring/constants/path';
+import {
+  queryByEpic,
+  queryByStory,
+  queryLatest,
+  parseEpicStoryFromRecord,
+} from '../scoring/query';
+import { loadAndDedupeRecords } from '../scoring/query/loader';
 
 function parseArgs(argv: string[]): Record<string, string> {
   const args: Record<string, string> = {};
@@ -38,6 +44,8 @@ function parseArgs(argv: string[]): Record<string, string> {
 }
 
 const EMPTY_DATA_MESSAGE = '暂无评分数据，请先完成至少一轮 Dev Story';
+const EMPTY_REAL_DEV_MESSAGE = '暂无 real_dev 评分数据，请先完成至少一轮 Dev Story';
+const EMPTY_EVAL_QUESTION_MESSAGE = '暂无 eval_question 评分数据';
 const DEFAULT_LIMIT = 100;
 
 async function main(): Promise<void> {
@@ -54,6 +62,14 @@ async function main(): Promise<void> {
     console.error(`Invalid --format value: ${format}. Expected json or markdown.`);
     process.exit(1);
   }
+
+  const scenarioArg = (args.scenario ?? args['scenario'] ?? 'real_dev').toLowerCase();
+  if (scenarioArg !== 'real_dev' && scenarioArg !== 'eval_question' && scenarioArg !== 'all') {
+    console.error(`Invalid --scenario value: ${scenarioArg}. Expected real_dev, eval_question, or all.`);
+    process.exit(1);
+  }
+  const scenarioFilter: 'real_dev' | 'eval_question' | undefined =
+    scenarioArg === 'all' ? undefined : scenarioArg === 'eval_question' ? 'eval_question' : 'real_dev';
 
   const epicArg = args.epic ?? args['epic'];
   const storyArg = args.story ?? args['story'];
@@ -78,18 +94,48 @@ async function main(): Promise<void> {
 
   if (epicArg != null || storyArg != null) {
     const epicId = epicArg != null ? parseInt(String(epicArg), 10) : undefined;
-    const storyId = storyArg != null ? (() => {
-      const parts = String(storyArg).split('.');
-      return parseInt(parts[1]!, 10);
-    })() : undefined;
-    const epicForStory = storyArg != null ? parseInt(String(storyArg).split('.')[0]!, 10) : epicId;
-    const filter = { epicId: epicForStory, storyId };
-    const filtered = filterByEpicStory(dataPath, filter);
-    if ('error' in filtered) {
-      console.log(filtered.error);
+    const storyId = storyArg != null
+      ? parseInt(String(storyArg).split('.')[1]!, 10)
+      : undefined;
+    const epicForStory = storyArg != null
+      ? parseInt(String(storyArg).split('.')[0]!, 10)
+      : epicId!;
+    const records =
+      storyArg != null
+        ? queryByStory(epicForStory, storyId!, dataPath)
+        : queryByEpic(epicForStory, dataPath);
+    if (records.length === 0) {
+      const latest = queryLatest(1, dataPath);
+      if (latest.length === 0) {
+        console.log(EMPTY_DATA_MESSAGE);
+      } else {
+        const all = loadAndDedupeRecords(dataPath);
+        const realDev = all.filter((r) => r.scenario !== 'eval_question');
+        const hasParsable = realDev.some((r) => parseEpicStoryFromRecord(r) != null);
+        console.log(
+          hasParsable
+            ? '无可筛选数据'
+            : '当前评分记录无可解析 Epic/Story，请确认 run_id 约定'
+        );
+      }
       process.exit(0);
     }
-    const result = await coachDiagnose(filtered.runId, { dataPath, records: filtered.records });
+    let latestRunId = records[0]!.run_id;
+    let latestTs = new Date(records[0]!.timestamp).getTime();
+    for (const r of records) {
+      const t = new Date(r.timestamp).getTime();
+      if (t > latestTs) {
+        latestTs = t;
+        latestRunId = r.run_id;
+      }
+    }
+    const allRecords = loadAndDedupeRecords(dataPath).filter(
+      (r) => r.run_id === latestRunId
+    );
+    const result = await coachDiagnose(latestRunId, {
+      dataPath,
+      records: allRecords,
+    });
     if ('error' in result) {
       console.error(JSON.stringify(result, null, 2));
       process.exit(1);
@@ -106,9 +152,15 @@ async function main(): Promise<void> {
   let truncated = false;
 
   if (effectiveRunId == null) {
-    const discovered = discoverLatestRunId(dataPath, limit);
+    const discovered = discoverLatestRunId(dataPath, limit, scenarioFilter);
     if (discovered == null) {
-      console.log(EMPTY_DATA_MESSAGE);
+      const emptyMsg =
+        scenarioFilter === 'real_dev'
+          ? EMPTY_REAL_DEV_MESSAGE
+          : scenarioFilter === 'eval_question'
+            ? EMPTY_EVAL_QUESTION_MESSAGE
+            : EMPTY_DATA_MESSAGE;
+      console.log(emptyMsg);
       process.exit(0);
     }
     effectiveRunId = discovered.runId;

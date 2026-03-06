@@ -27,6 +27,7 @@ description: AI Coach 诊断：基于最近一轮评分数据输出 phase_scores
 ## 可选参数
 
 - `--run-id <id>`：指定 run_id，跳过 discovery
+- `--scenario real_dev|eval_question|all`：discovery 时按 scenario 过滤；默认 `real_dev`（仅诊断真实 Dev Story）；`all` 表示不过滤
 - `--epic N`：仅诊断 Epic N 相关数据（Story 6.2）
 - `--story X.Y`：仅诊断 Story X.Y（解析为 epicId=X, storyId=Y）；与 `--epic` 互斥
 - `--format json|markdown`：默认 markdown
