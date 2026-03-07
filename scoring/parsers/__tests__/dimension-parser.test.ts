@@ -70,4 +70,40 @@ describe('dimension-parser', () => {
     const missingPath = path.join(process.cwd(), 'config', 'code-reviewer-config.not-exists.yaml');
     expect(parseDimensionScores(content, 'prd', missingPath)).toEqual([]);
   });
+
+  it('parses implement report with four code dimensions (audit-prompts §5.1)', () => {
+    const content = fs.readFileSync(
+      path.join(FIXTURES, 'sample-implement-report-with-four-dimensions.md'),
+      'utf-8'
+    );
+    const scores = parseDimensionScores(content, 'code');
+
+    expect(scores.length).toBe(4);
+    const dimNames = scores.map((s) => s.dimension);
+    expect(dimNames).toContain('功能性');
+    expect(dimNames).toContain('代码质量');
+    expect(dimNames).toContain('测试覆盖');
+    expect(dimNames).toContain('安全性');
+
+    expect(scores.find((s) => s.dimension === '功能性')).toEqual({
+      dimension: '功能性',
+      weight: 30,
+      score: 85,
+    });
+    expect(scores.find((s) => s.dimension === '代码质量')).toEqual({
+      dimension: '代码质量',
+      weight: 30,
+      score: 82,
+    });
+    expect(scores.find((s) => s.dimension === '测试覆盖')).toEqual({
+      dimension: '测试覆盖',
+      weight: 20,
+      score: 78,
+    });
+    expect(scores.find((s) => s.dimension === '安全性')).toEqual({
+      dimension: '安全性',
+      weight: 20,
+      score: 90,
+    });
+  });
 });

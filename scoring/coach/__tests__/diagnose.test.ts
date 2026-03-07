@@ -163,6 +163,35 @@ describe('coachDiagnose fallback', () => {
     fs.rmSync(dataPath, { recursive: true, force: true });
   });
 
+  it('Story 9.4: includes stage_evolution_traces when records have iteration_records with overall_grade', async () => {
+    const runId = `coach-evolution-${Date.now()}`;
+    const records: RunScoreRecord[] = [
+      {
+        run_id: runId,
+        scenario: 'real_dev',
+        stage: 'spec',
+        phase_score: 85,
+        phase_weight: 0.25,
+        check_items: [{ item_id: 'x', passed: true, score_delta: 0 }],
+        timestamp: new Date().toISOString(),
+        iteration_count: 2,
+        iteration_records: [
+          { timestamp: '2026-03-06T10:00:00Z', result: 'fail', severity: 'normal', overall_grade: 'C' },
+          { timestamp: '2026-03-06T11:00:00Z', result: 'fail', severity: 'minor', overall_grade: 'B' },
+          { timestamp: '2026-03-06T12:00:00Z', result: 'pass', severity: 'normal', overall_grade: 'A' },
+        ],
+        first_pass: false,
+      },
+    ];
+
+    const result = await coachDiagnose(runId, { records });
+    if ('error' in result) {
+      throw new Error(`unexpected error: ${result.error}`);
+    }
+    expect(result.stage_evolution_traces).toBeDefined();
+    expect(result.stage_evolution_traces!.spec).toBe('第1轮 C → 第2轮 B → 第3轮 A');
+  });
+
   it('documents iteration_passed formula source from VETO_AND_ITERATION_RULES §3.4.2', () => {
     const sourcePath = path.resolve(process.cwd(), 'scoring', 'coach', 'diagnose.ts');
     const source = fs.readFileSync(sourcePath, 'utf-8');

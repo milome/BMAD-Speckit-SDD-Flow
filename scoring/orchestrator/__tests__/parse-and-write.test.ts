@@ -367,6 +367,76 @@ PRD审计报告
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
+  it('T1: stage=implement + artifactDocPath=tasks path → source_path=reportPath', async () => {
+    const reportPath = path.join(FIXTURES, 'sample-prd-report.md');
+    const tasksPath = 'specs/epic-9/story-2-slug/tasks-E9-S2.md';
+    const tempDir = path.join(os.tmpdir(), `scoring-t1-tasks-${Date.now()}`);
+    const runId = `test-t1-tasks-${Date.now()}`;
+
+    await parseAndWriteScore({
+      reportPath,
+      stage: 'implement',
+      runId,
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+      artifactDocPath: tasksPath,
+      skipAutoHash: true,
+    });
+
+    const filePath = path.join(tempDir, `${runId}.json`);
+    const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    const expectedReportPath = path.isAbsolute(reportPath)
+      ? reportPath
+      : path.resolve(process.cwd(), reportPath);
+    expect(written.source_path).toBe(expectedReportPath);
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('T1: stage=implement + artifactDocPath=BUGFIX path → source_path=artifactDocPath', async () => {
+    const reportPath = path.join(FIXTURES, 'sample-prd-report.md');
+    const bugfixPath = '_bmad-output/implementation-artifacts/_orphan/BUGFIX_xxx.md';
+    const tempDir = path.join(os.tmpdir(), `scoring-t1-bugfix-${Date.now()}`);
+    const runId = `test-t1-bugfix-${Date.now()}`;
+
+    await parseAndWriteScore({
+      reportPath,
+      stage: 'implement',
+      runId,
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+      artifactDocPath: bugfixPath,
+      skipAutoHash: true,
+    });
+
+    const filePath = path.join(tempDir, `${runId}.json`);
+    const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    expect(written.source_path).toBe(bugfixPath);
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('T1: stage=implement + artifactDocPath not passed → no source_path', async () => {
+    const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
+    const tempDir = path.join(os.tmpdir(), `scoring-t1-noart-${Date.now()}`);
+    const runId = `test-t1-noart-${Date.now()}`;
+
+    await parseAndWriteScore({
+      content,
+      stage: 'implement',
+      runId,
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+      skipAutoHash: true,
+    });
+
+    const filePath = path.join(tempDir, `${runId}.json`);
+    const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    expect(written.source_path).toBeUndefined();
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
   it('overlays iteration_count and first_pass when iteration_count is passed (ITER-02)', async () => {
     const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
     const tempDir = path.join(os.tmpdir(), `scoring-iter-${Date.now()}`);
@@ -421,6 +491,242 @@ PRD审计报告
     expect(written.iteration_count).toBe(0);
     expect(written.first_pass).toBe(true);
     expect(written.tier_coefficient).toBe(1);
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('T5: parses stage=tasks checklist-style report (table+conclusion+parseable block)', async () => {
+    const content = fs.readFileSync(path.join(FIXTURES, 'sample-tasks-report-checklist-style.md'), 'utf-8');
+    const tempDir = path.join(os.tmpdir(), `scoring-tasks-checklist-${Date.now()}`);
+    const runId = `test-tasks-checklist-${Date.now()}`;
+
+    await parseAndWriteScore({
+      content,
+      stage: 'tasks',
+      runId,
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+      skipAutoHash: true,
+    });
+
+    const filePath = path.join(tempDir, `${runId}.json`);
+    expect(fs.existsSync(filePath)).toBe(true);
+    const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    expect(written.run_id).toBe(runId);
+    expect(written.stage).toBe('tasks');
+    expect(written.phase_score).toBeDefined();
+    expect(typeof written.phase_score).toBe('number');
+    expect(written.dimension_scores).toBeInstanceOf(Array);
+    expect(written.dimension_scores.length).toBe(4);
+    const dimNames = (written.dimension_scores as Array<{ dimension: string; score: number }>).map((d) => d.dimension);
+    expect(dimNames).toContain('需求完整性');
+    expect(dimNames).toContain('可测试性');
+    expect(dimNames).toContain('一致性');
+    expect(dimNames).toContain('可追溯性');
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('parses stage=tasks 逐条对照 report with table+conclusion+parseable block (T5)', async () => {
+    const content = fs.readFileSync(
+      path.join(FIXTURES, 'sample-tasks-report-逐条对照.md'),
+      'utf-8'
+    );
+    const tempDir = path.join(os.tmpdir(), `scoring-tasks-逐条-${Date.now()}`);
+    const runId = `test-tasks-逐条-${Date.now()}`;
+
+    await parseAndWriteScore({
+      content,
+      stage: 'tasks',
+      runId,
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+      skipAutoHash: true,
+    });
+
+    const filePath = path.join(tempDir, `${runId}.json`);
+    expect(fs.existsSync(filePath)).toBe(true);
+    const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    expect(written.run_id).toBe(runId);
+    expect(written.stage).toBe('tasks');
+    expect(written.phase_score).toBeDefined();
+    expect(written.dimension_scores).toBeInstanceOf(Array);
+    expect(written.dimension_scores.length).toBe(4);
+    expect(written.phase_score).toBeGreaterThan(0);
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('E9-S1 T4/T4b: writes trigger_stage when triggerStage option is passed', async () => {
+    const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
+    const tempDir = path.join(os.tmpdir(), `scoring-e9s1-trigger-${Date.now()}`);
+    const runId = `test-trigger-${Date.now()}`;
+
+    await parseAndWriteScore({
+      content,
+      stage: 'tasks',
+      runId,
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+      skipAutoHash: true,
+      triggerStage: 'speckit_5_2',
+    });
+
+    const filePath = path.join(tempDir, `${runId}.json`);
+    expect(fs.existsSync(filePath)).toBe(true);
+    const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    expect(written.run_id).toBe(runId);
+    expect(written.stage).toBe('tasks');
+    expect(written.trigger_stage).toBe('speckit_5_2');
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('Story 9.4: iterationReportPaths 2 fail + 1 pass → 3 iteration_records', async () => {
+    const tempDir = path.join(os.tmpdir(), `scoring-e9s4-iter-${Date.now()}`);
+    fs.mkdirSync(tempDir, { recursive: true });
+    const fail1 = path.join(tempDir, 'AUDIT_spec-E9-S4_round1.md');
+    const fail2 = path.join(tempDir, 'AUDIT_spec-E9-S4_round2.md');
+    const passContent = fs.readFileSync(path.join(FIXTURES, 'sample-spec-report.md'), 'utf-8');
+    fs.writeFileSync(fail1, `Spec 审计 round1\n总体评级: C\n维度评分:\n- 需求完整性: 60/100\n问题清单:\n1. [严重程度:高] 遗漏需求`);
+    fs.writeFileSync(fail2, `Spec 审计 round2\n总体评级: B\n维度评分:\n- 需求完整性: 75/100\n问题清单:\n1. [严重程度:中] 描述不清`);
+    const passPath = path.join(tempDir, 'AUDIT_spec-E9-S4_pass.md');
+    fs.writeFileSync(passPath, passContent);
+    const runId = `test-iter-e9s4-${Date.now()}`;
+
+    await parseAndWriteScore({
+      reportPath: passPath,
+      stage: 'spec',
+      runId,
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+      skipAutoHash: true,
+      iterationReportPaths: [fail1, fail2],
+    });
+
+    const filePath = path.join(tempDir, `${runId}.json`);
+    const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    expect(written.iteration_records).toHaveLength(3);
+    expect(written.iteration_records[0].result).toBe('fail');
+    expect(written.iteration_records[0].overall_grade).toBe('C');
+    expect(written.iteration_records[1].result).toBe('fail');
+    expect(written.iteration_records[1].overall_grade).toBe('B');
+    expect(written.iteration_records[2].result).toBe('pass');
+    expect(written.iteration_records[2].overall_grade).toBe('B');
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('Story 9.4: iteration_records empty when iterationReportPaths not passed', async () => {
+    const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
+    const tempDir = path.join(os.tmpdir(), `scoring-e9s4-noiter-${Date.now()}`);
+    const runId = `test-noiter-${Date.now()}`;
+    await parseAndWriteScore({
+      content,
+      stage: 'prd',
+      runId,
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+      skipAutoHash: true,
+    });
+    const written = JSON.parse(fs.readFileSync(path.join(tempDir, `${runId}.json`), 'utf-8'));
+    expect(written.iteration_records).toEqual([]);
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('Story 9.4: iteration_records empty when scenario=eval_question even with iterationReportPaths', async () => {
+    const tempDir = path.join(os.tmpdir(), `scoring-e9s4-eval-${Date.now()}`);
+    fs.mkdirSync(tempDir, { recursive: true });
+    const fail1 = path.join(tempDir, 'round1.md');
+    fs.writeFileSync(fail1, `总体评级: C\n问题清单:\n1. [严重程度:高] x`);
+    const passContent = fs.readFileSync(path.join(FIXTURES, 'sample-story-report.md'), 'utf-8');
+    const passPath = path.join(tempDir, 'pass.md');
+    fs.writeFileSync(passPath, passContent);
+    const runId = `test-eval-iter-${Date.now()}`;
+
+    await parseAndWriteScore({
+      reportPath: passPath,
+      stage: 'story',
+      runId,
+      scenario: 'eval_question',
+      question_version: 'v1',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+      skipAutoHash: true,
+      iterationReportPaths: [fail1],
+    });
+
+    const written = JSON.parse(fs.readFileSync(path.join(tempDir, `${runId}.json`), 'utf-8'));
+    expect(written.iteration_records).toEqual([]);
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('T1: stage=implement + artifactDocPath=tasks path → source_path=reportPath', async () => {
+    const reportPath = path.join(FIXTURES, 'sample-prd-report.md');
+    const tempDir = path.join(os.tmpdir(), `scoring-t1-tasks-${Date.now()}`);
+    const runId = `test-t1-tasks-${Date.now()}`;
+
+    await parseAndWriteScore({
+      reportPath,
+      stage: 'implement',
+      runId,
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+      artifactDocPath: 'specs/epic-9/story-2-xxx/tasks-E9-S2.md',
+      skipAutoHash: true,
+    });
+
+    const filePath = path.join(tempDir, `${runId}.json`);
+    const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    const expectedReportPath = path.isAbsolute(reportPath)
+      ? reportPath
+      : path.resolve(process.cwd(), reportPath);
+    expect(written.source_path).toBe(expectedReportPath);
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('T1: stage=implement + artifactDocPath=BUGFIX path → source_path=artifactDocPath', async () => {
+    const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
+    const tempDir = path.join(os.tmpdir(), `scoring-t1-bugfix-${Date.now()}`);
+    const runId = `test-t1-bugfix-${Date.now()}`;
+    const bugfixPath = '_bmad-output/implementation-artifacts/_orphan/BUGFIX_xxx.md';
+
+    await parseAndWriteScore({
+      content,
+      stage: 'implement',
+      runId,
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+      artifactDocPath: bugfixPath,
+      skipAutoHash: true,
+    });
+
+    const filePath = path.join(tempDir, `${runId}.json`);
+    const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    expect(written.source_path).toBe(bugfixPath);
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('T1: stage=implement + artifactDocPath not provided → no source_path', async () => {
+    const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
+    const tempDir = path.join(os.tmpdir(), `scoring-t1-no-artifact-${Date.now()}`);
+    const runId = `test-t1-no-artifact-${Date.now()}`;
+
+    await parseAndWriteScore({
+      content,
+      stage: 'implement',
+      runId,
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+      skipAutoHash: true,
+    });
+
+    const filePath = path.join(tempDir, `${runId}.json`);
+    const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    expect(written.source_path).toBeUndefined();
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 

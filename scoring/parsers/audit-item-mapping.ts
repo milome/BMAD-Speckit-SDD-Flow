@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import yaml from 'js-yaml';
 
-export type AuditStage = 'prd' | 'arch' | 'story' | 'spec' | 'plan' | 'tasks';
+export type AuditStage = 'prd' | 'arch' | 'story' | 'spec' | 'plan' | 'tasks' | 'implement';
 
 interface MappingCheck {
   text?: string;
@@ -39,6 +39,7 @@ function loadMapping(): Record<string, StageMapping> {
       spec: { checks: [] },
       plan: { checks: [] },
       tasks: { checks: [] },
+      implement: { checks: [] },
     };
     return cachedMapping;
   }
@@ -46,7 +47,7 @@ function loadMapping(): Record<string, StageMapping> {
   const doc = yaml.load(content) as Record<string, unknown>;
   const result: Record<string, StageMapping> = {};
 
-  for (const stage of ['prd', 'arch', 'story', 'spec', 'plan', 'tasks']) {
+  for (const stage of ['prd', 'arch', 'story', 'spec', 'plan', 'tasks', 'implement']) {
     const stageDoc = doc[stage] as Record<string, unknown> | undefined;
     const checks: Array<{ patterns: string[]; item_id: string }> = [];
 

@@ -51,6 +51,24 @@ describe('formatDashboardMarkdown', () => {
     expect(out).toContain('（无数据）');
   });
 
+  it('Story 9.4: appends evolution_trace to weakTop3 and highIterTop3 when present', () => {
+    const data = {
+      healthScore: 70,
+      dimensions: [],
+      weakTop3: [
+        { stage: 'spec', epicStory: 'E9.S4', score: 60, evolution_trace: '第1轮 C → 第2轮 B' },
+      ],
+      highIterTop3: [
+        { stage: 'spec', epicStory: 'E9.S4', iteration_count: 2, evolution_trace: '第1轮 C → 第2轮 B → 第3轮 A' },
+      ],
+      vetoCount: 0,
+      trend: '持平' as const,
+    };
+    const out = formatDashboardMarkdown(data);
+    expect(out).toContain('E9.S4 spec: 60 分（第1轮 C → 第2轮 B）');
+    expect(out).toContain('E9.S4 spec: 2 轮整改（第1轮 C → 第2轮 B → 第3轮 A）');
+  });
+
   it('shows 各 stage 均为一次通过 when highIterTop3 is empty (US-007)', () => {
     const data = {
       healthScore: 70,

@@ -1,3 +1,40 @@
-# 题库 v1 manifest
-# Schema: see scoring/eval-questions/MANIFEST_SCHEMA.md
-questions: []
+questions:
+  - id: q001
+    title: refactor-scoring
+    path: q001-refactor-scoring.md
+  - id: q002
+    title: bugfix-veto-logic
+    path: q002-bugfix-veto-logic.md
+  - id: q003
+    title: refactor-scoring
+    path: q003-refactor-scoring.md
+  - id: q004
+    title: audit-test-question
+    path: q004-audit-test-question.md
+  - id: gen-1772860446747-0
+    title: 如何改进 spec 阶段的短板
+    path: gen-1772860446747-0-spec.md
+  - id: gen-1772860446747-1
+    title: 如何改进 plan 阶段的短板
+    path: gen-1772860446747-1-plan.md
+  - id: gen-1772860446747-2
+    title: 如何提升 spec,plan 的 需求,覆盖
+    path: gen-1772860446747-2-specplan.md
+  - id: gen-1772860719459-0
+    title: 如何改进 spec 阶段的短板
+    path: gen-1772860719459-0-spec.md
+  - id: gen-1772860719459-1
+    title: 如何改进 plan 阶段的短板
+    path: gen-1772860719459-1-plan.md
+  - id: gen-1772860719459-2
+    title: 如何提升 spec,plan 的 需求,覆盖
+    path: gen-1772860719459-2-specplan.md
+  - id: gen-1772862017847-0
+    title: 如何改进 spec 阶段的短板
+    path: gen-1772862017847-0-spec.md
+  - id: gen-1772862017847-1
+    title: 如何改进 plan 阶段的短板
+    path: gen-1772862017847-1-plan.md
+  - id: gen-1772862017847-2
+    title: 如何提升 spec,plan 的 需求,覆盖
+    path: gen-1772862017847-2-specplan.md

@@ -33,6 +33,18 @@ export function formatToMarkdown(report: CoachDiagnosisReport): string {
         })()
       : [];
 
+  const evolutionSection =
+    report.stage_evolution_traces != null && Object.keys(report.stage_evolution_traces).length > 0
+      ? [
+          '',
+          '## 演进轨迹（Story 9.4）',
+          '',
+          ...Object.entries(report.stage_evolution_traces).map(
+            ([stage, trace]) => `- ${stage}: ${trace}`
+          ),
+        ]
+      : [];
+
   return [
     '# AI Coach Diagnosis',
     '',
@@ -44,6 +56,7 @@ export function formatToMarkdown(report: CoachDiagnosisReport): string {
     '',
     'phase_score 已按整改轮次应用阶梯扣分。',
     ...iterationSection,
+    ...evolutionSection,
     '',
     '## Weak Areas',
     weakAreaLines,

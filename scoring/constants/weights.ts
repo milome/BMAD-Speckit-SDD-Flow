@@ -9,6 +9,9 @@ export const PHASE_WEIGHTS_SPEC = 0.2;
 export const PHASE_WEIGHTS_PLAN = 0.2;
 export const PHASE_WEIGHTS_TASKS = 0.2;
 
+/** Story 9.2: implement 环节 2 权重 25% */
+export const PHASE_WEIGHT_IMPLEMENT = 0.25;
+
 /**
  * 各环节满分
  */

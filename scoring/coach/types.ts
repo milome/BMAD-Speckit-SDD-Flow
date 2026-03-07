@@ -30,6 +30,8 @@ export interface CoachDiagnosisReport {
   summary: string;
   phase_scores: Record<string, number>;
   phase_iteration_counts?: Record<string, number>;
+  /** Story 9.4: 各 stage 的评分演进轨迹，如 "第1轮 C → 第2轮 B → 第3轮 A" */
+  stage_evolution_traces?: Record<string, string>;
   weak_areas: string[];
   recommendations: string[];
   iteration_passed: boolean;

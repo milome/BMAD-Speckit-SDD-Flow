@@ -34,7 +34,8 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 # epics_source: _bmad-output/planning-artifacts/dev/epics.md (E1-E8 统一)
-generated: "2026-03-05"
+# Sprint Planning 2026-03-06: Epic 8 纳入实施范围，激活 8.1、8.2、8.3 (Bob Scrum Master)
+generated: "2026-03-06"
 project: BMAD-Speckit-SDD-Flow
 project_key: NOKEY
 tracking_system: file-system
@@ -80,15 +81,22 @@ development_status:
   6-5-bmad-eval-analytics-skill: done
   epic-6-retrospective: done
 
-  epic-7: in-progress
+  epic-7: done
   7-1-dashboard-generator: done
   7-2-sft-extract-command: done
   7-3-sft-bmad-eval-analytics-skill: done
   7-4-coach-discovery-real-dev-only: done
-  epic-7-retrospective: optional
+  epic-7-retrospective: done
 
-  epic-8: backlog
-  8-1-question-bank-structure-manifest: backlog
-  8-2-question-bank-list-add: backlog
-  8-3-question-bank-run-eval-integration: backlog
+  epic-8: done
+  8-1-question-bank-structure-manifest: done
+  8-2-question-bank-list-add: done
+  8-3-question-bank-run-eval-integration: done
   epic-8-retrospective: optional
+
+  epic-9: in-progress
+  9-1-scoring-full-pipeline: done
+  9-2-stage-implement-extension: done
+  9-3-epic-dashboard-aggregate: done
+  9-4-iteration-score-evolution: done
+  9-5-speckit-full-stage-score-write: done

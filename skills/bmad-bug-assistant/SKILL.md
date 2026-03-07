@@ -1,4 +1,4 @@
-﻿---
+---
 name: bmad-bug-assistant
 description: |
   BMAD Bug 助手：按「根因分析 → BUGFIX 文档 → 审计 → 任务列表补充 → 实施 → 实施后审计」执行 BUG 修复全流程。主 Agent 发起任一子任务时**必须**将本 skill 内该阶段的「完整 prompt 模板」整段复制并填入占位符后传入，禁止省略、概括或自行改写提示词；主 Agent 禁止直接修改生产代码，实施须通过 mcp_task 子代理。使用 party-mode 或 mcp_task generalPurpose 进行**至少 100 轮**多角色辩论（BUGFIX 产出最终方案与 §7 任务列表，属 party-mode step-02「生成最终方案和最终任务列表」场景），满足收敛条件（共识 + 近 2–3 轮无新 gap）再结束；审计优先 code-reviewer，回退 mcp_task。遵循 ralph-method、TDD 红绿灯、speckit-workflow。适用场景：用户报告 BUG、要求根因分析、生成/更新 BUGFIX 文档、补充 §7 任务列表、实施 BUGFIX。全程中文。
@@ -468,6 +468,22 @@ Amelia 开发 的规范已在上方 5 条中列出，子代理按内联执行即
 | 目标 | 迭代至「完全覆盖、验证通过」 |
 
 **未通过时必做（禁止只跑一轮即结束）**：若审计结论为「**未通过**」或审计报告中列出未通过项及修改建议，主 Agent **必须**按修改建议执行（委托子代理修改代码或更新 BUGFIX/文档），然后**再次发起**实施后审计（使用同一模板 BUG-A4-POSTAUDIT）；重复「审计 → 若未通过则按建议修改 → 再审计」直至结论为「**完全覆盖、验证通过**」。禁止在结论为未通过时仅做一轮审计即结束或向用户报告完成。
+
+**审计通过后评分写入（必须执行）**：实施后审计结论为「完全覆盖、验证通过」后，主 Agent **必须**调用 `parseAndWriteScore` 将 implement 阶段评分写入 scoring 存储。当存在 BUGFIX 文档时，**必须**显式传入 `artifactDocPath=<BUGFIX 文档路径>`，以确保 `record.source_path` 正确指向 BUGFIX 文档（而非审计报告路径）。
+
+**CLI 调用示例**（在项目根目录执行）：
+```bash
+npx ts-node scripts/parse-and-write-score.ts \
+  --reportPath <审计报告路径> \
+  --stage implement \
+  --epic {epic} \
+  --story {story} \
+  --artifactDocPath <BUGFIX 文档路径> \
+  --iteration-count <累计失败轮数，0 表示一次通过> \
+  --skipTriggerCheck true
+```
+
+**路径约定**：`artifactDocPath` 取值与「产出路径约定」一致——有 story 时：`_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/BUGFIX_{slug}.md`；无 story 时：`_bmad-output/implementation-artifacts/_orphan/BUGFIX_{slug}.md`。
 
 **模板 ID**：BUG-A4-POSTAUDIT。**阶段四实施后审计完整 prompt 模板**（主 Agent 必须完整复制到审计子任务的 prompt 中）：
 

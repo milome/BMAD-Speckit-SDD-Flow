@@ -1,0 +1,1 @@
+{"weak_areas":["spec","plan"],"weakness_clusters":[{"cluster_id":"c1","primary_item_ids":[],"frequency":2,"keywords":["需求","覆盖"],"severity_distribution":{},"affected_stages":["spec","plan"]}]}

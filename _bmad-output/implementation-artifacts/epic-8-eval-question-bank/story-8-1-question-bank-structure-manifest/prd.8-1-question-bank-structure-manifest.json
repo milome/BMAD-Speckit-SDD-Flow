@@ -1,0 +1,65 @@
+{
+  "branchName": "ralph/eval-question-bank-manifest",
+  "taskDescription": "Story 8.1: 题库目录结构与 manifest schema、类型、加载器、版本隔离",
+  "projectContext": {
+    "framework": "TypeScript, Vitest",
+    "testCommand": "npm test",
+    "buildCommand": "npm run build"
+  },
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "建立目录结构 v1/v2 及 manifest.yaml",
+      "description": "确保 scoring/eval-questions/v1/、v2/ 存在；各含 manifest.yaml（questions: []）",
+      "acceptanceCriteria": [
+        "v1、v2 目录存在",
+        "各含 manifest.yaml，可解析为 { questions: [] }",
+        "Build/test passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "v1 已存在；新建 v2"
+    },
+    {
+      "id": "US-002",
+      "title": "manifest schema 类型与 loadManifest 加载器",
+      "description": "定义 EvalQuestionEntry、EvalQuestionManifest；实现 loadManifest(versionDir)，校验 id 唯一、path 存在",
+      "acceptanceCriteria": [
+        "TypeScript 类型与 MANIFEST_SCHEMA 一致",
+        "loadManifest 解析 YAML 并校验",
+        "非法 manifest 或 path 不存在时抛错",
+        "Build/test passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "使用 js-yaml；path 相对 manifest 所在目录"
+    },
+    {
+      "id": "US-003",
+      "title": "MANIFEST_SCHEMA.md 同步",
+      "description": "比对 MANIFEST_SCHEMA.md 与实现 schema；若不一致则更新",
+      "acceptanceCriteria": [
+        "文档与实现一一对应",
+        "§3 题目模板与 schema 无冲突",
+        "Build/test passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "版本隔离与单元/集成测试",
+      "description": "单元测试：loadManifest 解析、校验、版本隔离；集成：从生产模块 import、真实路径调用",
+      "acceptanceCriteria": [
+        "npx vitest run scoring/eval-questions 全部通过",
+        "npm test 通过",
+        "不修改 eval-question-flow.test.ts",
+        "Build/test passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "T4.1～T4.3"
+    }
+  ]
+}

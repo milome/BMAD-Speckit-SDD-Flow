@@ -17,6 +17,7 @@
 | E6 | eval-ux-coach-and-query | 用户体验层 Coach 与查询：零参数 Coach 诊断、Epic/Story 筛选、评分查询层、/bmad-scores、bmad-eval-analytics Skill | 5d | P0 |
 | E7 | eval-ux-dashboard-and-sft | 仪表盘与 SFT 提取：项目健康度、四维雷达图、短板 Top 3、/bmad-dashboard、/bmad-sft-extract、bmad-eval-analytics 扩展 | 4d | P1 |
 | E8 | eval-question-bank | 评测题库：manifest 目录结构、list/add 命令、run 与 eval_question 集成、版本隔离 | 3d | P2 |
+| E9 | feature-scoring-full-pipeline | 评分全链路写入与仪表盘聚合：bmad-story-assistant 阶段四 parse-and-write-score、仪表盘按 epic/story 聚合、Story 完成自检、run_id 共享策略 | 5d | P0 |
 
 ---
 
@@ -88,6 +89,16 @@
 | 8.1 | 题库目录结构与 manifest：scoring/eval-questions/v1/、manifest.yaml schema（id、title、path、difficulty、tags） | 无 | 0.5d | 低 |
 | 8.2 | 题库 list 与 add 命令：/bmad-eval-questions list、add --title，生成 q00X-{slug}.md 模板 | E8.1 | 0.5d | 低 |
 | 8.3 | 题库 run 命令与 eval_question 集成：run --id --version，scenario=eval_question、question_version 注入，run_id 含 version | E8.2 | 1d | 中 |
+
+### Epic 9：feature-scoring-full-pipeline
+
+| Story ID | 描述 | 依赖 | 预估工时 | 风险 |
+|----------|------|------|----------|------|
+| 9.1 | 评分全链路实施：T1～T9、T11。T12、T10 已在 Phase 0 完成 | 无 | 5d | 中 |
+| 9.2 | stage=implement 扩展（中期增强）：parse-and-write-score 支持 stage=implement，配套 implement 专用解析规则；当前采用 trigger_stage 短期方案，本 Story 为后续架构演进承接 | E9.1 | 待排期 | 低 |
+| 9.3 | Epic 级仪表盘聚合：仅传 --epic N 时展示 Epic 下多 Story 聚合视图，采用方案 A（Per-Story 总分后简单平均） | E9.1 | 2d | 低 |
+| 9.4 | 迭代评分演进存储：IterationRecord 新增 optional overall_grade、dimension_scores（scoring/writer/types.ts、run-score-schema.json）；parseAndWriteScore 支持 iterationReportPaths，pass 时一次性解析失败轮报告写入 iteration_records；CLI 新增 --iterationReportPaths；失败轮路径约定：AUDIT_{stage}-E{epic}-S{story}_round{N}.md 或 _orphan/AUDIT_{slug}_round{N}.md，验证轮报告不列入；Coach、仪表盘从 iteration_records 取 overall_grade 序列展示「第1轮 C → 第2轮 B → 第3轮 A」；文档更新 docs/BMAD/仪表盘健康度说明与数据分析指南.md | E9.1 | 3d | 低 |
+| 9.5 | speckit 全 stage 评分写入规范：在 audit-prompts.md §1～§5 各节末尾追加【审计后动作】段落，要求审计通过时将报告保存至调用方指定的 reportPath 并在结论中注明 iteration_count；在 speckit-workflow SKILL §1.2～§5.2 各「审计通过后评分写入触发」段落中补充「发给子 Agent 的 prompt 必须包含落盘路径」；在 bmad-story-assistant SKILL 中强化 speckit 嵌套流程的审计 prompt 模板，显式包含落盘路径与 iteration_count 输出要求。任务详情见 _bmad-output/implementation-artifacts/epic-9-feature-scoring-full-pipeline/TASKS_speckit全stage评分写入改进.md、ANNEX_speckit全stage评分写入改进.md。可选任务：Story 9.3 全 stage 补齐或 implement-only 补齐（用户决策） | E9.3 | 1d | 低 |
 
 ---
 

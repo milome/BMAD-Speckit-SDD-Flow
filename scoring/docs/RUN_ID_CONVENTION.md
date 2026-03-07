@@ -79,12 +79,25 @@
 - **建议**：支持 `--epic`、`--story` 时生成约定格式，如 `dev-e{epic}-s{story}-{stage}-${Date.now()}`。
 - 传入 `artifactDocPath` 时，写入 `source_path`，供 query 层 fallback 解析。
 
-### 4.2 bmad-code-reviewer-lifecycle / speckit-workflow
+### 4.2 同一 Story 多 stage 共享 run_id（Story 9.1 T11）
+
+当同一 Story 的 spec、plan、gaps、tasks、implement 等多阶段需聚合为一次「完整 run」时，可共享 run_id：
+
+- **方式一**：传入 `--runGroupId dev-e{epic}-s{story}-{ts}`，与 `--runId` 等效；调用方保证同一 run 的各 stage 使用相同 runGroupId。
+- **方式二**：约定格式 `dev-e{epic}-s{story}-{ts}`，ts 取自首次写入；后续 stage 调用时传入 `--runId <首次的run_id>` 或 `--runGroupId <首次的run_id>`。
+- **单文件模式**：同 run_id 多次写入为覆盖语义，最终仅保留最后一条；若需保留多 stage，应使用 jsonl 或 both 模式，或为每 stage 使用不同 run_id 后缀（如 `dev-e9-s1-1730-spec`、`dev-e9-s1-1730-plan`）并依靠 run_id 正则 `dev-e{N}-s{N}-` 聚合。
+
+### 4.3 bmad-code-reviewer-lifecycle / speckit-workflow
 
 - 调用 parseAndWriteScore 时，若可从报告路径或 artifactDocPath 推断 epic/story，应传入符合 §2.1 的 runId。
 - 若无推断能力，可继续使用 `cli-${Date.now()}`；Epic/Story 筛选对该类记录不可用。
 
-### 4.3 /bmad-eval-questions run（E8）
+### 4.4 triggerStage 与 stage 一致时可省略（Story 9.2 Task 6.2）
+
+当 `--triggerStage` 与 `--stage` 一致时，可省略 `--triggerStage`；CLI 默认 `triggerStage = stage`。  
+例如：`--stage implement` 且未传 `--triggerStage` 时，`triggerStage` 默认为 `implement`，由 `config/scoring-trigger-modes.yaml` 的 `implement_audit_pass` 条目匹配通过校验。
+
+### 4.5 /bmad-eval-questions run（E8）
 
 - 必须使用 `eval-q{id}-{version}-{timestamp}` 格式。
 - 传入 `question_version`，与 run_id 中 version 一致。

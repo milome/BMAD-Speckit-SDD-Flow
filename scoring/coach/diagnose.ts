@@ -376,10 +376,22 @@ export async function coachDiagnose(
     weaknessClusters = [];
   }
 
+  const stageEvolutionTraces: Record<string, string> = {};
+  for (const item of scored) {
+    const recs = item.record.iteration_records ?? [];
+    if (recs.length === 0) continue;
+    const hasGrade = recs.some((r) => r.overall_grade != null && r.overall_grade.length > 0);
+    if (!hasGrade) continue;
+    const parts = recs.map((r, i) => `第${i + 1}轮 ${r.overall_grade ?? '?'}`);
+    stageEvolutionTraces[item.record.stage] = parts.join(' → ');
+  }
+
   const report: CoachDiagnosisReport = {
     summary: boundedSummary,
     phase_scores: phaseScores,
     phase_iteration_counts: phaseIterationCounts,
+    stage_evolution_traces:
+      Object.keys(stageEvolutionTraces).length > 0 ? stageEvolutionTraces : undefined,
     weak_areas: weakAreas,
     recommendations,
     iteration_passed: iterationPassed,

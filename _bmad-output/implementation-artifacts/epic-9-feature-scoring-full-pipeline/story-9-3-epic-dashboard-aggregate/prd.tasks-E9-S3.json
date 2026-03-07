@@ -1,0 +1,21 @@
+{
+  "branchName": "ralph/story-9-3-epic-dashboard-aggregate",
+  "taskDescription": "Story 9.3: Epic 级仪表盘聚合",
+  "projectContext": {
+    "framework": "TypeScript/Node",
+    "testCommand": "npm run test:scoring -- scoring/dashboard",
+    "buildCommand": "npm run build"
+  },
+  "userStories": [
+    { "id": "US-1.1", "title": "aggregateByEpicOnly", "description": "筛选 epicId 匹配且 timestamp 在 windowHours 内", "acceptanceCriteria": ["单测 epic=9 仅返回 E9.*"], "priority": 1, "passes": true },
+    { "id": "US-1.2", "title": "getEpicAggregateRecords", "description": "按 epic:story 分组取最新完整 run 合并", "acceptanceCriteria": ["S1+S2 各完整 run 返回 6 条；S3 仅 1 stage 不包含"], "priority": 2, "passes": true },
+    { "id": "US-1.3", "title": "computeEpicHealthScore", "description": "Per-Story computeHealthScore 后简单平均", "acceptanceCriteria": ["S1 80、S2 90 → Epic 85"], "priority": 3, "passes": true },
+    { "id": "US-1.4", "title": "getEpicDimensionScores", "description": "每 Story getDimensionScores 后维度平均", "acceptanceCriteria": ["2 Story 各 2 维合并平均正确"], "priority": 4, "passes": true },
+    { "id": "US-2.1", "title": "getLatestRunRecordsV2 epic-only", "description": "epic!=null && story==null 时调用 getEpicAggregateRecords", "acceptanceCriteria": ["epic=9 仅含 E9 records；run_id 时 epic 忽略"], "priority": 5, "passes": true },
+    { "id": "US-3.1", "title": "dashboard-generate epic-only", "description": "epic-only 分支调用 computeEpicHealthScore、getEpicDimensionScores", "acceptanceCriteria": ["--epic 9 输出 Epic 9 聚合视图"], "priority": 6, "passes": true },
+    { "id": "US-3.2", "title": "formatDashboardMarkdown 扩展", "description": "viewMode、epicId、storyIds、excludedStories", "acceptanceCriteria": ["Epic 9 聚合视图、已排除列表"], "priority": 7, "passes": true },
+    { "id": "US-3.3", "title": "CLI 文档化", "description": "epic/story 过滤仅 epic_story_window 有效", "acceptanceCriteria": ["grep 可查到"], "priority": 8, "passes": true },
+    { "id": "US-4.1", "title": "compute-epic-aggregate.test.ts", "description": "Epic 聚合单测", "acceptanceCriteria": ["npm run test:scoring 通过"], "priority": 9, "passes": true },
+    { "id": "US-4.2", "title": "Epic 聚合 fixture 与集成测试", "description": "五场景 E2E", "acceptanceCriteria": ["epic 聚合、部分不完整、run_id 忽略、无完整 Story、单 Story 不变"], "priority": 10, "passes": true }
+  ]
+}

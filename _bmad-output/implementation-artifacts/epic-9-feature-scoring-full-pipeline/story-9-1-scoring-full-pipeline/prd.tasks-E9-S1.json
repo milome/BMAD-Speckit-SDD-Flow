@@ -1,0 +1,19 @@
+{
+  "branchName": "ralph/story-9-1-scoring-full-pipeline",
+  "taskDescription": "Story 9.1: 评分全链路写入与仪表盘聚合",
+  "projectContext": {
+    "framework": "TypeScript/Node",
+    "testCommand": "npm test",
+    "buildCommand": "npm run build"
+  },
+  "userStories": [
+    { "id": "US-001", "title": "T4 trigger_stage", "description": "RunScoreRecord.trigger_stage, schema, orchestrator, CLI", "acceptanceCriteria": ["record.trigger_stage written", "CLI --triggerStage works"], "priority": 1, "passes": true },
+    { "id": "US-002", "title": "T4b trigger_stage 单测", "description": "Unit test assert record.trigger_stage", "acceptanceCriteria": ["Single test passes"], "priority": 2, "passes": true },
+    { "id": "US-003", "title": "T5 run_id 共享", "description": "--runGroupId or RUN_ID_CONVENTION", "acceptanceCriteria": ["--runGroupId or doc updated"], "priority": 3, "passes": true },
+    { "id": "US-004", "title": "T1-T3 bmad-story-assistant", "description": "Steps 4.2, path, reportPath", "acceptanceCriteria": ["SKILL grep passes"], "priority": 4, "passes": true },
+    { "id": "US-005", "title": "T6 check-story-score-written", "description": "New script", "acceptanceCriteria": ["CLI runs"], "priority": 5, "passes": true },
+    { "id": "US-006", "title": "T7-T8 SKILL embed + doc", "description": "Embed check step, Story 完成自检 doc", "acceptanceCriteria": ["SKILL and doc grep"], "priority": 6, "passes": true },
+    { "id": "US-007", "title": "T9 aggregate+getLatestRunRecordsV2", "description": "Dashboard aggregation functions", "acceptanceCriteria": ["Unit tests pass"], "priority": 7, "passes": true },
+    { "id": "US-008", "title": "T10-T12 dashboard+fixture+weak", "description": "strategy, fixture, getWeakTop3", "acceptanceCriteria": ["dashboard runs, tests pass"], "priority": 8, "passes": true }
+  ]
+}

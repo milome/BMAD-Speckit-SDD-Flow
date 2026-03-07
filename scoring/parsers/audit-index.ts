@@ -10,9 +10,9 @@ import { parseArchReport } from './audit-arch';
 import { parseStoryReport } from './audit-story';
 import { parseGenericReport } from './audit-generic';
 import { ParseError, ReportFileNotFoundError } from './audit-prd';
-import { PHASE_WEIGHTS_SPEC, PHASE_WEIGHTS_PLAN, PHASE_WEIGHTS_TASKS } from '../constants/weights';
+import { PHASE_WEIGHTS_SPEC, PHASE_WEIGHTS_PLAN, PHASE_WEIGHTS_TASKS, PHASE_WEIGHT_IMPLEMENT } from '../constants/weights';
 
-export type AuditStage = 'prd' | 'arch' | 'story' | 'spec' | 'plan' | 'tasks';
+export type AuditStage = 'prd' | 'arch' | 'story' | 'spec' | 'plan' | 'tasks' | 'implement';
 
 export interface ParseAuditReportOptions {
   reportPath?: string;
@@ -75,6 +75,14 @@ export async function parseAuditReport(options: ParseAuditReportOptions): Promis
         runId,
         scenario,
         phaseWeight: PHASE_WEIGHTS_TASKS,
+      });
+    case 'implement':
+      return parseGenericReport({
+        content: getInlineContent(options),
+        stage: 'implement',
+        runId,
+        scenario,
+        phaseWeight: PHASE_WEIGHT_IMPLEMENT,
       });
     default: {
       const _: never = stage;

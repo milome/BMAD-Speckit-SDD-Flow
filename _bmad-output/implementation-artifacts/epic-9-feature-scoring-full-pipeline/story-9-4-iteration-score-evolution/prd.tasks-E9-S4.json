@@ -1,0 +1,20 @@
+{
+  "branchName": "ralph/story-9-4-iteration-score-evolution",
+  "taskDescription": "Story 9.4: 迭代评分演进存储",
+  "projectContext": {
+    "framework": "TypeScript/Node",
+    "testCommand": "npm run test:scoring",
+    "buildCommand": "npm run build"
+  },
+  "userStories": [
+    { "id": "US-001", "title": "T1 IterationRecord schema 扩展", "description": "overall_grade、dimension_scores optional", "acceptanceCriteria": ["schema 校验通过", "旧 record 仍通过"], "priority": 1, "passes": true },
+    { "id": "US-002", "title": "T2 parseAndWriteScore iterationReportPaths", "description": "解析失败轮报告并写入 iteration_records", "acceptanceCriteria": ["2 fail+1 pass → 3 条", "eval_question 忽略"], "priority": 2, "passes": true },
+    { "id": "US-003", "title": "T3 CLI --iterationReportPaths", "description": "CLI 参数与传递", "acceptanceCriteria": ["--help 含该参数", "E2E 写入正确"], "priority": 3, "passes": true },
+    { "id": "US-004", "title": "T4 speckit-workflow 路径约定", "description": "失败轮 round 路径、验证轮排除", "acceptanceCriteria": ["grep 可查到约定"], "priority": 4, "passes": true },
+    { "id": "US-005", "title": "T5 bmad-story-assistant 路径约定", "description": "同上", "acceptanceCriteria": ["grep 可查到约定"], "priority": 5, "passes": true },
+    { "id": "US-006", "title": "T6 Coach 演进轨迹展示", "description": "第1轮 C → 第2轮 B → 第3轮 A", "acceptanceCriteria": ["coach-diagnose 输出含轨迹"], "priority": 6, "passes": true },
+    { "id": "US-007", "title": "T7 仪表盘演进轨迹展示", "description": "同上", "acceptanceCriteria": ["dashboard-generate 输出含轨迹"], "priority": 7, "passes": true },
+    { "id": "US-008", "title": "T8 文档更新", "description": "iteration_records 扩展说明", "acceptanceCriteria": ["grep iteration_records 可查"], "priority": 8, "passes": true },
+    { "id": "US-009", "title": "T9 单元测试与 E2E", "description": "单测、E2E、fixture 测试", "acceptanceCriteria": ["npm run test:scoring 全通过"], "priority": 9, "passes": true }
+  ]
+}

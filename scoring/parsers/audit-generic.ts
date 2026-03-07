@@ -10,7 +10,7 @@ const GRADE_TO_SCORE: Record<string, number> = {
   D: 40,
 };
 
-export type GenericAuditStage = Extract<MappingStage, 'prd' | 'spec' | 'plan' | 'tasks'>;
+export type GenericAuditStage = Extract<MappingStage, 'prd' | 'spec' | 'plan' | 'tasks' | 'implement'>;
 
 function normalizeSeverityDelta(severity: string): number {
   const value = severity.trim();

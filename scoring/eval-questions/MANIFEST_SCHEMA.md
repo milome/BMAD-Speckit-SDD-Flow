@@ -130,6 +130,7 @@ questions:
 
 ## 6. 参考
 
+- **实现**：`scoring/eval-questions/manifest-loader.ts`（EvalQuestionEntry、EvalQuestionManifest、loadManifest）
 - PRD：`prd.eval-ux-last-mile.md` §5.5、§7
 - REQ-UX-5.2：manifest schema
 - REQ-UX-5.9：题目与 parser 输入格式兼容

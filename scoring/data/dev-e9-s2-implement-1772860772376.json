@@ -1,0 +1,31 @@
+{
+  "run_id": "dev-e9-s2-implement-1772860772376",
+  "scenario": "real_dev",
+  "stage": "implement",
+  "phase_score": 80,
+  "phase_weight": 0.25,
+  "check_items": [
+    {
+      "item_id": "implement-issue-1",
+      "passed": false,
+      "score_delta": -5,
+      "note": "部分需求缺少唯一ID"
+    },
+    {
+      "item_id": "implement-issue-2",
+      "passed": false,
+      "score_delta": -2,
+      "note": "边界条件可进一步细化"
+    }
+  ],
+  "timestamp": "2026-03-07T05:19:32.380Z",
+  "iteration_count": 0,
+  "iteration_records": [],
+  "first_pass": true,
+  "veto_triggered": false,
+  "tier_coefficient": 1,
+  "base_commit_hash": "2870f4b9",
+  "content_hash": "c737bfad55a26cc353a51a01e3d8bd88d7e932ec9d5c6ece61944af6dcedf3cc",
+  "source_path": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\scoring\\parsers\\__tests__\\fixtures\\sample-prd-report.md",
+  "path_type": "full"
+}

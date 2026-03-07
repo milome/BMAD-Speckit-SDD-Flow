@@ -1,0 +1,47 @@
+{
+  "run_id": "dev-e9-s3-tasks-1772820234108",
+  "scenario": "real_dev",
+  "stage": "tasks",
+  "phase_score": 74.04,
+  "phase_weight": 0.2,
+  "check_items": [
+    {
+      "item_id": "tasks_overall",
+      "passed": true,
+      "score_delta": 0,
+      "note": "未发现问题清单段落"
+    }
+  ],
+  "timestamp": "2026-03-06T18:03:54.131Z",
+  "iteration_count": 1,
+  "iteration_records": [],
+  "first_pass": false,
+  "dimension_scores": [
+    {
+      "dimension": "需求完整性",
+      "weight": 35,
+      "score": 95
+    },
+    {
+      "dimension": "可测试性",
+      "weight": 25,
+      "score": 92
+    },
+    {
+      "dimension": "一致性",
+      "weight": 25,
+      "score": 90
+    },
+    {
+      "dimension": "可追溯性",
+      "weight": 15,
+      "score": 92
+    }
+  ],
+  "veto_triggered": false,
+  "tier_coefficient": 0.8,
+  "base_commit_hash": "2870f4b9",
+  "content_hash": "48284e7990eaf241503d466ac84fc07b5ef0764d8e2c196aaca7394ed167b4a6",
+  "trigger_stage": "bmad_story_stage4",
+  "path_type": "full"
+}

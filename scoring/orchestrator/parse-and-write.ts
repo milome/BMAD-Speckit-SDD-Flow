@@ -2,16 +2,17 @@
  * Story 3.3: parseAndWriteScore 编排
  * Story 4.1: 集成 applyTierAndVeto，在写入前应用 veto 与阶梯系数
  * GAP-B01: 支持 base_commit_hash + content_hash 版本追溯
+ * Story 9.4: 支持 iterationReportPaths 解析失败轮报告并写入 iteration_records
  */
 import * as fs from 'fs';
 import * as path from 'path';
-import { parseAuditReport, parseDimensionScores, stageToMode } from '../parsers';
+import { parseAuditReport, parseDimensionScores, stageToMode, extractOverallGrade } from '../parsers';
 import type { AuditStage } from '../parsers';
 import { writeScoreRecordSync } from '../writer';
 import type { WriteMode } from '../writer';
 import { applyTierAndVeto } from '../veto';
 import { computeContentHash, computeStringHash, getGitHeadHash } from '../utils/hash';
-import type { DimensionScore } from '../writer/types';
+import type { DimensionScore, IterationRecord } from '../writer/types';
 
 export interface ParseAndWriteScoreOptions {
   reportPath?: string;
@@ -33,6 +34,10 @@ export interface ParseAndWriteScoreOptions {
   artifactDocPath?: string;
   /** 该 stage 审计未通过（fail）次数；0 表示一次通过；DEBATE 迭代次数作为评分因子 */
   iteration_count?: number;
+  /** Story 9.1 T4: 触发阶段标识，写入 record.trigger_stage；如 speckit_5_2、bmad_story_stage4 */
+  triggerStage?: string;
+  /** Story 9.4: 本 stage 失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效 */
+  iterationReportPaths?: string[];
 }
 
 /**
@@ -48,6 +53,64 @@ function computeWeightedDimensionScore(scores: DimensionScore[]): number {
   return Math.round(weighted * 100) / 100;
 }
 
+/** Story 9.4: 从问题清单解析最高严重等级 */
+const SEVERITY_ORDER = ['fatal', 'serious', 'normal', 'minor'] as const;
+function parseMaxSeverityFromReport(content: string): 'fatal' | 'serious' | 'normal' | 'minor' {
+  const matches = content.matchAll(/\[严重程度:([^\]]+)\]/g);
+  let maxIdx = SEVERITY_ORDER.indexOf('normal');
+  for (const m of matches) {
+    const raw = (m[1] ?? '').trim().toLowerCase();
+    let idx: number;
+    if (/致命|fatal|critical/.test(raw)) idx = 0;
+    else if (/高|serious/.test(raw)) idx = 1;
+    else if (/中|normal/.test(raw)) idx = 2;
+    else idx = 3; // 低|minor
+    if (idx < maxIdx) maxIdx = idx;
+  }
+  return SEVERITY_ORDER[maxIdx];
+}
+
+/**
+ * T1: implement 阶段 source_path 写入逻辑。
+ * - stage=implement + artifactDocPath 含 BUGFIX → source_path=artifactDocPath
+ * - stage=implement + artifactDocPath 非 BUGFIX（如 tasks）→ source_path=reportPath
+ * - stage=implement + artifactDocPath 未传入 → 不写 source_path
+ * - 其他 stage：artifactDocPath 传入则 source_path=artifactDocPath
+ */
+function computeSourcePath(
+  stage: AuditStage,
+  artifactDocPath: string | undefined,
+  reportPath: string | undefined
+): { source_path?: string } {
+  if (artifactDocPath == null) return {};
+  if (stage === 'implement') {
+    if (/BUGFIX/i.test(artifactDocPath)) return { source_path: artifactDocPath };
+    if (reportPath != null) return { source_path: reportPath };
+    return {};
+  }
+  return { source_path: artifactDocPath };
+}
+
+/** Story 9.4: 从失败轮报告解析为 IterationRecord */
+function parseIterationReportToRecord(
+  filePath: string,
+  content: string,
+  stage: AuditStage
+): IterationRecord {
+  const stat = fs.statSync(filePath);
+  const timestamp = stat.mtime.toISOString();
+  const overallGrade = extractOverallGrade(content);
+  const dimensionScores = parseDimensionScores(content, stageToMode(stage));
+  const severity = parseMaxSeverityFromReport(content);
+  return {
+    timestamp,
+    result: 'fail',
+    severity,
+    overall_grade: overallGrade ?? undefined,
+    dimension_scores: dimensionScores.length > 0 ? dimensionScores : undefined,
+  };
+}
+
 /**
  * 解析审计报告并写入 scoring 存储。
  * 写入前应用 veto 与阶梯系数（Story 4.1）；reportPath 与 content 二选一。
@@ -56,9 +119,10 @@ function computeWeightedDimensionScore(scores: DimensionScore[]): number {
 export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Promise<void> {
   const { stage, runId, scenario, writeMode, dataPath } = options;
   let content = options.content;
+  let reportPath: string | undefined;
 
   if (options.reportPath) {
-    const reportPath = path.isAbsolute(options.reportPath)
+    reportPath = path.isAbsolute(options.reportPath)
       ? options.reportPath
       : path.resolve(process.cwd(), options.reportPath);
     content = fs.readFileSync(reportPath, 'utf-8');
@@ -115,8 +179,31 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     sourceHash = computeContentHash(resolved);
   }
 
+  let iterationRecords: IterationRecord[] = [];
+  if (options.scenario === 'real_dev' && options.iterationReportPaths?.length) {
+    const failRecords: IterationRecord[] = [];
+    for (const p of options.iterationReportPaths) {
+      const absPath = path.isAbsolute(p) ? p : path.resolve(process.cwd(), p);
+      if (!fs.existsSync(absPath)) continue;
+      const iterContent = fs.readFileSync(absPath, 'utf-8');
+      failRecords.push(parseIterationReportToRecord(absPath, iterContent, stage));
+    }
+    const mainOverallGrade = extractOverallGrade(content);
+    const mainDimensionScores = parseDimensionScores(content, stageToMode(stage));
+    const passRecord: IterationRecord = {
+      timestamp: baseRecord.timestamp,
+      result: 'pass',
+      severity: 'normal',
+      overall_grade: mainOverallGrade ?? undefined,
+      dimension_scores:
+        mainDimensionScores.length > 0 ? mainDimensionScores : baseRecord.dimension_scores,
+    };
+    iterationRecords = [...failRecords, passRecord];
+  }
+
   const recordToWrite = {
     ...baseRecord,
+    iteration_records: iterationRecords,
     phase_score,
     veto_triggered,
     tier_coefficient,
@@ -124,7 +211,8 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     ...(baseCommitHash != null ? { base_commit_hash: baseCommitHash } : {}),
     ...(contentHash != null ? { content_hash: contentHash } : {}),
     ...(sourceHash != null ? { source_hash: sourceHash } : {}),
-    ...(options.artifactDocPath != null ? { source_path: options.artifactDocPath } : {}),
+    ...(computeSourcePath(stage, options.artifactDocPath, reportPath)),
+    ...(options.triggerStage != null ? { trigger_stage: options.triggerStage } : {}),
   };
 
   writeScoreRecordSync(recordToWrite, writeMode, dataPath != null ? { dataPath } : undefined);

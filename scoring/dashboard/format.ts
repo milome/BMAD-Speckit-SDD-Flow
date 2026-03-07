@@ -17,10 +17,38 @@ export interface DashboardData {
   trend: TrendDirection;
 }
 
-export function formatDashboardMarkdown(data: DashboardData): string {
-  const lines: string[] = [];
+/** Story 9.3: Epic 聚合视图扩展 */
+export interface DashboardFormatOptions {
+  viewMode?: 'single_story' | 'epic_aggregate';
+  epicId?: number;
+  storyIds?: number[];
+  excludedStories?: string[];
+}
 
-  lines.push('# 项目健康度仪表盘');
+export function formatDashboardMarkdown(
+  data: DashboardData,
+  options?: DashboardFormatOptions
+): string {
+  const lines: string[] = [];
+  const viewMode = options?.viewMode ?? 'single_story';
+  const epicId = options?.epicId;
+  const storyIds = options?.storyIds ?? [];
+  const excludedStories = options?.excludedStories ?? [];
+
+  if (viewMode === 'epic_aggregate' && epicId != null) {
+    lines.push(`# Epic ${epicId} 聚合视图`);
+    lines.push('');
+    if (storyIds.length > 0) {
+      lines.push(`纳入 Story：${storyIds.map((s) => `E${epicId}.S${s}`).join(', ')}`);
+      lines.push('');
+    }
+    if (excludedStories.length > 0) {
+      lines.push(`已排除：${excludedStories.join('、')}（未达完整 run）`);
+      lines.push('');
+    }
+  } else {
+    lines.push('# 项目健康度仪表盘');
+  }
   lines.push('');
   lines.push(`## 总分：${data.healthScore} 分`);
   lines.push('');
@@ -41,7 +69,8 @@ export function formatDashboardMarkdown(data: DashboardData): string {
     lines.push('（无数据）');
   } else {
     for (const w of data.weakTop3) {
-      lines.push(`- ${w.epicStory} ${w.stage}: ${w.score} 分`);
+      const base = `- ${w.epicStory} ${w.stage}: ${w.score} 分`;
+      lines.push(w.evolution_trace ? `${base}（${w.evolution_trace}）` : base);
     }
   }
   lines.push('');
@@ -52,7 +81,8 @@ export function formatDashboardMarkdown(data: DashboardData): string {
     lines.push('各 stage 均为一次通过');
   } else {
     for (const h of data.highIterTop3) {
-      lines.push(`- ${h.epicStory} ${h.stage}: ${h.iteration_count} 轮整改`);
+      const base = `- ${h.epicStory} ${h.stage}: ${h.iteration_count} 轮整改`;
+      lines.push(h.evolution_trace ? `${base}（${h.evolution_trace}）` : base);
     }
   }
   lines.push('');

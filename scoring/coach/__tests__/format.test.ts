@@ -56,6 +56,25 @@ describe('formatToMarkdown', () => {
     expect(md).toContain('phase_score 已按整改轮次应用阶梯扣分');
   });
 
+  it('Story 9.4: adds 演进轨迹 section when stage_evolution_traces exists', () => {
+    const report = makeReport({
+      stage_evolution_traces: {
+        spec: '第1轮 C → 第2轮 B → 第3轮 A',
+        plan: '第1轮 B → 第2轮 A',
+      },
+    });
+    const md = formatToMarkdown(report);
+    expect(md).toContain('## 演进轨迹（Story 9.4）');
+    expect(md).toContain('第1轮 C → 第2轮 B → 第3轮 A');
+    expect(md).toContain('第1轮 B → 第2轮 A');
+  });
+
+  it('Story 9.4: omits 演进轨迹 section when stage_evolution_traces empty', () => {
+    const report = makeReport();
+    const md = formatToMarkdown(report);
+    expect(md).not.toContain('演进轨迹');
+  });
+
   it('sanitizes NaN/negative/decimal in phase_iteration_counts (US-005)', () => {
     const report = makeReport({
       phase_scores: { a: 70, b: 60, c: 50, d: 40 },

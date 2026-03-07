@@ -12,6 +12,7 @@ const CASES = [
   { stage: 'spec', fixture: 'sample-spec-report.md', expectedScore: 80 },
   { stage: 'plan', fixture: 'sample-plan-report.md', expectedScore: 100 },
   { stage: 'tasks', fixture: 'sample-tasks-report.md', expectedScore: 60 },
+  { stage: 'implement', fixture: 'sample-implement-report.md', expectedScore: 80, phaseWeight: 0.25 },
 ] as const;
 
 describe('audit-generic parser', () => {
@@ -26,7 +27,7 @@ describe('audit-generic parser', () => {
       });
 
       expect(result.stage).toBe(testCase.stage);
-      expect(result.phase_weight).toBe(0.2);
+      expect(result.phase_weight).toBe('phaseWeight' in testCase && testCase.phaseWeight != null ? testCase.phaseWeight : 0.2);
       expect(result.phase_score).toBe(testCase.expectedScore);
       expect(result.check_items.length).toBeGreaterThan(0);
       validateRunScoreRecord(result);

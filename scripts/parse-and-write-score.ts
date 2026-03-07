@@ -11,10 +11,16 @@ function parseArgs(): Record<string, string> {
   const args: Record<string, string> = {};
   for (let i = 2; i < process.argv.length; i++) {
     const arg = process.argv[i];
-    if (arg.startsWith('--') && i + 1 < process.argv.length) {
+    if (!arg.startsWith('--')) continue;
+    const eqIdx = arg.indexOf('=');
+    if (eqIdx >= 0) {
+      const key = arg.slice(2, eqIdx);
+      const val = arg.slice(eqIdx + 1);
+      if (key && val !== undefined) args[key] = val;
+    } else {
       const key = arg.slice(2);
-      const val = process.argv[i + 1];
-      if (!val.startsWith('--')) {
+      const val = i + 1 < process.argv.length ? process.argv[i + 1] : undefined;
+      if (val != null && !val.startsWith('--')) {
         args[key] = val;
         i++;
       }
@@ -40,7 +46,7 @@ async function main() {
   const epic = args.epic;
   const story = args.story;
 
-  let runId = args.runId;
+  let runId = args.runId ?? args.runGroupId;
   if (!runId) {
     if (epic && story) {
       runId = `dev-e${epic}-s${story}-${stage}-${Date.now()}`;
@@ -73,8 +79,14 @@ async function main() {
       ? iterationCountParsed
       : undefined;
 
+  const iterationReportPathsRaw = args.iterationReportPaths;
+  const iterationReportPaths: string[] =
+    iterationReportPathsRaw != null && iterationReportPathsRaw.trim().length > 0
+      ? iterationReportPathsRaw.split(',').map((p) => p.trim()).filter(Boolean)
+      : [];
+
   if (!reportPath) {
-    console.error('Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--event <event>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值');
+    console.error('Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--event <event>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records');
     process.exit(1);
   }
 
@@ -101,6 +113,8 @@ async function main() {
     artifactDocPath,
     question_version: questionVersion,
     iteration_count: iterationCount,
+    triggerStage: triggerStage !== stage ? triggerStage : undefined,
+    iterationReportPaths: iterationReportPaths.length > 0 ? iterationReportPaths : undefined,
   });
   console.log(`parseAndWriteScore: wrote record for runId=${runId}, stage=${stage}`);
 }

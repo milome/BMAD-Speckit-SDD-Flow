@@ -20,6 +20,10 @@ export interface IterationRecord {
   result: 'pass' | 'fail';
   severity: 'fatal' | 'serious' | 'normal' | 'minor';
   note?: string;
+  /** Story 9.4: 可解析总体评级 A|B|C|D */
+  overall_grade?: string;
+  /** Story 9.4: 可解析维度评分 */
+  dimension_scores?: DimensionScore[];
 }
 
 export interface RunScoreRecord {
@@ -45,6 +49,8 @@ export interface RunScoreRecord {
   source_hash?: string;
   /** 触发本次评分的源文档路径，如 BUGFIX 文档（B07 SFT 提取用） */
   source_path?: string;
+  /** Story 9.1 T4: 触发阶段标识，如 speckit_5_2、bmad_story_stage4，用于 implement 与 story 阶段区分 */
+  trigger_stage?: string;
 }
 
 /**

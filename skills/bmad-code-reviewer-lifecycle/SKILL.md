@@ -1,4 +1,4 @@
-﻿---
+---
 name: bmad-code-reviewer-lifecycle
 description: |
   全链路 Code Reviewer Skill：编排 BMAD 工作流各 stage 的审计产出→解析→scoring 写入。
@@ -50,3 +50,11 @@ references:
 - **函数**：`scoring/orchestrator/parse-and-write.ts`
 - **CLI**：`scripts/parse-and-write-score.ts`、`scripts/accept-e3-s3.ts`
 - **验收**：`npm run accept:e3-s3`
+
+## parseAndWriteScore 前置条件（Checklist）
+
+tasks 阶段审计通过后、调用 parseAndWriteScore 前，**必须**确认：
+
+1. **报告包含可解析块**：报告结尾须含「总体评级: [A|B|C|D]」与「维度评分: 维度名: XX/100」块，否则解析失败、仪表盘不显示评级。详见 `audit-prompts.md §4.1`、`audit-prompts-critical-auditor-appendix.md §7`、`docs/BMAD/审计报告格式与解析约定.md`。
+2. **逐条对照格式**：若报告为逐条对照格式（表格+结论），须在结论后追加上述可解析块。
+3. **路径**：可使用 `--reportPath` 指定任意报告路径；约定路径为 `AUDIT_tasks-E{epic}-S{story}.md`，历史命名变体（如含「逐条对照」后缀）亦可通过 `--reportPath` 解析。

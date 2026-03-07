@@ -28,6 +28,9 @@ scoring_write_control:
     speckit_5_2_audit_pass:
       event: stage_audit_complete
       stage: speckit_5_2
+    implement_audit_pass:
+      event: stage_audit_complete
+      stage: implement
     bmad_story_stage2_audit_pass:
       event: story_status_change
       stage: bmad_story_stage2

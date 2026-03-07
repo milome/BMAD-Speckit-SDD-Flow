@@ -117,3 +117,48 @@ story:
     - text: "可实施性"
       item_id: "story_implementability"
       patterns: ["可实施性", "实施"]
+
+# Story 9.2: stage=implement 扩展
+implement:
+  empty_overall: "impl_overall"
+  empty_dimensions: "impl_dimensions"
+  dimensions:
+    - name: "功能性"
+      checks:
+        - text: "功能正确性"
+          item_id: "func_correct"
+          patterns: ["功能正确", "功能性", "functional_correctness"]
+    - name: "代码规范"
+      checks:
+        - text: "命名规范"
+          item_id: "code_standards"
+          patterns: ["代码规范", "命名", "naming_conventions"]
+    - name: "异常处理"
+      checks:
+        - text: "异常处理"
+          item_id: "exception_handling"
+          patterns: ["异常处理", "exception"]
+    - name: "安全性"
+      checks:
+        - text: "安全合规"
+          item_id: "security"
+          patterns: ["安全", "OWASP", "owasp"]
+    - name: "性能可维护性"
+      checks:
+        - text: "性能与可维护性"
+          item_id: "perf_maintain"
+          patterns: ["性能", "可维护", "complexity_maintainability"]
+    - name: "否决项"
+      checks:
+        - text: "核心逻辑错误"
+          item_id: "veto_core_logic_error"
+          patterns: ["核心逻辑", "逻辑错误", "veto_core_logic"]
+        - text: "OWASP 高危"
+          item_id: "veto_high_security"
+          patterns: ["OWASP 高危", "veto_owasp"]
+        - text: "编译失败"
+          item_id: "veto_compile_fail"
+          patterns: ["编译失败", "veto_compile"]
+        - text: "硬编码敏感信息"
+          item_id: "veto_hardcoded_secret"
+          patterns: ["硬编码", "敏感信息", "CWE-798", "veto_cwe798"]

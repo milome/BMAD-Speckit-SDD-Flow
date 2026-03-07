@@ -1,0 +1,33 @@
+# Story 9.5 progress: speckit 全 stage 评分写入规范
+
+## US-001 T1 audit-prompts §1～§4 【审计后动作】
+2026-03-07 完成。修改 skills/speckit-workflow/references/audit-prompts.md，在 §1、§2、§3、§4 各节末尾追加【审计后动作】段落。
+[TDD-RED] 文档修改，无生产代码，无需 TDD 红绿灯 ✓
+[TDD-GREEN] 文档修改完成 ✓
+[TDD-REFACTOR] 无需重构 ✓
+
+## US-002 T2 audit-prompts §5 【审计后动作】
+2026-03-07 完成。在 §5 末尾追加【审计后动作】段落，含 implement 路径（AUDIT_implement、AUDIT_Story_stage4）。
+[TDD-RED] 文档修改，无生产代码 ✓
+[TDD-GREEN] 文档修改完成 ✓
+[TDD-REFACTOR] 无需重构 ✓
+
+## US-003 T3 speckit-workflow §x.2 prompt 落盘路径
+2026-03-07 完成。在 §1.2、§2.2、§3.2、§4.2、§5.2 各「审计通过后评分写入触发」段落内增加「发起审计子任务时，发给子 Agent 的 prompt 必须包含：审计通过后请将报告保存至 {约定路径}」。
+[TDD-RED] 文档修改 ✓
+[TDD-GREEN] 文档修改完成 ✓
+[TDD-REFACTOR] 无需重构 ✓
+
+## US-004 T4 bmad-story-assistant 强化审计 prompt
+2026-03-07 完成。在 STORY-A3-DEV 模板的「各 stage 审计通过后落盘与 parseAndWriteScore 约束」段落内，显式包含：(1) spec/plan/GAPS/tasks 审计路径；(2) 在结论中注明保存路径及 iteration_count。
+[TDD-RED] 文档修改 ✓
+[TDD-GREEN] 文档修改完成 ✓
+[TDD-REFACTOR] 无需重构 ✓
+
+## 2026-03-07 验收命令执行（主 Agent 实施后审计前）
+
+T1、T2 验收：`Select-String -Path "audit-prompts.md" -Pattern "审计后动作|reportPath|iteration_count"` ✓
+T3 验收：`Select-String -Path "speckit-workflow/SKILL.md" -Pattern "prompt 必须包含|审计通过后请将报告保存至"` ✓
+T4 验收：`Select-String -Path "bmad-story-assistant/SKILL.md" -Pattern "审计通过后请将报告保存至|iteration_count"` ✓
+
+**验收结果**：全部通过。T1～T4 修改均已就绪，主 Agent 可发起阶段四实施后审计。

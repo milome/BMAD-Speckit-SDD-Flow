@@ -1,0 +1,47 @@
+{
+  "run_id": "dev-e9-s1-plan-1772798623855",
+  "scenario": "real_dev",
+  "stage": "plan",
+  "phase_score": 95,
+  "phase_weight": 0.2,
+  "check_items": [
+    {
+      "item_id": "plan_overall",
+      "passed": true,
+      "score_delta": 0,
+      "note": "未发现问题清单段落"
+    }
+  ],
+  "timestamp": "2026-03-06T12:03:43.871Z",
+  "iteration_count": 0,
+  "iteration_records": [],
+  "first_pass": true,
+  "dimension_scores": [
+    {
+      "dimension": "需求完整性",
+      "weight": 35,
+      "score": 95
+    },
+    {
+      "dimension": "可测试性",
+      "weight": 25,
+      "score": 95
+    },
+    {
+      "dimension": "一致性",
+      "weight": 25,
+      "score": 95
+    },
+    {
+      "dimension": "可追溯性",
+      "weight": 15,
+      "score": 95
+    }
+  ],
+  "veto_triggered": false,
+  "tier_coefficient": 1,
+  "base_commit_hash": "2870f4b9",
+  "content_hash": "af0f79d71718fd73c82ef4671ec1220d6750df6d0af1de226920bf969bc4aa46",
+  "source_path": "specs/epic-9/story-1-scoring-full-pipeline/IMPLEMENTATION_GAPS-E9-S1.md",
+  "path_type": "full"
+}

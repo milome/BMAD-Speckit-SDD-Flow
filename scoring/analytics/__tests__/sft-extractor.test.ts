@@ -289,6 +289,347 @@ describe('sft-extractor', () => {
     expect(entries60.length).toBe(1);
   });
 
+  it('T2: source_path 指向审计报告、无 §1/§4 时用 extractAuditReportSections 产出 entry', async () => {
+    const auditPath = path.join(tempDir, 'audit-report.md');
+    fs.writeFileSync(
+      auditPath,
+      `## 批判审计员结论
+
+已检查维度：遗漏需求点。
+
+**本轮结论**：本轮存在 gap。具体项：1) 需求未覆盖；2) 验收不可执行
+
+**修改建议**：1) 补充需求映射；2) 增加验收命令`,
+      'utf-8'
+    );
+    const record = {
+      run_id: 'run-audit',
+      scenario: 'real_dev' as const,
+      stage: 'implement',
+      phase_score: 55,
+      phase_weight: 0.2,
+      check_items: [],
+      timestamp: new Date().toISOString(),
+      iteration_count: 0,
+      iteration_records: [],
+      first_pass: true,
+      source_path: auditPath,
+      base_commit_hash: 'abc12345',
+    };
+    fs.writeFileSync(path.join(tempDir, 'run-audit.json'), JSON.stringify(record), 'utf-8');
+
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (typeof cmd !== 'string') return 'a'.repeat(40);
+      if (cmd.includes('rev-parse HEAD')) return 'a'.repeat(40);
+      if (cmd.includes('rev-parse --verify')) return 'abc12345';
+      if (cmd.includes('git diff')) return '--- a\n+++ b\n-old\n+new';
+      return 'a'.repeat(40);
+    });
+
+    const { entries, summary } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
+    expect(entries.length).toBe(1);
+    expect(entries[0].instruction).toContain('已检查维度');
+    expect(entries[0].instruction).toContain('需求未覆盖');
+    expect(entries[0].instruction).toContain('补充需求映射');
+  });
+
+  it('T2: instruction 不足（<20 字符）时 incSkip 无 §1/§4 且审计报告解析失败', async () => {
+    const auditPath = path.join(tempDir, 'audit-empty.md');
+    fs.writeFileSync(auditPath, `# 无批判审计员结论的报告\n\n其他内容`, 'utf-8');
+    const record = {
+      run_id: 'run-empty-audit',
+      scenario: 'real_dev' as const,
+      stage: 'implement',
+      phase_score: 50,
+      phase_weight: 0.2,
+      check_items: [],
+      timestamp: new Date().toISOString(),
+      iteration_count: 0,
+      iteration_records: [],
+      first_pass: true,
+      source_path: auditPath,
+      base_commit_hash: 'abc12345',
+    };
+    fs.writeFileSync(path.join(tempDir, 'run-empty.json'), JSON.stringify(record), 'utf-8');
+
+    const { entries, summary } = await extractSftDataset(tempDir, path.join(tempDir, 'out2.jsonl'));
+    expect(entries.length).toBe(0);
+    expect(summary.skipReasons['无 §1/§4 且审计报告解析失败']).toBe(1);
+  });
+
+  it('T2: source_path 指向审计报告、无 §1/§4 时用 extractAuditReportSections 产出 entry', async () => {
+    const auditPath = path.join(tempDir, 'audit-report.md');
+    fs.writeFileSync(
+      auditPath,
+      `## 批判审计员结论
+
+已检查维度：遗漏需求点。
+**本轮结论**：本轮存在 gap。具体项：1) 需求未覆盖；2) 验收不可执行。
+**修改建议**：1) 补充需求映射；2) 增加可执行验收`,
+      'utf-8'
+    );
+    const record = {
+      run_id: 'run-audit',
+      scenario: 'real_dev' as const,
+      stage: 'implement',
+      phase_score: 55,
+      phase_weight: 0.2,
+      check_items: [],
+      timestamp: new Date().toISOString(),
+      iteration_count: 0,
+      iteration_records: [],
+      first_pass: true,
+      source_path: auditPath,
+      base_commit_hash: 'abc12345',
+    };
+    fs.writeFileSync(path.join(tempDir, 'run-audit.json'), JSON.stringify(record), 'utf-8');
+
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (typeof cmd !== 'string') return 'a'.repeat(40);
+      if (cmd.includes('rev-parse HEAD')) return 'a'.repeat(40);
+      if (cmd.includes('rev-parse --verify')) return 'abc12345';
+      if (cmd.includes('git diff')) return '--- a\n+++ b\n-old\n+new';
+      return 'a'.repeat(40);
+    });
+
+    const { entries, summary } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
+    expect(entries.length).toBe(1);
+    expect(entries[0].instruction).toContain('已检查维度');
+    expect(entries[0].instruction).toContain('需求未覆盖');
+    expect(entries[0].instruction).toContain('补充需求映射');
+  });
+
+  it('T2: instruction 不足（<20 字符）时 incSkip 无 §1/§4 且审计报告解析失败', async () => {
+    const auditPath = path.join(tempDir, 'audit-empty.md');
+    fs.writeFileSync(auditPath, `# 无批判审计员结论的文档\n\n无相关内容`, 'utf-8');
+    const record = {
+      run_id: 'run-empty-audit',
+      scenario: 'real_dev' as const,
+      stage: 'implement',
+      phase_score: 50,
+      phase_weight: 0.2,
+      check_items: [],
+      timestamp: new Date().toISOString(),
+      iteration_count: 0,
+      iteration_records: [],
+      first_pass: true,
+      source_path: auditPath,
+      base_commit_hash: 'abc12345',
+    };
+    fs.writeFileSync(path.join(tempDir, 'run-empty.json'), JSON.stringify(record), 'utf-8');
+
+    const { entries, summary } = await extractSftDataset(tempDir, path.join(tempDir, 'out2.jsonl'));
+    expect(entries.length).toBe(0);
+    expect(summary.skipReasons['无 §1/§4 且审计报告解析失败']).toBe(1);
+  });
+
+  it('T2-audit: source_path 指向审计报告、无 §1/§4 时，使用 extractAuditReportSections 结果作为 instruction 并产出 entry', async () => {
+    const auditPath = path.join(tempDir, 'audit-report.md');
+    fs.writeFileSync(
+      auditPath,
+      `## 批判审计员结论
+
+已检查维度：遗漏需求点。
+每维度结论：需修改。
+
+**本轮结论**：本轮存在 gap。具体项：1) 需求描述不清；2) 验收标准缺失
+
+**修改建议**：1) 补充需求描述；2) 明确验收标准`,
+      'utf-8'
+    );
+    const record = {
+      run_id: 'run-audit',
+      scenario: 'real_dev' as const,
+      stage: 'implement',
+      phase_score: 55,
+      phase_weight: 0.2,
+      check_items: [],
+      timestamp: new Date().toISOString(),
+      iteration_count: 0,
+      iteration_records: [],
+      first_pass: true,
+      source_path: auditPath,
+      base_commit_hash: 'abc12345',
+    };
+    fs.writeFileSync(path.join(tempDir, 'run-audit.json'), JSON.stringify(record), 'utf-8');
+
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (typeof cmd !== 'string') return 'a'.repeat(40);
+      if (cmd.includes('rev-parse HEAD')) return 'a'.repeat(40);
+      if (cmd.includes('rev-parse --verify')) return 'abc12345';
+      if (cmd.includes('git diff')) return '--- a\n+++ b\n-old\n+new';
+      return 'a'.repeat(40);
+    });
+
+    const { entries, summary } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
+    expect(entries.length).toBe(1);
+    expect(entries[0].instruction).toContain('已检查维度');
+    expect(entries[0].instruction).toContain('需求描述不清');
+    expect(entries[0].instruction).toContain('补充需求描述');
+  });
+
+  it('T2-insufficient: instruction 不足（<20 字符）时 incSkip「无 §1/§4 且审计报告解析失败」', async () => {
+    const auditPath = path.join(tempDir, 'audit-empty.md');
+    fs.writeFileSync(auditPath, `# 无结构报告\n\n无批判审计员结论`, 'utf-8');
+    const record = {
+      run_id: 'run-insufficient',
+      scenario: 'real_dev' as const,
+      stage: 'implement',
+      phase_score: 50,
+      phase_weight: 0.2,
+      check_items: [],
+      timestamp: new Date().toISOString(),
+      iteration_count: 0,
+      iteration_records: [],
+      first_pass: true,
+      source_path: auditPath,
+      base_commit_hash: 'abc12345',
+    };
+    fs.writeFileSync(path.join(tempDir, 'run-insufficient.json'), JSON.stringify(record), 'utf-8');
+
+    const { entries, summary } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
+    expect(entries.length).toBe(0);
+    expect(summary.skipReasons['无 §1/§4 且审计报告解析失败']).toBe(1);
+  });
+
+  it('T2-audit: source_path 指向审计报告、无 §1/§4 时用 extractAuditReportSections 产出 entry', async () => {
+    const auditPath = path.join(tempDir, 'audit-report.md');
+    fs.writeFileSync(
+      auditPath,
+      `## 批判审计员结论
+
+已检查维度：遗漏需求点。
+每维度结论：需改进。
+
+**本轮结论**：本轮存在 gap。具体项：1) 需求描述不清；2) 验收标准缺失
+
+**修改建议**：1) 补充需求描述；2) 明确验收标准`,
+      'utf-8'
+    );
+    const record = {
+      run_id: 'run-audit',
+      scenario: 'real_dev' as const,
+      stage: 'implement',
+      phase_score: 55,
+      phase_weight: 0.2,
+      check_items: [],
+      timestamp: new Date().toISOString(),
+      iteration_count: 0,
+      iteration_records: [],
+      first_pass: true,
+      source_path: auditPath,
+      base_commit_hash: 'abc12345',
+    };
+    fs.writeFileSync(path.join(tempDir, 'run-audit.json'), JSON.stringify(record), 'utf-8');
+
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (typeof cmd !== 'string') return 'a'.repeat(40);
+      if (cmd.includes('rev-parse HEAD')) return 'a'.repeat(40);
+      if (cmd.includes('rev-parse --verify')) return 'abc12345';
+      if (cmd.includes('git diff')) return '';
+      return 'a'.repeat(40);
+    });
+
+    const { entries, summary } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
+    expect(entries.length).toBe(1);
+    expect(entries[0].instruction).toContain('已检查维度');
+    expect(entries[0].instruction).toContain('需求描述不清');
+    expect(entries[0].instruction).toContain('补充需求描述');
+  });
+
+  it('T2-insufficient: instruction < 20 字符时 incSkip 无 §1/§4 且审计报告解析失败', async () => {
+    const auditPath = path.join(tempDir, 'audit-empty.md');
+    fs.writeFileSync(auditPath, `# 无结构报告\n无批判审计员结论`, 'utf-8');
+    const record = {
+      run_id: 'run-empty',
+      scenario: 'real_dev' as const,
+      stage: 'implement',
+      phase_score: 50,
+      phase_weight: 0.2,
+      check_items: [],
+      timestamp: new Date().toISOString(),
+      iteration_count: 0,
+      iteration_records: [],
+      first_pass: true,
+      source_path: auditPath,
+      base_commit_hash: 'abc12345',
+    };
+    fs.writeFileSync(path.join(tempDir, 'run-empty.json'), JSON.stringify(record), 'utf-8');
+
+    const { entries, summary } = await extractSftDataset(tempDir, path.join(tempDir, 'out2.jsonl'));
+    expect(entries.length).toBe(0);
+    expect(summary.skipReasons['无 §1/§4 且审计报告解析失败']).toBe(1);
+  });
+
+  it('T2-audit: source_path points to audit report (no §1/§4) → uses extractAuditReportSections as instruction', async () => {
+    const auditPath = path.join(tempDir, 'audit-report.md');
+    fs.writeFileSync(
+      auditPath,
+      `## 批判审计员结论
+
+已检查维度：遗漏需求点。
+每维度结论：需改进。
+
+**本轮结论**：本轮存在 gap。具体项：1) 需求描述不清；2) 验收标准缺失
+
+**修改建议**：1) 补充需求描述；2) 明确验收标准`,
+      'utf-8'
+    );
+    const record = {
+      run_id: 'run-audit',
+      scenario: 'real_dev' as const,
+      stage: 'implement',
+      phase_score: 55,
+      phase_weight: 0.2,
+      check_items: [],
+      timestamp: new Date().toISOString(),
+      iteration_count: 0,
+      iteration_records: [],
+      first_pass: true,
+      source_path: auditPath,
+      base_commit_hash: 'abc12345',
+    };
+    fs.writeFileSync(path.join(tempDir, 'run-audit.json'), JSON.stringify(record), 'utf-8');
+
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (typeof cmd !== 'string') return 'a'.repeat(40);
+      if (cmd.includes('rev-parse HEAD')) return 'a'.repeat(40);
+      if (cmd.includes('rev-parse --verify')) return 'abc12345';
+      if (cmd.includes('git diff')) return '';
+      return 'a'.repeat(40);
+    });
+
+    const { entries, summary } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
+    expect(entries.length).toBe(1);
+    expect(entries[0].instruction).toContain('已检查维度');
+    expect(entries[0].instruction).toContain('需求描述不清');
+    expect(entries[0].instruction).toContain('补充需求描述');
+  });
+
+  it('T2-insufficient: instruction < 20 chars → incSkip 无 §1/§4 且审计报告解析失败', async () => {
+    const auditPath = path.join(tempDir, 'audit-empty.md');
+    fs.writeFileSync(auditPath, `# Empty report\nNo critic section.`, 'utf-8');
+    const record = {
+      run_id: 'run-empty',
+      scenario: 'real_dev' as const,
+      stage: 'implement',
+      phase_score: 50,
+      phase_weight: 0.2,
+      check_items: [],
+      timestamp: new Date().toISOString(),
+      iteration_count: 0,
+      iteration_records: [],
+      first_pass: true,
+      source_path: auditPath,
+      base_commit_hash: 'abc12345',
+    };
+    fs.writeFileSync(path.join(tempDir, 'run-empty.json'), JSON.stringify(record), 'utf-8');
+
+    const { entries, summary } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
+    expect(entries.length).toBe(0);
+    expect(summary.skipReasons['无 §1/§4 且审计报告解析失败']).toBe(1);
+  });
+
   it('T2-10: formatSummary outputs correct text', () => {
     const summary: SftExtractSummary = {
       n: 5,
@@ -302,5 +643,74 @@ describe('sft-extractor', () => {
     expect(text).toContain('跳过 2 条');
     expect(text).toContain('无 source_path: 1');
     expect(text).toContain('无 §1 或 §4: 1');
+  });
+
+  it('T2-11: source_path 指向审计报告、无 §1/§4 时用 extractAuditReportSections 产出 entry', async () => {
+    const auditPath = path.join(tempDir, 'audit-report.md');
+    fs.writeFileSync(
+      auditPath,
+      `## 批判审计员结论
+
+已检查维度：遗漏需求点。
+每维度结论：需改进。
+
+**本轮结论**：本轮存在 gap。具体项：1) 需求描述不清；2) 验收标准缺失
+
+**修改建议**：1) 补充需求描述；2) 明确验收标准`,
+      'utf-8'
+    );
+    const record = {
+      run_id: 'run-audit',
+      scenario: 'real_dev' as const,
+      stage: 'implement',
+      phase_score: 55,
+      phase_weight: 0.2,
+      check_items: [],
+      timestamp: new Date().toISOString(),
+      iteration_count: 0,
+      iteration_records: [],
+      first_pass: true,
+      source_path: auditPath,
+      base_commit_hash: 'abc12345',
+    };
+    fs.writeFileSync(path.join(tempDir, 'run-audit.json'), JSON.stringify(record), 'utf-8');
+
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (typeof cmd !== 'string') return 'a'.repeat(40);
+      if (cmd.includes('rev-parse HEAD')) return 'a'.repeat(40);
+      if (cmd.includes('rev-parse --verify')) return 'abc12345';
+      if (cmd.includes('git diff')) return '--- a\n+++ b\n-old\n+new';
+      return 'a'.repeat(40);
+    });
+
+    const { entries, summary } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
+    expect(entries.length).toBe(1);
+    expect(entries[0].instruction).toContain('已检查维度');
+    expect(entries[0].instruction).toContain('需求描述不清');
+    expect(entries[0].instruction).toContain('补充需求描述');
+  });
+
+  it('T2-12: instruction 不足（<20 字符）时 incSkip 无 §1/§4 且审计报告解析失败', async () => {
+    const auditPath = path.join(tempDir, 'audit-empty.md');
+    fs.writeFileSync(auditPath, `# 无结构报告\n\n无批判审计员结论`, 'utf-8');
+    const record = {
+      run_id: 'run-empty',
+      scenario: 'real_dev' as const,
+      stage: 'implement',
+      phase_score: 50,
+      phase_weight: 0.2,
+      check_items: [],
+      timestamp: new Date().toISOString(),
+      iteration_count: 0,
+      iteration_records: [],
+      first_pass: true,
+      source_path: auditPath,
+      base_commit_hash: 'abc12345',
+    };
+    fs.writeFileSync(path.join(tempDir, 'run-empty.json'), JSON.stringify(record), 'utf-8');
+
+    const { entries, summary } = await extractSftDataset(tempDir, path.join(tempDir, 'out2.jsonl'));
+    expect(entries.length).toBe(0);
+    expect(summary.skipReasons['无 §1/§4 且审计报告解析失败']).toBe(1);
   });
 });

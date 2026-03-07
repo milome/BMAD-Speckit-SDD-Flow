@@ -9,6 +9,7 @@ import { execSync } from 'child_process';
 import { getGitHeadHashFull } from '../utils/hash';
 import type { RunScoreRecord } from '../writer/types';
 import { parseEpicStoryFromRecord } from '../query';
+import { extractAuditReportSections } from './audit-report-parser';
 
 export interface SftEntry {
   instruction: string;
@@ -216,12 +217,20 @@ export async function extractSftDataset(
       continue;
     }
 
-    const sections = extractBugfixSections(bugfixContent);
-    if (!sections) {
-      incSkip(skipReasons, '无 §1 或 §4');
-      continue;
+    let sections = extractBugfixSections(bugfixContent);
+    let instruction: string;
+    if (sections) {
+      instruction = [sections.s1, sections.s4].join('\n\n');
+    } else {
+      const auditSections = extractAuditReportSections(bugfixContent);
+      instruction = [auditSections.criticConclusion, auditSections.gaps.join('\n'), auditSections.suggestions.join('\n')]
+        .filter(Boolean)
+        .join('\n\n');
+      if (instruction.trim().length < 20) {
+        incSkip(skipReasons, '无 §1/§4 且审计报告解析失败');
+        continue;
+      }
     }
-    const instruction = [sections.s1, sections.s4].join('\n\n');
 
     try {
       execSync(`git rev-parse --verify ${baseCommitHash}`, {

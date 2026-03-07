@@ -1,0 +1,15 @@
+{
+  "branchName": "ralph/story-9-5-speckit-full-stage-score-write",
+  "taskDescription": "Story 9.5: speckit 全 stage 评分写入规范（T1～T4 文档/技能修改）",
+  "projectContext": {
+    "framework": "markdown/skill 文档",
+    "testCommand": "grep 验收命令",
+    "buildCommand": "N/A"
+  },
+  "userStories": [
+    { "id": "US-001", "title": "T1 audit-prompts §1～§4 【审计后动作】", "description": "在 audit-prompts.md §1、§2、§3、§4 各节末尾追加【审计后动作】段落", "acceptanceCriteria": ["grep 每节末尾含审计后动作、reportPath、iteration_count"], "priority": 1, "passes": true },
+    { "id": "US-002", "title": "T2 audit-prompts §5 【审计后动作】", "description": "在 §5 末尾追加【审计后动作】段落（含 implement 路径）", "acceptanceCriteria": ["grep §5 含审计后动作、implement、reportPath"], "priority": 2, "passes": true },
+    { "id": "US-003", "title": "T3 speckit-workflow §x.2 prompt 落盘路径", "description": "各 §1.2、§2.2、§3.2、§4.2、§5.2 补充「prompt 须包含落盘路径」", "acceptanceCriteria": ["grep 五处含 prompt 必须包含、审计通过后请将报告保存至"], "priority": 3, "passes": true },
+    { "id": "US-004", "title": "T4 bmad-story-assistant 强化审计 prompt", "description": "STORY-A3-DEV 及 speckit 嵌套段落显式包含路径与 iteration_count", "acceptanceCriteria": ["grep 含审计通过后请将报告保存至、iteration_count"], "priority": 4, "passes": true }
+  ]
+}

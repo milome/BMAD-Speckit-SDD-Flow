@@ -19,6 +19,9 @@ story:
   example: AUDIT_Story_3-1.md
 
 # speckit-workflow 各阶段审计报告路径（与 call_mapping speckit_*_audit_pass 对应）
+# tasks 约定路径：AUDIT_tasks-E{epic}-S{story}.md（如 specs/epic-8/story-8-1-xxx/AUDIT_tasks-E8-S1.md）
+# 历史命名变体：AUDIT_TASKS_E8_S1_逐条对照_2026-03-06.md 等；兼容策略见 docs/BMAD/审计报告格式与解析约定.md §5
+# parseAndWriteScore 可通过 --reportPath 指定任意路径；仅新产出须含可解析块并符合约定命名
 speckit_report_paths:
   spec: specs/epic-{epic}/story-{story}-{slug}/AUDIT_spec-E{epic}-S{story}.md
   plan: specs/epic-{epic}/story-{story}-{slug}/AUDIT_plan-E{epic}-S{story}.md
