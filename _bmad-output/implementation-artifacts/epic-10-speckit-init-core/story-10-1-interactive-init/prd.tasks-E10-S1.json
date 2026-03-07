@@ -1,0 +1,19 @@
+{
+  "branchName": "feature/e10-s1-interactive-init",
+  "taskDescription": "Story 10.1: 交互式 init - Banner、19+ AI、路径确认、模板版本、--modules、--force、--no-git",
+  "projectContext": {
+    "framework": "Node.js 18+, Commander.js, Inquirer.js, chalk, boxen, ora",
+    "testCommand": "node packages/bmad-speckit/bin/bmad-speckit.js init --help",
+    "buildCommand": "cd packages/bmad-speckit && npm install"
+  },
+  "userStories": [
+    { "id": "US-001", "title": "Phase 1: Setup - 包结构、utils、constants", "description": "T001-T006: 创建 packages/bmad-speckit、exit-codes、path、tty、bin 入口", "acceptanceCriteria": ["node bin/bmad-speckit.js init --help 可运行"], "priority": 1, "passes": true, "notes": "" },
+    { "id": "US-002", "title": "Phase 2: InitCommand 骨架与参数解析", "description": "T007-T010: 参数解析、路径解析、非空校验、可写性校验", "acceptanceCriteria": ["非空目录无 --force 时退出码 4"], "priority": 2, "passes": true, "notes": "" },
+    { "id": "US-003", "title": "Phase 3: ai-builtin 与 Banner", "description": "T011-T012: 19+ AI 列表、Banner 渲染", "acceptanceCriteria": ["init 进入交互时显示 Banner"], "priority": 3, "passes": true, "notes": "" },
+    { "id": "US-004", "title": "Phase 4: 交互步骤", "description": "T013-T014: AI 选择、路径确认、模板版本", "acceptanceCriteria": ["可完成 AI 选择、路径确认、模板版本选择"], "priority": 4, "passes": true, "notes": "" },
+    { "id": "US-005", "title": "Phase 5: TemplateFetcher", "description": "T015-T018: GitHub Release 拉取、版本选择、网络参数、错误处理", "acceptanceCriteria": ["模板拉取失败时退出码 3"], "priority": 5, "passes": true, "notes": "" },
+    { "id": "US-006", "title": "Phase 6: --modules 与骨架生成", "description": "T019-T024: modules 解析、目录生成、git init、selectedAI 写入", "acceptanceCriteria": ["init 完成目录含 _bmad、_bmad-output、bmad-speckit.json"], "priority": 6, "passes": true, "notes": "" },
+    { "id": "US-007", "title": "Phase 7: --debug 与错误处理", "description": "T025-T026: --debug 日志、退出码 4 提示", "acceptanceCriteria": ["非空无 force 退出码 4；无写权限退出码 4"], "priority": 7, "passes": true, "notes": "" },
+    { "id": "US-008", "title": "Phase 8: 集成与 E2E 测试", "description": "T027-T029: E2E 用例、生产代码关键路径验证", "acceptanceCriteria": ["E2E-1 至 E2E-10 通过；grep 验证无孤岛"], "priority": 8, "passes": true, "notes": "" }
+  ]
+}

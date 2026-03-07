@@ -4,7 +4,7 @@
  * 用法：
  *   npx ts-node scripts/eval-questions-cli.ts list [--version v1|v2]
  *   npx ts-node scripts/eval-questions-cli.ts add --title "xxx" [--version v1|v2]
- *   npx ts-node scripts/eval-questions-cli.ts run --id q001 --version v1 [--reportPath <path>]
+ *   npx ts-node scripts/eval-questions-cli.ts run --id q001 --version v1 [--reportPath <path>] [--no-agent]
  */
 import * as path from 'path';
 import * as fs from 'fs';
@@ -16,6 +16,7 @@ import {
   addQuestionToManifest,
 } from '../scoring/eval-questions/template-generator';
 import { generateEvalRunId, validateQuestionVersionForEval } from '../scoring/eval-questions/run-core';
+import { generateEvalAnswer, EvalAgentError } from '../scoring/eval-questions/agent-answer';
 import { parseAndWriteScore } from '../scoring/orchestrator';
 
 const EVAL_ROOT = path.resolve(process.cwd(), 'scoring', 'eval-questions');
@@ -28,12 +29,16 @@ function parseArgs(argv: string[]): Record<string, string> {
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith('--')) {
-      const key = arg.slice(2).replace(/^([^=]+)=.*/, '$1');
       const eqIdx = arg.indexOf('=');
+      const key = eqIdx >= 0 ? arg.slice(2, eqIdx) : arg.slice(2);
       const value = eqIdx >= 0 ? arg.slice(eqIdx + 1) : argv[i + 1];
-      if (value && !value.startsWith('--')) {
+      if (eqIdx >= 0) {
         args[key] = value;
-        if (eqIdx < 0) i++;
+      } else if (value && !value.startsWith('--')) {
+        args[key] = value;
+        i++;
+      } else {
+        args[key] = '1';
       }
     }
   }
@@ -104,7 +109,12 @@ function cmdAdd(title: string, version: string): void {
   console.log(`Created: ${path.relative(process.cwd(), filePath)}`);
 }
 
-async function cmdRun(id: string, version: string, reportPathArg?: string): Promise<void> {
+async function cmdRun(
+  id: string,
+  version: string,
+  reportPathArg?: string,
+  useAgent = true
+): Promise<void> {
   if (!id || !String(id).trim()) {
     console.error('Error: --id 必填');
     printRunUsage();
@@ -136,9 +146,43 @@ async function cmdRun(id: string, version: string, reportPathArg?: string): Prom
     process.exit(1);
   }
 
-  const reportPath = reportPathArg
-    ? (path.isAbsolute(reportPathArg) ? reportPathArg : path.resolve(process.cwd(), reportPathArg))
-    : path.join(versionDir, entry.path);
+  let reportPath: string;
+
+  if (reportPathArg) {
+    reportPath = path.isAbsolute(reportPathArg)
+      ? reportPathArg
+      : path.resolve(process.cwd(), reportPathArg);
+  } else if (useAgent) {
+    const questionPath = path.join(versionDir, entry.path);
+    if (!fs.existsSync(questionPath)) {
+      console.error(`题目文件不存在：${questionPath}`);
+      process.exit(1);
+    }
+    const questionContent = fs.readFileSync(questionPath, 'utf-8');
+    try {
+      console.log('正在调用 Agent 生成回答...');
+      const answer = await generateEvalAnswer(questionContent);
+      const answersDir = path.resolve(process.cwd(), '_bmad-output', 'eval-answers');
+      if (!fs.existsSync(answersDir)) {
+        fs.mkdirSync(answersDir, { recursive: true });
+      }
+      const ts = Date.now();
+      const answerFile = path.join(answersDir, `${id.trim()}-${version}-${ts}.md`);
+      fs.writeFileSync(answerFile, answer, 'utf-8');
+      reportPath = answerFile;
+      console.log(`Agent 回答已保存: ${path.relative(process.cwd(), answerFile)}`);
+    } catch (e) {
+      if (e instanceof EvalAgentError) {
+        console.error(`Agent 作答失败: ${e.message}`);
+        console.error('提示: 设置 SCORING_LLM_API_KEY 后重试，或使用 --no-agent 直接解析题目文件');
+      } else {
+        console.error(`Agent 作答失败: ${(e as Error).message}`);
+      }
+      process.exit(1);
+    }
+  } else {
+    reportPath = path.join(versionDir, entry.path);
+  }
 
   if (!fs.existsSync(reportPath)) {
     console.error(`报告文件不存在：${reportPath}`);
@@ -167,8 +211,9 @@ async function cmdRun(id: string, version: string, reportPathArg?: string): Prom
 
 function printRunUsage(): void {
   console.error(
-    'Usage: npx ts-node scripts/eval-questions-cli.ts run --id <questionId> --version v1|v2 [--reportPath <path>]'
+    'Usage: npx ts-node scripts/eval-questions-cli.ts run --id <questionId> --version v1|v2 [--reportPath <path>] [--no-agent]'
   );
+  console.error('  --no-agent: 不调用 Agent，直接解析题目文件（默认：先 Agent 作答再 parseAndWriteScore）');
 }
 
 async function main(): Promise<void> {
@@ -180,7 +225,7 @@ async function main(): Promise<void> {
     console.error('Usage:');
     console.error('  npx ts-node scripts/eval-questions-cli.ts list [--version v1|v2]');
     console.error('  npx ts-node scripts/eval-questions-cli.ts add --title "xxx" [--version v1|v2]');
-    console.error('  npx ts-node scripts/eval-questions-cli.ts run --id <id> --version v1|v2 [--reportPath <path>]');
+    console.error('  npx ts-node scripts/eval-questions-cli.ts run --id <id> --version v1|v2 [--reportPath <path>] [--no-agent]');
     process.exit(1);
   }
 
@@ -191,7 +236,8 @@ async function main(): Promise<void> {
   } else if (subcommand === 'add') {
     cmdAdd(args.title || '', version);
   } else if (subcommand === 'run') {
-    await cmdRun(args.id || '', args.version || '', args.reportPath);
+    const useAgent = !args['no-agent'] && !args['noAgent'];
+    await cmdRun(args.id || '', args.version || '', args.reportPath, useAgent);
   }
 }
 

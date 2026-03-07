@@ -1,7 +1,8 @@
 # AI 代码评测体系 — Epics 与 Story 列表
 
-**版本**：1.1  
-**来源**：prd.ai-code-eval-system.md、architecture.ai-code-eval-system.md、prd.eval-ux-last-mile.md
+**版本**：1.3  
+**来源**：prd.ai-code-eval-system.md、architecture.ai-code-eval-system.md、prd.eval-ux-last-mile.md、_bmad-output/planning-artifacts/dev/PRD_specify-cn-like-init-multi-ai-assistant.md、_bmad-output/planning-artifacts/dev/ARCH_specify-cn-like-init-multi-ai-assistant.md  
+**v1.3 变更**：E10–E13 与 PRD AI 目录映射对齐（按所选 AI 写入对应目录、configTemplate 与 spec-kit AGENTS.md 一致、check 按 selectedAI 验证、子代理支持）
 
 ---
 
@@ -18,6 +19,10 @@
 | E7 | eval-ux-dashboard-and-sft | 仪表盘与 SFT 提取：项目健康度、四维雷达图、短板 Top 3、/bmad-dashboard、/bmad-sft-extract、bmad-eval-analytics 扩展 | 4d | P1 |
 | E8 | eval-question-bank | 评测题库：manifest 目录结构、list/add 命令、run 与 eval_question 集成、版本隔离 | 3d | P2 |
 | E9 | feature-scoring-full-pipeline | 评分全链路写入与仪表盘聚合：bmad-story-assistant 阶段四 parse-and-write-score、仪表盘按 epic/story 聚合、Story 完成自检、run_id 共享策略 | 5d | P0 |
+| E10 | speckit-init-core | specify-cn 类 init 核心：交互式/非交互式初始化、Banner BMAD-Speckit、19+ AI 选择、--modules、--force、配置持久化、跨平台脚本生成 | 8d | P0 |
+| E11 | speckit-template-offline | 模板拉取与离线：--template、--offline、cache、templateVersion 持久化 | 3d | P0 |
+| E12 | speckit-ai-skill-publish | AI 扩展与 Skill 发布：registry、19+ 内置 configTemplate（与 spec-kit AGENTS.md 对齐）、按所选 AI 写入对应目录、引用完整性、worktree 共享（--bmad-path） | 6d | P0 |
+| E13 | speckit-diagnostic-commands | 诊断与运维子命令：check、version、upgrade、config、feedback、异常路径与错误码 | 5d | P0 |
 
 ---
 
@@ -100,6 +105,42 @@
 | 9.4 | 迭代评分演进存储：IterationRecord 新增 optional overall_grade、dimension_scores（scoring/writer/types.ts、run-score-schema.json）；parseAndWriteScore 支持 iterationReportPaths，pass 时一次性解析失败轮报告写入 iteration_records；CLI 新增 --iterationReportPaths；失败轮路径约定：AUDIT_{stage}-E{epic}-S{story}_round{N}.md 或 _orphan/AUDIT_{slug}_round{N}.md，验证轮报告不列入；Coach、仪表盘从 iteration_records 取 overall_grade 序列展示「第1轮 C → 第2轮 B → 第3轮 A」；文档更新 docs/BMAD/仪表盘健康度说明与数据分析指南.md | E9.1 | 3d | 低 |
 | 9.5 | speckit 全 stage 评分写入规范：在 audit-prompts.md §1～§5 各节末尾追加【审计后动作】段落，要求审计通过时将报告保存至调用方指定的 reportPath 并在结论中注明 iteration_count；在 speckit-workflow SKILL §1.2～§5.2 各「审计通过后评分写入触发」段落中补充「发给子 Agent 的 prompt 必须包含落盘路径」；在 bmad-story-assistant SKILL 中强化 speckit 嵌套流程的审计 prompt 模板，显式包含落盘路径与 iteration_count 输出要求。任务详情见 _bmad-output/implementation-artifacts/epic-9-feature-scoring-full-pipeline/TASKS_speckit全stage评分写入改进.md、ANNEX_speckit全stage评分写入改进.md。可选任务：Story 9.3 全 stage 补齐或 implement-only 补齐（用户决策） | E9.3 | 1d | 低 |
 
+### Epic 10：speckit-init-core
+
+| Story ID | 描述 | 依赖 | 预估工时 | 风险 |
+|----------|------|------|----------|------|
+| 10.1 | 交互式 init：Banner BMAD-Speckit（ASCII/box-drawing 风格）、19+ AI 列表（支持过滤、box-drawing 选择器边框）、路径确认（init . / --here 当前目录）、模板版本选择、--modules 选择性初始化、--force 非空目录覆盖、--no-git 跳过 git init、目标路径已存在时报错提示、--debug/--github-token/--skip-tls | 无 | 3d | 低 |
+| 10.2 | 非交互式 init：--ai、--yes、TTY 检测、环境变量 SDD_AI/SDD_YES、--modules 非交互（**须与 --ai、--yes 配合**）；--yes 时默认 AI 来源 defaultAI>内置第一项；非 TTY 且无 --ai/--yes 时自动 --yes | E10.1 | 1.5d | 低 |
+| 10.3 | 跨平台脚本生成：--script sh/ps、路径/编码/换行符、Windows 默认 ps | E10.1 | 1d | 中 |
+| 10.4 | 配置持久化：~/.bmad-speckit/config.json、_bmad-output/config/bmad-speckit.json、defaultAI/defaultScript、项目级覆盖 | E10.1 | 1d | 低 |
+| 10.5 | --bmad-path worktree 共享：不复制 _bmad、仅创建 _bmad-output、bmadPath 记录、check 验证；**须与 --ai、--yes 配合非交互使用**；path 不存在或结构不符合时退出码 4 | E10.1 | 1.5d | 中 |
+
+### Epic 11：speckit-template-offline
+
+| Story ID | 描述 | 依赖 | 预估工时 | 风险 |
+|----------|------|------|----------|------|
+| 11.1 | 模板拉取：GitHub Release、cache 至 ~/.bmad-speckit/templates/、--template tag/url；网络超时由 networkTimeoutMs 或 SDD_NETWORK_TIMEOUT_MS 控制（默认 30000ms） | 无 | 1.5d | 中 |
+| 11.2 | 离线与版本锁定：--offline、templateVersion 写入 bmad-speckit.json | E11.1 | 0.5d | 低 |
+
+### Epic 12：speckit-ai-skill-publish
+
+| Story ID | 描述 | 依赖 | 预估工时 | 风险 |
+|----------|------|------|----------|------|
+| 12.1 | AI Registry：~/.bmad-speckit/ai-registry.json、项目级覆盖、19+ 内置 configTemplate（与 spec-kit AGENTS.md 对齐：opencode→.opencode/command、auggie→.augment/rules、bob→.bob/commands、shai→.shai/commands、codex→.codex/commands）；configTemplate 须含 §5.3.1 适用字段（commandsDir、rulesDir 至少其一；skillsDir 若 AI 支持 skill 则必填；agentsDir 或 configDir 二选一；vscodeSettings 可选）及 §5.12.1 subagentSupport；detectCommand；--ai generic 时须 --ai-commands-dir 或 registry 含 aiCommandsDir，否则退出码 2 | 无 | 1.5d | 低 |
+| 12.2 | 引用完整性：按 configTemplate 同步 commands/rules/config 到所选 AI 目标目录（禁止写死 .cursor/）；若 configTemplate 含 vscodeSettings，写入 .vscode/settings.json；check 按 selectedAI 验证对应目录（含 opencode/bob/shai/codex 显式条目）；--bmad-path 验证 | E10.1, E12.1 | 1.5d | 中 |
+| 12.3 | Skill 发布：_bmad/skills/ 按 configTemplate.skillsDir 同步到所选 AI 全局目录、initLog、--ai-skills/--no-ai-skills；无子代理支持 AI 时 init/check 输出提示 | E12.2, E10.1 | 1.5d | 中 |
+| 12.4 | Post-init 引导：stdout 输出 /bmad-help 提示、模板含 bmad-help、speckit.constitution | E10.1 | 0.5d | 低 |
+
+### Epic 13：speckit-diagnostic-commands
+
+| Story ID | 描述 | 依赖 | 预估工时 | 风险 |
+|----------|------|------|----------|------|
+| 13.1 | check 与 version：诊断输出、--list-ai、--json、结构验证（按 selectedAI 验证对应目标目录：cursor-agent→.cursor/、claude→.claude/、gemini→.gemini/、windsurf→.windsurf/workflows、kilocode→.kilocode/rules、auggie→.augment/rules、roo→.roo/rules、opencode→.opencode/command、bob→.bob/commands、shai→.shai/commands、codex→.codex/commands 等；worktree 共享 bmadPath 验证；**无 selectedAI 时跳过 AI 目标目录验证或验证 .cursor 向后兼容**）退出码 0/1、--ignore-agent-tools 跳过 AI 工具检测、子代理支持等级输出 | E10.1 | 1.5d | 低 |
+| 13.2 | 异常路径：网络超时（networkTimeoutMs/SDD_NETWORK_TIMEOUT_MS 可配置，默认 30000）、模板失败、--offline cache 缺失、--bmad-path 路径不可用；退出码 1 通用/结构验证失败、2 --ai 无效（**须输出可用 AI 列表或提示运行 check --list-ai**）、3 网络/模板、4 路径不可用、5 离线 cache 缺失 | E11.1 | 0.5d | 低 |
+| 13.3 | upgrade：已 init 目录内执行、--dry-run、--template、templateVersion 更新 | E11.1 | 1d | 低 |
+| 13.4 | config：get/set/list、项目级优先、--global、defaultAI/defaultScript/templateSource/networkTimeoutMs、--json 输出 | E10.4 | 1d | 低 |
+| 13.5 | feedback：init 后 stdout 提示、feedback 子命令输出反馈入口；**feedback 输出或关联文档须含全流程兼容 AI 清单**（PRD §5.12.1，建议 cursor-agent、claude、qwen、auggie、codebuddy、amp、qodercli、kiro-cli） | E10.1 | 0.5d | 低 |
+
 ---
 
 ## 3. PRD 需求 → Story 映射
@@ -117,6 +158,18 @@
 | REQ-UX-3.1~3.7 | 7.1 |
 | REQ-UX-4.1~4.7 | 7.2, 7.3 |
 | REQ-UX-5.1~5.9 | 8.1, 8.2, 8.3 |
+| US-1（specify-cn） | 10.1 |
+| US-2（specify-cn） | 10.2 |
+| US-3（specify-cn） | 11.1, 11.2 |
+| US-4（specify-cn） | 12.1 |
+| US-5（specify-cn） | 13.1 |
+| US-6（specify-cn） | 13.2 |
+| US-7（specify-cn） | 10.3 |
+| US-8（specify-cn） | 10.4 |
+| US-9（specify-cn） | 10.5, 12.2, 12.3, 12.4 |
+| US-10（specify-cn） | 13.3 |
+| US-11（specify-cn） | 13.4 |
+| US-12（specify-cn） | 13.5 |
 
 ---
 
@@ -136,6 +189,14 @@
 | 数据流、BMAD 集成点 | 3.3, 4.3 |
 | 数据污染防护（§3.7 四条） | 4.3 |
 | 题量表述（§3.9 已实现 vs 目标规模） | 2.2 |
+| InitCommand、init 流程状态机（specify-cn） | 10.1, 10.2 |
+| TemplateFetcher（specify-cn） | 11.1, 11.2 |
+| AIRegistry、ai-builtin、configTemplate 与 spec-kit 对齐（specify-cn） | 12.1 |
+| ConfigManager（specify-cn） | 10.4, 13.4 |
+| SkillPublisher、按 configTemplate.skillsDir 同步、initLog（specify-cn） | 12.3 |
+| CheckCommand、按 selectedAI 验证目标目录、结构验证（specify-cn） | 12.2, 13.1 |
+| VersionCommand、UpgradeCommand、ConfigCommand、FeedbackCommand（specify-cn） | 13.1, 13.3, 13.4, 13.5 |
+| 退出码约定、错误码（specify-cn） | 13.1, 13.2 |
 
 ---
 
@@ -177,6 +238,28 @@ E8 (eval-question-bank) 可独立或与 E6 并行
 ```
 
 **E6–E8 路径**：E6.1 独立 → E6.2/E6.3 可并行 → E6.4/E6.5；E7 依赖 E6；E8 可独立启动
+
+```
+E10.1 (交互式 init)
+    ├──→ E10.2 (非交互)
+    ├──→ E10.3 (脚本生成)
+    ├──→ E10.4 (配置持久化)
+    └──→ E10.5 (--bmad-path)
+
+E11.1 (模板拉取)
+    └──→ E11.2 (离线)
+
+E12.1 (Registry)
+    └──→ E12.2 (引用完整性)
+              └──→ E12.3 (Skill 发布)
+                        └──→ E12.4 (Post-init 引导)
+
+E10.1, E11.1 → E13.1 (check/version), E13.2 (异常路径), E13.3 (upgrade)
+E10.4 → E13.4 (config)
+E10.1 → E13.5 (feedback)
+```
+
+**E10–E13 路径**：E10.1 为核心；E11、E12 可并行；E13 依赖 E10、E11。
 
 ---
 
@@ -719,4 +802,4 @@ E1-E4 (已完成)
 
 ---
 
-*本文档统一管理 E1–E8；Epic 6/7/8 来源 prd.eval-ux-last-mile.md。*
+*本文档统一管理 E1–E13；Epic 6/7/8 来源 prd.eval-ux-last-mile.md；Epic 10–13 来源 _bmad-output/planning-artifacts/dev/PRD_specify-cn-like-init-multi-ai-assistant.md、ARCH_specify-cn-like-init-multi-ai-assistant.md。*

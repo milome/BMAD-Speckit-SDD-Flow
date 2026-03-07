@@ -49,6 +49,7 @@ description: |
 | **party-mode** | `{project-root}/_bmad/core/workflows/party-mode/`；轮次与收敛见 step-02（BUGFIX 产出最终方案与 §7 任务列表：至少 100 轮；其它：50 轮；收敛条件再结束）。 |
 | **code-reviewer 子代理** | `.claude/agents/code-reviewer.md` 或 `.cursor/agents/code-reviewer.md`；找不到则用 `mcp_task` 调用 `generalPurpose` |
 | **audit-prompts §5** | `references/audit-prompts-section5.md`（本 skill 内）或 `{project-root}/docs/speckit/skills/speckit-workflow/references/audit-prompts.md`；**仅作其他工作流参考，不用于本 skill 的 BUGFIX 文档审计**。 |
+| **audit-document-iteration-rules** | `skills/speckit-workflow/references/audit-document-iteration-rules.md`；阶段一、二、三的 BUGFIX **文档**审计须遵循：审计子代理在发现 gap 时须直接修改 BUGFIX 文档。阶段四为实施后审计（代码），不适用。 |
 | **ralph-method** | 使用 ralph-method skill：prd、progress 文件，按 US 顺序执行 |
 | **speckit-workflow** | 禁止伪实现、必须运行验收命令、架构忠实 |
 | **改进说明（本技能）** | {project-root}/_bmad-output/BMAD_BUG_助手技能提示词与审计改进说明.md |
@@ -221,6 +222,10 @@ description: |
 5. 全文是否使用中文、无技术债占位。
 
 报告结尾必须按以下格式输出：结论：通过 / 未通过。必达子项：① §1 完整可复现；② §2 与共识一致且有证据；③ §4 明确无禁止词；④ §5 可执行可验证；⑤ 全文中文无技术债；⑥ 本报告结论格式符合本段要求。若任一项不满足则结论为未通过，并列出不满足项及每条对应的修改建议（含「删除可选项」或「将某段改为明确描述」）。
+
+**审计未通过时**：你（审计子代理）须在本轮内**直接修改 BUGFIX 文档**以消除 gap，修改完成后在报告中注明已修改内容；主 Agent 收到报告后再次发起审计。禁止仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules.md](../speckit-workflow/references/audit-document-iteration-rules.md)。
+
+**审计未通过时**：你（审计子代理）须在本轮内**直接修改 BUGFIX 文档**以消除 gap，修改完成后在报告中注明已修改内容；主 Agent 收到报告后再次发起审计。禁止仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules.md](../speckit-workflow/references/audit-document-iteration-rules.md)。
 ```
 
 ---
@@ -247,7 +252,7 @@ description: |
 2. 替换占位符：`{用户补充的现象、步骤、环境等}` → 用户实际补充内容；`{主 Agent 填入路径}` → BUGFIX 文档的完整路径（如 `_bmad-output/BUGFIX_xxx_2026-02-27.md`）。
 3. 发起辩论子任务；子任务返回后，根据产出更新 BUGFIX 文档（若主 Agent 直接按分析更新文档，则本步可合并到步骤 2 的产出）。
 4. **【必做】** 发起审计子任务：使用模板 ID **BUG-A1-AUDIT**（阶段一审计完整 prompt 模板）整段复制，子代理为 **code-reviewer** 或 **mcp_task generalPurpose**。
-5. **【必做】** 若审计结论为未通过，按修改建议执行（委托子代理或主 Agent 修改文档/代码），然后再次发起审计；重复直至结论为「完全覆盖、验证通过」。**禁止**在未通过时仅做一轮审计即结束。
+5. **【必做】** 若审计结论为未通过，**审计子代理须在本轮内直接修改 BUGFIX 文档**以消除 gap；主 Agent 收到报告后再次发起审计。禁止仅输出修改建议而不修改文档。文档审计迭代规则见 [audit-document-iteration-rules.md](../speckit-workflow/references/audit-document-iteration-rules.md)。重复直至结论为「完全覆盖、验证通过」。**禁止**在未通过时仅做一轮审计即结束。
 
 **简化路径**：若用户提供的补充信息已充分（如已有根因分析文档），主 Agent 可直接按分析更新 BUGFIX 文档，**但必须**在更新后发起审计子任务（BUG-A1-AUDIT）并迭代至通过。辩论可省略，审计不可省略。
 
@@ -299,7 +304,7 @@ description: |
 3. 输出自检结果（格式见「主 Agent 传递提示词规则」中的自检结果示例）。
 4. 发起子任务；子代理应产出更新后的 BUGFIX 文档（含 §7），并写入原文件路径。
 5. **【必做】** 子任务返回后，发起审计子任务：使用模板 **BUG-A3-AUDIT**（阶段三 §7 审计完整 prompt 模板）整段复制，子代理为 **code-reviewer** 或 **mcp_task generalPurpose**。
-6. **【必做】** 若审计结论为未通过，按修改建议执行（委托子代理或主 Agent 修改文档），然后再次发起审计；重复直至结论为「通过」。**禁止**在未通过时仅做一轮审计即结束。
+6. **【必做】** 若审计结论为未通过，**审计子代理须在本轮内直接修改 BUGFIX 文档**；主 Agent 收到报告后再次发起审计。禁止仅输出修改建议而不修改文档。文档审计迭代规则见 [audit-document-iteration-rules.md](../speckit-workflow/references/audit-document-iteration-rules.md)。重复直至结论为「通过」。**禁止**在未通过时仅做一轮审计即结束。
 
 **禁止**：不得在未完成步骤 2、3 的情况下执行步骤 4。不得在步骤 4 产出 §7 后省略步骤 5、6。
 
@@ -357,6 +362,8 @@ description: |
 6. §6 辩论纪要是否与 §7 一致；若有冲突以 §4 为准。
 
 报告结尾必须按以下格式输出：结论：通过 / 未通过。必达子项 1–6 如上；若任一项不满足则结论为未通过，并列出不满足项及每条对应的修改建议。
+
+**审计未通过时**：你（审计子代理）须在本轮内**直接修改 BUGFIX 文档**以消除 gap，修改完成后在报告中注明已修改内容；主 Agent 收到报告后再次发起审计。禁止仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules.md](../speckit-workflow/references/audit-document-iteration-rules.md)。
 ```
 
 ---
@@ -539,7 +546,7 @@ npx ts-node scripts/parse-and-write-score.ts \
 
 用户：「为 BUGFIX 文档补充最终任务列表。」
 
-主 Agent：执行阶段三——将「阶段三任务列表补充完整 prompt 模板」整段复制，填入 BUGFIX 文档路径与项目根目录后发起 mcp_task；子代理产出含 §7 的更新文档后，将「阶段三 §7 审计完整 prompt 模板」整段复制后发起审计子任务；若审计未通过，须按修改建议修改文档后再次发起审计，直至通过。
+主 Agent：执行阶段三——将「阶段三任务列表补充完整 prompt 模板」整段复制，填入 BUGFIX 文档路径与项目根目录后发起 mcp_task；子代理产出含 §7 的更新文档后，将「阶段三 §7 审计完整 prompt 模板」整段复制后发起审计子任务；若审计未通过，**审计子代理须在本轮内直接修改 BUGFIX 文档**，主 Agent 收到报告后再次发起审计，直至通过。
 
 ### 示例 4：实施修复
 

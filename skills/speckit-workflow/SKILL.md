@@ -93,7 +93,7 @@ description: |
 
 ### 0.3 迭代规则
 
-- 若 code-review 审计报告结论为**未通过**：根据报告逐条修改对应文档，修改完成后**必须再次调用 code-review**，不得在一次修改后自行宣布通过。
+- 若 code-review 审计报告结论为**未通过**：**审计子代理须在本轮内直接修改被审文档**以消除 gap，修改完成后输出报告并注明已修改内容；主 Agent 收到报告后发起下一轮审计。禁止仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules.md](references/audit-document-iteration-rules.md)。
 - **仅在** code-review 审计报告明确写出「完全覆盖、验证通过」时，方可结束该步骤。
 
 ---

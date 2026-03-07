@@ -38,3 +38,8 @@ questions:
   - id: gen-1772862017847-2
     title: 如何提升 spec,plan 的 需求,覆盖
     path: gen-1772862017847-2-specplan.md
+  - id: q005-defect-critical-auditor-ratio
+    title: 审计报告批判审计员段落占比不足时如何改进
+    path: q005-defect-critical-auditor-ratio.md
+    difficulty: medium
+    tags: [缺陷改进, 批判审计员, audit-post-impl-rules]

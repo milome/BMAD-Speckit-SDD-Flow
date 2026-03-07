@@ -146,7 +146,8 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 - **ralph-method**: Create/maintain prd + progress; naming and schema see ralph-method skill.  
 - **speckit-workflow**: TDD 红绿灯、15 条铁律、验收命令、架构忠实；审计须调用 code-review 技能.  
 - **audit-prompts §5**: 执行阶段审计；本技能内置的 6 项即为 §5 审计项。若项目存在 `_bmad/references/audit-prompts.md`，可对照其 §5 执行。逐项验证、完全覆盖、验证通过；批判审计员、3 轮无 gap 收敛.  
-- **audit-post-impl-rules**: 与 speckit-workflow、bmad-story-assistant 的实施后审计规则对齐。本技能 Step 2 已符合 audit-post-impl-rules（3 轮无 gap、批判审计员 >50%）。规则文件路径：`skills/speckit-workflow/references/audit-post-impl-rules.md`。  
+- **audit-post-impl-rules**: 与 speckit-workflow、bmad-story-assistant 的实施后审计规则对齐。本技能 Step 2 已符合 audit-post-impl-rules（3 轮无 gap、批判审计员 >50%）。规则文件路径：`skills/speckit-workflow/references/audit-post-impl-rules.md`。
+- **audit-document-iteration-rules**: 当对 TASKS/BUGFIX **文档**进行审计（非实施后审计）时，须遵循 `skills/speckit-workflow/references/audit-document-iteration-rules.md`：审计子代理在发现 gap 时须直接修改被审文档。**本技能 Step 2 为实施后审计（审计代码）**，修改由实施子代理完成，不适用文档迭代规则。  
 - **Prompt templates**: See `references/prompt-templates.md` for copy-paste prompts with placeholders.
 
 ## 错误与边界处理

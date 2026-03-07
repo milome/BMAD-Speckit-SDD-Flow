@@ -588,7 +588,7 @@ prompt: |
   【§Story 可解析块要求】报告结尾在结论与必达子项之后，**必须**追加可解析评分块（格式见 speckit-workflow/references/audit-prompts-critical-auditor-appendix.md §7 或 docs/BMAD/审计报告格式与解析约定.md）。须包含：独立一行「总体评级: [A|B|C|D]」及四行「- 需求完整性: XX/100」「- 可测试性: XX/100」「- 一致性: XX/100」「- 可追溯性: XX/100」。禁止用描述代替结构化块；总体评级仅限 A/B/C/D。映射建议：完全覆盖→A/90+；部分覆盖→B/80+；需修改→C/70+；不通过→D/60及以下。否则 parseAndWriteScore 无法解析、仪表盘无法显示评级。
 ```
 
-若审计未通过，**根据报告执行**：若修改建议含「创建 Story X.Y」或「更新 Story X.Y」，主 Agent 须**先执行**该建议（发起 Create Story 或更新子任务），再再次发起对当前 Story 的审计；若仅需修改当前 Story 文档，则修改后再次发起审计。**禁止**仅修改当前 Story 文档即再审计，当修改建议含创建/更新其他 Story 时。每次审计均遵循 §2.1 的优先顺序（先 code-reviewer，失败则 generalPurpose）。
+若审计未通过，**根据报告执行**：若修改建议含「创建 Story X.Y」或「更新 Story X.Y」，主 Agent 须**先执行**该建议（发起 Create Story 或更新子任务），再再次发起对当前 Story 的审计；若仅需修改当前 Story 文档，**审计子代理须在本轮内直接修改**该文档，主 Agent 收到报告后再次发起审计。**禁止**仅修改当前 Story 文档即再审计，当修改建议含创建/更新其他 Story 时。文档审计迭代规则见 [audit-document-iteration-rules.md](../speckit-workflow/references/audit-document-iteration-rules.md)。每次审计均遵循 §2.1 的优先顺序（先 code-reviewer，失败则 generalPurpose）。
 
 #### 审计通过后评分写入触发（强制）
 - branch_id=bmad_story_stage2_audit_pass，event=story_status_change，triggerStage=bmad_story_stage2；要求审计子任务 prompt 中写明「审计通过后请将报告保存至 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{epic}-{story}-*/AUDIT_Story_{epic}-{story}_stage2.md`」；主 Agent 在收到通过结论后，若有 reportPath，运行 parse-and-write-score，**必须含 `--iteration-count {累计值}`**（执行审计循环的 Agent 在 pass 时传入本 stage fail 轮数；一次通过传 0；连续 3 轮无 gap 验证不计入）；stage=story；缺 question_version 时 eval_question 不调用；失败 non_blocking，记录 resultCode。

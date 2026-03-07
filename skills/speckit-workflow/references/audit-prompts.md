@@ -1,6 +1,10 @@
 # 审计提示词（固定模板，可复制）
 
+**报告保存防死循环**：当 prompt 包含「报告保存」或「将完整报告保存至」时，**必须**同时包含禁止重复输出「正在写入完整审计报告」等状态信息的约束。详见 [audit-report-save-rules.md](audit-report-save-rules.md)。
+
 生成或更新各阶段文档后，必须调用 **code-review** 能力，使用下方对应提示词进行审计。**仅在审计报告结论为「完全覆盖、验证通过」时** 可结束该步骤；否则根据报告迭代修改文档并再次审计。
+
+**文档审计迭代规则（§1–§4 适用）**：spec/plan/GAPS/tasks 等**文档**审计须遵循 [audit-document-iteration-rules.md](audit-document-iteration-rules.md)。**审计子代理在发现 gap 时须直接修改被审文档**，禁止仅输出修改建议；主 Agent 收到报告后发起下一轮审计。**「连续 3 轮无 gap」针对被审文档**，即被审文档连续 3 轮审计均无 gap 发现才收敛。
 
 ---
 
@@ -10,7 +14,7 @@
 你是一位非常严苛的代码审计员，请帮我仔细审阅目前的 spec.md 是否完全覆盖了原始的需求设计文档所有章节，必须逐条进行检查和验证。若发现 spec 中存在模糊表述（如需求描述不明确、边界条件未定义、术语歧义等），须在报告中明确标注「spec 存在模糊表述」及具体位置，以便触发 clarify 澄清流程。生成一个逐条描述详细检查内容、验证方式和验证结果的审计报告。报告结尾必须明确给出结论：是否「完全覆盖、验证通过」；若未通过，请列出遗漏章节、未覆盖要点或模糊表述位置。报告结尾必须包含 §4.1 规定的可解析评分块（总体评级 + 维度评分），与 tasks 阶段一致，否则 parseAndWriteScore 无法解析、仪表盘无法显示评级。禁止用描述代替结构化块：不得在总结或正文中用「可解析评分块（总体评级 X，维度分 Y–Z）」等文字概括；必须在报告中输出完整的结构化块，包括独立一行 总体评级: X 和四行 - 维度名: XX/100。总体评级只能是 A/B/C/D（禁止 A-、C+ 等）。维度分必须逐行写明，不得用区间或概括代替。【§1 可解析块要求】审计时须同时执行批判审计员检查，输出格式见 [audit-prompts-critical-auditor-appendix.md](audit-prompts-critical-auditor-appendix.md)。
 ```
 
-【审计后动作】审计通过时，请将完整报告保存至调用方在本 prompt 中指定的 reportPath（调用方会在本 prompt 中提供具体路径），并在结论中注明保存路径及 iteration_count（本 stage 审计未通过轮数，0 表示一次通过），以便主 Agent 调用 parse-and-write-score。
+【审计后动作】审计通过时，请将完整报告保存至调用方在本 prompt 中指定的 reportPath（调用方会在本 prompt 中提供具体路径），并在结论中注明保存路径及 iteration_count（本 stage 审计未通过轮数，0 表示一次通过），以便主 Agent 调用 parse-and-write-score。**禁止**：保存时不得重复输出「正在写入完整审计报告」「正在保存」等状态信息；使用 write 工具一次性写入即可。**审计未通过时**：你（审计子代理）须在本轮内**直接修改被审文档**以消除 gap，修改完成后在报告中注明已修改内容；主 Agent 收到报告后发起下一轮审计。禁止仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules.md](audit-document-iteration-rules.md)。
 
 ---
 
@@ -20,7 +24,7 @@
 你是一位非常严苛的代码审计员，请帮我仔细审阅目前的 plan.md 是否完全覆盖了原始的需求设计文档所有章节，必须逐条进行检查和验证。此外，必须专项审查：plan.md 是否包含完整的集成测试与端到端功能测试计划（覆盖模块间协作、生产代码关键路径、用户可见功能流程），是否存在仅依赖单元测试而缺少集成/端到端测试计划的情况，是否存在模块可能内部实现完整但未被生产代码关键路径导入和调用的风险。生成一个逐条描述详细检查内容、验证方式和验证结果的审计报告。报告结尾必须明确给出结论：是否「完全覆盖、验证通过」；若未通过，请列出遗漏章节或未覆盖要点。报告结尾必须包含 §4.1 规定的可解析评分块（总体评级 + 维度评分），与 tasks 阶段一致，否则 parseAndWriteScore 无法解析、仪表盘无法显示评级。禁止用描述代替结构化块：不得在总结或正文中用「可解析评分块（总体评级 X，维度分 Y–Z）」等文字概括；必须在报告中输出完整的结构化块，包括独立一行 总体评级: X 和四行 - 维度名: XX/100。总体评级只能是 A/B/C/D（禁止 A-、C+ 等）。维度分必须逐行写明，不得用区间或概括代替。【§2 可解析块要求】审计时须同时执行批判审计员检查，输出格式见 [audit-prompts-critical-auditor-appendix.md](audit-prompts-critical-auditor-appendix.md)。
 ```
 
-【审计后动作】审计通过时，请将完整报告保存至调用方在本 prompt 中指定的 reportPath（调用方会在本 prompt 中提供具体路径），并在结论中注明保存路径及 iteration_count（本 stage 审计未通过轮数，0 表示一次通过），以便主 Agent 调用 parse-and-write-score。
+【审计后动作】审计通过时，请将完整报告保存至调用方在本 prompt 中指定的 reportPath（调用方会在本 prompt 中提供具体路径），并在结论中注明保存路径及 iteration_count（本 stage 审计未通过轮数，0 表示一次通过），以便主 Agent 调用 parse-and-write-score。**禁止**：保存时不得重复输出「正在写入完整审计报告」「正在保存」等状态信息；使用 write 工具一次性写入即可。**审计未通过时**：你（审计子代理）须在本轮内**直接修改被审文档**以消除 gap，修改完成后在报告中注明已修改内容；主 Agent 收到报告后发起下一轮审计。禁止仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules.md](audit-document-iteration-rules.md)。
 
 ---
 
@@ -30,7 +34,7 @@
 你是一位非常严苛的代码审计员，请帮我仔细审阅目前的 IMPLEMENTATION_GAPS.md 是否完全覆盖了原始的需求设计文档以及用户给定的所有参考文档（如架构设计文档、设计说明书等）的所有章节，必须逐条进行检查和验证，生成一个逐条描述详细检查内容、验证方式和验证结果的审计报告。报告结尾必须明确给出结论：是否「完全覆盖、验证通过」；若未通过，请列出遗漏章节或未覆盖要点。报告结尾必须包含 §4.1 规定的可解析评分块（总体评级 + 维度评分），与 tasks 阶段一致，否则 parseAndWriteScore 无法解析、仪表盘无法显示评级。禁止用描述代替结构化块：不得在总结或正文中用「可解析评分块（总体评级 X，维度分 Y–Z）」等文字概括；必须在报告中输出完整的结构化块，包括独立一行 总体评级: X 和四行 - 维度名: XX/100。总体评级只能是 A/B/C/D（禁止 A-、C+ 等）。维度分必须逐行写明，不得用区间或概括代替。【§3 可解析块要求】审计时须同时执行批判审计员检查，输出格式见 [audit-prompts-critical-auditor-appendix.md](audit-prompts-critical-auditor-appendix.md)。
 ```
 
-【审计后动作】审计通过时，请将完整报告保存至调用方在本 prompt 中指定的 reportPath（调用方会在本 prompt 中提供具体路径），并在结论中注明保存路径及 iteration_count（本 stage 审计未通过轮数，0 表示一次通过），以便主 Agent 调用 parse-and-write-score。
+【审计后动作】审计通过时，请将完整报告保存至调用方在本 prompt 中指定的 reportPath（调用方会在本 prompt 中提供具体路径），并在结论中注明保存路径及 iteration_count（本 stage 审计未通过轮数，0 表示一次通过），以便主 Agent 调用 parse-and-write-score。**禁止**：保存时不得重复输出「正在写入完整审计报告」「正在保存」等状态信息；使用 write 工具一次性写入即可。**审计未通过时**：你（审计子代理）须在本轮内**直接修改被审文档**以消除 gap，修改完成后在报告中注明已修改内容；主 Agent 收到报告后发起下一轮审计。禁止仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules.md](audit-document-iteration-rules.md)。
 
 ---
 
@@ -74,7 +78,7 @@
 | 需修改后重新审计   | C            | 70+          |
 | 严重问题、不通过   | D            | 60 及以下    |
 
-【审计后动作】审计通过时，请将完整报告保存至调用方在本 prompt 中指定的 reportPath（调用方会在本 prompt 中提供具体路径），并在结论中注明保存路径及 iteration_count（本 stage 审计未通过轮数，0 表示一次通过），以便主 Agent 调用 parse-and-write-score。
+【审计后动作】审计通过时，请将完整报告保存至调用方在本 prompt 中指定的 reportPath（调用方会在本 prompt 中提供具体路径），并在结论中注明保存路径及 iteration_count（本 stage 审计未通过轮数，0 表示一次通过），以便主 Agent 调用 parse-and-write-score。**禁止**：保存时不得重复输出「正在写入完整审计报告」「正在保存」等状态信息；使用 write 工具一次性写入即可。**审计未通过时**：你（审计子代理）须在本轮内**直接修改被审文档**以消除 gap，修改完成后在报告中注明已修改内容；主 Agent 收到报告后发起下一轮审计。禁止仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules.md](audit-document-iteration-rules.md)。
 
 ---
 
@@ -109,4 +113,4 @@ implement 阶段审计报告必须在结尾包含以下可解析块，与 `confi
 - `总体评级: A-`、`C+` — 非 A/B/C/D，extractOverallGrade 正则不匹配
 - `维度分 92–95`、`各维度 90+` — 区间/概括，缺 `- 维度名: XX/100` 行级格式，解析不到
 
-【审计后动作】审计通过时，请将完整报告保存至调用方在本 prompt 中指定的 reportPath。implement 阶段的 reportPath 通常为 _bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{epic}-{story}-{slug}/AUDIT_implement-E{epic}-S{story}.md 或 AUDIT_Story_{epic}-{story}_stage4.md。并在结论中注明保存路径及 iteration_count，以便主 Agent 调用 parse-and-write-score。
+【审计后动作】审计通过时，请将完整报告保存至调用方在本 prompt 中指定的 reportPath。implement 阶段的 reportPath 通常为 _bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{epic}-{story}-{slug}/AUDIT_implement-E{epic}-S{story}.md 或 AUDIT_Story_{epic}-{story}_stage4.md。并在结论中注明保存路径及 iteration_count，以便主 Agent 调用 parse-and-write-score。**禁止**：保存时不得重复输出「正在写入完整审计报告」「正在保存」等状态信息；使用 write 工具一次性写入即可。
