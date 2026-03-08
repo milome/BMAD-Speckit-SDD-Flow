@@ -6,8 +6,9 @@
  * 核心问题：Windows 终端对 Unicode 块体字符（█、═、║）渲染为 2 列宽，
  * 导致累积误差使 SPECKIT 出现阶梯状错位。
  *
- * 解决方案：使用 ANSI 光标定位（\x1b[<col>G）确保分隔符和 SPECKIT 从固定列开始，
- * 避免依赖字符宽度累积。列数基于 BMAD 最大渲染宽度 69。
+ * 解决方案：使用 ANSI 光标定位（\x1b[<col>G）确保 SPECKIT 从固定列开始。
+ * getRenderWidth() 按「块体字符=2 列」算出的 BMAD 最大宽度为名义 69 列，
+ * 但实际终端/字体下常渲染得更窄，故 SPECKIT_COL=62 经视觉验证无重叠且有余量。
  */
 const chalk = require('chalk').default ?? require('chalk');
 
@@ -39,6 +40,13 @@ const SPACING = '         ';        // 9 个空格，渲染宽度 9
 // Unicode 分支分隔符：无空格 dash，渲染宽度 1（TASKS_BUGFIX_banner-dash-forward-col）
 const DASH = '-';
 const DASH_RENDER_WIDTH = 1;
+
+/**
+ * Unicode 分支 SPECKIT 起始列号（ANSI \x1b[62G）。
+ * 名义上 BMAD 最长行 getRenderWidth=69，但多数终端实际渲染更窄，62 经视觉验证
+ * 不覆盖 BMAD/分隔符且仍有空隙，故定为正式值。
+ */
+const SPECKIT_COL = 62;
 
 // ASCII 回退版本
 const ASCII_BMAD_LINES = [
@@ -99,8 +107,8 @@ function buildAsciiBannerLines() {
 
 /**
  * 构建 banner 行
- * Unicode 分支：Part1(BMAD) + Part2(DASH) + ANSI 列定位 + Part3(SPECKIT)。
- * speckitCol = BMAD_MAX_RENDER_WIDTH + 1 + getRenderWidth(Part2)，Part2 为 DASH 时 = 71，实现「往前推进」。
+ * Unicode 分支：Part1(BMAD) + Part2(仅中间行) + ANSI 列定位 + Part3(SPECKIT)。
+ * 正式行为：仅中间一行(i===2)显示 SEPARATOR(═══)，其余行无 Part2；SPECKIT 统一从第 SPECKIT_COL 列起。
  */
 function buildBannerLines(opts = {}) {
   const useAscii = !opts.forceUnicode && shouldUseAsciiFallback();
@@ -108,11 +116,11 @@ function buildBannerLines(opts = {}) {
     return buildAsciiBannerLines();
   }
 
-  const speckitCol = BMAD_MAX_RENDER_WIDTH + 1 + getRenderWidth(DASH);  // 69 + 1 + 1 = 71
-  const ansiGoto = '\x1b[' + speckitCol + 'G';
+  const ansiGoto = '\x1b[' + SPECKIT_COL + 'G';
 
   return BMAD_LINES.map((bmad, i) => {
-    return bmad + DASH + ansiGoto + SPECKIT_LINES[i];
+    const part2 = i === 2 ? SEPARATOR : '';
+    return bmad + part2 + ansiGoto + SPECKIT_LINES[i];
   });
 }
 
@@ -173,4 +181,6 @@ module.exports = {
   BMAD_RENDER_WIDTHS,
   DASH,
   DASH_RENDER_WIDTH,
+  SPECKIT_COL,
+  SEPARATOR,
 };

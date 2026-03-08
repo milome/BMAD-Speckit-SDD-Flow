@@ -37,8 +37,9 @@ const EXPECTED_SPECKIT_LINES = [
   '╚══════╝╚═╝     ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝   ╚═╝',
 ];
 
-// Unicode 分支分隔符为 dash（TASKS_BUGFIX_banner-dash-forward-col）
-const UNICODE_SEPARATOR = '-';
+// 正式行为：仅中间一行(i===2)有 SEPARATOR(═══)，其余行无 Part2；SPECKIT 从第 SPECKIT_COL(62) 列起
+const MIDDLE_LINE_INDEX = 2;
+const ANSI_GOTO_62 = '\x1b[62G';
 
 describe('TASK-1: buildBannerLines() 返回 6 行字符串', () => {
   it('应返回包含 6 行的数组', () => {
@@ -47,53 +48,59 @@ describe('TASK-1: buildBannerLines() 返回 6 行字符串', () => {
     assert.strictEqual(lines.length, 6, '应返回 6 行');
   });
 
-  it('Unicode 分支每行均应包含分隔符 "-"', () => {
+  it('Unicode 分支仅中间一行包含分隔符 ═══，其余行无 dash', () => {
     assert.ok(bannerModule, 'banner.js 模块应存在');
     const lines = bannerModule.buildBannerLines({ forceUnicode: true });
+    const sep = bannerModule.SEPARATOR; // '   ═══   '
     for (let i = 0; i < lines.length; i++) {
-      assert.ok(lines[i].includes(UNICODE_SEPARATOR), `第 ${i + 1} 行应包含分隔符 '-'`);
+      if (i === MIDDLE_LINE_INDEX) {
+        assert.ok(lines[i].includes(sep), `第 ${i + 1} 行（中间行）应包含分隔符 ═══`);
+      } else {
+        assert.ok(!lines[i].includes(sep), `第 ${i + 1} 行不应包含分隔符 ═══`);
+        assert.ok(!lines[i].includes('-'), `第 ${i + 1} 行不应包含 dash`);
+      }
     }
   });
 });
 
-// TASKS_BUGFIX_banner-dash-forward-col：Unicode 分支使用 ANSI 列定位，SPECKIT 从第 71 列起
-describe('buildBannerLines() Unicode 分支每行包含 ANSI 列定位 \\x1b[71G', () => {
-  it('每行应包含 \\x1b[71G（SPECKIT 从第 71 列起对齐）', () => {
+describe('buildBannerLines() Unicode 分支每行包含 ANSI 列定位 \\x1b[62G', () => {
+  it('每行应包含 \\x1b[62G（SPECKIT 从第 62 列起对齐）', () => {
     assert.ok(bannerModule, 'banner.js 模块应存在');
     const lines = bannerModule.buildBannerLines({ forceUnicode: true });
     for (let i = 0; i < lines.length; i++) {
-      assert.ok(lines[i].includes('\x1b[71G'), `第 ${i + 1} 行应包含 ANSI \\x1b[71G`);
+      assert.ok(lines[i].includes(ANSI_GOTO_62), `第 ${i + 1} 行应包含 ANSI \\x1b[62G`);
     }
   });
 });
 
 describe('TASK-2: buildBannerLines() 返回正确结构', () => {
-  it('每行应包含 BMAD + dash + ANSI 列定位 + SPECKIT', () => {
+  it('每行应包含 BMAD + ANSI 列定位 + SPECKIT；仅中间行另有分隔符 ═══', () => {
     assert.ok(bannerModule, 'banner.js 模块应存在');
     const lines = bannerModule.buildBannerLines({ forceUnicode: true });
+    const sep = bannerModule.SEPARATOR;
 
     for (let i = 0; i < 6; i++) {
       assert.ok(lines[i].includes(EXPECTED_BMAD_LINES[i]), `第 ${i + 1} 行应包含 BMAD 部分`);
-      assert.ok(lines[i].includes(UNICODE_SEPARATOR), `第 ${i + 1} 行应包含 dash '-'`);
-      assert.ok(lines[i].includes('\x1b[71G'), `第 ${i + 1} 行应包含 ANSI 列定位`);
+      assert.ok(lines[i].includes(ANSI_GOTO_62), `第 ${i + 1} 行应包含 ANSI \\x1b[62G`);
       assert.ok(lines[i].includes(EXPECTED_SPECKIT_LINES[i]), `第 ${i + 1} 行应包含 SPECKIT 部分`);
+      if (i === MIDDLE_LINE_INDEX) {
+        assert.ok(lines[i].includes(sep), `第 ${i + 1} 行（中间行）应包含分隔符 ═══`);
+      }
     }
   });
 });
 
-// TASKS_BUGFIX_banner-dash-forward-col：SPECKIT 从第 71 列起，Part2(dash) 与 Part3 之间仅 ANSI
-describe('buildBannerLines() SPECKIT 从第 71 列起（Part2 与 Part3 之间仅 ANSI）', () => {
-  it('每行应包含 \\x1b[71G 且 SPECKIT 内容紧接其后，无多余空格', () => {
+describe('buildBannerLines() SPECKIT 从第 62 列起（Part2 与 Part3 之间仅 ANSI）', () => {
+  it('每行应包含 \\x1b[62G 且 SPECKIT 内容紧接其后', () => {
     assert.ok(bannerModule, 'banner.js 模块应存在');
     const lines = bannerModule.buildBannerLines({ forceUnicode: true });
 
     for (let i = 0; i < 6; i++) {
-      assert.ok(lines[i].includes('\x1b[71G'), `第 ${i + 1} 行应包含 \\x1b[71G`);
+      assert.ok(lines[i].includes(ANSI_GOTO_62), `第 ${i + 1} 行应包含 \\x1b[62G`);
       const speckitIdx = lines[i].indexOf(EXPECTED_SPECKIT_LINES[i]);
       assert.ok(speckitIdx >= 0, `第 ${i + 1} 行应包含 SPECKIT 内容`);
-      // ANSI 序列后紧跟 SPECKIT：\x1b[71G 之后应为 SPECKIT（可能中间有 ANSI 色码，无空格填充）
-      const after71G = lines[i].split('\x1b[71G')[1] || '';
-      assert.ok(after71G.includes(EXPECTED_SPECKIT_LINES[i]), `第 ${i + 1} 行 \\x1b[71G 后应包含 SPECKIT`);
+      const after62G = lines[i].split(ANSI_GOTO_62)[1] || '';
+      assert.ok(after62G.includes(EXPECTED_SPECKIT_LINES[i]), `第 ${i + 1} 行 \\x1b[62G 后应包含 SPECKIT`);
     }
   });
 });
