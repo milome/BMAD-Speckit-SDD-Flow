@@ -4,6 +4,8 @@ description: 'Execute a story by implementing tasks/subtasks, writing tests, val
 disable-model-invocation: true
 ---
 
+**前置条件**：sprint-planning 为 dev-story 的前置条件。sprint-status.yaml 缺失时需先运行 `sprint-planning` 或提供要开发的 Story 文件路径。参见 `bmad-bmm-sprint-planning` 命令。
+
 IT IS CRITICAL THAT YOU FOLLOW THESE STEPS - while staying in character as the current agent persona you may have loaded:
 
 <steps CRITICAL="TRUE">

@@ -4,7 +4,7 @@
  */
 const fs = require('fs');
 const path = require('path');
-const chalk = require('chalk');
+const chalk = require('chalk').default ?? require('chalk');
 const boxen = require('boxen');
 const pathUtils = require('../utils/path');
 const ttyUtils = require('../utils/tty');
@@ -80,32 +80,132 @@ function initCommand(projectName, options = {}) {
   // T007: Parsed options available - modules, force, noGit, debug, githubToken, skipTls
   log(`modules=${options.modules}, force=${options.force}, noGit=${options.noGit}`);
 
-  // Story 10.1: interactive only (--ai, --yes non-interactive by Story 10.2)
-  if (!ttyUtils.isTTY()) {
+  // Story 10.2: TTY detection, --ai, --yes, env vars (AC-3, AC-4)
+  const sddYes = process.env.SDD_YES;
+  const isSddYes = sddYes && ['1', 'true'].includes(String(sddYes).toLowerCase());
+  const internalYes = !ttyUtils.isTTY() && !options.ai && !options.yes;
+  const nonInteractive = options.yes || internalYes || isSddYes || (options.ai && !ttyUtils.isTTY());
+
+  const resolvedOptions = {
+    ...options,
+    ai: options.ai || process.env.SDD_AI || undefined,
+    nonInteractive,
+    internalYes,
+  };
+
+  if (nonInteractive) {
+    runNonInteractiveFlow(targetPath, resolvedOptions, log).catch((err) => {
+      console.error('Error:', err.message);
+      process.exit(exitCodes.GENERAL_ERROR);
+    });
+  } else if (!ttyUtils.isTTY()) {
     console.error('Error: Interactive init requires a TTY. Use --ai <name> and --yes for non-interactive (Story 10.2).');
     process.exit(exitCodes.GENERAL_ERROR);
+  } else {
+    runInteractiveFlow(targetPath, resolvedOptions, log).catch((err) => {
+      console.error('Error:', err.message);
+      process.exit(exitCodes.GENERAL_ERROR);
+    });
   }
-  runInteractiveFlow(targetPath, options, log).catch((err) => {
-    console.error('Error:', err.message);
-    process.exit(exitCodes.GENERAL_ERROR);
-  });
 }
 
 /**
- * T012: Banner BMAD-Speckit, ASCII/box-drawing, chalk+boxen (GAP-2.1)
+ * Story 10.2: Get default AI (ConfigManager defaultAI > aiBuiltin[0])
+ */
+function getDefaultAI() {
+  try {
+    const configManager = require('../services/config-manager');
+    const defaultAI = configManager?.get?.('defaultAI');
+    if (defaultAI && typeof defaultAI === 'string') return defaultAI;
+  } catch {
+    // Story 10.4 not done, ConfigManager may not exist
+  }
+  return aiBuiltin[0]?.id || 'claude';
+}
+
+/**
+ * Story 10.2: Non-interactive flow (--ai, --yes, TTY auto --yes, SDD_AI, SDD_YES)
+ */
+async function runNonInteractiveFlow(targetPath, options, log) {
+  let selectedAI = options.ai;
+  if (selectedAI) {
+    const validIds = aiBuiltin.map((a) => a.id);
+    if (!validIds.includes(selectedAI)) {
+      const list = aiBuiltin.map((a) => a.id).join(', ');
+      console.error(`Error: Invalid AI "${selectedAI}". Available: ${list}`);
+      console.error('Run "bmad-speckit check --list-ai" for full list.');
+      process.exit(exitCodes.AI_INVALID);
+    }
+  } else {
+    selectedAI = getDefaultAI();
+  }
+
+  const finalPath = targetPath;
+  const tag = 'latest';
+  log(`selectedAI=${selectedAI}, finalPath=${finalPath}, tag=${tag} (non-interactive)`);
+
+  const { fetchTemplate } = require('../services/template-fetcher');
+  const { generateSkeleton, writeSelectedAI } = require('./init-skeleton');
+
+  try {
+    const templateDir = await fetchTemplate(tag, {
+      githubToken: options.githubToken || process.env.GH_TOKEN || process.env.GITHUB_TOKEN,
+      skipTls: options.skipTls,
+      debug: options.debug,
+    });
+    const modules = options.modules ? options.modules.split(',').map((m) => m.trim()).filter(Boolean) : null;
+    await generateSkeleton(finalPath, templateDir, modules, options.force);
+    writeSelectedAI(finalPath, selectedAI);
+    if (!options.noGit) {
+      const { runGitInit } = require('./init-skeleton');
+      runGitInit(finalPath);
+    }
+    console.log(chalk.green(`\n✓ Initialized at ${finalPath}`));
+    console.log(chalk.gray('Run /bmad-help in your AI IDE for next steps.'));
+  } catch (err) {
+    console.error('Error:', err.message);
+    process.exit(exitCodes.GENERAL_ERROR);
+  }
+}
+
+/**
+ * T012: Banner BMAD-Speckit, ASCII/box-drawing (GAP-2.1)
+ * Style inspired by specify-cn: block-art + gradient + subtitle
+ * BMAD: specify-cn style; SPECKIT: TAAG ANSI Shadow (https://www.patorjk.com/software/taag/)
+ * 
+ * BUGFIX_showBanner-ascii-art: 重构使用 banner.js 模块
  */
 function showBanner() {
   const pkg = require('../../package.json');
-  const title = chalk.cyan.bold('BMAD-Speckit');
+  const banner = require('./banner.js');
+  const pad = ' '.repeat(16);
+
+  // 构建 banner 行
+  const lines = banner.buildBannerLines();
+
+  // 应用渐变色
+  let coloredLines;
+  if (banner.supportsTrueColor()) {
+    coloredLines = banner.applyGradient(lines, chalk);
+  } else {
+    // 回退到 16 色（与当前实现一致：chalk.cyan 作为第 4 个颜色）
+    const fallbackStyles = [chalk.blue, chalk.blueBright, chalk.cyan, chalk.cyan, chalk.white, chalk.gray];
+    coloredLines = lines.map((line, i) => fallbackStyles[i](line));
+  }
+
+  // 添加左侧缩进
+  const paddedLines = coloredLines.map((line) => pad + line);
+
+  // 输出
+  const subtitle = chalk.hex('#ff9800')('BMAD-Speckit - 规范驱动开发工具包');
   const version = chalk.gray(`v${pkg.version}`);
-  const line = chalk.gray('─'.repeat(20));
-  const content = [
-    '┌─────────────────────────┐',
-    `│  ${title}  │`,
-    `│  ${version.padEnd(22)} │`,
-    '└─────────────────────────┘',
-  ].join('\n');
-  console.log(boxen(content, { padding: 1, borderStyle: 'round', borderColor: 'cyan' }));
+
+  console.log('');
+  console.log(paddedLines.join('\n'));
+  console.log('');
+  console.log(pad + ' '.repeat(20) + subtitle);
+  console.log(pad + ' '.repeat(24) + version);
+  console.log('');
 }
 
 /**
@@ -117,27 +217,38 @@ async function runInteractiveFlow(targetPath, options, log) {
   const AutocompletePrompt = (await import('inquirer-autocomplete-prompt')).default;
   inquirer.registerPrompt('autocomplete', AutocompletePrompt);
 
-  showBanner();
-
-  const aiChoices = aiBuiltin.map((a) => ({ name: `${a.name} (${a.id})`, value: a.id }));
-  const { selectedAI } = await inquirer.prompt([
-    {
-      type: 'autocomplete',
-      name: 'selectedAI',
-      message: 'Select AI assistant (type to search):',
-      source: (answersSoFar, input) => {
-        const q = (input || '').toLowerCase().trim();
-        const filtered = q
-          ? aiChoices.filter(
-              (c) =>
-                c.name.toLowerCase().includes(q) || c.value.toLowerCase().includes(q),
-            )
-          : aiChoices;
-        return Promise.resolve(filtered);
+  let selectedAI;
+  if (options.ai) {
+    const validIds = aiBuiltin.map((a) => a.id);
+    if (!validIds.includes(options.ai)) {
+      const list = aiBuiltin.map((a) => a.id).join(', ');
+      console.error(`Error: Invalid AI "${options.ai}". Available: ${list}`);
+      console.error('Run "bmad-speckit check --list-ai" for full list.');
+      process.exit(exitCodes.AI_INVALID);
+    }
+    selectedAI = options.ai;
+  } else {
+    const aiChoices = aiBuiltin.map((a) => ({ name: `${a.name} (${a.id})`, value: a.id }));
+    const res = await inquirer.prompt([
+      {
+        type: 'autocomplete',
+        name: 'selectedAI',
+        message: 'Select AI assistant (type to search):',
+        source: (answersSoFar, input) => {
+          const q = (input || '').toLowerCase().trim();
+          const filtered = q
+            ? aiChoices.filter(
+                (c) =>
+                  c.name.toLowerCase().includes(q) || c.value.toLowerCase().includes(q),
+              )
+            : aiChoices;
+          return Promise.resolve(filtered);
+        },
+        pageSize: 15,
       },
-      pageSize: 15,
-    },
-  ]);
+    ]);
+    selectedAI = res.selectedAI;
+  }
 
   const { confirmedPath } = await inquirer.prompt([
     {
@@ -199,4 +310,5 @@ async function runInteractiveFlow(targetPath, options, log) {
 
 module.exports = {
   initCommand,
+  showBanner,
 };

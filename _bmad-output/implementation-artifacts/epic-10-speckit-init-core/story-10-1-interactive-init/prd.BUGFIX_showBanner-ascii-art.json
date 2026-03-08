@@ -1,0 +1,191 @@
+{
+  "branchName": "ralph/bugfix-showBanner-ascii-art",
+  "taskDescription": "修复 showBanner ASCII 艺术显示问题 - BMAD/SPECKIT 对齐、分隔符、24位真彩色渐变",
+  "projectContext": {
+    "framework": "Node.js/CLI",
+    "testCommand": "npm test",
+    "buildCommand": "npm run build"
+  },
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "编写测试用例 - buildBannerLines() 返回 6 行字符串",
+      "description": "编写测试用例验证 buildBannerLines() 函数返回 6 行字符串数组，每行包含分隔符 ═",
+      "acceptanceCriteria": [
+        "断言返回数组长度为 6",
+        "断言每行包含分隔符 ═",
+        "断言每行与预期字符串完全匹配",
+        "测试通过"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "对应 TASK-1，先写测试再实现"
+    },
+    {
+      "id": "US-002",
+      "title": "编写测试用例 - BMAD 每行与 TAAG 输出精确匹配",
+      "description": "编写测试用例验证 BMAD 部分每行字符与 TAAG ANSI Shadow 输出精确匹配",
+      "acceptanceCriteria": [
+        "测试定义完成",
+        "断言每行字符精确匹配 TAAG 输出",
+        "测试通过"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "对应 TASK-2"
+    },
+    {
+      "id": "US-003",
+      "title": "编写测试用例 - SPECKIT 第一行包含两个空格",
+      "description": "编写测试用例验证 SPECKIT 第一行 ██╗ ██╗ 后有两个空格",
+      "acceptanceCriteria": [
+        "测试定义完成",
+        "断言第一行包含两个空格",
+        "测试通过"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "对应 TASK-3，这是关键 bug"
+    },
+    {
+      "id": "US-005",
+      "title": "编写测试用例 - supportsTrueColor() 检测逻辑",
+      "description": "编写测试用例验证 supportsTrueColor() 函数正确检测终端 24 位真彩色支持",
+      "acceptanceCriteria": [
+        "测试定义完成",
+        "覆盖多种终端环境变量（WT_SESSION, COLORTERM, TERM_PROGRAM 等）",
+        "测试通过"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "对应 TASK-5"
+    },
+    {
+      "id": "US-006",
+      "title": "实现 buildBannerLines() 纯函数",
+      "description": "实现 buildBannerLines() 纯函数，分离 BMAD、分隔符、SPECKIT",
+      "acceptanceCriteria": [
+        "函数返回 6 行字符串数组",
+        "每行正确拼接 BMAD + 分隔符 + SPECKIT",
+        "所有测试通过"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "对应 TASK-6"
+    },
+    {
+      "id": "US-007",
+      "title": "实现 applyGradient() 渐变色函数（含错误处理）",
+      "description": "实现 applyGradient() 函数，使用 chalk.rgb() 实现 24 位真彩色渐变",
+      "acceptanceCriteria": [
+        "函数使用 chalk.rgb() 应用颜色",
+        "包含错误处理回退机制",
+        "排序：深蓝 → 青 → 浅灰",
+        "所有测试通过"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "对应 TASK-7"
+    },
+    {
+      "id": "US-008",
+      "title": "实现 supportsTrueColor() 终端检测函数",
+      "description": "实现 supportsTrueColor() 函数，检测终端是否支持 24 位真彩色",
+      "acceptanceCriteria": [
+        "函数检测 COLORTERM, WT_SESSION, TERM_PROGRAM 等环境变量",
+        "返回布尔值",
+        "所有测试通过"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "对应 TASK-8"
+    },
+    {
+      "id": "US-009",
+      "title": "重构 showBanner() 使用新函数",
+      "description": "重构 showBanner() 函数，调用 buildBannerLines(), applyGradient(), supportsTrueColor()",
+      "acceptanceCriteria": [
+        "showBanner() 调用新函数",
+        "保留左侧缩进和副标题输出",
+        "所有测试通过"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "对应 TASK-9"
+    },
+    {
+      "id": "US-010",
+      "title": "集成测试 - Windows Terminal 验证显示正常",
+      "description": "在 Windows Terminal 中验证 banner 显示正常",
+      "acceptanceCriteria": [
+        "运行 npx bmad-speckit init --help",
+        "截图确认显示效果",
+        "显示正常"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": "对应 TASK-10，集成测试"
+    },
+    {
+      "id": "US-011",
+      "title": "集成测试 - PowerShell 5.1 验证回退到 16 色",
+      "description": "在 PowerShell 5.1 中验证回退到 16 色显示",
+      "acceptanceCriteria": [
+        "运行 powershell -c npx bmad-speckit init --help",
+        "截图确认显示效果",
+        "回退正常"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": "对应 TASK-11，集成测试"
+    },
+    {
+      "id": "US-012",
+      "title": "删除旧代码中硬编码的分隔符",
+      "description": "删除旧代码中硬编码的分隔符，确保无残留",
+      "acceptanceCriteria": [
+        "无残留硬编码分隔符",
+        "所有测试通过"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": "对应 TASK-12"
+    },
+    {
+      "id": "US-013",
+      "title": "运行 npm test 确保所有现有测试通过",
+      "description": "运行 npm test 确保所有现有测试通过，无破坏",
+      "acceptanceCriteria": [
+        "npm test 执行通过",
+        "无失败用例"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": "对应 TASK-13，回归测试"
+    },
+    {
+      "id": "US-014",
+      "title": "Grep 搜索确认无其他文件硬编码 banner 格式",
+      "description": "使用 Grep 搜索确认无其他文件硬编码 banner 格式",
+      "acceptanceCriteria": [
+        "Grep 搜索完成",
+        "无其他依赖"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": "对应 TASK-14"
+    },
+    {
+      "id": "US-015",
+      "title": "导出预期 banner 字符串常量供测试使用",
+      "description": "导出预期 banner 字符串常量供测试使用",
+      "acceptanceCriteria": [
+        "常量导出完成",
+        "测试可引用"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": "对应 TASK-15"
+    }
+  ]
+}

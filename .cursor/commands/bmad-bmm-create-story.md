@@ -4,6 +4,10 @@ description: 'Create the next user story from epics+stories with enhanced contex
 disable-model-invocation: true
 ---
 
+**前置条件**：sprint-planning 为 create-story 的前置条件。sprint-status.yaml 缺失时需先运行 `sprint-planning` 或显式确认 bypass。参见 `bmad-bmm-sprint-planning` 命令。
+
+**Story docs path 豁免**：若用户提供 **story docs path**（greenfield 场景，指向包含 story 文档的文件夹路径），sprint-status 缺失时该路径可放行，作为合法入口；见 TASKS_sprint-planning-gate §2.2 豁免。epic-story 编号（如 2-4）在 sprint-status 缺失时仍须经门控确认。
+
 IT IS CRITICAL THAT YOU FOLLOW THESE STEPS - while staying in character as the current agent persona you may have loaded:
 
 <steps CRITICAL="TRUE">

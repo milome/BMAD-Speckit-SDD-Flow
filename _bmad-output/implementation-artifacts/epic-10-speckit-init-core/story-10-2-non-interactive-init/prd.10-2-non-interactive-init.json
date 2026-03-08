@@ -1,0 +1,87 @@
+{
+  "branchName": "ralph/story-10-2-non-interactive-init",
+  "taskDescription": "非交互式 init：--ai、--yes、TTY 检测、SDD_AI/SDD_YES、--modules 非交互",
+  "projectContext": {
+    "framework": "Node.js, Commander",
+    "testCommand": "node packages/bmad-speckit/tests/e2e/init-e2e.test.js",
+    "buildCommand": "npm run build"
+  },
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "TTY 检测与 internalYes",
+      "description": "InitCommand 在流程入口检测 TTY，非 TTY 且无 --ai/--yes 时设置 internalYes=true，进入非交互流程",
+      "acceptanceCriteria": [
+        "grep 确认 init.js 导入 ttyUtils 且调用 isTTY()",
+        "非 TTY 下 init（无 --ai/--yes）不退出，进入非交互流程"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "init.js 82-86 行当前为 exit，需改为 internalYes 分支"
+    },
+    {
+      "id": "US-002",
+      "title": "--ai 参数处理",
+      "description": "bin 增加 --ai 选项；init.js 解析、校验 --ai，无效时退出码 2",
+      "acceptanceCriteria": [
+        "init --help 含 --ai",
+        "init --ai cursor-agent --yes 跳过 AI 选择",
+        "init --ai invalid-ai --yes 退出码 2，stderr 含可用 AI 或 check --list-ai"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "ai-builtin 第一项为 claude"
+    },
+    {
+      "id": "US-003",
+      "title": "--yes 与默认 AI",
+      "description": "bin 增加 --yes/-y；init.js 非交互流程、defaultAI 来源、路径/模板默认",
+      "acceptanceCriteria": [
+        "init --help 含 --yes、-y",
+        "init --yes 无阻塞",
+        "无 defaultAI 时使用 aiBuiltin[0]；有 defaultAI 时使用 defaultAI",
+        "非交互模式路径 targetPath，模板 latest"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "ConfigManager 可能不存在，需 try/catch 或条件加载"
+    },
+    {
+      "id": "US-004",
+      "title": "环境变量 SDD_AI、SDD_YES",
+      "description": "init.js 读取 SDD_AI、SDD_YES，优先级低于 CLI",
+      "acceptanceCriteria": [
+        "SDD_AI=claude init --yes 使用 claude",
+        "SDD_AI=claude init --ai cursor-agent --yes 使用 cursor-agent",
+        "SDD_YES=1 或 true（不区分大小写）时视为非交互"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "--modules 非交互校验",
+      "description": "init.js --modules 指定且为非交互模式时允许执行",
+      "acceptanceCriteria": [
+        "init --modules bmm,tea --ai cursor-agent --yes 仅初始化 bmm、tea",
+        "非 TTY 下 init --modules bmm,tea 退出码 0，仅 bmm、tea"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "集成测试与 E2E",
+      "description": "init-e2e.test.js 增加非交互用例；grep 验证生产路径",
+      "acceptanceCriteria": [
+        "T6.1 全部 8 条用例通过",
+        "T6.2 grep 验证通过"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": "部分用例需网络（模板拉取），可 mock 或 skip"
+    }
+  ]
+}

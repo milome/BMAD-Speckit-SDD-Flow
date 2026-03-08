@@ -217,19 +217,20 @@ function Get-EpicSlugOrDefault {
             # Ignore parse errors
         }
     }
-    # 2) _bmad-output/planning-artifacts/{branch}/epics.md: ## Epic N: Title
+    # 2) _bmad-output/planning-artifacts/{branch}/epics.md: ## Epic N: Title (fallback to dev when branch subdir missing)
     if ([string]::IsNullOrWhiteSpace($slug) -and $HasGit) {
         try {
             $branch = git rev-parse --abbrev-ref HEAD 2>$null
-            if ($LASTEXITCODE -eq 0 -and $branch -and $branch -ne "HEAD") {
-                $branchSafe = $branch -replace '/', '-'
-                $epicsPath = Join-Path (Join-Path $RepoRoot "_bmad-output") (Join-Path "planning-artifacts" (Join-Path $branchSafe "epics.md"))
+            $branchSafe = if ($LASTEXITCODE -eq 0 -and $branch -and $branch -ne "HEAD") { $branch -replace '/', '-' } else { "dev" }
+            foreach ($b in @($branchSafe, "dev")) {
+                $epicsPath = Join-Path (Join-Path $RepoRoot "_bmad-output") (Join-Path "planning-artifacts" (Join-Path $b "epics.md"))
                 if (Test-Path $epicsPath) {
                     $line = Get-Content -Path $epicsPath -Encoding UTF8 | Where-Object { $_ -match "^\s*#{2,3}\s+Epic\s+$EpicNum\s*[:\uff1a]\s*(.+)$" } | Select-Object -First 1
                     if ($line -match "[:\uff1a]\s*(.+)$") {
                         $title = $matches[1].Trim()
                         if (-not [string]::IsNullOrWhiteSpace($title)) {
                             $slug = ConvertTo-CleanBranchName $title
+                            break
                         }
                     }
                 }
@@ -269,20 +270,21 @@ function Get-StorySlugOrDefault {
             # Ignore parse errors
         }
     }
-    # 2) _bmad-output/planning-artifacts/{branch}/epics.md: ### Story N.M: Title
+    # 2) _bmad-output/planning-artifacts/{branch}/epics.md: ### Story N.M: Title (fallback to dev when branch subdir missing)
     if ([string]::IsNullOrWhiteSpace($slug) -and $HasGit) {
         try {
             $branch = git rev-parse --abbrev-ref HEAD 2>$null
-            if ($LASTEXITCODE -eq 0 -and $branch -and $branch -ne "HEAD") {
-                $branchSafe = $branch -replace '/', '-'
-                $epicsPath = Join-Path (Join-Path $RepoRoot "_bmad-output") (Join-Path "planning-artifacts" (Join-Path $branchSafe "epics.md"))
+            $branchSafe = if ($LASTEXITCODE -eq 0 -and $branch -and $branch -ne "HEAD") { $branch -replace '/', '-' } else { "dev" }
+            foreach ($b in @($branchSafe, "dev")) {
+                $epicsPath = Join-Path (Join-Path $RepoRoot "_bmad-output") (Join-Path "planning-artifacts" (Join-Path $b "epics.md"))
                 if (Test-Path $epicsPath) {
-                    $pattern = "^\s*###\s+Story\s+$EpicNum\.$StoryNum\s*:\s*(.+)$"
+                    $pattern = "^\s*###\s+Story\s+$EpicNum\.$StoryNum\s*[:\uff1a]\s*(.+)$"
                     $line = Get-Content -Path $epicsPath -Encoding UTF8 | Where-Object { $_ -match $pattern } | Select-Object -First 1
-                    if ($line -match ":\s*(.+)$") {
+                    if ($line -match "[:\uff1a]\s*(.+)$") {
                         $title = $matches[1].Trim()
                         if (-not [string]::IsNullOrWhiteSpace($title)) {
                             $slug = ConvertTo-CleanBranchName $title
+                            break
                         }
                     }
                 }

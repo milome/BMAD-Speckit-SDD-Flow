@@ -1,0 +1,21 @@
+# Progress: TASKS_BUGFIX_banner-dash-forward-col
+# Total stories: 8
+
+Current story: 8
+Completed: 8
+
+---
+# Story log
+[2025-03-08] US-001: banner.js 新增 DASH/DASH_RENDER_WIDTH 常量 - PASSED
+[2025-03-08] US-002: buildBannerLines Unicode Part1+DASH+ANSI+Part3 - PASSED
+[2025-03-08] US-003: getSeparator/getUnicodeSeparator 返回 DASH - PASSED
+[2025-03-08] US-004: TASK-1 Unicode 分支每行包含 dash - PASSED
+[2025-03-08] US-005: describe Unicode 分支每行包含 \\x1b[71G - PASSED
+[2025-03-08] US-006: TASK-2 BMAD + dash + ANSI + SPECKIT - PASSED
+[2025-03-08] US-007: describe SPECKIT 从第 71 列起 - PASSED
+[2025-03-08] US-008: TASK-3 SPECKIT 第一行两空格 indexOf/includes - PASSED
+
+---
+# §4 验收命令结果
+npm test (packages/bmad-speckit): 20 passed, 0 failed, 0 skipped. duration_ms 18740.
+npx bmad-speckit init --help: 退出码 0，help 正常输出；目视需在 TTY 下执行 init 确认 banner 从第 71 列起对齐。

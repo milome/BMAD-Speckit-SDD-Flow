@@ -106,7 +106,7 @@ development_status:
   # Sprint Planning 2026-03-07: E10–E13 纳入实施范围 (Bob Scrum Master)
   epic-10: in-progress
   10-1-interactive-init: done
-  10-2-non-interactive-init: backlog
+  10-2-non-interactive-init: done
   10-3-cross-platform-script: backlog
   10-4-config-persistence: backlog
   10-5-bmad-path-worktree: backlog

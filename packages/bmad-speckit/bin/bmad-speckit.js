@@ -4,7 +4,13 @@
  */
 const { program } = require('commander');
 const pkg = require('../package.json');
-const { initCommand } = require('../src/commands/init');
+const { initCommand, showBanner } = require('../src/commands/init');
+const ttyUtils = require('../src/utils/tty');
+
+// Show banner for init (including init --help) when in TTY
+if (process.argv.includes('init') && ttyUtils.isTTY()) {
+  showBanner();
+}
 
 program
   .name('bmad-speckit')
@@ -13,8 +19,10 @@ program
 
 program
   .command('init [project-name]')
-  .description('Initialize a new SDD project')
+  .description('Initialize a new bmad-speckit project')
   .option('--here', 'Use current directory')
+  .option('--ai <name>', 'Non-interactive AI selection (skip selector)')
+  .option('-y, --yes', 'Skip all prompts, use defaults')
   .option('--modules <list>', 'Comma-separated modules (bmm,bmb,tea,bmgd,cis,...)')
   .option('--force', 'Force overwrite non-empty directory')
   .option('--no-git', 'Skip git init')

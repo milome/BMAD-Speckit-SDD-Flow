@@ -14,8 +14,8 @@ description: AI Coach 诊断：基于最近一轮评分数据输出 phase_scores
 
 ## 调用流程（无参数）
 
-1. **Discovery**：扫描 `getScoringDataPath()` 下 `*.json`（仅评分 schema）与 `scores.jsonl`，默认仅 `scenario=real_dev`，按 `timestamp` 取最新 N 条（默认 100）
-2. **空数据**：若无 real_dev 评分记录，返回「暂无 real_dev 评分数据，请先完成至少一轮 Dev Story」
+1. **Discovery**：扫描 `getScoringDataPath()` 下 `*.json`（仅评分 schema）与 `scores.jsonl`，按 `timestamp` 取最新 N 条（默认 100）
+2. **空数据**：若无评分记录，返回「暂无评分数据，请先完成至少一轮 Dev Story」
 3. **诊断**：取最新 run_id → 调用 `coachDiagnose(runId)` → `formatToMarkdown`
 4. **截断提示**：数据量超过 N 时，在报告前附加「仅展示最近 N 条」
 
@@ -39,7 +39,6 @@ description: AI Coach 诊断：基于最近一轮评分数据输出 phase_scores
 npx ts-node scripts/coach-diagnose.ts
 npx ts-node scripts/coach-diagnose.ts --epic 3
 npx ts-node scripts/coach-diagnose.ts --story 3.3
-npx ts-node scripts/coach-diagnose.ts --scenario eval_question
 ```
 
-有数据时输出诊断报告；空目录时输出「暂无 real_dev 评分数据，请先完成至少一轮 Dev Story」。`--epic`、`--story` 无匹配时输出明确反馈（如「无可筛选数据」）。
+有数据时输出诊断报告；空目录时输出「暂无评分数据，请先完成至少一轮 Dev Story」。`--epic`、`--story` 无匹配时输出明确反馈（如「无可筛选数据」）。
