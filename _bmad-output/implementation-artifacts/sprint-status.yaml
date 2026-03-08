@@ -107,8 +107,8 @@ development_status:
   epic-10: in-progress
   10-1-interactive-init: done
   10-2-non-interactive-init: done
-  10-3-cross-platform-script: ready-for-dev
-  10-4-config-persistence: ready-for-dev
+  10-3-cross-platform-script: done
+  10-4-config-persistence: done
   10-5-bmad-path-worktree: backlog
   epic-10-retrospective: optional
 
