@@ -80,6 +80,28 @@ function initCommand(projectName, options = {}) {
   // T007: Parsed options available - modules, force, noGit, debug, githubToken, skipTls
   log(`modules=${options.modules}, force=${options.force}, noGit=${options.noGit}`);
 
+  // Story 10.3: --script sh|ps resolution and default (AC-1, AC-2, AC-4)
+  const VALID_SCRIPT_TYPES = ['sh', 'ps'];
+  let resolvedScriptType = options.script;
+  if (resolvedScriptType) {
+    if (!VALID_SCRIPT_TYPES.includes(resolvedScriptType)) {
+      console.error(`Error: Invalid --script "${resolvedScriptType}". Use sh or ps.`);
+      process.exit(exitCodes.GENERAL_ERROR);
+    }
+  } else {
+    resolvedScriptType = process.platform === 'win32' ? 'ps' : 'sh';
+    try {
+      const configManager = require('../services/config-manager');
+      const defaultScript = configManager?.get?.('defaultScript', { cwd: process.cwd() });
+      if (defaultScript && VALID_SCRIPT_TYPES.includes(defaultScript)) {
+        resolvedScriptType = defaultScript;
+      }
+    } catch {
+      // ConfigManager may not exist in older installs
+    }
+  }
+  log(`resolvedScriptType=${resolvedScriptType}`);
+
   // Story 10.2: TTY detection, --ai, --yes, env vars (AC-3, AC-4)
   const sddYes = process.env.SDD_YES;
   const isSddYes = sddYes && ['1', 'true'].includes(String(sddYes).toLowerCase());
@@ -91,6 +113,7 @@ function initCommand(projectName, options = {}) {
     ai: options.ai || process.env.SDD_AI || undefined,
     nonInteractive,
     internalYes,
+    resolvedScriptType,
   };
 
   if (nonInteractive) {
@@ -110,15 +133,15 @@ function initCommand(projectName, options = {}) {
 }
 
 /**
- * Story 10.2: Get default AI (ConfigManager defaultAI > aiBuiltin[0])
+ * Story 10.2 / 10.4: Get default AI (ConfigManager defaultAI > aiBuiltin[0]); cwd for project-level override.
  */
-function getDefaultAI() {
+function getDefaultAI(cwd = process.cwd()) {
   try {
     const configManager = require('../services/config-manager');
-    const defaultAI = configManager?.get?.('defaultAI');
+    const defaultAI = configManager?.get?.('defaultAI', { cwd });
     if (defaultAI && typeof defaultAI === 'string') return defaultAI;
   } catch {
-    // Story 10.4 not done, ConfigManager may not exist
+    // ConfigManager may not exist in older installs
   }
   return aiBuiltin[0]?.id || 'claude';
 }
@@ -137,7 +160,7 @@ async function runNonInteractiveFlow(targetPath, options, log) {
       process.exit(exitCodes.AI_INVALID);
     }
   } else {
-    selectedAI = getDefaultAI();
+    selectedAI = getDefaultAI(process.cwd());
   }
 
   const finalPath = targetPath;
@@ -146,6 +169,7 @@ async function runNonInteractiveFlow(targetPath, options, log) {
 
   const { fetchTemplate } = require('../services/template-fetcher');
   const { generateSkeleton, writeSelectedAI } = require('./init-skeleton');
+  const { generateScript } = require('./script-generator');
 
   try {
     const templateDir = await fetchTemplate(tag, {
@@ -155,7 +179,8 @@ async function runNonInteractiveFlow(targetPath, options, log) {
     });
     const modules = options.modules ? options.modules.split(',').map((m) => m.trim()).filter(Boolean) : null;
     await generateSkeleton(finalPath, templateDir, modules, options.force);
-    writeSelectedAI(finalPath, selectedAI);
+    writeSelectedAI(finalPath, selectedAI, tag);
+    generateScript(finalPath, options.resolvedScriptType);
     if (!options.noGit) {
       const { runGitInit } = require('./init-skeleton');
       runGitInit(finalPath);
@@ -286,6 +311,7 @@ async function runInteractiveFlow(targetPath, options, log) {
   // Phase 5-6: TemplateFetcher + skeleton generation (will call from here)
   const { fetchTemplate } = require('../services/template-fetcher');
   const { generateSkeleton, writeSelectedAI } = require('./init-skeleton');
+  const { generateScript } = require('./script-generator');
 
   try {
     const templateDir = await fetchTemplate(tag, {
@@ -295,7 +321,8 @@ async function runInteractiveFlow(targetPath, options, log) {
     });
     const modules = options.modules ? options.modules.split(',').map((m) => m.trim()).filter(Boolean) : null;
     await generateSkeleton(finalPath, templateDir, modules, options.force);
-    writeSelectedAI(finalPath, selectedAI);
+    writeSelectedAI(finalPath, selectedAI, tag);
+    generateScript(finalPath, options.resolvedScriptType);
     if (!options.noGit) {
       const { runGitInit } = require('./init-skeleton');
       runGitInit(finalPath);

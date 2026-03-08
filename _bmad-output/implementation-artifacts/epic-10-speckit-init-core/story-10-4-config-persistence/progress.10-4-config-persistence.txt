@@ -1,0 +1,48 @@
+# Progress: 10-4-config-persistence
+# Total stories: 6
+
+Current story: 6
+Completed: 6
+
+---
+# Story log
+# (TDD RED/GREEN/REFACTOR per US appended below)
+
+[TDD-RED] T1 node --test packages/bmad-speckit/tests/config-manager.test.js => 1 failed (no module / path tests)
+[TDD-GREEN] T1 node --test packages/bmad-speckit/tests/config-manager.test.js => 15 passed
+[TDD-REFACTOR] T1 无需重构 ✓
+[2025-03-08] US-001: ConfigManager 模块与路径 - PASSED
+
+[TDD-RED] T2 config-manager get/priority/networkTimeoutMs 未实现时单元失败
+[TDD-GREEN] T2 get(key, options) 实现后 15 passed
+[TDD-REFACTOR] T2 无需重构 ✓
+[2025-03-08] US-002: get(key, options) 与优先级 - PASSED
+
+[TDD-RED] T3 set/setAll 未实现时单元失败
+[TDD-GREEN] T3 set/setAll 实现后 15 passed
+[TDD-REFACTOR] T3 无需重构 ✓
+[2025-03-08] US-003: set 与 setAll - PASSED
+
+[TDD-RED] T4 list 未实现时单元失败
+[TDD-GREEN] T4 list(options) 实现后 15 passed
+[TDD-REFACTOR] T4 无需重构 ✓
+[2025-03-08] US-004: list(options) 合并视图 - PASSED
+
+[TDD-RED] T5 init 未经 ConfigManager 写入时 E10-S4-config-after-init 无 templateVersion
+[TDD-GREEN] T5 init-skeleton setAll + init.js get(cwd) 后 E10-S4-config-after-init、E10-S4-grep 通过
+[TDD-REFACTOR] T5 无需重构 ✓
+[2025-03-08] US-005: 与 init 集成 - PASSED
+
+[TDD-RED] T6 无 E10-S4 E2E 与 grep 时验收缺失
+[TDD-GREEN] T6 E10-S4-config-after-init、E10-S4-grep 加入并通过；config-manager 单元 15 passed
+[TDD-REFACTOR] T6 无需重构 ✓
+[2025-03-08] US-006: 单元测试、集成/E2E、生产路径 - PASSED
+
+---
+# 交付前自检 (Dev Story 执行阶段)
+[TDD-RED] T1 node --test packages/bmad-speckit/tests/config-manager.test.js => 1 failed (no module / path tests)
+[TDD-GREEN] T1 node --test packages/bmad-speckit/tests/config-manager.test.js => 15 passed
+[TDD-RED] T6 node packages/bmad-speckit/tests/e2e/init-e2e.test.js => E10-S4-config-after-init, E10-S4-grep 验收
+[TDD-GREEN] T6 node packages/bmad-speckit/tests/e2e/init-e2e.test.js => 19 passed, 0 failed (E10-S4-config-after-init PASS, E10-S4-grep PASS)
+验收命令: node --test packages/bmad-speckit/tests/config-manager.test.js => 15 passed; node packages/bmad-speckit/tests/e2e/init-e2e.test.js => 19 passed, 0 failed.
+

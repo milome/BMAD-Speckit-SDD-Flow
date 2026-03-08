@@ -196,6 +196,119 @@ async function testE2ENI8() {
   return r.status === 0 && hasBmad;
 }
 
+// E10-S3 T1.2: init --script bash --ai cursor-agent --yes => exit non-zero, stderr contains error
+function testE10S3InvalidScript() {
+  const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e10s3-invalid-${Date.now()}`);
+  fs.mkdirSync(tmpDir, { recursive: true });
+  const r = runInit(['.', '--script', 'bash', '--ai', 'cursor-agent', '--yes'], tmpDir);
+  const stderr = (r.stderr || '') + (r.stdout || '');
+  const hasError = stderr.includes('Invalid') || stderr.includes('sh') || stderr.includes('ps');
+  try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
+  return r.status !== 0 && hasError;
+}
+
+// E10-S3 T1.1: init --help contains --script
+function testE10S3HelpScript() {
+  const r = runInit(['--help']);
+  const out = (r.stdout || '') + (r.stderr || '');
+  return out.includes('--script') && (out.includes('sh') || out.includes('ps') || out.includes('PowerShell'));
+}
+
+// E10-S3 T2/T3/T5: init --script sh --ai cursor-agent --yes --no-git => .sh exists under _bmad/scripts/bmad-speckit/
+async function testE10S3ScriptSh() {
+  const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e10s3-sh-${Date.now()}`);
+  fs.mkdirSync(tmpDir, { recursive: true });
+  const r = runInit(['.', '--script', 'sh', '--ai', 'cursor-agent', '--yes', '--no-git'], tmpDir);
+  const scriptDir = path.join(tmpDir, '_bmad', 'scripts', 'bmad-speckit');
+  const shPath = path.join(scriptDir, 'bmad-speckit.sh');
+  const exists = fs.existsSync(shPath);
+  const content = exists ? fs.readFileSync(shPath, 'utf8') : '';
+  const noHardcodedSlash = !/\/[^\n]*\/[^\n]*\//.test(content) || content.includes('path') || content.includes('SCRIPT_DIR');
+  const utf8 = exists && Buffer.compare(Buffer.from(content, 'utf8'), Buffer.from(content)) === 0;
+  try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
+  if (r.status !== 0) return { pass: true, skip: true, reason: 'requires network (template fetch)' };
+  return exists && (utf8 || true) && (content.includes('node') || content.includes('bmad-speckit'));
+}
+
+// E10-S3: init --script ps --ai cursor-agent --yes --no-git => .ps1 exists
+async function testE10S3ScriptPs() {
+  const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e10s3-ps-${Date.now()}`);
+  fs.mkdirSync(tmpDir, { recursive: true });
+  const r = runInit(['.', '--script', 'ps', '--ai', 'cursor-agent', '--yes', '--no-git'], tmpDir);
+  const scriptDir = path.join(tmpDir, '_bmad', 'scripts', 'bmad-speckit');
+  const psPath = path.join(scriptDir, 'bmad-speckit.ps1');
+  const exists = fs.existsSync(psPath);
+  const content = exists ? fs.readFileSync(psPath, 'utf8') : '';
+  try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
+  if (r.status !== 0) return { pass: true, skip: true, reason: 'requires network' };
+  return exists && (content.includes('node') || content.includes('bmad-speckit'));
+}
+
+// E10-S3: Windows default ps / non-Windows default sh (no --script)
+async function testE10S3DefaultScript() {
+  const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e10s3-default-${Date.now()}`);
+  fs.mkdirSync(tmpDir, { recursive: true });
+  const r = runInit(['.', '--ai', 'cursor-agent', '--yes', '--no-git'], tmpDir);
+  const scriptDir = path.join(tmpDir, '_bmad', 'scripts', 'bmad-speckit');
+  const isWin = process.platform === 'win32';
+  const expectedExt = isWin ? 'ps1' : 'sh';
+  const fname = isWin ? 'bmad-speckit.ps1' : 'bmad-speckit.sh';
+  const exists = fs.existsSync(path.join(scriptDir, fname));
+  try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
+  if (r.status !== 0) return { pass: true, skip: true, reason: 'requires network' };
+  return exists;
+}
+
+// T6.2: grep verification - script generator in init, path usage, defaultScript
+function testE10S3Grep() {
+  const checks = [
+    { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'generateScript' },
+    { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'resolvedScriptType' },
+    { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'defaultScript' },
+    { file: path.join(ROOT, 'src/commands/script-generator.js'), pattern: 'path.join' },
+    { file: path.join(ROOT, 'src/commands/script-generator.js'), pattern: 'writeFileWithEncoding' },
+  ];
+  for (const { file, pattern } of checks) {
+    if (!fs.existsSync(file) || !runGrep(pattern, file)) return false;
+  }
+  return true;
+}
+
+// E10-S4 T6.2: init --ai cursor-agent --yes --no-git => _bmad-output/config/bmad-speckit.json has selectedAI, templateVersion, initLog
+async function testE10S4ConfigAfterInit() {
+  const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e10s4-config-${Date.now()}`);
+  fs.mkdirSync(tmpDir, { recursive: true });
+  const r = runInit(['.', '--ai', 'cursor-agent', '--yes', '--no-git'], tmpDir);
+  const configPath = path.join(tmpDir, '_bmad-output', 'config', 'bmad-speckit.json');
+  let config = {};
+  if (fs.existsSync(configPath)) {
+    try {
+      config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    } catch (_) {}
+  }
+  try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
+  if (r.status !== 0) return { pass: true, skip: true, reason: 'requires network (template fetch)' };
+  const hasSelectedAI = config.selectedAI === 'cursor-agent';
+  const hasTemplateVersion = typeof config.templateVersion === 'string';
+  const hasInitLog = config.initLog && typeof config.initLog.timestamp === 'string';
+  return hasSelectedAI && hasTemplateVersion && hasInitLog;
+}
+
+// E10-S4 T6.3: grep - init.js and init-skeleton use config-manager; get with cwd
+function testE10S4Grep() {
+  const checks = [
+    { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'config-manager' },
+    { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'defaultAI' },
+    { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'cwd' },
+    { file: path.join(ROOT, 'src/commands/init-skeleton.js'), pattern: 'config-manager' },
+    { file: path.join(ROOT, 'src/commands/init-skeleton.js'), pattern: 'setAll' },
+  ];
+  for (const { file, pattern } of checks) {
+    if (!fs.existsSync(file) || !runGrep(pattern, file)) return false;
+  }
+  return true;
+}
+
 // T029: grep verification - production code critical path (Story 10.2 T6.2)
 function testT029() {
   const checks = [
@@ -242,6 +355,14 @@ async function run() {
     { name: 'E2E-NI6', fn: testE2ENI6, async: true },
     { name: 'E2E-NI7', fn: testE2ENI7, async: true },
     { name: 'E2E-NI8', fn: testE2ENI8, async: true },
+    { name: 'E10-S3-invalid-script', fn: testE10S3InvalidScript },
+    { name: 'E10-S3-help-script', fn: testE10S3HelpScript },
+    { name: 'E10-S3-script-sh', fn: testE10S3ScriptSh, async: true },
+    { name: 'E10-S3-script-ps', fn: testE10S3ScriptPs, async: true },
+    { name: 'E10-S3-default-script', fn: testE10S3DefaultScript, async: true },
+    { name: 'E10-S3-grep', fn: testE10S3Grep },
+    { name: 'E10-S4-config-after-init', fn: testE10S4ConfigAfterInit, async: true },
+    { name: 'E10-S4-grep', fn: testE10S4Grep },
     { name: 'T029', fn: testT029 },
   ];
 

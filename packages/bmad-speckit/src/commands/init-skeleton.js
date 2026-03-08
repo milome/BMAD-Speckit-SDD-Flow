@@ -83,22 +83,15 @@ async function generateSkeleton(targetPath, templateDir, modules, force) {
 }
 
 /**
- * T024: Write selectedAI to _bmad-output/config/bmad-speckit.json (GAP-5.4)
+ * T024 / Story 10.4: Write selectedAI, templateVersion, initLog via ConfigManager (GAP-5.1)
  */
-function writeSelectedAI(targetPath, selectedAI) {
-  const configPath = path.join(targetPath, '_bmad-output', 'config', 'bmad-speckit.json');
-  const configDir = path.dirname(configPath);
-  if (!fs.existsSync(configDir)) fs.mkdirSync(configDir, { recursive: true });
-  let config = {};
-  if (fs.existsSync(configPath)) {
-    try {
-      config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    } catch (_) {}
-  }
-  config.selectedAI = selectedAI;
-  config.initLog = config.initLog || {};
-  config.initLog.timestamp = new Date().toISOString();
-  fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
+function writeSelectedAI(targetPath, selectedAI, templateVersion = 'latest') {
+  const configManager = require('../services/config-manager');
+  const initLog = { timestamp: new Date().toISOString() };
+  configManager.setAll(
+    { selectedAI, templateVersion, initLog },
+    { scope: 'project', cwd: targetPath },
+  );
 }
 
 /**
