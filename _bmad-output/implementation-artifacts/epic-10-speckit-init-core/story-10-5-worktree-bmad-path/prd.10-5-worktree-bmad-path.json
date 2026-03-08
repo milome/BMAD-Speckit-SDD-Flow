@@ -1,0 +1,78 @@
+{
+  "branchName": "ralph/e10-s5-worktree-bmad-path",
+  "taskDescription": "Story 10.5: --bmad-path worktree 共享 - init 不复制 _bmad、bmadPath 写入、check 验证",
+  "projectContext": {
+    "framework": "Node.js CLI (bmad-speckit)",
+    "testCommand": "node --test packages/bmad-speckit/tests/",
+    "buildCommand": "npm run build (if any)"
+  },
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "结构验证共享与 init --bmad-path 解析与前置校验 (T1)",
+      "description": "structure-validate.js validateBmadStructure(rootPath); bin --bmad-path; init 解析、--ai/--yes 校验、path 存在且结构符合否则退出码 4",
+      "acceptanceCriteria": [
+        "单元测试 validateBmadStructure 存在/符合、不存在、结构不符合",
+        "init --bmad-path /nonexistent --ai cursor-agent --yes => 退出码 4; init --bmad-path <空目录> => 退出码 4 并列出缺失项"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "worktree 分支仅 _bmad-output 与 AI 同步 (T2)",
+      "description": "init --bmad-path 有效时不 fetchTemplate/generateSkeleton; 仅创建 _bmad-output; 从 bmadPath 同步 commands/rules/skills; writeSelectedAI 仍写入",
+      "acceptanceCriteria": [
+        "init --bmad-path <有效_bmad根> --ai cursor-agent --yes 后无 _bmad，有 _bmad-output，AI 目录来自 bmadPath"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "bmadPath 写入项目配置 (T3)",
+      "description": "worktree 分支经 ConfigManager.set/setAll 写入 bmadPath（规范绝对路径），合并已有 selectedAI/templateVersion/initLog",
+      "acceptanceCriteria": [
+        "bmad-speckit.json 含 bmadPath 与 selectedAI 等; grep 确认经 ConfigManager"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "check 在 bmadPath 存在时验证指向目录 (T4)",
+      "description": "check.js 读项目级配置; 若 bmadPath 存在则验证指向目录存在且结构符合; 不符合退出码 4; bin 注册 check 命令",
+      "acceptanceCriteria": [
+        "check 在 bmadPath 有效 => 0; bmadPath 不存在或结构不符合 => 4"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "退出码与错误信息 (T5)",
+      "description": "init/check 失败时 TARGET_PATH_UNAVAILABLE(4); 错误信息含路径不存在或结构不符合及缺失项",
+      "acceptanceCriteria": [
+        "stderr 可解析; 退出码 4 与文档一致"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "集成测试与 E2E、生产路径 (T6)",
+      "description": "structure-validate 单元; init --bmad-path 有效/无效 集成; check 集成; grep init/check 引用 structure-validate 与 ConfigManager",
+      "acceptanceCriteria": [
+        "npm test 或 node --test 通过; E2E init/check 通过; grep 验证通过"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": ""
+    }
+  ]
+}

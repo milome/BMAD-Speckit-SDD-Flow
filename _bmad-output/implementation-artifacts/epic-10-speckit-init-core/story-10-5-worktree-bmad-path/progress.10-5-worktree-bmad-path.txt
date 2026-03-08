@@ -1,0 +1,69 @@
+# Progress: 10-5-worktree-bmad-path
+# Total stories: 6
+
+Current story: 6
+Completed: 6
+
+---
+# Story log
+# (TDD RED/GREEN/REFACTOR per US appended below)
+
+## T1 (US-001): 结构验证共享与 init --bmad-path 解析与前置校验
+**红灯阶段**
+[TDD-RED] T1 structure-validate + init --bmad-path 校验 => 已有 structure-validate.test.js；E2E E10-S5-bmad-path-nonexistent/empty-dir => 退出码 4 验证
+
+**绿灯阶段**
+[TDD-GREEN] T1 init.js 解析 options.bmadPath、校验 --ai/--yes、validateBmadStructure(resolvedPath)、退出码 4；E2E 通过
+
+**重构阶段**
+[TDD-REFACTOR] T1 无需重构 ✓
+
+---
+## T2 (US-002): worktree 分支仅 _bmad-output 与 AI 同步
+**红灯阶段**
+[TDD-RED] T2 worktree 分支未实现前 E10-S5-worktree-init 或 createWorktreeSkeleton 相关验收缺失/失败
+**绿灯阶段**
+[TDD-GREEN] T2 createWorktreeSkeleton、writeSelectedAI(bmadPath)；不调用 fetchTemplate/generateSkeleton；E10-S5-worktree-init 通过
+
+**重构阶段**
+[TDD-REFACTOR] T2 无新增生产代码重复，worktree 分支独立 ✓
+
+---
+## T3 (US-003): bmadPath 写入项目配置
+**红灯阶段**
+[TDD-RED] T3 bmadPath 未写入项目配置前 setAll/bmad-speckit.json 验收缺失或失败
+**绿灯阶段**
+[TDD-GREEN] T3 writeSelectedAI(..., bmadPathResolved) 经 init-skeleton setAll 合并写入 bmad-speckit.json
+
+**重构阶段**
+[TDD-REFACTOR] T3 无需重构 ✓
+
+---
+## T4 (US-004): check 在 bmadPath 存在时验证指向目录
+**红灯阶段**
+[TDD-RED] T4 check 命令未实现前 E10-S5-check-ok/check-fail 验收缺失或失败
+**绿灯阶段**
+[TDD-GREEN] T4 check.js 读 ConfigManager.get('bmadPath')、validateBmadStructure(bmadPath)、退出码 0/4；bin 注册 check；E10-S5-check-ok/check-fail 通过
+
+**重构阶段**
+[TDD-REFACTOR] T4 无需重构 ✓
+
+---
+## T5 (US-005): 退出码与错误信息
+**红灯阶段**
+[TDD-RED] T5 退出码未统一为 4 前 E2E 退出码验收缺失或失败
+**绿灯阶段**
+[TDD-GREEN] T5 init/check 使用 TARGET_PATH_UNAVAILABLE(4)；错误信息含路径不存在或结构不符合
+
+**重构阶段**
+[TDD-REFACTOR] T5 无需重构 ✓
+
+---
+## T6 (US-006): 集成测试与 E2E、生产路径
+**红灯阶段**
+[TDD-RED] T6 E10-S5-* 与 E10-S5-grep 用例未加入前对应验收缺失
+**绿灯阶段**
+[TDD-GREEN] T6 structure-validate.test.js、init-e2e E10-S5-* 全部通过；E10-S5-grep 验证 init/init-skeleton/check 引用
+
+**重构阶段**
+[TDD-REFACTOR] T6 无新增生产代码，各模块关键路径已验证 ✓

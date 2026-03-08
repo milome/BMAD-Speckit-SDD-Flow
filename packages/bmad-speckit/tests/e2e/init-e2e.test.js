@@ -20,6 +20,10 @@ function runInit(args = [], cwd = ROOT, env = undefined) {
   return spawnSync('node', [BIN, 'init', ...args], opts);
 }
 
+function runCheck(cwd = ROOT) {
+  return spawnSync('node', [BIN, 'check'], { cwd, encoding: 'utf8', timeout: 5000 });
+}
+
 function runGrep(pattern, filePath) {
   const content = fs.readFileSync(filePath, 'utf8');
   return content.includes(pattern);
@@ -309,6 +313,100 @@ function testE10S4Grep() {
   return true;
 }
 
+// E10-S5 T1.4: init --bmad-path /nonexistent --ai cursor-agent --yes => exit 4
+function testE10S5BmadPathNonexistent() {
+  const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e10s5-ne-${Date.now()}`);
+  fs.mkdirSync(tmpDir, { recursive: true });
+  const r = runInit(['.', '--bmad-path', path.join(tmpDir, 'nonexistent'), '--ai', 'cursor-agent', '--yes'], tmpDir);
+  try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
+  return r.status === 4;
+}
+
+// E10-S5 T1.4: init --bmad-path <empty dir> --ai cursor-agent --yes => exit 4 (structure invalid)
+function testE10S5BmadPathEmptyDir() {
+  const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e10s5-empty-${Date.now()}`);
+  const emptyBmad = path.join(tmpDir, 'empty_bmad');
+  fs.mkdirSync(emptyBmad, { recursive: true });
+  const projectDir = path.join(tmpDir, 'proj');
+  fs.mkdirSync(projectDir, { recursive: true });
+  const r = runInit(['.', '--bmad-path', emptyBmad, '--ai', 'cursor-agent', '--yes'], projectDir);
+  try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
+  return r.status === 4;
+}
+
+// E10-S5 T2/T3: init --bmad-path <valid> --ai cursor-agent --yes => no _bmad, has _bmad-output, bmadPath in config
+function testE10S5WorktreeInit() {
+  const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e10s5-wt-${Date.now()}`);
+  const sharedBmad = path.join(tmpDir, 'shared_bmad');
+  fs.mkdirSync(path.join(sharedBmad, 'core'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'commands'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'rules'), { recursive: true });
+  const projectDir = path.join(tmpDir, 'proj');
+  fs.mkdirSync(projectDir, { recursive: true });
+  const r = runInit(['.', '--bmad-path', sharedBmad, '--ai', 'cursor-agent', '--yes', '--no-git'], projectDir);
+  const noBmad = !fs.existsSync(path.join(projectDir, '_bmad'));
+  const hasOutput = fs.existsSync(path.join(projectDir, '_bmad-output', 'config'));
+  let config = {};
+  const configPath = path.join(projectDir, '_bmad-output', 'config', 'bmad-speckit.json');
+  if (fs.existsSync(configPath)) {
+    try { config = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch (_) {}
+  }
+  const hasBmadPath = typeof config.bmadPath === 'string' && config.bmadPath.length > 0;
+  try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
+  return r.status === 0 && noBmad && hasOutput && hasBmadPath;
+}
+
+// E10-S5 T4: after worktree init, check => exit 0
+function testE10S5CheckOk() {
+  const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e10s5-chk-${Date.now()}`);
+  const sharedBmad = path.join(tmpDir, 'shared_bmad');
+  fs.mkdirSync(path.join(sharedBmad, 'core'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'commands'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'rules'), { recursive: true });
+  const projectDir = path.join(tmpDir, 'proj');
+  fs.mkdirSync(projectDir, { recursive: true });
+  runInit(['.', '--bmad-path', sharedBmad, '--ai', 'cursor-agent', '--yes', '--no-git'], projectDir);
+  const r = runCheck(projectDir);
+  try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
+  return r.status === 0;
+}
+
+// E10-S5 T4: bmadPath points to nonexistent => check exit 4
+function testE10S5CheckFail() {
+  const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e10s5-cf-${Date.now()}`);
+  const sharedBmad = path.join(tmpDir, 'shared_bmad');
+  fs.mkdirSync(path.join(sharedBmad, 'core'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'commands'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'rules'), { recursive: true });
+  const projectDir = path.join(tmpDir, 'proj');
+  fs.mkdirSync(projectDir, { recursive: true });
+  runInit(['.', '--bmad-path', sharedBmad, '--ai', 'cursor-agent', '--yes', '--no-git'], projectDir);
+  const configPath = path.join(projectDir, '_bmad-output', 'config', 'bmad-speckit.json');
+  let config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  config.bmadPath = path.join(tmpDir, 'nonexistent_path');
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
+  const r = runCheck(projectDir);
+  try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
+  return r.status === 4;
+}
+
+// E10-S5 T6.2: grep - init worktree uses validateBmadStructure, configManager; check uses structure-validate
+function testE10S5Grep() {
+  const checks = [
+    { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'validateBmadStructure' },
+    { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'runWorktreeFlow' },
+    { file: path.join(ROOT, 'src/commands/init-skeleton.js'), pattern: 'bmadPath' },
+    { file: path.join(ROOT, 'src/commands/init-skeleton.js'), pattern: 'setAll' },
+    { file: path.join(ROOT, 'src/commands/check.js'), pattern: 'structure-validate' },
+    { file: path.join(ROOT, 'src/commands/check.js'), pattern: 'validateBmadStructure' },
+    { file: path.join(ROOT, 'bin/bmad-speckit.js'), pattern: 'check' },
+  ];
+  for (const { file, pattern } of checks) {
+    if (!fs.existsSync(file) || !runGrep(pattern, file)) return false;
+  }
+  return true;
+}
+
 // T029: grep verification - production code critical path (Story 10.2 T6.2)
 function testT029() {
   const checks = [
@@ -363,6 +461,12 @@ async function run() {
     { name: 'E10-S3-grep', fn: testE10S3Grep },
     { name: 'E10-S4-config-after-init', fn: testE10S4ConfigAfterInit, async: true },
     { name: 'E10-S4-grep', fn: testE10S4Grep },
+    { name: 'E10-S5-bmad-path-nonexistent', fn: testE10S5BmadPathNonexistent },
+    { name: 'E10-S5-bmad-path-empty-dir', fn: testE10S5BmadPathEmptyDir },
+    { name: 'E10-S5-worktree-init', fn: testE10S5WorktreeInit },
+    { name: 'E10-S5-check-ok', fn: testE10S5CheckOk },
+    { name: 'E10-S5-check-fail', fn: testE10S5CheckFail },
+    { name: 'E10-S5-grep', fn: testE10S5Grep },
     { name: 'T029', fn: testT029 },
   ];
 

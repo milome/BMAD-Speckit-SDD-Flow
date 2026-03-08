@@ -83,15 +83,103 @@ async function generateSkeleton(targetPath, templateDir, modules, force) {
 }
 
 /**
- * T024 / Story 10.4: Write selectedAI, templateVersion, initLog via ConfigManager (GAP-5.1)
+ * Story 10.5: Worktree mode - only create _bmad-output, sync from bmadPath to .cursor/ (and bmadPath/skills)
  */
-function writeSelectedAI(targetPath, selectedAI, templateVersion = 'latest') {
+function generateWorktreeSkeleton(targetPath, bmadPath, selectedAI) {
+  if (!fs.existsSync(targetPath)) {
+    fs.mkdirSync(targetPath, { recursive: true });
+  }
+  const destOutput = path.join(targetPath, '_bmad-output');
+  const destConfig = path.join(destOutput, 'config');
+  fs.mkdirSync(destConfig, { recursive: true });
+
+  const copyDir = (src, dest) => {
+    if (!fs.existsSync(src)) return;
+    const entries = fs.readdirSync(src, { withFileTypes: true });
+    for (const e of entries) {
+      const s = path.join(src, e.name);
+      const d = path.join(dest, e.name);
+      if (e.isDirectory()) {
+        if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+        copyDir(s, d);
+      } else {
+        fs.copyFileSync(s, d);
+      }
+    }
+  };
+
+  const cursorSrc = path.join(bmadPath, 'cursor');
+  const cursorDest = path.join(targetPath, '.cursor');
+  if (fs.existsSync(cursorSrc) && fs.statSync(cursorSrc).isDirectory()) {
+    if (!fs.existsSync(cursorDest)) fs.mkdirSync(cursorDest, { recursive: true });
+    copyDir(cursorSrc, cursorDest);
+  }
+  const skillsSrc = path.join(bmadPath, 'skills');
+  const skillsDest = path.join(targetPath, '.cursor', 'skills');
+  if (fs.existsSync(skillsSrc) && fs.statSync(skillsSrc).isDirectory()) {
+    if (!fs.existsSync(skillsDest)) fs.mkdirSync(skillsDest, { recursive: true });
+    copyDir(skillsSrc, skillsDest);
+  }
+}
+
+/**
+ * T024 / Story 10.4: Write selectedAI, templateVersion, initLog via ConfigManager (GAP-5.1)
+ * Story 10.5: optional bmadPath to merge into project config
+ */
+function writeSelectedAI(targetPath, selectedAI, templateVersion = 'latest', bmadPath = null) {
   const configManager = require('../services/config-manager');
   const initLog = { timestamp: new Date().toISOString() };
-  configManager.setAll(
-    { selectedAI, templateVersion, initLog },
-    { scope: 'project', cwd: targetPath },
-  );
+  const record = { selectedAI, templateVersion, initLog };
+  if (bmadPath != null) record.bmadPath = bmadPath;
+  configManager.setAll(record, { scope: 'project', cwd: targetPath });
+}
+
+/**
+ * Story 10.5: Worktree mode - create only _bmad-output and config; sync commands/rules/skills from bmadPath (no _bmad copy)
+ */
+function createWorktreeSkeleton(targetPath, bmadPath, selectedAI) {
+  if (!fs.existsSync(targetPath)) {
+    fs.mkdirSync(targetPath, { recursive: true });
+  }
+  const destOutput = path.join(targetPath, '_bmad-output');
+  fs.mkdirSync(destOutput, { recursive: true });
+  fs.mkdirSync(path.join(destOutput, 'config'), { recursive: true });
+
+  const copyDir = (src, dest) => {
+    if (!fs.existsSync(src)) return;
+    const entries = fs.readdirSync(src, { withFileTypes: true });
+    for (const e of entries) {
+      const s = path.join(src, e.name);
+      const d = path.join(dest, e.name);
+      if (e.isDirectory()) {
+        if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+        copyDir(s, d);
+      } else {
+        fs.copyFileSync(s, d);
+      }
+    }
+  };
+
+  const cursorSrc = path.join(bmadPath, 'cursor');
+  const cursorDest = path.join(targetPath, '.cursor');
+  if (fs.existsSync(cursorSrc)) {
+    if (!fs.existsSync(cursorDest)) fs.mkdirSync(cursorDest, { recursive: true });
+    copyDir(cursorSrc, cursorDest);
+  }
+
+  const claudeSrc = path.join(bmadPath, 'claude');
+  const claudeDest = path.join(targetPath, '.claude');
+  if (fs.existsSync(claudeSrc) && (selectedAI === 'claude' || selectedAI === 'cursor-agent')) {
+    if (!fs.existsSync(claudeDest)) fs.mkdirSync(claudeDest, { recursive: true });
+    copyDir(claudeSrc, claudeDest);
+  }
+
+  const skillsSrc = path.join(bmadPath, 'skills');
+  const skillsDest = path.join(targetPath, '.cursor', 'skills');
+  if (fs.existsSync(skillsSrc)) {
+    if (!fs.existsSync(skillsDest)) fs.mkdirSync(skillsDest, { recursive: true });
+    copyDir(skillsSrc, skillsDest);
+  }
 }
 
 /**
@@ -117,5 +205,6 @@ _bmad-output/
 module.exports = {
   generateSkeleton,
   writeSelectedAI,
+  createWorktreeSkeleton,
   runGitInit,
 };

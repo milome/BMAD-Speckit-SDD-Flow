@@ -10,6 +10,7 @@ const pathUtils = require('../utils/path');
 const ttyUtils = require('../utils/tty');
 const exitCodes = require('../constants/exit-codes');
 const aiBuiltin = require('../constants/ai-builtin');
+const { validateBmadStructure } = require('../utils/structure-validate');
 
 /**
  * Check if directory is non-empty (FR-019): has _bmad, _bmad-output, or other files/subdirs
@@ -41,7 +42,7 @@ function isPathWritable(dirPath) {
 /**
  * Init command handler
  */
-function initCommand(projectName, options = {}) {
+async function initCommand(projectName, options = {}) {
   const cwd = process.cwd();
   const debug = options.debug || false;
 
@@ -108,13 +109,44 @@ function initCommand(projectName, options = {}) {
   const internalYes = !ttyUtils.isTTY() && !options.ai && !options.yes;
   const nonInteractive = options.yes || internalYes || isSddYes || (options.ai && !ttyUtils.isTTY());
 
+  // Story 10.5: --bmad-path worktree mode (AC-1, AC-4)
+  let resolvedBmadPath = null;
+  if (options.bmadPath) {
+    if (!nonInteractive) {
+      console.error('Error: --bmad-path requires --ai and --yes for non-interactive use.');
+      process.exit(exitCodes.TARGET_PATH_UNAVAILABLE);
+    }
+    resolvedBmadPath = path.resolve(options.bmadPath);
+    const structure = validateBmadStructure(resolvedBmadPath);
+    if (!structure.valid) {
+      if (structure.missing && structure.missing[0] === 'path does not exist') {
+        console.error(`Error: Path does not exist: ${resolvedBmadPath}`);
+      } else {
+        console.error(`Error: Structure does not match (need core/cursor/speckit/skills and cursor/commands, cursor/rules): ${(structure.missing || []).join('; ')}`);
+      }
+      process.exit(exitCodes.TARGET_PATH_UNAVAILABLE);
+    }
+    log(`resolvedBmadPath=${resolvedBmadPath} (worktree mode)`);
+  }
+
   const resolvedOptions = {
     ...options,
     ai: options.ai || process.env.SDD_AI || undefined,
     nonInteractive,
     internalYes,
     resolvedScriptType,
+    resolvedBmadPath,
   };
+
+  if (resolvedBmadPath && nonInteractive) {
+    try {
+      await runWorktreeFlow(targetPath, resolvedOptions, log);
+    } catch (err) {
+      console.error('Error:', err.message);
+      process.exit(exitCodes.GENERAL_ERROR);
+    }
+    return;
+  }
 
   if (nonInteractive) {
     runNonInteractiveFlow(targetPath, resolvedOptions, log).catch((err) => {
@@ -147,6 +179,32 @@ function getDefaultAI(cwd = process.cwd()) {
 }
 
 /**
+ * Story 10.5: Worktree flow (--bmad-path): no _bmad copy, only _bmad-output + sync from bmadPath, write bmadPath to config
+ */
+async function runWorktreeFlow(targetPath, options, log) {
+  let selectedAI = options.ai;
+  if (selectedAI) {
+    const validIds = aiBuiltin.map((a) => a.id);
+    if (!validIds.includes(selectedAI)) {
+      const list = aiBuiltin.map((a) => a.id).join(', ');
+      console.error(`Error: Invalid AI "${selectedAI}". Available: ${list}`);
+      process.exit(exitCodes.AI_INVALID);
+    }
+  } else {
+    selectedAI = getDefaultAI(process.cwd());
+  }
+
+  const bmadPathResolved = options.resolvedBmadPath;
+  const { createWorktreeSkeleton, writeSelectedAI, runGitInit } = require('./init-skeleton');
+
+  createWorktreeSkeleton(targetPath, bmadPathResolved, selectedAI);
+  writeSelectedAI(targetPath, selectedAI, 'latest', bmadPathResolved);
+  if (!options.noGit) runGitInit(targetPath);
+  console.log(chalk.green(`\n✓ Initialized (worktree) at ${targetPath}`));
+  console.log(chalk.gray('Run /bmad-help in your AI IDE for next steps.'));
+}
+
+/**
  * Story 10.2: Non-interactive flow (--ai, --yes, TTY auto --yes, SDD_AI, SDD_YES)
  */
 async function runNonInteractiveFlow(targetPath, options, log) {
@@ -167,23 +225,28 @@ async function runNonInteractiveFlow(targetPath, options, log) {
   const tag = 'latest';
   log(`selectedAI=${selectedAI}, finalPath=${finalPath}, tag=${tag} (non-interactive)`);
 
-  const { fetchTemplate } = require('../services/template-fetcher');
-  const { generateSkeleton, writeSelectedAI } = require('./init-skeleton');
+  const { generateSkeleton, createWorktreeSkeleton, writeSelectedAI, runGitInit } = require('./init-skeleton');
   const { generateScript } = require('./script-generator');
 
   try {
-    const templateDir = await fetchTemplate(tag, {
-      githubToken: options.githubToken || process.env.GH_TOKEN || process.env.GITHUB_TOKEN,
-      skipTls: options.skipTls,
-      debug: options.debug,
-    });
-    const modules = options.modules ? options.modules.split(',').map((m) => m.trim()).filter(Boolean) : null;
-    await generateSkeleton(finalPath, templateDir, modules, options.force);
-    writeSelectedAI(finalPath, selectedAI, tag);
-    generateScript(finalPath, options.resolvedScriptType);
-    if (!options.noGit) {
-      const { runGitInit } = require('./init-skeleton');
-      runGitInit(finalPath);
+    if (options.resolvedBmadPath) {
+      // Story 10.5: worktree mode - no _bmad copy, only _bmad-output and sync from bmadPath
+      createWorktreeSkeleton(finalPath, options.resolvedBmadPath, selectedAI);
+      writeSelectedAI(finalPath, selectedAI, tag, options.resolvedBmadPath);
+      generateScript(finalPath, options.resolvedScriptType);
+      if (!options.noGit) runGitInit(finalPath);
+    } else {
+      const { fetchTemplate } = require('../services/template-fetcher');
+      const templateDir = await fetchTemplate(tag, {
+        githubToken: options.githubToken || process.env.GH_TOKEN || process.env.GITHUB_TOKEN,
+        skipTls: options.skipTls,
+        debug: options.debug,
+      });
+      const modules = options.modules ? options.modules.split(',').map((m) => m.trim()).filter(Boolean) : null;
+      await generateSkeleton(finalPath, templateDir, modules, options.force);
+      writeSelectedAI(finalPath, selectedAI, tag);
+      generateScript(finalPath, options.resolvedScriptType);
+      if (!options.noGit) runGitInit(finalPath);
     }
     console.log(chalk.green(`\n✓ Initialized at ${finalPath}`));
     console.log(chalk.gray('Run /bmad-help in your AI IDE for next steps.'));
