@@ -2,6 +2,8 @@
 
 执行 tasks.md（或 tasks-v*.md）中的未完成任务时必须遵守本文件的全部规则。
 
+**执行顺序**：WRITE test → RUN → ASSERT FAIL → WRITE code → RUN → ASSERT PASS → REFACTOR。禁止先写生产代码再补测试。
+
 ---
 
 ## 1. TDD 红灯-绿灯-重构循环

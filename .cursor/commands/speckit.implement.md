@@ -2,7 +2,7 @@
 description: Execute the implementation plan by processing and executing all tasks defined in tasks.md
 ---
 
-**RALPH-METHOD 与 SPECKIT-WORKFLOW**：本命令执行 implement 时，须与 speckit-workflow SKILL §5.1 及 ralph-method SKILL 的 Mandatory Execution Rules 保持一致。若两者冲突，以 ralph-method 的「执行前创建」「每 US 完成即更新」为准。**TDD 红绿灯**：progress 必须包含每任务的 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 记录，禁止省略；详见 speckit-workflow §5.1.1。
+**RALPH-METHOD 与 SPECKIT-WORKFLOW**：本命令执行 implement 时，须与 speckit-workflow SKILL §5.1 及 ralph-method SKILL 的 Mandatory Execution Rules 保持一致。若两者冲突，以 ralph-method 的「执行前创建」「每 US 完成即更新」为准。**TDD 红绿灯**：每个涉及生产代码的任务必须先写/补测试并运行得失败（红灯），再实现（绿灯）；禁止先写生产代码再补测试。progress 必须包含每任务的 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 记录，禁止省略；详见 speckit-workflow §5.1.1。
 
 ## User Input
 

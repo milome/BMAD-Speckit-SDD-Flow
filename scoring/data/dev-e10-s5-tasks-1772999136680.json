@@ -1,0 +1,26 @@
+{
+  "run_id": "dev-e10-s5-tasks-1772999136680",
+  "scenario": "real_dev",
+  "stage": "tasks",
+  "phase_score": 80,
+  "phase_weight": 0.2,
+  "check_items": [
+    {
+      "item_id": "tasks_overall",
+      "passed": true,
+      "score_delta": 0,
+      "note": "未发现问题清单段落"
+    }
+  ],
+  "timestamp": "2026-03-08T19:45:36.701Z",
+  "iteration_count": 1,
+  "iteration_records": [],
+  "first_pass": false,
+  "veto_triggered": false,
+  "tier_coefficient": 0.8,
+  "base_commit_hash": "bec0955b",
+  "content_hash": "19603cd9c18e3259f229984d4316b82ea8e4b9f1308c1c1a6144e3c4b420455d",
+  "source_path": "_bmad-output/implementation-artifacts/epic-10-speckit-init-core/story-10-5-worktree-bmad-path/10-5-worktree-bmad-path.md",
+  "trigger_stage": "bmad_story_stage4",
+  "path_type": "full"
+}

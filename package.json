@@ -9,6 +9,7 @@
     "setup:full": "pwsh scripts/setup.ps1 -Full",
     "test": "vitest run",
     "test:scoring": "vitest run scoring",
+    "test:bmad-speckit": "cd packages/bmad-speckit && node --test tests/",
     "accept:e1-s1": "npx ts-node scripts/accept-e1-s1.ts",
     "accept:e1-s2": "npx ts-node scripts/accept-e1-s2.ts",
     "accept:e2-s1": "npx ts-node scripts/accept-e2-s1.ts",

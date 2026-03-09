@@ -1,0 +1,11 @@
+{
+  "bugfixRef": "BUGFIX_subagent-dev-story-tdd-prompt-overload",
+  "userStories": [
+    { "id": "US-001", "title": "T1: 在 STORY-A3-DEV 中新增 TDD 执行顺序段", "passes": true },
+    { "id": "US-002", "title": "T2: 将 parseAndWriteScore 约束拆分为条目", "passes": true },
+    { "id": "US-003", "title": "T3: 合并 TDD 记录与验收自检为单一段落", "passes": true },
+    { "id": "US-004", "title": "T4: 在 speckit-workflow §5.1 开头补充 TDD 执行顺序", "passes": true },
+    { "id": "US-005", "title": "T5: 在 task-execution-tdd.md 顶部增加执行顺序摘要", "passes": true },
+    { "id": "US-006", "title": "T6: 在 speckit.implement 命令中强化 TDD 顺序", "passes": true }
+  ]
+}

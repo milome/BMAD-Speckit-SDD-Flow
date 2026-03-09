@@ -104,16 +104,16 @@ development_status:
 
   # speckit-init (E10–E13) — specify-cn 类 init 与多 AI Assistant
   # Sprint Planning 2026-03-07: E10–E13 纳入实施范围 (Bob Scrum Master)
-  epic-10: in-progress
+  epic-10: done
   10-1-interactive-init: done
   10-2-non-interactive-init: done
   10-3-cross-platform-script: done
   10-4-config-persistence: done
   10-5-bmad-path-worktree: done
-  epic-10-retrospective: optional
+  epic-10-retrospective: done
 
-  epic-11: backlog
-  11-1-template-fetch: backlog
+  epic-11: in-progress
+  11-1-template-fetch: done
   11-2-offline-version-lock: backlog
   epic-11-retrospective: optional
 

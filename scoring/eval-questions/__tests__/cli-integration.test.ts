@@ -148,7 +148,7 @@ describe(
         sampleReport,
         path.join(tmpRoot, 'scoring', 'eval-questions', 'v1', 'q001-eval-sample.md')
       );
-      const out = runCli(['run', '--id', 'q001', '--version', 'v1']);
+      const out = runCli(['run', '--id', 'q001', '--version', 'v1', '--no-agent']);
       expect(out).toContain('run 完成');
       expect(out).toMatch(/runId=eval-q001-v1-\d+/);
       expect(out).toContain('scenario=eval_question');

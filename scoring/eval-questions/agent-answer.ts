@@ -54,7 +54,7 @@ export async function generateEvalAnswer(
     ''
   );
   const model = options?.model ?? process.env.SCORING_LLM_MODEL ?? 'gpt-4o-mini';
-  const timeoutMs = options?.timeoutMs ?? parseInt(String(process.env.SCORING_LLM_TIMEOUT_MS ?? 60000), 10) || 60000;
+  const timeoutMs = options?.timeoutMs ?? (parseInt(String(process.env.SCORING_LLM_TIMEOUT_MS ?? 60000), 10) || 60000);
 
   const url = `${baseUrl}/chat/completions`;
   const body = {

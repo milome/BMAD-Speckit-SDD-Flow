@@ -105,9 +105,10 @@ description: |
 ### 1.0 spec 目录路径约定（BMAD 与 standalone 双轨制）
 
 **BMAD 流程**（当 speckit 由 bmad-story-assistant 嵌套触发时）：
-- 路径格式：`specs/epic-{epic}/story-{story}-{slug}/`
-- **slug 必选**，保证目录可读性；若省略则导致 `specs/epic-4/story-1/` 等纯数字命名，可读性差。
-- 示例：`specs/epic-4/story-1-implement-base-cache/`
+- 路径格式：`specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/`
+- **epic-slug 必选**，来源：epics.md 中 `### Epic N: Title` 的 Title 转 kebab-case，或 create-new-feature.ps1 推导；禁止使用 `specs/epic-{epic}/` 无 slug 路径。
+- **story slug 必选**，保证目录可读性；若省略则导致 `specs/epic-4/story-1/` 等纯数字命名，可读性差。
+- 示例：`specs/epic-11-speckit-template-offline/story-1-template-fetch/`
 - 产出文件名：`spec-E{epic}-S{story}.md`、`plan-E{epic}-S{story}.md`、`tasks-E{epic}-S{story}.md`、`IMPLEMENTATION_GAPS-E{epic}-S{story}.md`
 
 **slug 来源规则**（按优先级，若无法推导则要求用户显式提供）：
@@ -131,7 +132,7 @@ description: |
 
 | 产出 | 路径 | 命令 |
 |------|------|------|
-| spec.md | `specs/{index}-{name}/spec.md` 或 `specs/epic-{epic}/story-{story}-{slug}/spec-E{epic}-S{story}.md` | speckit.specify |
+| spec.md | `specs/{index}-{name}/spec.md` 或 `specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/spec-E{epic}-S{story}.md` | speckit.specify |
 | plan.md | 同上目录 | speckit.plan |
 | tasks.md | 同上目录 | speckit.tasks |
 | IMPLEMENTATION_GAPS.md | 同上目录 | speckit.gaps |
@@ -152,7 +153,7 @@ description: |
 ### 1.0.4 BMAD 产出与 _bmad-output 子目录对应
 
 speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/`。
-当 spec 路径为 `specs/epic-{epic}/story-{story}-{slug}/` 时，对应 BMAD 子目录为 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/`。
+当 spec 路径为 `specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/` 时，对应 BMAD 子目录为 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/`。
 
 ### 1.1 必须完成
 
@@ -168,11 +169,11 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 - 生成或更新 spec.md 后，**必须按 §0 约定调用 code-review 技能**，使用 **固定审计提示词**：[references/audit-prompts.md](references/audit-prompts.md) §1。
 - **仅在** code-review 审计报告结论为「完全覆盖、验证通过」时**可结束本步骤**。
 - #### 审计通过后评分写入触发（强制）
-  - **报告路径**：`specs/epic-{epic}/story-{story}-{slug}/AUDIT_spec-E{epic}-S{story}.md`（epic/story 从当前 spec 路径解析）。
+  - **报告路径**：`specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_spec-E{epic}-S{story}.md`（epic/story/epic-slug 从当前 spec 路径解析）。
   - 发起审计子任务时，发给子 Agent 的 prompt 必须包含：审计通过后请将报告保存至 {约定路径}，路径由主 Agent 根据 epic、story、slug 填充。
   - **parse-and-write-score 完整调用示例**（含 --iteration-count；有 fail 轮时加 --iterationReportPaths）：
     ```bash
-    npx ts-node scripts/parse-and-write-score.ts --reportPath <上路径> --stage spec --event stage_audit_complete --triggerStage speckit_1_2 --epic {epic} --story {story} --artifactDocPath specs/epic-{epic}/story-{story}-{slug}/spec-E{epic}-S{story}.md --iteration-count {累计值} [--iterationReportPaths path1,path2,...]
+    npx ts-node scripts/parse-and-write-score.ts --reportPath <上路径> --stage spec --event stage_audit_complete --triggerStage speckit_1_2 --epic {epic} --story {story} --artifactDocPath specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/spec-E{epic}-S{story}.md --iteration-count {累计值} [--iterationReportPaths path1,path2,...]
     ```
     其中 iterationReportPaths 为 fail 轮报告路径（见 §1.0.3）；验证轮不列入。
   - **责任划分**：code-review 子代理产出审计报告并落盘至上述路径；主 Agent 在收到通过结论后执行 parse-and-write-score。读 `config/scoring-trigger-modes.yaml` 的 `scoring_write_control.enabled`；若 enabled 则执行；**iteration_count 传递（强制）**：执行审计循环的 Agent 在 pass 时传入当前累计值（本 stage 审计未通过/fail 的轮数）；一次通过传 0；连续 3 轮无 gap 的验证轮不计入 iteration_count；禁止省略；eval_question 缺 question_version 记 SCORE_WRITE_INPUT_INVALID 且不调用；失败不阻断主流程，记录 resultCode 进审计证据。
@@ -205,11 +206,11 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 - 生成或更新 plan.md 后，**必须按 §0 约定调用 code-review 技能**，使用 **固定审计提示词**：[references/audit-prompts.md](references/audit-prompts.md) §2。
 - **仅在** code-review 审计报告结论为「完全覆盖、验证通过」时**可结束本步骤**。
 - #### 审计通过后评分写入触发（强制）
-  - **报告路径**：`specs/epic-{epic}/story-{story}-{slug}/AUDIT_plan-E{epic}-S{story}.md`。
+  - **报告路径**：`specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_plan-E{epic}-S{story}.md`。
   - 发起审计子任务时，发给子 Agent 的 prompt 必须包含：审计通过后请将报告保存至 {约定路径}，路径由主 Agent 根据 epic、story、slug 填充。
   - **parse-and-write-score 完整调用示例**（含 --iteration-count）：
     ```bash
-    npx ts-node scripts/parse-and-write-score.ts --reportPath <上路径> --stage plan --event stage_audit_complete --triggerStage speckit_2_2 --epic {epic} --story {story} --artifactDocPath specs/epic-{epic}/story-{story}-{slug}/plan-E{epic}-S{story}.md --iteration-count {累计值}
+    npx ts-node scripts/parse-and-write-score.ts --reportPath <上路径> --stage plan --event stage_audit_complete --triggerStage speckit_2_2 --epic {epic} --story {story} --artifactDocPath specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/plan-E{epic}-S{story}.md --iteration-count {累计值}
     ```
   - **责任划分**：code-review 子代理产出报告并落盘；主 Agent 在收到通过结论后执行 parse-and-write-score。余同 §1.2（含 iteration_count 传递规则、失败记录 resultCode）。
 - 若未通过：根据审计报告 **迭代修改 plan.md**，**再次调用 code-review**，直至报告结论为通过。
@@ -257,11 +258,11 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 - 生成或更新 IMPLEMENTATION_GAPS.md 后，**必须按 §0 约定调用 code-review 技能**，使用 **固定审计提示词**：[references/audit-prompts.md](references/audit-prompts.md) §3。
 - **仅在** code-review 审计报告结论为「完全覆盖、验证通过」时**可结束本步骤**。
 - #### 审计通过后评分写入触发（强制）
-  - **报告路径**：`specs/epic-{epic}/story-{story}-{slug}/AUDIT_GAPS-E{epic}-S{story}.md`。
+  - **报告路径**：`specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_GAPS-E{epic}-S{story}.md`。
   - 发起审计子任务时，发给子 Agent 的 prompt 必须包含：审计通过后请将报告保存至 {约定路径}，路径由主 Agent 根据 epic、story、slug 填充。
   - **parse-and-write-score 完整调用示例**（含 --iteration-count）：
     ```bash
-    npx ts-node scripts/parse-and-write-score.ts --reportPath <上路径> --stage plan --event stage_audit_complete --triggerStage speckit_3_2 --epic {epic} --story {story} --artifactDocPath specs/epic-{epic}/story-{story}-{slug}/IMPLEMENTATION_GAPS-E{epic}-S{story}.md --iteration-count {累计值}
+    npx ts-node scripts/parse-and-write-score.ts --reportPath <上路径> --stage plan --event stage_audit_complete --triggerStage speckit_3_2 --epic {epic} --story {story} --artifactDocPath specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/IMPLEMENTATION_GAPS-E{epic}-S{story}.md --iteration-count {累计值}
     ```
   - **责任划分**：code-review 子代理产出报告并落盘；主 Agent 在收到通过结论后执行 parse-and-write-score。GAPS 报告格式与 plan 兼容，stage=plan。余同 §1.2（含 iteration_count 传递规则、失败记录 resultCode）。
 - 若未通过：根据审计报告 **迭代修改 IMPLEMENTATION_GAPS.md**，**再次调用 code-review**，直至报告结论为通过。
@@ -291,11 +292,11 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 - 生成或更新 tasks.md 后，**必须按 §0 约定调用 code-review 技能**，使用 **固定审计提示词**：[references/audit-prompts.md](references/audit-prompts.md) §4。
 - **仅在** code-review 审计报告结论为「完全覆盖、验证通过」时**可结束本步骤**。
 - #### 审计通过后评分写入触发（强制）
-  - **报告路径**：`specs/epic-{epic}/story-{story}-{slug}/AUDIT_tasks-E{epic}-S{story}.md`。
+  - **报告路径**：`specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_tasks-E{epic}-S{story}.md`。
   - 发起审计子任务时，发给子 Agent 的 prompt 必须包含：审计通过后请将报告保存至 {约定路径}，路径由主 Agent 根据 epic、story、slug 填充。
   - **parse-and-write-score 完整调用示例**（含 --iteration-count）：
     ```bash
-    npx ts-node scripts/parse-and-write-score.ts --reportPath <上路径> --stage tasks --event stage_audit_complete --triggerStage speckit_4_2 --epic {epic} --story {story} --artifactDocPath specs/epic-{epic}/story-{story}-{slug}/tasks-E{epic}-S{story}.md --iteration-count {累计值}
+    npx ts-node scripts/parse-and-write-score.ts --reportPath <上路径> --stage tasks --event stage_audit_complete --triggerStage speckit_4_2 --epic {epic} --story {story} --artifactDocPath specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/tasks-E{epic}-S{story}.md --iteration-count {累计值}
     ```
   - **责任划分**：code-review 子代理产出报告并落盘；主 Agent 在收到通过结论后执行 parse-and-write-score。余同 §1.2（含 iteration_count 传递规则、失败记录 resultCode）。
 - 若未通过：根据审计报告 **迭代修改 tasks.md**，**再次调用 code-review**，直至报告结论为通过。
@@ -356,6 +357,8 @@ Batch N: Task ... → 执行 → code-review审计 → 通过
 **必须执行的命令**：`/speckit.implement` 或 `.speckit.implement` 或 用户明确要求「执行 tasks.md」「执行 tasks」「完成 tasks 中的任务」
 
 当用户要求执行 tasks.md（或 tasks-v*.md）中的未完成任务时，**必须**按 TDD 红灯-绿灯-重构循环逐任务推进。
+
+**【执行顺序】** 每个涉及生产代码的任务：先写/补测试并运行验收得失败（红灯）；再写生产代码使通过（绿灯）；最后重构并记录。禁止先写生产代码再补测试。
 
 ### 5.1 执行流程
 

@@ -1,0 +1,35 @@
+# Progress: 10-3-cross-platform-script
+# Total stories: 6
+
+Current story: 6
+Completed: 6
+
+---
+# Story log
+# (TDD RED/GREEN/REFACTOR per US appended below)
+
+[TDD-RED] T1 node packages/bmad-speckit/tests/e2e/init-e2e.test.js E10-S3 => 2 failed (before impl)
+[TDD-GREEN] T1 node packages/bmad-speckit/tests/e2e/init-e2e.test.js => 21 passed (--script option + resolve + invalid exit)
+[TDD-REFACTOR] T1 无需重构 ✓
+[2025-03-08] US-001: --script 参数与默认值 - PASSED
+
+[TDD-RED] US-002 未实现前无 file-encoding writeFileWithEncoding 对应 E2E/单元用例
+[TDD-GREEN] US-002 file-encoding.js writeFileWithEncoding 实现后 E2E grep writeFileWithEncoding 通过
+[TDD-REFACTOR] 无需重构 ✓
+[2025-03-08] US-002: 编码与换行符工具 - PASSED
+
+[TDD-RED] US-003 未实现前无 script-generator POSIX shell 生成对应用例
+[TDD-GREEN] US-003 script-generator.js POSIX 路径与生成逻辑实现后 E2E 通过
+[TDD-REFACTOR] 无需重构 ✓
+[2025-03-08] US-003: POSIX shell 脚本生成 - PASSED
+
+[TDD-RED] US-004 未实现前无 script-generator PowerShell 生成对应用例
+[TDD-GREEN] US-004 script-generator.js PowerShell 路径与生成逻辑实现后 E2E 通过
+[TDD-REFACTOR] 无需重构 ✓
+[2025-03-08] US-004: PowerShell 脚本生成 - PASSED
+
+[TDD-RED] US-005 未实现前 init 未挂载 generateScript，E2E 无对应验证
+[TDD-GREEN] US-005 init.js 两处 generateScript 集成后 E2E init-e2e 全通过
+[TDD-REFACTOR] 无需重构 ✓
+[2025-03-08] US-005: 集成挂载 - PASSED
+[2025-03-08] US-006: 集成测试与 E2E - PASSED
