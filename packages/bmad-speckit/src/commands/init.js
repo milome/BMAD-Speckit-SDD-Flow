@@ -1,6 +1,6 @@
 /**
  * InitCommand - init subcommand handler (ARCH §3.2)
- * T007-T012: 参数解析、路径解析、非空校验、Banner、ai-builtin
+ * T007-T012: 参数解析、路径解析、非空校验、Banner、AIRegistry
  */
 const fs = require('fs');
 const path = require('path');
@@ -9,7 +9,7 @@ const boxen = require('boxen');
 const pathUtils = require('../utils/path');
 const ttyUtils = require('../utils/tty');
 const exitCodes = require('../constants/exit-codes');
-const aiBuiltin = require('../constants/ai-builtin');
+const AIRegistry = require('../services/ai-registry');
 const { validateBmadStructure } = require('../utils/structure-validate');
 
 /**
@@ -210,7 +210,7 @@ async function initCommand(projectName, options = {}) {
 }
 
 /**
- * Story 10.2 / 10.4: Get default AI (ConfigManager defaultAI > aiBuiltin[0]); cwd for project-level override.
+ * Story 10.2 / 10.4: Get default AI (ConfigManager defaultAI > first from AIRegistry); cwd for project-level override.
  */
 function getDefaultAI(cwd = process.cwd()) {
   try {
@@ -220,7 +220,23 @@ function getDefaultAI(cwd = process.cwd()) {
   } catch {
     // ConfigManager may not exist in older installs
   }
-  return aiBuiltin[0]?.id || 'claude';
+  const ids = AIRegistry.listIds({ cwd });
+  return ids[0] || 'claude';
+}
+
+/**
+ * Story 12.1: generic 校验 - --ai generic 时须 --ai-commands-dir 或 registry 含 aiCommandsDir
+ */
+function resolveGenericAiCommandsDir(selectedAI, options, cwd) {
+  if (selectedAI !== 'generic') return null;
+  if (options.aiCommandsDir && typeof options.aiCommandsDir === 'string' && options.aiCommandsDir.trim() !== '') {
+    return path.resolve(options.aiCommandsDir.trim());
+  }
+  const entry = AIRegistry.getById('generic', { cwd });
+  if (entry?.aiCommandsDir && typeof entry.aiCommandsDir === 'string' && entry.aiCommandsDir.trim() !== '') {
+    return path.resolve(entry.aiCommandsDir.trim());
+  }
+  return null;
 }
 
 /**
@@ -228,15 +244,22 @@ function getDefaultAI(cwd = process.cwd()) {
  */
 async function runWorktreeFlow(targetPath, options, log) {
   let selectedAI = options.ai;
+  const cwd = process.cwd();
   if (selectedAI) {
-    const validIds = aiBuiltin.map((a) => a.id);
+    const validIds = AIRegistry.listIds({ cwd });
     if (!validIds.includes(selectedAI)) {
-      const list = aiBuiltin.map((a) => a.id).join(', ');
+      const list = validIds.join(', ');
       console.error(`Error: Invalid AI "${selectedAI}". Available: ${list}`);
+      console.error('Run "bmad-speckit check --list-ai" for full list.');
+      process.exit(exitCodes.AI_INVALID);
+    }
+    const genericDir = resolveGenericAiCommandsDir(selectedAI, options, cwd);
+    if (selectedAI === 'generic' && genericDir == null) {
+      console.error('Error: --ai generic requires --ai-commands-dir or aiCommandsDir in registry.');
       process.exit(exitCodes.AI_INVALID);
     }
   } else {
-    selectedAI = getDefaultAI(process.cwd());
+    selectedAI = getDefaultAI(cwd);
   }
 
   const bmadPathResolved = options.resolvedBmadPath;
@@ -254,16 +277,22 @@ async function runWorktreeFlow(targetPath, options, log) {
  */
 async function runNonInteractiveFlow(targetPath, options, log) {
   let selectedAI = options.ai;
+  const cwd = process.cwd();
   if (selectedAI) {
-    const validIds = aiBuiltin.map((a) => a.id);
+    const validIds = AIRegistry.listIds({ cwd });
     if (!validIds.includes(selectedAI)) {
-      const list = aiBuiltin.map((a) => a.id).join(', ');
+      const list = validIds.join(', ');
       console.error(`Error: Invalid AI "${selectedAI}". Available: ${list}`);
       console.error('Run "bmad-speckit check --list-ai" for full list.');
       process.exit(exitCodes.AI_INVALID);
     }
+    const genericDir = resolveGenericAiCommandsDir(selectedAI, options, cwd);
+    if (selectedAI === 'generic' && genericDir == null) {
+      console.error('Error: --ai generic requires --ai-commands-dir or aiCommandsDir in registry.');
+      process.exit(exitCodes.AI_INVALID);
+    }
   } else {
-    selectedAI = getDefaultAI(process.cwd());
+    selectedAI = getDefaultAI(cwd);
   }
 
   const finalPath = targetPath;
@@ -359,18 +388,20 @@ async function runInteractiveFlow(targetPath, options, log) {
   const AutocompletePrompt = (await import('inquirer-autocomplete-prompt')).default;
   inquirer.registerPrompt('autocomplete', AutocompletePrompt);
 
+  const cwd = process.cwd();
+  const aiList = AIRegistry.load({ cwd });
   let selectedAI;
   if (options.ai) {
-    const validIds = aiBuiltin.map((a) => a.id);
+    const validIds = AIRegistry.listIds({ cwd });
     if (!validIds.includes(options.ai)) {
-      const list = aiBuiltin.map((a) => a.id).join(', ');
+      const list = validIds.join(', ');
       console.error(`Error: Invalid AI "${options.ai}". Available: ${list}`);
       console.error('Run "bmad-speckit check --list-ai" for full list.');
       process.exit(exitCodes.AI_INVALID);
     }
     selectedAI = options.ai;
   } else {
-    const aiChoices = aiBuiltin.map((a) => ({ name: `${a.name} (${a.id})`, value: a.id }));
+    const aiChoices = aiList.map((a) => ({ name: `${a.name} (${a.id})`, value: a.id }));
     const res = await inquirer.prompt([
       {
         type: 'autocomplete',
@@ -390,6 +421,15 @@ async function runInteractiveFlow(targetPath, options, log) {
       },
     ]);
     selectedAI = res.selectedAI;
+  }
+
+  // GAP-R2-1: 交互式选 generic 时须校验 aiCommandsDir
+  if (selectedAI === 'generic') {
+    const genericDir = resolveGenericAiCommandsDir(selectedAI, options, cwd);
+    if (genericDir == null) {
+      console.error('Error: --ai generic requires --ai-commands-dir or aiCommandsDir in registry.');
+      process.exit(exitCodes.AI_INVALID);
+    }
   }
 
   const { confirmedPath } = await inquirer.prompt([

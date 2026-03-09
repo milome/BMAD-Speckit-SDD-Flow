@@ -1,0 +1,36 @@
+# progress.tasks-E12-S1
+# Story 12.1 AI Registry - tasks-E12-S1 执行进度
+
+## US-001: AIRegistry 模块 (T1.1-T1.4)
+[TDD-RED] node --test tests/ai-registry.test.js => MODULE_NOT_FOUND (before impl)
+[TDD-GREEN] ai-registry.js load/getById/listIds, path.join/os.homedir, merge, deepMerge
+[TDD-REFACTOR] 无需重构 ✓
+
+## US-002: 19+ 内置 configTemplate (T2.1-T2.4)
+[TDD-RED] node --test tests/ai-registry-builtin.test.js => MODULE_NOT_FOUND
+[TDD-GREEN] ai-registry-builtin.js 22条完整 configTemplate, spec §4.3 表
+[TDD-REFACTOR] 无需重构 ✓
+
+## US-003: registry 文件格式与校验 (T3.1-T3.3)
+[TDD-RED] tests in ai-registry.test.js added
+[TDD-GREEN] parseRegistryFile 两种格式, validateConfigTemplate, 自定义 AI configTemplate 必填
+[TDD-REFACTOR] 无需重构 ✓
+
+## US-004: generic 校验与 init 集成 (T4.1-T4.2)
+[TDD-RED] integration tests added
+[TDD-GREEN] bin --ai-commands-dir, resolveGenericAiCommandsDir, init/check 使用 AIRegistry
+[TDD-REFACTOR] 无需重构 ✓
+
+## US-005: 集成与测试 (T5.1-T5.3)
+[TDD-RED] ai-registry-integration.test.js added
+[TDD-GREEN] init --ai generic --yes no dir => exit 2; init --ai generic --ai-commands-dir => 0; check --list-ai
+[TDD-REFACTOR] 无新增生产代码，各模块独立性已验证 ✓
+
+## GAP-R2: 实施后审计第二轮 (runInteractiveFlow generic 校验)
+[GAP-R2-1] runInteractiveFlow 交互式选 generic 时调用 resolveGenericAiCommandsDir，不满足则 exit 2
+[GAP-R2-2] init-interactive-generic.test.js: grep 回归 + E2E(Unix script) 覆盖
+[TDD-REFACTOR] init.js 增加 generic 校验块；tests/init-interactive-generic.test.js 新增 ✓
+
+---
+Current story: US-005
+Completed: 5/5

@@ -512,7 +512,7 @@ function testT029() {
     { file: path.join(ROOT, 'bin/bmad-speckit.js'), pattern: '--ai' },
     { file: path.join(ROOT, 'bin/bmad-speckit.js'), pattern: '--yes' },
     { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'template-fetcher' },
-    { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'ai-builtin' },
+    { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'ai-registry' },
     { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'utils/path' },
     { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'utils/tty' },
     { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'isTTY' },

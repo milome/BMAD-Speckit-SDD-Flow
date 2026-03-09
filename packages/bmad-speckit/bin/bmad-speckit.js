@@ -23,6 +23,7 @@ program
   .description('Initialize a new bmad-speckit project')
   .option('--here', 'Use current directory')
   .option('--ai <name>', 'Non-interactive AI selection (skip selector)')
+  .option('--ai-commands-dir <path>', 'Commands directory for generic AI (required when --ai generic)')
   .option('-y, --yes', 'Skip all prompts, use defaults')
   .option('--template <tag|url>', 'Template version (latest, v1.0.0) or tarball URL')
   .option('--network-timeout <ms>', 'Network timeout in ms (overrides env and config)')
@@ -40,6 +41,7 @@ program
 program
   .command('check')
   .description('Verify bmad-speckit setup (e.g. bmadPath when using worktree)')
-  .action(() => checkCommand({ cwd: process.cwd() }));
+  .option('--list-ai', 'List available AI ids from registry')
+  .action((opts) => checkCommand({ cwd: process.cwd(), listAi: opts.listAi }));
 
 program.parse();

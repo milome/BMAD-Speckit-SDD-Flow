@@ -1,10 +1,12 @@
 /**
- * CheckCommand - check subcommand (ARCH §3.2, Story 10.5)
+ * CheckCommand - check subcommand (ARCH §3.2, Story 10.5, 12.1)
  * When bmad-speckit.json has bmadPath, validate that path exists and structure matches; exit 4 if not.
+ * --list-ai: list available AI ids from AIRegistry.
  */
 const path = require('path');
 const exitCodes = require('../constants/exit-codes');
 const { validateBmadStructure } = require('../utils/structure-validate');
+const AIRegistry = require('../services/ai-registry');
 
 function getProjectBmadPath(cwd) {
   const configManager = require('../services/config-manager');
@@ -20,6 +22,13 @@ function getProjectBmadPath(cwd) {
  */
 function checkCommand(options = {}) {
   const cwd = options.cwd != null ? options.cwd : process.cwd();
+
+  if (options.listAi) {
+    const ids = AIRegistry.listIds({ cwd });
+    console.log(ids.join('\n'));
+    process.exit(exitCodes.SUCCESS);
+  }
+
   const bmadPathRaw = getProjectBmadPath(cwd);
 
   if (!bmadPathRaw) {
