@@ -7,7 +7,7 @@
     "init": "node scripts/init-to-root.js",
     "setup": "pwsh scripts/setup.ps1",
     "setup:full": "pwsh scripts/setup.ps1 -Full",
-    "test": "vitest run",
+    "test": "vitest run && npm run test:bmad-speckit",
     "test:scoring": "vitest run scoring",
     "test:bmad-speckit": "cd packages/bmad-speckit && node --test tests/",
     "accept:e1-s1": "npx ts-node scripts/accept-e1-s1.ts",

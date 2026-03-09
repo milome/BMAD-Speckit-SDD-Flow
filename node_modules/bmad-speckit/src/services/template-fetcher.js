@@ -44,6 +44,7 @@ function isCacheValid(cacheDir) {
  * Returns repo root path (parent of _bmad) so generateSkeleton finds _bmad and _bmad-output
  */
 function getLocalTemplatePath() {
+  if (process.env.BMAD_TEST_OFFLINE_ONLY === '1') return null;
   const repoRoot = path.join(__dirname, '../../../..');
   const bmadPath = path.join(repoRoot, '_bmad');
   if (fs.existsSync(bmadPath) && fs.statSync(bmadPath).isDirectory()) {
@@ -61,7 +62,8 @@ function getLocalTemplatePath() {
 async function fetchFromGitHub(tag, opts = {}) {
   const { githubToken, skipTls, debug, networkTimeoutMs } = opts;
   const templateSource = _getTemplateSource(opts);
-  const timeoutMs = networkTimeoutMs ?? parseInt(process.env.SDD_NETWORK_TIMEOUT_MS || '', 10) || DEFAULT_NETWORK_TIMEOUT_MS;
+  const parsed = parseInt(process.env.SDD_NETWORK_TIMEOUT_MS || '', 10);
+  const timeoutMs = networkTimeoutMs ?? (Number.isNaN(parsed) || parsed <= 0 ? DEFAULT_NETWORK_TIMEOUT_MS : parsed);
   if (skipTls) {
     console.warn('Warning: --skip-tls skips SSL/TLS verification. Use only in trusted networks.');
   }
@@ -156,13 +158,19 @@ function downloadAndExtract(url, destDir, opts) {
       }
       const tar = require('tar');
       const gunzip = createGunzip();
-      res.pipe(gunzip).pipe(tar.extract({ cwd: destDir, strip: 1 }))
-        .on('finish', resolve)
-        .on('error', (err) => {
-          const e = new Error(`模板解压失败: ${err.message}`);
-          e.code = 'NETWORK_TEMPLATE';
-          reject(e);
-        });
+      const extractStream = tar.extract({ cwd: destDir, strip: 1 });
+      gunzip.on('error', (err) => {
+        const e = new Error(`模板解压失败: ${err.message}`);
+        e.code = 'NETWORK_TEMPLATE';
+        reject(e);
+      });
+      extractStream.on('error', (err) => {
+        const e = new Error(`模板解压失败: ${err.message}`);
+        e.code = 'NETWORK_TEMPLATE';
+        reject(e);
+      });
+      res.pipe(gunzip).pipe(extractStream)
+        .on('finish', resolve);
     });
     req.on('error', (err) => {
       const e = new Error(err.message);
@@ -179,16 +187,48 @@ function downloadAndExtract(url, destDir, opts) {
 }
 
 /**
+ * Story 11.2: Resolve cache dir for offline mode (tag or url).
+ * For URL: compute url-<hash> like fetchFromUrl.
+ */
+function getOfflineCacheDir(templateSpec, opts) {
+  const trimmed = String(templateSpec || 'latest').trim();
+  const templateSource = _getTemplateSource(opts);
+  const tid = getTemplateId(templateSource);
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    const crypto = require('crypto');
+    const hash = crypto.createHash('sha256').update(trimmed).digest('hex').slice(0, 12);
+    return path.join(getCacheRoot(), tid, `url-${hash}`);
+  }
+  const tag = trimmed || 'latest';
+  return getCacheDir(tag, templateSource);
+}
+
+/**
  * Main export: fetch template, return path to template dir.
  * templateSpec: 'latest' | tag (e.g. 'v1.0.0') | url (https://...).
+ * Story 11.2: opts.offline - when true, use only cache, no network; cache missing → throw OFFLINE_CACHE_MISSING.
  */
 async function fetchTemplate(templateSpec, opts = {}) {
-  const local = getLocalTemplatePath();
-  if (local) {
-    if (opts.debug) console.error('[bmad-speckit:debug] Using local _bmad:', local);
-    return local;
+  if (!opts._noLocalForTest) {
+    const local = getLocalTemplatePath();
+    if (local) {
+      if (opts.debug) console.error('[bmad-speckit:debug] Using local _bmad:', local);
+      return local;
+    }
   }
   const trimmed = String(templateSpec || 'latest').trim();
+
+  if (opts.offline) {
+    const cacheDir = getOfflineCacheDir(trimmed, opts);
+    if (isCacheValid(cacheDir)) {
+      if (opts.debug) console.error('[bmad-speckit:debug] Offline: using cache:', cacheDir);
+      return cacheDir;
+    }
+    const err = new Error('离线模式下模板 cache 缺失 (Offline mode: template cache missing)');
+    err.code = 'OFFLINE_CACHE_MISSING';
+    throw err;
+  }
+
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
     return fetchFromUrl(trimmed, opts);
   }
@@ -200,7 +240,8 @@ async function fetchTemplate(templateSpec, opts = {}) {
  */
 async function fetchFromUrl(url, opts = {}) {
   const templateSource = _getTemplateSource(opts);
-  const timeoutMs = opts.networkTimeoutMs ?? parseInt(process.env.SDD_NETWORK_TIMEOUT_MS || '', 10) || DEFAULT_NETWORK_TIMEOUT_MS;
+  const parsed = parseInt(process.env.SDD_NETWORK_TIMEOUT_MS || '', 10);
+  const timeoutMs = opts.networkTimeoutMs ?? (Number.isNaN(parsed) || parsed <= 0 ? DEFAULT_NETWORK_TIMEOUT_MS : parsed);
   const crypto = require('crypto');
   const hash = crypto.createHash('sha256').update(url).digest('hex').slice(0, 12);
   const tid = getTemplateId(templateSource);
@@ -228,6 +269,7 @@ module.exports = {
   getCacheRoot,
   getTemplateId,
   getCacheDir,
+  getOfflineCacheDir,
   isCacheValid,
   TIMEOUT_MESSAGE,
   DEFAULT_NETWORK_TIMEOUT_MS,

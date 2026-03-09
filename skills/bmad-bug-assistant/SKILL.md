@@ -391,7 +391,7 @@ description: |
 在发起 mcp_task 前，**必须**确认 prompt 中包含以下全部内容，否则子代理无法遵守 ralph-method 与 TDD 红绿灯：
 
 - [ ] ralph-method：prd/progress 创建与更新规则（含命名规则、每 US 完成后更新）
-- [ ] TDD 红绿灯：先改测试（红灯）→ 实现（绿灯）→ 重构；每步运行验收；progress 须含 [TDD-RED]/[TDD-GREEN] 格式记录（见 bmad-story-assistant §3.2）
+- [ ] TDD 红绿灯：先改测试（红灯）→ 实现（绿灯）→ 重构；每步运行验收；progress 须含 [TDD-RED]/[TDD-GREEN]/[TDD-REFACTOR] 格式记录（见 bmad-story-assistant §3.2）
 - [ ] 「请读取 ralph-method 与 speckit-workflow 技能」或等效的**内联约束**（见下方模板）
 - [ ] BUGFIX 文档路径、任务列表所在章节（§7 或 §8.1 等）、项目根目录
 - [ ] 任务列表所在章节已明确写出（§7 或 §8.1）。
@@ -406,10 +406,11 @@ description: |
 ```
 你是一位非常资深的开发专家 Amelia 开发（对应 BMAD 开发职责），负责按 BUGFIX 文档与任务列表执行实施。请按以下规范执行。
 
-【必做】TDD 红绿灯记录：每完成一个涉及生产代码的任务的绿灯后，**立即**在 progress 追加两行：
+【必做】TDD 红绿灯记录：每完成一个涉及生产代码的任务的绿灯后，**立即**在 progress 追加三行：
 `[TDD-RED] <任务ID> <验收命令> => N failed`
 `[TDD-GREEN] <任务ID> <验收命令> => N passed`
-交付前自检：对照 §7 逐项检查——若该任务涉及生产代码，progress 中是否有 [TDD-RED] 与 [TDD-GREEN] 各至少一行？若否，补充后再交付。
+`[TDD-REFACTOR] <任务ID> <内容> | 无需重构 ✓`
+交付前自检：对照 §7 逐项检查——若该任务涉及生产代码，progress 中是否有 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 各至少一行，且 [TDD-RED] 在 [TDD-GREEN] 之前？若否，补充后再交付。
 
 **BUGFIX 文档路径**：{主 Agent 填入}
 **任务列表**：见上述文档的 §7（任务列表）或 §8.1（实施步骤），请根据文档实际结构确定章节。
@@ -428,7 +429,8 @@ description: |
 
 1. **ralph-method**：
    - 实施开始前，在 BUGFIX 文档同目录创建 `prd.{stem}.json` 与 `progress.{stem}.txt`（stem 为 BUGFIX 文件名无扩展名，如 BUGFIX_foo_2026-02-26）。
-   - 将任务列表中的每项映射为 prd 中的 user story，初始 passes=false。
+   - 将任务列表中的每项映射为 prd 中的 user story，初始 passes=false。**prd 须符合 ralph-method schema**：涉及生产代码的 US 含 `involvesProductionCode: true` 与 `tddSteps`（RED/GREEN/REFACTOR 三阶段）；仅文档/配置的含 `tddSteps`（DONE 单阶段）。
+   - **progress 预填 TDD 槽位**：生成 progress 时，对每个 US 预填 `[TDD-RED] _pending_`、`[TDD-GREEN] _pending_`、`[TDD-REFACTOR] _pending_` 或 `[DONE] _pending_`，涉及生产代码的 US 含三者，仅文档/配置的含 [DONE]；执行时将 `_pending_` 替换为实际结果。
    - 每完成一项任务（US），必须：① 将对应 story 的 passes 设为 true；② 在 progress 中追加时间戳与完成说明。
    - 按 US 顺序执行，不得跳过。
 
@@ -437,7 +439,7 @@ description: |
    - **绿灯**：再实现或修改生产代码，使上述验收**通过**（绿灯），并运行验收命令确认。
    - **重构**：若实现后代码可读性或结构可改进，在验收仍通过的前提下进行重构，并再次运行验收确认。
    - 若当前 US 不涉及生产代码（仅文档、配置等），仅运行该 US 规定的验收命令并通过即可。
-   - **progress 必须包含**每子步骤的验收命令与结果，格式：`[TDD-RED] <任务ID> <验收命令> => N failed`、`[TDD-GREEN] <任务ID> <验收命令> => N passed`。手动验收可用 `[TDD-RED] 手动：…`、`[TDD-GREEN] 手动：…`。完成红灯子步骤后**立即**在 progress 追加 `[TDD-RED] ...`；完成绿灯子步骤后**立即**追加 `[TDD-GREEN] ...`。禁止用「最终回归全部通过」替代逐任务的 TDD 记录。实施时须在 progress 中按 bmad-story-assistant §3.2 要求记录 TDD 红灯→绿灯。**回归失败且用户拒绝排除时**：当回归/验收命令执行后存在失败用例，且用户**拒绝**批准排除时，须在 progress 中**立即**追加 [TDD-RED] 记录，格式：`[TDD-RED] <任务ID> <验收命令> => N failed, M passed（用户拒绝批准排除，N 个失败用例须修复）`。该记录须在进入修复流程**之前**写入。必备字段：任务 ID、验收命令、失败数、通过数、用户决策。
+   - **progress 必须包含**每子步骤的验收命令与结果，格式：`[TDD-RED] <任务ID> <验收命令> => N failed`、`[TDD-GREEN] <任务ID> <验收命令> => N passed`、`[TDD-REFACTOR] <任务ID> <内容> | 无需重构 ✓`。手动验收可用 `[TDD-RED] 手动：…`、`[TDD-GREEN] 手动：…`。完成红灯子步骤后**立即**在 progress 追加 `[TDD-RED] ...`；完成绿灯子步骤后**立即**追加 `[TDD-GREEN] ...`；**无论是否有重构**，须追加 `[TDD-REFACTOR]`（无具体重构时写「无需重构 ✓」）。禁止用「最终回归全部通过」替代逐任务的 TDD 记录。实施时须在 progress 中按 bmad-story-assistant §3.2 要求记录 TDD 红灯→绿灯→重构。**回归失败且用户拒绝排除时**：当回归/验收命令执行后存在失败用例，且用户**拒绝**批准排除时，须在 progress 中**立即**追加 [TDD-RED] 记录，格式：`[TDD-RED] <任务ID> <验收命令> => N failed, M passed（用户拒绝批准排除，N 个失败用例须修复）`。该记录须在进入修复流程**之前**写入。必备字段：任务 ID、验收命令、失败数、通过数、用户决策。
 
 3. **speckit-workflow**：禁止伪实现与占位；必须运行验收命令；架构忠实于 BUGFIX 文档。
 
@@ -449,7 +451,7 @@ description: |
 
 7. 全程使用中文撰写注释、提交与进度说明。
 
-**交付前自检**：对照 BUGFIX §7，逐项检查：若该任务涉及生产代码，progress 中是否有 [TDD-RED] 与 [TDD-GREEN] 各至少一行？若否，补充后再交付。
+**交付前自检**：对照 BUGFIX §7，逐项检查：若该任务涉及生产代码，progress 中是否有 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 各至少一行，且 [TDD-RED] 在 [TDD-GREEN] 之前？若否，补充后再交付。
 
 请读取 ralph-method 与 speckit-workflow 技能（若可访问），严格按其中规则执行；若无法访问技能，则按上述内联约束执行。
 
@@ -507,13 +509,13 @@ npx ts-node scripts/parse-and-write-score.ts \
 3. 验收标准是否已按实际运行结果验证通过（若 §7 中写了验收命令，审计员必须执行该命令并报告通过/失败）。
 4. **Amelia 开发规范**：① 是否按任务顺序执行；② 每项是否均有运行验收并通过；③ 是否无标记完成但未实现；④ 是否无「将在后续迭代」表述；⑤ 注释与提交是否中文。
 5. **ralph-method**：是否存在 prd.{stem}.json 与 progress.{stem}.txt，progress 中是否按 US 有完成时间戳与说明。
-6. **TDD 红绿灯**：对 §7（或 §8.1）中涉及生产代码的每一项，是否先有失败验收（红灯）再实现并通过验收（绿灯）；**progress 是否包含**每任务的 `[TDD-RED]` 与 `[TDD-GREEN]` 记录（含验收命令与结果）；若无则判不通过。验证方式：`grep -E "\[TDD-(RED|GREEN)\]" progress.*.txt` 或目视检查；禁止用「最终回归通过」替代逐任务记录。不满足项⑥的修改建议：在 progress 中按 bmad-story-assistant §3.2 格式补充 [TDD-RED] 与 [TDD-GREEN] 记录；**须针对每个缺失任务写出可复制的具体示例**，如「Task 3 应补充：[TDD-RED] T3 pytest tests/xxx -v => 1 failed；[TDD-GREEN] T3 pytest tests/xxx -v => 1 passed」。**回归失败且用户拒绝排除**：若 §7 中存在回归任务，且实际执行时存在失败用例，且用户拒绝批准排除，则 progress 中**必须**包含对应的 [TDD-RED] 记录，格式须含：任务 ID、验收命令、失败数、通过数、「用户拒绝批准排除」。验证方式：`grep -E "\[TDD-RED\].*用户拒绝" progress.*.txt` 或目视检查。若无则判不通过，修改建议：在 progress 中补充，例如「[TDD-RED] US-003 pytest vnpy_datamanager/ -v => 16 failed, 46 passed（用户拒绝批准排除，16 个失败用例须修复）」。
+6. **TDD 红绿灯**：对 §7（或 §8.1）中涉及生产代码的每一项，是否先有失败验收（红灯）再实现并通过验收（绿灯）；**progress 是否包含**每任务的 `[TDD-RED]`、`[TDD-GREEN]`、`[TDD-REFACTOR]` 记录（含验收命令与结果）；若无则判不通过。**TDD 三项验证**：涉及生产代码的每个 US 须含 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 各至少一行（[TDD-REFACTOR] 允许写「无需重构 ✓」，禁止省略）。**TDD 顺序验证**：对每个任务的 progress 记录，[TDD-RED] 须在 [TDD-GREEN] 之前出现；若同一任务下 [TDD-GREEN] 在 [TDD-RED] 之前或缺少 [TDD-RED]，判为「事后补写」，结论未通过。验证方式：`grep -E "\[TDD-(RED|GREEN|REFACTOR)\]" progress.*.txt` 或目视检查；禁止用「最终回归通过」替代逐任务记录。不满足项⑥的修改建议：在 progress 中按 bmad-story-assistant §3.2 格式补充 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 记录；**须针对每个缺失任务写出可复制的具体示例**，如「Task 3 应补充：[TDD-RED] T3 pytest tests/xxx -v => 1 failed；[TDD-GREEN] T3 pytest tests/xxx -v => 1 passed；[TDD-REFACTOR] T3 无需重构 ✓」。**回归失败且用户拒绝排除**：若 §7 中存在回归任务，且实际执行时存在失败用例，且用户拒绝批准排除，则 progress 中**必须**包含对应的 [TDD-RED] 记录，格式须含：任务 ID、验收命令、失败数、通过数、「用户拒绝批准排除」。验证方式：`grep -E "\[TDD-RED\].*用户拒绝" progress.*.txt` 或目视检查。若无则判不通过，修改建议：在 progress 中补充，例如「[TDD-RED] US-003 pytest vnpy_datamanager/ -v => 16 failed, 46 passed（用户拒绝批准排除，16 个失败用例须修复）」。
 7. **speckit-workflow**：是否无伪实现、是否运行验收命令、是否架构忠实。
 8. 是否无「将在后续迭代」等延迟表述。
-9. **回归/验收失败用例**：回归或验收命令执行结果中，失败用例数为 0，或所有失败已列入正式排除清单且清单路径、格式与理由符合本技能「正式排除失败用例的规定」并经本轮审计通过；禁止存在未记录或未审计通过的排除。若验收/审计结论中出现本技能禁止词表中「失败排除」相关禁止词（既有问题可排除、与本次无关、历史问题暂不处理、环境问题可忽略）且无对应正式排除记录，结论为未通过。**禁止自动生成 exclude**：若审计员或实施子代理在本次审计/实施过程中产出了 EXCLUDED_TESTS_*.md 或类似排除清单文件，且**未经用户明确批准**，结论为未通过。排除清单的创建/更新必须经用户明确批准。
+9. **回归/验收失败用例**：**【回归判定强制规则】** 任何在本 Story 实施前已存在的测试用例，若实施后失败，一律视为回归，须在本轮修复或经用户批准后列入正式排除清单。禁止以「与 Story X 相关」「与本 Story 无关」「来自前置 Story」等理由排除失败用例。判定标准：实施前全量测试通过清单 ∩ 实施后失败清单 = 回归用例集。**强制步骤**：执行全量/回归测试，获取完整通过/失败列表；对每个失败用例核对是否存在于「实施前已存在」的用例集，若存在则标记为回归，须在审计结论中列为「须修复」或「已列入正式排除清单（附用户批准依据）」；禁止以「非本 Story 范围」为由排除。**结论绑定**：若审计结论或验收说明中出现「与 Story X 相关」「与本 Story 无关」「来自 Story 11.1」等表述且用于排除失败用例，且无对应正式排除记录（EXCLUDED_TESTS_*.md 经用户批准），结论为未通过。回归或验收命令执行结果中，失败用例数为 0，或所有失败已列入正式排除清单且清单路径、格式与理由符合本技能「正式排除失败用例的规定」并经本轮审计通过；禁止存在未记录或未审计通过的排除。**禁止自动生成 exclude**：若审计员或实施子代理在本次审计/实施过程中产出了 EXCLUDED_TESTS_*.md 或类似排除清单文件，且**未经用户明确批准**，结论为未通过。排除清单的创建/更新必须经用户明确批准。
 10. **主 Agent 兜底 cleanup**：若子任务涉及运行 pytest（§7 或验收命令含 pytest），主 Agent 是否在子任务返回或超时后执行了 4.1.5 规定的兜底 cleanup（检查 `_bmad-output/current_pytest_session_pid.txt`，若存在则执行 `cleanup_test_processes.py --only-from-file --session-pid` 并删除该文件）；若未执行且子任务涉及 pytest，结论为未通过。
 
-验证方式：阅读代码、grep 关键符号、**执行 §7 或文档规定的验收/回归命令并获取完整通过/失败列表**；若存在失败，**核对正式排除清单（若有）并确认每项符合「正式排除」规定**；运行 pytest 等验收命令、核对 §7 验收；**对审计项⑥**：`grep -E "\[TDD-(RED|GREEN)\]" progress.*.txt` 或目视检查 progress 是否含每任务的 [TDD-RED] 与 [TDD-GREEN] 记录；**对审计项⑩**：若 §7 或验收涉及 pytest，确认主 Agent 在子任务返回后执行了兜底 cleanup。
+验证方式：阅读代码、grep 关键符号、**执行 §7 或文档规定的验收/回归命令并获取完整通过/失败列表**；若存在失败，**核对正式排除清单（若有）并确认每项符合「正式排除」规定**；运行 pytest 等验收命令、核对 §7 验收；**对审计项⑥**：`grep -E "\[TDD-(RED|GREEN|REFACTOR)\]" progress.*.txt` 或目视检查 progress 是否含每任务的 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 记录；**对审计项⑩**：若 §7 或验收涉及 pytest，确认主 Agent 在子任务返回后执行了兜底 cleanup。
 
 报告结尾必须按以下格式输出：结论：通过 / 未通过。必达子项 1–10 如上；⑩ 主 Agent 兜底 cleanup（若涉及 pytest）；若任一项不满足则结论为未通过，并列出不满足项及每条对应的修改建议。
 ```

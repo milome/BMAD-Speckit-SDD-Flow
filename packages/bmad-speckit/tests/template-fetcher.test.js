@@ -184,3 +184,52 @@ describe('Story 11.1: fetchFromUrl with mock (T009)', () => {
     }
   });
 });
+
+describe('Story 11.2: fetchTemplate opts.offline (T005)', () => {
+  it('opts.offline true + cache exists returns path, no network', async () => {
+    if (!templateFetcher) return;
+    const cacheRoot = templateFetcher.getCacheRoot();
+    const tid = templateFetcher.getTemplateId('test-owner/offline-repo');
+    const cacheDir = path.join(cacheRoot, tid, 'v0.0.1');
+    fs.mkdirSync(cacheDir, { recursive: true });
+    fs.writeFileSync(path.join(cacheDir, 'file.md'), 'x');
+    try {
+      const result = await templateFetcher.fetchTemplate('v0.0.1', {
+        offline: true,
+        templateSource: 'test-owner/offline-repo',
+        _noLocalForTest: true,
+      });
+      assert.ok(fs.existsSync(result), 'should return cache path');
+      assert.ok(result.includes('v0.0.1'), 'path should contain tag');
+      assert.ok(templateFetcher.isCacheValid(result), 'cache should be valid');
+    } finally {
+      try { fs.rmSync(path.join(cacheRoot, tid), { recursive: true }); } catch {}
+    }
+  });
+
+  it('opts.offline true + cache missing throws OFFLINE_CACHE_MISSING with 离线 and cache 缺失', async () => {
+    if (!templateFetcher) return;
+    try {
+      await templateFetcher.fetchTemplate('v99.99.99-nonexistent', {
+        offline: true,
+        templateSource: 'test-owner/nonexistent-repo',
+        _noLocalForTest: true,
+      });
+      assert.fail('should have thrown');
+    } catch (err) {
+      assert.strictEqual(err.code, 'OFFLINE_CACHE_MISSING');
+      assert.ok(err.message.includes('离线'), 'message must contain 离线');
+      assert.ok(err.message.includes('cache') || err.message.includes('缺失'), 'message must contain cache or 缺失');
+    }
+  });
+
+  it('getOfflineCacheDir returns correct path for tag and url', () => {
+    if (!templateFetcher) return;
+    const dir1 = templateFetcher.getOfflineCacheDir('latest', { templateSource: 'a/b' });
+    assert.ok(dir1.includes('latest'), 'latest should be in path');
+    assert.ok(dir1.includes('b'), 'template id should be in path');
+    const url = 'https://example.com/template.tar.gz';
+    const dir2 = templateFetcher.getOfflineCacheDir(url, { templateSource: 'a/b' });
+    assert.ok(dir2.includes('url-'), 'url spec should use url-hash');
+  });
+});

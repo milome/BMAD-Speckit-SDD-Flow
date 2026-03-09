@@ -853,6 +853,7 @@ prompt: |
   5. 验证 ralph-method 追踪文件已创建或将在执行首步创建
      - 检查路径: _bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{epic_num}-{story_num}-*/prd.*.json 与 progress.*.txt
      - 若不存在：子代理**必须**在开始执行 tasks 前，根据 tasks-E{epic_num}-S{story_num}.md 生成 prd 与 progress（符合 ralph-method schema），否则不得开始编码。
+     - **progress 预填 TDD 槽位**：生成 progress 时，对每个 US 预填 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 或 [DONE] 占位行（`_pending_`），涉及生产代码的 US 含三者，仅文档/配置的含 [DONE]。
 
   如有任何一项不满足，立即返回错误：
   "前置检查失败: [具体原因]。请先完成 speckit-workflow 的完整流程（specify→plan→GAPS→tasks）。"
@@ -868,13 +869,21 @@ prompt: |
   3. 重构：在测试保护下优化代码，并在 progress 中记录 [TDD-REFACTOR]。
   禁止：先写生产代码再补测试；禁止在未看到红灯（测试失败）前进入绿灯阶段。
 
+  **【TDD 红绿灯阻塞约束】**每个涉及生产代码的任务执行顺序为：
+  1. 先写/补测试并运行验收 → 必须得到失败结果（红灯）
+  2. 立即在 progress 追加 [TDD-RED] <任务ID> <验收命令> => N failed
+  3. 再实现并通过验收 → 得到通过结果（绿灯）
+  4. 立即在 progress 追加 [TDD-GREEN] <任务ID> <验收命令> => N passed
+  5. **无论是否有重构**，在 progress 追加 [TDD-REFACTOR] <任务ID> <内容>（无具体重构时写「无需重构 ✓」）
+  禁止在未完成步骤 1–2 之前执行步骤 3。禁止所有任务完成后集中补写 TDD 记录。
+
   **【TDD 红绿灯记录与验收】**
   每完成一个涉及生产代码的任务的绿灯后，立即在 progress 追加三行：
   `[TDD-RED] <任务ID> <验收命令> => N failed`
   `[TDD-GREEN] <任务ID> <验收命令> => N passed`
   `[TDD-REFACTOR] <任务ID> <内容> | 无需重构 ✓`
   集成任务 REFACTOR 可写「无新增生产代码，各模块独立性已验证，无跨模块重构 ✓」。
-  交付前自检：每个涉及生产代码的 US，progress 须含 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 各一行；缺任一项则补充后再交付。禁止所有 US 完成后才集中补写。
+  交付前自检：对每个涉及生产代码的任务，progress 须含 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR]（或「Txx 无需重构 ✓」）各至少一行；且 [TDD-RED] 行须在 [TDD-GREEN] 行之前。缺任一项则补充后再交付。禁止所有 US 完成后才集中补写。
 
   请对 Story {epic_num}-{story_num} 执行 Dev Story 实施。
 
@@ -958,6 +967,10 @@ cleanup 命令（按平台择一执行）：
 4. 文档一致性：Story文档、spec、plan、代码是否一致
 5. 可追溯性：PRD需求→Story→spec→task→代码的链路是否完整
 
+**强制审计项（与 bmad-bug-assistant BUG-A4-POSTAUDIT 一致）**：
+- **TDD 顺序验证**：对每个任务的 progress 记录，[TDD-RED] 须在 [TDD-GREEN] 之前出现；若 [TDD-GREEN] 在 [TDD-RED] 之前或缺少 [TDD-RED]，判为「事后补写」，结论未通过。
+- **回归判定强制规则**：任何在本 Story 实施前已存在的测试用例，若实施后失败，一律视为回归，须修复或经用户批准后列入正式排除清单。禁止以「与 Story X 相关」「与本 Story 无关」「来自前置 Story」等理由排除。强制步骤：执行全量回归、逐条判定是否回归；若出现「与本 Story 无关」排除且无正式排除记录，结论为未通过。
+
 **审计方式**：
 - 优先：Cursor Task调度code-reviewer
 - 回退：mcp_task generalPurpose + audit-prompts.md §5内容
@@ -969,13 +982,13 @@ cleanup 命令（按平台择一执行）：
 - #### 步骤 4.2：运行 parse-and-write-score（强制）
   - 主 Agent 在收到实施后审计通过结论后，**必须**执行以下操作：
   - 1. 确定报告路径：`{project-root}/_bmad-output/implementation-artifacts/epic-{epic}-*/story-{epic}-{story}-*/AUDIT_Story_{epic}-{story}_stage4.md`
-  - 2. 若报告文件存在，执行：`npx ts-node scripts/parse-and-write-score.ts --reportPath <上述路径> --stage tasks --event story_status_change --triggerStage bmad_story_stage4 --epic {epic} --story {story} --artifactDocPath <story 文档路径> --iteration-count {本 stage 累计 fail 轮数，一次通过传 0}`
+  - 2. 若报告文件存在，执行：`npx ts-node scripts/parse-and-write-score.ts --reportPath <上述路径> --stage implement --event story_status_change --triggerStage bmad_story_stage4 --epic {epic} --story {story} --artifactDocPath <story 文档路径> --iteration-count {本 stage 累计 fail 轮数，一次通过传 0}`
   - 3. 若调用失败，记录 resultCode 到审计证据，不阻断流程（non_blocking）。
 - #### 审计通过后评分写入触发（强制）
-  - branch_id=bmad_story_stage4_audit_pass，event=story_status_change，triggerStage=bmad_story_stage4；**要求审计子任务 prompt 中写明**「审计通过后请将报告保存至 `{project-root}/_bmad-output/implementation-artifacts/epic-{epic}-*/story-{epic}-{story}-*/AUDIT_Story_{epic}-{story}_stage4.md`」；主 Agent 在实施后审计通过后，从约定路径或子任务输出解析 reportPath；若 reportPath 存在则运行 parse-and-write-score；若 reportPath 不存在则记录 `SCORE_WRITE_SKIP_REPORT_MISSING`，**不阻断**流程；**必须含 `--iteration-count {累计值}`**（本 stage fail 轮数；一次通过传 0）；stage=tasks；异常记 SCORE_WRITE_CALL_EXCEPTION；主流程继续到完成选项。
+  - branch_id=bmad_story_stage4_audit_pass，event=story_status_change，triggerStage=bmad_story_stage4；**要求审计子任务 prompt 中写明**「审计通过后请将报告保存至 `{project-root}/_bmad-output/implementation-artifacts/epic-{epic}-*/story-{epic}-{story}-*/AUDIT_Story_{epic}-{story}_stage4.md`」；主 Agent 在实施后审计通过后，从约定路径或子任务输出解析 reportPath；若 reportPath 存在则运行 parse-and-write-score；若 reportPath 不存在则记录 `SCORE_WRITE_SKIP_REPORT_MISSING`，**不阻断**流程；**必须含 `--iteration-count {累计值}`**（本 stage fail 轮数；一次通过传 0）；stage=implement；异常记 SCORE_WRITE_CALL_EXCEPTION；主流程继续到完成选项。
 - #### 步骤 4.3：Story 完成自检（GAP-3.2）
   - 在**提供完成选项之前**，主 Agent 必须执行：`npx ts-node scripts/check-story-score-written.ts --epic {epic} --story {story}`
-  - 若输出为 `STORY_SCORE_WRITTEN:no` 且 reportPath 存在，则补跑 parse-and-write-score：`npx ts-node scripts/parse-and-write-score.ts --reportPath <报告路径> --stage tasks --event story_status_change --triggerStage bmad_story_stage4 --epic {epic} --story {story} --artifactDocPath <story 文档路径> --iteration-count {本 stage 累计 fail 轮数}`
+  - 若输出为 `STORY_SCORE_WRITTEN:no` 且 reportPath 存在，则补跑 parse-and-write-score：`npx ts-node scripts/parse-and-write-score.ts --reportPath <报告路径> --stage implement --event story_status_change --triggerStage bmad_story_stage4 --epic {epic} --story {story} --artifactDocPath <story 文档路径> --iteration-count {本 stage 累计 fail 轮数}`
   - 补跑失败 non_blocking，主流程继续。
 - 提供完成选项（见下文）
 

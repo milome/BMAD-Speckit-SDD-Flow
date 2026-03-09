@@ -112,9 +112,9 @@ development_status:
   10-5-bmad-path-worktree: done
   epic-10-retrospective: done
 
-  epic-11: in-progress
+  epic-11: done
   11-1-template-fetch: done
-  11-2-offline-version-lock: backlog
+  11-2-offline-version-lock: done
   epic-11-retrospective: optional
 
   epic-12: backlog

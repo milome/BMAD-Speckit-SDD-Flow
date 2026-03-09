@@ -1,0 +1,23 @@
+{
+  "branchName": "ralph/bugfix-ralph-tdd-audit-regression",
+  "taskDescription": "修复 ralph-method TDD 脱节与审计回归责任逃逸",
+  "projectContext": {
+    "framework": "BMAD skills",
+    "testCommand": "grep 验收 / 手动检查",
+    "buildCommand": "N/A"
+  },
+  "userStories": [
+    { "id": "US-001", "title": "T1: bmad-story-assistant 增加 4.1.1 阻塞约束", "passes": true },
+    { "id": "US-002", "title": "T2: bmad-story-assistant 增加 4.1.2 交付前自检", "passes": true },
+    { "id": "US-003", "title": "T3: bmad-standalone-tasks 增加 4.1.1 阻塞约束", "passes": true },
+    { "id": "US-004", "title": "T4: speckit-workflow 增加 4.1.1 阻塞约束", "passes": true },
+    { "id": "US-005", "title": "T4a: ralph-method 扩展 prd schema (tddSteps)", "passes": true },
+    { "id": "US-006", "title": "T4b: progress 模板预填 TDD 槽位", "passes": true },
+    { "id": "US-007", "title": "T5: Stage 4 审计增加 4.1.3 TDD 顺序验证", "passes": true },
+    { "id": "US-008", "title": "T6: Stage 4 审计增加 4.2.1 回归强制规则", "passes": true },
+    { "id": "US-009", "title": "T7: Stage 4 审计增加 4.2.2 强制步骤", "passes": true },
+    { "id": "US-010", "title": "T8: Stage 4 审计增加 4.2.3 结论绑定", "passes": true },
+    { "id": "US-011", "title": "T9: code-reviewer-config 增加回归判定项", "passes": true },
+    { "id": "US-012", "title": "T10: 端到端验收验证", "passes": false }
+  ]
+}

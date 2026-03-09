@@ -34,6 +34,7 @@ program
   .option('--debug', 'Enable debug output')
   .option('--github-token <token>', 'GitHub API token')
   .option('--skip-tls', 'Skip SSL/TLS verification (not recommended)')
+  .option('--offline', 'Use only local cache, no network')
   .action(initCommand);
 
 program

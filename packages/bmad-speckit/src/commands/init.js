@@ -290,6 +290,7 @@ async function runNonInteractiveFlow(targetPath, options, log) {
         debug: options.debug,
         networkTimeoutMs,
         templateSource,
+        offline: options.offline,
       });
       const modules = options.modules ? options.modules.split(',').map((m) => m.trim()).filter(Boolean) : null;
       await generateSkeleton(finalPath, templateDir, modules, options.force);
@@ -300,6 +301,10 @@ async function runNonInteractiveFlow(targetPath, options, log) {
     console.log(chalk.green(`\n✓ Initialized at ${finalPath}`));
     console.log(chalk.gray('Run /bmad-help in your AI IDE for next steps.'));
   } catch (err) {
+    if (err.code === 'OFFLINE_CACHE_MISSING') {
+      console.error(err.message);
+      process.exit(exitCodes.OFFLINE_CACHE_MISSING);
+    }
     console.error('Error:', err.message);
     process.exit(err.code === 'NETWORK_TEMPLATE' ? exitCodes.NETWORK_TEMPLATE_FAILED : exitCodes.GENERAL_ERROR);
   }
@@ -437,6 +442,7 @@ async function runInteractiveFlow(targetPath, options, log) {
       debug: options.debug,
       networkTimeoutMs,
       templateSource,
+      offline: options.offline,
     });
     const modules = options.modules ? options.modules.split(',').map((m) => m.trim()).filter(Boolean) : null;
     await generateSkeleton(finalPath, templateDir, modules, options.force);
@@ -449,6 +455,10 @@ async function runInteractiveFlow(targetPath, options, log) {
     console.log(chalk.green(`\n✓ Initialized at ${finalPath}`));
     console.log(chalk.gray('Run /bmad-help in your AI IDE for next steps.'));
   } catch (err) {
+    if (err.code === 'OFFLINE_CACHE_MISSING') {
+      console.error(err.message);
+      process.exit(exitCodes.OFFLINE_CACHE_MISSING);
+    }
     console.error('Error:', err.message);
     process.exit(err.code === 'NETWORK_TEMPLATE' ? exitCodes.NETWORK_TEMPLATE_FAILED : exitCodes.GENERAL_ERROR);
   }

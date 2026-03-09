@@ -82,11 +82,18 @@ Status: ready-for-dev
 - TemplateFetcher 与 init 入口与 Story 11.1 一致；新增逻辑限于 --offline 分支、cache 存在性校验、退出码 5、以及 init 成功后的 templateVersion 写盘。
 - 与 epics.md 13.2 一致：退出码 5 专用于「离线 cache 缺失」；其他异常路径（网络超时、模板失败、路径不可用等）由 13.2 统一约定。
 
+### Previous Story Intelligence（Story 11.1）
+
+- **TemplateFetcher 位置**：`src/services/template-fetcher.js`（或项目现有等价路径）；init 与 TemplateFetcher 已有调用点，本 Story 在其上扩展 `--offline` 分支，不替换调用点。
+- **Cache 结构**：`~/.bmad-speckit/templates/<template-id>/<tag>/`（含 `latest/`、`v1.2.3/` 等）；自定义 URL 时可采用 `url-<hash>/` 子目录；本 Story 复用该结构解析，仅增加 cache 存在性校验。
+- **跨平台**：使用 Node.js `path`、`fs`、`os.homedir()`，禁止硬编码路径分隔符。
+- **测试模式**：Story 11.1 采用 mock 网络请求以稳定测试；本 Story 测试可 mock `fs.existsSync` 等以模拟 cache 存在/缺失。
+
 ### References
 
 - [Source: _bmad-output/planning-artifacts/dev/epics.md Epic 11、Story 11.2、Story 13.2]
 - [Source: _bmad-output/implementation-artifacts/epic-11-speckit-template-offline/story-11-1-template-fetch/11-1-template-fetch.md 模板拉取、cache 结构、非本 Story 范围]
-- [Source: _bmad-output/planning-artifacts/dev/ARCH_specify-cn-like-init-multi-ai-assistant.md §3.2 TemplateFetcher、§4.3 cache 与配置]
+- [Source: _bmad-output/planning-artifacts/dev/ARCH_specify-cn-like-init-multi-ai-assistant.md §3.2 TemplateFetcher、§3.4 退出码约定、§4.3 cache 与配置]
 
 ## Dev Agent Record
 

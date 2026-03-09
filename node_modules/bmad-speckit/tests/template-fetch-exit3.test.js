@@ -36,7 +36,7 @@ describe('Story 11.1: fetchFromUrl timeout triggers NETWORK_TEMPLATE with 网络
     if (!templateFetcher || !nock) return;
     nock('https://example.com')
       .get('/slow.tar.gz')
-      .delayConnection(5000)
+      .delay(5000)
       .reply(200, Buffer.alloc(0));
     try {
       await templateFetcher.fetchFromUrl('https://example.com/slow.tar.gz', { networkTimeoutMs: 100 });
