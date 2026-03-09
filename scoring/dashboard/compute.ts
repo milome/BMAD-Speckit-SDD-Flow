@@ -165,8 +165,8 @@ export function aggregateByEpicStoryTimeWindow(
   });
 }
 
-/** 完整 run 定义：至少 3 个 stage（implement 以 trigger_stage=speckit_5_2 计入） */
-const MIN_STAGES_COMPLETE_RUN = 3;
+/** 完整 run 定义：至少 2 个 stage（story+implement 为 2-stage 设计） */
+const MIN_STAGES_COMPLETE_RUN = 2;
 
 /** Story 9.2: 当 trigger_stage=speckit_5_2 时等效为 implement，否则用 record.stage */
 export function effectiveStage(r: RunScoreRecord): string {

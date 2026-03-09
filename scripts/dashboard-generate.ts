@@ -27,7 +27,7 @@ import {
 } from '../scoring/dashboard';
 
 const EMPTY_DATA_MESSAGE = '暂无数据，请先完成至少一轮 Dev Story';
-const INSUFFICIENT_RUN_MESSAGE = '数据不足，暂无完整 run（至少 3 stage）';
+const INSUFFICIENT_RUN_MESSAGE = '数据不足，暂无完整 run（至少 2 stage）';
 const EPIC_NO_COMPLETE_STORY_MESSAGE = (epicId: number) =>
   `Epic ${epicId} 下无完整 Story，暂无聚合数据`;
 const OUTPUT_PATH = '_bmad-output/dashboard.md';

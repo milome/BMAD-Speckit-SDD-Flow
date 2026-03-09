@@ -11,9 +11,11 @@ const chalk = require('chalk').default ?? require('chalk');
 const boxen = require('boxen');
 const pathUtils = require('../utils/path');
 const ttyUtils = require('../utils/tty');
+const { resolveNetworkTimeoutMs: resolveNetworkTimeoutMsUtil } = require('../utils/network-timeout');
 const exitCodes = require('../constants/exit-codes');
 const AIRegistry = require('../services/ai-registry');
 const { validateBmadStructure } = require('../utils/structure-validate');
+const { getFeedbackHintText } = require('./feedback');
 
 /**
  * Check if directory is non-empty (FR-019): has _bmad, _bmad-output, or other files/subdirs
@@ -28,30 +30,9 @@ function isDirectoryNonEmpty(dirPath) {
   return entries.length > 0;
 }
 
-/**
- * Story 11.1: Resolve network timeout ms: CLI > env > project config > global config > 30000
- */
+/** Story 11.1: Resolve network timeout ms; delegates to utils/network-timeout */
 function resolveNetworkTimeoutMs(options = {}) {
-  const cwd = process.cwd();
-  if (options.networkTimeout != null) {
-    const n = parseInt(options.networkTimeout, 10);
-    if (!Number.isNaN(n) && n > 0) return n;
-  }
-  const envMs = process.env.SDD_NETWORK_TIMEOUT_MS;
-  if (envMs != null && envMs !== '') {
-    const n = parseInt(envMs, 10);
-    if (!Number.isNaN(n) && n > 0) return n;
-  }
-  try {
-    const configManager = require('../services/config-manager');
-    const project = configManager?.get?.('networkTimeoutMs', { cwd });
-    if (project != null && Number(project) > 0) return Number(project);
-    const global = configManager?.get?.('networkTimeoutMs', {});
-    if (global != null && Number(global) > 0) return Number(global);
-  } catch {
-    // ignore
-  }
-  return 30000;
+  return resolveNetworkTimeoutMsUtil({ ...options, cwd: process.cwd() });
 }
 
 /**
@@ -190,7 +171,7 @@ async function initCommand(projectName, options = {}) {
     try {
       await runWorktreeFlow(targetPath, resolvedOptions, log);
     } catch (err) {
-      console.error('Error:', err.message);
+      console.error('Error:', err.message || 'Unknown error');
       process.exit(exitCodes.GENERAL_ERROR);
     }
     return;
@@ -198,7 +179,7 @@ async function initCommand(projectName, options = {}) {
 
   if (nonInteractive) {
     runNonInteractiveFlow(targetPath, resolvedOptions, log).catch((err) => {
-      console.error('Error:', err.message);
+      console.error('Error:', err.message || 'Unknown error');
       process.exit(exitCodes.GENERAL_ERROR);
     });
   } else if (!ttyUtils.isTTY()) {
@@ -206,7 +187,7 @@ async function initCommand(projectName, options = {}) {
     process.exit(exitCodes.GENERAL_ERROR);
   } else {
     runInteractiveFlow(targetPath, resolvedOptions, log).catch((err) => {
-      console.error('Error:', err.message);
+      console.error('Error:', err.message || 'Unknown error');
       process.exit(exitCodes.GENERAL_ERROR);
     });
   }
@@ -297,6 +278,7 @@ async function runWorktreeFlow(targetPath, options, log) {
   maybePrintSubagentHint(selectedAI, targetPath);
   console.log(chalk.green(`\n✓ Initialized (worktree) at ${targetPath}`));
   console.log(chalk.gray(POST_INIT_GUIDE_MSG));
+  console.log(chalk.gray(getFeedbackHintText()));
 }
 
 /**
@@ -374,13 +356,19 @@ async function runNonInteractiveFlow(targetPath, options, log) {
     maybePrintSubagentHint(selectedAI, finalPath);
     console.log(chalk.green(`\n✓ Initialized at ${finalPath}`));
     console.log(chalk.gray(POST_INIT_GUIDE_MSG));
+    console.log(chalk.gray(getFeedbackHintText()));
   } catch (err) {
     if (err.code === 'OFFLINE_CACHE_MISSING') {
       console.error(err.message);
       process.exit(exitCodes.OFFLINE_CACHE_MISSING);
     }
-    console.error('Error:', err.message);
-    process.exit(err.code === 'NETWORK_TEMPLATE' ? exitCodes.NETWORK_TEMPLATE_FAILED : exitCodes.GENERAL_ERROR);
+    if (err.code === 'NETWORK_TEMPLATE') {
+      console.error(err.message || 'Network or template fetch failed');
+      console.error('建议使用 --offline 或检查网络');
+      process.exit(exitCodes.NETWORK_TEMPLATE_FAILED);
+    }
+    console.error('Error:', err.message || 'Unknown error');
+    process.exit(exitCodes.GENERAL_ERROR);
   }
 }
 
@@ -548,13 +536,19 @@ async function runInteractiveFlow(targetPath, options, log) {
     maybePrintSubagentHint(selectedAI, finalPath);
     console.log(chalk.green(`\n✓ Initialized at ${finalPath}`));
     console.log(chalk.gray(POST_INIT_GUIDE_MSG));
+    console.log(chalk.gray(getFeedbackHintText()));
   } catch (err) {
     if (err.code === 'OFFLINE_CACHE_MISSING') {
       console.error(err.message);
       process.exit(exitCodes.OFFLINE_CACHE_MISSING);
     }
-    console.error('Error:', err.message);
-    process.exit(err.code === 'NETWORK_TEMPLATE' ? exitCodes.NETWORK_TEMPLATE_FAILED : exitCodes.GENERAL_ERROR);
+    if (err.code === 'NETWORK_TEMPLATE') {
+      console.error(err.message || 'Network or template fetch failed');
+      console.error('建议使用 --offline 或检查网络');
+      process.exit(exitCodes.NETWORK_TEMPLATE_FAILED);
+    }
+    console.error('Error:', err.message || 'Unknown error');
+    process.exit(exitCodes.GENERAL_ERROR);
   }
 }
 

@@ -585,13 +585,31 @@ prompt: |
 
   报告结尾必须按以下格式输出：结论：通过/未通过。必达子项：① 覆盖需求与 Epic；② 明确无禁止词；③ 多方案已共识；④ 无技术债/占位表述；⑤ 推迟闭环（若有「由 X.Y 负责」则 X.Y 存在且 scope 含该任务）；⑥ 本报告结论格式符合本段要求。若任一项不满足则结论为未通过，并列出不满足项及每条对应的修改建议。
 
-  【§Story 可解析块要求】报告结尾在结论与必达子项之后，**必须**追加可解析评分块（格式见 speckit-workflow/references/audit-prompts-critical-auditor-appendix.md §7 或 docs/BMAD/审计报告格式与解析约定.md）。须包含：独立一行「总体评级: [A|B|C|D]」及四行「- 需求完整性: XX/100」「- 可测试性: XX/100」「- 一致性: XX/100」「- 可追溯性: XX/100」。禁止用描述代替结构化块；总体评级仅限 A/B/C/D。映射建议：完全覆盖→A/90+；部分覆盖→B/80+；需修改→C/70+；不通过→D/60及以下。否则 parseAndWriteScore 无法解析、仪表盘无法显示评级。
+  【§Story 可解析块要求】报告结尾在结论与必达子项之后，**必须**追加可解析评分块（格式见 speckit-workflow/references/audit-prompts-critical-auditor-appendix.md §7 或 docs/BMAD/审计报告格式与解析约定.md）。须包含：独立一行「总体评级: [A|B|C|D]」及四行「- 需求完整性: XX/100」「- 可测试性: XX/100」「- 一致性: XX/100」「- 可追溯性: XX/100」。禁止用描述代替结构化块；总体评级仅限 A/B/C/D。禁止 B+、A-、C+、D- 等任意修饰符；介于两档时择一输出纯字母。映射建议：完全覆盖→A/90+；部分覆盖→B/80+；需修改→C/70+；不通过→D/60及以下。否则 parseAndWriteScore 无法解析、仪表盘无法显示评级。
+
+  【审计通过后必做】当结论为「通过」时，你（审计子代理）**在返回主 Agent 前必须**执行：`npx ts-node scripts/parse-and-write-score.ts --reportPath <保存的报告路径> --stage story --event story_status_change --triggerStage bmad_story_stage2 --epic {epic_num} --story {story_num} --iteration-count {本 stage 累计 fail 轮数，0 表示一次通过}`。报告路径为 `_bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{epic_num}-{story_num}-*/AUDIT_Story_{epic_num}-{story_num}_stage2.md`。若执行失败，在结论中注明 resultCode，不阻断返回。**禁止**在未执行上述命令前返回通过结论。
+
+  【审计未通过时】你（审计子代理）须在本轮内**直接修改被审 Story 文档**以消除 gap，修改完成后在报告中注明已修改内容；主 Agent 收到报告后发起下一轮审计。**禁止**仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules.md](../speckit-workflow/references/audit-document-iteration-rules.md)。
 ```
 
-若审计未通过，**根据报告执行**：若修改建议含「创建 Story X.Y」或「更新 Story X.Y」，主 Agent 须**先执行**该建议（发起 Create Story 或更新子任务），再再次发起对当前 Story 的审计；若仅需修改当前 Story 文档，**审计子代理须在本轮内直接修改**该文档，主 Agent 收到报告后再次发起审计。**禁止**仅修改当前 Story 文档即再审计，当修改建议含创建/更新其他 Story 时。文档审计迭代规则见 [audit-document-iteration-rules.md](../speckit-workflow/references/audit-document-iteration-rules.md)。每次审计均遵循 §2.1 的优先顺序（先 code-reviewer，失败则 generalPurpose）。
+若审计未通过，**根据报告执行**：若修改建议含「创建 Story X.Y」或「更新 Story X.Y」，主 Agent 须**先执行**该建议（发起 Create Story 或更新子任务），再次发起对当前 Story 的审计；若仅需修改当前 Story 文档，**审计子代理须在本轮内直接修改**该文档，主 Agent 收到报告后再次发起审计。**禁止**仅修改当前 Story 文档即再审计，当修改建议含创建/更新其他 Story 时。文档审计迭代规则见 [audit-document-iteration-rules.md](../speckit-workflow/references/audit-document-iteration-rules.md)。每次审计均遵循 §2.1 的优先顺序（先 code-reviewer，失败则 generalPurpose）。
+
+#### 步骤 2.3：阶段二准入检查（强制，先执行）
+
+主 Agent 在收到阶段二通过结论后、进入阶段三之前，**必须先**执行 `npx ts-node scripts/check-story-score-written.ts --epic {epic} --story {story}`。若输出为 `STORY_SCORE_WRITTEN:yes`，则无需执行 步骤 2.2（子代理已在【审计通过后必做】中写入）。若输出为 `STORY_SCORE_WRITTEN:no` 且报告文件 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{epic}-{story}-*/AUDIT_Story_{epic}-{story}_stage2.md` 存在，则主 Agent 执行 步骤 2.2 补跑。失败 non_blocking。
+
+#### 步骤 2.2：补跑 parse-and-write-score（步骤 2.3 得 no 时执行）
+
+当 步骤 2.3 得 `STORY_SCORE_WRITTEN:no` 且报告文件存在时，主 Agent 执行：
+```bash
+npx ts-node scripts/parse-and-write-score.ts --reportPath <报告路径> --stage story --event story_status_change --triggerStage bmad_story_stage2 --epic {epic} --story {story} --iteration-count 0
+```
+补跑后再次执行 check，直至 yes 或报告不存在。失败 non_blocking。
+
+**与 T11 衔接说明**：子代理在【审计通过后必做】中会在返回前执行 parse-and-write；主 Agent 先 步骤 2.3 check，若 yes 则免 步骤 2.2，避免双写。
 
 #### 审计通过后评分写入触发（强制）
-- branch_id=bmad_story_stage2_audit_pass，event=story_status_change，triggerStage=bmad_story_stage2；要求审计子任务 prompt 中写明「审计通过后请将报告保存至 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{epic}-{story}-*/AUDIT_Story_{epic}-{story}_stage2.md`」；主 Agent 在收到通过结论后，若有 reportPath，运行 parse-and-write-score，**必须含 `--iteration-count {累计值}`**（执行审计循环的 Agent 在 pass 时传入本 stage fail 轮数；一次通过传 0；连续 3 轮无 gap 验证不计入）；stage=story；缺 question_version 时 eval_question 不调用；失败 non_blocking，记录 resultCode。
+- branch_id=bmad_story_stage2_audit_pass，event=story_status_change，triggerStage=bmad_story_stage2；子代理在【审计通过后必做】中执行 parse-and-write；主 Agent 通过 步骤 2.2/2.3 做准入检查与补跑；**必须含 `--iteration-count {累计值}`**；stage=story；失败 non_blocking，记录 resultCode。
 
 ---
 
@@ -960,6 +978,8 @@ cleanup 命令（按平台择一执行）：
 
 使用 `audit-prompts.md §5` 进行综合验证。**报告可解析块须符合 §5.1**（四维：功能性、代码质量、测试覆盖、安全性），与 config/code-reviewer-config.yaml modes.code.dimensions 一致，否则 parseAndWriteScore(mode=code) 无法解析、仪表盘四维显示「无数据」。
 
+**【§5 可解析块要求（implement 专用）】** 报告结尾的可解析评分块**必须**使用 modes.code 四维：`- 功能性: XX/100`、`- 代码质量: XX/100`、`- 测试覆盖: XX/100`、`- 安全性: XX/100`。**禁止**使用 需求完整性、可测试性、一致性、可追溯性（该四维仅适用于 tasks/story 阶段）。总体评级禁止 B+、A-、C+、D- 等修饰符，仅限纯 A/B/C/D。否则 parseAndWriteScore(mode=code) 无法解析，仪表盘四维显示「无数据」。
+
 **审计维度**：
 1. 需求覆盖度：是否实现了Story文档中的所有需求
 2. 测试完整性：单元测试、集成测试是否充分
@@ -979,17 +999,17 @@ cleanup 命令（按平台择一执行）：
 
 **通过（A/B级）**：
 - Story标记为完成
-- #### 步骤 4.2：运行 parse-and-write-score（强制）
-  - 主 Agent 在收到实施后审计通过结论后，**必须**执行以下操作：
-  - 1. 确定报告路径：`{project-root}/_bmad-output/implementation-artifacts/epic-{epic}-*/story-{epic}-{story}-*/AUDIT_Story_{epic}-{story}_stage4.md`
-  - 2. 若报告文件存在，执行：`npx ts-node scripts/parse-and-write-score.ts --reportPath <上述路径> --stage implement --event story_status_change --triggerStage bmad_story_stage4 --epic {epic} --story {story} --artifactDocPath <story 文档路径> --iteration-count {本 stage 累计 fail 轮数，一次通过传 0}`
-  - 3. 若调用失败，记录 resultCode 到审计证据，不阻断流程（non_blocking）。
-- #### 审计通过后评分写入触发（强制）
-  - branch_id=bmad_story_stage4_audit_pass，event=story_status_change，triggerStage=bmad_story_stage4；**要求审计子任务 prompt 中写明**「审计通过后请将报告保存至 `{project-root}/_bmad-output/implementation-artifacts/epic-{epic}-*/story-{epic}-{story}-*/AUDIT_Story_{epic}-{story}_stage4.md`」；主 Agent 在实施后审计通过后，从约定路径或子任务输出解析 reportPath；若 reportPath 存在则运行 parse-and-write-score；若 reportPath 不存在则记录 `SCORE_WRITE_SKIP_REPORT_MISSING`，**不阻断**流程；**必须含 `--iteration-count {累计值}`**（本 stage fail 轮数；一次通过传 0）；stage=implement；异常记 SCORE_WRITE_CALL_EXCEPTION；主流程继续到完成选项。
-- #### 步骤 4.3：Story 完成自检（GAP-3.2）
-  - 在**提供完成选项之前**，主 Agent 必须执行：`npx ts-node scripts/check-story-score-written.ts --epic {epic} --story {story}`
-  - 若输出为 `STORY_SCORE_WRITTEN:no` 且 reportPath 存在，则补跑 parse-and-write-score：`npx ts-node scripts/parse-and-write-score.ts --reportPath <报告路径> --stage implement --event story_status_change --triggerStage bmad_story_stage4 --epic {epic} --story {story} --artifactDocPath <story 文档路径> --iteration-count {本 stage 累计 fail 轮数}`
+- #### 步骤 4.3：Story 完成自检（强制，先执行）
+  - 在**提供完成选项之前**，主 Agent **必须先**执行：`npx ts-node scripts/check-story-score-written.ts --epic {epic} --story {story} [--stage implement]`
+  - 若输出为 `STORY_SCORE_WRITTEN:yes`，则无需执行 步骤 4.2（子代理已在【审计通过后必做】中写入）。
+  - 若输出为 `STORY_SCORE_WRITTEN:no` 且 `AUDIT_Story_{epic}-{story}_stage4.md` 存在，则主 Agent 执行 步骤 4.2 补跑；补跑后再次 check。
+  - 若输出含 `DIMENSION_SCORES_MISSING:yes`（报告维度错误），亦须补跑：修正报告可解析块为 code 四维后重新 parse-and-write-score，再次 check 直至通过。
   - 补跑失败 non_blocking，主流程继续。
+- #### 步骤 4.2：补跑 parse-and-write-score（步骤 4.3 得 no 或 DIMENSION_SCORES_MISSING 时执行）
+  - 当 步骤 4.3 得 no 且报告存在时，主 Agent 执行：`npx ts-node scripts/parse-and-write-score.ts --reportPath <报告路径> --stage implement --event story_status_change --triggerStage bmad_story_stage4 --epic {epic} --story {story} --artifactDocPath <story 文档路径> --iteration-count {本 stage 累计 fail 轮数，0 表示一次通过}`
+  - 若调用失败，记录 resultCode，不阻断流程（non_blocking）。
+- #### 审计通过后评分写入触发（强制）
+  - 子代理在【审计通过后必做】中执行 parse-and-write；主 Agent 通过 步骤 4.3/4.2 做准入检查与补跑；**必须含 `--iteration-count {累计值}`**；stage=implement；失败 non_blocking。
 - 提供完成选项（见下文）
 
 **有条件通过（C级）**：
@@ -1372,7 +1392,7 @@ if time_since_last_activity() > timedelta(hours=24):
 
 ### 4.1 审计子代理与提示词
 
-与阶段二相同：**优先** Cursor Task 调度 code-reviewer；**回退** mcp_task generalPurpose。主 Agent 须将 **STORY-A4-POSTAUDIT** 完整 prompt 模板整段复制并替换占位符后传入。详细模板见本 skill 历史版本或 speckit-workflow references。
+与阶段二相同：**优先** Cursor Task 调度 code-reviewer；**回退** mcp_task generalPurpose。主 Agent 须将 **STORY-A4-POSTAUDIT** 完整 prompt 模板整段复制并替换占位符后传入。**传入审计子任务的 prompt 必须包含【§5 可解析块要求（implement 专用）】**（见上节综合审计），并附 audit-prompts §5.1 或 audit-prompts-code.md 可解析块示例（功能性、代码质量、测试覆盖、安全性）。**【审计通过后必做】**：当结论为「完全覆盖、验证通过」时，你（审计子代理）**在返回主 Agent 前必须**执行 `npx ts-node scripts/parse-and-write-score.ts --reportPath <报告路径> --stage implement --event story_status_change --triggerStage bmad_story_stage4 --epic {epic} --story {story} --artifactDocPath <story 文档路径> --iteration-count {本 stage 累计 fail 轮数，0 表示一次通过}`；报告路径为 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{epic}-{story}-*/AUDIT_Story_{epic}-{story}_stage4.md`；若执行失败，在结论中注明 resultCode；**禁止**在未执行前返回通过结论。详细模板见本 skill 历史版本或 speckit-workflow references。
 
 若审计结论为**未通过**，**必须**按审计报告修改后**再次发起**，直至「完全覆盖、验证通过」。
 

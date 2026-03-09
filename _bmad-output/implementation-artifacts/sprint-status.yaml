@@ -117,17 +117,17 @@ development_status:
   11-2-offline-version-lock: done
   epic-11-retrospective: optional
 
-  epic-12: in-progress
-  12-1-ai-registry: ready-for-dev
+  epic-12: done
+  12-1-ai-registry: done
   12-2-reference-integrity: done
   12-3-skill-publish: done
   12-4-post-init-guide: done
   epic-12-retrospective: done
 
-  epic-13: in-progress
-  13-1-check-version: ready-for-dev
-  13-2-error-paths: backlog
-  13-3-upgrade: backlog
-  13-4-config: backlog
-  13-5-feedback: backlog
-  epic-13-retrospective: optional
+  epic-13: done
+  13-1-check-version: done
+  13-2-exception-paths: done
+  13-3-upgrade: done
+  13-4-config: done
+  13-5-feedback: done
+  epic-13-retrospective: done

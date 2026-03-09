@@ -70,6 +70,7 @@ Status: ready-for-dev
 | 1 | --bmad-path 路径不存在 | 用户传 `--bmad-path <path>`，path 不存在 | init 或 check 校验 | 退出码 4；stderr 输出明确说明路径不存在或不可用 |
 | 2 | --bmad-path 结构不符合 | path 存在但目录结构不符合 §5.5 验证清单 | init 或 check 校验 | 退出码 4；stderr 输出明确说明结构不符合，列出缺失项 |
 | 3 | 目标路径已存在且非空 | 目标路径存在且含文件/子目录，用户未传 `--force` | init 校验 | 退出码 4；stderr 输出提示使用 `--force` 或选择其他路径 |
+| 4 | 无写权限 | 目标路径无写权限 | init 写入或 check 校验 | 退出码 4；stderr 输出明确说明无写权限 |
 
 ### AC-5: 通用错误提示格式
 
@@ -102,13 +103,14 @@ Status: ready-for-dev
 - [ ] Task 4：退出码 4（路径不可用）与错误提示（AC-4）
   - [ ] 4.1 确认 init --bmad-path、check bmadPath 验证在路径不存在或结构不符时使用退出码 4，输出明确说明
   - [ ] 4.2 确认目标路径已存在且非空且无 --force 时使用退出码 4
+  - [ ] 4.3 确认 init 写入或 check 校验时，目标路径无写权限使用退出码 4，输出明确说明
 
 - [ ] Task 5：通用错误提示格式（AC-5）
   - [ ] 5.1 统一异常路径错误输出至 stderr，确保每条错误信息包含可识别的问题描述
   - [ ] 5.2 为各退出码场景补充或调整测试，验证错误信息格式
 
 - [ ] Task 6：网络超时可配置（AC-6）
-  - [ ] 6.1 确认 TemplateFetcher 与 init 从配置链（CLI 参数 > SDD_NETWORK_TIMEOUT_MS > 项目级 networkTimeoutMs > 全局 networkTimeoutMs > 默认 30000）读取超时值
+  - [ ] 6.1 确认 TemplateFetcher 与 init 从配置链（SDD_NETWORK_TIMEOUT_MS 环境变量 > 项目级 networkTimeoutMs > 全局 networkTimeoutMs > 默认 30000，与 ARCH §4.1 一致）读取超时值
   - [ ] 6.2 为超时配置链与默认值补充或调整单元/集成测试
 
 ## Dev Notes
@@ -130,6 +132,7 @@ Status: ready-for-dev
 - [Source: _bmad-output/planning-artifacts/dev/ARCH_specify-cn-like-init-multi-ai-assistant.md §3.4 退出码约定、§3.2 TemplateFetcher]
 - [Source: _bmad-output/implementation-artifacts/epic-11-speckit-template-offline/story-11-2-offline-version-lock/11-2-offline-version-lock.md 退出码 5 归属]
 - [Source: _bmad-output/implementation-artifacts/epic-11-speckit-template-offline/story-11-1-template-fetch/11-1-template-fetch.md 网络超时、退出码 3]
+- [Source: _bmad-output/implementation-artifacts/epic-13-speckit-diagnostic-commands/story-13-4-config-command/13-4-config-command.md config get/set/list networkTimeoutMs]
 
 ## Dev Agent Record
 

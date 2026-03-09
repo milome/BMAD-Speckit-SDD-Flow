@@ -17,10 +17,10 @@ Status: ready-for-dev
 3. **AC3** `version` 子命令输出 CLI 版本、模板版本、Node 版本；支持 `--json`。
 4. **AC4** `check` 执行结构验证：读取 `_bmad-output/config/bmad-speckit.json`，按 §5.5 验证清单逐项校验；验证失败时列出缺失项并退出码 1，全部通过时退出码 0；便于 CI 脚本通过 `$?` 或 `exitCode` 判断。
 5. **AC5** 结构验证清单：`_bmad` 存在且含 `core/`、`cursor/`、`speckit/`、`skills/` 至少其二；当存在 `bmadPath` 时改为验证 `bmadPath` 指向目录（worktree 共享模式），不要求项目内存在 `_bmad`；`_bmad/cursor/` 存在时含 `commands/`、`rules/`；`_bmad-output` 存在且含 `config/`。
-6. **AC6** 按 `selectedAI` 验证所选 AI 目标目录（映射表见 Dev Notes）；若 `bmad-speckit.json` 无 `selectedAI` 或项目未 init：跳过 AI 目标目录验证，或验证 `.cursor` 作为向后兼容默认。
+6. **AC6** 按 `selectedAI` 验证所选 AI 目标目录（映射表见 Dev Notes）；若项目未 init（无 `bmad-speckit.json`）：跳过 AI 目标目录验证；若 `bmad-speckit.json` 存在但无 `selectedAI`：验证 `.cursor` 作为向后兼容默认。
 7. **AC7** `check --ignore-agent-tools` 时跳过 AI 工具（detectCommand）检测。
 8. **AC8** `check` 输出所选 AI 的子代理支持等级（`subagentSupport`：`native`|`mcp`|`limited`|`none`）；若为 `none` 或 `limited`，提示「全流程（party-mode、审计子任务等）可能不可用」。
-9. **AC9** 退出码约定：成功 0，结构验证失败 1；与 PRD §5.2、架构 exit-codes 一致。
+9. **AC9** 退出码约定：成功 0，结构验证失败 1；与 PRD §5.2、架构 exit-codes 一致。退出码 2（--ai 无效）、3（网络/模板）、4（路径不可用）由 Story 13.2 负责；退出码 5（离线 cache 缺失）由 Story 11.2 负责，本 Story 仅实现 0/1。
 
 ## Tasks / Subtasks
 
@@ -36,7 +36,7 @@ Status: ready-for-dev
 - [ ] **Task 3**：实现 CheckCommand 结构验证（AC: #4, #5, #6, #9）
   - [ ] 3.1 实现 §5.5 验证清单：`_bmad`/`bmadPath`、`_bmad-output`、`_bmad/cursor` 子目录
   - [ ] 3.2 实现按 selectedAI 验证目标目录：根据 configTemplate 映射表逐项校验（cursor-agent→.cursor/、claude→.claude/、gemini→.gemini/、windsurf→.windsurf/workflows、kilocode→.kilocode/rules、auggie→.augment/rules、roo→.roo/rules、opencode→.opencode/command、bob→.bob/commands、shai→.shai/commands、codex→.codex/commands 等）
-  - [ ] 3.3 无 selectedAI 时：跳过 AI 目标目录验证，或验证 `.cursor` 向后兼容
+  - [ ] 3.3 无 selectedAI 时：项目未 init 则跳过 AI 目标目录验证；有 bmad-speckit.json 但无 selectedAI 时验证 `.cursor` 作为向后兼容默认
   - [ ] 3.4 worktree 共享模式：当 bmad-speckit.json 含 `bmadPath` 时，验证 `bmadPath` 指向目录存在且结构符合清单
   - [ ] 3.5 验证失败时列出缺失项，退出码 1；成功退出码 0
 
@@ -63,7 +63,7 @@ Status: ready-for-dev
 
 - **CheckCommand**、**VersionCommand**：架构 §3.2 明确职责；与 InitCommand、AIRegistry、ConfigManager 协同。
 - **依赖 E10.1**：init 核心（bmad-speckit.json、selectedAI、bmadPath、configTemplate）须已实现；CheckCommand 读取项目级配置与 AIRegistry。
-- **constants/exit-codes.js**：退出码 0、1 与 PRD §5.2 一致；退出码 2（--ai 无效）由 init 与 Story 13.2 负责。
+- **constants/exit-codes.js**：退出码 0、1 与 PRD §5.2 一致。退出码 2（--ai 无效）、3（网络/模板）、4（路径不可用）由 Story 13.2（异常路径）负责，路径 `_bmad-output/implementation-artifacts/epic-13-speckit-diagnostic-commands/story-13-2-exception-paths/`，scope 含网络超时、模板失败、--bmad-path 路径不可用及对应退出码 2/3/4；退出码 5（--offline cache 缺失）由 Story 11.2 负责。
 
 ### 禁止写死目录
 
@@ -88,6 +88,7 @@ Status: ready-for-dev
 - [Source: ARCH_specify-cn-like-init-multi-ai-assistant.md §3.2 CheckCommand、VersionCommand]
 - [Source: epics.md Epic 13 Story 13.1]
 - [Source: PRD US-5 check 与 version 子命令]
+- [Source: epics.md Story 13.2 异常路径、退出码 2/3/4/5]
 
 ## Dev Agent Record
 

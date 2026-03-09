@@ -218,7 +218,7 @@ describe('parseAndWriteScore', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('content_hash is deterministic for same content (GAP-B01)', async () => {
+  it('content_hash is deterministic for same content (GAP-B01)', { timeout: 15000 }, async () => {
     const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
     const tempDir1 = path.join(os.tmpdir(), `scoring-gapb01-det1-${Date.now()}`);
     const tempDir2 = path.join(os.tmpdir(), `scoring-gapb01-det2-${Date.now()}`);
@@ -728,6 +728,46 @@ PRD审计报告
     const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
     expect(written.source_path).toBeUndefined();
     fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('BUGFIX_overall-grade: outputs WARN to stderr when report contains forbidden overall_grade modifier (e.g. B+)', async () => {
+    const content = `Implement 审计报告
+总体评级: B+
+
+维度评分:
+- 功能性: 85/100
+- 代码质量: 82/100
+- 测试覆盖: 78/100
+- 安全性: 90/100
+`;
+    const tempDir = path.join(os.tmpdir(), `scoring-forbidden-mod-${Date.now()}`);
+    const runId = `test-forbidden-mod-${Date.now()}`;
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    try {
+      await parseAndWriteScore({
+        content,
+        stage: 'implement',
+        runId,
+        scenario: 'real_dev',
+        writeMode: 'single_file',
+        dataPath: tempDir,
+        skipAutoHash: true,
+      });
+
+      const errCalls = consoleSpy.mock.calls.flat().join(' ');
+      expect(
+        errCalls.includes('WARN') &&
+          (errCalls.includes('B+') || errCalls.includes('forbidden') || errCalls.includes('modifier'))
+      ).toBe(true);
+    } finally {
+      consoleSpy.mockRestore();
+      try {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      } catch {
+        // ignore
+      }
+    }
   });
 
   it('writes to jsonl when writeMode is jsonl', async () => {

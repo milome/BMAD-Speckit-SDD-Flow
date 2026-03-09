@@ -1,14 +1,19 @@
 /**
- * CheckCommand - check subcommand (ARCH §3.2, Story 10.5, 12.1, 12.2)
+ * CheckCommand - check subcommand (ARCH §3.2, Story 10.5, 12.1, 12.2, 13.1)
  * - bmadPath: validate path exists and structure; exit 4 if not.
  * - selectedAI: validate target directories per configTemplate; exit 1 if not.
- * - --list-ai: list available AI ids from AIRegistry.
+ * - --list-ai: list available AI ids from AIRegistry; --json for JSON array.
+ * - Diagnostic output: aiToolsInstalled, cliVersion, templateVersion, envVars, subagentSupport.
+ * - --ignore-agent-tools: skip detectCommand detection.
  */
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 const exitCodes = require('../constants/exit-codes');
 const { validateBmadStructure } = require('../utils/structure-validate');
 const AIRegistry = require('../services/ai-registry');
+
+const pkg = require('../../package.json');
 
 function getProjectConfig(cwd) {
   const { getProjectConfigPath } = require('../services/config-manager');
@@ -81,6 +86,21 @@ function validateSelectedAITargets(cwd, selectedAI) {
   } else if (selectedAI === 'codex') {
     if (!hasDir('.codex')) missing.push('.codex');
     else if (!hasDir('.codex', 'commands')) missing.push('.codex/commands');
+  } else if (selectedAI === 'gemini') {
+    if (!hasDir('.gemini')) missing.push('.gemini');
+    else if (!hasDir('.gemini', 'commands')) missing.push('.gemini/commands');
+  } else if (selectedAI === 'windsurf') {
+    if (!hasDir('.windsurf')) missing.push('.windsurf');
+    else if (!hasDir('.windsurf', 'workflows')) missing.push('.windsurf/workflows');
+  } else if (selectedAI === 'kilocode') {
+    if (!hasDir('.kilocode')) missing.push('.kilocode');
+    else if (!hasDir('.kilocode', 'rules')) missing.push('.kilocode/rules');
+  } else if (selectedAI === 'auggie') {
+    if (!hasDir('.augment')) missing.push('.augment');
+    else if (!hasDir('.augment', 'rules')) missing.push('.augment/rules');
+  } else if (selectedAI === 'roo') {
+    if (!hasDir('.roo')) missing.push('.roo');
+    else if (!hasDir('.roo', 'rules')) missing.push('.roo/rules');
   } else if (ct.commandsDir || ct.rulesDir) {
     const root = ct.commandsDir ? path.dirname(ct.commandsDir) : path.dirname(ct.rulesDir);
     const full = path.join(cwd, root);
@@ -91,6 +111,80 @@ function validateSelectedAITargets(cwd, selectedAI) {
 }
 
 /**
+ * Story 13.1: Validate _bmad-output exists and contains config/
+ */
+function validateBmadOutput(cwd) {
+  const outDir = path.join(cwd, '_bmad-output');
+  if (!fs.existsSync(outDir) || !fs.statSync(outDir).isDirectory()) {
+    return { valid: false, missing: ['_bmad-output'] };
+  }
+  const configDir = path.join(outDir, 'config');
+  if (!fs.existsSync(configDir) || !fs.statSync(configDir).isDirectory()) {
+    return { valid: false, missing: ['_bmad-output/config'] };
+  }
+  return { valid: true, missing: [] };
+}
+
+/**
+ * Story 13.1: Validate .cursor for backward compat when no selectedAI (spec §5.4)
+ */
+function validateCursorBackwardCompat(cwd) {
+  const hasDir = (relPath, requiredSub) => {
+    const full = path.join(cwd, relPath);
+    if (!fs.existsSync(full)) return false;
+    if (!requiredSub) return true;
+    const sub = path.join(full, requiredSub);
+    return fs.existsSync(sub) && fs.statSync(sub).isDirectory();
+  };
+  if (!hasDir('.cursor')) return { valid: false, missing: ['.cursor'] };
+  if (!hasDir('.cursor', 'commands') && !hasDir('.cursor', 'rules') && !hasDir('.cursor', 'agents')) {
+    return { valid: false, missing: ['.cursor must have commands/, rules/, or agents/'] };
+  }
+  return { valid: true, missing: [] };
+}
+
+/**
+ * Story 13.1: detectCommand - collect installed AI tools
+ */
+function detectInstalledAITools(cwd) {
+  const list = AIRegistry.load({ cwd });
+  const installed = [];
+  for (const entry of list) {
+    const cmd = entry?.detectCommand;
+    if (!cmd || typeof cmd !== 'string') continue;
+    const r = spawnSync(cmd, [], { shell: true, timeout: 5000 });
+    if (r.status === 0) installed.push(entry.id);
+  }
+  return installed;
+}
+
+/**
+ * Story 13.1: Build diagnosis report
+ */
+function buildDiagnoseReport(cwd, options) {
+  const config = getProjectConfig(cwd);
+  const selectedAI = config.selectedAI || null;
+  const entry = selectedAI ? AIRegistry.getById(selectedAI, { cwd }) : null;
+  const subagentSupport = entry?.configTemplate?.subagentSupport || 'unknown';
+
+  const envVars = {};
+  for (const [k, v] of Object.entries(process.env)) {
+    if (k.startsWith('CURSOR_') || k.startsWith('BMAD_') || k === 'PATH' || k === 'HOME') {
+      envVars[k] = k === 'PATH' ? (v || '').substring(0, 100) + (v && v.length > 100 ? '...' : '') : v;
+    }
+  }
+
+  return {
+    cliVersion: pkg.version || '0.0.0',
+    templateVersion: config.templateVersion || null,
+    selectedAI,
+    subagentSupport,
+    envVars,
+    aiToolsInstalled: options.ignoreAgentTools ? [] : detectInstalledAITools(cwd),
+  };
+}
+
+/**
  * Check command handler
  */
 function checkCommand(options = {}) {
@@ -98,50 +192,79 @@ function checkCommand(options = {}) {
 
   if (options.listAi) {
     const ids = AIRegistry.listIds({ cwd });
-    console.log(ids.join('\n'));
+    if (options.json) {
+      console.log(JSON.stringify(ids));
+    } else {
+      ids.forEach((id) => console.log(id));
+    }
     process.exit(exitCodes.SUCCESS);
   }
 
+  const config = getProjectConfig(cwd);
+  const hasConfig = Object.keys(config).length > 0;
   const bmadPathRaw = getProjectBmadPath(cwd);
   const selectedAI = getProjectSelectedAI(cwd);
 
+  const structureMissing = [];
+
   if (bmadPathRaw) {
-    const bmadPath = path.resolve(bmadPathRaw);
+    const bmadPath = path.resolve(cwd, bmadPathRaw);
+    if (!fs.existsSync(bmadPath) || !fs.statSync(bmadPath).isDirectory()) {
+      console.error('Error: bmadPath points to a path that does not exist or is not a directory:', bmadPath);
+      process.exit(exitCodes.TARGET_PATH_UNAVAILABLE);
+    }
     const structure = validateBmadStructure(bmadPath);
     if (!structure.valid) {
-      if (structure.missing.some((m) => m.includes('does not exist') || m.includes('path is required'))) {
-        console.error('Error: bmadPath points to a path that does not exist or is not a directory:', bmadPath);
-      } else {
-        console.error('Error: bmadPath structure invalid. Missing:', (structure.missing || []).join('; '));
-      }
+      console.error('Error: bmadPath structure does not match (need core/cursor/speckit/skills and cursor/commands, cursor/rules):', (structure.missing || []).join('; '));
       process.exit(exitCodes.TARGET_PATH_UNAVAILABLE);
     }
   } else {
     const bmadLocal = path.join(cwd, '_bmad');
     if (fs.existsSync(bmadLocal) && fs.statSync(bmadLocal).isDirectory()) {
       const structure = validateBmadStructure(bmadLocal);
-      if (!structure.valid) {
-        console.error('Error: _bmad structure invalid. Missing:', (structure.missing || []).join('; '));
-        process.exit(exitCodes.GENERAL_ERROR);
-      }
+      if (!structure.valid) structureMissing.push(...structure.missing);
     }
   }
 
-  if (selectedAI) {
-    const aiResult = validateSelectedAITargets(cwd, selectedAI);
-    if (!aiResult.valid) {
-      console.error('Error: selectedAI target directories invalid. Missing:', aiResult.missing.join('; '));
-      process.exit(exitCodes.GENERAL_ERROR);
-    }
-    const entry = AIRegistry.getById(selectedAI, { cwd });
-    const support = entry?.configTemplate?.subagentSupport || 'unknown';
-    console.log('子代理支持等级:', support);
-    if (support === 'none' || support === 'limited') {
-      console.log('所选 AI 不支持或仅部分支持子代理，BMAD/Speckit 全流程（party-mode、code-reviewer、mcp_task 等）可能无法正常运行；建议使用支持子代理的 AI（如 cursor-agent、claude）');
+  const bmadOutputResult = validateBmadOutput(cwd);
+  if (!bmadOutputResult.valid) structureMissing.push(...bmadOutputResult.missing);
+
+  if (hasConfig) {
+    if (selectedAI) {
+      const aiResult = validateSelectedAITargets(cwd, selectedAI);
+      if (!aiResult.valid) structureMissing.push(...aiResult.missing);
+    } else {
+      const cursorResult = validateCursorBackwardCompat(cwd);
+      if (!cursorResult.valid) structureMissing.push(...cursorResult.missing);
     }
   }
 
-  console.log('Check OK.');
+  if (structureMissing.length > 0) {
+    console.error('Error: structure validation failed. Missing:', structureMissing.join('; '));
+    process.exit(exitCodes.GENERAL_ERROR);
+  }
+
+  const report = buildDiagnoseReport(cwd, options);
+
+  if (options.json) {
+    console.log(JSON.stringify(report, null, 0));
+  } else {
+    console.log('CLI version:', report.cliVersion);
+    console.log('Template version:', report.templateVersion || 'unknown');
+    console.log('Selected AI:', report.selectedAI || 'none');
+    console.log('子代理支持等级:', report.subagentSupport);
+    if (report.aiToolsInstalled && report.aiToolsInstalled.length > 0) {
+      console.log('Installed AI tools:', report.aiToolsInstalled.join(', '));
+    }
+    if (Object.keys(report.envVars).length > 0) {
+      console.log('Key env vars:', JSON.stringify(report.envVars));
+    }
+    if (report.subagentSupport === 'none' || report.subagentSupport === 'limited') {
+      console.log('所选 AI 不支持或仅部分支持子代理，BMAD/Speckit 全流程（party-mode、审计子任务等）可能不可用');
+    }
+    console.log('Check OK.');
+  }
+
   process.exit(exitCodes.SUCCESS);
 }
 

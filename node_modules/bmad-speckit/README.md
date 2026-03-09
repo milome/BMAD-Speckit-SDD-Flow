@@ -11,10 +11,11 @@ BMAD-Speckit CLI：init、check、version 等子命令。
 ```bash
 # 方式 1：npx（推荐，参数传递最可靠）
 npx bmad-speckit init .
-npx bmad-speckit init --help
+npx bmad-speckit init --help   # 查看 init 帮助与 banner
 
-# 方式 2：npm run
+# 方式 2：npm run（内部调用 bmad-speckit）
 npm run speckit -- init .
+npm run speckit -- init --help # 等价于 bmad-speckit init --help
 npm run speckit:init
 ```
 

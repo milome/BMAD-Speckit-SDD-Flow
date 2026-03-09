@@ -101,7 +101,7 @@
 
 | 项 | 内容 |
 |----|------|
-| **描述** | 新增 `getEpicAggregateRecords(records, epicId, windowHours): RunScoreRecord[]`：1) 调用 aggregateByEpicOnly 得候选 records；2) 按 epic:story 分组；3) 每组取「最新完整 run」（≥3 stage，同 groupByEpicStoryOrRunId 逻辑）；4) 合并各组 records 返回 |
+| **描述** | 新增 `getEpicAggregateRecords(records, epicId, windowHours): RunScoreRecord[]`：1) 调用 aggregateByEpicOnly 得候选 records；2) 按 epic:story 分组；3) 每组取「最新完整 run」（≥2 stage，2-stage 设计下 story+implement，同 groupByEpicStoryOrRunId 逻辑）；4) 合并各组 records 返回 |
 | **验收标准** | 1) 单测：E9 有 S1、S2 各一完整 run，返回 6 条（3+3）；2) 若 S3 仅有 1 stage，不包含 S3 的 record |
 | **依赖** | US-1.1 |
 

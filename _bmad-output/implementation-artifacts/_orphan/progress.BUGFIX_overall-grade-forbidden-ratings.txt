@@ -1,0 +1,15 @@
+BUGFIX_overall-grade-forbidden-ratings 进度
+============================================
+
+[T1] 完成 2026-03-09 - grep B+/禁止修饰符/仅限纯 A/B/C/D 通过
+[T2] 完成 2026-03-09 - grep B+/禁止修饰符 通过
+[T3] 完成 2026-03-09
+[TDD-RED] T3 含 B+ mock 报告 parse-and-write-score => 无 WARN（T3 未实现）
+[TDD-GREEN] T3 含 B+ mock 报告 parse-and-write-score => stderr 含 WARN/B+/forbidden
+[TDD-REFACTOR] T3 无需重构 ✓
+[T4] 完成 2026-03-09 - grep B+/禁止修饰符/仅限纯 A/B/C/D 通过
+[T5] 完成 2026-03-09
+[TDD-RED] T5 npm run test:scoring BUGFIX_overall-grade => 1 failed
+[TDD-GREEN] T5 npm run test:scoring => 421 passed
+[TDD-REFACTOR] T5 无需重构 ✓
+

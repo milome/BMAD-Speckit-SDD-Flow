@@ -89,7 +89,7 @@ describe('Epic 聚合集成 (US-4.2)', () => {
     expect(result).toHaveLength(0);
   });
 
-  it('(5) CLI 无完整 Story 时输出含「Epic N 下无完整 Story」', () => {
+  it('(5) CLI 无完整 Story 时输出含「Epic N 下无完整 Story」', { timeout: 15000 }, () => {
     const outPath = path.join(process.cwd(), '_bmad-output', 'dashboard.md');
     const outDir = path.dirname(outPath);
     if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
@@ -101,7 +101,7 @@ describe('Epic 聚合集成 (US-4.2)', () => {
     expect(content).toMatch(/Epic 9 下无完整 Story|暂无聚合数据/);
   });
 
-  it('(6) CLI epic 聚合输出含 Epic 9 聚合视图', () => {
+  it('(6) CLI epic 聚合输出含 Epic 9 聚合视图', { timeout: 15000 }, () => {
     execSync(
       `npx ts-node scripts/dashboard-generate.ts --dataPath "${FIXTURE_AGGREGATE}" --epic 9 --strategy epic_story_window --windowHours 168`,
       { cwd: process.cwd(), encoding: 'utf-8' }

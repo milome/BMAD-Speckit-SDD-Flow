@@ -1,0 +1,61 @@
+{
+  "branchName": "ralph/epic13-retro-improvements",
+  "taskDescription": "Epic 13 回顾改进：audit-prompts §1-§4 追加审计标记",
+  "projectContext": {
+    "framework": "Node/Vitest",
+    "testCommand": "npm test",
+    "buildCommand": "npm run build"
+  },
+  "userStories": [
+    {
+      "id": "US-T3",
+      "title": "audit-prompts §1 审计后动作追加 spec 标记",
+      "description": "§1 spec 审计通过时在被审 spec 文档末尾追加 <!-- AUDIT: PASSED by code-reviewer -->",
+      "acceptanceCriteria": ["grep 含「追加」「AUDIT: PASSED」「被审文档」"],
+      "priority": 1,
+      "passes": true,
+      "involvesProductionCode": false,
+      "tddSteps": [{ "phase": "DONE", "description": "修改 audit-prompts §1", "acceptanceCommand": "grep -E \"追加|AUDIT: PASSED|被审文档\" skills/speckit-workflow/references/audit-prompts.md", "passes": true }]
+    },
+    {
+      "id": "US-T4",
+      "title": "audit-prompts §2 审计后动作追加 plan 标记",
+      "description": "§2 plan 审计通过时在被审 plan 文档末尾追加标记",
+      "acceptanceCriteria": ["grep 含「追加」「AUDIT: PASSED」「被审文档」"],
+      "priority": 2,
+      "passes": true,
+      "involvesProductionCode": false,
+      "tddSteps": [{ "phase": "DONE", "description": "修改 audit-prompts §2", "acceptanceCommand": "grep -E \"追加|AUDIT: PASSED|被审文档\" skills/speckit-workflow/references/audit-prompts.md", "passes": true }]
+    },
+    {
+      "id": "US-T5",
+      "title": "audit-prompts §3 审计后动作追加 GAPS 标记",
+      "description": "§3 IMPLEMENTATION_GAPS 审计通过时在被审文档末尾追加标记",
+      "acceptanceCriteria": ["grep 含「追加」「AUDIT: PASSED」「被审文档」"],
+      "priority": 3,
+      "passes": true,
+      "involvesProductionCode": false,
+      "tddSteps": [{ "phase": "DONE", "description": "修改 audit-prompts §3", "acceptanceCommand": "grep -E \"追加|AUDIT: PASSED|被审文档\" skills/speckit-workflow/references/audit-prompts.md", "passes": true }]
+    },
+    {
+      "id": "US-T6",
+      "title": "audit-prompts §4 审计后动作追加 tasks 标记",
+      "description": "§4 tasks 审计通过时在被审 tasks 文档末尾追加标记",
+      "acceptanceCriteria": ["grep 含「追加」「AUDIT: PASSED」「被审文档」"],
+      "priority": 4,
+      "passes": true,
+      "involvesProductionCode": false,
+      "tddSteps": [{ "phase": "DONE", "description": "修改 audit-prompts §4", "acceptanceCommand": "grep -E \"追加|AUDIT: PASSED|被审文档\" skills/speckit-workflow/references/audit-prompts.md", "passes": true }]
+    },
+    {
+      "id": "US-T8",
+      "title": "回归：npm test 全通过",
+      "description": "T3-T6 完成后运行 npm test 验证无回归；check_speckit_prerequisites 对新 Story 通过",
+      "acceptanceCriteria": ["npm test 全通过", "check_speckit_prerequisites 对新 Story 通过"],
+      "priority": 5,
+      "passes": true,
+      "involvesProductionCode": false,
+      "tddSteps": [{ "phase": "DONE", "description": "npm test", "acceptanceCommand": "npm test", "passes": true }]
+    }
+  ]
+}

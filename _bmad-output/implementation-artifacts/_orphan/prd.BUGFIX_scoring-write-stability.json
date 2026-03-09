@@ -1,0 +1,29 @@
+{
+  "documentStem": "BUGFIX_scoring-write-stability",
+  "referenceDoc": "_bmad-output/implementation-artifacts/_orphan/BUGFIX_scoring-write-stability.md",
+  "userStories": [
+    {"id": "T1", "summary": "阶段二插入步骤 2.2 parse-and-write-score（强制）", "passes": true, "involvesProductionCode": false, "tddSteps": {"DONE": "done"}},
+    {"id": "T2", "summary": "阶段四增加【§5 可解析块要求（implement 专用）】", "passes": true, "involvesProductionCode": false, "tddSteps": {"DONE": "done"}},
+    {"id": "T3", "summary": "appendix 新增 §7.1 Implement 阶段可解析块", "passes": true, "involvesProductionCode": false, "tddSteps": {"DONE": "done"}},
+    {"id": "T4", "summary": "parse-and-write implement 时 dimensionScores 为空输出 WARN", "passes": true, "involvesProductionCode": true, "tddSteps": {"RED": "done", "GREEN": "done", "REFACTOR": "done"}},
+    {"id": "T5", "summary": "check-story-score-written 扩展 dimension_scores 为空校验", "passes": true, "involvesProductionCode": true, "tddSteps": {"RED": "done", "GREEN": "done", "REFACTOR": "done"}},
+    {"id": "T6", "summary": "MIN_STAGES_COMPLETE_RUN 从 3 改为 2", "passes": true, "involvesProductionCode": true, "tddSteps": {"RED": "done", "GREEN": "done", "REFACTOR": "done"}},
+    {"id": "T7", "summary": "dashboard-generate INSUFFICIENT_RUN_MESSAGE 改为 2 stage", "passes": true, "involvesProductionCode": true, "tddSteps": {"RED": "done", "GREEN": "done", "REFACTOR": "done"}},
+    {"id": "T8", "summary": "compute.test 2-stage 完整 run 用例", "passes": true, "involvesProductionCode": true, "tddSteps": {"RED": "done", "GREEN": "done", "REFACTOR": "done"}},
+    {"id": "T9", "summary": "RUN_ID_CONVENTION 增加 MIN_STAGES 说明", "passes": true, "involvesProductionCode": false, "tddSteps": {"DONE": "done"}},
+    {"id": "T10", "summary": "TASKS_Epic级仪表盘聚合 US-1.2 改为 ≥2 stage", "passes": true, "involvesProductionCode": false, "tddSteps": {"DONE": "done"}},
+    {"id": "T11", "summary": "STORY-A2-AUDIT 新增【审计通过后必做】parse-and-write-score", "passes": true, "involvesProductionCode": false, "tddSteps": {"DONE": "done"}},
+    {"id": "T12", "summary": "步骤 2.3 阶段二准入检查（check-story-score-written）", "passes": true, "involvesProductionCode": false, "tddSteps": {"DONE": "done"}},
+    {"id": "T13", "summary": "audit-prompts §1 spec 审计后动作：子代理必执行 parse-and-write-score", "passes": true, "involvesProductionCode": false, "tddSteps": {"DONE": "done"}},
+    {"id": "T14", "summary": "audit-prompts §2 plan 审计后动作", "passes": true, "involvesProductionCode": false, "tddSteps": {"DONE": "done"}},
+    {"id": "T15", "summary": "audit-prompts §3 GAPS 审计后动作", "passes": true, "involvesProductionCode": false, "tddSteps": {"DONE": "done"}},
+    {"id": "T16", "summary": "audit-prompts §4 tasks 审计后动作", "passes": true, "involvesProductionCode": false, "tddSteps": {"DONE": "done"}},
+    {"id": "T17", "summary": "audit-prompts §5 implement 审计后动作", "passes": true, "involvesProductionCode": false, "tddSteps": {"DONE": "done"}},
+    {"id": "T18", "summary": "STORY-A4-POSTAUDIT 新增【审计通过后必做】", "passes": true, "involvesProductionCode": false, "tddSteps": {"DONE": "done"}},
+    {"id": "T19", "summary": "check-story-score-written 增加 --stage story|implement 参数", "passes": true, "involvesProductionCode": true, "tddSteps": {"RED": "done", "GREEN": "done", "REFACTOR": "done"}},
+    {"id": "T20", "summary": "步骤 4.3 check 明确 --stage implement 与 DIMENSION_SCORES_MISSING", "passes": true, "involvesProductionCode": false, "tddSteps": {"DONE": "done"}}
+  ],
+  "currentStory": "T20",
+  "completed": 20,
+  "total": 20
+}

@@ -13,6 +13,12 @@ const { createGunzip } = require('zlib');
 const DEFAULT_TEMPLATE_REPO = 'bmad-method/bmad-method';
 const DEFAULT_NETWORK_TIMEOUT_MS = 30000;
 
+function _resolveNetworkTimeoutMs(opts) {
+  if (opts?.networkTimeoutMs != null && opts.networkTimeoutMs > 0) return opts.networkTimeoutMs;
+  const { resolveNetworkTimeoutMs } = require('../utils/network-timeout');
+  return resolveNetworkTimeoutMs({ cwd: opts?.cwd ?? process.cwd() });
+}
+
 function getCacheRoot() {
   return path.join(os.homedir(), '.bmad-speckit', 'templates');
 }
@@ -60,10 +66,9 @@ function getLocalTemplatePath() {
  * Story 11.1: cache to ~/.bmad-speckit/templates/<template-id>/<tag|latest>/; reuse if valid.
  */
 async function fetchFromGitHub(tag, opts = {}) {
-  const { githubToken, skipTls, debug, networkTimeoutMs } = opts;
+  const { githubToken, skipTls, debug } = opts;
   const templateSource = _getTemplateSource(opts);
-  const parsed = parseInt(process.env.SDD_NETWORK_TIMEOUT_MS || '', 10);
-  const timeoutMs = networkTimeoutMs ?? (Number.isNaN(parsed) || parsed <= 0 ? DEFAULT_NETWORK_TIMEOUT_MS : parsed);
+  const timeoutMs = _resolveNetworkTimeoutMs(opts);
   if (skipTls) {
     console.warn('Warning: --skip-tls skips SSL/TLS verification. Use only in trusted networks.');
   }
@@ -240,8 +245,7 @@ async function fetchTemplate(templateSpec, opts = {}) {
  */
 async function fetchFromUrl(url, opts = {}) {
   const templateSource = _getTemplateSource(opts);
-  const parsed = parseInt(process.env.SDD_NETWORK_TIMEOUT_MS || '', 10);
-  const timeoutMs = opts.networkTimeoutMs ?? (Number.isNaN(parsed) || parsed <= 0 ? DEFAULT_NETWORK_TIMEOUT_MS : parsed);
+  const timeoutMs = _resolveNetworkTimeoutMs(opts);
   const crypto = require('crypto');
   const hash = crypto.createHash('sha256').update(url).digest('hex').slice(0, 12);
   const tid = getTemplateId(templateSource);

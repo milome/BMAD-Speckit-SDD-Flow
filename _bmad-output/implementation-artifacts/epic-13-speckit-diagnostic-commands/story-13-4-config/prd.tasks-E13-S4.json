@@ -1,0 +1,41 @@
+{
+  "documentStem": "tasks-E13-S4",
+  "referenceDoc": "specs/epic-13-speckit-diagnostic-commands/story-4-config/tasks-E13-S4.md",
+  "userStories": [
+    {
+      "id": "US-001",
+      "summary": "ConfigCommand 骨架与 bin 注册 (T1.1-T1.3)",
+      "tasks": ["T1.1", "T1.2", "T1.3"],
+      "passes": true,
+      "involvesProductionCode": true,
+      "tddSteps": { "RED": "done", "GREEN": "done", "REFACTOR": "done" }
+    },
+    {
+      "id": "US-002",
+      "summary": "config get 与 list (T2.1-T2.3)",
+      "tasks": ["T2.1", "T2.2", "T2.3"],
+      "passes": true,
+      "involvesProductionCode": true,
+      "tddSteps": { "RED": "done", "GREEN": "done", "REFACTOR": "done" }
+    },
+    {
+      "id": "US-003",
+      "summary": "config set 与作用域规则 (T3.1-T3.5)",
+      "tasks": ["T3.1", "T3.2", "T3.3", "T3.4", "T3.5"],
+      "passes": true,
+      "involvesProductionCode": true,
+      "tddSteps": { "RED": "done", "GREEN": "done", "REFACTOR": "done" }
+    },
+    {
+      "id": "US-004",
+      "summary": "单元、集成、回归测试 (T4.1-T4.3)",
+      "tasks": ["T4.1", "T4.2", "T4.3"],
+      "passes": true,
+      "involvesProductionCode": false,
+      "tddSteps": { "DONE": "done" }
+    }
+  ],
+  "currentStory": null,
+  "completed": 4,
+  "total": 4
+}

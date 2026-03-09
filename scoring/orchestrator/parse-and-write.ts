@@ -215,5 +215,21 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     ...(options.triggerStage != null ? { trigger_stage: options.triggerStage } : {}),
   };
 
+  if (stage === 'implement' && dimensionScores.length === 0) {
+    console.error(
+      'WARN: implement stage report has no parseable dimension_scores. Expected dimensions: 功能性, 代码质量, 测试覆盖, 安全性. Check report parseable block matches modes.code.dimensions.'
+    );
+  }
+
+  // BUGFIX_overall-grade-forbidden-ratings: 检测非法总体评级格式（A-、B+、C+、D- 等）
+  const forbiddenModMatch = content.match(/总体评级:\s*([ABCD][+-])/m);
+  if (forbiddenModMatch) {
+    const line = forbiddenModMatch[0];
+    const snippet = line.length > 80 ? line.slice(0, 80) + '…' : line;
+    console.error(
+      `WARN: audit report contains forbidden overall_grade modifier (e.g. B+ or A-). Expected: A, B, C, or D only. Content snippet: ${snippet}`
+    );
+  }
+
   writeScoreRecordSync(recordToWrite, writeMode, dataPath != null ? { dataPath } : undefined);
 }

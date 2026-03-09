@@ -1,6 +1,7 @@
 /**
  * Story 9.1 T6: Story 完成自检 - 检查指定 epic/story 是否有评分记录
- * CLI: npx ts-node scripts/check-story-score-written.ts --epic N --story N [--dataPath path]
+ * CLI: npx ts-node scripts/check-story-score-written.ts --epic N --story N [--dataPath path] [--stage story|implement]
+ * --stage: 未指定时任意 stage 有 record 即 yes；story 时仅 stage===story 或 trigger_stage===bmad_story_stage2；implement 时仅 stage===implement 或 trigger_stage===bmad_story_stage4
  */
 import { loadAndDedupeRecords } from '../scoring/query/loader';
 import { parseEpicStoryFromRecord } from '../scoring/query/parse-epic-story';
@@ -26,9 +27,10 @@ function main(): void {
   const epicRaw = args.epic;
   const storyRaw = args.story;
   const dataPath = args.dataPath;
+  const stageFilter = args.stage as 'story' | 'implement' | undefined;
 
   if (!epicRaw || !storyRaw) {
-    console.error('Usage: npx ts-node scripts/check-story-score-written.ts --epic N --story N [--dataPath path]');
+    console.error('Usage: npx ts-node scripts/check-story-score-written.ts --epic N --story N [--dataPath path] [--stage story|implement]');
     process.exit(1);
   }
 
@@ -42,14 +44,32 @@ function main(): void {
   const records = loadAndDedupeRecords(dataPath);
   const realDev = records.filter((r) => r.scenario !== 'eval_question');
 
-  const matching = realDev.filter((r) => {
+  let matching = realDev.filter((r) => {
     const parsed = parseEpicStoryFromRecord(r);
     return parsed != null && parsed.epicId === epicId && parsed.storyId === storyId;
   });
 
+  if (stageFilter === 'story') {
+    matching = matching.filter(
+      (r) => r.stage === 'story' || r.trigger_stage === 'bmad_story_stage2'
+    );
+  } else if (stageFilter === 'implement') {
+    matching = matching.filter(
+      (r) => r.stage === 'implement' || r.trigger_stage === 'bmad_story_stage4'
+    );
+  }
+
   if (matching.length > 0) {
     console.log('STORY_SCORE_WRITTEN:yes');
     console.log(`Found ${matching.length} record(s) for epic=${epicId} story=${storyId}`);
+    const hasMissingDimensions = matching.some(
+      (r) =>
+        r.stage === 'implement' &&
+        (!r.dimension_scores || r.dimension_scores.length === 0)
+    );
+    if (hasMissingDimensions) {
+      console.log('DIMENSION_SCORES_MISSING:yes');
+    }
   } else {
     console.log('STORY_SCORE_WRITTEN:no');
     console.log(`No records for epic=${epicId} story=${storyId}`);

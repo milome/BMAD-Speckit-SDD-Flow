@@ -1,0 +1,57 @@
+{
+  "documentStem": "tasks-E13-S2",
+  "referenceDoc": "specs/epic-13-speckit-diagnostic-commands/story-2-exception-paths/tasks-E13-S2.md",
+  "userStories": [
+    {
+      "id": "US-001",
+      "summary": "T1: 退出码常量核验",
+      "tasks": ["T1.1"],
+      "passes": true,
+      "involvesProductionCode": false,
+      "tddSteps": { "RED": "done", "GREEN": "done", "REFACTOR": "done" }
+    },
+    {
+      "id": "US-002",
+      "summary": "T2: process.exit 梳理",
+      "tasks": ["T2.1"],
+      "passes": true,
+      "involvesProductionCode": true,
+      "tddSteps": { "RED": "done", "GREEN": "done", "REFACTOR": "done" }
+    },
+    {
+      "id": "US-003",
+      "summary": "T3: 退出码 3 错误提示 (--offline 建议)",
+      "tasks": ["T3.1"],
+      "passes": true,
+      "involvesProductionCode": true,
+      "tddSteps": { "RED": "done", "GREEN": "done", "REFACTOR": "done" }
+    },
+    {
+      "id": "US-004",
+      "summary": "T4: 网络超时配置链 (TemplateFetcher)",
+      "tasks": ["T4.1"],
+      "passes": true,
+      "involvesProductionCode": true,
+      "tddSteps": { "RED": "done", "GREEN": "done", "REFACTOR": "done" }
+    },
+    {
+      "id": "US-005",
+      "summary": "T5: 错误格式审查",
+      "tasks": ["T5.1"],
+      "passes": true,
+      "involvesProductionCode": true,
+      "tddSteps": { "RED": "done", "GREEN": "done", "REFACTOR": "done" }
+    },
+    {
+      "id": "US-006",
+      "summary": "T6: 集成/端到端测试",
+      "tasks": ["T6.1", "T6.2", "T6.3", "T6.4", "T6.5"],
+      "passes": true,
+      "involvesProductionCode": true,
+      "tddSteps": { "RED": "done", "GREEN": "done", "REFACTOR": "done" }
+    }
+  ],
+  "currentStory": "US-006",
+  "completed": 6,
+  "total": 6
+}

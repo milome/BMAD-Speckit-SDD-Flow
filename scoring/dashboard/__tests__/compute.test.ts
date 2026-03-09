@@ -221,7 +221,22 @@ describe('getLatestRunRecordsV2 (E9-S1 T9)', () => {
     expect(v2).toEqual(v1);
   });
 
-  it('strategy epic_story_window returns complete run with >=3 stages', () => {
+  it('strategy epic_story_window returns complete run with >=2 stages', () => {
+    const records = [
+      createRecord({ run_id: 'dev-e9-s1-x', stage: 'story', timestamp: '2026-03-06T12:00:00Z' }),
+      createRecord({ run_id: 'dev-e9-s1-x', stage: 'implement', timestamp: '2026-03-06T12:00:00Z' }),
+    ];
+    const result = getLatestRunRecordsV2(records, {
+      strategy: 'epic_story_window',
+      epic: 9,
+      story: 1,
+      windowHours: 168,
+    });
+    expect(result).toHaveLength(2);
+    expect(new Set(result.map((r) => r.stage)).size).toBe(2);
+  });
+
+  it('strategy epic_story_window returns complete run with 3 stages (still valid)', () => {
     const records = [
       createRecord({ run_id: 'dev-e9-s1-x', stage: 'spec', timestamp: '2026-03-06T12:00:00Z' }),
       createRecord({ run_id: 'dev-e9-s1-x', stage: 'plan', timestamp: '2026-03-06T12:00:00Z' }),
