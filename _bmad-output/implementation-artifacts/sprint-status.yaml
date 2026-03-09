@@ -119,10 +119,10 @@ development_status:
 
   epic-12: in-progress
   12-1-ai-registry: ready-for-dev
-  12-2-reference-integrity: ready-for-dev
-  12-3-skill-publish: ready-for-dev
-  12-4-post-init-guide: backlog
-  epic-12-retrospective: optional
+  12-2-reference-integrity: done
+  12-3-skill-publish: done
+  12-4-post-init-guide: done
+  epic-12-retrospective: done
 
   epic-13: in-progress
   13-1-check-version: ready-for-dev

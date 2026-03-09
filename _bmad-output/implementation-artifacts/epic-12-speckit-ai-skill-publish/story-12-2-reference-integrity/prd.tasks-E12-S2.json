@@ -1,0 +1,41 @@
+{
+  "documentStem": "tasks-E12-S2",
+  "referenceDoc": "specs/epic-12-speckit-ai-skill-publish/story-2-reference-integrity/tasks-E12-S2.md",
+  "userStories": [
+    {
+      "id": "US-001",
+      "summary": "SyncService 实现 (T1.1-T1.6)",
+      "tasks": ["T1.1", "T1.2", "T1.3", "T1.4", "T1.5", "T1.6"],
+      "passes": true,
+      "involvesProductionCode": true,
+      "tddSteps": { "RED": "done", "GREEN": "done", "REFACTOR": "done" }
+    },
+    {
+      "id": "US-002",
+      "summary": "InitCommand 集成 (T2.1-T2.4)",
+      "tasks": ["T2.1", "T2.2", "T2.3", "T2.4"],
+      "passes": true,
+      "involvesProductionCode": true,
+      "tddSteps": { "RED": "done", "GREEN": "done", "REFACTOR": "done" }
+    },
+    {
+      "id": "US-003",
+      "summary": "CheckCommand 结构验证 (T3.1-T3.5)",
+      "tasks": ["T3.1", "T3.2", "T3.3", "T3.4", "T3.5"],
+      "passes": true,
+      "involvesProductionCode": true,
+      "tddSteps": { "RED": "done", "GREEN": "done", "REFACTOR": "done" }
+    },
+    {
+      "id": "US-004",
+      "summary": "单元、集成、E2E 测试 (T4.1-T4.4)",
+      "tasks": ["T4.1", "T4.2", "T4.3", "T4.4"],
+      "passes": true,
+      "involvesProductionCode": false,
+      "tddSteps": { "RED": "done", "GREEN": "done", "REFACTOR": "done" }
+    }
+  ],
+  "currentStory": "US-004",
+  "completed": 4,
+  "total": 4
+}

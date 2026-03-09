@@ -1,6 +1,9 @@
 /**
  * InitCommand - init subcommand handler (ARCH §3.2)
  * T007-T012: 参数解析、路径解析、非空校验、Banner、AIRegistry
+ *
+ * Story 12.4 Post-init 引导：init 成功完成（骨架、git init、SyncService、SkillPublisher 全部成功后）
+ * 在进程退出前输出 POST_INIT_GUIDE_MSG 到 stdout；init 失败（catch 块）时不输出引导。
  */
 const fs = require('fs');
 const path = require('path');
@@ -239,6 +242,18 @@ function resolveGenericAiCommandsDir(selectedAI, options, cwd) {
   return null;
 }
 
+/** Story 12.4: Post-init 引导文案（PRD §5.2、§5.13）；init 成功完成后 stdout 输出，init 失败时不输出 */
+const POST_INIT_GUIDE_MSG = 'Init 完成。建议在 AI IDE 中运行 `/bmad-help` 获取下一步指引，或运行 `speckit.constitution` 开始 Spec-Driven Development。';
+
+/** Story 12.3 §6.2: stdout hint when subagentSupport is none or limited */
+function maybePrintSubagentHint(selectedAI, cwd) {
+  const entry = AIRegistry.getById(selectedAI, { cwd });
+  const support = entry?.configTemplate?.subagentSupport;
+  if (support === 'none' || support === 'limited') {
+    console.log(chalk.yellow('\n所选 AI 不支持或仅部分支持子代理，BMAD/Speckit 全流程（party-mode、code-reviewer、mcp_task 等）可能无法正常运行；建议使用支持子代理的 AI（如 cursor-agent、claude）\n'));
+  }
+}
+
 /**
  * Story 10.5: Worktree flow (--bmad-path): no _bmad copy, only _bmad-output + sync from bmadPath, write bmadPath to config
  */
@@ -264,12 +279,24 @@ async function runWorktreeFlow(targetPath, options, log) {
 
   const bmadPathResolved = options.resolvedBmadPath;
   const { createWorktreeSkeleton, writeSelectedAI, runGitInit } = require('./init-skeleton');
+  const SyncService = require('../services/sync-service');
+  const SkillPublisher = require('../services/skill-publisher');
 
   createWorktreeSkeleton(targetPath, bmadPathResolved, selectedAI);
-  writeSelectedAI(targetPath, selectedAI, 'latest', bmadPathResolved);
+  SyncService.syncCommandsRulesConfig(targetPath, selectedAI, { bmadPath: bmadPathResolved });
+  const noAiSkills = options.noAiSkills === true || options['no-ai-skills'] === true || options.aiSkills === false;
+  const publishResult = SkillPublisher.publish(targetPath, selectedAI, {
+    bmadPath: bmadPathResolved,
+    noAiSkills,
+  });
+  writeSelectedAI(targetPath, selectedAI, 'latest', bmadPathResolved, {
+    skillsPublished: publishResult.published,
+    skippedReasons: publishResult.skippedReasons,
+  });
   if (!options.noGit) runGitInit(targetPath);
+  maybePrintSubagentHint(selectedAI, targetPath);
   console.log(chalk.green(`\n✓ Initialized (worktree) at ${targetPath}`));
-  console.log(chalk.gray('Run /bmad-help in your AI IDE for next steps.'));
+  console.log(chalk.gray(POST_INIT_GUIDE_MSG));
 }
 
 /**
@@ -302,12 +329,23 @@ async function runNonInteractiveFlow(targetPath, options, log) {
 
   const { generateSkeleton, createWorktreeSkeleton, writeSelectedAI, runGitInit } = require('./init-skeleton');
   const { generateScript } = require('./script-generator');
+  const SyncService = require('../services/sync-service');
+  const SkillPublisher = require('../services/skill-publisher');
 
   try {
     if (options.resolvedBmadPath) {
       // Story 10.5: worktree mode - no _bmad copy, only _bmad-output and sync from bmadPath
       createWorktreeSkeleton(finalPath, options.resolvedBmadPath, selectedAI);
-      writeSelectedAI(finalPath, selectedAI, tag, options.resolvedBmadPath);
+      SyncService.syncCommandsRulesConfig(finalPath, selectedAI, { bmadPath: options.resolvedBmadPath });
+      const noAiSkills = options.noAiSkills === true || options['no-ai-skills'] === true || options.aiSkills === false;
+      const publishResult = SkillPublisher.publish(finalPath, selectedAI, {
+        bmadPath: options.resolvedBmadPath,
+        noAiSkills,
+      });
+      writeSelectedAI(finalPath, selectedAI, tag, options.resolvedBmadPath, {
+        skillsPublished: publishResult.published,
+        skippedReasons: publishResult.skippedReasons,
+      });
       generateScript(finalPath, options.resolvedScriptType);
       if (!options.noGit) runGitInit(finalPath);
     } else {
@@ -323,12 +361,19 @@ async function runNonInteractiveFlow(targetPath, options, log) {
       });
       const modules = options.modules ? options.modules.split(',').map((m) => m.trim()).filter(Boolean) : null;
       await generateSkeleton(finalPath, templateDir, modules, options.force);
-      writeSelectedAI(finalPath, selectedAI, tag);
+      SyncService.syncCommandsRulesConfig(finalPath, selectedAI, {});
+      const noAiSkills = options.noAiSkills === true || options['no-ai-skills'] === true || options.aiSkills === false;
+      const publishResult = SkillPublisher.publish(finalPath, selectedAI, { noAiSkills });
+      writeSelectedAI(finalPath, selectedAI, tag, null, {
+        skillsPublished: publishResult.published,
+        skippedReasons: publishResult.skippedReasons,
+      });
       generateScript(finalPath, options.resolvedScriptType);
       if (!options.noGit) runGitInit(finalPath);
     }
+    maybePrintSubagentHint(selectedAI, finalPath);
     console.log(chalk.green(`\n✓ Initialized at ${finalPath}`));
-    console.log(chalk.gray('Run /bmad-help in your AI IDE for next steps.'));
+    console.log(chalk.gray(POST_INIT_GUIDE_MSG));
   } catch (err) {
     if (err.code === 'OFFLINE_CACHE_MISSING') {
       console.error(err.message);
@@ -474,6 +519,8 @@ async function runInteractiveFlow(targetPath, options, log) {
   const { fetchTemplate } = require('../services/template-fetcher');
   const { generateSkeleton, writeSelectedAI } = require('./init-skeleton');
   const { generateScript } = require('./script-generator');
+  const SyncService = require('../services/sync-service');
+  const SkillPublisher = require('../services/skill-publisher');
 
   try {
     const templateDir = await fetchTemplate(tag, {
@@ -486,14 +533,21 @@ async function runInteractiveFlow(targetPath, options, log) {
     });
     const modules = options.modules ? options.modules.split(',').map((m) => m.trim()).filter(Boolean) : null;
     await generateSkeleton(finalPath, templateDir, modules, options.force);
-    writeSelectedAI(finalPath, selectedAI, tag);
+    SyncService.syncCommandsRulesConfig(finalPath, selectedAI, {});
+    const noAiSkills = options.noAiSkills === true || options['no-ai-skills'] === true || options.aiSkills === false;
+    const publishResult = SkillPublisher.publish(finalPath, selectedAI, { noAiSkills });
+    writeSelectedAI(finalPath, selectedAI, tag, null, {
+      skillsPublished: publishResult.published,
+      skippedReasons: publishResult.skippedReasons,
+    });
     generateScript(finalPath, options.resolvedScriptType);
     if (!options.noGit) {
       const { runGitInit } = require('./init-skeleton');
       runGitInit(finalPath);
     }
+    maybePrintSubagentHint(selectedAI, finalPath);
     console.log(chalk.green(`\n✓ Initialized at ${finalPath}`));
-    console.log(chalk.gray('Run /bmad-help in your AI IDE for next steps.'));
+    console.log(chalk.gray(POST_INIT_GUIDE_MSG));
   } catch (err) {
     if (err.code === 'OFFLINE_CACHE_MISSING') {
       console.error(err.message);

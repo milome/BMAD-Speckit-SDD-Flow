@@ -505,6 +505,240 @@ async function testE11S2OfflineCacheOk() {
   }
 }
 
+// Story 12.2 T4.3: init --bmad-path --ai opencode => .opencode/command exists and check passes
+function testE12S2OpencodeWorktree() {
+  const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e12s2-opencode-${Date.now()}`);
+  const sharedBmad = path.join(tmpDir, 'shared_bmad');
+  fs.mkdirSync(path.join(sharedBmad, 'core'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'commands'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'rules'), { recursive: true });
+  fs.writeFileSync(path.join(sharedBmad, 'cursor', 'commands', 'x.cmd'), 'x');
+  const projectDir = path.join(tmpDir, 'proj');
+  fs.mkdirSync(projectDir, { recursive: true });
+  const r = runInit(['.', '--bmad-path', sharedBmad, '--ai', 'opencode', '--yes', '--no-git'], projectDir);
+  const hasOpenencodeCommand = fs.existsSync(path.join(projectDir, '.opencode', 'command'));
+  const checkR = runCheck(projectDir);
+  try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
+  return r.status === 0 && hasOpenencodeCommand && checkR.status === 0;
+}
+
+// Story 12.2 T4.3: init --bmad-path --ai bob => .bob/commands exists and check passes
+function testE12S2BobWorktree() {
+  const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e12s2-bob-${Date.now()}`);
+  const sharedBmad = path.join(tmpDir, 'shared_bmad');
+  fs.mkdirSync(path.join(sharedBmad, 'core'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'commands'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'rules'), { recursive: true });
+  const projectDir = path.join(tmpDir, 'proj');
+  fs.mkdirSync(projectDir, { recursive: true });
+  const r = runInit(['.', '--bmad-path', sharedBmad, '--ai', 'bob', '--yes', '--no-git'], projectDir);
+  const hasBobCommands = fs.existsSync(path.join(projectDir, '.bob', 'commands'));
+  const checkR = runCheck(projectDir);
+  try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
+  return r.status === 0 && hasBobCommands && checkR.status === 0;
+}
+
+// Story 12.3 T4.3: init --ai cursor-agent --yes (worktree) => ~/.cursor/skills has published skills; initLog.skillsPublished
+function testE12S3SkillsPublishWorktree() {
+  const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e12s3-skills-${Date.now()}`);
+  const sharedBmad = path.join(tmpDir, 'shared_bmad');
+  fs.mkdirSync(path.join(sharedBmad, 'core'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'commands'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'rules'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'skills', 'speckit-workflow'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'skills', 'bmad-bug-assistant'), { recursive: true });
+  fs.writeFileSync(path.join(sharedBmad, 'skills', 'speckit-workflow', 'SKILL.md'), 'x');
+  const projectDir = path.join(tmpDir, 'proj');
+  fs.mkdirSync(projectDir, { recursive: true });
+  const r = runInit(['.', '--bmad-path', sharedBmad, '--ai', 'cursor-agent', '--yes', '--no-git'], projectDir);
+  const home = os.homedir();
+  const skillsDir = path.join(home, '.cursor', 'skills');
+  const hasSpeckit = fs.existsSync(path.join(skillsDir, 'speckit-workflow'));
+  const hasBmadBug = fs.existsSync(path.join(skillsDir, 'bmad-bug-assistant'));
+  const configPath = path.join(projectDir, '_bmad-output', 'config', 'bmad-speckit.json');
+  let config = {};
+  if (fs.existsSync(configPath)) {
+    try { config = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch (_) {}
+  }
+  const hasSkillsPublished = Array.isArray(config.initLog?.skillsPublished) && config.initLog.skillsPublished.length > 0;
+  try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
+  return r.status === 0 && (hasSpeckit || hasBmadBug) && hasSkillsPublished;
+}
+
+// Story 12.3 T4.3: init --no-ai-skills => skills not synced, initLog.skippedReasons
+function testE12S3NoAiSkills() {
+  const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e12s3-noai-${Date.now()}`);
+  const sharedBmad = path.join(tmpDir, 'shared_bmad');
+  fs.mkdirSync(path.join(sharedBmad, 'core'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'commands'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'rules'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'skills', 'speckit-workflow'), { recursive: true });
+  const projectDir = path.join(tmpDir, 'proj');
+  fs.mkdirSync(projectDir, { recursive: true });
+  const r = runInit(['.', '--bmad-path', sharedBmad, '--ai', 'cursor-agent', '--yes', '--no-git', '--no-ai-skills'], projectDir);
+  const configPath = path.join(projectDir, '_bmad-output', 'config', 'bmad-speckit.json');
+  let config = {};
+  if (fs.existsSync(configPath)) {
+    try { config = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch (_) {}
+  }
+  const hasSkippedReasons = Array.isArray(config.initLog?.skippedReasons) && config.initLog.skippedReasons.length > 0;
+  try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
+  return r.status === 0 && hasSkippedReasons;
+}
+
+// Story 12.3 T3.1: init --ai tabnine --yes => stdout contains subagent support hint
+function testE12S3SubagentHintInit() {
+  const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e12s3-tabnine-${Date.now()}`);
+  const sharedBmad = path.join(tmpDir, 'shared_bmad');
+  fs.mkdirSync(path.join(sharedBmad, 'core'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'commands'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'rules'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'skills', 'x'), { recursive: true });
+  const projectDir = path.join(tmpDir, 'proj');
+  fs.mkdirSync(projectDir, { recursive: true });
+  const r = runInit(['.', '--bmad-path', sharedBmad, '--ai', 'tabnine', '--yes', '--no-git'], projectDir);
+  const out = (r.stdout || '') + (r.stderr || '');
+  const hasHint = /子代理|party-mode|cursor-agent|claude/i.test(out);
+  try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
+  return r.status === 0 && hasHint;
+}
+
+// Story 12.3 T4.3: init --ai copilot --yes (worktree) => skippedReasons contains AI 不支持
+function testE12S3CopilotNoSkillsDir() {
+  const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e12s3-copilot-${Date.now()}`);
+  const sharedBmad = path.join(tmpDir, 'shared_bmad');
+  fs.mkdirSync(path.join(sharedBmad, 'core'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'commands'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'rules'), { recursive: true });
+  const projectDir = path.join(tmpDir, 'proj');
+  fs.mkdirSync(projectDir, { recursive: true });
+  const r = runInit(['.', '--bmad-path', sharedBmad, '--ai', 'copilot', '--yes', '--no-git'], projectDir);
+  const configPath = path.join(projectDir, '_bmad-output', 'config', 'bmad-speckit.json');
+  let config = {};
+  if (fs.existsSync(configPath)) {
+    try { config = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch (_) {}
+  }
+  const hasSkipped = Array.isArray(config.initLog?.skippedReasons) && config.initLog.skippedReasons.some((s) => /不支持|skill|AI/i.test(s));
+  try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
+  return r.status === 0 && hasSkipped;
+}
+
+// Story 12.3 T3.2: check with tabnine selectedAI => output contains 子代理支持等级
+function testE12S3SubagentHintCheck() {
+  const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e12s3-chk-${Date.now()}`);
+  const sharedBmad = path.join(tmpDir, 'shared_bmad');
+  fs.mkdirSync(path.join(sharedBmad, 'core'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'commands'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'rules'), { recursive: true });
+  const projectDir = path.join(tmpDir, 'proj');
+  fs.mkdirSync(projectDir, { recursive: true });
+  runInit(['.', '--bmad-path', sharedBmad, '--ai', 'tabnine', '--yes', '--no-git'], projectDir);
+  const r = runCheck(projectDir);
+  const out = (r.stdout || '') + (r.stderr || '');
+  const hasSubagentSection = /子代理|支持等级/i.test(out);
+  try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
+  return r.status === 0 && hasSubagentSection;
+}
+
+// Story 12.3 T2.5: init --help contains --ai-skills, --no-ai-skills
+function testE12S3HelpAiSkills() {
+  const r = runInit(['--help']);
+  const out = (r.stdout || '') + (r.stderr || '');
+  return out.includes('--ai-skills') && out.includes('--no-ai-skills');
+}
+
+// Story 12.4 T4.1: init success => stdout contains /bmad-help and speckit.constitution post-init guide
+function testE12S4PostInitGuide() {
+  const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e12s4-guide-${Date.now()}`);
+  const sharedBmad = path.join(tmpDir, 'shared_bmad');
+  fs.mkdirSync(path.join(sharedBmad, 'core'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'commands'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'rules'), { recursive: true });
+  const projectDir = path.join(tmpDir, 'proj');
+  fs.mkdirSync(projectDir, { recursive: true });
+  const r = runInit(['.', '--bmad-path', sharedBmad, '--ai', 'cursor-agent', '--yes', '--no-git'], projectDir);
+  const out = (r.stdout || '') + (r.stderr || '');
+  const hasBmadHelp = /\/bmad-help/.test(out);
+  const hasSpeckitConstitution = /speckit\.constitution/i.test(out);
+  try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
+  return r.status === 0 && hasBmadHelp && hasSpeckitConstitution;
+}
+
+// Story 12.4 T4.2: init --bmad-path with cursor/commands containing bmad-help, speckit.constitution => target .cursor/commands has both
+function testE12S4CommandsExist() {
+  const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e12s4-cmds-${Date.now()}`);
+  const sharedBmad = path.join(tmpDir, 'shared_bmad');
+  fs.mkdirSync(path.join(sharedBmad, 'core'), { recursive: true });
+  const cmdDir = path.join(sharedBmad, 'cursor', 'commands');
+  fs.mkdirSync(cmdDir, { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'rules'), { recursive: true });
+  fs.writeFileSync(path.join(cmdDir, 'bmad-help.md'), '---\nname: help\n---\n# help\n', 'utf8');
+  fs.writeFileSync(path.join(cmdDir, 'speckit.constitution.md'), '---\ndescription: constitution\n---\n# speckit.constitution\n', 'utf8');
+  const projectDir = path.join(tmpDir, 'proj');
+  fs.mkdirSync(projectDir, { recursive: true });
+  const r = runInit(['.', '--bmad-path', sharedBmad, '--ai', 'cursor-agent', '--yes', '--no-git'], projectDir);
+  const cursorCmds = path.join(projectDir, '.cursor', 'commands');
+  const hasBmadHelp = fs.existsSync(path.join(cursorCmds, 'bmad-help.md'));
+  const hasSpeckitConstitution = fs.existsSync(path.join(cursorCmds, 'speckit.constitution.md'));
+  try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
+  return r.status === 0 && hasBmadHelp && hasSpeckitConstitution;
+}
+
+// Story 12.4 T1.3: init failure => stdout/stderr must NOT contain post-init guide
+function testE12S4InitFailureNoGuide() {
+  const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e12s4-fail-${Date.now()}`);
+  fs.mkdirSync(tmpDir, { recursive: true });
+  const nonexistentBmad = path.join(tmpDir, 'nonexistent');
+  const r = runInit(['.', '--bmad-path', nonexistentBmad, '--ai', 'cursor-agent', '--yes', '--no-git'], tmpDir);
+  const out = (r.stdout || '') + (r.stderr || '');
+  const noGuide = !/\/bmad-help/.test(out) && !/speckit\.constitution/i.test(out);
+  try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
+  return r.status !== 0 && noGuide;
+}
+
+// Story 12.4 T2.2: init --modules bmm,tea --ai cursor-agent --yes => commands still has bmad-help, speckit.constitution
+function testE12S4CommandsExistWithModules() {
+  const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e12s4-mods-${Date.now()}`);
+  const sharedBmad = path.join(tmpDir, 'shared_bmad');
+  fs.mkdirSync(path.join(sharedBmad, 'core'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'bmm'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'tea'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'speckit'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'skills'), { recursive: true });
+  const cmdDir = path.join(sharedBmad, 'cursor', 'commands');
+  fs.mkdirSync(cmdDir, { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'rules'), { recursive: true });
+  fs.writeFileSync(path.join(cmdDir, 'bmad-help.md'), '---\nname: help\n---\n# help\n', 'utf8');
+  fs.writeFileSync(path.join(cmdDir, 'speckit.constitution.md'), '---\ndescription: constitution\n---\n# speckit.constitution\n', 'utf8');
+  const projectDir = path.join(tmpDir, 'proj');
+  fs.mkdirSync(projectDir, { recursive: true });
+  const r = runInit(['.', '--bmad-path', sharedBmad, '--modules', 'bmm,tea', '--ai', 'cursor-agent', '--yes', '--no-git'], projectDir);
+  const cursorCmds = path.join(projectDir, '.cursor', 'commands');
+  const hasBmadHelp = fs.existsSync(path.join(cursorCmds, 'bmad-help.md'));
+  const hasSpeckitConstitution = fs.existsSync(path.join(cursorCmds, 'speckit.constitution.md'));
+  try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
+  return r.status === 0 && hasBmadHelp && hasSpeckitConstitution;
+}
+
+// Story 12.2 T4.4: bmadPath invalid => check exit 4
+function testE12S2CheckBmadPathFail() {
+  const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e12s2-cf-${Date.now()}`);
+  const sharedBmad = path.join(tmpDir, 'shared_bmad');
+  fs.mkdirSync(path.join(sharedBmad, 'core'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'commands'), { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'rules'), { recursive: true });
+  const projectDir = path.join(tmpDir, 'proj');
+  fs.mkdirSync(projectDir, { recursive: true });
+  runInit(['.', '--bmad-path', sharedBmad, '--ai', 'cursor-agent', '--yes', '--no-git'], projectDir);
+  const configPath = path.join(projectDir, '_bmad-output', 'config', 'bmad-speckit.json');
+  const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  config.bmadPath = path.join(tmpDir, 'nonexistent_path');
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
+  const r = runCheck(projectDir);
+  try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
+  return r.status === 4;
+}
+
 // T029: grep verification - production code critical path (Story 10.2 T6.2)
 function testT029() {
   const checks = [
@@ -565,6 +799,19 @@ async function run() {
     { name: 'E10-S5-check-ok', fn: testE10S5CheckOk },
     { name: 'E10-S5-check-fail', fn: testE10S5CheckFail },
     { name: 'E10-S5-grep', fn: testE10S5Grep },
+    { name: 'E12-S2-opencode-worktree', fn: testE12S2OpencodeWorktree },
+    { name: 'E12-S2-bob-worktree', fn: testE12S2BobWorktree },
+    { name: 'E12-S2-check-bmadpath-fail', fn: testE12S2CheckBmadPathFail },
+    { name: 'E12-S3-skills-publish-worktree', fn: testE12S3SkillsPublishWorktree },
+    { name: 'E12-S3-no-ai-skills', fn: testE12S3NoAiSkills },
+    { name: 'E12-S3-help-ai-skills', fn: testE12S3HelpAiSkills },
+    { name: 'E12-S3-subagent-hint-init', fn: testE12S3SubagentHintInit },
+    { name: 'E12-S3-subagent-hint-check', fn: testE12S3SubagentHintCheck },
+    { name: 'E12-S3-copilot-no-skillsdir', fn: testE12S3CopilotNoSkillsDir },
+    { name: 'E12-S4-post-init-guide', fn: testE12S4PostInitGuide },
+    { name: 'E12-S4-commands-exist', fn: testE12S4CommandsExist },
+    { name: 'E12-S4-init-failure-no-guide', fn: testE12S4InitFailureNoGuide },
+    { name: 'E12-S4-commands-exist-modules', fn: testE12S4CommandsExistWithModules },
     { name: 'E11-S2-offline-cache-missing', fn: testE11S2OfflineCacheMissing },
     { name: 'E11-S2-offline-help', fn: testE11S2OfflineHelp },
     { name: 'E11-S2-offline-cache-ok', fn: testE11S2OfflineCacheOk, async: true },

@@ -4,13 +4,13 @@
 
 **执行顺序**：WRITE test → RUN → ASSERT FAIL → WRITE code → RUN → ASSERT PASS → REFACTOR。禁止先写生产代码再补测试。
 
-**【TDD 红绿灯阻塞约束】** 每个涉及生产代码的任务执行顺序为：
+**【TDD 红绿灯阻塞约束】** prd 中每个 involvesProductionCode=true 的 US 必须**独立**执行一次完整循环。执行顺序为：
 1. 先写/补测试并运行验收 → 必须得到失败结果（红灯）
 2. 立即在 progress 追加 [TDD-RED] <任务ID> <验收命令> => N failed
 3. 再实现并通过验收 → 得到通过结果（绿灯）
 4. 立即在 progress 追加 [TDD-GREEN] <任务ID> <验收命令> => N passed
 5. 若有重构，在 progress 追加 [TDD-REFACTOR] <任务ID> <内容>
-禁止在未完成步骤 1–2 之前执行步骤 3。禁止所有任务完成后集中补写 TDD 记录。
+禁止在未完成步骤 1–2 之前执行步骤 3。**禁止仅对首个 US 执行 TDD，后续 US 跳过红灯直接实现**。禁止所有任务完成后集中补写 TDD 记录。
 
 ---
 

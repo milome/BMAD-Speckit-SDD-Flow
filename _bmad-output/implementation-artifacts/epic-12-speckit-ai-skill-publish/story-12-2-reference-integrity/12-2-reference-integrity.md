@@ -60,7 +60,7 @@ Status: ready-for-dev
 |---|----------|-------|------|------|
 | 1 | configTemplate 含 vscodeSettings | configTemplate.vscodeSettings 为 `.vscode/settings.json`，且含配置片段 | init 完成 | 项目根下 `.vscode/settings.json` 存在，配置与 configTemplate 定义一致；与现有文件合并（非覆盖） |
 | 2 | configTemplate 无 vscodeSettings | configTemplate 不含 vscodeSettings 字段 | init 完成 | 不创建或修改 .vscode/settings.json |
-| 3 | .vscode 已存在 | 项目根已有 .vscode/settings.json | init 完成 | 合并 configTemplate 的 vscodeSettings 内容，保留原有键值；冲突时以 configTemplate 为准或按合并策略 |
+| 3 | .vscode 已存在 | 项目根已有 .vscode/settings.json | init 完成 | 合并 configTemplate 的 vscodeSettings 内容，保留原有键值；同键冲突时以 configTemplate 为准（JSON 深度合并） |
 
 ### AC-3: check 按 selectedAI 验证目标目录（含 opencode/bob/shai/codex 显式条目）
 

@@ -118,7 +118,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **Respect dependencies**: Run sequential tasks in order, parallel tasks [P] can run together  
    - **Follow TDD approach**: Execute test tasks before their corresponding implementation tasks
    - **File-based coordination**: Tasks affecting the same files must run sequentially
-   - **Per-US tracking**：每完成一个可验收任务（对应 prd 中的一个 US），**必须立即**：
+   - **Per-US tracking**：**每个 US 须独立执行 RED→GREEN→REFACTOR**；禁止仅对首个 US 执行 TDD 后对后续 US 跳过红灯直接实现。每完成一个可验收任务（对应 prd 中的一个 US），**必须立即**：
      1. 更新 prd：将对应 userStory 的 `passes` 设为 `true`；
      2. 更新 progress：必须同时追加以下内容：
         - story log：`[YYYY-MM-DD HH:MM] US-XXX: <title> - PASSED`；

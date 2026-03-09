@@ -32,6 +32,8 @@ program
   .option('--no-git', 'Skip git init')
   .option('--script <type>', 'Script type: sh (POSIX) or ps (PowerShell)')
   .option('--bmad-path <path>', 'Shared _bmad path (worktree mode, no copy)')
+  .option('--ai-skills', 'Publish AI skills (default)')
+  .option('--no-ai-skills', 'Skip publishing AI skills')
   .option('--debug', 'Enable debug output')
   .option('--github-token <token>', 'GitHub API token')
   .option('--skip-tls', 'Skip SSL/TLS verification (not recommended)')

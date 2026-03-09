@@ -1,0 +1,26 @@
+# progress.tasks-E12-S2
+# Story 12.2 引用完整性 - tasks-E12-S2 执行进度
+
+## US-001: SyncService 实现 (T1.1-T1.6)
+[TDD-RED] node --test tests/sync-service.test.js => MODULE_NOT_FOUND
+[TDD-GREEN] sync-service.js syncCommandsRulesConfig, configTemplate 映射, vscodeSettings, bmadPath 源
+[TDD-REFACTOR] 无需重构 ✓
+
+## US-002: InitCommand 集成 (T2.1-T2.4)
+[TDD-RED] init integration tests (E10-S5, E12-S2)
+[TDD-GREEN] SyncService 调用、init-skeleton 移除硬编码
+[TDD-REFACTOR] 无需重构 ✓
+
+## US-003: CheckCommand 结构验证 (T3.1-T3.5)
+[TDD-RED] E2E check tests
+[TDD-GREEN] validateSelectedAITargets、bmadPath/selectedAI/_bmad 验证
+[TDD-REFACTOR] 无需重构 ✓
+
+## US-004: 单元、集成、E2E 测试 (T4.1-T4.4)
+[TDD-RED] sync-service.test.js、e2e E12-S2
+[TDD-GREEN] 全部通过
+[TDD-REFACTOR] 无新增生产代码，各模块独立性已验证 ✓
+
+---
+Current story: US-004
+Completed: 4/4

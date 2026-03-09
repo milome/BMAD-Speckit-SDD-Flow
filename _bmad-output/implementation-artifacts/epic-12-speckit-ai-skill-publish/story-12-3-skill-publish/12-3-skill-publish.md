@@ -70,7 +70,7 @@ Status: ready-for-dev
   - [ ] T2.4 AI 无 skillsDir 时写入 initLog.skippedReasons，不抛出错误
 
 - [ ] **T3**：initLog 扩展（AC: 2）
-  - [ ] T3.1 在 writeSelectedAI 或 ConfigManager.setAll 调用中，扩展 initLog 结构：timestamp、selectedAI、templateVersion、skillsPublished、skippedReasons（可选）
+  - [ ] T3.1 在 writeSelectedAI 或 ConfigManager.setAll 调用中，扩展 initLog 结构：timestamp、selectedAI、templateVersion、skillsPublished、skippedReasons（存在跳过时记录，否则可省略）
   - [ ] T3.2 与 Story 10.4 的 initLog 写入逻辑一致，本 Story 扩展 skillsPublished 与 skippedReasons 字段
 
 - [ ] **T4**：无子代理支持时的 init/check 提示（AC: 4）
