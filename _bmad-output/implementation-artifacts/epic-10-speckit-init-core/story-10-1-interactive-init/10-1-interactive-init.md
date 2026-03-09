@@ -157,7 +157,7 @@ Status: ready-for-dev
 ### 架构约束
 
 - **InitCommand**：位于 src/commands/init.js，负责解析参数、编排交互流程、调用 TemplateFetcher、生成骨架、执行 git init（PRD §5.1–5.2，ARCH §3.2）
-- **init 流程状态机**：解析路径 → 校验目标（空/存在/--force）→ 拉取模板 → 选择 AI → 选择模块 → 生成 _bmad、_bmad-output → git init（由 --no-git 控制是否执行）→ 同步 AI 配置（本 Story 不实现完整同步，由 Story 12.2 实现）
+- **init 流程状态机**：解析路径 → 校验目标（空/存在/--force）→ 拉取模板 → 选择 AI → 选择模块 → 生成 _bmad、_bmad-output → git init（由 --no-git 控制是否执行）→ 同步 AI 配置（本 Story 不实现完整同步，由 Story 12.2 实现）。**用户可见交互顺序**以本 Story 范围为准：Banner → AI 选择 → 路径确认 → 模板版本 → 执行；上述状态机为实现子步骤归属，与之一致。
 - **包结构**：bin/bmad-speckit.js → src/commands/init.js、src/services/template-fetcher.js、src/constants/ai-builtin.js、src/constants/exit-codes.js（ARCH §3.1）
 - **CLI 框架**：Commander.js + Inquirer.js/prompts；富终端：chalk、boxen、ora（PRD §5.6，ARCH ADR-1～ADR-3）
 
