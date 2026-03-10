@@ -28,3 +28,7 @@ Thumbs.db
 
 # BMAD output (optional: track artifacts or ignore)
 # _bmad-output/
+
+# Temp / local
+tmp-*/
+temp_commit_message.txt

@@ -80,7 +80,7 @@ describe('Story 11.1: resolveNetworkTimeoutMs priority (T006, T009)', () => {
 
   it('global config when no project config', () => {
     if (!initModule || !configManager) return;
-    const globalDir = path.dirname(globalConfigPath);
+    const _globalDir = path.dirname(globalConfigPath);
     const existed = fs.existsSync(globalConfigPath);
     const backup = existed ? fs.readFileSync(globalConfigPath, 'utf8') : null;
     writeConfig(globalConfigPath, { networkTimeoutMs: 20000 });

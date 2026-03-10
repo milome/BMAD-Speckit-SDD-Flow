@@ -57,8 +57,9 @@ function main(): number {
     validateScenarioConstraints(makeRecord({ scenario: 'eval_question', question_version: undefined }));
     console.error('FAIL: eval_question 无 question_version 应抛错');
     failed++;
-  } catch (e: any) {
-    if (!/question_version.*必填/.test(e?.message || '')) {
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (!/question_version.*必填/.test(msg)) {
       console.error('FAIL: 错误信息应含 question_version 必填');
       failed++;
     }
@@ -90,8 +91,9 @@ function main(): number {
       writeMode: 'single_file',
       dataPath: tempDir,
     });
-  } catch (e: any) {
-    console.error('FAIL: parseAndWriteScore 调用失败', e?.message);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error('FAIL: parseAndWriteScore 调用失败', msg);
     failed++;
   }
 

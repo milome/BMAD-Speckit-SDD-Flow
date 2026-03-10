@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { checkPreconditionHash, loadLatestRecordByStage } from '../version-lock';
@@ -21,7 +22,7 @@ describe('version-lock', () => {
   it('hash 匹配 → { passed: true, action: proceed }', () => {
     const f = path.join(TMP, 'spec.md');
     fs.writeFileSync(f, 'hello', 'utf-8');
-    const expected = require('crypto').createHash('sha256').update('hello', 'utf-8').digest('hex');
+    const expected = crypto.createHash('sha256').update('hello', 'utf-8').digest('hex');
     const r = checkPreconditionHash('plan', f, expected);
     expect(r.passed).toBe(true);
     expect(r.action).toBe('proceed');
@@ -81,7 +82,7 @@ describe('version-lock', () => {
     const specContent = 'spec content';
     const f = path.join(TMP, 'spec.md');
     fs.writeFileSync(f, specContent, 'utf-8');
-    const hash = require('crypto').createHash('sha256').update(specContent, 'utf-8').digest('hex');
+    const hash = crypto.createHash('sha256').update(specContent, 'utf-8').digest('hex');
     const record = {
       run_id: 'run-1',
       scenario: 'real_dev' as const,

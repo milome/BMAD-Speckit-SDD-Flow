@@ -10,7 +10,7 @@
  * getRenderWidth() 按「块体字符=2 列」算出的 BMAD 最大宽度为名义 69 列，
  * 但实际终端/字体下常渲染得更窄，故 SPECKIT_COL=62 经视觉验证无重叠且有余量。
  */
-const chalk = require('chalk').default ?? require('chalk');
+const _chalk = require('chalk').default ?? require('chalk');
 
 // BMAD 行（TAAG ANSI Shadow 精确输出）
 const BMAD_LINES = [
@@ -34,8 +34,8 @@ const SPECKIT_LINES = [
 
 // 分隔符（3 空格 + 3 个双线字符 + 3 空格），供 ASCII 或测试引用
 const SEPARATOR = '   ═══   ';
-const SEPARATOR_RENDER_WIDTH = 12;  // ═ 渲染为 2 列
-const SPACING = '         ';        // 9 个空格，渲染宽度 9
+const _SEPARATOR_RENDER_WIDTH = 12;  // ═ 渲染为 2 列
+const _SPACING = '         ';        // 9 个空格，渲染宽度 9
 
 // Unicode 分支分隔符：无空格 dash，渲染宽度 1（TASKS_BUGFIX_banner-dash-forward-col）
 const DASH = '-';
@@ -94,7 +94,7 @@ function getRenderWidth(str) {
 const BMAD_RENDER_WIDTHS = BMAD_LINES.map(getRenderWidth);
 const BMAD_MAX_RENDER_WIDTH = Math.max(...BMAD_RENDER_WIDTHS);
 
-function shouldUseAsciiFallback(platform = process.platform, env = process.env) {
+function shouldUseAsciiFallback(_platform = process.platform, _env = process.env) {
   return false;
 }
 
@@ -142,7 +142,7 @@ function applyGradient(lines, chalkInstance) {
     const c = colors[i];
     try {
       return chalkInstance.rgb(c.r, c.g, c.b)(line);
-    } catch (err) {
+    } catch {
       return line;
     }
   });

@@ -2,7 +2,6 @@
  * Story 3.3 T3.2: CLI 入口
  * B04: 支持 --event、--skipTriggerCheck、--sourceHashFilePath、--questionVersion
  */
-import * as path from 'path';
 import { parseAndWriteScore } from '../scoring/orchestrator';
 import { shouldWriteScore } from '../scoring/trigger/trigger-loader';
 import type { AuditStage } from '../scoring/parsers';

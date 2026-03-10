@@ -5,7 +5,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 const docPath = path.resolve(process.cwd(), 'scoring', 'docs', 'SCORING_CRITERIA_AUTHORITATIVE.md');
-const rulesDir = path.resolve(process.cwd(), 'scoring', 'rules');
 const forbiddenWords = ['可选', '后续', '待定', '酌情', '视情况', '先实现', '或后续扩展'];
 
 // 24 项关键字（用于 AC-1 简化校验）

@@ -107,7 +107,7 @@ function writeSelectedAI(targetPath, selectedAI, templateVersion = 'latest', bma
  * Story 10.5 / 12.2: Worktree mode - create only _bmad-output and config.
  * Sync commands/rules/config is delegated to SyncService.syncCommandsRulesConfig (Story 12.2).
  */
-function createWorktreeSkeleton(targetPath, bmadPath, selectedAI) {
+function createWorktreeSkeleton(targetPath, _bmadPath, _selectedAI) {
   if (!fs.existsSync(targetPath)) {
     fs.mkdirSync(targetPath, { recursive: true });
   }

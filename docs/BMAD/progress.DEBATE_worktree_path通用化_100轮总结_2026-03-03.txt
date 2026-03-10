@@ -1,0 +1,17 @@
+# Progress: worktree-path-generalization
+# Reference: docs/BMAD/DEBATE_worktree_path通用化_100轮总结_2026-03-03.md
+# Total stories: 8
+
+Current story: 8
+Completed: 8
+
+---
+# Story log
+2026-03-03 US-001: M-1 setup_worktree.ps1 主脚本动态 Repo 名 - passes
+2026-03-03 US-002: M-8 setup_worktree.ps1 副本同步 - passes
+2026-03-03 US-003: M-2 using-git-worktrees SKILL.md - passes
+2026-03-03 US-004: M-3 bmad-story-assistant SKILL.md - passes
+2026-03-03 US-005: M-4,M-5 BMAD 文档更新 - passes
+2026-03-03 US-006: M-6,M-7 bmad-speckit-integration 文档更新 - passes
+2026-03-03 US-007: M-9 CREATE_WORKTREE.ps1 动态化 - passes
+2026-03-03 US-008: M-10 工具脚本 - passes（保留项目路径，按 DEBATE 排除）

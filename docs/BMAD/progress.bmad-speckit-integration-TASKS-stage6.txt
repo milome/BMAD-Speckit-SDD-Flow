@@ -1,0 +1,16 @@
+# Progress: bmad-speckit-integration-TASKS 阶段6 (任务6.1～6.7)
+# Reference: docs/BMAD/bmad-speckit-integration-TASKS.md
+# Total stories: 7
+
+Current story: 7
+Completed: 7
+
+---
+# Story log
+US-001: 创建 tests/integration/test_bmad_speckit_integration.py，12 个端到端测试通过
+US-002: 创建 tests/integration/test_error_handling.py，9 个错误处理场景测试通过
+US-003: 创建 tests/regression/test_backward_compatibility.py，5 个回归测试通过
+US-004: 创建 tests/performance/test_worktree_performance.py，3 个性能测试（参考基准，xfail）
+US-005: 创建 tests/factories.py，5 个 Factory 类 + 3 个便捷函数
+US-006: 创建 tests/unit/test_speckit_integration_units.py，6 个单元测试通过
+US-007: 在 test_bmad_speckit_integration.py 中新增 test_metrics_cache_fix_validation_scenario

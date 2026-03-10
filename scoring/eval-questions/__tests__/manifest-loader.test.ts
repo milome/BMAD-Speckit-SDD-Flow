@@ -9,7 +9,6 @@ import { loadManifest } from '../manifest-loader';
 
 const EVAL_ROOT = path.resolve(process.cwd(), 'scoring', 'eval-questions');
 const V1_DIR = path.join(EVAL_ROOT, 'v1');
-const V2_DIR = path.join(EVAL_ROOT, 'v2');
 const FIXTURES = path.join(EVAL_ROOT, '__tests__', 'fixtures');
 
 describe('manifest-loader', () => {

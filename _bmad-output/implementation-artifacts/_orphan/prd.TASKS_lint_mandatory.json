@@ -1,0 +1,23 @@
+{
+  "branchName": "ralph/lint-mandatory",
+  "taskDescription": "强制 lint 验收标准（通用化）：在所有 skill/command 文档中纳入按技术栈执行 Lint（见 lint-requirement-matrix）",
+  "projectContext": {
+    "framework": "documentation/skill",
+    "testCommand": "grep -E \"npm run lint|lint\"",
+    "buildCommand": "N/A"
+  },
+  "userStories": [
+    {"id": "US-001", "title": "T1 tasks-acceptance-templates lint", "passes": true},
+    {"id": "US-002", "title": "T2 audit-prompts §5 lint", "passes": true},
+    {"id": "US-003", "title": "T3 audit-prompts-critical-auditor-appendix lint", "passes": true},
+    {"id": "US-004", "title": "T4 speckit-workflow SKILL §5.1 lint", "passes": true},
+    {"id": "US-005", "title": "T5 ralph-method SKILL lint", "passes": true},
+    {"id": "US-006", "title": "T6 audit-prompts §4 tasks lint", "passes": true},
+    {"id": "US-007", "title": "T7 bmad-bug-assistant lint", "passes": true},
+    {"id": "US-008", "title": "T8 bmad-story-assistant lint", "passes": true},
+    {"id": "US-009", "title": "T9 bmad-standalone-tasks lint", "passes": true},
+    {"id": "US-010", "title": "T10 speckit.implement lint", "passes": true},
+    {"id": "US-011", "title": "T11 bmad-standalone-tasks-doc-review lint", "passes": true},
+    {"id": "US-012", "title": "T12 tasks-acceptance-templates §6 lint", "passes": true}
+  ]
+}

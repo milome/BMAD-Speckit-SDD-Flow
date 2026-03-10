@@ -217,7 +217,7 @@ export async function extractSftDataset(
       continue;
     }
 
-    let sections = extractBugfixSections(bugfixContent);
+    const sections = extractBugfixSections(bugfixContent);
     let instruction: string;
     if (sections) {
       instruction = [sections.s1, sections.s4].join('\n\n');

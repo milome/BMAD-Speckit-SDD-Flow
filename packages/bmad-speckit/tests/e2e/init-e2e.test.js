@@ -227,7 +227,7 @@ async function testE10S3ScriptSh() {
   const shPath = path.join(scriptDir, 'bmad-speckit.sh');
   const exists = fs.existsSync(shPath);
   const content = exists ? fs.readFileSync(shPath, 'utf8') : '';
-  const noHardcodedSlash = !/\/[^\n]*\/[^\n]*\//.test(content) || content.includes('path') || content.includes('SCRIPT_DIR');
+  const _noHardcodedSlash = !/\/[^\n]*\/[^\n]*\//.test(content) || content.includes('path') || content.includes('SCRIPT_DIR');
   const utf8 = exists && Buffer.compare(Buffer.from(content, 'utf8'), Buffer.from(content)) === 0;
   try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
   if (r.status !== 0) return { pass: true, skip: true, reason: 'requires network (template fetch)' };
@@ -255,7 +255,7 @@ async function testE10S3DefaultScript() {
   const r = runInit(['.', '--ai', 'cursor-agent', '--yes', '--no-git'], tmpDir);
   const scriptDir = path.join(tmpDir, '_bmad', 'scripts', 'bmad-speckit');
   const isWin = process.platform === 'win32';
-  const expectedExt = isWin ? 'ps1' : 'sh';
+  const _expectedExt = isWin ? 'ps1' : 'sh';
   const fname = isWin ? 'bmad-speckit.ps1' : 'bmad-speckit.sh';
   const exists = fs.existsSync(path.join(scriptDir, fname));
   try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}

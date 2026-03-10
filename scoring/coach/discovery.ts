@@ -22,7 +22,7 @@ function isRunScoreRecord(obj: unknown): obj is RunScoreRecord {
   );
 }
 
-function parseRecords(content: string, filePath: string): RunScoreRecord[] {
+function parseRecords(content: string, _filePath: string): RunScoreRecord[] {
   const records: RunScoreRecord[] = [];
   try {
     const parsed = JSON.parse(content) as unknown;

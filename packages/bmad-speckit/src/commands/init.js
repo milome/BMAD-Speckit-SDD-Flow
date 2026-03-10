@@ -8,7 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const chalk = require('chalk').default ?? require('chalk');
-const boxen = require('boxen');
+const _boxen = require('boxen');
 const pathUtils = require('../utils/path');
 const ttyUtils = require('../utils/tty');
 const { resolveNetworkTimeoutMs: resolveNetworkTimeoutMsUtil } = require('../utils/network-timeout');
@@ -238,7 +238,7 @@ function maybePrintSubagentHint(selectedAI, cwd) {
 /**
  * Story 10.5: Worktree flow (--bmad-path): no _bmad copy, only _bmad-output + sync from bmadPath, write bmadPath to config
  */
-async function runWorktreeFlow(targetPath, options, log) {
+async function runWorktreeFlow(targetPath, options, _log) {
   let selectedAI = options.ai;
   const cwd = process.cwd();
   if (selectedAI) {

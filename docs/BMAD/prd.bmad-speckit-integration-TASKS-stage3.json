@@ -1,0 +1,20 @@
+{
+  "branchName": "ralph/bmad-speckit-integration-stage3",
+  "taskDescription": "BMAD-Speckit整合方案 阶段3：using-git-worktrees修改（任务3.1～3.7）",
+  "projectContext": {
+    "framework": "Markdown/SKILL.md",
+    "testCommand": "验收标准检查、插入点验证",
+    "buildCommand": "无"
+  },
+  "referenceDocument": "docs/BMAD/bmad-speckit-integration-TASKS.md",
+  "modifyTarget": "C:\\Users\\milom\\.cursor\\skills\\using-git-worktrees\\SKILL.md",
+  "userStories": [
+    {"id": "US-001", "title": "任务3.1：新增Adaptive Worktree说明", "priority": 1, "passes": true},
+    {"id": "US-002", "title": "任务3.2：新增Epic级worktree创建逻辑", "priority": 2, "passes": true},
+    {"id": "US-003", "title": "任务3.3：新增Story分支管理", "priority": 3, "passes": true},
+    {"id": "US-004", "title": "任务3.4：新增串行/并行模式切换", "priority": 4, "passes": true},
+    {"id": "US-005", "title": "任务3.5：新增冲突检测和解决审计", "priority": 5, "passes": true},
+    {"id": "US-006", "title": "任务3.6：新增回滚到Story级机制", "priority": 6, "passes": true},
+    {"id": "US-007", "title": "任务3.7：更新触发时机说明", "priority": 7, "passes": true}
+  ]
+}

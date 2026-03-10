@@ -11,7 +11,6 @@ import {
 } from '../llm-fallback';
 
 describe('llm-fallback', () => {
-  const originalFetch = globalThis.fetch;
   const originalEnv = process.env;
 
   beforeEach(() => {

@@ -22,7 +22,7 @@ function getRelToRootForSh() {
 /**
  * Generate POSIX shell script content. All path logic uses path module; we embed the result.
  */
-function buildShContent(finalPath) {
+function buildShContent(_finalPath) {
   const relToRoot = getRelToRootForSh();
   const eol = getPlatformEOL();
   const lines = [
@@ -39,7 +39,7 @@ function buildShContent(finalPath) {
 /**
  * Generate PowerShell script content. Paths via path module; PowerShell accepts backslashes.
  */
-function buildPsContent(finalPath) {
+function buildPsContent(_finalPath) {
   const relToRoot = path.join('..', '..', '..');
   const binRel = path.join('node_modules', '.bin', 'bmad-speckit');
   const eol = getPlatformEOL();

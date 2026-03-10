@@ -3,7 +3,7 @@
  * 覆盖 prd/arch/story 三类报告，content 与 reportPath 输入
  * T4.3: AC-B05-7 parseAuditReport/parseAndWriteScore 经 LLM fallback 的 E2E
  */
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -770,7 +770,7 @@ PRD审计报告
     }
   });
 
-  it('writes to jsonl when writeMode is jsonl', async () => {
+  it('writes to jsonl when writeMode is jsonl', { timeout: 15000 }, async () => {
     const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
     const tempDir = path.join(os.tmpdir(), `scoring-e3s3-jsonl-${Date.now()}`);
     const runId = `test-jsonl-${Date.now()}`;

@@ -76,7 +76,7 @@ function parseAndValidate(
 
 export async function llmStructuredExtract(
   reportContent: string,
-  stage: string
+  _stage: string
 ): Promise<LlmExtractionResult> {
   const apiKey = process.env.SCORING_LLM_API_KEY;
   if (!apiKey) {

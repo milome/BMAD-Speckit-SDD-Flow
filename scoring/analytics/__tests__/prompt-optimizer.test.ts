@@ -2,7 +2,7 @@
  * Story 5.5 B08: prompt-optimizer 单测
  * AC-B08-1, AC-B08-2, AC-B08-3
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';

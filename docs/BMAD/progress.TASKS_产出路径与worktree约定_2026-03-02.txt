@@ -1,0 +1,163 @@
+﻿# Progress: Phase 1-3 T-OUT-1 T-OUT-2 T-WT-1 T-WT-2 + US-005~US-009 + US-011~US-026
+# Total stories: 26 (US-010 跳过)
+
+Current story: 26
+Completed: 25
+
+---
+# Story log
+
+## US-001 (T-OUT-1) 2026-03-03
+[TDD-RED] grep "1.0.1 speckit-workflow 产出路径约定" => 不存在
+[TDD-RED] grep "_bmad-output" => 不存在
+[TDD-GREEN] 在 speckit-workflow SKILL.md §1.0 与 §1.1 之间插入 §1.0.1 产出路径约定
+[TDD-GREEN] grep "1.0.1 speckit-workflow 产出路径约定" => 存在
+[TDD-GREEN] grep "_bmad-output" => 存在（禁止表述）
+prd: US-001 passes=true
+
+## US-002 (T-OUT-2) 2026-03-03
+[TDD-RED] grep "### 产出路径约定" bmad-story-assistant => 不存在
+[TDD-RED] grep "### 产出路径约定" bmad-bug-assistant => 不存在
+[TDD-GREEN] 在 bmad-story-assistant、bmad-bug-assistant 前置检查之后插入产出路径约定
+[TDD-GREEN] grep "### 产出路径约定" 两技能 => 存在
+[TDD-GREEN] grep "_bmad-output" 两技能 => 存在
+[TDD-GREEN] grep "spec 子目录" 两技能 => 存在（职责分离表述）
+prd: US-002 passes=true
+
+## US-003 (T-WT-1) 2026-03-03
+[TDD-RED] 原 $RepoDir = Split-Path -Parent $PSScriptRoot 可能非 repo 根
+[TDD-GREEN] 替换为 git rev-parse --show-toplevel + fallback 逻辑
+[TDD-GREEN] $WorktreeBaseDir = Split-Path -Parent $RepoDir
+[TDD-GREEN] 验证：test_parse.ps1 输出 RepoDir 正确、WorktreeBaseDir=D:\Dev
+prd: US-003 passes=true
+
+## US-004 (T-WT-2) 2026-03-03
+[TDD-RED] grep "产出路径约定（与 worktree 并列）" => 不存在
+[TDD-RED] grep "已修复（见 T-WT-1）" O-2 => 不存在
+[TDD-GREEN] 在「六、当前遗漏与建议」之前新增产出路径约定表
+[TDD-GREEN] O-2 建议列改为「已修复（见 T-WT-1）」
+[TDD-GREEN] grep 验收通过
+prd: US-004 passes=true
+
+## US-005 (T-BMAD-1) 2026-03-03
+[TDD-RED] grep "pre-speckit" bmad-story-assistant => 不存在
+[TDD-GREEN] 替换产出路径约定为 pre-speckit/post-speckit 版本
+[TDD-GREEN] Create Story 产出路径改为 {epic}-{story}-{slug}/{epic}-{story}-{slug}.md
+[TDD-GREEN] grep "pre-speckit" "post-speckit" "implementation-artifacts/{epic}-{story}-{slug}/" => 存在
+prd: US-005 passes=true
+
+## US-006 (T-BMAD-2) 2026-03-03
+[TDD-RED] grep "_orphan" bmad-bug-assistant => 不存在
+[TDD-GREEN] 替换产出路径约定为 有 story/无 story 版本
+[TDD-GREEN] grep "有 story" "无 story" "_orphan" => 存在
+prd: US-006 passes=true
+
+## US-007 (T-BMAD-3) 2026-03-03
+[TDD-RED] Test-Path _bmad-output/implementation-artifacts/4-1-test-e2e => False
+[TDD-GREEN] 在 create-new-feature.ps1 BMAD 模式块内插入同步创建 _bmad-output 子目录逻辑
+[TDD-GREEN] 执行 -ModeBmad -Epic 4 -Story 1 -Slug test-e2e => 4-1-test-e2e/ 存在
+prd: US-007 passes=true
+
+## US-008 (T-BMAD-4) 2026-03-03
+[TDD-RED] grep "1.0.2 BMAD 产出" speckit-workflow => 不存在
+[TDD-GREEN] 在 §1.0.1 之后新增 §1.0.2 BMAD 产出与 _bmad-output 子目录对应
+[TDD-GREEN] grep "1.0.2" "implementation-artifacts/{epic}-{story}-{slug}" => 存在
+prd: US-008 passes=true
+
+## US-009 (T-BMAD-6) 2026-03-03
+[TDD-RED] grep "产出路径约定（_bmad-output 子目录）" spec目录-branch-worktree => 不存在
+[TDD-GREEN] 在「六、当前遗漏与建议」之前新增 _bmad-output 子目录表
+[TDD-GREEN] grep "产出路径约定（_bmad-output 子目录）" "create-new-feature.ps1 -ModeBmad" => 存在
+prd: US-009 passes=true
+
+## US-011 (T-BK-1) 2026-03-03
+[TDD-RED] speckit-scripts-backup 技能 => 不存在
+[TDD-GREEN] 创建 SKILL.md、backup_speckit_scripts.py、apply_speckit_scripts.py
+[TDD-GREEN] 执行 backup => _bmad-output/speckit-scripts-backups/2026-03-03_01-15-08_speckit-scripts 存在
+[TDD-GREEN] 执行 apply --dry-run => 7 files 可复制
+[TDD-GREEN] grep "同一项目无需同步" => 存在
+prd: US-011 passes=true
+
+## US-012 (T-RT-1) 2026-03-03
+[TDD-RED] E2E_TEST_CHECKLIST_speckit_worktree.md => 不存在
+[TDD-GREEN] 创建 docs/BMAD/E2E_TEST_CHECKLIST_speckit_worktree.md
+[TDD-GREEN] 覆盖 create-new-feature（standalone+BMAD）、setup_worktree、产出路径
+[TDD-GREEN] 含测试隔离（999-e2e-test）、清理步骤
+[TDD-GREEN] TASKS §三 RT-E2E 已引用 docs/BMAD/E2E_TEST_CHECKLIST_speckit_worktree.md
+prd: US-012 passes=true
+
+## US-013 (T-SOLO-1) 2026-03-03
+[TDD-RED] create-new-feature.ps1 -CreateBranch/-CreateWorktree => 不存在
+[TDD-GREEN] param 增加 CreateBranch、CreateWorktree；默认逻辑 standalone CreateBranch=true、BMAD 两者 false
+[TDD-GREEN] 在 BMAD 模式块内增加 CreateBranch/CreateWorktree 逻辑；standalone 改为 if ($hasGit -and $CreateBranch)
+[TDD-GREEN] Help 增加 -CreateBranch、-CreateWorktree 及 Solo/完整隔离示例
+[TDD-GREEN] 执行 -ModeBmad -Epic 4 -Story 1 -Slug rt-solo => 无 branch、无 worktree（RT-SOLO-1）
+prd: US-013 passes=true
+
+## US-014 (T-SOLO-2) 2026-03-03
+[TDD-RED] grep "Solo 快速迭代与用户选择权" spec目录-branch-worktree => 不存在
+[TDD-GREEN] 在 §二之前新增 ## 〇、Solo 快速迭代与用户选择权
+[TDD-GREEN] 含用户选择点、Solo 快速迭代场景、完整隔离场景
+prd: US-014 passes=true
+
+## US-015 (T-SOLO-3) 2026-03-03
+[TDD-RED] grep "Solo 快速迭代模式" bmad-story-assistant => 不存在
+[TDD-GREEN] 在 Worktree 策略之后新增 ### Solo 快速迭代模式（无新 worktree/branch）
+[TDD-GREEN] 说明 spec、产出路径、planning-artifacts 按 {branch}/，多 story 同 branch 各 story 独立子目录
+prd: US-015 passes=true
+
+## US-016 (T-SOLO-4) 2026-03-03
+[TDD-RED] grep "不创建 worktree" using-git-worktrees => 不存在
+[TDD-GREEN] 在 Adaptive Worktree 策略之后新增 ### Solo 快速迭代模式（不创建 worktree）
+[TDD-GREEN] 说明 create-new-feature.ps1 未指定 -CreateWorktree 时不调用 worktree 创建
+prd: US-016 passes=true
+
+## US-017 (T-SOLO-5) 2026-03-03
+[TDD-RED] 验证 TASKS 任务总览、回归测试表
+[TDD-GREEN] grep "T-SOLO-1"～"T-SOLO-5" 任务总览 => 存在
+[TDD-GREEN] grep "RT-SOLO-1"～"RT-SOLO-7" 回归测试表 => 存在
+prd: US-017 passes=true
+
+## US-018 (T-BMAD-7) 2026-03-03
+[TDD-RED] _bmad/scripts/bmad-speckit/python/migrate_bmad_output_to_subdirs.py => 不存在
+[TDD-GREEN] 创建 migrate_bmad_output_to_subdirs.py，解析 {epic}-{story}-{slug}、TASKS_*、prd.*.json、progress.*.txt
+[TDD-GREEN] 支持 --project-root、--dry-run；不移动 planning-artifacts、current_session_pids_*、bmad-customization-backups
+[TDD-GREEN] pytest tests/test_migrate_bmad_output_to_subdirs.py => 4 passed
+[TDD-GREEN] python _bmad/scripts/bmad-speckit/python/migrate_bmad_output_to_subdirs.py --dry-run => 正确输出迁移计划
+prd: US-018 passes=true
+
+## US-019 (T-PRE-1) 2026-03-03
+[TDD-GREEN] create-epics-and-stories workflow 已含 outputFile: '{planning_artifacts}/{branch}/epics.md'
+[TDD-GREEN] workflow.md 已含 Branch Resolution 逻辑
+prd: US-019 passes=true
+
+## US-020 (T-PRE-2) 2026-03-03
+[TDD-GREEN] create-prd workflow 已含 Branch Resolution；step-01 outputFile: '{planning_artifacts}/{branch}/prd.md'
+prd: US-020 passes=true
+
+## US-021 (T-PRE-3) 2026-03-03
+[TDD-GREEN] check-implementation-readiness step outputFile: '{planning_artifacts}/{branch}/implementation-readiness-report-{{date}}.md'
+prd: US-021 passes=true
+
+## US-022 (T-PRE-3b) 2026-03-03
+[TDD-GREEN] create-architecture workflow 已含 Branch Resolution，产出至 {planning_artifacts}/{branch}/
+prd: US-022 passes=true
+
+## US-023 (T-PRE-4) 2026-03-03
+[TDD-GREEN] bmad-story-assistant 已含 pre-speckit branch 子目录表（epics、就绪报告、prd、架构设计）
+prd: US-023 passes=true
+
+## US-024 (T-PRE-5、T-PRE-6) 2026-03-03
+[TDD-GREEN] TASKS §1.2 已含 branch 子目录；spec目录-branch-worktree 已含 pre-speckit 产出覆盖策略
+prd: US-024 passes=true
+
+## US-025 (T-PRE-7) 2026-03-03
+[TDD-RED] _bmad/scripts/bmad-speckit/python/migrate_planning_artifacts_to_branch.py => 不存在
+[TDD-GREEN] 创建 migrate_planning_artifacts_to_branch.py，支持 --project-root、--dry-run
+[TDD-GREEN] python _bmad/scripts/bmad-speckit/python/migrate_planning_artifacts_to_branch.py --dry-run => 正确输出迁移计划（3 个文件）
+prd: US-025 passes=true
+
+## US-026 (T-SOLO-6) 2026-03-03
+[TDD-GREEN] bmad-help.csv Create Story 行 description 已含 Solo 说明
+[TDD-GREEN] help.md §7 已含 Create Story/Dev Story 推荐时附加 Solo 与 -CreateBranch -CreateWorktree
+prd: US-026 passes=true

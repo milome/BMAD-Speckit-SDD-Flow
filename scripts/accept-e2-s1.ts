@@ -1,6 +1,7 @@
 /**
  * Story 2.1 端到端验收脚本 AC-1～AC-7
  */
+import * as fs from 'fs';
 import * as path from 'path';
 import {
   loadPhaseScoringYaml,
@@ -135,7 +136,6 @@ function main(): void {
 
   // AC-7: scoring/rules/default/ 下三个文件存在且 schema 校验通过
   try {
-    const fs = require('fs');
     const impl = path.join(rulesDir, 'default', 'implement-scoring.yaml');
     const test = path.join(rulesDir, 'default', 'test-scoring.yaml');
     const bugfix = path.join(rulesDir, 'default', 'bugfix-scoring.yaml');

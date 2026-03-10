@@ -10,7 +10,7 @@ export interface DimensionScore {
 
 export type DimensionMode = 'code' | 'prd' | 'arch' | 'pr';
 
-const DIMENSION_SCORE_PATTERN = /^(?:[-*]\s*|\d+\.\s*)?(.+?)\s*[：:]\s*(\d+)\s*[\/／]\s*100\s*$/;
+const DIMENSION_SCORE_PATTERN = /^(?:[-*]\s*|\d+\.\s*)?(.+?)\s*[：:]\s*(\d+)\s*[/／]\s*100\s*$/;
 
 function getConfigPath(configPath?: string): string {
   return configPath ?? path.join(process.cwd(), 'config', 'code-reviewer-config.yaml');
@@ -21,7 +21,9 @@ function loadModeWeights(mode: DimensionMode, configPath?: string): Map<string, 
   if (!fs.existsSync(resolved)) return new Map();
 
   const content = fs.readFileSync(resolved, 'utf-8');
-  const parsed = yaml.load(content) as Record<string, any>;
+  const parsed = yaml.load(content) as {
+    modes?: Partial<Record<DimensionMode, { dimensions?: Array<{ name?: unknown; weight?: unknown }> }>>;
+  };
   const dimensions = parsed?.modes?.[mode]?.dimensions;
   if (!Array.isArray(dimensions)) return new Map();
 

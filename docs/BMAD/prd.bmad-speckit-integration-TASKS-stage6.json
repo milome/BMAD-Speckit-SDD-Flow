@@ -1,0 +1,19 @@
+{
+  "branchName": "ralph/bmad-speckit-integration-stage6",
+  "taskDescription": "BMAD-Speckit整合方案 阶段6：集成测试（任务6.1～6.7）",
+  "projectContext": {
+    "framework": "pytest",
+    "testCommand": "pytest tests/integration/test_bmad_speckit_integration.py tests/integration/test_error_handling.py tests/regression/ tests/performance/ tests/unit/test_speckit_integration_units.py -v",
+    "buildCommand": "无"
+  },
+  "referenceDocument": "docs/BMAD/bmad-speckit-integration-TASKS.md",
+  "userStories": [
+    {"id": "US-001", "title": "任务6.1：编写端到端测试用例", "priority": 1, "passes": true},
+    {"id": "US-002", "title": "任务6.2：编写错误处理场景测试", "priority": 2, "passes": true},
+    {"id": "US-003", "title": "任务6.3：编写回归测试", "priority": 3, "passes": true},
+    {"id": "US-004", "title": "任务6.4：编写性能基准测试", "priority": 4, "passes": true},
+    {"id": "US-005", "title": "任务6.5：编写测试数据工厂", "priority": 5, "passes": true},
+    {"id": "US-006", "title": "任务6.6：编写单元测试", "priority": 6, "passes": true},
+    {"id": "US-007", "title": "任务6.7：metrics-cache-fix验证场景", "priority": 7, "passes": true}
+  ]
+}

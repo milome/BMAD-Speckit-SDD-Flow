@@ -116,7 +116,7 @@ describe('sft-extractor', () => {
       .mockImplementationOnce(() => 'a'.repeat(40)) // getGitHeadHashFull: rev-parse HEAD
       .mockImplementationOnce(() => '--- a/foo\n+++ b/foo\n-xx\n+yy'); // git diff
 
-    const { entries, summary } = await extractSftDataset(
+    const { entries } = await extractSftDataset(
       tempDir,
       path.join(tempDir, 'out.jsonl')
     );
@@ -202,7 +202,7 @@ describe('sft-extractor', () => {
         throw new Error('git diff failed');
       }); // git diff -> fallback
 
-    const { entries, summary } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
+    const { entries } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
     expect(entries.length).toBe(1);
     expect(entries[0].has_code_pair).toBe(false);
     expect(entries[0].input).toBe('');
@@ -243,7 +243,7 @@ describe('sft-extractor', () => {
       return 'a'.repeat(40);
     });
 
-    const { entries, summary } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
+    const { entries } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
     expect(entries.length).toBe(1);
   });
 
@@ -326,7 +326,7 @@ describe('sft-extractor', () => {
       return 'a'.repeat(40);
     });
 
-    const { entries, summary } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
+    const { entries } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
     expect(entries.length).toBe(1);
     expect(entries[0].instruction).toContain('已检查维度');
     expect(entries[0].instruction).toContain('需求未覆盖');
@@ -392,7 +392,7 @@ describe('sft-extractor', () => {
       return 'a'.repeat(40);
     });
 
-    const { entries, summary } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
+    const { entries } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
     expect(entries.length).toBe(1);
     expect(entries[0].instruction).toContain('已检查维度');
     expect(entries[0].instruction).toContain('需求未覆盖');
@@ -461,7 +461,7 @@ describe('sft-extractor', () => {
       return 'a'.repeat(40);
     });
 
-    const { entries, summary } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
+    const { entries } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
     expect(entries.length).toBe(1);
     expect(entries[0].instruction).toContain('已检查维度');
     expect(entries[0].instruction).toContain('需求描述不清');
@@ -530,7 +530,7 @@ describe('sft-extractor', () => {
       return 'a'.repeat(40);
     });
 
-    const { entries, summary } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
+    const { entries } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
     expect(entries.length).toBe(1);
     expect(entries[0].instruction).toContain('已检查维度');
     expect(entries[0].instruction).toContain('需求描述不清');
@@ -599,7 +599,7 @@ describe('sft-extractor', () => {
       return 'a'.repeat(40);
     });
 
-    const { entries, summary } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
+    const { entries } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
     expect(entries.length).toBe(1);
     expect(entries[0].instruction).toContain('已检查维度');
     expect(entries[0].instruction).toContain('需求描述不清');
@@ -683,7 +683,7 @@ describe('sft-extractor', () => {
       return 'a'.repeat(40);
     });
 
-    const { entries, summary } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
+    const { entries } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
     expect(entries.length).toBe(1);
     expect(entries[0].instruction).toContain('已检查维度');
     expect(entries[0].instruction).toContain('需求描述不清');

@@ -22,7 +22,6 @@ import {
   countVetoTriggers,
   getTrend,
   aggregateByEpicOnly,
-  getEpicAggregateRecords,
   formatDashboardMarkdown,
 } from '../scoring/dashboard';
 

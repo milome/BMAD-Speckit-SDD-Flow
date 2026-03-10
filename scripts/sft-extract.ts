@@ -54,7 +54,7 @@ async function main(): Promise<void> {
     ? (path.isAbsolute(output) ? output : path.resolve(process.cwd(), output))
     : undefined;
 
-  const { entries, summary } = await extractSftDataset(dataPath, outputPath, { threshold });
+  const { summary } = await extractSftDataset(dataPath, outputPath, { threshold });
   console.log(formatSummary(summary));
 }
 

@@ -3,7 +3,7 @@
  * No hardcoded path separators; path handling is caller's responsibility.
  */
 const fs = require('fs');
-const os = require('os');
+const _os = require('os');
 
 /**
  * Get default EOL for current platform (LF or CRLF).
