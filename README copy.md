@@ -4,7 +4,7 @@
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org)
 
 <p align="center">
-  <img src="docs/assets/readme-slogan.final.svg" alt="BMAD-Speckit-SDD-Flow slogan banner" width="100%" />
+  <img src="docs/assets/readme-slogan.svg" alt="BMAD-Speckit-SDD-Flow slogan banner" width="100%" />
 </p>
 
 **Built on** [BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD) and [github/spec-kit](https://github.com/github/spec-kit).
@@ -19,7 +19,7 @@
 Traditional AI tools do the thinking for you. BMAD-Speckit-SDD-Flow combines **BMAD Method** (agile, party-mode, multi-agent) with **Spec-Driven Development** (specify → plan → GAPS → tasks → TDD).
 
 <p align="center">
-  <img src="docs/assets/readme-architecture-overview.final.svg" alt="BMAD-Speckit-SDD-Flow architecture overview" width="100%" />
+  <img src="docs/assets/readme-architecture-overview.svg" alt="BMAD-Speckit-SDD-Flow architecture overview" width="100%" />
 </p>
 
 What this adds in practice:
