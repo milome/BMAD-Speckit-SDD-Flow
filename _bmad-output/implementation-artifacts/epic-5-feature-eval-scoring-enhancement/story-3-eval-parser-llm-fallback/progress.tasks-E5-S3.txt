@@ -1,0 +1,22 @@
+# Progress: eval-parser-llm-fallback (Story 5-3)
+# Total stories: 5
+
+Current story: 5
+Completed: 5
+
+---
+# Story log
+[2026-03-05 18:51] US-001: T1 llm-fallback core - PASSED
+
+[TDD-RED] T1 npm run test:scoring -- scoring/parsers/__tests__/llm-fallback.test.ts => 1 failed (Cannot find module llm-fallback)
+[TDD-GREEN] T1 npm run test:scoring -- scoring/parsers/__tests__/llm-fallback.test.ts => 184 passed
+
+[2026-03-05 18:53] US-002: T2 Four parsers integrate LLM fallback - PASSED
+[TDD-GREEN] T2 npm run test:scoring => 193 passed
+
+[2026-03-05 18:53] US-003: T3 issues/veto_items mapping - PASSED (embedded in T2)
+
+[2026-03-05 18:53] US-004: T4 Tests - PASSED
+
+[2026-03-05 18:53] US-005: T5 Acceptance - PASSED
+[TDD-GREEN] T5.7 npm run test:scoring => 193 passed

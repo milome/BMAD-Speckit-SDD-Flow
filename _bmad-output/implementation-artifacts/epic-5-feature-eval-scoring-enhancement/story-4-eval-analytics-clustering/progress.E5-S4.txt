@@ -1,0 +1,20 @@
+# Progress: tasks-E5-S4 (Story 5.4 eval-analytics-clustering)
+# Total stories: 4
+
+Current story: 4
+Completed: 4
+
+---
+# Story log
+[2026-03-05] INIT: 创建 prd.E5-S4.json 与 progress.E5-S4.txt，准备按 T1→T2→T3→T4 顺序执行
+[2026-03-05] US-001: cluster-weaknesses 核心 (T1) - PASSED
+[TDD-RED] T1 npm run test:scoring -- scoring/analytics/__tests__/cluster-weaknesses.test.ts => FAIL (Cannot find module '../cluster-weaknesses')
+[TDD-GREEN] T1 npm run test:scoring -- scoring/analytics/__tests__/cluster-weaknesses.test.ts => 5 passed
+[TDD-REFACTOR] T1 无显式重构；cluster-weaknesses.ts 实现完成
+[2026-03-05] US-002: coachDiagnose 集成 (T2) - PASSED
+[TDD-GREEN] T2 npm run test:scoring -- scoring/coach/__tests__/diagnose.test.ts => 9 passed（含 weakness_clusters 断言）
+[2026-03-05] US-003: CLI analytics-cluster (T3) - PASSED
+[TDD-GREEN] T3 npx ts-node scripts/analytics-cluster.ts --dataPath scoring/data --minFrequency 2 => 输出合法 JSON []
+[TDD-GREEN] T3 npx ts-node scripts/analytics-cluster.ts --output <path> => 写入文件成功
+[2026-03-05] US-004: 测试与验收 (T4) - PASSED
+[VERIFY] T4.4 npm run test:scoring => 199 passed

@@ -1,0 +1,13 @@
+# 多次迭代阶梯式扣分配置
+# Architecture §9.3、REQUIREMENTS §3.8
+# 1 次 100%、2 次 80%、3 次 50%、≥4 次 0%
+iteration_tier:
+  1: 1.0
+  2: 0.8
+  3: 0.5
+  4: 0
+
+# 致命问题整改≥3 次→系数 0；严重问题整改≥2 次→降一档
+severity_override:
+  fatal: 3
+  serious: 2

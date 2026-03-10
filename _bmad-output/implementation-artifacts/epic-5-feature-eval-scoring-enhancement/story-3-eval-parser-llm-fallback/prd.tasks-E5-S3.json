@@ -1,0 +1,73 @@
+{
+  "branchName": "ralph/eval-parser-llm-fallback",
+  "taskDescription": "Story 5.3: LLM 结构化提取 fallback for eval parsers",
+  "projectContext": {
+    "framework": "Node.js + TypeScript + Vitest",
+    "testCommand": "npm run test:scoring",
+    "buildCommand": "npm run build"
+  },
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "T1: llm-fallback core (LlmExtractionResult, llmStructuredExtract)",
+      "description": "T1.1-T1.5: Add scoring/parsers/llm-fallback.ts with LlmExtractionResult, LLM_SYSTEM_PROMPT, llmStructuredExtract; fetch /v1/chat/completions; env vars SCORING_LLM_*; AbortSignal.timeout; structure validation + 1 retry; timeout/network → ParseError",
+      "acceptanceCriteria": [
+        "llm-fallback.ts exists with correct exports",
+        "npm run test:scoring -- scoring/parsers/__tests__/llm-fallback.test.ts passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "spec §3.1, plan Phase 1"
+    },
+    {
+      "id": "US-002",
+      "title": "T2: Four parsers integrate LLM fallback",
+      "description": "T2.1-T2.5: audit-arch/story use extractOverallGrade; audit-prd/arch/story/generic all add LLM fallback when grade is null; check SCORING_LLM_API_KEY before calling llmStructuredExtract",
+      "acceptanceCriteria": [
+        "All four parsers call llmStructuredExtract when extractOverallGrade returns null and API key exists",
+        "All four parsers throw ParseError when grade null and no API key",
+        "audit-prd/arch/story/generic tests pass"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "spec §3.2, plan Phase 2, includes T3 mapping in fallback logic"
+    },
+    {
+      "id": "US-003",
+      "title": "T3: issues/veto_items mapping to CheckItem",
+      "description": "T3.1-T3.2: issues → CheckItem via resolveItemId(stage, description, llm_{stage}_issue_{idx}); severity 高→-10 中→-5 低→-2; veto_items → { item_id, passed: false, score_delta: -10, note: 'veto' }",
+      "acceptanceCriteria": [
+        "LLM result issues map to check_items with correct item_id and score_delta",
+        "veto_items merge into check_items with veto semantics"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "Implemented within T2 parser fallback logic; spec §3.2.5"
+    },
+    {
+      "id": "US-004",
+      "title": "T4: Tests (unit + integration + parse-and-write)",
+      "description": "T4.1-T4.3: llm-fallback.test.ts 6 cases; audit-prd/arch/story/generic integration tests for regex fail + key + LLM success, regex fail + no key → ParseError; parse-and-write.test.ts LLM fallback e2e",
+      "acceptanceCriteria": [
+        "llm-fallback.test.ts: 6 cases pass",
+        "audit-* tests: integration scenarios pass",
+        "parse-and-write.test.ts: LLM fallback e2e scenario passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "TDD: tests written before/when implementing; plan §5"
+    },
+    {
+      "id": "US-005",
+      "title": "T5: Acceptance commands",
+      "description": "T5.1-T5.7: Run all acceptance commands; npm run test:scoring full regression",
+      "acceptanceCriteria": [
+        "T5.1-T5.6 individual test suites pass",
+        "T5.7 npm run test:scoring passes"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "Final verification"
+    }
+  ]
+}

@@ -1,0 +1,101 @@
+{
+  "branchName": "ralph/audit-rating-pipeline-fix",
+  "taskDescription": "审计报告格式与评分 Pipeline 衔接改进",
+  "projectContext": {
+    "framework": "BMAD speckit-workflow, scoring/orchestrator",
+    "testCommand": "npm test",
+    "buildCommand": "npm run build"
+  },
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "T1: 更新 audit-prompts tasks 相关章节，强制可解析块 + 维度分映射建议",
+      "description": "更新 audit-prompts §4 或 tasks 附录，强制所有 tasks 审计报告在结尾包含可解析评分块，并给出维度分映射建议（完全覆盖→A/90+；部分覆盖→B/80+）",
+      "acceptanceCriteria": [
+        "audit-prompts §4 或 tasks 附录中明确写出该要求",
+        "含维度分与逐条对照结论映射建议",
+        "grep audit-prompts 可找到映射建议"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "路径: C:\\Users\\milom\\.cursor\\skills\\speckit-workflow\\references\\audit-prompts.md"
+    },
+    {
+      "id": "US-002",
+      "title": "T2: 更新 audit-prompts-critical-auditor-appendix 逐条对照",
+      "description": "更新 critical-auditor-appendix，要求逐条对照报告在结论后追加可解析评分块，并给出维度分映射建议",
+      "acceptanceCriteria": [
+        "文档中写明逐条对照格式报告须在 §5 结论后追加可解析评分块",
+        "给出示例格式",
+        "含维度分映射建议"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "依赖 T1"
+    },
+    {
+      "id": "US-003",
+      "title": "T3: 新增审计报告格式与解析约定文档",
+      "description": "在 docs/BMAD 或 scoring 文档中新增「审计报告格式与解析约定」",
+      "acceptanceCriteria": [
+        "文档存在且可被 bmad 流程引用",
+        "含 extractOverallGrade、parseDimensionScores 的输入要求说明"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "路径: docs/BMAD 或 scoring 文档"
+    },
+    {
+      "id": "US-004",
+      "title": "T4: 校验 eval-lifecycle-report-paths.yaml",
+      "description": "校验 config/eval-lifecycle-report-paths.yaml，明确约定路径与历史命名变体兼容策略",
+      "acceptanceCriteria": [
+        "配置与文档一致",
+        "约定路径 AUDIT_tasks-E{epic}-S{story}.md",
+        "若有历史命名变体，在文档中说明兼容策略"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "config/eval-lifecycle-report-paths.yaml"
+    },
+    {
+      "id": "US-005",
+      "title": "T5: parseAndWriteScore stage=tasks 逐条对照风格集成测试",
+      "description": "为 parseAndWriteScore 增加 stage=tasks 的逐条对照风格集成测试（fixture：表格+结论+可解析块）",
+      "acceptanceCriteria": [
+        "测试文件存在",
+        "fixture 使用 stage=tasks，结构为表格+结论+可解析块",
+        "断言 phase_score、dimension_scores 符合预期",
+        "npm test 通过"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "scoring/orchestrator/__tests__/parse-and-write.test.ts；TDD 红绿灯"
+    },
+    {
+      "id": "US-006",
+      "title": "T6: 更新 Story 8.1 AUDIT_TASKS 报告追加可解析块",
+      "description": "更新 Story 8.1 的 AUDIT_TASKS_E8_S1_逐条对照 报告，在结论后追加可解析评分块",
+      "acceptanceCriteria": [
+        "报告包含总体评级、维度评分块",
+        "parseAndWriteScore 成功",
+        "仪表盘可显示"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": "依赖 T1"
+    },
+    {
+      "id": "US-007",
+      "title": "T7: bmad-code-reviewer-lifecycle Skill 写明 parseAndWriteScore 前置条件",
+      "description": "在 bmad-code-reviewer-lifecycle Skill 中以独立条款/checklist 形式写明 parseAndWriteScore 前置条件",
+      "acceptanceCriteria": [
+        "Skill 中以独立条款或 checklist 形式写明该前置条件",
+        "grep 前置条件可找到"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": "依赖 T3"
+    }
+  ]
+}

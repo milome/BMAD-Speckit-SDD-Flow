@@ -1,0 +1,83 @@
+{
+  "branchName": "ralph/bugfix-showBanner-powershell-kit-offset",
+  "taskDescription": "修复 PowerShell ConHost 下 KIT 部分水平偏移，通过 ASCII 回退 banner",
+  "projectContext": {
+    "framework": "Node.js CLI",
+    "testCommand": "cd packages/bmad-speckit && npm test",
+    "buildCommand": "N/A"
+  },
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "设计并实现 ASCII 回退 banner（6 行，BMAD-SPECKIT 等效）",
+      "description": "在 banner.js 中新增 ASCII_BMAD_LINES、ASCII_SPECKIT_LINES、buildAsciiBannerLines()，使用纯 ASCII 字符（#、=、|、-）构造 6 行等效视觉",
+      "acceptanceCriteria": ["视觉与 Unicode 版近似", "纯 ASCII，无块体字符"],
+      "priority": 1,
+      "passes": true,
+      "notes": "BUGFIX §4.3"
+    },
+    {
+      "id": "US-002",
+      "title": "实现 shouldUseAsciiFallback() 环境检测",
+      "description": "在 banner.js 中新增 shouldUseAsciiFallback()，win32 且非 WT/VSCode/ConEmu/Cmder 时返回 true",
+      "acceptanceCriteria": ["ConHost 下返回 true", "WT/VSCode/ConEmu/Cmder 下返回 false"],
+      "priority": 2,
+      "passes": true,
+      "notes": "BUGFIX §4.2"
+    },
+    {
+      "id": "US-003",
+      "title": "在 banner.js 中根据检测结果切换 Unicode/ASCII",
+      "description": "buildBannerLines() 根据 shouldUseAsciiFallback() 返回 Unicode 或 ASCII 版本",
+      "acceptanceCriteria": ["检测为 ConHost 时返回 ASCII 行", "其他环境返回 Unicode 行"],
+      "priority": 3,
+      "passes": true,
+      "notes": "BUGFIX §4.4"
+    },
+    {
+      "id": "US-004",
+      "title": "编写 buildAsciiBannerLines() 单元测试",
+      "description": "断言 6 行、纯 ASCII、无块体字符",
+      "acceptanceCriteria": ["6 行", "纯 ASCII", "无 U+2588/U+2551 等块体字符"],
+      "priority": 4,
+      "passes": true,
+      "notes": "BUGFIX §7 TASK-4"
+    },
+    {
+      "id": "US-005",
+      "title": "编写 shouldUseAsciiFallback() 单元测试",
+      "description": "覆盖 win32+ConHost、win32+WT、非 win32",
+      "acceptanceCriteria": ["win32+ConHost 返回 true", "win32+WT 返回 false", "非 win32 返回 false"],
+      "priority": 5,
+      "passes": true,
+      "notes": "BUGFIX §7 TASK-5"
+    },
+    {
+      "id": "US-006",
+      "title": "PowerShell 5.1（ConHost）手动验收",
+      "description": "AC-1 通过：npx bmad-speckit init --help 显示 banner，KIT 无阶梯错位",
+      "acceptanceCriteria": ["手动验收通过"],
+      "priority": 6,
+      "passes": false,
+      "notes": "BUGFIX §7 TASK-6"
+    },
+    {
+      "id": "US-007",
+      "title": "Windows Terminal 手动验收",
+      "description": "AC-3 通过：继续使用 Unicode banner，显示正常",
+      "acceptanceCriteria": ["手动验收通过"],
+      "priority": 7,
+      "passes": false,
+      "notes": "BUGFIX §7 TASK-7"
+    },
+    {
+      "id": "US-008",
+      "title": "运行 npm test 确保无回归",
+      "description": "全部测试通过",
+      "acceptanceCriteria": ["npm test 全部通过"],
+      "priority": 8,
+      "passes": true,
+      "notes": "BUGFIX §7 TASK-8"
+    }
+  ]
+}

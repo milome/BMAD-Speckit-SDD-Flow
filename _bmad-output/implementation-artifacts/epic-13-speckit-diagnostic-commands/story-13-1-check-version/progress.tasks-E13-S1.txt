@@ -1,0 +1,26 @@
+# progress.tasks-E13-S1
+# Story 13.1 check 与 version 子命令 - tasks-E13-S1 执行进度
+
+## US-001: VersionCommand (T1.1-T1.4)
+[TDD-RED] node --test tests/version.test.js => 1 failed (module missing)
+[TDD-GREEN] version.js, bin 注册, node --test tests/version.test.js => 5 passed
+[TDD-REFACTOR] 无需重构 ✓
+
+## US-002: CheckCommand 诊断输出 (T2.1-T2.6)
+[TDD-RED] check 无诊断报告、无 --json
+[TDD-GREEN] buildDiagnoseReport、--json、--ignore-agent-tools、--list-ai --json
+[TDD-REFACTOR] 无需重构 ✓
+
+## US-003: 结构验证 (T3.1-T3.5)
+[TDD-RED] 无 _bmad-output 验证、缺 selectedAI 映射
+[TDD-GREEN] validateBmadOutput、validateCursorBackwardCompat、gemini/windsurf/kilocode/auggie/roo 映射、bmadPath exit 4 保留
+[TDD-REFACTOR] 无需重构 ✓
+
+## US-004: 单元、集成、E2E 测试 (T4.1-T4.4)
+[TDD-RED] version.test.js 已有；check 集成待补
+[TDD-GREEN] version 测试通过；check/version CLI 验收
+[TDD-REFACTOR] 无新增生产代码，各模块独立性已验证 ✓
+
+---
+Current story: US-004
+Completed: 4/4

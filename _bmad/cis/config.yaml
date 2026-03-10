@@ -6,7 +6,7 @@
 visual_tools: intermediate
 
 # Core Configuration Values
-user_name: Micang
+user_name: "{user-name}"
 communication_language: Chinese
 document_output_language: Chinese
 output_folder: "{project-root}/_bmad-output"

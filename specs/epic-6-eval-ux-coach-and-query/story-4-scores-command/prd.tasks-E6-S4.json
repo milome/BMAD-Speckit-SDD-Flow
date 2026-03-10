@@ -1,0 +1,35 @@
+{
+  "title": "Story 6.4 Scores Command",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Command 文档与脚本骨架",
+      "acceptanceCriteria": ["commands/bmad-scores.md 存在", "scripts/scores-summary.ts 解析 --epic/--story", "无数据输出「暂无评分数据...」"],
+      "passes": true
+    },
+    {
+      "id": "US-002",
+      "title": "formatScoresToTable 与反馈",
+      "acceptanceCriteria": ["formatScoresToTable 三种 mode", "无数据/无约定/无可筛选区分", "query 复用"],
+      "passes": true
+    },
+    {
+      "id": "US-003",
+      "title": "验收与同步",
+      "acceptanceCriteria": ["验收命令可执行", ".cursor/commands 可选同步"],
+      "passes": true
+    },
+    {
+      "id": "US-004",
+      "title": "coach-diagnose 迁移",
+      "acceptanceCriteria": ["--epic/--story 改用 queryByEpic/queryByStory", "移除 filterByEpicStory", "行为不变"],
+      "passes": true
+    },
+    {
+      "id": "US-005",
+      "title": "测试与回归",
+      "acceptanceCriteria": ["formatScoresToTable 单测", "scores-summary/coach E2E", "npm run test:scoring 通过"],
+      "passes": true
+    }
+  ]
+}

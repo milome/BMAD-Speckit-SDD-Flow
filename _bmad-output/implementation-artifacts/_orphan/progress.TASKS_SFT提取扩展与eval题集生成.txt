@@ -1,0 +1,11 @@
+# Progress: TASKS_SFT提取扩展与eval题集生成
+# Total stories: 3
+
+Current story: 3
+Completed: 3
+
+---
+# Story log
+[2026-03-07 13:20] US-003: T3 eval_question 自动生成脚本 - PASSED (CLI+list+边界验证)
+[2026-03-07 13:12] US-002: T2 审计报告解析器与 SFT 提取器扩展 - PASSED
+[2026-03-07 13:10] US-001: T1 implement 阶段 source_path 逻辑 - PASSED (单测+CLI验证)

@@ -2,6 +2,16 @@
 
 执行 tasks.md（或 tasks-v*.md）中的未完成任务时必须遵守本文件的全部规则。
 
+**执行顺序**：WRITE test → RUN → ASSERT FAIL → WRITE code → RUN → ASSERT PASS → REFACTOR。禁止先写生产代码再补测试。
+
+**【TDD 红绿灯阻塞约束】** prd 中每个 involvesProductionCode=true 的 US 必须**独立**执行一次完整循环。执行顺序为：
+1. 先写/补测试并运行验收 → 必须得到失败结果（红灯）
+2. 立即在 progress 追加 [TDD-RED] <任务ID> <验收命令> => N failed
+3. 再实现并通过验收 → 得到通过结果（绿灯）
+4. 立即在 progress 追加 [TDD-GREEN] <任务ID> <验收命令> => N passed
+5. 若有重构，在 progress 追加 [TDD-REFACTOR] <任务ID> <内容>
+禁止在未完成步骤 1–2 之前执行步骤 3。**禁止仅对首个 US 执行 TDD，后续 US 跳过红灯直接实现**。禁止所有任务完成后集中补写 TDD 记录。
+
 ---
 
 ## 1. TDD 红灯-绿灯-重构循环
@@ -29,6 +39,28 @@
 ---
 
 ## 2. 进度追踪与状态更新
+
+### 2.0 progress 模板预填 TDD 槽位
+
+生成 progress 时，对每个 US 预填以下占位行；模型执行时将 `_pending_` 替换为实际结果：
+
+**涉及生产代码的 US**：
+```
+# US-001: Create user entity
+[TDD-RED]   _pending_
+[TDD-GREEN] _pending_
+[TDD-REFACTOR] _pending_
+---
+```
+
+**仅文档/配置的 US**：
+```
+# US-002: Add config value
+[DONE] _pending_
+---
+```
+
+替换格式示例：`[TDD-RED] T1 pytest tests/test_xxx.py -v => N failed`
 
 ### 2.1 TodoWrite 追踪
 

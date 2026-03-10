@@ -1,0 +1,31 @@
+# 环节 3：测试用例与质量保障
+# Architecture §9.2、REQUIREMENTS §3.11
+version: "1.0"
+stage: implement
+link_stage: [tasks, post_impl]
+link_环节: 3
+
+weights:
+  base:
+    test_coverage: 30
+    case_quality: 25
+    regression_tests: 25
+  bonus:
+    edge_cases: 10
+    performance_tests: 10
+
+items:
+  - id: test_coverage
+    ref: code-reviewer-config#test_coverage
+    deduct: 10
+  - id: case_quality
+    ref: code-reviewer-config#case_quality
+    deduct: 8
+  - id: regression
+    ref: code-reviewer-config#regression_tests
+    deduct: 8
+
+veto_items:
+  - id: veto_core_logic_error
+    ref: code-reviewer-config#veto_core_logic
+    consequence: stage_0_level_down

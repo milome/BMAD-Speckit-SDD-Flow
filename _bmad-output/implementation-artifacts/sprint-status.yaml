@@ -1,0 +1,133 @@
+# generated: 2026-03-04
+# project: micang-trader-015-indicator-system-refactor
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: {project-root}/_bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+# epics_source: _bmad-output/planning-artifacts/dev/epics.md (E1-E8 统一)
+# Sprint Planning 2026-03-06: Epic 8 纳入实施范围，激活 8.1、8.2、8.3 (Bob Scrum Master)
+generated: "2026-03-06"
+project: BMAD-Speckit-SDD-Flow
+project_key: NOKEY
+tracking_system: file-system
+story_location: "{project-root}/_bmad-output/implementation-artifacts"
+
+development_status:
+  epic-1: done
+  1-1-eval-system-scoring-core: done
+  1-2-eval-system-storage-writer: done
+  epic-1-retrospective: optional
+
+  epic-2: done
+  2-1-eval-rules-yaml-config: done
+  2-2-eval-authority-doc: done
+  epic-2-retrospective: optional
+
+  epic-3: done
+  3-1-eval-lifecycle-skill-def: done
+  3-2-eval-layer1-3-parser: done
+  3-3-eval-skill-scoring-write: done
+  epic-3-retrospective: done
+
+  epic-4: done
+  4-1-eval-veto-iteration-rules: done
+  4-2-eval-ai-coach: done
+  4-3-eval-scenario-bmad-integration: done
+  epic-4-retrospective: done
+
+  epic-5: done
+  5-1-eval-foundation-modules: done
+  5-2-eval-scoring-rules-expansion: done
+  5-3-eval-parser-llm-fallback: done
+  5-4-eval-analytics-clustering: done
+  5-5-eval-analytics-advanced: done
+  epic-5-retrospective: optional
+
+  # eval-ux-last-mile (E6→E7→E8)
+  epic-6: done
+  6-1-coach-command-no-args: done
+  6-2-coach-epic-story-filter: done
+  6-3-scoring-query-layer: done
+  6-4-scores-command: done
+  6-5-bmad-eval-analytics-skill: done
+  epic-6-retrospective: done
+
+  epic-7: done
+  7-1-dashboard-generator: done
+  7-2-sft-extract-command: done
+  7-3-sft-bmad-eval-analytics-skill: done
+  7-4-coach-discovery-real-dev-only: done
+  epic-7-retrospective: done
+
+  epic-8: done
+  8-1-question-bank-structure-manifest: done
+  8-2-question-bank-list-add: done
+  8-3-question-bank-run-eval-integration: done
+  epic-8-retrospective: optional
+
+  epic-9: done
+  9-1-scoring-full-pipeline: done
+  9-2-stage-implement-extension: done
+  9-3-epic-dashboard-aggregate: done
+  9-4-iteration-score-evolution: done
+  9-5-speckit-full-stage-score-write: done
+  epic-9-retrospective: optional
+
+  # speckit-init (E10–E13) — specify-cn 类 init 与多 AI Assistant
+  # Sprint Planning 2026-03-07: E10–E13 纳入实施范围 (Bob Scrum Master)
+  epic-10: done
+  10-1-interactive-init: done
+  10-2-non-interactive-init: done
+  10-3-cross-platform-script: done
+  10-4-config-persistence: done
+  10-5-bmad-path-worktree: done
+  epic-10-retrospective: done
+
+  epic-11: done
+  11-1-template-fetch: done
+  11-2-offline-version-lock: done
+  epic-11-retrospective: optional
+
+  epic-12: done
+  12-1-ai-registry: done
+  12-2-reference-integrity: done
+  12-3-skill-publish: done
+  12-4-post-init-guide: done
+  epic-12-retrospective: done
+
+  epic-13: done
+  13-1-check-version: done
+  13-2-exception-paths: done
+  13-3-upgrade: done
+  13-4-config: done
+  13-5-feedback: done
+  epic-13-retrospective: done

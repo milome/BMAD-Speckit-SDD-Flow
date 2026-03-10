@@ -1,0 +1,24 @@
+# Progress: tasks-E6-S2 Coach 按 Epic/Story 筛选
+
+## 2025-03-06
+
+### T1 filter-epic-story
+[TDD-RED] T5.1 单元测试 filter-epic-story.test.ts 先写 => 12 tests fail (module not found)
+[TDD-GREEN] T1 实现 filter-epic-story.ts => npm run test:scoring scoring/coach/__tests__/filter-epic-story.test.ts => 12 passed
+[TDD-REFACTOR] 无需重构 ✓
+
+### T2 coachDiagnose options.records
+[TDD-GREEN] types.ts + records; diagnose.ts 短路 loadRunRecords
+[TDD-REFACTOR] 无需重构 ✓
+
+### T3 脚本扩展
+[TDD-GREEN] coach-diagnose.ts --epic、--story 解析与分支
+[TDD-REFACTOR] 无需重构 ✓
+
+### T4 Command 文档
+[TDD-GREEN] commands/bmad-coach.md、.cursor/commands/bmad-coach.md 已更新
+[TDD-REFACTOR] 无新增生产代码 ✓
+
+### T5 测试与验收
+[TDD-GREEN] filter-epic-story 单测 12 passed；E2E --epic 3、--story 3.1 输出诊断；npm run test:scoring 234 passed
+[TDD-REFACTOR] 无需重构 ✓

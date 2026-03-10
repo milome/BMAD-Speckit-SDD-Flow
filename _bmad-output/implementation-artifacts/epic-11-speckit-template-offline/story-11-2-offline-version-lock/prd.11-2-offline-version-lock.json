@@ -1,0 +1,17 @@
+{
+  "epic": "11",
+  "story": "11-2",
+  "slug": "offline-version-lock",
+  "title": "离线与版本锁定（--offline、templateVersion 写入、退出码 5）",
+  "tasksSource": "specs/epic-11-speckit-template-offline/story-2-offline-version-lock/tasks-E11-S2.md",
+  "phases": [
+    "Phase 1: TemplateFetcher offline 分支 (T001-T003)",
+    "Phase 2: templateVersion 写入验收确认 (T004)",
+    "Phase 3: 测试与退出码验收 (T005-T006)"
+  ],
+  "acceptanceCriteria": [
+    "AC-1 --offline 仅用 cache、不发起网络；cache 缺失退出码 5",
+    "AC-2 templateVersion 写入 bmad-speckit.json；已有配置合并",
+    "AC-3 退出码 5 仅用于离线 cache 缺失"
+  ]
+}

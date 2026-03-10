@@ -7,13 +7,13 @@
    sync-manifest.yaml 路径（或相对当前目录）
 
 .PARAMETER RepoA
-  Repo A 根路径（如 micang-trader）
+  Repo A 根路径（如 your-project）
 
 .PARAMETER RepoB
   Repo B 根路径（如 BMAD-Speckit-SDD-Flow）
 
 .EXAMPLE
-  & ".\_bmad\scripts\bmad-speckit\powershell\validate-sync-manifest.ps1" -ManifestPath ".\sync-manifest.yaml" -RepoA "D:\path\to\micang-trader" -RepoB "D:\path\to\BMAD-Speckit-SDD-Flow"
+  & ".\_bmad\scripts\bmad-speckit\powershell\validate-sync-manifest.ps1" -ManifestPath ".\sync-manifest.yaml" -RepoA "D:\path\to\your-project" -RepoB "D:\path\to\BMAD-Speckit-SDD-Flow"
 #>
 [CmdletBinding()]
 param(

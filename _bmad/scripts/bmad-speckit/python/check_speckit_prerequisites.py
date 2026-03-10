@@ -42,7 +42,8 @@ def check_document_exists(project_root: str, epic: str, story: str, doc_type: st
         "tasks": "tasks",
     }
     file_prefix = doc_type_to_prefix.get(doc_type, doc_type)
-    pattern = f"specs/epic-{epic}/story-{story}-*/{file_prefix}-E{epic}-S{story}.md"
+    # 支持 epic slug（如 epic-10-speckit-init-core）与 story slug（如 story-2-non-interactive-init）
+    pattern = f"specs/epic-{epic}-*/story-{story}-*/{file_prefix}-E{epic}-S{story}.md"
     full_pattern = os.path.join(project_root, pattern)
     matches = glob.glob(full_pattern)
     return len(matches) > 0, matches[0] if matches else None

@@ -1,0 +1,12 @@
+# Progress: BUGFIX_eval-parser-item-id-mapping
+# Total stories: 4
+
+Current story: 4
+Completed: 4
+
+---
+# Story log
+[2026-03-04 17:38] US-001: T1+T2 盘点 dimensions.checks 并创建 audit-item-mapping.yaml - PASSED
+[2026-03-04 17:39] US-002: T3+T4+T5 修改 audit-prd/arch/story.ts 集成映射查找 - PASSED
+[2026-03-04 17:39] US-003: T6 更新 README 文档化 item_id 映射 - PASSED
+[2026-03-04 17:40] US-004: T7 npm run accept:e3-s2 => PASS (all 3 stages)

@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "stem": "tasks-E6-S3",
+  "userStories": [
+    { "id": "US-001", "title": "loader.ts: loadAndDedupeRecords, isRunScoreRecord, EXCLUDED_JSON", "acceptance": "T1.1-T1.3", "passes": true },
+    { "id": "US-002", "title": "parse-epic-story.ts: parseEpicStoryFromRecord", "acceptance": "T2.1-T2.3", "passes": true },
+    { "id": "US-003", "title": "query API: queryByEpic, queryByStory, queryLatest, queryByStage, queryByScenario", "acceptance": "T3.1-T3.6", "passes": true },
+    { "id": "US-004", "title": "验收脚本 scripts/query-validate.ts", "acceptance": "T4.1-T4.3", "passes": true },
+    { "id": "US-005", "title": "单元测试 loader, parse-epic-story, query", "acceptance": "T5.1-T5.5", "passes": true }
+  ]
+}

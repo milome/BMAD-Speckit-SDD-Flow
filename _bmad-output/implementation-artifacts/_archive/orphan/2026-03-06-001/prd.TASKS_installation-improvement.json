@@ -1,0 +1,23 @@
+{
+  "branchName": "ralph/installation-improvement",
+  "taskDescription": "TASKS_installation-improvement.md 中 18 项安装流程改进任务",
+  "projectContext": {
+    "framework": "BMAD Speckit",
+    "testCommand": "node scripts/init-to-root.js, pwsh scripts/setup.ps1 -DryRun",
+    "buildCommand": "N/A"
+  },
+  "userStories": [
+    {"id": "US-001", "title": "T-SYNC-2 补齐 speckit 命令", "description": "补齐 .cursor/commands/ 中缺失的 9 个 speckit 命令", "acceptanceCriteria": [".cursor/commands/ 下包含所有 speckit.*.md"], "priority": 1, "passes": true, "notes": "Phase 1"},
+    {"id": "US-002", "title": "T-SYNC-3 同步 code-reviewer-config", "description": "同步 .cursor/agents/code-reviewer-config.yaml 为完整版", "acceptanceCriteria": ["包含 items 和 veto_items 段"], "priority": 2, "passes": true, "notes": "Phase 1"},
+    {"id": "US-003", "title": "T-XPLAT-1 PATH_CONVENTIONS.md", "description": "新建 docs/PATH_CONVENTIONS.md 定义占位符", "acceptanceCriteria": ["定义 {SKILLS_ROOT}、{project-root}、{HOME}"], "priority": 3, "passes": true, "notes": "Phase 1"},
+    {"id": "US-004", "title": "T-INSTALL-1 扩展 init-to-root.js", "description": "增加 --full 参数与 .cursor/ 同步", "acceptanceCriteria": ["--full 部署 7 目录 + .cursor 同步"], "priority": 4, "passes": true, "notes": "Phase 2"},
+    {"id": "US-005", "title": "T-XPLAT-2 coach-trigger.yaml", "description": "使用 {SKILLS_ROOT} 占位符", "acceptanceCriteria": ["required_skill_path 使用占位符"], "priority": 5, "passes": true, "notes": "Phase 2"},
+    {"id": "US-006", "title": "T-XPLAT-3 scoring/coach/config.ts", "description": "支持 {SKILLS_ROOT} 展开", "acceptanceCriteria": ["os.homedir() 展开占位符"], "priority": 6, "passes": true, "notes": "Phase 2"},
+    {"id": "US-007", "title": "T-INSTALL-2/3/4 setup.ps1", "description": "新建 scripts/setup.ps1 一键安装", "acceptanceCriteria": ["-Target、-SkipSkills、-DryRun、验证逻辑"], "priority": 7, "passes": true, "notes": "Phase 3"},
+    {"id": "US-008", "title": "T-INSTALL-5 package.json", "description": "更新 files、scripts、bin", "acceptanceCriteria": ["setup 命令、bin 入口"], "priority": 8, "passes": true, "notes": "Phase 3"},
+    {"id": "US-009", "title": "T-XPLAT-4~8 文档路径统一", "description": "skills/README、SKILL.md、scoring/coach/README、docs/BMAD", "acceptanceCriteria": ["使用 {SKILLS_ROOT} 占位符"], "priority": 9, "passes": true, "notes": "Phase 4"},
+    {"id": "US-010", "title": "T-QUICKSTART-1 QUICKSTART.md", "description": "新建 5 分钟上手指南", "acceptanceCriteria": ["5 节内容 ≤1500 字"], "priority": 10, "passes": true, "notes": "Phase 5"},
+    {"id": "US-011", "title": "T-README-1 README.md", "description": "更新安装说明", "acceptanceCriteria": ["追加 setup.ps1 说明"], "priority": 11, "passes": true, "notes": "Phase 5"},
+    {"id": "US-012", "title": "T-README-2 安装指南", "description": "INSTALLATION_AND_MIGRATION_GUIDE 引用 setup.ps1", "acceptanceCriteria": ["§3.2、§3.6 追加 setup.ps1"], "priority": 12, "passes": true, "notes": "Phase 5"}
+  ]
+}

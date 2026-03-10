@@ -4,18 +4,62 @@
   "description": "BMAD + Speckit workflow and scoring skeleton; deploy _bmad, _bmad-output, commands, rules to project root",
   "scripts": {
     "postinstall": "node scripts/init-to-root.js",
-    "init": "node scripts/init-to-root.js"
+    "init": "node scripts/init-to-root.js",
+    "setup": "pwsh scripts/setup.ps1",
+    "setup:sh": "bash scripts/setup.sh",
+    "setup:full": "pwsh scripts/setup.ps1 -Full",
+    "setup:full:sh": "bash scripts/setup.sh -Full",
+    "test": "vitest run && npm run test:bmad-speckit",
+    "test:scoring": "vitest run scoring",
+    "test:bmad-speckit": "cd packages/bmad-speckit && node --test tests/",
+    "accept:e1-s1": "npx ts-node scripts/accept-e1-s1.ts",
+    "accept:e1-s2": "npx ts-node scripts/accept-e1-s2.ts",
+    "accept:e2-s1": "npx ts-node scripts/accept-e2-s1.ts",
+    "accept:e2-s2": "npx ts-node scripts/accept-e2-s2.ts",
+    "accept:e3-s1": "npx ts-node scripts/accept-e3-s1.ts",
+    "accept:e3-s2": "npx ts-node scripts/accept-e3-s2.ts",
+    "accept:e3-s3": "npx ts-node scripts/accept-e3-s3.ts",
+    "accept:e4-s1": "npx ts-node scripts/accept-e4-s1.ts",
+    "accept:e4-s2": "npx ts-node scripts/accept-e4-s2.ts",
+    "accept:e4-s3": "npx ts-node scripts/accept-e4-s3.ts",
+    "coach:diagnose": "npx ts-node scripts/coach-diagnose.ts",
+    "eval-questions": "npx ts-node scripts/eval-questions-cli.ts",
+    "speckit": "npx bmad-speckit",
+    "speckit:init": "npx bmad-speckit init"
   },
   "bin": {
-    "bmad-speckit-init": "scripts/init-to-root.js"
+    "bmad-speckit-init": "scripts/init-to-root.js",
+    "bmad-speckit-setup": "scripts/setup.ps1",
+    "bmad-speckit-setup-sh": "scripts/setup.sh"
   },
   "files": [
     "_bmad",
     "_bmad-output",
     "commands",
     "rules",
-    "scripts"
+    "scripts",
+    "config",
+    "templates",
+    "workflows"
   ],
-  "keywords": ["bmad", "speckit", "cursor", "workflow"],
-  "license": "MIT"
+  "keywords": [
+    "bmad",
+    "speckit",
+    "cursor",
+    "workflow"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^25.3.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "ajv": "^8.18.0",
+    "ajv-formats": "^3.0.1",
+    "bmad-speckit": "file:packages/bmad-speckit",
+    "js-yaml": "^4.1.1"
+  }
 }

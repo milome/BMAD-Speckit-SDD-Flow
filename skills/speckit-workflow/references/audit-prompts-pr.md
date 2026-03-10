@@ -140,3 +140,9 @@ PR: #123 Story 4.1: metrics cache fix
 ```
 
 等待用户明确选择[1]并确认后，才能执行merge操作。
+
+---
+
+## 批判审计员检查（standard/strict 模式必须）
+
+审计时须同时执行批判审计员检查，输出格式见 [audit-prompts-critical-auditor-appendix.md](audit-prompts-critical-auditor-appendix.md)。

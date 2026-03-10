@@ -1,0 +1,11 @@
+# Progress: dashboard-generator (Story 7.1)
+
+[2026-03-06] T1: commands/bmad-dashboard.md, scripts/dashboard-generate.ts - PASSED
+[TDD-GREEN] T2 scoring/dashboard compute + format - 14 tests passed
+[2026-03-06] T3: 验收 npx ts-node scripts/dashboard-generate.ts - PASSED
+[2026-03-06] T4: scoring/dashboard/__tests__/*.test.ts - PASSED (npm run test:scoring)
+
+验收命令: npx ts-node scripts/dashboard-generate.ts
+输出: _bmad-output/dashboard.md
+
+[AC-2] 无数据场景（空目录或无 real_dev）验收：已执行；输出「暂无数据，请先完成至少一轮 Dev Story」且 _bmad-output/dashboard.md 写入相同内容，PASSED

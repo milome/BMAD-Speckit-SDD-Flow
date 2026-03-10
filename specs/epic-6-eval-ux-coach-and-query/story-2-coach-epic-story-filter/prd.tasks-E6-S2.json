@@ -1,0 +1,10 @@
+{
+  "stem": "tasks-E6-S2",
+  "userStories": [
+    { "id": "US-001", "title": "filter-epic-story 模块", "passes": true, "acceptance": "parseEpicStoryFromRecord、filterByEpicStory 单测通过；生产路径调用" },
+    { "id": "US-002", "title": "coachDiagnose options.records", "passes": true, "acceptance": "传入 records 时跳过 loadRunRecords，诊断正确" },
+    { "id": "US-003", "title": "脚本 --epic、--story 扩展", "passes": true, "acceptance": "验收命令通过" },
+    { "id": "US-004", "title": "Command 文档更新", "passes": true, "acceptance": "bmad-coach.md 含 --epic、--story" },
+    { "id": "US-005", "title": "测试与验收", "passes": true, "acceptance": "单测、端到端、回归通过" }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "run_id": "dev-e9-s1-tasks-1772800551779",
+  "scenario": "real_dev",
+  "stage": "tasks",
+  "phase_score": 94.25,
+  "phase_weight": 0.2,
+  "check_items": [
+    {
+      "item_id": "tasks_overall",
+      "passed": true,
+      "score_delta": 0,
+      "note": "未发现问题清单段落"
+    }
+  ],
+  "timestamp": "2026-03-06T12:35:51.789Z",
+  "iteration_count": 0,
+  "iteration_records": [],
+  "first_pass": true,
+  "dimension_scores": [
+    {
+      "dimension": "需求完整性",
+      "weight": 35,
+      "score": 95
+    },
+    {
+      "dimension": "可测试性",
+      "weight": 25,
+      "score": 92
+    },
+    {
+      "dimension": "一致性",
+      "weight": 25,
+      "score": 95
+    },
+    {
+      "dimension": "可追溯性",
+      "weight": 15,
+      "score": 95
+    }
+  ],
+  "veto_triggered": false,
+  "tier_coefficient": 1,
+  "base_commit_hash": "2870f4b9",
+  "content_hash": "60d139f098aff79cca6e7fef0fdf5f9231d9c18d1d0c91b1f55ad5d6cc06df13",
+  "source_path": "specs/epic-9/story-1-scoring-full-pipeline/tasks-E9-S1.md",
+  "trigger_stage": "speckit_5_2",
+  "path_type": "full"
+}

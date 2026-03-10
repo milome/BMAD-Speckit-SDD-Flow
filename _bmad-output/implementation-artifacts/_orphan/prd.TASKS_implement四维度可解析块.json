@@ -1,0 +1,72 @@
+{
+  "branchName": "ralph/implement-four-dim-parseable-block",
+  "taskDescription": "Implement 阶段可解析评分块四维度完整性：功能性、代码质量、测试覆盖、安全性",
+  "projectContext": {
+    "framework": "TypeScript/Node",
+    "testCommand": "npm test",
+    "buildCommand": "npm run build"
+  },
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "audit-prompts 新增 §5.1 并修正 §5 引用",
+      "description": "在 audit-prompts.md 中新增 §5.1 Implement 阶段可解析评分块（四维：功能性、代码质量、测试覆盖、安全性）；将 §5 正文对 §4.1 的引用改为 §5.1",
+      "acceptanceCriteria": [
+        "§5.1 存在且四维名为 功能性、代码质量、测试覆盖、安全性",
+        "§5 引用 §5.1",
+        "§4.1 未被误改"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "产出: skills/speckit-workflow/references/audit-prompts.md"
+    },
+    {
+      "id": "US-002",
+      "title": "验证 implement 审计 prompt 包含 §5.1",
+      "description": "验证 speckit-workflow §5.2 与 bmad-story-assistant 阶段四 implement 审计 prompt 包含 §5.1 要求；必要时修正",
+      "acceptanceCriteria": [
+        "两条路径的 prompt 均可追溯到 §5.1 要求",
+        "必要时已修正 workflow 或模板"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "依赖 T1；产出: skills/speckit-workflow/SKILL.md、skills/bmad-story-assistant/SKILL.md"
+    },
+    {
+      "id": "US-003",
+      "title": "创建 audit-prompts-code.md",
+      "description": "在 references/ 创建 audit-prompts-code.md，可解析块为 §5.1 四维格式，文件头注释说明对应关系",
+      "acceptanceCriteria": [
+        "文件存在",
+        "可解析块含四维（功能性、代码质量、测试覆盖、安全性）",
+        "与 config modes.code 一致"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "依赖 T1；产出: skills/speckit-workflow/references/audit-prompts-code.md"
+    },
+    {
+      "id": "US-004",
+      "title": "dimension-parser 四维单元/集成测试",
+      "description": "对含四维的 implement 报告运行解析，断言 dimension_scores 长度为 4 且四维名称正确",
+      "acceptanceCriteria": [
+        "单测或集成测通过",
+        "断言 dimension_scores 四维完整"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "TDD 红绿灯；产出: scoring/parsers/__tests__/ 或 scoring/orchestrator/__tests__/"
+    },
+    {
+      "id": "US-005",
+      "title": "更新 docs/BMAD 文档与 §5.1 一致",
+      "description": "检查并更新审计报告格式与解析约定，若有 implement 可解析块描述则与 §5.1 一致；若无则增加引用",
+      "acceptanceCriteria": [
+        "文档与 §5.1 一致或已引用"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "依赖 T1；产出: docs/BMAD/审计报告格式与解析约定.md"
+    }
+  ]
+}

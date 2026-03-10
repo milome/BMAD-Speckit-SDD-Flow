@@ -1,0 +1,19 @@
+{
+  "branchName": "ralph/BUGFIX_post-impl-audit-marked-optional",
+  "taskDescription": "BUGFIX：实施后审计被标为可选 - 修改 bmad-story-assistant、bmad-bug-assistant 技能，明确实施后审计为必须步骤",
+  "projectContext": {
+    "framework": "BMAD/Bug Assistant Skills",
+    "testCommand": "grep 检索 + 人工验收",
+    "buildCommand": "N/A"
+  },
+  "userStories": [
+    {"id": "US-001", "title": "T1: Dev Story 流程增补实施后审计（必须）", "description": "bmad-story-assistant Dev Story 流程步骤 5 之后增补步骤 6", "acceptanceCriteria": ["段落存在且明确必须"], "priority": 1, "passes": true, "notes": ""},
+    {"id": "US-002", "title": "T2: STORY-A3-DEV 模板末尾增补主 Agent 职责", "description": "模板含主 Agent 必须发起实施后审计的说明", "acceptanceCriteria": ["模板含该说明"], "priority": 2, "passes": true, "notes": ""},
+    {"id": "US-003", "title": "T3: 阶段四首段增补本阶段为必须", "description": "阶段四首段含「本阶段为必须步骤，非可选」", "acceptanceCriteria": ["阶段四首段含该句"], "priority": 3, "passes": true, "notes": ""},
+    {"id": "US-004", "title": "T4: 示例 1 步骤 4 明确实施后审计为必须", "description": "示例 1 步骤 4 已更新", "acceptanceCriteria": ["示例 1 步骤 4 已更新"], "priority": 4, "passes": true, "notes": ""},
+    {"id": "US-005", "title": "T5: README/流程概览实施后审计节点标注", "description": "流程图/说明已更新", "acceptanceCriteria": ["流程图/说明已更新"], "priority": 5, "passes": true, "notes": ""},
+    {"id": "US-006", "title": "T6: bmad-bug-assistant 流程定义增补", "description": "流程说明已更新", "acceptanceCriteria": ["流程说明已更新"], "priority": 6, "passes": true, "notes": ""},
+    {"id": "US-007", "title": "T7: grep 检索确认无不当组合", "description": "检索报告或确认无问题", "acceptanceCriteria": ["检索报告或确认无问题"], "priority": 7, "passes": true, "notes": ""},
+    {"id": "US-008", "title": "T8: 回归验证 Dev Story 1.2", "description": "执行记录或测试通过", "acceptanceCriteria": ["执行记录或测试通过"], "priority": 8, "passes": false, "notes": ""}
+  ]
+}

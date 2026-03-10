@@ -1,0 +1,25 @@
+{
+  "run_id": "dev-e9-s5-story-1772823528754",
+  "scenario": "real_dev",
+  "stage": "story",
+  "phase_score": 100,
+  "phase_weight": 0.2,
+  "check_items": [
+    {
+      "item_id": "story_overall",
+      "passed": true,
+      "score_delta": 0,
+      "note": "从维度评分"
+    }
+  ],
+  "timestamp": "2026-03-06T18:58:48.775Z",
+  "iteration_count": 0,
+  "iteration_records": [],
+  "first_pass": true,
+  "veto_triggered": false,
+  "tier_coefficient": 1,
+  "base_commit_hash": "2870f4b9",
+  "content_hash": "124400312c44b8de9889cd602b81ed42028f3ed0b93a9f0b25ee805de6692eca",
+  "trigger_stage": "bmad_story_stage2",
+  "path_type": "full"
+}

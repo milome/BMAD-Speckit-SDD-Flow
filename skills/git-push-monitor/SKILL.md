@@ -11,9 +11,9 @@ Automatically monitor git push operations that may take a long time or hang. Sta
 
 脚本随 skill 安装在 **Cursor 用户目录** 下，与其它 Cursor skill 一致，便于迁移到其它机器：
 
-- **约定目录**：`<用户主目录>\.cursor\skills\git-push-monitor\scripts\`
-  - Windows：用户主目录一般为 `%USERPROFILE%`（如 `C:\Users\<用户名>`）
-  - Linux/macOS：用户主目录为 `$HOME` 或 `~`
+- **约定目录**：`{SKILLS_ROOT}\git-push-monitor\scripts\`
+  - Windows (PowerShell): `$HOME\.cursor\skills\git-push-monitor\scripts\`
+  - Linux/macOS: `~/.cursor/skills/git-push-monitor/scripts/`
 - **PowerShell 可移植写法**（推荐，任意机器执行同一套命令即可）：
   - `$HOME\.cursor\skills\git-push-monitor\scripts\monitor-push.ps1`
   - `$HOME\.cursor\skills\git-push-monitor\scripts\start-push-with-monitor.ps1`

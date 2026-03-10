@@ -1,0 +1,25 @@
+{
+  "run_id": "eval-q005-defect-critical-auditor-ratio-v1-1772880366760",
+  "scenario": "eval_question",
+  "stage": "prd",
+  "phase_score": 100,
+  "phase_weight": 0.2,
+  "check_items": [
+    {
+      "item_id": "prd-issue-1",
+      "passed": false,
+      "score_delta": -2,
+      "note": "若回答仅泛泛而谈、无具体根因或步骤，判为未通过"
+    }
+  ],
+  "timestamp": "2026-03-07T10:46:06.769Z",
+  "iteration_count": 0,
+  "iteration_records": [],
+  "first_pass": true,
+  "veto_triggered": false,
+  "tier_coefficient": 1,
+  "question_version": "v1",
+  "base_commit_hash": "614890a5",
+  "content_hash": "b858141057a8676992e25ad74966b1ae90d022f1f3da23e6687c1efaed67b15d",
+  "path_type": "full"
+}

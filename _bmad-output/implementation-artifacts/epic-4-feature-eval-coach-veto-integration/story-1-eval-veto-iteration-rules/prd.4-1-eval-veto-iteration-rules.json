@@ -1,0 +1,65 @@
+{
+  "branchName": "ralph/eval-veto-iteration-rules",
+  "taskDescription": "Story 4.1: 一票否决项与环节映射、阶梯系数、Epic 8 项判定模块",
+  "projectContext": {
+    "framework": "TypeScript/Node",
+    "testCommand": "npm test",
+    "buildCommand": "npx tsc --noEmit"
+  },
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "环节级 veto 判定 (T1)",
+      "description": "isVetoTriggered、buildVetoItemIds；单元测试覆盖 veto 类 item_id",
+      "acceptanceCriteria": ["isVetoTriggered 正确判定", "buildVetoItemIds 从 loadPhaseScoringYaml、loadGapsScoringYaml 构建", "npm test -- scoring/veto 通过"],
+      "priority": 1,
+      "passes": true,
+      "notes": "T1.1-T1.3"
+    },
+    {
+      "id": "US-002",
+      "title": "阶梯系数计算 (T2)",
+      "description": "getTierCoefficient、applyTierToPhaseScore；severity_override 顺序",
+      "acceptanceCriteria": ["iteration_count 0/1/2/≥3 → 1.0/0.8/0.5/0", "fatal≥3→0；serious≥2→降一档", "npm test -- scoring/veto 通过"],
+      "priority": 2,
+      "passes": true,
+      "notes": "T2.1-T2.3"
+    },
+    {
+      "id": "US-003",
+      "title": "applyTierAndVeto 编排 (T3)",
+      "description": "applyTierAndVeto 先 veto 后 tier",
+      "acceptanceCriteria": ["veto 触发→phase_score=0", "未触发→phase_score=raw×tier", "与 RunScoreRecord 兼容"],
+      "priority": 3,
+      "passes": true,
+      "notes": "T3.1-T3.2"
+    },
+    {
+      "id": "US-004",
+      "title": "Epic 8 项判定 (T4)",
+      "description": "evaluateEpicVeto、EpicVetoInput",
+      "acceptanceCriteria": ["8 项至少 6 项有单元测试", "evaluateEpicVeto 返回 triggered、triggeredConditions"],
+      "priority": 4,
+      "passes": true,
+      "notes": "T4.1-T4.4"
+    },
+    {
+      "id": "US-005",
+      "title": "角色 veto 规则文档化 (T5)",
+      "description": "VETO_AND_ITERATION_RULES.md",
+      "acceptanceCriteria": ["文档存在且含批判审计员、AI 教练触发条件与后果"],
+      "priority": 5,
+      "passes": true,
+      "notes": "T5.1-T5.2"
+    },
+    {
+      "id": "US-006",
+      "title": "可调用入口与集成 (T6)",
+      "description": "scoring/veto 导出；parse-and-write 集成；accept-e4-s1",
+      "acceptanceCriteria": ["applyTierAndVeto 可导入", "parse-and-write 或评分流程调用 applyTierAndVeto", "accept-e4-s1 通过"],
+      "priority": 6,
+      "passes": true,
+      "notes": "T6.1-T6.3"
+    }
+  ]
+}

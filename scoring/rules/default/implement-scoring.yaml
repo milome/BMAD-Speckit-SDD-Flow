@@ -1,0 +1,46 @@
+# 环节 2：代码开发与工程规范
+# Architecture §9.2、REQUIREMENTS §3.11
+version: "1.0"
+stage: implement
+link_stage: [tasks, post_impl]
+link_环节: 2
+
+weights:
+  base:
+    functional_correctness: 30
+    code_standards: 18
+    exception_handling: 12
+  bonus:
+    security_compliance: 20
+    performance_maintainability: 20
+
+items:
+  - id: func_correct
+    ref: code-reviewer-config#functional_correctness
+    deduct: 10
+  - id: code_standards
+    ref: code-reviewer-config#naming_conventions
+    deduct: 2
+  - id: exception_handling
+    ref: code-reviewer-config#exception_handling
+    deduct: 4
+  - id: security
+    ref: code-reviewer-config#owasp_top10
+    deduct: 10
+  - id: perf_maintain
+    ref: code-reviewer-config#complexity_maintainability
+    deduct: 10
+
+veto_items:
+  - id: veto_core_logic_error
+    ref: code-reviewer-config#veto_core_logic
+    consequence: stage_0_level_down
+  - id: veto_high_security
+    ref: code-reviewer-config#veto_owasp_high
+    consequence: stage_0_level_down
+  - id: veto_compile_fail
+    ref: code-reviewer-config#veto_compile
+    consequence: stage_0_level_down
+  - id: veto_hardcoded_secret
+    ref: code-reviewer-config#veto_cwe798
+    consequence: stage_0_level_down

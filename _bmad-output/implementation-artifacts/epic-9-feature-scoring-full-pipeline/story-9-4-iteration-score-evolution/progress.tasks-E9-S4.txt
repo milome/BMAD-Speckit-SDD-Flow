@@ -1,0 +1,45 @@
+Story 9.4 迭代评分演进存储 - 实施进度
+========================================
+
+2026-03-07 创建 prd.tasks-E9-S4.json、progress.tasks-E9-S4.txt
+
+## US-001 T1: IterationRecord schema 扩展
+[TDD-RED] US-001 旧 record 无 overall_grade 时 schema 校验须通过（扩展前已满足）
+[TDD-GREEN] US-001 扩展 overall_grade、dimension_scores optional；npm run test:scoring -- scoring/__tests__/schema => 4 passed
+[TDD-REFACTOR] US-001 无需重构 ✓
+
+## US-002 T2: parseAndWriteScore iterationReportPaths
+[TDD-RED] US-002 单测 2 fail+1 pass → 3 iteration_records（实现前无）
+[TDD-GREEN] US-002 实现 iterationReportPaths；单测 3 条通过
+[TDD-REFACTOR] US-002 无需重构 ✓
+
+## US-003 T3: CLI --iterationReportPaths
+[TDD-RED] US-003 --help 不含 iterationReportPaths（实现前）
+[TDD-GREEN] US-003 新增 --iterationReportPaths；usage 更新；传入 parseAndWriteScore
+[TDD-REFACTOR] US-003 无需重构 ✓
+
+## US-004 T4: speckit-workflow 路径约定
+无生产代码，文档约定 ✓
+
+## US-005 T5: bmad-story-assistant 路径约定
+无生产代码，文档约定 ✓
+
+## US-006 T6: Coach 演进轨迹展示
+[TDD-RED] US-006 实现前 coach 输出不含 stageEvolutionTraces 段落
+[TDD-GREEN] US-006 diagnose.ts stageEvolutionTraces；format.ts 演进轨迹段落
+[TDD-REFACTOR] US-006 无需重构 ✓
+
+## US-007 T7: 仪表盘演进轨迹展示
+[TDD-RED] US-007 实现前 dashboard 输出不含 formatIterationEvolution 展示
+[TDD-GREEN] US-007 compute.ts formatIterationEvolution；format.ts 追加展示
+[TDD-REFACTOR] US-007 无需重构 ✓
+
+## US-008 T8: 文档更新
+文档 §2.4 ✓
+
+## US-009 T9: 单元测试与 E2E
+[TDD-RED] US-009 实现前 orchestrator/coach/dashboard 相关单测缺失或失败
+[TDD-GREEN] US-009 npm run test:scoring => 393 passed
+[TDD-REFACTOR] US-009 无需重构 ✓
+
+2026-03-07 实施完成。验收通过。

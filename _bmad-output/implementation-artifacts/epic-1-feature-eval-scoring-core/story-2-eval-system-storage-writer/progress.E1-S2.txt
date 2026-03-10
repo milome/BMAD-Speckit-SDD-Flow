@@ -1,0 +1,25 @@
+=== Story 1.2 eval-system-storage-writer 进度追踪 ===
+2026-03-04 实施完成；实施后审计发现 GAP 并修复后补建本文件
+
+[TDD-RED] T1 类型与主接口 => 写测试：writeScoreRecordSync 存在、接受合法 record + 各 mode
+[TDD-GREEN] T1 实现 types、validate、writeScoreRecordSync 骨架 => 单测通过
+
+[TDD-RED] T2 单文件写入 => 写测试：写入后文件存在、同 run_id 覆盖
+[TDD-GREEN] T2 实现 ensureDataDir、writeSingleFile（write-score.ts 内联）=> 单测通过
+
+[TDD-RED] T3 JSONL 追加 => 写测试：行数递增、每行合法
+[TDD-GREEN] T3 实现 appendJsonl（write-score.ts 内联）=> 单测通过
+
+[TDD-GREEN] T4 双模式分发 => 在 T1 分发中区分 single_file / jsonl / both，补测
+
+[TDD-RED] T5 目录创建与 check_items => 写测试：无 data 目录时创建、check_items 原样
+[TDD-GREEN] T5 由 T2 ensureDataDir 与序列化保证 => 补测通过
+
+[TDD-GREEN] T6 accept-e1-s2.ts => AC-1～AC-7 全部 PASS
+
+--- 实施后审计修复（2026-03-04）---
+GAP-1: 删除孤岛模块 single-file.ts、jsonl-append.ts、ensure-dir.ts，以 write-score.ts 为唯一实现
+GAP-2: 创建 prd.E1-S2.json、progress.E1-S2.txt（本文件）
+GAP-3: 删除 types.ts 中 WriteScoreRecordOptions 重复声明
+
+2026-03-04 复验：单测 8 passed，accept:e1-s2 9 passed

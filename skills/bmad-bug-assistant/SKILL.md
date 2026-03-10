@@ -6,7 +6,7 @@ description: |
 
 # BMAD Bug 助手
 
-本 skill 定义 **根因分析 → BUGFIX 文档 → 审计 →（可选）信息补充更新 → 任务列表补充 → 实施 → 实施后审计** 的完整工作流。
+本 skill 定义 **根因分析 → BUGFIX 文档 → 审计 →（可选）信息补充更新 → 任务列表补充 → 实施 → 实施后审计** 的完整工作流。**实施后审计为必须步骤，非可选。**未通过时必须按修改建议修复后再次审计，直至通过。
 
 ## 强制约束（必须遵守）
 
@@ -37,7 +37,7 @@ description: |
 | 阶段二 | {用户补充的现象、步骤、环境等} | 用户补充内容 | 一段话 | 子代理无补充信息 |
 | 阶段二 | {主 Agent 填入路径} | BUGFIX 文档完整路径 | _bmad-output/BUGFIX_xxx_2026-02-27.md | 子代理无法定位文档 |
 | 阶段三 | {主 Agent 填入 BUGFIX 文档路径} | BUGFIX 文档完整路径 | 同上 | 同上 |
-| 阶段三 | {project-root} | 项目根目录绝对路径，不含末尾 / | d:\Dev\micang-trader-015-indicator-system-refactor | 子代理无法定位项目 |
+| 阶段三 | {project-root} | 项目根目录绝对路径，不含末尾 / | d:\Dev\my-project | 子代理无法定位项目 |
 | 阶段三审计 | {主 Agent 填入 BUGFIX 文档路径} | 同上 | 同上 | 子代理无法定位文档 |
 | 阶段四 | {主 Agent 填入} | BUGFIX 文档完整路径 | 同上 | 同上 |
 | 阶段四 | {project-root} | 同上 | 同上 | 同上 |
@@ -49,6 +49,7 @@ description: |
 | **party-mode** | `{project-root}/_bmad/core/workflows/party-mode/`；轮次与收敛见 step-02（BUGFIX 产出最终方案与 §7 任务列表：至少 100 轮；其它：50 轮；收敛条件再结束）。 |
 | **code-reviewer 子代理** | `.claude/agents/code-reviewer.md` 或 `.cursor/agents/code-reviewer.md`；找不到则用 `mcp_task` 调用 `generalPurpose` |
 | **audit-prompts §5** | `references/audit-prompts-section5.md`（本 skill 内）或 `{project-root}/docs/speckit/skills/speckit-workflow/references/audit-prompts.md`；**仅作其他工作流参考，不用于本 skill 的 BUGFIX 文档审计**。 |
+| **audit-document-iteration-rules** | `skills/speckit-workflow/references/audit-document-iteration-rules.md`；阶段一、二、三的 BUGFIX **文档**审计须遵循：审计子代理在发现 gap 时须直接修改 BUGFIX 文档。阶段四为实施后审计（代码），不适用。 |
 | **ralph-method** | 使用 ralph-method skill：prd、progress 文件，按 US 顺序执行 |
 | **speckit-workflow** | 禁止伪实现、必须运行验收命令、架构忠实 |
 | **改进说明（本技能）** | {project-root}/_bmad-output/BMAD_BUG_助手技能提示词与审计改进说明.md |
@@ -133,7 +134,7 @@ description: |
 
 **触发时机**：用户在本项目或 worktree 首次使用本 skill 时。
 
-**检查逻辑**：若检测到当前为新 worktree（例如 cwd 为与项目根平级的 worktree 目录如 `micang-trader-{branch}`，或 `_bmad` 为全新安装），且 `_bmad-output/bmad-customization-backups/` 存在备份，则提示用户：
+**检查逻辑**：若检测到当前为新 worktree（例如 cwd 为与项目根平级的 worktree 目录如 `my-project-{branch}`，或 `_bmad` 为全新安装），且 `_bmad-output/bmad-customization-backups/` 存在备份，则提示用户：
 
 > 检测到当前为新 worktree。若需恢复 _bmad 定制，可运行：`python {SKILLS_ROOT}/bmad-customization-backup/scripts/apply_bmad_backup.py --backup-path "{最新备份路径}" --project-root "{当前项目根}"`。最新备份路径为 `_bmad-output/bmad-customization-backups/` 下按时间戳排序的最新目录。
 
@@ -146,9 +147,9 @@ description: |
 **有 story 上下文的 BUGFIX**：
 | 产出 | 路径 |
 |------|------|
-| BUGFIX 文档 | `_bmad-output/implementation-artifacts/{epic}-{story}-{slug}/BUGFIX_{slug}.md` |
-| TASKS | `_bmad-output/implementation-artifacts/{epic}-{story}-{slug}/TASKS_BUGFIX_{slug}.md` |
-| prd、progress | `_bmad-output/implementation-artifacts/{epic}-{story}-{slug}/prd.BUGFIX_{slug}.json`、`progress.BUGFIX_{slug}.txt` |
+| BUGFIX 文档 | `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/BUGFIX_{slug}.md` |
+| TASKS | `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/TASKS_BUGFIX_{slug}.md` |
+| prd、progress | `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/prd.BUGFIX_{slug}.json`、`progress.BUGFIX_{slug}.txt` |
 
 **无 story 上下文的 BUGFIX**：
 | 产出 | 路径 |
@@ -221,6 +222,10 @@ description: |
 5. 全文是否使用中文、无技术债占位。
 
 报告结尾必须按以下格式输出：结论：通过 / 未通过。必达子项：① §1 完整可复现；② §2 与共识一致且有证据；③ §4 明确无禁止词；④ §5 可执行可验证；⑤ 全文中文无技术债；⑥ 本报告结论格式符合本段要求。若任一项不满足则结论为未通过，并列出不满足项及每条对应的修改建议（含「删除可选项」或「将某段改为明确描述」）。
+
+**审计未通过时**：你（审计子代理）须在本轮内**直接修改 BUGFIX 文档**以消除 gap，修改完成后在报告中注明已修改内容；主 Agent 收到报告后再次发起审计。禁止仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules.md](../speckit-workflow/references/audit-document-iteration-rules.md)。
+
+**审计未通过时**：你（审计子代理）须在本轮内**直接修改 BUGFIX 文档**以消除 gap，修改完成后在报告中注明已修改内容；主 Agent 收到报告后再次发起审计。禁止仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules.md](../speckit-workflow/references/audit-document-iteration-rules.md)。
 ```
 
 ---
@@ -247,7 +252,7 @@ description: |
 2. 替换占位符：`{用户补充的现象、步骤、环境等}` → 用户实际补充内容；`{主 Agent 填入路径}` → BUGFIX 文档的完整路径（如 `_bmad-output/BUGFIX_xxx_2026-02-27.md`）。
 3. 发起辩论子任务；子任务返回后，根据产出更新 BUGFIX 文档（若主 Agent 直接按分析更新文档，则本步可合并到步骤 2 的产出）。
 4. **【必做】** 发起审计子任务：使用模板 ID **BUG-A1-AUDIT**（阶段一审计完整 prompt 模板）整段复制，子代理为 **code-reviewer** 或 **mcp_task generalPurpose**。
-5. **【必做】** 若审计结论为未通过，按修改建议执行（委托子代理或主 Agent 修改文档/代码），然后再次发起审计；重复直至结论为「完全覆盖、验证通过」。**禁止**在未通过时仅做一轮审计即结束。
+5. **【必做】** 若审计结论为未通过，**审计子代理须在本轮内直接修改 BUGFIX 文档**以消除 gap；主 Agent 收到报告后再次发起审计。禁止仅输出修改建议而不修改文档。文档审计迭代规则见 [audit-document-iteration-rules.md](../speckit-workflow/references/audit-document-iteration-rules.md)。重复直至结论为「完全覆盖、验证通过」。**禁止**在未通过时仅做一轮审计即结束。
 
 **简化路径**：若用户提供的补充信息已充分（如已有根因分析文档），主 Agent 可直接按分析更新 BUGFIX 文档，**但必须**在更新后发起审计子任务（BUG-A1-AUDIT）并迭代至通过。辩论可省略，审计不可省略。
 
@@ -299,7 +304,7 @@ description: |
 3. 输出自检结果（格式见「主 Agent 传递提示词规则」中的自检结果示例）。
 4. 发起子任务；子代理应产出更新后的 BUGFIX 文档（含 §7），并写入原文件路径。
 5. **【必做】** 子任务返回后，发起审计子任务：使用模板 **BUG-A3-AUDIT**（阶段三 §7 审计完整 prompt 模板）整段复制，子代理为 **code-reviewer** 或 **mcp_task generalPurpose**。
-6. **【必做】** 若审计结论为未通过，按修改建议执行（委托子代理或主 Agent 修改文档），然后再次发起审计；重复直至结论为「通过」。**禁止**在未通过时仅做一轮审计即结束。
+6. **【必做】** 若审计结论为未通过，**审计子代理须在本轮内直接修改 BUGFIX 文档**；主 Agent 收到报告后再次发起审计。禁止仅输出修改建议而不修改文档。文档审计迭代规则见 [audit-document-iteration-rules.md](../speckit-workflow/references/audit-document-iteration-rules.md)。重复直至结论为「通过」。**禁止**在未通过时仅做一轮审计即结束。
 
 **禁止**：不得在未完成步骤 2、3 的情况下执行步骤 4。不得在步骤 4 产出 §7 后省略步骤 5、6。
 
@@ -357,6 +362,8 @@ description: |
 6. §6 辩论纪要是否与 §7 一致；若有冲突以 §4 为准。
 
 报告结尾必须按以下格式输出：结论：通过 / 未通过。必达子项 1–6 如上；若任一项不满足则结论为未通过，并列出不满足项及每条对应的修改建议。
+
+**审计未通过时**：你（审计子代理）须在本轮内**直接修改 BUGFIX 文档**以消除 gap，修改完成后在报告中注明已修改内容；主 Agent 收到报告后再次发起审计。禁止仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules.md](../speckit-workflow/references/audit-document-iteration-rules.md)。
 ```
 
 ---
@@ -384,7 +391,7 @@ description: |
 在发起 mcp_task 前，**必须**确认 prompt 中包含以下全部内容，否则子代理无法遵守 ralph-method 与 TDD 红绿灯：
 
 - [ ] ralph-method：prd/progress 创建与更新规则（含命名规则、每 US 完成后更新）
-- [ ] TDD 红绿灯：先改测试（红灯）→ 实现（绿灯）→ 重构；每步运行验收；progress 须含 [TDD-RED]/[TDD-GREEN] 格式记录（见 bmad-story-assistant §3.2）
+- [ ] TDD 红绿灯：先改测试（红灯）→ 实现（绿灯）→ 重构；每步运行验收；progress 须含 [TDD-RED]/[TDD-GREEN]/[TDD-REFACTOR] 格式记录（见 bmad-story-assistant §3.2）
 - [ ] 「请读取 ralph-method 与 speckit-workflow 技能」或等效的**内联约束**（见下方模板）
 - [ ] BUGFIX 文档路径、任务列表所在章节（§7 或 §8.1 等）、项目根目录
 - [ ] 任务列表所在章节已明确写出（§7 或 §8.1）。
@@ -399,10 +406,11 @@ description: |
 ```
 你是一位非常资深的开发专家 Amelia 开发（对应 BMAD 开发职责），负责按 BUGFIX 文档与任务列表执行实施。请按以下规范执行。
 
-【必做】TDD 红绿灯记录：每完成一个涉及生产代码的任务的绿灯后，**立即**在 progress 追加两行：
+【必做】TDD 红绿灯记录：每完成一个涉及生产代码的任务的绿灯后，**立即**在 progress 追加三行：
 `[TDD-RED] <任务ID> <验收命令> => N failed`
 `[TDD-GREEN] <任务ID> <验收命令> => N passed`
-交付前自检：对照 §7 逐项检查——若该任务涉及生产代码，progress 中是否有 [TDD-RED] 与 [TDD-GREEN] 各至少一行？若否，补充后再交付。
+`[TDD-REFACTOR] <任务ID> <内容> | 无需重构 ✓`
+交付前自检：对照 §7 逐项检查——若该任务涉及生产代码，progress 中是否有 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 各至少一行，且 [TDD-RED] 在 [TDD-GREEN] 之前？若否，补充后再交付。
 
 **BUGFIX 文档路径**：{主 Agent 填入}
 **任务列表**：见上述文档的 §7（任务列表）或 §8.1（实施步骤），请根据文档实际结构确定章节。
@@ -421,16 +429,17 @@ description: |
 
 1. **ralph-method**：
    - 实施开始前，在 BUGFIX 文档同目录创建 `prd.{stem}.json` 与 `progress.{stem}.txt`（stem 为 BUGFIX 文件名无扩展名，如 BUGFIX_foo_2026-02-26）。
-   - 将任务列表中的每项映射为 prd 中的 user story，初始 passes=false。
+   - 将任务列表中的每项映射为 prd 中的 user story，初始 passes=false。**prd 须符合 ralph-method schema**：涉及生产代码的 US 含 `involvesProductionCode: true` 与 `tddSteps`（RED/GREEN/REFACTOR 三阶段）；仅文档/配置的含 `tddSteps`（DONE 单阶段）。
+   - **progress 预填 TDD 槽位**：生成 progress 时，对每个 US 预填 `[TDD-RED] _pending_`、`[TDD-GREEN] _pending_`、`[TDD-REFACTOR] _pending_` 或 `[DONE] _pending_`，涉及生产代码的 US 含三者，仅文档/配置的含 [DONE]；执行时将 `_pending_` 替换为实际结果。
    - 每完成一项任务（US），必须：① 将对应 story 的 passes 设为 true；② 在 progress 中追加时间戳与完成说明。
    - 按 US 顺序执行，不得跳过。
 
-2. **TDD 红绿灯**（必须严格按顺序执行，不可跳过）：
+2. **TDD 红绿灯**（必须严格按顺序执行，不可跳过）：**每个 US 须独立执行 RED→GREEN→REFACTOR**；禁止仅对首个 US 执行 TDD 后对后续 US 跳过红灯直接实现。
    - **红灯**：对当前 US 涉及的生产行为，先新增或修改测试/验收（如 pytest、验收命令），使验收**失败**（红灯），并记录或输出失败结果。
    - **绿灯**：再实现或修改生产代码，使上述验收**通过**（绿灯），并运行验收命令确认。
    - **重构**：若实现后代码可读性或结构可改进，在验收仍通过的前提下进行重构，并再次运行验收确认。
    - 若当前 US 不涉及生产代码（仅文档、配置等），仅运行该 US 规定的验收命令并通过即可。
-   - **progress 必须包含**每子步骤的验收命令与结果，格式：`[TDD-RED] <任务ID> <验收命令> => N failed`、`[TDD-GREEN] <任务ID> <验收命令> => N passed`。手动验收可用 `[TDD-RED] 手动：…`、`[TDD-GREEN] 手动：…`。完成红灯子步骤后**立即**在 progress 追加 `[TDD-RED] ...`；完成绿灯子步骤后**立即**追加 `[TDD-GREEN] ...`。禁止用「最终回归全部通过」替代逐任务的 TDD 记录。实施时须在 progress 中按 bmad-story-assistant §3.2 要求记录 TDD 红灯→绿灯。**回归失败且用户拒绝排除时**：当回归/验收命令执行后存在失败用例，且用户**拒绝**批准排除时，须在 progress 中**立即**追加 [TDD-RED] 记录，格式：`[TDD-RED] <任务ID> <验收命令> => N failed, M passed（用户拒绝批准排除，N 个失败用例须修复）`。该记录须在进入修复流程**之前**写入。必备字段：任务 ID、验收命令、失败数、通过数、用户决策。
+   - **progress 必须包含**每子步骤的验收命令与结果，格式：`[TDD-RED] <任务ID> <验收命令> => N failed`、`[TDD-GREEN] <任务ID> <验收命令> => N passed`、`[TDD-REFACTOR] <任务ID> <内容> | 无需重构 ✓`。手动验收可用 `[TDD-RED] 手动：…`、`[TDD-GREEN] 手动：…`。完成红灯子步骤后**立即**在 progress 追加 `[TDD-RED] ...`；完成绿灯子步骤后**立即**追加 `[TDD-GREEN] ...`；**无论是否有重构**，须追加 `[TDD-REFACTOR]`（无具体重构时写「无需重构 ✓」）。禁止用「最终回归全部通过」替代逐任务的 TDD 记录。实施时须在 progress 中按 bmad-story-assistant §3.2 要求记录 TDD 红灯→绿灯→重构。**回归失败且用户拒绝排除时**：当回归/验收命令执行后存在失败用例，且用户**拒绝**批准排除时，须在 progress 中**立即**追加 [TDD-RED] 记录，格式：`[TDD-RED] <任务ID> <验收命令> => N failed, M passed（用户拒绝批准排除，N 个失败用例须修复）`。该记录须在进入修复流程**之前**写入。必备字段：任务 ID、验收命令、失败数、通过数、用户决策。
 
 3. **speckit-workflow**：禁止伪实现与占位；必须运行验收命令；架构忠实于 BUGFIX 文档。
 
@@ -442,7 +451,7 @@ description: |
 
 7. 全程使用中文撰写注释、提交与进度说明。
 
-**交付前自检**：对照 BUGFIX §7，逐项检查：若该任务涉及生产代码，progress 中是否有 [TDD-RED] 与 [TDD-GREEN] 各至少一行？若否，补充后再交付。
+**交付前自检**：对照 BUGFIX §7，逐项检查：若该任务涉及生产代码，progress 中是否有 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 各至少一行，且 [TDD-RED] 在 [TDD-GREEN] 之前？若否，补充后再交付。
 
 请读取 ralph-method 与 speckit-workflow 技能（若可访问），严格按其中规则执行；若无法访问技能，则按上述内联约束执行。
 
@@ -469,6 +478,22 @@ Amelia 开发 的规范已在上方 5 条中列出，子代理按内联执行即
 
 **未通过时必做（禁止只跑一轮即结束）**：若审计结论为「**未通过**」或审计报告中列出未通过项及修改建议，主 Agent **必须**按修改建议执行（委托子代理修改代码或更新 BUGFIX/文档），然后**再次发起**实施后审计（使用同一模板 BUG-A4-POSTAUDIT）；重复「审计 → 若未通过则按建议修改 → 再审计」直至结论为「**完全覆盖、验证通过**」。禁止在结论为未通过时仅做一轮审计即结束或向用户报告完成。
 
+**审计通过后评分写入（必须执行）**：实施后审计结论为「完全覆盖、验证通过」后，主 Agent **必须**调用 `parseAndWriteScore` 将 implement 阶段评分写入 scoring 存储。当存在 BUGFIX 文档时，**必须**显式传入 `artifactDocPath=<BUGFIX 文档路径>`，以确保 `record.source_path` 正确指向 BUGFIX 文档（而非审计报告路径）。
+
+**CLI 调用示例**（在项目根目录执行）：
+```bash
+npx ts-node scripts/parse-and-write-score.ts \
+  --reportPath <审计报告路径> \
+  --stage implement \
+  --epic {epic} \
+  --story {story} \
+  --artifactDocPath <BUGFIX 文档路径> \
+  --iteration-count <累计失败轮数，0 表示一次通过> \
+  --skipTriggerCheck true
+```
+
+**路径约定**：`artifactDocPath` 取值与「产出路径约定」一致——有 story 时：`_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/BUGFIX_{slug}.md`；无 story 时：`_bmad-output/implementation-artifacts/_orphan/BUGFIX_{slug}.md`。
+
 **模板 ID**：BUG-A4-POSTAUDIT。**阶段四实施后审计完整 prompt 模板**（主 Agent 必须完整复制到审计子任务的 prompt 中）：
 
 ```
@@ -484,13 +509,13 @@ Amelia 开发 的规范已在上方 5 条中列出，子代理按内联执行即
 3. 验收标准是否已按实际运行结果验证通过（若 §7 中写了验收命令，审计员必须执行该命令并报告通过/失败）。
 4. **Amelia 开发规范**：① 是否按任务顺序执行；② 每项是否均有运行验收并通过；③ 是否无标记完成但未实现；④ 是否无「将在后续迭代」表述；⑤ 注释与提交是否中文。
 5. **ralph-method**：是否存在 prd.{stem}.json 与 progress.{stem}.txt，progress 中是否按 US 有完成时间戳与说明。
-6. **TDD 红绿灯**：对 §7（或 §8.1）中涉及生产代码的每一项，是否先有失败验收（红灯）再实现并通过验收（绿灯）；**progress 是否包含**每任务的 `[TDD-RED]` 与 `[TDD-GREEN]` 记录（含验收命令与结果）；若无则判不通过。验证方式：`grep -E "\[TDD-(RED|GREEN)\]" progress.*.txt` 或目视检查；禁止用「最终回归通过」替代逐任务记录。不满足项⑥的修改建议：在 progress 中按 bmad-story-assistant §3.2 格式补充 [TDD-RED] 与 [TDD-GREEN] 记录；**须针对每个缺失任务写出可复制的具体示例**，如「Task 3 应补充：[TDD-RED] T3 pytest tests/xxx -v => 1 failed；[TDD-GREEN] T3 pytest tests/xxx -v => 1 passed」。**回归失败且用户拒绝排除**：若 §7 中存在回归任务，且实际执行时存在失败用例，且用户拒绝批准排除，则 progress 中**必须**包含对应的 [TDD-RED] 记录，格式须含：任务 ID、验收命令、失败数、通过数、「用户拒绝批准排除」。验证方式：`grep -E "\[TDD-RED\].*用户拒绝" progress.*.txt` 或目视检查。若无则判不通过，修改建议：在 progress 中补充，例如「[TDD-RED] US-003 pytest vnpy_datamanager/ -v => 16 failed, 46 passed（用户拒绝批准排除，16 个失败用例须修复）」。
+6. **TDD 红绿灯**：对 §7（或 §8.1）中涉及生产代码的每一项，是否先有失败验收（红灯）再实现并通过验收（绿灯）；**progress 是否包含**每任务的 `[TDD-RED]`、`[TDD-GREEN]`、`[TDD-REFACTOR]` 记录（含验收命令与结果）；若无则判不通过。**TDD 三项验证**：涉及生产代码的每个 US 须含 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 各至少一行（[TDD-REFACTOR] 允许写「无需重构 ✓」，禁止省略）。**TDD 顺序验证**：对每个任务的 progress 记录，[TDD-RED] 须在 [TDD-GREEN] 之前出现；若同一任务下 [TDD-GREEN] 在 [TDD-RED] 之前或缺少 [TDD-RED]，判为「事后补写」，结论未通过。验证方式：`grep -E "\[TDD-(RED|GREEN|REFACTOR)\]" progress.*.txt` 或目视检查；禁止用「最终回归通过」替代逐任务记录。不满足项⑥的修改建议：在 progress 中按 bmad-story-assistant §3.2 格式补充 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 记录；**须针对每个缺失任务写出可复制的具体示例**，如「Task 3 应补充：[TDD-RED] T3 pytest tests/xxx -v => 1 failed；[TDD-GREEN] T3 pytest tests/xxx -v => 1 passed；[TDD-REFACTOR] T3 无需重构 ✓」。**回归失败且用户拒绝排除**：若 §7 中存在回归任务，且实际执行时存在失败用例，且用户拒绝批准排除，则 progress 中**必须**包含对应的 [TDD-RED] 记录，格式须含：任务 ID、验收命令、失败数、通过数、「用户拒绝批准排除」。验证方式：`grep -E "\[TDD-RED\].*用户拒绝" progress.*.txt` 或目视检查。若无则判不通过，修改建议：在 progress 中补充，例如「[TDD-RED] US-003 pytest vnpy_datamanager/ -v => 16 failed, 46 passed（用户拒绝批准排除，16 个失败用例须修复）」。
 7. **speckit-workflow**：是否无伪实现、是否运行验收命令、是否架构忠实。
 8. 是否无「将在后续迭代」等延迟表述。
-9. **回归/验收失败用例**：回归或验收命令执行结果中，失败用例数为 0，或所有失败已列入正式排除清单且清单路径、格式与理由符合本技能「正式排除失败用例的规定」并经本轮审计通过；禁止存在未记录或未审计通过的排除。若验收/审计结论中出现本技能禁止词表中「失败排除」相关禁止词（既有问题可排除、与本次无关、历史问题暂不处理、环境问题可忽略）且无对应正式排除记录，结论为未通过。**禁止自动生成 exclude**：若审计员或实施子代理在本次审计/实施过程中产出了 EXCLUDED_TESTS_*.md 或类似排除清单文件，且**未经用户明确批准**，结论为未通过。排除清单的创建/更新必须经用户明确批准。
+9. **回归/验收失败用例**：**【回归判定强制规则】** 任何在本 Story 实施前已存在的测试用例，若实施后失败，一律视为回归，须在本轮修复或经用户批准后列入正式排除清单。禁止以「与 Story X 相关」「与本 Story 无关」「来自前置 Story」等理由排除失败用例。判定标准：实施前全量测试通过清单 ∩ 实施后失败清单 = 回归用例集。**强制步骤**：执行全量/回归测试，获取完整通过/失败列表；对每个失败用例核对是否存在于「实施前已存在」的用例集，若存在则标记为回归，须在审计结论中列为「须修复」或「已列入正式排除清单（附用户批准依据）」；禁止以「非本 Story 范围」为由排除。**结论绑定**：若审计结论或验收说明中出现「与 Story X 相关」「与本 Story 无关」「来自 Story 11.1」等表述且用于排除失败用例，且无对应正式排除记录（EXCLUDED_TESTS_*.md 经用户批准），结论为未通过。回归或验收命令执行结果中，失败用例数为 0，或所有失败已列入正式排除清单且清单路径、格式与理由符合本技能「正式排除失败用例的规定」并经本轮审计通过；禁止存在未记录或未审计通过的排除。**禁止自动生成 exclude**：若审计员或实施子代理在本次审计/实施过程中产出了 EXCLUDED_TESTS_*.md 或类似排除清单文件，且**未经用户明确批准**，结论为未通过。排除清单的创建/更新必须经用户明确批准。
 10. **主 Agent 兜底 cleanup**：若子任务涉及运行 pytest（§7 或验收命令含 pytest），主 Agent 是否在子任务返回或超时后执行了 4.1.5 规定的兜底 cleanup（检查 `_bmad-output/current_pytest_session_pid.txt`，若存在则执行 `cleanup_test_processes.py --only-from-file --session-pid` 并删除该文件）；若未执行且子任务涉及 pytest，结论为未通过。
 
-验证方式：阅读代码、grep 关键符号、**执行 §7 或文档规定的验收/回归命令并获取完整通过/失败列表**；若存在失败，**核对正式排除清单（若有）并确认每项符合「正式排除」规定**；运行 pytest 等验收命令、核对 §7 验收；**对审计项⑥**：`grep -E "\[TDD-(RED|GREEN)\]" progress.*.txt` 或目视检查 progress 是否含每任务的 [TDD-RED] 与 [TDD-GREEN] 记录；**对审计项⑩**：若 §7 或验收涉及 pytest，确认主 Agent 在子任务返回后执行了兜底 cleanup。
+验证方式：阅读代码、grep 关键符号、**执行 §7 或文档规定的验收/回归命令并获取完整通过/失败列表**；若存在失败，**核对正式排除清单（若有）并确认每项符合「正式排除」规定**；运行 pytest 等验收命令、核对 §7 验收；**对审计项⑥**：`grep -E "\[TDD-(RED|GREEN|REFACTOR)\]" progress.*.txt` 或目视检查 progress 是否含每任务的 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 记录；**对审计项⑩**：若 §7 或验收涉及 pytest，确认主 Agent 在子任务返回后执行了兜底 cleanup。
 
 报告结尾必须按以下格式输出：结论：通过 / 未通过。必达子项 1–10 如上；⑩ 主 Agent 兜底 cleanup（若涉及 pytest）；若任一项不满足则结论为未通过，并列出不满足项及每条对应的修改建议。
 ```
@@ -523,7 +548,7 @@ Amelia 开发 的规范已在上方 5 条中列出，子代理按内联执行即
 
 用户：「为 BUGFIX 文档补充最终任务列表。」
 
-主 Agent：执行阶段三——将「阶段三任务列表补充完整 prompt 模板」整段复制，填入 BUGFIX 文档路径与项目根目录后发起 mcp_task；子代理产出含 §7 的更新文档后，将「阶段三 §7 审计完整 prompt 模板」整段复制后发起审计子任务；若审计未通过，须按修改建议修改文档后再次发起审计，直至通过。
+主 Agent：执行阶段三——将「阶段三任务列表补充完整 prompt 模板」整段复制，填入 BUGFIX 文档路径与项目根目录后发起 mcp_task；子代理产出含 §7 的更新文档后，将「阶段三 §7 审计完整 prompt 模板」整段复制后发起审计子任务；若审计未通过，**审计子代理须在本轮内直接修改 BUGFIX 文档**，主 Agent 收到报告后再次发起审计，直至通过。
 
 ### 示例 4：实施修复
 

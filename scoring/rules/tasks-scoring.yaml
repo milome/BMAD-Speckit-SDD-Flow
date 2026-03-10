@@ -1,3 +1,29 @@
-# Placeholder: tasks stage scoring dimensions (see §4.2)
-# stage: tasks
-# dimensions: task executability, GAPS mapping, acceptance criteria
+version: "1.0"
+stage: tasks
+link_stage: [tasks, implement]
+link_环节: 1
+
+weights:
+  base:
+    test_coverage: 35
+    case_quality: 35
+    regression_tests: 30
+
+items:
+  - id: task_executability
+    ref: code-reviewer-config#test_coverage
+    deduct: 10
+  - id: acceptance_quality
+    ref: code-reviewer-config#case_quality
+    deduct: 8
+  - id: regression_readiness
+    ref: code-reviewer-config#regression_tests
+    deduct: 8
+
+veto_items:
+  - id: veto_core_logic_error
+    ref: code-reviewer-config#veto_core_logic
+    consequence: stage_0_level_down
+  - id: veto_compile_fail
+    ref: code-reviewer-config#veto_compile
+    consequence: stage_0_level_down

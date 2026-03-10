@@ -1,0 +1,15 @@
+{
+  "run_id": "sample-run",
+  "scenario": "real_dev",
+  "stage": "implement",
+  "path_type": "full",
+  "phase_score": 22,
+  "phase_weight": 0.25,
+  "check_items": [
+    { "item_id": "func_correct", "passed": true, "score_delta": 0, "note": "" }
+  ],
+  "timestamp": "2026-03-04T12:00:00.000Z",
+  "iteration_count": 0,
+  "iteration_records": [],
+  "first_pass": true
+}

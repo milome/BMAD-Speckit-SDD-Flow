@@ -1,0 +1,26 @@
+# Progress: tasks-E12-S4 (Post-init 引导)
+
+# Total stories: 4
+
+Current: US-004, Completed: 4
+
+---
+# Story log
+
+## US-001: Post-init 引导 stdout 输出
+[TDD-RED] testE12S4PostInitGuide added => E12-S4-post-init-guide FAIL (speckit.constitution missing)
+[TDD-GREEN] Replaced 3x console.log with POST_INIT_GUIDE_MSG => 39 passed
+[TDD-REFACTOR] Extracted POST_INIT_GUIDE_MSG constant, tests pass
+
+## US-002: 模板含 bmad-help 命令
+[TDD-RED] N/A - template files
+[TDD-GREEN] Created _bmad/cursor/commands/bmad-help.md
+[TDD-REFACTOR] 无需重构 ✓
+
+## US-003: 模板含 speckit.constitution 命令
+[TDD-RED] N/A - template files
+[TDD-GREEN] Created _bmad/cursor/commands/speckit.constitution.md
+[TDD-REFACTOR] 无需重构 ✓
+
+## US-004: 验收与文档
+[DONE] E2E E12-S4-post-init-guide, E12-S4-commands-exist pass; init.js Post-init 引导注释已添加

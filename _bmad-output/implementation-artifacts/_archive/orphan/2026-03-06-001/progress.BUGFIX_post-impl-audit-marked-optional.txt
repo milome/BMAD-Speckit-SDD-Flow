@@ -1,0 +1,17 @@
+# Progress: BUGFIX_post-impl-audit-marked-optional
+# Total stories: 8
+
+Current story: 8
+Completed: 7
+
+---
+# Story log
+[2026-03-04] US-001: T1 Dev Story 流程增补「6. 实施后审计（必须）」 - PASSED
+[2026-03-04] US-002: T2 STORY-A3-DEV 模板末尾增补主 Agent 职责 - PASSED
+[2026-03-04] US-003: T3 阶段四首段增补「本阶段为必须步骤，非可选」 - PASSED
+[2026-03-04] US-004: T4 示例 1 步骤 4 明确实施后审计为必须 - PASSED
+[2026-03-04] US-005: T5 README/流程概览实施后审计节点标注「必须」 - PASSED
+[2026-03-04] US-006: T6 bmad-bug-assistant 流程定义增补 - PASSED
+[2026-03-04] US-007: T7 grep 检索 - 确认无「实施后审计」与「可选」不当组合 - PASSED
+  T7 检索报告：grep "实施后审计.*可选|可选.*实施后审计" 无命中。bmad-bug-assistant 中「（可选）」仅修饰「信息补充更新」；REQUIREMENTS、PARTY_MODE 等文档中「pr_review 可选」为明确例外。BUGFIX 文档本身为问题描述，非流程约定。结论：无不当组合。
+[2026-03-04] US-008: T8 回归验证 - 需用户/主 Agent 手动触发 Dev Story 1.2 验证 - PENDING_USER

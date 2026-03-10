@@ -1,0 +1,42 @@
+# Progress: TASKS_installation-improvement
+# Total stories: 12
+
+Current story: 12
+Completed: 12
+
+---
+# Story log
+
+[2026-03-06] US-001: T-SYNC-2 补齐 speckit 命令 - PASSED
+[2026-03-06] US-002: T-SYNC-3 同步 code-reviewer-config - PASSED
+[2026-03-06] US-003: T-XPLAT-1 PATH_CONVENTIONS.md - PASSED
+[2026-03-06] US-004: T-INSTALL-1 扩展 init-to-root.js - PASSED
+[2026-03-06] US-005: T-XPLAT-2 coach-trigger.yaml - PASSED
+[2026-03-06] US-006: T-XPLAT-3 scoring/coach/config.ts - PASSED
+[2026-03-06] US-007: T-INSTALL-2/3/4 setup.ps1 - PASSED
+[2026-03-06] US-008: T-INSTALL-5 package.json - PASSED
+[2026-03-06] US-009: T-XPLAT-4~8 文档路径统一 - PASSED
+[2026-03-06] US-010: T-QUICKSTART-1 QUICKSTART.md - PASSED
+[2026-03-06] US-011: T-README-1 README.md - PASSED
+[2026-03-06] US-012: T-README-2 安装指南 - PASSED
+
+---
+# 验收命令运行结果
+
+[T-SYNC-2] Copy-Item 9 speckit 命令到 .cursor/commands - OK
+[T-SYNC-3] config -> .cursor/agents/code-reviewer-config.yaml - OK (211行, items+veto_items)
+[T-XPLAT-1] docs/PATH_CONVENTIONS.md 已创建 - OK
+[T-INSTALL-1] node scripts/init-to-root.js D:\Dev\test-project - 4 dirs, .cursor sync - OK
+[T-INSTALL-1] node scripts/init-to-root.js --full D:\Dev\test-project-full - 7 dirs, .cursor sync - OK
+[T-XPLAT-2] config/coach-trigger.yaml 使用 {SKILLS_ROOT} - OK
+[T-XPLAT-3] scoring/coach/config.ts os.homedir() 展开 - OK
+[T-INSTALL-2] pwsh scripts/setup.ps1 -Target D:\Dev\new-project -DryRun - OK
+[T-INSTALL-2] pwsh scripts/setup.ps1 -Target D:\Dev\new-project - 20 checks passed - OK
+
+---
+# §5 审计 GAP 修复 (2026-03-06)
+
+[G1] setup:full 与 TASKS 一致：setup.ps1 增加 -Full 参数，package.json setup:full 传入 -Full
+[G2] PowerShell 版本检查：$PSVersionTable.PSVersion.Major -lt 7 时报错退出
+[G3] QUICKSTART §2 验证命令：明确「在目标项目根目录执行」，改为相对路径 _bmad\scripts\bmad-speckit\powershell\check-prerequisites.ps1
+[G4] progress T-SYNC-3 行数：204 → 211

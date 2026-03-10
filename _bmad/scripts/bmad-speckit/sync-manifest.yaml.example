@@ -1,5 +1,5 @@
 # sync-manifest.yaml 示例（与 双repo_bmad_speckit_智能同步方案.md §5 路径映射一致）
-# path_a: micang-trader 相对路径，path_b: 新 repo 相对路径
+# path_a: your-project 相对路径，path_b: 新 repo 相对路径
 # 校验脚本：_bmad/scripts/bmad-speckit/powershell/validate-sync-manifest.ps1 或 python/validate_sync_manifest.py
 paths:
   - path_a: "_bmad/"

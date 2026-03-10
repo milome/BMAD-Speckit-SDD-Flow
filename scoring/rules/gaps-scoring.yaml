@@ -1,0 +1,25 @@
+# Gaps 前置完整性、后置闭合度评分规则
+# Architecture §9、REQUIREMENTS §3.7、§3.11
+# 前置 40% spec_coverage；后置 implement 占环节 2 的 30%、post_impl 占环节 6 的 50%
+version: "1.0"
+stage: gaps
+link_stage: [plan, tasks]
+link_环节: 1
+
+weights:
+  base:
+    spec_coverage: 40
+    gap_definition: 30
+    risk_anticipation: 30
+  post_implement:
+    implement_closure: 30
+  post_post_impl:
+    post_impl_closure: 50
+
+veto_items:
+  - id: veto_core_unmapped
+    ref: code-reviewer-config#veto_core_unmapped
+    consequence: gaps_pre_0_veto
+  - id: veto_gaps_conflict
+    ref: code-reviewer-config#veto_gaps_conflict
+    consequence: gaps_pre_0_veto

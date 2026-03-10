@@ -1,0 +1,103 @@
+{
+  "branchName": "ralph/eval-ai-coach",
+  "taskDescription": "Story 4.2: AI 代码教练模块（配置、诊断、格式化、veto联动、CLI与验收）",
+  "projectContext": {
+    "framework": "TypeScript/Node",
+    "testCommand": "npm test",
+    "buildCommand": "npx tsc --noEmit"
+  },
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "教练定义文档化 (T1)",
+      "description": "新增 AI_COACH_DEFINITION.md，覆盖定位、职责、BMAD 四维 persona、需求映射与文档自检",
+      "acceptanceCriteria": [
+        "AI_COACH_DEFINITION.md 存在且包含 role、identity、communication_style、principles",
+        "包含 REQUIREMENTS §3.14 逐条映射并明确边界",
+        "文档自检清单完成并记录结果"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "T1.1-T1.3"
+    },
+    {
+      "id": "US-002",
+      "title": "技能配置与 fallback (T2)",
+      "description": "新增 coach trigger 配置与加载逻辑；Skill 不可用时 fallback 到既有 scoring 数据解读",
+      "acceptanceCriteria": [
+        "存在 config/coach-trigger.yaml 且 auto_trigger_post_impl 默认 false",
+        "config loader 返回必引 Skill、触发开关、运行模式",
+        "fallback 路径在 Skill 不可用时稳定返回并保持输出字段完整"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "T2.1-T2.4"
+    },
+    {
+      "id": "US-003",
+      "title": "工作流入口与输出格式 (T3)",
+      "description": "实现 types、loader、diagnose 主流程、markdown formatter 与 index 导出",
+      "acceptanceCriteria": [
+        "coachDiagnose(runId, options?) 可加载 run 记录并处理 run_not_found",
+        "输出包含 summary、phase_scores、weak_areas、recommendations、iteration_passed",
+        "支持 JSON/Markdown 双格式输出"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "T3.1-T3.5"
+    },
+    {
+      "id": "US-004",
+      "title": "一票否决联动判定 (T4)",
+      "description": "复用 applyTierAndVeto 与 evaluateEpicVeto 计算 iteration_passed，并对齐规则文档",
+      "acceptanceCriteria": [
+        "iteration_passed = !epicVeto.triggered && 无 story veto && 无致命 phase_score=0",
+        "判定规则与 scoring/docs/VETO_AND_ITERATION_RULES.md §3.4.2 对齐",
+        "veto 场景、Epic veto 场景、全通过场景测试覆盖"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "T4.1-T4.3"
+    },
+    {
+      "id": "US-005",
+      "title": "禁止表述校验 (T5)",
+      "description": "实现 forbidden-words 配置与校验器，主导词阻断、模糊词告警",
+      "acceptanceCriteria": [
+        "forbidden-words.yaml 包含主导表述与模糊表述",
+        "主导词命中时报错拒绝，模糊词命中告警记录",
+        "通过/不通过样本测试覆盖并符合 spec §2.7"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "T5.1-T5.3"
+    },
+    {
+      "id": "US-006",
+      "title": "CLI 与端到端验收 (T6)",
+      "description": "提供 coach CLI、README、integration/e2e 测试与 accept-e4-s2 脚本",
+      "acceptanceCriteria": [
+        "scripts/coach-diagnose.ts 可通过 --run-id 与 --format 调用",
+        "scripts/accept-e4-s2.ts 验证 JSON/Markdown 双格式输出与关键字段完整",
+        "coach 模块被生产关键路径导入并调用（CLI + 验收脚本）"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": "T6.1-T6.4"
+    },
+    {
+      "id": "US-007",
+      "title": "Manifest 入驻与路由防御 (T7)",
+      "description": "新增 ai-coach manifest/persona，diagnose 外置 persona 加载，补齐 bmad-master 与文档路由防御边界",
+      "acceptanceCriteria": [
+        "agent-manifest.csv 存在 ai-coach 条目且 capabilities 仅限 scoring 分析/短板诊断/改进建议",
+        "_bmad/scoring/agents/ai-coach.md 含 role、identity、communication_style、principles 与拒绝分析防御条款",
+        "coachDiagnose 优先从 manifest/ai-coach.md 加载 persona，加载失败回退最小安全 persona",
+        "bmad-master 与说明文档明确 scoring ai-coach 不进入常规 /bmad ask 可见/自动调度列表"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": "T7.1-T7.4 + T7-audit-fix(persona strict priority, TDD RED/GREEN/REFACTOR evidence)"
+    }
+  ]
+}

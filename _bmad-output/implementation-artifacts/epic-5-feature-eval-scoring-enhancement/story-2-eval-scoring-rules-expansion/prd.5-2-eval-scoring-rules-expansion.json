@@ -1,0 +1,37 @@
+{
+  "branchName": "ralph/e5-s2-eval-scoring-rules-expansion",
+  "taskDescription": "Story 5.2: B03 三阶段评分规则落地 + B11 四维加权评分",
+  "projectContext": {
+    "framework": "TypeScript/Node",
+    "testCommand": "npm test",
+    "buildCommand": "npx tsc --noEmit"
+  },
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "B03 三阶段规则与通用解析",
+      "description": "实现 spec/plan/tasks 规则 YAML、AuditStage 扩展、audit-generic 解析与路由分发",
+      "acceptanceCriteria": [
+        "spec/plan/tasks 阶段均可解析并写入 phase_weight=0.2",
+        "缺失总体评级时抛出 ParseError",
+        "spec 阶段可在 veto 规则中生效"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "T1.1-T2.4 + T4.1/T4.3/T4.6 + T5.1/T5.4 已完成；补齐 T2.4 的通用提取复用。"
+    },
+    {
+      "id": "US-002",
+      "title": "B11 四维加权评分",
+      "description": "实现 dimension-parser、stageToMode、dimension_scores 写入与 fallback",
+      "acceptanceCriteria": [
+        "可从报告提取维度分并基于配置权重加权",
+        "有维度分时覆盖 phase_score 并写入 dimension_scores",
+        "无维度分或配置失败时回退等级映射且不中断"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "T3.1-T3.7 + T4.2/T4.4/T4.5 + T5.2/T5.3/T5.5 已完成；补齐无列表前缀维度分解析。"
+    }
+  ]
+}
