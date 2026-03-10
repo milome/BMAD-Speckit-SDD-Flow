@@ -1,0 +1,2 @@
+# Shell scripts: force LF for WSL/Linux compatibility
+*.sh text eol=lf

@@ -1,0 +1,24 @@
+{
+  "branchName": "ralph/open-source-prep-upstream",
+  "taskDescription": "开源准备与上游维护：config 清理、LICENSE、README、NOTICES、UPSTREAM、CHANGELOG",
+  "projectContext": {
+    "framework": "BMAD + speckit",
+    "testCommand": "npm test",
+    "buildCommand": "npm run build"
+  },
+  "userStories": [
+    {"id": "US-001", "title": "T1: 清理 bmm/config.yaml 项目专用信息", "description": "将 project_name、user_name 改为占位", "acceptanceCriteria": ["grep 不出现 micang-trader、Micang"], "priority": 1, "passes": true, "involvesProductionCode": true, "tddSteps": [{"phase": "DONE", "description": "修改并验收", "acceptanceCommand": "grep -E 'project_name|user_name' _bmad/bmm/config.yaml", "passes": true}]},
+    {"id": "US-002", "title": "T2: 全局替换 micang-trader、Micang 硬编码", "description": "配置/模板类文件中无匹配", "acceptanceCriteria": ["rg 在配置/模板类文件中无匹配"], "priority": 2, "passes": true, "involvesProductionCode": true, "tddSteps": [{"phase": "DONE", "description": "替换并验收", "acceptanceCommand": "rg -l 'micang-trader|Micang' --glob '!node_modules' --glob '!*.json' .", "passes": true}]},
+    {"id": "US-003", "title": "T3: 仓库根添加 MIT LICENSE", "description": "标准 MIT 文本", "acceptanceCriteria": ["LICENSE 存在且首行含 MIT License"], "priority": 3, "passes": true, "involvesProductionCode": false, "tddSteps": [{"phase": "DONE", "description": "创建 LICENSE", "passes": true}]},
+    {"id": "US-004", "title": "T4: README Built on 与 Credits", "description": "已有可补充", "acceptanceCriteria": ["grep Built on|BMAD-METHOD|spec-kit 有匹配"], "priority": 4, "passes": true, "involvesProductionCode": false, "tddSteps": [{"phase": "DONE", "description": "验证/补充", "passes": true}]},
+    {"id": "US-005", "title": "T5: 创建 NOTICES 或 ATTRIBUTIONS.md", "description": "含 BMAD-METHOD、spec-kit 名称/许可/链接", "acceptanceCriteria": ["文件存在且含要求内容"], "priority": 5, "passes": true, "involvesProductionCode": false, "tddSteps": [{"phase": "DONE", "description": "创建文件", "passes": true}]},
+    {"id": "US-006", "title": "T6: 创建 docs/UPSTREAM.md", "description": "依赖表、定制范围、同步策略、排除清单", "acceptanceCriteria": ["文件存在且含相关段落"], "priority": 6, "passes": true, "involvesProductionCode": false, "tddSteps": [{"phase": "DONE", "description": "创建 UPSTREAM.md", "passes": true}]},
+    {"id": "US-007", "title": "T7: .gitignore 排除 .env、*.key、*secret*", "description": "避免泄露", "acceptanceCriteria": ["git check-ignore -v .env 有输出"], "priority": 7, "passes": true, "involvesProductionCode": true, "tddSteps": [{"phase": "DONE", "description": "检查/创建 .gitignore", "passes": true}]},
+    {"id": "US-008", "title": "T8: README 补充 init/check 命令与安装链接", "description": "可复制命令和有效链接", "acceptanceCriteria": ["含 init、check、INSTALLATION"], "priority": 8, "passes": true, "involvesProductionCode": false, "tddSteps": [{"phase": "DONE", "description": "补充", "passes": true}]},
+    {"id": "US-009", "title": "T9: UPSTREAM.md 固化排除清单", "description": "scoring、adversarial-reviewer、critical-auditor 等", "acceptanceCriteria": ["含完整排除路径"], "priority": 9, "passes": true, "involvesProductionCode": false, "tddSteps": [{"phase": "DONE", "description": "写入排除清单", "passes": true}]},
+    {"id": "US-010", "title": "T10: 文档注明 bmad-sync-from-v6.ps1 引用", "description": "同步脚本使用说明", "acceptanceCriteria": ["文档含脚本引用及使用说明"], "priority": 10, "passes": true, "involvesProductionCode": false, "tddSteps": [{"phase": "DONE", "description": "补充文档", "passes": true}]},
+    {"id": "US-011", "title": "T11: 记录 upstream 版本", "description": "BMAD v6.0.1、spec-kit 来源", "acceptanceCriteria": ["有明确记录"], "priority": 11, "passes": true, "involvesProductionCode": false, "tddSteps": [{"phase": "DONE", "description": "写入 UPSTREAM.md", "passes": true}]},
+    {"id": "US-012", "title": "T12: 将「无定期同步」写入文档", "description": "按需同步策略", "acceptanceCriteria": ["含按需/同步策略说明"], "priority": 12, "passes": true, "involvesProductionCode": false, "tddSteps": [{"phase": "DONE", "description": "写入", "passes": true}]},
+    {"id": "US-013", "title": "T14: 建立 CHANGELOG.md", "description": "Keep a Changelog 格式，至少一个版本条目", "acceptanceCriteria": ["文件存在且含版本条目"], "priority": 13, "passes": true, "involvesProductionCode": false, "tddSteps": [{"phase": "DONE", "description": "创建 CHANGELOG", "passes": true}]}
+  ]
+}

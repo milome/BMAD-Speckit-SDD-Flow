@@ -37,7 +37,7 @@ description: |
 | 阶段二 | {用户补充的现象、步骤、环境等} | 用户补充内容 | 一段话 | 子代理无补充信息 |
 | 阶段二 | {主 Agent 填入路径} | BUGFIX 文档完整路径 | _bmad-output/BUGFIX_xxx_2026-02-27.md | 子代理无法定位文档 |
 | 阶段三 | {主 Agent 填入 BUGFIX 文档路径} | BUGFIX 文档完整路径 | 同上 | 同上 |
-| 阶段三 | {project-root} | 项目根目录绝对路径，不含末尾 / | d:\Dev\micang-trader-015-indicator-system-refactor | 子代理无法定位项目 |
+| 阶段三 | {project-root} | 项目根目录绝对路径，不含末尾 / | d:\Dev\my-project | 子代理无法定位项目 |
 | 阶段三审计 | {主 Agent 填入 BUGFIX 文档路径} | 同上 | 同上 | 子代理无法定位文档 |
 | 阶段四 | {主 Agent 填入} | BUGFIX 文档完整路径 | 同上 | 同上 |
 | 阶段四 | {project-root} | 同上 | 同上 | 同上 |
@@ -134,7 +134,7 @@ description: |
 
 **触发时机**：用户在本项目或 worktree 首次使用本 skill 时。
 
-**检查逻辑**：若检测到当前为新 worktree（例如 cwd 为与项目根平级的 worktree 目录如 `micang-trader-{branch}`，或 `_bmad` 为全新安装），且 `_bmad-output/bmad-customization-backups/` 存在备份，则提示用户：
+**检查逻辑**：若检测到当前为新 worktree（例如 cwd 为与项目根平级的 worktree 目录如 `my-project-{branch}`，或 `_bmad` 为全新安装），且 `_bmad-output/bmad-customization-backups/` 存在备份，则提示用户：
 
 > 检测到当前为新 worktree。若需恢复 _bmad 定制，可运行：`python {SKILLS_ROOT}/bmad-customization-backup/scripts/apply_bmad_backup.py --backup-path "{最新备份路径}" --project-root "{当前项目根}"`。最新备份路径为 `_bmad-output/bmad-customization-backups/` 下按时间戳排序的最新目录。
 

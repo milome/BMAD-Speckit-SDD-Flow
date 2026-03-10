@@ -371,7 +371,7 @@ foreach ($skill in $requiredSkills) {
 
 ```powershell
 # 迁移前评估脚本
-$projectRoot = "D:\Dev\micang-trader-015-indicator-system-refactor"
+$projectRoot = "D:\Dev\your-project"   # 替换为你的项目路径
 
 Write-Host "=== 迁移前评估 ===" -ForegroundColor Cyan
 
@@ -394,7 +394,7 @@ foreach ($d in $dirsToCheck) {
 
 ```powershell
 $SOURCE = "D:\Dev\BMAD-Speckit-SDD-Flow"
-$TARGET = "D:\Dev\micang-trader-015-indicator-system-refactor"
+$TARGET = "D:\Dev\your-project"   # 替换为你的目标项目路径
 
 # 步骤 1: 备份现有 _bmad 定制（若有修改）
 python "$SOURCE\skills\bmad-customization-backup\scripts\backup_bmad.py" --project-root $TARGET
@@ -545,7 +545,7 @@ if (-not (Test-Path "$TARGET\_bmad\core\workflows\party-mode\workflow.md")) {
 
 ```powershell
 # 完整迁移验证
-$TARGET = "D:\Dev\micang-trader-015-indicator-system-refactor"
+$TARGET = "D:\Dev\your-project"   # 替换为你的项目路径
 Set-Location $TARGET
 
 Write-Host "=== 迁移验证 ===" -ForegroundColor Cyan

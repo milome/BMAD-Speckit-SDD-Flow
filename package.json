@@ -6,7 +6,9 @@
     "postinstall": "node scripts/init-to-root.js",
     "init": "node scripts/init-to-root.js",
     "setup": "pwsh scripts/setup.ps1",
+    "setup:sh": "bash scripts/setup.sh",
     "setup:full": "pwsh scripts/setup.ps1 -Full",
+    "setup:full:sh": "bash scripts/setup.sh -Full",
     "test": "vitest run && npm run test:bmad-speckit",
     "test:scoring": "vitest run scoring",
     "test:bmad-speckit": "cd packages/bmad-speckit && node --test tests/",
@@ -27,7 +29,8 @@
   },
   "bin": {
     "bmad-speckit-init": "scripts/init-to-root.js",
-    "bmad-speckit-setup": "scripts/setup.ps1"
+    "bmad-speckit-setup": "scripts/setup.ps1",
+    "bmad-speckit-setup-sh": "scripts/setup.sh"
   },
   "files": [
     "_bmad",

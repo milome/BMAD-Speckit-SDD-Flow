@@ -152,7 +152,7 @@ def compare_entry(
 def main() -> int:
     ap = argparse.ArgumentParser(description="Validate sync-manifest between two repo roots (checksum).")
     ap.add_argument("--manifest", "-m", required=True, help="Path to sync-manifest.yaml")
-    ap.add_argument("--repo-a", "-a", required=True, help="Repo A root (e.g. micang-trader)")
+    ap.add_argument("--repo-a", "-a", required=True, help="Repo A root (e.g. your-project)")
     ap.add_argument("--repo-b", "-b", required=True, help="Repo B root (e.g. BMAD-Speckit-SDD-Flow)")
     ap.add_argument("--quiet", "-q", action="store_true", help="Only print summary and failures")
     args = ap.parse_args()

@@ -312,7 +312,7 @@ BMAD-Speckit-SDD-Flow/
 
 ### 5.1 假设
 
-- 新仓库与现有业务项目（如 micang-trader）**解耦**，仅作为工作流与脚本的提供方；使用方通过克隆或引用将命令/规则/脚本复制到业务项目中。
+- 新仓库与现有业务项目（如 your-project）**解耦**，仅作为工作流与脚本的提供方；使用方通过克隆或引用将命令/规则/脚本复制到业务项目中。
 - Cursor 全局 skills 的**副本**或**安装说明**放在新仓库 `skills/` 下，不要求新仓库必须安装 Cursor；若使用其他 IDE，仅使用脚本与文档也可部分复现流程。
 - 当前项目内 **audit-prompts、mapping-tables、qa-agent-rules、tasks-acceptance-templates** 若不存在于 docs 或 speckit-workflow skill 内，则迁移时在 `docs/references/` 留占位与说明，后续从 skill 或上游补齐。
 - **_bmad** 可从 BMAD 官方仓库或现有使用方获取完整目录后纳入新仓库；**_bmad-output** 在新仓库中可为空骨架，安装到项目根时在项目根创建同名目录即可。

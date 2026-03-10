@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Environment and secrets
+.env
+.env.*
+*.key
+*secret*
+*.pem
+secrets/
+
+# Build and cache
+dist/
+build/
+.cache/
+.pytest_cache/
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# BMAD output (optional: track artifacts or ignore)
+# _bmad-output/
