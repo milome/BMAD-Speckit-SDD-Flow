@@ -81,7 +81,7 @@ Welcome {{user_name}}! All BMAD agents are here and ready for a dynamic group di
 
 **Let me introduce our collaborating agents:**
 
-[Load agent roster and display 2-3 most diverse agents as examples. 介绍时必须使用展示名（displayName），与 `docs/BMAD/Cursor_BMAD_多Agent使用指南.md` 及 `_bmad/_config/agent-manifest.csv` 一致。示例：Winston 架构师、Amelia 开发、Mary 分析师、John 产品经理、BMad Master、Quinn 测试、Paige 技术写作、Sally UX、Barry Quick Flow、Bond Agent 构建、Morgan Module 构建、Wendy Workflow 构建、Victor 创新策略、Dr. Quinn 问题解决、Maya 设计思维、Carson 头脑风暴、Sophia 故事讲述、Caravaggio 演示、Murat 测试架构。]
+[Load agent roster and display 2-3 most diverse agents as examples. 介绍时必须使用展示名（displayName），与 `_bmad/_config/agent-manifest.csv` 一致。示例：Winston 架构师、Amelia 开发、Mary 分析师、John 产品经理、BMad Master、Quinn 测试、Paige 技术写作、Sally UX、Barry Quick Flow、Bond Agent 构建、Morgan Module 构建、Wendy Workflow 构建、Victor 创新策略、Dr. Quinn 问题解决、Maya 设计思维、Carson 头脑风暴、Sophia 故事讲述、Caravaggio 演示、Murat 测试架构。]
 
 **What would you like to discuss with the team today?**"
 

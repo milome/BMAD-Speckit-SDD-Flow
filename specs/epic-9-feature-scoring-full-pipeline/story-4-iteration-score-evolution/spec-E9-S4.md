@@ -123,7 +123,7 @@
 
 | 项 | 规格 |
 |------|------|
-| 修改路径 | `docs/BMAD/仪表盘健康度说明与数据分析指南.md` |
+| 修改路径 | `docs/仪表盘健康度说明与数据分析指南.md` |
 | 内容 | iteration_records 可含 overall_grade、dimension_scores；演进轨迹展示规则；单轮通过时 iteration_records 为空 |
 | 验收 | grep "iteration_records" 可查 |
 

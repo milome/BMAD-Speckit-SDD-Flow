@@ -6,8 +6,6 @@
 - **可追溯**：单次运行、单阶段得分可持久化并关联 artifact。
 - **与阶段对应**：spec / plan / tasks / implement，见 §4 设计。
 
-详见仓库根目录 `docs/BMAD/BMAD_Speckit_SDD_Flow_最优方案文档.md` §4。
-
 ## 架构（文字版）
 
 ```

@@ -20,7 +20,7 @@
 | AC-3 | 主 Agent 解析 reportPath；reportPath 不存在记录 SCORE_WRITE_SKIP_REPORT_MISSING | Phase 1.1 T3 | ✅ |
 | AC-4 | parse-and-write-score 支持 trigger_stage；record 含 speckit_5_2 | Phase 1.2 T4；§4.1 单测 record.trigger_stage | ✅ |
 | AC-5 | check-story-score-written 可运行；SKILL 嵌入检查 | Phase 2 T5；§4.2 集成测试 | ✅ |
-| AC-6 | docs/BMAD 新增「Story 完成自检」章节 | Phase 2 T6 | ✅ |
+| AC-6 | 新增「Story 完成自检」章节 | Phase 2 T6 | ✅ |
 | AC-7 | 聚合逻辑 aggregateByEpicStoryTimeWindow、getLatestRunRecordsV2 | Phase 3.1 T7；§4.3 单测 | ✅ |
 | AC-8 | dashboard-generate --strategy epic_story_window；fixture 断言总分与四维 | Phase 3.2 T8；§4.3 集成测试 | ⚠️ **GAP-B** |
 | AC-9 | getWeakTop3 按 epic/story；仪表盘含短板 | Phase 3.3 T9；§4.3 | ✅ |

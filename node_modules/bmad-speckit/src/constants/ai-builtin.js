@@ -1,6 +1,8 @@
 /**
- * Built-in 19+ AI list (PRD §5.3, ARCH §3.1, Story 10.1 T3)
- * Each item: id, name, description - for configTemplate extension (Story 12.1)
+ * Built-in 19+ AI list (PRD §5.3, ARCH §3.1, Story 10.1 T3).
+ * Each item: id, name, description - for configTemplate extension (Story 12.1).
+ * Used for init selection; full configTemplate comes from ai-registry-builtin.
+ * @type {Array<{ id: string, name: string, description: string }>}
  */
 module.exports = [
   { id: 'claude', name: 'Claude', description: 'Anthropic Claude (Claude Code, Claude Desktop)' },

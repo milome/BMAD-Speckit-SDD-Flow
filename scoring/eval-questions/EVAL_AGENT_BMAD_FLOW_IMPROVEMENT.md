@@ -131,7 +131,7 @@ npx ts-node scripts/eval-questions-cli.ts run --id q005 --version v1
 | `skills/bmad-story-assistant/SKILL.md` | 五层架构概览 | 提取「五层架构概览」段落（约 20 行） |
 | `skills/speckit-workflow/SKILL.md` | TDD、ralph-method、15 条铁律 | 提取关键段落或前 N 行 |
 | `skills/speckit-workflow/references/audit-prompts-critical-auditor-appendix.md` | 批判审计员格式 | 全文或必填结构段落 |
-| `docs/BMAD/审计报告格式与解析约定.md` | 可解析块格式 | 提取 §3 可解析块部分 |
+| `审计报告格式与解析约定.md` | 可解析块格式 | 提取 §3 可解析块部分 |
 
 **回退**：当上述路径不存在（如独立评测环境、skills 未安装）时，自动回退到精简版（§2 建议注入内容），避免运行失败。
 

@@ -13,6 +13,7 @@ const PS_FILENAME = 'bmad-speckit.ps1';
 /**
  * Path from script subdir to project root (for embedding in scripts).
  * Script lives at finalPath/_bmad/scripts/bmad-speckit/ so root is ../../..
+ * @returns {string} Relative path with forward slashes (e.g. '../../../').
  */
 function getRelToRootForSh() {
   const rel = path.join('..', '..', '..');
@@ -21,8 +22,10 @@ function getRelToRootForSh() {
 
 /**
  * Generate POSIX shell script content. All path logic uses path module; we embed the result.
+ * @param {string} [_finalPath] - Project root; unused, path is from getRelToRootForSh.
+ * @returns {string} Shell script content with platform EOL.
  */
-function buildShContent(finalPath) {
+function buildShContent(_finalPath) {
   const relToRoot = getRelToRootForSh();
   const eol = getPlatformEOL();
   const lines = [
@@ -38,8 +41,10 @@ function buildShContent(finalPath) {
 
 /**
  * Generate PowerShell script content. Paths via path module; PowerShell accepts backslashes.
+ * @param {string} [_finalPath] - Project root; used for path.join for relToRoot.
+ * @returns {string} PowerShell script content with platform EOL.
  */
-function buildPsContent(finalPath) {
+function buildPsContent(_finalPath) {
   const relToRoot = path.join('..', '..', '..');
   const binRel = path.join('node_modules', '.bin', 'bmad-speckit');
   const eol = getPlatformEOL();
@@ -56,8 +61,10 @@ function buildPsContent(finalPath) {
 
 /**
  * Ensure directory exists and write script file.
- * @param {string} finalPath - project root
- * @param {'sh'|'ps'} scriptType
+ * Creates _bmad/scripts/bmad-speckit/ and bmad-speckit.sh or bmad-speckit.ps1.
+ * @param {string} finalPath - Project root.
+ * @param {'sh'|'ps'} scriptType - Script type to generate.
+ * @returns {void}
  */
 function generateScript(finalPath, scriptType) {
   const scriptDir = path.join(finalPath, SCRIPT_DIR_REL);

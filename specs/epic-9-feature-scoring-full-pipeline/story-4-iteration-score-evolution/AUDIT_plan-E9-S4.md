@@ -18,7 +18,7 @@
 | spec §3.3 | CLI --iterationReportPaths | Phase 1.3 | 逗号分隔、传递 | ✅ |
 | spec §3.4, AC-3 | 失败轮路径约定 | Phase 2.1, 2.2 | speckit-workflow、bmad-story-assistant | ✅ |
 | spec §3.5, §3.6, AC-4 | Coach、仪表盘演进轨迹 | Phase 3.1, 3.2 | 格式、fixture | ✅ |
-| spec §3.7, AC-6 | 文档更新 | Phase 3.3 | docs/BMAD | ✅ |
+| spec §3.7, AC-6 | 文档更新 | Phase 3.3 | 仪表盘健康度文档 | ✅ |
 | spec §3.8 | 单元测试与 E2E | Phase 3.4 | parse-and-write、CLI、Coach/dashboard | ✅ |
 
 ### 1.2 集成测试与端到端专项审查

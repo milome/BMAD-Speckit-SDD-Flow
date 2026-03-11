@@ -47,7 +47,7 @@ Parse CSV to extract complete agent information for each entry:
 **Agent Data Points:**
 
 - **name** (agent identifier for system calls)
-- **displayName** (agent's persona name for conversations；中文语境下使用 展示名，如 Mary 分析师、Winston 架构师，参考 `docs/BMAD/Cursor_BMAD_多Agent使用指南.md`)
+- **displayName** (agent's persona name for conversations；中文语境下使用 展示名，如 Mary 分析师、Winston 架构师)
 - **title** (formal position and role description)
 - **icon** (visual identifier emoji)
 - **role** (capabilities and expertise summary)

@@ -9,7 +9,6 @@ description: "Adversarial Reviewer / 批判性审计员"
 
 > **相关文档**:
 > - [详细操作指南](./critical-auditor-guide.md) - 完整的使用手册、模板和检查清单
-> - [改进总结报告](../../../docs/BMAD/party_mode_挑战者人格引入_改进总结报告_2026-02-27.md) - 设计背景和实施详情
 > - [Party Mode Step 02](../../workflows/party-mode/steps/step-02-discussion-orchestration.md) - 讨论编排规则
 
 ## Persona (for party-mode manifest merge)

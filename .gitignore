@@ -15,6 +15,7 @@ build/
 .cache/
 .pytest_cache/
 *.log
+coverage/
 
 # IDE
 .idea/
@@ -26,9 +27,9 @@ build/
 .DS_Store
 Thumbs.db
 
-# BMAD output (optional: track artifacts or ignore)
-# _bmad-output/
+# BMAD output
+_bmad-output/
 
-# Temp / local
-tmp-*/
+# Documentation archives (BMAD historical artifacts)
+docs/BMAD/
 temp_commit_message.txt

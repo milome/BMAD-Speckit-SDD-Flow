@@ -67,7 +67,7 @@
 
 #### Phase 1.6：文档化约定（T6.2）
 
-1. **docs/BMAD/审计报告格式与解析约定.md** 或 **scoring/docs/** 或 **config/README**：补充「当 triggerStage 与 stage 一致时可省略 --triggerStage；--stage implement 时默认 triggerStage=implement」
+1. **审计报告格式与解析约定文档** 或 **scoring/docs/** 或 **config/README**：补充「当 triggerStage 与 stage 一致时可省略 --triggerStage；--stage implement 时默认 triggerStage=implement」
 2. **验收**：grep 可查到约定文档
 
 ### Phase 2：仪表盘完整 run（T4.1, T4.2, T4.3）
@@ -128,7 +128,7 @@
 | config/scoring-trigger-modes.yaml | implement_audit_pass | Phase 1.5 |
 | scoring/dashboard/compute.ts | 完整 run 定义、implement 识别 | Phase 2 |
 | speckit-workflow/SKILL.md | §5.2 --stage implement | Phase 3 |
-| docs/BMAD/审计报告格式与解析约定.md 或 scoring/docs | 文档化 triggerStage 约定 | Phase 1.6 |
+| 审计报告格式与解析约定文档或 scoring/docs | 文档化 triggerStage 约定 | Phase 1.6 |
 
 ### 5.2 新增文件（可选）
 

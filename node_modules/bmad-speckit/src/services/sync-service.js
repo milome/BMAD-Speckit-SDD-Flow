@@ -7,6 +7,12 @@ const fs = require('fs');
 const path = require('path');
 const AIRegistry = require('./ai-registry');
 
+/**
+ * Recursively copy directory contents to dest.
+ * @param {string} src - Source directory.
+ * @param {string} dest - Destination directory.
+ * @returns {void}
+ */
 function copyDirRecursive(src, dest) {
   if (!fs.existsSync(src) || !fs.statSync(src).isDirectory()) return;
   if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
@@ -22,6 +28,12 @@ function copyDirRecursive(src, dest) {
   }
 }
 
+/**
+ * Deep merge overlay into base. Arrays and primitives in overlay overwrite.
+ * @param {Record<string, unknown> | null} [base] - Base object.
+ * @param {Record<string, unknown> | null} [overlay] - Overlay object.
+ * @returns {Record<string, unknown>} Merged result.
+ */
 function deepMerge(base, overlay) {
   if (overlay == null || typeof overlay !== 'object' || Array.isArray(overlay)) return base || overlay;
   const result = base && typeof base === 'object' && !Array.isArray(base) ? { ...base } : {};
@@ -36,9 +48,12 @@ function deepMerge(base, overlay) {
 }
 
 /**
- * @param {string} projectRoot - 项目根目录
- * @param {string} selectedAI - AI id
- * @param {{ bmadPath?: string }} options
+ * Sync commands/rules/config from _bmad/cursor to selected AI target dirs per configTemplate.
+ * Also merges vscodeSettings into .vscode/settings.json if configured.
+ * @param {string} projectRoot - 项目根目录.
+ * @param {string} selectedAI - AI id from registry.
+ * @param {{ bmadPath?: string }} [options] - Optional bmadPath for worktree mode.
+ * @returns {void}
  */
 function syncCommandsRulesConfig(projectRoot, selectedAI, options = {}) {
   const entry = AIRegistry.getById(selectedAI, { cwd: projectRoot });

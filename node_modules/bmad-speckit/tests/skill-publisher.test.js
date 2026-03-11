@@ -74,7 +74,7 @@ describe('SkillPublisher (Story 12.3 T1, T4)', () => {
     createSkillsSource(bmadPath, ['from-bmad-path']);
 
     const SkillPublisher = require('../src/services/skill-publisher');
-    const result = SkillPublisher.publish(projectRoot, 'codebuddy', {
+    const _result = SkillPublisher.publish(projectRoot, 'codebuddy', {
       bmadPath: path.relative(projectRoot, bmadPath) || bmadPath,
     });
     // codebuddy skillsDir is .codebuddy/skills - project relative

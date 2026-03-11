@@ -8,7 +8,5 @@ paths:
     path_b: "_bmad-output/"
   - path_a: ".cursor/agents/code-reviewer-config.yaml"
     path_b: "config/code-reviewer-config.yaml"
-  - path_a: "docs/BMAD/"
-    path_b: "docs/BMAD/"
   - path_a: "docs/speckit/.speckit-state.yaml.template"
     path_b: ".speckit-state.yaml.template"

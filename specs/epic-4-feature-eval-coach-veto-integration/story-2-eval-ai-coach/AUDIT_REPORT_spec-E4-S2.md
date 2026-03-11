@@ -19,7 +19,7 @@
 | 原始需求文档 | 路径 |
 |--------------|------|
 | Story 4.2 | `_bmad-output/implementation-artifacts/4-2-eval-ai-coach/4-2-eval-ai-coach.md` |
-| REQUIREMENTS §3.14 | `docs/BMAD/REQUIREMENTS_AI代码评测体系_全流程审计闭环输出与迭代标准_需求分析.md` |
+| REQUIREMENTS §3.14 | REQUIREMENTS_AI代码评测体系_全流程审计闭环输出与迭代标准_需求分析.md |
 | VETO_AND_ITERATION_RULES | `scoring/docs/VETO_AND_ITERATION_RULES.md` |
 
 ---

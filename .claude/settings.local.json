@@ -71,7 +71,8 @@
       "Bash(npm install:*)",
       "Bash(npm run:*)",
       "Bash(npx eslint:*)",
-      "Bash(node_modules/.bin/eslint:*)"
+      "Bash(node_modules/.bin/eslint:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []

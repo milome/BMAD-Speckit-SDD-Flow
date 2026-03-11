@@ -95,9 +95,6 @@ See [WSL / Shell scripts](docs/WSL_SHELL_SCRIPTS.md) for full shell script refer
 ## Documentation
 
 - [Installation & Migration Guide](docs/INSTALLATION_AND_MIGRATION_GUIDE.md)
-- [bmad-speckit CLI Manual](docs/BMAD/bmad-speckit-CLI功能说明.md)
-- [Integration Spec](docs/BMAD/bmad-speckit-integration-FINAL-COMPLETE.md)
-- [Upstream & Sync](docs/BMAD/BMAD-METHOD-v6-Gaps与同步建议.md)
 
 ---
 

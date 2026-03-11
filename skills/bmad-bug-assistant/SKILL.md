@@ -99,7 +99,7 @@ description: |
 
 ## BMAD Agent 展示名与命令对照
 
-在 mcp_task 子任务调用、Party Mode 多轮对话、工作流指引等场景中，应使用以下**展示名**指代各 Agent，以保持上下文一致性与用户体验。参考：`docs/BMAD/Cursor_BMAD_多Agent使用指南.md`。
+在 mcp_task 子任务调用、Party Mode 多轮对话、工作流指引等场景中，应使用以下**展示名**指代各 Agent，以保持上下文一致性与用户体验。
 
 | Agent 展示名 | 命令名 | 模块 |
 |--------------|--------|------|

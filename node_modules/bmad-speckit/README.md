@@ -2,6 +2,28 @@
 
 BMAD-Speckit CLI：init、check、version 等子命令。
 
+## 子命令一览
+
+| 命令 | 用途 |
+|------|------|
+| `init [project-name]` | 初始化新 bmad-speckit 项目（骨架、_bmad、配置、脚本） |
+| `check` | 校验项目配置（bmadPath、AI、Agent 工具等） |
+| `version` | 显示 CLI 版本、模板版本、Node 版本 |
+| `upgrade` | 升级项目内模板版本 |
+| `config get/set/list` | 读写 bmad-speckit 配置 |
+| `feedback` | 显示反馈入口与全流程兼容 AI 列表 |
+
+## 配置存储位置
+
+- **项目级**：`_bmad-output/config/bmad-speckit.json`（项目根下）
+- **全局**：`~/.bmad-speckit/config.json`
+
+项目配置覆盖全局同名键。
+
+## 与 bmad-method 关系
+
+bmad-speckit 以 bmad-method 为模板来源；`init` 会拉取并展开模板到目标目录。可通过 `config set templateSource <repo>` 或环境变量 `SDD_TEMPLATE_REPO` 指定自定义模板源。
+
 ## 运行方式
 
 ### 从项目根目录（推荐）

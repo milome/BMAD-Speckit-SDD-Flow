@@ -450,8 +450,6 @@ paths:
     path_b: "_bmad-output/"
   - path_a: ".cursor/agents/code-reviewer-config.yaml"
     path_b: "config/code-reviewer-config.yaml"
-  - path_a: "docs/BMAD/"
-    path_b: "docs/BMAD/"
 ```
 
 ### 4.4 _bmad 定制迁移
@@ -1007,7 +1005,4 @@ A: 该配置指向全局 Skill 路径：`%USERPROFILE%/.cursor/skills/bmad-code-
 ---
 
 > **更多参考**：
-> - [bmad-speckit-integration-FINAL-COMPLETE.md](BMAD/bmad-speckit-integration-FINAL-COMPLETE.md) — 完整方案与五层架构
-> - [BMAD_Speckit_SDD_Flow_最优方案文档.md](BMAD/BMAD_Speckit_SDD_Flow_最优方案文档.md) — 仓库迁移与目录说明
-> - [双repo_bmad_speckit_智能同步方案.md](BMAD/双repo_bmad_speckit_智能同步方案.md) — 双仓库同步与校验
 > - [skills/README.md](../skills/README.md) — Skills 清单与安装方式

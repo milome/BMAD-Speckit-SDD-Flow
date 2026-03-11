@@ -189,7 +189,7 @@ Story 完整标识为 `{epic_num}-{story_num}`，例如 Epic 4、Story 4.1 → `
 ```yaml
 old_string: "[Load agent roster and display 2-3 most diverse agents as examples]"
 new_string: |
-  [Load agent roster and display 2-3 most diverse agents as examples. 介绍时必须使用展示名（displayName），与 `docs/BMAD/Cursor_BMAD_多Agent使用指南.md` 及 `_bmad/_config/agent-manifest.csv` 一致。示例：Winston 架构师、Amelia 开发、Mary 分析师、John 产品经理、BMad Master、Quinn 测试、Paige 技术写作、Sally UX、Barry Quick Flow、Bond Agent 构建、Morgan Module 构建、Wendy Workflow 构建、Victor 创新策略、Dr. Quinn 问题解决、Maya 设计思维、Carson 头脑风暴、Sophia 故事讲述、Caravaggio 演示、Murat 测试架构、批判性审计员。]
+  [Load agent roster and display 2-3 most diverse agents as examples. 介绍时必须使用展示名（displayName），与 `_bmad/_config/agent-manifest.csv` 保持一致。示例：Winston 架构师、Amelia 开发、Mary 分析师、John 产品经理、BMad Master、Quinn 测试、Paige 技术写作、Sally UX、Barry Quick Flow、Bond Agent 构建、Morgan Module 构建、Wendy Workflow 构建、Victor 创新策略、Dr. Quinn 问题解决、Maya 设计思维、Carson 头脑风暴、Sophia 故事讲述、Caravaggio 演示、Murat 测试架构、批判性审计员。]
 ```
 
 ### 补丁 2：step-01-agent-loading.md
@@ -199,7 +199,7 @@ new_string: |
 修改 A：
 ```yaml
 old_string: "- **displayName** (agent's persona name for conversations)"
-new_string: "- **displayName** (agent's persona name for conversations；中文语境下使用 展示名，如 Mary 分析师、Winston 架构师，参考 `docs/BMAD/Cursor_BMAD_多Agent使用指南.md`)"
+new_string: "- **displayName** (agent's persona name for conversations；中文语境下使用 展示名，如 Mary 分析师、Winston 架构师)"
 ```
 
 修改 B：
@@ -230,7 +230,7 @@ old_string: "**Response Structure:**
 [Bash: .claude/hooks/bmad-speak.sh \\\"[Agent Name]\\\" \\\"[Their response]\\\"]\""
 new_string: "**Response Structure:**
 [For each selected agent]:
-- 必须使用 **展示名（displayName）** 标注发言角色，与 `_bmad/_config/agent-manifest.csv` 及 `docs/BMAD/Cursor_BMAD_多Agent使用指南.md` 一致。
+- 必须使用 **展示名（displayName）** 标注发言角色，与 `_bmad/_config/agent-manifest.csv` 保持一致。
 - 展示名示例：BMad Master、Mary 分析师、John 产品经理、Winston 架构师、Amelia 开发、Bob Scrum Master、Quinn 测试、Paige 技术写作、Sally UX、Barry Quick Flow、Bond Agent 构建、Morgan Module 构建、Wendy Workflow 构建、Victor 创新策略、Dr. Quinn 问题解决、Maya 设计思维、Carson 头脑风暴、Sophia 故事讲述、Caravaggio 演示、Murat 测试架构、批判性审计员。
 
 \"[Icon Emoji] **[展示名 displayName]**: [Authentic in-character response]
@@ -585,7 +585,7 @@ prompt: |
 
   报告结尾必须按以下格式输出：结论：通过/未通过。必达子项：① 覆盖需求与 Epic；② 明确无禁止词；③ 多方案已共识；④ 无技术债/占位表述；⑤ 推迟闭环（若有「由 X.Y 负责」则 X.Y 存在且 scope 含该任务）；⑥ 本报告结论格式符合本段要求。若任一项不满足则结论为未通过，并列出不满足项及每条对应的修改建议。
 
-  【§Story 可解析块要求】报告结尾在结论与必达子项之后，**必须**追加可解析评分块（格式见 speckit-workflow/references/audit-prompts-critical-auditor-appendix.md §7 或 docs/BMAD/审计报告格式与解析约定.md）。须包含：独立一行「总体评级: [A|B|C|D]」及四行「- 需求完整性: XX/100」「- 可测试性: XX/100」「- 一致性: XX/100」「- 可追溯性: XX/100」。禁止用描述代替结构化块；总体评级仅限 A/B/C/D。禁止 B+、A-、C+、D- 等任意修饰符；介于两档时择一输出纯字母。映射建议：完全覆盖→A/90+；部分覆盖→B/80+；需修改→C/70+；不通过→D/60及以下。否则 parseAndWriteScore 无法解析、仪表盘无法显示评级。
+  【§Story 可解析块要求】报告结尾在结论与必达子项之后，**必须**追加可解析评分块（格式见 speckit-workflow/references/audit-prompts-critical-auditor-appendix.md §7）。须包含：独立一行「总体评级: [A|B|C|D]」及四行「- 需求完整性: XX/100」「- 可测试性: XX/100」「- 一致性: XX/100」「- 可追溯性: XX/100」。禁止用描述代替结构化块；总体评级仅限 A/B/C/D。禁止 B+、A-、C+、D- 等任意修饰符；介于两档时择一输出纯字母。映射建议：完全覆盖→A/90+；部分覆盖→B/80+；需修改→C/70+；不通过→D/60及以下。否则 parseAndWriteScore 无法解析、仪表盘无法显示评级。
 
   【审计通过后必做】当结论为「通过」时，你（审计子代理）**在返回主 Agent 前必须**执行：`npx ts-node scripts/parse-and-write-score.ts --reportPath <保存的报告路径> --stage story --event story_status_change --triggerStage bmad_story_stage2 --epic {epic_num} --story {story_num} --iteration-count {本 stage 累计 fail 轮数，0 表示一次通过}`。报告路径为 `_bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{epic_num}-{story_num}-*/AUDIT_Story_{epic_num}-{story_num}_stage2.md`。若执行失败，在结论中注明 resultCode，不阻断返回。**禁止**在未执行上述命令前返回通过结论。
 
@@ -1429,7 +1429,7 @@ prompt: |
 
 ## BMAD Agent 展示名与命令对照
 
-在 mcp_task 子任务调用、Party Mode 多轮对话、工作流指引等场景中，应使用以下**展示名**指代各 Agent，以保持上下文一致性与用户体验。参考：`docs/BMAD/Cursor_BMAD_多Agent使用指南.md`。
+在 mcp_task 子任务调用、Party Mode 多轮对话、工作流指引等场景中，应使用以下**展示名**指代各 Agent，以保持上下文一致性与用户体验。
 
 | Agent 展示名 | 命令名 | 模块 |
 |--------------|--------|------|
