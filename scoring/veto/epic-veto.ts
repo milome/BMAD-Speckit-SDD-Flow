@@ -25,7 +25,10 @@ const CONDITION_IDS = [
 ] as const;
 
 /**
- * 判定 Epic 8 项条件
+ * Evaluate Epic 8 veto conditions.
+ * @param {EpicVetoInput} input - EpicVetoInput with storyRecords, counts, testStats
+ * @param {EvaluateEpicVetoOptions} [options] - rulesDir for buildVetoItemIds
+ * @returns {EvaluateEpicVetoResult} EvaluateEpicVetoResult with triggered flag and triggeredConditions
  */
 export function evaluateEpicVeto(
   input: EpicVetoInput,

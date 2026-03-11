@@ -37,6 +37,11 @@ function uniqueMatches(text: string, terms: string[]): string[] {
   return hits;
 }
 
+/**
+ * Load forbidden words from YAML.
+ * @param {string} [forbiddenWordsPath] - Optional path; defaults to scoring/coach/forbidden-words.yaml
+ * @returns {ForbiddenWords} ForbiddenWords
+ */
 export function loadForbiddenWords(forbiddenWordsPath?: string): ForbiddenWords {
   const filePath = resolveForbiddenPath(forbiddenWordsPath);
   if (!fs.existsSync(filePath)) {
@@ -55,6 +60,12 @@ export function loadForbiddenWords(forbiddenWordsPath?: string): ForbiddenWords 
   };
 }
 
+/**
+ * Validate text against forbidden words.
+ * @param {string} text - Text to validate
+ * @param {ForbiddenWords} [words] - ForbiddenWords; defaults to built-in
+ * @returns {ForbiddenValidationResult} ForbiddenValidationResult with passed, violations, warnings
+ */
 export function validateForbiddenWords(
   text: string,
   words: ForbiddenWords = DEFAULT_FORBIDDEN_WORDS

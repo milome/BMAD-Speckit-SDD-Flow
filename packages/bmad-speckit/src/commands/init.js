@@ -18,7 +18,9 @@ const { validateBmadStructure } = require('../utils/structure-validate');
 const { getFeedbackHintText } = require('./feedback');
 
 /**
- * Check if directory is non-empty (FR-019): has _bmad, _bmad-output, or other files/subdirs
+ * Check if directory is non-empty (FR-019): has _bmad, _bmad-output, or other files/subdirs.
+ * @param {string} dirPath - Absolute or relative path to directory.
+ * @returns {boolean} True if directory exists, is a directory, and contains _bmad, _bmad-output, or any files/subdirs.
  */
 function isDirectoryNonEmpty(dirPath) {
   if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) {
@@ -30,13 +32,19 @@ function isDirectoryNonEmpty(dirPath) {
   return entries.length > 0;
 }
 
-/** Story 11.1: Resolve network timeout ms; delegates to utils/network-timeout */
+/**
+ * Story 11.1: Resolve network timeout ms; delegates to utils/network-timeout.
+ * @param {Object} [options={}] - Options (cwd, env, config overrides).
+ * @returns {number} Network timeout in milliseconds.
+ */
 function resolveNetworkTimeoutMs(options = {}) {
   return resolveNetworkTimeoutMsUtil({ ...options, cwd: process.cwd() });
 }
 
 /**
- * Story 11.1: Resolve template source: env > project config > global config > default
+ * Story 11.1: Resolve template source: env > project config > global config > default.
+ * @param {string} [cwd=process.cwd()] - Working directory for config lookup.
+ * @returns {string} Template repo (e.g. 'bmad-method/bmad-method').
  */
 function resolveTemplateSource(cwd = process.cwd()) {
   if (process.env.SDD_TEMPLATE_REPO != null && process.env.SDD_TEMPLATE_REPO !== '') {
@@ -55,7 +63,9 @@ function resolveTemplateSource(cwd = process.cwd()) {
 }
 
 /**
- * Check if path is writable (GAP-8.1)
+ * Check if path is writable (GAP-8.1).
+ * @param {string} dirPath - Directory path to test (creates temp file then removes).
+ * @returns {boolean} True if write and unlink succeed.
  */
 function isPathWritable(dirPath) {
   try {
@@ -69,7 +79,10 @@ function isPathWritable(dirPath) {
 }
 
 /**
- * Init command handler
+ * Init command handler: initialize a new bmad-speckit project.
+ * @param {string} [projectName] - Project name or path (e.g. '.', 'my-app').
+ * @param {Object} [options={}] - Commander options: here, ai, aiCommandsDir, yes, template, networkTimeout, modules, force, noGit, script, bmadPath, aiSkills, debug, githubToken, skipTls, offline.
+ * @returns {Promise<void>} Resolves when init completes; exits process on error.
  */
 async function initCommand(projectName, options = {}) {
   const cwd = process.cwd();
@@ -195,6 +208,8 @@ async function initCommand(projectName, options = {}) {
 
 /**
  * Story 10.2 / 10.4: Get default AI (ConfigManager defaultAI > first from AIRegistry); cwd for project-level override.
+ * @param {string} [cwd=process.cwd()] - Working directory for config and registry lookup.
+ * @returns {string} Default AI id (e.g. 'claude').
  */
 function getDefaultAI(cwd = process.cwd()) {
   try {
@@ -209,7 +224,11 @@ function getDefaultAI(cwd = process.cwd()) {
 }
 
 /**
- * Story 12.1: generic 校验 - --ai generic 时须 --ai-commands-dir 或 registry 含 aiCommandsDir
+ * Story 12.1: generic 校验 - --ai generic 时须 --ai-commands-dir 或 registry 含 aiCommandsDir.
+ * @param {string} selectedAI - Selected AI id ('generic' or other).
+ * @param {Object} options - Commander options (aiCommandsDir).
+ * @param {string} cwd - Working directory for registry lookup.
+ * @returns {string|null} Resolved absolute path to ai-commands dir, or null if not generic or not configured.
  */
 function resolveGenericAiCommandsDir(selectedAI, options, cwd) {
   if (selectedAI !== 'generic') return null;
@@ -226,7 +245,12 @@ function resolveGenericAiCommandsDir(selectedAI, options, cwd) {
 /** Story 12.4: Post-init 引导文案（PRD §5.2、§5.13）；init 成功完成后 stdout 输出，init 失败时不输出 */
 const POST_INIT_GUIDE_MSG = 'Init 完成。建议在 AI IDE 中运行 `/bmad-help` 获取下一步指引，或运行 `speckit.constitution` 开始 Spec-Driven Development。';
 
-/** Story 12.3 §6.2: stdout hint when subagentSupport is none or limited */
+/**
+ * Story 12.3 §6.2: stdout hint when subagentSupport is none or limited.
+ * @param {string} selectedAI - Selected AI id.
+ * @param {string} cwd - Working directory for registry lookup.
+ * @returns {void}
+ */
 function maybePrintSubagentHint(selectedAI, cwd) {
   const entry = AIRegistry.getById(selectedAI, { cwd });
   const support = entry?.configTemplate?.subagentSupport;
@@ -236,7 +260,11 @@ function maybePrintSubagentHint(selectedAI, cwd) {
 }
 
 /**
- * Story 10.5: Worktree flow (--bmad-path): no _bmad copy, only _bmad-output + sync from bmadPath, write bmadPath to config
+ * Story 10.5: Worktree flow (--bmad-path): no _bmad copy, only _bmad-output + sync from bmadPath, write bmadPath to config.
+ * @param {string} targetPath - Target project path.
+ * @param {Object} options - Resolved options including resolvedBmadPath.
+ * @param {Function} _log - Debug log function.
+ * @returns {Promise<void>}
  */
 async function runWorktreeFlow(targetPath, options, _log) {
   let selectedAI = options.ai;
@@ -282,7 +310,11 @@ async function runWorktreeFlow(targetPath, options, _log) {
 }
 
 /**
- * Story 10.2: Non-interactive flow (--ai, --yes, TTY auto --yes, SDD_AI, SDD_YES)
+ * Story 10.2: Non-interactive flow (--ai, --yes, TTY auto --yes, SDD_AI, SDD_YES).
+ * @param {string} targetPath - Target project path.
+ * @param {Object} options - Resolved options (ai, template, resolvedBmadPath, resolvedScriptType, etc.).
+ * @param {Function} log - Debug log function.
+ * @returns {Promise<void>}
  */
 async function runNonInteractiveFlow(targetPath, options, log) {
   let selectedAI = options.ai;
@@ -373,11 +405,13 @@ async function runNonInteractiveFlow(targetPath, options, log) {
 }
 
 /**
- * T012: Banner BMAD-Speckit, ASCII/box-drawing (GAP-2.1)
- * Style inspired by specify-cn: block-art + gradient + subtitle
- * BMAD: specify-cn style; SPECKIT: TAAG ANSI Shadow (https://www.patorjk.com/software/taag/)
- * 
+ * T012: Banner BMAD-Speckit, ASCII/box-drawing (GAP-2.1).
+ * Style inspired by specify-cn: block-art + gradient + subtitle.
+ * BMAD: specify-cn style; SPECKIT: TAAG ANSI Shadow (https://www.patorjk.com/software/taag/).
  * BUGFIX_showBanner-ascii-art: 重构使用 banner.js 模块
+ *
+ * @description Outputs init subcommand banner to stdout (gradient ASCII art, subtitle, version).
+ * @returns {void}
  */
 function showBanner() {
   const pkg = require('../../package.json');
@@ -413,8 +447,13 @@ function showBanner() {
 }
 
 /**
- * T013-T014: Inquirer AI selection with search filter, path confirm, template version (GAP-2.2, 2.3, 2.4, AC-2)
- * GAP-2: AI list supports input filter (search by name) via inquirer-autocomplete-prompt
+ * T013-T014: Inquirer AI selection with search filter, path confirm, template version (GAP-2.2, 2.3, 2.4, AC-2).
+ * GAP-2: AI list supports input filter (search by name) via inquirer-autocomplete-prompt.
+ *
+ * @param {string} targetPath - Target project path (may be confirmed by user).
+ * @param {Object} options - Resolved options.
+ * @param {Function} log - Debug log function.
+ * @returns {Promise<void>}
  */
 async function runInteractiveFlow(targetPath, options, log) {
   const inquirer = (await import('inquirer')).default;

@@ -7,7 +7,7 @@ module.exports = {
     ecmaVersion: 2020,
     sourceType: 'module',
   },
-  plugins: ['@typescript-eslint'],
+  plugins: ['@typescript-eslint', 'jsdoc'],
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
@@ -20,6 +20,35 @@ module.exports = {
     ],
   },
   overrides: [
+    {
+      files: [
+        'packages/bmad-speckit/src/**/*.js',
+        'scoring/**/*.ts',
+        'scripts/**/*.ts',
+      ],
+      excludedFiles: ['**/__tests__/**', '**/*.test.js', '**/*.test.ts'],
+      rules: {
+        'jsdoc/require-description': 'error',
+        'jsdoc/require-param': 'error',
+        'jsdoc/require-param-description': 'warn',
+        'jsdoc/require-param-type': 'error',
+        'jsdoc/require-returns': 'error',
+        'jsdoc/require-returns-description': 'warn',
+        'jsdoc/require-returns-type': 'error',
+      },
+    },
+    {
+      files: ['**/*.test.ts', '**/__tests__/**/*.ts', '**/*.test.js'],
+      rules: {
+        'jsdoc/require-description': 'off',
+        'jsdoc/require-param': 'off',
+        'jsdoc/require-param-description': 'off',
+        'jsdoc/require-param-type': 'off',
+        'jsdoc/require-returns': 'off',
+        'jsdoc/require-returns-description': 'off',
+        'jsdoc/require-returns-type': 'off',
+      },
+    },
     {
       files: ['packages/bmad-speckit/**/*.js'],
       parserOptions: { ecmaVersion: 2020, sourceType: 'script' },

@@ -70,8 +70,10 @@ const ASCII_SPECKIT_LINES = [
 const ASCII_SEPARATOR = '   ===   ';
 
 /**
- * 计算字符串在终端中的实际渲染宽度
- * Windows 终端下 Unicode 块体字符（█、═、║ 等）渲染为 2 列宽
+ * 计算字符串在终端中的实际渲染宽度。
+ * Windows 终端下 Unicode 块体字符（█、═、║ 等）渲染为 2 列宽。
+ * @param {string} str - String to measure.
+ * @returns {number} Render width in terminal columns.
  */
 function getRenderWidth(str) {
   let width = 0;
@@ -94,10 +96,20 @@ function getRenderWidth(str) {
 const BMAD_RENDER_WIDTHS = BMAD_LINES.map(getRenderWidth);
 const BMAD_MAX_RENDER_WIDTH = Math.max(...BMAD_RENDER_WIDTHS);
 
+/**
+ * Decide whether to use ASCII fallback banner (no Unicode blocks).
+ * @param {string} [_platform] - Platform (e.g. win32); defaults to process.platform.
+ * @param {NodeJS.ProcessEnv} [_env] - Env; defaults to process.env.
+ * @returns {boolean} True to use ASCII; currently always false.
+ */
 function shouldUseAsciiFallback(_platform = process.platform, _env = process.env) {
   return false;
 }
 
+/**
+ * Build ASCII fallback banner lines (BMAD + SPECKIT).
+ * @returns {string[]} Array of banner lines.
+ */
 function buildAsciiBannerLines() {
   return ASCII_BMAD_LINES.map((bmad, i) => {
     const separator = i === 2 ? ASCII_SEPARATOR : '         ';
@@ -106,9 +118,10 @@ function buildAsciiBannerLines() {
 }
 
 /**
- * 构建 banner 行
- * Unicode 分支：Part1(BMAD) + Part2(仅中间行) + ANSI 列定位 + Part3(SPECKIT)。
+ * 构建 banner 行。Unicode 分支：Part1(BMAD) + Part2(仅中间行) + ANSI 列定位 + Part3(SPECKIT)。
  * 正式行为：仅中间一行(i===2)显示 SEPARATOR(═══)，其余行无 Part2；SPECKIT 统一从第 SPECKIT_COL 列起。
+ * @param {{ forceUnicode?: boolean }} [opts] - forceUnicode to skip ASCII fallback.
+ * @returns {string[]} Array of banner lines.
  */
 function buildBannerLines(opts = {}) {
   const useAscii = !opts.forceUnicode && shouldUseAsciiFallback();
@@ -124,6 +137,12 @@ function buildBannerLines(opts = {}) {
   });
 }
 
+/**
+ * Apply gradient colors to banner lines using chalk rgb.
+ * @param {string[]} lines - Banner lines.
+ * @param {{ rgb?: (r: number, g: number, b: number) => (s: string) => string }} [chalkInstance] - Chalk instance with rgb.
+ * @returns {string[]} Colored lines, or original if chalk unavailable.
+ */
 function applyGradient(lines, chalkInstance) {
   if (!chalkInstance || typeof chalkInstance.rgb !== 'function') {
     return lines;
@@ -148,6 +167,10 @@ function applyGradient(lines, chalkInstance) {
   });
 }
 
+/**
+ * Detect if terminal supports true color (24-bit).
+ * @returns {boolean} True if COLORTERM, WT_SESSION, iTerm2, etc. indicate true color.
+ */
 function supportsTrueColor() {
   if (process.env.COLORTERM === 'truecolor' || process.env.COLORTERM === '24bit') return true;
   if (process.env.WT_SESSION) return true;
@@ -160,10 +183,28 @@ function supportsTrueColor() {
   return false;
 }
 
+/**
+ * Get BMAD lines for tests.
+ * @returns {string[]} Copy of BMAD_LINES.
+ */
 function getExpectedBmadLines() { return [...BMAD_LINES]; }
+
+/**
+ * Get SPECKIT lines for tests.
+ * @returns {string[]} Copy of SPECKIT_LINES.
+ */
 function getExpectedSpeckitLines() { return [...SPECKIT_LINES]; }
-/** Unicode 分支实际使用的分隔符（dash） */
+
+/**
+ * Unicode 分支实际使用的分隔符（dash）。
+ * @returns {string} DASH constant.
+ */
 function getSeparator() { return DASH; }
+
+/**
+ * Get unicode separator character.
+ * @returns {string} DASH constant.
+ */
 function getUnicodeSeparator() { return DASH; }
 
 module.exports = {

@@ -15,6 +15,11 @@ const AIRegistry = require('../services/ai-registry');
 
 const pkg = require('../../package.json');
 
+/**
+ * Load project config from config-manager path for the given cwd.
+ * @param {string} [cwd] - Working directory (default: process.cwd() for config path resolution).
+ * @returns {Record<string, unknown>} Parsed config object, or {} on parse error or missing file.
+ */
 function getProjectConfig(cwd) {
   const { getProjectConfigPath } = require('../services/config-manager');
   try {
@@ -27,6 +32,11 @@ function getProjectConfig(cwd) {
   }
 }
 
+/**
+ * Get the bmadPath from project config.
+ * @param {string} [cwd] - Working directory for config lookup.
+ * @returns {string | undefined} Resolved bmadPath string, or undefined if not set.
+ */
 function getProjectBmadPath(cwd) {
   const config = getProjectConfig(cwd);
   const bmadPath = config.bmadPath;
@@ -34,14 +44,22 @@ function getProjectBmadPath(cwd) {
   return undefined;
 }
 
+/**
+ * Get the selected AI id from project config.
+ * @param {string} [cwd] - Working directory for config lookup.
+ * @returns {string | undefined} selectedAI value from config, or undefined.
+ */
 function getProjectSelectedAI(cwd) {
   const config = getProjectConfig(cwd);
   return config.selectedAI;
 }
 
 /**
- * Story 12.2: Validate selectedAI target directories per spec §4.2 / PRD §5.5
- * @returns {{ valid: boolean, missing: string[] }}
+ * Story 12.2: Validate selectedAI target directories per spec §4.2 / PRD §5.5.
+ * Checks that the AI-specific config dirs (e.g. .cursor, .claude) exist and have required subdirs.
+ * @param {string} [cwd] - Working directory to validate against.
+ * @param {string} [selectedAI] - AI id (e.g. 'cursor-agent', 'claude').
+ * @returns {{ valid: boolean, missing: string[] }} Validation result; missing lists absent paths.
  */
 function validateSelectedAITargets(cwd, selectedAI) {
   const missing = [];
@@ -111,7 +129,9 @@ function validateSelectedAITargets(cwd, selectedAI) {
 }
 
 /**
- * Story 13.1: Validate _bmad-output exists and contains config/
+ * Story 13.1: Validate _bmad-output exists and contains config/.
+ * @param {string} [cwd] - Working directory to check.
+ * @returns {{ valid: boolean, missing: string[] }} Validation result; missing lists absent paths.
  */
 function validateBmadOutput(cwd) {
   const outDir = path.join(cwd, '_bmad-output');
@@ -126,7 +146,10 @@ function validateBmadOutput(cwd) {
 }
 
 /**
- * Story 13.1: Validate .cursor for backward compat when no selectedAI (spec §5.4)
+ * Story 13.1: Validate .cursor for backward compat when no selectedAI (spec §5.4).
+ * Ensures .cursor exists with commands/, rules/, or agents/ subdir.
+ * @param {string} [cwd] - Working directory to check.
+ * @returns {{ valid: boolean, missing: string[] }} Validation result; missing lists absent paths.
  */
 function validateCursorBackwardCompat(cwd) {
   const hasDir = (relPath, requiredSub) => {
@@ -144,7 +167,10 @@ function validateCursorBackwardCompat(cwd) {
 }
 
 /**
- * Story 13.1: detectCommand - collect installed AI tools
+ * Story 13.1: detectCommand - collect installed AI tools.
+ * Runs each registered AI's detectCommand and returns ids of those that return exit 0.
+ * @param {string} [cwd] - Working directory for AIRegistry.load.
+ * @returns {string[]} List of AI ids whose detectCommand succeeded.
  */
 function detectInstalledAITools(cwd) {
   const list = AIRegistry.load({ cwd });
@@ -159,7 +185,10 @@ function detectInstalledAITools(cwd) {
 }
 
 /**
- * Story 13.1: Build diagnosis report
+ * Story 13.1: Build diagnosis report.
+ * @param {string} [cwd] - Working directory for config and AI detection.
+ * @param {{ ignoreAgentTools?: boolean }} [options] - If ignoreAgentTools is true, aiToolsInstalled is [].
+ * @returns {{ cliVersion: string, templateVersion: string|null, selectedAI: string|null, subagentSupport: string, envVars: Record<string, string>, aiToolsInstalled: string[] }} Diagnosis report object.
  */
 function buildDiagnoseReport(cwd, options) {
   const config = getProjectConfig(cwd);
@@ -185,7 +214,10 @@ function buildDiagnoseReport(cwd, options) {
 }
 
 /**
- * Check command handler
+ * Check command handler. Validates bmadPath, selectedAI targets, _bmad-output structure.
+ * Exits with exit code 4 if bmadPath invalid, 1 if selectedAI invalid, prints diagnosis on success.
+ * @param {{ cwd?: string, listAi?: boolean, json?: boolean, ignoreAgentTools?: boolean }} [options] - Command options.
+ * @returns {void} Does not return; process.exit on completion.
  */
 function checkCommand(options = {}) {
   const cwd = options.cwd != null ? options.cwd : process.cwd();

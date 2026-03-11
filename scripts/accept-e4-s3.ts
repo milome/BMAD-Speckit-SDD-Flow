@@ -1,10 +1,12 @@
 #!/usr/bin/env npx ts-node
 /**
- * Story 4.3 accept-e4-s3: 验收场景区分、路径约束、5 份文档、禁止词
- * 1) 5 份文档存在
- * 2) validateScenarioConstraints 通过/失败符合预期
- * 3) 至少一个 BMAD 集成点可调用（accept-e3-s3 或 parseAndWriteScore）
- * 4) 5 份文档无禁止词违规
+ * Accept-e4-s3: 验收场景区分、路径约束、5 份文档、禁止词。
+ *
+ * 用途：验证 scenario/validateScenarioConstraints、5 份文档存在、禁止词。
+ *
+ * CLI：无参数
+ *
+ * 退出码：0=通过，1=失败
  */
 import * as fs from 'fs';
 import * as path from 'path';

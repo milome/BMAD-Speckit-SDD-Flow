@@ -86,13 +86,13 @@ function loadAllRecords(dataPath: string): RunScoreRecord[] {
  * 扫描 dataPath 下 *.json 与 scores.jsonl，解析为 RunScoreRecord[]，
  * 按 timestamp 降序取前 limit 条，返回拥有最新 timestamp 的记录的 run_id。
  *
- * @param dataPath - 数据根路径（通常 getScoringDataPath()）
- * @param limit - 最多考虑的记录数，默认 100
- * @param scenarioFilter - 可选。'real_dev' | 'eval_question' | 'all' | undefined
+ * @param {string} dataPath - 数据根路径（通常 getScoringDataPath()）
+ * @param {number} [limit=100] - 最多考虑的记录数
+ * @param {'real_dev'|'eval_question'|'all'} [scenarioFilter] - 可选 scenario 过滤
  *   - undefined 或 'all'：不过滤 scenario（向后兼容）
  *   - 'real_dev'：仅考虑 scenario=real_dev
  *   - 'eval_question'：仅考虑 scenario=eval_question
- * @returns { runId, truncated } 或 null（无记录时）
+ * @returns {{ runId: string; truncated: boolean } | null} { runId, truncated } 或 null（无记录时）
  */
 export function discoverLatestRunId(
   dataPath: string,

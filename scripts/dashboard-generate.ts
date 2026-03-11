@@ -1,8 +1,13 @@
 /**
- * Story 7.1: /bmad-dashboard CLI 入口
- * Story 9.1 T10/T11: --strategy epic_story_window（默认）、--dataPath
- * Story 9.3: epic-only 聚合视图（--epic N 不含 --story 时）；epic/story 过滤仅 epic_story_window 有效
- * 用法：npx ts-node scripts/dashboard-generate.ts [--strategy epic_story_window|run_id] [--dataPath path] [--epic N] [--story N] [--windowHours N]
+ * Dashboard-generate CLI: 生成项目健康度仪表盘 Markdown。
+ *
+ * 用途：聚合 scoring 数据，计算健康分数、短板 Top3、高迭代 Top3，输出 _bmad-output/dashboard.md。
+ *
+ * CLI 参数：--strategy (epic_story_window|run_id), --dataPath, --epic, --story, --windowHours
+ *
+ * 示例：npx ts-node scripts/dashboard-generate.ts --epic 2
+ *
+ * 退出码：0=成功，1=无数据或错误
  */
 import * as fs from 'fs';
 import * as path from 'path';

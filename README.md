@@ -81,10 +81,14 @@ See [WSL / Shell scripts](docs/WSL_SHELL_SCRIPTS.md) for full shell script refer
 | Component | Purpose |
 |-----------|---------|
 | **_bmad/** | BMAD core (core, bmm, bmb, cis, tea, scoring) |
+| **scoring/** | 评分扩展：解析审计报告、写分持久化、Coach 诊断、Dashboard、SFT 提取。见 [scoring/README.md](scoring/README.md) |
+| **scripts/** | CLI 入口：parse-and-write-score、dashboard-generate、sft-extract、eval-questions-cli、coach-diagnose 等。见 [scripts/README.md](scripts/README.md) |
 | **speckit-workflow** | specify → plan → GAPS → tasks → TDD with mandatory audits |
 | **bmad-story-assistant** | Create Story → Party-Mode → Dev Story → implement |
 | **bmad-bug-assistant** | Bug description → Party-Mode → BUGFIX doc |
 | **bmad-standalone-tasks** | Execute TASKS/BUGFIX docs via subagents |
+
+**scoring 与 bmad-speckit 协作**：bmad-speckit 提供 init/check/config 等 CLI；scripts 下脚本调用 scoring 做解析、写分、诊断、仪表盘。
 
 ---
 

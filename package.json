@@ -55,12 +55,14 @@
   "license": "MIT",
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
+    "@types/node": "^25.3.3",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
+    "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-jsdoc": "^62.7.1",
     "prettier": "^3.0.0",
-    "@types/node": "^25.3.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"

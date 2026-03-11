@@ -23,10 +23,20 @@ export interface TriggerDecision {
 
 let cachedConfig: TriggerConfig | null = null;
 
+/**
+ * 清空 trigger 配置缓存，用于测试或热重载。
+ * @returns {void}
+ */
 export function resetTriggerConfigCache(): void {
   cachedConfig = null;
 }
 
+/**
+ * 加载 scoring-trigger-modes.yaml 配置。
+ * @param {string} [configPath] - 配置文件路径，默认 config/scoring-trigger-modes.yaml
+ * @returns {TriggerConfig} TriggerConfig 对象
+ * @throws 文件不存在或格式无效时抛错
+ */
 export function loadTriggerConfig(configPath?: string): TriggerConfig {
   if (cachedConfig) {
     return cachedConfig;
@@ -45,6 +55,14 @@ export function loadTriggerConfig(configPath?: string): TriggerConfig {
   return cachedConfig;
 }
 
+/**
+ * 根据 event、stage、scenario 判断是否应写分及写分模式。
+ * @param {string} event - 事件名
+ * @param {string} stage - 阶段
+ * @param {'real_dev' | 'eval_question'} scenario - real_dev | eval_question
+ * @param {string} [configPath] - 可选配置路径
+ * @returns {TriggerDecision} TriggerDecision 对象
+ */
 export function shouldWriteScore(
   event: string,
   stage: string,

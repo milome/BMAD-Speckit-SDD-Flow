@@ -8,10 +8,19 @@ const os = require('os');
 
 const DEFAULT_NETWORK_TIMEOUT_MS = 30000;
 
+/**
+ * Get global config path (~/.bmad-speckit/config.json).
+ * @returns {string} Absolute path.
+ */
 function getGlobalConfigPath() {
   return path.join(os.homedir(), '.bmad-speckit', 'config.json');
 }
 
+/**
+ * Get project config path (_bmad-output/config/bmad-speckit.json).
+ * @param {string} cwd - Project root.
+ * @returns {string} Absolute path.
+ */
 function getProjectConfigPath(cwd) {
   return path.join(cwd, '_bmad-output', 'config', 'bmad-speckit.json');
 }
@@ -33,9 +42,10 @@ function _writeJson(filePath, obj) {
 }
 
 /**
- * @param {string} key
- * @param {{ cwd?: string }} options
- * @returns {string|number|undefined}
+ * Get config value by key. Project overrides global. networkTimeoutMs defaults to 30000.
+ * @param {string} key - Config key (e.g. selectedAI, templateVersion, networkTimeoutMs).
+ * @param {{ cwd?: string }} [options] - cwd for project config.
+ * @returns {string|number|undefined} Value or undefined.
  */
 function get(key, options = {}) {
   const cwd = options.cwd;
@@ -58,9 +68,12 @@ function get(key, options = {}) {
 }
 
 /**
- * @param {string} key
- * @param {string|number} value
- * @param {{ scope: 'global'|'project', cwd?: string }} options
+ * Set config key-value. Requires scope and cwd when scope is 'project'.
+ * @param {string} key - Config key.
+ * @param {string|number} value - Value to set.
+ * @param {{ scope: 'global'|'project', cwd?: string }} options - scope; cwd required for project.
+ * @returns {void}
+ * @throws {Error} If scope is project but cwd missing.
  */
 function set(key, value, options) {
   const { scope, cwd } = options || {};
@@ -73,8 +86,11 @@ function set(key, value, options) {
 }
 
 /**
- * @param {Record<string, unknown>} record
- * @param {{ scope: 'global'|'project', cwd?: string }} options
+ * Set multiple config keys from record. Merges with existing; overwrites matching keys.
+ * @param {Record<string, unknown>} record - Key-value pairs to write.
+ * @param {{ scope: 'global'|'project', cwd?: string }} options - scope; cwd required for project.
+ * @returns {void}
+ * @throws {Error} If scope is project but cwd missing.
  */
 function setAll(record, options) {
   const { scope, cwd } = options || {};
@@ -89,8 +105,9 @@ function setAll(record, options) {
 }
 
 /**
- * @param {{ cwd?: string }} options
- * @returns {Record<string, unknown>}
+ * List all config keys and values. Project overrides global. Adds networkTimeoutMs default if missing.
+ * @param {{ cwd?: string }} [options] - cwd for project config.
+ * @returns {Record<string, unknown>} Merged config object.
  */
 function list(options = {}) {
   const globalObj = _readJson(getGlobalConfigPath());

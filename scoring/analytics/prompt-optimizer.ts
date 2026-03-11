@@ -48,6 +48,9 @@ function priorityFromFrequency(frequency: number): 'high' | 'medium' | 'low' {
 /**
  * 根据聚类结果生成 Prompt 优化建议。
  * 遍历 skillsDir 和 .cursor/rules 下 .md 文件，keywords 与文件内容交集≥2 则匹配。
+ * @param {WeaknessCluster[]} clusters - 弱点聚类结果
+ * @param {string} [skillsDir] - skills 根目录，默认 cwd/skills
+ * @returns {PromptSuggestion[]} Prompt 优化建议列表
  */
 export function generatePromptSuggestions(
   clusters: WeaknessCluster[],
@@ -90,6 +93,11 @@ export function generatePromptSuggestions(
   return suggestions;
 }
 
+/**
+ * 将 Prompt 建议格式化为 Markdown 报告。
+ * @param {PromptSuggestion[]} suggestions - Prompt 建议列表
+ * @returns {string} Markdown 报告
+ */
 export function formatPromptSuggestionsMarkdown(suggestions: PromptSuggestion[]): string {
   if (suggestions.length === 0) return '# Prompt 优化建议\n\n（暂无建议）\n';
   const lines: string[] = ['# Prompt 优化建议', '', `共 ${suggestions.length} 条建议。`, ''];

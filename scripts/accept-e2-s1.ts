@@ -1,5 +1,11 @@
 /**
- * Story 2.1 端到端验收脚本 AC-1～AC-7
+ * Accept-e2-s1: 端到端验收脚本（Epic 2 Story 1）。
+ *
+ * 用途：验证 scoring 规则加载、ref 解析、环节 YAML 等。
+ *
+ * CLI：无参数
+ *
+ * 退出码：0=全部通过，1=有失败
  */
 import * as fs from 'fs';
 import * as path from 'path';

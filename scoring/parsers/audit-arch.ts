@@ -28,6 +28,14 @@ export interface ParseArchReportInput {
   scenario: 'real_dev' | 'eval_question';
 }
 
+/**
+ * Parse Architecture audit report and produce RunScoreRecord.
+ * Grade A/B/C/D maps to 100/80/60/40.
+ * @param {ParseArchReportInput} input - content or reportPath, runId, scenario
+ * @returns {Promise<RunScoreRecord>} RunScoreRecord for arch stage
+ * @throws {ReportFileNotFoundError} If reportPath does not exist
+ * @throws {ParseError} If content/reportPath missing or grade cannot be extracted
+ */
 export async function parseArchReport(input: ParseArchReportInput): Promise<RunScoreRecord> {
   let content: string;
   if (input.content != null) {

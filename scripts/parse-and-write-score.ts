@@ -1,11 +1,23 @@
 /**
- * Story 3.3 T3.2: CLI 入口
- * B04: 支持 --event、--skipTriggerCheck、--sourceHashFilePath、--questionVersion
+ * Parse-and-write-score CLI: 解析审计报告并写入 scoring 存储。
+ *
+ * 用途：根据 reportPath 解析审计报告，经 veto/阶梯 后写入 RunScoreRecord。
+ *
+ * CLI 参数：--reportPath, --stage, --runId, --event, --skipTriggerCheck,
+ * --sourceHashFilePath, --questionVersion, --scenario
+ *
+ * 示例：npx ts-node scripts/parse-and-write-score.ts --reportPath path/to/report.md --stage prd --runId r1
+ *
+ * 退出码：0=成功，1=参数/校验错误，3=trigger 禁用
  */
 import { parseAndWriteScore } from '../scoring/orchestrator';
 import { shouldWriteScore } from '../scoring/trigger/trigger-loader';
 import type { AuditStage } from '../scoring/parsers';
 
+/**
+ * 解析命令行参数
+ * @returns {Record<string, string>} 解析后的参数键值对
+ */
 function parseArgs(): Record<string, string> {
   const args: Record<string, string> = {};
   for (let i = 2; i < process.argv.length; i++) {
@@ -28,7 +40,11 @@ function parseArgs(): Record<string, string> {
   return args;
 }
 
-/** 从 reportPath 解析 epic/story：正则 E6-S3 / e6-s3 或目录 story-6-3- */
+/**
+ * 从 reportPath 解析 epic/story：正则 E6-S3 / e6-s3 或目录 story-6-3-
+ * @param {string} reportPath - 报告文件路径
+ * @returns {{ epic?: string; story?: string }} 包含 epic 和 story 的对象，可能为空
+ */
 function parseEpicStoryFromPath(reportPath: string): { epic?: string; story?: string } {
   if (!reportPath) return {};
   const fileMatch = reportPath.match(/[Ee](\d+)[-_]?[Ss](\d+)/);

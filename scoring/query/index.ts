@@ -6,11 +6,21 @@ import { loadAndDedupeRecords } from './loader';
 import { parseEpicStoryFromRecord } from './parse-epic-story';
 import type { RunScoreRecord } from '../writer/types';
 
-/** Epic/Story 查询仅针对 real_dev（排除 eval_question） */
+/**
+ * Epic/Story 查询仅针对 real_dev（排除 eval_question）
+ * @param {RunScoreRecord[]} records - Records to filter
+ * @returns {RunScoreRecord[]} Filtered records
+ */
 function filterRealDev(records: RunScoreRecord[]): RunScoreRecord[] {
   return records.filter((r) => r.scenario !== 'eval_question');
 }
 
+/**
+ * Query records by epic (real_dev only). Excludes eval_question.
+ * @param {number} epicId - Epic id
+ * @param {string} [dataPath] - Optional data path
+ * @returns {RunScoreRecord[]} Matching RunScoreRecord array
+ */
 export function queryByEpic(epicId: number, dataPath?: string): RunScoreRecord[] {
   const records = loadAndDedupeRecords(dataPath);
   const realDev = filterRealDev(records);
@@ -20,6 +30,13 @@ export function queryByEpic(epicId: number, dataPath?: string): RunScoreRecord[]
   });
 }
 
+/**
+ * Query records by epic+story (real_dev only).
+ * @param {number} epicId - Epic id
+ * @param {number} storyId - Story id
+ * @param {string} [dataPath] - Optional data path
+ * @returns {RunScoreRecord[]} Matching RunScoreRecord array
+ */
 export function queryByStory(
   epicId: number,
   storyId: number,
@@ -33,6 +50,12 @@ export function queryByStory(
   });
 }
 
+/**
+ * Get latest n records by timestamp (descending).
+ * @param {number} n - Number of records
+ * @param {string} [dataPath] - Optional data path
+ * @returns {RunScoreRecord[]} Latest n records
+ */
 export function queryLatest(n: number, dataPath?: string): RunScoreRecord[] {
   if (n <= 0) return [];
   const records = loadAndDedupeRecords(dataPath);
@@ -45,6 +68,13 @@ export function queryLatest(n: number, dataPath?: string): RunScoreRecord[] {
   return sorted.slice(0, n);
 }
 
+/**
+ * Query records by run_id and stage.
+ * @param {string} runId - Run id
+ * @param {string} stage - Stage name
+ * @param {string} [dataPath] - Optional data path
+ * @returns {RunScoreRecord[]} Matching RunScoreRecord array
+ */
 export function queryByStage(
   runId: string,
   stage: string,
@@ -54,6 +84,12 @@ export function queryByStage(
   return records.filter((r) => r.run_id === runId && r.stage === stage);
 }
 
+/**
+ * Query records by scenario.
+ * @param {string} scenario - Scenario ('real_dev' or 'eval_question')
+ * @param {string} [dataPath] - Optional data path
+ * @returns {RunScoreRecord[]} Matching RunScoreRecord array
+ */
 export function queryByScenario(
   scenario: string,
   dataPath?: string

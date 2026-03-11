@@ -9,6 +9,11 @@ import type { RunScoreRecord } from '../writer/types';
 
 export const EXCLUDED_JSON = ['sft-dataset.json'];
 
+/**
+ * Type guard: check if object is valid RunScoreRecord.
+ * @param {unknown} obj - Unknown value
+ * @returns {obj is RunScoreRecord} true if obj has run_id, timestamp, scenario, stage
+ */
 export function isRunScoreRecord(obj: unknown): obj is RunScoreRecord {
   if (obj == null || typeof obj !== 'object') return false;
   const o = obj as Record<string, unknown>;
@@ -88,7 +93,11 @@ function loadAllRecords(dataPath: string): RunScoreRecord[] {
   return records;
 }
 
-/** 按 (run_id, stage) 分组，每组取 timestamp 最大的一条 */
+/**
+ * 按 (run_id, stage) 分组，每组取 timestamp 最大的一条
+ * @param {RunScoreRecord[]} records - Records to dedupe
+ * @returns {RunScoreRecord[]} Deduplicated records
+ */
 function dedupeByRunIdStage(records: RunScoreRecord[]): RunScoreRecord[] {
   const byKey = new Map<string, RunScoreRecord>();
   for (const r of records) {
@@ -102,7 +111,9 @@ function dedupeByRunIdStage(records: RunScoreRecord[]): RunScoreRecord[] {
 }
 
 /**
- * 加载所有评分记录并按 (run_id, stage) 去重，保留每组 timestamp 最新的一条。
+ * Load all score records from *.json and scores.jsonl, dedupe by (run_id, stage), keep latest per group.
+ * @param {string} [dataPath] - Optional path; defaults to getScoringDataPath()
+ * @returns {RunScoreRecord[]} Deduplicated RunScoreRecord array
  */
 export function loadAndDedupeRecords(dataPath?: string): RunScoreRecord[] {
   const pathToUse = dataPath != null && dataPath !== '' ? dataPath : getScoringDataPath();

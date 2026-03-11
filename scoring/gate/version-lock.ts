@@ -20,6 +20,10 @@ export interface VersionLockResult {
  * 校验前置阶段源文件的 hash 是否与上一阶段审计记录中的 source_hash 一致。
  * hash 匹配→proceed；不匹配→block；异常→warn_and_proceed。
  * expectedHash 为空或未提供时，视为上一阶段无记录，返回 warn_and_proceed。
+ * @param {string} _currentStage - 当前阶段（保留参数用于日志/扩展）
+ * @param {string} preconditionFile - 前置条件文件路径
+ * @param {string | null | undefined} expectedHash - 期望的哈希值
+ * @returns {VersionLockResult} 版本锁定校验结果
  */
 export function checkPreconditionHash(
   _currentStage: string,
@@ -86,6 +90,9 @@ export function checkPreconditionHash(
 /**
  * 从 scoring/data/ 目录中查找指定 stage 的最新记录。
  * 扫描 *.json 文件（排除 scores.jsonl），按 timestamp 降序取最新。
+ * @param {string} stage - 阶段名称
+ * @param {string} [dataPath] - 数据目录路径，默认为 scoring/data
+ * @returns {RunScoreRecord | null} 最新的运行评分记录，若无则返回 null
  */
 export function loadLatestRecordByStage(stage: string, dataPath?: string): RunScoreRecord | null {
   const base = dataPath ?? path.resolve(process.cwd(), 'scoring', 'data');

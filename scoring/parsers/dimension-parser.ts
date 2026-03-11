@@ -1,7 +1,12 @@
+/**
+ * Dimension parser: extract dimension scores from report content.
+ * Uses code-reviewer-config modes.{mode}.dimensions for weights.
+ */
 import * as fs from 'fs';
 import * as path from 'path';
 import yaml from 'js-yaml';
 
+/** Single dimension score entry. */
 export interface DimensionScore {
   dimension: string;
   weight: number;
@@ -37,6 +42,11 @@ function loadModeWeights(mode: DimensionMode, configPath?: string): Map<string, 
   return map;
 }
 
+/**
+ * Map audit stage to dimension mode for weight lookup.
+ * @param {string} stage - Audit stage string
+ * @returns {DimensionMode} DimensionMode (prd, arch, code, or pr)
+ */
 export function stageToMode(stage: string): DimensionMode {
   switch (stage) {
     case 'prd':
@@ -57,6 +67,14 @@ export function stageToMode(stage: string): DimensionMode {
   }
 }
 
+/**
+ * Parse dimension scores from report content. Format: "dimension: score/100".
+ * Uses mode weights from code-reviewer-config; returns only dimensions with configured weights.
+ * @param {string} content - Report text
+ * @param {DimensionMode} mode - Dimension mode for weight lookup
+ * @param {string} [configPath] - Optional path to code-reviewer-config.yaml
+ * @returns {DimensionScore[]} DimensionScore array
+ */
 export function parseDimensionScores(
   content: string,
   mode: DimensionMode,

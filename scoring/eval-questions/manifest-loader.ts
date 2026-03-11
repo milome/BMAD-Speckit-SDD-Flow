@@ -18,6 +18,12 @@ export interface EvalQuestionManifest {
   questions: EvalQuestionEntry[];
 }
 
+/**
+ * Load eval question manifest from versionDir/manifest.yaml.
+ * @param {string} versionDir - Version directory (e.g. eval-questions/v1)
+ * @returns {EvalQuestionManifest} Loaded manifest
+ * @throws {Error} If manifest missing or invalid
+ */
 export function loadManifest(versionDir: string): EvalQuestionManifest {
   const resolvedDir = path.isAbsolute(versionDir)
     ? versionDir

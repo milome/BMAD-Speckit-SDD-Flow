@@ -8,9 +8,15 @@ const path = require('path');
 const SHARED_BMAD_DIRS = new Set(['core', '_config']);
 
 /**
- * T020: Generate _bmad, _bmad-output from template (PRD §5.10)
- * T019: --modules filter: only deploy selected modules when specified (AC-5, GAP-4.3)
- * T021: --force: overwrite existing files, keep non-conflicting
+ * T020: Generate _bmad, _bmad-output from template (PRD §5.10).
+ * T019: --modules filter: only deploy selected modules when specified (AC-5, GAP-4.3).
+ * T021: --force: overwrite existing files, keep non-conflicting.
+ * @param {string} targetPath - Project root to deploy into.
+ * @param {string} templateDir - Path to template directory containing _bmad, _bmad-output.
+ * @param {string[] | null} [modules] - If non-empty, only deploy these module dirs; null = all.
+ * @param {boolean} [force] - If true, overwrite existing files.
+ * @returns {Promise<void>}
+ * @throws {Error} If templateDir does not exist.
  */
 async function generateSkeleton(targetPath, templateDir, modules, force) {
   if (!fs.existsSync(templateDir)) {
@@ -83,9 +89,14 @@ async function generateSkeleton(targetPath, templateDir, modules, force) {
 }
 
 /**
- * T024 / Story 10.4: Write selectedAI, templateVersion, initLog via ConfigManager (GAP-5.1)
- * Story 10.5: optional bmadPath to merge into project config
- * Story 12.3: initLogExt { skillsPublished, skippedReasons }
+ * T024 / Story 10.4: Write selectedAI, templateVersion, initLog via ConfigManager (GAP-5.1).
+ * Story 10.5: optional bmadPath to merge into project config. Story 12.3: initLogExt.
+ * @param {string} targetPath - Project root for config write.
+ * @param {string} [selectedAI] - Selected AI id.
+ * @param {string} [templateVersion] - Template version string.
+ * @param {string | null} [bmadPath] - Optional bmadPath for worktree mode.
+ * @param {{ skillsPublished?: string[], skippedReasons?: string[] } | null} [initLogExt] - Init log extras.
+ * @returns {void}
  */
 function writeSelectedAI(targetPath, selectedAI, templateVersion = 'latest', bmadPath = null, initLogExt = null) {
   const configManager = require('../services/config-manager');
@@ -106,6 +117,10 @@ function writeSelectedAI(targetPath, selectedAI, templateVersion = 'latest', bma
 /**
  * Story 10.5 / 12.2: Worktree mode - create only _bmad-output and config.
  * Sync commands/rules/config is delegated to SyncService.syncCommandsRulesConfig (Story 12.2).
+ * @param {string} targetPath - Project root; creates _bmad-output/config here.
+ * @param {string} [_bmadPath] - Unused; reserved for future worktree path.
+ * @param {string} [_selectedAI] - Unused; reserved for future.
+ * @returns {void}
  */
 function createWorktreeSkeleton(targetPath, _bmadPath, _selectedAI) {
   if (!fs.existsSync(targetPath)) {
@@ -117,7 +132,10 @@ function createWorktreeSkeleton(targetPath, _bmadPath, _selectedAI) {
 }
 
 /**
- * T022: git init, create .gitignore when not --no-git (GAP-5.2)
+ * T022: git init, create .gitignore when not --no-git (GAP-5.2).
+ * Creates .gitignore with node_modules, _bmad-output if missing; runs git init.
+ * @param {string} targetPath - Project root for git init.
+ * @returns {void}
  */
 function runGitInit(targetPath) {
   const { spawnSync } = require('child_process');

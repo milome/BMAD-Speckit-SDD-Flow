@@ -1,5 +1,11 @@
 /**
- * Story 2.2 端到端验收脚本 AC-1～AC-6
+ * Accept-e2-s2: 端到端验收（SCORING_CRITERIA 文档、禁止词等）。
+ *
+ * 用途：验证 scoring 文档完整性、禁止词校验。
+ *
+ * CLI：无参数
+ *
+ * 退出码：0=通过，1=失败
  */
 import * as fs from 'fs';
 import * as path from 'path';

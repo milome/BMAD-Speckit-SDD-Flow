@@ -74,6 +74,14 @@ function parseAndValidate(
   return { grade: grade as 'A' | 'B' | 'C' | 'D', issues, veto_items };
 }
 
+/**
+ * Call LLM API to extract structured grade/issues/veto_items from report when regex fails.
+ * Requires SCORING_LLM_API_KEY. Uses OpenAI-compatible chat/completions API.
+ * @param {string} reportContent - Full audit report text
+ * @param {string} _stage - Stage (for logging; mapping uses audit-item-mapping)
+ * @returns {Promise<LlmExtractionResult>} LlmExtractionResult
+ * @throws {ParseError} If API key missing, API fails, or response invalid
+ */
 export async function llmStructuredExtract(
   reportContent: string,
   _stage: string
@@ -144,7 +152,10 @@ function severityToDelta(severity: '高' | '中' | '低'): number {
 
 /**
  * Map LlmExtractionResult to CheckItem[] for parser integration.
- * spec §3.2.5: resolveItemId(stage, description, llm_{stage}_issue_{idx}), severity mapping, veto_items
+ * Uses resolveItemId for item_id; severity maps to score_delta.
+ * @param {LlmExtractionResult} result - LLM extraction result
+ * @param {AuditStage} stage - Audit stage for item_id resolution
+ * @returns {CheckItem[]} CheckItem array
  */
 export function mapLlmResultToCheckItems(
   result: LlmExtractionResult,
@@ -180,6 +191,11 @@ export function mapLlmResultToCheckItems(
   return items;
 }
 
+/**
+ * Convert LLM grade (A/B/C/D) to numeric score.
+ * @param {LlmExtractionResult['grade']} grade - Grade letter
+ * @returns {number} Score (100/80/60/40, default 60)
+ */
 export function llmGradeToScore(grade: LlmExtractionResult['grade']): number {
   return GRADE_TO_SCORE[grade] ?? 60;
 }

@@ -12,8 +12,10 @@ import { parseGenericReport } from './audit-generic';
 import { ParseError, ReportFileNotFoundError } from './audit-prd';
 import { PHASE_WEIGHTS_SPEC, PHASE_WEIGHTS_PLAN, PHASE_WEIGHTS_TASKS, PHASE_WEIGHT_IMPLEMENT } from '../constants/weights';
 
+/** Supported audit stages for report parsing. */
 export type AuditStage = 'prd' | 'arch' | 'story' | 'spec' | 'plan' | 'tasks' | 'implement';
 
+/** Options for parseAuditReport. Either content or reportPath must be provided. */
 export interface ParseAuditReportOptions {
   reportPath?: string;
   content?: string;
@@ -36,6 +38,14 @@ function getInlineContent(options: ParseAuditReportOptions): string {
   throw new ParseError('Either content or reportPath must be provided');
 }
 
+/**
+ * Parse audit report by stage and return RunScoreRecord.
+ * Dispatches to prd/arch/story or parseGenericReport for spec/plan/tasks/implement.
+ * @param {ParseAuditReportOptions} options - reportPath or content, stage, runId, scenario
+ * @returns {Promise<RunScoreRecord>} Parsed RunScoreRecord
+ * @throws {ReportFileNotFoundError} If reportPath does not exist
+ * @throws {ParseError} If neither content nor reportPath provided or parse fails
+ */
 export async function parseAuditReport(options: ParseAuditReportOptions): Promise<RunScoreRecord> {
   const { stage, runId, scenario } = options;
   const input = {

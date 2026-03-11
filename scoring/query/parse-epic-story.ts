@@ -10,8 +10,9 @@ const SOURCE_PATH_STORY_RE = /story-(\d+)-(\d+)-/;
 const SOURCE_PATH_EPIC_RE = /epic-(\d+)-[^/]*\/story-(\d+)-/;
 
 /**
- * 从 record 解析 epicId、storyId。
- * 优先 run_id 正则，其次 source_path fallback（story 路径优先、epic 路径次之）。
+ * Parse epicId and storyId from record. Tries run_id regex first, then source_path fallback.
+ * @param {RunScoreRecord} record - RunScoreRecord with run_id or source_path
+ * @returns {{ epicId: number; storyId: number } | null} { epicId, storyId } or null if not parseable
  */
 export function parseEpicStoryFromRecord(
   record: RunScoreRecord

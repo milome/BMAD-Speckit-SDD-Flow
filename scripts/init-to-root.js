@@ -1,9 +1,14 @@
 #!/usr/bin/env node
 /**
- * Deploy _bmad, _bmad-output, commands, rules to project root (current working directory).
- * Usage: from package root, run `npm run init` or `node scripts/init-to-root.js [targetDir]`
- *        `node scripts/init-to-root.js --full [targetDir]` for full deployment (7 dirs + .cursor/ sync)
- * Target defaults to process.cwd() (e.g. when run as postinstall from a consumer project, cwd is that project).
+ * Init-to-root: 将 _bmad、_bmad-output、commands、rules 部署到项目根。
+ *
+ * 用途：部署 BMAD 目录结构；--full 时包含 config、templates、workflows。
+ *
+ * CLI 参数：[targetDir], --full
+ *
+ * 示例：node scripts/init-to-root.js
+ *
+ * 退出码：0=成功
  */
 const path = require('path');
 const fs = require('fs');

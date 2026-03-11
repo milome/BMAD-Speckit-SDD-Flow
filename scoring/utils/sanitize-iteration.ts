@@ -1,6 +1,8 @@
 /**
  * 展示前 sanitize iteration_count：NaN/负/小数 处理
  * TASKS_iteration_count_display US-005
+ * @param {number | undefined | null} val - 原始迭代次数，可为 NaN、负数或小数
+ * @returns {number} 处理后的非负整数
  */
 export function sanitizeIterationCount(val: number | undefined | null): number {
   if (val == null) return 0;

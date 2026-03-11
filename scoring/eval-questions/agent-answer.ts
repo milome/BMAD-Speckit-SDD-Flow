@@ -30,7 +30,14 @@ export interface GenerateEvalAnswerOptions {
   timeoutMs?: number;
 }
 
+/**
+ * Error class for Eval Agent failures
+ */
 export class EvalAgentError extends Error {
+  /**
+ * Constructor for EvalAgentError
+ * @param {string} message - Error message
+ */
   constructor(message: string) {
     super(message);
     this.name = 'EvalAgentError';
@@ -38,7 +45,11 @@ export class EvalAgentError extends Error {
 }
 
 /**
- * 调用 LLM 根据题目内容生成审计报告格式的回答
+ * Call LLM to generate audit-report-format answer from question content.
+ * @param {string} questionContent - Question markdown content
+ * @param {GenerateEvalAnswerOptions} [options] - apiKey, baseUrl, model, timeoutMs
+ * @returns {Promise<string>} LLM response text (audit report format)
+ * @throws {EvalAgentError} If API key missing or API fails
  */
 export async function generateEvalAnswer(
   questionContent: string,

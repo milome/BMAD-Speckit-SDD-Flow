@@ -18,7 +18,9 @@ function resolveTargetPath(input, cwd = process.cwd()) {
 }
 
 /**
- * Join path segments (cross-platform)
+ * Join path segments (cross-platform). Delegates to path.join.
+ * @param {...string} segments - Path segments.
+ * @returns {string} Joined path.
  */
 function join(...segments) {
   return path.join(...segments);

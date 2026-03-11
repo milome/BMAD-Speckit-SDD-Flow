@@ -27,6 +27,12 @@ function parseJsonFile(content: string, runId: string): RunScoreRecord[] {
   return record.run_id === runId ? [record] : [];
 }
 
+/**
+ * Load RunScoreRecords for a given run_id from {runId}.json or scores.jsonl.
+ * @param {string} runId - Run id to load
+ * @param {string} [dataPath] - Optional data path; defaults to getScoringDataPath()
+ * @returns {RunScoreRecord[]} Records sorted by timestamp
+ */
 export function loadRunRecords(runId: string, dataPath?: string): RunScoreRecord[] {
   const base = resolveDataPath(dataPath);
   const singleFilePath = path.join(base, `${runId}.json`);
