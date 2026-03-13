@@ -7,12 +7,20 @@ const fs = require('fs');
 
 const pkg = require('../../package.json');
 
+/**
+ * Resolve path to project bmad-speckit config file.
+ * @param {string} [cwd] - Working directory; defaults to process.cwd().
+ * @returns {string} Absolute path to _bmad-output/config/bmad-speckit.json.
+ */
 function getProjectConfigPath(cwd) {
   return path.join(cwd || process.cwd(), '_bmad-output', 'config', 'bmad-speckit.json');
 }
 
 /**
- * Get templateVersion from bmad-speckit.json or bmadPath/_bmad
+ * Get templateVersion from bmad-speckit.json or bmadPath package.json.
+ * Falls back to bmadPath/_bmad package.json if bmadPath is set.
+ * @param {string} [cwd] - Working directory for config lookup.
+ * @returns {string | null} Template version string, or null if not found.
  */
 function getTemplateVersion(cwd) {
   const configPath = getProjectConfigPath(cwd);
@@ -36,8 +44,9 @@ function getTemplateVersion(cwd) {
 }
 
 /**
- * @param {{ cwd?: string, json?: boolean }} options
- * @returns {{ cliVersion: string, templateVersion: string|null, nodeVersion: string }}
+ * VersionCommand handler. Outputs cliVersion, templateVersion, nodeVersion.
+ * @param {{ cwd?: string, json?: boolean }} [options] - cwd for config; json for JSON output.
+ * @returns {{ cliVersion: string, templateVersion: string|null, nodeVersion: string }} Version info (also printed to stdout).
  */
 function versionCommand(options = {}) {
   const cwd = options.cwd != null ? options.cwd : process.cwd();

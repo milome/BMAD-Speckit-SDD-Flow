@@ -1,7 +1,7 @@
 /**
  * Resolve network timeout ms: env SDD_NETWORK_TIMEOUT_MS > project config > global config > 30000
  * Story 11.1, spec §8: config chain for TemplateFetcher and init
- * @param {Object} [options]
+ * @param {Object} [options] - Options for resolving timeout.
  * @param {string|number} [options.networkTimeout] - CLI override
  * @param {string} [options.cwd] - cwd for project config
  * @returns {number} timeout in ms

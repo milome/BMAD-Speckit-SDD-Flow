@@ -1,6 +1,23 @@
 #!/usr/bin/env node
 /**
- * bmad-speckit CLI entry (ARCH §3.1)
+ * bmad-speckit CLI 主入口 (ARCH §3.1)
+ *
+ * @description
+ * BMAD-Speckit CLI：提供 init、check、version、upgrade、config、feedback 等子命令，
+ * 用于初始化项目、校验配置、管理模板版本等。
+ *
+ * 运行方式：
+ * - 项目根: npx bmad-speckit <cmd> 或 npm run speckit -- <cmd>
+ * - 包目录: node bin/bmad-speckit.js <cmd>
+ * - 全局: bmad-speckit <cmd> (npm link 后)
+ *
+ * 退出码约定（见 constants/exit-codes.js）：
+ * - 0: SUCCESS
+ * - 1: GENERAL_ERROR
+ * - 2: AI_INVALID
+ * - 3: NETWORK_TEMPLATE_FAILED
+ * - 4: TARGET_PATH_UNAVAILABLE
+ * - 5: OFFLINE_CACHE_MISSING
  */
 const { program } = require('commander');
 const pkg = require('../package.json');

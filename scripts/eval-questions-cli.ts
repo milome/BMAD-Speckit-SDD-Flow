@@ -1,10 +1,13 @@
 /**
- * Story 8.2: 题库 list / add 命令入口
- * Story 8.3: 题库 run 命令
- * 用法：
- *   npx ts-node scripts/eval-questions-cli.ts list [--version v1|v2]
- *   npx ts-node scripts/eval-questions-cli.ts add --title "xxx" [--version v1|v2]
- *   npx ts-node scripts/eval-questions-cli.ts run --id q001 --version v1 [--reportPath <path>] [--no-agent]
+ * Eval-questions-cli: 评测题库管理（list/add/run）。
+ *
+ * 用途：list 列出题目；add 新建题目；run 执行题目（Agent 作答 + parseAndWriteScore）。
+ *
+ * CLI 参数：list [--version v1|v2]; add --title "xxx" [--version]; run --id q001 --version v1 [--reportPath] [--no-agent]
+ *
+ * 示例：npx ts-node scripts/eval-questions-cli.ts run --id q001 --version v1
+ *
+ * 退出码：0=成功，1=参数错误
  */
 import * as path from 'path';
 import * as fs from 'fs';

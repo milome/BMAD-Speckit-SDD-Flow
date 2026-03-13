@@ -5,7 +5,7 @@
 **目标**：独立可运行的 Speckit 流程（constitution → spec → plan → GAPS → tasks → implement）、与审计闭环强绑定的步骤与审计 prompt、可复用脚本/模板/文档、评分扩展骨架。**目录**：`_bmad/`、`_bmad-output/`、`workflows/`、`commands/`、`rules/`、`config/`、`templates/`、`docs/`、`scoring/`、`skills/`。**最小复现**：克隆后可将 `commands/`、`rules/`、`_bmad`、`_bmad-output` 复制到项目根，或使用 npx 安装；
 **一键安装**：`pwsh scripts/setup.ps1 -Target <项目路径>`（自动部署全部目录、同步 `.cursor/`、安装全局 Skills）；详见 [安装与迁移指南](docs/INSTALLATION_AND_MIGRATION_GUIDE.md)。
 
-下文为 **BMAD 与 Speckit 整合方案** 的流程总览与图示（含 Mermaid 模块图、架构图、流程图、时序图、泳道图），便于快速理解五层架构、决策点与审计链。完整规格与实施细节见 **docs/BMAD/bmad-speckit-integration-FINAL-COMPLETE.md**。
+下文为 **BMAD 与 Speckit 整合方案** 的流程总览与图示（含 Mermaid 模块图、架构图、流程图、时序图、泳道图），便于快速理解五层架构、决策点与审计链。
 
 ---
 
@@ -13,7 +13,7 @@
 
 | 项目 | 说明 |
 |------|------|
-| **权威文档** | [bmad-speckit-integration-FINAL-COMPLETE.md](docs/BMAD/bmad-speckit-integration-FINAL-COMPLETE.md)（五层架构、复杂度评估、Party-Mode、Worktree、审计、回滚） |
+| **权威文档** | bmad-speckit-integration-FINAL-COMPLETE.md（五层架构、复杂度评估、Party-Mode、Worktree、审计、回滚） |
 | **本 README** | 基于 FINAL-COMPLETE 提炼的流程图与速查表，供入口与 PoC/流程图查阅 |
 | **版本** | Final v2.0 (Complete)，2026-03-02，已批准实施 |
 
@@ -275,7 +275,7 @@ flowchart TB
 
 - **Story 数 ≤2**：Story 级 worktree（每 Story 一树）；**≥3**：Epic 级 worktree（每 Epic 一树），支持串行/并行模式。
 - **模式切换**：`/bmad-set-worktree-mode epic=4 mode=parallel|serial|story-level`
-- **回滚**：`_bmad-output/config/settings.json` 中 `worktree_granularity: "story-level"`，按 [FINAL-COMPLETE §4.4](docs/BMAD/bmad-speckit-integration-FINAL-COMPLETE.md) 执行。
+- **回滚**：`_bmad-output/config/settings.json` 中 `worktree_granularity: "story-level"`。
 
 ---
 
@@ -290,7 +290,7 @@ flowchart TB
 ## 7. 文档映射与批判审计员
 
 - **文档对应**：Product Brief → PRD/Arch → Epic/Story 列表 → Story 文档 ↔ spec.md → plan.md + tasks.md；BUGFIX ↔ IMPLEMENTATION_GAPS；progress ↔ TDD 记录。
-- **批判审计员**：介入 Layer 1 PRD/Arch Party-Mode、Layer 3 Create Story party-mode；每轮至少 1 个深度质疑；近 3 轮无新 gap 退出；详见 [FINAL-COMPLETE §2.6.3](docs/BMAD/bmad-speckit-integration-FINAL-COMPLETE.md)。
+- **批判审计员**：介入 Layer 1 PRD/Arch Party-Mode、Layer 3 Create Story party-mode；每轮至少 1 个深度质疑；近 3 轮无新 gap 退出。
 
 ---
 
@@ -311,8 +311,5 @@ flowchart TB
 
 ## 9. 相关链接
 
-- [bmad-speckit-integration-FINAL-COMPLETE.md](docs/BMAD/bmad-speckit-integration-FINAL-COMPLETE.md) — 完整方案与附录
-- [BMAD_Speckit_SDD_Flow_最优方案文档.md](docs/BMAD/BMAD_Speckit_SDD_Flow_最优方案文档.md) — 本仓库迁移与目录说明
-- [双repo_bmad_speckit_智能同步方案.md](docs/BMAD/双repo_bmad_speckit_智能同步方案.md) — 双仓库同步与校验
 - 技能：bmad-story-assistant、speckit-workflow、using-git-worktrees、pr-template-generator、code-reviewer（见本仓库 `skills/`）
 - 流程图副本（含 ASCII 详图）：[poc/flowchart/README.md](poc/flowchart/README.md)

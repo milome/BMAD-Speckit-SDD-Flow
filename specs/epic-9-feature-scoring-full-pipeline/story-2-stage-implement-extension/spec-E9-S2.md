@@ -145,4 +145,4 @@
 - [scoring/rules/default/implement-scoring.yaml](../../scoring/rules/default/implement-scoring.yaml) - 环节 2 规则
 - [scoring/parsers/audit-index.ts](../../scoring/parsers/audit-index.ts) - parseAuditReport 入口
 - [scoring/parsers/audit-generic.ts](../../scoring/parsers/audit-generic.ts) - parseGenericReport
-- [docs/BMAD/审计报告格式与解析约定.md](../../docs/BMAD/审计报告格式与解析约定.md) - 可解析块格式
+- [审计报告格式与解析约定](../../docs/审计报告格式与解析约定.md) - 可解析块格式

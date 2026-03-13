@@ -25,6 +25,12 @@ export interface DashboardFormatOptions {
   excludedStories?: string[];
 }
 
+/**
+ * Format dashboard data as Markdown.
+ * @param {DashboardData} data - Health score, dimensions, weakTop3, highIterTop3, vetoCount, trend
+ * @param {DashboardFormatOptions} [options] - viewMode, epicId, storyIds, excludedStories for epic aggregate view
+ * @returns {string} Markdown string
+ */
 export function formatDashboardMarkdown(
   data: DashboardData,
   options?: DashboardFormatOptions

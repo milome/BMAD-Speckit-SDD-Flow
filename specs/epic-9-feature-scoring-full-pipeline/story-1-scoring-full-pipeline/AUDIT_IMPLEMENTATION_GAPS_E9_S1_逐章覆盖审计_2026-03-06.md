@@ -163,7 +163,7 @@ IMPLEMENTATION_GAPS **未分析** Dev Notes 中的约束与当前实现的一致
 **批判审计员**：对 GAPS 中的若干表述做交叉验证：
 
 - **GAP-1.1**：「SKILL 有 stage4 的 parse-and-write-score 触发描述（行 937）」——未在审计中验证行号是否仍然准确；若 SKILL 已更新，行号可能漂移。**建议**：用 grep 锚点（如「步骤 4.2」）代替行号。
-- **GAP-3.3**：「docs/BMAD/审计报告格式与解析约定.md 无『Story 完成自检』章节」——经 grep 验证，**无匹配**，GAP 正确 ✅
+- **GAP-3.3**：「审计报告格式与解析约定文档无『Story 完成自检』章节」——经 grep 验证，**无匹配**，GAP 正确 ✅
 - **GAP-3.1**：「脚本不存在」——scripts/ 下无 check-story-score-written.ts，**正确** ✅
 - **GAP-4.1、4.2**：「scoring/dashboard/compute.ts 无此函数」——经 grep，代码库中仅 TASKS、plan、spec 等文档引用，**实现中确实不存在** ✅
 

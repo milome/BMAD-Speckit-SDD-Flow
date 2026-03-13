@@ -3,11 +3,10 @@
  * AC-1: 注入样本 prd 报告，断言输出 schema 兼容
  * T4.2: AC-B05-7 集成 - 正则失败 + LLM fallback
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs';
 import { parsePrdReport, ParseError } from '../audit-prd';
-import type { RunScoreRecord } from '../../writer/types';
 import { validateRunScoreRecord } from '../../writer/validate';
 
 const FIXTURES = path.join(__dirname, 'fixtures');

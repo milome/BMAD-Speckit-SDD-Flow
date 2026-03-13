@@ -107,7 +107,9 @@ function parseEpicStoryFromSourcePath(sourcePath: string): { epicId: number; sto
 }
 
 /**
- * 从 record 解析 epicId、storyId。优先 run_id 正则，其次 source_path fallback。
+ * Parse epicId and storyId from record. Tries run_id regex first, then source_path.
+ * @param {RunScoreRecord} record - RunScoreRecord
+ * @returns {{ epicId: number; storyId: number } | null} { epicId, storyId } or null
  */
 export function parseEpicStoryFromRecord(
   record: RunScoreRecord
@@ -130,8 +132,12 @@ export interface FilterEpicStoryError {
 }
 
 /**
- * 按 epicId/storyId 筛选评分记录。仅针对 scenario !== 'eval_question'。
- * 空目录返回「暂无评分数据...」；无可解析返回「当前评分记录无可解析...」；无匹配返回「无可筛选数据」。
+ * Filter score records by epicId/storyId (real_dev only).
+ * @param {string} dataPath - Data directory path
+ * @param {{ epicId?: number; storyId?: number }} filter - epicId, storyId (both optional)
+ * @param {number} [filter.epicId] - Epic ID 过滤
+ * @param {number} [filter.storyId] - Story ID 过滤
+ * @returns {FilterEpicStoryResult | FilterEpicStoryError} FilterEpicStoryResult or FilterEpicStoryError
  */
 export function filterByEpicStory(
   dataPath: string,

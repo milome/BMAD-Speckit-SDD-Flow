@@ -83,7 +83,7 @@ When the selected agent is the designated challenger, prepend this instruction t
 
 **Response Structure:**
 [For each selected agent]:
-- 必须使用 **展示名（displayName）** 标注发言角色，与 `_bmad/_config/agent-manifest.csv` 及 `docs/BMAD/Cursor_BMAD_多Agent使用指南.md` 一致。
+- 必须使用 **展示名（displayName）** 标注发言角色，与 `_bmad/_config/agent-manifest.csv` 一致。
 - 展示名示例：BMad Master、Mary 分析师、John 产品经理、Winston 架构师、Amelia 开发、Bob Scrum Master、Quinn 测试、Paige 技术写作、Sally UX、Barry Quick Flow、Bond Agent 构建、Morgan Module 构建、Wendy Workflow 构建、Victor 创新策略、Dr. Quinn 问题解决、Maya 设计思维、Carson 头脑风暴、Sophia 故事讲述、Caravaggio 演示、Murat 测试架构、批判性审计员。
 
 "[Icon Emoji] **[展示名 displayName]**: [Authentic in-character response]

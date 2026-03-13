@@ -3,7 +3,6 @@ import {
   groupByRunId,
   getLatestRunRecords,
   getLatestRunRecordsV2,
-  getRecentRuns,
   computeHealthScore,
   getDimensionScores,
   getWeakTop3,

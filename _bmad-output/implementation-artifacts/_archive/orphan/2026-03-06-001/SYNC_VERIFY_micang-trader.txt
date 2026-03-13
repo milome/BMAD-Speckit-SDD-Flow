@@ -1,8 +1,0 @@
-﻿specs\015-indicator-system-refactor\.cursor\commands\speckit.implement.md : OK
-specs\000-Overview\.cursor\commands\speckit.implement.md : OK
-specs\002-PyQt画线交易支持\.cursor\commands\speckit.implement.md : OK
-specs\003-vnpy_chart_widget_refactor\.cursor\commands\speckit.implement.md : OK
-specs\010-daily-kline-multi-timeframe\.cursor\commands\speckit.implement.md : OK
-specs\011-cta-kline-style-activation\.cursor\commands\speckit.implement.md : OK
-multi-timeframe-webapp\.cursor\commands\speckit.implement.md : OK
-.iflow\commands\speckit.implement.md : OK

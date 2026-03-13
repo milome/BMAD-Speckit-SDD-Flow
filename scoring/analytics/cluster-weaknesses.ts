@@ -1,5 +1,8 @@
 import type { RunScoreRecord } from '../writer/types';
 
+/**
+ * 弱点聚类结果：item_id、频率、关键词、严重度分布、影响阶段。
+ */
 export interface WeaknessCluster {
   cluster_id: string;
   primary_item_ids: string[];
@@ -56,6 +59,12 @@ function extractKeywords(notes: string[]): string[] {
   return sorted;
 }
 
+/**
+ * 对评分记录中的未通过项进行聚类，输出按频率排序的 WeaknessCluster。
+ * @param {RunScoreRecord[]} records - 评分记录
+ * @param {number} [minFrequency=2] - 最小出现次数阈值，默认 2
+ * @returns {WeaknessCluster[]} 聚类结果
+ */
 export function clusterWeaknesses(
   records: RunScoreRecord[],
   minFrequency: number = 2

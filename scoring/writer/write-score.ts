@@ -9,6 +9,9 @@ const UTF8 = 'utf8';
 /**
  * 确保评分数据目录存在；若不存在则创建（含父级）。
  * 与 plan §7 一致：mkdirSync(..., { recursive: true })。
+ *
+ * @param {string} dataPath - Absolute or relative path to scoring data directory.
+ * @returns {void}
  */
 export function ensureDataDir(dataPath: string): void {
   fs.mkdirSync(dataPath, { recursive: true });
@@ -17,6 +20,10 @@ export function ensureDataDir(dataPath: string): void {
 /**
  * 将单条记录写入单文件 scoring/data/{run_id}.json。
  * 同一 run_id 多次调用为覆盖语义（plan §4）。
+ *
+ * @param {RunScoreRecord} record - RunScoreRecord to write.
+ * @param {string} dataPath - Scoring data directory path.
+ * @returns {void}
  */
 export function writeSingleFile(record: RunScoreRecord, dataPath: string): void {
   ensureDataDir(dataPath);
@@ -26,6 +33,10 @@ export function writeSingleFile(record: RunScoreRecord, dataPath: string): void 
 
 /**
  * 向 scoring/data/scores.jsonl 追加一行 JSON，不覆盖已有行。
+ *
+ * @param {RunScoreRecord} record - RunScoreRecord to append.
+ * @param {string} dataPath - Scoring data directory path.
+ * @returns {void}
  */
 export function appendJsonl(record: RunScoreRecord, dataPath: string): void {
   ensureDataDir(dataPath);
@@ -46,6 +57,12 @@ function getDataPath(options?: WriteScoreRecordOptions): string {
  * 写入单条评分记录；模式由 mode 决定。
  * 写入前校验 record 符合 run-score-schema，否则抛错不写入。
  * 单文件模式下同一 run_id 多次写入为覆盖。
+ *
+ * @param {unknown} record - RunScoreRecord (validated via validateRunScoreRecord).
+ * @param {WriteMode} mode - 'single_file' | 'jsonl' | 'both'.
+ * @param {WriteScoreRecordOptions} [options] - Optional WriteScoreRecordOptions (dataPath override).
+ * @returns {void}
+ * @throws Error when validation fails or mode is unknown.
  */
 export function writeScoreRecordSync(
   record: unknown,

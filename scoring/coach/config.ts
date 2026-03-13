@@ -17,6 +17,11 @@ function resolveConfigPath(configPath?: string): string {
   return path.isAbsolute(configPath) ? configPath : path.resolve(process.cwd(), configPath);
 }
 
+/**
+ * Load coach config from config/coach-trigger.yaml.
+ * @param {string} [configPath] - Optional path; defaults to config/coach-trigger.yaml
+ * @returns {import('./types').CoachConfig} CoachConfig (merged with defaults)
+ */
 export function loadCoachConfig(configPath?: string): CoachConfig {
   const targetPath = resolveConfigPath(configPath);
   if (!fs.existsSync(targetPath)) {

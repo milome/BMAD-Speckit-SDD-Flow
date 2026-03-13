@@ -10,8 +10,9 @@ const REQUIRED_TOP_LEVEL = ['core', 'cursor', 'speckit', 'skills'];
 const CURSOR_REQUIRED = ['commands', 'rules'];
 
 /**
- * @param {string} rootPath - Path to _bmad root (or shared bmad directory)
- * @returns {{ valid: boolean, missing: string[] }}
+ * Validate _bmad root structure: at least two of core/cursor/speckit/skills; cursor must have commands/ and rules/.
+ * @param {string} rootPath - Path to _bmad root (or shared bmad directory).
+ * @returns {{ valid: boolean, missing: string[] }} Validation result; missing lists absent paths.
  */
 function validateBmadStructure(rootPath) {
   const missing = [];

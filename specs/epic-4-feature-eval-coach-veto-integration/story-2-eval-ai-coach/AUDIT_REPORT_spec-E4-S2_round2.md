@@ -55,7 +55,7 @@
 
 | 首轮模糊 | 修复要求 | spec 实际内容 | 结果 |
 |----------|----------|---------------|------|
-| 「与 §3.6 schema 兼容」引用含糊 | 明确引用 REQUIREMENTS §3.6 或定义 CoachDiagnosisReport 专用 schema 路径 | spec 第 81 行：`引用路径：docs/BMAD/REQUIREMENTS_AI代码评测体系_全流程审计闭环输出与迭代标准_需求分析.md §3.6`；字段名与 schema 一致（summary、phase_scores、weak_areas、recommendations、iteration_passed） | ✅ **到位** |
+| 「与 §3.6 schema 兼容」引用含糊 | 明确引用 REQUIREMENTS §3.6 或定义 CoachDiagnosisReport 专用 schema 路径 | spec 第 81 行：`引用路径：REQUIREMENTS_AI代码评测体系_全流程审计闭环输出与迭代标准_需求分析.md §3.6`；字段名与 schema 一致（summary、phase_scores、weak_areas、recommendations、iteration_passed） | ✅ **到位** |
 
 ### 2.7 §2.6 iteration_passed 判定逻辑已显式定义
 

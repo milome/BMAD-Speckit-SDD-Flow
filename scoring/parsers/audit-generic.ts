@@ -19,11 +19,22 @@ function normalizeSeverityDelta(severity: string): number {
   return -2;
 }
 
+/**
+ * Extract 总体评级 (A/B/C/D) from report content via regex.
+ * @param {string} content - Full report text
+ * @returns {string | null} Grade letter or null if not found
+ */
 export function extractOverallGrade(content: string): string | null {
   const match = content.match(/总体评级:\s*([ABCD])/);
   return match ? match[1] : null;
 }
 
+/**
+ * Extract check_items from 问题清单 section. Uses audit-item-mapping for item_id resolution.
+ * @param {string} content - Full report text
+ * @param {GenericAuditStage} stage - Audit stage for mapping lookup
+ * @returns {CheckItem[]} CheckItem array
+ */
 export function extractCheckItems(content: string, stage: GenericAuditStage): CheckItem[] {
   const items: CheckItem[] = [];
   const problemSection = content.match(/问题清单:\s*([\s\S]*?)(?=通过标准:|下一步行动:|$)/i);
@@ -78,6 +89,18 @@ export function extractCheckItems(content: string, stage: GenericAuditStage): Ch
   return items;
 }
 
+/**
+ * Parse spec/plan/tasks/implement generic report. Extracts grade and check_items.
+ * Falls back to LLM if SCORING_LLM_API_KEY set and grade not found.
+ * @param {Object} input - content, stage, runId, scenario, phaseWeight
+ * @param {string} input.content - Report content
+ * @param {GenericAuditStage} input.stage - Audit stage
+ * @param {string} input.runId - Run ID
+ * @param {'real_dev' | 'eval_question'} input.scenario - Scenario type
+ * @param {number} input.phaseWeight - Phase weight
+ * @returns {Promise<RunScoreRecord>} RunScoreRecord
+ * @throws {ParseError} If grade cannot be extracted
+ */
 export async function parseGenericReport(input: {
   content: string;
   stage: GenericAuditStage;

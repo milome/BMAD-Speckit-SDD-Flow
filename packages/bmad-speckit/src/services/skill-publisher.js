@@ -8,7 +8,9 @@ const os = require('os');
 const AIRegistry = require('./ai-registry');
 
 /**
- * Expand ~ in path to os.homedir()
+ * Expand ~ in path to os.homedir(). Handles ~, ~/, ~\.
+ * @param {string} [p] - Path that may start with ~.
+ * @returns {string} Expanded path or original if no tilde.
  */
 function expandTilde(p) {
   if (!p || typeof p !== 'string') return p;
@@ -20,8 +22,10 @@ function expandTilde(p) {
 }
 
 /**
- * Recursively copy directory, preserving structure
- * @returns {string[]} names of top-level subdirs copied
+ * Recursively copy directory, preserving structure.
+ * @param {string} src - Source directory.
+ * @param {string} dest - Destination directory.
+ * @returns {string[]} Names of top-level subdirs copied.
  */
 function copyDirRecursive(src, dest) {
   const copied = [];
@@ -44,11 +48,11 @@ function copyDirRecursive(src, dest) {
 }
 
 /**
- * Publish skills from source to configTemplate.skillsDir
- * @param {string} projectRoot - project root
- * @param {string} selectedAI - AI id from registry
- * @param {{ bmadPath?: string, noAiSkills?: boolean }} options
- * @returns {{ published: string[], skippedReasons: string[] }}
+ * Publish skills from _bmad/skills (or bmadPath/skills) to configTemplate.skillsDir.
+ * @param {string} projectRoot - Project root.
+ * @param {string} selectedAI - AI id from registry.
+ * @param {{ bmadPath?: string, noAiSkills?: boolean }} [options] - bmadPath for worktree; noAiSkills to skip.
+ * @returns {{ published: string[], skippedReasons: string[] }} Published skill dir names and skip reasons.
  */
 function publish(projectRoot, selectedAI, options = {}) {
   const noAiSkills = options.noAiSkills === true || options['no-ai-skills'] === true;

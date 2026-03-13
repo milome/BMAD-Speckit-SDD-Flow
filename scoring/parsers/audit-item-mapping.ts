@@ -90,8 +90,12 @@ function loadMapping(): Record<string, StageMapping> {
 }
 
 /**
- * 根据问题描述 note 查找标准 item_id，无匹配时返回 fallback。
- * 匹配规则：note 包含任一 patterns 时使用对应 item_id；按顺序尝试，先匹配优先。
+ * Look up standard item_id from config/audit-item-mapping.yaml by problem description.
+ * Match rule: note contains any pattern → use item_id; first match wins.
+ * @param {AuditStage} stage - Audit stage for mapping lookup
+ * @param {string} note - Problem description
+ * @param {string} fallback - Returned when no pattern matches
+ * @returns {string} item_id from mapping or fallback
  */
 export function resolveItemId(stage: AuditStage, note: string, fallback: string): string {
   const mapping = loadMapping();
@@ -107,7 +111,12 @@ export function resolveItemId(stage: AuditStage, note: string, fallback: string)
 }
 
 /**
- * 获取空清单/从维度评分时的 item_id（若映射表有定义则用映射，否则用传入的 fallback）。
+ * Get item_id for empty checklist or dimension-sourced case.
+ * Uses empty_overall or empty_dimensions from mapping when defined.
+ * @param {AuditStage} stage - Audit stage
+ * @param {'overall' | 'dimensions'} type - 'overall' or 'dimensions'
+ * @param {string} fallback - Returned when mapping has no override
+ * @returns {string} item_id from mapping or fallback
  */
 export function resolveEmptyItemId(
   stage: AuditStage,

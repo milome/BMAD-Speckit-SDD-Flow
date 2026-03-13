@@ -1,6 +1,8 @@
 /**
- * Built-in 22 AI configTemplate (Story 12.1, spec §4.3, PRD §5.12)
- * 每条含 id、name、description、configTemplate（commandsDir、rulesDir、skillsDir、agentsDir/configDir、subagentSupport）
+ * Built-in 22 AI configTemplate (Story 12.1, spec §4.3, PRD §5.12).
+ * 每条含 id、name、description、configTemplate（commandsDir、rulesDir、skillsDir、agentsDir/configDir、subagentSupport）。
+ * Used by AIRegistry as base entries; project/global registry override or extend.
+ * @type {Array<{ id: string, name: string, description: string, configTemplate: Record<string, unknown> }>}
  */
 module.exports = [
   { id: 'cursor-agent', name: 'Cursor Agent', description: 'Cursor IDE built-in agent', configTemplate: { commandsDir: '.cursor/commands', rulesDir: '.cursor/rules', skillsDir: '~/.cursor/skills', agentsDir: '.cursor/agents', subagentSupport: 'native' } },

@@ -14,6 +14,11 @@ const { resolveNetworkTimeoutMs } = require('../utils/network-timeout');
 const templateFetcher = require('../services/template-fetcher');
 const { generateSkeleton } = require('./init-skeleton');
 
+/**
+ * Read and parse a JSON file. Returns null on missing file or parse error.
+ * @param {string} filePath - Path to JSON file.
+ * @returns {Record<string, unknown> | null} Parsed object or null.
+ */
 function readJsonSafe(filePath) {
   if (!fs.existsSync(filePath)) return null;
   try {
@@ -23,6 +28,11 @@ function readJsonSafe(filePath) {
   }
 }
 
+/**
+ * Extract version from template dir package.json or _bmad/package.json.
+ * @param {string} templateDir - Path to template directory.
+ * @returns {string | null} Version string or null if not found.
+ */
 function getVersionFromTemplateDir(templateDir) {
   const pkgPath = path.join(templateDir, 'package.json');
   const pkg = readJsonSafe(pkgPath);
@@ -33,8 +43,11 @@ function getVersionFromTemplateDir(templateDir) {
 }
 
 /**
- * @param {string} cwd - working directory
- * @param {{ dryRun?: boolean, template?: string, offline?: boolean }} options
+ * Upgrade template version. Fetches template, updates config or regenerates skeleton.
+ * Un-init dir => exit 1. --dry-run: no writes. --offline: local cache only.
+ * @param {string} [cwd] - Working directory.
+ * @param {{ dryRun?: boolean, template?: string, offline?: boolean }} [options] - dryRun, template tag, offline mode.
+ * @returns {Promise<void>} Does not resolve; process.exit on completion.
  */
 async function upgradeCommandAsync(cwd, options = {}) {
   const resolvedCwd = cwd != null ? cwd : process.cwd();
@@ -115,6 +128,12 @@ async function upgradeCommandAsync(cwd, options = {}) {
   }
 }
 
+/**
+ * Upgrade command entry. Wraps upgradeCommandAsync and exits on error.
+ * @param {string} [cwd] - Working directory.
+ * @param {{ dryRun?: boolean, template?: string, offline?: boolean }} [options] - Command options.
+ * @returns {void} Does not return; process.exit on completion.
+ */
 function upgradeCommand(cwd, options = {}) {
   upgradeCommandAsync(cwd, options).catch((err) => {
     console.error('Error:', err?.message || err);

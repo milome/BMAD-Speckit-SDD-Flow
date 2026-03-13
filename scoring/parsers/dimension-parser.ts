@@ -1,7 +1,12 @@
+/**
+ * Dimension parser: extract dimension scores from report content.
+ * Uses code-reviewer-config modes.{mode}.dimensions for weights.
+ */
 import * as fs from 'fs';
 import * as path from 'path';
 import yaml from 'js-yaml';
 
+/** Single dimension score entry. */
 export interface DimensionScore {
   dimension: string;
   weight: number;
@@ -10,7 +15,7 @@ export interface DimensionScore {
 
 export type DimensionMode = 'code' | 'prd' | 'arch' | 'pr';
 
-const DIMENSION_SCORE_PATTERN = /^(?:[-*]\s*|\d+\.\s*)?(.+?)\s*[：:]\s*(\d+)\s*[\/／]\s*100\s*$/;
+const DIMENSION_SCORE_PATTERN = /^(?:[-*]\s*|\d+\.\s*)?(.+?)\s*[：:]\s*(\d+)\s*[/／]\s*100\s*$/;
 
 function getConfigPath(configPath?: string): string {
   return configPath ?? path.join(process.cwd(), 'config', 'code-reviewer-config.yaml');
@@ -21,7 +26,9 @@ function loadModeWeights(mode: DimensionMode, configPath?: string): Map<string, 
   if (!fs.existsSync(resolved)) return new Map();
 
   const content = fs.readFileSync(resolved, 'utf-8');
-  const parsed = yaml.load(content) as Record<string, any>;
+  const parsed = yaml.load(content) as {
+    modes?: Partial<Record<DimensionMode, { dimensions?: Array<{ name?: unknown; weight?: unknown }> }>>;
+  };
   const dimensions = parsed?.modes?.[mode]?.dimensions;
   if (!Array.isArray(dimensions)) return new Map();
 
@@ -35,6 +42,11 @@ function loadModeWeights(mode: DimensionMode, configPath?: string): Map<string, 
   return map;
 }
 
+/**
+ * Map audit stage to dimension mode for weight lookup.
+ * @param {string} stage - Audit stage string
+ * @returns {DimensionMode} DimensionMode (prd, arch, code, or pr)
+ */
 export function stageToMode(stage: string): DimensionMode {
   switch (stage) {
     case 'prd':
@@ -55,6 +67,14 @@ export function stageToMode(stage: string): DimensionMode {
   }
 }
 
+/**
+ * Parse dimension scores from report content. Format: "dimension: score/100".
+ * Uses mode weights from code-reviewer-config; returns only dimensions with configured weights.
+ * @param {string} content - Report text
+ * @param {DimensionMode} mode - Dimension mode for weight lookup
+ * @param {string} [configPath] - Optional path to code-reviewer-config.yaml
+ * @returns {DimensionScore[]} DimensionScore array
+ */
 export function parseDimensionScores(
   content: string,
   mode: DimensionMode,

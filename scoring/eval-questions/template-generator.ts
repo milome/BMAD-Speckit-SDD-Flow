@@ -9,6 +9,8 @@ import type { EvalQuestionEntry } from './manifest-loader';
 
 /**
  * 从 title 生成 slug：小写、空格→连字符、去除非字母数字；无效时返回 untitled
+ * @param {string} title - Title to convert
+ * @returns {string} Generated slug
  */
 export function generateSlugFromTitle(title: string): string {
   const trimmed = String(title || '').trim();
@@ -24,6 +26,8 @@ export function generateSlugFromTitle(title: string): string {
 
 /**
  * 从现有 questions 计算下一个 id（q001, q002, ...）
+ * @param {EvalQuestionEntry[]} questions - List of existing questions
+ * @returns {string} Next question ID
  */
 export function generateNextQuestionId(questions: EvalQuestionEntry[]): string {
   let max = 0;
@@ -40,6 +44,11 @@ export function generateNextQuestionId(questions: EvalQuestionEntry[]): string {
 
 /**
  * 生成符合 MANIFEST_SCHEMA §3.1 的最小模板
+ * @param {Object} params - Template parameters
+ * @param {string} params.id - Question ID
+ * @param {string} params.title - Question title
+ * @param {string} params.date - Date string
+ * @returns {string} Generated markdown template
  */
 export function generateQuestionTemplate(params: {
   id: string;
@@ -68,6 +77,9 @@ export function generateQuestionTemplate(params: {
 
 /**
  * 将新题目条目追加到 manifest.yaml
+ * @param {string} versionDir - Version directory path
+ * @param {EvalQuestionEntry} entry - Question entry to add
+ * @returns {void}
  */
 export function addQuestionToManifest(versionDir: string, entry: EvalQuestionEntry): void {
   const resolvedDir = path.isAbsolute(versionDir)

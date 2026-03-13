@@ -1,6 +1,11 @@
 import type { CoachDiagnosisReport } from './types';
 import { sanitizeIterationCount } from '../utils/sanitize-iteration';
 
+/**
+ * Format CoachDiagnosisReport to Markdown.
+ * @param {import('./types').CoachDiagnosisReport} report - Diagnosis report
+ * @returns {string} Markdown string
+ */
 export function formatToMarkdown(report: CoachDiagnosisReport): string {
   const counts = report.phase_iteration_counts;
   const phaseLines = Object.entries(report.phase_scores)

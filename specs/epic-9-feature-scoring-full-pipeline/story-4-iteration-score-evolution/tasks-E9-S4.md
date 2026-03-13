@@ -89,7 +89,7 @@
 
 ### T8 [x] 文档更新（GAP-5.1）
 
-- **修改**：`docs/BMAD/仪表盘健康度说明与数据分析指南.md`
+- **修改**：`docs/仪表盘健康度说明与数据分析指南.md`
 - **内容**：补充 iteration_records 可含 overall_grade、dimension_scores；演进轨迹展示规则；单轮通过时 iteration_records 为空
 - **验收**：grep "iteration_records" 可查
 

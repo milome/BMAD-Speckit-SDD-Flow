@@ -1,7 +1,13 @@
 /**
- * Story 9.1 T6: Story 完成自检 - 检查指定 epic/story 是否有评分记录
- * CLI: npx ts-node scripts/check-story-score-written.ts --epic N --story N [--dataPath path] [--stage story|implement]
- * --stage: 未指定时任意 stage 有 record 即 yes；story 时仅 stage===story 或 trigger_stage===bmad_story_stage2；implement 时仅 stage===implement 或 trigger_stage===bmad_story_stage4
+ * Check-story-score-written: 检查指定 epic/story 是否有评分记录。
+ *
+ * 用途：Story 完成自检，验证评分已写入。
+ *
+ * CLI 参数：--epic N --story N [--dataPath] [--stage story|implement]
+ *
+ * 示例：npx ts-node scripts/check-story-score-written.ts --epic 2 --story 1
+ *
+ * 退出码：0=有记录，1=无记录或参数错误
  */
 import { loadAndDedupeRecords } from '../scoring/query/loader';
 import { parseEpicStoryFromRecord } from '../scoring/query/parse-epic-story';

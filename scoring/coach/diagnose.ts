@@ -271,6 +271,15 @@ function buildWeakAreas(phaseScores: Record<string, number>): string[] {
     .map(([stage]) => stage);
 }
 
+/**
+ * Coach 诊断入口：基于 scoring 记录对指定 run_id 输出短板诊断与改进建议。
+ * 加载 persona、应用 veto/tier、聚类弱点、输出报告；受 forbidden words 校验约束。
+ *
+ * @param {string} runId - 评分 run_id（用于 loadRunRecords 或 options.records）。
+ * @param {CoachDiagnoseOptions} [options] - dataPath、rulesDir、configPath、personaPath、records 等可选。
+ * @returns {Promise<CoachDiagnoseResult>} CoachDiagnosisReport 或 CoachRunNotFound（run_id 无记录时）。
+ * @throws Error when forbidden_dominant_terms validation fails.
+ */
 export async function coachDiagnose(
   runId: string,
   options: CoachDiagnoseOptions = {}

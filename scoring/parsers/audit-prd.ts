@@ -42,8 +42,12 @@ export interface ParsePrdReportInput {
 }
 
 /**
- * 解析 prd 审计报告，产出 RunScoreRecord。
- * 等级 A/B/C/D → 100/80/60/40；问题清单 → check_items。
+ * Parse PRD audit report and produce RunScoreRecord.
+ * Grade A/B/C/D maps to 100/80/60/40; 问题清单 → check_items.
+ * @param {ParsePrdReportInput} input - content or reportPath, runId, scenario
+ * @returns {Promise<RunScoreRecord>} RunScoreRecord for prd stage
+ * @throws {ReportFileNotFoundError} If reportPath does not exist
+ * @throws {ParseError} If content/reportPath missing or grade cannot be extracted
  */
 export async function parsePrdReport(input: ParsePrdReportInput): Promise<RunScoreRecord> {
   let content: string;

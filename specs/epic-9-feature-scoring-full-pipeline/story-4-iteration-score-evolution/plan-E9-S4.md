@@ -86,7 +86,7 @@
 
 #### Phase 3.3：文档更新（T8）
 
-1. **docs/BMAD/仪表盘健康度说明与数据分析指南.md**：补充 iteration_records 扩展说明、演进轨迹展示规则、单轮通过时为空
+1. **docs/仪表盘健康度说明与数据分析指南.md**：补充 iteration_records 扩展说明、演进轨迹展示规则、单轮通过时为空
 2. **验收**：grep "iteration_records" 可查
 
 #### Phase 3.4：单元测试与 E2E（T9）

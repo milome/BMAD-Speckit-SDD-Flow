@@ -13,7 +13,7 @@
 | 原始需求文档 | 路径 |
 |--------------|------|
 | Story 4.3 | `_bmad-output/implementation-artifacts/4-3-eval-scenario-bmad-integration/4-3-eval-scenario-bmad-integration.md` |
-| REQUIREMENTS §1.4、§2.2、§3.7 | `docs/BMAD/REQUIREMENTS_AI代码评测体系_全流程审计闭环输出与迭代标准_需求分析.md` |
+| REQUIREMENTS §1.4、§2.2、§3.7 | REQUIREMENTS_AI代码评测体系_全流程审计闭环输出与迭代标准_需求分析.md |
 | architecture §7 | `_bmad-output/planning-artifacts/dev/architecture.ai-code-eval-system.md` |
 
 ---

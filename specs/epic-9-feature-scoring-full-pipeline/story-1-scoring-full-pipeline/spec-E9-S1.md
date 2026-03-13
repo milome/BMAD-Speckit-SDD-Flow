@@ -114,7 +114,7 @@ npx ts-node scripts/parse-and-write-score.ts --reportPath <path> --stage tasks -
 
 | 项 | 规格 |
 |------|------|
-| 文档 | docs/BMAD/审计报告格式与解析约定.md 新增「Story 完成自检」章节 |
+| 文档 | 审计报告格式与解析约定文档新增「Story 完成自检」章节 |
 | 内容 | 检查逻辑、scoring/data 路径、run_id 与 epic/story 对应关系 |
 | 验收 | grep `Story 完成自检` 有匹配 |
 
@@ -175,7 +175,7 @@ npx ts-node scripts/parse-and-write-score.ts --reportPath <path> --stage tasks -
 | scoring/dashboard | scoring/dashboard/compute.ts | T7、T8、T9 |
 | scoring/query | scoring/query/loader.ts | T7 |
 | scripts | scripts/dashboard-generate.ts | T8 |
-| docs | docs/BMAD/审计报告格式与解析约定.md | T6 |
+| docs | 审计报告格式与解析约定文档 | T6 |
 | scoring/docs | scoring/docs/RUN_ID_CONVENTION.md | T11 |
 
 ---

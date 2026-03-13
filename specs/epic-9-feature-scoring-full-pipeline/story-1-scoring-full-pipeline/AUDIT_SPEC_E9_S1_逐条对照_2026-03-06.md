@@ -20,7 +20,7 @@
 | AC-3 | 主 Agent 收到审计通过后自动解析 reportPath | spec §3.2.1 | 对照自动化逻辑、SCORE_WRITE_SKIP_REPORT_MISSING 边界 | ✅ 覆盖 |
 | AC-4 | parse-and-write-score 支持 trigger_stage | spec §3.2.2 | 对照 RunScoreRecord、CLI、单测 | ✅ 覆盖 |
 | AC-5 | Story 完成时检查 scoring/data 是否已写入 | spec §3.3.1 | 对照 check-story-score-written 脚本、嵌入位置 | ✅ 覆盖 |
-| AC-6 | 检查逻辑与路径约定文档化 | spec §3.3.2 | 对照 docs/BMAD 章节、grep 验收 | ✅ 覆盖 |
+| AC-6 | 检查逻辑与路径约定文档化 | spec §3.3.2 | 对照文档章节、grep 验收 | ✅ 覆盖 |
 | AC-7 | 聚合逻辑：按时间窗口与 epic/story | spec §3.4.1 | 对照 aggregateByEpicStoryTimeWindow、getLatestRunRecordsV2 | ✅ 覆盖 |
 | AC-8 | 仪表盘按 epic/story 聚合总分与四维 | spec §3.4.2 | 对照 dashboard-generate、策略、验收 | ⚠️ 部分覆盖（见 1.3） |
 | AC-9 | 跨 run 聚合与短板计算 | spec §3.4.3 | 对照 getWeakTop3、最低分规则 | ✅ 覆盖 |

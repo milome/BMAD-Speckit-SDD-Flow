@@ -149,6 +149,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Verify all required tasks are completed
    - Check that implemented features match the original specification
    - Validate that tests pass and coverage meets requirements
+   - 项目须按技术栈执行 Lint（见 lint-requirement-matrix）；若使用主流语言但未配置 Lint 须修复；已配置的须执行且无错误、无警告，方可宣布完成。
    - Confirm the implementation follows the technical plan
    - Report final status with summary of completed work
 

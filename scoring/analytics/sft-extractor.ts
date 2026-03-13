@@ -35,6 +35,11 @@ export interface ExtractSftDatasetOptions {
 const SECTION_1_RE = /## §1[^\n]*\n([\s\S]*?)(?=## §|$)/;
 const SECTION_4_RE = /## §4[^\n]*\n([\s\S]*?)(?=## §|$)/;
 
+/**
+ * Extract §1 and §4 sections from BUGFIX document.
+ * @param {string} content - BUGFIX markdown content
+ * @returns {{ s1: string; s4: string } | null} { s1, s4 } or null
+ */
 export function extractBugfixSections(content: string): { s1: string; s4: string } | null {
   const m1 = content.match(SECTION_1_RE);
   const m4 = content.match(SECTION_4_RE);
@@ -45,6 +50,11 @@ export function extractBugfixSections(content: string): { s1: string; s4: string
   return { s1, s4 };
 }
 
+/**
+ * 解析 git diff 输出为 input/output 文本对。
+ * @param {string} diff - git diff 输出
+ * @returns {{ input: string; output: string }} input 为删除行，output 为新增行
+ */
 export function parseDiffToInputOutput(diff: string): { input: string; output: string } {
   const inputLines: string[] = [];
   const outputLines: string[] = [];
@@ -65,6 +75,10 @@ export function parseDiffToInputOutput(diff: string): { input: string; output: s
  * 执行 git diff 获取两个 commit 之间的差异。
  * 短 hash 会通过 git rev-parse --verify 验证唯一性。
  * 使用 getGitHeadHashFull 获取 40 位 HEAD 作为 hash2。
+ * @param {string} hash1 - 起始 commit hash
+ * @param {string} hash2 - 结束 commit hash（可为 HEAD）
+ * @param {string} [cwd] - 工作目录
+ * @returns {string} git diff 输出
  */
 export function gitDiffBetween(hash1: string, hash2: string, cwd?: string): string {
   const workDir = cwd ?? process.cwd();
@@ -173,6 +187,14 @@ function formatSummary(summary: SftExtractSummary): string {
  * git diff 失败时 fallback 为 instruction-only（has_code_pair: false）。
  * 按 source_run_id+base_commit_hash+source_path 去重。
  */
+/**
+ * Extract SFT dataset from scoring records and git diffs.
+ * Processes low-score records with source_path and base_commit_hash.
+ * @param {string} [dataPath] - Optional; defaults to scoring/data
+ * @param {string} [outputPath] - Optional output path
+ * @param {ExtractSftDatasetOptions} [options] - threshold, etc.
+ * @returns {Promise<{ entries: SftEntry[]; summary: SftExtractSummary }>} entries and summary
+ */
 export async function extractSftDataset(
   dataPath?: string,
   outputPath?: string,
@@ -217,7 +239,7 @@ export async function extractSftDataset(
       continue;
     }
 
-    let sections = extractBugfixSections(bugfixContent);
+    const sections = extractBugfixSections(bugfixContent);
     let instruction: string;
     if (sections) {
       instruction = [sections.s1, sections.s4].join('\n\n');

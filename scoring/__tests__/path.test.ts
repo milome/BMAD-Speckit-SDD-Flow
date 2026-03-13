@@ -1,6 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { getScoringDataPath } from '../constants/path';
-import path from 'path';
 
 describe('getScoringDataPath', () => {
   const orig = process.env.SCORING_DATA_PATH;

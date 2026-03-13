@@ -24,7 +24,7 @@
 | spec §3.2.3, T11 | GAP-2.4 | run_id 共享、--runGroupId 或 dev-e{epic}-s{story}-{ts} | 未实现 | parse-and-write-score 无 --runGroupId；runId 每次生成新 ts；RUN_ID_CONVENTION 未补充多 stage 共享约定 |
 | spec §3.3.1, T5 | GAP-3.1 | check-story-score-written.ts | 未实现 | 脚本不存在 |
 | spec §3.3.1, T5 | GAP-3.2 | bmad-story-assistant 嵌入检查步骤 | 未实现 | 阶段四无「提供完成选项前执行 check-story-score-written」 |
-| spec §3.3.2, T6 | GAP-3.3 | Story 完成自检文档章节 | 未实现 | docs/BMAD/审计报告格式与解析约定.md 无「Story 完成自检」章节 |
+| spec §3.3.2, T6 | GAP-3.3 | Story 完成自检文档章节 | 未实现 | 审计报告格式文档无「Story 完成自检」章节 |
 | spec §3.4.1, T7 | GAP-4.1 | aggregateByEpicStoryTimeWindow | 未实现 | scoring/dashboard/compute.ts 无此函数 |
 | spec §3.4.1, T7 | GAP-4.2 | getLatestRunRecordsV2 | 未实现 | 仅有 getLatestRunRecords；无 strategy、epic、story、windowHours 参数 |
 | spec §3.4.2, T8 | GAP-4.3 | dashboard-generate --strategy epic_story_window | 未实现 | 脚本无 --strategy 参数；固定使用 getLatestRunRecords；无完整 run 定义、退化逻辑 |

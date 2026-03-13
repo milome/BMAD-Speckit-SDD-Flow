@@ -125,7 +125,7 @@
 
 ### T6.2 [x] 文档化 triggerStage 与 stage 一致可省略约定（GAP-6.2）
 
-- **修改**：`docs/BMAD/审计报告格式与解析约定.md` 或 `scoring/docs/` 或 `config/README`
+- **修改**：`审计报告格式与解析约定文档` 或 `scoring/docs/` 或 `config/README`
 - **内容**：补充「当 triggerStage 与 stage 一致时可省略 --triggerStage；--stage implement 时默认 triggerStage=implement，由 implement_audit_pass 匹配」
 - **验收**：grep 可查到约定
 

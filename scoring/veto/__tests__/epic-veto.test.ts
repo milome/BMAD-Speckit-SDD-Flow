@@ -44,7 +44,7 @@ describe('evaluateEpicVeto', () => {
   });
 
   it('③ high risk vuln >= 2 triggers', () => {
-    const vetoIds = ['veto_core_logic', 'veto_owasp_high'];
+    const _vetoIds = ['veto_core_logic', 'veto_owasp_high'];
     const records = [
       makeStoryRecord({
         check_items: [

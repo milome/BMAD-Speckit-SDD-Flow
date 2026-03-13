@@ -1,6 +1,5 @@
 /**
- * T2: 审计报告解析器
- * 解析批判审计员结论、GAP 列表、修改建议，供 SFT 提取器使用
+ * 审计报告解析器：解析批判审计员结论、GAP 列表、修改建议，供 SFT 提取器使用。
  */
 export interface AuditReportSections {
   criticConclusion: string;
@@ -17,7 +16,9 @@ const SUGGESTIONS_BOLD_RE = /\*\*修改建议\*\*[：:]\s*([^\n]+(?:\n(?!\*\*)[^
 const SUGGESTIONS_TABLE_RE = /\|\s*Gap\s*\|\s*修改建议\s*\|[\s\S]*?\n\|[-:\s|]+\|\s*\n([\s\S]*?)(?=\n\n|##\s|$)/i;
 
 /**
- * 解析审计报告中的批判审计员结论、GAP 列表、修改建议
+ * 解析审计报告中的批判审计员结论、GAP 列表、修改建议。
+ * @param {string} content - 审计报告 markdown 全文
+ * @returns {AuditReportSections} 结构化 sections（criticConclusion, gaps, suggestions）
  */
 export function extractAuditReportSections(content: string): AuditReportSections {
   const criticConclusion = parseCriticConclusion(content);

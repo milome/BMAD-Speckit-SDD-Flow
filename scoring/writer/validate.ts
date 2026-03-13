@@ -17,7 +17,10 @@ function getValidate() {
 }
 
 /**
- * 校验 record 是否符合 run-score-schema；不符合则抛出错误。
+ * Validate record against run-score-schema. Throws if invalid.
+ * @param {unknown} record - Unknown value to validate
+ * @throws {Error} If validation fails
+ * @returns {void}
  */
 export function validateRunScoreRecord(record: unknown): asserts record is RunScoreRecord {
   const validate = getValidate();
@@ -29,9 +32,11 @@ export function validateRunScoreRecord(record: unknown): asserts record is RunSc
 }
 
 /**
- * 校验 record 符合场景约束（Story 4.3 spec §2.1）。
- * - scenario 必为 real_dev | eval_question
- * - scenario=eval_question 时 question_version 必填（非空字符串）
+ * Validate scenario constraints (Story 4.3 spec §2.1).
+ * scenario must be real_dev | eval_question; when eval_question, question_version required.
+ * @param {RunScoreRecord} record - RunScoreRecord to validate
+ * @throws {Error} If constraints violated
+ * @returns {void}
  */
 export function validateScenarioConstraints(record: RunScoreRecord): void {
   if (record.scenario !== 'real_dev' && record.scenario !== 'eval_question') {

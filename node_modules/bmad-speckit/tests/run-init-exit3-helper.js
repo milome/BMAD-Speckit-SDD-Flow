@@ -3,7 +3,6 @@
  * Spawned as subprocess so nock intercepts HTTP before init runs
  */
 const nock = require('nock');
-const path = require('path');
 
 const tmpDir = process.argv[2] || process.cwd();
 nock('https://example.com')

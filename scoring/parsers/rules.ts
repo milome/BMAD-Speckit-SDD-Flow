@@ -25,7 +25,11 @@ function getConfigPath(options?: { configPath?: string }): string {
   return options?.configPath ?? path.join(root, 'config', 'code-reviewer-config.yaml');
 }
 
-/** 加载并解析 code-reviewer-config.yaml */
+/**
+ * 加载并解析 code-reviewer-config.yaml
+ * @param {string} configPath - Config path
+ * @returns {object} Config object with items and veto_items
+ */
 function loadCodeReviewerConfig(configPath: string): {
   items?: Record<string, { name?: string; description?: string; [k: string]: unknown }>;
   veto_items?: Record<string, { name?: string; consequence?: string; [k: string]: unknown }>;
@@ -39,8 +43,11 @@ function loadCodeReviewerConfig(configPath: string): {
 }
 
 /**
- * 解析 ref 并返回 code-reviewer-config 中对应的检查项
- * @throws RefResolutionError 若 item_id 在 config 中不存在
+ * Resolve ref (code-reviewer-config#item_id) to ResolvedItem from code-reviewer-config.
+ * @param {string} ref - Reference string, e.g. code-reviewer-config#item_id
+ * @param {string} [configPath] - Optional path to code-reviewer-config.yaml
+ * @returns {ResolvedItem} ResolvedItem with item_id, name, description
+ * @throws {RefResolutionError} If item_id not found in config
  */
 export function resolveRef(ref: string, configPath?: string): ResolvedItem {
   const m = ref.match(REF_PATTERN);
@@ -68,6 +75,11 @@ export function resolveRef(ref: string, configPath?: string): ResolvedItem {
 
 /**
  * 加载环节 2/3/4 的 YAML
+ * @param {2 | 3 | 4} phase - Phase number
+ * @param {object} [options] - Options object
+ * @param {string} [options.rulesDir] - Rules directory path
+ * @param {string} [options.configPath] - Config path
+ * @returns {PhaseScoringYaml} PhaseScoringYaml
  */
 export function loadPhaseScoringYaml(
   phase: 2 | 3 | 4,
@@ -87,7 +99,13 @@ export function loadPhaseScoringYaml(
 }
 
 /**
- * 加载 spec/plan/tasks 阶段 YAML（Story 5.2 B03）
+ * Load spec/plan/tasks stage scoring YAML (Story 5.2 B03).
+ * @param {'spec' | 'plan' | 'tasks'} stage - spec, plan, or tasks
+ * @param {object} [options] - Options object
+ * @param {string} [options.rulesDir] - Rules directory path
+ * @param {string} [options.configPath] - Config path
+ * @returns {PhaseScoringYaml} PhaseScoringYaml
+ * @throws {Error} If file invalid
  */
 export function loadStageScoringYaml(
   stage: 'spec' | 'plan' | 'tasks',
@@ -107,7 +125,11 @@ export function loadStageScoringYaml(
 }
 
 /**
- * 加载 gaps-scoring.yaml
+ * Load gaps-scoring.yaml from rules directory.
+ * @param {object} [options] - Options object
+ * @param {string} [options.rulesDir] - Rules directory path
+ * @returns {GapsScoringYaml} GapsScoringYaml
+ * @throws {Error} If version, stage, or weights missing
  */
 export function loadGapsScoringYaml(options?: { rulesDir?: string }): GapsScoringYaml {
   const rulesDir = getRulesDir(options);
@@ -121,7 +143,11 @@ export function loadGapsScoringYaml(options?: { rulesDir?: string }): GapsScorin
 }
 
 /**
- * 加载 iteration-tier.yaml
+ * Load iteration-tier.yaml from rules directory.
+ * @param {object} [options] - Options object
+ * @param {string} [options.rulesDir] - Rules directory path
+ * @returns {IterationTierYaml} IterationTierYaml
+ * @throws {Error} If iteration_tier missing
  */
 export function loadIterationTierYaml(options?: { rulesDir?: string }): IterationTierYaml {
   const rulesDir = getRulesDir(options);
@@ -136,6 +162,8 @@ export function loadIterationTierYaml(options?: { rulesDir?: string }): Iteratio
 
 /**
  * 校验环节 2/3/4 YAML 并解析所有 ref（确保 item_id 存在）
+ * @param {PhaseScoringYaml} y - Phase scoring YAML
+ * @param {string} [configPath] - Config path
  */
 function validatePhaseScoringYaml(y: PhaseScoringYaml, configPath?: string): void {
   if (!y.version || !y.stage || !y.link_stage || !y.weights || !y.items) {

@@ -81,7 +81,7 @@ AI 教练的人格定义须与 BMAD agent 的 persona 结构一致（参见 `_bm
 | recommendations | string[] | 改进建议列表 |
 | iteration_passed | boolean | 迭代是否达标；false 时行使一票否决 |
 
-**格式支持**：JSON 与 Markdown。与 §3.6 schema 兼容 = 字段名与 REQUIREMENTS §3.6 数据保存 schema 一致（summary、phase_scores、weak_areas、recommendations、iteration_passed）；引用路径：docs/BMAD/REQUIREMENTS_AI代码评测体系_全流程审计闭环输出与迭代标准_需求分析.md §3.6。
+**格式支持**：JSON 与 Markdown。与 §3.6 schema 兼容 = 字段名与 REQUIREMENTS §3.6 数据保存 schema 一致（summary、phase_scores、weak_areas、recommendations、iteration_passed）；引用路径：REQUIREMENTS_AI代码评测体系_全流程审计闭环输出与迭代标准_需求分析.md §3.6。
 
 ### 2.6 一票否决权
 

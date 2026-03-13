@@ -88,7 +88,7 @@
 
 ### T8 [x] Story 完成自检文档章节（GAP-3.3）
 
-- **修改**：`docs/BMAD/审计报告格式与解析约定.md` 新增「Story 完成自检」章节
+- **修改**：审计报告格式与解析约定文档新增「Story 完成自检」章节
 - **内容**：检查逻辑、scoring/data 路径、run_id 与 epic/story 对应关系
 - **验收**：grep `Story 完成自检` 有匹配
 

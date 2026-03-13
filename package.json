@@ -3,8 +3,12 @@
   "version": "0.1.0",
   "description": "BMAD + Speckit workflow and scoring skeleton; deploy _bmad, _bmad-output, commands, rules to project root",
   "scripts": {
-    "postinstall": "node scripts/init-to-root.js",
-    "init": "node scripts/init-to-root.js",
+    "lint": "eslint . --ext .ts,.js",
+    "lint:fix": "eslint . --ext .ts,.js --fix",
+    "format": "prettier --write \"scoring/**/*.ts\" \"scripts/**/*.ts\" \"vitest.config.ts\"",
+    "format:check": "prettier --check \"scoring/**/*.ts\" \"scripts/**/*.ts\" \"vitest.config.ts\"",
+    "postinstall": "node scripts/init-to-root.js --agent cursor",
+    "init": "node scripts/init-to-root.js --agent cursor",
     "setup": "pwsh scripts/setup.ps1",
     "setup:sh": "bash scripts/setup.sh",
     "setup:full": "pwsh scripts/setup.ps1 -Full",
@@ -52,6 +56,13 @@
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.3.3",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "@vitest/coverage-v8": "^4.0.18",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-jsdoc": "^62.7.1",
+    "prettier": "^3.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"

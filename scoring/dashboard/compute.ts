@@ -6,7 +6,11 @@ import { parseEpicStoryFromRecord } from '../query';
 import { sanitizeIterationCount } from '../utils/sanitize-iteration';
 import type { RunScoreRecord } from '../writer/types';
 
-/** 按 run_id 分组 */
+/**
+ * Group records by run_id.
+ * @param {RunScoreRecord[]} records - RunScoreRecord 数组
+ * @returns {Map<string, RunScoreRecord[]>} 按 run_id 分组的 Map
+ */
 export function groupByRunId(
   records: RunScoreRecord[]
 ): Map<string, RunScoreRecord[]> {
@@ -19,7 +23,11 @@ export function groupByRunId(
   return byRun;
 }
 
-/** 取最新 run 的 records（按 run 最大 timestamp 降序，取第一组） */
+/**
+ * 获取最新运行的记录
+ * @param {RunScoreRecord[]} records - RunScoreRecord 数组
+ * @returns {RunScoreRecord[]} 最新运行的记录
+ */
 export function getLatestRunRecords(records: RunScoreRecord[]): RunScoreRecord[] {
   if (records.length === 0) return [];
   const groups = groupByRunId(records);
@@ -31,7 +39,13 @@ export function getLatestRunRecords(records: RunScoreRecord[]): RunScoreRecord[]
   return sorted[0]?.[1] ?? [];
 }
 
-/** Story 9.3: 按 epic 筛选记录（不含 story 约束），时间窗口内 */
+/**
+ * Story 9.3: 按 epic 筛选记录（不含 story 约束），时间窗口内
+ * @param {RunScoreRecord[]} records - RunScoreRecord 数组
+ * @param {number} epicId - Epic ID
+ * @param {number} windowHours - 时间窗口（小时）
+ * @returns {RunScoreRecord[]} 筛选后的记录
+ */
 export function aggregateByEpicOnly(
   records: RunScoreRecord[],
   epicId: number,
@@ -45,7 +59,13 @@ export function aggregateByEpicOnly(
   });
 }
 
-/** Story 9.3: Epic 聚合记录：按 epic:story 分组，每组取最新完整 run，排除不完整 Story */
+/**
+ * Story 9.3: Epic 聚合记录：按 epic:story 分组，每组取最新完整 run，排除不完整 Story
+ * @param {RunScoreRecord[]} records - RunScoreRecord 数组
+ * @param {number} epicId - Epic ID
+ * @param {number} windowHours - 时间窗口（小时）
+ * @returns {RunScoreRecord[]} 聚合后的记录
+ */
 export function getEpicAggregateRecords(
   records: RunScoreRecord[],
   epicId: number,
@@ -83,7 +103,11 @@ export function getEpicAggregateRecords(
   return result;
 }
 
-/** Story 9.3: Epic 总分（Per-Story computeHealthScore 后简单平均） */
+/**
+ * Story 9.3: Epic 总分（Per-Story computeHealthScore 后简单平均）
+ * @param {RunScoreRecord[]} epicRecords - Epic 评分记录数组
+ * @returns {number} Epic 健康分数
+ */
 export function computeEpicHealthScore(epicRecords: RunScoreRecord[]): number {
   if (epicRecords.length === 0) return 0;
   const byEpicStory = new Map<string, RunScoreRecord[]>();
@@ -105,7 +129,11 @@ export function computeEpicHealthScore(epicRecords: RunScoreRecord[]): number {
   return Math.round(avg);
 }
 
-/** Story 9.3: Epic 四维分数（每 Story getDimensionScores 后同维度 Story 级平均） */
+/**
+ * Story 9.3: Epic 四维分数（每 Story getDimensionScores 后同维度 Story 级平均）
+ * @param {RunScoreRecord[]} epicRecords - Epic 评分记录数组
+ * @returns {DimensionEntry[]} 维度分数列表
+ */
 export function getEpicDimensionScores(
   epicRecords: RunScoreRecord[]
 ): DimensionEntry[] {
@@ -150,7 +178,14 @@ export function getEpicDimensionScores(
   });
 }
 
-/** Story 9.1 T9: 按 epic/story 与时间窗口筛选记录 */
+/**
+ * Story 9.1 T9: 按 epic/story 与时间窗口筛选记录
+ * @param {RunScoreRecord[]} records - RunScoreRecord 数组
+ * @param {number} epicId - Epic ID
+ * @param {number} storyId - Story ID
+ * @param {number} windowHours - 时间窗口（小时）
+ * @returns {RunScoreRecord[]} 筛选后的记录
+ */
 export function aggregateByEpicStoryTimeWindow(
   records: RunScoreRecord[],
   epicId: number,
@@ -168,7 +203,11 @@ export function aggregateByEpicStoryTimeWindow(
 /** 完整 run 定义：至少 2 个 stage（story+implement 为 2-stage 设计） */
 const MIN_STAGES_COMPLETE_RUN = 2;
 
-/** Story 9.2: 当 trigger_stage=speckit_5_2 时等效为 implement，否则用 record.stage */
+/**
+ * Story 9.2: 当 trigger_stage=speckit_5_2 时等效为 implement，否则用 record.stage
+ * @param {RunScoreRecord} r - 评分记录
+ * @returns {string} 有效阶段名称
+ */
 export function effectiveStage(r: RunScoreRecord): string {
   return r.trigger_stage === 'speckit_5_2' ? 'implement' : r.stage;
 }
@@ -184,6 +223,8 @@ export interface GetLatestRunRecordsV2Options {
  * 按 run_group_id 或 (epic, story) 分组，兼容「每 stage 不同 run_id」的场景。
  * 当 run_id 各不相同、无法按 run_id 聚为完整 run 时，同一 epic/story 时间窗口内的
  * 多 stage 视为同一 run（T11 run_id 共享策略的 fallback）。
+ * @param {RunScoreRecord[]} records - RunScoreRecord 数组
+ * @returns {Map<string, RunScoreRecord[]>} 分组后的 Map
  */
 function groupByEpicStoryOrRunId(
   records: RunScoreRecord[]
@@ -201,7 +242,12 @@ function groupByEpicStoryOrRunId(
   return byKey;
 }
 
-/** Story 9.1 T9: 支持 epic_story_window 策略的取最新 run */
+/**
+ * Story 9.1 T9: 支持 epic_story_window 策略的取最新 run
+ * @param {RunScoreRecord[]} records - RunScoreRecord 数组
+ * @param {GetLatestRunRecordsV2Options} options - 选项配置
+ * @returns {RunScoreRecord[]} 最新运行的记录
+ */
 export function getLatestRunRecordsV2(
   records: RunScoreRecord[],
   options: GetLatestRunRecordsV2Options
@@ -273,7 +319,12 @@ export function getLatestRunRecordsV2(
   return getLatestRunRecords(realDev);
 }
 
-/** 取最近 n 个 run 的 record 数组（按 run 最大 timestamp 降序） */
+/**
+ * 取最近 n 个 run 的 record 数组（按 run 最大 timestamp 降序）
+ * @param {RunScoreRecord[]} records - RunScoreRecord 数组
+ * @param {number} n - 取最近的 n 个 run
+ * @returns {RunScoreRecord[][]} 最近 n 个 run 的记录数组
+ */
 export function getRecentRuns(
   records: RunScoreRecord[],
   n: number
@@ -288,7 +339,11 @@ export function getRecentRuns(
   return sorted.slice(0, n).map(([, arr]) => arr);
 }
 
-/** 单 run 的加权总分 */
+/**
+ * 计算健康分数（加权平均）
+ * @param {RunScoreRecord[]} records - RunScoreRecord 数组
+ * @returns {number} 加权健康分数 (0-100)
+ */
 export function computeHealthScore(records: RunScoreRecord[]): number {
   if (records.length === 0) return 0;
   let sumScore = 0;
@@ -336,7 +391,11 @@ export function getDimensionScores(
   });
 }
 
-/** Story 9.4: 从 iteration_records 格式化演进轨迹 */
+/**
+ * Story 9.4: 从 iteration_records 格式化演进轨迹
+ * @param {import('../writer/types').IterationRecord[] | undefined} recs - 迭代记录
+ * @returns {string | undefined} 格式化的演进轨迹
+ */
 function formatIterationEvolution(
   recs: import('../writer/types').IterationRecord[] | undefined
 ): string | undefined {
@@ -363,6 +422,11 @@ export interface HighIterEntry {
   evolution_trace?: string;
 }
 
+/**
+ * 获取高迭代次数的 Top 3
+ * @param {RunScoreRecord[]} records - RunScoreRecord 数组
+ * @returns {HighIterEntry[]} 高迭代次数条目列表
+ */
 export function getHighIterationTop3(records: RunScoreRecord[]): HighIterEntry[] {
   const sanitized = records.map((r) => ({
     record: r,
@@ -382,6 +446,11 @@ export function getHighIterationTop3(records: RunScoreRecord[]): HighIterEntry[]
   });
 }
 
+/**
+ * 获取最弱项的 Top 3
+ * @param {RunScoreRecord[]} records - RunScoreRecord 数组
+ * @returns {WeakEntry[]} 弱项条目列表
+ */
 export function getWeakTop3(records: RunScoreRecord[]): WeakEntry[] {
   const sorted = [...records].sort((a, b) => a.phase_score - b.phase_score);
   return sorted.slice(0, 3).map((r) => {
@@ -396,7 +465,11 @@ export function getWeakTop3(records: RunScoreRecord[]): WeakEntry[] {
   });
 }
 
-/** Story 9.1 T12: 按 epic/story 聚合，同一 Story 各 stage 取最低分，跨 run 短板 Top 3 */
+/**
+ * Story 9.1 T12: 按 epic/story 聚合，同一 Story 各 stage 取最低分，跨 run 短板 Top 3
+ * @param {RunScoreRecord[]} records - RunScoreRecord 数组
+ * @returns {WeakEntry[]} 弱项条目列表
+ */
 export function getWeakTop3EpicStory(records: RunScoreRecord[]): WeakEntry[] {
   const realDev = records.filter((r) => r.scenario !== 'eval_question');
   const byEpicStory = new Map<string, { minScore: number; stage: string; record: RunScoreRecord }>();
@@ -422,7 +495,11 @@ export function getWeakTop3EpicStory(records: RunScoreRecord[]): WeakEntry[] {
   return sorted.slice(0, 3);
 }
 
-/** Veto 触发计数 */
+/**
+ * Veto 触发计数
+ * @param {RunScoreRecord[]} records - RunScoreRecord 数组
+ * @returns {number} Veto 触发次数
+ */
 export function countVetoTriggers(records: RunScoreRecord[]): number {
   const vetoIds = buildVetoItemIds();
   let count = 0;
@@ -439,6 +516,11 @@ export function countVetoTriggers(records: RunScoreRecord[]): number {
 /** 趋势：升 | 降 | 持平 */
 export type TrendDirection = '升' | '降' | '持平';
 
+/**
+ * 获取趋势方向
+ * @param {RunScoreRecord[]} records - RunScoreRecord 数组
+ * @returns {TrendDirection} 趋势方向（升、降、持平）
+ */
 export function getTrend(records: RunScoreRecord[]): TrendDirection {
   const runs = getRecentRuns(records, 5);
   if (runs.length === 0) return '持平';

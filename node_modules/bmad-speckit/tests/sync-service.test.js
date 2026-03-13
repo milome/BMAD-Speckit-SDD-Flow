@@ -107,13 +107,13 @@ describe('SyncService (Story 12.2 T1)', () => {
     const projectRoot = path.join(tmpRoot, 't1_5');
     mkdirp(projectRoot);
     createCursorSource(path.join(projectRoot, '_bmad'));
-    const entry = { configTemplate: { commandsDir: '.cursor/commands', vscodeSettings: { 'editor.formatOnSave': true } } };
+    const _entry = { configTemplate: { commandsDir: '.cursor/commands', vscodeSettings: { 'editor.formatOnSave': true } } };
     const SyncService = require('../src/services/sync-service');
     SyncService.syncCommandsRulesConfig(projectRoot, 'cursor-agent', {});
-    const entryWithVscode = { configTemplate: { commandsDir: '.cursor/commands', rulesDir: '.cursor/rules', vscodeSettings: { 'editor.formatOnSave': true, 'files.encoding': 'utf8' } } };
+    const _entryWithVscode = { configTemplate: { commandsDir: '.cursor/commands', rulesDir: '.cursor/rules', vscodeSettings: { 'editor.formatOnSave': true, 'files.encoding': 'utf8' } } };
     const AIRegistry = require('../src/services/ai-registry');
-    const originalGetById = AIRegistry.getById.bind(AIRegistry);
-    let patched = false;
+    const _originalGetById = AIRegistry.getById.bind(AIRegistry);
+    let _patched = false;
     const SyncService2 = require('../src/services/sync-service');
     const projectRoot2 = path.join(tmpRoot, 't1_5b');
     mkdirp(projectRoot2);

@@ -3,6 +3,8 @@ import { PHASE_WEIGHTS, PHASE_MAX_SCORES, LEVEL_RANGES } from '../constants/weig
 /**
  * 综合得分 = Σ(环节得分/满分 × 对应权重) × 100，0–100 分（需求 §3.2）
  * 环节得分为 0–满分，按权重参与综合分计算
+ * @param {number[]} phaseScores - 六个环节得分
+ * @returns {number} 0–100 综合分
  */
 export function computeCompositeScore(phaseScores: number[]): number {
   if (phaseScores.length !== 6) {
@@ -18,6 +20,8 @@ export function computeCompositeScore(phaseScores: number[]): number {
 /**
  * 四能力维度聚合（需求 §3.2）
  * 需求与设计=环节1；代码与工程=环节2+5；质量与闭环=环节3+4；端到端=环节6
+ * @param {number[]} phaseScores - 六个环节得分
+ * @returns {Record<string, number>} 四能力维度分数
  */
 export function aggregateFourDimensions(phaseScores: number[]): Record<string, number> {
   if (phaseScores.length !== 6) {
@@ -34,6 +38,8 @@ export function aggregateFourDimensions(phaseScores: number[]): Record<string, n
 
 /**
  * 综合分 → L1–L5 等级。边界值归属高等级（如 90 归属 L5）
+ * @param {number} score - 综合得分
+ * @returns {string} L1–L5 等级
  */
 export function scoreToLevel(score: number): string {
   for (const { min, max, level } of LEVEL_RANGES) {

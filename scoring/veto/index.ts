@@ -22,8 +22,10 @@ export interface ApplyTierAndVetoResult {
 }
 
 /**
- * 先判定 veto，若触发则 phase_score=0；否则应用阶梯系数。
- * raw_phase_score 由调用方传入；若无则用 phase_score 作基数（文档化限制：可能重复应用阶梯，调用方需避免）。
+ * Apply veto and tier: if veto triggered, phase_score=0; else apply tier coefficient to raw score.
+ * @param {RunScoreRecord & { raw_phase_score?: number }} record - RunScoreRecord; raw_phase_score optional pre-tier base
+ * @param {ApplyTierAndVetoOptions} [options] - rulesDir
+ * @returns {ApplyTierAndVetoResult} ApplyTierAndVetoResult with phase_score, veto_triggered, tier_coefficient
  */
 export function applyTierAndVeto(
   record: RunScoreRecord & { raw_phase_score?: number },

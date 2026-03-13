@@ -75,6 +75,7 @@ Use these when invoking mcp_task for implementation (generalPurpose) and audit (
 4. 验收表/验收命令是否已按实际执行并填写
 5. 是否遵守 ralph-method（prd/progress 更新、US 顺序）；涉及生产代码的每个 US 是否含 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 各至少一行（[TDD-REFACTOR] 允许写「无需重构 ✓」；[TDD-RED] 须在 [TDD-GREEN] 之前）
 6. 是否无「将在后续迭代」等延迟表述；是否无标记完成但未调用
+7. 项目须按技术栈配置并执行 Lint（见 lint-requirement-matrix）；若使用主流语言但未配置 Lint 须作为未通过项；已配置的须执行且无错误、无警告。禁止以「与本次任务不相关」豁免。
 
 ## 批判审计员
 从对抗视角检查：遗漏任务、行号或路径失效、验收命令未跑、§5/验收误伤或漏网。

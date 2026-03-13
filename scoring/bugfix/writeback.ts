@@ -23,6 +23,8 @@ export class ParseError extends Error {
 /**
  * 解析 BUGFIX §7 下已完成的 checkbox 任务。
  * 支持 - [x]、* [X]、  - [x]、1. [x] 等变体。
+ * @param {string} content - BUGFIX 文档内容
+ * @returns {string[]} 已完成任务文本列表
  */
 function extractCompletedTasks(content: string): string[] {
   const sectionMatch = content.match(SECTION_7_REGEX);
@@ -45,6 +47,11 @@ function extractCompletedTasks(content: string): string[] {
 /**
  * BUGFIX §7 已完成任务回写到 progress.txt。
  * progress.txt 不存在则创建；存在则追加。
+ * @param {string} bugfixDocPath - BUGFIX 文档路径
+ * @param {string} storyProgressPath - Story progress.txt 路径
+ * @param {string} branchId - 分支 ID
+ * @param {string} storyId - Story ID
+ * @returns {WritebackResult} 回写结果
  */
 export function writebackBugfixToStory(
   bugfixDocPath: string,

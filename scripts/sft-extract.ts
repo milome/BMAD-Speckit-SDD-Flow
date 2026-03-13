@@ -1,9 +1,13 @@
 /**
- * Story 7.2: /bmad-sft-extract CLI 入口
- * 用法：
- *   npx ts-node scripts/sft-extract.ts
- *   npx ts-node scripts/sft-extract.ts --threshold 50
- *   npx ts-node scripts/sft-extract.ts --output /path/to/sft-dataset.jsonl
+ * SFT-extract CLI: 从 scoring 数据提取 SFT 训练数据集。
+ *
+ * 用途：筛选低分记录，提取 git diff 作为 input/output 对，写入 sft-dataset.jsonl。
+ *
+ * CLI 参数：--threshold, --output
+ *
+ * 示例：npx ts-node scripts/sft-extract.ts --threshold 50
+ *
+ * 退出码：0=成功，1=错误
  */
 import * as path from 'path';
 import { getScoringDataPath } from '../scoring/constants/path';
@@ -54,7 +58,7 @@ async function main(): Promise<void> {
     ? (path.isAbsolute(output) ? output : path.resolve(process.cwd(), output))
     : undefined;
 
-  const { entries, summary } = await extractSftDataset(dataPath, outputPath, { threshold });
+  const { summary } = await extractSftDataset(dataPath, outputPath, { threshold });
   console.log(formatSummary(summary));
 }
 

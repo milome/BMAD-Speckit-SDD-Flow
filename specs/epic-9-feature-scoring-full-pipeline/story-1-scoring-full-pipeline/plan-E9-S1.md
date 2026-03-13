@@ -64,7 +64,7 @@
    - 检查逻辑：loadAndDedupeRecords + parseEpicStoryFromRecord 或 run_id 正则 `dev-e{N}-s{N}-`
    - 输出：有/无记录
    - 嵌入 bmad-story-assistant 阶段四通过后、提供完成选项前；**补跑参数显式**：`--stage tasks --event story_status_change --triggerStage bmad_story_stage4`（与步骤 4.2 一致）
-2. **T6**：在 `docs/BMAD/审计报告格式与解析约定.md` 新增「Story 完成自检」章节；含检查逻辑、scoring/data 路径、run_id 与 epic/story 对应关系
+2. **T6**：在「审计报告格式与解析约定」文档新增「Story 完成自检」章节；含检查逻辑、scoring/data 路径、run_id 与 epic/story 对应关系
 
 ### Phase 3：聚合与仪表盘（T7、T8、T9）
 
@@ -144,7 +144,7 @@
 | `scoring/dashboard/compute.ts` | aggregateByEpicStoryTimeWindow、getLatestRunRecordsV2、getWeakTop3 扩展 | T7、T8、T9 |
 | `scoring/query/loader.ts` | 可选：导出 getLatestRunRecordsV2 所需 loader | T7 |
 | `scripts/dashboard-generate.ts` | --strategy epic_story_window | T8 |
-| `docs/BMAD/审计报告格式与解析约定.md` | Story 完成自检章节 | T6 |
+| 审计报告格式与解析约定文档 | Story 完成自检章节 | T6 |
 | `scoring/docs/RUN_ID_CONVENTION.md` | run_id 共享约定 | T11 |
 
 ---
@@ -156,7 +156,7 @@
 | T1–T3 | grep `步骤 4.2` skills/bmad-story-assistant/SKILL.md；grep `审计通过后请将报告保存至` | 有匹配 |
 | T4 | `npx ts-node scripts/parse-and-write-score.ts --reportPath <path> --stage tasks --triggerStage speckit_5_2 --epic 9 --story 1`；检查 scoring/data record.trigger_stage | speckit_5_2 |
 | T5 | `npx ts-node scripts/check-story-score-written.ts --epic 8 --story 1` | 有/无记录输出 |
-| T6 | grep `Story 完成自检` docs/BMAD/审计报告格式与解析约定.md | 有匹配 |
+| T6 | grep `Story 完成自检` 审计报告格式与解析约定文档 | 有匹配 |
 | T7 | 单测 aggregateByEpicStoryTimeWindow、getLatestRunRecordsV2 | 通过 |
 | T8 | `npx ts-node scripts/dashboard-generate.ts --strategy epic_story_window`；对 fixture 断言 | 总分、四维与预期一致（±1） |
 | T9 | 单测 getWeakTop3；仪表盘输出含短板 | 通过 |

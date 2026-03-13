@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { clusterWeaknesses, type WeaknessCluster } from '../cluster-weaknesses';
+import { clusterWeaknesses } from '../cluster-weaknesses';
 import type { RunScoreRecord } from '../../writer/types';
 
 function makeRecord(overrides: Partial<RunScoreRecord>): RunScoreRecord {

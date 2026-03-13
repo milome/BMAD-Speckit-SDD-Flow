@@ -8,7 +8,7 @@ const assert = require('node:assert');
 const builtin = require('../src/constants/ai-registry-builtin');
 
 const SUBAGENT_VALID = ['native', 'mcp', 'limited', 'none'];
-const BUILTIN_IDS = [
+const _BUILTIN_IDS = [
   'cursor-agent', 'claude', 'gemini', 'copilot', 'qwen', 'opencode', 'codex', 'windsurf', 'kilocode',
   'auggie', 'roo', 'codebuddy', 'amp', 'shai', 'q', 'agy', 'bob', 'qodercli', 'cody', 'tabnine', 'kiro-cli', 'generic',
 ];

@@ -64,6 +64,10 @@ function countItemAppearances(records: RunScoreRecord[]): Map<string, number> {
 /**
  * 根据聚类与记录统计生成规则升级建议。
  * 不修改规则文件，仅输出 YAML 建议。
+ * @param {WeaknessCluster[]} clusters - 弱点聚类结果
+ * @param {RunScoreRecord[]} records - 评分记录
+ * @param {string} [rulesDir] - scoring/rules 目录，默认 cwd/scoring/rules
+ * @returns {RuleSuggestion[]} 规则升级建议列表
  */
 export function generateRuleSuggestions(
   clusters: WeaknessCluster[],
@@ -132,6 +136,11 @@ export function generateRuleSuggestions(
   return suggestions;
 }
 
+/**
+ * 将规则建议序列化为 YAML 字符串。
+ * @param {RuleSuggestion[]} suggestions - 规则建议列表
+ * @returns {string} YAML 字符串
+ */
 export function formatRuleSuggestionsYaml(suggestions: RuleSuggestion[]): string {
   return yaml.dump({ suggestions }, { lineWidth: 120 });
 }

@@ -7,9 +7,11 @@ const fs = require('fs');
 const { get, set, list, getProjectConfigPath } = require('../services/config-manager');
 
 /**
- * config get <key>
- * @param {string} cwd
- * @param {{ key: string, json?: boolean }} options
+ * config get <key> - read a config value by key.
+ * Exits 1 if key does not exist; prints value (or JSON object with --json).
+ * @param {string} [cwd] - Working directory for project config path.
+ * @param {{ key: string, json?: boolean }} options - key to get; json for JSON output.
+ * @returns {void} Does not return; process.exit on completion.
  */
 function configGetCommand(cwd, options) {
   const { key, json } = options;
@@ -27,9 +29,10 @@ function configGetCommand(cwd, options) {
 }
 
 /**
- * config set <key> <value>
- * @param {string} cwd
- * @param {{ key: string, value: string, global?: boolean }} options
+ * config set <key> <value> - write a config value. Uses project scope unless --global.
+ * @param {string} [cwd] - Working directory for project config path.
+ * @param {{ key: string, value: string, global?: boolean }} options - key, value; global forces user-level config.
+ * @returns {void} Does not return; process.exit on completion.
  */
 function configSetCommand(cwd, options) {
   const { key, value, global: forceGlobal } = options;
@@ -42,9 +45,10 @@ function configSetCommand(cwd, options) {
 }
 
 /**
- * config list
- * @param {string} cwd
- * @param {{ json?: boolean }} options
+ * config list - list all config keys and values.
+ * @param {string} [cwd] - Working directory for project config path.
+ * @param {{ json?: boolean }} [options] - json for JSON object output.
+ * @returns {void} Does not return; process.exit on completion.
  */
 function configListCommand(cwd, options) {
   const { json } = options;

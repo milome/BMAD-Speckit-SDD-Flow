@@ -99,7 +99,7 @@ description: |
 
 ## BMAD Agent 展示名与命令对照
 
-在 mcp_task 子任务调用、Party Mode 多轮对话、工作流指引等场景中，应使用以下**展示名**指代各 Agent，以保持上下文一致性与用户体验。参考：`docs/BMAD/Cursor_BMAD_多Agent使用指南.md`。
+在 mcp_task 子任务调用、Party Mode 多轮对话、工作流指引等场景中，应使用以下**展示名**指代各 Agent，以保持上下文一致性与用户体验。
 
 | Agent 展示名 | 命令名 | 模块 |
 |--------------|--------|------|
@@ -509,15 +509,16 @@ npx ts-node scripts/parse-and-write-score.ts \
 3. 验收标准是否已按实际运行结果验证通过（若 §7 中写了验收命令，审计员必须执行该命令并报告通过/失败）。
 4. **Amelia 开发规范**：① 是否按任务顺序执行；② 每项是否均有运行验收并通过；③ 是否无标记完成但未实现；④ 是否无「将在后续迭代」表述；⑤ 注释与提交是否中文。
 5. **ralph-method**：是否存在 prd.{stem}.json 与 progress.{stem}.txt，progress 中是否按 US 有完成时间戳与说明。
-6. **TDD 红绿灯**：对 §7（或 §8.1）中涉及生产代码的每一项，是否先有失败验收（红灯）再实现并通过验收（绿灯）；**progress 是否包含**每任务的 `[TDD-RED]`、`[TDD-GREEN]`、`[TDD-REFACTOR]` 记录（含验收命令与结果）；若无则判不通过。**TDD 三项验证**：涉及生产代码的每个 US 须含 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 各至少一行（[TDD-REFACTOR] 允许写「无需重构 ✓」，禁止省略）。**TDD 顺序验证**：对每个任务的 progress 记录，[TDD-RED] 须在 [TDD-GREEN] 之前出现；若同一任务下 [TDD-GREEN] 在 [TDD-RED] 之前或缺少 [TDD-RED]，判为「事后补写」，结论未通过。验证方式：`grep -E "\[TDD-(RED|GREEN|REFACTOR)\]" progress.*.txt` 或目视检查；禁止用「最终回归通过」替代逐任务记录。不满足项⑥的修改建议：在 progress 中按 bmad-story-assistant §3.2 格式补充 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 记录；**须针对每个缺失任务写出可复制的具体示例**，如「Task 3 应补充：[TDD-RED] T3 pytest tests/xxx -v => 1 failed；[TDD-GREEN] T3 pytest tests/xxx -v => 1 passed；[TDD-REFACTOR] T3 无需重构 ✓」。**回归失败且用户拒绝排除**：若 §7 中存在回归任务，且实际执行时存在失败用例，且用户拒绝批准排除，则 progress 中**必须**包含对应的 [TDD-RED] 记录，格式须含：任务 ID、验收命令、失败数、通过数、「用户拒绝批准排除」。验证方式：`grep -E "\[TDD-RED\].*用户拒绝" progress.*.txt` 或目视检查。若无则判不通过，修改建议：在 progress 中补充，例如「[TDD-RED] US-003 pytest vnpy_datamanager/ -v => 16 failed, 46 passed（用户拒绝批准排除，16 个失败用例须修复）」。
-7. **speckit-workflow**：是否无伪实现、是否运行验收命令、是否架构忠实。
-8. 是否无「将在后续迭代」等延迟表述。
-9. **回归/验收失败用例**：**【回归判定强制规则】** 任何在本 Story 实施前已存在的测试用例，若实施后失败，一律视为回归，须在本轮修复或经用户批准后列入正式排除清单。禁止以「与 Story X 相关」「与本 Story 无关」「来自前置 Story」等理由排除失败用例。判定标准：实施前全量测试通过清单 ∩ 实施后失败清单 = 回归用例集。**强制步骤**：执行全量/回归测试，获取完整通过/失败列表；对每个失败用例核对是否存在于「实施前已存在」的用例集，若存在则标记为回归，须在审计结论中列为「须修复」或「已列入正式排除清单（附用户批准依据）」；禁止以「非本 Story 范围」为由排除。**结论绑定**：若审计结论或验收说明中出现「与 Story X 相关」「与本 Story 无关」「来自 Story 11.1」等表述且用于排除失败用例，且无对应正式排除记录（EXCLUDED_TESTS_*.md 经用户批准），结论为未通过。回归或验收命令执行结果中，失败用例数为 0，或所有失败已列入正式排除清单且清单路径、格式与理由符合本技能「正式排除失败用例的规定」并经本轮审计通过；禁止存在未记录或未审计通过的排除。**禁止自动生成 exclude**：若审计员或实施子代理在本次审计/实施过程中产出了 EXCLUDED_TESTS_*.md 或类似排除清单文件，且**未经用户明确批准**，结论为未通过。排除清单的创建/更新必须经用户明确批准。
-10. **主 Agent 兜底 cleanup**：若子任务涉及运行 pytest（§7 或验收命令含 pytest），主 Agent 是否在子任务返回或超时后执行了 4.1.5 规定的兜底 cleanup（检查 `_bmad-output/current_pytest_session_pid.txt`，若存在则执行 `cleanup_test_processes.py --only-from-file --session-pid` 并删除该文件）；若未执行且子任务涉及 pytest，结论为未通过。
+6. 项目须按技术栈配置并执行 Lint（见 lint-requirement-matrix）；若使用主流语言但未配置 Lint 须作为未通过项；已配置的须执行且无错误、无警告。禁止以「与本次任务不相关」豁免。
+7. **TDD 红绿灯**：对 §7（或 §8.1）中涉及生产代码的每一项，是否先有失败验收（红灯）再实现并通过验收（绿灯）；**progress 是否包含**每任务的 `[TDD-RED]`、`[TDD-GREEN]`、`[TDD-REFACTOR]` 记录（含验收命令与结果）；若无则判不通过。**TDD 三项验证**：涉及生产代码的每个 US 须含 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 各至少一行（[TDD-REFACTOR] 允许写「无需重构 ✓」，禁止省略）。**TDD 顺序验证**：对每个任务的 progress 记录，[TDD-RED] 须在 [TDD-GREEN] 之前出现；若同一任务下 [TDD-GREEN] 在 [TDD-RED] 之前或缺少 [TDD-RED]，判为「事后补写」，结论未通过。验证方式：`grep -E "\[TDD-(RED|GREEN|REFACTOR)\]" progress.*.txt` 或目视检查；禁止用「最终回归通过」替代逐任务记录。不满足项⑦的修改建议：在 progress 中按 bmad-story-assistant §3.2 格式补充 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 记录；**须针对每个缺失任务写出可复制的具体示例**，如「Task 3 应补充：[TDD-RED] T3 pytest tests/xxx -v => 1 failed；[TDD-GREEN] T3 pytest tests/xxx -v => 1 passed；[TDD-REFACTOR] T3 无需重构 ✓」。**回归失败且用户拒绝排除**：若 §7 中存在回归任务，且实际执行时存在失败用例，且用户拒绝批准排除，则 progress 中**必须**包含对应的 [TDD-RED] 记录，格式须含：任务 ID、验收命令、失败数、通过数、「用户拒绝批准排除」。验证方式：`grep -E "\[TDD-RED\].*用户拒绝" progress.*.txt` 或目视检查。若无则判不通过，修改建议：在 progress 中补充，例如「[TDD-RED] US-003 pytest vnpy_datamanager/ -v => 16 failed, 46 passed（用户拒绝批准排除，16 个失败用例须修复）」。
+8. **speckit-workflow**：是否无伪实现、是否运行验收命令、是否架构忠实。
+9. 是否无「将在后续迭代」等延迟表述。
+10. **回归/验收失败用例**：**【回归判定强制规则】** 任何在本 Story 实施前已存在的测试用例，若实施后失败，一律视为回归，须在本轮修复或经用户批准后列入正式排除清单。禁止以「与 Story X 相关」「与本 Story 无关」「来自前置 Story」等理由排除失败用例。判定标准：实施前全量测试通过清单 ∩ 实施后失败清单 = 回归用例集。**强制步骤**：执行全量/回归测试，获取完整通过/失败列表；对每个失败用例核对是否存在于「实施前已存在」的用例集，若存在则标记为回归，须在审计结论中列为「须修复」或「已列入正式排除清单（附用户批准依据）」；禁止以「非本 Story 范围」为由排除。**结论绑定**：若审计结论或验收说明中出现「与 Story X 相关」「与本 Story 无关」「来自 Story 11.1」等表述且用于排除失败用例，且无对应正式排除记录（EXCLUDED_TESTS_*.md 经用户批准），结论为未通过。回归或验收命令执行结果中，失败用例数为 0，或所有失败已列入正式排除清单且清单路径、格式与理由符合本技能「正式排除失败用例的规定」并经本轮审计通过；禁止存在未记录或未审计通过的排除。**禁止自动生成 exclude**：若审计员或实施子代理在本次审计/实施过程中产出了 EXCLUDED_TESTS_*.md 或类似排除清单文件，且**未经用户明确批准**，结论为未通过。排除清单的创建/更新必须经用户明确批准。
+11. **主 Agent 兜底 cleanup**：若子任务涉及运行 pytest（§7 或验收命令含 pytest），主 Agent 是否在子任务返回或超时后执行了 4.1.5 规定的兜底 cleanup（检查 `_bmad-output/current_pytest_session_pid.txt`，若存在则执行 `cleanup_test_processes.py --only-from-file --session-pid` 并删除该文件）；若未执行且子任务涉及 pytest，结论为未通过。
 
-验证方式：阅读代码、grep 关键符号、**执行 §7 或文档规定的验收/回归命令并获取完整通过/失败列表**；若存在失败，**核对正式排除清单（若有）并确认每项符合「正式排除」规定**；运行 pytest 等验收命令、核对 §7 验收；**对审计项⑥**：`grep -E "\[TDD-(RED|GREEN|REFACTOR)\]" progress.*.txt` 或目视检查 progress 是否含每任务的 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 记录；**对审计项⑩**：若 §7 或验收涉及 pytest，确认主 Agent 在子任务返回后执行了兜底 cleanup。
+验证方式：阅读代码、grep 关键符号、**执行 §7 或文档规定的验收/回归命令并获取完整通过/失败列表**；若存在失败，**核对正式排除清单（若有）并确认每项符合「正式排除」规定**；运行 pytest 等验收命令、核对 §7 验收；**对审计项⑦**：`grep -E "\[TDD-(RED|GREEN|REFACTOR)\]" progress.*.txt` 或目视检查 progress 是否含每任务的 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 记录；**对审计项⑪**：若 §7 或验收涉及 pytest，确认主 Agent 在子任务返回后执行了兜底 cleanup。
 
-报告结尾必须按以下格式输出：结论：通过 / 未通过。必达子项 1–10 如上；⑩ 主 Agent 兜底 cleanup（若涉及 pytest）；若任一项不满足则结论为未通过，并列出不满足项及每条对应的修改建议。
+报告结尾必须按以下格式输出：结论：通过 / 未通过。必达子项 1–11 如上；⑪ 主 Agent 兜底 cleanup（若涉及 pytest）；若任一项不满足则结论为未通过，并列出不满足项及每条对应的修改建议。
 ```
 
 ### 4.3 主 Agent 禁止事项

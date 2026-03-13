@@ -3,7 +3,7 @@
  * No hardcoded path separators; path handling is caller's responsibility.
  */
 const fs = require('fs');
-const os = require('os');
+const _os = require('os');
 
 /**
  * Get default EOL for current platform (LF or CRLF).
@@ -17,7 +17,7 @@ function getPlatformEOL() {
  * Normalize string to use a single line ending.
  * @param {string} content - file content
  * @param {string} eol - line ending to use ('\n' or '\r\n')
- * @returns {string}
+ * @returns {string} Content with normalized line endings.
  */
 function normalizeEOL(content, eol) {
   if (!content || typeof content !== 'string') return content;
@@ -27,9 +27,10 @@ function normalizeEOL(content, eol) {
 
 /**
  * Write file with UTF-8 encoding and configurable line endings.
- * @param {string} filePath - path to file (caller must use path.join etc.)
- * @param {string} content - file content
- * @param {{ encoding?: string, eol?: string }} [options] - encoding default 'utf8', eol default platform EOL
+ * @param {string} filePath - Path to file (caller must use path.join etc.).
+ * @param {string} content - File content.
+ * @param {{ encoding?: string, eol?: string }} [options] - encoding default 'utf8', eol default platform EOL.
+ * @returns {void}
  */
 function writeFileWithEncoding(filePath, content, options = {}) {
   const encoding = options.encoding || 'utf8';

@@ -21,15 +21,16 @@ const FEEDBACK_GUIDANCE =
 /**
  * Returns feedback hint text for init stdout (Story 13.5 T1.3).
  * Used by init.js after POST_INIT_GUIDE_MSG.
- * @returns {string}
+ * @returns {string} Feedback hint text.
  */
 function getFeedbackHintText() {
   return 'Feedback: Run `bmad-speckit feedback` to get the feedback entry.';
 }
 
 /**
- * FeedbackCommand handler (Story 13.5 T1.1)
- * Outputs feedback entry and full-flow compatible AI list; exits 0.
+ * FeedbackCommand handler (Story 13.5 T1.1). Outputs feedback entry and full-flow compatible AI list.
+ * No TTY dependency; exits 0 on success.
+ * @returns {void} Does not return; process.exit(0) on completion.
  */
 function feedbackCommand() {
   console.log('Feedback entry:', FEEDBACK_GUIDANCE);

@@ -1,9 +1,0 @@
-{
-  "version": "1.0",
-  "stem": "tasks-E7-S4",
-  "userStories": [
-    { "id": "US-001", "title": "扩展 discoverLatestRunId scenarioFilter", "acceptance": "T1.1-T1.3", "passes": true },
-    { "id": "US-002", "title": "coach-diagnose 解析 --scenario 并集成 discovery", "acceptance": "T2.1-T2.4", "passes": true },
-    { "id": "US-003", "title": "更新 Command 与 Skill 文档", "acceptance": "T3.1, T3.2", "passes": true }
-  ]
-}

@@ -1,8 +1,13 @@
 /**
- * T3: 从 coach-diagnose 的 weak_areas、weakness_clusters 自动生成 eval_question 题目
- * 用法：
- *   npx ts-node scripts/eval-question-generate.ts --run-id <id> [--version v1|v2] [--outputDir <dir>]
- *   npx ts-node scripts/eval-question-generate.ts --input <coach-diagnose JSON 路径> [--version v1|v2] [--outputDir <dir>]
+ * Eval-question-generate: 从 coach 诊断输出自动生成 eval 题目。
+ *
+ * 用途：基于 weak_areas、weakness_clusters 生成题目模板并追加到 manifest。
+ *
+ * CLI 参数：--run-id, --input (coach JSON), --version, --outputDir
+ *
+ * 示例：npx ts-node scripts/eval-question-generate.ts --run-id r1 --version v1
+ *
+ * 退出码：0=成功，1=错误
  */
 import * as fs from 'fs';
 import * as path from 'path';

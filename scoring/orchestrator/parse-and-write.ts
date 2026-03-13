@@ -14,6 +14,10 @@ import { applyTierAndVeto } from '../veto';
 import { computeContentHash, computeStringHash, getGitHeadHash } from '../utils/hash';
 import type { DimensionScore, IterationRecord } from '../writer/types';
 
+/**
+ * Options for parseAndWriteScore orchestration.
+ * @see parseAndWriteScore
+ */
 export interface ParseAndWriteScoreOptions {
   reportPath?: string;
   content?: string;
@@ -42,6 +46,8 @@ export interface ParseAndWriteScoreOptions {
 
 /**
  * 校验并规范化 iteration_count：非负则 clamp 为 0，非整数则 Math.round。
+ * @param {number} value - Raw iteration count (may be negative or fractional).
+ * @returns {number} Normalized non-negative integer (0 if value < 0, else Math.round(value)).
  */
 export function validateIterationCount(value: number): number {
   if (value < 0) return 0;
@@ -76,6 +82,10 @@ function parseMaxSeverityFromReport(content: string): 'fatal' | 'serious' | 'nor
  * - stage=implement + artifactDocPath 非 BUGFIX（如 tasks）→ source_path=reportPath
  * - stage=implement + artifactDocPath 未传入 → 不写 source_path
  * - 其他 stage：artifactDocPath 传入则 source_path=artifactDocPath
+ * @param {AuditStage} stage - 审计阶段
+ * @param {string | undefined} artifactDocPath - 触发评分的源文档路径
+ * @param {string | undefined} reportPath - 审计报告路径
+ * @returns {{ source_path?: string }} 包含 source_path 的对象，可能为空
  */
 function computeSourcePath(
   stage: AuditStage,
@@ -91,7 +101,13 @@ function computeSourcePath(
   return { source_path: artifactDocPath };
 }
 
-/** Story 9.4: 从失败轮报告解析为 IterationRecord */
+/**
+ * Story 9.4: 从失败轮报告解析为 IterationRecord
+ * @param {string} filePath - 失败轮报告文件路径
+ * @param {string} content - 报告内容
+ * @param {AuditStage} stage - 审计阶段
+ * @returns {IterationRecord} 迭代记录对象
+ */
 function parseIterationReportToRecord(
   filePath: string,
   content: string,
@@ -115,6 +131,10 @@ function parseIterationReportToRecord(
  * 解析审计报告并写入 scoring 存储。
  * 写入前应用 veto 与阶梯系数（Story 4.1）；reportPath 与 content 二选一。
  * 自动采集 base_commit_hash（git HEAD）和 content_hash（审计内容 SHA-256）。
+ *
+ * @param {ParseAndWriteScoreOptions} options - ParseAndWriteScoreOptions: stage, runId, scenario, writeMode required; reportPath or content required.
+ * @returns {Promise<void>} Promise that resolves when write completes.
+ * @throws Error when reportPath and content are both missing/empty.
  */
 export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Promise<void> {
   const { stage, runId, scenario, writeMode, dataPath } = options;

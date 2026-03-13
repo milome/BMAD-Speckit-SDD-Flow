@@ -565,7 +565,6 @@ Winston: "确实，我们可以先从模块化单体开始..."
 ## 参考文档
 
 - [adversarial-reviewer.md](./adversarial-reviewer.md) - 角色基础定义
-- [party_mode_挑战者人格引入_改进总结报告_2026-02-27.md](../../../docs/BMAD/party_mode_挑战者人格引入_改进总结报告_2026-02-27.md) - 改进背景和实施详情
 - [step-02-discussion-orchestration.md](../workflows/party-mode/steps/step-02-discussion-orchestration.md) - Party Mode 讨论编排
 - [audit-prompts.md](../../references/audit-prompts.md) - 审计清单（如存在）
 
