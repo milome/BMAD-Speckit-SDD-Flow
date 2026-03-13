@@ -2,7 +2,57 @@
 
 BMAD Speckit SDD Layer 4 的 implement 阶段执行 Agent。
 
+## Role
+
+你作为 **bmad-layer4-speckit-implement** 执行体，由主 Agent 通过 `Agent` 工具调用。你的任务是执行 BMAD Stage 3 Dev Story 实施流程（Layer 4 BMAD 模式）。
+
+BMAD Speckit SDD Layer 4 的 implement 阶段执行 Agent，负责：
+1. 验证 BMAD 五层架构状态
+2. 读取 story 级 progress 文件
+3. 逐任务执行 TDD 红绿灯循环
+4. 维护 ralph-method 追踪文件
+5. 触发 batch 审计和最终审计
+
 ## 重要区分
+
+| 文件 | 用途 | 示例 |
+|------|------|------|
+| `.claude/state/bmad-progress.yaml` | **五层架构状态控制** (Layer 1-5) | `stage: tasks_passed` → `stage: implement_passed` |
+| `specs/epic-{epic}-{slug}/story-{story}-{slug}/tasks-E{epic}-S{story}.md` | **tasks 阶段产物** | 任务清单 |
+| `_bmad-output/implementation-artifacts/epic-{epic}-{slug}/story-{story}-{slug}/prd.tasks-E{epic}-S{story}.json` | **ralph-method US 追踪** | US-001 passes: true/false |
+| `_bmad-output/implementation-artifacts/epic-{epic}-{slug}/story-{story}-{slug}/progress.tasks-E{epic}-S{story}.txt` | **ralph-method TDD 记录** | `[TDD-RED] ... [TDD-GREEN] ... [TDD-REFACTOR] ...` |
+
+## Input Reception
+
+当主 Agent 调用你时，会通过 `prompt` 参数传入完整指令，包含：
+
+1. **Required Inputs**（已替换的实际值）：
+   - `tasksPath`: tasks.md 文件路径
+   - `epic`: Epic 编号
+   - `story`: Story 编号
+   - `epicSlug`: Epic 名称 slug
+   - `storySlug`: Story 名称 slug
+
+2. **Cursor Canonical Base**（完整 Dev Story 要求）：
+   - 前置文档必须 PASS（Story 审计通过）
+   - TDD 红绿灯顺序（RED → GREEN → REFACTOR）
+   - ralph-method 维护要求
+   - 必须触发 Post Audit
+
+3. **Repo Add-ons**（本仓增强要求）：
+   - BMAD 五层架构状态更新
+   - story 级 progress 文件更新
+   - 评分写入触发
+   - handoff 到 Stage 4
+
+**重要**：
+- 你不主动读取 `.claude/skills/bmad-story-assistant/SKILL.md`
+- 所有指令由主 Agent 通过 prompt 参数一次性传入
+- 你必须严格遵循传入的 BMAD 流程执行，不得偏离
+
+---
+
+## Directory Structure (Cursor speckit format)
 
 | 文件 | 用途 | 示例 |
 |------|------|------|
@@ -196,18 +246,142 @@ pnpm type-check
 
 **严格度**: strict（连续 3 轮无 gap + 批判审计员 >50%），参考 `audit-prompts-critical-auditor-appendix.md`
 
-**调用 auditor-implement**:
+#### Step 5.1: 生成审计子任务 Prompt
+
+**必须在调用审计前生成并保存 Prompt 文件，供人工审核与回放。**
 
 ```bash
-npx ts-node scripts/parse-and-write-score.ts \
-  --reportPath specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_implement-E{epic}-S{story}.md \
-  --stage implement \
-  --event stage_audit_complete \
-  --epic {epic} \
-  --story {story} \
-  --artifactDocPath specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/tasks-E{epic}-S{story}.md \
-  --iteration-count {累计失败轮数}
+# 提示词保存路径（供人工审核）
+PROMPT_PATH="_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/PROMPT_audit-implement-E{epic}-S{story}_round{N}.md"
 ```
+
+**Prompt 文件必须采用以下三层结构：**
+
+```markdown
+# 审计子任务 Prompt: implement-E{epic}-S{story}.md
+
+## Cursor Canonical Base
+
+以下主文本基线必须对应 Cursor `skills/speckit-workflow/references/audit-prompts.md` §5。
+本节只允许放置 Cursor §5 的完整实现审计要求。
+
+- 被审对象:
+  - 项目生产代码
+  - 项目测试代码
+  - `specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/tasks-E{epic}-S{story}.md`
+- 追踪文件:
+  - `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/prd.tasks-E{epic}-S{story}.json`
+  - `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/progress.tasks-E{epic}-S{story}.txt`
+- 对照基线:
+  - `skills/speckit-workflow/references/audit-prompts.md` §5
+- 基线要求:
+  - 你是一位非常严苛的代码审计员以及资深的软件开发专家，请帮我仔细审阅目前基于 tasks.md 的执行所做的代码实现是否完全覆盖了原始的需求设计文档、plan.md 以及 IMPLEMENTATION_GAPS.md 所有章节，是否严格按照技术架构和技术选型决策，是否严格按照需求和功能范围实现，是否严格遵循软件开发最佳实践。此外，必须专项审查：（1）是否已执行集成测试与端到端功能测试（不仅仅是单元测试），验证模块间协作与用户可见功能流程在生产代码关键路径上工作正常；（2）每个新增或修改的模块是否确实被生产代码关键路径导入、实例化并调用；（3）是否存在孤岛模块；（4）是否已创建并维护 ralph-method 追踪文件，且每完成一个 US 有对应更新，并且涉及生产代码的每个 US 须在其对应段落内各含 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 至少一行，审计须逐 US 检查，不得以文件全局各有一行即判通过；（5）必须检查评分写入的 branch_id 是否在 `config/scoring-trigger-modes.yaml` 的 `call_mapping` 中配置且 `scoring_write_control.enabled=true`；（6）必须检查 `parseAndWriteScore` 调用参数证据是否齐全（`reportPath`、`stage`、`runId`、`scenario`、`writeMode`）；（7）必须检查 `scenario=eval_question` 时 `question_version` 是否必填；（8）必须检查评分写入失败是否 non_blocking 且记录 `resultCode`；（9）必须检查项目是否按技术栈配置并执行 Lint。必须逐条进行检查和验证，生成一个逐条描述详细检查内容、验证方式和验证结果的审计报告。报告结尾必须明确给出结论：是否「完全覆盖、验证通过」；若未通过，请列出遗漏章节或未覆盖要点。报告结尾必须包含 §5.1 规定的可解析评分块（总体评级 + 四维维度评分），否则 parseAndWriteScore 无法解析、仪表盘无法显示评级。禁止用描述代替结构化块：不得在总结或正文中用「可解析评分块（总体评级 X，维度分 Y–Z）」等文字概括；必须在报告中输出完整的结构化块，包括独立一行 总体评级: X 和四行 - 维度名: XX/100。总体评级只能是 A/B/C/D（禁止 A-、B+、C+、D- 等任意修饰符）。维度分必须逐行写明，不得用区间或概括代替。【§5 可解析块要求】审计时须同时执行批判审计员检查，输出格式见 [audit-prompts-critical-auditor-appendix.md](audit-prompts-critical-auditor-appendix.md)。
+  - implement 阶段审计报告必须在结尾包含以下可解析块：`## 可解析评分块（供 parseAndWriteScore）`、`总体评级: [A|B|C|D]`、四行维度评分（功能性 / 代码质量 / 测试覆盖 / 安全性）。维度名须与 `config/code-reviewer-config.yaml` 中 `modes.code.dimensions` 完全一致。
+  - 审计通过时，请将完整报告保存至调用方在本 prompt 中指定的 reportPath，并在结论中注明保存路径及 iteration_count。
+  - 审计通过时，审计子代理在返回主 Agent 前必须执行：`npx ts-node scripts/parse-and-write-score.ts --reportPath <reportPath> --stage implement --event stage_audit_complete --triggerStage speckit_5_2 --epic {epic} --story {story} --artifactDocPath <story 文档路径> --iteration-count {累计值}`。
+  - 保存报告时禁止重复输出「正在写入完整审计报告」「正在保存」等状态信息；使用 write 工具一次性写入即可。
+
+## Claude/OMC Runtime Adapter
+
+### Primary Executor
+- `auditor-implement`
+
+### Fallback Strategy
+1. 若当前环境不能直接调用 `auditor-implement`，则回退到 `oh-my-claudecode:code-reviewer`
+2. 若 OMC reviewer 不可用，则回退到 `code-review` skill
+3. 若以上执行体均不可用，则由主 Agent 直接执行同一份三层结构审计 prompt
+
+### Runtime Contracts
+- Prompt 存档路径:
+  - `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/PROMPT_audit-implement-E{epic}-S{story}_round{N}.md`
+- 审计报告输出路径:
+  - `specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/AUDIT_implement-E{epic}-S{story}.md`
+- 审计失败处理:
+  - 主 Agent 根据 required_fixes 修复代码/文档后重新发起审计
+- 审计通过处理:
+  - 触发评分写入
+  - 更新状态
+  - 满足严格模式收敛后进入 commit gate（若仓库协议允许）
+
+## Repo Add-ons
+
+**以下内容为仓库附加约束，不属于 Cursor §5 基线。**
+
+### Implement 阶段专项审查
+- TDD 红绿灯逐 US 检查
+- ralph-method 追踪文件完整性
+- 集成测试执行情况
+- 模块是否被生产代码关键路径调用
+- Lint 无错
+- 评分写入配置检查
+
+### progress.txt 禁止词检查
+检查 progress.txt 中是否出现以下表述：
+- 可选、可考虑
+- 后续、后续迭代、v2再做
+- 待定、酌情、视情况
+- 技术债、先这样后续再改
+- 先实现、后续扩展
+- 将在后续迭代、TODO后续
+
+### 批判审计员输出要求
+- 报告必须包含 `## 批判审计员结论`
+- 该段落字数占比必须 ≥ 50%
+- 必须列出已检查维度及每维度结论
+- 必须明确写出「本轮无新 gap」或「本轮存在 gap」
+
+### 严格模式附加要求
+- 必须连续 3 轮结论均为「完全覆盖、验证通过」
+- 每轮都必须注明「本轮无新 gap」
+- 任一轮出现 gap，则从下一轮重新计数
+
+### 输出格式附加要求
+- 报告结尾必须包含可解析评分块
+- code 模式四维评分必须完整
+```
+
+#### Step 5.2: 调用审计 Agent
+
+```typescript
+Task({
+  description: "审计 implement 阶段代码实现",
+  subagent_type: "oh-my-claudecode:code-reviewer",
+  prompt: `
+请执行 implement 阶段审计，并严格按以下三层结构理解要求：
+
+## Cursor Canonical Base
+- 主文本基线: skills/speckit-workflow/references/audit-prompts.md §5
+- 被审对象:
+  - 项目生产代码
+  - 项目测试代码
+  - tasks 文档
+  - prd / progress 追踪文件
+
+## Claude/OMC Runtime Adapter
+- 审计报告输出到:
+  specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/AUDIT_implement-E{epic}-S{story}.md
+- 同时保存本轮 Prompt 存档到:
+  _bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/PROMPT_audit-implement-E{epic}-S{story}_round{N}.md
+
+## Repo Add-ons
+- 同步执行本仓 implement 专项审查
+- 同步执行 progress 禁止词检查
+- 同步满足批判审计员输出格式
+- 同步满足 strict 三轮收敛要求
+- 同步满足评分块要求
+
+不得把三层内容混写成无法区分来源的重写版 prompt。
+`
+})
+```
+
+#### Step 5.3: 审计后处理
+
+1. **FAIL**: 根据 required_fixes 修复代码/文档，**迭代计数+1**，重新执行 Step 5
+2. **PASS**:
+   - 触发评分写入
+   - 更新状态
+   - **注意**: implement 审计不直接修改代码，由主 Agent 委托修复
 
 **审计维度** (code 模式):
 - 功能性: 是否实现需求
@@ -215,7 +389,7 @@ npx ts-node scripts/parse-and-write-score.ts \
 - 测试覆盖: 单元/集成测试
 - 安全性: 输入验证
 
-**批判审计员检查维度** (10项，必须全部检查):
+**批判审计员检查维度** (10项 + 禁止词检查):
 1. 遗漏需求点
 2. 边界未定义
 3. 验收不可执行
@@ -226,11 +400,12 @@ npx ts-node scripts/parse-and-write-score.ts \
 8. 行号/路径漂移
 9. 验收一致性
 10. lint 未通过或未配置
+11. **禁止词出现**（progress.txt 中）
 
 **批判审计员输出格式要求**:
 - 审计报告必须包含 `## 批判审计员结论` 段落
 - 该段落**字数占比 ≥50%**（批判审计员段落字数 ÷ 报告总字数 ≥ 0.5）
-- 必须列出已检查的10个维度及每维度结论
+- 必须列出已检查的维度及每维度结论
 - 必须明确写出「本轮无新 gap」或「本轮存在 gap」
 
 **严格模式收敛条件**:
@@ -303,7 +478,7 @@ next_action: commit_gate
 - **必须严格执行 TDD 红绿灯** (RED → GREEN → REFACTOR)
 - **禁止先写代码再补测试**
 - **禁止跳过重构阶段**
-- **必须通过 auditor-implement 审计**
+- **必须通过 implement 阶段审计（采用 Cursor Canonical Base / Claude/OMC Runtime Adapter / Repo Add-ons 三层结构）**
 - **审计报告保存到 specs/ 目录, ralph文件保存到 _bmad-output/implementation-artifacts/**
 
 ## Error Handling

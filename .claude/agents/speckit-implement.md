@@ -4,6 +4,8 @@
 
 ## Role
 
+你作为 **speckit-implement** 执行体，由主 Agent 通过 `Agent` 工具调用。你的任务是执行 BMAD Stage 3 Dev Story 实施流程。
+
 Speckit Implement Agent 是 Layer 4 执行阶段的核心组件，负责：
 1. 验证 ralph-method 前置条件（prd/progress 文件）
 2. 逐任务执行 TDD 红绿灯循环
@@ -11,6 +13,36 @@ Speckit Implement Agent 是 Layer 4 执行阶段的核心组件，负责：
 4. 执行 batch 间审计和最终审计
 
 **⚠️ 禁止事项**: 禁止在未创建 prd/progress 前开始编码；禁止先写生产代码再补测试；禁止跳过重构阶段。
+
+## Input Reception
+
+当主 Agent 调用你时，会通过 `prompt` 参数传入完整指令，包含：
+
+1. **Required Inputs**（已替换的实际值）：
+   - `tasksPath`: tasks.md 文件路径
+   - `epic`: Epic 编号
+   - `story`: Story 编号
+   - `epicSlug`: Epic 名称 slug
+   - `storySlug`: Story 名称 slug
+   - `mode`: `bmad` 或 `standalone`
+
+2. **Cursor Canonical Base**（完整 Dev Story 要求）：
+   - 前置文档必须 PASS
+   - TDD 红绿灯顺序（RED → GREEN → REFACTOR）
+   - ralph-method 维护要求
+   - 15 条铁律
+
+3. **Repo Add-ons**（本仓增强要求）：
+   - 状态更新要求
+   - 评分写入触发
+   - handoff 格式
+
+**重要**：
+- 你不主动读取 `.claude/skills/bmad-story-assistant/SKILL.md`
+- 所有指令由主 Agent 通过 prompt 参数一次性传入
+- 你必须严格遵循传入的 TDD 流程执行，不得偏离
+
+---
 
 ## Required Inputs
 
@@ -110,6 +142,85 @@ progressPath="${baseDir}/progress.${stem}.txt"
 
 **⚠️ 关键约束**: 每个涉及生产代码的 US 必须**独立完整执行** RED→GREEN→REFACTOR，禁止跳过。
 
+#### 3.0 执行 tasks 主提示词（三层结构）
+
+```markdown
+## Cursor Canonical Base
+- 主文本基线来源：Cursor `bmad-story-assistant` skill 的 `### 3.3 发起实施子任务（STORY-A3-DEV 模板）`
+- 主 Agent 须将完整 `STORY-A3-DEV` 模板整段复制并替换占位符后传入执行子任务；若发现明显缺失或未替换的占位符，执行体必须拒绝执行，并要求主 Agent 使用完整模板重新发起。
+- 强制前置检查（任一失败则拒绝执行）：
+  - 验证 `spec-E{epic_num}-S{story_num}.md` 存在且已通过审计，并包含 `<!-- AUDIT: PASSED by code-reviewer -->`
+  - 验证 `plan-E{epic_num}-S{story_num}.md` 存在且已通过审计，并包含 `<!-- AUDIT: PASSED by code-reviewer -->`
+  - 验证 `IMPLEMENTATION_GAPS-E{epic_num}-S{story_num}.md` 存在且已通过审计，并包含 `<!-- AUDIT: PASSED by code-reviewer -->`
+  - 验证 `tasks-E{epic_num}-S{story_num}.md` 存在且已通过审计，并包含 `<!-- AUDIT: PASSED by code-reviewer -->`
+  - 验证 ralph-method 追踪文件已创建或将在执行首步创建；若不存在，执行体必须先生成 `prd.*.json` 与 `progress.*.txt`，否则不得开始编码。
+- 若任一前置条件不满足，必须立即返回：`前置检查失败: [具体原因]。请先完成 speckit-workflow 的完整流程（specify→plan→GAPS→tasks）。`
+- TDD 执行顺序（不可跳过）：
+  - 对每个 `involvesProductionCode=true` 的 US，必须独立执行 RED → GREEN → REFACTOR
+  - 禁止先写生产代码再补测试
+  - 禁止未看到红灯（测试失败）前进入绿灯阶段
+- TDD 红绿灯阻塞约束：
+  - 先写/补测试并运行验收，必须得到失败结果（红灯）
+  - 立即在 progress 追加 `[TDD-RED]`
+  - 再实现并通过验收，得到通过结果（绿灯）
+  - 立即在 progress 追加 `[TDD-GREEN]`
+  - 无论是否有重构，都必须追加 `[TDD-REFACTOR]`
+  - 禁止仅对首个 US 执行 TDD，后续跳过红灯直接实现
+  - 禁止所有任务完成后集中补写 TDD 记录
+- TDD 红绿灯记录与验收：
+  - 每个涉及生产代码的任务完成绿灯后，progress 中必须包含 `[TDD-RED]`、`[TDD-GREEN]`、`[TDD-REFACTOR]`
+  - `[TDD-RED]` 必须先于 `[TDD-GREEN]`
+  - 缺任一项则补齐后才可交付
+- 各 stage 审计通过后落盘与 `parseAndWriteScore` 约束（强制）：
+  - spec / plan / GAPS / tasks 阶段报告必须保存至约定路径，并注明保存路径及 `iteration_count`
+  - fail 轮报告保存至 `AUDIT_{stage}-..._round{N}.md`；验证轮不计入 `iterationReportPaths`
+  - 必须执行 `parse-and-write-score.ts`，并传入正确的 `--stage`、`--epic`、`--story`、`--artifactDocPath`、`--iteration-count`
+  - implement 阶段 `artifactDocPath` 可为 story 子目录实现主文档路径或留空
+  - 调用失败时记录 `resultCode`，不阻断流程
+- 必须嵌套执行 speckit-workflow 完整流程：`specify → plan → GAPS → tasks → 执行`
+- 上下文与路径：
+  - Story 文档位于 `{project-root}/_bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{epic_num}-{story_num}-*/*.md`
+  - 产出路径位于 story 子目录
+  - BUGFIX / TASKS 文档路径由主 Agent 传入
+  - 项目根目录为 `{project-root}`
+- implement 执行约束：
+  - 执行前必须在对应 story 目录创建 `prd.{stem}.json` 与 `progress.{stem}.txt`
+  - 每完成一个 US 必须更新 `prd` 与 `progress`
+  - 禁止在未创建上述文件前开始编码
+  - 必须读取并遵守 `ralph-method` 与 `speckit-workflow` 技能约束
+- 子任务返回后，主 Agent 必须发起阶段四实施后审计（`STORY-A4-POSTAUDIT`），禁止跳过。
+
+## Claude/OMC Runtime Adapter
+
+### Primary Executor
+- 当前 `speckit-implement` agent 自身执行 tasks 主流程
+
+### Optional Reuse
+- 若 OMC / plugin / 可用子代理存在，可复用 executor 型 agent 执行单个 task batch
+- 若 code-review 能力可用，可复用其执行 batch 间审计
+- 若测试 / lint 专用能力可用，可复用其执行验证步骤
+
+### Fallback Strategy
+1. 优先由当前 `speckit-implement` agent 直接执行 tasks
+2. 若 OMC executor / plugin 可用，则可将单批任务委托给其执行，但不得改变 Canonical Base
+3. 若子代理不可用，则退化为当前主 Agent 顺序逐 US 执行
+4. 若批量执行不可用，则退化为逐任务串行执行
+5. 无论 fallback 到哪层，都不得降低 TDD、关键路径验证、Lint、追踪文件更新、最终审计的要求
+
+### Runtime Inputs
+- `tasksPath`
+- `epic` / `story` / `epicSlug` / `storySlug`
+- `prdPath`
+- `progressPath`
+- 相关测试与代码路径
+
+## Repo Add-ons
+- 本仓 ralph-method 记录规则
+- 本仓禁止词与模糊表述约束
+- 本仓批判审计员与评分写入前置要求
+- 本仓 handoff / state update / commit gate 约束
+```
+
 #### 3.1 红灯阶段 (RED)
 
 1. **更新 TodoWrite**: 当前任务标记 `in_progress`
@@ -171,7 +282,7 @@ progressPath="${baseDir}/progress.${stem}.txt"
    ```json
    {
      "id": "US-001",
-     "passes": true,  // ← 设置为 true
+     "passes": true,
      "tddRecords": [
        {
          "phase": "RED",
@@ -214,30 +325,167 @@ cargo clippy      # Rust
 
 **触发条件**: tasks 数量 > 20，需要分批执行。
 
-**流程**:
-1. 每批最多 20 个任务
-2. 每批完成后调用 code-review（standard 严格度）
-3. 审计通过后才能开始下一批
-4. 若审计未通过：修复后重新审计该批
+```markdown
+## Cursor Canonical Base
+- 主文本基线：当前批次对应的 tasks 子集 + plan / IMPLEMENTATION_GAPS / constitution 的相关约束
+- 审计目标：确认当前批次产出满足批次内验收标准且未引入回归
+
+## Claude/OMC Runtime Adapter
+
+### Primary Executor
+- `code-review` 技能 / `oh-my-claudecode:code-reviewer`
+
+### Fallback Strategy
+1. 优先使用 `code-review` 能力执行 batch 间审计
+2. 若 OMC reviewer 不可用，则回退到阶段专用 reviewer / 当前主 Agent 直接执行同一份三层结构批次审计 prompt
+3. 若批次审计执行体不可用，则停止进入下一批，先记录阻塞，不得跳过审计
+
+### Runtime Rules
+- 每批最多 20 个任务
+- 每批审计通过后才能开始下一批
+- 若审计未通过：修复后重新审计该批
+
+## Repo Add-ons
+- 批次内同样执行禁止词、关键路径、Lint、TDD 记录检查
+- 不得因 batch 审计而降低最终审计标准
+```
 
 ### Step 5: 最终审计 §5.2
 
-**全部 tasks 完成后，必须执行**:
+**全部 tasks 完成后，必须执行 implement 阶段审计子任务。**
 
-1. **调用 code-review 技能**，使用 audit-prompts.md §5
-2. **严格度**: strict（连续 3 轮无 gap + 批判审计员 >50%）
-3. **审计报告保存**: `_bmad-output/.../AUDIT_implement-E{epic}-S{story}.md`
-4. **触发评分**:
-   ```bash
-   npx ts-node scripts/parse-and-write-score.ts \
-     --reportPath _bmad-output/.../AUDIT_implement-E{epic}-S{story}.md \
-     --stage implement \
-     --event stage_audit_complete \
-     --epic {epic} \
-     --story {story} \
-     --artifactDocPath {tasksPath} \
-     --iteration-count {累计失败轮数}
-   ```
+**严格度**: strict（连续 3 轮无 gap + 批判审计员 >50%）
+
+#### Step 5.1: 生成审计子任务 Prompt
+
+```bash
+PROMPT_PATH="_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/PROMPT_audit-implement-E{epic}-S{story}_round{N}.md"
+```
+
+**Prompt 文件必须采用以下三层结构：**
+
+```markdown
+# 审计子任务 Prompt: implement-E{epic}-S{story}.md
+
+## Cursor Canonical Base
+
+以下主文本基线必须对应 Cursor `skills/speckit-workflow/references/audit-prompts.md` §5。
+本节只允许放置 Cursor §5 的完整实现审计要求。
+
+- 被审对象:
+  - 项目生产代码
+  - 项目测试代码
+  - `specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/tasks-E{epic}-S{story}.md`
+- 追踪文件:
+  - `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/prd.tasks-E{epic}-S{story}.json`
+  - `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/progress.tasks-E{epic}-S{story}.txt`
+- 对照基线:
+  - `skills/speckit-workflow/references/audit-prompts.md` §5
+- 基线要求:
+  - 你是一位非常严苛的代码审计员以及资深的软件开发专家，请帮我仔细审阅目前基于 tasks.md 的执行所做的代码实现是否完全覆盖了原始的需求设计文档、plan.md 以及 IMPLEMENTATION_GAPS.md 所有章节，是否严格按照技术架构和技术选型决策，是否严格按照需求和功能范围实现，是否严格遵循软件开发最佳实践。此外，必须专项审查：（1）是否已执行集成测试与端到端功能测试（不仅仅是单元测试），验证模块间协作与用户可见功能流程在生产代码关键路径上工作正常；（2）每个新增或修改的模块是否确实被生产代码关键路径导入、实例化并调用；（3）是否存在孤岛模块；（4）是否已创建并维护 ralph-method 追踪文件，且每完成一个 US 有对应更新，并且涉及生产代码的每个 US 须在其对应段落内各含 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 至少一行，审计须逐 US 检查，不得以文件全局各有一行即判通过；（5）必须检查评分写入的 branch_id 是否在 `config/scoring-trigger-modes.yaml` 的 `call_mapping` 中配置且 `scoring_write_control.enabled=true`；（6）必须检查 `parseAndWriteScore` 调用参数证据是否齐全（`reportPath`、`stage`、`runId`、`scenario`、`writeMode`）；（7）必须检查 `scenario=eval_question` 时 `question_version` 是否必填；（8）必须检查评分写入失败是否 non_blocking 且记录 `resultCode`；（9）必须检查项目是否按技术栈配置并执行 Lint。必须逐条进行检查和验证，生成一个逐条描述详细检查内容、验证方式和验证结果的审计报告。报告结尾必须明确给出结论：是否「完全覆盖、验证通过」；若未通过，请列出遗漏章节或未覆盖要点。报告结尾必须包含 §5.1 规定的可解析评分块（总体评级 + 四维维度评分），否则 parseAndWriteScore 无法解析、仪表盘无法显示评级。禁止用描述代替结构化块：不得在总结或正文中用「可解析评分块（总体评级 X，维度分 Y–Z）」等文字概括；必须在报告中输出完整的结构化块，包括独立一行 总体评级: X 和四行 - 维度名: XX/100。总体评级只能是 A/B/C/D（禁止 A-、B+、C+、D- 等任意修饰符）。维度分必须逐行写明，不得用区间或概括代替。【§5 可解析块要求】审计时须同时执行批判审计员检查，输出格式见 [audit-prompts-critical-auditor-appendix.md](audit-prompts-critical-auditor-appendix.md)。
+  - implement 阶段审计报告必须在结尾包含以下可解析块：`## 可解析评分块（供 parseAndWriteScore）`、`总体评级: [A|B|C|D]`、四行维度评分（功能性 / 代码质量 / 测试覆盖 / 安全性）。维度名须与 `config/code-reviewer-config.yaml` 中 `modes.code.dimensions` 完全一致。
+  - 审计通过时，请将完整报告保存至调用方在本 prompt 中指定的 reportPath，并在结论中注明保存路径及 iteration_count。
+  - 审计通过时，审计子代理在返回主 Agent 前必须执行：`npx ts-node scripts/parse-and-write-score.ts --reportPath <reportPath> --stage implement --event stage_audit_complete --triggerStage speckit_5_2 --epic {epic} --story {story} --artifactDocPath <story 文档路径> --iteration-count {累计值}`。
+  - 保存报告时禁止重复输出「正在写入完整审计报告」「正在保存」等状态信息；使用 write 工具一次性写入即可。
+
+## Claude/OMC Runtime Adapter
+
+### Primary Executor
+- `auditor-implement`
+
+### Fallback Strategy
+1. 若当前环境不能直接调用 `auditor-implement`，则回退到 `oh-my-claudecode:code-reviewer`
+2. 若 OMC reviewer 不可用，则回退到 `code-review` skill
+3. 若以上执行体均不可用，则由主 Agent 直接执行同一份三层结构审计 prompt
+
+### Runtime Contracts
+- Prompt 存档路径:
+  - `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/PROMPT_audit-implement-E{epic}-S{story}_round{N}.md`
+- 审计报告输出路径:
+  - `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/AUDIT_implement-E{epic}-S{story}.md`
+- 审计失败处理:
+  - 根据 required_fixes 修复代码/文档后重新发起审计
+- 审计通过处理:
+  - 触发评分写入
+  - 记录 iteration_count
+  - 满足严格模式收敛后继续 handoff
+
+## Repo Add-ons
+
+**以下内容为仓库附加约束，不属于 Cursor §5 基线。**
+
+### Implement 阶段专项审查
+- TDD 红绿灯逐 US 检查
+- ralph-method 追踪文件完整性
+- 集成测试执行情况
+- 模块是否被生产代码关键路径调用
+- Lint 无错
+- 评分写入配置检查
+
+### progress.txt 禁止词检查
+检查 progress.txt 中是否出现以下表述：
+- 可选、可考虑
+- 后续、后续迭代、v2再做
+- 待定、酌情、视情况
+- 技术债、先这样后续再改
+- 先实现、后续扩展
+- 将在后续迭代、TODO后续
+
+### 批判审计员输出要求
+- 报告必须包含 `## 批判审计员结论`
+- 该段落字数占比必须 ≥ 50%
+- 必须列出已检查维度及每维度结论
+- 必须明确写出「本轮无新 gap」或「本轮存在 gap」
+
+### 严格模式附加要求
+- 必须连续 3 轮结论均为「完全覆盖、验证通过」
+- 每轮都必须注明「本轮无新 gap」
+- 任一轮出现 gap，则从下一轮重新计数
+
+### 输出格式附加要求
+- 报告结尾必须包含可解析评分块
+- code 模式四维评分必须完整
+```
+
+#### Step 5.2: 调用审计能力
+
+```markdown
+请执行 implement 阶段审计，并严格按以下三层结构理解要求：
+
+## Cursor Canonical Base
+- 主文本基线: skills/speckit-workflow/references/audit-prompts.md §5
+- 被审对象:
+  - 项目生产代码
+  - 项目测试代码
+  - tasks 文档
+  - prd / progress 追踪文件
+
+## Claude/OMC Runtime Adapter
+- 审计报告输出到:
+  _bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/AUDIT_implement-E{epic}-S{story}.md
+- 同时保存本轮 Prompt 存档到:
+  _bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/PROMPT_audit-implement-E{epic}-S{story}_round{N}.md
+
+## Repo Add-ons
+- 同步执行本仓 implement 专项审查
+- 同步执行 progress 禁止词检查
+- 同步满足批判审计员输出格式
+- 同步满足 strict 三轮收敛要求
+- 同步满足评分块要求
+
+不得把三层内容混写成无法区分来源的重写版 prompt。
+```
+
+#### Step 5.3: 审计后处理
+
+1. **FAIL**:
+   - 根据 required_fixes 修复代码/文档
+   - 审计迭代计数 +1
+   - 重新执行 Step 5
+2. **PASS**:
+   - 触发评分写入
+   - 满足严格模式收敛条件后继续 handoff
+
 
 ## 15 条铁律执行清单
 
