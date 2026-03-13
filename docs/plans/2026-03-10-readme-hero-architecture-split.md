@@ -1,5 +1,7 @@
 # README Hero and Architecture Graphics Implementation Plan
 
+> ✅ **DONE** — 已完成于 2026-03-13
+
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Replace the dense README hero banner with a simpler slogan-plus-emblem banner and move the accurate five-layer architecture into a separate larger architecture overview graphic embedded lower in the README.

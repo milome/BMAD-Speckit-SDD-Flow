@@ -1,5 +1,7 @@
 # README Banner and Architecture Overview Implementation Plan
 
+> ✅ **DONE** — 已完成于 2026-03-13
+
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Redesign the README top banner to keep the slogan while simplifying supporting copy and replacing the right-side detail panel with a process-engine emblem, then move the five-layer architecture content into a dedicated mid-page architecture overview SVG.
