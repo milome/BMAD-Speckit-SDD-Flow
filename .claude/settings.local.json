@@ -72,7 +72,11 @@
       "Bash(npm run:*)",
       "Bash(npx eslint:*)",
       "Bash(node_modules/.bin/eslint:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(rtk lint:*)",
+      "Bash(npm link:*)",
+      "Bash(node:*)",
+      "Bash(./node_modules/.bin/bmad-speckit:*)"
     ],
     "deny": [],
     "ask": []

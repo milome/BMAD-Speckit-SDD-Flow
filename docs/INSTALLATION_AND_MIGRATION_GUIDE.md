@@ -135,6 +135,8 @@ BMAD-Speckit-SDD-Flow/                 # 本仓库（安装源）
 
 ### 3.2 安装方式一：npm 安装（推荐）
 
+> strict isolation：安装时必须显式指定目标 agent，分别走 Cursor 与 claude-code 的独立安装流。
+
 ```powershell
 # 1. 进入目标项目根目录
 cd D:\Dev\your-new-project

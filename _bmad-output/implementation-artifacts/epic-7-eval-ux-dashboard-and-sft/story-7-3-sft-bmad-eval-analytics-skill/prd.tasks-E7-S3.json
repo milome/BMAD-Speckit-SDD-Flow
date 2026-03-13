@@ -1,8 +1,0 @@
-{
-  "version": "1.0",
-  "stem": "tasks-E7-S3",
-  "userStories": [
-    { "id": "US-001", "title": "Skill 文档扩展", "acceptance": "T1.1, T1.2", "passes": true },
-    { "id": "US-002", "title": "验收", "acceptance": "T2.1, T2.2, T2.3", "passes": true }
-  ]
-}
