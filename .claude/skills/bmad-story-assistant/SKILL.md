@@ -283,13 +283,23 @@ prompt: |
    ```
 
 2. **Agent 文件引用模式**：
-   若使用 `.claude/agents/bmad-story-create.md` 作为执行体参考，必须先将该文件内容完整读入，然后作为 `prompt` 传入。`subagent_type` 仍然是 `general-purpose`：
+   若使用 `.claude/agents/bmad-story-create.md` 作为执行体，必须先将该文件内容完整读入，然后作为 `prompt` 传入。`subagent_type` 仍然是 `general-purpose`：
    ```yaml
    tool: Agent
    subagent_type: general-purpose
    description: "Create Story via bmad-story-create agent"
    prompt: |
-     [读取 .claude/agents/bmad-story-create.md 的完整内容，替换占位符后传入]
+     你作为 bmad-story-create 执行体，执行以下 Stage 1 Create Story 流程：
+
+     [读取 .claude/agents/bmad-story-create.md 的完整内容，含：]
+     [1. Role]
+     [2. Input Reception - 确认接收到的参数]
+     [3. Required Inputs - 替换为实际值]
+     [4. Cursor Canonical Base - 完整复制]
+     [5. Subtask Template - 完整复制，占位符已替换]
+     [6. Mandatory Startup]
+     [7. Execution Flow]
+     [8. Output / Handoff 要求]
    ```
 
 **重要**：
@@ -393,6 +403,7 @@ Claude 端 Stage 2 Story 审计执行体，负责审计 Story 文档并决定是
 
 ```yaml
 tool: Agent
+subagent_type: general-purpose
 description: "Execute Stage 2 Story Audit"
 prompt: |
   你作为 bmad-story-audit 执行体，执行以下 Stage 2 Story 审计流程：
@@ -554,6 +565,7 @@ prompt: |
 
 ```yaml
 tool: Agent
+subagent_type: general-purpose
 description: "Execute Stage 3 Dev Story"
 prompt: |
   你作为 speckit-implement / bmad-layer4-speckit-implement 执行体，执行以下 Stage 3 Dev Story 流程：
@@ -692,6 +704,7 @@ prompt: |
 
 ```yaml
 tool: Agent
+subagent_type: general-purpose
 description: "Execute Stage 4 Post Audit"
 prompt: |
   你作为 auditor-implement 执行体，执行以下 Stage 4 Post Audit 流程：
