@@ -33,4 +33,4 @@ artifacts:
 ## Constraints
 
 - **禁止自行 commit**
-- 必须通过 auditor-implement
+- 必须通过 implement 阶段审计（采用 Cursor Canonical Base / Claude/OMC Runtime Adapter / Repo Add-ons 三层结构）

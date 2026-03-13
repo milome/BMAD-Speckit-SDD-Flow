@@ -132,10 +132,141 @@ progressPath="_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/stor
 
 **严格度**: standard（单次 + 批判审计员 >50%），参考 `audit-prompts-critical-auditor-appendix.md`
 
-1. 调用 `auditor-tasks`
-2. 等待审计结果
-3. **FAIL**: 根据 required_fixes 修改，重新审计
-4. **PASS**: 触发评分写入，更新状态
+#### Step 4.1: 生成审计子任务 Prompt
+
+**必须在调用审计前生成并保存 Prompt 文件，供人工审核与回放。**
+
+```bash
+# 提示词保存路径（供人工审核）
+PROMPT_PATH="_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/PROMPT_audit-tasks-E{epic}-S{story}_round{N}.md"
+```
+
+**Prompt 文件必须采用以下三层结构：**
+
+```markdown
+# 审计子任务 Prompt: tasks-E{epic}-S{story}.md
+
+## Cursor Canonical Base
+
+以下主文本基线必须对应 Cursor `skills/speckit-workflow/references/audit-prompts.md` §4。
+本节只允许放置 Cursor §4 的完整审计要求。
+
+- 被审文档:
+  - `specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/tasks-E{epic}-S{story}.md`
+- 前置对照文档:
+  - `specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/spec-E{epic}-S{story}.md`
+  - `specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/plan-E{epic}-S{story}.md`
+  - `specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/IMPLEMENTATION_GAPS-E{epic}-S{story}.md`
+- 对照基线:
+  - `skills/speckit-workflow/references/audit-prompts.md` §4
+- 基线要求:
+  - 你是一位非常严苛的代码审计员，请帮我仔细审阅目前的 tasks.md 是否完全覆盖了原始的需求设计文档、plan.md 以及 IMPLEMENTATION_GAPS.md 所有章节，必须逐条进行检查和验证。此外，必须专项审查：（1）每个功能模块/Phase 是否包含集成测试与端到端功能测试任务及用例，严禁仅有单元测试；（2）每个模块的验收标准是否包含「该模块在生产代码关键路径中被导入、实例化并调用」的集成验证；（3）是否存在「模块内部实现完整且可通过单元测试，但从未在生产代码关键路径中被导入、实例化或调用」的孤岛模块任务；（4）每个任务或整体验收标准是否包含「按技术栈执行 Lint（见 lint-requirement-matrix），若使用主流语言但未配置 Lint 须作为 gap；已配置的须执行且无错误、无警告」；若缺失，须作为未覆盖项列出。生成一个逐条描述详细检查内容、验证方式和验证结果的审计报告。报告结尾必须明确给出结论：是否「完全覆盖、验证通过」；若未通过，请列出遗漏章节或未覆盖要点。无论采用标准格式或逐条对照格式，报告结尾必须包含 §4.1 规定的可解析评分块。禁止用描述代替结构化块：不得在总结或正文中用「可解析评分块（总体评级 X，维度分 Y–Z）」等文字概括；必须在报告中输出完整的结构化块，包括独立一行 总体评级: X 和四行 - 维度名: XX/100。总体评级只能是 A/B/C/D（禁止 A-、B+、C+、D- 等任意修饰符）。维度分必须逐行写明，不得用区间或概括代替。审计时须同时执行批判审计员检查，输出格式见 [audit-prompts-critical-auditor-appendix.md](audit-prompts-critical-auditor-appendix.md)。
+  - tasks 阶段审计报告必须在结尾包含以下可解析块：`## 可解析评分块（供 parseAndWriteScore）`、`总体评级: [A|B|C|D]`、四行维度评分（需求完整性 / 可测试性 / 一致性 / 可追溯性）。禁止使用 A-/B+/C+/D- 与区间分数。
+  - 审计通过时，审计子代理必须：① 在被审文档末尾追加 `<!-- AUDIT: PASSED by code-reviewer -->`（若已存在则跳过）；② 将完整报告保存至调用方指定的 reportPath，并在结论中注明保存路径及 iteration_count。
+  - 审计通过时，审计子代理在返回主 Agent 前必须执行：`npx ts-node scripts/parse-and-write-score.ts --reportPath <reportPath> --stage tasks --event stage_audit_complete --triggerStage speckit_4_2 --epic {epic} --story {story} --artifactDocPath specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/tasks-E{epic}-S{story}.md --iteration-count {累计值}`。
+  - 保存报告时禁止重复输出「正在写入完整审计报告」「正在保存」等状态信息；使用 write 工具一次性写入即可。
+  - 审计未通过时，审计子代理须在本轮内直接修改被审文档以消除 gap，修改完成后在报告中注明已修改内容；主 Agent 收到报告后发起下一轮审计。禁止仅输出修改建议而不修改文档。详见 `audit-document-iteration-rules.md`。
+
+## Claude/OMC Runtime Adapter
+
+### Primary Executor
+- `auditor-tasks`
+
+### Fallback Strategy
+1. 若当前环境不能直接调用 `auditor-tasks`，则回退到 `oh-my-claudecode:code-reviewer`
+2. 若 OMC reviewer 不可用，则回退到 `code-review` skill
+3. 若以上执行体均不可用，则由主 Agent 直接执行同一份三层结构审计 prompt
+
+### Runtime Contracts
+- Prompt 存档路径:
+  - `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/PROMPT_audit-tasks-E{epic}-S{story}_round{N}.md`
+- 审计报告输出路径:
+  - `specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/AUDIT_tasks-E{epic}-S{story}.md`
+- 审计失败处理:
+  - 主 Agent 根据 required_fixes 修改 tasks.md 后重新审计
+- 审计通过处理:
+  - 追加通过标记
+  - 触发评分写入
+  - 更新状态并 handoff 到 implement 阶段
+
+## Repo Add-ons
+
+**以下内容为仓库附加约束，不属于 Cursor §4 基线。**
+
+### Tasks 阶段专项审查
+- 禁止仅有单元测试
+- 必须包含集成/E2E 测试任务
+- 生产代码关键路径验证
+- 禁止孤岛模块
+- Lint 强制检查
+
+### 禁止词检查
+检查 tasks.md 中是否出现以下表述：
+- 可选、可考虑
+- 后续、后续迭代、v2再做
+- 待定、酌情、视情况
+- 技术债、先这样后续再改
+- 先实现、后续扩展
+- 将在后续迭代、TODO后续
+
+### 批判审计员输出要求
+- 必须包含 `## 批判审计员结论`
+- 字数占比 ≥ 50%
+- 必须列出已检查维度及每维度结论
+- 必须明确写出「本轮无新 gap」或「本轮存在 gap」
+
+### 输出格式附加要求
+- 报告结尾必须包含可解析评分块
+```
+
+#### Step 4.2: 调用审计 Agent
+
+**Primary Executor**: `auditor-tasks` 通过 `subagent_type: general-purpose` 调用
+
+```typescript
+Task({
+  description: "审计 tasks-E{epic}-S{story}.md",
+  subagent_type: "general-purpose",
+  prompt: `
+你作为 auditor-tasks 执行体，执行以下 Stage 4 tasks 阶段审计流程：
+
+**Cursor Canonical Base**
+- 主文本基线: skills/speckit-workflow/references/audit-prompts.md §4
+- 被审文档: specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/tasks-E{epic}-S{story}.md
+- 前置对照文档:
+  - spec-E{epic}-S{story}.md
+  - plan-E{epic}-S{story}.md
+  - IMPLEMENTATION_GAPS-E{epic}-S{story}.md
+
+**Claude/OMC Runtime Adapter**
+- 审计报告输出到:
+  specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/AUDIT_tasks-E{epic}-S{story}.md
+- 同时保存本轮 Prompt 存档到:
+  _bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/PROMPT_audit-tasks-E{epic}-S{story}_round{N}.md
+
+**Repo Add-ons**
+- 同步执行本仓 tasks 专项审查
+- 同步执行禁止词检查
+- 同步满足批判审计员格式与评分块要求
+
+不得把三层内容混写成无法区分来源的重写版 prompt。
+`
+})
+```
+
+**Fallback Strategy**
+1. 若 `general-purpose` 不可用，则回退到 `oh-my-claudecode:code-reviewer`
+2. 若 OMC reviewer 不可用，则回退到 `code-review` skill
+3. 若以上执行体均不可用，则由主 Agent 直接执行同一份三层结构审计 prompt
+```
+
+#### Step 4.3: 审计后处理
+
+1. **FAIL**: 根据 required_fixes 修改 tasks.md，**迭代计数+1**，重新执行 Step 4
+2. **PASS**:
+   - 在 tasks.md 末尾追加 `<!-- AUDIT: PASSED by code-reviewer -->`
+   - 触发评分写入
+   - 更新状态
 
 **批判审计员检查维度** (文档审计场景):
 - 遗漏需求点
@@ -144,6 +275,7 @@ progressPath="_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/stor
 - 与前置文档矛盾（与 plan/IMPLEMENTATION_GAPS 对比）
 - 任务不可执行
 - 集成/端到端测试缺失
+- **禁止词出现**
 
 **批判审计员输出格式要求**:
 - 审计报告必须包含 `## 批判审计员结论` 段落
@@ -204,7 +336,7 @@ next_agent: speckit-implement
 ## Constraints
 
 - **禁止自行 commit**
-- 必须通过 auditor-tasks 审计
+- 必须通过 tasks 阶段审计（采用 Cursor Canonical Base / Claude/OMC Runtime Adapter / Repo Add-ons 三层结构）
 - 每个任务必须有明确的 TDD 循环
 - 必须包含 Lint、集成测试、E2E 任务
 - **必须在 tasks 阶段创建 ralph-method 追踪文件**

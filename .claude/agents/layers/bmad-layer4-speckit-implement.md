@@ -342,14 +342,16 @@ PROMPT_PATH="_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story
 
 #### Step 5.2: 调用审计 Agent
 
+**Primary Executor**: `auditor-implement` 通过 `subagent_type: general-purpose` 调用
+
 ```typescript
 Task({
   description: "审计 implement 阶段代码实现",
-  subagent_type: "oh-my-claudecode:code-reviewer",
+  subagent_type: "general-purpose",
   prompt: `
-请执行 implement 阶段审计，并严格按以下三层结构理解要求：
+你作为 auditor-implement 执行体，执行以下 Stage 4 implement 阶段审计流程：
 
-## Cursor Canonical Base
+**Cursor Canonical Base**
 - 主文本基线: skills/speckit-workflow/references/audit-prompts.md §5
 - 被审对象:
   - 项目生产代码
@@ -357,13 +359,13 @@ Task({
   - tasks 文档
   - prd / progress 追踪文件
 
-## Claude/OMC Runtime Adapter
+**Claude/OMC Runtime Adapter**
 - 审计报告输出到:
   specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/AUDIT_implement-E{epic}-S{story}.md
 - 同时保存本轮 Prompt 存档到:
   _bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/PROMPT_audit-implement-E{epic}-S{story}_round{N}.md
 
-## Repo Add-ons
+**Repo Add-ons**
 - 同步执行本仓 implement 专项审查
 - 同步执行 progress 禁止词检查
 - 同步满足批判审计员输出格式
@@ -373,6 +375,12 @@ Task({
 不得把三层内容混写成无法区分来源的重写版 prompt。
 `
 })
+```
+
+**Fallback Strategy**
+1. 若 `general-purpose` 不可用，则回退到 `oh-my-claudecode:code-reviewer`
+2. 若 OMC reviewer 不可用，则回退到 `code-review` skill
+3. 若以上执行体均不可用，则由主 Agent 直接执行同一份三层结构审计 prompt
 ```
 
 #### Step 5.3: 审计后处理
