@@ -270,31 +270,26 @@ prompt: |
 
 主 Agent 使用本 skill 时，必须按以下方式调用执行体：
 
+**重要**：Claude Code CLI 的 `Agent` 工具没有专门的 `subagent_type` 对应 `.claude/agents/*.md` 文件。无论使用内置执行体还是自定义 agent 文件，都使用 `subagent_type: general-purpose`，并通过 `prompt` 参数传入完整的执行指令。
+
 1. **直接执行模式**（推荐）：
    主 Agent 直接读取本 skill 中 Stage 1 的完整 prompt（含上面的 Subtask Template），整段复制并替换占位符后，使用 `Agent` 工具调用执行体：
    ```yaml
    tool: Agent
-   subagent_type: generalPurpose
+   subagent_type: general-purpose
    description: "Execute Stage 1 Create Story"
    prompt: |
      [本 skill Stage 1 的完整内容，含 Cursor Canonical Base + Subtask Template，所有占位符已替换]
    ```
 
 2. **Agent 文件引用模式**：
-   若使用 `.claude/agents/bmad-story-create.md` 作为执行体，必须将本 skill 中的 `Cursor Canonical Base` 和 `Subtask Template` 完整传入 prompt 参数：
+   若使用 `.claude/agents/bmad-story-create.md` 作为执行体参考，必须先将该文件内容完整读入，然后作为 `prompt` 传入。`subagent_type` 仍然是 `general-purpose`：
    ```yaml
    tool: Agent
+   subagent_type: general-purpose
    description: "Create Story via bmad-story-create agent"
    prompt: |
-     你作为 bmad-story-create 执行体，执行以下 Stage 1 Create Story 流程：
-
-     [本 skill 中 Stage 1 的完整内容，含：]
-     [1. Purpose]
-     [2. Required Inputs - 替换为实际值]
-     [3. Cursor Canonical Base - 完整复制]
-     [4. Subtask Template - 完整复制，占位符已替换]
-     [5. Runtime Contracts]
-     [6. Output / Handoff 要求]
+     [读取 .claude/agents/bmad-story-create.md 的完整内容，替换占位符后传入]
    ```
 
 **重要**：
