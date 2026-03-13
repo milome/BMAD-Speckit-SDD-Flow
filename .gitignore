@@ -32,4 +32,5 @@ _bmad-output/
 
 # Documentation archives (BMAD historical artifacts)
 docs/BMAD/
+.worktrees/
 temp_commit_message.txt
