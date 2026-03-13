@@ -135,16 +135,19 @@ BMAD-Speckit-SDD-Flow/                 # 本仓库（安装源）
 
 ### 3.2 安装方式一：npm 安装（推荐）
 
-> strict isolation：安装时必须显式指定目标 agent，分别走 Cursor 与 claude-code 的独立安装流。
+> strict isolation：当前 `postinstall` / `npm run init` 默认走 `--agent cursor`。若需要 Claude Code，必须显式运行 `node scripts/init-to-root.js <targetDir> --agent claude-code`（或后续等价入口）。
 
 ```powershell
 # 1. 进入目标项目根目录
 cd D:\Dev\your-new-project
 
-# 2. 安装 BMAD-Speckit-SDD-Flow（postinstall 自动运行 init-to-root.js）
+# 2. 安装 BMAD-Speckit-SDD-Flow（postinstall 默认以 --agent cursor 运行）
 npm install --save-dev D:\Dev\BMAD-Speckit-SDD-Flow
 # 或者使用本地路径 link
 npm link D:\Dev\BMAD-Speckit-SDD-Flow
+
+# 3. 若要生成 Claude Code 隔离运行时，显式执行
+node D:\Dev\BMAD-Speckit-SDD-Flow\scripts\init-to-root.js D:\Dev\your-new-project --agent claude-code
 ```
 
 #### 推荐：一键安装
@@ -154,6 +157,13 @@ pwsh D:\Dev\BMAD-Speckit-SDD-Flow\scripts\setup.ps1 -Target D:\Dev\your-new-proj
 ```
 
 该脚本自动完成：核心目录部署 + `.cursor/` 同步 + 全局 Skills 安装 + 安装验证。
+
+涉及 init / distribute / score / runtime 隔离改动时，发布前至少要执行 `npm run test:cursor-regression`，把 Cursor 零回退作为 release gate。
+
+Claude Code 隔离入口验证使用 `npm run test:claude-isolation`。
+
+Claude Code 运行时最少应验证以下路径存在：`.claude/agents`、`.claude/protocols`、`.claude/state`、`.claude/hooks`。
+交叉安装后还应确认：Claude Code 安装不覆盖 `.cursor/**`，Cursor 安装不覆盖 `.claude/**`。
 
 `postinstall` 脚本 (`scripts/init-to-root.js`) 将自动复制以下目录到项目根：
 - `_bmad/` → `{项目根}/_bmad/`
@@ -189,10 +199,16 @@ Copy-Item -Recurse -Force "D:\Dev\BMAD-Speckit-SDD-Flow\scoring" "scoring"
 # 1. 克隆本仓库
 git clone <BMAD-Speckit-SDD-Flow-repo-url> D:\Dev\BMAD-Speckit-SDD-Flow
 
-# 2. 使用 init-to-root.js 部署到目标项目
-node D:\Dev\BMAD-Speckit-SDD-Flow\scripts\init-to-root.js D:\Dev\your-new-project
+# 2. 使用 init-to-root.js 部署到目标项目（默认 Cursor）
+node D:\Dev\BMAD-Speckit-SDD-Flow\scripts\init-to-root.js D:\Dev\your-new-project --agent cursor
 
-# 3. 同方式一的步骤 3：手动复制 .cursor/、config/、templates/、workflows/、scoring/
+# 3. 如需 Claude Code，单独执行 claude-code 安装目标
+node D:\Dev\BMAD-Speckit-SDD-Flow\scripts\init-to-root.js D:\Dev\your-new-project --agent claude-code
+
+# 4. 同方式一的步骤 3：手动复制 .cursor/、config/、templates/、workflows/、scoring/
+# 5. 验证交叉安装顺序（strict isolation）
+#    - cursor->claude-code
+#    - claude-code->cursor
 ```
 
 ### 3.4 全局 Skills 安装

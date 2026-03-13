@@ -10,20 +10,77 @@
  *
  * 退出码：0=成功
  */
-const path = require('path');
-const fs = require('fs');
+import fs from 'node:fs';
+import path from 'node:path';
 
 const PKG_ROOT = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
 const fullMode = args.includes('--full');
 const agentArgIndex = args.findIndex((a) => a === '--agent');
-const agentTarget =
+const requestedAgentTarget =
   agentArgIndex >= 0 && args[agentArgIndex + 1] ? args[agentArgIndex + 1] : 'cursor';
-const allowedAgents = new Set(['cursor', 'claude-code']);
-if (!allowedAgents.has(agentTarget)) {
-  console.error(`Unsupported --agent value: ${agentTarget}`);
+const REGISTERED_AGENT_PROFILES = {
+  cursor: {
+    runtimeRoot: '.cursor',
+    sync(targetDir) {
+      const cursorSync = [
+        { src: 'commands', dest: '.cursor/commands', fromPkgRoot: false },
+        { src: 'rules', dest: '.cursor/rules', fromPkgRoot: false },
+      ];
+      let totalFiles = 0;
+      for (const { src, dest, fromPkgRoot } of cursorSync) {
+        const srcPath = path.join(fromPkgRoot ? PKG_ROOT : targetDir, src);
+        const destPath = path.join(targetDir, dest);
+        if (fs.existsSync(srcPath)) {
+          console.log('Sync', src, '->', dest);
+          copyRecursive(srcPath, destPath);
+          totalFiles += countFiles(destPath);
+        }
+      }
+      const crSrc = path.join(targetDir, 'config', 'code-reviewer-config.yaml');
+      const crDest = path.join(targetDir, '.cursor', 'agents', 'code-reviewer-config.yaml');
+      if (fs.existsSync(crSrc)) {
+        fs.mkdirSync(path.dirname(crDest), { recursive: true });
+        fs.copyFileSync(crSrc, crDest);
+        console.log('Sync config/code-reviewer-config.yaml -> .cursor/agents/');
+        totalFiles += 1;
+      }
+      return totalFiles;
+    },
+  },
+  'claude-code': {
+    runtimeRoot: '.claude',
+    sync(targetDir) {
+      const claudeSync = [
+        { src: 'commands', dest: '.claude/commands', fromPkgRoot: false },
+        { src: 'rules', dest: '.claude/rules', fromPkgRoot: false },
+        { src: '.claude/agents', dest: '.claude/agents', fromPkgRoot: true },
+        { src: '.claude/protocols', dest: '.claude/protocols', fromPkgRoot: true },
+        { src: '.claude/state', dest: '.claude/state', fromPkgRoot: true },
+        { src: '.claude/hooks', dest: '.claude/hooks', fromPkgRoot: true },
+      ];
+      let totalFiles = 0;
+      for (const { src, dest, fromPkgRoot } of claudeSync) {
+        const srcPath = path.join(fromPkgRoot ? PKG_ROOT : targetDir, src);
+        const destPath = path.join(targetDir, dest);
+        if (fs.existsSync(srcPath)) {
+          console.log('Sync', src, '->', dest);
+          copyRecursive(srcPath, destPath);
+          totalFiles += countFiles(destPath);
+        } else {
+          fs.mkdirSync(destPath, { recursive: true });
+        }
+      }
+      return totalFiles;
+    },
+  },
+};
+const agentProfile = REGISTERED_AGENT_PROFILES[requestedAgentTarget];
+if (!agentProfile) {
+  console.error(`Unsupported --agent value: ${requestedAgentTarget}`);
   process.exit(1);
 }
+const agentTarget = requestedAgentTarget;
 const targetArg = args.find(
   (a, index) => a !== '--full' && a !== '--agent' && index !== agentArgIndex + 1
 );
@@ -86,53 +143,7 @@ for (const dir of DIRS) {
   totalFiles += countFiles(dest);
 }
 
-if (agentTarget === 'cursor') {
-  const cursorSync = [
-    { src: 'commands', dest: '.cursor/commands' },
-    { src: 'rules', dest: '.cursor/rules' },
-  ];
-  for (const { src, dest } of cursorSync) {
-    const srcPath = path.join(TARGET, src);
-    const destPath = path.join(TARGET, dest);
-    if (fs.existsSync(srcPath)) {
-      console.log('Sync', src, '->', dest);
-      copyRecursive(srcPath, destPath);
-      totalFiles += countFiles(destPath);
-    }
-  }
-  const crSrc = path.join(TARGET, 'config', 'code-reviewer-config.yaml');
-  const crDest = path.join(TARGET, '.cursor', 'agents', 'code-reviewer-config.yaml');
-  if (fs.existsSync(crSrc)) {
-    fs.mkdirSync(path.dirname(crDest), { recursive: true });
-    fs.copyFileSync(crSrc, crDest);
-    console.log('Sync config/code-reviewer-config.yaml -> .cursor/agents/');
-    totalFiles += 1;
-  }
-}
-
-if (agentTarget === 'claude-code') {
-  const claudeSync = [
-    { src: 'commands', dest: '.claude/commands' },
-    { src: 'rules', dest: '.claude/rules' },
-    { src: '.claude/agents', dest: '.claude/agents' },
-    { src: '.claude/protocols', dest: '.claude/protocols' },
-    { src: '.claude/state', dest: '.claude/state' },
-    { src: '.claude/hooks', dest: '.claude/hooks' },
-  ];
-  for (const { src, dest } of claudeSync) {
-    const srcPath = path.join(PKG_ROOT, src);
-    const fallbackSrcPath = path.join(TARGET, src);
-    const resolvedSrcPath = fs.existsSync(srcPath) ? srcPath : fallbackSrcPath;
-    const destPath = path.join(TARGET, dest);
-    if (fs.existsSync(resolvedSrcPath)) {
-      console.log('Sync', src, '->', dest);
-      copyRecursive(resolvedSrcPath, destPath);
-      totalFiles += countFiles(destPath);
-    } else {
-      fs.mkdirSync(destPath, { recursive: true });
-    }
-  }
-}
+totalFiles += agentProfile.sync(TARGET, PKG_ROOT);
 
 console.log('Done. Copied', DIRS.length, 'dirs,', totalFiles, 'files.');
 console.log('Verify with: _bmad/scripts/bmad-speckit/powershell/check-prerequisites.ps1');
