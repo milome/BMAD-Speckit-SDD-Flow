@@ -1,0 +1,112 @@
+# 依赖和构建产物
+node_modules/
+dist/
+build/
+.next/
+__pycache__/
+*.pyc
+*.pyo
+
+# 锁文件和日志
+*.lock
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 版本控制和IDE
+.git/
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 测试覆盖率
+coverage/
+.cache/
+.nyc_output/
+
+# ===== 本项目特定忽略 =====
+
+# OMC 运行时状态
+.omc/
+.omc/state/
+.omc/state/*.jsonl
+.omc/state/*.json
+
+# Speckit 运行时状态
+.speckit/
+.speckit-state.yaml
+.speckit-state.yaml.template
+
+# BMAD 输出和备份
+_bmad-output/
+bmad-customization-backups/
+
+# 临时目录
+tmp-*/
+*.tmp
+
+# Python 缓存
+.pytest_cache/
+.mypy_cache/
+
+# Git worktrees
+.worktrees/
+.claude/worktrees/
+
+# 评分数据（自动生成）
+scoring/data/*.json
+
+# 报告目录（自动生成）
+reports/
+
+# 测试产物
+test/
+tests/
+specs/epic-*/story-*/AUDIT_*
+specs/epic-*/story-*/VERIFICATION_REPORT.md
+specs/epic-*/story-*/HANDOFF_*
+specs/epic-*/story-*/gaps.md
+specs/epic-*/story-*/progress.txt
+
+# 临时进度文件
+progress.md
+progress.txt
+task_plan.md
+findings.md
+
+# 运行时状态文件
+.claude/state/
+.cursor/settings.json
+
+# 包管理器缓存
+packages/*/node_modules/
+
+# 环境变量与敏感文件
+.env
+.env.*
+
+# Python虚拟环境
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# 包管理器锁文件（体积大，极少需要读取）
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# 系统冗余文件
+.DS_Store
+Thumbs.db
+
+# 静态资源（非开发逻辑类）
+*.zip
+*.tar.gz
+*.png
+*.jpg
+*.jpeg
+*.svg
