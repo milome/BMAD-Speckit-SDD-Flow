@@ -12,6 +12,17 @@
 | **Agent目录** | `.cursor/agents/` 或 `.claude/agents/` | `.claude/agents/` |
 | **配置读取方式** | 文件系统 + MCP | 文件系统 + 原生工具 |
 
+## 当前落地状态说明
+
+- `scripts/bmad-config.ts` 已提供跨平台环境检测与 `mcp_task` / `Agent` 参数适配。
+- Claude 侧主流程文档与 Layer 4 阶段说明已明确接入审计粒度配置。
+- Cursor 侧此前主要停留在 `.cursor/rules/*.mdc` 的薄规则层，因此除了配置加载器本身，还需要补齐：
+  - Cursor 专项 guide 文档
+  - Cursor 入口规则中的审计粒度说明
+  - Cursor 回归测试
+
+以下文档中的 Cursor 调用示例表示**设计目标与适配约定**；只有当对应入口规则、使用说明与回归测试同时落地时，才表示 Cursor 侧真正完整支持。
+
 ## 跨平台配置方案
 
 ### 方案1: 统一配置文件 + 环境适配层（推荐）

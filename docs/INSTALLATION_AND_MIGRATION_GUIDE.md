@@ -671,6 +671,7 @@ foreach ($skill in $requiredSkills) {
 | Speckit commands | `commands/speckit.*.md` | Cursor 命令系统 |
 | BMAD commands | `commands/bmad-*.md` | Cursor 命令系统 |
 | Cursor rules | `.cursor/rules/bmad-*.mdc` | Cursor IDE 自动加载 |
+| Cursor guide docs | `docs/guide/cursor/*.md` | Cursor 使用说明与运行时差异说明 |
 
 ### 5.2 全局路径（Cursor 全局 Skills）
 

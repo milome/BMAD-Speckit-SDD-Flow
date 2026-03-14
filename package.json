@@ -26,10 +26,11 @@
     "accept:e4-s1": "npx ts-node scripts/accept-e4-s1.ts",
     "accept:e4-s2": "npx ts-node scripts/accept-e4-s2.ts",
     "accept:e4-s3": "npx ts-node scripts/accept-e4-s3.ts",
-    "test:cursor-regression": "npm run accept:e1-s1 && npm run accept:e1-s2 && npm run accept:e3-s1 && npm run accept:e3-s2 && npm run accept:e3-s3 && npm run accept:e4-s1 && npm run accept:e4-s2 && npm run accept:e4-s3",
+    "test:cursor-regression": "npx vitest run scripts/accept-cursor-regression-gate.test.ts && npm run accept:e1-s1 && npm run accept:e1-s2 && npm run accept:e3-s1 && npm run accept:e3-s2 && npm run accept:e3-s3 && npm run accept:e4-s1 && npm run accept:e4-s2 && npm run accept:e4-s3",
     "test:claude-isolation": "npx vitest run scripts/accept-claude-install-isolation.test.ts scripts/accept-claude-runtime-isolation.test.ts",
     "test:bmad": "npx vitest run scripts/accept-bmad-*.test.ts scripts/accept-layer4-*.test.ts scripts/accept-commit-gate.test.ts scripts/accept-runtime.test.ts scripts/accept-checklists.test.ts scripts/accept-extensions.test.ts",
     "coach:diagnose": "npx ts-node scripts/coach-diagnose.ts",
+    "verify:cursor-audit-granularity": "npx ts-node scripts/verify-cursor-audit-granularity.ts",
     "eval-questions": "npx ts-node scripts/eval-questions-cli.ts",
     "speckit": "npx bmad-speckit",
     "speckit:init": "npx bmad-speckit init"

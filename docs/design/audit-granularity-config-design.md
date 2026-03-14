@@ -541,8 +541,16 @@ npx vitest run scripts/bmad-config.test.ts
 # 结果: ✓ 19 tests passed
 ```
 
-### 11.4 待完成工作
+### 11.4 当前落地状态
 
-- [ ] Phase 2: Story Mode - Layer 4 agents条件审计支持
+- [x] Phase 1: 配置文件与 `scripts/bmad-config.ts` 已落地
+- [x] Claude 侧 `bmad-master` 与 Layer 4 文档已接入条件审计说明
+- [ ] Cursor 侧入口规则与专项使用文档仍需持续补齐并通过回归测试锁定
+- [ ] 全流程集成测试仍需继续补强
+
+### 11.5 待完成工作
+
+- [ ] Cursor 侧 `.cursor/rules/` / `rules/` 入口规则补齐
+- [ ] Cursor 专项 guide 文档与索引补齐
+- [ ] Cursor 回归测试升级为行为断言
 - [ ] Phase 4: 全流程集成测试
-- [ ] Layer 4各agent文档更新 (specify/plan/gaps/tasks/implement)
