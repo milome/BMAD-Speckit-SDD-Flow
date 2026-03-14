@@ -1,0 +1,53 @@
+{
+  "storyId": "E001-S004",
+  "slug": "demo-story-mode",
+  "currentPhase": "implement",
+  "currentStage": "REFACTOR",
+  "startedAt": "2026-03-14T16:40:00Z",
+  "lastUpdated": "2026-03-14T16:10:00Z",
+  "userStories": [
+    {
+      "id": "US-001",
+      "name": "配置读取器工厂函数",
+      "status": "completed",
+      "tddStage": "REFACTOR",
+      "testsWritten": true,
+      "testsPassing": true,
+      "refactored": true
+    },
+    {
+      "id": "US-002",
+      "name": "get 方法实现",
+      "status": "completed",
+      "tddStage": "REFACTOR",
+      "testsWritten": true,
+      "testsPassing": true,
+      "refactored": true
+    },
+    {
+      "id": "US-003",
+      "name": "错误类实现",
+      "status": "completed",
+      "tddStage": "REFACTOR",
+      "testsWritten": true,
+      "testsPassing": true,
+      "refactored": true
+    },
+    {
+      "id": "US-004",
+      "name": "缓存机制",
+      "status": "completed",
+      "tddStage": "REFACTOR",
+      "testsWritten": true,
+      "testsPassing": true,
+      "refactored": true
+    }
+  ],
+  "completedPhases": ["specify", "plan", "gaps", "tasks", "implement"],
+  "metrics": {
+    "totalUserStories": 4,
+    "completedUserStories": 4,
+    "totalTests": 16,
+    "passingTests": 16
+  }
+}

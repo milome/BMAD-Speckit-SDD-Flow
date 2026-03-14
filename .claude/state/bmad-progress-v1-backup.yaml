@@ -1,0 +1,47 @@
+layer: 4
+stage: implement_passed
+audit_status: pass
+story_id: example-readjsonfile
+artifacts:
+  spec: specs/example-readjsonfile/spec.md
+  plan: specs/example-readjsonfile/plan.md
+  tasks: specs/example-readjsonfile/tasks.md
+  implement:
+    - src/utils/readJsonFile.ts
+    - src/utils/errors/FileNotFoundError.ts
+    - src/utils/errors/InvalidJsonError.ts
+    - tests/integration/readJsonFile.spec.ts
+scores:
+  spec:
+    rating: A
+    dimensions:
+      需求完整性: 95
+      可测试性: 92
+      一致性: 90
+      可追溯性: 93
+  plan:
+    rating: A
+    dimensions:
+      需求完整性: 93
+      可测试性: 95
+      一致性: 92
+      可追溯性: 90
+  tasks:
+    rating: A
+    dimensions:
+      需求完整性: 94
+      可测试性: 96
+      一致性: 93
+      可追溯性: 91
+  implement:
+    rating: A
+    dimensions:
+      功能性: 95
+      代码质量: 92
+      测试覆盖: 100
+      安全性: 90
+git_control:
+  commit_allowed: true
+  last_commit_request: readJsonFile-complete
+runtime:
+  last_action: implement_complete

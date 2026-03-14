@@ -1,0 +1,29 @@
+story_id: "999-2"
+epic_id: 999
+story_slug: "test-story-create-2"
+status: "document_audit_passed"
+created_at: "2026-03-14T21:10:00+08:00"
+audit_at: "2026-03-14T21:15:00+08:00"
+stage: "document_audit_passed"
+layer: 4
+
+artifacts:
+  - path: "_bmad-output/implementation-artifacts/epic-999-test-epic/story-999-2-test-story-create-2/999-2-test-story-create-2.md"
+    type: "story_document"
+  - path: "_bmad-output/implementation-artifacts/epic-999-test-epic/story-999-2-test-story-create-2/AUDIT-POST-999-2.md"
+    type: "audit_report"
+
+audit:
+  result: "passed"
+  rating: "A"
+  requirements_completeness: 5
+  testability: 5
+  consistency: 5
+  traceability: 5
+  document_completeness: 100
+  task_completion: 100
+
+overall_rating: "A"
+completion_note: "文档验证型 Story，Stage 4 Post Audit 通过"
+
+next_action: "commit_gate"

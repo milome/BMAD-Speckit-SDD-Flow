@@ -32,5 +32,25 @@ _bmad-output/
 
 # Documentation archives (BMAD historical artifacts)
 docs/BMAD/
+
+# Claude Code / OMC runtime data
+.omc/
+.omc/sessions/
+.omc/state/
+.omc/state/checkpoints/
+
+# Source and test directories
+src/
+tests/
+
+# Docs subdirectories (keep guide/)
+docs/assets/
+docs/design/
+docs/examples/
+docs/fixes/
+docs/references/
+docs/PR/
+docs/plans/
+
 .worktrees/
 temp_commit_message.txt

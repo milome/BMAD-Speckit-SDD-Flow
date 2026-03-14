@@ -2,6 +2,102 @@
 
 BMAD Speckit SDD Layer 4 的 plan 阶段执行 Agent。
 
+## Execution Visibility Protocol
+
+### 执行开始时必须输出
+
+```yaml
+=== [bmad-layer4-speckit-plan] - 执行开始 ===
+时间戳: [ISO 8601]
+
+接收参数:
+  tasksPath: [值]
+  epic: [值]
+  story: [值]
+  epicSlug: [值]
+  storySlug: [值]
+  mode: [值]
+
+配置感知检查:
+  shouldAudit: [true/false]
+  配置来源: story-specific progress.yaml
+
+执行计划:
+  [ ] 步骤1: 读取前置产物
+  [ ] 步骤2: 三层审计结构检查（Cursor/Runtime/Repo）
+  [ ] 步骤3: 文档生成/修改
+  [ ] 步骤4: 禁止词检查
+  [ ] 步骤5: 文档持久化
+  [ ] 步骤6: 状态更新（progress.yaml）
+
+预期产物:
+  - 输出文档: _bmad-output/...[plan]-{epic}-{story}.md
+  - 状态更新: .claude/state/stories/{epic}-{story}-progress.yaml
+  - 阶段: layer4-plan
+
+预计耗时: 10-30 分钟
+====================================
+```
+
+### 关键里程碑输出
+
+```yaml
+--- 里程碑: 配置检查 ---
+状态: 完成 ✓
+shouldAudit: [true/false]
+若 false: 跳过审计，直接生成
+-------------------------
+
+--- 里程碑: 三层审计完成 ---
+状态: 完成 ✓
+Cursor Canonical Base: [通过/需调整]
+Claude/OMC Runtime: [通过/需调整]
+Repo Add-ons: [通过/需调整]
+-------------------------
+
+--- 里程碑: 文档生成 ---
+状态: 完成 ✓
+文档路径: [路径]
+文档大小: [字节]
+-------------------------
+
+--- 里程碑: 状态更新 ---
+状态: 完成 ✓
+progress.yaml 已更新
+下一阶段: layer4-gaps
+-------------------------
+```
+
+### 执行结束时必须输出
+
+```yaml
+=== [bmad-layer4-speckit-plan] - 执行完成 ===
+开始时间: [ISO 8601]
+结束时间: [ISO 8601]
+总耗时: [秒数]
+
+任务完成度:
+  [✓] 配置检查: [结果]
+  [✓] 三层审计: [结果]
+  [✓] 文档生成: [结果]
+  [✓] 禁止词检查: [结果]
+  [✓] 文档持久化: [结果]
+  [✓] 状态更新: [结果]
+
+产物确认:
+  ✓ 输出文档: [路径] - 已创建 ([size] bytes)
+  ✓ 状态文件: [路径] - 已更新
+
+关键决策记录:
+  1. [如有决策，记录在此]
+
+返回状态:
+  状态: completed
+  下一阶段: layer4-gaps
+====================================
+```
+
+
 ## 状态文件区分
 
 | 文件 | 用途 | 控制方 | 示例内容 |
@@ -34,6 +130,15 @@ specs/
 2. Read `.claude/state/bmad-progress.yaml` (获取 current_context)
 3. **Read story state**: `.claude/state/stories/{epic}-{story}-progress.yaml`
 4. Read spec.md (来自 specify 阶段产物，从 story state 读取路径)
+5. **读取审计配置**: 调用 `scripts/bmad-config.ts` 的 `shouldAudit('plan')` 确定是否执行审计
+
+**配置检查逻辑**:
+```typescript
+// 在执行流程开始前，先检查配置
+const shouldAudit = checkAuditConfig('plan'); // 调用 bmad-config.ts
+// shouldAudit: true  → 执行完整审计 (full 模式)
+// shouldAudit: false → 执行基础验证或直接通过 (story/epic 模式)
+```
 
 ## Execution Flow
 
@@ -71,11 +176,41 @@ specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/plan-E{epic}-S{story}.m
 - **性能测试**: 如有性能需求
 - **安全测试**: 如有安全需求
 
-### Step 4: 审计循环
+### Step 4: 审计循环（条件执行）
+
+**⚠️ 配置感知**: 本步骤根据 `shouldAudit('plan')` 结果决定执行路径。
+
+#### 配置检查与路由
+
+```typescript
+// 检查审计配置
+const stageConfig = getStageConfig('plan');
+const needsAudit = shouldAudit('plan'); // 来自 bmad-config.ts
+
+if (needsAudit) {
+  // 路径 1: 完整审计（full 模式或 story 模式指定审计）
+  await executeFullAudit({
+    strictness: stageConfig.strictness,
+    subagentTool: getSubagentParams().tool,
+    subagentType: getSubagentParams().subagentType
+  });
+} else if (stageConfig.validation === 'basic') {
+  // 路径 2: 基础验证（story 模式中间阶段）
+  await executeBasicValidation({
+    checks: ['document_exists', 'schema_valid', 'required_sections']
+  });
+  await markStageAsPassedWithoutAudit('plan');
+  return { status: 'passed_via_basic_validation', stage: 'plan' };
+} else {
+  // 路径 3: 直接通过（epic 模式）
+  await markStageAsPassedWithoutAudit('plan');
+  return { status: 'passed_without_audit', stage: 'plan' };
+}
+```
 
 **严格度**: standard（单次 + 批判审计员 >50%），参考 `audit-prompts-critical-auditor-appendix.md`
 
-#### Step 4.1: 生成审计子任务 Prompt
+#### Step 4.1: 生成审计子任务 Prompt（仅完整审计时执行）
 
 ```bash
 # 提示词保存路径（供人工审核）
@@ -279,7 +414,7 @@ layer: 4
 stage: plan
 artifactDocPath: specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/plan-E{epic}-S{story}.md
 auditReportPath: specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/AUDIT_plan-E{epic}-S{story}.md
-next_action: proceed_to_tasks
+next_action: proceed_to_gaps
 ```
 
 ## Constraints

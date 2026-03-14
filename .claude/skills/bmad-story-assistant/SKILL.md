@@ -179,6 +179,123 @@ Claude 版 `bmad-story-assistant` 必须满足：
 - commit gate
 - handoff 协议
 
+### 配置系统集成（审计粒度）
+
+本 skill 支持通过配置系统控制审计粒度，实现 `full`/`story`/`epic` 三种模式。
+
+#### 配置加载
+
+主 Agent 必须在 skill 启动时加载配置：
+
+```typescript
+// 使用 bmad-config.ts 加载配置
+import { loadConfig, shouldAudit, shouldValidate, getSubagentParams } from './scripts/bmad-config';
+
+const config = loadConfig();
+const env = getSubagentParams(); // 自动适配 Cursor/Claude 环境
+```
+
+#### 配置来源（按优先级）
+
+1. **CLI 参数**: `--audit-granularity=story` | `--continue`
+2. **环境变量**: `BMAD_AUDIT_GRANULARITY=story` | `BMAD_AUTO_CONTINUE=true`
+3. **项目配置**: `config/bmad-story-config.yaml`
+4. **默认值**: `audit-granularity=full`, `auto_continue=false`
+
+#### 条件审计路由
+
+每个 Layer 4 阶段（specify/plan/gaps/tasks/implement）必须根据配置决定执行路径：
+
+```typescript
+// 条件审计逻辑模板
+const stageConfig = getStageConfig('specify'); // 或当前阶段
+
+if (stageConfig.audit) {
+  // 路径 1: 完整审计（默认 full 模式）
+  await executeFullAudit({
+    strictness: stageConfig.strictness, // 'standard' | 'strict'
+    subagentTool: env.tool,             // 'Agent' | 'mcp_task'
+    subagentType: env.subagentType      // 'general-purpose' | 'generalPurpose'
+  });
+} else if (stageConfig.validation) {
+  // 路径 2: 基础验证（story 模式的中间阶段）
+  await executeBasicValidation({
+    level: stageConfig.validation,      // 'basic' | 'test_only'
+    checks: stageConfig.checks          // 验证项列表
+  });
+  // 验证通过后直接标记阶段完成，不生成 AUDIT_报告
+  await markStageAsPassedWithoutAudit();
+} else {
+  // 路径 3: 仅生成文档（epic 模式的 story 阶段）
+  await markStageAsPassedWithoutAudit();
+}
+```
+
+#### 各模式行为
+
+| 模式 | Story创建 | 中间阶段 | 实施后 | Epic审计 |
+|------|-----------|----------|--------|----------|
+| **full** | 审计 | 全部审计 | 审计 | - |
+| **story** | 审计 | 基础验证 | 审计 | - |
+| **epic** | 不审计 | 不审计 | 不审计 | 审计 |
+
+#### 验证级别定义
+
+**basic 验证**（用于 story 模式中间阶段）：
+- 文档存在性检查
+- 基本结构检查
+- 必需章节检查
+
+**test_only 验证**（用于 story 模式 implement 阶段）：
+- 所有测试通过
+- Lint 无错误
+- 文档存在
+
+#### 执行体调用方式
+
+使用配置系统后，执行体调用模板更新为：
+
+```yaml
+tool: Agent
+subagent_type: general-purpose  # 始终使用 general-purpose，通过 prompt 传递配置
+description: "Execute Stage with config-aware routing"
+prompt: |
+  【必读】本 prompt 包含配置上下文。
+
+  **配置上下文**:
+  - audit_mode: "story"  # full | story | epic
+  - stage: "specify"     # 当前阶段
+  - should_audit: false  # 根据配置计算
+  - validation: "basic"  # 当 audit: false 时的验证级别
+
+  **执行逻辑**:
+  1. 读取配置并解析 should_audit
+  2. 如果 should_audit: true → 执行完整审计流程（Step 4 审计循环）
+  3. 如果 should_audit: false:
+     - 若 validation: "basic" → 执行基础验证
+     - 若 validation: "test_only" → 执行测试验证
+     - 若 validation: null → 直接标记阶段通过
+  4. 根据结果更新状态文件
+```
+
+#### 跨平台兼容性
+
+配置系统自动检测运行环境：
+
+```typescript
+// 环境检测
+const env = detectEnvironment();
+// Cursor: { platform: 'cursor', subagentTool: 'mcp_task', subagentType: 'generalPurpose' }
+// Claude: { platform: 'claude', subagentTool: 'Agent', subagentType: 'general-purpose' }
+
+// 工具调用自动适配
+if (env.platform === 'cursor') {
+  await mcp_task({ subagent_type: 'generalPurpose', ... });
+} else {
+  await Agent({ subagent_type: 'general-purpose', ... });
+}
+```
+
 ### 运行时治理增强
 - ralph-method 追踪文件
 - progress / prd 必填
@@ -264,6 +381,49 @@ prompt: |
 - `{slug}` → Story 短名（从标题或输入推导）
 - `{project-root}` → 项目根目录绝对路径
 
+#### Stage 1 调用前 CLI 输出要求
+
+主 Agent 必须在调用 Stage 1 执行体之前，先在当前 session CLI 输出以下格式的调用摘要：
+
+```
+═══════════════════════════════════════════════════════════════════
+Stage 1: Create Story - 子代理调用摘要
+═══════════════════════════════════════════════════════════════════
+执行体: bmad-story-create
+subagent_type: general-purpose
+调用时间: {timestamp}
+
+输入参数:
+  • epic_num: {实际值}
+  • story_num: {实际值}
+  • epic_slug: {实际值}
+  • story_slug: {实际值}
+  • project_root: {实际值}
+
+提示词结构摘要:
+  ├─ Cursor Canonical Base
+  │   ├─ sprint-status 前置检查要求
+  │   ├─ STORY-A1-CREATE 完整模板
+  │   ├─ party-mode 强制要求（100轮辩论）
+  │   └─ Story 禁止词表约束
+  ├─ Claude/OMC Runtime Adapter
+  │   ├─ Primary Executor: bmad-story-create
+  │   ├─ Fallback: 主 Agent 直接执行
+  │   └─ Runtime Contracts: 产物路径、状态更新
+  └─ Repo Add-ons
+      ├─ 禁止词检查
+      ├─ 本仓目录规范
+      └─ BMAD 状态机兼容
+
+预期产物:
+  • Story 文档: _bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{epic_num}-{story_num}-{story_slug}/{epic_num}-{story_num}-{story_slug}.md
+  • 状态更新: story_created
+  • Handoff 目标: bmad-story-audit
+═══════════════════════════════════════════════════════════════════
+```
+
+输出后立即调用 Agent 工具。
+
 #### Claude/OMC Runtime Adapter
 
 **执行体调用方式**
@@ -342,9 +502,37 @@ prompt: |
 ```yaml
 layer: 3
 stage: story_create
-artifactPath: _bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{epic_num}-{story_num}-{story_slug}/{epic_num}-{story_num}-{story_slug}.md
-next_action: story_audit
-next_agent: bmad-story-audit
+
+execution_summary:
+  agent: bmad-story-create
+  started_at: "{timestamp}"
+  completed_at: "{timestamp}"
+  duration_seconds: {seconds}
+  status: completed
+
+  steps_completed:
+    - step: sprint_status_check
+      status: passed
+      result: "sprint-status.yaml 已确认"
+    - step: story_generation
+      status: completed
+      result: "Story 文档已生成"
+    - step: document_persistence
+      status: completed
+      result: "文档已写入"
+    - step: state_update
+      status: completed
+      result: "状态已更新为 story_created"
+
+artifacts:
+  story_doc:
+    path: "_bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{epic_num}-{story_num}-{story_slug}/{epic_num}-{story_num}-{story_slug}.md"
+    exists: true
+
+handoff:
+  next_action: story_audit
+  next_agent: bmad-story-audit
+  ready: true
 ```
 
 ### Stage 2: Story 审计
@@ -394,6 +582,54 @@ Claude 端 Stage 2 Story 审计执行体，负责审计 Story 文档并决定是
 - 审计通过后必做：执行 `parse-and-write-score.ts --stage story --event story_status_change --triggerStage bmad_story_stage2 --epic {epic_num} --story {story_num} --iteration-count {累计值}`。
 - 审计未通过时：审计子代理须在本轮内**直接修改被审 Story 文档**以消除 gap；若建议涉及创建或更新其他 Story，主 Agent 须先执行该建议，再重新审计当前 Story。
 - 阶段二准入检查：主 Agent 在收到阶段二通过结论后、进入阶段三之前，必须先执行 `check-story-score-written.ts`；若未写入则补跑 `parse-and-write-score.ts`。
+
+#### Stage 2 调用前 CLI 输出要求
+
+主 Agent 必须在调用 Stage 2 执行体之前，先在当前 session CLI 输出以下格式的调用摘要：
+
+```
+═══════════════════════════════════════════════════════════════════
+Stage 2: Story 审计 - 子代理调用摘要
+═══════════════════════════════════════════════════════════════════
+执行体: bmad-story-audit
+subagent_type: general-purpose
+调用时间: {timestamp}
+
+输入参数:
+  • storyDocPath: {实际值}
+  • epic_num: {实际值}
+  • story_num: {实际值}
+  • epic_slug: {实际值}
+  • story_slug: {实际值}
+
+审计严格度:
+  • 当前模式: {strict|standard}
+  • 判定依据: {无 party-mode 产物 → strict / 有 party-mode → standard}
+
+提示词结构摘要:
+  ├─ Cursor Canonical Base
+  │   ├─ STORY-A2-AUDIT 完整模板
+  │   ├─ 逐项验证要求（5大验证项）
+  │   ├─ 批判审计员介入要求
+  │   └─ 可解析评分块格式要求
+  ├─ Claude/OMC Runtime Adapter
+  │   ├─ Primary Executor: bmad-story-audit
+  │   ├─ Fallback: OMC reviewer → code-review skill → 主 Agent
+  │   └─ Runtime Contracts: 报告路径、状态更新
+  └─ Repo Add-ons
+      ├─ 禁止词检查
+      ├─ 批判审计员结论（>50%字数）
+      ├─ parseAndWriteScore 触发
+      └─ check-story-score-written 准入检查
+
+预期产物:
+  • 审计报告: _bmad-output/.../AUDIT_story-{epic_num}-{story_num}.md
+  • 评分写入: scoring/data/...json
+  • 状态更新: story_audit_passed / story_audit_failed
+═══════════════════════════════════════════════════════════════════
+```
+
+输出后立即调用 Agent 工具。
 
 #### Claude/OMC Runtime Adapter
 
@@ -468,20 +704,83 @@ prompt: |
 ```yaml
 layer: 3
 stage: story_audit_passed
-artifactPath: {storyDocPath}
-auditReportPath: _bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{epic_num}-{story_num}-{story_slug}/AUDIT_story-{epic_num}-{story_num}.md
-next_action: dev_story
-next_agent: speckit-implement
+
+execution_summary:
+  agent: bmad-story-audit
+  started_at: "{timestamp}"
+  completed_at: "{timestamp}"
+  duration_seconds: {seconds}
+  status: passed
+  strictness: {strict|standard}
+
+audit_summary:
+  gaps_found: 0
+  criteria_verified:
+    - requirement_coverage: passed
+    - forbidden_words_check: passed
+    - multi_solution_consensus: passed
+    - tech_debt_check: passed
+    - story_references_valid: passed
+  critical_auditor_percentage: "{XX}%"
+  score_block_generated: true
+
+artifacts:
+  story_doc:
+    path: "{storyDocPath}"
+    exists: true
+  audit_report:
+    path: "_bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{epic_num}-{story_num}-{story_slug}/AUDIT_story-{epic_num}-{story_num}.md"
+    exists: true
+  score_data:
+    path: "scoring/data/{epic_num}-{story_num}-story-audit.json"
+    written: true
+
+handoff:
+  next_action: dev_story
+  next_agent: speckit-implement
+  ready: true
 ```
 
 **FAIL**
 ```yaml
 layer: 3
 stage: story_audit_failed
-artifactPath: {storyDocPath}
-auditReportPath: _bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{epic_num}-{story_num}-{story_slug}/AUDIT_story-{epic_num}-{story_num}.md
-next_action: revise_story
-next_agent: bmad-story-create
+
+execution_summary:
+  agent: bmad-story-audit
+  started_at: "{timestamp}"
+  completed_at: "{timestamp}"
+  duration_seconds: {seconds}
+  status: failed
+
+audit_summary:
+  gaps_found: {N}
+  criteria_failed:
+    - {具体失败项}
+  critical_auditor_percentage: "{XX}%"
+
+required_fixes_detail:
+  fixes:
+    - fix_id: FIX-001
+      description: "{修复描述}"
+      location: "{文档位置}"
+      severity: critical|high|medium
+  fix_strategy: direct_modify
+  iteration_required: true
+
+artifacts:
+  story_doc:
+    path: "{storyDocPath}"
+    exists: true
+    modified_in_round: true
+  audit_report:
+    path: "_bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{epic_num}-{story_num}-{story_slug}/AUDIT_story-{epic_num}-{story_num}.md"
+    exists: true
+
+handoff:
+  next_action: revise_story
+  next_agent: bmad-story-create
+  ready: true
 ```
 
 ### Stage 3: Dev Story / `STORY-A3-DEV`
@@ -557,6 +856,59 @@ prompt: |
   - handoff 到 Stage 4 Post Audit
 ```
 
+#### Stage 3 调用前 CLI 输出要求
+
+主 Agent 必须在调用 Stage 3 执行体之前，先在当前 session CLI 输出以下格式的调用摘要：
+
+```
+═══════════════════════════════════════════════════════════════════
+Stage 3: Dev Story - 子代理调用摘要
+═══════════════════════════════════════════════════════════════════
+执行体: bmad-layer4-dev-story
+type: agent-sequence (5 sub-agents)
+调用时间: {timestamp}
+
+输入参数:
+  • tasksPath: {实际值}
+  • epic: {实际值}
+  • story: {实际值}
+  • epicSlug: {实际值}
+  • storySlug: {实际值}
+  • mode: {实际值}
+
+TDD 红绿灯顺序强调:
+  1. RED: 先写测试 → 测试失败
+  2. GREEN: 实现代码 → 测试通过
+  3. IMPROVE: 重构代码 → 保持通过
+
+ralph-method 追踪文件要求:
+  • 追踪文件: .claude/state/stories/{epic}-{story}-ralph-progress.yaml
+  • 必须记录: 当前灯状态、迭代次数、TDD 证据路径
+
+提示词结构摘要:
+  ├─ Cursor Canonical Base
+  │   ├─ Layer 4 五阶段执行序列 (specify → plan → gaps → tasks → implement)
+  │   ├─ 每阶段 handoff 检查点
+  │   └─ 强制 TDD 要求
+  ├─ Claude/OMC Runtime Adapter
+  │   ├─ Primary: bmad-layer4-dev-story (sequence coordinator)
+  │   ├─ Sub-agents: specify, plan, gaps, tasks, implement
+  │   └─ Runtime Contracts: 每阶段产物路径、状态更新
+  └─ Repo Add-ons
+      ├─ 禁止词检查
+      ├─ ralph-method 追踪
+      └─ TDD 证据审查
+
+预期产物:
+  • 设计文档: _bmad-output/.../DESIGN-{epic}-{story}.md
+  • 实现代码: src/... (根据 story 而定)
+  • 测试代码: tests/... (根据 story 而定)
+  • 状态更新: story_development_completed
+═══════════════════════════════════════════════════════════════════
+```
+
+输出后立即调用 Agent 工具。
+
 #### Claude/OMC Runtime Adapter
 
 **执行体调用方式**
@@ -607,10 +959,86 @@ prompt: |
 ```yaml
 layer: 4
 stage: implement_passed
-artifactPath: {storyDocPath}
-ralphMethodPath: _bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/
-next_action: post_audit
-next_agent: auditor-implement
+
+execution_summary:
+  agent: speckit-implement
+  started_at: "{timestamp}"
+  completed_at: "{timestamp}"
+  duration_seconds: {seconds}
+  status: completed
+
+  steps_completed:
+    - step: party_mode_check
+      status: passed
+      result: "party-mode.yaml 已确认"
+    - step: spec_read
+      status: completed
+      result: "spec.md 已读取"
+    - step: plan_read
+      status: completed
+      result: "plan.md 已读取"
+    - step: tasks_read
+      status: completed
+      result: "tasks.md 已读取"
+    - step: tdd_red
+      status: completed
+      result: "测试已编写，失败状态确认"
+    - step: tdd_green
+      status: completed
+      result: "实现已编写，测试通过"
+    - step: tdd_refactor
+      status: completed
+      result: "代码已重构"
+    - step: state_update
+      status: completed
+      result: "story state 已更新为 implement_passed"
+
+tdd_summary:
+  red_phase:
+    tests_written: {count}
+    tests_failed_initially: {count}
+    status: completed
+  green_phase:
+    implementation_complete: true
+    tests_passing: {count}
+    status: completed
+  refactor_phase:
+    code_quality_checks_passed: true
+    test_coverage: "{percent}%"
+    status: completed
+
+ralph_method_status:
+  prd_json_updated: true
+  progress_txt_updated: true
+  passes_status: "all_passed"
+
+artifacts:
+  story_doc:
+    path: "{storyDocPath}"
+    exists: true
+  implementation_code:
+    path: "{implementationPath}"
+    exists: true
+    file_count: {count}
+  test_files:
+    path: "{testPath}"
+    exists: true
+    coverage: "{percent}%"
+  ralph_artifacts:
+    path: "_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/"
+    files:
+      - "prd.json"
+      - "progress.txt"
+
+handoff:
+  next_action: post_audit
+  next_agent: auditor-implement
+  next_stage: 4
+  ready: true
+  prerequisites_met:
+    - tdd_cycle_complete
+    - ralph_method_tracked
+    - state_updated
 ```
 
 ### Stage 4: Post Audit / `STORY-A4-POSTAUDIT`
@@ -696,6 +1124,63 @@ prompt: |
   - commit gate 前置条件检查
 ```
 
+#### Stage 4 调用前 CLI 输出要求
+
+主 Agent 必须在调用 Stage 4 执行体之前，先在当前 session CLI 输出以下格式的调用摘要：
+
+```
+═══════════════════════════════════════════════════════════════════
+Stage 4: Post Audit - 子代理调用摘要
+═══════════════════════════════════════════════════════════════════
+执行体: bmad-story-post-audit
+subagent_type: general-purpose
+调用时间: {timestamp}
+
+输入参数:
+  • artifactDocPath: {实际值}
+  • reportPath: {实际值}
+  • tasksPath: {实际值}
+  • specPath: {实际值}
+  • planPath: {实际值}
+  • gapsPath: {实际值}
+  • implementationPath: {实际值}
+
+代码模式维度强调:
+  • 禁止词检查: 无模糊表述、无延期承诺
+  • 一致性检查: 实现与 spec/plan/tasks 对齐
+  • TDD 证据审查: 测试覆盖率 ≥ 80%
+  • 代码质量: 函数 < 50 行，文件 < 800 行
+
+strict convergence 检查:
+  • 第1轮: 初步审计，发现所有 gap
+  • 第2轮: 验证修复，确认无新 gap
+  • 第3轮: 最终确认，输出通过标记
+
+提示词结构摘要:
+  ├─ Cursor Canonical Base
+  │   ├─ POST-AUDIT-PROTOCOL 完整模板
+  │   ├─ 5大代码审计维度（禁止词/一致性/TDD/质量/安全）
+  │   ├─ 批判审计员介入要求
+  │   └─ 可解析评分块格式
+  ├─ Claude/OMC Runtime Adapter
+  │   ├─ Primary Executor: bmad-story-post-audit
+  │   ├─ Fallback: auditor-spec/plan/tasks/implement 序列
+  │   └─ Runtime Contracts: 审计报告路径、评分写入
+  └─ Repo Add-ons
+      ├─ 禁止词检查（含代码注释）
+      ├─ 批判审计员结论（>50%字数）
+      ├─ parseAndWriteScore 触发
+      └─ strict 模式 3 轮收敛
+
+预期产物:
+  • 审计报告: _bmad-output/.../AUDIT-POST-{epic}-{story}.md
+  • 评分写入: scoring/data/...json
+  • 状态更新: story_audit_passed / story_audit_failed
+═══════════════════════════════════════════════════════════════════
+```
+
+输出后立即调用 Agent 工具。
+
 #### Claude/OMC Runtime Adapter
 
 **执行体调用方式**
@@ -726,7 +1211,7 @@ prompt: |
 4. 最后回退到主 Agent 直接执行同一份三层 audit prompt
 
 **Runtime Contracts**
-- 审计报告路径：`_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT_implement-{epic}-{story}.md`
+- 审计报告路径：`_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT_Story_{epic}-{story}_stage4.md`
 - 审计通过后必须执行 `parse-and-write-score.ts`
 - 审计通过后更新 story state 为 `implement_passed`
 - 审计失败后更新 story state 为 `implement_failed`，回退到 Stage 3 修复
@@ -745,21 +1230,803 @@ prompt: |
 ```yaml
 layer: 4
 stage: implement_audit_passed
-artifactPath: {storyDocPath}
-auditReportPath: _bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT_implement-{epic}-{story}.md
-next_action: commit_gate
-next_agent: bmad-master
+
+execution_summary:
+  agent: auditor-implement
+  started_at: "{timestamp}"
+  completed_at: "{timestamp}"
+  duration_seconds: {seconds}
+  status: completed
+
+  steps_completed:
+    - step: config_read
+      status: passed
+      result: "bmad-story-config.yaml 已读取"
+    - step: strictness_determination
+      status: passed
+      result: "审计严格度: {simple|standard|strict}"
+    - step: artifact_read
+      status: completed
+      result: "代码实现已读取"
+    - step: tasks_comparison
+      status: completed
+      result: "tasks 覆盖度已验证"
+    - step: spec_comparison
+      status: completed
+      result: "spec 对齐度已验证"
+    - step: tdd_evidence_review
+      status: completed
+      result: "TDD 红绿灯证据已审查"
+    - step: ralph_method_check
+      status: completed
+      result: "ralph-method 追踪文件已检查"
+    - step: reviewer_invocation
+      status: completed
+      result: "批判审计员已介入"
+    - step: parse_and_write_score
+      status: completed
+      result: "评分已写入 scoring/data/"
+    - step: state_update
+      status: completed
+      result: "story state 已更新为 implement_audit_passed"
+
+audit_summary:
+  coverage:
+    tasks_verified: {percent}%
+    spec_verified: {percent}%
+    plan_verified: {percent}%
+  tdd_evidence:
+    red_phase_confirmed: true
+    green_phase_confirmed: true
+    refactor_phase_confirmed: true
+    test_coverage: "{percent}%"
+  ralph_method_check:
+    prd_json_complete: true
+    progress_txt_complete: true
+    all_stories_passed: true
+  code_quality:
+    avg_function_lines: {number}
+    avg_file_lines: {number}
+    no_banned_words: true
+    security_checks_passed: true
+  reviewer_conclusion:
+    reviewer_word_count: {count}
+    total_report_word_count: {count}
+    reviewer_percentage: "{percent}%"
+    verdict: "PASS"
+    critical_gaps: 0
+
+artifacts:
+  story_doc:
+    path: "{storyDocPath}"
+    exists: true
+  audit_report:
+    path: "_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT_Story_{epic}-{story}_stage4.md"
+    exists: true
+    reviewer_conclusion_included: true
+    parseable_score_block: true
+  scoring_data:
+    path: "scoring/data/dev-{epic}-{story}-implement-{timestamp}.json"
+    exists: true
+
+handoff:
+  next_action: commit_gate
+  next_agent: bmad-master
+  next_stage: commit
+  ready: true
+  prerequisites_met:
+    - audit_passed
+    - score_written
+    - state_updated
+    - reviewer_conclusion_verified
 ```
 
 **FAIL**
 ```yaml
 layer: 4
 stage: implement_audit_failed
-artifactPath: {storyDocPath}
-auditReportPath: _bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT_implement-{epic}-{story}.md
-required_fixes: [...]
-next_action: fix_implement
-next_agent: speckit-implement
+
+execution_summary:
+  agent: auditor-implement
+  started_at: "{timestamp}"
+  completed_at: "{timestamp}"
+  duration_seconds: {seconds}
+  status: completed
+
+  steps_completed:
+    - step: config_read
+      status: passed
+      result: "bmad-story-config.yaml 已读取"
+    - step: strictness_determination
+      status: passed
+      result: "审计严格度: {simple|standard|strict}"
+    - step: artifact_read
+      status: completed
+      result: "代码实现已读取"
+    - step: tasks_comparison
+      status: failed
+      result: "发现 tasks 未覆盖项"
+    - step: spec_comparison
+      status: failed
+      result: "发现 spec 偏离项"
+    - step: tdd_evidence_review
+      status: failed
+      result: "TDD 证据不足"
+    - step: ralph_method_check
+      status: failed
+      result: "ralph-method 追踪不完整"
+    - step: reviewer_invocation
+      status: completed
+      result: "批判审计员已介入"
+    - step: gap_documentation
+      status: completed
+      result: "所有 gap 已记录"
+
+audit_summary:
+  coverage:
+    tasks_verified: {percent}%
+    spec_verified: {percent}%
+    plan_verified: {percent}%
+  gaps_found:
+    total: {count}
+    critical: {count}
+    major: {count}
+    minor: {count}
+  required_fixes:
+    - category: "tasks_coverage"
+      description: "{gap_description}"
+      priority: critical
+    - category: "spec_alignment"
+      description: "{gap_description}"
+      priority: major
+    - category: "tdd_evidence"
+      description: "{gap_description}"
+      priority: major
+  reviewer_conclusion:
+    reviewer_word_count: {count}
+    total_report_word_count: {count}
+    reviewer_percentage: "{percent}%"
+    verdict: "FAIL"
+    critical_gaps: {count}
+
+required_fixes_detail:
+  fix_strategy: "return_to_stage_3"
+  estimated_fix_time: "{duration}"
+  fix_categories:
+    - category: "implementation"
+      items: [{gap_items}]
+    - category: "tests"
+      items: [{gap_items}]
+    - category: "documentation"
+      items: [{gap_items}]
+
+artifacts:
+  story_doc:
+    path: "{storyDocPath}"
+    exists: true
+  audit_report:
+    path: "_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT_Story_{epic}-{story}_stage4.md"
+    exists: true
+    reviewer_conclusion_included: true
+    parseable_score_block: true
+  gaps_list:
+    path: "_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/GAPS_{epic}-{story}_stage4.md"
+    exists: true
+
+handoff:
+  next_action: fix_implement
+  next_agent: speckit-implement
+  next_stage: 3
+  ready: true
+  fix_required: true
+  prerequisites_met:
+    - audit_completed
+    - gaps_documented
+    - reviewer_conclusion_verified
+```
+
+---
+
+#### Story Type Detection (Code vs Document Mode)
+
+Stage 4 支持两种审计模式，根据 Story 类型自动路由：
+
+| Story 类型 | 检测依据 | 审计模式 | 执行体 |
+|-----------|---------|---------|--------|
+| **代码实现型** | tasks.md 包含代码任务、spec.md 定义接口/实现 | Code Mode | `auditor-implement` |
+| **文档验证型** | tasks.md 任务为纯文档/验证工作，无生产代码 | Document Mode | `auditor-document` |
+
+**自动检测逻辑**（主 Agent 执行）：
+
+```typescript
+// TypeScript 检测逻辑示例
+function detectStoryType(tasksPath: string, specPath?: string): 'code' | 'document' {
+  const tasksContent = readFile(tasksPath);
+
+  // 文档型特征：任务均为文档创建、验证、测试配置等
+  const documentPatterns = [
+    /创建.*文档/i,
+    /验证.*输出/i,
+    /检查.*配置/i,
+    /测试.*Story/i,
+    /文档.*生成/i,
+    /格式.*验证/i,
+  ];
+
+  // 代码型特征：涉及生产代码、接口实现、模块开发
+  const codePatterns = [
+    /实现.*函数/i,
+    /创建.*模块/i,
+    /添加.*接口/i,
+    /编写.*代码/i,
+    /开发.*功能/i,
+    /refactor|重构/i,
+  ];
+
+  const docMatches = documentPatterns.filter(p => p.test(tasksContent)).length;
+  const codeMatches = codePatterns.filter(p => p.test(tasksContent)).length;
+
+  // 优先判断：如果有代码相关任务，视为代码型
+  if (codeMatches > 0) return 'code';
+  if (docMatches > 0 && codeMatches === 0) return 'document';
+
+  // 默认保守策略：按代码型处理（更严格）
+  return 'code';
+}
+```
+
+#### Extended Cursor Canonical Base (Code vs Document)
+
+**Code Mode（代码审计模式）**：
+
+- 被审对象是**代码实现**，不是文档
+- 发现 gap 时**不直接修改代码**（由主 Agent 委托实施子代理修改）
+- 使用 **code 模式维度**（功能性、代码质量、测试覆盖、安全性）
+- 必须验证 TDD 红绿灯执行证据
+- 必须检查 ralph-method 追踪文件
+- 审计通过后必须触发 `parse-and-write-score`
+
+**Document Mode（文档审计模式）**：
+
+- 被审对象是**Story 文档本身**，不是代码
+- 发现 gap 时**直接修改被审文档**（auditor 自行修复）
+- 使用 **document 模式维度**（文档完整性、任务完成度、一致性、可追溯性）
+- 无需检查 TDD 证据（无代码）
+- 无需检查 ralph-method 文件（无代码）
+- 必须验证 tasks.md 中所有任务已标记完成
+- 审计通过后必须触发 `parse-and-write-score`
+
+#### Code vs Document 审计对比
+
+| 项目 | Code 审计（auditor-implement） | Document 审计（auditor-document） |
+|------|-------------------------------|----------------------------------|
+| **被审对象** | 代码实现 | Story 文档本身 |
+| **发现 gap 时** | **不修改代码**（主 Agent 委托修改） | **直接修改文档**（auditor 自行修复） |
+| **维度** | 功能性/代码质量/测试覆盖/安全性 | 文档完整性/任务完成度/一致性/可追溯性 |
+| **TDD 检查** | 逐 US 强制检查 | 无（无代码） |
+| **ralph-method** | 强制检查 prd.json + progress.txt | 无（无代码） |
+| **tasks 检查** | 验证代码覆盖 tasks | 验证任务标记完成 |
+| **禁止词检查** | progress.txt + 代码注释 | Story 文档全文 |
+| **迭代收敛** | 连续 3 轮无 gap（strict） | 连续 3 轮无 gap（strict） |
+| **批判审计员** | ≥50% 字数 | ≥50% 字数 |
+
+---
+
+### Document Mode Subtask Template (STORY-A4-DOCUMENT-AUDIT)
+
+```yaml
+description: "Execute Document Post Audit for {epic}-{story} via STORY-A4-DOCUMENT-AUDIT"
+prompt: |
+  【必读】本 prompt 须为完整模板且所有占位符已替换。
+
+  你作为 auditor-document 执行体，执行 BMAD Stage 4 Post Audit（文档审计模式）流程。
+
+  **Required Inputs**（已替换为实际值）：
+  - artifactDocPath: {实际路径}（被审 Story 文档路径）
+  - tasksPath: {实际路径}（验证任务完成状态）
+  - reportPath: {实际路径}（审计报告保存路径）
+  - epic: {实际值}
+  - story: {实际值}
+  - iterationCount: {实际值}
+  - strictness: {standard|strict}
+
+  **Cursor Canonical Base - Document Audit 要求**：
+  1. 读取 audit-prompts.md §1（借用 spec 审计的文档检查方法）
+  2. 读取批判审计员规范
+  3. 读取文档迭代规则
+  4. 读取被审 Story 文档
+  5. 读取 tasks.md，验证所有任务已标记完成
+  6. 检查 Story 文档质量（完整性、准确性、规范性）
+  7. 检查文档中无禁止词、无模糊表述
+  8. 发现 gap 时直接修改被审文档
+  9. 生成包含批判审计员结论的完整报告
+  10. 报告结尾输出可解析评分块
+
+  **审计维度**（Document Mode）：
+  - 文档完整性：结构完整、章节齐全、格式规范
+  - 任务完成度：tasks.md 中所有任务已标记完成
+  - 一致性：文档内部一致、与前置文档一致
+  - 可追溯性：需求可追溯到验收标准
+
+  **Repo Add-ons**：
+  - 禁止词检查（Story 文档全文）
+  - 批判审计员结论（>50%字数）
+  - parseAndWriteScore 触发
+  - commit gate 前置条件检查
+```
+
+---
+
+#### Stage 4 调用前 CLI 输出要求（双模式）
+
+**Code Mode 调用摘要**：
+
+```
+═══════════════════════════════════════════════════════════════════
+Stage 4: Post Audit (Code Mode) - 子代理调用摘要
+═══════════════════════════════════════════════════════════════════
+执行体: auditor-implement
+subagent_type: general-purpose
+调用时间: {timestamp}
+
+Story 类型检测:
+  • 检测依据: tasks.md 内容分析
+  • 检测结果: 代码实现型（Code Mode）
+
+输入参数:
+  • artifactDocPath: {实际值}
+  • reportPath: {实际值}
+  • tasksPath: {实际值}
+  • specPath: {实际值}
+  • planPath: {实际值}
+
+代码模式维度强调:
+  • 禁止词检查: 无模糊表述、无延期承诺
+  • 一致性检查: 实现与 spec/plan/tasks 对齐
+  • TDD 证据审查: 测试覆盖率 ≥ 80%
+  • 代码质量: 函数 < 50 行，文件 < 800 行
+
+strict convergence 检查:
+  • 第1轮: 初步审计，发现所有 gap
+  • 第2轮: 验证修复，确认无新 gap
+  • 第3轮: 最终确认，输出通过标记
+
+预期产物:
+  • 审计报告: _bmad-output/.../AUDIT-POST-{epic}-{story}.md
+  • 评分写入: scoring/data/...json
+  • 状态更新: implement_audit_passed / implement_audit_failed
+═══════════════════════════════════════════════════════════════════
+```
+
+**Document Mode 调用摘要**：
+
+```
+═══════════════════════════════════════════════════════════════════
+Stage 4: Post Audit (Document Mode) - 子代理调用摘要
+═══════════════════════════════════════════════════════════════════
+执行体: auditor-document
+subagent_type: general-purpose
+调用时间: {timestamp}
+
+Story 类型检测:
+  • 检测依据: tasks.md 内容分析
+  • 检测结果: 文档验证型（Document Mode）
+
+输入参数:
+  • artifactDocPath: {实际值}
+  • tasksPath: {实际值}
+  • reportPath: {实际值}
+
+文档模式维度强调:
+  • 文档完整性: 结构完整、章节齐全、格式规范
+  • 任务完成度: tasks.md 中所有任务已标记完成
+  • 一致性: 文档内部一致、与前置文档一致
+  • 可追溯性: 需求可追溯到验收标准
+
+关键区别:
+  • 被审对象: Story 文档本身（非代码）
+  • Gap 修复: 审计子代理直接修改文档
+  • 无 TDD 检查: 无代码实现
+  • 无 ralph-method: 无代码实现
+
+strict convergence 检查:
+  • 第1轮: 初步审计，发现所有 gap
+  • 第2轮: 验证修复，确认无新 gap
+  • 第3轮: 最终确认，输出通过标记
+
+预期产物:
+  • 审计报告: _bmad-output/.../AUDIT-POST-{epic}-{story}.md
+  • 评分写入: scoring/data/...json
+  • Gap 修复: 直接修改 Story 文档
+  • 状态更新: implement_audit_passed / implement_audit_failed
+═══════════════════════════════════════════════════════════════════
+```
+
+输出后立即调用 Agent 工具。
+
+---
+
+#### Claude/OMC Runtime Adapter（双模式）
+
+**执行体调用方式**
+
+主 Agent 调用 Stage 4 执行体时，必须根据 Story 类型选择正确的执行体：
+
+```typescript
+// 主 Agent 路由逻辑
+const storyType = detectStoryType(tasksPath, specPath);
+
+if (storyType === 'code') {
+  // Code Mode - 使用 auditor-implement
+  await Agent({
+    subagent_type: 'general-purpose',
+    description: "Execute Stage 4 Post Audit (Code Mode)",
+    prompt: codeModePrompt // 完整 STORY-A4-POSTAUDIT 模板
+  });
+} else {
+  // Document Mode - 使用 auditor-document
+  await Agent({
+    subagent_type: 'general-purpose',
+    description: "Execute Stage 4 Post Audit (Document Mode)",
+    prompt: documentModePrompt // 完整 STORY-A4-DOCUMENT-AUDIT 模板
+  });
+}
+```
+
+**Primary Executor（按模式）**
+
+| 模式 | Primary Executor | Agent 文件 |
+|------|------------------|------------|
+| Code Mode | `auditor-implement` | `.claude/agents/auditors/auditor-implement.md` |
+| Document Mode | `auditor-document` | `.claude/agents/auditors/auditor-document.md` |
+
+**Fallback Strategy（双模式）**
+
+Code Mode:
+1. 优先由 `auditor-implement` agent 执行 Post Audit
+2. 若不可用，回退到 OMC reviewer
+3. 再不可用，回退到 `code-review` skill
+4. 最后回退到主 Agent 直接执行同一份三层 audit prompt
+
+Document Mode:
+1. 优先由 `auditor-document` agent 执行 Post Audit
+2. 若不可用，回退到 OMC reviewer
+3. 再不可用，回退到 `code-review` skill
+4. 最后回退到主 Agent 直接执行同一份三层 audit prompt
+
+**重要**：执行体本身不加载 skill，所有审计指令由主 Agent 通过 prompt 参数完整传递。
+
+---
+
+**Runtime Contracts（双模式）**
+
+Code Mode:
+- 审计报告路径：`_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT_Story_{epic}-{story}_stage4.md`
+- 审计通过后必须执行 `parse-and-write-score.ts`
+- 审计通过后更新 story state 为 `implement_passed`
+- 审计失败后更新 story state 为 `implement_failed`，回退到 Stage 3 修复
+
+Document Mode:
+- 审计报告路径：`_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT-POST-{epic}-{story}.md`
+- 审计通过后必须执行 `parse-and-write-score.ts`
+- 审计通过后更新 story state 为 `implement_passed`（文档型 Story 视为已实现）
+- 审计失败后更新 story state 为 `implement_failed`，返回修复文档
+
+---
+
+#### Repo Add-ons（双模式）
+
+Code Mode:
+- strict convergence（连续 3 轮无 gap）
+- 批判审计员结论
+- parseAndWriteScore 触发
+- commit gate 前置条件检查
+- 本仓禁止词检查（含代码注释）
+- TDD 红绿灯审查
+- ralph-method 追踪文件审查
+
+Document Mode:
+- strict convergence（连续 3 轮无 gap）
+- 批判审计员结论（≥50%字数）
+- parseAndWriteScore 触发
+- commit gate 前置条件检查
+- 本仓禁止词检查（Story 文档全文）
+- 文档结构完整性检查
+- 任务完成度验证
+
+---
+
+#### Output / Handoff（双模式）
+
+**Code Mode - PASS**
+
+```yaml
+layer: 4
+stage: implement_audit_passed
+
+execution_summary:
+  agent: auditor-implement
+  started_at: "{timestamp}"
+  completed_at: "{timestamp}"
+  duration_seconds: {seconds}
+  status: completed
+
+  steps_completed:
+    - step: config_read
+      status: passed
+      result: "bmad-story-config.yaml 已读取"
+    - step: strictness_determination
+      status: passed
+      result: "审计严格度: {simple|standard|strict}"
+    - step: artifact_read
+      status: completed
+      result: "代码实现已读取"
+    - step: tasks_comparison
+      status: completed
+      result: "tasks 覆盖度已验证"
+    - step: spec_comparison
+      status: completed
+      result: "spec 对齐度已验证"
+    - step: tdd_evidence_review
+      status: completed
+      result: "TDD 红绿灯证据已审查"
+    - step: ralph_method_check
+      status: completed
+      result: "ralph-method 追踪文件已检查"
+    - step: reviewer_invocation
+      status: completed
+      result: "批判审计员已介入"
+    - step: parse_and_write_score
+      status: completed
+      result: "评分已写入 scoring/data/"
+    - step: state_update
+      status: completed
+      result: "story state 已更新为 implement_audit_passed"
+
+audit_summary:
+  coverage:
+    tasks_verified: {percent}%
+    spec_verified: {percent}%
+    plan_verified: {percent}%
+  tdd_evidence:
+    red_phase_confirmed: true
+    green_phase_confirmed: true
+    refactor_phase_confirmed: true
+    test_coverage: "{percent}%"
+  ralph_method_check:
+    prd_json_complete: true
+    progress_txt_complete: true
+    all_stories_passed: true
+  code_quality:
+    avg_function_lines: {number}
+    avg_file_lines: {number}
+    no_banned_words: true
+    security_checks_passed: true
+  reviewer_conclusion:
+    reviewer_word_count: {count}
+    total_report_word_count: {count}
+    reviewer_percentage: "{percent}%"
+    verdict: "PASS"
+    critical_gaps: 0
+
+artifacts:
+  story_doc:
+    path: "{storyDocPath}"
+    exists: true
+  audit_report:
+    path: "_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT_Story_{epic}-{story}_stage4.md"
+    exists: true
+    reviewer_conclusion_included: true
+    parseable_score_block: true
+  scoring_data:
+    path: "scoring/data/dev-{epic}-{story}-implement-{timestamp}.json"
+    exists: true
+
+handoff:
+  next_action: commit_gate
+  next_agent: bmad-master
+  next_stage: commit
+  ready: true
+  prerequisites_met:
+    - audit_passed
+    - score_written
+    - state_updated
+    - reviewer_conclusion_verified
+```
+
+**Document Mode - PASS**
+
+```yaml
+layer: 4
+stage: implement_audit_passed
+
+execution_summary:
+  agent: auditor-document
+  started_at: "{timestamp}"
+  completed_at: "{timestamp}"
+  duration_seconds: {seconds}
+  status: completed
+
+  steps_completed:
+    - step: config_read
+      status: passed
+      result: "bmad-story-config.yaml 已读取"
+    - step: strictness_determination
+      status: passed
+      result: "审计严格度: {simple|standard|strict}"
+    - step: document_read
+      status: completed
+      result: "Story 文档已读取"
+    - step: tasks_read
+      status: completed
+      result: "tasks.md 已读取，所有任务已标记完成"
+    - step: document_structure_check
+      status: completed
+      result: "文档结构完整性已验证"
+    - step: forbidden_words_check
+      status: completed
+      result: "禁止词检查通过"
+    - step: document_consistency_check
+      status: completed
+      result: "文档一致性已验证"
+    - step: reviewer_invocation
+      status: completed
+      result: "批判审计员已介入"
+    - step: parse_and_write_score
+      status: completed
+      result: "评分已写入 scoring/data/"
+    - step: state_update
+      status: completed
+      result: "story state 已更新为 implement_audit_passed"
+
+audit_summary:
+  coverage:
+    document_complete: true
+    tasks_all_completed: true
+    no_gaps_found: true
+  document_quality:
+    structure_complete: true
+    format_compliant: true
+    no_banned_words: true
+    links_valid: true
+  document_consistency:
+    internal_consistent: true
+    aligned_with_spec: true
+    aligned_with_plan: true
+  reviewer_conclusion:
+    reviewer_word_count: {count}
+    total_report_word_count: {count}
+    reviewer_percentage: "{percent}%"
+    verdict: "PASS"
+    critical_gaps: 0
+
+artifacts:
+  story_doc:
+    path: "{artifactDocPath}"
+    exists: true
+    modified_in_round: false
+  audit_report:
+    path: "_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT-POST-{epic}-{story}.md"
+    exists: true
+    reviewer_conclusion_included: true
+    parseable_score_block: true
+  scoring_data:
+    path: "scoring/data/dev-{epic}-{story}-implement-{timestamp}.json"
+    exists: true
+
+handoff:
+  next_action: commit_gate
+  next_agent: bmad-master
+  next_stage: commit
+  ready: true
+  prerequisites_met:
+    - audit_passed
+    - score_written
+    - state_updated
+    - reviewer_conclusion_verified
+```
+
+**Document Mode - FAIL**
+
+```yaml
+layer: 4
+stage: implement_audit_failed
+
+execution_summary:
+  agent: auditor-document
+  started_at: "{timestamp}"
+  completed_at: "{timestamp}"
+  duration_seconds: {seconds}
+  status: completed
+
+  steps_completed:
+    - step: config_read
+      status: passed
+      result: "bmad-story-config.yaml 已读取"
+    - step: strictness_determination
+      status: passed
+      result: "审计严格度: {simple|standard|strict}"
+    - step: document_read
+      status: completed
+      result: "Story 文档已读取"
+    - step: tasks_read
+      status: failed
+      result: "发现未完成任务"
+    - step: document_structure_check
+      status: failed
+      result: "文档结构不完整"
+    - step: forbidden_words_check
+      status: failed
+      result: "发现禁止词"
+    - step: reviewer_invocation
+      status: completed
+      result: "批判审计员已介入"
+    - step: gap_fix_document
+      status: completed
+      result: "已直接修改 Story 文档"
+    - step: gap_documentation
+      status: completed
+      result: "所有 gap 已记录"
+
+audit_summary:
+  gaps_found:
+    total: {count}
+    critical: {count}
+    major: {count}
+    minor: {count}
+  required_fixes:
+    - category: "tasks_completion"
+      description: "{gap_description}"
+      priority: critical
+    - category: "document_structure"
+      description: "{gap_description}"
+      priority: major
+    - category: "forbidden_words"
+      description: "{gap_description}"
+      priority: major
+  reviewer_conclusion:
+    reviewer_word_count: {count}
+    total_report_word_count: {count}
+    reviewer_percentage: "{percent}%"
+    verdict: "FAIL"
+    critical_gaps: {count}
+
+required_fixes_detail:
+  fix_strategy: "direct_document_modify"
+  estimated_fix_time: "{duration}"
+  fix_categories:
+    - category: "document_structure"
+      items: [{gap_items}]
+    - category: "forbidden_words"
+      items: [{gap_items}]
+    - category: "tasks_completion"
+      items: [{gap_items}]
+
+artifacts:
+  story_doc:
+    path: "{artifactDocPath}"
+    exists: true
+    modified_in_round: true
+  audit_report:
+    path: "_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT-POST-{epic}-{story}.md"
+    exists: true
+    reviewer_conclusion_included: true
+    parseable_score_block: true
+  gaps_list:
+    path: "_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/GAPS_{epic}-{story}_stage4.md"
+    exists: true
+
+handoff:
+  next_action: fix_document
+  next_agent: auditor-document
+  next_stage: 4
+  ready: true
+  fix_required: true
+  prerequisites_met:
+    - audit_completed
+    - gaps_documented
+    - document_modified
+    - reviewer_conclusion_verified
 ```
 
 ---
@@ -772,7 +2039,8 @@ next_agent: speckit-implement
 | spec 审计失败 | 修复 spec 并重审 | `auditor-spec` fallback | 不得进入 plan |
 | plan 审计失败 | 修复 plan 并重审 | `auditor-plan` fallback | 不得进入 tasks |
 | tasks 审计失败 | 修复 tasks 并重审 | `auditor-tasks` fallback | 不得进入 implement |
-| implement 审计失败 | 修复代码/文档并重审 | `auditor-implement` fallback | 不得进入 commit gate |
+| implement 审计失败（Code Mode） | 修复代码/文档并重审 | `auditor-implement` fallback | 不得进入 commit gate |
+| implement 审计失败（Document Mode） | 直接修改文档后重审 | `auditor-document` fallback | 不得进入 commit gate |
 | OMC 不可用 | 回退到仓库定义 reviewer / skill / main agent | 逐级 fallback | 保持语义与输出契约不变 |
 | state drift | 读取 `.claude/state/...` 恢复上下文 | handoff + report 兜底 | 恢复后继续正确阶段 |
 | 产物缺失 | 停止并要求补齐前置文件 | 无 | 不得跳阶段 |

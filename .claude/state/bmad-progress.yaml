@@ -1,14 +1,12 @@
-layer: 4
-stage: implement_passed
-audit_status: pass
-artifacts:
-  spec: _bmad-output/pilot-001/spec.md
-  plan: _bmad-output/pilot-001/plan.md
-  tasks: _bmad-output/pilot-001/tasks.md
-  implement: package.json
+version: "2.0"
+layer: 1
+stage: new
+audit_status: pending
+active_stories: []
+completed_stories: []
+current_context: null
+artifacts: {}
 git_control:
-  commit_allowed: true
-  last_commit_request: pilot-001-complete
-runtime:
-  active_run_id: pilot-001
-  last_checkpoint: _bmad-output/pilot-001/implement-audit.md
+  commit_allowed: false
+  last_commit: null
+updated_at: "1970-01-01T00:00:00Z"

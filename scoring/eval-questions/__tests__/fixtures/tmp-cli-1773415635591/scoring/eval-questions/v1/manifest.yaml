@@ -1,0 +1,4 @@
+questions:
+  - id: q001
+    title: my-question
+    path: q001-my-question.md

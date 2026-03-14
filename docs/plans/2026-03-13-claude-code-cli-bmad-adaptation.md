@@ -211,7 +211,7 @@ model: sonnet
 ## 强制执行步骤
 1. 生成 spec.md
 2. 添加需求映射表格
-3. 调用 auditor-spec
+3. 触发 spec 阶段审计子任务（以 `audit-prompts.md` §1 为 Cursor Canonical Base，并显式分离 Claude/OMC Runtime Adapter 与 Repo Add-ons）
 4. 未通过则修改并重审
 5. 通过后写入评分并返回完成信号
 ```

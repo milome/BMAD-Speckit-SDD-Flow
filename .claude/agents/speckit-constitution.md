@@ -246,19 +246,37 @@ project/
 
 ### Step 3: 审计闭环 §0.5.2
 
-**调用 code-review 技能**:
+**constitution 审计必须采用三层结构，不得再用旧式单句“调用 code-review 技能”描述。**
 
-1. 使用 audit-prompts.md §0 或通用文档完整性检查
-2. 检查项：
-   - [ ] 技术栈是否明确
-   - [ ] 架构约束是否合理
-   - [ ] 编码规范是否完整
-   - [ ] 禁止事项是否清晰
-   - [ ] 强制事项是否可执行
+```markdown
+## Cursor Canonical Base
+- 主文本基线：constitution / 通用文档完整性审计固定基线（当前对应 `audit-prompts.md` §0 或通用文档完整性检查）
+- 检查项：
+  - 技术栈是否明确
+  - 架构约束是否合理
+  - 编码规范是否完整
+  - 禁止事项是否清晰
+  - 强制事项是否可执行
 
-**审计结果处理**:
-- **PASS**: 进入下一阶段（specify）
-- **FAIL**: 根据审计报告迭代修改 constitution，直至通过
+## Claude/OMC Runtime Adapter
+
+### Primary Executor
+- `code-review` 技能 / 对应 code-reviewer 能力
+
+### Fallback Strategy
+1. 若首选 code-review 能力不可用，则回退到 `oh-my-claudecode:code-reviewer`
+2. 若 OMC reviewer 不可用，则回退到主 Agent 直接执行同一份三层结构 constitution 审计 prompt
+
+### Runtime Contracts
+- 审计通过：进入下一阶段（specify）
+- 审计失败：根据审计报告迭代修改 constitution，直至通过
+- 审计结果需保持结构化输出，并保留通过标记与状态落盘约束
+
+## Repo Add-ons
+- 仓库禁止词与模糊表述约束
+- 批判审计员输出格式要求
+- 审计结果状态落盘与通过标记要求
+```
 
 ### Step 4: 状态更新
 

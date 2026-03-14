@@ -290,21 +290,40 @@ const UserSchema = z.object({
 
 ### Step 5: 触发重新审计
 
-**更新 spec.md 后，必须重新审计**:
+**更新 spec.md 后，必须重新触发采用三层结构的 spec 阶段审计子任务。**
 
-1. **标记 clarfiy 完成**:
+1. **标记 clarify 完成**:
    ```bash
    # 在澄清报告末尾追加
    echo "<!-- CLARIFICATION: COMPLETED -->" >> CLARIFICATION_report.md
    ```
 
 2. **触发新一轮 §1.2 审计**:
-   ```bash
-   # 主 Agent 收到澄清完成信号后，发起新一轮审计
-   claude-code --agent speckit-specify \
-     --mode clarify-complete \
-     --specPath {specPath} \
-     --auditRound {N+1}
+   ```markdown
+   ## Cursor Canonical Base
+   - 主文本基线：`audit-prompts.md` §1
+   - 被审对象：更新后的 spec 文档
+   - 审计目标：验证模糊表述是否被澄清、覆盖是否完整、是否满足 spec 审计要求
+
+   ## Claude/OMC Runtime Adapter
+
+   ### Primary Executor
+   - `auditor-spec`
+
+   ### Fallback Strategy
+   1. 若当前环境不能直接调用 `auditor-spec`，则回退到 `oh-my-claudecode:code-reviewer`
+   2. 若 OMC reviewer 不可用，则回退到 `code-review` skill
+   3. 若以上执行体均不可用，则由主 Agent 直接执行同一份三层结构 spec 审计 prompt
+
+   ### Runtime Contracts
+   - 主 Agent 收到 clarify 完成信号后，重新发起 spec 阶段审计
+   - 传递 `specPath` 与 `auditRound={N+1}`
+   - 不得因 fallback 改变 spec 审计的 Cursor Canonical Base、评分块、批判审计员和禁止词要求
+
+   ## Repo Add-ons
+   - 延续本仓禁止词检查
+   - 延续批判审计员格式与评分块要求
+   - 不得把三层内容混写成无法区分来源的重写版 prompt
    ```
 
 3. **审计循环继续**:

@@ -1,0 +1,9 @@
+{
+  "locked": true,
+  "owner": "agent-2",
+  "epic": "E001",
+  "story": "S002",
+  "acquired_at": "2026-03-14T13:01:48.590Z",
+  "expires_at": "2026-03-14T14:01:48.590Z",
+  "type": "write"
+}

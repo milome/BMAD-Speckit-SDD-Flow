@@ -1,0 +1,121 @@
+# Epic 级状态文件模板
+
+version: "1.0"
+epic: "E001"
+epic_slug: "test-epic"
+epic_name: "示例 Epic"
+status: "created"  # created | stories_in_progress | stories_completed | audit_pending | completed
+
+# Epic 级审计配置
+audit_config:
+  mode: "epic"  # full | story | epic
+  story_audit_skipped: true  # epic 模式下 Story 级审计被跳过
+  created_at: "2026-03-14T00:00:00Z"
+
+# Epic 元信息
+metadata:
+  description: "Epic 描述"
+  tech_stack: "TypeScript"
+  estimated_stories: 3
+  created_at: "2026-03-14T00:00:00Z"
+  updated_at: "2026-03-14T00:00:00Z"
+
+# Epic 内所有 Story
+stories:
+  S001:
+    status: "pending"  # pending | in_progress | implement_passed | completed
+    created_at: "2026-03-14T00:00:00Z"
+    completed_at: null
+    artifacts:
+      story_doc: "_bmad-output/.../E001-S001-test-story.md"
+      spec: "specs/epic-E001/.../spec-E001-S001.md"
+      plan: "specs/epic-E001/.../plan-E001-S001.md"
+      gaps: "specs/epic-E001/.../IMPLEMENTATION_GAPS-E001-S001.md"
+      tasks: "specs/epic-E001/.../tasks-E001-S001.md"
+      implement_audit: "specs/epic-E001/.../AUDIT_implement-E001-S001.md"
+    # Story 级审计被跳过（epic模式）
+    audit_skipped: true
+    validation_passed: true
+
+  S002:
+    status: "pending"
+    created_at: null
+    completed_at: null
+    artifacts: {}
+    audit_skipped: true
+    validation_passed: false
+
+  S00N:
+    status: "pending"
+    created_at: null
+    completed_at: null
+    artifacts: {}
+    audit_skipped: true
+    validation_passed: false
+
+# Epic 级审计状态
+epic_audit:
+  create_audit:
+    status: "pending"  # pending | in_progress | completed
+    completed_at: null
+    audit_passed: null
+    report_path: null
+    scores: {}
+
+  completion_audit:
+    status: "pending"
+    completed_at: null
+    audit_passed: null
+    report_path: null
+    scores: {}
+
+# 跨 Story 依赖检查
+cross_story_dependencies:
+  - id: "dep-001"
+    from: "S001"
+    to: "S002"
+    type: "api_dependency"
+    description: "S002 依赖 S001 的 API"
+    status: "pending"  # pending | verified | failed
+
+  - id: "dep-002"
+    from: "S003"
+    to: "S001"
+    type: "data_model_dependency"
+    description: "S003 依赖 S001 的数据模型"
+    status: "pending"
+
+# Epic 级集成测试状态
+integration_tests:
+  status: "pending"  # pending | running | passed | failed
+  tests:
+    - name: "跨Story数据流测试"
+      status: "pending"
+      story_coverage: ["S001", "S002"]
+    - name: "API兼容性测试"
+      status: "pending"
+      story_coverage: ["S001", "S002", "S003"]
+    - name: "端到端功能测试"
+      status: "pending"
+      story_coverage: ["S001", "S002", "S003"]
+
+# Epic 产物路径
+epic_artifacts:
+  audit_report: "_bmad-output/epic-E001-test-epic/AUDIT_Epic_E001.md"
+  completion_report: "_bmad-output/epic-E001-test-epic/EPIC_COMPLETION_REPORT.md"
+  architecture_doc: "docs/architecture/epic-E001-arch.md"
+
+# 完成统计
+completion_stats:
+  total_stories: 3
+  completed_stories: 0
+  in_progress_stories: 0
+  pending_stories: 3
+  completion_percentage: 0
+
+# Handoff 信息
+handoff:
+  next_action: "create_stories"
+  next_agent: "bmad-story-create"
+  ready: true
+  summary: "Epic E001 已创建，等待创建 Stories"

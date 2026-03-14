@@ -1,0 +1,15 @@
+layer: 4
+epic: E001
+story: S001
+stage: plan
+artifactDocPath: specs/epic-E001-e001/story-S001-email-validator/plan-E001-S001.md
+auditReportPath: specs/epic-E001-e001/story-S001-email-validator/AUDIT_plan-E001-S001.md
+scores:
+  plan:
+    rating: A
+    dimensions:
+      需求完整性: 93
+      可测试性: 95
+      一致性: 92
+      可追溯性: 90
+next_action: proceed_to_tasks

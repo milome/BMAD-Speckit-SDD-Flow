@@ -1,0 +1,19 @@
+{
+  "version": "2.0",
+  "epic": "E999",
+  "story": "S001",
+  "story_slug": "test-epic",
+  "layer": 4,
+  "stage": "completed",
+  "audit_status": "pending",
+  "artifacts": {},
+  "scores": {},
+  "git_control": {
+    "commit_allowed": false
+  },
+  "runtime": {
+    "last_action": "story_created"
+  },
+  "auditReportPath": "_bmad-output/implementation-artifacts/epic-E999-test-epic/story-E999-S001-test-story/AUDIT_implement-E999-S001.md",
+  "completedAt": "2026-03-13T20:14:30.875Z"
+}

@@ -1,0 +1,25 @@
+{
+  "story_id": "999-2",
+  "epic_id": 999,
+  "epic_slug": "test-epic",
+  "story_slug": "test-story-create-2",
+  "audit_timestamp": "2026-03-14T21:12:00+08:00",
+  "audit_mode": "standard",
+  "audit_result": "passed",
+  "rating": "A",
+  "scores": {
+    "requirements_completeness": 5,
+    "testability": 5,
+    "consistency": 5,
+    "traceability": 5
+  },
+  "checks": {
+    "prohibited_words": "passed",
+    "document_structure": "passed",
+    "task_list": "passed",
+    "consistency": "passed",
+    "state_file": "passed"
+  },
+  "next_action": "dev_story",
+  "next_agent": "speckit-implement"
+}

@@ -1,0 +1,48 @@
+{
+  "run_id": "dev-eE001-sS001-spec-1773434052522",
+  "scenario": "real_dev",
+  "stage": "spec",
+  "phase_score": 76,
+  "phase_weight": 0.2,
+  "check_items": [
+    {
+      "item_id": "spec_overall",
+      "passed": true,
+      "score_delta": 0,
+      "note": "未发现问题清单段落"
+    }
+  ],
+  "timestamp": "2026-03-13T20:34:12.526Z",
+  "iteration_count": 1,
+  "iteration_records": [],
+  "first_pass": false,
+  "dimension_scores": [
+    {
+      "dimension": "需求完整性",
+      "weight": 35,
+      "score": 95
+    },
+    {
+      "dimension": "可测试性",
+      "weight": 25,
+      "score": 94
+    },
+    {
+      "dimension": "一致性",
+      "weight": 25,
+      "score": 96
+    },
+    {
+      "dimension": "可追溯性",
+      "weight": 15,
+      "score": 95
+    }
+  ],
+  "veto_triggered": false,
+  "tier_coefficient": 0.8,
+  "base_commit_hash": "0b33e15d",
+  "content_hash": "9dc5363d519b16422dcc9114a07c7ecca8016e30e3e963d57897b86ebdfbefe8",
+  "source_path": "specs/epic-E001-test-epic/story-S001-test-story/spec-E001-S001.md",
+  "trigger_stage": "speckit_1_2",
+  "path_type": "full"
+}

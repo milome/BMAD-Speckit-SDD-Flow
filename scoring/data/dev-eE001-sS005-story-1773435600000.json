@@ -1,0 +1,19 @@
+{
+  "story_id": "E001-S005",
+  "epic_id": "E001",
+  "stage": "story",
+  "audit_date": "2026-03-14T17:20:00+08:00",
+  "overall_rating": "B",
+  "total_score": 85,
+  "dimensions": {
+    "requirement_completeness": { "score": 88, "weight": 0.3 },
+    "testability": { "score": 82, "weight": 0.25 },
+    "consistency": { "score": 85, "weight": 0.25 },
+    "traceability": { "score": 85, "weight": 0.2 }
+  },
+  "iteration_count": 1,
+  "passed": true,
+  "audit_mode": "strict",
+  "artifact_path": "_bmad-output/implementation-artifacts/epic-E001-test-epic/story-E001-5-verify-story-assistant-enhancement/E001-S005-verify-story-assistant-enhancement.md",
+  "audit_report_path": "_bmad-output/implementation-artifacts/epic-E001-test-epic/story-E001-5-verify-story-assistant-enhancement/AUDIT_story-E001-S005.md"
+}

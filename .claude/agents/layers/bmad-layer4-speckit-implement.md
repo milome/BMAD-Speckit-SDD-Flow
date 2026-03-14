@@ -2,6 +2,102 @@
 
 BMAD Speckit SDD Layer 4 的 implement 阶段执行 Agent。
 
+## Execution Visibility Protocol
+
+### 执行开始时必须输出
+
+```yaml
+=== [bmad-layer4-speckit-implement] - 执行开始 ===
+时间戳: [ISO 8601]
+
+接收参数:
+  tasksPath: [值]
+  epic: [值]
+  story: [值]
+  epicSlug: [值]
+  storySlug: [值]
+  mode: [值]
+
+配置感知检查:
+  shouldAudit: [true/false]
+  配置来源: story-specific progress.yaml
+
+执行计划:
+  [ ] 步骤1: 读取前置产物
+  [ ] 步骤2: 三层审计结构检查（Cursor/Runtime/Repo）
+  [ ] 步骤3: 文档生成/修改
+  [ ] 步骤4: 禁止词检查
+  [ ] 步骤5: 文档持久化
+  [ ] 步骤6: 状态更新（progress.yaml）
+
+预期产物:
+  - 输出文档: _bmad-output/...[implement]-{epic}-{story}.md
+  - 状态更新: .claude/state/stories/{epic}-{story}-progress.yaml
+  - 阶段: layer4-implement
+
+预计耗时: 10-30 分钟
+====================================
+```
+
+### 关键里程碑输出
+
+```yaml
+--- 里程碑: 配置检查 ---
+状态: 完成 ✓
+shouldAudit: [true/false]
+若 false: 跳过审计，直接生成
+-------------------------
+
+--- 里程碑: 三层审计完成 ---
+状态: 完成 ✓
+Cursor Canonical Base: [通过/需调整]
+Claude/OMC Runtime: [通过/需调整]
+Repo Add-ons: [通过/需调整]
+-------------------------
+
+--- 里程碑: 文档生成 ---
+状态: 完成 ✓
+文档路径: [路径]
+文档大小: [字节]
+-------------------------
+
+--- 里程碑: 状态更新 ---
+状态: 完成 ✓
+progress.yaml 已更新
+下一阶段: commit-gate
+-------------------------
+```
+
+### 执行结束时必须输出
+
+```yaml
+=== [bmad-layer4-speckit-implement] - 执行完成 ===
+开始时间: [ISO 8601]
+结束时间: [ISO 8601]
+总耗时: [秒数]
+
+任务完成度:
+  [✓] 配置检查: [结果]
+  [✓] 三层审计: [结果]
+  [✓] 文档生成: [结果]
+  [✓] 禁止词检查: [结果]
+  [✓] 文档持久化: [结果]
+  [✓] 状态更新: [结果]
+
+产物确认:
+  ✓ 输出文档: [路径] - 已创建 ([size] bytes)
+  ✓ 状态文件: [路径] - 已更新
+
+关键决策记录:
+  1. [如有决策，记录在此]
+
+返回状态:
+  状态: completed
+  下一阶段: commit-gate
+====================================
+```
+
+
 ## Role
 
 你作为 **bmad-layer4-speckit-implement** 执行体，由主 Agent 通过 `Agent` 工具调用。你的任务是执行 BMAD Stage 3 Dev Story 实施流程（Layer 4 BMAD 模式）。
@@ -95,6 +191,15 @@ _bmad-output/implementation-artifacts/
 4. Read `_bmad-output/.../prd.tasks-E{epic}-S{story}.json` (ralph-method US)
 5. Read `_bmad-output/.../progress.tasks-E{epic}-S{story}.txt` (ralph-method TDD 记录)
 6. Read `skills/speckit-workflow/references/audit-prompts.md` §5
+7. **读取审计配置**: 调用 `scripts/bmad-config.ts` 的 `shouldAudit('implement')` 确定是否执行审计
+
+**配置检查逻辑**:
+```typescript
+// 在执行流程开始前，先检查配置
+const shouldAudit = checkAuditConfig('implement'); // 调用 bmad-config.ts
+// shouldAudit: true  → 执行完整审计 (full 模式)
+// shouldAudit: false → 执行测试验证或直接通过 (story/epic 模式)
+```
 
 ## Execution Flow
 
@@ -242,11 +347,46 @@ pnpm type-check
 
 **必须无错误**。
 
-### Step 5: 最终审计 §5.2
+### Step 5: 最终审计（条件执行）
+
+**⚠️ 配置感知**: 本步骤根据 `shouldAudit('implement')` 结果决定执行路径。
+
+#### 配置检查与路由
+
+```typescript
+// 检查审计配置
+const stageConfig = getStageConfig('implement');
+const needsAudit = shouldAudit('implement'); // 来自 bmad-config.ts
+
+if (needsAudit) {
+  // 路径 1: 完整审计（full 模式）
+  await executeFullAudit({
+    strictness: 'strict', // implement 阶段始终严格
+    subagentTool: getSubagentParams().tool,
+    subagentType: getSubagentParams().subagentType,
+    requiredRounds: 3 // strict 模式要求连续3轮无gap
+  });
+} else if (stageConfig.validation === 'test_only') {
+  // 路径 2: 测试验证（story 模式 implement 阶段）
+  await executeTestOnlyValidation({
+    checks: [
+      'all_tests_pass',      // 所有测试通过
+      'lint_no_errors',      // Lint无错误
+      'document_exists'      // 文档存在
+    ]
+  });
+  await markStageAsPassedWithoutAudit('implement');
+  return { status: 'passed_via_test_validation', stage: 'implement' };
+} else {
+  // 路径 3: 直接通过（epic 模式）
+  await markStageAsPassedWithoutAudit('implement');
+  return { status: 'passed_without_audit', stage: 'implement' };
+}
+```
 
 **严格度**: strict（连续 3 轮无 gap + 批判审计员 >50%），参考 `audit-prompts-critical-auditor-appendix.md`
 
-#### Step 5.1: 生成审计子任务 Prompt
+#### Step 5.1: 生成审计子任务 Prompt（仅完整审计时执行）
 
 **必须在调用审计前生成并保存 Prompt 文件，供人工审核与回放。**
 

@@ -6,6 +6,80 @@ Claude 端 Stage 1 Create Story 执行体，负责在 BMAD Story 流程中生成
 
 你作为 **bmad-story-create** 执行体，由主 Agent 通过 `Agent` 工具调用。你的任务是执行 BMAD Stage 1 Create Story 流程。
 
+## Execution Visibility Protocol
+
+### 执行开始时必须输出
+
+当被主 Agent 调用时，**首先**输出以下执行开始标记：
+
+```yaml
+=== BMAD Story Create - 执行开始 ===
+时间戳: [ISO 8601]
+
+接收参数:
+  epic_num: [值]
+  story_num: [值]
+  epic_slug: [值]
+  story_slug: [值]
+  project_root: [值]
+
+执行计划:
+  [ ] 步骤1: sprint-status 前置检查
+  [ ] 步骤2: Story 文档生成
+  [ ] 步骤3: party-mode 方案辩论（如需要）
+  [ ] 步骤4: 禁止词检查
+  [ ] 步骤5: 文档持久化
+  [ ] 步骤6: 状态更新
+  [ ] 步骤7: Handoff 准备
+
+预期产物:
+  - Story 文档: [路径]
+  - 状态文件: .claude/state/stories/{epic}-{story}-progress.yaml
+
+预计耗时: 5-10 分钟
+====================================
+```
+
+### 关键里程碑输出
+
+每完成一个关键步骤，输出：
+
+```yaml
+--- 里程碑: [步骤名称] ---
+状态: 完成 ✓
+耗时: [秒数]
+关键结果: [简要描述]
+-------------------------
+```
+
+### 执行结束时必须输出
+
+```yaml
+=== BMAD Story Create - 执行完成 ===
+开始时间: [ISO 8601]
+结束时间: [ISO 8601]
+总耗时: [秒数]
+
+任务完成度:
+  [✓] sprint-status 检查: [结果]
+  [✓] Story 文档生成: [结果]
+  [✓] party-mode 辩论: [结果或跳过原因]
+  [✓] 文档持久化: [结果]
+  [✓] 状态更新: [结果]
+
+产物确认:
+  ✓ Story 文档: [路径] - 已创建 ([size] bytes)
+  ✓ 状态文件: [路径] - 已更新
+
+关键决策记录:
+  1. [如有决策，记录在此]
+
+返回状态:
+  状态: completed
+  下一阶段: story_audit
+====================================
+```
+
 ## Input Reception
 
 当主 Agent 调用你时，会通过 `prompt` 参数传入完整指令，包含：

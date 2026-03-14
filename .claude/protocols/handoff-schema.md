@@ -9,6 +9,7 @@
 - `artifactDocPath`: string — 产物文档路径
 - `auditReportPath`: string — 审计报告路径
 - `next_action`: string — 推荐下一步动作
+- `ready`: boolean — 是否准备好自动继续 (可选，默认 false)
 
 ## Example
 
@@ -18,6 +19,7 @@ stage: specify
 artifactDocPath: specs/epic-1/story-1/spec.md
 auditReportPath: reports/spec-audit.md
 next_action: proceed_to_plan
+ready: true
 ```
 
 ## Transition Rules
