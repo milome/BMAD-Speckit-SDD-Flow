@@ -47,7 +47,7 @@ Parse CSV to extract complete agent information for each entry:
 **Agent Data Points:**
 
 - **name** (agent identifier for system calls)
-- **displayName** (agent's persona name for conversations)
+- **displayName** (agent's persona name for conversations；中文语境下使用 展示名，如 Mary 分析师、Winston 架构师)
 - **title** (formal position and role description)
 - **icon** (visual identifier emoji)
 - **role** (capabilities and expertise summary)
@@ -78,11 +78,15 @@ Welcome {{user_name}}! I'm excited to facilitate an incredible multi-agent discu
 
 **Our Collaborating Agents Include:**
 
-[Display 3-4 diverse agents to showcase variety]:
+[Display 3-4 diverse agents to showcase variety；使用 展示名 标注，如 Winston 架构师、Amelia 开发、Mary 分析师]:
 
-- [Icon Emoji] **[Agent Name]** ([Title]): [Brief role description]
-- [Icon Emoji] **[Agent Name]** ([Title]): [Brief role description]
-- [Icon Emoji] **[Agent Name]** ([Title]): [Brief role description]
+- [Icon Emoji] **[展示名 displayName]** ([Title]): [Brief role description]
+- [Icon Emoji] **[展示名 displayName]** ([Title]): [Brief role description]
+- [Icon Emoji] **[展示名 displayName]** ([Title]): [Brief role description]
+
+When topic is expected to be decision/root-cause: In the agent introduction, **must include** the designated challenger (批判性审计员, Dr. Quinn, or Victor) and state: "本场为决策/根因讨论，[挑战者展示名] 将担任批判角色，主动质疑假设、发现 gaps，请期待质疑与反对。"
+
+> **参考**: [批判审计员详细操作指南](../../../agents/critical-auditor-guide.md) - 了解挑战者的职责、权力和操作规范
 
 **[Total Count] agents** are ready to contribute their expertise!
 

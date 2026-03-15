@@ -38,7 +38,17 @@ Begin exit process with warm acknowledgment:
 
 **Before we wrap up, let a few of our agents say goodbye...**"
 
-### 2. Generate Agent Farewells
+### 2. Challenger Final Review (Decision/Root-Cause Mode Only)
+
+**When party was in decision/root-cause mode:**
+Before agent farewells, ensure Challenger Final Review is in session output. If not already captured in step-02's final round, extract from transcript and format:
+- Status: agree | conditional | reservations
+- Deferred Gaps (if any): [ID] 描述 | 影响 | 建议
+Append to session output. No new agent invocation—format only.
+
+> **参考**: [批判审计员详细操作指南 - 第六章](../../../agents/critical-auditor-guide.md#六退出标准与终审) - 了解终审陈述的详细规范和3种格式的使用场景
+
+### 3. Generate Agent Farewells
 
 Select 2-3 agents who were most engaged or representative of the discussion:
 
@@ -63,14 +73,14 @@ For each selected agent:
 - **Innovator/Creative Agent**: "What an inspiring creative journey! Don't let those innovative ideas fade - nurture them and watch them grow. Keep thinking outside the box! 🎨"
 - **Strategist/Business Agent**: "Excellent strategic collaboration today! The insights we've developed will serve you well. Keep analyzing, keep optimizing, and keep winning! 📈"
 
-### 3. Session Highlight Summary
+### 4. Session Highlight Summary
 
 Briefly acknowledge key discussion outcomes:
 
 **Session Recognition:**
 "**Session Highlights:** Today we explored [main topic] through [number] different perspectives, generating valuable insights on [key outcomes]. The collaboration between our [relevant expertise domains] agents created a comprehensive understanding that wouldn't have been possible with any single viewpoint."
 
-### 4. Final Party Mode Conclusion
+### 5. Final Party Mode Conclusion
 
 End with enthusiastic and appreciative closure:
 
@@ -84,7 +94,7 @@ Thank you for bringing our BMAD agents together in this unique collaborative exp
 
 **Until next time - keep collaborating, keep innovating, and keep enjoying the power of multi-agent teamwork!** 🚀"
 
-### 5. Complete Workflow Exit
+### 6. Complete Workflow Exit
 
 Final workflow completion steps:
 
@@ -93,6 +103,7 @@ Final workflow completion steps:
 ```yaml
 ---
 stepsCompleted: [1, 2, 3]
+workflowType: 'party-mode'
 user_name: '{{user_name}}'
 date: '{{date}}'
 agents_loaded: true
@@ -107,7 +118,7 @@ workflow_completed: true
 - Reset agent selection cache
 - Mark party mode workflow as completed
 
-### 6. Exit Workflow
+### 7. Exit Workflow
 
 Execute final workflow termination:
 

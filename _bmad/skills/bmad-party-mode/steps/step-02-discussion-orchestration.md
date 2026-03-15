@@ -52,6 +52,13 @@ Select 2-3 most relevant agents based on analysis:
 - **Secondary Agent**: Complementary perspective or alternative approach
 - **Tertiary Agent**: Cross-domain insight or devil's advocate (if beneficial)
 
+**Decision/Root-Cause Mode Override:**
+When topic is decision/root-cause (multi-option choice or root-cause/design debate):
+- **Mandatory Challenger**: Must select exactly 1 agent from [批判性审计员, Dr. Quinn, Victor] as designated challenger. **Prioritize 批判性审计员** when available.
+- **Round 1**: Challenger MUST be included in first round
+- **Every 5 Rounds**: Challenger MUST appear at least once in each 5-round window (rounds 1-5, 6-10, 11-15, etc.)
+- Apply challenger persona injection (see below) to the selected agent
+
 **Priority Rules:**
 
 - If user names specific agent → Prioritize that agent + 1-2 complementary agents
@@ -69,12 +76,24 @@ Generate authentic responses for each selected agent:
 - Draw from their identity and role for authentic expertise
 - Maintain their unique voice and personality traits
 
+**Challenger Persona Injection (Decision/Root-Cause Mode Only):**
+When the selected agent is the designated challenger, prepend this instruction to their response generation:
+
+"本场为决策/根因讨论。你被指定为挑战者角色。你必须在本轮尝试提出至少 1 个：反对点、遗漏的 risk/edge case、或「若 X 不成立则结论无效」的反证。若当前共识看似合理，请从反面思考：是否有更简方案？成本是否过度？不得仅做补充性附和。"
+
 **Response Structure:**
 [For each selected agent]:
+- 必须使用 **展示名（displayName）** 标注发言角色，与 `_bmad/_config/agent-manifest.csv` 一致。
+- 展示名示例：BMad Master、Mary 分析师、John 产品经理、Winston 架构师、Amelia 开发、Bob Scrum Master、Quinn 测试、Paige 技术写作、Sally UX、Barry Quick Flow、Bond Agent 构建、Morgan Module 构建、Wendy Workflow 构建、Victor 创新策略、Dr. Quinn 问题解决、Maya 设计思维、Carson 头脑风暴、Sophia 故事讲述、Caravaggio 演示、Murat 测试架构、批判性审计员。
 
-"[Icon Emoji] **[Agent Name]**: [Authentic in-character response]
+"[Icon Emoji] **[展示名 displayName]**: [Authentic in-character response]
 
-[Bash: .claude/hooks/bmad-speak.sh \"[Agent Name]\" \"[Their response]\"]"
+[Bash: .claude/hooks/bmad-speak.sh \"[展示名 displayName]\" \"[Their response]\"]"
+
+**Challenge Definition (Decision/Root-Cause Mode):**
+A valid challenge = at least one of: (1) Explicit opposition to a conclusion; (2) Pointing out omitted risk/edge case; (3) "If X then conclusion invalid" counter-argument; (4) Request for evidence supporting a claim.
+
+Example: "我反对 100 点方案——若 n<150，100 点无法采满，与 3×100 的语义不一致，建议明确 n 不足时的 fallback。"
 
 ### 4. Natural Cross-Talk Integration
 
@@ -82,7 +101,7 @@ Enable dynamic agent-to-agent interactions:
 
 **Cross-Talk Patterns:**
 
-- Agents can reference each other by name: "As [Another Agent] mentioned..."
+- Agents can reference each other by 展示名: "As [Another Agent 展示名] mentioned..."（如「正如 Winston 架构师 所说…」）
 - Building on previous points: "[Another Agent] makes a great point about..."
 - Respectful disagreements: "I see it differently than [Another Agent]..."
 - Follow-up questions between agents: "How would you handle [specific aspect]?"
@@ -102,7 +121,7 @@ Manage different types of questions appropriately:
 When an agent asks the user a specific question:
 
 - End that response round immediately after the question
-- Clearly highlight: **[Agent Name] asks: [Their question]**
+- Clearly highlight: **[展示名 displayName] asks: [Their question]**（如 **Amelia 开发 asks: …**）
 - Display: _[Awaiting user response...]_
 - WAIT for user input before continuing
 
@@ -114,7 +133,20 @@ Allow natural back-and-forth within the same response round for dynamic interact
 
 ### 6. Response Round Completion
 
-After generating all agent responses for the round, let the user know he can speak naturally with the agents, an then show this menu opion"
+After generating all agent responses for the round, let the user know he can speak naturally with the agents, and then show the exit menu—**subject to round and convergence rules below when in decision/root-cause mode**.
+
+**Decision / root-cause mode (当本场为「多方案选一」或「根因/设计辩论」时)：**
+- **最少轮次（分级）**：
+  - **生成最终方案和最终任务列表**：当议题涉及产出 BUGFIX 文档（含 §4 修复方案与 §7 任务列表）、Create Story 产出 Story 文档且涉及方案选择或设计决策、或明确要求「生成最终方案」「产出 §7 任务列表」「产出任务列表」时，至少 **100 轮**。
+  - **其它使用场景**：多方案选一、根因/设计辩论等，至少 **50 轮**。
+- 未达最少轮次不展示 [E]。Facilitator 可根据议题描述判断适用层级。
+- **收敛条件**：在达到最少轮次后，须同时满足：(1) 已产出单一方案或共识结论，且无「可选」「可考虑」等未决表述；(2) 最近 2–3 轮无人提出新的 risks、edge cases 或遗漏点；(3) **挑战者已做终审陈述**（同意/有条件同意/有保留）；若有保留，须列出 deferred gaps 并写入产出。
+- **挑战者终审**：在准备展示 [E] 前，若挑战者最近发言未包含终审，Facilitator 提示「请挑战者做终审陈述」并生成一轮。
+- **质疑充分性（P1）**：若最近 10 轮质疑轮数 < 3，Facilitator 显式问「挑战者，你是否有未表达的反对？」；若 30% 未达，可延长 5 轮补救（仅 1 次）。
+- **收束提示**：若已达最少轮次但未满足收敛条件，Facilitator 先问：「还有没有遗漏的 risks、edge cases 或反对点？」再根据回应决定是否展示 [E]。
+- **展示 [E] 的时机**：仅在满足最少轮次且收敛条件满足后，再展示退出选项。
+
+Then show this menu option:
 
 `[E] Exit Party Mode - End the collaborative session`
 
@@ -168,10 +200,14 @@ Check for exit conditions before continuing:
 
 **Quality Control:**
 
-- If discussion becomes circular, have bmad-master summarize and redirect
+- Encourage substantive disagreements; resolve them through evidence and reasoning
+- In decision/root-cause mode, actively encourage challenging assumptions and surfacing gaps
+- Circular = multiple agents repeating same points with no progress (redirect). Challenging = challenger insisting on unanswered critique (do NOT redirect as circular)
+- If discussion becomes circular, have BMad Master 总结并引导转向
 - Ensure all agents stay true to their merged personalities
-- Handle disagreements constructively and professionally
 - Maintain respectful and inclusive conversation environment
+
+> **参考文档**: [批判审计员详细操作指南](../../../agents/critical-auditor-guide.md) - 包含完整的质疑技巧、模板和检查清单
 
 **Flow Management:**
 
