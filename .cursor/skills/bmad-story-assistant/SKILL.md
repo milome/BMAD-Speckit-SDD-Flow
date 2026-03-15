@@ -1019,7 +1019,7 @@ cleanup 命令（按平台择一执行）：
 
 ## 阶段四：实施后审计（增强版）
 
-本阶段为**必须**步骤，非可选。主 Agent 在子任务返回后必须发起，不得跳过。**严格度：strict**，须遵循 [audit-post-impl-rules.md](../speckit-workflow/references/audit-post-impl-rules.md)（路径：`skills/speckit-workflow/references/audit-post-impl-rules.md`）。
+本阶段为**必须**步骤，非可选。主 Agent 在子任务返回后必须发起，不得跳过。**严格度：strict**，须遵循 [audit-post-impl-rules.md](../speckit-workflow/references/audit-post-impl-rules.md)（路径：`.cursor/skills/speckit-workflow/references/audit-post-impl-rules.md`）。
 
 ### 收敛条件（strict，必须）
 

@@ -18,8 +18,8 @@
 ## Cursor Canonical Base
 
 - 原始语义来源：
-  - `skills/bmad-standalone-tasks-doc-review/SKILL.md`
-  - `skills/bmad-standalone-tasks-doc-review/references/audit-prompt-tasks-doc.md`
+  - `.claude/skills/bmad-standalone-tasks-doc-review/SKILL.md`
+  - `.claude/skills/bmad-standalone-tasks-doc-review/references/audit-prompt-tasks-doc.md`
 - 主审计基线：独立 TASKS 文档审计
 - 需求依据规则：
   - 若 TASKS 文档头部有“参考”字段，则读取该文档作为需求依据

@@ -197,9 +197,9 @@ model: sonnet
 ---
 
 ## 启动强制步骤
-1. 读取 `skills/speckit-workflow/SKILL.md`
+1. 读取 `.cursor/skills/speckit-workflow/SKILL.md`
 2. 提取 §1 的全部约束
-3. 读取 `skills/speckit-workflow/references/audit-prompts.md`
+3. 读取 `.cursor/skills/speckit-workflow/references/audit-prompts.md`
 4. 读取 `.claude/state/bmad-progress.yaml`
 
 ## 绝对禁止事项

@@ -46,11 +46,11 @@ description: |
 
 1. **触发**：阶段一收敛并生成最终方案 + 任务列表文档后，主 Agent **必须**发起审计子任务。
 2. **子代理**：优先 **code-reviewer**（Cursor Task）；若不可用则 `mcp_task` + `subagent_type: generalPurpose`。
-3. **审计依据**：使用 [references/audit-prompt-rca-tasks.md](references/audit-prompt-rca-tasks.md) 中的完整 prompt 模板（audit-prompts §4 精神 + TASKS 文档适配）；或项目内 `skills/speckit-workflow/references/audit-prompts.md` §4 的适配版本。
+3. **审计依据**：使用 [references/audit-prompt-rca-tasks.md](references/audit-prompt-rca-tasks.md) 中的完整 prompt 模板（audit-prompts §4 精神 + TASKS 文档适配）；或项目内 `.cursor/skills/speckit-workflow/references/audit-prompts.md` §4 的适配版本。
 4. **审计要求**：
    - **批判审计员必须出场**，发言占比 **>70%**；
    - **收敛条件**：**连续 3 轮无 gap**（针对被审文档）；
-   - **未通过时**：**审计子代理须在本轮内直接修改被审文档**以消除 gap，修改完成后输出报告并注明已修改内容；主 Agent 收到报告后发起下一轮审计；**禁止**仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules](references/audit-document-iteration-rules.md) 或 `{project-root}/skills/speckit-workflow/references/audit-document-iteration-rules.md`。
+   - **未通过时**：**审计子代理须在本轮内直接修改被审文档**以消除 gap，修改完成后输出报告并注明已修改内容；主 Agent 收到报告后发起下一轮审计；**禁止**仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules](references/audit-document-iteration-rules.md) 或 `{project-root}/.cursor/skills/speckit-workflow/references/audit-document-iteration-rules.md`。
 5. **迭代**：重复审计直至报告结论为「**完全覆盖、验证通过**」且连续 3 轮无 gap。
 6. **报告落盘**：每轮审计报告（无论通过与否）均须保存至约定路径，如 `_bmad-output/implementation-artifacts/_orphan/AUDIT_TASKS_RCA_{slug}_§4_round{N}.md`。
 
@@ -60,8 +60,8 @@ description: |
 |------|-----------|
 | **party-mode** | `{project-root}/_bmad/core/workflows/party-mode/workflow.md`；step-02 讨论编排、100 轮与收敛规则 |
 | **批判审计员** | `{project-root}/_bmad/core/agents/critical-auditor-guide.md`（若存在）；step-02 中批判性审计员为必选挑战者 |
-| **audit-prompts §4** | `{project-root}/skills/speckit-workflow/references/audit-prompts.md` §4（tasks 审计）；本技能审计 prompt 与之精神一致 |
-| **audit-document-iteration-rules** | `{project-root}/skills/speckit-workflow/references/audit-document-iteration-rules.md`；发现 gap 时审计子代理直接修改文档、3 轮无 gap 收敛 |
+| **audit-prompts §4** | `{project-root}/.cursor/skills/speckit-workflow/references/audit-prompts.md` §4（tasks 审计）；本技能审计 prompt 与之精神一致 |
+| **audit-document-iteration-rules** | `{project-root}/.cursor/skills/speckit-workflow/references/audit-document-iteration-rules.md`；发现 gap 时审计子代理直接修改文档、3 轮无 gap 收敛 |
 | **本技能审计模板** | [references/audit-prompt-rca-tasks.md](references/audit-prompt-rca-tasks.md) |
 
 ## § 禁止词表（方案与任务描述）

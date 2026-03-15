@@ -103,8 +103,8 @@
 - Create: `.claude/agents/auditors/auditor-bugfix.md`
 
 ### 3. 需要复用/读取
-- Read: `skills/speckit-workflow/SKILL.md`
-- Read: `skills/speckit-workflow/references/audit-prompts.md`
+- Read: `.cursor/skills/speckit-workflow/SKILL.md`
+- Read: `.cursor/skills/speckit-workflow/references/audit-prompts.md`
 - Read: `scripts/parse-and-write-score.*` 或现有评分脚本入口
 
 ---

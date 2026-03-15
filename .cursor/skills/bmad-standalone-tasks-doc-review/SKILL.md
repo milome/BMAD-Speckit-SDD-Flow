@@ -35,11 +35,11 @@ description: |
 
 ## 引用
 
-- **audit-document-iteration-rules**：`skills/speckit-workflow/references/audit-document-iteration-rules.md`
-- **audit-prompts §4**：`skills/speckit-workflow/references/audit-prompts.md` §4（主流程 TASKS 文档审计）
-- **audit-prompts §5**：`skills/speckit-workflow/references/audit-prompts.md` §5（模式 B 实施后审计）
-- **audit-prompts-critical-auditor-appendix**：`skills/speckit-workflow/references/audit-prompts-critical-auditor-appendix.md`
-- **audit-post-impl-rules**：`skills/speckit-workflow/references/audit-post-impl-rules.md`（模式 B 收敛规则）
+- **audit-document-iteration-rules**：`.cursor/skills/speckit-workflow/references/audit-document-iteration-rules.md`
+- **audit-prompts §4**：`.cursor/skills/speckit-workflow/references/audit-prompts.md` §4（主流程 TASKS 文档审计）
+- **audit-prompts §5**：`.cursor/skills/speckit-workflow/references/audit-prompts.md` §5（模式 B 实施后审计）
+- **audit-prompts-critical-auditor-appendix**：`.cursor/skills/speckit-workflow/references/audit-prompts-critical-auditor-appendix.md`
+- **audit-post-impl-rules**：`.cursor/skills/speckit-workflow/references/audit-post-impl-rules.md`（模式 B 收敛规则）
 
 ## 可解析评分块（强制）
 
@@ -62,6 +62,6 @@ description: |
 当用户要求对**实施完成后的结果**（代码、prd、progress）审计时，使用 audit-prompts §5。此时：
 - 被审对象为代码/实现，非文档
 - 发现 gap 时由**实施子代理**修改代码，非审计子代理
-- 收敛规则见 `skills/speckit-workflow/references/audit-post-impl-rules.md`
+- 收敛规则见 `.cursor/skills/speckit-workflow/references/audit-post-impl-rules.md`
 
 详见 [references/audit-prompt-impl.md](references/audit-prompt-impl.md)。

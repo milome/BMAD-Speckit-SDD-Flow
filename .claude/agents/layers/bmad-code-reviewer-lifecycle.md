@@ -17,7 +17,7 @@
 ## Cursor Canonical Base
 
 - 原始语义来源：
-  - `skills/bmad-code-reviewer-lifecycle/SKILL.md`
+  - `.claude/skills/bmad-code-reviewer-lifecycle/SKILL.md`
   - `config/code-reviewer-config.yaml`
   - `config/stage-mapping.yaml`
   - `config/eval-lifecycle-report-paths.yaml`

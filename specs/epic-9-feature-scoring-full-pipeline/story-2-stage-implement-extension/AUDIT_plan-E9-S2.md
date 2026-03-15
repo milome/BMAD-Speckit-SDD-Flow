@@ -209,9 +209,9 @@
 
 ### 5.5 speckit-workflow 路径质疑
 
-**质疑 5**：plan Phase 3 写「定位：C:\Users\milom\.cursor\skills\speckit-workflow\SKILL.md 或项目内 _bmad 下」。原始需求 Task 5.1 写「skills/speckit-workflow/SKILL.md 或 ~/.cursor/skills/speckit-workflow/SKILL.md（项目内优先）」。plan 的「项目内 _bmad 下」与「项目内」是否一致？项目内可能为 `skills/speckit-workflow/` 或 `.cursor/skills/` 等。
+**质疑 5**：plan Phase 3 写「定位：C:\Users\milom\.cursor\skills\speckit-workflow\SKILL.md 或项目内 _bmad 下」。原始需求 Task 5.1 写「.cursor/skills/speckit-workflow/SKILL.md 或 ~/.cursor/skills/speckit-workflow/SKILL.md（项目内优先）」。plan 的「项目内 _bmad 下」与「项目内」是否一致？项目内可能为 `.cursor/skills/speckit-workflow/` 或 `.cursor/skills/` 等。
 
-**复核**：spec §3.5 写「skills/speckit-workflow/SKILL.md 或 ~/.cursor/skills/speckit-workflow/SKILL.md（项目内优先）」。plan 的「项目内 _bmad 下」可能指 `_bmad` 目录下若有 speckit-workflow 副本；通常 speckit-workflow 为 Cursor 全局 skills，项目内可能通过 .cursor/skills 或子模块引用。**结论**：plan 与 spec 的路径描述略有差异，但均为「项目内优先、全局备选」的语义。实施时按 spec 优先查找项目内路径即可。**不构成 gap**。**本轮无新 gap。**
+**复核**：spec §3.5 写「.cursor/skills/speckit-workflow/SKILL.md 或 ~/.cursor/skills/speckit-workflow/SKILL.md（项目内优先）」。plan 的「项目内 _bmad 下」可能指 `_bmad` 目录下若有 speckit-workflow 副本；通常 speckit-workflow 为 Cursor 全局 skills，项目内可能通过 .cursor/skills 或子模块引用。**结论**：plan 与 spec 的路径描述略有差异，但均为「项目内优先、全局备选」的语义。实施时按 spec 优先查找项目内路径即可。**不构成 gap**。**本轮无新 gap。**
 
 ### 5.6 批判审计员本轮结论
 

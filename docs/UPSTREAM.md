@@ -21,7 +21,7 @@
 | 定制项 | 路径/说明 |
 |--------|------------|
 | **_bmad-overlay** | `_bmad/scoring/`、批判审计员、adversarial-reviewer、ai-coach |
-| **speckit-workflow** | `skills/speckit-workflow/`、`.cursor/commands/speckit.*` |
+| **speckit-workflow** | `.cursor/skills/speckit-workflow/`、`.cursor/commands/speckit.*` |
 | **bmad-speckit CLI** | `_bmad/scripts/bmad-speckit/`、`packages/bmad-speckit/` |
 | **agent-manifest** | `_bmad/_config/agent-manifest.csv` 中 adversarial-reviewer、ai-coach 条目 |
 
@@ -47,7 +47,7 @@
 | critical-auditor | `_bmad/core/agents/critical-auditor-guide.md`、`_bmad/core/agents/README-critical-auditor.md` |
 | bmad-speckit | `_bmad/scripts/bmad-speckit/` |
 | agent-manifest | `_bmad/_config/agent-manifest.csv` 中 adversarial-reviewer、ai-coach 条目 |
-| speckit-workflow | `skills/speckit-workflow/`（spec-kit 侧） |
+| speckit-workflow | `.cursor/skills/speckit-workflow/`（spec-kit 侧） |
 | speckit commands | `_bmad/cursor/commands/speckit.*` 或 `.cursor/commands/speckit.*` |
 
 ### 4.2 同步脚本引用

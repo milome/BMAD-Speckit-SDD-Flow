@@ -1,0 +1,25 @@
+{
+  "run_id": "dev-eE999-sS002-story-1773586472809",
+  "scenario": "real_dev",
+  "stage": "story",
+  "phase_score": 100,
+  "phase_weight": 0.2,
+  "check_items": [
+    {
+      "item_id": "story_overall",
+      "passed": true,
+      "score_delta": 0,
+      "note": "从维度评分"
+    }
+  ],
+  "timestamp": "2026-03-15T14:54:32.813Z",
+  "iteration_count": 0,
+  "iteration_records": [],
+  "first_pass": true,
+  "veto_triggered": false,
+  "tier_coefficient": 1,
+  "base_commit_hash": "33ead3d9",
+  "content_hash": "cdd35b5f6d927535b479b66ac5c2ff13d1b0afd29a1e7aa9d14ce4eb3e3adc6f",
+  "trigger_stage": "bmad_story_stage2",
+  "path_type": "full"
+}

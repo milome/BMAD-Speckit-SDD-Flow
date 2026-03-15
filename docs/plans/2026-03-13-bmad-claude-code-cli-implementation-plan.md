@@ -6,7 +6,7 @@
 
 **Architecture:** 采用 `bmad-master + 分层执行 Agent + auditor + protocol + minimal hooks/worker` 的组合式架构。`bmad-master` 负责阶段门控、状态追踪与 commit 放行；Layer 4 执行 Agent 负责文档产出与阶段推进；auditor 负责严格审计与评分触发；hooks/worker 只负责观测、checkpoint 和恢复，不承担最终裁决。
 
-**Tech Stack:** TypeScript、Node.js、Claude Code CLI、`.claude/agents`、`.claude/protocols`、`.claude/state`、`scripts/parse-and-write-score.ts`、`skills/speckit-workflow/references/audit-prompts.md`、Vitest、ESLint
+**Tech Stack:** TypeScript、Node.js、Claude Code CLI、`.claude/agents`、`.claude/protocols`、`.claude/state`、`scripts/parse-and-write-score.ts`、`.cursor/skills/speckit-workflow/references/audit-prompts.md`、Vitest、ESLint
 
 ---
 
@@ -27,7 +27,7 @@
 - 现有评分入口：`scripts/parse-and-write-score.ts`
 - 现有 master 参考：`.claude/commands/bmad-agent-bmad-master.md` → `_bmad/core/agents/bmad-master.md`
 - 现有 workflow 引擎参考：`_bmad/core/tasks/workflow.xml`
-- 现有审计规则来源：`skills/speckit-workflow/references/audit-prompts.md`
+- 现有审计规则来源：`.cursor/skills/speckit-workflow/references/audit-prompts.md`
 - 现有工程脚本入口：`package.json`
 - 本仓库 Windows worktree 会因超长路径失败，因此执行时不要把“必须在 worktree 中完成”当成阻断条件
 
@@ -266,7 +266,7 @@ git commit -m "feat: define bmad audit and handoff protocols"
 - Create: `scripts/parse-bmad-audit-result.ts`
 - Create: `scripts/accept-e4-audit-parser.ts`
 - Read: `.claude/protocols/audit-result-schema.md`
-- Read: `skills/speckit-workflow/references/audit-prompts.md`
+- Read: `.cursor/skills/speckit-workflow/references/audit-prompts.md`
 
 **Test type:** Behavior test
 
@@ -448,7 +448,7 @@ git commit -m "feat: add bmad master gatekeeper agent"
 - Create: `.claude/agents/auditors/auditor-plan.md`
 - Create: `.claude/agents/auditors/auditor-tasks.md`
 - Create: `.claude/agents/auditors/auditor-implement.md`
-- Read: `skills/speckit-workflow/references/audit-prompts.md`
+- Read: `.cursor/skills/speckit-workflow/references/audit-prompts.md`
 - Read: `scripts/parse-and-write-score.ts`
 - Create: `scripts/accept-e4-auditors.ts`
 
@@ -539,8 +539,8 @@ git commit -m "feat: add standardized bmad auditors"
 
 **Files:**
 - Create: `.claude/agents/layers/bmad-layer4-speckit-specify.md`
-- Read: `skills/speckit-workflow/references/audit-prompts.md`
-- Read: `skills/speckit-workflow/SKILL.md`
+- Read: `.cursor/skills/speckit-workflow/references/audit-prompts.md`
+- Read: `.cursor/skills/speckit-workflow/SKILL.md`
 - Modify: `.claude/state/bmad-progress.yaml`
 - Create: `scripts/accept-e4-specify-agent.ts`
 
@@ -551,7 +551,7 @@ git commit -m "feat: add standardized bmad auditors"
 断言 specify agent 包含：
 
 ```ts
-expect(agent).toContain('Read `skills/speckit-workflow/SKILL.md`');
+expect(agent).toContain('Read `.cursor/skills/speckit-workflow/SKILL.md`');
 expect(agent).toContain('auditor-spec');
 expect(agent).toContain('禁止自行 commit');
 expect(agent).toContain('bmad-progress.yaml');
@@ -601,7 +601,7 @@ git commit -m "feat: add layer4 specify agent"
 
 **Files:**
 - Create: `.claude/agents/layers/bmad-layer4-speckit-plan.md`
-- Read: `skills/speckit-workflow/references/audit-prompts.md`
+- Read: `.cursor/skills/speckit-workflow/references/audit-prompts.md`
 - Modify: `.claude/state/bmad-progress.yaml`
 - Create: `scripts/accept-e4-plan-agent.ts`
 
@@ -658,7 +658,7 @@ git commit -m "feat: add layer4 plan agent"
 
 **Files:**
 - Create: `.claude/agents/layers/bmad-layer4-speckit-tasks.md`
-- Read: `skills/speckit-workflow/references/audit-prompts.md`
+- Read: `.cursor/skills/speckit-workflow/references/audit-prompts.md`
 - Modify: `.claude/state/bmad-progress.yaml`
 - Create: `scripts/accept-e4-tasks-agent.ts`
 

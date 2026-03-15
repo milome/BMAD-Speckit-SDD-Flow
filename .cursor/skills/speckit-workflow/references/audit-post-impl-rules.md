@@ -68,5 +68,5 @@
 
 三处技能在描述实施后审计时，应引用本规则：
 
-- 路径：`skills/speckit-workflow/references/audit-post-impl-rules.md`
+- 路径：`.cursor/skills/speckit-workflow/references/audit-post-impl-rules.md`
 - 或相对引用：`[audit-post-impl-rules.md](audit-post-impl-rules.md)`（同目录下）

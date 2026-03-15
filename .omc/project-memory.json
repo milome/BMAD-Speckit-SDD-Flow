@@ -359,14 +359,14 @@
   "hotPaths": [
     {
       "path": ".claude\\agents\\bmad-story-create.md",
-      "accessCount": 20,
-      "lastAccessed": 1773576740808,
+      "accessCount": 21,
+      "lastAccessed": 1773583363573,
       "type": "file"
     },
     {
       "path": "C:\\Users\\milom\\.claude\\skills\\bmad-story-assistant\\SKILL.md",
-      "accessCount": 15,
-      "lastAccessed": 1773559982054,
+      "accessCount": 17,
+      "lastAccessed": 1773582796556,
       "type": "file"
     },
     {
@@ -374,6 +374,18 @@
       "accessCount": 15,
       "lastAccessed": 1773576741190,
       "type": "file"
+    },
+    {
+      "path": "config\\bmad-story-config.yaml",
+      "accessCount": 9,
+      "lastAccessed": 1773597423343,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 8,
+      "lastAccessed": 1773597361327,
+      "type": "directory"
     },
     {
       "path": "_bmad-output\\implementation-artifacts\\sprint-status.yaml",
@@ -397,12 +409,6 @@
       "path": "_bmad-output\\implementation-artifacts\\epic-E001-test-epic\\story-E001-2-string-utils\\E001-2-string-utils.md",
       "accessCount": 5,
       "lastAccessed": 1773544791963,
-      "type": "file"
-    },
-    {
-      "path": "config\\bmad-story-config.yaml",
-      "accessCount": 5,
-      "lastAccessed": 1773554290151,
       "type": "file"
     },
     {
@@ -454,10 +460,10 @@
       "type": "file"
     },
     {
-      "path": "",
+      "path": "specs\\epic-E001-test-epic\\epic.md",
       "accessCount": 3,
-      "lastAccessed": 1773559247444,
-      "type": "directory"
+      "lastAccessed": 1773585246406,
+      "type": "file"
     },
     {
       "path": "docs\\QUICKSTART.md",
@@ -481,12 +487,6 @@
       "path": "specs\\epic-E001-test-epic\\story-E001-1-simple-calculator\\tasks-E001-S1.md",
       "accessCount": 2,
       "lastAccessed": 1773542086273,
-      "type": "file"
-    },
-    {
-      "path": "specs\\epic-E001-test-epic\\epic.md",
-      "accessCount": 2,
-      "lastAccessed": 1773542833873,
       "type": "file"
     },
     {
@@ -520,6 +520,30 @@
       "type": "file"
     },
     {
+      "path": "_bmad\\core\\tasks\\workflow.xml",
+      "accessCount": 2,
+      "lastAccessed": 1773584466491,
+      "type": "file"
+    },
+    {
+      "path": "_bmad\\bmm\\workflows\\4-implementation\\create-story\\workflow.yaml",
+      "accessCount": 2,
+      "lastAccessed": 1773584466622,
+      "type": "file"
+    },
+    {
+      "path": "_bmad\\bmm\\workflows\\4-implementation\\create-story\\template.md",
+      "accessCount": 2,
+      "lastAccessed": 1773584720865,
+      "type": "file"
+    },
+    {
+      "path": "_bmad\\bmm\\workflows\\4-implementation\\create-story\\instructions.xml",
+      "accessCount": 2,
+      "lastAccessed": 1773584721549,
+      "type": "file"
+    },
+    {
       "path": ".",
       "accessCount": 1,
       "lastAccessed": 1773528819129,
@@ -541,30 +565,6 @@
       "path": "CLAUDE.md",
       "accessCount": 1,
       "lastAccessed": 1773529731586,
-      "type": "file"
-    },
-    {
-      "path": "_bmad\\core\\tasks\\workflow.xml",
-      "accessCount": 1,
-      "lastAccessed": 1773542334140,
-      "type": "file"
-    },
-    {
-      "path": "_bmad\\bmm\\workflows\\4-implementation\\create-story\\workflow.yaml",
-      "accessCount": 1,
-      "lastAccessed": 1773542334829,
-      "type": "file"
-    },
-    {
-      "path": "_bmad\\bmm\\workflows\\4-implementation\\create-story\\template.md",
-      "accessCount": 1,
-      "lastAccessed": 1773542357649,
-      "type": "file"
-    },
-    {
-      "path": "_bmad\\bmm\\workflows\\4-implementation\\create-story\\instructions.xml",
-      "accessCount": 1,
-      "lastAccessed": 1773542357713,
       "type": "file"
     },
     {

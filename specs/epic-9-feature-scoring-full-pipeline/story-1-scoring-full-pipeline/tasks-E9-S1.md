@@ -37,19 +37,19 @@
 
 ### T1 [x] bmad-story-assistant 阶段四插入步骤 4.2（GAP-1.1a/b/c）
 
-- **修改路径**：`skills/bmad-story-assistant/SKILL.md`（项目内优先）
+- **修改路径**：`.cursor/skills/bmad-story-assistant/SKILL.md`（项目内优先）
 - **修改内容**：在「审计通过后评分写入触发」**之前**插入「步骤 4.2：运行 parse-and-write-score（强制）」；含完整 CLI 示例（**须显式写出 `--triggerStage bmad_story_stage4`**、`--iteration-count`）、报告路径模板 `AUDIT_Story_{epic}-{story}_stage4.md`、non_blocking 说明
 - **验收**：grep `步骤 4.2`、`bmad_story_stage4`、`AUDIT_Story_` 有匹配；**最低可行 E2E**：人工验收清单——模拟 Dev Story 阶段四通过后，确认 parse-and-write-score 被触发（可选）
 
 ### T2 [x] STORY-A4-POSTAUDIT 约定报告保存路径（GAP-1.2）
 
-- **修改路径**：`skills/bmad-story-assistant/SKILL.md`
+- **修改路径**：`.cursor/skills/bmad-story-assistant/SKILL.md`
 - **修改内容**：在 stage4 审计 prompt 中增加「审计通过后请将报告保存至 `{project-root}/_bmad-output/implementation-artifacts/epic-{epic}-*/story-{epic}-{story}-*/AUDIT_Story_{epic}-{story}_stage4.md`」
 - **验收**：grep `审计通过后请将报告保存至` 或 `AUDIT_Story_.*stage4` 有匹配；**最低可行 E2E**：人工验收——执行一次 stage4 审计，确认报告保存到约定路径（可选）
 
 ### T3 [x] 主 Agent 解析 reportPath 与 SCORE_WRITE_SKIP_REPORT_MISSING（GAP-1.3）
 
-- **修改路径**：`skills/bmad-story-assistant/SKILL.md`
+- **修改路径**：`.cursor/skills/bmad-story-assistant/SKILL.md`
 - **修改内容**：在「审计结论处理」增加：从约定路径或子任务输出解析 reportPath；reportPath 不存在时记录 `SCORE_WRITE_SKIP_REPORT_MISSING`，不阻断
 - **验收**：SKILL 文档明确上述逻辑及边界条件；**最低可行 E2E**：人工验收——reportPath 不存在时确认 SCORE_WRITE_SKIP 被记录且不阻断（可选）
 
@@ -82,7 +82,7 @@
 
 ### T7 [x] bmad-story-assistant 嵌入检查步骤（GAP-3.2）
 
-- **修改路径**：`skills/bmad-story-assistant/SKILL.md`
+- **修改路径**：`.cursor/skills/bmad-story-assistant/SKILL.md`
 - **修改内容**：阶段四通过后、提供完成选项前，执行 check-story-score-written；补跑参数：`--stage tasks --event story_status_change --triggerStage bmad_story_stage4`
 - **验收**：SKILL 流程描述中含检查步骤；**最低可行 E2E**：人工验收清单——模拟阶段四通过后，确认 check-story-score-written 被执行（可选）
 

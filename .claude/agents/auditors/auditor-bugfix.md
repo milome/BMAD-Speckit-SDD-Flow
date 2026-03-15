@@ -18,8 +18,8 @@ BUGFIX 文档严格审计 Agent，面向 bugfix 流程中的 BUGFIX 文档与修
 ## Cursor Canonical Base
 
 - 原始语义来源：
-  - `skills/bmad-rca-helper/SKILL.md`
-  - `skills/bmad-rca-helper/references/audit-prompt-rca-tasks.md`
+  - `.claude/skills/bmad-rca-helper/SKILL.md`
+  - `.claude/skills/bmad-rca-helper/references/audit-prompt-rca-tasks.md`
 - 被审对象：BUGFIX 文档、RCA 产物、修复策略说明、复现测试计划
 - 需求依据规则：
   - 若 BUGFIX 文档头部有“参考”字段，则以该路径为准

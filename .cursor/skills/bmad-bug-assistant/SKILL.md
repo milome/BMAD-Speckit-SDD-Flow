@@ -49,7 +49,7 @@ description: |
 | **party-mode** | `{project-root}/_bmad/core/workflows/party-mode/`；轮次与收敛见 step-02（BUGFIX 产出最终方案与 §7 任务列表：至少 100 轮；其它：50 轮；收敛条件再结束）。 |
 | **code-reviewer 子代理** | `.claude/agents/code-reviewer.md` 或 `.cursor/agents/code-reviewer.md`；找不到则用 `mcp_task` 调用 `generalPurpose` |
 | **audit-prompts §5** | `references/audit-prompts-section5.md`（本 skill 内）或 `{project-root}/docs/speckit/skills/speckit-workflow/references/audit-prompts.md`；**仅作其他工作流参考，不用于本 skill 的 BUGFIX 文档审计**。 |
-| **audit-document-iteration-rules** | `skills/speckit-workflow/references/audit-document-iteration-rules.md`；阶段一、二、三的 BUGFIX **文档**审计须遵循：审计子代理在发现 gap 时须直接修改 BUGFIX 文档。阶段四为实施后审计（代码），不适用。 |
+| **audit-document-iteration-rules** | `.cursor/skills/speckit-workflow/references/audit-document-iteration-rules.md`；阶段一、二、三的 BUGFIX **文档**审计须遵循：审计子代理在发现 gap 时须直接修改 BUGFIX 文档。阶段四为实施后审计（代码），不适用。 |
 | **ralph-method** | 使用 ralph-method skill：prd、progress 文件，按 US 顺序执行 |
 | **speckit-workflow** | 禁止伪实现、必须运行验收命令、架构忠实 |
 | **改进说明（本技能）** | {project-root}/_bmad-output/BMAD_BUG_助手技能提示词与审计改进说明.md |

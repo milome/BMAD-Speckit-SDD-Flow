@@ -12,6 +12,6 @@
 
 ## 提示词来源
 
-完整 §5 提示词见：`skills/speckit-workflow/references/audit-prompts.md` 第 5 节。
+完整 §5 提示词见：`.cursor/skills/speckit-workflow/references/audit-prompts.md` 第 5 节。
 
 核心审计项：任务真正实现、生产代码在关键路径、实现与测试覆盖、验收已执行、ralph-method 遵守、无延迟表述。

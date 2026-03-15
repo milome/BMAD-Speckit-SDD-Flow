@@ -188,11 +188,9 @@ Claude 版 `bmad-story-assistant` 必须满足：
 主 Agent 必须在 skill 启动时加载配置：
 
 ```typescript
-// 使用 bmad-config.ts 加载配置
-import { loadConfig, shouldAudit, shouldValidate, getSubagentParams } from './scripts/bmad-config';
+import { loadConfig, shouldAudit, shouldValidate } from './scripts/bmad-config';
 
 const config = loadConfig();
-const env = getSubagentParams(); // 自动适配 Cursor/Claude 环境
 ```
 
 #### 配置来源（按优先级）
@@ -214,8 +212,8 @@ if (stageConfig.audit) {
   // 路径 1: 完整审计（默认 full 模式）
   await executeFullAudit({
     strictness: stageConfig.strictness, // 'standard' | 'strict'
-    subagentTool: env.tool,             // 'Agent' | 'mcp_task'
-    subagentType: env.subagentType      // 'general-purpose' | 'generalPurpose'
+    subagentTool: 'Agent',
+    subagentType: 'general-purpose'
   });
 } else if (stageConfig.validation) {
   // 路径 2: 基础验证（story 模式的中间阶段）
@@ -276,24 +274,6 @@ prompt: |
      - 若 validation: "test_only" → 执行测试验证
      - 若 validation: null → 直接标记阶段通过
   4. 根据结果更新状态文件
-```
-
-#### 跨平台兼容性
-
-配置系统自动检测运行环境：
-
-```typescript
-// 环境检测
-const env = detectEnvironment();
-// Cursor: { platform: 'cursor', subagentTool: 'mcp_task', subagentType: 'generalPurpose' }
-// Claude: { platform: 'claude', subagentTool: 'Agent', subagentType: 'general-purpose' }
-
-// 工具调用自动适配
-if (env.platform === 'cursor') {
-  await mcp_task({ subagent_type: 'generalPurpose', ... });
-} else {
-  await Agent({ subagent_type: 'general-purpose', ... });
-}
 ```
 
 ### 运行时治理增强
@@ -2110,3 +2090,5 @@ Claude 版 skill 落地后，至少应满足以下验证：
 ## 一句话结论
 
 > Claude 版 `bmad-story-assistant` 不是 Cursor skill 的直接复制品，而是一个以 Cursor 为语义基线、以 Claude/OMC 为执行适配层、以本仓规则为增强层的统一编排入口 skill。
+
+<!-- ADAPTATION_COMPLETE: 2026-03-15 -->

@@ -105,7 +105,7 @@
 
 - **伪实现/占位**：本审计对象为 IMPLEMENTATION_GAPS 文档，非代码实现；文档仅描述「未实现」「部分实现」「已实现」状态，无 TODO、占位、假完成表述。该维度对本审计对象不适用，按 N/A 处理。
 
-- **行号/路径漂移**：GAP 引用的路径经逐一 grep/read 验证：scoring/parsers/audit-index.ts、scoring/constants/weights.ts、scoring/parsers/audit-generic.ts、scoring/parsers/audit-item-mapping.ts、config/audit-item-mapping.yaml、config/scoring-trigger-modes.yaml、scripts/parse-and-write-score.ts、scoring/dashboard/compute.ts、skills/speckit-workflow/SKILL.md 均存在；run-score-schema.json 的 stage enum 确含 "implement"。无失效路径或行号。
+- **行号/路径漂移**：GAP 引用的路径经逐一 grep/read 验证：scoring/parsers/audit-index.ts、scoring/constants/weights.ts、scoring/parsers/audit-generic.ts、scoring/parsers/audit-item-mapping.ts、config/audit-item-mapping.yaml、config/scoring-trigger-modes.yaml、scripts/parse-and-write-score.ts、scoring/dashboard/compute.ts、.cursor/skills/speckit-workflow/SKILL.md 均存在；run-score-schema.json 的 stage enum 确含 "implement"。无失效路径或行号。
 
 - **验收一致性**：§4 成功标准（向后兼容、单测覆盖、E2E）与 §3 测试计划、plan §4 完全一致。GAP 文档为规划阶段产出，无需执行验收命令；若后续 tasks 执行后审计，将按 audit-prompts §5 执行验收命令并核对结果。
 

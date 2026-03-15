@@ -17,8 +17,8 @@
 ## Cursor Canonical Base
 
 - 原始语义来源：
-  - `skills/bmad-standalone-tasks/SKILL.md`
-  - `skills/bmad-standalone-tasks/references/prompt-templates.md`
+  - `.claude/skills/bmad-standalone-tasks/SKILL.md`
+  - `.claude/skills/bmad-standalone-tasks/references/prompt-templates.md`
 - 基线语义：
   - 用户直接提供 TASKS / BUGFIX 文档
   - 不经过完整五层架构文档产出流程

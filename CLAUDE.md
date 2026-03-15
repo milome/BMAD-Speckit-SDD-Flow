@@ -58,11 +58,25 @@ BMAD-Speckit-SDD-Flow/
 │   ├── coach-diagnose.ts
 │   ├── sft-extract.ts
 │   └── accept-*.test.ts        # Acceptance tests
-├── skills/                     # AI IDE Skills
-│   ├── speckit-workflow/       # Speckit SDD workflow
-│   ├── bmad-story-assistant/   # Story-level BMAD workflow
-│   ├── bmad-bug-assistant/     # Bug fixing workflow
-│   └── bmad-standalone-tasks/  # Standalone task execution
+├── skills/                     # Public skills (both platforms)
+│   ├── auto-commit-utf8/       # Chinese git commit with UTF-8
+│   ├── bmad-customization-backup/ # _bmad backup/migration
+│   ├── bmad-eval-analytics/    # Coach diagnosis & SFT extraction
+│   ├── bmad-orchestrator/      # BMAD workflow orchestrator
+│   ├── code-review/            # Code review skill
+│   ├── git-push-monitor/       # Git push background monitor
+│   └── pr-template-generator/  # PR template generation
+├── .cursor/skills/             # Cursor-specific skills
+│   ├── speckit-workflow/       # Speckit SDD workflow (Cursor)
+│   ├── bmad-story-assistant/   # Story-level BMAD workflow (Cursor)
+│   ├── bmad-bug-assistant/     # Bug fixing workflow (Cursor)
+│   ├── bmad-standalone-tasks/  # Standalone task execution (Cursor)
+│   ├── bmad-standalone-tasks-doc-review/ # TASKS doc audit (Cursor)
+│   ├── bmad-rca-helper/        # RCA helper (Cursor)
+│   ├── bmad-code-reviewer-lifecycle/ # Audit lifecycle (Cursor)
+│   └── using-git-worktrees/    # Git worktree isolation (Cursor)
+├── .claude/skills/             # Claude Code CLI adapted skills
+│   └── bmad-story-assistant/   # Story-level BMAD (Claude adapted)
 ├── .claude/agents/             # Claude Code agent definitions
 │   ├── layers/                 # Layer 4 agents (speckit phases)
 │   │   ├── bmad-layer4-speckit-specify.md
@@ -250,12 +264,12 @@ Located in `scripts/accept-*.test.ts`:
 
 ### Core Skills
 
-1. **speckit-workflow** (`skills/speckit-workflow/SKILL.md`)
+1. **speckit-workflow** (`.cursor/skills/speckit-workflow/SKILL.md`)
    - Constitution → Specify → Plan → GAPS → Tasks → Implement
    - Mandatory audit loops
    - TDD Red-Green-Refactor
 
-2. **bmad-story-assistant** (`skills/bmad-story-assistant/SKILL.md`)
+2. **bmad-story-assistant** (`.cursor/skills/bmad-story-assistant/SKILL.md`)
    - Create Story → Audit → Dev Story
    - Five-layer architecture
    - Party-mode execution

@@ -135,7 +135,7 @@ subagent_type: generalPurpose
 
 ### 完整审计定义
 
-「完整审计」指使用 `skills/speckit-workflow/references/audit-prompts.md` §1–§5 定义的审计流程，包括：
+「完整审计」指使用 `.cursor/skills/speckit-workflow/references/audit-prompts.md` §1–§5 定义的审计流程，包括：
 
 1. **审计提示词**：使用对应阶段的审计提示词（spec/plan/GAPS/tasks/implement）
 2. **批判审计员**：必须包含批判审计员段落，发言占比 ≥50%

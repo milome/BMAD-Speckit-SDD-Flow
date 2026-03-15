@@ -10,7 +10,7 @@
 - 追踪：`_bmad-output/implementation-artifacts/4-2-eval-ai-coach/prd.tasks-E4-S2.json`、`_bmad-output/implementation-artifacts/4-2-eval-ai-coach/progress.tasks-E4-S2.txt`
 
 审计基线：
-- `skills/speckit-workflow/references/audit-prompts.md` §5（执行阶段审计）
+- `.cursor/skills/speckit-workflow/references/audit-prompts.md` §5（执行阶段审计）
 - 用户指定 6 项强制检查（真实实现、关键路径调用、需求架构覆盖、验收可信、ralph-method 合规、禁止词与“完成但未调用”）
 
 ---

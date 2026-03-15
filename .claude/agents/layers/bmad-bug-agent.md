@@ -24,8 +24,8 @@ Bug 修复专用流程。
 ## Cursor Canonical Base
 
 - 原始语义来源：
-  - `skills/bmad-rca-helper/SKILL.md`
-  - `skills/bmad-rca-helper/references/audit-prompt-rca-tasks.md`
+  - `.claude/skills/bmad-rca-helper/SKILL.md`
+  - `.claude/skills/bmad-rca-helper/references/audit-prompt-rca-tasks.md`
 - 基线语义：
   - 先做根因分析
   - 生成 BUGFIX 文档

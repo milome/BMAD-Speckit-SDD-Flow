@@ -57,14 +57,14 @@
 
 #### Phase 2.1：speckit-workflow（T4）
 
-1. **skills/speckit-workflow/SKILL.md**：各 stage 审计循环描述补充失败轮报告路径约定
+1. **.cursor/skills/speckit-workflow/SKILL.md**：各 stage 审计循环描述补充失败轮报告路径约定
 2. 路径格式：`AUDIT_{stage}-E{epic}-S{story}_round{N}.md` 或 `_orphan/AUDIT_{slug}_round{N}.md`
 3. 验证轮不列入 iterationReportPaths；run_id 在 stage 审计循环内复用
 4. **验收**：grep 可查到路径约定、验证轮排除、iterationReportPaths
 
 #### Phase 2.2：bmad-story-assistant（T5）
 
-1. **skills/bmad-story-assistant/SKILL.md**：阶段四及 Dev Story 嵌套 speckit 各 stage 审计 prompt 补充
+1. **.cursor/skills/bmad-story-assistant/SKILL.md**：阶段四及 Dev Story 嵌套 speckit 各 stage 审计 prompt 补充
 2. fail 轮报告保存至 round 路径；验证轮不列入；pass 时收集 fail 轮路径传入 --iterationReportPaths
 3. **验收**：grep 含 round 路径、iterationReportPaths、验证轮排除
 

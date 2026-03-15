@@ -124,7 +124,7 @@
 
 **批判审计员**：plan §6 给出各 Phase 的验收命令（grep、CLI 执行、单测通过等）及预期结果。IMPLEMENTATION_GAPS 未建立「验收命令 → 当前可执行性 / 结果符合预期」的分析。
 
-例如：T1–T3 验收命令为 `grep 步骤 4.2 skills/bmad-story-assistant/SKILL.md`。GAP-1.1 描述为「部分实现」「未找到显式 checklist」——**未直接引用该 grep 命令的执行结果**（有匹配/无匹配/部分匹配）。若 GAPS 能补充「验收命令执行结果」列，则「逐章逐条」的可验证性将显著增强。
+例如：T1–T3 验收命令为 `grep 步骤 4.2 .cursor/skills/bmad-story-assistant/SKILL.md`。GAP-1.1 描述为「部分实现」「未找到显式 checklist」——**未直接引用该 grep 命令的执行结果**（有匹配/无匹配/部分匹配）。若 GAPS 能补充「验收命令执行结果」列，则「逐章逐条」的可验证性将显著增强。
 
 **结论**：**轻度不完善**。非阻断项，但符合「严格逐条」时可补充。
 
