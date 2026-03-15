@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Sync BMAD-METHOD v6 to _bmad (WSL/Linux/macOS)
+# Sync BMAD-METHOD to _bmad (WSL/Linux/macOS)
 # 与 scripts/bmad-sync-from-v6.ps1 功能对等
 #
-# Usage: ./scripts/bmad-sync-from-v6.sh [-Phase 1|2|3|all] [-DryRun] [-BackupDir <path>] [-ProjectRoot <path>] [-V6Ref v6.0.4]
+# Usage: ./scripts/bmad-sync-from-v6.sh [-Phase 1|2|3|all] [-DryRun] [-BackupDir <path>] [-ProjectRoot <path>] [-V6Ref main]
 
 set -e
 
 BMAD_METHOD_REPO="https://github.com/bmad-code-org/BMAD-METHOD.git"
-V6_REF="${V6_REF:-v6.0.4}"
+V6_REF="${V6_REF:-main}"
 
 EXCLUDE_PATTERNS=(
     "_bmad/scoring"
@@ -110,7 +110,7 @@ phase2_ops() {
     trap "rm -rf '$v6_root'" EXIT
     local v6_src="$v6_root/src"
 
-    for dir in core bmm; do
+    for dir in core bmm utility; do
         local src_dir="$v6_src/$dir"
         [[ -d "$src_dir" ]] || continue
         while IFS= read -r -d '' f; do
@@ -144,7 +144,7 @@ fi
 if $DRY_RUN; then
     echo "[DryRun] Phase operations (summary)"
     [[ "$PHASE" == "1" || "$PHASE" == "all" ]] && echo "  Phase 1: step-04 path fix"
-    [[ "$PHASE" == "2" || "$PHASE" == "all" ]] && echo "  Phase 2: copy core,bmm from v6 (excluding protected)"
+    [[ "$PHASE" == "2" || "$PHASE" == "all" ]] && echo "  Phase 2: copy core,bmm,utility from v6 (excluding protected)"
     echo "[DryRun] Done. No files modified."
 else
     [[ "$PHASE" == "1" || "$PHASE" == "all" ]] && phase1_ops

@@ -8,7 +8,7 @@
 
 | 名称 | 版本/范围 | 用途 | 许可 |
 |------|-----------|------|------|
-| **BMAD-METHOD** | v6.0.1（来自 `_bmad/bmm/config.yaml`） | 工作流、party-mode、bmm/bmb/cis 模块 | MIT |
+| **BMAD-METHOD** | main@45d125f（2026-03-16 同步） | 工作流、party-mode、bmm/core/utility 模块、V6 core skills | MIT |
 | **spec-kit** | 模板来源见 bmad-speckit init | 规范驱动开发（specify→plan→tasks） | MIT |
 
 - **BMAD-METHOD 源码**: [bmad-code-org/BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD)
@@ -24,6 +24,8 @@
 | **speckit-workflow** | `.cursor/skills/speckit-workflow/`、`.cursor/commands/speckit.*` |
 | **bmad-speckit CLI** | `_bmad/scripts/bmad-speckit/`、`packages/bmad-speckit/` |
 | **agent-manifest** | `_bmad/_config/agent-manifest.csv` 中 adversarial-reviewer、ai-coach 条目 |
+| **party-mode 定制** | `_bmad/core/workflows/party-mode/`（批判审计员角色注入、收敛条件定制） |
+| **V6 core skills 分发** | `_bmad/skills/`（从 `_bmad/core/skills/` 复制，用于通用技能分发） |
 
 ---
 
@@ -63,16 +65,24 @@ pwsh scripts/bmad-sync-from-v6.ps1 -Phase all          # 全阶段
 ```
 
 - **Phase 1**：Path 标准化、step-04 修正等  
-- **Phase 2**：可选功能合并  
+- **Phase 2**：core/bmm/utility 模块同步（含 V6 core skills）  
 - **禁止覆盖项**：以本文档 §4.1 为准；脚本内置 `$EXCLUDE_PATTERNS` 与其一致
+- **默认分支**：`main`（脚本默认 `-V6Ref main`）
 
 ---
 
 ## 5. 当前上游版本记录
 
-| 上游 | 版本 |
-|------|------|
-| BMAD-METHOD | v6.0.1 |
-| spec-kit | 模板来源见 bmad-speckit，无直接依赖版本号 |
+| 上游 | 版本 | 同步日期 |
+|------|------|----------|
+| BMAD-METHOD | main@45d125f | 2026-03-16 |
+| spec-kit | 模板来源见 bmad-speckit，无直接依赖版本号 | — |
 
 同步时对照上述版本，确认 merge 基准。
+
+### 同步历史
+
+| 日期 | 来源 | 范围 | 备注 |
+|------|------|------|------|
+| 2026-03-16 | main@45d125f | core/bmm/utility | V6 content sync：新增 11 个 core skills、utility 模块、party-mode skill（新路径 `_bmad/core/skills/bmad-party-mode/`） |
+| 2026-02-22 | v6.0.1 | core/bmm | 初始 BMAD-METHOD v6 安装 |

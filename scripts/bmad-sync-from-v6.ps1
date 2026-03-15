@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Sync core/bmm from BMAD-METHOD v6 to _bmad, excluding protected items.
+    Sync core/bmm/utility from BMAD-METHOD to _bmad, excluding protected items.
 .PARAMETER Phase
     1|2|3|all
 .PARAMETER DryRun
@@ -11,7 +11,7 @@
 .PARAMETER ProjectRoot
     Project root.
 .PARAMETER V6Ref
-    v6.0.4
+    Git ref to sync from (tag or branch). Default: main
 #>
 
 [CmdletBinding()]
@@ -21,7 +21,7 @@ param(
     [switch]$DryRun,
     [string]$BackupDir,
     [string]$ProjectRoot,
-    [string]$V6Ref = 'v6.0.4'
+    [string]$V6Ref = 'main'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -95,9 +95,13 @@ function Get-V6SourcePath {
     New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
 
     try {
-        git clone --depth 1 --branch $V6Ref $BMAD_METHOD_REPO $tempDir 2>&1 | Out-Null
-        if ($LASTEXITCODE -ne 0) {
-            throw "git clone failed (exit $LASTEXITCODE). Check network and V6Ref=$V6Ref."
+        $prevEAP = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        git clone --depth 1 --branch $V6Ref $BMAD_METHOD_REPO $tempDir 2>$null
+        $cloneExit = $LASTEXITCODE
+        $ErrorActionPreference = $prevEAP
+        if ($cloneExit -ne 0) {
+            throw "git clone failed (exit $cloneExit). Check network and V6Ref=$V6Ref."
         }
         $srcPath = Join-Path $tempDir 'src'
         if (-not (Test-Path $srcPath)) {
@@ -167,9 +171,9 @@ function Get-Phase2Operations {
     $ops = @()
     $v6Src = Join-Path $v6Root 'src'
 
-    # Scan v6 src/core, src/bmm for files to copy (exclude protected)
+    # Scan v6 src/core, src/bmm, src/utility for files to copy (exclude protected)
     $toCopy = @()
-    foreach ($dir in @('core', 'bmm')) {
+    foreach ($dir in @('core', 'bmm', 'utility')) {
         $srcDir = Join-Path $v6Src $dir
         if (-not (Test-Path $srcDir)) { continue }
         Get-ChildItem -Path $srcDir -Recurse -File | ForEach-Object {
