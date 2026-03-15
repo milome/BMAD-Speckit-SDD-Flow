@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1773344145137,
+  "lastScanned": 1773527745440,
   "projectRoot": "D:\\dev\\BMAD-Speckit-SDD-Flow",
   "techStack": {
     "languages": [
@@ -41,8 +41,8 @@
       "lint:fix": "eslint . --ext .ts,.js --fix",
       "format": "prettier --write \"scoring/**/*.ts\" \"scripts/**/*.ts\" \"vitest.config.ts\"",
       "format:check": "prettier --check \"scoring/**/*.ts\" \"scripts/**/*.ts\" \"vitest.config.ts\"",
-      "postinstall": "node scripts/init-to-root.js",
-      "init": "node scripts/init-to-root.js",
+      "postinstall": "node scripts/init-to-root.js --agent cursor",
+      "init": "node scripts/init-to-root.js --agent cursor",
       "setup": "pwsh scripts/setup.ps1",
       "setup:sh": "bash scripts/setup.sh",
       "setup:full": "pwsh scripts/setup.ps1 -Full",
@@ -60,16 +60,20 @@
       "accept:e4-s1": "npx ts-node scripts/accept-e4-s1.ts",
       "accept:e4-s2": "npx ts-node scripts/accept-e4-s2.ts",
       "accept:e4-s3": "npx ts-node scripts/accept-e4-s3.ts",
+      "test:cursor-regression": "npx vitest run scripts/accept-cursor-regression-gate.test.ts && npm run accept:e1-s1 && npm run accept:e1-s2 && npm run accept:e3-s1 && npm run accept:e3-s2 && npm run accept:e3-s3 && npm run accept:e4-s1 && npm run accept:e4-s2 && npm run accept:e4-s3",
+      "test:claude-isolation": "npx vitest run scripts/accept-claude-install-isolation.test.ts scripts/accept-claude-runtime-isolation.test.ts",
+      "test:bmad": "npx vitest run scripts/accept-bmad-*.test.ts scripts/accept-layer4-*.test.ts scripts/accept-commit-gate.test.ts scripts/accept-runtime.test.ts scripts/accept-checklists.test.ts scripts/accept-extensions.test.ts",
       "coach:diagnose": "npx ts-node scripts/coach-diagnose.ts",
+      "verify:cursor-audit-granularity": "npx ts-node scripts/verify-cursor-audit-granularity.ts",
       "eval-questions": "npx ts-node scripts/eval-questions-cli.ts",
       "speckit": "npx bmad-speckit",
       "speckit:init": "npx bmad-speckit init"
     }
   },
   "conventions": {
-    "namingStyle": null,
+    "namingStyle": "camelCase",
     "importStyle": null,
-    "testPattern": null,
+    "testPattern": "*.test.ts",
     "fileOrganization": null
   },
   "structure": {
@@ -77,7 +81,10 @@
     "workspaces": [],
     "mainDirectories": [
       "docs",
-      "scripts"
+      "scripts",
+      "src",
+      "test",
+      "tests"
     ],
     "gitBranches": null
   },
@@ -87,7 +94,7 @@
       "path": "commands",
       "purpose": null,
       "fileCount": 90,
-      "lastAccessed": 1773344144882,
+      "lastAccessed": 1773527744721,
       "keyFiles": [
         "bmad-agent-bmad-master.md",
         "bmad-agent-bmb-agent-builder.md",
@@ -99,54 +106,61 @@
     "config": {
       "path": "config",
       "purpose": "Configuration files",
-      "fileCount": 8,
-      "lastAccessed": 1773344144882,
+      "fileCount": 10,
+      "lastAccessed": 1773527745196,
       "keyFiles": [
         "audit-item-mapping.yaml",
+        "bmad-story-config.example.yaml",
+        "bmad-story-config.yaml",
         "coach-trigger.yaml",
-        "code-reviewer-config.yaml",
-        "eval-lifecycle-report-paths.yaml",
-        "README.md"
+        "code-reviewer-config.yaml"
       ]
     },
     "coverage": {
       "path": "coverage",
       "purpose": null,
-      "fileCount": 10,
-      "lastAccessed": 1773344145086,
+      "fileCount": 11,
+      "lastAccessed": 1773527745199,
       "keyFiles": [
         "base.css",
         "block-navigation.js",
+        "calculator.ts.html",
         "clover.xml",
-        "coverage-final.json",
-        "favicon.png"
+        "coverage-final.json"
       ]
     },
     "docs": {
       "path": "docs",
       "purpose": "Documentation",
-      "fileCount": 9,
-      "lastAccessed": 1773344145087,
+      "fileCount": 11,
+      "lastAccessed": 1773527745201,
       "keyFiles": [
         "INSTALLATION_AND_MIGRATION_GUIDE.md",
+        "MULTI-STORY.md",
         "PATH_CONVENTIONS.md",
         "QUICKSTART.md",
-        "README.backup-20260310.md",
-        "SOURCE_CODE_LIST.md"
+        "README.backup-20260310.md"
       ]
     },
     "packages": {
       "path": "packages",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1773344145088,
+      "lastAccessed": 1773527745205,
+      "keyFiles": []
+    },
+    "reports": {
+      "path": "reports",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1773527745206,
       "keyFiles": []
     },
     "rules": {
       "path": "rules",
       "purpose": null,
       "fileCount": 4,
-      "lastAccessed": 1773344145088,
+      "lastAccessed": 1773527745206,
       "keyFiles": [
         "bmad-bug-assistant.mdc",
         "bmad-bug-auto-party-mode.mdc",
@@ -157,7 +171,7 @@
       "path": "scoring",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1773344145088,
+      "lastAccessed": 1773527745207,
       "keyFiles": [
         "README.md"
       ]
@@ -165,21 +179,21 @@
     "scripts": {
       "path": "scripts",
       "purpose": "Build/utility scripts",
-      "fileCount": 31,
-      "lastAccessed": 1773344145089,
+      "fileCount": 80,
+      "lastAccessed": 1773527745207,
       "keyFiles": [
-        "accept-e1-s1.ts",
-        "accept-e1-s2.ts",
-        "accept-e2-s1.ts",
-        "accept-e2-s2.ts",
-        "accept-e3-s1.ts"
+        "accept-agent-dispatch.test.ts",
+        "accept-agent-dispatch.ts",
+        "accept-ai-agent-arg.test.ts",
+        "accept-ai-agent-arg.ts",
+        "accept-bmad-audit-parser.test.ts"
       ]
     },
     "skills": {
       "path": "skills",
       "purpose": null,
       "fileCount": 2,
-      "lastAccessed": 1773344145090,
+      "lastAccessed": 1773527745208,
       "keyFiles": [
         "README.md"
       ]
@@ -188,14 +202,23 @@
       "path": "specs",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1773344145090,
+      "lastAccessed": 1773527745209,
       "keyFiles": []
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 1,
+      "lastAccessed": 1773527745209,
+      "keyFiles": [
+        "calculator.ts"
+      ]
     },
     "templates": {
       "path": "templates",
       "purpose": null,
       "fileCount": 6,
-      "lastAccessed": 1773344145091,
+      "lastAccessed": 1773527745210,
       "keyFiles": [
         "agent-file-template.md",
         "checklist-template.md",
@@ -204,25 +227,41 @@
         "tasks-template.md"
       ]
     },
+    "test": {
+      "path": "test",
+      "purpose": "Test files",
+      "fileCount": 1,
+      "lastAccessed": 1773527745211,
+      "keyFiles": [
+        "calculator.test.ts"
+      ]
+    },
+    "tests": {
+      "path": "tests",
+      "purpose": "Test files",
+      "fileCount": 0,
+      "lastAccessed": 1773527745214,
+      "keyFiles": []
+    },
     "tmp-bmad-fixture": {
       "path": "tmp-bmad-fixture",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1773344145091,
+      "lastAccessed": 1773527745215,
       "keyFiles": []
     },
     "tmp-e10s5": {
       "path": "tmp-e10s5",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1773344145091,
+      "lastAccessed": 1773527745216,
       "keyFiles": []
     },
     "workflows": {
       "path": "workflows",
       "purpose": null,
       "fileCount": 7,
-      "lastAccessed": 1773344145092,
+      "lastAccessed": 1773527745217,
       "keyFiles": [
         "clarify-checklist-analyze.md",
         "constitution.md",
@@ -235,14 +274,14 @@
       "path": "_bmad",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1773344145092,
+      "lastAccessed": 1773527745217,
       "keyFiles": []
     },
     "_bmad-output": {
       "path": "_bmad-output",
       "purpose": null,
       "fileCount": 4,
-      "lastAccessed": 1773344145092,
+      "lastAccessed": 1773527745218,
       "keyFiles": [
         "AUDIT_skills-workflow-commands_round4.md",
         "dashboard.md",
@@ -253,17 +292,26 @@
       "path": "docs\\assets",
       "purpose": "Static assets",
       "fileCount": 2,
-      "lastAccessed": 1773344145094,
+      "lastAccessed": 1773527745219,
       "keyFiles": [
         "readme-architecture-overview.final.svg",
         "readme-slogan.final.svg"
       ]
     },
+    "docs\\examples": {
+      "path": "docs\\examples",
+      "purpose": "Example code",
+      "fileCount": 1,
+      "lastAccessed": 1773527745220,
+      "keyFiles": [
+        "layer4-complete-workflow-example.md"
+      ]
+    },
     "scoring\\data": {
       "path": "scoring\\data",
       "purpose": "Data files",
-      "fileCount": 101,
-      "lastAccessed": 1773344145095,
+      "fileCount": 116,
+      "lastAccessed": 1773527745222,
       "keyFiles": [
         "audit-e8s1-tasks-2026-03-06.json",
         "cli-1772703383862.json",
@@ -274,25 +322,35 @@
       "path": "scoring\\docs",
       "purpose": "Documentation",
       "fileCount": 9,
-      "lastAccessed": 1773344145095,
+      "lastAccessed": 1773527745222,
       "keyFiles": [
         "BMAD_INTEGRATION_POINTS.md",
         "DATA_POLLUTION_PREVENTION.md",
         "ITERATION_END_CRITERIA.md"
       ]
     },
+    "src\\utils": {
+      "path": "src\\utils",
+      "purpose": "Utility functions",
+      "fileCount": 2,
+      "lastAccessed": 1773527745224,
+      "keyFiles": [
+        "config-reader.test.ts",
+        "config-reader.ts"
+      ]
+    },
     "_bmad\\scripts": {
       "path": "_bmad\\scripts",
       "purpose": "Build/utility scripts",
       "fileCount": 0,
-      "lastAccessed": 1773344145097,
+      "lastAccessed": 1773527745226,
       "keyFiles": []
     },
     "_bmad-output\\config": {
       "path": "_bmad-output\\config",
       "purpose": "Configuration files",
       "fileCount": 2,
-      "lastAccessed": 1773344145097,
+      "lastAccessed": 1773527745226,
       "keyFiles": [
         "settings.json"
       ]
@@ -300,196 +358,304 @@
   },
   "hotPaths": [
     {
-      "path": "docs\\plans\\2026-03-13-bmad-claude-code-cli-implementation-plan.md",
-      "accessCount": 17,
-      "lastAccessed": 1773357307269,
+      "path": ".claude\\agents\\bmad-story-create.md",
+      "accessCount": 20,
+      "lastAccessed": 1773576740808,
       "type": "file"
     },
     {
-      "path": "",
+      "path": "C:\\Users\\milom\\.claude\\skills\\bmad-story-assistant\\SKILL.md",
       "accessCount": 15,
-      "lastAccessed": 1773357193013,
-      "type": "directory"
+      "lastAccessed": 1773559982054,
+      "type": "file"
     },
     {
-      "path": "docs\\plans\\2026-03-13-ai-agent-strict-isolation-implementation-plan.md",
+      "path": ".claude\\agents\\bmad-story-audit.md",
+      "accessCount": 15,
+      "lastAccessed": 1773576741190,
+      "type": "file"
+    },
+    {
+      "path": "_bmad-output\\implementation-artifacts\\sprint-status.yaml",
       "accessCount": 7,
-      "lastAccessed": 1773360196534,
+      "lastAccessed": 1773544266995,
       "type": "file"
     },
     {
-      "path": "package.json",
-      "accessCount": 6,
-      "lastAccessed": 1773360372014,
-      "type": "file"
-    },
-    {
-      "path": "scripts\\init-to-root.js",
-      "accessCount": 6,
-      "lastAccessed": 1773360372730,
-      "type": "file"
-    },
-    {
-      "path": "docs\\INSTALLATION_AND_MIGRATION_GUIDE.md",
-      "accessCount": 4,
-      "lastAccessed": 1773360374175,
-      "type": "file"
-    },
-    {
-      "path": "docs\\plans\\2026-03-13-claude-code-cli-bmad-implementation-checklist.md",
-      "accessCount": 2,
-      "lastAccessed": 1773353176247,
-      "type": "file"
-    },
-    {
-      "path": "docs\\plans\\2026-03-13-claude-code-cli-bmad-adaptation.md",
-      "accessCount": 2,
-      "lastAccessed": 1773353176651,
-      "type": "file"
-    },
-    {
-      "path": "docs\\plans\\2026-03-13-ai-agent-isolation-matrix.md",
-      "accessCount": 2,
-      "lastAccessed": 1773360373622,
-      "type": "file"
-    },
-    {
-      "path": "README.md",
-      "accessCount": 1,
-      "lastAccessed": 1773344579799,
-      "type": "file"
-    },
-    {
-      "path": "skills\\speckit-workflow\\SKILL.md",
-      "accessCount": 1,
-      "lastAccessed": 1773344668693,
-      "type": "file"
-    },
-    {
-      "path": ".claude\\agents\\feature-architect.md",
-      "accessCount": 1,
-      "lastAccessed": 1773344681346,
-      "type": "file"
-    },
-    {
-      "path": ".claude\\agents\\code-reviewer.md",
-      "accessCount": 1,
-      "lastAccessed": 1773344692072,
-      "type": "file"
-    },
-    {
-      "path": ".cursor\\commands\\speckit.specify.md",
-      "accessCount": 1,
-      "lastAccessed": 1773344692298,
-      "type": "file"
-    },
-    {
-      "path": ".cursor\\commands\\bmad-bmm-create-story.md",
-      "accessCount": 1,
-      "lastAccessed": 1773344853733,
+      "path": "_bmad-output\\implementation-artifacts\\epic-E001-test-epic\\story-E001-2-string-utils\\AUDIT_story_E001-2_stage2.md",
+      "accessCount": 7,
+      "lastAccessed": 1773544767421,
       "type": "file"
     },
     {
       "path": "skills\\bmad-story-assistant\\SKILL.md",
-      "accessCount": 1,
-      "lastAccessed": 1773344853919,
+      "accessCount": 6,
+      "lastAccessed": 1773559296302,
       "type": "file"
     },
     {
-      "path": "_bmad\\bmm\\workflows\\4-implementation\\create-story\\workflow.yaml",
-      "accessCount": 1,
-      "lastAccessed": 1773344859248,
+      "path": "_bmad-output\\implementation-artifacts\\epic-E001-test-epic\\story-E001-2-string-utils\\E001-2-string-utils.md",
+      "accessCount": 5,
+      "lastAccessed": 1773544791963,
       "type": "file"
     },
     {
-      "path": ".cursor\\commands\\bmad-bmm-dev-story.md",
-      "accessCount": 1,
-      "lastAccessed": 1773344859596,
+      "path": "config\\bmad-story-config.yaml",
+      "accessCount": 5,
+      "lastAccessed": 1773554290151,
       "type": "file"
     },
     {
-      "path": ".claude",
-      "accessCount": 1,
-      "lastAccessed": 1773352547222,
+      "path": "skills\\speckit-workflow\\SKILL.md",
+      "accessCount": 5,
+      "lastAccessed": 1773567050608,
+      "type": "file"
+    },
+    {
+      "path": ".claudeignore",
+      "accessCount": 4,
+      "lastAccessed": 1773529048452,
+      "type": "file"
+    },
+    {
+      "path": "src\\string-utils.ts",
+      "accessCount": 4,
+      "lastAccessed": 1773543833182,
+      "type": "file"
+    },
+    {
+      "path": "specs\\epic-E001-test-epic\\story-E001-2-string-utils\\spec-E001-S2.md",
+      "accessCount": 4,
+      "lastAccessed": 1773543833252,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 3,
+      "lastAccessed": 1773529605312,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 3,
+      "lastAccessed": 1773543253732,
+      "type": "file"
+    },
+    {
+      "path": "specs\\epic-E001-test-epic\\story-E001-2-string-utils\\prd.json",
+      "accessCount": 3,
+      "lastAccessed": 1773543922457,
+      "type": "file"
+    },
+    {
+      "path": "specs\\epic-E001-test-epic\\story-E001-2-string-utils\\progress.txt",
+      "accessCount": 3,
+      "lastAccessed": 1773543922741,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 3,
+      "lastAccessed": 1773559247444,
       "type": "directory"
     },
     {
-      "path": "scripts\\parse-and-write-score.ts",
-      "accessCount": 1,
-      "lastAccessed": 1773352557141,
+      "path": "docs\\QUICKSTART.md",
+      "accessCount": 2,
+      "lastAccessed": 1773529604188,
       "type": "file"
     },
     {
-      "path": ".claude\\commands\\bmad-agent-bmad-master.md",
-      "accessCount": 1,
-      "lastAccessed": 1773352557716,
+      "path": "specs\\epic-E001-test-epic\\story-E001-1-simple-calculator\\spec-E001-S1.md",
+      "accessCount": 2,
+      "lastAccessed": 1773542083058,
       "type": "file"
     },
     {
-      "path": "_bmad\\core\\agents\\bmad-master.md",
+      "path": "specs\\epic-E001-test-epic\\story-E001-1-simple-calculator\\plan-E001-S1.md",
+      "accessCount": 2,
+      "lastAccessed": 1773542083114,
+      "type": "file"
+    },
+    {
+      "path": "specs\\epic-E001-test-epic\\story-E001-1-simple-calculator\\tasks-E001-S1.md",
+      "accessCount": 2,
+      "lastAccessed": 1773542086273,
+      "type": "file"
+    },
+    {
+      "path": "specs\\epic-E001-test-epic\\epic.md",
+      "accessCount": 2,
+      "lastAccessed": 1773542833873,
+      "type": "file"
+    },
+    {
+      "path": "test\\string-utils.test.ts",
+      "accessCount": 2,
+      "lastAccessed": 1773543885399,
+      "type": "file"
+    },
+    {
+      "path": "_bmad-output\\implementation-artifacts\\epic-E001-test-epic\\story-E001-2-string-utils\\AUDIT_Story_E001-2_stage4.md",
+      "accessCount": 2,
+      "lastAccessed": 1773544769895,
+      "type": "file"
+    },
+    {
+      "path": ".claude\\state\\handoffs\\epic-E001-test-epic\\story-E001-2-string-utils\\handoff-implement-E001-2.md",
+      "accessCount": 2,
+      "lastAccessed": 1773554181578,
+      "type": "file"
+    },
+    {
+      "path": ".claude\\agents\\layers\\bmad-layer4-speckit-implement.md",
+      "accessCount": 2,
+      "lastAccessed": 1773555811294,
+      "type": "file"
+    },
+    {
+      "path": ".claude\\agents\\layers\\bmad-layer4-speckit-plan.md",
+      "accessCount": 2,
+      "lastAccessed": 1773566840804,
+      "type": "file"
+    },
+    {
+      "path": ".",
       "accessCount": 1,
-      "lastAccessed": 1773352582474,
+      "lastAccessed": 1773528819129,
+      "type": "directory"
+    },
+    {
+      "path": ".speckit-state.yaml.template",
+      "accessCount": 1,
+      "lastAccessed": 1773529218676,
+      "type": "file"
+    },
+    {
+      "path": "docs\\guide\\README.md",
+      "accessCount": 1,
+      "lastAccessed": 1773529638693,
+      "type": "file"
+    },
+    {
+      "path": "CLAUDE.md",
+      "accessCount": 1,
+      "lastAccessed": 1773529731586,
       "type": "file"
     },
     {
       "path": "_bmad\\core\\tasks\\workflow.xml",
       "accessCount": 1,
-      "lastAccessed": 1773352582837,
+      "lastAccessed": 1773542334140,
       "type": "file"
+    },
+    {
+      "path": "_bmad\\bmm\\workflows\\4-implementation\\create-story\\workflow.yaml",
+      "accessCount": 1,
+      "lastAccessed": 1773542334829,
+      "type": "file"
+    },
+    {
+      "path": "_bmad\\bmm\\workflows\\4-implementation\\create-story\\template.md",
+      "accessCount": 1,
+      "lastAccessed": 1773542357649,
+      "type": "file"
+    },
+    {
+      "path": "_bmad\\bmm\\workflows\\4-implementation\\create-story\\instructions.xml",
+      "accessCount": 1,
+      "lastAccessed": 1773542357713,
+      "type": "file"
+    },
+    {
+      "path": "_bmad\\bmm\\config.yaml",
+      "accessCount": 1,
+      "lastAccessed": 1773542359650,
+      "type": "file"
+    },
+    {
+      "path": "_bmad-output\\implementation-artifacts\\epic-E001-test-epic\\story-E001-1-simple-calculator\\E001-1-simple-calculator.md",
+      "accessCount": 1,
+      "lastAccessed": 1773542417185,
+      "type": "file"
+    },
+    {
+      "path": ".cursor\\rules\\bmad-story-assistant.mdc",
+      "accessCount": 1,
+      "lastAccessed": 1773542501037,
+      "type": "file"
+    },
+    {
+      "path": "_bmad-output\\planning-artifacts\\dev\\epics.md",
+      "accessCount": 1,
+      "lastAccessed": 1773542566625,
+      "type": "file"
+    },
+    {
+      "path": "specs",
+      "accessCount": 1,
+      "lastAccessed": 1773542835461,
+      "type": "directory"
+    },
+    {
+      "path": "scoring\\parsers\\audit-story.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773542965779,
+      "type": "file"
+    },
+    {
+      "path": "scoring\\parsers\\audit-generic.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773542979894,
+      "type": "file"
+    },
+    {
+      "path": "_bmad-output\\implementation-artifacts\\epic-E001-test-epic\\story-E001-2-string-utils",
+      "accessCount": 1,
+      "lastAccessed": 1773543076715,
+      "type": "directory"
     },
     {
       "path": "skills\\speckit-workflow\\references\\audit-prompts.md",
       "accessCount": 1,
-      "lastAccessed": 1773352583294,
+      "lastAccessed": 1773543866154,
       "type": "file"
     },
     {
-      "path": "scripts\\accept-ai-agent-arg.ts",
+      "path": "skills\\speckit-workflow\\references\\audit-prompts-critical-auditor-appendix.md",
       "accessCount": 1,
-      "lastAccessed": 1773359593877,
+      "lastAccessed": 1773544006919,
       "type": "file"
     },
     {
-      "path": "scripts\\accept-agent-dispatch.ts",
+      "path": ".claude\\agents\\auditors\\auditor-implement.md",
       "accessCount": 1,
-      "lastAccessed": 1773359595534,
+      "lastAccessed": 1773544058541,
       "type": "file"
     },
     {
-      "path": "scripts\\accept-isolation-matrix.ts",
+      "path": "scoring\\data\\dev-eE001-s2-implement-1773544193163.json",
       "accessCount": 1,
-      "lastAccessed": 1773359597374,
+      "lastAccessed": 1773544207845,
       "type": "file"
     },
     {
-      "path": "vitest.config.ts",
+      "path": "scoring\\data\\dev-eE001-s2-story-1773543105931.json",
       "accessCount": 1,
-      "lastAccessed": 1773359641134,
+      "lastAccessed": 1773553958686,
       "type": "file"
     },
     {
-      "path": "scripts",
+      "path": ".claude/state",
       "accessCount": 1,
-      "lastAccessed": 1773359641667,
+      "lastAccessed": 1773554166899,
       "type": "directory"
     },
     {
-      "path": "scripts\\accept-ai-agent-arg.test.ts",
+      "path": ".claude/agents",
       "accessCount": 1,
-      "lastAccessed": 1773359669570,
-      "type": "file"
-    },
-    {
-      "path": "scripts\\accept-agent-dispatch.test.ts",
-      "accessCount": 1,
-      "lastAccessed": 1773359671366,
-      "type": "file"
-    },
-    {
-      "path": "scripts\\accept-isolation-matrix.test.ts",
-      "accessCount": 1,
-      "lastAccessed": 1773359673162,
-      "type": "file"
+      "lastAccessed": 1773555813741,
+      "type": "directory"
     }
   ],
   "userDirectives": []

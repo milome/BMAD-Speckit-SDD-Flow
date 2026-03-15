@@ -224,6 +224,41 @@ git_control:
 @bmad-master Epic: E001 Story: S001
 ```
 
+### Stage Routing 上下文传递规范
+
+bmad-master 在通过 Agent 工具启动 Layer 4 子代理时，必须在 prompt 中包含以下上下文：
+
+**必传参数**（子代理通过 prompt 接收）：
+- `epic`: 当前 Epic 编号（如 "E001"）
+- `story`: 当前 Story 编号（如 "S001"）
+- `storyStatePath`: Story 状态文件路径（`.claude/state/stories/{epic}-{story}-progress.yaml`）
+
+**子代理职责**（Mandatory Startup 已定义）：
+- 子代理从 `storyStatePath` 读取完整状态（包含 epicSlug、storySlug、artifacts 路径等）
+- 子代理验证当前 stage 是否满足 Prerequisites
+- 子代理无需从 prompt 接收 slug 等衍生参数，从状态文件自行解析
+
+**启动子代理的 prompt 模板**：
+
+```
+你现在作为 {agent-name} 执行 {stage} 阶段。
+
+当前上下文：
+- epic: {epic}
+- story: {story}
+- storyStatePath: .claude/state/stories/{epic}-{story}-progress.yaml
+
+请按照你的 Mandatory Startup 步骤执行：
+1. 读取上述 storyStatePath 获取完整状态
+2. 验证 stage 前置条件
+3. 读取前置产物（路径从状态文件 artifacts 字段获取）
+4. 执行阶段工作流
+```
+
+**禁止**：
+- 不得在 prompt 中传入硬编码的文件路径（应由子代理从状态文件解析）
+- 不得省略 epic/story 参数（子代理需要它们定位状态文件）
+
 ### 3. Lock Management
 
 **Concurrency Control**:

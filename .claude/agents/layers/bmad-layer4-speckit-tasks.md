@@ -127,8 +127,8 @@ _bmad-output/implementation-artifacts/
 
 ## Prerequisites
 
-- `plan` 阶段已 PASS
-- Story state: `stage: plan_passed`
+- `gaps` 阶段已 PASS
+- Story state: `stage: gaps_passed`
 
 ## Mandatory Startup
 
