@@ -36,7 +36,7 @@ Load config from `{project-root}/_bmad/core/config.yaml` and resolve:
 
 ### Paths
 
-- `installed_path` = `{project-root}/_bmad/core/skills/bmad-party-mode`
+- `installed_path` = resolved at runtime from skill location
 - `agent_manifest_path` = `{project-root}/_bmad/_config/agent-manifest.csv`
 - `standalone_mode` = `true` (party mode is an interactive workflow)
 
@@ -108,7 +108,7 @@ Load step: `./steps/step-02-discussion-orchestration.md`
 
 **Decision / root-cause sessions:** When the topic is multi-option choice or root-cause/design debate, apply the min-rounds and convergence rules in step-02 (100 rounds for final-solution+task-list output, 50 rounds for other scenarios; show [E] only after consensus and no new gaps for 2–3 rounds).
 
-> **角色参考**: [批判审计员详细操作指南](../../agents/critical-auditor-guide.md) - Party Mode 中的专职挑战者角色，负责质疑假设、发现 gaps、挑战共识
+> **角色参考**: [批判审计员详细操作指南]({project-root}/_bmad/core/agents/critical-auditor-guide.md) - Party Mode 中的专职挑战者角色，负责质疑假设、发现 gaps、挑战共识
 
 ---
 

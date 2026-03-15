@@ -46,7 +46,7 @@ Before agent farewells, ensure Challenger Final Review is in session output. If 
 - Deferred Gaps (if any): [ID] 描述 | 影响 | 建议
 Append to session output. No new agent invocation—format only.
 
-> **参考**: [批判审计员详细操作指南 - 第六章](../../../agents/critical-auditor-guide.md#六退出标准与终审) - 了解终审陈述的详细规范和3种格式的使用场景
+> **参考**: [批判审计员详细操作指南 - 第六章]({project-root}/_bmad/core/agents/critical-auditor-guide.md#六退出标准与终审) - 了解终审陈述的详细规范和3种格式的使用场景
 
 ### 3. Generate Agent Farewells
 

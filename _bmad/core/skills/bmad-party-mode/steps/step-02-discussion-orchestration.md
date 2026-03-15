@@ -207,7 +207,7 @@ Check for exit conditions before continuing:
 - Ensure all agents stay true to their merged personalities
 - Maintain respectful and inclusive conversation environment
 
-> **参考文档**: [批判审计员详细操作指南](../../../agents/critical-auditor-guide.md) - 包含完整的质疑技巧、模板和检查清单
+> **参考文档**: [批判审计员详细操作指南]({project-root}/_bmad/core/agents/critical-auditor-guide.md) - 包含完整的质疑技巧、模板和检查清单
 
 **Flow Management:**
 

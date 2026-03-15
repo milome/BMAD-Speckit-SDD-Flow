@@ -86,7 +86,7 @@ Welcome {{user_name}}! I'm excited to facilitate an incredible multi-agent discu
 
 When topic is expected to be decision/root-cause: In the agent introduction, **must include** the designated challenger (批判性审计员, Dr. Quinn, or Victor) and state: "本场为决策/根因讨论，[挑战者展示名] 将担任批判角色，主动质疑假设、发现 gaps，请期待质疑与反对。"
 
-> **参考**: [批判审计员详细操作指南](../../../agents/critical-auditor-guide.md) - 了解挑战者的职责、权力和操作规范
+> **参考**: [批判审计员详细操作指南]({project-root}/_bmad/core/agents/critical-auditor-guide.md) - 了解挑战者的职责、权力和操作规范
 
 **[Total Count] agents** are ready to contribute their expertise!
 
