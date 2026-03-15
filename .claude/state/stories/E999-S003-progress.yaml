@@ -1,0 +1,57 @@
+story_id: E999-S003
+epic_id: E999
+story_num: S003
+epic_num: E999
+story_slug: stage-validator-transition-errors
+epic_slug: test-epic
+status: speckit_implement_passed
+created_at: 2026-03-16T00:00:00Z
+updated_at: 2026-03-16T02:20:00Z
+
+file_paths:
+  story_doc: _bmad-output/implementation-artifacts/epic-E999-test-epic/story-E999-S003-stage-validator-transition-errors/E999-S003-stage-validator-transition-errors.md
+  state_file: .claude/state/stories/E999-S003-progress.yaml
+  audit_report: _bmad-output/implementation-artifacts/epic-E999-test-epic/story-E999-S003-stage-validator-transition-errors/AUDIT_story-E999-S003.md
+  spec: specs/epic-E999-test-epic/story-3-stage-validator-transition-errors/spec-E999-S003.md
+  plan: specs/epic-E999-test-epic/story-3-stage-validator-transition-errors/plan-E999-S003.md
+  gaps: specs/epic-E999-test-epic/story-3-stage-validator-transition-errors/IMPLEMENTATION_GAPS-E999-S003.md
+  tasks: specs/epic-E999-test-epic/story-3-stage-validator-transition-errors/tasks-E999-S003.md
+
+audit_status:
+  required: true
+  completed: false
+  result: pending
+  next_stage: post_implement_audit
+
+progress:
+  current_stage: speckit_implement_passed
+  stages_completed:
+    - sprint_status_check
+    - story_generation
+    - document_persistence
+    - state_update
+    - story_audit
+    - speckit_specify
+    - speckit_plan
+    - speckit_gaps
+    - speckit_tasks
+    - speckit_implement
+  stages_pending:
+    - post_implement_audit
+  implement:
+    status: passed
+    summary: typed transition validation 已落地，StoryStateManager 已统一复用
+    touched_files:
+      - src/story-workflow/StageValidator.ts
+      - src/story-workflow/StoryStateManager.ts
+      - tests/story-workflow/StageValidator.test.ts
+      - tests/story-workflow/StoryStateManager.test.ts
+      - tests/story-workflow/integration.test.ts
+    test_command: npm exec vitest run tests/story-workflow/StageValidator.test.ts tests/story-workflow/StoryStateManager.test.ts tests/story-workflow/integration.test.ts
+    test_result: 3 passed files, 40 passed tests
+
+notes:
+  - "Story E999-S003 已完成 speckit specify/plan/gaps/tasks/implement 最小闭环"
+  - "RED 证据：validateTransition is not a function"
+  - "GREEN 结果：typed StageTransitionError 覆盖 prerequisite/skip/reverse"
+  - "下一阶段为 auditor-implement 执行 post_audit"

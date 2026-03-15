@@ -315,6 +315,45 @@ Located in `scripts/accept-*.test.ts`:
 - **Error handling**: Handle errors explicitly at every level
 - **Input validation**: Validate at system boundaries
 
+### Git Worktree Convention
+
+When creating git worktrees (including via Agent tool or subagent isolation), **always** place them in a sibling directory of the project root, **never** inside the project tree:
+
+```
+# CORRECT — sibling directory with structured naming
+D:/Dev/BMAD-Speckit-SDD-Flow-01-feature-name/   # {repo}-{index}-{slug}
+D:/Dev/BMAD-Speckit-SDD-Flow-02-bugfix-auth/
+
+# WRONG — inside project root (pollutes repo, causes long-path errors on Windows)
+D:/Dev/BMAD-Speckit-SDD-Flow/.claude/worktrees/agent-xxx   # ← NEVER do this
+D:/Dev/BMAD-Speckit-SDD-Flow/.worktrees/wt-xxx             # ← NEVER do this
+```
+
+**Naming rule**: `{repo-name}-{two-digit-index}-{kebab-slug}`
+
+**Rationale**:
+- Avoids "Filename too long" errors on Windows (260-char limit)
+- Prevents nested `.git` repositories inside the project
+- Keeps project directory clean for CI/CD and IDE indexing
+- `.claude/worktrees/` and `.worktrees/` are both gitignored as safety nets
+
+**Runtime enforcement**: The `WorktreeCreate` hook (`.claude/hooks/worktree-create-sibling.js`) automatically redirects all worktree creation to sibling directories, overriding the Agent tool's default behavior.
+
+### Hooks Architecture
+
+This project uses Claude Code CLI hooks (`.claude/settings.json`) for **model-agnostic runtime enforcement** of behaviors that were previously prompt-level soft constraints.
+
+| Hook | Event | Purpose |
+|------|-------|---------|
+| `pre-agent-summary.js` | `PreToolUse` (Agent) | Displays CLI calling summary before each subagent launch |
+| `subagent-milestone-init.js` | `SubagentStart` | Initializes milestone tracking file and injects tracking instructions |
+| `subagent-result-summary.js` | `SubagentStop` | Reads milestone file and displays result summary when subagent finishes |
+| `worktree-create-sibling.js` | `WorktreeCreate` | Redirects worktree creation to `{parent}/{repo}-{NN}-{slug}/` |
+
+**Milestone tracking**: Subagents are instructed to write phase transitions to `.claude/state/milestones/{agent_id}.jsonl`. The `SubagentStop` hook reads this file to compose a post-hoc milestone summary. This is a best-effort mechanism that depends on the subagent model following the injected instructions.
+
+**Visibility**: Hook output uses the `systemMessage` field which is shown to the user in the terminal, regardless of which model is running.
+
 ### Git Workflow
 
 ```

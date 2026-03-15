@@ -53,4 +53,6 @@ docs/PR/
 docs/plans/
 
 .worktrees/
+.claude/worktrees/
+.claude/state/milestones/
 temp_commit_message.txt

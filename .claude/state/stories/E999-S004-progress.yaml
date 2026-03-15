@@ -1,0 +1,52 @@
+story_id: E999-S004
+epic_id: E999
+story_num: S004
+epic_num: E999
+story_slug: stage-validator-allowed-next-stages
+epic_slug: test-epic
+status: implement_audit_passed
+created_at: 2026-03-16T00:00:00Z
+updated_at: 2026-03-16T03:35:00Z
+
+audit_report: _bmad-output/implementation-artifacts/epic-E999-test-epic/story-E999-S004-stage-validator-allowed-next-stages/AUDIT_Story_E999-S004_stage4.md
+score:
+  overall_rating: A
+  functionality: 96
+  code_quality: 93
+  test_coverage: 94
+  security: 95
+
+file_paths:
+  story_doc: _bmad-output/implementation-artifacts/epic-E999-test-epic/story-E999-S004-stage-validator-allowed-next-stages/E999-S004-stage-validator-allowed-next-stages.md
+  state_file: .claude/state/stories/E999-S004-progress.yaml
+  audit_report: _bmad-output/implementation-artifacts/epic-E999-test-epic/story-E999-S004-stage-validator-allowed-next-stages/AUDIT_Story_E999-S004_stage4.md
+
+audit_status:
+  required: true
+  completed: true
+  result: pass
+  next_stage: commit_gate
+
+progress:
+  current_stage: implement_audit
+  stages_completed:
+    - sprint_status_check
+    - story_generation
+    - document_persistence
+    - state_update
+    - story_audit
+    - speckit_implement
+    - post_implement_audit
+  stages_pending: []
+
+handoff:
+  next_action: commit_gate
+  next_agent: bmad-master
+
+notes:
+  - "Story E999-S004 已重建为全新 Stage 1 产物"
+  - "主题为 StageValidator allowed next stages 能力与 StoryStateManager 语义复用"
+  - "要求在 src/story-workflow 与 tests/story-workflow 下真实落地代码与测试"
+  - "Story Audit 可以修正文档，但不能替代 Dev Story 直接交付功能代码"
+  - "本轮 strict 审计已修复 Story 间责任外包歧义并判定通过"
+  - "Stage 4 Post Audit 判定通过，下一阶段进入 commit_gate"

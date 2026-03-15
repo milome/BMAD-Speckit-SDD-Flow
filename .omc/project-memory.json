@@ -358,9 +358,15 @@
   },
   "hotPaths": [
     {
+      "path": "",
+      "accessCount": 33,
+      "lastAccessed": 1773604988112,
+      "type": "directory"
+    },
+    {
       "path": ".claude\\agents\\bmad-story-create.md",
-      "accessCount": 21,
-      "lastAccessed": 1773583363573,
+      "accessCount": 22,
+      "lastAccessed": 1773598057898,
       "type": "file"
     },
     {
@@ -371,26 +377,20 @@
     },
     {
       "path": ".claude\\agents\\bmad-story-audit.md",
-      "accessCount": 15,
-      "lastAccessed": 1773576741190,
+      "accessCount": 16,
+      "lastAccessed": 1773598058557,
       "type": "file"
     },
     {
       "path": "config\\bmad-story-config.yaml",
-      "accessCount": 9,
-      "lastAccessed": 1773597423343,
+      "accessCount": 10,
+      "lastAccessed": 1773599492464,
       "type": "file"
     },
     {
-      "path": "",
-      "accessCount": 8,
-      "lastAccessed": 1773597361327,
-      "type": "directory"
-    },
-    {
       "path": "_bmad-output\\implementation-artifacts\\sprint-status.yaml",
-      "accessCount": 7,
-      "lastAccessed": 1773544266995,
+      "accessCount": 10,
+      "lastAccessed": 1773601684481,
       "type": "file"
     },
     {
@@ -406,6 +406,18 @@
       "type": "file"
     },
     {
+      "path": ".",
+      "accessCount": 6,
+      "lastAccessed": 1773598597703,
+      "type": "directory"
+    },
+    {
+      "path": "specs",
+      "accessCount": 6,
+      "lastAccessed": 1773601571895,
+      "type": "directory"
+    },
+    {
       "path": "_bmad-output\\implementation-artifacts\\epic-E001-test-epic\\story-E001-2-string-utils\\E001-2-string-utils.md",
       "accessCount": 5,
       "lastAccessed": 1773544791963,
@@ -415,6 +427,12 @@
       "path": "skills\\speckit-workflow\\SKILL.md",
       "accessCount": 5,
       "lastAccessed": 1773567050608,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 5,
+      "lastAccessed": 1773604814693,
       "type": "file"
     },
     {
@@ -439,12 +457,6 @@
       "path": "README.md",
       "accessCount": 3,
       "lastAccessed": 1773529605312,
-      "type": "file"
-    },
-    {
-      "path": "package.json",
-      "accessCount": 3,
-      "lastAccessed": 1773543253732,
       "type": "file"
     },
     {
@@ -544,12 +556,6 @@
       "type": "file"
     },
     {
-      "path": ".",
-      "accessCount": 1,
-      "lastAccessed": 1773528819129,
-      "type": "directory"
-    },
-    {
       "path": ".speckit-state.yaml.template",
       "accessCount": 1,
       "lastAccessed": 1773529218676,
@@ -590,12 +596,6 @@
       "accessCount": 1,
       "lastAccessed": 1773542566625,
       "type": "file"
-    },
-    {
-      "path": "specs",
-      "accessCount": 1,
-      "lastAccessed": 1773542835461,
-      "type": "directory"
     },
     {
       "path": "scoring\\parsers\\audit-story.ts",

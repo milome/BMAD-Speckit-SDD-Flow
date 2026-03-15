@@ -27,6 +27,15 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
 
+function buildCrossPlatformCommand(command: string): string {
+  if (process.platform !== 'win32') {
+    return command;
+  }
+
+  const escaped = command.replace(/"/g, '""');
+  return `cmd.exe /d /s /c "${escaped}"`;
+}
+
 interface CliOptions {
   [key: string]: string | boolean | undefined;
 }
@@ -299,11 +308,7 @@ function runValidation(projectPath: string = './'): void {
 
   // Check for protocols
   console.log('\nRequired Protocols:');
-  const requiredProtocols = [
-    'audit-result-schema.md',
-    'handoff-schema.md',
-    'commit-protocol.md',
-  ];
+  const requiredProtocols = ['audit-result-schema.md', 'handoff-schema.md', 'commit-protocol.md'];
 
   requiredProtocols.forEach((protocol) => {
     const protocolPath = path.resolve(projectPath, '.claude/protocols', protocol);
@@ -337,7 +342,9 @@ function runAudit(stage: string, artifactPath: string, options: CliOptions): voi
   }
 
   const iteration = options.iterationCount || '1';
-  const cmd = `npx ts-node ${auditorScript} ${artifactPath} ${iteration}`;
+  const cmd = buildCrossPlatformCommand(
+    `npx ts-node ${auditorScript} ${artifactPath} ${iteration}`
+  );
 
   console.log(`Running audit: ${cmd}`);
   try {
