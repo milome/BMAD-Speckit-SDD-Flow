@@ -89,9 +89,11 @@ async function main() {
   parts.push(LINE);
 
   const summary = parts.join('\n');
-  // stderr → displayed to user in terminal
-  process.stderr.write(summary + '\n');
-  // stdout → systemMessage for model context
+  // stderr → displayed to user in terminal (skip if model natively shows agent calls)
+  if (process.env.BMAD_HOOKS_QUIET !== '1') {
+    process.stderr.write(summary + '\n');
+  }
+  // stdout → systemMessage for model context (always active)
   process.stdout.write(JSON.stringify({ systemMessage: summary }));
 
   // Cleanup milestone file

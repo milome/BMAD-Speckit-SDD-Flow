@@ -41,9 +41,11 @@ async function main() {
     LINE,
   ].join('\n');
 
-  // stderr → displayed to user in terminal
-  process.stderr.write(msg + '\n');
-  // stdout → systemMessage for model context + approve decision
+  // stderr → displayed to user in terminal (skip if model natively shows agent calls)
+  if (process.env.BMAD_HOOKS_QUIET !== '1') {
+    process.stderr.write(msg + '\n');
+  }
+  // stdout → systemMessage for model context (always active)
   process.stdout.write(JSON.stringify({ systemMessage: msg }));
 }
 

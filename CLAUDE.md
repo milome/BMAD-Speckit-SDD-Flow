@@ -352,7 +352,11 @@ This project uses Claude Code CLI hooks (`.claude/settings.json`) for **model-ag
 
 **Milestone tracking**: Subagents are instructed to write phase transitions to `.claude/state/milestones/{agent_id}.jsonl`. The `SubagentStop` hook reads this file to compose a post-hoc milestone summary. This is a best-effort mechanism that depends on the subagent model following the injected instructions.
 
-**Visibility**: Hook output uses the `systemMessage` field which is shown to the user in the terminal, regardless of which model is running.
+**Visibility**: Hook output uses two channels:
+- `stderr` → user terminal (agent call/result summaries)
+- `systemMessage` (stdout JSON) → model context (always active)
+
+**Quiet mode**: If the model natively displays agent call/result info (e.g. Kimi 2.5), set `BMAD_HOOKS_QUIET=1` to suppress stderr output and avoid duplicate display. The `systemMessage` channel remains active for model context regardless of this setting.
 
 ### Git Workflow
 
