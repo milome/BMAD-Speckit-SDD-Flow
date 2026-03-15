@@ -24,6 +24,30 @@
           }
         ]
       }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/subagent-milestone-init.js\"",
+            "timeout": 5,
+            "statusMessage": "Initializing milestone tracking..."
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/subagent-result-summary.js\"",
+            "timeout": 10,
+            "statusMessage": "Composing result summary..."
+          }
+        ]
+      }
     ]
   }
 }
