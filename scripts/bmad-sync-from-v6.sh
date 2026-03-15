@@ -16,6 +16,7 @@ EXCLUDE_PATTERNS=(
     "_bmad/core/agents/README-critical-auditor.md"
     "_bmad/scripts/bmad-speckit"
     "_bmad/_config/agent-manifest.csv"
+    "_bmad/core/workflows/party-mode"
     "adversarial-reviewer.md"
     "critical-auditor-guide.md"
     "README-critical-auditor.md"
@@ -30,6 +31,7 @@ BACKUP_ITEMS=(
     "_bmad/core/agents/README-critical-auditor.md:README-critical-auditor.md"
     "_bmad/scripts/bmad-speckit:bmad_speckit_scripts"
     "_bmad/_config/agent-manifest.csv:agent-manifest.csv"
+    "_bmad/core/workflows/party-mode:party-mode-workflow"
 )
 
 PHASE="1"
@@ -125,6 +127,15 @@ phase2_ops() {
             fi
         done < <(find "$src_dir" -type f -print0 2>/dev/null)
     done
+
+    # Auto-sync _bmad/core/skills/ -> _bmad/skills/ (universal skill distribution)
+    local core_skills="$PROJECT_ROOT/_bmad/core/skills"
+    local dist_skills="$PROJECT_ROOT/_bmad/skills"
+    if [[ -d "$core_skills" ]]; then
+        mkdir -p "$dist_skills"
+        cp -Rf "$core_skills"/* "$dist_skills/"
+        echo "  Skill sync: _bmad/core/skills/ -> _bmad/skills/"
+    fi
 }
 
 echo "BMAD-METHOD v6 Sync | Phase=$PHASE | DryRun=$DRY_RUN | ProjectRoot=$PROJECT_ROOT"

@@ -24,8 +24,9 @@
 | **speckit-workflow** | `.cursor/skills/speckit-workflow/`、`.cursor/commands/speckit.*` |
 | **bmad-speckit CLI** | `_bmad/scripts/bmad-speckit/`、`packages/bmad-speckit/` |
 | **agent-manifest** | `_bmad/_config/agent-manifest.csv` 中 adversarial-reviewer、ai-coach 条目 |
-| **party-mode 定制** | `_bmad/core/workflows/party-mode/`（批判审计员角色注入、收敛条件定制） |
-| **V6 core skills 分发** | `_bmad/skills/`（从 `_bmad/core/skills/` 复制，用于通用技能分发） |
+| **party-mode 定制（旧路径）** | `_bmad/core/workflows/party-mode/`（批判审计员角色注入、收敛条件定制；本地定制原始版本，已加入排除清单） |
+| **party-mode 定制（新路径）** | `_bmad/core/skills/bmad-party-mode/`（V6 skill 格式 + 定制合并版；路径使用 `{project-root}` 绝对引用） |
+| **V6 core skills 分发** | `_bmad/skills/`（Phase 2 自动从 `_bmad/core/skills/` 同步） |
 
 ---
 
@@ -49,6 +50,7 @@
 | critical-auditor | `_bmad/core/agents/critical-auditor-guide.md`、`_bmad/core/agents/README-critical-auditor.md` |
 | bmad-speckit | `_bmad/scripts/bmad-speckit/` |
 | agent-manifest | `_bmad/_config/agent-manifest.csv` 中 adversarial-reviewer、ai-coach 条目 |
+| party-mode workflow | `_bmad/core/workflows/party-mode/`（本地定制版，含批判审计员角色注入） |
 | speckit-workflow | `.cursor/skills/speckit-workflow/`（spec-kit 侧） |
 | speckit commands | `_bmad/cursor/commands/speckit.*` 或 `.cursor/commands/speckit.*` |
 
@@ -65,7 +67,7 @@ pwsh scripts/bmad-sync-from-v6.ps1 -Phase all          # 全阶段
 ```
 
 - **Phase 1**：Path 标准化、step-04 修正等  
-- **Phase 2**：core/bmm/utility 模块同步（含 V6 core skills）  
+- **Phase 2**：core/bmm/utility 模块同步（含 V6 core skills）；Phase 2 完成后自动将 `_bmad/core/skills/` 同步到 `_bmad/skills/`（通用技能分发目录）  
 - **禁止覆盖项**：以本文档 §4.1 为准；脚本内置 `$EXCLUDE_PATTERNS` 与其一致
 - **默认分支**：`main`（脚本默认 `-V6Ref main`）
 
@@ -86,3 +88,22 @@ pwsh scripts/bmad-sync-from-v6.ps1 -Phase all          # 全阶段
 |------|------|------|------|
 | 2026-03-16 | main@45d125f | core/bmm/utility | V6 content sync：新增 11 个 core skills、utility 模块、party-mode skill（新路径 `_bmad/core/skills/bmad-party-mode/`） |
 | 2026-02-22 | v6.0.1 | core/bmm | 初始 BMAD-METHOD v6 安装 |
+
+---
+
+## 6. 补充说明
+
+### 6.1 新旧 Party-Mode 路径共存
+
+项目中存在两个 party-mode 实现，功能内容已一致（定制均已合并）：
+
+| 路径 | 类型 | 说明 |
+|------|------|------|
+| `_bmad/core/workflows/party-mode/` | 旧 workflow 格式 | 本地定制原始版本；已加入排除清单，同步时不被覆盖。当前多数 rule/skill 文件仍引用此路径。 |
+| `_bmad/core/skills/bmad-party-mode/` | V6 skill 格式 | upstream V6 新结构 + 定制合并版本；所有引用路径使用 `{project-root}` 绝对引用。同步后自动复制到 `_bmad/skills/bmad-party-mode/`。 |
+
+两个版本均可正常工作。未来如需统一路径引用，可将 rule/skill 文件中的 `workflows/party-mode` 迁移为 `skills/bmad-party-mode`。
+
+### 6.2 config.yaml 版本号
+
+`_bmad/bmm/config.yaml` 和 `_bmad/core/config.yaml` 中的 `Version: 6.0.1` 由初始 BMAD-METHOD 安装生成，属于项目级配置，不随 upstream 同步更新。实际同步基准以本文档 §5 的版本记录（`main@45d125f`）为准。

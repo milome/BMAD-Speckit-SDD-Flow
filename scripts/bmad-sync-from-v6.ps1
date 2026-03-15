@@ -35,6 +35,7 @@ $EXCLUDE_PATTERNS = @(
     '_bmad/core/agents/README-critical-auditor.md',
     '_bmad/scripts/bmad-speckit',
     '_bmad/_config/agent-manifest.csv',
+    '_bmad/core/workflows/party-mode',
     'adversarial-reviewer.md',
     'critical-auditor-guide.md',
     'README-critical-auditor.md',
@@ -50,6 +51,7 @@ $BACKUP_ITEMS = @(
     ,@{ From = "_bmad/core/agents/README-critical-auditor.md"; To = "README-critical-auditor.md" }
     ,@{ From = "_bmad/scripts/bmad-speckit"; To = "bmad_speckit_scripts" }
     ,@{ From = "_bmad/_config/agent-manifest.csv"; To = "agent-manifest.csv" }
+    ,@{ From = "_bmad/core/workflows/party-mode"; To = "party-mode-workflow" }
 )
 
 # --- Resolve ProjectRoot ---
@@ -79,9 +81,9 @@ if (-not [System.IO.Path]::IsPathRooted($BackupDir)) {
 # --- Exclude check ---
 function Test-ExcludedPath {
     param([string]$RelativePath)
+    $normalizedRel = $RelativePath -replace '\\', '/'
     foreach ($p in $EXCLUDE_PATTERNS) {
-        if ($RelativePath -replace '\\', '/' -like "*$($p -replace '/', '*')*" -or
-            $RelativePath -replace '\\', '/' -like "$p*") {
+        if ($normalizedRel -like "*$p*" -or $normalizedRel -like "$p*") {
             return $true
         }
     }
@@ -192,6 +194,12 @@ function Get-Phase2Operations {
     # Edge Case Hunter, bmad-os paths follow v6 layout
     $ops += @{ Action = 'Info'; Message = 'Phase 2: After copy, verify task-manifest.csv or workflow-manifest.csv for Edge Case Hunter.' }
 
+    # Auto-sync _bmad/core/skills/ -> _bmad/skills/ (universal skill distribution)
+    $coreSkillsDir = Join-Path $ProjectRoot '_bmad/core/skills'
+    if (Test-Path $coreSkillsDir) {
+        $ops += @{ Action = 'SkillSync'; Source = $coreSkillsDir; Dest = (Join-Path $ProjectRoot '_bmad/skills') }
+    }
+
     return @{ Ops = $ops; TempDir = $v6Root }
 }
 
@@ -284,6 +292,14 @@ try {
                 }
                 Copy-Item -Force $op.Source $op.Dest
                 Write-Host "  Copied: $($op.Dest)" -ForegroundColor Green
+            } elseif ($op.Action -eq 'SkillSync') {
+                if (Test-Path $op.Source) {
+                    if (-not (Test-Path $op.Dest)) {
+                        New-Item -ItemType Directory -Path $op.Dest -Force | Out-Null
+                    }
+                    Copy-Item -Recurse -Force (Join-Path $op.Source '*') $op.Dest
+                    Write-Host "  Skill sync: $($op.Source) -> $($op.Dest)" -ForegroundColor Green
+                }
             }
         }
         Write-RollbackCommands -BakDir $BackupDir -ProjRoot $ProjectRoot
