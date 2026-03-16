@@ -31,9 +31,9 @@ Thumbs.db
 _bmad-output/
 
 # Runtime deployment artifacts (legacy root dirs, source: _bmad/)
-commands/
-rules/
-skills/
+/commands/
+/rules/
+/skills/
 
 # Speckit runtime (deployed from _bmad/speckit/ by init-to-root / SyncService)
 .specify/
@@ -71,6 +71,7 @@ findings.md
 task_plan.md
 dxdiag_output.txt
 temp_commit_message.txt
+*.backup-*.md
 
 # Documentation archives
 docs/BMAD/
