@@ -38,70 +38,53 @@ pwsh scripts/setup.ps1 -Target <project-path>
 
 ```
 BMAD-Speckit-SDD-Flow/
-├── _bmad/                      # BMAD core modules
-│   ├── core/                   # Core BMAD functionality
-│   ├── bmm/                    # BMAD Method Manager
-│   ├── bmb/                    # BMAD Method Base
-│   ├── cis/                    # CI/CD integration
-│   ├── tea/                    # Test & Evaluation
-│   ├── scoring/                # Scoring system
-│   ├── scripts/                # Utility scripts
-│   └── _config/                # Configuration files
-├── _bmad-output/               # Generated output (gitignored)
-├── scoring/                    # Scoring extensions
-│   ├── parse-score.ts          # Parse audit reports
-│   ├── write-score.ts          # Persist scores
-│   ├── coach.ts                # AI Coach diagnosis
-│   └── dashboard.ts            # Dashboard generation
-├── scripts/                    # CLI entry points
+├── _bmad/                              # BMAD core modules (single source of truth)
+│   ├── speckit/                        # Speckit module (commands, templates, workflows, scripts)
+│   ├── core/                           # Core BMAD functionality
+│   ├── bmm/                            # BMAD Method Manager
+│   ├── bmb/                            # BMAD Method Base
+│   ├── cis/                            # CI/CD integration
+│   ├── tea/                            # Test & Evaluation
+│   ├── scoring/                        # Scoring system
+│   ├── scripts/                        # Utility scripts
+│   └── _config/                        # Configuration files
+├── packages/                           # Source code (monorepo)
+│   └── bmad-speckit/                   # CLI package
+├── scoring/                            # Scoring extensions
+│   ├── parse-score.ts                  # Parse audit reports
+│   ├── write-score.ts                  # Persist scores
+│   ├── coach.ts                        # AI Coach diagnosis
+│   └── dashboard.ts                    # Dashboard generation
+├── scripts/                            # CLI entry points & acceptance tests
 │   ├── parse-and-write-score.ts
 │   ├── coach-diagnose.ts
 │   ├── sft-extract.ts
-│   └── accept-*.test.ts        # Acceptance tests
-├── skills/                     # Public skills (both platforms)
-│   ├── auto-commit-utf8/       # Chinese git commit with UTF-8
-│   ├── bmad-customization-backup/ # _bmad backup/migration
-│   ├── bmad-eval-analytics/    # Coach diagnosis & SFT extraction
-│   ├── bmad-orchestrator/      # BMAD workflow orchestrator
-│   ├── code-review/            # Code review skill
-│   ├── git-push-monitor/       # Git push background monitor
-│   └── pr-template-generator/  # PR template generation
-├── .cursor/skills/             # Cursor-specific skills
-│   ├── speckit-workflow/       # Speckit SDD workflow (Cursor)
-│   ├── bmad-story-assistant/   # Story-level BMAD workflow (Cursor)
-│   ├── bmad-bug-assistant/     # Bug fixing workflow (Cursor)
-│   ├── bmad-standalone-tasks/  # Standalone task execution (Cursor)
-│   ├── bmad-standalone-tasks-doc-review/ # TASKS doc audit (Cursor)
-│   ├── bmad-rca-helper/        # RCA helper (Cursor)
-│   ├── bmad-code-reviewer-lifecycle/ # Audit lifecycle (Cursor)
-│   └── using-git-worktrees/    # Git worktree isolation (Cursor)
-├── .claude/skills/             # Claude Code CLI adapted skills
-│   └── bmad-story-assistant/   # Story-level BMAD (Claude adapted)
-├── .claude/agents/             # Claude Code agent definitions
-│   ├── layers/                 # Layer 4 agents (speckit phases)
-│   │   ├── bmad-layer4-speckit-specify.md
-│   │   ├── bmad-layer4-speckit-plan.md
-│   │   ├── bmad-layer4-speckit-gaps.md
-│   │   ├── bmad-layer4-speckit-tasks.md
-│   │   └── bmad-layer4-speckit-implement.md
-│   ├── auditors/               # Auditor agents
-│   │   ├── auditor-spec.md
-│   │   ├── auditor-plan.md
-│   │   ├── auditor-tasks.md
-│   │   └── auditor-implement.md
-│   └── bmad-master.md          # Master orchestrator
-├── specs/                      # Story specifications (generated)
+│   └── accept-*.test.ts               # Acceptance tests
+├── config/                             # Project configuration
+├── specs/                              # Story specifications (generated)
 │   └── epic-*/
 │       └── story-*/
 │           ├── spec.md
 │           ├── plan.md
 │           ├── IMPLEMENTATION_GAPS.md
 │           └── tasks.md
-├── docs/                       # Documentation
-│   ├── BMAD/                   # BMAD method documentation
-│   ├── guide/                  # User guides
-│   └── QUICKSTART.md           # 5-minute quickstart
-├── .speckit-state.yaml         # Speckit state machine
+├── docs/                               # Documentation (Diataxis)
+│   ├── tutorials/                      # Learning-oriented
+│   │   └── getting-started.md
+│   ├── how-to/                         # Task-oriented
+│   │   ├── cursor-setup.md
+│   │   ├── claude-code-setup.md
+│   │   ├── multi-story.md
+│   │   ├── migration.md
+│   │   └── wsl-shell-scripts.md
+│   ├── explanation/                    # Understanding-oriented
+│   │   ├── path-conventions.md
+│   │   └── upstream-relationship.md
+│   ├── reference/                      # Information-oriented
+│   │   ├── source-code.md
+│   │   └── speckit-cli.md
+│   └── sample/                         # Example documents
+├── .speckit-state.yaml                 # Speckit state machine
 └── package.json
 ```
 

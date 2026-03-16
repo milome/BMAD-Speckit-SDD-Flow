@@ -76,25 +76,52 @@ See [WSL / Shell scripts](docs/how-to/wsl-shell-scripts.md) for full shell scrip
 
 ---
 
+## Project Structure
+
+```
+BMAD-Speckit-SDD-Flow/
+├── _bmad/                              # BMAD core modules (single source of truth)
+│   ├── speckit/                        # Speckit module (commands, templates, workflows, scripts)
+│   ├── core/                           # Core BMAD functionality
+│   ├── bmm/, bmb/, cis/, tea/          # Other BMAD modules
+│   ├── scoring/                        # Scoring system
+│   └── _config/                        # Configuration files
+├── packages/                           # Source code (monorepo)
+│   └── bmad-speckit/                   # CLI package
+├── scoring/                            # Scoring extensions (see [scoring/README.md](scoring/README.md))
+├── scripts/                            # CLI entry points & acceptance tests (see [scripts/README.md](scripts/README.md))
+├── config/                             # Project configuration
+├── specs/                              # Story specifications (generated)
+├── docs/                               # Documentation (Diataxis)
+│   ├── tutorials/                      # Learning-oriented
+│   ├── how-to/                         # Task-oriented
+│   ├── explanation/                    # Understanding-oriented
+│   ├── reference/                      # Information-oriented
+│   └── sample/                         # Example documents
+└── package.json
+```
+
 ## Modules & Components
 
 | Component | Purpose |
 |-----------|---------|
 | **_bmad/** | BMAD core (core, bmm, bmb, cis, tea, scoring) |
-| **scoring/** | 评分扩展：解析审计报告、写分持久化、Coach 诊断、Dashboard、SFT 提取。见 [scoring/README.md](scoring/README.md) |
-| **scripts/** | CLI 入口：parse-and-write-score、dashboard-generate、sft-extract、eval-questions-cli、coach-diagnose 等。见 [scripts/README.md](scripts/README.md) |
+| **scoring/** | Scoring extensions: audit report parsing, score persistence, Coach diagnosis, Dashboard, SFT extraction |
+| **scripts/** | CLI entry points: parse-and-write-score, dashboard-generate, sft-extract, coach-diagnose |
 | **speckit-workflow** | specify → plan → GAPS → tasks → TDD with mandatory audits |
 | **bmad-story-assistant** | Create Story → Party-Mode → Dev Story → implement |
 | **bmad-bug-assistant** | Bug description → Party-Mode → BUGFIX doc |
 | **bmad-standalone-tasks** | Execute TASKS/BUGFIX docs via subagents |
 
-**scoring 与 bmad-speckit 协作**：bmad-speckit 提供 init/check/config 等 CLI；scripts 下脚本调用 scoring 做解析、写分、诊断、仪表盘。
-
 ---
 
 ## Documentation
 
+- [Getting Started](docs/tutorials/getting-started.md)
 - [Installation & Migration Guide](docs/how-to/migration.md)
+- [Cursor Setup](docs/how-to/cursor-setup.md)
+- [Claude Code Setup](docs/how-to/claude-code-setup.md)
+- [WSL / Shell Scripts](docs/how-to/wsl-shell-scripts.md)
 
 ---
 
