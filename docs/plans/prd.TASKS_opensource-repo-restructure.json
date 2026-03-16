@@ -560,11 +560,11 @@
         "CODE_OF_CONDUCT.md 存在，采用 Contributor Covenant"
       ],
       "priority": 32,
-      "passes": false,
+      "passes": true,
       "notes": "FU-05: P4",
       "involvesProductionCode": false,
       "tddSteps": [
-        { "phase": "DONE", "description": "创建文件并验证", "acceptanceCommand": "Test-Path CONTRIBUTING.md; Test-Path CODE_OF_CONDUCT.md", "passes": false }
+        { "phase": "DONE", "description": "创建文件并验证", "acceptanceCommand": "Test-Path CONTRIBUTING.md; Test-Path CODE_OF_CONDUCT.md", "passes": true }
       ]
     },
     {
@@ -577,11 +577,11 @@
         "记录阶段 A~G 和 B~F 和 FU 的变更"
       ],
       "priority": 33,
-      "passes": false,
+      "passes": true,
       "notes": "FU-06: P4",
       "involvesProductionCode": false,
       "tddSteps": [
-        { "phase": "DONE", "description": "创建 CHANGELOG.md 并验证", "acceptanceCommand": "Test-Path CHANGELOG.md", "passes": false }
+        { "phase": "DONE", "description": "创建 CHANGELOG.md 并验证", "acceptanceCommand": "Test-Path CHANGELOG.md", "passes": true }
       ]
     }
   ]

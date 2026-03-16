@@ -1,8 +1,8 @@
 # Progress: opensource-repo-restructure (Follow-Up FU-01~FU-06)
 # Total stories: 33 (27 completed B~F + 6 FU)
 
-Current story: FU05
-Completed: 31
+Current story: FU07
+Completed: 33
 
 ---
 # Story log (Phases B~F completed in prior batch)
@@ -39,5 +39,5 @@ Completed: 31
 [2026-03-17] US-FU02: docs/ 新文件撰写 (6 个文档) - PASSED
 [2026-03-17] US-FU03: bmad-story-assistant 两个平台指南合并 - PASSED
 [2026-03-17] US-FU04: Website 搭建 (Astro + Starlight) - PASSED
-[DONE] _pending_ US-FU05: CONTRIBUTING.md + CODE_OF_CONDUCT.md 创建
-[DONE] _pending_ US-FU06: CHANGELOG.md 创建
+[2026-03-17] US-FU05: CONTRIBUTING.md + CODE_OF_CONDUCT.md 创建 - PASSED
+[2026-03-17] US-FU06: CHANGELOG.md 创建 - PASSED
