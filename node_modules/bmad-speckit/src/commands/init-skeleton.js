@@ -4,8 +4,8 @@
 const fs = require('fs');
 const path = require('path');
 
-/** Shared _bmad dirs always copied (core workflows, config) */
-const SHARED_BMAD_DIRS = new Set(['core', '_config']);
+/** Shared _bmad dirs always copied (core workflows, config, commands, skills, platform dirs) */
+const SHARED_BMAD_DIRS = new Set(['core', '_config', 'commands', 'skills', 'cursor', 'claude', 'utility']);
 
 /**
  * T020: Generate _bmad, _bmad-output from template (PRD §5.10).
@@ -100,16 +100,19 @@ async function generateSkeleton(targetPath, templateDir, modules, force) {
  */
 function writeSelectedAI(targetPath, selectedAI, templateVersion = 'latest', bmadPath = null, initLogExt = null) {
   const configManager = require('../services/config-manager');
+  const selectedAIs = Array.isArray(selectedAI) ? selectedAI : [selectedAI];
+  const primaryAI = selectedAIs[0];
   const initLog = {
     timestamp: new Date().toISOString(),
-    selectedAI,
+    selectedAI: primaryAI,
+    selectedAIs,
     templateVersion,
     skillsPublished: (initLogExt && Array.isArray(initLogExt.skillsPublished)) ? initLogExt.skillsPublished : [],
   };
   if (initLogExt && Array.isArray(initLogExt.skippedReasons) && initLogExt.skippedReasons.length > 0) {
     initLog.skippedReasons = initLogExt.skippedReasons;
   }
-  const record = { selectedAI, templateVersion, initLog };
+  const record = { selectedAI: primaryAI, selectedAIs, templateVersion, initLog };
   if (bmadPath != null) record.bmadPath = bmadPath;
   configManager.setAll(record, { scope: 'project', cwd: targetPath });
 }

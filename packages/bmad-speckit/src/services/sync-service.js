@@ -48,8 +48,9 @@ function deepMerge(base, overlay) {
 }
 
 /**
- * Sync commands/rules/config from _bmad/cursor to selected AI target dirs per configTemplate.
- * Also merges vscodeSettings into .vscode/settings.json if configured.
+ * Sync commands/rules/agents and platform infrastructure to AI target dirs.
+ * Commands always from _bmad/commands/ (shared); rules/agents from _bmad/{sourceDir}/.
+ * For Claude: also deploys hooks, settings.json, state, CLAUDE.md.
  * @param {string} projectRoot - 项目根目录.
  * @param {string} selectedAI - AI id from registry.
  * @param {{ bmadPath?: string }} [options] - Optional bmadPath for worktree mode.
@@ -60,39 +61,41 @@ function syncCommandsRulesConfig(projectRoot, selectedAI, options = {}) {
   if (!entry || !entry.configTemplate) return;
 
   const ct = entry.configTemplate;
-  const bmadPath = options.bmadPath;
-  const cursorSrc = bmadPath
-    ? path.join(path.resolve(bmadPath), 'cursor')
-    : path.join(projectRoot, '_bmad', 'cursor');
+  const bmadRoot = options.bmadPath
+    ? path.resolve(options.bmadPath)
+    : path.join(projectRoot, '_bmad');
 
-  if (!fs.existsSync(cursorSrc) || !fs.statSync(cursorSrc).isDirectory()) return;
+  if (!fs.existsSync(bmadRoot) || !fs.statSync(bmadRoot).isDirectory()) return;
 
   if (ct.commandsDir) {
-    const src = path.join(cursorSrc, 'commands');
+    const src = path.join(bmadRoot, 'commands');
     const dest = path.join(projectRoot, ct.commandsDir);
     if (fs.existsSync(src) && fs.statSync(src).isDirectory()) {
       copyDirRecursive(src, dest);
     }
   }
 
-  if (ct.rulesDir) {
-    const src = path.join(cursorSrc, 'rules');
+  const sourceDir = ct.sourceDir;
+
+  if (ct.rulesDir && sourceDir) {
+    const src = path.join(bmadRoot, sourceDir, 'rules');
     const dest = path.join(projectRoot, ct.rulesDir);
     if (fs.existsSync(src) && fs.statSync(src).isDirectory()) {
       copyDirRecursive(src, dest);
     }
   }
 
-  const configSrc = path.join(cursorSrc, 'config');
-  if (ct.agentsDir) {
+  if (ct.agentsDir && sourceDir) {
+    const src = path.join(bmadRoot, sourceDir, 'agents');
     const dest = path.join(projectRoot, ct.agentsDir);
-    if (fs.existsSync(configSrc) && fs.statSync(configSrc).isDirectory()) {
-      copyDirRecursive(configSrc, dest);
+    if (fs.existsSync(src) && fs.statSync(src).isDirectory()) {
+      copyDirRecursive(src, dest);
     }
-  } else if (ct.configDir) {
-    const destFull = path.join(projectRoot, ct.configDir);
-    const destDir = path.dirname(destFull);
+  } else if (ct.configDir && sourceDir) {
+    const configSrc = path.join(bmadRoot, sourceDir, 'config');
     if (fs.existsSync(configSrc) && fs.statSync(configSrc).isDirectory()) {
+      const destFull = path.join(projectRoot, ct.configDir);
+      const destDir = path.dirname(destFull);
       const entries = fs.readdirSync(configSrc, { withFileTypes: true });
       if (entries.length > 0) {
         const first = entries.find((e) => e.isFile()) || entries[0];
@@ -103,6 +106,10 @@ function syncCommandsRulesConfig(projectRoot, selectedAI, options = {}) {
         }
       }
     }
+  }
+
+  if (sourceDir === 'claude') {
+    deployClaudeInfrastructure(projectRoot, bmadRoot);
   }
 
   if (ct.vscodeSettings && typeof ct.vscodeSettings === 'object') {
@@ -117,6 +124,46 @@ function syncCommandsRulesConfig(projectRoot, selectedAI, options = {}) {
     const merged = deepMerge(existing, ct.vscodeSettings);
     if (!fs.existsSync(vscodeDir)) fs.mkdirSync(vscodeDir, { recursive: true });
     fs.writeFileSync(settingsPath, JSON.stringify(merged, null, 2), 'utf8');
+  }
+}
+
+/**
+ * Deploy Claude-specific infrastructure: hooks, settings.json, state dirs, CLAUDE.md.
+ * @param {string} projectRoot - Project root.
+ * @param {string} bmadRoot - Path to _bmad directory.
+ */
+function deployClaudeInfrastructure(projectRoot, bmadRoot) {
+  const claudeSrc = path.join(bmadRoot, 'claude');
+  if (!fs.existsSync(claudeSrc)) return;
+
+  const hooksSrc = path.join(claudeSrc, 'hooks');
+  const hooksDest = path.join(projectRoot, '.claude', 'hooks');
+  if (fs.existsSync(hooksSrc)) {
+    copyDirRecursive(hooksSrc, hooksDest);
+  }
+
+  const settingsSrc = path.join(claudeSrc, 'settings.json');
+  const settingsDest = path.join(projectRoot, '.claude', 'settings.json');
+  if (fs.existsSync(settingsSrc)) {
+    if (!fs.existsSync(path.dirname(settingsDest))) {
+      fs.mkdirSync(path.dirname(settingsDest), { recursive: true });
+    }
+    fs.copyFileSync(settingsSrc, settingsDest);
+  }
+
+  const stateSrc = path.join(claudeSrc, 'state');
+  const stateDest = path.join(projectRoot, '.claude', 'state');
+  if (fs.existsSync(stateSrc)) {
+    copyDirRecursive(stateSrc, stateDest);
+  }
+
+  const templateSrc = path.join(claudeSrc, 'CLAUDE.md.template');
+  const claudeMdDest = path.join(projectRoot, 'CLAUDE.md');
+  if (fs.existsSync(templateSrc) && !fs.existsSync(claudeMdDest)) {
+    let content = fs.readFileSync(templateSrc, 'utf8');
+    const projectName = path.basename(projectRoot);
+    content = content.replace(/\{\{PROJECT_NAME\}\}/g, projectName);
+    fs.writeFileSync(claudeMdDest, content, 'utf8');
   }
 }
 

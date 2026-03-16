@@ -21,6 +21,9 @@
 .PARAMETER Full
   完整模式，与 -Target 配合时确保执行完整安装（init-to-root --full）
 
+.PARAMETER Agent
+  AI agent 类型：cursor (默认), claude-code, 或逗号分隔多选 (cursor,claude-code)
+
 .PARAMETER Help
   显示帮助
 #>
@@ -28,6 +31,7 @@
 param(
     [Parameter(Mandatory = $false)]
     [string]$Target,
+    [string]$Agent = 'cursor',
     [switch]$SkipSkills,
     [switch]$SkipScoring,
     [switch]$DryRun,
@@ -60,6 +64,7 @@ function Show-Help {
     Write-Output "BMAD-Speckit-SDD-Flow setup script"
     Write-Output "Usage: pwsh scripts/setup.ps1 -Target <path> [options]"
     Write-Output "  -Target <path>    Target project root (required)"
+    Write-Output "  -Agent <type>     AI agent: cursor (default), claude-code, or comma-separated"
     Write-Output "  -Full             Full install mode (default when using setup:full)"
     Write-Output "  -SkipSkills       Skip global Skills install"
     Write-Output "  -SkipScoring      Skip scoring/ copy"
@@ -101,15 +106,30 @@ if (-not $DryRun) {
     }
 }
 
+$AgentAliases = @{ 'cursor-agent' = 'cursor'; 'claude' = 'claude-code' }
+$AgentList = $Agent -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ } | ForEach-Object {
+    if ($AgentAliases.ContainsKey($_)) { $AgentAliases[$_] } else { $_ }
+}
+$ValidAgents = @('cursor', 'claude-code')
+foreach ($a in $AgentList) {
+    if ($a -notin $ValidAgents) {
+        Write-Error "Invalid -Agent value: $a. Valid: $($ValidAgents -join ', '), cursor-agent, claude"
+        exit 1
+    }
+}
+
 Write-Output "=== BMAD-Speckit-SDD-Flow Setup ==="
 Write-Output "PKG_ROOT: $PKG_ROOT"
 Write-Output "Target:   $TargetResolved"
+Write-Output "Agent:    $($AgentList -join ', ')"
 Write-Output ""
 
 if ($DryRun) {
     Write-Output "[DryRun] Plan:"
-    Write-Output "  1. node scripts/init-to-root.js --full $TargetResolved"
-    Write-Output "  2. .cursor/ sync (via init-to-root)"
+    foreach ($ag in $AgentList) {
+        Write-Output "  1. node scripts/init-to-root.js --full --agent $ag $TargetResolved"
+    }
+    Write-Output "  2. Agent sync (via init-to-root)"
     if (-not $SkipSkills) {
         Write-Output "  3. Copy REQUIRED_SKILLS: $($REQUIRED_SKILLS -join ', ')"
         Write-Output "  4. Copy OPTIONAL_SKILLS: $($OPTIONAL_SKILLS -join ', ')"
@@ -125,32 +145,44 @@ if ($DryRun) {
     exit 0
 }
 
-# Step 1–2: init-to-root --full (含 .cursor 同步)
-Write-Output "[1] Deploying core+extended dirs..."
-& node (Join-Path $PKG_ROOT 'scripts\init-to-root.js') --full $TargetResolved
-if ($LASTEXITCODE -ne 0) {
-    Write-Error 'init-to-root.js failed'
-    exit 1
+# Step 1–2: init-to-root --full for each agent
+foreach ($ag in $AgentList) {
+    Write-Output "[1] Deploying core+extended dirs (agent=$ag)..."
+    & node (Join-Path $PKG_ROOT 'scripts\init-to-root.js') --full --agent $ag $TargetResolved
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "init-to-root.js failed for agent=$ag"
+        exit 1
+    }
 }
 
 # Step 3–4: Skills 复制
 if (-not $SkipSkills) {
-    $skillsRoot = Join-Path $env:USERPROFILE '.cursor\skills'
-    if (-not (Test-Path $skillsRoot)) {
-        New-Item -ItemType Directory -Path $skillsRoot -Force | Out-Null
+    $skillTargets = @()
+    foreach ($ag in $AgentList) {
+        switch ($ag) {
+            'cursor' { $skillTargets += Join-Path $env:USERPROFILE '.cursor\skills' }
+            'claude-code' { $skillTargets += Join-Path $env:USERPROFILE '.claude\skills' }
+        }
     }
+    $skillTargets = $skillTargets | Select-Object -Unique
+
     $allSkills = $REQUIRED_SKILLS + $OPTIONAL_SKILLS
-    foreach ($skill in $allSkills) {
-        $src = Join-Path $PKG_ROOT "skills\$skill"
-        $dest = Join-Path $skillsRoot $skill
-        if (Test-Path $src) {
-            Write-Output "[2] Copy skill: $skill"
-            Copy-Item -Path $src -Destination $dest -Recurse -Force
-            if (-not (Test-Path (Join-Path $dest 'SKILL.md'))) {
-                Write-Warning "  $skill - SKILL.md not found after copy"
+    foreach ($skillsRoot in $skillTargets) {
+        if (-not (Test-Path $skillsRoot)) {
+            New-Item -ItemType Directory -Path $skillsRoot -Force | Out-Null
+        }
+        foreach ($skill in $allSkills) {
+            $src = Join-Path $PKG_ROOT "skills\$skill"
+            $dest = Join-Path $skillsRoot $skill
+            if (Test-Path $src) {
+                Write-Output "[2] Copy skill: $skill -> $skillsRoot"
+                Copy-Item -Path $src -Destination $dest -Recurse -Force
+                if (-not (Test-Path (Join-Path $dest 'SKILL.md'))) {
+                    Write-Warning "  $skill - SKILL.md not found after copy"
+                }
+            } else {
+                Write-Warning "  Skip (source missing): $skill"
             }
-        } else {
-            Write-Warning "  Skip (source missing): $skill"
         }
     }
 } else {
@@ -181,17 +213,33 @@ $checks = @(
     @{ Path = '_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml'; Desc = 'Dev Story workflow' }
     @{ Path = '_bmad/_config/agent-manifest.csv'; Desc = 'Agent manifest' }
     @{ Path = '_bmad-output/config/settings.json'; Desc = 'Worktree config' }
-    @{ Path = 'commands/speckit.specify.md'; Desc = 'speckit command' }
-    @{ Path = 'commands/bmad-bmm-create-story.md'; Desc = 'BMAD command' }
-    @{ Path = 'rules/bmad-bug-auto-party-mode.mdc'; Desc = 'rules' }
-    @{ Path = '.cursor/rules/bmad-bug-auto-party-mode.mdc'; Desc = 'Cursor rules' }
-    @{ Path = '.cursor/commands/speckit.specify.md'; Desc = 'Cursor speckit command' }
-    @{ Path = '.cursor/commands/bmad-bmm-create-story.md'; Desc = 'Cursor BMAD command' }
-    @{ Path = '.cursor/agents/code-reviewer-config.yaml'; Desc = 'Cursor Code Reviewer' }
     @{ Path = 'config/code-reviewer-config.yaml'; Desc = 'Code Reviewer config' }
     @{ Path = 'templates/spec-template.md'; Desc = 'Spec template' }
     @{ Path = 'workflows/specify.md'; Desc = 'Specify workflow' }
 )
+
+foreach ($ag in $AgentList) {
+    switch ($ag) {
+        'cursor' {
+            $checks += @(
+                @{ Path = '.cursor/rules/bmad-bug-auto-party-mode.mdc'; Desc = 'Cursor rules' }
+                @{ Path = '.cursor/commands/speckit.specify.md'; Desc = 'Cursor speckit command' }
+                @{ Path = '.cursor/commands/bmad-bmm-create-story.md'; Desc = 'Cursor BMAD command' }
+                @{ Path = '.cursor/agents/code-reviewer-config.yaml'; Desc = 'Cursor Code Reviewer' }
+            )
+        }
+        'claude-code' {
+            $checks += @(
+                @{ Path = '.claude/commands'; Desc = 'Claude commands dir' }
+                @{ Path = '.claude/rules'; Desc = 'Claude rules dir' }
+                @{ Path = '.claude/agents'; Desc = 'Claude agents dir' }
+                @{ Path = '.claude/hooks'; Desc = 'Claude hooks dir' }
+                @{ Path = '.claude/settings.json'; Desc = 'Claude settings' }
+                @{ Path = 'CLAUDE.md'; Desc = 'CLAUDE.md project file' }
+            )
+        }
+    }
+}
 
 $ok = 0
 $missing = 0
@@ -214,16 +262,22 @@ $skillChecks = @(
     'bmad-code-reviewer-lifecycle'
     'code-review'
 )
-foreach ($s in $skillChecks) {
-    $p = Join-Path $env:USERPROFILE ".cursor\skills\$s\SKILL.md"
-    if (Test-Path $p) {
-        Write-Output "  [OK] $s"
-        $ok++
-    } elseif ($SkipSkills) {
-        Write-Output "  [SKIP] $s (Skills skipped)"
-    } else {
-        Write-Output "  [MISSING] $s"
-        $missing++
+foreach ($ag in $AgentList) {
+    $agentSkillRoot = switch ($ag) {
+        'cursor'     { Join-Path $env:USERPROFILE '.cursor\skills' }
+        'claude-code' { Join-Path $env:USERPROFILE '.claude\skills' }
+    }
+    foreach ($s in $skillChecks) {
+        $p = Join-Path $agentSkillRoot "$s\SKILL.md"
+        if (Test-Path $p) {
+            Write-Output "  [OK] $s ($ag)"
+            $ok++
+        } elseif ($SkipSkills) {
+            Write-Output "  [SKIP] $s ($ag) (Skills skipped)"
+        } else {
+            Write-Output "  [MISSING] $s ($ag)"
+            $missing++
+        }
     }
 }
 

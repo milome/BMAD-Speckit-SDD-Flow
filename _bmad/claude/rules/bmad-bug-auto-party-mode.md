@@ -1,0 +1,37 @@
+# 问题描述时自动 party-mode 与 BUGFIX 产出
+
+## 适用时机
+
+当用户消息属于「**描述问题**」时，本规则适用，主 Agent **必须**按下列行为执行，且**不得**在未进入 party-mode 的情况下直接给出根因结论或直接修改生产代码。
+
+**「描述问题」** 指满足以下任一情况：
+
+- 用户消息中包含与错误/失败相关的关键词或短语，例如：测试失败、test failed、pytest 报错、用例失败、AssertionError、运行报错、exception、traceback、崩溃、bug、有问题、异常、根因、为什么失败 等；
+- 用户消息描述了以下场景之一：某条或某批测试用例失败（可带错误信息/路径/用例名）；程序运行时报错或异常（可带堆栈/日志）；行为与预期不符（可带复现步骤/环境）；或明确请求「分析根因」「写 BUGFIX」「修复这个 bug」。
+
+**不触发**：用户仅说「用 party-mode」且未描述具体问题；仅请求写文档/解释/README 且未涉及错误；或用户**明确**说「不要 party-mode」「直接修」时，以用户明确指令为准。
+
+## 必须执行的行为
+
+1. **自动发起 party-mode**
+   主 Agent 在识别到「用户描述问题」后，**第一条实质性回复**必须声明进入 party-mode（或等效表述），并说明将进行多角色辩论（目标：根因分析 + BUGFIX 文档）。不等待用户再说「用 party-mode」。
+
+2. **执行 party-mode 与角色约束**
+   - 执行 `{project-root}/_bmad/core/workflows/party-mode/workflow.md` 及 step-02 讨论编排。
+   - 必须引入角色：**批判审计员**、**Winston（架构师）**、**Amelia（开发）**、**John（产品）**；可包含其他 BMAD 角色。
+   - **批判审计员发言占比 > 60%**：即总轮数 100 时，至少 61 轮含批判审计员发言。批判审计员负责质疑可操作性、可验证性、被模型忽略风险、假 100 轮风险，并提出 gap 与边界情况。
+
+3. **轮次与收敛**
+   - 讨论 **至少 100 轮**，对问题做根因级深入分析。
+   - **收敛条件**：**最后 3 轮无新 gap** 才能结束辩论（例如第 98、99、100 轮均无新 gap）。
+   - 禁止凑轮次：每轮须有实质角色发言，不得空转。
+
+4. **产出 BUGFIX 文档**
+   辩论收敛后，**必须**生成一份 BUGFIX 文档，包含：§1 现象/问题描述、§2 根因分析、§3 依据/参考（可选）、§4 修复方案、§5 流程/建议流程（可选）、§7 最终任务列表。路径：有 story 时 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/BUGFIX_{slug}.md`；无 story 时 `_bmad-output/implementation-artifacts/_orphan/BUGFIX_{slug}.md`。格式与禁止词表等与 bmad-bug-assistant 约定一致。
+
+5. **禁止主 Agent 直接修改源代码**
+   主 Agent **不得**在会话中直接编辑生产代码以修复 bug。修复实施**须**通过子代理（Agent tool）或 BUGFIX 文档 §7 任务列表由用户/子代理执行；主 Agent 仅负责发起 party-mode、产出 BUGFIX、发起审计/实施子任务。
+
+## 与 bmad-bug-assistant 的配合
+
+进入 party-mode 并产出 BUGFIX 后，若主 Agent 再发起审计或实施子任务，仍须遵守 `.claude/rules/bmad-bug-assistant.md` 的自检与整段复制 prompt 模板等规则。

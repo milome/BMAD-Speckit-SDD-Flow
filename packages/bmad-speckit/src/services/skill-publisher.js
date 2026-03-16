@@ -48,7 +48,31 @@ function copyDirRecursive(src, dest) {
 }
 
 /**
- * Publish skills from _bmad/skills (or bmadPath/skills) to configTemplate.skillsDir.
+ * Copy all skill subdirectories from srcRoot to destFull.
+ * @param {string} srcRoot - Source skills directory.
+ * @param {string} destFull - Destination skills directory.
+ * @returns {string[]} Names of published skill directories.
+ */
+function publishFromDir(srcRoot, destFull) {
+  if (!fs.existsSync(srcRoot) || !fs.statSync(srcRoot).isDirectory()) return [];
+  const entries = fs.readdirSync(srcRoot, { withFileTypes: true });
+  const subdirs = entries.filter((e) => e.isDirectory());
+  const published = [];
+  for (const sub of subdirs) {
+    const srcSub = path.join(srcRoot, sub.name);
+    const destSub = path.join(destFull, sub.name);
+    if (!fs.existsSync(destSub)) fs.mkdirSync(destSub, { recursive: true });
+    copyDirRecursive(srcSub, destSub);
+    published.push(sub.name);
+  }
+  return published;
+}
+
+/**
+ * Publish skills to configTemplate.skillsDir in two phases:
+ * 1. Universal skills from _bmad/skills/
+ * 2. Platform-adapted skills from configTemplate.platformSkillsDir (e.g. _bmad/cursor/skills/)
+ * Same-name skills in phase 2 overwrite phase 1 (platform-specific wins).
  * @param {string} projectRoot - Project root.
  * @param {string} selectedAI - AI id from registry.
  * @param {{ bmadPath?: string, noAiSkills?: boolean }} [options] - bmadPath for worktree; noAiSkills to skip.
@@ -70,23 +94,9 @@ function publish(projectRoot, selectedAI, options = {}) {
     return { published: [], skippedReasons: ['该 AI 不支持全局 skill'] };
   }
 
-  let srcRoot;
-  if (options.bmadPath) {
-    const resolvedBmad = path.resolve(projectRoot, options.bmadPath);
-    srcRoot = path.join(resolvedBmad, 'skills');
-  } else {
-    srcRoot = path.join(projectRoot, '_bmad', 'skills');
-  }
-
-  if (!fs.existsSync(srcRoot) || !fs.statSync(srcRoot).isDirectory()) {
-    return { published: [], skippedReasons: [] };
-  }
-
-  const entries = fs.readdirSync(srcRoot, { withFileTypes: true });
-  const subdirs = entries.filter((e) => e.isDirectory());
-  if (subdirs.length === 0) {
-    return { published: [], skippedReasons: [] };
-  }
+  const bmadRoot = options.bmadPath
+    ? path.resolve(projectRoot, options.bmadPath)
+    : path.join(projectRoot, '_bmad');
 
   const destRaw = expandTilde(skillsDir);
   const destFull = path.isAbsolute(destRaw) ? destRaw : path.join(projectRoot, destRaw);
@@ -94,16 +104,20 @@ function publish(projectRoot, selectedAI, options = {}) {
     fs.mkdirSync(destFull, { recursive: true });
   }
 
-  const published = [];
-  for (const sub of subdirs) {
-    const srcSub = path.join(srcRoot, sub.name);
-    const destSub = path.join(destFull, sub.name);
-    if (!fs.existsSync(destSub)) fs.mkdirSync(destSub, { recursive: true });
-    copyDirRecursive(srcSub, destSub);
-    published.push(sub.name);
+  const universalSrc = path.join(bmadRoot, 'skills');
+  const universalPublished = publishFromDir(universalSrc, destFull);
+
+  let platformPublished = [];
+  const platformSkillsDir = entry.configTemplate.platformSkillsDir;
+  if (platformSkillsDir) {
+    const platformSrc = path.isAbsolute(platformSkillsDir)
+      ? platformSkillsDir
+      : path.join(projectRoot, platformSkillsDir);
+    platformPublished = publishFromDir(platformSrc, destFull);
   }
 
-  return { published, skippedReasons: [] };
+  const allPublished = [...new Set([...universalPublished, ...platformPublished])];
+  return { published: allPublished, skippedReasons: [] };
 }
 
 module.exports = { publish };

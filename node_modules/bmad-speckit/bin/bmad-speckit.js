@@ -25,6 +25,7 @@ const { initCommand, showBanner } = require('../src/commands/init');
 const { checkCommand } = require('../src/commands/check');
 const { versionCommand } = require('../src/commands/version');
 const { upgradeCommand } = require('../src/commands/upgrade');
+const { addAgentCommand } = require('../src/commands/add-agent');
 const { configGetCommand, configSetCommand, configListCommand } = require('../src/commands/config');
 const { feedbackCommand } = require('../src/commands/feedback');
 const ttyUtils = require('../src/utils/tty');
@@ -43,7 +44,7 @@ program
   .command('init [project-name]')
   .description('Initialize a new bmad-speckit project')
   .option('--here', 'Use current directory')
-  .option('--ai <name>', 'Non-interactive AI selection (skip selector)')
+  .option('--ai <name>', 'AI selection, comma-separated for multi (e.g. cursor-agent,claude)')
   .option('--ai-commands-dir <path>', 'Commands directory for generic AI (required when --ai generic)')
   .option('-y, --yes', 'Skip all prompts, use defaults')
   .option('--template <tag|url>', 'Template version (latest, v1.0.0) or tarball URL')
@@ -95,6 +96,11 @@ program
       offline: opts.offline,
     })
   );
+
+program
+  .command('add-agent <ai>')
+  .description('Add AI agent infrastructure to an initialized project (e.g. bmad-speckit add-agent claude)')
+  .action((ai) => addAgentCommand(ai, { cwd: process.cwd() }));
 
 program
   .command('feedback')

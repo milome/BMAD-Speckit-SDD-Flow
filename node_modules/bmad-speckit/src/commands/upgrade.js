@@ -11,22 +11,9 @@ const path = require('path');
 const exitCodes = require('../constants/exit-codes');
 const { getProjectConfigPath, set } = require('../services/config-manager');
 const { resolveNetworkTimeoutMs } = require('../utils/network-timeout');
+const { readJsonSafe } = require('../utils/json');
 const templateFetcher = require('../services/template-fetcher');
 const { generateSkeleton } = require('./init-skeleton');
-
-/**
- * Read and parse a JSON file. Returns null on missing file or parse error.
- * @param {string} filePath - Path to JSON file.
- * @returns {Record<string, unknown> | null} Parsed object or null.
- */
-function readJsonSafe(filePath) {
-  if (!fs.existsSync(filePath)) return null;
-  try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Extract version from template dir package.json or _bmad/package.json.
@@ -104,14 +91,27 @@ async function upgradeCommandAsync(cwd, options = {}) {
     const bmadPath = config.bmadPath;
 
     if (bmadPath != null && typeof bmadPath === 'string') {
-      // T3.4: worktree mode - only update templateVersion
       set('templateVersion', resolvedVersion, { scope: 'project', cwd: resolvedCwd });
     } else {
-      // T3.3: no bmadPath - generateSkeleton + update templateVersion
       const modules = Array.isArray(config.modules) ? config.modules : null;
       await generateSkeleton(resolvedCwd, templateDir, modules, true);
       set('templateVersion', resolvedVersion, { scope: 'project', cwd: resolvedCwd });
     }
+
+    const selectedAIs = Array.isArray(config.selectedAIs)
+      ? config.selectedAIs
+      : (config.selectedAI ? [config.selectedAI] : []);
+    if (selectedAIs.length > 0) {
+      const { syncAllAIs } = require('./init');
+      const noAiSkills = config.noAiSkills === true;
+      const syncOpts = bmadPath ? { bmadPath, noAiSkills } : { noAiSkills };
+      syncAllAIs(resolvedCwd, selectedAIs, syncOpts);
+      if (!Array.isArray(config.selectedAIs)) {
+        set('selectedAIs', selectedAIs, { scope: 'project', cwd: resolvedCwd });
+      }
+      console.log(`Synced AI infrastructure: ${selectedAIs.join(', ')}`);
+    }
+
     console.log('Upgrade complete. Template version:', resolvedVersion);
     process.exit(exitCodes.SUCCESS);
   } catch (err) {

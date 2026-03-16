@@ -17,12 +17,12 @@ describe('Init interactive generic validation (GAP-R2-2)', () => {
   it('runInteractiveFlow contains generic aiCommandsDir validation (grep regression)', () => {
     const content = fs.readFileSync(initPath, 'utf8');
     assert.ok(
-      content.includes('resolveGenericAiCommandsDir') && content.includes("selectedAI === 'generic'"),
-      'runInteractiveFlow must validate generic via resolveGenericAiCommandsDir',
+      content.includes('resolveGenericAiCommandsDir') && content.includes("=== 'generic'"),
+      'init.js must validate generic via resolveGenericAiCommandsDir',
     );
     const runInteractiveIdx = content.indexOf('async function runInteractiveFlow');
-    const genericCheckIdx = content.indexOf('if (selectedAI === \'generic\')', runInteractiveIdx);
-    assert.ok(genericCheckIdx > runInteractiveIdx && genericCheckIdx > 0, 'generic check must be inside runInteractiveFlow');
+    const validateGenericIdx = content.indexOf('validateGenericAIs(', runInteractiveIdx);
+    assert.ok(validateGenericIdx > runInteractiveIdx && validateGenericIdx > 0, 'runInteractiveFlow must call validateGenericAIs');
   });
 
   it('interactive select generic without aiCommandsDir => exit 2 (E2E, Unix only)', () => {

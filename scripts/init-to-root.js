@@ -17,8 +17,19 @@ const PKG_ROOT = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
 const fullMode = args.includes('--full');
 const agentArgIndex = args.findIndex((a) => a === '--agent');
-const requestedAgentTarget =
-  agentArgIndex >= 0 && args[agentArgIndex + 1] ? args[agentArgIndex + 1] : 'cursor';
+let requestedAgentTarget =
+  agentArgIndex >= 0 && args[agentArgIndex + 1] ? args[agentArgIndex + 1] : null;
+
+if (!requestedAgentTarget) {
+  try {
+    const configPath = path.join(PKG_ROOT, '_bmad-output', 'config', 'bmad-speckit.json');
+    if (fs.existsSync(configPath)) {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      requestedAgentTarget = config.selectedAI || 'cursor';
+    }
+  } catch { /* ignore */ }
+  if (!requestedAgentTarget) requestedAgentTarget = 'cursor';
+}
 const REGISTERED_AGENT_PROFILES = {
   cursor: {
     runtimeRoot: '.cursor',
@@ -55,7 +66,7 @@ const REGISTERED_AGENT_PROFILES = {
         { src: 'commands', dest: '.claude/commands', fromPkgRoot: false },
         { src: 'rules', dest: '.claude/rules', fromPkgRoot: false },
         { src: '.claude/agents', dest: '.claude/agents', fromPkgRoot: true },
-        { src: '.claude/protocols', dest: '.claude/protocols', fromPkgRoot: true },
+        { src: '.claude/skills', dest: '.claude/skills', fromPkgRoot: true },
         { src: '.claude/state', dest: '.claude/state', fromPkgRoot: true },
         { src: '.claude/hooks', dest: '.claude/hooks', fromPkgRoot: true },
       ];
@@ -75,12 +86,18 @@ const REGISTERED_AGENT_PROFILES = {
     },
   },
 };
-const agentProfile = REGISTERED_AGENT_PROFILES[requestedAgentTarget];
+const AGENT_ID_ALIASES = {
+  'cursor-agent': 'cursor',
+  'claude': 'claude-code',
+};
+const normalizedAgent = AGENT_ID_ALIASES[requestedAgentTarget] || requestedAgentTarget;
+const agentProfile = REGISTERED_AGENT_PROFILES[normalizedAgent];
 if (!agentProfile) {
-  console.error(`Unsupported --agent value: ${requestedAgentTarget}`);
+  const validKeys = [...Object.keys(REGISTERED_AGENT_PROFILES), ...Object.keys(AGENT_ID_ALIASES)];
+  console.error(`Unsupported --agent value: ${requestedAgentTarget}. Valid: ${validKeys.join(', ')}`);
   process.exit(1);
 }
-const agentTarget = requestedAgentTarget;
+const agentTarget = normalizedAgent;
 const targetArg = args.find(
   (a, index) => a !== '--full' && a !== '--agent' && index !== agentArgIndex + 1
 );

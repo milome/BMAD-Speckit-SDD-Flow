@@ -207,6 +207,77 @@ async function initCommand(projectName, options = {}) {
 }
 
 /**
+ * Parse AI list from comma-separated string or single value.
+ * @param {string} aiArg - AI argument (e.g. 'cursor-agent,claude' or 'cursor-agent').
+ * @returns {string[]} Array of AI ids.
+ */
+function parseAIList(aiArg) {
+  if (!aiArg || typeof aiArg !== 'string') return [];
+  return aiArg.split(',').map((s) => s.trim()).filter(Boolean);
+}
+
+/**
+ * Validate a list of AI IDs against the registry.
+ * @param {string[]} aiIds - AI IDs to validate.
+ * @param {string} cwd - Working directory for registry lookup.
+ * @returns {{ valid: string[], invalid: string[] }}
+ */
+function validateAIIds(aiIds, cwd) {
+  const validIds = AIRegistry.listIds({ cwd });
+  const valid = aiIds.filter((id) => validIds.includes(id));
+  const invalid = aiIds.filter((id) => !validIds.includes(id));
+  return { valid, invalid };
+}
+
+/**
+ * Run SyncService and SkillPublisher for each AI in the list.
+ * @param {string} targetPath - Project root.
+ * @param {string[]} aiIds - AI IDs to sync.
+ * @param {{ bmadPath?: string, noAiSkills?: boolean }} options - Sync options.
+ * @returns {{ published: string[], skippedReasons: string[] }} Aggregated results.
+ */
+function syncAllAIs(targetPath, aiIds, options = {}) {
+  const SyncService = require('../services/sync-service');
+  const SkillPublisher = require('../services/skill-publisher');
+  const allPublished = [];
+  const allSkipped = [];
+  const errors = [];
+  for (const aiId of aiIds) {
+    try {
+      SyncService.syncCommandsRulesConfig(targetPath, aiId, options);
+      const result = SkillPublisher.publish(targetPath, aiId, options);
+      allPublished.push(...result.published);
+      allSkipped.push(...result.skippedReasons);
+    } catch (err) {
+      errors.push({ aiId, error: err.message || String(err) });
+      console.error(`Warning: sync failed for AI "${aiId}": ${err.message || err}`);
+    }
+  }
+  if (errors.length > 0 && errors.length === aiIds.length) {
+    throw new Error(`All AI syncs failed: ${errors.map((e) => `${e.aiId}: ${e.error}`).join('; ')}`);
+  }
+  return { published: [...new Set(allPublished)], skippedReasons: allSkipped, errors };
+}
+
+/**
+ * Validate generic AI constraints for a list of AI IDs.
+ * @param {string[]} aiIds - AI IDs to check.
+ * @param {Object} options - Commander options (aiCommandsDir).
+ * @param {string} cwd - Working directory.
+ */
+function validateGenericAIs(aiIds, options, cwd) {
+  for (const aiId of aiIds) {
+    if (aiId === 'generic') {
+      const genericDir = resolveGenericAiCommandsDir(aiId, options, cwd);
+      if (genericDir == null) {
+        console.error('Error: --ai generic requires --ai-commands-dir or aiCommandsDir in registry.');
+        process.exit(exitCodes.AI_INVALID);
+      }
+    }
+  }
+}
+
+/**
  * Story 10.2 / 10.4: Get default AI (ConfigManager defaultAI > first from AIRegistry); cwd for project-level override.
  * @param {string} [cwd=process.cwd()] - Working directory for config and registry lookup.
  * @returns {string} Default AI id (e.g. 'claude').
@@ -267,44 +338,35 @@ function maybePrintSubagentHint(selectedAI, cwd) {
  * @returns {Promise<void>}
  */
 async function runWorktreeFlow(targetPath, options, _log) {
-  let selectedAI = options.ai;
   const cwd = process.cwd();
-  if (selectedAI) {
-    const validIds = AIRegistry.listIds({ cwd });
-    if (!validIds.includes(selectedAI)) {
-      const list = validIds.join(', ');
-      console.error(`Error: Invalid AI "${selectedAI}". Available: ${list}`);
-      console.error('Run "bmad-speckit check --list-ai" for full list.');
-      process.exit(exitCodes.AI_INVALID);
-    }
-    const genericDir = resolveGenericAiCommandsDir(selectedAI, options, cwd);
-    if (selectedAI === 'generic' && genericDir == null) {
-      console.error('Error: --ai generic requires --ai-commands-dir or aiCommandsDir in registry.');
-      process.exit(exitCodes.AI_INVALID);
-    }
-  } else {
-    selectedAI = getDefaultAI(cwd);
+  let selectedAIs = options.ai ? parseAIList(options.ai) : [getDefaultAI(cwd)];
+
+  const { valid, invalid } = validateAIIds(selectedAIs, cwd);
+  if (invalid.length > 0) {
+    const list = AIRegistry.listIds({ cwd }).join(', ');
+    console.error(`Error: Invalid AI "${invalid.join(', ')}". Available: ${list}`);
+    console.error('Run "bmad-speckit check --list-ai" for full list.');
+    process.exit(exitCodes.AI_INVALID);
   }
+  selectedAIs = valid;
+  validateGenericAIs(selectedAIs, options, cwd);
 
   const bmadPathResolved = options.resolvedBmadPath;
   const { createWorktreeSkeleton, writeSelectedAI, runGitInit } = require('./init-skeleton');
-  const SyncService = require('../services/sync-service');
-  const SkillPublisher = require('../services/skill-publisher');
 
-  createWorktreeSkeleton(targetPath, bmadPathResolved, selectedAI);
-  SyncService.syncCommandsRulesConfig(targetPath, selectedAI, { bmadPath: bmadPathResolved });
+  createWorktreeSkeleton(targetPath, bmadPathResolved, selectedAIs[0]);
   const noAiSkills = options.noAiSkills === true || options['no-ai-skills'] === true || options.aiSkills === false;
-  const publishResult = SkillPublisher.publish(targetPath, selectedAI, {
+  const publishResult = syncAllAIs(targetPath, selectedAIs, {
     bmadPath: bmadPathResolved,
     noAiSkills,
   });
-  writeSelectedAI(targetPath, selectedAI, 'latest', bmadPathResolved, {
+  writeSelectedAI(targetPath, selectedAIs, 'latest', bmadPathResolved, {
     skillsPublished: publishResult.published,
     skippedReasons: publishResult.skippedReasons,
   });
   if (!options.noGit) runGitInit(targetPath);
-  maybePrintSubagentHint(selectedAI, targetPath);
-  console.log(chalk.green(`\n✓ Initialized (worktree) at ${targetPath}`));
+  for (const aiId of selectedAIs) maybePrintSubagentHint(aiId, targetPath);
+  console.log(chalk.green(`\n✓ Initialized (worktree) at ${targetPath} [${selectedAIs.join(', ')}]`));
   console.log(chalk.gray(POST_INIT_GUIDE_MSG));
   console.log(chalk.gray(getFeedbackHintText()));
 }
@@ -317,46 +379,36 @@ async function runWorktreeFlow(targetPath, options, _log) {
  * @returns {Promise<void>}
  */
 async function runNonInteractiveFlow(targetPath, options, log) {
-  let selectedAI = options.ai;
   const cwd = process.cwd();
-  if (selectedAI) {
-    const validIds = AIRegistry.listIds({ cwd });
-    if (!validIds.includes(selectedAI)) {
-      const list = validIds.join(', ');
-      console.error(`Error: Invalid AI "${selectedAI}". Available: ${list}`);
-      console.error('Run "bmad-speckit check --list-ai" for full list.');
-      process.exit(exitCodes.AI_INVALID);
-    }
-    const genericDir = resolveGenericAiCommandsDir(selectedAI, options, cwd);
-    if (selectedAI === 'generic' && genericDir == null) {
-      console.error('Error: --ai generic requires --ai-commands-dir or aiCommandsDir in registry.');
-      process.exit(exitCodes.AI_INVALID);
-    }
-  } else {
-    selectedAI = getDefaultAI(cwd);
+  let selectedAIs = options.ai ? parseAIList(options.ai) : [getDefaultAI(cwd)];
+
+  const { valid, invalid } = validateAIIds(selectedAIs, cwd);
+  if (invalid.length > 0) {
+    const list = AIRegistry.listIds({ cwd }).join(', ');
+    console.error(`Error: Invalid AI "${invalid.join(', ')}". Available: ${list}`);
+    console.error('Run "bmad-speckit check --list-ai" for full list.');
+    process.exit(exitCodes.AI_INVALID);
   }
+  selectedAIs = valid;
+  validateGenericAIs(selectedAIs, options, cwd);
 
   const finalPath = targetPath;
   const tag = (options.template && options.template.trim()) || 'latest';
   const networkTimeoutMs = resolveNetworkTimeoutMs(options);
-  log(`selectedAI=${selectedAI}, finalPath=${finalPath}, tag=${tag} (non-interactive)`);
+  log(`selectedAIs=${selectedAIs.join(',')}, finalPath=${finalPath}, tag=${tag} (non-interactive)`);
 
   const { generateSkeleton, createWorktreeSkeleton, writeSelectedAI, runGitInit } = require('./init-skeleton');
   const { generateScript } = require('./script-generator');
-  const SyncService = require('../services/sync-service');
-  const SkillPublisher = require('../services/skill-publisher');
+  const noAiSkills = options.noAiSkills === true || options['no-ai-skills'] === true || options.aiSkills === false;
 
   try {
     if (options.resolvedBmadPath) {
-      // Story 10.5: worktree mode - no _bmad copy, only _bmad-output and sync from bmadPath
-      createWorktreeSkeleton(finalPath, options.resolvedBmadPath, selectedAI);
-      SyncService.syncCommandsRulesConfig(finalPath, selectedAI, { bmadPath: options.resolvedBmadPath });
-      const noAiSkills = options.noAiSkills === true || options['no-ai-skills'] === true || options.aiSkills === false;
-      const publishResult = SkillPublisher.publish(finalPath, selectedAI, {
+      createWorktreeSkeleton(finalPath, options.resolvedBmadPath, selectedAIs[0]);
+      const publishResult = syncAllAIs(finalPath, selectedAIs, {
         bmadPath: options.resolvedBmadPath,
         noAiSkills,
       });
-      writeSelectedAI(finalPath, selectedAI, tag, options.resolvedBmadPath, {
+      writeSelectedAI(finalPath, selectedAIs, tag, options.resolvedBmadPath, {
         skillsPublished: publishResult.published,
         skippedReasons: publishResult.skippedReasons,
       });
@@ -375,18 +427,16 @@ async function runNonInteractiveFlow(targetPath, options, log) {
       });
       const modules = options.modules ? options.modules.split(',').map((m) => m.trim()).filter(Boolean) : null;
       await generateSkeleton(finalPath, templateDir, modules, options.force);
-      SyncService.syncCommandsRulesConfig(finalPath, selectedAI, {});
-      const noAiSkills = options.noAiSkills === true || options['no-ai-skills'] === true || options.aiSkills === false;
-      const publishResult = SkillPublisher.publish(finalPath, selectedAI, { noAiSkills });
-      writeSelectedAI(finalPath, selectedAI, tag, null, {
+      const publishResult = syncAllAIs(finalPath, selectedAIs, { noAiSkills });
+      writeSelectedAI(finalPath, selectedAIs, tag, null, {
         skillsPublished: publishResult.published,
         skippedReasons: publishResult.skippedReasons,
       });
       generateScript(finalPath, options.resolvedScriptType);
       if (!options.noGit) runGitInit(finalPath);
     }
-    maybePrintSubagentHint(selectedAI, finalPath);
-    console.log(chalk.green(`\n✓ Initialized at ${finalPath}`));
+    for (const aiId of selectedAIs) maybePrintSubagentHint(aiId, finalPath);
+    console.log(chalk.green(`\n✓ Initialized at ${finalPath} [${selectedAIs.join(', ')}]`));
     console.log(chalk.gray(POST_INIT_GUIDE_MSG));
     console.log(chalk.gray(getFeedbackHintText()));
   } catch (err) {
@@ -462,47 +512,31 @@ async function runInteractiveFlow(targetPath, options, log) {
 
   const cwd = process.cwd();
   const aiList = AIRegistry.load({ cwd });
-  let selectedAI;
+  let selectedAIs;
   if (options.ai) {
-    const validIds = AIRegistry.listIds({ cwd });
-    if (!validIds.includes(options.ai)) {
-      const list = validIds.join(', ');
-      console.error(`Error: Invalid AI "${options.ai}". Available: ${list}`);
+    selectedAIs = parseAIList(options.ai);
+    const { invalid } = validateAIIds(selectedAIs, cwd);
+    if (invalid.length > 0) {
+      const list = AIRegistry.listIds({ cwd }).join(', ');
+      console.error(`Error: Invalid AI "${invalid.join(', ')}". Available: ${list}`);
       console.error('Run "bmad-speckit check --list-ai" for full list.');
       process.exit(exitCodes.AI_INVALID);
     }
-    selectedAI = options.ai;
   } else {
     const aiChoices = aiList.map((a) => ({ name: `${a.name} (${a.id})`, value: a.id }));
     const res = await inquirer.prompt([
       {
-        type: 'autocomplete',
-        name: 'selectedAI',
-        message: 'Select AI assistant (type to search):',
-        source: (answersSoFar, input) => {
-          const q = (input || '').toLowerCase().trim();
-          const filtered = q
-            ? aiChoices.filter(
-                (c) =>
-                  c.name.toLowerCase().includes(q) || c.value.toLowerCase().includes(q),
-              )
-            : aiChoices;
-          return Promise.resolve(filtered);
-        },
-        pageSize: 15,
+        type: 'checkbox',
+        name: 'selectedAIs',
+        message: 'Select AI assistant(s) (space to toggle, enter to confirm):',
+        choices: aiChoices,
+        validate: (answer) => answer.length > 0 ? true : 'Please select at least one AI.',
       },
     ]);
-    selectedAI = res.selectedAI;
+    selectedAIs = res.selectedAIs;
   }
 
-  // GAP-R2-1: 交互式选 generic 时须校验 aiCommandsDir
-  if (selectedAI === 'generic') {
-    const genericDir = resolveGenericAiCommandsDir(selectedAI, options, cwd);
-    if (genericDir == null) {
-      console.error('Error: --ai generic requires --ai-commands-dir or aiCommandsDir in registry.');
-      process.exit(exitCodes.AI_INVALID);
-    }
-  }
+  validateGenericAIs(selectedAIs, options, cwd);
 
   const { confirmedPath } = await inquirer.prompt([
     {
@@ -541,13 +575,11 @@ async function runInteractiveFlow(targetPath, options, log) {
 
   const networkTimeoutMs = resolveNetworkTimeoutMs(options);
   const templateSource = resolveTemplateSource(process.cwd());
-  log(`selectedAI=${selectedAI}, finalPath=${finalPath}, tag=${tag}`);
+  log(`selectedAIs=${selectedAIs.join(',')}, finalPath=${finalPath}, tag=${tag}`);
 
   const { fetchTemplate } = require('../services/template-fetcher');
   const { generateSkeleton, writeSelectedAI } = require('./init-skeleton');
   const { generateScript } = require('./script-generator');
-  const SyncService = require('../services/sync-service');
-  const SkillPublisher = require('../services/skill-publisher');
 
   try {
     const templateDir = await fetchTemplate(tag, {
@@ -560,10 +592,9 @@ async function runInteractiveFlow(targetPath, options, log) {
     });
     const modules = options.modules ? options.modules.split(',').map((m) => m.trim()).filter(Boolean) : null;
     await generateSkeleton(finalPath, templateDir, modules, options.force);
-    SyncService.syncCommandsRulesConfig(finalPath, selectedAI, {});
     const noAiSkills = options.noAiSkills === true || options['no-ai-skills'] === true || options.aiSkills === false;
-    const publishResult = SkillPublisher.publish(finalPath, selectedAI, { noAiSkills });
-    writeSelectedAI(finalPath, selectedAI, tag, null, {
+    const publishResult = syncAllAIs(finalPath, selectedAIs, { noAiSkills });
+    writeSelectedAI(finalPath, selectedAIs, tag, null, {
       skillsPublished: publishResult.published,
       skippedReasons: publishResult.skippedReasons,
     });
@@ -572,8 +603,8 @@ async function runInteractiveFlow(targetPath, options, log) {
       const { runGitInit } = require('./init-skeleton');
       runGitInit(finalPath);
     }
-    maybePrintSubagentHint(selectedAI, finalPath);
-    console.log(chalk.green(`\n✓ Initialized at ${finalPath}`));
+    for (const aiId of selectedAIs) maybePrintSubagentHint(aiId, finalPath);
+    console.log(chalk.green(`\n✓ Initialized at ${finalPath} [${selectedAIs.join(', ')}]`));
     console.log(chalk.gray(POST_INIT_GUIDE_MSG));
     console.log(chalk.gray(getFeedbackHintText()));
   } catch (err) {
@@ -596,4 +627,8 @@ module.exports = {
   showBanner,
   resolveNetworkTimeoutMs,
   resolveTemplateSource,
+  parseAIList,
+  validateAIIds,
+  syncAllAIs,
+  validateGenericAIs,
 };
