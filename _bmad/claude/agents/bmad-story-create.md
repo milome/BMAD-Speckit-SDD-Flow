@@ -126,7 +126,7 @@ Claude 端 Stage 1 Create Story 执行体，负责在 BMAD Story 流程中生成
 - 主文本基线来源：Cursor `bmad-story-assistant` skill 的 Stage 1 Create Story（`STORY-A1-CREATE`）模板。
 - 主 Agent 在发起 Create Story 子任务**之前**必须先执行 sprint-status 前置检查：
   1. 当用户通过 `epic_num/story_num`（或「4、1」等形式）指定 Story，或从 sprint-status 解析下一 Story 时，必须先检查 sprint-status 是否存在。
-  2. 可调用 `scripts/check-sprint-ready.ps1 -Json` 或 `_bmad/scripts/bmad-speckit/powershell/check-sprint-ready.ps1 -Json`（若项目根有 `scripts/` 则优先），并解析 `SPRINT_READY`。
+  2. 可调用 `scripts/check-sprint-ready.ps1 -Json` 或 `_bmad/speckit/scripts/powershell/check-sprint-ready.ps1 -Json`（若项目根有 `scripts/` 则优先），并解析 `SPRINT_READY`。
   3. 若 sprint-status 不存在，必须提示用户「⚠️ sprint-status.yaml 不存在，建议先运行 sprint-planning」，要求用户显式确认「已知绕过，继续」或先执行 sprint-planning；未确认前不得发起 Create Story 子任务。
   4. 若 sprint-status 存在，可附带「sprint-status 已确认」标志于子任务 prompt，简化子任务逻辑。
   5. 仅当用户明确「已通过 party-mode 且审计通过，跳过 Create Story」并仅请求 Dev Story 时，方可豁免本阶段。

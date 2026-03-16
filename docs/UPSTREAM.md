@@ -22,7 +22,7 @@
 |--------|------------|
 | **_bmad-overlay** | `_bmad/scoring/`、批判审计员、adversarial-reviewer、ai-coach |
 | **speckit-workflow** | `.cursor/skills/speckit-workflow/`、`.cursor/commands/speckit.*` |
-| **bmad-speckit CLI** | `_bmad/scripts/bmad-speckit/`、`packages/bmad-speckit/` |
+| **bmad-speckit CLI** | `_bmad/speckit/scripts/`、`packages/bmad-speckit/` |
 | **agent-manifest** | `_bmad/_config/agent-manifest.csv` 中 adversarial-reviewer、ai-coach 条目 |
 | **party-mode 定制（旧路径）** | `_bmad/core/workflows/party-mode/`（批判审计员角色注入、收敛条件定制；本地定制原始版本，已加入排除清单） |
 | **party-mode 定制（新路径）** | `_bmad/core/skills/bmad-party-mode/`（V6 skill 格式 + 定制合并版；路径使用 `{project-root}` 绝对引用） |
@@ -48,7 +48,7 @@
 | scoring | `_bmad/scoring/` |
 | adversarial-reviewer | `_bmad/core/agents/adversarial-reviewer.md` |
 | critical-auditor | `_bmad/core/agents/critical-auditor-guide.md`、`_bmad/core/agents/README-critical-auditor.md` |
-| bmad-speckit | `_bmad/scripts/bmad-speckit/` |
+| bmad-speckit | `_bmad/speckit/scripts/` |
 | agent-manifest | `_bmad/_config/agent-manifest.csv` 中 adversarial-reviewer、ai-coach 条目 |
 | party-mode workflow | `_bmad/core/workflows/party-mode/`（本地定制版，含批判审计员角色注入） |
 | speckit-workflow | `.cursor/skills/speckit-workflow/`（spec-kit 侧） |

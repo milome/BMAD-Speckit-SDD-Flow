@@ -44,9 +44,7 @@
     "_bmad",
     "_bmad-output",
     "scripts",
-    "config",
-    "templates",
-    "workflows"
+    "config"
   ],
   "keywords": [
     "bmad",

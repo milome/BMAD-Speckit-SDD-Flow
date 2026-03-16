@@ -14,7 +14,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Outline
 
-1. Run check-prerequisites from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. **On Windows**: `_bmad/scripts/bmad-speckit/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks -RequireSprintStatus`. **On WSL/Linux/macOS**: `_bmad/scripts/bmad-speckit/shell/check-prerequisites.sh -Json -RequireTasks -IncludeTasks -RequireSprintStatus`. All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot"). **Note**: `-RequireSprintStatus` enforces sprint-planning前置 when the project has `_bmad-output/implementation-artifacts` (BMAD mode); standalone projects without this directory are unaffected.
+1. Run check-prerequisites from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. **On Windows**: `_bmad/speckit/scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks -RequireSprintStatus`. **On WSL/Linux/macOS**: `_bmad/speckit/scripts/shell/check-prerequisites.sh -Json -RequireTasks -IncludeTasks -RequireSprintStatus`. All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot"). **Note**: `-RequireSprintStatus` enforces sprint-planning前置 when the project has `_bmad-output/implementation-artifacts` (BMAD mode); standalone projects without this directory are unaffected.
 
 2. **Check checklists status** (if FEATURE_DIR/checklists/ exists):
    - Scan all checklist files in the checklists/ directory

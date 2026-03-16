@@ -250,8 +250,9 @@ $checks = @(
     @{ Path = '_bmad/_config/agent-manifest.csv'; Desc = 'Agent manifest' }
     @{ Path = '_bmad-output/config/settings.json'; Desc = 'Worktree config' }
     @{ Path = 'config/code-reviewer-config.yaml'; Desc = 'Code Reviewer config' }
-    @{ Path = 'templates/spec-template.md'; Desc = 'Spec template' }
-    @{ Path = 'workflows/specify.md'; Desc = 'Specify workflow' }
+    @{ Path = '_bmad/speckit/templates/spec-template.md'; Desc = 'Spec template' }
+    @{ Path = '_bmad/speckit/workflows/specify.md'; Desc = 'Specify workflow' }
+    @{ Path = '.specify/templates/spec-template.md'; Desc = '.specify template deployment' }
 )
 
 foreach ($ag in $AgentList) {

@@ -5,7 +5,7 @@
 get_repo_root() {
     local root
     root="$(git rev-parse --show-toplevel 2>/dev/null)" && echo "$root" && return 0
-    # Fallback: script is in _bmad/scripts/bmad-speckit/shell/
+    # Fallback: script is in _bmad/speckit/scripts/shell/
     local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     cd "$script_dir/../../.." && pwd
 }

@@ -49,13 +49,13 @@ npm run setup:sh -- -Target /home/user/my-project -Full
 ### speckit 前置检查
 
 ```bash
-./_bmad/scripts/bmad-speckit/shell/check-prerequisites.sh -Json -RequireTasks -IncludeTasks -RequireSprintStatus
+./_bmad/speckit/scripts/shell/check-prerequisites.sh -Json -RequireTasks -IncludeTasks -RequireSprintStatus
 ```
 
 ### 创建 Feature (BMAD 模式)
 
 ```bash
-./_bmad/scripts/bmad-speckit/shell/create-new-feature.sh -ModeBmad -Epic 4 -Story 1 -Slug my-story
+./_bmad/speckit/scripts/shell/create-new-feature.sh -ModeBmad -Epic 4 -Story 1 -Slug my-story
 ```
 
 ### 同步清单校验（validate-sync-manifest）
@@ -63,16 +63,16 @@ npm run setup:sh -- -Target /home/user/my-project -Full
 shell 版调用 Python，参数与 PS 对应关系：PS `-ManifestPath`→`--manifest`，`-RepoA`→`--repo-a`，`-RepoB`→`--repo-b`。
 
 ```bash
-./_bmad/scripts/bmad-speckit/shell/validate-sync-manifest.sh --manifest sync-manifest.yaml --repo-a /path/to/repo-a --repo-b /path/to/repo-b
+./_bmad/speckit/scripts/shell/validate-sync-manifest.sh --manifest sync-manifest.yaml --repo-a /path/to/repo-a --repo-b /path/to/repo-b
 ```
 
 ### Worktree 管理
 
 ```bash
-./_bmad/scripts/bmad-speckit/shell/setup_worktree.sh create 005-my-feature
-./_bmad/scripts/bmad-speckit/shell/setup_worktree.sh list
-./_bmad/scripts/bmad-speckit/shell/setup_worktree.sh remove 005-my-feature
-./_bmad/scripts/bmad-speckit/shell/setup_worktree.sh sync ../my-repo-005-my-feature
+./_bmad/speckit/scripts/shell/setup_worktree.sh create 005-my-feature
+./_bmad/speckit/scripts/shell/setup_worktree.sh list
+./_bmad/speckit/scripts/shell/setup_worktree.sh remove 005-my-feature
+./_bmad/speckit/scripts/shell/setup_worktree.sh sync ../my-repo-005-my-feature
 ```
 
 ### Git push 监控（后台 push + 监控）
@@ -85,18 +85,18 @@ shell 版调用 Python，参数与 PS 对应关系：PS `-ManifestPath`→`--man
 ### audit 配置校验、Plan 设置、Agent 更新、相关文档
 
 ```bash
-# 校验 .speckit/config.yaml 禁止 audit_convergence: simple
-./_bmad/scripts/bmad-speckit/shell/validate-audit-config.sh
+# 校验 config/speckit.yaml 禁止 audit_convergence: simple
+./_bmad/speckit/scripts/shell/validate-audit-config.sh
 
 # 设置 plan 模板
-./_bmad/scripts/bmad-speckit/shell/setup-plan.sh -Json
+./_bmad/speckit/scripts/shell/setup-plan.sh -Json
 
 # 更新 Agent 上下文
-./_bmad/scripts/bmad-speckit/shell/update-agent-context.sh claude
-./_bmad/scripts/bmad-speckit/shell/update-agent-context.sh   # 更新全部
+./_bmad/speckit/scripts/shell/update-agent-context.sh claude
+./_bmad/speckit/scripts/shell/update-agent-context.sh   # 更新全部
 
 # 查找相关设计文档
-./_bmad/scripts/bmad-speckit/shell/find-related-docs.sh -FeatureDescription "用户认证" -ShortName auth -Json
+./_bmad/speckit/scripts/shell/find-related-docs.sh -FeatureDescription "用户认证" -ShortName auth -Json
 ```
 
 ## package.json 新增脚本

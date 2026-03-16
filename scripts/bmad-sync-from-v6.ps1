@@ -30,10 +30,10 @@ $ErrorActionPreference = 'Stop'
 $BMAD_METHOD_REPO = 'https://github.com/bmad-code-org/BMAD-METHOD.git'
 $EXCLUDE_PATTERNS = @(
     '_bmad/scoring',
+    '_bmad/speckit',
     '_bmad/core/agents/adversarial-reviewer.md',
     '_bmad/core/agents/critical-auditor-guide.md',
     '_bmad/core/agents/README-critical-auditor.md',
-    '_bmad/scripts/bmad-speckit',
     '_bmad/_config/agent-manifest.csv',
     '_bmad/core/workflows/party-mode',
     'adversarial-reviewer.md',
@@ -49,7 +49,7 @@ $BACKUP_ITEMS = @(
     ,@{ From = "_bmad/core/agents/adversarial-reviewer.md"; To = "adversarial-reviewer.md" }
     ,@{ From = "_bmad/core/agents/critical-auditor-guide.md"; To = "critical-auditor-guide.md" }
     ,@{ From = "_bmad/core/agents/README-critical-auditor.md"; To = "README-critical-auditor.md" }
-    ,@{ From = "_bmad/scripts/bmad-speckit"; To = "bmad_speckit_scripts" }
+    ,@{ From = "_bmad/speckit"; To = "bmad_speckit" }
     ,@{ From = "_bmad/_config/agent-manifest.csv"; To = "agent-manifest.csv" }
     ,@{ From = "_bmad/core/workflows/party-mode"; To = "party-mode-workflow" }
 )

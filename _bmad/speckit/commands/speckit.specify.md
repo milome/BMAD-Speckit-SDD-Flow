@@ -1,4 +1,4 @@
-﻿---
+---
 description: Create or update the feature specification from a natural language feature description.
 handoffs: 
   - label: Build Technical Plan
@@ -53,10 +53,10 @@ Given that feature description, do this:
       - Find the highest number N
       - Use N+1 for the new branch number
    
-   d. Run the script `_bmad/scripts/bmad-speckit/powershell/create-new-feature.ps1 -Json "$ARGUMENTS"` with the calculated number and short-name:
+   d. Run the script `_bmad/speckit/scripts/powershell/create-new-feature.ps1 -Json "$ARGUMENTS"` with the calculated number and short-name:
       - Pass `--number N+1` and `--short-name "your-short-name"` along with the feature description
-      - Bash example: `_bmad/scripts/bmad-speckit/powershell/create-new-feature.ps1 -Json "$ARGUMENTS" --json --number 5 --short-name "user-auth" "Add user authentication"`
-      - PowerShell example: `_bmad/scripts/bmad-speckit/powershell/create-new-feature.ps1 -Json "$ARGUMENTS" -Json -Number 5 -ShortName "user-auth" "Add user authentication"`
+      - Bash example: `_bmad/speckit/scripts/powershell/create-new-feature.ps1 -Json "$ARGUMENTS" --json --number 5 --short-name "user-auth" "Add user authentication"`
+      - PowerShell example: `_bmad/speckit/scripts/powershell/create-new-feature.ps1 -Json "$ARGUMENTS" -Json -Number 5 -ShortName "user-auth" "Add user authentication"`
    
    **IMPORTANT**:
    - Check all three sources (remote branches, local branches, specs directories) to find the highest number
@@ -69,7 +69,7 @@ Given that feature description, do this:
 
 3. **Search for related design documents** (before generating spec):
    
-   a. Run the script `_bmad/scripts/bmad-speckit/powershell/find-related-docs.ps1 -Json` to find existing design documents:
+   a. Run the script `_bmad/speckit/scripts/powershell/find-related-docs.ps1 -Json` to find existing design documents:
       - Pass the feature description and short-name as parameters
       - Search locations:
         - `specs/000-Overview/*.md` - Design documents in Overview directory

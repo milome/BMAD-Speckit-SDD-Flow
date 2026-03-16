@@ -35,6 +35,9 @@ commands/
 rules/
 skills/
 
+# Speckit runtime (deployed from _bmad/speckit/ by init-to-root / SyncService)
+.specify/
+
 # Cursor runtime
 # commands/rules: deployed by init-to-root from _bmad/commands/ and _bmad/cursor/rules/
 # skills: deployed to ~/.cursor/skills/ by SkillPublisher (not project-level)

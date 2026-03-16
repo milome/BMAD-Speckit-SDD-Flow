@@ -591,5 +591,5 @@ Layer 5: 收尾与集成
 | Agent 执行规则（完整） | [references/qa-agent-rules.md](references/qa-agent-rules.md) |
 | **Tasks 执行 TDD 规则（完整）** | **[references/task-execution-tdd.md](references/task-execution-tdd.md)** |
 | 实施后审计规则（strict） | [references/audit-post-impl-rules.md](references/audit-post-impl-rules.md) |
-| audit_convergence 配置 | [references/audit-config-schema.md](references/audit-config-schema.md)；校验脚本 `_bmad/scripts/bmad-speckit/powershell/validate-audit-config.ps1` |
+| audit_convergence 配置 | [references/audit-config-schema.md](references/audit-config-schema.md)；校验脚本 `_bmad/speckit/scripts/powershell/validate-audit-config.ps1` |
 | **Speckit 命令索引** | 见 §8 |

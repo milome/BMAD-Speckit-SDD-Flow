@@ -14,7 +14,7 @@ EXCLUDE_PATTERNS=(
     "_bmad/core/agents/adversarial-reviewer.md"
     "_bmad/core/agents/critical-auditor-guide.md"
     "_bmad/core/agents/README-critical-auditor.md"
-    "_bmad/scripts/bmad-speckit"
+    "_bmad/speckit"
     "_bmad/_config/agent-manifest.csv"
     "_bmad/core/workflows/party-mode"
     "adversarial-reviewer.md"
@@ -29,7 +29,7 @@ BACKUP_ITEMS=(
     "_bmad/core/agents/adversarial-reviewer.md:adversarial-reviewer.md"
     "_bmad/core/agents/critical-auditor-guide.md:critical-auditor-guide.md"
     "_bmad/core/agents/README-critical-auditor.md:README-critical-auditor.md"
-    "_bmad/scripts/bmad-speckit:bmad_speckit_scripts"
+    "_bmad/speckit:bmad_speckit"
     "_bmad/_config/agent-manifest.csv:agent-manifest.csv"
     "_bmad/core/workflows/party-mode:party-mode-workflow"
 )

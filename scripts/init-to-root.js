@@ -7,7 +7,8 @@
  *   - Cursor rules/skills: _bmad/cursor/
  *   - Claude agents/skills/hooks/rules: _bmad/claude/
  *
- * 用途：部署 BMAD 目录结构；--full 时包含 config、templates、workflows。
+ * 用途：部署 BMAD 目录结构；--full 时包含 config。
+ * speckit commands 从 _bmad/speckit/commands/ 合并；.specify/ 部署 templates/workflows/scripts。
  *
  * CLI 参数：[targetDir], --full, --agent cursor|claude-code
  *
@@ -35,6 +36,60 @@ if (!requestedAgentTarget) {
   } catch { /* ignore */ }
   if (!requestedAgentTarget) requestedAgentTarget = 'cursor';
 }
+/**
+ * Deploy .specify/ runtime directory from _bmad/speckit/ source.
+ * @param {string} targetDir - Project root.
+ * @returns {number} Number of files deployed.
+ */
+function deploySpecify(targetDir) {
+  const bmadRoot = path.join(targetDir, '_bmad');
+  const specifyDest = path.join(targetDir, '.specify');
+  const specifySync = [
+    { src: path.join(bmadRoot, 'speckit', 'templates'), dest: path.join(specifyDest, 'templates') },
+    { src: path.join(bmadRoot, 'speckit', 'workflows'), dest: path.join(specifyDest, 'workflows') },
+    { src: path.join(bmadRoot, 'speckit', 'scripts', 'shell'), dest: path.join(specifyDest, 'scripts') },
+    { src: path.join(bmadRoot, 'speckit', 'scripts', 'powershell'), dest: path.join(specifyDest, 'scripts') },
+  ];
+  let totalFiles = 0;
+  for (const { src, dest } of specifySync) {
+    if (fs.existsSync(src)) {
+      console.log('Sync', path.relative(targetDir, src), '->', path.relative(targetDir, dest));
+      copyRecursive(src, dest);
+      totalFiles += countFiles(dest);
+    }
+  }
+  const cmdSrc = path.join(bmadRoot, 'speckit', 'commands');
+  const cmdDest = path.join(specifyDest, 'templates', 'commands');
+  if (fs.existsSync(cmdSrc)) {
+    console.log('Sync', path.relative(targetDir, cmdSrc), '->', path.relative(targetDir, cmdDest), '(strip speckit. prefix)');
+    copyStripPrefix(cmdSrc, cmdDest, 'speckit.');
+    totalFiles += countFiles(cmdDest);
+  }
+  const memoryDir = path.join(specifyDest, 'memory');
+  if (!fs.existsSync(memoryDir)) {
+    fs.mkdirSync(memoryDir, { recursive: true });
+  }
+  return totalFiles;
+}
+
+/**
+ * Copy directory contents, stripping a filename prefix from top-level files.
+ * e.g. speckit.plan.md -> plan.md (upstream convention for .specify/templates/commands/).
+ */
+function copyStripPrefix(src, dest, prefix) {
+  if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
+  for (const name of fs.readdirSync(src)) {
+    const srcPath = path.join(src, name);
+    const stat = fs.statSync(srcPath);
+    if (stat.isDirectory()) {
+      copyRecursive(srcPath, path.join(dest, name));
+    } else {
+      const destName = name.startsWith(prefix) ? name.slice(prefix.length) : name;
+      fs.copyFileSync(srcPath, path.join(dest, destName));
+    }
+  }
+}
+
 const REGISTERED_AGENT_PROFILES = {
   cursor: {
     runtimeRoot: '.cursor',
@@ -42,6 +97,7 @@ const REGISTERED_AGENT_PROFILES = {
       const bmadRoot = path.join(targetDir, '_bmad');
       const cursorSync = [
         { src: path.join(bmadRoot, 'commands'), dest: '.cursor/commands' },
+        { src: path.join(bmadRoot, 'speckit', 'commands'), dest: '.cursor/commands' },
         { src: path.join(bmadRoot, 'cursor', 'rules'), dest: '.cursor/rules' },
         { src: path.join(bmadRoot, 'cursor', 'skills'), dest: '.cursor/skills' },
       ];
@@ -62,6 +118,7 @@ const REGISTERED_AGENT_PROFILES = {
         console.log('Sync config/code-reviewer-config.yaml -> .cursor/agents/');
         totalFiles += 1;
       }
+      totalFiles += deploySpecify(targetDir);
       return totalFiles;
     },
   },
@@ -71,6 +128,7 @@ const REGISTERED_AGENT_PROFILES = {
       const bmadRoot = path.join(targetDir, '_bmad');
       const claudeSync = [
         { src: path.join(bmadRoot, 'commands'), dest: '.claude/commands' },
+        { src: path.join(bmadRoot, 'speckit', 'commands'), dest: '.claude/commands' },
         { src: path.join(bmadRoot, 'claude', 'rules'), dest: '.claude/rules' },
         { src: path.join(bmadRoot, 'claude', 'agents'), dest: '.claude/agents' },
         { src: path.join(bmadRoot, 'claude', 'skills'), dest: '.claude/skills' },
@@ -106,6 +164,7 @@ const REGISTERED_AGENT_PROFILES = {
         console.log('Generated CLAUDE.md from template');
         totalFiles += 1;
       }
+      totalFiles += deploySpecify(targetDir);
       return totalFiles;
     },
   },
@@ -132,8 +191,6 @@ const FULL_DIRS = [
   '_bmad',
   '_bmad-output',
   'config',
-  'templates',
-  'workflows',
 ];
 const DIRS = fullMode ? FULL_DIRS : CORE_DIRS;
 
@@ -185,4 +242,4 @@ for (const dir of DIRS) {
 totalFiles += agentProfile.sync(TARGET, PKG_ROOT);
 
 console.log('Done. Copied', DIRS.length, 'dirs,', totalFiles, 'files.');
-console.log('Verify with: _bmad/scripts/bmad-speckit/powershell/check-prerequisites.ps1');
+console.log('Verify with: _bmad/speckit/scripts/powershell/check-prerequisites.ps1');

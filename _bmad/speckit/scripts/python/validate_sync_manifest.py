@@ -3,7 +3,7 @@
 双 repo 同步清单校验脚本（与 双repo_bmad_speckit_智能同步方案.md §7.1 一致）。
 读取 sync-manifest，对每条路径在两边计算 SHA256 checksum，输出一致/不一致列表。
 用法: python validate_sync_manifest.py --manifest sync-manifest.yaml --repo-a /path/to/repoA --repo-b /path/to/repoB
-从项目根执行时: python _bmad/scripts/bmad-speckit/python/validate_sync_manifest.py --manifest sync-manifest.yaml --repo-a . --repo-b D:/path/to/BMAD-Speckit-SDD-Flow
+从项目根执行时: python _bmad/speckit/scripts/python/validate_sync_manifest.py --manifest sync-manifest.yaml --repo-a . --repo-b D:/path/to/BMAD-Speckit-SDD-Flow
 """
 from __future__ import annotations
 

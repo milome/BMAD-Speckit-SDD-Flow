@@ -655,8 +655,8 @@ foreach ($skill in $requiredSkills) {
 | Task manifest | `_bmad/_config/task-manifest.csv` | bmad-master |
 | Workflow manifest | `_bmad/_config/workflow-manifest.csv` | bmad-master |
 | BMAD config | `_bmad/core/config.yaml` | bmad-master |
-| Check prerequisites | `_bmad/scripts/bmad-speckit/python/check_speckit_prerequisites.py` | bmad-story-assistant |
-| Check sprint ready | `_bmad/scripts/bmad-speckit/powershell/check-sprint-ready.ps1` | bmad-story-assistant |
+| Check prerequisites | `_bmad/speckit/scripts/python/check_speckit_prerequisites.py` | bmad-story-assistant |
+| Check sprint ready | `_bmad/speckit/scripts/powershell/check-sprint-ready.ps1` | bmad-story-assistant |
 | Code reviewer config | `config/code-reviewer-config.yaml` | bmad-code-reviewer-lifecycle, code-reviewer |
 | Code reviewer (IDE) | `.cursor/agents/code-reviewer-config.yaml` | Cursor IDE |
 | Stage mapping | `config/stage-mapping.yaml` | bmad-code-reviewer-lifecycle |
@@ -1013,7 +1013,7 @@ A: 该配置指向全局 Skill 路径：`%USERPROFILE%/.cursor/skills/bmad-code-
 | Cursor 命令不显示 | `.cursor/commands/` 缺失或未同步 | 从 `commands/` 复制到 `.cursor/commands/`，重启 Cursor |
 | Party-Mode 无法启动 | `_bmad/core/workflows/party-mode/workflow.md` 缺失 | 重新运行 `init-to-root.js` |
 | 审计找不到 prompt | `speckit-workflow/references/audit-prompts*.md` 缺失 | 检查全局 Skill 是否包含 `references/` 子目录 |
-| check-prerequisites 报错 | `_bmad/scripts/bmad-speckit/powershell/common.ps1` 缺失 | 确保 `_bmad/scripts/` 完整部署 |
+| check-prerequisites 报错 | `_bmad/speckit/scripts/powershell/common.ps1` 缺失 | 确保 `_bmad/scripts/` 完整部署 |
 | speckit.specify 报找不到模板 | `templates/spec-template.md` 缺失 | 从源仓库复制 `templates/` 目录 |
 | code-reviewer 配置找不到 | `config/code-reviewer-config.yaml` 或 `.cursor/agents/` 缺失 | 复制配置文件到两个位置 |
 | 全局 Skill 读不到 | 未安装到 `%USERPROFILE%\.cursor\skills\` | 重新运行 Skill 安装脚本 |

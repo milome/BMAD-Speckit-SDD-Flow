@@ -7,28 +7,28 @@
 
 ## _bmad
 
-  [生产] _bmad/scripts/bmad-speckit/powershell/check-prerequisites.ps1
-  [生产] _bmad/scripts/bmad-speckit/powershell/common.ps1
-  [生产] _bmad/scripts/bmad-speckit/powershell/create-new-feature.ps1
-  [生产] _bmad/scripts/bmad-speckit/powershell/find-related-docs.ps1
-  [生产] _bmad/scripts/bmad-speckit/powershell/setup_worktree.ps1
-  [生产] _bmad/scripts/bmad-speckit/powershell/setup-plan.ps1
-  [生产] _bmad/scripts/bmad-speckit/powershell/update-agent-context.ps1
-  [生产] _bmad/scripts/bmad-speckit/powershell/validate-audit-config.ps1
-  [生产] _bmad/scripts/bmad-speckit/powershell/validate-sync-manifest.ps1
-  [生产] _bmad/scripts/bmad-speckit/python/check_speckit_prerequisites.py
-  [生产] _bmad/scripts/bmad-speckit/python/migrate_bmad_output_to_subdirs.py
-  [生产] _bmad/scripts/bmad-speckit/python/migrate_planning_artifacts_to_branch.py
-  [生产] _bmad/scripts/bmad-speckit/python/validate_sync_manifest.py
-  [生产] _bmad/scripts/bmad-speckit/shell/check-prerequisites.sh
-  [生产] _bmad/scripts/bmad-speckit/shell/common.sh
-  [生产] _bmad/scripts/bmad-speckit/shell/create-new-feature.sh
-  [生产] _bmad/scripts/bmad-speckit/shell/find-related-docs.sh
-  [生产] _bmad/scripts/bmad-speckit/shell/setup_worktree.sh
-  [生产] _bmad/scripts/bmad-speckit/shell/setup-plan.sh
-  [生产] _bmad/scripts/bmad-speckit/shell/update-agent-context.sh
-  [生产] _bmad/scripts/bmad-speckit/shell/validate-audit-config.sh
-  [生产] _bmad/scripts/bmad-speckit/shell/validate-sync-manifest.sh
+  [生产] _bmad/speckit/scripts/powershell/check-prerequisites.ps1
+  [生产] _bmad/speckit/scripts/powershell/common.ps1
+  [生产] _bmad/speckit/scripts/powershell/create-new-feature.ps1
+  [生产] _bmad/speckit/scripts/powershell/find-related-docs.ps1
+  [生产] _bmad/speckit/scripts/powershell/setup_worktree.ps1
+  [生产] _bmad/speckit/scripts/powershell/setup-plan.ps1
+  [生产] _bmad/speckit/scripts/powershell/update-agent-context.ps1
+  [生产] _bmad/speckit/scripts/powershell/validate-audit-config.ps1
+  [生产] _bmad/speckit/scripts/powershell/validate-sync-manifest.ps1
+  [生产] _bmad/speckit/scripts/python/check_speckit_prerequisites.py
+  [生产] _bmad/speckit/scripts/python/migrate_bmad_output_to_subdirs.py
+  [生产] _bmad/speckit/scripts/python/migrate_planning_artifacts_to_branch.py
+  [生产] _bmad/speckit/scripts/python/validate_sync_manifest.py
+  [生产] _bmad/speckit/scripts/shell/check-prerequisites.sh
+  [生产] _bmad/speckit/scripts/shell/common.sh
+  [生产] _bmad/speckit/scripts/shell/create-new-feature.sh
+  [生产] _bmad/speckit/scripts/shell/find-related-docs.sh
+  [生产] _bmad/speckit/scripts/shell/setup_worktree.sh
+  [生产] _bmad/speckit/scripts/shell/setup-plan.sh
+  [生产] _bmad/speckit/scripts/shell/update-agent-context.sh
+  [生产] _bmad/speckit/scripts/shell/validate-audit-config.sh
+  [生产] _bmad/speckit/scripts/shell/validate-sync-manifest.sh
 
 
 ## packages
@@ -251,7 +251,7 @@
 
 ## tmp-e10s5b
 
-  [生产] tmp-e10s5b/_bmad/scripts/bmad-speckit/bmad-speckit.ps1
+  [生产] tmp-e10s5b/_bmad/speckit/scripts/bmad-speckit.ps1
 
 
 ## 根目录

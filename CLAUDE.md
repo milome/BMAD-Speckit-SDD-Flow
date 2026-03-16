@@ -390,7 +390,7 @@ Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `ci`
 npx bmad-speckit init <path> --ai cursor-agent
 
 # Check prerequisites
-pwsh _bmad/scripts/bmad-speckit/powershell/check-prerequisites.ps1
+pwsh _bmad/speckit/scripts/powershell/check-prerequisites.ps1
 
 # Run acceptance tests
 npm run accept:e1-s1  # Epic 1, Story 1

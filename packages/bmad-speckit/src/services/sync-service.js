@@ -73,6 +73,10 @@ function syncCommandsRulesConfig(projectRoot, selectedAI, options = {}) {
     if (fs.existsSync(src) && fs.statSync(src).isDirectory()) {
       copyDirRecursive(src, dest);
     }
+    const speckitCmdSrc = path.join(bmadRoot, 'speckit', 'commands');
+    if (fs.existsSync(speckitCmdSrc) && fs.statSync(speckitCmdSrc).isDirectory()) {
+      copyDirRecursive(speckitCmdSrc, dest);
+    }
   }
 
   const sourceDir = ct.sourceDir;
@@ -132,6 +136,52 @@ function syncCommandsRulesConfig(projectRoot, selectedAI, options = {}) {
     const merged = deepMerge(existing, ct.vscodeSettings);
     if (!fs.existsSync(vscodeDir)) fs.mkdirSync(vscodeDir, { recursive: true });
     fs.writeFileSync(settingsPath, JSON.stringify(merged, null, 2), 'utf8');
+  }
+
+  deploySpecifyDir(projectRoot, bmadRoot);
+}
+
+/**
+ * Deploy .specify/ runtime directory from _bmad/speckit/ source.
+ * Creates templates/, workflows/, scripts/, memory/ under .specify/.
+ * @param {string} projectRoot - Project root.
+ * @param {string} bmadRoot - Path to _bmad directory.
+ */
+function deploySpecifyDir(projectRoot, bmadRoot) {
+  const specifyDest = path.join(projectRoot, '.specify');
+  const pairs = [
+    { src: path.join(bmadRoot, 'speckit', 'templates'), dest: path.join(specifyDest, 'templates') },
+    { src: path.join(bmadRoot, 'speckit', 'workflows'), dest: path.join(specifyDest, 'workflows') },
+  ];
+  for (const { src, dest } of pairs) {
+    if (fs.existsSync(src) && fs.statSync(src).isDirectory()) {
+      copyDirRecursive(src, dest);
+    }
+  }
+  const cmdSrc = path.join(bmadRoot, 'speckit', 'commands');
+  const cmdDest = path.join(specifyDest, 'templates', 'commands');
+  if (fs.existsSync(cmdSrc) && fs.statSync(cmdSrc).isDirectory()) {
+    copyDirStripPrefix(cmdSrc, cmdDest, 'speckit.');
+  }
+  const memoryDir = path.join(specifyDest, 'memory');
+  if (!fs.existsSync(memoryDir)) fs.mkdirSync(memoryDir, { recursive: true });
+}
+
+/**
+ * Copy directory contents, stripping a filename prefix from top-level files.
+ * e.g. speckit.plan.md -> plan.md (upstream convention for .specify/templates/commands/).
+ */
+function copyDirStripPrefix(src, dest, prefix) {
+  if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
+  const entries = fs.readdirSync(src, { withFileTypes: true });
+  for (const e of entries) {
+    const s = path.join(src, e.name);
+    if (e.isDirectory()) {
+      copyDirRecursive(s, path.join(dest, e.name));
+    } else {
+      const destName = e.name.startsWith(prefix) ? e.name.slice(prefix.length) : e.name;
+      fs.copyFileSync(s, path.join(dest, destName));
+    }
   }
 }
 
