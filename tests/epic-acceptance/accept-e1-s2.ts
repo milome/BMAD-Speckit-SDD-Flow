@@ -10,7 +10,7 @@ import addFormats from 'ajv-formats';
 import {
   writeScoreRecordSync,
   type RunScoreRecord,
-} from '../packages/scoring/writer';
+} from '../../packages/scoring/writer';
 
 const validRecord: RunScoreRecord = {
   run_id: 'accept-e1-s2-run',

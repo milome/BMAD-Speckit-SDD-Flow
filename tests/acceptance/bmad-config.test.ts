@@ -23,7 +23,7 @@ import {
   shouldAutoContinue,
   type AuditGranularityMode,
   type StageName,
-} from './bmad-config';
+} from '../../scripts/bmad-config';
 
 describe('bmad-config', () => {
   describe('Environment Detection', () => {

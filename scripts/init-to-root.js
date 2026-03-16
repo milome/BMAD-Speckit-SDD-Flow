@@ -99,6 +99,7 @@ const REGISTERED_AGENT_PROFILES = {
         { src: path.join(bmadRoot, 'commands'), dest: '.cursor/commands' },
         { src: path.join(bmadRoot, 'speckit', 'commands'), dest: '.cursor/commands' },
         { src: path.join(bmadRoot, 'cursor', 'rules'), dest: '.cursor/rules' },
+        { src: path.join(bmadRoot, 'skills'), dest: '.cursor/skills' },
         { src: path.join(bmadRoot, 'cursor', 'skills'), dest: '.cursor/skills' },
       ];
       let totalFiles = 0;
@@ -131,6 +132,7 @@ const REGISTERED_AGENT_PROFILES = {
         { src: path.join(bmadRoot, 'speckit', 'commands'), dest: '.claude/commands' },
         { src: path.join(bmadRoot, 'claude', 'rules'), dest: '.claude/rules' },
         { src: path.join(bmadRoot, 'claude', 'agents'), dest: '.claude/agents' },
+        { src: path.join(bmadRoot, 'skills'), dest: '.claude/skills' },
         { src: path.join(bmadRoot, 'claude', 'skills'), dest: '.claude/skills' },
         { src: path.join(bmadRoot, 'claude', 'state'), dest: '.claude/state' },
         { src: path.join(bmadRoot, 'claude', 'hooks'), dest: '.claude/hooks' },

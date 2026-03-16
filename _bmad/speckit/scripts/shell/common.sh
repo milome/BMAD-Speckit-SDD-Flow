@@ -56,22 +56,37 @@ get_feature_dir() {
     echo "$repo_root/specs/$branch"
 }
 
+has_jq() {
+    command -v jq >/dev/null 2>&1
+}
+
+json_escape() {
+    local s="$1"
+    s="${s//\\/\\\\}"
+    s="${s//\"/\\\"}"
+    s="${s//$'\n'/\\n}"
+    s="${s//$'\t'/\\t}"
+    s="${s//$'\r'/\\r}"
+    printf '%s' "$s"
+}
+
 get_feature_paths_env() {
     local repo_root current_branch has_git feature_dir
     repo_root="$(get_repo_root)"
     current_branch="$(get_current_branch)"
     test_has_git && has_git=true || has_git=false
     feature_dir="$(get_feature_dir "$repo_root" "$current_branch")"
-    # Output as eval-able or parseable
-    echo "REPO_ROOT=$repo_root"
-    echo "CURRENT_BRANCH=$current_branch"
-    echo "HAS_GIT=$has_git"
-    echo "FEATURE_DIR=$feature_dir"
-    echo "FEATURE_SPEC=$feature_dir/spec.md"
-    echo "IMPL_PLAN=$feature_dir/plan.md"
-    echo "TASKS=$feature_dir/tasks.md"
-    echo "RESEARCH=$feature_dir/research.md"
-    echo "DATA_MODEL=$feature_dir/data-model.md"
-    echo "QUICKSTART=$feature_dir/quickstart.md"
-    echo "CONTRACTS_DIR=$feature_dir/contracts"
+    # Use printf '%q' to safely quote values, preventing shell injection
+    # via crafted branch names or paths containing special characters
+    printf 'REPO_ROOT=%q\n' "$repo_root"
+    printf 'CURRENT_BRANCH=%q\n' "$current_branch"
+    printf 'HAS_GIT=%q\n' "$has_git"
+    printf 'FEATURE_DIR=%q\n' "$feature_dir"
+    printf 'FEATURE_SPEC=%q\n' "$feature_dir/spec.md"
+    printf 'IMPL_PLAN=%q\n' "$feature_dir/plan.md"
+    printf 'TASKS=%q\n' "$feature_dir/tasks.md"
+    printf 'RESEARCH=%q\n' "$feature_dir/research.md"
+    printf 'DATA_MODEL=%q\n' "$feature_dir/data-model.md"
+    printf 'QUICKSTART=%q\n' "$feature_dir/quickstart.md"
+    printf 'CONTRACTS_DIR=%q\n' "$feature_dir/contracts"
 }

@@ -72,7 +72,7 @@ describe('coach integration', () => {
 
   it('is imported by production CLI paths', () => {
     const coachCliPath = path.resolve(process.cwd(), 'scripts', 'coach-diagnose.ts');
-    const acceptPath = path.resolve(process.cwd(), 'scripts', 'accept-e4-s2.ts');
+    const acceptPath = path.resolve(process.cwd(), 'tests', 'epic-acceptance', 'accept-e4-s2.ts');
     const coachCliSource = fs.readFileSync(coachCliPath, 'utf-8');
     const acceptSource = fs.readFileSync(acceptPath, 'utf-8');
 
@@ -81,8 +81,8 @@ describe('coach integration', () => {
       coachCliSource.includes('from "../packages/scoring/coach"')
     ).toBe(true);
     expect(
-      acceptSource.includes("from '../packages/scoring/coach'") ||
-      acceptSource.includes('from "../packages/scoring/coach"')
+      acceptSource.includes("from '../../packages/scoring/coach'") ||
+      acceptSource.includes('from "../../packages/scoring/coach"')
     ).toBe(true);
     expect(acceptSource.includes('coachDiagnose')).toBe(true);
   });

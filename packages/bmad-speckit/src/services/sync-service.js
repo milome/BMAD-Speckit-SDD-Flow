@@ -120,6 +120,23 @@ function syncCommandsRulesConfig(projectRoot, selectedAI, options = {}) {
     }
   }
 
+  if (sourceDir) {
+    const agentRoot = ct.commandsDir
+      ? path.dirname(ct.commandsDir)
+      : ct.rulesDir ? path.dirname(ct.rulesDir) : null;
+    if (agentRoot) {
+      const projectSkillsDest = path.join(projectRoot, agentRoot, 'skills');
+      const sharedSkillsSrc = path.join(bmadRoot, 'skills');
+      if (fs.existsSync(sharedSkillsSrc) && fs.statSync(sharedSkillsSrc).isDirectory()) {
+        copyDirRecursive(sharedSkillsSrc, projectSkillsDest);
+      }
+      const platformSkillsSrc = path.join(bmadRoot, sourceDir, 'skills');
+      if (fs.existsSync(platformSkillsSrc) && fs.statSync(platformSkillsSrc).isDirectory()) {
+        copyDirRecursive(platformSkillsSrc, projectSkillsDest);
+      }
+    }
+  }
+
   if (sourceDir === 'claude') {
     deployClaudeInfrastructure(projectRoot, bmadRoot);
   }
@@ -152,6 +169,8 @@ function deploySpecifyDir(projectRoot, bmadRoot) {
   const pairs = [
     { src: path.join(bmadRoot, 'speckit', 'templates'), dest: path.join(specifyDest, 'templates') },
     { src: path.join(bmadRoot, 'speckit', 'workflows'), dest: path.join(specifyDest, 'workflows') },
+    { src: path.join(bmadRoot, 'speckit', 'scripts', 'shell'), dest: path.join(specifyDest, 'scripts') },
+    { src: path.join(bmadRoot, 'speckit', 'scripts', 'powershell'), dest: path.join(specifyDest, 'scripts') },
   ];
   for (const { src, dest } of pairs) {
     if (fs.existsSync(src) && fs.statSync(src).isDirectory()) {

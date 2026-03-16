@@ -10,7 +10,7 @@ import {
   formatToMarkdown,
   loadForbiddenWords,
   validateForbiddenWords,
-} from '../packages/scoring/coach';
+} from '../../packages/scoring/coach';
 
 function parseArgs(argv: string[]): Record<string, string> {
   const args: Record<string, string> = {};

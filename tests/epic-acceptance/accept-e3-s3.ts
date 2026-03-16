@@ -4,7 +4,7 @@
  */
 import * as path from 'path';
 import * as fs from 'fs';
-import { parseAndWriteScore } from '../packages/scoring/orchestrator';
+import { parseAndWriteScore } from '../../packages/scoring/orchestrator';
 
 const FIXTURES = path.join(process.cwd(), 'packages', 'scoring', 'parsers', '__tests__', 'fixtures');
 const TEMP_OUT = path.join(process.cwd(), '_bmad-output', 'implementation-artifacts', '3-3-eval-skill-scoring-write', 'accept-e3-s3-out');

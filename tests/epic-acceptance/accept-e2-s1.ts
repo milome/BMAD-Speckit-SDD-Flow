@@ -14,7 +14,7 @@ import {
   loadGapsScoringYaml,
   loadIterationTierYaml,
   resolveRef,
-} from '../packages/scoring/parsers';
+} from '../../packages/scoring/parsers';
 
 const rulesDir = path.resolve(process.cwd(), 'packages', 'scoring', 'rules');
 const configPath = path.resolve(process.cwd(), 'config', 'code-reviewer-config.yaml');

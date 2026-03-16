@@ -6,10 +6,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
-import { getScoringDataPath } from '../packages/scoring/constants/path';
-import { computeCompositeScore, aggregateFourDimensions, scoreToLevel } from '../packages/scoring/core/calculator';
-import { STAGE_TO_PHASE } from '../packages/scoring/constants/table-b';
-import { ALL_STAGES } from '../packages/scoring/constants/table-a';
+import { getScoringDataPath } from '../../packages/scoring/constants/path';
+import { computeCompositeScore, aggregateFourDimensions, scoreToLevel } from '../../packages/scoring/core/calculator';
+import { STAGE_TO_PHASE } from '../../packages/scoring/constants/table-b';
+import { ALL_STAGES } from '../../packages/scoring/constants/table-a';
 
 const ajv = new Ajv();
 addFormats(ajv);

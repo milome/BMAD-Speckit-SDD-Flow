@@ -8,7 +8,7 @@ import {
   applyTierAndVeto,
   evaluateEpicVeto,
   buildVetoItemIds,
-} from '../packages/scoring/veto';
+} from '../../packages/scoring/veto';
 
 const rulesDir = path.resolve(process.cwd(), 'packages', 'scoring', 'rules');
 const opts = { rulesDir };
