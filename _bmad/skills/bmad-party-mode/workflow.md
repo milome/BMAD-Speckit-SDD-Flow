@@ -85,6 +85,8 @@ Welcome {{user_name}}! All BMAD agents are here and ready for a dynamic group di
 
 **What would you like to discuss with the team today?**"
 
+> **发言格式（强制）**：整个 party-mode 会话期间，每轮每位角色发言**必须**使用格式 `[Icon Emoji] **[展示名]**: [发言内容]`。Icon 与展示名取自 `_bmad/_config/agent-manifest.csv`，禁止省略。详见 `steps/step-02-discussion-orchestration.md` 的 Response Structure。
+
 ### Agent Selection Intelligence
 
 For each user message or topic:

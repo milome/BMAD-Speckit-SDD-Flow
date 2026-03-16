@@ -861,10 +861,6 @@ TDD 红绿灯顺序强调:
   2. GREEN: 实现代码 → 测试通过
   3. IMPROVE: 重构代码 → 保持通过
 
-ralph-method 追踪文件要求:
-  • 追踪文件: .claude/state/stories/{epic}-{story}-ralph-progress.yaml
-  • 必须记录: 当前灯状态、迭代次数、TDD 证据路径
-
 提示词结构摘要:
   ├─ Cursor Canonical Base
   │   ├─ Layer 4 五阶段执行序列 (specify → plan → gaps → tasks → implement)

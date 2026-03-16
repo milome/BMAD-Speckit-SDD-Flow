@@ -108,6 +108,14 @@ function syncCommandsRulesConfig(projectRoot, selectedAI, options = {}) {
     }
   }
 
+  if (ct.protocolsDir && sourceDir) {
+    const src = path.join(bmadRoot, sourceDir, 'protocols');
+    const dest = path.join(projectRoot, ct.protocolsDir);
+    if (fs.existsSync(src) && fs.statSync(src).isDirectory()) {
+      copyDirRecursive(src, dest);
+    }
+  }
+
   if (sourceDir === 'claude') {
     deployClaudeInfrastructure(projectRoot, bmadRoot);
   }

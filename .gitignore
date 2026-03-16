@@ -30,20 +30,47 @@ Thumbs.db
 # BMAD output
 _bmad-output/
 
-# Documentation archives (BMAD historical artifacts)
-docs/BMAD/
+# Runtime deployment artifacts (legacy root dirs, source: _bmad/)
+commands/
+rules/
+skills/
 
-# Claude Code / OMC runtime data
+# Cursor runtime
+# commands/rules: deployed by init-to-root from _bmad/commands/ and _bmad/cursor/rules/
+# skills: deployed to ~/.cursor/skills/ by SkillPublisher (not project-level)
+# agents: deployed by init-to-root from config/
+.cursor/commands/
+.cursor/rules/
+.cursor/skills/
+.cursor/agents/
+
+# Claude runtime (deployed by init-to-root / SyncService from _bmad/claude/)
+# state: runtime session data, template source: _bmad/claude/state/ (if exists)
+.claude/commands/
+.claude/rules/
+.claude/skills/
+.claude/agents/
+.claude/hooks/
+.claude/protocols/
+.claude/state/
+.claude/settings.json
+.claude/settings.local.json
+.claude/mcp.json
+
+# Agent / OMC runtime data
+.agents/
 .omc/
-.omc/sessions/
-.omc/state/
-.omc/state/checkpoints/
 
-# Source and test directories
-src/
-tests/
+# Session temporary files
+progress.txt
+progress.md
+findings.md
+task_plan.md
+dxdiag_output.txt
+temp_commit_message.txt
 
-# Docs subdirectories (keep guide/)
+# Documentation archives
+docs/BMAD/
 docs/assets/
 docs/design/
 docs/examples/
@@ -52,7 +79,10 @@ docs/references/
 docs/PR/
 docs/plans/
 
+# Worktrees
 .worktrees/
 .claude/worktrees/
-.claude/state/milestones/
-temp_commit_message.txt
+
+# Source and test directories (legacy)
+src/
+tests/

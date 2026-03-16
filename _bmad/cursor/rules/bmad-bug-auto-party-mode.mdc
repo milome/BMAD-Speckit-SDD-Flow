@@ -23,8 +23,9 @@ alwaysApply: true
    主 Agent 在识别到「用户描述问题」后，**第一条实质性回复**必须声明进入 party-mode（或等效表述），并说明将进行多角色辩论（目标：根因分析 + BUGFIX 文档）。不等待用户再说「用 party-mode」。
 
 2. **执行 party-mode 与角色约束**  
-   - 执行 `{project-root}/_bmad/core/workflows/party-mode/workflow.md` 及 step-02 讨论编排。  
-   - 必须引入角色：**批判审计员**、**Winston（架构师）**、**Amelia（开发）**、**John（产品）**；可包含其他 BMAD 角色。  
+   - **必须读取** `{project-root}/_bmad/core/workflows/party-mode/workflow.md` 及 `steps/step-02-discussion-orchestration.md`，并**严格遵循** step-02 中的 Response Structure 格式。  
+   - 必须引入角色：⚔️ **批判性审计员**、🏗️ **Winston 架构师**、💻 **Amelia 开发**、📋 **John 产品经理**；可包含其他 BMAD 角色（展示名与 `_bmad/_config/agent-manifest.csv` 的 displayName 一致）。  
+   - **发言格式（强制）**：每轮每位角色发言**必须**使用格式 `[Icon Emoji] **[展示名]**: [发言内容]`（如 `🏗️ **Winston 架构师**: ...`、`⚔️ **批判性审计员**: ...`）。禁止省略 Icon 或展示名。  
    - **批判审计员发言占比 > 60%**：即总轮数 100 时，至少 61 轮含批判审计员发言。批判审计员负责质疑可操作性、可验证性、被模型忽略风险、假 100 轮风险，并提出 gap 与边界情况。
 
 3. **轮次与收敛**  

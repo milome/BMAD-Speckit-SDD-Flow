@@ -30,8 +30,9 @@ description: |
 ### 阶段一：Party-Mode 根因分析与方案讨论
 
 1. **输入**：用户提供的议题/问题描述/截图/问题（主 Agent 归纳为统一议题描述）。
-2. **执行**：按 `{project-root}/_bmad/core/workflows/party-mode/workflow.md` 及 step-02 编排多角色讨论。
-3. **角色**：**必须**引入 **批判审计员**（批判性审计员）；可包含 Winston 架构师、Amelia 开发、John 产品经理等；批判审计员发言占比 **>70%**。
+2. **执行**：**必须读取** `{project-root}/_bmad/core/workflows/party-mode/workflow.md` 及 `steps/step-02-discussion-orchestration.md`，并**严格遵循** step-02 中的 Response Structure 格式编排多角色讨论。
+3. **角色**：**必须**引入 ⚔️ **批判性审计员**；可包含 🏗️ Winston 架构师、💻 Amelia 开发、📋 John 产品经理等（展示名与 `_bmad/_config/agent-manifest.csv` 一致）；批判审计员发言占比 **>70%**。
+3b. **发言格式（强制）**：每轮每位角色发言**必须**使用格式 `[Icon Emoji] **[展示名]**: [发言内容]`（如 `🏗️ **Winston 架构师**: ...`、`⚔️ **批判性审计员**: ...`）。Icon 与展示名取自 `_bmad/_config/agent-manifest.csv`，禁止省略。
 4. **轮次与收敛**：
    - 讨论 **至少 100 轮**；
    - **收敛条件**：**最后 3 轮无新 gap** 才能结束（如第 98、99、100 轮均无新 gap）；

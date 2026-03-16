@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 /**
- * Init-to-root: 将 _bmad、_bmad-output、commands、rules 部署到项目根。
+ * Init-to-root: 将 _bmad、_bmad-output 部署到项目根，再按 agent 从 _bmad/ 同步到运行时目录。
+ *
+ * 源路径约定：_bmad/ 是唯一内容源。
+ *   - 共享 commands: _bmad/commands/
+ *   - Cursor rules/skills: _bmad/cursor/
+ *   - Claude agents/skills/hooks/rules: _bmad/claude/
  *
  * 用途：部署 BMAD 目录结构；--full 时包含 config、templates、workflows。
  *
@@ -10,8 +15,8 @@
  *
  * 退出码：0=成功
  */
-import fs from 'node:fs';
-import path from 'node:path';
+const fs = require('node:fs');
+const path = require('node:path');
 
 const PKG_ROOT = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
@@ -34,17 +39,18 @@ const REGISTERED_AGENT_PROFILES = {
   cursor: {
     runtimeRoot: '.cursor',
     sync(targetDir) {
+      const bmadRoot = path.join(targetDir, '_bmad');
       const cursorSync = [
-        { src: 'commands', dest: '.cursor/commands', fromPkgRoot: false },
-        { src: 'rules', dest: '.cursor/rules', fromPkgRoot: false },
+        { src: path.join(bmadRoot, 'commands'), dest: '.cursor/commands' },
+        { src: path.join(bmadRoot, 'cursor', 'rules'), dest: '.cursor/rules' },
+        { src: path.join(bmadRoot, 'cursor', 'skills'), dest: '.cursor/skills' },
       ];
       let totalFiles = 0;
-      for (const { src, dest, fromPkgRoot } of cursorSync) {
-        const srcPath = path.join(fromPkgRoot ? PKG_ROOT : targetDir, src);
+      for (const { src, dest } of cursorSync) {
         const destPath = path.join(targetDir, dest);
-        if (fs.existsSync(srcPath)) {
-          console.log('Sync', src, '->', dest);
-          copyRecursive(srcPath, destPath);
+        if (fs.existsSync(src)) {
+          console.log('Sync', path.relative(targetDir, src), '->', dest);
+          copyRecursive(src, destPath);
           totalFiles += countFiles(destPath);
         }
       }
@@ -62,25 +68,43 @@ const REGISTERED_AGENT_PROFILES = {
   'claude-code': {
     runtimeRoot: '.claude',
     sync(targetDir) {
+      const bmadRoot = path.join(targetDir, '_bmad');
       const claudeSync = [
-        { src: 'commands', dest: '.claude/commands', fromPkgRoot: false },
-        { src: 'rules', dest: '.claude/rules', fromPkgRoot: false },
-        { src: '.claude/agents', dest: '.claude/agents', fromPkgRoot: true },
-        { src: '.claude/skills', dest: '.claude/skills', fromPkgRoot: true },
-        { src: '.claude/state', dest: '.claude/state', fromPkgRoot: true },
-        { src: '.claude/hooks', dest: '.claude/hooks', fromPkgRoot: true },
+        { src: path.join(bmadRoot, 'commands'), dest: '.claude/commands' },
+        { src: path.join(bmadRoot, 'claude', 'rules'), dest: '.claude/rules' },
+        { src: path.join(bmadRoot, 'claude', 'agents'), dest: '.claude/agents' },
+        { src: path.join(bmadRoot, 'claude', 'skills'), dest: '.claude/skills' },
+        { src: path.join(bmadRoot, 'claude', 'state'), dest: '.claude/state' },
+        { src: path.join(bmadRoot, 'claude', 'hooks'), dest: '.claude/hooks' },
+        { src: path.join(bmadRoot, 'claude', 'protocols'), dest: '.claude/protocols' },
       ];
       let totalFiles = 0;
-      for (const { src, dest, fromPkgRoot } of claudeSync) {
-        const srcPath = path.join(fromPkgRoot ? PKG_ROOT : targetDir, src);
+      for (const { src, dest } of claudeSync) {
         const destPath = path.join(targetDir, dest);
-        if (fs.existsSync(srcPath)) {
-          console.log('Sync', src, '->', dest);
-          copyRecursive(srcPath, destPath);
+        if (fs.existsSync(src)) {
+          console.log('Sync', path.relative(targetDir, src), '->', dest);
+          copyRecursive(src, destPath);
           totalFiles += countFiles(destPath);
         } else {
           fs.mkdirSync(destPath, { recursive: true });
         }
+      }
+      const settingsSrc = path.join(bmadRoot, 'claude', 'settings.json');
+      const settingsDest = path.join(targetDir, '.claude', 'settings.json');
+      if (fs.existsSync(settingsSrc)) {
+        fs.mkdirSync(path.dirname(settingsDest), { recursive: true });
+        fs.copyFileSync(settingsSrc, settingsDest);
+        console.log('Sync _bmad/claude/settings.json -> .claude/settings.json');
+        totalFiles += 1;
+      }
+      const templateSrc = path.join(bmadRoot, 'claude', 'CLAUDE.md.template');
+      const claudeMdDest = path.join(targetDir, 'CLAUDE.md');
+      if (fs.existsSync(templateSrc) && !fs.existsSync(claudeMdDest)) {
+        let content = fs.readFileSync(templateSrc, 'utf8');
+        content = content.replace(/\{\{PROJECT_NAME\}\}/g, path.basename(targetDir));
+        fs.writeFileSync(claudeMdDest, content, 'utf8');
+        console.log('Generated CLAUDE.md from template');
+        totalFiles += 1;
       }
       return totalFiles;
     },
@@ -103,12 +127,10 @@ const targetArg = args.find(
 );
 const TARGET = targetArg ? path.resolve(targetArg) : process.cwd();
 
-const CORE_DIRS = ['_bmad', '_bmad-output', 'commands', 'rules'];
+const CORE_DIRS = ['_bmad', '_bmad-output'];
 const FULL_DIRS = [
   '_bmad',
   '_bmad-output',
-  'commands',
-  'rules',
   'config',
   'templates',
   'workflows',

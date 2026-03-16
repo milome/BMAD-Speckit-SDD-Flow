@@ -43,8 +43,6 @@
   "files": [
     "_bmad",
     "_bmad-output",
-    "commands",
-    "rules",
     "scripts",
     "config",
     "templates",

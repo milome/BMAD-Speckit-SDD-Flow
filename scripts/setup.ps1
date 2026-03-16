@@ -52,12 +52,28 @@ $REQUIRED_SKILLS = @(
 )
 $OPTIONAL_SKILLS = @(
     'bmad-standalone-tasks',
+    'bmad-standalone-tasks-doc-review',
+    'bmad-rca-helper',
     'bmad-customization-backup',
     'bmad-orchestrator',
     'using-git-worktrees',
     'pr-template-generator',
     'auto-commit-utf8',
-    'git-push-monitor'
+    'git-push-monitor',
+    'bmad-eval-analytics'
+)
+$V6_CORE_SKILLS = @(
+    'bmad-party-mode',
+    'bmad-brainstorming',
+    'bmad-advanced-elicitation',
+    'bmad-distillator',
+    'bmad-editorial-review-prose',
+    'bmad-editorial-review-structure',
+    'bmad-help',
+    'bmad-index-docs',
+    'bmad-review-adversarial-general',
+    'bmad-review-edge-case-hunter',
+    'bmad-shard-doc'
 )
 
 function Show-Help {
@@ -166,16 +182,36 @@ if (-not $SkipSkills) {
     }
     $skillTargets = $skillTargets | Select-Object -Unique
 
-    $allSkills = $REQUIRED_SKILLS + $OPTIONAL_SKILLS
+    $allSkills = $REQUIRED_SKILLS + $OPTIONAL_SKILLS + $V6_CORE_SKILLS
+
+    function Find-SkillSource {
+        param([string]$SkillName, [string]$AgentId)
+        $candidates = @(
+            (Join-Path $PKG_ROOT "skills\$SkillName"),
+            (Join-Path $PKG_ROOT "_bmad\skills\$SkillName"),
+            (Join-Path $PKG_ROOT "_bmad\core\skills\$SkillName")
+        )
+        if ($AgentId -eq 'cursor') {
+            $candidates = @((Join-Path $PKG_ROOT "_bmad\cursor\skills\$SkillName")) + $candidates
+        } elseif ($AgentId -eq 'claude-code') {
+            $candidates = @((Join-Path $PKG_ROOT "_bmad\claude\skills\$SkillName")) + $candidates
+        }
+        foreach ($c in $candidates) {
+            if (Test-Path $c) { return $c }
+        }
+        return $null
+    }
+
     foreach ($skillsRoot in $skillTargets) {
         if (-not (Test-Path $skillsRoot)) {
             New-Item -ItemType Directory -Path $skillsRoot -Force | Out-Null
         }
+        $currentAgent = if ($skillsRoot -match '\.cursor') { 'cursor' } else { 'claude-code' }
         foreach ($skill in $allSkills) {
-            $src = Join-Path $PKG_ROOT "skills\$skill"
+            $src = Find-SkillSource -SkillName $skill -AgentId $currentAgent
             $dest = Join-Path $skillsRoot $skill
-            if (Test-Path $src) {
-                Write-Output "[2] Copy skill: $skill -> $skillsRoot"
+            if ($src) {
+                Write-Output "[2] Copy skill: $skill -> $skillsRoot (from $(Split-Path $src -Parent | Split-Path -Leaf))"
                 Copy-Item -Path $src -Destination $dest -Recurse -Force
                 if (-not (Test-Path (Join-Path $dest 'SKILL.md'))) {
                     Write-Warning "  $skill - SKILL.md not found after copy"
