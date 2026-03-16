@@ -278,8 +278,7 @@ Located in `scripts/accept-*.test.ts`:
 ### Documentation
 - `README.md` - Project overview
 - `docs/tutorials/getting-started.md` - 5-minute quickstart
-- `docs/how-to/bmad-story-assistant-claude.md` - Claude Code guide
-- `docs/how-to/bmad-story-assistant-cursor.md` - Cursor guide
+- `docs/how-to/bmad-story-assistant.md` - Story Assistant guide (Cursor + Claude Code)
 
 ### Scripts
 - `scripts/parse-and-write-score.ts` - Score parsing
