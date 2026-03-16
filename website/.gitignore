@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.astro/
+src/content/docs/tutorials/
+src/content/docs/how-to/
+src/content/docs/explanation/
+src/content/docs/reference/
