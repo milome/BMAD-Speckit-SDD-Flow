@@ -10,12 +10,12 @@ describe('cursor regression gate', () => {
 
   it('ships both Cursor rule entrypoints', () => {
     expect(existsSync('.cursor/rules/bmad-story-assistant.mdc')).toBe(true);
-    expect(existsSync('rules/bmad-story-assistant.mdc')).toBe(true);
+    expect(existsSync('_bmad/cursor/rules/bmad-story-assistant.mdc')).toBe(true);
   });
 
   it('keeps mirrored Cursor rules identical', () => {
     const cursorRule = readFileSync('.cursor/rules/bmad-story-assistant.mdc', 'utf8');
-    const mirrorRule = readFileSync('rules/bmad-story-assistant.mdc', 'utf8');
+    const mirrorRule = readFileSync('_bmad/cursor/rules/bmad-story-assistant.mdc', 'utf8');
     expect(cursorRule).toBe(mirrorRule);
   });
 

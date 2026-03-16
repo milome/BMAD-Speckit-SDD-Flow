@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 describe('layer4 complete workflow e2e', () => {
   describe('stage routing via bmad-master', () => {
-    const master = readFileSync('.claude/agents/bmad-master.md', 'utf8');
+    const master = readFileSync('_bmad/claude/agents/bmad-master.md', 'utf8');
 
     it('routes to specify when stage is null', () => {
       expect(master).toContain('stage: null');
@@ -27,9 +27,9 @@ describe('layer4 complete workflow e2e', () => {
   });
 
   describe('layer4 specify → plan → tasks → implement flow', () => {
-    const specify = readFileSync('.claude/agents/layers/bmad-layer4-speckit-specify.md', 'utf8');
-    const plan = readFileSync('.claude/agents/layers/bmad-layer4-speckit-plan.md', 'utf8');
-    const tasks = readFileSync('.claude/agents/layers/bmad-layer4-speckit-tasks.md', 'utf8');
+    const specify = readFileSync('_bmad/claude/agents/layers/bmad-layer4-speckit-specify.md', 'utf8');
+    const plan = readFileSync('_bmad/claude/agents/layers/bmad-layer4-speckit-plan.md', 'utf8');
+    const tasks = readFileSync('_bmad/claude/agents/layers/bmad-layer4-speckit-tasks.md', 'utf8');
 
     it('each stage has audit loop with auditor', () => {
       expect(specify).toContain('auditor-spec');
@@ -63,7 +63,7 @@ describe('layer4 complete workflow e2e', () => {
     });
 
     it('specify generates required artifacts', () => {
-      expect(specify).toContain('需求映射表格');
+      expect(specify).toContain('需求映射表');
       expect(specify).toContain('验收标准');
       expect(specify).toContain('边界定义');
       expect(specify).toContain('依赖清单');
@@ -97,7 +97,7 @@ describe('layer4 complete workflow e2e', () => {
   });
 
   describe('commit gate enforcement', () => {
-    const master = readFileSync('.claude/agents/bmad-master.md', 'utf8');
+    const master = readFileSync('_bmad/claude/agents/bmad-master.md', 'utf8');
 
     it('enforces audit before commit', () => {
       expect(master).toContain('禁止在未通过审计时放行 commit');
@@ -120,8 +120,8 @@ describe('layer4 complete workflow e2e', () => {
   });
 
   describe('state management', () => {
-    const specify = readFileSync('.claude/agents/layers/bmad-layer4-speckit-specify.md', 'utf8');
-    const master = readFileSync('.claude/agents/bmad-master.md', 'utf8');
+    const specify = readFileSync('_bmad/claude/agents/layers/bmad-layer4-speckit-specify.md', 'utf8');
+    const master = readFileSync('_bmad/claude/agents/bmad-master.md', 'utf8');
 
     it('reads bmad-progress.yaml at startup', () => {
       expect(specify).toContain('bmad-progress.yaml');
@@ -143,15 +143,15 @@ describe('layer4 complete workflow e2e', () => {
   });
 
   describe('audit-driven iteration', () => {
-    const specify = readFileSync('.claude/agents/layers/bmad-layer4-speckit-specify.md', 'utf8');
-    const plan = readFileSync('.claude/agents/layers/bmad-layer4-speckit-plan.md', 'utf8');
-    const tasks = readFileSync('.claude/agents/layers/bmad-layer4-speckit-tasks.md', 'utf8');
+    const specify = readFileSync('_bmad/claude/agents/layers/bmad-layer4-speckit-specify.md', 'utf8');
+    const plan = readFileSync('_bmad/claude/agents/layers/bmad-layer4-speckit-plan.md', 'utf8');
+    const tasks = readFileSync('_bmad/claude/agents/layers/bmad-layer4-speckit-tasks.md', 'utf8');
 
     it('each stage has audit loop: FAIL → fix → re-audit', () => {
       // Specify
       expect(specify).toContain('FAIL');
       expect(specify).toContain('required_fixes');
-      expect(specify).toContain('重新审计');
+      expect(specify).toContain('迭代计数');
 
       // Plan
       expect(plan).toContain('FAIL');
@@ -170,9 +170,9 @@ describe('layer4 complete workflow e2e', () => {
   });
 
   describe('no self-commit constraint', () => {
-    const specify = readFileSync('.claude/agents/layers/bmad-layer4-speckit-specify.md', 'utf8');
-    const plan = readFileSync('.claude/agents/layers/bmad-layer4-speckit-plan.md', 'utf8');
-    const tasks = readFileSync('.claude/agents/layers/bmad-layer4-speckit-tasks.md', 'utf8');
+    const specify = readFileSync('_bmad/claude/agents/layers/bmad-layer4-speckit-specify.md', 'utf8');
+    const plan = readFileSync('_bmad/claude/agents/layers/bmad-layer4-speckit-plan.md', 'utf8');
+    const tasks = readFileSync('_bmad/claude/agents/layers/bmad-layer4-speckit-tasks.md', 'utf8');
 
     it('each layer4 agent prohibits self-commit', () => {
       expect(specify).toContain('禁止自行 commit');

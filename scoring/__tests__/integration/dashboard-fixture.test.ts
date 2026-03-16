@@ -2,7 +2,7 @@
  * Story 9.1 T11: dashboard-generate 对 fixture 的集成测试
  */
 import * as path from 'path';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { loadAndDedupeRecords } from '../../query/loader';
 import {
   getLatestRunRecordsV2,
@@ -19,6 +19,12 @@ const FIXTURE_PATH = path.join(
 );
 
 describe('dashboard with fixture (E9-S1 T11)', () => {
+  beforeAll(() => {
+    vi.useFakeTimers({ now: new Date('2026-03-06T14:00:00Z') });
+  });
+  afterAll(() => {
+    vi.useRealTimers();
+  });
   it('getLatestRunRecordsV2 returns complete run for epic=99 story=99', () => {
     const records = loadAndDedupeRecords(FIXTURE_PATH).filter(
       (r) => r.scenario !== 'eval_question'

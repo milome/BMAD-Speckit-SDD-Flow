@@ -221,9 +221,10 @@ describe('getLatestRunRecordsV2 (E9-S1 T9)', () => {
   });
 
   it('strategy epic_story_window returns complete run with >=2 stages', () => {
+    const recent = new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString();
     const records = [
-      createRecord({ run_id: 'dev-e9-s1-x', stage: 'story', timestamp: '2026-03-06T12:00:00Z' }),
-      createRecord({ run_id: 'dev-e9-s1-x', stage: 'implement', timestamp: '2026-03-06T12:00:00Z' }),
+      createRecord({ run_id: 'dev-e9-s1-x', stage: 'story', timestamp: recent }),
+      createRecord({ run_id: 'dev-e9-s1-x', stage: 'implement', timestamp: recent }),
     ];
     const result = getLatestRunRecordsV2(records, {
       strategy: 'epic_story_window',
@@ -236,10 +237,11 @@ describe('getLatestRunRecordsV2 (E9-S1 T9)', () => {
   });
 
   it('strategy epic_story_window returns complete run with 3 stages (still valid)', () => {
+    const recent = new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString();
     const records = [
-      createRecord({ run_id: 'dev-e9-s1-x', stage: 'spec', timestamp: '2026-03-06T12:00:00Z' }),
-      createRecord({ run_id: 'dev-e9-s1-x', stage: 'plan', timestamp: '2026-03-06T12:00:00Z' }),
-      createRecord({ run_id: 'dev-e9-s1-x', stage: 'tasks', timestamp: '2026-03-06T12:00:00Z' }),
+      createRecord({ run_id: 'dev-e9-s1-x', stage: 'spec', timestamp: recent }),
+      createRecord({ run_id: 'dev-e9-s1-x', stage: 'plan', timestamp: recent }),
+      createRecord({ run_id: 'dev-e9-s1-x', stage: 'tasks', timestamp: recent }),
     ];
     const result = getLatestRunRecordsV2(records, {
       strategy: 'epic_story_window',
@@ -252,10 +254,11 @@ describe('getLatestRunRecordsV2 (E9-S1 T9)', () => {
   });
 
   it('strategy epic_story_window accepts stage=implement as complete run (Story 9.2)', () => {
+    const base = Date.now() - 2 * 60 * 60 * 1000;
     const records = [
-      createRecord({ run_id: 'dev-e9-s2-spec-1', stage: 'spec', timestamp: '2026-03-06T10:00:00Z' }),
-      createRecord({ run_id: 'dev-e9-s2-plan-2', stage: 'plan', timestamp: '2026-03-06T10:30:00Z' }),
-      createRecord({ run_id: 'dev-e9-s2-implement-3', stage: 'implement', timestamp: '2026-03-06T11:00:00Z' }),
+      createRecord({ run_id: 'dev-e9-s2-spec-1', stage: 'spec', timestamp: new Date(base).toISOString() }),
+      createRecord({ run_id: 'dev-e9-s2-plan-2', stage: 'plan', timestamp: new Date(base + 30 * 60 * 1000).toISOString() }),
+      createRecord({ run_id: 'dev-e9-s2-implement-3', stage: 'implement', timestamp: new Date(base + 60 * 60 * 1000).toISOString() }),
     ];
     const result = getLatestRunRecordsV2(records, {
       strategy: 'epic_story_window',
@@ -269,12 +272,11 @@ describe('getLatestRunRecordsV2 (E9-S1 T9)', () => {
   });
 
   it('strategy epic_story_window treats different run_ids per stage as one run (Epic 9 pattern)', () => {
-    // 每 stage 使用不同 run_id 时间戳（parse-and-write-score 默认行为），
-    // 聚合层按 (epic, story) 识别为同一完整 run
+    const base = Date.now() - 2 * 60 * 60 * 1000;
     const records = [
-      createRecord({ run_id: 'dev-e9-s1-spec-1772797518938', stage: 'spec', timestamp: '2026-03-06T10:00:00Z' }),
-      createRecord({ run_id: 'dev-e9-s1-plan-1772798018940', stage: 'plan', timestamp: '2026-03-06T10:30:00Z' }),
-      createRecord({ run_id: 'dev-e9-s1-tasks-1772798984398', stage: 'tasks', timestamp: '2026-03-06T11:00:00Z' }),
+      createRecord({ run_id: 'dev-e9-s1-spec-1772797518938', stage: 'spec', timestamp: new Date(base).toISOString() }),
+      createRecord({ run_id: 'dev-e9-s1-plan-1772798018940', stage: 'plan', timestamp: new Date(base + 30 * 60 * 1000).toISOString() }),
+      createRecord({ run_id: 'dev-e9-s1-tasks-1772798984398', stage: 'tasks', timestamp: new Date(base + 60 * 60 * 1000).toISOString() }),
     ];
     const result = getLatestRunRecordsV2(records, {
       strategy: 'epic_story_window',
@@ -287,15 +289,15 @@ describe('getLatestRunRecordsV2 (E9-S1 T9)', () => {
   });
 
   it('strategy epic_story_window treats stage=tasks+trigger_stage=speckit_5_2 as implement (Story 9.2 backward compat)', () => {
-    // 完整 run 定义：stage=implement 或 trigger_stage=speckit_5_2 其一即可计入 implement
+    const base = Date.now() - 2 * 60 * 60 * 1000;
     const records = [
-      createRecord({ run_id: 'dev-e9-s2-spec-1', stage: 'spec', timestamp: '2026-03-06T10:00:00Z' }),
-      createRecord({ run_id: 'dev-e9-s2-plan-2', stage: 'plan', timestamp: '2026-03-06T10:30:00Z' }),
+      createRecord({ run_id: 'dev-e9-s2-spec-1', stage: 'spec', timestamp: new Date(base).toISOString() }),
+      createRecord({ run_id: 'dev-e9-s2-plan-2', stage: 'plan', timestamp: new Date(base + 30 * 60 * 1000).toISOString() }),
       createRecord({
         run_id: 'dev-e9-s2-tasks-3',
         stage: 'tasks',
         trigger_stage: 'speckit_5_2',
-        timestamp: '2026-03-06T11:00:00Z',
+        timestamp: new Date(base + 60 * 60 * 1000).toISOString(),
       }),
     ];
     const result = getLatestRunRecordsV2(records, {

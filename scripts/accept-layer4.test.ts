@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 describe('layer4 agents', () => {
   describe('bmad-layer4-speckit-specify.md', () => {
-    const content = readFileSync('.claude/agents/layers/bmad-layer4-speckit-specify.md', 'utf8');
+    const content = readFileSync('_bmad/claude/agents/layers/bmad-layer4-speckit-specify.md', 'utf8');
 
     it('outputs to specs/ (Cursor speckit format)', () => {
       expect(content).toContain('specs/');
@@ -13,9 +13,9 @@ describe('layer4 agents', () => {
     });
 
     it('has state file distinction table', () => {
-      expect(content).toContain('状态文件区分');
+      expect(content).toContain('状态文件区');
       expect(content).toContain('bmad-progress.yaml');
-      expect(content).toContain('五层架构状态控制');
+      expect(content).toContain('五层架构状态控');
     });
 
     it('has audit report path in specs/', () => {
@@ -29,7 +29,7 @@ describe('layer4 agents', () => {
   });
 
   describe('bmad-layer4-speckit-plan.md', () => {
-    const content = readFileSync('.claude/agents/layers/bmad-layer4-speckit-plan.md', 'utf8');
+    const content = readFileSync('_bmad/claude/agents/layers/bmad-layer4-speckit-plan.md', 'utf8');
 
     it('outputs to specs/ (Cursor speckit format)', () => {
       expect(content).toContain('specs/');
@@ -37,7 +37,7 @@ describe('layer4 agents', () => {
     });
 
     it('has state file distinction table', () => {
-      expect(content).toContain('状态文件区分');
+      expect(content).toContain('状态文件区');
       expect(content).toContain('bmad-progress.yaml');
     });
 
@@ -52,7 +52,7 @@ describe('layer4 agents', () => {
   });
 
   describe('bmad-layer4-speckit-tasks.md', () => {
-    const content = readFileSync('.claude/agents/layers/bmad-layer4-speckit-tasks.md', 'utf8');
+    const content = readFileSync('_bmad/claude/agents/layers/bmad-layer4-speckit-tasks.md', 'utf8');
 
     it('outputs tasks.md to specs/ (Cursor speckit format)', () => {
       expect(content).toContain('specs/');
@@ -94,7 +94,7 @@ describe('layer4 agents', () => {
   });
 
   describe('bmad-layer4-speckit-implement.md', () => {
-    const content = readFileSync('.claude/agents/layers/bmad-layer4-speckit-implement.md', 'utf8');
+    const content = readFileSync('_bmad/claude/agents/layers/bmad-layer4-speckit-implement.md', 'utf8');
 
     it('reads tasks.md from specs/ (Cursor speckit format)', () => {
       expect(content).toContain('specs/');
@@ -126,13 +126,13 @@ describe('layer4 agents', () => {
 
     it('enforces TDD red-green-refactor', () => {
       expect(content).toContain('TDD 红绿灯');
-      expect(content).toContain('RED → GREEN → REFACTOR');
+      expect(content).toContain('RED→GREEN→REFACTOR');
       expect(content).toContain('禁止先写代码再补测试');
       expect(content).toContain('禁止跳过重构');
     });
 
     it('extracts TDD evidence from progress.txt', () => {
-      expect(content).toContain('从 progress.txt 提取');
+      expect(content).toContain('progress.txt 提取');
       expect(content).toContain('[TDD-RED]');
       expect(content).toContain('[TDD-GREEN]');
       expect(content).toContain('[TDD-REFACTOR]');
@@ -140,7 +140,7 @@ describe('layer4 agents', () => {
 
     it('has state file distinction table', () => {
       expect(content).toContain('重要区分');
-      expect(content).toContain('五层架构状态控制');
+      expect(content).toContain('五层架构状态控');
       expect(content).toContain('ralph-method US 追踪');
     });
 

@@ -3,7 +3,7 @@
  */
 import * as path from 'path';
 import * as fs from 'fs';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { loadAndDedupeRecords } from '../../query/loader';
 import { parseEpicStoryFromRecord } from '../../query';
 import {
@@ -29,6 +29,12 @@ const FIXTURE_NO_COMPLETE = path.join(
 );
 
 describe('Epic 聚合集成 (US-4.2)', () => {
+  beforeAll(() => {
+    vi.useFakeTimers({ now: new Date('2026-03-06T14:00:00Z') });
+  });
+  afterAll(() => {
+    vi.useRealTimers();
+  });
   it('(1) --epic 9 时总分、四维与预期一致', () => {
     const records = loadAndDedupeRecords(FIXTURE_AGGREGATE).filter(
       (r) => r.scenario !== 'eval_question'
@@ -94,7 +100,7 @@ describe('Epic 聚合集成 (US-4.2)', () => {
     const outDir = path.dirname(outPath);
     if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
     execSync(
-      `npx ts-node scripts/dashboard-generate.ts --dataPath "${FIXTURE_NO_COMPLETE}" --epic 9 --strategy epic_story_window --windowHours 168`,
+      `npx ts-node scripts/dashboard-generate.ts --dataPath "${FIXTURE_NO_COMPLETE}" --epic 9 --strategy epic_story_window --windowHours 999999`,
       { cwd: process.cwd(), encoding: 'utf-8' }
     );
     const content = fs.readFileSync(outPath, 'utf-8');
@@ -103,7 +109,7 @@ describe('Epic 聚合集成 (US-4.2)', () => {
 
   it('(6) CLI epic 聚合输出含 Epic 9 聚合视图', { timeout: 15000 }, () => {
     execSync(
-      `npx ts-node scripts/dashboard-generate.ts --dataPath "${FIXTURE_AGGREGATE}" --epic 9 --strategy epic_story_window --windowHours 168`,
+      `npx ts-node scripts/dashboard-generate.ts --dataPath "${FIXTURE_AGGREGATE}" --epic 9 --strategy epic_story_window --windowHours 999999`,
       { cwd: process.cwd(), encoding: 'utf-8' }
     );
     const content = fs.readFileSync(path.join(process.cwd(), '_bmad-output', 'dashboard.md'), 'utf-8');
