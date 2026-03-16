@@ -10,8 +10,8 @@
  * 退出码：0=成功，1=错误
  */
 import * as path from 'path';
-import { getScoringDataPath } from '../scoring/constants/path';
-import { extractSftDataset, formatSummary } from '../scoring/analytics/sft-extractor';
+import { getScoringDataPath } from '../packages/scoring/constants/path';
+import { extractSftDataset, formatSummary } from '../packages/scoring/analytics/sft-extractor';
 
 function parseArgs(argv: string[]): Record<string, string> {
   const args: Record<string, string> = {};

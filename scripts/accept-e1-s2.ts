@@ -10,7 +10,7 @@ import addFormats from 'ajv-formats';
 import {
   writeScoreRecordSync,
   type RunScoreRecord,
-} from '../scoring/writer';
+} from '../packages/scoring/writer';
 
 const validRecord: RunScoreRecord = {
   run_id: 'accept-e1-s2-run',
@@ -33,7 +33,7 @@ function main() {
   process.env.SCORING_DATA_PATH = testDir;
 
   try {
-    const schemaPath = path.resolve(process.cwd(), 'scoring', 'schema', 'run-score-schema.json');
+    const schemaPath = path.resolve(process.cwd(), 'packages', 'scoring', 'schema', 'run-score-schema.json');
     const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf-8'));
     const ajv = new Ajv();
     addFormats(ajv);

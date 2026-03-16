@@ -11,18 +11,18 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
-import { coachDiagnose } from '../scoring/coach';
-import { getScoringDataPath } from '../scoring/constants/path';
+import { coachDiagnose } from '../packages/scoring/coach';
+import { getScoringDataPath } from '../packages/scoring/constants/path';
 import {
   generateQuestionTemplate,
   addQuestionToManifest,
   generateSlugFromTitle,
-} from '../scoring/eval-questions/template-generator';
-import type { EvalQuestionEntry } from '../scoring/eval-questions/manifest-loader';
-import type { WeaknessCluster } from '../scoring/analytics/cluster-weaknesses';
+} from '../packages/scoring/eval-questions/template-generator';
+import type { EvalQuestionEntry } from '../packages/scoring/eval-questions/manifest-loader';
+import type { WeaknessCluster } from '../packages/scoring/analytics/cluster-weaknesses';
 
 const DEFAULT_VERSION = 'v1';
-const EVAL_ROOT = path.resolve(process.cwd(), 'scoring', 'eval-questions');
+const EVAL_ROOT = path.resolve(process.cwd(), 'packages', 'scoring', 'eval-questions');
 
 function parseArgs(argv: string[]): Record<string, string> {
   const args: Record<string, string> = {};

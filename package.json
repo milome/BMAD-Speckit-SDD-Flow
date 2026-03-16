@@ -5,8 +5,8 @@
   "scripts": {
     "lint": "eslint . --ext .ts,.js",
     "lint:fix": "eslint . --ext .ts,.js --fix",
-    "format": "prettier --write \"scoring/**/*.ts\" \"scripts/**/*.ts\" \"vitest.config.ts\"",
-    "format:check": "prettier --check \"scoring/**/*.ts\" \"scripts/**/*.ts\" \"vitest.config.ts\"",
+    "format": "prettier --write \"packages/scoring/**/*.ts\" \"scripts/**/*.ts\" \"vitest.config.ts\"",
+    "format:check": "prettier --check \"packages/scoring/**/*.ts\" \"scripts/**/*.ts\" \"vitest.config.ts\"",
     "postinstall": "node scripts/init-to-root.js",
     "init": "node scripts/init-to-root.js",
     "setup": "pwsh scripts/setup.ps1",
@@ -14,7 +14,7 @@
     "setup:full": "pwsh scripts/setup.ps1 -Full",
     "setup:full:sh": "bash scripts/setup.sh -Full",
     "test": "vitest run && npm run test:bmad-speckit",
-    "test:scoring": "vitest run scoring",
+    "test:scoring": "vitest run packages/scoring",
     "test:bmad-speckit": "cd packages/bmad-speckit && node --test tests/",
     "accept:e1-s1": "npx ts-node scripts/accept-e1-s1.ts",
     "accept:e1-s2": "npx ts-node scripts/accept-e1-s2.ts",
@@ -52,6 +52,7 @@
     "cursor",
     "workflow"
   ],
+  "workspaces": ["packages/*"],
   "license": "MIT",
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",

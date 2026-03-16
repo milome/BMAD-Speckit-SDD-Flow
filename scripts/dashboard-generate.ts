@@ -11,9 +11,9 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
-import { getScoringDataPath } from '../scoring/constants/path';
-import { loadAndDedupeRecords } from '../scoring/query/loader';
-import { parseEpicStoryFromRecord } from '../scoring/query';
+import { getScoringDataPath } from '../packages/scoring/constants/path';
+import { loadAndDedupeRecords } from '../packages/scoring/query/loader';
+import { parseEpicStoryFromRecord } from '../packages/scoring/query';
 import {
   getLatestRunRecords,
   getLatestRunRecordsV2,
@@ -28,7 +28,7 @@ import {
   getTrend,
   aggregateByEpicOnly,
   formatDashboardMarkdown,
-} from '../scoring/dashboard';
+} from '../packages/scoring/dashboard';
 
 const EMPTY_DATA_MESSAGE = '暂无数据，请先完成至少一轮 Dev Story';
 const INSUFFICIENT_RUN_MESSAGE = '数据不足，暂无完整 run（至少 2 stage）';

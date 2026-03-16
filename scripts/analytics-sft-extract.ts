@@ -4,7 +4,7 @@
  *   npx ts-node scripts/analytics-sft-extract.ts --dataPath scoring/data --output scoring/data/sft-dataset.jsonl
  */
 import * as path from 'path';
-import { extractSftDataset } from '../scoring/analytics/sft-extractor';
+import { extractSftDataset } from '../packages/scoring/analytics/sft-extractor';
 
 function parseArgs(argv: string[]): Record<string, string> {
   const args: Record<string, string> = {};
@@ -28,7 +28,7 @@ function parseArgs(argv: string[]): Record<string, string> {
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
-  const dataPath = args.dataPath ?? args.data ?? path.join(process.cwd(), 'scoring', 'data');
+  const dataPath = args.dataPath ?? args.data ?? path.join(process.cwd(), 'packages', 'scoring', 'data');
   const output = args.output ?? path.join(dataPath, 'sft-dataset.jsonl');
 
   const entries = await extractSftDataset(dataPath, output);

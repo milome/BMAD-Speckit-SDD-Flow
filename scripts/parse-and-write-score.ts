@@ -10,9 +10,9 @@
  *
  * 退出码：0=成功，1=参数/校验错误，3=trigger 禁用
  */
-import { parseAndWriteScore } from '../scoring/orchestrator';
-import { shouldWriteScore } from '../scoring/trigger/trigger-loader';
-import type { AuditStage } from '../scoring/parsers';
+import { parseAndWriteScore } from '../packages/scoring/orchestrator';
+import { shouldWriteScore } from '../packages/scoring/trigger/trigger-loader';
+import type { AuditStage } from '../packages/scoring/parsers';
 
 /**
  * 解析命令行参数

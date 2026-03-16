@@ -11,18 +11,18 @@
  */
 import * as path from 'path';
 import * as fs from 'fs';
-import { loadManifest } from '../scoring/eval-questions/manifest-loader';
+import { loadManifest } from '../packages/scoring/eval-questions/manifest-loader';
 import {
   generateSlugFromTitle,
   generateNextQuestionId,
   generateQuestionTemplate,
   addQuestionToManifest,
-} from '../scoring/eval-questions/template-generator';
-import { generateEvalRunId, validateQuestionVersionForEval } from '../scoring/eval-questions/run-core';
-import { generateEvalAnswer, EvalAgentError } from '../scoring/eval-questions/agent-answer';
-import { parseAndWriteScore } from '../scoring/orchestrator';
+} from '../packages/scoring/eval-questions/template-generator';
+import { generateEvalRunId, validateQuestionVersionForEval } from '../packages/scoring/eval-questions/run-core';
+import { generateEvalAnswer, EvalAgentError } from '../packages/scoring/eval-questions/agent-answer';
+import { parseAndWriteScore } from '../packages/scoring/orchestrator';
 
-const EVAL_ROOT = path.resolve(process.cwd(), 'scoring', 'eval-questions');
+const EVAL_ROOT = path.resolve(process.cwd(), 'packages', 'scoring', 'eval-questions');
 const ALLOWED_VERSIONS = ['v1', 'v2'] as const;
 const DEFAULT_VERSION = 'v1';
 const EMPTY_LIST_MESSAGE = '当前版本无题目';

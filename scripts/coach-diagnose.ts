@@ -7,15 +7,15 @@
  *   npx ts-node scripts/coach-diagnose.ts --story 3.3         # Story 6.2: 仅诊断 Story 3.3
  *   npx ts-node scripts/coach-diagnose.ts --limit 50          # discovery 最多考虑 50 条
  */
-import { coachDiagnose, discoverLatestRunId, formatToMarkdown } from '../scoring/coach';
-import { getScoringDataPath } from '../scoring/constants/path';
+import { coachDiagnose, discoverLatestRunId, formatToMarkdown } from '../packages/scoring/coach';
+import { getScoringDataPath } from '../packages/scoring/constants/path';
 import {
   queryByEpic,
   queryByStory,
   queryLatest,
   parseEpicStoryFromRecord,
-} from '../scoring/query';
-import { loadAndDedupeRecords } from '../scoring/query/loader';
+} from '../packages/scoring/query';
+import { loadAndDedupeRecords } from '../packages/scoring/query/loader';
 
 function parseArgs(argv: string[]): Record<string, string> {
   const args: Record<string, string> = {};

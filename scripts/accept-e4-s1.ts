@@ -8,9 +8,9 @@ import {
   applyTierAndVeto,
   evaluateEpicVeto,
   buildVetoItemIds,
-} from '../scoring/veto';
+} from '../packages/scoring/veto';
 
-const rulesDir = path.resolve(process.cwd(), 'scoring', 'rules');
+const rulesDir = path.resolve(process.cwd(), 'packages', 'scoring', 'rules');
 const opts = { rulesDir };
 
 function main(): void {
@@ -94,7 +94,7 @@ function main(): void {
 
   // 4. grep 验证：scoring/veto 被 parse-and-write 导入
   try {
-    const parseWritePath = path.join(process.cwd(), 'scoring', 'orchestrator', 'parse-and-write.ts');
+    const parseWritePath = path.join(process.cwd(), 'packages', 'scoring', 'orchestrator', 'parse-and-write.ts');
     const content = fs.readFileSync(parseWritePath, 'utf-8');
     if (content.includes("from '../veto'") || content.includes('from "../veto"')) {
       console.log('AC-4 (parse-and-write imports veto): PASS');

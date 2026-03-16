@@ -10,9 +10,9 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
-import { validateScenarioConstraints } from '../scoring/writer/validate';
-import type { RunScoreRecord } from '../scoring/writer/types';
-import { parseAndWriteScore } from '../scoring/orchestrator/parse-and-write';
+import { validateScenarioConstraints } from '../packages/scoring/writer/validate';
+import type { RunScoreRecord } from '../packages/scoring/writer/types';
+import { parseAndWriteScore } from '../packages/scoring/orchestrator/parse-and-write';
 
 const DOCS = [
   'scoring/docs/SCENARIO_AND_PATH_RULES.md',
