@@ -46,9 +46,8 @@ node D:\Dev\BMAD-Speckit-SDD-Flow\scripts\init-to-root.js D:\Dev\your-project --
 
 `postinstall` 脚本会自动复制以下目录到项目根：
 - `_bmad/` → `{项目根}/_bmad/`
-- `_bmad-output/` → `{项目根}/_bmad-output/`
-- `commands/` → `{项目根}/commands/`
-- `rules/` → `{项目根}/rules/`
+- `config/`（`--full` 时）→ `{项目根}/config/`
+- 创建空的 `_bmad-output/config/`（不复制源项目的产出内容）
 
 npm 包**不含**的目录需手动复制：
 

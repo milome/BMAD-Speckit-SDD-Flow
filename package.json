@@ -1,7 +1,7 @@
 {
   "name": "bmad-speckit-sdd-flow",
   "version": "0.1.0",
-  "description": "BMAD + Speckit workflow and scoring skeleton; deploy _bmad, _bmad-output, commands, rules to project root",
+  "description": "BMAD + Speckit workflow and scoring skeleton; deploy _bmad, config to project root",
   "scripts": {
     "lint": "eslint . --ext .ts,.js",
     "lint:fix": "eslint . --ext .ts,.js --fix",
@@ -42,7 +42,6 @@
   },
   "files": [
     "_bmad",
-    "_bmad-output",
     "scripts",
     "config"
   ],

@@ -119,7 +119,7 @@ fi
 
 # Step 5: scoring copy
 if [[ "$SKIP_SCORING" != "true" ]]; then
-    SCORING_SRC="$PKG_ROOT/scoring"
+    SCORING_SRC="$PKG_ROOT/packages/scoring"
     SCORING_DEST="$TARGET_RESOLVED/scoring"
     if [[ -d "$SCORING_SRC" ]]; then
         echo "[3] Copy scoring/ -> $SCORING_DEST"
@@ -141,7 +141,7 @@ CHECKS=(
     "_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml:Create Story workflow"
     "_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml:Dev Story workflow"
     "_bmad/_config/agent-manifest.csv:Agent manifest"
-    "_bmad-output/config/settings.json:Worktree config"
+    "_bmad-output/config:_bmad-output/config dir"
     "commands/speckit.specify.md:speckit command"
     "commands/bmad-bmm-create-story.md:BMAD command"
     "rules/bmad-bug-auto-party-mode.mdc:rules"

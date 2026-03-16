@@ -188,10 +188,9 @@ const targetArg = args.find(
 );
 const TARGET = targetArg ? path.resolve(targetArg) : process.cwd();
 
-const CORE_DIRS = ['_bmad', '_bmad-output'];
+const CORE_DIRS = ['_bmad'];
 const FULL_DIRS = [
   '_bmad',
-  '_bmad-output',
   'config',
 ];
 const DIRS = fullMode ? FULL_DIRS : CORE_DIRS;
@@ -242,6 +241,14 @@ for (const dir of DIRS) {
 }
 
 totalFiles += agentProfile.sync(TARGET, PKG_ROOT);
+
+// Ensure _bmad-output/config exists (empty); never copy source's _bmad-output contents.
+const bmadOutputDir = path.join(TARGET, '_bmad-output');
+const bmadOutputConfig = path.join(bmadOutputDir, 'config');
+if (!fs.existsSync(bmadOutputConfig)) {
+  fs.mkdirSync(bmadOutputConfig, { recursive: true });
+  console.log('Created _bmad-output/config/ (empty structure for target project)');
+}
 
 console.log('Done. Copied', DIRS.length, 'dirs,', totalFiles, 'files.');
 console.log('Verify with: _bmad/speckit/scripts/powershell/check-prerequisites.ps1');

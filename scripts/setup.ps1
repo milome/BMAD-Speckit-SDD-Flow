@@ -227,7 +227,7 @@ if (-not $SkipSkills) {
 
 # Step 5: scoring 复制
 if (-not $SkipScoring) {
-    $scoringSrc = Join-Path $PKG_ROOT 'scoring'
+    $scoringSrc = Join-Path $PKG_ROOT 'packages' 'scoring'
     $scoringDest = Join-Path $TargetResolved 'scoring'
     if (Test-Path $scoringSrc) {
         Write-Output "[3] Copy scoring/ -> $scoringDest"
@@ -248,7 +248,7 @@ $checks = @(
     @{ Path = '_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml'; Desc = 'Create Story workflow' }
     @{ Path = '_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml'; Desc = 'Dev Story workflow' }
     @{ Path = '_bmad/_config/agent-manifest.csv'; Desc = 'Agent manifest' }
-    @{ Path = '_bmad-output/config/settings.json'; Desc = 'Worktree config' }
+    @{ Path = '_bmad-output/config'; Desc = '_bmad-output/config dir' }
     @{ Path = 'config/code-reviewer-config.yaml'; Desc = 'Code Reviewer config' }
     @{ Path = '_bmad/speckit/templates/spec-template.md'; Desc = 'Spec template' }
     @{ Path = '_bmad/speckit/workflows/specify.md'; Desc = 'Specify workflow' }
