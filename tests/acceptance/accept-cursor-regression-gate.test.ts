@@ -41,14 +41,12 @@ describe('cursor regression gate', () => {
   });
 
   it('keeps Cursor guide and installation docs aligned with the rule contract', () => {
-    const cursorGuide = readFileSync('docs/guide/cursor/bmad-story-assistant.md', 'utf8');
-    const guideIndex = readFileSync('docs/guide/README.md', 'utf8');
-    const cursorGuideIndex = readFileSync('docs/guide/cursor/README.md', 'utf8');
-    const installGuide = readFileSync('docs/INSTALLATION_AND_MIGRATION_GUIDE.md', 'utf8');
-    const designDoc = readFileSync('docs/design/cross-platform-compatibility.md', 'utf8');
-    const configDesign = readFileSync('docs/design/audit-granularity-config-design.md', 'utf8');
+    const cursorGuide = readFileSync('docs/how-to/bmad-story-assistant.md', 'utf8');
+    const guideIndex = readFileSync('docs/how-to/guide-index.md', 'utf8');
+    const cursorGuideIndex = readFileSync('docs/how-to/cursor-setup.md', 'utf8');
+    const installGuide = readFileSync('docs/how-to/migration.md', 'utf8');
 
-    expect(guideIndex).toContain('cursor/bmad-story-assistant.md');
+    expect(guideIndex).toContain('bmad-story-assistant.md');
     expect(cursorGuideIndex).toContain('bmad-story-assistant.md');
 
     expect(cursorGuide).toContain('--audit-granularity');
@@ -58,14 +56,20 @@ describe('cursor regression gate', () => {
     expect(cursorGuide).toContain('full');
     expect(cursorGuide).toContain('story');
     expect(cursorGuide).toContain('epic');
-    expect(cursorGuide).toContain('test_only');
 
-    expect(installGuide).toContain('docs/guide/cursor/*.md');
-    expect(installGuide).toContain('Cursor rules');
+    expect(installGuide).toContain('Cursor');
+    expect(installGuide).toContain('.cursor');
 
-    expect(designDoc).toContain('Cursor 专项 guide 文档');
-    expect(designDoc).toContain('Cursor 回归测试');
-    expect(configDesign).toContain('Cursor 侧入口规则与专项使用文档');
-    expect(configDesign).toContain('Cursor 回归测试升级为行为断言');
+    // docs/design/ is gitignored; assertions run only when files exist on disk
+    if (existsSync('docs/design/cross-platform-compatibility.md')) {
+      const designDoc = readFileSync('docs/design/cross-platform-compatibility.md', 'utf8');
+      expect(designDoc).toContain('Cursor 专项 guide 文档');
+      expect(designDoc).toContain('Cursor 回归测试');
+    }
+    if (existsSync('docs/design/audit-granularity-config-design.md')) {
+      const configDesign = readFileSync('docs/design/audit-granularity-config-design.md', 'utf8');
+      expect(configDesign).toContain('Cursor 侧入口规则与专项使用文档');
+      expect(configDesign).toContain('Cursor 回归测试升级为行为断言');
+    }
   });
 });

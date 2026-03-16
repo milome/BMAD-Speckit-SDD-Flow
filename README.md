@@ -87,9 +87,10 @@ BMAD-Speckit-SDD-Flow/
 │   ├── scoring/                        # Scoring system
 │   └── _config/                        # Configuration files
 ├── packages/                           # Source code (monorepo)
-│   └── bmad-speckit/                   # CLI package
-├── scoring/                            # Scoring extensions (see [scoring/README.md](scoring/README.md))
-├── scripts/                            # CLI entry points & acceptance tests (see [scripts/README.md](scripts/README.md))
+│   ├── bmad-speckit/                   # CLI package
+│   └── scoring/                        # Scoring extensions (see [packages/scoring/README.md](packages/scoring/README.md))
+├── tests/                              # Test suite (acceptance/, epic-acceptance/)
+├── scripts/                            # Deployment/utility scripts only
 ├── config/                             # Project configuration
 ├── specs/                              # Story specifications (generated)
 ├── docs/                               # Documentation (Diataxis)
@@ -106,8 +107,8 @@ BMAD-Speckit-SDD-Flow/
 | Component | Purpose |
 |-----------|---------|
 | **_bmad/** | BMAD core (core, bmm, bmb, cis, tea, scoring) |
-| **scoring/** | Scoring extensions: audit report parsing, score persistence, Coach diagnosis, Dashboard, SFT extraction |
-| **scripts/** | CLI entry points: parse-and-write-score, dashboard-generate, sft-extract, coach-diagnose |
+| **packages/scoring/** | Scoring extensions: audit report parsing, score persistence, Coach diagnosis, Dashboard, SFT extraction |
+| **scripts/** | Deployment/utility scripts: init-to-root, setup, parse-and-write-score, coach-diagnose, sft-extract |
 | **speckit-workflow** | specify → plan → GAPS → tasks → TDD with mandatory audits |
 | **bmad-story-assistant** | Create Story → Party-Mode → Dev Story → implement |
 | **bmad-bug-assistant** | Bug description → Party-Mode → BUGFIX doc |

@@ -49,17 +49,17 @@ BMAD-Speckit-SDD-Flow/
 │   ├── scripts/                        # Utility scripts
 │   └── _config/                        # Configuration files
 ├── packages/                           # Source code (monorepo)
-│   └── bmad-speckit/                   # CLI package
-├── scoring/                            # Scoring extensions
-│   ├── parse-score.ts                  # Parse audit reports
-│   ├── write-score.ts                  # Persist scores
-│   ├── coach.ts                        # AI Coach diagnosis
-│   └── dashboard.ts                    # Dashboard generation
-├── scripts/                            # CLI entry points & acceptance tests
+│   ├── bmad-speckit/                   # CLI package
+│   └── scoring/                        # Scoring extensions (parse, write, coach, dashboard)
+├── tests/                              # Test suite
+│   ├── acceptance/                     # Vitest acceptance tests
+│   └── epic-acceptance/                # ts-node epic acceptance scripts
+├── scripts/                            # Deployment/utility scripts only
 │   ├── parse-and-write-score.ts
 │   ├── coach-diagnose.ts
 │   ├── sft-extract.ts
-│   └── accept-*.test.ts               # Acceptance tests
+│   ├── init-to-root.js
+│   └── setup.ps1
 ├── config/                             # Project configuration
 ├── specs/                              # Story specifications (generated)
 │   └── epic-*/

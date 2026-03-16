@@ -92,7 +92,3 @@ docs/plans/
 # Worktrees
 .worktrees/
 .claude/worktrees/
-
-# Source and test directories (legacy)
-src/
-tests/
