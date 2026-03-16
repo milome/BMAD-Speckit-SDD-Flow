@@ -1,8 +1,8 @@
-# Progress: opensource-repo-restructure (Follow-Up FU-01~FU-06)
-# Total stories: 33 (27 completed B~F + 6 FU)
+# Progress: opensource-repo-restructure (Follow-Up FU-01~FU-10)
+# Total stories: 37 (27 completed B~F + 10 FU)
 
-Current story: FU07
-Completed: 33
+Current story: —
+Completed: 37
 
 ---
 # Story log (Phases B~F completed in prior batch)
@@ -41,3 +41,7 @@ Completed: 33
 [2026-03-17] US-FU04: Website 搭建 (Astro + Starlight) - PASSED
 [2026-03-17] US-FU05: CONTRIBUTING.md + CODE_OF_CONDUCT.md 创建 - PASSED
 [2026-03-17] US-FU06: CHANGELOG.md 创建 - PASSED
+[2026-03-17] US-FU07: _bmad/core/skills/ 冗余清理 - PASSED
+[2026-03-17] US-FU08: .gitignore 死条目 docs/references/ - PASSED
+[2026-03-17] US-FU09: 根 package.json scoring 依赖 - SKIPPED (scripts/tests 仍使用)
+[2026-03-17] US-FU10: packages/scoring/vitest.config.ts - PASSED

@@ -583,6 +583,70 @@
       "tddSteps": [
         { "phase": "DONE", "description": "创建 CHANGELOG.md 并验证", "acceptanceCommand": "Test-Path CHANGELOG.md", "passes": true }
       ]
+    },
+    {
+      "id": "US-FU07",
+      "title": "_bmad/core/skills/ 与 _bmad/skills/ 冗余清理",
+      "description": "移除 _bmad/core/skills/ 中 11 个与 _bmad/skills/ 完全一致的副本，保留 _bmad/skills/ 为 canonical；更新 sync 脚本与文档引用",
+      "acceptanceCriteria": [
+        "Test-Path _bmad/core/skills = False",
+        "sync 脚本在复制后删除 core/skills/ 避免冗余",
+        "docs/explanation/upstream-relationship.md 引用更新为 _bmad/skills/"
+      ],
+      "priority": 34,
+      "passes": true,
+      "notes": "FU-07: 移除 core/skills/，sync 脚本增加复制后删除步骤",
+      "involvesProductionCode": false,
+      "tddSteps": [
+        { "phase": "DONE", "description": "Remove-Item core/skills; 更新 sync 脚本与文档", "acceptanceCommand": "Test-Path _bmad/core/skills", "passes": true }
+      ]
+    },
+    {
+      "id": "US-FU08",
+      "title": ".gitignore 死条目清理（docs/references/ 删除后）",
+      "description": "T-B4 删除 docs/references/ 后，移除 .gitignore 中对应条目",
+      "acceptanceCriteria": [
+        ".gitignore 中无 docs/references/ 条目"
+      ],
+      "priority": 35,
+      "passes": true,
+      "notes": "FU-08: 移除 docs/references/ 死条目",
+      "involvesProductionCode": false,
+      "tddSteps": [
+        { "phase": "DONE", "description": "编辑 .gitignore 移除 docs/references/", "acceptanceCommand": "Select-String docs/references .gitignore | Measure-Object", "passes": true }
+      ]
+    },
+    {
+      "id": "US-FU09",
+      "title": "根 package.json 清理 scoring 依赖",
+      "description": "ajv、ajv-formats、js-yaml 已声明于 packages/scoring/package.json，若根级仅 scoring 使用则移除",
+      "acceptanceCriteria": [
+        "根 package.json 无冗余 scoring 依赖",
+        "或保留因 scripts/tests 仍使用"
+      ],
+      "priority": 36,
+      "passes": true,
+      "notes": "FU-09: 跳过 — scripts/bmad-config.ts、bmad-state-reader.ts、diagnose-bmad-state.ts 及 tests/epic-acceptance/ 使用 js-yaml/ajv，根级需保留",
+      "involvesProductionCode": false,
+      "tddSteps": [
+        { "phase": "DONE", "description": "验证 scripts 与 tests 使用情况，确认保留", "acceptanceCommand": "rg 'js-yaml|ajv' scripts/ tests/ --type ts", "passes": true }
+      ]
+    },
+    {
+      "id": "US-FU10",
+      "title": "packages/scoring/ 独立 vitest.config.ts",
+      "description": "创建 packages/scoring/vitest.config.ts，使 scoring 包可独立运行测试，无需从根级调用",
+      "acceptanceCriteria": [
+        "packages/scoring/vitest.config.ts 存在",
+        "cd packages/scoring && npm run test 可独立运行"
+      ],
+      "priority": 37,
+      "passes": true,
+      "notes": "FU-10: 简单 config，include **/__tests__/**/*.test.ts",
+      "involvesProductionCode": false,
+      "tddSteps": [
+        { "phase": "DONE", "description": "创建 vitest.config.ts 并验证 npm run test", "acceptanceCommand": "cd packages/scoring; npm run test", "passes": true }
+      ]
     }
   ]
 }
