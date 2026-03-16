@@ -25,8 +25,8 @@
 | **bmad-speckit CLI** | `_bmad/speckit/scripts/`、`packages/bmad-speckit/` |
 | **agent-manifest** | `_bmad/_config/agent-manifest.csv` 中 adversarial-reviewer、ai-coach 条目 |
 | **party-mode 定制（旧路径）** | `_bmad/core/workflows/party-mode/`（批判审计员角色注入、收敛条件定制；本地定制原始版本，已加入排除清单） |
-| **party-mode 定制（新路径）** | `_bmad/core/skills/bmad-party-mode/`（V6 skill 格式 + 定制合并版；路径使用 `{project-root}` 绝对引用） |
-| **V6 core skills 分发** | `_bmad/skills/`（Phase 2 自动从 `_bmad/core/skills/` 同步） |
+| **party-mode 定制（新路径）** | `_bmad/skills/bmad-party-mode/`（V6 skill 格式 + 定制合并版；路径使用 `{project-root}` 绝对引用） |
+| **V6 core skills canonical** | `_bmad/skills/`（Phase 2 同步时从 upstream `_bmad/core/skills/` 复制到此，然后删除 core/skills/ 避免冗余） |
 
 ---
 
@@ -67,7 +67,7 @@ pwsh scripts/bmad-sync-from-v6.ps1 -Phase all          # 全阶段
 ```
 
 - **Phase 1**：Path 标准化、step-04 修正等  
-- **Phase 2**：core/bmm/utility 模块同步（含 V6 core skills）；Phase 2 完成后自动将 `_bmad/core/skills/` 同步到 `_bmad/skills/`（通用技能分发目录）  
+- **Phase 2**：core/bmm/utility 模块同步（含 V6 core skills）；Phase 2 完成后将 upstream `_bmad/core/skills/` 复制到 `_bmad/skills/`（canonical），然后删除 `core/skills/` 避免冗余  
 - **禁止覆盖项**：以本文档 §4.1 为准；脚本内置 `$EXCLUDE_PATTERNS` 与其一致
 - **默认分支**：`main`（脚本默认 `-V6Ref main`）
 
@@ -86,7 +86,7 @@ pwsh scripts/bmad-sync-from-v6.ps1 -Phase all          # 全阶段
 
 | 日期 | 来源 | 范围 | 备注 |
 |------|------|------|------|
-| 2026-03-16 | main@45d125f | core/bmm/utility | V6 content sync：新增 11 个 core skills、utility 模块、party-mode skill（新路径 `_bmad/core/skills/bmad-party-mode/`） |
+| 2026-03-16 | main@45d125f | core/bmm/utility | V6 content sync：新增 11 个 core skills、utility 模块、party-mode skill（canonical 路径 `_bmad/skills/bmad-party-mode/`） |
 | 2026-02-22 | v6.0.1 | core/bmm | 初始 BMAD-METHOD v6 安装 |
 
 ---
@@ -100,7 +100,7 @@ pwsh scripts/bmad-sync-from-v6.ps1 -Phase all          # 全阶段
 | 路径 | 类型 | 说明 |
 |------|------|------|
 | `_bmad/core/workflows/party-mode/` | 旧 workflow 格式 | 本地定制原始版本；已加入排除清单，同步时不被覆盖。当前多数 rule/skill 文件仍引用此路径。 |
-| `_bmad/core/skills/bmad-party-mode/` | V6 skill 格式 | upstream V6 新结构 + 定制合并版本；所有引用路径使用 `{project-root}` 绝对引用。同步后自动复制到 `_bmad/skills/bmad-party-mode/`。 |
+| `_bmad/skills/bmad-party-mode/` | V6 skill 格式 | upstream V6 新结构 + 定制合并版本；所有引用路径使用 `{project-root}` 绝对引用。同步时 upstream `core/skills/` 复制到此，然后删除 `core/skills/` 避免冗余。 |
 
 两个版本均可正常工作。未来如需统一路径引用，可将 rule/skill 文件中的 `workflows/party-mode` 迁移为 `skills/bmad-party-mode`。
 

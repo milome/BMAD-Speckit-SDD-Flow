@@ -128,13 +128,15 @@ phase2_ops() {
         done < <(find "$src_dir" -type f -print0 2>/dev/null)
     done
 
-    # Auto-sync _bmad/core/skills/ -> _bmad/skills/ (universal skill distribution)
+    # Auto-sync _bmad/core/skills/ -> _bmad/skills/ (universal skill distribution); _bmad/skills/ is canonical
     local core_skills="$PROJECT_ROOT/_bmad/core/skills"
     local dist_skills="$PROJECT_ROOT/_bmad/skills"
     if [[ -d "$core_skills" ]]; then
         mkdir -p "$dist_skills"
         cp -Rf "$core_skills"/* "$dist_skills/"
         echo "  Skill sync: _bmad/core/skills/ -> _bmad/skills/"
+        rm -rf "$core_skills"
+        echo "  Removed redundant: _bmad/core/skills/ (_bmad/skills/ is canonical)"
     fi
 }
 

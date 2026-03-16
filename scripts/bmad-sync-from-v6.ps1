@@ -299,6 +299,8 @@ try {
                     }
                     Copy-Item -Recurse -Force (Join-Path $op.Source '*') $op.Dest
                     Write-Host "  Skill sync: $($op.Source) -> $($op.Dest)" -ForegroundColor Green
+                    Remove-Item -Recurse -Force $op.Source -ErrorAction SilentlyContinue
+                    Write-Host "  Removed redundant: $($op.Source) (_bmad/skills/ is canonical)" -ForegroundColor Green
                 }
             }
         }
