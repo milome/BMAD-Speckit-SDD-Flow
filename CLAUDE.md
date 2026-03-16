@@ -294,9 +294,9 @@ Located in `scripts/accept-*.test.ts`:
 
 ### Documentation
 - `README.md` - Project overview
-- `docs/QUICKSTART.md` - 5-minute quickstart
-- `docs/guide/claudecode/bmad-story-assistant.md` - Claude Code guide
-- `docs/guide/cursor/bmad-story-assistant.md` - Cursor guide
+- `docs/tutorials/getting-started.md` - 5-minute quickstart
+- `docs/how-to/bmad-story-assistant-claude.md` - Claude Code guide
+- `docs/how-to/bmad-story-assistant-cursor.md` - Cursor guide
 
 ### Scripts
 - `scripts/parse-and-write-score.ts` - Score parsing

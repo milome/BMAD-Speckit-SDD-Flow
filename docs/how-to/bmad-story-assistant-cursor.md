@@ -4,7 +4,7 @@
 
 本文档介绍的是 **Cursor 运行时版本** 的 `bmad-story-assistant` 使用方式。
 
-它与 `docs/guide/claudecode/bmad-story-assistant.md` 共享相同的高层流程语义，但运行时入口不同：
+它与 `docs/how-to/bmad-story-assistant-claude.md` 共享相同的高层流程语义，但运行时入口不同：
 
 - **Cursor 版**：通过 Cursor 规则、Cursor Task、`mcp_task`、`generalPurpose` 执行
 - **Claude 版**：通过 Claude Code CLI / OMC、`Agent`、`general-purpose` 执行

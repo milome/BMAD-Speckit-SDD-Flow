@@ -46,7 +46,7 @@ npx bmad-speckit init my-project --ai cursor-agent --yes
 npx bmad-speckit check
 ```
 
-> **Not sure what to do?** Run `/bmad-help` in your AI IDE. See [Installation & Migration Guide](docs/INSTALLATION_AND_MIGRATION_GUIDE.md) for details.
+> **Not sure what to do?** Run `/bmad-help` in your AI IDE. See [Installation & Migration Guide](docs/how-to/migration.md) for details.
 
 **One-line deploy**:
 
@@ -61,7 +61,7 @@ bash scripts/setup.sh -Target <project-path>
 # or: npm run setup:sh -- -Target <path>
 ```
 
-See [WSL / Shell scripts](docs/WSL_SHELL_SCRIPTS.md) for full shell script reference.
+See [WSL / Shell scripts](docs/how-to/wsl-shell-scripts.md) for full shell script reference.
 
 ---
 
@@ -94,7 +94,7 @@ See [WSL / Shell scripts](docs/WSL_SHELL_SCRIPTS.md) for full shell script refer
 
 ## Documentation
 
-- [Installation & Migration Guide](docs/INSTALLATION_AND_MIGRATION_GUIDE.md)
+- [Installation & Migration Guide](docs/how-to/migration.md)
 
 ---
 

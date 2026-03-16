@@ -1,6 +1,6 @@
 # BMAD-Speckit 5 分钟上手指南
 
-> 从零到生成第一个 `spec.md` 的快速路径。完整安装与迁移见 [安装与迁移指南](INSTALLATION_AND_MIGRATION_GUIDE.md)。
+> 从零到生成第一个 `spec.md` 的快速路径。完整安装与迁移见 [安装与迁移指南](../how-to/migration.md)。
 
 ---
 
@@ -68,6 +68,6 @@ git checkout -b 001-my-first-feature
 - **bmad-bug-assistant**：描述问题时自动进入 Party-Mode，产出 BUGFIX 文档并生成修复任务
 - **bmad-standalone-tasks**：按单份 TASKS/BUGFIX 文档执行，用法示例：`/bmad 按 TASKS_xxx.md 中的未完成任务实施`
 
-- **完整安装**：[安装与迁移指南](INSTALLATION_AND_MIGRATION_GUIDE.md)
+- **完整安装**：[安装与迁移指南](../how-to/migration.md)
 - **BMAD Story 流程**：[README.md §2](../README.md)
 - **完整方案**：[bmad-speckit-integration-FINAL-COMPLETE.md](BMAD/bmad-speckit-integration-FINAL-COMPLETE.md)

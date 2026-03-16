@@ -9,7 +9,7 @@
 需要注意：
 
 - 本目录当前的 `bmad-story-assistant` 文档，介绍的是 **Claude Code CLI / OMC 适配版**
-- 文档当前位置已调整为：`docs/guide/claudecode/bmad-story-assistant.md`
+- 文档当前位置已调整为：`docs/how-to/bmad-story-assistant-claude.md`
 - Cursor 中的同名 skill 仍需要单独的使用说明文档，不应与本指南混为一体
 
 理解方式建议如下：
@@ -17,13 +17,13 @@
 - `bmad-story-assistant`：Story 流程入口语义
 - `bmad-master`：其背后的总控、状态机、路由与门控执行机制
 
-如果你是第一次接触这个流程，优先阅读 `claudecode` 目录下的 `bmad-story-assistant` 使用说明；如果你在维护或使用 Cursor 运行时，则阅读 `cursor` 目录下的对应文档。
+如果你是第一次接触这个流程，优先阅读 Claude Code 版的 `bmad-story-assistant` 使用说明；如果你在维护或使用 Cursor 运行时，则阅读 Cursor 版的对应文档。
 
 ## 文档列表
 
 ### Claude Code / OMC
 
-- [`claudecode/bmad-story-assistant.md`](./claudecode/bmad-story-assistant.md)
+- [`bmad-story-assistant-claude.md`](./bmad-story-assistant-claude.md)
 
 适合以下场景：
 
@@ -35,7 +35,7 @@
 
 ### Cursor
 
-- [`cursor/bmad-story-assistant.md`](./cursor/bmad-story-assistant.md)
+- [`bmad-story-assistant-cursor.md`](./bmad-story-assistant-cursor.md)
 
 适合以下场景：
 
@@ -49,9 +49,9 @@
 
 如果你是第一次接触本仓的 BMAD Story 流程，建议按以下顺序阅读：
 
-1. [`claudecode/bmad-story-assistant.md`](./claudecode/bmad-story-assistant.md)
-2. [`cursor/bmad-story-assistant.md`](./cursor/bmad-story-assistant.md)
-3. [`../MULTI-STORY.md`](../MULTI-STORY.md)
+1. [`bmad-story-assistant-claude.md`](./bmad-story-assistant-claude.md)
+2. [`bmad-story-assistant-cursor.md`](./bmad-story-assistant-cursor.md)
+3. [`multi-story.md`](./multi-story.md)
 
 ## 维护建议
 

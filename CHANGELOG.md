@@ -11,7 +11,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - MIT LICENSE
 - ATTRIBUTIONS.md (BMAD-METHOD, spec-kit)
-- docs/UPSTREAM.md (upstream dependencies, sync strategy, exclude list)
+- docs/explanation/upstream-relationship.md (upstream dependencies, sync strategy, exclude list)
 - .gitignore (.env, *.key, *secret*, etc.)
 - CHANGELOG.md
 
