@@ -34,15 +34,21 @@ describe('AI Registry integration (Story 12.1 T5)', () => {
   it('T4.1 init --ai generic --ai-commands-dir <path> --yes => passes generic validation', () => {
     const parentDir = path.join(os.tmpdir(), `bmad-speckit-gen-ok-${Date.now()}`);
     fs.mkdirSync(parentDir, { recursive: true });
+    const sharedBmad = path.join(parentDir, 'shared_bmad');
+    fs.mkdirSync(path.join(sharedBmad, 'core'), { recursive: true });
+    fs.mkdirSync(path.join(sharedBmad, 'cursor', 'commands'), { recursive: true });
+    fs.mkdirSync(path.join(sharedBmad, 'cursor', 'rules'), { recursive: true });
     const commandsDir = path.join(parentDir, 'my-commands');
-    const projectDir = path.join(parentDir, 'proj'); // empty subdir for init
+    const projectDir = path.join(parentDir, 'proj');
     fs.mkdirSync(commandsDir, { recursive: true });
     fs.mkdirSync(projectDir, { recursive: true });
-    const r = runInit(['.', '--ai', 'generic', '--ai-commands-dir', commandsDir, '--yes', '--no-git'], projectDir, { timeout: 60000 });
+    const r = runInit(
+      ['.', '--bmad-path', sharedBmad, '--ai', 'generic', '--ai-commands-dir', commandsDir, '--yes', '--no-git'],
+      projectDir,
+      { timeout: 30000 }
+    );
     try { fs.rmSync(parentDir, { recursive: true }); } catch (_) {}
-    if (r.status === 5) return; // skip if offline cache missing
-    if (r.status === 3) return; // skip if network failed
-    assert.strictEqual(r.status, 0, `expected exit 0, got ${r.status}: ${r.stderr}`);
+    assert.strictEqual(r.status, 0, `expected exit 0, got ${r.status}: ${r.stderr || r.stdout}`);
   });
 
   it('T4.2 init uses AIRegistry (grep init.js)', () => {
