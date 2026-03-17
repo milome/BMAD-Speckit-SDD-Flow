@@ -4,9 +4,9 @@
  * 跨平台配置加载器，支持 Cursor 和 Claude Code CLI 环境
  * 负责读取审计粒度配置并提供运行时决策支持
  */
+/* eslint-disable jsdoc/require-description, jsdoc/require-param, jsdoc/require-param-description, jsdoc/require-param-type, jsdoc/require-returns, jsdoc/require-returns-description, jsdoc/require-returns-type */
 
 import { readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
 import * as yaml from 'js-yaml';
 
 // =============================================================================
@@ -267,6 +267,7 @@ export function detectEnvironment(): EnvironmentConfig {
 
 /**
  * 显式设置运行环境（用于测试或强制指定）
+ * @param platform
  */
 export function setEnvironment(platform: Platform): EnvironmentConfig {
   process.env.BMAD_PLATFORM = platform;
@@ -504,6 +505,8 @@ export function getDefaultConfig(): BmadConfig {
 
 /**
  * 合并配置（深度合并）
+ * @param base
+ * @param override
  */
 function mergeConfig(base: BmadConfig, override: Partial<BmadConfig>): BmadConfig {
   return {
@@ -582,6 +585,7 @@ export function loadConfig(configPath?: string): RuntimeConfig {
 
 /**
  * 获取当前审计粒度模式
+ * @param config
  */
 export function getCurrentMode(config?: RuntimeConfig): AuditGranularityMode {
   const cfg = config || loadConfig();
@@ -616,6 +620,8 @@ export function shouldAutoContinue(
 
 /**
  * 获取当前模式的阶段配置
+ * @param stage
+ * @param config
  */
 export function getStageConfig(stage: StageName, config?: RuntimeConfig): StageConfig | undefined {
   const cfg = config || loadConfig();
@@ -744,6 +750,10 @@ export function getReportPathTemplate(
  * 格式化报告路径（替换占位符）
  * @param template 路径模板
  * @param params 替换参数
+ * @param params.epic
+ * @param params.story
+ * @param params.epicSlug
+ * @param params.storySlug
  * @returns 格式化后的路径
  */
 export function formatReportPath(
@@ -768,6 +778,7 @@ export function formatReportPath(
 
 /**
  * 打印当前配置摘要（用于调试）
+ * @param config
  */
 export function printConfigSummary(config?: RuntimeConfig): void {
   const cfg = config || loadConfig();

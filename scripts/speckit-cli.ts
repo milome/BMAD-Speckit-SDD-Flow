@@ -349,7 +349,7 @@ function runAudit(stage: string, artifactPath: string, options: CliOptions): voi
   console.log(`Running audit: ${cmd}`);
   try {
     execSync(cmd, { stdio: 'inherit' });
-  } catch (error) {
+  } catch {
     console.error('Audit failed');
     process.exit(1);
   }

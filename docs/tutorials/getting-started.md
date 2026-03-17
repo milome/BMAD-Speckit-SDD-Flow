@@ -22,7 +22,18 @@ git clone <BMAD-Speckit-SDD-Flow-repo-url> D:\Dev\BMAD-Speckit-SDD-Flow
 
 ## 2. 安装
 
-### 2.1 方式一：一键安装（推荐）
+### 2.1 方式一：npx 免安装（推荐）
+
+无需克隆源仓库，直接在目标项目中运行：
+
+```powershell
+cd D:\Dev\your-project
+npx bmad-speckit init . --ai cursor-agent --yes
+```
+
+此方式从 npm registry 拉取最新版，自动完成：核心目录部署 + AI 运行时同步 + 安装验证。适用于任何项目（含非 Node 项目）。
+
+### 2.2 方式二：PowerShell 一键安装
 
 需要 PowerShell ≥7，在 **BMAD-Speckit-SDD-Flow 源仓库根目录**执行：
 
@@ -32,34 +43,31 @@ pwsh scripts/setup.ps1 -Target D:\Dev\your-project
 
 该脚本自动完成：核心目录部署 + `.cursor/` 同步 + 全局 Skills 安装 + 安装验证。
 
-### 2.2 方式二：npm 安装
+### 2.3 方式三：npm 本地安装
 
 ```powershell
 cd D:\Dev\your-project
 
-# 安装（postinstall 默认走 --agent cursor）
+# 安装（postinstall 自动部署 _bmad、.cursor、package.json 等）
 npm install --save-dev D:\Dev\BMAD-Speckit-SDD-Flow
 
 # 若要生成 Claude Code 隔离运行时，显式执行
 node D:\Dev\BMAD-Speckit-SDD-Flow\scripts\init-to-root.js D:\Dev\your-project --agent claude-code
 ```
 
-`postinstall` 脚本会自动复制以下目录到项目根：
-- `_bmad/` → `{项目根}/_bmad/`（含 `_bmad/_config/` 配置文件）
-- 创建空的 `_bmad-output/config/`（不复制源项目的产出内容）
+`postinstall` 脚本会**自动完成**：
+- `_bmad/` → `{项目根}/_bmad/`
+- `.cursor/` 同步（commands、rules、skills、agents）
+- `.specify/` 模板与脚本
+- `_bmad-output/config/` 空结构
+- `package.json` 中 `bmad-speckit` 依赖及 `check`、`speckit` 脚本
 
-npm 包**不含**的目录需手动复制：
+> **提示**：对于非 Node 项目，可使用 `--no-package-json` 标志跳过 `package.json` 创建：
+> ```powershell
+> node scripts/init-to-root.js D:\Dev\your-project --no-package-json
+> ```
 
-```powershell
-$SOURCE = "D:\Dev\BMAD-Speckit-SDD-Flow"
-
-# Cursor IDE 配置
-Copy-Item -Recurse -Force "$SOURCE\.cursor\commands" ".cursor\commands"
-Copy-Item -Recurse -Force "$SOURCE\.cursor\rules" ".cursor\rules"
-Copy-Item -Recurse -Force "$SOURCE\.cursor\agents" ".cursor\agents"
-```
-
-### 2.3 方式三：克隆后手动部署
+### 2.4 方式四：克隆后手动部署
 
 ```powershell
 git clone <BMAD-Speckit-SDD-Flow-repo-url> D:\Dev\BMAD-Speckit-SDD-Flow
@@ -73,7 +81,7 @@ node D:\Dev\BMAD-Speckit-SDD-Flow\scripts\init-to-root.js D:\Dev\your-project --
 2. 将 speckit 命令复制到 `.cursor\commands\`
 3. 将 5 个必须 Skill 复制到全局 `$env:USERPROFILE\.cursor\skills\`
 
-### 2.4 非交互式安装
+### 2.5 非交互式安装
 
 > 适用于：CI/CD 流水线、脚本化安装、批量部署、已知配置的快速安装。参考 [BMAD Method 非交互式安装](https://docs.bmad-method.org/how-to/non-interactive-installation/)。
 

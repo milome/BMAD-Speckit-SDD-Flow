@@ -6,7 +6,6 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { AuditLogger } from '../../src/story-workflow/AuditLogger';
-import type { StoryStage } from '../../src/story-workflow/types';
 
 describe('AuditLogger', () => {
   let logger: AuditLogger;

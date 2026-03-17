@@ -4,11 +4,10 @@
  */
 import type { RunScoreRecord } from '../writer/types';
 import { loadIterationTierYaml } from '../parsers/rules';
-import * as path from 'path';
+import { resolveRulesDir } from '../constants/path';
 
 function getRulesDir(options?: { rulesDir?: string }): string {
-  if (options?.rulesDir) return options.rulesDir;
-  return path.join(process.cwd(), 'packages', 'scoring', 'rules');
+  return resolveRulesDir(options);
 }
 
 /**

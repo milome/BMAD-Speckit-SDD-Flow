@@ -28,7 +28,7 @@
     "accept:e4-s3": "npx ts-node tests/epic-acceptance/accept-e4-s3.ts",
     "test:cursor-regression": "npx vitest run tests/acceptance/accept-cursor-regression-gate.test.ts && npm run accept:e1-s1 && npm run accept:e1-s2 && npm run accept:e3-s1 && npm run accept:e3-s2 && npm run accept:e3-s3 && npm run accept:e4-s1 && npm run accept:e4-s2 && npm run accept:e4-s3",
     "test:claude-isolation": "npx vitest run tests/acceptance/accept-claude-install-isolation.test.ts tests/acceptance/accept-claude-runtime-isolation.test.ts",
-    "test:bmad": "npx vitest run tests/acceptance/accept-bmad-*.test.ts tests/acceptance/accept-layer4-*.test.ts tests/acceptance/accept-commit-gate.test.ts tests/acceptance/accept-runtime.test.ts tests/acceptance/accept-checklists.test.ts tests/acceptance/accept-extensions.test.ts",
+    "test:bmad": "npx vitest run tests/acceptance/accept-bmad-*.test.ts tests/acceptance/accept-layer4-*.test.ts tests/acceptance/accept-commit-gate.test.ts tests/acceptance/accept-runtime.test.ts tests/acceptance/accept-checklists.test.ts tests/acceptance/accept-extensions.test.ts tests/acceptance/accept-install-consumer-cli.test.ts tests/acceptance/accept-init-package-json.test.ts",
     "coach:diagnose": "npx ts-node scripts/coach-diagnose.ts",
     "verify:cursor-audit-granularity": "npx ts-node scripts/verify-cursor-audit-granularity.ts",
     "eval-questions": "npx ts-node scripts/eval-questions-cli.ts",

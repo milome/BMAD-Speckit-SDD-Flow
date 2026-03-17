@@ -3,7 +3,6 @@
  * 检测 spec 文档中的缺陷
  */
 import * as fs from 'fs';
-import * as path from 'path';
 
 interface AuditResult {
   status: 'PASS' | 'FAIL';

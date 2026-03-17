@@ -11,7 +11,6 @@ import {
   trim,
   padStart,
   padEnd,
-  NullableString,
 } from '../src/string-formatter';
 
 describe('String Formatter Utility', () => {

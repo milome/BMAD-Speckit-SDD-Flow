@@ -2,7 +2,7 @@
  * BMAD Multi-Story State Management
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 
 const STATE_DIR = '.claude/state';
@@ -259,10 +259,11 @@ export function releaseLock(epic: string, story: string, owner: string): boolean
   if (!existing.locked) return true;
   if (existing.owner !== owner) return false;
 
-  const { unlinkSync } = require('node:fs');
   try {
     unlinkSync(getLockPath(epic, story));
-  } catch {}
+  } catch {
+    // intentional: ignore unlink errors
+  }
   return true;
 }
 

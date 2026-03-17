@@ -9,15 +9,15 @@ import {
   loadConfig,
   shouldAudit,
   shouldValidate,
-  getStageConfig,
   getCurrentMode,
   getSubagentParams,
+  type StageName,
 } from './bmad-config';
 
-// Test configuration
-const TEST_EPIC = 'E001';
-const TEST_STORY = 'S003';
-const TEST_SLUG = 'story-mode-test';
+// Test configuration (for documentation)
+const _TEST_EPIC = 'E001';
+const _TEST_STORY = 'S003';
+const _TEST_SLUG = 'story-mode-test';
 
 // Stage definitions with expected behavior in story mode
 const STAGE_DEFINITIONS = [
@@ -108,9 +108,8 @@ function runVerification(): TestResult[] {
   let allPassed = true;
 
   for (const stageDef of STAGE_DEFINITIONS) {
-    const stageConfig = getStageConfig(stageDef.name as any, config);
-    const needsAudit = shouldAudit(stageDef.name as any, config);
-    const validation = shouldValidate(stageDef.name as any, config);
+    const needsAudit = shouldAudit(stageDef.name as StageName, config);
+    const validation = shouldValidate(stageDef.name as StageName, config);
 
     const result: TestResult = {
       stage: stageDef.name,

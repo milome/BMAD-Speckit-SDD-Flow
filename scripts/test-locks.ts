@@ -1,5 +1,5 @@
 // Test locking functionality
-import { acquireLock, getLock, releaseLock, listActiveStories } from './bmad-state';
+import { acquireLock, getLock, releaseLock } from './bmad-state';
 
 console.log('Testing locks...\n');
 

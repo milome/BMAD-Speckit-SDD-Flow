@@ -220,6 +220,7 @@ Write-Output ""
 Write-Output "=== Install Verification ==="
 
 $checks = @(
+    @{ Path = 'package.json'; Desc = 'package.json with bmad-speckit' }
     @{ Path = '_bmad/core/workflows/party-mode/workflow.md'; Desc = 'Party-Mode workflow' }
     @{ Path = '_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml'; Desc = 'Create Story workflow' }
     @{ Path = '_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml'; Desc = 'Dev Story workflow' }

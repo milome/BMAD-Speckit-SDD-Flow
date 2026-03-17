@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as veto from '../veto';
+import { resolveRulesDir } from '../constants/path';
 import type { EpicStoryRecord } from '../veto';
 import { clusterWeaknesses } from '../analytics/cluster-weaknesses';
 import { loadCoachConfig } from './config';
@@ -308,7 +309,7 @@ export async function coachDiagnose(
   const config = loadCoachConfig(options.configPath);
   const requiredSkillPath = options.requiredSkillPath ?? config.required_skill_path;
   const fallbackMode = !isSkillAvailable(requiredSkillPath, options.forceSkillLoadError === true);
-  const rulesDir = options.rulesDir ?? path.resolve(process.cwd(), 'packages', 'scoring', 'rules');
+  const rulesDir = options.rulesDir ?? resolveRulesDir();
 
   const scored = records.map((record) => {
     const result = veto.applyTierAndVeto(

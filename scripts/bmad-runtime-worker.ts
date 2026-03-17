@@ -41,7 +41,7 @@ export function processQueue(): void {
 
       // 移动到 done
       fs.renameSync(processingPath, path.join(doneDir, file));
-    } catch (error) {
+    } catch {
       // 移动到 failed
       fs.renameSync(processingPath, path.join(failedDir, file));
     }

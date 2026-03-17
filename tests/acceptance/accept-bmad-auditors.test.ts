@@ -19,7 +19,7 @@ describe('auditor agents', () => {
 
     it('contains critical auditor conclusion section', () => {
       expect(content).toContain('批判审计员结论');
-      expect(content).toContain('50%');
+      expect(content).toContain('70%');
       expect(content).toContain('已检查维');
     });
 
@@ -101,7 +101,7 @@ describe('auditor agents', () => {
 
     it('contains critical auditor conclusion section', () => {
       expect(content).toContain('批判审计员结论');
-      expect(content).toContain('50%');
+      expect(content).toContain('70%');
     });
 
     it('has plan-specific checks (integration/E2E testing)', () => {
@@ -141,13 +141,13 @@ describe('auditor agents', () => {
       expect(content).toContain('Step 1:');
       expect(content).toContain('Step 2:');
       expect(content).toContain('Step 3:');
-      expect(content).toContain('Step 5: §5');
+      expect(content).toContain('Step 7: §5');
       expect(content).toContain('## §5 结论');
     });
 
     it('contains critical auditor conclusion section', () => {
       expect(content).toContain('批判审计员结论');
-      expect(content).toContain('50%');
+      expect(content).toContain('70%');
     });
 
     it('has tasks-specific checks (test tasks)', () => {
@@ -191,7 +191,7 @@ describe('auditor agents', () => {
 
     it('contains critical auditor conclusion section', () => {
       expect(content).toContain('批判审计员结论');
-      expect(content).toContain('50%');
+      expect(content).toContain('70%');
     });
 
     it('has CODE MODE dimensions in scoring block (4 different dimensions)', () => {

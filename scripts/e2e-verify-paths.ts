@@ -1,6 +1,5 @@
 #!/usr/bin/env ts-node
 import * as fs from 'fs';
-import * as path from 'path';
 
 const TEST_EPIC = 'TEST';
 const TEST_STORY = '001';

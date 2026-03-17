@@ -4,12 +4,10 @@
  * INT-001~003: Full workflow integration tests
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   StoryStateManager,
   StageValidator,
-  AuditLogger,
-  ValidationError,
   StageTransitionError,
 } from '../../src/story-workflow';
 

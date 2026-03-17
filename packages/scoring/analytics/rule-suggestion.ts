@@ -5,6 +5,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import yaml from 'js-yaml';
+import { resolveRulesDir } from '../constants/path';
 import type { WeaknessCluster } from './cluster-weaknesses';
 import type { RunScoreRecord } from '../writer/types';
 
@@ -74,8 +75,7 @@ export function generateRuleSuggestions(
   records: RunScoreRecord[],
   rulesDir?: string
 ): RuleSuggestion[] {
-  const cwd = process.cwd();
-  const rulesPath = rulesDir ?? path.join(cwd, 'packages', 'scoring', 'rules');
+  const rulesPath = rulesDir ?? resolveRulesDir();
   const itemDeducts = loadItemDeducts(rulesPath);
   const evidenceTotals = countItemAppearances(records);
 

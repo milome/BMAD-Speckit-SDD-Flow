@@ -12,12 +12,12 @@ import type {
   ResolvedItem,
 } from './types';
 import { RefResolutionError } from './types';
+import { resolveRulesDir } from '../constants/path';
 
 const REF_PATTERN = /^code-reviewer-config#([a-zA-Z0-9_]+)$/;
 
 function getRulesDir(options?: { rulesDir?: string }): string {
-  const root = process.cwd();
-  return options?.rulesDir ?? path.join(root, 'packages', 'scoring', 'rules');
+  return resolveRulesDir(options);
 }
 
 function getConfigPath(options?: { configPath?: string }): string {

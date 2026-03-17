@@ -3,12 +3,14 @@ import addFormats from 'ajv-formats';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { RunScoreRecord } from './types';
+import { resolveSchemaDir } from '../constants/path';
 
 let validateFn: ReturnType<Ajv['compile']>;
 
 function getValidate() {
   if (validateFn) return validateFn;
-  const schemaPath = path.resolve(process.cwd(), 'packages', 'scoring', 'schema', 'run-score-schema.json');
+  const schemaDir = resolveSchemaDir();
+  const schemaPath = path.join(schemaDir, 'run-score-schema.json');
   const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf-8'));
   const ajv = new Ajv();
   addFormats(ajv);

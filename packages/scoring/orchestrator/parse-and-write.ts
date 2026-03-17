@@ -11,6 +11,7 @@ import type { AuditStage } from '../parsers';
 import { writeScoreRecordSync } from '../writer';
 import type { WriteMode } from '../writer';
 import { applyTierAndVeto } from '../veto';
+import { resolveRulesDir } from '../constants/path';
 import { computeContentHash, computeStringHash, getGitHeadHash } from '../utils/hash';
 import type { DimensionScore, IterationRecord } from '../writer/types';
 
@@ -181,7 +182,7 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
   const rawScore = baseRecord.phase_score;
   const { phase_score, veto_triggered, tier_coefficient } = applyTierAndVeto(
     { ...baseRecord, raw_phase_score: rawScore },
-    { rulesDir: path.join(process.cwd(), 'packages', 'scoring', 'rules') }
+    { rulesDir: resolveRulesDir() }
   );
 
   const baseCommitHash = options.skipAutoHash

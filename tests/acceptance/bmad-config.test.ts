@@ -6,18 +6,15 @@ import { readFileSync } from 'node:fs';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   loadConfig,
-  getCurrentMode,
   getStageConfig,
   shouldAudit,
   shouldValidate,
-  shouldGenerateDoc,
   getStrictness,
   getSubagentParams,
   getEnvironment,
   formatReportPath,
   validateConfig,
   getDefaultConfig,
-  detectEnvironment,
   setEnvironment,
   isAutoContinueEnabled,
   shouldAutoContinue,

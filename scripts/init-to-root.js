@@ -10,7 +10,7 @@
  * 用途：部署 BMAD 目录结构。
  * speckit commands 从 _bmad/speckit/commands/ 合并；.specify/ 部署 templates/workflows/scripts。
  *
- * CLI 参数：[targetDir], --full, --agent cursor|claude-code
+ * CLI 参数：[targetDir], --full, --agent cursor|claude-code, --no-package-json
  *
  * 示例：node scripts/init-to-root.js
  *
@@ -22,6 +22,7 @@ const path = require('node:path');
 const PKG_ROOT = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
 const fullMode = args.includes('--full');
+const noPackageJson = args.includes('--no-package-json');
 const agentArgIndex = args.findIndex((a) => a === '--agent');
 let requestedAgentTarget =
   agentArgIndex >= 0 && args[agentArgIndex + 1] ? args[agentArgIndex + 1] : null;
@@ -184,9 +185,12 @@ if (!agentProfile) {
 }
 const agentTarget = normalizedAgent;
 const targetArg = args.find(
-  (a, index) => a !== '--full' && a !== '--agent' && index !== agentArgIndex + 1
+  (a, index) => a !== '--full' && a !== '--no-package-json' && a !== '--agent' && index !== agentArgIndex + 1
 );
-const TARGET = targetArg ? path.resolve(targetArg) : process.cwd();
+// When run as postinstall (npm install in consumer), INIT_CWD = consumer root; use it as target.
+const TARGET = targetArg
+  ? path.resolve(targetArg)
+  : (process.env.INIT_CWD && path.resolve(process.env.INIT_CWD)) || process.cwd();
 
 const CORE_DIRS = ['_bmad'];
 const FULL_DIRS = [
@@ -247,6 +251,48 @@ const bmadOutputConfig = path.join(bmadOutputDir, 'config');
 if (!fs.existsSync(bmadOutputConfig)) {
   fs.mkdirSync(bmadOutputConfig, { recursive: true });
   console.log('Created _bmad-output/config/ (empty structure for target project)');
+}
+
+// Ensure package.json with bmad-speckit dep when deploying to external project (not self).
+// --no-package-json 标志：跳过 package.json 创建与 npm install（适用于已发布 CLI 的场景）
+const targetReal = fs.realpathSync(TARGET, { encoding: 'utf8' });
+const pkgRootReal = fs.realpathSync(PKG_ROOT, { encoding: 'utf8' });
+if (noPackageJson) {
+  console.log('Skipped package.json creation (--no-package-json)');
+} else if (targetReal !== pkgRootReal) {
+  const relToPkg = path.relative(TARGET, path.join(PKG_ROOT, 'packages', 'bmad-speckit'));
+  const bmadSpeckitDep = 'file:' + relToPkg.replace(/\\/g, '/');
+  const pkgPath = path.join(TARGET, 'package.json');
+  let pkg = {};
+  if (fs.existsSync(pkgPath)) {
+    let raw = fs.readFileSync(pkgPath, 'utf8');
+    if (raw.charCodeAt(0) === 0xfeff) raw = raw.slice(1); // strip BOM
+    pkg = JSON.parse(raw);
+  } else {
+    pkg = {
+      name: path.basename(TARGET).toLowerCase().replace(/\s+/g, '-'),
+      version: '0.1.0',
+      private: true,
+      description: 'BMAD-Speckit project',
+    };
+    console.log('Created package.json (minimal)');
+  }
+  pkg.devDependencies = pkg.devDependencies || {};
+  if (!pkg.devDependencies['bmad-speckit']) {
+    pkg.devDependencies['bmad-speckit'] = bmadSpeckitDep;
+    pkg.scripts = pkg.scripts || {};
+    if (!pkg.scripts.check) pkg.scripts.check = 'npx bmad-speckit check';
+    if (!pkg.scripts.speckit) pkg.scripts.speckit = 'npx bmad-speckit';
+    fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
+    console.log('Added bmad-speckit to devDependencies');
+    const { execSync } = require('node:child_process');
+    try {
+      execSync('npm install', { cwd: TARGET, stdio: 'inherit' });
+      console.log('Ran npm install');
+    } catch (e) {
+      console.warn('npm install failed (run manually in target):', e.message);
+    }
+  }
 }
 
 console.log('Done. Copied', DIRS.length, 'dirs,', totalFiles, 'files.');

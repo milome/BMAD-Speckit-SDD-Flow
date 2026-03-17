@@ -13,8 +13,8 @@ async function testStoryFlow() {
     const newStory = createStory(epic, story, 'test-epic', 'test-story');
     console.log('✓ Story created:', newStory.epic + '-' + newStory.story);
     console.log('  State:', newStory.stage);
-  } catch (e: any) {
-    console.log('✗ Story creation failed:', e.message);
+  } catch (e: unknown) {
+    console.log('✗ Story creation failed:', e instanceof Error ? e.message : String(e));
     // If exists, get current state
     const existing = getStoryState(epic, story);
     if (existing) {

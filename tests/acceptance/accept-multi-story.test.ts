@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, beforeEach } from 'vitest';
 import {
   getGlobalState,
   saveGlobalState,
@@ -13,7 +13,7 @@ import {
   releaseLock,
   getLock,
 } from '../../scripts/bmad-state';
-import { existsSync, rmdirSync, unlinkSync, readdirSync } from 'node:fs';
+import { existsSync, unlinkSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const TEST_STATE_DIR = '.claude/state';
@@ -31,7 +31,9 @@ describe('bmad multi-story state', () => {
           unlinkSync(join(TEST_STORIES_DIR, f));
         }
       }
-    } catch {}
+    } catch {
+      // intentional: clean test dirs
+    }
     try {
       const locks = readdirSync(TEST_LOCKS_DIR);
       for (const f of locks) {
@@ -39,12 +41,16 @@ describe('bmad multi-story state', () => {
           unlinkSync(join(TEST_LOCKS_DIR, f));
         }
       }
-    } catch {}
+    } catch {
+      // intentional: clean test dirs
+    }
     try {
       if (existsSync(join(TEST_STATE_DIR, 'bmad-progress.yaml'))) {
         unlinkSync(join(TEST_STATE_DIR, 'bmad-progress.yaml'));
       }
-    } catch {}
+    } catch {
+      // intentional: clean test dirs
+    }
   });
 
   describe('global state', () => {
@@ -191,8 +197,8 @@ describe('bmad multi-story state', () => {
 
   describe('multi-story isolation', () => {
     it('stories have independent states', () => {
-      const story1 = createStory('E001', 'S001', 'test1');
-      const story2 = createStory('E001', 'S002', 'test2');
+      createStory('E001', 'S001', 'test1');
+      createStory('E001', 'S002', 'test2');
 
       updateStoryState('E001', 'S001', { stage: 'implement_passed' });
 

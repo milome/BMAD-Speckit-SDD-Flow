@@ -113,6 +113,7 @@ echo ""
 echo "=== Install Verification ==="
 
 CHECKS=(
+    "package.json:package.json with bmad-speckit"
     "_bmad/core/workflows/party-mode/workflow.md:Party-Mode workflow"
     "_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml:Create Story workflow"
     "_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml:Dev Story workflow"
