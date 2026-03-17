@@ -3,7 +3,7 @@
  * Covers setup.ps1, setup.sh, npm install, init-to-root flows.
  * Runs in CI (ubuntu-latest).
  */
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';

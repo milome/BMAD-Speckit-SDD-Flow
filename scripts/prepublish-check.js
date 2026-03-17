@@ -3,6 +3,7 @@
  * 发布前检查脚本：确保 bmad-speckit 的 bundleDependencies 所需产物就绪。
  * 在 prepublishOnly 生命周期中调用，失败则阻止发布。
  */
+/* eslint-disable @typescript-eslint/no-require-imports -- CommonJS script for prepublish */
 const fs = require('node:fs');
 const path = require('node:path');
 
