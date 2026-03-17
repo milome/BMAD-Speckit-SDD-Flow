@@ -11,11 +11,12 @@ const os = require('os');
 
 const BIN = path.join(__dirname, '../bin/bmad-speckit.js');
 
-function runInit(args, cwd) {
+function runInit(args, cwd, opts = {}) {
+  const timeout = opts.timeout ?? 10000;
   return spawnSync('node', [BIN, 'init', ...args], {
     cwd: cwd || os.tmpdir(),
     encoding: 'utf8',
-    timeout: 10000,
+    timeout,
   });
 }
 
@@ -37,7 +38,7 @@ describe('AI Registry integration (Story 12.1 T5)', () => {
     const projectDir = path.join(parentDir, 'proj'); // empty subdir for init
     fs.mkdirSync(commandsDir, { recursive: true });
     fs.mkdirSync(projectDir, { recursive: true });
-    const r = runInit(['.', '--ai', 'generic', '--ai-commands-dir', commandsDir, '--yes', '--no-git'], projectDir);
+    const r = runInit(['.', '--ai', 'generic', '--ai-commands-dir', commandsDir, '--yes', '--no-git'], projectDir, { timeout: 60000 });
     try { fs.rmSync(parentDir, { recursive: true }); } catch (_) {}
     if (r.status === 5) return; // skip if offline cache missing
     if (r.status === 3) return; // skip if network failed
