@@ -73,8 +73,8 @@ describe('auditor agents', () => {
       expect(content).toContain('禁止仅输出建议');
     });
 
-    it('contains parse-and-write-score integration', () => {
-      expect(content).toContain('parse-and-write-score.ts');
+    it('contains bmad-speckit score integration', () => {
+      expect(content).toContain('bmad-speckit score');
       expect(content).toContain('--stage spec');
       expect(content).toContain('--event stage_audit_complete');
     });
@@ -123,8 +123,8 @@ describe('auditor agents', () => {
       expect(content).toMatch(/- 需求完整.{1,3}\[?(?:XX|\d{2,3})\]?\/100/);
     });
 
-    it('contains parse-and-write-score integration', () => {
-      expect(content).toContain('parse-and-write-score.ts');
+    it('contains bmad-speckit score integration', () => {
+      expect(content).toContain('bmad-speckit score');
       expect(content).toContain('--stage plan');
     });
   });
@@ -163,8 +163,8 @@ describe('auditor agents', () => {
       expect(content).toContain('可追溯');
     });
 
-    it('contains parse-and-write-score integration', () => {
-      expect(content).toContain('parse-and-write-score.ts');
+    it('contains bmad-speckit score integration', () => {
+      expect(content).toContain('bmad-speckit score');
       expect(content).toContain('--stage tasks');
     });
   });
@@ -225,8 +225,8 @@ describe('auditor agents', () => {
       expect(content).toContain('主 Agent 委托');
     });
 
-    it('contains parse-and-write-score integration', () => {
-      expect(content).toContain('parse-and-write-score.ts');
+    it('contains bmad-speckit score integration', () => {
+      expect(content).toContain('bmad-speckit score');
       expect(content).toContain('--stage implement');
     });
 

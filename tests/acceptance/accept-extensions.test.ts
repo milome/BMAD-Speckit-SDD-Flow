@@ -168,7 +168,7 @@ describe('T4: Claude adapted bmad-code-reviewer-lifecycle skill', () => {
 
   it('preserves scoring pipeline references', () => {
     const content = readFileSync(skillPath, 'utf8');
-    expect(content).toContain('parse-and-write-score');
+    expect(content).toContain('bmad-speckit score');
     expect(content).toContain('code-reviewer-config.yaml');
     expect(content).toContain('stage-mapping.yaml');
     expect(content).toContain('eval-lifecycle-report-paths.yaml');
@@ -925,7 +925,7 @@ describe('extension agents', () => {
     expect(reviewer).toContain('code-reviewer-config.yaml');
     expect(reviewer).toContain('stage-mapping.yaml');
     expect(reviewer).toContain('eval-lifecycle-report-paths.yaml');
-    expect(reviewer).toContain('parse-and-write-score');
+    expect(reviewer).toContain('bmad-speckit score');
 
     for (const content of [tasksDocAuditor, bugfixAuditor]) {
       expect(content).toContain('## 批判审计员结论');

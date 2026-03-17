@@ -174,7 +174,7 @@
 
 ### 4.3 审计报告格式要求
 
-**必须包含可解析评分块**（供 parseAndWriteScore 解析）：
+**必须包含可解析评分块**（供 `bmad-speckit score` 解析）：
 
 ```markdown
 ## 可解析评分块（供 parseAndWriteScore）
@@ -192,11 +192,13 @@
 
 ## 五、评分系统映射
 
-### 5.1 parse-and-write-score 调用参数
+### 5.1 scoring CLI 调用参数
+
+> 旧调用方式 `npx ts-node scripts/parse-and-write-score.ts` 已替换为 `npx bmad-speckit score`，参数不变。
 
 ```bash
 # §1 specify
-npx ts-node scripts/parse-and-write-score.ts \
+npx bmad-speckit score \
   --reportPath specs/epic-{epic}-{slug}/story-{story}-{slug}/AUDIT_spec-E{epic}-S{story}.md \
   --stage spec \
   --event stage_audit_complete \
@@ -208,7 +210,7 @@ npx ts-node scripts/parse-and-write-score.ts \
   [--iterationReportPaths fail_round1_path,fail_round2_path,...]
 
 # §2 plan
-npx ts-node scripts/parse-and-write-score.ts \
+npx bmad-speckit score \
   --reportPath specs/epic-{epic}-{slug}/story-{story}-{slug}/AUDIT_plan-E{epic}-S{story}.md \
   --stage plan \
   --event stage_audit_complete \
@@ -216,7 +218,7 @@ npx ts-node scripts/parse-and-write-score.ts \
   ...
 
 # §3 GAPS (stage=plan, 报告格式与plan兼容)
-npx ts-node scripts/parse-and-write-score.ts \
+npx bmad-speckit score \
   --reportPath specs/.../AUDIT_GAPS-E{epic}-S{story}.md \
   --stage plan \
   --event stage_audit_complete \
@@ -224,7 +226,7 @@ npx ts-node scripts/parse-and-write-score.ts \
   ...
 
 # §4 tasks
-npx ts-node scripts/parse-and-write-score.ts \
+npx bmad-speckit score \
   --reportPath specs/.../AUDIT_tasks-E{epic}-S{story}.md \
   --stage tasks \
   --event stage_audit_complete \
@@ -232,7 +234,7 @@ npx ts-node scripts/parse-and-write-score.ts \
   ...
 
 # §5 implement
-npx ts-node scripts/parse-and-write-score.ts \
+npx bmad-speckit score \
   --reportPath _bmad-output/implementation-artifacts/.../AUDIT_implement-E{epic}-S{story}.md \
   --stage implement \
   --event stage_audit_complete \
@@ -245,7 +247,7 @@ npx ts-node scripts/parse-and-write-score.ts \
 
 ### 5.2 评分触发配置
 
-触发配置存储在: `config/scoring-trigger-modes.yaml`
+触发配置存储在: `_bmad/_config/scoring-trigger-modes.yaml`
 
 ```yaml
 stages:
@@ -459,7 +461,7 @@ scripts/
 ├── auditor-plan.ts                   # 需重构
 ├── auditor-tasks.ts                  # 需重构
 ├── auditor-implement.ts              # 需重构
-└── parse-and-write-score.ts          # 已有
+└── parse-and-write-score.ts          # 已整合为 npx bmad-speckit score
 ```
 
 ---

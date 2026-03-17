@@ -23,7 +23,7 @@ module.exports = {
     {
       files: [
         'packages/bmad-speckit/src/**/*.js',
-        'scoring/**/*.ts',
+        'packages/scoring/**/*.ts',
         'scripts/**/*.ts',
       ],
       excludedFiles: ['**/__tests__/**', '**/*.test.js', '**/*.test.ts'],

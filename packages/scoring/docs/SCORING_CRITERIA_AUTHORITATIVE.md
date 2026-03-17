@@ -233,7 +233,7 @@ veto_items:
 |----------|------|----------|
 | code-reviewer | 执行各 stage 审计 | Cursor Task 调度 |
 | audit-prompts | 各 stage 审计提示词 | audit-prompts-prd.md、audit-prompts-arch.md 等 |
-| code-reviewer-config | 多模式配置 | config/code-reviewer-config.yaml |
+| code-reviewer-config | 多模式配置 | _bmad/_config/code-reviewer-config.yaml |
 | scoring/rules | 解析规则、item_id、veto_items | scoring/rules/*.yaml |
 
 与 speckit-workflow、bmad-story-assistant 协同：clarify/checklist/analyze 嵌入审计闭环；stage 完成→解析并写入 scoring 存储。

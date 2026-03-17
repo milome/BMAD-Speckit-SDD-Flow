@@ -55,12 +55,8 @@ BMAD-Speckit-SDD-Flow/
 │   ├── acceptance/                     # Vitest acceptance tests
 │   └── epic-acceptance/                # ts-node epic acceptance scripts
 ├── scripts/                            # Deployment/utility scripts only
-│   ├── parse-and-write-score.ts
-│   ├── coach-diagnose.ts
-│   ├── sft-extract.ts
 │   ├── init-to-root.js
 │   └── setup.ps1
-├── config/                             # Project configuration
 ├── specs/                              # Story specifications (generated)
 │   └── epic-*/
 │       └── story-*/
@@ -280,10 +276,13 @@ Located in `scripts/accept-*.test.ts`:
 - `docs/tutorials/getting-started.md` - 5-minute quickstart
 - `docs/how-to/bmad-story-assistant.md` - Story Assistant guide (Cursor + Claude Code)
 
-### Scripts
-- `scripts/parse-and-write-score.ts` - Score parsing
-- `scripts/coach-diagnose.ts` - AI Coach diagnosis
-- `scripts/sft-extract.ts` - SFT data extraction
+### Scripts & CLI
+- `npx bmad-speckit score` - Score parsing (replaces `scripts/parse-and-write-score.ts`)
+- `npx bmad-speckit coach` - AI Coach diagnosis (replaces `scripts/coach-diagnose.ts`)
+- `npx bmad-speckit sft-extract` - SFT data extraction (replaces `scripts/sft-extract.ts`)
+- `npx bmad-speckit dashboard` - Dashboard generation
+- `npx bmad-speckit scores` - Score summary
+- `npx bmad-speckit check-score` - Check story score
 - `scripts/init-to-root.js` - Project initialization
 
 ---
@@ -378,8 +377,12 @@ pwsh _bmad/speckit/scripts/powershell/check-prerequisites.ps1
 npm run accept:e1-s1  # Epic 1, Story 1
 npm run accept:e3-s1  # Epic 3, Story 1
 
-# Generate coach diagnosis
-npm run coach:diagnose
+# Scoring CLI subcommands
+npx bmad-speckit score --reportPath <report> --stage <stage>
+npx bmad-speckit coach
+npx bmad-speckit dashboard
+npx bmad-speckit sft-extract
+npx bmad-speckit scores
 
 # Verify audit granularity
 npm run verify:cursor-audit-granularity

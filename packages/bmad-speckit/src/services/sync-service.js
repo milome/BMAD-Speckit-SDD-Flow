@@ -189,6 +189,9 @@ function deploySpecifyDir(projectRoot, bmadRoot) {
 /**
  * Copy directory contents, stripping a filename prefix from top-level files.
  * e.g. speckit.plan.md -> plan.md (upstream convention for .specify/templates/commands/).
+ * @param {string} src - Source directory path
+ * @param {string} dest - Destination directory path
+ * @param {string} prefix - Filename prefix to strip
  */
 function copyDirStripPrefix(src, dest, prefix) {
   if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });

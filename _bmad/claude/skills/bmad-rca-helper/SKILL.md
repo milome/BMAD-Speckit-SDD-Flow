@@ -221,7 +221,7 @@ handoff:
 审计通过时执行 scoring pipeline：
 
 ```bash
-npx ts-node scripts/parse-and-write-score.ts \
+npx bmad-speckit score \
   --reportPath {报告路径} \
   --stage rca_doc \
   --event stage_audit_complete \

@@ -152,9 +152,9 @@ describe('Speckit Implement Agent Definition', () => {
       expect(content).toMatch(/连续.*3.*轮/);
     });
 
-    it('should trigger parse-and-write-score', () => {
+    it('should trigger bmad-speckit score', () => {
       const content = readFileSync(agentPath, 'utf8');
-      expect(content).toMatch(/parse-and-write-score/);
+      expect(content).toMatch(/bmad-speckit score/);
       expect(content).toMatch(/stage implement/);
     });
   });

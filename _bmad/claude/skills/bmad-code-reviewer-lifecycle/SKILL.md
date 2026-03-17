@@ -21,7 +21,7 @@ references:
   - audit-prompts-arch: 架构审计提示词；`.claude/skills/speckit-workflow/references/audit-prompts-arch.md`
   - audit-prompts-code: 代码审计提示词；`.claude/skills/speckit-workflow/references/audit-prompts-code.md`
   - audit-prompts-pr: PR 审计提示词；`.claude/skills/speckit-workflow/references/audit-prompts-pr.md`
-  - code-reviewer-config: 多模式配置（prd/arch/code/pr）；`config/code-reviewer-config.yaml`
+  - code-reviewer-config: 多模式配置（prd/arch/code/pr）；`_bmad/_config/code-reviewer-config.yaml`
   - scoring/rules: 解析规则、item_id、veto_items；`scoring/rules/*.yaml`
   - parseAndWriteScore (Story 3.3): 解析审计报告并写入 scoring 存储；`scoring/orchestrator/parse-and-write.ts`；CLI `scripts/parse-and-write-score.ts`
 ---
@@ -72,13 +72,13 @@ Claude 版 `bmad-code-reviewer-lifecycle` 必须满足：
 
 - **auditor 执行体**: `.claude/agents/auditors/auditor-spec.md`、`auditor-plan.md`、`auditor-gaps.md`、`auditor-tasks.md`、`auditor-implement.md`、`auditor-bugfix.md`、`auditor-document.md`
 - **审计提示词**: `.claude/skills/speckit-workflow/references/audit-prompts.md`、`audit-prompts-prd.md`、`audit-prompts-arch.md`、`audit-prompts-code.md`、`audit-prompts-pr.md`
-- **配置**: `config/code-reviewer-config.yaml`、`config/stage-mapping.yaml`、`config/eval-lifecycle-report-paths.yaml`
+- **配置**: `_bmad/_config/code-reviewer-config.yaml`、`_bmad/_config/stage-mapping.yaml`、`_bmad/_config/eval-lifecycle-report-paths.yaml`
 - **评分规则**: `scoring/rules/`（含 `default/`、`gaps-scoring.yaml`、`iteration-tier.yaml`）
 - **自身路径**: `.claude/skills/bmad-code-reviewer-lifecycle/SKILL.md`
 
 ### Stage 映射与触发
 
-详见 `config/stage-mapping.yaml`。各 stage 到 auditor 执行体的映射如下：
+详见 `_bmad/_config/stage-mapping.yaml`。各 stage 到 auditor 执行体的映射如下：
 
 | stage | layer | auditor 执行体 | prompt_template |
 |-------|-------|----------------|-----------------|
@@ -108,7 +108,7 @@ Claude 版 `bmad-code-reviewer-lifecycle` 必须满足：
 
 ### 报告路径约定
 
-详见 `config/eval-lifecycle-report-paths.yaml`。
+详见 `_bmad/_config/eval-lifecycle-report-paths.yaml`。
 
 ### Mode Mapping
 
@@ -228,7 +228,7 @@ handoff:
 ### parse-and-write-score CLI 调用示例
 
 ```bash
-npx ts-node scripts/parse-and-write-score.ts \
+npx bmad-speckit score \
   --reportPath <报告路径> \
   --stage <stage> \
   --event stage_audit_complete \

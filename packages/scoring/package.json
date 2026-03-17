@@ -3,10 +3,63 @@
   "version": "0.1.0",
   "description": "BMAD scoring system: audit parsing, score calculation, coach diagnosis, dashboard generation",
   "private": true,
-  "main": "core/calculator.ts",
-  "scripts": {
-    "test": "vitest run"
+  "main": "dist/orchestrator/index.js",
+  "types": "dist/orchestrator/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/orchestrator/index.js",
+      "types": "./dist/orchestrator/index.d.ts"
+    },
+    "./orchestrator": {
+      "require": "./dist/orchestrator/index.js",
+      "types": "./dist/orchestrator/index.d.ts"
+    },
+    "./query/loader": {
+      "require": "./dist/query/loader.js",
+      "types": "./dist/query/loader.d.ts"
+    },
+    "./query": {
+      "require": "./dist/query/index.js",
+      "types": "./dist/query/index.d.ts"
+    },
+    "./query/parse-epic-story": {
+      "require": "./dist/query/parse-epic-story.js",
+      "types": "./dist/query/parse-epic-story.d.ts"
+    },
+    "./coach": {
+      "require": "./dist/coach/index.js",
+      "types": "./dist/coach/index.d.ts"
+    },
+    "./constants/path": {
+      "require": "./dist/constants/path.js",
+      "types": "./dist/constants/path.d.ts"
+    },
+    "./trigger/trigger-loader": {
+      "require": "./dist/trigger/trigger-loader.js",
+      "types": "./dist/trigger/trigger-loader.d.ts"
+    },
+    "./dashboard": {
+      "require": "./dist/dashboard/index.js",
+      "types": "./dist/dashboard/index.d.ts"
+    },
+    "./analytics/sft-extractor": {
+      "require": "./dist/analytics/sft-extractor.js",
+      "types": "./dist/analytics/sft-extractor.d.ts"
+    },
+    "./scores/format-table": {
+      "require": "./dist/scores/format-table.js",
+      "types": "./dist/scores/format-table.d.ts"
+    }
   },
+  "scripts": {
+    "test": "vitest run",
+    "build": "tsc --outDir dist"
+  },
+  "files": [
+    "dist/",
+    "rules/",
+    "data/__fixtures-*"
+  ],
   "dependencies": {
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",

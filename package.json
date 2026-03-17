@@ -1,7 +1,7 @@
 {
   "name": "bmad-speckit-sdd-flow",
   "version": "0.1.0",
-  "description": "BMAD + Speckit workflow and scoring skeleton; deploy _bmad, config to project root",
+  "description": "BMAD + Speckit workflow and scoring skeleton; deploy _bmad to project root",
   "scripts": {
     "lint": "eslint . --ext .ts,.js",
     "lint:fix": "eslint . --ext .ts,.js --fix",
@@ -32,6 +32,8 @@
     "coach:diagnose": "npx ts-node scripts/coach-diagnose.ts",
     "verify:cursor-audit-granularity": "npx ts-node scripts/verify-cursor-audit-granularity.ts",
     "eval-questions": "npx ts-node scripts/eval-questions-cli.ts",
+    "build:scoring": "cd packages/scoring && npm run build",
+    "prepublishOnly": "npm run build:scoring",
     "speckit": "npx bmad-speckit",
     "speckit:init": "npx bmad-speckit init"
   },
@@ -42,8 +44,7 @@
   },
   "files": [
     "_bmad",
-    "scripts",
-    "config"
+    "scripts"
   ],
   "keywords": [
     "bmad",

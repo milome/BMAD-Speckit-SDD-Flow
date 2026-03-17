@@ -4,16 +4,13 @@
   BMAD-Speckit-SDD-Flow 一键安装脚本
 
 .DESCRIPTION
-  部署核心 + 扩展目录、同步 .cursor/、安装全局 Skills、复制 scoring/，并运行验证。
+  部署核心 + 扩展目录、同步 .cursor/、安装全局 Skills，并运行验证。
 
 .PARAMETER Target
   目标项目根目录（必须）
 
 .PARAMETER SkipSkills
   跳过全局 Skills 安装
-
-.PARAMETER SkipScoring
-  跳过 scoring/ 目录复制
 
 .PARAMETER DryRun
   仅输出计划，不执行
@@ -33,7 +30,6 @@ param(
     [string]$Target,
     [string]$Agent = 'cursor',
     [switch]$SkipSkills,
-    [switch]$SkipScoring,
     [switch]$DryRun,
     [switch]$Full,
     [switch]$Help
@@ -83,7 +79,6 @@ function Show-Help {
     Write-Output "  -Agent <type>     AI agent: cursor (default), claude-code, or comma-separated"
     Write-Output "  -Full             Full install mode (default when using setup:full)"
     Write-Output "  -SkipSkills       Skip global Skills install"
-    Write-Output "  -SkipScoring      Skip scoring/ copy"
     Write-Output "  -DryRun           Plan only, no execution"
     Write-Output "  -Help             Show help"
     exit 0
@@ -152,12 +147,7 @@ if ($DryRun) {
     } else {
         Write-Output "  3. Skip Skills install"
     }
-    if (-not $SkipScoring) {
-        Write-Output "  5. Copy scoring/ -> $TargetResolved\scoring\"
-    } else {
-        Write-Output "  5. Skip scoring copy"
-    }
-    Write-Output "  6. Run validation"
+    Write-Output "  5. Run validation"
     exit 0
 }
 
@@ -225,21 +215,7 @@ if (-not $SkipSkills) {
     Write-Output "[2] Skip Skills install"
 }
 
-# Step 5: scoring 复制
-if (-not $SkipScoring) {
-    $scoringSrc = Join-Path $PKG_ROOT 'packages' 'scoring'
-    $scoringDest = Join-Path $TargetResolved 'scoring'
-    if (Test-Path $scoringSrc) {
-        Write-Output "[3] Copy scoring/ -> $scoringDest"
-        Copy-Item -Path $scoringSrc -Destination $scoringDest -Recurse -Force
-    } else {
-        Write-Warning "[3] Skip scoring (source missing)"
-    }
-} else {
-    Write-Output "[3] Skip scoring copy"
-}
-
-# Step 6: 验证检查 (T-INSTALL-4)
+# Step 5: 验证检查 (T-INSTALL-4)
 Write-Output ""
 Write-Output "=== Install Verification ==="
 
@@ -249,7 +225,7 @@ $checks = @(
     @{ Path = '_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml'; Desc = 'Dev Story workflow' }
     @{ Path = '_bmad/_config/agent-manifest.csv'; Desc = 'Agent manifest' }
     @{ Path = '_bmad-output/config'; Desc = '_bmad-output/config dir' }
-    @{ Path = 'config/code-reviewer-config.yaml'; Desc = 'Code Reviewer config' }
+    @{ Path = '_bmad/_config/code-reviewer-config.yaml'; Desc = 'Code Reviewer config' }
     @{ Path = '_bmad/speckit/templates/spec-template.md'; Desc = 'Spec template' }
     @{ Path = '_bmad/speckit/workflows/specify.md'; Desc = 'Specify workflow' }
     @{ Path = '.specify/templates/spec-template.md'; Desc = '.specify template deployment' }

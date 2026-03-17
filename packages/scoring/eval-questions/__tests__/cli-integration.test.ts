@@ -121,10 +121,10 @@ describe(
         path.join(tmpRoot, 'packages', 'scoring', 'rules'),
         { recursive: true }
       );
-      fs.mkdirSync(path.join(tmpRoot, 'config'), { recursive: true });
+      fs.mkdirSync(path.join(tmpRoot, '_bmad', '_config'), { recursive: true });
       fs.copyFileSync(
-        path.join(projRoot, 'config', 'code-reviewer-config.yaml'),
-        path.join(tmpRoot, 'config', 'code-reviewer-config.yaml')
+        path.join(projRoot, '_bmad', '_config', 'code-reviewer-config.yaml'),
+        path.join(tmpRoot, '_bmad', '_config', 'code-reviewer-config.yaml')
       );
       fs.mkdirSync(path.join(tmpRoot, 'packages', 'scoring', 'schema'), { recursive: true });
       fs.copyFileSync(

@@ -68,6 +68,28 @@ BUGFIX 文档严格审计 Agent，面向 bugfix 流程中的 BUGFIX 文档与修
   - `next_action`
   - `ready`
 
+## Mandatory Startup
+
+1. **读取审计提示词**：`.claude/skills/bmad-rca-helper/references/audit-prompt-rca-tasks.md`
+2. **读取批判审计员规范**：`.claude/skills/speckit-workflow/references/audit-prompts-critical-auditor-appendix.md`
+3. **读取被审 BUGFIX 文档**：`artifactDocPath` 指定路径
+
+## Execution Flow
+
+### Step 1: 模型选择信息输出
+
+在审计报告开头必须输出：
+
+```markdown
+## 模型选择信息
+
+| 项目 | 值 |
+|------|-----|
+| 配置来源 | .claude/agents/auditors/auditor-bugfix.md |
+| 指定模型 | inherit（继承主 Agent 模型） |
+| 选择依据 | auditor-bugfix Agent 定义 |
+```
+
 ## Execution Visibility Protocol
 
 ### 执行开始时必须输出
@@ -144,17 +166,23 @@ handoff:
 
 ## Scoring Block
 
-报告结尾必须包含：
+报告结尾必须包含（stage=implement 使用 code 模式维度，与 `_bmad/_config/code-reviewer-config.yaml` modes.code.dimensions 一致）：
 
 ```markdown
 ## 可解析评分块（供 parseAndWriteScore）
+
 总体评级: [A|B|C|D]
+
 维度评分:
-- 需求完整性: XX/100
-- 可测试性: XX/100
-- 一致性: XX/100
-- 可追溯性: XX/100
+- 功能性: XX/100
+- 代码质量: XX/100
+- 测试覆盖: XX/100
+- 安全性: XX/100
 ```
+
+## Post-Audit Actions（审计通过时）
+
+审计通过时，须执行评分写入：`npx bmad-speckit score --reportPath <reportPath> --stage implement --event stage_audit_complete --triggerStage speckit_5_2 --epic {epic} --story {story} --artifactDocPath {artifactDocPath} --iteration-count {iterationCount} --scenario real_dev --writeMode single_file`；配置路径 `_bmad/_config/`；失败在结论中注明 resultCode。
 
 ## Report Persistence Rules
 

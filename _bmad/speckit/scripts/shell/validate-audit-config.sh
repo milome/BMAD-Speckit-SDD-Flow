@@ -3,12 +3,12 @@
 # 与 powershell/validate-audit-config.ps1 功能对等
 #
 # 用法: 从项目根执行 ./validate-audit-config.sh [project-root]
-# 若 config/speckit.yaml 含 audit_convergence: simple，exit 1
+# 若 _bmad/_config/speckit.yaml 含 audit_convergence: simple，exit 1
 
 set -e
 
 PROJECT_ROOT="${1:-$(pwd)}"
-CONFIG_PATH="$PROJECT_ROOT/config/speckit.yaml"
+CONFIG_PATH="$PROJECT_ROOT/_bmad/_config/speckit.yaml"
 
 [[ -f "$CONFIG_PATH" ]] || exit 0
 

@@ -33,7 +33,7 @@ export function resetTriggerConfigCache(): void {
 
 /**
  * 加载 scoring-trigger-modes.yaml 配置。
- * @param {string} [configPath] - 配置文件路径，默认 config/scoring-trigger-modes.yaml
+ * @param {string} [configPath] - 配置文件路径，默认 _bmad/_config/scoring-trigger-modes.yaml
  * @returns {TriggerConfig} TriggerConfig 对象
  * @throws 文件不存在或格式无效时抛错
  */
@@ -41,7 +41,7 @@ export function loadTriggerConfig(configPath?: string): TriggerConfig {
   if (cachedConfig) {
     return cachedConfig;
   }
-  const base = configPath ?? path.resolve(process.cwd(), 'config', 'scoring-trigger-modes.yaml');
+  const base = configPath ?? path.resolve(process.cwd(), '_bmad', '_config', 'scoring-trigger-modes.yaml');
   const resolved = path.isAbsolute(base) ? base : path.resolve(process.cwd(), base);
   if (!fs.existsSync(resolved)) {
     throw new Error(`Trigger config not found: ${resolved}`);

@@ -22,7 +22,7 @@ function getRulesDir(options?: { rulesDir?: string }): string {
 
 function getConfigPath(options?: { configPath?: string }): string {
   const root = process.cwd();
-  return options?.configPath ?? path.join(root, 'config', 'code-reviewer-config.yaml');
+  return options?.configPath ?? path.join(root, '_bmad', '_config', 'code-reviewer-config.yaml');
 }
 
 /**

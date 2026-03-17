@@ -6,7 +6,7 @@ import * as path from 'path';
 import { resolveRef } from '../../parsers/rules';
 import { RefResolutionError } from '../../parsers/types';
 
-const configPath = path.resolve(process.cwd(), 'config', 'code-reviewer-config.yaml');
+const configPath = path.resolve(process.cwd(), '_bmad', '_config', 'code-reviewer-config.yaml');
 
 describe('resolveRef', () => {
   it('AC-6: ref 指向的 item_id 存在时返回 ResolvedItem', () => {

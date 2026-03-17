@@ -7,10 +7,10 @@ import {
   resetTriggerConfigCache,
 } from '../trigger-loader';
 
-const TMP = path.join(process.cwd(), 'config', 'e5s1-tmp-trigger-test');
+const TMP = path.join(process.cwd(), '_bmad', '_config', 'e5s1-tmp-trigger-test');
 
 describe('trigger-loader', () => {
-  const realConfigPath = path.resolve(process.cwd(), 'config', 'scoring-trigger-modes.yaml');
+  const realConfigPath = path.resolve(process.cwd(), '_bmad', '_config', 'scoring-trigger-modes.yaml');
 
   beforeEach(() => {
     resetTriggerConfigCache();

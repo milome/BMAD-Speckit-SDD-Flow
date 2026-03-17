@@ -73,4 +73,14 @@ describe('T1.1: validateBmadStructure - structure符合', () => {
     const result = validateBmadStructure(withCursor);
     assert.strictEqual(result.valid, true);
   });
+
+  it('returns valid: true when cursor exists with rules/ and shared commands/ at root (BMAD-Speckit-SDD-Flow layout)', () => {
+    if (!validateBmadStructure) return;
+    const withShared = path.join(tmpDir, 'withShared');
+    fs.mkdirSync(path.join(withShared, 'core'), { recursive: true });
+    fs.mkdirSync(path.join(withShared, 'commands'), { recursive: true });
+    fs.mkdirSync(path.join(withShared, 'cursor', 'rules'), { recursive: true });
+    const result = validateBmadStructure(withShared);
+    assert.strictEqual(result.valid, true);
+  });
 });

@@ -91,7 +91,7 @@ BMAD-Speckit-SDD-Flow/
 │   └── scoring/                        # Scoring extensions (see [packages/scoring/README.md](packages/scoring/README.md))
 ├── tests/                              # Test suite (acceptance/, epic-acceptance/)
 ├── scripts/                            # Deployment/utility scripts only
-├── config/                             # Project configuration
+│   └── _config/                        # Project configuration (merged from former root config/)
 ├── specs/                              # Story specifications (generated)
 ├── docs/                               # Documentation (Diataxis)
 │   ├── tutorials/                      # Learning-oriented
@@ -108,7 +108,7 @@ BMAD-Speckit-SDD-Flow/
 |-----------|---------|
 | **_bmad/** | BMAD core (core, bmm, bmb, cis, tea, scoring) |
 | **packages/scoring/** | Scoring extensions: audit report parsing, score persistence, Coach diagnosis, Dashboard, SFT extraction |
-| **scripts/** | Deployment/utility scripts: init-to-root, setup, parse-and-write-score, coach-diagnose, sft-extract |
+| **scripts/** | Deployment/utility scripts: init-to-root, setup. Scoring 已整合进 bmad-speckit CLI，目标项目使用 `npx bmad-speckit score/coach/dashboard/sft-extract/scores` |
 | **speckit-workflow** | specify → plan → GAPS → tasks → TDD with mandatory audits |
 | **bmad-story-assistant** | Create Story → Party-Mode → Dev Story → implement |
 | **bmad-bug-assistant** | Bug description → Party-Mode → BUGFIX doc |

@@ -197,7 +197,7 @@ const config = loadConfig();
 
 1. **CLI 参数**: `--audit-granularity=story` | `--continue`
 2. **环境变量**: `BMAD_AUDIT_GRANULARITY=story` | `BMAD_AUTO_CONTINUE=true`
-3. **项目配置**: `config/bmad-story-config.yaml`
+3. **项目配置**: `_bmad/_config/bmad-story-config.yaml`
 4. **默认值**: `audit-granularity=full`, `auto_continue=false`
 
 #### 条件审计路由
@@ -559,9 +559,9 @@ Claude 端 Stage 2 Story 审计执行体，负责审计 Story 文档并决定是
   4. 是否有技术债或占位性表述
   5. 若 Story 含「由 Story X.Y 负责」，须验证对应 Story 文档存在且 scope/验收标准含该任务具体描述；否则判不通过
 - 报告结尾必须输出：结论（通过/未通过）+ 必达子项 + Story 阶段可解析评分块（总体评级 A/B/C/D + 四维评分：需求完整性 / 可测试性 / 一致性 / 可追溯性）。
-- 审计通过后必做：执行 `parse-and-write-score.ts --stage story --event story_status_change --triggerStage bmad_story_stage2 --epic {epic_num} --story {story_num} --iteration-count {累计值}`。
+- 审计通过后必做：执行 `npx bmad-speckit score --stage story --event story_status_change --triggerStage bmad_story_stage2 --epic {epic_num} --story {story_num} --iteration-count {累计值}`。
 - 审计未通过时：审计子代理须在本轮内**直接修改被审 Story 文档**以消除 gap；若建议涉及创建或更新其他 Story，主 Agent 须先执行该建议，再重新审计当前 Story。
-- 阶段二准入检查：主 Agent 在收到阶段二通过结论后、进入阶段三之前，必须先执行 `check-story-score-written.ts`；若未写入则补跑 `parse-and-write-score.ts`。
+- 阶段二准入检查：主 Agent 在收到阶段二通过结论后、进入阶段三之前，必须先执行 `npx bmad-speckit check-score`；若未写入则补跑 `npx bmad-speckit score`。
 
 #### Stage 2 调用前 CLI 输出要求
 
@@ -600,7 +600,7 @@ subagent_type: general-purpose
       ├─ 禁止词检查
       ├─ 批判审计员结论（>50%字数）
       ├─ parseAndWriteScore 触发
-      └─ check-story-score-written 准入检查
+      └─ bmad-speckit check-score 准入检查
 
 预期产物:
   • 审计报告: _bmad-output/.../AUDIT_story-{epic_num}-{story_num}.md

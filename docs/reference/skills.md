@@ -40,8 +40,8 @@ BUG 修复全流程：根因分析 → BUGFIX 文档 → 审计 → 任务列表
 
 全链路 Code Reviewer：审计产出 → 解析 → scoring 写入。
 
-- **职责**：编排各 stage 的审计流程，触发 `parse-and-write-score.ts`
-- **依赖**：`config/code-reviewer-config.yaml`、`config/stage-mapping.yaml`
+- **职责**：编排各 stage 的审计流程，触发 `bmad-speckit score`
+- **依赖**：`_bmad/_config/code-reviewer-config.yaml`、`_bmad/_config/stage-mapping.yaml`
 
 ### code-review
 

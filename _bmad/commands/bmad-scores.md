@@ -10,15 +10,15 @@ description: 评分汇总：全部摘要、按 Epic 或 Story 筛选，输出 Ma
 ## 触发方式
 
 - Cursor Command：`/bmad-scores`
-- CLI：`npx ts-node scripts/scores-summary.ts`
+- CLI：`npx bmad-speckit scores`
 
 ## 调用模式
 
 | 模式 | 命令 | 输出 |
 |------|------|------|
-| 全部摘要 | `npx ts-node scripts/scores-summary.ts` | 最近 100 条评分记录（表格） |
-| Epic 汇总 | `npx ts-node scripts/scores-summary.ts --epic 3` | Epic 3 各 Story 评分 |
-| Story 明细 | `npx ts-node scripts/scores-summary.ts --story 3.3` | Story 3.3 各阶段评分明细 |
+| 全部摘要 | `npx bmad-speckit scores` | 最近 100 条评分记录（表格） |
+| Epic 汇总 | `npx bmad-speckit scores --epic 3` | Epic 3 各 Story 评分 |
+| Story 明细 | `npx bmad-speckit scores --story 3.3` | Story 3.3 各阶段评分明细 |
 
 ## 参数
 
@@ -35,7 +35,7 @@ description: 评分汇总：全部摘要、按 Epic 或 Story 筛选，输出 Ma
 ## 验收命令
 
 ```bash
-npx ts-node scripts/scores-summary.ts
-npx ts-node scripts/scores-summary.ts --epic 3
-npx ts-node scripts/scores-summary.ts --story 3.3
+npx bmad-speckit scores
+npx bmad-speckit scores --epic 3
+npx bmad-speckit scores --story 3.3
 ```

@@ -7,7 +7,7 @@
  *   - Cursor rules/skills: _bmad/cursor/
  *   - Claude agents/skills/hooks/rules: _bmad/claude/
  *
- * 用途：部署 BMAD 目录结构；--full 时包含 config。
+ * 用途：部署 BMAD 目录结构。
  * speckit commands 从 _bmad/speckit/commands/ 合并；.specify/ 部署 templates/workflows/scripts。
  *
  * CLI 参数：[targetDir], --full, --agent cursor|claude-code
@@ -111,12 +111,12 @@ const REGISTERED_AGENT_PROFILES = {
           totalFiles += countFiles(destPath);
         }
       }
-      const crSrc = path.join(targetDir, 'config', 'code-reviewer-config.yaml');
+      const crSrc = path.join(targetDir, '_bmad', '_config', 'code-reviewer-config.yaml');
       const crDest = path.join(targetDir, '.cursor', 'agents', 'code-reviewer-config.yaml');
       if (fs.existsSync(crSrc)) {
         fs.mkdirSync(path.dirname(crDest), { recursive: true });
         fs.copyFileSync(crSrc, crDest);
-        console.log('Sync config/code-reviewer-config.yaml -> .cursor/agents/');
+        console.log('Sync _bmad/_config/code-reviewer-config.yaml -> .cursor/agents/');
         totalFiles += 1;
       }
       totalFiles += deploySpecify(targetDir);
@@ -191,7 +191,6 @@ const TARGET = targetArg ? path.resolve(targetArg) : process.cwd();
 const CORE_DIRS = ['_bmad'];
 const FULL_DIRS = [
   '_bmad',
-  'config',
 ];
 const DIRS = fullMode ? FULL_DIRS : CORE_DIRS;
 

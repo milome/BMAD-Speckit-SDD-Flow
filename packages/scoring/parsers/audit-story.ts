@@ -1,7 +1,7 @@
 /**
  * Story 3.2 T3: Layer 3 Create Story 审计报告解析器
  * 路径 AUDIT_Story_{epic}-{story}.md；含 A/B/C/D 则复用 prd/arch 映射
- * BUGFIX: item_id 优先从 config/audit-item-mapping.yaml 查找，无匹配 fallback story-issue-N
+ * BUGFIX: item_id 优先从 _bmad/_config/audit-item-mapping.yaml 查找，无匹配 fallback story-issue-N
  */
 import * as fs from 'fs';
 import * as path from 'path';

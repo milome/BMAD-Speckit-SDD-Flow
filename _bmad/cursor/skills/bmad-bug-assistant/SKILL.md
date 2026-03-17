@@ -488,7 +488,7 @@ Amelia 开发 的规范已在上方 5 条中列出，子代理按内联执行即
 
 **CLI 调用示例**（在项目根目录执行）：
 ```bash
-npx ts-node scripts/parse-and-write-score.ts \
+npx bmad-speckit score \
   --reportPath <审计报告路径> \
   --stage implement \
   --epic {epic} \

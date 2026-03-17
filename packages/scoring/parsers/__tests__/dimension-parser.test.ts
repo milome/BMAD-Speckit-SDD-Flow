@@ -10,6 +10,7 @@ describe('dimension-parser', () => {
     expect(stageToMode('prd')).toBe('prd');
     expect(stageToMode('spec')).toBe('prd');
     expect(stageToMode('plan')).toBe('prd');
+    expect(stageToMode('gaps')).toBe('prd');
     expect(stageToMode('tasks')).toBe('prd');
     expect(stageToMode('arch')).toBe('arch');
     expect(stageToMode('story')).toBe('code');

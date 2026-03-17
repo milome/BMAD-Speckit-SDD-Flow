@@ -199,6 +199,9 @@
 
 ## scripts
 
+> Scoring 相关脚本已整合进 `bmad-speckit` CLI 子命令。`scripts/*.ts` 保留为源仓库开发入口。
+> 对应关系：`parse-and-write-score.ts` → `npx bmad-speckit score`、`check-story-score-written.ts` → `npx bmad-speckit check-score`、`coach-diagnose.ts` → `npx bmad-speckit coach`、`dashboard-generate.ts` → `npx bmad-speckit dashboard`、`sft-extract.ts` → `npx bmad-speckit sft-extract`、`scores-summary.ts` → `npx bmad-speckit scores`。
+
   [生产] scripts/accept-e1-s1.ts
   [生产] scripts/accept-e1-s2.ts
   [生产] scripts/accept-e2-s1.ts

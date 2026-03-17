@@ -220,7 +220,7 @@ function parseAIList(aiArg) {
  * Validate a list of AI IDs against the registry.
  * @param {string[]} aiIds - AI IDs to validate.
  * @param {string} cwd - Working directory for registry lookup.
- * @returns {{ valid: string[], invalid: string[] }}
+ * @returns {{ valid: string[], invalid: string[] }} Categorized AI IDs
  */
 function validateAIIds(aiIds, cwd) {
   const validIds = AIRegistry.listIds({ cwd });

@@ -1,13 +1,13 @@
 /**
  * BUGFIX: item_id 映射解析
- * 从 config/audit-item-mapping.yaml 查找报告问题描述对应的标准 item_id；
+ * 从 _bmad/_config/audit-item-mapping.yaml 查找报告问题描述对应的标准 item_id；
  * 无匹配时返回 fallback。
  */
 import * as fs from 'fs';
 import * as path from 'path';
 import yaml from 'js-yaml';
 
-export type AuditStage = 'prd' | 'arch' | 'story' | 'spec' | 'plan' | 'tasks' | 'implement';
+export type AuditStage = 'prd' | 'arch' | 'story' | 'spec' | 'plan' | 'gaps' | 'tasks' | 'implement';
 
 interface MappingCheck {
   text?: string;
@@ -25,7 +25,7 @@ let cachedMapping: Record<string, StageMapping> | null = null;
 
 function getMappingPath(): string {
   const root = process.cwd();
-  return path.join(root, 'config', 'audit-item-mapping.yaml');
+  return path.join(root, '_bmad', '_config', 'audit-item-mapping.yaml');
 }
 
 function loadMapping(): Record<string, StageMapping> {
@@ -38,6 +38,7 @@ function loadMapping(): Record<string, StageMapping> {
       story: { checks: [] },
       spec: { checks: [] },
       plan: { checks: [] },
+      gaps: { checks: [] },
       tasks: { checks: [] },
       implement: { checks: [] },
     };
@@ -47,7 +48,7 @@ function loadMapping(): Record<string, StageMapping> {
   const doc = yaml.load(content) as Record<string, unknown>;
   const result: Record<string, StageMapping> = {};
 
-  for (const stage of ['prd', 'arch', 'story', 'spec', 'plan', 'tasks', 'implement']) {
+  for (const stage of ['prd', 'arch', 'story', 'spec', 'plan', 'gaps', 'tasks', 'implement']) {
     const stageDoc = doc[stage] as Record<string, unknown> | undefined;
     const checks: Array<{ patterns: string[]; item_id: string }> = [];
 
@@ -90,7 +91,7 @@ function loadMapping(): Record<string, StageMapping> {
 }
 
 /**
- * Look up standard item_id from config/audit-item-mapping.yaml by problem description.
+ * Look up standard item_id from _bmad/_config/audit-item-mapping.yaml by problem description.
  * Match rule: note contains any pattern → use item_id; first match wins.
  * @param {AuditStage} stage - Audit stage for mapping lookup
  * @param {string} note - Problem description

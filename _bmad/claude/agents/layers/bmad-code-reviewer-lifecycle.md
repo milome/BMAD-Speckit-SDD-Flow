@@ -18,9 +18,9 @@
 
 - 原始语义来源：
   - `.claude/skills/bmad-code-reviewer-lifecycle/SKILL.md`
-  - `config/code-reviewer-config.yaml`
-  - `config/stage-mapping.yaml`
-  - `config/eval-lifecycle-report-paths.yaml`
+  - `_bmad/_config/code-reviewer-config.yaml`
+  - `_bmad/_config/stage-mapping.yaml`
+  - `_bmad/_config/eval-lifecycle-report-paths.yaml`
 - 基线语义：
   - lifecycle 管理的是各 stage 审计 → 解析 → scoring 写入闭环
   - 保留 mode、stage、reportPath、trigger、评分写入前置条件
@@ -34,7 +34,7 @@
 ### Fallback Strategy
 1. 各 auditor 直接复用本生命周期模板
 2. 无法统一时由主 Agent 按同一生命周期语义执行
-3. 最终评分触发回退到 `parse-and-write-score.ts` 与现有 config 映射
+3. 最终评分触发使用 `npx bmad-speckit score`（非 ts-node）；配置路径 `_bmad/_config/scoring-trigger-modes.yaml`
 
 ### Runtime Contracts
 - 必读：`.claude/protocols/audit-result-schema.md`

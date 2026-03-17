@@ -13,7 +13,7 @@ import { ParseError, ReportFileNotFoundError } from './audit-prd';
 import { PHASE_WEIGHTS_SPEC, PHASE_WEIGHTS_PLAN, PHASE_WEIGHTS_TASKS, PHASE_WEIGHT_IMPLEMENT } from '../constants/weights';
 
 /** Supported audit stages for report parsing. */
-export type AuditStage = 'prd' | 'arch' | 'story' | 'spec' | 'plan' | 'tasks' | 'implement';
+export type AuditStage = 'prd' | 'arch' | 'story' | 'spec' | 'plan' | 'gaps' | 'tasks' | 'implement';
 
 /** Options for parseAuditReport. Either content or reportPath must be provided. */
 export interface ParseAuditReportOptions {
@@ -74,6 +74,14 @@ export async function parseAuditReport(options: ParseAuditReportOptions): Promis
       return parseGenericReport({
         content: getInlineContent(options),
         stage: 'plan',
+        runId,
+        scenario,
+        phaseWeight: PHASE_WEIGHTS_PLAN,
+      });
+    case 'gaps':
+      return parseGenericReport({
+        content: getInlineContent(options),
+        stage: 'gaps',
         runId,
         scenario,
         phaseWeight: PHASE_WEIGHTS_PLAN,

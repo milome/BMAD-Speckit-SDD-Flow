@@ -12,14 +12,14 @@ const DEFAULT_CONFIG: CoachConfig = {
 
 function resolveConfigPath(configPath?: string): string {
   if (configPath == null || configPath === '') {
-    return path.resolve(process.cwd(), 'config', 'coach-trigger.yaml');
+    return path.resolve(process.cwd(), '_bmad', '_config', 'coach-trigger.yaml');
   }
   return path.isAbsolute(configPath) ? configPath : path.resolve(process.cwd(), configPath);
 }
 
 /**
- * Load coach config from config/coach-trigger.yaml.
- * @param {string} [configPath] - Optional path; defaults to config/coach-trigger.yaml
+ * Load coach config from _bmad/_config/coach-trigger.yaml.
+ * @param {string} [configPath] - Optional path; defaults to _bmad/_config/coach-trigger.yaml
  * @returns {import('./types').CoachConfig} CoachConfig (merged with defaults)
  */
 export function loadCoachConfig(configPath?: string): CoachConfig {

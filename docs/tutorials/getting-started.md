@@ -9,7 +9,7 @@
 
 | 条件 | 要求 | 说明 |
 |------|------|------|
-| Node.js | ≥18 | 运行 `init-to-root.js` 和 scoring 脚本 |
+| Node.js | ≥18 | 运行 `init-to-root.js` 和 `bmad-speckit` CLI |
 | PowerShell | ≥7 | 运行 `check-prerequisites.ps1` 等脚本 |
 | Cursor IDE | 最新版 | 使用 skills、commands、rules |
 | Git | ≥2.x | worktree、分支管理 |
@@ -45,8 +45,7 @@ node D:\Dev\BMAD-Speckit-SDD-Flow\scripts\init-to-root.js D:\Dev\your-project --
 ```
 
 `postinstall` 脚本会自动复制以下目录到项目根：
-- `_bmad/` → `{项目根}/_bmad/`
-- `config/`（`--full` 时）→ `{项目根}/config/`
+- `_bmad/` → `{项目根}/_bmad/`（含 `_bmad/_config/` 配置文件）
 - 创建空的 `_bmad-output/config/`（不复制源项目的产出内容）
 
 npm 包**不含**的目录需手动复制：
@@ -58,9 +57,6 @@ $SOURCE = "D:\Dev\BMAD-Speckit-SDD-Flow"
 Copy-Item -Recurse -Force "$SOURCE\.cursor\commands" ".cursor\commands"
 Copy-Item -Recurse -Force "$SOURCE\.cursor\rules" ".cursor\rules"
 Copy-Item -Recurse -Force "$SOURCE\.cursor\agents" ".cursor\agents"
-
-# 项目配置
-Copy-Item -Recurse -Force "$SOURCE\config" "config"
 ```
 
 ### 2.3 方式三：克隆后手动部署
@@ -120,9 +116,8 @@ npx bmad-speckit init "${GITHUB_WORKSPACE}" --ai cursor-agent --modules bmm --ye
 |------|------|------|
 | `-Target <path>` | 目标项目根目录 | 必填 |
 | `-Agent <name>` | AI 类型：cursor、claude-code 或逗号分隔 | cursor |
-| `-Full` | 完整模式（含 config） | 否 |
+| `-Full` | 完整模式 | 否 |
 | `-SkipSkills` | 跳过全局 Skills 安装 | 否 |
-| `-SkipScoring` | 跳过 scoring 目录复制 | 否 |
 | `-DryRun` | 仅输出计划，不执行 | 否 |
 
 ```powershell
@@ -135,7 +130,7 @@ pwsh scripts/setup.ps1 -Target D:\Dev\your-project -Agent cursor -Full
 |------|------|
 | `[targetDir]` | 目标目录（缺省为当前目录） |
 | `--agent <name>` | cursor 或 claude-code |
-| `--full` | 包含 config 等完整部署 |
+| `--full` | 完整部署 |
 
 ```powershell
 node D:\Dev\BMAD-Speckit-SDD-Flow\scripts\init-to-root.js D:\Dev\your-project --agent cursor --full
@@ -199,7 +194,7 @@ $checks = @(
     "_bmad-output\config\settings.json",
     ".cursor\rules\bmad-bug-auto-party-mode.mdc",
     ".cursor\commands\bmad-bmm-create-story.md",
-    "config\code-reviewer-config.yaml"
+    "_bmad\_config\code-reviewer-config.yaml"
 )
 foreach ($path in $checks) {
     if (Test-Path $path) {
@@ -241,6 +236,17 @@ git checkout -b 001-my-first-feature
 - **bmad-story-assistant**：Story 全流程（Create Story → Dev Story），对应命令 `/bmad-bmm-create-story`、`/bmad-bmm-dev-story`
 - **bmad-bug-assistant**：描述问题时自动进入 Party-Mode，产出 BUGFIX 文档并生成修复任务
 - **bmad-standalone-tasks**：按单份 TASKS/BUGFIX 文档执行，用法示例：`/bmad 按 TASKS_xxx.md 中的未完成任务实施`
+
+**Scoring CLI 子命令**（审计评分、Coach 诊断等）：
+
+```bash
+npx bmad-speckit score --reportPath <审计报告> --stage <spec|plan|tasks|implement>
+npx bmad-speckit check-score --epic 1 --story 1
+npx bmad-speckit coach
+npx bmad-speckit dashboard
+npx bmad-speckit sft-extract
+npx bmad-speckit scores
+```
 
 **更多资源**：
 - [迁移指南](../how-to/migration.md) — 现有项目迁移流程

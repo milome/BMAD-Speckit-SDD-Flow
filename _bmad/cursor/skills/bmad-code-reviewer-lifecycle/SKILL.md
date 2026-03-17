@@ -11,7 +11,7 @@ when_to_use: |
 references:
   - code-reviewer: 执行各 stage 审计；Cursor Task 调度，按 stage 传 mode 与 prompt_template
   - audit-prompts: 各 stage 审计提示词；audit-prompts-prd.md、audit-prompts-arch.md 等
-  - code-reviewer-config: 多模式配置（prd/arch/code/pr）；config/code-reviewer-config.yaml
+  - code-reviewer-config: 多模式配置（prd/arch/code/pr）；_bmad/_config/code-reviewer-config.yaml
   - scoring/rules: 解析规则、item_id、veto_items；scoring/rules/*.yaml
   - parseAndWriteScore (Story 3.3): 解析审计报告并写入 scoring 存储；scoring/orchestrator/parse-and-write.ts；CLI scripts/parse-and-write-score.ts、验收 scripts/accept-e3-s3.ts
 ---
@@ -33,16 +33,16 @@ references:
 
 - **code-reviewer**: `.cursor/agents/code-reviewer.md` 或 `.claude/agents/code-reviewer.md`
 - **audit-prompts**: `{SKILLS_ROOT}/speckit-workflow/references/audit-prompts-prd.md`、`audit-prompts-arch.md` 等
-- **code-reviewer-config**: `config/code-reviewer-config.yaml`
+- **code-reviewer-config**: `_bmad/_config/code-reviewer-config.yaml`
 - **scoring/rules**: `scoring/rules/`（含 default/、gaps-scoring.yaml、iteration-tier.yaml）
 
 ## stage 映射与触发
 
-详见 `config/stage-mapping.yaml`。
+详见 `_bmad/_config/stage-mapping.yaml`。
 
 ## 报告路径约定
 
-详见 `config/eval-lifecycle-report-paths.yaml` 或 `_bmad-output/implementation-artifacts/epic-3-feature-eval-lifecycle-skill/story-1-eval-lifecycle-skill-def/CONTRACT_E3-S1-to-3.2-3.3.md`。
+详见 `_bmad/_config/eval-lifecycle-report-paths.yaml` 或 `_bmad-output/implementation-artifacts/epic-3-feature-eval-lifecycle-skill/story-1-eval-lifecycle-skill-def/CONTRACT_E3-S1-to-3.2-3.3.md`。
 
 ## 解析并写入（Story 3.3）
 

@@ -1,22 +1,30 @@
 # scripts
 
-CLI 脚本目录，提供 scoring、coach、dashboard、eval-questions 等入口。
+部署与开发便利脚本目录。
+
+> **Scoring 相关脚本已整合进 `bmad-speckit` CLI**。目标项目应使用 `npx bmad-speckit score/coach/dashboard/sft-extract/scores/check-score`。`scripts/*.ts` 保留为源仓库开发便利入口，不再是推荐调用方式。
+
+## CLI 子命令对应关系
+
+| 旧脚本 | CLI 子命令 |
+|--------|-----------|
+| `parse-and-write-score.ts` | `npx bmad-speckit score` |
+| `check-story-score-written.ts` | `npx bmad-speckit check-score` |
+| `coach-diagnose.ts` | `npx bmad-speckit coach` |
+| `dashboard-generate.ts` | `npx bmad-speckit dashboard` |
+| `sft-extract.ts` | `npx bmad-speckit sft-extract` |
+| `scores-summary.ts` | `npx bmad-speckit scores` |
 
 ## 脚本用途表
 
 | 脚本 | 用途 | 典型调用 |
 |------|------|----------|
-| `parse-and-write-score.ts` | 解析审计报告并写入 scoring 存储 | `npx ts-node scripts/parse-and-write-score.ts --reportPath path --stage prd --runId r1` |
-| `dashboard-generate.ts` | 生成项目健康度仪表盘 | `npx ts-node scripts/dashboard-generate.ts --epic 2` |
-| `sft-extract.ts` | 从 scoring 提取 SFT 训练数据 | `npx ts-node scripts/sft-extract.ts --threshold 50` |
+| `init-to-root.js` | 部署 _bmad、commands、rules 到项目根 | `node scripts/init-to-root.js` |
 | `eval-questions-cli.ts` | 评测题库 list/add/run | `npx ts-node scripts/eval-questions-cli.ts run --id q001 --version v1` |
 | `eval-question-generate.ts` | 从 coach 诊断生成 eval 题目 | `npx ts-node scripts/eval-question-generate.ts --run-id r1` |
-| `check-story-score-written.ts` | 检查 epic/story 是否有评分记录 | `npx ts-node scripts/check-story-score-written.ts --epic 2 --story 1` |
-| `coach-diagnose.ts` | Coach 短板诊断 | `npx ts-node scripts/coach-diagnose.ts` |
-| `init-to-root.js` | 部署 _bmad、commands、rules 到项目根 | `node scripts/init-to-root.js` |
 | `accept-e2-s1.ts` / `accept-e2-s2.ts` / `accept-e4-s3.ts` 等 | 端到端验收脚本 | `npx ts-node scripts/accept-e2-s1.ts` |
 
 ## 与 scoring / bmad-speckit 关系
 
-- **scoring**：`parse-and-write-score`、`dashboard-generate`、`sft-extract`、`eval-questions-cli`、`eval-question-generate`、`check-story-score-written`、`coach-diagnose` 均调用 `scoring/` 模块。
-- **bmad-speckit**：`init-to-root.js` 部署 bmad-speckit 模板；其他脚本与 bmad-speckit CLI 互补（如 coach 诊断由 `scripts/coach-diagnose.ts` 执行）。
+- **scoring**：`packages/scoring/` 是 TypeScript 源码包，编译产物被 `packages/bmad-speckit/` 作为依赖导入。
+- **bmad-speckit**：`init-to-root.js` 部署 bmad-speckit 模板；scoring 功能已通过 CLI 子命令提供（`npx bmad-speckit score` 等）。

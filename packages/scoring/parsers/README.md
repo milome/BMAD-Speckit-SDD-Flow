@@ -11,8 +11,8 @@
 
 | 类型 | 路径或约定 |
 |------|------------|
-| prd | config/eval-lifecycle-report-paths.yaml 中 prd.report_path；由 code-reviewer prd 模式产出 |
-| arch | config/eval-lifecycle-report-paths.yaml 中 arch.report_path；由 code-reviewer arch 模式产出 |
+| prd | _bmad/_config/eval-lifecycle-report-paths.yaml 中 prd.report_path；由 code-reviewer prd 模式产出 |
+| arch | _bmad/_config/eval-lifecycle-report-paths.yaml 中 arch.report_path；由 code-reviewer arch 模式产出 |
 | story | `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_Story_{epic}-{story}.md` |
 
 ### 解析入口
@@ -34,7 +34,7 @@ const record = await parseAuditReport({
 
 ### item_id 映射（BUGFIX）
 
-check_items 中的 item_id 优先从 `config/audit-item-mapping.yaml` 查找，与 code-reviewer-config 的 dimensions.checks 对齐：
+check_items 中的 item_id 优先从 `_bmad/_config/audit-item-mapping.yaml` 查找，与 code-reviewer-config 的 dimensions.checks 对齐：
 
 - **映射规则**：问题描述（note）包含映射表中 text 或 patterns 任一关键词时，产出对应标准 item_id（如 `prd_traceability_req_id`、`arch_security_threat_model`）。
 - **fallback**：无匹配时保留 `prd-issue-N`、`arch-issue-N`、`story-issue-N` 等序号格式，保证向后兼容。

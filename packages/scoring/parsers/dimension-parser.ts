@@ -18,7 +18,7 @@ export type DimensionMode = 'code' | 'prd' | 'arch' | 'pr';
 const DIMENSION_SCORE_PATTERN = /^(?:[-*]\s*|\d+\.\s*)?(.+?)\s*[：:]\s*(\d+)\s*[/／]\s*100\s*$/;
 
 function getConfigPath(configPath?: string): string {
-  return configPath ?? path.join(process.cwd(), 'config', 'code-reviewer-config.yaml');
+  return configPath ?? path.join(process.cwd(), '_bmad', '_config', 'code-reviewer-config.yaml');
 }
 
 function loadModeWeights(mode: DimensionMode, configPath?: string): Map<string, number> {
@@ -52,6 +52,7 @@ export function stageToMode(stage: string): DimensionMode {
     case 'prd':
     case 'spec':
     case 'plan':
+    case 'gaps':
     case 'tasks':
       return 'prd';
     case 'arch':

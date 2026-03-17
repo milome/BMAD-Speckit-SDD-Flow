@@ -2,13 +2,13 @@
 # GAP-CONV-10: 校验 audit_convergence 配置
 # 项目级 audit_convergence: simple 禁止；仅 CLI --audit-mode simple 可启用
 # 用法: 从项目根执行 .\validate-audit-config.ps1
-# 若 config/speckit.yaml 含 audit_convergence: simple，exit 1 并输出错误
+# 若 _bmad/_config/speckit.yaml 含 audit_convergence: simple，exit 1 并输出错误
 
 param(
     [string]$ProjectRoot = (Get-Location).Path
 )
 
-$configPath = Join-Path $ProjectRoot "config\speckit.yaml"
+$configPath = Join-Path $ProjectRoot "_bmad\_config\speckit.yaml"
 if (-not (Test-Path $configPath)) {
     exit 0
 }

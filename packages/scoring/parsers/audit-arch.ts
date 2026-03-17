@@ -1,7 +1,7 @@
 /**
  * Story 3.2 T2: Layer 1 arch 审计报告解析器
  * 从 audit-prompts-arch 对应的审计报告提取 phase_score、check_items
- * BUGFIX: item_id 优先从 config/audit-item-mapping.yaml 查找，无匹配 fallback arch-issue-N
+ * BUGFIX: item_id 优先从 _bmad/_config/audit-item-mapping.yaml 查找，无匹配 fallback arch-issue-N
  */
 import * as fs from 'fs';
 import * as path from 'path';

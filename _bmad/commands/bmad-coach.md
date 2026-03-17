@@ -10,7 +10,7 @@ description: AI Coach 诊断：基于最近一轮评分数据输出 phase_scores
 ## 触发方式
 
 - Cursor Command：`/bmad-coach`
-- CLI：`npx ts-node scripts/coach-diagnose.ts` 或 `npm run coach:diagnose`
+- CLI：`npx bmad-speckit coach` 或 `npm run coach:diagnose`
 
 ## 调用流程（无参数）
 
@@ -36,9 +36,9 @@ description: AI Coach 诊断：基于最近一轮评分数据输出 phase_scores
 ## 验收命令
 
 ```bash
-npx ts-node scripts/coach-diagnose.ts
-npx ts-node scripts/coach-diagnose.ts --epic 3
-npx ts-node scripts/coach-diagnose.ts --story 3.3
+npx bmad-speckit coach
+npx bmad-speckit coach --epic 3
+npx bmad-speckit coach --story 3.3
 ```
 
 有数据时输出诊断报告；空目录时输出「暂无评分数据，请先完成至少一轮 Dev Story」。`--epic`、`--story` 无匹配时输出明确反馈（如「无可筛选数据」）。

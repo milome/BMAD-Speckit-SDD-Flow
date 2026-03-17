@@ -68,6 +68,28 @@
   - `next_action`
   - `ready`
 
+## Mandatory Startup
+
+1. **读取审计提示词**：`.claude/skills/bmad-standalone-tasks-doc-review/references/audit-prompt-tasks-doc.md`
+2. **读取批判审计员规范**：`.claude/skills/speckit-workflow/references/audit-prompts-critical-auditor-appendix.md`
+3. **读取被审 TASKS 文档**：`artifactDocPath` 指定路径
+
+## Execution Flow
+
+### Step 1: 模型选择信息输出
+
+在审计报告开头必须输出：
+
+```markdown
+## 模型选择信息
+
+| 项目 | 值 |
+|------|-----|
+| 配置来源 | .claude/agents/auditors/auditor-tasks-doc.md |
+| 指定模型 | inherit（继承主 Agent 模型） |
+| 选择依据 | auditor-tasks-doc Agent 定义 |
+```
+
 ## Execution Visibility Protocol
 
 ### 执行开始时必须输出
@@ -148,13 +170,21 @@ handoff:
 
 ```markdown
 ## 可解析评分块（供 parseAndWriteScore）
+
 总体评级: [A|B|C|D]
+
 维度评分:
 - 需求完整性: XX/100
 - 可测试性: XX/100
 - 一致性: XX/100
 - 可追溯性: XX/100
 ```
+
+## Post-Audit Actions（审计通过时）
+
+审计通过时，须执行评分写入：`npx bmad-speckit score --reportPath <reportPath> --stage tasks --event stage_audit_complete --triggerStage speckit_4_2 --epic {epic} --story {story} --artifactDocPath {artifactDocPath} --iteration-count {iterationCount} --scenario real_dev --writeMode single_file`；配置路径 `_bmad/_config/`；失败在结论中注明 resultCode。
+
+**Orphan TASKS 说明**：若被审 TASKS 文档为 standalone/orphan（无 epic/story 上下文），则省略 `--epic` 与 `--story` 参数；评分将从 reportPath 解析或使用默认 runId。
 
 ## Report Persistence Rules
 

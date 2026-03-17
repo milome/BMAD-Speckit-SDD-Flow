@@ -43,10 +43,10 @@ describe('layer4 complete workflow e2e', () => {
       expect(tasks).toContain('stage: tasks_passed');
     });
 
-    it('each stage calls parse-and-write-score on PASS', () => {
-      expect(specify).toContain('parse-and-write-score.ts');
-      expect(plan).toContain('parse-and-write-score.ts');
-      expect(tasks).toContain('parse-and-write-score.ts');
+    it('each stage calls bmad-speckit score on PASS', () => {
+      expect(specify).toContain('bmad-speckit score');
+      expect(plan).toContain('bmad-speckit score');
+      expect(tasks).toContain('bmad-speckit score');
 
       expect(specify).toContain('--stage spec');
       expect(plan).toContain('--stage plan');

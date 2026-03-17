@@ -1,7 +1,7 @@
 /**
  * Story 3.2 T1: Layer 1 prd 审计报告解析器
  * 从 audit-prompts-prd 对应的审计报告提取 phase_score、check_items，映射环节 1
- * BUGFIX: item_id 优先从 config/audit-item-mapping.yaml 查找，无匹配 fallback prd-issue-N
+ * BUGFIX: item_id 优先从 _bmad/_config/audit-item-mapping.yaml 查找，无匹配 fallback prd-issue-N
  */
 import * as fs from 'fs';
 import * as path from 'path';

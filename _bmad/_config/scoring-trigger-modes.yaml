@@ -62,7 +62,7 @@ event_to_write_mode:
     real_dev: single_file
     eval_question: single_file
 
-# 与 config/stage-mapping.yaml trigger_modes 对应
+# 与 _bmad/_config/stage-mapping.yaml trigger_modes 对应
 # stage_audit_complete → 该 stage 对应环节，自动
 # story_status_change → 环节 1–6，自动（可配置）
 # mr_created → 环节 2–6，自动（可配置）

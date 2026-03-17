@@ -457,7 +457,7 @@ for each epic in active_epics:
 ## 与审计粒度配置集成
 
 ```yaml
-# config/bmad-story-config.yaml
+# _bmad/_config/bmad-story-config.yaml
 audit_granularity:
   mode: "epic"
 

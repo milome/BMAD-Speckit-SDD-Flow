@@ -12,7 +12,7 @@ const { readJsonSafe } = require('../utils/json');
 /**
  * Add one or more AI agents to an existing project.
  * @param {string} aiArg - Comma-separated AI ids (e.g. 'claude' or 'cursor-agent,claude').
- * @param {{ cwd?: string }} [options]
+ * @param {{ cwd?: string }} [options] - Command options including working directory
  */
 function addAgentCommand(aiArg, options = {}) {
   const cwd = options.cwd || process.cwd();

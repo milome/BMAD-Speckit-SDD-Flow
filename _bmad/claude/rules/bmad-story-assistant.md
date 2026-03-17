@@ -43,7 +43,7 @@
 
 1. 用户输入 / CLI 参数中的 `--audit-granularity=...`
 2. 环境变量 `BMAD_AUDIT_GRANULARITY`
-3. 项目配置 `config/bmad-story-config.yaml`
+3. 项目配置 `_bmad/_config/bmad-story-config.yaml`
 4. 默认值 `full`
 
 ### Claude Code CLI 运行时调用约束
@@ -178,7 +178,7 @@ subagent_type: general-purpose
 
 ```bash
 # 验证配置文件存在
-test -f config/bmad-story-config.yaml && echo "PASS: config exists"
+test -f _bmad/_config/bmad-story-config.yaml && echo "PASS: config exists"
 
 # 验证配置加载脚本存在
 test -f scripts/bmad-config.ts && echo "PASS: bmad-config.ts exists"

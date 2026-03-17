@@ -289,7 +289,7 @@ handoff:
 
 **CLI 调用示例**（在项目根目录执行）：
 ```bash
-npx ts-node scripts/parse-and-write-score.ts \
+npx bmad-speckit score \
   --reportPath <审计报告路径> \
   --stage implement \
   --epic {epic} \

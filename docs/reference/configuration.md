@@ -1,12 +1,12 @@
 # 配置文件参考
 
-> `config/` 目录下所有配置文件的说明。
+> `_bmad/_config/` 目录下所有配置文件的说明。
 
 ---
 
 ## 概述
 
-BMAD-Speckit-SDD-Flow 的配置文件集中在 `config/` 目录下，控制审计行为、评分触发、Coach 诊断等功能。
+BMAD-Speckit-SDD-Flow 的配置文件集中在 `_bmad/_config/` 目录下，控制审计行为、评分触发、Coach 诊断等功能。
 
 ---
 
@@ -60,7 +60,7 @@ scoring_write_control:
   enabled: true
 ```
 
-当 `enabled: false` 时，审计通过后不触发 `parse-and-write-score.ts`。
+当 `enabled: false` 时，审计通过后不触发 `bmad-speckit score`。
 
 ---
 

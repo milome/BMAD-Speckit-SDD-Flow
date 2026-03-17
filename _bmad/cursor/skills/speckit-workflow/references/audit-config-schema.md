@@ -5,7 +5,7 @@
 | 优先级 | 来源 | 说明 |
 |--------|------|------|
 | 1 | CLI 参数 `--audit-mode` | 单次命令覆盖 |
-| 2 | 项目 `config/speckit.yaml` | 项目级默认 |
+| 2 | 项目 `_bmad/_config/speckit.yaml` | 项目级默认 |
 | 3 | skill 默认 | standard |
 
 ## 取值
@@ -18,14 +18,14 @@
 
 ## 禁止事项
 
-**项目级 simple 禁止**：`config/speckit.yaml` 中不得设置 `audit_convergence: simple`。若设置，skill 入口或校验脚本应拒绝并报错（exit code ≠ 0）。
+**项目级 simple 禁止**：`_bmad/_config/speckit.yaml` 中不得设置 `audit_convergence: simple`。若设置，skill 入口或校验脚本应拒绝并报错（exit code ≠ 0）。
 
 **校验脚本**：`_bmad/speckit/scripts/powershell/validate-audit-config.ps1`。执行该脚本时，若项目 config 含 `audit_convergence: simple`，预期报错且 exit code ≠ 0。
 
 ## 验收示例
 
 ```powershell
-# 1. 写入 config/speckit.yaml 并设置 audit_convergence: simple
+# 1. 写入 _bmad/_config/speckit.yaml 并设置 audit_convergence: simple
 Set-Content -Path "config\speckit.yaml" -Value "audit_convergence: simple"
 
 # 2. 执行校验脚本

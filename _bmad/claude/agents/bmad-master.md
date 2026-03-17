@@ -49,7 +49,7 @@ auto_continue_check:
   config_source_priority:
     - CLI: --continue
     - ENV: BMAD_AUTO_CONTINUE=true
-    - FILE: config/bmad-story-config.yaml -> auto_continue.enabled
+    - FILE: _bmad/_config/bmad-story-config.yaml -> auto_continue.enabled
     - DEFAULT: false
 
   conditions:

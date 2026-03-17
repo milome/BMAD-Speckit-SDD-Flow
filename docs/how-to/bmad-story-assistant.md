@@ -39,7 +39,7 @@
 
 - Story 工作流阶段语义
 - 审计粒度配置模型
-- `config/bmad-story-config.yaml` 配置来源
+- `_bmad/_config/bmad-story-config.yaml` 配置来源
 - TDD 红绿灯、ralph-method 追踪
 
 ### 平台差异对照
@@ -121,7 +121,7 @@ Slug: email-validator
 
 1. CLI 参数：`--audit-granularity=full`
 2. 环境变量：`BMAD_AUDIT_GRANULARITY=story`
-3. 项目配置：`config/bmad-story-config.yaml`
+3. 项目配置：`_bmad/_config/bmad-story-config.yaml`
 4. 默认值：`full`
 
 ### 使用示例
@@ -138,7 +138,7 @@ Slug: email-validator
 
 ### 配置文件
 
-`config/bmad-story-config.yaml`：
+`_bmad/_config/bmad-story-config.yaml`：
 
 ```yaml
 audit_granularity:
@@ -158,12 +158,12 @@ auto_continue:
 
 | 文件 | 说明 |
 |------|------|
-| `config/bmad-story-config.yaml` | 审计粒度、auto-continue 配置 |
+| `_bmad/_config/bmad-story-config.yaml` | 审计粒度、auto-continue 配置 |
 | `_bmad/core/workflows/party-mode/workflow.md` | Party-Mode 工作流 |
 | `_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml` | Create Story 工作流 |
 | `_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml` | Dev Story 工作流 |
 | `_bmad/_config/agent-manifest.csv` | Agent 清单 |
-| `scripts/parse-and-write-score.ts` | 评分写入 |
+| `npx bmad-speckit score` | 评分写入（CLI 子命令） |
 | `scripts/bmad-config.ts` | 配置加载 |
 
 ### Cursor 专属
