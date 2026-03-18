@@ -21,8 +21,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build scoring package
+        run: npm run build:scoring
+
       - name: Lint
         run: npm run lint
 
       - name: Run tests
-        run: npm run test
+        run: npm run test:ci

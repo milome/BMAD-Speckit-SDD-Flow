@@ -1,7 +1,0 @@
-{
-  "tool_name": "Agent",
-  "tool_input_preview": "{\"description\":\"Review first batch\",\"prompt\":\"Review the current in-place first-batch changes against docs/plans/2026-03-13-ai-agent-strict-isolation-implementation-plan.md Tasks 1-3. Read-only review...",
-  "error": "Failed to create worktree: Preparing worktree (new branch 'worktree-agent-a633e3ef')\nerror: unable to create file _bmad-output/implementation-artifacts/epic-3-feature-eval-lifecycle-skill/story-4-parse-and-write-score/parseAndWriteScore-embedding-and-skill-migration/AUDIT_REPORT_TASKS_parseAndWriteScore-embedding-skill-migration_§5.md: Filename too long\nerror: unable to create file _bmad-output/implementation-artifacts/epic-3-feature-eval-lifecycle-skill/story-4-parse-and-write-score/parseAndWri...",
-  "timestamp": "2026-03-13T00:05:59.780Z",
-  "retry_count": 3
-}

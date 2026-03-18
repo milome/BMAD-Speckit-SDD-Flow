@@ -9,8 +9,8 @@
  *
  * 退出码：0=有记录，1=无记录或参数错误
  */
-import { loadAndDedupeRecords } from '../scoring/query/loader';
-import { parseEpicStoryFromRecord } from '../scoring/query/parse-epic-story';
+import { loadAndDedupeRecords } from '../packages/scoring/query/loader';
+import { parseEpicStoryFromRecord } from '../packages/scoring/query/parse-epic-story';
 
 function parseArgs(): Record<string, string> {
   const args: Record<string, string> = {};

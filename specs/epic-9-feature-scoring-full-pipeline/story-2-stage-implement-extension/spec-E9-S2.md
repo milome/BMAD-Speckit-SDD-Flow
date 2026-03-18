@@ -114,7 +114,7 @@
 
 | 项 | 规格 |
 |------|------|
-| 修改路径 | `skills/speckit-workflow/SKILL.md` 或 `~/.cursor/skills/speckit-workflow/SKILL.md`（项目内优先） |
+| 修改路径 | `.cursor/skills/speckit-workflow/SKILL.md` 或 `~/.cursor/skills/speckit-workflow/SKILL.md`（项目内优先） |
 | 修改位置 | §5.2 implement 阶段「审计通过后评分写入触发」段落 |
 | 原内容 | `--stage tasks --triggerStage speckit_5_2` |
 | 新内容 | `--stage implement`，移除 `--triggerStage speckit_5_2` |

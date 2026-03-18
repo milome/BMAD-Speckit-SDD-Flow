@@ -32,15 +32,15 @@ To validate complete coverage of all requirements and ensure stories are ready f
 - üìñ CRITICAL: Read the complete step file before taking any action
 - üîÑ CRITICAL: Process validation sequentially without skipping
 - üìã YOU ARE A FACILITATOR, not a content generator
-- ‚úÖ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
+- ‚ú?YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
 
 ### Role Reinforcement:
 
-- ‚úÖ You are a product strategist and technical specifications writer
-- ‚úÖ If you already have been given communication or persona patterns, continue to use those while playing this new role
-- ‚úÖ We engage in collaborative dialogue, not command-response
-- ‚úÖ You bring validation expertise and quality assurance
-- ‚úÖ User brings their implementation priorities and final review
+- ‚ú?You are a product strategist and technical specifications writer
+- ‚ú?If you already have been given communication or persona patterns, continue to use those while playing this new role
+- ‚ú?We engage in collaborative dialogue, not command-response
+- ‚ú?You bring validation expertise and quality assurance
+- ‚ú?User brings their implementation priorities and final review
 
 ### Step-Specific Rules:
 
@@ -88,8 +88,8 @@ Review the complete epic and story breakdown to ensure EVERY FR is covered:
 **Database/Entity Creation Validation:**
 
 - Are database tables/entities created ONLY when needed by stories?
-- ‚ùå WRONG: Epic 1 creates all tables upfront
-- ‚úÖ RIGHT: Tables created as part of the first story that needs them
+- ‚ù?WRONG: Epic 1 creates all tables upfront
+- ‚ú?RIGHT: Tables created as part of the first story that needs them
 - Each story should create/modify ONLY what it needs
 
 ### 3. Story Quality Validation
@@ -119,8 +119,8 @@ Review the complete epic and story breakdown to ensure EVERY FR is covered:
 - Does each epic deliver COMPLETE functionality for its domain?
 - Can Epic 2 function without Epic 3 being implemented?
 - Can Epic 3 function standalone using Epic 1 & 2 outputs?
-- ‚ùå WRONG: Epic 2 requires Epic 3 features to work
-- ‚úÖ RIGHT: Each epic is independently valuable
+- ‚ù?WRONG: Epic 2 requires Epic 3 features to work
+- ‚ú?RIGHT: Each epic is independently valuable
 
 **Within-Epic Story Dependency Check:**
 For each epic, review stories in order:
@@ -128,9 +128,9 @@ For each epic, review stories in order:
 - Can Story N.1 be completed without Stories N.2, N.3, etc.?
 - Can Story N.2 be completed using only Story N.1 output?
 - Can Story N.3 be completed using only Stories N.1 & N.2 outputs?
-- ‚ùå WRONG: "This story depends on a future story"
-- ‚ùå WRONG: Story references features not yet implemented
-- ‚úÖ RIGHT: Each story builds only on previous stories
+- ‚ù?WRONG: "This story depends on a future story"
+- ‚ù?WRONG: Story references features not yet implemented
+- ‚ú?RIGHT: Each story builds only on previous stories
 
 ### 6. Complete and Save
 
@@ -145,6 +145,6 @@ If all validations pass:
 
 When C is selected, the workflow is complete and the epics.md is ready for development.
 
-Epics and Stories complete. Read fully and follow: `_bmad/core/tasks/help.md` with argument `Create Epics and Stories`.
+Epics and Stories complete. Read fully and follow: `{project-root}/_bmad/core/tasks/help.md` with argument `Create Epics and Stories`.
 
 Upon Completion of task output: offer to answer any questions about the Epics and Stories.

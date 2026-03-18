@@ -1,21 +1,22 @@
 #!/usr/bin/env bash
-# Sync BMAD-METHOD v6 to _bmad (WSL/Linux/macOS)
+# Sync BMAD-METHOD to _bmad (WSL/Linux/macOS)
 # 与 scripts/bmad-sync-from-v6.ps1 功能对等
 #
-# Usage: ./scripts/bmad-sync-from-v6.sh [-Phase 1|2|3|all] [-DryRun] [-BackupDir <path>] [-ProjectRoot <path>] [-V6Ref v6.0.4]
+# Usage: ./scripts/bmad-sync-from-v6.sh [-Phase 1|2|3|all] [-DryRun] [-BackupDir <path>] [-ProjectRoot <path>] [-V6Ref main]
 
 set -e
 
 BMAD_METHOD_REPO="https://github.com/bmad-code-org/BMAD-METHOD.git"
-V6_REF="${V6_REF:-v6.0.4}"
+V6_REF="${V6_REF:-main}"
 
 EXCLUDE_PATTERNS=(
     "_bmad/scoring"
     "_bmad/core/agents/adversarial-reviewer.md"
     "_bmad/core/agents/critical-auditor-guide.md"
     "_bmad/core/agents/README-critical-auditor.md"
-    "_bmad/scripts/bmad-speckit"
+    "_bmad/speckit"
     "_bmad/_config/agent-manifest.csv"
+    "_bmad/core/workflows/party-mode"
     "adversarial-reviewer.md"
     "critical-auditor-guide.md"
     "README-critical-auditor.md"
@@ -28,8 +29,9 @@ BACKUP_ITEMS=(
     "_bmad/core/agents/adversarial-reviewer.md:adversarial-reviewer.md"
     "_bmad/core/agents/critical-auditor-guide.md:critical-auditor-guide.md"
     "_bmad/core/agents/README-critical-auditor.md:README-critical-auditor.md"
-    "_bmad/scripts/bmad-speckit:bmad_speckit_scripts"
+    "_bmad/speckit:bmad_speckit"
     "_bmad/_config/agent-manifest.csv:agent-manifest.csv"
+    "_bmad/core/workflows/party-mode:party-mode-workflow"
 )
 
 PHASE="1"
@@ -110,7 +112,7 @@ phase2_ops() {
     trap "rm -rf '$v6_root'" EXIT
     local v6_src="$v6_root/src"
 
-    for dir in core bmm; do
+    for dir in core bmm utility; do
         local src_dir="$v6_src/$dir"
         [[ -d "$src_dir" ]] || continue
         while IFS= read -r -d '' f; do
@@ -125,6 +127,17 @@ phase2_ops() {
             fi
         done < <(find "$src_dir" -type f -print0 2>/dev/null)
     done
+
+    # Auto-sync _bmad/core/skills/ -> _bmad/skills/ (universal skill distribution); _bmad/skills/ is canonical
+    local core_skills="$PROJECT_ROOT/_bmad/core/skills"
+    local dist_skills="$PROJECT_ROOT/_bmad/skills"
+    if [[ -d "$core_skills" ]]; then
+        mkdir -p "$dist_skills"
+        cp -Rf "$core_skills"/* "$dist_skills/"
+        echo "  Skill sync: _bmad/core/skills/ -> _bmad/skills/"
+        rm -rf "$core_skills"
+        echo "  Removed redundant: _bmad/core/skills/ (_bmad/skills/ is canonical)"
+    fi
 }
 
 echo "BMAD-METHOD v6 Sync | Phase=$PHASE | DryRun=$DRY_RUN | ProjectRoot=$PROJECT_ROOT"
@@ -144,7 +157,7 @@ fi
 if $DRY_RUN; then
     echo "[DryRun] Phase operations (summary)"
     [[ "$PHASE" == "1" || "$PHASE" == "all" ]] && echo "  Phase 1: step-04 path fix"
-    [[ "$PHASE" == "2" || "$PHASE" == "all" ]] && echo "  Phase 2: copy core,bmm from v6 (excluding protected)"
+    [[ "$PHASE" == "2" || "$PHASE" == "all" ]] && echo "  Phase 2: copy core,bmm,utility from v6 (excluding protected)"
     echo "[DryRun] Done. No files modified."
 else
     [[ "$PHASE" == "1" || "$PHASE" == "all" ]] && phase1_ops

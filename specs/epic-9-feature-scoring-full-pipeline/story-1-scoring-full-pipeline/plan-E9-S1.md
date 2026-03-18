@@ -42,7 +42,7 @@
 
 #### Phase 1.1：bmad-story-assistant SKILL 修改（T1、T2、T3）
 
-1. **定位 SKILL**：`skills/bmad-story-assistant/SKILL.md` 或 `~/.cursor/skills/bmad-story-assistant/SKILL.md`（项目内优先）
+1. **定位 SKILL**：`.cursor/skills/bmad-story-assistant/SKILL.md` 或 `~/.cursor/skills/bmad-story-assistant/SKILL.md`（项目内优先）
 2. **T1**：在「审计通过后评分写入触发」段落**之前**插入「步骤 4.2：运行 parse-and-write-score（强制）」；含完整 CLI 示例（**须显式写出 `--triggerStage bmad_story_stage4`**，与 implement 的 speckit_5_2 区分）、报告路径模板、non_blocking 处理
 3. **T2**：在 STORY-A4-POSTAUDIT 模板中增加「审计通过后请将报告保存至 `{project-root}/_bmad-output/implementation-artifacts/epic-{epic}-*/story-{epic}-{story}-*/AUDIT_Story_{epic}-{story}_stage4.md`」
 4. **T3**：在「审计结论处理」增加主 Agent 解析 reportPath 逻辑；reportPath 不存在时记录 SCORE_WRITE_SKIP_REPORT_MISSING，不阻断
@@ -136,7 +136,7 @@
 
 | 文件 | 变更 | 说明 |
 |------|------|------|
-| `skills/bmad-story-assistant/SKILL.md` | T1–T3、T5 流程修改 | 步骤 4.2、路径约定、reportPath 解析、检查嵌入 |
+| `.cursor/skills/bmad-story-assistant/SKILL.md` | T1–T3、T5 流程修改 | 步骤 4.2、路径约定、reportPath 解析、检查嵌入 |
 | `scoring/writer/types.ts` | RunScoreRecord.trigger_stage | T4 |
 | `scoring/schema/run-score-schema.json` | trigger_stage 字段 | T4 |
 | `scoring/orchestrator/parse-and-write.ts` | triggerStage 透传 | T4 |
@@ -153,7 +153,7 @@
 
 | Phase | 验收命令 | 预期 |
 |-------|----------|------|
-| T1–T3 | grep `步骤 4.2` skills/bmad-story-assistant/SKILL.md；grep `审计通过后请将报告保存至` | 有匹配 |
+| T1–T3 | grep `步骤 4.2` .cursor/skills/bmad-story-assistant/SKILL.md；grep `审计通过后请将报告保存至` | 有匹配 |
 | T4 | `npx ts-node scripts/parse-and-write-score.ts --reportPath <path> --stage tasks --triggerStage speckit_5_2 --epic 9 --story 1`；检查 scoring/data record.trigger_stage | speckit_5_2 |
 | T5 | `npx ts-node scripts/check-story-score-written.ts --epic 8 --story 1` | 有/无记录输出 |
 | T6 | grep `Story 完成自检` 审计报告格式与解析约定文档 | 有匹配 |

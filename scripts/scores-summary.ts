@@ -5,15 +5,15 @@
  *   npx ts-node scripts/scores-summary.ts --epic 3       # Epic 3 汇总
  *   npx ts-node scripts/scores-summary.ts --story 3.3    # Story 3.3 明细
  */
-import { getScoringDataPath } from '../scoring/constants/path';
+import { getScoringDataPath } from '../packages/scoring/constants/path';
 import {
   queryByEpic,
   queryByStory,
   queryLatest,
   parseEpicStoryFromRecord,
-} from '../scoring/query';
-import { loadAndDedupeRecords } from '../scoring/query/loader';
-import { formatScoresToTable } from '../scoring/scores/format-table';
+} from '../packages/scoring/query';
+import { loadAndDedupeRecords } from '../packages/scoring/query/loader';
+import { formatScoresToTable } from '../packages/scoring/scores/format-table';
 
 const EMPTY_DATA_MESSAGE = '暂无评分数据，请先完成至少一轮 Dev Story';
 const NO_PARSABLE_MESSAGE =

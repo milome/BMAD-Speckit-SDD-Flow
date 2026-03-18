@@ -2,7 +2,7 @@
  * Story 12.1 T1: AIRegistry 单元测试
  * load/getById/listIds, 路径、合并、JSON 失败、深度合并
  */
-const { describe, it } = require('node:test');
+const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
@@ -17,6 +17,26 @@ function mkdirp(p) {
 
 describe('AIRegistry (Story 12.1 T1)', () => {
   const tmpRoot = path.join(os.tmpdir(), `bmad-speckit-ai-registry-${Date.now()}`);
+  const globalRegistryPath = path.join(os.homedir(), '.bmad-speckit', 'ai-registry.json');
+  let globalRegistryBackup = null;
+
+  before(() => {
+    if (fs.existsSync(globalRegistryPath)) {
+      globalRegistryBackup = fs.readFileSync(globalRegistryPath, 'utf8');
+      fs.unlinkSync(globalRegistryPath);
+    }
+  });
+
+  after(() => {
+    if (globalRegistryBackup != null) {
+      const dir = path.dirname(globalRegistryPath);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(globalRegistryPath, globalRegistryBackup, 'utf8');
+    } else if (fs.existsSync(globalRegistryPath)) {
+      fs.unlinkSync(globalRegistryPath);
+    }
+    try { fs.rmSync(tmpRoot, { recursive: true, force: true }); } catch (_) {}
+  });
 
   it('T1.1 load returns merged AI list', () => {
     const list = AIRegistry.load({ cwd: tmpRoot });

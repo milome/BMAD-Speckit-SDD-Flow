@@ -61,13 +61,13 @@
 
 ### T4 [x] speckit-workflow 失败轮路径约定（GAP-3.1）
 
-- **修改**：`skills/speckit-workflow/SKILL.md`
+- **修改**：`.cursor/skills/speckit-workflow/SKILL.md`
 - **内容**：各 stage 审计循环描述补充：失败轮报告保存至 `AUDIT_{stage}-E{epic}-S{story}_round{N}.md` 或 `_orphan/AUDIT_{slug}_round{N}.md`；验证轮不列入 iterationReportPaths；run_id 在 stage 内复用
 - **验收**：grep `_round`、`round{N}`、`验证轮`、`iterationReportPaths` 有匹配
 
 ### T5 [x] bmad-story-assistant 失败轮路径约定（GAP-3.2）
 
-- **修改**：`skills/bmad-story-assistant/SKILL.md`
+- **修改**：`.cursor/skills/bmad-story-assistant/SKILL.md`
 - **内容**：阶段四及 Dev Story 嵌套 speckit 各 stage 审计 prompt 补充：fail 轮保存至 round 路径；验证轮不列入；pass 时收集 fail 轮路径传入 --iterationReportPaths
 - **验收**：grep 含 round 路径、iterationReportPaths、验证轮排除
 

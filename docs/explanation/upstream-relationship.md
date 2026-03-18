@@ -1,0 +1,109 @@
+# Upstream Dependencies & Sync Strategy
+
+本文档说明 BMAD-Speckit-SDD-Flow 对上游的依赖、定制范围与同步策略。可参考 [BMAD-METHOD v6 Gaps 与同步建议](BMAD/BMAD-METHOD-v6-Gaps与同步建议.md)。
+
+---
+
+## 1. Upstream 依赖表
+
+| 名称 | 版本/范围 | 用途 | 许可 |
+|------|-----------|------|------|
+| **BMAD-METHOD** | main@45d125f（2026-03-16 同步） | 工作流、party-mode、bmm/core/utility 模块、V6 core skills | MIT |
+| **spec-kit** | 模板来源见 bmad-speckit init | 规范驱动开发（specify→plan→tasks） | MIT |
+
+- **BMAD-METHOD 源码**: [bmad-code-org/BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD)
+- **spec-kit 来源**: `bmad-speckit init` 从 GitHub tarball 拉取，未直接依赖 npm 包
+
+---
+
+## 2. 定制范围
+
+| 定制项 | 路径/说明 |
+|--------|------------|
+| **_bmad-overlay** | `_bmad/scoring/`、批判审计员、adversarial-reviewer、ai-coach |
+| **speckit-workflow** | `.cursor/skills/speckit-workflow/`、`.cursor/commands/speckit.*` |
+| **bmad-speckit CLI** | `_bmad/speckit/scripts/`、`packages/bmad-speckit/` |
+| **agent-manifest** | `_bmad/_config/agent-manifest.csv` 中 adversarial-reviewer、ai-coach 条目 |
+| **party-mode 定制（旧路径）** | `_bmad/core/workflows/party-mode/`（批判审计员角色注入、收敛条件定制；本地定制原始版本，已加入排除清单） |
+| **party-mode 定制（新路径）** | `_bmad/skills/bmad-party-mode/`（V6 skill 格式 + 定制合并版；路径使用 `{project-root}` 绝对引用） |
+| **V6 core skills canonical** | `_bmad/skills/`（Phase 2 同步时从 upstream `_bmad/core/skills/` 复制到此，然后删除 core/skills/ 避免冗余） |
+
+---
+
+## 3. 同步策略
+
+- **BMAD**：按需同步（约 2–3 个大版本一次，或需要新功能时）。**无定期同步**。
+- **spec-kit**：一般不定期同步；有明确需求时手工 cherry-pick 或评估后合并。
+
+---
+
+## 4. BMAD 同步排除清单
+
+从 BMAD-METHOD 同步时**不得覆盖**以下路径（以 `scripts/bmad-sync-from-v6.ps1` 及文档为准）：
+
+### 4.1 路径排除（永不覆盖）
+
+| 类别 | 路径 |
+|------|------|
+| scoring | `_bmad/scoring/` |
+| adversarial-reviewer | `_bmad/core/agents/adversarial-reviewer.md` |
+| critical-auditor | `_bmad/core/agents/critical-auditor-guide.md`、`_bmad/core/agents/README-critical-auditor.md` |
+| bmad-speckit | `_bmad/speckit/scripts/` |
+| agent-manifest | `_bmad/_config/agent-manifest.csv` 中 adversarial-reviewer、ai-coach 条目 |
+| party-mode workflow | `_bmad/core/workflows/party-mode/`（本地定制版，含批判审计员角色注入） |
+| speckit-workflow | `.cursor/skills/speckit-workflow/`（spec-kit 侧） |
+| speckit commands | `_bmad/cursor/commands/speckit.*` 或 `.cursor/commands/speckit.*` |
+
+### 4.2 同步脚本引用
+
+BMAD 同步可选用 **`scripts/bmad-sync-from-v6.ps1`**：
+
+```powershell
+# 用法
+pwsh scripts/bmad-sync-from-v6.ps1 -Phase 1 -DryRun   # 列出操作，不执行
+pwsh scripts/bmad-sync-from-v6.ps1 -Phase 1            # Phase 1：path 标准化等
+pwsh scripts/bmad-sync-from-v6.ps1 -Phase 2            # Phase 2：可选功能
+pwsh scripts/bmad-sync-from-v6.ps1 -Phase all          # 全阶段
+```
+
+- **Phase 1**：Path 标准化、step-04 修正等  
+- **Phase 2**：core/bmm/utility 模块同步（含 V6 core skills）；Phase 2 完成后将 upstream `_bmad/core/skills/` 复制到 `_bmad/skills/`（canonical），然后删除 `core/skills/` 避免冗余  
+- **禁止覆盖项**：以本文档 §4.1 为准；脚本内置 `$EXCLUDE_PATTERNS` 与其一致
+- **默认分支**：`main`（脚本默认 `-V6Ref main`）
+
+---
+
+## 5. 当前上游版本记录
+
+| 上游 | 版本 | 同步日期 |
+|------|------|----------|
+| BMAD-METHOD | main@45d125f | 2026-03-16 |
+| spec-kit | 模板来源见 bmad-speckit，无直接依赖版本号 | — |
+
+同步时对照上述版本，确认 merge 基准。
+
+### 同步历史
+
+| 日期 | 来源 | 范围 | 备注 |
+|------|------|------|------|
+| 2026-03-16 | main@45d125f | core/bmm/utility | V6 content sync：新增 11 个 core skills、utility 模块、party-mode skill（canonical 路径 `_bmad/skills/bmad-party-mode/`） |
+| 2026-02-22 | v6.0.1 | core/bmm | 初始 BMAD-METHOD v6 安装 |
+
+---
+
+## 6. 补充说明
+
+### 6.1 新旧 Party-Mode 路径共存
+
+项目中存在两个 party-mode 实现，功能内容已一致（定制均已合并）：
+
+| 路径 | 类型 | 说明 |
+|------|------|------|
+| `_bmad/core/workflows/party-mode/` | 旧 workflow 格式 | 本地定制原始版本；已加入排除清单，同步时不被覆盖。当前多数 rule/skill 文件仍引用此路径。 |
+| `_bmad/skills/bmad-party-mode/` | V6 skill 格式 | upstream V6 新结构 + 定制合并版本；所有引用路径使用 `{project-root}` 绝对引用。同步时 upstream `core/skills/` 复制到此，然后删除 `core/skills/` 避免冗余。 |
+
+两个版本均可正常工作。未来如需统一路径引用，可将 rule/skill 文件中的 `workflows/party-mode` 迁移为 `skills/bmad-party-mode`。
+
+### 6.2 config.yaml 版本号
+
+`_bmad/bmm/config.yaml` 和 `_bmad/core/config.yaml` 中的 `Version: 6.0.1` 由初始 BMAD-METHOD 安装生成，属于项目级配置，不随 upstream 同步更新。实际同步基准以本文档 §5 的版本记录（`main@45d125f`）为准。

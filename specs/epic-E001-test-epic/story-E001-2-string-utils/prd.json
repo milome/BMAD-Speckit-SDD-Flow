@@ -1,0 +1,55 @@
+{
+  "title": "E001-2-string-utils: String Utilities Module Implementation",
+  "description": "实现字符串工具模块，包含 camelCase、kebabCase、truncate、isEmpty 四个函数，遵循 TDD 红绿灯流程，目标测试覆盖率 80%+",
+  "stories": [
+    {
+      "id": "TDD-001",
+      "title": "实现 camelCase 函数",
+      "description": "将字符串转换为 camelCase 格式，支持空格、连字符、下划线分隔",
+      "acceptanceCriteria": [
+        "camelCase('hello world') => 'helloWorld'",
+        "camelCase('hello-world') => 'helloWorld'",
+        "camelCase('hello_world') => 'helloWorld'",
+        "处理大写开头、单字、空字符串等边界情况"
+      ],
+      "passes": true
+    },
+    {
+      "id": "TDD-002",
+      "title": "实现 kebabCase 函数",
+      "description": "将字符串转换为 kebab-case 格式，支持驼峰命名和空格分隔",
+      "acceptanceCriteria": [
+        "kebabCase('hello world') => 'hello-world'",
+        "kebabCase('helloWorld') => 'hello-world'",
+        "kebabCase('Hello World') => 'hello-world'",
+        "处理单字、空字符串等边界情况"
+      ],
+      "passes": true
+    },
+    {
+      "id": "TDD-003",
+      "title": "实现 truncate 函数",
+      "description": "截断字符串，超过指定长度时添加省略号",
+      "acceptanceCriteria": [
+        "truncate('hello world', 5) => 'he...'",
+        "truncate('hello', 10) => 'hello'",
+        "处理负数长度返回原字符串",
+        "处理空字符串等边界情况"
+      ],
+      "passes": true
+    },
+    {
+      "id": "TDD-004",
+      "title": "实现 isEmpty 函数",
+      "description": "检查字符串是否为空，支持 null 和 undefined",
+      "acceptanceCriteria": [
+        "isEmpty('') => true",
+        "isEmpty('  ') => true",
+        "isEmpty(null) => true",
+        "isEmpty(undefined) => true",
+        "isEmpty('hello') => false"
+      ],
+      "passes": true
+    }
+  ]
+}

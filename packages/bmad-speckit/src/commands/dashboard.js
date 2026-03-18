@@ -1,0 +1,142 @@
+/**
+ * Dashboard subcommand: generate project health dashboard Markdown.
+ * Ported from scripts/dashboard-generate.ts to JS for CLI integration.
+ *
+ * Exit codes: 0=success, 1=no data or error
+ */
+const fs = require('fs');
+const path = require('path');
+const { getScoringDataPath } = require('@bmad-speckit/scoring/constants/path');
+const { loadAndDedupeRecords } = require('@bmad-speckit/scoring/query/loader');
+const { parseEpicStoryFromRecord } = require('@bmad-speckit/scoring/query');
+const {
+  getLatestRunRecords,
+  getLatestRunRecordsV2,
+  computeHealthScore,
+  computeEpicHealthScore,
+  getDimensionScores,
+  getEpicDimensionScores,
+  getWeakTop3,
+  getWeakTop3EpicStory,
+  getHighIterationTop3,
+  countVetoTriggers,
+  getTrend,
+  aggregateByEpicOnly,
+  formatDashboardMarkdown,
+} = require('@bmad-speckit/scoring/dashboard');
+
+const EMPTY_DATA_MESSAGE = '暂无数据，请先完成至少一轮 Dev Story';
+const INSUFFICIENT_RUN_MESSAGE = '数据不足，暂无完整 run（至少 2 stage）';
+const EPIC_NO_COMPLETE_STORY_MESSAGE = (epicId) =>
+  `Epic ${epicId} 下无完整 Story，暂无聚合数据`;
+const OUTPUT_PATH = '_bmad-output/dashboard.md';
+
+function ensureDir(dir) {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
+
+function dashboardCommand(opts) {
+  const strategy = opts.strategy || 'epic_story_window';
+  const dataPathArg = opts.dataPath;
+  const dataPath = dataPathArg != null && dataPathArg !== ''
+    ? (path.isAbsolute(dataPathArg) ? dataPathArg : path.resolve(process.cwd(), dataPathArg))
+    : getScoringDataPath();
+
+  const records = loadAndDedupeRecords(dataPath).filter(
+    (r) => r.scenario !== 'eval_question'
+  );
+
+  const outDir = path.resolve(process.cwd(), path.dirname(OUTPUT_PATH));
+  ensureDir(outDir);
+  const outFile = path.resolve(process.cwd(), OUTPUT_PATH);
+
+  if (records.length === 0) {
+    const content = EMPTY_DATA_MESSAGE + '\n';
+    fs.writeFileSync(outFile, content, 'utf-8');
+    console.log(EMPTY_DATA_MESSAGE);
+    return;
+  }
+
+  const epicRaw = opts.epic;
+  const storyRaw = opts.story;
+  const epic = epicRaw != null ? parseInt(epicRaw, 10) : undefined;
+  const story = storyRaw != null ? parseInt(storyRaw, 10) : undefined;
+  const windowHours = opts.windowHours != null ? parseInt(opts.windowHours, 10) : 24 * 7;
+  const isEpicOnly =
+    strategy === 'epic_story_window' &&
+    epic != null &&
+    !isNaN(epic) &&
+    (story == null || isNaN(story));
+
+  const latestRecords =
+    strategy === 'epic_story_window'
+      ? getLatestRunRecordsV2(records, {
+          strategy: 'epic_story_window',
+          epic: epic != null && !isNaN(epic) ? epic : undefined,
+          story: story != null && !isNaN(story) ? story : undefined,
+          windowHours,
+        })
+      : getLatestRunRecords(records);
+
+  if (latestRecords.length === 0) {
+    const msg = isEpicOnly && epic != null ? EPIC_NO_COMPLETE_STORY_MESSAGE(epic) : INSUFFICIENT_RUN_MESSAGE;
+    const content = msg + '\n';
+    fs.writeFileSync(outFile, content, 'utf-8');
+    console.log(msg);
+    return;
+  }
+
+  const healthScore = isEpicOnly ? computeEpicHealthScore(latestRecords) : computeHealthScore(latestRecords);
+  const dimensions = isEpicOnly ? getEpicDimensionScores(latestRecords) : getDimensionScores(latestRecords);
+  const weakTop3 =
+    strategy === 'epic_story_window'
+      ? getWeakTop3EpicStory(latestRecords)
+      : getWeakTop3(latestRecords);
+  const highIterTop3 = getHighIterationTop3(latestRecords);
+  const vetoCount = countVetoTriggers(latestRecords);
+  const trend = getTrend(records);
+
+  let formatOpts;
+  if (isEpicOnly && epic != null) {
+    const storyIdsSet = new Set();
+    for (const r of latestRecords) {
+      const p = parseEpicStoryFromRecord(r);
+      if (p) storyIdsSet.add(p.storyId);
+    }
+    const storyIds = [...storyIdsSet].sort((a, b) => a - b);
+    const candidates = aggregateByEpicOnly(records, epic, windowHours);
+    const inResult = new Set(
+      latestRecords
+        .map((r) => {
+          const p = parseEpicStoryFromRecord(r);
+          return p ? `E${p.epicId}.S${p.storyId}` : null;
+        })
+        .filter((x) => x != null)
+    );
+    const excludedStories = [];
+    const seen = new Set();
+    for (const r of candidates) {
+      const p = parseEpicStoryFromRecord(r);
+      if (p) {
+        const key = `E${p.epicId}.S${p.storyId}`;
+        if (!inResult.has(key) && !seen.has(key)) {
+          seen.add(key);
+          excludedStories.push(key);
+        }
+      }
+    }
+    formatOpts = { viewMode: 'epic_aggregate', epicId: epic, storyIds, excludedStories };
+  }
+
+  const markdown = formatDashboardMarkdown(
+    { healthScore, dimensions, weakTop3, highIterTop3, vetoCount, trend },
+    formatOpts
+  );
+
+  fs.writeFileSync(outFile, markdown, 'utf-8');
+  console.log(markdown);
+}
+
+module.exports = { dashboardCommand };

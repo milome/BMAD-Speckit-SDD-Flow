@@ -218,12 +218,12 @@ function testE10S3HelpScript() {
   return out.includes('--script') && (out.includes('sh') || out.includes('ps') || out.includes('PowerShell'));
 }
 
-// E10-S3 T2/T3/T5: init --script sh --ai cursor-agent --yes --no-git => .sh exists under _bmad/scripts/bmad-speckit/
+// E10-S3 T2/T3/T5: init --script sh --ai cursor-agent --yes --no-git => .sh exists under _bmad/speckit/scripts/
 async function testE10S3ScriptSh() {
   const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e10s3-sh-${Date.now()}`);
   fs.mkdirSync(tmpDir, { recursive: true });
   const r = runInit(['.', '--script', 'sh', '--ai', 'cursor-agent', '--yes', '--no-git'], tmpDir);
-  const scriptDir = path.join(tmpDir, '_bmad', 'scripts', 'bmad-speckit');
+  const scriptDir = path.join(tmpDir, '_bmad', 'speckit', 'scripts');
   const shPath = path.join(scriptDir, 'bmad-speckit.sh');
   const exists = fs.existsSync(shPath);
   const content = exists ? fs.readFileSync(shPath, 'utf8') : '';
@@ -239,7 +239,7 @@ async function testE10S3ScriptPs() {
   const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e10s3-ps-${Date.now()}`);
   fs.mkdirSync(tmpDir, { recursive: true });
   const r = runInit(['.', '--script', 'ps', '--ai', 'cursor-agent', '--yes', '--no-git'], tmpDir);
-  const scriptDir = path.join(tmpDir, '_bmad', 'scripts', 'bmad-speckit');
+  const scriptDir = path.join(tmpDir, '_bmad', 'speckit', 'scripts');
   const psPath = path.join(scriptDir, 'bmad-speckit.ps1');
   const exists = fs.existsSync(psPath);
   const content = exists ? fs.readFileSync(psPath, 'utf8') : '';
@@ -253,7 +253,7 @@ async function testE10S3DefaultScript() {
   const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e10s3-default-${Date.now()}`);
   fs.mkdirSync(tmpDir, { recursive: true });
   const r = runInit(['.', '--ai', 'cursor-agent', '--yes', '--no-git'], tmpDir);
-  const scriptDir = path.join(tmpDir, '_bmad', 'scripts', 'bmad-speckit');
+  const scriptDir = path.join(tmpDir, '_bmad', 'speckit', 'scripts');
   const isWin = process.platform === 'win32';
   const _expectedExt = isWin ? 'ps1' : 'sh';
   const fname = isWin ? 'bmad-speckit.ps1' : 'bmad-speckit.sh';
@@ -512,7 +512,9 @@ function testE12S2OpencodeWorktree() {
   fs.mkdirSync(path.join(sharedBmad, 'core'), { recursive: true });
   fs.mkdirSync(path.join(sharedBmad, 'cursor', 'commands'), { recursive: true });
   fs.mkdirSync(path.join(sharedBmad, 'cursor', 'rules'), { recursive: true });
-  fs.writeFileSync(path.join(sharedBmad, 'cursor', 'commands', 'x.cmd'), 'x');
+  const genericCmds = path.join(sharedBmad, 'commands');
+  fs.mkdirSync(genericCmds, { recursive: true });
+  fs.writeFileSync(path.join(genericCmds, 'x.cmd'), 'x');
   const projectDir = path.join(tmpDir, 'proj');
   fs.mkdirSync(projectDir, { recursive: true });
   const r = runInit(['.', '--bmad-path', sharedBmad, '--ai', 'opencode', '--yes', '--no-git'], projectDir);
@@ -529,6 +531,9 @@ function testE12S2BobWorktree() {
   fs.mkdirSync(path.join(sharedBmad, 'core'), { recursive: true });
   fs.mkdirSync(path.join(sharedBmad, 'cursor', 'commands'), { recursive: true });
   fs.mkdirSync(path.join(sharedBmad, 'cursor', 'rules'), { recursive: true });
+  const genericCmds = path.join(sharedBmad, 'commands');
+  fs.mkdirSync(genericCmds, { recursive: true });
+  fs.writeFileSync(path.join(genericCmds, 'placeholder.md'), '# placeholder');
   const projectDir = path.join(tmpDir, 'proj');
   fs.mkdirSync(projectDir, { recursive: true });
   const r = runInit(['.', '--bmad-path', sharedBmad, '--ai', 'bob', '--yes', '--no-git'], projectDir);
@@ -669,9 +674,10 @@ function testE12S4CommandsExist() {
   const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e12s4-cmds-${Date.now()}`);
   const sharedBmad = path.join(tmpDir, 'shared_bmad');
   fs.mkdirSync(path.join(sharedBmad, 'core'), { recursive: true });
-  const cmdDir = path.join(sharedBmad, 'cursor', 'commands');
-  fs.mkdirSync(cmdDir, { recursive: true });
+  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'commands'), { recursive: true });
   fs.mkdirSync(path.join(sharedBmad, 'cursor', 'rules'), { recursive: true });
+  const cmdDir = path.join(sharedBmad, 'commands');
+  fs.mkdirSync(cmdDir, { recursive: true });
   fs.writeFileSync(path.join(cmdDir, 'bmad-help.md'), '---\nname: help\n---\n# help\n', 'utf8');
   fs.writeFileSync(path.join(cmdDir, 'speckit.constitution.md'), '---\ndescription: constitution\n---\n# speckit.constitution\n', 'utf8');
   const projectDir = path.join(tmpDir, 'proj');
@@ -705,9 +711,8 @@ function testE12S4CommandsExistWithModules() {
   fs.mkdirSync(path.join(sharedBmad, 'tea'), { recursive: true });
   fs.mkdirSync(path.join(sharedBmad, 'speckit'), { recursive: true });
   fs.mkdirSync(path.join(sharedBmad, 'skills'), { recursive: true });
-  const cmdDir = path.join(sharedBmad, 'cursor', 'commands');
+  const cmdDir = path.join(sharedBmad, 'commands');
   fs.mkdirSync(cmdDir, { recursive: true });
-  fs.mkdirSync(path.join(sharedBmad, 'cursor', 'rules'), { recursive: true });
   fs.writeFileSync(path.join(cmdDir, 'bmad-help.md'), '---\nname: help\n---\n# help\n', 'utf8');
   fs.writeFileSync(path.join(cmdDir, 'speckit.constitution.md'), '---\ndescription: constitution\n---\n# speckit.constitution\n', 'utf8');
   const projectDir = path.join(tmpDir, 'proj');

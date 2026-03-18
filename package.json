@@ -1,35 +1,44 @@
 {
   "name": "bmad-speckit-sdd-flow",
   "version": "0.1.0",
-  "description": "BMAD + Speckit workflow and scoring skeleton; deploy _bmad, _bmad-output, commands, rules to project root",
+  "description": "BMAD + Speckit workflow and scoring skeleton; deploy _bmad to project root",
   "scripts": {
     "lint": "eslint . --ext .ts,.js",
     "lint:fix": "eslint . --ext .ts,.js --fix",
-    "format": "prettier --write \"scoring/**/*.ts\" \"scripts/**/*.ts\" \"vitest.config.ts\"",
-    "format:check": "prettier --check \"scoring/**/*.ts\" \"scripts/**/*.ts\" \"vitest.config.ts\"",
-    "postinstall": "node scripts/init-to-root.js --agent cursor",
-    "init": "node scripts/init-to-root.js --agent cursor",
+    "format": "prettier --write \"packages/scoring/**/*.ts\" \"scripts/**/*.ts\" \"tests/**/*.ts\" \"vitest.config.ts\"",
+    "format:check": "prettier --check \"packages/scoring/**/*.ts\" \"scripts/**/*.ts\" \"tests/**/*.ts\" \"vitest.config.ts\"",
+    "postinstall": "node scripts/init-to-root.js",
+    "init": "node scripts/init-to-root.js",
+    "init:claude": "node scripts/init-to-root.js --agent claude-code",
     "setup": "pwsh scripts/setup.ps1",
     "setup:sh": "bash scripts/setup.sh",
     "setup:full": "pwsh scripts/setup.ps1 -Full",
     "setup:full:sh": "bash scripts/setup.sh -Full",
     "test": "vitest run && npm run test:bmad-speckit",
-    "test:scoring": "vitest run scoring",
+    "test:ci": "npm run init:claude && vitest run && npm run test:bmad-speckit",
+    "test:scoring": "vitest run packages/scoring",
     "test:bmad-speckit": "cd packages/bmad-speckit && node --test tests/",
-    "accept:e1-s1": "npx ts-node scripts/accept-e1-s1.ts",
-    "accept:e1-s2": "npx ts-node scripts/accept-e1-s2.ts",
-    "accept:e2-s1": "npx ts-node scripts/accept-e2-s1.ts",
-    "accept:e2-s2": "npx ts-node scripts/accept-e2-s2.ts",
-    "accept:e3-s1": "npx ts-node scripts/accept-e3-s1.ts",
-    "accept:e3-s2": "npx ts-node scripts/accept-e3-s2.ts",
-    "accept:e3-s3": "npx ts-node scripts/accept-e3-s3.ts",
-    "accept:e4-s1": "npx ts-node scripts/accept-e4-s1.ts",
-    "accept:e4-s2": "npx ts-node scripts/accept-e4-s2.ts",
-    "accept:e4-s3": "npx ts-node scripts/accept-e4-s3.ts",
+    "accept:e1-s1": "npx ts-node tests/epic-acceptance/accept-e1-s1.ts",
+    "accept:e1-s2": "npx ts-node tests/epic-acceptance/accept-e1-s2.ts",
+    "accept:e2-s1": "npx ts-node tests/epic-acceptance/accept-e2-s1.ts",
+    "accept:e2-s2": "npx ts-node tests/epic-acceptance/accept-e2-s2.ts",
+    "accept:e3-s1": "npx ts-node tests/epic-acceptance/accept-e3-s1.ts",
+    "accept:e3-s2": "npx ts-node tests/epic-acceptance/accept-e3-s2.ts",
+    "accept:e3-s3": "npx ts-node tests/epic-acceptance/accept-e3-s3.ts",
+    "accept:e4-s1": "npx ts-node tests/epic-acceptance/accept-e4-s1.ts",
+    "accept:e4-s2": "npx ts-node tests/epic-acceptance/accept-e4-s2.ts",
+    "accept:e4-s3": "npx ts-node tests/epic-acceptance/accept-e4-s3.ts",
+    "test:cursor-regression": "npx vitest run tests/acceptance/accept-cursor-regression-gate.test.ts && npm run accept:e1-s1 && npm run accept:e1-s2 && npm run accept:e3-s1 && npm run accept:e3-s2 && npm run accept:e3-s3 && npm run accept:e4-s1 && npm run accept:e4-s2 && npm run accept:e4-s3",
+    "test:claude-isolation": "npx vitest run tests/acceptance/accept-claude-install-isolation.test.ts tests/acceptance/accept-claude-runtime-isolation.test.ts",
+    "test:bmad": "npx vitest run tests/acceptance/accept-bmad-*.test.ts tests/acceptance/accept-layer4-*.test.ts tests/acceptance/accept-commit-gate.test.ts tests/acceptance/accept-runtime.test.ts tests/acceptance/accept-checklists.test.ts tests/acceptance/accept-extensions.test.ts tests/acceptance/accept-install-consumer-cli.test.ts tests/acceptance/accept-init-package-json.test.ts",
     "coach:diagnose": "npx ts-node scripts/coach-diagnose.ts",
+    "verify:cursor-audit-granularity": "npx ts-node scripts/verify-cursor-audit-granularity.ts",
     "eval-questions": "npx ts-node scripts/eval-questions-cli.ts",
+    "build:scoring": "cd packages/scoring && npm run build",
+    "prepublishOnly": "npm run build:scoring",
     "speckit": "npx bmad-speckit",
-    "speckit:init": "npx bmad-speckit init"
+    "speckit:init": "npx bmad-speckit init",
+    "check": "npx bmad-speckit check"
   },
   "bin": {
     "bmad-speckit-init": "scripts/init-to-root.js",
@@ -38,19 +47,16 @@
   },
   "files": [
     "_bmad",
-    "_bmad-output",
-    "commands",
-    "rules",
-    "scripts",
-    "config",
-    "templates",
-    "workflows"
+    "scripts"
   ],
   "keywords": [
     "bmad",
     "speckit",
     "cursor",
     "workflow"
+  ],
+  "workspaces": [
+    "packages/*"
   ],
   "license": "MIT",
   "devDependencies": {
@@ -65,7 +71,8 @@
     "prettier": "^3.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "bmad-speckit": "file:packages/bmad-speckit"
   },
   "dependencies": {
     "ajv": "^8.18.0",

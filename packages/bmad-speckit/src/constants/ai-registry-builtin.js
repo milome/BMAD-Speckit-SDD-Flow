@@ -5,8 +5,8 @@
  * @type {Array<{ id: string, name: string, description: string, configTemplate: Record<string, unknown> }>}
  */
 module.exports = [
-  { id: 'cursor-agent', name: 'Cursor Agent', description: 'Cursor IDE built-in agent', configTemplate: { commandsDir: '.cursor/commands', rulesDir: '.cursor/rules', skillsDir: '~/.cursor/skills', agentsDir: '.cursor/agents', subagentSupport: 'native' } },
-  { id: 'claude', name: 'Claude', description: 'Anthropic Claude (Claude Code, Claude Desktop)', configTemplate: { commandsDir: '.claude/commands', rulesDir: '.claude/rules', skillsDir: '~/.claude/skills', agentsDir: '.claude/agents', subagentSupport: 'native' } },
+  { id: 'cursor-agent', name: 'Cursor Agent', description: 'Cursor IDE built-in agent', configTemplate: { commandsDir: '.cursor/commands', rulesDir: '.cursor/rules', skillsDir: '~/.cursor/skills', agentsDir: '.cursor/agents', subagentSupport: 'native', sourceDir: 'cursor', platformSkillsDir: '_bmad/cursor/skills', rulesFormat: 'mdc' } },
+  { id: 'claude', name: 'Claude', description: 'Anthropic Claude (Claude Code, Claude Desktop)', configTemplate: { commandsDir: '.claude/commands', rulesDir: '.claude/rules', skillsDir: '~/.claude/skills', agentsDir: '.claude/agents', subagentSupport: 'native', sourceDir: 'claude', platformSkillsDir: '_bmad/claude/skills', hooksDir: '.claude/hooks', protocolsDir: '.claude/protocols', rulesFormat: 'md' } },
   { id: 'gemini', name: 'Gemini', description: 'Google Gemini', configTemplate: { commandsDir: '.gemini/commands', skillsDir: '~/.gemini/commands', subagentSupport: 'limited' } },
   { id: 'copilot', name: 'Copilot', description: 'GitHub Copilot', configTemplate: { commandsDir: '.github/agents', subagentSupport: 'native' } },
   { id: 'qwen', name: 'Qwen', description: 'Alibaba Qwen / Tongyi', configTemplate: { commandsDir: '.qwen/commands', skillsDir: '~/.qwen/skills', subagentSupport: 'native' } },

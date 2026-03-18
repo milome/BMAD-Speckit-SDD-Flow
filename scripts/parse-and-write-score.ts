@@ -4,15 +4,15 @@
  * 用途：根据 reportPath 解析审计报告，经 veto/阶梯 后写入 RunScoreRecord。
  *
  * CLI 参数：--reportPath, --stage, --runId, --event, --skipTriggerCheck,
- * --sourceHashFilePath, --questionVersion, --scenario
+ * --sourceHashFilePath, --questionVersion, --scenario, --agent, --source
  *
  * 示例：npx ts-node scripts/parse-and-write-score.ts --reportPath path/to/report.md --stage prd --runId r1
  *
  * 退出码：0=成功，1=参数/校验错误，3=trigger 禁用
  */
-import { parseAndWriteScore } from '../scoring/orchestrator';
-import { shouldWriteScore } from '../scoring/trigger/trigger-loader';
-import type { AuditStage } from '../scoring/parsers';
+import { parseAndWriteScore } from '../packages/scoring/orchestrator';
+import { shouldWriteScore } from '../packages/scoring/trigger/trigger-loader';
+import type { AuditStage } from '../packages/scoring/parsers';
 
 /**
  * 解析命令行参数
@@ -83,6 +83,8 @@ async function main() {
   const sourceHashFilePath = args.sourceHashFilePath;
   const artifactDocPath = args.artifactDocPath;
   const event = args.event ?? 'user_explicit_request';
+  const agent = args.agent;
+  const source = args.source;
   const skipTriggerCheck = args.skipTriggerCheck === 'true';
   const triggerStage = args.triggerStage ?? stage;
   const questionVersion = args.questionVersion;
@@ -90,18 +92,31 @@ async function main() {
   const iterationCountParsed =
     iterationCountRaw != null ? parseInt(iterationCountRaw, 10) : undefined;
   const iterationCount =
-    iterationCountParsed != null && !isNaN(iterationCountParsed)
-      ? iterationCountParsed
-      : undefined;
+    iterationCountParsed != null && !isNaN(iterationCountParsed) ? iterationCountParsed : undefined;
 
   const iterationReportPathsRaw = args.iterationReportPaths;
   const iterationReportPaths: string[] =
     iterationReportPathsRaw != null && iterationReportPathsRaw.trim().length > 0
-      ? iterationReportPathsRaw.split(',').map((p) => p.trim()).filter(Boolean)
+      ? iterationReportPathsRaw
+          .split(',')
+          .map((p) => p.trim())
+          .filter(Boolean)
       : [];
 
   if (!reportPath) {
-    console.error('Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--event <event>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records');
+    console.error(
+      'Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records'
+    );
+    process.exit(1);
+  }
+
+  if (agent != null && !['cursor', 'claude-code'].includes(agent)) {
+    console.error(`Unsupported --agent value: ${agent}`);
+    process.exit(1);
+  }
+
+  if (source != null && !['cursor_command', 'claude_agent', 'claude_hook'].includes(source)) {
+    console.error(`Unsupported --source value: ${source}`);
     process.exit(1);
   }
 

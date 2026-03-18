@@ -15,7 +15,7 @@
 |--------|------------|----------|------|
 | T1 CLI 示例 | Phase 1.1 T1 或 §4.1 中显式写出 bmad-story-assistant 场景使用 bmad_story_stage4 | Phase 1.1 第 43 行：「含完整 CLI 示例（**须显式写出 `--triggerStage bmad_story_stage4`**，与 implement 的 speckit_5_2 区分）」 | ✅ **通过** |
 
-**批判审计员评述**：plan 在 Phase 1.1 T1 处已明确要求「须显式写出 `--triggerStage bmad_story_stage4`」，与 implement 的 speckit_5_2 区分清晰。实施时若 SKILL 文档中 CLI 示例未写入该参数，验收命令 `grep 步骤 4.2` 虽能通过，但无法自动校验参数完整性。建议：若 §6 验收命令能补充 `grep bmad_story_stage4 skills/bmad-story-assistant/SKILL.md` 则更严谨；但当前 plan 已满足「显式写出」要求，**判定通过**。
+**批判审计员评述**：plan 在 Phase 1.1 T1 处已明确要求「须显式写出 `--triggerStage bmad_story_stage4`」，与 implement 的 speckit_5_2 区分清晰。实施时若 SKILL 文档中 CLI 示例未写入该参数，验收命令 `grep 步骤 4.2` 虽能通过，但无法自动校验参数完整性。建议：若 §6 验收命令能补充 `grep bmad_story_stage4 .cursor/skills/bmad-story-assistant/SKILL.md` 则更严谨；但当前 plan 已满足「显式写出」要求，**判定通过**。
 
 ---
 

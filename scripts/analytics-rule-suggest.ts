@@ -6,13 +6,13 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
-import { clusterWeaknesses } from '../scoring/analytics/cluster-weaknesses';
+import { clusterWeaknesses } from '../packages/scoring/analytics/cluster-weaknesses';
 import {
   generateRuleSuggestions,
   formatRuleSuggestionsYaml,
-} from '../scoring/analytics/rule-suggestion';
-import type { RunScoreRecord } from '../scoring/writer/types';
-import type { WeaknessCluster } from '../scoring/analytics/cluster-weaknesses';
+} from '../packages/scoring/analytics/rule-suggestion';
+import type { RunScoreRecord } from '../packages/scoring/writer/types';
+import type { WeaknessCluster } from '../packages/scoring/analytics/cluster-weaknesses';
 
 function parseArgs(argv: string[]): Record<string, string> {
   const args: Record<string, string> = {};
@@ -73,9 +73,9 @@ function loadClusters(clustersPath: string): WeaknessCluster[] {
 
 function main(): void {
   const args = parseArgs(process.argv.slice(2));
-  const dataPath = args.dataPath ?? args.data ?? path.join(process.cwd(), 'scoring', 'data');
+  const dataPath = args.dataPath ?? args.data ?? path.join(process.cwd(), 'packages', 'scoring', 'data');
   const clustersPath = args.clustersPath ?? args.clusters;
-  const rulesDir = args.rulesDir ?? path.join(process.cwd(), 'scoring', 'rules');
+  const rulesDir = args.rulesDir ?? path.join(process.cwd(), 'packages', 'scoring', 'rules');
 
   const records = loadRecords(dataPath);
 

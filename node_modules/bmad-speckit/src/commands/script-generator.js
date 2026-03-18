@@ -6,13 +6,13 @@ const path = require('path');
 const fs = require('fs');
 const { writeFileWithEncoding, getPlatformEOL } = require('../utils/file-encoding');
 
-const SCRIPT_DIR_REL = path.join('_bmad', 'scripts', 'bmad-speckit');
+const SCRIPT_DIR_REL = path.join('_bmad', 'speckit', 'scripts');
 const SH_FILENAME = 'bmad-speckit.sh';
 const PS_FILENAME = 'bmad-speckit.ps1';
 
 /**
  * Path from script subdir to project root (for embedding in scripts).
- * Script lives at finalPath/_bmad/scripts/bmad-speckit/ so root is ../../..
+ * Script lives at finalPath/_bmad/speckit/scripts/ so root is ../../..
  * @returns {string} Relative path with forward slashes (e.g. '../../../').
  */
 function getRelToRootForSh() {
@@ -61,7 +61,7 @@ function buildPsContent(_finalPath) {
 
 /**
  * Ensure directory exists and write script file.
- * Creates _bmad/scripts/bmad-speckit/ and bmad-speckit.sh or bmad-speckit.ps1.
+ * Creates _bmad/speckit/scripts/ and bmad-speckit.sh or bmad-speckit.ps1.
  * @param {string} finalPath - Project root.
  * @param {'sh'|'ps'} scriptType - Script type to generate.
  * @returns {void}

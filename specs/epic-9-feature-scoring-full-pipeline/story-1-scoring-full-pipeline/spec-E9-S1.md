@@ -54,7 +54,7 @@
 
 | 项 | 规格 |
 |------|------|
-| 修改路径 | `skills/bmad-story-assistant/SKILL.md` 或 `~/.cursor/skills/bmad-story-assistant/SKILL.md`（项目内优先） |
+| 修改路径 | `.cursor/skills/bmad-story-assistant/SKILL.md` 或 `~/.cursor/skills/bmad-story-assistant/SKILL.md`（项目内优先） |
 | 修改位置 | 阶段四「审计结论处理」→「通过（A/B 级）」→「审计通过后评分写入触发」段落之前 |
 | 插入内容 | 步骤 4.2：运行 parse-and-write-score（强制） |
 | 验收 | 含「步骤 4.2」、完整 CLI 示例、报告路径模板 `AUDIT_Story_{epic}-{story}_stage4.md` |
@@ -166,7 +166,7 @@ npx ts-node scripts/parse-and-write-score.ts --reportPath <path> --stage tasks -
 
 | 模块 | 路径 | 修改内容 |
 |------|------|----------|
-| bmad-story-assistant | skills/bmad-story-assistant/SKILL.md | T1–T3、T5 流程修改 |
+| bmad-story-assistant | .cursor/skills/bmad-story-assistant/SKILL.md | T1–T3、T5 流程修改 |
 | scoring/writer | scoring/writer/types.ts | T4 trigger_stage 类型 |
 | scoring/schema | scoring/schema/run-score-schema.json | T4 schema 扩展 |
 | scoring/orchestrator | scoring/orchestrator/parse-and-write.ts | T4 triggerStage 透传 |

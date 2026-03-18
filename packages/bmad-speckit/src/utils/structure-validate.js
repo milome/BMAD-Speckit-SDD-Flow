@@ -1,16 +1,17 @@
 /**
  * Structure validation for _bmad root (PRD §5.5, Story 10.5)
  * Validates rootPath has at least two of: core/, cursor/, speckit/, skills/;
- * if cursor/ exists, it must contain commands/ and rules/.
+ * if cursor/ exists, it must contain rules/; commands may be in cursor/commands or shared commands/.
  */
 const fs = require('fs');
 const path = require('path');
 
 const REQUIRED_TOP_LEVEL = ['core', 'cursor', 'speckit', 'skills'];
-const CURSOR_REQUIRED = ['commands', 'rules'];
+const CURSOR_REQUIRED = ['rules'];
 
 /**
- * Validate _bmad root structure: at least two of core/cursor/speckit/skills; cursor must have commands/ and rules/.
+ * Validate _bmad root structure: at least two of core/cursor/speckit/skills; cursor must have rules/;
+ * commands must exist in either _bmad/commands (shared) or _bmad/cursor/commands.
  * @param {string} rootPath - Path to _bmad root (or shared bmad directory).
  * @returns {{ valid: boolean, missing: string[] }} Validation result; missing lists absent paths.
  */
@@ -46,6 +47,14 @@ function validateBmadStructure(rootPath) {
       if (!fs.existsSync(subPath) || !fs.statSync(subPath).isDirectory()) {
         missing.push(`cursor/${sub} missing`);
       }
+    }
+    // commands: accept either shared _bmad/commands or _bmad/cursor/commands
+    const hasSharedCommands = fs.existsSync(path.join(resolved, 'commands')) &&
+      fs.statSync(path.join(resolved, 'commands')).isDirectory();
+    const hasCursorCommands = fs.existsSync(path.join(cursorPath, 'commands')) &&
+      fs.statSync(path.join(cursorPath, 'commands')).isDirectory();
+    if (!hasSharedCommands && !hasCursorCommands) {
+      missing.push('cursor/commands missing (or shared commands/ at _bmad root)');
     }
   }
 

@@ -6,7 +6,6 @@
 #   -Target <path>  目标项目根目录（必须）
 #   -Full           完整模式
 #   -SkipSkills     跳过全局 Skills 安装
-#   -SkipScoring    跳过 scoring/ 复制
 #   -DryRun         仅输出计划
 #   -Help           显示帮助
 
@@ -24,7 +23,6 @@ show_help() {
     echo "  -Target <path>    Target project root (required)"
     echo "  -Full             Full install mode"
     echo "  -SkipSkills       Skip global Skills install"
-    echo "  -SkipScoring      Skip scoring/ copy"
     echo "  -DryRun           Plan only, no execution"
     echo "  -Help             Show help"
     exit 0
@@ -32,7 +30,6 @@ show_help() {
 
 TARGET=""
 SKIP_SKILLS=false
-SKIP_SCORING=false
 DRY_RUN=false
 FULL=false
 
@@ -40,7 +37,6 @@ while [[ $# -gt 0 ]]; do
     case $1 in
         -Target) TARGET="$2"; shift 2 ;;
         -SkipSkills) SKIP_SKILLS=true; shift ;;
-        -SkipScoring) SKIP_SCORING=true; shift ;;
         -DryRun) DRY_RUN=true; shift ;;
         -Full) FULL=true; shift ;;
         -Help|-h) show_help ;;
@@ -84,12 +80,7 @@ if [[ "$DRY_RUN" == "true" ]]; then
     else
         echo "  3. Skip Skills install"
     fi
-    if [[ "$SKIP_SCORING" != "true" ]]; then
-        echo "  5. Copy scoring/ -> $TARGET_RESOLVED/scoring/"
-    else
-        echo "  5. Skip scoring copy"
-    fi
-    echo "  6. Run validation"
+    echo "  5. Run validation"
     exit 0
 fi
 
@@ -117,31 +108,17 @@ else
     echo "[2] Skip Skills install"
 fi
 
-# Step 5: scoring copy
-if [[ "$SKIP_SCORING" != "true" ]]; then
-    SCORING_SRC="$PKG_ROOT/scoring"
-    SCORING_DEST="$TARGET_RESOLVED/scoring"
-    if [[ -d "$SCORING_SRC" ]]; then
-        echo "[3] Copy scoring/ -> $SCORING_DEST"
-        mkdir -p "$(dirname "$SCORING_DEST")"
-        cp -Rf "$SCORING_SRC" "$SCORING_DEST"
-    else
-        echo "[3] Skip scoring (source missing)"
-    fi
-else
-    echo "[3] Skip scoring copy"
-fi
-
-# Step 6: Verification
+# Step 5: Verification
 echo ""
 echo "=== Install Verification ==="
 
 CHECKS=(
+    "package.json:package.json with bmad-speckit"
     "_bmad/core/workflows/party-mode/workflow.md:Party-Mode workflow"
     "_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml:Create Story workflow"
     "_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml:Dev Story workflow"
     "_bmad/_config/agent-manifest.csv:Agent manifest"
-    "_bmad-output/config/settings.json:Worktree config"
+    "_bmad-output/config:_bmad-output/config dir"
     "commands/speckit.specify.md:speckit command"
     "commands/bmad-bmm-create-story.md:BMAD command"
     "rules/bmad-bug-auto-party-mode.mdc:rules"
@@ -149,7 +126,7 @@ CHECKS=(
     ".cursor/commands/speckit.specify.md:Cursor speckit command"
     ".cursor/commands/bmad-bmm-create-story.md:Cursor BMAD command"
     ".cursor/agents/code-reviewer-config.yaml:Cursor Code Reviewer"
-    "config/code-reviewer-config.yaml:Code Reviewer config"
+    "_bmad/_config/code-reviewer-config.yaml:Code Reviewer config"
     "templates/spec-template.md:Spec template"
     "workflows/specify.md:Specify workflow"
 )

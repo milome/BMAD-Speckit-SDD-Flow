@@ -25,8 +25,15 @@ const { initCommand, showBanner } = require('../src/commands/init');
 const { checkCommand } = require('../src/commands/check');
 const { versionCommand } = require('../src/commands/version');
 const { upgradeCommand } = require('../src/commands/upgrade');
+const { addAgentCommand } = require('../src/commands/add-agent');
 const { configGetCommand, configSetCommand, configListCommand } = require('../src/commands/config');
 const { feedbackCommand } = require('../src/commands/feedback');
+const { scoreCommand } = require('../src/commands/score');
+const { checkScoreCommand } = require('../src/commands/check-score');
+const { coachCommand } = require('../src/commands/coach');
+const { dashboardCommand } = require('../src/commands/dashboard');
+const { sftExtractCommand } = require('../src/commands/sft-extract');
+const { scoresCommand } = require('../src/commands/scores');
 const ttyUtils = require('../src/utils/tty');
 
 // Show banner for init (including init --help) when in TTY
@@ -43,7 +50,7 @@ program
   .command('init [project-name]')
   .description('Initialize a new bmad-speckit project')
   .option('--here', 'Use current directory')
-  .option('--ai <name>', 'Non-interactive AI selection (skip selector)')
+  .option('--ai <name>', 'AI selection, comma-separated for multi (e.g. cursor-agent,claude)')
   .option('--ai-commands-dir <path>', 'Commands directory for generic AI (required when --ai generic)')
   .option('-y, --yes', 'Skip all prompts, use defaults')
   .option('--template <tag|url>', 'Template version (latest, v1.0.0) or tarball URL')
@@ -97,6 +104,11 @@ program
   );
 
 program
+  .command('add-agent <ai>')
+  .description('Add AI agent infrastructure to an initialized project (e.g. bmad-speckit add-agent claude)')
+  .action((ai) => addAgentCommand(ai, { cwd: process.cwd() }));
+
+program
   .command('feedback')
   .description('Show feedback entry and full-flow compatible AI list')
   .action(() => feedbackCommand());
@@ -128,5 +140,92 @@ configCmd
   .action((opts) => {
     configListCommand(process.cwd(), { json: opts.json });
   });
+
+program
+  .command('score')
+  .description('Parse audit report and write scoring record')
+  .requiredOption('--reportPath <path>', 'Path to audit report file')
+  .option('--stage <stage>', 'Audit stage (prd|arch|story|spec|plan|gaps|tasks|implement)', 'prd')
+  .option('--runId <id>', 'Run ID (auto-generated if omitted)')
+  .option('--epic <n>', 'Epic number')
+  .option('--story <n>', 'Story number')
+  .option('--event <event>', 'Trigger event', 'user_explicit_request')
+  .option('--scenario <scenario>', 'Scenario (real_dev|eval_question)', 'real_dev')
+  .option('--writeMode <mode>', 'Write mode (single_file|jsonl|both)', 'single_file')
+  .option('--dataPath <path>', 'Scoring data directory')
+  .option('--triggerStage <stage>', 'Trigger stage override')
+  .option('--iteration-count <n>', 'Audit iteration fail count')
+  .option('--iterationReportPaths <paths>', 'Comma-separated failed iteration report paths')
+  .option('--artifactDocPath <path>', 'Artifact document path')
+  .option('--questionVersion <ver>', 'Question version')
+  .option('--skipTriggerCheck', 'Skip trigger check')
+  .option('--baseCommitHash <hash>', 'Base commit hash')
+  .option('--sourceHashFilePath <path>', 'Source hash file path')
+  .option('--agent <agent>', 'Agent type (cursor|claude-code)')
+  .option('--source <source>', 'Source type (cursor_command|claude_agent|claude_hook)')
+  .action((opts) => {
+    scoreCommand(opts).catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
+  });
+
+program
+  .command('check-score')
+  .description('Check if epic/story has scoring records')
+  .requiredOption('--epic <n>', 'Epic number')
+  .requiredOption('--story <n>', 'Story number')
+  .option('--dataPath <path>', 'Scoring data directory')
+  .option('--stage <stage>', 'Stage filter (story|implement)')
+  .action((opts) => checkScoreCommand(opts));
+
+program
+  .command('coach')
+  .description('AI Coach diagnosis')
+  .option('--run-id <id>', 'Run ID')
+  .option('--format <format>', 'Output format (json|markdown)', 'markdown')
+  .option('--epic <n>', 'Epic number')
+  .option('--story <x.y>', 'Story X.Y')
+  .option('--limit <n>', 'Discovery limit', String(100))
+  .option('--scenario <scenario>', 'Scenario filter (real_dev|eval_question|all)', 'real_dev')
+  .option('--dataPath <path>', 'Scoring data directory')
+  .action((opts) => {
+    coachCommand(opts).catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
+  });
+
+program
+  .command('dashboard')
+  .description('Generate project health dashboard')
+  .option('--strategy <strategy>', 'Strategy (epic_story_window|run_id)', 'epic_story_window')
+  .option('--dataPath <path>', 'Scoring data directory')
+  .option('--epic <n>', 'Epic number')
+  .option('--story <x.y>', 'Story number')
+  .option('--windowHours <n>', 'Window hours for aggregation')
+  .action((opts) => dashboardCommand(opts));
+
+program
+  .command('sft-extract')
+  .description('Extract SFT training dataset from scoring data')
+  .option('--threshold <n>', 'Score threshold (default: 60)')
+  .option('--output <path>', 'Output file path')
+  .option('--dataPath <path>', 'Scoring data directory')
+  .action((opts) => {
+    sftExtractCommand(opts).catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
+  });
+
+program
+  .command('scores')
+  .description('Display scoring summary')
+  .option('--epic <n>', 'Epic number')
+  .option('--story <x.y>', 'Story X.Y')
+  .option('--dataPath <path>', 'Scoring data directory')
+  .option('--limit <n>', 'Max records to display', String(100))
+  .action((opts) => scoresCommand(opts));
 
 program.parse();

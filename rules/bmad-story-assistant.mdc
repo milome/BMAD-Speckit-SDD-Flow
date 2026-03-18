@@ -1,9 +1,0 @@
----
-description: 使用 bmad-story-assistant 技能时，发起子任务前必须完成自检并输出自检结果
-globs: 
-alwaysApply: false
----
-
-# BMAD Story 助手——自检后发起
-
-当使用 **bmad-story-assistant** 技能且即将调用 **mcp_task** 或 **Cursor Task** 发起子任务时，必须先完成该阶段「发起前自检清单」全部项并在发起前**输出自检结果**（格式见技能「主 Agent 传递提示词规则」）；禁止在未完成自检或未输出自检结果的情况下发起子任务。

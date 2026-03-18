@@ -6,8 +6,8 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
-import { clusterWeaknesses } from '../scoring/analytics/cluster-weaknesses';
-import type { RunScoreRecord } from '../scoring/writer/types';
+import { clusterWeaknesses } from '../packages/scoring/analytics/cluster-weaknesses';
+import type { RunScoreRecord } from '../packages/scoring/writer/types';
 
 function parseArgs(argv: string[]): Record<string, string> {
   const args: Record<string, string> = {};

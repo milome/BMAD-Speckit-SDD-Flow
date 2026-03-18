@@ -8,7 +8,7 @@ import {
   queryByEpic,
   queryByStory,
   queryLatest,
-} from '../scoring/query';
+} from '../packages/scoring/query';
 
 function main() {
   const dataPath = process.env.SCORING_DATA_PATH ?? resolveDataPathFromArgs();

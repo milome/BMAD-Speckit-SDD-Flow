@@ -85,6 +85,8 @@ Welcome {{user_name}}! All BMAD agents are here and ready for a dynamic group di
 
 **What would you like to discuss with the team today?**"
 
+> **发言格式（强制）**：整个 party-mode 会话期间，每轮每位角色发言**必须**使用格式 `[Icon Emoji] **[展示名]**: [发言内容]`。Icon 与展示名取自 `_bmad/_config/agent-manifest.csv`，禁止省略。详见 `steps/step-02-discussion-orchestration.md` 的 Response Structure。
+
 ### Agent Selection Intelligence
 
 For each user message or topic:
@@ -108,7 +110,7 @@ Load step: `./steps/step-02-discussion-orchestration.md`
 
 **Decision / root-cause sessions:** When the topic is multi-option choice or root-cause/design debate, apply the min-rounds and convergence rules in step-02 (100 rounds for final-solution+task-list output, 50 rounds for other scenarios; show [E] only after consensus and no new gaps for 2–3 rounds).
 
-> **角色参考**: [批判审计员详细操作指南](../../agents/critical-auditor-guide.md) - Party Mode 中的专职挑战者角色，负责质疑假设、发现 gaps、挑战共识
+> **角色参考**: [批判审计员详细操作指南]({project-root}/_bmad/core/agents/critical-auditor-guide.md) - Party Mode 中的专职挑战者角色，负责质疑假设、发现 gaps、挑战共识
 
 ---
 
