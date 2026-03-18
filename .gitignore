@@ -88,6 +88,18 @@ docs/fixes/
 docs/PR/
 docs/plans/
 
+# Test story generated code (temporary, not part of project source)
+src/story-assistant-validation/
+src/story-workflow/
+src/string-formatter.ts
+src/string-utils.ts
+src/utils/config-reader.ts
+src/utils/config-reader.test.ts
+test/
+tests/story-assistant-validation/
+tests/story-workflow/
+tests/string-formatter.test.ts
+
 # Worktrees
 .worktrees/
 .claude/worktrees/
