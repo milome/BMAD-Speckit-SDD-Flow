@@ -7,34 +7,16 @@
     "bmad-speckit": "bin/bmad-speckit.js"
   },
   "scripts": {
-    "test": "node --test tests/ 2>/dev/null || echo 'No tests yet'",
-    "prepublishOnly": "node ../../scripts/prepublish-check.js"
+    "test": "node --test tests/ 2>/dev/null || echo 'No tests yet'"
   },
   "keywords": ["bmad", "speckit", "sdd", "init"],
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/milome/BMAD-Speckit-SDD-Flow.git",
-    "directory": "packages/bmad-speckit"
-  },
-  "homepage": "https://github.com/milome/BMAD-Speckit-SDD-Flow#readme",
-  "bugs": "https://github.com/milome/BMAD-Speckit-SDD-Flow/issues",
-  "publishConfig": {
-    "access": "public"
-  },
-  "files": [
-    "bin/",
-    "src/"
-  ],
   "engines": {
     "node": ">=18.0.0"
   },
   "devDependencies": {
     "nock": "^15.0.0"
   },
-  "bundleDependencies": [
-    "@bmad-speckit/scoring"
-  ],
   "dependencies": {
     "@bmad-speckit/scoring": "file:../scoring",
     "ajv": "^8.18.0",
