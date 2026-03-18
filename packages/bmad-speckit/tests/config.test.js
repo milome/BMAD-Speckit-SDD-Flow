@@ -244,13 +244,18 @@ describe('T3: config set and scope rules', () => {
   it('config set single key preserves other keys (T3.4)', () => {
     const tmpDir = path.join(os.tmpdir(), `config-set-merge-${Date.now()}`);
     const configDir = path.join(tmpDir, '_bmad-output', 'config');
+    const fakeHome = path.join(tmpDir, 'fakeHome');
     fs.mkdirSync(configDir, { recursive: true });
+    fs.mkdirSync(fakeHome, { recursive: true });
     fs.writeFileSync(
       path.join(configDir, 'bmad-speckit.json'),
       JSON.stringify({ selectedAI: 'cursor-agent' }),
       'utf8'
     );
-    const r = runConfigSet('defaultAI', 'bob', [], tmpDir);
+    const r = runConfigSet('defaultAI', 'bob', [], tmpDir, {
+      USERPROFILE: fakeHome,
+      HOME: fakeHome,
+    });
     try {
       assert.strictEqual(r.status, 0);
       const cfg = JSON.parse(fs.readFileSync(path.join(configDir, 'bmad-speckit.json'), 'utf8'));

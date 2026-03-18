@@ -188,7 +188,8 @@ describe('T4: Claude adapted bmad-code-reviewer-lifecycle skill', () => {
     const agentFile = '.claude/agents/layers/bmad-code-reviewer-lifecycle.md';
     if (existsSync(agentFile)) {
       const agentContent = readFileSync(agentFile, 'utf8');
-      const cursorRefs = agentContent.match(/\.cursor\/skills\/bmad-code-reviewer-lifecycle/g) || [];
+      const cursorRefs =
+        agentContent.match(/\.cursor\/skills\/bmad-code-reviewer-lifecycle/g) || [];
       expect(cursorRefs.length).toBe(0);
     }
   });
@@ -354,7 +355,9 @@ describe('T6: Claude adapted bmad-standalone-tasks skill', () => {
 
   it('preserves FR20a: main Agent cannot edit production code', () => {
     const content = readFileSync(skillPath, 'utf8');
-    expect(content).toMatch(/主\s*Agent\s*禁止.*直接.*生产代码|禁止直接.*改.*生产代码|禁止.*直接编辑生产代码/);
+    expect(content).toMatch(
+      /主\s*Agent\s*禁止.*直接.*生产代码|禁止直接.*改.*生产代码|禁止.*直接编辑生产代码/
+    );
   });
 
   it('preserves TDD and ralph-method constraints (FR15a)', () => {
@@ -485,7 +488,8 @@ describe('T7: Claude adapted bmad-standalone-tasks-doc-review skill', () => {
     const agentFile = '.claude/agents/auditors/auditor-tasks-doc.md';
     if (existsSync(agentFile)) {
       const agentContent = readFileSync(agentFile, 'utf8');
-      const cursorRefs = agentContent.match(/\.cursor\/skills\/bmad-standalone-tasks-doc-review/g) || [];
+      const cursorRefs =
+        agentContent.match(/\.cursor\/skills\/bmad-standalone-tasks-doc-review/g) || [];
       expect(cursorRefs.length).toBe(0);
     }
   });
@@ -708,23 +712,27 @@ describe('T10: CI verification script verify-skill-architecture.sh', () => {
     expect(content).toMatch(/bash/);
   });
 
-  it('checks directory counts (skills/=7, .cursor/skills/=8, .claude/skills/=8)', () => {
+  it('checks directory counts using public + adapter skill totals, not legacy adapter-only totals', () => {
     const content = readFileSync(scriptPath, 'utf8');
-    expect(content).toContain('skills/');
-    expect(content).toContain('.cursor/skills/');
-    expect(content).toContain('.claude/skills/');
-    expect(content).toMatch(/7|seven/i);
-    expect(content).toMatch(/8|eight/i);
+    expect(content).toContain('PUBLIC_SKILLS');
+    expect(content).toContain('CURSOR_SKILLS');
+    expect(content).toContain('expected_cursor_total');
+    expect(content).toContain('expected_claude_total');
+    expect(content).not.toContain('.cursor/skills/=8');
+    expect(content).not.toContain('.claude/skills/=8');
   });
 
-  it('checks for bare reference residuals', () => {
+  it('checks for bare reference residuals while supporting explicit exclusions', () => {
     const content = readFileSync(scriptPath, 'utf8');
     expect(content).toMatch(/bare|裸引用|裸.*引用/i);
+    expect(content).toMatch(/grep -v|exclude/i);
   });
 
-  it('checks backmigration residuals (.claude/ with .cursor/skills/ refs)', () => {
+  it('checks backmigration residuals (.claude/ with .cursor/skills/ refs) while allowing only documented legacy exceptions', () => {
     const content = readFileSync(scriptPath, 'utf8');
     expect(content).toMatch(/backmigrat|回迁|residual|残留/i);
+    expect(content).toMatch(/grep -v|exclude/i);
+    expect(content).toContain('bmad-customization-backup');
   });
 
   it('checks platform keyword isolation', () => {
@@ -822,8 +830,9 @@ describe('T12: general-purpose subagent_type across all .claude/skills/', () => 
   const claudeSkillsDir = '.claude/skills';
 
   it('no SKILL.md under .claude/skills/ uses generalPurpose as subagent_type', () => {
-    const skillDirs = readdirSync(claudeSkillsDir, { withFileTypes: true })
-      .filter(d => d.isDirectory());
+    const skillDirs = readdirSync(claudeSkillsDir, { withFileTypes: true }).filter((d) =>
+      d.isDirectory()
+    );
     for (const dir of skillDirs) {
       const skillFile = `${claudeSkillsDir}/${dir.name}/SKILL.md`;
       if (!existsSync(skillFile)) continue;
@@ -831,14 +840,15 @@ describe('T12: general-purpose subagent_type across all .claude/skills/', () => 
       const matches = content.match(/\bgeneralPurpose\b/g) || [];
       expect(
         matches.length,
-        `${skillFile} still contains ${matches.length} generalPurpose references`,
+        `${skillFile} still contains ${matches.length} generalPurpose references`
       ).toBe(0);
     }
   });
 
   it('skills that use subagent_type specify general-purpose', () => {
-    const skillDirs = readdirSync(claudeSkillsDir, { withFileTypes: true })
-      .filter(d => d.isDirectory());
+    const skillDirs = readdirSync(claudeSkillsDir, { withFileTypes: true }).filter((d) =>
+      d.isDirectory()
+    );
     const skillsWithSubagent: string[] = [];
     for (const dir of skillDirs) {
       const skillFile = `${claudeSkillsDir}/${dir.name}/SKILL.md`;

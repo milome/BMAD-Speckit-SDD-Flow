@@ -9,11 +9,13 @@
     "format:check": "prettier --check \"packages/scoring/**/*.ts\" \"scripts/**/*.ts\" \"tests/**/*.ts\" \"vitest.config.ts\"",
     "postinstall": "node scripts/init-to-root.js",
     "init": "node scripts/init-to-root.js",
+    "init:claude": "node scripts/init-to-root.js --agent claude-code",
     "setup": "pwsh scripts/setup.ps1",
     "setup:sh": "bash scripts/setup.sh",
     "setup:full": "pwsh scripts/setup.ps1 -Full",
     "setup:full:sh": "bash scripts/setup.sh -Full",
     "test": "vitest run && npm run test:bmad-speckit",
+    "test:ci": "npm run init:claude && vitest run && npm run test:bmad-speckit",
     "test:scoring": "vitest run packages/scoring",
     "test:bmad-speckit": "cd packages/bmad-speckit && node --test tests/",
     "accept:e1-s1": "npx ts-node tests/epic-acceptance/accept-e1-s1.ts",
@@ -35,7 +37,8 @@
     "build:scoring": "cd packages/scoring && npm run build",
     "prepublishOnly": "npm run build:scoring",
     "speckit": "npx bmad-speckit",
-    "speckit:init": "npx bmad-speckit init"
+    "speckit:init": "npx bmad-speckit init",
+    "check": "npx bmad-speckit check"
   },
   "bin": {
     "bmad-speckit-init": "scripts/init-to-root.js",
@@ -52,7 +55,9 @@
     "cursor",
     "workflow"
   ],
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "license": "MIT",
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
@@ -66,7 +71,8 @@
     "prettier": "^3.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "bmad-speckit": "file:packages/bmad-speckit"
   },
   "dependencies": {
     "ajv": "^8.18.0",

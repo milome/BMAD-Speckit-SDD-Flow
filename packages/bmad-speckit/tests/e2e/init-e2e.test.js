@@ -20,8 +20,10 @@ function runInit(args = [], cwd = ROOT, env = undefined) {
   return spawnSync('node', [BIN, 'init', ...args], opts);
 }
 
-function runCheck(cwd = ROOT) {
-  return spawnSync('node', [BIN, 'check'], { cwd, encoding: 'utf8', timeout: 5000 });
+function runCheck(cwd = ROOT, env = undefined) {
+  const opts = { cwd, encoding: 'utf8', timeout: 5000 };
+  if (env) opts.env = { ...process.env, ...env };
+  return spawnSync('node', [BIN, 'check'], opts);
 }
 
 function runGrep(pattern, filePath) {
@@ -380,12 +382,20 @@ function testE10S5CheckFail() {
   fs.mkdirSync(path.join(sharedBmad, 'cursor', 'rules'), { recursive: true });
   const projectDir = path.join(tmpDir, 'proj');
   fs.mkdirSync(projectDir, { recursive: true });
-  runInit(['.', '--bmad-path', sharedBmad, '--ai', 'cursor-agent', '--yes', '--no-git'], projectDir);
+  const isolatedHome = path.join(tmpDir, 'home');
+  fs.mkdirSync(isolatedHome, { recursive: true });
+  runInit(['.', '--bmad-path', sharedBmad, '--ai', 'cursor-agent', '--yes', '--no-git'], projectDir, {
+    HOME: isolatedHome,
+    USERPROFILE: isolatedHome,
+  });
   const configPath = path.join(projectDir, '_bmad-output', 'config', 'bmad-speckit.json');
   let config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
   config.bmadPath = path.join(tmpDir, 'nonexistent_path');
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
-  const r = runCheck(projectDir);
+  const r = runCheck(projectDir, {
+    HOME: isolatedHome,
+    USERPROFILE: isolatedHome,
+  });
   try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
   return r.status === 4;
 }
@@ -517,9 +527,17 @@ function testE12S2OpencodeWorktree() {
   fs.writeFileSync(path.join(genericCmds, 'x.cmd'), 'x');
   const projectDir = path.join(tmpDir, 'proj');
   fs.mkdirSync(projectDir, { recursive: true });
-  const r = runInit(['.', '--bmad-path', sharedBmad, '--ai', 'opencode', '--yes', '--no-git'], projectDir);
+  const isolatedHome = path.join(tmpDir, 'home');
+  fs.mkdirSync(isolatedHome, { recursive: true });
+  const r = runInit(['.', '--bmad-path', sharedBmad, '--ai', 'opencode', '--yes', '--no-git'], projectDir, {
+    HOME: isolatedHome,
+    USERPROFILE: isolatedHome,
+  });
   const hasOpenencodeCommand = fs.existsSync(path.join(projectDir, '.opencode', 'command'));
-  const checkR = runCheck(projectDir);
+  const checkR = runCheck(projectDir, {
+    HOME: isolatedHome,
+    USERPROFILE: isolatedHome,
+  });
   try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
   return r.status === 0 && hasOpenencodeCommand && checkR.status === 0;
 }
@@ -536,9 +554,17 @@ function testE12S2BobWorktree() {
   fs.writeFileSync(path.join(genericCmds, 'placeholder.md'), '# placeholder');
   const projectDir = path.join(tmpDir, 'proj');
   fs.mkdirSync(projectDir, { recursive: true });
-  const r = runInit(['.', '--bmad-path', sharedBmad, '--ai', 'bob', '--yes', '--no-git'], projectDir);
+  const isolatedHome = path.join(tmpDir, 'home');
+  fs.mkdirSync(isolatedHome, { recursive: true });
+  const r = runInit(['.', '--bmad-path', sharedBmad, '--ai', 'bob', '--yes', '--no-git'], projectDir, {
+    HOME: isolatedHome,
+    USERPROFILE: isolatedHome,
+  });
   const hasBobCommands = fs.existsSync(path.join(projectDir, '.bob', 'commands'));
-  const checkR = runCheck(projectDir);
+  const checkR = runCheck(projectDir, {
+    HOME: isolatedHome,
+    USERPROFILE: isolatedHome,
+  });
   try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
   return r.status === 0 && hasBobCommands && checkR.status === 0;
 }
@@ -734,12 +760,20 @@ function testE12S2CheckBmadPathFail() {
   fs.mkdirSync(path.join(sharedBmad, 'cursor', 'rules'), { recursive: true });
   const projectDir = path.join(tmpDir, 'proj');
   fs.mkdirSync(projectDir, { recursive: true });
-  runInit(['.', '--bmad-path', sharedBmad, '--ai', 'cursor-agent', '--yes', '--no-git'], projectDir);
+  const isolatedHome = path.join(tmpDir, 'home');
+  fs.mkdirSync(isolatedHome, { recursive: true });
+  runInit(['.', '--bmad-path', sharedBmad, '--ai', 'cursor-agent', '--yes', '--no-git'], projectDir, {
+    HOME: isolatedHome,
+    USERPROFILE: isolatedHome,
+  });
   const configPath = path.join(projectDir, '_bmad-output', 'config', 'bmad-speckit.json');
   const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
   config.bmadPath = path.join(tmpDir, 'nonexistent_path');
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
-  const r = runCheck(projectDir);
+  const r = runCheck(projectDir, {
+    HOME: isolatedHome,
+    USERPROFILE: isolatedHome,
+  });
   try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
   return r.status === 4;
 }

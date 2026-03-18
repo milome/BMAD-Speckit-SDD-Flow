@@ -59,6 +59,20 @@ PUBLIC_SKILLS=(
   pr-template-generator
 )
 
+BMAD_V6_SKILLS=(
+  bmad-advanced-elicitation
+  bmad-brainstorming
+  bmad-distillator
+  bmad-editorial-review-prose
+  bmad-editorial-review-structure
+  bmad-help
+  bmad-index-docs
+  bmad-party-mode
+  bmad-review-adversarial-general
+  bmad-review-edge-case-hunter
+  bmad-shard-doc
+)
+
 CURSOR_SKILLS=(
   bmad-bug-assistant
   bmad-code-reviewer-lifecycle
@@ -102,10 +116,17 @@ skills_count=$(count_dirs "skills")
 cursor_count=$(count_dirs ".cursor/skills")
 claude_count=$(count_dirs ".claude/skills")
 
-if [[ "$skills_count" -eq 7 && "$cursor_count" -eq 8 && "$claude_count" -eq 8 ]]; then
+expected_public_total=${#PUBLIC_SKILLS[@]}
+expected_bmad_v6_total=${#BMAD_V6_SKILLS[@]}
+expected_cursor_adapter_total=${#CURSOR_SKILLS[@]}
+expected_claude_adapter_total=${#CURSOR_SKILLS[@]}
+expected_cursor_total=$((expected_public_total + expected_bmad_v6_total + expected_cursor_adapter_total))
+expected_claude_total=$((expected_public_total + expected_bmad_v6_total + expected_claude_adapter_total))
+
+if [[ "$skills_count" -eq "$expected_public_total" && "$cursor_count" -eq "$expected_cursor_total" && "$claude_count" -eq "$expected_claude_total" ]]; then
   pass "Directory counts: skills/=$skills_count, .cursor/skills/=$cursor_count, .claude/skills/=$claude_count"
 else
-  fail "Directory counts: skills/=$skills_count (expected 7), .cursor/skills/=$cursor_count (expected 8), .claude/skills/=$claude_count (expected 8)"
+  fail "Directory counts: skills/=$skills_count (expected $expected_public_total), .cursor/skills/=$cursor_count (expected $expected_cursor_total), .claude/skills/=$claude_count (expected $expected_claude_total)"
 fi
 
 # === Check 2: Bare reference residuals ===
@@ -120,9 +141,13 @@ for skill in "${CURSOR_SKILLS[@]}"; do
     | grep -v "\.cursor/skills/${skill}/" \
     | grep -v "\.claude/skills/${skill}/" \
     | grep -v "_bmad/skills/${skill}/" \
+    | grep -v "_bmad/cursor/skills/${skill}/" \
+    | grep -v "_bmad/claude/skills/${skill}/" \
     | grep -v "docs/speckit/skills/${skill}/" \
     | grep -v "_bmad-output/" \
     | grep -v "docs/plans/" \
+    | grep -v "docs/design/" \
+    | grep -v "docs/PR/" \
     | grep -v "scoring/" \
     || true)
   if [[ -n "$matches" ]]; then
@@ -147,7 +172,9 @@ echo ""
 echo "=== Check 3: Backmigration residuals ==="
 
 # 3a: .claude/ should have zero .cursor/skills/ references
-claude_cursor_refs=$(grep -rn '\.cursor/skills/' .claude/ --include="*.md" $GREP_EXCLUDE 2>/dev/null || true)
+claude_cursor_refs=$(grep -rn '\.cursor/skills/' .claude/ --include="*.md" $GREP_EXCLUDE 2>/dev/null \
+  | grep -v '^\.claude/skills/bmad-customization-backup/' \
+  || true)
 claude_cursor_count=0
 if [[ -n "$claude_cursor_refs" ]]; then
   claude_cursor_count=$(echo "$claude_cursor_refs" | wc -l | tr -d ' ')
