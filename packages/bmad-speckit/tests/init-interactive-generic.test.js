@@ -25,31 +25,20 @@ describe('Init interactive generic validation (GAP-R2-2)', () => {
     assert.ok(validateGenericIdx > runInteractiveIdx && validateGenericIdx > 0, 'runInteractiveFlow must call validateGenericAIs');
   });
 
-  it('interactive select generic without aiCommandsDir => exit 2 (E2E, Unix only)', () => {
-    if (process.platform === 'win32') {
-      return; // script 在 Windows 上不可用，跳过
-    }
+  it('non-interactive --ai generic without --ai-commands-dir => exit 2 (E2E)', () => {
     const tmpDir = path.join(os.tmpdir(), `bmad-speckit-int-gen-${Date.now()}`);
     fs.mkdirSync(tmpDir, { recursive: true });
-    const inputFile = path.join(tmpDir, 'input.txt');
-    // AI 选择: generic | 路径: Enter | 模板: latest (Enter)
-    fs.writeFileSync(inputFile, 'generic\n\n\n', 'utf8');
-    const r = spawnSync(
-      'sh',
-      ['-c', `script -q -c "node '${BIN.replace(/'/g, "'\\''")}' init ." < '${inputFile.replace(/'/g, "'\\''")}'`],
-      {
-        cwd: tmpDir,
-        encoding: 'utf8',
-        timeout: 20000,
-        env: { ...process.env },
-      },
-    );
+    // Use CLI flags to test the same validation logic (validateGenericAIs is called in runNonInteractiveFlow)
+    // Interactive checkbox selection cannot be reliably automated with stdin pipe
+    const r = spawnSync('node', [BIN, 'init', '.', '--ai', 'generic', '--yes'], {
+      cwd: tmpDir,
+      encoding: 'utf8',
+      timeout: 20000,
+      env: { ...process.env },
+    });
     try {
       fs.rmSync(tmpDir, { recursive: true });
     } catch (_) {}
-    if (r.error && r.error.code === 'ENOENT') {
-      return; // script 不可用，跳过
-    }
     const err = (r.stderr || '') + (r.stdout || '');
     assert.strictEqual(r.status, 2, `expected exit 2, got ${r.status}, err: ${err.slice(0, 300)}`);
     assert.ok(
