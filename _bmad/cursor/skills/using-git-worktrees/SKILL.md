@@ -68,9 +68,31 @@ def determine_worktree_strategy(epic):
 
 ## Directory Selection Process
 
+**Preferred creation path:** Use repository-native Speckit/BMAD scripts to create branches and worktrees when they exist. Use raw `git worktree add` only as a fallback.
+
 **worktree 与项目根平级**：路径为 `{父目录}/{repo名}-{branch}`，其中 `{repo名}` = 主 repo 目录名（由 `git rev-parse --show-toplevel` 的 basename 获取），`{父目录}` = 主 repo 的父目录（如 `D:\Dev\`）。可由 `REPO_NAME` 环境变量覆盖。无需在项目内选择目录。
 
-### 1. 获取 worktree 路径
+### 1. 优先查找仓库内 Speckit/BMAD 脚本
+
+按顺序查找以下脚本；找到即可优先使用：
+
+```bash
+# Preferred worktree script locations
+_bmad/scripts/bmad-speckit/powershell/setup_worktree.ps1
+specs/000-Overview/.specify/scripts/powershell/setup_worktree.ps1
+
+# Preferred branch/spec bootstrap script
+_bmad/scripts/bmad-speckit/powershell/create-new-feature.ps1
+specs/000-Overview/.specify/scripts/powershell/create-new-feature.ps1
+```
+
+**If found:**
+- 优先用 `create-new-feature.ps1` 负责 branch/spec 初始化（如果该项目流程需要）
+- 优先用 `setup_worktree.ps1 create <branch>` 负责 worktree 创建
+- 不要先手写 `git worktree add`，除非脚本不存在或无法适配当前仓库
+- **重要约束**：脚本优先只是在固化 branch/worktree 创建方式，**不保证** worktree 下构建、测试、Vitest、Pytest、IDE 索引或其他工具行为与主 repo 完全一致；创建完成后仍必须执行 baseline verification
+
+### 2. 获取 worktree 路径
 
 ```bash
 # 获取 repo 根目录
@@ -83,7 +105,7 @@ repo_name=$(basename "$repo_root")
 worktree_path="$worktree_base/$repo_name-$BRANCH_NAME"
 ```
 
-### 2. Check CLAUDE.md（可选）
+### 3. Check CLAUDE.md（可选）
 
 ```bash
 grep -i "worktree.*director" CLAUDE.md 2>/dev/null
@@ -168,16 +190,23 @@ project=$(basename "$(git rev-parse --show-toplevel)")
 ### 2. Create Worktree
 
 ```bash
-# worktree 与项目根平级: {父目录}/{repo名}-{branch}
+# Preferred: use repository-native Speckit/BMAD scripts when available
+# 1) If create-new-feature.ps1 is the repo's branch/spec bootstrap, use it to create branch/spec state first
+# 2) Then use setup_worktree.ps1 create <branch> to create the worktree at the sibling path
+
+# Fallback only when no suitable script exists:
 repo_root=$(git rev-parse --show-toplevel)
 worktree_base=$(dirname "$repo_root")
 repo_name=$(basename "$repo_root")
 path="$worktree_base/$repo_name-$BRANCH_NAME"
-
-# Create worktree with new branch
 git worktree add "$path" -b "$BRANCH_NAME"
 cd "$path"
 ```
+
+**Priority order:**
+1. `create-new-feature.ps1` + `setup_worktree.ps1`
+2. `setup_worktree.ps1` directly
+3. Raw `git worktree add` fallback
 
 ### 3. Run Project Setup
 

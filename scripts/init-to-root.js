@@ -216,7 +216,14 @@ function countFiles(dirPath) {
   let n = 0;
   for (const name of fs.readdirSync(dirPath)) {
     const p = path.join(dirPath, name);
-    n += fs.statSync(p).isDirectory() ? countFiles(p) : 1;
+    let stat;
+    try {
+      stat = fs.statSync(p);
+    } catch (err) {
+      if (err && err.code === 'ENOENT') continue;
+      throw err;
+    }
+    n += stat.isDirectory() ? countFiles(p) : 1;
   }
   return n;
 }
