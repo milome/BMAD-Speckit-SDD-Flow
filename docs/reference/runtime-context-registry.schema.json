@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "runtime-context-registry.schema.json",
+  "title": "Runtime Context Registry",
+  "type": "object",
+  "required": [
+    "version",
+    "projectRoot",
+    "sources",
+    "projectContextPath",
+    "epicContexts",
+    "storyContexts",
+    "runContexts",
+    "activeScope"
+  ],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "projectRoot": { "type": "string", "minLength": 1 },
+    "generatedAt": { "type": "string" },
+    "updatedAt": { "type": "string" },
+    "sources": {
+      "type": "object",
+      "required": ["storyArtifactsRoot", "specsRoot"],
+      "properties": {
+        "sprintStatusPath": { "type": "string" },
+        "epicsPath": { "type": "string" },
+        "storyArtifactsRoot": { "type": "string" },
+        "specsRoot": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "projectContextPath": { "type": "string", "minLength": 1 },
+    "epicContexts": { "type": "object" },
+    "storyContexts": { "type": "object" },
+    "runContexts": { "type": "object" },
+    "activeScope": {
+      "type": "object",
+      "required": ["scopeType"],
+      "properties": {
+        "scopeType": {
+          "type": "string",
+          "enum": ["project", "epic", "story", "run"]
+        },
+        "epicId": { "type": "string" },
+        "storyId": { "type": "string" },
+        "runId": { "type": "string" },
+        "resolvedContextPath": { "type": "string" },
+        "reason": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

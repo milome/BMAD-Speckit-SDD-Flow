@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/runtime-context.json",
+  "title": "BMAD RuntimeContextFile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "flow", "stage", "updatedAt"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "flow": {
+      "type": "string",
+      "enum": ["story", "bugfix", "standalone_tasks", "epic", "unknown"]
+    },
+    "stage": {
+      "type": "string",
+      "enum": [
+        "story_create",
+        "story_audit",
+        "specify",
+        "plan",
+        "gaps",
+        "tasks",
+        "implement",
+        "post_audit",
+        "epic_create",
+        "epic_complete"
+      ]
+    },
+    "sourceMode": {
+      "type": "string",
+      "enum": ["full_bmad", "seeded_solutioning", "standalone_story"]
+    },
+    "templateId": { "type": "string", "minLength": 1 },
+    "epicId": { "type": "string", "minLength": 1 },
+    "storyId": { "type": "string", "minLength": 1 },
+    "storySlug": { "type": "string", "minLength": 1 },
+    "runId": { "type": "string", "minLength": 1 },
+    "artifactRoot": { "type": "string", "minLength": 1 },
+    "contextScope": {
+      "type": "string",
+      "enum": ["project", "story"]
+    },
+    "updatedAt": { "type": "string", "minLength": 1 }
+  }
+}

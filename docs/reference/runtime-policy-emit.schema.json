@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/runtime-policy-emit.json",
+  "title": "RuntimePolicyEmit",
+  "oneOf": [
+    { "$ref": "#/$defs/successPolicy" },
+    { "$ref": "#/$defs/errorBody" }
+  ],
+  "$defs": {
+    "auditConvergence": {
+      "type": "object",
+      "required": [
+        "description",
+        "rounds",
+        "no_gap_required",
+        "critical_auditor_ratio",
+        "applicable_stages"
+      ],
+      "properties": {
+        "description": { "type": "string" },
+        "rounds": { "type": "integer" },
+        "no_gap_required": { "type": "boolean" },
+        "critical_auditor_ratio": { "type": "number" },
+        "applicable_stages": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "successPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "flow",
+        "stage",
+        "auditRequired",
+        "validationLevel",
+        "strictness",
+        "generateDoc",
+        "convergence",
+        "mandatoryGate",
+        "granularityGoverned",
+        "skipAllowed",
+        "scoringEnabled",
+        "triggerStage",
+        "compatibilitySource",
+        "reason",
+        "identity",
+        "control",
+        "language"
+      ],
+      "properties": {
+        "flow": {
+          "type": "string",
+          "enum": ["story", "bugfix", "standalone_tasks", "epic", "unknown"]
+        },
+        "stage": { "type": "string" },
+        "auditRequired": { "type": "boolean" },
+        "validationLevel": {
+          "type": ["string", "null"],
+          "enum": ["basic", "test_only", "full_validation", null]
+        },
+        "strictness": { "type": "string", "enum": ["strict", "standard"] },
+        "generateDoc": { "type": "boolean" },
+        "convergence": { "$ref": "#/$defs/auditConvergence" },
+        "mandatoryGate": { "type": "boolean" },
+        "granularityGoverned": { "type": "boolean" },
+        "skipAllowed": { "type": "boolean" },
+        "scoringEnabled": { "type": "boolean" },
+        "triggerStage": { "type": "string" },
+        "compatibilitySource": {
+          "type": "string",
+          "enum": ["legacy", "shadow", "governance"]
+        },
+        "reason": { "type": "string" },
+        "identity": {
+          "type": "object",
+          "required": ["flow", "stage"],
+          "additionalProperties": false,
+          "properties": {
+            "flow": {
+              "type": "string",
+              "enum": ["story", "bugfix", "standalone_tasks", "epic", "unknown"]
+            },
+            "stage": { "type": "string" }
+          }
+        },
+        "control": {
+          "type": "object",
+          "required": [
+            "auditRequired",
+            "validationLevel",
+            "strictness",
+            "generateDoc",
+            "convergence",
+            "mandatoryGate",
+            "granularityGoverned",
+            "skipAllowed",
+            "scoringEnabled",
+            "triggerStage",
+            "reason"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "auditRequired": { "type": "boolean" },
+            "validationLevel": {
+              "type": ["string", "null"],
+              "enum": ["basic", "test_only", "full_validation", null]
+            },
+            "strictness": { "type": "string", "enum": ["strict", "standard"] },
+            "generateDoc": { "type": "boolean" },
+            "convergence": { "$ref": "#/$defs/auditConvergence" },
+            "mandatoryGate": { "type": "boolean" },
+            "granularityGoverned": { "type": "boolean" },
+            "skipAllowed": { "type": "boolean" },
+            "scoringEnabled": { "type": "boolean" },
+            "triggerStage": { "type": "string" },
+            "reason": { "type": "string" }
+          }
+        },
+        "language": {
+          "type": "object",
+          "required": ["preserveMachineKeys", "preserveParserAnchors", "preserveTriggerStage"],
+          "additionalProperties": false,
+          "properties": {
+            "preserveMachineKeys": { "type": "boolean", "const": true },
+            "preserveParserAnchors": { "type": "boolean", "const": true },
+            "preserveTriggerStage": { "type": "boolean", "const": true }
+          }
+        }
+      }
+    },
+    "errorBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["error", "reason"],
+      "properties": {
+        "error": { "type": "string" },
+        "reason": { "type": "string" }
+      }
+    }
+  }
+}
