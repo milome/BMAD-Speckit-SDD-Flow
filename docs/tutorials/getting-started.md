@@ -41,7 +41,7 @@ npx bmad-speckit init . --ai cursor-agent --yes
 pwsh scripts/setup.ps1 -Target D:\Dev\your-project
 ```
 
-该脚本自动完成：核心目录部署 + `.cursor/` 同步 + 全局 Skills 安装 + 安装验证。
+该脚本自动完成：核心目录部署 + `.cursor/` 同步 + 项目根 `specs/`（空目录，供 Speckit 产出）+ 全局 Skills 安装 + 安装验证。
 
 ### 2.3 方式三：npm 本地安装
 
@@ -200,6 +200,7 @@ $checks = @(
     "_bmad\core\workflows\party-mode\workflow.md",
     "_bmad\_config\agent-manifest.csv",
     "_bmad-output\config\settings.json",
+    "specs",
     ".cursor\rules\bmad-bug-auto-party-mode.mdc",
     ".cursor\commands\bmad-bmm-create-story.md",
     "_bmad\_config\code-reviewer-config.yaml"

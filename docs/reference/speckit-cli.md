@@ -195,6 +195,12 @@
 ### 5.1 scoring CLI 调用参数
 
 > 旧调用方式 `npx ts-node scripts/parse-and-write-score.ts` 已替换为 `npx bmad-speckit score`，参数不变。
+>
+> `--triggerStage` 的统一理解：
+> - 它不是简单手填字符串，而是 **当前运行阶段在 scoring 侧使用的最终阶段标识**。
+> - 它的基础映射来源于 `stage-mapping.yaml`。
+> - 在统一 Runtime Governance 模型下，最终 `triggerStage` 应由治理层结合 `flow`、`stage`、映射规则与兼容规则共同求值得出。
+> - 因此，下面示例中的 `speckit_1_2`、`speckit_2_2` 等值，应理解为“当前场景下最终采用的 `triggerStage` 示例值”。
 
 ```bash
 # §1 specify
@@ -248,6 +254,14 @@ npx bmad-speckit score \
 ### 5.2 评分触发配置
 
 触发配置存储在: `_bmad/_config/scoring-trigger-modes.yaml`
+
+> 统一理解：
+> - `scoring-trigger-modes.yaml` 提供的是 **trigger 策略输入**，用于参与 `scoringEnabled` 求值。
+> - `stage-mapping.yaml` 提供的是 **阶段到内部标识的基础映射**，用于参与 `triggerStage` 求值。
+> - Runtime Governance 输出的才是当前场景下最终可执行的：
+>   - `scoringEnabled`
+>   - `triggerStage`
+> - 因此，CLI 调用中的 `--triggerStage` 应与运行时治理结果保持一致，而不应脱离映射与治理规则单独理解。
 
 ```yaml
 stages:

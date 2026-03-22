@@ -24,6 +24,9 @@ jobs:
       - name: Build scoring package
         run: npm run build:scoring
 
+      - name: Build runtime-emit package (esbuild bundle from scripts/emit-runtime-policy.ts)
+        run: npm run build:runtime-emit
+
       - name: Lint
         run: npm run lint
 

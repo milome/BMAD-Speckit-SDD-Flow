@@ -159,7 +159,7 @@ auto_continue:
 | 文件 | 说明 |
 |------|------|
 | `_bmad/_config/bmad-story-config.yaml` | 审计粒度、auto-continue 配置 |
-| `_bmad/core/workflows/party-mode/workflow.md` | Party-Mode 工作流 |
+| `_bmad/skills/bmad-party-mode/workflow.md` | Party-Mode canonical skill 工作流（旧规则兼容路径：`_bmad/core/workflows/party-mode/workflow.md`） |
 | `_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml` | Create Story 工作流 |
 | `_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml` | Dev Story 工作流 |
 | `_bmad/_config/agent-manifest.csv` | Agent 清单 |
@@ -178,7 +178,7 @@ auto_continue:
 
 | 文件 | 说明 |
 |------|------|
-| `.claude/skills/bmad-story-assistant/SKILL.md` | Skill 入口 |
+| `.claude/skills/bmad-story-assistant/SKILL.md` | Claude Code skill 入口（当前仓库已提供） |
 | `.claude/agents/bmad-master.md` | 总控 Agent |
 | `.claude/agents/bmad-story-create.md` | Story Create Agent |
 | `.claude/agents/bmad-story-audit.md` | Story Audit Agent |
