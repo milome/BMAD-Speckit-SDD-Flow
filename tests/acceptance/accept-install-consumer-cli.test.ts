@@ -22,8 +22,10 @@ describe('install to consumer → CLI acceptance', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-init-'));
     try {
       run(`node scripts/init-to-root.js --full "${target}"`, PKG_ROOT);
-      expect(existsSync(join(target, 'package.json'))).toBe(true);
+      expect(existsSync(join(target, 'package.json'))).toBe(false);
       expect(existsSync(join(target, '_bmad'))).toBe(true);
+      expect(existsSync(join(target, 'specs'))).toBe(true);
+      expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy.cjs'))).toBe(true);
 
       const out = run('npx bmad-speckit check', target);
       expect(out).toMatch(/Check OK|OK/i);
@@ -63,6 +65,8 @@ describe('install to consumer → CLI acceptance', () => {
       run(`npm install --save-dev "file:${pkgPath}"`, target);
       expect(existsSync(join(target, '_bmad'))).toBe(true);
       expect(existsSync(join(target, '.cursor'))).toBe(true);
+      expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy.cjs'))).toBe(true);
+      expect(existsSync(join(target, 'scripts', 'emit-runtime-policy.cjs'))).toBe(false);
 
       const out = run('npx bmad-speckit check', target);
       expect(out).toMatch(/Check OK|OK/i);

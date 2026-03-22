@@ -18,6 +18,7 @@
     "nock": "^15.0.0"
   },
   "dependencies": {
+    "@bmad-speckit/runtime-emit": "file:../runtime-emit",
     "@bmad-speckit/scoring": "file:../scoring",
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",

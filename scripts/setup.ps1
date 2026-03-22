@@ -220,6 +220,7 @@ Write-Output ""
 Write-Output "=== Install Verification ==="
 
 $checks = @(
+    @{ Path = 'specs'; Desc = 'specs/ (Speckit feature output root)' }
     @{ Path = 'package.json'; Desc = 'package.json with bmad-speckit' }
     @{ Path = '_bmad/core/workflows/party-mode/workflow.md'; Desc = 'Party-Mode workflow' }
     @{ Path = '_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml'; Desc = 'Create Story workflow' }
@@ -259,6 +260,25 @@ $ok = 0
 $missing = 0
 foreach ($c in $checks) {
     $fullPath = Join-Path $TargetResolved $c.Path
+    if ($c.Path -eq 'package.json' -and -not (Test-Path $fullPath)) {
+        Write-Output "  [OK] package.json absent (optional; init-to-root: add --with-package-json for local bmad-speckit devDependency)"
+        $ok++
+        continue
+    }
+    if ($c.Path -eq 'package.json' -and (Test-Path $fullPath)) {
+        try {
+            $pkgText = Get-Content -LiteralPath $fullPath -Raw -ErrorAction Stop
+            if ($pkgText -notmatch 'bmad-speckit') {
+                Write-Output "  [MISSING] package.json lacks bmad-speckit devDependency"
+                $missing++
+                continue
+            }
+        } catch {
+            Write-Output "  [MISSING] package.json unreadable"
+            $missing++
+            continue
+        }
+    }
     if (Test-Path $fullPath) {
         Write-Output "  [OK] $($c.Desc)"
         $ok++
