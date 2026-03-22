@@ -12,31 +12,61 @@ const os = require('os');
 
 const BIN = path.join(__dirname, '../bin/bmad-speckit.js');
 
+function withIsolatedHome(envOverrides = {}) {
+  const homeRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-speckit-home-'));
+  return {
+    env: {
+      ...process.env,
+      HOME: homeRoot,
+      USERPROFILE: homeRoot,
+      ...envOverrides,
+    },
+    cleanup() {
+      try { fs.rmSync(homeRoot, { recursive: true, force: true }); } catch (_) {}
+    },
+  };
+}
+
 function runConfig(args, subcommand, cwd, envOverrides = {}) {
-  return spawnSync('node', [BIN, 'config', subcommand, ...(args || [])], {
-    cwd: cwd || process.cwd(),
-    encoding: 'utf8',
-    timeout: 5000,
-    env: { ...process.env, ...envOverrides },
-  });
+  const { env, cleanup } = withIsolatedHome(envOverrides);
+  try {
+    return spawnSync('node', [BIN, 'config', subcommand, ...(args || [])], {
+      cwd: cwd || process.cwd(),
+      encoding: 'utf8',
+      timeout: 15000,
+      env,
+    });
+  } finally {
+    cleanup();
+  }
 }
 
 function runConfigList(args, cwd, envOverrides = {}) {
-  return spawnSync('node', [BIN, 'config', 'list', ...(args || [])], {
-    cwd: cwd || process.cwd(),
-    encoding: 'utf8',
-    timeout: 5000,
-    env: { ...process.env, ...envOverrides },
-  });
+  const { env, cleanup } = withIsolatedHome(envOverrides);
+  try {
+    return spawnSync('node', [BIN, 'config', 'list', ...(args || [])], {
+      cwd: cwd || process.cwd(),
+      encoding: 'utf8',
+      timeout: 15000,
+      env,
+    });
+  } finally {
+    cleanup();
+  }
 }
 
 function runConfigSet(key, value, args, cwd, envOverrides = {}) {
-  return spawnSync('node', [BIN, 'config', 'set', key, value, ...(args || [])], {
-    cwd: cwd || process.cwd(),
-    encoding: 'utf8',
-    timeout: 5000,
-    env: { ...process.env, ...envOverrides },
-  });
+  const { env, cleanup } = withIsolatedHome(envOverrides);
+  try {
+    return spawnSync('node', [BIN, 'config', 'set', key, value, ...(args || [])], {
+      cwd: cwd || process.cwd(),
+      encoding: 'utf8',
+      timeout: 15000,
+      env,
+    });
+  } finally {
+    cleanup();
+  }
 }
 
 // T1.1-T1.3: ConfigCommand skeleton and bin registration

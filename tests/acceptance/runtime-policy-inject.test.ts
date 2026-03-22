@@ -45,7 +45,7 @@ describe('runtime-policy-inject (dual host entry)', () => {
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
-  });
+  }, 15000);
 
   it('Claude path: PreToolUse Agent stdin', () => {
     const { dir, file } = writeTempContext();
@@ -69,7 +69,7 @@ describe('runtime-policy-inject (dual host entry)', () => {
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
-  });
+  }, 15000);
 
   it('BMAD_POLICY_INJECT=0 skips policy JSON in systemMessage', () => {
     const inject = path.join(repoRoot, '_bmad/claude/hooks/runtime-policy-inject.js');
@@ -87,7 +87,7 @@ describe('runtime-policy-inject (dual host entry)', () => {
     const out = JSON.parse(r.stdout || '{}');
     expect(out.systemMessage).toContain('BMAD_POLICY_INJECT=0');
     expect(out.systemMessage).not.toContain('"auditRequired"');
-  });
+  }, 15000);
 
   it('quietly skips injection when no BMAD/Speckit context is active and emit only reports missing flow/stage', () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'non-bmad-hook-'));

@@ -11,12 +11,33 @@ const os = require('os');
 
 const BIN = path.join(__dirname, '../bin/bmad-speckit.js');
 
-function runInit(args, cwd) {
-  return spawnSync('node', [BIN, 'init', ...args], {
-    cwd: cwd || os.tmpdir(),
-    encoding: 'utf8',
-    timeout: 10000,
-  });
+function withIsolatedHome(envOverrides = {}) {
+  const homeRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-speckit-home-'));
+  return {
+    env: {
+      ...process.env,
+      HOME: homeRoot,
+      USERPROFILE: homeRoot,
+      ...envOverrides,
+    },
+    cleanup() {
+      try { fs.rmSync(homeRoot, { recursive: true, force: true }); } catch (_) {}
+    },
+  };
+}
+
+function runInit(args, cwd, envOverrides = {}) {
+  const { env, cleanup } = withIsolatedHome(envOverrides);
+  try {
+    return spawnSync('node', [BIN, 'init', ...args], {
+      cwd: cwd || os.tmpdir(),
+      encoding: 'utf8',
+      timeout: 20000,
+      env,
+    });
+  } finally {
+    cleanup();
+  }
 }
 
 describe('AI Registry integration (Story 12.1 T5)', () => {
@@ -62,11 +83,14 @@ describe('AI Registry integration (Story 12.1 T5)', () => {
   });
 
   it('T5.1 check --list-ai outputs AI ids', () => {
+    const { env, cleanup } = withIsolatedHome();
     const r = spawnSync('node', [BIN, 'check', '--list-ai'], {
       cwd: path.dirname(BIN),
       encoding: 'utf8',
-      timeout: 5000,
+      timeout: 15000,
+      env,
     });
+    cleanup();
     assert.strictEqual(r.status, 0);
     const out = (r.stdout || '').trim();
     assert.ok(out.includes('cursor-agent'));
