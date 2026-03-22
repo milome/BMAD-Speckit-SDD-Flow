@@ -11,7 +11,7 @@ description: |
 ## 强制约束（必须遵守）
 
 1. **全程使用中文**：所有产出（BUGFIX 文档、任务列表、审计报告、子任务 prompt）及与用户的交互均使用中文。
-2. **party-mode 子代理**：使用 party-mode 时**必须**使用合适的 BMAD 子代理（见下方「BMAD Agent 展示名与命令对照」及各阶段的「推荐 Agent」）；若当前环境无法调度对应子代理（如 Cursor Task 中无该 agent），则**回退**使用 `mcp_task` 子任务调用（如 `generalPurpose`），不得跳过多角色辩论或改用单角色。
+2. **party-mode 子代理**：**优先** Cursor Task 调度 **party-mode-facilitator**（若存在 `.cursor/agents/party-mode-facilitator.md`），用户可在调度会话中看到完整辩论过程；若不可用则回退 `mcp_task` + `generalPurpose`。使用 party-mode 时须按下方「BMAD Agent 展示名与命令对照」及各阶段的「推荐 Agent」引入角色；**禁止**跳过多角色辩论或改用单角色。
 3. **主 Agent 禁止直接改生产代码**：实施修复必须通过子代理执行；主 Agent 仅发起子任务、传入文档路径、收集输出。
 4. **主 Agent 禁止直接生成 BUGFIX 文档**：阶段一、二的 BUGFIX 文档（含 §1–§5）必须由 party-mode 或 mcp_task 子代理产出；主 Agent 不得以「已有分析文档」「根因已共识」等为由跳过子代理并自行撰写 BUGFIX 文档。
 5. **凡更新必审计**：凡产出或更新 BUGFIX 文档（含 §4、§7），完成后**必须**发起审计子任务并迭代至通过；**禁止**省略审计步骤。无论是否经过辩论，审计闭环为必做项。
@@ -47,6 +47,7 @@ description: |
 | 资源 | 路径/说明 |
 | ---- | --------- |
 | **party-mode** | `{project-root}/_bmad/core/workflows/party-mode/`；轮次与收敛见 step-02（BUGFIX 产出最终方案与 §7 任务列表：至少 100 轮；其它：50 轮；收敛条件再结束）。 |
+| **party-mode-facilitator 子代理** | `.cursor/agents/party-mode-facilitator.md`；优先 Cursor Task 调度，用户可见完整辩论；找不到则用 `mcp_task` + `generalPurpose` |
 | **code-reviewer 子代理** | `.claude/agents/code-reviewer.md` 或 `.cursor/agents/code-reviewer.md`；找不到则用 `mcp_task` 调用 `generalPurpose` |
 | **audit-prompts §5** | `references/audit-prompts-section5.md`（本 skill 内）或 `{project-root}/docs/speckit/skills/speckit-workflow/references/audit-prompts.md`；**仅作其他工作流参考，不用于本 skill 的 BUGFIX 文档审计**。 |
 | **audit-document-iteration-rules** | `.cursor/skills/speckit-workflow/references/audit-document-iteration-rules.md`；阶段一、二、三的 BUGFIX **文档**审计须遵循：审计子代理在发现 gap 时须直接修改 BUGFIX 文档。阶段四为实施后审计（代码），不适用。 |
@@ -167,7 +168,7 @@ description: |
 
 **流程**：
 
-1. 根据用户提供的 BUG 问题信息，使用 **party-mode** 引入上述多角色，进行**至少 100 轮**互相质疑和辩论（BUGFIX 属「生成最终方案和最终任务列表」场景），满足收敛条件（根因共识 + 近 2–3 轮无新 gap）再结束；若无法调度 party-mode 子代理，则回退 **mcp_task** + `generalPurpose`，在 prompt 中明确要求模拟多角色（Winston 架构师、Mary 分析师、Amelia 开发、Quinn 测试、John 产品经理）辩论并达成根因共识。
+1. 根据用户提供的 BUG 问题信息，**优先**通过 Cursor Task 调度 **party-mode-facilitator**（`.cursor/agents/party-mode-facilitator.md`）引入上述多角色，进行**至少 100 轮**互相质疑和辩论（BUGFIX 属「生成最终方案和最终任务列表」场景），满足收敛条件（根因共识 + 近 2–3 轮无新 gap）再结束；若 party-mode-facilitator 不可用则回退 **mcp_task** + `generalPurpose`，在 prompt 中明确要求模拟多角色（Winston 架构师、Mary 分析师、Amelia 开发、Quinn 测试、John 产品经理）辩论并达成根因共识。
 2. 对根因做深入分析，直至达成根因共识。
 3. 生成 **BUGFIX 文档**，完成 BUG 上报（保存至 `_bmad-output/` 或 `bugfix/`）。
 4. 发起**审计子任务**：

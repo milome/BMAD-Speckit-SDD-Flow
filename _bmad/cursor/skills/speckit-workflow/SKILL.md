@@ -20,6 +20,10 @@ description: |
 
 本 skill 定义 **constitution → spec.md → plan.md → IMPLEMENTATION_GAPS.md → tasks.md → tasks 执行** 各阶段的强制步骤：constitution 建立项目原则；文档阶段为 **需求映射表格** + **code-review 审计循环**（直至审计通过）；执行阶段为 **TDD 红灯-绿灯-重构循环** + **15 条铁律**（直至全部任务完成）。
 
+## 本回合 Runtime Governance（JSON）
+
+每回合在执行本 skill 任一阶段任务前，须已具备由 **hook + `emit-runtime-policy`**（`scripts/emit-runtime-policy.ts` / `.claude|cursor/hooks/emit-runtime-policy-cli.js`）注入上下文的治理 JSON 块；契约见 `docs/reference/runtime-policy-emit-schema.md`。**禁止**手写与 `resolveRuntimePolicy` 不一致的示例 policy；若上下文中无该块，须先修复 `.bmad/runtime-context.json` 与 hook，不得臆造字段。
+
 ## 快速决策指引
 
 ### 何时使用本技能

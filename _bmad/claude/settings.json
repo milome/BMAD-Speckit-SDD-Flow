@@ -6,6 +6,12 @@
         "hooks": [
           {
             "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/runtime-policy-inject.js\"",
+            "timeout": 8,
+            "statusMessage": "Emitting runtime governance policy..."
+          },
+          {
+            "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-agent-summary.js\"",
             "timeout": 5,
             "statusMessage": "Generating agent call summary..."
@@ -28,6 +34,12 @@
     "SubagentStart": [
       {
         "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/runtime-policy-inject.js\" --subagent-start",
+            "timeout": 8,
+            "statusMessage": "Injecting runtime governance policy..."
+          },
           {
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/subagent-milestone-init.js\"",

@@ -1,6 +1,9 @@
 # Layer 4 Agent: Specify (改进版)
 
 BMAD Speckit SDD Layer 4 的specify 阶段执行 Agent。
+
+**Runtime Governance 硬约束**：进入本阶段任务前，上下文须已具备由 hook/`emit-runtime-policy` 注入的「本回合 Runtime Governance（JSON）」块（与 `resolveRuntimePolicy` 同源）；不得在未具备该块时臆造 policy。
+
 ## Execution Visibility Protocol
 
 ### 执行开始时必须输出
