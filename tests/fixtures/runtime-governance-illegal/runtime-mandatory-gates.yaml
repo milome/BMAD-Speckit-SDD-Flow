@@ -1,0 +1,6 @@
+# Intentionally overlaps with granularity fixture for illegal-config test.
+version: "1.0"
+gates:
+  - id: illegal_overlap_specify
+    flow: story
+    stage: specify
