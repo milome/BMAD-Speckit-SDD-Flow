@@ -5,12 +5,15 @@
  * 源路径约定：_bmad/ 是唯一内容源。
  *   - 共享 commands: _bmad/commands/
  *   - Cursor rules/skills: _bmad/cursor/
- *   - Claude agents/skills/hooks/rules: _bmad/claude/
+ *   - Claude agents/skills/hooks/rules/i18n: _bmad/claude/
+ *   - Cursor 侧额外同步 _bmad/claude/i18n -> .cursor/i18n（与 .claude/i18n 同源，双语 manifest）
  *
  * 用途：部署 BMAD 目录结构。
+ * 对外部目标目录：从 @bmad-speckit/runtime-emit 将 emit-runtime-policy.cjs 与 write-runtime-context.js 复制到 **.cursor/hooks** 与/或 **.claude/hooks**（与 hook 脚本同目录，不在项目根创建 scripts/）。
+ * 外部目标默认**不**创建 package.json、不执行 npm install；若需在消费者目录安装本地 bmad-speckit CLI 依赖，传入 **--with-package-json**。
  * speckit commands 从 _bmad/speckit/commands/ 合并；.specify/ 部署 templates/workflows/scripts。
  *
- * CLI 参数：[targetDir], --full, --agent cursor|claude-code, --no-package-json
+ * CLI 参数：[targetDir], --full, --agent cursor|claude-code, --no-package-json, --with-package-json
  *
  * 示例：node scripts/init-to-root.js
  *
@@ -18,11 +21,13 @@
  */
 const fs = require('node:fs');
 const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 
 const PKG_ROOT = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
 const fullMode = args.includes('--full');
 const noPackageJson = args.includes('--no-package-json');
+const withPackageJson = args.includes('--with-package-json');
 const agentArgIndex = args.findIndex((a) => a === '--agent');
 let requestedAgentTarget =
   agentArgIndex >= 0 && args[agentArgIndex + 1] ? args[agentArgIndex + 1] : null;
@@ -34,7 +39,9 @@ if (!requestedAgentTarget) {
       const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
       requestedAgentTarget = config.selectedAI || 'cursor';
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   if (!requestedAgentTarget) requestedAgentTarget = 'cursor';
 }
 /**
@@ -48,8 +55,14 @@ function deploySpecify(targetDir) {
   const specifySync = [
     { src: path.join(bmadRoot, 'speckit', 'templates'), dest: path.join(specifyDest, 'templates') },
     { src: path.join(bmadRoot, 'speckit', 'workflows'), dest: path.join(specifyDest, 'workflows') },
-    { src: path.join(bmadRoot, 'speckit', 'scripts', 'shell'), dest: path.join(specifyDest, 'scripts') },
-    { src: path.join(bmadRoot, 'speckit', 'scripts', 'powershell'), dest: path.join(specifyDest, 'scripts') },
+    {
+      src: path.join(bmadRoot, 'speckit', 'scripts', 'shell'),
+      dest: path.join(specifyDest, 'scripts'),
+    },
+    {
+      src: path.join(bmadRoot, 'speckit', 'scripts', 'powershell'),
+      dest: path.join(specifyDest, 'scripts'),
+    },
   ];
   let totalFiles = 0;
   for (const { src, dest } of specifySync) {
@@ -62,7 +75,13 @@ function deploySpecify(targetDir) {
   const cmdSrc = path.join(bmadRoot, 'speckit', 'commands');
   const cmdDest = path.join(specifyDest, 'templates', 'commands');
   if (fs.existsSync(cmdSrc)) {
-    console.log('Sync', path.relative(targetDir, cmdSrc), '->', path.relative(targetDir, cmdDest), '(strip speckit. prefix)');
+    console.log(
+      'Sync',
+      path.relative(targetDir, cmdSrc),
+      '->',
+      path.relative(targetDir, cmdDest),
+      '(strip speckit. prefix)'
+    );
     copyStripPrefix(cmdSrc, cmdDest, 'speckit.');
     totalFiles += countFiles(cmdDest);
   }
@@ -91,6 +110,24 @@ function copyStripPrefix(src, dest, prefix) {
   }
 }
 
+function writeCursorHooksJson(targetDir) {
+  const cursorDir = path.join(targetDir, '.cursor');
+  fs.mkdirSync(cursorDir, { recursive: true });
+  const hooksJsonPath = path.join(cursorDir, 'hooks.json');
+  const hooksJson = {
+    hooks: {
+      SessionStart: [
+        { command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host --session-start' },
+      ],
+      PreToolUse: [{ command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host' }],
+      SubagentStart: [
+        { command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host --subagent-start' },
+      ],
+    },
+  };
+  fs.writeFileSync(hooksJsonPath, `${JSON.stringify(hooksJson, null, 2)}\n`, 'utf8');
+}
+
 const REGISTERED_AGENT_PROFILES = {
   cursor: {
     runtimeRoot: '.cursor',
@@ -102,6 +139,7 @@ const REGISTERED_AGENT_PROFILES = {
         { src: path.join(bmadRoot, 'cursor', 'rules'), dest: '.cursor/rules' },
         { src: path.join(bmadRoot, 'skills'), dest: '.cursor/skills' },
         { src: path.join(bmadRoot, 'cursor', 'skills'), dest: '.cursor/skills' },
+        { src: path.join(bmadRoot, 'claude', 'i18n'), dest: '.cursor/i18n' },
       ];
       let totalFiles = 0;
       for (const { src, dest } of cursorSync) {
@@ -120,7 +158,15 @@ const REGISTERED_AGENT_PROFILES = {
         console.log('Sync _bmad/_config/code-reviewer-config.yaml -> .cursor/agents/');
         totalFiles += 1;
       }
+      const cursorAgentsSrc = path.join(bmadRoot, 'cursor', 'agents');
+      if (fs.existsSync(cursorAgentsSrc)) {
+        const cursorAgentsDest = path.join(targetDir, '.cursor', 'agents');
+        copyRecursive(cursorAgentsSrc, cursorAgentsDest);
+        totalFiles += countFiles(cursorAgentsDest);
+        console.log('Sync _bmad/cursor/agents/ -> .cursor/agents/');
+      }
       totalFiles += deploySpecify(targetDir);
+      syncCursorRuntimePolicyHooks(targetDir, bmadRoot);
       return totalFiles;
     },
   },
@@ -174,18 +220,25 @@ const REGISTERED_AGENT_PROFILES = {
 };
 const AGENT_ID_ALIASES = {
   'cursor-agent': 'cursor',
-  'claude': 'claude-code',
+  claude: 'claude-code',
 };
 const normalizedAgent = AGENT_ID_ALIASES[requestedAgentTarget] || requestedAgentTarget;
 const agentProfile = REGISTERED_AGENT_PROFILES[normalizedAgent];
 if (!agentProfile) {
   const validKeys = [...Object.keys(REGISTERED_AGENT_PROFILES), ...Object.keys(AGENT_ID_ALIASES)];
-  console.error(`Unsupported --agent value: ${requestedAgentTarget}. Valid: ${validKeys.join(', ')}`);
+  console.error(
+    `Unsupported --agent value: ${requestedAgentTarget}. Valid: ${validKeys.join(', ')}`
+  );
   process.exit(1);
 }
 const agentTarget = normalizedAgent;
 const targetArg = args.find(
-  (a, index) => a !== '--full' && a !== '--no-package-json' && a !== '--agent' && index !== agentArgIndex + 1
+  (a, index) =>
+    a !== '--full' &&
+    a !== '--no-package-json' &&
+    a !== '--with-package-json' &&
+    a !== '--agent' &&
+    index !== agentArgIndex + 1
 );
 // When run as postinstall (npm install in consumer), INIT_CWD = consumer root; use it as target.
 const TARGET = targetArg
@@ -193,9 +246,7 @@ const TARGET = targetArg
   : (process.env.INIT_CWD && path.resolve(process.env.INIT_CWD)) || process.cwd();
 
 const CORE_DIRS = ['_bmad'];
-const FULL_DIRS = [
-  '_bmad',
-];
+const FULL_DIRS = ['_bmad'];
 const DIRS = fullMode ? FULL_DIRS : CORE_DIRS;
 
 function copyRecursive(src, dest) {
@@ -209,6 +260,147 @@ function copyRecursive(src, dest) {
     fs.mkdirSync(path.dirname(dest), { recursive: true });
     fs.copyFileSync(src, dest);
   }
+}
+
+/**
+ * Deploy emit + inject hooks for Cursor (same scripts as Claude hooks).
+ * @param {string} targetDir
+ * @param {string} bmadRoot
+ */
+function syncCursorRuntimePolicyHooks(targetDir, bmadRoot) {
+  const destDir = path.join(targetDir, '.cursor', 'hooks');
+  const sharedDir = path.join(bmadRoot, 'runtime', 'hooks');
+  const cursorHooksDir = path.join(bmadRoot, 'cursor', 'hooks');
+  const fallbackDir = path.join(bmadRoot, 'claude', 'hooks');
+
+  fs.mkdirSync(destDir, { recursive: true });
+
+  if (fs.existsSync(sharedDir)) {
+    copyRecursive(sharedDir, destDir);
+    console.log('Sync', path.relative(targetDir, sharedDir), '->', path.join('.cursor', 'hooks'));
+  }
+
+  const names = ['emit-runtime-policy-cli.js', 'runtime-policy-inject.js'];
+  for (const name of names) {
+    const primary = path.join(cursorHooksDir, name);
+    const fallback = path.join(fallbackDir, name);
+    const src = fs.existsSync(primary) ? primary : fallback;
+    if (src && fs.existsSync(src)) {
+      fs.copyFileSync(src, path.join(destDir, name));
+      console.log('Sync', path.relative(targetDir, src), '->', path.join('.cursor', 'hooks', name));
+    }
+  }
+  writeCursorHooksJson(targetDir);
+}
+
+function writeDefaultRuntimeRegistry(targetDir, pkgRoot) {
+  const candidates = [
+    path.join(targetDir, '.cursor', 'hooks', 'write-runtime-registry.js'),
+    path.join(targetDir, '.claude', 'hooks', 'write-runtime-registry.js'),
+    path.join(targetDir, 'scripts', 'write-runtime-registry.js'),
+    path.join(pkgRoot, 'scripts', 'write-runtime-registry.js'),
+  ];
+  const script = candidates.find((p) => fs.existsSync(p));
+  if (!script) {
+    console.warn('Skip runtime-registry: write-runtime-registry.js not found');
+    return;
+  }
+  const r = spawnSync(process.execPath, [script, targetDir], {
+    cwd: targetDir,
+    stdio: 'inherit',
+  });
+  if (r.status !== 0) {
+    console.warn('write-runtime-registry exited', r.status);
+  }
+}
+
+function writeDefaultRuntimeContext(targetDir, pkgRoot) {
+  const candidates = [
+    path.join(targetDir, '.cursor', 'hooks', 'write-runtime-context.js'),
+    path.join(targetDir, '.claude', 'hooks', 'write-runtime-context.js'),
+    path.join(targetDir, 'scripts', 'write-runtime-context.js'),
+    path.join(pkgRoot, 'scripts', 'write-runtime-context.js'),
+  ];
+  const script = candidates.find((p) => fs.existsSync(p));
+  if (!script) {
+    console.warn('Skip runtime-context: write-runtime-context.js not found');
+    return;
+  }
+  const targetContext = path.join(targetDir, '_bmad-output', 'runtime', 'context', 'project.json');
+  const r = spawnSync(process.execPath, [script, targetContext, 'story', 'story_create'], {
+    cwd: targetDir,
+    stdio: 'inherit',
+  });
+  if (r.status !== 0) {
+    console.warn('write-runtime-context exited', r.status);
+  }
+}
+
+/**
+ * External installs only receive `_bmad/` by default; hooks need a pre-built emit (no ts-node).
+ * Resolve `@bmad-speckit/runtime-emit` from pkgRoot node_modules (bmad-speckit 依赖树)，供复制到 hooks/emit-runtime-policy.cjs。
+ * @param {string} pkgRoot - BMAD-Speckit-SDD-Flow root (init script location).
+ * @param {string} targetDir - Consumer project root.
+ */
+function resolveRuntimeEmitCjs(pkgRoot) {
+  try {
+    return require.resolve('@bmad-speckit/runtime-emit', { paths: [pkgRoot] });
+  } catch {
+    const devDist = path.join(
+      pkgRoot,
+      'packages',
+      'runtime-emit',
+      'dist',
+      'emit-runtime-policy.cjs'
+    );
+    if (fs.existsSync(devDist)) return devDist;
+    const legacy = path.join(pkgRoot, 'scripts', 'emit-runtime-policy.bundle.cjs');
+    if (fs.existsSync(legacy)) return legacy;
+    return null;
+  }
+}
+
+function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
+  let targetReal;
+  let pkgRootReal;
+  try {
+    targetReal = fs.realpathSync(targetDir);
+    pkgRootReal = fs.realpathSync(pkgRoot);
+  } catch {
+    return;
+  }
+  if (targetReal === pkgRootReal) return;
+
+  const emitSrc = resolveRuntimeEmitCjs(pkgRoot);
+  if (!emitSrc || !fs.existsSync(emitSrc)) {
+    console.warn(
+      '@bmad-speckit/runtime-emit not found; run: npm install && npm run build:runtime-emit — policy hooks may fail in target.'
+    );
+    return;
+  }
+  const wrcSrc = path.join(path.dirname(emitSrc), '..', 'write-runtime-context.js');
+  const hookDirs = [
+    path.join(targetDir, '.cursor', 'hooks'),
+    path.join(targetDir, '.claude', 'hooks'),
+  ];
+  let deployed = 0;
+  for (const d of hookDirs) {
+    if (!fs.existsSync(d)) continue;
+    fs.copyFileSync(emitSrc, path.join(d, 'emit-runtime-policy.cjs'));
+    if (fs.existsSync(wrcSrc)) {
+      fs.copyFileSync(wrcSrc, path.join(d, 'write-runtime-context.js'));
+    }
+    deployed += 1;
+  }
+  if (deployed === 0) {
+    console.warn(
+      'No .cursor/hooks or .claude/hooks found after agent sync; emit-runtime-policy.cjs not deployed (re-run init after --agent).'
+    );
+    return;
+  }
+  console.log(
+    'Deployed emit-runtime-policy.cjs (+ write-runtime-context.js) under .cursor/hooks and/or .claude/hooks (no project-root scripts/).'
+  );
 }
 
 function countFiles(dirPath) {
@@ -252,6 +444,11 @@ for (const dir of DIRS) {
 
 totalFiles += agentProfile.sync(TARGET, PKG_ROOT);
 
+deployConsumerRuntimeEmitToHooks(PKG_ROOT, TARGET);
+
+writeDefaultRuntimeContext(TARGET, PKG_ROOT);
+writeDefaultRuntimeRegistry(TARGET, PKG_ROOT);
+
 // Ensure _bmad-output/config exists (empty); never copy source's _bmad-output contents.
 const bmadOutputDir = path.join(TARGET, '_bmad-output');
 const bmadOutputConfig = path.join(bmadOutputDir, 'config');
@@ -260,12 +457,20 @@ if (!fs.existsSync(bmadOutputConfig)) {
   console.log('Created _bmad-output/config/ (empty structure for target project)');
 }
 
-// Ensure package.json with bmad-speckit dep when deploying to external project (not self).
-// --no-package-json 标志：跳过 package.json 创建与 npm install（适用于已发布 CLI 的场景）
+// Speckit 规格根目录（与 docs/tutorials/getting-started.md、设计文档 §4.10 一致；具体 epic 由 /speckit.specify 等写入）
+fs.mkdirSync(path.join(TARGET, 'specs'), { recursive: true });
+
+// 外部项目：默认不创建 package.json（npx bmad-speckit 可不依赖本地 package.json）。
+// --with-package-json：写入 devDependencies + npm install（旧行为）。
+// --no-package-json：显式跳过（与默认等价，保留兼容）。
 const targetReal = fs.realpathSync(TARGET, { encoding: 'utf8' });
 const pkgRootReal = fs.realpathSync(PKG_ROOT, { encoding: 'utf8' });
-if (noPackageJson) {
-  console.log('Skipped package.json creation (--no-package-json)');
+if (noPackageJson || !withPackageJson) {
+  if (targetReal !== pkgRootReal) {
+    console.log(
+      'Skipped package.json / npm install (pass --with-package-json for local bmad-speckit devDependency in target).'
+    );
+  }
 } else if (targetReal !== pkgRootReal) {
   const relToPkg = path.relative(TARGET, path.join(PKG_ROOT, 'packages', 'bmad-speckit'));
   const bmadSpeckitDep = 'file:' + relToPkg.replace(/\\/g, '/');
