@@ -37,11 +37,13 @@ $EXCLUDE_PATTERNS = @(
     '_bmad/core/agents/adversarial-reviewer.md',
     '_bmad/core/agents/critical-auditor-guide.md',
     '_bmad/core/agents/README-critical-auditor.md',
+    '_bmad/core/agents/bmad-master.md',
     '_bmad/_config/agent-manifest.csv',
     '_bmad/core/workflows/party-mode',
     'adversarial-reviewer.md',
     'critical-auditor-guide.md',
     'README-critical-auditor.md',
+    'bmad-master.md',
     'bmad-speckit',
     'agent-manifest.csv'
 )
@@ -52,6 +54,7 @@ $BACKUP_ITEMS = @(
     ,@{ From = "_bmad/core/agents/adversarial-reviewer.md"; To = "adversarial-reviewer.md" }
     ,@{ From = "_bmad/core/agents/critical-auditor-guide.md"; To = "critical-auditor-guide.md" }
     ,@{ From = "_bmad/core/agents/README-critical-auditor.md"; To = "README-critical-auditor.md" }
+    ,@{ From = "_bmad/core/agents/bmad-master.md"; To = "bmad-master.md" }
     ,@{ From = "_bmad/speckit"; To = "bmad_speckit" }
     ,@{ From = "_bmad/_config/agent-manifest.csv"; To = "agent-manifest.csv" }
     ,@{ From = "_bmad/core/workflows/party-mode"; To = "party-mode-workflow" }
