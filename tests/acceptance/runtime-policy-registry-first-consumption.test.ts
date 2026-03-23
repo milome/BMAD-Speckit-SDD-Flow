@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { mkdtempSync, rmSync, mkdirSync, cpSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { defaultRuntimeContextRegistry, writeRuntimeContextRegistry } from '../../scripts/runtime-context-registry';
+import {
+  defaultRuntimeContextRegistry,
+  writeRuntimeContextRegistry,
+} from '../../scripts/runtime-context-registry';
 import { projectContextPath, writeRuntimeContext } from '../../scripts/runtime-context';
 import { mainEmitRuntimePolicy } from '../../scripts/emit-runtime-policy';
 
@@ -41,6 +44,7 @@ describe('runtime-policy registry-first consumption', () => {
       const code = mainEmitRuntimePolicy(['--cwd', root]);
 
       expect(code).toBe(0);
+      expect(process.env.BMAD_RUNTIME_CONTEXT_FILE).toBeUndefined();
     } finally {
       delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
       rmSync(root, { recursive: true, force: true });

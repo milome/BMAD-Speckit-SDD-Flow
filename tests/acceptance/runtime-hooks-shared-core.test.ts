@@ -16,6 +16,7 @@ describe('runtime hooks shared core', () => {
     expect(existsSync(skipPath)).toBe(true);
     expect(existsSync(errorPath)).toBe(true);
 
+    /* eslint-disable @typescript-eslint/no-require-imports */
     const { runtimePolicyInjectCore } = require(corePath);
     const { shouldSkipRuntimePolicy } = require(skipPath);
     const { buildRuntimeErrorMessage } = require(errorPath);

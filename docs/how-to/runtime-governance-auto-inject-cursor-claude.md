@@ -94,7 +94,7 @@ npx vitest run tests/acceptance/cursor-hooks-json-generation.test.ts tests/accep
 
 | 现象 | 处理 |
 |------|------|
-| 缺少显式 runtime context file | 生成或提供一个 story-scoped context file，并通过 `BMAD_RUNTIME_CONTEXT_FILE` 传入 |
+| 缺少 registry-backed runtime context | 先确保 `activeScope` 指向有效的 scoped context file，或通过 CLI/env 明确提供 `flow`/`stage` 与 story identity；正式入口不再依赖单独的 context-file 环境变量 |
 | emit 失败 / hook exit 1 | 读 stderr；模型侧只能见错误信息，**不能**出现伪 policy |
 | Cursor 无生效 hooks | 先检查 `.cursor/hooks.json` 是否存在、事件是否注册、command 路径是否正确 |
 | 路径错误 | 确认项目根含 `_bmad/` 且 hook command 指向正确文件 |

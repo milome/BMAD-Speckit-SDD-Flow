@@ -319,7 +319,7 @@ CLI 参数只用于声明宿主模式和事件模式，例如：
 输入必须被分为三层：
 
 1. **宿主事件输入**：来自 Cursor hook stdin JSON
-2. **运行时上下文输入**：来自显式 context file（通过 `BMAD_RUNTIME_CONTEXT_FILE` 传入）
+2. **运行时上下文输入**：来自 registry `activeScope` 指向的 scoped context file，或来自 CLI/env 直接提供的 `flow`/`stage`
 3. **治理求值输入**：传给 `resolveRuntimePolicy()` 的标准字段
 
 ### 7.3 运行时上下文补全规则

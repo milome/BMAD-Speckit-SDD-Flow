@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import schema from '../../docs/reference/runtime-context.schema.json';
-import {
-  defaultRuntimeContextFile,
-  resolveRuntimeContextPath,
-} from '../../scripts/runtime-context';
+import { defaultRuntimeContextFile, projectContextPath } from '../../scripts/runtime-context';
 
 describe('runtime-context schema', () => {
   it('accepts story-scoped identity fields', () => {
@@ -41,10 +38,10 @@ describe('runtime-context schema', () => {
     expect(ctx.contextScope).toBe('story');
   });
 
-  it('requires an explicit BMAD_RUNTIME_CONTEXT_FILE instead of defaulting to root runtime-context.json', () => {
-    delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
-    expect(() => resolveRuntimeContextPath(process.cwd())).toThrow(
-      'runtime-context explicit file required: set BMAD_RUNTIME_CONTEXT_FILE'
-    );
+  it('uses the project runtime-context path under _bmad-output/runtime/context/project.json', () => {
+    expect(projectContextPath(process.cwd())).toContain('_bmad-output');
+    expect(projectContextPath(process.cwd())).toContain('runtime');
+    expect(projectContextPath(process.cwd())).toContain('context');
+    expect(projectContextPath(process.cwd())).toContain('project.json');
   });
 });

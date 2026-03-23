@@ -63,7 +63,6 @@ function runScenario(
     'utf8'
   );
 
-  process.env.BMAD_RUNTIME_CONTEXT_FILE = runContext.path;
   const chunks: string[] = [];
   const originalWrite = process.stdout.write.bind(process.stdout);
   (process.stdout as any).write = (chunk: any) => {

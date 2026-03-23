@@ -29,6 +29,9 @@ $ErrorActionPreference = 'Stop'
 # --- Constants ---
 $BMAD_METHOD_REPO = 'https://github.com/bmad-code-org/BMAD-METHOD.git'
 $EXCLUDE_PATTERNS = @(
+    '_bmad/_config',
+    '_bmad/_memory',
+    '_bmad/bmb',
     '_bmad/scoring',
     '_bmad/speckit',
     '_bmad/core/agents/adversarial-reviewer.md',

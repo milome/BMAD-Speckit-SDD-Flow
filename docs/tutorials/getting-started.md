@@ -22,7 +22,18 @@ git clone <BMAD-Speckit-SDD-Flow-repo-url> D:\Dev\BMAD-Speckit-SDD-Flow
 
 ## 2. 安装
 
-### 2.1 方式一：npx 免安装（推荐）
+### 2.0 安装方式对比与选择
+
+| 方式 | 部署内容 | 额外步骤 | 适用场景 |
+|------|----------|----------|----------|
+| **方式一 npx** | 上游模板（npm） | 无 | 无 clone、无 PowerShell；注意：可能无本仓库定制（运行时治理、双语等） |
+| **方式二 setup.ps1** | 本仓库 _bmad 全量 | 全局 Skills + 自动校验 | **首选**：有 PowerShell 7 时，一键完整安装 |
+| **方式三 npm install** | 本仓库 _bmad（postinstall） | 会创建 node_modules | 需要本地 bmad-speckit 依赖的项目 |
+| **方式四 init-to-root** | 本仓库 _bmad 全量 | 无；Skills 已在项目内 | 无 PowerShell、CI/CD、或只需部署到单项目时 |
+
+**setup.ps1 与 init-to-root 的关系**：setup.ps1 内部调用 init-to-root，并额外完成「全局 Skills 安装」和「安装验证」。单独使用 init-to-root 时，项目内 `.cursor/skills` 已有完整 skills，**项目可正常工作**；仅当希望其他未安装 BMAD 的项目也能用这些 skills 时，才需要手动复制到全局。
+
+### 2.1 方式一：npx 免安装
 
 无需克隆源仓库，直接在目标项目中运行：
 
@@ -33,15 +44,19 @@ npx bmad-speckit init . --ai cursor-agent --yes
 
 此方式从 npm registry 拉取最新版，自动完成：核心目录部署 + AI 运行时同步 + 安装验证。适用于任何项目（含非 Node 项目）。
 
-### 2.2 方式二：PowerShell 一键安装
+> **注意**：`npx bmad-speckit init` 拉取的是上游 bmad-method 模板。若需本仓库的定制能力（运行时治理 hooks、双语 i18n 等），请使用方式二或方式四从本地 _bmad 部署。
+>
+> 若本仓库定制已发布到 npm（或自建 registry），`npx bmad-speckit init` 即可使用全部功能；当前建议方式二或四，是因为上游 npm 包可能尚未包含这些定制。
+
+### 2.2 方式二：PowerShell 一键安装（推荐，有 PowerShell 时）
 
 需要 PowerShell ≥7，在 **BMAD-Speckit-SDD-Flow 源仓库根目录**执行：
 
 ```powershell
-pwsh scripts/setup.ps1 -Target D:\Dev\your-project
+pwsh scripts/setup.ps1 -Target D:\Dev\your-project -Full
 ```
 
-该脚本自动完成：核心目录部署 + `.cursor/` 同步 + 项目根 `specs/`（空目录，供 Speckit 产出）+ 全局 Skills 安装 + 安装验证。
+该脚本自动完成：核心目录部署（含运行时治理 hooks、双语 i18n）+ `.cursor/` 同步 + 项目根 `specs/`（空目录）+ **全局 Skills 安装** + **安装验证**。验证本仓库定制能力（运行时治理、双语等）时优先用此方式。
 
 ### 2.3 方式三：npm 本地安装
 
@@ -56,6 +71,7 @@ node D:\Dev\BMAD-Speckit-SDD-Flow\scripts\init-to-root.js D:\Dev\your-project --
 ```
 
 `postinstall` 脚本会**自动完成**：
+
 - `_bmad/` → `{项目根}/_bmad/`
 - `.cursor/` 同步（commands、rules、skills、agents）
 - `.specify/` 模板与脚本
@@ -63,23 +79,25 @@ node D:\Dev\BMAD-Speckit-SDD-Flow\scripts\init-to-root.js D:\Dev\your-project --
 - `package.json` 中 `bmad-speckit` 依赖及 `check`、`speckit` 脚本
 
 > **提示**：对于非 Node 项目，可使用 `--no-package-json` 标志跳过 `package.json` 创建：
+>
 > ```powershell
 > node scripts/init-to-root.js D:\Dev\your-project --no-package-json
 > ```
 
-### 2.4 方式四：克隆后手动部署
+### 2.4 方式四：init-to-root 直接调用（无 PowerShell 时）
+
+在 **BMAD-Speckit-SDD-Flow 源仓库根目录**执行：
 
 ```powershell
 git clone <BMAD-Speckit-SDD-Flow-repo-url> D:\Dev\BMAD-Speckit-SDD-Flow
 
-node D:\Dev\BMAD-Speckit-SDD-Flow\scripts\init-to-root.js D:\Dev\your-project --agent cursor
+cd D:\Dev\BMAD-Speckit-SDD-Flow
+node scripts/init-to-root.js D:\Dev\your-project --agent cursor --full
 ```
 
-若 `setup.ps1` 未就绪，可手动三步：
+**何时选用**：无法使用 PowerShell 7（如部分 CI 环境、WSL 纯 Node 脚本）、或只需部署到单个项目且不需要全局 Skills 时。
 
-1. `node scripts/init-to-root.js D:\Dev\your-project`
-2. 将 speckit 命令复制到 `.cursor\commands\`
-3. 将 5 个必须 Skill 复制到全局 `$env:USERPROFILE\.cursor\skills\`
+**部署内容**：与 setup.ps1 相同的核心部署（_bmad、.cursor、.claude、hooks、i18n、项目内 skills）。**项目内已有完整 skills**，打开该目标项目即可使用。若需 Skills 对其他项目全局可用，可参考 §3 手动复制到 `$env:USERPROFILE\.cursor\skills\`。安装后建议手动运行 `pwsh _bmad\speckit\scripts\powershell\check-prerequisites.ps1 -PathsOnly` 做校验。
 
 ### 2.5 非交互式安装
 

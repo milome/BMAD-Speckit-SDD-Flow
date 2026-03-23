@@ -25,9 +25,9 @@
 
 | 变量 | 作用 |
 |------|------|
-| `BMAD_POLICY_INJECT=0` | 总开关：不调用 emit、不注入 policy JSON 块（见 how-to）。 |
-| `BMAD_RUNTIME_CONTEXT_FILE` | 显式提供 runtime context file 路径（测试与正式 story-scoped 运行时均使用）。 |
 | `BMAD_RUNTIME_CWD` | 项目根（emit-cli 设置）。 |
+| `BMAD_RUNTIME_FLOW` / `BMAD_RUNTIME_STAGE` | 直接提供 flow/stage；缺失时才回落到 registry-backed context 解析。 |
+| `BMAD_RUNTIME_EPIC_ID` / `BMAD_RUNTIME_STORY_ID` / `BMAD_RUNTIME_RUN_ID` 等 | 提供 story-scoped identity；正式入口不再依赖单独的 context-file 环境变量。 |
 | `BMAD_RUNTIME_SHADOW=1` | 影响 `compatibilitySource` 字段（对照测试）。 |
 
 ## 互链

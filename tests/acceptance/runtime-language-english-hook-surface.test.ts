@@ -1,3 +1,6 @@
+import { mkdtempSync, rmSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { mainEmitRuntimePolicy } from '../../scripts/emit-runtime-policy';
 
@@ -7,16 +10,18 @@ describe('runtime language english hook surface', () => {
     delete process.env.BMAD_RUNTIME_FLOW;
     delete process.env.BMAD_RUNTIME_STAGE;
 
+    const root = mkdtempSync(path.join(os.tmpdir(), 'runtime-hook-surface-'));
     const errors: string[] = [];
     const originalError = console.error;
     console.error = (...args: any[]) => {
       errors.push(args.join(' '));
     };
     try {
-      const code = mainEmitRuntimePolicy(['--cwd', process.cwd()]);
+      const code = mainEmitRuntimePolicy(['--cwd', root]);
       expect(code).toBe(1);
     } finally {
       console.error = originalError;
+      rmSync(root, { recursive: true, force: true });
     }
 
     const text = errors.join('\n');

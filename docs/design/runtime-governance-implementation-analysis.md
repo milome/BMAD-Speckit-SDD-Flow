@@ -50,7 +50,7 @@ Runtime Governance 的接入分成两层：
 - `emit-runtime-policy`
 - `registry.json`
 - `activeScope`
-- `BMAD_RUNTIME_CONTEXT_FILE`
+- ~~`BMAD_RUNTIME_CONTEXT_FILE`~~（已废弃；context 仅通过 registry + activeScope 解析）
 
 **结果：** 没有看到这些 workflow 文件中大范围内联的 runtime 写入调用。
 
@@ -1118,7 +1118,7 @@ policy JSON
 - `write-runtime-context`
 - `runtime-context-registry`
 - `emit-runtime-policy`
-- `BMAD_RUNTIME_CONTEXT_FILE`
+- ~~`BMAD_RUNTIME_CONTEXT_FILE`~~（已废弃）
 
 ### 7.2 当前是“由外围实现承接 workflow 事实源”
 

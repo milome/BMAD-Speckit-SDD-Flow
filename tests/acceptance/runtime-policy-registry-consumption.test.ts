@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, cpSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, cpSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {
@@ -40,9 +40,7 @@ describe('runtime-policy registry consumption', () => {
       };
       writeRuntimeContextRegistry(root, registry);
 
-      process.env.BMAD_RUNTIME_CONTEXT_FILE = contextFile;
       const code = mainEmitRuntimePolicy(['--cwd', root]);
-      delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
 
       expect(code).toBe(0);
     } finally {
@@ -80,7 +78,6 @@ describe('runtime-policy registry consumption', () => {
         storyId: '20-1-seeded-story',
         updatedAt: new Date().toISOString(),
       });
-      process.env.BMAD_RUNTIME_CONTEXT_FILE = seededFile;
       expect(mainEmitRuntimePolicy(['--cwd', root])).toBe(0);
 
       writeRuntimeContext(root, {
@@ -94,7 +91,6 @@ describe('runtime-policy registry consumption', () => {
         updatedAt: new Date().toISOString(),
       });
       expect(mainEmitRuntimePolicy(['--cwd', root])).toBe(0);
-      delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
     } finally {
       delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
       rmSync(root, { recursive: true, force: true });

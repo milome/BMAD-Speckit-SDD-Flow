@@ -59,6 +59,7 @@ packages/scoring/outputs/
 # Agent / OMC runtime data
 .agents/
 .omc/
+.serena/
 
 # Session temporary files
 progress.txt

@@ -25,9 +25,7 @@ describe('runtime-context io', () => {
       expect(existsSync(file)).toBe(true);
       expect(file).toContain(path.join('_bmad-output', 'runtime', 'context', 'project.json'));
 
-      process.env.BMAD_RUNTIME_CONTEXT_FILE = file;
       const loaded = readRuntimeContext(root);
-      delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
 
       expect(loaded.version).toBe(1);
       expect(loaded.stage).toBe('story_create');
@@ -37,7 +35,6 @@ describe('runtime-context io', () => {
       const raw = readFileSync(file, 'utf8');
       expect(raw).toContain('story_create');
     } finally {
-      delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
       rmSync(root, { recursive: true, force: true });
     }
   });
@@ -45,7 +42,6 @@ describe('runtime-context io', () => {
   it('preserves seeded_solutioning and standalone_story source modes when writing and reading context', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'runtime-context-source-modes-'));
     try {
-      const seededFile = projectContextPath(root);
       writeRuntimeContext(
         root,
         defaultRuntimeContextFile({
@@ -55,7 +51,6 @@ describe('runtime-context io', () => {
         })
       );
 
-      process.env.BMAD_RUNTIME_CONTEXT_FILE = seededFile;
       const seeded = readRuntimeContext(root);
       expect(seeded.sourceMode).toBe('seeded_solutioning');
 
@@ -72,7 +67,6 @@ describe('runtime-context io', () => {
       expect(standalone.sourceMode).toBe('standalone_story');
       expect(standalone.stage).toBe('story_audit');
     } finally {
-      delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
       rmSync(root, { recursive: true, force: true });
     }
   });

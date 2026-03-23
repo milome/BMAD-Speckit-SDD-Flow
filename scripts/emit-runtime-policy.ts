@@ -3,10 +3,11 @@
  *
  * Args: --flow, --stage, --template-id, --cwd
  * Env: BMAD_RUNTIME_FLOW, BMAD_RUNTIME_STAGE, BMAD_RUNTIME_TEMPLATE_ID, BMAD_RUNTIME_CWD,
- *      BMAD_RUNTIME_CONTEXT_FILE (required explicit context path when context file is used)
+ *      BMAD_RUNTIME_EPIC_ID, BMAD_RUNTIME_STORY_ID, BMAD_RUNTIME_STORY_SLUG,
+ *      BMAD_RUNTIME_RUN_ID, BMAD_RUNTIME_ARTIFACT_ROOT
  *
- * Missing flow/stage from CLI+env → read explicit story-scoped runtime context file only.
- * On missing/invalid explicit context when needed: exit 1, stderr message; stdout empty (documented).
+ * Missing flow/stage from CLI+env → read registry-backed runtime context.
+ * On missing/invalid registry-backed context when needed: exit 1, stderr message; stdout empty (documented).
  */
 /* eslint-disable no-console */
 
@@ -66,8 +67,7 @@ function loadContextFromRegistry(root: string): {
   const registry = readRuntimeContextRegistry(root);
   const scope = resolveActiveScope(registry, registry.activeScope);
   const resolvedContextPath = resolveContextPathFromActiveScope(registry, scope);
-  process.env.BMAD_RUNTIME_CONTEXT_FILE = resolvedContextPath;
-  const ctx = readRuntimeContext(root);
+  const ctx = readRuntimeContext(root, resolvedContextPath);
   const templateId = hydrateIdentityFromContext(ctx);
   return {
     flow: ctx.flow,
@@ -104,47 +104,6 @@ export function mainEmitRuntimePolicy(argv: string[]): number {
     let flow = (args.flow || process.env.BMAD_RUNTIME_FLOW || '').trim();
     let stage = (args.stage || process.env.BMAD_RUNTIME_STAGE || '').trim();
     let templateId = (args.templateId || process.env.BMAD_RUNTIME_TEMPLATE_ID || '').trim();
-    const explicitContextFile = (process.env.BMAD_RUNTIME_CONTEXT_FILE || '').trim();
-
-    if (!flow || !stage) {
-      if (explicitContextFile) {
-        try {
-          const ctx = readRuntimeContext(root);
-          const normalizedStage =
-            ctx.stage === ('constitution' as StageName) ? 'specify' : ctx.stage;
-          if (!flow) flow = ctx.flow;
-          if (!stage) stage = normalizedStage;
-          if (!templateId && ctx.templateId) templateId = hydrateIdentityFromContext(ctx);
-          else hydrateIdentityFromContext(ctx);
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e);
-          if (!msg.includes('runtime-context')) {
-            console.error(`emit-runtime-policy: ${msg}`);
-            return 1;
-          }
-        }
-      }
-    }
-
-    if (!flow || !stage) {
-      if (explicitContextFile) {
-        try {
-          const ctx = readRuntimeContext(root);
-          const normalizedStage =
-            ctx.stage === ('constitution' as StageName) ? 'specify' : ctx.stage;
-          const templateFromCtx = hydrateIdentityFromContext(ctx);
-          if (!flow) flow = ctx.flow;
-          if (!stage) stage = normalizedStage;
-          if (!templateId && templateFromCtx) templateId = templateFromCtx;
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e);
-          if (!msg.includes('runtime-context')) {
-            console.error(`emit-runtime-policy: ${msg}`);
-            return 1;
-          }
-        }
-      }
-    }
 
     if (!flow || !stage) {
       try {
@@ -169,9 +128,6 @@ export function mainEmitRuntimePolicy(argv: string[]): number {
     }
 
     const contextProvided =
-      Boolean(
-        process.env.BMAD_RUNTIME_CONTEXT_FILE && process.env.BMAD_RUNTIME_CONTEXT_FILE.trim()
-      ) ||
       Boolean(process.env.BMAD_RUNTIME_RUN_ID && process.env.BMAD_RUNTIME_RUN_ID.trim()) ||
       Boolean(process.env.BMAD_RUNTIME_STORY_ID && process.env.BMAD_RUNTIME_STORY_ID.trim());
 
@@ -184,7 +140,7 @@ export function mainEmitRuntimePolicy(argv: string[]): number {
 
     if (!flow || !stage) {
       console.error(
-        'emit-runtime-policy: missing flow/stage (CLI/env, runtime registry activeScope/context resolution, or explicit debug override).'
+        'emit-runtime-policy: missing flow/stage (CLI/env or runtime registry activeScope/context resolution).'
       );
       return 1;
     }

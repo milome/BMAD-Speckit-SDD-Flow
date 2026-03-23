@@ -2,14 +2,26 @@ import { describe, expect, it } from 'vitest';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { buildProjectRegistryFromSprintStatus, writeRuntimeContextRegistry } from '../../scripts/runtime-context-registry';
-import { projectContextPath, readRuntimeContext, writeRuntimeContextFromSprintStatus } from '../../scripts/runtime-context';
+import {
+  buildProjectRegistryFromSprintStatus,
+  writeRuntimeContextRegistry,
+} from '../../scripts/runtime-context-registry';
+import {
+  projectContextPath,
+  readRuntimeContext,
+  writeRuntimeContextFromSprintStatus,
+} from '../../scripts/runtime-context';
 
 describe('runtime-context project sync', () => {
   it('writes project context derived from sprint-status and keeps it aligned with registry', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'project-sync-'));
     try {
-      const sprintStatusPath = path.join(root, '_bmad-output', 'implementation-artifacts', 'sprint-status.yaml');
+      const sprintStatusPath = path.join(
+        root,
+        '_bmad-output',
+        'implementation-artifacts',
+        'sprint-status.yaml'
+      );
       mkdirSync(path.dirname(sprintStatusPath), { recursive: true });
       writeFileSync(
         sprintStatusPath,
@@ -32,19 +44,18 @@ describe('runtime-context project sync', () => {
       writeRuntimeContextFromSprintStatus(root, sprintStatusPath);
 
       const contextFile = projectContextPath(root);
-      expect(contextFile).toContain(path.join('_bmad-output', 'runtime', 'context', 'project.json'));
+      expect(contextFile).toContain(
+        path.join('_bmad-output', 'runtime', 'context', 'project.json')
+      );
       expect(readFileSync(contextFile, 'utf8')).toContain('full_bmad');
 
-      process.env.BMAD_RUNTIME_CONTEXT_FILE = contextFile;
       const loaded = readRuntimeContext(root);
-      delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
 
       expect(loaded.sourceMode).toBe('full_bmad');
       expect(loaded.contextScope).toBe('project');
       expect(loaded.epicId).toBe('epic-14');
       expect(loaded.storyId).toBe('14-1-runtime-context-refactor');
     } finally {
-      delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
       rmSync(root, { recursive: true, force: true });
     }
   });

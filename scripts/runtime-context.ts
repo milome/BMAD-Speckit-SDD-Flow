@@ -108,28 +108,26 @@ export function runContextPath(
   );
 }
 
-/** Resolve path from env `BMAD_RUNTIME_CONTEXT_FILE` only; no implicit root fallback. */
-export function resolveRuntimeContextPath(root: string): string {
-  const override = process.env.BMAD_RUNTIME_CONTEXT_FILE;
-  if (override && override.trim() !== '') {
-    return path.isAbsolute(override) ? override : path.resolve(root, override);
-  }
-  throw new Error('runtime-context explicit file required: set BMAD_RUNTIME_CONTEXT_FILE');
-}
-
-/** Resolve explicit write target from env `BMAD_RUNTIME_CONTEXT_FILE` or CLI-provided path. */
-export function resolveRuntimeContextWritePath(root: string, explicitPath?: string): string {
-  const candidate = explicitPath?.trim() || process.env.BMAD_RUNTIME_CONTEXT_FILE?.trim();
+/** Resolve runtime context path from an explicit argument or the project-scoped default path. */
+export function resolveRuntimeContextPath(root: string, explicitPath?: string): string {
+  const candidate = explicitPath?.trim();
   if (candidate) {
     return path.isAbsolute(candidate) ? candidate : path.resolve(root, candidate);
   }
-  throw new Error(
-    'runtime-context explicit write path required: pass a file path or set BMAD_RUNTIME_CONTEXT_FILE'
-  );
+  return projectContextPath(root);
 }
 
-export function readRuntimeContext(root: string): RuntimeContextFile {
-  const file = resolveRuntimeContextPath(root);
+/** Resolve write target from an explicit argument or the project-scoped default path. */
+export function resolveRuntimeContextWritePath(root: string, explicitPath?: string): string {
+  const candidate = explicitPath?.trim();
+  if (candidate) {
+    return path.isAbsolute(candidate) ? candidate : path.resolve(root, candidate);
+  }
+  return projectContextPath(root);
+}
+
+export function readRuntimeContext(root: string, explicitPath?: string): RuntimeContextFile {
+  const file = resolveRuntimeContextPath(root, explicitPath);
   let raw: string;
   try {
     raw = fs.readFileSync(file, 'utf8');

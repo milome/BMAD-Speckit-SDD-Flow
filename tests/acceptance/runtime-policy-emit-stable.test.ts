@@ -37,44 +37,71 @@ describe('emit-runtime-policy vs resolveRuntimePolicy (stable JSON)', () => {
     expect(out).toBe(expected);
   });
 
-  it('emit-runtime-policy-cli.js reads BMAD_RUNTIME_CONTEXT_FILE', () => {
-    const ctxDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-rp-'));
-    const ctxFile = path.join(ctxDir, 'ctx.json');
+  it('emit-runtime-policy-cli.js uses explicit runtime identity envs without BMAD_RUNTIME_CONTEXT_FILE', () => {
+    const cli = path.join(repoRoot, '_bmad/claude/hooks/emit-runtime-policy-cli.js');
+    const r = spawnSync(process.execPath, [cli], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        CLAUDE_PROJECT_DIR: repoRoot,
+        CURSOR_PROJECT_ROOT: repoRoot,
+        BMAD_RUNTIME_CWD: repoRoot,
+        BMAD_RUNTIME_FLOW: 'story',
+        BMAD_RUNTIME_STAGE: 'implement',
+        BMAD_RUNTIME_EPIC_ID: 'epic-14',
+        BMAD_RUNTIME_STORY_ID: '14.1',
+        BMAD_RUNTIME_RUN_ID: 'run-emit-stable',
+        BMAD_RUNTIME_CONTEXT_FILE: '',
+      },
+    });
+    expect(r.status).toBe(0);
+    const policy = JSON.parse((r.stdout || '').trim());
+    expect(policy.flow).toBe('story');
+    expect(policy.stage).toBe('implement');
+    expect(policy.identity.storyId).toBe('14.1');
+    expect(policy.identity.runId).toBe('run-emit-stable');
+  });
+
+  it('ignores BMAD_RUNTIME_CONTEXT_FILE when explicit flow/stage are absent and no registry-backed context is available', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-rp-env-ignored-'));
+    const ctxFile = path.join(root, 'ctx.json');
     fs.writeFileSync(
       ctxFile,
       JSON.stringify({
         version: 1,
         flow: 'story',
-        stage: 'specify',
+        stage: 'post_audit',
+        storyId: 'should-not-be-read',
         updatedAt: new Date().toISOString(),
       })
     );
+    fs.cpSync(path.join(repoRoot, '_bmad'), path.join(root, '_bmad'), { recursive: true });
+    const chunks: string[] = [];
+    const errors: string[] = [];
+    const origWrite = process.stdout.write.bind(process.stdout);
+    const origError = console.error;
+    process.stdout.write = (msg: string | Uint8Array) => {
+      chunks.push(typeof msg === 'string' ? msg : Buffer.from(msg).toString('utf8'));
+      return true;
+    };
+    console.error = (...args: unknown[]) => {
+      errors.push(args.map((arg) => String(arg)).join(' '));
+    };
     try {
-      const cli = path.join(repoRoot, '_bmad/claude/hooks/emit-runtime-policy-cli.js');
-      const r = spawnSync(process.execPath, [cli], {
-        cwd: repoRoot,
-        encoding: 'utf8',
-        env: {
-          ...process.env,
-          // Isolate from host shell CLAUDE_PROJECT_DIR / CURSOR_PROJECT_ROOT pointing elsewhere
-          CLAUDE_PROJECT_DIR: repoRoot,
-          CURSOR_PROJECT_ROOT: repoRoot,
-          BMAD_RUNTIME_CONTEXT_FILE: ctxFile,
-          BMAD_RUNTIME_CWD: repoRoot,
-        },
-      });
-      expect(r.status).toBe(0);
-      const policy = JSON.parse((r.stdout || '').trim());
-      expect(policy.flow).toBe('story');
-      expect(policy.stage).toBe('specify');
-      const expected = stableStringifyPolicy(
-        resolveRuntimePolicy({ flow: 'story', stage: 'specify' })
-      );
-      expect(stableStringifyPolicy(policy)).toBe(expected);
+      process.env.BMAD_RUNTIME_CONTEXT_FILE = ctxFile;
+      const code = mainEmitRuntimePolicy(['--cwd', root]);
+      expect(code).toBe(1);
     } finally {
-      fs.rmSync(ctxDir, { recursive: true, force: true });
+      delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
+      process.stdout.write = origWrite;
+      console.error = origError;
+      fs.rmSync(root, { recursive: true, force: true });
     }
-  });
+    expect(chunks.join('')).toBe('');
+    expect(errors.join('\n')).toContain('emit-runtime-policy: missing flow/stage');
+    expect(errors.join('\n')).not.toContain('should-not-be-read');
+  }, 20_000);
 
   it('emit fails loud when flow/stage are missing and no registry-backed context is available', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-rp-sp-'));

@@ -7,8 +7,6 @@ import {
   scoringEnabledForTriggerStage,
   resetTriggerConfigCache,
 } from '../trigger-loader';
-import { loadConfig } from '../../../../scripts/bmad-config';
-import { resolveRuntimePolicy } from '../../../../scripts/runtime-governance';
 
 const TMP = path.join(process.cwd(), '_bmad', '_config', 'e5s1-tmp-trigger-test');
 

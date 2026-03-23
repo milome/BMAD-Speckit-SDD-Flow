@@ -20,7 +20,6 @@ describe('runtime-policy inject auto-trigger boundary', () => {
           BMAD_HOOK_HOST: 'cursor',
           CURSOR_PROJECT_ROOT: tempRoot,
           CLAUDE_PROJECT_DIR: tempRoot,
-          BMAD_RUNTIME_CONTEXT_FILE: '',
           BMAD_RUNTIME_FLOW: '',
           BMAD_RUNTIME_STAGE: '',
         },
@@ -30,7 +29,9 @@ describe('runtime-policy inject auto-trigger boundary', () => {
       expect((r.stderr || '').trim()).toBe('');
       const out = JSON.parse(r.stdout || '{}');
       expect(out.systemMessage || '').toBe('');
-      expect(fs.existsSync(path.join(tempRoot, '_bmad-output', 'runtime', 'registry.json'))).toBe(false);
+      expect(fs.existsSync(path.join(tempRoot, '_bmad-output', 'runtime', 'registry.json'))).toBe(
+        false
+      );
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }

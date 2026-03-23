@@ -4,9 +4,9 @@
  *
  * 源路径约定：_bmad/ 是唯一内容源。
  *   - 共享 commands: _bmad/commands/
+ *   - 共享 i18n: _bmad/i18n/
  *   - Cursor rules/skills: _bmad/cursor/
- *   - Claude agents/skills/hooks/rules/i18n: _bmad/claude/
- *   - Cursor 侧额外同步 _bmad/claude/i18n -> .cursor/i18n（与 .claude/i18n 同源，双语 manifest）
+ *   - Claude agents/skills/hooks/rules: _bmad/claude/
  *
  * 用途：部署 BMAD 目录结构。
  * 对外部目标目录：从 @bmad-speckit/runtime-emit 将 emit-runtime-policy.cjs 与 write-runtime-context.js 复制到 **.cursor/hooks** 与/或 **.claude/hooks**（与 hook 脚本同目录，不在项目根创建 scripts/）。
@@ -139,7 +139,7 @@ const REGISTERED_AGENT_PROFILES = {
         { src: path.join(bmadRoot, 'cursor', 'rules'), dest: '.cursor/rules' },
         { src: path.join(bmadRoot, 'skills'), dest: '.cursor/skills' },
         { src: path.join(bmadRoot, 'cursor', 'skills'), dest: '.cursor/skills' },
-        { src: path.join(bmadRoot, 'claude', 'i18n'), dest: '.cursor/i18n' },
+        { src: path.join(bmadRoot, 'i18n'), dest: '.cursor/i18n' },
       ];
       let totalFiles = 0;
       for (const { src, dest } of cursorSync) {
@@ -181,6 +181,7 @@ const REGISTERED_AGENT_PROFILES = {
         { src: path.join(bmadRoot, 'claude', 'agents'), dest: '.claude/agents' },
         { src: path.join(bmadRoot, 'skills'), dest: '.claude/skills' },
         { src: path.join(bmadRoot, 'claude', 'skills'), dest: '.claude/skills' },
+        { src: path.join(bmadRoot, 'i18n'), dest: '.claude/i18n' },
         { src: path.join(bmadRoot, 'claude', 'state'), dest: '.claude/state' },
         { src: path.join(bmadRoot, 'claude', 'hooks'), dest: '.claude/hooks' },
         { src: path.join(bmadRoot, 'claude', 'protocols'), dest: '.claude/protocols' },
@@ -271,7 +272,6 @@ function syncCursorRuntimePolicyHooks(targetDir, bmadRoot) {
   const destDir = path.join(targetDir, '.cursor', 'hooks');
   const sharedDir = path.join(bmadRoot, 'runtime', 'hooks');
   const cursorHooksDir = path.join(bmadRoot, 'cursor', 'hooks');
-  const fallbackDir = path.join(bmadRoot, 'claude', 'hooks');
 
   fs.mkdirSync(destDir, { recursive: true });
 
@@ -282,12 +282,12 @@ function syncCursorRuntimePolicyHooks(targetDir, bmadRoot) {
 
   const names = ['emit-runtime-policy-cli.js', 'runtime-policy-inject.js'];
   for (const name of names) {
-    const primary = path.join(cursorHooksDir, name);
-    const fallback = path.join(fallbackDir, name);
-    const src = fs.existsSync(primary) ? primary : fallback;
-    if (src && fs.existsSync(src)) {
+    const src = path.join(cursorHooksDir, name);
+    if (fs.existsSync(src)) {
       fs.copyFileSync(src, path.join(destDir, name));
       console.log('Sync', path.relative(targetDir, src), '->', path.join('.cursor', 'hooks', name));
+    } else {
+      console.warn(`Skip Cursor hook override (missing): ${path.relative(targetDir, src)}`);
     }
   }
   writeCursorHooksJson(targetDir);

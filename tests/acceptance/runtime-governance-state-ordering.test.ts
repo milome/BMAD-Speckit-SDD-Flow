@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import path from 'node:path';
 import { readRuntimeContext } from '../../scripts/runtime-context';
 
 describe('runtime-governance state ordering', () => {
   it('rejects non-monotonic stage transitions against the canonical runtime stage sequence', () => {
-    process.env.BMAD_RUNTIME_CONTEXT_FILE = 'tests/fixtures/story-runtime-context.json';
-    const context = readRuntimeContext(process.cwd());
-    delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
+    const context = readRuntimeContext(
+      process.cwd(),
+      path.resolve(process.cwd(), 'tests/fixtures/story-runtime-context.json')
+    );
     const stageOrder = [
       'story_create',
       'story_audit',

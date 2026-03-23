@@ -16,9 +16,7 @@ function run(cmd: string, cwd: string, env?: NodeJS.ProcessEnv): string {
 }
 
 describe('install to consumer → CLI acceptance', () => {
-  it(
-    'init-to-root deploy → bmad-speckit check passes',
-    () => {
+  it('init-to-root deploy → bmad-speckit check passes', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-init-'));
     try {
       run(`node scripts/init-to-root.js --full "${target}"`, PKG_ROOT);
@@ -26,19 +24,16 @@ describe('install to consumer → CLI acceptance', () => {
       expect(existsSync(join(target, '_bmad'))).toBe(true);
       expect(existsSync(join(target, 'specs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy.cjs'))).toBe(true);
+      expect(existsSync(join(target, '.cursor', 'i18n'))).toBe(true);
 
       const out = run('npx bmad-speckit check', target);
       expect(out).toMatch(/Check OK|OK/i);
     } finally {
       rmSync(target, { recursive: true, force: true });
     }
-  },
-    30_000
-  );
+  }, 30_000);
 
-  it(
-    'init-to-root deploy → bmad-speckit version runs',
-    () => {
+  it('init-to-root deploy → bmad-speckit version runs', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-ver-'));
     try {
       run(`node scripts/init-to-root.js --full "${target}"`, PKG_ROOT);
@@ -47,13 +42,9 @@ describe('install to consumer → CLI acceptance', () => {
     } finally {
       rmSync(target, { recursive: true, force: true });
     }
-  },
-    30_000
-  );
+  }, 30_000);
 
-  it(
-    'npm install → postinstall deploys → bmad-speckit check passes',
-    () => {
+  it('npm install → postinstall deploys → bmad-speckit check passes', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-npm-'));
     try {
       writeFileSync(
@@ -66,6 +57,7 @@ describe('install to consumer → CLI acceptance', () => {
       expect(existsSync(join(target, '_bmad'))).toBe(true);
       expect(existsSync(join(target, '.cursor'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy.cjs'))).toBe(true);
+      expect(existsSync(join(target, '.cursor', 'i18n'))).toBe(true);
       expect(existsSync(join(target, 'scripts', 'emit-runtime-policy.cjs'))).toBe(false);
 
       const out = run('npx bmad-speckit check', target);
@@ -73,7 +65,5 @@ describe('install to consumer → CLI acceptance', () => {
     } finally {
       rmSync(target, { recursive: true, force: true });
     }
-  },
-    60_000
-  );
+  }, 60_000);
 });
