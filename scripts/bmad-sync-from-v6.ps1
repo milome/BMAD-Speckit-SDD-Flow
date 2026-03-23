@@ -11,7 +11,8 @@
 .PARAMETER ProjectRoot
     Project root.
 .PARAMETER V6Ref
-    Git ref to sync from (tag or branch). Default: main
+    Git ref to sync from (tag or branch). Default: 21c2a48 (pre-#2050 layout: src/core, src/bmm, src/utility).
+    Use 'main' to sync from current v6 (requires layout migration).
 #>
 
 [CmdletBinding()]
@@ -21,7 +22,7 @@ param(
     [switch]$DryRun,
     [string]$BackupDir,
     [string]$ProjectRoot,
-    [string]$V6Ref = 'main'
+    [string]$V6Ref = '21c2a48'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -105,12 +106,28 @@ function Get-V6SourcePath {
     try {
         $prevEAP = $ErrorActionPreference
         $ErrorActionPreference = 'Continue'
-        git clone --depth 1 --branch $V6Ref $BMAD_METHOD_REPO $tempDir 2>$null
-        $cloneExit = $LASTEXITCODE
-        $ErrorActionPreference = $prevEAP
-        if ($cloneExit -ne 0) {
-            throw "git clone failed (exit $cloneExit). Check network and V6Ref=$V6Ref."
+        # V6Ref can be branch (main) or commit SHA (21c2a48). Branch works with --branch; SHA needs clone+checkout.
+        $isSha = $V6Ref -match '^[0-9a-f]{7,40}$'
+        if ($isSha) {
+            git clone --depth 300 --branch main $BMAD_METHOD_REPO $tempDir 2>$null
+            $cloneExit = $LASTEXITCODE
+            if ($cloneExit -eq 0) {
+                Push-Location $tempDir
+                git checkout $V6Ref 2>$null
+                $checkoutExit = $LASTEXITCODE
+                Pop-Location
+                if ($checkoutExit -ne 0) { throw "git checkout $V6Ref failed." }
+            } else {
+                throw "git clone failed (exit $cloneExit)."
+            }
+        } else {
+            git clone --depth 1 --branch $V6Ref $BMAD_METHOD_REPO $tempDir 2>$null
+            $cloneExit = $LASTEXITCODE
+            if ($cloneExit -ne 0) {
+                throw "git clone failed (exit $cloneExit). Check network and V6Ref=$V6Ref."
+            }
         }
+        $ErrorActionPreference = $prevEAP
         $srcPath = Join-Path $tempDir 'src'
         if (-not (Test-Path $srcPath)) {
             throw "v6 source layout changed: src/ not found."
@@ -178,6 +195,12 @@ function Get-Phase2Operations {
     $v6Root = Get-V6SourcePath
     $ops = @()
     $v6Src = Join-Path $v6Root 'src'
+    # T7: v6 layout compatibility check
+    foreach ($dir in @('core', 'bmm', 'utility')) {
+        if (-not (Test-Path (Join-Path $v6Src $dir))) {
+            Write-Error "v6 layout changed: src/$dir not found. Check BMAD-METHOD main branch structure."
+        }
+    }
 
     # Scan v6 src/core, src/bmm, src/utility for files to copy (exclude protected)
     $toCopy = @()
@@ -207,6 +230,30 @@ function Get-Phase2Operations {
     }
 
     return @{ Ops = $ops; TempDir = $v6Root }
+}
+
+# --- Protected unchanged check (T5) ---
+function Test-ProtectedUnchanged {
+    param([string]$BakDir, [string]$ProjRoot)
+    foreach ($item in $BACKUP_ITEMS) {
+        $currentPath = Join-Path $ProjRoot $item.From
+        $backupPath = Join-Path $BakDir $item.To
+        if (-not (Test-Path $backupPath)) { continue }
+        if (-not (Test-Path $currentPath)) { continue }
+        $changed = $false
+        if (Test-Path $backupPath -PathType Container) {
+            $currHash = (Get-ChildItem -Path $currentPath -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object { (Get-FileHash $_.FullName -Algorithm MD5).Hash } | Sort-Object) -join ''
+            $bakHash = (Get-ChildItem -Path $backupPath -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object { (Get-FileHash $_.FullName -Algorithm MD5).Hash } | Sort-Object) -join ''
+            $changed = ($currHash -ne $bakHash)
+        } else {
+            $currHash = (Get-FileHash -Path $currentPath -Algorithm MD5 -ErrorAction SilentlyContinue).Hash
+            $bakHash = (Get-FileHash -Path $backupPath -Algorithm MD5 -ErrorAction SilentlyContinue).Hash
+            $changed = ($currHash -ne $bakHash)
+        }
+        if ($changed) {
+            Write-Warning "Protected item may have been modified: $($item.From)"
+        }
+    }
 }
 
 # --- Rollback commands ---
@@ -309,6 +356,9 @@ try {
                     Write-Host "  Removed redundant: $($op.Source) (_bmad/skills/ is canonical)" -ForegroundColor Green
                 }
             }
+        }
+        if ($phasesToRun -contains '2') {
+            Test-ProtectedUnchanged -BakDir $BackupDir -ProjRoot $ProjectRoot
         }
         Write-RollbackCommands -BakDir $BackupDir -ProjRoot $ProjectRoot
     }

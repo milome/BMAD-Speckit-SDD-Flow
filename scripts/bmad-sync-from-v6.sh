@@ -2,12 +2,13 @@
 # Sync BMAD-METHOD to _bmad (WSL/Linux/macOS)
 # 与 scripts/bmad-sync-from-v6.ps1 功能对等
 #
-# Usage: ./scripts/bmad-sync-from-v6.sh [-Phase 1|2|3|all] [-DryRun] [-BackupDir <path>] [-ProjectRoot <path>] [-V6Ref main]
+# Usage: ./scripts/bmad-sync-from-v6.sh [-Phase 1|2|3|all] [-DryRun] [-BackupDir <path>] [-ProjectRoot <path>] [-V6Ref 21c2a48]
+# Default V6Ref=21c2a48: pre-#2050 layout (src/core, src/bmm, src/utility). Use 'main' for current v6 (requires layout migration).
 
 set -e
 
 BMAD_METHOD_REPO="https://github.com/bmad-code-org/BMAD-METHOD.git"
-V6_REF="${V6_REF:-main}"
+V6_REF="${V6_REF:-21c2a48}"
 
 EXCLUDE_PATTERNS=(
     "_bmad/scoring"
@@ -79,7 +80,16 @@ test_excluded() {
 fetch_v6() {
     local tmp
     tmp="$(mktemp -d)"
-    ( cd "$tmp" && git clone --depth 1 --branch "$V6_REF" "$BMAD_METHOD_REPO" . )
+    if [[ "$V6_REF" =~ ^[0-9a-f]{7,40}$ ]]; then
+        # Commit SHA: clone main with depth, then checkout
+        ( cd "$tmp" && git clone --depth 300 --branch main "$BMAD_METHOD_REPO" . && git checkout "$V6_REF" ) || {
+            echo "git clone/checkout failed for V6Ref=$V6_REF"; rm -rf "$tmp"; exit 1;
+        }
+    else
+        ( cd "$tmp" && git clone --depth 1 --branch "$V6_REF" "$BMAD_METHOD_REPO" . ) || {
+            echo "git clone failed for V6Ref=$V6_REF"; rm -rf "$tmp"; exit 1;
+        }
+    fi
     [[ -d "$tmp/src" ]] || { echo "v6 source layout changed: src/ not found."; rm -rf "$tmp"; exit 1; }
     echo "$tmp"
 }

@@ -4,6 +4,14 @@ description: 'Execute a story by implementing tasks/subtasks, writing tests, val
 disable-model-invocation: true
 ---
 
+**依赖 Skill**：bmad-story-assistant、speckit-workflow
+**安装**：`pwsh scripts/setup.ps1 -Target <项目根>` 或手动复制至 `{SKILLS_ROOT}`
+**衔接**：Create Story 产出后须显式触发本 command 完成 Dev Story 流程
+
+**依赖 Skill**：bmad-story-assistant、speckit-workflow
+**安装**：`pwsh scripts/setup.ps1 -Target <项目根>` 或手动复制至 `{SKILLS_ROOT}`
+**衔接**：Create Story 产出后须显式触发本 command 完成 Dev Story 流程
+
 **前置条件**：sprint-planning 为 dev-story 的前置条件。sprint-status.yaml 缺失时需先运行 `sprint-planning` 或提供要开发的 Story 文件路径。参见 `bmad-bmm-sprint-planning` 命令。
 
 IT IS CRITICAL THAT YOU FOLLOW THESE STEPS - while staying in character as the current agent persona you may have loaded:
