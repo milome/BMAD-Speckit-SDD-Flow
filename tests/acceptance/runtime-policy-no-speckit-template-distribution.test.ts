@@ -14,7 +14,7 @@ describe('runtime-policy no speckit template distribution', () => {
       ),
       'utf8'
     );
-    expect(planDoc).toContain('不再把 `.speckit-state.yaml` 作为正式 runtime context 文件');
-    expect(planDoc).toContain('.speckit-state.yaml.template');
+    expect(planDoc).toContain('已完全移除，不再作为 runtime context');
+    expect(planDoc).toContain('.speckit-state.yaml');
   });
 });

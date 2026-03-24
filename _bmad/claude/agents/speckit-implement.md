@@ -179,7 +179,7 @@ progressPath="${baseDir}/progress.${stem}.txt"
   - 调用失败时记录`resultCode`，不阻断流程
 - 必须嵌套执行 speckit-workflow 完整流程：`specify →plan →GAPS →tasks →执行`
 - 上下文与路径：
-  - Story 文档位于 `{project-root}/_bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{epic_num}-{story_num}-*/*.md`
+  - Story 文档位于 `{project-root}/_bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{story_num}-*/*.md`
   - 产出路径位于 story 子目录
   - BUGFIX / TASKS 文档路径由主 Agent 传入
   - 项目根目录为 `{project-root}`

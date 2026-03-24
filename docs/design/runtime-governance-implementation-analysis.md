@@ -441,7 +441,7 @@ policy 消费不再猜测上下文，而是通过：
 当前已经落地：
 
 - 不再 fallback `.bmad/runtime-context.json`
-- 不再 fallback `.speckit-state.yaml`
+- `.speckit-state.yaml` 已完全移除，不再作为 runtime context
 - 无上下文时 fail loud
 - 非 BMAD 项目下 hook 注入层静默跳过，不制造噪声
 

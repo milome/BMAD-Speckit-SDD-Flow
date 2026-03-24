@@ -94,7 +94,7 @@ Story 完整标识为 `{epic_num}-{story_num}`，例如 Epic 4、Story 4.1 → `
 
 **须先询问用户**：当验收/回归存在失败用例且拟列入正式排除时，主 Agent 或子代理必须**先向用户询问**「是否批准将以下用例列入正式排除清单」，用户明确批准后，方可创建或更新排除清单；若用户拒绝，必须进入修复流程，不得创建排除清单。
 
-**排除记录路径（Story 用）**：`_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{epic_num}-{story_num}-{slug}/EXCLUDED_TESTS_{epic_num}-{story_num}.md`。必备字段与可接受/不可接受判定与 bmad-bug-assistant「正式排除失败用例的规定」一致（用例 ID、排除理由、客观依据、本 Story 标识、审计结论）。
+**排除记录路径（Story 用）**：`_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/EXCLUDED_TESTS_{epic_num}-{story_num}.md`。必备字段与可接受/不可接受判定与 bmad-bug-assistant「正式排除失败用例的规定」一致（用例 ID、排除理由、客观依据、本 Story 标识、审计结论）。
 
 ---
 
@@ -134,7 +134,7 @@ Story 完整标识为 `{epic_num}-{story_num}`，例如 Epic 4、Story 4.1 → `
 主 Agent 执行顺序：
 0. （阶段零-前置）若 _bmad 存在且 party-mode 未做展示名优化，自动执行补丁
 1. 发起 Create Story 子任务（epic_num=4, story_num=1）
-2. 产出 `_bmad-output/implementation-artifacts/epic-4-*/story-4-1-<slug>/4-1-<slug>.md` 后，发起 Story 文档审计
+2. 产出 `_bmad-output/implementation-artifacts/epic-4-*/story-1-<slug>/4-1-<slug>.md` 后，发起 Story 文档审计
 3. 审计通过后，发起 Dev Story 实施子任务，传入 TASKS 或 BUGFIX 文档路径
 4. 实施完成后，**必须**发起实施后审计（audit-prompts.md §5）（本步骤为必须，非可选）
 5. 审计通过即流程结束
@@ -161,8 +161,8 @@ Story 完整标识为 `{epic_num}-{story_num}`，例如 Epic 4、Story 4.1 → `
 用户说：「Story 4-1 文档已存在，**已通过 party-mode 且审计通过**，请执行 Dev Story。」
 
 主 Agent 方可跳过阶段一、二，直接发起 Dev Story 实施子任务，传入：
-- Story 文档路径：`_bmad-output/implementation-artifacts/epic-4-*/story-4-1-*/*.md`
-- TASKS 文档路径：（如 `_bmad-output/implementation-artifacts/epic-4-*/story-4-1-*/TASKS_4-1-*.md`）
+- Story 文档路径：`_bmad-output/implementation-artifacts/epic-4-*/story-1-*/*.md`
+- TASKS 文档路径：（如 `_bmad-output/implementation-artifacts/epic-4-*/story-1-*/TASKS_4-1-*.md`）
 - 项目根目录
 
 实施完成后按阶段四发起实施后审计。
@@ -557,7 +557,7 @@ prompt: |
   2. 读取其全部内容
   3. 以 {project-root}/_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml 作为 workflow-config 参数
   4. 按照 workflow.xml 的指示执行 create-story 工作流
-  5. 输出 Story 文档到 {project-root}/_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{epic_num}-{story_num}-{slug}/{epic_num}-{story_num}-<slug>.md（slug 从 Story 标题或用户输入推导）
+  5. 输出 Story 文档到 {project-root}/_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/{epic_num}-{story_num}-<slug>.md（slug 从 Story 标题或用户输入推导）
 
   **强制约束**：
   - 创建 story 文档必须使用明确描述，禁止使用本 skill「§ 禁止词表（Story 文档）」中的词（可选、可考虑、后续、先实现、后续扩展、待定、酌情、视情况、技术债）。
@@ -570,7 +570,7 @@ prompt: |
 
 ### 1.2 文档产出路径
 
-Story 文档通常保存在：`_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{epic_num}-{story_num}-{slug}/{epic_num}-{story_num}-<slug>.md`。
+Story 文档通常保存在：`_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/{epic_num}-{story_num}-<slug>.md`。
 
 ---
 
@@ -641,15 +641,15 @@ prompt: |
   2. 若 Story 文档中存在本 skill § 禁止词表（Story 文档）任一词，一律判为未通过，并在修改建议中注明删除或改为明确描述。
   3. 多方案场景是否已通过辩论达成共识并选定最优方案。
   4. 是否有技术债或占位性表述。
-  5. **推迟闭环**：若 Story 含「由 Story X.Y 负责」，须验证 `_bmad-output/implementation-artifacts/epic-{X}-*/story-{X}-{Y}-*/` 下 Story 文档存在且 scope/验收标准含该任务的具体描述；否则判不通过。「由 X.Y 负责」的表述须含被推迟任务的**具体描述**，便于 grep 验证。修改建议（三选一）：① 若 X.Y 不存在：创建 Story X.Y，scope 含 [任务具体描述]；② 若 X.Y 存在但 scope 不含：更新 Story X.Y，将 [任务具体描述] 加入 scope；③ 若不应推迟：删除「由 X.Y 负责」，改为本 Story 实现。
+  5. **推迟闭环**：若 Story 含「由 Story X.Y 负责」，须验证 `_bmad-output/implementation-artifacts/epic-{X}-*/story-{Y}-*/` 下 Story 文档存在且 scope/验收标准含该任务的具体描述；否则判不通过。「由 X.Y 负责」的表述须含被推迟任务的**具体描述**，便于 grep 验证。修改建议（三选一）：① 若 X.Y 不存在：创建 Story X.Y，scope 含 [任务具体描述]；② 若 X.Y 存在但 scope 不含：更新 Story X.Y，将 [任务具体描述] 加入 scope；③ 若不应推迟：删除「由 X.Y 负责」，改为本 Story 实现。
   
-  验证方式：阅读 Story 文档；若含「由 Story X.Y 负责」，读取 `{project-root}/_bmad-output/implementation-artifacts/epic-{X}-*/story-{X}-{Y}-*/` 下 Story 文档，检查 scope/验收标准是否含该任务；grep 被推迟任务的关键词。
+  验证方式：阅读 Story 文档；若含「由 Story X.Y 负责」，读取 `{project-root}/_bmad-output/implementation-artifacts/epic-{X}-*/story-{Y}-*/` 下 Story 文档，检查 scope/验收标准是否含该任务；grep 被推迟任务的关键词。
 
   报告结尾必须按以下格式输出：结论：通过/未通过。必达子项：① 覆盖需求与 Epic；② 明确无禁止词；③ 多方案已共识；④ 无技术债/占位表述；⑤ 推迟闭环（若有「由 X.Y 负责」则 X.Y 存在且 scope 含该任务）；⑥ 本报告结论格式符合本段要求。若任一项不满足则结论为未通过，并列出不满足项及每条对应的修改建议。
 
   【§Story 可解析块要求】报告结尾在结论与必达子项之后，**必须**追加可解析评分块（格式见 speckit-workflow/references/audit-prompts-critical-auditor-appendix.md §7）。须包含：独立一行「总体评级: [A|B|C|D]」及四行「- 需求完整性: XX/100」「- 可测试性: XX/100」「- 一致性: XX/100」「- 可追溯性: XX/100」。禁止用描述代替结构化块；总体评级仅限 A/B/C/D。禁止 B+、A-、C+、D- 等任意修饰符；介于两档时择一输出纯字母。映射建议：完全覆盖→A/90+；部分覆盖→B/80+；需修改→C/70+；不通过→D/60及以下。否则 parseAndWriteScore 无法解析、仪表盘无法显示评级。
 
-  【审计通过后必做】当结论为「通过」时，你（审计子代理）**在返回主 Agent 前必须**执行：`npx bmad-speckit score --reportPath <保存的报告路径> --stage story --event story_status_change --triggerStage bmad_story_stage2 --epic {epic_num} --story {story_num} --iteration-count {本 stage 累计 fail 轮数，0 表示一次通过}`。报告路径为 `_bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{epic_num}-{story_num}-*/AUDIT_Story_{epic_num}-{story_num}_stage2.md`。若执行失败，在结论中注明 resultCode，不阻断返回。**禁止**在未执行上述命令前返回通过结论。
+  【审计通过后必做】当结论为「通过」时，你（审计子代理）**在返回主 Agent 前必须**执行：`npx bmad-speckit score --reportPath <保存的报告路径> --stage story --event story_status_change --triggerStage bmad_story_stage2 --epic {epic_num} --story {story_num} --iteration-count {本 stage 累计 fail 轮数，0 表示一次通过}`。报告路径为 `_bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{story_num}-*/AUDIT_Story_{epic_num}-{story_num}_stage2.md`。若执行失败，在结论中注明 resultCode，不阻断返回。**禁止**在未执行上述命令前返回通过结论。
 
   【审计未通过时】你（审计子代理）须在本轮内**直接修改被审 Story 文档**以消除 gap，修改完成后在报告中注明已修改内容；主 Agent 收到报告后发起下一轮审计。**禁止**仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules.md](../speckit-workflow/references/audit-document-iteration-rules.md)。
 ```
@@ -658,7 +658,7 @@ prompt: |
 
 #### 步骤 2.3：阶段二准入检查（强制，先执行）
 
-主 Agent 在收到阶段二通过结论后、进入阶段三之前，**必须先**执行 `npx bmad-speckit check-score --epic {epic} --story {story}`。若输出为 `STORY_SCORE_WRITTEN:yes`，则无需执行 步骤 2.2（子代理已在【审计通过后必做】中写入）。若输出为 `STORY_SCORE_WRITTEN:no` 且报告文件 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{epic}-{story}-*/AUDIT_Story_{epic}-{story}_stage2.md` 存在，则主 Agent 执行 步骤 2.2 补跑。失败 non_blocking。
+主 Agent 在收到阶段二通过结论后、进入阶段三之前，**必须先**执行 `npx bmad-speckit check-score --epic {epic} --story {story}`。若输出为 `STORY_SCORE_WRITTEN:yes`，则无需执行 步骤 2.2（子代理已在【审计通过后必做】中写入）。若输出为 `STORY_SCORE_WRITTEN:no` 且报告文件 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_Story_{epic}-{story}_stage2.md` 存在，则主 Agent 执行 步骤 2.2 补跑。失败 non_blocking。
 
 #### 步骤 2.2：补跑 parse-and-write-score（步骤 2.3 得 no 时执行）
 
@@ -883,7 +883,7 @@ elif story_count >= 3:
 
 ### 3.2 主 Agent 职责
 
-**主 Agent 必须执行的步骤**：1 推导 epic_slug（从 `_bmad-output/planning-artifacts/dev/epics.md` 中 `### Epic N：Title` 的 Title 转 kebab-case，或从 `_bmad-output/implementation-artifacts/epic-{N}-*/` 已有目录名解析）→ 2 准备 prompt（将模板 STORY-A3-DEV 整段复制并替换占位符 epic_num、story_num、epic_slug、slug、project-root）→ 3 执行发起前自检清单 → 4 输出自检结果 → 5 发起子任务。**禁止**：不得在未完成步骤 3、4 的情况下执行步骤 5；不得省略 epic_slug 占位符，否则子代理会创建无 slug 的 specs/epic-N/ 路径。
+**主 Agent 必须执行的步骤**：1 推导 epic_slug（从 `_bmad-output/planning-artifacts/epics.md` 中 `### Epic N：Title` 的 Title 转 kebab-case，或从 `_bmad-output/implementation-artifacts/epic-{N}-*/` 已有目录名解析）→ 2 准备 prompt（将模板 STORY-A3-DEV 整段复制并替换占位符 epic_num、story_num、epic_slug、slug、project-root）→ 3 执行发起前自检清单 → 4 输出自检结果 → 5 发起子任务。**禁止**：不得在未完成步骤 3、4 的情况下执行步骤 5；不得省略 epic_slug 占位符，否则子代理会创建无 slug 的 specs/epic-N/ 路径。
 
 - **仅负责**：发起 mcp_task、传入 BUGFIX/TASKS 文档路径、收集 subagent 输出。
 - **禁止**：主 Agent 直接对生产代码执行 `search_replace` 或 `write`。
@@ -897,7 +897,7 @@ elif story_count >= 3:
 
 **强制规则**：
 
-1. **发起阶段三之前**：主 Agent 必须检查该 Story 的产出目录 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{epic}-{story}-*/` 是否已存在 `progress.*.txt` 且内容含 `Completed: N`（N≥1）及对应 `prd.*.json`，且该目录下已有 tasks 对应的实现产物。若**已存在**上述条件，视为**实施已结束**，**禁止**再次发起阶段三 Dev Story 子任务；**必须**直接进入阶段四（实施后审计）。
+1. **发起阶段三之前**：主 Agent 必须检查该 Story 的产出目录 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/` 是否已存在 `progress.*.txt` 且内容含 `Completed: N`（N≥1）及对应 `prd.*.json`，且该目录下已有 tasks 对应的实现产物。若**已存在**上述条件，视为**实施已结束**，**禁止**再次发起阶段三 Dev Story 子任务；**必须**直接进入阶段四（实施后审计）。
 2. **子任务（STORY-A3-DEV）返回或超时之后**：主 Agent **仅允许**执行 3.3.1 兜底 cleanup，然后**立即**发起阶段四（STORY-A4-POSTAUDIT）。**禁止**以任何理由再次发起阶段三 Dev Story 子任务（例如不得因「用户说继续」或「下一项」而重新发起 Dev Story）。
 
 ### 3.3 发起实施子任务（STORY-A3-DEV 模板）
@@ -916,7 +916,7 @@ prompt: |
   1. 验证 spec-E{epic_num}-S{story_num}.md 存在且已通过审计
      - 检查路径: specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/spec-E{epic_num}-S{story_num}.md
      - 必须包含审计标记: <!-- AUDIT: PASSED by code-reviewer -->
-     - **若 spec 目录不存在**：须先创建 specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/，epic_slug 从 _bmad-output/planning-artifacts/dev/epics.md 中 `### Epic {epic_num}：Title` 的 Title 转 kebab-case 推导，禁止使用 specs/epic-{epic_num}/ 无 slug 路径
+     - **若 spec 目录不存在**：须先创建 specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/，epic_slug 从 _bmad-output/planning-artifacts/epics.md 中 `### Epic {epic_num}：Title` 的 Title 转 kebab-case 推导，禁止使用 specs/epic-{epic_num}/ 无 slug 路径
 
   2. 验证 plan-E{epic_num}-S{story_num}.md 存在且已通过审计
      - 检查路径: specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/plan-E{epic_num}-S{story_num}.md
@@ -931,7 +931,7 @@ prompt: |
      - 必须包含审计标记: <!-- AUDIT: PASSED by code-reviewer -->
 
   5. 验证 ralph-method 追踪文件已创建或将在执行首步创建
-     - 检查路径: _bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{epic_num}-{story_num}-*/prd.*.json 与 progress.*.txt
+     - 检查路径: _bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{story_num}-*/prd.*.json 与 progress.*.txt
      - 若不存在：子代理**必须**在开始执行 tasks 前，根据 tasks-E{epic_num}-S{story_num}.md 生成 prd 与 progress（符合 ralph-method schema），否则不得开始编码。
      - **progress 预填 TDD 槽位**：生成 progress 时，对每个 US 预填 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 或 [DONE] 占位行（`_pending_`），涉及生产代码的 US 含三者，仅文档/配置的含 [DONE]。
 
@@ -982,12 +982,12 @@ prompt: |
   **必须嵌套执行 speckit-workflow 完整流程**：specify → plan → GAPS → tasks → 执行。
 
   **上下文与路径**：
-  - Story 文档：{project-root}/_bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{epic_num}-{story_num}-*/*.md
-  - 产出路径：Story 文档入 story 子目录 `epic-{epic_num}-{epic-slug}/story-{epic_num}-{story_num}-{slug}/{epic_num}-{story_num}-{slug}.md`
+  - Story 文档：{project-root}/_bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{story_num}-*/*.md
+  - 产出路径：Story 文档入 story 子目录 `epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/{epic_num}-{story_num}-{slug}.md`
   - BUGFIX/TASKS 文档：（由主 Agent 传入实际路径）
   - 项目根目录：{project-root}
 
-  **必须遵守**：ralph-method（执行前**必须**在 `_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{epic_num}-{story_num}-{slug}/` 创建 prd.{stem}.json 与 progress.{stem}.txt（stem 为 tasks 文档 stem）；每完成一个 US 必须更新 prd（passes=true）、progress（追加 story log）；按 US 顺序执行。**禁止**在未创建上述文件前开始编码）、TDD 红绿灯、speckit-workflow、禁止伪实现、失败用例须修或记、pytest 在项目根目录运行。
+  **必须遵守**：ralph-method（执行前**必须**在 `_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/` 创建 prd.{stem}.json 与 progress.{stem}.txt（stem 为 tasks 文档 stem）；每完成一个 US 必须更新 prd（passes=true）、progress（追加 story log）；按 US 顺序执行。**禁止**在未创建上述文件前开始编码）、TDD 红绿灯、speckit-workflow、禁止伪实现、失败用例须修或记、pytest 在项目根目录运行。
 
 **implement 执行约束**：执行 implement（或等价执行 tasks）时，子 Agent 必须加载 speckit-workflow 与 ralph-method 技能，或至少遵守 commands/speckit.implement.md 中嵌入的 ralph 步骤（步骤 3.5、6、8）；不得仅凭「执行 tasks」的泛化理解而跳过 prd/progress 创建与 per-US 更新。
 
@@ -1455,7 +1455,7 @@ if time_since_last_activity() > timedelta(hours=24):
 
 ### 4.1 审计子代理与提示词
 
-与阶段二相同：**优先** Cursor Task 调度 code-reviewer；**回退** mcp_task generalPurpose。主 Agent 须将 **STORY-A4-POSTAUDIT** 完整 prompt 模板整段复制并替换占位符后传入。**传入审计子任务的 prompt 必须包含【§5 可解析块要求（implement 专用）】**（见上节综合审计），并附 audit-prompts §5.1 或 audit-prompts-code.md 可解析块示例（功能性、代码质量、测试覆盖、安全性）。**【审计通过后必做】**：当结论为「完全覆盖、验证通过」时，你（审计子代理）**在返回主 Agent 前必须**执行 `npx bmad-speckit score --reportPath <报告路径> --stage implement --event story_status_change --triggerStage bmad_story_stage4 --epic {epic} --story {story} --artifactDocPath <story 文档路径> --iteration-count {本 stage 累计 fail 轮数，0 表示一次通过}`；报告路径为 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{epic}-{story}-*/AUDIT_Story_{epic}-{story}_stage4.md`；若执行失败，在结论中注明 resultCode；**禁止**在未执行前返回通过结论。详细模板见本 skill 历史版本或 speckit-workflow references。
+与阶段二相同：**优先** Cursor Task 调度 code-reviewer；**回退** mcp_task generalPurpose。主 Agent 须将 **STORY-A4-POSTAUDIT** 完整 prompt 模板整段复制并替换占位符后传入。**传入审计子任务的 prompt 必须包含【§5 可解析块要求（implement 专用）】**（见上节综合审计），并附 audit-prompts §5.1 或 audit-prompts-code.md 可解析块示例（功能性、代码质量、测试覆盖、安全性）。**【审计通过后必做】**：当结论为「完全覆盖、验证通过」时，你（审计子代理）**在返回主 Agent 前必须**执行 `npx bmad-speckit score --reportPath <报告路径> --stage implement --event story_status_change --triggerStage bmad_story_stage4 --epic {epic} --story {story} --artifactDocPath <story 文档路径> --iteration-count {本 stage 累计 fail 轮数，0 表示一次通过}`；报告路径为 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_Story_{epic}-{story}_stage4.md`；若执行失败，在结论中注明 resultCode；**禁止**在未执行前返回通过结论。详细模板见本 skill 历史版本或 speckit-workflow references。
 
 若审计结论为**未通过**，**必须**按审计报告修改后**再次发起**，直至「完全覆盖、验证通过」。
 

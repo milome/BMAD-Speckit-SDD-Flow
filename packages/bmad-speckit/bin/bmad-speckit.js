@@ -209,7 +209,7 @@ program
 program
   .command('sft-extract')
   .description('Extract SFT training dataset from scoring data')
-  .option('--threshold <n>', 'Score threshold (default: 60)')
+  .option('--min-score <n>', 'Minimum score for inclusion (default: 90, minimum: 90)')
   .option('--output <path>', 'Output file path')
   .option('--dataPath <path>', 'Scoring data directory')
   .action((opts) => {

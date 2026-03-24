@@ -45,16 +45,41 @@
 
 | 类别 | 路径 |
 |------|------|
+| 整体排除 | `_bmad/_config/`、`_bmad/_memory/`、`_bmad/bmb/`（脚本额外排除，与 §4.1 具体项互补） |
 | scoring | `_bmad/scoring/` |
 | adversarial-reviewer | `_bmad/core/agents/adversarial-reviewer.md` |
-| critical-auditor | `_bmad/core/agents/critical-auditor-guide.md`、`_bmad/core/agents/README-critical-auditor.md` |
+| critical-auditor | `_bmad/core/agents/critical-auditor-guide.md`、`_bmad/core/agents/README-critical-auditor.md`、`_bmad/core/agents/bmad-master.md` |
 | bmad-speckit | `_bmad/speckit/scripts/` |
 | agent-manifest | `_bmad/_config/agent-manifest.csv` 中 adversarial-reviewer、ai-coach 条目 |
 | party-mode workflow | `_bmad/core/workflows/party-mode/`（本地定制版，含批判审计员角色注入） |
-| speckit-workflow | `.cursor/skills/speckit-workflow/`（spec-kit 侧） |
-| speckit commands | `_bmad/cursor/commands/speckit.*` 或 `.cursor/commands/speckit.*` |
+| speckit-workflow | `.cursor/skills/speckit-workflow/`（项目根下，脚本不同步此路径；若扩展同步范围需加入排除） |
+| speckit commands | `_bmad/cursor/commands/speckit.*` 或 `.cursor/commands/speckit.*`（同上） |
+| Story 路径规则 | `_bmad/_config/eval-lifecycle-report-paths.yaml`、`_bmad/cursor/skills/bmad-story-assistant/`（epic-{epic}-{slug}/story-{story}-{slug}） |
+| _config 定制 | `_bmad/_config/bmad-help.csv`、`_bmad/_config/skill-command-mapping.yaml` |
+| bmm 定制 | `_bmad/bmm/module-help.csv`、`_bmad/bmm/workflows/4-implementation/bmad-code-review/`、`_bmad/bmm/workflows/4-implementation/create-story/`、`_bmad/bmm/workflows/bmad-quick-flow/bmad-quick-dev-new-preview/` |
+| core/skills/commands | `_bmad/core/tasks/help.md`、`_bmad/skills/bmad-help/`、`_bmad/commands/bmad-agent-bmm-tech-writer.md`、`_bmad/commands/bmad-bmm-create-story.md`、`_bmad/commands/bmad-sft-extract.md` |
 
-### 4.2 同步脚本引用
+### 4.2 需定期 Merge 的排除项（持续跟进上游）
+
+以下路径在 `EXCLUDE_PATTERNS` 中，**建议定期与上游对比并手工 merge**，以便吸纳上游改进的同时保留项目定制：
+
+| 路径 | 定制内容 | 建议检查时机 |
+|------|----------|--------------|
+| `_bmad/bmm/workflows/4-implementation/create-story/` | Story 路径规则（epic/story 含 slug） | 上游 create-story 有大版本更新时 |
+| `_bmad/bmm/workflows/4-implementation/bmad-code-review/` | Code Review 流程定制 | 上游 code-review 有大版本更新时 |
+| `_bmad/_config/bmad-help.csv`、`_bmad/_config/skill-command-mapping.yaml` | 帮助与命令映射 | 上游新增/调整命令时 |
+| `_bmad/skills/bmad-help/` | bmad-help 技能定制 | 上游 bmad-help 有大版本更新时 |
+| `_bmad/cursor/skills/bmad-story-assistant/` | Story 助手路径规则 | 上游 story 相关 workflow 更新时 |
+
+**Merge 步骤**（需要吸纳上游更新时）：
+
+1. **备份**：运行 `pwsh scripts/bmad-sync-from-v6.ps1 -Phase 1`（会备份 `BACKUP_ITEMS`）
+2. **临时移除排除**：从 `$EXCLUDE_PATTERNS` 中注释或移除目标路径
+3. **获取上游**：`pwsh scripts/bmad-sync-from-v6.ps1 -Phase 2 -DryRun` 查看将覆盖的文件；或单独 `git show upstream:path/to/file` 获取上游版本
+4. **3-way merge**：用 `git diff`、`git merge-file` 或 IDE 合并工具，将上游改动与本地定制合并
+5. **恢复排除**：合并完成后，将路径加回 `$EXCLUDE_PATTERNS`
+
+### 4.3 同步脚本引用
 
 BMAD 同步可选用 **`scripts/bmad-sync-from-v6.ps1`**：
 
@@ -68,8 +93,9 @@ pwsh scripts/bmad-sync-from-v6.ps1 -Phase all          # 全阶段
 
 - **Phase 1**：Path 标准化、step-04 修正等  
 - **Phase 2**：core/bmm/utility 模块同步（含 V6 core skills）；Phase 2 完成后将 upstream `_bmad/core/skills/` 复制到 `_bmad/skills/`（canonical），然后删除 `core/skills/` 避免冗余  
-- **禁止覆盖项**：以本文档 §4.1 为准；脚本内置 `$EXCLUDE_PATTERNS` 与其一致
-- **默认分支**：`main`（脚本默认 `-V6Ref main`）
+- **禁止覆盖项**：以本文档 §4.1 为准；脚本内置 `$EXCLUDE_PATTERNS` 与其一致（见脚本注释）
+- **需定期 Merge 项**：见 §4.2，建议在重大上游更新时对比合并
+- **默认 V6Ref**：脚本默认 `-V6Ref 21c2a48`（SHA）；同步最新内容时请显式传入 `-V6Ref main`
 
 ---
 

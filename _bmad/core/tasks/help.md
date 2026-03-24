@@ -26,11 +26,11 @@ When `command` field is empty:
 - Then invokes by referencing the `code` field or describing the `name` field
 - Do NOT show a slash command — show the code value and agent load instruction instead
 
-Example presentation for empty command:
+Example presentation for skill/command-based agent:
 ```
 Explain Concept (EC)
-Load: /tech-writer, then ask to "EC about [topic]"
-Agent: Tech Writer
+Command: `bmad-agent-bmm-tech-writer` (loads skill:bmad-agent-tech-writer), then ask to "EC about [topic]"
+Agent: Paige (Technical Writer)
 Description: Create clear technical explanations with examples...
 ```
 

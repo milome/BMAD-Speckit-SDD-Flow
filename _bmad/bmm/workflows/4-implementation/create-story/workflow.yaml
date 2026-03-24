@@ -26,7 +26,7 @@ architecture_file: "{planning_artifacts}/architecture.md" # Fallback for constra
 ux_file: "{planning_artifacts}/*ux*.md" # Fallback for UX requirements (if not in epics file)
 story_title: "" # Will be elicited if not derivable
 project_context: "**/project-context.md"
-default_output_file: "{implementation_artifacts}/{{story_key}}.md"
+default_output_file: "{implementation_artifacts}/epic-{{epic_num}}-{{epic_slug}}/story-{{story_num}}-{{story_slug}}/{{story_key}}.md"
 
 # Smart input file references - Simplified for enhanced approach
 # The epics+stories file should contain everything needed with source hints

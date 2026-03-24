@@ -16,6 +16,8 @@ disable-model-invocation: true
 
 **Story docs path 豁免**：若用户提供 **story docs path**（greenfield 场景，指向包含 story 文档的文件夹路径），sprint-status 缺失时该路径可放行，作为合法入口；见 TASKS_sprint-planning-gate §2.2 豁免。epic-story 编号（如 2-4）在 sprint-status 缺失时仍须经门控确认。
 
+**产出路径（MANDATORY）**：`_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/{epic}-{story}-{slug}.md`。与 bmad-story-assistant 一致；story 子目录仅含 story 编号（`story-{story}-{slug}`），不含 epic 编号。
+
 IT IS CRITICAL THAT YOU FOLLOW THESE STEPS - while staying in character as the current agent persona you may have loaded:
 
 <steps CRITICAL="TRUE">

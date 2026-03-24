@@ -206,6 +206,14 @@
   <step n="2" goal="Load and analyze core artifacts">
     <critical>🔬 EXHAUSTIVE ARTIFACT ANALYSIS - This is where you prevent future developer fuckups!</critical>
 
+    <!-- Derive epic_slug and story_slug for default_output_file path.
+         CANONICAL PATH: epic-{epic}-{epic_slug}/story-{story}-{story_slug}/{epic}-{story}-{story_slug}.md
+         Story subdir uses story number ONLY (story-{story}-{slug}), NOT story-{epic}-{story}-{slug}.
+         Must match bmad-story-assistant, bmad-story-create, bmad-story-audit. -->
+    <action>Set story_slug = part of story_key after "{{epic_num}}-{{story_num}}-" (e.g. "2-1-runtime-governance-complete" → "runtime-governance-complete")</action>
+    <action>Load {{epics_file}}, find "## Epic {{epic_num}}:" or "### Epic {{epic_num}}:", extract title, set epic_slug = kebab-case of title (lowercase, replace non-alphanumeric with "-")</action>
+    <action>If epic_slug cannot be derived, use story_slug as fallback for epic_slug</action>
+
     <!-- Load all available content through discovery protocol -->
     <invoke-protocol
       name="discover_inputs" />

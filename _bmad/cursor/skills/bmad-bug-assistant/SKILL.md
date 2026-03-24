@@ -6,6 +6,8 @@ description: |
 
 # BMAD Bug 助手
 
+> **【必读】使用本 skill 前，必须先读取并遵守 `{project-root}/.cursor/rules/bmad-bug-assistant.mdc` 中的自检规则。**发起 mcp_task 或 party-mode 子任务前，须完成该阶段「发起前自检清单」全部项并输出自检结果，否则不得发起。
+
 本 skill 定义 **根因分析 → BUGFIX 文档 → 审计 →（可选）信息补充更新 → 任务列表补充 → 实施 → 实施后审计** 的完整工作流。**实施后审计为必须步骤，非可选。**未通过时必须按修改建议修复后再次审计，直至通过。
 
 ## 强制约束（必须遵守）

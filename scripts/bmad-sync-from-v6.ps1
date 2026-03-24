@@ -28,6 +28,8 @@ param(
 $ErrorActionPreference = 'Stop'
 
 # --- Constants ---
+# 排除项清单见 docs/explanation/upstream-relationship.md §4.1
+# 需定期与上游 merge 的项见 §4.2（临时移除排除→合并→恢复排除）
 $BMAD_METHOD_REPO = 'https://github.com/bmad-code-org/BMAD-METHOD.git'
 $EXCLUDE_PATTERNS = @(
     '_bmad/_config',
@@ -35,6 +37,21 @@ $EXCLUDE_PATTERNS = @(
     '_bmad/bmb',
     '_bmad/scoring',
     '_bmad/speckit',
+    # 项目定制：Story 路径规则统一（epic-{epic}-{slug}/story-{story}-{slug}，specs 含 epic-slug）
+    '_bmad/_config/eval-lifecycle-report-paths.yaml',
+    '_bmad/_config/bmad-help.csv',
+    '_bmad/_config/skill-command-mapping.yaml',
+    '_bmad/cursor/skills/bmad-story-assistant',
+    # 项目定制：bmm/workflows、help、commands、skills
+    '_bmad/bmm/module-help.csv',
+    '_bmad/bmm/workflows/4-implementation/bmad-code-review',
+    '_bmad/bmm/workflows/4-implementation/create-story',
+    '_bmad/bmm/workflows/bmad-quick-flow/bmad-quick-dev-new-preview',
+    '_bmad/core/tasks/help.md',
+    '_bmad/skills/bmad-help',
+    '_bmad/commands/bmad-agent-bmm-tech-writer.md',
+    '_bmad/commands/bmad-bmm-create-story.md',
+    '_bmad/commands/bmad-sft-extract.md',
     '_bmad/core/agents/adversarial-reviewer.md',
     '_bmad/core/agents/critical-auditor-guide.md',
     '_bmad/core/agents/README-critical-auditor.md',
@@ -51,6 +68,19 @@ $EXCLUDE_PATTERNS = @(
 
 # Backup items: From (relative to project) -> To (in BackupDir)
 $BACKUP_ITEMS = @(
+    ,@{ From = "_bmad/_config/eval-lifecycle-report-paths.yaml"; To = "eval-lifecycle-report-paths.yaml" }
+    ,@{ From = "_bmad/_config/bmad-help.csv"; To = "bmad-help.csv" }
+    ,@{ From = "_bmad/_config/skill-command-mapping.yaml"; To = "skill-command-mapping.yaml" }
+    ,@{ From = "_bmad/cursor/skills/bmad-story-assistant"; To = "bmad-story-assistant-skill" }
+    ,@{ From = "_bmad/bmm/module-help.csv"; To = "bmm-module-help.csv" }
+    ,@{ From = "_bmad/bmm/workflows/4-implementation/bmad-code-review"; To = "bmad-code-review-workflow" }
+    ,@{ From = "_bmad/bmm/workflows/4-implementation/create-story"; To = "create-story-workflow" }
+    ,@{ From = "_bmad/bmm/workflows/bmad-quick-flow/bmad-quick-dev-new-preview"; To = "bmad-quick-dev-new-preview" }
+    ,@{ From = "_bmad/core/tasks/help.md"; To = "core-tasks-help.md" }
+    ,@{ From = "_bmad/skills/bmad-help"; To = "bmad-help-skill" }
+    ,@{ From = "_bmad/commands/bmad-agent-bmm-tech-writer.md"; To = "bmad-agent-bmm-tech-writer.md" }
+    ,@{ From = "_bmad/commands/bmad-bmm-create-story.md"; To = "bmad-bmm-create-story.md" }
+    ,@{ From = "_bmad/commands/bmad-sft-extract.md"; To = "bmad-sft-extract.md" }
     ,@{ From = "_bmad/scoring"; To = "_bmad_scoring" }
     ,@{ From = "_bmad/core/agents/adversarial-reviewer.md"; To = "adversarial-reviewer.md" }
     ,@{ From = "_bmad/core/agents/critical-auditor-guide.md"; To = "critical-auditor-guide.md" }

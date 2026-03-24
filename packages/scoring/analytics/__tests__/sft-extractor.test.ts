@@ -70,8 +70,8 @@ describe('sft-extractor', () => {
     expect(extractBugfixSections('no sections')).toBeNull();
   });
 
-  it('T2-4: filters A/B records (phase_score > 60) - only C/D extracted (AC-B07-4)', async () => {
-    const bugfixPath = path.join(tempDir, 'bugfix-c.md');
+  it('T2-4: filters low-score records (phase_score < 90) - only high-score extracted (minScore default 90)', async () => {
+    const bugfixPath = path.join(tempDir, 'bugfix-high.md');
     fs.writeFileSync(
       bugfixPath,
       `## §1 问题
@@ -81,20 +81,8 @@ describe('sft-extractor', () => {
 方案`,
       'utf-8'
     );
-    const recordA = {
-      run_id: 'run-a',
-      scenario: 'real_dev' as const,
-      stage: 'prd',
-      phase_score: 80,
-      phase_weight: 0.2,
-      check_items: [],
-      timestamp: new Date().toISOString(),
-      iteration_count: 0,
-      iteration_records: [],
-      first_pass: true,
-    };
-    const recordC = {
-      run_id: 'run-c',
+    const recordLow = {
+      run_id: 'run-low',
       scenario: 'real_dev' as const,
       stage: 'prd',
       phase_score: 55,
@@ -107,8 +95,22 @@ describe('sft-extractor', () => {
       source_path: bugfixPath,
       base_commit_hash: 'abc12345',
     };
-    fs.writeFileSync(path.join(tempDir, 'run-a.json'), JSON.stringify(recordA), 'utf-8');
-    fs.writeFileSync(path.join(tempDir, 'run-c.json'), JSON.stringify(recordC), 'utf-8');
+    const recordHigh = {
+      run_id: 'run-high',
+      scenario: 'real_dev' as const,
+      stage: 'prd',
+      phase_score: 95,
+      phase_weight: 0.2,
+      check_items: [],
+      timestamp: new Date().toISOString(),
+      iteration_count: 0,
+      iteration_records: [],
+      first_pass: true,
+      source_path: bugfixPath,
+      base_commit_hash: 'abc12345',
+    };
+    fs.writeFileSync(path.join(tempDir, 'run-low.json'), JSON.stringify(recordLow), 'utf-8');
+    fs.writeFileSync(path.join(tempDir, 'run-high.json'), JSON.stringify(recordHigh), 'utf-8');
 
     vi.mocked(execSync)
       .mockImplementationOnce(() => 'abc12345') // extractSftDataset: rev-parse --verify
@@ -121,7 +123,7 @@ describe('sft-extractor', () => {
       path.join(tempDir, 'out.jsonl')
     );
     expect(entries.length).toBe(1);
-    expect(entries[0].source_run_id).toBe('run-c');
+    expect(entries[0].source_run_id).toBe('run-high');
     expect(entries[0].instruction).toContain('描述');
     expect(entries[0].input).toBe('xx');
     expect(entries[0].output).toBe('yy');
@@ -133,7 +135,7 @@ describe('sft-extractor', () => {
       run_id: 'run-no-path',
       scenario: 'real_dev' as const,
       stage: 'prd',
-      phase_score: 50,
+      phase_score: 95,
       phase_weight: 0.2,
       check_items: [],
       timestamp: new Date().toISOString(),
@@ -154,7 +156,7 @@ describe('sft-extractor', () => {
       run_id: 'run-missing',
       scenario: 'real_dev' as const,
       stage: 'prd',
-      phase_score: 50,
+      phase_score: 95,
       phase_weight: 0.2,
       check_items: [],
       timestamp: new Date().toISOString(),
@@ -182,7 +184,7 @@ describe('sft-extractor', () => {
       run_id: 'run-git-fail',
       scenario: 'real_dev' as const,
       stage: 'prd',
-      phase_score: 50,
+      phase_score: 95,
       phase_weight: 0.2,
       check_items: [],
       timestamp: new Date().toISOString(),
@@ -222,7 +224,7 @@ describe('sft-extractor', () => {
       run_id: 'run-dup',
       scenario: 'real_dev' as const,
       stage: 'prd',
-      phase_score: 55,
+      phase_score: 95,
       phase_weight: 0.2,
       check_items: [],
       timestamp: new Date().toISOString(),
@@ -247,7 +249,7 @@ describe('sft-extractor', () => {
     expect(entries.length).toBe(1);
   });
 
-  it('T2-9: threshold option filters phase_score', async () => {
+  it('T2-9: minScore option filters phase_score', async () => {
     const bugfixPath = path.join(tempDir, 'bugfix.md');
     fs.writeFileSync(
       bugfixPath,
@@ -278,13 +280,13 @@ describe('sft-extractor', () => {
       return 'a'.repeat(40);
     });
 
-    const { entries: entries50 } = await extractSftDataset(tempDir, path.join(tempDir, 'out50.jsonl'), {
-      threshold: 50,
+    const { entries: entries70 } = await extractSftDataset(tempDir, path.join(tempDir, 'out70.jsonl'), {
+      minScore: 70,
     });
-    expect(entries50.length).toBe(0);
+    expect(entries70.length).toBe(0);
 
     const { entries: entries60 } = await extractSftDataset(tempDir, path.join(tempDir, 'out60.jsonl'), {
-      threshold: 60,
+      minScore: 60,
     });
     expect(entries60.length).toBe(1);
   });
@@ -306,7 +308,7 @@ describe('sft-extractor', () => {
       run_id: 'run-audit',
       scenario: 'real_dev' as const,
       stage: 'implement',
-      phase_score: 55,
+      phase_score: 95,
       phase_weight: 0.2,
       check_items: [],
       timestamp: new Date().toISOString(),
@@ -340,7 +342,7 @@ describe('sft-extractor', () => {
       run_id: 'run-empty-audit',
       scenario: 'real_dev' as const,
       stage: 'implement',
-      phase_score: 50,
+      phase_score: 95,
       phase_weight: 0.2,
       check_items: [],
       timestamp: new Date().toISOString(),
@@ -372,7 +374,7 @@ describe('sft-extractor', () => {
       run_id: 'run-audit',
       scenario: 'real_dev' as const,
       stage: 'implement',
-      phase_score: 55,
+      phase_score: 95,
       phase_weight: 0.2,
       check_items: [],
       timestamp: new Date().toISOString(),
@@ -406,7 +408,7 @@ describe('sft-extractor', () => {
       run_id: 'run-empty-audit',
       scenario: 'real_dev' as const,
       stage: 'implement',
-      phase_score: 50,
+      phase_score: 95,
       phase_weight: 0.2,
       check_items: [],
       timestamp: new Date().toISOString(),
@@ -441,7 +443,7 @@ describe('sft-extractor', () => {
       run_id: 'run-audit',
       scenario: 'real_dev' as const,
       stage: 'implement',
-      phase_score: 55,
+      phase_score: 95,
       phase_weight: 0.2,
       check_items: [],
       timestamp: new Date().toISOString(),
@@ -475,7 +477,7 @@ describe('sft-extractor', () => {
       run_id: 'run-insufficient',
       scenario: 'real_dev' as const,
       stage: 'implement',
-      phase_score: 50,
+      phase_score: 95,
       phase_weight: 0.2,
       check_items: [],
       timestamp: new Date().toISOString(),
@@ -510,7 +512,7 @@ describe('sft-extractor', () => {
       run_id: 'run-audit',
       scenario: 'real_dev' as const,
       stage: 'implement',
-      phase_score: 55,
+      phase_score: 95,
       phase_weight: 0.2,
       check_items: [],
       timestamp: new Date().toISOString(),
@@ -544,7 +546,7 @@ describe('sft-extractor', () => {
       run_id: 'run-empty',
       scenario: 'real_dev' as const,
       stage: 'implement',
-      phase_score: 50,
+      phase_score: 95,
       phase_weight: 0.2,
       check_items: [],
       timestamp: new Date().toISOString(),
@@ -579,7 +581,7 @@ describe('sft-extractor', () => {
       run_id: 'run-audit',
       scenario: 'real_dev' as const,
       stage: 'implement',
-      phase_score: 55,
+      phase_score: 95,
       phase_weight: 0.2,
       check_items: [],
       timestamp: new Date().toISOString(),
@@ -613,7 +615,7 @@ describe('sft-extractor', () => {
       run_id: 'run-empty',
       scenario: 'real_dev' as const,
       stage: 'implement',
-      phase_score: 50,
+      phase_score: 95,
       phase_weight: 0.2,
       check_items: [],
       timestamp: new Date().toISOString(),
@@ -663,7 +665,7 @@ describe('sft-extractor', () => {
       run_id: 'run-audit',
       scenario: 'real_dev' as const,
       stage: 'implement',
-      phase_score: 55,
+      phase_score: 95,
       phase_weight: 0.2,
       check_items: [],
       timestamp: new Date().toISOString(),
@@ -697,7 +699,7 @@ describe('sft-extractor', () => {
       run_id: 'run-empty',
       scenario: 'real_dev' as const,
       stage: 'implement',
-      phase_score: 50,
+      phase_score: 95,
       phase_weight: 0.2,
       check_items: [],
       timestamp: new Date().toISOString(),

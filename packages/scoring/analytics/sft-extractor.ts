@@ -1,7 +1,7 @@
 /**
  * Story 5.5 B07 / Story 7.2: SFT 微调数据集提取
- * 从 phase_score≤threshold 的记录提取 instruction（BUGFIX §1+§4）与 git diff bad/good 代码对
- * Story 7.2 增强：has_code_pair、git diff 失败 fallback、去重、摘要、阈值可配置
+ * 从 phase_score>=minScore 的记录提取 instruction（BUGFIX §1+§4）与 git diff bad/good 代码对
+ * Story 7.2 增强：has_code_pair、git diff 失败 fallback、去重、摘要；minScore 默认 90（高分样本）
  */
 import * as fs from 'fs';
 import * as path from 'path';
@@ -29,7 +29,8 @@ export interface SftExtractSummary {
 }
 
 export interface ExtractSftDatasetOptions {
-  threshold?: number;
+  /** Minimum phase_score for inclusion (default 90). Records with phase_score >= minScore are extracted. */
+  minScore?: number;
 }
 
 const SECTION_1_RE = /## §1[^\n]*\n([\s\S]*?)(?=## §|$)/;
@@ -183,16 +184,16 @@ function formatSummary(summary: SftExtractSummary): string {
 
 /**
  * 从 scoring data 提取 SFT 数据集。
- * 仅处理 phase_score≤threshold 且含 source_path、base_commit_hash 的记录。
+ * 仅处理 phase_score>=minScore 且含 source_path、base_commit_hash 的记录。
  * git diff 失败时 fallback 为 instruction-only（has_code_pair: false）。
  * 按 source_run_id+base_commit_hash+source_path 去重。
  */
 /**
  * Extract SFT dataset from scoring records and git diffs.
- * Processes low-score records with source_path and base_commit_hash.
+ * Processes high-score records (phase_score >= minScore) with source_path and base_commit_hash.
  * @param {string} [dataPath] - Optional; defaults to scoring/data
  * @param {string} [outputPath] - Optional output path
- * @param {ExtractSftDatasetOptions} [options] - threshold, etc.
+ * @param {ExtractSftDatasetOptions} [options] - minScore (default 90)
  * @returns {Promise<{ entries: SftEntry[]; summary: SftExtractSummary }>} entries and summary
  */
 export async function extractSftDataset(
@@ -200,7 +201,7 @@ export async function extractSftDataset(
   outputPath?: string,
   options?: ExtractSftDatasetOptions
 ): Promise<{ entries: SftEntry[]; summary: SftExtractSummary }> {
-  const threshold = options?.threshold ?? 60;
+  const minScore = options?.minScore ?? 90;
   const basePath = dataPath ?? path.join(process.cwd(), 'packages', 'scoring', 'data');
   const outPath = outputPath ?? path.join(basePath, 'sft-dataset.jsonl');
   const records = loadRecordsFromDataPath(basePath);
@@ -208,9 +209,9 @@ export async function extractSftDataset(
   const entries: SftEntry[] = [];
   const skipReasons: Record<string, number> = {};
 
-  const lowScoreRecords = records.filter((r) => r.phase_score <= threshold);
+  const highScoreRecords = records.filter((r) => r.phase_score >= minScore);
 
-  for (const rec of lowScoreRecords) {
+  for (const rec of highScoreRecords) {
     const sourcePath = (rec as RunScoreRecord & { source_path?: string }).source_path;
     const baseCommitHash = rec.base_commit_hash;
 

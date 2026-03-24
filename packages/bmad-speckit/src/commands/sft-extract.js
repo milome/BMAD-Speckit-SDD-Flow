@@ -8,22 +8,24 @@ const path = require('path');
 const { getScoringDataPath } = require('@bmad-speckit/scoring/constants/path');
 const { extractSftDataset, formatSummary } = require('@bmad-speckit/scoring/analytics/sft-extractor');
 
-function getThreshold(opts) {
-  const cli = opts.threshold;
+const MIN_SCORE_FLOOR = 90;
+
+function getMinScore(opts) {
+  const cli = opts.minScore;
   if (cli != null) {
     const n = Number(cli);
-    if (!Number.isNaN(n) && n >= 0) return n;
+    if (!Number.isNaN(n)) {
+      if (n < MIN_SCORE_FLOOR) {
+        throw new Error(`最低下限不能低于${MIN_SCORE_FLOOR}，请重新设置（当前值：${n}）`);
+      }
+      return n;
+    }
   }
-  const env = process.env.SFT_THRESHOLD;
-  if (env != null) {
-    const n = Number(env);
-    if (!Number.isNaN(n) && n >= 0) return n;
-  }
-  return 60;
+  return MIN_SCORE_FLOOR;
 }
 
 async function sftExtractCommand(opts) {
-  const threshold = getThreshold(opts);
+  const minScore = getMinScore(opts);
   const output = opts.output;
   const dataPathArg = opts.dataPath;
 
@@ -34,7 +36,7 @@ async function sftExtractCommand(opts) {
     ? (path.isAbsolute(output) ? output : path.resolve(process.cwd(), output))
     : undefined;
 
-  const { summary } = await extractSftDataset(dataPath, outputPath, { threshold });
+  const { summary } = await extractSftDataset(dataPath, outputPath, { minScore });
   console.log(formatSummary(summary));
 }
 
