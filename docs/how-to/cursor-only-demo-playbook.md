@@ -19,5 +19,5 @@ node scripts/init-to-root.js ..\BMAD-Speckit-SDD-Flow-Demo --agent cursor
 
 ## 注意事项
 
-- `emit-runtime-policy` 在无 `--cwd` 时受环境变量 `BMAD_RUNTIME_CWD` 影响；验证消费者目录时请显式 `--cwd` 或清除该变量。
+- `emit-runtime-policy` 仅接受 `--cwd` 定位项目根；未传时使用当前工作目录；**不**通过环境变量指定项目根或其它策略输入。
 - 消费者根 `package.json` **不建议**设置 `"type":"module"`，除非已将 `.cursor/hooks` 内脚本改为 ESM；否则 `require` 会失败。

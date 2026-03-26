@@ -1,6 +1,6 @@
 # Runtime policy emit 契约（`emit-runtime-policy`）
 
-单一求值源：`scripts/runtime-governance.ts` 的 `resolveRuntimePolicy`。对外出口：`scripts/emit-runtime-policy.ts`（开发）、`@bmad-speckit/runtime-emit` 打出的 `emit-runtime-policy.cjs`（消费者 / hooks），或 `emit-runtime-policy-cli.js` 包装器。
+单一求值源：`scripts/runtime-governance.ts` 的 `resolveRuntimePolicy`。对外出口：`scripts/emit-runtime-policy.ts`（本仓库开发）、`@bmad-speckit/runtime-emit` 打出的 `dist/emit-runtime-policy.cjs`（**消费者与 hooks 主路径**：`npm install` + init 将 cjs 置于 `.cursor/hooks`/`.claude/hooks` 旁），以及 `emit-runtime-policy-cli.js` 薄启动器（优先同目录 cjs，其次 `require.resolve('@bmad-speckit/runtime-emit/dist/emit-runtime-policy.cjs')`）。**不要求**消费者项目根存在 `scripts/emit-runtime-policy.ts`。
 
 ## 成功响应（stdout）
 
@@ -21,14 +21,11 @@
 
 - `runtime-policy-inject.js`：`emit` 非 0 时 **exit 1**，并向 stdout 写入 Claude Code 要求的 JSON，其中 **仅含错误说明文本**（`systemMessage` 或 `hookSpecificOutput.additionalContext`），**禁止**注入伪造的完整 policy 对象。
 
-## 环境变量
+## 环境变量与真相源
 
-| 变量 | 作用 |
-|------|------|
-| `BMAD_RUNTIME_CWD` | 项目根（emit-cli 设置）。 |
-| `BMAD_RUNTIME_FLOW` / `BMAD_RUNTIME_STAGE` | 直接提供 flow/stage；缺失时才回落到 registry-backed context 解析。 |
-| `BMAD_RUNTIME_EPIC_ID` / `BMAD_RUNTIME_STORY_ID` / `BMAD_RUNTIME_RUN_ID` 等 | 提供 story-scoped identity；正式入口不再依赖单独的 context-file 环境变量。 |
-| `BMAD_RUNTIME_SHADOW=1` | 影响 `compatibilitySource` 字段（对照测试）。 |
+- **不读取**任何用于覆盖运行时策略或关闭注入的专用环境变量；**无** env 覆盖、**无** CLI 覆盖 flow/stage（CLI 仅 `--cwd` 用于定位项目根）。
+- **唯一真相源**：`_bmad-output/runtime/registry.json` 的 `activeScope` + 解析得到的 scoped context JSON（如 `context/project.json`）。
+- **`compatibilitySource` 的 `shadow`**：仅由单元/验收测试调用 `setRuntimePolicyShadowModeForTests(true)`（见 `scripts/runtime-governance.ts`），**不**通过环境变量。
 
 ## 互链
 

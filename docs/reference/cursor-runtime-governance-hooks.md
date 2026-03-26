@@ -179,6 +179,7 @@ Cursor Runtime Governance 推荐的注入优先级如下：
 
 ```json
 {
+  "version": 1,
   "hooks": {
     "sessionStart": [
       {
@@ -212,6 +213,8 @@ Cursor Runtime Governance 推荐的注入优先级如下：
 
 `.cursor/hooks.json` 必须满足：
 
+- 根级 `version` 为 **数字**（例如 `1`），不能是字符串
+- 事件名使用 Cursor 约定的 **camelCase**（如 `sessionStart`、`preToolUse`），与 Claude Code `settings.json` 中的 PascalCase 事件名不同
 - command 使用项目内相对路径或稳定本地路径
 - timeout 固定可文档化
 - matcher 固定可测试

@@ -136,7 +136,7 @@ policy object 中承载**审计收敛契约**的字段（结构与 `AuditConverg
 | `skipAllowed` | `boolean` | 阶段表 `optional === true` |
 | `scoringEnabled` | `boolean` | `scoringEnabledForTriggerStage`（`packages/scoring/trigger/trigger-loader.ts`）+ `scoring-trigger-modes.yaml` |
 | `triggerStage` | `string` | `_bmad/_config/stage-mapping.yaml` 段 `runtime_flow_stage_to_trigger_stage` |
-| `compatibilitySource` | `CompatibilitySource` | 生产路径固定 `governance`；`BMAD_RUNTIME_SHADOW=1` 时为 `shadow`（对照用） |
+| `compatibilitySource` | `CompatibilitySource` | 生产路径固定 `governance`；测试路径通过 `setRuntimePolicyShadowModeForTests(true)` 产出 `shadow`（对照用，**非**环境变量） |
 | `reason` | `string` | 人类可读说明（含 legacy / mandatory / trigger / scoring 摘要） |
 | `identity` | `RuntimePolicyIdentity` | 子结构：当前最小实现包含 `flow`、`stage`；后续 Story 批次扩展 story/run/artifact identity 时以此为正式承载面，同时保持顶层兼容读取 |
 | `control` | `RuntimePolicyControl` | 子结构：承载 `auditRequired`、`validationLevel`、`strictness`、`generateDoc`、`convergence`、`mandatoryGate`、`granularityGoverned`、`skipAllowed`、`scoringEnabled`、`triggerStage`、`reason`；顶层同名字段当前作为 compatibility mirror 保留 |

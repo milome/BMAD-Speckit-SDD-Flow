@@ -23,6 +23,7 @@
 
 ### 其他指南
 
+- [`runtime-locale-and-i18n-config.md`](./runtime-locale-and-i18n-config.md) — 运行时语言（`languagePolicy`）与 BMAD i18n YAML 如何配置、何时生效；与审计提示词选稿的关系
 - [`multi-story.md`](./multi-story.md) — 多 Story 并行管理
 - [`cursor-setup.md`](./cursor-setup.md) — Cursor IDE 配置
 - [`claude-code-setup.md`](./claude-code-setup.md) — Claude Code 配置

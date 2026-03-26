@@ -32,9 +32,19 @@ Runtime Governance 的接入分成两层：
 
 ## 2. upstream workflow / skill / agent：哪些改了，哪些没改
 
-### 2.1 没看到大范围“显式 runtime 写入调用”的 upstream workflow 本体
+### 2.1 upstream workflow 指令正文中的 runtime 同步入口（E15-S1 更新）
 
-本轮检索了 `_bmad/**/workflow.{md,yaml,yml}`，重点覆盖：
+E15 Story 1 在下列 **instructions** 正文中写入了显式 CLI 调用（由执行引擎中的 Agent 负责运行，而非 Node 内联 API）：
+
+- `sprint-planning/instructions.md`：写入 `sprint-status.yaml` 后执行 `npx bmad-speckit sync-runtime-context-from-sprint`
+- `sprint-status/instructions.md`：corrections 分支写回后执行同上
+- `create-epics-and-stories/steps/step-04-final-validation.md`：保存 epics 后执行同上
+- `create-story/instructions.xml`：更新 sprint 后执行 `sync-runtime-context-from-sprint --story-key {{story_key}}`
+- `dev-story/instructions.xml`：`ensure-run-runtime-context`（dev_story / persist）
+
+此前仅检索 `_bmad/**/workflow.{md,yaml,yml}` 时，**不会**覆盖上述 `instructions.md` / `instructions.xml` 内的子串；若以关键词 `bmad-speckit sync-runtime-context-from-sprint` 检索 instructions 文件，可命中上述接线。
+
+历史检索还曾覆盖以下路径与关键词（用于对比外围脚本层契约）：
 
 - `_bmad/bmm/workflows/4-implementation/create-story/**`
 - `_bmad/bmm/workflows/4-implementation/dev-story/**`
@@ -42,17 +52,15 @@ Runtime Governance 的接入分成两层：
 - `_bmad/bmm/workflows/4-implementation/sprint-status/**`
 - `_bmad/bmm/workflows/3-solutioning/create-epics-and-stories/**`
 
-以及关键词：
-
 - `runtime-context`
 - `runtime-context-registry`
 - `write-runtime-context`
 - `emit-runtime-policy`
 - `registry.json`
 - `activeScope`
-- ~~`BMAD_RUNTIME_CONTEXT_FILE`~~（已废弃；context 仅通过 registry + activeScope 解析）
+- context 仅通过 registry + `activeScope` 解析（**不**存在 context-file 类环境变量）
 
-**结果：** 没有看到这些 workflow 文件中大范围内联的 runtime 写入调用。
+**结果（更新后）：** workflow **YAML/顶层 workflow.md** 仍可不内嵌 Node 写入脚本；**instructions 层**已包含与 `bmad-speckit` CLI 对齐的同步命令，与外围 `runtime-context` 包一致。
 
 也就是说，本轮不是通过下面这种方式完成接入的：
 
@@ -531,24 +539,22 @@ policy 消费不再猜测上下文，而是通过：
 消费入口：
 - `scripts/emit-runtime-policy.ts`
 
-消费顺序：
+消费顺序（**仅** registry + context；无 CLI flow/stage、无环境变量回退或覆盖）：
 
-1. 先看 CLI 参数：`--flow --stage`
-2. 再看 env：`BMAD_RUNTIME_FLOW / BMAD_RUNTIME_STAGE`
-3. 若不足，则读 registry：
+1. 读 registry：
    - `readRuntimeContextRegistry(root)`
    - `resolveActiveScope(...)`
    - `resolveContextPathFromActiveScope(...)`
-4. 读对应 context file：
-   - `readRuntimeContext(root)`
-5. 提取 identity：
+2. 读对应 context file：
+   - `readRuntimeContext(root, resolvedPath)`
+3. 提取 identity：
    - `epicId`
    - `storyId`
    - `storySlug`
    - `runId`
    - `artifactRoot`
-6. 调 `resolveRuntimePolicy(...)`
-7. 输出稳定 JSON
+4. 调 `resolveRuntimePolicy(...)`
+5. 输出稳定 JSON
 
 ### 5.3 policy 如何注入执行上下文
 
@@ -1118,7 +1124,6 @@ policy JSON
 - `write-runtime-context`
 - `runtime-context-registry`
 - `emit-runtime-policy`
-- ~~`BMAD_RUNTIME_CONTEXT_FILE`~~（已废弃）
 
 ### 7.2 当前是“由外围实现承接 workflow 事实源”
 
@@ -1180,6 +1185,46 @@ policy JSON
 | `_bmad/claude/hooks/runtime-policy-inject.js` | 否 | 是 |
 | `.claude/.cursor/hooks/runtime-policy-inject.js` | 否 | 是 |
 | `scripts/init-to-root.js` | 否 | 是 |
+
+---
+
+## 9.1 upstream 修改汇总表（tasks-E15-S1 第 3 节全文）
+
+以下表格与 `specs/epic-15-runtime-governance-and-i18n/story-1-runtime-governance-complete/tasks-E15-S1.md` 第 3 节一致，列出 Runtime Governance 在 `_bmad` 与发布链路上的必改文件。
+
+| 任务 | 文件路径 | 修改类型 |
+|------|----------|----------|
+| S8 | `_bmad/bmm/workflows/4-implementation/sprint-planning/instructions.md` | 插入 sync 调用 |
+| S8 | `_bmad/bmm/workflows/4-implementation/sprint-status/instructions.md` | 在 corrections 写入后插入 sync |
+| S9 | `_bmad/bmm/workflows/3-solutioning/create-epics-and-stories/steps/step-04-final-validation.md` | 插入 sync 调用与缺失文件时停止说明 |
+| S10 | `bmad-speckit sync-runtime-context-from-sprint`（`@bmad-speckit/runtime-context`） | `--story-key` + `ensureStoryRuntimeContext` |
+| S10 | `_bmad/bmm/workflows/4-implementation/create-story/instructions.xml` | 插入 sync 调用 |
+| S10 | `_bmad/claude/agents/bmad-story-audit.md` | 插入 S10 sync 小节 |
+| S10 | `_bmad/cursor/skills/bmad-story-assistant/SKILL.md` | 在审计通过后必做之前插入 S10 sync |
+| S11 | `packages/runtime-context` + `bmad-speckit ensure-run-runtime-context` | 新建 |
+| S11 | `_bmad/bmm/workflows/4-implementation/dev-story/instructions.xml` | step 1 插入 generate；step 9 插入 persist |
+| S11 | `_bmad/cursor/skills/bmad-story-assistant/SKILL.md` | 插入 S11 post-audit 两条命令 |
+| S11 | `_bmad/claude/skills/bmad-story-assistant/SKILL.md` | 插入 S11 post-audit 两条命令 |
+| S12 | `tests/acceptance/runtime-context-full-bmad-auto-trigger.test.ts` | 增加 upstream 子串断言 |
+| S13 | `tests/acceptance/runtime-context-seeded-solutioning-auto-trigger.test.ts` | 增加 upstream 子串断言 |
+| S14 | `tests/acceptance/runtime-context-standalone-story-auto-trigger.test.ts` | 增加 upstream 子串断言 |
+| S16 | `docs/design/runtime-governance-implementation-analysis.md` | 更新责任矩阵 |
+| S16 | `docs/reference/runtime-governance-upstream-wiring.md` | 新建 |
+| S16 | `docs/how-to/runtime-sync-after-workflows.md` | 新建 |
+| S-PACK | `scripts/prepublish-check.js` | 同步 bundle 到 bmad-speckit node_modules |
+| S-PACK | `packages/bmad-speckit/package.json` | `bundleDependencies` |
+| S-PACK | 根目录 `package.json` | `prepublishOnly` 含 prepublish-check |
+| S-PACK | `packages/bmad-speckit/.npmignore` | `*.tgz` |
+| S-PACK | `tests/acceptance/accept-pack-bmad-speckit.test.ts` | pack → 干净安装 → 子命令 |
+| S-SYNC-V6 | `docs/explanation/upstream-relationship.md` | §4.4 + §4.1 行 |
+| S-SYNC-V6 | `scripts/bmad-sync-from-v6.ps1` | `$EXCLUDE_PATTERNS` + `$BACKUP_ITEMS` |
+| S-SYNC-V6 | `tests/acceptance/runtime-v6-sync-protected-paths.test.ts` | 文档与脚本片段一致 |
+| S8-WIRING-TEST | `tests/acceptance/runtime-upstream-s8-sync-wiring.test.ts` | 新建 |
+| S9-WIRING-TEST | `tests/acceptance/runtime-upstream-s9-sync-wiring.test.ts` | 新建 |
+| S10-WIRING-TEST | `tests/acceptance/runtime-upstream-s10-sync-wiring.test.ts` | 新建 |
+| S8–S10-WIRING-PACKAGE | 根目录 `package.json` | `test:bmad` 追加三文件路径 |
+
+自动触发链要求：在写入 `sprint-status.yaml` 或 Story 状态后执行 `npx bmad-speckit sync-runtime-context-from-sprint`（必要时加 `--story-key {{story_key}}`）。`sprint-planning` 在生成 `sprint-status.yaml` 后必须执行一次无 `--story-key` 的 sync。
 
 ---
 

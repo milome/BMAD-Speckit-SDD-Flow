@@ -12,10 +12,10 @@
 
 1. 运行 `npx bmad-speckit init .`（`--ai claude` / `cursor-agent` 或逗号多选）或 `node scripts/init-to-root.js`（`--agent cursor` / `claude-code`）。
 2. 完成后应存在：
-   - **Claude**：`.claude/hooks/emit-runtime-policy-cli.js`、`.claude/hooks/runtime-policy-inject.js`，且 `.claude/settings.json` 含 policy hooks。
-   - **Cursor**：`.cursor/hooks/emit-runtime-policy-cli.js`、`.cursor/hooks/runtime-policy-inject.js`、`.cursor/hooks/emit-runtime-policy.cjs`、`.cursor/hooks/write-runtime-context.js`，且 **`.cursor/hooks.json` 已生成**。
+   - **Claude**：`.claude/hooks/emit-runtime-policy-cli.js`、`.claude/hooks/runtime-policy-inject.js`、`.claude/hooks/resolve-for-session.cjs`（与 emit 同目录部署），且 `.claude/settings.json` 含 policy hooks。
+   - **Cursor**：`.cursor/hooks/emit-runtime-policy-cli.js`、`.cursor/hooks/runtime-policy-inject.js`、`.cursor/hooks/emit-runtime-policy.cjs`、`.cursor/hooks/resolve-for-session.cjs`（i18n 合并）、`.cursor/hooks/write-runtime-context.js`，且 **`.cursor/hooks.json` 已生成**。
 3. **runtime context / registry bootstrap**：init 现在会自动生成基础 project context 与最小 registry；正式运行时，story/run 级上下文应由真实入口通过统一 helper 自动刷新，而不是依赖用户记住手工补上下文。
-4. **`scripts/emit-runtime-policy.cjs`**：由 workspace 包 **`@bmad-speckit/runtime-emit`** 构建并在 init 时复制到目标项目。
+4. **预构建 CJS**：由 workspace 包 **`@bmad-speckit/runtime-emit`** 构建 `emit-runtime-policy.cjs` 与 **`resolve-for-session.cjs`**，init 时复制到各 host 的 `hooks/` 目录；CLI 亦可通过 `require.resolve('@bmad-speckit/runtime-emit/dist/*.cjs', { paths: [项目根] })` 解析。**消费者无需**在项目根保留 `scripts/` 下的 TS 入口即可运行 emit 与 inject（含语言策略合并）。
 
 ## Cursor Native Hooks
 
@@ -94,15 +94,10 @@ npx vitest run tests/acceptance/cursor-hooks-json-generation.test.ts tests/accep
 
 | 现象 | 处理 |
 |------|------|
-| 缺少 registry-backed runtime context | 先确保 `activeScope` 指向有效的 scoped context file，或通过 CLI/env 明确提供 `flow`/`stage` 与 story identity；正式入口不再依赖单独的 context-file 环境变量 |
+| 缺少 registry-backed runtime context | 先确保 `activeScope` 指向存在的 scoped context file，且其中 `flow`/`stage`/identity 合法；**不得**用环境变量替代 registry 中的上述字段 |
 | emit 失败 / hook exit 1 | 读 stderr；模型侧只能见错误信息，**不能**出现伪 policy |
 | Cursor 无生效 hooks | 先检查 `.cursor/hooks.json` 是否存在、事件是否注册、command 路径是否正确 |
 | 路径错误 | 确认项目根含 `_bmad/` 且 hook command 指向正确文件 |
-
-## `BMAD_POLICY_INJECT`
-
-- **默认**：未设置 = **开启**注入。
-- **`BMAD_POLICY_INJECT=0`**：hook 与 `emit-runtime-policy-cli.js` 首行短路，不调用 emit；仅输出已关闭说明。用于排障，**不作为默认安装行为**。
 
 ## 超时
 
