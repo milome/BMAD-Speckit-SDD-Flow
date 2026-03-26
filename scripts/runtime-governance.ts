@@ -23,8 +23,20 @@ import { applyRegisteredAugmenters } from './runtime-governance-registry';
 /** 流程类型（扩展时可与 orchestrator 枚举对齐） */
 export type RuntimeFlowId = 'story' | 'bugfix' | 'standalone_tasks' | 'epic' | 'unknown';
 
-/** 策略结果来源；`BMAD_RUNTIME_SHADOW=1` 时本模块产出 `shadow` 供对照测试观测 */
+/** 策略结果来源；对照测试通过 `setRuntimePolicyShadowModeForTests(true)` 产出 `shadow` */
 export type CompatibilitySource = 'legacy' | 'shadow' | 'governance';
+
+let runtimePolicyShadowModeForTests = false;
+
+/** 仅测试使用：启用 shadow compatibilitySource，不读取任何环境变量 */
+export function setRuntimePolicyShadowModeForTests(enabled: boolean): void {
+  runtimePolicyShadowModeForTests = enabled;
+}
+
+/** @internal tests only */
+export function getRuntimePolicyShadowModeForTests(): boolean {
+  return runtimePolicyShadowModeForTests;
+}
 
 export interface RuntimePolicyIdentity {
   flow: RuntimeFlowId;
@@ -297,8 +309,9 @@ export function resolveRuntimePolicy(input: ResolveRuntimePolicyInput): RuntimeP
 
   const reason = `${legacyPart}; convergence:${strictness}; ${mandatoryPart}; ${granPart}; trigger:${mappingDescriptor}; ${scoringPart}; ${identityPart}`;
 
-  const compatibilitySource: CompatibilitySource =
-    process.env.BMAD_RUNTIME_SHADOW === '1' ? 'shadow' : 'governance';
+  const compatibilitySource: CompatibilitySource = runtimePolicyShadowModeForTests
+    ? 'shadow'
+    : 'governance';
 
   let policy: RuntimePolicy = {
     flow,

@@ -1,13 +1,12 @@
 /**
  * CLI: stdout = stable JSON policy from `resolveRuntimePolicy` (single evaluation source).
  *
- * Args: --flow, --stage, --template-id, --cwd
- * Env: BMAD_RUNTIME_FLOW, BMAD_RUNTIME_STAGE, BMAD_RUNTIME_TEMPLATE_ID, BMAD_RUNTIME_CWD,
- *      BMAD_RUNTIME_EPIC_ID, BMAD_RUNTIME_STORY_ID, BMAD_RUNTIME_STORY_SLUG,
- *      BMAD_RUNTIME_RUN_ID, BMAD_RUNTIME_ARTIFACT_ROOT
+ * **唯一真相源**：`_bmad-output/runtime/registry.json` + activeScope 解析出的 scoped context JSON
+ * （如 `project.json`）。不通过环境变量注入 flow/stage 或覆盖 registry 解析结果；不提供 CLI 参数覆盖 flow/stage（仅 `--cwd`）。
  *
- * Missing flow/stage from CLI+env → read registry-backed runtime context.
- * On missing/invalid registry-backed context when needed: exit 1, stderr message; stdout empty (documented).
+ * Args: 仅 `--cwd <dir>` 用于指定项目根（定位 registry）；缺省为 `process.cwd()`。
+ *
+ * 若 registry 或 context 缺失/非法：exit 1，stderr 说明；stdout 为空。
  */
 /* eslint-disable no-console */
 
@@ -30,66 +29,47 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
   const out: Record<string, string | undefined> = {};
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a === '--flow' && argv[i + 1]) {
-      out.flow = argv[++i];
-    } else if (a === '--stage' && argv[i + 1]) {
-      out.stage = argv[++i];
-    } else if (a === '--template-id' && argv[i + 1]) {
-      out.templateId = argv[++i];
-    } else if (a === '--cwd' && argv[i + 1]) {
+    if (a === '--cwd' && argv[i + 1]) {
       out.cwd = argv[++i];
     }
   }
   return out;
 }
 
-function hydrateIdentityFromContext(ctx: {
+/** Load flow/stage/identity **only** from registry-backed runtime context. */
+export function loadPolicyContextFromRegistry(root: string): {
+  flow: string;
+  stage: string;
   templateId?: string;
   epicId?: string;
   storyId?: string;
   storySlug?: string;
   runId?: string;
   artifactRoot?: string;
-}): string | undefined {
-  if (ctx.epicId) process.env.BMAD_RUNTIME_EPIC_ID = ctx.epicId;
-  if (ctx.storyId) process.env.BMAD_RUNTIME_STORY_ID = ctx.storyId;
-  if (ctx.storySlug) process.env.BMAD_RUNTIME_STORY_SLUG = ctx.storySlug;
-  if (ctx.runId) process.env.BMAD_RUNTIME_RUN_ID = ctx.runId;
-  if (ctx.artifactRoot) process.env.BMAD_RUNTIME_ARTIFACT_ROOT = ctx.artifactRoot;
-  return ctx.templateId;
-}
-
-function loadContextFromRegistry(root: string): {
-  flow?: string;
-  stage?: string;
-  templateId?: string;
 } {
   const registry = readRuntimeContextRegistry(root);
   const scope = resolveActiveScope(registry, registry.activeScope);
   const resolvedContextPath = resolveContextPathFromActiveScope(registry, scope);
   const ctx = readRuntimeContext(root, resolvedContextPath);
-  const templateId = hydrateIdentityFromContext(ctx);
   return {
     flow: ctx.flow,
     stage: ctx.stage,
-    templateId,
+    templateId: ctx.templateId,
+    epicId: ctx.epicId,
+    storyId: ctx.storyId,
+    storySlug: ctx.storySlug,
+    runId: ctx.runId,
+    artifactRoot: ctx.artifactRoot,
   };
 }
 
 function pickRoot(args: Record<string, string | undefined>): string {
   const fromArg = args.cwd?.trim();
-  const fromEnv = process.env.BMAD_RUNTIME_CWD?.trim();
   if (fromArg) return path.resolve(fromArg);
-  if (fromEnv) return path.resolve(fromEnv);
   return process.cwd();
 }
 
 export function mainEmitRuntimePolicy(argv: string[]): number {
-  if (process.env.BMAD_POLICY_INJECT === '0') {
-    console.error('BMAD_POLICY_INJECT=0: emit-runtime-policy skipped (no stdout).');
-    return 0;
-  }
-
   const args = parseArgs(argv);
   const root = pickRoot(args);
 
@@ -101,46 +81,33 @@ export function mainEmitRuntimePolicy(argv: string[]): number {
   }
 
   try {
-    let flow = (args.flow || process.env.BMAD_RUNTIME_FLOW || '').trim();
-    let stage = (args.stage || process.env.BMAD_RUNTIME_STAGE || '').trim();
-    let templateId = (args.templateId || process.env.BMAD_RUNTIME_TEMPLATE_ID || '').trim();
-
-    if (!flow || !stage) {
-      try {
-        const loaded = loadContextFromRegistry(root);
-        if (!flow && loaded.flow) flow = loaded.flow;
-        if (!stage && loaded.stage) stage = loaded.stage;
-        if (!templateId && loaded.templateId) templateId = loaded.templateId;
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        if (!msg.includes('registry') && !msg.includes('runtime-context')) {
-          console.error(`emit-runtime-policy: ${msg}`);
-          return 1;
-        }
-      }
-    } else if (!templateId) {
-      try {
-        const loaded = loadContextFromRegistry(root);
-        if (loaded.templateId) templateId = loaded.templateId;
-      } catch {
-        /* optional templateId from registry-backed context only */
-      }
+    let loaded: ReturnType<typeof loadPolicyContextFromRegistry>;
+    try {
+      loaded = loadPolicyContextFromRegistry(root);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`emit-runtime-policy: ${msg}`);
+      return 1;
     }
 
+    const flow = (loaded.flow || '').trim();
+    const stage = (loaded.stage || '').trim();
+    const templateId = (loaded.templateId || '').trim();
+
     const contextProvided =
-      Boolean(process.env.BMAD_RUNTIME_RUN_ID && process.env.BMAD_RUNTIME_RUN_ID.trim()) ||
-      Boolean(process.env.BMAD_RUNTIME_STORY_ID && process.env.BMAD_RUNTIME_STORY_ID.trim());
+      Boolean(loaded.runId && loaded.runId.trim()) ||
+      Boolean(loaded.storyId && loaded.storyId.trim());
 
     if (flow === 'story' && stage === 'implement' && !contextProvided) {
       console.error(
-        'emit-runtime-policy: story/implement requires explicit runtime context in story-scoped mode.'
+        'emit-runtime-policy: story/implement requires storyId or runId in runtime context (registry-backed).'
       );
       return 1;
     }
 
     if (!flow || !stage) {
       console.error(
-        'emit-runtime-policy: missing flow/stage (CLI/env or runtime registry activeScope/context resolution).'
+        'emit-runtime-policy: missing flow/stage in registry-backed runtime context (see _bmad-output/runtime/).'
       );
       return 1;
     }
@@ -148,15 +115,11 @@ export function mainEmitRuntimePolicy(argv: string[]): number {
     const input: ResolveRuntimePolicyInput = {
       flow: flow as RuntimeFlowId,
       stage: stage as StageName,
-      ...(process.env.BMAD_RUNTIME_EPIC_ID ? { epicId: process.env.BMAD_RUNTIME_EPIC_ID } : {}),
-      ...(process.env.BMAD_RUNTIME_STORY_ID ? { storyId: process.env.BMAD_RUNTIME_STORY_ID } : {}),
-      ...(process.env.BMAD_RUNTIME_STORY_SLUG
-        ? { storySlug: process.env.BMAD_RUNTIME_STORY_SLUG }
-        : {}),
-      ...(process.env.BMAD_RUNTIME_RUN_ID ? { runId: process.env.BMAD_RUNTIME_RUN_ID } : {}),
-      ...(process.env.BMAD_RUNTIME_ARTIFACT_ROOT
-        ? { artifactRoot: process.env.BMAD_RUNTIME_ARTIFACT_ROOT }
-        : {}),
+      ...(loaded.epicId ? { epicId: loaded.epicId } : {}),
+      ...(loaded.storyId ? { storyId: loaded.storyId } : {}),
+      ...(loaded.storySlug ? { storySlug: loaded.storySlug } : {}),
+      ...(loaded.runId ? { runId: loaded.runId } : {}),
+      ...(loaded.artifactRoot ? { artifactRoot: loaded.artifactRoot } : {}),
     };
     if (templateId) {
       input.templateId = templateId;

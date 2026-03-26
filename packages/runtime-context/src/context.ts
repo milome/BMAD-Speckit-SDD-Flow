@@ -6,13 +6,13 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as yaml from 'js-yaml';
-import type { RuntimeFlowId } from './runtime-governance';
-import type { StageName } from './bmad-config';
+import type { RuntimeFlowId, StageName } from './types';
 import {
   buildProjectRegistryFromSprintStatus,
   defaultRuntimeContextRegistry,
+  readRegistryOrDefault,
   writeRuntimeContextRegistry,
-} from './runtime-context-registry';
+} from './registry';
 
 export const RUNTIME_CONTEXT_VERSION = 1 as const;
 
@@ -42,8 +42,6 @@ export interface RuntimeContextFile {
   runId?: string;
   artifactRoot?: string;
   contextScope?: 'project' | 'story';
-  /** Session-scoped language resolution (Story 15.2 i18n); optional. */
-  languagePolicy?: { resolvedMode: 'zh' | 'en' | 'bilingual' };
   updatedAt: string;
 }
 
@@ -180,19 +178,6 @@ export function readRuntimeContext(root: string, explicitPath?: string): Runtime
   if (o.contextScope !== undefined && o.contextScope !== 'project' && o.contextScope !== 'story') {
     throw new Error(`runtime-context.contextScope invalid: ${file}`);
   }
-  if (o.languagePolicy !== undefined) {
-    if (!o.languagePolicy || typeof o.languagePolicy !== 'object') {
-      throw new Error(`runtime-context.languagePolicy invalid: ${file}`);
-    }
-    const lp = o.languagePolicy as Record<string, unknown>;
-    if (
-      lp.resolvedMode !== 'zh' &&
-      lp.resolvedMode !== 'en' &&
-      lp.resolvedMode !== 'bilingual'
-    ) {
-      throw new Error(`runtime-context.languagePolicy.resolvedMode invalid: ${file}`);
-    }
-  }
   if (typeof o.updatedAt !== 'string' || o.updatedAt.trim() === '') {
     throw new Error(`runtime-context.updatedAt missing: ${file}`);
   }
@@ -219,47 +204,12 @@ export function readRuntimeContext(root: string, explicitPath?: string): Runtime
   if (typeof o.artifactRoot === 'string' && o.artifactRoot !== '')
     out.artifactRoot = o.artifactRoot;
   if (o.contextScope === 'project' || o.contextScope === 'story') out.contextScope = o.contextScope;
-  if (o.languagePolicy && typeof o.languagePolicy === 'object') {
-    const lp = o.languagePolicy as Record<string, unknown>;
-    if (
-      lp.resolvedMode === 'zh' ||
-      lp.resolvedMode === 'en' ||
-      lp.resolvedMode === 'bilingual'
-    ) {
-      out.languagePolicy = { resolvedMode: lp.resolvedMode as 'zh' | 'en' | 'bilingual' };
-    }
-  }
   return out;
 }
 
 /**
  * Write context with fsync so emit can read within ~1s on local FS.
  */
-/**
- * Merge `languagePolicy.resolvedMode` into existing project runtime context when `project.json` exists and is valid.
- * No-op if file missing or unreadable (hooks must not fail closed on cold projects).
- */
-export function mergeLanguagePolicyIntoProjectContext(
-  root: string,
-  languagePolicy: { resolvedMode: 'zh' | 'en' | 'bilingual' }
-): void {
-  const file = projectContextPath(root);
-  if (!fs.existsSync(file)) {
-    return;
-  }
-  try {
-    const ctx = readRuntimeContext(root);
-    const next: RuntimeContextFile = {
-      ...ctx,
-      languagePolicy: { resolvedMode: languagePolicy.resolvedMode },
-      updatedAt: new Date().toISOString(),
-    };
-    writeRuntimeContext(root, next);
-  } catch {
-    /* ignore corrupt or legacy context */
-  }
-}
-
 export function writeRuntimeContext(root: string, payload: RuntimeContextFile): void {
   const file = runtimeContextPath(root);
   const dir = path.dirname(file);
@@ -353,7 +303,7 @@ export function ensureStoryRuntimeContext(
   });
   writeRuntimeContext(root, payload);
 
-  const registry = defaultRuntimeContextRegistry(root);
+  const registry = readRegistryOrDefault(root);
   const epicId = options.epicId || payload.epicId || 'epic-unknown';
   registry.storyContexts[options.storyId] = {
     path: storyContextPath(root, epicId, options.storyId),
@@ -367,6 +317,7 @@ export function ensureStoryRuntimeContext(
     resolvedContextPath: registry.storyContexts[options.storyId].path,
     reason: 'ensureStoryRuntimeContext bootstrap',
   };
+  registry.updatedAt = new Date().toISOString();
   writeRuntimeContextRegistry(root, registry);
   return payload;
 }
@@ -390,7 +341,7 @@ export function ensureRunRuntimeContext(
   });
   writeRuntimeContext(root, payload);
 
-  const registry = defaultRuntimeContextRegistry(root);
+  const registry = readRegistryOrDefault(root);
   const epicId = options.epicId || payload.epicId || 'epic-unknown';
   registry.runContexts[options.runId] = {
     path: runContextPath(root, epicId, options.storyId, options.runId),
@@ -407,6 +358,7 @@ export function ensureRunRuntimeContext(
     resolvedContextPath: registry.runContexts[options.runId].path,
     reason: 'ensureRunRuntimeContext bootstrap',
   };
+  registry.updatedAt = new Date().toISOString();
   writeRuntimeContextRegistry(root, registry);
   return payload;
 }
