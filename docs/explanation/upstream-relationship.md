@@ -58,6 +58,8 @@
 | _config 定制 | `_bmad/_config/bmad-help.csv`、`_bmad/_config/skill-command-mapping.yaml` |
 | bmm 定制 | `_bmad/bmm/module-help.csv`、`_bmad/bmm/workflows/4-implementation/bmad-code-review/`、`_bmad/bmm/workflows/4-implementation/create-story/`、`_bmad/bmm/workflows/bmad-quick-flow/bmad-quick-dev-new-preview/` |
 | core/skills/commands | `_bmad/core/tasks/help.md`、`_bmad/skills/bmad-help/`、`_bmad/commands/bmad-agent-bmm-tech-writer.md`、`_bmad/commands/bmad-bmm-create-story.md`、`_bmad/commands/bmad-sft-extract.md` |
+| bmad-help OFFICIAL vs legacy commands | `_bmad/commands/bmad-bmm-dev-story.md`、`_bmad/commands/bmad-bmm-quick-dev.md`、`_bmad/commands/bmad-bmm-quick-spec.md`、`_bmad/commands/bmad-agent-bmm-quick-flow-solo-dev.md`（Speckit-SDD-Flow 头部注记指向 **bmad-story-assistant** / **bmad-standalone-tasks**；同步时不覆盖） |
+| Runtime Governance（E15） | `bmad-speckit sync-runtime-context-from-sprint` / `ensure-run-runtime-context` 接线涉及的 workflow、step、agent、SKILL：**完整路径见 §4.4**；`scripts/bmad-sync-from-v6.ps1` 中 `$EXCLUDE_PATTERNS` 与 `$BACKUP_ITEMS` 与本节对齐 |
 
 ### 4.2 需定期 Merge 的排除项（持续跟进上游）
 
@@ -69,6 +71,7 @@
 | `_bmad/bmm/workflows/4-implementation/bmad-code-review/` | Code Review 流程定制 | 上游 code-review 有大版本更新时 |
 | `_bmad/_config/bmad-help.csv`、`_bmad/_config/skill-command-mapping.yaml` | 帮助与命令映射 | 上游新增/调整命令时 |
 | `_bmad/skills/bmad-help/` | bmad-help 技能定制 | 上游 bmad-help 有大版本更新时 |
+| `_bmad/commands/bmad-bmm-dev-story.md` 等（见 §6.3） | Speckit-SDD-Flow 头部注记与 OFFICIAL skill 指向 | 上游 BMM quick / dev-story 命令有大版本更新时 |
 | `_bmad/cursor/skills/bmad-story-assistant/` | Story 助手路径规则 | 上游 story 相关 workflow 更新时 |
 
 **Merge 步骤**（需要吸纳上游更新时）：
@@ -96,6 +99,24 @@ pwsh scripts/bmad-sync-from-v6.ps1 -Phase all          # 全阶段
 - **禁止覆盖项**：以本文档 §4.1 为准；脚本内置 `$EXCLUDE_PATTERNS` 与其一致（见脚本注释）
 - **需定期 Merge 项**：见 §4.2，建议在重大上游更新时对比合并
 - **默认 V6Ref**：脚本默认 `-V6Ref 21c2a48`（SHA）；同步最新内容时请显式传入 `-V6Ref main`
+- **Runtime Governance 保护项**：见 §4.4；Phase 2 复制前 `$BACKUP_ITEMS` 含这些路径；同步结束后若需撤销，使用控制台输出的 **Rollback commands** 将备份拷回 `$ProjectRoot`
+
+### 4.4 Runtime Governance（E15）— instructions / workflows 定制（同步时不覆盖）
+
+以下路径由本项目写入 `bmad-speckit sync-runtime-context-from-sprint`、`ensure-run-runtime-context` 等接线；从 BMAD-METHOD 执行 Phase 2 时**不得被上游文件覆盖**。`scripts/bmad-sync-from-v6.ps1` 已将对应片段列入 `$EXCLUDE_PATTERNS`，并在每次运行开始时按 `$BACKUP_ITEMS` 备份，便于对比与回滚。
+
+| 路径 | 说明 |
+|------|------|
+| `_bmad/bmm/workflows/4-implementation/sprint-planning/` | sprint-planning `instructions.md` 内 sync |
+| `_bmad/bmm/workflows/4-implementation/sprint-status/` | sprint-status `instructions.md` 内 sync |
+| `_bmad/bmm/workflows/3-solutioning/create-epics-and-stories/steps/step-04-final-validation.md` | create-epics Step 4 内 sync 与前置说明 |
+| `_bmad/bmm/workflows/4-implementation/create-story/` | create-story 内 `--story-key` sync（与 §4.1「create-story」排除项同一目录） |
+| `_bmad/bmm/workflows/4-implementation/dev-story/` | dev-story `instructions.xml` 内 ensure-run |
+| `_bmad/claude/agents/bmad-story-audit.md` | story audit agent 内 S10 sync |
+| `_bmad/cursor/skills/bmad-story-assistant/` | Story 助手 SKILL 内 S10、S11（与 §4.1「bmad-story-assistant」排除项同一目录） |
+| `_bmad/claude/skills/bmad-story-assistant/` | Claude 侧 Story 助手 SKILL 内 S11 post-audit |
+
+**恢复步骤**：同步完成后若发现定制丢失，在当次运行输出的 **Rollback commands** 中查找对应 `Copy-Item`；备份根目录为运行开始时打印的 `$BackupDir`（默认 `_bmad-output/bmad-sync-backups/<timestamp>-<rand>`）。
 
 ---
 
@@ -133,3 +154,15 @@ pwsh scripts/bmad-sync-from-v6.ps1 -Phase all          # 全阶段
 ### 6.2 config.yaml 版本号
 
 `_bmad/bmm/config.yaml` 和 `_bmad/core/config.yaml` 中的 `Version: 6.0.1` 由初始 BMAD-METHOD 安装生成，属于项目级配置，不随 upstream 同步更新。实际同步基准以本文档 §5 的版本记录（`main@45d125f`）为准。
+
+### 6.3 bmad-help：正式执行路径（Speckit-SDD-Flow）与上游命令
+
+本项目在 **`bmad-help`** 工作流指引中将下列 **Cursor/Claude 技能** 作为正式入口；上游 BMAD **命令** 仍保留以便兼容，但**不推荐**作为首选（技能整合了 speckit-workflow、ralph-method、TDD 红绿灯与审计闭环）。
+
+| 场景 | 正式路径（推荐） | 旧路径（不推荐单独使用） |
+|------|------------------|---------------------------|
+| Story / Dev Story | 技能 **`bmad-story-assistant`** | 命令 `bmad-bmm-dev-story`（`_bmad/commands/bmad-bmm-dev-story.md`） |
+| 快速任务 / TASKS 列表 | 技能 **`bmad-standalone-tasks`** | `bmad-bmm-quick-dev`、`bmad-bmm-quick-spec`、`bmad-agent-bmm-quick-flow-solo-dev`（对应 `_bmad/commands/*.md`） |
+| BUG 修复 / BUGFIX | 技能 **`bmad-bug-assistant`** | —（沿用既有 bug 流程时请走技能） |
+
+**English:** **OFFICIAL** execution uses project skills (`bmad-story-assistant`, `bmad-standalone-tasks`, `bmad-bug-assistant`) that bundle speckit-workflow, audit loops, ralph-method, and TDD. Legacy BMAD command files stay in-repo for upstream parity; **Speckit-SDD-Flow** adds header notes on those commands—sync scripts exclude them from overwrite (see §4.1).

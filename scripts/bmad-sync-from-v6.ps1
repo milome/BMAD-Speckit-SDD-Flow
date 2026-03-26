@@ -28,8 +28,9 @@ param(
 $ErrorActionPreference = 'Stop'
 
 # --- Constants ---
-# 排除项清单见 docs/explanation/upstream-relationship.md §4.1
+# 排除项清单见 docs/explanation/upstream-relationship.md §4.1、§4.4
 # 需定期与上游 merge 的项见 §4.2（临时移除排除→合并→恢复排除）
+# Runtime Governance（E15）保护路径见 §4.4；$BACKUP_ITEMS 含备份与 Rollback 恢复
 $BMAD_METHOD_REPO = 'https://github.com/bmad-code-org/BMAD-METHOD.git'
 $EXCLUDE_PATTERNS = @(
     '_bmad/_config',
@@ -46,12 +47,23 @@ $EXCLUDE_PATTERNS = @(
     '_bmad/bmm/module-help.csv',
     '_bmad/bmm/workflows/4-implementation/bmad-code-review',
     '_bmad/bmm/workflows/4-implementation/create-story',
+    '_bmad/bmm/workflows/4-implementation/sprint-planning',
+    '_bmad/bmm/workflows/4-implementation/sprint-status',
+    'step-04-final-validation.md',
+    '_bmad/bmm/workflows/4-implementation/dev-story',
+    '_bmad/claude/agents/bmad-story-audit',
+    '_bmad/claude/skills/bmad-story-assistant',
     '_bmad/bmm/workflows/bmad-quick-flow/bmad-quick-dev-new-preview',
     '_bmad/core/tasks/help.md',
     '_bmad/skills/bmad-help',
     '_bmad/commands/bmad-agent-bmm-tech-writer.md',
     '_bmad/commands/bmad-bmm-create-story.md',
     '_bmad/commands/bmad-sft-extract.md',
+    # Speckit-SDD-Flow: bmad-help OFFICIAL paths use skills; these commands carry Speckit-SDD-Flow header notes (do not overwrite)
+    '_bmad/commands/bmad-bmm-dev-story.md',
+    '_bmad/commands/bmad-bmm-quick-dev.md',
+    '_bmad/commands/bmad-bmm-quick-spec.md',
+    '_bmad/commands/bmad-agent-bmm-quick-flow-solo-dev.md',
     '_bmad/core/agents/adversarial-reviewer.md',
     '_bmad/core/agents/critical-auditor-guide.md',
     '_bmad/core/agents/README-critical-auditor.md',
@@ -75,12 +87,22 @@ $BACKUP_ITEMS = @(
     ,@{ From = "_bmad/bmm/module-help.csv"; To = "bmm-module-help.csv" }
     ,@{ From = "_bmad/bmm/workflows/4-implementation/bmad-code-review"; To = "bmad-code-review-workflow" }
     ,@{ From = "_bmad/bmm/workflows/4-implementation/create-story"; To = "create-story-workflow" }
+    ,@{ From = "_bmad/bmm/workflows/4-implementation/sprint-planning"; To = "sprint-planning-workflow" }
+    ,@{ From = "_bmad/bmm/workflows/4-implementation/sprint-status"; To = "sprint-status-workflow" }
+    ,@{ From = "_bmad/bmm/workflows/3-solutioning/create-epics-and-stories/steps/step-04-final-validation.md"; To = "step-04-final-validation.md" }
+    ,@{ From = "_bmad/bmm/workflows/4-implementation/dev-story"; To = "dev-story-workflow" }
+    ,@{ From = "_bmad/claude/agents/bmad-story-audit.md"; To = "bmad-story-audit.md" }
+    ,@{ From = "_bmad/claude/skills/bmad-story-assistant"; To = "bmad-story-assistant-skill-claude" }
     ,@{ From = "_bmad/bmm/workflows/bmad-quick-flow/bmad-quick-dev-new-preview"; To = "bmad-quick-dev-new-preview" }
     ,@{ From = "_bmad/core/tasks/help.md"; To = "core-tasks-help.md" }
     ,@{ From = "_bmad/skills/bmad-help"; To = "bmad-help-skill" }
     ,@{ From = "_bmad/commands/bmad-agent-bmm-tech-writer.md"; To = "bmad-agent-bmm-tech-writer.md" }
     ,@{ From = "_bmad/commands/bmad-bmm-create-story.md"; To = "bmad-bmm-create-story.md" }
     ,@{ From = "_bmad/commands/bmad-sft-extract.md"; To = "bmad-sft-extract.md" }
+    ,@{ From = "_bmad/commands/bmad-bmm-dev-story.md"; To = "bmad-bmm-dev-story.md" }
+    ,@{ From = "_bmad/commands/bmad-bmm-quick-dev.md"; To = "bmad-bmm-quick-dev.md" }
+    ,@{ From = "_bmad/commands/bmad-bmm-quick-spec.md"; To = "bmad-bmm-quick-spec.md" }
+    ,@{ From = "_bmad/commands/bmad-agent-bmm-quick-flow-solo-dev.md"; To = "bmad-agent-bmm-quick-flow-solo-dev.md" }
     ,@{ From = "_bmad/scoring"; To = "_bmad_scoring" }
     ,@{ From = "_bmad/core/agents/adversarial-reviewer.md"; To = "adversarial-reviewer.md" }
     ,@{ From = "_bmad/core/agents/critical-auditor-guide.md"; To = "critical-auditor-guide.md" }
