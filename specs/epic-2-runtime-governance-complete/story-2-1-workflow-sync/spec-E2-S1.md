@@ -10,7 +10,7 @@
 
 ### 1.1 本 spec 覆盖
 
-将 BMAD workflow 节点（sprint-planning、sprint-status、create-epics-and-stories、create-story、story audit、dev-story、post-audit）接入显式 context/registry 同步，使各入口在完成时自动调用 `buildProjectRegistryFromSprintStatus`、`writeRuntimeContextFromSprintStatus`、`ensureProjectRuntimeContext`、`ensureStoryRuntimeContext`、`ensureRunRuntimeContext` 等函数，或执行 `scripts/sync-runtime-context-from-sprint.ts`。**当前状态：Phase C 全部未完成，`_bmad/bmm` 下无任何对 sync/ensure 函数的调用。**
+将 BMAD workflow 节点（sprint-planning、sprint-status、create-epics-and-stories、create-story、story audit、dev-story、post-audit）接入显式 context/registry 同步，使各入口在完成时自动调用 `buildProjectRegistryFromSprintStatus`、`writeRuntimeContextFromSprintStatus`、`ensureProjectRuntimeContext`、`ensureStoryRuntimeContext`、`ensureRunRuntimeContext` 等函数，或执行 `npx bmad-speckit sync-runtime-context-from-sprint`。**当前状态：Phase C 全部未完成，`_bmad/bmm` 下无任何对 sync/ensure 函数的调用。**
 
 ### 1.2 功能边界
 
@@ -27,7 +27,7 @@
 
 | 计划文档 Task | 入口 | 必须调用的函数/脚本 | 目标产物 | 当前状态 |
 |---------------|------|---------------------|----------|----------|
-| C1 | sprint-planning / sprint-status | `ensureProjectRuntimeContext` 或 `scripts/sync-runtime-context-from-sprint.ts` | `_bmad-output/runtime/registry.json`、`_bmad-output/runtime/context/project.json` 刷新 | **未完成** |
+| C1 | sprint-planning / sprint-status | `ensureProjectRuntimeContext` 或 `bmad-speckit sync-runtime-context-from-sprint` | `_bmad-output/runtime/registry.json`、`_bmad-output/runtime/context/project.json` 刷新 | **未完成** |
 | C2 | create-epics-and-stories | `ensureStoryRuntimeContext`、epic refresh | `_bmad-output/runtime/context/epics/{epicId}.json`、registry.epicContexts 填充 | **未完成** |
 | C3 | create-story / story audit | story context 刷新、registry 更新 | `_bmad-output/runtime/context/stories/{epicId}/{storyId}.json` | **未完成** |
 | C4 | dev-story / post-audit | `ensureRunRuntimeContext`、activeScope 切换 | `_bmad-output/runtime/context/runs/{epicId}/{storyId}/{runId}.json`、lifecycleStage/workflowStage | **未完成** |
@@ -38,7 +38,7 @@
 
 | 修改类型 | 具体路径 | 修改内容 |
 |----------|----------|----------|
-| Modify | `_bmad/bmm/workflows/4-implementation/sprint-planning/` | workflow 完成步骤后追加调用 sync；或在 instructions/step 末尾触发 `sync-runtime-context-from-sprint.ts` |
+| Modify | `_bmad/bmm/workflows/4-implementation/sprint-planning/` | workflow 完成步骤后追加调用 sync；或在 instructions/step 末尾触发 `bmad-speckit sync-runtime-context-from-sprint` |
 | Modify | `_bmad/bmm/workflows/4-implementation/sprint-status/`（若存在） | 同上 |
 | Modify | `_bmad/bmm/workflows/3-solutioning/create-epics-and-stories/` | 完成 step 后调用 `ensureStoryRuntimeContext` 或 epic context 刷新 |
 | Modify | `_bmad/bmm/workflows/4-implementation/create-story/` | create-story instructions 完成步后调用 story context 刷新 |
@@ -48,7 +48,7 @@
 | Modify | post-audit 入口 | 入口调用 run context 创建，lifecycleStage=post_audit |
 | Modify | `scripts/runtime-context.ts` | 确认 `writeRuntimeContextFromSprintStatus`、`buildProjectRegistryFromSprintStatus` 已实现 |
 | Modify | `scripts/runtime-context-registry.ts` | 确认 `ensureProjectRuntimeContext`、`ensureStoryRuntimeContext`、`ensureRunRuntimeContext` 已实现 |
-| Modify | `scripts/sync-runtime-context-from-sprint.ts` | 确认脚本可被 workflow 调用 |
+| Modify | `bmad-speckit sync-runtime-context-from-sprint`（`@bmad-speckit/runtime-context`） | 确认 CLI 可被 workflow 调用 |
 
 ---
 
