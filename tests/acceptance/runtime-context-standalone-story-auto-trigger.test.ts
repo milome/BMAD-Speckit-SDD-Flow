@@ -5,6 +5,16 @@ import path from 'node:path';
 import { ensureStoryRuntimeContext, ensureRunRuntimeContext } from '../../scripts/runtime-context';
 import { readRuntimeContextRegistry, runtimeContextRegistryPath } from '../../scripts/runtime-context-registry';
 
+const REPO_ROOT = path.join(import.meta.dirname, '..', '..');
+const CREATE_STORY = path.join(
+  REPO_ROOT,
+  '_bmad/bmm/workflows/4-implementation/create-story/instructions.xml'
+);
+const DEV_STORY = path.join(
+  REPO_ROOT,
+  '_bmad/bmm/workflows/4-implementation/dev-story/instructions.xml'
+);
+
 describe('runtime-context standalone_story auto trigger', () => {
   it('creates story/run runtime state automatically for standalone story mode', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'standalone-auto-'));
@@ -35,5 +45,12 @@ describe('runtime-context standalone_story auto trigger', () => {
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
+  });
+
+  it('standalone_story upstream contains --story-key in create-story and ensure-run in dev-story (S14)', () => {
+    const createStory = readFileSync(CREATE_STORY, 'utf8');
+    expect(createStory.includes('--story-key')).toBe(true);
+    const devStory = readFileSync(DEV_STORY, 'utf8');
+    expect(devStory.includes('bmad-speckit ensure-run-runtime-context')).toBe(true);
   });
 });

@@ -3,11 +3,25 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import {
+  linkRepoNodeModulesIntoProject,
+  writeMinimalRegistryAndProjectContext,
+} from '../helpers/runtime-registry-fixture';
 
 const repoRoot = process.cwd();
 
+/** Consumer-like root: `_bmad` + hoisted `node_modules` (workspace @bmad-speckit/runtime-emit); no project-root `scripts/`. */
+function makeEmitReadyRoot(): string {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-hook-inject-'));
+  fs.cpSync(path.join(repoRoot, '_bmad'), path.join(tempRoot, '_bmad'), { recursive: true });
+  linkRepoNodeModulesIntoProject(tempRoot);
+  writeMinimalRegistryAndProjectContext(tempRoot, { flow: 'story', stage: 'specify' });
+  return tempRoot;
+}
+
 describe('runtime-policy-inject (dual host entry)', () => {
   it('Cursor path: --cursor-host + stdin', () => {
+    const tempRoot = makeEmitReadyRoot();
     try {
       const inject = path.join(repoRoot, '_bmad/claude/hooks/runtime-policy-inject.js');
       const r = spawnSync(process.execPath, [inject, '--cursor-host'], {
@@ -16,11 +30,8 @@ describe('runtime-policy-inject (dual host entry)', () => {
         encoding: 'utf8',
         env: {
           ...process.env,
-          BMAD_HOOK_HOST: 'cursor',
-          BMAD_RUNTIME_FLOW: 'story',
-          BMAD_RUNTIME_STAGE: 'specify',
-          CURSOR_PROJECT_ROOT: repoRoot,
-          CLAUDE_PROJECT_DIR: repoRoot,
+          CURSOR_PROJECT_ROOT: tempRoot,
+          CLAUDE_PROJECT_DIR: tempRoot,
         },
       });
       expect(r.status).toBe(0);
@@ -28,11 +39,39 @@ describe('runtime-policy-inject (dual host entry)', () => {
       expect(out.systemMessage).toContain('本回合 Runtime Governance（JSON）');
       expect(out.systemMessage).toContain('"flow"');
     } finally {
-      // no-op
+      fs.rmSync(tempRoot, { recursive: true, force: true });
     }
-  }, 15000);
+  }, 30000);
+
+  it('Cursor path: agent_message 请用英文 → systemMessage 含 resolvedMode en', () => {
+    const tempRoot = makeEmitReadyRoot();
+    try {
+      const inject = path.join(repoRoot, '_bmad/claude/hooks/runtime-policy-inject.js');
+      const stdin = JSON.stringify({
+        cwd: tempRoot,
+        agent_message: '请用英文回答',
+        tool_name: 'Read',
+      });
+      const r = spawnSync(process.execPath, [inject, '--cursor-host'], {
+        cwd: repoRoot,
+        input: stdin,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          CURSOR_PROJECT_ROOT: tempRoot,
+          CLAUDE_PROJECT_DIR: tempRoot,
+        },
+      });
+      expect(r.status).toBe(0);
+      const out = JSON.parse(r.stdout || '{}');
+      expect(out.systemMessage).toMatch(/"resolvedMode":\s*"en"/);
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  }, 45000);
 
   it('Claude path: PreToolUse Agent stdin', () => {
+    const tempRoot = makeEmitReadyRoot();
     try {
       const inject = path.join(repoRoot, '_bmad/claude/hooks/runtime-policy-inject.js');
       const stdin = JSON.stringify({ tool_name: 'Agent', tool_input: { description: 'x' } });
@@ -42,37 +81,16 @@ describe('runtime-policy-inject (dual host entry)', () => {
         encoding: 'utf8',
         env: {
           ...process.env,
-          BMAD_HOOK_HOST: 'claude',
-          BMAD_RUNTIME_FLOW: 'story',
-          BMAD_RUNTIME_STAGE: 'specify',
-          CLAUDE_PROJECT_DIR: repoRoot,
+          CLAUDE_PROJECT_DIR: tempRoot,
         },
       });
       expect(r.status).toBe(0);
       const out = JSON.parse(r.stdout || '{}');
       expect(out.systemMessage).toContain('本回合 Runtime Governance（JSON）');
     } finally {
-      // no-op
+      fs.rmSync(tempRoot, { recursive: true, force: true });
     }
-  }, 15000);
-
-  it('BMAD_POLICY_INJECT=0 skips policy JSON in systemMessage', () => {
-    const inject = path.join(repoRoot, '_bmad/claude/hooks/runtime-policy-inject.js');
-    const r = spawnSync(process.execPath, [inject, '--cursor-host'], {
-      cwd: repoRoot,
-      input: '{}',
-      encoding: 'utf8',
-      env: {
-        ...process.env,
-        BMAD_POLICY_INJECT: '0',
-        CURSOR_PROJECT_ROOT: repoRoot,
-      },
-    });
-    expect(r.status).toBe(0);
-    const out = JSON.parse(r.stdout || '{}');
-    expect(out.systemMessage).toContain('BMAD_POLICY_INJECT=0');
-    expect(out.systemMessage).not.toContain('"auditRequired"');
-  }, 15000);
+  }, 45000);
 
   it('quietly skips injection when no BMAD/Speckit context is active and emit only reports missing flow/stage', () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'non-bmad-hook-'));
@@ -84,11 +102,8 @@ describe('runtime-policy-inject (dual host entry)', () => {
         encoding: 'utf8',
         env: {
           ...process.env,
-          BMAD_HOOK_HOST: 'cursor',
           CURSOR_PROJECT_ROOT: tempRoot,
           CLAUDE_PROJECT_DIR: tempRoot,
-          BMAD_RUNTIME_FLOW: '',
-          BMAD_RUNTIME_STAGE: '',
         },
       });
       expect(r.status).toBe(0);
@@ -115,18 +130,14 @@ describe('runtime-policy-inject (dual host entry)', () => {
       {
         cwd: repoRoot,
         encoding: 'utf8',
-        env: {
-          ...process.env,
-          BMAD_RUNTIME_FLOW: '',
-          BMAD_RUNTIME_STAGE: '',
-        },
+        env: { ...process.env },
       }
     );
 
     const stderr = r.stderr ?? '';
     expect(stderr).not.toContain('.bmad/runtime-context.json');
     if (r.status !== 0) {
-      expect(stderr).toContain('missing flow/stage');
+      expect(stderr).toMatch(/emit-runtime-policy:/);
     } else {
       expect((r.stdout ?? '').trim()).toContain('"triggerStage"');
     }

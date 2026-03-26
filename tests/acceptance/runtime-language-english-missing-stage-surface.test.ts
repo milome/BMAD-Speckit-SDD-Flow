@@ -3,18 +3,22 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { mainEmitRuntimePolicy } from '../../scripts/emit-runtime-policy';
+import {
+  defaultRuntimeContextRegistry,
+  writeRuntimeContextRegistry,
+} from '../../scripts/runtime-context-registry';
 
-describe('runtime language english missing-stage surface', () => {
-  it('keeps missing-stage output english-oriented and free of legacy chinese/runtime-source wording', () => {
-    delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
-    delete process.env.BMAD_RUNTIME_FLOW;
-    delete process.env.BMAD_RUNTIME_STAGE;
+describe('runtime language english missing-context surface', () => {
+  it('stderr for registry without scoped context file is english-oriented and free of legacy wording', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'runtime-missing-context-'));
+    const registry = defaultRuntimeContextRegistry(root);
+    writeRuntimeContextRegistry(root, registry);
+    // Intentionally omit project.json — activeScope points at missing file.
 
-    const root = mkdtempSync(path.join(os.tmpdir(), 'runtime-missing-stage-'));
     const errors: string[] = [];
     const originalError = console.error;
-    console.error = (...args: any[]) => {
-      errors.push(args.join(' '));
+    console.error = (...args: unknown[]) => {
+      errors.push(args.map(String).join(' '));
     };
     try {
       const code = mainEmitRuntimePolicy(['--cwd', root]);
@@ -25,9 +29,8 @@ describe('runtime language english missing-stage surface', () => {
     }
 
     const text = errors.join('\n');
-    expect(text).toContain('missing flow/stage');
-    expect(text).toContain('runtime registry activeScope/context resolution');
-    expect(text).not.toContain('BMAD_RUNTIME_CONTEXT_FILE');
+    expect(text).toContain('emit-runtime-policy:');
+    expect(text).toContain('runtime-context missing');
     expect(text).not.toContain('legacy stage-source string');
     expect(text).not.toContain('缺少');
     expect(text).not.toContain('未找到');

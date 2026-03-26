@@ -10,7 +10,7 @@ import { projectContextPath, writeRuntimeContext } from '../../scripts/runtime-c
 import { mainEmitRuntimePolicy } from '../../scripts/emit-runtime-policy';
 
 describe('runtime-policy registry-first consumption', () => {
-  it('resolves context from registry activeScope without requiring BMAD_RUNTIME_CONTEXT_FILE', () => {
+  it('resolves context from registry activeScope (project.json)', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'registry-first-'));
     try {
       const configSource = path.join(process.cwd(), '_bmad', '_config');
@@ -40,13 +40,10 @@ describe('runtime-policy registry-first consumption', () => {
       };
       writeRuntimeContextRegistry(root, registry);
 
-      delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
       const code = mainEmitRuntimePolicy(['--cwd', root]);
 
       expect(code).toBe(0);
-      expect(process.env.BMAD_RUNTIME_CONTEXT_FILE).toBeUndefined();
     } finally {
-      delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
       rmSync(root, { recursive: true, force: true });
     }
   });

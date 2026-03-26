@@ -75,7 +75,6 @@ describe('runtime-policy post-audit run-first consumption', () => {
         'utf8'
       );
 
-      delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
       const chunks: string[] = [];
       const originalWrite = process.stdout.write.bind(process.stdout);
       (process.stdout as any).write = (chunk: any) => {
@@ -95,7 +94,6 @@ describe('runtime-policy post-audit run-first consumption', () => {
       expect(output).toContain('"triggerStage":"bmad_story_stage4"');
       expect(output).toContain('"strictness":"strict"');
     } finally {
-      delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
       rmSync(root, { recursive: true, force: true });
     }
   });

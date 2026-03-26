@@ -17,11 +17,8 @@ describe('runtime-policy inject auto-trigger boundary', () => {
         encoding: 'utf8',
         env: {
           ...process.env,
-          BMAD_HOOK_HOST: 'cursor',
           CURSOR_PROJECT_ROOT: tempRoot,
           CLAUDE_PROJECT_DIR: tempRoot,
-          BMAD_RUNTIME_FLOW: '',
-          BMAD_RUNTIME_STAGE: '',
         },
       });
 

@@ -75,7 +75,6 @@ describe('runtime language english chain milestone', () => {
         'utf8'
       );
 
-      delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
       const chunks: string[] = [];
       const originalWrite = process.stdout.write.bind(process.stdout);
       (process.stdout as any).write = (chunk: any) => {
@@ -98,7 +97,6 @@ describe('runtime language english chain milestone', () => {
       expect(output).not.toContain('审计报告');
       expect(output).not.toContain('中文');
     } finally {
-      delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
       rmSync(root, { recursive: true, force: true });
     }
   });

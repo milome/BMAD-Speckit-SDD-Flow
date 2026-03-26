@@ -120,7 +120,6 @@ describe('runtime-context milestone: full runtime chain', () => {
           'utf8'
         );
 
-        delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
         const chunks: string[] = [];
         const originalWrite = process.stdout.write.bind(process.stdout);
         (process.stdout as any).write = (chunk: any) => {
@@ -149,7 +148,6 @@ describe('runtime-context milestone: full runtime chain', () => {
       expect(registryRaw).toContain('14-2-registry-sync');
       expect(registryRaw).toContain('"scopeType": "run"');
     } finally {
-      delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
       rmSync(root, { recursive: true, force: true });
     }
   });

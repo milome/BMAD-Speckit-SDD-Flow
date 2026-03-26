@@ -44,7 +44,6 @@ describe('runtime-policy registry consumption', () => {
 
       expect(code).toBe(0);
     } finally {
-      delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
       rmSync(root, { recursive: true, force: true });
     }
   });
@@ -92,7 +91,6 @@ describe('runtime-policy registry consumption', () => {
       });
       expect(mainEmitRuntimePolicy(['--cwd', root])).toBe(0);
     } finally {
-      delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
       rmSync(root, { recursive: true, force: true });
     }
   });

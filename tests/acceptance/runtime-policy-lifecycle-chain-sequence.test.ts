@@ -109,7 +109,6 @@ describe('runtime-policy lifecycle chain sequence', () => {
           'utf8'
         );
 
-        delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
         const chunks: string[] = [];
         const originalWrite = process.stdout.write.bind(process.stdout);
         (process.stdout as any).write = (chunk: any) => {
@@ -129,7 +128,6 @@ describe('runtime-policy lifecycle chain sequence', () => {
         expect(output).toContain(`"strictness":"${scenario.expectedStrictness}"`);
       }
     } finally {
-      delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
       rmSync(root, { recursive: true, force: true });
     }
   });

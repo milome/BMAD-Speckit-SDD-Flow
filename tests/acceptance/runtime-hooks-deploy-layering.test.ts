@@ -13,4 +13,13 @@ describe('runtime hooks deploy layering', () => {
     expect(source).toContain('const src = path.join(cursorHooksDir, name)');
     expect(source).not.toContain('const src = fs.existsSync(primary) ? primary : fallback');
   });
+
+  it('deploys claude adapters from _bmad/claude/hooks and shared helpers from _bmad/runtime/hooks', () => {
+    const source = readFileSync(path.join(process.cwd(), 'scripts', 'init-to-root.js'), 'utf8');
+
+    expect(source).toContain('function syncClaudeRuntimePolicyHooks(targetDir, bmadRoot)');
+    expect(source).toContain("const claudeHooksDir = path.join(bmadRoot, 'claude', 'hooks')");
+    expect(source).toContain("path.join('.claude', 'hooks')");
+    expect(source).toContain('syncClaudeRuntimePolicyHooks(targetDir, bmadRoot)');
+  });
 });

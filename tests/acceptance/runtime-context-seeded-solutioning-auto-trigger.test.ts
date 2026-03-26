@@ -5,6 +5,16 @@ import path from 'node:path';
 import { ensureProjectRuntimeContext, ensureStoryRuntimeContext } from '../../scripts/runtime-context';
 import { readRuntimeContextRegistry, runtimeContextRegistryPath } from '../../scripts/runtime-context-registry';
 
+const REPO_ROOT = path.join(import.meta.dirname, '..', '..');
+const STEP04 = path.join(
+  REPO_ROOT,
+  '_bmad/bmm/workflows/3-solutioning/create-epics-and-stories/steps/step-04-final-validation.md'
+);
+const CREATE_STORY = path.join(
+  REPO_ROOT,
+  '_bmad/bmm/workflows/4-implementation/create-story/instructions.xml'
+);
+
 describe('runtime-context seeded_solutioning auto trigger', () => {
   it('creates registry/context automatically for seeded solutioning without manual registry assembly', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'seeded-auto-'));
@@ -38,5 +48,12 @@ describe('runtime-context seeded_solutioning auto trigger', () => {
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
+  });
+
+  it('seeded_solutioning upstream contains sync in step-04 and --story-key in create-story (S13)', () => {
+    const step04 = readFileSync(STEP04, 'utf8');
+    expect(step04.includes('bmad-speckit sync-runtime-context-from-sprint')).toBe(true);
+    const createStory = readFileSync(CREATE_STORY, 'utf8');
+    expect(createStory.includes('--story-key')).toBe(true);
   });
 });

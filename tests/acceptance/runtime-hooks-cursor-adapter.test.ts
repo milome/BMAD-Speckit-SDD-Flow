@@ -7,7 +7,8 @@ describe('runtime hooks cursor adapter', () => {
     const file = path.join(process.cwd(), '_bmad', 'cursor', 'hooks', 'runtime-policy-inject.js');
     const source = readFileSync(file, 'utf8');
 
-    expect(source).toContain("../../runtime/hooks/runtime-policy-inject-core");
+    expect(source).toContain("./runtime-policy-inject-core");
+    expect(source).toContain('../../runtime/hooks/runtime-policy-inject-core');
     expect(source).not.toContain('spawnSync');
     expect(source).not.toContain('runEmit(');
     expect(source).not.toContain('buildRuntimeErrorMessage');

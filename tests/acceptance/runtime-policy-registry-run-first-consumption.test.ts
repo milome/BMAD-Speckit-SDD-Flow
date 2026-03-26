@@ -74,7 +74,6 @@ describe('runtime-policy registry run-first consumption', () => {
       };
       writeRuntimeContextRegistry(root, registry);
 
-      delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
       const chunks: string[] = [];
       const originalWrite = process.stdout.write.bind(process.stdout);
       (process.stdout as any).write = (chunk: any) => {
@@ -93,7 +92,6 @@ describe('runtime-policy registry run-first consumption', () => {
       expect(output).toContain('"triggerStage":"bmad_story_stage4"');
       expect(output).toContain('"runId":"run-001"');
     } finally {
-      delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
       rmSync(root, { recursive: true, force: true });
     }
   });

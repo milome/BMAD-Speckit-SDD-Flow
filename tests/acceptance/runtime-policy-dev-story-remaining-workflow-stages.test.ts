@@ -120,7 +120,6 @@ describe('runtime-policy dev-story remaining workflow stages', () => {
       expect(gaps).toContain('"stage":"gaps"');
       expect(gaps).toContain('"runId":"run-dev-gaps-001"');
     } finally {
-      delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
       rmSync(root, { recursive: true, force: true });
     }
   });

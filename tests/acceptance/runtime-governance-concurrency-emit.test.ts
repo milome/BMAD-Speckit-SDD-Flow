@@ -1,25 +1,28 @@
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { mainEmitRuntimePolicy } from '../../scripts/emit-runtime-policy';
+import { writeMinimalRegistryAndProjectContext } from '../helpers/runtime-registry-fixture';
+
+const repoRoot = process.cwd();
 
 describe('runtime-governance concurrency emit', () => {
-  it('fails loud with an explicit story-scoped context error when implement mode lacks explicit context file', () => {
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    delete process.env.BMAD_RUNTIME_CONTEXT_FILE;
+  it('fails loud when story/implement lacks storyId and runId in registry-backed context', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-concurrency-emit-'));
+    fs.cpSync(path.join(repoRoot, '_bmad'), path.join(root, '_bmad'), { recursive: true });
+    writeMinimalRegistryAndProjectContext(root, { flow: 'story', stage: 'implement' });
 
-    const code = mainEmitRuntimePolicy([
-      '--flow',
-      'story',
-      '--stage',
-      'implement',
-      '--cwd',
-      process.cwd(),
-    ]);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const code = mainEmitRuntimePolicy(['--cwd', root]);
 
     expect(code).toBe(1);
     expect(errorSpy).toHaveBeenCalledWith(
-      'emit-runtime-policy: story/implement requires explicit runtime context in story-scoped mode.'
+      'emit-runtime-policy: story/implement requires storyId or runId in runtime context (registry-backed).'
     );
 
     errorSpy.mockRestore();
+    fs.rmSync(root, { recursive: true, force: true });
   });
 });

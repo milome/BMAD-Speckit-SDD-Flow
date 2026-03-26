@@ -1,7 +1,7 @@
 /**
  * U-1.5 Shadow 可观测性（**策略 B**：仅测试层组装 legacy ↔ governance；生产 `bmad-config` 不静态 import `runtime-governance`，见 U-1.5c）。
  *
- * `BMAD_RUNTIME_SHADOW=1` 时经 `console.debug('[bmad-runtime-shadow]', …)` 输出单行 JSON。
+ * 通过 `setRuntimePolicyShadowModeForTests(true)` 启用；不读取任何环境变量。
  */
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
@@ -13,7 +13,12 @@ import {
   shouldGenerateDoc,
   type StageName,
 } from '../../scripts/bmad-config';
-import { resolveRuntimePolicy, type RuntimeFlowId } from '../../scripts/runtime-governance';
+import {
+  resolveRuntimePolicy,
+  setRuntimePolicyShadowModeForTests,
+  getRuntimePolicyShadowModeForTests,
+  type RuntimeFlowId,
+} from '../../scripts/runtime-governance';
 
 type LegacySlice = {
   auditRequired: boolean;
@@ -38,14 +43,15 @@ function shadowDiff(
   governanceOverride?: ReturnType<typeof resolveRuntimePolicy>
 ): { legacy: LegacySlice; governance: ReturnType<typeof resolveRuntimePolicy>; diff: boolean } {
   const legacy = buildLegacySlice(stage, config);
-  const governance = governanceOverride ?? resolveRuntimePolicy({ flow, stage, config });
+  const governance =
+    governanceOverride ?? resolveRuntimePolicy({ flow, stage, config });
   const diff =
     legacy.auditRequired !== governance.auditRequired ||
     legacy.validationLevel !== governance.validationLevel ||
     legacy.strictness !== governance.strictness ||
     legacy.generateDoc !== governance.generateDoc;
 
-  if (process.env.BMAD_RUNTIME_SHADOW === '1') {
+  if (getRuntimePolicyShadowModeForTests()) {
     console.debug(
       '[bmad-runtime-shadow]',
       JSON.stringify({ flow, stage, legacy, governance, diff })
@@ -56,26 +62,20 @@ function shadowDiff(
 }
 
 describe('runtime-governance shadow (U-1.5)', () => {
-  const prevShadow = process.env.BMAD_RUNTIME_SHADOW;
-
   afterEach(() => {
-    if (prevShadow === undefined) {
-      delete process.env.BMAD_RUNTIME_SHADOW;
-    } else {
-      process.env.BMAD_RUNTIME_SHADOW = prevShadow;
-    }
+    setRuntimePolicyShadowModeForTests(false);
     vi.restoreAllMocks();
   });
 
-  it('BMAD_RUNTIME_SHADOW=1 时 resolveRuntimePolicy 的 compatibilitySource 为 shadow', () => {
-    process.env.BMAD_RUNTIME_SHADOW = '1';
+  it('shadow mode 时 resolveRuntimePolicy 的 compatibilitySource 为 shadow', () => {
+    setRuntimePolicyShadowModeForTests(true);
     const config = loadConfig();
     const policy = resolveRuntimePolicy({ flow: 'story', stage: 'plan', config });
     expect(policy.compatibilitySource).toBe('shadow');
   });
 
-  it('BMAD_RUNTIME_SHADOW=1 时输出 console.debug 且 payload 含 flow/stage/legacy/governance/diff', () => {
-    process.env.BMAD_RUNTIME_SHADOW = '1';
+  it('shadow mode 时输出 console.debug 且 payload 含 flow/stage/legacy/governance/diff', () => {
+    setRuntimePolicyShadowModeForTests(true);
     const dbg = vi.spyOn(console, 'debug').mockImplementation(() => {});
     const config = loadConfig();
     shadowDiff('story', 'specify', config);
@@ -98,7 +98,7 @@ describe('runtime-governance shadow (U-1.5)', () => {
   });
 
   it('无篡改时 diff 为 false（与 governance legacy 对齐字段一致）', () => {
-    process.env.BMAD_RUNTIME_SHADOW = '1';
+    setRuntimePolicyShadowModeForTests(true);
     vi.spyOn(console, 'debug').mockImplementation(() => {});
     const config = loadConfig();
     const { diff } = shadowDiff('bugfix', 'plan', config);
@@ -106,7 +106,7 @@ describe('runtime-governance shadow (U-1.5)', () => {
   });
 
   it('intentional：mock resolveRuntimePolicy 返回篡改 auditRequired 时 diff 为 true 且仍输出 debug', () => {
-    process.env.BMAD_RUNTIME_SHADOW = '1';
+    setRuntimePolicyShadowModeForTests(true);
     const dbg = vi.spyOn(console, 'debug').mockImplementation(() => {});
     const config = loadConfig();
     const canonical = resolveRuntimePolicy({ flow: 'standalone_tasks', stage: 'tasks', config });
