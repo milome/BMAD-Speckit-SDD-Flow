@@ -3,7 +3,7 @@
  * Covers setup.ps1, setup.sh, npm install, init-to-root flows.
  * Runs in CI (ubuntu-latest).
  */
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
@@ -66,4 +66,46 @@ describe('install to consumer → CLI acceptance', () => {
       rmSync(target, { recursive: true, force: true });
     }
   }, 60_000);
+
+  it('npm install consumer can re-run installed deploy entrypoint to heal .specify mirror drift', () => {
+    const target = mkdtempSync(join(tmpdir(), 'accept-consumer-mirror-heal-'));
+    try {
+      writeFileSync(
+        join(target, 'package.json'),
+        JSON.stringify({ name: 'consumer-app', version: '1.0.0', private: true }),
+        'utf8'
+      );
+
+      const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
+      run(`npm install --save-dev "file:${pkgPath}"`, target);
+
+      const canonicalTemplate = join(target, '_bmad', 'speckit', 'templates', 'tasks-template.md');
+      const mirroredTemplate = join(target, '.specify', 'templates', 'tasks-template.md');
+      const canonicalScript = join(
+        target,
+        '_bmad',
+        'speckit',
+        'scripts',
+        'powershell',
+        'check-sprint-ready.ps1'
+      );
+      const mirroredScript = join(target, '.specify', 'scripts', 'check-sprint-ready.ps1');
+
+      expect(existsSync(mirroredTemplate)).toBe(true);
+      expect(existsSync(mirroredScript)).toBe(true);
+
+      writeFileSync(mirroredTemplate, '# stale mirror\n', 'utf8');
+      rmSync(mirroredScript, { force: true });
+
+      expect(readFileSync(mirroredTemplate, 'utf8')).not.toBe(readFileSync(canonicalTemplate, 'utf8'));
+      expect(existsSync(mirroredScript)).toBe(false);
+
+      run('npx bmad-speckit-init --agent claude-code', target);
+
+      expect(readFileSync(mirroredTemplate, 'utf8')).toBe(readFileSync(canonicalTemplate, 'utf8'));
+      expect(readFileSync(mirroredScript, 'utf8')).toBe(readFileSync(canonicalScript, 'utf8'));
+    } finally {
+      rmSync(target, { recursive: true, force: true });
+    }
+  }, 90_000);
 });

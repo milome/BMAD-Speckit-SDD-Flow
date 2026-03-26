@@ -1,6 +1,22 @@
 {
-  "preAgentSummary": {},
-  "subagentResult": {},
+  "preAgentSummary": {
+    "title": "Agent 调用摘要",
+    "charsUnit": "chars",
+    "labels": {
+      "desc": "描述:",
+      "type": "类型:",
+      "prompt": "提示词:",
+      "preview": "预览:"
+    }
+  },
+  "subagentResult": {
+    "title": "Agent 完成",
+    "type": "类型:",
+    "duration": "耗时:",
+    "milestones": "里程碑:",
+    "milestonesEmpty": "里程碑: (子代理未写入里程碑文件)",
+    "resultSummary": "结果摘要:"
+  },
   "runtimeGovernance": {
     "jsonBlockPrefix": "本回合 Runtime Governance（JSON）："
   }

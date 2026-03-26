@@ -91,7 +91,7 @@ Given that feature description, do this:
       - Extract business requirements, user needs, and success criteria from design docs
       - Reference the documents in a "Reference Documents" section at the end of spec.md
 
-4. Load `.specify/templates/spec-template.md` to understand required sections.
+4. Load `_bmad/speckit/templates/spec-template.md` to understand the canonical required sections.
 
 5. Follow this execution flow:
 

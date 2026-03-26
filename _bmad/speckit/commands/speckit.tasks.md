@@ -25,41 +25,49 @@ You **MUST** consider the user input before proceeding (if not empty).
 1. **Setup**: Run `_bmad/speckit/scripts/powershell/check-prerequisites.ps1 -Json` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 
 2. **Load design documents**: Read from FEATURE_DIR:
-   - **Required**: plan.md (tech stack, libraries, structure), spec.md (user stories with priorities)
+   - **Required**: plan.md (tech stack, libraries, structure), spec.md (user stories with priorities), IMPLEMENTATION_GAPS.md (or the latest versioned gaps doc)
    - **Optional**: data-model.md (entities), contracts/ (API endpoints), research.md (decisions), quickstart.md (test scenarios)
-   - Note: Not all projects have all documents. Generate tasks based on what's available.
+   - **If already split out**: journey-ledger.md, invariant-ledger.md, trace-map.json
+   - Note: Not all projects have all optional documents. Generate tasks from the strongest available journey / gap evidence and surface missing contract artifacts explicitly.
 
 3. **Execute task generation workflow**:
-   - Load plan.md and extract tech stack, libraries, project structure
-   - Load spec.md and extract user stories with their priorities (P1, P2, P3, etc.)
-   - If data-model.md exists: Extract entities and map to user stories
-   - If contracts/ exists: Map endpoints to user stories
-   - If research.md exists: Extract decisions for setup tasks
-   - Generate tasks organized by user story (see Task Generation Rules below)
-   - Generate dependency graph showing user story completion order
-   - Create parallel execution examples per user story
-   - Validate task completeness (each user story has all needed tasks, independently testable)
+   - Load plan.md and extract tech stack, libraries, project structure, `P0 journey`, smoke E2E expectations, fixture / environment readiness constraints, and dependency semantics
+   - Load spec.md and extract user stories with priorities plus user-visible journey outcomes
+   - Load IMPLEMENTATION_GAPS.md and separate `definition gap` from `implementation gap`
+   - Build or refresh a `journey ledger`, `invariant ledger`, and `journey -> task -> test -> closure` trace map
+   - If data-model.md exists: Extract entities and map them to journeys, not only to modules
+   - If contracts/ exists: Map endpoints to journeys and identify smoke/full proof points
+   - If research.md exists: Extract decisions for setup or foundational tasks, but keep those tasks attached to a named Journey ID
+   - Generate tasks organized by `runnable slice` (see Task Generation Rules below)
+   - Generate dependency graph showing journey completion order and at least one smoke path task chain per journey
+   - Create parallel execution examples per journey slice
+   - Validate task completeness: each journey has implementation, evidence, smoke proof, and closure coverage
 
-4. **Generate tasks.md**: Use `.specify/templates/tasks-template.md` as structure, fill with:
+4. **Generate tasks.md**: Use `_bmad/speckit/templates/tasks-template.md` (or the project's bound tasks template path) as structure, fill with:
    - Correct feature name from plan.md
-   - Phase 1: Setup tasks (project initialization)
-   - Phase 2: Foundational tasks (blocking prerequisites for all user stories)
-   - Phase 3+: One phase per user story (in priority order from spec.md)
-   - Each phase includes: story goal, independent test criteria, tests (if requested), implementation tasks
-   - Final Phase: Polish & cross-cutting concerns
+   - `P0 Journey Ledger`
+   - `Invariant Ledger`
+   - `Runnable Slice Milestones`
+   - One `Journey Slice` per runnable journey, in priority order
+   - Separate `Definition Gap Tasks` and `Implementation Gap Tasks`
+   - `Closure Notes` section with one closure note path per journey
    - All tasks must follow the strict checklist format (see Task Generation Rules below)
+   - Every task must carry `Journey ID`, `Trace ID`, and the right evidence / task-type label
+   - Every journey must contain at least one smoke path task chain plus one closure note task
    - Clear file paths for each task
-   - Dependencies section showing story completion order
-   - Parallel execution examples per story
+   - Dependencies section showing journey completion order
+   - Parallel execution examples per journey
    - Implementation strategy section (MVP first, incremental delivery)
+   - For multi-agent mode: explicit shared artifact requirement for one journey ledger, one invariant ledger, one trace map
 
 5. **Report**: Output path to generated tasks.md and summary:
    - Total task count
-   - Task count per user story
+   - Task count per journey
    - Parallel opportunities identified
-   - Independent test criteria for each story
-   - Suggested MVP scope (typically just User Story 1)
+   - Smoke proof / full E2E / closure coverage for each journey
+   - Suggested MVP scope (typically just the first runnable P0 journey)
    - Format validation: Confirm ALL tasks follow the checklist format (checkbox, ID, labels, file paths)
+   - Trace validation: Confirm `journey -> task -> test -> closure` coverage and whether any gaps remain definition-only vs implementation-only
 
 Context for task generation: $ARGUMENTS
 
@@ -67,16 +75,16 @@ The tasks.md should be immediately executable - each task must be specific enoug
 
 ## Task Generation Rules
 
-**CRITICAL**: Tasks MUST be organized by user story to enable independent implementation and testing.
+**CRITICAL**: Tasks MUST be organized by `journey / runnable slice` so the user-visible path becomes runnable and verifiable without waiting for module-complete cleanup.
 
-**Tests are OPTIONAL**: Only generate test tasks if explicitly requested in the feature specification or if user requests TDD approach.
+**Tests are OPTIONAL**: Only generate formal test tasks if explicitly requested in the feature specification or if the user requests TDD. However, every `P0 journey` MUST still have smoke proof, verification command, and closure note coverage.
 
 ### Checklist Format (REQUIRED)
 
 Every task MUST strictly follow this format:
 
 ```text
-- [ ] [TaskID] [P?] [Story?] Description with file path
+- [ ] [TaskID] [P?] [Story?] [Journey?] [Invariant?] [Trace?] [Type?] Description with file path
 ```
 
 **Format Components**:
@@ -84,55 +92,81 @@ Every task MUST strictly follow this format:
 1. **Checkbox**: ALWAYS start with `- [ ]` (markdown checkbox)
 2. **Task ID**: Sequential number (T001, T002, T003...) in execution order
 3. **[P] marker**: Include ONLY if task is parallelizable (different files, no dependencies on incomplete tasks)
-4. **[Story] label**: REQUIRED for user story phase tasks only
+4. **[Story] label**:
    - Format: [US1], [US2], [US3], etc. (maps to user stories from spec.md)
-   - Setup phase: NO story label
-   - Foundational phase: NO story label  
-   - User Story phases: MUST have story label
-   - Polish phase: NO story label
-5. **Description**: Clear action with exact file path
+   - Journey slice tasks MUST have a story label
+   - Shared setup / foundational tasks may omit it only if the owning journey is still explicit
+5. **[Journey] label**:
+   - REQUIRED for every setup, foundational, and journey task
+   - Format: [J01], [J02], [J03], etc.
+6. **[Invariant] label**:
+   - Use [INV-02] when the task protects an invariant
+   - Use [INV-N/A] only when no invariant applies and the reason is written in slice metadata
+7. **[Trace] label**:
+   - REQUIRED for every task
+   - Format: [TR-J01-T021] or another stable project convention derived from journey + task id
+8. **[Type] label**:
+   - REQUIRED for every task
+   - Prefer [FOUNDATION], [IMPLEMENT], [SMOKE], [FULL-E2E], [EVIDENCE], [CLOSURE], [DEF-GAP], [IMPL-GAP]
+9. **Description**: Clear action with exact file path
 
 **Examples**:
 
-- ✅ CORRECT: `- [ ] T001 Create project structure per implementation plan`
-- ✅ CORRECT: `- [ ] T005 [P] Implement authentication middleware in src/middleware/auth.py`
-- ✅ CORRECT: `- [ ] T012 [P] [US1] Create User model in src/models/user.py`
-- ✅ CORRECT: `- [ ] T014 [US1] Implement UserService in src/services/user_service.py`
-- ❌ WRONG: `- [ ] Create User model` (missing ID and Story label)
+- ✅ CORRECT: `- [ ] T001 [J01] [INV-N/A] [TR-J01-T001] [FOUNDATION] Create project structure in src/ for Journey J01`
+- ✅ CORRECT: `- [ ] T005 [P] [US1] [J01] [INV-02] [TR-J01-T005] [SMOKE] Add checkout smoke test in tests/e2e/smoke/checkout.spec.ts`
+- ✅ CORRECT: `- [ ] T012 [P] [US1] [J01] [INV-02] [TR-J01-T012] [IMPLEMENT] Create Order model in src/models/order.py`
+- ✅ CORRECT: `- [ ] T014 [US1] [J01] [INV-02] [TR-J01-T014] [CLOSURE] Write closure note in closure-notes/J01.md`
+- ❌ WRONG: `- [ ] Create User model` (missing ID and trace labels)
 - ❌ WRONG: `T001 [US1] Create model` (missing checkbox)
 - ❌ WRONG: `- [ ] [US1] Create User model` (missing Task ID)
-- ❌ WRONG: `- [ ] T001 [US1] Create model` (missing file path)
+- ❌ WRONG: `- [ ] T001 [US1] Create model` (missing Journey / Trace / file path)
+- ❌ WRONG: `- [ ] T030 [US2] [J02] [TR-J02-T030] [IMPLEMENT] Finish backend before wiring later` (non-runnable completion language)
 
 ### Task Organization
 
-1. **From User Stories (spec.md)** - PRIMARY ORGANIZATION:
-   - Each user story (P1, P2, P3...) gets its own phase
-   - Map all related components to their story:
-     - Models needed for that story
-     - Services needed for that story
-     - Endpoints/UI needed for that story
-     - If tests requested: Tests specific to that story
-   - Mark story dependencies (most stories should be independent)
+1. **From P0 Journeys (spec.md + plan.md)** - PRIMARY ORGANIZATION:
+   - Each runnable journey gets its own top-level slice
+   - Map all related components to the journey:
+     - Models or entities needed for the journey
+     - Services needed for the journey
+     - Endpoints/UI needed for the journey
+     - Smoke proof, full E2E or deferred reason, closure note
+   - Mark journey dependencies; do not let a slice become a loose technical bucket
 
 2. **From Contracts**:
-   - Map each contract/endpoint → to the user story it serves
-   - If tests requested: Each contract → contract test task [P] before implementation in that story's phase
+   - Map each contract/endpoint → to the journey it serves
+   - If tests requested: each contract should produce test tasks in the same journey slice
+   - Mark which contract task is smoke proof vs full E2E vs supporting evidence
 
 3. **From Data Model**:
-   - Map each entity to the user story(ies) that need it
-   - If entity serves multiple stories: Put in earliest story or Setup phase
-   - Relationships → service layer tasks in appropriate story phase
+   - Map each entity to the journey or invariant that needs it
+   - If an entity serves multiple journeys: attach it to the earliest runnable slice or to a clearly tagged shared prerequisite with Journey IDs
+   - Relationships → implementation tasks inside the appropriate journey slice
 
 4. **From Setup/Infrastructure**:
-   - Shared infrastructure → Setup phase (Phase 1)
-   - Foundational/blocking tasks → Foundational phase (Phase 2)
-   - Story-specific setup → within that story's phase
+   - Shared infrastructure is allowed only if it names the journey(s) it unlocks
+   - Foundational / blocking tasks must remain inside the affected journey slice or in a clearly tagged shared prerequisite section
+   - Story-specific setup belongs inside that story's runnable slice
 
-### Phase Structure
+5. **From Gaps**:
+   - `Definition gap` tasks must be listed separately from `implementation gap` tasks
+   - A missing contract, role definition, completion state, fixture, permission boundary, or dependency semantic is a definition gap
+   - A missing code path, missing wiring, failing proof, or missing closure note is an implementation gap
 
-- **Phase 1**: Setup (project initialization)
-- **Phase 2**: Foundational (blocking prerequisites - MUST complete before user stories)
-- **Phase 3+**: User Stories in priority order (P1, P2, P3...)
-  - Within each story: Tests (if requested) → Models → Services → Endpoints → Integration
-  - Each phase should be a complete, independently testable increment
-- **Final Phase**: Polish & Cross-Cutting Concerns
+### Top-Level Structure
+
+- `P0 Journey Ledger`
+- `Invariant Ledger`
+- `Runnable Slice Milestones`
+- One `Journey Slice` per runnable journey
+- `Definition Gap Tasks`
+- `Implementation Gap Tasks`
+- `Closure Notes`
+
+### Generation Guardrails
+
+- Every journey MUST have at least one `smoke path` task chain.
+- Every journey MUST have one `closure note` task.
+- Do not merge multiple journeys into one module bucket just because they share files.
+- Do not produce “module complete but journey not runnable” task plans.
+- In multi-agent mode, all agents must share the same `journey ledger`, `invariant ledger`, and `trace map`; private summaries are not sufficient.

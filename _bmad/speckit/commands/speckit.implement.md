@@ -50,10 +50,13 @@ You **MUST** consider the user input before proceeding (if not empty).
 3. Load and analyze the implementation context:
    - **REQUIRED**: Read tasks.md for the complete task list and execution plan
    - **REQUIRED**: Read plan.md for tech stack, architecture, and file structure
+   - **REQUIRED if split artifacts exist**: Read `journey-ledger.md`, `invariant-ledger.md`, and `trace-map.json`
    - **IF EXISTS**: Read data-model.md for entities and relationships
    - **IF EXISTS**: Read contracts/ for API specifications and test requirements
    - **IF EXISTS**: Read research.md for technical decisions and constraints
    - **IF EXISTS**: Read quickstart.md for integration scenarios
+   - If the repo has not split ledgers into standalone files yet, load the equivalent sections from tasks.md and treat them as the source of truth.
+   - Before executing any task, identify which items are `definition gap` work versus `implementation gap` work and do not mix completion claims across the two.
 
 3.5. **【ralph-method 强制前置】创建 prd 与 progress 追踪文件**：
    - 若 FEATURE_DIR 或 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/` 下不存在 `prd.{stem}.json` 与 `progress.{stem}.txt`，**必须**在开始执行任何任务前创建；
@@ -108,47 +111,59 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **Kubernetes/k8s**: `*.secret.yaml`, `secrets/`, `.kube/`, `kubeconfig*`, `*.key`, `*.crt`
 
 5. Parse tasks.md structure and extract:
-   - **Task phases**: Setup, Tests, Core, Integration, Polish
+   - **Journey artifacts**: `P0 Journey Ledger`, `Invariant Ledger`, `Runnable Slice Milestones`, `Closure Notes`
    - **Task dependencies**: Sequential vs parallel execution rules
-   - **Task details**: ID, description, file paths, parallel markers [P]
-   - **Execution flow**: Order and dependency requirements
+   - **Task details**: ID, journey id, invariant id, trace id, task type, file paths, parallel markers [P]
+   - **Execution flow**: order and dependency requirements per runnable slice
+   - **Gap split**: which tasks close `definition gap` versus `implementation gap`
 
 6. Execute implementation following the task plan:
-   - **Phase-by-phase execution**: Complete each phase before moving to the next
+   - **Slice-by-slice execution**: Complete each runnable journey slice before claiming the milestone
    - **Respect dependencies**: Run sequential tasks in order, parallel tasks [P] can run together  
    - **Follow TDD approach**: Execute test tasks before their corresponding implementation tasks
    - **File-based coordination**: Tasks affecting the same files must run sequentially
+   - **Ledger-driven execution**: Keep `journey-ledger`, `invariant-ledger`, and `trace-map` aligned with task progress; multi-agent work must share the same artifacts
    - **Per-US tracking**：**每个 US 须独立执行 RED→GREEN→REFACTOR**；禁止仅对首个 US 执行 TDD 后对后续 US 跳过红灯直接实现。每完成一个可验收任务（对应 prd 中的一个 US），**必须立即**：
-     1. 更新 prd：将对应 userStory 的 `passes` 设为 `true`；
-     2. 更新 progress：必须同时追加以下内容：
+      1. 更新 prd：将对应 userStory 的 `passes` 设为 `true`；
+      2. 更新 progress：必须同时追加以下内容：
         - story log：`[YYYY-MM-DD HH:MM] US-XXX: <title> - PASSED`；
         - TDD 记录（涉及生产代码的任务必填，三行缺一不可）：
           - `[TDD-RED] <任务ID> <验收命令> => N failed`（红灯：测试先失败）
           - `[TDD-GREEN] <任务ID> <验收命令> => N passed`（绿灯：实现后通过）
           - `[TDD-REFACTOR] <任务ID> [重构操作描述]`（必填：有重构则写具体操作；无则写「无重构（已符合最佳实践）」）
-        参考：speckit-workflow SKILL §5.1.1、task-execution-tdd.md；禁止省略 REFACTOR 阶段。
-     3. 禁止在全部任务完成后才批量更新 prd/progress。
-   - **Validation checkpoints**: Verify each phase completion before proceeding
+        - 参考：speckit-workflow SKILL §5.1.1、task-execution-tdd.md；禁止省略 REFACTOR 阶段。
+      3. 禁止在全部任务完成后才批量更新 prd/progress。
+   - **Closure discipline**: Every time a `P0 journey` reaches runnable smoke status, write or update its closure note before moving on
+   - **Validation checkpoints**: Verify each runnable slice completion before proceeding
+   - **Re-readiness trigger**: If a change touches `P0 journey`, completion semantics, dependency semantics, permission boundaries, or smoke/full proof assumptions, stop and trigger `re-readiness` before continuing implementation claims
 
 7. Implementation execution rules:
    - **Setup first**: Initialize project structure, dependencies, configuration
    - **Tests before code**: If you need to write tests for contracts, entities, and integration scenarios
    - **Core development**: Implement models, services, CLI commands, endpoints
    - **Integration work**: Database connections, middleware, logging, external services
+   - **Journey proof before polish**: Do not start polish-only work until the current journey slice is runnable and evidenced
+   - **Closure note contract**: Each closure note must name covered journey id, implementing task ids, smoke test ids, full E2E ids or deferred reason, and unresolved deferred gaps
+   - **No orphan module drift**: A module is not complete if it passes local tests but the journey is still not runnable from the real entry path
    - **Polish and validation**: Unit tests, performance optimization, documentation
 
 8. Progress tracking and error handling:
    - Report progress: 在 tasks.md 中标记 `[X]`；**同时**按 ralph-method 更新 prd（passes=true）与 progress（追加 story log + TDD 三行记录，格式见步骤 6）。
+   - Progress / handoff / blocker notes MUST explicitly distinguish `definition gap` from `implementation gap`
    - Halt execution if any non-parallel task fails
    - For parallel tasks [P], continue with successful tasks, report failed ones
    - Provide clear error messages with context for debugging
    - Suggest next steps if implementation cannot proceed
+   - Batch checkpoints must explicitly answer: "Did we finish a module only, or did we make the journey runnable?"
    - **IMPORTANT** For completed tasks, make sure to mark the task off as [X] in the tasks file.
 
 9. Completion validation:
    - Verify all required tasks are completed
    - Check that implemented features match the original specification
    - Validate that tests pass and coverage meets requirements
+   - Verify each `P0 journey` has smoke proof, trace coverage, and a closure note
+   - If full E2E is deferred, verify the deferred reason and next gate are written in the closure note
+   - Verify no unresolved `definition gap` is being reported as implemented functionality
    - 项目须按技术栈执行 Lint（见 lint-requirement-matrix）；若使用主流语言但未配置 Lint 须修复；已配置的须执行且无错误、无警告，方可宣布完成。
    - Confirm the implementation follows the technical plan
    - Report final status with summary of completed work

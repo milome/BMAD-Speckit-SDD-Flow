@@ -26,6 +26,14 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const PKG_ROOT = path.resolve(__dirname, '..');
+const { syncSpecifyMirror } = require(path.join(
+  PKG_ROOT,
+  '_bmad',
+  'speckit',
+  'scripts',
+  'node',
+  'speckit-mirror.js'
+));
 const args = process.argv.slice(2);
 const fullMode = args.includes('--full');
 const noPackageJson = args.includes('--no-package-json');
@@ -52,64 +60,12 @@ if (!requestedAgentTarget) {
  * @returns {number} Number of files deployed.
  */
 function deploySpecify(targetDir) {
-  const bmadRoot = path.join(targetDir, '_bmad');
-  const specifyDest = path.join(targetDir, '.specify');
-  const specifySync = [
-    { src: path.join(bmadRoot, 'speckit', 'templates'), dest: path.join(specifyDest, 'templates') },
-    { src: path.join(bmadRoot, 'speckit', 'workflows'), dest: path.join(specifyDest, 'workflows') },
-    {
-      src: path.join(bmadRoot, 'speckit', 'scripts', 'shell'),
-      dest: path.join(specifyDest, 'scripts'),
-    },
-    {
-      src: path.join(bmadRoot, 'speckit', 'scripts', 'powershell'),
-      dest: path.join(specifyDest, 'scripts'),
-    },
-  ];
-  let totalFiles = 0;
-  for (const { src, dest } of specifySync) {
-    if (fs.existsSync(src)) {
-      console.log('Sync', path.relative(targetDir, src), '->', path.relative(targetDir, dest));
-      copyRecursive(src, dest);
-      totalFiles += countFiles(dest);
-    }
-  }
-  const cmdSrc = path.join(bmadRoot, 'speckit', 'commands');
-  const cmdDest = path.join(specifyDest, 'templates', 'commands');
-  if (fs.existsSync(cmdSrc)) {
-    console.log(
-      'Sync',
-      path.relative(targetDir, cmdSrc),
-      '->',
-      path.relative(targetDir, cmdDest),
-      '(strip speckit. prefix)'
-    );
-    copyStripPrefix(cmdSrc, cmdDest, 'speckit.');
-    totalFiles += countFiles(cmdDest);
-  }
-  const memoryDir = path.join(specifyDest, 'memory');
-  if (!fs.existsSync(memoryDir)) {
-    fs.mkdirSync(memoryDir, { recursive: true });
-  }
-  return totalFiles;
-}
-
-/**
- * Copy directory contents, stripping a filename prefix from top-level files.
- * e.g. speckit.plan.md -> plan.md (upstream convention for .specify/templates/commands/).
- */
-function copyStripPrefix(src, dest, prefix) {
-  if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
-  for (const name of fs.readdirSync(src)) {
-    const srcPath = path.join(src, name);
-    const stat = fs.statSync(srcPath);
-    if (stat.isDirectory()) {
-      copyRecursive(srcPath, path.join(dest, name));
-    } else {
-      const destName = name.startsWith(prefix) ? name.slice(prefix.length) : name;
-      fs.copyFileSync(srcPath, path.join(dest, destName));
-    }
-  }
+  const result = syncSpecifyMirror({
+    bmadRoot: path.join(targetDir, '_bmad'),
+    projectRoot: targetDir,
+    logger: console,
+  });
+  return result.fileCount;
 }
 
 function writeCursorHooksJson(targetDir) {

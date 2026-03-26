@@ -48,6 +48,14 @@ function deepMerge(base, overlay) {
   return result;
 }
 
+function loadSpeckitMirrorTools(bmadRoot) {
+  const helperPath = path.join(bmadRoot, 'speckit', 'scripts', 'node', 'speckit-mirror.js');
+  if (!fs.existsSync(helperPath)) {
+    return null;
+  }
+  return require(helperPath);
+}
+
 /**
  * Sync commands/rules/agents and platform infrastructure to AI target dirs.
  * Commands always from _bmad/commands/ (shared); rules/agents from _bmad/{sourceDir}/.
@@ -222,6 +230,15 @@ function deployRuntimeGovernanceFromPackage(projectRoot) {
  * @param {string} bmadRoot - Path to _bmad directory.
  */
 function deploySpecifyDir(projectRoot, bmadRoot) {
+  const mirrorTools = loadSpeckitMirrorTools(bmadRoot);
+  if (mirrorTools && typeof mirrorTools.syncSpecifyMirror === 'function') {
+    mirrorTools.syncSpecifyMirror({
+      bmadRoot,
+      projectRoot,
+    });
+    return;
+  }
+
   const specifyDest = path.join(projectRoot, '.specify');
   const pairs = [
     { src: path.join(bmadRoot, 'speckit', 'templates'), dest: path.join(specifyDest, 'templates') },
