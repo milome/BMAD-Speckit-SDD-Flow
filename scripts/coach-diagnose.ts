@@ -43,9 +43,9 @@ function parseArgs(argv: string[]): Record<string, string> {
   return args;
 }
 
-const EMPTY_DATA_MESSAGE = '暂无评分数据，请先完成至少一轮 Dev Story';
-const EMPTY_REAL_DEV_MESSAGE = '暂无 real_dev 评分数据，请先完成至少一轮 Dev Story';
-const EMPTY_EVAL_QUESTION_MESSAGE = '暂无 eval_question 评分数据';
+const EMPTY_DATA_MESSAGE = 'No scoring data yet; complete at least one Dev Story run first.';
+const EMPTY_REAL_DEV_MESSAGE = 'No real_dev scoring data yet; complete at least one Dev Story run first.';
+const EMPTY_EVAL_QUESTION_MESSAGE = 'No eval_question scoring data.';
 const DEFAULT_LIMIT = 100;
 
 async function main(): Promise<void> {
@@ -114,8 +114,8 @@ async function main(): Promise<void> {
         const hasParsable = realDev.some((r) => parseEpicStoryFromRecord(r) != null);
         console.log(
           hasParsable
-            ? '无可筛选数据'
-            : '当前评分记录无可解析 Epic/Story，请确认 run_id 约定'
+            ? 'No records match the filter.'
+            : 'No parsable Epic/Story in score records; check run_id conventions.'
         );
       }
       process.exit(0);
@@ -176,7 +176,7 @@ async function main(): Promise<void> {
   if (format === 'markdown') {
     const markdown = formatToMarkdown(result);
     if (truncated) {
-      console.log(`> 仅展示最近 ${limit} 条\n\n${markdown}`);
+      console.log(`> Showing at most the latest ${limit} record(s)\n\n${markdown}`);
     } else {
       console.log(markdown);
     }

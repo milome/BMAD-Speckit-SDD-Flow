@@ -3,7 +3,7 @@
  *
  * 用途：聚合 scoring 数据，计算健康分数、短板 Top3、高迭代 Top3，输出 _bmad-output/dashboard.md。
  *
- * CLI 参数：--strategy (epic_story_window|run_id), --dataPath, --epic, --story, --windowHours
+ * CLI 参数：--strategy (epic_story_window|run_id), --dataPath, --epic, --story, --windowHours, --output (默认 _bmad-output/dashboard.md)
  *
  * 示例：npx ts-node scripts/dashboard-generate.ts --epic 2
  *
@@ -70,9 +70,11 @@ function main(): void {
     (r) => r.scenario !== 'eval_question'
   );
 
-  const outDir = path.resolve(process.cwd(), path.dirname(OUTPUT_PATH));
+  const outputArg = args.output;
+  const outputRel = outputArg != null && outputArg !== '' ? outputArg : OUTPUT_PATH;
+  const outDir = path.resolve(process.cwd(), path.dirname(outputRel));
   ensureDir(outDir);
-  const outFile = path.resolve(process.cwd(), OUTPUT_PATH);
+  const outFile = path.resolve(process.cwd(), outputRel);
 
   if (records.length === 0) {
     const content = EMPTY_DATA_MESSAGE + '\n';
