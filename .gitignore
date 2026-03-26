@@ -61,6 +61,9 @@ packages/scoring/outputs/
 .omc/
 .serena/
 
+# Packaged artifacts (local npm pack, etc.)
+*.tgz
+
 # Session temporary files
 progress.txt
 progress.md
