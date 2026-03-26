@@ -1,0 +1,34 @@
+id: speckit.audit.spec
+version: 1
+kind: audit_template
+control:
+  stage: spec
+  output_contract: markdown_audit_report
+  required_sections:
+    - audit_scope
+    - conclusion
+  placeholders:
+    epic: identifier
+    story: identifier
+  protected_tokens:
+    - AUDIT_SCOPE
+    - CONCLUSION
+localization:
+  default_language: zh
+  allow_bilingual: true
+anchors:
+  audit_scope: AUDIT_SCOPE
+  conclusion: CONCLUSION
+strings:
+  audit_scope_heading:
+    zh: "审计范围（Epic {{epic}} / Story {{story}}）"
+    en: "Audit Scope (Epic {{epic}} / Story {{story}})"
+  audit_scope_body:
+    zh: "本段对 spec.md 做 Speckit Specify 阶段合规审计；可解析块须含 AUDIT_SCOPE 锚点。"
+    en: "This section audits spec.md for Speckit Specify compliance; parseable blocks must include the AUDIT_SCOPE anchor."
+  conclusion_heading:
+    zh: "批判审计员结论"
+    en: "Critical Auditor Conclusion"
+  conclusion_body:
+    zh: "总体评级: [A/B/C/D]\n维度评分:\n- 需求完整性: [0-100]/100\n批判审计员须输出可解析 CONCLUSION 块。"
+    en: "Overall Grade: [A/B/C/D]\nDimension scores:\n- Requirements Completeness: [0-100]/100\nThe Critical Auditor must emit a parseable CONCLUSION block."

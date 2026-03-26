@@ -8,7 +8,13 @@ const EXPLICIT_PATTERNS: Array<{ mode: ResolvedLanguage; patterns: RegExp[] }> =
   },
   {
     mode: 'en',
-    patterns: [/answer in english/i, /respond in english/i, /use english/i, /output in english/i],
+    patterns: [
+      /answer in english/i,
+      /respond in english/i,
+      /use english/i,
+      /output in english/i,
+      /请用英文/u,
+    ],
   },
   {
     mode: 'bilingual',
