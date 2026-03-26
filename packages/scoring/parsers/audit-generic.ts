@@ -12,12 +12,20 @@ const GRADE_TO_SCORE: Record<string, number> = {
 
 export type GenericAuditStage = Extract<MappingStage, 'prd' | 'spec' | 'plan' | 'gaps' | 'tasks' | 'implement'>;
 
-function normalizeSeverityDelta(severity: string): number {
+/** Maps Chinese or English severity labels to score deltas (T3.2). */
+export function normalizeSeverityDelta(severity: string): number {
   const value = severity.trim();
-  if (value === '高') return -10;
-  if (value === '中') return -5;
+  const lower = value.toLowerCase();
+  if (value === '高' || lower === 'high') return -10;
+  if (value === '中' || lower === 'medium') return -5;
   return -2;
 }
+
+const OVERALL_GRADE_PATTERNS: RegExp[] = [
+  /总体评级:\s*([ABCD])/,
+  /Overall Grade:\s*([ABCD])/i,
+  /Overall rating:\s*([ABCD])/i,
+];
 
 /**
  * Extract 总体评级 (A/B/C/D) from report content via regex.
@@ -25,8 +33,18 @@ function normalizeSeverityDelta(severity: string): number {
  * @returns {string | null} Grade letter or null if not found
  */
 export function extractOverallGrade(content: string): string | null {
-  const match = content.match(/总体评级:\s*([ABCD])/);
-  return match ? match[1] : null;
+  for (const pattern of OVERALL_GRADE_PATTERNS) {
+    const match = content.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
+}
+
+/** Bilingual problem-list section (T3.2). */
+function findProblemSectionText(content: string): RegExpMatchArray | null {
+  return content.match(
+    /(?:问题清单|Issue List|Problem List):\s*([\s\S]*?)(?=通过标准:|下一步行动:|Pass Criteria:|Next Actions:|$)/i
+  );
 }
 
 /**
@@ -37,7 +55,7 @@ export function extractOverallGrade(content: string): string | null {
  */
 export function extractCheckItems(content: string, stage: GenericAuditStage): CheckItem[] {
   const items: CheckItem[] = [];
-  const problemSection = content.match(/问题清单:\s*([\s\S]*?)(?=通过标准:|下一步行动:|$)/i);
+  const problemSection = findProblemSectionText(content);
 
   if (!problemSection) {
     items.push({
@@ -50,7 +68,14 @@ export function extractCheckItems(content: string, stage: GenericAuditStage): Ch
   }
 
   const sectionText = problemSection[1].trim();
-  if (/\(无\)|无$/.test(sectionText)) {
+  const emptyT = sectionText.trim();
+  if (
+    /\(无\)/.test(sectionText) ||
+    /无$/.test(emptyT) ||
+    /^\(none\)$/i.test(emptyT) ||
+    /^none$/i.test(emptyT) ||
+    /^n\/a$/i.test(emptyT)
+  ) {
     items.push({
       item_id: resolveEmptyItemId(stage, 'overall', `${stage}_overall`),
       passed: true,
@@ -63,7 +88,9 @@ export function extractCheckItems(content: string, stage: GenericAuditStage): Ch
   const lines = sectionText.split(/\n/).map((line) => line.trim()).filter(Boolean);
   let idx = 0;
   for (const line of lines) {
-    const match = line.match(/^\d+\.\s*\[严重程度:([^\]]+)\]\s*(.+?)(?:\s+建议\s*|$)/);
+    const match = line.match(
+      /^\d+\.\s*\[(?:严重程度|Severity):([^\]]+)\]\s*(.+?)(?:\s+建议\s*|\s+Suggestion\s*:?\s*|\s+Recommendation\s*:?\s*|)$/i
+    );
     if (!match) continue;
     const severity = match[1];
     const description = match[2].trim();

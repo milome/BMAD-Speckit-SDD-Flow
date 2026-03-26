@@ -2,7 +2,11 @@
  * T2: audit-report-parser 单测
  */
 import { describe, it, expect } from 'vitest';
+import * as fs from 'fs';
+import * as path from 'path';
 import { extractAuditReportSections } from '../audit-report-parser';
+
+const PARSER_FIXTURES = path.join(__dirname, '../../parsers/__tests__/fixtures');
 
 describe('extractAuditReportSections', () => {
   it('parses criticConclusion from ## 批判审计员结论', () => {
@@ -61,5 +65,22 @@ describe('extractAuditReportSections', () => {
 | G1 | 建议内容 |`;
     const result = extractAuditReportSections(content);
     expect(result.suggestions).toContain('建议内容');
+  });
+
+  it('parses English headings (TB.4)', () => {
+    const EN_REPORT = fs.readFileSync(
+      path.join(PARSER_FIXTURES, 'sample-audit-sections.en.md'),
+      'utf-8'
+    );
+    const r = extractAuditReportSections(EN_REPORT);
+    expect(r.criticConclusion).toContain('Checked all dimensions');
+    expect(r.gaps).toEqual(['A', 'B']);
+    expect(r.suggestions.some((s) => s.includes('T1'))).toBe(true);
+  });
+
+  it('parses no new gaps in English', () => {
+    const content = `**Round conclusion**: no new gaps`;
+    const r = extractAuditReportSections(content);
+    expect(r.gaps).toEqual([]);
   });
 });

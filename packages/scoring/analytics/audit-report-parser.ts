@@ -7,13 +7,17 @@ export interface AuditReportSections {
   suggestions: string[];
 }
 
-const CRITIC_HEADING_RE = /##\s*(?:\d+\.\s*)?批判审计员结论\s*\n([\s\S]*?)(?=##\s|$)/i;
-const ROUND_CONCLUSION_RE = /\*\*本轮结论\*\*[：:]\s*([^\n]+(?:\n(?!\*\*)[^\n]*)*)/;
-const NO_GAP_RE = /本轮无新\s*gap/i;
+const CRITIC_HEADING_RE = /##\s*(?:\d+\.\s*)?(?:批判审计员结论|Critical Auditor Conclusion)\s*\n([\s\S]*?)(?=##\s|$)/i;
+const ROUND_CONCLUSION_RE =
+  /\*\*(?:本轮结论|Round conclusion)\*\*[：:]\s*([^\n]+(?:\n(?!\*\*)[^\n]*)*)/i;
+const NO_GAP_RE = /(?:本轮无新\s*gap|no new gaps?)/i;
 const GAP_ITEM_SPLIT_RE = /[；;]\s*|\d+\)\s*|①\s*|②\s*|③\s*|④\s*|⑤\s*/;
-const SUGGESTIONS_HEADING_RE = /##\s*修改建议\s*\n([\s\S]*?)(?=##\s|$)/i;
-const SUGGESTIONS_BOLD_RE = /\*\*修改建议\*\*[：:]\s*([^\n]+(?:\n(?!\*\*)[^\n]*)*)/i;
-const SUGGESTIONS_TABLE_RE = /\|\s*Gap\s*\|\s*修改建议\s*\|[\s\S]*?\n\|[-:\s|]+\|\s*\n([\s\S]*?)(?=\n\n|##\s|$)/i;
+const SUGGESTIONS_HEADING_RE =
+  /##\s*(?:修改建议|Suggestions|Modification suggestions)\s*\n([\s\S]*?)(?=##\s|$)/i;
+const SUGGESTIONS_BOLD_RE =
+  /\*\*(?:修改建议|Suggestions)\*\*[：:]\s*([^\n]+(?:\n(?!\*\*)[^\n]*)*)/i;
+const SUGGESTIONS_TABLE_RE =
+  /\|\s*Gap\s*\|\s*(?:修改建议|Suggestion|Recommendation)\s*\|[\s\S]*?\n\|[-:\s|]+\|\s*\n([\s\S]*?)(?=\n\n|##\s|$)/i;
 
 /**
  * 解析审计报告中的批判审计员结论、GAP 列表、修改建议。
@@ -39,7 +43,7 @@ function parseGaps(content: string): string[] {
   const conclusion = (roundMatch[1] ?? '').trim();
   if (NO_GAP_RE.test(conclusion)) return [];
 
-  const match = conclusion.match(/具体项[：:]\s*([\s\S]+)/);
+  const match = conclusion.match(/(?:具体项|Items)[：:]\s*([^\n]+)/);
   if (!match) return [];
   const block = (match[1] ?? '').trim();
   return parseGapBlock(block);

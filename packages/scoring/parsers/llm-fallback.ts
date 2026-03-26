@@ -7,7 +7,6 @@ import { ParseError } from './audit-prd';
 import { resolveItemId, type AuditStage } from './audit-item-mapping';
 
 const VALID_GRADES = ['A', 'B', 'C', 'D'] as const;
-const VALID_SEVERITIES = ['高', '中', '低'] as const;
 
 export interface LlmExtractionResult {
   grade: 'A' | 'B' | 'C' | 'D';
@@ -28,6 +27,36 @@ grade: 总体评级。
 issues: 问题清单，severity 仅能为 高、中、低 之一。
 veto_items: 一票否决项 item_id 列表，若无则为空数组。
 仅返回 JSON 结构，不要包含或引用输入文本中的代码片段。`;
+
+/** English system prompt (TASKS TB.1 实现 α); use when SCORING_LLM_LOCALE=en */
+export const LLM_SYSTEM_PROMPT_EN = `You are an audit report extraction assistant. Return ONLY a JSON object (no markdown fences, no code from the input).
+
+Format:
+{
+  "grade": "A" | "B" | "C" | "D",
+  "issues": [{"severity": "high"|"medium"|"low"|"critical", "description": "string"}],
+  "veto_items": ["item_id", ...]
+}
+
+grade: overall letter grade.
+issues: severity must be one of high, medium, low, critical (critical maps to highest deduction).
+veto_items: veto item ids, or [] if none.
+Return JSON only, do not echo input code blocks.`;
+
+export function getLlmSystemPrompt(): string {
+  const loc = (process.env.SCORING_LLM_LOCALE ?? '').toLowerCase();
+  return loc === 'en' ? LLM_SYSTEM_PROMPT_EN : LLM_SYSTEM_PROMPT;
+}
+
+/** Normalize LLM JSON severity to 高|中|低 (TB.1: accept zh + en tokens). */
+export function normalizeLlmSeverity(raw: string): '高' | '中' | '低' {
+  const s = raw.trim();
+  const lower = s.toLowerCase();
+  if (s === '高' || lower === 'high' || lower === 'critical') return '高';
+  if (s === '中' || lower === 'medium') return '中';
+  if (s === '低' || lower === 'low') return '低';
+  throw new ParseError(`Invalid severity token: ${raw}`);
+}
 
 function parseAndValidate(
   raw: string,
@@ -58,13 +87,21 @@ function parseAndValidate(
     const item = it as Record<string, unknown>;
     const severity = item.severity;
     const description = item.description;
-    if (typeof severity !== 'string' || !VALID_SEVERITIES.includes(severity as typeof VALID_SEVERITIES[number])) {
-      throw new ParseError(`Invalid issue severity at index ${i}: ${String(severity)} (attempt ${attempt})`);
+    if (typeof severity !== 'string') {
+      throw new ParseError(`Invalid issue severity at index ${i} (attempt ${attempt})`);
     }
     if (typeof description !== 'string') {
       throw new ParseError(`Invalid issue description at index ${i} (attempt ${attempt})`);
     }
-    issues.push({ severity: severity as '高' | '中' | '低', description });
+    let canon: '高' | '中' | '低';
+    try {
+      canon = normalizeLlmSeverity(severity);
+    } catch {
+      throw new ParseError(
+        `Invalid issue severity at index ${i}: ${String(severity)} (attempt ${attempt})`
+      );
+    }
+    issues.push({ severity: canon, description });
   }
   const vetoRaw = o.veto_items;
   const veto_items = Array.isArray(vetoRaw)
@@ -99,7 +136,7 @@ export async function llmStructuredExtract(
   const body = {
     model,
     messages: [
-      { role: 'system', content: LLM_SYSTEM_PROMPT },
+      { role: 'system', content: getLlmSystemPrompt() },
       { role: 'user', content: reportContent },
     ],
     temperature: 0,

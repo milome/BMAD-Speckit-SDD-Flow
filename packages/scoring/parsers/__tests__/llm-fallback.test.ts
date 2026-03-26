@@ -8,6 +8,9 @@ import {
   llmStructuredExtract,
   LlmExtractionResult,
   LLM_SYSTEM_PROMPT,
+  LLM_SYSTEM_PROMPT_EN,
+  getLlmSystemPrompt,
+  normalizeLlmSeverity,
 } from '../llm-fallback';
 
 describe('llm-fallback', () => {
@@ -134,7 +137,41 @@ describe('llm-fallback', () => {
     expect(globalThis.fetch).toHaveBeenCalledTimes(2);
   });
 
-  it('validates issues severity must be 高|中|低', async () => {
+  it('normalizeLlmSeverity maps high/medium/low/critical to 高|中|低', () => {
+    expect(normalizeLlmSeverity('high')).toBe('高');
+    expect(normalizeLlmSeverity('critical')).toBe('高');
+    expect(normalizeLlmSeverity('medium')).toBe('中');
+    expect(normalizeLlmSeverity('low')).toBe('低');
+  });
+
+  it('SCORING_LLM_LOCALE=en uses LLM_SYSTEM_PROMPT_EN', () => {
+    const prev = process.env.SCORING_LLM_LOCALE;
+    process.env.SCORING_LLM_LOCALE = 'en';
+    expect(getLlmSystemPrompt()).toBe(LLM_SYSTEM_PROMPT_EN);
+    process.env.SCORING_LLM_LOCALE = prev;
+  });
+
+  it('accepts English severities from LLM JSON', async () => {
+    process.env.SCORING_LLM_API_KEY = 'test-key';
+    process.env.SCORING_LLM_LOCALE = 'en';
+    const mockResult = {
+      grade: 'B',
+      issues: [{ severity: 'high', description: 'x' }],
+      veto_items: [] as string[],
+    };
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: JSON.stringify(mockResult) } }],
+      }),
+    });
+
+    const result = await llmStructuredExtract('report', 'prd');
+    expect(result.issues).toEqual([{ severity: '高', description: 'x' }]);
+    delete process.env.SCORING_LLM_LOCALE;
+  });
+
+  it('validates issues severity (zh or normalized en)', async () => {
     process.env.SCORING_LLM_API_KEY = 'test-key';
     (globalThis.fetch as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({

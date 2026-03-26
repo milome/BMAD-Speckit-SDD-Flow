@@ -98,7 +98,7 @@ export function generateRuleSuggestions(
           current_deduct: currentDeduct,
           suggested_deduct: 0,
           action: 'promote_to_veto',
-          reason: `失败率 ${(failureRate * 100).toFixed(1)}% > 80%`,
+          reason: `Failure rate ${(failureRate * 100).toFixed(1)}% > 80%`,
           evidence_count: evidenceCount,
           evidence_total: total,
         });
@@ -108,7 +108,7 @@ export function generateRuleSuggestions(
           current_deduct: currentDeduct,
           suggested_deduct: currentDeduct + 2,
           action: 'increase_deduct',
-          reason: `失败率 ${(failureRate * 100).toFixed(1)}% > 50%，且 deduct=${currentDeduct} < 8`,
+          reason: `Failure rate ${(failureRate * 100).toFixed(1)}% > 50% and deduct=${currentDeduct} < 8`,
           evidence_count: evidenceCount,
           evidence_total: total,
         });
@@ -126,7 +126,7 @@ export function generateRuleSuggestions(
         current_deduct: 0,
         suggested_deduct: 8,
         action: 'add_new_item',
-        reason: `关键词 ${keywords.slice(0, 3).join('、')} 不匹配现有 item`,
+        reason: `Keywords [${keywords.slice(0, 3).join(', ')}] do not match an existing item`,
         evidence_count: evidenceCount,
         evidence_total: evidenceTotals.get(cluster.primary_item_ids?.[0] ?? '') ?? 0,
       });

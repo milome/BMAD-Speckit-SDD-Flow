@@ -25,5 +25,5 @@ export {
 } from './audit-index';
 export type { ParseAuditReportOptions, AuditStage } from './audit-index';
 
-export { parseDimensionScores, stageToMode } from './dimension-parser';
+export { listDimensionNamesEn, parseDimensionScores, stageToMode } from './dimension-parser';
 export type { DimensionScore, DimensionMode } from './dimension-parser';

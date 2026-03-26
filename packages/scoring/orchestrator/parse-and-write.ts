@@ -6,7 +6,13 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
-import { parseAuditReport, parseDimensionScores, stageToMode, extractOverallGrade } from '../parsers';
+import {
+  parseAuditReport,
+  parseDimensionScores,
+  stageToMode,
+  extractOverallGrade,
+  listDimensionNamesEn,
+} from '../parsers';
 import type { AuditStage } from '../parsers';
 import { writeScoreRecordSync } from '../writer';
 import type { WriteMode } from '../writer';
@@ -62,16 +68,24 @@ function computeWeightedDimensionScore(scores: DimensionScore[]): number {
 
 /** Story 9.4: 从问题清单解析最高严重等级 */
 const SEVERITY_ORDER = ['fatal', 'serious', 'normal', 'minor'] as const;
+function severityTokenToIndex(raw: string): number {
+  const t = raw.trim().toLowerCase();
+  if (/致命|fatal|critical/.test(t)) return 0;
+  if (/高|high|serious/.test(t)) return 1;
+  if (/中|medium|normal/.test(t)) return 2;
+  return 3; // 低|low|minor
+}
+
 function parseMaxSeverityFromReport(content: string): 'fatal' | 'serious' | 'normal' | 'minor' {
-  const matches = content.matchAll(/\[严重程度:([^\]]+)\]/g);
+  const zhMatches = content.matchAll(/\[严重程度:([^\]]+)\]/g);
+  const enMatches = content.matchAll(/\[Severity:([^\]]+)\]/gi);
   let maxIdx = SEVERITY_ORDER.indexOf('normal');
-  for (const m of matches) {
-    const raw = (m[1] ?? '').trim().toLowerCase();
-    let idx: number;
-    if (/致命|fatal|critical/.test(raw)) idx = 0;
-    else if (/高|serious/.test(raw)) idx = 1;
-    else if (/中|normal/.test(raw)) idx = 2;
-    else idx = 3; // 低|minor
+  for (const m of zhMatches) {
+    const idx = severityTokenToIndex(m[1] ?? '');
+    if (idx < maxIdx) maxIdx = idx;
+  }
+  for (const m of enMatches) {
+    const idx = severityTokenToIndex(m[1] ?? '');
     if (idx < maxIdx) maxIdx = idx;
   }
   return SEVERITY_ORDER[maxIdx];
@@ -237,13 +251,20 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
   };
 
   if (stage === 'implement' && dimensionScores.length === 0) {
+    const expectedEn = listDimensionNamesEn('code');
+    const dimHint =
+      expectedEn.length > 0
+        ? expectedEn.join(', ')
+        : 'Functionality, Code Quality, Test Coverage, Security';
     console.error(
-      'WARN: implement stage report has no parseable dimension_scores. Expected dimensions: 功能性, 代码质量, 测试覆盖, 安全性. Check report parseable block matches modes.code.dimensions.'
+      `WARN: implement stage report has no parseable dimension_scores. Expected dimensions (name_en from modes.code): ${dimHint}. Check report parseable block matches modes.code.dimensions.`
     );
   }
 
   // BUGFIX_overall-grade-forbidden-ratings: 检测非法总体评级格式（A-、B+、C+、D- 等）
-  const forbiddenModMatch = content.match(/总体评级:\s*([ABCD][+-])/m);
+  const forbiddenModZh = content.match(/总体评级:\s*([ABCD][+-])/m);
+  const forbiddenModEn = content.match(/Overall Grade:\s*([ABCD][+-])/im);
+  const forbiddenModMatch = forbiddenModZh ?? forbiddenModEn;
   if (forbiddenModMatch) {
     const line = forbiddenModMatch[0];
     const snippet = line.length > 80 ? line.slice(0, 80) + '…' : line;

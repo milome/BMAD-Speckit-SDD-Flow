@@ -81,8 +81,8 @@ export function generatePromptSuggestions(
       if (overlap >= 2) {
         suggestions.push({
           target_file: filePath,
-          section: '全文',
-          suggestion: `考虑补充与「${keywords.slice(0, 3).join('、')}」相关的指引`,
+          section: 'full document',
+          suggestion: `Consider adding guidance related to: ${keywords.slice(0, 3).join(', ')}`,
           evidence,
           priority,
         });
@@ -99,15 +99,20 @@ export function generatePromptSuggestions(
  * @returns {string} Markdown 报告
  */
 export function formatPromptSuggestionsMarkdown(suggestions: PromptSuggestion[]): string {
-  if (suggestions.length === 0) return '# Prompt 优化建议\n\n（暂无建议）\n';
-  const lines: string[] = ['# Prompt 优化建议', '', `共 ${suggestions.length} 条建议。`, ''];
-  const byPriority = { high: '高', medium: '中', low: '低' };
+  if (suggestions.length === 0) return '# Prompt optimization suggestions\n\n(none)\n';
+  const lines: string[] = [
+    '# Prompt optimization suggestions',
+    '',
+    `Total: ${suggestions.length} suggestion(s).`,
+    '',
+  ];
+  const byPriority = { high: 'high', medium: 'medium', low: 'low' };
   for (const s of suggestions) {
     lines.push(`## ${s.target_file}`, '');
-    lines.push(`- **优先级**: ${byPriority[s.priority]}`);
-    lines.push(`- **范围**: ${s.section}`);
-    lines.push(`- **建议**: ${s.suggestion}`);
-    lines.push(`- **依据**: ${s.evidence}`);
+    lines.push(`- **Priority**: ${byPriority[s.priority]}`);
+    lines.push(`- **Scope**: ${s.section}`);
+    lines.push(`- **Suggestion**: ${s.suggestion}`);
+    lines.push(`- **Evidence**: ${s.evidence}`);
     lines.push('');
   }
   return lines.join('\n');

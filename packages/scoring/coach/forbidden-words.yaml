@@ -3,6 +3,9 @@ dominant_terms:
   - 面试官
   - 应聘
   - 候选人
+  - interview
+  - interviewer
+  - candidate
 
 ambiguous_terms:
   - 可选
@@ -14,4 +17,8 @@ ambiguous_terms:
   - 酌情
   - 视情况
   - 技术债
-
+  # TB.5 scheme 2: English coach output
+  - optional
+  - TBD
+  - later
+  - maybe

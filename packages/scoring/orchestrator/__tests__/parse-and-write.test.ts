@@ -730,6 +730,40 @@ PRD审计报告
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
+  it('BUGFIX_overall-grade: outputs WARN when Overall Grade has forbidden modifier (English B+)', async () => {
+    const content = `Implement audit
+Overall Grade: B+
+
+Dimension scores:
+- Functionality: 85/100
+`;
+    const tempDir = path.join(os.tmpdir(), `scoring-forbidden-mod-en-${Date.now()}`);
+    const runId = `test-forbidden-mod-en-${Date.now()}`;
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    try {
+      await parseAndWriteScore({
+        content,
+        stage: 'implement',
+        runId,
+        scenario: 'real_dev',
+        writeMode: 'single_file',
+        dataPath: tempDir,
+        skipAutoHash: true,
+      });
+
+      const errCalls = consoleSpy.mock.calls.flat().join(' ');
+      expect(errCalls.includes('WARN') && (errCalls.includes('B+') || errCalls.includes('forbidden'))).toBe(true);
+    } finally {
+      consoleSpy.mockRestore();
+      try {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      } catch {
+        // ignore
+      }
+    }
+  });
+
   it('BUGFIX_overall-grade: outputs WARN to stderr when report contains forbidden overall_grade modifier (e.g. B+)', async () => {
     const content = `Implement 审计报告
 总体评级: B+

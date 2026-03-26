@@ -74,7 +74,9 @@ describe('filterByEpicStory', () => {
 
     const result = filterByEpicStory(dataPath, { epicId: 3 });
     expect('error' in result).toBe(true);
-    expect((result as { error: string }).error).toBe('暂无评分数据，请先完成至少一轮 Dev Story');
+    expect((result as { error: string }).error).toBe(
+      'No scoring data yet; complete at least one Dev Story run first.'
+    );
 
     fs.rmSync(dataPath, { recursive: true, force: true });
   });
@@ -90,7 +92,7 @@ describe('filterByEpicStory', () => {
 
     const result = filterByEpicStory(dataPath, { epicId: 3 });
     expect('error' in result).toBe(true);
-    expect((result as { error: string }).error).toContain('无可解析 Epic/Story');
+    expect((result as { error: string }).error).toContain('No parsable Epic/Story');
 
     fs.rmSync(dataPath, { recursive: true, force: true });
   });
@@ -106,7 +108,7 @@ describe('filterByEpicStory', () => {
 
     const result = filterByEpicStory(dataPath, { epicId: 99 });
     expect('error' in result).toBe(true);
-    expect((result as { error: string }).error).toBe('无可筛选数据');
+    expect((result as { error: string }).error).toBe('No records match the filter.');
 
     fs.rmSync(dataPath, { recursive: true, force: true });
   });
@@ -152,7 +154,7 @@ describe('filterByEpicStory', () => {
 
     const result = filterByEpicStory(dataPath, { epicId: 1 });
     expect('error' in result).toBe(true);
-    expect((result as { error: string }).error).toContain('无可解析');
+    expect((result as { error: string }).error).toContain('No parsable');
 
     fs.rmSync(dataPath, { recursive: true, force: true });
   });

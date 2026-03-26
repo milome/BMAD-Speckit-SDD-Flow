@@ -13,9 +13,24 @@ export interface ForbiddenValidationResult {
   warnings: string[];
 }
 
+/** TB.5 scheme 2: user-visible coach output is English; terms cover CN audit text and EN output. */
 const DEFAULT_FORBIDDEN_WORDS: ForbiddenWords = {
-  dominant_terms: ['面试', '面试官', '应聘', '候选人'],
-  ambiguous_terms: ['可选', '可考虑', '后续', '先实现', '后续扩展', '待定', '酌情', '视情况', '技术债'],
+  dominant_terms: ['面试', '面试官', '应聘', '候选人', 'interview', 'interviewer', 'candidate'],
+  ambiguous_terms: [
+    '可选',
+    '可考虑',
+    '后续',
+    '先实现',
+    '后续扩展',
+    '待定',
+    '酌情',
+    '视情况',
+    '技术债',
+    'optional',
+    'TBD',
+    'later',
+    'maybe',
+  ],
 };
 
 function resolveForbiddenPath(forbiddenWordsPath?: string): string {
