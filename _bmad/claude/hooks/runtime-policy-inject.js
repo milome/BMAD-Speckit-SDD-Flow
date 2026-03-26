@@ -1,7 +1,13 @@
 #!/usr/bin/env node
 'use strict';
 
-const { runtimePolicyInjectCore } = require('../../runtime/hooks/runtime-policy-inject-core');
+/** Deployed `.claude/hooks` has `runtime-policy-inject-core.js` beside this file; repo `_bmad/claude/hooks` falls back to `_bmad/runtime/hooks`. */
+const path = require('node:path');
+const fs = require('node:fs');
+const localCore = path.join(__dirname, 'runtime-policy-inject-core.js');
+const { runtimePolicyInjectCore } = require(
+  fs.existsSync(localCore) ? './runtime-policy-inject-core' : '../../runtime/hooks/runtime-policy-inject-core'
+);
 
 runtimePolicyInjectCore({ host: 'claude' })
   .then(({ exitCode, output, stderr }) => {

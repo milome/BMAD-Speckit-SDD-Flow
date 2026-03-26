@@ -24,7 +24,6 @@ function runEmitRuntimePolicy(root) {
       ...process.env,
       CLAUDE_PROJECT_DIR: root,
       CURSOR_PROJECT_ROOT: root,
-      BMAD_RUNTIME_CWD: root,
     },
     maxBuffer: 10 * 1024 * 1024,
   });
