@@ -34,6 +34,14 @@ Agent: Paige (Technical Writer)
 Description: Create clear technical explanations with examples...
 ```
 
+## OFFICIAL EXECUTION PATHS (BMAD-Speckit-SDD-Flow)
+
+When recommending next steps, **prefer** these skills as the canonical entry points (see `_bmad/_config/bmad-help.csv` and `_bmad/bmm/module-help.csv`):
+
+- **Story lifecycle (Dev Story)** — Official: **`bmad-story-assistant`**. **Not recommended alone:** **`/bmad-bmm-dev-story`** (loses speckit-workflow + audit-loop orchestration).
+- **Quick task lists (Quick Spec / Quick Dev)** — Official: **`bmad-standalone-tasks`**. **Not recommended as primary:** legacy **`bmad-bmm-quick-dev`**, **`bmad-bmm-quick-spec`**, **`bmad-agent-bmm-quick-flow-solo-dev`**.
+- **BUGFIX** — Official: **`bmad-bug-assistant`**.
+
 ## MODULE DETECTION
 
 - **Empty `module` column** → universal tools (work across all modules)

@@ -37,6 +37,16 @@ Agent: Paige (Technical Writer)
 Description: Create clear technical explanations with examples...
 ```
 
+## OFFICIAL EXECUTION PATHS (BMAD-Speckit-SDD-Flow)
+
+When recommending next steps, **prefer** these skills as the canonical entry points (see `{project-root}/_bmad/_config/bmad-help.csv` and `_bmad/bmm/module-help.csv`):
+
+- **Story lifecycle (Dev Story / DS)** — Official: **`bmad-story-assistant`** (Create Story → audit → Dev Story → post-audit; integrates **speckit-workflow** and audit-loop iteration). **Not recommended:** invoking **`/bmad-bmm-dev-story`** or the legacy dev-story command / `_bmad/commands/bmad-bmm-dev-story.md` **alone**, which skips that orchestration.
+- **Quick Spec / Quick Dev (QS / QD)** — Official: **`bmad-standalone-tasks`** for TASKS/BUGFIX-style execution (**ralph-method**, TDD, audit-loop iteration). **Not recommended as primary:** **`bmad-bmm-quick-dev`**, **`bmad-bmm-quick-spec`**, **`bmad-agent-bmm-quick-flow-solo-dev`**, or the legacy quick-flow commands alone.
+- **BUGFIX** — Official: **`bmad-bug-assistant`** (party-mode RCA → BUGFIX doc → audit → implementation via subagent).
+
+Always surface these preferences when the user is in the matching phase or asks what to run next.
+
 ## MODULE DETECTION
 
 - **Empty `module` column** → universal tools (work across all modules)

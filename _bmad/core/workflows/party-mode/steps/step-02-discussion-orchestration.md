@@ -21,6 +21,7 @@
 - Complete agent roster with merged personalities is available
 - User topic and conversation history guide agent selection
 - Exit triggers: `*exit`, `goodbye`, `end party`, `quit`
+- **i18n audit blocks**: When orchestration references speckit auditors or audit-parseable sections, align narrative with `_bmad/i18n/manifests/` templates; `languagePolicy.resolvedMode` is read from `_bmad-output/runtime/context/project.json` (same contract as `renderTemplate` + `loadManifest`).
 
 ## YOUR TASK:
 
