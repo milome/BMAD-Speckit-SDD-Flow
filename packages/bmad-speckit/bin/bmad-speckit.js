@@ -34,6 +34,8 @@ const { coachCommand } = require('../src/commands/coach');
 const { dashboardCommand } = require('../src/commands/dashboard');
 const { sftExtractCommand } = require('../src/commands/sft-extract');
 const { scoresCommand } = require('../src/commands/scores');
+const { ensureRunRuntimeContextCommand } = require('../src/commands/ensure-run-runtime-context');
+const { syncRuntimeContextFromSprintCommand } = require('../src/commands/sync-runtime-context-from-sprint');
 const ttyUtils = require('../src/utils/tty');
 
 // Show banner for init (including init --help) when in TTY
@@ -227,5 +229,33 @@ program
   .option('--dataPath <path>', 'Scoring data directory')
   .option('--limit <n>', 'Max records to display', String(100))
   .action((opts) => scoresCommand(opts));
+
+program
+  .command('ensure-run-runtime-context')
+  .description('Generate or persist run-scoped runtime context (dev_story / post_audit)')
+  .requiredOption('--story-key <key>', 'Story key (e.g. 15-1-runtime-governance-complete)')
+  .option('--lifecycle <phase>', 'dev_story | post_audit', 'dev_story')
+  .option('--persist', 'After sprint-status write: refresh registry using last-*-run.json')
+  .action((opts) => {
+    try {
+      ensureRunRuntimeContextCommand(opts);
+    } catch (err) {
+      console.error(err);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('sync-runtime-context-from-sprint')
+  .description('Refresh runtime registry and project context from sprint-status.yaml')
+  .option('--story-key <key>', 'After sync, scope story context (S10; kebab-case story key)')
+  .action((opts) => {
+    try {
+      syncRuntimeContextFromSprintCommand(opts);
+    } catch (err) {
+      console.error(err);
+      process.exit(1);
+    }
+  });
 
 program.parse();

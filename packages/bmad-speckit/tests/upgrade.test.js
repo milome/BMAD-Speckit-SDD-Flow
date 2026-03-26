@@ -12,11 +12,14 @@ const os = require('os');
 
 const BIN = path.join(__dirname, '../bin/bmad-speckit.js');
 
+/** Upgrade may fetch templates over the network; 15s is too tight on slow CI or cold cache. */
+const UPGRADE_SPAWN_TIMEOUT_MS = 120000;
+
 function runUpgrade(args, cwd, envOverrides = {}) {
   return spawnSync('node', [BIN, 'upgrade', ...(args || [])], {
     cwd: cwd || process.cwd(),
     encoding: 'utf8',
-    timeout: 15000,
+    timeout: UPGRADE_SPAWN_TIMEOUT_MS,
     env: { ...process.env, ...envOverrides },
   });
 }

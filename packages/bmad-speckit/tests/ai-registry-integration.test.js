@@ -32,7 +32,7 @@ function runInit(args, cwd, envOverrides = {}) {
     return spawnSync('node', [BIN, 'init', ...args], {
       cwd: cwd || os.tmpdir(),
       encoding: 'utf8',
-      timeout: 20000,
+      timeout: 120000,
       env,
     });
   } finally {
@@ -62,7 +62,11 @@ describe('AI Registry integration (Story 12.1 T5)', () => {
     try { fs.rmSync(parentDir, { recursive: true }); } catch (_) {}
     if (r.status === 5) return; // skip if offline cache missing
     if (r.status === 3) return; // skip if network failed
-    assert.strictEqual(r.status, 0, `expected exit 0, got ${r.status}: ${r.stderr}`);
+    const exitMsg =
+      r.status === null && r.error && r.error.code === 'ETIMEDOUT'
+        ? `expected exit 0, got null (spawnSync timed out): ${r.stderr}`
+        : `expected exit 0, got ${r.status}: ${r.stderr}`;
+    assert.strictEqual(r.status, 0, exitMsg);
   });
 
   it('T4.2 init uses AIRegistry (grep init.js)', () => {

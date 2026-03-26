@@ -269,12 +269,13 @@ function writeCursorHooksJson(projectRoot) {
   fs.mkdirSync(cursorDir, { recursive: true });
   const hooksJsonPath = path.join(cursorDir, 'hooks.json');
   const hooksJson = {
+    version: 1,
     hooks: {
-      SessionStart: [
+      sessionStart: [
         { command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host --session-start' },
       ],
-      PreToolUse: [{ command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host' }],
-      SubagentStart: [
+      preToolUse: [{ command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host' }],
+      subagentStart: [
         { command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host --subagent-start' },
       ],
     },
@@ -288,22 +289,54 @@ function writeCursorHooksJson(projectRoot) {
  * @param {string} bmadRoot - Path to _bmad directory.
  */
 /**
- * Cursor runtime governance hooks (same node scripts as Claude; from _bmad/claude/hooks/).
+ * Cursor runtime governance hooks: shared `_bmad/runtime/hooks` then thin shells from `_bmad/cursor/hooks` (aligns with `scripts/init-to-root.js`).
  * @param {string} projectRoot - Project root.
  * @param {string} bmadRoot - Path to _bmad directory.
  * @returns {void}
  */
 function deployCursorRuntimePolicyHooks(projectRoot, bmadRoot) {
   const destDir = path.join(projectRoot, '.cursor', 'hooks');
+  const sharedDir = path.join(bmadRoot, 'runtime', 'hooks');
+  const cursorHooksDir = path.join(bmadRoot, 'cursor', 'hooks');
+
+  if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+  if (fs.existsSync(sharedDir)) {
+    copyDirRecursive(sharedDir, destDir);
+  }
+
   const names = ['emit-runtime-policy-cli.js', 'runtime-policy-inject.js'];
   for (const name of names) {
-    const src = path.join(bmadRoot, 'claude', 'hooks', name);
+    const src = path.join(cursorHooksDir, name);
     if (fs.existsSync(src)) {
-      if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
       fs.copyFileSync(src, path.join(destDir, name));
     }
   }
   writeCursorHooksJson(projectRoot);
+}
+
+/**
+ * Claude hooks: shared `_bmad/runtime/hooks` then thin shells from `_bmad/claude/hooks` (aligns with `scripts/init-to-root.js`).
+ * @param {string} projectRoot - Project root.
+ * @param {string} bmadRoot - Path to _bmad directory.
+ * @returns {void}
+ */
+function deployClaudeRuntimePolicyHooks(projectRoot, bmadRoot) {
+  const destDir = path.join(projectRoot, '.claude', 'hooks');
+  const sharedDir = path.join(bmadRoot, 'runtime', 'hooks');
+  const claudeHooksDir = path.join(bmadRoot, 'claude', 'hooks');
+
+  if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+  if (fs.existsSync(sharedDir)) {
+    copyDirRecursive(sharedDir, destDir);
+  }
+
+  const names = ['emit-runtime-policy-cli.js', 'runtime-policy-inject.js'];
+  for (const name of names) {
+    const src = path.join(claudeHooksDir, name);
+    if (fs.existsSync(src)) {
+      fs.copyFileSync(src, path.join(destDir, name));
+    }
+  }
 }
 
 function deployClaudeInfrastructure(projectRoot, bmadRoot) {
@@ -339,6 +372,8 @@ function deployClaudeInfrastructure(projectRoot, bmadRoot) {
     content = content.replace(/\{\{PROJECT_NAME\}\}/g, projectName);
     fs.writeFileSync(claudeMdDest, content, 'utf8');
   }
+
+  deployClaudeRuntimePolicyHooks(projectRoot, bmadRoot);
 }
 
 module.exports = {

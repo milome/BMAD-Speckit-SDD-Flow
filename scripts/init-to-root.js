@@ -9,7 +9,9 @@
  *   - Claude agents/skills/hooks/rules: _bmad/claude/
  *
  * 用途：部署 BMAD 目录结构。
- * 对外部目标目录：从 @bmad-speckit/runtime-emit 将 emit-runtime-policy.cjs 与 write-runtime-context.js 复制到 **.cursor/hooks** 与/或 **.claude/hooks**（与 hook 脚本同目录，不在项目根创建 scripts/）。
+ * 对外部目标目录：从 @bmad-speckit/runtime-emit 将 emit-runtime-policy.cjs、resolve-for-session.cjs、render-audit-block.cjs 与 write-runtime-context.js 复制到 **.cursor/hooks** 与/或 **.claude/hooks**（与 hook 脚本同目录，不在项目根创建 scripts/）。
+ * `--agent cursor`：`syncCursorRuntimePolicyHooks` 先将 `_bmad/runtime/hooks` 下 4 个共享 JS 复制到 `.cursor/hooks`，再覆盖 `emit-runtime-policy-cli.js`、`runtime-policy-inject.js`（薄壳，`./runtime-policy-inject-core` 优先）。
+ * `--agent claude-code`：`syncClaudeRuntimePolicyHooks` 同样将上述 4 个文件复制到 `.claude/hooks` 后再覆盖薄壳与 CLI，与 Cursor 侧分层一致。
  * 外部目标默认**不**创建 package.json、不执行 npm install；若需在消费者目录安装本地 bmad-speckit CLI 依赖，传入 **--with-package-json**。
  * speckit commands 从 _bmad/speckit/commands/ 合并；.specify/ 部署 templates/workflows/scripts。
  *
@@ -115,12 +117,13 @@ function writeCursorHooksJson(targetDir) {
   fs.mkdirSync(cursorDir, { recursive: true });
   const hooksJsonPath = path.join(cursorDir, 'hooks.json');
   const hooksJson = {
+    version: 1,
     hooks: {
-      SessionStart: [
+      sessionStart: [
         { command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host --session-start' },
       ],
-      PreToolUse: [{ command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host' }],
-      SubagentStart: [
+      preToolUse: [{ command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host' }],
+      subagentStart: [
         { command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host --subagent-start' },
       ],
     },
@@ -215,6 +218,7 @@ const REGISTERED_AGENT_PROFILES = {
         totalFiles += 1;
       }
       totalFiles += deploySpecify(targetDir);
+      syncClaudeRuntimePolicyHooks(targetDir, bmadRoot);
       return totalFiles;
     },
   },
@@ -293,6 +297,35 @@ function syncCursorRuntimePolicyHooks(targetDir, bmadRoot) {
   writeCursorHooksJson(targetDir);
 }
 
+/**
+ * Deploy shared runtime hook helpers + Claude thin shells into `.claude/hooks` (same layering as Cursor).
+ * @param {string} targetDir
+ * @param {string} bmadRoot
+ */
+function syncClaudeRuntimePolicyHooks(targetDir, bmadRoot) {
+  const destDir = path.join(targetDir, '.claude', 'hooks');
+  const sharedDir = path.join(bmadRoot, 'runtime', 'hooks');
+  const claudeHooksDir = path.join(bmadRoot, 'claude', 'hooks');
+
+  fs.mkdirSync(destDir, { recursive: true });
+
+  if (fs.existsSync(sharedDir)) {
+    copyRecursive(sharedDir, destDir);
+    console.log('Sync', path.relative(targetDir, sharedDir), '->', path.join('.claude', 'hooks'));
+  }
+
+  const names = ['emit-runtime-policy-cli.js', 'runtime-policy-inject.js'];
+  for (const name of names) {
+    const src = path.join(claudeHooksDir, name);
+    if (fs.existsSync(src)) {
+      fs.copyFileSync(src, path.join(destDir, name));
+      console.log('Sync', path.relative(targetDir, src), '->', path.join('.claude', 'hooks', name));
+    } else {
+      console.warn(`Skip Claude hook override (missing): ${path.relative(targetDir, src)}`);
+    }
+  }
+}
+
 function writeDefaultRuntimeRegistry(targetDir, pkgRoot) {
   const candidates = [
     path.join(targetDir, '.cursor', 'hooks', 'write-runtime-registry.js'),
@@ -360,6 +393,50 @@ function resolveRuntimeEmitCjs(pkgRoot) {
   }
 }
 
+/**
+ * Resolve bundled resolve-for-session.cjs (i18n CLI) from @bmad-speckit/runtime-emit.
+ * @param {string} pkgRoot - BMAD-Speckit-SDD-Flow root (init script location).
+ * @returns {string | null}
+ */
+function resolveRuntimeResolveSessionCjs(pkgRoot) {
+  try {
+    return require.resolve('@bmad-speckit/runtime-emit/dist/resolve-for-session.cjs', {
+      paths: [pkgRoot],
+    });
+  } catch {
+    const devDist = path.join(
+      pkgRoot,
+      'packages',
+      'runtime-emit',
+      'dist',
+      'resolve-for-session.cjs'
+    );
+    return fs.existsSync(devDist) ? devDist : null;
+  }
+}
+
+/**
+ * Resolve bundled render-audit-block.cjs (i18n audit preview CLI) from @bmad-speckit/runtime-emit.
+ * @param {string} pkgRoot - BMAD-Speckit-SDD-Flow root (init script location).
+ * @returns {string | null}
+ */
+function resolveRuntimeRenderAuditBlockCjs(pkgRoot) {
+  try {
+    return require.resolve('@bmad-speckit/runtime-emit/dist/render-audit-block.cjs', {
+      paths: [pkgRoot],
+    });
+  } catch {
+    const devDist = path.join(
+      pkgRoot,
+      'packages',
+      'runtime-emit',
+      'dist',
+      'render-audit-block.cjs'
+    );
+    return fs.existsSync(devDist) ? devDist : null;
+  }
+}
+
 function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
   let targetReal;
   let pkgRootReal;
@@ -378,6 +455,18 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
     );
     return;
   }
+  const resolveSessionSrc = resolveRuntimeResolveSessionCjs(pkgRoot);
+  if (!resolveSessionSrc || !fs.existsSync(resolveSessionSrc)) {
+    console.warn(
+      'resolve-for-session.cjs not found; run: npm run build:runtime-emit — runtime-policy-inject i18n merge may fail in target.'
+    );
+  }
+  const renderAuditSrc = resolveRuntimeRenderAuditBlockCjs(pkgRoot);
+  if (!renderAuditSrc || !fs.existsSync(renderAuditSrc)) {
+    console.warn(
+      'render-audit-block.cjs not found; run: npm run build:runtime-emit — pre-agent-summary audit inject may be empty in target.'
+    );
+  }
   const wrcSrc = path.join(path.dirname(emitSrc), '..', 'write-runtime-context.js');
   const hookDirs = [
     path.join(targetDir, '.cursor', 'hooks'),
@@ -387,6 +476,12 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
   for (const d of hookDirs) {
     if (!fs.existsSync(d)) continue;
     fs.copyFileSync(emitSrc, path.join(d, 'emit-runtime-policy.cjs'));
+    if (resolveSessionSrc && fs.existsSync(resolveSessionSrc)) {
+      fs.copyFileSync(resolveSessionSrc, path.join(d, 'resolve-for-session.cjs'));
+    }
+    if (renderAuditSrc && fs.existsSync(renderAuditSrc)) {
+      fs.copyFileSync(renderAuditSrc, path.join(d, 'render-audit-block.cjs'));
+    }
     if (fs.existsSync(wrcSrc)) {
       fs.copyFileSync(wrcSrc, path.join(d, 'write-runtime-context.js'));
     }
@@ -399,8 +494,49 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
     return;
   }
   console.log(
-    'Deployed emit-runtime-policy.cjs (+ write-runtime-context.js) under .cursor/hooks and/or .claude/hooks (no project-root scripts/).'
+    'Deployed emit-runtime-policy.cjs, resolve-for-session.cjs, render-audit-block.cjs (+ write-runtime-context.js) under .cursor/hooks and/or .claude/hooks (no project-root scripts/).'
   );
+}
+
+/**
+ * E15-S2 T5.16: Copy SKILL.zh.md or SKILL.en.md over SKILL.md based on runtime context languagePolicy.
+ * @param {string} targetDir
+ */
+function materializeSkillMdByLanguage(targetDir) {
+  const ctxPath = path.join(targetDir, '_bmad-output', 'runtime', 'context', 'project.json');
+  let mode = 'en';
+  if (fs.existsSync(ctxPath)) {
+    try {
+      const j = JSON.parse(fs.readFileSync(ctxPath, 'utf8'));
+      if (j?.languagePolicy?.resolvedMode === 'zh') mode = 'zh';
+    } catch {
+      /* ignore */
+    }
+  }
+  const skillRoots = [
+    path.join(targetDir, '.cursor', 'skills'),
+    path.join(targetDir, '.claude', 'skills'),
+  ];
+  for (const root of skillRoots) {
+    if (!fs.existsSync(root)) continue;
+    for (const name of fs.readdirSync(root)) {
+      const dir = path.join(root, name);
+      let stat;
+      try {
+        stat = fs.statSync(dir);
+      } catch {
+        continue;
+      }
+      if (!stat.isDirectory()) continue;
+      const zh = path.join(dir, 'SKILL.zh.md');
+      const en = path.join(dir, 'SKILL.en.md');
+      const primary = path.join(dir, 'SKILL.md');
+      if (fs.existsSync(zh) && fs.existsSync(en)) {
+        const src = mode === 'zh' ? zh : en;
+        fs.copyFileSync(src, primary);
+      }
+    }
+  }
 }
 
 function countFiles(dirPath) {
@@ -447,6 +583,7 @@ totalFiles += agentProfile.sync(TARGET, PKG_ROOT);
 deployConsumerRuntimeEmitToHooks(PKG_ROOT, TARGET);
 
 writeDefaultRuntimeContext(TARGET, PKG_ROOT);
+materializeSkillMdByLanguage(TARGET);
 writeDefaultRuntimeRegistry(TARGET, PKG_ROOT);
 
 // Ensure _bmad-output/config exists (empty); never copy source's _bmad-output contents.

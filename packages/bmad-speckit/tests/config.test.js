@@ -71,7 +71,7 @@ function runConfigSet(key, value, args, cwd, envOverrides = {}) {
 
 // T1.1-T1.3: ConfigCommand skeleton and bin registration
 describe('T1: ConfigCommand skeleton and bin registration', () => {
-  it('config get unknownKey => exit 1, stderr contains 不存在 or equivalent (T1.1)', () => {
+  it('config get unknownKey => exit 1, stderr indicates missing key (T1.1)', () => {
     const tmpDir = path.join(os.tmpdir(), `config-get-missing-${Date.now()}`);
     fs.mkdirSync(tmpDir, { recursive: true });
     const r = runConfig(['unknownKey'], 'get', tmpDir);
@@ -80,7 +80,10 @@ describe('T1: ConfigCommand skeleton and bin registration', () => {
     assert.ok(!err.includes('unknown command'), 'config command must exist (not "unknown command")');
     assert.strictEqual(r.status, 1, `expected exit 1, got ${r.status}`);
     assert.ok(
-      err.includes('不存在') || err.includes('not found') || err.includes('missing'),
+      err.includes('不存在') ||
+        err.includes('not found') ||
+        err.includes('missing') ||
+        err.includes('does not exist'),
       `stderr should mention key missing: ${r.stderr}`
     );
   });

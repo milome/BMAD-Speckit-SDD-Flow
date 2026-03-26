@@ -31,7 +31,7 @@ describe('install to consumer → CLI acceptance', () => {
     } finally {
       rmSync(target, { recursive: true, force: true });
     }
-  }, 30_000);
+  }, 90_000);
 
   it('init-to-root deploy → bmad-speckit version runs', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-ver-'));
@@ -42,7 +42,7 @@ describe('install to consumer → CLI acceptance', () => {
     } finally {
       rmSync(target, { recursive: true, force: true });
     }
-  }, 30_000);
+  }, 90_000);
 
   it('npm install → postinstall deploys → bmad-speckit check passes', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-npm-'));

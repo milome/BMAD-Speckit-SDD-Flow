@@ -18,13 +18,15 @@ const FULL_FLOW_AI_LIST = [
 const FEEDBACK_GUIDANCE =
   'Run `bmad-speckit feedback` to get the feedback entry, or visit: https://github.com/bmad-method/bmad-method/issues';
 
+const { feedbackHintMsg } = require('../messages/cli');
+
 /**
  * Returns feedback hint text for init stdout (Story 13.5 T1.3).
- * Used by init.js after POST_INIT_GUIDE_MSG.
+ * Used by init.js after post-init guide.
  * @returns {string} Feedback hint text.
  */
 function getFeedbackHintText() {
-  return 'Feedback: Run `bmad-speckit feedback` to get the feedback entry.';
+  return feedbackHintMsg();
 }
 
 /**
