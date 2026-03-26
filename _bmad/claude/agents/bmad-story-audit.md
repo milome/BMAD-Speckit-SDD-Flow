@@ -69,6 +69,12 @@ Claude 端 Stage 2 Story 审计执行体，负责审计 Story 文档并决定是
 -------------------------
 ```
 
+### Runtime sync (S10)
+
+**Runtime sync (S10 - MANDATORY):** 审计结论为通过；通过判定之后、返回主 Agent 之前执行：
+`npx bmad-speckit sync-runtime-context-from-sprint --story-key <story_key>`
+`<story_key>` 填被审计 Story 的 kebab-case key，与 sprint-status `development_status` 中的键名相同。
+
 ### 执行结束时必须输出
 
 ```yaml

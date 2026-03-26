@@ -161,6 +161,10 @@ development_status:
 - Epics in-progress: {{in_progress_count}}
 - Stories done: {{done_count}}
 
+<action>MANDATORY: After writing {status_file}, run sync to refresh runtime registry and project context.</action>
+<action>Execute: npx bmad-speckit sync-runtime-context-from-sprint</action>
+<action>Verify stdout contains the line starting with OK: registry and project context synced</action>
+
 <action>Display completion summary to {user_name} in {communication_language}:</action>
 
 **Sprint Status Generated Successfully**

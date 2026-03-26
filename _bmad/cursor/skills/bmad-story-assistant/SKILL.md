@@ -649,6 +649,10 @@ prompt: |
 
   【§Story 可解析块要求】报告结尾在结论与必达子项之后，**必须**追加可解析评分块（格式见 speckit-workflow/references/audit-prompts-critical-auditor-appendix.md §7）。须包含：独立一行「总体评级: [A|B|C|D]」及四行「- 需求完整性: XX/100」「- 可测试性: XX/100」「- 一致性: XX/100」「- 可追溯性: XX/100」。禁止用描述代替结构化块；总体评级仅限 A/B/C/D。禁止 B+、A-、C+、D- 等任意修饰符；介于两档时择一输出纯字母。映射建议：完全覆盖→A/90+；部分覆盖→B/80+；需修改→C/70+；不通过→D/60及以下。否则 parseAndWriteScore 无法解析、仪表盘无法显示评级。
 
+  **Runtime sync (S10 - MANDATORY):** 审计结论为通过；通过判定之后、返回主 Agent 之前执行：
+  `npx bmad-speckit sync-runtime-context-from-sprint --story-key <story_key>`
+  `<story_key>` 填被审计 Story 的 kebab-case key，与 sprint-status `development_status` 中的键名相同。
+
   【审计通过后必做】当结论为「通过」时，你（审计子代理）**在返回主 Agent 前必须**执行：`npx bmad-speckit score --reportPath <保存的报告路径> --stage story --event story_status_change --triggerStage bmad_story_stage2 --epic {epic_num} --story {story_num} --iteration-count {本 stage 累计 fail 轮数，0 表示一次通过}`。报告路径为 `_bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{story_num}-*/AUDIT_Story_{epic_num}-{story_num}_stage2.md`。若执行失败，在结论中注明 resultCode，不阻断返回。**禁止**在未执行上述命令前返回通过结论。
 
   【审计未通过时】你（审计子代理）须在本轮内**直接修改被审 Story 文档**以消除 gap，修改完成后在报告中注明已修改内容；主 Agent 收到报告后发起下一轮审计。**禁止**仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules.md](../speckit-workflow/references/audit-document-iteration-rules.md)。
@@ -1452,6 +1456,12 @@ if time_since_last_activity() > timedelta(hours=24):
 - P0 PR：4小时内响应
 - P1 PR：24小时内响应
 - P2 PR：72小时内响应
+
+**Runtime Governance (S11 - post-audit):** 主 Agent 在调用 post-audit 子任务之前执行：
+`npx bmad-speckit ensure-run-runtime-context --story-key {story_key} --lifecycle post_audit`
+子任务返回之后执行：
+`npx bmad-speckit ensure-run-runtime-context --story-key {story_key} --lifecycle post_audit --persist`
+`{story_key}` 为当前 Story 的 kebab-case key。
 
 ### 4.1 审计子代理与提示词
 

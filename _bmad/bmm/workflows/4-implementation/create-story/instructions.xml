@@ -359,6 +359,9 @@
       <action>Verify current status is "backlog" (expected previous state)</action>
       <action>Update development_status[{{story_key}}] = "ready-for-dev"</action>
       <action>Save file, preserving ALL comments and structure including STATUS DEFINITIONS</action>
+      <action>MANDATORY: Run sync to refresh runtime registry and story context.</action>
+      <action>Execute: npx bmad-speckit sync-runtime-context-from-sprint --story-key {{story_key}}</action>
+      <action>Verify stdout contains the line starting with OK: registry and project context synced</action>
     </check>
 
     <action>Report completion</action>

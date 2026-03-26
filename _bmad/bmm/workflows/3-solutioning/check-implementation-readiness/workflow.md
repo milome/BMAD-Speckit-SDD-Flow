@@ -63,4 +63,4 @@ Before writing any output, resolve branch for planning-artifacts subdirectory:
 
 ### 3. First Step EXECUTION
 
-Read fully and follow: `./step-01-document-discovery.md` to begin the workflow.
+Read fully and follow: `./steps/step-01-document-discovery.md` to begin the workflow.

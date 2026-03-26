@@ -1017,6 +1017,12 @@ handoff:
     - state_updated
 ```
 
+**Runtime Governance (S11 - post-audit):** 主 Agent 在调用 post-audit 子任务之前执行：
+`npx bmad-speckit ensure-run-runtime-context --story-key {story_key} --lifecycle post_audit`
+子任务返回之后执行：
+`npx bmad-speckit ensure-run-runtime-context --story-key {story_key} --lifecycle post_audit --persist`
+`{story_key}` 为当前 Story 的 kebab-case key。
+
 ### Stage 4: Post Audit / `STORY-A4-POSTAUDIT`
 
 Claude 端 Stage 4 Post Audit 执行体，负责对 Dev Story 实施结果进行严格审计。
