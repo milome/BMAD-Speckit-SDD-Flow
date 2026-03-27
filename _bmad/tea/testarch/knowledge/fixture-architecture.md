@@ -13,6 +13,14 @@ Traditional Page Object Models create tight coupling through inheritance chains 
 - **Reusability**: Export fixtures via package subpaths for cross-project sharing
 - **Maintainability**: One concern per fixture = clear responsibility boundaries
 
+## Smoke / Full / Fixture Lifecycle Contract
+
+- `tests/e2e/smoke/` 用于 P0 journey 的快速可运行验证，目标是证明用户关键路径真能跑通。
+- `tests/e2e/full/` 用于更广覆盖、矩阵化浏览器/环境、nightly 或更重的回归场景。
+- 任何直接服务于 P0 smoke 的 fixture 都必须显式声明 setup、handoff、teardown、cleanup；不能依赖“前一个测试已经准备好状态”。
+- Fixture 生命周期至少要回答四件事：谁创建状态、状态何时交给测试、测试后如何清理、失败时如何留下可追踪证据。
+- 共享只读资源可以复用；共享脏状态、跨测试累积 seed data、隐式登录会话都应视为高风险反模式。
+
 ## Pattern Examples
 
 ### Example 1: Pure Function → Fixture Pattern
@@ -309,6 +317,7 @@ export const test = base.extend<DatabaseFixture>({
 - Teardown (after `use()`) deletes all tracked resources
 - Tests don't manually clean up—happens automatically
 - Prevents test pollution and flakiness from shared state
+- Smoke fixtures should prefer the smallest viable seeded state; full E2E can layer broader datasets only when cleanup remains deterministic
 
 ### Anti-Pattern: Inheritance-Based Page Objects
 
@@ -387,6 +396,7 @@ export const test = base.extend({
 - **Related fragments**:
   - `data-factories.md` - Factory functions for test data
   - `network-first.md` - Network interception patterns
+  - `smoke-vs-full-e2e.md` - Suite split, time budget, and gate positioning
   - `test-quality.md` - Deterministic test design principles
 
 ## Helper Function Reuse Guidelines

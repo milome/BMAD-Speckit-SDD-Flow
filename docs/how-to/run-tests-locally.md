@@ -234,9 +234,84 @@ chmod +x verify-local.sh
 ./verify-local.sh
 ```
 
+## Wave 2 工具检查
+
+如果你正在补或验证 `journey-ledger / trace-map / closure-note` contract，建议在完整测试前先跑这三类快速检查。
+
+### 1. 校验 schema 与 CLI 入口
+
+```bash
+python -m json.tool docs/reference/speckit-journey-ledger.schema.json > /dev/null
+python -m json.tool docs/reference/speckit-trace-map.schema.json > /dev/null
+python -m json.tool docs/reference/speckit-closure-note.schema.json > /dev/null
+
+python _bmad/speckit/scripts/python/readiness_gate.py --help
+python _bmad/speckit/scripts/python/generate_smoke_skeleton.py --help
+python _bmad/speckit/scripts/python/ambiguity_linter.py --help
+```
+
+Windows PowerShell:
+
+```powershell
+python -m json.tool docs/reference/speckit-journey-ledger.schema.json > $null
+python -m json.tool docs/reference/speckit-trace-map.schema.json > $null
+python -m json.tool docs/reference/speckit-closure-note.schema.json > $null
+```
+
+### 2. 运行 readiness gate
+
+最小自检可以直接用模板：
+
+```bash
+tmpdir="$(mktemp -d)"
+cp _bmad/speckit/scripts/templates/journey-ledger.template.json "$tmpdir/journey-ledger.json"
+cp _bmad/speckit/scripts/templates/trace-map.template.json "$tmpdir/trace-map.json"
+mkdir -p "$tmpdir/closure-notes"
+cp _bmad/speckit/scripts/templates/closure-note.template.md "$tmpdir/closure-notes/J01.md"
+
+python _bmad/speckit/scripts/python/readiness_gate.py \
+  --journey-ledger "$tmpdir/journey-ledger.json" \
+  --trace-map "$tmpdir/trace-map.json" \
+  --artifact-root "$tmpdir"
+```
+
+如果你要检查真实工件，把 `--journey-ledger`、`--trace-map`、`--artifact-root` 换成你的实际输出目录即可。
+
+### 3. 运行 ambiguity linter
+
+```bash
+python _bmad/speckit/scripts/python/ambiguity_linter.py \
+  docs/reference/speckit-journey-ledger.schema.json \
+  docs/reference/speckit-trace-map.schema.json
+```
+
+它主要抓：
+
+- unresolved markers: `TODO` / `TBD` / `FIXME` / `???`
+- silent assumptions: `后续补齐` / `默认如此` / `later wire in`
+- completion / role placeholder
+
+### 4. 验证 smoke skeleton 可生成
+
+```bash
+tmpdir="$(mktemp -d)"
+python _bmad/speckit/scripts/python/generate_smoke_skeleton.py \
+  --journey-ledger _bmad/speckit/scripts/templates/journey-ledger.template.json \
+  --output-root "$tmpdir/smoke"
+
+find "$tmpdir/smoke" -name '*.smoke.spec.ts'
+```
+
+如果仓库里已经有真实的 `tests/e2e/smoke/`，再额外跑一次真实 smoke：
+
+```bash
+npx playwright test tests/e2e/smoke
+```
+
+没有真实 smoke 套件时，只验证 skeleton 可生成即可；不要把“已生成模板”误当成“E2E 已跑通”。
+
 ## 参考
 
 - [CI 配置](../../.github/workflows/ci.yml)
 - [package.json](../../package.json)
 - [Vitest 配置](../../vitest.config.ts)
-

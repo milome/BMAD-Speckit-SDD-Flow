@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "generatedFrom": "journey-ledger.template.json",
+  "journeys": [
+    {
+      "journeyId": "J01",
+      "taskIds": ["T021", "T022", "T023"],
+      "smokeTests": ["SMOKE-J01"],
+      "fullE2E": ["E2E-J01-FULL"],
+      "closureNote": "closure-notes/J01.md",
+      "deferredGaps": []
+    }
+  ]
+}

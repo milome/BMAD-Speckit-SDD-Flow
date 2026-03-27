@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/speckit-closure-note.json",
+  "title": "Speckit Closure Note Metadata",
+  "description": "Logical metadata carried by a markdown closure note.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "journeyId",
+    "coveredTaskIds",
+    "smokeTestIds",
+    "fullE2EIds",
+    "definitionGapsStillOpen",
+    "implementationGapsStillOpen",
+    "verificationCommands",
+    "summary"
+  ],
+  "properties": {
+    "journeyId": { "type": "string", "minLength": 1 },
+    "coveredTaskIds": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "smokeTestIds": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "fullE2EIds": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "definitionGapsStillOpen": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "implementationGapsStillOpen": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "verificationCommands": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

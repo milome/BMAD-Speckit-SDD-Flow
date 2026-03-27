@@ -2,11 +2,11 @@
 
 ## Principle
 
-Load environment configs via a central map (`envConfigMap`), standardize timeouts (action 15s, navigation 30s, expect 10s, test 60s), emit HTML + JUnit reporters, and store artifacts under `test-results/` for CI upload. Keep `.env.example`, `.nvmrc`, and browser dependencies versioned so local and CI runs stay aligned.
+Load environment configs via a central map (`envConfigMap`), standardize timeouts (action 15s, navigation 30s, expect 10s, test 60s), emit HTML + JUnit reporters, and store artifacts under `test-results/` for CI upload. Keep `.env.example`, `.nvmrc`, and browser dependencies versioned so local and CI runs stay aligned. Split fast `smoke` verification from broader `full` E2E so PR gates stay stable and nightly coverage can grow independently.
 
 ## Rationale
 
-Environment-specific configuration prevents hardcoded URLs, timeouts, and credentials from leaking into tests. A central config map with fail-fast validation catches missing environments early. Standardized timeouts reduce flakiness while remaining long enough for real-world network conditions. Consistent artifact storage (`test-results/`, `playwright-report/`) enables CI pipelines to upload failure evidence automatically. Versioned dependencies (`.nvmrc`, `package.json` browser versions) eliminate "works on my machine" issues between local and CI environments.
+Environment-specific configuration prevents hardcoded URLs, timeouts, and credentials from leaking into tests. A central config map with fail-fast validation catches missing environments early. Standardized timeouts reduce flakiness while remaining long enough for real-world network conditions. Consistent artifact storage (`test-results/`, `playwright-report/`) enables CI pipelines to upload failure evidence automatically. Versioned dependencies (`.nvmrc`, `package.json` browser versions) eliminate "works on my machine" issues between local and CI environments. Explicit smoke/full project boundaries prevent heavy regression suites from silently becoming PR blockers.
 
 ## Pattern Examples
 
@@ -705,12 +705,65 @@ jobs:
 - CI matrix strategy runs projects in parallel (4x faster with 4 projects)
 - `isMobile` context property for conditional logic in tests
 
+### Example 6: Smoke vs Full Project Split
+
+**Context**: 当仓库同时需要 PR gate 的快速验证和 nightly 的广覆盖回归时，使用 project 或 testMatch 把 `smoke` 与 `full` 分开，而不是让所有 E2E 共享同一套运行预算。
+
+**Implementation**:
+
+```typescript
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  projects: [
+    {
+      name: 'smoke',
+      testDir: './tests/e2e/smoke',
+      timeout: 60_000,
+      retries: process.env.CI ? 1 : 0,
+      use: {
+        trace: 'on-first-retry',
+        screenshot: 'only-on-failure',
+        video: 'retain-on-failure',
+      },
+    },
+    {
+      name: 'full',
+      testDir: './tests/e2e/full',
+      timeout: 120_000,
+      retries: process.env.CI ? 1 : 0,
+      use: {
+        trace: 'retain-on-failure',
+        screenshot: 'only-on-failure',
+        video: 'retain-on-failure',
+      },
+    },
+  ],
+});
+```
+
+```bash
+# PR gate
+npx playwright test --project=smoke
+
+# Nightly / broader verification
+npx playwright test --project=full
+```
+
+**Key Points**:
+
+- Smoke suite should target a bounded runtime budget (default target: <= 10 minutes per PR run).
+- Full E2E can take wider browser/device matrices, but should not be the default blocker until runtime cost is proven.
+- Artifact retention can be stricter for smoke and richer for full E2E if storage cost matters.
+- Any smoke fixture that depends on shared dirty state should be treated as a design bug, not patched with retries.
+
 ## Integration Points
 
 - **Used in workflows**: `*framework` (config setup), `*ci` (parallelization, artifact upload)
 - **Related fragments**:
   - `fixture-architecture.md` - Fixture-based timeout overrides
   - `ci-burn-in.md` - CI pipeline artifact upload
+  - `smoke-vs-full-e2e.md` - Suite split and gate positioning
   - `test-quality.md` - Timeout standards (no hard waits)
   - `data-factories.md` - Per-test isolation (no shared global state)
 
@@ -725,6 +778,7 @@ jobs:
 - [ ] `.env.example`, `.nvmrc`, browser versions committed
 - [ ] Parallelization configured (workers, sharding)
 - [ ] Projects defined for cross-browser/device testing (if needed)
+- [ ] Smoke and full E2E lanes are split, with separate time budgets and artifact expectations
 - [ ] CI uploads artifacts on failure with 30-day retention
 
 _Source: Playwright book repo, SEON configuration example, Murat testing philosophy (lines 216-271)._

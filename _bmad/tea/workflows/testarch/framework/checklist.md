@@ -38,6 +38,8 @@ Before starting the workflow:
 
 - [ ] `tests/` root directory created
 - [ ] `tests/e2e/` directory created (or user's preferred structure)
+- [ ] `tests/e2e/smoke/` directory created for fast P0 journey coverage
+- [ ] `tests/e2e/full/` directory created for broader full-regression journeys
 - [ ] `tests/support/` directory created (critical pattern)
 - [ ] `tests/support/fixtures/` directory created
 - [ ] `tests/support/fixtures/factories/` directory created
@@ -45,15 +47,18 @@ Before starting the workflow:
 - [ ] `tests/support/page-objects/` directory created (if applicable)
 - [ ] All directories have correct permissions
 
-**Note**: Test organization is flexible (e2e/, api/, integration/). The **support/** folder is the key pattern.
+**Note**: Test organization is flexible (e2e/, api/, integration/). The **support/** folder is the key pattern, but Wave 2 默认要求显式区分 `smoke/` 与 `full/`，避免把快速 gate 和大回归套件混在一起。
 
 ### Step 4: Configuration Files
 
 - [ ] Framework config file created (`playwright.config.ts` or `cypress.config.ts`)
 - [ ] Config file uses TypeScript (if `use_typescript: true`)
 - [ ] Timeouts configured correctly (action: 15s, navigation: 30s, test: 60s)
+- [ ] Smoke suite budget declared (default target: <= 10 minutes for PR gate)
+- [ ] Full E2E lane declared separately (default target: nightly / broader matrix)
 - [ ] Base URL configured with environment variable fallback
 - [ ] Trace/screenshot/video set to retain-on-failure
+- [ ] Artifact retention rules documented for smoke vs full E2E
 - [ ] Multiple reporters configured (HTML + JUnit + console)
 - [ ] Parallel execution enabled
 - [ ] CI-specific settings configured (retries, workers)
@@ -76,6 +81,9 @@ Before starting the workflow:
 - [ ] Type definitions for fixtures created
 - [ ] mergeTests pattern implemented (if multiple fixtures)
 - [ ] Auto-cleanup logic included in fixtures
+- [ ] Fixture lifecycle documented (setup, handoff, teardown, cleanup evidence)
+- [ ] No shared dirty fixture state for any P0 journey smoke path
+- [ ] Fixture/environment requirements are explicit, not implicit tribal knowledge
 - [ ] Fixture architecture follows knowledge base patterns
 
 ### Step 7: Data Factories
@@ -90,11 +98,14 @@ Before starting the workflow:
 ### Step 8: Sample Tests
 
 - [ ] Example test file created (`tests/e2e/example.spec.ts`)
+- [ ] Smoke example created under `tests/e2e/smoke/`
+- [ ] Full E2E example created or explicitly deferred under `tests/e2e/full/`
 - [ ] Test uses fixture architecture
 - [ ] Test demonstrates data factory usage
 - [ ] Test uses proper selector strategy (data-testid)
 - [ ] Test follows Given-When-Then structure
 - [ ] Test includes proper assertions
+- [ ] Smoke example proves a runnable user-visible completion state, not only page load
 - [ ] Network interception demonstrated (if applicable)
 
 ### Step 9: Helper Utilities
@@ -138,6 +149,8 @@ Before starting the workflow:
 ### Test Execution Validation
 
 - [ ] Sample test runs successfully
+- [ ] Smoke suite can run independently (`tests/e2e/smoke/`)
+- [ ] Full E2E suite can be scheduled independently (`tests/e2e/full/`) or is explicitly marked deferred
 - [ ] Test execution produces expected output (pass/fail)
 - [ ] Test artifacts generated correctly (traces, screenshots, videos)
 - [ ] Test report generated successfully
@@ -178,6 +191,8 @@ Before starting the workflow:
 - [ ] Selectors use data-testid strategy
 - [ ] Artifacts only captured on failure
 - [ ] Tests follow Given-When-Then structure
+- [ ] Smoke tests stay focused on P0 journey completion rather than broad regression
+- [ ] Full E2E coverage is reserved for broader matrices / nightly unless explicitly justified
 - [ ] No hard-coded waits or sleeps
 
 ### Knowledge Base Alignment
@@ -285,6 +300,10 @@ If workflow fails and needs to be rolled back:
 **Issue**: Fixture cleanup not working
 
 - **Solution**: Verify cleanup() is called in fixture teardown
+
+**Issue**: Smoke suite keeps passing locally but failing in CI
+
+- **Solution**: Check fixture lifecycle isolation, shared seed reuse, and smoke time budget drift before widening retries
 
 **Issue**: Network interception not working
 
