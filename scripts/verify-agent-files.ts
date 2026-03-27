@@ -18,6 +18,13 @@ const REQUIRED_AGENTS: AgentCheck[] = [
   { name: 'bmad-layer4-speckit-implement', path: '.claude/agents/layers/bmad-layer4-speckit-implement.md', expectedPrerequisite: 'tasks_passed' },
 ];
 
+const REQUIRED_SPECKIT_ALIASES: AgentCheck[] = [
+  { name: 'speckit-specify', path: '.claude/agents/speckit-specify.md' },
+  { name: 'speckit-plan', path: '.claude/agents/speckit-plan.md' },
+  { name: 'speckit-gaps', path: '.claude/agents/speckit-gaps.md' },
+  { name: 'speckit-tasks', path: '.claude/agents/speckit-tasks.md' },
+];
+
 const REQUIRED_AUDITORS: AgentCheck[] = [
   { name: 'auditor-spec', path: '.claude/agents/auditors/auditor-spec.md' },
   { name: 'auditor-plan', path: '.claude/agents/auditors/auditor-plan.md' },
@@ -47,6 +54,16 @@ function verifyAgentFiles(): void {
           hasErrors = true;
         }
       }
+    } else {
+      console.log(`❌ ${agent.name}: ${agent.path} — 文件缺失`);
+      hasErrors = true;
+    }
+  });
+
+  console.log('\n【检查 1.5】Speckit 顶层 alias:');
+  REQUIRED_SPECKIT_ALIASES.forEach(agent => {
+    if (fs.existsSync(agent.path)) {
+      console.log(`✅ ${agent.name}: ${agent.path}`);
     } else {
       console.log(`❌ ${agent.name}: ${agent.path} — 文件缺失`);
       hasErrors = true;

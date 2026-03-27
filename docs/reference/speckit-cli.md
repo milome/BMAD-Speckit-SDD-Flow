@@ -11,12 +11,94 @@
 | **constitution** | `/speckit.constitution` | `claude-code --agent speckit-constitution` | §0.5 | 无 | `constitution.md` |
 | **specify** | `/speckit.specify` | `claude-code --agent speckit-specify` | §1 | constitution 通过审计 | `spec-E{epic}-S{story}.md` |
 | **plan** | `/speckit.plan` | `claude-code --agent speckit-plan` | §2 | spec 通过审计 | `plan-E{epic}-S{story}.md` |
-| **GAPS** | 无独立命令（自动/触发） | `claude-code --agent speckit-gaps` | §3 | plan 通过审计 | `IMPLEMENTATION_GAPS-E{epic}-S{story}.md` |
+| **GAPS** | `/speckit.gaps`（兼容自动触发） | `claude-code --agent speckit-gaps` | §3 | plan 通过审计 | `IMPLEMENTATION_GAPS-E{epic}-S{story}.md` |
 | **tasks** | `/speckit.tasks` | `claude-code --agent speckit-tasks` | §4 | GAPS 通过审计 | `tasks-E{epic}-S{story}.md` |
 | **implement** | `/speckit.implement` | `claude-code --agent speckit-implement` | §5 | tasks 通过审计 | 可运行代码 + 测试 |
 | **clarify** | `/speckit.clarify` | `claude-code --agent speckit-clarify` | §1.2 内嵌 | spec 审计发现模糊 | 更新后的 spec.md |
 | **checklist** | `/speckit.checklist` | `claude-code --agent speckit-checklist` | §2.2 内嵌 | plan 多模块/复杂 | 质量检查清单 |
 | **analyze** | `/speckit.analyze` | `claude-code --agent speckit-analyze` | §4.2 内嵌 | tasks≥10 或跨 artifact | 一致性分析报告 |
+
+---
+
+## 一点五、Wave 2 标准工具命令
+
+Wave 2 把前面新增的 journey / trace / closure contract 接成了可执行工具。它们不是新的 speckit 主阶段，而是配套的本地/CI 标准检查入口。
+
+### 1. Readiness Gate
+
+直接调用 Python:
+
+```bash
+python _bmad/speckit/scripts/python/readiness_gate.py \
+  --journey-ledger _bmad/speckit/scripts/templates/journey-ledger.template.json \
+  --trace-map _bmad/speckit/scripts/templates/trace-map.template.json \
+  --artifact-root _bmad/speckit/scripts/templates
+```
+
+PowerShell wrapper:
+
+```powershell
+./_bmad/speckit/scripts/powershell/run-readiness-gate.ps1 `
+  -JourneyLedger _bmad/speckit/scripts/templates/journey-ledger.template.json `
+  -TraceMap _bmad/speckit/scripts/templates/trace-map.template.json `
+  -ArtifactRoot _bmad/speckit/scripts/templates
+```
+
+Shell wrapper:
+
+```bash
+./_bmad/speckit/scripts/shell/run-readiness-gate.sh \
+  --journey-ledger _bmad/speckit/scripts/templates/journey-ledger.template.json \
+  --trace-map _bmad/speckit/scripts/templates/trace-map.template.json \
+  --artifact-root _bmad/speckit/scripts/templates
+```
+
+Readiness gate 最少检查：
+
+- `journey-ledger` 必填字段与 smoke generatability
+- `trace-map` 与 journey task / smoke / closure 的一致性
+- closure note 是否真实存在并带有关键 marker
+- blocker words / placeholder / 静默假设痕迹
+
+### 2. Ambiguity Linter
+
+```bash
+python _bmad/speckit/scripts/python/ambiguity_linter.py \
+  docs/reference/speckit-journey-ledger.schema.json \
+  docs/reference/speckit-trace-map.schema.json
+```
+
+```powershell
+./_bmad/speckit/scripts/powershell/run-ambiguity-linter.ps1 `
+  docs/reference/speckit-journey-ledger.schema.json `
+  docs/reference/speckit-trace-map.schema.json
+```
+
+用途：
+
+- 抓 `TODO` / `TBD` / `FIXME` / `???`
+- 抓 `后续补齐` / `默认如此` / `later wire in` 之类 silent assumption
+- 抓角色、完成态仍是 placeholder 的文档
+
+### 3. Generate Smoke Skeleton
+
+```bash
+python _bmad/speckit/scripts/python/generate_smoke_skeleton.py \
+  --journey-ledger _bmad/speckit/scripts/templates/journey-ledger.template.json \
+  --output-root tests/e2e/smoke
+```
+
+```powershell
+./_bmad/speckit/scripts/powershell/generate-smoke-skeleton.ps1 `
+  -JourneyLedger _bmad/speckit/scripts/templates/journey-ledger.template.json `
+  -OutputRoot tests/e2e/smoke
+```
+
+规则：
+
+- 生成的是最小 smoke skeleton，不代表真实 E2E 已完成
+- 生成文件后仍需补齐用户可见完成态断言、fixture 需求、验证命令
+- 推荐把 `tests/e2e/smoke/` 作为 PR gate，把 `tests/e2e/full/` 作为更重的 nightly / broader matrix
 
 ---
 
@@ -77,8 +159,8 @@
 │                                ▼                                            │
 │                                                                             │
 │  §3 GAPS              ┌─────────────────────────┐                          │
-│  ───────────────────→ │ 自动生成(无独立命令)      │ ──→ code-review 审计 §3.2  │
-│                       │ 深度分析plan vs 当前实现   │    (standard + 批判审计员)  │
+│  ───────────────────→ │ /speckit.gaps 正式入口   │ ──→ code-review 审计 §3.2  │
+│                       │ 兼容自动触发 / 深度分析   │    (standard + 批判审计员)  │
 │                       │ 生成IMPLEMENTATION_GAPS  │ ──→ parse-and-write-score  │
 │                       └─────────────────────────┘                          │
 │                                │                                            │
@@ -347,97 +429,72 @@ stages:
 
 ---
 
-## 七、Agent 定义映射
+## 七、Agent 实现映射（当前仓库现状）
 
-### 7.1 需要创建的 Agent
+### 7.1 CLI 目标名 ↔ 当前实现文件
 
-| Agent | 文件 | 对应 Speckit 命令 |
-|-------|------|------------------|
-| speckit-constitution | `.claude/agents/speckit-constitution.md` | `/speckit.constitution` |
-| speckit-specify | `.claude/agents/speckit-specify.md` | `/speckit.specify` |
-| speckit-plan | `.claude/agents/speckit-plan.md` | `/speckit.plan` |
-| speckit-gaps | `.claude/agents/speckit-gaps.md` | `/speckit.gaps` (自动生成) |
-| speckit-tasks | `.claude/agents/speckit-tasks.md` | `/speckit.tasks` |
-| **speckit-implement** | `.claude/agents/speckit-implement.md` | `/speckit.implement` |
-| speckit-clarify | `.claude/agents/speckit-clarify.md` | `/speckit.clarify` |
-| speckit-checklist | `.claude/agents/speckit-checklist.md` | `/speckit.checklist` |
-| speckit-analyze | `.claude/agents/speckit-analyze.md` | `/speckit.analyze` |
+| CLI / 命令目标名 | 当前实现文件 | 现状说明 |
+|------------------|--------------|----------|
+| `speckit-constitution` | `.claude/agents/speckit-constitution.md` | 已有顶层 agent |
+| `speckit-specify` | `.claude/agents/speckit-specify.md` | 顶层 alias 已落地；canonical body 为 `.claude/agents/layers/bmad-layer4-speckit-specify.md` |
+| `speckit-plan` | `.claude/agents/speckit-plan.md` | 顶层 alias 已落地；canonical body 为 `.claude/agents/layers/bmad-layer4-speckit-plan.md` |
+| `speckit-gaps` | `.claude/agents/speckit-gaps.md` | 顶层 alias 已落地；canonical body 为 `.claude/agents/layers/bmad-layer4-speckit-gaps.md`，旧名 `.claude/agents/gaps.md` 保留兼容 |
+| `speckit-tasks` | `.claude/agents/speckit-tasks.md` | 顶层 alias 已落地；canonical body 为 `.claude/agents/layers/bmad-layer4-speckit-tasks.md` |
+| `speckit-implement` | `.claude/agents/speckit-implement.md` + `.claude/agents/layers/bmad-layer4-speckit-implement.md` | 顶层执行体与 BMAD Layer 4 wrapper 均已存在 |
+| `speckit-clarify` | `.claude/agents/speckit-clarify.md` | 已有顶层 agent |
+| `speckit-checklist` | `.claude/agents/speckit-checklist.md` | 已有顶层 agent |
+| `speckit-analyze` | `.claude/agents/speckit-analyze.md` | 已有顶层 agent |
 
-### 7.2 现有 Agent
+### 7.2 现有辅助 / 审计 Agent
 
 | Agent | 文件 | 用途 |
 |-------|------|------|
-| bmad-master | `.claude/agents/bmad-master.md` | 总协调 |
-| auditor-spec | `.claude/agents/auditors/auditor-spec.md` | §1 审计 |
-| auditor-plan | `.claude/agents/auditors/auditor-plan.md` | §2 审计 |
-| auditor-tasks | `.claude/agents/auditors/auditor-tasks.md` | §4 审计 |
-| auditor-implement | `.claude/agents/auditors/auditor-implement.md` | §5 审计 |
-| gaps | `.claude/agents/gaps.md` | Gap分析(已创建) |
+| `bmad-master` | `.claude/agents/bmad-master.md` | 总协调 |
+| `auditor-spec` | `.claude/agents/auditors/auditor-spec.md` | §1 审计 |
+| `auditor-plan` | `.claude/agents/auditors/auditor-plan.md` | §2 审计 |
+| `auditor-gaps` | `.claude/agents/auditors/auditor-gaps.md` | §3 审计 |
+| `auditor-tasks` | `.claude/agents/auditors/auditor-tasks.md` | §4 审计 |
+| `auditor-implement` | `.claude/agents/auditors/auditor-implement.md` | §5 审计 |
+| `gaps` | `.claude/agents/gaps.md` | 旧名 gaps 分析 agent；当前可作为 `speckit-gaps` 的兼容实现体之一 |
 
 ---
 
-## 八、关键缺失项清单
+## 八、Agent 命名与兼容层现状
 
-### 8.1 缺失的 Agent 定义
+### 8.1 已落地的顶层 alias
 
-- [ ] **speckit-constitution** - §0.5 项目原则
-- [ ] **speckit-implement** - §5 TDD执行 (**最关键缺失**)
-- [ ] speckit-clarify - §1.2 澄清
-- [ ] speckit-checklist - §2.2 检查清单
-- [ ] speckit-analyze - §4.2 分析
+以下命令名现在都已经有同名顶层 `.claude/agents/*.md` 入口：
 
-### 8.2 缺失的审计实现
+- `speckit-specify`
+- `speckit-plan`
+- `speckit-gaps`
+- `speckit-tasks`
 
-当前 `scripts/auditor-spec.ts` 的 gaps:
+CLI 与文档应优先引用这些顶层 alias，而不是直接让用户依赖 `layers/` 内部路径。
 
-| 缺失项 | Speckit 要求 | 当前实现 |
-|--------|-------------|---------|
-| 审计提示词加载 | 读取 `audit-prompts.md` §1 | 硬编码4项检查 |
-| 报告格式 | 可解析评分块(总体评级+维度评分) | 简单PASS/FAIL |
-| 迭代规则 | 连续3轮无gap收敛 | 单轮检查 |
-| 文档修改 | 审计子代理直接修改被审文档 | 仅返回建议 |
-| 评分触发 | 自动调用parse-and-write-score | 未实现 |
-| 批判审计员 | 必须执行批判审计员检查 | 未实现 |
+### 8.2 仍需保留的兼容关系
 
-### 8.3 缺失的 TDD 强制约束
+- `.claude/agents/gaps.md` 仍作为旧名兼容实现保留
+- `speckit-gaps` 的正式入口是 `.claude/agents/speckit-gaps.md`
+- 4 个顶层 alias 的 canonical body 仍位于 `.claude/agents/layers/`
 
-当前实现缺少:
+### 8.3 当前收口原则
 
-1. **ralph-method 前置检查**: 未检查 prd/progress 文件
-2. **TDD槽位预填**: 未在 progress 中预填 `[TDD-XXX] _pending_`
-3. **逐US独立执行**: 未确保每个US独立RED→GREEN→REFACTOR
-4. **进度更新**: 未在每US完成后更新 prd passes=true
-5. **TDD记录格式**: 未按格式 `[TDD-RED] US-00X ... => N failed` 记录
+1. 面向用户或 CLI 的入口统一引用顶层 alias。
+2. 面向实现与阶段前置条件检查的说明，仍可引用 `layers/bmad-layer4-*` canonical body。
+3. 文档必须显式区分“命令入口文件”和“内部 canonical execution body”，避免再次把两者混写成互斥事实。
 
 ---
 
-## 九、完整实施建议
+## 九、Agent 层当前建议
 
-### 9.1 优先级1: 核心执行 Agent
-
-**speckit-implement** 是最关键缺失，需要完整实现:
-1. ralph-method 前置检查
-2. TDD红绿灯循环执行
-3. prd/progress 自动更新
-4. batch间审计调用
-5. 最终 §5.2 strict 审计
-
-### 9.2 优先级2: 审计系统重构
-
-重构 `scripts/auditor-*.ts`:
-1. 读取 `audit-prompts.md` 对应章节作为提示词
-2. 输出可解析评分块格式
-3. 实现连续3轮收敛逻辑
-4. 集成批判审计员检查
-5. 自动触发 parse-and-write-score
-
-### 9.3 优先级3: 增强命令
-
-实现 clarify/checklist/analyze 三个内嵌命令。
+1. CLI、安装验证、自检脚本统一指向 `speckit-specify / plan / gaps / tasks` 顶层 alias。
+2. `layers/` 路径继续作为 canonical implementation body 暴露给维护者和阶段门禁脚本。
+3. 保留 `.claude/agents/gaps.md` 作为兼容入口时，必须始终注明其从属关系，不得再把它写成正式主入口。
 
 ---
 
-## 十、文件引用关系图
+## 十、文件引用关系图（当前现状）
 
 ```
 speckit-workflow/
@@ -454,21 +511,29 @@ speckit-workflow/
 
 .claude/agents/
 ├── bmad-master.md                    # 总协调
-├── speckit-constitution.md           # §0.5 (缺失)
-├── speckit-specify.md                # §1 (已有基础)
-├── speckit-plan.md                   # §2 (已有基础)
-├── speckit-gaps.md                   # §3 (缺失)
-├── speckit-tasks.md                  # §4 (已有基础)
-├── speckit-implement.md              # §5 (关键缺失)
-├── speckit-clarify.md                # §1.2 (缺失)
-├── speckit-checklist.md              # §2.2 (缺失)
-├── speckit-analyze.md                # §4.2 (缺失)
-├── gaps.md                           # Gap分析(已创建)
+├── speckit-constitution.md           # §0.5 已存在
+├── speckit-specify.md                # §1 顶层 alias
+├── speckit-plan.md                   # §2 顶层 alias
+├── speckit-gaps.md                   # §3 正式顶层 alias
+├── speckit-tasks.md                  # §4 顶层 alias
+├── speckit-clarify.md                # §1.2 已存在
+├── speckit-checklist.md              # §2.2 已存在
+├── speckit-analyze.md                # §4.2 已存在
+├── speckit-implement.md              # §5 已存在
+├── gaps.md                           # 旧名兼容 gaps agent
 └── auditors/
     ├── auditor-spec.md
     ├── auditor-plan.md
+    ├── auditor-gaps.md
     ├── auditor-tasks.md
     └── auditor-implement.md
+
+.claude/agents/layers/
+├── bmad-layer4-speckit-specify.md    # §1 当前执行体
+├── bmad-layer4-speckit-plan.md       # §2 当前执行体
+├── bmad-layer4-speckit-gaps.md       # §3 当前执行体
+├── bmad-layer4-speckit-tasks.md      # §4 当前执行体
+└── bmad-layer4-speckit-implement.md  # §5 BMAD Layer 4 wrapper
 
 scripts/
 ├── auditor-spec.ts                   # 需重构以加载audit-prompts.md

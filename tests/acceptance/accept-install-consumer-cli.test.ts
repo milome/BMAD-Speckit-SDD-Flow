@@ -108,4 +108,37 @@ describe('install to consumer → CLI acceptance', () => {
       rmSync(target, { recursive: true, force: true });
     }
   }, 90_000);
+
+  it('npm install consumer can deploy Claude top-level speckit aliases via installed init entrypoint', () => {
+    const target = mkdtempSync(join(tmpdir(), 'accept-consumer-claude-aliases-'));
+    try {
+      writeFileSync(
+        join(target, 'package.json'),
+        JSON.stringify({ name: 'consumer-app', version: '1.0.0', private: true }),
+        'utf8'
+      );
+
+      const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
+      run(`npm install --save-dev "file:${pkgPath}"`, target);
+      run('npx bmad-speckit-init --agent claude-code', target);
+
+      const aliases = [
+        'speckit-specify.md',
+        'speckit-plan.md',
+        'speckit-gaps.md',
+        'speckit-tasks.md',
+      ];
+
+      for (const alias of aliases) {
+        const canonical = join(target, '_bmad', 'claude', 'agents', alias);
+        const runtime = join(target, '.claude', 'agents', alias);
+
+        expect(existsSync(canonical)).toBe(true);
+        expect(existsSync(runtime)).toBe(true);
+        expect(readFileSync(runtime, 'utf8')).toBe(readFileSync(canonical, 'utf8'));
+      }
+    } finally {
+      rmSync(target, { recursive: true, force: true });
+    }
+  }, 90_000);
 });
