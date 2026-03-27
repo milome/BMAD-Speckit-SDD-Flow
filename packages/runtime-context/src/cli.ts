@@ -30,6 +30,18 @@ export interface ParsedStoryKey {
   epicId: string;
 }
 
+interface RuntimeEventRecord {
+  event_id: string;
+  event_type: string;
+  event_version: 1;
+  timestamp: string;
+  run_id: string;
+  flow?: string;
+  stage?: string;
+  scope?: Record<string, unknown>;
+  payload: Record<string, unknown>;
+}
+
 /** Same rule as create-story: epic_num-story_num-slug (e.g. 15-1-runtime-governance-complete). */
 export function parseStoryKey(storyKey: string): ParsedStoryKey {
   const trimmed = storyKey.trim();
@@ -52,6 +64,85 @@ function lastRunPath(root: string, lifecycle: 'dev_story' | 'post_audit'): strin
   const name =
     lifecycle === 'dev_story' ? 'last-dev-story-run.json' : 'last-post-audit-run.json';
   return path.join(root, '_bmad-output', 'runtime', name);
+}
+
+function runtimeEventsPath(root: string): string {
+  return path.join(root, '_bmad-output', 'runtime', 'events');
+}
+
+function appendRuntimeEvent(root: string, event: RuntimeEventRecord): void {
+  const eventsDir = runtimeEventsPath(root);
+  fs.mkdirSync(eventsDir, { recursive: true });
+  const safeTimestamp = event.timestamp.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const safeEventId = event.event_id.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const filePath = path.join(eventsDir, `${safeTimestamp}-${safeEventId}.json`);
+  const tmpPath = `${filePath}.${process.pid}.tmp`;
+  fs.writeFileSync(tmpPath, JSON.stringify(event, null, 2) + '\n', 'utf8');
+  fs.renameSync(tmpPath, filePath);
+}
+
+function emitRunLifecycleEvents(
+  root: string,
+  input: {
+    runId: string;
+    storyKey: string;
+    epicId: string;
+    lifecycle: 'dev_story' | 'post_audit';
+    runPath: string;
+  }
+): void {
+  const now = new Date().toISOString();
+  const stage = stageForLifecycle(input.lifecycle);
+  const scope = {
+    story_key: input.storyKey,
+    epic_id: input.epicId,
+    story_id: input.storyKey,
+    flow: 'story',
+    resolved_context_path: input.runPath,
+  };
+
+  appendRuntimeEvent(root, {
+    event_id: randomUUID(),
+    event_type: 'run.created',
+    event_version: 1,
+    timestamp: now,
+    run_id: input.runId,
+    flow: 'story',
+    stage,
+    scope,
+    payload: {
+      lifecycle: input.lifecycle,
+      status: 'pending',
+    },
+  });
+  appendRuntimeEvent(root, {
+    event_id: randomUUID(),
+    event_type: 'run.scope.changed',
+    event_version: 1,
+    timestamp: now,
+    run_id: input.runId,
+    flow: 'story',
+    stage,
+    scope,
+    payload: {
+      lifecycle: input.lifecycle,
+      scope_type: 'run',
+    },
+  });
+  appendRuntimeEvent(root, {
+    event_id: randomUUID(),
+    event_type: 'stage.started',
+    event_version: 1,
+    timestamp: now,
+    run_id: input.runId,
+    flow: 'story',
+    stage,
+    scope,
+    payload: {
+      lifecycle: input.lifecycle,
+      status: 'running',
+    },
+  });
 }
 
 function writeLastRun(root: string, lifecycle: 'dev_story' | 'post_audit', body: { storyKey: string; runId: string }): void {
@@ -124,6 +215,13 @@ function persistRunRegistry(
   };
   registry.updatedAt = new Date().toISOString();
   writeRuntimeContextRegistry(root, registry);
+  emitRunLifecycleEvents(root, {
+    runId,
+    storyKey,
+    epicId: parsed.epicId,
+    lifecycle,
+    runPath,
+  });
 }
 
 export function runEnsureRunCli(opts: EnsureRunCliOptions): void {
@@ -150,6 +248,13 @@ export function runEnsureRunCli(opts: EnsureRunCliOptions): void {
     runId,
     stage: stageForLifecycle(lifecycle),
     flow: 'story',
+  });
+  emitRunLifecycleEvents(root, {
+    runId,
+    storyKey,
+    epicId: parsed.epicId,
+    lifecycle,
+    runPath: runContextPath(root, parsed.epicId, storyKey, runId),
   });
 
   // eslint-disable-next-line no-console -- CLI contract (tasks-E15-S1)
