@@ -12,17 +12,42 @@ const os = require('os');
 const BIN = path.join(__dirname, '../bin/bmad-speckit.js');
 const ROOT = path.join(__dirname, '..');
 
+function withIsolatedHome(envOverrides = {}) {
+  const homeRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-speckit-home-'));
+  return {
+    env: {
+      ...process.env,
+      HOME: homeRoot,
+      USERPROFILE: homeRoot,
+      ...envOverrides,
+    },
+    cleanup() {
+      try { fs.rmSync(homeRoot, { recursive: true, force: true }); } catch (_) {}
+    },
+  };
+}
+
 function runCheck(cwd) {
-  return spawnSync('node', [BIN, 'check'], { cwd, encoding: 'utf8', timeout: 5000 });
+  const { env, cleanup } = withIsolatedHome();
+  try {
+    return spawnSync('node', [BIN, 'check'], { cwd, encoding: 'utf8', timeout: 5000, env });
+  } finally {
+    cleanup();
+  }
 }
 
 function runInit(args, cwd, env = {}) {
-  return spawnSync('node', [BIN, 'init', ...args], {
-    cwd: cwd || os.tmpdir(),
-    encoding: 'utf8',
-    timeout: 15000,
-    env: { ...process.env, ...env },
-  });
+  const { env: isolatedEnv, cleanup } = withIsolatedHome(env);
+  try {
+    return spawnSync('node', [BIN, 'init', ...args], {
+      cwd: cwd || os.tmpdir(),
+      encoding: 'utf8',
+      timeout: 15000,
+      env: isolatedEnv,
+    });
+  } finally {
+    cleanup();
+  }
 }
 
 // T6.1: 退出码 1 - check 结构验证失败
@@ -43,7 +68,7 @@ describe('E13-S2 T6.2: exit code 2 (--ai invalid)', () => {
   it('init --ai invalid-name --yes => exit 2, stderr has Available or check --list-ai', () => {
     const tmpDir = path.join(os.tmpdir(), `e13s2-ex2-${Date.now()}`);
     fs.mkdirSync(tmpDir, { recursive: true });
-    const r = runInit(['.', '--ai', 'invalid-xyz-ai', '--yes'], tmpDir);
+    const r = runInit(['target', '--ai', 'invalid-xyz-ai', '--yes'], tmpDir);
     try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
     assert.strictEqual(r.status, 2);
     const err = (r.stderr || '') + (r.stdout || '');
