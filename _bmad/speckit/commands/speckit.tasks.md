@@ -30,6 +30,45 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **If already split out**: journey-ledger.md, invariant-ledger.md, trace-map.json
    - Note: Not all projects have all optional documents. Generate tasks from the strongest available journey / gap evidence and surface missing contract artifacts explicitly.
 
+2.5 **Plan-Only Bootstrap Gate (HARD RULE)**:
+   - `/speckit.tasks` MUST NOT generate `tasks.md` from `plan.md` alone by default.
+   - It MAY enter `PLAN_ONLY_BOOTSTRAP` mode only when **all** of the following are true:
+     - The feature is a **standalone greenfield bootstrap** with no upstream requirements source:
+       - no PRD
+       - no Epic/Story document
+       - no original requirements/design document
+       - no existing `spec.md`
+     - There is no comparable current implementation to diff against, so `IMPLEMENTATION_GAPS` is genuinely `N/A`, not merely missing or skipped.
+     - `plan.md` is already self-sufficient and explicitly defines all of the following:
+       - `P0 journeys`
+       - user-visible completion state for each journey
+       - smoke proof for each journey
+       - full E2E proof, or an explicit deferred reason
+       - closure note path for each journey
+       - dependency semantics
+       - owner / permission boundaries
+       - fixture / environment readiness
+       - failure / recovery / rollback / exception boundaries
+     - `plan.md` contains no unresolved `NEEDS CLARIFICATION` items and the constitution gate has already passed.
+   - If and only if all conditions above are true, `/speckit.tasks` MAY generate `tasks.md` in `PLAN_ONLY_BOOTSTRAP` mode.
+   - When using `PLAN_ONLY_BOOTSTRAP` mode, the generated `tasks.md` MUST explicitly include:
+     - `PLAN_ONLY_BOOTSTRAP`
+     - `Definition Gap = N/A (greenfield bootstrap)`
+     - `Implementation Gap = N/A (pre-implementation bootstrap)`
+     - a complete `Journey -> Task -> Test -> Closure` mapping for every `P0 journey`
+   - `/speckit.tasks` MUST REFUSE plan-only generation and STOP with an explicit blocker if **any** of the following is true:
+     - `spec.md` is missing while any upstream requirements source exists
+     - `IMPLEMENTATION_GAPS.md` is missing in any non-bootstrap scenario
+     - PRD, Epic/Story, original requirements, or design documents exist but are not mapped
+     - `plan.md` does not define a complete runnable-slice contract
+     - `plan.md` still contains unresolved clarifications
+     - the requested output would produce module-complete tasks without runnable journey proof
+   - Required refusal messages should be explicit. Prefer messages such as:
+     - `Blocked: spec.md is required to establish user journeys, priority, and requirement coverage.`
+     - `Blocked: IMPLEMENTATION_GAPS.md is required to separate definition gaps from implementation gaps.`
+     - `Blocked: upstream requirements sources exist, so plan-only task generation is prohibited.`
+     - `Blocked: plan.md does not yet define a complete runnable-slice contract for plan-only bootstrap generation.`
+
 3. **Execute task generation workflow**:
    - Load plan.md and extract tech stack, libraries, project structure, `P0 journey`, smoke E2E expectations, fixture / environment readiness constraints, and dependency semantics
    - Load spec.md and extract user stories with priorities plus user-visible journey outcomes

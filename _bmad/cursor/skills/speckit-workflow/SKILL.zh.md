@@ -247,7 +247,7 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 
 ## 3. 生成 tasks 之前（IMPLEMENTATION_GAPS.md）
 
-**触发方式**：无独立命令。在 plan.md 已通过审计后，**模型必须自动执行深度分析**：对照 plan.md、原始需求文档与当前实现，逐章节逐条比较差异，生成 IMPLEMENTATION_GAPS.md。用户要求「生成 IMPLEMENTATION_GAPS」「生成 GAPS」时同样触发。
+**必须执行的命令**：`/speckit.gaps` 或 `.speckit.gaps`。在 plan.md 已通过审计后，**模型必须执行深度分析**：对照 plan.md、原始需求文档与当前实现，逐章节逐条比较差异，生成 IMPLEMENTATION_GAPS.md。为兼容旧流程，当用户直接要求「生成 IMPLEMENTATION_GAPS」「生成 GAPS」，或在 `/speckit.tasks` 前检测到 gaps 缺失时，也可自动触发同一流程；但规范入口已变为 `/speckit.gaps`。
 
 ### 3.1 必须完成
 
@@ -563,7 +563,7 @@ Layer 5: 收尾与集成
 | **0. constitution** | `/speckit.constitution` 或 `.speckit.constitution` | 无（入口阶段） | constitution.md 或 .specify/memory/constitution.md | 项目自定义或通用文档完整性 |
 | **1. specify** | `/speckit.specify` 或 `.speckit.specify` | constitution 已产出 | spec.md | audit-prompts.md §1 |
 | **2. plan** | `/speckit.plan` 或 `.speckit.plan` | spec.md 已通过审计 | plan.md | audit-prompts.md §2 |
-| **3. GAPS** | 无独立命令；模型自动深度分析（对照 plan + 需求 + 当前实现）或 用户要求「生成 IMPLEMENTATION_GAPS」 | plan.md 已通过审计 | IMPLEMENTATION_GAPS.md | audit-prompts.md §3 |
+| **3. GAPS** | `/speckit.gaps` 或 `.speckit.gaps`；兼容：模型自动深度分析（对照 plan + 需求 + 当前实现）或 用户要求「生成 IMPLEMENTATION_GAPS」 | plan.md 已通过审计 | IMPLEMENTATION_GAPS.md | audit-prompts.md §3 |
 | **4. tasks** | `/speckit.tasks` 或 `.speckit.tasks` 或 用户要求「生成 tasks」 | IMPLEMENTATION_GAPS.md 已通过审计 | tasks.md | audit-prompts.md §4 |
 | **5. 执行** | `/speckit.implement` 或 `.speckit.implement` 或 用户要求「执行 tasks」「完成 tasks 中的任务」 | tasks.md 已通过审计 | 可运行代码 + 测试 | audit-prompts.md §5 |
 
@@ -578,9 +578,9 @@ Layer 5: 收尾与集成
 | `/speckit.analyze` | **§4.2 tasks 审计闭环内** | tasks≥10 或跨多 artifact | 作为 §4.2 审计步骤的一部分；若发现问题则迭代 tasks → 再次审计 |
 
 **命令格式说明**：
-- `/speckit.xxx`：Cursor/Claude 斜杠命令（constitution、specify、plan、tasks、implement、clarify、analyze、checklist）
-- `.speckit.xxx`：点命令或项目内 `.speckit.xxx` 文件触发
-- **GAPS 无独立命令**：模型在 plan 通过后自动深度分析生成；或用户要求「生成 IMPLEMENTATION_GAPS」时触发
+- `/speckit.xxx`：Cursor/Claude 斜杠命令（constitution、specify、plan、gaps、tasks、implement、clarify、analyze、checklist）
+- `.speckit.xxx`：点命令或项目内 `.speckit.xxx` 文件触发（含 `.speckit.gaps`）
+- **GAPS 已有独立命令**：规范入口为 `/speckit.gaps` 或 `.speckit.gaps`；模型在 plan 通过后自动深度分析生成，或用户要求「生成 IMPLEMENTATION_GAPS」时触发，属于兼容 fallback，不替代正式命令入口
 
 ---
 

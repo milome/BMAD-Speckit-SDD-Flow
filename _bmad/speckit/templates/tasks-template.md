@@ -1,251 +1,306 @@
 ---
 
-description: "Task list template for feature implementation"
+description: "Journey-first task list template for runnable slice implementation"
 ---
 
 # Tasks: [FEATURE NAME]
 
 **Input**: Design documents from `/specs/[###-feature-name]/`
-**Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
+**Prerequisites**: plan.md (required), spec.md (required unless `PLAN_ONLY_BOOTSTRAP` gate has explicitly passed), IMPLEMENTATION_GAPS.md (required unless `PLAN_ONLY_BOOTSTRAP` gate has explicitly passed), research.md, data-model.md, contracts/
 
-**Tests**: The examples below include test tasks. Tests are OPTIONAL - only include them if explicitly requested in the feature specification.
+**Tests**: Tests remain optional unless the feature specification requires them, but every `P0 journey` MUST define runnable smoke proof. If full E2E is deferred, the reason must be written explicitly.
 
-**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+**Organization**: Tasks are grouped by `journey / runnable slice`, not by frontend/backend/db buckets. Setup or foundational work may exist only when it clearly serves a named journey.
 
-## Format: `[ID] [P?] [Story] Description`
+## Format: `[ID] [P?] [Story?] [Journey?] [Invariant?] [Trace?] [Type?] Description`
 
-- **[P]**: Can run in parallel (different files, no dependencies)
-- **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
-- Include exact file paths in descriptions
+- **Task ID**: Always keep `- [ ] T001 ...` grammar so downstream parsers continue to work.
+- **[P]**: Can run in parallel (different files, no blocking dependency on incomplete work).
+- **[Story]**: Use `[US1]`, `[US2]`, `[US3]` for story-specific tasks.
+- **[Journey]**: Every setup, foundational, and story task MUST carry a `Journey ID` such as `[J01]`.
+- **[Invariant]**: Use `[INV-02]` when the task protects or proves an invariant; otherwise use `[INV-N/A]` with a reason in the slice metadata.
+- **[Trace]**: Every task MUST carry a stable trace label such as `[TR-J01-T021]`.
+- **[Type]**: Use labels such as `[FOUNDATION]`, `[IMPLEMENT]`, `[SMOKE]`, `[FULL-E2E]`, `[EVIDENCE]`, `[CLOSURE]`, `[DEF-GAP]`, `[IMPL-GAP]`.
+- Include exact file paths in descriptions.
 
-## Path Conventions
+## Hard Rules
 
-- **Single project**: `src/`, `tests/` at repository root
-- **Web app**: `backend/src/`, `frontend/src/`
-- **Mobile**: `api/src/`, `ios/src/` or `android/src/`
-- Paths shown below assume single project - adjust based on plan.md structure
+- Top-level slices MUST be organized by `journey / runnable slice`, not by `frontend / backend / db` modules.
+- Any setup or foundational task that remains MUST explicitly declare which `Journey ID` it unlocks.
+- Do not write “pure internal completion”, “later wire in”, “placeholder”, or similar non-runnable completion language.
+- Every milestone MUST be written as `Journey Jxx smoke 跑通`, never as “frontend complete” or “backend complete”.
+- `definition gap` and `implementation gap` MUST be tracked separately. Do not hide them inside a generic development task.
+- Every runnable slice MUST end with an explicit `closure note` task.
+- `tasks.md` MUST include the requirement traceability, gap mapping, and gap acceptance tables required by `speckit-workflow`.
+- In any non-bootstrap scenario, missing `spec.md` or missing `IMPLEMENTATION_GAPS.md` is a hard blocker, not a warning.
+- `PLAN_ONLY_BOOTSTRAP` is allowed only after the command-level hard gate has passed. When used, `tasks.md` MUST explicitly carry `PLAN_ONLY_BOOTSTRAP`, `Definition Gap = N/A (greenfield bootstrap)`, and `Implementation Gap = N/A (pre-implementation bootstrap)`.
+- If the current artifacts would produce only module-complete tasks without runnable journey proof, generation MUST stop and escalate the missing contract artifacts.
 
-<!-- 
+<!--
   ============================================================================
-  IMPORTANT: The tasks below are SAMPLE TASKS for illustration purposes only.
-  
-  The /speckit.tasks command MUST replace these with actual tasks based on:
-  - User stories from spec.md (with their priorities P1, P2, P3...)
-  - Feature requirements from plan.md
-  - Entities from data-model.md
-  - Endpoints from contracts/
-  
-  Tasks MUST be organized by user story so each story can be:
-  - Implemented independently
-  - Tested independently
-  - Delivered as an MVP increment
-  
-  DO NOT keep these sample tasks in the generated tasks.md file.
+  IMPORTANT: The sections below are structural requirements, not sample output.
+
+  /speckit.tasks MUST replace placeholders with actual tasks generated from:
+  - P0 journeys and user stories in spec.md
+  - journey-first architecture and readiness constraints in plan.md
+  - definition / implementation gaps in IMPLEMENTATION_GAPS.md
+  - entities, contracts, and research decisions from supporting artifacts
+
+  Generated tasks.md MUST preserve:
+  - generation mode / gate decision
+  - journey ledger
+  - invariant ledger
+  - runnable slice milestones
+  - requirement traceability tables
+  - gap-to-task mapping tables
+  - gap acceptance tables
+  - closure notes
+  - journey -> task -> test -> closure traceability
   ============================================================================
 -->
 
-## Phase 1: Setup (Shared Infrastructure)
+## P0 Journey Ledger
 
-**Purpose**: Project initialization and basic structure
+| Journey ID | Story | User-visible goal | Blocking dependencies | Smoke proof | Full E2E / deferred reason | Closure note |
+|------------|-------|-------------------|-----------------------|-------------|----------------------------|--------------|
+| J01 | US1 | [Describe the first runnable journey] | [Key dependency] | `tests/e2e/smoke/...` | `tests/e2e/full/...` or deferred reason | `closure-notes/J01.md` |
+| J02 | US2 | [Describe the next runnable journey] | [Key dependency] | `tests/e2e/smoke/...` | `tests/e2e/full/...` or deferred reason | `closure-notes/J02.md` |
 
-- [ ] T001 Create project structure per implementation plan
-- [ ] T002 Initialize [language] project with [framework] dependencies
-- [ ] T003 [P] Configure linting and formatting tools
+## Invariant Ledger
 
----
+| Invariant ID | Applies to Journey | Rule that must never break | Evidence type | Verification command | Owner task IDs |
+|--------------|--------------------|----------------------------|---------------|----------------------|----------------|
+| INV-01 | J01 | [Invariant statement] | integration / smoke-e2e | `[command]` | T00X, T00Y |
+| INV-02 | J02 | [Invariant statement] | unit / integration | `[command]` | T00Z |
 
-## Phase 2: Foundational (Blocking Prerequisites)
+## Runnable Slice Milestones
 
-**Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented
+- `M1`: Journey J01 smoke 跑通
+- `M2`: Journey J02 smoke 跑通
+- `M3`: All required closure notes written and trace map closed
 
-**⚠️ CRITICAL**: No user story work can begin until this phase is complete
+## Generation Mode & Artifact Gate
 
-Examples of foundational tasks (adjust based on your project):
+| Field | Value |
+|-------|-------|
+| Generation Mode | `STANDARD` or `PLAN_ONLY_BOOTSTRAP` |
+| Upstream requirements source | `[PRD / Epic-Story / original requirements doc / existing spec.md / N/A]` |
+| `spec.md` status | `Present` or `N/A (PLAN_ONLY_BOOTSTRAP)` |
+| `IMPLEMENTATION_GAPS.md` status | `Present` or `N/A (PLAN_ONLY_BOOTSTRAP)` |
+| Definition Gap status | `Tracked` or `N/A (greenfield bootstrap)` |
+| Implementation Gap status | `Tracked` or `N/A (pre-implementation bootstrap)` |
+| Gate decision | `[Why generation is allowed]` |
+| Blockers | `N/A` or `[explicit blocker that must stop generation]` |
 
-- [ ] T004 Setup database schema and migrations framework
-- [ ] T005 [P] Implement authentication/authorization framework
-- [ ] T006 [P] Setup API routing and middleware structure
-- [ ] T007 Create base models/entities that all stories depend on
-- [ ] T008 Configure error handling and logging infrastructure
-- [ ] T009 Setup environment configuration management
+> `PLAN_ONLY_BOOTSTRAP` is valid only for a standalone greenfield bootstrap with no upstream requirements source and no comparable implementation diff. In every other scenario, `spec.md` and `IMPLEMENTATION_GAPS.md` are mandatory.
 
-**Checkpoint**: Foundation ready - user story implementation can now begin in parallel
+## 本批任务 ↔ 需求追溯
 
----
+| 任务 ID | 需求文档 | 章节 | 需求要点 |
+|---------|----------|------|----------|
+| T001-T009 | `[requirements doc]` | `§1, §2` | `[Journey J01 outcome and acceptance point]` |
+| T010-T015 | `[requirements doc]` | `§3` | `[Journey J02 outcome and acceptance point]` |
 
-## Phase 3: User Story 1 - [Title] (Priority: P1) 🎯 MVP
+## Gaps → 任务映射（按需求文档章节）
 
-**Goal**: [Brief description of what this story delivers]
+**核对规则**：`IMPLEMENTATION_GAPS.md` 中出现的每一条 Gap 必须在本任务表中出现并对应到具体任务；不得遗漏。
 
-**Independent Test**: [How to verify this story works on its own]
+| 章节 | Gap ID | 本任务表行 | 对应任务 |
+|------|--------|------------|----------|
+| 第 1 章 | `GAP-1.1` | `✓ 有` | `T002, T016` |
+| 第 2 章 | `GAP-2.3` | `✓ 有` | `T008, T018` |
 
-### Tests for User Story 1 (OPTIONAL - only if tests requested) ⚠️
+## Gaps → 任务映射（四类汇总）
 
-> **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
+| 类别 | Gap ID | 本任务表行 | 对应任务 |
+|------|--------|------------|----------|
+| `D` | `D1, D2` | `✓ 有` | `T002, T016, T017` |
+| `S` | `S1, S2` | `✓ 有` | `T001, T010` |
+| `I` | `I1, I2` | `✓ 有` | `T008, T018, T019` |
+| `M` | `M1, M2` | `✓ 有` | `T003, T011, T012` |
 
-- [ ] T010 [P] [US1] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T011 [P] [US1] Integration test for [user journey] in tests/integration/test_[name].py
+## Journey -> Task -> Test -> Closure 映射
 
-### Implementation for User Story 1
+| Journey ID | Invariant IDs | Task IDs | Smoke Proof | Full E2E | Closure Note |
+|------------|---------------|----------|-------------|----------|--------------|
+| J01 | `INV-01, INV-N/A` | `T001-T009` | `tests/e2e/smoke/...` | `tests/e2e/full/...` or deferred reason | `closure-notes/J01.md` |
+| J02 | `INV-02` | `T010-T015` | `tests/e2e/smoke/...` | `N/A` or deferred reason | `closure-notes/J02.md` |
 
-- [ ] T012 [P] [US1] Create [Entity1] model in src/models/[entity1].py
-- [ ] T013 [P] [US1] Create [Entity2] model in src/models/[entity2].py
-- [ ] T014 [US1] Implement [Service] in src/services/[service].py (depends on T012, T013)
-- [ ] T015 [US1] Implement [endpoint/feature] in src/[location]/[file].py
-- [ ] T016 [US1] Add validation and error handling
-- [ ] T017 [US1] Add logging for user story 1 operations
+## Definition Gap vs Implementation Gap
 
-**Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
-
----
-
-## Phase 4: User Story 2 - [Title] (Priority: P2)
-
-**Goal**: [Brief description of what this story delivers]
-
-**Independent Test**: [How to verify this story works on its own]
-
-### Tests for User Story 2 (OPTIONAL - only if tests requested) ⚠️
-
-- [ ] T018 [P] [US2] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T019 [P] [US2] Integration test for [user journey] in tests/integration/test_[name].py
-
-### Implementation for User Story 2
-
-- [ ] T020 [P] [US2] Create [Entity] model in src/models/[entity].py
-- [ ] T021 [US2] Implement [Service] in src/services/[service].py
-- [ ] T022 [US2] Implement [endpoint/feature] in src/[location]/[file].py
-- [ ] T023 [US2] Integrate with User Story 1 components (if needed)
-
-**Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
-
----
-
-## Phase 5: User Story 3 - [Title] (Priority: P3)
-
-**Goal**: [Brief description of what this story delivers]
-
-**Independent Test**: [How to verify this story works on its own]
-
-### Tests for User Story 3 (OPTIONAL - only if tests requested) ⚠️
-
-- [ ] T024 [P] [US3] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T025 [P] [US3] Integration test for [user journey] in tests/integration/test_[name].py
-
-### Implementation for User Story 3
-
-- [ ] T026 [P] [US3] Create [Entity] model in src/models/[entity].py
-- [ ] T027 [US3] Implement [Service] in src/services/[service].py
-- [ ] T028 [US3] Implement [endpoint/feature] in src/[location]/[file].py
-
-**Checkpoint**: All user stories should now be independently functional
+| Gap Type | Source | Current Handling | Owner | Next Gate |
+|----------|--------|------------------|-------|----------|
+| Definition Gap | `spec / plan / readiness / audit` | `clarify / re-readiness / contract patch` | `PM / Architect / Owner` | `clarify / readiness` |
+| Implementation Gap | `tasks / implement / verification / audit` | `code change / test fix / closure note` | `Dev / QA / Owner` | `implement / audit` |
 
 ---
 
-[Add more user story phases as needed, following the same pattern]
+## Journey Slice 1 - [Journey Title] (Priority: P1)
+
+**Journey ID**: `J01`
+**Story**: `US1`
+**Invariant IDs**: `INV-01`, `INV-N/A` (reason: [why no additional invariant is needed])
+**Smoke Proof**: `[test id / path / command]`
+**Full E2E**: `[test id / path]` or `Deferred: [reason]`
+**Closure Note Path**: `closure-notes/J01.md`
+**Definition Gap Handling**: `[Gap IDs or N/A]`
+**Implementation Gap Handling**: `[Gap IDs or N/A]`
+
+### Slice Prerequisites
+
+- [ ] T001 [J01] [INV-N/A] [TR-J01-T001] [FOUNDATION] Create [shared prerequisite] in [path] for Journey J01
+- [ ] T002 [J01] [INV-01] [TR-J01-T002] [DEF-GAP] Resolve [definition gap / missing contract] in [path]
+
+### Tests & Evidence
+
+- [ ] T003 [P] [US1] [J01] [INV-01] [TR-J01-T003] [SMOKE] Add smoke journey test in tests/e2e/smoke/[name].spec.[ext]
+- [ ] T004 [P] [US1] [J01] [INV-01] [TR-J01-T004] [FULL-E2E] Add full E2E test or explicit deferred marker in tests/e2e/full/[name].spec.[ext]
+- [ ] T005 [US1] [J01] [INV-01] [TR-J01-T005] [EVIDENCE] Record verification command and proof location in [path]
+
+### Implementation
+
+- [ ] T006 [P] [US1] [J01] [INV-01] [TR-J01-T006] [IMPLEMENT] Create or update [component/service/model] in [path]
+- [ ] T007 [US1] [J01] [INV-01] [TR-J01-T007] [IMPLEMENT] Wire the production entry path in [path] so Journey J01 is runnable end to end
+- [ ] T008 [US1] [J01] [INV-01] [TR-J01-T008] [IMPL-GAP] Close remaining implementation gap in [path]
+
+### Closure
+
+- [ ] T009 [US1] [J01] [INV-01] [TR-J01-T009] [CLOSURE] Write closure note for Journey J01 in closure-notes/J01.md
+
+**Checkpoint**: Journey J01 smoke 跑通
 
 ---
 
-## Phase N: Polish & Cross-Cutting Concerns
+## Journey Slice 2 - [Journey Title] (Priority: P2)
 
-**Purpose**: Improvements that affect multiple user stories
+**Journey ID**: `J02`
+**Story**: `US2`
+**Invariant IDs**: `INV-02`
+**Smoke Proof**: `[test id / path / command]`
+**Full E2E**: `[test id / path]` or `Deferred: [reason]`
+**Closure Note Path**: `closure-notes/J02.md`
+**Definition Gap Handling**: `[Gap IDs or N/A]`
+**Implementation Gap Handling**: `[Gap IDs or N/A]`
 
-- [ ] TXXX [P] Documentation updates in docs/
-- [ ] TXXX Code cleanup and refactoring
-- [ ] TXXX Performance optimization across all stories
-- [ ] TXXX [P] Additional unit tests (if requested) in tests/unit/
-- [ ] TXXX Security hardening
-- [ ] TXXX Run quickstart.md validation
+### Slice Prerequisites
+
+- [ ] T010 [J02] [INV-N/A] [TR-J02-T010] [FOUNDATION] Create [shared prerequisite] in [path] for Journey J02
+
+### Tests & Evidence
+
+- [ ] T011 [P] [US2] [J02] [INV-02] [TR-J02-T011] [SMOKE] Add smoke journey test in tests/e2e/smoke/[name].spec.[ext]
+- [ ] T012 [US2] [J02] [INV-02] [TR-J02-T012] [EVIDENCE] Document verification command and expected proof in [path]
+
+### Implementation
+
+- [ ] T013 [P] [US2] [J02] [INV-02] [TR-J02-T013] [IMPLEMENT] Implement [component/service/model] in [path]
+- [ ] T014 [US2] [J02] [INV-02] [TR-J02-T014] [IMPLEMENT] Connect Journey J02 to the production entry path in [path]
+
+### Closure
+
+- [ ] T015 [US2] [J02] [INV-02] [TR-J02-T015] [CLOSURE] Write closure note for Journey J02 in closure-notes/J02.md
+
+**Checkpoint**: Journey J02 smoke 跑通
+
+---
+
+## Definition Gap Tasks
+
+- [ ] T016 [US1] [J01] [INV-N/A] [TR-J01-T016] [DEF-GAP] Clarify unresolved fixture / environment / permission contract in [path]
+- [ ] T017 [US2] [J02] [INV-N/A] [TR-J02-T017] [DEF-GAP] Clarify unresolved completion-state contract in [path]
+
+## Implementation Gap Tasks
+
+- [ ] T018 [US1] [J01] [INV-01] [TR-J01-T018] [IMPL-GAP] Close implementation drift between code and Journey J01 smoke path in [path]
+- [ ] T019 [US2] [J02] [INV-02] [TR-J02-T019] [IMPL-GAP] Close implementation drift between code and Journey J02 evidence path in [path]
+
+## Gap Acceptance
+
+### 按需求文档章节（GAP-x.y）
+
+表头说明：**生产代码实现要点**须列出文件、类、方法、代码实现细节；**集成测试要求**须列出测试文件、用例名、执行命令、预期结果；**执行情况**验收时必填（待执行/通过/失败及原因）；仅当两者满足且执行情况为通过时可勾选**验证通过**。
+
+| Gap ID | 对应任务 | 生产代码实现要点（文件/类/方法/实现细节） | 集成测试要求（测试文件/用例/命令/预期） | 执行情况 | 验证通过 |
+|--------|----------|------------------------------------------|----------------------------------------|----------|----------|
+| `GAP-1.1` | `T002, T016` | `[files / classes / methods / implementation detail]` | `[test file / case / command / expected result]` | `[ ] 待执行 / [x] 通过 / [ ] 失败（原因）` | `[ ] / [x]` |
+| `GAP-2.3` | `T008, T018` | `[files / classes / methods / implementation detail]` | `[test file / case / command / expected result]` | `[ ] 待执行 / [x] 通过 / [ ] 失败（原因）` | `[ ] / [x]` |
+
+### 四类汇总（D/S/I/M）
+
+| Gap ID | 对应任务 | 生产代码实现要点（文件/类/方法/实现细节） | 集成测试要求（测试文件/用例/命令/预期） | 执行情况 | 验证通过 |
+|--------|----------|------------------------------------------|----------------------------------------|----------|----------|
+| `D1` | `T002, T016, T017` | `[definition-side contract patch / doc update / readiness detail]` | `[verification command / expected evidence]` | `[ ] 待执行 / [x] 通过 / [ ] 失败` | `[ ] / [x]` |
+| `S1` | `T001, T010` | `[shared prerequisite / slice dependency implementation detail]` | `[smoke setup command / expected evidence]` | `[ ] 待执行 / [x] 通过 / [ ] 失败` | `[ ] / [x]` |
+| `I1` | `T008, T018, T019` | `[production wiring / smoke reachability / closure-ready implementation]` | `[integration or E2E command / expected evidence]` | `[ ] 待执行 / [x] 通过 / [ ] 失败` | `[ ] / [x]` |
+| `M1` | `T003, T011, T012` | `[measurement / evidence / verification path detail]` | `[smoke or full E2E command / expected evidence]` | `[ ] 待执行 / [x] 通过 / [ ] 失败` | `[ ] / [x]` |
+
+## Closure Notes
+
+| Journey ID | Closure note path | Must name covered task IDs | Must name smoke / full E2E IDs | Deferred gaps allowed? |
+|------------|-------------------|----------------------------|--------------------------------|------------------------|
+| J01 | `closure-notes/J01.md` | T001-T009 | `SMOKE-J01`, `E2E-J01-FULL` or deferred reason | Yes, with owner and next gate |
+| J02 | `closure-notes/J02.md` | T010-T015 | `SMOKE-J02`, `E2E-J02-FULL` or deferred reason | Yes, with owner and next gate |
 
 ---
 
 ## Dependencies & Execution Order
 
-### Phase Dependencies
+### Slice Dependencies
 
-- **Setup (Phase 1)**: No dependencies - can start immediately
-- **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories
-- **User Stories (Phase 3+)**: All depend on Foundational phase completion
-  - User stories can then proceed in parallel (if staffed)
-  - Or sequentially in priority order (P1 → P2 → P3)
-- **Polish (Final Phase)**: Depends on all desired user stories being complete
+- Foundation work may start immediately, but only if the task is tagged to a concrete `Journey ID`.
+- Each journey slice must produce at least one runnable smoke chain before the next milestone is claimed.
+- `Definition gap` tasks must close or explicitly escalate before the corresponding implementation task is marked done.
+- `Closure` tasks are mandatory before a journey is considered complete.
 
-### User Story Dependencies
+### Within Each Journey Slice
 
-- **User Story 1 (P1)**: Can start after Foundational (Phase 2) - No dependencies on other stories
-- **User Story 2 (P2)**: Can start after Foundational (Phase 2) - May integrate with US1 but should be independently testable
-- **User Story 3 (P3)**: Can start after Foundational (Phase 2) - May integrate with US1/US2 but should be independently testable
-
-### Within Each User Story
-
-- Tests (if included) MUST be written and FAIL before implementation
-- Models before services
-- Services before endpoints
-- Core implementation before integration
-- Story complete before moving to next priority
+- Tests or evidence tasks should be written before implementation when TDD is required.
+- Production wiring tasks must prove the journey is reachable from the real entry path.
+- Closure note task must be the final step of the slice.
 
 ### Parallel Opportunities
 
-- All Setup tasks marked [P] can run in parallel
-- All Foundational tasks marked [P] can run in parallel (within Phase 2)
-- Once Foundational phase completes, all user stories can start in parallel (if team capacity allows)
-- All tests for a user story marked [P] can run in parallel
-- Models within a story marked [P] can run in parallel
-- Different user stories can be worked on in parallel by different team members
+- Tasks marked `[P]` may run in parallel when they touch different files and do not block the same journey proof.
+- Different journey slices may run in parallel only after their journey-specific prerequisites are complete and the shared ledgers remain aligned.
 
 ---
 
-## Parallel Example: User Story 1
+## Parallel Example: Journey J01
 
 ```bash
-# Launch all tests for User Story 1 together (if tests requested):
-Task: "Contract test for [endpoint] in tests/contract/test_[name].py"
-Task: "Integration test for [user journey] in tests/integration/test_[name].py"
-
-# Launch all models for User Story 1 together:
-Task: "Create [Entity1] model in src/models/[entity1].py"
-Task: "Create [Entity2] model in src/models/[entity2].py"
+# Parallel proof work for Journey J01
+Task: "T003 [SMOKE] Add smoke journey test in tests/e2e/smoke/[name].spec.[ext]"
+Task: "T006 [IMPLEMENT] Create or update [component/service/model] in [path]"
 ```
 
 ---
 
 ## Implementation Strategy
 
-### MVP First (User Story 1 Only)
+### MVP First
 
-1. Complete Phase 1: Setup
-2. Complete Phase 2: Foundational (CRITICAL - blocks all stories)
-3. Complete Phase 3: User Story 1
-4. **STOP and VALIDATE**: Test User Story 1 independently
-5. Deploy/demo if ready
+1. Complete the minimum journey-specific prerequisites for `J01`
+2. Make `Journey J01 smoke 跑通`
+3. Write `closure-notes/J01.md`
+4. Stop and validate before expanding scope
 
 ### Incremental Delivery
 
-1. Complete Setup + Foundational → Foundation ready
-2. Add User Story 1 → Test independently → Deploy/Demo (MVP!)
-3. Add User Story 2 → Test independently → Deploy/Demo
-4. Add User Story 3 → Test independently → Deploy/Demo
-5. Each story adds value without breaking previous stories
+1. Finish `J01` smoke path and closure
+2. Add `J02` only after `J01` is runnable and traceable
+3. Expand to later journeys with the same smoke -> evidence -> closure rhythm
 
-### Parallel Team Strategy
+### Multi-Agent Strategy
 
-With multiple developers:
-
-1. Team completes Setup + Foundational together
-2. Once Foundational is done:
-   - Developer A: User Story 1
-   - Developer B: User Story 2
-   - Developer C: User Story 3
-3. Stories complete and integrate independently
+1. Share one journey ledger, one invariant ledger, and one trace map
+2. Split work by runnable slice, not by technical layer
+3. Reconcile closure notes before claiming the batch complete
 
 ---
 
 ## Notes
 
-- [P] tasks = different files, no dependencies
-- [Story] label maps task to specific user story for traceability
-- Each user story should be independently completable and testable
-- Verify tests fail before implementing
-- Commit after each task or logical group
-- Stop at any checkpoint to validate story independently
-- Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence
+- Every task must remain runnable, traceable, and tied to a journey outcome.
+- Avoid orphan module tasks that never connect to a smoke or full E2E path.
+- Do not merge `definition gap` handling into `implementation gap` tasks.
+- A journey is not done until smoke proof, evidence, and closure note all exist.
