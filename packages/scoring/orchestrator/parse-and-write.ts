@@ -6,6 +6,7 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
+import { randomUUID } from 'node:crypto';
 import {
   parseAuditReport,
   parseDimensionScores,
@@ -20,6 +21,7 @@ import { applyTierAndVeto } from '../veto';
 import { resolveRulesDir } from '../constants/path';
 import { computeContentHash, computeStringHash, getGitHeadHash } from '../utils/hash';
 import type { CheckItem, DimensionScore, IterationRecord, JourneyContractSignals } from '../writer/types';
+import { appendRuntimeEvent } from '../runtime';
 
 /**
  * Options for parseAndWriteScore orchestration.
@@ -49,6 +51,29 @@ export interface ParseAndWriteScoreOptions {
   triggerStage?: string;
   /** Story 9.4: 本 stage 失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效 */
   iterationReportPaths?: string[];
+}
+
+function resolveScoreDataPath(dataPath?: string): string {
+  if (dataPath == null || dataPath === '') {
+    return path.resolve(process.cwd(), 'packages', 'scoring', 'data');
+  }
+  return path.isAbsolute(dataPath) ? dataPath : path.resolve(process.cwd(), dataPath);
+}
+
+function inferRuntimeRootFromDataPath(dataPath?: string): string {
+  if (dataPath == null || dataPath === '') {
+    return process.cwd();
+  }
+
+  const resolved = resolveScoreDataPath(dataPath);
+  const normalized = resolved.replace(/\\/g, '/');
+  const knownSuffixes = ['/packages/scoring/data', '/_bmad-output/scoring'];
+  for (const suffix of knownSuffixes) {
+    if (normalized.endsWith(suffix)) {
+      return resolved.slice(0, resolved.length - suffix.length);
+    }
+  }
+  return resolved;
 }
 
 /**
@@ -299,4 +324,32 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
   }
 
   writeScoreRecordSync(recordToWrite, writeMode, dataPath != null ? { dataPath } : undefined);
+
+  const resolvedDataPath = resolveScoreDataPath(dataPath);
+  const scoreRecordPath =
+    writeMode === 'jsonl'
+      ? path.join(resolvedDataPath, 'scores.jsonl')
+      : path.join(resolvedDataPath, `${runId}.json`);
+  appendRuntimeEvent({
+    event_id: randomUUID(),
+    event_type: 'score.written',
+    event_version: 1,
+    timestamp: recordToWrite.timestamp,
+    run_id: runId,
+    flow: 'story',
+    stage,
+    payload: {
+      score_record_id: `${runId}:${stage}`,
+      path: scoreRecordPath,
+      phase_score: recordToWrite.phase_score,
+      veto_triggered: recordToWrite.veto_triggered ?? false,
+    },
+    source: {
+      source_path: recordToWrite.source_path,
+      base_commit_hash: recordToWrite.base_commit_hash,
+      content_hash: recordToWrite.content_hash,
+    },
+  }, {
+    root: inferRuntimeRootFromDataPath(dataPath),
+  });
 }
