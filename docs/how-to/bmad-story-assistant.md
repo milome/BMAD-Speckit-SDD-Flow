@@ -23,13 +23,13 @@
 
 ## 2. 核心阶段总览
 
-| 阶段 | 说明 |
-|------|------|
-| **Stage 1: Create Story** | 从 Epic 生成 Story 文档，涉及多方案时进入 Party-Mode |
-| **Stage 2: Story Audit** | 验证 Story 文档的完整性和可执行性 |
+| 阶段                             | 说明                                                    |
+| -------------------------------- | ------------------------------------------------------- |
+| **Stage 1: Create Story**        | 从 Epic 生成 Story 文档，涉及多方案时进入 Party-Mode    |
+| **Stage 2: Story Audit**         | 验证 Story 文档的完整性和可执行性                       |
 | **Stage 3: Dev Story / Layer 4** | specify → plan → gaps → tasks → implement（TDD 红绿灯） |
-| **Stage 4: Post Audit** | 强制门控，验证实现覆盖 tasks/spec/plan |
-| **Commit Gate** | 审计通过后进入 commit gate |
+| **Stage 4: Post Audit**          | 强制门控，验证实现覆盖 tasks/spec/plan                  |
+| **Commit Gate**                  | 审计通过后进入 commit gate                              |
 
 ---
 
@@ -44,14 +44,14 @@
 
 ### 平台差异对照
 
-| 特性 | Cursor | Claude Code CLI |
-|------|--------|-----------------|
-| **Skill 入口** | `.cursor/skills/bmad-story-assistant/SKILL.md` | `.claude/skills/bmad-story-assistant/SKILL.md` |
-| **子代理工具** | `mcp_task` / Task tool | `Agent` |
-| **subagent_type** | `generalPurpose` | `general-purpose` |
-| **规则加载** | `.cursor/rules/` 自动加载 | `.claude/` 目录 |
-| **Agent 定义** | `.cursor/agents/` | `.claude/agents/` |
-| **总控** | 通过 Skill 入口触发 | 通过 `@bmad-master` 或 Skill 入口触发 |
+| 特性              | Cursor                                         | Claude Code CLI                                |
+| ----------------- | ---------------------------------------------- | ---------------------------------------------- |
+| **Skill 入口**    | `.cursor/skills/bmad-story-assistant/SKILL.md` | `.claude/skills/bmad-story-assistant/SKILL.md` |
+| **子代理工具**    | `mcp_task` / Task tool                         | `Agent`                                        |
+| **subagent_type** | `generalPurpose`                               | `general-purpose`                              |
+| **规则加载**      | `.cursor/rules/` 自动加载                      | `.claude/` 目录                                |
+| **Agent 定义**    | `.cursor/agents/`                              | `.claude/agents/`                              |
+| **总控**          | 通过 Skill 入口触发                            | 通过 `@bmad-master` 或 Skill 入口触发          |
 
 ---
 
@@ -111,11 +111,11 @@ Slug: email-validator
 
 ### 支持的模式
 
-| 模式 | Story 创建 | 中间阶段 | 实施后 | 适用场景 |
-|------|-----------|---------|--------|----------|
-| `full` | 审计 | 全部审计 | 审计 | 高风险变更，最大化门控 |
-| `story` | 审计 | 基础验证 | 审计 | 减少中间审计成本，保留闭环 |
-| `epic` | 不审计 | 不审计 | 不审计 | 大 Epic 下多 Story 批量推进 |
+| 模式    | Story 创建 | 中间阶段 | 实施后 | 适用场景                    |
+| ------- | ---------- | -------- | ------ | --------------------------- |
+| `full`  | 审计       | 全部审计 | 审计   | 高风险变更，最大化门控      |
+| `story` | 审计       | 基础验证 | 审计   | 减少中间审计成本，保留闭环  |
+| `epic`  | 不审计     | 不审计   | 不审计 | 大 Epic 下多 Story 批量推进 |
 
 ### 优先级
 
@@ -142,7 +142,7 @@ Slug: email-validator
 
 ```yaml
 audit_granularity:
-  mode: "full"
+  mode: 'full'
 
 auto_continue:
   enabled: false
@@ -156,33 +156,33 @@ auto_continue:
 
 ### 通用
 
-| 文件 | 说明 |
-|------|------|
-| `_bmad/_config/bmad-story-config.yaml` | 审计粒度、auto-continue 配置 |
-| `_bmad/skills/bmad-party-mode/workflow.md` | Party-Mode canonical skill 工作流（旧规则兼容路径：`_bmad/core/workflows/party-mode/workflow.md`） |
-| `_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml` | Create Story 工作流 |
-| `_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml` | Dev Story 工作流 |
-| `_bmad/_config/agent-manifest.csv` | Agent 清单 |
-| `npx bmad-speckit score` | 评分写入（CLI 子命令） |
-| `scripts/bmad-config.ts` | 配置加载 |
+| 文件                                                              | 说明                                                                                               |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `_bmad/_config/bmad-story-config.yaml`                            | 审计粒度、auto-continue 配置                                                                       |
+| `_bmad/skills/bmad-party-mode/workflow.md`                        | Party-Mode canonical skill 工作流（旧规则兼容路径：`_bmad/core/workflows/party-mode/workflow.md`） |
+| `_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml` | Create Story 工作流                                                                                |
+| `_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml`    | Dev Story 工作流                                                                                   |
+| `_bmad/_config/agent-manifest.csv`                                | Agent 清单                                                                                         |
+| `npx bmad-speckit score`                                          | 评分写入（CLI 子命令）                                                                             |
+| `scripts/bmad-config.ts`                                          | 配置加载                                                                                           |
 
 ### Cursor 专属
 
-| 文件 | 说明 |
-|------|------|
-| `.cursor/skills/bmad-story-assistant/SKILL.md` | Skill 入口 |
-| `.cursor/agents/code-reviewer-config.yaml` | Code Reviewer 配置 |
-| `.cursor/rules/bmad-story-assistant.mdc` | 自检规则 |
+| 文件                                           | 说明               |
+| ---------------------------------------------- | ------------------ |
+| `.cursor/skills/bmad-story-assistant/SKILL.md` | Skill 入口         |
+| `.cursor/agents/code-reviewer-config.yaml`     | Code Reviewer 配置 |
+| `.cursor/rules/bmad-story-assistant.mdc`       | 自检规则           |
 
 ### Claude Code 专属
 
-| 文件 | 说明 |
-|------|------|
+| 文件                                           | 说明                                     |
+| ---------------------------------------------- | ---------------------------------------- |
 | `.claude/skills/bmad-story-assistant/SKILL.md` | Claude Code skill 入口（当前仓库已提供） |
-| `.claude/agents/bmad-master.md` | 总控 Agent |
-| `.claude/agents/bmad-story-create.md` | Story Create Agent |
-| `.claude/agents/bmad-story-audit.md` | Story Audit Agent |
-| `.claude/state/stories/*-progress.yaml` | Story 状态 |
+| `.claude/agents/bmad-master.md`                | 总控 Agent                               |
+| `.claude/agents/bmad-story-create.md`          | Story Create Agent                       |
+| `.claude/agents/bmad-story-audit.md`           | Story Audit Agent                        |
+| `.claude/state/stories/*-progress.yaml`        | Story 状态                               |
 
 ---
 
@@ -206,12 +206,12 @@ auto_continue:
 
 ## 8. 常用恢复方式
 
-| 操作 | 命令 |
-|------|------|
-| 手动继续 | `请使用 bmad-story-assistant 继续 E001-S001` |
-| 自动续跑 | `... 继续 E001-S001 --continue` |
-| 查看 Story 列表 | `@bmad-master list stories`（Claude Code） |
-| 切换 Story | `@bmad-master 切换到 E001-S002`（Claude Code） |
+| 操作            | 命令                                           |
+| --------------- | ---------------------------------------------- |
+| 手动继续        | `请使用 bmad-story-assistant 继续 E001-S001`   |
+| 自动续跑        | `... 继续 E001-S001 --continue`                |
+| 查看 Story 列表 | `@bmad-master list stories`（Claude Code）     |
+| 切换 Story      | `@bmad-master 切换到 E001-S002`（Claude Code） |
 
 ---
 
@@ -241,4 +241,11 @@ npx vitest run tests/acceptance/accept-layer4.test.ts
 - [Party-Mode](../explanation/party-mode.md) — 多角色辩论机制
 - [Agent 参考](../reference/agents.md) — Agent 定义
 - [配置参考](../reference/configuration.md) — bmad-story-config.yaml 详解
+- [Speckit Governance](../reference/speckit-governance.md) — risk tier、owner、exception 与默认 gate
+- [Speckit Done Standards](../reference/speckit-done-standards.md) — Layer 4 各阶段退出标准
+- [Speckit Exception Log Template](../reference/speckit-exception-log-template.md) — 需要跳过 gate 或延期证明时的记录模板
+- [Speckit Rollout Playbook](./speckit-rollout-playbook.md) — 如何把 journey-first 治理作为团队默认做法推广
+- [Good PRD Contract Example](../examples/speckit-contracts/good-prd-contract.md) — 什么样的 PRD contract 能真正驱动后续阶段
+- [Good Architecture Contract Example](../examples/speckit-contracts/good-architecture-contract.md) — 什么样的 architecture contract 能承接 P0 journey
+- [Good Smoke E2E Example](../examples/speckit-contracts/good-smoke-e2e.md) — smoke proof 应该证明什么、如何定义边界
 - [入门教程](../tutorials/getting-started.md) — 安装与第一次使用

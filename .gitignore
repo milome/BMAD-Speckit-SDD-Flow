@@ -77,6 +77,10 @@ temp_commit_message.txt
 docs/BMAD/
 docs/design/
 docs/examples/
+!docs/examples/
+docs/examples/*
+!docs/examples/speckit-contracts/
+!docs/examples/speckit-contracts/*.md
 docs/fixes/
 docs/pr/
 docs/plans/
