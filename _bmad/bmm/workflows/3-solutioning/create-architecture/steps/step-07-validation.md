@@ -3,13 +3,12 @@
 ## MANDATORY EXECUTION RULES (READ FIRST):
 
 - 🛑 NEVER generate content without user input
-
-- 📖 CRITICAL: ALWAYS read the complete step file before taking any action - partial understanding leads to incomplete decisions
+- 📖 CRITICAL: ALWAYS read the complete step file before taking any action
 - 🔄 CRITICAL: When loading next step with 'C', ensure the entire file is read and understood before proceeding
 - ✅ ALWAYS treat this as collaborative discovery between architectural peers
 - 📋 YOU ARE A FACILITATOR, not a content generator
-- 💬 FOCUS on validating architectural coherence and completeness
-- ✅ VALIDATE all requirements are covered by architectural decisions
+- 💬 FOCUS on validating implementation-readiness, not just documentation completeness
+- ✅ VALIDATE all requirements are covered by architectural decisions, including P0 journeys, evidence contracts, smoke E2E preconditions, and failure handling
 - ⚠️ ABSOLUTELY NO TIME ESTIMATES - AI development speed has fundamentally changed
 - ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
 
@@ -26,8 +25,8 @@
 
 This step will generate content and present choices:
 
-- **A (Advanced Elicitation)**: Use discovery protocols to address complex architectural issues found during validation
-- **P (Party Mode)**: Bring multiple perspectives to resolve validation concerns
+- **A (Advanced Elicitation)**: Use discovery protocols to resolve undefined or risky contracts
+- **P (Party Mode)**: Bring multiple perspectives to challenge readiness assumptions
 - **C (Continue)**: Save the validation results and complete the architecture
 
 ## PROTOCOL INTEGRATION:
@@ -41,12 +40,12 @@ This step will generate content and present choices:
 
 - Complete architecture document with all sections is available
 - All architectural decisions, patterns, and structure are defined
-- Focus on validation, gap analysis, and coherence checking
+- Focus on validation, blockers, and readiness-to-implement
 - Prepare for handoff to implementation phase
 
 ## YOUR TASK:
 
-Validate the complete architecture for coherence, completeness, and readiness to guide AI agents through consistent implementation.
+Validate the complete architecture for coherence, completeness, and implementation-readiness with explicit blocker language. The outcome is not a soft summary; it is a readiness decision.
 
 ## VALIDATION SEQUENCE:
 
@@ -58,7 +57,7 @@ Check that all architectural decisions work together:
 
 - Do all technology choices work together without conflicts?
 - Are all versions compatible with each other?
-- Do patterns align with technology choices?
+- Do key path decisions align with technology choices?
 - Are there any contradictory decisions?
 
 **Pattern Consistency:**
@@ -100,7 +99,41 @@ Verify all project requirements are architecturally supported:
 - Are scalability considerations properly handled?
 - Are compliance requirements architecturally supported?
 
-### 3. Implementation Readiness Validation
+### 3. Validate P0 Journey Coverage
+
+For every inherited P0 journey, verify the architecture provides:
+
+- a key path sequence
+- a system acceptance point
+- a business completion point
+- success evidence and failure evidence
+- fallback / compensation behavior
+- ownership of the sync / async boundary
+
+If any critical journey lacks one of these items, record a blocker immediately.
+
+### 4. Validate Smoke E2E Preconditions
+
+Check whether the architecture defines the minimum conditions required to generate and run smoke E2E tests:
+
+- required fixtures / seed data
+- required environment dependencies
+- external service assumptions or stubs
+- observability needed to prove success or diagnose failure
+- minimum commands or verification hooks for the key paths
+
+If a smoke E2E cannot be generated from the architecture, the document is not ready.
+
+### 5. Validate Observability, Traceability, and Failure Handling
+
+Verify the architecture explicitly defines:
+
+- logs / traces / metrics / correlation IDs for critical paths
+- failure detection points
+- retry, compensation, rollback, or operator intervention
+- mapping back to PRD journey IDs and evidence contracts
+
+### 6. Implementation Readiness Validation
 
 Assess if AI agents can implement consistently:
 
@@ -109,7 +142,7 @@ Assess if AI agents can implement consistently:
 - Are all critical decisions documented with versions?
 - Are implementation patterns comprehensive enough?
 - Are consistency rules clear and enforceable?
-- Are examples provided for all major patterns?
+- Are examples provided for major patterns and key paths?
 
 **Structure Completeness:**
 
@@ -123,16 +156,16 @@ Assess if AI agents can implement consistently:
 - Are all potential conflict points addressed?
 - Are naming conventions comprehensive?
 - Are communication patterns fully specified?
-- Are process patterns (error handling, etc.) complete?
+- Are process patterns (error handling, compensation, retries) complete?
 
-### 4. Gap Analysis
+### 7. Gap Analysis And Undefined Contract Risk
 
-Identify and document any missing elements:
+Identify and document missing elements:
 
 **Critical Gaps:**
 
 - Missing architectural decisions that block implementation
-- Incomplete patterns that could cause conflicts
+- Missing key path sequences or smoke E2E preconditions
 - Missing structural elements needed for development
 - Undefined integration points
 
@@ -150,7 +183,17 @@ Identify and document any missing elements:
 - Tooling recommendations
 - Development workflow optimizations
 
-### 5. Address Validation Issues
+Also identify any contract that still requires guessing during implementation:
+
+- undefined completion semantics
+- unclear async ownership
+- unspecified fixture or environment requirement
+- missing security or permission enforcement point
+- ambiguous acceptance evidence
+
+Any undefined contract that blocks a critical slice must remain visible in the blockers section.
+
+### 8. Address Validation Issues
 
 For any issues found, facilitate resolution:
 
@@ -175,16 +218,30 @@ These aren't blocking, but addressing them would make implementation smoother. S
 
 These are optional refinements. Would you like to address any of these?"
 
-### 6. Generate Validation Content
+### 9. Produce Explicit Readiness Status
 
-Prepare the content to append to the document:
+Do not use soft completion language such as "ready for implementation" without conditions.
 
-#### Content Structure:
+The only allowed readiness statuses are:
+
+- `READY`
+- `READY WITH BLOCKERS CLOSED`
+- `NOT READY`
+
+Status rules:
+
+- `READY`: No blockers remain for any critical journey
+- `READY WITH BLOCKERS CLOSED`: Architecture is acceptable only after enumerated blockers are resolved
+- `NOT READY`: Critical journeys or smoke E2E preconditions remain undefined
+
+## REQUIRED OUTPUT CONTENT
+
+Prepare the content to append to the document using this structure:
 
 ```markdown
 ## Architecture Validation Results
 
-### Coherence Validation ✅
+### Coherence Validation
 
 **Decision Compatibility:**
 {{assessment_of_how_all_decisions_work_together}}
@@ -195,7 +252,7 @@ Prepare the content to append to the document:
 **Structure Alignment:**
 {{confirmation_that_structure_supports_architecture}}
 
-### Requirements Coverage Validation ✅
+### Requirements Coverage Validation
 
 **Epic/Feature Coverage:**
 {{verification_that_all_epics_or_features_are_supported}}
@@ -206,7 +263,16 @@ Prepare the content to append to the document:
 **Non-Functional Requirements Coverage:**
 {{verification_that_NFRs_are_addressed}}
 
-### Implementation Readiness Validation ✅
+### P0 Journey Coverage Validation
+{{journey_coverage_results}}
+
+### Smoke E2E Preconditions Validation
+{{smoke_e2e_results}}
+
+### Observability, Traceability, and Failure Handling Validation
+{{observability_and_failure_results}}
+
+### Implementation Readiness Validation
 
 **Decision Completeness:**
 {{assessment_of_decision_documentation_completeness}}
@@ -217,12 +283,13 @@ Prepare the content to append to the document:
 **Pattern Completeness:**
 {{verification_of_implementation_patterns_completeness}}
 
-### Gap Analysis Results
+### Undefined Contract Analysis
+{{undefined_contract_findings}}
 
+### Gap Analysis Results
 {{gap_analysis_findings_with_priority_levels}}
 
 ### Validation Issues Addressed
-
 {{description_of_any_issues_found_and_resolutions}}
 
 ### Architecture Completeness Checklist
@@ -240,6 +307,8 @@ Prepare the content to append to the document:
 - [x] Technology stack fully specified
 - [x] Integration patterns defined
 - [x] Performance considerations addressed
+- [x] Key path sequences defined
+- [x] Business done vs system accepted semantics defined
 
 **✅ Implementation Patterns**
 
@@ -247,6 +316,7 @@ Prepare the content to append to the document:
 - [x] Structure patterns defined
 - [x] Communication patterns specified
 - [x] Process patterns documented
+- [x] Failure handling and observability documented
 
 **✅ Project Structure**
 
@@ -254,18 +324,31 @@ Prepare the content to append to the document:
 - [x] Component boundaries established
 - [x] Integration points mapped
 - [x] Requirements to structure mapping complete
+- [x] Smoke E2E prerequisites identified
 
 ### Architecture Readiness Assessment
 
-**Overall Status:** READY FOR IMPLEMENTATION
+**Overall Status:** {{READY | READY WITH BLOCKERS CLOSED | NOT READY}}
 
 **Confidence Level:** {{high/medium/low}} based on validation results
+
+**Decision Basis:**
+- Critical journeys covered:
+- Smoke E2E preconditions defined:
+- Observability / trace contract defined:
+- Undefined contracts remaining:
 
 **Key Strengths:**
 {{list_of_architecture_strengths}}
 
 **Areas for Future Enhancement:**
 {{areas_that_could_be_improved_later}}
+
+### Blockers
+{{blocker_list}}
+
+### Deferred Gaps
+{{deferred_gap_list}}
 
 ### Implementation Handoff
 
@@ -275,85 +358,87 @@ Prepare the content to append to the document:
 - Use implementation patterns consistently across all components
 - Respect project structure and boundaries
 - Refer to this document for all architectural questions
+- Do not guess missing contracts; treat blockers as real blockers
 
 **First Implementation Priority:**
 {{starter_template_command_or_first_architectural_step}}
+
+**Required Fixtures / Environments Before Coding:**
+{{fixture_and_environment_prerequisites}}
+
+**Proof Expected From First Smoke E2E:**
+{{first_smoke_e2e_proof}}
 ```
 
-### 7. Present Content and Menu
+## PRESENT CONTENT AND MENU
 
 Show the validation results and present choices:
 
-"I've completed a comprehensive validation of your architecture.
+"I've completed the architecture readiness validation.
 
 **Validation Summary:**
 
-- ✅ Coherence: All decisions work together
-- ✅ Coverage: All requirements are supported
-- ✅ Readiness: AI agents can implement consistently
+- Coherence checked across technology, patterns, and structure
+- Requirements coverage verified
+- P0 journeys validated for architectural handoff
+- Smoke E2E preconditions checked
+- Observability and failure contracts checked
+- Undefined contracts converted into explicit blockers or deferred gaps
 
 **Here's what I'll add to complete the architecture document:**
 
-[Show the complete markdown content from step 6]
+[Show the complete markdown content]
 
 **What would you like to do?**
-[A] Advanced Elicitation - Address any complex architectural concerns
-[P] Party Mode - Review validation from different implementation perspectives
-[C] Continue - Complete the architecture and finish workflow
+[A] Advanced Elicitation - Resolve undefined contracts
+[P] Party Mode - Challenge readiness from multiple perspectives
+[C] Continue - Complete the architecture and finish workflow"
 
-### 8. Handle Menu Selection
+## HANDLE MENU SELECTION
 
-#### If 'A' (Advanced Elicitation):
+### If 'A' (Advanced Elicitation):
 
-- Read fully and follow: {project-root}/_bmad/core/workflows/advanced-elicitation/workflow.xml with validation issues
-- Process enhanced solutions for complex concerns
+- Read fully and follow: {project-root}/_bmad/core/workflows/advanced-elicitation/workflow.xml with focus on unresolved blockers
 - Ask user: "Accept these architectural improvements? (y/n)"
 - If yes: Update content, then return to A/P/C menu
 - If no: Keep original content, then return to A/P/C menu
 
-#### If 'P' (Party Mode):
+### If 'P' (Party Mode):
 
 - Read fully and follow: {project-root}/_bmad/core/workflows/party-mode/workflow.md with validation context
-- Process collaborative insights on implementation readiness
 - Ask user: "Accept these changes to the validation results? (y/n)"
 - If yes: Update content, then return to A/P/C menu
 - If no: Keep original content, then return to A/P/C menu
 
-#### If 'C' (Continue):
+### If 'C' (Continue):
 
 - Append the final content to `{planning_artifacts}/{branch}/architecture.md`
 - Update frontmatter: `stepsCompleted: [1, 2, 3, 4, 5, 6, 7]`
 - Load `./step-08-complete.md`
 
-## APPEND TO DOCUMENT:
-
-When user selects 'C', append the content directly to the document using the structure from step 6.
-
 ## SUCCESS METRICS:
 
 ✅ All architectural decisions validated for coherence
 ✅ Complete requirements coverage verified
-✅ Implementation readiness confirmed
-✅ All gaps identified and addressed
+✅ P0 journey coverage validated
+✅ Smoke E2E preconditions are explicitly validated
+✅ Observability and failure handling are not implicit
+✅ Undefined contracts are converted into blockers or deferred gaps
+✅ Final status uses only the allowed readiness categories
 ✅ Comprehensive validation checklist completed
-✅ A/P/C menu presented and handled correctly
-✅ Content properly appended to document when C selected
+✅ A/P/C menu is presented and handled correctly
 
 ## FAILURE MODES:
 
-❌ Skipping validation of decision compatibility
+❌ Skipping coherence or structure validation
 ❌ Not verifying all requirements are architecturally supported
-❌ Missing potential implementation conflicts
-❌ Not addressing gaps found during validation
-❌ Providing incomplete validation checklist
-❌ Not presenting A/P/C menu after content generation
-
-❌ **CRITICAL**: Reading only partial step file - leads to incomplete understanding and poor decisions
-❌ **CRITICAL**: Proceeding with 'C' without fully reading and understanding the next step file
-❌ **CRITICAL**: Making decisions without complete understanding of step requirements and protocols
+❌ Missing smoke E2E preconditions
+❌ Missing observability / trace / failure contracts
+❌ Hiding undefined contracts inside generic prose
+❌ Using soft readiness language instead of explicit status
 
 ## NEXT STEP:
 
 After user selects 'C' and content is saved to document, load `./step-08-complete.md` to complete the workflow and provide implementation guidance.
 
-Remember: Do NOT proceed to step-08 until user explicitly selects 'C' from the A/P/C menu and content is saved!
+Remember: Do NOT proceed to step-08 until user explicitly selects 'C' from the A/P/C menu and content is saved.

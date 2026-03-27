@@ -1,6 +1,6 @@
 ---
 name: 'step-09-functional'
-description: 'Synthesize all discovery into comprehensive functional requirements'
+description: 'Synthesize all discovery into comprehensive functional requirements that are explicitly downstream of journey contracts'
 
 # File References
 nextStepFile: './step-10-nonfunctional.md'
@@ -24,7 +24,8 @@ partyModeWorkflow: '{project-root}/_bmad/core/workflows/party-mode/workflow.md'
 - ✅ ALWAYS treat this as collaborative discovery between PM peers
 - 📋 YOU ARE A FACILITATOR, not a content generator
 - 💬 FOCUS on creating comprehensive capability inventory for the product
-- 🎯 CRITICAL: This is THE CAPABILITY CONTRACT for all downstream work
+- 🎯 CRITICAL: Functional requirements are downstream of the journey contract, not a replacement for it
+- 🚫 CRITICAL: No journey = no FR acceptance = cannot continue
 - ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
 
 ## EXECUTION PROTOCOLS:
@@ -59,7 +60,7 @@ partyModeWorkflow: '{project-root}/_bmad/core/workflows/party-mode/workflow.md'
 Start by explaining the critical role of functional requirements:
 
 **Purpose:**
-FRs define WHAT capabilities the product must have. They are the complete inventory of user-facing and system capabilities that deliver the product vision.
+FRs define WHAT capabilities the product must have. They are the complete inventory of user-facing and system capabilities that deliver the product vision, but they must be traceable to the journeys already captured.
 
 **Critical Properties:**
 ✅ Each FR is a testable capability
@@ -67,6 +68,7 @@ FRs define WHAT capabilities the product must have. They are the complete invent
 ✅ Each FR specifies WHO and WHAT, not HOW
 ✅ No UI details, no performance numbers, no technology choices
 ✅ Comprehensive coverage of capability areas
+✅ Each FR cluster traces back to one or more journey IDs
 
 **How They Will Be Used:**
 
@@ -82,7 +84,7 @@ Systematically review all previous sections to extract capabilities:
 
 - Executive Summary → Core product differentiator capabilities
 - Success Criteria → Success-enabling capabilities
-- User Journeys → Journey-revealed capabilities
+- User Journeys → Journey-revealed capabilities and P0 journey contracts
 - Domain Requirements → Compliance and regulatory capabilities
 - Innovation Patterns → Innovative feature capabilities
 - Project-Type Requirements → Technical capability needs
@@ -105,7 +107,7 @@ Create complete functional requirements using this format:
 
 **Format:**
 
-- FR#: [Actor] can [capability] [context/constraint if needed]
+- FR#: [Journey IDs] [Actor] can [capability] [context/constraint if needed]
 - Number sequentially (FR1, FR2, FR3...)
 - Aim for 20-50 FRs for typical projects
 
@@ -114,7 +116,7 @@ Each FR should answer "WHAT capability exists?" NOT "HOW it's implemented?"
 
 **Examples:**
 
-- ✅ "Users can customize appearance settings"
+- ✅ "FR1 [J01]: Users can customize appearance settings"
 - ❌ "Users can toggle light/dark theme with 3 font size options stored in LocalStorage"
 
 ### 5. Self-Validation Process
@@ -129,6 +131,8 @@ Before presenting to user, validate the FR list:
 4. "Could a UX designer read ONLY the FRs and know what to design?"
 5. "Could an Architect read ONLY the FRs and know what to support?"
 6. "Are there any user actions or system behaviors we discussed that have no FR?"
+7. "Does every P0 journey map to at least one FR cluster?"
+8. "Did I create any orphan FR that has no source journey?"
 
 **Altitude Check:**
 
@@ -141,6 +145,7 @@ Before presenting to user, validate the FR list:
 1. "Is each FR clear enough that someone could test whether it exists?"
 2. "Is each FR independent (not dependent on reading other FRs to understand)?"
 3. "Did I avoid vague terms like 'good', 'fast', 'easy'?" (Use NFRs for quality attributes)
+4. "Is each FR tagged with the journey IDs it supports?"
 
 ### 6. Generate Functional Requirements Content
 
@@ -153,16 +158,20 @@ When saving to document, append these Level 2 and Level 3 sections:
 ```markdown
 ## Functional Requirements
 
+### Journey-to-FR Traceability Summary
+
+[Show which journey IDs map to which capability areas]
+
 ### [Capability Area Name]
 
-- FR1: [Specific Actor] can [specific capability]
-- FR2: [Specific Actor] can [specific capability]
-- FR3: [Specific Actor] can [specific capability]
+- FR1 [J01]: [Specific Actor] can [specific capability]
+- FR2 [J01, J02]: [Specific Actor] can [specific capability]
+- FR3 [J03]: [Specific Actor] can [specific capability]
 
 ### [Another Capability Area]
 
-- FR4: [Specific Actor] can [specific capability]
-- FR5: [Specific Actor] can [specific capability]
+- FR4 [J02]: [Specific Actor] can [specific capability]
+- FR5 [J04]: [Specific Actor] can [specific capability]
 
 [Continue for all capability areas discovered in conversation]
 ```
@@ -173,6 +182,7 @@ Present the functional requirements for review, then display menu:
 - Show synthesized functional requirements (using structure from step 6)
 - Emphasize this is the capability contract for all downstream work
 - Highlight that every feature must trace back to these requirements
+- Explicitly call out that every FR must trace back to at least one journey ID
 - Ask if they'd like to refine further, get other perspectives, or proceed
 - Present menu options naturally as part of conversation
 
@@ -203,14 +213,17 @@ When user selects 'C', append the content directly to the document using the str
 ✅ Comprehensive coverage with 20-50 FRs typical
 ✅ Altitude validation ensures implementation-agnostic requirements
 ✅ Completeness check validates coverage of all discussed capabilities
+✅ Every P0 journey maps to at least one FR cluster and every FR cites journey IDs
 ✅ A/P/C menu presented and handled correctly
 ✅ Content properly appended to document when C selected
 
 ## FAILURE MODES:
 
 ❌ Missing capabilities from previous discovery sections
+❌ Missing FR traceability back to journey IDs
 ❌ Organizing FRs by technology instead of capability areas
 ❌ Including implementation details or UI specifics in FRs
+❌ Creating orphan FRs with no source journey
 ❌ Not achieving comprehensive coverage of discussed capabilities
 ❌ Using vague terms instead of testable capabilities
 ❌ Not presenting A/P/C menu after content generation
