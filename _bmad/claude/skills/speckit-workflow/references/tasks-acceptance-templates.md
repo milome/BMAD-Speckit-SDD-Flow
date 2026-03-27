@@ -124,3 +124,43 @@
 ```markdown
 **结论**：本任务列表与 IMPLEMENTATION_GAPS_xx.md **一一对应**；按章节 N 条 Gap + 四类汇总 M 条 Gap 均在上述两表中出现并映射到任务 Txxxx–Txxxx，**无遗漏**。验收时以「按需求文档章节」表与「四类汇总」表为准逐条执行。
 ```
+
+---
+
+## 8. Runnable Slice 元数据模板（每个 Journey Slice 必填）
+
+```markdown
+### Journey Slice 元数据
+
+- **Journey ID**: `J01`
+- **Invariant ID**: `INV-01` / `INV-N/A`（若为 N/A，必须写原因）
+- **Evidence Type**: `unit` / `integration` / `smoke-e2e` / `full-e2e` / `closure-note`
+- **Verification Command**: `[完整命令]`
+- **Closure Note Path**: `closure-notes/J01.md`
+- **Definition Gap IDs**: `DG-01` / `N/A`
+- **Implementation Gap IDs**: `IG-01` / `N/A`
+```
+
+**要求**：
+- 每个 runnable slice 都必须写全上述字段。
+- `Evidence Type` 不能留空；若一个 slice 有多个证据层，需逐条列出。
+- `Closure Note Path` 为空时，不得宣称 Journey 完成。
+
+---
+
+## 9. Journey 验收模板（证明完成 + 收口）
+
+```markdown
+### Journey 验收
+
+| Journey ID | 对应任务 | 哪条测试证明完成 | Verification Command | Closure Note | Gap 类型 |
+|------------|----------|------------------|----------------------|--------------|----------|
+| J01 | T021, T022, T023 | `tests/e2e/smoke/test_checkout.py::test_checkout_smoke` | `pytest tests/e2e/smoke/test_checkout.py -v` | `closure-notes/J01.md` | Implementation Gap |
+| J02 | T024, T025 | `N/A`（当前仍是定义澄清） | `N/A` | `closure-notes/J02.md`（标记 deferred） | Definition Gap |
+```
+
+**要求**：
+- 验收必须明确写出“由哪条测试证明完成”，不能只写“已覆盖测试”。
+- 验收必须明确写出“由哪条 closure note 收口”，不能只写“已记录”。
+- 若当前任务只是在消除 `definition gap`，必须明确标注为 `Definition Gap`，禁止借此宣称功能已可跑通。
+- 若当前任务是在修复代码或接线问题，标注为 `Implementation Gap`，并给出真实验证命令。
