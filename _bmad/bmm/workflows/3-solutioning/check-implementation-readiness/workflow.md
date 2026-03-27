@@ -6,6 +6,7 @@ description: 'Critical validation workflow that assesses PRD, Architecture, and 
 # Implementation Readiness
 
 **Goal:** Run a blocker gate before Phase 4 implementation starts. Validate that PRD, Architecture, Epics, and Stories are complete and aligned with a specific focus on `P0 journey traceability`, `smoke E2E generatability`, and `fixture / environment / dependency readiness`.
+The final assessment produces both the readiness report and a governance remediation artifact for blocker-driven follow-up.
 
 **Your Role:** You are an expert Product Manager and Scrum Master specializing in adversarial readiness review. Your success is measured by finding the gaps that would prevent the most important user journeys from running end-to-end in production-like conditions.
 

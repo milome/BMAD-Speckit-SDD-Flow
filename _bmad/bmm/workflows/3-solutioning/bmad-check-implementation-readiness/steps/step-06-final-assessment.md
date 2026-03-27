@@ -1,5 +1,6 @@
 ---
 outputFile: '{planning_artifacts}/implementation-readiness-report-{{date}}.md'
+remediationArtifactFile: '{planning_artifacts}/implementation-readiness-remediation-{{date}}.md'
 ---
 
 # Step 6: Final Assessment
@@ -93,12 +94,63 @@ This assessment identified [X] issues across [Y] categories. Address the critica
 - Add date and assessor information
 - Save the final report
 
-### 5. Present Completion
+### 5. Generate Governance Remediation Runner Outputs
+
+After saving the final report, you must also generate a governance remediation artifact at `{remediationArtifactFile}`.
+
+Use `npx ts-node --transpile-only scripts/governance-remediation-runner.ts` and populate the arguments from the completed readiness report using these fixed rules.
+
+Before running the command, load provider and packet output policy from `{project-root}/_bmad/_config/governance-remediation.yaml`.
+This config is the canonical source for:
+
+- primary host selection
+- provider mode selection
+- packet host list
+
+The default readiness expectation is that cursor and claude packet outputs are generated first. Codex packet output may also be generated when enabled by config.
+
+- `--outputPath "{remediationArtifactFile}"`
+- `--projectRoot "{project-root}"`
+- `--promptText "<one-line summary of the user's current readiness/audit request>"`
+- `--stageContextKnown true`
+- `--gateFailureExists true` when readiness status is not `READY`; otherwise `false`
+- `--blockerOwnershipLocked true`
+- `--rootTargetLocked true`
+- `--equivalentAdapterCount 1` by default
+- `--attemptId "implementation-readiness-{{date}}"`
+- `--sourceGateFailureIds "<comma-separated blocker ids if present, else empty>"`
+- `--capabilitySlot "qa.readiness"`
+- `--canonicalAgent "PM + QA / readiness reviewer"`
+- `--actualExecutor "implementation readiness workflow"`
+- `--adapterPath "local workflow fallback"`
+- `--targetArtifacts "<comma-separated impacted artifacts such as prd.md,architecture.md,epics.md>"`
+- `--expectedDelta "<short blocker-oriented repair summary>"`
+- `--rerunOwner "PM"`
+- `--rerunGate "implementation-readiness"`
+- `--outcome "<ready|needs_work|not_ready>"`
+- `--sharedArtifactsUpdated "implementation-readiness-report"`
+- `--contradictionsDelta "<opened/closed summary or none>"`
+- `--externalProofAdded "<summary or none>"`
+- `--readyToRerunGate false`
+- `--stopReason "<why execution stops here>"`
+
+Hard rules:
+
+- `PromptRoutingHints` are consumed only after `stage context -> gate failure -> artifact state`
+- the generated remediation artifact must say `Blocker ownership affected: no`
+- prompt hints may influence entry or adapter choice only; they may not change blocker ownership in this readiness gate
+- `cursor packet generated` and `claude packet generated` are mandatory unless config explicitly disables them
+- packet generation must reuse governance-owned routing fields; packet selection does not change blocker ownership or root target
+
+### 6. Present Completion
 
 Display:
 "**Implementation Readiness Assessment Complete**
 
 Report generated: {outputFile}
+Remediation artifact generated: {remediationArtifactFile}
+cursor packet generated: derive from `{remediationArtifactFile}` as `.cursor-packet.md`
+claude packet generated: derive from `{remediationArtifactFile}` as `.claude-packet.md`
 
 The assessment found [number] issues requiring attention. Review the detailed report for specific findings and recommendations."
 
@@ -118,9 +170,13 @@ Implementation Readiness complete. Invoke the `bmad-help` skill.
 - Clear recommendations provided
 - Readiness status determined
 - Final report saved
+- Governance remediation artifact saved
+- cursor/claude executor packets saved
 
 ### ❌ SYSTEM FAILURE:
 
 - Not reviewing previous findings
 - Incomplete summary
 - No clear recommendations
+- Failing to generate the governance remediation artifact
+- Failing to generate required cursor/claude packet outputs
