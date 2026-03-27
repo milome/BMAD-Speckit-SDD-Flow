@@ -60,6 +60,30 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/post-tool-use.js\"",
+            "timeout": 8,
+            "statusMessage": "Queueing governance remediation reruns..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop.js\"",
+            "timeout": 20,
+            "statusMessage": "Saving checkpoint and draining runtime queues..."
+          }
+        ]
+      }
     ]
   }
 }

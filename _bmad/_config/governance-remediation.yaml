@@ -1,0 +1,9 @@
+version: 1
+primaryHost: cursor
+packetHosts:
+  - cursor
+  - claude
+  - codex
+provider:
+  mode: stub
+  id: default-governance-provider

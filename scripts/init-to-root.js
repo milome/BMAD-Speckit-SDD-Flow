@@ -82,6 +82,7 @@ function writeCursorHooksJson(targetDir) {
       subagentStart: [
         { command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host --subagent-start' },
       ],
+      postToolUse: [{ command: 'node .cursor/hooks/post-tool-use.js' }],
     },
   };
   fs.writeFileSync(hooksJsonPath, `${JSON.stringify(hooksJson, null, 2)}\n`, 'utf8');
@@ -240,7 +241,7 @@ function syncCursorRuntimePolicyHooks(targetDir, bmadRoot) {
     console.log('Sync', path.relative(targetDir, sharedDir), '->', path.join('.cursor', 'hooks'));
   }
 
-  const names = ['emit-runtime-policy-cli.js', 'runtime-policy-inject.js'];
+  const names = ['emit-runtime-policy-cli.js', 'runtime-policy-inject.js', 'post-tool-use.js'];
   for (const name of names) {
     const src = path.join(cursorHooksDir, name);
     if (fs.existsSync(src)) {

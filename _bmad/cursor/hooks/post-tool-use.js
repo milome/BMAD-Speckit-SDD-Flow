@@ -58,18 +58,6 @@ function readStdin() {
   });
 }
 
-function recordHighValueEvent(event) {
-  const highValueEvents = ['file-modified', 'audit-request', 'git-commit-attempt'];
-  if (!highValueEvents.includes(event?.type)) {
-    return;
-  }
-
-  const eventsDir = path.join(process.cwd(), '.claude', 'state', 'runtime', 'events');
-  fs.mkdirSync(eventsDir, { recursive: true });
-  const eventPath = path.join(eventsDir, `${Date.now()}.json`);
-  fs.writeFileSync(eventPath, JSON.stringify(event, null, 2) + '\n', 'utf8');
-}
-
 function extractProjectRoot(event) {
   const payload = event && typeof event.payload === 'object' ? event.payload : null;
   const runnerInput =
@@ -109,13 +97,7 @@ function triggerDetachedBackgroundDrain(projectRoot) {
 }
 
 function postToolUse(event) {
-  if (!event || typeof event !== 'object') {
-    return null;
-  }
-
-  recordHighValueEvent(event);
-
-  if (event.type !== 'governance-rerun-result') {
+  if (!event || typeof event !== 'object' || event.type !== 'governance-rerun-result') {
     return null;
   }
 
