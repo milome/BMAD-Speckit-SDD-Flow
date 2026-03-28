@@ -86,7 +86,7 @@ function buildToolResult(
   };
 }
 
-async function handleToolCall(
+export async function invokeRuntimeMcpTool(
   toolName: string,
   toolArgs: Record<string, unknown> | undefined,
   dashboardUrl: string | null,
@@ -124,7 +124,7 @@ async function handleToolCall(
       );
     case 'preview_sft':
       return buildToolResult(
-        `accepted=${snapshot.sft_summary.accepted} rejected=${snapshot.sft_summary.rejected}`,
+        `accepted=${snapshot.sft_summary.accepted} rejected=${snapshot.sft_summary.rejected} redacted=${snapshot.sft_summary.redaction_status_counts.redacted} blocked=${snapshot.sft_summary.redaction_status_counts.blocked}`,
         snapshot.sft_summary as unknown as Record<string, unknown>
       );
     case 'export_sft':
@@ -146,6 +146,10 @@ async function handleToolCall(
             last_bundle_id: snapshot.sft_summary.last_bundle?.bundle_id ?? null,
             last_bundle: snapshot.sft_summary.last_bundle,
             rejection_reasons: snapshot.sft_summary.rejection_reasons,
+            redaction_status_counts: snapshot.sft_summary.redaction_status_counts,
+            redaction_applied_rules: snapshot.sft_summary.redaction_applied_rules,
+            redaction_finding_kinds: snapshot.sft_summary.redaction_finding_kinds,
+            redaction_preview: snapshot.sft_summary.redaction_preview,
           }
         );
       }
@@ -275,7 +279,7 @@ export async function runRuntimeMcpServer(
           request.params && typeof request.params.arguments === 'object'
             ? (request.params.arguments as Record<string, unknown>)
             : undefined;
-        const result = await handleToolCall(toolName, toolArgs, dashboardUrl, options);
+        const result = await invokeRuntimeMcpTool(toolName, toolArgs, dashboardUrl, options);
         writeMessage({
           jsonrpc: '2.0',
           id: request.id,

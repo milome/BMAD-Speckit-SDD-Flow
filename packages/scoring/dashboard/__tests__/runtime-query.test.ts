@@ -200,6 +200,184 @@ describe('runtime-aware dashboard query', () => {
           },
         },
       },
+      {
+        sample_id: 'sample-runtime-query-002',
+        sample_version: 'v1',
+        source: {
+          run_id: 'run-e15-s1-001',
+          stage: 'implement',
+          flow: 'story',
+          score_record_id: 'run-e15-s1-001:implement',
+          event_ids: ['score:run-e15-s1-001:implement'],
+          artifact_refs: [
+            {
+              path: fixture.sourcePath,
+              content_hash: 'sha256:content-002',
+              source_hash: 'sha256:source-002',
+              kind: 'md',
+            },
+          ],
+        },
+        messages: [
+          { role: 'system', content: 'You are a senior coding agent.' },
+          { role: 'user', content: 'Explain the redacted runtime snapshot.' },
+          { role: 'assistant', content: 'The tool arguments were redacted before export.' },
+        ],
+        metadata: {
+          schema_targets: ['openai_chat', 'hf_tool_calling'],
+          language: 'zh-CN',
+          notes: ['tool_trace_injected'],
+        },
+        quality: {
+          acceptance_decision: 'accepted',
+          phase_score: 90,
+          raw_phase_score: 90,
+          veto_triggered: false,
+          iteration_count: 0,
+          has_code_pair: true,
+          token_estimate: 72,
+          dedupe_cluster_id: null,
+          safety_flags: [],
+          rejection_reasons: [],
+          warnings: ['warning_redacted_noncritical'],
+        },
+        provenance: {
+          base_commit_hash: 'base-commit-001',
+          content_hash: 'sha256:content-002',
+          source_hash: 'sha256:source-002',
+          source_path: fixture.sourcePath,
+          patch_ref: 'sha256:patch-002',
+          generated_at: '2026-03-28T00:05:40.000Z',
+          lineage: ['run-e15-s1-001', 'run-e15-s1-001:implement', 'tool-trace:sha256:trace-002'],
+        },
+        split: {
+          assignment: 'validation',
+          group_key: 'epic-15/story-15-1-runtime-dashboard-sft',
+          seed: 42,
+          strategy: 'story_hash_v1',
+        },
+        redaction: {
+          status: 'redacted',
+          applied_rules: ['secret-token'],
+          findings: [
+            {
+              kind: 'secret_token',
+              severity: 'high',
+              field_path: 'messages[2].tool_calls[0].function.arguments',
+              action: 'redact',
+            },
+          ],
+          redacted_fields: ['messages[2].tool_calls[0].function.arguments'],
+        },
+        export_compatibility: {
+          openai_chat: { compatible: true, reasons: [], warnings: [] },
+          hf_conversational: { compatible: false, reasons: ['target_incompatible_hf_conversational'], warnings: [] },
+          hf_tool_calling: { compatible: true, reasons: [], warnings: [] },
+        },
+        tools: [
+          {
+            type: 'function',
+            function: {
+              name: 'get_runtime_snapshot',
+              parameters: {
+                type: 'object',
+                properties: {
+                  run_id: { type: 'string' },
+                },
+              },
+            },
+          },
+        ],
+      },
+      {
+        sample_id: 'sample-runtime-query-003',
+        sample_version: 'v1',
+        source: {
+          run_id: 'run-e15-s1-001',
+          stage: 'implement',
+          flow: 'story',
+          score_record_id: 'run-e15-s1-001:implement',
+          event_ids: ['score:run-e15-s1-001:implement'],
+          artifact_refs: [
+            {
+              path: fixture.sourcePath,
+              content_hash: 'sha256:content-003',
+              source_hash: 'sha256:source-003',
+              kind: 'md',
+            },
+          ],
+        },
+        messages: [
+          { role: 'system', content: 'You are a senior coding agent.' },
+          { role: 'user', content: 'Explain the blocked runtime snapshot.' },
+          { role: 'assistant', content: 'This sample must not export.' },
+        ],
+        metadata: {
+          schema_targets: ['openai_chat', 'hf_tool_calling'],
+          language: 'zh-CN',
+          notes: ['tool_trace_injected'],
+        },
+        quality: {
+          acceptance_decision: 'rejected',
+          phase_score: 95,
+          raw_phase_score: 95,
+          veto_triggered: false,
+          iteration_count: 0,
+          has_code_pair: true,
+          token_estimate: 80,
+          dedupe_cluster_id: null,
+          safety_flags: [],
+          rejection_reasons: ['redaction_blocked', 'secret_detected_unresolved'],
+          warnings: [],
+        },
+        provenance: {
+          base_commit_hash: 'base-commit-001',
+          content_hash: 'sha256:content-003',
+          source_hash: 'sha256:source-003',
+          source_path: fixture.sourcePath,
+          patch_ref: 'sha256:patch-003',
+          generated_at: '2026-03-28T00:05:50.000Z',
+          lineage: ['run-e15-s1-001', 'run-e15-s1-001:implement', 'tool-trace:sha256:trace-003'],
+        },
+        split: {
+          assignment: 'test',
+          group_key: 'epic-15/story-15-1-runtime-dashboard-sft',
+          seed: 42,
+          strategy: 'story_hash_v1',
+        },
+        redaction: {
+          status: 'blocked',
+          applied_rules: ['private-key'],
+          findings: [
+            {
+              kind: 'private_key',
+              severity: 'critical',
+              field_path: 'messages[2].tool_calls[0].function.arguments',
+              action: 'block',
+            },
+          ],
+          redacted_fields: ['messages[2].tool_calls[0].function.arguments'],
+        },
+        export_compatibility: {
+          openai_chat: { compatible: false, reasons: ['redaction_blocked'], warnings: [] },
+          hf_conversational: { compatible: false, reasons: ['redaction_blocked'], warnings: [] },
+          hf_tool_calling: { compatible: false, reasons: ['redaction_blocked'], warnings: [] },
+        },
+        tools: [
+          {
+            type: 'function',
+            function: {
+              name: 'get_runtime_snapshot',
+              parameters: {
+                type: 'object',
+                properties: {
+                  privateKey: { type: 'string' },
+                },
+              },
+            },
+          },
+        ],
+      },
     ];
     vi.spyOn(candidateBuilder, 'buildCanonicalCandidatesFromRecordsSync').mockReturnValue({
       samples,
@@ -295,15 +473,48 @@ describe('runtime-aware dashboard query', () => {
           iteration_count: 0,
         }),
       ]);
-      expect(snapshot.sft_summary.total_candidates).toBe(1);
-      expect(snapshot.sft_summary.accepted).toBe(1);
+      expect(snapshot.sft_summary.total_candidates).toBe(3);
+      expect(snapshot.sft_summary.accepted).toBe(2);
+      expect(snapshot.sft_summary.rejected).toBe(1);
       expect(
         snapshot.sft_summary.by_split.train +
           snapshot.sft_summary.by_split.validation +
           snapshot.sft_summary.by_split.test +
           snapshot.sft_summary.by_split.holdout
-      ).toBe(1);
-      expect(snapshot.sft_summary.target_availability.openai_chat.compatible).toBe(1);
+      ).toBe(3);
+      expect(snapshot.sft_summary.target_availability.openai_chat.compatible).toBe(2);
+      expect(snapshot.sft_summary.redaction_status_counts).toEqual({
+        clean: 1,
+        redacted: 1,
+        blocked: 1,
+      });
+      expect(snapshot.sft_summary.redaction_applied_rules).toEqual(
+        expect.arrayContaining([
+          { rule: 'secret-token', count: 1 },
+          { rule: 'private-key', count: 1 },
+        ])
+      );
+      expect(snapshot.sft_summary.redaction_finding_kinds).toEqual(
+        expect.arrayContaining([
+          { kind: 'secret_token', count: 1 },
+          { kind: 'private_key', count: 1 },
+        ])
+      );
+      expect(snapshot.sft_summary.redaction_preview).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            sample_id: 'sample-runtime-query-002',
+            status: 'redacted',
+            finding_kinds: ['secret_token'],
+          }),
+          expect.objectContaining({
+            sample_id: 'sample-runtime-query-003',
+            status: 'blocked',
+            finding_kinds: ['private_key'],
+            rejection_reasons: ['redaction_blocked', 'secret_detected_unresolved'],
+          }),
+        ])
+      );
     } finally {
       fs.rmSync(fixture.root, { recursive: true, force: true });
     }

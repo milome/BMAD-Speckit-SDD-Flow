@@ -132,6 +132,65 @@ function renderSft(data) {
     `
     : '<p>No bundle has been exported yet.</p>';
 
+  const redactionCards = `
+    <div class="metric-grid">
+      <div class="metric-card"><span>Clean</span><strong>${escapeHtml(data.redaction_status_counts?.clean ?? 0)}</strong></div>
+      <div class="metric-card"><span>Redacted</span><strong>${escapeHtml(data.redaction_status_counts?.redacted ?? 0)}</strong></div>
+      <div class="metric-card"><span>Blocked</span><strong>${escapeHtml(data.redaction_status_counts?.blocked ?? 0)}</strong></div>
+    </div>
+  `;
+
+  const redactionRuleRows = (data.redaction_applied_rules || []).length > 0
+    ? `
+      <table>
+        <thead><tr><th>Rule</th><th>Count</th></tr></thead>
+        <tbody>
+          ${data.redaction_applied_rules.map((entry) => `
+            <tr>
+              <td>${escapeHtml(entry.rule)}</td>
+              <td>${escapeHtml(entry.count)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `
+    : '<p>No redaction rules applied yet.</p>';
+
+  const redactionFindingRows = (data.redaction_finding_kinds || []).length > 0
+    ? `
+      <table>
+        <thead><tr><th>Finding Kind</th><th>Count</th></tr></thead>
+        <tbody>
+          ${data.redaction_finding_kinds.map((entry) => `
+            <tr>
+              <td>${escapeHtml(entry.kind)}</td>
+              <td>${escapeHtml(entry.count)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `
+    : '<p>No redaction findings recorded yet.</p>';
+
+  const redactionPreviewRows = (data.redaction_preview || []).length > 0
+    ? `
+      <table>
+        <thead><tr><th>Sample</th><th>Status</th><th>Rules</th><th>Finding Kinds</th><th>Rejection Reasons</th></tr></thead>
+        <tbody>
+          ${data.redaction_preview.map((entry) => `
+            <tr>
+              <td>${escapeHtml(entry.sample_id)}</td>
+              <td>${escapeHtml(entry.status)}</td>
+              <td>${escapeHtml((entry.applied_rules || []).join(', ') || 'N/A')}</td>
+              <td>${escapeHtml((entry.finding_kinds || []).join(', ') || 'N/A')}</td>
+              <td>${escapeHtml((entry.rejection_reasons || []).join(', ') || 'N/A')}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `
+    : '<p>No redaction preview samples yet.</p>';
+
   panels.sft.innerHTML = `
     <h2>SFT Builder Summary</h2>
     <div class="metric-grid">
@@ -149,6 +208,14 @@ function renderSft(data) {
     ${lastBundle}
     <h3>Rejection Reasons</h3>
     ${rejectionReasons}
+    <h3>Redaction Status</h3>
+    ${redactionCards}
+    <h3>Redaction Rules</h3>
+    ${redactionRuleRows}
+    <h3>Redaction Finding Kinds</h3>
+    ${redactionFindingRows}
+    <h3>Redaction Preview</h3>
+    ${redactionPreviewRows}
   `;
 }
 

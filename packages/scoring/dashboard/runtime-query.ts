@@ -1,7 +1,12 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { buildCanonicalCandidatesFromRecordsSync } from '../analytics/candidate-builder';
-import { assessSampleForTarget, type DatasetExportTarget } from '../analytics/validation-report';
+import {
+  assessSampleForTarget,
+  buildDatasetRedactionPreview,
+  buildDatasetRedactionSummary,
+  type DatasetExportTarget,
+} from '../analytics/validation-report';
 import type { CanonicalSftSample, DatasetBundleManifest } from '../analytics/types';
 import { loadAndDedupeRecords } from '../query/loader';
 import type { RunScoreRecord } from '../writer/types';
@@ -115,6 +120,28 @@ export interface DashboardSftSummary {
   rejection_reasons: Array<{
     reason: string;
     count: number;
+  }>;
+  redaction_status_counts: {
+    clean: number;
+    redacted: number;
+    blocked: number;
+  };
+  redaction_applied_rules: Array<{
+    rule: string;
+    count: number;
+  }>;
+  redaction_finding_kinds: Array<{
+    kind: string;
+    count: number;
+  }>;
+  redaction_preview: Array<{
+    sample_id: string;
+    run_id: string;
+    split: string;
+    status: 'clean' | 'redacted' | 'blocked';
+    applied_rules: string[];
+    finding_kinds: string[];
+    rejection_reasons: string[];
   }>;
   last_bundle: {
     bundle_id: string;
@@ -462,6 +489,14 @@ function buildSftSummary(
     },
     target_availability: createEmptyTargetAvailability(),
     rejection_reasons: [],
+    redaction_status_counts: {
+      clean: 0,
+      redacted: 0,
+      blocked: 0,
+    },
+    redaction_applied_rules: [],
+    redaction_finding_kinds: [],
+    redaction_preview: [],
     last_bundle: findLatestBundle(root),
   };
 
@@ -477,6 +512,11 @@ function buildSftSummary(
   summary.total_candidates = samples.length;
   summary.target_availability = buildTargetAvailability(samples);
   summary.rejection_reasons = countRejectionReasons(samples);
+  const redactionSummary = buildDatasetRedactionSummary(samples);
+  summary.redaction_status_counts = redactionSummary.status_counts;
+  summary.redaction_applied_rules = redactionSummary.applied_rules;
+  summary.redaction_finding_kinds = redactionSummary.finding_kinds;
+  summary.redaction_preview = buildDatasetRedactionPreview(samples);
 
   for (const sample of samples) {
     if (sample.quality.acceptance_decision === 'accepted') summary.accepted += 1;
