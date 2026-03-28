@@ -37,6 +37,10 @@
     "content_hash": { "type": "string", "description": "SHA-256 of audit report content passed to parseAndWriteScore" },
     "source_hash": { "type": "string", "description": "SHA-256 of audited source file for cross-stage version lock" },
     "source_path": { "type": "string", "description": "Path to artifact doc that triggered this scoring (e.g. BUGFIX)" },
+    "patch_ref": { "type": "string", "description": "Immutable patch snapshot ref captured at scoring time when available" },
+    "patch_snapshot_path": { "type": "string", "description": "Absolute or cwd-relative path to the persisted patch snapshot artifact" },
+    "tool_trace_ref": { "type": "string", "description": "Immutable tool trace ref captured at scoring time when available" },
+    "tool_trace_path": { "type": "string", "description": "Absolute or cwd-relative path to the persisted tool trace artifact" },
     "trigger_stage": { "type": "string", "description": "Stage identifier that triggered this scoring, e.g. speckit_5_2, bmad_story_stage4 (Story 9.1 T4)" }
   },
   "definitions": {

@@ -170,6 +170,7 @@ program
   .option('--sourceHashFilePath <path>', 'Source hash file path')
   .option('--agent <agent>', 'Agent type (cursor|claude-code)')
   .option('--source <source>', 'Source type (cursor_command|claude_agent|claude_hook)')
+  .option('--toolTracePath <path>', 'Persisted tool trace artifact path for canonical tool-calling injection')
   .action((opts) => {
     scoreCommand(opts).catch((err) => {
       console.error(err);

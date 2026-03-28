@@ -42,6 +42,7 @@ async function scoreCommand(opts) {
   const baseCommitHash = opts.baseCommitHash;
   const sourceHashFilePath = opts.sourceHashFilePath;
   const artifactDocPath = opts.artifactDocPath;
+  const toolTracePath = opts.toolTracePath;
   const event = opts.event || 'user_explicit_request';
   const agent = opts.agent;
   const source = opts.source;
@@ -102,6 +103,7 @@ async function scoreCommand(opts) {
     baseCommitHash,
     sourceHashFilePath,
     artifactDocPath,
+    toolTracePath,
     question_version: questionVersion,
     iteration_count: iterationCount,
     triggerStage: triggerStage !== stage ? triggerStage : undefined,

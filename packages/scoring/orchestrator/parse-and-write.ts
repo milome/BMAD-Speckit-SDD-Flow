@@ -20,8 +20,14 @@ import type { WriteMode } from '../writer';
 import { applyTierAndVeto } from '../veto';
 import { resolveRulesDir } from '../constants/path';
 import { computeContentHash, computeStringHash, getGitHeadHash } from '../utils/hash';
+import { persistPatchSnapshot } from '../utils/patch-snapshot';
 import type { DimensionScore, IterationRecord } from '../writer/types';
 import { appendRuntimeEvent } from '../runtime';
+import {
+  discoverLatestToolTraceArtifact,
+  readToolTraceArtifact,
+  resolveToolTracePath,
+} from '../analytics/tool-trace';
 
 /**
  * Options for parseAndWriteScore orchestration.
@@ -45,6 +51,8 @@ export interface ParseAndWriteScoreOptions {
   sourceHashFilePath?: string;
   /** 触发评分的源文档路径（如 BUGFIX 文档），写入 record 的 source_path（B07） */
   artifactDocPath?: string;
+  /** Optional persisted tool trace artifact used for canonical tool-calling injection */
+  toolTracePath?: string;
   /** 该 stage 审计未通过（fail）次数；0 表示一次通过；DEBATE 迭代次数作为评分因子 */
   iteration_count?: number;
   /** Story 9.1 T4: 触发阶段标识，写入 record.trigger_stage；如 speckit_5_2、bmad_story_stage4 */
@@ -239,6 +247,38 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     sourceHash = computeContentHash(resolved);
   }
 
+  let resolvedToolTracePath: string | undefined;
+  let toolTraceRef: string | undefined;
+  if (options.toolTracePath) {
+    resolvedToolTracePath = resolveToolTracePath(options.toolTracePath, process.cwd());
+    const toolTrace = readToolTraceArtifact(resolvedToolTracePath, process.cwd());
+    if (toolTrace == null) {
+      throw new Error(`parseAndWriteScore: invalid tool trace artifact: ${options.toolTracePath}`);
+    }
+    toolTraceRef = toolTrace.traceRef;
+  } else {
+    const discoveredToolTrace = discoverLatestToolTraceArtifact({
+      root: inferRuntimeRootFromDataPath(dataPath),
+      runId,
+      stage,
+      cwd: process.cwd(),
+    });
+    if (discoveredToolTrace != null) {
+      resolvedToolTracePath = discoveredToolTrace.artifactPath;
+      toolTraceRef = discoveredToolTrace.traceRef;
+    }
+  }
+
+  const patchSnapshot = options.skipAutoHash
+    ? null
+    : persistPatchSnapshot({
+        cwd: process.cwd(),
+        dataPath: resolveScoreDataPath(dataPath),
+        runId,
+        stage,
+        baseCommitHash,
+      });
+
   let iterationRecords: IterationRecord[] = [];
   if (options.scenario === 'real_dev' && options.iterationReportPaths?.length) {
     const failRecords: IterationRecord[] = [];
@@ -271,6 +311,9 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     ...(baseCommitHash != null ? { base_commit_hash: baseCommitHash } : {}),
     ...(contentHash != null ? { content_hash: contentHash } : {}),
     ...(sourceHash != null ? { source_hash: sourceHash } : {}),
+    ...(patchSnapshot ?? {}),
+    ...(toolTraceRef != null ? { tool_trace_ref: toolTraceRef } : {}),
+    ...(resolvedToolTracePath != null ? { tool_trace_path: resolvedToolTracePath } : {}),
     ...(computeSourcePath(stage, options.artifactDocPath, reportPath)),
     ...(options.triggerStage != null ? { trigger_stage: options.triggerStage } : {}),
   };
@@ -327,4 +370,27 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
   }, {
     root: inferRuntimeRootFromDataPath(dataPath),
   });
+
+  if (resolvedToolTracePath && toolTraceRef) {
+    appendRuntimeEvent({
+      event_id: randomUUID(),
+      event_type: 'artifact.attached',
+      event_version: 1,
+      timestamp: recordToWrite.timestamp,
+      run_id: runId,
+      flow: 'story',
+      stage,
+      payload: {
+        kind: 'tool_trace',
+        path: resolvedToolTracePath,
+        content_hash: toolTraceRef,
+      },
+      source: {
+        source_path: resolvedToolTracePath,
+        content_hash: toolTraceRef,
+      },
+    }, {
+      root: inferRuntimeRootFromDataPath(dataPath),
+    });
+  }
 }
