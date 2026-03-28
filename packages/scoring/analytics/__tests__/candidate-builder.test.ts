@@ -86,6 +86,46 @@ describe('canonical candidate builder', () => {
     ]);
   });
 
+  it('prefers a persisted patch snapshot over runtime git diff reconstruction', async () => {
+    const bugfixPath = path.join(tempDir, 'BUGFIX_runtime-dashboard-sft.md');
+    const patchPath = path.join(tempDir, 'patches', 'run-e15-s1-001.patch');
+    fs.mkdirSync(path.dirname(patchPath), { recursive: true });
+    fs.writeFileSync(
+      bugfixPath,
+      `## §1 问题\n修复 dashboard runtime 观测缺口。\n\n## §4 修复方案\n补充 query core 与 live dashboard。\n`,
+      'utf-8'
+    );
+    fs.writeFileSync(
+      patchPath,
+      '--- a/foo.ts\n+++ b/foo.ts\n-old snapshot code\n+new snapshot code',
+      'utf-8'
+    );
+    fs.writeFileSync(
+      path.join(tempDir, 'record.json'),
+      JSON.stringify(
+        makeRecord({
+          source_path: bugfixPath,
+          patch_ref: 'sha256:patch-snapshot-001',
+          patch_snapshot_path: patchPath,
+        })
+      ),
+      'utf-8'
+    );
+
+    const result = await buildCanonicalCandidates({
+      dataPath: tempDir,
+      cwd: tempDir,
+      minScore: 90,
+    });
+
+    expect(result.samples).toHaveLength(1);
+    expect(result.samples[0].provenance.patch_ref).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(result.samples[0].quality.has_code_pair).toBe(true);
+    expect(String(result.samples[0].messages[1].content)).toContain('old snapshot code');
+    expect(String(result.samples[0].messages[2].content)).toContain('new snapshot code');
+    expect(execSync).not.toHaveBeenCalled();
+  });
+
   it('rejects a candidate when provenance is incomplete', async () => {
     const bugfixPath = path.join(tempDir, 'BUGFIX_runtime-dashboard-sft.md');
     fs.writeFileSync(

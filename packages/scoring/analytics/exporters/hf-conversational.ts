@@ -1,6 +1,7 @@
 import type { CanonicalSftSample } from '../types';
 import {
   assessSampleForTarget,
+  buildExportRowRedactionMetadata,
   createRejectedSampleReport,
   createValidationAccumulator,
   finalizeValidationReport,
@@ -16,6 +17,10 @@ export interface HfConversationalRow {
     run_id: string;
     split: 'train' | 'validation' | 'test';
     acceptance_decision: string;
+    redaction_status: CanonicalSftSample['redaction']['status'];
+    redaction_applied_rules: string[];
+    redaction_findings_count: number;
+    redaction_finding_kinds: string[];
   };
 }
 
@@ -25,6 +30,7 @@ export function exportHfConversationalRows(
   const accumulator = createValidationAccumulator<HfConversationalRow>();
 
   for (const sample of samples) {
+    accumulator.seenSamples.push(sample);
     const decision = assessSampleForTarget(sample, 'hf_conversational');
     if (!decision.exportable) {
       accumulator.rejectedSamples.push(createRejectedSampleReport(sample, decision));
@@ -44,6 +50,7 @@ export function exportHfConversationalRows(
         run_id: sample.source.run_id,
         split: sample.split.assignment,
         acceptance_decision: sample.quality.acceptance_decision,
+        ...buildExportRowRedactionMetadata(sample),
       },
     };
 

@@ -176,6 +176,14 @@ function getMetadataString(message: CanonicalMessage | undefined, key: string): 
   return typeof value === 'string' ? value : null;
 }
 
+function stripPatchLocationHeaders(content: string): string {
+  return content
+    .split(/\r?\n/)
+    .filter((line) => !line.startsWith('File: ') && !line.startsWith('Hunk: '))
+    .join('\n')
+    .trim();
+}
+
 function extractLegacyInstructionAndInput(userMessage: CanonicalMessage | undefined): {
   instruction: string;
   input: string;
@@ -185,7 +193,7 @@ function extractLegacyInstructionAndInput(userMessage: CanonicalMessage | undefi
   if (legacyInstruction != null || legacyInput != null) {
     return {
       instruction: legacyInstruction ?? '',
-      input: legacyInput ?? '',
+      input: stripPatchLocationHeaders(legacyInput ?? ''),
     };
   }
 
@@ -207,8 +215,10 @@ function toLegacyEntry(sample: CanonicalSftSample): SftEntry {
   const assistantMessage = getFirstMessage(sample, 'assistant');
   const legacy = extractLegacyInstructionAndInput(userMessage);
   const output =
-    getMetadataString(assistantMessage, 'legacy_output') ??
-    (assistantMessage ? contentToString(assistantMessage.content).trim() : '');
+    stripPatchLocationHeaders(
+      getMetadataString(assistantMessage, 'legacy_output') ??
+        (assistantMessage ? contentToString(assistantMessage.content).trim() : '')
+    );
 
   return {
     instruction: legacy.instruction,

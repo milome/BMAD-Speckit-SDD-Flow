@@ -19,6 +19,17 @@ function hasAssistantTarget(sample: CanonicalSftSample): boolean {
   );
 }
 
+function usesTooling(sample: CanonicalSftSample): boolean {
+  return (
+    Boolean(sample.tools && sample.tools.length > 0) ||
+    sample.messages.some(
+      (message) =>
+        message.role === 'tool' ||
+        Boolean(message.tool_calls && message.tool_calls.length > 0)
+    )
+  );
+}
+
 function withCompatibility(
   compatible: boolean,
   reasons: string[],
@@ -33,6 +44,15 @@ function withCompatibility(
 
 function unique(items: string[]): string[] {
   return [...new Set(items)];
+}
+
+function hasUnresolvedFinding(
+  sample: CanonicalSftSample,
+  matcher: (kind: string) => boolean
+): boolean {
+  return sample.redaction.findings.some(
+    (finding) => matcher(finding.kind) && finding.action !== 'redact'
+  );
 }
 
 export function applyQualityGates(
@@ -75,10 +95,10 @@ export function applyQualityGates(
   }
   if (sample.redaction.status === 'blocked') {
     hardReasons.push('redaction_blocked');
-    if (sample.redaction.findings.some((finding) => finding.kind.includes('secret') || finding.kind.includes('private'))) {
+    if (hasUnresolvedFinding(sample, (kind) => kind.includes('secret') || kind.includes('private'))) {
       hardReasons.push('secret_detected_unresolved');
     }
-    if (sample.redaction.findings.some((finding) => finding.kind.includes('pii'))) {
+    if (hasUnresolvedFinding(sample, (kind) => kind.includes('pii'))) {
       hardReasons.push('pii_detected_unresolved');
     }
   }
@@ -103,6 +123,7 @@ export function applyQualityGates(
 
   const sharedWarnings = unique(warnings);
   const sharedHardReasons = unique(hardReasons);
+  const toolAware = usesTooling(sample);
 
   return {
     ...sample,
@@ -114,10 +135,20 @@ export function applyQualityGates(
     },
     export_compatibility: {
       openai_chat: withCompatibility(sharedHardReasons.length === 0, sharedHardReasons, sharedWarnings),
-      hf_conversational: withCompatibility(sharedHardReasons.length === 0, sharedHardReasons, sharedWarnings),
+      hf_conversational: toolAware
+        ? withCompatibility(
+            false,
+            unique([...sharedHardReasons, 'target_incompatible_hf_conversational']),
+            sharedWarnings
+          )
+        : withCompatibility(sharedHardReasons.length === 0, sharedHardReasons, sharedWarnings),
       hf_tool_calling: sample.tools && sample.tools.length > 0
         ? withCompatibility(sharedHardReasons.length === 0, sharedHardReasons, sharedWarnings)
-        : withCompatibility(false, ['target_incompatible_hf_tool_calling'], sharedWarnings),
+        : withCompatibility(
+            false,
+            unique([...sharedHardReasons, 'target_incompatible_hf_tool_calling']),
+            sharedWarnings
+          ),
     },
   };
 }

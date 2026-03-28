@@ -103,4 +103,38 @@ describe('quality gates', () => {
       expect.arrayContaining(['redaction_blocked', 'secret_detected_unresolved'])
     );
   });
+
+  it('does not mark already-redacted pii as unresolved when another finding blocks the sample', () => {
+    const sample = applyQualityGates({
+      ...makeSample(),
+      redaction: {
+        status: 'blocked',
+        applied_rules: ['email', 'private-key'],
+        findings: [
+          {
+            kind: 'pii_email',
+            severity: 'medium',
+            field_path: 'messages[1].content',
+            action: 'redact',
+          },
+          {
+            kind: 'private_key',
+            severity: 'critical',
+            field_path: 'messages[2].tool_calls[0].function.arguments',
+            action: 'block',
+          },
+        ],
+        redacted_fields: [
+          'messages[1].content',
+          'messages[2].tool_calls[0].function.arguments',
+        ],
+      },
+    });
+
+    expect(sample.quality.acceptance_decision).toBe('rejected');
+    expect(sample.quality.rejection_reasons).toEqual(
+      expect.arrayContaining(['redaction_blocked', 'secret_detected_unresolved'])
+    );
+    expect(sample.quality.rejection_reasons).not.toContain('pii_detected_unresolved');
+  });
 });
