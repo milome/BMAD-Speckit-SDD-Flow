@@ -71,8 +71,22 @@ function makeSample(overrides: Partial<CanonicalSftSample> = {}): CanonicalSftSa
 }
 
 describe('hf conversational exporter', () => {
-  it('preserves role-aware messages and metadata without tools', () => {
-    const sample = makeSample();
+  it('preserves role-aware messages and exports redaction metadata without tools', () => {
+    const sample = makeSample({
+      redaction: {
+        status: 'redacted',
+        applied_rules: ['email'],
+        findings: [
+          {
+            kind: 'pii_email',
+            severity: 'medium',
+            field_path: 'messages[1].content',
+            action: 'redact',
+          },
+        ],
+        redacted_fields: ['messages[1].content'],
+      },
+    });
 
     const result = exportHfConversationalRows([sample]);
 
@@ -88,6 +102,10 @@ describe('hf conversational exporter', () => {
         run_id: 'run-hf-conv-001',
         split: 'validation',
         acceptance_decision: 'accepted',
+        redaction_status: 'redacted',
+        redaction_applied_rules: ['email'],
+        redaction_findings_count: 1,
+        redaction_finding_kinds: ['pii_email'],
       },
     });
     expect(result.validationReport.counts.accepted).toBe(1);

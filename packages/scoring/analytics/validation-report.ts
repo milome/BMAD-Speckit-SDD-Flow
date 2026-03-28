@@ -1,9 +1,11 @@
 import type {
   CanonicalAcceptanceDecision,
   CanonicalMessage,
+  CanonicalRedactionFinding,
   CanonicalSftSample,
   CanonicalSplitAssignment,
   DatasetBundleManifest,
+  RedactionStatus,
 } from './types';
 
 export type DatasetExportTarget = DatasetBundleManifest['export_target'];
@@ -38,6 +40,7 @@ export interface DatasetValidationReport {
   counts: DatasetValidationCounts;
   exported_sample_ids: string[];
   rejected_samples: RejectedSampleReport[];
+  redaction_summary: DatasetRedactionSummary;
 }
 
 export interface DatasetExportResult<Row> {
@@ -56,6 +59,36 @@ export interface ValidationAccumulator<Row> {
   rowsBySplit: ExportRowsBySplit<Row>;
   exportedSamples: CanonicalSftSample[];
   rejectedSamples: RejectedSampleReport[];
+  seenSamples: CanonicalSftSample[];
+}
+
+export interface ExportRowRedactionMetadata {
+  redaction_status: RedactionStatus;
+  redaction_applied_rules: string[];
+  redaction_findings_count: number;
+  redaction_finding_kinds: string[];
+}
+
+export interface DatasetRedactionSummary {
+  status_counts: Record<RedactionStatus, number>;
+  applied_rules: Array<{
+    rule: string;
+    count: number;
+  }>;
+  finding_kinds: Array<{
+    kind: string;
+    count: number;
+  }>;
+}
+
+export interface DatasetRedactionPreviewItem {
+  sample_id: string;
+  run_id: string;
+  split: CanonicalSplitAssignment;
+  status: RedactionStatus;
+  applied_rules: string[];
+  finding_kinds: string[];
+  rejection_reasons: string[];
 }
 
 export interface DatasetRedactionSummary {
@@ -85,6 +118,7 @@ export function createValidationAccumulator<Row>(): ValidationAccumulator<Row> {
     rowsBySplit: createEmptyRowsBySplit<Row>(),
     exportedSamples: [],
     rejectedSamples: [],
+    seenSamples: [],
   };
 }
 
@@ -93,6 +127,87 @@ export function normalizeMessageContent(content: CanonicalMessage['content']): s
     return content;
   }
   return content.map((part) => part.text).join('\n');
+}
+
+function sortCountEntries<T extends string>(
+  counts: Map<T, number>,
+  fieldName: 'rule' | 'kind'
+): Array<{ [K in typeof fieldName]: T } & { count: number }> {
+  return [...counts.entries()]
+    .sort((left, right) => right[1] - left[1] || String(left[0]).localeCompare(String(right[0])))
+    .map(([value, count]) => ({
+      [fieldName]: value,
+      count,
+    })) as Array<{ [K in typeof fieldName]: T } & { count: number }>;
+}
+
+export function buildExportRowRedactionMetadata(
+  sample: CanonicalSftSample
+): ExportRowRedactionMetadata {
+  return {
+    redaction_status: sample.redaction.status,
+    redaction_applied_rules: [...sample.redaction.applied_rules],
+    redaction_findings_count: sample.redaction.findings.length,
+    redaction_finding_kinds: [...new Set(sample.redaction.findings.map((finding) => finding.kind))],
+  };
+}
+
+export function buildDatasetRedactionSummary(
+  samples: CanonicalSftSample[]
+): DatasetRedactionSummary {
+  const statusCounts: Record<RedactionStatus, number> = {
+    clean: 0,
+    redacted: 0,
+    blocked: 0,
+  };
+  const ruleCounts = new Map<string, number>();
+  const findingKindCounts = new Map<string, number>();
+
+  for (const sample of samples) {
+    statusCounts[sample.redaction.status] += 1;
+    for (const rule of sample.redaction.applied_rules) {
+      ruleCounts.set(rule, (ruleCounts.get(rule) ?? 0) + 1);
+    }
+    for (const finding of sample.redaction.findings) {
+      findingKindCounts.set(finding.kind, (findingKindCounts.get(finding.kind) ?? 0) + 1);
+    }
+  }
+
+  return {
+    status_counts: statusCounts,
+    applied_rules: sortCountEntries(ruleCounts, 'rule'),
+    finding_kinds: sortCountEntries(findingKindCounts, 'kind'),
+  };
+}
+
+export function buildDatasetRedactionPreview(
+  samples: CanonicalSftSample[],
+  limit = 5
+): DatasetRedactionPreviewItem[] {
+  return samples
+    .filter((sample) => sample.redaction.status !== 'clean' || sample.redaction.findings.length > 0)
+    .slice()
+    .sort((left, right) => {
+      const severityRank = (findings: CanonicalRedactionFinding[]): number => {
+        const ranks = { critical: 4, high: 3, medium: 2, low: 1 } as const;
+        return findings.reduce((max, finding) => Math.max(max, ranks[finding.severity]), 0);
+      };
+      const bySeverity = severityRank(right.redaction.findings) - severityRank(left.redaction.findings);
+      if (bySeverity !== 0) {
+        return bySeverity;
+      }
+      return right.redaction.findings.length - left.redaction.findings.length;
+    })
+    .slice(0, limit)
+    .map((sample) => ({
+      sample_id: sample.sample_id,
+      run_id: sample.source.run_id,
+      split: sample.split.assignment,
+      status: sample.redaction.status,
+      applied_rules: [...sample.redaction.applied_rules],
+      finding_kinds: [...new Set(sample.redaction.findings.map((finding) => finding.kind))],
+      rejection_reasons: [...sample.quality.rejection_reasons],
+    }));
 }
 
 function toolCallIdsMatch(sample: CanonicalSftSample): boolean {
@@ -210,6 +325,7 @@ export function finalizeValidationReport<Row>(
     },
     exported_sample_ids: accumulator.exportedSamples.map((sample) => sample.sample_id),
     rejected_samples: accumulator.rejectedSamples,
+    redaction_summary: buildDatasetRedactionSummary(accumulator.seenSamples),
   };
 }
 
@@ -267,6 +383,18 @@ export function renderValidationReportMarkdown(report: DatasetValidationReport):
       : report.rejected_samples
           .map((sample) => `- ${sample.sample_id}: ${sample.reasons.join(', ') || 'unknown_rejection'}`)
           .join('\n');
+  const appliedRulesSection =
+    report.redaction_summary.applied_rules.length === 0
+      ? '- 无'
+      : report.redaction_summary.applied_rules
+          .map((entry) => `- ${entry.rule}: ${entry.count}`)
+          .join('\n');
+  const findingKindsSection =
+    report.redaction_summary.finding_kinds.length === 0
+      ? '- 无'
+      : report.redaction_summary.finding_kinds
+          .map((entry) => `- ${entry.kind}: ${entry.count}`)
+          .join('\n');
 
   return [
     `# Validation Report`,
@@ -279,6 +407,15 @@ export function renderValidationReportMarkdown(report: DatasetValidationReport):
     `- Train: ${report.counts.train}`,
     `- Validation: ${report.counts.validation}`,
     `- Test: ${report.counts.test}`,
+    `- Redaction Clean: ${report.redaction_summary.status_counts.clean}`,
+    `- Redaction Redacted: ${report.redaction_summary.status_counts.redacted}`,
+    `- Redaction Blocked: ${report.redaction_summary.status_counts.blocked}`,
+    ``,
+    `## Redaction Rules`,
+    appliedRulesSection,
+    ``,
+    `## Redaction Finding Kinds`,
+    findingKindsSection,
     ``,
     `## Rejected Samples`,
     rejectedSection,

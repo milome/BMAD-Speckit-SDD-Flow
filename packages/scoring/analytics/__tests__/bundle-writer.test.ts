@@ -117,6 +117,9 @@ describe('bundle writer', () => {
     const validationRows = fs.readFileSync(path.join(result.bundleDir, 'validation.openai_chat.jsonl'), 'utf-8').trim().split('\n');
     const rejectionReport = JSON.parse(fs.readFileSync(path.join(result.bundleDir, 'rejection-report.json'), 'utf-8'));
     const manifest = JSON.parse(fs.readFileSync(path.join(result.bundleDir, 'manifest.json'), 'utf-8'));
+    const validationReport = JSON.parse(
+      fs.readFileSync(path.join(result.bundleDir, 'validation-report.json'), 'utf-8')
+    );
 
     expect(trainRows).toHaveLength(1);
     expect(validationRows).toHaveLength(1);
@@ -132,6 +135,15 @@ describe('bundle writer', () => {
       train: 1,
       validation: 1,
       test: 0,
+    });
+    expect(validationReport.redaction_summary).toEqual({
+      status_counts: {
+        clean: 3,
+        redacted: 0,
+        blocked: 0,
+      },
+      applied_rules: [],
+      finding_kinds: [],
     });
   });
 });

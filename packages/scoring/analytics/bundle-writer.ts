@@ -98,6 +98,7 @@ export async function writeDatasetBundle(
     target: options.exportTarget,
     counts: exportResult.validationReport.counts,
     exported_sample_ids: exportResult.validationReport.exported_sample_ids,
+    redaction_summary: exportResult.validationReport.redaction_summary,
   };
 
   fs.writeFileSync(path.join(bundleDir, manifestFile), JSON.stringify(manifest, null, 2), 'utf-8');

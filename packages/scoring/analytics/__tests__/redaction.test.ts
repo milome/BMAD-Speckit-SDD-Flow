@@ -82,4 +82,160 @@ describe('canonical redaction', () => {
     });
     expect(String(sample.messages[1].content)).not.toContain('engineer@example.com');
   });
+
+  it('redacts secret tokens from assistant tool call arguments', () => {
+    const sample = makeSample('Use the runtime tool to inspect the active run.');
+    sample.messages = [
+      sample.messages[0]!,
+      sample.messages[1]!,
+      {
+        role: 'assistant',
+        content: '',
+        tool_calls: [
+          {
+            id: 'call-runtime-001',
+            type: 'function',
+            function: {
+              name: 'get_runtime_snapshot',
+              arguments: '{"apiKey":"sk-1234567890abcdefghijklmnop"}',
+            },
+          },
+        ],
+      },
+      {
+        role: 'tool',
+        tool_call_id: 'call-runtime-001',
+        content: '{"status":"running"}',
+      },
+      sample.messages[2]!,
+    ];
+    sample.tools = [
+      {
+        type: 'function',
+        function: {
+          name: 'get_runtime_snapshot',
+          parameters: {
+            type: 'object',
+            properties: {
+              apiKey: { type: 'string' },
+            },
+          },
+        },
+      },
+    ];
+
+    const redacted = applyCanonicalRedaction(sample);
+
+    expect(redacted.redaction.status).toBe('redacted');
+    expect(redacted.redaction.redacted_fields).toContain(
+      'messages[2].tool_calls[0].function.arguments'
+    );
+    expect(redacted.redaction.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'secret_token',
+          severity: 'high',
+          field_path: 'messages[2].tool_calls[0].function.arguments',
+        }),
+      ])
+    );
+    expect(
+      redacted.messages[2]!.tool_calls?.[0]?.function.arguments
+    ).toContain('[REDACTED_SECRET]');
+    expect(
+      redacted.messages[2]!.tool_calls?.[0]?.function.arguments
+    ).not.toContain('sk-1234567890abcdefghijklmnop');
+  });
+
+  it('blocks private keys from assistant tool call arguments', () => {
+    const sample = makeSample('Use the runtime tool to inspect the active run.');
+    sample.messages = [
+      sample.messages[0]!,
+      sample.messages[1]!,
+      {
+        role: 'assistant',
+        content: '',
+        tool_calls: [
+          {
+            id: 'call-runtime-001',
+            type: 'function',
+            function: {
+              name: 'get_runtime_snapshot',
+              arguments: '{"privateKey":"BEGIN RSA PRIVATE KEY"}',
+            },
+          },
+        ],
+      },
+      sample.messages[2]!,
+    ];
+
+    const redacted = applyCanonicalRedaction(sample);
+
+    expect(redacted.redaction.status).toBe('blocked');
+    expect(redacted.redaction.redacted_fields).toContain(
+      'messages[2].tool_calls[0].function.arguments'
+    );
+    expect(redacted.redaction.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'private_key',
+          severity: 'critical',
+          field_path: 'messages[2].tool_calls[0].function.arguments',
+          action: 'block',
+        }),
+      ])
+    );
+  });
+
+  it('redacts content parts and tool schema strings', () => {
+    const sample = makeSample('Use the runtime tool to inspect the active run.');
+    sample.messages = [
+      sample.messages[0]!,
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'Contact engineer@example.com for the bundle.' },
+          { type: 'text', text: 'Then inspect the runtime tool output.' },
+        ],
+      },
+      sample.messages[2]!,
+    ];
+    sample.tools = [
+      {
+        type: 'function',
+        function: {
+          name: 'get_runtime_snapshot',
+          description: 'Escalate issues to owner@example.com before export.',
+          parameters: {
+            type: 'object',
+            properties: {
+              note: {
+                type: 'string',
+                description: 'Fallback token sk-1234567890abcdefghijklmnop',
+              },
+            },
+          },
+        },
+      },
+    ];
+
+    const redacted = applyCanonicalRedaction(sample);
+
+    expect(redacted.redaction.status).toBe('redacted');
+    expect(redacted.redaction.redacted_fields).toEqual(
+      expect.arrayContaining([
+        'messages[1].content[0].text',
+        'tools[0].function.description',
+        'tools[0].function.parameters.properties.note.description',
+      ])
+    );
+    expect(redacted.messages[1]!.content).toEqual([
+      { type: 'text', text: 'Contact [REDACTED_EMAIL] for the bundle.' },
+      { type: 'text', text: 'Then inspect the runtime tool output.' },
+    ]);
+    expect(redacted.tools?.[0]?.function.description).toContain('[REDACTED_EMAIL]');
+    expect(
+      String(redacted.tools?.[0]?.function.parameters.properties.note.description)
+    ).toContain('[REDACTED_SECRET]');
+  });
 });

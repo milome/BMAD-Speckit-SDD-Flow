@@ -1,6 +1,7 @@
 import type { CanonicalSftSample, CanonicalTool, CanonicalToolCall } from '../types';
 import {
   assessSampleForTarget,
+  buildExportRowRedactionMetadata,
   createRejectedSampleReport,
   createValidationAccumulator,
   finalizeValidationReport,
@@ -21,6 +22,16 @@ export interface OpenAiChatRow {
   messages: OpenAiChatMessage[];
   tools?: CanonicalTool[];
   parallel_tool_calls: boolean;
+  metadata: {
+    sample_id: string;
+    run_id: string;
+    split: CanonicalSftSample['split']['assignment'];
+    acceptance_decision: CanonicalSftSample['quality']['acceptance_decision'];
+    redaction_status: CanonicalSftSample['redaction']['status'];
+    redaction_applied_rules: string[];
+    redaction_findings_count: number;
+    redaction_finding_kinds: string[];
+  };
 }
 
 function toOpenAiMessage(message: CanonicalSftSample['messages'][number]): OpenAiChatMessage {
@@ -51,6 +62,7 @@ export function exportOpenAiChatRows(
   const accumulator = createValidationAccumulator<OpenAiChatRow>();
 
   for (const sample of samples) {
+    accumulator.seenSamples.push(sample);
     const decision = assessSampleForTarget(sample, 'openai_chat');
     if (!decision.exportable) {
       accumulator.rejectedSamples.push(createRejectedSampleReport(sample, decision));
@@ -60,6 +72,13 @@ export function exportOpenAiChatRows(
     const row: OpenAiChatRow = {
       messages: sample.messages.map(toOpenAiMessage),
       parallel_tool_calls: false,
+      metadata: {
+        sample_id: sample.sample_id,
+        run_id: sample.source.run_id,
+        split: sample.split.assignment,
+        acceptance_decision: sample.quality.acceptance_decision,
+        ...buildExportRowRedactionMetadata(sample),
+      },
       ...(sample.tools && sample.tools.length > 0 ? { tools: sample.tools } : {}),
     };
 

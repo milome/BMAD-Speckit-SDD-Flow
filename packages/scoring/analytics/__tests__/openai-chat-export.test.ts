@@ -106,8 +106,22 @@ function makeSample(overrides: Partial<CanonicalSftSample> = {}): CanonicalSftSa
 }
 
 describe('openai chat exporter', () => {
-  it('exports OpenAI JSONL rows with messages and preserves tool interactions', () => {
-    const sample = makeSample();
+  it('exports OpenAI JSONL rows with messages, tool interactions, and redaction metadata', () => {
+    const sample = makeSample({
+      redaction: {
+        status: 'redacted',
+        applied_rules: ['email'],
+        findings: [
+          {
+            kind: 'pii_email',
+            severity: 'medium',
+            field_path: 'messages[1].content',
+            action: 'redact',
+          },
+        ],
+        redacted_fields: ['messages[1].content'],
+      },
+    });
 
     const result = exportOpenAiChatRows([sample]);
 
@@ -115,6 +129,16 @@ describe('openai chat exporter', () => {
     expect(result.rowsBySplit.train[0]).toMatchObject({
       parallel_tool_calls: false,
       tools: sample.tools,
+      metadata: {
+        sample_id: 'sample-openai-001',
+        run_id: 'run-openai-001',
+        split: 'train',
+        acceptance_decision: 'accepted',
+        redaction_status: 'redacted',
+        redaction_applied_rules: ['email'],
+        redaction_findings_count: 1,
+        redaction_finding_kinds: ['pii_email'],
+      },
     });
     expect(result.rowsBySplit.train[0].messages).toEqual([
       { role: 'system', content: 'You are a coding agent.' },

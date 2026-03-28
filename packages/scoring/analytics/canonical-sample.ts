@@ -1,5 +1,5 @@
 import { computeStringHash } from '../utils/hash';
-import type { CanonicalMessage } from './types';
+import type { CanonicalMessage, CanonicalTool } from './types';
 import { extractAuditReportSections } from './audit-report-parser';
 
 export const HARD_REJECTION_REASONS = [
@@ -109,13 +109,43 @@ export function buildCanonicalMessages(
 
 export function estimateTokenCount(messages: CanonicalMessage[]): number {
   const content = messages
+    .map((message) => {
+      const parts = [
+        typeof message.content === 'string'
+          ? message.content
+          : message.content.map((part) => part.text).join('\n'),
+      ];
+      if (message.name) {
+        parts.push(message.name);
+      }
+      if (message.tool_call_id) {
+        parts.push(message.tool_call_id);
+      }
+      if (message.tool_calls && message.tool_calls.length > 0) {
+        parts.push(JSON.stringify(message.tool_calls));
+      }
+      return parts.filter(Boolean).join('\n');
+    })
+    .join('\n');
+  return Math.max(1, Math.ceil(content.length / 4));
+}
+
+export function estimateCanonicalTokenCount(
+  messages: CanonicalMessage[],
+  tools?: CanonicalTool[]
+): number {
+  const toolsPayload = tools && tools.length > 0 ? JSON.stringify(tools) : '';
+  const combined = `${messages
     .map((message) =>
       typeof message.content === 'string'
         ? message.content
         : message.content.map((part) => part.text).join('\n')
     )
-    .join('\n');
-  return Math.max(1, Math.ceil(content.length / 4));
+    .join('\n')}\n${messages
+    .flatMap((message) => message.tool_calls ?? [])
+    .map((toolCall) => JSON.stringify(toolCall))
+    .join('\n')}\n${toolsPayload}`.trim();
+  return Math.max(1, Math.ceil(combined.length / 4));
 }
 
 export function buildCanonicalSampleId(input: {
@@ -124,6 +154,9 @@ export function buildCanonicalSampleId(input: {
   sourcePath: string | null;
   baseCommitHash: string | null;
   instruction: string;
+  input?: string;
+  chunkKey?: string | null;
+  traceRef?: string | null;
   output: string;
 }): string {
   const stable = [
@@ -132,6 +165,9 @@ export function buildCanonicalSampleId(input: {
     input.sourcePath ?? 'no-source',
     input.baseCommitHash ?? 'no-base',
     input.instruction,
+    input.input ?? '',
+    input.chunkKey ?? '',
+    input.traceRef ?? '',
     input.output,
   ].join('::');
   return `sample-${computeStringHash(stable).slice(0, 16)}`;

@@ -106,8 +106,22 @@ function makeSample(overrides: Partial<CanonicalSftSample> = {}): CanonicalSftSa
 }
 
 describe('hf tool-calling exporter', () => {
-  it('writes messages plus tools and preserves tool response linkage', () => {
-    const sample = makeSample();
+  it('writes messages plus tools, preserves linkage, and includes redaction metadata', () => {
+    const sample = makeSample({
+      redaction: {
+        status: 'redacted',
+        applied_rules: ['secret-token'],
+        findings: [
+          {
+            kind: 'secret_token',
+            severity: 'high',
+            field_path: 'messages[2].tool_calls[0].function.arguments',
+            action: 'redact',
+          },
+        ],
+        redacted_fields: ['messages[2].tool_calls[0].function.arguments'],
+      },
+    });
 
     const result = exportHfToolCallingRows([sample]);
 
@@ -119,6 +133,10 @@ describe('hf tool-calling exporter', () => {
         run_id: 'run-hf-tool-001',
         split: 'test',
         acceptance_decision: 'accepted',
+        redaction_status: 'redacted',
+        redaction_applied_rules: ['secret-token'],
+        redaction_findings_count: 1,
+        redaction_finding_kinds: ['secret_token'],
       },
     });
     expect(result.rowsBySplit.test[0].messages[2]).toMatchObject({
