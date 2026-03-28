@@ -50,6 +50,16 @@ export function renderDashboardSnapshotMarkdown(
   lines.push(`- Accepted: ${snapshot.sft_summary.accepted}`);
   lines.push(`- Rejected: ${snapshot.sft_summary.rejected}`);
   lines.push(`- Downgraded: ${snapshot.sft_summary.downgraded}`);
+  lines.push(`- Redaction Clean: ${snapshot.sft_summary.redaction_status_counts.clean}`);
+  lines.push(`- Redaction Redacted: ${snapshot.sft_summary.redaction_status_counts.redacted}`);
+  lines.push(`- Redaction Blocked: ${snapshot.sft_summary.redaction_status_counts.blocked}`);
+  if (snapshot.sft_summary.redaction_applied_rules.length > 0) {
+    lines.push(
+      `- Redaction Rules: ${snapshot.sft_summary.redaction_applied_rules
+        .map((entry) => `${entry.rule}(${entry.count})`)
+        .join(', ')}`
+    );
+  }
   return lines.join('\n') + '\n';
 }
 
