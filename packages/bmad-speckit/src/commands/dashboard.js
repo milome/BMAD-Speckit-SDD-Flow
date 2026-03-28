@@ -23,6 +23,8 @@ const {
   getTrend,
   aggregateByEpicOnly,
   formatDashboardMarkdown,
+  queryRuntimeDashboard,
+  writeDashboardSnapshotFiles,
 } = require('@bmad-speckit/scoring/dashboard');
 
 const EMPTY_DATA_MESSAGE = '暂无数据，请先完成至少一轮 Dev Story';
@@ -30,6 +32,7 @@ const INSUFFICIENT_RUN_MESSAGE = '数据不足，暂无完整 run（至少 2 sta
 const EPIC_NO_COMPLETE_STORY_MESSAGE = (epicId) =>
   `Epic ${epicId} 下无完整 Story，暂无聚合数据`;
 const OUTPUT_PATH = '_bmad-output/dashboard.md';
+const OUTPUT_JSON_PATH = '_bmad-output/dashboard/runtime-dashboard.json';
 
 function ensureDir(dir) {
   if (!fs.existsSync(dir)) {
@@ -48,16 +51,15 @@ function dashboardCommand(opts) {
     (r) => r.scenario !== 'eval_question'
   );
 
-  const outDir = path.resolve(process.cwd(), path.dirname(OUTPUT_PATH));
-  ensureDir(outDir);
-  const outFile = path.resolve(process.cwd(), OUTPUT_PATH);
+  const outputPath = opts.output || OUTPUT_PATH;
+  const jsonPath = opts.outputJson || OUTPUT_JSON_PATH;
+  const includeRuntime = Boolean(opts.includeRuntime);
+  const printJson = Boolean(opts.json);
 
-  if (records.length === 0) {
-    const content = EMPTY_DATA_MESSAGE + '\n';
-    fs.writeFileSync(outFile, content, 'utf-8');
-    console.log(EMPTY_DATA_MESSAGE);
-    return;
-  }
+  const outDir = path.resolve(process.cwd(), path.dirname(outputPath));
+  ensureDir(outDir);
+  const outFile = path.resolve(process.cwd(), outputPath);
+  const outJsonFile = path.resolve(process.cwd(), jsonPath);
 
   const epicRaw = opts.epic;
   const storyRaw = opts.story;
@@ -69,6 +71,30 @@ function dashboardCommand(opts) {
     epic != null &&
     !isNaN(epic) &&
     (story == null || isNaN(story));
+
+  const snapshot = queryRuntimeDashboard({
+    root: process.cwd(),
+    dataPath,
+    strategy,
+    epic: epic != null && !isNaN(epic) ? epic : undefined,
+    story: story != null && !isNaN(story) ? story : undefined,
+    windowHours,
+  });
+
+  function writeArtifacts(markdown) {
+    const written = writeDashboardSnapshotFiles(snapshot, {
+      markdownPath: outFile,
+      jsonPath: outJsonFile,
+      markdown,
+      includeRuntime,
+    });
+    console.log(printJson ? written.json.trimEnd() : written.markdown.trimEnd());
+  }
+
+  if (records.length === 0) {
+    writeArtifacts(EMPTY_DATA_MESSAGE);
+    return;
+  }
 
   const latestRecords =
     strategy === 'epic_story_window'
@@ -82,9 +108,7 @@ function dashboardCommand(opts) {
 
   if (latestRecords.length === 0) {
     const msg = isEpicOnly && epic != null ? EPIC_NO_COMPLETE_STORY_MESSAGE(epic) : INSUFFICIENT_RUN_MESSAGE;
-    const content = msg + '\n';
-    fs.writeFileSync(outFile, content, 'utf-8');
-    console.log(msg);
+    writeArtifacts(msg);
     return;
   }
 
@@ -135,8 +159,7 @@ function dashboardCommand(opts) {
     formatOpts
   );
 
-  fs.writeFileSync(outFile, markdown, 'utf-8');
-  console.log(markdown);
+  writeArtifacts(markdown);
 }
 
 module.exports = { dashboardCommand };

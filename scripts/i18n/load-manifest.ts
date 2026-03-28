@@ -11,8 +11,10 @@ export function getDefaultManifestRoot(): string {
 }
 
 /**
- * @param id - Manifest id without extension (e.g. `speckit.audit.spec`)
- * @param manifestRoot - Optional root directory; defaults to `_bmad/i18n/manifests` under cwd
+ * Load a manifest by id.
+ * @param {string} id - Manifest id without extension (e.g. `speckit.audit.spec`)
+ * @param {string} [manifestRoot] - Optional root directory; defaults to `_bmad/i18n/manifests` under cwd
+ * @returns {TemplateManifest} Parsed manifest object
  */
 export function loadManifest(id: string, manifestRoot: string = getDefaultManifestRoot()): TemplateManifest {
   const filePath = path.join(manifestRoot, `${id}.yaml`);

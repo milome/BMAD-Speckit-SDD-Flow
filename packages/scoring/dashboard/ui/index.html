@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Runtime Observatory</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <p class="eyebrow">Runtime Observatory</p>
+        <h1>Live execution, score gates, and SFT readiness in one local console.</h1>
+        <p class="lede">
+          Overview, runtime context, stage timeline, score detail, and SFT builder summary refresh on polling.
+        </p>
+      </section>
+
+      <nav class="tabs" aria-label="Dashboard tabs">
+        <button class="tab is-active" data-tab="overview">Overview</button>
+        <button class="tab" data-tab="runtime">Runtime Context</button>
+        <button class="tab" data-tab="timeline">Stage Timeline</button>
+        <button class="tab" data-tab="score">Score Detail</button>
+        <button class="tab" data-tab="sft">SFT Builder Summary</button>
+      </nav>
+
+      <section class="panel-grid">
+        <article class="panel" id="panel-overview"></article>
+        <article class="panel is-hidden" id="panel-runtime"></article>
+        <article class="panel is-hidden" id="panel-timeline"></article>
+        <article class="panel is-hidden" id="panel-score"></article>
+        <article class="panel is-hidden" id="panel-sft"></article>
+      </section>
+    </main>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

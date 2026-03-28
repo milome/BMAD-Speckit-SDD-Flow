@@ -48,7 +48,11 @@ export function getLlmSystemPrompt(): string {
   return loc === 'en' ? LLM_SYSTEM_PROMPT_EN : LLM_SYSTEM_PROMPT;
 }
 
-/** Normalize LLM JSON severity to 高|中|低 (TB.1: accept zh + en tokens). */
+/**
+ * Normalize LLM JSON severity to 高|中|低 (TB.1: accept zh + en tokens).
+ * @param {string} raw - Raw severity token
+ * @returns {'高' | '中' | '低'} Canonical severity
+ */
 export function normalizeLlmSeverity(raw: string): '高' | '中' | '低' {
   const s = raw.trim();
   const lower = s.toLowerCase();
@@ -58,6 +62,13 @@ export function normalizeLlmSeverity(raw: string): '高' | '中' | '低' {
   throw new ParseError(`Invalid severity token: ${raw}`);
 }
 
+/**
+ * Parse and validate raw LLM JSON output.
+ * @param {string} raw - Raw JSON string from the model
+ * @param {number} attempt - Retry attempt number
+ * @returns {LlmExtractionResult} Parsed extraction result
+ * @throws {ParseError} If payload shape is invalid
+ */
 function parseAndValidate(
   raw: string,
   attempt: number

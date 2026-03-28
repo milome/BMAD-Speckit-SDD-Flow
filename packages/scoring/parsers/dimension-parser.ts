@@ -121,9 +121,9 @@ export function parseDimensionScores(
 
 /**
  * English dimension labels from code-reviewer-config `name_en` (TB.6 WARN / diagnostics).
- * @param mode - Dimension mode
- * @param configPath - Optional config path
- * @returns Ordered list of name_en values (skips entries without name_en)
+ * @param {DimensionMode} mode - Dimension mode
+ * @param {string} [configPath] - Optional config path
+ * @returns {string[]} Ordered list of name_en values (skips entries without name_en)
  */
 export function listDimensionNamesEn(mode: DimensionMode, configPath?: string): string[] {
   const resolved = getConfigPath(configPath);

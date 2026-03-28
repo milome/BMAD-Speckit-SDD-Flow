@@ -36,7 +36,20 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
   return out;
 }
 
-/** Load flow/stage/identity **only** from registry-backed runtime context. */
+/**
+ * Load flow/stage/identity **only** from registry-backed runtime context.
+ * @param {string} root - Project root
+ * @returns {{
+ *   flow: string;
+ *   stage: string;
+ *   templateId?: string;
+ *   epicId?: string;
+ *   storyId?: string;
+ *   storySlug?: string;
+ *   runId?: string;
+ *   artifactRoot?: string;
+ * }} Registry-backed runtime policy context
+ */
 export function loadPolicyContextFromRegistry(root: string): {
   flow: string;
   stage: string;

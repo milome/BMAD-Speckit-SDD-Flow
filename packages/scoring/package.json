@@ -55,6 +55,10 @@
       "require": "./dist/analytics/types.js",
       "types": "./dist/analytics/types.d.ts"
     },
+    "./analytics": {
+      "require": "./dist/analytics/index.js",
+      "types": "./dist/analytics/index.d.ts"
+    },
     "./analytics/sft-extractor": {
       "require": "./dist/analytics/sft-extractor.js",
       "types": "./dist/analytics/sft-extractor.d.ts"
@@ -76,6 +80,7 @@
     "schema/",
     "runtime/schema/",
     "analytics/schema/",
+    "dashboard/ui/",
     "data/__fixtures-*"
   ],
   "dependencies": {

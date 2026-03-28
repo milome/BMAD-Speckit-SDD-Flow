@@ -4,19 +4,52 @@
 
 ---
 
+## Runtime Dashboard / Training-Ready SFT 子命令
+
+这组命令不是新的 speckit 主阶段，而是 runtime 观测、agent 工具接入、以及训练数据产出的稳定入口。
+
+| 命令                                                 | 用途                                                                 | 关键输出                                                                                                                                                 |
+| ---------------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bmad-speckit dashboard --json --output-json <path>` | 生成 dashboard markdown，并落一份 runtime snapshot JSON              | `_bmad-output/dashboard/runtime-dashboard.json`，顶层含 `selection` / `overview` / `runtime_context` / `stage_timeline` / `score_detail` / `sft_summary` |
+| `bmad-speckit dashboard-live`                        | 启动本地 live dashboard web server                                   | stdout 打印 URL；提供 `/health`、`/api/snapshot`、`/api/runtime-context`、`/api/stage-timeline`、`/api/score-detail`、`/api/sft-summary`                 |
+| `bmad-speckit runtime-mcp`                           | 以 stdio 启动 runtime dashboard MCP server                           | 默认 `MCP-first`；若未提供 `--dashboard-url`，会自动拉起 live dashboard                                                                                  |
+| `bmad-speckit sft-preview`                           | 预览 canonical SFT 候选集                                            | JSON；含 accepted / rejected / downgraded、split 统计                                                                                                    |
+| `bmad-speckit sft-validate`                          | 校验 `CanonicalSftSample` 与目标导出兼容性                           | JSON；含 `schema_valid`、`invalid_samples`、`rejected_samples`                                                                                           |
+| `bmad-speckit sft-bundle`                            | 写出 training-ready bundle                                           | bundle 目录、`manifest.json`、`validation-report.json`、`rejection-report.json`                                                                          |
+| `bmad-speckit sft-extract`                           | 兼容旧版 JSONL 导出；非 legacy target 时复用 canonical bundle writer | `legacy_instruction_io` 或 `openai_chat` / `hf_conversational` / `hf_tool_calling`                                                                       |
+
+### Runtime 连接边界
+
+- Agent runtime：`MCP-first`
+- UI 展示：`webserver-independent fallback`
+- CLI dataset 命令：优先读 `BMAD_RUNTIME_DASHBOARD_URL` / `RUNTIME_DASHBOARD_URL` 对应的 live dashboard；未提供时回退本地 shared core
+
+### 推荐命令
+
+```bash
+npx bmad-speckit dashboard-live
+npx bmad-speckit runtime-mcp --dashboard-port 43123
+npx bmad-speckit dashboard --json --include-runtime
+npx bmad-speckit sft-preview --target openai_chat
+npx bmad-speckit sft-validate --target hf_tool_calling
+npx bmad-speckit sft-bundle --target hf_conversational --bundle-dir _bmad-output/datasets
+```
+
+---
+
 ## 一、命令映射总表
 
-| Speckit 命令 | Cursor 形式 | Claude Code CLI 形式 | 阶段 | 前置条件 | 产出文档 |
-|-------------|------------|---------------------|------|---------|---------|
-| **constitution** | `/speckit.constitution` | `claude-code --agent speckit-constitution` | §0.5 | 无 | `constitution.md` |
-| **specify** | `/speckit.specify` | `claude-code --agent speckit-specify` | §1 | constitution 通过审计 | `spec-E{epic}-S{story}.md` |
-| **plan** | `/speckit.plan` | `claude-code --agent speckit-plan` | §2 | spec 通过审计 | `plan-E{epic}-S{story}.md` |
-| **GAPS** | `/speckit.gaps`（兼容自动触发） | `claude-code --agent speckit-gaps` | §3 | plan 通过审计 | `IMPLEMENTATION_GAPS-E{epic}-S{story}.md` |
-| **tasks** | `/speckit.tasks` | `claude-code --agent speckit-tasks` | §4 | GAPS 通过审计 | `tasks-E{epic}-S{story}.md` |
-| **implement** | `/speckit.implement` | `claude-code --agent speckit-implement` | §5 | tasks 通过审计 | 可运行代码 + 测试 |
-| **clarify** | `/speckit.clarify` | `claude-code --agent speckit-clarify` | §1.2 内嵌 | spec 审计发现模糊 | 更新后的 spec.md |
-| **checklist** | `/speckit.checklist` | `claude-code --agent speckit-checklist` | §2.2 内嵌 | plan 多模块/复杂 | 质量检查清单 |
-| **analyze** | `/speckit.analyze` | `claude-code --agent speckit-analyze` | §4.2 内嵌 | tasks≥10 或跨 artifact | 一致性分析报告 |
+| Speckit 命令     | Cursor 形式                     | Claude Code CLI 形式                       | 阶段      | 前置条件               | 产出文档                                  |
+| ---------------- | ------------------------------- | ------------------------------------------ | --------- | ---------------------- | ----------------------------------------- |
+| **constitution** | `/speckit.constitution`         | `claude-code --agent speckit-constitution` | §0.5      | 无                     | `constitution.md`                         |
+| **specify**      | `/speckit.specify`              | `claude-code --agent speckit-specify`      | §1        | constitution 通过审计  | `spec-E{epic}-S{story}.md`                |
+| **plan**         | `/speckit.plan`                 | `claude-code --agent speckit-plan`         | §2        | spec 通过审计          | `plan-E{epic}-S{story}.md`                |
+| **GAPS**         | `/speckit.gaps`（兼容自动触发） | `claude-code --agent speckit-gaps`         | §3        | plan 通过审计          | `IMPLEMENTATION_GAPS-E{epic}-S{story}.md` |
+| **tasks**        | `/speckit.tasks`                | `claude-code --agent speckit-tasks`        | §4        | GAPS 通过审计          | `tasks-E{epic}-S{story}.md`               |
+| **implement**    | `/speckit.implement`            | `claude-code --agent speckit-implement`    | §5        | tasks 通过审计         | 可运行代码 + 测试                         |
+| **clarify**      | `/speckit.clarify`              | `claude-code --agent speckit-clarify`      | §1.2 内嵌 | spec 审计发现模糊      | 更新后的 spec.md                          |
+| **checklist**    | `/speckit.checklist`            | `claude-code --agent speckit-checklist`    | §2.2 内嵌 | plan 多模块/复杂       | 质量检查清单                              |
+| **analyze**      | `/speckit.analyze`              | `claude-code --agent speckit-analyze`      | §4.2 内嵌 | tasks≥10 或跨 artifact | 一致性分析报告                            |
 
 ---
 
@@ -207,25 +240,25 @@ python _bmad/speckit/scripts/python/generate_smoke_skeleton.py \
 
 ### 3.1 产出文档路径
 
-| 阶段 | BMAD 路径格式 | Standalone 路径格式 |
-|------|--------------|---------------------|
-| constitution | `.claude/memory/constitution.md` | `constitution.md` |
-| spec | `specs/epic-{epic}-{slug}/story-{story}-{slug}/spec-E{epic}-S{story}.md` | `specs/{index}-{name}/spec.md` |
-| plan | `specs/epic-{epic}-{slug}/story-{story}-{slug}/plan-E{epic}-S{story}.md` | `specs/{index}-{name}/plan.md` |
-| GAPS | `specs/epic-{epic}-{slug}/story-{story}-{slug}/IMPLEMENTATION_GAPS-E{epic}-S{story}.md` | `specs/{index}-{name}/IMPLEMENTATION_GAPS.md` |
-| tasks | `specs/epic-{epic}-{slug}/story-{story}-{slug}/tasks-E{epic}-S{story}.md` | `specs/{index}-{name}/tasks.md` |
-| prd | `_bmad-output/implementation-artifacts/epic-{epic}-{slug}/story-{story}-{slug}/prd.{stem}.json` | `prd.{stem}.json` |
-| progress | `_bmad-output/implementation-artifacts/epic-{epic}-{slug}/story-{story}-{slug}/progress.{stem}.txt` | `progress.{stem}.txt` |
-| audit报告 | `AUDIT_{stage}-E{epic}-S{story}_round{N}.md` | `_orphan/AUDIT_{slug}_round{N}.md` |
+| 阶段         | BMAD 路径格式                                                                                       | Standalone 路径格式                           |
+| ------------ | --------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| constitution | `.claude/memory/constitution.md`                                                                    | `constitution.md`                             |
+| spec         | `specs/epic-{epic}-{slug}/story-{story}-{slug}/spec-E{epic}-S{story}.md`                            | `specs/{index}-{name}/spec.md`                |
+| plan         | `specs/epic-{epic}-{slug}/story-{story}-{slug}/plan-E{epic}-S{story}.md`                            | `specs/{index}-{name}/plan.md`                |
+| GAPS         | `specs/epic-{epic}-{slug}/story-{story}-{slug}/IMPLEMENTATION_GAPS-E{epic}-S{story}.md`             | `specs/{index}-{name}/IMPLEMENTATION_GAPS.md` |
+| tasks        | `specs/epic-{epic}-{slug}/story-{story}-{slug}/tasks-E{epic}-S{story}.md`                           | `specs/{index}-{name}/tasks.md`               |
+| prd          | `_bmad-output/implementation-artifacts/epic-{epic}-{slug}/story-{story}-{slug}/prd.{stem}.json`     | `prd.{stem}.json`                             |
+| progress     | `_bmad-output/implementation-artifacts/epic-{epic}-{slug}/story-{story}-{slug}/progress.{stem}.txt` | `progress.{stem}.txt`                         |
+| audit报告    | `AUDIT_{stage}-E{epic}-S{story}_round{N}.md`                                                        | `_orphan/AUDIT_{slug}_round{N}.md`            |
 
 ### 3.2 过程控制文件
 
-| 文件 | 用途 | 更新时机 |
-|------|------|---------|
-| `bmad-progress.yaml` | BMAD 状态跟踪 | 每阶段完成后 |
-| `bmad-lock.yaml` | 并发控制 | 阶段开始时锁定 |
-| `prd.{stem}.json` | ralph-method PRD | §5.1 执行前创建，每US完成后更新 passes |
-| `progress.{stem}.txt` | TDD进度追踪 | §5.1 执行前创建，每阶段后追加 [TDD-XXX] |
+| 文件                  | 用途             | 更新时机                                |
+| --------------------- | ---------------- | --------------------------------------- |
+| `bmad-progress.yaml`  | BMAD 状态跟踪    | 每阶段完成后                            |
+| `bmad-lock.yaml`      | 并发控制         | 阶段开始时锁定                          |
+| `prd.{stem}.json`     | ralph-method PRD | §5.1 执行前创建，每US完成后更新 passes  |
+| `progress.{stem}.txt` | TDD进度追踪      | §5.1 执行前创建，每阶段后追加 [TDD-XXX] |
 
 ---
 
@@ -233,26 +266,26 @@ python _bmad/speckit/scripts/python/generate_smoke_skeleton.py \
 
 ### 4.1 审计严格度
 
-| 阶段 | 严格度 | 收敛规则 | 批判审计员 |
-|------|--------|---------|-----------|
-| §0.5 constitution | standard | 单次通过 | 可选 |
-| §1 specify | standard | 单次通过 | **必须** |
-| §2 plan | standard | 单次通过 | **必须** |
-| §3 GAPS | standard | 单次通过 | **必须** |
-| §4 tasks | standard | 单次通过 | **必须** |
-| §5 implement(batch间) | standard | 单次通过 | **必须** |
-| §5.2 implement(最终) | **strict** | **连续3轮无gap** | **必须>50%** |
+| 阶段                  | 严格度     | 收敛规则         | 批判审计员   |
+| --------------------- | ---------- | ---------------- | ------------ |
+| §0.5 constitution     | standard   | 单次通过         | 可选         |
+| §1 specify            | standard   | 单次通过         | **必须**     |
+| §2 plan               | standard   | 单次通过         | **必须**     |
+| §3 GAPS               | standard   | 单次通过         | **必须**     |
+| §4 tasks              | standard   | 单次通过         | **必须**     |
+| §5 implement(batch间) | standard   | 单次通过         | **必须**     |
+| §5.2 implement(最终)  | **strict** | **连续3轮无gap** | **必须>50%** |
 
 ### 4.2 审计提示词来源
 
-| 阶段 | 提示词文件 | 章节 |
-|------|-----------|------|
+| 阶段         | 提示词文件       | 章节                |
+| ------------ | ---------------- | ------------------- |
 | constitution | audit-prompts.md | §0 (通用文档完整性) |
-| spec | audit-prompts.md | §1 |
-| plan | audit-prompts.md | §2 |
-| GAPS | audit-prompts.md | §3 |
-| tasks | audit-prompts.md | §4 |
-| implement | audit-prompts.md | §5 |
+| spec         | audit-prompts.md | §1                  |
+| plan         | audit-prompts.md | §2                  |
+| GAPS         | audit-prompts.md | §3                  |
+| tasks        | audit-prompts.md | §4                  |
+| implement    | audit-prompts.md | §5                  |
 
 ### 4.3 审计报告格式要求
 
@@ -261,9 +294,10 @@ python _bmad/speckit/scripts/python/generate_smoke_skeleton.py \
 ```markdown
 ## 可解析评分块（供 parseAndWriteScore）
 
-总体评级: [A|B|C|D]  (只能是A/B/C/D，禁止A-、B+等)
+总体评级: [A|B|C|D] (只能是A/B/C/D，禁止A-、B+等)
 
 维度评分:
+
 - 需求完整性: XX/100
 - 可测试性: XX/100
 - 一致性: XX/100
@@ -279,6 +313,7 @@ python _bmad/speckit/scripts/python/generate_smoke_skeleton.py \
 > 旧调用方式 `npx ts-node scripts/parse-and-write-score.ts` 已替换为 `npx bmad-speckit score`，参数不变。
 >
 > `--triggerStage` 的统一理解：
+>
 > - 它不是简单手填字符串，而是 **当前运行阶段在 scoring 侧使用的最终阶段标识**。
 > - 它的基础映射来源于 `stage-mapping.yaml`。
 > - 在统一 Runtime Governance 模型下，最终 `triggerStage` 应由治理层结合 `flow`、`stage`、映射规则与兼容规则共同求值得出。
@@ -338,6 +373,7 @@ npx bmad-speckit score \
 触发配置存储在: `_bmad/_config/scoring-trigger-modes.yaml`
 
 > 统一理解：
+>
 > - `scoring-trigger-modes.yaml` 提供的是 **trigger 策略输入**，用于参与 `scoringEnabled` 求值。
 > - `stage-mapping.yaml` 提供的是 **阶段到内部标识的基础映射**，用于参与 `triggerStage` 求值。
 > - Runtime Governance 输出的才是当前场景下最终可执行的：
@@ -347,15 +383,15 @@ npx bmad-speckit score \
 
 ```yaml
 stages:
-  - name: speckit_1_2  # §1 specify
+  - name: speckit_1_2 # §1 specify
     events: [stage_audit_complete]
-  - name: speckit_2_2  # §2 plan
+  - name: speckit_2_2 # §2 plan
     events: [stage_audit_complete]
-  - name: speckit_3_2  # §3 GAPS
+  - name: speckit_3_2 # §3 GAPS
     events: [stage_audit_complete]
-  - name: speckit_4_2  # §4 tasks
+  - name: speckit_4_2 # §4 tasks
     events: [stage_audit_complete]
-  - name: speckit_5_2  # §5 implement
+  - name: speckit_5_2 # §5 implement
     events: [stage_audit_complete]
 ```
 
@@ -412,6 +448,7 @@ stages:
 
 ```markdown
 # US-001: 实现XXX功能
+
 [TDD-RED] US-001 pytest tests/test_xxx.py -v => 3 failed
 错误: ModuleNotFoundError, Test failed as expected
 
@@ -419,11 +456,13 @@ stages:
 实现: 添加XXX类，实现YYY方法
 
 [TDD-REFACTOR] US-001 无需重构 ✓
+
 # 或 [TDD-REFACTOR] US-001 提取XXX工具函数，优化命名
 
 ---
 
 # US-002: 配置更新
+
 [DONE] US-002 2024-01-15 14:30
 ```
 
@@ -433,29 +472,29 @@ stages:
 
 ### 7.1 CLI 目标名 ↔ 当前实现文件
 
-| CLI / 命令目标名 | 当前实现文件 | 现状说明 |
-|------------------|--------------|----------|
-| `speckit-constitution` | `.claude/agents/speckit-constitution.md` | 已有顶层 agent |
-| `speckit-specify` | `.claude/agents/speckit-specify.md` | 顶层 alias 已落地；canonical body 为 `.claude/agents/layers/bmad-layer4-speckit-specify.md` |
-| `speckit-plan` | `.claude/agents/speckit-plan.md` | 顶层 alias 已落地；canonical body 为 `.claude/agents/layers/bmad-layer4-speckit-plan.md` |
-| `speckit-gaps` | `.claude/agents/speckit-gaps.md` | 顶层 alias 已落地；canonical body 为 `.claude/agents/layers/bmad-layer4-speckit-gaps.md`，旧名 `.claude/agents/gaps.md` 保留兼容 |
-| `speckit-tasks` | `.claude/agents/speckit-tasks.md` | 顶层 alias 已落地；canonical body 为 `.claude/agents/layers/bmad-layer4-speckit-tasks.md` |
-| `speckit-implement` | `.claude/agents/speckit-implement.md` + `.claude/agents/layers/bmad-layer4-speckit-implement.md` | 顶层执行体与 BMAD Layer 4 wrapper 均已存在 |
-| `speckit-clarify` | `.claude/agents/speckit-clarify.md` | 已有顶层 agent |
-| `speckit-checklist` | `.claude/agents/speckit-checklist.md` | 已有顶层 agent |
-| `speckit-analyze` | `.claude/agents/speckit-analyze.md` | 已有顶层 agent |
+| CLI / 命令目标名       | 当前实现文件                                                                                     | 现状说明                                                                                                                         |
+| ---------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `speckit-constitution` | `.claude/agents/speckit-constitution.md`                                                         | 已有顶层 agent                                                                                                                   |
+| `speckit-specify`      | `.claude/agents/speckit-specify.md`                                                              | 顶层 alias 已落地；canonical body 为 `.claude/agents/layers/bmad-layer4-speckit-specify.md`                                      |
+| `speckit-plan`         | `.claude/agents/speckit-plan.md`                                                                 | 顶层 alias 已落地；canonical body 为 `.claude/agents/layers/bmad-layer4-speckit-plan.md`                                         |
+| `speckit-gaps`         | `.claude/agents/speckit-gaps.md`                                                                 | 顶层 alias 已落地；canonical body 为 `.claude/agents/layers/bmad-layer4-speckit-gaps.md`，旧名 `.claude/agents/gaps.md` 保留兼容 |
+| `speckit-tasks`        | `.claude/agents/speckit-tasks.md`                                                                | 顶层 alias 已落地；canonical body 为 `.claude/agents/layers/bmad-layer4-speckit-tasks.md`                                        |
+| `speckit-implement`    | `.claude/agents/speckit-implement.md` + `.claude/agents/layers/bmad-layer4-speckit-implement.md` | 顶层执行体与 BMAD Layer 4 wrapper 均已存在                                                                                       |
+| `speckit-clarify`      | `.claude/agents/speckit-clarify.md`                                                              | 已有顶层 agent                                                                                                                   |
+| `speckit-checklist`    | `.claude/agents/speckit-checklist.md`                                                            | 已有顶层 agent                                                                                                                   |
+| `speckit-analyze`      | `.claude/agents/speckit-analyze.md`                                                              | 已有顶层 agent                                                                                                                   |
 
 ### 7.2 现有辅助 / 审计 Agent
 
-| Agent | 文件 | 用途 |
-|-------|------|------|
-| `bmad-master` | `.claude/agents/bmad-master.md` | 总协调 |
-| `auditor-spec` | `.claude/agents/auditors/auditor-spec.md` | §1 审计 |
-| `auditor-plan` | `.claude/agents/auditors/auditor-plan.md` | §2 审计 |
-| `auditor-gaps` | `.claude/agents/auditors/auditor-gaps.md` | §3 审计 |
-| `auditor-tasks` | `.claude/agents/auditors/auditor-tasks.md` | §4 审计 |
-| `auditor-implement` | `.claude/agents/auditors/auditor-implement.md` | §5 审计 |
-| `gaps` | `.claude/agents/gaps.md` | 旧名 gaps 分析 agent；当前可作为 `speckit-gaps` 的兼容实现体之一 |
+| Agent               | 文件                                           | 用途                                                             |
+| ------------------- | ---------------------------------------------- | ---------------------------------------------------------------- |
+| `bmad-master`       | `.claude/agents/bmad-master.md`                | 总协调                                                           |
+| `auditor-spec`      | `.claude/agents/auditors/auditor-spec.md`      | §1 审计                                                          |
+| `auditor-plan`      | `.claude/agents/auditors/auditor-plan.md`      | §2 审计                                                          |
+| `auditor-gaps`      | `.claude/agents/auditors/auditor-gaps.md`      | §3 审计                                                          |
+| `auditor-tasks`     | `.claude/agents/auditors/auditor-tasks.md`     | §4 审计                                                          |
+| `auditor-implement` | `.claude/agents/auditors/auditor-implement.md` | §5 审计                                                          |
+| `gaps`              | `.claude/agents/gaps.md`                       | 旧名 gaps 分析 agent；当前可作为 `speckit-gaps` 的兼容实现体之一 |
 
 ---
 
@@ -545,6 +584,6 @@ scripts/
 
 ---
 
-*映射文档版本: v1.0*
-*基于: speckit-workflow SKILL.md (594行)*
-*创建时间: 2026-03-13*
+_映射文档版本: v1.0_
+_基于: speckit-workflow SKILL.md (594行)_
+_创建时间: 2026-03-13_

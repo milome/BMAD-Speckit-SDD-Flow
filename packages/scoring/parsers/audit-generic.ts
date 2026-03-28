@@ -12,7 +12,11 @@ const GRADE_TO_SCORE: Record<string, number> = {
 
 export type GenericAuditStage = Extract<MappingStage, 'prd' | 'spec' | 'plan' | 'gaps' | 'tasks' | 'implement'>;
 
-/** Maps Chinese or English severity labels to score deltas (T3.2). */
+/**
+ * Maps Chinese or English severity labels to score deltas (T3.2).
+ * @param {string} severity - Chinese or English severity label
+ * @returns {number} Score delta
+ */
 export function normalizeSeverityDelta(severity: string): number {
   const value = severity.trim();
   const lower = value.toLowerCase();
@@ -40,7 +44,11 @@ export function extractOverallGrade(content: string): string | null {
   return null;
 }
 
-/** Bilingual problem-list section (T3.2). */
+/**
+ * Extract the bilingual problem-list section (T3.2).
+ * @param {string} content - Full report text
+ * @returns {RegExpMatchArray | null} Matched section or null
+ */
 function findProblemSectionText(content: string): RegExpMatchArray | null {
   return content.match(
     /(?:问题清单|Issue List|Problem List):\s*([\s\S]*?)(?=通过标准:|下一步行动:|Pass Criteria:|Next Actions:|$)/i

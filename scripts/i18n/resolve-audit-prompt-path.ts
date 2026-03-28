@@ -22,6 +22,8 @@ const PROJECT_RUNTIME_CONTEXT = path.join(
  * - `en` → English `.en.md` when present.
  * - `zh` | `bilingual` → Chinese path (`.zh.md` or default `.md`); bilingual does not pick a second file here.
  * - Missing/invalid file or field → **zh** (default main稿).
+ * @param {string} [projectRoot=process.cwd()] - Project root used to locate runtime context
+ * @returns {AuditPromptLocale} Preferred audit prompt locale
  */
 export function getAuditPromptLocaleFromRuntimeContext(
   projectRoot: string = process.cwd()
@@ -56,9 +58,11 @@ export interface ResolveAuditPromptResult {
 }
 
 /**
- * @param refsDir - e.g. .../speckit-workflow/references
- * @param templateBasename - value from code-reviewer-config prompt_template, e.g. audit-prompts-code.md
- * @param locale - from `getAuditPromptLocaleFromRuntimeContext()` / `languagePolicy.resolvedMode` (zh | en)
+ * Resolve the concrete audit prompt template path for a locale.
+ * @param {string} refsDir - e.g. .../speckit-workflow/references
+ * @param {string} templateBasename - Value from code-reviewer-config prompt_template, e.g. audit-prompts-code.md
+ * @param {AuditPromptLocale} locale - Locale from runtime context (`zh` | `en`)
+ * @returns {ResolveAuditPromptResult} Resolved path metadata
  */
 export function resolveAuditPromptPath(
   refsDir: string,
