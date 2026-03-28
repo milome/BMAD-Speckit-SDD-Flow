@@ -14,7 +14,7 @@ function postToolUse(event) {
 }
 
 if (require.main === module) {
-  postToolUseCore({ host: 'claude' })
+  postToolUseCore({ host: 'cursor' })
     .then(({ exitCode, output, stderr }) => {
       if (stderr && process.env.BMAD_HOOKS_QUIET !== '1') {
         process.stderr.write(`${stderr}\n`);

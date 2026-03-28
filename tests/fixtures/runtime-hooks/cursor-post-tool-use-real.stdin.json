@@ -1,0 +1,22 @@
+{
+  "conversation_id": "00000000-aaaa-bbbb-cccc-111111111111",
+  "generation_id": "00000000-2222-3333-4444-555555555555",
+  "model": "composer-1.5",
+  "tool_name": "Shell",
+  "tool_input": {
+    "command": "Set-Location \"d:\\workspace\\runtime-dashboard-sft\"; npm test -- tests/acceptance/runtime-v6-sync-protected-paths.test.ts 2>&1",
+    "cwd": "",
+    "timeout": 30000
+  },
+  "tool_output": "{\"output\":\"\\n> bmad-speckit-sdd-flow@0.1.0 test\\n> vitest run && npm run test:bmad-speckit tests/acceptance/runtime-v6-sync-protected-paths.test.ts\\n\\n\\n RUN  v4.0.18 D:/workspace/runtime-dashboard-sft\\n\\n ✓ tests/acceptance/runtime-v6-sync-protected-paths.test.ts (1 test) 42ms\\n\",\"exitCode\":0}",
+  "duration": 30025.251,
+  "tool_use_id": "00000000-1111-2222-3333-444444444444",
+  "cwd": "",
+  "hook_event_name": "postToolUse",
+  "cursor_version": "2.6.21",
+  "workspace_roots": [
+    "/d:/workspace/runtime-dashboard-sft"
+  ],
+  "user_email": "redacted@example.test",
+  "transcript_path": "c:\\Users\\redacted\\.cursor\\projects\\runtime-dashboard-sft\\agent-transcripts\\00000000-aaaa-bbbb-cccc-111111111111\\00000000-aaaa-bbbb-cccc-111111111111.jsonl"
+}

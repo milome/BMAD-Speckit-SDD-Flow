@@ -79,6 +79,7 @@ function writeCursorHooksJson(targetDir) {
         { command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host --session-start' },
       ],
       preToolUse: [{ command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host' }],
+      postToolUse: [{ command: 'node .cursor/hooks/post-tool-use.js' }],
       subagentStart: [
         { command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host --subagent-start' },
       ],
@@ -240,7 +241,7 @@ function syncCursorRuntimePolicyHooks(targetDir, bmadRoot) {
     console.log('Sync', path.relative(targetDir, sharedDir), '->', path.join('.cursor', 'hooks'));
   }
 
-  const names = ['emit-runtime-policy-cli.js', 'runtime-policy-inject.js'];
+  const names = ['emit-runtime-policy-cli.js', 'runtime-policy-inject.js', 'post-tool-use.js'];
   for (const name of names) {
     const src = path.join(cursorHooksDir, name);
     if (fs.existsSync(src)) {
@@ -270,7 +271,7 @@ function syncClaudeRuntimePolicyHooks(targetDir, bmadRoot) {
     console.log('Sync', path.relative(targetDir, sharedDir), '->', path.join('.claude', 'hooks'));
   }
 
-  const names = ['emit-runtime-policy-cli.js', 'runtime-policy-inject.js'];
+  const names = ['emit-runtime-policy-cli.js', 'runtime-policy-inject.js', 'post-tool-use.js'];
   for (const name of names) {
     const src = path.join(claudeHooksDir, name);
     if (fs.existsSync(src)) {
