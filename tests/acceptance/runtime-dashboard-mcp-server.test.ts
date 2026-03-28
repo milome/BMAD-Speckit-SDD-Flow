@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { rmSync } from 'node:fs';
 import * as path from 'node:path';
 import { spawn } from 'node:child_process';
@@ -60,73 +60,82 @@ describe('runtime dashboard mcp server', () => {
   });
 
   it('boots over stdio and exposes summary-first runtime tools', async () => {
-    const fixture = await createRuntimeDashboardFixture();
-    roots.push(fixture.root);
-    ensureScoringBuild(process.cwd());
-
-    const binPath = path.join(process.cwd(), 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
-    const proc = spawn('node', [binPath, 'runtime-mcp', '--dashboard-port', '0'], {
-      cwd: fixture.root,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     try {
-      proc.stdin.write(
-        encodeMessage({
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'initialize',
-          params: {
-            protocolVersion: '2024-11-05',
-            capabilities: {},
-            clientInfo: { name: 'vitest', version: '1.0.0' },
-          },
-        })
-      );
-      const initResponse = await readMessage(proc);
+      const fixture = await createRuntimeDashboardFixture();
+      roots.push(fixture.root);
+      ensureScoringBuild(process.cwd());
 
-      proc.stdin.write(
-        encodeMessage({
-          jsonrpc: '2.0',
-          id: 2,
-          method: 'tools/list',
-        })
-      );
-      const toolsResponse = await readMessage(proc);
+      const binPath = path.join(process.cwd(), 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
+      const proc = spawn('node', [binPath, 'runtime-mcp', '--dashboard-port', '0'], {
+        cwd: fixture.root,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
 
-      proc.stdin.write(
-        encodeMessage({
-          jsonrpc: '2.0',
-          id: 3,
-          method: 'tools/call',
-          params: {
-            name: 'get_current_run_summary',
-            arguments: {},
-          },
-        })
-      );
-      const summaryResponse = await readMessage(proc);
+      try {
+        proc.stdin.write(
+          encodeMessage({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'initialize',
+            params: {
+              protocolVersion: '2024-11-05',
+              capabilities: {},
+              clientInfo: { name: 'vitest', version: '1.0.0' },
+            },
+          })
+        );
+        const initResponse = await readMessage(proc);
 
-      expect(initResponse.result?.capabilities).toBeDefined();
-      expect(toolsResponse.result?.tools).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ name: 'get_current_run_summary' }),
-          expect.objectContaining({ name: 'preview_sft' }),
-          expect.objectContaining({ name: 'open_dashboard' }),
-        ])
-      );
-      expect(summaryResponse.result?.structuredContent).toEqual(
-        expect.objectContaining({
-          run_id: fixture.runId,
-          status: 'running',
-          current_stage: 'implement',
-        })
-      );
-    } finally {
-      if (!proc.killed) {
-        proc.kill();
+        proc.stdin.write(
+          encodeMessage({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'tools/list',
+          })
+        );
+        const toolsResponse = await readMessage(proc);
+
+        proc.stdin.write(
+          encodeMessage({
+            jsonrpc: '2.0',
+            id: 3,
+            method: 'tools/call',
+            params: {
+              name: 'get_current_run_summary',
+              arguments: {},
+            },
+          })
+        );
+        const summaryResponse = await readMessage(proc);
+
+        expect(initResponse.result?.capabilities).toBeDefined();
+        expect(toolsResponse.result?.tools).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ name: 'get_current_run_summary' }),
+            expect.objectContaining({ name: 'preview_sft' }),
+            expect.objectContaining({ name: 'open_dashboard' }),
+          ])
+        );
+        expect(summaryResponse.result?.structuredContent).toEqual(
+          expect.objectContaining({
+            run_id: fixture.runId,
+            status: 'running',
+            current_stage: 'implement',
+          })
+        );
+        expect(consoleSpy.mock.calls.flat().join(' ')).not.toContain(
+          'implement stage report has no parseable dimension_scores'
+        );
+      } finally {
+        if (!proc.killed) {
+          proc.kill();
+        }
+        await new Promise((resolve) => proc.once('exit', resolve));
       }
-      await new Promise((resolve) => proc.once('exit', resolve));
+    } finally {
+      consoleSpy.mockRestore();
     }
   });
 });

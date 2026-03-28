@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { rmSync } from 'node:fs';
 import { createRuntimeDashboardFixture } from '../helpers/runtime-dashboard-fixture';
 import { startLiveDashboardServer } from '../../packages/scoring/dashboard/live-server';
@@ -13,30 +13,39 @@ describe('runtime dashboard fallback behavior', () => {
   });
 
   it('keeps the live dashboard usable when no MCP process is running', async () => {
-    const fixture = await createRuntimeDashboardFixture();
-    roots.push(fixture.root);
-
-    const server = await startLiveDashboardServer({
-      root: fixture.root,
-      host: '127.0.0.1',
-      port: 0,
-      dataPath: fixture.dataPath,
-    });
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     try {
-      const health = await (await fetch(`${server.url}/health`)).json() as {
-        ok: boolean;
-        dashboard_url: string;
-      };
-      const overview = await (await fetch(`${server.url}/api/overview`)).json() as {
-        status: string;
-      };
+      const fixture = await createRuntimeDashboardFixture();
+      roots.push(fixture.root);
 
-      expect(health.ok).toBe(true);
-      expect(health.dashboard_url).toBe(server.url);
-      expect(overview.status).toBe('running');
+      const server = await startLiveDashboardServer({
+        root: fixture.root,
+        host: '127.0.0.1',
+        port: 0,
+        dataPath: fixture.dataPath,
+      });
+
+      try {
+        const health = await (await fetch(`${server.url}/health`)).json() as {
+          ok: boolean;
+          dashboard_url: string;
+        };
+        const overview = await (await fetch(`${server.url}/api/overview`)).json() as {
+          status: string;
+        };
+
+        expect(health.ok).toBe(true);
+        expect(health.dashboard_url).toBe(server.url);
+        expect(overview.status).toBe('running');
+        expect(consoleSpy.mock.calls.flat().join(' ')).not.toContain(
+          'implement stage report has no parseable dimension_scores'
+        );
+      } finally {
+        await server.close();
+      }
     } finally {
-      await server.close();
+      consoleSpy.mockRestore();
     }
   });
 });

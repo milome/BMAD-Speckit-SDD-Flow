@@ -211,7 +211,10 @@ export function readRuntimeContext(root: string, explicitPath?: string): Runtime
  * Write context with fsync so emit can read within ~1s on local FS.
  */
 export function writeRuntimeContext(root: string, payload: RuntimeContextFile): void {
-  const file = runtimeContextPath(root);
+  writeRuntimeContextFile(runtimeContextPath(root), payload);
+}
+
+function writeRuntimeContextFile(file: string, payload: RuntimeContextFile): void {
   const dir = path.dirname(file);
   fs.mkdirSync(dir, { recursive: true });
   const body = JSON.stringify(payload, null, 2) + '\n';
@@ -305,8 +308,10 @@ export function ensureStoryRuntimeContext(
 
   const registry = readRegistryOrDefault(root);
   const epicId = options.epicId || payload.epicId || 'epic-unknown';
+  const scopedPath = storyContextPath(root, epicId, options.storyId);
+  writeRuntimeContextFile(scopedPath, payload);
   registry.storyContexts[options.storyId] = {
-    path: storyContextPath(root, epicId, options.storyId),
+    path: scopedPath,
     epicId,
     sourceMode: detectedSourceMode,
   };
@@ -343,8 +348,10 @@ export function ensureRunRuntimeContext(
 
   const registry = readRegistryOrDefault(root);
   const epicId = options.epicId || payload.epicId || 'epic-unknown';
+  const scopedPath = runContextPath(root, epicId, options.storyId, options.runId);
+  writeRuntimeContextFile(scopedPath, payload);
   registry.runContexts[options.runId] = {
-    path: runContextPath(root, epicId, options.storyId, options.runId),
+    path: scopedPath,
     epicId,
     storyId: options.storyId,
     runId: options.runId,
