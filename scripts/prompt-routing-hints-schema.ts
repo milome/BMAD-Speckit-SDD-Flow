@@ -30,6 +30,8 @@ export interface PromptRoutingHints {
   inferredStage?: string;
   inferredArtifactTarget?: string;
   explicitRolePreference: string[];
+  recommendedSkillChain?: string[];
+  recommendedSubagentRoles?: string[];
   researchPolicy: PromptRoutingResearchPolicy;
   delegationPreference: PromptRoutingDelegationPreference;
   constraints: string[];
@@ -147,6 +149,14 @@ const promptRoutingHintsSchema = {
     inferredStage: { type: 'string' },
     inferredArtifactTarget: { type: 'string' },
     explicitRolePreference: {
+      type: 'array',
+      items: { type: 'string' },
+    },
+    recommendedSkillChain: {
+      type: 'array',
+      items: { type: 'string' },
+    },
+    recommendedSubagentRoles: {
       type: 'array',
       items: { type: 'string' },
     },

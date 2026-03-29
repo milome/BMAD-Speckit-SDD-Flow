@@ -1,10 +1,74 @@
 #!/usr/bin/env node
+// @ts-check
 'use strict';
+
+/**
+ * @typedef {import('node:child_process').ChildProcess} ChildProcess
+ * @typedef {import('node:child_process').SpawnSyncReturns<string>} SpawnSyncResult
+ * @typedef {import('../../../scripts/governance-hook-types').GovernanceExecutionResult} GovernanceExecutionResult
+ * @typedef {import('../../../scripts/governance-hook-types').GovernanceExecutorRoutingProjection} GovernanceExecutorRoutingProjection
+ * @typedef {import('../../../scripts/governance-hook-types').GovernanceJourneyContractHintProjection} GovernanceJourneyContractHintProjection
+ * @typedef {import('../../../scripts/governance-hook-types').GovernanceRemediationAuditTrace} GovernanceRemediationAuditTrace
+ * @typedef {import('../../../scripts/governance-hook-types').GovernanceRerunDecisionProjection} GovernanceRerunDecisionProjection
+ * @typedef {import('../../../scripts/governance-hook-types').GovernanceRunnerLockSnapshot} GovernanceRunnerLockSnapshot
+ * @typedef {import('../../../scripts/governance-hook-types').GovernanceWorkerResult} GovernanceWorkerResult
+ *
+ * @typedef {{
+ *   payload?: {
+ *     journeyContractHints?: GovernanceJourneyContractHintProjection[];
+ *   };
+ * }} GovernanceQueueItemLike
+ *
+ * @typedef {{
+ *   command: string;
+ *   args: string[];
+ *   shell: boolean;
+ * }} WorkerSpawnPlan
+ *
+ * @typedef {{
+ *   projectRoot?: string;
+ *   wait?: boolean;
+ *   onlyWhenPending?: boolean;
+ * }} GovernanceWorkerOptions
+ *
+ * @typedef {{
+ *   child: ChildProcess;
+ *   pid?: number;
+ *   intervalMs: number;
+ * }} RunnerHeartbeatHandle
+ *
+ * @typedef {{
+ *   acquired: boolean;
+ *   lockPath: string;
+ *   reason?: string;
+ *   lock?: GovernanceRunnerLockSnapshot;
+ *   activeLock?: GovernanceRunnerLockSnapshot | null;
+ * }} RunnerLockAttempt
+ */
 
 const { spawn, spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
+const {
+  buildGovernanceRunnerCliPresentation,
+} = require('./governance-runner-summary-presenter.js');
 
+/**
+ * @param {unknown} error
+ * @returns {string | undefined}
+ */
+function errorCode(error) {
+  if (!error || typeof error !== 'object' || !('code' in error)) {
+    return undefined;
+  }
+  const { code } = /** @type {{ code?: unknown }} */ (error);
+  return typeof code === 'string' ? code : undefined;
+}
+
+/**
+ * @param {string | null | undefined} explicitRoot
+ * @returns {string}
+ */
 function findProjectRoot(explicitRoot) {
   if (explicitRoot) {
     const resolved = path.resolve(explicitRoot);
@@ -34,19 +98,42 @@ function findProjectRoot(explicitRoot) {
   }
 }
 
+/**
+ * @param {string} projectRoot
+ * @returns {string}
+ */
 function governanceRunnerLockPath(projectRoot) {
   return path.join(projectRoot, '_bmad-output', 'runtime', 'governance', 'runner-lock.json');
 }
 
+/**
+ * @returns {string}
+ */
 function nowIso() {
   return new Date().toISOString();
 }
 
+/**
+ * @param {number} ms
+ * @returns {void}
+ */
+function waitBriefly(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+/**
+ * @param {unknown} value
+ * @returns {number | null}
+ */
 function parsePositiveInt(value) {
   const parsed = Number.parseInt(String(value ?? ''), 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
+/**
+ * @param {GovernanceRunnerLockSnapshot | null | undefined} [lock]
+ * @returns {number}
+ */
 function resolveRunnerLockTtlMs(lock) {
   return (
     parsePositiveInt(process.env.BMAD_GOVERNANCE_LOCK_TTL_MS) ??
@@ -55,6 +142,10 @@ function resolveRunnerLockTtlMs(lock) {
   );
 }
 
+/**
+ * @param {GovernanceRunnerLockSnapshot | null | undefined} [lock]
+ * @returns {number}
+ */
 function resolveRunnerHeartbeatIntervalMs(lock) {
   const ttlMs = resolveRunnerLockTtlMs(lock);
   const requested =
@@ -66,6 +157,11 @@ function resolveRunnerHeartbeatIntervalMs(lock) {
   return Math.min(requested, maxInterval);
 }
 
+/**
+ * @param {GovernanceRunnerLockSnapshot | null | undefined} lock
+ * @param {number} [now]
+ * @returns {number}
+ */
 function lockHeartbeatAgeMs(lock, now = Date.now()) {
   const heartbeatSource = lock && (lock.heartbeatAt || lock.acquiredAt);
   const heartbeatMs = heartbeatSource ? Date.parse(heartbeatSource) : NaN;
@@ -75,10 +171,19 @@ function lockHeartbeatAgeMs(lock, now = Date.now()) {
   return Math.max(0, now - heartbeatMs);
 }
 
+/**
+ * @param {GovernanceRunnerLockSnapshot | null | undefined} lock
+ * @param {number} [now]
+ * @returns {boolean}
+ */
 function isRunnerLockHeartbeatExpired(lock, now = Date.now()) {
   return lockHeartbeatAgeMs(lock, now) > resolveRunnerLockTtlMs(lock);
 }
 
+/**
+ * @param {string} dir
+ * @returns {number}
+ */
 function pendingJsonCount(dir) {
   if (!fs.existsSync(dir)) {
     return 0;
@@ -86,6 +191,152 @@ function pendingJsonCount(dir) {
   return fs.readdirSync(dir).filter((file) => file.endsWith('.json')).length;
 }
 
+/**
+ * @param {string} projectRoot
+ * @returns {GovernanceQueueItemLike[]}
+ */
+function readPendingGovernanceQueueItems(projectRoot) {
+  const pendingDir = path.join(
+    projectRoot,
+    '_bmad-output',
+    'runtime',
+    'governance',
+    'queue',
+    'pending'
+  );
+
+  if (!fs.existsSync(pendingDir)) {
+    return [];
+  }
+
+  return fs
+    .readdirSync(pendingDir)
+    .filter((file) => file.endsWith('.json'))
+    .sort((left, right) => left.localeCompare(right))
+    .map((file) => path.join(pendingDir, file))
+    .map((file) => {
+      try {
+        return /** @type {GovernanceQueueItemLike} */ (JSON.parse(fs.readFileSync(file, 'utf8')));
+      } catch {
+        return null;
+      }
+    })
+    .filter(
+      /**
+       * @param {GovernanceQueueItemLike | null} item
+       * @returns {item is GovernanceQueueItemLike}
+       */
+      (item) => item !== null
+    );
+}
+
+/**
+ * @param {string} projectRoot
+ * @returns {GovernanceJourneyContractHintProjection[]}
+ */
+function collectPendingJourneyContractHints(projectRoot) {
+  const seen = new Set();
+  const hints = [];
+
+  for (const item of readPendingGovernanceQueueItems(projectRoot)) {
+    const payload = item && typeof item.payload === 'object' ? item.payload : null;
+    const payloadHints =
+      payload && Array.isArray(payload.journeyContractHints) ? payload.journeyContractHints : [];
+
+    for (const hint of payloadHints) {
+      if (!hint || typeof hint !== 'object' || typeof hint.signal !== 'string') {
+        continue;
+      }
+      const key = JSON.stringify(hint);
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      hints.push(hint);
+    }
+  }
+
+  return hints;
+}
+
+/**
+ * @param {GovernanceJourneyContractHintProjection[] | null | undefined} hints
+ * @returns {string[]}
+ */
+function uniqueSignalsFromHints(hints) {
+  return [...new Set((Array.isArray(hints) ? hints : [])
+    .map((hint) => (hint && typeof hint.signal === 'string' ? hint.signal : null))
+    .filter(
+      /**
+       * @param {string | null} signal
+       * @returns {signal is string}
+       */
+      (signal) => signal !== null
+    ))].sort();
+}
+
+/**
+ * @param {string} projectRoot
+ * @param {GovernanceJourneyContractHintProjection[] | null | undefined} pendingJourneyContractHints
+ * @param {boolean} pendingQueueExists
+ * @returns {GovernanceRerunDecisionProjection}
+ */
+function buildRerunDecision(projectRoot, pendingJourneyContractHints, pendingQueueExists) {
+  const normalizedHints = Array.isArray(pendingJourneyContractHints) ? pendingJourneyContractHints : [];
+  const signals = uniqueSignalsFromHints(pendingJourneyContractHints);
+  if (signals.length > 0) {
+    return /** @type {GovernanceRerunDecisionProjection} */ ({
+      mode: 'targeted',
+      signals,
+      hintCount: normalizedHints.length,
+      reason: 'journey contract hints present in pending governance queue',
+      projectRoot,
+    });
+  }
+
+  if (pendingQueueExists) {
+    return /** @type {GovernanceRerunDecisionProjection} */ ({
+      mode: 'generic',
+      signals: [],
+      hintCount: 0,
+      reason: 'pending governance queue exists without journey contract hints',
+      projectRoot,
+    });
+  }
+
+  return /** @type {GovernanceRerunDecisionProjection} */ ({
+    mode: 'idle',
+    signals: [],
+    hintCount: 0,
+    reason: 'no pending governance queue items',
+    projectRoot,
+  });
+}
+
+/**
+ * @param {GovernanceRerunDecisionProjection | null | undefined} rerunDecision
+ * @returns {GovernanceExecutorRoutingProjection}
+ */
+function buildExecutorRoutingPreview(rerunDecision) {
+  if (rerunDecision && rerunDecision.mode === 'targeted') {
+    return /** @type {GovernanceExecutorRoutingProjection} */ ({
+      routingMode: 'targeted',
+      executorRoute: 'journey-contract-remediation',
+      prioritizedSignals: Array.isArray(rerunDecision.signals) ? rerunDecision.signals : [],
+    });
+  }
+
+  return /** @type {GovernanceExecutorRoutingProjection} */ ({
+    routingMode: 'generic',
+    executorRoute: 'default-gate-remediation',
+    prioritizedSignals: [],
+  });
+}
+
+/**
+ * @param {string} projectRoot
+ * @returns {boolean}
+ */
 function hasPendingQueueItems(projectRoot) {
   const governancePending = path.join(
     projectRoot,
@@ -99,6 +350,223 @@ function hasPendingQueueItems(projectRoot) {
   return pendingJsonCount(governancePending) > 0 || pendingJsonCount(legacyPending) > 0;
 }
 
+/**
+ * @param {string} projectRoot
+ * @returns {string}
+ */
+function governanceCurrentRunPath(projectRoot) {
+  return path.join(projectRoot, '_bmad-output', 'runtime', 'governance', 'current-run.json');
+}
+
+/**
+ * @param {GovernanceExecutionResult | null | undefined} result
+ * @param {GovernanceExecutorRoutingProjection} executorRouting
+ * @returns {GovernanceRemediationAuditTrace}
+ */
+function buildRemediationAuditTrace(result, executorRouting) {
+  const journeyContractHints =
+    result && Array.isArray(result.journeyContractHints) ? result.journeyContractHints : [];
+  const prioritizedSignals = Array.isArray(executorRouting.prioritizedSignals)
+    ? executorRouting.prioritizedSignals
+    : [];
+  const stopReason =
+    result && result.stopReason !== undefined && result.stopReason !== null
+      ? String(result.stopReason)
+      : null;
+  const summaryLines = [
+    `Routing Mode: ${executorRouting.routingMode || '(unknown)'}`,
+    `Executor Route: ${executorRouting.executorRoute || '(unknown)'}`,
+    `Stop Reason: ${stopReason || '(none)'}`,
+    `Journey Contract Signals: ${journeyContractHints.map((hint) => hint && hint.signal).filter(Boolean).join(', ') || '(none)'}`,
+  ];
+
+  return {
+    artifactPath: result && typeof result.artifactPath === 'string' ? result.artifactPath : undefined,
+    stopReason,
+    journeyContractHints,
+    routingMode: executorRouting.routingMode,
+    executorRoute: executorRouting.executorRoute,
+    prioritizedSignals,
+    summaryLines,
+  };
+}
+
+/**
+ * @param {GovernanceJourneyContractHintProjection[] | null | undefined} journeyContractHints
+ * @param {GovernanceExecutorRoutingProjection} executorRouting
+ * @param {string | null | undefined} stopReason
+ * @returns {GovernanceRemediationAuditTrace}
+ */
+function buildFallbackRemediationAuditTrace(journeyContractHints, executorRouting, stopReason) {
+  return buildRemediationAuditTrace(
+    {
+      artifactPath: undefined,
+      stopReason: stopReason !== undefined ? stopReason : null,
+      journeyContractHints: Array.isArray(journeyContractHints) ? journeyContractHints : [],
+    },
+    executorRouting
+  );
+}
+
+/**
+ * @param {GovernanceExecutionResult | null | undefined} executionSummary
+ * @returns {string[]}
+ */
+function buildRunnerSummaryLinesFromExecutionSummary(executionSummary) {
+  if (!executionSummary || typeof executionSummary !== 'object') {
+    return [];
+  }
+
+  const lines = [
+    '## Governance Remediation Runner Summary',
+    `- Loop State ID: ${executionSummary.loopStateId || '(none)'}`,
+    `- Current Attempt Number: ${
+      executionSummary.currentAttemptNumber !== undefined &&
+      executionSummary.currentAttemptNumber !== null
+        ? executionSummary.currentAttemptNumber
+        : '(none)'
+    }`,
+    `- Next Attempt Number: ${
+      executionSummary.nextAttemptNumber !== undefined &&
+      executionSummary.nextAttemptNumber !== null
+        ? executionSummary.nextAttemptNumber
+        : '(none)'
+    }`,
+    `- Should Continue: ${executionSummary.shouldContinue ? 'yes' : 'no'}`,
+    `- Stop Reason: ${executionSummary.stopReason || '(none)'}`,
+    `- Artifact Path: ${executionSummary.artifactPath || '(none)'}`,
+    `- Executor Packet: ${
+      executionSummary.packetPaths && Object.keys(executionSummary.packetPaths).length > 0 ? 'yes' : 'no'
+    }`,
+    '',
+    '## Loop State Trace Summary',
+  ];
+
+  const remediationTrace =
+    executionSummary.remediationAuditTrace && Array.isArray(executionSummary.remediationAuditTrace.summaryLines)
+      ? executionSummary.remediationAuditTrace.summaryLines
+      : [];
+  if (remediationTrace.length > 0) {
+    for (const line of remediationTrace) {
+      lines.push(`- ${line}`);
+    }
+  } else {
+    lines.push('- (none)');
+  }
+
+  const packetPaths = executionSummary.packetPaths && typeof executionSummary.packetPaths === 'object'
+    ? Object.entries(executionSummary.packetPaths).filter((entry) => entry[1])
+    : [];
+  if (packetPaths.length > 0) {
+    lines.push('');
+    lines.push('## Packet Paths');
+    for (const [hostKind, packetPath] of packetPaths) {
+      lines.push(`- ${hostKind}: ${packetPath}`);
+    }
+  }
+
+  return lines;
+}
+
+/**
+ * @param {string} projectRoot
+ * @returns {GovernanceExecutionResult | null}
+ */
+function readLatestGovernanceExecutionSummary(projectRoot) {
+  const currentRunFile = governanceCurrentRunPath(projectRoot);
+  if (!fs.existsSync(currentRunFile)) {
+    return null;
+  }
+
+  try {
+    const items = JSON.parse(fs.readFileSync(currentRunFile, 'utf8'));
+    if (!Array.isArray(items)) {
+      return null;
+    }
+    for (let index = items.length - 1; index >= 0; index -= 1) {
+      const item = items[index];
+      const result = item && typeof item.result === 'object' ? item.result : null;
+      const executorRouting =
+        result && typeof result.executorRouting === 'object' ? result.executorRouting : null;
+      if (!executorRouting) {
+        continue;
+      }
+      return {
+        shouldContinue: typeof result.shouldContinue === 'boolean' ? result.shouldContinue : undefined,
+        stopReason: typeof result.stopReason === 'string' ? result.stopReason : null,
+        loopStateId: typeof result.loopStateId === 'string' ? result.loopStateId : null,
+        currentAttemptNumber:
+          typeof result.currentAttemptNumber === 'number' ? result.currentAttemptNumber : null,
+        nextAttemptNumber:
+          typeof result.nextAttemptNumber === 'number' ? result.nextAttemptNumber : null,
+        artifactPath: typeof result.artifactPath === 'string' ? result.artifactPath : null,
+        packetPaths:
+          result && typeof result.packetPaths === 'object' && result.packetPaths ? result.packetPaths : {},
+        executorRouting,
+        runnerSummaryLines: Array.isArray(result.runnerSummaryLines)
+          ? result.runnerSummaryLines
+          : buildRunnerSummaryLinesFromExecutionSummary({
+              ...result,
+              executorRouting,
+              remediationAuditTrace: buildRemediationAuditTrace(result, executorRouting),
+            }),
+        remediationAuditTrace: buildRemediationAuditTrace(result, executorRouting),
+        governancePresentation: buildGovernanceRunnerCliPresentation({
+          shouldContinue:
+            typeof result.shouldContinue === 'boolean' ? result.shouldContinue : undefined,
+          stopReason: typeof result.stopReason === 'string' ? result.stopReason : null,
+          loopStateId: typeof result.loopStateId === 'string' ? result.loopStateId : null,
+          currentAttemptNumber:
+            typeof result.currentAttemptNumber === 'number' ? result.currentAttemptNumber : null,
+          nextAttemptNumber:
+            typeof result.nextAttemptNumber === 'number' ? result.nextAttemptNumber : null,
+          artifactPath: typeof result.artifactPath === 'string' ? result.artifactPath : null,
+          packetPaths:
+            result && typeof result.packetPaths === 'object' && result.packetPaths
+              ? result.packetPaths
+              : {},
+          executorRouting,
+          runnerSummaryLines: Array.isArray(result.runnerSummaryLines)
+            ? result.runnerSummaryLines
+            : buildRunnerSummaryLinesFromExecutionSummary({
+                ...result,
+                executorRouting,
+                remediationAuditTrace: buildRemediationAuditTrace(result, executorRouting),
+              }),
+        }),
+      };
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+/**
+ * @param {string} projectRoot
+ * @param {number} [attempts]
+ * @param {number} [delayMs]
+ * @returns {GovernanceExecutionResult | null}
+ */
+function readLatestGovernanceExecutionSummaryWithRetry(projectRoot, attempts = 5, delayMs = 100) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const summary = readLatestGovernanceExecutionSummary(projectRoot);
+    if (summary && !hasPendingQueueItems(projectRoot)) {
+      return summary;
+    }
+    if (attempt < attempts - 1) {
+      waitBriefly(delayMs);
+    }
+  }
+  return null;
+}
+
+/**
+ * @param {string} moduleId
+ * @param {string} projectRoot
+ * @returns {string | null}
+ */
 function tryResolveModule(moduleId, projectRoot) {
   try {
     return require.resolve(moduleId, { paths: [projectRoot, __dirname] });
@@ -107,6 +575,10 @@ function tryResolveModule(moduleId, projectRoot) {
   }
 }
 
+/**
+ * @param {string} projectRoot
+ * @returns {string | null}
+ */
 function resolveWorkerEntry(projectRoot) {
   const candidates = [
     path.join(projectRoot, 'scripts', 'bmad-runtime-worker.js'),
@@ -135,6 +607,11 @@ function resolveWorkerEntry(projectRoot) {
   return null;
 }
 
+/**
+ * @param {string} projectRoot
+ * @param {string} workerEntry
+ * @returns {string | null}
+ */
 function resolveTsNodeBin(projectRoot, workerEntry) {
   const fromModules = tryResolveModule('ts-node/dist/bin.js', projectRoot);
   if (fromModules && fs.existsSync(fromModules)) {
@@ -175,6 +652,10 @@ function resolveTsNodeBin(projectRoot, workerEntry) {
   return null;
 }
 
+/**
+ * @param {string} projectRoot
+ * @returns {WorkerSpawnPlan}
+ */
 function buildWorkerSpawnPlan(projectRoot) {
   const workerEntry = resolveWorkerEntry(projectRoot);
   if (!workerEntry) {
@@ -205,6 +686,10 @@ function buildWorkerSpawnPlan(projectRoot) {
   };
 }
 
+/**
+ * @param {string} projectRoot
+ * @returns {GovernanceRunnerLockSnapshot | null}
+ */
 function readRunnerLock(projectRoot) {
   const lockPath = governanceRunnerLockPath(projectRoot);
   if (!fs.existsSync(lockPath)) {
@@ -217,6 +702,11 @@ function readRunnerLock(projectRoot) {
   }
 }
 
+/**
+ * @param {string} projectRoot
+ * @param {GovernanceRunnerLockSnapshot} lockPayload
+ * @returns {GovernanceRunnerLockSnapshot}
+ */
 function writeRunnerLock(projectRoot, lockPayload) {
   const lockPath = governanceRunnerLockPath(projectRoot);
   fs.mkdirSync(path.dirname(lockPath), { recursive: true });
@@ -224,19 +714,30 @@ function writeRunnerLock(projectRoot, lockPayload) {
   return lockPayload;
 }
 
+/**
+ * @param {number | null | undefined} pid
+ * @returns {boolean}
+ */
 function isProcessAlive(pid) {
-  if (!Number.isInteger(pid) || pid <= 0) {
+  const normalizedPid = typeof pid === 'number' && Number.isInteger(pid) ? pid : null;
+  if (!normalizedPid || normalizedPid <= 0) {
     return false;
   }
 
   try {
-    process.kill(pid, 0);
+    process.kill(normalizedPid, 0);
     return true;
   } catch (error) {
-    return error && error.code !== 'ESRCH';
+    return errorCode(error) !== 'ESRCH';
   }
 }
 
+/**
+ * @param {string} projectRoot
+ * @param {number} ownerPid
+ * @param {Partial<GovernanceRunnerLockSnapshot>} [patch]
+ * @returns {GovernanceRunnerLockSnapshot | null}
+ */
 function updateRunnerLockHeartbeat(projectRoot, ownerPid, patch = {}) {
   const currentLock = readRunnerLock(projectRoot);
   if (!currentLock || currentLock.pid !== ownerPid) {
@@ -253,6 +754,17 @@ function updateRunnerLockHeartbeat(projectRoot, ownerPid, patch = {}) {
   return nextLock;
 }
 
+/**
+ * @param {string} projectRoot
+ * @returns {{
+ *   cleared: boolean;
+ *   lockPath: string;
+ *   reason?: string;
+ *   lock?: GovernanceRunnerLockSnapshot;
+ *   staleLock?: GovernanceRunnerLockSnapshot;
+ *   staleReason?: string;
+ * }}
+ */
 function clearStaleRunnerLock(projectRoot) {
   const lockPath = governanceRunnerLockPath(projectRoot);
   const currentLock = readRunnerLock(projectRoot);
@@ -278,6 +790,10 @@ function clearStaleRunnerLock(projectRoot) {
   };
 }
 
+/**
+ * @param {string} projectRoot
+ * @returns {GovernanceRunnerLockSnapshot | null}
+ */
 function readActiveRunnerLock(projectRoot) {
   const currentLock = readRunnerLock(projectRoot);
   if (!currentLock) {
@@ -290,6 +806,10 @@ function readActiveRunnerLock(projectRoot) {
   return null;
 }
 
+/**
+ * @param {string} projectRoot
+ * @returns {RunnerLockAttempt}
+ */
 function tryAcquireRunnerLock(projectRoot) {
   const lockPath = governanceRunnerLockPath(projectRoot);
   fs.mkdirSync(path.dirname(lockPath), { recursive: true });
@@ -315,7 +835,7 @@ function tryAcquireRunnerLock(projectRoot) {
         lock: lockPayload,
       };
     } catch (error) {
-      if (!error || error.code !== 'EEXIST') {
+      if (errorCode(error) !== 'EEXIST') {
         throw error;
       }
 
@@ -340,6 +860,10 @@ function tryAcquireRunnerLock(projectRoot) {
   };
 }
 
+/**
+ * @param {string} projectRoot
+ * @returns {boolean}
+ */
 function releaseRunnerLock(projectRoot) {
   const lockPath = governanceRunnerLockPath(projectRoot);
   const currentLock = readRunnerLock(projectRoot);
@@ -354,6 +878,10 @@ function releaseRunnerLock(projectRoot) {
   return true;
 }
 
+/**
+ * @param {string} projectRoot
+ * @returns {SpawnSyncResult}
+ */
 function runActualWorker(projectRoot) {
   const plan = buildWorkerSpawnPlan(projectRoot);
   return spawnSync(plan.command, plan.args, {
@@ -367,6 +895,11 @@ function runActualWorker(projectRoot) {
   });
 }
 
+/**
+ * @param {string} projectRoot
+ * @param {number} ownerPid
+ * @returns {RunnerHeartbeatHandle}
+ */
 function startRunnerLockHeartbeat(projectRoot, ownerPid) {
   const intervalMs = resolveRunnerHeartbeatIntervalMs();
   const child = spawn(
@@ -396,6 +929,10 @@ function startRunnerLockHeartbeat(projectRoot, ownerPid) {
   };
 }
 
+/**
+ * @param {RunnerHeartbeatHandle | null | undefined} heartbeatHandle
+ * @returns {boolean}
+ */
 function stopRunnerLockHeartbeat(heartbeatHandle) {
   if (!heartbeatHandle || !heartbeatHandle.child || typeof heartbeatHandle.child.kill !== 'function') {
     return false;
@@ -408,17 +945,31 @@ function stopRunnerLockHeartbeat(heartbeatHandle) {
   }
 }
 
+/**
+ * @param {GovernanceWorkerOptions} [options]
+ * @returns {GovernanceWorkerResult}
+ */
 function runWorkerWithRunnerLock(options = {}) {
   const projectRoot = findProjectRoot(options.projectRoot);
+  const pendingJourneyContractHints = collectPendingJourneyContractHints(projectRoot);
+  const pendingQueueExists = hasPendingQueueItems(projectRoot);
+  const rerunDecision = buildRerunDecision(
+    projectRoot,
+    pendingJourneyContractHints,
+    pendingQueueExists
+  );
   const onlyWhenPending = options.onlyWhenPending !== false;
 
-  if (onlyWhenPending && !hasPendingQueueItems(projectRoot)) {
+  if (onlyWhenPending && !pendingQueueExists) {
     return {
       started: false,
       skipped: true,
       projectRoot,
       reason: 'no pending queue items',
       lockPath: governanceRunnerLockPath(projectRoot),
+      pendingJourneyContractHints,
+      rerunDecision,
+      executorRouting: buildExecutorRoutingPreview(rerunDecision),
     };
   }
 
@@ -431,6 +982,9 @@ function runWorkerWithRunnerLock(options = {}) {
       reason: lockAttempt.reason || 'runner lock active',
       lockPath: lockAttempt.lockPath,
       activeLock: lockAttempt.activeLock || null,
+      pendingJourneyContractHints,
+      rerunDecision,
+      executorRouting: buildExecutorRoutingPreview(rerunDecision),
     };
   }
 
@@ -438,6 +992,8 @@ function runWorkerWithRunnerLock(options = {}) {
   try {
     heartbeatHandle = startRunnerLockHeartbeat(projectRoot, process.pid);
     const result = runActualWorker(projectRoot);
+    const executionSummary =
+      result.status === 0 ? readLatestGovernanceExecutionSummaryWithRetry(projectRoot) : null;
     return {
       started: true,
       skipped: false,
@@ -447,6 +1003,62 @@ function runWorkerWithRunnerLock(options = {}) {
       status: result.status === null ? 1 : result.status,
       stdout: result.stdout || '',
       stderr: result.stderr || '',
+      pendingJourneyContractHints,
+      rerunDecision,
+      shouldContinue: executionSummary ? executionSummary.shouldContinue : undefined,
+      stopReason: executionSummary ? executionSummary.stopReason : undefined,
+      executorRouting: executionSummary
+        ? executionSummary.executorRouting
+        : buildExecutorRoutingPreview(rerunDecision),
+      runnerSummaryLines: executionSummary
+        ? executionSummary.runnerSummaryLines
+        : buildRunnerSummaryLinesFromExecutionSummary({
+            loopStateId: null,
+            currentAttemptNumber: null,
+            nextAttemptNumber: null,
+            shouldContinue: false,
+            stopReason: null,
+            artifactPath: null,
+            packetPaths: {},
+            remediationAuditTrace: buildFallbackRemediationAuditTrace(
+              pendingJourneyContractHints,
+              buildExecutorRoutingPreview(rerunDecision),
+              null
+            ),
+          }),
+      governancePresentation: executionSummary
+        ? executionSummary.governancePresentation
+        : buildGovernanceRunnerCliPresentation({
+            shouldContinue: false,
+            stopReason: null,
+            loopStateId: null,
+            currentAttemptNumber: null,
+            nextAttemptNumber: null,
+            artifactPath: null,
+            packetPaths: {},
+            executorRouting: buildExecutorRoutingPreview(rerunDecision),
+            runnerSummaryLines: buildRunnerSummaryLinesFromExecutionSummary({
+              loopStateId: null,
+              currentAttemptNumber: null,
+              nextAttemptNumber: null,
+              shouldContinue: false,
+              stopReason: null,
+              artifactPath: null,
+              packetPaths: {},
+              remediationAuditTrace: buildFallbackRemediationAuditTrace(
+                pendingJourneyContractHints,
+                buildExecutorRoutingPreview(rerunDecision),
+                null
+              ),
+            }),
+          }),
+      remediationAuditTrace: executionSummary
+        ? executionSummary.remediationAuditTrace
+        : buildFallbackRemediationAuditTrace(
+            pendingJourneyContractHints,
+            buildExecutorRoutingPreview(rerunDecision),
+            null
+          ),
     };
   } finally {
     stopRunnerLockHeartbeat(heartbeatHandle);
@@ -454,18 +1066,32 @@ function runWorkerWithRunnerLock(options = {}) {
   }
 }
 
+/**
+ * @param {GovernanceWorkerOptions} [options]
+ * @returns {GovernanceWorkerResult}
+ */
 function runBmadRuntimeWorker(options = {}) {
   const projectRoot = findProjectRoot(options.projectRoot);
   const wait = options.wait !== false;
   const onlyWhenPending = options.onlyWhenPending !== false;
+  const pendingJourneyContractHints = collectPendingJourneyContractHints(projectRoot);
+  const pendingQueueExists = hasPendingQueueItems(projectRoot);
+  const rerunDecision = buildRerunDecision(
+    projectRoot,
+    pendingJourneyContractHints,
+    pendingQueueExists
+  );
 
-  if (onlyWhenPending && !hasPendingQueueItems(projectRoot)) {
+  if (onlyWhenPending && !pendingQueueExists) {
     return {
       started: false,
       skipped: true,
       projectRoot,
       reason: 'no pending queue items',
       lockPath: governanceRunnerLockPath(projectRoot),
+      pendingJourneyContractHints,
+      rerunDecision,
+      executorRouting: buildExecutorRoutingPreview(rerunDecision),
     };
   }
 
@@ -478,6 +1104,9 @@ function runBmadRuntimeWorker(options = {}) {
       reason: 'runner lock active',
       lockPath: governanceRunnerLockPath(projectRoot),
       activeLock,
+      pendingJourneyContractHints,
+      rerunDecision,
+      executorRouting: buildExecutorRoutingPreview(rerunDecision),
     };
   }
 
@@ -504,9 +1133,17 @@ function runBmadRuntimeWorker(options = {}) {
     projectRoot,
     lockPath: governanceRunnerLockPath(projectRoot),
     pid: child.pid,
+    pendingJourneyContractHints,
+    rerunDecision,
+    executorRouting: buildExecutorRoutingPreview(rerunDecision),
   };
 }
 
+/**
+ * @param {string[]} args
+ * @param {string} flag
+ * @returns {string | undefined}
+ */
 function argValue(args, flag) {
   const idx = args.indexOf(flag);
   return idx >= 0 ? args[idx + 1] : undefined;
@@ -518,6 +1155,8 @@ module.exports = {
   findProjectRoot,
   governanceRunnerLockPath,
   hasPendingQueueItems,
+  collectPendingJourneyContractHints,
+  buildRerunDecision,
   isProcessAlive,
   isRunnerLockHeartbeatExpired,
   lockHeartbeatAgeMs,

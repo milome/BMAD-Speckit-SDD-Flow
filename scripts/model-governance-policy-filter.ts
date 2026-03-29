@@ -4,6 +4,7 @@ import {
   type FilteredModelGovernanceHints,
   type ModelGovernanceForbiddenOverrideKey,
   type ModelGovernanceHintCandidate,
+  type StructuredGovernanceRecommendationItem,
 } from './model-governance-hints-schema';
 
 export interface ModelGovernancePolicyContext {
@@ -27,6 +28,29 @@ export interface ModelGovernancePolicyFilterResult {
 
 function unique(values: string[]): string[] {
   return [...new Set(values)];
+}
+
+function buildStructuredRecommendationItems(input: {
+  values: string[];
+  items?: Array<{ value: string; reason: string; confidence: 'low' | 'medium' | 'high' }>;
+}): StructuredGovernanceRecommendationItem[] {
+  const itemMap = new Map(
+    (input.items ?? []).map((item) => [item.value, item] as const)
+  );
+
+  return unique(input.values)
+    .filter(Boolean)
+    .map((value) => {
+      const matched = itemMap.get(value);
+      return {
+        value,
+        source: 'model-provider',
+        reason: matched?.reason ?? 'Provider recommended this item.',
+        confidence: matched?.confidence ?? 'medium',
+        consumed: true,
+        filteredBecause: [],
+      } satisfies StructuredGovernanceRecommendationItem;
+    });
 }
 
 export function filterModelGovernanceHintCandidate(
@@ -89,6 +113,16 @@ export function filterModelGovernanceHintCandidate(
       ? { suggestedArtifactTarget: candidate.suggestedArtifactTarget }
       : {}),
     explicitRolePreference: candidate.explicitRolePreference,
+    recommendedSkillChain: candidate.recommendedSkillChain,
+    recommendedSubagentRoles: candidate.recommendedSubagentRoles,
+    recommendedSkillItems: buildStructuredRecommendationItems({
+      values: candidate.recommendedSkillChain,
+      items: candidate.recommendedSkillItems,
+    }),
+    recommendedSubagentRoleItems: buildStructuredRecommendationItems({
+      values: candidate.recommendedSubagentRoles,
+      items: candidate.recommendedSubagentRoleItems,
+    }),
     researchPolicy: candidate.researchPolicy,
     delegationPreference: candidate.delegationPreference,
     constraints: candidate.constraints,
@@ -122,6 +156,8 @@ export function toPromptRoutingHintsCompat(
       ? { inferredArtifactTarget: filteredHints.suggestedArtifactTarget }
       : {}),
     explicitRolePreference: filteredHints.explicitRolePreference,
+    recommendedSkillChain: filteredHints.recommendedSkillChain,
+    recommendedSubagentRoles: filteredHints.recommendedSubagentRoles,
     researchPolicy: filteredHints.researchPolicy,
     delegationPreference: filteredHints.delegationPreference,
     constraints: filteredHints.constraints,

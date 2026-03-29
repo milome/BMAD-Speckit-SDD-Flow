@@ -3,18 +3,28 @@ import {
   resolveModelGovernanceHintCandidate,
   type ResolveModelGovernanceHintInput,
 } from './model-governance-hint-resolver';
+import { resolvePromptHintUsageFromText } from './prompt-routing-governance';
+import type { ExecutionSkillInventoryEntry } from './execution-intent-schema';
 import type {
+  ModelGovernanceRecommendationItem,
   ModelGovernanceHintCandidate,
   ModelGovernanceProviderMode,
 } from './model-governance-hints-schema';
+import { resolveGovernanceSkillInventory } from './skill-inventory-provider';
+import type { GovernanceHostKind } from './governance-remediation-runner';
 
 export type GovernanceProviderProtocol = ModelGovernanceProviderMode;
 
 export interface GovernanceProviderAdapterInput extends ResolveModelGovernanceHintInput {
+  projectRoot?: string;
+  hostKind?: GovernanceHostKind;
   capabilitySlot: string;
   canonicalAgent: string;
   actualExecutor: string;
   targetArtifacts: string[];
+  availableSkills?: string[] | null;
+  skillPaths?: string[] | null;
+  skillInventory?: ExecutionSkillInventoryEntry[] | null;
 }
 
 export interface GovernanceProviderAdapter {
@@ -48,7 +58,46 @@ export interface OpenAICompatibleGovernanceProviderAdapterConfig {
   systemPrompt?: string;
 }
 
+export interface AnthropicCompatibleGovernanceProviderAdapterConfig {
+  id: string;
+  baseUrl: string;
+  model: string;
+  apiKey?: string;
+  timeoutMs?: number;
+  headers?: Record<string, string>;
+  displayName?: string;
+  systemPrompt?: string;
+  maxTokens?: number;
+  anthropicVersion?: string;
+}
+
 function defaultHttpJsonRequestBuilder(input: GovernanceProviderAdapterInput): unknown {
+  const resolvedSkillInventory =
+    input.projectRoot &&
+    input.hostKind &&
+    !(input.availableSkills?.length || input.skillPaths?.length || input.skillInventory?.length)
+      ? resolveGovernanceSkillInventory({
+          projectRoot: input.projectRoot,
+          hostKind: input.hostKind,
+        })
+      : null;
+  const promptRoutingPreview = resolvePromptHintUsageFromText({
+    projectRoot: input.projectRoot ?? process.cwd(),
+    promptText: input.promptText,
+    stageContextKnown: input.stageContextKnown,
+    gateFailure: {
+      exists: input.gateFailureExists,
+      blockerOwnershipLocked: input.blockerOwnershipLocked,
+    },
+    artifactState: {
+      rootTargetLocked: input.rootTargetLocked,
+      equivalentAdapterCount: input.equivalentAdapterCount,
+    },
+    availableSkills: input.availableSkills ?? resolvedSkillInventory?.availableSkills,
+    skillPaths: input.skillPaths ?? resolvedSkillInventory?.skillPaths,
+    skillInventory: input.skillInventory ?? resolvedSkillInventory?.skillInventory,
+  });
+
   return {
     promptText: input.promptText,
     routingContext: {
@@ -61,11 +110,37 @@ function defaultHttpJsonRequestBuilder(input: GovernanceProviderAdapterInput): u
       canonicalAgent: input.canonicalAgent,
       actualExecutor: input.actualExecutor,
       targetArtifacts: input.targetArtifacts,
+      availableSkills: input.availableSkills ?? resolvedSkillInventory?.availableSkills ?? [],
+      skillPaths: input.skillPaths ?? resolvedSkillInventory?.skillPaths ?? [],
+      skillInventory: input.skillInventory ?? resolvedSkillInventory?.skillInventory ?? [],
+    },
+    promptRoutingPreview: {
+      executionIntentCandidate: promptRoutingPreview.executionIntentCandidate,
+      executionPlanDecision: promptRoutingPreview.executionPlanDecision,
+      semanticSkillFeatures:
+        promptRoutingPreview.executionPlanDecision?.semanticSkillFeatures ??
+        promptRoutingPreview.executionIntentCandidate?.semanticSkillFeatures ??
+        [],
+      semanticFeatureTopN:
+        promptRoutingPreview.executionPlanDecision?.semanticFeatureTopN ??
+        promptRoutingPreview.executionIntentCandidate?.semanticFeatureTopN ??
+        {
+          stageHints: [],
+          actionHints: [],
+          interactionHints: [],
+          researchPolicyHints: [],
+          delegationHints: [],
+          constraintHints: [],
+        },
     },
   };
 }
 
 function normalizeOpenAICompatibleBaseUrl(baseUrl: string): string {
+  return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+}
+
+function normalizeAnthropicCompatibleBaseUrl(baseUrl: string): string {
   return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
 }
 
@@ -94,6 +169,44 @@ function normalizeStringArray(value: unknown): string[] {
   return value.filter((item): item is string => typeof item === 'string' && item.trim() !== '');
 }
 
+function normalizeRecommendationItems(value: unknown): ModelGovernanceRecommendationItem[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => {
+      if (!item || typeof item !== 'object') {
+        return null;
+      }
+      const record = item as Record<string, unknown>;
+      const candidateValue =
+        typeof record.value === 'string'
+          ? record.value.trim()
+          : typeof record.skillId === 'string'
+            ? record.skillId.trim()
+            : typeof record.role === 'string'
+              ? record.role.trim()
+              : '';
+      const reason = typeof record.reason === 'string' ? record.reason.trim() : '';
+      const confidence =
+        record.confidence === 'low' || record.confidence === 'medium' || record.confidence === 'high'
+          ? record.confidence
+          : 'medium';
+
+      if (!candidateValue || !reason) {
+        return null;
+      }
+
+      return {
+        value: candidateValue,
+        reason,
+        confidence,
+      } satisfies ModelGovernanceRecommendationItem;
+    })
+    .filter((item): item is ModelGovernanceRecommendationItem => Boolean(item));
+}
+
 function toModelGovernanceHintCandidate(
   payload: unknown,
   adapterId: string,
@@ -113,6 +226,12 @@ function toModelGovernanceHintCandidate(
   const confidence = nested.confidence;
   const researchPolicy = nested.researchPolicy;
   const delegationPreference = nested.delegationPreference;
+  const recommendedSkillItems = normalizeRecommendationItems(nested.recommendedSkillItems);
+  const recommendedSubagentRoleItems = normalizeRecommendationItems(
+    nested.recommendedSubagentRoleItems
+  );
+  const recommendedSkillChain = normalizeStringArray(nested.recommendedSkillChain);
+  const recommendedSubagentRoles = normalizeStringArray(nested.recommendedSubagentRoles);
 
   return {
     source: 'model-provider',
@@ -132,6 +251,18 @@ function toModelGovernanceHintCandidate(
       ? { suggestedArtifactTarget: nested.suggestedArtifactTarget }
       : {}),
     explicitRolePreference: normalizeStringArray(nested.explicitRolePreference),
+    recommendedSkillChain:
+      recommendedSkillChain.length > 0
+        ? recommendedSkillChain
+        : recommendedSkillItems.map((item) => item.value),
+    recommendedSubagentRoles:
+      recommendedSubagentRoles.length > 0
+        ? recommendedSubagentRoles
+        : recommendedSubagentRoleItems.map((item) => item.value),
+    ...(recommendedSkillItems.length > 0 ? { recommendedSkillItems } : {}),
+    ...(recommendedSubagentRoleItems.length > 0
+      ? { recommendedSubagentRoleItems }
+      : {}),
     researchPolicy:
       researchPolicy === 'allowed' || researchPolicy === 'forbidden' || researchPolicy === 'preferred'
         ? researchPolicy
@@ -188,6 +319,19 @@ function defaultOpenAICompatibleSystemPrompt(): string {
   return [
     'You are a governance hint synthesizer.',
     'Return JSON only.',
+    'The input contains an explicit semanticSkillFeatures field describing skill-derived stage/action/interaction/research/delegation/constraint signals.',
+    'Treat semanticSkillFeatures as first-class structured routing evidence, not as incidental prose.',
+    'You may suggest stage/action/artifact/role/research/delegation/constraints.',
+    'You must not assert authority over blocker ownership, failed-check severity, or artifact-derived root target.',
+  ].join(' ');
+}
+
+function defaultAnthropicCompatibleSystemPrompt(): string {
+  return [
+    'You are a governance hint synthesizer.',
+    'Return JSON only.',
+    'The input contains an explicit semanticSkillFeatures field describing skill-derived stage/action/interaction/research/delegation/constraint signals.',
+    'Treat semanticSkillFeatures as first-class structured routing evidence, not as incidental prose.',
     'You may suggest stage/action/artifact/role/research/delegation/constraints.',
     'You must not assert authority over blocker ownership, failed-check severity, or artifact-derived root target.',
   ].join(' ');
@@ -227,6 +371,28 @@ function parseOpenAICompatibleResponse(payload: unknown): unknown {
   }
 
   throw new Error('OpenAI-compatible provider response missing choices[0].message.content or output_text');
+}
+
+function parseAnthropicCompatibleResponse(payload: unknown): unknown {
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Anthropic-compatible provider returned a non-object payload');
+  }
+
+  const doc = payload as Record<string, unknown>;
+  const content = doc.content;
+  if (!Array.isArray(content) || content.length === 0) {
+    throw new Error('Anthropic-compatible provider response missing content blocks');
+  }
+
+  const text = content
+    .map((item) =>
+      item && typeof item === 'object' && typeof (item as Record<string, unknown>).text === 'string'
+        ? ((item as Record<string, unknown>).text as string)
+        : ''
+    )
+    .join('\n');
+
+  return extractJsonObjectFromText(text);
 }
 
 export function createStubGovernanceProviderAdapter(
@@ -303,6 +469,43 @@ export function createOpenAICompatibleGovernanceProviderAdapter(
       );
       const parsed = parseOpenAICompatibleResponse(response);
       return toModelGovernanceHintCandidate(parsed, config.id, 'openai-compatible');
+    },
+  };
+}
+
+export function createAnthropicCompatibleGovernanceProviderAdapter(
+  config: AnthropicCompatibleGovernanceProviderAdapterConfig
+): GovernanceProviderAdapter {
+  const endpoint = `${normalizeAnthropicCompatibleBaseUrl(config.baseUrl)}/messages`;
+  return {
+    id: config.id,
+    protocol: 'anthropic-http',
+    displayName: config.displayName ?? 'Anthropic-Compatible Governance Provider Adapter',
+    async resolveModelHints(input) {
+      const body = {
+        model: config.model,
+        max_tokens: config.maxTokens ?? 512,
+        system: config.systemPrompt ?? defaultAnthropicCompatibleSystemPrompt(),
+        messages: [
+          {
+            role: 'user',
+            content: JSON.stringify(defaultHttpJsonRequestBuilder(input)),
+          },
+        ],
+      };
+      const response = await postJson(
+        endpoint,
+        body,
+        {
+          ...(config.apiKey ? { 'x-api-key': config.apiKey } : {}),
+          'anthropic-version': config.anthropicVersion ?? '2023-06-01',
+          ...(config.headers ?? {}),
+        },
+        config.timeoutMs ?? 30_000,
+        'POST'
+      );
+      const parsed = parseAnthropicCompatibleResponse(response);
+      return toModelGovernanceHintCandidate(parsed, config.id, 'anthropic-http');
     },
   };
 }

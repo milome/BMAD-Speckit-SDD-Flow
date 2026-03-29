@@ -19,6 +19,8 @@ describe('model-governance policy filter', () => {
       suggestedStage: 'readiness',
       suggestedAction: 'audit',
       explicitRolePreference: ['critical-auditor'],
+      recommendedSkillChain: ['speckit-workflow'],
+      recommendedSubagentRoles: ['code-reviewer'],
       researchPolicy: 'preferred',
       delegationPreference: 'ask-me-first',
       constraints: ['minimal-patch'],
@@ -67,6 +69,26 @@ describe('model-governance policy filter', () => {
     expect(filtered.ignoredBecause).toContain('artifact root target locked');
     expect(filtered.ignoredBecause).toContain('downstream continuation is governance-owned');
     expect(filtered.filteredHints?.debug.strippedForbiddenOverrides).toContain('blockerOwnership');
+    expect(filtered.filteredHints?.recommendedSkillItems).toEqual([
+      {
+        value: 'speckit-workflow',
+        source: 'model-provider',
+        reason: 'Provider recommended this item.',
+        confidence: 'medium',
+        consumed: true,
+        filteredBecause: [],
+      },
+    ]);
+    expect(filtered.filteredHints?.recommendedSubagentRoleItems).toEqual([
+      {
+        value: 'code-reviewer',
+        source: 'model-provider',
+        reason: 'Provider recommended this item.',
+        confidence: 'medium',
+        consumed: true,
+        filteredBecause: [],
+      },
+    ]);
 
     const compatHints = toPromptRoutingHintsCompat(filtered.filteredHints!);
     const usage = resolvePromptHintUsage({
@@ -97,6 +119,8 @@ describe('model-governance policy filter', () => {
       suggestedStage: 'architecture',
       suggestedAction: 'patch',
       explicitRolePreference: ['party-mode'],
+      recommendedSkillChain: ['speckit-workflow'],
+      recommendedSubagentRoles: ['code-reviewer'],
       researchPolicy: 'forbidden',
       delegationPreference: 'decide-for-me',
       constraints: ['docs-only'],
@@ -129,6 +153,26 @@ describe('model-governance policy filter', () => {
 
     expect(filtered.strippedForbiddenOverrides).toHaveLength(0);
     expect(filtered.filteredHints?.explicitRolePreference).toEqual(['party-mode']);
+    expect(filtered.filteredHints?.recommendedSkillItems).toEqual([
+      {
+        value: 'speckit-workflow',
+        source: 'model-provider',
+        reason: 'Provider recommended this item.',
+        confidence: 'medium',
+        consumed: true,
+        filteredBecause: [],
+      },
+    ]);
+    expect(filtered.filteredHints?.recommendedSubagentRoleItems).toEqual([
+      {
+        value: 'code-reviewer',
+        source: 'model-provider',
+        reason: 'Provider recommended this item.',
+        confidence: 'medium',
+        consumed: true,
+        filteredBecause: [],
+      },
+    ]);
     expect(filtered.filteredHints?.researchPolicy).toBe('forbidden');
 
     const compatHints = toPromptRoutingHintsCompat(filtered.filteredHints!);

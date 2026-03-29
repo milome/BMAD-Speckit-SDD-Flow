@@ -22,6 +22,24 @@ export type ModelGovernanceForbiddenOverrideKey =
   | 'artifactRootTarget'
   | 'downstreamContinuation';
 
+export interface ModelGovernanceRecommendationItem {
+  value: string;
+  reason: string;
+  confidence: PromptRoutingHintConfidence;
+}
+
+export interface StructuredGovernanceRecommendationItem {
+  value: string;
+  source: 'model-provider';
+  reason: string;
+  confidence: PromptRoutingHintConfidence;
+  consumed: boolean;
+  matchedSkillId?: string;
+  matchedBy?: 'exact-id' | 'substring' | 'token-overlap' | 'unmatched';
+  matchScore?: number;
+  filteredBecause: string[];
+}
+
 export interface ModelGovernanceHintCandidate {
   source: 'model-provider';
   providerId: string;
@@ -31,6 +49,10 @@ export interface ModelGovernanceHintCandidate {
   suggestedAction?: string;
   suggestedArtifactTarget?: string;
   explicitRolePreference: string[];
+  recommendedSkillChain: string[];
+  recommendedSubagentRoles: string[];
+  recommendedSkillItems?: ModelGovernanceRecommendationItem[];
+  recommendedSubagentRoleItems?: ModelGovernanceRecommendationItem[];
   researchPolicy: PromptRoutingResearchPolicy;
   delegationPreference: PromptRoutingDelegationPreference;
   constraints: string[];
@@ -48,6 +70,10 @@ export interface FilteredModelGovernanceHints {
   suggestedAction?: string;
   suggestedArtifactTarget?: string;
   explicitRolePreference: string[];
+  recommendedSkillChain: string[];
+  recommendedSubagentRoles: string[];
+  recommendedSkillItems: StructuredGovernanceRecommendationItem[];
+  recommendedSubagentRoleItems: StructuredGovernanceRecommendationItem[];
   researchPolicy: PromptRoutingResearchPolicy;
   delegationPreference: PromptRoutingDelegationPreference;
   constraints: string[];
@@ -66,6 +92,34 @@ const stringArraySchema = {
   items: { type: 'string' },
 } as const;
 
+const recommendationItemSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['value', 'reason', 'confidence'],
+  properties: {
+    value: { type: 'string', minLength: 1 },
+    reason: { type: 'string', minLength: 1 },
+    confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
+  },
+} as const;
+
+const structuredRecommendationItemSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['value', 'source', 'reason', 'confidence', 'consumed', 'filteredBecause'],
+  properties: {
+    value: { type: 'string', minLength: 1 },
+    source: { type: 'string', const: 'model-provider' },
+    reason: { type: 'string', minLength: 1 },
+    confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
+    consumed: { type: 'boolean' },
+    matchedSkillId: { type: 'string' },
+    matchedBy: { type: 'string', enum: ['exact-id', 'substring', 'token-overlap', 'unmatched'] },
+    matchScore: { type: 'number' },
+    filteredBecause: stringArraySchema,
+  },
+} as const;
+
 const modelGovernanceHintCandidateSchema = {
   type: 'object',
   additionalProperties: false,
@@ -75,6 +129,8 @@ const modelGovernanceHintCandidateSchema = {
     'providerMode',
     'confidence',
     'explicitRolePreference',
+    'recommendedSkillChain',
+    'recommendedSubagentRoles',
     'researchPolicy',
     'delegationPreference',
     'constraints',
@@ -103,6 +159,16 @@ const modelGovernanceHintCandidateSchema = {
     suggestedAction: { type: 'string' },
     suggestedArtifactTarget: { type: 'string' },
     explicitRolePreference: stringArraySchema,
+    recommendedSkillChain: stringArraySchema,
+    recommendedSubagentRoles: stringArraySchema,
+    recommendedSkillItems: {
+      type: 'array',
+      items: recommendationItemSchema,
+    },
+    recommendedSubagentRoleItems: {
+      type: 'array',
+      items: recommendationItemSchema,
+    },
     researchPolicy: { type: 'string', enum: ['allowed', 'forbidden', 'preferred'] },
     delegationPreference: { type: 'string', enum: ['decide-for-me', 'ask-me-first'] },
     constraints: stringArraySchema,
@@ -130,6 +196,8 @@ const filteredModelGovernanceHintsSchema = {
     'providerMode',
     'confidence',
     'explicitRolePreference',
+    'recommendedSkillChain',
+    'recommendedSubagentRoles',
     'researchPolicy',
     'delegationPreference',
     'constraints',
@@ -159,6 +227,16 @@ const filteredModelGovernanceHintsSchema = {
     suggestedAction: { type: 'string' },
     suggestedArtifactTarget: { type: 'string' },
     explicitRolePreference: stringArraySchema,
+    recommendedSkillChain: stringArraySchema,
+    recommendedSubagentRoles: stringArraySchema,
+    recommendedSkillItems: {
+      type: 'array',
+      items: structuredRecommendationItemSchema,
+    },
+    recommendedSubagentRoleItems: {
+      type: 'array',
+      items: structuredRecommendationItemSchema,
+    },
     researchPolicy: { type: 'string', enum: ['allowed', 'forbidden', 'preferred'] },
     delegationPreference: { type: 'string', enum: ['decide-for-me', 'ask-me-first'] },
     constraints: stringArraySchema,

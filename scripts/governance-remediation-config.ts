@@ -7,10 +7,12 @@ import type {
 import type { ModelGovernanceHintCandidate } from './model-governance-hints-schema';
 import type {
   GovernanceProviderAdapter,
+  AnthropicCompatibleGovernanceProviderAdapterConfig,
   HttpJsonGovernanceProviderAdapterConfig,
   OpenAICompatibleGovernanceProviderAdapterConfig,
 } from './governance-provider-adapter';
 import {
+  createAnthropicCompatibleGovernanceProviderAdapter,
   createHttpJsonGovernanceProviderAdapter,
   createOpenAICompatibleGovernanceProviderAdapter,
   createStubGovernanceProviderAdapter,
@@ -21,7 +23,7 @@ export interface GovernanceRemediationConfig {
   primaryHost: GovernanceHostKind;
   packetHosts: GovernanceHostKind[];
   provider: {
-    mode: 'stub' | 'http-json' | 'openai-compatible';
+    mode: 'stub' | 'http-json' | 'openai-compatible' | 'anthropic-compatible';
     id: string;
     displayName?: string;
     timeoutMs?: number;
@@ -33,6 +35,8 @@ export interface GovernanceRemediationConfig {
     apiKey?: string;
     apiKeyEnv?: string;
     systemPrompt?: string;
+    maxTokens?: number;
+    anthropicVersion?: string;
     stubCandidate?: ModelGovernanceHintCandidate | null;
   };
 }
@@ -144,6 +148,29 @@ export function createGovernanceProviderAdapterFromConfig(
         systemPrompt: config.provider.systemPrompt,
       };
       return createOpenAICompatibleGovernanceProviderAdapter(providerConfig);
+    }
+    case 'anthropic-compatible': {
+      if (!config.provider.baseUrl || !config.provider.model) {
+        throw new Error(
+          'governance-remediation provider.baseUrl and provider.model are required for anthropic-compatible mode'
+        );
+      }
+      const apiKey =
+        config.provider.apiKey ??
+        (config.provider.apiKeyEnv ? process.env[config.provider.apiKeyEnv] : undefined);
+      const providerConfig: AnthropicCompatibleGovernanceProviderAdapterConfig = {
+        id: config.provider.id,
+        baseUrl: config.provider.baseUrl,
+        model: config.provider.model,
+        apiKey,
+        timeoutMs: config.provider.timeoutMs,
+        headers: config.provider.headers,
+        displayName: config.provider.displayName,
+        systemPrompt: config.provider.systemPrompt,
+        maxTokens: config.provider.maxTokens,
+        anthropicVersion: config.provider.anthropicVersion,
+      };
+      return createAnthropicCompatibleGovernanceProviderAdapter(providerConfig);
     }
     default:
       return undefined;

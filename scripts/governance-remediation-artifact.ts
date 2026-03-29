@@ -1,18 +1,26 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
-  resolvePromptHintUsage,
-  type PromptRoutingGovernanceInput,
+  resolvePromptHintUsageFromText,
   type PromptHintUsageRecord,
 } from './prompt-routing-governance';
 import { type ModelGovernanceHintCandidate } from './model-governance-hints-schema';
-import { resolvePromptRoutingHintsFromText } from './prompt-routing-hints';
+import type {
+  ExecutionIntentCandidate,
+  ExecutionPlanDecision,
+  ExecutionSkillSemanticFeature,
+  ExecutionSkillInventoryEntry,
+} from './execution-intent-schema';
+import type { JourneyContractRemediationHint } from '../packages/scoring/analytics/journey-contract-remediation';
 
 export interface GovernanceRemediationArtifactInput {
   projectRoot: string;
   outputPath: string;
   promptText?: string;
   modelHintsCandidate?: ModelGovernanceHintCandidate | null;
+  availableSkills?: string[] | null;
+  skillPaths?: string[] | null;
+  skillInventory?: ExecutionSkillInventoryEntry[] | null;
   stageContextKnown: boolean;
   gateFailureExists: boolean;
   blockerOwnershipLocked: boolean;
@@ -34,11 +42,22 @@ export interface GovernanceRemediationArtifactInput {
   externalProofAdded?: string;
   readyToRerunGate?: boolean;
   stopReason?: string;
+  journeyContractHints?: JourneyContractRemediationHint[];
+  executorRouting?: {
+    routingMode: 'targeted' | 'generic';
+    executorRoute: 'journey-contract-remediation' | 'default-gate-remediation';
+    prioritizedSignals: string[];
+    packetStrategy?: string;
+    reason?: string;
+  };
 }
 
 export interface GovernanceRemediationArtifactResult {
   markdown: string;
   promptHintUsage: PromptHintUsageRecord;
+  executionIntentCandidate: ExecutionIntentCandidate | null;
+  executionPlanDecision: ExecutionPlanDecision | null;
+  journeyContractHints: JourneyContractRemediationHint[];
 }
 
 function yesNo(value: boolean): string {
@@ -104,14 +123,269 @@ function buildModelHintUsageLines(usage: PromptHintUsageRecord): string[] {
   ];
 }
 
+function formatSemanticSkillFeaturesCompact(
+  semanticSkillFeatures: ExecutionSkillSemanticFeature[]
+): string {
+  if (semanticSkillFeatures.length === 0) {
+    return '(none)';
+  }
+
+  const renderedFeatures = semanticSkillFeatures.map((feature) => {
+    const details = [
+      feature.stageHints.length > 0 ? `stage=${feature.stageHints.join('|')}` : null,
+      feature.actionHints.length > 0 ? `action=${feature.actionHints.join('|')}` : null,
+      feature.interactionHints.length > 0
+        ? `interaction=${feature.interactionHints.join('|')}`
+        : null,
+      feature.researchPolicyHints.length > 0
+        ? `research=${feature.researchPolicyHints.join('|')}`
+        : null,
+      feature.delegationHints.length > 0
+        ? `delegation=${feature.delegationHints.join('|')}`
+        : null,
+      feature.constraintHints.length > 0
+        ? `constraints=${feature.constraintHints.join('|')}`
+        : null,
+    ]
+      .filter((detail): detail is string => Boolean(detail))
+      .join('; ');
+
+    return `${feature.skillId}${details ? ` [${details}]` : ''}`;
+  });
+
+  return [...new Set(renderedFeatures)].join(' || ');
+}
+
+function buildExecutionIntentCandidateLines(
+  candidate: ExecutionIntentCandidate | null
+): string[] {
+  if (!candidate) {
+    return ['- (none)'];
+  }
+
+  const compactSkillMatchLines =
+    candidate.skillMatchReasons.length > 0
+      ? candidate.skillMatchReasons.map((reason) => {
+          const flags = [
+            reason.exactIdMatch ? 'exact' : null,
+            reason.substringMatch ? 'substr' : null,
+            reason.overlapTokens.length > 0 ? `tokens=${reason.overlapTokens.join('|')}` : null,
+          ]
+            .filter((flag): flag is string => Boolean(flag))
+            .join(', ');
+          return `  - ${reason.requestedSkill} -> ${reason.matchedSkillId} [score=${reason.score}${flags ? `; ${flags}` : ''}]`;
+        })
+      : ['  - (none)'];
+
+  const compactTopN = [
+    ['stageHints', candidate.semanticFeatureTopN.stageHints],
+    ['actionHints', candidate.semanticFeatureTopN.actionHints],
+    ['interactionHints', candidate.semanticFeatureTopN.interactionHints],
+    ['researchPolicyHints', candidate.semanticFeatureTopN.researchPolicyHints],
+    ['delegationHints', candidate.semanticFeatureTopN.delegationHints],
+    ['constraintHints', candidate.semanticFeatureTopN.constraintHints],
+  ]
+    .map(([label, items]) => {
+      const rendered = (items as Array<{ value: string; score: number; provenanceSkillIds: string[] }>)
+        .map((item) => `${item.value}@${item.score}<-${item.provenanceSkillIds.join('|')}`)
+        .join(', ');
+      return rendered ? `  - ${label}: ${rendered}` : null;
+    })
+    .filter((line): line is string => Boolean(line));
+
+  return [
+    `- Source: ${candidate.source}`,
+    `- Stage: ${candidate.stage ?? '(none)'}`,
+    `- Action: ${candidate.action ?? '(none)'}`,
+    `- Interaction Mode: ${candidate.interactionMode}`,
+    `- Skill Availability Mode: ${candidate.skillAvailabilityMode}`,
+    `- Available Skills: ${candidate.availableSkills.join(', ') || '(none)'}`,
+    `- Skill Paths: ${candidate.skillPaths.join(', ') || '(none)'}`,
+    `- Matched Available Skills: ${candidate.matchedAvailableSkills.join(', ') || '(none)'}`,
+    `- Missing Skills: ${candidate.missingSkills.join(', ') || '(none)'}`,
+    '- Skill Match Reasons:',
+    ...compactSkillMatchLines,
+    `- Semantic Skill Features: ${formatSemanticSkillFeaturesCompact(candidate.semanticSkillFeatures)}`,
+    '- Semantic Feature Top-N:',
+    ...(compactTopN.length > 0 ? compactTopN : ['  - (none)']),
+    `- Research Policy: ${candidate.researchPolicy}`,
+    `- Delegation Preference: ${candidate.delegationPreference}`,
+    `- Provider Recommended Skill Chain: ${candidate.providerRecommendedSkillChain.join(', ') || '(none)'}`,
+    `- Provider Recommended Subagent Roles: ${candidate.providerRecommendedSubagentRoles.join(', ') || '(none)'}`,
+    '- Provider Recommendation Items (Skills):',
+    ...(
+      candidate.providerRecommendationItems.skills.length > 0
+        ? candidate.providerRecommendationItems.skills.map(
+            (item) =>
+              `  - ${item.value} [source=${item.source}; confidence=${item.confidence}; consumed=${item.consumed ? 'yes' : 'no'}; reason=${item.reason}; filteredBecause=${item.filteredBecause.join('|') || '(none)'}]`
+          )
+        : ['  - (none)']
+    ),
+    '- Provider Recommendation Items (Subagent Roles):',
+    ...(
+      candidate.providerRecommendationItems.subagentRoles.length > 0
+        ? candidate.providerRecommendationItems.subagentRoles.map(
+            (item) =>
+              `  - ${item.value} [source=${item.source}; confidence=${item.confidence}; consumed=${item.consumed ? 'yes' : 'no'}; reason=${item.reason}; filteredBecause=${item.filteredBecause.join('|') || '(none)'}]`
+          )
+        : ['  - (none)']
+    ),
+    `- Skill Chain: ${candidate.skillChain.join(', ') || '(none)'}`,
+    `- Subagent Roles: ${candidate.subagentRoles.join(', ') || '(none)'}`,
+    `- Constraints: ${candidate.constraints.join(', ') || '(none)'}`,
+    `- Advisory Only: ${candidate.advisoryOnly ? 'yes' : 'no'}`,
+  ];
+}
+
+function buildExecutionPlanDecisionLines(
+  decision: ExecutionPlanDecision | null
+): string[] {
+  if (!decision) {
+    return ['- (none)'];
+  }
+
+  const compactSkillMatchLines =
+    decision.skillMatchReasons.length > 0
+      ? decision.skillMatchReasons.map((reason) => {
+          const flags = [
+            reason.exactIdMatch ? 'exact' : null,
+            reason.substringMatch ? 'substr' : null,
+            reason.overlapTokens.length > 0 ? `tokens=${reason.overlapTokens.join('|')}` : null,
+          ]
+            .filter((flag): flag is string => Boolean(flag))
+            .join(', ');
+          return `  - ${reason.requestedSkill} -> ${reason.matchedSkillId} [score=${reason.score}${flags ? `; ${flags}` : ''}]`;
+        })
+      : ['  - (none)'];
+
+  const compactTopN = [
+    ['stageHints', decision.semanticFeatureTopN.stageHints],
+    ['actionHints', decision.semanticFeatureTopN.actionHints],
+    ['interactionHints', decision.semanticFeatureTopN.interactionHints],
+    ['researchPolicyHints', decision.semanticFeatureTopN.researchPolicyHints],
+    ['delegationHints', decision.semanticFeatureTopN.delegationHints],
+    ['constraintHints', decision.semanticFeatureTopN.constraintHints],
+  ]
+    .map(([label, items]) => {
+      const rendered = (items as Array<{ value: string; score: number; provenanceSkillIds: string[] }>)
+        .map((item) => `${item.value}@${item.score}<-${item.provenanceSkillIds.join('|')}`)
+        .join(', ');
+      return rendered ? `  - ${label}: ${rendered}` : null;
+    })
+    .filter((line): line is string => Boolean(line));
+
+  return [
+    `- Source: ${decision.source}`,
+    `- Stage: ${decision.stage ?? '(none)'}`,
+    `- Action: ${decision.action ?? '(none)'}`,
+    `- Interaction Mode: ${decision.interactionMode}`,
+    `- Skill Availability Mode: ${decision.skillAvailabilityMode}`,
+    `- Available Skills: ${decision.availableSkills.join(', ') || '(none)'}`,
+    `- Skill Paths: ${decision.skillPaths.join(', ') || '(none)'}`,
+    `- Matched Available Skills: ${decision.matchedAvailableSkills.join(', ') || '(none)'}`,
+    `- Missing Skills: ${decision.missingSkills.join(', ') || '(none)'}`,
+    '- Skill Match Reasons:',
+    ...compactSkillMatchLines,
+    `- Semantic Skill Features: ${formatSemanticSkillFeaturesCompact(decision.semanticSkillFeatures)}`,
+    '- Semantic Feature Top-N:',
+    ...(compactTopN.length > 0 ? compactTopN : ['  - (none)']),
+    `- Research Policy: ${decision.researchPolicy}`,
+    `- Delegation Preference: ${decision.delegationPreference}`,
+    `- Provider Recommended Skill Chain: ${decision.providerRecommendedSkillChain.join(', ') || '(none)'}`,
+    `- Provider Recommended Subagent Roles: ${decision.providerRecommendedSubagentRoles.join(', ') || '(none)'}`,
+    '- Provider Recommendation Items (Skills):',
+    ...(
+      decision.providerRecommendationItems.skills.length > 0
+        ? decision.providerRecommendationItems.skills.map(
+            (item) =>
+              `  - ${item.value} [source=${item.source}; confidence=${item.confidence}; consumed=${item.consumed ? 'yes' : 'no'}; reason=${item.reason}; filteredBecause=${item.filteredBecause.join('|') || '(none)'}]`
+          )
+        : ['  - (none)']
+    ),
+    '- Provider Recommendation Items (Subagent Roles):',
+    ...(
+      decision.providerRecommendationItems.subagentRoles.length > 0
+        ? decision.providerRecommendationItems.subagentRoles.map(
+            (item) =>
+              `  - ${item.value} [source=${item.source}; confidence=${item.confidence}; consumed=${item.consumed ? 'yes' : 'no'}; reason=${item.reason}; filteredBecause=${item.filteredBecause.join('|') || '(none)'}]`
+          )
+        : ['  - (none)']
+    ),
+    `- Skill Chain: ${decision.skillChain.join(', ') || '(none)'}`,
+    `- Subagent Roles: ${decision.subagentRoles.join(', ') || '(none)'}`,
+    `- Governance Constraints: ${decision.governanceConstraints.join(', ') || '(none)'}`,
+    `- Blocked By Governance: ${decision.blockedByGovernance.join(', ') || '(none)'}`,
+    `- Advisory Only: ${decision.advisoryOnly ? 'yes' : 'no'}`,
+  ];
+}
+
+function buildJourneyContractHintLines(hints: JourneyContractRemediationHint[]): string[] {
+  if (hints.length === 0) {
+    return ['- (none)'];
+  }
+
+  return hints.flatMap((hint) => [
+    `- ${hint.signal}: ${hint.recommendation}`,
+    `  - Count: ${hint.count}`,
+    `  - Affected stages: ${hint.affected_stages.join(', ') || '(none)'}`,
+    `  - Stories: ${hint.epic_stories.join(', ') || '(none)'}`,
+  ]);
+}
+
+function defaultExecutorRouting(
+  hints: JourneyContractRemediationHint[]
+): NonNullable<GovernanceRemediationArtifactInput['executorRouting']> {
+  if (hints.length > 0) {
+    return {
+      routingMode: 'targeted',
+      executorRoute: 'journey-contract-remediation',
+      prioritizedSignals: hints.map((hint) => hint.signal).sort(),
+      packetStrategy: 'journey-contract-remediation-packet',
+      reason:
+        'journey contract hints detected; use targeted remediation routing before generic blocker cleanup',
+    };
+  }
+
+  return {
+    routingMode: 'generic',
+    executorRoute: 'default-gate-remediation',
+    prioritizedSignals: [],
+    packetStrategy: 'default-remediation-packet',
+    reason: 'no journey contract hints detected; use the default gate remediation route',
+  };
+}
+
+function buildExecutorRoutingLines(
+  executorRouting: NonNullable<GovernanceRemediationArtifactInput['executorRouting']>
+): string[] {
+  return [
+    `- Routing Mode: ${executorRouting.routingMode}`,
+    `- Executor Route: ${executorRouting.executorRoute}`,
+    `- Packet Strategy: ${executorRouting.packetStrategy ?? '(none)'}`,
+    `- Prioritized Signals: ${executorRouting.prioritizedSignals.join(', ') || '(none)'}`,
+    `- Routing Reason: ${executorRouting.reason ?? '(none)'}`,
+  ];
+}
+
+export function buildRemediationAuditTraceSummaryLines(
+  stopReason: string | undefined,
+  journeyContractHints: JourneyContractRemediationHint[],
+  executorRouting: NonNullable<GovernanceRemediationArtifactInput['executorRouting']>
+): string[] {
+  return [
+    `Routing Mode: ${executorRouting.routingMode}`,
+    `Executor Route: ${executorRouting.executorRoute}`,
+    `Stop Reason: ${stopReason ?? '(none)'}`,
+    `Journey Contract Signals: ${journeyContractHints.map((hint) => hint.signal).join(', ') || '(none)'}`,
+  ];
+}
+
 export function buildGovernanceRemediationArtifact(
   input: GovernanceRemediationArtifactInput
 ): GovernanceRemediationArtifactResult {
-  const promptHints = input.promptText
-    ? resolvePromptRoutingHintsFromText(input.projectRoot, input.promptText)
-    : null;
-
-  const governanceInput: PromptRoutingGovernanceInput = {
+  const promptHintUsage = resolvePromptHintUsageFromText({
+    projectRoot: input.projectRoot,
+    promptText: input.promptText,
     stageContextKnown: input.stageContextKnown,
     gateFailure: {
       exists: input.gateFailureExists,
@@ -121,11 +395,20 @@ export function buildGovernanceRemediationArtifact(
       rootTargetLocked: input.rootTargetLocked,
       equivalentAdapterCount: input.equivalentAdapterCount,
     },
-    promptHints,
     modelHintsCandidate: input.modelHintsCandidate,
-  };
-
-  const promptHintUsage = resolvePromptHintUsage(governanceInput);
+    availableSkills: input.availableSkills,
+    skillPaths: input.skillPaths,
+    skillInventory: input.skillInventory,
+  });
+  const executionIntentCandidate = promptHintUsage.executionIntentCandidate;
+  const executionPlanDecision = promptHintUsage.executionPlanDecision;
+  const journeyContractHints = input.journeyContractHints ?? [];
+  const executorRouting = input.executorRouting ?? defaultExecutorRouting(journeyContractHints);
+  const remediationAuditTraceSummaryLines = buildRemediationAuditTraceSummaryLines(
+    input.stopReason,
+    journeyContractHints,
+    executorRouting
+  );
   const markdown = [
     '# Remediation Attempt',
     '',
@@ -162,6 +445,26 @@ export function buildGovernanceRemediationArtifact(
     '',
     ...buildModelHintUsageLines(promptHintUsage),
     '',
+    '## Execution Intent Candidate',
+    '',
+    ...buildExecutionIntentCandidateLines(executionIntentCandidate),
+    '',
+    '## Execution Plan Decision',
+    '',
+    ...buildExecutionPlanDecisionLines(executionPlanDecision),
+    '',
+    '## Executor Routing Trace',
+    '',
+    ...buildExecutorRoutingLines(executorRouting),
+    '',
+    '## Remediation Audit Trace Summary',
+    '',
+    ...remediationAuditTraceSummaryLines,
+    '',
+    '## Journey Contract Remediation Hints',
+    '',
+    ...buildJourneyContractHintLines(journeyContractHints),
+    '',
     '## Evidence Delta',
     '',
     '- Shared artifacts updated:',
@@ -179,6 +482,9 @@ export function buildGovernanceRemediationArtifact(
   return {
     markdown,
     promptHintUsage,
+    executionIntentCandidate,
+    executionPlanDecision,
+    journeyContractHints,
   };
 }
 
