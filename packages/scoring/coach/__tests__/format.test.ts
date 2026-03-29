@@ -91,4 +91,25 @@ describe('formatToMarkdown', () => {
     expect(md).toContain('remediation iterations: 0');
     expect(md).toContain('remediation iterations: 2');
   });
+
+  it('renders Journey contract remediation section when hints exist', () => {
+    const report = makeReport({
+      journey_contract_hints: [
+        {
+          signal: 'smoke_task_chain',
+          label: 'Smoke Task Chain',
+          count: 2,
+          affected_stages: ['tasks'],
+          epic_stories: ['E6.S4'],
+          recommendation: 'Add at least one smoke task chain per Journey Slice and point setup tasks to that chain.',
+        },
+      ],
+    });
+    const md = formatToMarkdown(report);
+    expect(md).toContain('## Journey Contract Remediation');
+    expect(md).toContain('Smoke Task Chain: 2 occurrence(s)');
+    expect(md).toContain('affected stages tasks');
+    expect(md).toContain('stories E6.S4');
+    expect(md).toContain('Add at least one smoke task chain per Journey Slice');
+  });
 });

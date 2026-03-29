@@ -19,7 +19,7 @@ import type { WriteMode } from '../writer';
 import { applyTierAndVeto } from '../veto';
 import { resolveRulesDir } from '../constants/path';
 import { computeContentHash, computeStringHash, getGitHeadHash } from '../utils/hash';
-import type { DimensionScore, IterationRecord } from '../writer/types';
+import type { CheckItem, DimensionScore, IterationRecord, JourneyContractSignals } from '../writer/types';
 
 /**
  * Options for parseAndWriteScore orchestration.
@@ -64,6 +64,28 @@ export function validateIterationCount(value: number): number {
 function computeWeightedDimensionScore(scores: DimensionScore[]): number {
   const weighted = scores.reduce((sum, current) => sum + (current.score * current.weight) / 100, 0);
   return Math.round(weighted * 100) / 100;
+}
+
+const JOURNEY_CONTRACT_SIGNAL_BY_ITEM_ID: Record<string, keyof JourneyContractSignals> = {
+  journey_smoke_chain: 'smoke_task_chain',
+  journey_closure_task: 'closure_task_id',
+  journey_unlock_contract: 'journey_unlock',
+  journey_gap_split_contract: 'gap_split_contract',
+  shared_path_reference: 'shared_path_reference',
+};
+
+function deriveJourneyContractSignals(checkItems: CheckItem[]): JourneyContractSignals | undefined {
+  const signals: JourneyContractSignals = {};
+
+  for (const item of checkItems) {
+    if (item.passed) continue;
+    const signalKey = JOURNEY_CONTRACT_SIGNAL_BY_ITEM_ID[item.item_id];
+    if (signalKey) {
+      signals[signalKey] = true;
+    }
+  }
+
+  return Object.keys(signals).length > 0 ? signals : undefined;
 }
 
 /** Story 9.4: 从问题清单解析最高严重等级 */
@@ -236,12 +258,15 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     iterationRecords = [...failRecords, passRecord];
   }
 
+  const journeyContractSignals = deriveJourneyContractSignals(baseRecord.check_items);
+
   const recordToWrite = {
     ...baseRecord,
     iteration_records: iterationRecords,
     phase_score,
     veto_triggered,
     tier_coefficient,
+    ...(journeyContractSignals != null ? { journey_contract_signals: journeyContractSignals } : {}),
     ...(options.question_version != null ? { question_version: options.question_version } : {}),
     ...(baseCommitHash != null ? { base_commit_hash: baseCommitHash } : {}),
     ...(contentHash != null ? { content_hash: contentHash } : {}),

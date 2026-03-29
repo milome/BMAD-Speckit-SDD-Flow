@@ -223,9 +223,22 @@ describe('readiness remediation artifact generation', () => {
       expect(remediation).toContain('Source GateFailure IDs: IR-BLK-001, IR-BLK-002');
       expect(remediation).toContain('- implementation-readiness-report');
       expect(remediation).toContain('- Blocker ownership affected: no');
+      expect(remediation).toContain('## Remediation Audit Trace Summary');
+      expect(remediation).toContain('Routing Mode: generic');
+      expect(remediation).toContain('Executor Route: default-gate-remediation');
+      expect(remediation).toContain('Stop Reason: critical blockers remain open');
+      expect(remediation).toContain('Journey Contract Signals: (none)');
+      expect(remediation).toContain('## Governance Remediation Runner Summary');
+      expect(remediation).toContain('## Loop State Trace Summary');
+      expect(remediation).toContain('- Stop Reason: critical blockers remain open');
       expect(cursorPacket).toContain('# Governance Remediation Task Packet');
       expect(cursorPacket).toContain('cursor-mcp-task');
+      expect(cursorPacket).toContain('## Remediation Audit Trace Summary');
+      expect(cursorPacket).toContain('Stop Reason: critical blockers remain open');
+      expect(cursorPacket).toContain('Journey Contract Signals: (none)');
       expect(claudePacket).toContain('claude-agent-tool');
+      expect(claudePacket).toContain('## Remediation Audit Trace Summary');
+      expect(claudePacket).toContain('Stop Reason: critical blockers remain open');
     } finally {
       rmSync(tmpRoot, { recursive: true, force: true });
     }
@@ -266,7 +279,16 @@ describe('readiness remediation artifact generation', () => {
       expect(remediation).toContain('Adapter Path: local workflow fallback');
       expect(remediation).toContain('Prompt hint present: yes');
       expect(remediation).toContain('- Blocker ownership affected: no');
+      expect(remediation).toContain('## Remediation Audit Trace Summary');
+      expect(remediation).toContain('Routing Mode: generic');
+      expect(remediation).toContain('Executor Route: default-gate-remediation');
+      expect(remediation).toContain('Stop Reason: critical blockers remain open');
+      expect(remediation).toContain('## Governance Remediation Runner Summary');
+      expect(remediation).toContain('## Loop State Trace Summary');
+      expect(remediation).toContain('- Stop Reason: critical blockers remain open');
       expect(cursorPacket).toContain('## Remediation Artifact');
+      expect(cursorPacket).toContain('## Remediation Audit Trace Summary');
+      expect(cursorPacket).toContain('Stop Reason: critical blockers remain open');
     } finally {
       rmSync(tmpRoot, { recursive: true, force: true });
     }

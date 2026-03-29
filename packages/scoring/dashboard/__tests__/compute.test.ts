@@ -7,11 +7,16 @@ import {
   getDimensionScores,
   getWeakTop3,
   getWeakTop3EpicStory,
+  getJourneyContractSummary,
   aggregateByEpicStoryTimeWindow,
   getHighIterationTop3,
   countVetoTriggers,
   getTrend,
   effectiveStage,
+  getGovernanceRoutingSummary,
+  getGovernanceRoutingModeDistribution,
+  getGovernanceSignalHotspots,
+  getGovernanceRerunGateFailureTrend,
 } from '../compute';
 import type { RunScoreRecord } from '../../writer/types';
 
@@ -352,6 +357,236 @@ describe('countVetoTriggers', () => {
       createRecord({ check_items: [{ item_id: 'non_veto', passed: false, score_delta: -5 }] }),
     ];
     expect(countVetoTriggers(records)).toBe(0);
+  });
+});
+
+describe('getJourneyContractSummary', () => {
+  it('returns journey contract summary sorted by frequency desc', () => {
+    const records = [
+      createRecord({
+        run_id: 'dev-e6-s4-tasks-1',
+        stage: 'tasks',
+        journey_contract_signals: {
+          smoke_task_chain: true,
+          closure_task_id: true,
+        },
+      }),
+      createRecord({
+        run_id: 'dev-e6-s5-tasks-2',
+        stage: 'tasks',
+        journey_contract_signals: {
+          smoke_task_chain: true,
+        },
+      }),
+      createRecord({
+        run_id: 'dev-e6-s4-implement-3',
+        stage: 'tasks',
+        trigger_stage: 'speckit_5_2',
+        journey_contract_signals: {
+          shared_path_reference: true,
+        },
+      }),
+    ];
+
+    const summary = getJourneyContractSummary(records);
+
+    expect(summary[0]).toMatchObject({
+      signal: 'smoke_task_chain',
+      count: 2,
+      affected_stages: ['tasks'],
+      epic_stories: ['E6.S4', 'E6.S5'],
+    });
+    expect(summary.find((item) => item.signal === 'shared_path_reference')).toMatchObject({
+      affected_stages: ['implement'],
+      epic_stories: ['E6.S4'],
+    });
+  });
+});
+
+describe('getGovernanceRoutingSummary', () => {
+  it('summarizes the latest governance rerun history from score records instead of runtime state', () => {
+    const records = [
+      createRecord({
+        run_id: 'dev-e6-s4-plan-1',
+        stage: 'plan',
+        timestamp: '2026-03-28T10:00:00.000Z',
+        governance_rerun_history: [
+          {
+            event_id: 'gov-evt-1',
+            timestamp: '2026-03-28T10:05:00.000Z',
+            rerun_gate: 'brief-gate',
+            outcome: 'blocked',
+            decision_mode: 'generic',
+            executor_routing: {
+              routing_mode: 'generic',
+              executor_route: 'default-gate-remediation',
+              prioritized_signals: [],
+            },
+            summary_lines: [
+              'Routing Mode: generic',
+              'Executor Route: default-gate-remediation',
+              'Stop Reason: (none)',
+              'Journey Contract Signals: (none)',
+            ],
+          },
+        ],
+      }),
+      createRecord({
+        run_id: 'dev-e6-s4-implement-2',
+        stage: 'tasks',
+        trigger_stage: 'speckit_5_2',
+        timestamp: '2026-03-28T11:00:00.000Z',
+        governance_rerun_history: [
+          {
+            event_id: 'gov-evt-2',
+            timestamp: '2026-03-28T11:15:00.000Z',
+            rerun_gate: 'implementation-readiness',
+            outcome: 'blocked',
+            decision_mode: 'targeted',
+            executor_routing: {
+              routing_mode: 'targeted',
+              executor_route: 'journey-contract-remediation',
+              prioritized_signals: ['closure_task_id', 'smoke_task_chain'],
+            },
+            summary_lines: [
+              'Routing Mode: targeted',
+              'Executor Route: journey-contract-remediation',
+              'Stop Reason: (none)',
+              'Journey Contract Signals: closure_task_id, smoke_task_chain',
+            ],
+          },
+        ],
+      }),
+    ];
+
+    const summary = getGovernanceRoutingSummary(records);
+
+    expect(summary).toMatchObject({
+      routingMode: 'targeted',
+      executorRoute: 'journey-contract-remediation',
+      prioritizedSignals: ['closure_task_id', 'smoke_task_chain'],
+      source: 'scoring-governance-history',
+      latestTimestamp: '2026-03-28T11:15:00.000Z',
+      eventCount: 2,
+      affectedStages: ['implement', 'plan'],
+    });
+    expect(summary?.summaryLines).toEqual([
+      'Routing Mode: targeted',
+      'Executor Route: journey-contract-remediation',
+      'Stop Reason: (none)',
+      'Journey Contract Signals: closure_task_id, smoke_task_chain',
+    ]);
+  });
+});
+
+describe('governance history dashboard metrics', () => {
+  const records = [
+    createRecord({
+      run_id: 'dev-e6-s4-plan-1',
+      stage: 'plan',
+      governance_rerun_history: [
+        {
+          event_id: 'gov-evt-1',
+          timestamp: '2026-03-28T10:00:00.000Z',
+          rerun_gate: 'brief-gate',
+          outcome: 'pass',
+          decision_mode: 'generic',
+          executor_routing: {
+            routing_mode: 'generic',
+            executor_route: 'default-gate-remediation',
+            prioritized_signals: [],
+          },
+        },
+        {
+          event_id: 'gov-evt-2',
+          timestamp: '2026-03-28T10:10:00.000Z',
+          rerun_gate: 'brief-gate',
+          outcome: 'blocked',
+          decision_mode: 'generic',
+          executor_routing: {
+            routing_mode: 'generic',
+            executor_route: 'default-gate-remediation',
+            prioritized_signals: [],
+          },
+        },
+      ],
+    }),
+    createRecord({
+      run_id: 'dev-e6-s4-implement-2',
+      stage: 'tasks',
+      trigger_stage: 'speckit_5_2',
+      governance_rerun_history: [
+        {
+          event_id: 'gov-evt-3',
+          timestamp: '2026-03-28T10:20:00.000Z',
+          rerun_gate: 'implementation-readiness',
+          outcome: 'blocked',
+          decision_mode: 'targeted',
+          executor_routing: {
+            routing_mode: 'targeted',
+            executor_route: 'journey-contract-remediation',
+            prioritized_signals: ['smoke_task_chain'],
+          },
+        },
+        {
+          event_id: 'gov-evt-4',
+          timestamp: '2026-03-28T10:30:00.000Z',
+          rerun_gate: 'implementation-readiness',
+          outcome: 'blocked',
+          decision_mode: 'targeted',
+          executor_routing: {
+            routing_mode: 'targeted',
+            executor_route: 'journey-contract-remediation',
+            prioritized_signals: ['closure_task_id', 'smoke_task_chain'],
+          },
+        },
+      ],
+    }),
+  ];
+
+  it('returns routing mode distribution', () => {
+    expect(getGovernanceRoutingModeDistribution(records)).toEqual([
+      { mode: 'generic', count: 2 },
+      { mode: 'targeted', count: 2 },
+    ]);
+  });
+
+  it('returns governance signal hotspots', () => {
+    expect(getGovernanceSignalHotspots(records)).toEqual([
+      {
+        signal: 'smoke_task_chain',
+        count: 2,
+        affected_stages: ['implement'],
+        rerun_gates: ['implementation-readiness'],
+      },
+      {
+        signal: 'closure_task_id',
+        count: 1,
+        affected_stages: ['implement'],
+        rerun_gates: ['implementation-readiness'],
+      },
+    ]);
+  });
+
+  it('returns rerun gate failure trend', () => {
+    expect(getGovernanceRerunGateFailureTrend(records)).toEqual([
+      {
+        rerun_gate: 'implementation-readiness',
+        failure_count: 2,
+        total_events: 2,
+        latest_outcome: 'blocked',
+        latest_timestamp: '2026-03-28T10:30:00.000Z',
+        trend: 'flat',
+      },
+      {
+        rerun_gate: 'brief-gate',
+        failure_count: 1,
+        total_events: 2,
+        latest_outcome: 'blocked',
+        latest_timestamp: '2026-03-28T10:10:00.000Z',
+        trend: 'worsening',
+      },
+    ]);
   });
 });
 

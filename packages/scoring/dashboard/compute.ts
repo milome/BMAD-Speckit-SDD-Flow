@@ -1,6 +1,19 @@
 /**
  * Story 7.1: 仪表盘计算逻辑
  */
+import { summarizeJourneyContractSignals, type JourneyContractSignalSummary } from '../analytics/journey-contract-signals';
+import {
+  summarizeGovernanceRouting,
+  type GovernanceRoutingSummary,
+} from '../analytics/governance-routing-summary';
+import {
+  summarizeGovernanceRoutingModeDistribution,
+  summarizeGovernanceSignalHotspots,
+  summarizeGovernanceRerunGateFailureTrend,
+  type GovernanceRoutingModeDistributionEntry,
+  type GovernanceSignalHotspotEntry,
+  type GovernanceRerunGateFailureTrendEntry,
+} from '../analytics/governance-history-metrics';
 import { buildVetoItemIds } from '../veto';
 import { parseEpicStoryFromRecord } from '../query';
 import { sanitizeIterationCount } from '../utils/sanitize-iteration';
@@ -422,6 +435,14 @@ export interface HighIterEntry {
   evolution_trace?: string;
 }
 
+export type JourneyContractSummaryEntry = JourneyContractSignalSummary;
+export type GovernanceRoutingSummaryEntry = GovernanceRoutingSummary;
+export type GovernanceRoutingModeDistributionSummaryEntry =
+  GovernanceRoutingModeDistributionEntry;
+export type GovernanceSignalHotspotSummaryEntry = GovernanceSignalHotspotEntry;
+export type GovernanceRerunGateFailureTrendSummaryEntry =
+  GovernanceRerunGateFailureTrendEntry;
+
 /**
  * 获取高迭代次数的 Top 3
  * @param {RunScoreRecord[]} records - RunScoreRecord 数组
@@ -493,6 +514,45 @@ export function getWeakTop3EpicStory(records: RunScoreRecord[]): WeakEntry[] {
     }))
     .sort((a, b) => a.score - b.score);
   return sorted.slice(0, 3);
+}
+
+/**
+ * 汇总 Journey contract 结构化信号，供 dashboard 单独展示。
+ * @param {RunScoreRecord[]} records - RunScoreRecord 数组
+ * @returns {JourneyContractSummaryEntry[]} Journey contract 摘要列表
+ */
+export function getJourneyContractSummary(
+  records: RunScoreRecord[]
+): JourneyContractSummaryEntry[] {
+  return summarizeJourneyContractSignals(records);
+}
+
+/**
+ * 汇总 governance rerun history，输出 dashboard 可直接消费的 executor routing 摘要。
+ * 数据来源必须是 scoring records，而不是 runtime current-run 快照。
+ */
+export function getGovernanceRoutingSummary(
+  records: RunScoreRecord[]
+): GovernanceRoutingSummaryEntry | undefined {
+  return summarizeGovernanceRouting(records);
+}
+
+export function getGovernanceRoutingModeDistribution(
+  records: RunScoreRecord[]
+): GovernanceRoutingModeDistributionSummaryEntry[] {
+  return summarizeGovernanceRoutingModeDistribution(records);
+}
+
+export function getGovernanceSignalHotspots(
+  records: RunScoreRecord[]
+): GovernanceSignalHotspotSummaryEntry[] {
+  return summarizeGovernanceSignalHotspots(records);
+}
+
+export function getGovernanceRerunGateFailureTrend(
+  records: RunScoreRecord[]
+): GovernanceRerunGateFailureTrendSummaryEntry[] {
+  return summarizeGovernanceRerunGateFailureTrend(records);
 }
 
 /**

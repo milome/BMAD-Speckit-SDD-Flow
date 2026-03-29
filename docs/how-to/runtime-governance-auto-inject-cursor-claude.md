@@ -125,3 +125,4 @@ npx vitest run tests/acceptance/cursor-hooks-json-generation.test.ts tests/accep
 - [`../reference/runtime-policy-emit-schema.md`](../reference/runtime-policy-emit-schema.md)
 - [`../reference/runtime-context.schema.json`](../reference/runtime-context.schema.json)
 - [`../reference/cursor-runtime-governance-hooks.md`](../reference/cursor-runtime-governance-hooks.md)
+- [`../reference/governance-remediation-provider-config.md`](../reference/governance-remediation-provider-config.md)

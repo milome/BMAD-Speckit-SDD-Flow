@@ -48,6 +48,9 @@ function enqueueGovernanceRerunEvent(event) {
     timestamp: new Date().toISOString(),
     payload: {
       projectRoot,
+      ...(Array.isArray(payload.journeyContractHints) && payload.journeyContractHints.length > 0
+        ? { journeyContractHints: payload.journeyContractHints }
+        : {}),
       ...(typeof payload.configPath === 'string' && payload.configPath
         ? { configPath: payload.configPath }
         : {}),

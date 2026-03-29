@@ -34,6 +34,7 @@ description: "Journey-first task list template for runnable slice implementation
 - `tasks.md` MUST include the requirement traceability, gap mapping, and gap acceptance tables required by `speckit-workflow`.
 - In any non-bootstrap scenario, missing `spec.md` or missing `IMPLEMENTATION_GAPS.md` is a hard blocker, not a warning.
 - `PLAN_ONLY_BOOTSTRAP` is allowed only after the command-level hard gate has passed. When used, `tasks.md` MUST explicitly carry `PLAN_ONLY_BOOTSTRAP`, `Definition Gap = N/A (greenfield bootstrap)`, and `Implementation Gap = N/A (pre-implementation bootstrap)`.
+- `PLAN_ONLY_BOOTSTRAP` MUST still preserve the journey-level smoke/closure/trace contract: every `P0 journey` keeps an explicit `Smoke Task Chain`, `Closure Task ID`, and task-level `Trace ID` coverage.
 - If the current artifacts would produce only module-complete tasks without runnable journey proof, generation MUST stop and escalate the missing contract artifacts.
 
 <!--
@@ -121,10 +122,10 @@ description: "Journey-first task list template for runnable slice implementation
 
 ## Journey -> Task -> Test -> Closure 映射
 
-| Journey ID | Invariant IDs | Task IDs | Smoke Proof | Full E2E | Closure Note |
-|------------|---------------|----------|-------------|----------|--------------|
-| J01 | `INV-01, INV-N/A` | `T001-T009` | `tests/e2e/smoke/...` | `tests/e2e/full/...` or deferred reason | `closure-notes/J01.md` |
-| J02 | `INV-02` | `T010-T015` | `tests/e2e/smoke/...` | `N/A` or deferred reason | `closure-notes/J02.md` |
+| Journey ID | Invariant IDs | Task IDs | Smoke Task Chain | Smoke Proof | Full E2E | Closure Task ID | Closure Note |
+|------------|---------------|----------|------------------|-------------|----------|-----------------|--------------|
+| J01 | `INV-01, INV-N/A` | `T001-T009` | `T003 -> T006 -> T007` | `tests/e2e/smoke/...` | `tests/e2e/full/...` or deferred reason | `T009` | `closure-notes/J01.md` |
+| J02 | `INV-02` | `T010-T015` | `T011 -> T013 -> T014` | `tests/e2e/smoke/...` | `N/A` or deferred reason | `T015` | `closure-notes/J02.md` |
 
 ## Definition Gap vs Implementation Gap
 
@@ -140,15 +141,21 @@ description: "Journey-first task list template for runnable slice implementation
 **Journey ID**: `J01`
 **Story**: `US1`
 **Invariant IDs**: `INV-01`, `INV-N/A` (reason: [why no additional invariant is needed])
+**Evidence Type**: `smoke-e2e`, `full-e2e`, `closure-note`
+**Verification Command**: `[command that proves Journey J01 is runnable]`
+**Smoke Task Chain**: `T003 -> T006 -> T007`
 **Smoke Proof**: `[test id / path / command]`
 **Full E2E**: `[test id / path]` or `Deferred: [reason]`
+**Closure Task ID**: `T009`
 **Closure Note Path**: `closure-notes/J01.md`
 **Definition Gap Handling**: `[Gap IDs or N/A]`
 **Implementation Gap Handling**: `[Gap IDs or N/A]`
+**Journey Unlock**: `Journey J01`
+**Smoke Path Unlock**: `T003 -> T006 -> T007`
 
 ### Slice Prerequisites
 
-- [ ] T001 [J01] [INV-N/A] [TR-J01-T001] [FOUNDATION] Create [shared prerequisite] in [path] for Journey J01
+- [ ] T001 [J01] [INV-N/A] [TR-J01-T001] [FOUNDATION] Create [shared prerequisite] in [path] to unlock Journey J01 smoke path `T003 -> T006 -> T007`
 - [ ] T002 [J01] [INV-01] [TR-J01-T002] [DEF-GAP] Resolve [definition gap / missing contract] in [path]
 
 ### Tests & Evidence
@@ -176,15 +183,21 @@ description: "Journey-first task list template for runnable slice implementation
 **Journey ID**: `J02`
 **Story**: `US2`
 **Invariant IDs**: `INV-02`
+**Evidence Type**: `smoke-e2e`, `closure-note`
+**Verification Command**: `[command that proves Journey J02 is runnable]`
+**Smoke Task Chain**: `T011 -> T013 -> T014`
 **Smoke Proof**: `[test id / path / command]`
 **Full E2E**: `[test id / path]` or `Deferred: [reason]`
+**Closure Task ID**: `T015`
 **Closure Note Path**: `closure-notes/J02.md`
 **Definition Gap Handling**: `[Gap IDs or N/A]`
 **Implementation Gap Handling**: `[Gap IDs or N/A]`
+**Journey Unlock**: `Journey J02`
+**Smoke Path Unlock**: `T011 -> T013 -> T014`
 
 ### Slice Prerequisites
 
-- [ ] T010 [J02] [INV-N/A] [TR-J02-T010] [FOUNDATION] Create [shared prerequisite] in [path] for Journey J02
+- [ ] T010 [J02] [INV-N/A] [TR-J02-T010] [FOUNDATION] Create [shared prerequisite] in [path] to unlock Journey J02 smoke path `T011 -> T013 -> T014`
 
 ### Tests & Evidence
 
@@ -236,10 +249,10 @@ description: "Journey-first task list template for runnable slice implementation
 
 ## Closure Notes
 
-| Journey ID | Closure note path | Must name covered task IDs | Must name smoke / full E2E IDs | Deferred gaps allowed? |
-|------------|-------------------|----------------------------|--------------------------------|------------------------|
-| J01 | `closure-notes/J01.md` | T001-T009 | `SMOKE-J01`, `E2E-J01-FULL` or deferred reason | Yes, with owner and next gate |
-| J02 | `closure-notes/J02.md` | T010-T015 | `SMOKE-J02`, `E2E-J02-FULL` or deferred reason | Yes, with owner and next gate |
+| Journey ID | Closure Task ID | Closure note path | Must name covered task IDs | Must name smoke / full E2E IDs | Deferred gaps allowed? |
+|------------|-----------------|-------------------|----------------------------|--------------------------------|------------------------|
+| J01 | `T009` | `closure-notes/J01.md` | T001-T009 | `SMOKE-J01`, `E2E-J01-FULL` or deferred reason | Yes, with owner and next gate |
+| J02 | `T015` | `closure-notes/J02.md` | T010-T015 | `SMOKE-J02`, `E2E-J02-FULL` or deferred reason | Yes, with owner and next gate |
 
 ---
 
@@ -292,9 +305,12 @@ Task: "T006 [IMPLEMENT] Create or update [component/service/model] in [path]"
 
 ### Multi-Agent Strategy
 
-1. Share one journey ledger, one invariant ledger, and one trace map
-2. Split work by runnable slice, not by technical layer
-3. Reconcile closure notes before claiming the batch complete
+1. **Shared Journey Ledger Path**: `journey-ledger.md`
+2. **Shared Invariant Ledger Path**: `invariant-ledger.md`
+3. **Shared Trace Map Path**: `trace-map.json`
+4. Every agent must use the same path reference for these shared artifacts; private summaries are not sufficient.
+5. Split work by runnable slice, not by technical layer
+6. Reconcile closure notes before claiming the batch complete
 
 ---
 

@@ -234,6 +234,20 @@ Status rules:
 - `READY WITH BLOCKERS CLOSED`: Architecture is acceptable only after enumerated blockers are resolved
 - `NOT READY`: Critical journeys or smoke E2E preconditions remain undefined
 
+### 9A. Run Architecture Contract Gate Before Continue
+
+Before you offer `[C] Continue`, validate that the closing validation package explicitly covers:
+
+- blockers are either closed or remain visible
+- undefined contracts are named
+- smoke E2E preconditions are concrete
+- readiness status matches the blocker state
+
+If any blocker-level architecture contract remains unresolved:
+- emit a `GateFailure`
+- build a `RemediationPlan`
+- do not show plain Continue until the blocker is repaired and the local gate is rerun
+
 ## REQUIRED OUTPUT CONTENT
 
 Prepare the content to append to the document using this structure:
@@ -405,7 +419,7 @@ Show the validation results and present choices:
 
 ### If 'P' (Party Mode):
 
-- Read fully and follow: {project-root}/_bmad/core/workflows/party-mode/workflow.md with validation context
+- Read fully and follow: {project-root}/_bmad/core/workflows/party-mode/workflow.md using the `architecture-contract-gate` stage profile with current blocker/gap context and validation context
 - Ask user: "Accept these changes to the validation results? (y/n)"
 - If yes: Update content, then return to A/P/C menu
 - If no: Keep original content, then return to A/P/C menu

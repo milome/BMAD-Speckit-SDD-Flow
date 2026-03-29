@@ -110,6 +110,22 @@ Load step: `./steps/step-02-discussion-orchestration.md`
 
 **Decision / root-cause sessions:** When the topic is multi-option choice or root-cause/design debate, apply the min-rounds and convergence rules in step-02 (100 rounds for final-solution+task-list output, 50 rounds for other scenarios; show [E] only after consensus and no new gaps for 2–3 rounds).
 
+### Stage-Aware Gate Profiles
+
+Party mode may also run as a stage-specific challenge harness. The current stage profiles are:
+
+- `brief-gate`
+- `prd-contract-gate`
+- `architecture-contract-gate`
+- `readiness-blocker-gate`
+
+When one of these profiles is active, load supporting guidance from:
+
+- `{project-root}/_bmad/bmm/data/party-mode-stage-profiles.md`
+- `{project-root}/_bmad/bmm/data/stage-specific-exit-criteria.md`
+
+The active profile determines the roster emphasis, blocker vocabulary, and what must be produced before the session is allowed to converge.
+
 > **角色参考**: [批判审计员详细操作指南]({project-root}/_bmad/core/agents/critical-auditor-guide.md) - Party Mode 中的专职挑战者角色，负责质疑假设、发现 gaps、挑战共识
 
 ---

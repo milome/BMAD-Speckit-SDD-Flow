@@ -23,6 +23,15 @@ export function formatToMarkdown(report: CoachDiagnosisReport): string {
   const recommendationLines = report.recommendations.length > 0
     ? report.recommendations.map((x) => `- ${x}`).join('\n')
     : '- (none)';
+  const journeyHintLines =
+    report.journey_contract_hints != null && report.journey_contract_hints.length > 0
+      ? report.journey_contract_hints
+          .map(
+            (item) =>
+              `- ${item.label}: ${item.count} occurrence(s); affected stages ${item.affected_stages.join('、') || '-'}; stories ${item.epic_stories.join('、') || '-'}; action ${item.recommendation}`
+          )
+          .join('\n')
+      : undefined;
 
   const iterationSection =
     counts != null
@@ -62,6 +71,14 @@ export function formatToMarkdown(report: CoachDiagnosisReport): string {
     '`phase_score` uses tiered deduction from remediation iteration counts.',
     ...iterationSection,
     ...evolutionSection,
+    ...(journeyHintLines != null
+      ? [
+          '',
+          '## Journey Contract Remediation',
+          '',
+          journeyHintLines,
+        ]
+      : []),
     '',
     '## Weak Areas',
     weakAreaLines,
@@ -73,4 +90,3 @@ export function formatToMarkdown(report: CoachDiagnosisReport): string {
     report.iteration_passed ? 'true' : 'false',
   ].join('\n');
 }
-

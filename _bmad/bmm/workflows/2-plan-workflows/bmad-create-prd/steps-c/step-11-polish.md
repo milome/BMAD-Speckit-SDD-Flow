@@ -161,6 +161,19 @@ Create the polished version:
 4. Verify improvements enhance readability
 5. Prepare optimized version for review
 
+### 5A. Run PRD Contract Gate Before Continue
+
+Before you offer `[C] Continue`, validate that the polished PRD still makes the contract explicit:
+
+- `P0 Journey Inventory` is concrete enough to map forward
+- evidence wording is explicit enough to audit
+- unresolved blockers are named and owned
+
+If any blocker-level contract is still implicit:
+- emit a `GateFailure`
+- build a `RemediationPlan`
+- do not show plain Continue until the blocker is repaired and the local gate is rerun
+
 ### 6. Present MENU OPTIONS
 
 Present the polished document for review, then display menu:
@@ -173,7 +186,7 @@ Display: "**Select:** [A] Advanced Elicitation [P] Party Mode [C] Continue to Co
 
 #### Menu Handling Logic:
 - IF A: Invoke the `bmad-advanced-elicitation` skill with the polished document, process the enhanced refinements that come back, ask user "Accept these polish improvements? (y/n)", if yes update content with improvements then redisplay menu, if no keep original polish then redisplay menu
-- IF P: Invoke the `bmad-party-mode` skill with the polished document, process the collaborative refinements to flow and coherence, ask user "Accept these polish changes? (y/n)", if yes update content with improvements then redisplay menu, if no keep original polish then redisplay menu
+- IF P: Invoke the `bmad-party-mode` skill with the `prd-contract-gate` stage profile and current blocker/gap context, process the collaborative refinements to flow and coherence, ask user "Accept these polish changes? (y/n)", if yes update content with improvements then redisplay menu, if no keep original polish then redisplay menu
 - IF C: Save the polished document to {outputFile}, update frontmatter by adding this step name to the end of the stepsCompleted array, then read fully and follow: ./step-12-complete.md
 - IF Any other: help user respond, then redisplay menu
 

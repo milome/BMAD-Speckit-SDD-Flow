@@ -144,6 +144,21 @@ Prepare the following structure for document append:
 [Key performance indicators content based on conversation, or N/A if not discussed]
 ```
 
+### 6A. Run Local Gate Check Before Continue
+
+Before you offer `[C] Continue`, validate that the current metrics section explicitly covers:
+
+- `success evidence`
+- `current workaround`
+- `failure cost`
+- `role / permission boundary`
+- `external dependency semantics`
+
+If any blocker-level field is missing:
+- emit a `GateFailure`
+- build a `RemediationPlan`
+- do not show plain Continue until the blocker is repaired and the local gate is rerun
+
 ### 7. Present MENU OPTIONS
 
 **Content Presentation:**
@@ -157,7 +172,7 @@ Prepare the following structure for document append:
 #### Menu Handling Logic:
 
 - IF A: Invoke the `bmad-advanced-elicitation` skill with current metrics content to dive deeper into success metric insights
-- IF P: Invoke the `bmad-party-mode` skill to bring different perspectives to validate comprehensive metrics
+- IF P: Invoke the `bmad-party-mode` skill with the `brief-gate` stage profile and current blocker/gap context to bring different perspectives to validate comprehensive metrics and repair blocker gaps
 - IF C: Save content to {outputFile}, update frontmatter with stepsCompleted: [1, 2, 3, 4], then read fully and follow: ./step-05-scope.md
 - IF Any other comments or queries: help user respond then [Redisplay Menu Options](#7-present-menu-options)
 

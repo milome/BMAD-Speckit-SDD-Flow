@@ -25,6 +25,7 @@ export interface CoachDiagnoseOptions {
 }
 
 import type { WeaknessCluster } from '../analytics/cluster-weaknesses';
+import type { JourneyContractRemediationHint } from '../analytics/journey-contract-remediation';
 
 export interface CoachDiagnosisReport {
   summary: string;
@@ -36,6 +37,7 @@ export interface CoachDiagnosisReport {
   recommendations: string[];
   iteration_passed: boolean;
   weakness_clusters?: WeaknessCluster[];
+  journey_contract_hints?: JourneyContractRemediationHint[];
 }
 
 export interface CoachRunNotFound {
@@ -44,4 +46,3 @@ export interface CoachRunNotFound {
 }
 
 export type CoachDiagnoseResult = CoachDiagnosisReport | CoachRunNotFound;
-

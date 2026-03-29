@@ -111,6 +111,20 @@ roleAliases:
   party-mode:
     - party-mode
     - party mode
+  brief-gate:
+    - brief-gate
+    - brief gate
+    - brief blocker gate
+    - brief challenge gate
+  prd-contract-gate:
+    - prd-contract-gate
+    - prd contract gate
+  architecture-contract-gate:
+    - architecture-contract-gate
+    - architecture contract gate
+  readiness-blocker-gate:
+    - readiness-blocker-gate
+    - readiness blocker gate
   critical-auditor:
     - critical auditor
     - 批判审计员

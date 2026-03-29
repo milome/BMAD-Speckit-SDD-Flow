@@ -280,6 +280,20 @@ Prepare the content to append to the document:
 {{starter_template_command_or_first_architectural_step}}
 ```
 
+### 6A. Run Architecture Contract Gate Before Continue
+
+Before you offer `[C] Continue`, validate that the closing validation package explicitly covers:
+
+- blockers are either closed or remain visible
+- undefined contracts are named
+- smoke E2E preconditions are concrete
+- readiness status matches the blocker state
+
+If any blocker-level architecture contract remains unresolved:
+- emit a `GateFailure`
+- build a `RemediationPlan`
+- do not show plain Continue until the blocker is repaired and the local gate is rerun
+
 ### 7. Present Content and Menu
 
 Show the validation results and present choices:
@@ -313,7 +327,7 @@ Show the validation results and present choices:
 
 #### If 'P' (Party Mode):
 
-- Invoke the `bmad-party-mode` skill with validation context
+- Invoke the `bmad-party-mode` skill with the `architecture-contract-gate` stage profile and current blocker/gap context
 - Process collaborative insights on implementation readiness
 - Ask user: "Accept these changes to the validation results? (y/n)"
 - If yes: Update content, then return to A/P/C menu

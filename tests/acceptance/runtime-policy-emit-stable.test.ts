@@ -47,7 +47,7 @@ describe('emit-runtime-policy vs resolveRuntimePolicy (stable JSON)', () => {
     }
   });
 
-  it('emit-runtime-policy-cli.js resolves identity from registry-backed context only', () => {
+  it('emit-runtime-policy-cli.js resolves identity from registry-backed context only', async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-emit-cli-id-'));
     fs.cpSync(path.join(repoRoot, '_bmad'), path.join(root, '_bmad'), { recursive: true });
     linkRepoNodeModulesIntoProject(root);
@@ -64,6 +64,7 @@ describe('emit-runtime-policy vs resolveRuntimePolicy (stable JSON)', () => {
     const r = spawnSync(process.execPath, [cli], {
       cwd: repoRoot,
       encoding: 'utf8',
+      timeout: 60000, // Increase timeout for Windows
       env: {
         ...process.env,
         CLAUDE_PROJECT_DIR: root,

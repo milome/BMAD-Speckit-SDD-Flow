@@ -182,4 +182,32 @@ yes
       expect(r.phase_score).toBe(100);
     });
   });
+
+  describe('Journey contract mapping (Wave 1B)', () => {
+    it('maps tasks journey contract findings to dedicated item_ids', () => {
+      const content = `
+总体评级: C
+
+问题清单:
+1. [严重程度:高] Journey Slice J-1 缺少 smoke task chain，无法证明至少一条 smoke path task chain 已落到任务
+2. [严重程度:中] Journey Slice J-1 缺少 closure note task，无法形成 closure note task
+3. [严重程度:中] setup/foundation 任务只带 Journey ID，但未显式说明 unlocks 哪条 journey / smoke path
+4. [严重程度:中] Journey Slice 生成规则把 definition gap 和 implementation gap 混在一起，未保持 gap split contract
+5. [严重程度:低] multi-agent 模式只要求共享 trace map，未要求共享同一份 journey ledger / invariant ledger / trace map 的路径引用
+
+通过标准:
+待修复
+`;
+
+      const items = extractCheckItems(content, 'tasks');
+
+      expect(items.map((item) => item.item_id)).toEqual([
+        'journey_smoke_chain',
+        'journey_closure_task',
+        'journey_unlock_contract',
+        'journey_gap_split_contract',
+        'shared_path_reference',
+      ]);
+    });
+  });
 });

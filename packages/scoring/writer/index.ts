@@ -6,6 +6,8 @@ export type {
   RunScoreRecord,
   CheckItem,
   IterationRecord,
+  GovernanceExecutorRoutingRecord,
+  GovernanceRerunHistoryEntry,
   WriteMode,
   WriteScoreRecordOptions,
 } from './types';

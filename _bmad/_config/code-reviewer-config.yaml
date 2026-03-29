@@ -220,6 +220,21 @@ items:
   risk_anticipation:
     name: "风险预判"
     description: "风险识别到位"
+  journey_smoke_chain_contract:
+    name: "Journey Smoke Task Chain 合同"
+    description: "每个 Journey Slice 至少绑定一条 smoke task chain"
+  journey_closure_task_contract:
+    name: "Journey Closure Task 合同"
+    description: "每个 Journey Slice 必须有 closure note task"
+  journey_unlock_contract:
+    name: "Journey Unlock 合同"
+    description: "setup/foundation 任务必须显式说明 unlocks 哪条 journey / smoke path"
+  journey_gap_split_contract:
+    name: "Journey Gap Split 合同"
+    description: "Journey Slice 规则必须保持 definition gap 与 implementation gap 分离"
+  journey_shared_path_reference:
+    name: "Shared Ledger Path Reference 合同"
+    description: "multi-agent 模式必须共享同一份 journey ledger / invariant ledger / trace map 路径引用"
 
 veto_items:
   veto_core_logic:

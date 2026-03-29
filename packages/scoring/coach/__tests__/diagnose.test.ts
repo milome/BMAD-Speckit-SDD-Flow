@@ -328,6 +328,53 @@ describe('coachDiagnose fallback', () => {
     fs.rmSync(dataPath, { recursive: true, force: true });
   });
 
+  it('adds journey contract remediation hints and targeted recommendations when journey signals exist', async () => {
+    const runId = `coach-journey-hints-${Date.now()}`;
+    const records: RunScoreRecord[] = [
+      {
+        run_id: runId,
+        scenario: 'real_dev',
+        stage: 'tasks',
+        phase_score: 62,
+        phase_weight: 0.25,
+        check_items: [{ item_id: 'journey_smoke_chain', passed: false, score_delta: -10 }],
+        timestamp: new Date().toISOString(),
+        iteration_count: 1,
+        iteration_records: [],
+        first_pass: false,
+        journey_contract_signals: {
+          smoke_task_chain: true,
+          closure_task_id: true,
+        },
+      },
+    ];
+
+    const result = await coachDiagnose(runId, {
+      records,
+      requiredSkillPath: 'not/exist/skill.md',
+      forceSkillLoadError: true,
+    });
+    if ('error' in result) {
+      throw new Error(`unexpected error: ${result.error}`);
+    }
+
+    expect(result.journey_contract_hints).toBeDefined();
+    expect(result.journey_contract_hints?.map((item) => item.signal).sort()).toEqual([
+      'closure_task_id',
+      'smoke_task_chain',
+    ]);
+    expect(
+      result.recommendations.some((item) =>
+        item.includes('Add at least one smoke task chain per Journey Slice')
+      )
+    ).toBe(true);
+    expect(
+      result.recommendations.some((item) =>
+        item.includes('Add one closure note task for each Journey Slice')
+      )
+    ).toBe(true);
+  });
+
   it('does not add 高整改轮次 recommendation when all iteration_count are 0 (US-010)', async () => {
     const runId = `coach-all-zero-iter-${Date.now()}`;
     const dataPath = path.join(os.tmpdir(), `coach-all-zero-iter-${Date.now()}`);

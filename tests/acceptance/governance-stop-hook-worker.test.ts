@@ -10,11 +10,9 @@ import {
 import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { describe, expect, it } from 'vitest';
-import {
-  governanceCurrentRunPath,
-  governancePendingQueueFilePath,
-} from '../../scripts/governance-runtime-queue';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { governancePendingQueueFilePath } from '../../scripts/governance-runtime-queue';
+import type { GovernanceStopHookResult } from '../../scripts/governance-hook-types';
 import {
   governanceAttemptLoopStatePath,
   runGovernanceRemediation,
@@ -27,6 +25,28 @@ import {
 
 const require = createRequire(import.meta.url);
 const stopHook = require('../../_bmad/claude/hooks/stop.js');
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+function waitBriefly(ms: number): void {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+function cleanupWithRetries(root: string): void {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      rmSync(root, { recursive: true, force: true });
+      return;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException)?.code !== 'EBUSY' || attempt === 4) {
+        throw error;
+      }
+      waitBriefly(200);
+    }
+  }
+}
 
 function writeGovernanceConfig(root: string): string {
   const configPath = path.join(root, '_bmad', '_config', 'governance-remediation.yaml');
@@ -76,7 +96,7 @@ function createFixtureProject(): {
     root,
     configPath: writeGovernanceConfig(root),
     cleanup() {
-      rmSync(root, { recursive: true, force: true });
+      cleanupWithRetries(root);
     },
   };
 }
@@ -125,6 +145,17 @@ describe('governance stop hook worker trigger', () => {
             payload: {
               projectRoot: fixture.root,
               configPath: fixture.configPath,
+              journeyContractHints: [
+                {
+                  signal: 'smoke_task_chain',
+                  label: 'Smoke Task Chain',
+                  count: 1,
+                  affected_stages: ['tasks'],
+                  epic_stories: ['E14.S2'],
+                  recommendation:
+                    'Add at least one smoke task chain per Journey Slice and point setup tasks to that chain.',
+                },
+              ],
               runnerInput: {
                 projectRoot: fixture.root,
                 outputPath: secondOutput,
@@ -163,17 +194,12 @@ describe('governance stop hook worker trigger', () => {
         'utf8'
       );
 
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       const stopResult = stopHook.stop({
         projectRoot: fixture.root,
         waitForWorker: true,
-      }) as {
-        checkpointPath: string;
-        workerResult?: { status?: number; skipped?: boolean; started?: boolean };
-      };
+      }) as GovernanceStopHookResult;
 
-      const currentRun = JSON.parse(readFileSync(governanceCurrentRunPath(fixture.root), 'utf8')) as Array<{
-        type: string;
-      }>;
       const loopStateRaw = JSON.parse(
         readFileSync(
           governanceAttemptLoopStatePath(fixture.root, firstRun.loopState.loopStateId),
@@ -185,9 +211,82 @@ describe('governance stop hook worker trigger', () => {
       expect(stopResult.workerResult?.started).toBe(true);
       expect(stopResult.workerResult?.skipped).not.toBe(true);
       expect(stopResult.workerResult?.status).toBe(0);
+      expect(stopResult.workerResult?.journeyContractHints?.map((item) => item.signal)).toEqual([
+        'smoke_task_chain',
+      ]);
+      expect(stopResult.workerResult).not.toHaveProperty('pendingJourneyContractHints');
+      expect(stopResult.workerResult?.rerunDecision).toMatchObject({
+        mode: 'targeted',
+        signals: ['smoke_task_chain'],
+        hintCount: 1,
+      });
+      expect(stopResult.workerResult?.rerunDecision?.reason).toContain('journey contract hints');
+      expect(stopResult.workerResult?.executorRouting).toMatchObject({
+        routingMode: 'targeted',
+        executorRoute: 'journey-contract-remediation',
+        prioritizedSignals: ['smoke_task_chain'],
+      });
+      expect(stopResult.workerResult?.remediationAuditTrace).toMatchObject({
+        stopReason: null,
+        routingMode: 'targeted',
+        executorRoute: 'journey-contract-remediation',
+        prioritizedSignals: ['smoke_task_chain'],
+      });
+      expect(
+        stopResult.workerResult?.remediationAuditTrace?.journeyContractHints?.map((item) => item.signal)
+      ).toEqual(['smoke_task_chain']);
+      expect(stopResult.workerResult?.remediationAuditTrace?.summaryLines).toEqual(
+        expect.arrayContaining([
+          'Routing Mode: targeted',
+          'Executor Route: journey-contract-remediation',
+          'Stop Reason: (none)',
+          'Journey Contract Signals: smoke_task_chain',
+        ])
+      );
+      expect(stopResult.workerResult?.runnerSummaryLines).toEqual(
+        expect.arrayContaining([
+          '## Governance Remediation Runner Summary',
+          '## Loop State Trace Summary',
+          '- Routing Mode: targeted',
+          '- Executor Route: journey-contract-remediation',
+          '- Stop Reason: (none)',
+          '- Journey Contract Signals: smoke_task_chain',
+        ])
+      );
+      expect(stopResult.workerResult?.governancePresentation?.structuredMetadataLines).toEqual(
+        expect.arrayContaining([
+          '## Governance Structured Metadata',
+          '- Routing Mode: targeted',
+          '- Executor Route: journey-contract-remediation',
+          '- Prioritized Signals: smoke_task_chain',
+        ])
+      );
+      expect(stopResult.workerResult?.governancePresentation?.rawEventLines).toEqual(
+        expect.arrayContaining([
+          '## Governance Latest Raw Event',
+          '## Governance Remediation Runner Summary',
+          '- Journey Contract Signals: smoke_task_chain',
+        ])
+      );
+      expect(stopResult.workerResult?.governancePresentation?.combinedLines).toEqual(
+        expect.arrayContaining([
+          '## Governance Structured Metadata',
+          '## Governance Latest Raw Event',
+          '## Governance Remediation Runner Summary',
+        ])
+      );
+      expect(consoleLogSpy.mock.calls.flat()).toEqual(
+        expect.arrayContaining([
+          '## Governance Structured Metadata',
+          '## Governance Latest Raw Event',
+          '- Routing Mode: targeted',
+          '- Executor Route: journey-contract-remediation',
+          '- Stop Reason: (none)',
+          '- Journey Contract Signals: smoke_task_chain',
+        ])
+      );
       expect(existsSync(secondOutput)).toBe(true);
       expect(existsSync(secondOutput.replace(/\.md$/i, '.cursor-packet.md'))).toBe(true);
-      expect(currentRun.at(-1)?.type).toBe('governance-remediation-rerun');
       expect(loopStateRaw.attemptCount).toBe(2);
       expect(loopStateRaw.attempts[1]?.attemptId).toBe('attempt-stop-02');
     } finally {

@@ -303,6 +303,20 @@ After each major decision, identify related downstream decisions:
 
 Make dependencies between decisions explicit instead of leaving them implicit.
 
+### 8A. Run Architecture Contract Gate Before Continue
+
+Before you offer `[C] Continue`, validate that the current architecture decision set explicitly covers:
+
+- `P0 Key Path Sequences`
+- `Business Completion State vs System Completion State`
+- `Testability And Smoke E2E Preconditions`
+- `Fallback And Compensation Strategy`
+
+If any blocker-level architecture contract is missing:
+- emit a `GateFailure`
+- build a `RemediationPlan`
+- do not show plain Continue until the blocker is repaired and the local gate is rerun
+
 ## REQUIRED OUTPUT CONTENT
 
 After facilitating all decisions, prepare content that appends to the architecture document using this structure:
@@ -394,7 +408,7 @@ Show the generated decisions content and present choices:
 
 ### If 'P' (Party Mode):
 
-- Read fully and follow: {project-root}/_bmad/core/workflows/party-mode/workflow.md with focus on key path sequences, sync/async boundaries, and fallback contracts
+- Read fully and follow: {project-root}/_bmad/core/workflows/party-mode/workflow.md using the `architecture-contract-gate` stage profile with current blocker/gap context, focusing on key path sequences, sync/async boundaries, and fallback contracts
 - Ask user: "Accept these changes to the architectural decisions? (y/n)"
 - If yes: Update content, then return to A/P/C menu
 - If no: Keep original content, then return to A/P/C menu

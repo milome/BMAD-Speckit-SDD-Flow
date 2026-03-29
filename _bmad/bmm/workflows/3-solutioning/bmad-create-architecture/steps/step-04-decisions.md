@@ -245,6 +245,20 @@ After facilitating all decision categories, prepare the content to append:
 {{how_decisions_affect_each_other}}
 ```
 
+### 5A. Run Architecture Contract Gate Before Continue
+
+Before you offer `[C] Continue`, validate that the current architecture decision set explicitly covers:
+
+- `P0 Key Path Sequences`
+- `Business Completion State vs System Completion State`
+- `Testability And Smoke E2E Preconditions`
+- `Fallback And Compensation Strategy`
+
+If any blocker-level architecture contract is missing:
+- emit a `GateFailure`
+- build a `RemediationPlan`
+- do not show plain Continue until the blocker is repaired and the local gate is rerun
+
 ### 6. Present Content and Menu
 
 Show the generated decisions content and present choices:
@@ -272,7 +286,7 @@ Show the generated decisions content and present choices:
 
 #### If 'P' (Party Mode):
 
-- Invoke the `bmad-party-mode` skill with architectural decisions context
+- Invoke the `bmad-party-mode` skill with the `architecture-contract-gate` stage profile and current blocker/gap context
 - Process collaborative insights about decision trade-offs
 - Ask user: "Accept these changes to the architectural decisions? (y/n)"
 - If yes: Update content, then return to A/P/C menu

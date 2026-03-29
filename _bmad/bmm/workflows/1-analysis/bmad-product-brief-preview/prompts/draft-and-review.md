@@ -61,7 +61,13 @@ After all reviews complete:
 
 1. **Triage findings** — group by theme, remove duplicates
 2. **Apply non-controversial improvements** directly to the draft (obvious gaps, unclear language, missing specifics)
-3. **Flag substantive suggestions** that need user input (strategic choices, scope questions, market positioning decisions)
+3. **Convert blocker-level review findings into a `RemediationPlan`** with target artifact, expected delta, and rerun owner
+4. **Flag substantive suggestions** that need user input (strategic choices, scope questions, market positioning decisions)
+
+`draft review pass` is not achieved while blocker-level findings remain unresolved. If blockers exist:
+- emit the `GateFailure` summary
+- run the `RemediationPlan`
+- rerun the draft review before presenting completion
 
 ## Step 4: Present to User
 

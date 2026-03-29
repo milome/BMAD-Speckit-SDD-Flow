@@ -1,15 +1,14 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-
 export type GovernanceQueueBucket = 'pending' | 'processing' | 'done' | 'failed';
 
-export interface GovernanceRuntimeQueueItem<TPayload = unknown> {
+export interface GovernanceRuntimeQueueItem<TPayload = unknown, TResult = unknown> {
   id: string;
   type: string;
   payload: TPayload;
   timestamp: string;
   processedAt?: string;
-  result?: unknown;
+  result?: TResult;
   error?: string;
 }
 
@@ -50,16 +49,19 @@ export function ensureGovernanceQueueDirs(projectRoot: string): void {
   }
 }
 
-export function readGovernanceCurrentRun(
+export function readGovernanceCurrentRun<TResult = unknown, TPayload = unknown>(
   projectRoot: string
-): GovernanceRuntimeQueueItem<unknown>[] {
+): GovernanceRuntimeQueueItem<TPayload, TResult>[] {
   const file = governanceCurrentRunPath(projectRoot);
   if (!fs.existsSync(file)) {
     return [];
   }
 
   try {
-    const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as GovernanceRuntimeQueueItem<unknown>[];
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as GovernanceRuntimeQueueItem<
+      TPayload,
+      TResult
+    >[];
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
@@ -68,7 +70,7 @@ export function readGovernanceCurrentRun(
 
 export function appendGovernanceCurrentRun(
   projectRoot: string,
-  entry: GovernanceRuntimeQueueItem<unknown>
+  entry: GovernanceRuntimeQueueItem<unknown, unknown>
 ): void {
   const file = governanceCurrentRunPath(projectRoot);
   const current = readGovernanceCurrentRun(projectRoot);

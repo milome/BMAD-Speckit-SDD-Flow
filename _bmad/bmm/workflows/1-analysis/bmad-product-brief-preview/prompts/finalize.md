@@ -47,6 +47,11 @@ purpose: "Token-efficient context for downstream PRD creation"
   - **Scope signals** — what the user indicated is in/out/maybe for MVP
 - Token-conscious: be concise, but give enough context per bullet so an LLM reading this later understands WHY each point matters
 
+If the brief required blocker repair or local reruns, the distillate becomes mandatory handoff rather than optional overflow context. It must preserve:
+- the final `Known Unknowns` disposition
+- any deferred contradictions
+- the remediation summary that downstream PRD authors must inherit
+
 **Headless mode:** Always create the distillate automatically — unless the session was too brief to capture meaningful overflow (in that case, note this in the completion output instead of creating an empty file).
 
 ## Step 3: Present Completion

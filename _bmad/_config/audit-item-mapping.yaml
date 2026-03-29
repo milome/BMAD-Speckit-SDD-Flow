@@ -118,10 +118,46 @@ story:
       item_id: "story_implementability"
       patterns: ["可实施性", "实施"]
 
+tasks:
+  empty_overall: "tasks_overall"
+  empty_dimensions: "tasks_dimensions"
+  checks:
+    - text: "smoke task chain"
+      item_id: "journey_smoke_chain"
+      patterns: ["smoke path task chain", "smoke task chain"]
+    - text: "closure note task"
+      item_id: "journey_closure_task"
+      patterns: ["closure note task", "closure task"]
+    - text: "unlocks 哪条 journey / smoke path"
+      item_id: "journey_unlock_contract"
+      patterns: ["unlocks 哪条 journey / smoke path", "unlocks 哪条 journey", "unlocks 哪条 smoke path"]
+    - text: "definition gap 和 implementation gap"
+      item_id: "journey_gap_split_contract"
+      patterns: ["definition gap 和 implementation gap", "gap split contract", "definition gap", "implementation gap"]
+    - text: "journey ledger / invariant ledger / trace map 的路径引用"
+      item_id: "shared_path_reference"
+      patterns: ["journey ledger / invariant ledger / trace map 的路径引用", "shared path reference", "同一份 journey ledger", "同一份 trace map"]
+
 # Story 9.2: stage=implement 扩展
 implement:
   empty_overall: "impl_overall"
   empty_dimensions: "impl_dimensions"
+  checks:
+    - text: "smoke task chain"
+      item_id: "journey_smoke_chain"
+      patterns: ["smoke path task chain", "smoke task chain"]
+    - text: "closure note task"
+      item_id: "journey_closure_task"
+      patterns: ["closure note task", "closure task"]
+    - text: "unlocks 哪条 journey / smoke path"
+      item_id: "journey_unlock_contract"
+      patterns: ["unlocks 哪条 journey / smoke path", "unlocks 哪条 journey", "unlocks 哪条 smoke path"]
+    - text: "definition gap 和 implementation gap"
+      item_id: "journey_gap_split_contract"
+      patterns: ["definition gap 和 implementation gap", "gap split contract", "definition gap", "implementation gap"]
+    - text: "journey ledger / invariant ledger / trace map 的路径引用"
+      item_id: "shared_path_reference"
+      patterns: ["journey ledger / invariant ledger / trace map 的路径引用", "shared path reference", "同一份 journey ledger", "同一份 trace map"]
   dimensions:
     - name: "功能性"
       checks:

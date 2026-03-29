@@ -56,6 +56,8 @@ You **MUST** consider the user input before proceeding (if not empty).
      - `Definition Gap = N/A (greenfield bootstrap)`
      - `Implementation Gap = N/A (pre-implementation bootstrap)`
      - a complete `Journey -> Task -> Test -> Closure` mapping for every `P0 journey`
+     - the full journey-level smoke/closure/trace contract for every `P0 journey`
+     - explicit `Smoke Task Chain`, `Closure Task ID`, and task-level `Trace ID` coverage for every `P0 journey`
    - `/speckit.tasks` MUST REFUSE plan-only generation and STOP with an explicit blocker if **any** of the following is true:
      - `spec.md` is missing while any upstream requirements source exists
      - `IMPLEMENTATION_GAPS.md` is missing in any non-bootstrap scenario
@@ -88,6 +90,8 @@ You **MUST** consider the user input before proceeding (if not empty).
    - `Invariant Ledger`
    - `Runnable Slice Milestones`
    - One `Journey Slice` per runnable journey, in priority order
+   - Slice metadata including `Journey ID`, `Invariant IDs`, `Evidence Type`, `Verification Command`, `Definition Gap Handling`, `Implementation Gap Handling`, `Journey Unlock`, `Smoke Path Unlock`, and `Closure Note Path`
+   - One explicit `Smoke Task Chain` and one explicit `Closure Task ID` per journey so smoke/closure coverage is traceable at task level
    - Separate `Definition Gap Tasks` and `Implementation Gap Tasks`
    - `Closure Notes` section with one closure note path per journey
    - All tasks must follow the strict checklist format (see Task Generation Rules below)
@@ -97,7 +101,8 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Dependencies section showing journey completion order
    - Parallel execution examples per journey
    - Implementation strategy section (MVP first, incremental delivery)
-   - For multi-agent mode: explicit shared artifact requirement for one journey ledger, one invariant ledger, one trace map
+   - For multi-agent mode: explicit shared artifact requirement for one journey ledger, one invariant ledger, and one trace map via the same path reference
+   - For multi-agent mode: record `Shared Journey Ledger Path`, `Shared Invariant Ledger Path`, and `Shared Trace Map Path`; private summaries are not sufficient
 
 5. **Report**: Output path to generated tasks.md and summary:
    - Total task count
@@ -202,10 +207,24 @@ Every task MUST strictly follow this format:
 - `Implementation Gap Tasks`
 - `Closure Notes`
 
+Every runnable slice must carry:
+
+- `Journey ID`
+- `Invariant IDs` or explicit `INV-N/A` reason
+- `Evidence Type`
+- `Verification Command`
+- `Definition Gap Handling`
+- `Implementation Gap Handling`
+- `Journey Unlock`
+- `Smoke Path Unlock`
+- `Smoke Task Chain`
+- `Closure Task ID`
+- `Closure Note Path`
+
 ### Generation Guardrails
 
 - Every journey MUST have at least one `smoke path` task chain.
 - Every journey MUST have one `closure note` task.
 - Do not merge multiple journeys into one module bucket just because they share files.
 - Do not produce “module complete but journey not runnable” task plans.
-- In multi-agent mode, all agents must share the same `journey ledger`, `invariant ledger`, and `trace map`; private summaries are not sufficient.
+- In multi-agent mode, all agents must share the same `journey ledger`, `invariant ledger`, and `trace map` via the same path reference; private summaries are not sufficient.

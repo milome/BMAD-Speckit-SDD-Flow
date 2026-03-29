@@ -37,7 +37,17 @@
     "content_hash": { "type": "string", "description": "SHA-256 of audit report content passed to parseAndWriteScore" },
     "source_hash": { "type": "string", "description": "SHA-256 of audited source file for cross-stage version lock" },
     "source_path": { "type": "string", "description": "Path to artifact doc that triggered this scoring (e.g. BUGFIX)" },
-    "trigger_stage": { "type": "string", "description": "Stage identifier that triggered this scoring, e.g. speckit_5_2, bmad_story_stage4 (Story 9.1 T4)" }
+    "trigger_stage": { "type": "string", "description": "Stage identifier that triggered this scoring, e.g. speckit_5_2, bmad_story_stage4 (Story 9.1 T4)" },
+    "run_group_id": { "type": "string", "description": "Optional logical run grouping key for multi-record runs and governance runtime events" },
+    "journey_contract_signals": {
+      "$ref": "#/definitions/JourneyContractSignals",
+      "description": "Wave 1B: structured journey contract gaps derived from dedicated check_items"
+    },
+    "governance_rerun_history": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/GovernanceRerunHistoryEntry" },
+      "description": "Structured governance rerun history appended by runtime worker / stop-hook flows"
+    }
   },
   "definitions": {
     "CheckItem": {
@@ -73,6 +83,54 @@
         "dimension": { "type": "string" },
         "weight": { "type": "number" },
         "score": { "type": "number" }
+      }
+    },
+    "JourneyContractSignals": {
+      "type": "object",
+      "properties": {
+        "smoke_task_chain": { "type": "boolean" },
+        "closure_task_id": { "type": "boolean" },
+        "journey_unlock": { "type": "boolean" },
+        "gap_split_contract": { "type": "boolean" },
+        "shared_path_reference": { "type": "boolean" }
+      }
+    },
+    "GovernanceExecutorRoutingRecord": {
+      "type": "object",
+      "required": ["routing_mode", "executor_route", "prioritized_signals"],
+      "properties": {
+        "routing_mode": { "enum": ["targeted", "generic"] },
+        "executor_route": {
+          "enum": ["journey-contract-remediation", "default-gate-remediation"]
+        },
+        "prioritized_signals": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "GovernanceRerunHistoryEntry": {
+      "type": "object",
+      "required": ["event_id", "timestamp", "rerun_gate", "outcome"],
+      "properties": {
+        "event_id": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "rerun_gate": { "type": "string" },
+        "outcome": { "type": "string" },
+        "decision_mode": { "enum": ["targeted", "generic", "idle"] },
+        "attempt_id": { "type": "string" },
+        "loop_state_id": { "type": "string" },
+        "executor_routing": {
+          "$ref": "#/definitions/GovernanceExecutorRoutingRecord"
+        },
+        "summary_lines": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "runner_summary_lines": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
       }
     }
   }

@@ -132,6 +132,20 @@ When saving to document, append these Level 2 and Level 3 sections:
 [Summary of capabilities revealed by journeys based on conversation]
 ```
 
+### 6A. Run PRD Contract Gate Before Continue
+
+Before you offer `[C] Continue`, validate that the current PRD journey contract explicitly covers:
+
+- `P0 Journey Inventory`
+- `Journey Evidence Contract`
+- `Failure Triggers And Recovery`
+- unresolved blockers are named and owned
+
+If any blocker-level contract field is missing:
+- emit a `GateFailure`
+- build a `RemediationPlan`
+- do not show plain Continue until the blocker is repaired and the local gate is rerun
+
 ### 7. Present MENU OPTIONS
 
 Present the user journey content for review, then display menu:
@@ -144,7 +158,7 @@ Display: "**Select:** [A] Advanced Elicitation [P] Party Mode [C] Continue to Do
 
 #### Menu Handling Logic:
 - IF A: Invoke the `bmad-advanced-elicitation` skill with the current journey content, process the enhanced journey insights that come back, ask user "Accept these improvements to the user journeys? (y/n)", if yes update content with improvements then redisplay menu, if no keep original content then redisplay menu
-- IF P: Invoke the `bmad-party-mode` skill with the current journeys, process the collaborative journey improvements and additions, ask user "Accept these changes to the user journeys? (y/n)", if yes update content with improvements then redisplay menu, if no keep original content then redisplay menu
+- IF P: Invoke the `bmad-party-mode` skill with the `prd-contract-gate` stage profile and current blocker/gap context, process the collaborative journey improvements and additions, ask user "Accept these changes to the user journeys? (y/n)", if yes update content with improvements then redisplay menu, if no keep original content then redisplay menu
 - IF C: Append the final content to {outputFile}, update frontmatter by adding this step name to the end of the stepsCompleted array, then read fully and follow: ./step-05-domain.md
 - IF Any other: help user respond, then redisplay menu
 

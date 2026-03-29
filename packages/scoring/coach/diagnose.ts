@@ -4,6 +4,7 @@ import * as veto from '../veto';
 import { resolveRulesDir } from '../constants/path';
 import type { EpicStoryRecord } from '../veto';
 import { clusterWeaknesses } from '../analytics/cluster-weaknesses';
+import { buildJourneyContractRemediationHints } from '../analytics/journey-contract-remediation';
 import { loadCoachConfig } from './config';
 import { loadRunRecords } from './loader';
 import { loadForbiddenWords, validateForbiddenWords } from './forbidden';
@@ -386,6 +387,13 @@ export async function coachDiagnose(
       'Focus on stages with high remediation iteration counts to improve first-pass rate.',
     ];
   }
+  const journeyContractHints = buildJourneyContractRemediationHints(records);
+  if (journeyContractHints.length > 0) {
+    recommendations = [
+      ...recommendations,
+      ...journeyContractHints.map((item) => item.recommendation),
+    ];
+  }
   const summary = fallbackMode
     ? `Fallback diagnosis complete (run_id=${normalizedRunId}). Output is based on existing score records.`
     : `Diagnosis complete (run_id=${normalizedRunId}). End-to-end Skill was not downgraded.`;
@@ -418,6 +426,7 @@ export async function coachDiagnose(
     recommendations,
     iteration_passed: iterationPassed,
     weakness_clusters: weaknessClusters,
+    journey_contract_hints: journeyContractHints.length > 0 ? journeyContractHints : undefined,
   };
 
   const forbiddenWords = loadForbiddenWords(options.forbiddenWordsPath);
@@ -436,4 +445,3 @@ export async function coachDiagnose(
 
   return report;
 }
-

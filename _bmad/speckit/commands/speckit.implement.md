@@ -56,6 +56,8 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **IF EXISTS**: Read research.md for technical decisions and constraints
    - **IF EXISTS**: Read quickstart.md for integration scenarios
    - If the repo has not split ledgers into standalone files yet, load the equivalent sections from tasks.md and treat them as the source of truth.
+   - Treat the following journey contracts as **required execution inputs** before any coding begins: `Smoke Task Chain`, `Closure Task ID`, `Journey Unlock`, `Smoke Path Unlock`, `Definition Gap Handling`, `Implementation Gap Handling`.
+   - If multi-agent mode is enabled, also load `Shared Journey Ledger Path`, `Shared Invariant Ledger Path`, and `Shared Trace Map Path`, and require every agent to use the same path reference rather than private summaries.
    - Before executing any task, identify which items are `definition gap` work versus `implementation gap` work and do not mix completion claims across the two.
 
 3.5. **【ralph-method 强制前置】创建 prd 与 progress 追踪文件**：
@@ -113,16 +115,17 @@ You **MUST** consider the user input before proceeding (if not empty).
 5. Parse tasks.md structure and extract:
    - **Journey artifacts**: `P0 Journey Ledger`, `Invariant Ledger`, `Runnable Slice Milestones`, `Closure Notes`
    - **Task dependencies**: Sequential vs parallel execution rules
-   - **Task details**: ID, journey id, invariant id, trace id, task type, file paths, parallel markers [P]
+   - **Task details**: ID, journey id, invariant id, trace id, task type, file paths, parallel markers [P], `Smoke Task Chain`, `Closure Task ID`, `Journey Unlock`, `Smoke Path Unlock`
    - **Execution flow**: order and dependency requirements per runnable slice
-   - **Gap split**: which tasks close `definition gap` versus `implementation gap`
+   - **Gap split**: which tasks close `definition gap` versus `implementation gap`, and how `Definition Gap Handling` stays separate from `Implementation Gap Handling`
+   - **Shared artifact references**: `Shared Journey Ledger Path`, `Shared Invariant Ledger Path`, `Shared Trace Map Path`, and whether every worker is pinned to the same path reference
 
 6. Execute implementation following the task plan:
    - **Slice-by-slice execution**: Complete each runnable journey slice before claiming the milestone
    - **Respect dependencies**: Run sequential tasks in order, parallel tasks [P] can run together  
    - **Follow TDD approach**: Execute test tasks before their corresponding implementation tasks
    - **File-based coordination**: Tasks affecting the same files must run sequentially
-   - **Ledger-driven execution**: Keep `journey-ledger`, `invariant-ledger`, and `trace-map` aligned with task progress; multi-agent work must share the same artifacts
+   - **Ledger-driven execution**: Keep `journey-ledger`, `invariant-ledger`, and `trace-map` aligned with task progress; multi-agent work must share the same artifacts through `Shared Journey Ledger Path`, `Shared Invariant Ledger Path`, and `Shared Trace Map Path`, using the same path reference for every agent
    - **Per-US tracking**：**每个 US 须独立执行 RED→GREEN→REFACTOR**；禁止仅对首个 US 执行 TDD 后对后续 US 跳过红灯直接实现。每完成一个可验收任务（对应 prd 中的一个 US），**必须立即**：
       1. 更新 prd：将对应 userStory 的 `passes` 设为 `true`；
       2. 更新 progress：必须同时追加以下内容：

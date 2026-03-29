@@ -826,4 +826,43 @@ Dimension scores:
     expect(written.run_id).toBe(runId);
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
+
+  it('writes journey_contract_signals derived from dedicated journey contract check_items (Wave 1B)', async () => {
+    const content = `
+总体评级: C
+
+问题清单:
+1. [严重程度:高] Journey Slice J-1 缺少 smoke task chain，无法证明至少一条 smoke path task chain 已落到任务
+2. [严重程度:中] Journey Slice J-1 缺少 closure note task，无法形成 closure note task
+3. [严重程度:中] setup/foundation 任务只带 Journey ID，但未显式说明 unlocks 哪条 journey / smoke path
+4. [严重程度:中] Journey Slice 生成规则把 definition gap 和 implementation gap 混在一起，未保持 gap split contract
+5. [严重程度:低] multi-agent 模式只要求共享 trace map，未要求共享同一份 journey ledger / invariant ledger / trace map 的路径引用
+
+通过标准:
+待修复
+`;
+    const tempDir = path.join(os.tmpdir(), `scoring-journey-signals-${Date.now()}`);
+    const runId = `test-journey-signals-${Date.now()}`;
+
+    await parseAndWriteScore({
+      content,
+      stage: 'tasks',
+      runId,
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+      skipAutoHash: true,
+    });
+
+    const filePath = path.join(tempDir, `${runId}.json`);
+    const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    expect(written.journey_contract_signals).toEqual({
+      smoke_task_chain: true,
+      closure_task_id: true,
+      journey_unlock: true,
+      gap_split_contract: true,
+      shared_path_reference: true,
+    });
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
 });

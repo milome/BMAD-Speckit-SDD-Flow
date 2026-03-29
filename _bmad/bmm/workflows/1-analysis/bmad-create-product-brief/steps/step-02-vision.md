@@ -138,6 +138,21 @@ Prepare the following structure for document append:
 [Key differentiators based on conversation]
 ```
 
+### 6A. Run Local Gate Check Before Continue
+
+Before you offer `[C] Continue`, validate that the current vision section explicitly covers:
+
+- `success evidence`
+- `current workaround`
+- `failure cost`
+- `role / permission boundary`
+- `external dependency semantics`
+
+If any blocker-level field is missing:
+- emit a `GateFailure`
+- build a `RemediationPlan`
+- do not show plain Continue until the blocker is repaired and the local gate is rerun
+
 ### 7. Present MENU OPTIONS
 
 **Content Presentation:**
@@ -151,7 +166,7 @@ Prepare the following structure for document append:
 #### Menu Handling Logic:
 
 - IF A: Invoke the `bmad-advanced-elicitation` skill with current vision content to dive deeper and refine
-- IF P: Invoke the `bmad-party-mode` skill to bring different perspectives to positioning and differentiation
+- IF P: Invoke the `bmad-party-mode` skill with the `brief-gate` stage profile and current blocker/gap context to bring different perspectives to positioning, differentiation, and blocker remediation
 - IF C: Save content to {outputFile}, update frontmatter with stepsCompleted: [1, 2], then read fully and follow: ./step-03-users.md
 - IF Any other comments or queries: help user respond then [Redisplay Menu Options](#7-present-menu-options)
 

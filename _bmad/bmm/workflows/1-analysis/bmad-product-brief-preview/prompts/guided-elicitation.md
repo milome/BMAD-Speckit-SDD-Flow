@@ -44,9 +44,15 @@ You are NOT walking through a rigid questionnaire. You're having a conversation 
 For each topic area where you have gaps:
 
 1. **Lead with what you know** — "Based on your input and my research, it sounds like [X]. Is that right?"
-2. **Ask the gap question** — targeted, specific, not generic
+2. **Ask the gap question** — targeted, specific, not generic, and always derived from `evidence gaps`, `Known Unknowns`, or `missing contract fields`
 3. **Reflect and confirm** — paraphrase what you heard
 4. **"Anything else on this, or shall we move on?"** — the soft gate
+
+Do not use a generic checklist when stronger prompts exist in the current `Contradiction Log`. The preferred order is:
+- contradiction-driven question
+- evidence gaps question
+- missing contract fields question
+- only then a broader topical prompt
 
 If the user is giving you detail beyond brief scope (requirements, architecture, platform details, timelines), **capture it silently** for the distillate. Acknowledge it briefly ("Good detail, I'll capture that") but don't derail the conversation.
 

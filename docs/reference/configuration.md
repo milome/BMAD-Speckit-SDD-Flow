@@ -113,6 +113,38 @@ IDE 副本：`.cursor/agents/code-reviewer-config.yaml`。
 
 ---
 
+### governance-remediation.yaml
+
+治理 remediation runner 的宿主与 provider 配置。
+
+```yaml
+version: 1
+primaryHost: cursor
+packetHosts:
+  - cursor
+  - claude
+  - codex
+
+provider:
+  mode: openai-compatible
+  id: openai-governance
+  baseUrl: https://api.openai.com/v1
+  model: gpt-5.4
+  apiKeyEnv: OPENAI_API_KEY
+  timeoutMs: 30000
+```
+
+这个文件同时控制两层：
+
+- `primaryHost` / `packetHosts`：决定 remediation packet 面向哪个宿主
+- `provider`：决定 governance hints 通过哪种模型协议获取
+
+完整字段说明、OpenAI / Anthropic 双示例，见：
+
+- [Governance Remediation Provider 配置参考](./governance-remediation-provider-config.md)
+
+---
+
 ### bmad-story-config.yaml
 
 Story 工作流配置，控制审计粒度和自动续跑行为。

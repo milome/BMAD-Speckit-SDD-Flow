@@ -283,9 +283,10 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 - 使用项目 **tasks 模板**：`_bmad/speckit/templates/tasks-template.md`（或项目内约定的模板路径）。
 - 在 **tasks.md** 中按原始需求文档、plan.md、IMPLEMENTATION_GAPS.md **逐章节、逐条** 增加 **需求映射清单表格**；表头与列名见 [references/mapping-tables.md](references/mapping-tables.md) §4–§10；Agent 执行规则、需求追溯格式、验收标准与验收执行规则见 [references/tasks-acceptance-templates.md](references/tasks-acceptance-templates.md)。
 - tasks.md 顶层必须是 `journey-first`：至少包含 `P0 Journey Ledger`、`Invariant Ledger`、`Runnable Slice Milestones`、按 Journey 拆分的 runnable slices、`Closure Notes`。
-- 每个任务必须显式挂接 `Journey ID`、`Trace ID`、任务类型；setup / foundational 任务不得脱离 Journey 单独存在。
-- 每个 runnable slice 必须声明 `Journey ID`、`Invariant ID`（或 `INV-N/A` + 原因）、`Evidence Type`、`Verification Command`、`Closure Note Path`。
-- tasks.md 中必须同时存在 `Journey -> Task -> Test -> Closure` 映射表，以及 `Definition Gap vs Implementation Gap` 对照表；两类 gap 不得混写后直接宣称功能已跑通。
+- 每个任务必须显式挂接 `Journey ID`、`Trace ID`、任务类型；setup / foundational 任务不得脱离 Journey 单独存在，且必须额外声明 `Journey Unlock` 与 `Smoke Path Unlock`。
+- 每个 runnable slice 必须声明 `Journey ID`、`Invariant ID`（或 `INV-N/A` + 原因）、`Evidence Type`、`Verification Command`、`Closure Note Path`、`Definition Gap Handling`、`Implementation Gap Handling`。
+- tasks.md 中必须同时存在 `Journey -> Task -> Test -> Closure` 映射表，以及 `Definition Gap vs Implementation Gap` 对照表；映射表中必须显式写出 `Smoke Task Chain` 与 `Closure Task ID`，两类 gap 不得混写后直接宣称功能已跑通。
+- 若 tasks.md 启用 multi-agent 模式，必须显式记录 `Shared Journey Ledger Path`、`Shared Invariant Ledger Path`、`Shared Trace Map Path`，并强调所有 agent 使用同一份 `same path reference`，禁止各自产生私有摘要。
 
 **集成与端到端测试用例（必须）**
 
@@ -382,15 +383,16 @@ Batch N: Task ... → 执行 → code-review审计 → 通过
    - 产出路径：与 tasks 同目录，或 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/`（BMAD 流程时）；
    - **禁止**在未创建上述文件前开始编码或执行涉及生产代码的任务。
 3. **阅读前置文档**：需求文档、plan.md、IMPLEMENTATION_GAPS.md，理解技术架构与需求范围。
-3.1 **读取 ledger 工件**：若存在 `journey-ledger.md`、`invariant-ledger.md`、`trace-map.json`，必须在执行前加载；若仓库尚未拆分独立文件，则以 tasks.md 中对应 section 作为事实来源。
-3.2 **先区分 gap 类型**：执行前必须标记哪些任务是在消除 `definition gap`，哪些是在修复 `implementation gap`；禁止混写并在同一轮里直接宣布 Journey 完成。
+3.1 **读取 ledger 工件**：若存在 `journey-ledger.md`、`invariant-ledger.md`、`trace-map.json`，必须在执行前加载；若仓库尚未拆分独立文件，则以 tasks.md 中对应 section 作为事实来源，并同步读取 `Smoke Task Chain`、`Closure Task ID`、`Journey Unlock`、`Smoke Path Unlock`。
+3.2 **先区分 gap 类型**：执行前必须标记哪些任务是在消除 `definition gap`，哪些是在修复 `implementation gap`；执行记录中必须保持 `Definition Gap Handling` 与 `Implementation Gap Handling` 分离，禁止混写并在同一轮里直接宣布 Journey 完成。
+3.3 **多 Agent 共用工件路径**：若为 multi-agent 执行，必须先锁定 `Shared Journey Ledger Path`、`Shared Invariant Ledger Path`、`Shared Trace Map Path`，并确认所有 agent 都消费同一份 `same path reference`，禁止改写为各自私有摘要。
 4. **使用 TodoWrite** 创建任务追踪列表，首个任务标记 `in_progress`。
 5. **逐任务执行 TDD 循环**（**每个 US 必须独立执行**，禁止仅对首个 US 执行 TDD 后对后续 US 跳过红灯直接实现）：
    - **红灯**：编写/补充覆盖当前任务验收标准的测试用例，运行确认**测试失败**（验证测试有效性）。
    - **绿灯**：编写最少量生产代码使测试通过。
    - **重构**：在测试保护下检查并优化代码质量（SOLID、命名、解耦、性能）。**无论是否有具体重构动作，均须在 progress 中记录 `[TDD-REFACTOR]` 一行**；无具体重构时写"无需重构 ✓"，集成任务写"无新增生产代码，各模块独立性已验证，无跨模块重构 ✓"。
 6. **完成后立即更新** tasks.md 中的复选框 `[ ]` → `[x]`，TodoWrite 标记 `completed`。
-6.1 **Journey 收口**：每当一个 `P0 journey` 达到 smoke runnable 状态，必须立即写或更新对应 `closure note`，写明 covered journey id、implementing task ids、smoke test ids、full E2E ids 或 deferred reason、未解决 deferred gaps。
+6.1 **Journey 收口**：每当一个 `P0 journey` 达到 smoke runnable 状态，必须立即完成或更新对应 `Closure Task ID` 指向的 `closure note`，并校对 `Smoke Task Chain` 已闭合；closure note 必须写明 covered journey id、implementing task ids、smoke test ids、full E2E ids 或 deferred reason、未解决 deferred gaps。
 7. **检查点验证**：遇到检查点时验证所有前置任务已完成，执行回归测试。
 7.1. **lint（必须）**：每完成一批任务或全部任务完成前，项目须按技术栈执行 Lint（见 lint-requirement-matrix）；若使用主流语言但未配置 Lint 须修复；已配置的须执行且无错误、无警告。禁止以「与本次任务不相关」为由豁免。
 7.2. **re-readiness 触发**：若本批变更触及 `P0 journey`、完成态定义、依赖语义、权限边界、fixture / environment 假设，必须回到 readiness 重新确认后再继续推进 implement 结论。

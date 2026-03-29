@@ -24,9 +24,15 @@ import {
   getWeakTop3,
   getWeakTop3EpicStory,
   getHighIterationTop3,
+  getJourneyContractSummary,
+  getGovernanceRoutingSummary,
+  getGovernanceRoutingModeDistribution,
+  getGovernanceSignalHotspots,
+  getGovernanceRerunGateFailureTrend,
   countVetoTriggers,
   getTrend,
   aggregateByEpicOnly,
+  aggregateByEpicStoryTimeWindow,
   formatDashboardMarkdown,
 } from '../packages/scoring/dashboard';
 
@@ -35,6 +41,28 @@ const INSUFFICIENT_RUN_MESSAGE = '数据不足，暂无完整 run（至少 2 sta
 const EPIC_NO_COMPLETE_STORY_MESSAGE = (epicId: number) =>
   `Epic ${epicId} 下无完整 Story，暂无聚合数据`;
 const OUTPUT_PATH = '_bmad-output/dashboard.md';
+
+function resolveScopedAnalyticsRecords(
+  records: ReturnType<typeof loadAndDedupeRecords>,
+  strategy: 'epic_story_window' | 'run_id',
+  epic: number | undefined,
+  story: number | undefined,
+  windowHours: number
+) {
+  if (strategy !== 'epic_story_window') {
+    return records;
+  }
+
+  if (epic != null && !isNaN(epic) && story != null && !isNaN(story)) {
+    return aggregateByEpicStoryTimeWindow(records, epic, story, windowHours);
+  }
+
+  if (epic != null && !isNaN(epic)) {
+    return aggregateByEpicOnly(records, epic, windowHours);
+  }
+
+  return records;
+}
 
 function parseArgs(): Record<string, string> {
   const args: Record<string, string> = {};
@@ -93,6 +121,13 @@ function main(): void {
     epic != null &&
     !isNaN(epic) &&
     (story == null || isNaN(story));
+  const analyticsRecords = resolveScopedAnalyticsRecords(
+    records,
+    strategy,
+    epic != null && !isNaN(epic) ? epic : undefined,
+    story != null && !isNaN(story) ? story : undefined,
+    windowHours
+  );
 
   const latestRecords =
     strategy === 'epic_story_window'
@@ -119,8 +154,15 @@ function main(): void {
       ? getWeakTop3EpicStory(latestRecords)
       : getWeakTop3(latestRecords);
   const highIterTop3 = getHighIterationTop3(latestRecords);
+  const journeyContractSummary = getJourneyContractSummary(latestRecords);
   const vetoCount = countVetoTriggers(latestRecords);
   const trend = getTrend(records);
+  const governanceRoutingSummary = getGovernanceRoutingSummary(analyticsRecords);
+  const governanceRoutingModeDistribution =
+    getGovernanceRoutingModeDistribution(analyticsRecords);
+  const governanceSignalHotspots = getGovernanceSignalHotspots(analyticsRecords);
+  const governanceGateFailureTrend =
+    getGovernanceRerunGateFailureTrend(analyticsRecords);
 
   let formatOpts: { viewMode?: 'epic_aggregate'; epicId?: number; storyIds?: number[]; excludedStories?: string[] } | undefined;
   if (isEpicOnly && epic != null) {
@@ -155,7 +197,19 @@ function main(): void {
   }
 
   const markdown = formatDashboardMarkdown(
-    { healthScore, dimensions, weakTop3, highIterTop3, vetoCount, trend },
+    {
+      healthScore,
+      dimensions,
+      weakTop3,
+      highIterTop3,
+      journeyContractSummary,
+      governanceRoutingSummary,
+      governanceRoutingModeDistribution,
+      governanceSignalHotspots,
+      governanceGateFailureTrend,
+      vetoCount,
+      trend,
+    },
     formatOpts
   );
 
