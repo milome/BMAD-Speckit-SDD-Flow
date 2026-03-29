@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-require-imports */
 
 const path = require('node:path');
 const { verifySpecifyMirror } = require(path.join(

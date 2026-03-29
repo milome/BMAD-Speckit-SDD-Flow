@@ -29,6 +29,25 @@ function compareEvents(left: RuntimeEvent, right: RuntimeEvent): number {
   if (byTimestamp !== 0) {
     return byTimestamp;
   }
+
+  const order: Record<string, number> = {
+    'run.created': 0,
+    'run.scope.changed': 1,
+    'stage.started': 2,
+    'artifact.attached': 3,
+    'score.written': 4,
+    'sft.candidate.built': 5,
+    'stage.completed': 6,
+    'stage.failed': 7,
+    'stage.vetoed': 8,
+  };
+
+  const leftRank = order[left.event_type] ?? 99;
+  const rightRank = order[right.event_type] ?? 99;
+  if (leftRank !== rightRank) {
+    return leftRank - rightRank;
+  }
+
   return left.event_id.localeCompare(right.event_id);
 }
 

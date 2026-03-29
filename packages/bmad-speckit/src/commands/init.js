@@ -314,7 +314,10 @@ function resolveGenericAiCommandsDir(selectedAI, options, cwd) {
   return null;
 }
 
-/** Story 12.4: Post-init 引导（PRD §5.2、§5.13）；文案见 messages/cli.js（BMAD_SPECKIT_LOCALE） */
+/**
+ * Story 12.4: Post-init 引导（PRD §5.2、§5.13）；文案见 messages/cli.js（BMAD_SPECKIT_LOCALE）。
+ * @returns {string} Localized post-init guide text
+ */
 function getPostInitGuideMsg() {
   return postInitGuideMsg();
 }

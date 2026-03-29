@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { execSync } from 'child_process';
+import { execSync } from 'node:child_process';
 import {
   extractSftDataset,
   parseDiffToInputOutput,
@@ -16,7 +16,7 @@ import {
   type SftExtractSummary,
 } from '../sft-extractor';
 
-vi.mock('child_process', () => ({
+vi.mock('node:child_process', () => ({
   execSync: vi.fn(),
 }));
 
@@ -714,5 +714,41 @@ describe('sft-extractor', () => {
     const { entries, summary } = await extractSftDataset(tempDir, path.join(tempDir, 'out2.jsonl'));
     expect(entries.length).toBe(0);
     expect(summary.skipReasons['无 §1/§4 且审计报告解析失败']).toBe(1);
+  });
+
+  it('T2-13: canonical veto rejection is skipped by legacy extract wrapper', async () => {
+    const bugfixPath = path.join(tempDir, 'bugfix-veto.md');
+    fs.writeFileSync(
+      bugfixPath,
+      `## §1 问题\n需要修复 runtime dashboard 缺口\n\n## §4 修复方案\n补充 query core 与 live dashboard`,
+      'utf-8'
+    );
+    const record = {
+      run_id: 'run-veto',
+      scenario: 'real_dev' as const,
+      stage: 'implement',
+      phase_score: 96,
+      phase_weight: 0.2,
+      check_items: [{ item_id: 'veto_runtime_guard', passed: false, score_delta: -100 }],
+      timestamp: new Date().toISOString(),
+      iteration_count: 0,
+      iteration_records: [],
+      first_pass: true,
+      source_path: bugfixPath,
+      base_commit_hash: 'abc12345',
+    };
+    fs.writeFileSync(path.join(tempDir, 'run-veto.json'), JSON.stringify(record), 'utf-8');
+
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (typeof cmd !== 'string') return 'a'.repeat(40);
+      if (cmd.includes('rev-parse HEAD')) return 'a'.repeat(40);
+      if (cmd.includes('rev-parse --verify')) return 'abc12345';
+      if (cmd.includes('git diff')) return '--- a\n+++ b\n-old\n+new';
+      return 'a'.repeat(40);
+    });
+
+    const { entries, summary } = await extractSftDataset(tempDir, path.join(tempDir, 'out-veto.jsonl'));
+    expect(entries).toHaveLength(0);
+    expect(summary.skipReasons.veto_triggered).toBe(1);
   });
 });

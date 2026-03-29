@@ -8,6 +8,8 @@ import {
   shouldRunRealSftExtract,
   runFreshRegressionMatrixMain,
   GOVERNANCE_VITEST_FILES,
+  runOptionalNpmScript,
+  resolveDualHostGateMode,
 } from '../../scripts/run-fresh-regression-matrix';
 
 describe('fresh-regression-matrix helpers', () => {
@@ -36,6 +38,19 @@ describe('fresh-regression-matrix helpers', () => {
   it('resolveFreshRegressionRoot defaults to sibling worktree name', () => {
     delete process.env.FRESH_REGRESSION_ROOT;
     const repo = path.join(tmpBase, 'BMAD-Speckit-SDD-Flow');
+    expect(resolveFreshRegressionRoot(repo)).toBe(
+      path.join(tmpBase, 'BMAD-Speckit-SDD-Flow-01-fresh-regression')
+    );
+  });
+
+  it('resolveFreshRegressionRoot normalizes feature worktree roots before resolving sibling fresh worktree', () => {
+    delete process.env.FRESH_REGRESSION_ROOT;
+    const repo = path.join(
+      tmpBase,
+      'BMAD-Speckit-SDD-Flow',
+      '.worktrees',
+      'runtime-dashboard-sft'
+    );
     expect(resolveFreshRegressionRoot(repo)).toBe(
       path.join(tmpBase, 'BMAD-Speckit-SDD-Flow-01-fresh-regression')
     );
@@ -106,6 +121,37 @@ describe('fresh-regression-matrix helpers', () => {
       'tests/acceptance/runtime-governance-mandatory-granularity.test.ts',
     ];
     expect([...GOVERNANCE_VITEST_FILES]).toEqual(expected);
+  });
+
+  it('runOptionalNpmScript skips missing optional runtime build script', () => {
+    const log: string[] = [];
+    const code = runOptionalNpmScript(tmpBase, {}, 'build:runtime-emit', log);
+
+    expect(code).toBe(0);
+    expect(log).toContain('SKIP: build:runtime-emit missing; treat as OK');
+  });
+
+  it('resolveDualHostGateMode falls back to legacy split gate when dual-host scripts are unavailable', () => {
+    expect(resolveDualHostGateMode({ 'test:ci': 'npm run init:claude && vitest run' })).toBe(
+      'legacy_split'
+    );
+    expect(
+      resolveDualHostGateMode({
+        'test:ci:dual': 'npm run init:claude && npm run init:cursor && vitest run',
+      })
+    ).toBe('dual_script');
+  });
+
+  it('keeps runtime dashboard and SFT smoke help commands in the fresh regression matrix', () => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, '../../scripts/run-fresh-regression-matrix.ts'),
+      'utf8'
+    );
+
+    expect(source).toContain('bmad-speckit runtime-mcp --help');
+    expect(source).toContain('bmad-speckit dashboard-live --help');
+    expect(source).toContain('bmad-speckit sft-preview --help');
+    expect(source).toContain('bmad-speckit sft-bundle --help');
   });
 });
 

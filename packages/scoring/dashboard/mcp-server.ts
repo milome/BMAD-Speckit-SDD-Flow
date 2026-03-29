@@ -1,0 +1,297 @@
+import { startLiveDashboardServer, type LiveDashboardServerHandle } from './live-server';
+import { queryRuntimeDashboard, type RuntimeDashboardQueryOptions } from './runtime-query';
+
+export interface RuntimeMcpServerOptions extends RuntimeDashboardQueryOptions {
+  host?: string;
+  dashboardUrl?: string;
+  dashboardPort?: number;
+}
+
+interface JsonRpcRequest {
+  jsonrpc: '2.0';
+  id?: number;
+  method: string;
+  params?: Record<string, unknown>;
+}
+
+interface ToolDefinition {
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
+}
+
+const SERVER_INFO = {
+  name: 'bmad-runtime-dashboard',
+  version: '0.1.0',
+};
+
+function writeMessage(payload: Record<string, unknown>): void {
+  const body = JSON.stringify(payload);
+  process.stdout.write(`Content-Length: ${Buffer.byteLength(body, 'utf8')}\r\n\r\n${body}`);
+}
+
+function buildTools(): ToolDefinition[] {
+  return [
+    {
+      name: 'get_current_run_summary',
+      description: 'Return the selected runtime run summary, current stage, and health score.',
+      inputSchema: { type: 'object', additionalProperties: false, properties: {} },
+    },
+    {
+      name: 'get_stage_status',
+      description: 'Return the current stage timeline for the selected run.',
+      inputSchema: { type: 'object', additionalProperties: false, properties: {} },
+    },
+    {
+      name: 'get_score_gate_result',
+      description: 'Return score gate summary including veto count and latest score detail.',
+      inputSchema: { type: 'object', additionalProperties: false, properties: {} },
+    },
+    {
+      name: 'preview_sft',
+      description: 'Return the current SFT candidate summary preview.',
+      inputSchema: { type: 'object', additionalProperties: false, properties: {} },
+    },
+    {
+      name: 'export_sft',
+      description: 'Return export guidance for the current SFT dataset surface.',
+      inputSchema: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          target: { type: 'string' },
+        },
+      },
+    },
+    {
+      name: 'open_dashboard',
+      description: 'Return the live dashboard URL.',
+      inputSchema: { type: 'object', additionalProperties: false, properties: {} },
+    },
+    {
+      name: 'get_runtime_service_health',
+      description: 'Return the MCP/live-dashboard/shared-core health summary.',
+      inputSchema: { type: 'object', additionalProperties: false, properties: {} },
+    },
+  ];
+}
+
+function buildToolResult(
+  text: string,
+  structuredContent: Record<string, unknown>
+): Record<string, unknown> {
+  return {
+    content: [{ type: 'text', text }],
+    structuredContent,
+  };
+}
+
+async function handleToolCall(
+  toolName: string,
+  toolArgs: Record<string, unknown> | undefined,
+  dashboardUrl: string | null,
+  options: RuntimeMcpServerOptions
+): Promise<Record<string, unknown>> {
+  const snapshot = queryRuntimeDashboard(options);
+
+  switch (toolName) {
+    case 'get_current_run_summary':
+      return buildToolResult(
+        `run=${snapshot.selection.run_id ?? 'N/A'} status=${snapshot.overview.status} stage=${snapshot.runtime_context.current_stage ?? 'N/A'}`,
+        {
+          run_id: snapshot.selection.run_id,
+          status: snapshot.overview.status,
+          current_stage: snapshot.runtime_context.current_stage,
+          health_score: snapshot.overview.health_score,
+        }
+      );
+    case 'get_stage_status':
+      return buildToolResult(
+        `timeline_entries=${snapshot.stage_timeline.length}`,
+        {
+          current_stage: snapshot.runtime_context.current_stage,
+          timeline: snapshot.stage_timeline,
+        }
+      );
+    case 'get_score_gate_result':
+      return buildToolResult(
+        `health=${snapshot.overview.health_score ?? 'N/A'} veto=${snapshot.overview.veto_count}`,
+        {
+          health_score: snapshot.overview.health_score,
+          veto_count: snapshot.overview.veto_count,
+          score_detail: snapshot.score_detail,
+        }
+      );
+    case 'preview_sft':
+      return buildToolResult(
+        `accepted=${snapshot.sft_summary.accepted} rejected=${snapshot.sft_summary.rejected}`,
+        snapshot.sft_summary as unknown as Record<string, unknown>
+      );
+    case 'export_sft':
+      {
+        const target =
+          toolArgs && typeof toolArgs.target === 'string'
+            ? toolArgs.target
+            : 'openai_chat';
+        const availability =
+          snapshot.sft_summary.target_availability[
+            target as keyof typeof snapshot.sft_summary.target_availability
+          ];
+        return buildToolResult(
+          `target=${target} compatible=${availability?.compatible ?? 0} incompatible=${availability?.incompatible ?? 0}`,
+          {
+            target,
+            compatible_samples: availability?.compatible ?? 0,
+            incompatible_samples: availability?.incompatible ?? 0,
+            last_bundle_id: snapshot.sft_summary.last_bundle?.bundle_id ?? null,
+            last_bundle: snapshot.sft_summary.last_bundle,
+            rejection_reasons: snapshot.sft_summary.rejection_reasons,
+          }
+        );
+      }
+    case 'open_dashboard':
+      return buildToolResult(`dashboard_url=${dashboardUrl ?? 'N/A'}`, {
+        dashboard_url: dashboardUrl,
+      });
+    case 'get_runtime_service_health':
+      return buildToolResult('shared core healthy', {
+        mcp: 'up',
+        shared_core: 'up',
+        dashboard_url: dashboardUrl,
+      });
+    default:
+      return buildToolResult(`unknown tool: ${toolName}`, {
+        error: 'unknown_tool',
+      });
+  }
+}
+
+function tryParseMessage(buffer: string): {
+  request: JsonRpcRequest | null;
+  consumed: number;
+} {
+  const separatorIndex = buffer.indexOf('\r\n\r\n');
+  if (separatorIndex === -1) {
+    return { request: null, consumed: 0 };
+  }
+
+  const header = buffer.slice(0, separatorIndex);
+  const match = /Content-Length:\s*(\d+)/i.exec(header);
+  if (!match) {
+    throw new Error(`missing content-length header: ${header}`);
+  }
+  const contentLength = Number(match[1]);
+  const bodyStart = separatorIndex + 4;
+  if (buffer.length < bodyStart + contentLength) {
+    return { request: null, consumed: 0 };
+  }
+
+  const body = buffer.slice(bodyStart, bodyStart + contentLength);
+  return {
+    request: JSON.parse(body) as JsonRpcRequest,
+    consumed: bodyStart + contentLength,
+  };
+}
+
+export async function runRuntimeMcpServer(
+  options: RuntimeMcpServerOptions = {}
+): Promise<void> {
+  let liveServer: LiveDashboardServerHandle | null = null;
+  let dashboardUrl = options.dashboardUrl ?? null;
+
+  if (!dashboardUrl) {
+    liveServer = await startLiveDashboardServer({
+      root: options.root,
+      dataPath: options.dataPath,
+      host: options.host,
+      port: options.dashboardPort ?? 43123,
+      strategy: options.strategy,
+      epic: options.epic,
+      story: options.story,
+      windowHours: options.windowHours,
+    });
+    dashboardUrl = liveServer.url;
+  }
+
+  const cleanup = async () => {
+    if (liveServer) {
+      await liveServer.close();
+    }
+  };
+
+  process.once('SIGINT', () => {
+    cleanup().finally(() => process.exit(0));
+  });
+  process.once('SIGTERM', () => {
+    cleanup().finally(() => process.exit(0));
+  });
+
+  let buffer = '';
+  process.stdin.setEncoding('utf8');
+  process.stdin.on('data', async (chunk: string) => {
+    buffer += chunk;
+
+    while (buffer.length > 0) {
+      const parsed = tryParseMessage(buffer);
+      if (!parsed.request) {
+        return;
+      }
+      buffer = buffer.slice(parsed.consumed);
+
+      const request = parsed.request;
+      if (request.method === 'initialize') {
+        writeMessage({
+          jsonrpc: '2.0',
+          id: request.id,
+          result: {
+            protocolVersion: '2024-11-05',
+            capabilities: {
+              tools: {},
+            },
+            serverInfo: SERVER_INFO,
+          },
+        });
+        continue;
+      }
+
+      if (request.method === 'notifications/initialized') {
+        continue;
+      }
+
+      if (request.method === 'tools/list') {
+        writeMessage({
+          jsonrpc: '2.0',
+          id: request.id,
+          result: {
+            tools: buildTools(),
+          },
+        });
+        continue;
+      }
+
+      if (request.method === 'tools/call') {
+        const toolName = typeof request.params?.name === 'string' ? request.params.name : '';
+        const toolArgs =
+          request.params && typeof request.params.arguments === 'object'
+            ? (request.params.arguments as Record<string, unknown>)
+            : undefined;
+        const result = await handleToolCall(toolName, toolArgs, dashboardUrl, options);
+        writeMessage({
+          jsonrpc: '2.0',
+          id: request.id,
+          result,
+        });
+        continue;
+      }
+
+      writeMessage({
+        jsonrpc: '2.0',
+        id: request.id,
+        error: {
+          code: -32601,
+          message: `unknown method: ${request.method}`,
+        },
+      });
+    }
+  });
+}

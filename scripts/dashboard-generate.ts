@@ -34,6 +34,8 @@ import {
   aggregateByEpicOnly,
   aggregateByEpicStoryTimeWindow,
   formatDashboardMarkdown,
+  queryRuntimeDashboard,
+  writeDashboardSnapshotFiles,
 } from '../packages/scoring/dashboard';
 
 const EMPTY_DATA_MESSAGE = '暂无数据，请先完成至少一轮 Dev Story';
@@ -41,6 +43,7 @@ const INSUFFICIENT_RUN_MESSAGE = '数据不足，暂无完整 run（至少 2 sta
 const EPIC_NO_COMPLETE_STORY_MESSAGE = (epicId: number) =>
   `Epic ${epicId} 下无完整 Story，暂无聚合数据`;
 const OUTPUT_PATH = '_bmad-output/dashboard.md';
+const OUTPUT_JSON_PATH = '_bmad-output/dashboard/runtime-dashboard.json';
 
 function resolveScopedAnalyticsRecords(
   records: ReturnType<typeof loadAndDedupeRecords>,
@@ -68,12 +71,14 @@ function parseArgs(): Record<string, string> {
   const args: Record<string, string> = {};
   for (let i = 2; i < process.argv.length; i++) {
     const arg = process.argv[i];
-    if (arg.startsWith('--') && i + 1 < process.argv.length) {
+    if (arg.startsWith('--')) {
       const key = arg.slice(2);
       const val = process.argv[i + 1];
-      if (!val.startsWith('--')) {
+      if (val != null && !val.startsWith('--')) {
         args[key] = val;
         i++;
+      } else {
+        args[key] = 'true';
       }
     }
   }
@@ -103,13 +108,12 @@ function main(): void {
   const outDir = path.resolve(process.cwd(), path.dirname(outputRel));
   ensureDir(outDir);
   const outFile = path.resolve(process.cwd(), outputRel);
-
-  if (records.length === 0) {
-    const content = EMPTY_DATA_MESSAGE + '\n';
-    fs.writeFileSync(outFile, content, 'utf-8');
-    console.log(EMPTY_DATA_MESSAGE);
-    return;
-  }
+  const outputJsonArg = args['output-json'];
+  const outputJsonRel =
+    outputJsonArg != null && outputJsonArg !== '' ? outputJsonArg : OUTPUT_JSON_PATH;
+  const outJsonFile = path.resolve(process.cwd(), outputJsonRel);
+  const printJson = args.json === 'true';
+  const includeRuntime = args['include-runtime'] === 'true';
 
   const epicRaw = args.epic;
   const storyRaw = args.story;
@@ -129,6 +133,30 @@ function main(): void {
     windowHours
   );
 
+  const snapshot = queryRuntimeDashboard({
+    root: process.cwd(),
+    dataPath,
+    strategy,
+    epic: epic != null && !isNaN(epic) ? epic : undefined,
+    story: story != null && !isNaN(story) ? story : undefined,
+    windowHours,
+  });
+
+  function writeArtifacts(markdown: string): void {
+    const written = writeDashboardSnapshotFiles(snapshot, {
+      markdownPath: outFile,
+      jsonPath: outJsonFile,
+      markdown,
+      includeRuntime,
+    });
+    console.log(printJson ? written.json.trimEnd() : written.markdown.trimEnd());
+  }
+
+  if (records.length === 0) {
+    writeArtifacts(EMPTY_DATA_MESSAGE);
+    return;
+  }
+
   const latestRecords =
     strategy === 'epic_story_window'
       ? getLatestRunRecordsV2(records, {
@@ -141,9 +169,7 @@ function main(): void {
 
   if (latestRecords.length === 0) {
     const msg = isEpicOnly && epic != null ? EPIC_NO_COMPLETE_STORY_MESSAGE(epic) : INSUFFICIENT_RUN_MESSAGE;
-    const content = msg + '\n';
-    fs.writeFileSync(outFile, content, 'utf-8');
-    console.log(msg);
+    writeArtifacts(msg);
     return;
   }
 
@@ -213,8 +239,7 @@ function main(): void {
     formatOpts
   );
 
-  fs.writeFileSync(outFile, markdown, 'utf-8');
-  console.log(markdown);
+  writeArtifacts(markdown);
 }
 
 main();

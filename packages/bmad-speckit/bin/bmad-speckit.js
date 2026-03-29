@@ -33,9 +33,14 @@ const { checkScoreCommand } = require('../src/commands/check-score');
 const { coachCommand } = require('../src/commands/coach');
 const { dashboardCommand } = require('../src/commands/dashboard');
 const { sftExtractCommand } = require('../src/commands/sft-extract');
+const { sftPreviewCommand } = require('../src/commands/sft-preview');
+const { sftValidateCommand } = require('../src/commands/sft-validate');
+const { sftBundleCommand } = require('../src/commands/sft-bundle');
 const { scoresCommand } = require('../src/commands/scores');
 const { ensureRunRuntimeContextCommand } = require('../src/commands/ensure-run-runtime-context');
 const { syncRuntimeContextFromSprintCommand } = require('../src/commands/sync-runtime-context-from-sprint');
+const { runtimeMcpCommand } = require('../src/commands/runtime-mcp');
+const { dashboardLiveCommand } = require('../src/commands/dashboard-live');
 const ttyUtils = require('../src/utils/tty');
 
 // Show banner for init (including init --help) when in TTY
@@ -206,16 +211,92 @@ program
   .option('--epic <n>', 'Epic number')
   .option('--story <x.y>', 'Story number')
   .option('--windowHours <n>', 'Window hours for aggregation')
+  .option('--output <path>', 'Markdown output path')
+  .option('--json', 'Print runtime-aware dashboard snapshot as JSON')
+  .option('--output-json <path>', 'JSON snapshot output path')
+  .option('--include-runtime', 'Append runtime context sections to markdown output')
   .action((opts) => dashboardCommand(opts));
 
 program
   .command('sft-extract')
-  .description('Extract SFT training dataset from scoring data')
+  .description('Extract SFT training dataset from scoring data (legacy JSONL or canonical bundle compatibility mode)')
   .option('--min-score <n>', 'Minimum score for inclusion (default: 90, minimum: 90)')
+  .option(
+    '--target <target>',
+    'Export target (openai_chat|hf_conversational|hf_tool_calling|legacy_instruction_io)',
+    'legacy_instruction_io'
+  )
   .option('--output <path>', 'Output file path')
+  .option('--bundle-dir <path>', 'Bundle output directory when --target is not legacy_instruction_io')
   .option('--dataPath <path>', 'Scoring data directory')
+  .option('--split-seed <n>', 'Deterministic split seed for canonical exporters')
+  .option('--max-tokens <n>', 'Maximum token estimate allowed for canonical exporters')
+  .option('--drop-no-code-pair', 'Reject samples without code pair in canonical exporters')
   .action((opts) => {
     sftExtractCommand(opts).catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
+  });
+
+program
+  .command('sft-preview')
+  .description('Preview accepted/rejected SFT dataset candidates')
+  .option('--min-score <n>', 'Minimum score for inclusion (default: 90)')
+  .option(
+    '--target <target>',
+    'Preview target (openai_chat|hf_conversational|hf_tool_calling)',
+    'openai_chat'
+  )
+  .option('--format <format>', 'Output format (json)', 'json')
+  .option('--dataPath <path>', 'Scoring data directory')
+  .option('--split-seed <n>', 'Deterministic split seed')
+  .option('--max-tokens <n>', 'Maximum token estimate allowed')
+  .option('--drop-no-code-pair', 'Reject samples without code pair')
+  .action((opts) => {
+    sftPreviewCommand(opts).catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
+  });
+
+program
+  .command('sft-validate')
+  .description('Validate canonical SFT samples and export compatibility')
+  .option('--min-score <n>', 'Minimum score for inclusion (default: 90)')
+  .option(
+    '--target <target>',
+    'Validation target (openai_chat|hf_conversational|hf_tool_calling)',
+    'openai_chat'
+  )
+  .option('--format <format>', 'Output format (json)', 'json')
+  .option('--dataPath <path>', 'Scoring data directory')
+  .option('--split-seed <n>', 'Deterministic split seed')
+  .option('--max-tokens <n>', 'Maximum token estimate allowed')
+  .option('--drop-no-code-pair', 'Reject samples without code pair')
+  .action((opts) => {
+    sftValidateCommand(opts).catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
+  });
+
+program
+  .command('sft-bundle')
+  .description('Write a training-ready canonical SFT dataset bundle')
+  .option('--min-score <n>', 'Minimum score for inclusion (default: 90)')
+  .option(
+    '--target <target>',
+    'Bundle target (openai_chat|hf_conversational|hf_tool_calling)',
+    'openai_chat'
+  )
+  .option('--bundle-dir <path>', 'Bundle output directory', '_bmad-output/datasets')
+  .option('--dataPath <path>', 'Scoring data directory')
+  .option('--split-seed <n>', 'Deterministic split seed')
+  .option('--max-tokens <n>', 'Maximum token estimate allowed')
+  .option('--drop-no-code-pair', 'Reject samples without code pair')
+  .action((opts) => {
+    sftBundleCommand(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -256,6 +337,34 @@ program
       console.error(err);
       process.exit(1);
     }
+  });
+
+program
+  .command('runtime-mcp')
+  .description('Start the runtime dashboard MCP server over stdio')
+  .option('--dataPath <path>', 'Scoring data directory')
+  .option('--dashboard-url <url>', 'Existing dashboard URL')
+  .option('--dashboard-port <n>', 'Port to auto-start the dashboard on')
+  .option('--host <host>', 'Dashboard host when auto-starting', '127.0.0.1')
+  .action((opts) => {
+    runtimeMcpCommand(opts).catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
+  });
+
+program
+  .command('dashboard-live')
+  .description('Start the local live runtime dashboard web server')
+  .option('--dataPath <path>', 'Scoring data directory')
+  .option('--port <n>', 'Port to listen on', String(43123))
+  .option('--host <host>', 'Host to bind', '127.0.0.1')
+  .option('--open', 'Reserved for future browser-open behavior')
+  .action((opts) => {
+    dashboardLiveCommand(opts).catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
   });
 
 program.parse();

@@ -1,6 +1,10 @@
 /**
  * CLI user-visible strings (TP.1). BMAD_SPECKIT_LOCALE=zh|en (default en).
  */
+/**
+ * Resolve CLI locale from environment.
+ * @returns {'zh' | 'en'} Normalized locale
+ */
 function locale() {
   const v = (process.env.BMAD_SPECKIT_LOCALE || 'en').toLowerCase();
   return v === 'zh' ? 'zh' : 'en';
@@ -19,6 +23,11 @@ const STR = {
   },
 };
 
+/**
+ * Look up a localized CLI string.
+ * @param {keyof typeof STR.en} key - String key
+ * @returns {string} Localized message
+ */
 function t(key) {
   const loc = locale();
   return STR[loc][key] ?? STR.en[key];

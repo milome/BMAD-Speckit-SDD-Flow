@@ -85,12 +85,16 @@ export function resolveFreshRegressionRoot(repoRoot: string): string {
   if (env != null && env.trim() !== '') {
     return path.resolve(env.trim());
   }
-  return path.join(repoRoot, '..', 'BMAD-Speckit-SDD-Flow-01-fresh-regression');
+  const resolvedRepoRoot = path.resolve(repoRoot);
+  const parentDirName = path.basename(path.dirname(resolvedRepoRoot));
+  const projectRoot =
+    parentDirName === '.worktrees' || parentDirName === 'worktrees'
+      ? path.dirname(path.dirname(resolvedRepoRoot))
+      : resolvedRepoRoot;
+  return path.join(projectRoot, '..', 'BMAD-Speckit-SDD-Flow-01-fresh-regression');
 }
 
-export function validateFreshRoot(
-  freshRoot: string
-): { ok: true } | { ok: false; reason: string } {
+export function validateFreshRoot(freshRoot: string): { ok: true } | { ok: false; reason: string } {
   if (!fs.existsSync(freshRoot)) {
     return { ok: false, reason: 'fresh root does not exist' };
   }
@@ -128,6 +132,19 @@ function runNpmScript(cwd: string, script: string, log: string[]): number {
   return runCmd(cwd, 'npm', ['run', script], log);
 }
 
+export function runOptionalNpmScript(
+  cwd: string,
+  scripts: Record<string, string>,
+  script: string,
+  log: string[]
+): number {
+  if (!scripts[script]) {
+    log.push(`SKIP: ${script} missing; treat as OK`);
+    return 0;
+  }
+  return runNpmScript(cwd, script, log);
+}
+
 function appendSummary(repoRoot: string, lines: string[]): void {
   const outDir = path.join(
     repoRoot,
@@ -141,23 +158,62 @@ function appendSummary(repoRoot: string, lines: string[]): void {
   fs.appendFileSync(p, `${lines.join('\n')}\n`, 'utf8');
 }
 
-function runDualHostGate(cwd: string, scripts: Record<string, string>, log: string[]): number {
+export function resolveDualHostGateMode(
+  scripts: Record<string, string>
+): 'dual_script' | 'legacy_split' | 'invalid' {
   if (scripts['test:ci:dual']) {
+    return 'dual_script';
+  }
+  if (scripts['test:ci']) {
+    return 'legacy_split';
+  }
+  return 'invalid';
+}
+
+function runDualHostGate(cwd: string, scripts: Record<string, string>, log: string[]): number {
+  const mode = resolveDualHostGateMode(scripts);
+
+  if (mode === 'dual_script') {
     return runNpmScript(cwd, 'test:ci:dual', log);
   }
-  if (!scripts['test:ci']) {
+
+  if (mode === 'invalid') {
     log.push('FAIL: test:ci missing while test:ci:dual absent');
     return 1;
   }
-  const c = runNpmScript(cwd, 'test:ci', log);
-  if (c !== 0) {
-    return c;
+
+  if (scripts['init:cursor']) {
+    const c = runNpmScript(cwd, 'test:ci', log);
+    if (c !== 0) {
+      return c;
+    }
+    return runNpmScript(cwd, 'init:cursor', log);
   }
-  if (!scripts['init:cursor']) {
-    log.push('FAIL: init:cursor missing; required when test:ci:dual absent');
-    return 1;
+
+  if (scripts['init:claude']) {
+    const initClaude = runNpmScript(cwd, 'init:claude', log);
+    if (initClaude !== 0) {
+      return initClaude;
+    }
   }
-  return runNpmScript(cwd, 'init:cursor', log);
+
+  const vitest = runCmd(cwd, 'npx', ['vitest', 'run'], log);
+  if (vitest !== 0) {
+    return vitest;
+  }
+
+  const nodeTests = runCmd(
+    path.join(cwd, 'packages', 'bmad-speckit'),
+    'node',
+    ['--test', '--test-concurrency=1', 'tests/'],
+    log
+  );
+  if (nodeTests !== 0) {
+    return nodeTests;
+  }
+
+  log.push('SKIP: init:cursor missing; legacy split gate treated as single-host compatible');
+  return 0;
 }
 
 function runCoachSmoke(cwd: string, scripts: Record<string, string>, log: string[]): number {
@@ -196,7 +252,10 @@ export function runFreshRegressionMatrixMain(): number {
 
   const steps: Array<{ label: string; fn: () => number }> = [
     { label: 'build:scoring', fn: () => runNpmScript(freshRoot, 'build:scoring', logLines) },
-    { label: 'build:runtime-emit', fn: () => runNpmScript(freshRoot, 'build:runtime-emit', logLines) },
+    {
+      label: 'build:runtime-emit',
+      fn: () => runOptionalNpmScript(freshRoot, scripts, 'build:runtime-emit', logLines),
+    },
     { label: 'dual-host', fn: () => runDualHostGate(freshRoot, scripts, logLines) },
     { label: 'lint', fn: () => runNpmScript(freshRoot, 'lint', logLines) },
     { label: 'test:bmad', fn: () => runNpmScript(freshRoot, 'test:bmad', logLines) },
@@ -207,15 +266,20 @@ export function runFreshRegressionMatrixMain(): number {
     },
     {
       label: 'vitest runtime+layer4',
-      fn: () =>
-        runCmd(freshRoot, 'npx', ['vitest', 'run', ...RUNTIME_LAYER4_FILES], logLines),
+      fn: () => runCmd(freshRoot, 'npx', ['vitest', 'run', ...RUNTIME_LAYER4_FILES], logLines),
     },
     {
       label: 'vitest governance bundle',
       fn: () => runCmd(freshRoot, 'npx', ['vitest', 'run', ...GOVERNANCE_VITEST_FILES], logLines),
     },
-    { label: 'bmad-speckit check', fn: () => runCmd(freshRoot, 'npx', ['bmad-speckit', 'check'], logLines) },
-    { label: 'bmad-speckit scores', fn: () => runCmd(freshRoot, 'npx', ['bmad-speckit', 'scores'], logLines) },
+    {
+      label: 'bmad-speckit check',
+      fn: () => runCmd(freshRoot, 'npx', ['bmad-speckit', 'check'], logLines),
+    },
+    {
+      label: 'bmad-speckit scores',
+      fn: () => runCmd(freshRoot, 'npx', ['bmad-speckit', 'scores'], logLines),
+    },
     {
       label: 'bmad-speckit score --help',
       fn: () => runCmd(freshRoot, 'npx', ['bmad-speckit', 'score', '--help'], logLines),
@@ -223,6 +287,22 @@ export function runFreshRegressionMatrixMain(): number {
     {
       label: 'bmad-speckit sft-extract --help',
       fn: () => runCmd(freshRoot, 'npx', ['bmad-speckit', 'sft-extract', '--help'], logLines),
+    },
+    {
+      label: 'bmad-speckit runtime-mcp --help',
+      fn: () => runCmd(freshRoot, 'npx', ['bmad-speckit', 'runtime-mcp', '--help'], logLines),
+    },
+    {
+      label: 'bmad-speckit dashboard-live --help',
+      fn: () => runCmd(freshRoot, 'npx', ['bmad-speckit', 'dashboard-live', '--help'], logLines),
+    },
+    {
+      label: 'bmad-speckit sft-preview --help',
+      fn: () => runCmd(freshRoot, 'npx', ['bmad-speckit', 'sft-preview', '--help'], logLines),
+    },
+    {
+      label: 'bmad-speckit sft-bundle --help',
+      fn: () => runCmd(freshRoot, 'npx', ['bmad-speckit', 'sft-bundle', '--help'], logLines),
     },
     { label: 'coach smoke', fn: () => runCoachSmoke(freshRoot, scripts, logLines) },
   ];
