@@ -73,6 +73,12 @@ dxdiag_output.txt
 temp_commit_message.txt
 *.backup-*.md
 
+# Local screenshots / ad-hoc outputs
+dashboard-*.png
+outputs/
+test-results/
+tests/typecheck/
+
 # Documentation archives
 docs/BMAD/
 docs/design/
