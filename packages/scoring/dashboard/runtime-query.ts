@@ -5,6 +5,7 @@ import {
   assessSampleForTarget,
   buildDatasetRedactionPreview,
   buildDatasetRedactionSummary,
+  type DatasetRedactionPreviewItem,
   type DatasetExportTarget,
 } from '../analytics/validation-report';
 import type { CanonicalSftSample, DatasetBundleManifest } from '../analytics/types';
@@ -136,12 +137,10 @@ export interface DashboardSftSummary {
   }>;
   redaction_preview: Array<{
     sample_id: string;
-    run_id: string;
-    split: string;
     status: 'clean' | 'redacted' | 'blocked';
     applied_rules: string[];
     finding_kinds: string[];
-    rejection_reasons: string[];
+    rejection_reasons?: string[];
   }>;
   last_bundle: {
     bundle_id: string;
@@ -150,6 +149,12 @@ export interface DashboardSftSummary {
     bundle_dir: string;
     manifest_path: string;
   } | null;
+}
+
+function normalizeRedactionPreviewStatus(
+  status: DatasetRedactionPreviewItem['status']
+): 'clean' | 'redacted' | 'blocked' {
+  return status;
 }
 
 export interface RuntimeDashboardSnapshot {
@@ -516,7 +521,13 @@ function buildSftSummary(
   summary.redaction_status_counts = redactionSummary.status_counts;
   summary.redaction_applied_rules = redactionSummary.applied_rules;
   summary.redaction_finding_kinds = redactionSummary.finding_kinds;
-  summary.redaction_preview = buildDatasetRedactionPreview(samples);
+  summary.redaction_preview = buildDatasetRedactionPreview(samples).map((item) => ({
+    sample_id: item.sample_id,
+    status: normalizeRedactionPreviewStatus(item.status),
+    applied_rules: item.applied_rules,
+    finding_kinds: item.finding_kinds,
+    ...(item.rejection_reasons ? { rejection_reasons: item.rejection_reasons } : {}),
+  }));
 
   for (const sample of samples) {
     if (sample.quality.acceptance_decision === 'accepted') summary.accepted += 1;

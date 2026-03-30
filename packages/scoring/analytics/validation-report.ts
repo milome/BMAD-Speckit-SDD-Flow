@@ -58,6 +58,20 @@ export interface ValidationAccumulator<Row> {
   rejectedSamples: RejectedSampleReport[];
 }
 
+export interface DatasetRedactionSummary {
+  status_counts: Record<'clean' | 'redacted' | 'blocked', number>;
+  applied_rules: Array<{ rule: string; count: number }>;
+  finding_kinds: Array<{ kind: string; count: number }>;
+}
+
+export interface DatasetRedactionPreviewItem {
+  sample_id: string;
+  status: CanonicalSftSample['redaction']['status'];
+  finding_kinds: string[];
+  applied_rules: string[];
+  rejection_reasons?: string[];
+}
+
 export function createEmptyRowsBySplit<Row>(): ExportRowsBySplit<Row> {
   return {
     train: [],
@@ -197,6 +211,53 @@ export function finalizeValidationReport<Row>(
     exported_sample_ids: accumulator.exportedSamples.map((sample) => sample.sample_id),
     rejected_samples: accumulator.rejectedSamples,
   };
+}
+
+export function buildDatasetRedactionSummary(
+  samples: CanonicalSftSample[]
+): DatasetRedactionSummary {
+  const status_counts = {
+    clean: 0,
+    redacted: 0,
+    blocked: 0,
+  };
+  const applied_rules = new Map<string, number>();
+  const finding_kinds = new Map<string, number>();
+
+  for (const sample of samples) {
+    const normalizedStatus = sample.redaction.status;
+    status_counts[normalizedStatus] += 1;
+    for (const rule of sample.redaction.applied_rules) {
+      applied_rules.set(rule, (applied_rules.get(rule) ?? 0) + 1);
+    }
+    for (const finding of sample.redaction.findings) {
+      finding_kinds.set(finding.kind, (finding_kinds.get(finding.kind) ?? 0) + 1);
+    }
+  }
+
+  return {
+    status_counts,
+    applied_rules: [...applied_rules.entries()]
+      .map(([rule, count]) => ({ rule, count }))
+      .sort((left, right) => left.rule.localeCompare(right.rule)),
+    finding_kinds: [...finding_kinds.entries()]
+      .map(([kind, count]) => ({ kind, count }))
+      .sort((left, right) => left.kind.localeCompare(right.kind)),
+  };
+}
+
+export function buildDatasetRedactionPreview(
+  samples: CanonicalSftSample[]
+): DatasetRedactionPreviewItem[] {
+  return samples.map((sample) => ({
+    sample_id: sample.sample_id,
+    status: sample.redaction.status,
+    finding_kinds: [...new Set(sample.redaction.findings.map((finding) => finding.kind))].sort(),
+    applied_rules: [...new Set(sample.redaction.applied_rules)].sort(),
+    ...(sample.quality.rejection_reasons.length > 0
+      ? { rejection_reasons: [...new Set(sample.quality.rejection_reasons)].sort() }
+      : {}),
+  }));
 }
 
 export function renderValidationReportMarkdown(report: DatasetValidationReport): string {
