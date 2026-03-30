@@ -94,45 +94,15 @@ function normalizeRuntimeOptions(defaults, payload) {
 }
 
 async function getSftPreviewLocal(options) {
-  return {
-    accepted: 0,
-    rejected: 0,
-    downgraded: 0,
-    targets: [options.target],
-  };
+  throw new Error('local SFT preview is unavailable until scoring analytics build is present');
 }
 
 async function validateSftDatasetLocal(options) {
-  return {
-    schema_valid: true,
-    accepted: 0,
-    rejected: 0,
-    downgraded: 0,
-    export_target: options.target,
-    invalid_samples: [],
-    rejected_samples: [],
-    rejection_report_path: null,
-  };
+  throw new Error('local SFT validation is unavailable until scoring analytics build is present');
 }
 
 async function writeSftBundleLocal(options) {
-  const bundleDir = path.join(options.bundleDir, `${options.target}-bundle`);
-  const manifestPath = path.join(bundleDir, 'manifest.json');
-  const validationReportPath = path.join(bundleDir, 'validation-report.json');
-  const rejectionReportPath = path.join(bundleDir, 'rejection-report.json');
-
-  return {
-    bundle_dir: toUserPath(bundleDir, options.cwd),
-    manifest_path: toUserPath(manifestPath, options.cwd),
-    validation_report_path: toUserPath(validationReportPath, options.cwd),
-    rejection_report_path: toUserPath(rejectionReportPath, options.cwd),
-    counts: {
-      total: 0,
-      accepted: 0,
-      rejected: 0,
-      downgraded: 0,
-    },
-  };
+  throw new Error('local SFT bundle export is unavailable until scoring analytics build is present');
 }
 
 function createLocalRuntimeCore(defaults = {}) {

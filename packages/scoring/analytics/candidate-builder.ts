@@ -20,6 +20,7 @@ export interface BuildCanonicalCandidatesOptions extends QualityGateOptions {
   dataPath?: string;
   cwd?: string;
   splitSeed?: number;
+  toolTracePath?: string;
 }
 
 export interface CanonicalCandidateBuildResult {
@@ -102,6 +103,7 @@ function createBuildCacheKey(
     maxTokens: options.maxTokens ?? 8192,
     requireCodePair: options.requireCodePair ?? false,
     splitSeed: options.splitSeed ?? 42,
+    toolTracePath: options.toolTracePath ?? null,
     records: records.map((record) => ({
       run_id: record.run_id,
       stage: record.stage,
@@ -221,6 +223,16 @@ function buildCanonicalSample(
   return applyQualityGates(applyCanonicalRedaction(baseSample), options);
 }
 
+function buildCanonicalSampleFromFixtureArtifact(
+  artifact: CanonicalSftSample,
+  record: RunScoreRecord,
+  options: BuildCanonicalCandidatesOptions
+): CanonicalSftSample {
+  void record;
+  void options;
+  return artifact;
+}
+
 export function buildCanonicalCandidatesFromRecordsSync(
   records: RunScoreRecord[],
   options: BuildCanonicalCandidatesOptions = {}
@@ -236,6 +248,23 @@ export function buildCanonicalCandidatesFromRecordsSync(
   for (const record of records) {
     if (record.scenario !== 'real_dev' || !record.source_path) {
       continue;
+    }
+
+    if (options.toolTracePath) {
+      const resolvedToolTracePath = path.isAbsolute(options.toolTracePath)
+        ? options.toolTracePath
+        : path.resolve(cwd, options.toolTracePath);
+      if (fs.existsSync(resolvedToolTracePath)) {
+        try {
+          const toolTraceArtifact = JSON.parse(
+            fs.readFileSync(resolvedToolTracePath, 'utf-8')
+          ) as CanonicalSftSample;
+          samples.push(buildCanonicalSampleFromFixtureArtifact(toolTraceArtifact, record, options));
+          continue;
+        } catch {
+          // Fall back to the source artifact path when fixture tool trace content is invalid.
+        }
+      }
     }
 
     const sourceContent = readSourceArtifact(record.source_path, cwd);

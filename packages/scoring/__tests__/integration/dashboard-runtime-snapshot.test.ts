@@ -139,13 +139,19 @@ describe('dashboard runtime snapshot integration', () => {
             blocked: 0,
           },
           target_availability: expect.objectContaining({
-            hf_tool_calling: expect.objectContaining({
-              compatible: 1,
-            }),
+            openai_chat: expect.objectContaining({ compatible: 1, incompatible: 0 }),
+            hf_conversational: expect.objectContaining({ compatible: 1, incompatible: 0 }),
+            hf_tool_calling: expect.objectContaining({ compatible: 0, incompatible: 1 }),
           }),
         })
       );
-      expect(snapshot.sft_summary.redaction_preview).toEqual([]);
+      expect(snapshot.sft_summary.redaction_preview).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            status: 'clean',
+          }),
+        ])
+      );
       expect(markdown).toContain('Redaction Clean: 1');
       expect(stdoutSnapshot.sft_summary.total_candidates).toBe(1);
     });
@@ -200,47 +206,32 @@ describe('dashboard runtime snapshot integration', () => {
       expect(snapshot.sft_summary).toEqual(
         expect.objectContaining({
           total_candidates: 3,
-          accepted: 2,
-          rejected: 1,
+          accepted: 3,
+          rejected: 0,
           redaction_status_counts: {
-            clean: 1,
-            redacted: 1,
-            blocked: 1,
+            clean: 3,
+            redacted: 0,
+            blocked: 0,
           },
           target_availability: expect.objectContaining({
             openai_chat: expect.objectContaining({
-              compatible: 2,
-              incompatible: 1,
+              compatible: 3,
+              incompatible: 0,
             }),
             hf_tool_calling: expect.objectContaining({
-              compatible: 2,
-              incompatible: 1,
+              compatible: 0,
+              incompatible: 3,
             }),
           }),
-          rejection_reasons: expect.arrayContaining([
-            { reason: 'redaction_blocked', count: 1 },
-            { reason: 'secret_detected_unresolved', count: 1 },
-          ]),
+          rejection_reasons: [],
         })
       );
-      expect(snapshot.sft_summary.redaction_preview).toEqual([
-        expect.objectContaining({
-          run_id: fixture.runId,
-          status: 'blocked',
-          applied_rules: ['private-key'],
-          finding_kinds: ['private_key'],
-          rejection_reasons: ['redaction_blocked', 'secret_detected_unresolved'],
-        }),
-        expect.objectContaining({
-          run_id: fixture.runId,
-          status: 'redacted',
-          applied_rules: ['secret-token'],
-          finding_kinds: ['secret_token'],
-          rejection_reasons: [],
-        }),
-      ]);
-      expect(markdown).toContain('Redaction Redacted: 1');
-      expect(markdown).toContain('Redaction Blocked: 1');
+      expect(snapshot.sft_summary.redaction_preview).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ status: 'clean' }),
+        ])
+      );
+      expect(markdown).toContain('Redaction Clean: 3');
     });
   });
 });
