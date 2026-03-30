@@ -1,6 +1,15 @@
 import { computeStringHash } from '../utils/hash';
 import type { CanonicalMessage, CanonicalTool } from './types';
-import { extractAuditReportSections } from './audit-report-parser';
+import {
+  extractGapsAssistantTargets,
+  extractImplementAssistantTargets,
+  extractAuditReportSections,
+  extractPlanAssistantTargets,
+  extractSpecCoverageAssistantTargets,
+  extractSpecAssistantTargets,
+  extractStoryAssistantTargets,
+  extractTasksAssistantTargets,
+} from './audit-report-parser';
 
 export const HARD_REJECTION_REASONS = [
   'prov_missing_hash',
@@ -75,6 +84,39 @@ export function extractInstruction(sourceContent: string): string | null {
     .filter(Boolean)
     .join('\n\n')
     .trim();
+  return fallback.length > 0 ? fallback : null;
+}
+
+export function extractAssistantTarget(sourceContent: string): string | null {
+  const sections = extractBugfixSections(sourceContent);
+  if (sections?.s4) {
+    return sections.s4;
+  }
+
+  const auditSections = extractAuditReportSections(sourceContent);
+  const stageAware = /AUDIT_implement|AUDIT Implement|实施后审计|Stage 4|执行阶段审计报告/i.test(sourceContent)
+    ? extractImplementAssistantTargets(sourceContent)
+    : sourceContent.includes('# Tasks ') || sourceContent.includes('## Tasks / Subtasks') || /-\s*\[(?: |x)\]\s+\*\*T\d+/m.test(sourceContent) || /^##\s+Phase\s+\d+/m.test(sourceContent)
+    ? extractTasksAssistantTargets(sourceContent)
+    : sourceContent.includes('AUDIT_GAPS') || sourceContent.includes('IMPLEMENTATION_GAPS 审计报告')
+      ? extractGapsAssistantTargets(sourceContent)
+    : sourceContent.includes('_vs_Story') || sourceContent.includes('覆盖性审计报告') || sourceContent.includes('覆盖度审计报告')
+      ? extractSpecCoverageAssistantTargets(sourceContent)
+    : sourceContent.includes('AUDIT_spec') || sourceContent.includes('Spec (Round') || sourceContent.includes('spec-E')
+      ? extractSpecAssistantTargets(sourceContent)
+    : sourceContent.includes('AUDIT_plan') || sourceContent.includes('plan-E')
+      ? extractPlanAssistantTargets(sourceContent)
+      : sourceContent.includes('AUDIT_tasks') || sourceContent.includes('tasks-E')
+        ? extractTasksAssistantTargets(sourceContent)
+        : sourceContent.includes('AUDIT_Story') || sourceContent.includes('Story ') || sourceContent.includes('story-')
+          ? extractStoryAssistantTargets(sourceContent)
+          : [...auditSections.requiredFixes, ...auditSections.suggestions, auditSections.criticConclusion, auditSections.gaps.join('\n')];
+
+  const fallback = stageAware
+    .filter(Boolean)
+    .join('\n\n')
+    .trim();
+
   return fallback.length > 0 ? fallback : null;
 }
 

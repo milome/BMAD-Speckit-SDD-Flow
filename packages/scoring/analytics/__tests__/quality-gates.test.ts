@@ -25,6 +25,7 @@ function makeSample(): CanonicalSftSample {
     ],
     metadata: {
       schema_targets: ['openai_chat', 'hf_conversational'],
+      sample_kind: 'implementation',
     },
     quality: {
       acceptance_decision: 'accepted',
@@ -32,7 +33,7 @@ function makeSample(): CanonicalSftSample {
       raw_phase_score: 95,
       veto_triggered: false,
       iteration_count: 5,
-      has_code_pair: false,
+      has_code_pair: true,
       token_estimate: 200,
       dedupe_cluster_id: null,
       safety_flags: [],
@@ -70,15 +71,54 @@ function makeSample(): CanonicalSftSample {
 
 describe('quality gates', () => {
   it('downgrades samples with missing code pair and too many iterations', () => {
-    const sample = applyQualityGates(makeSample(), {
+    const base = makeSample();
+    const sample = applyQualityGates({
+      ...base,
+      quality: {
+        ...base.quality,
+        has_code_pair: false,
+        token_estimate: 200,
+      },
+    }, {
       minScore: 90,
       maxIterations: 3,
+      maxTokens: 8192,
     });
 
-    expect(sample.quality.acceptance_decision).toBe('downgraded');
+    expect(sample.quality.rejection_reasons).toEqual(['missing_code_pair', 'too_many_iterations']);
+
+    expect(sample.quality.acceptance_decision).toBe('rejected');
     expect(sample.quality.rejection_reasons).toEqual(
       expect.arrayContaining(['missing_code_pair', 'too_many_iterations'])
     );
+  });
+
+  it('allows documentation samples to omit code pairs without missing_code_pair rejection', () => {
+    const base = makeSample();
+    const sample = applyQualityGates({
+      ...base,
+      metadata: {
+        ...base.metadata,
+        sample_kind: 'documentation',
+      },
+      quality: {
+        ...base.quality,
+        has_code_pair: false,
+        iteration_count: 0,
+        token_estimate: 200,
+        warnings: [],
+        rejection_reasons: [],
+      },
+    }, {
+      minScore: 90,
+      maxIterations: 3,
+      maxTokens: 8192,
+    });
+
+    expect(sample.quality.rejection_reasons).toEqual([]);
+
+    expect(sample.quality.acceptance_decision).toBe('accepted');
+    expect(sample.quality.rejection_reasons).not.toContain('missing_code_pair');
   });
 
   it('rejects blocked redaction findings', () => {

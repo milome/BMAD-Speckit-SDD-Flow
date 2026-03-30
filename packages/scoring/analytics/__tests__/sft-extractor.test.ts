@@ -208,7 +208,7 @@ describe('sft-extractor', () => {
     expect(entries.length).toBe(1);
     expect(entries[0].has_code_pair).toBe(false);
     expect(entries[0].input).toBe('');
-    expect(entries[0].output).toBe('');
+    expect(entries[0].output).toBe('y');
     expect(entries[0].instruction).toContain('x');
     expect(entries[0].instruction).toContain('y');
   });

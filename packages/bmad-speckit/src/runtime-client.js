@@ -1,6 +1,35 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
+function requireScoringAnalyticsModule(modulePath) {
+  try {
+    return require(modulePath);
+  } catch {
+    return null;
+  }
+}
+
+function loadScoringAnalyticsRuntime() {
+  const candidates = [
+    path.resolve(process.cwd(), 'packages', 'scoring', 'dist', 'analytics'),
+    path.resolve(__dirname, '..', '..', '..', 'scoring', 'dist', 'analytics'),
+  ];
+
+  for (const candidate of candidates) {
+    const indexPath = path.join(candidate, 'index.js');
+    if (!fs.existsSync(indexPath)) {
+      continue;
+    }
+
+    const loaded = requireScoringAnalyticsModule(indexPath);
+    if (loaded) {
+      return loaded;
+    }
+  }
+
+  return null;
+}
+
 function getScoringDataPath() {
   const primary = path.resolve(process.cwd(), 'packages', 'scoring', 'data');
   if (fs.existsSync(primary)) {
@@ -94,15 +123,108 @@ function normalizeRuntimeOptions(defaults, payload) {
 }
 
 async function getSftPreviewLocal(options) {
-  throw new Error('local SFT preview is unavailable until scoring analytics build is present');
+  const analytics = loadScoringAnalyticsRuntime();
+  if (!analytics || typeof analytics.buildCanonicalCandidates !== 'function') {
+    throw new Error('local SFT preview is unavailable until scoring analytics build is present');
+  }
+
+  const { samples } = await analytics.buildCanonicalCandidates({
+    dataPath: options.dataPath,
+    cwd: options.cwd,
+    minScore: options.minScore,
+    maxTokens: options.maxTokens,
+    splitSeed: options.splitSeed,
+    requireCodePair: options.dropNoCodePair,
+  });
+
+  return {
+    target: options.target,
+    total_candidates: samples.length,
+    accepted: samples.filter((sample) => sample.quality.acceptance_decision === 'accepted').length,
+    rejected: samples.filter((sample) => sample.quality.acceptance_decision === 'rejected').length,
+    downgraded: samples.filter((sample) => sample.quality.acceptance_decision === 'downgraded').length,
+    split_counts: samples.reduce(
+      (acc, sample) => {
+        acc[sample.split.assignment] += 1;
+        return acc;
+      },
+      { train: 0, validation: 0, test: 0, holdout: 0 }
+    ),
+    samples,
+  };
 }
 
 async function validateSftDatasetLocal(options) {
-  throw new Error('local SFT validation is unavailable until scoring analytics build is present');
+  const analytics = loadScoringAnalyticsRuntime();
+  if (!analytics || typeof analytics.buildCanonicalCandidates !== 'function') {
+    throw new Error('local SFT validation is unavailable until scoring analytics build is present');
+  }
+
+  const { samples } = await analytics.buildCanonicalCandidates({
+    dataPath: options.dataPath,
+    cwd: options.cwd,
+    minScore: options.minScore,
+    maxTokens: options.maxTokens,
+    splitSeed: options.splitSeed,
+    requireCodePair: options.dropNoCodePair,
+  });
+
+  const invalidSamples = samples.filter((sample) => !sample.sample_id || sample.messages.length === 0);
+  const rejectedSamples = samples
+    .filter((sample) => sample.quality.acceptance_decision === 'rejected')
+    .map((sample) => ({
+      sample_id: sample.sample_id,
+      run_id: sample.source.run_id,
+      split: sample.split.assignment,
+      reasons: sample.quality.rejection_reasons,
+      warnings: sample.quality.warnings,
+      acceptance_decision: sample.quality.acceptance_decision,
+    }));
+
+  return {
+    target: options.target,
+    schema_valid: invalidSamples.length === 0,
+    total_samples: samples.length,
+    invalid_samples: invalidSamples.map((sample) => sample.sample_id),
+    rejected_samples: rejectedSamples,
+  };
 }
 
 async function writeSftBundleLocal(options) {
-  throw new Error('local SFT bundle export is unavailable until scoring analytics build is present');
+  const analytics = loadScoringAnalyticsRuntime();
+  if (
+    !analytics ||
+    typeof analytics.buildCanonicalCandidates !== 'function' ||
+    typeof analytics.writeDatasetBundle !== 'function'
+  ) {
+    throw new Error('local SFT bundle export is unavailable until scoring analytics build is present');
+  }
+
+  const { samples } = await analytics.buildCanonicalCandidates({
+    dataPath: options.dataPath,
+    cwd: options.cwd,
+    minScore: options.minScore,
+    maxTokens: options.maxTokens,
+    splitSeed: options.splitSeed,
+    requireCodePair: options.dropNoCodePair,
+  });
+
+  const result = await analytics.writeDatasetBundle(samples, {
+    exportTarget: options.target,
+    outputRoot: options.bundleDir,
+    exporterVersion: 'local-runtime-v1',
+    filterSettings: {
+      min_score: options.minScore,
+    },
+  });
+
+  return {
+    bundle_dir: toUserPath(result.bundleDir, options.cwd),
+    manifest_path: toUserPath(path.join(result.bundleDir, 'manifest.json'), options.cwd),
+    bundle_id: result.manifest.bundle_id,
+    export_target: result.manifest.export_target,
+    counts: result.manifest.counts,
+  };
 }
 
 function createLocalRuntimeCore(defaults = {}) {

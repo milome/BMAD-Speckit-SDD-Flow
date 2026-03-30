@@ -7,6 +7,7 @@ import { computeStringHash, getGitHeadHashFull } from '../utils/hash';
 import { readPatchSnapshot } from '../utils/patch-snapshot';
 import type { RunScoreRecord } from '../writer/types';
 import {
+  extractAssistantTarget,
   buildCanonicalMessages,
   buildCanonicalSampleId,
   estimateCanonicalTokenCount,
@@ -47,6 +48,13 @@ interface SampleCodePair {
   output: string;
   patchRef: string | null;
   chunkKey: string | null;
+}
+
+function inferSampleKind(record: RunScoreRecord, codePairs: SampleCodePair[]): 'implementation' | 'documentation' {
+  if (record.stage === 'implement' && codePairs.some((pair) => pair.input.trim() || pair.output.trim())) {
+    return 'implementation';
+  }
+  return 'documentation';
 }
 
 const sourceArtifactCache = new Map<string, string | null>();
@@ -301,10 +309,12 @@ function formatPatchCodePair(
 
 function buildMessagesWithToolTrace(
   instruction: string,
+  assistantTarget: string,
   codePair: SampleCodePair,
   toolTrace: LoadedToolTrace | null
 ): CanonicalMessage[] {
-  const baseMessages = buildCanonicalMessages(instruction, codePair.input, codePair.output);
+  const assistantContent = codePair.output.trim() || assistantTarget.trim();
+  const baseMessages = buildCanonicalMessages(instruction, codePair.input, assistantContent);
   if (!toolTrace) {
     return baseMessages;
   }
@@ -319,11 +329,12 @@ function buildMessagesWithToolTrace(
 
 function estimateCodePairTokens(
   instruction: string,
+  assistantTarget: string,
   codePair: SampleCodePair,
   toolTrace: LoadedToolTrace | null
 ): number {
   return estimateCanonicalTokenCount(
-    buildMessagesWithToolTrace(instruction, codePair, toolTrace),
+    buildMessagesWithToolTrace(instruction, assistantTarget, codePair, toolTrace),
     toolTrace?.tools
   );
 }
@@ -332,6 +343,7 @@ function splitLongChangeToBudget(
   unit: PatchChangeUnit,
   change: PatchChange,
   instruction: string,
+  assistantTarget: string,
   maxTokens: number,
   patchRef: string | null,
   chunkKeyPrefix: string,
@@ -355,7 +367,7 @@ function splitLongChangeToBudget(
         `${chunkKeyPrefix}:fragment-${fragmentIndex}`
       );
 
-      if (estimateCodePairTokens(instruction, candidate, toolTrace) <= maxTokens) {
+      if (estimateCodePairTokens(instruction, assistantTarget, candidate, toolTrace) <= maxTokens) {
         best = mid;
         low = mid + 1;
       } else {
@@ -382,12 +394,13 @@ function splitLongChangeToBudget(
 function splitPatchUnitToBudget(
   unit: PatchChangeUnit,
   instruction: string,
+  assistantTarget: string,
   maxTokens: number,
   patchRef: string | null,
   toolTrace: LoadedToolTrace | null
 ): SampleCodePair[] {
   const wholeUnit = formatPatchCodePair(unit, unit.changes, patchRef, `${unit.unitKey}:whole`);
-  if (estimateCodePairTokens(instruction, wholeUnit, toolTrace) <= maxTokens) {
+  if (estimateCodePairTokens(instruction, assistantTarget, wholeUnit, toolTrace) <= maxTokens) {
     return [wholeUnit];
   }
 
@@ -407,7 +420,7 @@ function splitPatchUnitToBudget(
         patchRef,
         `${unit.unitKey}:slice-${sliceIndex}`
       );
-      if (estimateCodePairTokens(instruction, candidate, toolTrace) <= maxTokens) {
+      if (estimateCodePairTokens(instruction, assistantTarget, candidate, toolTrace) <= maxTokens) {
         bestEnd = end;
         bestPair = candidate;
         end += 1;
@@ -429,6 +442,7 @@ function splitPatchUnitToBudget(
         unit,
         currentChange,
         instruction,
+        assistantTarget,
         maxTokens,
         patchRef,
         `${unit.unitKey}:slice-${sliceIndex}`,
@@ -445,6 +459,7 @@ function splitPatchUnitToBudget(
 function combineCodePairsToBudget(
   codePairs: SampleCodePair[],
   instruction: string,
+  assistantTarget: string,
   maxTokens: number,
   toolTrace: LoadedToolTrace | null
 ): SampleCodePair[] {
@@ -464,7 +479,7 @@ function combineCodePairsToBudget(
       chunkKey: [current.chunkKey, next.chunkKey].filter(Boolean).join('|') || null,
     };
 
-    if (estimateCodePairTokens(instruction, candidate, toolTrace) <= maxTokens) {
+    if (estimateCodePairTokens(instruction, assistantTarget, candidate, toolTrace) <= maxTokens) {
       current = candidate;
       continue;
     }
@@ -480,6 +495,7 @@ function combineCodePairsToBudget(
 function buildCodePairsFromPatchContent(
   patchContent: string,
   instruction: string,
+  assistantTarget: string,
   maxTokens: number,
   patchRef: string | null,
   toolTrace: LoadedToolTrace | null
@@ -498,15 +514,16 @@ function buildCodePairsFromPatchContent(
   }
 
   const boundedPairs = patchUnits.flatMap((unit) =>
-    splitPatchUnitToBudget(unit, instruction, maxTokens, patchRef, toolTrace)
+    splitPatchUnitToBudget(unit, instruction, assistantTarget, maxTokens, patchRef, toolTrace)
   );
 
-  return combineCodePairsToBudget(boundedPairs, instruction, maxTokens, toolTrace);
+  return combineCodePairsToBudget(boundedPairs, instruction, assistantTarget, maxTokens, toolTrace);
 }
 
 function resolveCodePairsForRecord(
   record: RunScoreRecord,
   instruction: string,
+  assistantTarget: string,
   cwd: string,
   maxTokens: number,
   toolTrace: LoadedToolTrace | null
@@ -516,6 +533,7 @@ function resolveCodePairsForRecord(
     return buildCodePairsFromPatchContent(
       patchSnapshot.patchContent,
       instruction,
+      assistantTarget,
       maxTokens,
       patchSnapshot.patchRef,
       toolTrace
@@ -524,7 +542,7 @@ function resolveCodePairsForRecord(
 
   const runtimeDiff = loadRuntimeDiff(record.base_commit_hash, cwd);
   if (runtimeDiff != null) {
-    return buildCodePairsFromPatchContent(runtimeDiff, instruction, maxTokens, null, toolTrace);
+    return buildCodePairsFromPatchContent(runtimeDiff, instruction, assistantTarget, maxTokens, null, toolTrace);
   }
 
   return [
@@ -551,11 +569,13 @@ function buildCanonicalSample(
   record: RunScoreRecord,
   sourceContent: string,
   instruction: string,
+  assistantTarget: string,
+  sampleKind: 'implementation' | 'documentation',
   codePair: SampleCodePair,
   toolTrace: LoadedToolTrace | null,
   options: BuildCanonicalCandidatesOptions
 ): CanonicalSftSample {
-  const messages = buildMessagesWithToolTrace(instruction, codePair, toolTrace);
+  const messages = buildMessagesWithToolTrace(instruction, assistantTarget, codePair, toolTrace);
   const parsedStory = parseEpicStoryFromRecord(record);
   const split = assignDeterministicSplit({
     seed: options.splitSeed ?? 42,
@@ -596,7 +616,7 @@ function buildCanonicalSample(
       input: codePair.input,
       chunkKey: codePair.chunkKey,
       traceRef: toolTrace?.traceRef ?? null,
-      output: codePair.output,
+      output: codePair.output || assistantTarget,
     }),
     sample_version: 'v1',
     source: {
@@ -614,6 +634,7 @@ function buildCanonicalSample(
     ...(toolTrace ? { tools: toolTrace.tools } : {}),
     metadata: {
       schema_targets: toolTrace ? ['openai_chat', 'hf_tool_calling'] : ['openai_chat', 'hf_conversational'],
+      sample_kind: sampleKind,
       language: 'zh-CN',
       notes: [
         codePair.input || codePair.output ? 'legacy_flat_compat' : 'legacy_instruction_only',
@@ -719,11 +740,24 @@ export function buildCanonicalCandidatesFromRecordsSync(
     }
 
     const instruction = extractInstruction(sourceContent) ?? '';
+    const assistantTarget = extractAssistantTarget(sourceContent) ?? '';
     const toolTrace = loadToolTrace(record, cwd);
-    const codePairs = resolveCodePairsForRecord(record, instruction, cwd, maxTokens, toolTrace);
+    const codePairs = resolveCodePairsForRecord(record, instruction, assistantTarget, cwd, maxTokens, toolTrace);
+    const sampleKind = inferSampleKind(record, codePairs);
 
     for (const codePair of codePairs) {
-      samples.push(buildCanonicalSample(record, sourceContent, instruction, codePair, toolTrace, options));
+      samples.push(
+        buildCanonicalSample(
+          record,
+          sourceContent,
+          instruction,
+          assistantTarget,
+          sampleKind,
+          codePair,
+          toolTrace,
+          options
+        )
+      );
     }
   }
 

@@ -52,6 +52,7 @@ export interface CanonicalTool {
 
 export interface CanonicalMetadata {
   schema_targets: Array<'openai_chat' | 'hf_conversational' | 'hf_tool_calling'>;
+  sample_kind?: 'implementation' | 'documentation';
   host?: string;
   language?: string;
   tags?: string[];

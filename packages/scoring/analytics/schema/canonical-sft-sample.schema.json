@@ -157,6 +157,10 @@
             "enum": ["openai_chat", "hf_conversational", "hf_tool_calling"]
           }
         },
+        "sample_kind": {
+          "type": "string",
+          "enum": ["implementation", "documentation"]
+        },
         "host": { "type": "string" },
         "language": { "type": "string" },
         "tags": { "type": "array", "items": { "type": "string" } },

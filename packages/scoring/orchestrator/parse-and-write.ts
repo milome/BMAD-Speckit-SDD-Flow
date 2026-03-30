@@ -20,6 +20,7 @@ import type { WriteMode } from '../writer';
 import { applyTierAndVeto } from '../veto';
 import { resolveRulesDir } from '../constants/path';
 import { computeContentHash, computeStringHash, getGitHeadHash } from '../utils/hash';
+import { persistPatchSnapshot } from '../utils/patch-snapshot';
 import type { CheckItem, DimensionScore, IterationRecord, JourneyContractSignals } from '../writer/types';
 import { appendRuntimeEvent } from '../runtime';
 
@@ -284,6 +285,14 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
   }
 
   const journeyContractSignals = deriveJourneyContractSignals(baseRecord.check_items);
+  const resolvedDataPath = resolveScoreDataPath(dataPath);
+  const patchSnapshot = persistPatchSnapshot({
+    cwd: process.cwd(),
+    dataPath: resolvedDataPath,
+    runId,
+    stage,
+    baseCommitHash,
+  });
 
   const recordToWrite = {
     ...baseRecord,
@@ -296,6 +305,7 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     ...(baseCommitHash != null ? { base_commit_hash: baseCommitHash } : {}),
     ...(contentHash != null ? { content_hash: contentHash } : {}),
     ...(sourceHash != null ? { source_hash: sourceHash } : {}),
+    ...(patchSnapshot ?? {}),
     ...(computeSourcePath(stage, options.artifactDocPath, reportPath)),
     ...(options.triggerStage != null ? { trigger_stage: options.triggerStage } : {}),
   };
@@ -325,7 +335,6 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
 
   writeScoreRecordSync(recordToWrite, writeMode, dataPath != null ? { dataPath } : undefined);
 
-  const resolvedDataPath = resolveScoreDataPath(dataPath);
   const scoreRecordPath =
     writeMode === 'jsonl'
       ? path.join(resolvedDataPath, 'scores.jsonl')

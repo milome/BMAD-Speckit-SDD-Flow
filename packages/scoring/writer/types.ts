@@ -74,6 +74,10 @@ export interface RunScoreRecord {
   content_hash?: string;
   /** 被审计的源文件的 SHA-256 指纹，用于跨阶段版本锁定校验 */
   source_hash?: string;
+  /** 稳定 patch snapshot 的内容哈希，供 canonical SFT provenance 复用 */
+  patch_ref?: string;
+  /** 稳定 patch snapshot 的落盘路径，供 analytics 直接读取 immutable diff */
+  patch_snapshot_path?: string;
   /** 触发本次评分的源文档路径，如 BUGFIX 文档（B07 SFT 提取用） */
   source_path?: string;
   /** Story 9.1 T4: 触发阶段标识，如 speckit_5_2、bmad_story_stage4，用于 implement 与 story 阶段区分 */

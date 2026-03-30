@@ -7,6 +7,18 @@ export interface QualityGateOptions {
   requireCodePair?: boolean;
 }
 
+function requiresCodePair(sample: CanonicalSftSample, options: QualityGateOptions): boolean {
+  if (options.requireCodePair != null) {
+    return options.requireCodePair;
+  }
+
+  return sample.metadata.sample_kind !== 'documentation';
+}
+
+function hasOverTokenLimit(sample: CanonicalSftSample, maxTokens: number): boolean {
+  return sample.quality.token_estimate > maxTokens;
+}
+
 function hasUserAndAssistantMessages(sample: CanonicalSftSample): boolean {
   const hasUser = sample.messages.some((message) => message.role === 'user');
   const hasAssistant = sample.messages.some((message) => message.role === 'assistant');
@@ -15,7 +27,11 @@ function hasUserAndAssistantMessages(sample: CanonicalSftSample): boolean {
 
 function hasAssistantTarget(sample: CanonicalSftSample): boolean {
   return sample.messages.some(
-    (message) => message.role === 'assistant' && String(message.content).trim().length > 0
+    (message) =>
+      message.role === 'assistant' &&
+      (typeof message.content === 'string'
+        ? message.content.trim().length > 0
+        : message.content.some((part) => part.text.trim().length > 0))
   );
 }
 
@@ -62,7 +78,7 @@ export function applyQualityGates(
   const minScore = options.minScore ?? 90;
   const maxIterations = options.maxIterations ?? 3;
   const maxTokens = options.maxTokens ?? 8192;
-  const requireCodePair = options.requireCodePair ?? false;
+  const requireCodePair = requiresCodePair(sample, options);
 
   const hardReasons: string[] = [];
   const softReasons: string[] = [];
@@ -90,7 +106,7 @@ export function applyQualityGates(
   if (sample.quality.veto_triggered) {
     hardReasons.push('veto_triggered');
   }
-  if (sample.quality.token_estimate > maxTokens) {
+  if (hasOverTokenLimit(sample, maxTokens)) {
     hardReasons.push('token_over_limit');
   }
   if (sample.redaction.status === 'blocked') {
@@ -106,12 +122,8 @@ export function applyQualityGates(
   if (sample.quality.iteration_count > maxIterations) {
     softReasons.push('too_many_iterations');
   }
-  if (!sample.quality.has_code_pair) {
-    if (requireCodePair) {
-      hardReasons.push('missing_code_pair');
-    } else {
-      softReasons.push('missing_code_pair');
-    }
+  if (!sample.quality.has_code_pair && requireCodePair) {
+    hardReasons.push('missing_code_pair');
   }
   if (sample.redaction.status === 'redacted') {
     warnings.push('warning_redacted_noncritical');
