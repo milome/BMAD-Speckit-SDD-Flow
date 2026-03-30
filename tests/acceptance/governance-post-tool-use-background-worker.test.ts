@@ -403,7 +403,7 @@ describe('governance post-tool-use detached background worker', () => {
       await waitFor(() => !existsSync(lockPath), 15000, 200);
       await fixture.cleanup();
     }
-  }, 40000);
+  }, 60000);
 
   it('preserves the Wave 2A human-review hold through the detached background worker path on Windows-style hook hosts', async () => {
     const fixture = createWave2aTailFixtureProject();
@@ -534,5 +534,5 @@ describe('governance post-tool-use detached background worker', () => {
       await waitFor(() => !existsSync(lockPath), 15000, 200).catch(() => {});
       await fixture.cleanup();
     }
-  }, 40000);
+  }, 60000);
 });

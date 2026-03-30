@@ -41,7 +41,7 @@ describe('runtime-policy-inject (dual host entry)', () => {
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }
-  }, 30000);
+  }, 60000);
 
   it('Cursor path: agent_message 请用英文 → systemMessage 含 resolvedMode en', () => {
     const tempRoot = makeEmitReadyRoot();

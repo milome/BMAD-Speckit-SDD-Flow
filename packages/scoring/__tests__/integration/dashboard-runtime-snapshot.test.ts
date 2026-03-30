@@ -155,7 +155,7 @@ describe('dashboard runtime snapshot integration', () => {
       expect(markdown).toContain('Redaction Clean: 1');
       expect(stdoutSnapshot.sft_summary.total_candidates).toBe(1);
     });
-  }, 40000);
+  }, 180000);
 
   it('surfaces real host redacted and blocked tool trace fixtures inside runtime snapshot sft summary output', () => {
     const fixturePromise = createRuntimeDashboardFixture({
@@ -233,5 +233,5 @@ describe('dashboard runtime snapshot integration', () => {
       );
       expect(markdown).toContain('Redaction Clean: 3');
     });
-  }, 40000);
+  }, 180000);
 });

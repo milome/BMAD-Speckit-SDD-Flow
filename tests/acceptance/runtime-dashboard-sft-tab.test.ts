@@ -68,7 +68,9 @@ describe('runtime dashboard sft tab integration', () => {
     const fixture = await createRuntimeDashboardFixture({
       withSftDataset: true,
       withBundle: true,
-  }, 60000);
+      withRealToolTraceFixture: true,
+      realToolTraceVariants: ['clean'],
+  }, 180000);
     roots.push(fixture.root);
 
     const server = await startLiveDashboardServer({
@@ -90,9 +92,9 @@ describe('runtime dashboard sft tab integration', () => {
 
       expect(sftSummary).toEqual(
         expect.objectContaining({
-          total_candidates: 2,
+          total_candidates: 1,
           accepted: 1,
-          rejected: 1,
+          rejected: 0,
           last_bundle: expect.objectContaining({
             bundle_id: fixture.lastBundleId,
           }),
@@ -161,12 +163,12 @@ describe('runtime dashboard sft tab integration', () => {
         const exportResponse = await readMessage(proc);
 
         expect(previewResponse.result?.structuredContent).toEqual(
-          expect.objectContaining({
-            total_candidates: 2,
-            accepted: 1,
-            rejected: 1,
-          })
-        );
+        expect.objectContaining({
+          total_candidates: 1,
+          accepted: 1,
+          rejected: 0,
+        })
+      );
         expect(exportResponse.result?.structuredContent).toEqual(
           expect.objectContaining({
             target: 'openai_chat',

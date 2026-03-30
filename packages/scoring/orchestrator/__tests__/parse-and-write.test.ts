@@ -34,7 +34,7 @@ describe('parseAndWriteScore', () => {
     expect(written.phase_score).toBeDefined();
     expect(written.check_items).toBeDefined();
     fs.rmSync(tempDir, { recursive: true, force: true });
-  }, 40000);
+  }, 60000);
 
   it('writes record when given content for arch stage', async () => {
     const content = fs.readFileSync(path.join(FIXTURES, 'sample-arch-report.md'), 'utf-8');

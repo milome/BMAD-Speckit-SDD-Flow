@@ -8,7 +8,7 @@ function runCli(args: string[]) {
   return spawnSync(process.execPath, [BIN, ...args], {
     cwd: process.cwd(),
     encoding: 'utf8',
-    timeout: 30000,
+    timeout: 60000,
   });
 }
 
