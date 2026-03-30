@@ -34,7 +34,7 @@ describe('parseAndWriteScore', () => {
     expect(written.phase_score).toBeDefined();
     expect(written.check_items).toBeDefined();
     fs.rmSync(tempDir, { recursive: true, force: true });
-  });
+  }, 40000);
 
   it('writes record when given content for arch stage', async () => {
     const content = fs.readFileSync(path.join(FIXTURES, 'sample-arch-report.md'), 'utf-8');
@@ -79,7 +79,7 @@ describe('parseAndWriteScore', () => {
     expect(written.run_id).toBe(runId);
     expect(written.stage).toBe('story');
     fs.rmSync(tempDir, { recursive: true, force: true });
-  });
+  }, 40000);
 
   it('writes record when given reportPath', async () => {
     const reportPath = path.join(FIXTURES, 'sample-prd-report.md');

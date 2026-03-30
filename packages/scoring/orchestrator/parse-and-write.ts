@@ -200,6 +200,7 @@ function parseIterationReportToRecord(
  * @throws Error when reportPath and content are both missing/empty.
  */
 export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Promise<void> {
+  const scopedConsoleError = console.error;
   const { stage, runId, scenario, writeMode, dataPath } = options;
   let content = options.content;
   let reportPath: string | undefined;
@@ -316,7 +317,7 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
       expectedEn.length > 0
         ? expectedEn.join(', ')
         : 'Functionality, Code Quality, Test Coverage, Security';
-    console.error(
+    scopedConsoleError(
       `WARN: implement stage report has no parseable dimension_scores. Expected dimensions (name_en from modes.code): ${dimHint}. Check report parseable block matches modes.code.dimensions.`
     );
   }
@@ -328,7 +329,7 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
   if (forbiddenModMatch) {
     const line = forbiddenModMatch[0];
     const snippet = line.length > 80 ? line.slice(0, 80) + '…' : line;
-    console.error(
+    scopedConsoleError(
       `WARN: audit report contains forbidden overall_grade modifier (e.g. B+ or A-). Expected: A, B, C, or D only. Content snippet: ${snippet}`
     );
   }

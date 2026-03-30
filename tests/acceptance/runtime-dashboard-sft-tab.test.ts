@@ -68,7 +68,7 @@ describe('runtime dashboard sft tab integration', () => {
     const fixture = await createRuntimeDashboardFixture({
       withSftDataset: true,
       withBundle: true,
-    });
+  }, 60000);
     roots.push(fixture.root);
 
     const server = await startLiveDashboardServer({

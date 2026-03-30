@@ -490,6 +490,7 @@ export async function createRuntimeDashboardFixture(
       });
       lastBundleId = bundle.manifest.bundle_id;
     }
+
   } else {
     await parseAndWriteScore({
       content: fs.readFileSync(getReportFixturePathForStage('implement'), 'utf-8'),

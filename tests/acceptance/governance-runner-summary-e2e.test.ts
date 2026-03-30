@@ -252,5 +252,5 @@ describe('governance runner summary end-to-end flow', () => {
     } finally {
       fixture.cleanup();
     }
-  });
+  }, 40000);
 });

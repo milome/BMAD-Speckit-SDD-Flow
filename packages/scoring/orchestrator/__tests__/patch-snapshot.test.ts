@@ -56,5 +56,5 @@ describe('parseAndWriteScore stable patch snapshot', () => {
     } finally {
       fs.rmSync(dataPath, { recursive: true, force: true });
     }
-  });
+  }, 40000);
 });

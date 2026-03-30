@@ -171,13 +171,21 @@ export function buildDatasetRedactionPreview(
   limit = 5
 ): DatasetRedactionPreviewItem[] {
   return samples
-    .filter((sample) => sample.redaction.status !== 'clean' || sample.redaction.findings.length > 0)
     .slice()
     .sort((left, right) => {
       const severityRank = (findings: CanonicalRedactionFinding[]): number => {
         const ranks = { critical: 4, high: 3, medium: 2, low: 1 } as const;
         return findings.reduce((max, finding) => Math.max(max, ranks[finding.severity]), 0);
       };
+      const statusRank = (sample: CanonicalSftSample): number => {
+        if (sample.redaction.status === 'blocked') return 3;
+        if (sample.redaction.status === 'redacted') return 2;
+        return 1;
+      };
+      const byStatus = statusRank(right) - statusRank(left);
+      if (byStatus !== 0) {
+        return byStatus;
+      }
       const bySeverity = severityRank(right.redaction.findings) - severityRank(left.redaction.findings);
       if (bySeverity !== 0) {
         return bySeverity;

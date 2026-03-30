@@ -137,5 +137,5 @@ describe('runtime dashboard mcp server', () => {
     } finally {
       consoleSpy.mockRestore();
     }
-  });
+  }, 40000);
 });

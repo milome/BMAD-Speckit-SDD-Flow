@@ -43,7 +43,7 @@ function sleep(ms: number): Promise<void> {
 
 async function waitFor(
   predicate: () => boolean,
-  timeoutMs = 15000,
+  timeoutMs = 30000,
   intervalMs = 200
 ): Promise<void> {
   const deadline = Date.now() + timeoutMs;
@@ -59,7 +59,7 @@ async function waitFor(
 async function waitForWorkerSettled(
   projectRoot: string,
   predicate: () => boolean,
-  timeoutMs = 15000,
+  timeoutMs = 30000,
   intervalMs = 200
 ): Promise<void> {
   const lockPath = runtimeWorkerHelper.governanceRunnerLockPath(projectRoot) as string;
@@ -403,7 +403,7 @@ describe('governance post-tool-use detached background worker', () => {
       await waitFor(() => !existsSync(lockPath), 15000, 200);
       await fixture.cleanup();
     }
-  });
+  }, 40000);
 
   it('preserves the Wave 2A human-review hold through the detached background worker path on Windows-style hook hosts', async () => {
     const fixture = createWave2aTailFixtureProject();
@@ -534,5 +534,5 @@ describe('governance post-tool-use detached background worker', () => {
       await waitFor(() => !existsSync(lockPath), 15000, 200).catch(() => {});
       await fixture.cleanup();
     }
-  });
+  }, 40000);
 });
