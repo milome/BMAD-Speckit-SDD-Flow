@@ -37,6 +37,9 @@ const messages = {
     topFindings: '重点问题',
     inspector: '检查器',
     inspectorDesc: '右侧保持 group-level 上下文、问题流与导出信号，减少来回跳转。',
+    phaseScore: '阶段分数',
+    rawScore: '原始分数',
+    dimensionScores: '维度分数',
     latestBundle: '最近导出',
     targetAvailability: '目标可用性',
     unavailable: '暂无数据',
@@ -79,6 +82,9 @@ const messages = {
     topFindings: 'Top Findings',
     inspector: 'Inspector',
     inspectorDesc: 'Keep group-level context, findings, and export signals visible on the right so the operator does not bounce between views.',
+    phaseScore: 'Phase Score',
+    rawScore: 'Raw Score',
+    dimensionScores: 'Dimension Scores',
     latestBundle: 'Last Bundle',
     targetAvailability: 'Target Availability',
     unavailable: 'N/A',
@@ -236,8 +242,10 @@ function App() {
       </header>
 
       <section className="dashboard-shell">
-        <aside className="grid content-start gap-4">
-          <section className="glass-card p-[18px]">
+        <div className="dashboard-left-column">
+          <aside className="dashboard-rail-left">
+            <div className="dashboard-rail-scroll grid content-start gap-4">
+            <section className="glass-card p-[18px]">
             <div className="mb-3 text-[15px] font-semibold" id="runs-heading">{msg.runs}</div>
             <div className="grid gap-4" id="run-list">
               {boardGroups.length === 0 ? (
@@ -253,9 +261,9 @@ function App() {
                 </button>
               ))}
             </div>
-          </section>
+            </section>
 
-          <section className="glass-card p-[18px]">
+            <section className="glass-card p-[18px]">
             <div className="mb-3 text-[15px] font-semibold" id="stage-rail-heading">{msg.workItems}</div>
             <div className="grid gap-4" id="stage-list">
               {workItems.length === 0 ? (
@@ -274,10 +282,12 @@ function App() {
                 </button>
               ))}
             </div>
-          </section>
-        </aside>
+            </section>
+            </div>
+          </aside>
+        </div>
 
-        <section className="grid content-start gap-4">
+        <section className="dashboard-main grid content-start gap-4">
           <section className="glass-card p-[18px]">
             <div className="mb-4 flex flex-wrap gap-2" id="command-grid">
               {['overview', 'runtime', 'score', 'sft'].map((tab) => (
@@ -342,7 +352,27 @@ function App() {
             ) : null}
 
             {activeTab === 'score' ? (
-              <div className="grid gap-4" id="panel-score">
+              <div className="grid gap-4 xl:grid-cols-[360px_1fr]" id="panel-score">
+                <section className="grid gap-4 content-start">
+                  <section className="panel-card p-4">
+                    <div className="mb-3 text-[15px] font-semibold text-primary">{msg.phaseScore}</div>
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-1">
+                      <MetricCard label={msg.phaseScore} value={formatNullable(msg, activeWorkItem?.phase_score)} tone="cyan" />
+                      <MetricCard label={msg.rawScore} value={formatNullable(msg, snapshot?.score_detail?.records?.[0]?.raw_phase_score)} tone="mint" />
+                    </div>
+                  </section>
+                  <section className="panel-card p-4">
+                    <div className="mb-3 text-[15px] font-semibold text-primary">{msg.dimensionScores}</div>
+                    <div className="grid gap-3">
+                      {dimensions.length === 0 ? <div className="empty-note">{msg.noData}</div> : dimensions.map(([dimension, score]) => (
+                        <div key={dimension} className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-2">
+                          <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{dimension}</div>
+                          <div className="text-[18px] font-semibold text-primary">{score}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                </section>
                 <section className="panel-card p-4">
                   <div className="mb-3 text-[15px] font-semibold text-primary">{msg.failureStream}</div>
                   <div className="grid gap-3">

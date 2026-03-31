@@ -101,6 +101,14 @@ export interface DashboardStageTimelineEntry {
   score_timestamp: string | null;
 }
 
+const STANDARD_STAGE_SEQUENCE: Record<DashboardWorkItem['flow'], string[]> = {
+  story: ['brief', 'prd', 'arch', 'tasks', 'implement'],
+  bugfix: ['prd', 'plan', 'tasks', 'implement'],
+  standalone_tasks: ['plan', 'tasks', 'implement'],
+  epic: ['brief', 'prd', 'arch', 'tasks', 'implement'],
+  unknown: ['plan', 'tasks', 'implement'],
+};
+
 export interface DashboardScoreDetailRecord {
   run_id: string;
   stage: string;
@@ -967,60 +975,41 @@ function buildSyntheticRuntimeContext(
 
 function buildStageTimeline(
   projection: RuntimeRunProjection | null,
-  scoreDetailRecords: DashboardScoreDetailRecord[]
+  scoreDetailRecords: DashboardScoreDetailRecord[],
+  activeWorkItem: DashboardWorkItem | null
 ): DashboardStageTimelineEntry[] {
+  const stageOrder = STANDARD_STAGE_SEQUENCE[activeWorkItem?.flow ?? 'unknown'] ?? STANDARD_STAGE_SEQUENCE.unknown;
   const byStage = new Map<string, DashboardScoreDetailRecord>();
-  for (const record of scoreDetailRecords) {
+  for (const record of [...scoreDetailRecords].sort((left, right) => compareTimestampsAsc(left.timestamp, right.timestamp))) {
     byStage.set(record.stage, record);
   }
 
-  if (projection && projection.stage_history.length > 0) {
-    const stages: DashboardStageTimelineEntry[] = projection.stage_history.map((stage) => {
-      const scoreDetail = byStage.get(stage.stage);
-      return {
-        stage: stage.stage,
-        status: stage.status,
-        started_at: stage.started_at,
-        completed_at: stage.completed_at,
-        phase_score: scoreDetail?.phase_score ?? null,
-        raw_phase_score: scoreDetail?.raw_phase_score ?? null,
-        veto_triggered: scoreDetail?.veto_triggered ?? false,
-        iteration_count: scoreDetail?.iteration_count ?? null,
-        score_timestamp: scoreDetail?.timestamp ?? null,
-      };
-    });
-
-    for (const record of scoreDetailRecords) {
-      if (projection.stage_history.some((item) => item.stage === record.stage)) {
-        continue;
-      }
-      stages.push({
-        stage: record.stage,
-        status: 'passed',
-        phase_score: record.phase_score,
-        raw_phase_score: record.raw_phase_score,
-        veto_triggered: record.veto_triggered,
-        iteration_count: record.iteration_count,
-        score_timestamp: record.timestamp,
-      });
+  const projectionByStage = new Map<string, RuntimeRunProjection['stage_history'][number]>();
+  if (projection) {
+    for (const stage of projection.stage_history) {
+      projectionByStage.set(stage.stage, stage);
     }
-
-    return stages;
   }
 
-  return scoreDetailRecords
-    .slice()
-    .sort((left, right) => compareTimestampsAsc(left.timestamp, right.timestamp))
-    .map((record) => ({
-      stage: record.stage,
-      status: 'passed',
-      phase_score: record.phase_score,
-      raw_phase_score: record.raw_phase_score,
-      veto_triggered: record.veto_triggered,
-      iteration_count: record.iteration_count,
-      score_timestamp: record.timestamp,
-      completed_at: record.timestamp,
-    }));
+  const knownStages = [...new Set([...stageOrder, ...projectionByStage.keys(), ...byStage.keys()])];
+
+  const buildEntry = (stageName: string): DashboardStageTimelineEntry => {
+    const projectionStage = projectionByStage.get(stageName);
+    const scoreDetail = byStage.get(stageName);
+    return {
+      stage: stageName,
+      status: projectionStage?.status ?? (scoreDetail ? 'passed' : 'pending'),
+      started_at: projectionStage?.started_at,
+      completed_at: projectionStage?.completed_at,
+      phase_score: scoreDetail?.phase_score ?? null,
+      raw_phase_score: scoreDetail?.raw_phase_score ?? null,
+      veto_triggered: scoreDetail?.veto_triggered ?? false,
+      iteration_count: scoreDetail?.iteration_count ?? null,
+      score_timestamp: scoreDetail?.timestamp ?? null,
+    };
+  };
+
+  return knownStages.map(buildEntry);
 }
 
 function createEmptyTargetAvailability(): DashboardSftSummary['target_availability'] {
@@ -1264,7 +1253,7 @@ export function buildRuntimeDashboardModel(input: {
         (scoreDetailRecords[0]?.timestamp ?? null),
     },
     runtime_context: runtimeContext,
-    stage_timeline: buildStageTimeline(selectedProjection, scoreDetailRecords),
+    stage_timeline: buildStageTimeline(selectedProjection, scoreDetailRecords, activeWorkItem),
     score_detail: {
       run_id: selectedRunId,
       records: scoreDetailRecords,

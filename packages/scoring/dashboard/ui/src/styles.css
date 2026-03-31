@@ -48,10 +48,37 @@
 @layer components {
   .dashboard-shell {
     @apply grid gap-4 rounded-[24px] border p-[18px];
-    grid-template-columns: 238px minmax(0, 1fr) 330px;
+    grid-template-columns: 320px minmax(0, 1fr);
+    align-items: stretch;
+    min-height: calc(100vh - 180px);
     border-color: var(--color-line-soft);
     background: linear-gradient(180deg, #0d1723, #101a28);
     box-shadow: var(--shadow-panel);
+  }
+
+  .dashboard-left-column {
+    min-width: 0;
+    width: 320px;
+    max-width: 320px;
+    overflow: hidden;
+  }
+
+  .dashboard-rail-left {
+    height: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .dashboard-rail-scroll {
+    height: calc(100vh - 216px);
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .dashboard-main {
+    min-width: 0;
+    align-self: stretch;
+    overflow: hidden;
   }
 
   .glass-card {
@@ -92,6 +119,15 @@
     box-shadow: inset 0 0 0 1px rgba(99, 230, 255, 0.18);
   }
 
+  .dashboard-rail-scroll::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .dashboard-rail-scroll::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(159, 177, 200, 0.28);
+  }
+
   .badge-pill {
     @apply inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[12px] whitespace-nowrap;
     border-color: var(--color-line-soft);
@@ -127,4 +163,19 @@
 
 @media (max-width: 1280px) {
   .dashboard-shell { grid-template-columns: 1fr; }
+
+  .dashboard-left-column {
+    width: auto;
+    max-width: none;
+  }
+
+  .dashboard-rail-left {
+    overflow: visible;
+  }
+
+  .dashboard-rail-scroll {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
 }

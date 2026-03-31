@@ -4,6 +4,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { chromium, type Page } from 'playwright';
 import { createRuntimeDashboardFixture } from '../helpers/runtime-dashboard-fixture';
+import { getReportFixturePathForStage } from '../helpers/runtime-dashboard-fixture-manifest';
 import { startLiveDashboardServer } from '../../packages/scoring/dashboard/live-server';
 import { parseAndWriteScore } from '../../packages/scoring/orchestrator/parse-and-write';
 
@@ -31,6 +32,28 @@ async function run(): Promise<void> {
   const browser = await chromium.launch({ headless: true });
 
   try {
+    await parseAndWriteScore({
+      content: fs.readFileSync(getReportFixturePathForStage('tasks'), 'utf-8'),
+      stage: 'tasks',
+      runId: fixture.runId,
+      scenario: 'real_dev',
+      writeMode: 'jsonl',
+      dataPath: fixture.dataPath,
+      artifactDocPath: 'docs/plans/BUGFIX_runtime-dashboard-sft.md',
+      baseCommitHash: 'playwright-smoke-tasks-base-commit',
+    });
+
+    await parseAndWriteScore({
+      content: fs.readFileSync(getReportFixturePathForStage('plan'), 'utf-8'),
+      stage: 'plan',
+      runId: fixture.runId,
+      scenario: 'real_dev',
+      writeMode: 'jsonl',
+      dataPath: fixture.dataPath,
+      artifactDocPath: 'docs/plans/BUGFIX_runtime-dashboard-sft.md',
+      baseCommitHash: 'playwright-smoke-plan-base-commit',
+    });
+
     await parseAndWriteScore({
       content: fs.readFileSync(
         path.join(process.cwd(), 'packages', 'scoring', 'parsers', '__tests__', 'fixtures', 'sample-implement-report-with-four-dimensions.md'),
@@ -108,6 +131,10 @@ async function run(): Promise<void> {
     await enPage.click('button[data-board-group-id="queue:bugfix"]');
     await expectContains(enPage, '#stage-list', 'Fix Runtime Dashboard Findings Duplication');
     await expectContains(enPage, '#stage-list', 'IN PROGRESS');
+    const railBox = await enPage.locator('.dashboard-left-column').boundingBox();
+    const mainBox = await enPage.locator('.dashboard-main').boundingBox();
+    assert.ok(railBox && mainBox, 'dashboard columns should be measurable');
+    assert.ok((railBox.y + railBox.height) <= (mainBox.y + 4), 'left rail should not overlap main content vertically');
 
     await enPage.click('button[data-board-group-id="epic:epic-15"]');
     await expectContains(enPage, '#stage-list', '15-1-runtime-dashboard-sft');
@@ -118,7 +145,16 @@ async function run(): Promise<void> {
 
     await enPage.click('button[data-tab="runtime"]');
     await expectContains(enPage, '#panel-runtime', 'Implementation');
+    await expectContains(enPage, '#panel-runtime', 'Plan');
+    await expectContains(enPage, '#panel-runtime', 'Tasks');
+    await expectContains(enPage, '#panel-runtime', 'Pending');
     await enPage.click('button[data-board-group-id="queue:bugfix"]');
+
+    await enPage.click('button[data-tab="score"]');
+    await expectContains(enPage, '#panel-score', 'Phase Score');
+    await expectContains(enPage, '#panel-score', 'Raw Score');
+    await expectContains(enPage, '#panel-score', 'Dimension Scores');
+    await expectContains(enPage, '#panel-score', 'Failure Stream');
 
     await enPage.click('button[data-locale="zh"]');
     await expectText(enPage, '#hero-eyebrow', '运行时观测台');
@@ -131,9 +167,14 @@ async function run(): Promise<void> {
 
     await enPage.click('button[data-tab="score"]');
     await expectContains(enPage, '#panel-score', '问题流');
+    await expectContains(enPage, '#panel-score', '阶段分数');
+    await expectContains(enPage, '#panel-score', '原始分数');
+    await expectContains(enPage, '#panel-score', '维度分数');
 
     await enPage.click('button[data-tab="runtime"]');
     await expectContains(enPage, '#panel-runtime', 'Plan');
+    await expectContains(enPage, '#panel-runtime', 'Tasks');
+    await expectContains(enPage, '#panel-runtime', '待执行');
 
     await enContext.close();
 

@@ -462,15 +462,21 @@ describe('runtime-aware dashboard query', () => {
       expect(snapshot.overview.veto_count).toBe(0);
       expect(snapshot.overview.trend).toBe('升');
       expect(snapshot.runtime_context.scope?.resolved_context_path).toContain('_bmad-output/runtime/context/runs');
-      expect(snapshot.stage_timeline).toEqual([
-        expect.objectContaining({
-          stage: 'implement',
-          status: 'passed',
-          phase_score: 91,
-          veto_triggered: false,
-          iteration_count: 0,
-        }),
-      ]);
+      expect(snapshot.stage_timeline).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ stage: 'brief', status: 'pending' }),
+          expect.objectContaining({ stage: 'prd', status: 'pending' }),
+          expect.objectContaining({ stage: 'arch', status: 'pending' }),
+          expect.objectContaining({ stage: 'tasks', status: 'pending' }),
+          expect.objectContaining({
+            stage: 'implement',
+            status: 'passed',
+            phase_score: 91,
+            veto_triggered: false,
+            iteration_count: 0,
+          }),
+        ])
+      );
       expect(snapshot.score_detail.records).toEqual([
         expect.objectContaining({
           stage: 'implement',
@@ -548,12 +554,15 @@ describe('runtime-aware dashboard query', () => {
     expect(snapshot.runtime_context.current_stage).toBe('tasks');
     expect(snapshot.overview.health_score).toBeNull();
     expect(snapshot.score_detail.records).toEqual([]);
-    expect(snapshot.stage_timeline).toEqual([
-      expect.objectContaining({
-        stage: 'tasks',
-        status: 'running',
-      }),
-    ]);
+    expect(snapshot.stage_timeline).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ stage: 'brief', status: 'pending' }),
+        expect.objectContaining({ stage: 'prd', status: 'pending' }),
+        expect.objectContaining({ stage: 'arch', status: 'pending' }),
+        expect.objectContaining({ stage: 'tasks', status: 'running' }),
+        expect.objectContaining({ stage: 'implement', status: 'pending' }),
+      ])
+    );
   });
 
   it('gracefully falls back when scores exist but runtime events do not', () => {
@@ -581,18 +590,17 @@ describe('runtime-aware dashboard query', () => {
     expect(snapshot.selection.source).toBe('scores');
     expect(snapshot.runtime_context.status).toBe('passed');
     expect(snapshot.runtime_context.current_stage).toBe('plan');
-    expect(snapshot.stage_timeline).toEqual([
-      expect.objectContaining({
-        stage: 'spec',
-        status: 'passed',
-        phase_score: 82,
-      }),
-      expect.objectContaining({
-        stage: 'plan',
-        status: 'passed',
-        phase_score: 88,
-      }),
-    ]);
+    expect(snapshot.stage_timeline).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ stage: 'brief', status: 'pending' }),
+        expect.objectContaining({ stage: 'prd', status: 'pending' }),
+        expect.objectContaining({ stage: 'arch', status: 'pending' }),
+        expect.objectContaining({ stage: 'tasks', status: 'pending' }),
+        expect.objectContaining({ stage: 'implement', status: 'pending' }),
+        expect.objectContaining({ stage: 'spec', status: 'passed', phase_score: 82 }),
+        expect.objectContaining({ stage: 'plan', status: 'passed', phase_score: 88 }),
+      ])
+    );
     expect(snapshot.score_detail.records).toHaveLength(2);
     expect(snapshot.overview.health_score).toBe(86);
   });
@@ -651,5 +659,99 @@ describe('runtime-aware dashboard query', () => {
     expect(snapshot.workboard.active_board_group_id).toBe('queue:standalone-ops');
     expect(snapshot.workboard.work_items.filter((item) => item.board_group_id === 'queue:standalone-ops')).toHaveLength(1);
     expect(snapshot.workboard.active_work_item_id).toBe('standalone_task:orphan:run-standalone-ops-001');
+  });
+
+  it('aggregates a full stage timeline for the active work item across runs', () => {
+    const snapshot = buildRuntimeDashboardModel({
+      events: [
+        makeEvent({
+          run_id: 'run-e15-s1-prev',
+          event_id: 'evt-prev-001',
+          timestamp: '2026-03-27T00:00:00.000Z',
+          payload: { status: 'pending' },
+          scope: {
+            story_key: '15-1-runtime-dashboard-sft',
+            epic_id: 'epic-15',
+            story_id: '15-1-runtime-dashboard-sft',
+            flow: 'story',
+          },
+        }),
+        makeEvent({
+          run_id: 'run-e15-s1-prev',
+          event_id: 'evt-prev-002',
+          event_type: 'stage.completed',
+          stage: 'prd',
+          timestamp: '2026-03-27T00:05:00.000Z',
+          payload: { status: 'passed' },
+        }),
+        makeEvent({
+          run_id: 'run-e15-s1-prev',
+          event_id: 'evt-prev-003',
+          event_type: 'stage.completed',
+          stage: 'plan',
+          timestamp: '2026-03-27T00:10:00.000Z',
+          payload: { status: 'passed' },
+        }),
+        makeEvent({
+          run_id: 'run-e15-s1-active',
+          event_id: 'evt-active-001',
+          timestamp: '2026-03-28T00:00:00.000Z',
+          payload: { status: 'pending' },
+          scope: {
+            story_key: '15-1-runtime-dashboard-sft',
+            epic_id: 'epic-15',
+            story_id: '15-1-runtime-dashboard-sft',
+            flow: 'story',
+          },
+        }),
+        makeEvent({
+          run_id: 'run-e15-s1-active',
+          event_id: 'evt-active-002',
+          event_type: 'stage.started',
+          stage: 'implement',
+          timestamp: '2026-03-28T00:15:00.000Z',
+          payload: { status: 'running' },
+        }),
+      ],
+      scoreRecords: [
+        makeScoreRecord({
+          run_id: 'run-e15-s1-prev',
+          stage: 'prd',
+          timestamp: '2026-03-27T00:05:00.000Z',
+          phase_score: 78,
+          source_path: 'docs/plans/story-15-1-runtime-dashboard.md',
+        }),
+        makeScoreRecord({
+          run_id: 'run-e15-s1-prev',
+          stage: 'plan',
+          timestamp: '2026-03-27T00:10:00.000Z',
+          phase_score: 84,
+          source_path: 'docs/plans/story-15-1-runtime-dashboard.md',
+        }),
+        makeScoreRecord({
+          run_id: 'run-e15-s1-active',
+          stage: 'implement',
+          timestamp: '2026-03-28T00:15:00.000Z',
+          phase_score: 91,
+          source_path: 'docs/plans/story-15-1-runtime-dashboard.md',
+        }),
+      ],
+      options: {
+        boardGroupId: 'epic:epic-15',
+        workItemId: 'story:15-1-runtime-dashboard-sft',
+      },
+    });
+
+    expect(snapshot.stage_timeline.map((entry) => entry.stage)).toEqual(['brief', 'prd', 'arch', 'tasks', 'implement', 'plan']);
+    expect(snapshot.stage_timeline).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ stage: 'brief', status: 'pending' }),
+        expect.objectContaining({ stage: 'prd', phase_score: 78, status: 'passed' }),
+        expect.objectContaining({ stage: 'arch', status: 'pending' }),
+        expect.objectContaining({ stage: 'tasks', status: 'pending' }),
+        expect.objectContaining({ stage: 'implement', phase_score: 91, status: 'running' }),
+        expect.objectContaining({ stage: 'plan', phase_score: 84, status: 'passed' }),
+      ])
+    );
   });
 });
