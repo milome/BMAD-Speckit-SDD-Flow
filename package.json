@@ -49,6 +49,7 @@
     "verify:cursor-audit-granularity": "npx ts-node scripts/verify-cursor-audit-granularity.ts",
     "eval-questions": "npx ts-node scripts/eval-questions-cli.ts",
     "build:scoring": "cd packages/scoring && npm run build",
+    "build:runtime-dashboard-ui": "npm run build:dashboard-ui -w @bmad-speckit/scoring",
     "build:runtime-context": "npm run build -w @bmad-speckit/runtime-context",
     "build:runtime-emit": "npm run build -w @bmad-speckit/runtime-emit",
     "prepublishOnly": "npm run build:scoring && npm run build:runtime-context && npm run build:runtime-emit && node scripts/prepublish-check.js",

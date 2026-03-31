@@ -38,6 +38,7 @@ const messages = {
     inspector: '检查器',
     inspectorDesc: '右侧保持 group-level 上下文、问题流与导出信号，减少来回跳转。',
     latestBundle: '最近导出',
+    targetAvailability: '目标可用性',
     unavailable: '暂无数据',
     acceptedLabel: '接受',
     rejectedLabel: '拒绝',
@@ -79,6 +80,7 @@ const messages = {
     inspector: 'Inspector',
     inspectorDesc: 'Keep group-level context, findings, and export signals visible on the right so the operator does not bounce between views.',
     latestBundle: 'Last Bundle',
+    targetAvailability: 'Target Availability',
     unavailable: 'N/A',
     acceptedLabel: 'Accepted',
     rejectedLabel: 'Rejected',
@@ -179,6 +181,17 @@ function App() {
         if (!disposed) {
           setSnapshot(json);
           setError('');
+          setSelection((current) => {
+            const nextBoardGroupId = current.activeBoardGroupId ?? json?.workboard?.active_board_group_id ?? null;
+            const nextWorkItemId = current.activeWorkItemId ?? json?.workboard?.active_work_item_id ?? null;
+            if (current.activeBoardGroupId === nextBoardGroupId && current.activeWorkItemId === nextWorkItemId) {
+              return current;
+            }
+            return {
+              activeBoardGroupId: nextBoardGroupId,
+              activeWorkItemId: nextWorkItemId,
+            };
+          });
         }
       } catch (fetchError) {
         if (!disposed) setError(fetchError instanceof Error ? fetchError.message : String(fetchError));
@@ -248,7 +261,7 @@ function App() {
               {workItems.length === 0 ? (
                 <div className="empty-note">{isLoading ? msg.loading : msg.noData}</div>
               ) : workItems.map((item) => (
-                <button key={item.work_item_id} type="button" data-work-item-id={item.work_item_id} className={`panel-card p-4 text-left ${item.work_item_id === activeWorkItemId ? 'item-active' : ''}`} onClick={() => setSelection((current) => ({ ...current, activeWorkItemId: item.work_item_id }))}>
+                <button key={item.work_item_id} type="button" data-work-item-id={item.work_item_id} className={`panel-card p-4 text-left ${item.work_item_id === activeWorkItemId ? 'item-active' : ''}`} onClick={() => setSelection((current) => ({ ...current, activeBoardGroupId: item.board_group_id, activeWorkItemId: item.work_item_id }))}>
                   <div className="mb-3 flex items-start justify-between gap-3">
                     <strong className="flex-1 min-w-0 text-[14px] leading-6 text-primary truncate">{item.title}</strong>
                     <Badge label={formatBoardStatus(item.board_status, msg)} tone={item.board_status === 'done' ? 'mint' : item.board_status === 'in_progress' ? 'cyan' : 'amber'} />
@@ -304,6 +317,7 @@ function App() {
                       <MetricCard label={msg.lastEventAt} value={formatNullable(msg, snapshot?.runtime_context?.last_event_at)} tone="mint" />
                       <MetricCard label={msg.latestBundle} value={formatNullable(msg, sft?.last_bundle?.bundle_id)} tone="amber" />
                     </div>
+                    <div className="mt-4 text-[13px] leading-5 text-secondary">{formatNullable(msg, activeBoardGroup?.board_group_label)}</div>
                   </section>
                 </div>
               </div>
@@ -360,6 +374,9 @@ function App() {
                     <MetricCard label={msg.compatible} value={formatNullable(msg, sft.target_availability?.openai_chat?.compatible)} tone="cyan" />
                     <MetricCard label={msg.blocked} value={formatNullable(msg, sft.target_availability?.hf_tool_calling?.compatible)} tone="amber" />
                   </div>
+                  <div className="mt-4 text-[15px] font-semibold text-primary">{msg.latestBundle}</div>
+                  <div className="mt-2 text-[13px] leading-5 text-secondary">{formatNullable(msg, sft?.last_bundle?.bundle_id)}</div>
+                  <div className="mt-4 text-[15px] font-semibold text-primary">{msg.targetAvailability}</div>
                 </section>
               </div>
             ) : null}

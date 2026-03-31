@@ -119,7 +119,13 @@ describe('runtime-aware dashboard query', () => {
     expect(snapshot.selection.source).toBe('runtime');
     expect(snapshot.runtime_context.current_stage).toBe('plan');
     expect(snapshot.overview.status).toBe('running');
-    expect(snapshot.score_detail.records).toEqual([]);
+    expect(snapshot.score_detail.records).toEqual([
+      expect.objectContaining({
+        run_id: 'run-e15-s1-older',
+        stage: 'implement',
+        phase_score: 95,
+      }),
+    ]);
   });
 
   it('builds a runtime-aware snapshot with score detail, timeline, and trend', () => {
@@ -589,5 +595,61 @@ describe('runtime-aware dashboard query', () => {
     ]);
     expect(snapshot.score_detail.records).toHaveLength(2);
     expect(snapshot.overview.health_score).toBe(86);
+  });
+
+  it('keeps work items visible when the selected run belongs to a different board group', () => {
+    const snapshot = buildRuntimeDashboardModel({
+      events: [
+        makeEvent({
+          run_id: 'run-e15-s1-story',
+          event_id: 'evt-story-001',
+          timestamp: '2026-03-28T00:00:00.000Z',
+          payload: { status: 'pending' },
+          scope: {
+            story_key: '15-1-runtime-dashboard-sft',
+            epic_id: 'epic-15',
+            story_id: '15-1-runtime-dashboard-sft',
+            flow: 'story',
+          },
+        }),
+        makeEvent({
+          run_id: 'run-e15-s1-story',
+          event_id: 'evt-story-002',
+          event_type: 'stage.completed',
+          stage: 'implement',
+          timestamp: '2026-03-28T00:05:00.000Z',
+          payload: { status: 'passed' },
+        }),
+        makeEvent({
+          run_id: 'run-standalone-ops-001',
+          event_id: 'evt-ops-001',
+          timestamp: '2026-03-28T01:00:00.000Z',
+          payload: { status: 'pending' },
+        }),
+        makeEvent({
+          run_id: 'run-standalone-ops-001',
+          event_id: 'evt-ops-002',
+          event_type: 'stage.started',
+          stage: 'plan',
+          timestamp: '2026-03-28T01:10:00.000Z',
+          payload: { status: 'running' },
+        }),
+      ],
+      scoreRecords: [
+        makeScoreRecord({
+          run_id: 'run-e15-s1-story',
+          source_path: 'docs/plans/story-15-1-runtime-dashboard.md',
+          timestamp: '2026-03-28T00:05:00.000Z',
+        }),
+      ],
+    });
+
+    expect(snapshot.selection.run_id).toBe('run-standalone-ops-001');
+    expect(snapshot.workboard.board_groups.map((group) => group.board_group_id)).toEqual(
+      expect.arrayContaining(['epic:epic-15', 'queue:standalone-ops'])
+    );
+    expect(snapshot.workboard.active_board_group_id).toBe('queue:standalone-ops');
+    expect(snapshot.workboard.work_items.filter((item) => item.board_group_id === 'queue:standalone-ops')).toHaveLength(1);
+    expect(snapshot.workboard.active_work_item_id).toBe('standalone_task:orphan:run-standalone-ops-001');
   });
 });

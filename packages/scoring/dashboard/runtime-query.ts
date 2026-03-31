@@ -179,6 +179,11 @@ export interface DashboardWorkboardPayload {
   work_items: DashboardWorkItem[];
 }
 
+interface DashboardWorkboardResolution {
+  payload: DashboardWorkboardPayload;
+  active_work_item: DashboardWorkItem | null;
+}
+
 export interface DashboardSftSummary {
   total_candidates: number;
   accepted: number;
@@ -257,6 +262,11 @@ interface RunWorkItemSeed {
   score_records: RunScoreRecord[];
 }
 
+interface ParsedRunIdentity {
+  epicToken?: string | null;
+  storyToken?: string | null;
+}
+
 interface WorkItemIdentity {
   work_item_id: string;
   work_item_type: DashboardWorkItemType;
@@ -287,6 +297,12 @@ function compareTimestampsAsc(left?: string | null, right?: string | null): numb
   return compareTimestamps(right, left);
 }
 
+function rankBoardStatus(status: DashboardBoardStatus): number {
+  if (status === 'in_progress') return 0;
+  if (status === 'todo') return 1;
+  return 2;
+}
+
 function normalizePath(value?: string | null): string {
   return (value ?? '').replace(/\\/g, '/');
 }
@@ -309,10 +325,66 @@ function slugFromPath(sourcePath?: string | null): string | null {
   return slug || null;
 }
 
+function extractStoryIdentityFromPath(sourcePath?: string | null): {
+  epicId: string;
+  storyKey: string;
+} | null {
+  const normalized = normalizePath(sourcePath);
+  if (!normalized) return null;
+
+  const storyScopedMatch = normalized.match(/epic-([^/]+)\/story-([^/]+)/i);
+  if (storyScopedMatch) {
+    return {
+      epicId: `epic-${storyScopedMatch[1]}`.replace(/^epic-epic-/i, 'epic-'),
+      storyKey: storyScopedMatch[2],
+    };
+  }
+
+  const specsMatch = normalized.match(/specs\/epic-(\d+)\/story-(\d+)-([^/]+)/i);
+  if (specsMatch) {
+    return {
+      epicId: `epic-${specsMatch[1]}`,
+      storyKey: `${specsMatch[1]}-${specsMatch[2]}-${specsMatch[3]}`,
+    };
+  }
+
+  return null;
+}
+
 function parseEpicNumber(epicId?: string | null): string | null {
   if (!epicId) return null;
   const match = /epic[-_]?(\d+)/i.exec(epicId);
   return match?.[1] ?? null;
+}
+
+function parseRunIdentity(runId: string): ParsedRunIdentity {
+  const canonicalMatch = runId.match(/-e([a-z0-9]+)-s([a-z0-9]+)(?:-|$)/i);
+  if (canonicalMatch) {
+    return {
+      epicToken: canonicalMatch[1],
+      storyToken: canonicalMatch[2],
+    };
+  }
+
+  const mixedMatch = runId.match(/-e([a-z0-9]+)-sS?([a-z0-9]+)(?:-|$)/i);
+  if (mixedMatch) {
+    return {
+      epicToken: mixedMatch[1],
+      storyToken: mixedMatch[2],
+    };
+  }
+
+  return {};
+}
+
+function normalizeEpicId(epicToken?: string | null): string | null {
+  if (!epicToken) return null;
+  return epicToken.toLowerCase().startsWith('epic-') ? epicToken : `epic-${epicToken}`;
+}
+
+function normalizeStoryKey(epicToken?: string | null, storyToken?: string | null): string | null {
+  if (!epicToken || !storyToken) return null;
+  return `${epicToken}-${storyToken}`;
 }
 
 function classifyArtifactScope(sourcePath?: string | null, scope?: RuntimeScopeRef | null): DashboardArtifactScope {
@@ -320,6 +392,36 @@ function classifyArtifactScope(sourcePath?: string | null, scope?: RuntimeScopeR
   const normalized = normalizePath(sourcePath);
   if (normalized.includes('/_orphan/')) return 'orphan_scoped';
   return 'story_scoped';
+}
+
+function inferScopeFromSeed(seed: RunWorkItemSeed): RuntimeScopeRef | null {
+  if (seed.scope?.story_key || seed.scope?.epic_id) {
+    return seed.scope;
+  }
+
+  const fromPath = extractStoryIdentityFromPath(seed.source_path);
+  if (fromPath) {
+    return {
+      flow: 'story',
+      epic_id: fromPath.epicId,
+      story_key: fromPath.storyKey,
+      story_id: fromPath.storyKey,
+    };
+  }
+
+  const fromRunId = parseRunIdentity(seed.run_id);
+  const epicId = normalizeEpicId(fromRunId.epicToken);
+  const storyKey = normalizeStoryKey(fromRunId.epicToken, fromRunId.storyToken);
+  if (epicId && storyKey) {
+    return {
+      flow: 'story',
+      epic_id: epicId,
+      story_key: storyKey,
+      story_id: storyKey,
+    };
+  }
+
+  return null;
 }
 
 function inferFlowForSeed(seed: Pick<RunWorkItemSeed, 'flow' | 'scope' | 'source_path'>): DashboardWorkItem['flow'] {
@@ -335,10 +437,11 @@ function inferFlowForSeed(seed: Pick<RunWorkItemSeed, 'flow' | 'scope' | 'source
 }
 
 function deriveWorkItemIdentity(seed: RunWorkItemSeed): WorkItemIdentity | null {
-  const flow = inferFlowForSeed(seed);
-  const artifactScope = classifyArtifactScope(seed.source_path, seed.scope);
-  const storyKey = seed.scope?.story_key ?? null;
-  const epicId = seed.scope?.epic_id ?? null;
+  const inferredScope = inferScopeFromSeed(seed);
+  const flow = inferFlowForSeed({ ...seed, scope: inferredScope });
+  const artifactScope = classifyArtifactScope(seed.source_path, inferredScope);
+  const storyKey = inferredScope?.story_key ?? null;
+  const epicId = inferredScope?.epic_id ?? null;
 
   if (storyKey) {
     const epicNumber = parseEpicNumber(epicId);
@@ -396,7 +499,59 @@ function deriveWorkItemIdentity(seed: RunWorkItemSeed): WorkItemIdentity | null 
     };
   }
 
-  return null;
+  if (storyKey && epicId) {
+    const epicNumber = parseEpicNumber(epicId);
+    return {
+      work_item_id: `story:${storyKey}`,
+      work_item_type: 'story',
+      artifact_scope: artifactScope,
+      title: storyKey,
+      slug: storyKey,
+      flow: 'story',
+      board_group_id: `epic:${epicId}`,
+      board_group_label: epicNumber ? `Epic ${epicNumber}` : epicId,
+      board_group_kind: 'epic',
+      epic_id: epicId,
+      story_key: storyKey,
+      linked_story_key: null,
+      linked_epic_id: null,
+    };
+  }
+
+  const normalized = normalizePath(seed.source_path).toLowerCase();
+  if (normalized.includes('bugfix')) {
+    return {
+      work_item_id: `bugfix:orphan:${slug}`,
+      work_item_type: 'bugfix',
+      artifact_scope: artifactScope,
+      title: titleFromSlug(slug),
+      slug,
+      flow: 'bugfix',
+      board_group_id: 'queue:bugfix',
+      board_group_label: 'Bugfix Queue',
+      board_group_kind: 'bugfix_queue',
+      epic_id: null,
+      story_key: null,
+      linked_story_key: null,
+      linked_epic_id: null,
+    };
+  }
+
+  return {
+    work_item_id: `standalone_task:orphan:${slug}`,
+    work_item_type: 'standalone_task',
+    artifact_scope: artifactScope,
+    title: titleFromSlug(slug),
+    slug,
+    flow: 'standalone_tasks',
+    board_group_id: 'queue:standalone-ops',
+    board_group_label: 'Standalone / Ops',
+    board_group_kind: 'standalone_ops',
+    epic_id: null,
+    story_key: null,
+    linked_story_key: null,
+    linked_epic_id: null,
+  };
 }
 
 function summarizeRuntimeStatus(seeds: RunWorkItemSeed[]): RuntimeStatusLike {
@@ -518,7 +673,7 @@ function buildWorkboard(
   scoreRecords: RunScoreRecord[],
   selectedRunId: string | null,
   options: Pick<RuntimeDashboardQueryOptions, 'workItemId' | 'boardGroupId'> = {}
-): DashboardWorkboardPayload {
+): DashboardWorkboardResolution {
   const seeds = buildRunWorkItemSeeds(events, projections, scoreRecords);
   const grouped = new Map<string, { identity: WorkItemIdentity; seeds: RunWorkItemSeed[] }>();
 
@@ -583,16 +738,73 @@ function buildWorkboard(
   }
 
   const boardGroups = [...groupMap.values()].sort((left, right) => left.sort_order - right.sort_order || left.board_group_label.localeCompare(right.board_group_label));
-  const activeBoardGroupId = options.boardGroupId ?? boardGroups[0]?.board_group_id ?? null;
-  const filteredWorkItems = workItems.filter((item) => item.board_group_id === activeBoardGroupId);
-  const activeWorkItemId = options.workItemId ?? filteredWorkItems[0]?.work_item_id ?? null;
+  const selectedWorkItem = selectedRunId
+    ? workItems.find((item) => item.run_ids.includes(selectedRunId)) ?? null
+    : null;
+  const activeBoardGroupId = options.boardGroupId ?? selectedWorkItem?.board_group_id ?? boardGroups[0]?.board_group_id ?? null;
+  const filteredWorkItems = workItems
+    .filter((item) => item.board_group_id === activeBoardGroupId)
+    .sort((left, right) => {
+      const byStatus = rankBoardStatus(left.board_status) - rankBoardStatus(right.board_status);
+      if (byStatus !== 0) return byStatus;
 
-  return {
+      const leftHasFindings = left.findings_count > 0 ? 0 : 1;
+      const rightHasFindings = right.findings_count > 0 ? 0 : 1;
+      if (leftHasFindings !== rightHasFindings) return leftHasFindings - rightHasFindings;
+
+      return compareTimestamps(left.last_updated_at, right.last_updated_at) || left.title.localeCompare(right.title);
+    });
+  const activeWorkItemId =
+    options.workItemId ??
+    (selectedWorkItem && selectedWorkItem.board_group_id === activeBoardGroupId
+      ? selectedWorkItem.work_item_id
+      : filteredWorkItems[0]?.work_item_id ?? null);
+
+  const payload: DashboardWorkboardPayload = {
     active_board_group_id: activeBoardGroupId,
     active_work_item_id: activeWorkItemId,
     board_groups: boardGroups,
     work_items: workItems.map(({ _board_group_kind, ...item }) => item),
   };
+
+  return {
+    payload,
+    active_work_item: payload.work_items.find((item) => item.work_item_id === activeWorkItemId) ?? null,
+  };
+}
+
+function filterScoreRecordsForActiveWorkItem(
+  scoreRecords: RunScoreRecord[],
+  activeWorkItem: DashboardWorkItem | null
+): RunScoreRecord[] {
+  if (!activeWorkItem) return scoreRecords;
+
+  const runIdSet = new Set(activeWorkItem.run_ids);
+  let matched = scoreRecords.filter((record) => runIdSet.has(record.run_id));
+  if (matched.length > 0) {
+    return matched.sort((left, right) => compareTimestamps(left.timestamp, right.timestamp));
+  }
+
+  if (activeWorkItem.story_key) {
+    matched = scoreRecords.filter((record) => {
+      const parsedFromPath = extractStoryIdentityFromPath(record.source_path);
+      if (parsedFromPath?.storyKey === activeWorkItem.story_key) return true;
+
+      const parsedRun = parseRunIdentity(record.run_id);
+      const storyKey = normalizeStoryKey(parsedRun.epicToken, parsedRun.storyToken);
+      return storyKey === activeWorkItem.story_key;
+    });
+  }
+
+  if (matched.length > 0) {
+    return matched.sort((left, right) => compareTimestamps(left.timestamp, right.timestamp));
+  }
+
+  if (activeWorkItem.source_path) {
+    matched = scoreRecords.filter((record) => record.source_path === activeWorkItem.source_path);
+  }
+
+  return matched.sort((left, right) => compareTimestamps(left.timestamp, right.timestamp));
 }
 
 function buildRuntimeProjections(events: RuntimeEvent[]): RuntimeRunProjection[] {
@@ -665,6 +877,17 @@ function resolveSelectedScoreRecords(
   }
 
   return getLatestRunRecords(scoreRecords);
+}
+
+function resolveWorkboardScoreRecords(
+  scoreRecords: RunScoreRecord[],
+  selectedScoreRecords: RunScoreRecord[]
+): RunScoreRecord[] {
+  if (scoreRecords.length > 0) {
+    return scoreRecords;
+  }
+
+  return selectedScoreRecords;
 }
 
 function mapDimensionScores(
@@ -963,8 +1186,23 @@ export function buildRuntimeDashboardModel(input: {
   const projections = buildRuntimeProjections(input.events);
   const selectedProjection = selectRuntimeProjection(projections);
   const selectedScoreRecords = resolveSelectedScoreRecords(scoreRecords, options, selectedProjection);
-  const scoreDetailRecords = buildScoreDetailRecords(selectedScoreRecords);
-  const scoreFindings = selectedScoreRecords
+  const workboardScoreRecords = resolveWorkboardScoreRecords(scoreRecords, selectedScoreRecords);
+  const selectedRunId =
+    selectedProjection?.run_id ??
+    (selectedScoreRecords.length > 0
+      ? [...new Set(selectedScoreRecords.map((record) => record.run_id))][0] ?? null
+      : null);
+
+  const workboardResolution = buildWorkboard(input.events, projections, workboardScoreRecords, selectedRunId, {
+    workItemId: options.workItemId,
+    boardGroupId: options.boardGroupId,
+  });
+  const workboard = workboardResolution.payload;
+  const activeWorkItem = workboardResolution.active_work_item;
+  const activeWorkItemScoreRecords = filterScoreRecordsForActiveWorkItem(workboardScoreRecords, activeWorkItem);
+  const detailSourceRecords = activeWorkItemScoreRecords.length > 0 ? activeWorkItemScoreRecords : selectedScoreRecords;
+  const scoreDetailRecords = buildScoreDetailRecords(detailSourceRecords);
+  const scoreFindings = detailSourceRecords
     .flatMap((record) => buildScoreFindings(record))
     .sort((left, right) => compareTimestamps(left.timestamp, right.timestamp));
   const runtimeContext = selectedProjection
@@ -979,24 +1217,12 @@ export function buildRuntimeDashboardModel(input: {
       }
     : buildSyntheticRuntimeContext(scoreDetailRecords);
 
-  const selectedRunId =
-    selectedProjection?.run_id ??
-    (selectedScoreRecords.length > 0
-      ? [...new Set(selectedScoreRecords.map((record) => record.run_id))][0] ?? null
-      : null);
-
   const selection: RuntimeDashboardSelection = {
     run_id: selectedRunId,
     source: selectedProjection ? 'runtime' : selectedScoreRecords.length > 0 ? 'scores' : 'none',
     has_runtime: selectedProjection != null,
     has_scores: selectedScoreRecords.length > 0,
   };
-
-  const workboard = buildWorkboard(input.events, projections, selectedScoreRecords, selectedRunId, {
-    workItemId: options.workItemId,
-    boardGroupId: options.boardGroupId,
-  });
-  const activeWorkItem = workboard.work_items.find((item) => item.work_item_id === workboard.active_work_item_id) ?? null;
 
   if (runtimeContext) {
     runtimeContext.work_item = activeWorkItem

@@ -90,13 +90,35 @@ async function run(): Promise<void> {
     await expectText(enPage, '#stage-rail-heading', 'Work Items');
     await expectContains(enPage, '#run-list', 'Epic 15');
     await expectContains(enPage, '#run-list', 'Epic Lane');
+    await expectContains(enPage, '#run-list', 'Ops Queue');
+    await expectContains(enPage, '#run-list', 'Bugfix Queue');
     await expectContains(enPage, '#stage-list', 'Current Stage');
     await expectContains(enPage, '#stage-list', 'Status');
-    await expectContains(enPage, '#stage-list', 'Implementation');
+    await expectContains(enPage, '#stage-list', 'Fix Runtime Dashboard Findings Duplication');
     await expectContains(enPage, '#stage-list', 'IN PROGRESS');
     await expectContains(enPage, '#stage-list', 'Score');
     await expectContains(enPage, '#command-grid', 'Overview');
+    await expectContains(enPage, '#inspector-runtime', 'Bugfix Queue');
+
+    await enPage.click('button[data-board-group-id="queue:standalone-ops"]');
+    await expectContains(enPage, '#stage-list', 'Scores');
+    await expectContains(enPage, '#stage-list', 'Implementation');
+    await expectContains(enPage, '#stage-list', 'IN PROGRESS');
+
+    await enPage.click('button[data-board-group-id="queue:bugfix"]');
+    await expectContains(enPage, '#stage-list', 'Fix Runtime Dashboard Findings Duplication');
+    await expectContains(enPage, '#stage-list', 'IN PROGRESS');
+
+    await enPage.click('button[data-board-group-id="epic:epic-15"]');
+    await expectContains(enPage, '#stage-list', '15-1-runtime-dashboard-sft');
+    await expectContains(enPage, '#stage-list', 'Implementation');
+    await expectContains(enPage, '#stage-list', 'IN PROGRESS');
+    await enPage.click('button[data-work-item-id="story:15-1-runtime-dashboard-sft"]');
     await expectContains(enPage, '#inspector-runtime', 'Epic 15');
+
+    await enPage.click('button[data-tab="runtime"]');
+    await expectContains(enPage, '#panel-runtime', 'Implementation');
+    await enPage.click('button[data-board-group-id="queue:bugfix"]');
 
     await enPage.click('button[data-locale="zh"]');
     await expectText(enPage, '#hero-eyebrow', '运行时观测台');
