@@ -274,10 +274,19 @@ function App() {
                     <strong className="flex-1 min-w-0 text-[14px] leading-6 text-primary truncate">{item.title}</strong>
                     <Badge label={formatBoardStatus(item.board_status, msg)} tone={item.board_status === 'done' ? 'mint' : item.board_status === 'in_progress' ? 'cyan' : 'amber'} />
                   </div>
-                  <div className="grid gap-2 md:grid-cols-3">
-                    <div className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-2"><div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.status}</div><div className="text-[14px] font-semibold text-primary">{formatBoardStatus(item.board_status, msg)}</div></div>
-                    <div className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-2"><div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.currentStage}</div><div className="text-[14px] font-semibold text-primary">{item.current_stage ? formatStage(locale, item.current_stage, msg) : msg.unavailable}</div></div>
-                    <div className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-2"><div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.score}</div><div className="text-[14px] font-semibold text-primary">{item.phase_score != null ? item.phase_score : msg.unavailable}</div></div>
+                  <div className="grid gap-2 md:grid-cols-[1.05fr_1.2fr_0.75fr]">
+                    <div className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-2">
+                      <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.status}</div>
+                      <div className="text-[14px] font-semibold text-primary text-truncate">{formatBoardStatus(item.board_status, msg)}</div>
+                    </div>
+                    <div className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-2">
+                      <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.currentStage}</div>
+                      <div className="text-[14px] font-semibold text-primary text-truncate">{item.current_stage ? formatStage(locale, item.current_stage, msg) : msg.unavailable}</div>
+                    </div>
+                    <div className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-2">
+                      <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.score}</div>
+                      <div className="text-[14px] font-semibold text-primary text-truncate">{item.phase_score != null ? item.phase_score : msg.unavailable}</div>
+                    </div>
                   </div>
                 </button>
               ))}

@@ -48,7 +48,7 @@
 @layer components {
   .dashboard-shell {
     @apply grid gap-4 rounded-[24px] border p-[18px];
-    grid-template-columns: 320px minmax(0, 1fr);
+    grid-template-columns: 420px minmax(0, 1fr);
     align-items: stretch;
     min-height: calc(100vh - 180px);
     border-color: var(--color-line-soft);
@@ -58,8 +58,8 @@
 
   .dashboard-left-column {
     min-width: 0;
-    width: 320px;
-    max-width: 320px;
+    width: 420px;
+    max-width: 420px;
     overflow: hidden;
   }
 

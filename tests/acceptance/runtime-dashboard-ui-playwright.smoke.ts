@@ -134,12 +134,17 @@ async function run(): Promise<void> {
     const railBox = await enPage.locator('.dashboard-left-column').boundingBox();
     const mainBox = await enPage.locator('.dashboard-main').boundingBox();
     assert.ok(railBox && mainBox, 'dashboard columns should be measurable');
+    assert.ok((railBox?.width ?? 0) >= 400, 'left rail should be widened for board groups and work items');
     assert.ok((railBox.y + railBox.height) <= (mainBox.y + 4), 'left rail should not overlap main content vertically');
 
     await enPage.click('button[data-board-group-id="epic:epic-15"]');
     await expectContains(enPage, '#stage-list', '15-1-runtime-dashboard-sft');
     await expectContains(enPage, '#stage-list', 'Implementation');
     await expectContains(enPage, '#stage-list', 'IN PROGRESS');
+    const workItemCardText = await enPage.locator('button[data-work-item-id="story:15-1-runtime-dashboard-sft"]').textContent();
+    assert.ok(workItemCardText?.includes('Status'), 'work item card should keep status block visible after widening');
+    assert.ok(workItemCardText?.includes('Current Stage'), 'work item card should keep stage block visible after widening');
+    assert.ok(workItemCardText?.includes('Score'), 'work item card should keep score block visible after widening');
     await enPage.click('button[data-work-item-id="story:15-1-runtime-dashboard-sft"]');
     await expectContains(enPage, '#inspector-runtime', 'Epic 15');
 
