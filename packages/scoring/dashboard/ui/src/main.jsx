@@ -22,6 +22,9 @@ const messages = {
     currentStage: '当前阶段',
     status: '状态',
     score: '分数',
+    swimlaneTodo: '待开始',
+    swimlaneInProgress: '进行中',
+    swimlaneDone: '已完成',
     todo: '待开始',
     inProgress: '进行中',
     done: '已完成',
@@ -67,6 +70,9 @@ const messages = {
     currentStage: 'Current Stage',
     status: 'Status',
     score: 'Score',
+    swimlaneTodo: 'TODO',
+    swimlaneInProgress: 'IN PROGRESS',
+    swimlaneDone: 'DONE',
     todo: 'TODO',
     inProgress: 'IN PROGRESS',
     done: 'DONE',
@@ -213,6 +219,7 @@ function App() {
 
   const workboard = snapshot?.workboard ?? { board_groups: [], work_items: [], active_board_group_id: null, active_work_item_id: null };
   const boardGroups = workboard.board_groups ?? [];
+  const swimlanes = workboard.swimlanes ?? { todo: [], in_progress: [], done: [] };
   const activeBoardGroupId = selection.activeBoardGroupId ?? workboard.active_board_group_id ?? boardGroups[0]?.board_group_id ?? null;
   const activeBoardGroup = boardGroups.find((group) => group.board_group_id === activeBoardGroupId) ?? null;
   const workItems = (workboard.work_items ?? []).filter((item) => item.board_group_id === activeBoardGroupId);
@@ -268,28 +275,45 @@ function App() {
             <div className="grid gap-4" id="stage-list">
               {workItems.length === 0 ? (
                 <div className="empty-note">{isLoading ? msg.loading : msg.noData}</div>
-              ) : workItems.map((item) => (
-                <button key={item.work_item_id} type="button" data-work-item-id={item.work_item_id} className={`panel-card p-4 text-left ${item.work_item_id === activeWorkItemId ? 'item-active' : ''}`} onClick={() => setSelection((current) => ({ ...current, activeBoardGroupId: item.board_group_id, activeWorkItemId: item.work_item_id }))}>
-                  <div className="mb-3 flex items-start justify-between gap-3">
-                    <strong className="flex-1 min-w-0 text-[14px] leading-6 text-primary truncate">{item.title}</strong>
-                    <Badge label={formatBoardStatus(item.board_status, msg)} tone={item.board_status === 'done' ? 'mint' : item.board_status === 'in_progress' ? 'cyan' : 'amber'} />
-                  </div>
-                  <div className="grid gap-2 md:grid-cols-[1.05fr_1.2fr_0.75fr]">
-                    <div className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-2">
-                      <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.status}</div>
-                      <div className="text-[14px] font-semibold text-primary text-truncate">{formatBoardStatus(item.board_status, msg)}</div>
-                    </div>
-                    <div className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-2">
-                      <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.currentStage}</div>
-                      <div className="text-[14px] font-semibold text-primary text-truncate">{item.current_stage ? formatStage(locale, item.current_stage, msg) : msg.unavailable}</div>
-                    </div>
-                    <div className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-2">
-                      <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.score}</div>
-                      <div className="text-[14px] font-semibold text-primary text-truncate">{item.phase_score != null ? item.phase_score : msg.unavailable}</div>
-                    </div>
-                  </div>
-                </button>
-              ))}
+              ) : (
+                <>
+                  {[
+                    ['todo', msg.swimlaneTodo],
+                    ['in_progress', msg.swimlaneInProgress],
+                    ['done', msg.swimlaneDone],
+                  ].map(([laneKey, laneLabel]) => (
+                    <section key={laneKey} className="rounded-[18px] border border-soft bg-white/[0.02] p-3" data-swimlane={laneKey}>
+                      <div className="mb-3 text-[12px] uppercase tracking-[0.12em] text-secondary">{laneLabel}</div>
+                      <div className="grid gap-3">
+                        {(swimlanes[laneKey] ?? []).length === 0 ? (
+                          <div className="empty-note">{msg.noData}</div>
+                        ) : (swimlanes[laneKey] ?? []).map((item) => (
+                          <button key={item.work_item_id} type="button" data-work-item-id={item.work_item_id} className={`panel-card p-4 text-left ${item.work_item_id === activeWorkItemId ? 'item-active' : ''}`} onClick={() => setSelection((current) => ({ ...current, activeBoardGroupId: item.board_group_id, activeWorkItemId: item.work_item_id }))}>
+                            <div className="mb-3 flex items-start justify-between gap-3">
+                              <strong className="flex-1 min-w-0 text-[14px] leading-6 text-primary truncate">{item.title}</strong>
+                              <Badge label={formatBoardStatus(item.board_status, msg)} tone={item.board_status === 'done' ? 'mint' : item.board_status === 'in_progress' ? 'cyan' : 'amber'} />
+                            </div>
+                            <div className="grid gap-2 md:grid-cols-[1.05fr_1.2fr_0.75fr]">
+                              <div className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-2">
+                                <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.status}</div>
+                                <div className="text-[14px] font-semibold text-primary text-truncate">{formatBoardStatus(item.board_status, msg)}</div>
+                              </div>
+                              <div className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-2">
+                                <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.currentStage}</div>
+                                <div className="text-[14px] font-semibold text-primary text-truncate">{item.current_stage ? formatStage(locale, item.current_stage, msg) : msg.unavailable}</div>
+                              </div>
+                              <div className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-2">
+                                <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.score}</div>
+                                <div className="text-[14px] font-semibold text-primary text-truncate">{item.phase_score != null ? item.phase_score : msg.unavailable}</div>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </>
+              )}
             </div>
             </section>
             </div>

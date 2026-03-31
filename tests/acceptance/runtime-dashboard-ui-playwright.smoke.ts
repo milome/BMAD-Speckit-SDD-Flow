@@ -119,6 +119,9 @@ async function run(): Promise<void> {
     assert.equal(epic15Count, 1, 'board group list should not duplicate Epic 15');
     await expectContains(enPage, '#stage-list', 'Current Stage');
     await expectContains(enPage, '#stage-list', 'Status');
+    await expectContains(enPage, '#stage-list', 'TODO');
+    await expectContains(enPage, '#stage-list', 'IN PROGRESS');
+    await expectContains(enPage, '#stage-list', 'DONE');
     await expectContains(enPage, '#stage-list', 'Fix Runtime Dashboard Findings Duplication');
     await expectContains(enPage, '#stage-list', 'IN PROGRESS');
     await expectContains(enPage, '#stage-list', 'Score');
@@ -127,12 +130,14 @@ async function run(): Promise<void> {
 
     await enPage.click('button[data-board-group-id="queue:standalone-ops"]');
     await expectContains(enPage, '#stage-list', 'Scores');
-    await expectContains(enPage, '#stage-list', 'Implementation');
+    await expectContains(enPage, '#stage-list', 'IN PROGRESS');
     await expectContains(enPage, '#stage-list', 'IN PROGRESS');
 
     await enPage.click('button[data-board-group-id="queue:bugfix"]');
     await expectContains(enPage, '#stage-list', 'Fix Runtime Dashboard Findings Duplication');
     await expectContains(enPage, '#stage-list', 'IN PROGRESS');
+    const laneCount = await enPage.locator('#stage-list [data-swimlane]').count();
+    assert.equal(laneCount, 3, 'left rail should render three swimlanes');
     const railBox = await enPage.locator('.dashboard-left-column').boundingBox();
     const mainBox = await enPage.locator('.dashboard-main').boundingBox();
     assert.ok(railBox && mainBox, 'dashboard columns should be measurable');
@@ -140,9 +145,8 @@ async function run(): Promise<void> {
     assert.ok((railBox.y + railBox.height) <= (mainBox.y + 4), 'left rail should not overlap main content vertically');
 
     await enPage.click('button[data-board-group-id="epic:epic-15"]');
-    await expectContains(enPage, '#stage-list', '15-1-runtime-dashboard-sft');
-    await expectContains(enPage, '#stage-list', 'Implementation');
-    await expectContains(enPage, '#stage-list', 'IN PROGRESS');
+    await expectContains(enPage, '#run-list', 'Epic 15');
+    await expectContains(enPage, '#stage-list', 'DONE');
     const workItemCardText = await enPage.locator('button[data-work-item-id="story:15-1-runtime-dashboard-sft"]').textContent();
     assert.ok(workItemCardText?.includes('Status'), 'work item card should keep status block visible after widening');
     assert.ok(workItemCardText?.includes('Current Stage'), 'work item card should keep stage block visible after widening');
@@ -171,6 +175,9 @@ async function run(): Promise<void> {
     await expectContains(enPage, '#stage-list', '当前阶段');
     await expectContains(enPage, '#stage-list', '状态');
     await expectContains(enPage, '#stage-list', '分数');
+    await expectContains(enPage, '#stage-list', '待开始');
+    await expectContains(enPage, '#stage-list', '进行中');
+    await expectContains(enPage, '#stage-list', '已完成');
 
     await enPage.click('button[data-tab="score"]');
     await expectContains(enPage, '#panel-score', '问题流');

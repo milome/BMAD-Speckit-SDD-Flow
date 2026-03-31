@@ -816,4 +816,71 @@ describe('runtime-aware dashboard query', () => {
     const epic15Groups = snapshot.workboard.board_groups.filter((group) => group.board_group_label === 'Epic 15');
     expect(epic15Groups).toHaveLength(1);
   });
+
+  it('builds todo/in-progress/done swimlanes for the active board group', () => {
+    const snapshot = buildRuntimeDashboardModel({
+      events: [
+        makeEvent({
+          run_id: 'run-standalone-todo-001',
+          event_id: 'evt-todo-001',
+          timestamp: '2026-03-28T00:00:00.000Z',
+          payload: { status: 'pending' },
+        }),
+        makeEvent({
+          run_id: 'run-standalone-active-001',
+          event_id: 'evt-active-001',
+          timestamp: '2026-03-28T00:05:00.000Z',
+          payload: { status: 'pending' },
+        }),
+        makeEvent({
+          run_id: 'run-standalone-active-001',
+          event_id: 'evt-active-002',
+          event_type: 'stage.started',
+          stage: 'plan',
+          timestamp: '2026-03-28T00:10:00.000Z',
+          payload: { status: 'running' },
+        }),
+      ],
+      scoreRecords: [
+        makeScoreRecord({
+          run_id: 'run-standalone-done-001',
+          phase_score: 97,
+          source_path: '_bmad-output/implementation-artifacts/_orphan/standalone_tasks/finished-item.md',
+          timestamp: '2026-03-28T00:20:00.000Z',
+        }),
+      ],
+      options: {
+        boardGroupId: 'queue:standalone-ops',
+      },
+    });
+
+    expect(snapshot.workboard.swimlanes?.todo).toHaveLength(1);
+    expect(snapshot.workboard.swimlanes?.in_progress).toHaveLength(1);
+    expect(snapshot.workboard.swimlanes?.done).toHaveLength(1);
+  });
+
+  it('prefers the bugfix board group when the selected run id is bugfix-scoped', () => {
+    const snapshot = buildRuntimeDashboardModel({
+      events: [],
+      scoreRecords: [
+        makeScoreRecord({
+          run_id: 'run-standalone-ops-001',
+          source_path: '_bmad-output/implementation-artifacts/_orphan/standalone_tasks/improve-audit-rollup.md',
+          phase_score: 93,
+        }),
+        makeScoreRecord({
+          run_id: 'run-bugfix-queue-001',
+          stage: 'plan',
+          source_path: '_bmad-output/implementation-artifacts/_orphan/bugfix/fix-runtime-dashboard-findings-duplication.md',
+          phase_score: 90,
+          timestamp: '2026-03-28T00:30:00.000Z',
+        }),
+      ],
+      options: {
+        boardGroupId: 'queue:bugfix',
+      },
+    });
+
+    expect(snapshot.workboard.active_board_group_id).toBe('queue:bugfix');
+  });
 });

@@ -185,6 +185,7 @@ export interface DashboardWorkboardPayload {
   active_work_item_id: string | null;
   board_groups: DashboardBoardGroup[];
   work_items: DashboardWorkItem[];
+  swimlanes?: Record<DashboardBoardStatus, DashboardWorkItem[]>;
 }
 
 interface DashboardWorkboardResolution {
@@ -442,6 +443,20 @@ function inferFlowForSeed(seed: Pick<RunWorkItemSeed, 'flow' | 'scope' | 'source
   if (normalized.includes('/bugfix/') || normalized.includes('/bugfix_') || normalized.includes('/bugfix-')) return 'bugfix';
   if (normalized.includes('/story-') || normalized.includes('/story/')) return 'story';
   return 'unknown';
+}
+
+function preferredBoardGroupIdForSelectedRun(
+  workItems: WorkItemAggregateCandidate[],
+  selectedRunId: string | null
+): string | null {
+  if (!selectedRunId) return null;
+  const directMatch = workItems.find((item) => item.run_ids.includes(selectedRunId));
+  if (directMatch) return directMatch.board_group_id;
+
+  const runIdLower = selectedRunId.toLowerCase();
+  if (runIdLower.includes('bugfix')) return 'queue:bugfix';
+  if (runIdLower.includes('standalone')) return 'queue:standalone-ops';
+  return null;
 }
 
 function deriveWorkItemIdentity(seed: RunWorkItemSeed): WorkItemIdentity | null {
@@ -770,7 +785,8 @@ function buildWorkboard(
   const selectedWorkItem = selectedRunId
     ? workItems.find((item) => item.run_ids.includes(selectedRunId)) ?? null
     : null;
-  const activeBoardGroupId = options.boardGroupId ?? selectedWorkItem?.board_group_id ?? boardGroups[0]?.board_group_id ?? null;
+  const preferredBoardGroupId = preferredBoardGroupIdForSelectedRun(workItems, selectedRunId);
+  const activeBoardGroupId = options.boardGroupId ?? preferredBoardGroupId ?? selectedWorkItem?.board_group_id ?? boardGroups[0]?.board_group_id ?? null;
   const filteredWorkItems = workItems
     .filter((item) => item.board_group_id === activeBoardGroupId)
     .sort((left, right) => {
@@ -794,6 +810,11 @@ function buildWorkboard(
     active_work_item_id: activeWorkItemId,
     board_groups: boardGroups,
     work_items: workItems.map(({ _board_group_kind, ...item }) => item),
+    swimlanes: {
+      todo: filteredWorkItems.filter((item) => item.board_status === 'todo').map(({ _board_group_kind, ...item }) => item),
+      in_progress: filteredWorkItems.filter((item) => item.board_status === 'in_progress').map(({ _board_group_kind, ...item }) => item),
+      done: filteredWorkItems.filter((item) => item.board_status === 'done').map(({ _board_group_kind, ...item }) => item),
+    },
   };
 
   return {
