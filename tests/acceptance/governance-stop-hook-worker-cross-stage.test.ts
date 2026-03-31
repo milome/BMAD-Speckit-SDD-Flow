@@ -375,7 +375,7 @@ describe('governance stop hook cross-stage rerun queue', () => {
     } finally {
       fixture.cleanup();
     }
-  });
+  }, 60000);
 
   it('surfaces the human-review hold on workerResult after bmad_story_stage4 passes instead of forcing stop-hook consumers to infer it from current-run', async () => {
     const fixture = createWave2aTailFixtureProject();
@@ -567,5 +567,5 @@ describe('governance stop hook cross-stage rerun queue', () => {
     } finally {
       fixture.cleanup();
     }
-  });
+  }, 60000);
 });

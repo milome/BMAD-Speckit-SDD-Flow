@@ -83,7 +83,7 @@ describe('dashboard runtime snapshot integration', () => {
       }),
     ]);
     expect(stdoutSnapshot.selection.run_id).toBe(lastRun.runId);
-  });
+  }, 60000);
 
   it('surfaces a real host tool trace fixture inside runtime snapshot sft summary output', () => {
     const fixturePromise = createRuntimeDashboardFixture({

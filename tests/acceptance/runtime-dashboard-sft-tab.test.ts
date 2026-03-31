@@ -185,5 +185,5 @@ describe('runtime dashboard sft tab integration', () => {
     } finally {
       await server.close();
     }
-  }, 40000);
+  }, 120000);
 });

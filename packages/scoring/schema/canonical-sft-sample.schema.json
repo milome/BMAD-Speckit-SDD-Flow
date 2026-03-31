@@ -1,0 +1,326 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.dev/schema/canonical-sft-sample.schema.json",
+  "title": "Canonical SFT Sample",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "sample_id",
+    "sample_version",
+    "source",
+    "messages",
+    "metadata",
+    "quality",
+    "provenance",
+    "split",
+    "redaction",
+    "export_compatibility"
+  ],
+  "properties": {
+    "sample_id": { "type": "string", "minLength": 1 },
+    "sample_version": { "const": "v1" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run_id", "stage", "flow", "event_ids", "artifact_refs"],
+      "properties": {
+        "run_id": { "type": "string", "minLength": 1 },
+        "stage": { "type": "string", "minLength": 1 },
+        "flow": { "type": "string", "minLength": 1 },
+        "epic_id": { "type": "string" },
+        "story_id": { "type": "string" },
+        "story_slug": { "type": "string" },
+        "event_ids": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "score_record_id": { "type": "string" },
+        "artifact_refs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "content_hash"],
+            "properties": {
+              "path": { "type": "string", "minLength": 1 },
+              "content_hash": { "type": "string", "minLength": 1 },
+              "source_hash": { "type": "string" },
+              "kind": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "messages": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "content"],
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": ["system", "user", "assistant", "tool"]
+          },
+          "content": {
+            "oneOf": [
+              { "type": "string" },
+              {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["type", "text"],
+                  "properties": {
+                    "type": { "const": "text" },
+                    "text": { "type": "string" }
+                  }
+                }
+              }
+            ]
+          },
+          "name": { "type": "string" },
+          "tool_call_id": { "type": "string" },
+          "tool_calls": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "type", "function"],
+              "properties": {
+                "id": { "type": "string", "minLength": 1 },
+                "type": { "const": "function" },
+                "function": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["name", "arguments"],
+                  "properties": {
+                    "name": { "type": "string", "minLength": 1 },
+                    "arguments": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "weight": {
+            "type": "integer",
+            "enum": [0, 1]
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "function"],
+        "properties": {
+          "type": { "const": "function" },
+          "function": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "parameters"],
+            "properties": {
+              "name": { "type": "string", "minLength": 1 },
+              "description": { "type": "string" },
+              "parameters": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_targets"],
+      "properties": {
+        "schema_targets": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["openai_chat", "hf_conversational", "hf_tool_calling"]
+          }
+        },
+        "sample_kind": {
+          "type": "string",
+          "enum": ["implementation", "documentation"]
+        },
+        "host": { "type": "string" },
+        "language": { "type": "string" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "acceptance_decision",
+        "phase_score",
+        "raw_phase_score",
+        "veto_triggered",
+        "iteration_count",
+        "has_code_pair",
+        "token_estimate",
+        "dedupe_cluster_id",
+        "safety_flags",
+        "rejection_reasons",
+        "warnings"
+      ],
+      "properties": {
+        "acceptance_decision": {
+          "type": "string",
+          "enum": ["accepted", "rejected", "downgraded"]
+        },
+        "phase_score": { "type": ["number", "null"] },
+        "raw_phase_score": { "type": ["number", "null"] },
+        "dimension_scores": {
+          "type": "object",
+          "additionalProperties": { "type": "number" }
+        },
+        "dimension_floors": {
+          "type": "object",
+          "additionalProperties": { "type": "number" }
+        },
+        "veto_triggered": { "type": "boolean" },
+        "iteration_count": { "type": "integer", "minimum": 0 },
+        "has_code_pair": { "type": "boolean" },
+        "token_estimate": { "type": "integer", "minimum": 0 },
+        "dedupe_cluster_id": { "type": ["string", "null"] },
+        "safety_flags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "rejection_reasons": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "warnings": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_commit_hash",
+        "content_hash",
+        "source_hash",
+        "source_path",
+        "patch_ref",
+        "lineage",
+        "generated_at"
+      ],
+      "properties": {
+        "base_commit_hash": { "type": ["string", "null"] },
+        "content_hash": { "type": ["string", "null"] },
+        "source_hash": { "type": ["string", "null"] },
+        "source_path": { "type": ["string", "null"] },
+        "patch_ref": { "type": ["string", "null"] },
+        "lineage": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "split": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assignment", "seed", "strategy", "group_key"],
+      "properties": {
+        "assignment": {
+          "type": "string",
+          "enum": ["train", "validation", "test", "holdout"]
+        },
+        "seed": { "type": "integer" },
+        "strategy": { "type": "string", "minLength": 1 },
+        "group_key": { "type": ["string", "null"] }
+      }
+    },
+    "redaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "applied_rules", "findings", "redacted_fields"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["clean", "redacted", "blocked"]
+        },
+        "applied_rules": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "severity", "field_path"],
+            "properties": {
+              "kind": { "type": "string", "minLength": 1 },
+              "severity": {
+                "type": "string",
+                "enum": ["low", "medium", "high", "critical"]
+              },
+              "field_path": { "type": "string", "minLength": 1 },
+              "action": { "type": "string" }
+            }
+          }
+        },
+        "redacted_fields": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "export_compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["openai_chat", "hf_conversational", "hf_tool_calling"],
+      "properties": {
+        "openai_chat": { "$ref": "#/$defs/exportDecision" },
+        "hf_conversational": { "$ref": "#/$defs/exportDecision" },
+        "hf_tool_calling": { "$ref": "#/$defs/exportDecision" }
+      }
+    }
+  },
+  "$defs": {
+    "exportDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["compatible", "reasons", "warnings"],
+      "properties": {
+        "compatible": { "type": "boolean" },
+        "reasons": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "warnings": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -26,7 +26,7 @@ describe('sft dataset cli regression', () => {
     expect((validate.stdout || '') + (validate.stderr || '')).toContain('sft-validate');
 
     expect(bundle.status).toBe(0);
-    expect((bundle.stdout || '') + (bundle.stderr || '')).toContain('sft-bundle');
+    expect((bundle.stdout || '') + (bundle.stderr || '')).toContain('bundle-dir');
 
     expect(extract.status).toBe(0);
     expect((extract.stdout || '') + (extract.stderr || '')).toContain('--target');

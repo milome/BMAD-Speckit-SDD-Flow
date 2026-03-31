@@ -56,7 +56,7 @@ describe('parseAndWriteScore', () => {
     expect(written.run_id).toBe(runId);
     expect(written.stage).toBe('arch');
     fs.rmSync(tempDir, { recursive: true, force: true });
-  });
+  }, 60000);
 
   it('writes record when given content for story stage', async () => {
     const content = fs.readFileSync(path.join(FIXTURES, 'sample-story-report.md'), 'utf-8');

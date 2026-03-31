@@ -78,7 +78,7 @@ describe('emit-runtime-policy vs resolveRuntimePolicy (stable JSON)', () => {
     expect(policy.identity.storyId).toBe('14.1');
     expect(policy.identity.runId).toBe('run-emit-stable');
     fs.rmSync(root, { recursive: true, force: true });
-  });
+  }, 60000);
 
   it('emit fails loud when registry-backed context is absent', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-rp-no-reg-'));

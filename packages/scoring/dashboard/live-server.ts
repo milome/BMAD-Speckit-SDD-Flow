@@ -25,6 +25,7 @@ function resolveUiAsset(assetName: string): string {
   const candidates = [
     path.join(__dirname, 'ui', assetName),
     path.resolve(__dirname, '..', '..', 'dashboard', 'ui', assetName),
+    path.resolve(process.cwd(), 'packages', 'scoring', 'dashboard', 'ui', assetName),
   ];
 
   for (const candidate of candidates) {
@@ -60,6 +61,22 @@ function sendText(
   response.end(fs.readFileSync(filePath, 'utf-8'));
 }
 
+function parseDashboardQueryOptions(
+  requestUrl: URL,
+  options: LiveDashboardServerOptions
+): RuntimeDashboardQueryOptions {
+  return {
+    root: options.root,
+    dataPath: options.dataPath,
+    strategy: options.strategy,
+    epic: options.epic,
+    story: options.story,
+    windowHours: options.windowHours,
+    workItemId: requestUrl.searchParams.get('work_item_id') ?? undefined,
+    boardGroupId: requestUrl.searchParams.get('board_group_id') ?? undefined,
+  };
+}
+
 export async function startLiveDashboardServer(
   options: LiveDashboardServerOptions = {}
 ): Promise<LiveDashboardServerHandle> {
@@ -75,14 +92,7 @@ export async function startLiveDashboardServer(
       return;
     }
 
-    const snapshot = queryRuntimeDashboard({
-      root: options.root,
-      dataPath: options.dataPath,
-      strategy: options.strategy,
-      epic: options.epic,
-      story: options.story,
-      windowHours: options.windowHours,
-    });
+    const snapshot = queryRuntimeDashboard(parseDashboardQueryOptions(requestUrl, options));
 
     if (requestUrl.pathname === '/health') {
       sendJson(response, 200, {
@@ -114,6 +124,10 @@ export async function startLiveDashboardServer(
     }
     if (requestUrl.pathname === '/api/sft-summary') {
       sendJson(response, 200, snapshot.sft_summary);
+      return;
+    }
+    if (requestUrl.pathname === '/api/workboard') {
+      sendJson(response, 200, snapshot.workboard);
       return;
     }
 

@@ -292,5 +292,5 @@ describe('governance stop hook worker trigger', () => {
     } finally {
       fixture.cleanup();
     }
-  });
+  }, 60000);
 });

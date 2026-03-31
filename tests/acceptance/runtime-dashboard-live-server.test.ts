@@ -33,8 +33,9 @@ describe('runtime dashboard live server', () => {
 
         expect(response.ok).toBe(true);
         expect(html).toContain('Runtime Observatory');
-        expect(html).toContain('Overview');
-        expect(html).toContain('SFT Builder Summary');
+        expect(html).toContain('id="app"');
+        expect(html).toContain('/app.js');
+        expect(html).toContain('/styles.css');
         expect(consoleSpy.mock.calls.flat().join(' ')).not.toContain(
           'implement stage report has no parseable dimension_scores'
         );

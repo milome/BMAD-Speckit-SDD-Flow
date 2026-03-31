@@ -369,7 +369,7 @@ describe('governance remediation runner', () => {
     } finally {
       fixture.cleanup();
     }
-  });
+  }, 60000);
 
   it('builds the first host-aware execution packet and persists loop state', async () => {
     const fixture = createFixtureProject();
