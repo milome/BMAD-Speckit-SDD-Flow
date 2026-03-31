@@ -5,6 +5,7 @@ export interface RuntimeMcpServerOptions extends RuntimeDashboardQueryOptions {
   host?: string;
   dashboardUrl?: string;
   dashboardPort?: number;
+  dashboardSource?: 'state_reused' | 'mcp_owned' | 'external_url';
 }
 
 interface JsonRpcRequest {
@@ -90,7 +91,7 @@ export async function invokeRuntimeMcpTool(
   toolName: string,
   toolArgs: Record<string, unknown> | undefined,
   dashboardUrl: string | null,
-  options: RuntimeMcpServerOptions
+  options: RuntimeMcpServerOptions & { dashboardSource?: 'state_reused' | 'mcp_owned' | 'external_url' }
 ): Promise<Record<string, unknown>> {
   const snapshot = queryRuntimeDashboard(options);
 
@@ -162,6 +163,7 @@ export async function invokeRuntimeMcpTool(
         mcp: 'up',
         shared_core: 'up',
         dashboard_url: dashboardUrl,
+        dashboard_source: options.dashboardSource ?? 'mcp_owned',
       });
     default:
       return buildToolResult(`unknown tool: ${toolName}`, {
@@ -202,6 +204,7 @@ export async function runRuntimeMcpServer(
 ): Promise<void> {
   let liveServer: LiveDashboardServerHandle | null = null;
   let dashboardUrl = options.dashboardUrl ?? null;
+  let dashboardSource: 'state_reused' | 'mcp_owned' | 'external_url' = options.dashboardSource ?? (options.dashboardUrl ? 'external_url' : 'mcp_owned');
 
   if (!dashboardUrl) {
     liveServer = await startLiveDashboardServer({
@@ -215,6 +218,7 @@ export async function runRuntimeMcpServer(
       windowHours: options.windowHours,
     });
     dashboardUrl = liveServer.url;
+    dashboardSource = 'mcp_owned';
   }
 
   const cleanup = async () => {
@@ -279,7 +283,10 @@ export async function runRuntimeMcpServer(
           request.params && typeof request.params.arguments === 'object'
             ? (request.params.arguments as Record<string, unknown>)
             : undefined;
-        const result = await invokeRuntimeMcpTool(toolName, toolArgs, dashboardUrl, options);
+        const result = await invokeRuntimeMcpTool(toolName, toolArgs, dashboardUrl, {
+          ...options,
+          dashboardSource,
+        });
         writeMessage({
           jsonrpc: '2.0',
           id: request.id,

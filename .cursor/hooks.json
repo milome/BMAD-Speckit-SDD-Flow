@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "node .cursor/hooks/runtime-policy-inject.js --cursor-host --session-start"
+      },
+      {
+        "command": "node .cursor/hooks/runtime-dashboard-session-start.js"
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": "node .cursor/hooks/runtime-policy-inject.js --cursor-host"
+      }
+    ],
+    "subagentStart": [
+      {
+        "command": "node .cursor/hooks/runtime-policy-inject.js --cursor-host --subagent-start"
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "node .cursor/hooks/post-tool-use.js"
+      }
+    ]
+  }
+}

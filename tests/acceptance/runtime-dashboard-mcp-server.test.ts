@@ -5,6 +5,8 @@ import { spawn } from 'node:child_process';
 import { createRuntimeDashboardFixture } from '../helpers/runtime-dashboard-fixture';
 import { ensureScoringBuild } from '../helpers/ensure-scoring-build';
 
+ensureScoringBuild(process.cwd());
+
 interface JsonRpcMessage {
   jsonrpc: '2.0';
   id?: number;
@@ -110,6 +112,19 @@ describe('runtime dashboard mcp server', () => {
         );
         const summaryResponse = await readMessage(proc);
 
+        proc.stdin.write(
+          encodeMessage({
+            jsonrpc: '2.0',
+            id: 4,
+            method: 'tools/call',
+            params: {
+              name: 'get_runtime_service_health',
+              arguments: {},
+            },
+          })
+        );
+        const healthResponse = await readMessage(proc);
+
         expect(initResponse.result?.capabilities).toBeDefined();
         expect(toolsResponse.result?.tools).toEqual(
           expect.arrayContaining([
@@ -123,6 +138,11 @@ describe('runtime dashboard mcp server', () => {
             run_id: fixture.runId,
             status: 'running',
             current_stage: 'implement',
+          })
+        );
+        expect(healthResponse.result?.structuredContent).toEqual(
+          expect.objectContaining({
+            dashboard_url: expect.stringMatching(/^http:\/\/127\.0\.0\.1:/),
           })
         );
         expect(consoleSpy.mock.calls.flat().join(' ')).not.toContain(

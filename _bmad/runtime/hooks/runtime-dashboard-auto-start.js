@@ -22,4 +22,8 @@ async function autoStartRuntimeDashboard({ projectRoot, open = false }) {
   return ensureRuntimeDashboardServer({ root: projectRoot, open });
 }
 
-module.exports = { autoStartRuntimeDashboard, shouldAutoStart };
+function shouldAnnounceAutoStart(payload) {
+  return payload?.mode === 'started' || payload?.mode === 'restarted';
+}
+
+module.exports = { autoStartRuntimeDashboard, shouldAutoStart, shouldAnnounceAutoStart };

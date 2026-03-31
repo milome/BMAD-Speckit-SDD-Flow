@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 'use strict';
 
-const { autoStartRuntimeDashboard } = require('../../runtime/hooks/runtime-dashboard-auto-start.js');
+const { autoStartRuntimeDashboard, shouldAnnounceAutoStart } = require('../../runtime/hooks/runtime-dashboard-auto-start.js');
 
 async function main() {
   try {
     const payload = await autoStartRuntimeDashboard({ projectRoot: process.cwd(), open: false });
-    if (payload?.mode === 'started' || payload?.mode === 'restarted') {
+    if (shouldAnnounceAutoStart(payload)) {
       process.stdout.write(JSON.stringify({ systemMessage: `[BMAD Dashboard] ${payload.url}` }));
       return;
     }

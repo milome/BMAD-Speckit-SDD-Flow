@@ -23,6 +23,7 @@ function tryLoadLauncher() {
 async function runtimeMcpCommand(opts) {
   let dashboardUrl = opts.dashboardUrl;
   const launcher = tryLoadLauncher();
+  let dashboardSource = dashboardUrl ? 'external_url' : 'mcp_owned';
 
   if (!dashboardUrl && launcher && opts.dashboardPort == null) {
     const payload = await launcher.startRuntimeDashboardServer({
@@ -33,6 +34,7 @@ async function runtimeMcpCommand(opts) {
       open: false,
     });
     dashboardUrl = payload.url;
+    dashboardSource = 'state_reused';
   }
 
   const serverPromise = dashboardModule.runRuntimeMcpServer({
@@ -40,6 +42,7 @@ async function runtimeMcpCommand(opts) {
     dataPath: opts.dataPath,
     host: opts.host,
     dashboardUrl,
+    dashboardSource,
     dashboardPort:
       opts.dashboardPort != null ? Number(opts.dashboardPort) : undefined,
   });
