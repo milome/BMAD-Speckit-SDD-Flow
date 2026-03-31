@@ -663,16 +663,24 @@ function buildRunWorkItemSeeds(
 }
 
 function buildScoreFindings(record: RunScoreRecord): DashboardScoreFinding[] {
-  return record.check_items
-    .filter((item) => item.passed === false)
-    .map((item) => ({
+  const deduped = new Map<string, DashboardScoreFinding>();
+
+  for (const item of record.check_items.filter((candidate) => candidate.passed === false)) {
+    const finding = {
       run_id: record.run_id,
       stage: record.stage,
       timestamp: record.timestamp,
       item_id: item.item_id,
       note: item.note ?? item.item_id,
       score_delta: item.score_delta,
-    }));
+    };
+    const key = `${finding.run_id}::${finding.stage}::${finding.item_id}::${finding.note}::${finding.score_delta}`;
+    if (!deduped.has(key)) {
+      deduped.set(key, finding);
+    }
+  }
+
+  return [...deduped.values()];
 }
 
 function buildWorkboard(
@@ -745,7 +753,20 @@ function buildWorkboard(
     groupMap.set(item.board_group_id, existing);
   }
 
-  const boardGroups = [...groupMap.values()].sort((left, right) => left.sort_order - right.sort_order || left.board_group_label.localeCompare(right.board_group_label));
+  const dedupedBoardGroups = new Map<string, DashboardBoardGroup>();
+  for (const group of groupMap.values()) {
+    const existing = dedupedBoardGroups.get(group.board_group_label);
+    if (!existing) {
+      dedupedBoardGroups.set(group.board_group_label, group);
+      continue;
+    }
+
+    existing.counts.todo += group.counts.todo;
+    existing.counts.in_progress += group.counts.in_progress;
+    existing.counts.done += group.counts.done;
+  }
+
+  const boardGroups = [...dedupedBoardGroups.values()].sort((left, right) => left.sort_order - right.sort_order || left.board_group_label.localeCompare(right.board_group_label));
   const selectedWorkItem = selectedRunId
     ? workItems.find((item) => item.run_ids.includes(selectedRunId)) ?? null
     : null;

@@ -754,4 +754,66 @@ describe('runtime-aware dashboard query', () => {
       ])
     );
   });
+
+  it('deduplicates repeated findings for the same failed check item', () => {
+    const snapshot = buildRuntimeDashboardModel({
+      events: [],
+      scoreRecords: [
+        makeScoreRecord({
+          run_id: 'run-bugfix-queue-001',
+          stage: 'plan',
+          timestamp: '2026-03-28T00:02:00.000Z',
+          source_path: '_bmad-output/implementation-artifacts/_orphan/bugfix/fix-runtime-dashboard-findings-duplication.md',
+          check_items: [
+            { item_id: 'dup-1', note: 'same finding', passed: false, score_delta: -10 },
+            { item_id: 'dup-1', note: 'same finding', passed: false, score_delta: -10 },
+          ],
+        }),
+      ],
+      options: {
+        boardGroupId: 'queue:bugfix',
+      },
+    });
+
+    expect(snapshot.score_detail.findings).toHaveLength(1);
+    expect(snapshot.score_detail.findings[0]).toEqual(
+      expect.objectContaining({
+        item_id: 'dup-1',
+        note: 'same finding',
+        score_delta: -10,
+      })
+    );
+  });
+
+  it('deduplicates board groups with the same label', () => {
+    const snapshot = buildRuntimeDashboardModel({
+      events: [
+        makeEvent({
+          run_id: 'run-e15-s1-story',
+          event_id: 'evt-story-001',
+          timestamp: '2026-03-28T00:00:00.000Z',
+          payload: { status: 'pending' },
+          scope: {
+            story_key: '15-1-runtime-dashboard-sft',
+            epic_id: 'epic-15',
+            story_id: '15-1-runtime-dashboard-sft',
+            flow: 'story',
+          },
+        }),
+      ],
+      scoreRecords: [
+        makeScoreRecord({
+          run_id: 'run-e15-s1-story',
+          source_path: 'specs/epic-15/story-1-runtime-dashboard-sft/spec.md',
+        }),
+        makeScoreRecord({
+          run_id: 'run-e15-s1-story-dup',
+          source_path: 'docs/plans/story-15-1-runtime-dashboard.md',
+        }),
+      ],
+    });
+
+    const epic15Groups = snapshot.workboard.board_groups.filter((group) => group.board_group_label === 'Epic 15');
+    expect(epic15Groups).toHaveLength(1);
+  });
 });

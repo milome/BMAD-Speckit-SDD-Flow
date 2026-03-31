@@ -115,6 +115,8 @@ async function run(): Promise<void> {
     await expectContains(enPage, '#run-list', 'Epic Lane');
     await expectContains(enPage, '#run-list', 'Ops Queue');
     await expectContains(enPage, '#run-list', 'Bugfix Queue');
+    const epic15Count = await enPage.locator('#run-list').getByText('Epic 15', { exact: true }).count();
+    assert.equal(epic15Count, 1, 'board group list should not duplicate Epic 15');
     await expectContains(enPage, '#stage-list', 'Current Stage');
     await expectContains(enPage, '#stage-list', 'Status');
     await expectContains(enPage, '#stage-list', 'Fix Runtime Dashboard Findings Duplication');
@@ -192,6 +194,8 @@ async function run(): Promise<void> {
     await expectText(zhPage, '#runs-heading', '看板分组');
     await expectText(zhPage, '#stage-rail-heading', '工作项');
     await expectContains(zhPage, '#run-list', 'Epic 15');
+    const zhEpic15Count = await zhPage.locator('#run-list').getByText('Epic 15', { exact: true }).count();
+    assert.equal(zhEpic15Count, 1, 'board group list should not duplicate Epic 15 in zh locale');
     await zhPage.click('button[data-tab="overview"]');
     await expectContains(zhPage, '#panel-overview', '维度驱动项');
 
