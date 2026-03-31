@@ -41,6 +41,9 @@ const { ensureRunRuntimeContextCommand } = require('../src/commands/ensure-run-r
 const { syncRuntimeContextFromSprintCommand } = require('../src/commands/sync-runtime-context-from-sprint');
 const { runtimeMcpCommand } = require('../src/commands/runtime-mcp');
 const { dashboardLiveCommand } = require('../src/commands/dashboard-live');
+const { dashboardStartCommand } = require('../src/commands/dashboard-start');
+const { dashboardStatusCommand } = require('../src/commands/dashboard-status');
+const { dashboardStopCommand } = require('../src/commands/dashboard-stop');
 const ttyUtils = require('../src/utils/tty');
 
 // Show banner for init (including init --help) when in TTY
@@ -354,12 +357,46 @@ program
   });
 
 program
+  .command('dashboard-start')
+  .description('Start or reuse a stable local runtime dashboard web server')
+  .option('--dataPath <path>', 'Scoring data directory')
+  .option('--port <n>', 'Port to listen on', String(0))
+  .option('--host <host>', 'Host to bind', '127.0.0.1')
+  .option('--open', 'Open the dashboard in the default browser')
+  .action((opts) => {
+    dashboardStartCommand(opts).catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
+  });
+
+program
+  .command('dashboard-status')
+  .description('Inspect the stable runtime dashboard server state and health')
+  .action(() => {
+    dashboardStatusCommand().catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
+  });
+
+program
+  .command('dashboard-stop')
+  .description('Stop the stable runtime dashboard server and clear state')
+  .action(() => {
+    dashboardStopCommand().catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
+  });
+
+program
   .command('dashboard-live')
   .description('Start the local live runtime dashboard web server')
   .option('--dataPath <path>', 'Scoring data directory')
   .option('--port <n>', 'Port to listen on', String(43123))
   .option('--host <host>', 'Host to bind', '127.0.0.1')
-  .option('--open', 'Reserved for future browser-open behavior')
+  .option('--open', 'Start a stable background server and open the dashboard in the browser')
   .action((opts) => {
     dashboardLiveCommand(opts).catch((err) => {
       console.error(err);

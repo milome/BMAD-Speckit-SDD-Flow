@@ -57,8 +57,10 @@ describe('install to consumer → CLI acceptance', () => {
       expect(existsSync(join(target, '_bmad'))).toBe(true);
       expect(existsSync(join(target, '.cursor'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy.cjs'))).toBe(true);
+      expect(existsSync(join(target, '.cursor', 'hooks', 'runtime-dashboard-session-start.js'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'i18n'))).toBe(true);
       expect(existsSync(join(target, 'scripts', 'emit-runtime-policy.cjs'))).toBe(false);
+      expect(existsSync(join(target, 'scripts', 'start-runtime-dashboard-server.cjs'))).toBe(false);
 
       const out = run('npx bmad-speckit check', target);
       expect(out).toMatch(/Check OK|OK/i);
@@ -122,6 +124,9 @@ describe('install to consumer → CLI acceptance', () => {
       run(`npm install --save-dev "file:${pkgPath}"`, target);
       run('npx bmad-speckit-init --agent claude-code', target);
 
+      expect(existsSync(join(target, '.claude', 'hooks', 'session-start.js'))).toBe(true);
+      expect(existsSync(join(target, '_bmad', 'runtime', 'hooks', 'runtime-dashboard-auto-start.js'))).toBe(true);
+
       const aliases = [
         'speckit-specify.md',
         'speckit-plan.md',
@@ -137,6 +142,31 @@ describe('install to consumer → CLI acceptance', () => {
         expect(existsSync(runtime)).toBe(true);
         expect(readFileSync(runtime, 'utf8')).toBe(readFileSync(canonical, 'utf8'));
       }
+    } finally {
+      rmSync(target, { recursive: true, force: true });
+    }
+  }, 90_000);
+
+  it('consumer install syncs runtime dashboard auto-start skeleton for Cursor hooks', () => {
+    const target = mkdtempSync(join(tmpdir(), 'accept-consumer-dashboard-host-'));
+    try {
+      writeFileSync(
+        join(target, 'package.json'),
+        JSON.stringify({ name: 'consumer-app', version: '1.0.0', private: true }),
+        'utf8'
+      );
+
+      const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
+      run(`npm install --save-dev "file:${pkgPath}"`, target);
+
+      const hooksJson = readFileSync(join(target, '.cursor', 'hooks.json'), 'utf8');
+      expect(hooksJson).toContain('runtime-dashboard-session-start.js');
+
+      const hookScript = readFileSync(join(target, '.cursor', 'hooks', 'runtime-dashboard-session-start.js'), 'utf8');
+      expect(hookScript).toContain('autoStartRuntimeDashboard');
+
+      const sharedHelper = readFileSync(join(target, '_bmad', 'runtime', 'hooks', 'runtime-dashboard-auto-start.js'), 'utf8');
+      expect(sharedHelper).toContain('ensureRuntimeDashboardServer');
     } finally {
       rmSync(target, { recursive: true, force: true });
     }

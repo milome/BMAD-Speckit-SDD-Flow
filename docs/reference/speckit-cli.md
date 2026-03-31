@@ -11,6 +11,9 @@
 | 命令                                                 | 用途                                                                 | 关键输出                                                                                                                                                 |
 | ---------------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `bmad-speckit dashboard --json --output-json <path>` | 生成 dashboard markdown，并落一份 runtime snapshot JSON              | `_bmad-output/dashboard/runtime-dashboard.json`，顶层含 `selection` / `overview` / `runtime_context` / `stage_timeline` / `score_detail` / `sft_summary` |
+| `bmad-speckit dashboard-start`                       | 启动或复用稳定后台 dashboard server                                  | JSON；含 `mode`、`url`、`port`、`pid`、`state_path`                                                                                                      |
+| `bmad-speckit dashboard-status`                      | 查看稳定 dashboard server 当前状态与 health                          | JSON；含 state/health/pid/url                                                                                                                            |
+| `bmad-speckit dashboard-stop`                        | 停止稳定 dashboard server 并清理 state                               | JSON；含停止前状态                                                                                                                                        |
 | `bmad-speckit dashboard-live`                        | 启动本地 live dashboard web server                                   | stdout 打印 URL；提供 `/health`、`/api/snapshot`、`/api/runtime-context`、`/api/stage-timeline`、`/api/score-detail`、`/api/sft-summary`                 |
 | `bmad-speckit runtime-mcp`                           | 以 stdio 启动 runtime dashboard MCP server                           | 默认 `MCP-first`；若未提供 `--dashboard-url`，会自动拉起 live dashboard                                                                                  |
 | `bmad-speckit sft-preview`                           | 预览 canonical SFT 候选集                                            | JSON；含 accepted / rejected / downgraded、split 统计                                                                                                    |
@@ -27,6 +30,9 @@
 ### 推荐命令
 
 ```bash
+npx bmad-speckit dashboard-start --open
+npx bmad-speckit dashboard-status
+npx bmad-speckit dashboard-stop
 npx bmad-speckit dashboard-live
 npx bmad-speckit runtime-mcp --dashboard-port 43123
 npx bmad-speckit dashboard --json --include-runtime

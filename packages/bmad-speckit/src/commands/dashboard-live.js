@@ -1,6 +1,12 @@
 const { startLiveDashboardServer } = require('@bmad-speckit/scoring/dashboard');
 
 async function dashboardLiveCommand(opts) {
+  if (opts.open) {
+    const { dashboardStartCommand } = require('./dashboard-start');
+    await dashboardStartCommand(opts);
+    return;
+  }
+
   const server = await startLiveDashboardServer({
     root: process.cwd(),
     dataPath: opts.dataPath,

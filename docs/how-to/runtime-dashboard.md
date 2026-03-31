@@ -19,6 +19,20 @@
 - 你要在本地持续观察 run、stage、score、SFT tab：启动 `bmad-speckit dashboard-live`
 - 你只要拿一次快照给脚本、CI 或人工排查：执行 `bmad-speckit dashboard --json`
 
+## 稳定启动链路
+
+如果你要的是可复用、可状态管理、可后台常驻的版本，优先使用：
+
+```bash
+npx bmad-speckit dashboard-start --open
+npx bmad-speckit dashboard-status
+npx bmad-speckit dashboard-stop
+```
+
+详细说明见：
+
+- `docs/how-to/runtime-dashboard-stable-launcher.md`
+
 ## 启动本地 live dashboard
 
 运行：
