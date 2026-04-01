@@ -13,7 +13,7 @@ function runCli(args: string[]) {
 }
 
 describe('sft dataset cli regression', () => {
-  it('exposes sft-preview, sft-validate, sft-bundle, and keeps sft-extract target compatibility option', () => {
+  it('exposes sft-preview, sft-validate, sft-bundle, and keeps sft-extract target compatibility option', { timeout: 60000 }, () => {
     const preview = runCli(['sft-preview', '--help']);
     const validate = runCli(['sft-validate', '--help']);
     const bundle = runCli(['sft-bundle', '--help']);

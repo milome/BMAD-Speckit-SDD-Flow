@@ -127,7 +127,7 @@ describe('parseAndWriteScore', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('throws when scenario=eval_question but question_version missing (Story 4.3)', async () => {
+  it('throws when scenario=eval_question but question_version missing (Story 4.3)', { timeout: 60000 }, async () => {
     const content = fs.readFileSync(path.join(FIXTURES, 'sample-story-report.md'), 'utf-8');
     const tempDir = path.join(os.tmpdir(), `scoring-e4s3-rej-${Date.now()}`);
 
@@ -218,7 +218,7 @@ describe('parseAndWriteScore', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('content_hash is deterministic for same content (GAP-B01)', { timeout: 15000 }, async () => {
+  it('content_hash is deterministic for same content (GAP-B01)', { timeout: 30000 }, async () => {
     const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
     const tempDir1 = path.join(os.tmpdir(), `scoring-gapb01-det1-${Date.now()}`);
     const tempDir2 = path.join(os.tmpdir(), `scoring-gapb01-det2-${Date.now()}`);

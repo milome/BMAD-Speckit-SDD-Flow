@@ -8,6 +8,31 @@ const {
   getServerStatePath,
 } = require('./runtime-dashboard-server-state.cjs');
 
+function createSessionRestrictedError(cause) {
+  const error = new Error(
+    'runtime dashboard launch blocked by current session restrictions: detached child processes are not allowed here. Retry from a normal host shell, Cursor/Claude session hook, or another unrestricted bootstrap context.'
+  );
+  error.code = 'DASHBOARD_SESSION_RESTRICTED';
+  error.cause = cause;
+  return error;
+}
+
+function createServiceStartFailedError(message, details = {}) {
+  const lines = ['runtime dashboard service failed to become healthy after launch.'];
+  if (message) {
+    lines.push(`reason: ${message}`);
+  }
+  if (details.stdout) {
+    lines.push(`stdout: ${details.stdout}`);
+  }
+  if (details.stderr) {
+    lines.push(`stderr: ${details.stderr}`);
+  }
+  const error = new Error(lines.join('\n'));
+  error.code = 'DASHBOARD_SERVICE_START_FAILED';
+  return error;
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -98,10 +123,19 @@ async function waitForHealthyState(root, timeoutMs) {
 async function startRuntimeDashboardServer(options = {}) {
   const root = path.resolve(options.root || process.cwd());
   const host = options.host || '127.0.0.1';
-  const requestedPort = options.port != null ? Number(options.port) : 43124;
+  const requestedPort = options.port != null ? Number(options.port) : 0;
   const dataPath = options.dataPath ? path.resolve(options.dataPath) : undefined;
   const open = Boolean(options.open);
   const timeoutMs = Number(options.timeoutMs || 15000);
+  const sessionRestriction =
+    process.env.BMAD_SESSION_RESTRICT_BACKGROUND === '1' ||
+    process.env.CURSOR_SANDBOX === '1';
+
+  if (sessionRestriction) {
+    throw createSessionRestrictedError(
+      new Error('background spawn restricted by session environment flag')
+    );
+  }
 
   const existing = readServerState(root);
   if (existing && isPidAlive(existing.pid) && await checkHealth(existing.health_url || `${existing.url}/health`)) {
@@ -115,20 +149,28 @@ async function startRuntimeDashboardServer(options = {}) {
     clearServerState(root);
   }
 
-  const child = spawn(process.execPath, [resolveForeverScript(root)], {
-    cwd: root,
-    detached: true,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    windowsHide: true,
-    env: {
-      ...process.env,
-      RUNTIME_DASHBOARD_ROOT: root,
-      RUNTIME_DASHBOARD_HOST: host,
-      RUNTIME_DASHBOARD_PORT: String(requestedPort),
-      RUNTIME_DASHBOARD_DATA_PATH: dataPath || '',
-      RUNTIME_DASHBOARD_LAUNCH_MODE: existing ? 'restarted' : 'started',
-    },
-  });
+  let child;
+  try {
+    child = spawn(process.execPath, [resolveForeverScript(root)], {
+      cwd: root,
+      detached: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true,
+      env: {
+        ...process.env,
+        RUNTIME_DASHBOARD_ROOT: root,
+        RUNTIME_DASHBOARD_HOST: host,
+        RUNTIME_DASHBOARD_PORT: String(requestedPort),
+        RUNTIME_DASHBOARD_DATA_PATH: dataPath || '',
+        RUNTIME_DASHBOARD_LAUNCH_MODE: existing ? 'restarted' : 'started',
+      },
+    });
+  } catch (error) {
+    if (error && typeof error === 'object' && error.code === 'EPERM') {
+      throw createSessionRestrictedError(error);
+    }
+    throw error;
+  }
 
   let startupStdout = '';
   let startupStderr = '';
@@ -144,7 +186,10 @@ async function startRuntimeDashboardServer(options = {}) {
   try {
     healthyState = await waitForHealthyState(root, timeoutMs);
   } catch (error) {
-    throw new Error(`${error.message}\nstdout: ${startupStdout}\nstderr: ${startupStderr}`);
+    throw createServiceStartFailedError(error.message, {
+      stdout: startupStdout.trim(),
+      stderr: startupStderr.trim(),
+    });
   }
   const payload = {
     ...healthyState,
@@ -162,7 +207,7 @@ async function cli() {
   const payload = await startRuntimeDashboardServer({
     root: process.cwd(),
     host: process.env.RUNTIME_DASHBOARD_HOST || '127.0.0.1',
-    port: Number(process.env.RUNTIME_DASHBOARD_PORT || 43124),
+    port: process.env.RUNTIME_DASHBOARD_PORT != null ? Number(process.env.RUNTIME_DASHBOARD_PORT) : 0,
     dataPath: process.env.RUNTIME_DASHBOARD_DATA_PATH || undefined,
     open: process.env.RUNTIME_DASHBOARD_OPEN === '1',
   });

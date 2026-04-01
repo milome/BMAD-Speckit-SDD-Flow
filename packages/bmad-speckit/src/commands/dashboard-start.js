@@ -19,7 +19,22 @@ async function dashboardStartCommand(opts) {
     open: Boolean(opts.open),
   });
 
-  console.log(JSON.stringify(payload, null, 2));
+  const printable = { ...payload };
+  delete printable._foregroundServer;
+  console.log(JSON.stringify(printable, null, 2));
+
+  if (payload._foregroundServer) {
+    await new Promise((resolve) => {
+      const shutdown = async () => {
+        try {
+          await payload._foregroundServer.close();
+        } catch {}
+        resolve();
+      };
+      process.once('SIGINT', shutdown);
+      process.once('SIGTERM', shutdown);
+    });
+  }
 }
 
 module.exports = { dashboardStartCommand };

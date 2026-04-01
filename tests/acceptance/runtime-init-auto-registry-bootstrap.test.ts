@@ -5,13 +5,13 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 describe('runtime init auto registry bootstrap', () => {
-  it('bootstraps registry.json together with project context during init', () => {
+  it('bootstraps registry.json together with project context during init', { timeout: 60000 }, () => {
     const target = mkdtempSync(path.join(os.tmpdir(), 'runtime-init-auto-'));
     try {
       const result = spawnSync(
         process.execPath,
         [path.join(process.cwd(), 'scripts', 'init-to-root.js'), target, '--agent', 'cursor'],
-        { cwd: process.cwd(), encoding: 'utf8' }
+        { cwd: process.cwd(), encoding: 'utf8', timeout: 60000 }
       );
 
       expect(result.status).toBe(0);

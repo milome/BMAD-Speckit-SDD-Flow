@@ -21,7 +21,7 @@ async function ensureRuntimeDashboardServer(options = {}) {
         ? Number(options.port)
         : process.env.RUNTIME_DASHBOARD_PORT != null
           ? Number(process.env.RUNTIME_DASHBOARD_PORT)
-          : 43124,
+          : 0,
     dataPath: options.dataPath || process.env.RUNTIME_DASHBOARD_DATA_PATH || undefined,
     open: Boolean(options.open),
   });

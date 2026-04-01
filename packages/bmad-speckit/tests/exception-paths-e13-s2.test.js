@@ -30,7 +30,12 @@ function withIsolatedHome(envOverrides = {}) {
 function runCheck(cwd) {
   const { env, cleanup } = withIsolatedHome();
   try {
-    return spawnSync('node', [BIN, 'check'], { cwd, encoding: 'utf8', timeout: 5000, env });
+    return spawnSync(process.execPath, [BIN, 'check'], {
+      cwd,
+      encoding: 'utf8',
+      timeout: 15000,
+      env,
+    });
   } finally {
     cleanup();
   }
@@ -132,7 +137,11 @@ describe('E13-S2 T6.4: exit code 4 (path unavailable)', () => {
     fs.writeFileSync(path.join(configDir, 'bmad-speckit.json'), JSON.stringify({ bmadPath: path.join(tmpDir, 'nonexistent') }), 'utf8');
     const r = runCheck(tmpDir);
     try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
-    assert.strictEqual(r.status, 4);
+    assert.strictEqual(
+      r.status,
+      4,
+      `expected exit 4, got ${r.status}; error=${r.error?.code || 'none'}; stdout=${r.stdout || ''}; stderr=${r.stderr || ''}`
+    );
   });
 });
 

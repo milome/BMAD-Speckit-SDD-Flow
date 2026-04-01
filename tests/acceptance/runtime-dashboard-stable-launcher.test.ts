@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { rmSync } from 'node:fs';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -7,9 +7,14 @@ import { parseAndWriteScore } from '../../packages/scoring/orchestrator/parse-an
 
 const { startRuntimeDashboardServer, stopServerByState } = require('../../scripts/start-runtime-dashboard-server.cjs');
 const { clearServerState } = require('../../scripts/runtime-dashboard-server-state.cjs');
+const childProcess = require('node:child_process');
 
 describe('runtime dashboard stable launcher', () => {
   const roots: string[] = [];
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
 
   afterEach(() => {
     for (const root of roots.splice(0)) {
@@ -23,7 +28,7 @@ describe('runtime dashboard stable launcher', () => {
     }
   });
 
-  it('starts, writes state, and reuses a healthy server', async () => {
+  it('reuses a healthy server from existing state without spawning a new child', async () => {
     const fixture = await createRuntimeDashboardFixture();
     roots.push(fixture.root);
 
@@ -52,14 +57,51 @@ describe('runtime dashboard stable launcher', () => {
     expect(started.state_path).toContain(path.join('outputs', 'runtime', 'runtime-dashboard', 'server.json'));
     expect(fs.existsSync(started.state_path)).toBe(true);
 
+    const spawnSpy = vi.spyOn(childProcess, 'spawn');
+
     const reused = await startRuntimeDashboardServer({
       root: fixture.root,
       dataPath: fixture.dataPath,
-      port: started.port,
+      port: 0,
     });
 
     expect(reused.mode).toBe('reused');
     expect(reused.url).toBe(started.url);
     expect(reused.pid).toBe(started.pid);
+    expect(spawnSpy).not.toHaveBeenCalled();
+  }, 60000);
+
+  it('reports session restriction instead of falling back to a foreground server when detached spawn is blocked', async () => {
+    const fixture = await createRuntimeDashboardFixture();
+    roots.push(fixture.root);
+
+    const prev = process.env.BMAD_SESSION_RESTRICT_BACKGROUND;
+    process.env.BMAD_SESSION_RESTRICT_BACKGROUND = '1';
+    const spawnSpy = vi.spyOn(childProcess, 'spawn').mockImplementation(() => {
+      const error: NodeJS.ErrnoException = new Error('spawn EPERM');
+      error.code = 'EPERM';
+      throw error;
+    });
+
+    try {
+      await expect(
+        startRuntimeDashboardServer({
+          root: fixture.root,
+          dataPath: fixture.dataPath,
+          port: 43124,
+        })
+      ).rejects.toMatchObject({
+        code: 'DASHBOARD_SESSION_RESTRICTED',
+      });
+
+      expect(spawnSpy).not.toHaveBeenCalled();
+      expect(fs.existsSync(path.join(fixture.root, 'outputs', 'runtime', 'runtime-dashboard', 'server.json'))).toBe(false);
+    } finally {
+      if (prev == null) {
+        delete process.env.BMAD_SESSION_RESTRICT_BACKGROUND;
+      } else {
+        process.env.BMAD_SESSION_RESTRICT_BACKGROUND = prev;
+      }
+    }
   });
 });

@@ -12,7 +12,7 @@ async function main() {
   const server = await startLiveDashboardServer({
     root: fixture.root,
     host: '127.0.0.1',
-    port: 3456,
+    port: 0,
     dataPath: fixture.dataPath,
   });
 
