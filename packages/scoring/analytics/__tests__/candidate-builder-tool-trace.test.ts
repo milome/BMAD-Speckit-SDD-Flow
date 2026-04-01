@@ -155,6 +155,8 @@ describe('canonical candidate builder tool trace injection', () => {
     expect(String(result.samples[0].messages[4].content)).toContain('new trace code');
     expect(result.samples[0].metadata.schema_targets).toContain('hf_tool_calling');
     expect(result.samples[0].metadata.notes).toContain('tool_trace_injected');
+    expect(result.samples[0].quality.trace_completeness).toBe('complete');
+    expect(result.samples[0].quality.training_blockers).toEqual([]);
     expect(result.samples[0].export_compatibility.hf_tool_calling.compatible).toBe(true);
     expect(result.samples[0].export_compatibility.hf_conversational.compatible).toBe(false);
     expect(result.samples[0].export_compatibility.hf_conversational.reasons).toContain(
@@ -252,10 +254,104 @@ describe('canonical candidate builder tool trace injection', () => {
 
     expect(result.samples).toHaveLength(1);
     expect(result.samples[0].redaction.status).toBe('blocked');
+    expect(result.samples[0].quality.trace_completeness).toBe('blocked');
     expect(result.samples[0].quality.acceptance_decision).toBe('rejected');
+    expect(result.samples[0].quality.training_ready).toBe(false);
+    expect(result.samples[0].quality.training_blockers).toEqual(
+      expect.arrayContaining(['redaction_blocked', 'tool_trace_blocked'])
+    );
     expect(result.samples[0].quality.rejection_reasons).toEqual(
       expect.arrayContaining(['redaction_blocked', 'secret_detected_unresolved'])
     );
     expect(result.samples[0].export_compatibility.hf_tool_calling.compatible).toBe(false);
+  });
+
+  it('marks tool traces as partial when assistant calls do not have matching tool results', async () => {
+    const bugfixPath = path.join(tempDir, 'BUGFIX_runtime-dashboard-sft.md');
+    const patchPath = path.join(tempDir, 'patches', 'run-e15-s1-tool-trace.patch');
+    const toolTracePath = path.join(tempDir, 'traces', 'run-e15-s1-tool-trace-partial.json');
+
+    fs.mkdirSync(path.dirname(patchPath), { recursive: true });
+    fs.mkdirSync(path.dirname(toolTracePath), { recursive: true });
+
+    fs.writeFileSync(
+      bugfixPath,
+      `## §1 问题\n需要让 runtime dashboard 的工具调用也能进入 SFT 导出。\n\n## §4 修复方案\n把 runtime tool trace 注入 canonical sample。\n`,
+      'utf-8'
+    );
+    fs.writeFileSync(
+      patchPath,
+      '--- a/foo.ts\n+++ b/foo.ts\n-old trace code\n+new trace code',
+      'utf-8'
+    );
+    fs.writeFileSync(
+      toolTracePath,
+      JSON.stringify(
+        {
+          trace_version: 1,
+          tools: [
+            {
+              type: 'function',
+              function: {
+                name: 'get_runtime_snapshot',
+                parameters: { type: 'object' },
+              },
+            },
+          ],
+          messages: [
+            {
+              role: 'assistant',
+              content: '',
+              tool_calls: [
+                {
+                  id: 'call-runtime-002',
+                  type: 'function',
+                  function: {
+                    name: 'get_runtime_snapshot',
+                    arguments: '{"run_id":"run-e15-s1-tool-trace"}',
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      'utf-8'
+    );
+
+    fs.writeFileSync(
+      path.join(tempDir, 'record.json'),
+      JSON.stringify(
+        {
+          ...makeRecord({
+            source_path: bugfixPath,
+            patch_ref: 'sha256:patch-snapshot-tool-trace',
+            patch_snapshot_path: patchPath,
+          }),
+          tool_trace_path: toolTracePath,
+          tool_trace_ref: 'sha256:tool-trace-partial-001',
+        },
+        null,
+        2
+      ),
+      'utf-8'
+    );
+
+    const result = await buildCanonicalCandidates({
+      dataPath: tempDir,
+      cwd: tempDir,
+      minScore: 90,
+      maxTokens: 512,
+    });
+
+    expect(result.samples).toHaveLength(1);
+    expect(result.samples[0].quality.trace_completeness).toBe('partial');
+    expect(result.samples[0].quality.acceptance_decision).toBe('downgraded');
+    expect(result.samples[0].quality.training_ready).toBe(false);
+    expect(result.samples[0].quality.training_blockers).toEqual(
+      expect.arrayContaining(['tool_trace_partial'])
+    );
   });
 });

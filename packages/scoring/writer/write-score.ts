@@ -109,6 +109,14 @@ function mergeWithExistingSingleFileRecord(record: RunScoreRecord, dataPath: str
   return {
     ...existing,
     ...record,
+    ...(record.story_key == null && existing.story_key != null ? { story_key: existing.story_key } : {}),
+    ...(record.story_id == null && existing.story_id != null ? { story_id: existing.story_id } : {}),
+    ...(record.epic_id == null && existing.epic_id != null ? { epic_id: existing.epic_id } : {}),
+    ...(record.artifact_root == null && existing.artifact_root != null
+      ? { artifact_root: existing.artifact_root }
+      : {}),
+    ...(record.host == null && existing.host != null ? { host: existing.host } : {}),
+    ...(record.host_kind == null && existing.host_kind != null ? { host_kind: existing.host_kind } : {}),
     ...(record.run_group_id == null && existing.run_group_id != null
       ? { run_group_id: existing.run_group_id }
       : {}),

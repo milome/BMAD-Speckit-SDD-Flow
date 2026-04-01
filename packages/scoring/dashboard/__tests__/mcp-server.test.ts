@@ -41,6 +41,7 @@ describe('runtime dashboard MCP server', () => {
         accepted: 2,
         rejected: 1,
         downgraded: 0,
+        training_ready_candidates: 2,
         by_split: {
           train: 1,
           validation: 1,
@@ -101,6 +102,7 @@ describe('runtime dashboard MCP server', () => {
     );
 
     expect(preview.structuredContent).toMatchObject({
+      training_ready_candidates: 2,
       redaction_status_counts: {
         clean: 1,
         redacted: 1,
@@ -115,6 +117,7 @@ describe('runtime dashboard MCP server', () => {
     });
     expect(exportResult.structuredContent).toMatchObject({
       target: 'hf_tool_calling',
+      last_bundle: null,
       redaction_status_counts: {
         clean: 1,
         redacted: 1,

@@ -49,6 +49,7 @@ const messages = {
     acceptedLabel: '接受',
     rejectedLabel: '拒绝',
     downgradedLabel: '降级',
+    trainingReadyLabel: '训练就绪',
     compatible: '可用',
     failureStream: '问题流',
     lastEventAt: '最近事件',
@@ -97,6 +98,7 @@ const messages = {
     acceptedLabel: 'Accepted',
     rejectedLabel: 'Rejected',
     downgradedLabel: 'Downgraded',
+    trainingReadyLabel: 'Training Ready',
     compatible: 'Compatible',
     failureStream: 'Failure Stream',
     lastEventAt: 'Last Event',
@@ -452,6 +454,7 @@ function App() {
                     <MetricCard label={msg.acceptedLabel} value={formatNullable(msg, sft.accepted)} tone="mint" />
                     <MetricCard label={msg.rejectedLabel} value={formatNullable(msg, sft.rejected)} tone="coral" />
                     <MetricCard label={msg.downgradedLabel} value={formatNullable(msg, sft.downgraded)} tone="amber" />
+                    <MetricCard label={msg.trainingReadyLabel} value={formatNullable(msg, sft.training_ready_candidates)} tone="mint" />
                     <MetricCard label={msg.compatible} value={formatNullable(msg, sft.target_availability?.openai_chat?.compatible)} tone="cyan" />
                     <MetricCard label={msg.blocked} value={formatNullable(msg, sft.target_availability?.hf_tool_calling?.compatible)} tone="amber" />
                   </div>

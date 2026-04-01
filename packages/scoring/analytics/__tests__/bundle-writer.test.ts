@@ -130,12 +130,24 @@ describe('bundle writer', () => {
       }),
     ]);
     expect(manifest.counts).toMatchObject({
+      total_candidates: 3,
       accepted: 2,
       rejected: 1,
+      downgraded: 0,
+      blocked: 0,
       train: 1,
       validation: 1,
       test: 0,
     });
+    expect(manifest.bundle_version).toBe('v2');
+    expect(manifest.bundle_kind).toBe('training');
+    expect(manifest.generator_version).toBe('bundle-writer.v2');
+    expect(manifest.redaction_summary).toEqual(validationReport.redaction_summary);
+    expect(manifest.validation_summary).toEqual(
+      expect.objectContaining({
+        schema_valid: true,
+      })
+    );
     expect(validationReport.redaction_summary).toEqual({
       status_counts: {
         clean: 3,
@@ -145,5 +157,7 @@ describe('bundle writer', () => {
       applied_rules: [],
       finding_kinds: [],
     });
+    expect(validationReport.schema_valid).toBe(true);
+    expect(validationReport.invalid_samples).toEqual([]);
   });
 });

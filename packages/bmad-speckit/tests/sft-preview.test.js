@@ -33,6 +33,11 @@ describe('sft-preview command', () => {
                   accepted: 12,
                   rejected: 3,
                   downgraded: 2,
+                  training_ready_candidates: 10,
+                  validation_summary: {
+                    schema_valid: true,
+                    training_ready_passed: false,
+                  },
                   targets: ['openai_chat', 'hf_conversational'],
                 };
               },
@@ -50,6 +55,11 @@ describe('sft-preview command', () => {
       accepted: 12,
       rejected: 3,
       downgraded: 2,
+      training_ready_candidates: 10,
+      validation_summary: {
+        schema_valid: true,
+        training_ready_passed: false,
+      },
       targets: ['openai_chat', 'hf_conversational'],
     });
   });

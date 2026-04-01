@@ -67,7 +67,15 @@ describe('dashboard runtime snapshot integration', () => {
     const markdown = fs.readFileSync(markdownPath, 'utf-8');
     const snapshot = JSON.parse(fs.readFileSync(jsonPath, 'utf-8')) as {
       selection: { run_id: string };
-      runtime_context: { current_stage: string; scope: { story_key: string } };
+      runtime_context: {
+        current_stage: string;
+        scope: {
+          story_key: string;
+          story_id?: string;
+          epic_id?: string;
+          artifact_root?: string;
+        };
+      };
       score_detail: { records: Array<{ stage: string; phase_score: number }> };
     };
     const stdoutSnapshot = JSON.parse(stdout) as { selection: { run_id: string } };
@@ -77,6 +85,8 @@ describe('dashboard runtime snapshot integration', () => {
     expect(snapshot.selection.run_id).toBe(lastRun.runId);
     expect(snapshot.runtime_context.current_stage).toBe('implement');
     expect(snapshot.runtime_context.scope.story_key).toBe('15-1-runtime-dashboard-sft');
+    expect(snapshot.runtime_context.scope.story_id).toBe('1');
+    expect(snapshot.runtime_context.scope.epic_id).toBe('15');
     expect(snapshot.score_detail.records).toEqual([
       expect.objectContaining({
         stage: 'implement',

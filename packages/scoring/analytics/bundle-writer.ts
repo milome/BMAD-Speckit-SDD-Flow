@@ -67,10 +67,18 @@ export async function writeDatasetBundle(
 
   const manifest: DatasetBundleManifest = {
     bundle_id: bundleId,
+    bundle_version: 'v2',
+    bundle_kind: 'training',
     export_target: options.exportTarget,
     created_at: new Date().toISOString(),
     canonical_schema_version: 'v1',
     exporter_version: options.exporterVersion ?? 'v1',
+    generator_version: 'bundle-writer.v2',
+    source_snapshot: {
+      sample_count: samples.length,
+      split_seed: samples[0]?.split.seed ?? 42,
+      split_strategy: samples[0]?.split.strategy ?? 'story_hash_v1',
+    },
     export_hash: exportHash,
     filter_settings: options.filterSettings ?? {},
     split: {
@@ -78,11 +86,26 @@ export async function writeDatasetBundle(
       strategy: samples[0]?.split.strategy ?? 'story_hash_v1',
     },
     counts: {
+      total_candidates: samples.length,
       accepted: exportResult.validationReport.counts.accepted,
       rejected: exportResult.validationReport.counts.rejected,
+      downgraded: exportResult.validationReport.counts.downgraded,
+      blocked: samples.filter((sample) => sample.redaction.status === 'blocked').length,
       train: exportResult.validationReport.counts.train,
       validation: exportResult.validationReport.counts.validation,
       test: exportResult.validationReport.counts.test,
+    },
+    provider_summary: {
+      provider_ids: [...new Set(samples.map((sample) => sample.source.provider_id).filter(Boolean))],
+      provider_modes: [...new Set(samples.map((sample) => sample.source.provider_mode).filter(Boolean))],
+    },
+    redaction_summary: exportResult.validationReport.redaction_summary,
+    validation_summary: {
+      schema_valid: exportResult.validationReport.schema_valid,
+      privacy_gate_passed: exportResult.validationReport.privacy_gate_passed,
+      trace_quality_passed: exportResult.validationReport.trace_quality_passed,
+      provider_compatibility_passed: exportResult.validationReport.provider_compatibility_passed,
+      training_ready_passed: exportResult.validationReport.training_ready_passed,
     },
     artifacts: {
       train_path: trainFile,

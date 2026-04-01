@@ -40,6 +40,10 @@ describe('sft-bundle command', () => {
                 return {
                   bundle_dir: '_bmad-output/datasets/openai_chat-demo',
                   manifest_path: '_bmad-output/datasets/openai_chat-demo/manifest.json',
+                  validation_summary: {
+                    schema_valid: true,
+                    training_ready_passed: true,
+                  },
                 };
               },
             };
@@ -55,6 +59,10 @@ describe('sft-bundle command', () => {
     assert.deepStrictEqual(payload, {
       bundle_dir: '_bmad-output/datasets/openai_chat-demo',
       manifest_path: '_bmad-output/datasets/openai_chat-demo/manifest.json',
+      validation_summary: {
+        schema_valid: true,
+        training_ready_passed: true,
+      },
     });
   });
 });

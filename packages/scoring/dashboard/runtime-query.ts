@@ -200,6 +200,7 @@ export interface DashboardSftSummary {
   accepted: number;
   rejected: number;
   downgraded: number;
+  training_ready_candidates: number;
   by_split: Record<'train' | 'validation' | 'test' | 'holdout', number>;
   target_availability: Record<DatasetExportTarget, {
     compatible: number;
@@ -235,6 +236,7 @@ export interface DashboardSftSummary {
     created_at: string;
     bundle_dir: string;
     manifest_path: string;
+    validation_summary?: Record<string, unknown>;
   } | null;
 }
 
@@ -1168,6 +1170,9 @@ function findLatestBundle(root: string): DashboardSftSummary['last_bundle'] {
     created_at: latest.manifest.created_at,
     bundle_dir: path.relative(root, latest.bundleDir).replace(/\\/g, '/'),
     manifest_path: path.relative(root, latest.manifestPath).replace(/\\/g, '/'),
+    ...(latest.manifest.validation_summary
+      ? { validation_summary: latest.manifest.validation_summary }
+      : {}),
   };
 }
 
@@ -1180,6 +1185,7 @@ function buildSftSummary(
     accepted: 0,
     rejected: 0,
     downgraded: 0,
+    training_ready_candidates: 0,
     by_split: {
       train: 0,
       validation: 0,
@@ -1227,6 +1233,7 @@ function buildSftSummary(
     if (sample.quality.acceptance_decision === 'accepted') summary.accepted += 1;
     if (sample.quality.acceptance_decision === 'rejected') summary.rejected += 1;
     if (sample.quality.acceptance_decision === 'downgraded') summary.downgraded += 1;
+    if (sample.quality.training_ready) summary.training_ready_candidates += 1;
     summary.by_split[sample.split.assignment] += 1;
   }
 

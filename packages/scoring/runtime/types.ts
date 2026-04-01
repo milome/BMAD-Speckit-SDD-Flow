@@ -13,6 +13,8 @@ export interface RuntimeScopeRef {
   flow?: string;
   template_id?: string;
   artifact_root?: string;
+  host?: string;
+  host_kind?: string;
   resolved_context_path?: string;
 }
 

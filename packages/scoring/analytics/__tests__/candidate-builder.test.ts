@@ -71,9 +71,22 @@ describe('canonical candidate builder', () => {
     expect(result.samples).toHaveLength(1);
     expect(result.samples[0]).toMatchObject({
       sample_version: 'v1',
+      source: {
+        tool_trace_ref: undefined,
+      },
+      metadata: {
+        host_kind: 'unknown',
+      },
       quality: {
         acceptance_decision: 'accepted',
         has_code_pair: true,
+        trace_completeness: 'missing',
+        training_ready: true,
+        training_blockers: ['tool_trace_missing'],
+      },
+      provenance: {
+        schema_version: 'canonical-sft-sample.v1',
+        generator_version: 'candidate-builder.v3',
       },
       split: {
         strategy: 'story_hash_v1',
@@ -153,6 +166,10 @@ describe('canonical candidate builder', () => {
     expect(result.samples).toHaveLength(1);
     expect(result.samples[0].quality.acceptance_decision).toBe('rejected');
     expect(result.samples[0].quality.rejection_reasons).toContain('prov_missing_hash');
+    expect(result.samples[0].quality.training_ready).toBe(false);
+    expect(result.samples[0].quality.training_blockers).toEqual(
+      expect.arrayContaining(['tool_trace_missing', 'prov_missing_hash'])
+    );
   });
 
   it('ignores tmp and malformed source artifacts before candidate creation', async () => {

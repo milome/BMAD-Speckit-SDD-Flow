@@ -232,6 +232,10 @@ function toLegacyEntry(sample: CanonicalSftSample): SftEntry {
 }
 
 function isLegacyInstructionOnlyCompatible(sample: CanonicalSftSample): boolean {
+  if (sample.quality.training_blockers && sample.quality.training_blockers.length > 0) {
+    return false;
+  }
+
   if (sample.quality.has_code_pair) {
     return false;
   }

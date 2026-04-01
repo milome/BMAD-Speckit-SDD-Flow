@@ -91,6 +91,10 @@ describe('quality gates', () => {
     expect(sample.quality.rejection_reasons).toEqual(
       expect.arrayContaining(['missing_code_pair', 'too_many_iterations'])
     );
+    expect(sample.quality.training_ready).toBe(false);
+    expect(sample.quality.training_blockers).toEqual(
+      expect.arrayContaining(['missing_code_pair'])
+    );
   });
 
   it('allows documentation samples to omit code pairs without missing_code_pair rejection', () => {
@@ -119,6 +123,8 @@ describe('quality gates', () => {
 
     expect(sample.quality.acceptance_decision).toBe('accepted');
     expect(sample.quality.rejection_reasons).not.toContain('missing_code_pair');
+    expect(sample.quality.training_ready).toBe(true);
+    expect(sample.quality.training_blockers).toEqual([]);
   });
 
   it('rejects blocked redaction findings', () => {
@@ -141,6 +147,10 @@ describe('quality gates', () => {
     expect(sample.quality.acceptance_decision).toBe('rejected');
     expect(sample.quality.rejection_reasons).toEqual(
       expect.arrayContaining(['redaction_blocked', 'secret_detected_unresolved'])
+    );
+    expect(sample.quality.training_ready).toBe(false);
+    expect(sample.quality.training_blockers).toEqual(
+      expect.arrayContaining(['redaction_blocked'])
     );
   });
 
@@ -176,5 +186,31 @@ describe('quality gates', () => {
       expect.arrayContaining(['redaction_blocked', 'secret_detected_unresolved'])
     );
     expect(sample.quality.rejection_reasons).not.toContain('pii_detected_unresolved');
+  });
+
+  it('downgrades tooling samples with partial trace completeness and marks training blockers', () => {
+    const sample = applyQualityGates({
+      ...makeSample(),
+      tools: [
+        {
+          type: 'function',
+          function: {
+            name: 'get_runtime_snapshot',
+            parameters: { type: 'object' },
+          },
+        },
+      ],
+      quality: {
+        ...makeSample().quality,
+        trace_completeness: 'partial',
+      },
+    });
+
+    expect(sample.quality.acceptance_decision).toBe('downgraded');
+    expect(sample.quality.rejection_reasons).toContain('tool_trace_partial');
+    expect(sample.quality.training_ready).toBe(false);
+    expect(sample.quality.training_blockers).toEqual(
+      expect.arrayContaining(['tool_trace_partial'])
+    );
   });
 });
