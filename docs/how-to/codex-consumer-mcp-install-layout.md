@@ -229,3 +229,36 @@ node .codex/mcp/bmad-runtime/server/dist/index.js
 
 下一步可直接在本仓库补一套脚本草案，作为“消费项目安装后可用”的 MCP 发布/安装雏形。
 
+---
+
+## Provider 配置补充
+
+如果 consumer MCP 后续要接入真实模型服务，除了安装 `.mcp.json` / `server.config.json` / `dist/index.js` 之外，还需要补 provider 层配置。
+
+目前 provider 侧的实现入口主要在：
+
+- [governance-remediation-config.ts](/D:/Dev/BMAD-Speckit-SDD-Flow/scripts/governance-remediation-config.ts)
+- [governance-provider-adapter.ts](/D:/Dev/BMAD-Speckit-SDD-Flow/scripts/governance-provider-adapter.ts)
+
+已支持：
+
+- `openai-compatible`
+- `anthropic-compatible`
+- `http-json`
+- `stub`
+
+更细一层的 provider 配置说明，包括：
+
+- OpenAI / Anthropic / 自定义 provider 的 API key 注入方式
+- endpoint / baseUrl 约定
+- model 字段的当前语义
+- model mapping 的推荐扩展方向
+
+见：
+
+- [provider-configuration.md](/D:/Dev/BMAD-Speckit-SDD-Flow/docs/how-to/provider-configuration.md)
+
+建议阅读顺序：
+
+1. 先看本文，理解 consumer MCP 安装布局
+2. 再看 [provider-configuration.md](/D:/Dev/BMAD-Speckit-SDD-Flow/docs/how-to/provider-configuration.md)，补齐真实 provider 接线
