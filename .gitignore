@@ -71,6 +71,7 @@ findings.md
 task_plan.md
 dxdiag_output.txt
 temp_commit_message.txt
+tmp-*
 *.backup-*.md
 
 # Local screenshots / ad-hoc outputs
@@ -82,6 +83,7 @@ tests/typecheck/
 # Documentation archives
 docs/BMAD/
 docs/design/
+docs/explanation/
 docs/examples/
 !docs/examples/
 docs/examples/*
@@ -90,6 +92,7 @@ docs/examples/*
 docs/fixes/
 docs/pr/
 docs/plans/
+docs/requirements/
 
 # Test story generated code (temporary, not part of project source)
 src/story-assistant-validation/
