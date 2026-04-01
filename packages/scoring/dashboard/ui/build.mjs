@@ -1,4 +1,3 @@
-import { build } from 'esbuild';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
@@ -12,6 +11,10 @@ const entryFile = path.join(root, 'src', 'main.jsx');
 const outfile = path.join(root, 'app.js');
 const inputCss = path.join(root, 'src', 'styles.css');
 const outputCss = path.join(root, 'styles.css');
+
+const esbuildCli = process.platform === 'win32'
+  ? path.join(root, '..', '..', '..', '..', 'node_modules', '.bin', 'esbuild.cmd')
+  : path.join(root, '..', '..', '..', '..', 'node_modules', '.bin', 'esbuild');
 
 const tailwindBinary = process.platform === 'win32'
   ? path.join(root, '..', '..', '..', '..', 'node_modules', '.bin', 'tailwindcss.cmd')
@@ -27,24 +30,28 @@ if (cssBuild.status !== 0) {
   throw new Error(`tailwind build failed with exit code ${cssBuild.status ?? 'unknown'}`);
 }
 
-await build({
-  entryPoints: [entryFile],
-  bundle: true,
-  format: 'esm',
-  platform: 'browser',
-  target: ['es2022'],
-  outfile,
-  absWorkingDir: root,
-  conditions: ['browser', 'import', 'style'],
-  loader: {
-    '.js': 'jsx',
-    '.jsx': 'jsx',
-  },
-  jsx: 'automatic',
-  sourcemap: false,
-  minify: true,
-  logLevel: 'info',
+const jsBuild = spawnSync(esbuildCli, [
+  entryFile,
+  '--bundle',
+  '--format=esm',
+  '--platform=browser',
+  '--target=es2022',
+  `--outfile=${outfile}`,
+  '--jsx=automatic',
+  '--minify',
+  '--log-level=info',
+  '--external:tailwindcss',
+  '--loader:.js=jsx',
+  '--loader:.jsx=jsx',
+], {
+  cwd: root,
+  stdio: 'inherit',
+  shell: process.platform === 'win32',
 });
+
+if (jsBuild.status !== 0) {
+  throw new Error(`esbuild cli failed with exit code ${jsBuild.status ?? 'unknown'}`);
+}
 
 for (const emittedCssName of ['app.css', 'app.js.css']) {
   const emittedCss = path.join(root, emittedCssName);

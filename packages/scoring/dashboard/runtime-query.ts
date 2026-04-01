@@ -172,6 +172,7 @@ export interface DashboardBoardGroup {
   board_group_id: string;
   board_group_label: string;
   kind: 'epic' | 'standalone_ops' | 'bugfix_queue';
+  board_status: DashboardBoardStatus;
   sort_order: number;
   counts: {
     todo: number;
@@ -186,6 +187,7 @@ export interface DashboardWorkboardPayload {
   board_groups: DashboardBoardGroup[];
   work_items: DashboardWorkItem[];
   swimlanes?: Record<DashboardBoardStatus, DashboardWorkItem[]>;
+  board_group_swimlanes?: Record<DashboardBoardStatus, DashboardBoardGroup[]>;
 }
 
 interface DashboardWorkboardResolution {
@@ -761,10 +763,20 @@ function buildWorkboard(
       board_group_id: item.board_group_id,
       board_group_label: item.board_group_label,
       kind: item._board_group_kind,
+      board_status: 'todo',
       sort_order: item._board_group_kind === 'epic' ? 0 : item._board_group_kind === 'standalone_ops' ? 1 : 2,
       counts: { todo: 0, in_progress: 0, done: 0 },
     };
     existing.counts[item.board_status] += 1;
+    if (item.board_status === 'in_progress') {
+      existing.board_status = 'in_progress';
+    } else if (
+      item.board_status === 'done' &&
+      existing.board_status !== 'in_progress' &&
+      existing.counts.in_progress === 0
+    ) {
+      existing.board_status = 'done';
+    }
     groupMap.set(item.board_group_id, existing);
   }
 
@@ -779,9 +791,23 @@ function buildWorkboard(
     existing.counts.todo += group.counts.todo;
     existing.counts.in_progress += group.counts.in_progress;
     existing.counts.done += group.counts.done;
+    if (group.board_status === 'in_progress') {
+      existing.board_status = 'in_progress';
+    } else if (
+      group.board_status === 'done' &&
+      existing.board_status !== 'in_progress' &&
+      existing.counts.in_progress === 0
+    ) {
+      existing.board_status = 'done';
+    }
   }
 
   const boardGroups = [...dedupedBoardGroups.values()].sort((left, right) => left.sort_order - right.sort_order || left.board_group_label.localeCompare(right.board_group_label));
+  const boardGroupSwimlanes = {
+    todo: boardGroups.filter((group) => group.board_status === 'todo'),
+    in_progress: boardGroups.filter((group) => group.board_status === 'in_progress'),
+    done: boardGroups.filter((group) => group.board_status === 'done'),
+  };
   const selectedWorkItem = selectedRunId
     ? workItems.find((item) => item.run_ids.includes(selectedRunId)) ?? null
     : null;
@@ -815,6 +841,7 @@ function buildWorkboard(
       in_progress: filteredWorkItems.filter((item) => item.board_status === 'in_progress').map(({ _board_group_kind, ...item }) => item),
       done: filteredWorkItems.filter((item) => item.board_status === 'done').map(({ _board_group_kind, ...item }) => item),
     },
+    board_group_swimlanes: boardGroupSwimlanes,
   };
 
   return {

@@ -31,6 +31,11 @@ const bundles = [
     outfile: path.join(outDir, 'render-audit-block.cjs'),
     label: 'render-audit-block',
   },
+  {
+    entry: path.join(pkgDir, 'src', 'consumer-mcp-server.js'),
+    outfile: path.join(outDir, 'consumer-mcp-server.cjs'),
+    label: 'consumer-mcp-server',
+  },
 ];
 
 fs.mkdirSync(outDir, { recursive: true });

@@ -3,6 +3,29 @@ import * as http from 'node:http';
 import * as path from 'node:path';
 import { queryRuntimeDashboard, type RuntimeDashboardQueryOptions } from './runtime-query';
 
+const EMBEDDED_DASHBOARD_HTML = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Runtime Observatory</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>`;
+
+function loadEmbeddedUiAsset(assetName: string): string | null {
+  const embeddedRoot = path.resolve(process.cwd(), 'packages', 'scoring', 'dashboard', 'ui');
+  const embeddedPath = path.join(embeddedRoot, assetName);
+  if (fs.existsSync(embeddedPath)) {
+    return fs.readFileSync(embeddedPath, 'utf-8');
+  }
+  return null;
+}
+
 export interface LiveDashboardServerOptions extends RuntimeDashboardQueryOptions {
   host?: string;
   port?: number;
@@ -37,6 +60,19 @@ function resolveUiAsset(assetName: string): string {
   throw new Error(`dashboard ui asset not found: ${assetName}`);
 }
 
+function getUiAssetContent(assetName: string): string {
+  const embedded = loadEmbeddedUiAsset(assetName);
+  if (embedded != null) {
+    return embedded;
+  }
+
+  if (assetName === 'index.html') {
+    return EMBEDDED_DASHBOARD_HTML;
+  }
+
+  throw new Error(`dashboard ui asset not found: ${assetName}`);
+}
+
 function sendJson(
   response: http.ServerResponse,
   statusCode: number,
@@ -52,13 +88,15 @@ function sendJson(
 function sendText(
   response: http.ServerResponse,
   statusCode: number,
-  filePath: string
+  filePathOrAssetName: string,
+  content?: string
 ): void {
+  const filePath = content == null ? filePathOrAssetName : path.resolve(filePathOrAssetName);
   response.writeHead(statusCode, {
     'content-type': getMimeType(filePath),
     'cache-control': 'no-store',
   });
-  response.end(fs.readFileSync(filePath, 'utf-8'));
+  response.end(content ?? fs.readFileSync(filePath, 'utf-8'));
 }
 
 function parseDashboardQueryOptions(
@@ -132,7 +170,7 @@ export async function startLiveDashboardServer(
     }
 
     if (requestUrl.pathname === '/' || requestUrl.pathname === '/index.html') {
-      sendText(response, 200, resolveUiAsset('index.html'));
+      sendText(response, 200, 'index.html', getUiAssetContent('index.html'));
       return;
     }
     if (requestUrl.pathname === '/app.js') {

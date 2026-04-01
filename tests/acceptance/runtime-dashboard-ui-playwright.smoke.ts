@@ -115,6 +115,8 @@ async function run(): Promise<void> {
     await expectContains(enPage, '#run-list', 'Epic Lane');
     await expectContains(enPage, '#run-list', 'Ops Queue');
     await expectContains(enPage, '#run-list', 'Bugfix Queue');
+    const boardLaneCount = await enPage.locator('#run-list [data-board-swimlane]').count();
+    assert.equal(boardLaneCount, 3, 'board group list should render three swimlanes');
     const epic15Count = await enPage.locator('#run-list').getByText('Epic 15', { exact: true }).count();
     assert.equal(epic15Count, 1, 'board group list should not duplicate Epic 15');
     await expectContains(enPage, '#stage-list', 'Current Stage');

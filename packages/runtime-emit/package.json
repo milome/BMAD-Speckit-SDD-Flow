@@ -7,7 +7,8 @@
     ".": "./dist/emit-runtime-policy.cjs",
     "./dist/emit-runtime-policy.cjs": "./dist/emit-runtime-policy.cjs",
     "./dist/resolve-for-session.cjs": "./dist/resolve-for-session.cjs",
-    "./dist/render-audit-block.cjs": "./dist/render-audit-block.cjs"
+    "./dist/render-audit-block.cjs": "./dist/render-audit-block.cjs",
+    "./dist/consumer-mcp-server.cjs": "./dist/consumer-mcp-server.cjs"
   },
   "files": [
     "dist",
@@ -18,7 +19,7 @@
     "prepare": "node build.js",
     "prepublishOnly": "node build.js"
   },
-  "keywords": ["bmad", "speckit", "runtime", "policy"],
+  "keywords": ["bmad", "speckit", "runtime", "policy", "mcp"],
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"

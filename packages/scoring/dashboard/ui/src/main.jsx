@@ -219,6 +219,7 @@ function App() {
 
   const workboard = snapshot?.workboard ?? { board_groups: [], work_items: [], active_board_group_id: null, active_work_item_id: null };
   const boardGroups = workboard.board_groups ?? [];
+  const boardGroupSwimlanes = workboard.board_group_swimlanes ?? { todo: [], in_progress: [], done: [] };
   const swimlanes = workboard.swimlanes ?? { todo: [], in_progress: [], done: [] };
   const activeBoardGroupId = selection.activeBoardGroupId ?? workboard.active_board_group_id ?? boardGroups[0]?.board_group_id ?? null;
   const activeBoardGroup = boardGroups.find((group) => group.board_group_id === activeBoardGroupId) ?? null;
@@ -257,16 +258,33 @@ function App() {
             <div className="grid gap-4" id="run-list">
               {boardGroups.length === 0 ? (
                 <div className="empty-note">{isLoading ? msg.loading : msg.noData}</div>
-              ) : boardGroups.map((group) => (
-                <button key={group.board_group_id} type="button" data-board-group-id={group.board_group_id} className={`panel-card p-3 text-left ${group.board_group_id === activeBoardGroupId ? 'item-active' : ''}`} onClick={() => setSelection({ activeBoardGroupId: group.board_group_id, activeWorkItemId: null })}>
-                  <div className="mb-1 text-[11px] uppercase tracking-[0.12em] text-secondary">{msg.boardGroups}</div>
-                  <div className="min-w-0 font-mono text-[15px] leading-6 text-primary truncate">{formatNullable(msg, group.board_group_label)}</div>
-                  <div className="mt-3 flex items-start justify-between gap-3">
-                    <span className="text-[12px] leading-5 text-secondary font-mono">TODO {group.counts?.todo ?? 0} · IN {group.counts?.in_progress ?? 0} · DONE {group.counts?.done ?? 0}</span>
-                    <Badge label={getBoardGroupKindLabel(group.kind, msg)} tone="cyan" />
-                  </div>
-                </button>
-              ))}
+              ) : (
+                <>
+                  {[
+                    ['todo', msg.swimlaneTodo],
+                    ['in_progress', msg.swimlaneInProgress],
+                    ['done', msg.swimlaneDone],
+                  ].map(([laneKey, laneLabel]) => (
+                    <section key={laneKey} className="rounded-[18px] border border-soft bg-white/[0.02] p-3" data-board-swimlane={laneKey}>
+                      <div className="mb-3 text-[12px] uppercase tracking-[0.12em] text-secondary">{laneLabel}</div>
+                      <div className="grid gap-3">
+                        {(boardGroupSwimlanes[laneKey] ?? []).length === 0 ? (
+                          <div className="empty-note">{msg.noData}</div>
+                        ) : (boardGroupSwimlanes[laneKey] ?? []).map((group) => (
+                          <button key={group.board_group_id} type="button" data-board-group-id={group.board_group_id} className={`panel-card p-3 text-left ${group.board_group_id === activeBoardGroupId ? 'item-active' : ''}`} onClick={() => setSelection({ activeBoardGroupId: group.board_group_id, activeWorkItemId: null })}>
+                            <div className="mb-1 text-[11px] uppercase tracking-[0.12em] text-secondary">{msg.boardGroups}</div>
+                            <div className="min-w-0 font-mono text-[15px] leading-6 text-primary truncate">{formatNullable(msg, group.board_group_label)}</div>
+                            <div className="mt-3 flex items-start justify-between gap-3">
+                              <span className="text-[12px] leading-5 text-secondary font-mono">TODO {group.counts?.todo ?? 0} · IN {group.counts?.in_progress ?? 0} · DONE {group.counts?.done ?? 0}</span>
+                              <Badge label={getBoardGroupKindLabel(group.kind, msg)} tone="cyan" />
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </>
+              )}
             </div>
             </section>
 

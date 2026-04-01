@@ -497,6 +497,45 @@ function materializeSkillMdByLanguage(targetDir) {
   }
 }
 
+function installConsumerMcpLayout(targetDir, pkgRoot) {
+  let targetReal;
+  let pkgRootReal;
+  try {
+    targetReal = fs.realpathSync(targetDir);
+    pkgRootReal = fs.realpathSync(pkgRoot);
+  } catch {
+    return;
+  }
+  if (targetReal === pkgRootReal) return;
+
+  const script = path.join(pkgRoot, 'scripts', 'mcp', 'consumer', 'install-consumer-mcp.ps1');
+  if (!fs.existsSync(script)) {
+    console.warn('Skip consumer MCP install: script missing', script);
+    return;
+  }
+
+  const shouldSkipMcpInstall =
+    process.env.BMAD_SKIP_CONSUMER_MCP_INSTALL === '1' ||
+    process.env.VITEST === 'true' ||
+    process.env.NODE_ENV === 'test';
+  if (shouldSkipMcpInstall) {
+    console.log('Skip consumer MCP install for test/runtime-constrained session.');
+    return;
+  }
+
+  const result = spawnSync(
+    'powershell.exe',
+    ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-TargetDir', targetDir],
+    {
+      cwd: targetDir,
+      stdio: 'inherit',
+    }
+  );
+  if (result.status !== 0) {
+    console.warn('install-consumer-mcp exited', result.status);
+  }
+}
+
 function countFiles(dirPath) {
   if (!fs.existsSync(dirPath)) return 0;
   let n = 0;
@@ -539,10 +578,11 @@ for (const dir of DIRS) {
 totalFiles += agentProfile.sync(TARGET, PKG_ROOT);
 
 deployConsumerRuntimeEmitToHooks(PKG_ROOT, TARGET);
+installConsumerMcpLayout(TARGET, PKG_ROOT);
 
+writeDefaultRuntimeRegistry(TARGET, PKG_ROOT);
 writeDefaultRuntimeContext(TARGET, PKG_ROOT);
 materializeSkillMdByLanguage(TARGET);
-writeDefaultRuntimeRegistry(TARGET, PKG_ROOT);
 
 // Ensure _bmad-output/config exists (empty); never copy source's _bmad-output contents.
 const bmadOutputDir = path.join(TARGET, '_bmad-output');

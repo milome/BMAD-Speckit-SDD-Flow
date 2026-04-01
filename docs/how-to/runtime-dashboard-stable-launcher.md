@@ -1,5 +1,38 @@
 # Runtime Dashboard Stable Launcher
 
+## Release Summary
+
+- 新增稳定启动链路：`dashboard-start`、`dashboard-status`、`dashboard-stop`
+- 新增后台守护、health 检查、state 落盘与复用逻辑
+- Cursor / Claude Code CLI 新增 session-start 自动拉起骨架
+- `runtime-mcp` 可复用同一份 dashboard server 状态
+
+### 用户影响
+
+1. 自动模式
+   Cursor / Claude Code CLI 进入 session 后，宿主 hook 会尝试自动复用或拉起 dashboard。
+
+2. 手动模式
+
+```bash
+npx bmad-speckit dashboard-start --open
+npx bmad-speckit dashboard-status
+npx bmad-speckit dashboard-stop
+```
+
+### 行为变化
+
+- 已有健康实例：默认静默复用
+- 首次启动或失效重启：自动恢复并写入 state
+- Claude 侧仅在真正拉起/重启时输出一行 dashboard URL
+- Cursor 侧尽量保持更安静，减少 session 噪声
+
+### 真相分层
+
+- `_bmad/` 是宿主自动接线的唯一发布真相层
+- `.claude/` 与 `.cursor/` 只保留运行时副本职责
+- 消费项目通过 `init-to-root` / `npm install` 从 `_bmad` 同步宿主接线文件
+
 ## 目标
 
 这份说明面向消费项目用户，描述 runtime dashboard 在 Cursor / Claude Code CLI 项目中的稳定启动方式，以及自动接线骨架的最终行为。

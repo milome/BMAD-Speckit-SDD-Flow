@@ -883,4 +883,49 @@ describe('runtime-aware dashboard query', () => {
 
     expect(snapshot.workboard.active_board_group_id).toBe('queue:bugfix');
   });
+
+  it('builds todo/in-progress/done swimlanes for board groups as well', () => {
+    const snapshot = buildRuntimeDashboardModel({
+      events: [
+        makeEvent({
+          run_id: 'run-story-todo-001',
+          event_id: 'evt-story-todo-001',
+          timestamp: '2026-03-28T00:00:00.000Z',
+          payload: { status: 'pending' },
+          scope: {
+            story_key: '15-1-runtime-dashboard-sft',
+            epic_id: 'epic-15',
+            story_id: '15-1-runtime-dashboard-sft',
+            flow: 'story',
+          },
+        }),
+        makeEvent({
+          run_id: 'run-bugfix-active-001',
+          event_id: 'evt-bugfix-active-001',
+          timestamp: '2026-03-28T00:05:00.000Z',
+          payload: { status: 'pending' },
+        }),
+        makeEvent({
+          run_id: 'run-bugfix-active-001',
+          event_id: 'evt-bugfix-active-002',
+          event_type: 'stage.started',
+          stage: 'plan',
+          timestamp: '2026-03-28T00:10:00.000Z',
+          payload: { status: 'running' },
+        }),
+      ],
+      scoreRecords: [
+        makeScoreRecord({
+          run_id: 'run-standalone-done-001',
+          phase_score: 97,
+          source_path: '_bmad-output/implementation-artifacts/_orphan/standalone_tasks/finished-item.md',
+          timestamp: '2026-03-28T00:20:00.000Z',
+        }),
+      ],
+    });
+
+    expect(snapshot.workboard.board_group_swimlanes?.todo).toHaveLength(1);
+    expect(snapshot.workboard.board_group_swimlanes?.in_progress).toHaveLength(1);
+    expect(snapshot.workboard.board_group_swimlanes?.done).toHaveLength(0);
+  });
 });
