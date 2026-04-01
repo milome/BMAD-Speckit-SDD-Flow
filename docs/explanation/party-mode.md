@@ -75,10 +75,13 @@ Party-Mode 辩论收敛后产出：
 
 ## 工作流文件
 
-Party-Mode 的工作流定义位于：
-- `_bmad/core/workflows/party-mode/workflow.md` — 主工作流
-- `_bmad/core/workflows/party-mode/steps/step-01-agent-loading.md` — 角色加载
-- `_bmad/core/workflows/party-mode/steps/step-02-discussion-orchestration.md` — 辩论编排
+Party-Mode 的 canonical skill 定义位于：
+- `_bmad/skills/bmad-party-mode/workflow.md` — Skill 工作流入口
+- `_bmad/skills/bmad-party-mode/steps/step-01-agent-loading.md` — 角色加载
+- `_bmad/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md` — 辩论编排
+
+兼容保留的旧路径：
+- `_bmad/core/workflows/party-mode/workflow.md` — 旧 workflow 路径（仍被部分规则/技能引用）
 
 ---
 

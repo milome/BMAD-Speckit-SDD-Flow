@@ -1,27 +1,34 @@
 ---
-description: Generate a custom checklist for the current feature based on user requirements.
+description: Generate an omission-first checklist for the current feature based on repository governance and requirement quality risks.
 ---
 
 ## Checklist Purpose: "Unit Tests for English"
 
-**CRITICAL CONCEPT**: Checklists are **UNIT TESTS FOR REQUIREMENTS WRITING** - they validate the quality, clarity, and completeness of requirements in a given domain.
+Checklists created by `/speckit.checklist` are **requirements-quality gates**, not implementation QA plans.
 
-**NOT for verification/testing**:
+They MUST test whether the written contract is:
 
-- ❌ NOT "Verify the button clicks correctly"
-- ❌ NOT "Test error handling works"
-- ❌ NOT "Confirm the API returns 200"
-- ❌ NOT checking if code/implementation matches the spec
+- complete
+- clear
+- consistent
+- traceable
+- measurable
+- resilient against omission-driven E2E failure
 
-**FOR requirements quality validation**:
+They MUST NOT test whether code already works.
 
-- ✅ "Are visual hierarchy requirements defined for all card types?" (completeness)
-- ✅ "Is 'prominent display' quantified with specific sizing/positioning?" (clarity)
-- ✅ "Are hover state requirements consistent across all interactive elements?" (consistency)
-- ✅ "Are accessibility requirements defined for keyboard navigation?" (coverage)
-- ✅ "Does the spec define what happens when logo image fails to load?" (edge cases)
+## Default Mode
 
-**Metaphor**: If your spec is code written in English, the checklist is its unit test suite. You're testing whether the requirements are well-written, complete, unambiguous, and ready for implementation - NOT whether the implementation works.
+In this repository, `/speckit.checklist` defaults to **omissions and ambiguity auditing**.
+
+If the user does not request a domain explicitly, generate an omissions-focused checklist that looks for the kinds of gaps that later produce:
+
+- `module complete but journey not runnable`
+- missing smoke proof
+- missing closure note
+- missing failure / rollback definition
+- silent assumption drift
+- missing owner or exception boundary
 
 ## User Input
 
@@ -31,265 +38,188 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
-## Execution Steps
+## Mandatory Inputs
 
-1. **Setup**: Run `_bmad/speckit/scripts/powershell/check-prerequisites.ps1 -Json` from repo root and parse JSON for FEATURE_DIR and AVAILABLE_DOCS list.
-   - All file paths must be absolute.
-   - For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+1. Run `_bmad/speckit/scripts/powershell/check-prerequisites.ps1 -Json -IncludeTasks` from repo root and parse:
+   - `FEATURE_DIR`
+   - `AVAILABLE_DOCS`
+2. Load `_bmad/_config/speckit-governance.yaml`
+3. Load `_bmad/cursor/skills/speckit-workflow/references/omissions-pattern-library.md`
+   - Fallback: `_bmad/claude/skills/speckit-workflow/references/omissions-pattern-library.md`
+4. Load from `FEATURE_DIR` when present:
+   - `spec.md`
+   - `plan.md`
+   - `tasks.md`
 
-2. **Clarify intent (dynamic)**: Derive up to THREE initial contextual clarifying questions (no pre-baked catalog). They MUST:
-   - Be generated from the user's phrasing + extracted signals from spec/plan/tasks
-   - Only ask about information that materially changes checklist content
-   - Be skipped individually if already unambiguous in `$ARGUMENTS`
-   - Prefer precision over breadth
+If the governance YAML or omissions pattern library cannot be found, stop and report the blocker.
 
-   Generation algorithm:
-   1. Extract signals: feature domain keywords (e.g., auth, latency, UX, API), risk indicators ("critical", "must", "compliance"), stakeholder hints ("QA", "review", "security team"), and explicit deliverables ("a11y", "rollback", "contracts").
-   2. Cluster signals into candidate focus areas (max 4) ranked by relevance.
-   3. Identify probable audience & timing (author, reviewer, QA, release) if not explicit.
-   4. Detect missing dimensions: scope breadth, depth/rigor, risk emphasis, exclusion boundaries, measurable acceptance criteria.
-   5. Formulate questions chosen from these archetypes:
-      - Scope refinement (e.g., "Should this include integration touchpoints with X and Y or stay limited to local module correctness?")
-      - Risk prioritization (e.g., "Which of these potential risk areas should receive mandatory gating checks?")
-      - Depth calibration (e.g., "Is this a lightweight pre-commit sanity list or a formal release gate?")
-      - Audience framing (e.g., "Will this be used by the author only or peers during PR review?")
-      - Boundary exclusion (e.g., "Should we explicitly exclude performance tuning items this round?")
-      - Scenario class gap (e.g., "No recovery flows detected—are rollback / partial failure paths in scope?")
+## Clarifying Questions
 
-   Question formatting rules:
-   - If presenting options, generate a compact table with columns: Option | Candidate | Why It Matters
-   - Limit to A–E options maximum; omit table if a free-form answer is clearer
-   - Never ask the user to restate what they already said
-   - Avoid speculative categories (no hallucination). If uncertain, ask explicitly: "Confirm whether X belongs in scope."
+Ask clarifying questions **only** when the answer materially changes checklist content.
 
-   Defaults when interaction impossible:
-   - Depth: Standard
-   - Audience: Reviewer (PR) if code-related; Author otherwise
-   - Focus: Top 2 relevance clusters
+Rules:
 
-   Output the questions (label Q1/Q2/Q3). After answers: if ≥2 scenario classes (Alternate / Exception / Recovery / Non-Functional domain) remain unclear, you MAY ask up to TWO more targeted follow‑ups (Q4/Q5) with a one-line justification each (e.g., "Unresolved recovery path risk"). Do not exceed five total questions. Skip escalation if user explicitly declines more.
+- Ask at most **two** questions.
+- Prefer omission-focused questions such as:
+  - Should this checklist stay generic omissions-first, or focus on a specific domain like security/performance/API?
+  - Does this feature touch a `P0 journey`, permission boundary, or rollback-sensitive flow?
+- If the user already gave enough signal, skip questions and proceed.
 
-3. **Understand user request**: Combine `$ARGUMENTS` + clarifying answers:
-   - Derive checklist theme (e.g., security, review, deploy, ux)
-   - Consolidate explicit must-have items mentioned by user
-   - Map focus selections to category scaffolding
-   - Infer any missing context from spec/plan/tasks (do NOT hallucinate)
+Defaults when no further interaction is needed:
 
-4. **Load feature context**: Read from FEATURE_DIR:
-   - spec.md: Feature requirements and scope
-   - plan.md (if exists): Technical details, dependencies
-   - tasks.md (if exists): Implementation tasks
+- checklist mode: `omissions`
+- audience: reviewer
+- depth: standard
 
-   **Context Loading Strategy**:
-   - Load only necessary portions relevant to active focus areas (avoid full-file dumping)
-   - Prefer summarizing long sections into concise scenario/requirement bullets
-   - Use progressive disclosure: add follow-on retrieval only if gaps detected
-   - If source docs are large, generate interim summary items instead of embedding raw text
+## Checklist Generation Flow
 
-5. **Generate checklist** - Create "Unit Tests for Requirements":
-   - Create `FEATURE_DIR/checklists/` directory if it doesn't exist
-   - Generate unique checklist filename:
-     - Use short, descriptive name based on domain (e.g., `ux.md`, `api.md`, `security.md`)
-     - Format: `[domain].md`
-   - File handling behavior:
-     - If file does NOT exist: Create new file and number items starting from CHK001
-     - If file exists: Append new items to existing file, continuing from the last CHK ID (e.g., if last item is CHK015, start new items at CHK016)
-     - Never delete or replace existing checklist content - always preserve and append
+1. **Determine checklist type**
+   - If the user explicitly names a domain, use a short descriptive filename such as `security.md`, `api.md`, or `performance.md`.
+   - If the user does not specify a domain, use `omissions.md`.
 
-   **CORE PRINCIPLE - Test the Requirements, Not the Implementation**:
-   Every checklist item MUST evaluate the REQUIREMENTS THEMSELVES for:
-   - **Completeness**: Are all necessary requirements present?
-   - **Clarity**: Are requirements unambiguous and specific?
-   - **Consistency**: Do requirements align with each other?
-   - **Measurability**: Can requirements be objectively verified?
-   - **Coverage**: Are all scenarios/edge cases addressed?
+2. **Load feature context selectively**
+   - Read only the parts of spec/plan/tasks needed to assess:
+     - completion states
+     - evidence types
+     - verification commands
+     - failure paths
+     - recovery / rollback conditions
+     - owner / permission boundaries
+     - exception conditions
+     - readiness / smoke / closure / re-readiness
+   - Do not dump full files when a focused summary is enough.
 
-   **Category Structure** - Group items by requirement quality dimensions:
-   - **Requirement Completeness** (Are all necessary requirements documented?)
-   - **Requirement Clarity** (Are requirements specific and unambiguous?)
-   - **Requirement Consistency** (Do requirements align without conflicts?)
-   - **Acceptance Criteria Quality** (Are success criteria measurable?)
-   - **Scenario Coverage** (Are all flows/cases addressed?)
-   - **Edge Case Coverage** (Are boundary conditions defined?)
-   - **Non-Functional Requirements** (Performance, Security, Accessibility, etc. - are they specified?)
-   - **Dependencies & Assumptions** (Are they documented and validated?)
-   - **Ambiguities & Conflicts** (What needs clarification?)
+3. **Create or append checklist file**
+   - Directory: `FEATURE_DIR/checklists/`
+   - If the file does not exist, create it starting at `CHK001`.
+   - If the file exists, append and continue numbering.
+   - Never delete existing checklist content.
 
-   **HOW TO WRITE CHECKLIST ITEMS - "Unit Tests for English"**:
+## Required Omission Categories
 
-   ❌ **WRONG** (Testing implementation):
-   - "Verify landing page displays 3 episode cards"
-   - "Test hover states work on desktop"
-   - "Confirm logo click navigates home"
+Unless the user explicitly narrows scope, the checklist MUST include questions for these categories:
 
-   ✅ **CORRECT** (Testing requirements quality):
-   - "Are the exact number and layout of featured episodes specified?" [Completeness]
-   - "Is 'prominent display' quantified with specific sizing/positioning?" [Clarity]
-   - "Are hover state requirements consistent across all interactive elements?" [Consistency]
-   - "Are keyboard navigation requirements defined for all interactive UI?" [Coverage]
-   - "Is the fallback behavior specified when logo image fails to load?" [Edge Cases]
-   - "Are loading states defined for asynchronous episode data?" [Completeness]
-   - "Does the spec define visual hierarchy for competing UI elements?" [Clarity]
+### 1. Completion State
 
-   **ITEM STRUCTURE**:
-   Each item should follow this pattern:
-   - Question format asking about requirement quality
-   - Focus on what's WRITTEN (or not written) in the spec/plan
-   - Include quality dimension in brackets [Completeness/Clarity/Consistency/etc.]
-   - Reference spec section `[Spec §X.Y]` when checking existing requirements
-   - Use `[Gap]` marker when checking for missing requirements
+Check whether the docs define user-visible completion, not only "implementation done".
 
-   **EXAMPLES BY QUALITY DIMENSION**:
+Examples:
 
-   Completeness:
-   - "Are error handling requirements defined for all API failure modes? [Gap]"
-   - "Are accessibility requirements specified for all interactive elements? [Completeness]"
-   - "Are mobile breakpoint requirements defined for responsive layouts? [Gap]"
+- "Is the user-visible completion state defined for each P0 journey? [Completeness]"
+- "Can the stated completion condition be objectively verified? [Measurability]"
 
-   Clarity:
-   - "Is 'fast loading' quantified with specific timing thresholds? [Clarity, Spec §NFR-2]"
-   - "Are 'related episodes' selection criteria explicitly defined? [Clarity, Spec §FR-5]"
-   - "Is 'prominent' defined with measurable visual properties? [Ambiguity, Spec §FR-4]"
+### 2. Evidence & Verification
 
-   Consistency:
-   - "Do navigation requirements align across all pages? [Consistency, Spec §FR-10]"
-   - "Are card component requirements consistent between landing and detail pages? [Consistency]"
+Check whether the contract says what proof is required.
 
-   Coverage:
-   - "Are requirements defined for zero-state scenarios (no episodes)? [Coverage, Edge Case]"
-   - "Are concurrent user interaction scenarios addressed? [Coverage, Gap]"
-   - "Are requirements specified for partial data loading failures? [Coverage, Exception Flow]"
+Examples:
 
-   Measurability:
-   - "Are visual hierarchy requirements measurable/testable? [Acceptance Criteria, Spec §FR-1]"
-   - "Can 'balanced visual weight' be objectively verified? [Measurability, Spec §FR-2]"
+- "Are evidence types defined for each runnable slice and journey? [Traceability]"
+- "Are verification commands specified where smoke proof or closure is required? [Gap]"
 
-   **Scenario Classification & Coverage** (Requirements Quality Focus):
-   - Check if requirements exist for: Primary, Alternate, Exception/Error, Recovery, Non-Functional scenarios
-   - For each scenario class, ask: "Are [scenario type] requirements complete, clear, and consistent?"
-   - If scenario class missing: "Are [scenario type] requirements intentionally excluded or missing? [Gap]"
-   - Include resilience/rollback when state mutation occurs: "Are rollback requirements defined for migration failures? [Gap]"
+### 3. Failure / Recovery / Rollback
 
-   **Traceability Requirements**:
-   - MINIMUM: ≥80% of items MUST include at least one traceability reference
-   - Each item should reference: spec section `[Spec §X.Y]`, or use markers: `[Gap]`, `[Ambiguity]`, `[Conflict]`, `[Assumption]`
-   - If no ID system exists: "Is a requirement & acceptance criteria ID scheme established? [Traceability]"
+Check whether failure handling is explicitly written.
 
-   **Surface & Resolve Issues** (Requirements Quality Problems):
-   Ask questions about the requirements themselves:
-   - Ambiguities: "Is the term 'fast' quantified with specific metrics? [Ambiguity, Spec §NFR-1]"
-   - Conflicts: "Do navigation requirements conflict between §FR-10 and §FR-10a? [Conflict]"
-   - Assumptions: "Is the assumption of 'always available podcast API' validated? [Assumption]"
-   - Dependencies: "Are external podcast API requirements documented? [Dependency, Gap]"
-   - Missing definitions: "Is 'visual hierarchy' defined with measurable criteria? [Gap]"
+Examples:
 
-   **Content Consolidation**:
-   - Soft cap: If raw candidate items > 40, prioritize by risk/impact
-   - Merge near-duplicates checking the same requirement aspect
-   - If >5 low-impact edge cases, create one item: "Are edge cases X, Y, Z addressed in requirements? [Coverage]"
+- "Are failure triggers defined for the primary journey, not only the happy path? [Coverage]"
+- "Are rollback or recovery requirements documented for mutation-heavy flows? [Gap]"
 
-   **🚫 ABSOLUTELY PROHIBITED** - These make it an implementation test, not a requirements test:
-   - ❌ Any item starting with "Verify", "Test", "Confirm", "Check" + implementation behavior
-   - ❌ References to code execution, user actions, system behavior
-   - ❌ "Displays correctly", "works properly", "functions as expected"
-   - ❌ "Click", "navigate", "render", "load", "execute"
-   - ❌ Test cases, test plans, QA procedures
-   - ❌ Implementation details (frameworks, APIs, algorithms)
+### 4. Owner / Permission / Responsibility
 
-   **✅ REQUIRED PATTERNS** - These test requirements quality:
-   - ✅ "Are [requirement type] defined/specified/documented for [scenario]?"
-   - ✅ "Is [vague term] quantified/clarified with specific criteria?"
-   - ✅ "Are requirements consistent between [section A] and [section B]?"
-   - ✅ "Can [requirement] be objectively measured/verified?"
-   - ✅ "Are [edge cases/scenarios] addressed in requirements?"
-   - ✅ "Does the spec define [missing aspect]?"
+Check whether ownership and permission boundaries are explicit.
 
-6. **Structure Reference**: Generate the checklist following the canonical template in `.specify/templates/checklist-template.md` for title, meta section, category headings, and ID formatting. If template is unavailable, use: H1 title, purpose/created meta lines, `##` category sections containing `- [ ] CHK### <requirement item>` lines with globally incrementing IDs starting at CHK001.
+Examples:
 
-7. **Report**: Output full path to checklist file, item count, and summarize whether the run created a new file or appended to an existing one. Summarize:
-   - Focus areas selected
-   - Depth level
-   - Actor/timing
-   - Any explicit user-specified must-have items incorporated
+- "Are owner roles defined for readiness, implement, and closure decisions? [Completeness]"
+- "Are permission boundaries documented where user role changes affect the flow? [Gap]"
 
-**Important**: Each `/speckit.checklist` command invocation uses a short, descriptive checklist filename and either creates a new file or appends to an existing one. This allows:
+### 5. Exception Conditions
 
-- Multiple checklists of different types (e.g., `ux.md`, `test.md`, `security.md`)
-- Simple, memorable filenames that indicate checklist purpose
-- Easy identification and navigation in the `checklists/` folder
+Check whether the docs say when an exception log is required.
 
-To avoid clutter, use descriptive types and clean up obsolete checklists when done.
+Examples:
 
-## Example Checklist Types & Sample Items
+- "Are exception conditions defined for deferred full E2E, waived gates, or missing sign-off? [Coverage]"
+- "Does the contract define the next gate or expiry for each allowed exception? [Clarity]"
 
-**UX Requirements Quality:** `ux.md`
+### 6. Smoke / Closure / Re-Readiness
 
-Sample items (testing the requirements, NOT the implementation):
+If the feature touches a `P0 journey`, the checklist MUST ask about:
 
-- "Are visual hierarchy requirements defined with measurable criteria? [Clarity, Spec §FR-1]"
-- "Is the number and positioning of UI elements explicitly specified? [Completeness, Spec §FR-1]"
-- "Are interaction state requirements (hover, focus, active) consistently defined? [Consistency]"
-- "Are accessibility requirements specified for all interactive elements? [Coverage, Gap]"
-- "Is fallback behavior defined when images fail to load? [Edge Case, Gap]"
-- "Can 'prominent display' be objectively measured? [Measurability, Spec §FR-4]"
+- smoke runnable proof
+- closure note path
+- traceability from journey to task to test to closure
+- re-readiness triggers when completion semantics, dependency semantics, permission boundaries, or fixture/environment assumptions change
 
-**API Requirements Quality:** `api.md`
+### 7. Silent Assumption / Silent Scope Growth
 
-Sample items:
+The checklist MUST ask whether the docs contain or imply:
 
-- "Are error response formats specified for all failure scenarios? [Completeness]"
-- "Are rate limiting requirements quantified with specific thresholds? [Clarity]"
-- "Are authentication requirements consistent across all endpoints? [Consistency]"
-- "Are retry/timeout requirements defined for external dependencies? [Coverage, Gap]"
-- "Is versioning strategy documented in requirements? [Gap]"
+- silent assumption
+- silent scope growth
+- unstated fixture lifecycle
+- unstated environment dependency
+- module completion without runnable journey proof
 
-**Performance Requirements Quality:** `performance.md`
+## Writing Rules
 
-Sample items:
+Every checklist item MUST:
 
-- "Are performance requirements quantified with specific metrics? [Clarity]"
-- "Are performance targets defined for all critical user journeys? [Coverage]"
-- "Are performance requirements under different load conditions specified? [Completeness]"
-- "Can performance requirements be objectively measured? [Measurability]"
-- "Are degradation requirements defined for high-load scenarios? [Edge Case, Gap]"
+- be phrased as a question about the written requirements
+- use a quality dimension marker such as `[Completeness]`, `[Clarity]`, `[Consistency]`, `[Traceability]`, `[Gap]`, `[Assumption]`, `[Conflict]`
+- include a reference to a source section where possible
+- avoid implementation verbs like `verify click`, `test API`, `confirm render`, or `check code path`
 
-**Security Requirements Quality:** `security.md`
+At least **80%** of checklist items MUST include a traceability reference such as:
 
-Sample items:
+- `[Spec §X.Y]`
+- `[Plan §X.Y]`
+- `[Tasks §X.Y]`
+- `[Gap]`
+- `[Assumption]`
+- `[Conflict]`
 
-- "Are authentication requirements specified for all protected resources? [Coverage]"
-- "Are data protection requirements defined for sensitive information? [Completeness]"
-- "Is the threat model documented and requirements aligned to it? [Traceability]"
-- "Are security requirements consistent with compliance obligations? [Consistency]"
-- "Are security failure/breach response requirements defined? [Gap, Exception Flow]"
+## Prohibited Anti-Patterns
 
-## Anti-Examples: What NOT To Do
+Do **not** turn the checklist into:
 
-**❌ WRONG - These test implementation, not requirements:**
+- an implementation test plan
+- a QA execution checklist
+- a code review template
+- a release checklist
 
-```markdown
-- [ ] CHK001 - Verify landing page displays 3 episode cards [Spec §FR-001]
-- [ ] CHK002 - Test hover states work correctly on desktop [Spec §FR-003]
-- [ ] CHK003 - Confirm logo click navigates to home page [Spec §FR-010]
-- [ ] CHK004 - Check that related episodes section shows 3-5 items [Spec §FR-005]
-```
+Bad:
 
-**✅ CORRECT - These test requirements quality:**
+- "Verify the endpoint returns 200"
+- "Test the button click works"
+- "Confirm the smoke test passes"
 
-```markdown
-- [ ] CHK001 - Are the number and layout of featured episodes explicitly specified? [Completeness, Spec §FR-001]
-- [ ] CHK002 - Are hover state requirements consistently defined for all interactive elements? [Consistency, Spec §FR-003]
-- [ ] CHK003 - Are navigation requirements clear for all clickable brand elements? [Clarity, Spec §FR-010]
-- [ ] CHK004 - Is the selection criteria for related episodes documented? [Gap, Spec §FR-005]
-- [ ] CHK005 - Are loading state requirements defined for asynchronous episode data? [Gap]
-- [ ] CHK006 - Can "visual hierarchy" requirements be objectively measured? [Measurability, Spec §FR-001]
-```
+Good:
 
-**Key Differences:**
+- "Is the endpoint success and failure contract fully specified? [Completeness]"
+- "Is the user-visible success condition for the action explicitly defined? [Clarity]"
+- "Does the contract specify what smoke proof is required before closure? [Traceability]"
 
-- Wrong: Tests if the system works correctly
-- Correct: Tests if the requirements are written correctly
-- Wrong: Verification of behavior
-- Correct: Validation of requirement quality
-- Wrong: "Does it do X?"
-- Correct: "Is X clearly specified?"
+## Output Format
+
+Use `_bmad/speckit/templates/checklist-template.md` as the canonical structural reference.
+
+Minimum structure:
+
+- H1 title
+- purpose / created / feature metadata
+- `##` category headings
+- checklist items in the form `- [ ] CHK### ...`
+
+## Final Report
+
+When complete, report:
+
+- absolute path to the checklist file
+- whether the file was created or appended
+- total item count
+- checklist mode (`omissions` by default unless user requested another domain)
+- whether the checklist includes P0 journey / smoke / closure / re-readiness checks
+- any major omission hotspots discovered while generating it

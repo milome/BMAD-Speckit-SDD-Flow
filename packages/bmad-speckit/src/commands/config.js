@@ -17,7 +17,7 @@ function configGetCommand(cwd, options) {
   const { key, json } = options;
   const value = get(key, { cwd });
   if (value === undefined) {
-    console.error('Error: 配置项不存在 (Key does not exist)');
+    console.error('Error: Key does not exist');
     process.exit(1);
   }
   if (json) {

@@ -141,6 +141,21 @@ Prepare the following structure for document append:
 [User journey content based on conversation, or N/A if not discussed]
 ```
 
+### 5A. Run Local Gate Check Before Continue
+
+Before you offer `[C] Continue`, validate that the current user section explicitly covers:
+
+- `success evidence`
+- `current workaround`
+- `failure cost`
+- `role / permission boundary`
+- `external dependency semantics`
+
+If any blocker-level field is missing:
+- emit a `GateFailure`
+- build a `RemediationPlan`
+- do not show plain Continue until the blocker is repaired and the local gate is rerun
+
 ### 6. Present MENU OPTIONS
 
 **Content Presentation:**
@@ -154,7 +169,7 @@ Prepare the following structure for document append:
 #### Menu Handling Logic:
 
 - IF A: Invoke the `bmad-advanced-elicitation` skill with current user content to dive deeper into personas and journeys
-- IF P: Invoke the `bmad-party-mode` skill to bring different perspectives to validate user understanding
+- IF P: Invoke the `bmad-party-mode` skill with the `brief-gate` stage profile and current blocker/gap context to bring different perspectives to validate user understanding and resolve blocker gaps
 - IF C: Save content to {outputFile}, update frontmatter with stepsCompleted: [1, 2, 3], then read fully and follow: ./step-04-metrics.md
 - IF Any other comments or queries: help user respond then [Redisplay Menu Options](#6-present-menu-options)
 

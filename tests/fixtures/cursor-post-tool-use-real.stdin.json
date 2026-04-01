@@ -1,0 +1,15 @@
+{
+  "cwd": "D:/workspace/runtime-dashboard-fixture",
+  "stage": "implement",
+  "tool_name": "Shell",
+  "tool_call_id": "00000000-1111-2222-3333-444444444444",
+  "tool_input": {
+    "command": "Get-ChildItem tests | Select-String -Pattern runtime-v6-sync-protected-paths.test.ts",
+    "description": "Search runtime regression fixture references"
+  },
+  "tool_result": {
+    "exitCode": 0,
+    "stdout": "tests/acceptance/runtime-v6-sync-protected-paths.test.ts\n",
+    "stderr": ""
+  }
+}

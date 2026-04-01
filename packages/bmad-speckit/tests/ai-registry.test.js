@@ -17,10 +17,18 @@ function mkdirp(p) {
 
 describe('AIRegistry (Story 12.1 T1)', () => {
   const tmpRoot = path.join(os.tmpdir(), `bmad-speckit-ai-registry-${Date.now()}`);
-  const globalRegistryPath = path.join(os.homedir(), '.bmad-speckit', 'ai-registry.json');
+  const isolatedHome = path.join(tmpRoot, 'home');
+  const originalHomedir = os.homedir;
   let globalRegistryBackup = null;
 
+  function getGlobalRegistryPath() {
+    return path.join(os.homedir(), '.bmad-speckit', 'ai-registry.json');
+  }
+
   before(() => {
+    fs.mkdirSync(isolatedHome, { recursive: true });
+    os.homedir = () => isolatedHome;
+    const globalRegistryPath = getGlobalRegistryPath();
     if (fs.existsSync(globalRegistryPath)) {
       globalRegistryBackup = fs.readFileSync(globalRegistryPath, 'utf8');
       fs.unlinkSync(globalRegistryPath);
@@ -28,6 +36,7 @@ describe('AIRegistry (Story 12.1 T1)', () => {
   });
 
   after(() => {
+    const globalRegistryPath = getGlobalRegistryPath();
     if (globalRegistryBackup != null) {
       const dir = path.dirname(globalRegistryPath);
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -35,6 +44,7 @@ describe('AIRegistry (Story 12.1 T1)', () => {
     } else if (fs.existsSync(globalRegistryPath)) {
       fs.unlinkSync(globalRegistryPath);
     }
+    os.homedir = originalHomedir;
     try { fs.rmSync(tmpRoot, { recursive: true, force: true }); } catch (_) {}
   });
 

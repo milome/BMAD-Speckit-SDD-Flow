@@ -1,0 +1,13 @@
+version: 1
+primaryHost: cursor
+packetHosts:
+  - cursor
+  - claude
+  - codex
+provider:
+  mode: openai-compatible
+  id: openai-governance
+  baseUrl: https://api.openai.com/v1
+  model: gpt-5.4
+  apiKeyEnv: OPENAI_API_KEY
+  timeoutMs: 30000

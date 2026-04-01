@@ -1,6 +1,6 @@
 # Test Architect workflow: framework
 name: testarch-framework
-description: "Initialize production-ready test framework architecture (Playwright or Cypress) with fixtures, helpers, and configuration"
+description: "Initialize production-ready test framework architecture (Playwright or Cypress) with smoke/full E2E layout, fixture lifecycle cleanup, helpers, and configuration"
 author: "BMad"
 
 # Critical variables from config
@@ -20,9 +20,15 @@ validation: "{installed_path}/checklist.md"
 # Variables and inputs
 variables:
   test_dir: "{project-root}/tests" # Root test directory
+  smoke_e2e_dir: "{test_dir}/e2e/smoke" # Fast P0 journey verification lane
+  full_e2e_dir: "{test_dir}/e2e/full" # Broader regression or nightly lane
+  support_dir: "{test_dir}/support" # Shared support directory
+  fixture_dir: "{support_dir}/fixtures" # Fixture lifecycle + cleanup ownership
   use_typescript: true # Prefer TypeScript configuration
   framework_preference: "auto" # auto, playwright, cypress - user can override auto-detection
   project_size: "auto" # auto, small, large - influences framework recommendation
+  smoke_time_budget_minutes: 10 # Default budget for PR smoke verification
+  full_e2e_schedule: "nightly" # Default cadence for wider full E2E coverage
 
 # Output configuration
 default_output_file: "{test_dir}/README.md" # Main deliverable is test setup README

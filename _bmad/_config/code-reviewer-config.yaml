@@ -1,4 +1,6 @@
 # code-reviewer多模式配置文件
+# audit-prompts 多语言：locale 来自 _bmad-output/runtime/context/project.json → languagePolicy.resolvedMode（非 env）。解析见
+# scripts/i18n/resolve-audit-prompt-path.ts；文件约定见 _bmad/_config/AUDIT_PROMPTS_STRATEGY.md（.md / .zh.md / .en.md）。
 # GAP-009 修复：prompt_template 路径规则
 # GAP-076 修复：prompt_template 路径解析优先级：(1) 相对于 config 文件所在目录；(2) 若不存在则 {SKILLS_ROOT}/speckit-workflow/references/
 # GAP-025 修复：audit-prompts-*.md 为新建独立文件，与 speckit-workflow/references/audit-prompts.md 关系：
@@ -19,18 +21,21 @@ modes:
       D: "不及格，严重问题，拒绝merge"
     dimensions:
       - name: "功能性"
+        name_en: "Functionality"
         weight: 30
         checks:
           - "是否实现了需求"
           - "边界条件处理"
           - "错误处理"
       - name: "代码质量"
+        name_en: "Code Quality"
         weight: 30
         checks:
           - "命名规范"
           - "代码复杂度"
           - "注释完整性"
       - name: "测试覆盖"
+        name_en: "Test Coverage"
         weight: 20
         checks:
           - "单元测试"
@@ -38,6 +43,7 @@ modes:
           - "边界测试"
           - "回归判定：实施前已存在用例若实施后失败须修复或正式排除；禁止以与本Story无关、与Story X 相关等理由排除"
       - name: "安全性"
+        name_en: "Security"
         weight: 20
         checks:
           - "输入验证"
@@ -54,29 +60,41 @@ modes:
       不通过: "关键维度缺失"
     dimensions:
       - name: "需求完整性"
+        name_en: "Requirements Completeness"
         weight: 35
         checks:
           - "覆盖所有用户场景"
+          - "P0 journey 合同完整"
+          - "journey evidence contract 完整"
           - "边界条件明确"
           - "异常流程考虑"
       - name: "可测试性"
+        name_en: "Testability"
         weight: 25
         checks:
           - "验收标准明确"
           - "可验证"
           - "测试场景清晰"
+          - "smoke E2E readiness"
+          - "fixture / environment readiness"
       - name: "一致性"
+        name_en: "Consistency"
         weight: 25
         checks:
           - "与Product Brief一致"
           - "内部逻辑自洽"
           - "术语统一"
+          - "actor-permission-state matrix"
+          - "failure matrix"
       - name: "可追溯性"
+        name_en: "Traceability"
         weight: 15
         checks:
           - "需求有唯一ID"
           - "需求描述足够详细以便追溯"
           - "依赖关系明确"
+          - "journey 到 epic/story traceability"
+          - "证据合同可追溯"
 
   arch:
     name: "架构审计"
@@ -88,29 +106,41 @@ modes:
       不通过: "关键维度缺失或Tradeoff未记录"
     dimensions:
       - name: "技术可行性"
+        name_en: "Technical Feasibility"
         weight: 30
         checks:
           - "方案可实现"
           - "技术选型合理"
           - "资源需求明确"
+          - "P0 journey key path 可实现"
+          - "business completion state 已定义"
       - name: "扩展性"
+        name_en: "Scalability"
         weight: 25
         checks:
           - "未来3年可持续"
           - "水平扩展能力"
           - "向后兼容"
+          - "sync / async boundary 合理"
+          - "failure handling / compensation 可扩展"
       - name: "安全性"
+        name_en: "Security"
         weight: 25
         checks:
           - "威胁建模完整"
           - "安全控制措施"
           - "数据保护"
+          - "actor / permission 约束承接"
+          - "trace / audit 证据完整"
       - name: "成本效益"
+        name_en: "Cost-Benefit"
         weight: 20
         checks:
           - "ROI合理"
           - "运维成本可控"
           - "人力成本估算"
+          - "smoke E2E readiness 成本可承受"
+          - "fixture / observability 合同可维护"
 
   pr:
     name: "PR审计"
@@ -190,6 +220,21 @@ items:
   risk_anticipation:
     name: "风险预判"
     description: "风险识别到位"
+  journey_smoke_chain_contract:
+    name: "Journey Smoke Task Chain 合同"
+    description: "每个 Journey Slice 至少绑定一条 smoke task chain"
+  journey_closure_task_contract:
+    name: "Journey Closure Task 合同"
+    description: "每个 Journey Slice 必须有 closure note task"
+  journey_unlock_contract:
+    name: "Journey Unlock 合同"
+    description: "setup/foundation 任务必须显式说明 unlocks 哪条 journey / smoke path"
+  journey_gap_split_contract:
+    name: "Journey Gap Split 合同"
+    description: "Journey Slice 规则必须保持 definition gap 与 implementation gap 分离"
+  journey_shared_path_reference:
+    name: "Shared Ledger Path Reference 合同"
+    description: "multi-agent 模式必须共享同一份 journey ledger / invariant ledger / trace map 路径引用"
 
 veto_items:
   veto_core_logic:

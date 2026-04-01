@@ -1,6 +1,6 @@
 ---
 name: 'step-04-journeys'
-description: 'Map ALL user types that interact with the system with narrative story-based journeys'
+description: 'Map ALL user types that interact with the system through evidence-backed journey contracts'
 
 # File References
 nextStepFile: './step-05-domain.md'
@@ -44,7 +44,7 @@ partyModeWorkflow: '{project-root}/_bmad/core/workflows/party-mode/workflow.md'
 
 ## YOUR TASK:
 
-Create compelling narrative user journeys that leverage existing personas from product briefs and identify additional user types needed for comprehensive coverage.
+Create evidence-backed user journey contracts that leverage existing personas from product briefs, identify additional user types needed for comprehensive coverage, and make the P0 paths executable downstream.
 
 ## JOURNEY MAPPING SEQUENCE:
 
@@ -99,6 +99,15 @@ Guide narrative journey creation using story structure:
 
 Encourage narrative format with specific user details, emotional journey, and clear before/after contrast
 
+**Mandatory Journey Contract Fields (for every P0 and important non-P0 journey):**
+- `Journey ID`
+- `Actor-State-Path` triplet
+- `Given / When / Then`
+- `Success evidence`
+- `Failure trigger + recovery`
+- `Current workaround`
+- `Business completion state`
+
 ### 3. Guide Journey Exploration
 
 For each journey, facilitate detailed exploration:
@@ -107,6 +116,9 @@ For each journey, facilitate detailed exploration:
 - What information do they need to see/hear?
 - What's their emotional state at each point?
 - Where does this journey succeed or fail?
+- What concrete actor-state-path transition is occurring?
+- What proof would let a reviewer say this journey really ran?
+- What is the current workaround if this journey is not yet supported?
 
 ### 4. Connect Journeys to Requirements
 
@@ -114,10 +126,11 @@ After each journey, explicitly state:
 - This journey reveals requirements for specific capability areas
 - Help user see how different journeys create different feature sets
 - Connect journey needs to concrete capabilities (onboarding, dashboards, notifications, etc.)
+- Mark which journeys are P0 and therefore must become downstream acceptance anchors
 
-### 5. Aim for Comprehensive Coverage
+### 5. Build P0 Journey Inventory And Evidence Contract
 
-Guide toward complete journey set:
+Guide toward complete journey set and explicit contract capture:
 
 - **Primary user** - happy path (core experience)
 - **Primary user** - edge case (different goal, error recovery)
@@ -125,6 +138,13 @@ Guide toward complete journey set:
 - **API consumer** (if applicable)
 
 Ask if additional journeys are needed to cover uncovered user types
+
+For every journey promoted to P0, require:
+- one-line actor-state-path summary
+- one-line Given/When/Then
+- one success evidence statement
+- one failure trigger and recovery statement
+- one current workaround statement
 
 ### 6. Generate User Journey Content
 
@@ -139,10 +159,41 @@ When saving to document, append these Level 2 and Level 3 sections:
 
 [All journey narratives based on conversation]
 
+### P0 Journey Inventory
+
+- **Journey ID**: J01
+  - **Actor-State-Path**: [actor] -> [state] -> [path]
+  - **Given / When / Then**: Given [...], When [...], Then [...]
+  - **Success Evidence**: [...]
+  - **Failure Trigger + Recovery**: [...]
+  - **Current Workaround**: [...]
+
+### Journey Evidence Contract
+
+[How each P0 journey will be proven and what evidence exists]
+
+### Failure Triggers And Recovery
+
+[Failure matrix summary based on conversation]
+
 ### Journey Requirements Summary
 
 [Summary of capabilities revealed by journeys based on conversation]
 ```
+
+### 6A. Run PRD Contract Gate Before Continue
+
+Before you offer `[C] Continue`, validate that the current PRD journey contract explicitly covers:
+
+- `P0 Journey Inventory`
+- `Journey Evidence Contract`
+- `Failure Triggers And Recovery`
+- unresolved blockers are named and owned
+
+If any blocker-level contract field is missing:
+- emit a `GateFailure`
+- build a `RemediationPlan`
+- do not show plain Continue until the blocker is repaired and the local gate is rerun
 
 ### 7. Present MENU OPTIONS
 
@@ -156,7 +207,7 @@ Display: "**Select:** [A] Advanced Elicitation [P] Party Mode [C] Continue to Do
 
 #### Menu Handling Logic:
 - IF A: Read fully and follow: {advancedElicitationTask} with the current journey content, process the enhanced journey insights that come back, ask user "Accept these improvements to the user journeys? (y/n)", if yes update content with improvements then redisplay menu, if no keep original content then redisplay menu
-- IF P: Read fully and follow: {partyModeWorkflow} with the current journeys, process the collaborative journey improvements and additions, ask user "Accept these changes to the user journeys? (y/n)", if yes update content with improvements then redisplay menu, if no keep original content then redisplay menu
+- IF P: Read fully and follow: {partyModeWorkflow} using the `prd-contract-gate` stage profile with current blocker/gap context, process the collaborative journey improvements and additions, ask user "Accept these changes to the user journeys? (y/n)", if yes update content with improvements then redisplay menu, if no keep original content then redisplay menu
 - IF C: Append the final content to {outputFile}, update frontmatter by adding this step name to the end of the stepsCompleted array, then read fully and follow: {nextStepFile}
 - IF Any other: help user respond, then redisplay menu
 
@@ -176,6 +227,7 @@ When user selects 'C', append the content directly to the document using the str
 ✅ Rich narrative storytelling for each persona and journey
 ✅ Complete story-based journey mapping with emotional arc
 ✅ Journey requirements clearly connected to capabilities needed
+✅ Every P0 journey includes actor-state-path, Given/When/Then, success evidence, failure trigger + recovery, and current workaround
 ✅ Minimum 3-4 compelling narrative journeys covering different user types
 ✅ A/P/C menu presented and handled correctly
 ✅ Content properly appended to document when C selected
@@ -187,6 +239,7 @@ When user selects 'C', append the content directly to the document using the str
 ❌ Creating generic journeys without rich persona details and narrative
 ❌ Missing emotional storytelling elements that make journeys compelling
 ❌ Missing critical decision points and failure scenarios
+❌ Missing actor-state-path, Given/When/Then, success evidence, or current workaround for P0 journeys
 ❌ Not connecting journeys to required capabilities
 ❌ Not having enough journey diversity (admin, support, API, etc.)
 ❌ Not presenting A/P/C menu after content generation

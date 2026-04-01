@@ -1,11 +1,18 @@
 import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
-import { parseDimensionScores, stageToMode } from '../dimension-parser';
+import { listDimensionNamesEn, parseDimensionScores, stageToMode } from '../dimension-parser';
 
 const FIXTURES = path.join(__dirname, 'fixtures');
 
 describe('dimension-parser', () => {
+  it('listDimensionNamesEn returns name_en from code-reviewer-config (TB.6)', () => {
+    const cfg = path.join(__dirname, '../../../../_bmad/_config/code-reviewer-config.yaml');
+    if (!fs.existsSync(cfg)) return;
+    const en = listDimensionNamesEn('code', cfg);
+    expect(en).toEqual(['Functionality', 'Code Quality', 'Test Coverage', 'Security']);
+  });
+
   it('maps stage to mode with Story 5.2 rules', () => {
     expect(stageToMode('prd')).toBe('prd');
     expect(stageToMode('spec')).toBe('prd');
@@ -70,6 +77,20 @@ describe('dimension-parser', () => {
     const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report-with-dimensions.md'), 'utf-8');
     const missingPath = path.join(process.cwd(), 'config', 'code-reviewer-config.not-exists.yaml');
     expect(parseDimensionScores(content, 'prd', missingPath)).toEqual([]);
+  });
+
+  it('parses English PRD dimension labels using name_en (T3.7)', () => {
+    const content = `
+维度评分:
+- Requirements Completeness: 85/100
+- Testability: 80/100
+`;
+    const scores = parseDimensionScores(content, 'prd');
+    expect(scores.length).toBe(2);
+    expect(scores[0].dimension).toBe('Requirements Completeness');
+    expect(scores[0].weight).toBe(35);
+    expect(scores[1].dimension).toBe('Testability');
+    expect(scores[1].weight).toBe(25);
   });
 
   it('parses implement report with four code dimensions (audit-prompts §5.1)', () => {

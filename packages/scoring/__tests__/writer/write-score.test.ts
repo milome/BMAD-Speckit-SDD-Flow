@@ -125,6 +125,37 @@ describe('writer (sync)', () => {
       expect(() => writeScoreRecordSync(invalid, 'single_file')).toThrow(/validation failed/i);
       expect(fs.existsSync(path.join(testDataPath, 'x.json'))).toBe(false);
     });
+
+    it('preserves governance rerun history when a later stage rewrite does not carry it explicitly', () => {
+      const existing: RunScoreRecord & {
+        governance_rerun_history?: Array<{ event_id: string; rerun_gate: string }>;
+      } = {
+        ...validRecord,
+        governance_rerun_history: [
+          {
+            event_id: 'gov-evt-1',
+            timestamp: '2026-03-28T12:10:00.000Z',
+            rerun_gate: 'implementation-readiness',
+            outcome: 'blocked',
+          },
+        ],
+      };
+
+      writeScoreRecordSync(existing, 'single_file');
+      writeScoreRecordSync({ ...validRecord, phase_score: 91 }, 'single_file');
+
+      const filePath = path.join(testDataPath, 'test-run-1.json');
+      const content = JSON.parse(fs.readFileSync(filePath, 'utf-8')) as RunScoreRecord & {
+        governance_rerun_history?: Array<{ event_id: string; rerun_gate: string }>;
+      };
+
+      expect(content.phase_score).toBe(91);
+      expect(content.governance_rerun_history).toHaveLength(1);
+      expect(content.governance_rerun_history?.[0]).toMatchObject({
+        event_id: 'gov-evt-1',
+        rerun_gate: 'implementation-readiness',
+      });
+    });
   });
 
   describe('check_items 结构', () => {

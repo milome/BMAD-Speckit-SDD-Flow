@@ -1,0 +1,14 @@
+{
+  "cwd": "D:/workspace/runtime-dashboard-fixture",
+  "tool_name": "Shell",
+  "tool_call_id": "00000000-1111-2222-3333-666666666666",
+  "tool_input": {
+    "command": "Write-Output \"BEGIN RSA PRIVATE KEY\"",
+    "description": "Blocked private key example"
+  },
+  "tool_result": {
+    "exitCode": 1,
+    "stdout": "BEGIN RSA PRIVATE KEY",
+    "stderr": "blocked secret material"
+  }
+}

@@ -4,6 +4,7 @@ import * as veto from '../veto';
 import { resolveRulesDir } from '../constants/path';
 import type { EpicStoryRecord } from '../veto';
 import { clusterWeaknesses } from '../analytics/cluster-weaknesses';
+import { buildJourneyContractRemediationHints } from '../analytics/journey-contract-remediation';
 import { loadCoachConfig } from './config';
 import { loadRunRecords } from './loader';
 import { loadForbiddenWords, validateForbiddenWords } from './forbidden';
@@ -27,12 +28,12 @@ interface ManifestAgentRow {
 const MIN_SAFE_FALLBACK_PERSONA: AiCoachPersona = {
   role: 'AI Code Coach + Iteration Gate Keeper',
   identity:
-    '资深工程师视角，聚焦工业级可交付质量。仅基于既有 scoring 与审计结果进行短板诊断和改进建议输出。',
-  communication_style: '精准、直接、可执行；结论明确，不使用模糊表述。',
+    'Senior-engineer lens: industrial-grade deliverables. Diagnosis uses only existing scoring and audit artifacts.',
+  communication_style: 'Precise, direct, actionable; clear conclusions, no vague wording.',
   principles: [
-    '只消费已有审计与 scoring 数据，不替代 Reviewer。',
-    '未提供 run_id 或无 scoring 数据时，必须拒绝分析。',
-    '不执行新的 code review 或审计流程。',
+    'Consume only existing audit and scoring data; do not replace the Reviewer.',
+    'Refuse analysis when run_id is missing or there is no scoring data.',
+    'Do not run new code review or audit flows.',
   ],
 };
 
@@ -243,22 +244,34 @@ function buildRecommendations(
 ): string[] {
   const recommendations: string[] = [];
   if (fallbackMode) {
-    recommendations.push('fallback 模式已启用：全链路 Skill 不可用，当前诊断基于既有 scoring 数据。');
+    recommendations.push(
+      'Fallback mode: end-to-end Skill unavailable; diagnosis uses existing scoring data only.'
+    );
   }
   if (hasStageVeto) {
-    recommendations.push('存在环节 veto 触发，优先修复 veto 对应检查项后再执行下一轮迭代。');
+    recommendations.push(
+      'Stage veto triggered: fix the corresponding check items before the next iteration.'
+    );
   }
   if (epicTriggered) {
-    recommendations.push('Epic veto 条件触发，建议优先处理触发条件对应的高风险问题。');
+    recommendations.push(
+      'Epic veto triggered: prioritize high-risk issues that match the trigger conditions.'
+    );
   }
   if (!hasStageVeto && !epicTriggered) {
-    recommendations.push('本轮未触发 veto，建议继续提升低分阶段的稳定性与可维护性。');
+    recommendations.push(
+      'No veto this run: continue improving stability and maintainability of lower-scoring stages.'
+    );
   }
 
   const boundaryRule =
     persona.principles.find(
-      (item) => item.includes('不替代') || item.includes('不执行') || item.includes('审计')
-    ) ?? '不替代 Reviewer，不执行新审计流程。';
+      (item) =>
+        /Reviewer|audit flow|does not replace|Do not run/i.test(item) ||
+        item.includes('不替代') ||
+        item.includes('不执行') ||
+        item.includes('审计')
+    ) ?? 'Does not replace Reviewer; does not run new audit flows.';
   if (!recommendations.includes(boundaryRule)) {
     recommendations.push(boundaryRule);
   }
@@ -371,13 +384,20 @@ export async function coachDiagnose(
   if (hasHighIteration) {
     recommendations = [
       ...recommendations,
-      '建议关注高整改轮次 stage，提升一次通过率。',
+      'Focus on stages with high remediation iteration counts to improve first-pass rate.',
+    ];
+  }
+  const journeyContractHints = buildJourneyContractRemediationHints(records);
+  if (journeyContractHints.length > 0) {
+    recommendations = [
+      ...recommendations,
+      ...journeyContractHints.map((item) => item.recommendation),
     ];
   }
   const summary = fallbackMode
-    ? `fallback 模式诊断完成（run_id=${normalizedRunId}）。已基于既有评分记录输出结果。`
-    : `诊断完成（run_id=${normalizedRunId}）。未触发全链路 Skill 降级。`;
-  const boundedSummary = `${summary} 角色边界：${persona.role}，仅消费既有 scoring 结果。`;
+    ? `Fallback diagnosis complete (run_id=${normalizedRunId}). Output is based on existing score records.`
+    : `Diagnosis complete (run_id=${normalizedRunId}). End-to-end Skill was not downgraded.`;
+  const boundedSummary = `${summary} Role boundary: ${persona.role}; consumes existing scoring only.`;
 
   let weaknessClusters: CoachDiagnosisReport['weakness_clusters'];
   try {
@@ -392,7 +412,7 @@ export async function coachDiagnose(
     if (recs.length === 0) continue;
     const hasGrade = recs.some((r) => r.overall_grade != null && r.overall_grade.length > 0);
     if (!hasGrade) continue;
-    const parts = recs.map((r, i) => `第${i + 1}轮 ${r.overall_grade ?? '?'}`);
+    const parts = recs.map((r, i) => `Round ${i + 1} ${r.overall_grade ?? '?'}`);
     stageEvolutionTraces[item.record.stage] = parts.join(' → ');
   }
 
@@ -406,6 +426,7 @@ export async function coachDiagnose(
     recommendations,
     iteration_passed: iterationPassed,
     weakness_clusters: weaknessClusters,
+    journey_contract_hints: journeyContractHints.length > 0 ? journeyContractHints : undefined,
   };
 
   const forbiddenWords = loadForbiddenWords(options.forbiddenWordsPath);
@@ -418,10 +439,9 @@ export async function coachDiagnose(
   }
   if (forbiddenValidation.warnings.length > 0) {
     report.recommendations.push(
-      `措辞告警：检测到模糊表述 ${forbiddenValidation.warnings.join('、')}，请替换为明确承诺表达。`
+      `Wording alert: ambiguous terms detected (${forbiddenValidation.warnings.join(', ')}). Replace with explicit commitments.`
     );
   }
 
   return report;
 }
-

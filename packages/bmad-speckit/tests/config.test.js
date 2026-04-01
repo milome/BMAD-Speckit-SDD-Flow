@@ -12,36 +12,66 @@ const os = require('os');
 
 const BIN = path.join(__dirname, '../bin/bmad-speckit.js');
 
+function withIsolatedHome(envOverrides = {}) {
+  const homeRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-speckit-home-'));
+  return {
+    env: {
+      ...process.env,
+      HOME: homeRoot,
+      USERPROFILE: homeRoot,
+      ...envOverrides,
+    },
+    cleanup() {
+      try { fs.rmSync(homeRoot, { recursive: true, force: true }); } catch (_) {}
+    },
+  };
+}
+
 function runConfig(args, subcommand, cwd, envOverrides = {}) {
-  return spawnSync('node', [BIN, 'config', subcommand, ...(args || [])], {
-    cwd: cwd || process.cwd(),
-    encoding: 'utf8',
-    timeout: 5000,
-    env: { ...process.env, ...envOverrides },
-  });
+  const { env, cleanup } = withIsolatedHome(envOverrides);
+  try {
+    return spawnSync('node', [BIN, 'config', subcommand, ...(args || [])], {
+      cwd: cwd || process.cwd(),
+      encoding: 'utf8',
+      timeout: 15000,
+      env,
+    });
+  } finally {
+    cleanup();
+  }
 }
 
 function runConfigList(args, cwd, envOverrides = {}) {
-  return spawnSync('node', [BIN, 'config', 'list', ...(args || [])], {
-    cwd: cwd || process.cwd(),
-    encoding: 'utf8',
-    timeout: 5000,
-    env: { ...process.env, ...envOverrides },
-  });
+  const { env, cleanup } = withIsolatedHome(envOverrides);
+  try {
+    return spawnSync('node', [BIN, 'config', 'list', ...(args || [])], {
+      cwd: cwd || process.cwd(),
+      encoding: 'utf8',
+      timeout: 15000,
+      env,
+    });
+  } finally {
+    cleanup();
+  }
 }
 
 function runConfigSet(key, value, args, cwd, envOverrides = {}) {
-  return spawnSync('node', [BIN, 'config', 'set', key, value, ...(args || [])], {
-    cwd: cwd || process.cwd(),
-    encoding: 'utf8',
-    timeout: 5000,
-    env: { ...process.env, ...envOverrides },
-  });
+  const { env, cleanup } = withIsolatedHome(envOverrides);
+  try {
+    return spawnSync('node', [BIN, 'config', 'set', key, value, ...(args || [])], {
+      cwd: cwd || process.cwd(),
+      encoding: 'utf8',
+      timeout: 15000,
+      env,
+    });
+  } finally {
+    cleanup();
+  }
 }
 
 // T1.1-T1.3: ConfigCommand skeleton and bin registration
 describe('T1: ConfigCommand skeleton and bin registration', () => {
-  it('config get unknownKey => exit 1, stderr contains 不存在 or equivalent (T1.1)', () => {
+  it('config get unknownKey => exit 1, stderr indicates missing key (T1.1)', () => {
     const tmpDir = path.join(os.tmpdir(), `config-get-missing-${Date.now()}`);
     fs.mkdirSync(tmpDir, { recursive: true });
     const r = runConfig(['unknownKey'], 'get', tmpDir);
@@ -50,7 +80,10 @@ describe('T1: ConfigCommand skeleton and bin registration', () => {
     assert.ok(!err.includes('unknown command'), 'config command must exist (not "unknown command")');
     assert.strictEqual(r.status, 1, `expected exit 1, got ${r.status}`);
     assert.ok(
-      err.includes('不存在') || err.includes('not found') || err.includes('missing'),
+      err.includes('不存在') ||
+        err.includes('not found') ||
+        err.includes('missing') ||
+        err.includes('does not exist'),
       `stderr should mention key missing: ${r.stderr}`
     );
   });

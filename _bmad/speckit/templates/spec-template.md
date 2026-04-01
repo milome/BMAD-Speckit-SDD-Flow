@@ -4,6 +4,36 @@
 **Created**: [DATE]  
 **Status**: Draft  
 **Input**: User description: "$ARGUMENTS"
+**Source Requirement Documents**: [original requirements doc / PRD / Epic-Story / design doc / user prompt / bootstrap brief]
+**Specification Mode**: `STANDARD` or `GREENFIELD_BOOTSTRAP`
+
+## Hard Rules *(mandatory)*
+
+- `spec.md` MUST stay grounded in an explicit upstream requirements source. If no formal document exists, write `user prompt` or `bootstrap brief` explicitly instead of leaving the source implicit.
+- User stories MUST be written as user-visible journeys / runnable slices, not technical modules or internal layer completion.
+- Every user story MUST define a user-visible outcome and an independent test that can prove the slice delivers value on its own.
+- Every chapter and requirement point from the upstream source MUST appear in the requirement mapping table below. Missing coverage is a blocker, not a warning.
+- Any unresolved ambiguity that changes user-visible behavior, acceptance, permissions, data contract, or operational boundary MUST be marked `NEEDS CLARIFICATION`.
+- If any `P0` or `P1` journey still depends on unresolved `NEEDS CLARIFICATION`, the spec is not ready to advance to planning.
+
+## 需求映射清单（spec.md ↔ 原始需求文档）
+
+| 原始文档章节 | 原始需求要点 | spec.md 对应位置 | 覆盖状态 |
+|-------------|-------------|------------------|----------|
+| §1 概述 | [Brief requirement summary] | User Story 1 / FR-001 / SC-001 | ✅ / ❌ |
+| §2 [Section Name] | [Brief requirement summary] | User Story 2 / FR-00X / SC-00X | ✅ / ❌ |
+
+**说明**：
+- 原始需求文档的每一章、每一条须在 spec.md 中有明确对应并标注覆盖状态。
+- 若为 `GREENFIELD_BOOTSTRAP`，原始文档章节可写为 `user prompt`、`bootstrap brief` 或等价输入来源，但不得留空。
+- `❌` 状态必须在本轮补齐，或明确转入 `NEEDS CLARIFICATION` 并阻断进入 plan。
+
+## Clarification Ledger
+
+| Clarification ID | Source section | Open question | Blocking impact | Status |
+|------------------|----------------|---------------|-----------------|--------|
+| CL-001 | §[N] | [What is unclear?] | P0 / P1 / P2 / P3 | Open / Resolved |
+| CL-002 | §[N] | [What is unclear?] | P0 / P1 / P2 / P3 | Open / Resolved |
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -80,6 +110,8 @@
 <!--
   ACTION REQUIRED: The content in this section represents placeholders.
   Fill them out with the right functional requirements.
+  Every functional requirement MUST trace back to the mapping table above
+  and MUST support at least one user-visible journey.
 -->
 
 ### Functional Requirements
@@ -105,6 +137,8 @@
 <!--
   ACTION REQUIRED: Define measurable success criteria.
   These must be technology-agnostic and measurable.
+  Every success criterion MUST validate user-visible completion,
+  not merely internal module completion.
 -->
 
 ### Measurable Outcomes

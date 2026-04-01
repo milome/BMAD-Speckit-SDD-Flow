@@ -19,6 +19,21 @@ items:
   - id: regression_readiness
     ref: code-reviewer-config#regression_tests
     deduct: 8
+  - id: journey_smoke_chain
+    ref: code-reviewer-config#journey_smoke_chain_contract
+    deduct: 8
+  - id: journey_closure_task
+    ref: code-reviewer-config#journey_closure_task_contract
+    deduct: 6
+  - id: journey_unlock_contract
+    ref: code-reviewer-config#journey_unlock_contract
+    deduct: 6
+  - id: journey_gap_split_contract
+    ref: code-reviewer-config#journey_gap_split_contract
+    deduct: 6
+  - id: shared_path_reference
+    ref: code-reviewer-config#journey_shared_path_reference
+    deduct: 4
 
 veto_items:
   - id: veto_core_logic_error

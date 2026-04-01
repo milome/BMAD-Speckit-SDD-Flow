@@ -18,7 +18,8 @@ function runCli(args: string[], cwd = process.cwd()): string {
 
 describe(
   'eval-questions-cli 集成',
-  { timeout: 15000 },
+  /** ts-node cold start under parallel vitest + heavy acceptance (e.g. pack) can exceed 15s */
+  { timeout: 60_000 },
   () => {
   let tmpRoot: string;
   let origCwd: string;

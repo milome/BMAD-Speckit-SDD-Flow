@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import { parseAuditReport } from '../audit-index';
-import { extractCheckItems, parseGenericReport } from '../audit-generic';
+import { extractCheckItems, extractOverallGrade, parseGenericReport } from '../audit-generic';
 import { ParseError } from '../audit-prd';
 import { validateRunScoreRecord } from '../../writer/validate';
 
@@ -112,6 +112,102 @@ Spec 审计报告
           phaseWeight: 0.2,
         })
       ).rejects.toThrow(ParseError);
+    });
+  });
+
+  describe('English report headings (E15-S2)', () => {
+    it('extractOverallGrade matches Overall Grade / Overall rating', () => {
+      expect(extractOverallGrade('Intro\n\nOverall Grade: B\n')).toBe('B');
+      expect(extractOverallGrade('Overall rating: C')).toBe('C');
+    });
+
+    it('extractCheckItems parses Issue List and Severity', () => {
+      const content = `
+Issue List:
+1. [Severity: Medium] Missing edge case
+
+Pass Criteria:
+ok
+`;
+      const items = extractCheckItems(content, 'spec');
+      expect(items.some((i) => !i.passed && i.note.includes('edge'))).toBe(true);
+    });
+
+    it('treats Issue List (none) as empty pass', () => {
+      const content = `
+Overall Grade: A
+
+Issue List:
+(none)
+
+Pass Criteria:
+ok
+`;
+      const items = extractCheckItems(content, 'spec');
+      expect(items.some((i) => i.passed && i.note.includes('问题清单为空'))).toBe(true);
+    });
+
+    it('parses problem line with Recommendation suffix (English)', () => {
+      const content = `
+Overall Grade: C
+
+Issue List:
+1. [Severity: High] Missing edge case Recommendation: add tests
+
+Pass Criteria:
+no
+`;
+      const items = extractCheckItems(content, 'spec');
+      expect(items.some((i) => !i.passed && i.note.includes('Missing edge'))).toBe(true);
+    });
+
+    it('parseGenericReport succeeds on English headings', async () => {
+      const content = `
+Overall Grade: A
+
+Issue List:
+1. [Severity: Low] minor
+
+Pass Criteria:
+yes
+`;
+      delete process.env.SCORING_LLM_API_KEY;
+      const r = await parseGenericReport({
+        content,
+        stage: 'spec',
+        runId: 'en-1',
+        scenario: 'real_dev',
+        phaseWeight: 0.2,
+      });
+      expect(r.phase_score).toBe(100);
+    });
+  });
+
+  describe('Journey contract mapping (Wave 1B)', () => {
+    it('maps tasks journey contract findings to dedicated item_ids', () => {
+      const content = `
+总体评级: C
+
+问题清单:
+1. [严重程度:高] Journey Slice J-1 缺少 smoke task chain，无法证明至少一条 smoke path task chain 已落到任务
+2. [严重程度:中] Journey Slice J-1 缺少 closure note task，无法形成 closure note task
+3. [严重程度:中] setup/foundation 任务只带 Journey ID，但未显式说明 unlocks 哪条 journey / smoke path
+4. [严重程度:中] Journey Slice 生成规则把 definition gap 和 implementation gap 混在一起，未保持 gap split contract
+5. [严重程度:低] multi-agent 模式只要求共享 trace map，未要求共享同一份 journey ledger / invariant ledger / trace map 的路径引用
+
+通过标准:
+待修复
+`;
+
+      const items = extractCheckItems(content, 'tasks');
+
+      expect(items.map((item) => item.item_id)).toEqual([
+        'journey_smoke_chain',
+        'journey_closure_task',
+        'journey_unlock_contract',
+        'journey_gap_split_contract',
+        'shared_path_reference',
+      ]);
     });
   });
 });

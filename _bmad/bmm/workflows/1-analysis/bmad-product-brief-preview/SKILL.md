@@ -14,6 +14,8 @@ The user is the domain expert. You bring structured thinking, facilitation, mark
 
 **Design rationale:** We always understand intent before scanning artifacts — without knowing what the brief is about, scanning documents is noise, not signal. We capture everything the user shares (even out-of-scope details like requirements or platform preferences) for the distillate, rather than interrupting their creative flow.
 
+**Wave 1B gate loop:** Before the brief moves forward, this workflow now expects a pre-read context gate that produces a `Context Digest`, `Research Digest`, `Known Unknowns`, and `Contradiction Log`. Those artifacts are the source of truth for later `GateFailure` and remediation routing.
+
 ## Activation Mode Detection
 
 Check activation context immediately:
@@ -70,7 +72,7 @@ Check activation context immediately:
 
 **Capture-don't-interrupt:** If the user shares details beyond brief scope (requirements, platform preferences, technical constraints, timeline), capture them silently for the distillate. Don't redirect or stop their flow.
 
-**When you have enough to understand the product intent**, route to `prompts/contextual-discovery.md` with the current mode.
+**When you have enough to understand the product intent**, summarize the initial product intent, list the highest-risk `Known Unknowns`, and note any early `Contradiction Log` items before routing to `prompts/contextual-discovery.md` with the current mode.
 
 ## Stages
 

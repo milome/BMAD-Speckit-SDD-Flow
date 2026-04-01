@@ -9,6 +9,7 @@ import {
   getStageConfig,
   shouldAudit,
   shouldValidate,
+  shouldGenerateDoc,
   getStrictness,
   getSubagentParams,
   getEnvironment,
@@ -21,6 +22,7 @@ import {
   type AuditGranularityMode,
   type StageName,
 } from '../../scripts/bmad-config';
+import { getI18nConfig } from '../../scripts/bmad-config';
 
 describe('bmad-config', () => {
   describe('Environment Detection', () => {
@@ -49,6 +51,15 @@ describe('bmad-config', () => {
       expect(env.subagentTool).toBe('Agent');
       expect(env.subagentType).toBe('general-purpose');
     });
+
+    it('should read environment from runtime config when provided', () => {
+      const config = loadConfig();
+      const env = getEnvironment(config);
+
+      expect(env.platform).toBe(config._environment.platform);
+      expect(env.subagentTool).toBe(config._environment.subagentTool);
+      expect(env.subagentType).toBe(config._environment.subagentType);
+    });
   });
 
   describe('Default Configuration', () => {
@@ -59,6 +70,34 @@ describe('bmad-config', () => {
       expect(config.audit_granularity.modes.full).toBeDefined();
       expect(config.audit_granularity.modes.story).toBeDefined();
       expect(config.audit_granularity.modes.epic).toBeDefined();
+    });
+
+    it('should ignore governance-owned fields even when extra fields are mixed into config-shaped input', () => {
+      const config = getDefaultConfig();
+      const mixedInput = {
+        ...config,
+        i18n: {
+          ...config.i18n,
+          triggerStage: 'speckit_9_9',
+          scoringEnabled: false,
+          mandatoryGate: false,
+          granularityGoverned: 'epic',
+        },
+      } as ReturnType<typeof loadConfig>;
+
+      const i18n = getI18nConfig(mixedInput);
+
+      expect(i18n.default_language_mode).toBe('auto');
+      expect(i18n.default_artifact_language).toBe('auto');
+      expect(i18n.allow_bilingual_auto_mode).toBe(false);
+      expect(i18n.fallback_language).toBe('en');
+      expect(i18n.preserve_control_keys_in_english).toBe(true);
+      expect(i18n.preserve_commands_and_paths).toBe(true);
+      expect(i18n.render_bilingual_headings_with_slash).toBe(true);
+      expect(i18n).not.toHaveProperty('triggerStage');
+      expect(i18n).not.toHaveProperty('scoringEnabled');
+      expect(i18n).not.toHaveProperty('mandatoryGate');
+      expect(i18n).not.toHaveProperty('granularityGoverned');
     });
 
     it('should have all required stages in full mode', () => {
@@ -384,6 +423,61 @@ describe('bmad-config', () => {
     it('should return undefined for invalid stage', () => {
       const config = getStageConfig('invalid_stage' as StageName);
       expect(config).toBeUndefined();
+    });
+  });
+
+  /**
+   * U-1.1：冻结 `full` / `story` / `epic` × 各 `StageName` 下 helper 与阶段表语义一致（单一事实源：`getDefaultConfig().audit_granularity.modes`）。
+   */
+  describe('U-1.1 legacy baseline', () => {
+    const ALL_STAGES: StageName[] = [
+      'story_create',
+      'story_audit',
+      'specify',
+      'plan',
+      'gaps',
+      'tasks',
+      'implement',
+      'post_audit',
+      'epic_create',
+      'epic_complete',
+    ];
+
+    const MODES: AuditGranularityMode[] = ['full', 'story', 'epic'];
+
+    function runtimeConfigForMode(mode: AuditGranularityMode): ReturnType<typeof loadConfig> {
+      const base = getDefaultConfig();
+      base.audit_granularity.mode = mode;
+      return base as ReturnType<typeof loadConfig>;
+    }
+
+    it.each(MODES.flatMap((mode) => ALL_STAGES.map((stage) => [mode, stage] as const)))(
+      'mode %s × stage %s: shouldAudit / shouldValidate / getStrictness / shouldGenerateDoc match stage table + documented fallbacks',
+      (mode, stage) => {
+        const cfg = runtimeConfigForMode(mode);
+        const table = getDefaultConfig().audit_granularity.modes[mode].stages[stage];
+        const stageCfg = getStageConfig(stage, cfg);
+
+        expect(stageCfg).toEqual(table);
+        expect(shouldAudit(stage, cfg)).toBe(table?.audit ?? true);
+        expect(shouldValidate(stage, cfg)).toBe(table?.validation ?? null);
+        expect(getStrictness(stage, cfg)).toBe(table?.strictness ?? 'standard');
+        expect(shouldGenerateDoc(stage, cfg)).toBe(table?.generate_doc ?? true);
+      }
+    );
+
+    /** U-1.1c：`StageConfig` 暴露的语义字段与 helper 可追踪一致（防仅测 helper 而表漂移）。 */
+    it('U-1.1c: stageConfig audit/validation/generate_doc/strictness trace to helpers with documented defaults', () => {
+      for (const mode of MODES) {
+        const cfg = runtimeConfigForMode(mode);
+        for (const stage of ALL_STAGES) {
+          const sc = getStageConfig(stage, cfg);
+          expect(shouldAudit(stage, cfg)).toBe(sc?.audit ?? true);
+          expect(shouldValidate(stage, cfg)).toBe(sc?.validation ?? null);
+          expect(shouldGenerateDoc(stage, cfg)).toBe(sc?.generate_doc ?? true);
+          expect(getStrictness(stage, cfg)).toBe(sc?.strictness ?? 'standard');
+        }
+      }
     });
   });
 });

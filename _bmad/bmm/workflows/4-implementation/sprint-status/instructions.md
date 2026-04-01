@@ -76,6 +76,8 @@ Enter corrections (e.g., "1=in-progress, 2=backlog") or "skip" to continue witho
 <check if="user provided corrections">
 <action>Update sprint-status.yaml with corrected values</action>
 <action>Re-parse the file with corrected statuses</action>
+<action>Execute: npx bmad-speckit sync-runtime-context-from-sprint</action>
+<action>Verify stdout contains the line starting with OK: registry and project context synced</action>
 </check>
 </check>
 

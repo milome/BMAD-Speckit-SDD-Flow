@@ -69,6 +69,12 @@ Claude 端 Stage 2 Story 审计执行体，负责审计 Story 文档并决定是
 -------------------------
 ```
 
+### Runtime sync (S10)
+
+**Runtime sync (S10 - MANDATORY):** 审计结论为通过；通过判定之后、返回主 Agent 之前执行：
+`npx bmad-speckit sync-runtime-context-from-sprint --story-key <story_key>`
+`<story_key>` 填被审计 Story 的 kebab-case key，与 sprint-status `development_status` 中的键名相同。
+
 ### 执行结束时必须输出
 
 ```yaml
@@ -192,7 +198,7 @@ Claude 端 Stage 2 Story 审计执行体，负责审计 Story 文档并决定是
 4. fallback 不得降低审计严格度
 
 ### Runtime Contracts
-- 审计报告路径：`_bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{epic_num}-{story_num}-{story_slug}/AUDIT_story-{epic_num}-{story_num}.md`
+- 审计报告路径：`_bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{story_num}-{story_slug}/AUDIT_story-{epic_num}-{story_num}.md`（与 create-story workflow、bmad-story-assistant 一致：story 子目录为 `story-{story}-{slug}`）
 - 审计通过：更新 story state 为 `story_audit_passed`，handoff 到 `speckit-implement`
 - 审计失败：更新 story state 为 `story_audit_failed`，要求修 Story 文档后重新审计
 
@@ -210,7 +216,7 @@ Claude 端 Stage 2 Story 审计执行体，负责审计 Story 文档并决定是
 layer: 3
 stage: story_audit_passed
 artifactPath: {storyDocPath}
-auditReportPath: _bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{epic_num}-{story_num}-{story_slug}/AUDIT_story-{epic_num}-{story_num}.md
+auditReportPath: _bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{story_num}-{story_slug}/AUDIT_story-{epic_num}-{story_num}.md
 next_action: dev_story
 next_agent: speckit-implement
 ```
@@ -220,7 +226,7 @@ next_agent: speckit-implement
 layer: 3
 stage: story_audit_failed
 artifactPath: {storyDocPath}
-auditReportPath: _bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{epic_num}-{story_num}-{story_slug}/AUDIT_story-{epic_num}-{story_num}.md
+auditReportPath: _bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{story_num}-{story_slug}/AUDIT_story-{epic_num}-{story_num}.md
 next_action: revise_story
 next_agent: bmad-story-create
 ```

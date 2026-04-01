@@ -1,6 +1,6 @@
 ---
 name: 'step-05-epic-quality-review'
-description: 'Validate epics and stories against create-epics-and-stories best practices'
+description: 'Validate epics and stories for implementation readiness using journey-first slicing, runnable slices, and evidence-backed verification'
 
 nextStepFile: './step-06-final-assessment.md'
 outputFile: '{planning_artifacts}/{branch}/implementation-readiness-report-{{date}}.md'
@@ -10,7 +10,7 @@ outputFile: '{planning_artifacts}/{branch}/implementation-readiness-report-{{dat
 
 ## STEP GOAL:
 
-To validate epics and stories against the best practices defined in create-epics-and-stories workflow, focusing on user value, independence, dependencies, and implementation readiness.
+To validate epics and stories for implementation readiness, focusing on journey-first slicing, runnable slices instead of module-only progress, trace IDs, and explicit verification hooks per critical slice.
 
 ## MANDATORY EXECUTION RULES (READ FIRST):
 
@@ -24,204 +24,134 @@ To validate epics and stories against the best practices defined in create-epics
 
 ### Role Reinforcement:
 
-- ✅ You are an EPIC QUALITY ENFORCER
-- ✅ You know what good epics look like - challenge anything deviating
-- ✅ Technical epics are wrong - find them
-- ✅ Forward dependencies are forbidden - catch them
-- ✅ Stories must be independently completable
+- ✅ You are an IMPLEMENTATION READINESS ENFORCER
+- ✅ You know that module progress is not the same as runnable user value
+- ✅ You challenge any story that cannot be proven with evidence
+- ✅ Critical slices must carry trace IDs and verification hooks
 
 ### Step-Specific Rules:
 
-- 🎯 Apply create-epics-and-stories standards rigorously
-- 🚫 Don't accept "technical milestones" as epics
-- 💬 Challenge every dependency on future work
-- 🚪 Verify proper story sizing and structure
+- 🎯 Apply journey-first readiness rules rigorously
+- 🚫 Don't accept module-only or infrastructure-only progress as sufficient
+- 💬 Challenge every story that lacks runnable proof
+- 🚪 Verify trace IDs, smoke paths, and evidence types
 
 ## EXECUTION PROTOCOLS:
 
 - 🎯 Systematically validate each epic and story
-- 💾 Document all violations of best practices
-- 📖 Check every dependency relationship
-- 🚫 FORBIDDEN to accept structural problems
+- 💾 Document all readiness defects
+- 📖 Check every dependency and verification hook
+- 🚫 FORBIDDEN to accept structural problems that block E2E progress
 
-## EPIC QUALITY REVIEW PROCESS:
+## IMPLEMENTATION READINESS REVIEW PROCESS:
 
-### 1. Initialize Best Practices Validation
+### 1. Initialize Readiness Review
 
-"Beginning **Epic Quality Review** against create-epics-and-stories standards.
+"Beginning **Implementation Readiness Review**.
 
 I will rigorously validate:
 
-- Epics deliver user value (not technical milestones)
-- Epic independence (Epic 2 doesn't need Epic 3)
-- Story dependencies (no forward references)
-- Proper story sizing and completeness
+- Stories are sliced from journeys, not only modules
+- Critical slices are runnable and verifiable
+- Trace IDs exist for important paths
+- Acceptance criteria include evidence type or validation command
+- Dependencies do not delay the first smoke path unnecessarily"
 
-Any deviation from best practices will be flagged as a defect."
+### 2. Journey-First Slicing Validation
 
-### 2. Epic Structure Validation
+For each epic and story, verify:
 
-#### A. User Value Focus Check
+- it maps back to a journey ID or explicit supporting dependency for a journey
+- it contributes to a runnable slice, not just internal scaffolding
+- if it is foundational, the next story using it is visible and testable
 
-For each epic:
+**Red flags (must be documented):**
 
-- **Epic Title:** Is it user-centric (what user can do)?
-- **Epic Goal:** Does it describe user outcome?
-- **Value Proposition:** Can users benefit from this epic alone?
+- "只有模块任务，没有 runnable slice"
+- "有 story 但没有 smoke path"
+- "有 acceptance 但没有 evidence type"
 
-**Red flags (violations):**
+### 3. Trace ID and Verification Hook Validation
 
-- "Setup Database" or "Create Models" - no user value
-- "API Development" - technical milestone
-- "Infrastructure Setup" - not user-facing
-- "Authentication System" - borderline (is it user value?)
+Check each critical story for:
 
-#### B. Epic Independence Validation
+- journey ID or equivalent trace ID
+- acceptance criteria tied to observable evidence
+- validation command, verification hook, or smoke path reference
+- explicit mention of fixture / environment dependency when required
 
-Test epic independence:
+### 4. Dependency and Slice Sequencing Review
 
-- **Epic 1:** Must stand alone completely
-- **Epic 2:** Can function using only Epic 1 output
-- **Epic 3:** Can function using Epic 1 & 2 outputs
-- **Rule:** Epic N cannot require Epic N+1 to work
+Validate that the story order enables forward progress:
 
-**Document failures:**
-
-- "Epic 2 requires Epic 3 features to function"
-- Stories in Epic 2 referencing Epic 3 components
-- Circular dependencies between epics
-
-### 3. Story Quality Assessment
-
-#### A. Story Sizing Validation
-
-Check each story:
-
-- **Clear User Value:** Does the story deliver something meaningful?
-- **Independent:** Can it be completed without future stories?
-
-**Common violations:**
-
-- "Setup all models" - not a USER story
-- "Create login UI (depends on Story 1.3)" - forward dependency
-
-#### B. Acceptance Criteria Review
-
-For each story's ACs:
-
-- **Given/When/Then Format:** Proper BDD structure?
-- **Testable:** Each AC can be verified independently?
-- **Complete:** Covers all scenarios including errors?
-- **Specific:** Clear expected outcomes?
-
-**Issues to find:**
-
-- Vague criteria like "user can login"
-- Missing error conditions
-- Incomplete happy path
-- Non-measurable outcomes
-
-### 4. Dependency Analysis
-
-#### A. Within-Epic Dependencies
-
-Map story dependencies within each epic:
-
-- Story 1.1 must be completable alone
-- Story 1.2 can use Story 1.1 output
-- Story 1.3 can use Story 1.1 & 1.2 outputs
-
-**Critical violations:**
-
-- "This story depends on Story 1.4"
-- "Wait for future story to work"
-- Stories referencing features not yet implemented
-
-#### B. Database/Entity Creation Timing
-
-Validate database creation approach:
-
-- **Wrong:** Epic 1 Story 1 creates all tables upfront
-- **Right:** Each story creates tables it needs
-- **Check:** Are tables created only when first needed?
+- no critical slice depends on a future undefined slice
+- verification hooks appear early enough to prove progress
+- fixture / environment setup is introduced before first dependent smoke path
+- stories do not defer all proof to a distant final integration phase
 
 ### 5. Special Implementation Checks
 
-#### A. Starter Template Requirement
+Check for the following structural readiness gaps:
 
-Check if Architecture specifies starter template:
+- stories that only describe module creation with no user-visible or evidence-visible outcome
+- acceptance criteria that prove internal code exists but not that the path runs
+- stories that cannot be executed in isolation because fixtures, environments, or dependencies are unspecified
 
-- If YES: Epic 1 Story 1 must be "Set up initial project from starter template"
-- Verify story includes cloning, dependencies, initial configuration
-
-#### B. Greenfield vs Brownfield Indicators
-
-Greenfield projects should have:
-
-- Initial project setup story
-- Development environment configuration
-- CI/CD pipeline setup early
-
-Brownfield projects should have:
-
-- Integration points with existing systems
-- Migration or compatibility stories
-
-### 6. Best Practices Compliance Checklist
+### 6. Readiness Compliance Checklist
 
 For each epic, verify:
 
-- [ ] Epic delivers user value
-- [ ] Epic can function independently
-- [ ] Stories appropriately sized
-- [ ] No forward dependencies
-- [ ] Database tables created when needed
-- [ ] Clear acceptance criteria
-- [ ] Traceability to FRs maintained
+- [ ] Journey-first slicing is visible
+- [ ] Critical stories have trace IDs
+- [ ] Runnable slice exists early enough
+- [ ] Smoke path exists for critical journey
+- [ ] Acceptance includes evidence type
+- [ ] Validation command or verification hook exists where needed
+- [ ] Fixture / environment dependencies are explicit
 
 ### 7. Quality Assessment Documentation
 
 Document all findings by severity:
 
-#### 🔴 Critical Violations
+#### 🔴 Critical Readiness Gaps
 
-- Technical epics with no user value
-- Forward dependencies breaking independence
-- Epic-sized stories that cannot be completed
+- No runnable slice for critical journey
+- Missing smoke path for critical story
+- Acceptance with no evidence type
+- Missing fixture / environment dependency for a critical slice
 
 #### 🟠 Major Issues
 
-- Vague acceptance criteria
-- Stories requiring future stories
-- Database creation violations
+- Weak or missing trace IDs
+- Verification hooks too vague
+- Story sequencing delays first proveable slice
 
 #### 🟡 Minor Concerns
 
-- Formatting inconsistencies
-- Minor structure deviations
-- Documentation gaps
+- Naming or formatting inconsistencies
+- Useful but non-blocking documentation improvements
 
 ### 8. Autonomous Review Execution
 
 This review runs autonomously to maintain standards:
 
-- Apply best practices without compromise
+- Apply readiness rules without compromise
 - Document every violation with specific examples
 - Provide clear remediation guidance
-- Prepare recommendations for each issue
+- Prepare blocker-oriented findings for the final assessment
 
 ## REVIEW COMPLETION:
 
-After completing epic quality review:
+After completing readiness review:
 
-- Update {outputFile} with all quality findings
-- Document specific best practices violations
+- Update {outputFile} with all findings
+- Document specific readiness violations
 - Provide actionable recommendations
-- Load {nextStepFile} for final readiness assessment
+- Load {nextStepFile} for blocker-style final assessment
 
 ## CRITICAL STEP COMPLETION NOTE
 
-This step executes autonomously. Load {nextStepFile} only after complete epic quality review is documented.
+This step executes autonomously. Load {nextStepFile} only after the complete readiness review is documented.
 
 ---
 
@@ -229,17 +159,16 @@ This step executes autonomously. Load {nextStepFile} only after complete epic qu
 
 ### ✅ SUCCESS:
 
-- All epics validated against best practices
-- Every dependency checked and verified
-- Quality violations documented with examples
+- All epics validated for journey-first slicing
+- Every critical story checked for trace ID and verification hook
+- Readiness violations documented with examples
 - Clear remediation guidance provided
-- No compromise on standards enforcement
 
 ### ❌ SYSTEM FAILURE:
 
-- Accepting technical epics as valid
-- Ignoring forward dependencies
-- Not verifying story sizing
-- Overlooking obvious violations
+- Accepting module-only progress as sufficient
+- Ignoring missing smoke paths
+- Ignoring acceptance with no evidence type
+- Not checking fixture or environment dependencies
 
-**Master Rule:** Enforce best practices rigorously. Find all violations.
+**Master Rule:** A story is not implementation-ready unless it advances a runnable, proveable path.

@@ -1,6 +1,6 @@
 ---
 name: 'step-03-epic-coverage-validation'
-description: 'Validate that all PRD FRs are covered in epics and stories'
+description: 'Validate that all P0 journeys are traceable into epics and stories with smoke paths and evidence-backed acceptance'
 
 nextStepFile: './step-04-ux-alignment.md'
 outputFile: '{planning_artifacts}/{branch}/implementation-readiness-report-{{date}}.md'
@@ -10,7 +10,7 @@ outputFile: '{planning_artifacts}/{branch}/implementation-readiness-report-{{dat
 
 ## STEP GOAL:
 
-To validate that all Functional Requirements from the PRD are captured in the epics and stories document, identifying any gaps in coverage.
+To validate that every P0 journey from the PRD is traceable into epics and stories, that each critical journey has at least one smoke path, and that stories do not drift away from journey-backed acceptance.
 
 ## MANDATORY EXECUTION RULES (READ FIRST):
 
@@ -25,101 +25,92 @@ To validate that all Functional Requirements from the PRD are captured in the ep
 ### Role Reinforcement:
 
 - ✅ You are an expert Product Manager and Scrum Master
-- ✅ Your expertise is in requirements traceability
-- ✅ You ensure no requirements fall through the cracks
-- ✅ Success is measured in complete FR coverage
+- ✅ Your expertise is in journey traceability
+- ✅ You ensure the most important user journeys do not disappear in epic decomposition
+- ✅ Success is measured in complete journey-to-story coverage
 
 ### Step-Specific Rules:
 
-- 🎯 Focus ONLY on FR coverage validation
-- 🚫 Don't analyze story quality (that's later)
-- 💬 Compare PRD FRs against epic coverage list
-- 🚪 Document every missing FR
+- 🎯 Focus on journey traceability, not only FR enumeration
+- 🚫 Don't analyze story quality yet
+- 💬 Compare PRD journey contracts against epics and stories
+- 🚪 Document every missing journey path, missing smoke path, or evidence gap
 
 ## EXECUTION PROTOCOLS:
 
 - 🎯 Load epics document completely
-- 💾 Extract FR coverage from epics
-- 📖 Compare against PRD FR list
-- 🚫 FORBIDDEN to proceed without documenting gaps
+- 💾 Extract journey coverage information
+- 📖 Compare against PRD journey contracts from previous step
+- 🚫 FORBIDDEN to proceed without documenting traceability gaps
 
-## EPIC COVERAGE VALIDATION PROCESS:
+## JOURNEY TRACEABILITY VALIDATION PROCESS:
 
-### 1. Initialize Coverage Validation
+### 1. Initialize Traceability Validation
 
-"Beginning **Epic Coverage Validation**.
+"Beginning **Journey Traceability Validation**.
 
 I will:
 
 1. Load the epics and stories document
-2. Extract FR coverage information
-3. Compare against PRD FRs from previous step
-4. Identify any FRs not covered in epics"
+2. Extract journey mappings, story IDs, and acceptance evidence
+3. Compare against PRD P0 journeys
+4. Identify any missing smoke paths, no-evidence acceptance, or orphan stories"
 
 ### 2. Load Epics Document
 
 From the document inventory in step 1:
 
 - Load the epics and stories document (whole or sharded)
-- Read it completely to find FR coverage information
-- Look for sections like "FR Coverage Map" or similar
+- Read it completely to find trace IDs, coverage mapping, story acceptance, and verification hooks
 
-### 3. Extract Epic FR Coverage
+### 3. Extract Journey Coverage
 
-From the epics document:
+From the epics document, extract:
 
-- Find FR coverage mapping or list
-- Extract which FR numbers are claimed to be covered
-- Document which epics cover which FRs
+- which epic / story maps to which journey ID
+- whether the story includes a runnable or smoke slice
+- whether acceptance includes evidence type or verification hook
+- whether any story lacks a journey source
 
-Format as:
+### 4. Compare Coverage Against PRD Journeys
 
-```
-## Epic FR Coverage Extracted
+Using the P0 journey list from step 2, check for each journey:
 
-FR1: Covered in Epic X
-FR2: Covered in Epic Y
-FR3: Covered in Epic Z
-...
-Total FRs in epics: [count]
-```
+- Is there epic / story coverage?
+- Is there at least one smoke path?
+- Is there acceptance evidence or verification hook?
+- Is the journey sliced into runnable user value rather than module-only work?
 
-### 4. Compare Coverage Against PRD
+Create this matrix:
 
-Using the PRD FR list from step 2:
+```md
+## Journey Traceability Analysis
 
-- Check each PRD FR against epic coverage
-- Identify FRs NOT covered in epics
-- Note any FRs in epics but NOT in PRD
-
-Create coverage matrix:
-
-```
-## FR Coverage Analysis
-
-| FR Number | PRD Requirement | Epic Coverage  | Status    |
-| --------- | --------------- | -------------- | --------- |
-| FR1       | [PRD text]      | Epic X Story Y | ✓ Covered |
-| FR2       | [PRD text]      | **NOT FOUND**  | ❌ MISSING |
-| FR3       | [PRD text]      | Epic Z Story A | ✓ Covered |
+| Journey ID | Journey Contract | Epic/Story Coverage | Smoke Path | Evidence Type | Status |
+| ---------- | ---------------- | ------------------- | ---------- | ------------- | ------ |
+| P0-1       | [summary]        | Epic X Story Y      | Yes/No     | [type]        | ✓ / ❌ |
 ```
 
-### 5. Document Missing Coverage
+### 5. Document Missing Coverage and Orphan Work
 
-List all FRs not covered:
+List all gaps, including:
 
-```
-## Missing FR Coverage
+- journeys missing epic / story coverage
+- journeys with no smoke path
+- journeys with acceptance but no evidence type
+- stories with no journey source
+- stories that appear module-only and do not create a runnable slice
 
-### Critical Missing FRs
+Format findings as:
 
-FR#: [Full requirement text from PRD]
-- Impact: [Why this is critical]
-- Recommendation: [Which epic should include this]
+```md
+## Missing Journey Coverage
 
-### High Priority Missing FRs
+## Missing Smoke Paths
 
-[List any other uncovered FRs]
+## No-Evidence Acceptance Findings
+
+## Orphan Stories
 ```
 
 ### 6. Add to Assessment Report
@@ -127,30 +118,44 @@ FR#: [Full requirement text from PRD]
 Append to {outputFile}:
 
 ```markdown
-## Epic Coverage Validation
+## Journey Traceability Validation
 
-### Coverage Matrix
+### Journey Traceability Analysis
 
-[Complete coverage matrix from section 4]
+[Complete matrix from section 4]
 
-### Missing Requirements
+### Missing Journey Coverage
 
-[List of uncovered FRs from section 5]
+[Findings from section 5]
+
+### Missing Smoke Paths
+
+[Findings from section 5]
+
+### No-Evidence Acceptance Findings
+
+[Findings from section 5]
+
+### Orphan Stories
+
+[Findings from section 5]
 
 ### Coverage Statistics
 
-- Total PRD FRs: [count]
-- FRs covered in epics: [count]
-- Coverage percentage: [percentage]
+- Total P0 journeys: [count]
+- Journeys mapped to epics/stories: [count]
+- Journey coverage percentage: [percentage]
+- Journeys with smoke path: [count]
+- Stories without journey source: [count]
 ```
 
 ### 7. Auto-Proceed to Next Step
 
-After coverage validation complete, immediately load next step.
+After traceability validation is complete, immediately load next step.
 
 ## PROCEEDING TO UX ALIGNMENT
 
-Epic coverage validation complete. Loading next step for UX alignment.
+Journey traceability validation complete. Loading next step for UX alignment.
 
 ---
 
@@ -159,15 +164,16 @@ Epic coverage validation complete. Loading next step for UX alignment.
 ### ✅ SUCCESS:
 
 - Epics document loaded completely
-- FR coverage extracted accurately
-- All gaps identified and documented
-- Coverage matrix created
+- Every P0 journey checked against epic/story mappings
+- Smoke path coverage assessed
+- Evidence-backed acceptance checked
+- Orphan stories identified and documented
 
 ### ❌ SYSTEM FAILURE:
 
 - Not reading complete epics document
-- Missing FRs in comparison
-- Not documenting uncovered requirements
-- Incomplete coverage analysis
+- Checking only FR numbering without journey contracts
+- Missing no-evidence acceptance findings
+- Ignoring stories with no journey source
 
-**Master Rule:** Every FR must have a traceable implementation path.
+**Master Rule:** Every critical journey must have a traceable, runnable implementation path.

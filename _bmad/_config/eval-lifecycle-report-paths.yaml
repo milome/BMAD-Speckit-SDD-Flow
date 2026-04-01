@@ -19,15 +19,15 @@ story:
   example: AUDIT_Story_3-1.md
 
 # speckit-workflow 各阶段审计报告路径（与 call_mapping speckit_*_audit_pass 对应）
-# tasks 约定路径：AUDIT_tasks-E{epic}-S{story}.md（如 specs/epic-8/story-8-1-xxx/AUDIT_tasks-E8-S1.md）
+# tasks 约定路径：AUDIT_tasks-E{epic}-S{story}.md（如 specs/epic-8-{epic-slug}/story-1-{slug}/AUDIT_tasks-E8-S1.md）
 # 历史命名变体：AUDIT_TASKS_E8_S1_逐条对照_2026-03-06.md 等；兼容策略见相关审计报告格式约定 §5
 # parseAndWriteScore 可通过 --reportPath 指定任意路径；仅新产出须含可解析块并符合约定命名
 speckit_report_paths:
-  spec: specs/epic-{epic}/story-{story}-{slug}/AUDIT_spec-E{epic}-S{story}.md
-  plan: specs/epic-{epic}/story-{story}-{slug}/AUDIT_plan-E{epic}-S{story}.md
-  gaps: specs/epic-{epic}/story-{story}-{slug}/AUDIT_GAPS-E{epic}-S{story}.md
-  tasks: specs/epic-{epic}/story-{story}-{slug}/AUDIT_tasks-E{epic}-S{story}.md
-  implement: _bmad-output/implementation-artifacts/epic-{epic}-*/story-{epic}-{story}-*/AUDIT_implement-E{epic}-S{story}.md
+  spec: specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_spec-E{epic}-S{story}.md
+  plan: specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_plan-E{epic}-S{story}.md
+  gaps: specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_GAPS-E{epic}-S{story}.md
+  tasks: specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_tasks-E{epic}-S{story}.md
+  implement: _bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_implement-E{epic}-S{story}.md
 
 # Layer 4–5：speckit-workflow、audit-prompts.md §1–§5 约定
 layers_4_5:

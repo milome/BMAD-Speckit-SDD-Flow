@@ -54,3 +54,33 @@ trigger_modes:
   - event: user_explicit_request
     trigger: manual
     scope: 全环节
+
+# Runtime Governance: (flow, stage) → scoring trigger_stage_id（与 scoring-trigger-modes call_mapping.stage 逐字对齐）
+runtime_flow_stage_to_trigger_stage:
+  story:
+    specify: speckit_1_2
+    plan: speckit_2_2
+    gaps: speckit_3_2
+    tasks: speckit_4_2
+    implement: speckit_5_2
+    story_audit: bmad_story_stage2
+    post_audit: bmad_story_stage4
+  bugfix:
+    specify: speckit_1_2
+    plan: speckit_2_2
+    gaps: speckit_3_2
+    tasks: speckit_4_2
+    implement: speckit_5_2
+    post_audit: bmad_story_stage4
+  standalone_tasks:
+    specify: speckit_1_2
+    plan: speckit_2_2
+    gaps: speckit_3_2
+    tasks: speckit_4_2
+    implement: implement
+  epic:
+    specify: speckit_1_2
+    plan: speckit_2_2
+    gaps: speckit_3_2
+    tasks: speckit_4_2
+    implement: speckit_5_2

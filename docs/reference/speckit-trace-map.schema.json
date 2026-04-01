@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/speckit-trace-map.json",
+  "title": "Speckit Trace Map",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "journeys"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "generatedFrom": {
+      "type": "string",
+      "minLength": 1
+    },
+    "journeys": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/journeyTrace"
+      }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "identifierArray": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/nonEmptyString"
+      },
+      "uniqueItems": true
+    },
+    "journeyTrace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "journeyId",
+        "taskIds",
+        "smokeTests",
+        "fullE2E",
+        "closureNote",
+        "deferredGaps"
+      ],
+      "properties": {
+        "journeyId": { "$ref": "#/$defs/nonEmptyString" },
+        "taskIds": {
+          "$ref": "#/$defs/identifierArray",
+          "minItems": 1
+        },
+        "smokeTests": {
+          "$ref": "#/$defs/identifierArray",
+          "minItems": 1
+        },
+        "fullE2E": { "$ref": "#/$defs/identifierArray" },
+        "closureNote": { "$ref": "#/$defs/nonEmptyString" },
+        "deferredGaps": { "$ref": "#/$defs/identifierArray" }
+      }
+    }
+  }
+}

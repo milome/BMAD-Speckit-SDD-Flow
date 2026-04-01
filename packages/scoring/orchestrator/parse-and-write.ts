@@ -6,14 +6,23 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
-import { parseAuditReport, parseDimensionScores, stageToMode, extractOverallGrade } from '../parsers';
+import { randomUUID } from 'node:crypto';
+import {
+  parseAuditReport,
+  parseDimensionScores,
+  stageToMode,
+  extractOverallGrade,
+  listDimensionNamesEn,
+} from '../parsers';
 import type { AuditStage } from '../parsers';
 import { writeScoreRecordSync } from '../writer';
 import type { WriteMode } from '../writer';
 import { applyTierAndVeto } from '../veto';
 import { resolveRulesDir } from '../constants/path';
 import { computeContentHash, computeStringHash, getGitHeadHash } from '../utils/hash';
-import type { DimensionScore, IterationRecord } from '../writer/types';
+import { persistPatchSnapshot } from '../utils/patch-snapshot';
+import type { CheckItem, DimensionScore, IterationRecord, JourneyContractSignals } from '../writer/types';
+import { appendRuntimeEvent } from '../runtime';
 
 /**
  * Options for parseAndWriteScore orchestration.
@@ -45,6 +54,29 @@ export interface ParseAndWriteScoreOptions {
   iterationReportPaths?: string[];
 }
 
+function resolveScoreDataPath(dataPath?: string): string {
+  if (dataPath == null || dataPath === '') {
+    return path.resolve(process.cwd(), 'packages', 'scoring', 'data');
+  }
+  return path.isAbsolute(dataPath) ? dataPath : path.resolve(process.cwd(), dataPath);
+}
+
+function inferRuntimeRootFromDataPath(dataPath?: string): string {
+  if (dataPath == null || dataPath === '') {
+    return process.cwd();
+  }
+
+  const resolved = resolveScoreDataPath(dataPath);
+  const normalized = resolved.replace(/\\/g, '/');
+  const knownSuffixes = ['/packages/scoring/data', '/_bmad-output/scoring'];
+  for (const suffix of knownSuffixes) {
+    if (normalized.endsWith(suffix)) {
+      return resolved.slice(0, resolved.length - suffix.length);
+    }
+  }
+  return resolved;
+}
+
 /**
  * 校验并规范化 iteration_count：非负则 clamp 为 0，非整数则 Math.round。
  * @param {number} value - Raw iteration count (may be negative or fractional).
@@ -60,18 +92,48 @@ function computeWeightedDimensionScore(scores: DimensionScore[]): number {
   return Math.round(weighted * 100) / 100;
 }
 
+const JOURNEY_CONTRACT_SIGNAL_BY_ITEM_ID: Record<string, keyof JourneyContractSignals> = {
+  journey_smoke_chain: 'smoke_task_chain',
+  journey_closure_task: 'closure_task_id',
+  journey_unlock_contract: 'journey_unlock',
+  journey_gap_split_contract: 'gap_split_contract',
+  shared_path_reference: 'shared_path_reference',
+};
+
+function deriveJourneyContractSignals(checkItems: CheckItem[]): JourneyContractSignals | undefined {
+  const signals: JourneyContractSignals = {};
+
+  for (const item of checkItems) {
+    if (item.passed) continue;
+    const signalKey = JOURNEY_CONTRACT_SIGNAL_BY_ITEM_ID[item.item_id];
+    if (signalKey) {
+      signals[signalKey] = true;
+    }
+  }
+
+  return Object.keys(signals).length > 0 ? signals : undefined;
+}
+
 /** Story 9.4: 从问题清单解析最高严重等级 */
 const SEVERITY_ORDER = ['fatal', 'serious', 'normal', 'minor'] as const;
+function severityTokenToIndex(raw: string): number {
+  const t = raw.trim().toLowerCase();
+  if (/致命|fatal|critical/.test(t)) return 0;
+  if (/高|high|serious/.test(t)) return 1;
+  if (/中|medium|normal/.test(t)) return 2;
+  return 3; // 低|low|minor
+}
+
 function parseMaxSeverityFromReport(content: string): 'fatal' | 'serious' | 'normal' | 'minor' {
-  const matches = content.matchAll(/\[严重程度:([^\]]+)\]/g);
+  const zhMatches = content.matchAll(/\[严重程度:([^\]]+)\]/g);
+  const enMatches = content.matchAll(/\[Severity:([^\]]+)\]/gi);
   let maxIdx = SEVERITY_ORDER.indexOf('normal');
-  for (const m of matches) {
-    const raw = (m[1] ?? '').trim().toLowerCase();
-    let idx: number;
-    if (/致命|fatal|critical/.test(raw)) idx = 0;
-    else if (/高|serious/.test(raw)) idx = 1;
-    else if (/中|normal/.test(raw)) idx = 2;
-    else idx = 3; // 低|minor
+  for (const m of zhMatches) {
+    const idx = severityTokenToIndex(m[1] ?? '');
+    if (idx < maxIdx) maxIdx = idx;
+  }
+  for (const m of enMatches) {
+    const idx = severityTokenToIndex(m[1] ?? '');
     if (idx < maxIdx) maxIdx = idx;
   }
   return SEVERITY_ORDER[maxIdx];
@@ -138,6 +200,7 @@ function parseIterationReportToRecord(
  * @throws Error when reportPath and content are both missing/empty.
  */
 export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Promise<void> {
+  const scopedConsoleError = console.error;
   const { stage, runId, scenario, writeMode, dataPath } = options;
   let content = options.content;
   let reportPath: string | undefined;
@@ -222,35 +285,81 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     iterationRecords = [...failRecords, passRecord];
   }
 
+  const journeyContractSignals = deriveJourneyContractSignals(baseRecord.check_items);
+  const resolvedDataPath = resolveScoreDataPath(dataPath);
+  const patchSnapshot = persistPatchSnapshot({
+    cwd: process.cwd(),
+    dataPath: resolvedDataPath,
+    runId,
+    stage,
+    baseCommitHash,
+  });
+
   const recordToWrite = {
     ...baseRecord,
     iteration_records: iterationRecords,
     phase_score,
     veto_triggered,
     tier_coefficient,
+    ...(journeyContractSignals != null ? { journey_contract_signals: journeyContractSignals } : {}),
     ...(options.question_version != null ? { question_version: options.question_version } : {}),
     ...(baseCommitHash != null ? { base_commit_hash: baseCommitHash } : {}),
     ...(contentHash != null ? { content_hash: contentHash } : {}),
     ...(sourceHash != null ? { source_hash: sourceHash } : {}),
+    ...(patchSnapshot ?? {}),
     ...(computeSourcePath(stage, options.artifactDocPath, reportPath)),
     ...(options.triggerStage != null ? { trigger_stage: options.triggerStage } : {}),
   };
 
   if (stage === 'implement' && dimensionScores.length === 0) {
-    console.error(
-      'WARN: implement stage report has no parseable dimension_scores. Expected dimensions: 功能性, 代码质量, 测试覆盖, 安全性. Check report parseable block matches modes.code.dimensions.'
+    const expectedEn = listDimensionNamesEn('code');
+    const dimHint =
+      expectedEn.length > 0
+        ? expectedEn.join(', ')
+        : 'Functionality, Code Quality, Test Coverage, Security';
+    scopedConsoleError(
+      `WARN: implement stage report has no parseable dimension_scores. Expected dimensions (name_en from modes.code): ${dimHint}. Check report parseable block matches modes.code.dimensions.`
     );
   }
 
   // BUGFIX_overall-grade-forbidden-ratings: 检测非法总体评级格式（A-、B+、C+、D- 等）
-  const forbiddenModMatch = content.match(/总体评级:\s*([ABCD][+-])/m);
+  const forbiddenModZh = content.match(/总体评级:\s*([ABCD][+-])/m);
+  const forbiddenModEn = content.match(/Overall Grade:\s*([ABCD][+-])/im);
+  const forbiddenModMatch = forbiddenModZh ?? forbiddenModEn;
   if (forbiddenModMatch) {
     const line = forbiddenModMatch[0];
     const snippet = line.length > 80 ? line.slice(0, 80) + '…' : line;
-    console.error(
+    scopedConsoleError(
       `WARN: audit report contains forbidden overall_grade modifier (e.g. B+ or A-). Expected: A, B, C, or D only. Content snippet: ${snippet}`
     );
   }
 
   writeScoreRecordSync(recordToWrite, writeMode, dataPath != null ? { dataPath } : undefined);
+
+  const scoreRecordPath =
+    writeMode === 'jsonl'
+      ? path.join(resolvedDataPath, 'scores.jsonl')
+      : path.join(resolvedDataPath, `${runId}.json`);
+  appendRuntimeEvent({
+    event_id: randomUUID(),
+    event_type: 'score.written',
+    event_version: 1,
+    timestamp: recordToWrite.timestamp,
+    run_id: runId,
+    flow: 'story',
+    stage,
+    payload: {
+      score_record_id: `${runId}:${stage}`,
+      path: scoreRecordPath,
+      phase_score: recordToWrite.phase_score,
+      veto_triggered: recordToWrite.veto_triggered ?? false,
+    },
+    source: {
+      source_path: recordToWrite.source_path,
+      base_commit_hash: recordToWrite.base_commit_hash,
+      content_hash: recordToWrite.content_hash,
+    },
+  }, {
+    root: inferRuntimeRootFromDataPath(dataPath),
+  });
 }

@@ -4,9 +4,15 @@ description: 'Create the next user story from epics+stories with enhanced contex
 disable-model-invocation: true
 ---
 
-**前置条件**：sprint-planning 为 create-story 的前置条件。sprint-status.yaml 缺失时需先运行 `sprint-planning` 或显式确认 bypass。参见 `bmad-bmm-sprint-planning` 命令。
+**Required skills**: bmad-story-assistant (full Create Story flow); bmad-party-mode (when design or option trade-offs need party-mode)
+**Install**: `pwsh scripts/setup.ps1 -Target <project-root>` or copy manually to `{SKILLS_ROOT}`
+**Handoff**: After Create Story output, explicitly invoke `/bmad-bmm-dev-story` to complete the Dev Story flow.
 
-**Story docs path 豁免**：若用户提供 **story docs path**（greenfield 场景，指向包含 story 文档的文件夹路径），sprint-status 缺失时该路径可放行，作为合法入口；见 TASKS_sprint-planning-gate §2.2 豁免。epic-story 编号（如 2-4）在 sprint-status 缺失时仍须经门控确认。
+**Prerequisites**: sprint-planning is a prerequisite for create-story. If `sprint-status.yaml` is missing, run `sprint-planning` first or explicitly confirm bypass. See the `bmad-bmm-sprint-planning` command.
+
+**Story docs path exemption**: If the user supplies a **story docs path** (greenfield: a folder path containing story documents), that path may be accepted as a valid entry when sprint-status is missing; authoritative behavior and ordering are in `@{project-root}/_bmad/bmm/workflows/4-implementation/create-story/instructions.xml` step 1 (comments mark the greenfield / §2.2-style exemption). Epic–story IDs (e.g. 2-4) still require gate confirmation when sprint-status is missing.
+
+**Output path (MANDATORY)**: `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/{epic}-{story}-{slug}.md`. Same as bmad-story-assistant; the story subdirectory contains only the story segment (`story-{story}-{slug}`), not the epic segment.
 
 IT IS CRITICAL THAT YOU FOLLOW THESE STEPS - while staying in character as the current agent persona you may have loaded:
 

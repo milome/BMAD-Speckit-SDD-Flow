@@ -134,12 +134,12 @@ Claude 端 Stage 1 Create Story 执行体，负责在 BMAD Story 流程中生成
 - 跳过判断：仅当用户**明确**说出「已通过 party-mode 且审计通过」「跳过 Create Story」时，主 Agent 方可跳过阶段一、二。若用户仅提供 Epic/Story 编号或说「Story 已存在」而未明确上述表述，**必须**执行 Create Story。
 - Create Story 模板要求：
   - 通过子任务执行 `/bmad-bmm-create-story` 等价工作流，生成 Epic `{epic_num}`、Story `{epic_num}-{story_num}` 的 Story 文档。
-  - 输出 Story 文档到 `_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{epic_num}-{story_num}-{slug}/{epic_num}-{story_num}-<slug>.md`。
+  - 输出 Story 文档到 `_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/{epic_num}-{story_num}-<slug>.md`。
   - 创建 Story 文档时必须使用明确描述，禁止使用 Story 禁止词表中的词（可选、可考虑、后续、先实现、后续扩展、待定、酌情、视情况、技术债）。
   - 当功能不在本 Story 范围但属本 Epic 时，须写明「由 Story X.Y 负责」及任务具体描述；确保 X.Y 存在且 scope 含该功能。禁止模糊推迟表述。
   - **party-mode 强制**：无论 Epic/Story 文档是否已存在，只要涉及以下任一情形，**必须**进入 party-mode 进行多角色辩论（最少 100 轮）：① 有多个实现方案可选；② 存在架构/设计决策或 trade-off；③ 方案或范围存在歧义或未决点。
   - 全程必须使用中文。
-- Create Story 产出后，Story 文档通常保存在：`_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{epic_num}-{story_num}-{slug}/{epic_num}-{story_num}-<slug>.md`。
+- Create Story 产出后，Story 文档通常保存在：`_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/{epic_num}-{story_num}-<slug>.md`。
 
 ## Claude/OMC Runtime Adapter
 
@@ -157,7 +157,7 @@ Claude 端 Stage 1 Create Story 执行体，负责在 BMAD Story 流程中生成
 4. fallback 不得改变 Cursor Canonical Base 的语义要求
 
 ### Runtime Contracts
-- 产物路径：`_bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{epic_num}-{story_num}-{story_slug}/{epic_num}-{story_num}-{story_slug}.md`
+- 产物路径：`_bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{story_num}-{story_slug}/{epic_num}-{story_num}-{story_slug}.md`（与 create-story workflow、bmad-story-assistant 一致：story 子目录为 `story-{story}-{slug}`，不含 epic 编号）
 - Story 产出完成后，必须将 story state 更新为 `story_created`
 - 必须写入 handoff，交由 `bmad-story-audit` 执行 Stage 2
 - 若用户明确跳过 Create Story，必须记录跳过依据并直接进入 Story 审计
@@ -176,7 +176,7 @@ Claude 端 Stage 1 Create Story 执行体，负责在 BMAD Story 流程中生成
 ```yaml
 layer: 3
 stage: story_create
-artifactPath: _bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{epic_num}-{story_num}-{story_slug}/{epic_num}-{story_num}-{story_slug}.md
+artifactPath: _bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{story_num}-{story_slug}/{epic_num}-{story_num}-{story_slug}.md
 next_action: story_audit
 next_agent: bmad-story-audit
 ```

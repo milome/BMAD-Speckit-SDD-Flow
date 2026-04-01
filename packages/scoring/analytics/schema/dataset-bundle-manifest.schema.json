@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DatasetBundleManifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "bundle_id",
+    "export_target",
+    "created_at",
+    "canonical_schema_version",
+    "exporter_version",
+    "export_hash",
+    "filter_settings",
+    "split",
+    "counts",
+    "artifacts"
+  ],
+  "properties": {
+    "bundle_id": { "type": "string", "minLength": 1 },
+    "export_target": {
+      "type": "string",
+      "enum": ["openai_chat", "hf_conversational", "hf_tool_calling"]
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "canonical_schema_version": { "const": "v1" },
+    "exporter_version": { "type": "string", "minLength": 1 },
+    "export_hash": { "type": "string", "minLength": 8 },
+    "filter_settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "min_score": { "type": "number" },
+        "drop_no_code_pair": { "type": "boolean" },
+        "max_tokens": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "split": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["seed", "strategy"],
+      "properties": {
+        "seed": { "type": "integer" },
+        "strategy": { "type": "string", "minLength": 1 }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["accepted", "rejected", "train", "validation", "test"],
+      "properties": {
+        "accepted": { "type": "integer", "minimum": 0 },
+        "rejected": { "type": "integer", "minimum": 0 },
+        "train": { "type": "integer", "minimum": 0 },
+        "validation": { "type": "integer", "minimum": 0 },
+        "test": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "train_path",
+        "validation_path",
+        "test_path",
+        "manifest_path",
+        "validation_report_path",
+        "rejection_report_path"
+      ],
+      "properties": {
+        "train_path": { "type": "string", "minLength": 1 },
+        "validation_path": { "type": "string", "minLength": 1 },
+        "test_path": { "type": "string", "minLength": 1 },
+        "manifest_path": { "type": "string", "minLength": 1 },
+        "validation_report_path": { "type": "string", "minLength": 1 },
+        "rejection_report_path": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

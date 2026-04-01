@@ -11,6 +11,7 @@ describe('runtime hooks and worker', () => {
     expect(sessionStart).toContain('checkpoint');
     expect(postToolUse).toContain('event');
     expect(stop).toContain('checkpoint');
+    expect(stop).toContain('runBmadRuntimeWorker');
     expect(worker).toContain('pending');
     expect(worker).toContain('processing');
     expect(worker).toContain('done');

@@ -41,7 +41,7 @@
 | 是否存在 `.specify/` | `Test-Path .specify` | 需迁移到 `specs/` |
 | 是否存在 `.speckit/` | `Test-Path .speckit` | 需检查状态文件 |
 | 现有 commands/rules 来源 | 对比文件内容 | 判断是否需要覆盖 |
-| 全局 Skills 版本 | `ls $env:USERPROFILE\.cursor\skills\` | 确认是否需要更新 |
+| 全局 Skills 版本 | `ls $env:USERPROFILE\.cursor\skills\` | 仅检查运行时安装副本；repo 内 `_bmad/skills/` 才是第一批 skill 的 canonical 源 |
 
 ```powershell
 $projectRoot = "D:\Dev\your-project"
@@ -177,21 +177,25 @@ if (Test-Path "$TARGET\.specify") {
 
 ### 7.2 `.speckit/` 状态文件
 
-```powershell
-if (-not (Test-Path "$TARGET\.speckit-state.yaml")) {
-    Copy-Item "$SOURCE\_bmad\scripts\bmad-speckit\templates\.speckit-state.yaml.template" `
-        "$TARGET\.speckit-state.yaml"
-    Write-Host "[CREATED] .speckit-state.yaml" -ForegroundColor Green
-}
-```
+`.speckit-state.yaml` 已完全移除，不再作为 runtime context。迁移时不应创建、分发或复制该文件作为运行时治理依赖。
 
 ### 7.3 `.cursor/rules/` 中的路径引用
 
-确保 `_bmad/core/workflows/party-mode/workflow.md` 存在：
+若项目仍使用旧规则绑定，确保 legacy Party-Mode workflow 存在：
 
 ```powershell
 if (-not (Test-Path "$TARGET\_bmad\core\workflows\party-mode\workflow.md")) {
-    Write-Host "[ERROR] party-mode workflow.md missing!" -ForegroundColor Red
+    Write-Host "[WARN] legacy party-mode workflow.md missing; some old rules may fail" -ForegroundColor Yellow
+}
+```
+
+同时建议验证 canonical skill 路径：
+
+```powershell
+if (-not (Test-Path "$TARGET\_bmad\skills\bmad-party-mode\workflow.md") -and -not (Test-Path "$TARGET\_bmad\core\workflows\party-mode\workflow.md")) {
+    Write-Host "[ERROR] neither canonical nor legacy party-mode workflow exists!" -ForegroundColor Red
+} elseif (-not (Test-Path "$TARGET\_bmad\skills\bmad-party-mode\workflow.md")) {
+    Write-Host "[WARN] canonical bmad-party-mode skill workflow.md missing; legacy-bound flows may still work" -ForegroundColor Yellow
 }
 ```
 
@@ -224,7 +228,22 @@ foreach ($item in $coreDirs) {
     }
 }
 
-# 全局 Skills 验证
+# 先验证 repo 内 canonical skill 目录
+$repoCanonicalSkills = @(
+    @("_bmad\skills\bmad-party-mode", "Party-Mode canonical skill"),
+    @("_bmad\skills\bmad-brainstorming", "Brainstorming canonical skill"),
+    @("_bmad\skills\bmad-index-docs", "Index Docs canonical skill"),
+    @("_bmad\skills\bmad-shard-doc", "Shard Doc canonical skill")
+)
+foreach ($item in $repoCanonicalSkills) {
+    if (Test-Path $item[0]) {
+        Write-Host "[OK] $($item[1]): $($item[0])" -ForegroundColor Green
+    } else {
+        Write-Host "[MISSING] $($item[1]): $($item[0])" -ForegroundColor Red
+    }
+}
+
+# 全局 Skills 验证（仅运行时安装副本）
 $SKILLS_ROOT = "$env:USERPROFILE\.cursor\skills"
 $requiredSkills = @("speckit-workflow", "bmad-story-assistant", "bmad-bug-assistant", "bmad-code-reviewer-lifecycle", "code-review")
 foreach ($skill in $requiredSkills) {
@@ -245,13 +264,13 @@ foreach ($skill in $requiredSkills) {
 
 | 组件 | 路径 | 引用者 |
 |------|------|--------|
-| Party-Mode workflow | `_bmad/core/workflows/party-mode/workflow.md` | bmad-story-assistant, bmad-bug-assistant |
+| Party-Mode workflow | `_bmad/skills/bmad-party-mode/workflow.md` | canonical skill 路径；旧规则仍可能兼容 `_bmad/core/workflows/party-mode/workflow.md` |
 | Create Story workflow | `_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml` | bmad-story-assistant |
 | Agent manifest | `_bmad/_config/agent-manifest.csv` | bmad-story-assistant, bmad-master |
 | Code reviewer config | `config/code-reviewer-config.yaml` | bmad-code-reviewer-lifecycle |
 | Speckit commands | `_bmad/speckit/commands/speckit.*.md` | Cursor 命令系统 |
 
-### 9.2 全局路径（Cursor 全局 Skills）
+### 9.2 全局路径（Cursor 全局 Skills，运行时安装副本）
 
 | Skill | 全局路径 |
 |-------|----------|

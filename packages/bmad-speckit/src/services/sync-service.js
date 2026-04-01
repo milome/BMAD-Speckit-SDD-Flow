@@ -5,6 +5,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 const AIRegistry = require('./ai-registry');
 
 /**
@@ -45,6 +46,14 @@ function deepMerge(base, overlay) {
     }
   }
   return result;
+}
+
+function loadSpeckitMirrorTools(bmadRoot) {
+  const helperPath = path.join(bmadRoot, 'speckit', 'scripts', 'node', 'speckit-mirror.js');
+  if (!fs.existsSync(helperPath)) {
+    return null;
+  }
+  return require(helperPath);
 }
 
 /**
@@ -141,6 +150,10 @@ function syncCommandsRulesConfig(projectRoot, selectedAI, options = {}) {
     deployClaudeInfrastructure(projectRoot, bmadRoot);
   }
 
+  if (sourceDir === 'cursor') {
+    deployCursorRuntimePolicyHooks(projectRoot, bmadRoot);
+  }
+
   if (ct.vscodeSettings && typeof ct.vscodeSettings === 'object') {
     const vscodeDir = path.join(projectRoot, '.vscode');
     const settingsPath = path.join(vscodeDir, 'settings.json');
@@ -156,6 +169,58 @@ function syncCommandsRulesConfig(projectRoot, selectedAI, options = {}) {
   }
 
   deploySpecifyDir(projectRoot, bmadRoot);
+
+  /** Align with monorepo `init-to-root`: hooks dir gets `emit-runtime-policy.cjs` + `write-runtime-context.js`; default `.bmad/runtime-context.json`. */
+  deployRuntimeGovernanceFromPackage(projectRoot);
+
+  fs.mkdirSync(path.join(projectRoot, 'specs'), { recursive: true });
+}
+
+/**
+ * Copy `@bmad-speckit/runtime-emit` artifacts into `.cursor/hooks` and/or `.claude/hooks` (not project-root `scripts/`).
+ * @param {string} projectRoot - Project root (where node_modules may contain the package).
+ * @returns {void}
+ */
+function deployRuntimeGovernanceFromPackage(projectRoot) {
+  /** bmad-speckit package root (real path when consumer uses file: link to monorepo). */
+  const bmadSpeckitRoot = path.resolve(__dirname, '..', '..');
+  let emitSrc;
+  try {
+    emitSrc = require.resolve('@bmad-speckit/runtime-emit', {
+      paths: [bmadSpeckitRoot, projectRoot],
+    });
+  } catch {
+    return;
+  }
+  const pkgRootRuntimeEmit =
+    path.basename(path.dirname(emitSrc)) === 'dist' ? path.dirname(path.dirname(emitSrc)) : path.dirname(emitSrc);
+  const wrcSrc = path.join(pkgRootRuntimeEmit, 'write-runtime-context.js');
+  const hookDirs = [path.join(projectRoot, '.cursor', 'hooks'), path.join(projectRoot, '.claude', 'hooks')];
+  let deployed = 0;
+  for (const d of hookDirs) {
+    if (!fs.existsSync(d)) continue;
+    fs.copyFileSync(emitSrc, path.join(d, 'emit-runtime-policy.cjs'));
+    if (fs.existsSync(wrcSrc)) {
+      fs.copyFileSync(wrcSrc, path.join(d, 'write-runtime-context.js'));
+    }
+    deployed += 1;
+  }
+  if (deployed === 0) return;
+
+  const rcPath = path.join(projectRoot, '.bmad', 'runtime-context.json');
+  if (!fs.existsSync(rcPath)) {
+    const wrcCandidates = [
+      path.join(projectRoot, '.cursor', 'hooks', 'write-runtime-context.js'),
+      path.join(projectRoot, '.claude', 'hooks', 'write-runtime-context.js'),
+    ];
+    const wrcDest = wrcCandidates.find((p) => fs.existsSync(p));
+    if (wrcDest) {
+      spawnSync(process.execPath, [wrcDest, projectRoot, 'story', 'specify'], {
+        cwd: projectRoot,
+        stdio: 'pipe',
+      });
+    }
+  }
 }
 
 /**
@@ -165,6 +230,15 @@ function syncCommandsRulesConfig(projectRoot, selectedAI, options = {}) {
  * @param {string} bmadRoot - Path to _bmad directory.
  */
 function deploySpecifyDir(projectRoot, bmadRoot) {
+  const mirrorTools = loadSpeckitMirrorTools(bmadRoot);
+  if (mirrorTools && typeof mirrorTools.syncSpecifyMirror === 'function') {
+    mirrorTools.syncSpecifyMirror({
+      bmadRoot,
+      projectRoot,
+    });
+    return;
+  }
+
   const specifyDest = path.join(projectRoot, '.specify');
   const pairs = [
     { src: path.join(bmadRoot, 'speckit', 'templates'), dest: path.join(specifyDest, 'templates') },
@@ -207,11 +281,81 @@ function copyDirStripPrefix(src, dest, prefix) {
   }
 }
 
+function writeCursorHooksJson(projectRoot) {
+  const cursorDir = path.join(projectRoot, '.cursor');
+  fs.mkdirSync(cursorDir, { recursive: true });
+  const hooksJsonPath = path.join(cursorDir, 'hooks.json');
+  const hooksJson = {
+    version: 1,
+    hooks: {
+      sessionStart: [
+        { command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host --session-start' },
+      ],
+      preToolUse: [{ command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host' }],
+      subagentStart: [
+        { command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host --subagent-start' },
+      ],
+    },
+  };
+  fs.writeFileSync(hooksJsonPath, `${JSON.stringify(hooksJson, null, 2)}\n`, 'utf8');
+}
+
 /**
  * Deploy Claude-specific infrastructure: hooks, settings.json, state dirs, CLAUDE.md.
  * @param {string} projectRoot - Project root.
  * @param {string} bmadRoot - Path to _bmad directory.
  */
+/**
+ * Cursor runtime governance hooks: shared `_bmad/runtime/hooks` then thin shells from `_bmad/cursor/hooks` (aligns with `scripts/init-to-root.js`).
+ * @param {string} projectRoot - Project root.
+ * @param {string} bmadRoot - Path to _bmad directory.
+ * @returns {void}
+ */
+function deployCursorRuntimePolicyHooks(projectRoot, bmadRoot) {
+  const destDir = path.join(projectRoot, '.cursor', 'hooks');
+  const sharedDir = path.join(bmadRoot, 'runtime', 'hooks');
+  const cursorHooksDir = path.join(bmadRoot, 'cursor', 'hooks');
+
+  if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+  if (fs.existsSync(sharedDir)) {
+    copyDirRecursive(sharedDir, destDir);
+  }
+
+  const names = ['emit-runtime-policy-cli.js', 'runtime-policy-inject.js'];
+  for (const name of names) {
+    const src = path.join(cursorHooksDir, name);
+    if (fs.existsSync(src)) {
+      fs.copyFileSync(src, path.join(destDir, name));
+    }
+  }
+  writeCursorHooksJson(projectRoot);
+}
+
+/**
+ * Claude hooks: shared `_bmad/runtime/hooks` then thin shells from `_bmad/claude/hooks` (aligns with `scripts/init-to-root.js`).
+ * @param {string} projectRoot - Project root.
+ * @param {string} bmadRoot - Path to _bmad directory.
+ * @returns {void}
+ */
+function deployClaudeRuntimePolicyHooks(projectRoot, bmadRoot) {
+  const destDir = path.join(projectRoot, '.claude', 'hooks');
+  const sharedDir = path.join(bmadRoot, 'runtime', 'hooks');
+  const claudeHooksDir = path.join(bmadRoot, 'claude', 'hooks');
+
+  if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+  if (fs.existsSync(sharedDir)) {
+    copyDirRecursive(sharedDir, destDir);
+  }
+
+  const names = ['emit-runtime-policy-cli.js', 'runtime-policy-inject.js'];
+  for (const name of names) {
+    const src = path.join(claudeHooksDir, name);
+    if (fs.existsSync(src)) {
+      fs.copyFileSync(src, path.join(destDir, name));
+    }
+  }
+}
+
 function deployClaudeInfrastructure(projectRoot, bmadRoot) {
   const claudeSrc = path.join(bmadRoot, 'claude');
   if (!fs.existsSync(claudeSrc)) return;
@@ -245,6 +389,8 @@ function deployClaudeInfrastructure(projectRoot, bmadRoot) {
     content = content.replace(/\{\{PROJECT_NAME\}\}/g, projectName);
     fs.writeFileSync(claudeMdDest, content, 'utf8');
   }
+
+  deployClaudeRuntimePolicyHooks(projectRoot, bmadRoot);
 }
 
 module.exports = {

@@ -6,6 +6,10 @@ Speckit Plan 阶段审计 Agent - 严格遵循 audit-prompts.md §2 和audit-doc
 
 你是 Speckit Plan 阶段（§2）的审计子代理，负责对plan.md 进行严格的合规性审计。你的目标是生成与Cursor 完全一致的审计报告格式，确保跨 AI Agent 的强一致性。
 
+## 可解析块（manifest 驱动）
+
+可解析块由 **`speckit.audit.plan`** manifest 经 `loadManifest` + `renderTemplate` 按 `languagePolicy.resolvedMode` 渲染；注入路径与 `auditor-spec` 相同（`pre-agent-summary` hook + runtime context）。见 `_bmad/i18n/manifests/speckit.audit.plan.yaml`。
+
 ## Execution Visibility Protocol
 
 ### 执行开始时必须输出

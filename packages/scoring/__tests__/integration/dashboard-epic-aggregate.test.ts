@@ -3,6 +3,7 @@
  */
 import * as path from 'path';
 import * as fs from 'fs';
+import * as os from 'os';
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { loadAndDedupeRecords } from '../../query/loader';
 import { parseEpicStoryFromRecord } from '../../query';
@@ -97,26 +98,105 @@ describe('Epic 聚合集成 (US-4.2)', () => {
     expect(result).toHaveLength(0);
   });
 
-  it('(5) CLI 无完整 Story 时输出含「Epic N 下无完整 Story」', { timeout: 15000 }, () => {
-    const outPath = path.join(process.cwd(), '_bmad-output', 'dashboard.md');
-    const outDir = path.dirname(outPath);
-    if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+  it('(5) CLI 无完整 Story 时输出含「Epic N 下无完整 Story」', { timeout: 45000 }, () => {
+    const outPath = path.join(os.tmpdir(), `dashboard-us42-no-complete-${Date.now()}.md`);
     execSync(
-      `npx ts-node scripts/dashboard-generate.ts --dataPath "${FIXTURE_NO_COMPLETE}" --epic 9 --strategy epic_story_window --windowHours 999999`,
+      `npx ts-node scripts/dashboard-generate.ts --dataPath "${FIXTURE_NO_COMPLETE}" --epic 9 --strategy epic_story_window --windowHours 999999 --output "${outPath}"`,
       { cwd: process.cwd(), encoding: 'utf-8' }
     );
     const content = fs.readFileSync(outPath, 'utf-8');
     expect(content).toMatch(/Epic 9 下无完整 Story|暂无聚合数据/);
+    try {
+      fs.unlinkSync(outPath);
+    } catch {
+      // ignore
+    }
   });
 
-  it('(6) CLI epic 聚合输出含 Epic 9 聚合视图', { timeout: 15000 }, () => {
+  it('(6) CLI epic 聚合输出含 Epic 9 聚合视图', { timeout: 45000 }, () => {
+    const dataRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dashboard-us42-aggregate-data-'));
+    const dataPath = path.join(dataRoot, 'scoring-data');
+    fs.mkdirSync(dataPath, { recursive: true });
+    const fixtureRecords = fs
+      .readFileSync(path.join(FIXTURE_AGGREGATE, 'scores.jsonl'), 'utf8')
+      .trim()
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => JSON.parse(line) as Record<string, unknown>);
+    const withGovernanceHistory = fixtureRecords.map((record) =>
+      record.run_id === 'dev-e9-s2-b' && record.stage === 'tasks'
+        ? {
+            ...record,
+            governance_rerun_history: [
+              {
+                event_id: 'gov-evt-epic-targeted-01',
+                timestamp: '2026-03-06T12:05:00.000Z',
+                rerun_gate: 'implementation-readiness',
+                outcome: 'blocked',
+                decision_mode: 'targeted',
+                executor_routing: {
+                  routing_mode: 'targeted',
+                  executor_route: 'journey-contract-remediation',
+                  prioritized_signals: ['closure_task_id', 'smoke_task_chain'],
+                },
+                summary_lines: [
+                  'Routing Mode: targeted',
+                  'Executor Route: journey-contract-remediation',
+                  'Stop Reason: await human review',
+                  'Journey Contract Signals: closure_task_id, smoke_task_chain',
+                ],
+                runner_summary_lines: [
+                  '## Governance Remediation Runner Summary',
+                  '- Should Continue: no',
+                  '- Stop Reason: await human review',
+                  '',
+                  '## Loop State Trace Summary',
+                  '- Journey Contract Signals: closure_task_id, smoke_task_chain',
+                ],
+              },
+            ],
+          }
+        : record
+    );
+    fs.writeFileSync(
+      path.join(dataPath, 'scores.jsonl'),
+      withGovernanceHistory.map((record) => JSON.stringify(record)).join('\n') + '\n',
+      'utf8'
+    );
+    const outPath = path.join(os.tmpdir(), `dashboard-us42-aggregate-${Date.now()}.md`);
     execSync(
-      `npx ts-node scripts/dashboard-generate.ts --dataPath "${FIXTURE_AGGREGATE}" --epic 9 --strategy epic_story_window --windowHours 999999`,
+      `npx ts-node scripts/dashboard-generate.ts --dataPath "${dataPath}" --epic 9 --strategy epic_story_window --windowHours 999999 --output "${outPath}"`,
       { cwd: process.cwd(), encoding: 'utf-8' }
     );
-    const content = fs.readFileSync(path.join(process.cwd(), '_bmad-output', 'dashboard.md'), 'utf-8');
+    const content = fs.readFileSync(outPath, 'utf-8');
     expect(content).toMatch(/Epic 9|Epic 9 聚合/);
     expect(content).toMatch(/已排除/);
+    expect(content).toContain('## Governance History Summary');
+    expect(content).toContain('Dominant Routing Mode: targeted (1/1)');
+    expect(content).toContain(
+      'Top Signal: closure_task_id (1 次；阶段 tasks；gates implementation-readiness)'
+    );
+    expect(content).toContain('Worsening Gates: none');
+    expect(content).toContain('## Governance Executor Routing');
+    expect(content).toContain('Routing Mode: targeted');
+    expect(content).toContain('Executor Route: journey-contract-remediation');
+    expect(content).toContain('Signals: closure_task_id、smoke_task_chain');
+    expect(content).toContain('Trace Summary:');
+    expect(content).toContain('Stop Reason: await human review');
+    expect(content).toContain('Journey Contract Signals: closure_task_id, smoke_task_chain');
+    expect(content).toContain('## Governance Latest Raw Event');
+    expect(content).toContain('## Governance Remediation Runner Summary');
+    expect(content).toContain('- Should Continue: no');
+    try {
+      fs.unlinkSync(outPath);
+    } catch {
+      // ignore
+    }
+    try {
+      fs.rmSync(dataRoot, { recursive: true, force: true });
+    } catch {
+      // ignore
+    }
   });
 
   it('(7) 单 Story --epic 9 --story 1 行为与 epic+story 一致', () => {

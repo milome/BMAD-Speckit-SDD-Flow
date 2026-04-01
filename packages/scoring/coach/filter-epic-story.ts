@@ -145,7 +145,7 @@ export function filterByEpicStory(
 ): FilterEpicStoryResult | FilterEpicStoryError {
   const all = loadAllRecordsForFilter(dataPath);
   if (all.length === 0) {
-    return { error: '暂无评分数据，请先完成至少一轮 Dev Story' };
+    return { error: 'No scoring data yet; complete at least one Dev Story run first.' };
   }
 
   const realDev = all.filter((r) => r.scenario !== 'eval_question');
@@ -153,7 +153,7 @@ export function filterByEpicStory(
 
   const parsable = withParsed.filter((x) => x.parsed != null);
   if (parsable.length === 0) {
-    return { error: '当前评分记录无可解析 Epic/Story，请确认 run_id 约定' };
+    return { error: 'No parsable Epic/Story in score records; check run_id conventions.' };
   }
 
   const matched = parsable.filter((x) => {
@@ -168,7 +168,7 @@ export function filterByEpicStory(
   });
 
   if (matched.length === 0) {
-    return { error: '无可筛选数据' };
+    return { error: 'No records match the filter.' };
   }
 
   const byRunId = new Map<string, typeof matched>();

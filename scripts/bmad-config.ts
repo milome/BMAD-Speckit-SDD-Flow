@@ -8,6 +8,27 @@
 
 import { readFileSync, existsSync } from 'node:fs';
 import * as yaml from 'js-yaml';
+import {
+  resolveRuntimePolicy,
+  type ResolveRuntimePolicyInput,
+  type RuntimeFlowId,
+} from './runtime-governance';
+
+// =============================================================================
+// Runtime Governance delegation (U-1.6)
+// U-1.5c：`runtime-governance.ts` **不**再调用本文件的 `shouldAudit` 等（改用 `getStageConfig` 同源求值），故可与本文件 **静态** 互 import 而无运行期环。
+// Shadow **策略 B** — 并行对比仅在 `tests/acceptance/runtime-governance-shadow.test.ts`。
+// =============================================================================
+
+function callResolveRuntimePolicy(input: ResolveRuntimePolicyInput): import('./runtime-governance').RuntimePolicy {
+  return resolveRuntimePolicy(input);
+}
+
+/**
+ * 仅有 `stage` 的 helper 无 `flow` 上下文时，委托 `resolveRuntimePolicy` 使用固定 `story`（Story 主路径）。
+ * Epic/bugfix 等显式 flow 请直接调用 `resolveRuntimePolicy({ flow, stage, config })`。
+ */
+const BMAD_HELPER_GOVERNANCE_FLOW: RuntimeFlowId = 'story';
 
 // =============================================================================
 // Type Definitions
@@ -104,6 +125,15 @@ export interface EnvironmentOverride {
 /** 完整 BMAD 配置 */
 export interface BmadConfig {
   version: string;
+  i18n: {
+    default_language_mode: 'zh' | 'en' | 'bilingual' | 'auto';
+    default_artifact_language: 'zh' | 'en' | 'bilingual' | 'auto';
+    allow_bilingual_auto_mode: boolean;
+    fallback_language: 'zh' | 'en';
+    preserve_control_keys_in_english: boolean;
+    preserve_commands_and_paths: boolean;
+    render_bilingual_headings_with_slash: boolean;
+  };
   audit_granularity: {
     mode: AuditGranularityMode;
     modes: Record<AuditGranularityMode, ModeConfig>;
@@ -151,8 +181,69 @@ export interface RuntimeConfig extends BmadConfig {
 // Constants
 // =============================================================================
 
+/** 仓库内默认 BMAD Story 配置路径；`loadConfigFromFile` / `loadConfig` 在未传参时使用 `EnvironmentConfig.configPath`（默认等同此路径）。 */
 const DEFAULT_CONFIG_PATH = 'config/bmad-story-config.yaml';
 const DEFAULT_MODE: AuditGranularityMode = 'full';
+
+/**
+ * 阶段默认语义在 YAML / 内嵌默认中的键路径（与 `getDefaultConfig()` 结构一致；文件缺失时仅内嵌默认生效）：
+ *
+ * | Helper | YAML / 对象路径 | 缺省（代码回退） |
+ * |--------|----------------|------------------|
+ * | `shouldAudit` | `audit_granularity.modes.<full\|story\|epic>.stages.<StageName>.audit` | `true`（`getStageConfig` 未命中时） |
+ * | `shouldValidate` | `...stages.<StageName>.validation` | `null` |
+ * | `shouldGenerateDoc` | `...stages.<StageName>.generate_doc` | `true` |
+ * | `getStrictness` | `...stages.<StageName>.strictness` | `'standard'` |
+ * | `getValidationChecks` | `...stages.<StageName>.checks` | `[]` |
+ *
+ * 当前模式：`audit_granularity.mode`。覆盖来源：`BMAD_AUDIT_GRANULARITY`、`--audit-granularity=`（见 `parseEnvOverrides` / `parseCliFlags`）。
+ */
+
+// Cache only configuration-level data derived from defaults + file/env/CLI merge.
+// This module owns config loading / merge / exposure only.
+// It must not cache invocation-level language decisions, recent-message detection results,
+// display-mode orchestration, or any Runtime Governance decisions.
+// In particular, this cache must never become a store for fields such as:
+// auditRequired, validationLevel, mandatoryGate, granularityGoverned,
+// skipAllowed, scoringEnabled, or triggerStage.
+let cachedConfig: RuntimeConfig | null = null;
+
+// Build a runtime-shaped config from configuration sources only.
+// This helper may apply config/env/CLI overrides that belong to config loading,
+// but it must not resolve LanguagePolicy and must not derive governance-owned fields
+// such as auditRequired, validationLevel, mandatoryGate, granularityGoverned,
+// skipAllowed, scoringEnabled, or triggerStage.
+function buildRuntimeConfig(baseConfig: BmadConfig, env: EnvironmentConfig): RuntimeConfig {
+  const mergedConfig = mergeConfig(baseConfig, {});
+  const envOverrides = parseEnvOverrides();
+  const cliFlags = parseCliFlags();
+
+  const runtimeEnv = { ...env };
+  const override = mergedConfig.environment_overrides[runtimeEnv.platform];
+  if (override) {
+    runtimeEnv.subagentTool = override.subagent_tool;
+    runtimeEnv.subagentType = override.default_subagent_type;
+  }
+
+  if (envOverrides.auditGranularity) {
+    mergedConfig.audit_granularity.mode = envOverrides.auditGranularity;
+  }
+  if (cliFlags.auditGranularity) {
+    mergedConfig.audit_granularity.mode = cliFlags.auditGranularity;
+  }
+
+  if (typeof envOverrides.autoContinue === 'boolean') {
+    mergedConfig.auto_continue.enabled = envOverrides.autoContinue;
+  }
+  if (typeof cliFlags.autoContinue === 'boolean') {
+    mergedConfig.auto_continue.enabled = cliFlags.autoContinue;
+  }
+
+  return {
+    ...mergedConfig,
+    _environment: runtimeEnv,
+  };
+}
 
 function parseCliFlags(argv: string[] = process.argv.slice(2)): {
   autoContinue?: boolean;
@@ -245,19 +336,13 @@ export function detectEnvironment(): EnvironmentConfig {
     return { ...ENV_CLAUDE };
   }
 
-  // 方法2: 检查配置文件位置（Cursor 可能有 .cursor 目录）
+  // 方法2: 检查 Cursor 目录结构
   if (existsSync('.cursor')) {
     return { ...ENV_CURSOR };
   }
 
-  // 方法3: 检查特定于 Cursor 的文件或目录
-  if (existsSync('.cursor/skills') || existsSync('.cursor/agents')) {
-    return { ...ENV_CURSOR };
-  }
-
-  // 方法4: 检查是否运行在 Claude Code CLI 环境
-  // Claude Code CLI 设置特定环境变量
-  if (process.env.CLAUDE_CODE_CLI === 'true' || process.env.ANTHROPIC_API_KEY) {
+  // 方法3: 检查是否运行在 Claude Code CLI 环境
+  if (process.env.CLAUDE_CODE_CLI === 'true') {
     return { ...ENV_CLAUDE };
   }
 
@@ -271,6 +356,7 @@ export function detectEnvironment(): EnvironmentConfig {
  */
 export function setEnvironment(platform: Platform): EnvironmentConfig {
   process.env.BMAD_PLATFORM = platform;
+  cachedConfig = null;
   return detectEnvironment();
 }
 
@@ -306,6 +392,15 @@ export function loadConfigFromFile(configPath?: string): Partial<BmadConfig> {
 export function getDefaultConfig(): BmadConfig {
   return {
     version: '1.0',
+    i18n: {
+      default_language_mode: 'auto',
+      default_artifact_language: 'auto',
+      allow_bilingual_auto_mode: false,
+      fallback_language: 'en',
+      preserve_control_keys_in_english: true,
+      preserve_commands_and_paths: true,
+      render_bilingual_headings_with_slash: true,
+    },
     audit_granularity: {
       mode: DEFAULT_MODE,
       modes: {
@@ -528,6 +623,10 @@ function mergeConfig(base: BmadConfig, override: Partial<BmadConfig>): BmadConfi
       ...base.notifications,
       ...override.notifications,
     },
+    i18n: {
+      ...base.i18n,
+      ...override.i18n,
+    },
     report_paths: {
       ...base.report_paths,
       ...override.report_paths,
@@ -550,37 +649,24 @@ function mergeConfig(base: BmadConfig, override: Partial<BmadConfig>): BmadConfi
  */
 export function loadConfig(configPath?: string): RuntimeConfig {
   const env = detectEnvironment();
+
+  if (!configPath && cachedConfig) {
+    return buildRuntimeConfig(cachedConfig, env);
+  }
+
   const baseConfig = getDefaultConfig();
   const fileConfig = loadConfigFromFile(configPath || env.configPath);
   const mergedConfig = mergeConfig(baseConfig, fileConfig);
-  const envOverrides = parseEnvOverrides();
-  const cliFlags = parseCliFlags();
+  const runtimeConfig = buildRuntimeConfig(mergedConfig, env);
 
-  // 应用环境特定覆盖
-  const override = mergedConfig.environment_overrides[env.platform];
-  if (override) {
-    env.subagentTool = override.subagent_tool;
-    env.subagentType = override.default_subagent_type;
-  }
-
-  if (envOverrides.auditGranularity) {
-    mergedConfig.audit_granularity.mode = envOverrides.auditGranularity;
-  }
-  if (cliFlags.auditGranularity) {
-    mergedConfig.audit_granularity.mode = cliFlags.auditGranularity;
+  if (!configPath) {
+    cachedConfig = {
+      ...mergedConfig,
+      _environment: runtimeConfig._environment,
+    };
   }
 
-  if (typeof envOverrides.autoContinue === 'boolean') {
-    mergedConfig.auto_continue.enabled = envOverrides.autoContinue;
-  }
-  if (typeof cliFlags.autoContinue === 'boolean') {
-    mergedConfig.auto_continue.enabled = cliFlags.autoContinue;
-  }
-
-  return {
-    ...mergedConfig,
-    _environment: env,
-  };
+  return runtimeConfig;
 }
 
 /**
@@ -640,8 +726,11 @@ export function getStageConfig(stage: StageName, config?: RuntimeConfig): StageC
  * @returns 是否需要审计
  */
 export function shouldAudit(stage: StageName, config?: RuntimeConfig): boolean {
-  const stageConfig = getStageConfig(stage, config);
-  return stageConfig?.audit ?? true; // 默认需要审计
+  return callResolveRuntimePolicy({
+    flow: BMAD_HELPER_GOVERNANCE_FLOW,
+    stage,
+    config,
+  }).auditRequired;
 }
 
 /**
@@ -651,8 +740,11 @@ export function shouldAudit(stage: StageName, config?: RuntimeConfig): boolean {
  * @returns 验证级别，null 表示不需要验证
  */
 export function shouldValidate(stage: StageName, config?: RuntimeConfig): ValidationLevel {
-  const stageConfig = getStageConfig(stage, config);
-  return stageConfig?.validation ?? null;
+  return callResolveRuntimePolicy({
+    flow: BMAD_HELPER_GOVERNANCE_FLOW,
+    stage,
+    config,
+  }).validationLevel;
 }
 
 /**
@@ -662,8 +754,11 @@ export function shouldValidate(stage: StageName, config?: RuntimeConfig): Valida
  * @returns 是否需要生成文档
  */
 export function shouldGenerateDoc(stage: StageName, config?: RuntimeConfig): boolean {
-  const stageConfig = getStageConfig(stage, config);
-  return stageConfig?.generate_doc ?? true; // 默认生成文档
+  return callResolveRuntimePolicy({
+    flow: BMAD_HELPER_GOVERNANCE_FLOW,
+    stage,
+    config,
+  }).generateDoc;
 }
 
 /**
@@ -673,8 +768,11 @@ export function shouldGenerateDoc(stage: StageName, config?: RuntimeConfig): boo
  * @returns 严格度级别
  */
 export function getStrictness(stage: StageName, config?: RuntimeConfig): StrictnessLevel {
-  const stageConfig = getStageConfig(stage, config);
-  return stageConfig?.strictness ?? 'standard';
+  return callResolveRuntimePolicy({
+    flow: BMAD_HELPER_GOVERNANCE_FLOW,
+    stage,
+    config,
+  }).strictness;
 }
 
 /**
@@ -689,7 +787,9 @@ export function getValidationChecks(stage: StageName, config?: RuntimeConfig): s
 }
 
 /**
- * 获取审计收敛配置
+ * 获取审计收敛配置（`audit_convergence.<strictness>`）。
+ * 与 `resolveRuntimePolicy(...).convergence` **同源**：同一 `strictness` + 同一合并后的 `config` 时结果一致。
+ *
  * @param strictness 严格度级别
  * @param config 运行时配置（可选，会自动加载）
  * @returns 审计收敛配置
@@ -728,8 +828,36 @@ export function getSubagentParams(config?: RuntimeConfig): {
  * 获取环境配置
  * @returns 当前环境配置
  */
-export function getEnvironment(): EnvironmentConfig {
-  return detectEnvironment();
+export function getEnvironment(config?: RuntimeConfig): EnvironmentConfig {
+  if (config?._environment) {
+    return config._environment;
+  }
+
+  return loadConfig()._environment;
+}
+
+/**
+ * 获取 i18n 配置
+ * @param config 运行时配置（可选，会自动加载）
+ *
+ * This accessor exposes configuration only.
+ * It must not resolve LanguagePolicy, must not perform request-scoped precedence resolution,
+ * must not inspect recent messages, and must not orchestrate display mode at runtime.
+ * It also must not expose or derive Runtime Governance-owned fields such as:
+ * auditRequired, validationLevel, mandatoryGate, granularityGoverned,
+ * skipAllowed, scoringEnabled, or triggerStage.
+ */
+export function getI18nConfig(config?: RuntimeConfig): RuntimeConfig['i18n'] {
+  const cfg = config || loadConfig();
+  return {
+    default_language_mode: cfg.i18n.default_language_mode,
+    default_artifact_language: cfg.i18n.default_artifact_language,
+    allow_bilingual_auto_mode: cfg.i18n.allow_bilingual_auto_mode,
+    fallback_language: cfg.i18n.fallback_language,
+    preserve_control_keys_in_english: cfg.i18n.preserve_control_keys_in_english,
+    preserve_commands_and_paths: cfg.i18n.preserve_commands_and_paths,
+    render_bilingual_headings_with_slash: cfg.i18n.render_bilingual_headings_with_slash,
+  };
 }
 
 /**
@@ -847,6 +975,7 @@ export default {
   getAuditConvergence,
   getSubagentParams,
   getEnvironment,
+  getI18nConfig,
   getReportPathTemplate,
   formatReportPath,
   printConfigSummary,

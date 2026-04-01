@@ -52,7 +52,7 @@ describe('prompt-optimizer', () => {
     expect(suggestions.length).toBeGreaterThanOrEqual(1);
     const match = suggestions.find((s) => s.target_file.includes('foo-skill'));
     expect(match).toBeDefined();
-    expect(match!.section).toBe('全文');
+    expect(match!.section).toBe('full document');
   });
 
   it('T3-2: priority high when frequency≥5, medium when≥3, low otherwise (AC-B08-2)', () => {
@@ -101,20 +101,20 @@ describe('prompt-optimizer', () => {
 
   it('T3-4: formatPromptSuggestionsMarkdown produces valid Markdown', () => {
     const empty = formatPromptSuggestionsMarkdown([]);
-    expect(empty).toContain('暂无建议');
+    expect(empty).toContain('(none)');
 
     const withData: PromptSuggestion[] = [
       {
         target_file: '/path/to/file.md',
-        section: '全文',
+        section: 'full document',
         suggestion: 'add guidance',
         evidence: 'cluster c1',
         priority: 'high',
       },
     ];
     const out = formatPromptSuggestionsMarkdown(withData);
-    expect(out).toContain('# Prompt 优化建议');
+    expect(out).toContain('# Prompt optimization suggestions');
     expect(out).toContain('/path/to/file.md');
-    expect(out).toContain('高');
+    expect(out).toContain('**Priority**: high');
   });
 });

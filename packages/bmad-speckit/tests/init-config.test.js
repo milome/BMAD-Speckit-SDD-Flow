@@ -3,7 +3,7 @@
  * resolveNetworkTimeoutMs: CLI > env > project config > global config > 30000
  * resolveTemplateSource: env > project config > global config > default
  */
-const { describe, it } = require('node:test');
+const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
@@ -19,9 +19,24 @@ try {
   configManager = null;
 }
 
-const globalConfigPath = path.join(os.homedir(), '.bmad-speckit', 'config.json');
 const projectConfigDir = (cwd) => path.join(cwd, '_bmad-output', 'config');
 const projectConfigPath = (cwd) => path.join(projectConfigDir(cwd), 'bmad-speckit.json');
+const isolatedHomeRoot = path.join(os.tmpdir(), `bmad-speckit-init-config-home-${Date.now()}`);
+const originalHomedir = os.homedir;
+
+function getGlobalConfigPath() {
+  return path.join(os.homedir(), '.bmad-speckit', 'config.json');
+}
+
+before(() => {
+  fs.mkdirSync(isolatedHomeRoot, { recursive: true });
+  os.homedir = () => isolatedHomeRoot;
+});
+
+after(() => {
+  os.homedir = originalHomedir;
+  try { fs.rmSync(isolatedHomeRoot, { recursive: true, force: true }); } catch {}
+});
 
 function writeConfig(filePath, obj) {
   const dir = path.dirname(filePath);
@@ -80,7 +95,7 @@ describe('Story 11.1: resolveNetworkTimeoutMs priority (T006, T009)', () => {
 
   it('global config when no project config', () => {
     if (!initModule || !configManager) return;
-    const _globalDir = path.dirname(globalConfigPath);
+    const globalConfigPath = getGlobalConfigPath();
     const existed = fs.existsSync(globalConfigPath);
     const backup = existed ? fs.readFileSync(globalConfigPath, 'utf8') : null;
     writeConfig(globalConfigPath, { networkTimeoutMs: 20000 });

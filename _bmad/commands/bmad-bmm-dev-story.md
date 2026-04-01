@@ -4,7 +4,13 @@ description: 'Execute a story by implementing tasks/subtasks, writing tests, val
 disable-model-invocation: true
 ---
 
-**前置条件**：sprint-planning 为 dev-story 的前置条件。sprint-status.yaml 缺失时需先运行 `sprint-planning` 或提供要开发的 Story 文件路径。参见 `bmad-bmm-sprint-planning` 命令。
+> **Speckit-SDD-Flow:** Prefer the **`bmad-story-assistant`** skill for the full Story lifecycle (Create Story → audit → Dev Story → post-audit). It integrates **speckit-workflow** and audit-loop iteration. Invoking this command **alone** is **not recommended**—use the skill entry point instead.
+
+**Required skills**: bmad-story-assistant, speckit-workflow
+**Install**: `pwsh scripts/setup.ps1 -Target <project-root>` or copy manually to `{SKILLS_ROOT}`
+**Handoff**: After Create Story output, explicitly invoke this command to complete the Dev Story flow
+
+**Prerequisite**: sprint-planning precedes dev-story. If sprint-status.yaml is missing, run `sprint-planning` first or supply the Story file path to develop. See the `bmad-bmm-sprint-planning` command.
 
 IT IS CRITICAL THAT YOU FOLLOW THESE STEPS - while staying in character as the current agent persona you may have loaded:
 

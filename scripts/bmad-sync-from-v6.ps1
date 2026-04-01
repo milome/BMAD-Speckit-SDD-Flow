@@ -11,7 +11,8 @@
 .PARAMETER ProjectRoot
     Project root.
 .PARAMETER V6Ref
-    Git ref to sync from (tag or branch). Default: main
+    Git ref to sync from (tag or branch). Default: 21c2a48 (pre-#2050 layout: src/core, src/bmm, src/utility).
+    Use 'main' to sync from current v6 (requires layout migration).
 #>
 
 [CmdletBinding()]
@@ -21,34 +22,92 @@ param(
     [switch]$DryRun,
     [string]$BackupDir,
     [string]$ProjectRoot,
-    [string]$V6Ref = 'main'
+    [string]$V6Ref = '21c2a48'
 )
 
 $ErrorActionPreference = 'Stop'
 
 # --- Constants ---
+# 排除项清单见 docs/explanation/upstream-relationship.md §4.1、§4.4
+# 需定期与上游 merge 的项见 §4.2（临时移除排除→合并→恢复排除）
+# Runtime Governance（E15）保护路径见 §4.4；$BACKUP_ITEMS 含备份与 Rollback 恢复
 $BMAD_METHOD_REPO = 'https://github.com/bmad-code-org/BMAD-METHOD.git'
 $EXCLUDE_PATTERNS = @(
+    '_bmad/_config',
+    '_bmad/_memory',
+    '_bmad/bmb',
     '_bmad/scoring',
     '_bmad/speckit',
+    # 项目定制：Story 路径规则统一（epic-{epic}-{slug}/story-{story}-{slug}，specs 含 epic-slug）
+    '_bmad/_config/eval-lifecycle-report-paths.yaml',
+    '_bmad/_config/bmad-help.csv',
+    '_bmad/_config/skill-command-mapping.yaml',
+    '_bmad/cursor/skills/bmad-story-assistant',
+    # 项目定制：bmm/workflows、help、commands、skills
+    '_bmad/bmm/module-help.csv',
+    '_bmad/bmm/workflows/4-implementation/bmad-code-review',
+    '_bmad/bmm/workflows/4-implementation/create-story',
+    '_bmad/bmm/workflows/4-implementation/sprint-planning',
+    '_bmad/bmm/workflows/4-implementation/sprint-status',
+    'step-04-final-validation.md',
+    '_bmad/bmm/workflows/4-implementation/dev-story',
+    '_bmad/claude/agents/bmad-story-audit',
+    '_bmad/claude/skills/bmad-story-assistant',
+    '_bmad/bmm/workflows/bmad-quick-flow/bmad-quick-dev-new-preview',
+    '_bmad/core/tasks/help.md',
+    '_bmad/skills/bmad-help',
+    '_bmad/commands/bmad-agent-bmm-tech-writer.md',
+    '_bmad/commands/bmad-bmm-create-story.md',
+    '_bmad/commands/bmad-sft-extract.md',
+    # Speckit-SDD-Flow: bmad-help OFFICIAL paths use skills; these commands carry Speckit-SDD-Flow header notes (do not overwrite)
+    '_bmad/commands/bmad-bmm-dev-story.md',
+    '_bmad/commands/bmad-bmm-quick-dev.md',
+    '_bmad/commands/bmad-bmm-quick-spec.md',
+    '_bmad/commands/bmad-agent-bmm-quick-flow-solo-dev.md',
     '_bmad/core/agents/adversarial-reviewer.md',
     '_bmad/core/agents/critical-auditor-guide.md',
     '_bmad/core/agents/README-critical-auditor.md',
+    '_bmad/core/agents/bmad-master.md',
     '_bmad/_config/agent-manifest.csv',
     '_bmad/core/workflows/party-mode',
     'adversarial-reviewer.md',
     'critical-auditor-guide.md',
     'README-critical-auditor.md',
+    'bmad-master.md',
     'bmad-speckit',
     'agent-manifest.csv'
 )
 
 # Backup items: From (relative to project) -> To (in BackupDir)
 $BACKUP_ITEMS = @(
+    ,@{ From = "_bmad/_config/eval-lifecycle-report-paths.yaml"; To = "eval-lifecycle-report-paths.yaml" }
+    ,@{ From = "_bmad/_config/bmad-help.csv"; To = "bmad-help.csv" }
+    ,@{ From = "_bmad/_config/skill-command-mapping.yaml"; To = "skill-command-mapping.yaml" }
+    ,@{ From = "_bmad/cursor/skills/bmad-story-assistant"; To = "bmad-story-assistant-skill" }
+    ,@{ From = "_bmad/bmm/module-help.csv"; To = "bmm-module-help.csv" }
+    ,@{ From = "_bmad/bmm/workflows/4-implementation/bmad-code-review"; To = "bmad-code-review-workflow" }
+    ,@{ From = "_bmad/bmm/workflows/4-implementation/create-story"; To = "create-story-workflow" }
+    ,@{ From = "_bmad/bmm/workflows/4-implementation/sprint-planning"; To = "sprint-planning-workflow" }
+    ,@{ From = "_bmad/bmm/workflows/4-implementation/sprint-status"; To = "sprint-status-workflow" }
+    ,@{ From = "_bmad/bmm/workflows/3-solutioning/create-epics-and-stories/steps/step-04-final-validation.md"; To = "step-04-final-validation.md" }
+    ,@{ From = "_bmad/bmm/workflows/4-implementation/dev-story"; To = "dev-story-workflow" }
+    ,@{ From = "_bmad/claude/agents/bmad-story-audit.md"; To = "bmad-story-audit.md" }
+    ,@{ From = "_bmad/claude/skills/bmad-story-assistant"; To = "bmad-story-assistant-skill-claude" }
+    ,@{ From = "_bmad/bmm/workflows/bmad-quick-flow/bmad-quick-dev-new-preview"; To = "bmad-quick-dev-new-preview" }
+    ,@{ From = "_bmad/core/tasks/help.md"; To = "core-tasks-help.md" }
+    ,@{ From = "_bmad/skills/bmad-help"; To = "bmad-help-skill" }
+    ,@{ From = "_bmad/commands/bmad-agent-bmm-tech-writer.md"; To = "bmad-agent-bmm-tech-writer.md" }
+    ,@{ From = "_bmad/commands/bmad-bmm-create-story.md"; To = "bmad-bmm-create-story.md" }
+    ,@{ From = "_bmad/commands/bmad-sft-extract.md"; To = "bmad-sft-extract.md" }
+    ,@{ From = "_bmad/commands/bmad-bmm-dev-story.md"; To = "bmad-bmm-dev-story.md" }
+    ,@{ From = "_bmad/commands/bmad-bmm-quick-dev.md"; To = "bmad-bmm-quick-dev.md" }
+    ,@{ From = "_bmad/commands/bmad-bmm-quick-spec.md"; To = "bmad-bmm-quick-spec.md" }
+    ,@{ From = "_bmad/commands/bmad-agent-bmm-quick-flow-solo-dev.md"; To = "bmad-agent-bmm-quick-flow-solo-dev.md" }
     ,@{ From = "_bmad/scoring"; To = "_bmad_scoring" }
     ,@{ From = "_bmad/core/agents/adversarial-reviewer.md"; To = "adversarial-reviewer.md" }
     ,@{ From = "_bmad/core/agents/critical-auditor-guide.md"; To = "critical-auditor-guide.md" }
     ,@{ From = "_bmad/core/agents/README-critical-auditor.md"; To = "README-critical-auditor.md" }
+    ,@{ From = "_bmad/core/agents/bmad-master.md"; To = "bmad-master.md" }
     ,@{ From = "_bmad/speckit"; To = "bmad_speckit" }
     ,@{ From = "_bmad/_config/agent-manifest.csv"; To = "agent-manifest.csv" }
     ,@{ From = "_bmad/core/workflows/party-mode"; To = "party-mode-workflow" }
@@ -99,12 +158,28 @@ function Get-V6SourcePath {
     try {
         $prevEAP = $ErrorActionPreference
         $ErrorActionPreference = 'Continue'
-        git clone --depth 1 --branch $V6Ref $BMAD_METHOD_REPO $tempDir 2>$null
-        $cloneExit = $LASTEXITCODE
-        $ErrorActionPreference = $prevEAP
-        if ($cloneExit -ne 0) {
-            throw "git clone failed (exit $cloneExit). Check network and V6Ref=$V6Ref."
+        # V6Ref can be branch (main) or commit SHA (21c2a48). Branch works with --branch; SHA needs clone+checkout.
+        $isSha = $V6Ref -match '^[0-9a-f]{7,40}$'
+        if ($isSha) {
+            git clone --depth 300 --branch main $BMAD_METHOD_REPO $tempDir 2>$null
+            $cloneExit = $LASTEXITCODE
+            if ($cloneExit -eq 0) {
+                Push-Location $tempDir
+                git checkout $V6Ref 2>$null
+                $checkoutExit = $LASTEXITCODE
+                Pop-Location
+                if ($checkoutExit -ne 0) { throw "git checkout $V6Ref failed." }
+            } else {
+                throw "git clone failed (exit $cloneExit)."
+            }
+        } else {
+            git clone --depth 1 --branch $V6Ref $BMAD_METHOD_REPO $tempDir 2>$null
+            $cloneExit = $LASTEXITCODE
+            if ($cloneExit -ne 0) {
+                throw "git clone failed (exit $cloneExit). Check network and V6Ref=$V6Ref."
+            }
         }
+        $ErrorActionPreference = $prevEAP
         $srcPath = Join-Path $tempDir 'src'
         if (-not (Test-Path $srcPath)) {
             throw "v6 source layout changed: src/ not found."
@@ -172,6 +247,12 @@ function Get-Phase2Operations {
     $v6Root = Get-V6SourcePath
     $ops = @()
     $v6Src = Join-Path $v6Root 'src'
+    # T7: v6 layout compatibility check
+    foreach ($dir in @('core', 'bmm', 'utility')) {
+        if (-not (Test-Path (Join-Path $v6Src $dir))) {
+            Write-Error "v6 layout changed: src/$dir not found. Check BMAD-METHOD main branch structure."
+        }
+    }
 
     # Scan v6 src/core, src/bmm, src/utility for files to copy (exclude protected)
     $toCopy = @()
@@ -201,6 +282,30 @@ function Get-Phase2Operations {
     }
 
     return @{ Ops = $ops; TempDir = $v6Root }
+}
+
+# --- Protected unchanged check (T5) ---
+function Test-ProtectedUnchanged {
+    param([string]$BakDir, [string]$ProjRoot)
+    foreach ($item in $BACKUP_ITEMS) {
+        $currentPath = Join-Path $ProjRoot $item.From
+        $backupPath = Join-Path $BakDir $item.To
+        if (-not (Test-Path $backupPath)) { continue }
+        if (-not (Test-Path $currentPath)) { continue }
+        $changed = $false
+        if (Test-Path $backupPath -PathType Container) {
+            $currHash = (Get-ChildItem -Path $currentPath -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object { (Get-FileHash $_.FullName -Algorithm MD5).Hash } | Sort-Object) -join ''
+            $bakHash = (Get-ChildItem -Path $backupPath -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object { (Get-FileHash $_.FullName -Algorithm MD5).Hash } | Sort-Object) -join ''
+            $changed = ($currHash -ne $bakHash)
+        } else {
+            $currHash = (Get-FileHash -Path $currentPath -Algorithm MD5 -ErrorAction SilentlyContinue).Hash
+            $bakHash = (Get-FileHash -Path $backupPath -Algorithm MD5 -ErrorAction SilentlyContinue).Hash
+            $changed = ($currHash -ne $bakHash)
+        }
+        if ($changed) {
+            Write-Warning "Protected item may have been modified: $($item.From)"
+        }
+    }
 }
 
 # --- Rollback commands ---
@@ -303,6 +408,9 @@ try {
                     Write-Host "  Removed redundant: $($op.Source) (_bmad/skills/ is canonical)" -ForegroundColor Green
                 }
             }
+        }
+        if ($phasesToRun -contains '2') {
+            Test-ProtectedUnchanged -BakDir $BackupDir -ProjRoot $ProjectRoot
         }
         Write-RollbackCommands -BakDir $BackupDir -ProjRoot $ProjectRoot
     }

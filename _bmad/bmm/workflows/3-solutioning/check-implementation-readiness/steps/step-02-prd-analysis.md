@@ -1,6 +1,6 @@
 ---
 name: 'step-02-prd-analysis'
-description: 'Read and analyze PRD to extract all FRs and NFRs for coverage validation'
+description: 'Read and analyze PRD to extract journey contracts, evidence contracts, and supporting FR/NFR requirements for readiness validation'
 
 nextStepFile: './step-03-epic-coverage-validation.md'
 outputFile: '{planning_artifacts}/{branch}/implementation-readiness-report-{{date}}.md'
@@ -11,7 +11,7 @@ epicsFile: '{planning_artifacts}/*epic*.md' # Will be resolved to actual file
 
 ## STEP GOAL:
 
-To fully read and analyze the PRD document (whole or sharded) to extract all Functional Requirements (FRs) and Non-Functional Requirements (NFRs) for validation against epics coverage.
+To fully read and analyze the PRD document (whole or sharded) and extract the product contracts that determine implementation readiness: P0 journeys, evidence contracts, actor-permission-state links, failure paths, unresolved ambiguities, plus supporting FRs and NFRs.
 
 ## MANDATORY EXECUTION RULES (READ FIRST):
 
@@ -26,37 +26,38 @@ To fully read and analyze the PRD document (whole or sharded) to extract all Fun
 ### Role Reinforcement:
 
 - ✅ You are an expert Product Manager and Scrum Master
-- ✅ Your expertise is in requirements analysis and traceability
-- ✅ You think critically about requirement completeness
-- ✅ Success is measured in thorough requirement extraction
+- ✅ Your expertise is in requirements analysis and readiness traceability
+- ✅ You think critically about runnable paths, not just requirement lists
+- ✅ Success is measured in extracting every contract needed for downstream implementation
 
 ### Step-Specific Rules:
 
-- 🎯 Focus ONLY on reading and extracting from PRD
-- 🚫 Don't validate files (done in step 1)
+- 🎯 Focus ONLY on reading and extracting from the PRD
+- 🚫 Don't validate epics yet
 - 💬 Read PRD completely - whole or all sharded files
-- 🚪 Extract every FR and NFR with numbering
+- 🚪 Extract journey contracts in addition to FRs and NFRs
 
 ## EXECUTION PROTOCOLS:
 
 - 🎯 Load and completely read the PRD
-- 💾 Extract all requirements systematically
+- 💾 Extract all journey and evidence contracts systematically
 - 📖 Document findings in the report
-- 🚫 FORBIDDEN to skip or summarize PRD content
+- 🚫 FORBIDDEN to skip failure paths, deferred ambiguities, or actor/state links
 
 ## PRD ANALYSIS PROCESS:
 
 ### 1. Initialize PRD Analysis
 
-"Beginning **PRD Analysis** to extract all requirements.
+"Beginning **PRD Analysis** to extract product contracts for readiness review.
 
 I will:
 
 1. Load the PRD document (whole or sharded)
 2. Read it completely and thoroughly
-3. Extract ALL Functional Requirements (FRs)
-4. Extract ALL Non-Functional Requirements (NFRs)
-5. Document findings for coverage validation"
+3. Extract all P0 journey contracts
+4. Extract all journey evidence contracts
+5. Extract actor-permission-state links, failure paths, and unresolved ambiguities
+6. Extract supporting FRs and NFRs for traceability"
 
 ### 2. Load and Read PRD
 
@@ -66,90 +67,136 @@ From the document inventory in step 1:
 - If sharded PRD exists: Load and read ALL files in the PRD folder
 - Ensure complete coverage - no files skipped
 
-### 3. Extract Functional Requirements (FRs)
+### 3. Extract P0 Journey Contracts
 
 Search for and extract:
 
-- Numbered FRs (FR1, FR2, FR3, etc.)
-- Requirements labeled "Functional Requirement"
-- User stories or use cases that represent functional needs
-- Business rules that must be implemented
+- `P0 Journey Inventory`
+- journey IDs and names
+- actor + permission + starting state + ending state
+- success outcome or business completion state
+- current workaround if mentioned
 
 Format findings as:
 
-```
-## Functional Requirements Extracted
+```md
+## P0 Journey Contracts Extracted
 
-FR1: [Complete requirement text]
-FR2: [Complete requirement text]
-FR3: [Complete requirement text]
-...
-Total FRs: [count]
+Journey ID:
+- Goal:
+- Actor / permission:
+- Start state -> end state:
+- Business completion outcome:
+- Current workaround:
 ```
 
-### 4. Extract Non-Functional Requirements (NFRs)
+### 4. Extract Journey Evidence Contracts
 
 Search for and extract:
 
-- Performance requirements (response times, throughput)
-- Security requirements (authentication, encryption, etc.)
-- Usability requirements (accessibility, ease of use)
-- Reliability requirements (uptime, error rates)
-- Scalability requirements (concurrent users, data growth)
-- Compliance requirements (standards, regulations)
+- success evidence
+- failure evidence
+- observable signals or proof requirements
+- validation owner or verification method
 
 Format findings as:
 
+```md
+## Journey Evidence Contracts Extracted
+
+Journey ID:
+- Success evidence:
+- Failure evidence:
+- Verification method:
+- Validation owner:
 ```
-## Non-Functional Requirements Extracted
 
-NFR1: [Performance requirement]
-NFR2: [Security requirement]
-NFR3: [Usability requirement]
-...
-Total NFRs: [count]
+### 5. Extract Actor-Permission-State Links, Failure Paths, and Ambiguities
+
+Search for and extract:
+
+- actor-permission-state relationships
+- failure triggers and recovery expectations
+- deferred ambiguities or unresolved decisions
+
+Format findings as:
+
+```md
+## Actor-Permission-State Links Extracted
+
+## Failure Paths Extracted
+
+## Deferred Ambiguities Extracted
 ```
 
-### 5. Document Additional Requirements
+### 6. Extract Supporting Functional Requirements (FRs)
 
-Look for:
+Search for and extract:
 
-- Constraints or assumptions
-- Technical requirements not labeled as FR/NFR
-- Business constraints
-- Integration requirements
+- numbered FRs (FR1, FR2, FR3, etc.)
+- requirements labeled "Functional Requirement"
+- user stories or use cases that represent functional needs
+- business rules that must be implemented
 
-### 6. Add to Assessment Report
+### 7. Extract Supporting Non-Functional Requirements (NFRs)
+
+Search for and extract:
+
+- performance requirements
+- security requirements
+- usability requirements
+- reliability requirements
+- scalability requirements
+- compliance requirements
+- environment / fixture / dependency assumptions when present
+
+### 8. Add to Assessment Report
 
 Append to {outputFile}:
 
 ```markdown
 ## PRD Analysis
 
+### P0 Journey Contracts Extracted
+
+[Journey contract list from section 3]
+
+### Journey Evidence Contracts Extracted
+
+[Evidence contract list from section 4]
+
+### Actor-Permission-State Links Extracted
+
+[Findings from section 5]
+
+### Failure Paths Extracted
+
+[Findings from section 5]
+
+### Deferred Ambiguities Extracted
+
+[Findings from section 5]
+
 ### Functional Requirements
 
-[Complete FR list from section 3]
+[Supporting FR list]
 
 ### Non-Functional Requirements
 
-[Complete NFR list from section 4]
-
-### Additional Requirements
-
-[Any other requirements or constraints found]
+[Supporting NFR list]
 
 ### PRD Completeness Assessment
 
-[Initial assessment of PRD completeness and clarity]
+[Initial assessment of whether the PRD defines runnable product contracts clearly enough for readiness review]
 ```
 
-### 7. Auto-Proceed to Next Step
+### 9. Auto-Proceed to Next Step
 
-After PRD analysis complete, immediately load next step for epic coverage validation.
+After PRD analysis is complete, immediately load next step for journey traceability validation.
 
-## PROCEEDING TO EPIC COVERAGE VALIDATION
+## PROCEEDING TO JOURNEY TRACEABILITY VALIDATION
 
-PRD analysis complete. Loading next step to validate epic coverage.
+PRD analysis complete. Loading next step to validate journey coverage in epics and stories.
 
 ---
 
@@ -158,15 +205,17 @@ PRD analysis complete. Loading next step to validate epic coverage.
 ### ✅ SUCCESS:
 
 - PRD loaded and read completely
-- All FRs extracted with full text
-- All NFRs identified and documented
+- All P0 journeys extracted with actor, state, and completion information
+- Evidence contracts documented
+- Failure paths and deferred ambiguities captured
+- Supporting FRs and NFRs extracted
 - Findings added to assessment report
 
 ### ❌ SYSTEM FAILURE:
 
-- Not reading complete PRD (especially sharded versions)
-- Missing requirements in extraction
-- Summarizing instead of extracting full text
-- Not documenting findings in report
+- Not reading complete PRD
+- Missing P0 journeys or evidence contracts
+- Ignoring failure paths or unresolved ambiguities
+- Extracting only FR/NFR lists without runnable journey contracts
 
-**Master Rule:** Complete requirement extraction is essential for traceability validation.
+**Master Rule:** Readiness review begins with explicit product contracts, not generic requirement summaries.

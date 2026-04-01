@@ -16,6 +16,8 @@ Now that you know what the brief is about, fan out subagents in parallel to gath
 
 2. **Web Researcher** (`../agents/web-researcher.md`) — Searches for competitive landscape, market context, trends, and relevant industry data. Returns structured findings scoped to the product domain.
 
+3. **Contract Translator** (`../agents/contract-translator.md`) — Converts brief-stage findings into downstream-ready contract hints, especially user evidence, risk wording, and handoff-ready structure when the brief later needs PRD inheritance.
+
 ### Graceful Degradation
 
 If subagents are unavailable or fail:
@@ -28,15 +30,20 @@ If subagents are unavailable or fail:
 Once subagent results return (or inline scanning completes):
 
 1. **Merge findings** with what the user already told you
-2. **Identify gaps** — what do you still need to know to write a solid brief?
-3. **Note surprises** — anything from research that contradicts or enriches the user's assumptions?
+2. **Produce a `Context Digest`** — the strongest local facts that matter for the brief
+3. **Produce a `Research Digest`** — the strongest external facts that matter for the brief
+4. **Identify `Known Unknowns`** — what do you still need to know to write a solid brief?
+5. **Maintain a `Contradiction Log`** — anything from research that contradicts or materially enriches the user's assumptions?
+6. **Emit `GateFailure`** if a blocker-level gap prevents continuing, including target artifact, owning role, and what must change before rerun
 
 ## Mode-Specific Behavior
 
 **Guided mode:**
 - Present a concise summary of what you found: "Here's what I learned from your documents and web research..."
+- Make the `Context Digest`, `Research Digest`, `Known Unknowns`, and `Contradiction Log` explicit
 - Highlight anything surprising or worth discussing
 - Share the gaps you've identified
+- If a blocker-level gap exists, present the `GateFailure`, route it to the right reviewer or `contract-translator`, and do not advance until the local gate is rerun
 - Ask: "Anything else you'd like to add, or shall we move on to filling in the details?"
 - Route to `guided-elicitation.md`
 

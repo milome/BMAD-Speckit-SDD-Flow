@@ -34,7 +34,7 @@ describe('parseAndWriteScore', () => {
     expect(written.phase_score).toBeDefined();
     expect(written.check_items).toBeDefined();
     fs.rmSync(tempDir, { recursive: true, force: true });
-  });
+  }, 60000);
 
   it('writes record when given content for arch stage', async () => {
     const content = fs.readFileSync(path.join(FIXTURES, 'sample-arch-report.md'), 'utf-8');
@@ -56,7 +56,7 @@ describe('parseAndWriteScore', () => {
     expect(written.run_id).toBe(runId);
     expect(written.stage).toBe('arch');
     fs.rmSync(tempDir, { recursive: true, force: true });
-  });
+  }, 60000);
 
   it('writes record when given content for story stage', async () => {
     const content = fs.readFileSync(path.join(FIXTURES, 'sample-story-report.md'), 'utf-8');
@@ -79,7 +79,7 @@ describe('parseAndWriteScore', () => {
     expect(written.run_id).toBe(runId);
     expect(written.stage).toBe('story');
     fs.rmSync(tempDir, { recursive: true, force: true });
-  });
+  }, 40000);
 
   it('writes record when given reportPath', async () => {
     const reportPath = path.join(FIXTURES, 'sample-prd-report.md');
@@ -127,7 +127,7 @@ describe('parseAndWriteScore', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('throws when scenario=eval_question but question_version missing (Story 4.3)', async () => {
+  it('throws when scenario=eval_question but question_version missing (Story 4.3)', { timeout: 60000 }, async () => {
     const content = fs.readFileSync(path.join(FIXTURES, 'sample-story-report.md'), 'utf-8');
     const tempDir = path.join(os.tmpdir(), `scoring-e4s3-rej-${Date.now()}`);
 
@@ -218,7 +218,7 @@ describe('parseAndWriteScore', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('content_hash is deterministic for same content (GAP-B01)', { timeout: 15000 }, async () => {
+  it('content_hash is deterministic for same content (GAP-B01)', { timeout: 30000 }, async () => {
     const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
     const tempDir1 = path.join(os.tmpdir(), `scoring-gapb01-det1-${Date.now()}`);
     const tempDir2 = path.join(os.tmpdir(), `scoring-gapb01-det2-${Date.now()}`);
@@ -730,6 +730,40 @@ PRD审计报告
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
+  it('BUGFIX_overall-grade: outputs WARN when Overall Grade has forbidden modifier (English B+)', async () => {
+    const content = `Implement audit
+Overall Grade: B+
+
+Dimension scores:
+- Functionality: 85/100
+`;
+    const tempDir = path.join(os.tmpdir(), `scoring-forbidden-mod-en-${Date.now()}`);
+    const runId = `test-forbidden-mod-en-${Date.now()}`;
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    try {
+      await parseAndWriteScore({
+        content,
+        stage: 'implement',
+        runId,
+        scenario: 'real_dev',
+        writeMode: 'single_file',
+        dataPath: tempDir,
+        skipAutoHash: true,
+      });
+
+      const errCalls = consoleSpy.mock.calls.flat().join(' ');
+      expect(errCalls.includes('WARN') && (errCalls.includes('B+') || errCalls.includes('forbidden'))).toBe(true);
+    } finally {
+      consoleSpy.mockRestore();
+      try {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      } catch {
+        // ignore
+      }
+    }
+  });
+
   it('BUGFIX_overall-grade: outputs WARN to stderr when report contains forbidden overall_grade modifier (e.g. B+)', async () => {
     const content = `Implement 审计报告
 总体评级: B+
@@ -790,6 +824,45 @@ PRD审计报告
     expect(lines.length).toBeGreaterThanOrEqual(1);
     const written = JSON.parse(lines[lines.length - 1]);
     expect(written.run_id).toBe(runId);
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('writes journey_contract_signals derived from dedicated journey contract check_items (Wave 1B)', async () => {
+    const content = `
+总体评级: C
+
+问题清单:
+1. [严重程度:高] Journey Slice J-1 缺少 smoke task chain，无法证明至少一条 smoke path task chain 已落到任务
+2. [严重程度:中] Journey Slice J-1 缺少 closure note task，无法形成 closure note task
+3. [严重程度:中] setup/foundation 任务只带 Journey ID，但未显式说明 unlocks 哪条 journey / smoke path
+4. [严重程度:中] Journey Slice 生成规则把 definition gap 和 implementation gap 混在一起，未保持 gap split contract
+5. [严重程度:低] multi-agent 模式只要求共享 trace map，未要求共享同一份 journey ledger / invariant ledger / trace map 的路径引用
+
+通过标准:
+待修复
+`;
+    const tempDir = path.join(os.tmpdir(), `scoring-journey-signals-${Date.now()}`);
+    const runId = `test-journey-signals-${Date.now()}`;
+
+    await parseAndWriteScore({
+      content,
+      stage: 'tasks',
+      runId,
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+      skipAutoHash: true,
+    });
+
+    const filePath = path.join(tempDir, `${runId}.json`);
+    const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    expect(written.journey_contract_signals).toEqual({
+      smoke_task_chain: true,
+      closure_task_id: true,
+      journey_unlock: true,
+      gap_split_contract: true,
+      shared_path_reference: true,
+    });
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 });

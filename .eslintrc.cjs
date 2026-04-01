@@ -84,6 +84,8 @@ module.exports = {
     '_bmad/',
     '_bmad-output/',
     'scripts/init-to-root.js', // CommonJS entry
+    'packages/runtime-emit/build.js',
+    'packages/runtime-emit/write-runtime-context.js',
     '*.config.ts',
   ],
 };

@@ -1,0 +1,176 @@
+version: "1.0"
+
+defaults:
+  risk_tier: medium
+  primary_flow_objective: P0 journey runnable
+  smoke_gate_mode: pr
+  full_e2e_mode: nightly
+  omission_policy: block_on_silent_assumption
+
+risk_tiers:
+  low:
+    description: Minor or localized change with limited blast radius and no permission-boundary shift.
+    required_artifacts:
+      - prd
+      - architecture
+      - tasks
+      - readiness
+    required_gates:
+      - readiness
+      - ambiguity_linter
+      - smoke_skeleton_validation
+    required_signoffs:
+      - feature_owner
+  medium:
+    description: Default tier for feature work that touches a P0 journey or cross-module behavior.
+    required_artifacts:
+      - prd
+      - architecture
+      - tasks
+      - readiness
+      - journey_ledger
+      - trace_map
+      - closure_note
+    required_gates:
+      - readiness
+      - ambiguity_linter
+      - smoke_proof_or_skeleton_validation
+      - re_readiness_on_semantic_change
+    required_signoffs:
+      - feature_owner
+      - architect_or_tech_lead
+  high:
+    description: High-blast-radius, permission-boundary, compliance, or multi-system change requiring stronger proof.
+    required_artifacts:
+      - prd
+      - architecture
+      - tasks
+      - readiness
+      - journey_ledger
+      - trace_map
+      - closure_note
+      - exception_log_entry
+      - full_e2e_plan
+    required_gates:
+      - readiness
+      - omission_focused_checklist
+      - ambiguity_linter
+      - smoke_proof
+      - re_readiness_on_semantic_change
+    required_signoffs:
+      - feature_owner
+      - architect_or_tech_lead
+      - qa_or_release_owner
+
+owner_model:
+  deep_interview:
+    owner: pm_or_feature_owner
+    support:
+      - architect
+  prd:
+    owner: pm
+    support:
+      - feature_owner
+  architecture:
+    owner: architect
+    support:
+      - tech_lead
+  readiness:
+    owner: architect
+    support:
+      - pm
+      - qa
+  tasks:
+    owner: tech_lead
+    support:
+      - developer
+      - qa
+  implement:
+    owner: developer
+    support:
+      - tech_lead
+  closure:
+    owner: developer
+    support:
+      - qa
+      - feature_owner
+  exception:
+    owner: feature_owner
+    support:
+      - architect
+      - qa
+
+stage_done_standards:
+  prd:
+    - p0_journey_inventory_defined
+    - completion_states_explicit
+    - failure_paths_explicit
+    - owner_and_permission_boundaries_explicit
+  architecture:
+    - key_path_design_traced_to_p0_journeys
+    - testability_and_fixture_strategy_defined
+    - smoke_vs_full_e2e_positioning_defined
+    - re_readiness_triggers_defined
+  readiness:
+    - blocker_words_resolved
+    - silent_assumptions_removed_or_logged
+    - journey_ledger_and_trace_map_consistent
+    - smoke_path_generatable
+  tasks:
+    - runnable_slices_over_module_queues
+    - evidence_type_and_verification_command_defined
+    - closure_note_path_defined
+    - definition_gaps_separated_from_implementation_gaps
+  implement:
+    - smoke_proof_recorded_for_each_p0_journey
+    - closure_notes_updated
+    - re_readiness_triggered_when_required
+    - module_complete_but_journey_not_runnable_prohibited
+  closure:
+    - deferred_gaps_explicit
+    - next_gate_or_expiry_explicit
+    - verification_commands_recorded
+    - owners_and_signoffs_recorded
+
+exception_policy:
+  default_log_path: docs/logs/speckit-exceptions.md
+  template_path: docs/reference/speckit-exception-log-template.md
+  required_fields:
+    - exception_id
+    - risk_tier
+    - affected_stage
+    - owner
+    - reason
+    - mitigation
+    - expiry_or_next_gate
+  triggers:
+    - risk_tier_override
+    - deferred_full_e2e
+    - waived_gate
+    - unresolved_definition_gap
+    - unresolved_implementation_gap
+    - owner_signoff_missing
+
+health_metrics:
+  keys:
+    first_smoke_pass_time:
+      unit: minutes
+      description: Time from approved tasks to first passing smoke proof for the P0 journey.
+    definition_gap_count:
+      unit: count
+      description: Open definition gaps at the current stage boundary.
+    implementation_gap_count:
+      unit: count
+      description: Open implementation gaps at the current stage boundary.
+    re_readiness_count:
+      unit: count
+      description: Number of times implementation had to return to readiness.
+    deferred_gap_count:
+      unit: count
+      description: Number of deferred gaps explicitly carried into closure.
+    challenge_density:
+      unit: findings_per_review
+      description: Review challenge volume normalized per audit or checklist pass.
+    exception_count:
+      unit: count
+      description: Number of active exceptions recorded for the feature or story.

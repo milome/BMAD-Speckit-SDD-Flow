@@ -189,7 +189,7 @@ describe('coachDiagnose fallback', () => {
       throw new Error(`unexpected error: ${result.error}`);
     }
     expect(result.stage_evolution_traces).toBeDefined();
-    expect(result.stage_evolution_traces!.spec).toBe('第1轮 C → 第2轮 B → 第3轮 A');
+    expect(result.stage_evolution_traces!.spec).toBe('Round 1 C → Round 2 B → Round 3 A');
   });
 
   it('documents iteration_passed formula source from VETO_AND_ITERATION_RULES §3.4.2', () => {
@@ -229,7 +229,7 @@ describe('coachDiagnose fallback', () => {
         '  identity: "EXPLICIT_IDENTITY"',
         '  communication_style: "EXPLICIT_STYLE"',
         '  principles:',
-        '    - "只消费已有审计与 scoring 数据，不替代 Reviewer。"',
+        '    - "Consume only existing audit and scoring data; do not replace the Reviewer."',
         '```',
       ].join('\n'),
       'utf-8'
@@ -322,8 +322,57 @@ describe('coachDiagnose fallback', () => {
     if ('error' in result) {
       throw new Error(`unexpected error: ${result.error}`);
     }
-    expect(result.recommendations).toContain('建议关注高整改轮次 stage，提升一次通过率。');
+    expect(result.recommendations).toContain(
+      'Focus on stages with high remediation iteration counts to improve first-pass rate.'
+    );
     fs.rmSync(dataPath, { recursive: true, force: true });
+  });
+
+  it('adds journey contract remediation hints and targeted recommendations when journey signals exist', async () => {
+    const runId = `coach-journey-hints-${Date.now()}`;
+    const records: RunScoreRecord[] = [
+      {
+        run_id: runId,
+        scenario: 'real_dev',
+        stage: 'tasks',
+        phase_score: 62,
+        phase_weight: 0.25,
+        check_items: [{ item_id: 'journey_smoke_chain', passed: false, score_delta: -10 }],
+        timestamp: new Date().toISOString(),
+        iteration_count: 1,
+        iteration_records: [],
+        first_pass: false,
+        journey_contract_signals: {
+          smoke_task_chain: true,
+          closure_task_id: true,
+        },
+      },
+    ];
+
+    const result = await coachDiagnose(runId, {
+      records,
+      requiredSkillPath: 'not/exist/skill.md',
+      forceSkillLoadError: true,
+    });
+    if ('error' in result) {
+      throw new Error(`unexpected error: ${result.error}`);
+    }
+
+    expect(result.journey_contract_hints).toBeDefined();
+    expect(result.journey_contract_hints?.map((item) => item.signal).sort()).toEqual([
+      'closure_task_id',
+      'smoke_task_chain',
+    ]);
+    expect(
+      result.recommendations.some((item) =>
+        item.includes('Add at least one smoke task chain per Journey Slice')
+      )
+    ).toBe(true);
+    expect(
+      result.recommendations.some((item) =>
+        item.includes('Add one closure note task for each Journey Slice')
+      )
+    ).toBe(true);
   });
 
   it('does not add 高整改轮次 recommendation when all iteration_count are 0 (US-010)', async () => {
@@ -339,7 +388,9 @@ describe('coachDiagnose fallback', () => {
     if ('error' in result) {
       throw new Error(`unexpected error: ${result.error}`);
     }
-    expect(result.recommendations).not.toContain('建议关注高整改轮次 stage，提升一次通过率。');
+    expect(result.recommendations).not.toContain(
+      'Focus on stages with high remediation iteration counts to improve first-pass rate.'
+    );
     fs.rmSync(dataPath, { recursive: true, force: true });
   });
 
@@ -357,7 +408,9 @@ describe('coachDiagnose fallback', () => {
       throw new Error(`unexpected error: ${result.error}`);
     }
     expect(
-      result.recommendations.includes('只消费已有审计与 scoring 数据，不替代 Reviewer。')
+      result.recommendations.some((r) =>
+        r.includes('Consume only existing audit and scoring data; do not replace the Reviewer.')
+      )
     ).toBe(true);
 
     fs.rmSync(dataPath, { recursive: true, force: true });

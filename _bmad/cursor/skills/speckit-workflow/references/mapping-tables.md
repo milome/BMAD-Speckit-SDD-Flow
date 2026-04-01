@@ -114,3 +114,36 @@
 |--------|----------|------------------------------------------|----------------------------------------|----------|----------|
 | D1 | Txxxx, ... | ... | ... | [ ] / [x] 通过 / [ ] 失败 | [ ] / [x] |
 ```
+
+---
+
+## 9. tasks.md：Journey -> Task -> Test -> Closure 映射
+
+```markdown
+## Journey -> Task -> Test -> Closure 映射
+
+| Journey ID | Invariant IDs | Task IDs | Smoke Proof | Full E2E | Closure Note |
+|------------|---------------|----------|-------------|----------|--------------|
+| J01 | INV-01, INV-02 | T021, T022, T023 | `tests/e2e/smoke/...` | `tests/e2e/full/...` 或 deferred reason | `closure-notes/J01.md` |
+| J02 | INV-03 | T024, T025 | `tests/e2e/smoke/...` | `N/A`（写明原因） | `closure-notes/J02.md` |
+```
+
+**说明**：每条 `P0 journey` 都必须能从 `journey -> task -> test -> closure` 一路追溯，禁止只列模块任务而无 smoke proof / closure 收口。
+
+---
+
+## 10. Gap 分类：Definition Gap vs Implementation Gap
+
+```markdown
+## Definition Gap vs Implementation Gap
+
+| Gap Type | Source | Current Handling | Owner | Next Gate |
+|----------|--------|------------------|-------|----------|
+| Definition Gap | spec / plan / readiness / audit | clarify / re-readiness / contract patch | PM / Architect / Owner | clarify / readiness |
+| Implementation Gap | tasks / implement / verification / audit | code change / test fix / closure note | Dev / QA / Owner | implement / audit |
+```
+
+**说明**：
+- `Definition Gap` 指需求、完成态、权限边界、fixture / environment、依赖语义等定义层缺口。
+- `Implementation Gap` 指代码路径、生产接线、smoke/full 证据、closure note 等实现层缺口。
+- 两类 gap **必须分开记录**，不得在一条“开发任务”里混写后直接宣称功能已跑通。

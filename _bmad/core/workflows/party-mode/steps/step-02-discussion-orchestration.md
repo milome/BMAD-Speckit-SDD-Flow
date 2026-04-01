@@ -21,6 +21,7 @@
 - Complete agent roster with merged personalities is available
 - User topic and conversation history guide agent selection
 - Exit triggers: `*exit`, `goodbye`, `end party`, `quit`
+- **i18n audit blocks**: When orchestration references speckit auditors or audit-parseable sections, align narrative with `_bmad/i18n/manifests/` templates; `languagePolicy.resolvedMode` is read from `_bmad-output/runtime/context/project.json` (same contract as `renderTemplate` + `loadManifest`).
 
 ## YOUR TASK:
 
@@ -59,6 +60,9 @@ When topic is decision/root-cause (multi-option choice or root-cause/design deba
 - **Every 5 Rounds**: Challenger MUST appear at least once in each 5-round window (rounds 1-5, 6-10, 11-15, etc.)
 - Apply challenger persona injection (see below) to the selected agent
 
+**Stage Profile Override:**
+When a `brief-gate`, `prd-contract-gate`, `architecture-contract-gate`, or `readiness-blocker-gate` profile is explicitly active, keep the challenger logic but also enforce profile-specific `mandatory outputs` and `stage-specific exit criteria`.
+
 **Priority Rules:**
 
 - If user names specific agent → Prioritize that agent + 1-2 complementary agents
@@ -86,9 +90,13 @@ When the selected agent is the designated challenger, prepend this instruction t
 - 必须使用 **展示名（displayName）** 标注发言角色，与 `_bmad/_config/agent-manifest.csv` 一致。
 - 展示名示例：BMad Master、Mary 分析师、John 产品经理、Winston 架构师、Amelia 开发、Bob Scrum Master、Quinn 测试、Paige 技术写作、Sally UX、Barry Quick Flow、Bond Agent 构建、Morgan Module 构建、Wendy Workflow 构建、Victor 创新策略、Dr. Quinn 问题解决、Maya 设计思维、Carson 头脑风暴、Sophia 故事讲述、Caravaggio 演示、Murat 测试架构、批判性审计员。
 
-"[Icon Emoji] **[展示名 displayName]**: [Authentic in-character response]
+"[Icon Emoji] **[展示名 displayName]**: [Authentic in-character response]"
 
-[Bash: .claude/hooks/bmad-speak.sh \"[展示名 displayName]\" \"[Their response]\"]"
+When a stage profile is active, the facilitator must also maintain these `mandatory outputs` in the round summary:
+- `resolved blockers`
+- `unresolved blockers`
+- `deferred risks`
+- `next artifact updates required`
 
 **Challenge Definition (Decision/Root-Cause Mode):**
 A valid challenge = at least one of: (1) Explicit opposition to a conclusion; (2) Pointing out omitted risk/edge case; (3) "If X then conclusion invalid" counter-argument; (4) Request for evidence supporting a claim.
@@ -145,6 +153,7 @@ After generating all agent responses for the round, let the user know he can spe
 - **质疑充分性（P1）**：若最近 10 轮质疑轮数 < 3，Facilitator 显式问「挑战者，你是否有未表达的反对？」；若 30% 未达，可延长 5 轮补救（仅 1 次）。
 - **收束提示**：若已达最少轮次但未满足收敛条件，Facilitator 先问：「还有没有遗漏的 risks、edge cases 或反对点？」再根据回应决定是否展示 [E]。
 - **展示 [E] 的时机**：仅在满足最少轮次且收敛条件满足后，再展示退出选项。
+- **Stage-profile exit gate**：若当前 profile 还未满足 its `stage-specific exit criteria`, even after the minimum rounds, continue the discussion and explicitly call out which blocker output is still missing.
 
 Then show this menu option:
 

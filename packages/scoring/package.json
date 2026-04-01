@@ -41,10 +41,30 @@
       "require": "./dist/dashboard/index.js",
       "types": "./dist/dashboard/index.d.ts"
     },
+    "./runtime": {
+      "require": "./dist/runtime/index.js",
+      "types": "./dist/runtime/index.d.ts"
+    },
+    "./runtime/types": {
+      "require": "./dist/runtime/types.js",
+      "types": "./dist/runtime/types.d.ts"
+    },
+    "./runtime/schema/runtime-event": "./runtime/schema/runtime-event.schema.json",
+    "./runtime/schema/runtime-run-projection": "./runtime/schema/runtime-run-projection.schema.json",
+    "./analytics/types": {
+      "require": "./dist/analytics/types.js",
+      "types": "./dist/analytics/types.d.ts"
+    },
+    "./analytics": {
+      "require": "./dist/analytics/index.js",
+      "types": "./dist/analytics/index.d.ts"
+    },
     "./analytics/sft-extractor": {
       "require": "./dist/analytics/sft-extractor.js",
       "types": "./dist/analytics/sft-extractor.d.ts"
     },
+    "./analytics/schema/canonical-sft-sample": "./analytics/schema/canonical-sft-sample.schema.json",
+    "./analytics/schema/dataset-bundle-manifest": "./analytics/schema/dataset-bundle-manifest.schema.json",
     "./scores/format-table": {
       "require": "./dist/scores/format-table.js",
       "types": "./dist/scores/format-table.d.ts"
@@ -52,12 +72,16 @@
   },
   "scripts": {
     "test": "vitest run",
-    "build": "tsc --outDir dist"
+    "build:dashboard-ui": "node dashboard/ui/build.mjs",
+    "build": "npm run build:dashboard-ui && tsc --outDir dist"
   },
   "files": [
     "dist/",
     "rules/",
     "schema/",
+    "runtime/schema/",
+    "analytics/schema/",
+    "dashboard/ui/",
     "data/__fixtures-*"
   ],
   "dependencies": {
@@ -66,6 +90,11 @@
     "js-yaml": "^4.1.1"
   },
   "devDependencies": {
-    "@types/js-yaml": "^4.0.9"
+    "@types/js-yaml": "^4.0.9",
+    "@tailwindcss/cli": "^4.1.5",
+    "esbuild": "^0.25.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tailwindcss": "^4.1.5"
   }
 }

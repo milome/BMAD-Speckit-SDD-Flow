@@ -26,13 +26,21 @@ When `command` field is empty:
 - Then invokes by referencing the `code` field or describing the `name` field
 - Do NOT show a slash command — show the code value and agent load instruction instead
 
-Example presentation for empty command:
+Example presentation for skill/command-based agent:
 ```
 Explain Concept (EC)
-Load: /tech-writer, then ask to "EC about [topic]"
-Agent: Tech Writer
+Command: `bmad-agent-bmm-tech-writer` (loads skill:bmad-agent-tech-writer), then ask to "EC about [topic]"
+Agent: Paige (Technical Writer)
 Description: Create clear technical explanations with examples...
 ```
+
+## OFFICIAL EXECUTION PATHS (BMAD-Speckit-SDD-Flow)
+
+When recommending next steps, **prefer** these skills as the canonical entry points (see `_bmad/_config/bmad-help.csv` and `_bmad/bmm/module-help.csv`):
+
+- **Story lifecycle (Dev Story)** — Official: **`bmad-story-assistant`**. **Not recommended alone:** **`/bmad-bmm-dev-story`** (loses speckit-workflow + audit-loop orchestration).
+- **Quick task lists (Quick Spec / Quick Dev)** — Official: **`bmad-standalone-tasks`**. **Not recommended as primary:** legacy **`bmad-bmm-quick-dev`**, **`bmad-bmm-quick-spec`**, **`bmad-agent-bmm-quick-flow-solo-dev`**.
+- **BUGFIX** — Official: **`bmad-bug-assistant`**.
 
 ## MODULE DETECTION
 

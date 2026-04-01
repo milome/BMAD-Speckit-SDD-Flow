@@ -10,6 +10,11 @@ export {
   getDimensionScores,
   getWeakTop3,
   getWeakTop3EpicStory,
+  getJourneyContractSummary,
+  getGovernanceRoutingSummary,
+  getGovernanceRoutingModeDistribution,
+  getGovernanceSignalHotspots,
+  getGovernanceRerunGateFailureTrend,
   getHighIterationTop3,
   countVetoTriggers,
   getTrend,
@@ -23,8 +28,34 @@ export type {
   DimensionEntry,
   WeakEntry,
   HighIterEntry,
+  JourneyContractSummaryEntry,
+  GovernanceRoutingSummaryEntry,
+  GovernanceRoutingModeDistributionSummaryEntry,
+  GovernanceSignalHotspotSummaryEntry,
+  GovernanceRerunGateFailureTrendSummaryEntry,
   TrendDirection,
   GetLatestRunRecordsV2Options,
 } from './compute';
 export { formatDashboardMarkdown } from './format';
 export type { DashboardData, DashboardFormatOptions } from './format';
+export { buildRuntimeDashboardModel, queryRuntimeDashboard } from './runtime-query';
+export type {
+  RuntimeDashboardQueryOptions,
+  RuntimeDashboardSnapshot,
+  RuntimeDashboardSelection,
+  DashboardOverviewPanel,
+  DashboardRuntimeContextPanel,
+  DashboardStageTimelineEntry,
+  DashboardScoreDetailRecord,
+  DashboardScoreDetailPayload,
+  DashboardSftSummary,
+} from './runtime-query';
+export { renderDashboardSnapshotMarkdown, writeDashboardSnapshotFiles } from './snapshot';
+export type { WriteDashboardSnapshotOptions } from './snapshot';
+export { startLiveDashboardServer } from './live-server';
+export type {
+  LiveDashboardServerHandle,
+  LiveDashboardServerOptions,
+} from './live-server';
+export { runRuntimeMcpServer } from './mcp-server';
+export type { RuntimeMcpServerOptions } from './mcp-server';

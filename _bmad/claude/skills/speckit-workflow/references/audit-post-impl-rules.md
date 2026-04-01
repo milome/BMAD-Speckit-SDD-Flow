@@ -47,6 +47,17 @@
 - **iteration_count**：统计审计**未通过**的轮次（fail 次数），用于 scoring tier 系数等
 - **consecutive_pass_count**：用于收敛条件，不写入 scoring，仅流程内部控制
 
+### 2.4 Wave 1B journey contract 也是 strict 收敛前提
+
+strict 审计不只检查“有无 gap”，还必须把以下 Wave 1B journey contracts 视为**硬门槛**；任一项缺失或证据不成立，该轮即判 `存在 gap`，`consecutive_pass_count` 清零：
+
+- `Smoke Task Chain`：必须能证明当前 Journey 的 smoke 任务链已真正闭合，而不是只存在文字声明。
+- `Closure Task ID`：必须能定位到真实 closure note 任务；若 closure note 已写但没有对应 `Closure Task ID`，仍判未通过。
+- `Journey Unlock` / `Smoke Path Unlock`：setup / foundational 任务若声称已解锁 Journey，必须有实际解锁证据，而不是仅带 Journey 标签。
+- `Definition Gap Handling` / `Implementation Gap Handling`：两类 gap 必须保持分离；若把 definition gap 包装成已实现功能，或在审计结论里混写，仍判未通过。
+- `Shared Journey Ledger Path` / `Shared Invariant Ledger Path` / `Shared Trace Map Path`：multi-agent 审计必须验证所有 worker 使用同一份 shared artifacts。
+- `same path reference`：若不同 agent 只引用各自私有摘要，而没有回到同一份 ledger / trace map 路径，则该轮不得记为无 gap。
+
 ---
 
 ## 3. 与 audit-prompts §5 的引用关系

@@ -18,14 +18,68 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: Install dependencies
         run: npm ci
 
       - name: Build scoring package
         run: npm run build:scoring
 
+      - name: Build runtime-emit package (esbuild bundle from scripts/emit-runtime-policy.ts)
+        run: npm run build:runtime-emit
+
       - name: Lint
         run: npm run lint
+
+      - name: Validate Wave 2 schemas
+        run: |
+          python -m json.tool docs/reference/speckit-journey-ledger.schema.json > /dev/null
+          python -m json.tool docs/reference/speckit-trace-map.schema.json > /dev/null
+          python -m json.tool docs/reference/speckit-closure-note.schema.json > /dev/null
+
+      - name: Validate Wave 2 CLI entrypoints
+        run: |
+          python _bmad/speckit/scripts/python/readiness_gate.py --help
+          python _bmad/speckit/scripts/python/generate_smoke_skeleton.py --help
+          python _bmad/speckit/scripts/python/ambiguity_linter.py --help
+
+      - name: Readiness gate self-check
+        run: |
+          tmpdir="$(mktemp -d)"
+          cp _bmad/speckit/scripts/templates/journey-ledger.template.json "$tmpdir/journey-ledger.json"
+          cp _bmad/speckit/scripts/templates/trace-map.template.json "$tmpdir/trace-map.json"
+          mkdir -p "$tmpdir/closure-notes"
+          cp _bmad/speckit/scripts/templates/closure-note.template.md "$tmpdir/closure-notes/J01.md"
+          python _bmad/speckit/scripts/python/readiness_gate.py \
+            --journey-ledger "$tmpdir/journey-ledger.json" \
+            --trace-map "$tmpdir/trace-map.json" \
+            --artifact-root "$tmpdir"
+
+      - name: Ambiguity linter self-check
+        run: |
+          python _bmad/speckit/scripts/python/ambiguity_linter.py \
+            docs/reference/speckit-journey-ledger.schema.json \
+            docs/reference/speckit-trace-map.schema.json
+
+      - name: Smoke skeleton generation validation
+        run: |
+          tmpdir="$(mktemp -d)"
+          python _bmad/speckit/scripts/python/generate_smoke_skeleton.py \
+            --journey-ledger _bmad/speckit/scripts/templates/journey-ledger.template.json \
+            --output-root "$tmpdir/smoke"
+          find "$tmpdir/smoke" -name '*.smoke.spec.ts' -print -quit | grep -q .
+
+      - name: Run smoke E2E when suite exists
+        run: |
+          if [ -d tests/e2e/smoke ] && find tests/e2e/smoke -type f | grep -q .; then
+            npx playwright test tests/e2e/smoke
+          else
+            echo "No tests/e2e/smoke suite present; skipping real smoke E2E run."
+          fi
 
       - name: Run tests
         run: npm run test:ci

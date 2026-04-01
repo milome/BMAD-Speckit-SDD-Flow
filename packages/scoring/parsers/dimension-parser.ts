@@ -35,9 +35,16 @@ function loadModeWeights(mode: DimensionMode, configPath?: string): Map<string, 
   const map = new Map<string, number>();
   for (const item of dimensions) {
     const name = typeof item?.name === 'string' ? item.name.trim() : '';
+    const nameEn =
+      typeof (item as { name_en?: unknown }).name_en === 'string'
+        ? (item as { name_en: string }).name_en.trim()
+        : '';
     const weight = typeof item?.weight === 'number' ? item.weight : Number(item?.weight);
     if (!name || !Number.isFinite(weight)) continue;
     map.set(name, weight);
+    if (nameEn) {
+      map.set(nameEn, weight);
+    }
   }
   return map;
 }
@@ -92,7 +99,16 @@ export function parseDimensionScores(
       if (!match) continue;
       const dimension = match[1].trim();
       const score = Number(match[2]);
-      const weight = weights.get(dimension);
+      let weight = weights.get(dimension);
+      if (weight == null) {
+        const lower = dimension.toLowerCase();
+        for (const [k, w] of weights) {
+          if (k.toLowerCase() === lower) {
+            weight = w;
+            break;
+          }
+        }
+      }
       if (weight == null || !Number.isFinite(score)) continue;
       results.push({ dimension, weight, score });
     }
@@ -101,4 +117,29 @@ export function parseDimensionScores(
   } catch {
     return [];
   }
+}
+
+/**
+ * English dimension labels from code-reviewer-config `name_en` (TB.6 WARN / diagnostics).
+ * @param {DimensionMode} mode - Dimension mode
+ * @param {string} [configPath] - Optional config path
+ * @returns {string[]} Ordered list of name_en values (skips entries without name_en)
+ */
+export function listDimensionNamesEn(mode: DimensionMode, configPath?: string): string[] {
+  const resolved = getConfigPath(configPath);
+  if (!fs.existsSync(resolved)) return [];
+
+  const content = fs.readFileSync(resolved, 'utf-8');
+  const parsed = yaml.load(content) as {
+    modes?: Partial<Record<DimensionMode, { dimensions?: Array<{ name_en?: unknown }> }>>;
+  };
+  const dimensions = parsed?.modes?.[mode]?.dimensions;
+  if (!Array.isArray(dimensions)) return [];
+
+  const out: string[] = [];
+  for (const item of dimensions) {
+    const nameEn = typeof item?.name_en === 'string' ? item.name_en.trim() : '';
+    if (nameEn) out.push(nameEn);
+  }
+  return out;
 }

@@ -1,0 +1,14 @@
+{
+  "cwd": "D:/workspace/runtime-dashboard-fixture",
+  "tool_name": "Shell",
+  "tool_call_id": "00000000-1111-2222-3333-555555555555",
+  "tool_input": {
+    "command": "Write-Output \"apiKey=[REDACTED_SECRET]\"",
+    "description": "Redacted secret example"
+  },
+  "tool_result": {
+    "exitCode": 0,
+    "stdout": "apiKey=[REDACTED_SECRET]",
+    "stderr": ""
+  }
+}

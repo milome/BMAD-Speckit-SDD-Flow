@@ -1,6 +1,14 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
+/** EN Claude adapters may cite "Cursor Task" inside markdown table rows (Cursor↔Claude executor parity). Strip those lines for platform-isolation checks. */
+function proseWithoutCursorParityTableRows(s: string): string {
+  return s
+    .split(/\r?\n/)
+    .filter((line) => !(line.includes('|') && line.includes('Cursor Task')))
+    .join('\n');
+}
+
 describe('T3: Claude adapted speckit-workflow skill', () => {
   const skillPath = '.claude/skills/speckit-workflow/SKILL.md';
   const refsDir = '.claude/skills/speckit-workflow/references';
@@ -134,9 +142,9 @@ describe('T4: Claude adapted bmad-code-reviewer-lifecycle skill', () => {
 
   it('follows three-layer architecture pattern', () => {
     const content = readFileSync(skillPath, 'utf8');
-    expect(content).toContain('Cursor Canonical Base');
-    expect(content).toContain('Runtime Adapter');
-    expect(content).toContain('Fallback Strategy');
+    expect(content).toMatch(/Cursor\s+[Cc]anonical\s+[Bb]ase/);
+    expect(content).toMatch(/[Rr]untime\s+[Aa]dapter/);
+    expect(content).toMatch(/Fallback\s+[Ss]trategy|Fallback\s+notice/i);
   });
 
   it('maps each stage to correct auditor agent', () => {
@@ -151,7 +159,9 @@ describe('T4: Claude adapted bmad-code-reviewer-lifecycle skill', () => {
 
   it('includes Fallback degradation notification (FR26)', () => {
     const content = readFileSync(skillPath, 'utf8');
-    expect(content).toMatch(/Fallback.*降级|降级.*通知|执行体层级/);
+    expect(content).toMatch(
+      /Fallback.*降级|降级.*通知|执行体层级|Fallback\s+notice|audit\s+executor\s+level|Executor\s+downgrade/i
+    );
   });
 
   it('includes CLI Calling Summary fields (Architecture D2)', () => {
@@ -176,12 +186,12 @@ describe('T4: Claude adapted bmad-code-reviewer-lifecycle skill', () => {
 
   it('preserves lifecycle phases', () => {
     const content = readFileSync(skillPath, 'utf8');
-    expect(content).toContain('Pre-Audit');
-    expect(content).toContain('Audit Execution');
-    expect(content).toContain('Report Generation');
-    expect(content).toContain('Scoring Trigger');
-    expect(content).toContain('Iteration Tracking');
-    expect(content).toContain('Convergence Check');
+    expect(content).toMatch(/Pre-?[Aa]udit/);
+    expect(content).toMatch(/Audit\s+execution/i);
+    expect(content).toMatch(/Report\s+generation/i);
+    expect(content).toMatch(/Scoring\s+trigger/i);
+    expect(content).toMatch(/Iteration\s+tracking/i);
+    expect(content).toMatch(/Convergence\s+check/i);
   });
 
   it('.claude/agents/ references point to .claude/skills/bmad-code-reviewer-lifecycle/ not .cursor/', () => {
@@ -240,9 +250,9 @@ describe('T5: Claude adapted bmad-bug-assistant skill', () => {
 
   it('follows three-layer architecture pattern', () => {
     const content = readFileSync(skillPath, 'utf8');
-    expect(content).toContain('Cursor Canonical Base');
-    expect(content).toContain('Runtime Adapter');
-    expect(content).toContain('Fallback Strategy');
+    expect(content).toMatch(/Cursor\s+[Cc]anonical\s+[Bb]ase/);
+    expect(content).toMatch(/[Rr]untime\s+[Aa]dapter/);
+    expect(content).toMatch(/Fallback\s+[Ss]trategy|Fallback\s+notice/i);
   });
 
   it('maps bugfix auditing to correct auditor agent', () => {
@@ -252,12 +262,16 @@ describe('T5: Claude adapted bmad-bug-assistant skill', () => {
 
   it('includes Fallback degradation notification (FR26)', () => {
     const content = readFileSync(skillPath, 'utf8');
-    expect(content).toMatch(/Fallback.*降级|降级.*通知|执行体层级/);
+    expect(content).toMatch(
+      /Fallback.*降级|降级.*通知|执行体层级|Fallback\s+notice|audit\s+executor\s+level|Executor\s+downgrade/i
+    );
   });
 
   it('preserves FR20a: main Agent cannot edit production code', () => {
     const content = readFileSync(skillPath, 'utf8');
-    expect(content).toMatch(/主\s*Agent\s*禁止.*直接.*生产代码|禁止直接.*改.*生产代码/);
+    expect(content).toMatch(
+      /主\s*Agent\s*禁止.*直接.*生产代码|禁止直接.*改.*生产代码|prohibited\s+from\s+directly\s+modifying\s+the\s+production\s+code|must\s+not\s+edit\s+production\s+code|must\s+not\s+use\s+`search_replace`/i
+    );
   });
 
   it('preserves all 7 prompt template IDs', () => {
@@ -337,9 +351,9 @@ describe('T6: Claude adapted bmad-standalone-tasks skill', () => {
 
   it('follows three-layer architecture pattern', () => {
     const content = readFileSync(skillPath, 'utf8');
-    expect(content).toContain('Cursor Canonical Base');
-    expect(content).toContain('Runtime Adapter');
-    expect(content).toContain('Fallback Strategy');
+    expect(content).toMatch(/Cursor\s+[Cc]anonical\s+[Bb]ase/);
+    expect(content).toMatch(/[Rr]untime\s+[Aa]dapter/);
+    expect(content).toMatch(/Fallback\s+[Ss]trategy|Fallback\s+notice/i);
   });
 
   it('maps to correct auditor agents', () => {
@@ -350,13 +364,15 @@ describe('T6: Claude adapted bmad-standalone-tasks skill', () => {
 
   it('includes Fallback degradation notification (FR26)', () => {
     const content = readFileSync(skillPath, 'utf8');
-    expect(content).toMatch(/Fallback.*降级|降级.*通知|执行体层级/);
+    expect(content).toMatch(
+      /Fallback.*降级|降级.*通知|执行体层级|Fallback\s+notice|audit\s+executor\s+level|Executor\s+downgrade/i
+    );
   });
 
   it('preserves FR20a: main Agent cannot edit production code', () => {
     const content = readFileSync(skillPath, 'utf8');
     expect(content).toMatch(
-      /主\s*Agent\s*禁止.*直接.*生产代码|禁止直接.*改.*生产代码|禁止.*直接编辑生产代码/
+      /主\s*Agent\s*禁止.*直接.*生产代码|禁止直接.*改.*生产代码|禁止.*直接编辑生产代码|must\s+not\s+edit\s+production\s+code|must\s+not\s+use\s+`search_replace`/i
     );
   });
 
@@ -425,7 +441,7 @@ describe('T7: Claude adapted bmad-standalone-tasks-doc-review skill', () => {
   it('contains no Cursor-specific keywords (platform isolation)', () => {
     const content = readFileSync(skillPath, 'utf8');
     expect(content).not.toMatch(/\bmcp_task\b/);
-    expect(content).not.toMatch(/Cursor Task/);
+    expect(proseWithoutCursorParityTableRows(content)).not.toMatch(/Cursor Task/);
     expect(content).not.toMatch(/\.cursor\/rules\//);
   });
 
@@ -442,9 +458,9 @@ describe('T7: Claude adapted bmad-standalone-tasks-doc-review skill', () => {
 
   it('follows three-layer architecture pattern', () => {
     const content = readFileSync(skillPath, 'utf8');
-    expect(content).toContain('Cursor Canonical Base');
-    expect(content).toContain('Runtime Adapter');
-    expect(content).toContain('Fallback Strategy');
+    expect(content).toMatch(/Cursor\s+[Cc]anonical\s+[Bb]ase/);
+    expect(content).toMatch(/[Rr]untime\s+[Aa]dapter/);
+    expect(content).toMatch(/Fallback\s+[Ss]trategy|Fallback\s+notice/i);
   });
 
   it('maps to correct auditor agent', () => {
@@ -454,15 +470,17 @@ describe('T7: Claude adapted bmad-standalone-tasks-doc-review skill', () => {
 
   it('includes Fallback degradation notification (FR26)', () => {
     const content = readFileSync(skillPath, 'utf8');
-    expect(content).toMatch(/Fallback.*降级|降级.*通知|执行体层级/);
+    expect(content).toMatch(
+      /Fallback.*降级|降级.*通知|执行体层级|Fallback\s+notice|audit\s+executor\s+level|Executor\s+downgrade/i
+    );
   });
 
   it('preserves critical auditor >70% and 3-round convergence', () => {
     const content = readFileSync(skillPath, 'utf8');
-    expect(content).toContain('批判审计员');
+    expect(content).toMatch(/批判审计员|批判性审计员|Critical\s+Auditor/i);
     expect(content).toContain('>70%');
-    expect(content).toContain('3 轮无 gap');
-    expect(content).toContain('直接修改被审文档');
+    expect(content).toMatch(/3\s*轮无\s*gap|three\s+consecutive\s+rounds\s+with\s+no\s+new\s+gap|3\s+no-gap/i);
+    expect(content).toMatch(/直接修改被审文档|edit\s+the\s+audited\s+document/i);
   });
 
   it('includes CLI Calling Summary fields (Architecture D2)', () => {
@@ -519,7 +537,7 @@ describe('T8: Claude adapted bmad-rca-helper skill', () => {
   it('contains no Cursor-specific keywords (platform isolation)', () => {
     const content = readFileSync(skillPath, 'utf8');
     expect(content).not.toMatch(/\bmcp_task\b/);
-    expect(content).not.toMatch(/Cursor Task/);
+    expect(proseWithoutCursorParityTableRows(content)).not.toMatch(/Cursor Task/);
     expect(content).not.toMatch(/\.cursor\/rules\//);
   });
 
@@ -536,9 +554,9 @@ describe('T8: Claude adapted bmad-rca-helper skill', () => {
 
   it('follows three-layer architecture pattern', () => {
     const content = readFileSync(skillPath, 'utf8');
-    expect(content).toContain('Cursor Canonical Base');
-    expect(content).toContain('Runtime Adapter');
-    expect(content).toContain('Fallback Strategy');
+    expect(content).toMatch(/Cursor\s+[Cc]anonical\s+[Bb]ase/);
+    expect(content).toMatch(/[Rr]untime\s+[Aa]dapter/);
+    expect(content).toMatch(/Fallback\s+[Ss]trategy|Fallback\s+notice/i);
   });
 
   it('maps audit to correct auditor agent', () => {
@@ -548,20 +566,22 @@ describe('T8: Claude adapted bmad-rca-helper skill', () => {
 
   it('includes Fallback degradation notification (FR26)', () => {
     const content = readFileSync(skillPath, 'utf8');
-    expect(content).toMatch(/Fallback.*降级|降级.*通知|执行体层级/);
+    expect(content).toMatch(
+      /Fallback.*降级|降级.*通知|执行体层级|Fallback\s+notice|audit\s+executor\s+level|Executor\s+downgrade/i
+    );
   });
 
   it('preserves critical auditor >70% and 3-round convergence (FR23a)', () => {
     const content = readFileSync(skillPath, 'utf8');
-    expect(content).toContain('批判审计员');
+    expect(content).toMatch(/批判审计员|批判性审计员|Critical\s+Auditor/i);
     expect(content).toContain('>70%');
-    expect(content).toContain('3 轮无 gap');
-    expect(content).toContain('直接修改被审文档');
+    expect(content).toMatch(/3\s*轮无\s*gap|three\s+consecutive\s+rounds\s+with\s+no\s+new\s+gap|three\s+consecutive\s+no-gap/i);
+    expect(content).toMatch(/直接修改被审文档|edit\s+the\s+audited\s+document/i);
   });
 
   it('preserves Party-Mode 100 round requirement', () => {
     const content = readFileSync(skillPath, 'utf8');
-    expect(content).toMatch(/100\s*轮|至少\s*100\s*轮/);
+    expect(content).toMatch(/100\s*轮|至少\s*100\s*轮|at\s+least\s+100|100\s+rounds/i);
     expect(content).toContain('party-mode');
   });
 
@@ -592,9 +612,9 @@ describe('T8: Claude adapted bmad-rca-helper skill', () => {
 
   it('preserves forbidden words list', () => {
     const content = readFileSync(skillPath, 'utf8');
-    expect(content).toContain('禁止词');
-    expect(content).toContain('可选');
-    expect(content).toContain('酌情');
+    expect(content).toMatch(/禁止词|Forbidden\s+wording/i);
+    expect(content).toMatch(/可选/);
+    expect(content).toMatch(/酌情/);
   });
 });
 

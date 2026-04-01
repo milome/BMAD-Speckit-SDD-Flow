@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/speckit-journey-ledger.json",
+  "title": "Speckit Journey Ledger",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "journeys"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "journeys": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/journey"
+      }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "identifierArray": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/nonEmptyString"
+      },
+      "uniqueItems": true
+    },
+    "journey": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "journeyId",
+        "storyId",
+        "title",
+        "userVisibleGoal",
+        "taskIds",
+        "smokeTests",
+        "smokeCommands",
+        "fullE2E",
+        "closureNote",
+        "fixtureRequirements",
+        "environmentRequirements",
+        "deferredGaps"
+      ],
+      "properties": {
+        "journeyId": { "$ref": "#/$defs/nonEmptyString" },
+        "storyId": { "$ref": "#/$defs/nonEmptyString" },
+        "title": { "$ref": "#/$defs/nonEmptyString" },
+        "userVisibleGoal": { "$ref": "#/$defs/nonEmptyString" },
+        "taskIds": { "$ref": "#/$defs/identifierArray" },
+        "smokeTests": {
+          "$ref": "#/$defs/identifierArray",
+          "minItems": 1
+        },
+        "smokeCommands": {
+          "$ref": "#/$defs/identifierArray",
+          "minItems": 1
+        },
+        "fullE2E": { "$ref": "#/$defs/identifierArray" },
+        "closureNote": { "$ref": "#/$defs/nonEmptyString" },
+        "fixtureRequirements": { "$ref": "#/$defs/identifierArray" },
+        "environmentRequirements": { "$ref": "#/$defs/identifierArray" },
+        "deferredGaps": { "$ref": "#/$defs/identifierArray" }
+      }
+    }
+  }
+}

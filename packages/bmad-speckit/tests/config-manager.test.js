@@ -2,7 +2,7 @@
  * ConfigManager unit tests (Story 10.4 - T1..T4, T6.1)
  * Run: node --test tests/config-manager.test.js
  */
-const { describe, it } = require('node:test');
+const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
@@ -16,6 +16,18 @@ try {
 }
 
 const tmpDir = path.join(os.tmpdir(), `bmad-speckit-cm-${Date.now()}`);
+const isolatedHome = path.join(tmpDir, 'home');
+const originalHomedir = os.homedir;
+
+before(() => {
+  fs.mkdirSync(isolatedHome, { recursive: true });
+  os.homedir = () => isolatedHome;
+});
+
+after(() => {
+  os.homedir = originalHomedir;
+  try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (_) {}
+});
 
 describe('T1.1: getGlobalConfigPath / getProjectConfigPath', () => {
   it('module exists and exports path functions', () => {

@@ -350,7 +350,7 @@ bmad-master 必须在 `tasks_passed` 阶段检测 Story 类型，决定路由到
 
 ```yaml
 detect_story_type:
-  read: "_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{epic}-{story}-{storySlug}/tasks.md"
+  read: "_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/tasks.md"
   detection_criteria:
     code_implementation_story:
       indicators:

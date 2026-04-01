@@ -16,6 +16,7 @@ const exitCodes = require('../constants/exit-codes');
 const AIRegistry = require('../services/ai-registry');
 const { validateBmadStructure } = require('../utils/structure-validate');
 const { getFeedbackHintText } = require('./feedback');
+const { postInitGuideMsg } = require('../messages/cli');
 
 /**
  * Check if directory is non-empty (FR-019): has _bmad, _bmad-output, or other files/subdirs.
@@ -313,8 +314,13 @@ function resolveGenericAiCommandsDir(selectedAI, options, cwd) {
   return null;
 }
 
-/** Story 12.4: Post-init 引导文案（PRD §5.2、§5.13）；init 成功完成后 stdout 输出，init 失败时不输出 */
-const POST_INIT_GUIDE_MSG = 'Init 完成。建议在 AI IDE 中运行 `/bmad-help` 获取下一步指引，或运行 `speckit.constitution` 开始 Spec-Driven Development。';
+/**
+ * Story 12.4: Post-init 引导（PRD §5.2、§5.13）；文案见 messages/cli.js（BMAD_SPECKIT_LOCALE）。
+ * @returns {string} Localized post-init guide text
+ */
+function getPostInitGuideMsg() {
+  return postInitGuideMsg();
+}
 
 /**
  * Story 12.3 §6.2: stdout hint when subagentSupport is none or limited.
@@ -367,7 +373,7 @@ async function runWorktreeFlow(targetPath, options, _log) {
   if (!options.noGit) runGitInit(targetPath);
   for (const aiId of selectedAIs) maybePrintSubagentHint(aiId, targetPath);
   console.log(chalk.green(`\n✓ Initialized (worktree) at ${targetPath} [${selectedAIs.join(', ')}]`));
-  console.log(chalk.gray(POST_INIT_GUIDE_MSG));
+  console.log(chalk.gray(getPostInitGuideMsg()));
   console.log(chalk.gray(getFeedbackHintText()));
 }
 
@@ -437,7 +443,7 @@ async function runNonInteractiveFlow(targetPath, options, log) {
     }
     for (const aiId of selectedAIs) maybePrintSubagentHint(aiId, finalPath);
     console.log(chalk.green(`\n✓ Initialized at ${finalPath} [${selectedAIs.join(', ')}]`));
-    console.log(chalk.gray(POST_INIT_GUIDE_MSG));
+    console.log(chalk.gray(getPostInitGuideMsg()));
     console.log(chalk.gray(getFeedbackHintText()));
   } catch (err) {
     if (err.code === 'OFFLINE_CACHE_MISSING') {
@@ -605,7 +611,7 @@ async function runInteractiveFlow(targetPath, options, log) {
     }
     for (const aiId of selectedAIs) maybePrintSubagentHint(aiId, finalPath);
     console.log(chalk.green(`\n✓ Initialized at ${finalPath} [${selectedAIs.join(', ')}]`));
-    console.log(chalk.gray(POST_INIT_GUIDE_MSG));
+    console.log(chalk.gray(getPostInitGuideMsg()));
     console.log(chalk.gray(getFeedbackHintText()));
   } catch (err) {
     if (err.code === 'OFFLINE_CACHE_MISSING') {

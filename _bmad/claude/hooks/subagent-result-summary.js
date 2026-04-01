@@ -5,6 +5,8 @@
 const fs = require('fs');
 const path = require('path');
 
+const { loadHookMessages, getHooksTimeLocale } = require('./hook-load-messages');
+
 const LINE = '═'.repeat(50);
 
 function readStdin() {
@@ -58,45 +60,44 @@ async function main() {
   const lastMsg = input.last_assistant_message || '';
   const projectDir = input.cwd || process.cwd();
   const now = new Date();
-  const ts = now.toLocaleTimeString('zh-CN', { hour12: false });
+  const ts = now.toLocaleTimeString(getHooksTimeLocale(), { hour12: false });
+  const MSG = loadHookMessages(__dirname);
+  const sr = MSG.subagentResult || {};
 
   const milestoneFile = path.join(projectDir, '.claude', 'state', 'milestones', `${agentId}.jsonl`);
   const milestones = parseMilestones(milestoneFile);
 
-  const parts = [LINE, `Agent 完成  ${ts}`, LINE];
-  parts.push(`类型: ${agentType}`);
+  const parts = [LINE, `${sr.title}  ${ts}`, LINE];
+  parts.push(`${sr.type} ${agentType}`);
 
   if (milestones.length > 0) {
     const startEntry = milestones.find(m => m.event === 'agent_start');
     if (startEntry) {
-      parts.push(`耗时: ${formatDuration(startEntry.ts, now)}`);
+      parts.push(`${sr.duration} ${formatDuration(startEntry.ts, now)}`);
     }
 
     const phaseEntries = milestones.filter(m => m.event !== 'agent_start');
     if (phaseEntries.length > 0) {
-      parts.push('里程碑:');
+      parts.push(sr.milestones);
       phaseEntries.forEach((m, i) => {
-        const mTime = new Date(m.ts).toLocaleTimeString('zh-CN', { hour12: false });
+        const mTime = new Date(m.ts).toLocaleTimeString(getHooksTimeLocale(), { hour12: false });
         const detail = m.detail ? `: ${m.detail}` : '';
         parts.push(`  ${i + 1}. [${mTime}] ${m.event}${detail}`);
       });
     }
   } else {
-    parts.push('里程碑: (子代理未写入里程碑文件)');
+    parts.push(sr.milestonesEmpty);
   }
 
-  parts.push(`结果摘要: ${truncate(lastMsg, 500)}`);
+  parts.push(`${sr.resultSummary} ${truncate(lastMsg, 500)}`);
   parts.push(LINE);
 
   const summary = parts.join('\n');
-  // stderr → displayed to user in terminal (skip if model natively shows agent calls)
   if (process.env.BMAD_HOOKS_QUIET !== '1') {
     process.stderr.write(summary + '\n');
   }
-  // stdout → systemMessage for model context (always active)
   process.stdout.write(JSON.stringify({ systemMessage: summary }));
 
-  // Cleanup milestone file
   try { fs.unlinkSync(milestoneFile); } catch { /* ignore */ }
 }
 

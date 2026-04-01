@@ -17,6 +17,9 @@
       <action>Use {{story_path}} directly</action>
       <action>Read COMPLETE story file</action>
       <action>Extract story_key from filename or metadata</action>
+      <action>MANDATORY: Generate run context for dev_story lifecycle.</action>
+      <action>Execute: npx bmad-speckit ensure-run-runtime-context --story-key {{story_key}} --lifecycle dev_story</action>
+      <action>Confirm _bmad-output/runtime/last-dev-story-run.json exists and contains runId</action>
       <goto anchor="task_check" />
     </check>
 
@@ -343,6 +346,8 @@
       <action>Verify current status is "in-progress" (expected previous state)</action>
       <action>Update development_status[{{story_key}}] = "review"</action>
       <action>Save file, preserving ALL comments and structure including STATUS DEFINITIONS</action>
+      <action>MANDATORY: Persist run context to registry after sprint-status write.</action>
+      <action>Execute: npx bmad-speckit ensure-run-runtime-context --story-key {{story_key}} --lifecycle dev_story --persist</action>
       <output>✅ Story status updated to "review" in sprint-status.yaml</output>
     </check>
 

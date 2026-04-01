@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RuntimeEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "event_type",
+    "event_version",
+    "timestamp",
+    "run_id",
+    "payload"
+  ],
+  "properties": {
+    "event_id": { "type": "string", "minLength": 1 },
+    "event_type": { "type": "string", "minLength": 1 },
+    "event_version": { "type": "integer", "minimum": 1 },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "run_id": { "type": "string", "minLength": 1 },
+    "flow": { "type": ["string", "null"], "minLength": 1 },
+    "stage": { "type": ["string", "null"], "minLength": 1 },
+    "scope": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/definitions/runtimeScopeRef" }
+      ]
+    },
+    "payload": {
+      "type": "object"
+    },
+    "source": {
+      "$ref": "#/definitions/runtimeEventSourceRef"
+    }
+  },
+  "definitions": {
+    "runtimeScopeRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "story_key": { "type": "string", "minLength": 1 },
+        "epic_id": { "type": "string", "minLength": 1 },
+        "story_id": { "type": "string", "minLength": 1 },
+        "flow": { "type": "string", "minLength": 1 },
+        "template_id": { "type": "string", "minLength": 1 },
+        "artifact_root": { "type": "string", "minLength": 1 },
+        "resolved_context_path": { "type": "string", "minLength": 1 }
+      }
+    },
+    "runtimeEventSourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_path": { "type": "string", "minLength": 1 },
+        "base_commit_hash": { "type": "string", "minLength": 1 },
+        "content_hash": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

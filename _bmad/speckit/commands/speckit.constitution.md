@@ -1,6 +1,6 @@
 ---
-description: Create or update the project constitution from interactive or provided principle inputs, ensuring all dependent templates stay in sync.
-handoffs: 
+description: Create or update the project constitution from repository governance policy, risk-tier rules, and journey-first process principles.
+handoffs:
   - label: Build Specification
     agent: speckit.specify
     prompt: Implement the feature specification based on the updated constitution. I want to build...
@@ -14,69 +14,124 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
-## Outline
+## Purpose
 
-You are updating the project constitution at `.specify/memory/constitution.md`. This file is a TEMPLATE containing placeholder tokens in square brackets (e.g. `[PROJECT_NAME]`, `[PRINCIPLE_1_NAME]`). Your job is to (a) collect/derive concrete values, (b) fill the template precisely, and (c) propagate any amendments across dependent artifacts.
+You are creating or updating the project constitution at `.specify/memory/constitution.md`.
 
-Follow this execution flow:
+In this repository, the constitution is **not** a generic manifesto. It is the top-level governance contract
+that anchors:
 
-1. Load the existing constitution template at `.specify/memory/constitution.md`.
-   - Identify every placeholder token of the form `[ALL_CAPS_IDENTIFIER]`.
-   **IMPORTANT**: The user might require less or more principles than the ones used in the template. If a number is specified, respect that - follow the general template. You will update the doc accordingly.
+- risk tier policy
+- owner model
+- stage done standards
+- exception policy
+- the rule that `P0 journey runnable` is the primary flow objective
 
-2. Collect/derive values for placeholders:
-   - If user input (conversation) supplies a value, use it.
-   - Otherwise infer from existing repo context (README, docs, prior constitution versions if embedded).
-   - For governance dates: `RATIFICATION_DATE` is the original adoption date (if unknown ask or mark TODO), `LAST_AMENDED_DATE` is today if changes are made, otherwise keep previous.
-   - `CONSTITUTION_VERSION` must increment according to semantic versioning rules:
-     - MAJOR: Backward incompatible governance/principle removals or redefinitions.
-     - MINOR: New principle/section added or materially expanded guidance.
-     - PATCH: Clarifications, wording, typo fixes, non-semantic refinements.
-   - If version bump type ambiguous, propose reasoning before finalizing.
+The constitution output must be rooted in `_bmad/_config/speckit-governance.yaml`, not invented from scratch.
 
-3. Draft the updated constitution content:
-   - Replace every placeholder with concrete text (no bracketed tokens left except intentionally retained template slots that the project has chosen not to define yet—explicitly justify any left).
-   - Preserve heading hierarchy and comments can be removed once replaced unless they still add clarifying guidance.
-   - Ensure each Principle section: succinct name line, paragraph (or bullet list) capturing non‑negotiable rules, explicit rationale if not obvious.
-   - Ensure Governance section lists amendment procedure, versioning policy, and compliance review expectations.
+## Mandatory Inputs
 
-4. Consistency propagation checklist (convert prior checklist into active validations):
-   - Read `.specify/templates/plan-template.md` and ensure any "Constitution Check" or rules align with updated principles.
-   - Read `.specify/templates/spec-template.md` for scope/requirements alignment—update if constitution adds/removes mandatory sections or constraints.
-   - Read `.specify/templates/tasks-template.md` and ensure task categorization reflects new or removed principle-driven task types (e.g., observability, versioning, testing discipline).
-   - Read each command file in `.specify/templates/commands/*.md` (including this one) to verify no outdated references (agent-specific names like CLAUDE only) remain when generic guidance is required.
-   - Read any runtime guidance docs (e.g., `README.md`, `docs/quickstart.md`, or agent-specific guidance files if present). Update references to principles changed.
+Load these files before drafting:
 
-5. Produce a Sync Impact Report (prepend as an HTML comment at top of the constitution file after update):
-   - Version change: old → new
-   - List of modified principles (old title → new title if renamed)
-   - Added sections
-   - Removed sections
-   - Templates requiring updates (✅ updated / ⚠ pending) with file paths
-   - Follow-up TODOs if any placeholders intentionally deferred.
+1. `_bmad/_config/speckit-governance.yaml`
+2. `.specify/memory/constitution.md` if it exists; otherwise use `_bmad/speckit/templates/memory/constitution.md`
+3. `_bmad/speckit/templates/plan-template.md`
+4. `_bmad/speckit/templates/spec-template.md`
+5. `_bmad/speckit/templates/tasks-template.md`
+6. `_bmad/cursor/skills/speckit-workflow/references/omissions-pattern-library.md`
+   - Fallback: `_bmad/claude/skills/speckit-workflow/references/omissions-pattern-library.md`
 
-6. Validation before final output:
-   - No remaining unexplained bracket tokens.
-   - Version line matches report.
-   - Dates ISO format YYYY-MM-DD.
-   - Principles are declarative, testable, and free of vague language ("should" → replace with MUST/SHOULD rationale where appropriate).
+If `_bmad/_config/speckit-governance.yaml` is missing or cannot be parsed, stop and report the blocker.
 
-7. Write the completed constitution back to `.specify/memory/constitution.md` (overwrite).
+## Required Execution Flow
 
-8. Output a final summary to the user with:
-   - New version and bump rationale.
-   - Any files flagged for manual follow-up.
-   - Suggested commit message (e.g., `docs: amend constitution to vX.Y.Z (principle additions + governance update)`).
+1. **Load the governance source**
+   - Parse `_bmad/_config/speckit-governance.yaml`.
+   - Extract the default risk tier, risk tier matrix, owner model, stage done standards, exception policy, and health metric keys.
 
-Formatting & Style Requirements:
+2. **Load the constitution base**
+   - If `.specify/memory/constitution.md` exists, update it in place.
+   - If it does not exist, initialize from `_bmad/speckit/templates/memory/constitution.md`.
+   - Preserve valid repo-specific technical constraints that are still applicable.
+   - Remove or rewrite stale principles that conflict with the governance YAML.
 
-- Use Markdown headings exactly as in the template (do not demote/promote levels).
-- Wrap long rationale lines to keep readability (<100 chars ideally) but do not hard enforce with awkward breaks.
-- Keep a single blank line between sections.
-- Avoid trailing whitespace.
+3. **Determine the active governance framing**
+   - If the user explicitly requests a risk tier or governance change, honor it.
+   - Otherwise use the default tier from `_bmad/_config/speckit-governance.yaml`.
+   - If the current constitution already names a stricter tier, keep the stricter rule unless the user explicitly downgrades it.
 
-If the user supplies partial updates (e.g., only one principle revision), still perform validation and version decision steps.
+4. **Rewrite the constitution around non-negotiable process principles**
+   - The constitution MUST explicitly state these principles, even if repo-specific principles are also present:
+     - `P0 journey runnable` is the primary flow objective.
+     - Deep interview is evidence capture, not longer discussion for its own sake.
+     - Architecture is key-path plus testability design.
+     - Readiness is a blocker gate, not an approval ceremony.
+     - Tasks are runnable slices, not module work queues.
+     - Silent assumptions and silent scope growth are prohibited.
+   - Prefer declarative, testable language: `MUST`, `MUST NOT`, `SHOULD`, `PROHIBITED`.
+   - Do not leave generic placeholder values or vague wording such as "best practice", "reasonable", or "as needed" without a hard condition.
 
-If critical info missing (e.g., ratification date truly unknown), insert `TODO(<FIELD_NAME>): explanation` and include in the Sync Impact Report under deferred items.
+5. **Required governance sections**
+   - The updated constitution MUST contain sections or explicit subsections covering:
+     - Risk Tier Policy
+     - Owner Model
+     - Stage Done Standards
+     - Exception Policy
+     - Amendment Process
+     - Compliance Review
+   - If `docs/reference/speckit-governance.md` or `docs/reference/speckit-done-standards.md` do not yet exist, inline a concise summary sourced from the YAML instead of inventing broken references.
 
-Do not create a new template; always operate on the existing `.specify/memory/constitution.md` file.
+6. **Template consistency propagation**
+   - Review `_bmad/speckit/templates/plan-template.md` and make sure the Constitution Check can align with the new governance model.
+   - Review `_bmad/speckit/templates/spec-template.md` and ensure it does not silently omit completion states, failure paths, or owner/permission boundaries now mandated by the constitution.
+   - Review `_bmad/speckit/templates/tasks-template.md` and ensure it can support runnable slices, evidence types, verification commands, and closure-oriented work.
+   - Do not silently claim templates are aligned when they are not. If you are not updating them in the same run, list them as follow-up impact items.
+
+7. **Sync Impact Report**
+   - Prepend an HTML comment block at the top of `.specify/memory/constitution.md` containing:
+     - version change: old -> new
+     - active/default risk tier
+     - modified principles
+     - added governance sections
+     - removed or superseded sections
+     - downstream templates reviewed
+     - follow-up items still pending
+
+8. **Validation before write-back**
+   - No unexplained bracket placeholders remain.
+   - Dates use `YYYY-MM-DD`.
+   - Version bump rationale matches the actual change scope.
+   - The constitution explicitly mentions:
+     - risk tier
+     - owner model
+     - done standard
+     - exception policy
+     - silent assumption
+     - silent scope growth
+
+9. **Write-back**
+   - Overwrite `.specify/memory/constitution.md` with the final content.
+
+10. **Final output**
+   - Report:
+     - new version
+     - bump rationale
+     - chosen/default risk tier
+     - files reviewed for propagation
+     - any follow-up files still pending
+   - Suggest a commit message.
+
+## Versioning Rules
+
+- **MAJOR**: backward-incompatible governance change, principle removal, or redefinition of what blocks flow progression
+- **MINOR**: new governance section, new principle, or material expansion of policy surface
+- **PATCH**: wording clarification, typo fix, or non-semantic tightening
+
+If version bump type is ambiguous, explain the reasoning before finalizing.
+
+## Non-Negotiable Constraints
+
+- Do **not** draft a generic constitution disconnected from `_bmad/_config/speckit-governance.yaml`.
+- Do **not** weaken the governance language into optional suggestions.
+- Do **not** erase repo-specific technical rules unless they are clearly obsolete or in direct conflict with the new governance model.
+- Do **not** leave deferred-placeholder phrasing or any similar silent-assumption wording in the final constitution.

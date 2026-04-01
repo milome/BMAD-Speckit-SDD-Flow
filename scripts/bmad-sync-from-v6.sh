@@ -2,14 +2,30 @@
 # Sync BMAD-METHOD to _bmad (WSL/Linux/macOS)
 # 与 scripts/bmad-sync-from-v6.ps1 功能对等
 #
-# Usage: ./scripts/bmad-sync-from-v6.sh [-Phase 1|2|3|all] [-DryRun] [-BackupDir <path>] [-ProjectRoot <path>] [-V6Ref main]
+# Usage: ./scripts/bmad-sync-from-v6.sh [-Phase 1|2|3|all] [-DryRun] [-BackupDir <path>] [-ProjectRoot <path>] [-V6Ref 21c2a48]
+# Default V6Ref=21c2a48: pre-#2050 layout (src/core, src/bmm, src/utility). Use 'main' for current v6 (requires layout migration).
 
 set -e
 
+# 排除项清单见 docs/explanation/upstream-relationship.md §4.1
+# 需定期与上游 merge 的项见 §4.2（临时移除排除→合并→恢复排除）
 BMAD_METHOD_REPO="https://github.com/bmad-code-org/BMAD-METHOD.git"
-V6_REF="${V6_REF:-main}"
+V6_REF="${V6_REF:-21c2a48}"
 
 EXCLUDE_PATTERNS=(
+    "_bmad/_config/eval-lifecycle-report-paths.yaml"
+    "_bmad/_config/bmad-help.csv"
+    "_bmad/_config/skill-command-mapping.yaml"
+    "_bmad/cursor/skills/bmad-story-assistant"
+    "_bmad/bmm/module-help.csv"
+    "_bmad/bmm/workflows/4-implementation/bmad-code-review"
+    "_bmad/bmm/workflows/4-implementation/create-story"
+    "_bmad/bmm/workflows/bmad-quick-flow/bmad-quick-dev-new-preview"
+    "_bmad/core/tasks/help.md"
+    "_bmad/skills/bmad-help"
+    "_bmad/commands/bmad-agent-bmm-tech-writer.md"
+    "_bmad/commands/bmad-bmm-create-story.md"
+    "_bmad/commands/bmad-sft-extract.md"
     "_bmad/scoring"
     "_bmad/core/agents/adversarial-reviewer.md"
     "_bmad/core/agents/critical-auditor-guide.md"
@@ -25,6 +41,19 @@ EXCLUDE_PATTERNS=(
 )
 
 BACKUP_ITEMS=(
+    "_bmad/_config/eval-lifecycle-report-paths.yaml:eval-lifecycle-report-paths.yaml"
+    "_bmad/_config/bmad-help.csv:bmad-help.csv"
+    "_bmad/_config/skill-command-mapping.yaml:skill-command-mapping.yaml"
+    "_bmad/cursor/skills/bmad-story-assistant:bmad-story-assistant-skill"
+    "_bmad/bmm/module-help.csv:bmm-module-help.csv"
+    "_bmad/bmm/workflows/4-implementation/bmad-code-review:bmad-code-review-workflow"
+    "_bmad/bmm/workflows/4-implementation/create-story:create-story-workflow"
+    "_bmad/bmm/workflows/bmad-quick-flow/bmad-quick-dev-new-preview:bmad-quick-dev-new-preview"
+    "_bmad/core/tasks/help.md:core-tasks-help.md"
+    "_bmad/skills/bmad-help:bmad-help-skill"
+    "_bmad/commands/bmad-agent-bmm-tech-writer.md:bmad-agent-bmm-tech-writer.md"
+    "_bmad/commands/bmad-bmm-create-story.md:bmad-bmm-create-story.md"
+    "_bmad/commands/bmad-sft-extract.md:bmad-sft-extract.md"
     "_bmad/scoring:_bmad_scoring"
     "_bmad/core/agents/adversarial-reviewer.md:adversarial-reviewer.md"
     "_bmad/core/agents/critical-auditor-guide.md:critical-auditor-guide.md"
@@ -79,7 +108,16 @@ test_excluded() {
 fetch_v6() {
     local tmp
     tmp="$(mktemp -d)"
-    ( cd "$tmp" && git clone --depth 1 --branch "$V6_REF" "$BMAD_METHOD_REPO" . )
+    if [[ "$V6_REF" =~ ^[0-9a-f]{7,40}$ ]]; then
+        # Commit SHA: clone main with depth, then checkout
+        ( cd "$tmp" && git clone --depth 300 --branch main "$BMAD_METHOD_REPO" . && git checkout "$V6_REF" ) || {
+            echo "git clone/checkout failed for V6Ref=$V6_REF"; rm -rf "$tmp"; exit 1;
+        }
+    else
+        ( cd "$tmp" && git clone --depth 1 --branch "$V6_REF" "$BMAD_METHOD_REPO" . ) || {
+            echo "git clone failed for V6Ref=$V6_REF"; rm -rf "$tmp"; exit 1;
+        }
+    fi
     [[ -d "$tmp/src" ]] || { echo "v6 source layout changed: src/ not found."; rm -rf "$tmp"; exit 1; }
     echo "$tmp"
 }

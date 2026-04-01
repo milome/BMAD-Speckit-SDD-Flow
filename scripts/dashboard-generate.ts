@@ -3,7 +3,7 @@
  *
  * 用途：聚合 scoring 数据，计算健康分数、短板 Top3、高迭代 Top3，输出 _bmad-output/dashboard.md。
  *
- * CLI 参数：--strategy (epic_story_window|run_id), --dataPath, --epic, --story, --windowHours
+ * CLI 参数：--strategy (epic_story_window|run_id), --dataPath, --epic, --story, --windowHours, --output (默认 _bmad-output/dashboard.md)
  *
  * 示例：npx ts-node scripts/dashboard-generate.ts --epic 2
  *
@@ -24,10 +24,18 @@ import {
   getWeakTop3,
   getWeakTop3EpicStory,
   getHighIterationTop3,
+  getJourneyContractSummary,
+  getGovernanceRoutingSummary,
+  getGovernanceRoutingModeDistribution,
+  getGovernanceSignalHotspots,
+  getGovernanceRerunGateFailureTrend,
   countVetoTriggers,
   getTrend,
   aggregateByEpicOnly,
+  aggregateByEpicStoryTimeWindow,
   formatDashboardMarkdown,
+  queryRuntimeDashboard,
+  writeDashboardSnapshotFiles,
 } from '../packages/scoring/dashboard';
 
 const EMPTY_DATA_MESSAGE = '暂无数据，请先完成至少一轮 Dev Story';
@@ -35,17 +43,42 @@ const INSUFFICIENT_RUN_MESSAGE = '数据不足，暂无完整 run（至少 2 sta
 const EPIC_NO_COMPLETE_STORY_MESSAGE = (epicId: number) =>
   `Epic ${epicId} 下无完整 Story，暂无聚合数据`;
 const OUTPUT_PATH = '_bmad-output/dashboard.md';
+const OUTPUT_JSON_PATH = '_bmad-output/dashboard/runtime-dashboard.json';
+
+function resolveScopedAnalyticsRecords(
+  records: ReturnType<typeof loadAndDedupeRecords>,
+  strategy: 'epic_story_window' | 'run_id',
+  epic: number | undefined,
+  story: number | undefined,
+  windowHours: number
+) {
+  if (strategy !== 'epic_story_window') {
+    return records;
+  }
+
+  if (epic != null && !isNaN(epic) && story != null && !isNaN(story)) {
+    return aggregateByEpicStoryTimeWindow(records, epic, story, windowHours);
+  }
+
+  if (epic != null && !isNaN(epic)) {
+    return aggregateByEpicOnly(records, epic, windowHours);
+  }
+
+  return records;
+}
 
 function parseArgs(): Record<string, string> {
   const args: Record<string, string> = {};
   for (let i = 2; i < process.argv.length; i++) {
     const arg = process.argv[i];
-    if (arg.startsWith('--') && i + 1 < process.argv.length) {
+    if (arg.startsWith('--')) {
       const key = arg.slice(2);
       const val = process.argv[i + 1];
-      if (!val.startsWith('--')) {
+      if (val != null && !val.startsWith('--')) {
         args[key] = val;
         i++;
+      } else {
+        args[key] = 'true';
       }
     }
   }
@@ -70,16 +103,17 @@ function main(): void {
     (r) => r.scenario !== 'eval_question'
   );
 
-  const outDir = path.resolve(process.cwd(), path.dirname(OUTPUT_PATH));
+  const outputArg = args.output;
+  const outputRel = outputArg != null && outputArg !== '' ? outputArg : OUTPUT_PATH;
+  const outDir = path.resolve(process.cwd(), path.dirname(outputRel));
   ensureDir(outDir);
-  const outFile = path.resolve(process.cwd(), OUTPUT_PATH);
-
-  if (records.length === 0) {
-    const content = EMPTY_DATA_MESSAGE + '\n';
-    fs.writeFileSync(outFile, content, 'utf-8');
-    console.log(EMPTY_DATA_MESSAGE);
-    return;
-  }
+  const outFile = path.resolve(process.cwd(), outputRel);
+  const outputJsonArg = args['output-json'];
+  const outputJsonRel =
+    outputJsonArg != null && outputJsonArg !== '' ? outputJsonArg : OUTPUT_JSON_PATH;
+  const outJsonFile = path.resolve(process.cwd(), outputJsonRel);
+  const printJson = args.json === 'true';
+  const includeRuntime = args['include-runtime'] === 'true';
 
   const epicRaw = args.epic;
   const storyRaw = args.story;
@@ -91,6 +125,37 @@ function main(): void {
     epic != null &&
     !isNaN(epic) &&
     (story == null || isNaN(story));
+  const analyticsRecords = resolveScopedAnalyticsRecords(
+    records,
+    strategy,
+    epic != null && !isNaN(epic) ? epic : undefined,
+    story != null && !isNaN(story) ? story : undefined,
+    windowHours
+  );
+
+  const snapshot = queryRuntimeDashboard({
+    root: process.cwd(),
+    dataPath,
+    strategy,
+    epic: epic != null && !isNaN(epic) ? epic : undefined,
+    story: story != null && !isNaN(story) ? story : undefined,
+    windowHours,
+  });
+
+  function writeArtifacts(markdown: string): void {
+    const written = writeDashboardSnapshotFiles(snapshot, {
+      markdownPath: outFile,
+      jsonPath: outJsonFile,
+      markdown,
+      includeRuntime,
+    });
+    console.log(printJson ? written.json.trimEnd() : written.markdown.trimEnd());
+  }
+
+  if (records.length === 0) {
+    writeArtifacts(EMPTY_DATA_MESSAGE);
+    return;
+  }
 
   const latestRecords =
     strategy === 'epic_story_window'
@@ -104,9 +169,7 @@ function main(): void {
 
   if (latestRecords.length === 0) {
     const msg = isEpicOnly && epic != null ? EPIC_NO_COMPLETE_STORY_MESSAGE(epic) : INSUFFICIENT_RUN_MESSAGE;
-    const content = msg + '\n';
-    fs.writeFileSync(outFile, content, 'utf-8');
-    console.log(msg);
+    writeArtifacts(msg);
     return;
   }
 
@@ -117,8 +180,15 @@ function main(): void {
       ? getWeakTop3EpicStory(latestRecords)
       : getWeakTop3(latestRecords);
   const highIterTop3 = getHighIterationTop3(latestRecords);
+  const journeyContractSummary = getJourneyContractSummary(latestRecords);
   const vetoCount = countVetoTriggers(latestRecords);
   const trend = getTrend(records);
+  const governanceRoutingSummary = getGovernanceRoutingSummary(analyticsRecords);
+  const governanceRoutingModeDistribution =
+    getGovernanceRoutingModeDistribution(analyticsRecords);
+  const governanceSignalHotspots = getGovernanceSignalHotspots(analyticsRecords);
+  const governanceGateFailureTrend =
+    getGovernanceRerunGateFailureTrend(analyticsRecords);
 
   let formatOpts: { viewMode?: 'epic_aggregate'; epicId?: number; storyIds?: number[]; excludedStories?: string[] } | undefined;
   if (isEpicOnly && epic != null) {
@@ -153,12 +223,23 @@ function main(): void {
   }
 
   const markdown = formatDashboardMarkdown(
-    { healthScore, dimensions, weakTop3, highIterTop3, vetoCount, trend },
+    {
+      healthScore,
+      dimensions,
+      weakTop3,
+      highIterTop3,
+      journeyContractSummary,
+      governanceRoutingSummary,
+      governanceRoutingModeDistribution,
+      governanceSignalHotspots,
+      governanceGateFailureTrend,
+      vetoCount,
+      trend,
+    },
     formatOpts
   );
 
-  fs.writeFileSync(outFile, markdown, 'utf-8');
-  console.log(markdown);
+  writeArtifacts(markdown);
 }
 
 main();

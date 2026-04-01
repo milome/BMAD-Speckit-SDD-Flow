@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "flow": "story",
+  "stage": "implement",
+  "storyId": "14.1",
+  "storySlug": "runtimegovanceValidator",
+  "runId": "parity-run-001",
+  "artifactRoot": "_bmad-output/implementation-artifacts/epic-14-runtimegovanceValidator/story-14-1-runtimegovanceValidator",
+  "contextScope": "story",
+  "updatedAt": "2026-03-21T00:00:00.000Z"
+}

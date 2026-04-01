@@ -15,4 +15,16 @@ describe('claude runtime isolation', () => {
     expect(script).toContain('cmd.exe');
     expect(script).toContain('/d /s /c');
   });
+
+  it('routes speckit CLI stages through top-level Claude aliases', () => {
+    const script = readFileSync('scripts/speckit-cli.ts', 'utf8');
+    expect(script).toContain("agentFile: '.claude/agents/speckit-specify.md'");
+    expect(script).toContain("agentFile: '.claude/agents/speckit-plan.md'");
+    expect(script).toContain("agentFile: '.claude/agents/speckit-gaps.md'");
+    expect(script).toContain("agentFile: '.claude/agents/speckit-tasks.md'");
+    expect(script).toContain("'speckit-specify.md'");
+    expect(script).toContain("'speckit-plan.md'");
+    expect(script).toContain("'speckit-gaps.md'");
+    expect(script).toContain("'speckit-tasks.md'");
+  });
 });

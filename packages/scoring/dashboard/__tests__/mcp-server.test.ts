@@ -1,0 +1,134 @@
+import { describe, expect, it, vi } from 'vitest';
+import * as runtimeQuery from '../runtime-query';
+import { invokeRuntimeMcpTool } from '../mcp-server';
+
+describe('runtime dashboard MCP server', () => {
+  it('includes redaction summary in preview_sft and export_sft tool responses', async () => {
+    vi.spyOn(runtimeQuery, 'queryRuntimeDashboard').mockReturnValue({
+      generated_at: '2026-03-28T00:00:00.000Z',
+      selection: {
+        run_id: 'run-e15-s1-001',
+        source: 'runtime',
+        has_runtime: true,
+        has_scores: true,
+      },
+      overview: {
+        status: 'running',
+        health_score: 91,
+        trend: '升',
+        veto_count: 0,
+        dimensions: [],
+        weak_top3: [],
+        high_iteration_top3: [],
+        score_record_count: 1,
+        last_updated_at: '2026-03-28T00:05:00.000Z',
+      },
+      runtime_context: {
+        run_id: 'run-e15-s1-001',
+        status: 'running',
+        current_stage: 'implement',
+        flow: 'story',
+        scope: null,
+        last_event_at: '2026-03-28T00:05:00.000Z',
+      },
+      stage_timeline: [],
+      score_detail: {
+        run_id: 'run-e15-s1-001',
+        records: [],
+      },
+      sft_summary: {
+        total_candidates: 3,
+        accepted: 2,
+        rejected: 1,
+        downgraded: 0,
+        by_split: {
+          train: 1,
+          validation: 1,
+          test: 1,
+          holdout: 0,
+        },
+        target_availability: {
+          openai_chat: { compatible: 2, incompatible: 1 },
+          hf_conversational: { compatible: 1, incompatible: 2 },
+          hf_tool_calling: { compatible: 1, incompatible: 2 },
+        },
+        rejection_reasons: [
+          { reason: 'redaction_blocked', count: 1 },
+        ],
+        redaction_status_counts: {
+          clean: 1,
+          redacted: 1,
+          blocked: 1,
+        },
+        redaction_applied_rules: [
+          { rule: 'secret-token', count: 1 },
+          { rule: 'private-key', count: 1 },
+        ],
+        redaction_finding_kinds: [
+          { kind: 'secret_token', count: 1 },
+          { kind: 'private_key', count: 1 },
+        ],
+        redaction_preview: [
+          {
+            sample_id: 'sample-runtime-query-002',
+            run_id: 'run-e15-s1-001',
+            split: 'validation',
+            status: 'redacted',
+            applied_rules: ['secret-token'],
+            finding_kinds: ['secret_token'],
+            rejection_reasons: [],
+          },
+          {
+            sample_id: 'sample-runtime-query-003',
+            run_id: 'run-e15-s1-001',
+            split: 'test',
+            status: 'blocked',
+            applied_rules: ['private-key'],
+            finding_kinds: ['private_key'],
+            rejection_reasons: ['redaction_blocked', 'secret_detected_unresolved'],
+          },
+        ],
+        last_bundle: null,
+      },
+    });
+
+    const preview = await invokeRuntimeMcpTool('preview_sft', undefined, 'http://127.0.0.1:43123', {});
+    const exportResult = await invokeRuntimeMcpTool(
+      'export_sft',
+      { target: 'hf_tool_calling' },
+      'http://127.0.0.1:43123',
+      {}
+    );
+
+    expect(preview.structuredContent).toMatchObject({
+      redaction_status_counts: {
+        clean: 1,
+        redacted: 1,
+        blocked: 1,
+      },
+      redaction_preview: expect.arrayContaining([
+        expect.objectContaining({
+          sample_id: 'sample-runtime-query-003',
+          status: 'blocked',
+        }),
+      ]),
+    });
+    expect(exportResult.structuredContent).toMatchObject({
+      target: 'hf_tool_calling',
+      redaction_status_counts: {
+        clean: 1,
+        redacted: 1,
+        blocked: 1,
+      },
+      redaction_finding_kinds: expect.arrayContaining([
+        expect.objectContaining({ kind: 'private_key', count: 1 }),
+      ]),
+      redaction_preview: expect.arrayContaining([
+        expect.objectContaining({
+          sample_id: 'sample-runtime-query-002',
+          status: 'redacted',
+        }),
+      ]),
+    });
+  });
+});

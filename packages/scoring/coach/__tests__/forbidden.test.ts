@@ -22,5 +22,12 @@ describe('forbidden words validation', () => {
     expect(out.warnings).toContain('可选');
     expect(out.warnings).toContain('视情况');
   });
+
+  it('warns on English ambiguous terms (TB.5 scheme 2)', () => {
+    const words = loadForbiddenWords();
+    const out = validateForbiddenWords('We can do TBD later, maybe optional.', words);
+    expect(out.passed).toBe(true);
+    expect(out.warnings.length).toBeGreaterThan(0);
+  });
 });
 

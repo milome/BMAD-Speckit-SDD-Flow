@@ -108,13 +108,24 @@ Try to discover the following:
 - index.md is a guide to what's relevant whenever available
 - Track all successfully loaded files in frontmatter `inputDocuments` array
 
-#### B. Create Initial Document
+#### B. Stage 0 Context Gate
+
+Before creating the initial document, synthesize a brief-stage pre-read pack with these exact sections:
+
+- `Context Digest`
+- `Research Digest`
+- `Known Unknowns`
+- `Contradiction Log`
+
+If the pre-read pack reveals blocker-level ambiguity that would make the next step speculative, emit a local `GateFailure`, prepare a `RemediationPlan`, identify the owning reviewer, and stop for remediation before proceeding.
+
+#### C. Create Initial Document
 
 **Document Setup:**
 
 - Copy the template from `{productBriefTemplate}` to `{outputFile}`, and update the frontmatter fields
 
-#### C. Present Initialization Results
+#### D. Present Initialization Results
 
 **Setup Report to User:**
 "Welcome {{user_name}}! I've set up your product brief workspace for {{project_name}}.

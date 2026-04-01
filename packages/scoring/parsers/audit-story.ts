@@ -8,7 +8,7 @@ import * as path from 'path';
 import type { RunScoreRecord, CheckItem } from '../writer/types';
 import { PHASE_WEIGHTS } from '../constants/weights';
 import { ReportFileNotFoundError, ParseError } from './audit-prd';
-import { extractOverallGrade } from './audit-generic';
+import { extractOverallGrade, normalizeSeverityDelta } from './audit-generic';
 import { llmStructuredExtract, mapLlmResultToCheckItems } from './llm-fallback';
 import { resolveItemId, resolveEmptyItemId } from './audit-item-mapping';
 
@@ -85,7 +85,9 @@ export async function parseStoryReport(input: ParseStoryReportInput): Promise<Ru
 
 function extractCheckItemsFromStory(content: string): CheckItem[] {
   const items: CheckItem[] = [];
-  const problemSection = content.match(/问题清单:\s*([\s\S]*?)(?=通过标准:|下一步行动:|$)/i);
+  const problemSection = content.match(
+    /(?:问题清单|Issue List|Problem List):\s*([\s\S]*?)(?=通过标准:|下一步行动:|Pass Criteria:|Next Actions:|$)/i
+  );
   if (!problemSection) {
     items.push({
       item_id: resolveEmptyItemId('story', 'overall', 'story-overall'),
@@ -108,11 +110,11 @@ function extractCheckItemsFromStory(content: string): CheckItem[] {
   const lines = text.split(/\n/).filter(Boolean);
   let idx = 0;
   for (const line of lines) {
-    const m = line.match(/^\d+\.\s*\[严重程度:([^\]]+)\]\s*(.+)/);
+    const m = line.match(/^\d+\.\s*\[(?:严重程度|Severity):([^\]]+)\]\s*(.+)/);
     if (m) {
       const severity = m[1].trim();
       const desc = m[2].trim();
-      const scoreDelta = severity === '高' ? -10 : severity === '中' ? -5 : -2;
+      const scoreDelta = normalizeSeverityDelta(severity);
       const fallbackId = `story-issue-${++idx}`;
       items.push({
         item_id: resolveItemId('story', desc, fallbackId),
