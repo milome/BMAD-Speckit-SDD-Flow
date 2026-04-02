@@ -89,7 +89,28 @@ describe('runtime dashboard MCP server', () => {
             rejection_reasons: ['redaction_blocked', 'secret_detected_unresolved'],
           },
         ],
-        last_bundle: null,
+        last_bundle: {
+          bundle_id: 'openai_chat-story-runtime-query',
+          export_target: 'openai_chat',
+          created_at: '2026-03-28T00:10:00.000Z',
+          bundle_dir: '_bmad-output/datasets/openai_chat-story-runtime-query',
+          manifest_path: '_bmad-output/datasets/openai_chat-story-runtime-query/manifest.json',
+          source_scope: {
+            scope_type: 'story',
+            epic_id: 'epic-15',
+            story_key: '15-1-runtime-dashboard-sft',
+          },
+        },
+        global_last_bundle: {
+          bundle_id: 'openai_chat-global-runtime-query',
+          export_target: 'openai_chat',
+          created_at: '2026-03-28T00:12:00.000Z',
+          bundle_dir: '_bmad-output/datasets/openai_chat-global-runtime-query',
+          manifest_path: '_bmad-output/datasets/openai_chat-global-runtime-query/manifest.json',
+          source_scope: {
+            scope_type: 'global',
+          },
+        },
       },
     });
 
@@ -117,7 +138,12 @@ describe('runtime dashboard MCP server', () => {
     });
     expect(exportResult.structuredContent).toMatchObject({
       target: 'hf_tool_calling',
-      last_bundle: null,
+      last_bundle: expect.objectContaining({
+        bundle_id: 'openai_chat-story-runtime-query',
+      }),
+      global_last_bundle: expect.objectContaining({
+        bundle_id: 'openai_chat-global-runtime-query',
+      }),
       redaction_status_counts: {
         clean: 1,
         redacted: 1,

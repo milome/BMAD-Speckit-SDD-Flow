@@ -4,8 +4,9 @@
  *
  * Exit codes: 0=has records, 1=no records or param error
  */
-const { loadAndDedupeRecords } = require('@bmad-speckit/scoring/query/loader');
-const { parseEpicStoryFromRecord } = require('@bmad-speckit/scoring/query/parse-epic-story');
+const { loadScoringModule } = require('../scoring-runtime');
+const { loadAndDedupeRecords } = loadScoringModule('query/loader');
+const { parseEpicStoryFromRecord } = loadScoringModule('query/parse-epic-story');
 
 function checkScoreCommand(opts) {
   const epicRaw = opts.epic;

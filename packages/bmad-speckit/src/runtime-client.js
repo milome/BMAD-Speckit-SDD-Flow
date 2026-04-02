@@ -46,6 +46,82 @@ const DEFAULT_BUNDLE_DIR = path.resolve(process.cwd(), '_bmad-output', 'datasets
 const EXPORT_TARGETS = ['openai_chat', 'hf_conversational', 'hf_tool_calling'];
 const EXPORT_TARGET_SET = new Set(EXPORT_TARGETS);
 
+function normalizePath(filePath) {
+  return String(filePath || '').replace(/\\/g, '/');
+}
+
+function deriveSourceScopeFromPath(sourcePath) {
+  const normalized = normalizePath(sourcePath);
+  if (!normalized) return null;
+
+  const storyScopedMatch = normalized.match(/epic-([^/]+)\/story-([^/]+)/i);
+  if (storyScopedMatch) {
+    const epicId = `epic-${storyScopedMatch[1]}`.replace(/^epic-epic-/i, 'epic-');
+    const storyKey = storyScopedMatch[2];
+    return {
+      scope_type: 'story',
+      epic_id: epicId,
+      story_key: storyKey,
+      work_item_id: `story:${storyKey}`,
+      board_group_id: `epic:${epicId}`,
+    };
+  }
+
+  const specsMatch = normalized.match(/specs\/epic-(\d+)\/story-(\d+)-([^/]+)/i);
+  if (specsMatch) {
+    const epicId = `epic-${specsMatch[1]}`;
+    const storyKey = `${specsMatch[1]}-${specsMatch[2]}-${specsMatch[3]}`;
+    return {
+      scope_type: 'story',
+      epic_id: epicId,
+      story_key: storyKey,
+      work_item_id: `story:${storyKey}`,
+      board_group_id: `epic:${epicId}`,
+    };
+  }
+
+  if (normalized.includes('/_orphan/standalone_tasks/')) {
+    const basename = normalized.split('/').pop() || 'standalone';
+    const slug = basename.replace(/\.[a-z0-9]+$/i, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'standalone';
+    return {
+      scope_type: 'work_item',
+      work_item_id: `standalone_task:orphan:${slug}`,
+      board_group_id: 'queue:standalone-ops',
+    };
+  }
+
+  if (normalized.includes('/_orphan/bugfix/')) {
+    const basename = normalized.split('/').pop() || 'bugfix';
+    const slug = basename.replace(/\.[a-z0-9]+$/i, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'bugfix';
+    return {
+      scope_type: 'work_item',
+      work_item_id: `bugfix:orphan:${slug}`,
+      board_group_id: 'queue:bugfix',
+    };
+  }
+
+  return null;
+}
+
+function deriveSourceScope(samples, options) {
+  if (options.sourceScope && typeof options.sourceScope === 'object') {
+    return options.sourceScope;
+  }
+
+  const paths = [...new Set(
+    (samples || [])
+      .map((sample) => sample?.provenance?.source_path || sample?.source?.artifact_refs?.[0]?.path)
+      .filter(Boolean)
+  )];
+
+  if (paths.length === 1) {
+    const inferred = deriveSourceScopeFromPath(paths[0]);
+    if (inferred) return inferred;
+  }
+
+  return { scope_type: 'global' };
+}
+
 function parseInteger(value, fallback, fieldName) {
   if (value == null || value === '') {
     return fallback;
@@ -118,6 +194,10 @@ function normalizeRuntimeOptions(defaults, payload) {
     dropNoCodePair: parseBoolean(merged.dropNoCodePair, false),
     target: normalizeTarget(merged.target, DEFAULT_TARGET),
     bundleDir: toAbsolutePath(merged.bundleDir, DEFAULT_BUNDLE_DIR),
+    sourceScope:
+      merged.sourceScope && typeof merged.sourceScope === 'object'
+        ? merged.sourceScope
+        : undefined,
     format: typeof merged.format === 'string' && merged.format !== '' ? merged.format : 'json',
   };
 }
@@ -216,6 +296,7 @@ async function writeSftBundleLocal(options) {
     filterSettings: {
       min_score: options.minScore,
     },
+    sourceScope: deriveSourceScope(samples, options),
   });
 
   return {
@@ -224,6 +305,7 @@ async function writeSftBundleLocal(options) {
     bundle_id: result.manifest.bundle_id,
     export_target: result.manifest.export_target,
     counts: result.manifest.counts,
+    source_scope: result.manifest.source_scope,
   };
 }
 
@@ -312,4 +394,6 @@ function createRuntimeClient(options = {}) {
 
 module.exports = {
   createRuntimeClient,
+  deriveSourceScopeFromPath,
+  deriveSourceScope,
 };

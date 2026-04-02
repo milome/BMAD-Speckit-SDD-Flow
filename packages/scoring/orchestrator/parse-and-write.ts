@@ -21,7 +21,7 @@ import { applyTierAndVeto } from '../veto';
 import { resolveRulesDir } from '../constants/path';
 import { computeContentHash, computeStringHash, getGitHeadHash } from '../utils/hash';
 import { persistPatchSnapshot } from '../utils/patch-snapshot';
-import type { CheckItem, DimensionScore, IterationRecord, JourneyContractSignals } from '../writer/types';
+import type { CheckItem, DimensionScore, IterationRecord, JourneyContractSignals, RunScoreRecord } from '../writer/types';
 import { appendRuntimeEvent } from '../runtime';
 
 /**
@@ -199,7 +199,7 @@ function parseIterationReportToRecord(
  * @returns {Promise<void>} Promise that resolves when write completes.
  * @throws Error when reportPath and content are both missing/empty.
  */
-export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Promise<void> {
+export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Promise<RunScoreRecord> {
   const scopedConsoleError = console.error;
   const { stage, runId, scenario, writeMode, dataPath } = options;
   let content = options.content;
@@ -362,4 +362,6 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
   }, {
     root: inferRuntimeRootFromDataPath(dataPath),
   });
+
+  return recordToWrite;
 }

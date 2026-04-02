@@ -82,6 +82,13 @@ function writeLatestBundleFixture(root: string): void {
         canonical_schema_version: 'v1',
         exporter_version: 'v1-test',
         generator_version: 'bundle-writer.v2',
+        source_scope: {
+          scope_type: 'story',
+          epic_id: 'epic-15',
+          story_key: '15-1-runtime-dashboard-sft',
+          work_item_id: 'story:15-1-runtime-dashboard-sft',
+          board_group_id: 'epic:epic-15',
+        },
         source_snapshot: { sample_count: 3 },
         export_hash: 'sha256:bundle-runtime-query',
         filter_settings: { min_score: 90 },
@@ -101,6 +108,58 @@ function writeLatestBundleFixture(root: string): void {
         validation_summary: {
           schema_valid: true,
           training_ready_passed: false,
+        },
+        artifacts: {
+          train_path: 'train.jsonl',
+          validation_path: 'validation.jsonl',
+          test_path: 'test.jsonl',
+          manifest_path: 'manifest.json',
+          validation_report_path: 'validation-report.json',
+          rejection_report_path: 'rejection-report.json',
+        },
+      },
+      null,
+      2
+    ),
+    'utf-8'
+  );
+
+  const globalBundleRoot = path.join(root, '_bmad-output', 'datasets', 'openai_chat-global-runtime-query');
+  fs.mkdirSync(globalBundleRoot, { recursive: true });
+  fs.writeFileSync(
+    path.join(globalBundleRoot, 'manifest.json'),
+    JSON.stringify(
+      {
+        bundle_id: 'openai_chat-global-runtime-query',
+        bundle_version: 'v2',
+        bundle_kind: 'training',
+        export_target: 'openai_chat',
+        created_at: '2026-03-28T00:12:00.000Z',
+        canonical_schema_version: 'v1',
+        exporter_version: 'v1-test',
+        generator_version: 'bundle-writer.v2',
+        source_scope: {
+          scope_type: 'global',
+        },
+        source_snapshot: { sample_count: 9 },
+        export_hash: 'sha256:bundle-runtime-query-global',
+        filter_settings: { min_score: 90 },
+        split: { seed: 42, strategy: 'story_hash_v1' },
+        counts: {
+          total_candidates: 9,
+          accepted: 5,
+          rejected: 2,
+          downgraded: 2,
+          blocked: 1,
+          train: 5,
+          validation: 2,
+          test: 2,
+        },
+        provider_summary: {},
+        redaction_summary: {},
+        validation_summary: {
+          schema_valid: true,
+          training_ready_passed: true,
         },
         artifacts: {
           train_path: 'train.jsonl',
@@ -589,6 +648,23 @@ describe('runtime-aware dashboard query', () => {
       expect(snapshot.sft_summary.last_bundle?.validation_summary).toEqual(
         expect.objectContaining({
           schema_valid: true,
+        })
+      );
+      expect(snapshot.sft_summary.last_bundle).toEqual(
+        expect.objectContaining({
+          bundle_id: 'openai_chat-runtime-query',
+          source_scope: expect.objectContaining({
+            scope_type: 'story',
+            story_key: '15-1-runtime-dashboard-sft',
+          }),
+        })
+      );
+      expect(snapshot.sft_summary.global_last_bundle).toEqual(
+        expect.objectContaining({
+          bundle_id: 'openai_chat-global-runtime-query',
+          source_scope: expect.objectContaining({
+            scope_type: 'global',
+          }),
         })
       );
     } finally {

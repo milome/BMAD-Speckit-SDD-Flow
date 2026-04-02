@@ -4,15 +4,16 @@
  *
  * Exit codes: 0=success, 1=error
  */
-const { getScoringDataPath } = require('@bmad-speckit/scoring/constants/path');
+const { loadScoringModule } = require('../scoring-runtime');
+const { getScoringDataPath } = loadScoringModule('constants/path');
 const {
   queryByEpic,
   queryByStory,
   queryLatest,
   parseEpicStoryFromRecord,
-} = require('@bmad-speckit/scoring/query');
-const { loadAndDedupeRecords } = require('@bmad-speckit/scoring/query/loader');
-const { formatScoresToTable } = require('@bmad-speckit/scoring/scores/format-table');
+} = loadScoringModule('query');
+const { loadAndDedupeRecords } = loadScoringModule('query/loader');
+const { formatScoresToTable } = loadScoringModule('scores/format-table');
 
 const EMPTY_DATA_MESSAGE = '暂无评分数据，请先完成至少一轮 Dev Story';
 const NO_PARSABLE_MESSAGE = '当前评分记录无可解析 Epic/Story，请确认 run_id 约定';

@@ -5,8 +5,9 @@
  * Exit codes: 0=success, 1=error
  */
 const path = require('path');
-const { getScoringDataPath } = require('@bmad-speckit/scoring/constants/path');
-const { extractSftDataset, formatSummary } = require('@bmad-speckit/scoring/analytics/sft-extractor');
+const { loadScoringModule } = require('../scoring-runtime');
+const { getScoringDataPath } = loadScoringModule('constants/path');
+const { extractSftDataset, formatSummary } = loadScoringModule('analytics/sft-extractor');
 const { createRuntimeClient } = require('../runtime-client');
 
 const MIN_SCORE_FLOOR = 90;

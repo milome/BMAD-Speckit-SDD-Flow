@@ -1,6 +1,7 @@
 const dashboardModule = (() => {
   try {
-    const loaded = require('@bmad-speckit/scoring/dashboard');
+    const { loadScoringModule } = require('../scoring-runtime');
+    const loaded = loadScoringModule('dashboard');
     if (typeof loaded.runRuntimeMcpServer === 'function') {
       return loaded;
     }

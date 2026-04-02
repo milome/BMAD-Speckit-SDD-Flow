@@ -153,6 +153,13 @@ export interface DatasetBundleManifest {
   exporter_version: string;
   generator_version?: string;
   source_snapshot?: Record<string, unknown>;
+  source_scope?: {
+    scope_type: 'global' | 'epic' | 'story' | 'work_item' | 'standalone_task' | 'bugfix';
+    epic_id?: string;
+    story_key?: string;
+    work_item_id?: string;
+    board_group_id?: string;
+  };
   export_hash: string;
   filter_settings: {
     min_score?: number;
@@ -174,7 +181,7 @@ export interface DatasetBundleManifest {
     test: number;
   };
   provider_summary?: Record<string, unknown>;
-  redaction_summary?: Record<string, unknown>;
+  redaction_summary?: import('./validation-report').DatasetRedactionSummary;
   validation_summary?: Record<string, unknown>;
   artifacts: {
     train_path: string;

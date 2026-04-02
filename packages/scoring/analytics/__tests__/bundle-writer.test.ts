@@ -102,6 +102,12 @@ describe('bundle writer', () => {
       filterSettings: {
         min_score: 90,
       },
+      sourceScope: {
+        scope_type: 'story',
+        epic_id: 'epic-15',
+        story_key: '15-1-runtime-dashboard-sft',
+        board_group_id: 'epic:epic-15',
+      },
     });
 
     expect(fs.existsSync(result.bundleDir)).toBe(true);
@@ -142,6 +148,12 @@ describe('bundle writer', () => {
     expect(manifest.bundle_version).toBe('v2');
     expect(manifest.bundle_kind).toBe('training');
     expect(manifest.generator_version).toBe('bundle-writer.v2');
+    expect(manifest.source_scope).toEqual({
+      scope_type: 'story',
+      epic_id: 'epic-15',
+      story_key: '15-1-runtime-dashboard-sft',
+      board_group_id: 'epic:epic-15',
+    });
     expect(manifest.redaction_summary).toEqual(validationReport.redaction_summary);
     expect(manifest.validation_summary).toEqual(
       expect.objectContaining({
@@ -159,5 +171,33 @@ describe('bundle writer', () => {
     });
     expect(validationReport.schema_valid).toBe(true);
     expect(validationReport.invalid_samples).toEqual([]);
+  });
+
+  it('includes source scope in bundle uniqueness so scoped exports do not overwrite global bundles', async () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dataset-bundle-scope-'));
+    const sample = makeSample('train-001', 'train');
+
+    const globalResult = await writeDatasetBundle([sample], {
+      exportTarget: 'openai_chat',
+      outputRoot: tempRoot,
+      exporterVersion: 'v1-test',
+      sourceScope: { scope_type: 'global' },
+    });
+
+    const scopedResult = await writeDatasetBundle([sample], {
+      exportTarget: 'openai_chat',
+      outputRoot: tempRoot,
+      exporterVersion: 'v1-test',
+      sourceScope: {
+        scope_type: 'story',
+        epic_id: 'epic-15',
+        story_key: '15-1-runtime-dashboard-sft',
+        work_item_id: 'story:15-1-runtime-dashboard-sft',
+        board_group_id: 'epic:epic-15',
+      },
+    });
+
+    expect(globalResult.manifest.bundle_id).not.toBe(scopedResult.manifest.bundle_id);
+    expect(globalResult.bundleDir).not.toBe(scopedResult.bundleDir);
   });
 });

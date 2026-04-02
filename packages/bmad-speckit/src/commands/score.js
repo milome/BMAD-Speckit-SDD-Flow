@@ -4,8 +4,10 @@
  *
  * Exit codes: 0=success, 1=param/validation error, 3=trigger disabled
  */
-const { parseAndWriteScore } = require('@bmad-speckit/scoring/orchestrator');
-const { shouldWriteScore } = require('@bmad-speckit/scoring/trigger/trigger-loader');
+const { loadScoringModule } = require('../scoring-runtime');
+const scoringOrchestrator = loadScoringModule('orchestrator');
+const { shouldWriteScore } = loadScoringModule('trigger/trigger-loader');
+const runtimeClientModule = require('../runtime-client');
 
 function parseEpicStoryFromPath(reportPath) {
   if (!reportPath) return {};
@@ -16,7 +18,63 @@ function parseEpicStoryFromPath(reportPath) {
   return {};
 }
 
-async function scoreCommand(opts) {
+function isAuditPassedEvent(event, triggerStage) {
+  const candidates = [event, triggerStage]
+    .filter(Boolean)
+    .map((value) => String(value).toLowerCase());
+
+  return candidates.some((value) =>
+    value === 'stage_audit_complete' ||
+    value === 'post_audit_passed' ||
+    value.endsWith('_audit_passed') ||
+    value.endsWith('_passed')
+  );
+}
+
+function shouldAutoWriteScopedBundle({ scenario, stage, phaseScore, reportPath, artifactDocPath, event, triggerStage }) {
+  if (scenario !== 'real_dev') return false;
+  if (stage !== 'implement' && stage !== 'post_audit') return false;
+  if (typeof phaseScore !== 'number' || phaseScore < 90) return false;
+  if (!isAuditPassedEvent(event, triggerStage)) return false;
+  return Boolean(artifactDocPath || reportPath);
+}
+
+async function maybeWriteScopedBundle({
+  scenario,
+  stage,
+  phaseScore,
+  reportPath,
+  artifactDocPath,
+  dataPath,
+  event,
+  triggerStage,
+  createRuntimeClient,
+  deriveSourceScopeFromPath,
+}) {
+  if (!shouldAutoWriteScopedBundle({ scenario, stage, phaseScore, reportPath, artifactDocPath, event, triggerStage })) {
+    return null;
+  }
+
+  const scopeSource = artifactDocPath || reportPath;
+  const sourceScope = deriveSourceScopeFromPath(scopeSource);
+  if (!sourceScope || sourceScope.scope_type === 'global') {
+    return null;
+  }
+
+  const client = createRuntimeClient({ cwd: process.cwd(), dataPath });
+  return client.request('writeSftBundle', {
+    dataPath,
+    target: 'openai_chat',
+    minScore: 90,
+    bundleDir: '_bmad-output/datasets',
+    sourceScope,
+  });
+}
+
+async function scoreCommand(opts, deps = {}) {
+  const parseAndWriteScore = deps.parseAndWriteScore || scoringOrchestrator.parseAndWriteScore;
+  const createRuntimeClient = deps.createRuntimeClient || runtimeClientModule.createRuntimeClient;
+  const deriveSourceScopeFromPath = deps.deriveSourceScopeFromPath || runtimeClientModule.deriveSourceScopeFromPath;
   const reportPath = opts.reportPath;
   const stage = opts.stage || 'prd';
   const epic = opts.epic;
@@ -92,7 +150,7 @@ async function scoreCommand(opts) {
     effectiveWriteMode = decision.writeMode;
   }
 
-  await parseAndWriteScore({
+  const parsedRecord = await Promise.resolve(parseAndWriteScore({
     reportPath,
     stage,
     runId,
@@ -106,8 +164,34 @@ async function scoreCommand(opts) {
     iteration_count: iterationCount,
     triggerStage: triggerStage !== stage ? triggerStage : undefined,
     iterationReportPaths: iterationReportPaths.length > 0 ? iterationReportPaths : undefined,
+  }));
+
+  const effectivePhaseScore =
+    parsedRecord && typeof parsedRecord.phase_score === 'number'
+      ? parsedRecord.phase_score
+      : undefined;
+
+  if (effectivePhaseScore == null) {
+    console.warn(`WARN: parseAndWriteScore did not return phase_score; got ${JSON.stringify(parsedRecord)}; skipping auto scoped bundle export.`);
+  }
+
+  const bundleResult = await maybeWriteScopedBundle({
+    scenario,
+    stage,
+    phaseScore: effectivePhaseScore,
+    reportPath,
+    artifactDocPath,
+    dataPath,
+    event,
+    triggerStage,
+    createRuntimeClient,
+    deriveSourceScopeFromPath,
   });
+
   console.log(`parseAndWriteScore: wrote record for runId=${runId}, stage=${stage}`);
+  if (bundleResult) {
+    console.log(`sft-bundle: wrote scoped bundle ${bundleResult.bundle_id}`);
+  }
 }
 
 module.exports = { scoreCommand };

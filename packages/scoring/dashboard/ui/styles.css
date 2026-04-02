@@ -314,8 +314,14 @@
   .overflow-hidden {
     overflow: hidden;
   }
+  .rounded-\[12px\] {
+    border-radius: 12px;
+  }
   .rounded-\[14px\] {
     border-radius: 14px;
+  }
+  .rounded-\[16px\] {
+    border-radius: 16px;
   }
   .rounded-\[18px\] {
     border-radius: 18px;
@@ -479,6 +485,12 @@
     --tw-tracking: 0.28em;
     letter-spacing: 0.28em;
   }
+  .text-coral {
+    color: var(--color-coral);
+  }
+  .text-mint {
+    color: var(--color-mint);
+  }
   .uppercase {
     text-transform: uppercase;
   }
@@ -524,6 +536,11 @@
   .xl\:grid-cols-1 {
     @media (width >= 80rem) {
       grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+  }
+  .xl\:grid-cols-3 {
+    @media (width >= 80rem) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
   .xl\:grid-cols-\[1fr_1fr\] {
@@ -605,7 +622,7 @@
   .dashboard-main {
     min-width: 0;
     align-self: stretch;
-    overflow: hidden;
+    overflow: visible;
   }
   .glass-card {
     border-radius: 22px;
@@ -706,6 +723,25 @@
     border-color: rgba(99,230,255,0.28);
     background: rgba(99,230,255,0.05);
     color: var(--color-fg-secondary);
+  }
+  #panel-sft .panel-card {
+    overflow: visible;
+  }
+  .bundle-meta-grid {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .bundle-meta-block {
+    border: 1px solid var(--color-line-soft);
+    border-radius: 16px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.025);
+    min-width: 0;
+  }
+  .bundle-meta-line {
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 }
 @layer utilities {

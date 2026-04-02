@@ -87,6 +87,7 @@ describe('runtime dashboard sft tab integration', () => {
         rejected: number;
         training_ready_candidates?: number;
         last_bundle?: { bundle_id: string; validation_summary?: { schema_valid?: boolean } } | null;
+        global_last_bundle?: { bundle_id: string; validation_summary?: { schema_valid?: boolean } } | null;
         target_availability?: Record<string, { compatible: number; incompatible: number }>;
       };
       const appJs = await (await fetch(`${server.url}/app.js`)).text();
@@ -96,7 +97,7 @@ describe('runtime dashboard sft tab integration', () => {
           total_candidates: 1,
           accepted: 1,
           rejected: 0,
-          last_bundle: expect.objectContaining({
+          global_last_bundle: expect.objectContaining({
             bundle_id: fixture.lastBundleId,
             validation_summary: expect.objectContaining({
               schema_valid: true,
@@ -112,7 +113,8 @@ describe('runtime dashboard sft tab integration', () => {
           }),
         })
       );
-      expect(appJs).toContain('Last Bundle');
+      expect(appJs).toContain('Current Work Item Bundle');
+      expect(appJs).toContain('Global Latest Bundle');
       expect(appJs).toContain('Target Availability');
 
       ensureScoringBuild(process.cwd());
@@ -177,7 +179,11 @@ describe('runtime dashboard sft tab integration', () => {
           expect.objectContaining({
             target: 'openai_chat',
             compatible_samples: 1,
-            last_bundle_id: fixture.lastBundleId,
+            last_bundle_id: null,
+            last_bundle: null,
+            global_last_bundle: expect.objectContaining({
+              bundle_id: fixture.lastBundleId,
+            }),
           })
         );
       } finally {

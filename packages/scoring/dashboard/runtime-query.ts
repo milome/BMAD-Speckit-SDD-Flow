@@ -236,6 +236,16 @@ export interface DashboardSftSummary {
     created_at: string;
     bundle_dir: string;
     manifest_path: string;
+    source_scope?: DatasetBundleManifest['source_scope'];
+    validation_summary?: Record<string, unknown>;
+  } | null;
+  global_last_bundle: {
+    bundle_id: string;
+    export_target: DatasetExportTarget;
+    created_at: string;
+    bundle_dir: string;
+    manifest_path: string;
+    source_scope?: DatasetBundleManifest['source_scope'];
     validation_summary?: Record<string, unknown>;
   } | null;
 }
@@ -262,6 +272,8 @@ type ScoreRecordWithDerived = RunScoreRecord & {
   tier_coefficient?: number;
   raw_phase_score?: number;
 };
+
+type DashboardBundleSummary = NonNullable<DashboardSftSummary['last_bundle']>;
 
 interface RunWorkItemSeed {
   run_id: string;
@@ -1125,10 +1137,84 @@ function buildTargetAvailability(
   return targetAvailability;
 }
 
-function findLatestBundle(root: string): DashboardSftSummary['last_bundle'] {
+function bundleMatchesWorkItem(
+  manifest: DatasetBundleManifest,
+  activeWorkItem: DashboardWorkItem | null,
+  activeBoardGroupId: string | null
+): boolean {
+  const scope = manifest.source_scope;
+  if (!scope) {
+    return activeWorkItem == null;
+  }
+
+  if (scope.scope_type === 'global') {
+    return activeWorkItem == null;
+  }
+
+  if (scope.work_item_id && activeWorkItem?.work_item_id) {
+    return scope.work_item_id === activeWorkItem.work_item_id;
+  }
+
+  if (scope.story_key && activeWorkItem?.story_key) {
+    return scope.story_key === activeWorkItem.story_key;
+  }
+
+  if (scope.board_group_id && activeBoardGroupId) {
+    return scope.board_group_id === activeBoardGroupId;
+  }
+
+  if (scope.epic_id && activeWorkItem?.epic_id) {
+    return scope.epic_id === activeWorkItem.epic_id;
+  }
+
+  if (scope.scope_type === 'story' && activeWorkItem?.work_item_type === 'story') {
+    return true;
+  }
+
+  if (scope.scope_type === 'bugfix' && activeWorkItem?.work_item_type === 'bugfix') {
+    return true;
+  }
+
+  if (scope.scope_type === 'standalone_task' && activeWorkItem?.work_item_type === 'standalone_task') {
+    return true;
+  }
+
+  return false;
+}
+
+function toBundleSummary(
+  root: string,
+  bundleDir: string,
+  manifestPath: string,
+  manifest: DatasetBundleManifest
+): DashboardBundleSummary {
+  return {
+    bundle_id: manifest.bundle_id,
+    export_target: manifest.export_target,
+    created_at: manifest.created_at,
+    bundle_dir: path.relative(root, bundleDir).replace(/\\/g, '/'),
+    manifest_path: path.relative(root, manifestPath).replace(/\\/g, '/'),
+    ...(manifest.source_scope ? { source_scope: manifest.source_scope } : {}),
+    ...(manifest.validation_summary
+      ? { validation_summary: manifest.validation_summary }
+      : {}),
+  };
+}
+
+function findLatestBundles(
+  root: string,
+  activeWorkItem: DashboardWorkItem | null,
+  activeBoardGroupId: string | null
+): {
+  global_last_bundle: DashboardSftSummary['global_last_bundle'];
+  scoped_last_bundle: DashboardSftSummary['last_bundle'];
+} {
   const bundlesRoot = path.join(root, '_bmad-output', 'datasets');
   if (!fs.existsSync(bundlesRoot)) {
-    return null;
+    return {
+      global_last_bundle: null,
+      scoped_last_bundle: null,
+    };
   }
 
   const manifests: Array<{
@@ -1158,28 +1244,33 @@ function findLatestBundle(root: string): DashboardSftSummary['last_bundle'] {
   }
 
   if (manifests.length === 0) {
-    return null;
+    return {
+      global_last_bundle: null,
+      scoped_last_bundle: null,
+    };
   }
 
   manifests.sort((left, right) => compareTimestamps(left.manifest.created_at, right.manifest.created_at));
-  const latest = manifests[0]!;
+  const globalLatest = manifests[0]!;
+  const scopedLatest = manifests.find(({ manifest }) =>
+    bundleMatchesWorkItem(manifest, activeWorkItem, activeBoardGroupId)
+  ) ?? null;
 
   return {
-    bundle_id: latest.manifest.bundle_id,
-    export_target: latest.manifest.export_target,
-    created_at: latest.manifest.created_at,
-    bundle_dir: path.relative(root, latest.bundleDir).replace(/\\/g, '/'),
-    manifest_path: path.relative(root, latest.manifestPath).replace(/\\/g, '/'),
-    ...(latest.manifest.validation_summary
-      ? { validation_summary: latest.manifest.validation_summary }
-      : {}),
+    global_last_bundle: toBundleSummary(root, globalLatest.bundleDir, globalLatest.manifestPath, globalLatest.manifest),
+    scoped_last_bundle: scopedLatest
+      ? toBundleSummary(root, scopedLatest.bundleDir, scopedLatest.manifestPath, scopedLatest.manifest)
+      : null,
   };
 }
 
 function buildSftSummary(
   records: RunScoreRecord[],
-  root: string
+  root: string,
+  activeWorkItem: DashboardWorkItem | null,
+  activeBoardGroupId: string | null
 ): DashboardSftSummary {
+  const latestBundles = findLatestBundles(root, activeWorkItem, activeBoardGroupId);
   const summary: DashboardSftSummary = {
     total_candidates: 0,
     accepted: 0,
@@ -1202,7 +1293,8 @@ function buildSftSummary(
     redaction_applied_rules: [],
     redaction_finding_kinds: [],
     redaction_preview: [],
-    last_bundle: findLatestBundle(root),
+    last_bundle: latestBundles.scoped_last_bundle,
+    global_last_bundle: latestBundles.global_last_bundle,
   };
 
   if (records.length === 0) {
@@ -1335,7 +1427,12 @@ export function buildRuntimeDashboardModel(input: {
       records: scoreDetailRecords,
       findings: scoreFindings,
     },
-    sft_summary: buildSftSummary(selectedScoreRecords, input.root ?? options.root ?? process.cwd()),
+    sft_summary: buildSftSummary(
+      selectedScoreRecords,
+      input.root ?? options.root ?? process.cwd(),
+      activeWorkItem,
+      workboard.active_board_group_id ?? null
+    ),
     workboard,
   };
 }

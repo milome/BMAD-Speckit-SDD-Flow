@@ -206,6 +206,12 @@ describe('canonical SFT schema contracts', () => {
       canonical_schema_version: 'v1',
       exporter_version: 'v1',
       export_hash: 'sha256:bundle-001',
+      source_scope: {
+        scope_type: 'story',
+        epic_id: 'epic-15',
+        story_key: '15-1-runtime-dashboard-sft',
+        board_group_id: 'epic:epic-15',
+      },
       filter_settings: {
         min_score: 90,
         drop_no_code_pair: true,

@@ -78,7 +78,7 @@
   .dashboard-main {
     min-width: 0;
     align-self: stretch;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .glass-card {
@@ -144,6 +144,29 @@
     border-color: rgba(99,230,255,0.28);
     background: rgba(99,230,255,0.05);
     color: var(--color-fg-secondary);
+  }
+
+  #panel-sft .panel-card {
+    overflow: visible;
+  }
+
+  .bundle-meta-grid {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .bundle-meta-block {
+    border: 1px solid var(--color-line-soft);
+    border-radius: 16px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.025);
+    min-width: 0;
+  }
+
+  .bundle-meta-line {
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 }
 

@@ -14,6 +14,7 @@
 | `dashboard-generate.ts` | `npx bmad-speckit dashboard` |
 | `sft-extract.ts` | `npx bmad-speckit sft-extract` |
 | `scores-summary.ts` | `npx bmad-speckit scores` |
+| `verify-score-auto-scoped-bundle.cjs` | 最小非-vitest 验证 `score -> scoped bundle -> dashboard last_bundle` |
 
 ## 脚本用途表
 
@@ -28,3 +29,4 @@
 
 - **scoring**：`packages/scoring/` 是 TypeScript 源码包，编译产物被 `packages/bmad-speckit/` 作为依赖导入。
 - **bmad-speckit**：`init-to-root.js` 部署 bmad-speckit 模板；scoring 功能已通过 CLI 子命令提供（`npx bmad-speckit score` 等）。
+- **workspace/dist 优先**：`packages/bmad-speckit/src/scoring-runtime.js` 现在优先直接加载仓库内 `packages/scoring/dist/**`，仅在 workspace 构建产物不存在时才回退到 `@bmad-speckit/scoring/*`。这样本地开发不再依赖手工覆盖 `packages/bmad-speckit/node_modules` 中的 scoring 副本。

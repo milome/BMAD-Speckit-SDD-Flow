@@ -6,9 +6,10 @@
  */
 const fs = require('fs');
 const path = require('path');
-const { getScoringDataPath } = require('@bmad-speckit/scoring/constants/path');
-const { loadAndDedupeRecords } = require('@bmad-speckit/scoring/query/loader');
-const { parseEpicStoryFromRecord } = require('@bmad-speckit/scoring/query');
+const { loadScoringModule } = require('../scoring-runtime');
+const { getScoringDataPath } = loadScoringModule('constants/path');
+const { loadAndDedupeRecords } = loadScoringModule('query/loader');
+const { parseEpicStoryFromRecord } = loadScoringModule('query');
 const {
   getLatestRunRecords,
   getLatestRunRecordsV2,
@@ -25,7 +26,7 @@ const {
   formatDashboardMarkdown,
   queryRuntimeDashboard,
   writeDashboardSnapshotFiles,
-} = require('@bmad-speckit/scoring/dashboard');
+} = loadScoringModule('dashboard');
 
 const EMPTY_DATA_MESSAGE = '暂无数据，请先完成至少一轮 Dev Story';
 const INSUFFICIENT_RUN_MESSAGE = '数据不足，暂无完整 run（至少 2 stage）';

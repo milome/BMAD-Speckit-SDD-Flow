@@ -95,8 +95,8 @@ function emitRunLifecycleEvents(
   const stage = stageForLifecycle(input.lifecycle);
   const scope = {
     story_key: input.storyKey,
-    epic_id: input.epicId.replace(/^epic-/, ''),
-    story_id: input.storyKey.split('-')[1] ?? input.storyKey,
+    epic_id: input.epicId,
+    story_id: input.storyKey,
     flow: 'story',
     resolved_context_path: input.runPath,
   };

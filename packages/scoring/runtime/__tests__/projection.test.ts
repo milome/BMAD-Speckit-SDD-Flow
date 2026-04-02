@@ -22,8 +22,8 @@ describe('runtime projection', () => {
         makeEvent({
           scope: {
             story_key: '15-1-runtime-dashboard-sft',
-            story_id: '1',
-            epic_id: '15',
+            story_id: '15-1-runtime-dashboard-sft',
+            epic_id: 'epic-15',
             artifact_root: 'docs/plans',
             host: 'cursor',
             host_kind: 'cursor',
@@ -88,8 +88,8 @@ describe('runtime projection', () => {
     expect(projection?.status).toBe('passed');
     expect(projection?.current_stage).toBe('implement');
     expect(projection?.current_scope?.story_key).toBe('15-1-runtime-dashboard-sft');
-    expect(projection?.current_scope?.story_id).toBe('1');
-    expect(projection?.current_scope?.epic_id).toBe('15');
+    expect(projection?.current_scope?.story_id).toBe('15-1-runtime-dashboard-sft');
+    expect(projection?.current_scope?.epic_id).toBe('epic-15');
     expect(projection?.current_scope?.artifact_root).toBe('docs/plans');
     expect(projection?.current_scope?.host).toBe('cursor');
     expect(projection?.current_scope?.host_kind).toBe('cursor');
@@ -162,8 +162,8 @@ describe('runtime projection', () => {
         makeEvent({
           scope: {
             story_key: '15-1-runtime-dashboard-sft',
-            story_id: '1',
-            epic_id: '15',
+            story_id: '15-1-runtime-dashboard-sft',
+            epic_id: 'epic-15',
             artifact_root: 'docs/plans',
             host: 'cursor',
             host_kind: 'cursor',
@@ -187,8 +187,8 @@ describe('runtime projection', () => {
     expect(projection?.current_scope).toEqual(
       expect.objectContaining({
         story_key: '15-1-runtime-dashboard-sft',
-        story_id: '1',
-        epic_id: '15',
+        story_id: '15-1-runtime-dashboard-sft',
+        epic_id: 'epic-15',
         artifact_root: 'docs/plans',
         host: 'cursor',
         host_kind: 'cursor',

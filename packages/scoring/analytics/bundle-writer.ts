@@ -13,6 +13,7 @@ export interface WriteDatasetBundleOptions {
   outputRoot: string;
   exporterVersion?: string;
   filterSettings?: DatasetBundleManifest['filter_settings'];
+  sourceScope?: DatasetBundleManifest['source_scope'];
 }
 
 export interface DatasetBundleWriteResult {
@@ -45,8 +46,9 @@ export async function writeDatasetBundle(
     ...exportResult.rowsBySplit.test.map((row) => JSON.stringify(row)),
   ].join('\n');
   const exportHash = `sha256:${computeStringHash(serializedRows)}`;
+  const scopeKey = JSON.stringify(options.sourceScope ?? { scope_type: 'global' });
   const bundleId = `${options.exportTarget}-${computeStringHash(
-    `${options.exportTarget}::${exportResult.validationReport.exported_sample_ids.join(',')}::${exportResult.validationReport.rejected_samples.map((sample) => sample.sample_id).join(',')}`
+    `${options.exportTarget}::${scopeKey}::${exportResult.validationReport.exported_sample_ids.join(',')}::${exportResult.validationReport.rejected_samples.map((sample) => sample.sample_id).join(',')}`
   ).slice(0, 12)}`;
 
   const bundleDir = path.join(options.outputRoot, bundleId);
@@ -79,6 +81,7 @@ export async function writeDatasetBundle(
       split_seed: samples[0]?.split.seed ?? 42,
       split_strategy: samples[0]?.split.strategy ?? 'story_hash_v1',
     },
+    ...(options.sourceScope ? { source_scope: options.sourceScope } : {}),
     export_hash: exportHash,
     filter_settings: options.filterSettings ?? {},
     split: {
