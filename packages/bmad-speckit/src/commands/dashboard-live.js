@@ -1,4 +1,5 @@
-const { startLiveDashboardServer } = require('@bmad-speckit/scoring/dashboard');
+const { loadScoringModule } = require('../scoring-runtime');
+const { startLiveDashboardServer } = loadScoringModule('dashboard');
 
 async function dashboardLiveCommand(opts) {
   if (opts.open) {

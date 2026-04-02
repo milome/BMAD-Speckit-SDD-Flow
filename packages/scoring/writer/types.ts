@@ -57,6 +57,12 @@ export interface RunScoreRecord {
   run_id: string;
   scenario: 'real_dev' | 'eval_question';
   stage: string;
+  story_key?: string;
+  story_id?: string;
+  epic_id?: string;
+  artifact_root?: string;
+  host?: string;
+  host_kind?: string;
   phase_score: number;
   phase_weight: number;
   check_items: CheckItem[];

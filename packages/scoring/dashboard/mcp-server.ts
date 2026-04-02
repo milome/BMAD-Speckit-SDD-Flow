@@ -146,6 +146,7 @@ export async function invokeRuntimeMcpTool(
             incompatible_samples: availability?.incompatible ?? 0,
             last_bundle_id: snapshot.sft_summary.last_bundle?.bundle_id ?? null,
             last_bundle: snapshot.sft_summary.last_bundle,
+            global_last_bundle: snapshot.sft_summary.global_last_bundle,
             rejection_reasons: snapshot.sft_summary.rejection_reasons,
             redaction_status_counts: snapshot.sft_summary.redaction_status_counts,
             redaction_applied_rules: snapshot.sft_summary.redaction_applied_rules,

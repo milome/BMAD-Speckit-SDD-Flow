@@ -20,7 +20,15 @@ describe('runtime projection', () => {
     const projection = buildRunProjection(
       [
         makeEvent({
-          scope: { story_key: '15-1-runtime-dashboard-sft', flow: 'story' },
+          scope: {
+            story_key: '15-1-runtime-dashboard-sft',
+            story_id: '15-1-runtime-dashboard-sft',
+            epic_id: 'epic-15',
+            artifact_root: 'docs/plans',
+            host: 'cursor',
+            host_kind: 'cursor',
+            flow: 'story',
+          },
           payload: { status: 'pending' },
         }),
         makeEvent({
@@ -80,6 +88,11 @@ describe('runtime projection', () => {
     expect(projection?.status).toBe('passed');
     expect(projection?.current_stage).toBe('implement');
     expect(projection?.current_scope?.story_key).toBe('15-1-runtime-dashboard-sft');
+    expect(projection?.current_scope?.story_id).toBe('15-1-runtime-dashboard-sft');
+    expect(projection?.current_scope?.epic_id).toBe('epic-15');
+    expect(projection?.current_scope?.artifact_root).toBe('docs/plans');
+    expect(projection?.current_scope?.host).toBe('cursor');
+    expect(projection?.current_scope?.host_kind).toBe('cursor');
     expect(projection?.stage_history).toEqual([
       {
         stage: 'implement',
@@ -141,6 +154,46 @@ describe('runtime projection', () => {
         started_at: '2026-03-28T00:00:01.000Z',
       },
     ]);
+  });
+
+  it('preserves existing identity fields when later scope patches omit them', () => {
+    const projection = buildRunProjection(
+      [
+        makeEvent({
+          scope: {
+            story_key: '15-1-runtime-dashboard-sft',
+            story_id: '15-1-runtime-dashboard-sft',
+            epic_id: 'epic-15',
+            artifact_root: 'docs/plans',
+            host: 'cursor',
+            host_kind: 'cursor',
+          },
+          payload: { status: 'pending' },
+        }),
+        makeEvent({
+          event_id: 'evt-002',
+          event_type: 'run.scope.changed',
+          timestamp: '2026-03-28T00:00:01.000Z',
+          scope: {
+            flow: 'story',
+            story_key: '15-1-runtime-dashboard-sft',
+          },
+          payload: {},
+        }),
+      ],
+      'run-001'
+    );
+
+    expect(projection?.current_scope).toEqual(
+      expect.objectContaining({
+        story_key: '15-1-runtime-dashboard-sft',
+        story_id: '15-1-runtime-dashboard-sft',
+        epic_id: 'epic-15',
+        artifact_root: 'docs/plans',
+        host: 'cursor',
+        host_kind: 'cursor',
+      })
+    );
   });
 
   it('projects status transitions across pending, running, passed, failed, and vetoed', () => {

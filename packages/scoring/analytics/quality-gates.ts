@@ -119,6 +119,19 @@ export function applyQualityGates(
     }
   }
 
+  const effectiveTraceCompleteness =
+    sample.redaction.status === 'blocked' ? 'blocked' : sample.quality.trace_completeness;
+
+  if (effectiveTraceCompleteness === 'blocked') {
+    hardReasons.push('tool_trace_blocked');
+  }
+  if (effectiveTraceCompleteness === 'partial') {
+    softReasons.push('tool_trace_partial');
+  }
+  if (effectiveTraceCompleteness === 'missing' && usesTooling(sample)) {
+    softReasons.push('tool_trace_missing');
+  }
+
   if (sample.quality.iteration_count > maxIterations) {
     softReasons.push('too_many_iterations');
   }
@@ -136,11 +149,21 @@ export function applyQualityGates(
   const sharedWarnings = unique(warnings);
   const sharedHardReasons = unique(hardReasons);
   const toolAware = usesTooling(sample);
+  const trainingBlockers = unique([
+    ...sample.quality.training_blockers ?? [],
+    ...sharedHardReasons,
+    ...(toolAware && effectiveTraceCompleteness === 'partial' ? ['tool_trace_partial'] : []),
+    ...(toolAware && effectiveTraceCompleteness === 'missing' ? ['tool_trace_missing'] : []),
+  ]);
+  const trainingReady = acceptanceDecision === 'accepted';
 
   return {
     ...sample,
     quality: {
       ...sample.quality,
+      trace_completeness: effectiveTraceCompleteness,
+      training_ready: trainingReady,
+      training_blockers: trainingBlockers,
       acceptance_decision: acceptanceDecision,
       rejection_reasons: rejectionReasons,
       warnings: sharedWarnings,

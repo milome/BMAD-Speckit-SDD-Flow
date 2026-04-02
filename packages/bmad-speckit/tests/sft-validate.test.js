@@ -31,6 +31,10 @@ describe('sft-validate command', () => {
                 });
                 return {
                   schema_valid: true,
+                  privacy_gate_passed: true,
+                  trace_quality_passed: true,
+                  provider_compatibility_passed: true,
+                  training_ready_passed: true,
                   accepted: 10,
                   rejected: 2,
                   rejection_report_path: '_bmad-output/datasets/demo/rejection-report.json',
@@ -48,6 +52,10 @@ describe('sft-validate command', () => {
     const payload = JSON.parse(logs[0]);
     assert.deepStrictEqual(payload, {
       schema_valid: true,
+      privacy_gate_passed: true,
+      trace_quality_passed: true,
+      provider_compatibility_passed: true,
+      training_ready_passed: true,
       accepted: 10,
       rejected: 2,
       rejection_report_path: '_bmad-output/datasets/demo/rejection-report.json',

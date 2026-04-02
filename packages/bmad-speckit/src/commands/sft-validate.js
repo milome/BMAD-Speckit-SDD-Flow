@@ -43,7 +43,16 @@ async function sftValidateCommand(opts, deps = {}) {
   }).request('validateSftDataset', buildPayload(opts));
 
   // eslint-disable-next-line no-console -- CLI contract
-  console.log(JSON.stringify(result));
+  console.log(JSON.stringify({
+    schema_valid: result.schema_valid,
+    privacy_gate_passed: result.privacy_gate_passed,
+    trace_quality_passed: result.trace_quality_passed,
+    provider_compatibility_passed: result.provider_compatibility_passed,
+    training_ready_passed: result.training_ready_passed,
+    accepted: result.accepted,
+    rejected: result.rejected,
+    rejection_report_path: result.rejection_report_path,
+  }));
 }
 
 module.exports = { sftValidateCommand };

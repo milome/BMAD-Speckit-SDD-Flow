@@ -17,6 +17,9 @@ export interface CanonicalSourceRef {
   epic_id?: string;
   story_id?: string;
   story_slug?: string;
+  provider_id?: string;
+  provider_mode?: string;
+  tool_trace_ref?: string;
   event_ids: string[];
   score_record_id?: string;
   artifact_refs: CanonicalArtifactRef[];
@@ -54,10 +57,13 @@ export interface CanonicalMetadata {
   schema_targets: Array<'openai_chat' | 'hf_conversational' | 'hf_tool_calling'>;
   sample_kind?: 'implementation' | 'documentation';
   host?: string;
+  host_kind?: string;
   language?: string;
   tags?: string[];
   notes?: string[];
 }
+
+export type CanonicalTraceCompleteness = 'complete' | 'partial' | 'missing' | 'blocked';
 
 export interface CanonicalQuality {
   acceptance_decision: CanonicalAcceptanceDecision;
@@ -65,6 +71,9 @@ export interface CanonicalQuality {
   raw_phase_score: number | null;
   dimension_scores?: Record<string, number>;
   dimension_floors?: Record<string, number>;
+  trace_completeness?: CanonicalTraceCompleteness;
+  training_ready?: boolean;
+  training_blockers?: string[];
   veto_triggered: boolean;
   iteration_count: number;
   has_code_pair: boolean;
@@ -81,6 +90,8 @@ export interface CanonicalProvenance {
   source_hash: string | null;
   source_path: string | null;
   patch_ref: string | null;
+  generator_version?: string;
+  schema_version?: string;
   lineage: string[];
   generated_at: string;
 }
@@ -134,10 +145,21 @@ export interface CanonicalSftSample {
 
 export interface DatasetBundleManifest {
   bundle_id: string;
+  bundle_version?: string;
+  bundle_kind?: 'training' | 'evaluation' | 'debug';
   export_target: 'openai_chat' | 'hf_conversational' | 'hf_tool_calling';
   created_at: string;
   canonical_schema_version: 'v1';
   exporter_version: string;
+  generator_version?: string;
+  source_snapshot?: Record<string, unknown>;
+  source_scope?: {
+    scope_type: 'global' | 'epic' | 'story' | 'work_item' | 'standalone_task' | 'bugfix';
+    epic_id?: string;
+    story_key?: string;
+    work_item_id?: string;
+    board_group_id?: string;
+  };
   export_hash: string;
   filter_settings: {
     min_score?: number;
@@ -149,12 +171,18 @@ export interface DatasetBundleManifest {
     strategy: string;
   };
   counts: {
+    total_candidates?: number;
     accepted: number;
     rejected: number;
+    downgraded?: number;
+    blocked?: number;
     train: number;
     validation: number;
     test: number;
   };
+  provider_summary?: Record<string, unknown>;
+  redaction_summary?: import('./validation-report').DatasetRedactionSummary;
+  validation_summary?: Record<string, unknown>;
   artifacts: {
     train_path: string;
     validation_path: string;

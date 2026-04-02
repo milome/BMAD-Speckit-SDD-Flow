@@ -58,9 +58,14 @@ function mergeScope(
   if (eventScope == null) {
     return currentScope;
   }
+
+  const normalizedEventScope = Object.fromEntries(
+    Object.entries(eventScope).filter(([, value]) => value !== undefined)
+  ) as RuntimeScopeRef;
+
   return {
     ...(currentScope ?? {}),
-    ...eventScope,
+    ...normalizedEventScope,
   };
 }
 

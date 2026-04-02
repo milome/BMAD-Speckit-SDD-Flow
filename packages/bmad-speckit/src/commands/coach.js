@@ -4,15 +4,16 @@
  *
  * Exit codes: 0=success, 1=error
  */
-const { coachDiagnose, discoverLatestRunId, formatToMarkdown } = require('@bmad-speckit/scoring/coach');
-const { getScoringDataPath } = require('@bmad-speckit/scoring/constants/path');
+const { loadScoringModule } = require('../scoring-runtime');
+const { coachDiagnose, discoverLatestRunId, formatToMarkdown } = loadScoringModule('coach');
+const { getScoringDataPath } = loadScoringModule('constants/path');
 const {
   queryByEpic,
   queryByStory,
   queryLatest,
   parseEpicStoryFromRecord,
-} = require('@bmad-speckit/scoring/query');
-const { loadAndDedupeRecords } = require('@bmad-speckit/scoring/query/loader');
+} = loadScoringModule('query');
+const { loadAndDedupeRecords } = loadScoringModule('query/loader');
 
 const EMPTY_DATA_MESSAGE = '暂无评分数据，请先完成至少一轮 Dev Story';
 const EMPTY_REAL_DEV_MESSAGE = '暂无 real_dev 评分数据，请先完成至少一轮 Dev Story';

@@ -25,6 +25,21 @@
     "canonical_schema_version": { "const": "v1" },
     "exporter_version": { "type": "string", "minLength": 1 },
     "export_hash": { "type": "string", "minLength": 8 },
+    "source_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope_type"],
+      "properties": {
+        "scope_type": {
+          "type": "string",
+          "enum": ["global", "epic", "story", "work_item"]
+        },
+        "epic_id": { "type": "string", "minLength": 1 },
+        "story_key": { "type": "string", "minLength": 1 },
+        "work_item_id": { "type": "string", "minLength": 1 },
+        "board_group_id": { "type": "string", "minLength": 1 }
+      }
+    },
     "filter_settings": {
       "type": "object",
       "additionalProperties": false,

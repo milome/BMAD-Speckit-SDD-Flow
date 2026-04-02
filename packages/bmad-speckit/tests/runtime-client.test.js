@@ -1,6 +1,5 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
-
 let runtimeClientModule;
 try {
   runtimeClientModule = require('../src/runtime-client.js');
@@ -47,5 +46,35 @@ describe('runtime-client', () => {
       ['http', 'getSftPreview', { minScore: 90 }],
       ['local', 'getSftPreview', { minScore: 90 }],
     ]);
+  });
+
+  it('derives story source_scope from story-scoped artifact paths', async () => {
+    assert.ok(runtimeClientModule, 'runtime-client.js 模块应存在');
+
+    const scope = runtimeClientModule.deriveSourceScopeFromPath(
+      '_bmad-output/implementation-artifacts/epic-15/story-15-1-runtime-dashboard-sft/plan.md'
+    );
+
+    assert.deepStrictEqual(scope, {
+      scope_type: 'story',
+      epic_id: 'epic-15',
+      story_key: '15-1-runtime-dashboard-sft',
+      work_item_id: 'story:15-1-runtime-dashboard-sft',
+      board_group_id: 'epic:epic-15',
+    });
+  });
+
+  it('falls back to global source_scope when bundle mixes multiple source paths', async () => {
+    assert.ok(runtimeClientModule, 'runtime-client.js 模块应存在');
+
+    const scope = runtimeClientModule.deriveSourceScope(
+      [
+        { provenance: { source_path: 'specs/epic-15/story-15-1-runtime-dashboard-sft/spec.md' }, source: { artifact_refs: [] } },
+        { provenance: { source_path: '_bmad-output/implementation-artifacts/_orphan/bugfix/fix-runtime-dashboard-findings-duplication.md' }, source: { artifact_refs: [] } },
+      ],
+      {}
+    );
+
+    assert.deepStrictEqual(scope, { scope_type: 'global' });
   });
 });

@@ -59,11 +59,122 @@ function createSourceFixture(): {
     ].join('\n'),
     'utf-8'
   );
+  writeLatestBundleFixture(root);
 
   return {
     root,
     sourcePath,
   };
+}
+
+function writeLatestBundleFixture(root: string): void {
+  const bundleRoot = path.join(root, '_bmad-output', 'datasets', 'openai_chat-runtime-query');
+  fs.mkdirSync(bundleRoot, { recursive: true });
+  fs.writeFileSync(
+    path.join(bundleRoot, 'manifest.json'),
+    JSON.stringify(
+      {
+        bundle_id: 'openai_chat-runtime-query',
+        bundle_version: 'v2',
+        bundle_kind: 'training',
+        export_target: 'openai_chat',
+        created_at: '2026-03-28T00:10:00.000Z',
+        canonical_schema_version: 'v1',
+        exporter_version: 'v1-test',
+        generator_version: 'bundle-writer.v2',
+        source_scope: {
+          scope_type: 'story',
+          epic_id: 'epic-15',
+          story_key: '15-1-runtime-dashboard-sft',
+          work_item_id: 'story:15-1-runtime-dashboard-sft',
+          board_group_id: 'epic:epic-15',
+        },
+        source_snapshot: { sample_count: 3 },
+        export_hash: 'sha256:bundle-runtime-query',
+        filter_settings: { min_score: 90 },
+        split: { seed: 42, strategy: 'story_hash_v1' },
+        counts: {
+          total_candidates: 3,
+          accepted: 2,
+          rejected: 1,
+          downgraded: 0,
+          blocked: 1,
+          train: 1,
+          validation: 1,
+          test: 1,
+        },
+        provider_summary: {},
+        redaction_summary: {},
+        validation_summary: {
+          schema_valid: true,
+          training_ready_passed: false,
+        },
+        artifacts: {
+          train_path: 'train.jsonl',
+          validation_path: 'validation.jsonl',
+          test_path: 'test.jsonl',
+          manifest_path: 'manifest.json',
+          validation_report_path: 'validation-report.json',
+          rejection_report_path: 'rejection-report.json',
+        },
+      },
+      null,
+      2
+    ),
+    'utf-8'
+  );
+
+  const globalBundleRoot = path.join(root, '_bmad-output', 'datasets', 'openai_chat-global-runtime-query');
+  fs.mkdirSync(globalBundleRoot, { recursive: true });
+  fs.writeFileSync(
+    path.join(globalBundleRoot, 'manifest.json'),
+    JSON.stringify(
+      {
+        bundle_id: 'openai_chat-global-runtime-query',
+        bundle_version: 'v2',
+        bundle_kind: 'training',
+        export_target: 'openai_chat',
+        created_at: '2026-03-28T00:12:00.000Z',
+        canonical_schema_version: 'v1',
+        exporter_version: 'v1-test',
+        generator_version: 'bundle-writer.v2',
+        source_scope: {
+          scope_type: 'global',
+        },
+        source_snapshot: { sample_count: 9 },
+        export_hash: 'sha256:bundle-runtime-query-global',
+        filter_settings: { min_score: 90 },
+        split: { seed: 42, strategy: 'story_hash_v1' },
+        counts: {
+          total_candidates: 9,
+          accepted: 5,
+          rejected: 2,
+          downgraded: 2,
+          blocked: 1,
+          train: 5,
+          validation: 2,
+          test: 2,
+        },
+        provider_summary: {},
+        redaction_summary: {},
+        validation_summary: {
+          schema_valid: true,
+          training_ready_passed: true,
+        },
+        artifacts: {
+          train_path: 'train.jsonl',
+          validation_path: 'validation.jsonl',
+          test_path: 'test.jsonl',
+          manifest_path: 'manifest.json',
+          validation_report_path: 'validation-report.json',
+          rejection_report_path: 'rejection-report.json',
+        },
+      },
+      null,
+      2
+    ),
+    'utf-8'
+  );
 }
 
 describe('runtime-aware dashboard query', () => {
@@ -163,6 +274,8 @@ describe('runtime-aware dashboard query', () => {
           acceptance_decision: 'accepted',
           phase_score: 91,
           raw_phase_score: 91,
+          training_ready: true,
+          training_blockers: [],
           dimension_scores: {
             功能性: 93,
             代码质量: 88,
@@ -238,6 +351,8 @@ describe('runtime-aware dashboard query', () => {
           acceptance_decision: 'accepted',
           phase_score: 90,
           raw_phase_score: 90,
+          training_ready: true,
+          training_blockers: [],
           veto_triggered: false,
           iteration_count: 0,
           has_code_pair: true,
@@ -327,6 +442,8 @@ describe('runtime-aware dashboard query', () => {
           acceptance_decision: 'rejected',
           phase_score: 95,
           raw_phase_score: 95,
+          training_ready: false,
+          training_blockers: ['redaction_blocked', 'tool_trace_blocked'],
           veto_triggered: false,
           iteration_count: 0,
           has_code_pair: true,
@@ -488,6 +605,7 @@ describe('runtime-aware dashboard query', () => {
       expect(snapshot.sft_summary.total_candidates).toBe(3);
       expect(snapshot.sft_summary.accepted).toBe(2);
       expect(snapshot.sft_summary.rejected).toBe(1);
+      expect(snapshot.sft_summary.training_ready_candidates).toBe(2);
       expect(
         snapshot.sft_summary.by_split.train +
           snapshot.sft_summary.by_split.validation +
@@ -526,6 +644,28 @@ describe('runtime-aware dashboard query', () => {
             rejection_reasons: ['redaction_blocked', 'secret_detected_unresolved'],
           }),
         ])
+      );
+      expect(snapshot.sft_summary.last_bundle?.validation_summary).toEqual(
+        expect.objectContaining({
+          schema_valid: true,
+        })
+      );
+      expect(snapshot.sft_summary.last_bundle).toEqual(
+        expect.objectContaining({
+          bundle_id: 'openai_chat-runtime-query',
+          source_scope: expect.objectContaining({
+            scope_type: 'story',
+            story_key: '15-1-runtime-dashboard-sft',
+          }),
+        })
+      );
+      expect(snapshot.sft_summary.global_last_bundle).toEqual(
+        expect.objectContaining({
+          bundle_id: 'openai_chat-global-runtime-query',
+          source_scope: expect.objectContaining({
+            scope_type: 'global',
+          }),
+        })
       );
     } finally {
       fs.rmSync(fixture.root, { recursive: true, force: true });

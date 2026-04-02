@@ -23,6 +23,9 @@ describe('canonical sft schemas', () => {
         run_id: 'run-001',
         stage: 'implement',
         flow: 'story',
+        provider_id: 'openai-primary',
+        provider_mode: 'openai-compatible',
+        tool_trace_ref: 'sha256:trace-001',
         event_ids: ['evt-001'],
         artifact_refs: [
           {
@@ -53,12 +56,16 @@ describe('canonical sft schemas', () => {
         schema_targets: ['openai_chat', 'hf_conversational'],
         sample_kind: 'implementation',
         host: 'cursor',
+        host_kind: 'cursor',
         language: 'ts'
       },
       quality: {
         acceptance_decision: 'accepted',
         phase_score: 95,
         raw_phase_score: 95,
+        trace_completeness: 'complete',
+        training_ready: true,
+        training_blockers: [],
         veto_triggered: false,
         iteration_count: 1,
         has_code_pair: true,
@@ -74,6 +81,8 @@ describe('canonical sft schemas', () => {
         source_hash: 'sha256:source',
         source_path: 'docs/BUGFIX_sample.md',
         patch_ref: 'sha256:patch',
+        generator_version: 'candidate-builder.v2',
+        schema_version: 'canonical-sft-sample.v1',
         lineage: ['score.written'],
         generated_at: '2026-03-31T00:00:00.000Z'
       },
@@ -109,6 +118,7 @@ describe('canonical sft schemas', () => {
     };
 
     expect(validate(sample)).toBe(true);
+    expect(validate.errors).toBeNull();
   });
 
   it('validates dataset bundle manifests against dataset-bundle-manifest.schema.json', () => {
@@ -119,10 +129,16 @@ describe('canonical sft schemas', () => {
 
     const manifest = {
       bundle_id: 'openai_chat-abc123',
+      bundle_version: 'v2',
+      bundle_kind: 'training',
       export_target: 'openai_chat',
       created_at: '2026-03-31T00:00:00.000Z',
       canonical_schema_version: 'v1',
       exporter_version: 'v1',
+      generator_version: 'bundle-writer.v2',
+      source_snapshot: {
+        sample_count: 12,
+      },
       export_hash: 'sha256:bundle',
       filter_settings: {
         min_score: 90,
@@ -134,11 +150,26 @@ describe('canonical sft schemas', () => {
         strategy: 'story_hash_v1'
       },
       counts: {
+        total_candidates: 12,
         accepted: 10,
         rejected: 2,
+        downgraded: 1,
+        blocked: 1,
         train: 7,
         validation: 2,
         test: 1
+      },
+      provider_summary: {},
+      redaction_summary: {
+        status_counts: {
+          clean: 10,
+          redacted: 1,
+          blocked: 1,
+        },
+      },
+      validation_summary: {
+        schema_valid: true,
+        training_ready_passed: false,
       },
       artifacts: {
         train_path: 'train.openai_chat.jsonl',

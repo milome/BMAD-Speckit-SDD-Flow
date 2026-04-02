@@ -31,6 +31,9 @@ function buildPayload(opts) {
   if (opts.dropNoCodePair) {
     payload.dropNoCodePair = true;
   }
+  if (opts.sourceScope && typeof opts.sourceScope === 'object') {
+    payload.sourceScope = opts.sourceScope;
+  }
 
   return payload;
 }

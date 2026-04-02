@@ -17,8 +17,16 @@ import {
 import { applyQualityGates, type QualityGateOptions } from './quality-gates';
 import { applyCanonicalRedaction } from './redaction';
 import { assignDeterministicSplit } from './split';
-import { readToolTraceArtifact, type LoadedToolTrace } from './tool-trace';
+import {
+  computeTraceCompleteness,
+  summarizeToolTrace,
+  readToolTraceArtifact,
+  type LoadedToolTrace,
+} from './tool-trace';
 import type { CanonicalMessage, CanonicalSftSample } from './types';
+
+const CANONICAL_GENERATOR_VERSION = 'candidate-builder.v3';
+const CANONICAL_SCHEMA_VERSION = 'canonical-sft-sample.v1';
 
 export interface BuildCanonicalCandidatesOptions extends QualityGateOptions {
   dataPath?: string;
@@ -626,6 +634,9 @@ function buildCanonicalSample(
       epic_id: parsedStory ? `epic-${parsedStory.epicId}` : undefined,
       story_id: parsedStory ? `${parsedStory.storyId}` : undefined,
       story_slug: undefined,
+      provider_id: undefined,
+      provider_mode: undefined,
+      tool_trace_ref: toolTrace?.traceRef,
       event_ids: [`score:${record.run_id}:${record.stage}`],
       score_record_id: `${record.run_id}:${record.stage}`,
       artifact_refs: artifactRefs,
@@ -635,10 +646,12 @@ function buildCanonicalSample(
     metadata: {
       schema_targets: toolTrace ? ['openai_chat', 'hf_tool_calling'] : ['openai_chat', 'hf_conversational'],
       sample_kind: sampleKind,
+      host_kind: 'unknown',
       language: 'zh-CN',
       notes: [
         codePair.input || codePair.output ? 'legacy_flat_compat' : 'legacy_instruction_only',
         ...(toolTrace ? ['tool_trace_injected'] : []),
+        ...(toolTrace ? [`tool_trace_summary=${JSON.stringify(summarizeToolTrace(toolTrace))}`] : []),
       ],
     },
     quality: {
@@ -649,6 +662,9 @@ function buildCanonicalSample(
       dimension_scores: record.dimension_scores
         ? Object.fromEntries(record.dimension_scores.map((score) => [score.dimension, score.score]))
         : undefined,
+      trace_completeness: computeTraceCompleteness(toolTrace),
+      training_ready: false,
+      training_blockers: toolTrace ? [] : ['tool_trace_missing'],
       veto_triggered: isVetoTriggered(record),
       iteration_count: record.iteration_count,
       has_code_pair: codePair.input.length > 0 || codePair.output.length > 0,
@@ -664,6 +680,8 @@ function buildCanonicalSample(
       source_hash: record.source_hash ?? computeStringHash(sourceContent),
       source_path: record.source_path ?? null,
       patch_ref: codePair.patchRef,
+      generator_version: CANONICAL_GENERATOR_VERSION,
+      schema_version: CANONICAL_SCHEMA_VERSION,
       lineage,
       generated_at: new Date().toISOString(),
     },

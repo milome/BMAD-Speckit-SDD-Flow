@@ -37,9 +37,17 @@ export interface DatasetValidationCounts {
 export interface DatasetValidationReport {
   export_target: DatasetExportTarget;
   generated_at: string;
+  schema_valid: boolean;
+  privacy_gate_passed: boolean;
+  trace_quality_passed: boolean;
+  provider_compatibility_passed: boolean;
+  training_ready_passed: boolean;
   counts: DatasetValidationCounts;
   exported_sample_ids: string[];
+  invalid_samples: string[];
   rejected_samples: RejectedSampleReport[];
+  downgraded_samples: RejectedSampleReport[];
+  summary_by_reason: Array<{ reason: string; count: number }>;
   redaction_summary: DatasetRedactionSummary;
 }
 
@@ -306,9 +314,41 @@ export function finalizeValidationReport<Row>(
   target: DatasetExportTarget,
   accumulator: ValidationAccumulator<Row>
 ): DatasetValidationReport {
+  const downgradedSamples = accumulator.seenSamples
+    .filter((sample) => sample.quality.acceptance_decision === 'downgraded')
+    .map((sample) => ({
+      sample_id: sample.sample_id,
+      run_id: sample.source.run_id,
+      split: sample.split.assignment,
+      reasons: sample.quality.rejection_reasons,
+      warnings: sample.quality.warnings,
+      acceptance_decision: sample.quality.acceptance_decision,
+    }));
+  const reasonCounts = new Map<string, number>();
+  for (const sample of [...accumulator.rejectedSamples, ...downgradedSamples]) {
+    for (const reason of sample.reasons) {
+      reasonCounts.set(reason, (reasonCounts.get(reason) ?? 0) + 1);
+    }
+  }
+  const summaryByReason = [...reasonCounts.entries()]
+    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+    .map(([reason, count]) => ({ reason, count }));
+  const seenSamples = accumulator.seenSamples;
+
   return {
     export_target: target,
     generated_at: new Date().toISOString(),
+    schema_valid: true,
+    privacy_gate_passed: seenSamples.every(
+      (sample) => sample.redaction.status !== 'blocked' && sample.quality.rejection_reasons.indexOf('redaction_blocked') === -1
+    ),
+    trace_quality_passed: seenSamples.every(
+      (sample) => sample.quality.trace_completeness == null || sample.quality.trace_completeness === 'complete'
+    ),
+    provider_compatibility_passed: seenSamples.every(
+      (sample) => sample.export_compatibility[target].reasons.every((reason) => !reason.includes('provider'))
+    ),
+    training_ready_passed: seenSamples.every((sample) => sample.quality.training_ready !== false),
     counts: {
       accepted: accumulator.exportedSamples.length,
       rejected: accumulator.rejectedSamples.length,
@@ -320,7 +360,10 @@ export function finalizeValidationReport<Row>(
       test: accumulator.rowsBySplit.test.length,
     },
     exported_sample_ids: accumulator.exportedSamples.map((sample) => sample.sample_id),
+    invalid_samples: [],
     rejected_samples: accumulator.rejectedSamples,
+    downgraded_samples: downgradedSamples,
+    summary_by_reason: summaryByReason,
     redaction_summary: buildDatasetRedactionSummary(accumulator.seenSamples),
   };
 }
@@ -350,6 +393,11 @@ export function renderValidationReportMarkdown(report: DatasetValidationReport):
     ``,
     `- Target: \`${report.export_target}\``,
     `- Generated At: \`${report.generated_at}\``,
+    `- Schema Valid: ${report.schema_valid ? 'yes' : 'no'}`,
+    `- Privacy Gate Passed: ${report.privacy_gate_passed ? 'yes' : 'no'}`,
+    `- Trace Quality Passed: ${report.trace_quality_passed ? 'yes' : 'no'}`,
+    `- Provider Compatibility Passed: ${report.provider_compatibility_passed ? 'yes' : 'no'}`,
+    `- Training Ready Passed: ${report.training_ready_passed ? 'yes' : 'no'}`,
     `- Accepted: ${report.counts.accepted}`,
     `- Rejected: ${report.counts.rejected}`,
     `- Downgraded: ${report.counts.downgraded}`,

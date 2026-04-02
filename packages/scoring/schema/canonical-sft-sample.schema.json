@@ -30,6 +30,9 @@
         "epic_id": { "type": "string" },
         "story_id": { "type": "string" },
         "story_slug": { "type": "string" },
+        "provider_id": { "type": "string" },
+        "provider_mode": { "type": "string" },
+        "tool_trace_ref": { "type": "string" },
         "event_ids": {
           "type": "array",
           "items": { "type": "string", "minLength": 1 }
@@ -155,6 +158,7 @@
           "enum": ["implementation", "documentation"]
         },
         "host": { "type": "string" },
+        "host_kind": { "type": "string" },
         "language": { "type": "string" },
         "tags": {
           "type": "array",
@@ -197,6 +201,15 @@
           "type": "object",
           "additionalProperties": { "type": "number" }
         },
+        "trace_completeness": {
+          "type": "string",
+          "enum": ["complete", "partial", "missing", "blocked"]
+        },
+        "training_ready": { "type": "boolean" },
+        "training_blockers": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
         "veto_triggered": { "type": "boolean" },
         "iteration_count": { "type": "integer", "minimum": 0 },
         "has_code_pair": { "type": "boolean" },
@@ -234,6 +247,8 @@
         "source_hash": { "type": ["string", "null"] },
         "source_path": { "type": ["string", "null"] },
         "patch_ref": { "type": ["string", "null"] },
+        "generator_version": { "type": "string" },
+        "schema_version": { "type": "string" },
         "lineage": {
           "type": "array",
           "items": { "type": "string" }

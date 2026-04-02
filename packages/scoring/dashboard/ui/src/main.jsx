@@ -44,11 +44,17 @@ const messages = {
     rawScore: '原始分数',
     dimensionScores: '维度分数',
     latestBundle: '最近导出',
+    globalLatestBundle: '全局最近导出',
+    scopedLatestBundle: '当前工作项最近导出',
+    sourceScope: '来源范围',
+    bundleDir: 'Bundle 目录',
+    manifestPath: 'Manifest 路径',
     targetAvailability: '目标可用性',
     unavailable: '暂无数据',
     acceptedLabel: '接受',
     rejectedLabel: '拒绝',
     downgradedLabel: '降级',
+    trainingReadyLabel: '训练就绪',
     compatible: '可用',
     failureStream: '问题流',
     lastEventAt: '最近事件',
@@ -92,11 +98,17 @@ const messages = {
     rawScore: 'Raw Score',
     dimensionScores: 'Dimension Scores',
     latestBundle: 'Last Bundle',
+    globalLatestBundle: 'Global Latest Bundle',
+    scopedLatestBundle: 'Current Work Item Bundle',
+    sourceScope: 'Source Scope',
+    bundleDir: 'Bundle Dir',
+    manifestPath: 'Manifest Path',
     targetAvailability: 'Target Availability',
     unavailable: 'N/A',
     acceptedLabel: 'Accepted',
     rejectedLabel: 'Rejected',
     downgradedLabel: 'Downgraded',
+    trainingReadyLabel: 'Training Ready',
     compatible: 'Compatible',
     failureStream: 'Failure Stream',
     lastEventAt: 'Last Event',
@@ -151,17 +163,86 @@ function formatBoardStatus(status, msg) {
   return msg.unavailable;
 }
 
+function formatSourceScope(scope, msg) {
+  if (!scope) return msg.unavailable;
+  const parts = [scope.scope_type ?? 'unknown'];
+  if (scope.epic_id) parts.push(scope.epic_id);
+  if (scope.story_key) parts.push(scope.story_key);
+  if (scope.work_item_id) parts.push(scope.work_item_id);
+  return parts.join(' · ');
+}
+
 function Badge({ label, tone }) {
   return <span className={`badge-pill badge-${tone}`}>{label}</span>;
 }
 
 function MetricCard({ label, value, tone = 'cyan' }) {
   const text = String(value ?? '');
+  const isUnavailable = text === '' || text === messages.zh.unavailable || text === messages.en.unavailable;
   const fontSize = text.length > 30 ? 'text-[11px]' : text.length > 20 ? 'text-[13px]' : text.length > 10 ? 'text-[18px]' : 'text-[24px]';
   return (
     <div className="panel-card p-4">
       <div className="mb-2 text-[11px] uppercase tracking-[0.12em] text-secondary">{label}</div>
-      <div className={`min-w-0 font-mono ${fontSize} leading-tight truncate text-${tone}`}>{value}</div>
+      <div className={`min-w-0 font-mono leading-tight truncate ${isUnavailable ? 'text-[13px] text-secondary' : `${fontSize} text-${tone}`}`}>{value}</div>
+    </div>
+  );
+}
+
+function BundleMetaBlock({ title, bundle, msg }) {
+  return (
+    <div className="bundle-meta-block">
+      <div className="text-[15px] font-semibold text-primary">{title}</div>
+      <div className="mt-2 grid gap-2 text-[13px] leading-5 text-secondary">
+        <div className="bundle-meta-line">{formatNullable(msg, bundle?.bundle_id)}</div>
+        <div className="bundle-meta-line">{msg.sourceScope}: {formatSourceScope(bundle?.source_scope, msg)}</div>
+        <div className="bundle-meta-line">{msg.bundleDir}: {formatNullable(msg, bundle?.bundle_dir)}</div>
+        <div className="bundle-meta-line">{msg.manifestPath}: {formatNullable(msg, bundle?.manifest_path)}</div>
+      </div>
+    </div>
+  );
+}
+
+function ValidationSummary({ summary, msg }) {
+  const entries = Object.entries(summary ?? {});
+  if (entries.length === 0) {
+    return <div className="empty-note">{msg.noData}</div>;
+  }
+
+  return (
+    <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+      {entries.map(([key, value]) => (
+        <div key={key} className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-2">
+          <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{key}</div>
+          <div className="text-[14px] font-semibold text-primary">{String(value)}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TargetAvailabilityGrid({ availability, msg }) {
+  const entries = Object.entries(availability ?? {});
+  if (entries.length === 0) {
+    return <div className="empty-note">{msg.noData}</div>;
+  }
+
+  return (
+    <div className="mt-3 grid gap-3 md:grid-cols-3">
+      {entries.map(([target, counts]) => (
+        <div key={target} className="rounded-[16px] border border-soft bg-white/[0.025] p-3">
+          <div className="mb-2 font-mono text-[13px] text-primary">{target}</div>
+          <div className="grid gap-2 md:grid-cols-2">
+            <div className="rounded-[12px] border border-soft bg-white/[0.02] px-3 py-2">
+              <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.compatible}</div>
+              <div className="text-[16px] font-semibold text-mint">{formatNullable(msg, counts?.compatible)}</div>
+            </div>
+            <div className="rounded-[12px] border border-soft bg-white/[0.02] px-3 py-2">
+              <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.rejectedLabel}</div>
+              <div className="text-[16px] font-semibold text-coral">{formatNullable(msg, counts?.incompatible)}</div>
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -376,9 +457,11 @@ function App() {
                     <div className="grid gap-3 md:grid-cols-3">
                       <MetricCard label={msg.currentStage} value={activeWorkItem?.current_stage ? formatStage(locale, activeWorkItem.current_stage, msg) : msg.unavailable} tone="cyan" />
                       <MetricCard label={msg.lastEventAt} value={formatNullable(msg, snapshot?.runtime_context?.last_event_at)} tone="mint" />
-                      <MetricCard label={msg.latestBundle} value={formatNullable(msg, sft?.last_bundle?.bundle_id)} tone="amber" />
+                      <MetricCard label={msg.scopedLatestBundle} value={formatNullable(msg, sft?.last_bundle?.bundle_id)} tone="amber" />
                     </div>
-                    <div className="mt-4 text-[13px] leading-5 text-secondary">{formatNullable(msg, activeBoardGroup?.board_group_label)}</div>
+                    <div className="mt-4">
+                      <BundleMetaBlock title={msg.scopedLatestBundle} bundle={sft?.last_bundle} msg={msg} />
+                    </div>
                   </section>
                 </div>
               </div>
@@ -452,12 +535,18 @@ function App() {
                     <MetricCard label={msg.acceptedLabel} value={formatNullable(msg, sft.accepted)} tone="mint" />
                     <MetricCard label={msg.rejectedLabel} value={formatNullable(msg, sft.rejected)} tone="coral" />
                     <MetricCard label={msg.downgradedLabel} value={formatNullable(msg, sft.downgraded)} tone="amber" />
+                    <MetricCard label={msg.trainingReadyLabel} value={formatNullable(msg, sft.training_ready_candidates)} tone="mint" />
                     <MetricCard label={msg.compatible} value={formatNullable(msg, sft.target_availability?.openai_chat?.compatible)} tone="cyan" />
                     <MetricCard label={msg.blocked} value={formatNullable(msg, sft.target_availability?.hf_tool_calling?.compatible)} tone="amber" />
                   </div>
-                  <div className="mt-4 text-[15px] font-semibold text-primary">{msg.latestBundle}</div>
-                  <div className="mt-2 text-[13px] leading-5 text-secondary">{formatNullable(msg, sft?.last_bundle?.bundle_id)}</div>
+                  <div className="bundle-meta-grid">
+                    <BundleMetaBlock title={msg.scopedLatestBundle} bundle={sft?.last_bundle} msg={msg} />
+                    <BundleMetaBlock title={msg.globalLatestBundle} bundle={sft?.global_last_bundle} msg={msg} />
+                  </div>
                   <div className="mt-4 text-[15px] font-semibold text-primary">{msg.targetAvailability}</div>
+                  <TargetAvailabilityGrid availability={sft?.target_availability} msg={msg} />
+                  <div className="mt-4 text-[15px] font-semibold text-primary">Validation Summary</div>
+                  <ValidationSummary summary={sft?.last_bundle?.validation_summary ?? sft?.global_last_bundle?.validation_summary} msg={msg} />
                 </section>
               </div>
             ) : null}

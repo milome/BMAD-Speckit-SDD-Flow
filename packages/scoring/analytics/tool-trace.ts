@@ -4,6 +4,17 @@ import { computeStringHash } from '../utils/hash';
 import { readRuntimeEvents } from '../runtime';
 import type { CanonicalMessage, CanonicalTool, CanonicalToolCall } from './types';
 
+export interface ToolTraceSummary {
+  tool_count: number;
+  assistant_call_count: number;
+  tool_result_count: number;
+  has_orphan_tool_call: boolean;
+  has_orphan_tool_result: boolean;
+  call_result_matched: boolean;
+}
+
+export type ToolTraceCompleteness = 'complete' | 'partial' | 'missing' | 'blocked';
+
 export interface PersistedToolTrace {
   trace_version?: number;
   messages: CanonicalMessage[];
@@ -19,6 +30,49 @@ export interface LoadedToolTrace {
 
 export interface DiscoveredToolTrace extends LoadedToolTrace {
   attachedAt?: string;
+}
+
+export function summarizeToolTrace(trace: LoadedToolTrace): ToolTraceSummary {
+  const assistantCalls = trace.messages
+    .filter((message) => message.role === 'assistant')
+    .flatMap((message) => message.tool_calls ?? []);
+  const toolResults = trace.messages.filter((message) => message.role === 'tool');
+  const assistantCallIds = assistantCalls.map((call) => call.id);
+  const toolResultIds = toolResults
+    .map((message) => message.tool_call_id)
+    .filter((value): value is string => typeof value === 'string' && value.length > 0);
+  const toolResultIdSet = new Set(toolResultIds);
+  const assistantCallIdSet = new Set(assistantCallIds);
+  const hasOrphanToolCall = assistantCallIds.some((id) => !toolResultIdSet.has(id));
+  const hasOrphanToolResult = toolResultIds.some((id) => !assistantCallIdSet.has(id));
+
+  return {
+    tool_count: trace.tools.length,
+    assistant_call_count: assistantCalls.length,
+    tool_result_count: toolResults.length,
+    has_orphan_tool_call: hasOrphanToolCall,
+    has_orphan_tool_result: hasOrphanToolResult,
+    call_result_matched: assistantCalls.length > 0 && !hasOrphanToolCall && !hasOrphanToolResult,
+  };
+}
+
+export function computeTraceCompleteness(
+  trace: LoadedToolTrace | null,
+  options: { blocked?: boolean } = {}
+): ToolTraceCompleteness {
+  if (options.blocked) {
+    return 'blocked';
+  }
+  if (!trace) {
+    return 'missing';
+  }
+
+  const summary = summarizeToolTrace(trace);
+  if (summary.assistant_call_count === 0 && summary.tool_result_count === 0) {
+    return 'missing';
+  }
+
+  return summary.call_result_matched ? 'complete' : 'partial';
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
