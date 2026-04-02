@@ -20,9 +20,26 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+
+function resolvePresenterModule() {
+  const candidates = [
+    path.join(__dirname, 'governance-runner-summary-presenter.js'),
+    path.join(__dirname, '..', '..', 'runtime', 'hooks', 'governance-runner-summary-presenter.js'),
+    path.join(__dirname, '..', '..', '_bmad', 'runtime', 'hooks', 'governance-runner-summary-presenter.js'),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return require(candidate);
+    }
+  }
+
+  throw new Error('Cannot resolve governance-runner-summary-presenter.js from known hook locations');
+}
+
 const {
   buildGovernanceRunnerCliPresentation,
-} = require('../../runtime/hooks/governance-runner-summary-presenter.js');
+} = resolvePresenterModule();
 
 function resolveGovernanceQueueHelper() {
   const candidates = [
