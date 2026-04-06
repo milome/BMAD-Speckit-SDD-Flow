@@ -109,3 +109,5 @@ tests/string-formatter.test.ts
 # Worktrees
 .worktrees/
 .claude/worktrees/
+.zread/
+Devclaw-scope/
