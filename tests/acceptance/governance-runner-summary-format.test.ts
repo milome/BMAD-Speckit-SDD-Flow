@@ -9,7 +9,7 @@ describe('governance runner summary shared formatter', () => {
       buildGovernanceLatestRawEventSectionLines,
       appendRunnerSummaryToArtifactMarkdown,
       printGovernanceRunnerSummaryLines,
-    } = require('../../_bmad/runtime/hooks/governance-runner-summary-format.js') as {
+    } = require('../../_bmad/runtime/hooks/governance-runner-summary-format.cjs') as {
       buildGovernanceLatestRawEventSectionLines: (lines: string[]) => string[];
       appendRunnerSummaryToArtifactMarkdown: (
         artifactMarkdown: string,

@@ -1,0 +1,39 @@
+# 各 stage 审计报告路径约定（Story 3.1 产出，供 Story 3.2、3.3 引用）
+# Architecture §5、§6
+
+version: "1.0"
+
+# prd、arch 阶段：与 audit-prompts-prd/arch 对应
+# 产出路径由 code-reviewer 或 bmad 工作流约定
+prd:
+  audit_prompt: audit-prompts-prd.md
+  report_path: 由 code-reviewer prd 模式产出路径约定
+arch:
+  audit_prompt: audit-prompts-arch.md
+  report_path: 由 code-reviewer arch 模式产出路径约定
+
+# Layer 3 Create Story 审计报告（Architecture §6、Story 3.2 一致）
+story:
+  report_path: _bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_Story_{epic}-{story}.md
+  filename_pattern: AUDIT_Story_{epic}-{story}.md
+  example: AUDIT_Story_3-1.md
+
+# speckit-workflow 各阶段审计报告路径（与 call_mapping speckit_*_audit_pass 对应）
+# tasks 约定路径：AUDIT_tasks-E{epic}-S{story}.md（如 specs/epic-8-{epic-slug}/story-1-{slug}/AUDIT_tasks-E8-S1.md）
+# 历史命名变体：AUDIT_TASKS_E8_S1_逐条对照_2026-03-06.md 等；兼容策略见相关审计报告格式约定 §5
+# parseAndWriteScore 可通过 --reportPath 指定任意路径；仅新产出须含可解析块并符合约定命名
+speckit_report_paths:
+  spec: specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_spec-E{epic}-S{story}.md
+  plan: specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_plan-E{epic}-S{story}.md
+  gaps: specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_GAPS-E{epic}-S{story}.md
+  tasks: specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_tasks-E{epic}-S{story}.md
+  implement: _bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_implement-E{epic}-S{story}.md
+
+# Layer 4–5：speckit-workflow、audit-prompts.md §1–§5 约定
+layers_4_5:
+  specify: audit-prompts §1
+  plan: audit-prompts §2
+  gaps: audit-prompts §3
+  tasks: audit-prompts §4
+  implement: audit-prompts §5
+  post_impl: audit-prompts §5

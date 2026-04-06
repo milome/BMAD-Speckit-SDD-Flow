@@ -10,7 +10,7 @@ describe('runtime-policy inject auto-trigger boundary', () => {
   it('quietly skips outside BMAD instead of fabricating business runtime state', () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hook-boundary-'));
     try {
-      const script = path.join(repoRoot, '_bmad/claude/hooks/runtime-policy-inject.js');
+      const script = path.join(repoRoot, '_bmad/claude/hooks/runtime-policy-inject.cjs');
       const r = spawnSync(process.execPath, [script, '--cursor-host'], {
         cwd: tempRoot,
         input: JSON.stringify({ cwd: tempRoot }),

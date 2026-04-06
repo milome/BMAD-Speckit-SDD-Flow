@@ -8,7 +8,7 @@ describe('governance hook jsdoc typing', () => {
   it('annotates governance hook result contracts directly in JS hook entrypoints', () => {
     const cases = [
       {
-        file: path.join(repoRoot, '_bmad', 'claude', 'hooks', 'post-tool-use.js'),
+        file: path.join(repoRoot, '_bmad', 'claude', 'hooks', 'post-tool-use.cjs'),
         typedefs: [
           'GovernanceBackgroundTrigger',
           'GovernancePostToolUseResult',
@@ -16,7 +16,7 @@ describe('governance hook jsdoc typing', () => {
         returns: '@returns {GovernancePostToolUseResult | null}',
       },
       {
-        file: path.join(repoRoot, '_bmad', 'cursor', 'hooks', 'post-tool-use.js'),
+        file: path.join(repoRoot, '_bmad', 'cursor', 'hooks', 'post-tool-use.cjs'),
         typedefs: [
           'GovernanceBackgroundTrigger',
           'GovernancePostToolUseResult',
@@ -24,12 +24,12 @@ describe('governance hook jsdoc typing', () => {
         returns: '@returns {GovernancePostToolUseResult | null}',
       },
       {
-        file: path.join(repoRoot, '_bmad', 'claude', 'hooks', 'stop.js'),
+        file: path.join(repoRoot, '_bmad', 'claude', 'hooks', 'stop.cjs'),
         typedefs: ['GovernanceStopHookResult', 'GovernanceWorkerResult'],
         returns: '@returns {GovernanceStopHookResult}',
       },
       {
-        file: path.join(repoRoot, '_bmad', 'runtime', 'hooks', 'run-bmad-runtime-worker.js'),
+        file: path.join(repoRoot, '_bmad', 'runtime', 'hooks', 'run-bmad-runtime-worker.cjs'),
         typedefs: ['GovernanceWorkerResult'],
         returns: '@returns {GovernanceWorkerResult}',
       },
@@ -47,7 +47,7 @@ describe('governance hook jsdoc typing', () => {
     }
 
     const runtimeWorkerContent = readFileSync(
-      path.join(repoRoot, '_bmad', 'runtime', 'hooks', 'run-bmad-runtime-worker.js'),
+      path.join(repoRoot, '_bmad', 'runtime', 'hooks', 'run-bmad-runtime-worker.cjs'),
       'utf8'
     );
     expect(runtimeWorkerContent).toContain(

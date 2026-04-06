@@ -28,7 +28,7 @@ describe('accept-hooks-locale', () => {
     const en = JSON.parse(readFileSync(path.join(HOOKS, 'messages.en.json'), 'utf8')) as {
       runtimeGovernance: { jsonBlockPrefix: string };
     };
-    const hookLoad = path.join(HOOKS, 'hook-load-messages.js');
+    const hookLoad = path.join(HOOKS, 'hook-load-messages.cjs');
     const out = execFileSync(
       process.execPath,
       [
@@ -55,7 +55,7 @@ process.stdout.write(String(m.runtimeGovernance.jsonBlockPrefix));`,
         prompt: 'hello world',
       },
     });
-    const script = path.join(HOOKS, 'pre-agent-summary.js');
+    const script = path.join(HOOKS, 'pre-agent-summary.cjs');
     const r = spawnSync(process.execPath, [script], {
       encoding: 'utf8',
       input: stdin,
@@ -83,7 +83,7 @@ process.stdout.write(String(m.runtimeGovernance.jsonBlockPrefix));`,
       last_assistant_message: 'done',
       cwd: ROOT,
     });
-    const script = path.join(HOOKS, 'subagent-result-summary.js');
+    const script = path.join(HOOKS, 'subagent-result-summary.cjs');
     const r = spawnSync(process.execPath, [script], {
       encoding: 'utf8',
       input: stdin,

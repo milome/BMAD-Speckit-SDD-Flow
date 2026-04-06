@@ -4,7 +4,7 @@ import path from 'node:path';
 
 describe('runtime hooks cursor adapter', () => {
   it('keeps Cursor adapter thin and delegates to shared core', () => {
-    const file = path.join(process.cwd(), '_bmad', 'cursor', 'hooks', 'runtime-policy-inject.js');
+    const file = path.join(process.cwd(), '_bmad', 'cursor', 'hooks', 'runtime-policy-inject.cjs');
     const source = readFileSync(file, 'utf8');
 
     expect(source).toContain("./runtime-policy-inject-core");

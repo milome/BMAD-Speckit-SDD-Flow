@@ -27,8 +27,8 @@ describe('init-to-root package.json creation', () => {
       expect(pkg.scripts?.speckit).toBe('npx bmad-speckit');
       expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy.cjs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'hooks', 'resolve-for-session.cjs'))).toBe(true);
-      expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy-cli.js'))).toBe(true);
-      expect(existsSync(join(target, '.cursor', 'hooks', 'runtime-policy-inject.js'))).toBe(true);
+      expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy-cli.cjs'))).toBe(true);
+      expect(existsSync(join(target, '.cursor', 'hooks', 'runtime-policy-inject.cjs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'hooks', 'write-runtime-context.cjs'))).toBe(true);
       expect(existsSync(join(target, 'scripts', 'emit-runtime-policy.cjs'))).toBe(false);
     } finally {

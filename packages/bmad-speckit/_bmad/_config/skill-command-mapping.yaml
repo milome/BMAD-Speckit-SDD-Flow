@@ -1,0 +1,18 @@
+# BMAD Skills ↔ Commands 依赖 manifest
+# 用途：结构化记录 Command 与 Skill 的双向依赖，供 init/README 引用
+# 参考：docs/plans/BMAD-v6-skills-commands-workflows-gaps-analysis.md §5 T4
+
+commands:
+  bmad-bmm-create-story: [bmad-story-assistant, bmad-party-mode]
+  bmad-bmm-dev-story: [bmad-story-assistant, speckit-workflow]
+  bmad-coach: [bmad-eval-analytics]
+  bmad-sft-extract: [bmad-eval-analytics]
+  bmad-agent-bmm-tech-writer: [bmad-agent-tech-writer]
+  bmad-help: [bmad-help]
+
+skills:
+  bmad-story-assistant: [bmad-bmm-create-story, bmad-bmm-dev-story]
+  bmad-bug-assistant: []  # skill-only, triggered by rules/natural language, no dedicated command
+  bmad-eval-analytics: [bmad-coach, bmad-sft-extract]  # G3: 共用 npx bmad-speckit coach/sft-extract
+  bmad-agent-tech-writer: [bmad-agent-bmm-tech-writer]
+  bmad-help: [bmad-help]  # command 加载 skill，skill 无其他 command 依赖

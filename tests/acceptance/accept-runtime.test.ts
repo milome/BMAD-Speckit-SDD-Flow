@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 
 describe('runtime hooks and worker', () => {
   it('hooks directory has required files', () => {
-    const sessionStart = readFileSync('.claude/hooks/session-start.js', 'utf8');
-    const postToolUse = readFileSync('.claude/hooks/post-tool-use.js', 'utf8');
-    const stop = readFileSync('.claude/hooks/stop.js', 'utf8');
+    const sessionStart = readFileSync('.claude/hooks/session-start.cjs', 'utf8');
+    const postToolUse = readFileSync('.claude/hooks/post-tool-use.cjs', 'utf8');
+    const stop = readFileSync('.claude/hooks/stop.cjs', 'utf8');
     const worker = readFileSync('scripts/bmad-runtime-worker.ts', 'utf8');
 
     expect(sessionStart).toContain('checkpoint');

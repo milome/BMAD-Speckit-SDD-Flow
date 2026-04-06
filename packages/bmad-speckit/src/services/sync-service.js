@@ -347,7 +347,7 @@ function deployClaudeRuntimePolicyHooks(projectRoot, bmadRoot) {
     copyDirRecursive(sharedDir, destDir);
   }
 
-  const names = ['emit-runtime-policy-cli.js', 'runtime-policy-inject.js'];
+  const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs'];
   for (const name of names) {
     const src = path.join(claudeHooksDir, name);
     if (fs.existsSync(src)) {

@@ -23,7 +23,7 @@ describe('runtime-policy-inject (dual host entry)', () => {
   it('Cursor path: --cursor-host + stdin', () => {
     const tempRoot = makeEmitReadyRoot();
     try {
-      const inject = path.join(repoRoot, '_bmad/claude/hooks/runtime-policy-inject.js');
+      const inject = path.join(repoRoot, '_bmad/claude/hooks/runtime-policy-inject.cjs');
       const r = spawnSync(process.execPath, [inject, '--cursor-host'], {
         cwd: repoRoot,
         input: '{}',
@@ -46,7 +46,7 @@ describe('runtime-policy-inject (dual host entry)', () => {
   it('Cursor path: agent_message 请用英文 → systemMessage 含 resolvedMode en', () => {
     const tempRoot = makeEmitReadyRoot();
     try {
-      const inject = path.join(repoRoot, '_bmad/claude/hooks/runtime-policy-inject.js');
+      const inject = path.join(repoRoot, '_bmad/claude/hooks/runtime-policy-inject.cjs');
       const stdin = JSON.stringify({
         cwd: tempRoot,
         agent_message: '请用英文回答',
@@ -73,7 +73,7 @@ describe('runtime-policy-inject (dual host entry)', () => {
   it('Claude path: PreToolUse Agent stdin', () => {
     const tempRoot = makeEmitReadyRoot();
     try {
-      const inject = path.join(repoRoot, '_bmad/claude/hooks/runtime-policy-inject.js');
+      const inject = path.join(repoRoot, '_bmad/claude/hooks/runtime-policy-inject.cjs');
       const stdin = JSON.stringify({ tool_name: 'Agent', tool_input: { description: 'x' } });
       const r = spawnSync(process.execPath, [inject], {
         cwd: repoRoot,
@@ -95,7 +95,7 @@ describe('runtime-policy-inject (dual host entry)', () => {
   it('quietly skips injection when no BMAD/Speckit context is active and emit only reports missing flow/stage', () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'non-bmad-hook-'));
     try {
-      const inject = path.join(repoRoot, '_bmad/claude/hooks/runtime-policy-inject.js');
+      const inject = path.join(repoRoot, '_bmad/claude/hooks/runtime-policy-inject.cjs');
       const r = spawnSync(process.execPath, [inject, '--cursor-host'], {
         cwd: tempRoot,
         input: JSON.stringify({ cwd: tempRoot }),

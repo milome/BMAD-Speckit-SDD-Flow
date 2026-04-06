@@ -75,7 +75,7 @@ describe('runtime tool trace automatic capture', () => {
       fs.cpSync(path.join(repoRoot, '_bmad'), path.join(tempRoot, '_bmad'), { recursive: true });
       writeActiveRunContext(tempRoot, runId, 'implement');
 
-      const hookModule = require(path.join(repoRoot, '_bmad', 'runtime', 'hooks', 'post-tool-use-core.js')) as {
+      const hookModule = require(path.join(repoRoot, '_bmad', 'runtime', 'hooks', 'post-tool-use-core.cjs')) as {
         captureToolTrace: (input: unknown) => unknown;
       };
       const firstPayload = JSON.stringify({
@@ -171,7 +171,7 @@ describe('runtime tool trace automatic capture', () => {
       fs.cpSync(path.join(repoRoot, '_bmad'), path.join(tempRoot, '_bmad'), { recursive: true });
       writeActiveRunContext(tempRoot, runId, 'implement');
 
-      const hookModule = require(path.join(repoRoot, '_bmad', 'runtime', 'hooks', 'post-tool-use-core.js')) as {
+      const hookModule = require(path.join(repoRoot, '_bmad', 'runtime', 'hooks', 'post-tool-use-core.cjs')) as {
         captureToolTrace: (input: unknown) => unknown;
       };
       const payload = JSON.parse(fs.readFileSync(cursorRealFixturePath, 'utf8')) as Record<string, unknown>;

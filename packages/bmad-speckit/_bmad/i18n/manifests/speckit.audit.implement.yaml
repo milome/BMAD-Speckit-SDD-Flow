@@ -1,0 +1,34 @@
+id: speckit.audit.implement
+version: 1
+kind: audit_template
+control:
+  stage: implement
+  output_contract: markdown_audit_report
+  required_sections:
+    - audit_scope
+    - conclusion
+  placeholders:
+    epic: identifier
+    story: identifier
+  protected_tokens:
+    - AUDIT_SCOPE
+    - CONCLUSION
+localization:
+  default_language: zh
+  allow_bilingual: true
+anchors:
+  audit_scope: AUDIT_SCOPE
+  conclusion: CONCLUSION
+strings:
+  audit_scope_heading:
+    zh: "审计范围（实施阶段，Epic {{epic}} / Story {{story}}）"
+    en: "Audit Scope (implementation, Epic {{epic}} / Story {{story}})"
+  audit_scope_body:
+    zh: "代码审计四维：功能性、代码质量、测试覆盖、安全性（modes.code）；可解析块须含 AUDIT_SCOPE。"
+    en: "Code audit dimensions: Functionality, Code Quality, Test Coverage, Security (modes.code); parseable blocks must include AUDIT_SCOPE."
+  conclusion_heading:
+    zh: "批判审计员结论"
+    en: "Critical Auditor Conclusion"
+  conclusion_body:
+    zh: "总体评级: [A/B/C/D]\n维度：功能性/代码质量/测试覆盖/安全性；输出 CONCLUSION。"
+    en: "Overall Grade: [A/B/C/D]\nDimensions: Functionality, Code Quality, Test Coverage, Security; emit CONCLUSION."

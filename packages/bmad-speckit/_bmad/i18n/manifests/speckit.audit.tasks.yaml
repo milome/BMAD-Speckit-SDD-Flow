@@ -1,0 +1,34 @@
+id: speckit.audit.tasks
+version: 1
+kind: audit_template
+control:
+  stage: tasks
+  output_contract: markdown_audit_report
+  required_sections:
+    - audit_scope
+    - conclusion
+  placeholders:
+    epic: identifier
+    story: identifier
+  protected_tokens:
+    - AUDIT_SCOPE
+    - CONCLUSION
+localization:
+  default_language: zh
+  allow_bilingual: true
+anchors:
+  audit_scope: AUDIT_SCOPE
+  conclusion: CONCLUSION
+strings:
+  audit_scope_heading:
+    zh: "审计范围（tasks.md，Epic {{epic}} / Story {{story}}）"
+    en: "Audit Scope (tasks.md, Epic {{epic}} / Story {{story}})"
+  audit_scope_body:
+    zh: "本段对 tasks.md 做任务分解审计；可解析块须含 AUDIT_SCOPE 锚点。"
+    en: "This section audits tasks.md; parseable blocks must include the AUDIT_SCOPE anchor."
+  conclusion_heading:
+    zh: "批判审计员结论"
+    en: "Critical Auditor Conclusion"
+  conclusion_body:
+    zh: "总体评级: [A/B/C/D]\n问题清单与维度评分须符合解析器约定；输出 CONCLUSION。"
+    en: "Overall Grade: [A/B/C/D]\nIssue list and dimension scores must match parser conventions; emit CONCLUSION."

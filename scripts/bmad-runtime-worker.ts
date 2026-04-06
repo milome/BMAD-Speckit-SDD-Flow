@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 const {
   buildGovernanceRunnerCliPresentation,
-  } = require('../_bmad/runtime/hooks/governance-runner-summary-presenter.js') as {
+  } = require('../_bmad/runtime/hooks/governance-runner-summary-presenter.cjs') as {
   buildGovernanceRunnerCliPresentation: (input: {
     executionIntentCandidate?: GovernanceExecutionResult['executionIntentCandidate'];
     executionPlanDecision?: GovernanceExecutionResult['executionPlanDecision'];

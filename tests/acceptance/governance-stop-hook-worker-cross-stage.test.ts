@@ -31,7 +31,7 @@ import {
 } from '../../scripts/runtime-context-registry';
 
 const require = createRequire(import.meta.url);
-const stopHook = require('../../_bmad/claude/hooks/stop.js');
+const stopHook = require('../../_bmad/claude/hooks/stop.cjs');
 
 function waitBriefly(ms: number): void {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
