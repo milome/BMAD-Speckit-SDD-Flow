@@ -23,6 +23,7 @@
  */
 const fs = require('node:fs');
 const path = require('node:path');
+const os = require('node:os');
 const { spawnSync } = require('node:child_process');
 
 const PKG_ROOT = path.resolve(__dirname, '..');
@@ -162,7 +163,23 @@ const REGISTERED_AGENT_PROFILES = {
       const settingsDest = path.join(targetDir, '.claude', 'settings.json');
       if (fs.existsSync(settingsSrc)) {
         fs.mkdirSync(path.dirname(settingsDest), { recursive: true });
-        fs.copyFileSync(settingsSrc, settingsDest);
+        // Merge with global settings.json hooks (preserve user's global hooks like Stop notification)
+        const bmadSettings = JSON.parse(fs.readFileSync(settingsSrc, 'utf8'));
+        const globalSettingsPath = path.join(os.homedir(), '.claude', 'settings.json');
+        let mergedSettings = bmadSettings;
+        if (fs.existsSync(globalSettingsPath)) {
+          try {
+            const globalSettings = JSON.parse(fs.readFileSync(globalSettingsPath, 'utf8'));
+            if (globalSettings.hooks) {
+              // Deep merge: BMAD settings as base, append global hooks that don't conflict
+              mergedSettings = deepMergeSettings(bmadSettings, globalSettings);
+              console.log('Merged global ~/.claude/settings.json hooks into project settings');
+            }
+          } catch (e) {
+            console.warn('Failed to read global settings, using BMAD defaults:', e.message);
+          }
+        }
+        fs.writeFileSync(settingsDest, JSON.stringify(mergedSettings, null, 2) + '\n', 'utf8');
         console.log('Sync _bmad/claude/settings.json -> .claude/settings.json');
         totalFiles += 1;
       }
@@ -208,9 +225,95 @@ const TARGET = targetArg
   ? path.resolve(targetArg)
   : (process.env.INIT_CWD && path.resolve(process.env.INIT_CWD)) || process.cwd();
 
+/**
+ * Deep merge BMAD settings with global settings, preserving global hooks.
+ * BMAD settings take precedence, but global hooks (like Stop notification) are appended.
+ * @param {object} bmadSettings - BMAD settings from _bmad/claude/settings.json
+ * @param {object} globalSettings - Global settings from ~/.claude/settings.json
+ * @returns {object} Merged settings
+ */
+function deepMergeSettings(bmadSettings, globalSettings) {
+  const merged = JSON.parse(JSON.stringify(bmadSettings));
+
+  // Merge hooks: BMAD hooks first, then append global hooks that don't conflict
+  if (globalSettings.hooks) {
+    merged.hooks = merged.hooks || {};
+    for (const [hookName, globalHookValue] of Object.entries(globalSettings.hooks)) {
+      if (hookName === 'Stop' && Array.isArray(globalHookValue) && globalHookValue.length > 0) {
+        // For Stop hook, append global hooks after BMAD hooks
+        merged.hooks.Stop = merged.hooks.Stop || [];
+        // Filter out duplicate commands
+        const bmadCommands = new Set(merged.hooks.Stop.flatMap(h => h.hooks?.map(hh => hh.command) || []));
+        const globalHooksToAdd = globalHookValue.filter(h => {
+          const commands = h.hooks?.map(hh => hh.command) || [];
+          return !commands.every(cmd => bmadCommands.has(cmd));
+        });
+        if (globalHooksToAdd.length > 0) {
+          merged.hooks.Stop.push(...globalHooksToAdd);
+          console.log(`  Appended ${globalHooksToAdd.length} global Stop hook(s)`);
+        }
+      }
+      // Other hooks: BMAD takes precedence, skip global
+    }
+  }
+
+  // Preserve global env, permissions if not defined in BMAD
+  if (globalSettings.env && !merged.env) {
+    merged.env = globalSettings.env;
+  }
+  if (globalSettings.permissions && !merged.permissions) {
+    merged.permissions = globalSettings.permissions;
+  }
+
+  return merged;
+}
+
 const CORE_DIRS = ['_bmad'];
 const FULL_DIRS = ['_bmad'];
 const DIRS = fullMode ? FULL_DIRS : CORE_DIRS;
+
+/**
+ * Deep merge BMAD settings with global settings, preserving global hooks.
+ * BMAD settings take precedence, but global hooks (like Stop notification) are appended.
+ * @param {object} bmadSettings - BMAD settings from _bmad/claude/settings.json
+ * @param {object} globalSettings - Global settings from ~/.claude/settings.json
+ * @returns {object} Merged settings
+ */
+function deepMergeSettings(bmadSettings, globalSettings) {
+  const merged = JSON.parse(JSON.stringify(bmadSettings));
+
+  // Merge hooks: BMAD hooks first, then append global hooks that don't conflict
+  if (globalSettings.hooks) {
+    merged.hooks = merged.hooks || {};
+    for (const [hookName, globalHookValue] of Object.entries(globalSettings.hooks)) {
+      if (hookName === 'Stop' && Array.isArray(globalHookValue) && globalHookValue.length > 0) {
+        // For Stop hook, append global hooks after BMAD hooks
+        merged.hooks.Stop = merged.hooks.Stop || [];
+        // Filter out duplicate commands
+        const bmadCommands = new Set(merged.hooks.Stop.flatMap(h => h.hooks?.map(hh => hh.command) || []));
+        const globalHooksToAdd = globalHookValue.filter(h => {
+          const commands = h.hooks?.map(hh => hh.command) || [];
+          return !commands.every(cmd => bmadCommands.has(cmd));
+        });
+        if (globalHooksToAdd.length > 0) {
+          merged.hooks.Stop.push(...globalHooksToAdd);
+          console.log(`  Appended ${globalHooksToAdd.length} global Stop hook(s)`);
+        }
+      }
+      // Other hooks: BMAD takes precedence, skip global
+    }
+  }
+
+  // Preserve global env, permissions if not defined in BMAD
+  if (globalSettings.env && !merged.env) {
+    merged.env = globalSettings.env;
+  }
+  if (globalSettings.permissions && !merged.permissions) {
+    merged.permissions = globalSettings.permissions;
+  }
+
+  return merged;
+}
 
 function copyRecursive(src, dest) {
   const stat = fs.statSync(src);
