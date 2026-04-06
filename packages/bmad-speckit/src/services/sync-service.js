@@ -170,7 +170,7 @@ function syncCommandsRulesConfig(projectRoot, selectedAI, options = {}) {
 
   deploySpecifyDir(projectRoot, bmadRoot);
 
-  /** Align with monorepo `init-to-root`: hooks dir gets `emit-runtime-policy.cjs` + `write-runtime-context.js`; default `.bmad/runtime-context.json`. */
+  /** Align with monorepo `init-to-root`: hooks dir gets `emit-runtime-policy.cjs` + `write-runtime-context.cjs`; default `.bmad/runtime-context.json`. */
   deployRuntimeGovernanceFromPackage(projectRoot);
 
   fs.mkdirSync(path.join(projectRoot, 'specs'), { recursive: true });
@@ -194,14 +194,14 @@ function deployRuntimeGovernanceFromPackage(projectRoot) {
   }
   const pkgRootRuntimeEmit =
     path.basename(path.dirname(emitSrc)) === 'dist' ? path.dirname(path.dirname(emitSrc)) : path.dirname(emitSrc);
-  const wrcSrc = path.join(pkgRootRuntimeEmit, 'write-runtime-context.js');
+  const wrcSrc = path.join(pkgRootRuntimeEmit, 'write-runtime-context.cjs');
   const hookDirs = [path.join(projectRoot, '.cursor', 'hooks'), path.join(projectRoot, '.claude', 'hooks')];
   let deployed = 0;
   for (const d of hookDirs) {
     if (!fs.existsSync(d)) continue;
     fs.copyFileSync(emitSrc, path.join(d, 'emit-runtime-policy.cjs'));
     if (fs.existsSync(wrcSrc)) {
-      fs.copyFileSync(wrcSrc, path.join(d, 'write-runtime-context.js'));
+      fs.copyFileSync(wrcSrc, path.join(d, 'write-runtime-context.cjs'));
     }
     deployed += 1;
   }
@@ -210,8 +210,8 @@ function deployRuntimeGovernanceFromPackage(projectRoot) {
   const rcPath = path.join(projectRoot, '.bmad', 'runtime-context.json');
   if (!fs.existsSync(rcPath)) {
     const wrcCandidates = [
-      path.join(projectRoot, '.cursor', 'hooks', 'write-runtime-context.js'),
-      path.join(projectRoot, '.claude', 'hooks', 'write-runtime-context.js'),
+      path.join(projectRoot, '.cursor', 'hooks', 'write-runtime-context.cjs'),
+      path.join(projectRoot, '.claude', 'hooks', 'write-runtime-context.cjs'),
     ];
     const wrcDest = wrcCandidates.find((p) => fs.existsSync(p));
     if (wrcDest) {

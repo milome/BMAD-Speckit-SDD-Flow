@@ -9,7 +9,7 @@
  *   - Claude agents/skills/hooks/rules: _bmad/claude/
  *
  * 用途：部署 BMAD 目录结构。
- * 对外部目标目录：从 @bmad-speckit/runtime-emit 将 emit-runtime-policy.cjs、resolve-for-session.cjs、render-audit-block.cjs 与 write-runtime-context.js 复制到 **.cursor/hooks** 与/或 **.claude/hooks**（与 hook 脚本同目录，不在项目根创建 scripts/）。
+ * 对外部目标目录：从 @bmad-speckit/runtime-emit 将 emit-runtime-policy.cjs、resolve-for-session.cjs、render-audit-block.cjs 与 write-runtime-context.cjs 复制到 **.cursor/hooks** 与/或 **.claude/hooks**（与 hook 脚本同目录，不在项目根创建 scripts/）。
  * `--agent cursor`：`syncCursorRuntimePolicyHooks` 先将 `_bmad/runtime/hooks` 下 4 个共享 JS 复制到 `.cursor/hooks`，再覆盖 `emit-runtime-policy-cli.js`、`runtime-policy-inject.js`（薄壳，`./runtime-policy-inject-core` 优先）。
  * `--agent claude-code`：`syncClaudeRuntimePolicyHooks` 同样将上述 4 个文件复制到 `.claude/hooks` 后再覆盖薄壳与 CLI，与 Cursor 侧分层一致。
  * 外部目标默认**不**创建 package.json、不执行 npm install；若需在消费者目录安装本地 bmad-speckit CLI 依赖，传入 **--with-package-json**。
@@ -307,14 +307,14 @@ function writeDefaultRuntimeRegistry(targetDir, pkgRoot) {
 
 function writeDefaultRuntimeContext(targetDir, pkgRoot) {
   const candidates = [
-    path.join(targetDir, '.cursor', 'hooks', 'write-runtime-context.js'),
-    path.join(targetDir, '.claude', 'hooks', 'write-runtime-context.js'),
-    path.join(targetDir, 'scripts', 'write-runtime-context.js'),
-    path.join(pkgRoot, 'scripts', 'write-runtime-context.js'),
+    path.join(targetDir, '.cursor', 'hooks', 'write-runtime-context.cjs'),
+    path.join(targetDir, '.claude', 'hooks', 'write-runtime-context.cjs'),
+    path.join(targetDir, 'scripts', 'write-runtime-context.cjs'),
+    path.join(pkgRoot, 'scripts', 'write-runtime-context.cjs'),
   ];
   const script = candidates.find((p) => fs.existsSync(p));
   if (!script) {
-    console.warn('Skip runtime-context: write-runtime-context.js not found');
+    console.warn('Skip runtime-context: write-runtime-context.cjs not found');
     return;
   }
   const targetContext = path.join(targetDir, '_bmad-output', 'runtime', 'context', 'project.json');
@@ -425,7 +425,7 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
       'render-audit-block.cjs not found; run: npm run build:runtime-emit — pre-agent-summary audit inject may be empty in target.'
     );
   }
-  const wrcSrc = path.join(path.dirname(emitSrc), '..', 'write-runtime-context.js');
+  const wrcSrc = path.join(path.dirname(emitSrc), '..', 'write-runtime-context.cjs');
   const hookDirs = [
     path.join(targetDir, '.cursor', 'hooks'),
     path.join(targetDir, '.claude', 'hooks'),
@@ -441,7 +441,7 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
       fs.copyFileSync(renderAuditSrc, path.join(d, 'render-audit-block.cjs'));
     }
     if (fs.existsSync(wrcSrc)) {
-      fs.copyFileSync(wrcSrc, path.join(d, 'write-runtime-context.js'));
+      fs.copyFileSync(wrcSrc, path.join(d, 'write-runtime-context.cjs'));
     }
     deployed += 1;
   }
@@ -452,7 +452,7 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
     return;
   }
   console.log(
-    'Deployed emit-runtime-policy.cjs, resolve-for-session.cjs, render-audit-block.cjs (+ write-runtime-context.js) under .cursor/hooks and/or .claude/hooks (no project-root scripts/).'
+    'Deployed emit-runtime-policy.cjs, resolve-for-session.cjs, render-audit-block.cjs (+ write-runtime-context.cjs) under .cursor/hooks and/or .claude/hooks (no project-root scripts/).'
   );
 }
 

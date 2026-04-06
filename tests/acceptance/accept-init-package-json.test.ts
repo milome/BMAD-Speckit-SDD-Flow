@@ -29,14 +29,14 @@ describe('init-to-root package.json creation', () => {
       expect(existsSync(join(target, '.cursor', 'hooks', 'resolve-for-session.cjs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy-cli.js'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'hooks', 'runtime-policy-inject.js'))).toBe(true);
-      expect(existsSync(join(target, '.cursor', 'hooks', 'write-runtime-context.js'))).toBe(true);
+      expect(existsSync(join(target, '.cursor', 'hooks', 'write-runtime-context.cjs'))).toBe(true);
       expect(existsSync(join(target, 'scripts', 'emit-runtime-policy.cjs'))).toBe(false);
     } finally {
       rmSync(target, { recursive: true, force: true });
     }
   }, 60_000);
 
-  it('deploys emit + resolve-for-session cjs and write-runtime-context.js to external target with --no-package-json', () => {
+  it('deploys emit + resolve-for-session cjs and write-runtime-context.cjs to external target with --no-package-json', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-init-nopkg-'));
     try {
       execSync(`node scripts/init-to-root.js "${target}" --agent claude-code --no-package-json`, {
@@ -45,7 +45,7 @@ describe('init-to-root package.json creation', () => {
       });
       expect(existsSync(join(target, '.claude', 'hooks', 'emit-runtime-policy.cjs'))).toBe(true);
       expect(existsSync(join(target, '.claude', 'hooks', 'resolve-for-session.cjs'))).toBe(true);
-      expect(existsSync(join(target, '.claude', 'hooks', 'write-runtime-context.js'))).toBe(true);
+      expect(existsSync(join(target, '.claude', 'hooks', 'write-runtime-context.cjs'))).toBe(true);
       expect(existsSync(join(target, '.claude', 'i18n'))).toBe(true);
       expect(existsSync(join(target, 'scripts', 'emit-runtime-policy.cjs'))).toBe(false);
     } finally {
