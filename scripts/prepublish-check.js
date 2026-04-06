@@ -9,6 +9,12 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 const SPECKIT_DIR = path.join(ROOT, 'packages', 'bmad-speckit');
+const SPECKIT_BMAD_MIRROR = path.join(SPECKIT_DIR, '_bmad');
+const SILENT = process.env.BMAD_PREPUBLISH_SILENT === '1';
+
+function info(message) {
+  if (!SILENT) console.log(message);
+}
 
 const BUNDLED = [
   {
@@ -61,6 +67,23 @@ function copyDir(src, dest) {
   }
 }
 
+function removeDirContents(target) {
+  if (!fs.existsSync(target)) return;
+  for (const name of fs.readdirSync(target)) {
+    fs.rmSync(path.join(target, name), { recursive: true, force: true });
+  }
+}
+
+function syncBmadMirror() {
+  const source = path.join(ROOT, '_bmad');
+  if (!fs.existsSync(source) || !fs.statSync(source).isDirectory()) {
+    throw new Error('仓库根目录缺少 _bmad，无法同步发布镜像');
+  }
+  fs.mkdirSync(SPECKIT_BMAD_MIRROR, { recursive: true });
+  removeDirContents(SPECKIT_BMAD_MIRROR);
+  copyDir(source, SPECKIT_BMAD_MIRROR);
+}
+
 function syncWorkspacePackageToBundled(relDir, scopedId) {
   const pkgDir = path.join(ROOT, relDir);
   const parts = scopedId.split('/');
@@ -84,10 +107,12 @@ function syncWorkspacePackageToBundled(relDir, scopedId) {
 }
 
 for (const b of BUNDLED) {
-  console.log(`同步 ${b.id} → bmad-speckit/node_modules ...`);
+  info(`同步 ${b.id} → bmad-speckit/node_modules ...`);
   syncWorkspacePackageToBundled(b.relDir, b.id);
 }
-console.log('同步完成。\n');
+info('同步 _bmad → packages/bmad-speckit/_bmad ...');
+syncBmadMirror();
+info('同步完成。\n');
 
 const checks = [];
 
@@ -112,6 +137,23 @@ for (const b of BUNDLED) {
 }
 
 checks.push({
+  label: 'packages/bmad-speckit/_bmad 存在',
+  test: () => fs.existsSync(SPECKIT_BMAD_MIRROR) && fs.statSync(SPECKIT_BMAD_MIRROR).isDirectory() && fs.readdirSync(SPECKIT_BMAD_MIRROR).length > 0,
+});
+
+checks.push({
+  label: 'packages/bmad-speckit/_bmad 含 hooks/*.cjs',
+  test: () => {
+    const hookRoots = [
+      path.join(SPECKIT_BMAD_MIRROR, 'runtime', 'hooks'),
+      path.join(SPECKIT_BMAD_MIRROR, 'cursor', 'hooks'),
+      path.join(SPECKIT_BMAD_MIRROR, 'claude', 'hooks'),
+    ];
+    return hookRoots.every((dir) => fs.existsSync(dir) && fs.readdirSync(dir).some((name) => name.endsWith('.cjs')));
+  },
+});
+
+checks.push({
   label: 'packages/bmad-speckit/package.json 包含 bundleDependencies（三项 @bmad-speckit/*）',
   test: () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(SPECKIT_DIR, 'package.json'), 'utf8'));
@@ -124,7 +166,7 @@ checks.push({
 let allPassed = true;
 for (const { label, test } of checks) {
   const ok = test();
-  console.log(ok ? `  ✓ ${label}` : `  ✗ ${label}`);
+  info(ok ? `  ✓ ${label}` : `  ✗ ${label}`);
   if (!ok) allPassed = false;
 }
 
@@ -133,4 +175,4 @@ if (!allPassed) {
   process.exit(1);
 }
 
-console.log('\n发布前检查全部通过 ✓');
+info('\n发布前检查全部通过 ✓');

@@ -112,6 +112,10 @@ const REGISTERED_AGENT_PROFILES = {
           totalFiles += countFiles(destPath);
         }
       }
+      totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'bmm', 'workflows'), path.join(targetDir, '.cursor', 'skills'), targetDir);
+      totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'bmm', 'agents'), path.join(targetDir, '.cursor', 'skills'), targetDir);
+      totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'core', 'tasks'), path.join(targetDir, '.cursor', 'skills'), targetDir);
+      totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'core', 'skills'), path.join(targetDir, '.cursor', 'skills'), targetDir);
       const crSrc = path.join(targetDir, '_bmad', '_config', 'code-reviewer-config.yaml');
       const crDest = path.join(targetDir, '.cursor', 'agents', 'code-reviewer-config.yaml');
       if (fs.existsSync(crSrc)) {
@@ -159,6 +163,10 @@ const REGISTERED_AGENT_PROFILES = {
           fs.mkdirSync(destPath, { recursive: true });
         }
       }
+      totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'bmm', 'workflows'), path.join(targetDir, '.claude', 'skills'), targetDir);
+      totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'bmm', 'agents'), path.join(targetDir, '.claude', 'skills'), targetDir);
+      totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'core', 'tasks'), path.join(targetDir, '.claude', 'skills'), targetDir);
+      totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'core', 'skills'), path.join(targetDir, '.claude', 'skills'), targetDir);
       const settingsSrc = path.join(bmadRoot, 'claude', 'settings.json');
       const settingsDest = path.join(targetDir, '.claude', 'settings.json');
       if (fs.existsSync(settingsSrc)) {
@@ -328,6 +336,30 @@ function copyRecursive(src, dest) {
   }
 }
 
+function copySkillDirsRecursive(srcRoot, destRoot, targetDir) {
+  if (!fs.existsSync(srcRoot) || !fs.statSync(srcRoot).isDirectory()) return 0;
+  let copiedFiles = 0;
+
+  function walk(current) {
+    const entries = fs.readdirSync(current, { withFileTypes: true });
+    const hasSkill = entries.some((entry) => entry.isFile() && entry.name === 'SKILL.md');
+    if (hasSkill) {
+      const skillName = path.basename(current);
+      const destDir = path.join(destRoot, skillName);
+      copyRecursive(current, destDir);
+      copiedFiles += countFiles(destDir);
+      console.log('Sync', path.relative(targetDir, current), '->', path.relative(targetDir, destDir));
+      return;
+    }
+    for (const entry of entries) {
+      if (entry.isDirectory()) walk(path.join(current, entry.name));
+    }
+  }
+
+  walk(srcRoot);
+  return copiedFiles;
+}
+
 /**
  * Deploy emit + inject hooks for Cursor (same scripts as Claude hooks).
  * @param {string} targetDir
@@ -375,7 +407,7 @@ function syncClaudeRuntimePolicyHooks(targetDir, bmadRoot) {
     console.log('Sync', path.relative(targetDir, sharedDir), '->', path.join('.claude', 'hooks'));
   }
 
-  const names = ['emit-runtime-policy-cli.js', 'runtime-policy-inject.js', 'session-start.js'];
+  const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs', 'session-start.cjs'];
   for (const name of names) {
     const src = path.join(claudeHooksDir, name);
     if (fs.existsSync(src)) {

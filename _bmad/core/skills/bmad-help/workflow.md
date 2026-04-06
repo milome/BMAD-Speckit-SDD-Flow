@@ -14,14 +14,15 @@
 ## DISPLAY RULES
 
 ### Command-Based Workflows
-When `command` field has a value:
-- Show the command as a skill name in backticks (e.g., `bmad-bmm-create-prd`)
+When `workflow-file` is a normal file path and `command` field has a value:
+- Show the command in backticks as a legacy command entry point
 
 ### Skill-Referenced Workflows
 When `workflow-file` starts with `skill:`:
 - The value is a skill reference (e.g., `skill:bmad-quick-dev-new-preview`), NOT a file path
 - Do NOT attempt to resolve or load it as a file path
-- Display using the `command` column value as a skill name in backticks (same as command-based workflows)
+- Strip the `skill:` prefix and display the real skill name in backticks (e.g., `bmad-create-prd`)
+- If `command` is also present, present it only as a legacy/compatibility alias, not as the primary skill name
 
 ### Agent-Based Workflows
 When `command` field is empty:
@@ -32,7 +33,8 @@ When `command` field is empty:
 Example presentation for skill/command-based agent:
 ```
 Explain Concept (EC)
-Command: `bmad-agent-bmm-tech-writer` (loads skill:bmad-agent-tech-writer), then ask to "EC about [topic]"
+Skill: `bmad-agent-tech-writer`
+Legacy command: `bmad-agent-bmm-tech-writer`, then ask to "EC about [topic]"
 Agent: Paige (Technical Writer)
 Description: Create clear technical explanations with examples...
 ```
@@ -85,7 +87,8 @@ Determine what was just completed:
 
    For each item, apply DISPLAY RULES above and include:
    - Workflow **name**
-   - **Command** OR **Code + Agent load instruction** (per DISPLAY RULES)
+   - **Skill** OR **Code + Agent load instruction** (per DISPLAY RULES)
+   - If present and helpful, include **Legacy command** as a compatibility alias rather than the primary invocation
    - **Agent** title and display name from the CSV (e.g., "🎨 Alex (Designer)")
    - Brief **description**
 

@@ -69,6 +69,40 @@ function publishFromDir(srcRoot, destFull) {
 }
 
 /**
+ * Discover skill directories recursively by finding SKILL.md files and publishing the parent dir.
+ * This supports upstream layouts like _bmad/bmm/workflows/<phase>/bmad-create-prd/SKILL.md.
+ * @param {string} srcRoot - Source root to scan.
+ * @param {string} destFull - Destination skills directory.
+ * @returns {string[]} Names of published skill directories.
+ */
+function publishRecursiveSkillDirs(srcRoot, destFull) {
+  if (!fs.existsSync(srcRoot) || !fs.statSync(srcRoot).isDirectory()) return [];
+
+  const published = new Set();
+
+  function walk(current) {
+    const entries = fs.readdirSync(current, { withFileTypes: true });
+    const hasSkill = entries.some((entry) => entry.isFile() && entry.name === 'SKILL.md');
+    if (hasSkill) {
+      const skillName = path.basename(current);
+      const destSub = path.join(destFull, skillName);
+      if (!fs.existsSync(destSub)) fs.mkdirSync(destSub, { recursive: true });
+      copyDirRecursive(current, destSub);
+      published.add(skillName);
+      return;
+    }
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        walk(path.join(current, entry.name));
+      }
+    }
+  }
+
+  walk(srcRoot);
+  return [...published];
+}
+
+/**
  * Publish skills to configTemplate.skillsDir in two phases:
  * 1. Universal skills from _bmad/skills/
  * 2. Platform-adapted skills from configTemplate.platformSkillsDir (e.g. _bmad/cursor/skills/)
@@ -107,6 +141,14 @@ function publish(projectRoot, selectedAI, options = {}) {
   const universalSrc = path.join(bmadRoot, 'skills');
   const universalPublished = publishFromDir(universalSrc, destFull);
 
+  const workflowSkillRoots = [
+    path.join(bmadRoot, 'bmm', 'workflows'),
+    path.join(bmadRoot, 'bmm', 'agents'),
+    path.join(bmadRoot, 'core', 'tasks'),
+    path.join(bmadRoot, 'core', 'skills'),
+  ];
+  const workflowPublished = workflowSkillRoots.flatMap((root) => publishRecursiveSkillDirs(root, destFull));
+
   let platformPublished = [];
   const platformSkillsDir = entry.configTemplate.platformSkillsDir;
   if (platformSkillsDir) {
@@ -116,7 +158,7 @@ function publish(projectRoot, selectedAI, options = {}) {
     platformPublished = publishFromDir(platformSrc, destFull);
   }
 
-  const allPublished = [...new Set([...universalPublished, ...platformPublished])];
+  const allPublished = [...new Set([...universalPublished, ...workflowPublished, ...platformPublished])];
   return { published: allPublished, skippedReasons: [] };
 }
 
