@@ -10,7 +10,7 @@
  *
  * 用途：部署 BMAD 目录结构。
  * 对外部目标目录：从 @bmad-speckit/runtime-emit 将 emit-runtime-policy.cjs、resolve-for-session.cjs、render-audit-block.cjs 与 write-runtime-context.cjs 复制到 **.cursor/hooks** 与/或 **.claude/hooks**（与 hook 脚本同目录，不在项目根创建 scripts/）。
- * `--agent cursor`：`syncCursorRuntimePolicyHooks` 先将 `_bmad/runtime/hooks` 下 4 个共享 JS 复制到 `.cursor/hooks`，再覆盖 `emit-runtime-policy-cli.js`、`runtime-policy-inject.js`（薄壳，`./runtime-policy-inject-core` 优先）。
+ * `--agent cursor`：`syncCursorRuntimePolicyHooks` 先将 `_bmad/runtime/hooks` 下 4 个共享 JS 复制到 `.cursor/hooks`，再覆盖 `emit-runtime-policy-cli.cjs`、`runtime-policy-inject.cjs`（薄壳，`./runtime-policy-inject-core` 优先）。
  * `--agent claude-code`：`syncClaudeRuntimePolicyHooks` 同样将上述 4 个文件复制到 `.claude/hooks` 后再覆盖薄壳与 CLI，与 Cursor 侧分层一致。
  * 外部目标默认**不**创建 package.json、不执行 npm install；若需在消费者目录安装本地 bmad-speckit CLI 依赖，传入 **--with-package-json**。
  * speckit commands 从 _bmad/speckit/commands/ 合并；.specify/ 部署 templates/workflows/scripts。
@@ -77,14 +77,14 @@ function writeCursorHooksJson(targetDir) {
     version: 1,
     hooks: {
       sessionStart: [
-        { command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host --session-start' },
-        { command: 'node .cursor/hooks/runtime-dashboard-session-start.js' },
+        { command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host --session-start' },
+        { command: 'node .cursor/hooks/runtime-dashboard-session-start.cjs' },
       ],
-      preToolUse: [{ command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host' }],
+      preToolUse: [{ command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host' }],
       subagentStart: [
-        { command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host --subagent-start' },
+        { command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host --subagent-start' },
       ],
-      postToolUse: [{ command: 'node .cursor/hooks/post-tool-use.js' }],
+      postToolUse: [{ command: 'node .cursor/hooks/post-tool-use.cjs' }],
     },
   };
   fs.writeFileSync(hooksJsonPath, `${JSON.stringify(hooksJson, null, 2)}\n`, 'utf8');
@@ -345,7 +345,7 @@ function syncCursorRuntimePolicyHooks(targetDir, bmadRoot) {
     console.log('Sync', path.relative(targetDir, sharedDir), '->', path.join('.cursor', 'hooks'));
   }
 
-  const names = ['emit-runtime-policy-cli.js', 'runtime-policy-inject.js', 'post-tool-use.js', 'runtime-dashboard-session-start.js'];
+  const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs', 'post-tool-use.cjs', 'runtime-dashboard-session-start.cjs'];
   for (const name of names) {
     const src = path.join(cursorHooksDir, name);
     if (fs.existsSync(src)) {

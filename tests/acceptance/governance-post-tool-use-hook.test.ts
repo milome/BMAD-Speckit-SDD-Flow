@@ -7,7 +7,7 @@ import { governancePendingQueueFilePath } from '../../scripts/governance-runtime
 import type { GovernancePostToolUseResult } from '../../scripts/governance-hook-types';
 
 const require = createRequire(import.meta.url);
-const cursorHook = require('../../_bmad/cursor/hooks/post-tool-use.js');
+const cursorHook = require('../../_bmad/cursor/hooks/post-tool-use.cjs');
 const claudeHook = require('../../_bmad/claude/hooks/post-tool-use.js');
 
 const originalCwd = process.cwd();

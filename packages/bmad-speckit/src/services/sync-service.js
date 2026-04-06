@@ -289,11 +289,11 @@ function writeCursorHooksJson(projectRoot) {
     version: 1,
     hooks: {
       sessionStart: [
-        { command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host --session-start' },
+        { command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host --session-start' },
       ],
-      preToolUse: [{ command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host' }],
+      preToolUse: [{ command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host' }],
       subagentStart: [
-        { command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host --subagent-start' },
+        { command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host --subagent-start' },
       ],
     },
   };
@@ -321,7 +321,7 @@ function deployCursorRuntimePolicyHooks(projectRoot, bmadRoot) {
     copyDirRecursive(sharedDir, destDir);
   }
 
-  const names = ['emit-runtime-policy-cli.js', 'runtime-policy-inject.js'];
+  const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs'];
   for (const name of names) {
     const src = path.join(cursorHooksDir, name);
     if (fs.existsSync(src)) {

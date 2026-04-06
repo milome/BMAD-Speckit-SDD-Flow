@@ -7,10 +7,10 @@
 
 `init-to-root.js`（`--agent cursor`）与 install/sync 路径必须部署：
 
-- `.cursor/hooks/emit-runtime-policy-cli.js`
-- `.cursor/hooks/runtime-policy-inject.js`
+- `.cursor/hooks/emit-runtime-policy-cli.cjs`
+- `.cursor/hooks/runtime-policy-inject.cjs`
 - `.cursor/hooks/emit-runtime-policy.cjs`
-- `.cursor/hooks/write-runtime-context.js`
+- `.cursor/hooks/write-runtime-context.cjs`
 - `.cursor/hooks.json`
 
 ## 与 Claude 的关系
