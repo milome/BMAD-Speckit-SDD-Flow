@@ -5,7 +5,18 @@
   "bin": {
     "bmad-speckit": "bin/bmad-speckit.js"
   },
+  "files": [
+    "README.md",
+    "bin/",
+    "src/",
+    "tests/",
+    "test-nonempty/",
+    "_bmad/"
+  ],
   "scripts": {
+    "prepack": "node -e \"process.env.BMAD_PREPUBLISH_SILENT='1'; require('../../scripts/prepublish-check.js')\"",
+    "postpack": "node ../../scripts/cleanup-packed-bmad.js",
+    "prepublishOnly": "node ../../scripts/prepublish-check.js",
     "test": "node --test tests/ 2>/dev/null || echo 'No tests yet'"
   },
   "keywords": ["bmad", "speckit", "sdd", "init"],

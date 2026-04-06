@@ -20,15 +20,32 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+
+function resolvePresenterModule() {
+  const candidates = [
+    path.join(__dirname, 'governance-runner-summary-presenter.cjs'),
+    path.join(__dirname, '..', '..', 'runtime', 'hooks', 'governance-runner-summary-presenter.cjs'),
+    path.join(__dirname, '..', '..', '_bmad', 'runtime', 'hooks', 'governance-runner-summary-presenter.cjs'),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return require(candidate);
+    }
+  }
+
+  throw new Error('Cannot resolve governance-runner-summary-presenter.cjs from known hook locations');
+}
+
 const {
   buildGovernanceRunnerCliPresentation,
-} = require('../../runtime/hooks/governance-runner-summary-presenter.js');
+} = resolvePresenterModule();
 
 function resolveGovernanceQueueHelper() {
   const candidates = [
-    path.join(__dirname, 'governance-rerun-queue.js'),
-    path.join(__dirname, '..', '..', 'runtime', 'hooks', 'governance-rerun-queue.js'),
-    path.join(__dirname, '..', '..', '_bmad', 'runtime', 'hooks', 'governance-rerun-queue.js'),
+    path.join(__dirname, 'governance-rerun-queue.cjs'),
+    path.join(__dirname, '..', '..', 'runtime', 'hooks', 'governance-rerun-queue.cjs'),
+    path.join(__dirname, '..', '..', '_bmad', 'runtime', 'hooks', 'governance-rerun-queue.cjs'),
   ];
 
   for (const candidate of candidates) {
@@ -42,9 +59,9 @@ function resolveGovernanceQueueHelper() {
 
 function resolveRuntimeWorkerHelper() {
   const candidates = [
-    path.join(__dirname, 'run-bmad-runtime-worker.js'),
-    path.join(__dirname, '..', '..', 'runtime', 'hooks', 'run-bmad-runtime-worker.js'),
-    path.join(__dirname, '..', '..', '_bmad', 'runtime', 'hooks', 'run-bmad-runtime-worker.js'),
+    path.join(__dirname, 'run-bmad-runtime-worker.cjs'),
+    path.join(__dirname, '..', '..', 'runtime', 'hooks', 'run-bmad-runtime-worker.cjs'),
+    path.join(__dirname, '..', '..', '_bmad', 'runtime', 'hooks', 'run-bmad-runtime-worker.cjs'),
   ];
 
   for (const candidate of candidates) {
@@ -79,22 +96,6 @@ function readStdin() {
     });
     process.stdin.on('error', reject);
   });
-}
-
-/**
- * @param {GovernanceRerunEventLike | null | undefined} event
- * @returns {void}
- */
-function recordHighValueEvent(event) {
-  const highValueEvents = ['file-modified', 'audit-request', 'git-commit-attempt'];
-  if (typeof event?.type !== 'string' || !highValueEvents.includes(event.type)) {
-    return;
-  }
-
-  const eventsDir = path.join(process.cwd(), '.claude', 'state', 'runtime', 'events');
-  fs.mkdirSync(eventsDir, { recursive: true });
-  const eventPath = path.join(eventsDir, `${Date.now()}.json`);
-  fs.writeFileSync(eventPath, JSON.stringify(event, null, 2) + '\n', 'utf8');
 }
 
 /**
@@ -149,14 +150,6 @@ function buildExecutorRoutingFromHints(journeyContractHints) {
     executorRoute: 'default-gate-remediation',
     prioritizedSignals: [],
   });
-}
-
-/**
- * @param {GovernanceRerunEventLike | null | undefined} event
- * @returns {GovernanceExecutorRoutingProjection}
- */
-function buildExecutorRoutingPreview(event) {
-  return buildExecutorRoutingFromHints(extractJourneyContractHints(event));
 }
 
 /**
@@ -224,18 +217,15 @@ function normalizeBackgroundTrigger(backgroundTrigger, projectRoot, event) {
 
 /**
  * @param {string} projectRoot
- * @param {GovernanceRerunEventLike | null | undefined} event
  * @returns {GovernanceBackgroundTrigger | null}
  */
-function triggerDetachedBackgroundDrain(projectRoot, event) {
-  const executorRouting = buildExecutorRoutingPreview(event);
+function triggerDetachedBackgroundDrain(projectRoot) {
   if (process.env.BMAD_SKIP_GOVERNANCE_BACKGROUND_DRAIN === '1') {
     return {
       started: false,
       skipped: true,
       reason: 'disabled by BMAD_SKIP_GOVERNANCE_BACKGROUND_DRAIN',
       projectRoot,
-      executorRouting,
     };
   }
 
@@ -256,13 +246,7 @@ function triggerDetachedBackgroundDrain(projectRoot, event) {
  * @returns {GovernancePostToolUseResult | null}
  */
 function postToolUse(event) {
-  if (!event || typeof event !== 'object') {
-    return null;
-  }
-
-  recordHighValueEvent(event);
-
-  if (event.type !== 'governance-rerun-result') {
+  if (!event || typeof event !== 'object' || event.type !== 'governance-rerun-result') {
     return null;
   }
 
@@ -274,7 +258,7 @@ function postToolUse(event) {
   const queuePath = helper.enqueueGovernanceRerunEvent(event);
   const projectRoot = extractProjectRoot(event);
   const backgroundTrigger = normalizeBackgroundTrigger(
-    triggerDetachedBackgroundDrain(projectRoot, event),
+    triggerDetachedBackgroundDrain(projectRoot),
     projectRoot,
     event
   );

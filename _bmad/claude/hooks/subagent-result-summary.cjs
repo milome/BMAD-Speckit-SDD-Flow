@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const { loadHookMessages, getHooksTimeLocale } = require('./hook-load-messages');
+const { loadHookMessages, getHooksTimeLocale } = require('./hook-load-messages.cjs');
 
 const LINE = '═'.repeat(50);
 

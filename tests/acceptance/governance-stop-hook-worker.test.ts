@@ -24,7 +24,7 @@ import {
 } from '../../scripts/runtime-context-registry';
 
 const require = createRequire(import.meta.url);
-const stopHook = require('../../_bmad/claude/hooks/stop.js');
+const stopHook = require('../../_bmad/claude/hooks/stop.cjs');
 
 afterEach(() => {
   vi.restoreAllMocks();

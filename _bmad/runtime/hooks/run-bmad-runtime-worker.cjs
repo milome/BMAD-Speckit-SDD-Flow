@@ -51,7 +51,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const {
   buildGovernanceRunnerCliPresentation,
-} = require('./governance-runner-summary-presenter.js');
+} = require('./governance-runner-summary-presenter.cjs');
 
 /**
  * @param {unknown} error

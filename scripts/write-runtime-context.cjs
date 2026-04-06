@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Write an explicit runtime context file (bootstrap / speckit phase updates).
- * Usage: node scripts/write-runtime-context.js <targetFile> [flow] [stage] [templateId?] [epicId] [storyId] [storySlug] [runId] [artifactRoot] [contextScope]
+ * Usage: node scripts/write-runtime-context.cjs <targetFile> [flow] [stage] [templateId?] [epicId] [storyId] [storySlug] [runId] [artifactRoot] [contextScope]
  * Default flow/stage: story / specify
  */
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -13,7 +13,7 @@ const path = require('node:path');
 const targetFileArg = process.argv[2];
 if (!targetFileArg || String(targetFileArg).trim() === '') {
   console.error(
-    'Usage: node scripts/write-runtime-context.js <targetFile> [flow] [stage] [templateId?] [epicId] [storyId] [storySlug] [runId] [artifactRoot] [contextScope]'
+    'Usage: node write-runtime-context.cjs <targetFile> [flow] [stage] [templateId?] [epicId] [storyId] [storySlug] [runId] [artifactRoot] [contextScope]'
   );
   process.exit(1);
 }

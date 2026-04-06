@@ -7,7 +7,7 @@ describe('runtime-governance cursor hooks path', () => {
     const hooksPath = path.join(process.cwd(), '.cursor', 'hooks.json');
     expect(existsSync(hooksPath)).toBe(true);
     const content = readFileSync(hooksPath, 'utf8');
-    expect(content).toContain('runtime-policy-inject.js --cursor-host');
+    expect(content).toContain('runtime-policy-inject.cjs --cursor-host');
     expect(content).toContain('"version": 1');
     expect(content).toContain('sessionStart');
     expect(content).toContain('preToolUse');

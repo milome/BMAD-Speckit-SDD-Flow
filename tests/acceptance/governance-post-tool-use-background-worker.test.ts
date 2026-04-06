@@ -34,8 +34,8 @@ import {
 } from '../../scripts/runtime-context-registry';
 
 const require = createRequire(import.meta.url);
-const claudeHook = require('../../_bmad/claude/hooks/post-tool-use.js');
-const runtimeWorkerHelper = require('../../_bmad/runtime/hooks/run-bmad-runtime-worker.js');
+const claudeHook = require('../../_bmad/claude/hooks/post-tool-use.cjs');
+const runtimeWorkerHelper = require('../../_bmad/runtime/hooks/run-bmad-runtime-worker.cjs');
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));

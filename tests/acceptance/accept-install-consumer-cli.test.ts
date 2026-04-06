@@ -57,7 +57,7 @@ describe('install to consumer → CLI acceptance', () => {
       expect(existsSync(join(target, '_bmad'))).toBe(true);
       expect(existsSync(join(target, '.cursor'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy.cjs'))).toBe(true);
-      expect(existsSync(join(target, '.cursor', 'hooks', 'runtime-dashboard-session-start.js'))).toBe(true);
+      expect(existsSync(join(target, '.cursor', 'hooks', 'runtime-dashboard-session-start.cjs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'i18n'))).toBe(true);
       expect(existsSync(join(target, 'scripts', 'emit-runtime-policy.cjs'))).toBe(false);
       expect(existsSync(join(target, 'scripts', 'start-runtime-dashboard-server.cjs'))).toBe(false);
@@ -124,8 +124,8 @@ describe('install to consumer → CLI acceptance', () => {
       run(`npm install --save-dev "file:${pkgPath}"`, target);
       run('npx bmad-speckit-init --agent claude-code', target);
 
-      expect(existsSync(join(target, '.claude', 'hooks', 'session-start.js'))).toBe(true);
-      expect(existsSync(join(target, '_bmad', 'runtime', 'hooks', 'runtime-dashboard-auto-start.js'))).toBe(true);
+      expect(existsSync(join(target, '.claude', 'hooks', 'session-start.cjs'))).toBe(true);
+      expect(existsSync(join(target, '_bmad', 'runtime', 'hooks', 'runtime-dashboard-auto-start.cjs'))).toBe(true);
 
       const aliases = [
         'speckit-specify.md',
@@ -160,12 +160,12 @@ describe('install to consumer → CLI acceptance', () => {
       run(`npm install --save-dev "file:${pkgPath}"`, target);
 
       const hooksJson = readFileSync(join(target, '.cursor', 'hooks.json'), 'utf8');
-      expect(hooksJson).toContain('runtime-dashboard-session-start.js');
+      expect(hooksJson).toContain('runtime-dashboard-session-start.cjs');
 
-      const hookScript = readFileSync(join(target, '.cursor', 'hooks', 'runtime-dashboard-session-start.js'), 'utf8');
+      const hookScript = readFileSync(join(target, '.cursor', 'hooks', 'runtime-dashboard-session-start.cjs'), 'utf8');
       expect(hookScript).toContain('autoStartRuntimeDashboard');
 
-      const sharedHelper = readFileSync(join(target, '_bmad', 'runtime', 'hooks', 'runtime-dashboard-auto-start.js'), 'utf8');
+      const sharedHelper = readFileSync(join(target, '_bmad', 'runtime', 'hooks', 'runtime-dashboard-auto-start.cjs'), 'utf8');
       expect(sharedHelper).toContain('ensureRuntimeDashboardServer');
     } finally {
       rmSync(target, { recursive: true, force: true });

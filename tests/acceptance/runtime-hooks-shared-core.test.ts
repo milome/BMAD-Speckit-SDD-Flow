@@ -6,10 +6,10 @@ const root = process.cwd();
 
 describe('runtime hooks shared core', () => {
   it('provides shared emit/skip/error helpers and a reusable inject core', async () => {
-    const corePath = path.join(root, '_bmad', 'runtime', 'hooks', 'runtime-policy-inject-core.js');
-    const runEmitPath = path.join(root, '_bmad', 'runtime', 'hooks', 'run-emit-runtime-policy.js');
-    const skipPath = path.join(root, '_bmad', 'runtime', 'hooks', 'should-skip-runtime-policy.js');
-    const errorPath = path.join(root, '_bmad', 'runtime', 'hooks', 'build-runtime-error-message.js');
+    const corePath = path.join(root, '_bmad', 'runtime', 'hooks', 'runtime-policy-inject-core.cjs');
+    const runEmitPath = path.join(root, '_bmad', 'runtime', 'hooks', 'run-emit-runtime-policy.cjs');
+    const skipPath = path.join(root, '_bmad', 'runtime', 'hooks', 'should-skip-runtime-policy.cjs');
+    const errorPath = path.join(root, '_bmad', 'runtime', 'hooks', 'build-runtime-error-message.cjs');
 
     expect(existsSync(corePath)).toBe(true);
     expect(existsSync(runEmitPath)).toBe(true);

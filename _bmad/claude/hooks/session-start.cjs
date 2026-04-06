@@ -1,7 +1,7 @@
 // SessionStart hook: 注入 checkpoint 摘要
 const fs = require('fs');
 const path = require('path');
-const { autoStartRuntimeDashboard, shouldAnnounceAutoStart } = require('../../_bmad/runtime/hooks/runtime-dashboard-auto-start.js');
+const { autoStartRuntimeDashboard, shouldAnnounceAutoStart } = require('../../runtime/hooks/runtime-dashboard-auto-start.cjs');
 
 async function sessionStart() {
   const checkpointPath = path.join('.claude', 'state', 'runtime', 'checkpoints', 'latest.md');

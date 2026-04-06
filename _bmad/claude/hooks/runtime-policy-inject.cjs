@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 'use strict';
 
-/** Deployed `.cursor/hooks` has `runtime-policy-inject-core.js` beside this file; repo `_bmad/cursor/hooks` falls back to `_bmad/runtime/hooks`. */
+/** Deployed `.claude/hooks` has `runtime-policy-inject-core.js` beside this file; repo `_bmad/claude/hooks` falls back to `_bmad/runtime/hooks`. */
 const path = require('node:path');
 const fs = require('node:fs');
-const localCore = path.join(__dirname, 'runtime-policy-inject-core.js');
+const localCore = path.join(__dirname, 'runtime-policy-inject-core.cjs');
 const { runtimePolicyInjectCore } = require(
-  fs.existsSync(localCore) ? './runtime-policy-inject-core' : '../../runtime/hooks/runtime-policy-inject-core'
+  fs.existsSync(localCore) ? './runtime-policy-inject-core.cjs' : '../../runtime/hooks/runtime-policy-inject-core.cjs'
 );
 
-runtimePolicyInjectCore({ host: 'cursor' })
+runtimePolicyInjectCore({ host: 'claude' })
   .then(({ exitCode, output, stderr }) => {
     if (stderr && process.env.BMAD_HOOKS_QUIET !== '1') {
       process.stderr.write(`${stderr}\n`);

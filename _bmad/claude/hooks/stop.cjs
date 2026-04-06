@@ -9,15 +9,32 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+
+function resolvePresenterModule() {
+  const candidates = [
+    path.join(__dirname, 'governance-runner-summary-presenter.cjs'),
+    path.join(__dirname, '..', '..', 'runtime', 'hooks', 'governance-runner-summary-presenter.cjs'),
+    path.join(__dirname, '..', '..', '_bmad', 'runtime', 'hooks', 'governance-runner-summary-presenter.cjs'),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return require(candidate);
+    }
+  }
+
+  throw new Error('Cannot resolve governance-runner-summary-presenter.cjs from known hook locations');
+}
+
 const {
   printGovernanceRunnerCliPresentation,
-} = require('../../runtime/hooks/governance-runner-summary-presenter.js');
+} = resolvePresenterModule();
 
 function resolveRuntimeWorkerHelper() {
   const candidates = [
-    path.join(__dirname, 'run-bmad-runtime-worker.js'),
-    path.join(__dirname, '..', '..', 'runtime', 'hooks', 'run-bmad-runtime-worker.js'),
-    path.join(__dirname, '..', '..', '_bmad', 'runtime', 'hooks', 'run-bmad-runtime-worker.js'),
+    path.join(__dirname, 'run-bmad-runtime-worker.cjs'),
+    path.join(__dirname, '..', '..', 'runtime', 'hooks', 'run-bmad-runtime-worker.cjs'),
+    path.join(__dirname, '..', '..', '_bmad', 'runtime', 'hooks', 'run-bmad-runtime-worker.cjs'),
   ];
 
   for (const candidate of candidates) {

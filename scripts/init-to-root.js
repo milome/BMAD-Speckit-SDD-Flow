@@ -9,8 +9,8 @@
  *   - Claude agents/skills/hooks/rules: _bmad/claude/
  *
  * 用途：部署 BMAD 目录结构。
- * 对外部目标目录：从 @bmad-speckit/runtime-emit 将 emit-runtime-policy.cjs、resolve-for-session.cjs、render-audit-block.cjs 与 write-runtime-context.js 复制到 **.cursor/hooks** 与/或 **.claude/hooks**（与 hook 脚本同目录，不在项目根创建 scripts/）。
- * `--agent cursor`：`syncCursorRuntimePolicyHooks` 先将 `_bmad/runtime/hooks` 下 4 个共享 JS 复制到 `.cursor/hooks`，再覆盖 `emit-runtime-policy-cli.js`、`runtime-policy-inject.js`（薄壳，`./runtime-policy-inject-core` 优先）。
+ * 对外部目标目录：从 @bmad-speckit/runtime-emit 将 emit-runtime-policy.cjs、resolve-for-session.cjs、render-audit-block.cjs 与 write-runtime-context.cjs 复制到 **.cursor/hooks** 与/或 **.claude/hooks**（与 hook 脚本同目录，不在项目根创建 scripts/）。
+ * `--agent cursor`：`syncCursorRuntimePolicyHooks` 先将 `_bmad/runtime/hooks` 下 4 个共享 JS 复制到 `.cursor/hooks`，再覆盖 `emit-runtime-policy-cli.cjs`、`runtime-policy-inject.cjs`（薄壳，`./runtime-policy-inject-core` 优先）。
  * `--agent claude-code`：`syncClaudeRuntimePolicyHooks` 同样将上述 4 个文件复制到 `.claude/hooks` 后再覆盖薄壳与 CLI，与 Cursor 侧分层一致。
  * 外部目标默认**不**创建 package.json、不执行 npm install；若需在消费者目录安装本地 bmad-speckit CLI 依赖，传入 **--with-package-json**。
  * speckit commands 从 _bmad/speckit/commands/ 合并；.specify/ 部署 templates/workflows/scripts。
@@ -23,6 +23,7 @@
  */
 const fs = require('node:fs');
 const path = require('node:path');
+const os = require('node:os');
 const { spawnSync } = require('node:child_process');
 
 const PKG_ROOT = path.resolve(__dirname, '..');
@@ -76,14 +77,14 @@ function writeCursorHooksJson(targetDir) {
     version: 1,
     hooks: {
       sessionStart: [
-        { command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host --session-start' },
-        { command: 'node .cursor/hooks/runtime-dashboard-session-start.js' },
+        { command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host --session-start' },
+        { command: 'node .cursor/hooks/runtime-dashboard-session-start.cjs' },
       ],
-      preToolUse: [{ command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host' }],
+      preToolUse: [{ command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host' }],
       subagentStart: [
-        { command: 'node .cursor/hooks/runtime-policy-inject.js --cursor-host --subagent-start' },
+        { command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host --subagent-start' },
       ],
-      postToolUse: [{ command: 'node .cursor/hooks/post-tool-use.js' }],
+      postToolUse: [{ command: 'node .cursor/hooks/post-tool-use.cjs' }],
     },
   };
   fs.writeFileSync(hooksJsonPath, `${JSON.stringify(hooksJson, null, 2)}\n`, 'utf8');
@@ -111,6 +112,10 @@ const REGISTERED_AGENT_PROFILES = {
           totalFiles += countFiles(destPath);
         }
       }
+      totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'bmm', 'workflows'), path.join(targetDir, '.cursor', 'skills'), targetDir);
+      totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'bmm', 'agents'), path.join(targetDir, '.cursor', 'skills'), targetDir);
+      totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'core', 'tasks'), path.join(targetDir, '.cursor', 'skills'), targetDir);
+      totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'core', 'skills'), path.join(targetDir, '.cursor', 'skills'), targetDir);
       const crSrc = path.join(targetDir, '_bmad', '_config', 'code-reviewer-config.yaml');
       const crDest = path.join(targetDir, '.cursor', 'agents', 'code-reviewer-config.yaml');
       if (fs.existsSync(crSrc)) {
@@ -158,11 +163,31 @@ const REGISTERED_AGENT_PROFILES = {
           fs.mkdirSync(destPath, { recursive: true });
         }
       }
+      totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'bmm', 'workflows'), path.join(targetDir, '.claude', 'skills'), targetDir);
+      totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'bmm', 'agents'), path.join(targetDir, '.claude', 'skills'), targetDir);
+      totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'core', 'tasks'), path.join(targetDir, '.claude', 'skills'), targetDir);
+      totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'core', 'skills'), path.join(targetDir, '.claude', 'skills'), targetDir);
       const settingsSrc = path.join(bmadRoot, 'claude', 'settings.json');
       const settingsDest = path.join(targetDir, '.claude', 'settings.json');
       if (fs.existsSync(settingsSrc)) {
         fs.mkdirSync(path.dirname(settingsDest), { recursive: true });
-        fs.copyFileSync(settingsSrc, settingsDest);
+        // Merge with global settings.json hooks (preserve user's global hooks like Stop notification)
+        const bmadSettings = JSON.parse(fs.readFileSync(settingsSrc, 'utf8'));
+        const globalSettingsPath = path.join(os.homedir(), '.claude', 'settings.json');
+        let mergedSettings = bmadSettings;
+        if (fs.existsSync(globalSettingsPath)) {
+          try {
+            const globalSettings = JSON.parse(fs.readFileSync(globalSettingsPath, 'utf8'));
+            if (globalSettings.hooks) {
+              // Deep merge: BMAD settings as base, append global hooks that don't conflict
+              mergedSettings = deepMergeSettings(bmadSettings, globalSettings);
+              console.log('Merged global ~/.claude/settings.json hooks into project settings');
+            }
+          } catch (e) {
+            console.warn('Failed to read global settings, using BMAD defaults:', e.message);
+          }
+        }
+        fs.writeFileSync(settingsDest, JSON.stringify(mergedSettings, null, 2) + '\n', 'utf8');
         console.log('Sync _bmad/claude/settings.json -> .claude/settings.json');
         totalFiles += 1;
       }
@@ -208,9 +233,95 @@ const TARGET = targetArg
   ? path.resolve(targetArg)
   : (process.env.INIT_CWD && path.resolve(process.env.INIT_CWD)) || process.cwd();
 
+/**
+ * Deep merge BMAD settings with global settings, preserving global hooks.
+ * BMAD settings take precedence, but global hooks (like Stop notification) are appended.
+ * @param {object} bmadSettings - BMAD settings from _bmad/claude/settings.json
+ * @param {object} globalSettings - Global settings from ~/.claude/settings.json
+ * @returns {object} Merged settings
+ */
+function deepMergeSettings(bmadSettings, globalSettings) {
+  const merged = JSON.parse(JSON.stringify(bmadSettings));
+
+  // Merge hooks: BMAD hooks first, then append global hooks that don't conflict
+  if (globalSettings.hooks) {
+    merged.hooks = merged.hooks || {};
+    for (const [hookName, globalHookValue] of Object.entries(globalSettings.hooks)) {
+      if (hookName === 'Stop' && Array.isArray(globalHookValue) && globalHookValue.length > 0) {
+        // For Stop hook, append global hooks after BMAD hooks
+        merged.hooks.Stop = merged.hooks.Stop || [];
+        // Filter out duplicate commands
+        const bmadCommands = new Set(merged.hooks.Stop.flatMap(h => h.hooks?.map(hh => hh.command) || []));
+        const globalHooksToAdd = globalHookValue.filter(h => {
+          const commands = h.hooks?.map(hh => hh.command) || [];
+          return !commands.every(cmd => bmadCommands.has(cmd));
+        });
+        if (globalHooksToAdd.length > 0) {
+          merged.hooks.Stop.push(...globalHooksToAdd);
+          console.log(`  Appended ${globalHooksToAdd.length} global Stop hook(s)`);
+        }
+      }
+      // Other hooks: BMAD takes precedence, skip global
+    }
+  }
+
+  // Preserve global env, permissions if not defined in BMAD
+  if (globalSettings.env && !merged.env) {
+    merged.env = globalSettings.env;
+  }
+  if (globalSettings.permissions && !merged.permissions) {
+    merged.permissions = globalSettings.permissions;
+  }
+
+  return merged;
+}
+
 const CORE_DIRS = ['_bmad'];
 const FULL_DIRS = ['_bmad'];
 const DIRS = fullMode ? FULL_DIRS : CORE_DIRS;
+
+/**
+ * Deep merge BMAD settings with global settings, preserving global hooks.
+ * BMAD settings take precedence, but global hooks (like Stop notification) are appended.
+ * @param {object} bmadSettings - BMAD settings from _bmad/claude/settings.json
+ * @param {object} globalSettings - Global settings from ~/.claude/settings.json
+ * @returns {object} Merged settings
+ */
+function deepMergeSettings(bmadSettings, globalSettings) {
+  const merged = JSON.parse(JSON.stringify(bmadSettings));
+
+  // Merge hooks: BMAD hooks first, then append global hooks that don't conflict
+  if (globalSettings.hooks) {
+    merged.hooks = merged.hooks || {};
+    for (const [hookName, globalHookValue] of Object.entries(globalSettings.hooks)) {
+      if (hookName === 'Stop' && Array.isArray(globalHookValue) && globalHookValue.length > 0) {
+        // For Stop hook, append global hooks after BMAD hooks
+        merged.hooks.Stop = merged.hooks.Stop || [];
+        // Filter out duplicate commands
+        const bmadCommands = new Set(merged.hooks.Stop.flatMap(h => h.hooks?.map(hh => hh.command) || []));
+        const globalHooksToAdd = globalHookValue.filter(h => {
+          const commands = h.hooks?.map(hh => hh.command) || [];
+          return !commands.every(cmd => bmadCommands.has(cmd));
+        });
+        if (globalHooksToAdd.length > 0) {
+          merged.hooks.Stop.push(...globalHooksToAdd);
+          console.log(`  Appended ${globalHooksToAdd.length} global Stop hook(s)`);
+        }
+      }
+      // Other hooks: BMAD takes precedence, skip global
+    }
+  }
+
+  // Preserve global env, permissions if not defined in BMAD
+  if (globalSettings.env && !merged.env) {
+    merged.env = globalSettings.env;
+  }
+  if (globalSettings.permissions && !merged.permissions) {
+    merged.permissions = globalSettings.permissions;
+  }
+
+  return merged;
+}
 
 function copyRecursive(src, dest) {
   const stat = fs.statSync(src);
@@ -223,6 +334,30 @@ function copyRecursive(src, dest) {
     fs.mkdirSync(path.dirname(dest), { recursive: true });
     fs.copyFileSync(src, dest);
   }
+}
+
+function copySkillDirsRecursive(srcRoot, destRoot, targetDir) {
+  if (!fs.existsSync(srcRoot) || !fs.statSync(srcRoot).isDirectory()) return 0;
+  let copiedFiles = 0;
+
+  function walk(current) {
+    const entries = fs.readdirSync(current, { withFileTypes: true });
+    const hasSkill = entries.some((entry) => entry.isFile() && entry.name === 'SKILL.md');
+    if (hasSkill) {
+      const skillName = path.basename(current);
+      const destDir = path.join(destRoot, skillName);
+      copyRecursive(current, destDir);
+      copiedFiles += countFiles(destDir);
+      console.log('Sync', path.relative(targetDir, current), '->', path.relative(targetDir, destDir));
+      return;
+    }
+    for (const entry of entries) {
+      if (entry.isDirectory()) walk(path.join(current, entry.name));
+    }
+  }
+
+  walk(srcRoot);
+  return copiedFiles;
 }
 
 /**
@@ -242,7 +377,7 @@ function syncCursorRuntimePolicyHooks(targetDir, bmadRoot) {
     console.log('Sync', path.relative(targetDir, sharedDir), '->', path.join('.cursor', 'hooks'));
   }
 
-  const names = ['emit-runtime-policy-cli.js', 'runtime-policy-inject.js', 'post-tool-use.js', 'runtime-dashboard-session-start.js'];
+  const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs', 'post-tool-use.cjs', 'runtime-dashboard-session-start.cjs'];
   for (const name of names) {
     const src = path.join(cursorHooksDir, name);
     if (fs.existsSync(src)) {
@@ -272,7 +407,7 @@ function syncClaudeRuntimePolicyHooks(targetDir, bmadRoot) {
     console.log('Sync', path.relative(targetDir, sharedDir), '->', path.join('.claude', 'hooks'));
   }
 
-  const names = ['emit-runtime-policy-cli.js', 'runtime-policy-inject.js', 'session-start.js'];
+  const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs', 'session-start.cjs'];
   for (const name of names) {
     const src = path.join(claudeHooksDir, name);
     if (fs.existsSync(src)) {
@@ -307,14 +442,14 @@ function writeDefaultRuntimeRegistry(targetDir, pkgRoot) {
 
 function writeDefaultRuntimeContext(targetDir, pkgRoot) {
   const candidates = [
-    path.join(targetDir, '.cursor', 'hooks', 'write-runtime-context.js'),
-    path.join(targetDir, '.claude', 'hooks', 'write-runtime-context.js'),
-    path.join(targetDir, 'scripts', 'write-runtime-context.js'),
-    path.join(pkgRoot, 'scripts', 'write-runtime-context.js'),
+    path.join(targetDir, '.cursor', 'hooks', 'write-runtime-context.cjs'),
+    path.join(targetDir, '.claude', 'hooks', 'write-runtime-context.cjs'),
+    path.join(targetDir, 'scripts', 'write-runtime-context.cjs'),
+    path.join(pkgRoot, 'scripts', 'write-runtime-context.cjs'),
   ];
   const script = candidates.find((p) => fs.existsSync(p));
   if (!script) {
-    console.warn('Skip runtime-context: write-runtime-context.js not found');
+    console.warn('Skip runtime-context: write-runtime-context.cjs not found');
     return;
   }
   const targetContext = path.join(targetDir, '_bmad-output', 'runtime', 'context', 'project.json');
@@ -425,7 +560,7 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
       'render-audit-block.cjs not found; run: npm run build:runtime-emit — pre-agent-summary audit inject may be empty in target.'
     );
   }
-  const wrcSrc = path.join(path.dirname(emitSrc), '..', 'write-runtime-context.js');
+  const wrcSrc = path.join(path.dirname(emitSrc), '..', 'write-runtime-context.cjs');
   const hookDirs = [
     path.join(targetDir, '.cursor', 'hooks'),
     path.join(targetDir, '.claude', 'hooks'),
@@ -441,7 +576,7 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
       fs.copyFileSync(renderAuditSrc, path.join(d, 'render-audit-block.cjs'));
     }
     if (fs.existsSync(wrcSrc)) {
-      fs.copyFileSync(wrcSrc, path.join(d, 'write-runtime-context.js'));
+      fs.copyFileSync(wrcSrc, path.join(d, 'write-runtime-context.cjs'));
     }
     deployed += 1;
   }
@@ -452,7 +587,7 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
     return;
   }
   console.log(
-    'Deployed emit-runtime-policy.cjs, resolve-for-session.cjs, render-audit-block.cjs (+ write-runtime-context.js) under .cursor/hooks and/or .claude/hooks (no project-root scripts/).'
+    'Deployed emit-runtime-policy.cjs, resolve-for-session.cjs, render-audit-block.cjs (+ write-runtime-context.cjs) under .cursor/hooks and/or .claude/hooks (no project-root scripts/).'
   );
 }
 

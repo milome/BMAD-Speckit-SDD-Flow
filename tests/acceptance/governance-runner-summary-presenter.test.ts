@@ -8,7 +8,7 @@ describe('governance runner summary presenter', () => {
     const {
       buildGovernanceRunnerCliPresentation,
       printGovernanceRunnerCliPresentation,
-    } = require('../../_bmad/runtime/hooks/governance-runner-summary-presenter.js') as {
+    } = require('../../_bmad/runtime/hooks/governance-runner-summary-presenter.cjs') as {
       buildGovernanceRunnerCliPresentation: (input: {
         executionPlanDecision?: Record<string, unknown>;
         shouldContinue?: boolean | null;

@@ -7,7 +7,7 @@ const { spawnSync } = require('node:child_process');
 const path = require('node:path');
 const fs = require('node:fs');
 
-const { loadHookMessages, getHooksTimeLocale } = require('./hook-load-messages');
+const { loadHookMessages, getHooksTimeLocale } = require('./hook-load-messages.cjs');
 
 const LINE = '═'.repeat(50);
 

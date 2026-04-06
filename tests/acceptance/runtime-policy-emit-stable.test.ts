@@ -60,7 +60,7 @@ describe('emit-runtime-policy vs resolveRuntimePolicy (stable JSON)', () => {
       runId: 'run-emit-stable',
     });
 
-    const cli = path.join(repoRoot, '_bmad/claude/hooks/emit-runtime-policy-cli.js');
+    const cli = path.join(repoRoot, '_bmad/claude/hooks/emit-runtime-policy-cli.cjs');
     const r = spawnSync(process.execPath, [cli], {
       cwd: repoRoot,
       encoding: 'utf8',

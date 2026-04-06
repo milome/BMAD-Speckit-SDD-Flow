@@ -4,7 +4,7 @@ import path from 'node:path';
 
 describe('runtime hooks claude adapter', () => {
   it('keeps Claude adapter thin and delegates to shared core', () => {
-    const file = path.join(process.cwd(), '_bmad', 'claude', 'hooks', 'runtime-policy-inject.js');
+    const file = path.join(process.cwd(), '_bmad', 'claude', 'hooks', 'runtime-policy-inject.cjs');
     const source = readFileSync(file, 'utf8');
 
     expect(source).toContain("./runtime-policy-inject-core");

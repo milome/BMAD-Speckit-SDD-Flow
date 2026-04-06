@@ -3,7 +3,7 @@ import * as path from 'node:path';
 const {
   appendRunnerSummaryToArtifactMarkdown,
   renderGovernanceRunnerSummaryLines,
-} = require('../_bmad/runtime/hooks/governance-runner-summary-format.js') as {
+} = require('../_bmad/runtime/hooks/governance-runner-summary-format.cjs') as {
   appendRunnerSummaryToArtifactMarkdown: (
     artifactMarkdown: string,
     runnerSummaryLines: string[]

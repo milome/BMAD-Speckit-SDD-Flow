@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-const { autoStartRuntimeDashboard, shouldAnnounceAutoStart } = require('../../runtime/hooks/runtime-dashboard-auto-start.js');
+const { autoStartRuntimeDashboard, shouldAnnounceAutoStart } = require('../../runtime/hooks/runtime-dashboard-auto-start.cjs');
 
 async function main() {
   try {

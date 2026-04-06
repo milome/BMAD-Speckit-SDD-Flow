@@ -4,10 +4,10 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
-const { shouldSkipRuntimePolicy } = require('./should-skip-runtime-policy');
-const { buildRuntimeErrorMessage } = require('./build-runtime-error-message');
-const { runEmitRuntimePolicy } = require('./run-emit-runtime-policy');
-const { loadHookMessages } = require('./hook-load-messages');
+const { shouldSkipRuntimePolicy } = require('./should-skip-runtime-policy.cjs');
+const { buildRuntimeErrorMessage } = require('./build-runtime-error-message.cjs');
+const { runEmitRuntimePolicy } = require('./run-emit-runtime-policy.cjs');
+const { loadHookMessages } = require('./hook-load-messages.cjs');
 
 function readStdin() {
   return new Promise((resolve, reject) => {

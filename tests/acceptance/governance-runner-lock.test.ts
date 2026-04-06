@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 import { afterEach, describe, expect, it } from 'vitest';
 
 const require = createRequire(import.meta.url);
-const runtimeWorkerHelper = require('../../_bmad/runtime/hooks/run-bmad-runtime-worker.js');
+const runtimeWorkerHelper = require('../../_bmad/runtime/hooks/run-bmad-runtime-worker.cjs');
 
 const tempRoots: string[] = [];
 const originalLockTtl = process.env.BMAD_GOVERNANCE_LOCK_TTL_MS;

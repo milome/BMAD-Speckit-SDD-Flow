@@ -11,7 +11,7 @@
 const {
   buildGovernanceLatestRawEventSectionLines,
   normalizeGovernanceRunnerSummaryLines,
-} = require('./governance-runner-summary-format.js');
+} = require('./governance-runner-summary-format.cjs');
 
 /**
  * @param {unknown} value
