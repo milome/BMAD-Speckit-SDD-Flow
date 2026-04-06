@@ -1,7 +1,0 @@
-# Runtime policy templates (T9): allowed-field overrides merged after base policy.
-# Keys under `templates` are template_id values passed as `templateId` to `resolveRuntimePolicy`.
-version: "1.0"
-templates:
-  audit_heavy:
-    strictness: strict
-    auditRequired: true
