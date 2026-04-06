@@ -6,13 +6,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/runtime-policy-inject.js\"",
+            "command": "node ./.claude/hooks/runtime-policy-inject.js",
             "timeout": 8,
             "statusMessage": "Emitting runtime governance policy..."
           },
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-agent-summary.js\"",
+            "command": "node ./.claude/hooks/pre-agent-summary.js",
             "timeout": 5,
             "statusMessage": "Generating agent call summary..."
           }
@@ -24,7 +24,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/worktree-create-sibling.js\"",
+            "command": "node ./.claude/hooks/worktree-create-sibling.js",
             "timeout": 30,
             "statusMessage": "Creating worktree in sibling directory..."
           }
@@ -36,13 +36,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/runtime-policy-inject.js\" --subagent-start",
+            "command": "node ./.claude/hooks/runtime-policy-inject.js --subagent-start",
             "timeout": 8,
             "statusMessage": "Injecting runtime governance policy..."
           },
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/subagent-milestone-init.js\"",
+            "command": "node ./.claude/hooks/subagent-milestone-init.js",
             "timeout": 5,
             "statusMessage": "Initializing milestone tracking..."
           }
@@ -54,7 +54,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/subagent-result-summary.js\"",
+            "command": "node ./.claude/hooks/subagent-result-summary.js",
             "timeout": 10,
             "statusMessage": "Composing result summary..."
           }
@@ -66,7 +66,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/post-tool-use.js\"",
+            "command": "node ./.claude/hooks/post-tool-use.js",
             "timeout": 8,
             "statusMessage": "Queueing governance remediation reruns..."
           }
@@ -78,7 +78,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop.js\"",
+            "command": "node ./.claude/hooks/stop.js",
             "timeout": 20,
             "statusMessage": "Saving checkpoint and draining runtime queues..."
           }
