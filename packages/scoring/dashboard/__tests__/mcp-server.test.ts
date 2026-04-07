@@ -35,6 +35,7 @@ describe('runtime dashboard MCP server', () => {
       score_detail: {
         run_id: 'run-e15-s1-001',
         records: [],
+        findings: [],
       },
       sft_summary: {
         total_candidates: 3,
@@ -72,8 +73,6 @@ describe('runtime dashboard MCP server', () => {
         redaction_preview: [
           {
             sample_id: 'sample-runtime-query-002',
-            run_id: 'run-e15-s1-001',
-            split: 'validation',
             status: 'redacted',
             applied_rules: ['secret-token'],
             finding_kinds: ['secret_token'],
@@ -81,8 +80,6 @@ describe('runtime dashboard MCP server', () => {
           },
           {
             sample_id: 'sample-runtime-query-003',
-            run_id: 'run-e15-s1-001',
-            split: 'test',
             status: 'blocked',
             applied_rules: ['private-key'],
             finding_kinds: ['private_key'],
@@ -111,6 +108,12 @@ describe('runtime dashboard MCP server', () => {
             scope_type: 'global',
           },
         },
+      },
+      workboard: {
+        active_board_group_id: null,
+        active_work_item_id: null,
+        board_groups: [],
+        work_items: [],
       },
     });
 

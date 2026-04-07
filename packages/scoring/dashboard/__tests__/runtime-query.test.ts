@@ -302,6 +302,7 @@ describe('runtime-aware dashboard query', () => {
           assignment: 'train',
           group_key: 'epic-15/story-15-1-runtime-dashboard-sft',
           seed: 42,
+          strategy: 'story_hash_v1',
         },
         redaction: {
           status: 'clean',

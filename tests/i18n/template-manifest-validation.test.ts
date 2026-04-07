@@ -66,7 +66,7 @@ describe('validateTemplateManifest', () => {
 
   it('fails when localized strings reference undeclared placeholders', () => {
     const manifest = createValidManifest();
-    manifest.strings.instruction = {
+    manifest.strings!.instruction = {
       zh: '运行 `{{missing_path}}`',
       en: 'Run `{{missing_path}}`',
     };
@@ -84,7 +84,7 @@ describe('validateTemplateManifest', () => {
 
   it('fails when anchors are duplicated', () => {
     const manifest = createValidManifest();
-    manifest.anchors.conclusion = 'audit_scope';
+    manifest.anchors!.conclusion = 'audit_scope';
 
     const result = validateTemplateManifest(manifest);
 
@@ -94,7 +94,7 @@ describe('validateTemplateManifest', () => {
 
   it('allows single-language variants for runtime fallback scenarios', () => {
     const manifest = createValidManifest();
-    manifest.strings.title = {
+    manifest.strings!.title = {
       zh: '任务审计',
     } as { zh: string; en: string };
 
@@ -106,7 +106,7 @@ describe('validateTemplateManifest', () => {
 
   it('fails when protected tokens differ across language variants', () => {
     const manifest = createValidManifest();
-    manifest.strings.instruction = {
+    manifest.strings!.instruction = {
       zh: '执行 `npx bmad-speckit score --triggerStage speckit_4_2`',
       en: 'Run `npx bmad-speckit score --triggerStage translated_stage`',
     };

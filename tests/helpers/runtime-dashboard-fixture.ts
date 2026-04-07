@@ -408,7 +408,7 @@ function replayRealCursorToolTraceFixture(
   const toolTracePath = path.join(artifactDir, `${config.stage}.json`);
   fs.writeFileSync(
     toolTracePath,
-    JSON.stringify(buildCanonicalFixtureSample(runId, config.stage, variant, sourcePath), null, 2) + '\n',
+    JSON.stringify(buildCanonicalFixtureSample(runId, config.stage, sourcePath, variant), null, 2) + '\n',
     'utf-8'
   );
   if (config.stage !== 'implement') {
@@ -454,7 +454,6 @@ export async function createRuntimeDashboardFixture(
           dataPath,
           artifactDocPath,
           baseCommitHash,
-          toolTracePath,
         });
       }
     } else {

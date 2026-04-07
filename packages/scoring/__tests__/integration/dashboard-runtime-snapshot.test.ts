@@ -54,7 +54,7 @@ describe('dashboard runtime snapshot integration', () => {
     const jsonPath = path.join(root, '_bmad-output', 'dashboard', 'runtime-dashboard.json');
 
     const stdout = execSync(
-      `npx ts-node scripts/dashboard-generate.ts --dataPath "${path.join(root, 'packages', 'scoring', 'data')}" --json --include-runtime --output "${markdownPath}" --output-json "${jsonPath}"`,
+      `npx ts-node --project tsconfig.node.json scripts/dashboard-generate.ts --dataPath "${path.join(root, 'packages', 'scoring', 'data')}" --json --include-runtime --output "${markdownPath}" --output-json "${jsonPath}"`,
       {
         cwd: process.cwd(),
         encoding: 'utf-8',
@@ -114,7 +114,7 @@ describe('dashboard runtime snapshot integration', () => {
       );
 
       const stdout = execSync(
-        `npx ts-node scripts/dashboard-generate.ts --dataPath "${fixture.dataPath}" --json --include-runtime --output "${markdownPath}" --output-json "${jsonPath}"`,
+        `npx ts-node --project tsconfig.node.json scripts/dashboard-generate.ts --dataPath "${fixture.dataPath}" --json --include-runtime --output "${markdownPath}" --output-json "${jsonPath}"`,
         {
           cwd: process.cwd(),
           encoding: 'utf-8',
@@ -187,7 +187,7 @@ describe('dashboard runtime snapshot integration', () => {
       );
 
       execSync(
-        `npx ts-node scripts/dashboard-generate.ts --dataPath "${fixture.dataPath}" --json --include-runtime --output "${markdownPath}" --output-json "${jsonPath}"`,
+        `npx ts-node --project tsconfig.node.json scripts/dashboard-generate.ts --dataPath "${fixture.dataPath}" --json --include-runtime --output "${markdownPath}" --output-json "${jsonPath}"`,
         {
           cwd: process.cwd(),
           encoding: 'utf-8',

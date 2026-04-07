@@ -94,7 +94,7 @@ describe('renderTemplate', () => {
 
   it('applies fallback diagnostics when a single-language variant is missing', () => {
     const manifest = createManifest();
-    manifest.strings.audit_scope_body = {
+    manifest.strings!.audit_scope_body = {
       en: 'Run `{{report_path}}` and keep `{{trigger_stage}}` unchanged.',
     };
 
@@ -109,7 +109,7 @@ describe('renderTemplate', () => {
 
   it('fails when bilingual rendering requires both language variants and one is missing', () => {
     const manifest = createManifest();
-    manifest.strings.conclusion_heading = {
+    manifest.strings!.conclusion_heading = {
       zh: '结论',
     };
 
@@ -123,7 +123,7 @@ describe('renderTemplate', () => {
 
   it('changes headings and prose only while keeping anchors and protected tokens stable', () => {
     const manifest = createManifest();
-    manifest.strings.audit_scope_body = {
+    manifest.strings!.audit_scope_body = {
       zh: '运行 `{{report_path}}`，执行 `npx bmad-speckit score --triggerStage {{trigger_stage}}`。',
       en: 'Run `{{report_path}}` and execute `npx bmad-speckit score --triggerStage {{trigger_stage}}`.',
     };

@@ -1,4 +1,4 @@
-import http from 'node:http';
+import http, { type IncomingMessage, type ServerResponse } from 'node:http';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createGovernanceProviderAdapterFromConfig } from '../../scripts/governance-remediation-config';
 import {
@@ -8,7 +8,7 @@ import {
 } from '../../scripts/governance-provider-adapter';
 
 function listen(
-  handler: Parameters<typeof http.createServer>[0]
+  handler: (req: IncomingMessage, res: ServerResponse) => void | Promise<void>
 ): Promise<{ server: http.Server; baseUrl: string }> {
   return new Promise((resolve) => {
     const server = http.createServer(handler);

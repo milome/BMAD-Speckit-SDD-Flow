@@ -288,8 +288,13 @@ function postToolUse(event) {
     return null;
   }
 
-  const queuePath = helper.enqueueGovernanceRerunEvent(event);
   const projectRoot = extractProjectRoot(event);
+
+  if (typeof helper.drainGovernanceStageEvents === 'function') {
+    helper.drainGovernanceStageEvents(projectRoot);
+  }
+
+  const queuePath = helper.enqueueGovernanceRerunEvent(event);
   const backgroundTrigger = normalizeBackgroundTrigger(
     triggerDetachedBackgroundDrain(projectRoot, event),
     projectRoot,

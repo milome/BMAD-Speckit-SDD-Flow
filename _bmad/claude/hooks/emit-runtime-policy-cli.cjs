@@ -93,10 +93,21 @@ if (fs.existsSync(emitAdjacent)) {
     process.exit(1);
   }
   const tsNodeBin = path.join(root, 'node_modules', 'ts-node', 'dist', 'bin.js');
+  const tsconfigNode = path.join(root, 'tsconfig.node.json');
   if (fs.existsSync(tsNodeBin)) {
-    result = spawnSync(node, [tsNodeBin, '--transpile-only', emitTs, ...extraArgs], spawnOpts);
+    const tsNodeArgs = [];
+    if (fs.existsSync(tsconfigNode)) {
+      tsNodeArgs.push('--project', tsconfigNode);
+    }
+    tsNodeArgs.push('--transpile-only', emitTs, ...extraArgs);
+    result = spawnSync(node, [tsNodeBin, ...tsNodeArgs], spawnOpts);
   } else {
-    result = spawnSync('npx', ['ts-node', '--transpile-only', emitTs, ...extraArgs], {
+    const tsNodeArgs = ['ts-node'];
+    if (fs.existsSync(tsconfigNode)) {
+      tsNodeArgs.push('--project', tsconfigNode);
+    }
+    tsNodeArgs.push('--transpile-only', emitTs, ...extraArgs);
+    result = spawnSync('npx', tsNodeArgs, {
       ...spawnOpts,
       shell: true,
     });

@@ -124,7 +124,7 @@ describe('dashboard governance routing integration', () => {
 
     const outPath = path.join(root, 'dashboard.md');
     execSync(
-      `npx ts-node "${SCRIPT_PATH}" --dataPath "${dataPath}" --epic 99 --story 99 --strategy epic_story_window --windowHours 999999 --output "${outPath}"`,
+      `npx ts-node --project tsconfig.node.json "${SCRIPT_PATH}" --dataPath "${dataPath}" --epic 99 --story 99 --strategy epic_story_window --windowHours 999999 --output "${outPath}"`,
       { cwd: process.cwd(), encoding: 'utf-8' }
     );
 

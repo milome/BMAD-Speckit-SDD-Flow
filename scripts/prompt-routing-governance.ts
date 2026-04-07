@@ -781,12 +781,12 @@ function buildExecutionIntentCandidate(input: {
     interactionMode: semanticInteractionMode ?? interactionMode,
     researchPolicy:
       selectResearchPolicy(input.promptHints, input.modelHints) === 'allowed' && semanticResearchPolicy
-        ? semanticResearchPolicy
+        ? (semanticResearchPolicy as PromptRoutingHints['researchPolicy'])
         : selectResearchPolicy(input.promptHints, input.modelHints),
     delegationPreference:
       selectDelegationPreference(input.promptHints, input.modelHints) === 'decide-for-me' &&
       semanticDelegationPreference
-        ? semanticDelegationPreference
+        ? (semanticDelegationPreference as PromptRoutingHints['delegationPreference'])
         : selectDelegationPreference(input.promptHints, input.modelHints),
     constraints: unique([
       ...(input.promptHints?.constraints ?? []),

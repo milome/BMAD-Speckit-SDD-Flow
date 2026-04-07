@@ -42,11 +42,11 @@ async function readMessage(
         return;
       }
       const body = buffer.slice(bodyStart, bodyStart + length);
-      proc.stdout.off('data', onData);
+      proc.stdout?.off('data', onData);
       resolve(JSON.parse(body) as JsonRpcMessage);
     };
 
-    proc.stdout.on('data', onData);
+    proc.stdout?.on('data', onData);
     proc.once('error', reject);
   });
 }
@@ -70,7 +70,7 @@ describe('runtime dashboard sft tab integration', () => {
       withBundle: true,
       withRealToolTraceFixture: true,
       realToolTraceVariants: ['clean'],
-  }, 180000);
+    });
     roots.push(fixture.root);
 
     const server = await startLiveDashboardServer({

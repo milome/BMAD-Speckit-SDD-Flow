@@ -101,7 +101,7 @@ describe('Epic 聚合集成 (US-4.2)', () => {
   it('(5) CLI 无完整 Story 时输出含「Epic N 下无完整 Story」', { timeout: 45000 }, () => {
     const outPath = path.join(os.tmpdir(), `dashboard-us42-no-complete-${Date.now()}.md`);
     execSync(
-      `npx ts-node scripts/dashboard-generate.ts --dataPath "${FIXTURE_NO_COMPLETE}" --epic 9 --strategy epic_story_window --windowHours 999999 --output "${outPath}"`,
+      `npx ts-node --project tsconfig.node.json scripts/dashboard-generate.ts --dataPath "${FIXTURE_NO_COMPLETE}" --epic 9 --strategy epic_story_window --windowHours 999999 --output "${outPath}"`,
       { cwd: process.cwd(), encoding: 'utf-8' }
     );
     const content = fs.readFileSync(outPath, 'utf-8');
@@ -165,7 +165,7 @@ describe('Epic 聚合集成 (US-4.2)', () => {
     );
     const outPath = path.join(os.tmpdir(), `dashboard-us42-aggregate-${Date.now()}.md`);
     execSync(
-      `npx ts-node scripts/dashboard-generate.ts --dataPath "${dataPath}" --epic 9 --strategy epic_story_window --windowHours 999999 --output "${outPath}"`,
+      `npx ts-node --project tsconfig.node.json scripts/dashboard-generate.ts --dataPath "${dataPath}" --epic 9 --strategy epic_story_window --windowHours 999999 --output "${outPath}"`,
       { cwd: process.cwd(), encoding: 'utf-8' }
     );
     const content = fs.readFileSync(outPath, 'utf-8');

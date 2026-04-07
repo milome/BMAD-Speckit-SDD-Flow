@@ -23,6 +23,20 @@ export function linkRepoScriptsIntoProject(projectRoot: string): void {
   }
 }
 
+export function linkRepoTsconfigIntoProject(projectRoot: string): void {
+  for (const fileName of ['tsconfig.json', 'tsconfig.node.json']) {
+    const src = path.join(REPO_ROOT, fileName);
+    const dest = path.join(projectRoot, fileName);
+    if (!fs.existsSync(src)) {
+      continue;
+    }
+    if (fs.existsSync(dest)) {
+      fs.rmSync(dest, { force: true });
+    }
+    fs.copyFileSync(src, dest);
+  }
+}
+
 export function linkRepoNodeModulesIntoProject(projectRoot: string): void {
   const src = path.join(REPO_ROOT, 'node_modules');
   const dest = path.join(projectRoot, 'node_modules');

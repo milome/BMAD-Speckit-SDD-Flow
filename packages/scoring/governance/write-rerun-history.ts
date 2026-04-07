@@ -185,7 +185,8 @@ export function writeGovernanceRerunHistory(
 ): RunScoreRecord {
   const dataPath = resolveScoringDataPath(input.projectRoot);
   const epicStory = parseEpicStoryFromRuntimeContext(input.runtimeContext);
-  const stage = input.runtimeContext?.stage ?? 'post_impl';
+  const rawStage = input.runtimeContext?.stage ?? 'post_impl';
+  const stage = rawStage === 'post_audit' ? 'post_impl' : rawStage;
   const runGroupId = input.runtimeContext?.runId;
   const target = findTargetRecord({
     dataPath,
