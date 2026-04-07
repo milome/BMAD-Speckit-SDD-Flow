@@ -13,9 +13,10 @@
  * `--agent cursor`：`syncCursorRuntimePolicyHooks` 先将 `_bmad/runtime/hooks` 下 4 个共享 JS 复制到 `.cursor/hooks`，再覆盖 `emit-runtime-policy-cli.cjs`、`runtime-policy-inject.cjs`（薄壳，`./runtime-policy-inject-core` 优先）。
  * `--agent claude-code`：`syncClaudeRuntimePolicyHooks` 同样将上述 4 个文件复制到 `.claude/hooks` 后再覆盖薄壳与 CLI，与 Cursor 侧分层一致。
  * 外部目标默认**不**创建 package.json、不执行 npm install；若需在消费者目录安装本地 bmad-speckit CLI 依赖，传入 **--with-package-json**。
+ * 外部目标默认**不**生成 runtime MCP 布局；如需启用，显式传入 **--with-mcp**。
  * speckit commands 从 _bmad/speckit/commands/ 合并；.specify/ 部署 templates/workflows/scripts。
  *
- * CLI 参数：[targetDir], --full, --agent cursor|claude-code, --no-package-json, --with-package-json
+ * CLI 参数：[targetDir], --full, --agent cursor|claude-code, --no-package-json, --with-package-json, --with-mcp
  *
  * 示例：node scripts/init-to-root.js
  *
@@ -39,6 +40,7 @@ const args = process.argv.slice(2);
 const fullMode = args.includes('--full');
 const noPackageJson = args.includes('--no-package-json');
 const withPackageJson = args.includes('--with-package-json');
+const withMcp = args.includes('--with-mcp');
 const agentArgIndex = args.findIndex((a) => a === '--agent');
 let requestedAgentTarget =
   agentArgIndex >= 0 && args[agentArgIndex + 1] ? args[agentArgIndex + 1] : null;
@@ -226,6 +228,7 @@ const targetArg = args.find(
     a !== '--full' &&
     a !== '--no-package-json' &&
     a !== '--with-package-json' &&
+    a !== '--with-mcp' &&
     a !== '--agent' &&
     index !== agentArgIndex + 1
 );
@@ -653,7 +656,7 @@ function materializeSkillMdByLanguage(targetDir) {
   }
 }
 
-function installConsumerMcpLayout(targetDir, pkgRoot) {
+function installConsumerMcpLayout(targetDir, pkgRoot, options = {}) {
   let targetReal;
   let pkgRootReal;
   try {
@@ -672,8 +675,7 @@ function installConsumerMcpLayout(targetDir, pkgRoot) {
 
   const shouldSkipMcpInstall =
     process.env.BMAD_SKIP_CONSUMER_MCP_INSTALL === '1' ||
-    process.env.VITEST === 'true' ||
-    process.env.NODE_ENV === 'test';
+    (!options.force && (process.env.VITEST === 'true' || process.env.NODE_ENV === 'test'));
   if (shouldSkipMcpInstall) {
     console.log('Skip consumer MCP install for test/runtime-constrained session.');
     return;
@@ -734,7 +736,11 @@ for (const dir of DIRS) {
 totalFiles += agentProfile.sync(TARGET, PKG_ROOT);
 
 deployConsumerRuntimeEmitToHooks(PKG_ROOT, TARGET);
-installConsumerMcpLayout(TARGET, PKG_ROOT);
+if (withMcp) {
+  installConsumerMcpLayout(TARGET, PKG_ROOT, { force: true });
+} else if (fs.realpathSync(TARGET, { encoding: 'utf8' }) !== fs.realpathSync(PKG_ROOT, { encoding: 'utf8' })) {
+  console.log('Skipped runtime MCP layout (pass --with-mcp to enable consumer MCP files).');
+}
 syncArchitectureGateConfig(TARGET, path.join(TARGET, '_bmad'));
 
 writeDefaultRuntimeRegistry(TARGET, PKG_ROOT);

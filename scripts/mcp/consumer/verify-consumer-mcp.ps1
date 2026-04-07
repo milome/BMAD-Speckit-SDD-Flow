@@ -5,7 +5,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $targetRoot = (Resolve-Path $TargetDir).Path
-$entryPath = Join-Path $targetRoot ".codex\mcp\$ServerName\server\dist\index.js"
+$entryPath = Join-Path $targetRoot '.runtime-mcp\server\dist\index.cjs'
 $configPath = Join-Path $targetRoot '.mcp.json'
 
 if (-not (Test-Path $entryPath)) { throw "Missing server entry: $entryPath" }

@@ -5,7 +5,7 @@ TARGET_DIR="${1:-.}"
 SERVER_NAME="${SERVER_NAME:-bmad-runtime}"
 TARGET_ROOT="$(cd "$TARGET_DIR" && pwd)"
 
-ENTRY_PATH="$TARGET_ROOT/.codex/mcp/$SERVER_NAME/server/dist/index.js"
+ENTRY_PATH="$TARGET_ROOT/.runtime-mcp/server/dist/index.cjs"
 CONFIG_PATH="$TARGET_ROOT/.mcp.json"
 
 [[ -f "$ENTRY_PATH" ]] || { echo "Missing server entry: $ENTRY_PATH"; exit 1; }
