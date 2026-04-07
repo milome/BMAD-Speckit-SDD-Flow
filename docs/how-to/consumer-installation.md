@@ -23,6 +23,11 @@
 3. 如果要启用治理 provider，显式配置 `_bmad/_config/governance-remediation.yaml`
 4. 最后执行最小验证命令，确认 hooks、dashboard、provider 都可用
 
+补充说明：
+
+- `dashboard` 属于默认支持能力
+- `runtime-mcp` 属于增强能力，需要显式开关 `--with-mcp` 启用，不属于默认安装产物
+
 如果你只照旧 README 的 Quick Start 做，信息还不够覆盖消费者项目的完整安装链，尤其是：
 
 - provider 的 `baseUrl` / `apiKeyEnv` / `model` 怎么配
@@ -162,6 +167,12 @@ npx bmad-speckit dashboard-status
 npx bmad-speckit dashboard-start --open
 ```
 
+说明：
+
+- dashboard 的自动启动是通过宿主 hooks 完成的
+- 默认不需要单独启动 MCP server，dashboard 本身即可提供人工可见的运行时观察能力
+- 只有当你明确需要工具化的 runtime 接口时，才考虑 `runtime-mcp`
+
 ## 第三步：配置 provider
 
 这一步只在你需要“治理 runtime 真实访问模型服务”时才做。
@@ -241,6 +252,27 @@ npx bmad-speckit dashboard-stop
 npx bmad-speckit dashboard --json --include-runtime --output-json _bmad-output/dashboard/runtime-dashboard.json
 ```
 
+## 关于 runtime-mcp
+
+`runtime-mcp` 当前定位为增强能力，而不是默认安装路径的一部分。
+
+默认安装：
+
+- 不生成 `.mcp.json`
+- 不生成 `.runtime-mcp/...`
+- 不要求用户额外启动 MCP server
+
+只有在你明确需要把 runtime 信息作为 agent 工具接口暴露时，才显式启用：
+
+```powershell
+node scripts/init-to-root.js <消费项目根目录> --agent cursor --with-mcp
+node scripts/init-to-root.js <消费项目根目录> --agent claude-code --with-mcp
+```
+
+对应布局与边界见：
+
+- [runtime-mcp-installation.md](./runtime-mcp-installation.md)
+
 ## 第五步：做最小验活
 
 ### 安装验活
@@ -287,4 +319,5 @@ npx bmad-speckit dashboard-status
 但仍要明确边界：
 
 - 当前正式支持面应理解为 Cursor / Claude 两条消费者安装路径
+- runtime-mcp 保留为显式启用的增强能力，不是默认安装要求
 - 如果你要的是“消费项目接上真实 provider 并跑治理链路”，当前支持配置，但 smoke/一键验活脚本还可以继续加强

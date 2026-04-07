@@ -65,6 +65,8 @@ See [WSL / Shell scripts](docs/how-to/wsl-shell-scripts.md) for full shell scrip
 
 面向消费项目的完整安装入口见 [Consumer Installation Guide](docs/how-to/consumer-installation.md)。如果你需要继续配置 provider 的 `baseUrl` / `apiKeyEnv` / `model`，也从这篇开始。
 
+如果你后续确实需要把运行时信息通过工具接口暴露给 agent，再看 [Runtime MCP Installation](docs/how-to/runtime-mcp-installation.md)。该能力不是默认安装产物，需要显式启用。
+
 ---
 
 ## Built On
@@ -126,6 +128,7 @@ BMAD-Speckit-SDD-Flow/
 - [Cursor Setup](docs/how-to/cursor-setup.md)
 - [Claude Code Setup](docs/how-to/claude-code-setup.md)
 - [Provider Configuration](docs/how-to/provider-configuration.md)
+- [Runtime MCP Installation](docs/how-to/runtime-mcp-installation.md)
 - [WSL / Shell Scripts](docs/how-to/wsl-shell-scripts.md)
 
 ---
