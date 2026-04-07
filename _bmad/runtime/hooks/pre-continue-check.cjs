@@ -5,6 +5,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const yaml = require('js-yaml');
 const {
+  buildGovernanceStageRerunResultEvent,
+  persistGovernanceStageRerunResultEvent,
+} = require('./governance-stage-event-emitter.cjs');
+const {
   resolveRuntimeStepState,
   persistRuntimeStepState,
 } = require('./runtime-step-state.cjs');
@@ -144,6 +148,7 @@ function evaluateRule(rule, stepName, sections, defaults, config) {
   const keywordRoot = config.rule_keywords || {};
   const versionKeywords = keywordRoot.version_keywords || [];
   const exampleKeywords = keywordRoot.example_keywords || [];
+  const evidenceKeywords = defaults.evidence_keywords || {};
 
   for (const sectionName of rule.required_sections || []) {
     const content = sections.get(sectionName) || '';
@@ -163,6 +168,23 @@ function evaluateRule(rule, stepName, sections, defaults, config) {
     }
     if (!containsExample(content, exampleKeywords)) {
       failures.push(`${rule.name}: missing example detail: ${sectionName}`);
+    }
+  }
+
+  const keywordGroups = rule.required_keywords || {};
+  const scopedSectionNames = Array.isArray(rule.section_scope) ? rule.section_scope : [];
+  const scopedText = scopedSectionNames.length > 0
+    ? scopedSectionNames.map((sectionName) => sections.get(sectionName) || '').join('\n')
+    : [...sections.values()].join('\n');
+  for (const [keywordGroup, expectedKeywords] of Object.entries(keywordGroups)) {
+    const normalizedKeywords = Array.isArray(expectedKeywords) && expectedKeywords.length > 0
+      ? expectedKeywords
+      : evidenceKeywords[keywordGroup] || [];
+    const hit = normalizedKeywords.some((keyword) => scopedText.includes(keyword));
+    if (!hit) {
+      failures.push(
+        `${rule.name}: missing ${keywordGroup.replace(/_/g, ' ')} evidence (${normalizedKeywords.join(', ')})`
+      );
     }
   }
 
@@ -338,6 +360,44 @@ async function main() {
     sourceGateFailureIds: failures.map((_, index) => `${(gate.runtime?.gate || gateConfig.key).toUpperCase()}-${index + 1}`),
     failures,
   }, result);
+
+  if (failures.length > 0) {
+    persistGovernanceStageRerunResultEvent(
+      buildGovernanceStageRerunResultEvent({
+        projectRoot,
+        sourceEventType: 'governance-pre-continue-check',
+        runnerInput: {
+          projectRoot,
+          outputPath: artifactPath,
+          promptText: `GateFailure for ${routedWorkflow} ${routedStep}: ${failures.join('; ')}`,
+          stageContextKnown: true,
+          gateFailureExists: true,
+          blockerOwnershipLocked: true,
+          rootTargetLocked: true,
+          equivalentAdapterCount: 1,
+          attemptId: `pre-continue-${Date.now()}`,
+          sourceGateFailureIds: failures.map((_, index) => `${(gate.runtime?.gate || gateConfig.key).toUpperCase()}-${index + 1}`),
+          capabilitySlot: `${routedWorkflow}.${routedStep}`,
+          canonicalAgent: 'Governance Gate Runner',
+          actualExecutor: 'pre-continue-check',
+          adapterPath: '_bmad/runtime/hooks/pre-continue-check.cjs',
+          targetArtifacts: artifactPath ? [artifactPath] : [],
+          expectedDelta: 'repair governed contract sections before Continue',
+          rerunOwner: 'PM',
+          rerunGate: dynamic.rerunGate || (route && route.rerunGate) || gate.runtime?.gate || gateConfig.key,
+          outcome: 'blocked',
+          hostKind: 'claude',
+        },
+        rerunGateResult: {
+          gate: dynamic.rerunGate || (route && route.rerunGate) || gate.runtime?.gate || gateConfig.key,
+          status: 'fail',
+          blockerIds: failures.map((_, index) => `${(gate.runtime?.gate || gateConfig.key).toUpperCase()}-${index + 1}`),
+          summary: failures.join('; '),
+          updatedArtifacts: artifactPath ? [artifactPath] : [],
+        },
+      })
+    );
+  }
   writeResult(result);
 
   if (failures.length > 0) {

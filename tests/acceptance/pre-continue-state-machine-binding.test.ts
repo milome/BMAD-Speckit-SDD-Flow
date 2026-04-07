@@ -1,4 +1,4 @@
-import { cpSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, readdirSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -68,6 +68,37 @@ describe('pre-continue state machine binding', () => {
       const pendingDir = join(project, '_bmad-output', 'runtime', 'governance', 'queue', 'pending');
       const pendingFiles = readdirSync(pendingDir).filter((file) => file.endsWith('.json'));
       expect(pendingFiles.length).toBe(1);
+
+      const stageEventDir = join(
+        project,
+        '_bmad-output',
+        'runtime',
+        'governance',
+        'queue',
+        'pending-events'
+      );
+      const stageEventFiles = existsSync(stageEventDir)
+        ? readdirSync(stageEventDir).filter((file) => file.endsWith('.json'))
+        : [];
+      expect(stageEventFiles.length).toBe(1);
+      const stageEvent = JSON.parse(
+        readFileSync(join(stageEventDir, stageEventFiles[0]), 'utf8')
+      ) as {
+        type: string;
+        payload: {
+          sourceEventType?: string;
+          runnerInput?: { rerunGate?: string; capabilitySlot?: string };
+          rerunGateResult?: { gate?: string; status?: string };
+        };
+      };
+      expect(stageEvent.type).toBe('governance-rerun-result');
+      expect(stageEvent.payload.sourceEventType).toBe('governance-pre-continue-check');
+      expect(stageEvent.payload.runnerInput?.rerunGate).toBe('architecture-contract-gate');
+      expect(stageEvent.payload.runnerInput?.capabilitySlot).toBe(
+        'bmad-create-architecture.step-04-decisions'
+      );
+      expect(stageEvent.payload.rerunGateResult?.gate).toBe('architecture-contract-gate');
+      expect(stageEvent.payload.rerunGateResult?.status).toBe('fail');
 
       const queued = JSON.parse(readFileSync(join(pendingDir, pendingFiles[0]), 'utf8')) as {
         type: string;
@@ -166,6 +197,19 @@ describe('pre-continue state machine binding', () => {
       );
 
       await processQueue(project);
+
+      const stageEventDir = join(
+        project,
+        '_bmad-output',
+        'runtime',
+        'governance',
+        'queue',
+        'pending-events'
+      );
+      const stageEventFiles = existsSync(stageEventDir)
+        ? readdirSync(stageEventDir).filter((file) => file.endsWith('.json'))
+        : [];
+      expect(stageEventFiles.length).toBe(1);
 
       const currentRun = readGovernanceCurrentRun<GovernanceExecutionResult>(project);
       expect(currentRun.length).toBe(1);

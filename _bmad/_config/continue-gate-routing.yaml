@@ -50,6 +50,34 @@ routes:
     steps:
       workflow: bmad_story_stage2
 
+  - workflow: speckit-specify
+    aliases: [specify, spec]
+    flow: story
+    stage: specify
+    steps:
+      workflow: speckit_1_2
+
+  - workflow: speckit-plan
+    aliases: [plan]
+    flow: story
+    stage: plan
+    steps:
+      workflow: speckit_2_2
+
+  - workflow: speckit-gaps
+    aliases: [gaps]
+    flow: story
+    stage: gaps
+    steps:
+      workflow: speckit_3_2
+
+  - workflow: speckit-tasks
+    aliases: [tasks]
+    flow: story
+    stage: tasks
+    steps:
+      workflow: speckit_4_2
+
   - workflow: bmad-dev-story
     aliases: [dev-story]
     flow: story

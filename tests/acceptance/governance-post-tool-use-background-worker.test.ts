@@ -27,6 +27,7 @@ import { writeRuntimeContext } from '../../scripts/runtime-context';
 import {
   linkRepoNodeModulesIntoProject,
   linkRepoScriptsIntoProject,
+  linkRepoTsconfigIntoProject,
 } from '../helpers/runtime-registry-fixture';
 import {
   defaultRuntimeContextRegistry,
@@ -106,6 +107,7 @@ function createFixtureProject(): {
   seedScoringSchemaFixture(root);
   linkRepoNodeModulesIntoProject(root);
   linkRepoScriptsIntoProject(root);
+  linkRepoTsconfigIntoProject(root);
   const registry = defaultRuntimeContextRegistry(root);
   writeRuntimeContextRegistry(root, registry);
   writeRuntimeContext(root, {
@@ -152,12 +154,13 @@ function createWave2aTailFixtureProject(): {
   seedScoringSchemaFixture(root);
   linkRepoNodeModulesIntoProject(root);
   linkRepoScriptsIntoProject(root);
+  linkRepoTsconfigIntoProject(root);
   const registry = defaultRuntimeContextRegistry(root);
   writeRuntimeContextRegistry(root, registry);
   writeRuntimeContext(root, {
     version: 1,
     flow: 'story',
-    stage: 'post_impl',
+    stage: 'post_audit',
     contextScope: 'story',
     sourceMode: 'full_bmad',
     storyId: '15.3',

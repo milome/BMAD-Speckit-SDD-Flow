@@ -141,6 +141,7 @@ function runReadinessRemediationRunnerCli(
   const command = [
     'npx',
     'ts-node',
+    '--project', 'tsconfig.node.json',
     '--transpile-only',
     'scripts/governance-remediation-runner.ts',
     '--projectRoot',

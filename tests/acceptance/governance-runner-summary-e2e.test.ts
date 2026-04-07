@@ -235,7 +235,7 @@ describe('governance runner summary end-to-end flow', () => {
 
       const dashboardPath = path.join(fixture.root, 'dashboard.md');
       execSync(
-        `npx ts-node "${DASHBOARD_SCRIPT}" --dataPath "${path.join(
+        `npx ts-node --project tsconfig.node.json "${DASHBOARD_SCRIPT}" --dataPath "${path.join(
           fixture.root,
           'packages',
           'scoring',

@@ -22,6 +22,11 @@ import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
 } from '../../scripts/runtime-context-registry';
+import {
+  linkRepoNodeModulesIntoProject,
+  linkRepoScriptsIntoProject,
+  linkRepoTsconfigIntoProject,
+} from '../helpers/runtime-registry-fixture';
 
 const require = createRequire(import.meta.url);
 const stopHook = require('../../_bmad/claude/hooks/stop.cjs');
@@ -76,6 +81,9 @@ function createFixtureProject(): {
   const repoRoot = process.cwd();
   const root = mkdtempSync(path.join(os.tmpdir(), 'gov-stop-worker-'));
   cpSync(path.join(repoRoot, '_bmad'), path.join(root, '_bmad'), { recursive: true });
+  linkRepoNodeModulesIntoProject(root);
+  linkRepoScriptsIntoProject(root);
+  linkRepoTsconfigIntoProject(root);
   const registry = defaultRuntimeContextRegistry(root);
   writeRuntimeContextRegistry(root, registry);
   writeRuntimeContext(root, {

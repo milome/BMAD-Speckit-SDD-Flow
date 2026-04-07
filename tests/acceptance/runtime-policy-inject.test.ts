@@ -176,6 +176,8 @@ describe('runtime-policy-inject (dual host entry)', () => {
       process.execPath,
       [
         path.join(repoRoot, 'node_modules', 'ts-node', 'dist', 'bin.js'),
+        '--project',
+        path.join(repoRoot, 'tsconfig.node.json'),
         '--transpile-only',
         emit,
         '--cwd',

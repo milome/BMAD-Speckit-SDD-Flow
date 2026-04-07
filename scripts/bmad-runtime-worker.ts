@@ -54,6 +54,10 @@ import type {
   GovernancePresentation,
   GovernanceRemediationAuditTrace,
 } from './governance-hook-types';
+import {
+  buildGovernanceStageRerunResultEvent,
+  persistGovernanceStageRerunResultEvent,
+} from '../_bmad/runtime/hooks/governance-stage-event-emitter.cjs';
 
 const LEGACY_QUEUE_DIR = path.join('.claude', 'state', 'runtime', 'queue');
 
@@ -355,6 +359,32 @@ async function processGovernanceRerunEvent(
     result: resultPayload,
   };
 
+  const debugPath = path.join(
+    queueProjectRoot,
+    '_bmad-output',
+    'runtime',
+    'governance',
+    'queue',
+    'last-success-debug.json'
+  );
+  fs.mkdirSync(path.dirname(debugPath), { recursive: true });
+  fs.writeFileSync(
+    debugPath,
+    JSON.stringify(
+      {
+        itemId: item.id,
+        processedAt,
+        stopReason: resultPayload.stopReason ?? null,
+        shouldContinue: resultPayload.shouldContinue ?? null,
+        artifactPath: resultPayload.artifactPath ?? null,
+        queueProjectRoot,
+      },
+      null,
+      2
+    ) + '\n',
+    'utf8'
+  );
+
   appendGovernanceCurrentRun(queueProjectRoot, finalizedItem);
   return finalizedItem;
 }
@@ -434,6 +464,51 @@ async function processGovernanceEvent(
       result.artifactPath = remediationResult.artifactPath;
     }
 
+    if (payload.status === 'fail' && payload.rerunGate) {
+      persistGovernanceStageRerunResultEvent(
+        buildGovernanceStageRerunResultEvent({
+          projectRoot: payload.projectRoot ?? queueProjectRoot,
+          sourceEventType: 'governance-pre-continue-check',
+          runnerInput: {
+            projectRoot: payload.projectRoot ?? queueProjectRoot,
+            outputPath:
+              payload.artifactPath ??
+              path.join(
+                payload.projectRoot ?? queueProjectRoot,
+                '_bmad-output',
+                'planning-artifacts',
+                'gate-remediation.md'
+              ),
+            promptText: `GateFailure for ${payload.workflow || 'unknown-workflow'} ${payload.step || 'workflow'}: ${gateFailures.join('; ')}`,
+            stageContextKnown: true,
+            gateFailureExists: true,
+            blockerOwnershipLocked: true,
+            rootTargetLocked: true,
+            equivalentAdapterCount: 1,
+            attemptId: `pre-continue-${item.id}`,
+            sourceGateFailureIds: payload.sourceGateFailureIds ?? [],
+            capabilitySlot: `${payload.workflow || 'workflow'}.${payload.step || 'workflow'}`,
+            canonicalAgent: 'Governance Gate Runner',
+            actualExecutor: 'pre-continue-check',
+            adapterPath: '_bmad/runtime/hooks/pre-continue-check.cjs',
+            targetArtifacts: payload.artifactPath ? [payload.artifactPath] : [],
+            expectedDelta: 'repair governed contract sections before Continue',
+            rerunOwner: 'PM',
+            rerunGate: payload.rerunGate,
+            outcome: 'blocked',
+            hostKind: 'claude',
+          },
+          rerunGateResult: {
+            gate: payload.rerunGate,
+            status: 'fail',
+            blockerIds: payload.sourceGateFailureIds ?? [],
+            summary: gateFailures.join('; '),
+            updatedArtifacts: payload.artifactPath ? [payload.artifactPath] : [],
+          },
+        })
+      );
+    }
+
     const passthroughItem: GovernanceRuntimeQueueItem<GovernanceRemediationRerunPayload, GovernanceExecutionResult> = {
       ...item,
       processedAt: new Date().toISOString(),
@@ -479,6 +554,14 @@ async function processGovernanceQueue(projectRoot: string): Promise<void> {
       fs.writeFileSync(processingPath, JSON.stringify(finalizedItem, null, 2) + '\n', 'utf8');
       fs.renameSync(processingPath, governanceDoneQueueFilePath(projectRoot, itemId));
     } catch (error) {
+      const failedDebugPath = path.join(
+        projectRoot,
+        '_bmad-output',
+        'runtime',
+        'governance',
+        'queue',
+        'last-failed-debug.json'
+      );
       try {
         const failedItem = JSON.parse(
           fs.readFileSync(processingPath, 'utf8')
@@ -492,6 +575,23 @@ async function processGovernanceQueue(projectRoot: string): Promise<void> {
       } catch {
         // Keep the original queue file if it cannot be re-read or re-written.
       }
+
+      fs.mkdirSync(path.dirname(failedDebugPath), { recursive: true });
+      fs.writeFileSync(
+        failedDebugPath,
+        JSON.stringify(
+          {
+            itemId,
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack ?? null : null,
+            processingPath,
+            failedAt: new Date().toISOString(),
+          },
+          null,
+          2
+        ) + '\n',
+        'utf8'
+      );
 
       fs.renameSync(processingPath, governanceFailedQueueFilePath(projectRoot, itemId));
     }

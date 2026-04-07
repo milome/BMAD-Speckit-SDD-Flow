@@ -28,6 +28,11 @@ import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
 } from '../../scripts/runtime-context-registry';
+import {
+  linkRepoNodeModulesIntoProject,
+  linkRepoScriptsIntoProject,
+  linkRepoTsconfigIntoProject,
+} from '../helpers/runtime-registry-fixture';
 
 function writeGovernanceConfig(root: string): string {
   const configPath = path.join(root, '_bmad', '_config', 'governance-remediation.yaml');
@@ -57,6 +62,9 @@ function createFixtureProject(): {
   const repoRoot = process.cwd();
   const root = mkdtempSync(path.join(os.tmpdir(), 'gov-runtime-worker-cross-stage-'));
   cpSync(path.join(repoRoot, '_bmad'), path.join(root, '_bmad'), { recursive: true });
+  linkRepoNodeModulesIntoProject(root);
+  linkRepoScriptsIntoProject(root);
+  linkRepoTsconfigIntoProject(root);
   const registry = defaultRuntimeContextRegistry(root);
   writeRuntimeContextRegistry(root, registry);
   writeRuntimeContext(root, {
@@ -90,12 +98,15 @@ function createWave2aTailFixtureProject(): {
   const repoRoot = process.cwd();
   const root = mkdtempSync(path.join(os.tmpdir(), 'gov-runtime-worker-wave2a-tail-'));
   cpSync(path.join(repoRoot, '_bmad'), path.join(root, '_bmad'), { recursive: true });
+  linkRepoNodeModulesIntoProject(root);
+  linkRepoScriptsIntoProject(root);
+  linkRepoTsconfigIntoProject(root);
   const registry = defaultRuntimeContextRegistry(root);
   writeRuntimeContextRegistry(root, registry);
   writeRuntimeContext(root, {
     version: 1,
     flow: 'story',
-    stage: 'post_impl',
+    stage: 'post_audit',
     contextScope: 'story',
     sourceMode: 'full_bmad',
     storyId: '15.3',
@@ -411,9 +422,34 @@ describe('governance runtime worker cross-stage rerun queue', () => {
 
       await processQueue(fixture.root);
 
+      const donePath = governanceDoneQueueFilePath(fixture.root, 'queue-wave2a-tail-01');
+      if (!existsSync(donePath)) {
+        const failedDebug = path.join(
+          fixture.root,
+          '_bmad-output',
+          'runtime',
+          'governance',
+          'queue',
+          'last-failed-debug.json'
+        );
+        const successDebug = path.join(
+          fixture.root,
+          '_bmad-output',
+          'runtime',
+          'governance',
+          'queue',
+          'last-success-debug.json'
+        );
+        throw new Error(
+          `Missing done queue item at ${donePath}; current-run=${governanceCurrentRunPath(fixture.root)}; failedDebug=${
+            existsSync(failedDebug) ? readFileSync(failedDebug, 'utf8') : 'missing'
+          }; successDebug=${existsSync(successDebug) ? readFileSync(successDebug, 'utf8') : 'missing'}`
+        );
+      }
+
       const currentRun = readGovernanceCurrentRun<GovernanceExecutionResult>(fixture.root);
       const doneQueueResult = JSON.parse(
-        readFileSync(governanceDoneQueueFilePath(fixture.root, 'queue-wave2a-tail-01'), 'utf8')
+        readFileSync(donePath, 'utf8')
       ) as GovernanceRuntimeQueueItem<unknown, GovernanceExecutionResult>;
       const loopStateRaw = JSON.parse(
         readFileSync(
