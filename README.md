@@ -63,6 +63,8 @@ bash scripts/setup.sh -Target <project-path>
 
 See [WSL / Shell scripts](docs/how-to/wsl-shell-scripts.md) for full shell script reference.
 
+面向消费项目的完整安装入口见 [Consumer Installation Guide](docs/how-to/consumer-installation.md)。如果你需要继续配置 provider 的 `baseUrl` / `apiKeyEnv` / `model`，也从这篇开始。
+
 ---
 
 ## Built On
@@ -119,9 +121,11 @@ BMAD-Speckit-SDD-Flow/
 ## Documentation
 
 - [Getting Started](docs/tutorials/getting-started.md)
+- [Consumer Installation Guide](docs/how-to/consumer-installation.md)
 - [Installation & Migration Guide](docs/how-to/migration.md)
 - [Cursor Setup](docs/how-to/cursor-setup.md)
 - [Claude Code Setup](docs/how-to/claude-code-setup.md)
+- [Provider Configuration](docs/how-to/provider-configuration.md)
 - [WSL / Shell Scripts](docs/how-to/wsl-shell-scripts.md)
 
 ---

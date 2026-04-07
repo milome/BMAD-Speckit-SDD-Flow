@@ -12,7 +12,7 @@
 本文档主要面向两类场景：
 
 1. runtime governance / remediation provider 配置
-2. consumer MCP 安装后，需要继续接入真实模型 provider 的场景
+2. consumer 项目安装后，需要继续接入真实模型 provider 的场景
 
 ---
 
@@ -36,7 +36,7 @@
 
 说明：
 
-- `consumer MCP` 当前安装链已能把 server / template / config 骨架落到消费项目
+- consumer 项目当前安装链已能把治理配置骨架落到消费项目
 - 但 provider 的真实联网能力，仍应通过项目内配置文件或环境变量显式提供
 - 不建议把 API key 写死在仓库文件中
 
@@ -333,32 +333,22 @@ provider:
 
 ---
 
-## 七、consumer MCP 与 provider 的关系
+## 七、consumer 安装链与 provider 的关系
 
 需要明确：
 
-- `consumer MCP 安装链` 负责的是**运行时布局、server 文件、模板、配置骨架**
-- `provider 配置` 负责的是**MCP server 或治理逻辑真正联网时怎么访问模型服务**
+- consumer 安装链负责的是**项目内目录、hooks、运行时配置骨架**
+- `provider 配置` 负责的是**治理逻辑真正联网时怎么访问模型服务**
 
 两者关系是：
 
-1. install-consumer-mcp 先生成 `.mcp.json`、`server.config.json`、`dist/index.js`
+1. 先把 `_bmad` 与运行时骨架部署到消费项目
 2. provider 再通过项目配置或环境变量补齐真实模型访问能力
-
-当前 consumer MCP 产物中的：
-
-- [consumer-mcp-server.js](/D:/Dev/BMAD-Speckit-SDD-Flow/packages/runtime-emit/src/consumer-mcp-server.js)
-
-还是一个 baseline/stub 入口，主要用于：
-
-- 布局落盘
-- smoke 检查
-- 后续真实 MCP server 实现的接线占位
 
 所以目前 provider 配置文档的价值在于：
 
 - 先把“配置契约”定义清楚
-- 为后续真实 consumer MCP server 接入模型 provider 提前铺路
+- 为后续真实 consumer 运行时接入模型 provider 提前铺路
 
 ---
 
@@ -369,7 +359,7 @@ provider:
 1. 给 `governance-remediation.yaml` 增加 `providerProfiles`
 2. 增加 `modelMap` / `logical model alias` 解析层
 3. 给 `headers` 支持 `${ENV_VAR}` 替换
-4. 在 consumer MCP server 中正式接入 provider config 读取
+4. 在 consumer 运行时入口中正式接入 provider config 读取
 5. 增加 provider smoke 测试与 fail-fast 校验
 
 ---
@@ -428,9 +418,9 @@ provider:
 - endpoint / model 字段的语义边界
 - model mapping 的当前现状与推荐演进路径
 
-本文档补齐后，consumer MCP 安装文档就可以更清楚地区分：
+本文档补齐后，consumer 安装文档就可以更清楚地区分：
 
-- “MCP 安装骨架”负责什么
+- “consumer 安装骨架”负责什么
 - “provider 配置”应该放在哪里、怎么写、目前做到哪一步
 
 ---
@@ -508,7 +498,6 @@ primaryHost: cursor
 packetHosts:
   - cursor
   - claude
-  - codex
 
 provider:
   mode: openai-compatible
@@ -540,7 +529,6 @@ primaryHost: cursor
 packetHosts:
   - cursor
   - claude
-  - codex
 
 provider:
   mode: openai-compatible
@@ -666,7 +654,6 @@ primaryHost: cursor
 packetHosts:
   - cursor
   - claude
-  - codex
 provider:
   mode: openai-compatible
   id: dashscope-coding-kimi
