@@ -54,6 +54,9 @@ export type ValidationLevel = 'basic' | 'test_only' | 'full_validation' | null;
 
 /** 阶段名称 */
 export type StageName =
+  | 'prd'
+  | 'arch'
+  | 'epics'
   | 'story_create'
   | 'story_audit'
   | 'specify'
@@ -867,7 +870,7 @@ export function getI18nConfig(config?: RuntimeConfig): RuntimeConfig['i18n'] {
  * @returns 路径模板（包含占位符）
  */
 export function getReportPathTemplate(
-  stage: Exclude<StageName, 'story_create' | 'story_audit'>,
+  stage: Exclude<StageName, 'prd' | 'arch' | 'epics' | 'story_create' | 'story_audit'>,
   config?: RuntimeConfig
 ): string {
   const cfg = config || loadConfig();

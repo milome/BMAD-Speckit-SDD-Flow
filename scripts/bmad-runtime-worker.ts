@@ -366,21 +366,26 @@ async function processGovernanceEvent(
   if (item.type === 'governance-pre-continue-check') {
     const payload = (item.payload ?? {}) as GovernancePreContinuePayload;
     const gateFailures = Array.isArray(payload.failures) ? payload.failures : [];
-    const result: GovernanceExecutionResult = {
-      shouldContinue: false,
-      stopReason: gateFailures.length > 0 ? 'gate failed - remediation required' : 'gate passed - awaiting workflow transition',
-      gateCheck: {
-        gate: payload.gate || 'pre-continue',
-        workflow: payload.workflow,
-        step: payload.step,
-        artifactPath: payload.artifactPath ?? null,
-        scope: {
-          branch: payload.branch ?? null,
-          epicId: payload.epicId ?? null,
-          storyId: payload.storyId ?? null,
-        },
-        failures: gateFailures,
+    const gateCheck = {
+      gate: payload.gate || 'pre-continue',
+      workflow: payload.workflow,
+      step: payload.step,
+      artifactPath: payload.artifactPath ?? null,
+      scope: {
+        branch: payload.branch ?? null,
+        epicId: payload.epicId ?? null,
+        storyId: payload.storyId ?? null,
       },
+      failures: gateFailures,
+      status: payload.status || (gateFailures.length > 0 ? 'fail' : 'pass'),
+      rerunGate: payload.rerunGate || payload.gate || 'pre-continue',
+      sourceGateFailureIds: payload.sourceGateFailureIds || [],
+    };
+
+    const result: GovernanceExecutionResult = {
+      shouldContinue: gateCheck.status === 'pass' ? false : false,
+      stopReason: gateFailures.length > 0 ? 'gate failed - remediation required' : 'gate passed - awaiting workflow transition',
+      gateCheck,
     };
 
     if (payload.status === 'fail' && payload.rerunGate) {
@@ -407,7 +412,8 @@ async function processGovernanceEvent(
         hostKind: 'claude',
       });
 
-      result.stopReason = remediationResult.stopReason;
+      result.stopReason = remediationResult.stopReason ?? result.stopReason;
+      result.shouldContinue = false;
       result.currentAttemptNumber = remediationResult.currentAttemptNumber;
       result.nextAttemptNumber = remediationResult.nextAttemptNumber;
       result.loopStateId = remediationResult.loopState.loopStateId;
@@ -419,7 +425,11 @@ async function processGovernanceEvent(
             prioritizedSignals: remediationResult.executorPacket.prioritizedSignals,
           }
         : undefined;
-      result.runnerSummaryLines = buildGovernanceRemediationRunnerSummaryLines(remediationResult);
+      result.runnerSummaryLines = buildGovernanceRemediationRunnerSummaryLines({
+        ...remediationResult,
+        shouldContinue: false,
+        stopReason: result.stopReason ?? null,
+      });
       result.packetPaths = remediationResult.packetPaths;
       result.artifactPath = remediationResult.artifactPath;
     }

@@ -1,11 +1,25 @@
 # @bmad-speckit/runtime-emit
 
-esbuild 单文件打包 `../../scripts/emit-runtime-policy.ts` → `dist/emit-runtime-policy.cjs`，供 `emit-runtime-policy-cli.js` 与消费者项目在无 `ts-node` 时执行。
+为消费者项目提供 runtime governance 的可部署产物：
 
-## 与 `@bmad-speckit/scoring` 一致的模式
+- `dist/emit-runtime-policy.cjs`
+- `dist/resolve-for-session.cjs`
+- `dist/render-audit-block.cjs`
+- `write-runtime-context.cjs`
 
-- 由 `bmad-speckit` 以 `file:../runtime-emit`（monorepo）或发布后的 semver 依赖安装；安装后出现在 `node_modules/@bmad-speckit/runtime-emit/`。
-- `init-to-root.js` 通过 `require.resolve('@bmad-speckit/runtime-emit', { paths: [pkgRoot] })` 定位产物，并复制到目标项目的 `scripts/emit-runtime-policy.cjs`。
+这些文件由 `bmad-speckit` 的安装/同步链复制到消费者项目的 `.cursor/hooks/` 与 `.claude/hooks/`，不再落到项目根 `scripts/`。
+
+## runtime context 写入契约
+
+`write-runtime-context.cjs` 的目标文件是显式传入的 context 文件路径，默认消费者链路会写到：
+
+`_bmad-output/runtime/context/project.json`
+
+CLI 形态：
+
+```bash
+node write-runtime-context.cjs <targetFile> [flow] [stage] [templateId?] [epicId] [storyId] [storySlug] [runId] [artifactRoot] [contextScope] [workflow] [step] [artifactPath]
+```
 
 ## 构建
 
@@ -15,4 +29,4 @@ npm run build -w @bmad-speckit/runtime-emit
 cd packages/runtime-emit && npm run build
 ```
 
-本地 `npm install` 于 monorepo 根目录时会运行 **prepare**（若 devDependencies 已安装）。发布到 npm 前 **prepublishOnly** 会写入 `dist/`， tarball 内含构建结果，消费者无需 esbuild。
+monorepo 根目录本地 `npm install` 会运行 `prepare`。发布到 npm 前 `prepublishOnly` 会写入 `dist/`，因此 tarball 自带消费者所需运行时文件。

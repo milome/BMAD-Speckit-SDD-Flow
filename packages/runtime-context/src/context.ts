@@ -18,6 +18,9 @@ export const RUNTIME_CONTEXT_VERSION = 1 as const;
 
 const RUNTIME_FLOWS: RuntimeFlowId[] = ['story', 'bugfix', 'standalone_tasks', 'epic', 'unknown'];
 const STAGE_NAMES: StageName[] = [
+  'prd',
+  'arch',
+  'epics',
   'story_create',
   'story_audit',
   'specify',
@@ -34,6 +37,8 @@ export interface RuntimeContextFile {
   version: number;
   flow: RuntimeFlowId;
   stage: StageName;
+  workflow?: string;
+  step?: string;
   sourceMode?: 'full_bmad' | 'seeded_solutioning' | 'standalone_story';
   templateId?: string;
   epicId?: string;
@@ -41,7 +46,9 @@ export interface RuntimeContextFile {
   storySlug?: string;
   runId?: string;
   artifactRoot?: string;
+  artifactPath?: string;
   contextScope?: 'project' | 'story';
+  languagePolicy?: { resolvedMode: 'zh' | 'en' | 'bilingual' };
   updatedAt: string;
 }
 
@@ -175,8 +182,26 @@ export function readRuntimeContext(root: string, explicitPath?: string): Runtime
       throw new Error(`runtime-context.${key} must be string when set: ${file}`);
     }
   }
+  for (const key of ['workflow', 'step', 'artifactPath'] as const) {
+    if (o[key] !== undefined && typeof o[key] !== 'string') {
+      throw new Error(`runtime-context.${key} must be string when set: ${file}`);
+    }
+  }
   if (o.contextScope !== undefined && o.contextScope !== 'project' && o.contextScope !== 'story') {
     throw new Error(`runtime-context.contextScope invalid: ${file}`);
+  }
+  if (o.languagePolicy !== undefined) {
+    if (!o.languagePolicy || typeof o.languagePolicy !== 'object') {
+      throw new Error(`runtime-context.languagePolicy invalid: ${file}`);
+    }
+    const lp = o.languagePolicy as Record<string, unknown>;
+    if (
+      lp.resolvedMode !== 'zh' &&
+      lp.resolvedMode !== 'en' &&
+      lp.resolvedMode !== 'bilingual'
+    ) {
+      throw new Error(`runtime-context.languagePolicy.resolvedMode invalid: ${file}`);
+    }
   }
   if (typeof o.updatedAt !== 'string' || o.updatedAt.trim() === '') {
     throw new Error(`runtime-context.updatedAt missing: ${file}`);
@@ -203,7 +228,20 @@ export function readRuntimeContext(root: string, explicitPath?: string): Runtime
   if (typeof o.runId === 'string' && o.runId !== '') out.runId = o.runId;
   if (typeof o.artifactRoot === 'string' && o.artifactRoot !== '')
     out.artifactRoot = o.artifactRoot;
+  if (typeof o.artifactPath === 'string' && o.artifactPath !== '') out.artifactPath = o.artifactPath;
+  if (typeof o.workflow === 'string' && o.workflow !== '') out.workflow = o.workflow;
+  if (typeof o.step === 'string' && o.step !== '') out.step = o.step;
   if (o.contextScope === 'project' || o.contextScope === 'story') out.contextScope = o.contextScope;
+  if (o.languagePolicy && typeof o.languagePolicy === 'object') {
+    const lp = o.languagePolicy as Record<string, unknown>;
+    if (
+      lp.resolvedMode === 'zh' ||
+      lp.resolvedMode === 'en' ||
+      lp.resolvedMode === 'bilingual'
+    ) {
+      out.languagePolicy = { resolvedMode: lp.resolvedMode as 'zh' | 'en' | 'bilingual' };
+    }
+  }
   return out;
 }
 

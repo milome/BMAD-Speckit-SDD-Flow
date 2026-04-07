@@ -4,6 +4,9 @@
 export type RuntimeFlowId = 'story' | 'bugfix' | 'standalone_tasks' | 'epic' | 'unknown';
 
 export type StageName =
+  | 'prd'
+  | 'arch'
+  | 'epics'
   | 'story_create'
   | 'story_audit'
   | 'specify'

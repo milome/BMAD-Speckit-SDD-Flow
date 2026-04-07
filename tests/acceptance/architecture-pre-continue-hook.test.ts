@@ -9,12 +9,16 @@ const ROOT = join(import.meta.dirname, '..', '..');
 describe('architecture pre-continue gate hook', () => {
   it('declares architecture gate config', () => {
     const yaml = readFileSync(join(ROOT, '_bmad', '_config', 'architecture-gates.yaml'), 'utf8');
+    const routing = readFileSync(join(ROOT, '_bmad', '_config', 'continue-gate-routing.yaml'), 'utf8');
     expect(yaml).toContain('schema: unified_gate_v1');
     expect(yaml).toContain('architecture_contract_gate');
     expect(yaml).toContain('brief_contract_gate');
     expect(yaml).toContain('prd_contract_gate');
     expect(yaml).toContain('readiness_blocker_gate');
     expect(yaml).toContain('阻止 Continue');
+    expect(routing).toContain('bmad-create-architecture');
+    expect(routing).toContain('bmad-create-story');
+    expect(routing).toContain('speckit-workflow');
   });
 
   it('fails when architecture sections are empty placeholders', () => {
@@ -88,6 +92,10 @@ describe('architecture pre-continue gate hook', () => {
     expect(claudeSettings).toContain('pre-continue-check.cjs');
     expect(initScript).toContain('preToolUseCommands');
     expect(syncService).toContain('deployPreContinueGateConfig');
+    expect(initScript).toContain('continue-gate-routing.yaml');
+    expect(syncService).toContain('continue-gate-routing.yaml');
+    expect(syncService).toContain("'_bmad-output', 'runtime', 'context', 'project.json'");
+    expect(syncService).not.toContain(".bmad', 'runtime-context.json");
   });
 
   it('consumer install produces pre-continue hook files', () => {
@@ -108,6 +116,7 @@ describe('architecture pre-continue gate hook', () => {
       expect(existsSync(join(target, '.cursor', 'hooks', 'pre-continue-check.cjs'))).toBe(true);
       expect(readFileSync(join(target, '.cursor', 'hooks.json'), 'utf8')).toContain('pre-continue-check.cjs');
       expect(existsSync(join(target, '_bmad', '_config', 'architecture-gates.yaml'))).toBe(true);
+      expect(existsSync(join(target, '_bmad', '_config', 'continue-gate-routing.yaml'))).toBe(true);
     } finally {
       rmSync(target, { recursive: true, force: true });
     }

@@ -170,7 +170,7 @@ function syncCommandsRulesConfig(projectRoot, selectedAI, options = {}) {
 
   deploySpecifyDir(projectRoot, bmadRoot);
 
-  /** Align with monorepo `init-to-root`: hooks dir gets `emit-runtime-policy.cjs` + `write-runtime-context.cjs`; default `.bmad/runtime-context.json`. */
+  /** Align with monorepo `init-to-root`: hooks dir gets `emit-runtime-policy.cjs` + `write-runtime-context.cjs`; default project context lives under `_bmad-output/runtime/context/project.json`. */
   deployRuntimeGovernanceFromPackage(projectRoot);
 
   fs.mkdirSync(path.join(projectRoot, 'specs'), { recursive: true });
@@ -211,15 +211,15 @@ function deployRuntimeGovernanceFromPackage(projectRoot) {
   }
   if (deployed === 0) return;
 
-  const rcPath = path.join(projectRoot, '.bmad', 'runtime-context.json');
-  if (!fs.existsSync(rcPath)) {
+  const targetContext = path.join(projectRoot, '_bmad-output', 'runtime', 'context', 'project.json');
+  if (!fs.existsSync(targetContext)) {
     const wrcCandidates = [
       path.join(projectRoot, '.cursor', 'hooks', 'write-runtime-context.cjs'),
       path.join(projectRoot, '.claude', 'hooks', 'write-runtime-context.cjs'),
     ];
     const wrcDest = wrcCandidates.find((p) => fs.existsSync(p));
     if (wrcDest) {
-      spawnSync(process.execPath, [wrcDest, projectRoot, 'story', 'specify'], {
+      spawnSync(process.execPath, [wrcDest, targetContext, 'story', 'story_create'], {
         cwd: projectRoot,
         stdio: 'pipe',
       });
@@ -297,7 +297,7 @@ function writeCursorHooksJson(projectRoot) {
       ],
       preToolUse: [
         { command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host' },
-        { command: 'node .cursor/hooks/pre-continue-check.cjs bmad-create-architecture step-04-decisions' },
+        { command: 'node .cursor/hooks/pre-continue-check.cjs' },
       ],
       subagentStart: [
         { command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host --subagent-start' },
@@ -373,6 +373,12 @@ function deployPreContinueGateConfig(projectRoot, bmadRoot) {
   if (!fs.existsSync(src)) return;
   if (!fs.existsSync(path.dirname(dest))) fs.mkdirSync(path.dirname(dest), { recursive: true });
   fs.copyFileSync(src, dest);
+
+  const routingSrc = path.join(bmadRoot, '_config', 'continue-gate-routing.yaml');
+  const routingDest = path.join(projectRoot, '_bmad', '_config', 'continue-gate-routing.yaml');
+  if (fs.existsSync(routingSrc)) {
+    fs.copyFileSync(routingSrc, routingDest);
+  }
 }
 
 function deployClaudeInfrastructure(projectRoot, bmadRoot) {

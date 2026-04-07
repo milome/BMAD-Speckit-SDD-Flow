@@ -57,6 +57,9 @@ export interface GovernanceExecutionResult {
       storyId?: string | null;
     };
     failures?: string[];
+    status?: 'pass' | 'fail';
+    rerunGate?: string;
+    sourceGateFailureIds?: string[];
   };
 }
 

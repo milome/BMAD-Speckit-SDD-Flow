@@ -1,0 +1,65 @@
+version: 1
+schema: continue_gate_routing_v1
+
+routes:
+  - workflow: bmad-create-product-brief
+    aliases: [create-product-brief]
+    flow: epic
+    stage: prd
+    steps:
+      step-02-vision: brief-gate
+      step-03-users: brief-gate
+      step-04-metrics: brief-gate
+      step-05-scope: brief-gate
+
+  - workflow: bmad-create-prd
+    aliases: [create-prd]
+    flow: epic
+    stage: prd
+    steps:
+      step-04-journeys: prd-contract-gate
+      step-11-polish: prd-contract-gate
+
+  - workflow: bmad-create-architecture
+    aliases: [create-architecture]
+    flow: epic
+    stage: arch
+    steps:
+      step-04-decisions: architecture-contract-gate
+      step-07-validation: architecture-contract-gate
+
+  - workflow: bmad-check-implementation-readiness
+    aliases: [check-implementation-readiness]
+    flow: epic
+    stage: arch
+    steps:
+      step-06-final-assessment: implementation-readiness
+
+  - workflow: bmad-create-epics-and-stories
+    aliases: [create-epics-and-stories]
+    flow: epic
+    stage: epics
+    steps:
+      step-02-design-epics: epics-contract-gate
+      step-03-create-stories: epics-contract-gate
+
+  - workflow: bmad-create-story
+    aliases: [create-story]
+    flow: story
+    stage: story_create
+    steps:
+      workflow: bmad_story_stage2
+
+  - workflow: bmad-dev-story
+    aliases: [dev-story]
+    flow: story
+    stage: implement
+    steps:
+      workflow: speckit_5_2
+
+  - workflow: speckit-workflow
+    aliases: [speckit-implement]
+    flow: story
+    stage: implement
+    steps:
+      workflow: speckit_5_2

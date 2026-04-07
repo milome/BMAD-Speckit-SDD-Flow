@@ -81,9 +81,7 @@ function writeCursorHooksJson(targetDir) {
         { command: 'node .cursor/hooks/runtime-dashboard-session-start.cjs' },
       ],
       preToolUse: [{ command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host' }],
-      preToolUseCommands: [
-        { command: 'node .cursor/hooks/pre-continue-check.cjs bmad-create-architecture step-04-decisions' },
-      ],
+      preToolUseCommands: [{ command: 'node .cursor/hooks/pre-continue-check.cjs' }],
       subagentStart: [
         { command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host --subagent-start' },
       ],
@@ -433,6 +431,13 @@ function syncArchitectureGateConfig(targetDir, bmadRoot) {
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   fs.copyFileSync(src, dest);
   console.log('Sync', path.relative(targetDir, src), '->', path.relative(targetDir, dest));
+
+  const routingSrc = path.join(bmadRoot, '_config', 'continue-gate-routing.yaml');
+  const routingDest = path.join(targetDir, '_bmad', '_config', 'continue-gate-routing.yaml');
+  if (fs.existsSync(routingSrc)) {
+    fs.copyFileSync(routingSrc, routingDest);
+    console.log('Sync', path.relative(targetDir, routingSrc), '->', path.relative(targetDir, routingDest));
+  }
 }
 
 function writeDefaultRuntimeRegistry(targetDir, pkgRoot) {

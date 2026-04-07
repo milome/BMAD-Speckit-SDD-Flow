@@ -8,6 +8,10 @@ const { shouldSkipRuntimePolicy } = require('./should-skip-runtime-policy.cjs');
 const { buildRuntimeErrorMessage } = require('./build-runtime-error-message.cjs');
 const { runEmitRuntimePolicy } = require('./run-emit-runtime-policy.cjs');
 const { loadHookMessages } = require('./hook-load-messages.cjs');
+const {
+  resolveRuntimeStepState,
+  persistRuntimeStepState,
+} = require('./runtime-step-state.cjs');
 
 function readStdin() {
   return new Promise((resolve, reject) => {
@@ -173,6 +177,21 @@ async function runtimePolicyInjectCore({ host }) {
     return { exitCode: 0, output: JSON.stringify({ systemMessage: '' }), stderr: '' };
   }
 
+  let stateDiag = '';
+  try {
+    const resolvedState = resolveRuntimeStepState(root, {
+      argv: process.argv.slice(0, 2),
+      env: process.env,
+      hookInput: input,
+    });
+    persistRuntimeStepState(root, resolvedState);
+  } catch (error) {
+    const hint = error && error.message ? error.message : String(error);
+    if (hint && process.env.BMAD_HOOKS_QUIET !== '1') {
+      stateDiag = `[runtime-policy-inject] runtime step state sync skipped: ${hint}\n`;
+    }
+  }
+
   const res = runEmitRuntimePolicy(root);
   if (res.status !== 0) {
     if (shouldSkipRuntimePolicy({ cursorHost, root, res })) {
@@ -213,6 +232,7 @@ async function runtimePolicyInjectCore({ host }) {
       langDiag = `[runtime-policy-inject] languagePolicy merge skipped: ${hint}\n`;
     }
   }
+  const stderr = `${stateDiag}${langDiag}`;
 
   const rg = loadHookMessages(__dirname).runtimeGovernance || {};
   const prefix = rg.jsonBlockPrefix || '本回合 Runtime Governance（JSON）：';
@@ -223,10 +243,10 @@ async function runtimePolicyInjectCore({ host }) {
       output: JSON.stringify({
         hookSpecificOutput: { hookEventName: 'SubagentStart', additionalContext: block },
       }),
-      stderr: langDiag,
+      stderr,
     };
   }
-  return { exitCode: 0, output: JSON.stringify({ systemMessage: block }), stderr: langDiag };
+  return { exitCode: 0, output: JSON.stringify({ systemMessage: block }), stderr };
 }
 
 module.exports = { runtimePolicyInjectCore };

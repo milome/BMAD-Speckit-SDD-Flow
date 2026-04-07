@@ -4,6 +4,28 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const yaml = require('js-yaml');
+const {
+  resolveRuntimeStepState,
+  persistRuntimeStepState,
+} = require('./runtime-step-state.cjs');
+
+function readStdin() {
+  return new Promise((resolve, reject) => {
+    let data = '';
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', (chunk) => {
+      data += chunk;
+    });
+    process.stdin.on('end', () => {
+      try {
+        resolve(JSON.parse(data));
+      } catch {
+        resolve(null);
+      }
+    });
+    process.stdin.on('error', reject);
+  });
+}
 
 function enqueuePreContinueEvent(projectRoot, payload, result) {
   const pendingDir = path.join(projectRoot, '_bmad-output', 'runtime', 'governance', 'queue', 'pending');
@@ -39,6 +61,12 @@ function loadRuntimeContext(projectRoot) {
   const runtimeContextPath = path.join(projectRoot, '_bmad-output', 'runtime', 'context', 'project.json');
   if (!fs.existsSync(runtimeContextPath)) return null;
   return readJson(runtimeContextPath);
+}
+
+function loadContinueGateRouting(projectRoot) {
+  const routingPath = path.join(projectRoot, '_bmad', '_config', 'continue-gate-routing.yaml');
+  if (!fs.existsSync(routingPath)) return null;
+  return readYaml(routingPath);
 }
 
 function branchName(projectRoot) {
@@ -142,22 +170,85 @@ function evaluateRule(rule, stepName, sections, defaults, config) {
 }
 
 function resolveWorkflowAndStep(argv, runtimeContext) {
-  const explicitWorkflow = argv[2] || process.env.BMAD_PRECONTINUE_WORKFLOW || runtimeContext?.workflow || '';
-  const explicitStep = argv[3] || process.env.BMAD_PRECONTINUE_STEP || runtimeContext?.step || '';
+  const explicitWorkflow = argv[2] || process.env.BMAD_PRECONTINUE_WORKFLOW || runtimeContext?.workflow || runtimeContext?.templateId || '';
+  const explicitStep = argv[3] || process.env.BMAD_PRECONTINUE_STEP || runtimeContext?.step || runtimeContext?.stage || '';
   return {
     workflow: explicitWorkflow.trim(),
     step: explicitStep.trim() || 'workflow',
   };
 }
 
+function resolveDynamicState(projectRoot, argv) {
+  const runtimeContext = loadRuntimeContext(projectRoot);
+  const resolved = resolveWorkflowAndStep(argv, runtimeContext);
+  return {
+    runtimeContext,
+    workflow: resolved.workflow,
+    step: resolved.step,
+    artifactPath: runtimeContext?.artifactPath || null,
+    branch: branchName(projectRoot),
+    epicId: runtimeContext?.epicId || null,
+    storyId: runtimeContext?.storyId || null,
+    route: null,
+    rerunGate: null,
+    flow: runtimeContext?.flow || null,
+    stage: runtimeContext?.stage || null,
+  };
+}
+
+function resolveRoute(routingConfig, workflow, step) {
+  if (!routingConfig || !Array.isArray(routingConfig.routes)) return null;
+  for (const route of routingConfig.routes) {
+    const aliases = Array.isArray(route.aliases) ? route.aliases : [];
+    if (route.workflow === workflow || aliases.includes(workflow)) {
+      const gate = route.steps && route.steps[step];
+      const workflowGate = route.steps && route.steps.workflow;
+      return {
+        workflow: route.workflow,
+        flow: route.flow,
+        stage: route.stage,
+        rerunGate: gate || workflowGate || null,
+        step: gate ? step : workflowGate ? 'workflow' : step,
+      };
+    }
+  }
+  return null;
+}
+
 function writeResult(result) {
   process.stdout.write(JSON.stringify(result));
 }
 
-function main() {
+async function main() {
   const projectRoot = process.cwd();
-  const runtimeContext = loadRuntimeContext(projectRoot);
-  const { workflow, step } = resolveWorkflowAndStep(process.argv, runtimeContext);
+  const hookInput = await readStdin();
+  let dynamic;
+  try {
+    const resolved = resolveRuntimeStepState(projectRoot, {
+      argv: process.argv,
+      env: process.env,
+      hookInput,
+    });
+    const persisted = persistRuntimeStepState(projectRoot, resolved);
+    dynamic = {
+      runtimeContext: persisted.persistedContext || persisted.runtimeContext || loadRuntimeContext(projectRoot),
+      workflow: persisted.workflow,
+      step: persisted.step,
+      artifactPath: persisted.artifactPath,
+      branch: persisted.branch,
+      epicId: persisted.epicId,
+      storyId: persisted.storyId,
+      route: persisted.route || null,
+      rerunGate: persisted.rerunGate || null,
+      flow: persisted.flow || null,
+      stage: persisted.stage || null,
+    };
+  } catch {
+    dynamic = resolveDynamicState(projectRoot, process.argv);
+  }
+  const runtimeContext = dynamic.runtimeContext;
+  const workflow = dynamic.workflow;
+  const step = dynamic.step;
 
   if (!workflow) {
     writeResult({ ok: true, skipped: true, reason: 'no-workflow' });
@@ -171,33 +262,37 @@ function main() {
   }
 
   const config = readYaml(configPath);
+  const routingConfig = loadContinueGateRouting(projectRoot);
   const defaults = config.defaults || {};
-  const gateConfig = resolveGateConfig(config, workflow);
+  const route = dynamic.route || resolveRoute(routingConfig, workflow, step);
+  const routedWorkflow = route && route.workflow ? route.workflow : workflow;
+  const routedStep = dynamic.step || (route && route.step ? route.step : step);
+  const gateConfig = resolveGateConfig(config, routedWorkflow);
   if (!gateConfig) {
-    writeResult({ ok: true, skipped: true, reason: 'workflow-not-governed', workflow, step });
+    writeResult({ ok: true, skipped: true, reason: 'workflow-not-governed', workflow: routedWorkflow, step: routedStep });
     return;
   }
 
   const gate = gateConfig.value;
-  const stepConfig = gate.steps && gate.steps[step];
+  const stepConfig = gate.steps && (gate.steps[routedStep] || gate.steps.workflow);
   if (!stepConfig) {
-    writeResult({ ok: true, skipped: true, reason: 'step-not-governed', workflow, step, gate: gate.runtime?.gate || gateConfig.key });
+    writeResult({ ok: true, skipped: true, reason: 'step-not-governed', workflow: routedWorkflow, step: routedStep, gate: gate.runtime?.gate || gateConfig.key });
     return;
   }
 
-  const artifactPath = resolveArtifactPath(projectRoot, defaults, runtimeContext);
+  const artifactPath = dynamic.artifactPath || resolveArtifactPath(projectRoot, defaults, runtimeContext);
   if (!artifactPath) {
     const result = {
       ok: false,
       skipped: false,
       gate: gate.runtime?.gate || gateConfig.key,
-      workflow,
-      step,
+      workflow: routedWorkflow,
+      step: routedStep,
       artifactPath: null,
       scope: {
-        branch: branchName(projectRoot),
-        epicId: runtimeContext?.epicId || null,
-        storyId: runtimeContext?.storyId || null,
+        branch: dynamic.branch || branchName(projectRoot),
+        epicId: dynamic.epicId || runtimeContext?.epicId || null,
+        storyId: dynamic.storyId || runtimeContext?.storyId || null,
       },
       failures: ['missing governed artifact'],
     };
@@ -217,27 +312,29 @@ function main() {
     ok: failures.length === 0,
     skipped: false,
     gate: gate.runtime?.gate || gateConfig.key,
-    workflow,
-    step,
+    workflow: routedWorkflow,
+    step: routedStep,
     artifactPath,
     scope: {
-      branch: branchName(projectRoot),
-      epicId: runtimeContext?.epicId || null,
-      storyId: runtimeContext?.storyId || null,
+      branch: dynamic.branch || branchName(projectRoot),
+      epicId: dynamic.epicId || runtimeContext?.epicId || null,
+      storyId: dynamic.storyId || runtimeContext?.storyId || null,
     },
     failures,
   };
   enqueuePreContinueEvent(projectRoot, {
     projectRoot,
-    workflow,
-    step,
+    workflow: routedWorkflow,
+    step: routedStep,
     artifactPath,
-    branch: branchName(projectRoot),
-    epicId: runtimeContext?.epicId || null,
-    storyId: runtimeContext?.storyId || null,
+    branch: dynamic.branch || branchName(projectRoot),
+    epicId: dynamic.epicId || runtimeContext?.epicId || null,
+    storyId: dynamic.storyId || runtimeContext?.storyId || null,
+    flow: dynamic.flow || route?.flow || gate.runtime?.flow || null,
+    stage: dynamic.stage || route?.stage || gate.runtime?.stage || null,
     gate: gate.runtime?.gate || gateConfig.key,
     status: failures.length === 0 ? 'pass' : 'fail',
-    rerunGate: gate.runtime?.gate || gateConfig.key,
+    rerunGate: dynamic.rerunGate || (route && route.rerunGate) || gate.runtime?.gate || gateConfig.key,
     sourceGateFailureIds: failures.map((_, index) => `${(gate.runtime?.gate || gateConfig.key).toUpperCase()}-${index + 1}`),
     failures,
   }, result);
@@ -249,4 +346,7 @@ function main() {
   }
 }
 
-main();
+main().catch((error) => {
+  process.stderr.write(`${error && error.stack ? error.stack : String(error)}\n`);
+  process.exitCode = 1;
+});
