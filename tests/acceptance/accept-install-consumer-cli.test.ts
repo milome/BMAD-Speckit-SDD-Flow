@@ -25,6 +25,8 @@ describe('install to consumer → CLI acceptance', () => {
       expect(existsSync(join(target, 'specs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy.cjs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'i18n'))).toBe(true);
+      expect(existsSync(join(target, '.mcp.json'))).toBe(false);
+      expect(existsSync(join(target, '.runtime-mcp'))).toBe(false);
 
       const out = run('npx bmad-speckit check', target);
       expect(out).toMatch(/Check OK|OK/i);
@@ -59,6 +61,8 @@ describe('install to consumer → CLI acceptance', () => {
       expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy.cjs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'hooks', 'runtime-dashboard-session-start.cjs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'i18n'))).toBe(true);
+      expect(existsSync(join(target, '.mcp.json'))).toBe(false);
+      expect(existsSync(join(target, '.runtime-mcp'))).toBe(false);
       expect(existsSync(join(target, 'scripts', 'emit-runtime-policy.cjs'))).toBe(false);
       expect(existsSync(join(target, 'scripts', 'start-runtime-dashboard-server.cjs'))).toBe(false);
 
@@ -167,6 +171,18 @@ describe('install to consumer → CLI acceptance', () => {
 
       const sharedHelper = readFileSync(join(target, '_bmad', 'runtime', 'hooks', 'runtime-dashboard-auto-start.cjs'), 'utf8');
       expect(sharedHelper).toContain('ensureRuntimeDashboardServer');
+    } finally {
+      rmSync(target, { recursive: true, force: true });
+    }
+  }, 90_000);
+
+  it('consumer install can opt into runtime MCP layout explicitly', () => {
+    const target = mkdtempSync(join(tmpdir(), 'accept-consumer-with-mcp-'));
+    try {
+      run(`node scripts/init-to-root.js --full --with-mcp "${target}"`, PKG_ROOT);
+
+      expect(existsSync(join(target, '.mcp.json'))).toBe(true);
+      expect(existsSync(join(target, '.runtime-mcp', 'server', 'dist', 'index.cjs'))).toBe(true);
     } finally {
       rmSync(target, { recursive: true, force: true });
     }
