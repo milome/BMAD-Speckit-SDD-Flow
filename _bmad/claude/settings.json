@@ -17,6 +17,17 @@
             "statusMessage": "Generating agent call summary..."
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ./.claude/hooks/pre-continue-check.cjs",
+            "timeout": 8,
+            "statusMessage": "Checking architecture continue gate..."
+          }
+        ]
       }
     ],
     "WorktreeCreate": [

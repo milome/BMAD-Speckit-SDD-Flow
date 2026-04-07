@@ -203,6 +203,10 @@ function deployRuntimeGovernanceFromPackage(projectRoot) {
     if (fs.existsSync(wrcSrc)) {
       fs.copyFileSync(wrcSrc, path.join(d, 'write-runtime-context.cjs'));
     }
+    const preContinueSrc = path.join(projectRoot, '_bmad', 'runtime', 'hooks', 'pre-continue-check.cjs');
+    if (fs.existsSync(preContinueSrc)) {
+      fs.copyFileSync(preContinueSrc, path.join(d, 'pre-continue-check.cjs'));
+    }
     deployed += 1;
   }
   if (deployed === 0) return;
@@ -291,7 +295,10 @@ function writeCursorHooksJson(projectRoot) {
       sessionStart: [
         { command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host --session-start' },
       ],
-      preToolUse: [{ command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host' }],
+      preToolUse: [
+        { command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host' },
+        { command: 'node .cursor/hooks/pre-continue-check.cjs bmad-create-architecture step-04-decisions' },
+      ],
       subagentStart: [
         { command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host --subagent-start' },
       ],
@@ -321,11 +328,13 @@ function deployCursorRuntimePolicyHooks(projectRoot, bmadRoot) {
     copyDirRecursive(sharedDir, destDir);
   }
 
-  const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs'];
+  const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs', 'pre-continue-check.cjs'];
   for (const name of names) {
     const src = path.join(cursorHooksDir, name);
-    if (fs.existsSync(src)) {
-      fs.copyFileSync(src, path.join(destDir, name));
+    const runtimeFallback = path.join(bmadRoot, 'runtime', 'hooks', name);
+    const source = fs.existsSync(src) ? src : runtimeFallback;
+    if (fs.existsSync(source)) {
+      fs.copyFileSync(source, path.join(destDir, name));
     }
   }
   writeCursorHooksJson(projectRoot);
@@ -347,13 +356,23 @@ function deployClaudeRuntimePolicyHooks(projectRoot, bmadRoot) {
     copyDirRecursive(sharedDir, destDir);
   }
 
-  const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs'];
+  const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs', 'pre-continue-check.cjs'];
   for (const name of names) {
     const src = path.join(claudeHooksDir, name);
-    if (fs.existsSync(src)) {
-      fs.copyFileSync(src, path.join(destDir, name));
+    const runtimeFallback = path.join(bmadRoot, 'runtime', 'hooks', name);
+    const source = fs.existsSync(src) ? src : runtimeFallback;
+    if (fs.existsSync(source)) {
+      fs.copyFileSync(source, path.join(destDir, name));
     }
   }
+}
+
+function deployPreContinueGateConfig(projectRoot, bmadRoot) {
+  const src = path.join(bmadRoot, '_config', 'architecture-gates.yaml');
+  const dest = path.join(projectRoot, '_bmad', '_config', 'architecture-gates.yaml');
+  if (!fs.existsSync(src)) return;
+  if (!fs.existsSync(path.dirname(dest))) fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.copyFileSync(src, dest);
 }
 
 function deployClaudeInfrastructure(projectRoot, bmadRoot) {
@@ -391,6 +410,7 @@ function deployClaudeInfrastructure(projectRoot, bmadRoot) {
   }
 
   deployClaudeRuntimePolicyHooks(projectRoot, bmadRoot);
+  deployPreContinueGateConfig(projectRoot, bmadRoot);
 }
 
 module.exports = {

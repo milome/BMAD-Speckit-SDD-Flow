@@ -247,6 +247,8 @@ If any blocker-level architecture contract remains unresolved:
 - emit a `GateFailure`
 - build a `RemediationPlan`
 - do not show plain Continue until the blocker is repaired and the local gate is rerun
+- present only remediation-oriented options (for example `[A]` / `[P]`) plus an explicit blocked status message
+- if the local gate is still failed, `[C] Continue` is forbidden and must not appear in the menu text or selection handling
 
 ## REQUIRED OUTPUT CONTENT
 
@@ -404,9 +406,14 @@ Show the validation results and present choices:
 [Show the complete markdown content]
 
 **What would you like to do?**
-[A] Advanced Elicitation - Resolve undefined contracts
-[P] Party Mode - Challenge readiness from multiple perspectives
-[C] Continue - Complete the architecture and finish workflow"
+- If Architecture Contract Gate = PASS:
+  [A] Advanced Elicitation - Resolve undefined contracts
+  [P] Party Mode - Challenge readiness from multiple perspectives
+  [C] Continue - Complete the architecture and finish workflow
+- If Architecture Contract Gate = FAIL:
+  [A] Advanced Elicitation - Resolve undefined contracts and blockers
+  [P] Party Mode - Challenge blockers and refine the remediation path
+  Gate Status: ❌ FAILED - Continue is blocked until the local gate passes"
 
 ## HANDLE MENU SELECTION
 
@@ -426,6 +433,9 @@ Show the validation results and present choices:
 
 ### If 'C' (Continue):
 
+- Only valid when the Architecture Contract Gate has passed in the current local state
+- If the gate is failed, emit `GateFailure`, restate the `RemediationPlan`, and return to the blocked menu without performing any save
+
 - Append the final content to `{planning_artifacts}/{branch}/architecture.md`
 - Update frontmatter: `stepsCompleted: [1, 2, 3, 4, 5, 6, 7]`
 - Load `./step-08-complete.md`
@@ -441,6 +451,7 @@ Show the validation results and present choices:
 ✅ Final status uses only the allowed readiness categories
 ✅ Comprehensive validation checklist completed
 ✅ A/P/C menu is presented and handled correctly
+✅ Gate failure blocks plain Continue and forces remediation-first choices
 
 ## FAILURE MODES:
 
@@ -450,6 +461,7 @@ Show the validation results and present choices:
 ❌ Missing observability / trace / failure contracts
 ❌ Hiding undefined contracts inside generic prose
 ❌ Using soft readiness language instead of explicit status
+❌ Showing `[C] Continue` while blocker-level architecture contracts remain unresolved
 
 ## NEXT STEP:
 

@@ -81,6 +81,9 @@ function writeCursorHooksJson(targetDir) {
         { command: 'node .cursor/hooks/runtime-dashboard-session-start.cjs' },
       ],
       preToolUse: [{ command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host' }],
+      preToolUseCommands: [
+        { command: 'node .cursor/hooks/pre-continue-check.cjs bmad-create-architecture step-04-decisions' },
+      ],
       subagentStart: [
         { command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host --subagent-start' },
       ],
@@ -377,12 +380,14 @@ function syncCursorRuntimePolicyHooks(targetDir, bmadRoot) {
     console.log('Sync', path.relative(targetDir, sharedDir), '->', path.join('.cursor', 'hooks'));
   }
 
-  const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs', 'post-tool-use.cjs', 'runtime-dashboard-session-start.cjs'];
+  const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs', 'post-tool-use.cjs', 'runtime-dashboard-session-start.cjs', 'pre-continue-check.cjs'];
   for (const name of names) {
     const src = path.join(cursorHooksDir, name);
-    if (fs.existsSync(src)) {
-      fs.copyFileSync(src, path.join(destDir, name));
-      console.log('Sync', path.relative(targetDir, src), '->', path.join('.cursor', 'hooks', name));
+    const runtimeFallback = path.join(bmadRoot, 'runtime', 'hooks', name);
+    const source = fs.existsSync(src) ? src : runtimeFallback;
+    if (fs.existsSync(source)) {
+      fs.copyFileSync(source, path.join(destDir, name));
+      console.log('Sync', path.relative(targetDir, source), '->', path.join('.cursor', 'hooks', name));
     } else {
       console.warn(`Skip Cursor hook override (missing): ${path.relative(targetDir, src)}`);
     }
@@ -407,16 +412,27 @@ function syncClaudeRuntimePolicyHooks(targetDir, bmadRoot) {
     console.log('Sync', path.relative(targetDir, sharedDir), '->', path.join('.claude', 'hooks'));
   }
 
-  const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs', 'session-start.cjs'];
+  const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs', 'session-start.cjs', 'pre-continue-check.cjs'];
   for (const name of names) {
     const src = path.join(claudeHooksDir, name);
-    if (fs.existsSync(src)) {
-      fs.copyFileSync(src, path.join(destDir, name));
-      console.log('Sync', path.relative(targetDir, src), '->', path.join('.claude', 'hooks', name));
+    const runtimeFallback = path.join(bmadRoot, 'runtime', 'hooks', name);
+    const source = fs.existsSync(src) ? src : runtimeFallback;
+    if (fs.existsSync(source)) {
+      fs.copyFileSync(source, path.join(destDir, name));
+      console.log('Sync', path.relative(targetDir, source), '->', path.join('.claude', 'hooks', name));
     } else {
       console.warn(`Skip Claude hook override (missing): ${path.relative(targetDir, src)}`);
     }
   }
+}
+
+function syncArchitectureGateConfig(targetDir, bmadRoot) {
+  const src = path.join(bmadRoot, '_config', 'architecture-gates.yaml');
+  const dest = path.join(targetDir, '_bmad', '_config', 'architecture-gates.yaml');
+  if (!fs.existsSync(src)) return;
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.copyFileSync(src, dest);
+  console.log('Sync', path.relative(targetDir, src), '->', path.relative(targetDir, dest));
 }
 
 function writeDefaultRuntimeRegistry(targetDir, pkgRoot) {
@@ -714,6 +730,7 @@ totalFiles += agentProfile.sync(TARGET, PKG_ROOT);
 
 deployConsumerRuntimeEmitToHooks(PKG_ROOT, TARGET);
 installConsumerMcpLayout(TARGET, PKG_ROOT);
+syncArchitectureGateConfig(TARGET, path.join(TARGET, '_bmad'));
 
 writeDefaultRuntimeRegistry(TARGET, PKG_ROOT);
 writeDefaultRuntimeContext(TARGET, PKG_ROOT);

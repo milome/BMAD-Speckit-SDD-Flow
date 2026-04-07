@@ -1,0 +1,204 @@
+version: 1
+schema: unified_gate_v1
+defaults:
+  fail_action: 阻止 Continue
+  allow_markers:
+    - Deferred to Implementation
+    - TBD
+    - TODO
+    - Pending
+  artifact_resolver:
+    type: planning_artifact
+    candidates:
+      - "{planning_artifacts}/{branch}/architecture.md"
+      - "{planning_artifacts}/architecture.md"
+
+gate_sets:
+  architecture_contract_gate:
+    workflow_keys:
+      - bmad-create-architecture
+      - create-architecture
+    runtime:
+      gate: architecture-contract-gate
+      flow: epic
+      stage: arch
+    steps:
+      step-04-decisions:
+        gate_rules:
+          - name: contract_completeness
+            check: 所有模板章节必须有内容或明确标记
+            required_sections:
+              - P0 Key Path Sequences
+              - Business Completion State vs System Completion State
+              - Sync / Async Boundaries
+              - Fallback And Compensation Strategy
+              - Minimum Observability Contract
+              - Testability And Smoke E2E Preconditions
+          - name: decision_documentation
+            check: 所有决策必须有版本和示例
+            required_version_sections:
+              - Data Architecture
+              - Authentication & Security
+              - API & Communication Patterns
+              - Frontend Architecture
+              - Infrastructure & Deployment
+      step-07-validation:
+        gate_rules:
+          - name: contract_completeness
+            check: 所有模板章节必须有内容或明确标记
+            required_sections:
+              - P0 Journey Coverage Validation
+              - Smoke E2E Preconditions Validation
+              - Observability, Traceability, and Failure Handling Validation
+              - Undefined Contract Analysis
+              - Blockers
+              - Architecture Readiness Assessment
+          - name: decision_documentation
+            check: 所有决策必须有版本和示例
+            required_version_sections:
+              - Implementation Readiness Validation
+              - Architecture Readiness Assessment
+
+  brief_contract_gate:
+    workflow_keys:
+      - bmad-create-product-brief
+      - create-product-brief
+    runtime:
+      gate: brief-gate
+      flow: epic
+      stage: prd
+    steps:
+      step-02-vision:
+        gate_rules:
+          - name: section_contract_completeness
+            check: 愿景关键章节必须有内容或明确标记
+            required_sections:
+              - Product Vision
+      step-03-users:
+        gate_rules:
+          - name: section_contract_completeness
+            check: 用户章节必须有内容或明确标记
+            required_sections:
+              - Target Users
+      step-04-metrics:
+        gate_rules:
+          - name: section_contract_completeness
+            check: 成功指标章节必须有内容或明确标记
+            required_sections:
+              - Success Metrics
+      step-05-scope:
+        gate_rules:
+          - name: section_contract_completeness
+            check: 范围章节必须有内容或明确标记
+            required_sections:
+              - Scope
+
+  prd_contract_gate:
+    workflow_keys:
+      - bmad-create-prd
+      - create-prd
+    runtime:
+      gate: prd-contract-gate
+      flow: epic
+      stage: prd
+    steps:
+      step-04-journeys:
+        gate_rules:
+          - name: section_contract_completeness
+            check: journey contract 章节必须有内容或明确标记
+            required_sections:
+              - User Journeys
+      step-11-polish:
+        gate_rules:
+          - name: prd_contract_polish
+            check: 抛光后的 PRD 关键合同章节必须保持完整
+            required_sections:
+              - User Journeys
+              - Functional Requirements
+              - Non-Functional Requirements
+
+  readiness_blocker_gate:
+    workflow_keys:
+      - bmad-check-implementation-readiness
+      - check-implementation-readiness
+    runtime:
+      gate: readiness-blocker-gate
+      flow: epic
+      stage: arch
+    steps:
+      step-06-final-assessment:
+        gate_rules:
+          - name: readiness_blocker_visibility
+            check: readiness blockers 与 deferred gaps 必须显式列出
+            required_sections:
+              - Blockers Requiring Immediate Action
+              - Deferred Gaps
+
+  epics_contract_gate:
+    workflow_keys:
+      - bmad-create-epics-and-stories
+      - create-epics-and-stories
+    runtime:
+      gate: epics-contract-gate
+      flow: epic
+      stage: epics
+    steps:
+      step-02-design-epics:
+        gate_rules:
+          - name: epic_slice_completeness
+            check: epic 设计必须覆盖关键用户价值切片
+            required_sections:
+              - Epic Design
+      step-03-create-stories:
+        gate_rules:
+          - name: story_slice_completeness
+            check: stories 必须覆盖执行切片与验收线索
+            required_sections:
+              - Stories
+
+  create_story_gate:
+    workflow_keys:
+      - bmad-create-story
+      - create-story
+    runtime:
+      gate: create-story-gate
+      flow: story
+      stage: story_create
+    steps:
+      workflow:
+        gate_rules:
+          - name: story_contract_readiness
+            check: story 文档必须完整到可开发状态
+            required_sections:
+              - Story
+              - Acceptance Criteria
+
+  dev_story_gate:
+    workflow_keys:
+      - bmad-dev-story
+      - dev-story
+      - speckit-workflow
+    runtime:
+      gate: dev-story-gate
+      flow: story
+      stage: implement
+    steps:
+      workflow:
+        gate_rules:
+          - name: implementation_contract_readiness
+            check: 实施阶段必须有任务、验证与未完成项状态
+            required_sections:
+              - Tasks
+              - Testing
+              - Review Findings
+
+rule_keywords:
+  version_keywords:
+    - Version:
+    - version:
+    - v
+  example_keywords:
+    - Example
+    - example
+    - e.g.
+    - for example

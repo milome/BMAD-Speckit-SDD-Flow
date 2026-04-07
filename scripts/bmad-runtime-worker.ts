@@ -45,6 +45,7 @@ import {
   governanceFailedQueueFilePath,
   governancePendingQueueFilePath,
   governanceProcessingQueueFilePath,
+  type GovernancePreContinuePayload,
   type GovernanceRuntimeQueueItem,
 } from './governance-runtime-queue';
 import type {
@@ -362,6 +363,76 @@ async function processGovernanceEvent(
   queueProjectRoot: string,
   item: GovernanceRuntimeQueueItem<GovernanceRemediationRerunPayload, GovernanceExecutionResult>
 ): Promise<GovernanceRuntimeQueueItem<GovernanceRemediationRerunPayload, GovernanceExecutionResult>> {
+  if (item.type === 'governance-pre-continue-check') {
+    const payload = (item.payload ?? {}) as GovernancePreContinuePayload;
+    const gateFailures = Array.isArray(payload.failures) ? payload.failures : [];
+    const result: GovernanceExecutionResult = {
+      shouldContinue: false,
+      stopReason: gateFailures.length > 0 ? 'gate failed - remediation required' : 'gate passed - awaiting workflow transition',
+      gateCheck: {
+        gate: payload.gate || 'pre-continue',
+        workflow: payload.workflow,
+        step: payload.step,
+        artifactPath: payload.artifactPath ?? null,
+        scope: {
+          branch: payload.branch ?? null,
+          epicId: payload.epicId ?? null,
+          storyId: payload.storyId ?? null,
+        },
+        failures: gateFailures,
+      },
+    };
+
+    if (payload.status === 'fail' && payload.rerunGate) {
+      const remediationResult = await runGovernanceRemediation({
+        projectRoot: payload.projectRoot ?? queueProjectRoot,
+        outputPath: payload.artifactPath ?? path.join(payload.projectRoot ?? queueProjectRoot, '_bmad-output', 'planning-artifacts', 'gate-remediation.md'),
+        promptText: `GateFailure for ${payload.workflow || 'unknown-workflow'} ${payload.step || 'workflow'}: ${gateFailures.join('; ')}`,
+        stageContextKnown: true,
+        gateFailureExists: true,
+        blockerOwnershipLocked: true,
+        rootTargetLocked: true,
+        equivalentAdapterCount: 1,
+        attemptId: `pre-continue-${item.id}`,
+        sourceGateFailureIds: payload.sourceGateFailureIds ?? [],
+        capabilitySlot: `${payload.workflow || 'workflow'}.${payload.step || 'workflow'}`,
+        canonicalAgent: 'Governance Gate Runner',
+        actualExecutor: 'pre-continue-check',
+        adapterPath: '_bmad/runtime/hooks/pre-continue-check.cjs',
+        targetArtifacts: payload.artifactPath ? [payload.artifactPath] : [],
+        expectedDelta: 'repair governed contract sections before Continue',
+        rerunOwner: 'PM',
+        rerunGate: payload.rerunGate,
+        outcome: 'blocked',
+        hostKind: 'claude',
+      });
+
+      result.stopReason = remediationResult.stopReason;
+      result.currentAttemptNumber = remediationResult.currentAttemptNumber;
+      result.nextAttemptNumber = remediationResult.nextAttemptNumber;
+      result.loopStateId = remediationResult.loopState.loopStateId;
+      result.rerunGateResultIngested = remediationResult.rerunGateResultIngested;
+      result.executorRouting = remediationResult.executorPacket
+        ? {
+            routingMode: remediationResult.executorPacket.routingMode,
+            executorRoute: remediationResult.executorPacket.executorRoute,
+            prioritizedSignals: remediationResult.executorPacket.prioritizedSignals,
+          }
+        : undefined;
+      result.runnerSummaryLines = buildGovernanceRemediationRunnerSummaryLines(remediationResult);
+      result.packetPaths = remediationResult.packetPaths;
+      result.artifactPath = remediationResult.artifactPath;
+    }
+
+    const passthroughItem: GovernanceRuntimeQueueItem<GovernanceRemediationRerunPayload, GovernanceExecutionResult> = {
+      ...item,
+      processedAt: new Date().toISOString(),
+      result,
+    };
+    appendGovernanceCurrentRun(queueProjectRoot, passthroughItem);
+    return passthroughItem;
+  }
+
   if (item.type === 'governance-remediation-rerun') {
     return processGovernanceRerunEvent(queueProjectRoot, item);
   }

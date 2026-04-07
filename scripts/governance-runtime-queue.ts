@@ -12,6 +12,21 @@ export interface GovernanceRuntimeQueueItem<TPayload = unknown, TResult = unknow
   error?: string;
 }
 
+export interface GovernancePreContinuePayload {
+  projectRoot?: string;
+  workflow?: string;
+  step?: string;
+  artifactPath?: string;
+  branch?: string;
+  epicId?: string;
+  storyId?: string;
+  gate?: string;
+  status?: 'pass' | 'fail';
+  rerunGate?: string;
+  sourceGateFailureIds?: string[];
+  failures?: string[];
+}
+
 export function governanceQueueDir(projectRoot: string): string {
   return path.join(projectRoot, '_bmad-output', 'runtime', 'governance', 'queue');
 }
@@ -41,6 +56,10 @@ export function governanceFailedQueueFilePath(projectRoot: string, id: string): 
 
 export function governanceCurrentRunPath(projectRoot: string): string {
   return path.join(projectRoot, '_bmad-output', 'runtime', 'governance', 'current-run.json');
+}
+
+export function governancePreContinueQueueFilePath(projectRoot: string, id: string): string {
+  return path.join(governanceQueueBucketDir(projectRoot, 'pending'), `${id}.json`);
 }
 
 export function ensureGovernanceQueueDirs(projectRoot: string): void {
