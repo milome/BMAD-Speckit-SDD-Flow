@@ -13,9 +13,16 @@
 
 ## DISPLAY RULES
 
+## PRESENTATION PRIORITY
+
+- **Always lead with recommended skill/workflow** — Show the canonical skill or workflow entry first
+- **Commands are secondary** — Legacy commands belong in a separate quick-reference section or as compatibility aliases after the recommended entry
+- **Do not open with command cheat sheets** — If a skill/workflow recommendation exists, it must appear before any command list
+- **Use workflow language for next steps** — Prefer phrases like "推荐 workflow" / "推荐 skill" / "下一步建议" over command-first phrasing
+
 ### Command-Based Workflows
 When `workflow-file` is a normal file path and `command` field has a value:
-- Show the command in backticks as a legacy command entry point
+- Show the workflow or skill recommendation first, and only then show the command in backticks as a legacy command entry point
 
 ### Skill-Referenced Workflows
 When `workflow-file` starts with `skill:`:
@@ -33,6 +40,7 @@ When `command` field is empty:
 Example presentation for skill/command-based agent:
 ```
 Explain Concept (EC)
+Recommended skill: `bmad-agent-tech-writer`
 Skill: `bmad-agent-tech-writer`
 Legacy command: `bmad-agent-bmm-tech-writer`, then ask to "EC about [topic]"
 Agent: Paige (Technical Writer)
@@ -82,8 +90,10 @@ Determine what was just completed:
    - Phase/sequence ordering (ROUTING RULES)
    - Artifact presence
 
+   **Recommended skill/workflow first** — Lead with the canonical skill or workflow entry the user should run next
    **Optional items first** — List optional workflows until a required step is reached
    **Required items next** — List the next required workflow
+   **Command quick reference last** — If commands are worth showing, add them after the recommendation section as compatibility aliases or a short cheat sheet
 
    For each item, apply DISPLAY RULES above and include:
    - Workflow **name**
