@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync } from 'node:fs';
+import { mkdtempSync } from 'node:fs';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -408,7 +408,7 @@ function replayRealCursorToolTraceFixture(
   const toolTracePath = path.join(artifactDir, `${config.stage}.json`);
   fs.writeFileSync(
     toolTracePath,
-    JSON.stringify(buildCanonicalFixtureSample(runId, config.stage, variant, sourcePath), null, 2) + '\n',
+    JSON.stringify(buildCanonicalFixtureSample(runId, config.stage, sourcePath, variant), null, 2) + '\n',
     'utf-8'
   );
   if (config.stage !== 'implement') {
@@ -429,7 +429,7 @@ export async function createRuntimeDashboardFixture(
   });
 
   const lastRun = JSON.parse(
-    readFileSync(path.join(root, '_bmad-output', 'runtime', 'last-dev-story-run.json'), 'utf-8')
+    fs.readFileSync(path.join(root, '_bmad-output', 'runtime', 'last-dev-story-run.json'), 'utf-8')
   ) as { runId: string };
 
   const dataPath = path.join(root, 'packages', 'scoring', 'data');
@@ -444,7 +444,7 @@ export async function createRuntimeDashboardFixture(
       const variants = options.realToolTraceVariants ?? ['clean'];
       for (const variant of variants) {
         const config = getRealToolTraceVariantConfig(variant);
-        const toolTracePath = replayRealCursorToolTraceFixture(root, lastRun.runId, variant);
+        replayRealCursorToolTraceFixture(root, lastRun.runId, variant);
         await parseAndWriteScore({
           content: fs.readFileSync(config.reportFixturePath, 'utf-8'),
           stage: config.stage,
@@ -454,7 +454,6 @@ export async function createRuntimeDashboardFixture(
           dataPath,
           artifactDocPath,
           baseCommitHash,
-          toolTracePath,
         });
       }
     } else {

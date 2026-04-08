@@ -110,12 +110,15 @@
 10. **禁止提前停止**：禁止在所有未完成任务真正实现并完成之前擅自停止开发工作。必须持续推进直到所有任务完成或遇到不可解决的阻塞。
 11. **检查点前验证前置任务**：遇到检查点时验证所有前置任务已完成。列出前置任务清单，逐一确认状态为 completed，运行检查点要求的全部验证命令。
 12. **查阅前置文档**：如需参考设计，查看前置相关的需求文档/plan文档/IMPLEMENTATION_GAPS文档。实施前执行需求追溯（见下 §5）。
+12.1 **读取 Deferred Gaps 工件**：若存在 `deferred-gap-register.yaml`，必须在执行前加载；若声明存在 inherited deferred gaps 却未读取该文件，不得继续把任务标记为完成。
+12.2 **读取 Journey-first 工件**：优先读取独立 `journey-ledger`、`invariant-ledger`、`trace-map`、`closure-notes`；仅当这些独立工件不存在时，才允许回退到 tasks.md 内嵌 section。
 
 ### 第六类：进度追踪
 
 13. **TodoWrite 追踪进度**：使用 TodoWrite 追踪进度，每个任务标记 `in_progress` / `completed`。
 14. **立即更新复选框**：完成任务后立即更新 tasks.md（或 tasks-v*.md）中的复选框 `[ ]` → `[x]`。
 15. **长时间脚本后台运行**：pytest/长时间脚本使用 `block_until_ms: 0` 后台运行，然后轮询 `terminals/` 检查结果。
+16. **Journey 与 Deferred Gap 同步收口**：关闭 gap、生成 smoke/full E2E、完成 closure note、补 acceptance evidence 时，必须同步更新 `deferred-gap-register.yaml` 与 Journey-first 工件，禁止只改任务复选框。
 
 ---
 
@@ -152,6 +155,8 @@ FOR EACH uncompleted_task IN tasks_md:
     # 需求追溯
     READ related requirement docs (specs/, plan.md, IMPLEMENTATION_GAPS.md)
     FILL requirement traceability fields
+    READ deferred-gap-register.yaml when present
+    READ journey-ledger / trace-map / closure-notes when present
 
     # 红灯
     WRITE test cases covering acceptance criteria
@@ -176,6 +181,8 @@ FOR EACH uncompleted_task IN tasks_md:
     # 更新进度
     UPDATE tasks_md checkbox [ ] → [x]
     TodoWrite(task.id, status="completed")
+    UPDATE deferred-gap-register closure_evidence or carry_forward_evidence
+    UPDATE journey-ledger / trace-map / closure-note when journey state changes
 
     # 检查点（如有）
     IF task is checkpoint:

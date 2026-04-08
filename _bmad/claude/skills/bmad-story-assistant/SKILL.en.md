@@ -38,6 +38,16 @@ The Claude version of `bmad-story-assistant` must satisfy:
   -commit gate
 - Cursor Canonical Base, Claude Runtime Adapter, and Repo Add-ons must not be mixed into a rewritten version of prompt from unknown sources.
 
+## Deferred Gaps Dev Story Addendum
+
+This distributed English variant must keep the same Deferred Gaps guardrails as the main Chinese contract.
+
+- Before implementation, Dev Story must read and validate `deferred-gap-register.yaml`.
+- Dev Story must also read and validate `journey-ledger`, `trace-map`, and `closure-notes`.
+- Implementation must fail closed when an active gap has no task binding, `Smoke Task Chain`, `Closure Task ID`, or production path mapping.
+- Post-audit must inspect `closure_evidence`, `carry_forward_evidence`, `Production Path`, `Smoke Proof`, and `Acceptance Evidence`.
+- `module complete but journey not runnable` is a hard failure, not a warning.
+
 ---
 
 ## Cursor Canonical Base

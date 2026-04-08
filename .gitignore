@@ -90,6 +90,7 @@ docs/examples/*
 !docs/examples/speckit-contracts/
 !docs/examples/speckit-contracts/*.md
 docs/fixes/
+docs/how-to/codex-consumer-mcp-install-layout.md
 docs/pr/
 docs/plans/
 docs/requirements/

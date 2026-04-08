@@ -5,7 +5,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 describe('runtime init auto registry bootstrap', () => {
-  it('bootstraps registry.json together with project context during init', { timeout: 60000 }, () => {
+  it('bootstraps registry.json together with project context during init', () => {
     const target = mkdtempSync(path.join(os.tmpdir(), 'runtime-init-auto-'));
     try {
       const result = spawnSync(

@@ -92,6 +92,24 @@ function writeMinimalReadinessReport(reportPath: string, status: string): void {
       '- IR-BLK-001: Missing smoke E2E proof for the critical journey',
       '- IR-BLK-002: Fixture dependency is not specified',
       '',
+      '## Deferred Gaps',
+      '',
+      '- J04-Smoke-E2E: P0 Journey J04 缺少 Smoke E2E',
+      '  - Reason: P2 优先级',
+      '  - Resolution Target: Sprint 2+',
+      '  - Owner: Dev Team',
+      '- Epic3-4-UX: 缺少正式 UX 规范',
+      '  - Reason: MVP 可基于 PRD',
+      '  - Resolution Target: Epic 3 开始前',
+      '  - Owner: UX Designer',
+      '',
+      '## Deferred Gaps Tracking',
+      '',
+      '| Gap ID | 描述 | 原因 | 解决时机 | Owner | 状态检查点 |',
+      '|--------|------|------|----------|-------|-----------|',
+      '| J04-Smoke-E2E | P0 Journey J04 缺少 Smoke E2E | P2 优先级 | Sprint 2+ | Dev Team | Sprint Planning |',
+      '| Epic3-4-UX | 缺少正式 UX 规范 | MVP 可基于 PRD | Epic 3 开始前 | UX Designer | Epic 3 Planning |',
+      '',
     ].join('\n'),
     'utf8'
   );
@@ -141,6 +159,7 @@ function runReadinessRemediationRunnerCli(
   const command = [
     'npx',
     'ts-node',
+    '--project', 'tsconfig.node.json',
     '--transpile-only',
     'scripts/governance-remediation-runner.ts',
     '--projectRoot',
@@ -231,6 +250,12 @@ describe('readiness remediation artifact generation', () => {
       expect(remediation).toContain('## Governance Remediation Runner Summary');
       expect(remediation).toContain('## Loop State Trace Summary');
       expect(remediation).toContain('- Stop Reason: critical blockers remain open');
+      expect(remediation).toContain('## Structured Deferred Gaps');
+      expect(remediation).toContain('deferred_gaps:');
+      expect(remediation).toContain('gap_id: J04-Smoke-E2E');
+      expect(remediation).toContain('resolution_target: Sprint 2+');
+      expect(remediation).toContain('owner: Dev Team');
+      expect(remediation).toContain('gap_id: Epic3-4-UX');
       expect(cursorPacket).toContain('# Governance Remediation Task Packet');
       expect(cursorPacket).toContain('cursor-mcp-task');
       expect(cursorPacket).toContain('## Remediation Audit Trace Summary');
@@ -283,6 +308,9 @@ describe('readiness remediation artifact generation', () => {
       expect(remediation).toContain('Routing Mode: generic');
       expect(remediation).toContain('Executor Route: default-gate-remediation');
       expect(remediation).toContain('Stop Reason: critical blockers remain open');
+      expect(remediation).toContain('## Structured Deferred Gaps');
+      expect(remediation).toContain('gap_id: J04-Smoke-E2E');
+      expect(remediation).toContain('gap_id: Epic3-4-UX');
       expect(remediation).toContain('## Governance Remediation Runner Summary');
       expect(remediation).toContain('## Loop State Trace Summary');
       expect(remediation).toContain('- Stop Reason: critical blockers remain open');

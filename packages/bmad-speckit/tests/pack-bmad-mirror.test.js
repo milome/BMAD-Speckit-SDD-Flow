@@ -20,14 +20,24 @@ test('npm pack --dry-run includes packaged _bmad hook cjs files', () => {
   const files = packInfo.files.map((file) => file.path);
   const hookCjs = files.filter((file) => /^_bmad\/.+\/hooks\/.+\.cjs$/.test(file));
 
-  const expected = [
+  const expectedHookFiles = [
+    'node_modules/@bmad-speckit/schema/run-score-schema.json',
     '_bmad/runtime/hooks/runtime-policy-inject-core.cjs',
     '_bmad/cursor/hooks/runtime-policy-inject.cjs',
     '_bmad/claude/hooks/runtime-policy-inject.cjs',
+    'node_modules/@bmad-speckit/runtime-emit/dist/governance-runtime-worker.cjs',
+    'node_modules/@bmad-speckit/runtime-emit/dist/governance-remediation-runner.cjs',
   ];
 
-  for (const file of expected) {
-    assert.ok(hookCjs.includes(file), `tarball missing ${file}`);
+  const expectedHookSubset = expectedHookFiles.filter((file) => file.endsWith('.cjs'));
+  const expectedNonHookSubset = expectedHookFiles.filter((file) => !file.endsWith('.cjs'));
+
+  for (const file of expectedHookSubset) {
+    assert.ok(files.includes(file), `tarball missing ${file}`);
+  }
+
+  for (const file of expectedNonHookSubset) {
+    assert.ok(files.includes(file), `tarball missing ${file}`);
   }
 
   assert.ok(hookCjs.length >= 10, `expected multiple hook .cjs files, got ${hookCjs.length}`);

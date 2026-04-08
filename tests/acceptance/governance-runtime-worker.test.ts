@@ -29,6 +29,7 @@ import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
 } from '../../scripts/runtime-context-registry';
+const runtimeWorkerHelper = require('../../_bmad/runtime/hooks/run-bmad-runtime-worker.cjs');
 
 function writeGovernanceConfig(root: string): string {
   const configPath = path.join(root, '_bmad', '_config', 'governance-remediation.yaml');
@@ -58,6 +59,16 @@ function createFixtureProject(): {
   const repoRoot = process.cwd();
   const root = mkdtempSync(path.join(os.tmpdir(), 'gov-runtime-worker-'));
   cpSync(path.join(repoRoot, '_bmad'), path.join(root, '_bmad'), { recursive: true });
+  cpSync(
+    path.join(repoRoot, 'packages', 'runtime-emit', 'dist'),
+    path.join(root, 'node_modules', 'bmad-speckit-sdd-flow', 'packages', 'runtime-emit', 'dist'),
+    { recursive: true }
+  );
+  cpSync(
+    path.join(repoRoot, 'packages', 'scoring', 'schema'),
+    path.join(root, 'node_modules', 'bmad-speckit-sdd-flow', 'packages', 'scoring', 'schema'),
+    { recursive: true }
+  );
   const registry = defaultRuntimeContextRegistry(root);
   writeRuntimeContextRegistry(root, registry);
   writeRuntimeContext(root, {
@@ -78,7 +89,17 @@ function createFixtureProject(): {
     root,
     configPath: writeGovernanceConfig(root),
     cleanup() {
-      rmSync(root, { recursive: true, force: true });
+      for (let attempt = 0; attempt < 10; attempt += 1) {
+        try {
+          rmSync(root, { recursive: true, force: true });
+          break;
+        } catch (error) {
+          if (attempt === 9) {
+            throw error;
+          }
+          Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 200);
+        }
+      }
     },
   };
 }
@@ -455,6 +476,128 @@ describe('governance runtime worker', () => {
           '## Governance Latest Raw Event',
           '- Executor Route: journey-contract-remediation',
         ])
+      );
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('hook-local packaged worker can move a rerun item from pending to done/current-run without ts-node in consumer root', async () => {
+    const fixture = createFixtureProject();
+    try {
+      const outDir = path.join(fixture.root, '_bmad-output', 'planning-artifacts', 'feature-worker-packaged');
+      mkdirSync(outDir, { recursive: true });
+      const output = path.join(outDir, 'attempt-packaged.md');
+
+      const queuePath = governancePendingQueueFilePath(fixture.root, 'queue-item-packaged');
+      mkdirSync(path.dirname(queuePath), { recursive: true });
+      mkdirSync(path.join(fixture.root, '.claude', 'hooks'), { recursive: true });
+      cpSync(
+        path.join(process.cwd(), '_bmad', 'runtime', 'hooks'),
+        path.join(fixture.root, '.claude', 'hooks'),
+        { recursive: true }
+      );
+      cpSync(
+        path.join(process.cwd(), '_bmad', 'runtime', 'hooks'),
+        path.join(fixture.root, '.cursor', 'hooks'),
+        { recursive: true }
+      );
+      cpSync(
+        path.join(process.cwd(), 'packages', 'runtime-emit', 'dist'),
+        path.join(fixture.root, 'node_modules', 'bmad-speckit-sdd-flow', 'packages', 'runtime-emit', 'dist'),
+        { recursive: true }
+      );
+      cpSync(
+        path.join(process.cwd(), 'packages', 'scoring', 'schema'),
+        path.join(fixture.root, 'node_modules', 'bmad-speckit-sdd-flow', 'packages', 'schema'),
+        { recursive: true }
+      );
+      writeFileSync(
+        queuePath,
+        JSON.stringify(
+          {
+            id: 'queue-item-packaged',
+            type: 'governance-remediation-rerun',
+            timestamp: '2026-03-28T02:00:00.000Z',
+            payload: {
+              projectRoot: fixture.root,
+              configPath: fixture.configPath,
+              runnerInput: {
+                projectRoot: fixture.root,
+                outputPath: output,
+                promptText: 'packaged worker rerun',
+                stageContextKnown: true,
+                gateFailureExists: true,
+                blockerOwnershipLocked: true,
+                rootTargetLocked: true,
+                equivalentAdapterCount: 1,
+                attemptId: 'attempt-packaged-01',
+                sourceGateFailureIds: ['PKG-1'],
+                capabilitySlot: 'qa.readiness',
+                canonicalAgent: 'PM + QA / readiness reviewer',
+                actualExecutor: 'implementation readiness workflow',
+                adapterPath: 'local workflow fallback',
+                targetArtifacts: ['prd.md', 'architecture.md'],
+                expectedDelta: 'close readiness blockers',
+                rerunOwner: 'PM',
+                rerunGate: 'implementation-readiness',
+                outcome: 'blocked',
+                hostKind: 'cursor',
+              },
+            },
+          },
+          null,
+          2
+        ),
+        'utf8'
+      );
+
+      const workerResult = runtimeWorkerHelper.runWorkerWithRunnerLock({
+        projectRoot: fixture.root,
+        onlyWhenPending: true,
+      });
+
+      expect(workerResult.status).toBe(0);
+      const failedDebugPath = path.join(
+        fixture.root,
+        '_bmad-output',
+        'runtime',
+        'governance',
+        'queue',
+        'last-failed-debug.json'
+      );
+      if (existsSync(failedDebugPath)) {
+        throw new Error(readFileSync(failedDebugPath, 'utf8'));
+      }
+      expect(existsSync(governanceDoneQueueFilePath(fixture.root, 'queue-item-packaged'))).toBe(true);
+      expect(existsSync(governanceCurrentRunPath(fixture.root))).toBe(true);
+      expect(existsSync(output)).toBe(true);
+      expect(existsSync(output.replace(/\.md$/i, '.cursor-packet.md'))).toBe(true);
+
+      const currentRun = readGovernanceCurrentRun<GovernanceExecutionResult>(fixture.root);
+      expect(currentRun.at(-1)?.type).toBe('governance-remediation-rerun');
+      expect(currentRun.at(-1)?.result?.artifactPath).toBe(output);
+      expect(currentRun.at(-1)?.result?.rerunGateResultIngested).toBe(false);
+      expect(currentRun.at(-1)?.result?.executionIntentCandidate).toBeTruthy();
+      expect(currentRun.at(-1)?.result?.executionPlanDecision).toBeTruthy();
+      expect(currentRun.at(-1)?.result?.executionIntentCandidate?.source).toBeTruthy();
+      expect(currentRun.at(-1)?.result?.executionPlanDecision?.source).toBeTruthy();
+      expect(currentRun.at(-1)?.result?.executorRouting).toMatchObject({
+        routingMode: 'generic',
+        executorRoute: 'default-gate-remediation',
+      });
+      expect(currentRun.at(-1)?.result?.runnerSummaryLines).toEqual(
+        expect.arrayContaining([
+          '- Routing Mode: generic',
+          '- Executor Route: default-gate-remediation',
+          '- Stop Reason: (none)',
+          '- Journey Contract Signals: (none)',
+        ])
+      );
+      expect(readFileSync(output, 'utf8')).toContain('## Governance Remediation Runner Summary');
+      expect(readFileSync(output, 'utf8')).toContain('## Governance Remediation Runner Summary');
+      expect(readFileSync(output.replace(/\.md$/i, '.cursor-packet.md'), 'utf8')).toContain(
+        '## Governance Remediation Runner Summary'
       );
     } finally {
       fixture.cleanup();

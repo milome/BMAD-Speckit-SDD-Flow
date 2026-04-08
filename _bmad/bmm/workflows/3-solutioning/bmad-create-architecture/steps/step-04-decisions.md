@@ -258,6 +258,8 @@ If any blocker-level architecture contract is missing:
 - emit a `GateFailure`
 - build a `RemediationPlan`
 - do not show plain Continue until the blocker is repaired and the local gate is rerun
+- present only remediation-oriented options (for example `[A]` / `[P]`) plus an explicit blocked status message
+- if the local gate is still failed, `[C] Continue` is forbidden and must not appear in the menu text or selection handling
 
 ### 6. Present Content and Menu
 
@@ -270,9 +272,14 @@ Show the generated decisions content and present choices:
 [Show the complete markdown content from step 5]
 
 **What would you like to do?**
-[A] Advanced Elicitation - Explore innovative approaches to any specific decisions
-[P] Party Mode - Review decisions from multiple perspectives
-[C] Continue - Save these decisions and move to implementation patterns"
+- If Architecture Contract Gate = PASS:
+  [A] Advanced Elicitation - Explore innovative approaches to any specific decisions
+  [P] Party Mode - Review decisions from multiple perspectives
+  [C] Continue - Save these decisions and move to implementation patterns
+- If Architecture Contract Gate = FAIL:
+  [A] Advanced Elicitation - Resolve the missing architecture contracts
+  [P] Party Mode - Stress-test blockers and build a remediation path
+  Gate Status: ❌ FAILED - Continue is blocked until the local gate passes"
 
 ### 7. Handle Menu Selection
 
@@ -294,6 +301,9 @@ Show the generated decisions content and present choices:
 
 #### If 'C' (Continue):
 
+- Only valid when the Architecture Contract Gate has passed in the current local state
+- If the gate is failed, emit `GateFailure`, restate the `RemediationPlan`, and return to the blocked menu without performing any save
+
 - Append the final content to `{planning_artifacts}/architecture.md`
 - Update frontmatter: `stepsCompleted: [1, 2, 3, 4]`
 - Load `./step-05-patterns.md`
@@ -310,6 +320,7 @@ When user selects 'C', append the content directly to the document using the str
 ✅ Cascading implications identified and addressed
 ✅ User provided appropriate level of explanation for skill level
 ✅ A/P/C menu presented and handled correctly for each category
+✅ Gate failure blocks plain Continue and forces remediation-first choices
 ✅ Content properly appended to document when C selected
 
 ## FAILURE MODES:
@@ -320,6 +331,7 @@ When user selects 'C', append the content directly to the document using the str
 ❌ Not adapting explanations to user skill level
 ❌ Forgetting to document decisions made by starter template
 ❌ Not presenting A/P/C menu after content generation
+❌ Showing `[C] Continue` while blocker-level architecture contracts are still missing
 
 ❌ **CRITICAL**: Reading only partial step file - leads to incomplete understanding and poor decisions
 ❌ **CRITICAL**: Proceeding with 'C' without fully reading and understanding the next step file

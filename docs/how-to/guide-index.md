@@ -35,7 +35,11 @@
 
 ### 其他指南
 
+- [`consumer-installation.md`](./consumer-installation.md) — 面向消费项目的完整安装、provider 配置与 dashboard 启动入口
+- [`consumer-packaging-troubleshooting.md`](./consumer-packaging-troubleshooting.md) — 处理 consumer zero-scripts、packaged schema、governance rerun stage 映射等真实安装回归
+- [`runtime-mcp-installation.md`](./runtime-mcp-installation.md) — `runtime-mcp` 显式启用时的布局、配置与验活说明
 - [`runtime-dashboard.md`](./runtime-dashboard.md) — 启动 live dashboard、runtime MCP，以及查看 `/api/snapshot` / `runtime_context` / `sft_summary`
+- [`deferred-gap-governance-operations.md`](./deferred-gap-governance-operations.md) — 查看 `dashboard --show-deferred-gaps` 输出、运行 `deferred-gap-audit`，以及理解 alert 语义
 - [`training-ready-sft-export.md`](./training-ready-sft-export.md) — 基于 `CanonicalSftSample` 预览、校验、打包 OpenAI / Hugging Face 训练数据
 - [`runtime-locale-and-i18n-config.md`](./runtime-locale-and-i18n-config.md) — 运行时语言（`languagePolicy`）与 BMAD i18n YAML 如何配置、何时生效；与审计提示词选稿的关系
 - [`multi-story.md`](./multi-story.md) — 多 Story 并行管理
@@ -47,9 +51,10 @@
 ## 推荐阅读顺序
 
 1. [入门教程](../tutorials/getting-started.md) — 安装与第一次使用
-2. [`bmad-story-assistant.md`](./bmad-story-assistant.md) — Story 工作流
-3. [`speckit-rollout-playbook.md`](./speckit-rollout-playbook.md) — 把 journey-first 治理落进团队日常
-4. [`multi-story.md`](./multi-story.md) — 多 Story 管理
+2. [`consumer-installation.md`](./consumer-installation.md) — 消费项目安装主入口
+3. [`bmad-story-assistant.md`](./bmad-story-assistant.md) — Story 工作流
+4. [`speckit-rollout-playbook.md`](./speckit-rollout-playbook.md) — 把 journey-first 治理落进团队日常
+5. [`multi-story.md`](./multi-story.md) — 多 Story 管理
 
 ## 维护建议
 

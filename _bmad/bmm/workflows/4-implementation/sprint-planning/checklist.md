@@ -31,3 +31,6 @@ Epic Files Contains:                Sprint Status Contains:
 - [ ] Total count of epics matches
 - [ ] Total count of stories matches
 - [ ] All items are in the expected order (epic, stories, retrospective)
+- [ ] If a readiness report exists, every deferred gap appears under `deferred_gap_plan.items`
+- [ ] Each deferred gap entry has both `owner` and `resolution_target`
+- [ ] Each deferred gap entry has either `planned_work_items` or `explicit_reason`

@@ -83,3 +83,74 @@ jobs:
 
       - name: Run tests
         run: npm run test:ci
+
+  package:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify root publish chain on npmjs.org
+        run: npm publish --dry-run --registry=https://registry.npmjs.org
+
+      - name: Verify bmad-speckit publish chain on npmjs.org
+        run: npm publish --dry-run -w bmad-speckit --registry=https://registry.npmjs.org
+
+      - name: Pack root tgz
+        run: |
+          mkdir -p .artifacts/npm
+          npm pack --json > .artifacts/npm/root-pack.json
+          ROOT_TGZ=$(node -e "const fs=require('fs');const pack=JSON.parse(fs.readFileSync('.artifacts/npm/root-pack.json','utf8'));process.stdout.write(pack[0].filename)")
+          mv "$ROOT_TGZ" ".artifacts/npm/$ROOT_TGZ"
+
+      - name: Pack bmad-speckit tgz
+        run: |
+          npm pack --json -w bmad-speckit > .artifacts/npm/bmad-speckit-pack.json
+          CLI_TGZ=$(node -e "const fs=require('fs');const pack=JSON.parse(fs.readFileSync('.artifacts/npm/bmad-speckit-pack.json','utf8'));process.stdout.write(pack[0].filename)")
+          CLI_TGZ_PATH=$(node -e "const fs=require('fs');const path=require('path');const pack=JSON.parse(fs.readFileSync('.artifacts/npm/bmad-speckit-pack.json','utf8'));const candidates=[path.join(process.cwd(), pack[0].filename), path.join(process.cwd(), 'packages', 'bmad-speckit', pack[0].filename)];const hit=candidates.find((candidate)=>fs.existsSync(candidate));if(!hit){console.error(`Cannot locate ${pack[0].filename}`);process.exit(1);}process.stdout.write(hit);")
+          mv "$CLI_TGZ_PATH" ".artifacts/npm/$CLI_TGZ"
+
+      - name: Write npm package artifact manifest
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = '.artifacts/npm';
+          const summarize = (filename) => {
+            const pack = JSON.parse(fs.readFileSync(filename, 'utf8'))[0];
+            return {
+              name: pack.name,
+              version: pack.version,
+              filename: pack.filename,
+              size: pack.size,
+              unpackedSize: pack.unpackedSize,
+              shasum: pack.shasum,
+            };
+          };
+
+          const manifest = {
+            generatedAt: new Date().toISOString(),
+            packages: {
+              root: summarize(`${path}/root-pack.json`),
+              bmadSpeckit: summarize(`${path}/bmad-speckit-pack.json`),
+            },
+          };
+
+          fs.writeFileSync(`${path}/manifest.json`, JSON.stringify(manifest, null, 2));
+          NODE
+
+      - name: Upload npm tarball artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-packages-${{ github.sha }}
+          path: .artifacts/npm/

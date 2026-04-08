@@ -14,6 +14,9 @@
     "stage": {
       "type": "string",
       "enum": [
+        "prd",
+        "arch",
+        "epics",
         "story_create",
         "story_audit",
         "specify",
@@ -30,15 +33,29 @@
       "type": "string",
       "enum": ["full_bmad", "seeded_solutioning", "standalone_story"]
     },
+    "workflow": { "type": "string", "minLength": 1 },
+    "step": { "type": "string", "minLength": 1 },
     "templateId": { "type": "string", "minLength": 1 },
     "epicId": { "type": "string", "minLength": 1 },
     "storyId": { "type": "string", "minLength": 1 },
     "storySlug": { "type": "string", "minLength": 1 },
     "runId": { "type": "string", "minLength": 1 },
     "artifactRoot": { "type": "string", "minLength": 1 },
+    "artifactPath": { "type": "string", "minLength": 1 },
     "contextScope": {
       "type": "string",
       "enum": ["project", "story"]
+    },
+    "languagePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resolvedMode"],
+      "properties": {
+        "resolvedMode": {
+          "type": "string",
+          "enum": ["zh", "en", "bilingual"]
+        }
+      }
     },
     "updatedAt": { "type": "string", "minLength": 1 }
   }

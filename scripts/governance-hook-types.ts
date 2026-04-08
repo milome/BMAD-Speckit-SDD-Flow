@@ -46,6 +46,21 @@ export interface GovernanceExecutionResult {
   remediationAuditTrace?: GovernanceRemediationAuditTrace;
   runnerSummaryLines?: string[];
   governancePresentation?: GovernancePresentation;
+  gateCheck?: {
+    gate: string;
+    workflow?: string;
+    step?: string;
+    artifactPath?: string | null;
+    scope?: {
+      branch?: string | null;
+      epicId?: string | null;
+      storyId?: string | null;
+    };
+    failures?: string[];
+    status?: 'pass' | 'fail';
+    rerunGate?: string;
+    sourceGateFailureIds?: string[];
+  };
 }
 
 export interface GovernanceRerunDecisionProjection {

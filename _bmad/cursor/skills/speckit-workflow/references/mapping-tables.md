@@ -34,6 +34,20 @@
 
 ---
 
+## 2A. plan.md：Deferred Gap Architecture Mapping
+
+```markdown
+## Deferred Gap Architecture Mapping
+
+| Gap ID | 来源 | Architecture Refs | Work Item Refs | Journey Refs | Production Path Refs | 状态 |
+|--------|------|-------------------|----------------|--------------|----------------------|------|
+| J04-Smoke-E2E | readiness | `architecture.md#checkout` | `T021,T022` | `J04` | `src/app/checkout/page.tsx` | mapped |
+```
+
+**说明**：active Deferred Gaps 在 plan 阶段必须至少映射到 architecture/work item；若影响真实功能可用性，还必须显式写出 `Journey Refs` 与 `Production Path Refs`。
+
+---
+
 ## 3. IMPLEMENTATION_GAPS.md：Gap 列表表头（按需求文档章节）
 
 ```markdown
@@ -45,6 +59,21 @@
 ```
 
 **说明**：按原始需求文档逐章节列出每条 Gap，注明实现状态与缺失/偏差。
+
+---
+
+## 3A. IMPLEMENTATION_GAPS.md：Deferred Gap Lifecycle Classification
+
+```markdown
+## Deferred Gap Lifecycle Classification
+
+| Gap ID | Gap Origin | Lifecycle Classification | Gap Type | 说明 |
+|--------|------------|--------------------------|----------|------|
+| J04-Smoke-E2E | inherited | inherited_open | journey runnable gap | smoke proof 仍未形成 |
+| J07-Async-Proof | new | new_gap | evidence gap | 新发现的 acceptance evidence 缺口 |
+```
+
+**说明**：这里必须把 inherited gap 和 new gap 分开；`Gap Type` 还必须区分 `definition gap`、`implementation gap`、`journey runnable gap`、`evidence gap`。
 
 ---
 
@@ -91,6 +120,21 @@
 
 ---
 
+## 6A. tasks.md：Deferred Gap Task Binding
+
+```markdown
+## Deferred Gap Task Binding
+
+| Gap ID | Task Binding Status | Task IDs | Smoke Task IDs | Closure Task ID | Explicit Defer Reason | Next Checkpoint |
+|--------|---------------------|----------|----------------|-----------------|----------------------|-----------------|
+| J04-Smoke-E2E | planned | T021,T022 | T023 | CLOSE-J04 |  | Sprint Review |
+| J09-Full-E2E | explicitly_deferred |  |  |  | Nightly suite owned by QA backlog | Epic 3 Planning |
+```
+
+**说明**：active Deferred Gap 必须二选一：要么绑定 task，要么写 `Explicit Defer Reason`。若 gap 影响某条 Journey，必须同时写 `Smoke Task IDs` 与 `Closure Task ID`。
+
+---
+
 ## 7. tasks.md：验收表头（按 Gap 逐条验证）
 
 ```markdown
@@ -129,6 +173,21 @@
 ```
 
 **说明**：每条 `P0 journey` 都必须能从 `journey -> task -> test -> closure` 一路追溯，禁止只列模块任务而无 smoke proof / closure 收口。
+
+---
+
+## 9A. Journey Runtime Proof Mapping
+
+```markdown
+## Journey Runtime Proof Mapping
+
+| Journey ID | Production Path | Smoke Proof | Full E2E / defer reason | Closure Note | Acceptance Evidence |
+|------------|-----------------|-------------|--------------------------|--------------|--------------------|
+| J01 | `src/app/checkout/page.tsx` | `tests/e2e/smoke/checkout.spec.ts` | `tests/e2e/full/checkout.spec.ts` | `closure-notes/J01.md` | `reports/checkout-proof.md` |
+| J02 | `src/server/orders/create-order.ts` | `tests/e2e/smoke/order.spec.ts` | deferred: nightly owned by QA | `closure-notes/J02.md` | `reports/order-proof.md` |
+```
+
+**说明**：这一表专门防“任务完成但 Journey 不 runnable”。`Production Path`、`Smoke Proof`、`Closure Note`、`Acceptance Evidence` 缺任一项，Journey 都不能宣称完成。
 
 ---
 

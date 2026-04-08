@@ -65,7 +65,7 @@ describe('validateScenarioConstraints', () => {
 
   it('scenario 非法值 → 抛错', () => {
     const record = makeRecord({}) as RunScoreRecord & { scenario: string };
-    record.scenario = 'invalid';
-    expect(() => validateScenarioConstraints(record)).toThrow();
+    (record as { scenario: string }).scenario = 'invalid';
+    expect(() => validateScenarioConstraints(record as RunScoreRecord)).toThrow();
   });
 });

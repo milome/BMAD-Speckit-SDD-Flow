@@ -316,6 +316,8 @@ If any blocker-level architecture contract is missing:
 - emit a `GateFailure`
 - build a `RemediationPlan`
 - do not show plain Continue until the blocker is repaired and the local gate is rerun
+- present only remediation-oriented options (for example `[A]` / `[P]`) plus an explicit blocked status message
+- if the local gate is still failed, `[C] Continue` is forbidden and must not appear in the menu text or selection handling
 
 ## REQUIRED OUTPUT CONTENT
 
@@ -393,9 +395,14 @@ Show the generated decisions content and present choices:
 [Show the complete markdown content]
 
 **What would you like to do?**
-[A] Advanced Elicitation - Deepen unresolved or risky contracts
-[P] Party Mode - Stress-test trade-offs and missing paths
-[C] Continue - Save these decisions and move to implementation patterns"
+- If Architecture Contract Gate = PASS:
+  [A] Advanced Elicitation - Deepen unresolved or risky contracts
+  [P] Party Mode - Stress-test trade-offs and missing paths
+  [C] Continue - Save these decisions and move to implementation patterns
+- If Architecture Contract Gate = FAIL:
+  [A] Advanced Elicitation - Resolve the missing architecture contracts
+  [P] Party Mode - Stress-test blockers and build a remediation path
+  Gate Status: ❌ FAILED - Continue is blocked until the local gate passes"
 
 ## HANDLE MENU SELECTION
 
@@ -415,6 +422,9 @@ Show the generated decisions content and present choices:
 
 ### If 'C' (Continue):
 
+- Only valid when the Architecture Contract Gate has passed in the current local state
+- If the gate is failed, emit `GateFailure`, restate the `RemediationPlan`, and return to the blocked menu without performing any save
+
 - Append the final content to `{planning_artifacts}/{branch}/architecture.md`
 - Update frontmatter: `stepsCompleted: [1, 2, 3, 4]`
 - Load `./step-05-patterns.md`
@@ -431,6 +441,7 @@ Show the generated decisions content and present choices:
 ✅ Cascading implications are identified and addressed
 ✅ User receives explanations appropriate to skill level
 ✅ A/P/C menu is presented and handled correctly
+✅ Gate failure blocks plain Continue and forces remediation-first choices
 
 ## FAILURE MODES:
 
@@ -442,6 +453,7 @@ Show the generated decisions content and present choices:
 ❌ Dropping category coverage in favor of only key-path narrative
 ❌ Missing cascading implications between decisions
 ❌ Treating architecture as complete without a testability contract
+❌ Showing `[C] Continue` while blocker-level architecture contracts are still missing
 
 ## NEXT STEP:
 

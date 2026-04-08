@@ -43,10 +43,25 @@ describe('readiness remediation artifact wiring', () => {
       ),
       'utf8'
     );
+    const template = readFileSync(
+      path.join(
+        root,
+        '_bmad',
+        'bmm',
+        'workflows',
+        '3-solutioning',
+        'check-implementation-readiness',
+        'templates',
+        'readiness-report-template.md'
+      ),
+      'utf8'
+    );
 
     expect(workflow).toContain('The final assessment produces both the readiness report and a governance remediation artifact for blocker-driven follow-up.');
     expect(step05).toContain("nextStepFile: './step-06-final-assessment.md'");
     expect(file).toContain("remediationArtifactFile: '{planning_artifacts}/{branch}/implementation-readiness-remediation-{{date}}.md'");
+    expect(file).toContain('Deferred Gaps Tracking');
+    expect(file).toContain('the generated remediation artifact must include a `## Structured Deferred Gaps` section');
     expect(file).toContain('scripts/governance-remediation-runner.ts');
     expect(file).toContain('_bmad/_config/governance-remediation.yaml');
     expect(file).toContain('cursor packet generated');
@@ -54,6 +69,8 @@ describe('readiness remediation artifact wiring', () => {
     expect(file).toContain('`PromptRoutingHints` are consumed only after `stage context -> gate failure -> artifact state`');
     expect(file).toContain('Blocker ownership affected: no');
     expect(file).toContain('Remediation artifact generated: {remediationArtifactFile}');
+    expect(template).toContain('## Deferred Gaps Tracking');
+    expect(template).toContain('| Gap ID | 描述 | 原因 | 解决时机 | Owner | 状态检查点 |');
   });
 
   it('bmad readiness workflow and final assessment mirror wire governance-remediation-runner generation', () => {
@@ -96,10 +113,25 @@ describe('readiness remediation artifact wiring', () => {
       ),
       'utf8'
     );
+    const template = readFileSync(
+      path.join(
+        root,
+        '_bmad',
+        'bmm',
+        'workflows',
+        '3-solutioning',
+        'bmad-check-implementation-readiness',
+        'templates',
+        'readiness-report-template.md'
+      ),
+      'utf8'
+    );
 
     expect(workflow).toContain('The final assessment produces both the readiness report and a governance remediation artifact for blocker-driven follow-up.');
     expect(step05).toContain('Load ./step-06-final-assessment.md for final readiness assessment');
     expect(file).toContain("remediationArtifactFile: '{planning_artifacts}/implementation-readiness-remediation-{{date}}.md'");
+    expect(file).toContain('Deferred Gaps Tracking');
+    expect(file).toContain('the generated remediation artifact must include a `## Structured Deferred Gaps` section');
     expect(file).toContain('scripts/governance-remediation-runner.ts');
     expect(file).toContain('_bmad/_config/governance-remediation.yaml');
     expect(file).toContain('cursor packet generated');
@@ -107,5 +139,7 @@ describe('readiness remediation artifact wiring', () => {
     expect(file).toContain('`PromptRoutingHints` are consumed only after `stage context -> gate failure -> artifact state`');
     expect(file).toContain('Blocker ownership affected: no');
     expect(file).toContain('Remediation artifact generated: {remediationArtifactFile}');
+    expect(template).toContain('## Deferred Gaps Tracking');
+    expect(template).toContain('| Gap ID | 描述 | 原因 | 解决时机 | Owner | 状态检查点 |');
   });
 });

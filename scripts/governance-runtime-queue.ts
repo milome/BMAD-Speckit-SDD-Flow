@@ -12,6 +12,39 @@ export interface GovernanceRuntimeQueueItem<TPayload = unknown, TResult = unknow
   error?: string;
 }
 
+export interface GovernancePreContinuePayload {
+  projectRoot?: string;
+  workflow?: string;
+  step?: string;
+  artifactPath?: string;
+  branch?: string;
+  epicId?: string;
+  storyId?: string;
+  gate?: string;
+  status?: 'pass' | 'fail';
+  rerunGate?: string;
+  sourceGateFailureIds?: string[];
+  failures?: string[];
+  deferred_gap_count?: number;
+  deferred_gaps_explicit?: boolean;
+  deferred_gaps?: Array<{
+    gap_id?: string;
+    description?: string;
+    reason?: string;
+    resolution_target?: string;
+    owner?: string;
+    status?: string;
+    current_risk?: string;
+    journey_refs?: string[];
+    prod_path_refs?: string[];
+    smoke_test_refs?: string[];
+    full_e2e_refs?: string[];
+    closure_note_refs?: string[];
+  }>;
+  removed_without_evidence?: string[];
+  previous_report_path?: string | null;
+}
+
 export function governanceQueueDir(projectRoot: string): string {
   return path.join(projectRoot, '_bmad-output', 'runtime', 'governance', 'queue');
 }
@@ -41,6 +74,10 @@ export function governanceFailedQueueFilePath(projectRoot: string, id: string): 
 
 export function governanceCurrentRunPath(projectRoot: string): string {
   return path.join(projectRoot, '_bmad-output', 'runtime', 'governance', 'current-run.json');
+}
+
+export function governancePreContinueQueueFilePath(projectRoot: string, id: string): string {
+  return path.join(governanceQueueBucketDir(projectRoot, 'pending'), `${id}.json`);
 }
 
 export function ensureGovernanceQueueDirs(projectRoot: string): void {

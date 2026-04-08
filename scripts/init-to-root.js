@@ -13,9 +13,10 @@
  * `--agent cursor`：`syncCursorRuntimePolicyHooks` 先将 `_bmad/runtime/hooks` 下 4 个共享 JS 复制到 `.cursor/hooks`，再覆盖 `emit-runtime-policy-cli.cjs`、`runtime-policy-inject.cjs`（薄壳，`./runtime-policy-inject-core` 优先）。
  * `--agent claude-code`：`syncClaudeRuntimePolicyHooks` 同样将上述 4 个文件复制到 `.claude/hooks` 后再覆盖薄壳与 CLI，与 Cursor 侧分层一致。
  * 外部目标默认**不**创建 package.json、不执行 npm install；若需在消费者目录安装本地 bmad-speckit CLI 依赖，传入 **--with-package-json**。
+ * 外部目标默认**不**生成 runtime MCP 布局；如需启用，显式传入 **--with-mcp**。
  * speckit commands 从 _bmad/speckit/commands/ 合并；.specify/ 部署 templates/workflows/scripts。
  *
- * CLI 参数：[targetDir], --full, --agent cursor|claude-code, --no-package-json, --with-package-json
+ * CLI 参数：[targetDir], --full, --agent cursor|claude-code, --no-package-json, --with-package-json, --with-mcp
  *
  * 示例：node scripts/init-to-root.js
  *
@@ -39,6 +40,7 @@ const args = process.argv.slice(2);
 const fullMode = args.includes('--full');
 const noPackageJson = args.includes('--no-package-json');
 const withPackageJson = args.includes('--with-package-json');
+const withMcp = args.includes('--with-mcp');
 const agentArgIndex = args.findIndex((a) => a === '--agent');
 let requestedAgentTarget =
   agentArgIndex >= 0 && args[agentArgIndex + 1] ? args[agentArgIndex + 1] : null;
@@ -81,6 +83,7 @@ function writeCursorHooksJson(targetDir) {
         { command: 'node .cursor/hooks/runtime-dashboard-session-start.cjs' },
       ],
       preToolUse: [{ command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host' }],
+      preToolUseCommands: [{ command: 'node .cursor/hooks/pre-continue-check.cjs' }],
       subagentStart: [
         { command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host --subagent-start' },
       ],
@@ -225,6 +228,7 @@ const targetArg = args.find(
     a !== '--full' &&
     a !== '--no-package-json' &&
     a !== '--with-package-json' &&
+    a !== '--with-mcp' &&
     a !== '--agent' &&
     index !== agentArgIndex + 1
 );
@@ -377,12 +381,14 @@ function syncCursorRuntimePolicyHooks(targetDir, bmadRoot) {
     console.log('Sync', path.relative(targetDir, sharedDir), '->', path.join('.cursor', 'hooks'));
   }
 
-  const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs', 'post-tool-use.cjs', 'runtime-dashboard-session-start.cjs'];
+  const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs', 'post-tool-use.cjs', 'runtime-dashboard-session-start.cjs', 'pre-continue-check.cjs'];
   for (const name of names) {
     const src = path.join(cursorHooksDir, name);
-    if (fs.existsSync(src)) {
-      fs.copyFileSync(src, path.join(destDir, name));
-      console.log('Sync', path.relative(targetDir, src), '->', path.join('.cursor', 'hooks', name));
+    const runtimeFallback = path.join(bmadRoot, 'runtime', 'hooks', name);
+    const source = fs.existsSync(src) ? src : runtimeFallback;
+    if (fs.existsSync(source)) {
+      fs.copyFileSync(source, path.join(destDir, name));
+      console.log('Sync', path.relative(targetDir, source), '->', path.join('.cursor', 'hooks', name));
     } else {
       console.warn(`Skip Cursor hook override (missing): ${path.relative(targetDir, src)}`);
     }
@@ -407,15 +413,33 @@ function syncClaudeRuntimePolicyHooks(targetDir, bmadRoot) {
     console.log('Sync', path.relative(targetDir, sharedDir), '->', path.join('.claude', 'hooks'));
   }
 
-  const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs', 'session-start.cjs'];
+  const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs', 'session-start.cjs', 'pre-continue-check.cjs'];
   for (const name of names) {
     const src = path.join(claudeHooksDir, name);
-    if (fs.existsSync(src)) {
-      fs.copyFileSync(src, path.join(destDir, name));
-      console.log('Sync', path.relative(targetDir, src), '->', path.join('.claude', 'hooks', name));
+    const runtimeFallback = path.join(bmadRoot, 'runtime', 'hooks', name);
+    const source = fs.existsSync(src) ? src : runtimeFallback;
+    if (fs.existsSync(source)) {
+      fs.copyFileSync(source, path.join(destDir, name));
+      console.log('Sync', path.relative(targetDir, source), '->', path.join('.claude', 'hooks', name));
     } else {
       console.warn(`Skip Claude hook override (missing): ${path.relative(targetDir, src)}`);
     }
+  }
+}
+
+function syncArchitectureGateConfig(targetDir, bmadRoot) {
+  const src = path.join(bmadRoot, '_config', 'architecture-gates.yaml');
+  const dest = path.join(targetDir, '_bmad', '_config', 'architecture-gates.yaml');
+  if (!fs.existsSync(src)) return;
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.copyFileSync(src, dest);
+  console.log('Sync', path.relative(targetDir, src), '->', path.relative(targetDir, dest));
+
+  const routingSrc = path.join(bmadRoot, '_config', 'continue-gate-routing.yaml');
+  const routingDest = path.join(targetDir, '_bmad', '_config', 'continue-gate-routing.yaml');
+  if (fs.existsSync(routingSrc)) {
+    fs.copyFileSync(routingSrc, routingDest);
+    console.log('Sync', path.relative(targetDir, routingSrc), '->', path.relative(targetDir, routingDest));
   }
 }
 
@@ -460,6 +484,88 @@ function writeDefaultRuntimeContext(targetDir, pkgRoot) {
   if (r.status !== 0) {
     console.warn('write-runtime-context exited', r.status);
   }
+}
+
+function writeConsumerBmadSpeckitBinWrappers(targetDir, pkgRoot) {
+  const targetReal = fs.existsSync(targetDir) ? fs.realpathSync(targetDir) : path.resolve(targetDir);
+  const pkgReal = fs.existsSync(pkgRoot) ? fs.realpathSync(pkgRoot) : path.resolve(pkgRoot);
+  if (targetReal === pkgReal) {
+    return;
+  }
+
+  const binDir = path.join(targetDir, 'node_modules', '.bin');
+  if (!fs.existsSync(binDir)) {
+    return;
+  }
+
+  const jsRel = path.join('..', 'bmad-speckit-sdd-flow', 'scripts', 'bmad-speckit-cli.js');
+  const cmdBody = [
+    '@ECHO off',
+    'GOTO start',
+    ':find_dp0',
+    'SET dp0=%~dp0',
+    'EXIT /b',
+    ':start',
+    'SETLOCAL',
+    'CALL :find_dp0',
+    '',
+    'IF EXIST "%dp0%\\node.exe" (',
+    '  SET "_prog=%dp0%\\node.exe"',
+    ') ELSE (',
+    '  SET "_prog=node"',
+    '  SET PATHEXT=%PATHEXT:;.JS;=;%',
+    ')',
+    '',
+    `endLocal & goto #_undefined_# 2>NUL || title %COMSPEC% & "%_prog%"  "%dp0%\\${jsRel.replace(/\//g, '\\')}" %*`,
+    '',
+  ].join('\r\n');
+
+  const shBody = [
+    '#!/bin/sh',
+    "basedir=$(dirname \"$(echo \"$0\" | sed -e 's,\\\\,/,g')\")",
+    '',
+    'case `uname` in',
+    '    *CYGWIN*|*MINGW*|*MSYS*)',
+    '        if command -v cygpath > /dev/null 2>&1; then',
+    '            basedir=`cygpath -w "$basedir"`',
+    '        fi',
+    '    ;;',
+    'esac',
+    '',
+    'if [ -x "$basedir/node" ]; then',
+    `  exec "$basedir/node" "$basedir/${jsRel.replace(/\\/g, '/')}" "$@"`,
+    'else',
+    `  exec node "$basedir/${jsRel.replace(/\\/g, '/')}" "$@"`,
+    'fi',
+    '',
+  ].join('\n');
+
+  const ps1Body = [
+    '#!/usr/bin/env pwsh',
+    '$basedir = Split-Path $MyInvocation.MyCommand.Definition -Parent',
+    '',
+    '$exe = ""',
+    'if ($PSVersionTable.PSVersion -lt "6.0" -or $IsWindows) {',
+    '  $exe = ".exe"',
+    '}',
+    'if (Test-Path "$basedir/node$exe") {',
+    `  & "$basedir/node$exe"  "$basedir/${jsRel.replace(/\\/g, '/')}" $args`,
+    '} else {',
+    `  & "node$exe"  "$basedir/${jsRel.replace(/\\/g, '/')}" $args`,
+    '}',
+    'exit $LASTEXITCODE',
+    '',
+  ].join('\n');
+
+  fs.writeFileSync(path.join(binDir, 'bmad-speckit.cmd'), cmdBody, 'utf8');
+  fs.writeFileSync(path.join(binDir, 'bmad-speckit'), shBody, 'utf8');
+  fs.writeFileSync(path.join(binDir, 'bmad-speckit.ps1'), ps1Body, 'utf8');
+  try {
+    fs.chmodSync(path.join(binDir, 'bmad-speckit'), 0o755);
+  } catch {
+    // ignore on Windows
+  }
+  console.log('Repaired consumer node_modules/.bin/bmad-speckit wrappers');
 }
 
 /**
@@ -560,6 +666,8 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
       'render-audit-block.cjs not found; run: npm run build:runtime-emit — pre-agent-summary audit inject may be empty in target.'
     );
   }
+  const governanceWorkerSrc = path.join(pkgRoot, 'packages', 'runtime-emit', 'dist', 'governance-runtime-worker.cjs');
+  const governanceRunnerSrc = path.join(pkgRoot, 'packages', 'runtime-emit', 'dist', 'governance-remediation-runner.cjs');
   const wrcSrc = path.join(path.dirname(emitSrc), '..', 'write-runtime-context.cjs');
   const hookDirs = [
     path.join(targetDir, '.cursor', 'hooks'),
@@ -575,6 +683,12 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
     if (renderAuditSrc && fs.existsSync(renderAuditSrc)) {
       fs.copyFileSync(renderAuditSrc, path.join(d, 'render-audit-block.cjs'));
     }
+    if (fs.existsSync(governanceWorkerSrc)) {
+      fs.copyFileSync(governanceWorkerSrc, path.join(d, 'governance-runtime-worker.cjs'));
+    }
+    if (fs.existsSync(governanceRunnerSrc)) {
+      fs.copyFileSync(governanceRunnerSrc, path.join(d, 'governance-remediation-runner.cjs'));
+    }
     if (fs.existsSync(wrcSrc)) {
       fs.copyFileSync(wrcSrc, path.join(d, 'write-runtime-context.cjs'));
     }
@@ -587,7 +701,7 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
     return;
   }
   console.log(
-    'Deployed emit-runtime-policy.cjs, resolve-for-session.cjs, render-audit-block.cjs (+ write-runtime-context.cjs) under .cursor/hooks and/or .claude/hooks (no project-root scripts/).'
+    'Deployed emit-runtime-policy.cjs, resolve-for-session.cjs, render-audit-block.cjs, governance-runtime-worker.cjs, governance-remediation-runner.cjs (+ write-runtime-context.cjs) under .cursor/hooks and/or .claude/hooks (no project-root scripts/).'
   );
 }
 
@@ -632,7 +746,7 @@ function materializeSkillMdByLanguage(targetDir) {
   }
 }
 
-function installConsumerMcpLayout(targetDir, pkgRoot) {
+function installConsumerMcpLayout(targetDir, pkgRoot, options = {}) {
   let targetReal;
   let pkgRootReal;
   try {
@@ -651,8 +765,7 @@ function installConsumerMcpLayout(targetDir, pkgRoot) {
 
   const shouldSkipMcpInstall =
     process.env.BMAD_SKIP_CONSUMER_MCP_INSTALL === '1' ||
-    process.env.VITEST === 'true' ||
-    process.env.NODE_ENV === 'test';
+    (!options.force && (process.env.VITEST === 'true' || process.env.NODE_ENV === 'test'));
   if (shouldSkipMcpInstall) {
     console.log('Skip consumer MCP install for test/runtime-constrained session.');
     return;
@@ -713,10 +826,16 @@ for (const dir of DIRS) {
 totalFiles += agentProfile.sync(TARGET, PKG_ROOT);
 
 deployConsumerRuntimeEmitToHooks(PKG_ROOT, TARGET);
-installConsumerMcpLayout(TARGET, PKG_ROOT);
+if (withMcp) {
+  installConsumerMcpLayout(TARGET, PKG_ROOT, { force: true });
+} else if (fs.realpathSync(TARGET, { encoding: 'utf8' }) !== fs.realpathSync(PKG_ROOT, { encoding: 'utf8' })) {
+  console.log('Skipped runtime MCP layout (pass --with-mcp to enable consumer MCP files).');
+}
+syncArchitectureGateConfig(TARGET, path.join(TARGET, '_bmad'));
 
 writeDefaultRuntimeRegistry(TARGET, PKG_ROOT);
 writeDefaultRuntimeContext(TARGET, PKG_ROOT);
+writeConsumerBmadSpeckitBinWrappers(TARGET, PKG_ROOT);
 materializeSkillMdByLanguage(TARGET);
 
 // Ensure _bmad-output/config exists (empty); never copy source's _bmad-output contents.

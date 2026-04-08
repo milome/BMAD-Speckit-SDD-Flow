@@ -1,0 +1,550 @@
+version: 1
+schema: unified_gate_v1
+defaults:
+  fail_action: 阻止 Continue
+  allow_markers:
+    - Deferred to Implementation
+    - TBD
+    - TODO
+    - Pending
+  artifact_resolver:
+    type: planning_artifact
+    candidates:
+      - "{planning_artifacts}/{branch}/architecture.md"
+      - "{planning_artifacts}/architecture.md"
+  evidence_keywords:
+    p0_journey:
+      - P0 Journey
+      - P0 journey
+      - critical journey
+      - User Journeys
+    smoke_e2e:
+      - smoke E2E
+      - Smoke E2E
+      - e2e
+      - end-to-end
+    evidence_proof:
+      - evidence
+      - proof
+      - screenshot
+      - log
+      - trace
+    traceability:
+      - traceability
+      - link
+      - source
+      - task chain
+
+gate_sets:
+  architecture_contract_gate:
+    workflow_keys:
+      - bmad-create-architecture
+      - create-architecture
+    runtime:
+      gate: architecture-contract-gate
+      flow: epic
+      stage: arch
+    steps:
+      step-04-decisions:
+        gate_rules:
+          - name: contract_completeness
+            check: 所有模板章节必须有内容或明确标记
+            required_sections:
+              - P0 Key Path Sequences
+              - Business Completion State vs System Completion State
+              - Sync / Async Boundaries
+              - Fallback And Compensation Strategy
+              - Minimum Observability Contract
+              - Testability And Smoke E2E Preconditions
+          - name: decision_documentation
+            check: 所有决策必须有版本和示例
+            required_version_sections:
+              - Data Architecture
+              - Authentication & Security
+              - API & Communication Patterns
+              - Frontend Architecture
+              - Infrastructure & Deployment
+          - name: architecture_journey_contract
+            check: architecture 决策阶段必须显式保留四信号 contract
+            required_keywords:
+              p0_journey:
+                - P0 Journey
+              smoke_e2e:
+                - smoke E2E
+              evidence_proof:
+                - evidence
+              traceability:
+                - traceability
+      step-07-validation:
+        gate_rules:
+          - name: contract_completeness
+            check: 所有模板章节必须有内容或明确标记
+            required_sections:
+              - P0 Journey Coverage Validation
+              - Smoke E2E Preconditions Validation
+              - Observability, Traceability, and Failure Handling Validation
+              - Undefined Contract Analysis
+              - Blockers
+              - Architecture Readiness Assessment
+          - name: decision_documentation
+            check: 所有决策必须有版本和示例
+            required_version_sections:
+              - Implementation Readiness Validation
+              - Architecture Readiness Assessment
+          - name: architecture_validation_contract
+            check: architecture 验证阶段必须显式保留四信号 contract
+            required_keywords:
+              p0_journey:
+                - P0 Journey
+              smoke_e2e:
+                - smoke E2E
+              evidence_proof:
+                - evidence
+              traceability:
+                - traceability
+
+  brief_contract_gate:
+    workflow_keys:
+      - bmad-create-product-brief
+      - create-product-brief
+    runtime:
+      gate: brief-gate
+      flow: epic
+      stage: prd
+    steps:
+      step-02-vision:
+        gate_rules:
+          - name: section_contract_completeness
+            check: 愿景关键章节必须有内容或明确标记
+            required_sections:
+              - Product Vision
+          - name: brief_journey_contract_anchor
+            check: brief 愿景必须显式绑定四信号 contract
+            required_keywords:
+              p0_journey:
+                - P0 Journey
+              smoke_e2e:
+                - smoke E2E
+              evidence_proof:
+                - evidence
+              traceability:
+                - traceability
+      step-03-users:
+        gate_rules:
+          - name: section_contract_completeness
+            check: 用户章节必须有内容或明确标记
+            required_sections:
+              - Target Users
+          - name: brief_users_contract_anchor
+            check: 用户章节必须给出四信号 contract 线索
+            required_keywords:
+              p0_journey:
+                - P0 Journey
+              smoke_e2e:
+                - smoke E2E
+              evidence_proof:
+                - evidence
+              traceability:
+                - traceability chain
+      step-04-metrics:
+        gate_rules:
+          - name: section_contract_completeness
+            check: 成功指标章节必须有内容或明确标记
+            required_sections:
+              - Success Metrics
+          - name: brief_metrics_contract_anchor
+            check: 成功指标必须能映射到四信号 contract
+            required_keywords:
+              p0_journey:
+                - P0 Journey
+              smoke_e2e:
+                - smoke E2E
+              evidence_proof:
+                - evidence
+              traceability:
+                - traceability
+      step-05-scope:
+        gate_rules:
+          - name: section_contract_completeness
+            check: 范围章节必须有内容或明确标记
+            required_sections:
+              - Scope
+          - name: brief_scope_contract_anchor
+            check: 范围章节必须说明四信号 contract
+            required_keywords:
+              p0_journey:
+                - P0 Journey
+              smoke_e2e:
+                - smoke E2E
+              evidence_proof:
+                - evidence
+              traceability:
+                - traceability
+
+  prd_contract_gate:
+    workflow_keys:
+      - bmad-create-prd
+      - create-prd
+    runtime:
+      gate: prd-contract-gate
+      flow: epic
+      stage: prd
+    steps:
+      step-04-journeys:
+        gate_rules:
+          - name: section_contract_completeness
+            check: journey contract 章节必须有内容或明确标记
+            required_sections:
+              - User Journeys
+          - name: prd_journey_evidence_chain
+            check: PRD journey 必须包含 P0 journey、smoke E2E、evidence、traceability
+            section_scope:
+              - User Journeys
+            required_keywords:
+              p0_journey:
+                - P0 Journey
+              smoke_e2e:
+                - smoke E2E
+              evidence_proof:
+                - evidence
+              traceability:
+                - traceability
+      step-11-polish:
+        gate_rules:
+          - name: prd_contract_polish
+            check: 抛光后的 PRD 关键合同章节必须保持完整
+            required_sections:
+              - User Journeys
+              - Functional Requirements
+              - Non-Functional Requirements
+
+  readiness_blocker_gate:
+    workflow_keys:
+      - bmad-check-implementation-readiness
+      - check-implementation-readiness
+    runtime:
+      gate: readiness-blocker-gate
+      flow: epic
+      stage: arch
+    steps:
+      step-06-final-assessment:
+        gate_rules:
+          - name: readiness_blocker_visibility
+            check: readiness blockers 与 deferred gaps 必须显式列出
+            required_sections:
+              - Blockers Requiring Immediate Action
+              - Deferred Gaps
+              - Deferred Gaps Tracking
+          - name: readiness_four_signal_contract_section
+            check: report 必须包含 Four-Signal Governance Contract Status 章节
+            required_sections:
+              - Four-Signal Governance Contract Status
+              - P0 Journey Coverage Matrix
+              - Smoke E2E Preconditions Traceability
+              - Cross-Document Traceability
+              - Four-Signal Contract Verification
+          - name: readiness_four_signal_traceability
+            check: report 必须显式总结四信号追溯性矩阵
+            section_scope:
+              - Four-Signal Governance Contract Status
+            required_keywords:
+              p0_journey:
+                - P0 Journey Coverage Matrix
+                - PRD Journey
+                - Arch P0 Key Path
+                - Epic Coverage
+              smoke_e2e:
+                - Smoke E2E Preconditions Traceability
+                - E2E test strategy
+                - Critical paths
+              evidence_proof:
+                - Evidence & Proof Chain
+                - Source Document
+                - Evidence Location
+                - Verification
+              traceability:
+                - Cross-Document Traceability
+                - PRD Requirement
+                - Architecture Decision
+                - Epic Story
+                - Traceability Status
+          - name: readiness_journey_contract
+            check: readiness 最终评估必须保留四信号 contract
+            required_keywords:
+              p0_journey:
+                - P0 Journey
+              smoke_e2e:
+                - smoke E2E
+              evidence_proof:
+                - evidence
+              traceability:
+                - traceability
+
+  epics_contract_gate:
+    workflow_keys:
+      - bmad-create-epics-and-stories
+      - create-epics-and-stories
+    runtime:
+      gate: epics-contract-gate
+      flow: epic
+      stage: epics
+    steps:
+      step-02-design-epics:
+        gate_rules:
+          - name: epic_slice_completeness
+            check: epic 设计必须覆盖关键用户价值切片
+            required_sections:
+              - Epic Design
+          - name: epic_journey_contract_anchor
+            check: epic 设计必须显式锚定四信号 contract
+            required_keywords:
+              p0_journey:
+                - P0 Journey
+              smoke_e2e:
+                - smoke E2E
+              evidence_proof:
+                - evidence
+              traceability:
+                - traceability
+      step-03-create-stories:
+        gate_rules:
+          - name: story_slice_completeness
+            check: stories 必须覆盖执行切片与验收线索
+            required_sections:
+              - Stories
+          - name: epic_story_journey_contract
+            check: stories 必须落地四信号 contract / task chain
+            required_keywords:
+              p0_journey:
+                - P0 Journey
+              smoke_e2e:
+                - smoke E2E
+              evidence_proof:
+                - evidence
+              traceability:
+                - task chain
+
+  create_story_gate:
+    workflow_keys:
+      - bmad-create-story
+      - create-story
+    runtime:
+      gate: create-story-gate
+      flow: story
+      stage: story_create
+    steps:
+      workflow:
+        gate_rules:
+          - name: story_contract_readiness
+            check: story 文档必须完整到可开发状态
+            required_sections:
+              - Story
+              - Acceptance Criteria
+          - name: story_journey_contract
+            check: story 阶段必须显式落地四信号 contract
+            required_sections:
+              - Story
+            required_keywords:
+              p0_journey:
+                - P0 Journey
+              smoke_e2e:
+                - smoke E2E
+              evidence_proof:
+                - evidence
+              traceability:
+                - traceability
+
+  speckit_specify_gate:
+    workflow_keys:
+      - speckit-specify
+      - specify
+      - spec
+    runtime:
+      gate: spec-contract-gate
+      flow: story
+      stage: specify
+    steps:
+      workflow:
+        gate_rules:
+          - name: p0_journey_spec_contract
+            check: spec 阶段必须定义 P0 journey、smoke E2E 与证据链
+            required_sections:
+              - User Journeys
+              - Inherited Deferred Gaps
+              - Deferred Gap Intake Mapping
+            required_keywords:
+              p0_journey:
+                - P0 Journey
+              smoke_e2e:
+                - smoke E2E
+              evidence_proof:
+                - evidence
+              traceability:
+                - traceability
+          - name: deferred_gap_intake_contract
+            check: spec 阶段必须承接 inherited deferred gaps
+            required_sections:
+              - Inherited Deferred Gaps
+              - Deferred Gap Intake Mapping
+
+  speckit_plan_gate:
+    workflow_keys:
+      - speckit-plan
+      - plan
+    runtime:
+      gate: plan-contract-gate
+      flow: story
+      stage: plan
+    steps:
+      workflow:
+        gate_rules:
+          - name: p0_journey_plan_contract
+            check: plan 阶段必须把 P0 journey 落到执行/验证链路
+            required_sections:
+              - Testing Strategy
+              - Deferred Gap Architecture Mapping
+            required_keywords:
+              p0_journey:
+                - P0 Journey
+              smoke_e2e:
+                - smoke E2E
+              traceability:
+                - traceability
+              evidence_proof:
+                - evidence
+          - name: deferred_gap_plan_mapping
+            check: plan 阶段必须把 deferred gaps 映射到 architecture / work items / journeys
+            required_sections:
+              - Deferred Gap Architecture Mapping
+
+  speckit_gaps_gate:
+    workflow_keys:
+      - speckit-gaps
+      - gaps
+    runtime:
+      gate: gaps-contract-gate
+      flow: story
+      stage: gaps
+    steps:
+      workflow:
+        gate_rules:
+          - name: p0_journey_gap_visibility
+            check: gaps 阶段必须显式列出 P0 journey / smoke E2E / evidence 缺口
+            required_sections:
+              - Implementation Gaps
+              - Deferred Gap Lifecycle Classification
+            required_keywords:
+              p0_journey:
+                - P0 Journey
+              smoke_e2e:
+                - smoke E2E
+              evidence_proof:
+                - evidence
+              traceability:
+                - traceability
+          - name: deferred_gap_lifecycle_classification
+            check: gaps 阶段必须区分 inherited gap 与 new gap，并声明生命周期分类
+            required_sections:
+              - Deferred Gap Lifecycle Classification
+
+  speckit_tasks_gate:
+    workflow_keys:
+      - speckit-tasks
+      - tasks
+    runtime:
+      gate: tasks-contract-gate
+      flow: story
+      stage: tasks
+    steps:
+      workflow:
+        gate_rules:
+          - name: p0_journey_task_chain
+            check: tasks 阶段必须把 P0 journey / smoke E2E / evidence chain 落为任务链
+            required_sections:
+              - Tasks
+              - Testing
+              - Deferred Gap Task Binding
+              - P0 Journey Ledger
+              - Journey -> Task -> Test -> Closure
+            required_keywords:
+              p0_journey:
+                - P0 Journey
+              smoke_e2e:
+                - smoke E2E
+              evidence_proof:
+                - evidence
+              traceability:
+                - task chain
+          - name: deferred_gap_task_binding
+            check: tasks 阶段必须把 deferred gap 落到 task binding 或 explicit defer reason
+            required_sections:
+              - Deferred Gap Task Binding
+          - name: journey_runnable_task_chain
+            check: tasks 阶段必须显式保留 Journey -> Task -> Test -> Closure 映射
+            required_sections:
+              - Journey -> Task -> Test -> Closure
+
+  dev_story_gate:
+    workflow_keys:
+      - bmad-dev-story
+      - dev-story
+      - speckit-workflow
+    runtime:
+      gate: dev-story-gate
+      flow: story
+      stage: implement
+    steps:
+      workflow:
+        gate_rules:
+          - name: implementation_contract_readiness
+            check: 实施阶段必须有任务、验证与未完成项状态
+            required_sections:
+              - Tasks
+              - Testing
+              - Review Findings
+              - P0 Journey Ledger
+              - Journey -> Task -> Test -> Closure
+              - Closure Notes
+          - name: p0_journey_implementation_proof
+            check: implement 阶段必须落地 P0 journey / smoke E2E / 证据链
+            required_keywords:
+              p0_journey:
+                - P0 Journey
+              smoke_e2e:
+                - smoke E2E
+              evidence_proof:
+                - evidence
+              traceability:
+                - traceability
+          - name: deferred_gap_resolution_or_carry_forward
+            check: implement 阶段必须为 active deferred gaps 提供 closure evidence 或 carry-forward evidence
+            required_keywords:
+              evidence_proof:
+                - closure
+                - carry-forward
+          - name: journey_runnable_proof_gate
+            check: implement 阶段必须证明 P0 journey runnable
+            required_keywords:
+              p0_journey:
+                - P0 Journey
+              smoke_e2e:
+                - smoke E2E
+              evidence_proof:
+                - closure note
+          - name: production_path_integration_gate
+            check: implement 阶段必须证明真实 production path 已接通
+            required_keywords:
+              traceability:
+                - production path
+                - entrypoint
+
+rule_keywords:
+  version_keywords:
+    - Version:
+    - version:
+    - v
+  example_keywords:
+    - Example
+    - example
+    - e.g.
+    - for example

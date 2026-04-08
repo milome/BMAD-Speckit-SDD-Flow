@@ -69,6 +69,9 @@ describe('wave 1B brief -> prd -> arch gate/rerun e2e wiring', () => {
       expect(content).toContain('GateFailure');
       expect(content).toContain('RemediationPlan');
       expect(content).toContain('do not show plain Continue');
+      expect(content).toContain('Continue is blocked until the local gate passes');
+      expect(content).toContain('[C] Continue` is forbidden');
+      expect(content).toContain('Only valid when the Architecture Contract Gate has passed');
       expect(content).toContain('architecture-contract-gate');
       expect(content).toContain('party-mode');
       expect(content).toContain('current blocker/gap context');

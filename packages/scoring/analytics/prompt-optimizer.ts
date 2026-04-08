@@ -6,6 +6,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import type { WeaknessCluster } from './cluster-weaknesses';
 
+export type { WeaknessCluster };
+
 export interface PromptSuggestion {
   target_file: string;
   section: string;

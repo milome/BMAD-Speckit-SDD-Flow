@@ -63,8 +63,12 @@ describe('npm pack bmad-speckit → clean install → CLI', () => {
       );
       const reEmit = join(bundledRe, 'emit-runtime-policy.cjs');
       const reResolve = join(bundledRe, 'resolve-for-session.cjs');
+      const reGovWorker = join(bundledRe, 'governance-runtime-worker.cjs');
+      const reGovRunner = join(bundledRe, 'governance-remediation-runner.cjs');
       expect(existsSync(reEmit)).toBe(true);
       expect(existsSync(reResolve)).toBe(true);
+      expect(existsSync(reGovWorker)).toBe(true);
+      expect(existsSync(reGovRunner)).toBe(true);
 
       const sprintDir = join(consumer, '_bmad-output', 'implementation-artifacts');
       const sprintFile = join(sprintDir, 'sprint-status.yaml');

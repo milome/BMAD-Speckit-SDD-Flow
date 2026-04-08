@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Write an explicit runtime context file for deployed consumer hooks.
- * Usage: node write-runtime-context.js <targetFile> [flow] [stage] [templateId?] [epicId] [storyId] [storySlug] [runId] [artifactRoot] [contextScope]
+ * Usage: node write-runtime-context.cjs <targetFile> [flow] [stage] [templateId?] [epicId] [storyId] [storySlug] [runId] [artifactRoot] [contextScope] [workflow] [step] [artifactPath]
  * Default flow/stage: story / specify
  */
 'use strict';
@@ -12,7 +12,7 @@ const path = require('node:path');
 const targetFileArg = process.argv[2];
 if (!targetFileArg || String(targetFileArg).trim() === '') {
   console.error(
-    'Usage: node write-runtime-context.js <targetFile> [flow] [stage] [templateId?] [epicId] [storyId] [storySlug] [runId] [artifactRoot] [contextScope]'
+    'Usage: node write-runtime-context.cjs <targetFile> [flow] [stage] [templateId?] [epicId] [storyId] [storySlug] [runId] [artifactRoot] [contextScope] [workflow] [step] [artifactPath]'
   );
   process.exit(1);
 }
@@ -27,6 +27,9 @@ const storySlugArg = process.argv[8];
 const runIdArg = process.argv[9];
 const artifactRootArg = process.argv[10];
 const contextScopeArg = process.argv[11];
+const workflowArg = process.argv[12];
+const stepArg = process.argv[13];
+const artifactPathArg = process.argv[14];
 
 fs.mkdirSync(path.dirname(targetFile), { recursive: true });
 
@@ -56,6 +59,15 @@ if (artifactRootArg && String(artifactRootArg).trim() !== '') {
 }
 if (contextScopeArg && ['project', 'story'].includes(String(contextScopeArg).trim())) {
   payload.contextScope = String(contextScopeArg).trim();
+}
+if (workflowArg && String(workflowArg).trim() !== '') {
+  payload.workflow = String(workflowArg).trim();
+}
+if (stepArg && String(stepArg).trim() !== '') {
+  payload.step = String(stepArg).trim();
+}
+if (artifactPathArg && String(artifactPathArg).trim() !== '') {
+  payload.artifactPath = String(artifactPathArg).trim();
 }
 
 const tmp = `${targetFile}.${process.pid}.tmp`;

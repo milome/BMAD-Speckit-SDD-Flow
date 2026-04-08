@@ -1,0 +1,31 @@
+name: Deferred Gap Audit
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+jobs:
+  deferred-gap-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run deferred gap audit
+        run: npx bmad-speckit deferred-gap-audit --output _bmad-output/deferred-gap-audit.md --fail-on-alert
+
+      - name: Upload deferred gap audit artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deferred-gap-audit
+          path: _bmad-output/deferred-gap-audit.md

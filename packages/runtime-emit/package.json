@@ -8,7 +8,9 @@
     "./dist/emit-runtime-policy.cjs": "./dist/emit-runtime-policy.cjs",
     "./dist/resolve-for-session.cjs": "./dist/resolve-for-session.cjs",
     "./dist/render-audit-block.cjs": "./dist/render-audit-block.cjs",
-    "./dist/consumer-mcp-server.cjs": "./dist/consumer-mcp-server.cjs"
+    "./dist/consumer-mcp-server.cjs": "./dist/consumer-mcp-server.cjs",
+    "./dist/governance-runtime-worker.cjs": "./dist/governance-runtime-worker.cjs",
+    "./dist/governance-remediation-runner.cjs": "./dist/governance-remediation-runner.cjs"
   },
   "files": [
     "dist",
@@ -23,6 +25,9 @@
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@bmad-speckit/schema": "file:../schema"
   },
   "devDependencies": {
     "esbuild": "^0.25.0"

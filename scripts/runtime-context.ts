@@ -11,6 +11,7 @@ import type { StageName } from './bmad-config';
 import {
   buildProjectRegistryFromSprintStatus,
   defaultRuntimeContextRegistry,
+  readRuntimeContextRegistry,
   writeRuntimeContextRegistry,
 } from './runtime-context-registry';
 
@@ -18,6 +19,9 @@ export const RUNTIME_CONTEXT_VERSION = 1 as const;
 
 const RUNTIME_FLOWS: RuntimeFlowId[] = ['story', 'bugfix', 'standalone_tasks', 'epic', 'unknown'];
 const STAGE_NAMES: StageName[] = [
+  'prd',
+  'arch',
+  'epics',
   'story_create',
   'story_audit',
   'specify',
@@ -34,6 +38,8 @@ export interface RuntimeContextFile {
   version: number;
   flow: RuntimeFlowId;
   stage: StageName;
+  workflow?: string;
+  step?: string;
   sourceMode?: 'full_bmad' | 'seeded_solutioning' | 'standalone_story';
   templateId?: string;
   epicId?: string;
@@ -41,6 +47,7 @@ export interface RuntimeContextFile {
   storySlug?: string;
   runId?: string;
   artifactRoot?: string;
+  artifactPath?: string;
   contextScope?: 'project' | 'story';
   /** Session-scoped language resolution (Story 15.2 i18n); optional. */
   languagePolicy?: { resolvedMode: 'zh' | 'en' | 'bilingual' };
@@ -177,6 +184,11 @@ export function readRuntimeContext(root: string, explicitPath?: string): Runtime
       throw new Error(`runtime-context.${key} must be string when set: ${file}`);
     }
   }
+  for (const key of ['workflow', 'step', 'artifactPath'] as const) {
+    if (o[key] !== undefined && typeof o[key] !== 'string') {
+      throw new Error(`runtime-context.${key} must be string when set: ${file}`);
+    }
+  }
   if (o.contextScope !== undefined && o.contextScope !== 'project' && o.contextScope !== 'story') {
     throw new Error(`runtime-context.contextScope invalid: ${file}`);
   }
@@ -218,6 +230,9 @@ export function readRuntimeContext(root: string, explicitPath?: string): Runtime
   if (typeof o.runId === 'string' && o.runId !== '') out.runId = o.runId;
   if (typeof o.artifactRoot === 'string' && o.artifactRoot !== '')
     out.artifactRoot = o.artifactRoot;
+  if (typeof o.artifactPath === 'string' && o.artifactPath !== '') out.artifactPath = o.artifactPath;
+  if (typeof o.workflow === 'string' && o.workflow !== '') out.workflow = o.workflow;
+  if (typeof o.step === 'string' && o.step !== '') out.step = o.step;
   if (o.contextScope === 'project' || o.contextScope === 'story') out.contextScope = o.contextScope;
   if (o.languagePolicy && typeof o.languagePolicy === 'object') {
     const lp = o.languagePolicy as Record<string, unknown>;
@@ -261,7 +276,10 @@ export function mergeLanguagePolicyIntoProjectContext(
 }
 
 export function writeRuntimeContext(root: string, payload: RuntimeContextFile): void {
-  const file = runtimeContextPath(root);
+  writeRuntimeContextFile(runtimeContextPath(root), payload);
+}
+
+function writeRuntimeContextFile(file: string, payload: RuntimeContextFile): void {
   const dir = path.dirname(file);
   fs.mkdirSync(dir, { recursive: true });
   const body = JSON.stringify(payload, null, 2) + '\n';
@@ -279,6 +297,14 @@ export function writeRuntimeContext(root: string, payload: RuntimeContextFile): 
     fs.fsyncSync(fd);
   } finally {
     fs.closeSync(fd);
+  }
+}
+
+function readRegistryOrDefault(root: string) {
+  try {
+    return readRuntimeContextRegistry(root);
+  } catch {
+    return defaultRuntimeContextRegistry(root);
   }
 }
 
@@ -353,10 +379,12 @@ export function ensureStoryRuntimeContext(
   });
   writeRuntimeContext(root, payload);
 
-  const registry = defaultRuntimeContextRegistry(root);
+  const registry = readRegistryOrDefault(root);
   const epicId = options.epicId || payload.epicId || 'epic-unknown';
+  const scopedPath = storyContextPath(root, epicId, options.storyId);
+  writeRuntimeContextFile(scopedPath, payload);
   registry.storyContexts[options.storyId] = {
-    path: storyContextPath(root, epicId, options.storyId),
+    path: scopedPath,
     epicId,
     sourceMode: detectedSourceMode,
   };
@@ -390,10 +418,12 @@ export function ensureRunRuntimeContext(
   });
   writeRuntimeContext(root, payload);
 
-  const registry = defaultRuntimeContextRegistry(root);
+  const registry = readRegistryOrDefault(root);
   const epicId = options.epicId || payload.epicId || 'epic-unknown';
+  const scopedPath = runContextPath(root, epicId, options.storyId, options.runId);
+  writeRuntimeContextFile(scopedPath, payload);
   registry.runContexts[options.runId] = {
-    path: runContextPath(root, epicId, options.storyId, options.runId),
+    path: scopedPath,
     epicId,
     storyId: options.storyId,
     runId: options.runId,

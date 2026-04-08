@@ -4,13 +4,14 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 function resolveProjectRoot() {
-  return path.resolve(process.cwd(), process.env.BMAD_PROJECT_ROOT || '.');
+  const configured = process.env.BMAD_PROJECT_ROOT || '.';
+  return path.resolve(process.cwd(), configured);
 }
 
 function resolveServerConfigPath(projectRoot) {
   return path.resolve(
     projectRoot,
-    process.env.BMAD_MCP_SERVER_CONFIG || '.codex/mcp/bmad-runtime/server/config/server.config.json'
+    process.env.BMAD_MCP_SERVER_CONFIG || '.runtime-mcp/server/config/server.config.json'
   );
 }
 
@@ -37,6 +38,15 @@ function smokePayload() {
 }
 
 function main() {
+  if (process.env.BMAD_PROJECT_ROOT) {
+    try {
+      process.chdir(resolveProjectRoot());
+    } catch (error) {
+      process.stderr.write(`[bmad-runtime] failed to chdir to project root: ${error.message}\n`);
+      process.exit(1);
+    }
+  }
+
   if (process.argv.includes('--smoke')) {
     process.stdout.write(JSON.stringify(smokePayload()) + '\n');
     process.exit(0);

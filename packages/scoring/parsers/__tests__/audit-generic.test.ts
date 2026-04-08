@@ -130,7 +130,7 @@ Pass Criteria:
 ok
 `;
       const items = extractCheckItems(content, 'spec');
-      expect(items.some((i) => !i.passed && i.note.includes('edge'))).toBe(true);
+      expect(items.some((i) => !i.passed && i.note?.includes('edge'))).toBe(true);
     });
 
     it('treats Issue List (none) as empty pass', () => {
@@ -144,7 +144,7 @@ Pass Criteria:
 ok
 `;
       const items = extractCheckItems(content, 'spec');
-      expect(items.some((i) => i.passed && i.note.includes('问题清单为空'))).toBe(true);
+      expect(items.some((i) => i.passed && i.note?.includes('问题清单为空'))).toBe(true);
     });
 
     it('parses problem line with Recommendation suffix (English)', () => {
@@ -158,7 +158,7 @@ Pass Criteria:
 no
 `;
       const items = extractCheckItems(content, 'spec');
-      expect(items.some((i) => !i.passed && i.note.includes('Missing edge'))).toBe(true);
+      expect(items.some((i) => !i.passed && i.note?.includes('Missing edge'))).toBe(true);
     });
 
     it('parseGenericReport succeeds on English headings', async () => {

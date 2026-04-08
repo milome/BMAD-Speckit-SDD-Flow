@@ -53,3 +53,20 @@ development_status:
   2-2-chat-interface: backlog
   2-3-llm-integration: backlog
   epic-2-retrospective: optional
+
+deferred_gap_plan:
+  source_report: "_bmad-output/planning-artifacts/implementation-readiness-report-2026-04-08.md"
+  items:
+    J04-Smoke-E2E:
+      status: deferred
+      resolution_target: Sprint 2+
+      owner: Dev Team
+      planned_work_items: []
+      explicit_reason: Carry forward to Sprint 2 due to MVP priority ordering.
+    Epic3-4-UX:
+      status: deferred
+      resolution_target: Epic 3 开始前
+      owner: UX Designer
+      planned_work_items:
+        - 3-1-ux-spec-foundation
+      explicit_reason: ""

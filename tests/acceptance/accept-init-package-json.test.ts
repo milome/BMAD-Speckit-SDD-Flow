@@ -48,8 +48,25 @@ describe('init-to-root package.json creation', () => {
       expect(existsSync(join(target, '.claude', 'hooks', 'write-runtime-context.cjs'))).toBe(true);
       expect(existsSync(join(target, '.claude', 'i18n'))).toBe(true);
       expect(existsSync(join(target, 'scripts', 'emit-runtime-policy.cjs'))).toBe(false);
+      expect(existsSync(join(target, '.mcp.json'))).toBe(false);
+      expect(existsSync(join(target, '.runtime-mcp'))).toBe(false);
     } finally {
       rmSync(target, { recursive: true, force: true });
     }
-  }, 30_000);
+  }, 60_000);
+
+  it('deploys runtime MCP layout only when --with-mcp is explicitly enabled', () => {
+    const target = mkdtempSync(join(tmpdir(), 'accept-init-with-mcp-'));
+    try {
+      execSync(`node scripts/init-to-root.js "${target}" --agent claude-code --with-mcp`, {
+        cwd: PKG_ROOT,
+        stdio: 'pipe',
+      });
+
+      expect(existsSync(join(target, '.mcp.json'))).toBe(true);
+      expect(existsSync(join(target, '.runtime-mcp', 'server', 'dist', 'index.cjs'))).toBe(true);
+    } finally {
+      rmSync(target, { recursive: true, force: true });
+    }
+  }, 120_000);
 });

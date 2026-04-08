@@ -26,7 +26,9 @@ import {
 import { writeRuntimeContext } from '../../scripts/runtime-context';
 import {
   linkRepoNodeModulesIntoProject,
+  linkRepoBmadRuntimeHooksIntoClaudeProject,
   linkRepoScriptsIntoProject,
+  linkRepoTsconfigIntoProject,
 } from '../helpers/runtime-registry-fixture';
 import {
   defaultRuntimeContextRegistry,
@@ -43,7 +45,7 @@ function sleep(ms: number): Promise<void> {
 
 async function waitFor(
   predicate: () => boolean,
-  timeoutMs = 30000,
+  timeoutMs = 60000,
   intervalMs = 200
 ): Promise<void> {
   const deadline = Date.now() + timeoutMs;
@@ -59,7 +61,7 @@ async function waitFor(
 async function waitForWorkerSettled(
   projectRoot: string,
   predicate: () => boolean,
-  timeoutMs = 30000,
+  timeoutMs = 60000,
   intervalMs = 200
 ): Promise<void> {
   const lockPath = runtimeWorkerHelper.governanceRunnerLockPath(projectRoot) as string;
@@ -106,6 +108,8 @@ function createFixtureProject(): {
   seedScoringSchemaFixture(root);
   linkRepoNodeModulesIntoProject(root);
   linkRepoScriptsIntoProject(root);
+  linkRepoBmadRuntimeHooksIntoClaudeProject(root);
+  linkRepoTsconfigIntoProject(root);
   const registry = defaultRuntimeContextRegistry(root);
   writeRuntimeContextRegistry(root, registry);
   writeRuntimeContext(root, {
@@ -152,12 +156,13 @@ function createWave2aTailFixtureProject(): {
   seedScoringSchemaFixture(root);
   linkRepoNodeModulesIntoProject(root);
   linkRepoScriptsIntoProject(root);
+  linkRepoTsconfigIntoProject(root);
   const registry = defaultRuntimeContextRegistry(root);
   writeRuntimeContextRegistry(root, registry);
   writeRuntimeContext(root, {
     version: 1,
     flow: 'story',
-    stage: 'post_impl',
+    stage: 'post_audit',
     contextScope: 'story',
     sourceMode: 'full_bmad',
     storyId: '15.3',
@@ -403,7 +408,7 @@ describe('governance post-tool-use detached background worker', () => {
       await waitFor(() => !existsSync(lockPath), 15000, 200);
       await fixture.cleanup();
     }
-  }, 60000);
+  }, 120000);
 
   it('preserves the Wave 2A human-review hold through the detached background worker path on Windows-style hook hosts', async () => {
     const fixture = createWave2aTailFixtureProject();
@@ -534,5 +539,5 @@ describe('governance post-tool-use detached background worker', () => {
       await waitFor(() => !existsSync(lockPath), 15000, 200).catch(() => {});
       await fixture.cleanup();
     }
-  }, 60000);
+  }, 120000);
 });

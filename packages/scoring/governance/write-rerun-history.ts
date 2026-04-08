@@ -42,6 +42,40 @@ export interface WriteGovernanceRerunHistoryInput {
   runnerSummaryLines?: string[];
 }
 
+const VALID_RUN_SCORE_STAGES = new Set([
+  'prd',
+  'arch',
+  'epics',
+  'story',
+  'spec',
+  'specify',
+  'plan',
+  'gaps',
+  'tasks',
+  'implement',
+  'post_impl',
+  'pr_review',
+]);
+
+function normalizeGovernanceHistoryStage(
+  rawStage: string | undefined,
+  runtimeContext?: GovernanceRuntimeContextLike | null
+): string {
+  const normalized = (rawStage ?? '').trim();
+  if (normalized === 'post_audit') return 'post_impl';
+  if (normalized === 'story_create' || normalized === 'story_audit') return 'story';
+  if (normalized === 'epic_create' || normalized === 'epic_complete') return 'epics';
+  if (VALID_RUN_SCORE_STAGES.has(normalized)) return normalized;
+
+  if (runtimeContext?.epicId && !runtimeContext?.storyId) {
+    return 'epics';
+  }
+  if (runtimeContext?.storyId) {
+    return 'story';
+  }
+  return 'post_impl';
+}
+
 function normalizeSummaryLines(lines?: string[]): string[] | undefined {
   const normalized = [...new Set((lines ?? []).map((line) => line.trim()).filter(Boolean))];
   return normalized.length > 0 ? normalized : undefined;
@@ -185,7 +219,10 @@ export function writeGovernanceRerunHistory(
 ): RunScoreRecord {
   const dataPath = resolveScoringDataPath(input.projectRoot);
   const epicStory = parseEpicStoryFromRuntimeContext(input.runtimeContext);
-  const stage = input.runtimeContext?.stage ?? 'post_impl';
+  const stage = normalizeGovernanceHistoryStage(
+    input.runtimeContext?.stage,
+    input.runtimeContext
+  );
   const runGroupId = input.runtimeContext?.runId;
   const target = findTargetRecord({
     dataPath,

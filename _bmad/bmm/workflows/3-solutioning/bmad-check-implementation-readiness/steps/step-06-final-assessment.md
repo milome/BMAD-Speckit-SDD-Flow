@@ -63,6 +63,31 @@ Check the {outputFile} for sections added by previous steps:
 
 ### 3. Add Final Assessment Section
 
+Before appending the final section, you must also append a structured `Deferred Gaps Tracking` section to `{outputFile}`.
+
+Rules for `Deferred Gaps Tracking`:
+
+- Every deferred gap from `## Deferred Gaps` must appear exactly once in the table.
+- Every row must include `Gap ID`, `描述`, `原因`, `解决时机`, `Owner`, `状态检查点`.
+- If a gap from the previous readiness report no longer appears, you must add explicit resolution evidence in the report body before removing it.
+- `Owner` and `解决时机` are mandatory; missing values mean the report is incomplete.
+
+Append this table shape:
+
+```markdown
+## Deferred Gaps Tracking
+
+| Gap ID | 描述 | 原因 | 解决时机 | Owner | 状态检查点 |
+|--------|------|------|----------|-------|-----------|
+| J04-Smoke-E2E | P0 Journey J04 缺少 Smoke E2E | P2 优先级 | Sprint 2+ | Dev Team | Sprint Planning |
+| Epic3-4-UX | 缺少正式 UX 规范 | MVP 可基于 PRD | Epic 3 开始前 | UX Designer | Epic 3 Planning |
+
+**防漂移检查**：
+- [ ] 上次 deferred gaps 仍存在，或本次报告已提供明确解决证据
+- [ ] 每个 deferred gap 都有 Owner
+- [ ] 每个 deferred gap 都有 resolution_target
+```
+
 Append to {outputFile}:
 
 ```markdown
@@ -138,6 +163,7 @@ Hard rules:
 
 - `PromptRoutingHints` are consumed only after `stage context -> gate failure -> artifact state`
 - the generated remediation artifact must say `Blocker ownership affected: no`
+- the generated remediation artifact must include a `## Structured Deferred Gaps` section with a YAML block beginning with `deferred_gaps:`
 - prompt hints may influence entry or adapter choice only; they may not change blocker ownership in this readiness gate
 - `cursor packet generated` and `claude packet generated` are mandatory unless config explicitly disables them
 - packet generation must reuse governance-owned routing fields; packet selection does not change blocker ownership or root target

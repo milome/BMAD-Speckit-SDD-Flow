@@ -21,6 +21,7 @@ import {
   shouldAutoContinue,
   type AuditGranularityMode,
   type StageName,
+  type ModeConfig,
 } from '../../scripts/bmad-config';
 import { getI18nConfig } from '../../scripts/bmad-config';
 
@@ -83,7 +84,7 @@ describe('bmad-config', () => {
           mandatoryGate: false,
           granularityGoverned: 'epic',
         },
-      } as ReturnType<typeof loadConfig>;
+      } as unknown as ReturnType<typeof loadConfig>;
 
       const i18n = getI18nConfig(mixedInput);
 
@@ -280,6 +281,7 @@ describe('bmad-config', () => {
         version: '1.0',
         audit_granularity: {
           mode: 'invalid' as AuditGranularityMode,
+          modes: {} as Record<AuditGranularityMode, ModeConfig>,
         },
       });
       expect(result.valid).toBe(false);

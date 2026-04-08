@@ -1,0 +1,14 @@
+{
+  "name": "@bmad-speckit/schema",
+  "version": "0.1.0",
+  "description": "Shared BMAD schema assets for packaged runtime consumers",
+  "license": "MIT",
+  "files": [
+    "*.json"
+  ],
+  "exports": {
+    "./run-score-schema.json": "./run-score-schema.json",
+    "./canonical-sft-sample.schema.json": "./canonical-sft-sample.schema.json",
+    "./dataset-bundle-manifest.schema.json": "./dataset-bundle-manifest.schema.json"
+  }
+}

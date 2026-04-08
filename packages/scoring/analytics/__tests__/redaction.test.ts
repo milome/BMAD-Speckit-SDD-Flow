@@ -234,8 +234,9 @@ describe('canonical redaction', () => {
       { type: 'text', text: 'Then inspect the runtime tool output.' },
     ]);
     expect(redacted.tools?.[0]?.function.description).toContain('[REDACTED_EMAIL]');
-    expect(
-      String(redacted.tools?.[0]?.function.parameters.properties.note.description)
-    ).toContain('[REDACTED_SECRET]');
+    const noteParam = (
+      (redacted.tools?.[0]?.function.parameters as Record<string, unknown> | undefined)?.properties as Record<string, unknown> | undefined
+    )?.note as { description?: string } | undefined;
+    expect(noteParam?.description).toContain('[REDACTED_SECRET]');
   });
 });

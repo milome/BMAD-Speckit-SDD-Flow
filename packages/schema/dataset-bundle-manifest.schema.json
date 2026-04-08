@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.dev/schema/dataset-bundle-manifest.schema.json",
+  "title": "Dataset Bundle Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "bundle_id",
+    "bundle_version",
+    "bundle_kind",
+    "export_target",
+    "created_at",
+    "canonical_schema_version",
+    "exporter_version",
+    "generator_version",
+    "source_snapshot",
+    "export_hash",
+    "filter_settings",
+    "split",
+    "counts",
+    "provider_summary",
+    "redaction_summary",
+    "validation_summary",
+    "artifacts"
+  ],
+  "properties": {
+    "bundle_id": { "type": "string", "minLength": 1 },
+    "bundle_version": { "type": "string", "minLength": 1 },
+    "bundle_kind": {
+      "type": "string",
+      "enum": ["training", "evaluation", "debug"]
+    },
+    "export_target": {
+      "type": "string",
+      "enum": ["openai_chat", "hf_conversational", "hf_tool_calling"]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "canonical_schema_version": { "const": "v1" },
+    "exporter_version": { "type": "string", "minLength": 1 },
+    "generator_version": { "type": "string", "minLength": 1 },
+    "source_snapshot": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "export_hash": { "type": "string", "minLength": 1 },
+    "filter_settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "min_score": { "type": "number" },
+        "drop_no_code_pair": { "type": "boolean" },
+        "max_tokens": { "type": "number" }
+      }
+    },
+    "split": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["seed", "strategy"],
+      "properties": {
+        "seed": { "type": "integer" },
+        "strategy": { "type": "string", "minLength": 1 }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total_candidates", "accepted", "rejected", "downgraded", "blocked", "train", "validation", "test"],
+      "properties": {
+        "total_candidates": { "type": "integer", "minimum": 0 },
+        "accepted": { "type": "integer", "minimum": 0 },
+        "rejected": { "type": "integer", "minimum": 0 },
+        "downgraded": { "type": "integer", "minimum": 0 },
+        "blocked": { "type": "integer", "minimum": 0 },
+        "train": { "type": "integer", "minimum": 0 },
+        "validation": { "type": "integer", "minimum": 0 },
+        "test": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "provider_summary": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "redaction_summary": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "validation_summary": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "train_path",
+        "validation_path",
+        "test_path",
+        "manifest_path",
+        "validation_report_path",
+        "rejection_report_path"
+      ],
+      "properties": {
+        "train_path": { "type": "string", "minLength": 1 },
+        "validation_path": { "type": "string", "minLength": 1 },
+        "test_path": { "type": "string", "minLength": 1 },
+        "manifest_path": { "type": "string", "minLength": 1 },
+        "validation_report_path": { "type": "string", "minLength": 1 },
+        "rejection_report_path": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

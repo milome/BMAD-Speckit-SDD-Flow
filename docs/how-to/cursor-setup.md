@@ -26,6 +26,38 @@
 
 不等同于 Claude Code CLI / OMC 中的同名文档。
 
+## Hook 提示开关
+
+如果你希望 Cursor 项目里的 hooks 在执行时把更多提示信息直接打印出来，可在项目级环境配置中开启：
+
+```json
+{
+  "env": {
+    "BMAD_HOOKS_VERBOSE": "1"
+  }
+}
+```
+
+对于当前仓库，推荐与 Claude 侧一起统一开启，便于比对宿主差异。
+
+当前效果：
+
+- `BMAD_HOOKS_VERBOSE=0`
+  - 默认安静模式
+- `BMAD_HOOKS_VERBOSE=1`
+  - Cursor hooks 会额外打印：
+    - `pre-continue-check passed`
+    - `pre-continue-check failed`
+    - `pre-continue-check skipped: artifact self write`
+    - governance rerun queue 入队
+    - background worker started / skipped
+
+这个开关适合验证：
+
+1. `.cursor/hooks.json` 是否真的接到了事件
+2. `post-tool-use.cjs` 是否真的被执行
+3. governance worker 是启动了、跳过了，还是根本没进链路
+
 ## Skill 与 Command 依赖
 
 | Command | 依赖 Skill | 说明 |

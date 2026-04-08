@@ -1,0 +1,139 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RunScore",
+  "description": "Single run score record; per spec §3.6",
+  "type": "object",
+  "required": ["run_id", "scenario", "stage", "phase_score", "phase_weight", "check_items", "timestamp", "iteration_count", "iteration_records", "first_pass"],
+  "properties": {
+    "run_id": { "type": "string", "description": "Unique run identifier" },
+    "scenario": { "enum": ["real_dev", "eval_question"], "description": "real_dev | eval_question" },
+    "stage": {
+      "enum": ["prd", "arch", "epics", "story", "spec", "specify", "plan", "gaps", "tasks", "implement", "post_impl", "pr_review"],
+      "description": "BMAD stage"
+    },
+    "path_type": { "type": "string", "description": "Optional; full for both scenarios" },
+    "phase_score": { "type": "number", "description": "Score for phase 1-6" },
+    "phase_weight": { "type": "number", "minimum": 0, "maximum": 1, "description": "Phase weight e.g. 0.20" },
+    "check_items": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/CheckItem" },
+      "description": "Check item details"
+    },
+    "dimension_scores": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/DimensionScore" },
+      "description": "Optional weighted dimension scores from audit report"
+    },
+    "timestamp": { "type": "string", "format": "date-time", "description": "ISO 8601" },
+    "model_version": { "type": "string", "description": "Optional" },
+    "question_version": { "type": "string", "description": "Optional; required for eval_question" },
+    "iteration_count": { "type": "integer", "minimum": 0, "description": "0 = first pass" },
+    "iteration_records": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/IterationRecord" }
+    },
+    "first_pass": { "type": "boolean", "description": "true = 100% tier coefficient" },
+    "base_commit_hash": { "type": "string", "description": "Git HEAD commit hash at scoring time (pre-change baseline)" },
+    "content_hash": { "type": "string", "description": "SHA-256 of audit report content passed to parseAndWriteScore" },
+    "source_hash": { "type": "string", "description": "SHA-256 of audited source file for cross-stage version lock" },
+    "patch_ref": { "type": "string", "description": "Stable patch snapshot SHA-256 reference for immutable diff provenance" },
+    "patch_snapshot_path": { "type": "string", "description": "Absolute path to persisted immutable patch snapshot" },
+    "source_path": { "type": "string", "description": "Path to artifact doc that triggered this scoring (e.g. BUGFIX)" },
+    "trigger_stage": { "type": "string", "description": "Stage identifier that triggered this scoring, e.g. speckit_5_2, bmad_story_stage4 (Story 9.1 T4)" },
+    "run_group_id": { "type": "string", "description": "Optional logical run grouping key for multi-record runs and governance runtime events" },
+    "journey_contract_signals": {
+      "$ref": "#/definitions/JourneyContractSignals",
+      "description": "Wave 1B: structured journey contract gaps derived from dedicated check_items"
+    },
+    "governance_rerun_history": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/GovernanceRerunHistoryEntry" },
+      "description": "Structured governance rerun history appended by runtime worker / stop-hook flows"
+    }
+  },
+  "definitions": {
+    "CheckItem": {
+      "type": "object",
+      "required": ["item_id", "passed", "score_delta"],
+      "properties": {
+        "item_id": { "type": "string" },
+        "passed": { "type": "boolean" },
+        "score_delta": { "type": "number" },
+        "note": { "type": "string" }
+      }
+    },
+    "IterationRecord": {
+      "type": "object",
+      "required": ["timestamp", "result", "severity"],
+      "properties": {
+        "timestamp": { "type": "string", "format": "date-time" },
+        "result": { "enum": ["pass", "fail"] },
+        "severity": { "enum": ["fatal", "serious", "normal", "minor"] },
+        "note": { "type": "string" },
+        "overall_grade": { "type": "string", "description": "Story 9.4: A|B|C|D" },
+        "dimension_scores": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/DimensionScore" },
+          "description": "Story 9.4: dimension scores from iteration report"
+        }
+      }
+    },
+    "DimensionScore": {
+      "type": "object",
+      "required": ["dimension", "weight", "score"],
+      "properties": {
+        "dimension": { "type": "string" },
+        "weight": { "type": "number" },
+        "score": { "type": "number" }
+      }
+    },
+    "JourneyContractSignals": {
+      "type": "object",
+      "properties": {
+        "smoke_task_chain": { "type": "boolean" },
+        "closure_task_id": { "type": "boolean" },
+        "journey_unlock": { "type": "boolean" },
+        "gap_split_contract": { "type": "boolean" },
+        "shared_path_reference": { "type": "boolean" }
+      }
+    },
+    "GovernanceExecutorRoutingRecord": {
+      "type": "object",
+      "required": ["routing_mode", "executor_route", "prioritized_signals"],
+      "properties": {
+        "routing_mode": { "enum": ["targeted", "generic"] },
+        "executor_route": {
+          "enum": ["journey-contract-remediation", "default-gate-remediation"]
+        },
+        "prioritized_signals": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "GovernanceRerunHistoryEntry": {
+      "type": "object",
+      "required": ["event_id", "timestamp", "rerun_gate", "outcome"],
+      "properties": {
+        "event_id": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "rerun_gate": { "type": "string" },
+        "outcome": { "type": "string" },
+        "decision_mode": { "enum": ["targeted", "generic", "idle"] },
+        "attempt_id": { "type": "string" },
+        "loop_state_id": { "type": "string" },
+        "executor_routing": {
+          "$ref": "#/definitions/GovernanceExecutorRoutingRecord"
+        },
+        "summary_lines": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "runner_summary_lines": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

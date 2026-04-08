@@ -222,14 +222,14 @@ describe('runtime tool trace automatic capture', () => {
           },
         ],
       });
-      expect(trace.messages[0].tool_calls?.[0]?.function.arguments).toContain(
+      expect((trace.messages[0] as { tool_calls?: Array<{ function: { name: string; arguments: string } }> }).tool_calls?.[0]?.function.arguments).toContain(
         'runtime-v6-sync-protected-paths.test.ts'
       );
       expect(trace.messages[1]).toMatchObject({
         role: 'tool',
         tool_call_id: '00000000-1111-2222-3333-444444444444',
       });
-      expect(trace.messages[1].content).toContain('"exitCode":0');
+      expect((trace.messages[1] as { content?: string }).content).toContain('"exitCode":0');
 
       const events = readRuntimeEvents({ root: tempRoot }).filter(
         (event) =>

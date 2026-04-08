@@ -13,11 +13,18 @@
 - live dashboard 不依赖 MCP 才能工作
 - `bmad-speckit dashboard --json` 仍然可以直接产出 runtime snapshot JSON
 
+边界先明确：
+
+- `dashboard` 是默认支持能力
+- `runtime-mcp` 是显式启用能力
+- 不启用 `runtime-mcp` 不影响 dashboard、hooks、snapshot、治理链路本身
+
 ## 什么时候用哪条路径
 
-- 你要让 Cursor / Claude / Codex 把 runtime 当工具读：启动 `bmad-speckit runtime-mcp`
+- 默认消费者安装：直接使用 dashboard 与 hooks，不需要额外启用 MCP
 - 你要在本地持续观察 run、stage、score、SFT tab：启动 `bmad-speckit dashboard-live`
 - 你只要拿一次快照给脚本、CI 或人工排查：执行 `bmad-speckit dashboard --json`
+- 你要把 runtime 信息当作 agent 工具接口暴露：显式启用 `runtime-mcp`
 
 ## 稳定启动链路
 
@@ -55,6 +62,8 @@ npx bmad-speckit dashboard-live --host 127.0.0.1 --port 43123
 命令启动后会把 URL 打到 stdout。服务保持前台运行，直到收到 `SIGINT` 或 `SIGTERM`。
 
 ## 启动 runtime MCP server
+
+前提：消费项目已通过显式开关 `--with-mcp` 生成 runtime MCP 布局；默认安装不会自动具备这条链路。
 
 运行：
 
@@ -113,6 +122,23 @@ npx bmad-speckit dashboard --json --include-runtime --output-json _bmad-output/d
 - `stage_timeline` 给出阶段时间线、phase score、迭代次数、veto
 - `score_detail` 给出当前 run 的细粒度 score records
 - `sft_summary` 给出 accepted / rejected / downgraded、target availability、rejection reasons、last bundle
+
+## 查看 Deferred Gaps 状态
+
+如果你要把 readiness / sprint planning 的 Deferred Gaps 一并带到 dashboard Markdown 里，执行：
+
+```bash
+npx bmad-speckit dashboard --show-deferred-gaps
+```
+
+这会在原 dashboard 后追加：
+
+- `Deferred Gap Governance Summary`
+- `Deferred Gaps Status`
+
+完整操作说明与 alert 语义见：
+
+- [`deferred-gap-governance-operations.md`](./deferred-gap-governance-operations.md)
 
 ## 直接查 live dashboard API
 

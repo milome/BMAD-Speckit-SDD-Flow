@@ -109,4 +109,12 @@ describe('bmad-help skill route audit', () => {
     assert.match(workflow, /legacy\/compatibility alias/);
     assert.doesNotMatch(workflow, /Show the command as a skill name in backticks/);
   });
+
+  it('bmad-help workflow explicitly prioritizes recommended skill workflow output before command quick reference', () => {
+    const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '_bmad', 'skills', 'bmad-help', 'workflow.md'), 'utf8');
+
+    assert.match(workflow, /Always lead with recommended skill\/workflow/);
+    assert.match(workflow, /Do not open with command cheat sheets/);
+    assert.match(workflow, /Command quick reference last/);
+  });
 });

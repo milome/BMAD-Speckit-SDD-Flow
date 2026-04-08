@@ -40,7 +40,7 @@ To validate that all required input documents exist and extract all requirements
 
 ### 1. Welcome and Overview
 
-Welcome {user_name} to comprehensive epic and story creation!
+Welcome {{user_name}} to comprehensive epic and story creation!
 
 **CRITICAL PREREQUISITE VALIDATION:**
 

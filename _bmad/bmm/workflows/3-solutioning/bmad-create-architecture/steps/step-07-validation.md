@@ -293,6 +293,8 @@ If any blocker-level architecture contract remains unresolved:
 - emit a `GateFailure`
 - build a `RemediationPlan`
 - do not show plain Continue until the blocker is repaired and the local gate is rerun
+- present only remediation-oriented options (for example `[A]` / `[P]`) plus an explicit blocked status message
+- if the local gate is still failed, `[C] Continue` is forbidden and must not appear in the menu text or selection handling
 
 ### 7. Present Content and Menu
 
@@ -311,9 +313,14 @@ Show the validation results and present choices:
 [Show the complete markdown content from step 6]
 
 **What would you like to do?**
-[A] Advanced Elicitation - Address any complex architectural concerns
-[P] Party Mode - Review validation from different implementation perspectives
-[C] Continue - Complete the architecture and finish workflow
+- If Architecture Contract Gate = PASS:
+  [A] Advanced Elicitation - Address any complex architectural concerns
+  [P] Party Mode - Review validation from different implementation perspectives
+  [C] Continue - Complete the architecture and finish workflow
+- If Architecture Contract Gate = FAIL:
+  [A] Advanced Elicitation - Resolve undefined contracts and blockers
+  [P] Party Mode - Challenge blockers and refine the remediation path
+  Gate Status: ❌ FAILED - Continue is blocked until the local gate passes
 
 ### 8. Handle Menu Selection
 
@@ -335,6 +342,9 @@ Show the validation results and present choices:
 
 #### If 'C' (Continue):
 
+- Only valid when the Architecture Contract Gate has passed in the current local state
+- If the gate is failed, emit `GateFailure`, restate the `RemediationPlan`, and return to the blocked menu without performing any save
+
 - Append the final content to `{planning_artifacts}/architecture.md`
 - Update frontmatter: `stepsCompleted: [1, 2, 3, 4, 5, 6, 7]`
 - Load `./step-08-complete.md`
@@ -351,6 +361,7 @@ When user selects 'C', append the content directly to the document using the str
 ✅ All gaps identified and addressed
 ✅ Comprehensive validation checklist completed
 ✅ A/P/C menu presented and handled correctly
+✅ Gate failure blocks plain Continue and forces remediation-first choices
 ✅ Content properly appended to document when C selected
 
 ## FAILURE MODES:
@@ -361,6 +372,7 @@ When user selects 'C', append the content directly to the document using the str
 ❌ Not addressing gaps found during validation
 ❌ Providing incomplete validation checklist
 ❌ Not presenting A/P/C menu after content generation
+❌ Showing `[C] Continue` while blocker-level architecture contracts remain unresolved
 
 ❌ **CRITICAL**: Reading only partial step file - leads to incomplete understanding and poor decisions
 ❌ **CRITICAL**: Proceeding with 'C' without fully reading and understanding the next step file

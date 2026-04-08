@@ -38,6 +38,12 @@ module.exports = {
       },
     },
     {
+      files: ['scripts/**/*.ts', '**/*.test.ts', '**/__tests__/**/*.ts'],
+      rules: {
+        '@typescript-eslint/no-require-imports': 'off',
+      },
+    },
+    {
       files: ['**/*.test.ts', '**/__tests__/**/*.ts', '**/*.test.js'],
       rules: {
         'jsdoc/require-description': 'off',
@@ -50,7 +56,11 @@ module.exports = {
       },
     },
     {
-      files: ['packages/bmad-speckit/**/*.js'],
+      files: [
+        'packages/bmad-speckit/**/*.js',
+        'packages/runtime-emit/src/**/*.js',
+        'scripts/**/*.js',
+      ],
       parserOptions: { ecmaVersion: 2020, sourceType: 'script' },
       env: { node: true, es2020: true },
       rules: {
@@ -86,6 +96,7 @@ module.exports = {
     'scripts/init-to-root.js', // CommonJS entry
     'packages/runtime-emit/build.js',
     'packages/runtime-emit/write-runtime-context.js',
+    'packages/scoring/dashboard/ui/app.js',
     '*.config.ts',
   ],
 };

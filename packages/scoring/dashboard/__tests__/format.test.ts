@@ -20,7 +20,7 @@ describe('formatDashboardMarkdown', () => {
       ],
       journeyContractSummary: [
         {
-          signal: 'smoke_task_chain',
+          signal: 'smoke_task_chain' as const,
           label: 'Smoke Task Chain',
           count: 2,
           affected_stages: ['tasks', 'implement'],
@@ -28,8 +28,8 @@ describe('formatDashboardMarkdown', () => {
         },
       ],
       governanceRoutingSummary: {
-        routingMode: 'targeted',
-        executorRoute: 'journey-contract-remediation',
+        routingMode: 'targeted' as const,
+        executorRoute: 'journey-contract-remediation' as const,
         prioritizedSignals: ['closure_task_id', 'smoke_task_chain'],
         summaryLines: [
           'Routing Mode: targeted',
@@ -48,10 +48,11 @@ describe('formatDashboardMarkdown', () => {
         latestTimestamp: '2026-03-28T12:05:00.000Z',
         eventCount: 2,
         affectedStages: ['implement', 'plan'],
+        epicStories: ['E6.S1', 'E6.S4'],
       },
       governanceRoutingModeDistribution: [
-        { mode: 'generic', count: 2 },
-        { mode: 'targeted', count: 3 },
+        { mode: 'generic' as const, count: 2 },
+        { mode: 'targeted' as const, count: 3 },
       ],
       governanceSignalHotspots: [
         {
@@ -235,8 +236,8 @@ describe('formatDashboardMarkdown', () => {
       highIterTop3: [],
       journeyContractSummary: [],
       governanceRoutingSummary: {
-        routingMode: 'targeted',
-        executorRoute: 'journey-contract-remediation',
+        routingMode: 'targeted' as const,
+        executorRoute: 'journey-contract-remediation' as const,
         prioritizedSignals: ['closure_task_id', 'smoke_task_chain'],
         summaryLines: [
           'Routing Mode: targeted',
@@ -255,8 +256,9 @@ describe('formatDashboardMarkdown', () => {
         latestTimestamp: '2026-03-28T12:05:00.000Z',
         eventCount: 1,
         affectedStages: ['tasks'],
+        epicStories: ['E6.S1'],
       },
-      governanceRoutingModeDistribution: [{ mode: 'targeted', count: 1 }],
+      governanceRoutingModeDistribution: [{ mode: 'targeted' as const, count: 1 }],
       governanceSignalHotspots: [
         {
           signal: 'closure_task_id',

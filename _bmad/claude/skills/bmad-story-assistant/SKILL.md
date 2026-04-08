@@ -815,6 +815,8 @@ prompt: |
   **Cursor Canonical Base - Dev Story 要求**：
   1. 前置检查：Story 审计必须已 PASS
   2. 读取 tasks.md、plan.md、IMPLEMENTATION_GAPS.md
+  2.1 读取并验证 `deferred-gap-register.yaml`
+  2.2 读取并验证 `journey-ledger`、`trace-map`、`closure-notes`
   3. 验证 ralph-method 文件存在（prd.json + progress.txt）
   4. 逐任务执行 TDD 红绿灯循环：
      - [TDD-RED] 编写失败的测试
@@ -822,6 +824,8 @@ prompt: |
      - [TDD-REFACTOR] 重构代码
   5. 实时更新 ralph-method 追踪文件
   6. 执行 batch 间审计和最终审计
+  6.1 若存在 active deferred gap 但无 task binding、Smoke Task Chain、Closure Task ID 或 production path 映射，不得继续实施
+  6.2 若 Journey runnable 状态发生变化，必须同步更新 `deferred-gap-register`、`journey-ledger`、`trace-map`、`closure-notes`
   7. 完成后必须发起 STORY-A4-POSTAUDIT
 
   **强制约束**：
@@ -920,6 +924,7 @@ prompt: |
 - 每个 User Story 完成后更新 prd.json passes 状态
 - 必须记录 TDD 循环到 progress.txt
 - 实施后必须触发 Stage 4 Post Audit
+- 不得只勾选 tasks 复选框而不更新 `deferred-gap-register`、`journey-ledger`、`trace-map`、`closure-notes`
 
 #### Repo Add-ons
 
@@ -1061,6 +1066,9 @@ Claude 端 Stage 4 Post Audit 执行体，负责对 Dev Story 实施结果进行
 - 必须验证 TDD 红绿灯执行证据
 - 必须检查 ralph-method 追踪文件
 - 审计通过后必须触发 `parse-and-write-score`
+- 必须额外检查 `deferred-gap-register` 的 closure / carry-forward evidence
+- 必须额外检查 `Production Path`、`Smoke Proof`、`Full E2E` / defer reason、`Closure Note`、`Acceptance Evidence`
+- 若出现 `module complete but journey not runnable`，必须判失败并回退到 Stage 3 修复
 
 #### Subtask Template (STORY-A4-POSTAUDIT)
 

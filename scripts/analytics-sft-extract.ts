@@ -31,8 +31,8 @@ async function main(): Promise<void> {
   const dataPath = args.dataPath ?? args.data ?? path.join(process.cwd(), 'packages', 'scoring', 'data');
   const output = args.output ?? path.join(dataPath, 'sft-dataset.jsonl');
 
-  const entries = await extractSftDataset(dataPath, output);
-  console.log(`extractSftDataset: wrote ${entries.length} entries to ${output}`);
+  const result = await extractSftDataset(dataPath, output);
+  console.log(`extractSftDataset: wrote ${result.entries.length} entries to ${output}`);
 }
 
 main().catch((err) => {

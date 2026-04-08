@@ -939,6 +939,15 @@ prompt: |
      - 若不存在：子代理**必须**在开始执行 tasks 前，根据 tasks-E{epic_num}-S{story_num}.md 生成 prd 与 progress（符合 ralph-method schema），否则不得开始编码。
      - **progress 预填 TDD 槽位**：生成 progress 时，对每个 US 预填 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 或 [DONE] 占位行（`_pending_`），涉及生产代码的 US 含三者，仅文档/配置的含 [DONE]。
 
+  6. 验证 `deferred-gap-register.yaml` 已存在且可读
+     - 检查路径: specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/deferred-gap-register.yaml 或对应 story artifact root
+     - 若存在 active deferred gap，必须能读取到 task_binding / implementation 状态
+
+  7. 验证 Journey-first 工件已存在或有明确 fallback
+     - 优先检查独立工件: `journey-ledger`、`trace-map`、`closure-notes/`
+     - 若独立工件不存在，tasks 文档中必须至少有 `P0 Journey Ledger`、`Journey -> Task -> Test -> Closure`、`Closure Notes`
+     - 若存在 active deferred gap 但无 Smoke Task Chain、Closure Task ID 或 production path 映射，则拒绝执行
+
   如有任何一项不满足，立即返回错误：
   "前置检查失败: [具体原因]。请先完成 speckit-workflow 的完整流程（specify→plan→GAPS→tasks）。"
 
@@ -1462,6 +1471,12 @@ if time_since_last_activity() > timedelta(hours=24):
 子任务返回之后执行：
 `npx bmad-speckit ensure-run-runtime-context --story-key {story_key} --lifecycle post_audit --persist`
 `{story_key}` 为当前 Story 的 kebab-case key。
+
+post-audit 前还必须追加以下检查：
+
+1. `deferred-gap-register.yaml` 已同步 closure / carry-forward evidence
+2. `journey-ledger`、`trace-map`、`closure-notes` 与 tasks 当前状态一致
+3. 若存在 `module complete but journey not runnable`、缺 `Production Path`、缺 `Smoke Proof`、缺 `Closure Note`、缺 `Acceptance Evidence`，则不得进入通过结论
 
 ### 4.1 审计子代理与提示词
 

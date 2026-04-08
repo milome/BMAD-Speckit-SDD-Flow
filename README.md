@@ -23,6 +23,7 @@ Traditional AI tools do the thinking for you. BMAD-Speckit-SDD-Flow combines **B
 </p>
 
 What this adds in practice:
+
 - **Five-layer architecture** — Product Brief → PRD → Architecture → Epic/Story → speckit specify/plan/GAPS/tasks → TDD implement → PR + human review
 - **Mandatory audit loops** — Each stage requires code-review pass before proceeding
 - **Critical Auditor** — Dedicated challenger role, >60% share in party-mode
@@ -46,6 +47,33 @@ npx bmad-speckit init my-project --ai cursor-agent --yes
 npx bmad-speckit check
 ```
 
+**Important boundary**:
+
+- The commands above are the **upstream quick bootstrap path**
+- They are **not** the highest-confidence installation path for BMAD-Speckit-SDD-Flow custom consumer features on another machine
+- If your priority scenario is **installing into a consumer project on another machine without this repository checked out**, use the verified off-repo path in [Consumer Installation Guide](docs/how-to/consumer-installation.md)
+- In this repository, the verified off-repo path is: install the **root package release artifact** (`bmad-speckit-sdd-flow-<version>.tgz` or the equivalent published package), then run `npx bmad-speckit version` / `check` / `bmad-speckit-init`
+
+### Install From A CI Artifact
+
+If you need to install this into a consumer project on another machine without cloning this repository, use the tarball produced by the CI `package` job:
+
+1. Download the GitHub Actions artifact named `npm-packages-<commit-sha>`
+2. Extract the artifact and locate `bmad-speckit-sdd-flow-<version>.tgz`
+3. Install that root package tarball in the consumer project
+4. Run the verification commands before initializing host hooks
+
+```powershell
+cd D:\Dev\your-project
+npm install --save-dev .\bmad-speckit-sdd-flow-<version>.tgz
+npx bmad-speckit version
+npx bmad-speckit check
+npx bmad-speckit-init --agent claude-code
+npx bmad-speckit-init --agent cursor
+```
+
+Use the root package tarball as the default install artifact. The same CI artifact also contains `bmad-speckit-<version>.tgz`, but that CLI-only package is not the primary consumer installation path documented here.
+
 > **Not sure what to do?** Run `/bmad-help` in your AI IDE. See [Installation & Migration Guide](docs/how-to/migration.md) for details.
 
 **One-line deploy**:
@@ -63,14 +91,18 @@ bash scripts/setup.sh -Target <project-path>
 
 See [WSL / Shell scripts](docs/how-to/wsl-shell-scripts.md) for full shell script reference.
 
+面向消费项目的完整安装入口见 [Consumer Installation Guide](docs/how-to/consumer-installation.md)。如果你需要继续配置 provider 的 `baseUrl` / `apiKeyEnv` / `model`，也从这篇开始。
+
+如果你后续确实需要把运行时信息通过工具接口暴露给 agent，再看 [Runtime MCP Installation](docs/how-to/runtime-mcp-installation.md)。该能力不是默认安装产物，需要显式启用。
+
 ---
 
 ## Built On
 
-| Upstream | Purpose |
-|----------|---------|
-| [BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD) | Agile workflows, Party Mode, 34+ workflows |
-| [github/spec-kit](https://github.com/github/spec-kit) | Spec-Driven Development (constitution, specify, plan, tasks) |
+| Upstream                                                    | Purpose                                                      |
+| ----------------------------------------------------------- | ------------------------------------------------------------ |
+| [BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD) | Agile workflows, Party Mode, 34+ workflows                   |
+| [github/spec-kit](https://github.com/github/spec-kit)       | Spec-Driven Development (constitution, specify, plan, tasks) |
 
 **Our extensions**: scoring, critical auditor, speckit-workflow audit loops, bmad-story-assistant, bmad-bug-assistant.
 
@@ -104,24 +136,27 @@ BMAD-Speckit-SDD-Flow/
 
 ## Modules & Components
 
-| Component | Purpose |
-|-----------|---------|
-| **_bmad/** | BMAD core (core, bmm, bmb, cis, tea, scoring) |
-| **packages/scoring/** | Scoring extensions: audit report parsing, score persistence, Coach diagnosis, Dashboard, SFT extraction |
-| **scripts/** | Deployment/utility scripts: init-to-root, setup. Scoring 已整合进 bmad-speckit CLI，目标项目使用 `npx bmad-speckit score/coach/dashboard/sft-extract/scores` |
-| **speckit-workflow** | specify → plan → GAPS → tasks → TDD with mandatory audits |
-| **bmad-story-assistant** | Create Story → Party-Mode → Dev Story → implement |
-| **bmad-bug-assistant** | Bug description → Party-Mode → BUGFIX doc |
-| **bmad-standalone-tasks** | Execute TASKS/BUGFIX docs via subagents |
+| Component                 | Purpose                                                                                                                                                      |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **\_bmad/**               | BMAD core (core, bmm, bmb, cis, tea, scoring)                                                                                                                |
+| **packages/scoring/**     | Scoring extensions: audit report parsing, score persistence, Coach diagnosis, Dashboard, SFT extraction                                                      |
+| **scripts/**              | Deployment/utility scripts: init-to-root, setup. Scoring 已整合进 bmad-speckit CLI，目标项目使用 `npx bmad-speckit score/coach/dashboard/sft-extract/scores` |
+| **speckit-workflow**      | specify → plan → GAPS → tasks → TDD with mandatory audits                                                                                                    |
+| **bmad-story-assistant**  | Create Story → Party-Mode → Dev Story → implement                                                                                                            |
+| **bmad-bug-assistant**    | Bug description → Party-Mode → BUGFIX doc                                                                                                                    |
+| **bmad-standalone-tasks** | Execute TASKS/BUGFIX docs via subagents                                                                                                                      |
 
 ---
 
 ## Documentation
 
 - [Getting Started](docs/tutorials/getting-started.md)
+- [Consumer Installation Guide](docs/how-to/consumer-installation.md)
 - [Installation & Migration Guide](docs/how-to/migration.md)
 - [Cursor Setup](docs/how-to/cursor-setup.md)
 - [Claude Code Setup](docs/how-to/claude-code-setup.md)
+- [Provider Configuration](docs/how-to/provider-configuration.md)
+- [Runtime MCP Installation](docs/how-to/runtime-mcp-installation.md)
 - [WSL / Shell Scripts](docs/how-to/wsl-shell-scripts.md)
 
 ---

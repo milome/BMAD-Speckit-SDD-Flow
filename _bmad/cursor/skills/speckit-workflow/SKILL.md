@@ -165,6 +165,7 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 - 在 **spec.md** 中按原始需求文档 **逐章节、逐条** 增加 **需求映射清单表格**。表头与列名固定模板见 [references/mapping-tables.md](references/mapping-tables.md) §1。
 
 - 确保原始需求文档的 **每一章、每一条** 在 spec.md 中有明确对应且标注覆盖状态。
+- 若存在上游 deferred gaps，spec.md 还必须显式新增 `Inherited Deferred Gaps` 与 `Deferred Gap Intake Mapping`，并同步创建/更新 `deferred-gap-register.yaml`。
 
 ### 1.2 审计闭环
 
@@ -196,6 +197,7 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 - 对照 **原始需求设计文档**、**spec.md** 与生成的 **plan.md**。
 - 在 **plan.md** 中按原始需求文档与 spec.md **逐章节、逐条** 增加 **需求映射清单表格**。表头与列名固定模板见 [references/mapping-tables.md](references/mapping-tables.md) §2。
 - 确保需求文档与 spec.md 的 **每一章、每一条** 在 plan.md 中有明确对应。
+- 若存在 active deferred gaps，plan.md 还必须新增 `Deferred Gap Architecture Mapping`，并把每条 gap 映射到 `architecture_refs`、`work_item_refs`、`journey_refs`、`prod_path_refs`（如适用）。
 
 **集成与端到端测试计划（必须）**
 
@@ -247,13 +249,14 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 
 ## 3. 生成 tasks 之前（IMPLEMENTATION_GAPS.md）
 
-**必须执行的命令**：`/speckit.gaps` 或 `.speckit.gaps`。在 plan.md 已通过审计后，**模型必须执行深度分析**：对照 plan.md、原始需求文档与当前实现，逐章节逐条比较差异，生成 IMPLEMENTATION_GAPS.md。为兼容旧流程，当用户直接要求「生成 IMPLEMENTATION_GAPS」「生成 GAPS」，或在 `/speckit.tasks` 前检测到 gaps 缺失时，也可自动触发同一流程；但规范入口已变为 `/speckit.gaps`。
+**触发方式**：无独立命令。在 plan.md 已通过审计后，**模型必须自动执行深度分析**：对照 plan.md、原始需求文档与当前实现，逐章节逐条比较差异，生成 IMPLEMENTATION_GAPS.md。用户要求「生成 IMPLEMENTATION_GAPS」「生成 GAPS」时同样触发。
 
 ### 3.1 必须完成
 
 - 根据 **当前实现** 与 **原始需求设计文档**，按 **逐章节、逐条** 分析差异，生成 **IMPLEMENTATION_GAPS.md**。
 - **若用户明确给出更多参考文档**（例如单独的架构设计文档、设计说明书等），**必须**同时按 **逐章节、逐条** 对**所有给定参考文档**分析差异，确保全部作为有效输入参与 Gap 分析。
 - 文档结构需按需求文档（及所有参考文档）章节列出每条 Gap，并注明：需求/设计章节、当前实现状态、缺失/偏差说明。Gap 列表表头模板见 [references/mapping-tables.md](references/mapping-tables.md) §3。
+- 若存在 deferred gaps，IMPLEMENTATION_GAPS.md 还必须新增 `Deferred Gap Lifecycle Classification`，并显式区分 `inherited gap`、`new gap`、`definition gap`、`implementation gap`、`journey runnable gap`、`evidence gap`。
 
 ### 3.2 审计闭环
 
@@ -287,6 +290,8 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 - 每个 runnable slice 必须声明 `Journey ID`、`Invariant ID`（或 `INV-N/A` + 原因）、`Evidence Type`、`Verification Command`、`Closure Note Path`、`Definition Gap Handling`、`Implementation Gap Handling`。
 - tasks.md 中必须同时存在 `Journey -> Task -> Test -> Closure` 映射表，以及 `Definition Gap vs Implementation Gap` 对照表；映射表中必须显式写出 `Smoke Task Chain` 与 `Closure Task ID`，两类 gap 不得混写后直接宣称功能已跑通。
 - 若 tasks.md 启用 multi-agent 模式，必须显式记录 `Shared Journey Ledger Path`、`Shared Invariant Ledger Path`、`Shared Trace Map Path`，并强调所有 agent 使用同一份 `same path reference`，禁止各自产生私有摘要。
+- 若存在 inherited deferred gaps，tasks 阶段必须同时维护 `deferred-gap-register.yaml`，并新增 `Deferred Gap Task Binding`；active gap 必须二选一：绑定 task 或写 explicit defer reason。
+- 若 deferred gap 影响某条 Journey，tasks 阶段必须把该 gap 映射到 `Journey ID`、`Smoke Task Chain`、`Closure Task ID`、`Production Path`。
 
 **集成与端到端测试用例（必须）**
 
@@ -383,6 +388,7 @@ Batch N: Task ... → 执行 → code-review审计 → 通过
    - 产出路径：与 tasks 同目录，或 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/`（BMAD 流程时）；
    - **禁止**在未创建上述文件前开始编码或执行涉及生产代码的任务。
 3. **阅读前置文档**：需求文档、plan.md、IMPLEMENTATION_GAPS.md，理解技术架构与需求范围。
+3.0 **读取 deferred-gap-register**：若存在 `deferred-gap-register.yaml`，必须在执行前加载；若已声明 inherited deferred gaps 却无此文件，不得继续宣称任务完成。
 3.1 **读取 ledger 工件**：若存在 `journey-ledger.md`、`invariant-ledger.md`、`trace-map.json`，必须在执行前加载；若仓库尚未拆分独立文件，则以 tasks.md 中对应 section 作为事实来源，并同步读取 `Smoke Task Chain`、`Closure Task ID`、`Journey Unlock`、`Smoke Path Unlock`。
 3.2 **先区分 gap 类型**：执行前必须标记哪些任务是在消除 `definition gap`，哪些是在修复 `implementation gap`；执行记录中必须保持 `Definition Gap Handling` 与 `Implementation Gap Handling` 分离，禁止混写并在同一轮里直接宣布 Journey 完成。
 3.3 **多 Agent 共用工件路径**：若为 multi-agent 执行，必须先锁定 `Shared Journey Ledger Path`、`Shared Invariant Ledger Path`、`Shared Trace Map Path`，并确认所有 agent 都消费同一份 `same path reference`，禁止改写为各自私有摘要。
@@ -393,6 +399,7 @@ Batch N: Task ... → 执行 → code-review审计 → 通过
    - **重构**：在测试保护下检查并优化代码质量（SOLID、命名、解耦、性能）。**无论是否有具体重构动作，均须在 progress 中记录 `[TDD-REFACTOR]` 一行**；无具体重构时写"无需重构 ✓"，集成任务写"无新增生产代码，各模块独立性已验证，无跨模块重构 ✓"。
 6. **完成后立即更新** tasks.md 中的复选框 `[ ]` → `[x]`，TodoWrite 标记 `completed`。
 6.1 **Journey 收口**：每当一个 `P0 journey` 达到 smoke runnable 状态，必须立即完成或更新对应 `Closure Task ID` 指向的 `closure note`，并校对 `Smoke Task Chain` 已闭合；closure note 必须写明 covered journey id、implementing task ids、smoke test ids、full E2E ids 或 deferred reason、未解决 deferred gaps。
+6.2 **Deferred Gap 收口**：若任务关闭了某条 deferred gap，必须同步写入 `deferred-gap-register.yaml` 的 `closure_evidence`；若继续延期，必须同步写入 `carry_forward_evidence`、新 `resolution_target` 与 closure note 摘要。
 7. **检查点验证**：遇到检查点时验证所有前置任务已完成，执行回归测试。
 7.1. **lint（必须）**：每完成一批任务或全部任务完成前，项目须按技术栈执行 Lint（见 lint-requirement-matrix）；若使用主流语言但未配置 Lint 须修复；已配置的须执行且无错误、无警告。禁止以「与本次任务不相关」为由豁免。
 7.2. **re-readiness 触发**：若本批变更触及 `P0 journey`、完成态定义、依赖语义、权限边界、fixture / environment 假设，必须回到 readiness 重新确认后再继续推进 implement 结论。
@@ -466,6 +473,7 @@ Batch N: Task ... → 执行 → code-review审计 → 通过
 - **必须**验证每个新增或修改的模块**确实被生产代码关键路径导入、实例化并调用**（例如：grep 生产代码 import 路径、检查 UI 入口是否挂载、检查 Engine/主流程是否实际调用）。
 - 发现「模块内部实现完整且可通过单元测试，但从未在生产代码关键路径中被导入、实例化或调用」的情况时，**必须**将其作为 **未通过项** 报告并修复，而非标记为通过。
 - 每个 `P0 journey` 在审计前必须有 `closure note`；若 full E2E 延后，closure note 中必须写明 deferred reason 与 next gate。
+- 每个 `P0 journey` 在审计前还必须具备 `Production Path` 与 `Acceptance Evidence`；缺任一项，不得宣称真实功能已落地。
 
 ### 5.3 关键约束（15 条铁律摘要）
 
@@ -578,7 +586,7 @@ Layer 5: 收尾与集成
 | **0. constitution** | `/speckit.constitution` 或 `.speckit.constitution` | 无（入口阶段） | constitution.md 或 .specify/memory/constitution.md | 项目自定义或通用文档完整性 |
 | **1. specify** | `/speckit.specify` 或 `.speckit.specify` | constitution 已产出 | spec.md | audit-prompts.md §1 |
 | **2. plan** | `/speckit.plan` 或 `.speckit.plan` | spec.md 已通过审计 | plan.md | audit-prompts.md §2 |
-| **3. GAPS** | `/speckit.gaps` 或 `.speckit.gaps`；兼容：模型自动深度分析（对照 plan + 需求 + 当前实现）或 用户要求「生成 IMPLEMENTATION_GAPS」 | plan.md 已通过审计 | IMPLEMENTATION_GAPS.md | audit-prompts.md §3 |
+| **3. GAPS** | 无独立命令；模型自动深度分析（对照 plan + 需求 + 当前实现）或 用户要求「生成 IMPLEMENTATION_GAPS」 | plan.md 已通过审计 | IMPLEMENTATION_GAPS.md | audit-prompts.md §3 |
 | **4. tasks** | `/speckit.tasks` 或 `.speckit.tasks` 或 用户要求「生成 tasks」 | IMPLEMENTATION_GAPS.md 已通过审计 | tasks.md | audit-prompts.md §4 |
 | **5. 执行** | `/speckit.implement` 或 `.speckit.implement` 或 用户要求「执行 tasks」「完成 tasks 中的任务」 | tasks.md 已通过审计 | 可运行代码 + 测试 | audit-prompts.md §5 |
 
@@ -593,9 +601,9 @@ Layer 5: 收尾与集成
 | `/speckit.analyze` | **§4.2 tasks 审计闭环内** | tasks≥10 或跨多 artifact | 作为 §4.2 审计步骤的一部分；若发现问题则迭代 tasks → 再次审计 |
 
 **命令格式说明**：
-- `/speckit.xxx`：Cursor/Claude 斜杠命令（constitution、specify、plan、gaps、tasks、implement、clarify、analyze、checklist）
-- `.speckit.xxx`：点命令或项目内 `.speckit.xxx` 文件触发（含 `.speckit.gaps`）
-- **GAPS 已有独立命令**：规范入口为 `/speckit.gaps` 或 `.speckit.gaps`；模型在 plan 通过后自动深度分析生成，或用户要求「生成 IMPLEMENTATION_GAPS」时触发，属于兼容 fallback，不替代正式命令入口
+- `/speckit.xxx`：Cursor/Claude 斜杠命令（constitution、specify、plan、tasks、implement、clarify、analyze、checklist）
+- `.speckit.xxx`：点命令或项目内 `.speckit.xxx` 文件触发
+- **GAPS 无独立命令**：模型在 plan 通过后自动深度分析生成；或用户要求「生成 IMPLEMENTATION_GAPS」时触发
 
 ---
 

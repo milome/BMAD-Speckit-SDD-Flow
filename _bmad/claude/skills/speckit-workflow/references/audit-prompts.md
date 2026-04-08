@@ -4,6 +4,12 @@
 
 生成或更新各阶段文档后，必须调用 **code-review** 能力，使用下方对应提示词进行审计。**仅在审计报告结论为「完全覆盖、验证通过」时** 可结束该步骤；否则根据报告迭代修改文档并再次审计。文档类审计默认必须显式检查 `journey-first`、`smoke E2E`、`成功/失败证据`、`fixture / environment readiness`、`traceability`，禁止只做泛化的“完整性/一致性”陈述。
 
+**Deferred Gap / Journey-first 补充要求（所有相关阶段默认生效）**：
+- 若存在 inherited deferred gaps，审计必须检查 `deferred-gap-register.yaml`
+- tasks / implement 阶段必须检查 `journey-ledger`、`trace-map`、`closure-notes`
+- implement 阶段必须检查 `Production Path`、`Smoke Proof`、`Full E2E`/defer reason、`Acceptance Evidence`
+- 若出现 `module complete but journey not runnable`，必须明确判未通过
+
 **文档审计迭代规则（§1–§4 适用）**：spec/plan/GAPS/tasks 等**文档**审计须遵循 [audit-document-iteration-rules.md](audit-document-iteration-rules.md)。**审计子代理在发现 gap 时须直接修改被审文档**，禁止仅输出修改建议；主 Agent 收到报告后发起下一轮审计。**「连续 3 轮无 gap」针对被审文档**，即被审文档连续 3 轮审计均无 gap 发现才收敛。
 
 ---
@@ -39,6 +45,8 @@
 ---
 
 ## 4. tasks.md 审计提示词
+
+**补充必审项**：除下面 prompt 外，tasks 阶段还必须核对 `deferred-gap-register` 的 task binding 是否与 `Journey -> Task -> Test -> Closure`、`Smoke Task Chain`、`Closure Task ID` 一致。
 
 **可解析评分块（强制）**：无论采用标准格式或逐条对照格式，tasks 阶段的审计报告**必须**在结尾包含供 `parseAndWriteScore` 解析的「可解析评分块」，否则仪表盘无法显示评级。详见本文件 §4.1 与 scoring 解析约定。
 
@@ -84,6 +92,11 @@
 ---
 
 ## 5. 执行 tasks.md 中的任务（TDD 红绿灯模式）后审计提示词
+
+**补充必审项**：除下面 prompt 外，implement 阶段还必须核对：
+- `deferred-gap-register` 的 closure / carry-forward evidence
+- `journey-ledger` 的 `Production Path`、`Smoke Proof`、`Full E2E / defer reason`
+- `closure-notes` 是否包含 acceptance evidence 与未解决 deferred gaps 摘要
 
 **执行阶段必须遵守**：在开始执行 tasks 前创建 prd/progress；每完成一个 US 立即更新。详见 speckit-workflow §5.1、commands/speckit.implement.md 步骤 3.5 与 6。
 

@@ -67,7 +67,7 @@
         <!-- Sprint-planning gate: require explicit bypass before proceeding (TASKS_sprint-planning-gate T2) -->
         <action>Parse user input: extract epic_num, story_num, story_title from epic-story (e.g. "2-4" or "1-2-user-auth")</action>
         <action>Set {{epic_num}}, {{story_num}}, {{story_key}} from user input</action>
-        <output>⚠️ sprint-status.yaml 不存在。建议先运行 `sprint-planning` 初始化 sprint 跟踪。若确需继续，请显式输入 `继续`、`force` 或 `bypass`。</output>
+        <output>⚠️ sprint-status.yaml 不存在。建议先运行 `sprint-planning` 初始化 sprint 跟踪。若确需继续，请显式输入 `继续`、`force` 或 `bypass`。注意：该绕过仅放行 Create Story，不放行后续 Dev Story 的 deferred-gap-register、journey-ledger、trace-map、closure-notes 前置检查。</output>
         <ask>输入 继续 / force / bypass 以继续，或 [q] 退出：</ask>
         <check if="user input is exactly 继续 or force or bypass (case-insensitive, no extra text)">
           <action>GOTO step 2a</action>

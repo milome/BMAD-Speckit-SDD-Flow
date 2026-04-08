@@ -7,26 +7,13 @@
 const fs = require('fs');
 const path = require('path');
 const { loadScoringModule } = require('../scoring-runtime');
-const { getScoringDataPath } = loadScoringModule('constants/path');
-const { loadAndDedupeRecords } = loadScoringModule('query/loader');
-const { parseEpicStoryFromRecord } = loadScoringModule('query');
 const {
-  getLatestRunRecords,
-  getLatestRunRecordsV2,
-  computeHealthScore,
-  computeEpicHealthScore,
-  getDimensionScores,
-  getEpicDimensionScores,
-  getWeakTop3,
-  getWeakTop3EpicStory,
-  getHighIterationTop3,
-  countVetoTriggers,
-  getTrend,
-  aggregateByEpicOnly,
-  formatDashboardMarkdown,
-  queryRuntimeDashboard,
-  writeDashboardSnapshotFiles,
-} = loadScoringModule('dashboard');
+  loadDeferredGapGovernance,
+} = require('../utils/deferred-gap-governance-loader');
+const {
+  buildDeferredGapAudit,
+  renderDeferredGapMarkdownTable,
+} = loadDeferredGapGovernance();
 
 const EMPTY_DATA_MESSAGE = '暂无数据，请先完成至少一轮 Dev Story';
 const INSUFFICIENT_RUN_MESSAGE = '数据不足，暂无完整 run（至少 2 stage）';
@@ -41,7 +28,51 @@ function ensureDir(dir) {
   }
 }
 
+function appendDeferredGapSection(markdown, projectRoot) {
+  const audit = buildDeferredGapAudit(projectRoot);
+  const summaryLines = [
+    '## Deferred Gap Governance Summary',
+    '',
+    `- Readiness Reports: ${audit.readiness_report_count}`,
+    `- Deferred Gap Count: ${audit.deferred_gap_count}`,
+    `- Deferred Gaps Explicit: ${audit.deferred_gaps_explicit ? 'yes' : 'no'}`,
+    `- Alert Count: ${audit.alert_count}`,
+    '',
+  ];
+  return `${markdown.trimEnd()}\n\n${summaryLines.join('\n')}${renderDeferredGapMarkdownTable(audit).trimEnd()}\n`;
+}
+
+function loadDashboardDeps() {
+  return {
+    getScoringDataPath: loadScoringModule('constants/path').getScoringDataPath,
+    loadAndDedupeRecords: loadScoringModule('query/loader').loadAndDedupeRecords,
+    parseEpicStoryFromRecord: loadScoringModule('query').parseEpicStoryFromRecord,
+    ...loadScoringModule('dashboard'),
+  };
+}
+
 function dashboardCommand(opts) {
+  const {
+    getScoringDataPath,
+    loadAndDedupeRecords,
+    parseEpicStoryFromRecord,
+    getLatestRunRecords,
+    getLatestRunRecordsV2,
+    computeHealthScore,
+    computeEpicHealthScore,
+    getDimensionScores,
+    getEpicDimensionScores,
+    getWeakTop3,
+    getWeakTop3EpicStory,
+    getHighIterationTop3,
+    countVetoTriggers,
+    getTrend,
+    aggregateByEpicOnly,
+    formatDashboardMarkdown,
+    queryRuntimeDashboard,
+    writeDashboardSnapshotFiles,
+  } = loadDashboardDeps();
+
   const strategy = opts.strategy || 'epic_story_window';
   const dataPathArg = opts.dataPath;
   const dataPath = dataPathArg != null && dataPathArg !== ''
@@ -56,6 +87,7 @@ function dashboardCommand(opts) {
   const jsonPath = opts.outputJson || OUTPUT_JSON_PATH;
   const includeRuntime = Boolean(opts.includeRuntime);
   const printJson = Boolean(opts.json);
+  const showDeferredGaps = Boolean(opts.showDeferredGaps);
 
   const outDir = path.resolve(process.cwd(), path.dirname(outputPath));
   ensureDir(outDir);
@@ -83,10 +115,13 @@ function dashboardCommand(opts) {
   });
 
   function writeArtifacts(markdown) {
+    const finalMarkdown = showDeferredGaps
+      ? appendDeferredGapSection(markdown, process.cwd())
+      : markdown;
     const written = writeDashboardSnapshotFiles(snapshot, {
       markdownPath: outFile,
       jsonPath: outJsonFile,
-      markdown,
+      markdown: finalMarkdown,
       includeRuntime,
     });
     console.log(printJson ? written.json.trimEnd() : written.markdown.trimEnd());

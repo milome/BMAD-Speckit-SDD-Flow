@@ -4,6 +4,16 @@ import {
   resolvePromptHintUsageFromText,
   type PromptHintUsageRecord,
 } from './prompt-routing-governance';
+import * as deferredGapGovernance from './deferred-gap-governance.cjs';
+const {
+  readDeferredGapsFromReport,
+} = deferredGapGovernance as {
+  readDeferredGapsFromReport: (reportPath: string) => {
+    gaps: Array<Record<string, string>>;
+    explicit: boolean;
+    report_path: string;
+  };
+};
 import { type ModelGovernanceHintCandidate } from './model-governance-hints-schema';
 import type {
   ExecutionIntentCandidate,
@@ -43,6 +53,10 @@ export interface GovernanceRemediationArtifactInput {
   readyToRerunGate?: boolean;
   stopReason?: string;
   journeyContractHints?: JourneyContractRemediationHint[];
+  deferredGaps?: Array<Record<string, unknown>>;
+  deferredGapCount?: number;
+  deferredGapsExplicit?: boolean;
+  previousReportPath?: string | null;
   executorRouting?: {
     routingMode: 'targeted' | 'generic';
     executorRoute: 'journey-contract-remediation' | 'default-gate-remediation';
@@ -62,6 +76,10 @@ export interface GovernanceRemediationArtifactResult {
 
 function yesNo(value: boolean): string {
   return value ? 'yes' : 'no';
+}
+
+function normalizeText(value: unknown): string {
+  return String(value ?? '').trim();
 }
 
 function bulletList(items: string[]): string {
@@ -332,6 +350,99 @@ function buildJourneyContractHintLines(hints: JourneyContractRemediationHint[]):
   ]);
 }
 
+function resolveDeferredGapContext(input: GovernanceRemediationArtifactInput): {
+  sourceReportPath: string | null;
+  gaps: Array<Record<string, unknown>>;
+  explicit: boolean;
+  count: number;
+} {
+  if (Array.isArray(input.deferredGaps) && input.deferredGaps.length > 0) {
+    return {
+      sourceReportPath: null,
+      gaps: input.deferredGaps,
+      explicit: input.deferredGapsExplicit ?? true,
+      count: input.deferredGapCount ?? input.deferredGaps.length,
+    };
+  }
+
+  const candidateReportPath = input.outputPath.replace(
+    /implementation-readiness-remediation-/i,
+    'implementation-readiness-report-'
+  );
+
+  if (fs.existsSync(candidateReportPath)) {
+    const report = readDeferredGapsFromReport(candidateReportPath);
+    return {
+      sourceReportPath: report.report_path,
+      gaps: report.gaps,
+      explicit: report.explicit,
+      count: report.gaps.length,
+    };
+  }
+
+  return {
+    sourceReportPath: null,
+    gaps: [],
+    explicit: input.deferredGapsExplicit ?? false,
+    count: input.deferredGapCount ?? 0,
+  };
+}
+
+function buildStructuredDeferredGapLines(input: {
+  sourceReportPath: string | null;
+  previousReportPath?: string | null;
+  gaps: Array<Record<string, unknown>>;
+  explicit: boolean;
+  count: number;
+}): string[] {
+  const lines = [
+    `- Source report: ${input.sourceReportPath ?? '(none)'}`,
+    `- Previous report: ${input.previousReportPath ?? '(none)'}`,
+    `- Deferred gap count: ${input.count}`,
+    `- Deferred gaps explicit: ${yesNo(input.explicit)}`,
+    '',
+    '```yaml',
+    'deferred_gaps:',
+  ];
+
+  if (input.gaps.length === 0) {
+    lines.push('  []');
+    lines.push('```');
+    return lines;
+  }
+
+  for (const gap of input.gaps) {
+    const journeyRefs = Array.isArray(gap.journey_refs)
+      ? gap.journey_refs.map((value) => normalizeText(value)).filter(Boolean)
+      : [];
+    const prodPathRefs = Array.isArray(gap.prod_path_refs)
+      ? gap.prod_path_refs.map((value) => normalizeText(value)).filter(Boolean)
+      : [];
+    const smokeTestRefs = Array.isArray(gap.smoke_test_refs)
+      ? gap.smoke_test_refs.map((value) => normalizeText(value)).filter(Boolean)
+      : [];
+    const fullE2ERefs = Array.isArray(gap.full_e2e_refs)
+      ? gap.full_e2e_refs.map((value) => normalizeText(value)).filter(Boolean)
+      : [];
+    const closureNoteRefs = Array.isArray(gap.closure_note_refs)
+      ? gap.closure_note_refs.map((value) => normalizeText(value)).filter(Boolean)
+      : [];
+    lines.push(`  - gap_id: ${normalizeText(gap.gap_id) || '(missing)'}`);
+    lines.push(`    status: ${normalizeText(gap.status) || 'deferred'}`);
+    lines.push(`    reason: ${normalizeText(gap.reason) || '(none)'}`);
+    lines.push(`    resolution_target: ${normalizeText(gap.resolution_target) || '(none)'}`);
+    lines.push(`    owner: ${normalizeText(gap.owner) || '(missing)'}`);
+    lines.push(`    current_risk: ${normalizeText(gap.current_risk) || '(none)'}`);
+    if (journeyRefs.length > 0) lines.push(`    journey_refs: [${journeyRefs.join(', ')}]`);
+    if (prodPathRefs.length > 0) lines.push(`    prod_path_refs: [${prodPathRefs.join(', ')}]`);
+    if (smokeTestRefs.length > 0) lines.push(`    smoke_test_refs: [${smokeTestRefs.join(', ')}]`);
+    if (fullE2ERefs.length > 0) lines.push(`    full_e2e_refs: [${fullE2ERefs.join(', ')}]`);
+    if (closureNoteRefs.length > 0) lines.push(`    closure_note_refs: [${closureNoteRefs.join(', ')}]`);
+  }
+  lines.push('```');
+  return lines;
+}
+
 function defaultExecutorRouting(
   hints: JourneyContractRemediationHint[]
 ): NonNullable<GovernanceRemediationArtifactInput['executorRouting']> {
@@ -404,6 +515,7 @@ export function buildGovernanceRemediationArtifact(
   const executionPlanDecision = promptHintUsage.executionPlanDecision;
   const journeyContractHints = input.journeyContractHints ?? [];
   const executorRouting = input.executorRouting ?? defaultExecutorRouting(journeyContractHints);
+  const deferredGapContext = resolveDeferredGapContext(input);
   const remediationAuditTraceSummaryLines = buildRemediationAuditTraceSummaryLines(
     input.stopReason,
     journeyContractHints,
@@ -464,6 +576,16 @@ export function buildGovernanceRemediationArtifact(
     '## Journey Contract Remediation Hints',
     '',
     ...buildJourneyContractHintLines(journeyContractHints),
+    '',
+    '## Structured Deferred Gaps',
+    '',
+    ...buildStructuredDeferredGapLines({
+      sourceReportPath: deferredGapContext.sourceReportPath,
+      previousReportPath: input.previousReportPath,
+      gaps: deferredGapContext.gaps,
+      explicit: deferredGapContext.explicit,
+      count: deferredGapContext.count,
+    }),
     '',
     '## Evidence Delta',
     '',

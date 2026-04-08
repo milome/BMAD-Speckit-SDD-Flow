@@ -67,7 +67,41 @@ function enqueueGovernanceRerunEvent(event) {
   return file;
 }
 
+function readPendingGovernanceStageEvents(projectRoot) {
+  const dir = path.join(governanceQueueDir(projectRoot), 'pending-events');
+  if (!fs.existsSync(dir)) {
+    return [];
+  }
+
+  return fs
+    .readdirSync(dir)
+    .filter((file) => file.endsWith('.json'))
+    .sort((left, right) => left.localeCompare(right))
+    .map((file) => ({
+      filePath: path.join(dir, file),
+      fileName: file,
+    }));
+}
+
+function drainGovernanceStageEvents(projectRoot) {
+  const emitted = [];
+  for (const item of readPendingGovernanceStageEvents(projectRoot)) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(item.filePath, 'utf8'));
+      const queuePath = enqueueGovernanceRerunEvent(parsed);
+      if (queuePath) {
+        emitted.push(queuePath);
+      }
+      fs.rmSync(item.filePath, { force: true });
+    } catch {
+      // keep broken event file for inspection
+    }
+  }
+  return emitted;
+}
+
 module.exports = {
+  drainGovernanceStageEvents,
   enqueueGovernanceRerunEvent,
   ensureGovernanceQueueDirs,
   governancePendingDir,

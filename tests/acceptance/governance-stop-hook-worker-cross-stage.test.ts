@@ -13,7 +13,6 @@ import { createRequire } from 'node:module';
 import { describe, expect, it } from 'vitest';
 import {
   readGovernanceCurrentRun,
-  governanceCurrentRunPath,
   governancePendingQueueFilePath,
 } from '../../scripts/governance-runtime-queue';
 import type {
@@ -29,6 +28,11 @@ import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
 } from '../../scripts/runtime-context-registry';
+import {
+  linkRepoNodeModulesIntoProject,
+  linkRepoScriptsIntoProject,
+  linkRepoTsconfigIntoProject,
+} from '../helpers/runtime-registry-fixture';
 
 const require = createRequire(import.meta.url);
 const stopHook = require('../../_bmad/claude/hooks/stop.cjs');
@@ -98,6 +102,9 @@ function createFixtureProject(): {
   const root = mkdtempSync(path.join(os.tmpdir(), 'gov-stop-worker-cross-stage-'));
   cpSync(path.join(repoRoot, '_bmad'), path.join(root, '_bmad'), { recursive: true });
   seedScoringSchemaFixture(repoRoot, root);
+  linkRepoNodeModulesIntoProject(root);
+  linkRepoScriptsIntoProject(root);
+  linkRepoTsconfigIntoProject(root);
   const registry = defaultRuntimeContextRegistry(root);
   writeRuntimeContextRegistry(root, registry);
   writeRuntimeContext(root, {
@@ -132,12 +139,15 @@ function createWave2aTailFixtureProject(): {
   const root = mkdtempSync(path.join(os.tmpdir(), 'gov-stop-worker-wave2a-tail-'));
   cpSync(path.join(repoRoot, '_bmad'), path.join(root, '_bmad'), { recursive: true });
   seedScoringSchemaFixture(repoRoot, root);
+  linkRepoNodeModulesIntoProject(root);
+  linkRepoScriptsIntoProject(root);
+  linkRepoTsconfigIntoProject(root);
   const registry = defaultRuntimeContextRegistry(root);
   writeRuntimeContextRegistry(root, registry);
   writeRuntimeContext(root, {
     version: 1,
     flow: 'story',
-    stage: 'post_impl',
+    stage: 'post_audit',
     contextScope: 'story',
     sourceMode: 'full_bmad',
     storyId: '15.3',

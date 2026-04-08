@@ -170,7 +170,7 @@ function syncCommandsRulesConfig(projectRoot, selectedAI, options = {}) {
 
   deploySpecifyDir(projectRoot, bmadRoot);
 
-  /** Align with monorepo `init-to-root`: hooks dir gets `emit-runtime-policy.cjs` + `write-runtime-context.cjs`; default `.bmad/runtime-context.json`. */
+  /** Align with monorepo `init-to-root`: hooks dir gets `emit-runtime-policy.cjs` + `write-runtime-context.cjs`; default project context lives under `_bmad-output/runtime/context/project.json`. */
   deployRuntimeGovernanceFromPackage(projectRoot);
 
   fs.mkdirSync(path.join(projectRoot, 'specs'), { recursive: true });
@@ -195,6 +195,8 @@ function deployRuntimeGovernanceFromPackage(projectRoot) {
   const pkgRootRuntimeEmit =
     path.basename(path.dirname(emitSrc)) === 'dist' ? path.dirname(path.dirname(emitSrc)) : path.dirname(emitSrc);
   const wrcSrc = path.join(pkgRootRuntimeEmit, 'write-runtime-context.cjs');
+  const governanceWorkerSrc = path.join(pkgRootRuntimeEmit, 'dist', 'governance-runtime-worker.cjs');
+  const governanceRunnerSrc = path.join(pkgRootRuntimeEmit, 'dist', 'governance-remediation-runner.cjs');
   const hookDirs = [path.join(projectRoot, '.cursor', 'hooks'), path.join(projectRoot, '.claude', 'hooks')];
   let deployed = 0;
   for (const d of hookDirs) {
@@ -203,19 +205,29 @@ function deployRuntimeGovernanceFromPackage(projectRoot) {
     if (fs.existsSync(wrcSrc)) {
       fs.copyFileSync(wrcSrc, path.join(d, 'write-runtime-context.cjs'));
     }
+    const preContinueSrc = path.join(projectRoot, '_bmad', 'runtime', 'hooks', 'pre-continue-check.cjs');
+    if (fs.existsSync(preContinueSrc)) {
+      fs.copyFileSync(preContinueSrc, path.join(d, 'pre-continue-check.cjs'));
+    }
+    if (fs.existsSync(governanceWorkerSrc)) {
+      fs.copyFileSync(governanceWorkerSrc, path.join(d, 'governance-runtime-worker.cjs'));
+    }
+    if (fs.existsSync(governanceRunnerSrc)) {
+      fs.copyFileSync(governanceRunnerSrc, path.join(d, 'governance-remediation-runner.cjs'));
+    }
     deployed += 1;
   }
   if (deployed === 0) return;
 
-  const rcPath = path.join(projectRoot, '.bmad', 'runtime-context.json');
-  if (!fs.existsSync(rcPath)) {
+  const targetContext = path.join(projectRoot, '_bmad-output', 'runtime', 'context', 'project.json');
+  if (!fs.existsSync(targetContext)) {
     const wrcCandidates = [
       path.join(projectRoot, '.cursor', 'hooks', 'write-runtime-context.cjs'),
       path.join(projectRoot, '.claude', 'hooks', 'write-runtime-context.cjs'),
     ];
     const wrcDest = wrcCandidates.find((p) => fs.existsSync(p));
     if (wrcDest) {
-      spawnSync(process.execPath, [wrcDest, projectRoot, 'story', 'specify'], {
+      spawnSync(process.execPath, [wrcDest, targetContext, 'story', 'story_create'], {
         cwd: projectRoot,
         stdio: 'pipe',
       });
@@ -291,7 +303,10 @@ function writeCursorHooksJson(projectRoot) {
       sessionStart: [
         { command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host --session-start' },
       ],
-      preToolUse: [{ command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host' }],
+      preToolUse: [
+        { command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host' },
+        { command: 'node .cursor/hooks/pre-continue-check.cjs' },
+      ],
       subagentStart: [
         { command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host --subagent-start' },
       ],
@@ -321,11 +336,19 @@ function deployCursorRuntimePolicyHooks(projectRoot, bmadRoot) {
     copyDirRecursive(sharedDir, destDir);
   }
 
-  const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs'];
+  const names = [
+    'emit-runtime-policy-cli.cjs',
+    'runtime-policy-inject.cjs',
+    'pre-continue-check.cjs',
+    'post-tool-use.cjs',
+    'runtime-dashboard-session-start.cjs',
+  ];
   for (const name of names) {
     const src = path.join(cursorHooksDir, name);
-    if (fs.existsSync(src)) {
-      fs.copyFileSync(src, path.join(destDir, name));
+    const runtimeFallback = path.join(bmadRoot, 'runtime', 'hooks', name);
+    const source = fs.existsSync(src) ? src : runtimeFallback;
+    if (fs.existsSync(source)) {
+      fs.copyFileSync(source, path.join(destDir, name));
     }
   }
   writeCursorHooksJson(projectRoot);
@@ -347,12 +370,35 @@ function deployClaudeRuntimePolicyHooks(projectRoot, bmadRoot) {
     copyDirRecursive(sharedDir, destDir);
   }
 
-  const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs'];
+  const names = [
+    'emit-runtime-policy-cli.cjs',
+    'runtime-policy-inject.cjs',
+    'pre-continue-check.cjs',
+    'post-tool-use.cjs',
+    'session-start.cjs',
+    'stop.cjs',
+  ];
   for (const name of names) {
     const src = path.join(claudeHooksDir, name);
-    if (fs.existsSync(src)) {
-      fs.copyFileSync(src, path.join(destDir, name));
+    const runtimeFallback = path.join(bmadRoot, 'runtime', 'hooks', name);
+    const source = fs.existsSync(src) ? src : runtimeFallback;
+    if (fs.existsSync(source)) {
+      fs.copyFileSync(source, path.join(destDir, name));
     }
+  }
+}
+
+function deployPreContinueGateConfig(projectRoot, bmadRoot) {
+  const src = path.join(bmadRoot, '_config', 'architecture-gates.yaml');
+  const dest = path.join(projectRoot, '_bmad', '_config', 'architecture-gates.yaml');
+  if (!fs.existsSync(src)) return;
+  if (!fs.existsSync(path.dirname(dest))) fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.copyFileSync(src, dest);
+
+  const routingSrc = path.join(bmadRoot, '_config', 'continue-gate-routing.yaml');
+  const routingDest = path.join(projectRoot, '_bmad', '_config', 'continue-gate-routing.yaml');
+  if (fs.existsSync(routingSrc)) {
+    fs.copyFileSync(routingSrc, routingDest);
   }
 }
 
@@ -391,6 +437,7 @@ function deployClaudeInfrastructure(projectRoot, bmadRoot) {
   }
 
   deployClaudeRuntimePolicyHooks(projectRoot, bmadRoot);
+  deployPreContinueGateConfig(projectRoot, bmadRoot);
 }
 
 module.exports = {

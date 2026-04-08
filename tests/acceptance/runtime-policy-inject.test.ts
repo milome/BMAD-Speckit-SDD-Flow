@@ -7,6 +7,7 @@ import {
   linkRepoNodeModulesIntoProject,
   writeMinimalRegistryAndProjectContext,
 } from '../helpers/runtime-registry-fixture';
+import { readRuntimeContext } from '../../scripts/runtime-context';
 
 const repoRoot = process.cwd();
 
@@ -92,6 +93,59 @@ describe('runtime-policy-inject (dual host entry)', () => {
     }
   }, 45000);
 
+  it('persists workflow/step/artifactPath into project context from runtime artifact input', () => {
+    const tempRoot = makeEmitReadyRoot();
+    try {
+      const artifactDir = path.join(tempRoot, '_bmad-output', 'planning-artifacts', 'feature-prd');
+      fs.mkdirSync(artifactDir, { recursive: true });
+      const artifactPath = path.join(artifactDir, 'prd.md');
+      fs.writeFileSync(
+        artifactPath,
+        [
+          '---',
+          'workflowType: prd',
+          'stepsCompleted:',
+          '  - step-04-journeys',
+          '---',
+          '',
+          '# PRD',
+          '',
+          '## User Journeys',
+          'Filled.',
+        ].join('\n'),
+        'utf8',
+      );
+
+      const inject = path.join(repoRoot, '_bmad/claude/hooks/runtime-policy-inject.cjs');
+      const stdin = JSON.stringify({
+        cwd: tempRoot,
+        tool_name: 'Read',
+        tool_input: {
+          artifactPath,
+        },
+      });
+      const r = spawnSync(process.execPath, [inject, '--cursor-host'], {
+        cwd: repoRoot,
+        input: stdin,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          CURSOR_PROJECT_ROOT: tempRoot,
+          CLAUDE_PROJECT_DIR: tempRoot,
+        },
+      });
+
+      expect(r.status).toBe(0);
+      const ctx = readRuntimeContext(tempRoot);
+      expect(ctx.workflow).toBe('bmad-create-prd');
+      expect(ctx.step).toBe('step-04-journeys');
+      expect(ctx.stage).toBe('prd');
+      expect(ctx.artifactPath).toBe(artifactPath.replace(/\\/g, '/'));
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  }, 45000);
+
   it('quietly skips injection when no BMAD/Speckit context is active and emit only reports missing flow/stage', () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'non-bmad-hook-'));
     try {
@@ -122,6 +176,8 @@ describe('runtime-policy-inject (dual host entry)', () => {
       process.execPath,
       [
         path.join(repoRoot, 'node_modules', 'ts-node', 'dist', 'bin.js'),
+        '--project',
+        path.join(repoRoot, 'tsconfig.node.json'),
         '--transpile-only',
         emit,
         '--cwd',

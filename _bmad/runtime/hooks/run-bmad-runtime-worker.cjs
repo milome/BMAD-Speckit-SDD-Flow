@@ -359,6 +359,54 @@ function governanceCurrentRunPath(projectRoot) {
 }
 
 /**
+ * @param {string} projectRoot
+ * @returns {string}
+ */
+function governanceDoneQueueDir(projectRoot) {
+  return path.join(projectRoot, '_bmad-output', 'runtime', 'governance', 'queue', 'done');
+}
+
+/**
+ * @param {string} projectRoot
+ * @returns {string[]}
+ */
+function readDoneQueueItemIds(projectRoot) {
+  const doneDir = governanceDoneQueueDir(projectRoot);
+  if (!fs.existsSync(doneDir)) {
+    return [];
+  }
+  return fs
+    .readdirSync(doneDir)
+    .filter((file) => file.endsWith('.json'))
+    .map((file) => file.replace(/\.json$/i, ''))
+    .sort();
+}
+
+/**
+ * @param {string} projectRoot
+ * @returns {string[]}
+ */
+function readCurrentRunItemIds(projectRoot) {
+  const currentRunFile = governanceCurrentRunPath(projectRoot);
+  if (!fs.existsSync(currentRunFile)) {
+    return [];
+  }
+
+  try {
+    const items = JSON.parse(fs.readFileSync(currentRunFile, 'utf8'));
+    if (!Array.isArray(items)) {
+      return [];
+    }
+    return items
+      .map((item) => (item && typeof item.id === 'string' ? item.id : null))
+      .filter(Boolean)
+      .sort();
+  } catch {
+    return [];
+  }
+}
+
+/**
  * @param {GovernanceExecutionResult | null | undefined} result
  * @param {GovernanceExecutorRoutingProjection} executorRouting
  * @returns {GovernanceRemediationAuditTrace}
@@ -545,15 +593,114 @@ function readLatestGovernanceExecutionSummary(projectRoot) {
 
 /**
  * @param {string} projectRoot
+ * @returns {GovernanceExecutionResult | null}
+ */
+function readLatestDoneQueueExecutionSummary(projectRoot) {
+  const doneDir = governanceDoneQueueDir(projectRoot);
+  if (!fs.existsSync(doneDir)) {
+    return null;
+  }
+
+  const files = fs.readdirSync(doneDir).filter((file) => file.endsWith('.json')).sort();
+  for (let index = files.length - 1; index >= 0; index -= 1) {
+    const file = path.join(doneDir, files[index]);
+    try {
+      const item = JSON.parse(fs.readFileSync(file, 'utf8'));
+      const result = item && typeof item.result === 'object' ? item.result : null;
+      if (!result) {
+        continue;
+      }
+      const executorRouting =
+        result && typeof result.executorRouting === 'object' ? result.executorRouting : null;
+      const remediationAuditTrace =
+        result && typeof result.remediationAuditTrace === 'object'
+          ? result.remediationAuditTrace
+          : buildRemediationAuditTrace(result, executorRouting || buildExecutorRoutingPreview({ mode: 'generic', signals: [] }));
+      if (!executorRouting) {
+        continue;
+      }
+      return {
+        shouldContinue: typeof result.shouldContinue === 'boolean' ? result.shouldContinue : undefined,
+        stopReason: typeof result.stopReason === 'string' ? result.stopReason : null,
+        loopStateId: typeof result.loopStateId === 'string' ? result.loopStateId : null,
+        currentAttemptNumber:
+          typeof result.currentAttemptNumber === 'number' ? result.currentAttemptNumber : null,
+        nextAttemptNumber:
+          typeof result.nextAttemptNumber === 'number' ? result.nextAttemptNumber : null,
+        artifactPath: typeof result.artifactPath === 'string' ? result.artifactPath : null,
+        packetPaths:
+          result && typeof result.packetPaths === 'object' && result.packetPaths ? result.packetPaths : {},
+        executorRouting,
+        runnerSummaryLines: Array.isArray(result.runnerSummaryLines)
+          ? result.runnerSummaryLines
+          : buildRunnerSummaryLinesFromExecutionSummary({
+              ...result,
+              executorRouting,
+              remediationAuditTrace,
+            }),
+        remediationAuditTrace,
+        governancePresentation:
+          result && result.governancePresentation
+            ? result.governancePresentation
+            : buildGovernanceRunnerCliPresentation({
+                shouldContinue:
+                  typeof result.shouldContinue === 'boolean' ? result.shouldContinue : undefined,
+                stopReason: typeof result.stopReason === 'string' ? result.stopReason : null,
+                loopStateId: typeof result.loopStateId === 'string' ? result.loopStateId : null,
+                currentAttemptNumber:
+                  typeof result.currentAttemptNumber === 'number' ? result.currentAttemptNumber : null,
+                nextAttemptNumber:
+                  typeof result.nextAttemptNumber === 'number' ? result.nextAttemptNumber : null,
+                artifactPath: typeof result.artifactPath === 'string' ? result.artifactPath : null,
+                packetPaths:
+                  result && typeof result.packetPaths === 'object' && result.packetPaths
+                    ? result.packetPaths
+                    : {},
+                executorRouting,
+                runnerSummaryLines: Array.isArray(result.runnerSummaryLines)
+                  ? result.runnerSummaryLines
+                  : buildRunnerSummaryLinesFromExecutionSummary({
+                      ...result,
+                      executorRouting,
+                      remediationAuditTrace,
+                    }),
+              }),
+      };
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * @param {string} projectRoot
  * @param {number} [attempts]
  * @param {number} [delayMs]
  * @returns {GovernanceExecutionResult | null}
  */
 function readLatestGovernanceExecutionSummaryWithRetry(projectRoot, attempts = 5, delayMs = 100) {
+  const baselineDoneIds = new Set(readDoneQueueItemIds(projectRoot));
+  const baselineCurrentRunIds = new Set(readCurrentRunItemIds(projectRoot));
+
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     const summary = readLatestGovernanceExecutionSummary(projectRoot);
-    if (summary && !hasPendingQueueItems(projectRoot)) {
+    const doneIds = readDoneQueueItemIds(projectRoot);
+    const currentRunIds = readCurrentRunItemIds(projectRoot);
+    const hasNewDoneItem = doneIds.some((id) => !baselineDoneIds.has(id));
+    const hasNewCurrentRunItem = currentRunIds.some((id) => !baselineCurrentRunIds.has(id));
+    if (
+      summary &&
+      !hasPendingQueueItems(projectRoot) &&
+      !hasProcessingQueueItems(projectRoot) &&
+      (hasNewDoneItem || hasNewCurrentRunItem)
+    ) {
       return summary;
+    }
+    const doneSummary = readLatestDoneQueueExecutionSummary(projectRoot);
+    if (doneSummary && !hasPendingQueueItems(projectRoot) && !hasProcessingQueueItems(projectRoot)) {
+      return doneSummary;
     }
     if (attempt < attempts - 1) {
       waitBriefly(delayMs);
@@ -581,70 +728,25 @@ function tryResolveModule(moduleId, projectRoot) {
  */
 function resolveWorkerEntry(projectRoot) {
   const candidates = [
-    path.join(projectRoot, 'scripts', 'bmad-runtime-worker.js'),
-    path.join(projectRoot, 'scripts', 'bmad-runtime-worker.ts'),
+    path.join(projectRoot, '.claude', 'hooks', 'governance-runtime-worker.cjs'),
+    path.join(projectRoot, '.cursor', 'hooks', 'governance-runtime-worker.cjs'),
+    path.join(projectRoot, '_bmad', 'runtime', 'hooks', 'governance-runtime-worker.cjs'),
+    path.join(projectRoot, 'node_modules', 'bmad-speckit', '_bmad', 'runtime', 'hooks', 'governance-runtime-worker.cjs'),
     path.join(projectRoot, 'node_modules', 'bmad-speckit', 'scripts', 'bmad-runtime-worker.js'),
-    path.join(projectRoot, 'node_modules', 'bmad-speckit', 'scripts', 'bmad-runtime-worker.ts'),
+    path.resolve(__dirname, 'governance-runtime-worker.cjs'),
+    path.resolve(__dirname, '..', '..', 'runtime', 'hooks', 'governance-runtime-worker.cjs'),
+    path.resolve(__dirname, '..', '..', '..', '_bmad', 'runtime', 'hooks', 'governance-runtime-worker.cjs'),
     path.resolve(__dirname, '..', '..', 'scripts', 'bmad-runtime-worker.js'),
-    path.resolve(__dirname, '..', '..', 'scripts', 'bmad-runtime-worker.ts'),
     path.resolve(__dirname, '..', '..', '..', 'scripts', 'bmad-runtime-worker.js'),
-    path.resolve(__dirname, '..', '..', '..', 'scripts', 'bmad-runtime-worker.ts'),
   ];
 
   const resolvedModules = [
+    tryResolveModule('bmad-speckit/_bmad/runtime/hooks/governance-runtime-worker.cjs', projectRoot),
     tryResolveModule('bmad-speckit/scripts/bmad-runtime-worker.js', projectRoot),
-    tryResolveModule('bmad-speckit/scripts/bmad-runtime-worker.ts', projectRoot),
-    tryResolveModule('./scripts/bmad-runtime-worker.js', projectRoot),
-    tryResolveModule('./scripts/bmad-runtime-worker.ts', projectRoot),
   ];
 
   for (const candidate of [...resolvedModules, ...candidates]) {
     if (candidate && fs.existsSync(candidate)) {
-      return candidate;
-    }
-  }
-
-  return null;
-}
-
-/**
- * @param {string} projectRoot
- * @param {string} workerEntry
- * @returns {string | null}
- */
-function resolveTsNodeBin(projectRoot, workerEntry) {
-  const fromModules = tryResolveModule('ts-node/dist/bin.js', projectRoot);
-  if (fromModules && fs.existsSync(fromModules)) {
-    return fromModules;
-  }
-
-  const candidates = [
-    path.join(projectRoot, 'node_modules', 'ts-node', 'dist', 'bin.js'),
-    path.join(
-      projectRoot,
-      'node_modules',
-      'bmad-speckit',
-      'node_modules',
-      'ts-node',
-      'dist',
-      'bin.js'
-    ),
-    path.join(path.dirname(workerEntry), '..', '..', 'node_modules', 'ts-node', 'dist', 'bin.js'),
-    path.join(
-      path.dirname(workerEntry),
-      '..',
-      '..',
-      'node_modules',
-      'bmad-speckit',
-      'node_modules',
-      'ts-node',
-      'dist',
-      'bin.js'
-    ),
-  ];
-
-  for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) {
       return candidate;
     }
   }
@@ -661,28 +763,124 @@ function buildWorkerSpawnPlan(projectRoot) {
   if (!workerEntry) {
     throw new Error('bmad runtime worker entry not found');
   }
+  return {
+    command: process.execPath,
+    args: [workerEntry, projectRoot],
+    shell: false,
+  };
+}
 
-  if (workerEntry.endsWith('.js')) {
-    return {
-      command: process.execPath,
-      args: [workerEntry],
-      shell: false,
-    };
+/**
+ * @param {string} projectRoot
+ * @returns {GovernanceExecutionResult | null}
+ */
+function buildProcessingPlaceholderExecutionSummary(projectRoot) {
+  const doneDir = governanceDoneQueueDir(projectRoot);
+  const processingDir = path.join(
+    projectRoot,
+    '_bmad-output',
+    'runtime',
+    'governance',
+    'queue',
+    'processing'
+  );
+
+  const processingFiles = fs.existsSync(processingDir)
+    ? fs.readdirSync(processingDir).filter((file) => file.endsWith('.json')).sort()
+    : [];
+  if (processingFiles.length === 0) {
+    return null;
   }
 
-  const tsNodeBin = resolveTsNodeBin(projectRoot, workerEntry);
-  if (tsNodeBin) {
-    return {
-      command: process.execPath,
-      args: [tsNodeBin, '--transpile-only', workerEntry],
-      shell: false,
-    };
+  fs.mkdirSync(doneDir, { recursive: true });
+
+  let executorRouting = buildExecutorRoutingPreview({ mode: 'generic', signals: [] });
+  let journeyContractHints = [];
+  let stopReason = null;
+  let shouldContinue = false;
+  for (const file of processingFiles) {
+    const fullPath = path.join(processingDir, file);
+    let parsed = null;
+    try {
+      parsed = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+    } catch {
+      continue;
+    }
+    const payload = parsed && typeof parsed.payload === 'object' ? parsed.payload : null;
+    if (payload && Array.isArray(payload.journeyContractHints)) {
+      journeyContractHints = payload.journeyContractHints;
+      executorRouting = buildExecutorRoutingPreview(
+        buildRerunDecision(projectRoot, journeyContractHints, true)
+      );
+    }
+    const result = parsed && typeof parsed.result === 'object' ? parsed.result : null;
+    if (result) {
+      if (typeof result.stopReason === 'string') {
+        stopReason = result.stopReason;
+      }
+      if (typeof result.shouldContinue === 'boolean') {
+        shouldContinue = result.shouldContinue;
+      }
+      const resultRouting =
+        result && typeof result.executorRouting === 'object' ? result.executorRouting : null;
+      if (resultRouting && resultRouting.routingMode && resultRouting.executorRoute) {
+        executorRouting = resultRouting;
+      }
+      if (Array.isArray(result.journeyContractHints) && result.journeyContractHints.length > 0) {
+        journeyContractHints = result.journeyContractHints;
+      }
+      if (result && typeof result.remediationAuditTrace === 'object') {
+        const trace = result.remediationAuditTrace;
+        if (typeof trace.stopReason === 'string') {
+          stopReason = trace.stopReason;
+        }
+      }
+    }
+    const donePath = path.join(doneDir, file);
+    if (!fs.existsSync(donePath)) {
+      fs.copyFileSync(fullPath, donePath);
+    }
   }
+
+  const remediationAuditTrace = buildFallbackRemediationAuditTrace(
+    journeyContractHints,
+    executorRouting,
+    stopReason
+  );
+  const runnerSummaryLines = buildRunnerSummaryLinesFromExecutionSummary({
+    loopStateId: null,
+    currentAttemptNumber: null,
+    nextAttemptNumber: null,
+    shouldContinue,
+    stopReason,
+    artifactPath: null,
+    packetPaths: {},
+    remediationAuditTrace,
+  });
 
   return {
-    command: 'npx',
-    args: ['ts-node', '--transpile-only', workerEntry],
-    shell: true,
+    shouldContinue,
+    stopReason,
+    loopStateId: null,
+    currentAttemptNumber: null,
+    nextAttemptNumber: null,
+    artifactPath: null,
+    packetPaths: {},
+    executorRouting,
+    journeyContractHints,
+    remediationAuditTrace,
+    runnerSummaryLines,
+    governancePresentation: buildGovernanceRunnerCliPresentation({
+      shouldContinue,
+      stopReason,
+      loopStateId: null,
+      currentAttemptNumber: null,
+      nextAttemptNumber: null,
+      artifactPath: null,
+      packetPaths: {},
+      executorRouting,
+      runnerSummaryLines,
+    }),
   };
 }
 
@@ -897,6 +1095,22 @@ function runActualWorker(projectRoot) {
 
 /**
  * @param {string} projectRoot
+ * @returns {boolean}
+ */
+function hasProcessingQueueItems(projectRoot) {
+  const processingDir = path.join(
+    projectRoot,
+    '_bmad-output',
+    'runtime',
+    'governance',
+    'queue',
+    'processing'
+  );
+  return pendingJsonCount(processingDir) > 0;
+}
+
+/**
+ * @param {string} projectRoot
  * @param {number} ownerPid
  * @returns {RunnerHeartbeatHandle}
  */
@@ -961,6 +1175,27 @@ function runWorkerWithRunnerLock(options = {}) {
   const onlyWhenPending = options.onlyWhenPending !== false;
 
   if (onlyWhenPending && !pendingQueueExists) {
+    const processingSummary = hasProcessingQueueItems(projectRoot)
+      ? buildProcessingPlaceholderExecutionSummary(projectRoot)
+      : null;
+    if (processingSummary) {
+      return {
+        started: false,
+        skipped: false,
+        projectRoot,
+        reason: 'governance worker already processing queue items',
+        lockPath: governanceRunnerLockPath(projectRoot),
+        pendingJourneyContractHints,
+        rerunDecision,
+        shouldContinue: processingSummary.shouldContinue,
+        stopReason: processingSummary.stopReason,
+        executorRouting: processingSummary.executorRouting,
+        remediationAuditTrace: processingSummary.remediationAuditTrace,
+        runnerSummaryLines: processingSummary.runnerSummaryLines,
+        governancePresentation: processingSummary.governancePresentation,
+        status: 0,
+      };
+    }
     return {
       started: false,
       skipped: true,

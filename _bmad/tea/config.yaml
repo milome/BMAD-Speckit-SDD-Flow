@@ -15,7 +15,7 @@ test_review_output: _bmad-output/test-artifacts/test-reviews
 trace_output: _bmad-output/test-artifacts/traceability
 
 # Core Configuration Values
-user_name: "{user-name}"
+user_name: "Developer"
 communication_language: Chinese
 document_output_language: Chinese
 output_folder: "{project-root}/_bmad-output"

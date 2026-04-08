@@ -9,6 +9,8 @@ import { resolveRulesDir } from '../constants/path';
 import type { WeaknessCluster } from './cluster-weaknesses';
 import type { RunScoreRecord } from '../writer/types';
 
+export type { WeaknessCluster };
+
 export interface RuleSuggestion {
   item_id: string;
   current_deduct: number;

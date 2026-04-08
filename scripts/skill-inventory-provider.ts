@@ -268,7 +268,7 @@ function collectSkillEntries(root: SkillInventoryRoot): HostSkillInventoryEntry[
         source: root.source,
         priority: root.priority,
         ...readSkillMetadata(skillMarkdownPath),
-      } satisfies HostSkillInventoryEntry;
+      } as HostSkillInventoryEntry;
     })
     .filter((entry): entry is HostSkillInventoryEntry => entry !== null);
 }

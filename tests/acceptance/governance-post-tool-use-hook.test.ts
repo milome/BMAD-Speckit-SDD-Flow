@@ -112,4 +112,74 @@ describe('governance post-tool-use hook', () => {
       'smoke_task_chain',
     ]);
   });
+
+  it.each([
+    ['claude', claudeHook],
+    ['cursor', cursorHook],
+  ])('drains stage-emitted rerun-result events before handling %s post-tool-use payload', (_, hook) => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'gov-post-tool-use-stage-event-'));
+    tempRoots.push(root);
+    mkdirSync(path.join(root, '_bmad-output', 'runtime', 'governance', 'queue', 'pending-events'), {
+      recursive: true,
+    });
+    process.chdir(root);
+    process.env.BMAD_SKIP_GOVERNANCE_BACKGROUND_DRAIN = '1';
+
+    const stagedEventPath = path.join(
+      root,
+      '_bmad-output',
+      'runtime',
+      'governance',
+      'queue',
+      'pending-events',
+      'stage-event.json'
+    );
+    const stagedEvent = {
+      type: 'governance-rerun-result',
+      payload: {
+        projectRoot: root,
+        sourceEventType: 'governance-pre-continue-check',
+        runnerInput: {
+          projectRoot: root,
+          outputPath: path.join(root, '_bmad-output', 'planning-artifacts', 'attempt-stage.md'),
+          promptText: '阶段治理失败后进入 rerun',
+          rerunGate: 'architecture-contract-gate',
+          capabilitySlot: 'bmad-create-architecture.step-04-decisions',
+          attemptId: 'pre-continue-stage-1',
+        },
+        rerunGateResult: {
+          gate: 'architecture-contract-gate',
+          status: 'fail',
+        },
+      },
+    };
+    require('node:fs').writeFileSync(stagedEventPath, JSON.stringify(stagedEvent, null, 2), 'utf8');
+
+    hook.postToolUse({
+      type: 'governance-rerun-result',
+      payload: {
+        runnerInput: {
+          projectRoot: root,
+          outputPath: path.join(root, '_bmad-output', 'planning-artifacts', 'attempt-direct.md'),
+          promptText: '直接 rerun',
+        },
+      },
+    });
+
+    const pendingDir = path.join(root, '_bmad-output', 'runtime', 'governance', 'queue', 'pending');
+    const pendingFiles = readdirSync(pendingDir).filter((file) => file.endsWith('.json'));
+    expect(pendingFiles.length).toBeGreaterThanOrEqual(2);
+    const queuedPayloads = pendingFiles.map((file) =>
+      JSON.parse(readFileSync(path.join(pendingDir, file), 'utf8')) as {
+        payload?: { sourceEventType?: string; runnerInput?: { rerunGate?: string } };
+      }
+    );
+    expect(
+      queuedPayloads.some(
+        (item) =>
+          item.payload?.runnerInput?.rerunGate === 'architecture-contract-gate'
+      )
+    ).toBe(true);
+    expect(existsSync(stagedEventPath)).toBe(false);
+  });
 });
