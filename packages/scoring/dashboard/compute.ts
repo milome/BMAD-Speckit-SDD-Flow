@@ -530,6 +530,8 @@ export function getJourneyContractSummary(
 /**
  * 汇总 governance rerun history，输出 dashboard 可直接消费的 executor routing 摘要。
  * 数据来源必须是 scoring records，而不是 runtime current-run 快照。
+ * @param {RunScoreRecord[]} records - RunScoreRecord 数组
+ * @returns {GovernanceRoutingSummaryEntry | undefined} routing 摘要
  */
 export function getGovernanceRoutingSummary(
   records: RunScoreRecord[]
@@ -537,18 +539,33 @@ export function getGovernanceRoutingSummary(
   return summarizeGovernanceRouting(records);
 }
 
+/**
+ * 获取 governance routing mode 分布。
+ * @param {RunScoreRecord[]} records - RunScoreRecord 数组
+ * @returns {GovernanceRoutingModeDistributionSummaryEntry[]} routing mode 分布
+ */
 export function getGovernanceRoutingModeDistribution(
   records: RunScoreRecord[]
 ): GovernanceRoutingModeDistributionSummaryEntry[] {
   return summarizeGovernanceRoutingModeDistribution(records);
 }
 
+/**
+ * 获取 governance signal 热点。
+ * @param {RunScoreRecord[]} records - RunScoreRecord 数组
+ * @returns {GovernanceSignalHotspotSummaryEntry[]} signal 热点
+ */
 export function getGovernanceSignalHotspots(
   records: RunScoreRecord[]
 ): GovernanceSignalHotspotSummaryEntry[] {
   return summarizeGovernanceSignalHotspots(records);
 }
 
+/**
+ * 获取 governance rerun gate 失败趋势。
+ * @param {RunScoreRecord[]} records - RunScoreRecord 数组
+ * @returns {GovernanceRerunGateFailureTrendSummaryEntry[]} gate 失败趋势
+ */
 export function getGovernanceRerunGateFailureTrend(
   records: RunScoreRecord[]
 ): GovernanceRerunGateFailureTrendSummaryEntry[] {

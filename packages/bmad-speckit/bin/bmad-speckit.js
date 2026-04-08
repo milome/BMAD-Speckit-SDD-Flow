@@ -21,33 +21,15 @@
  */
 const { program } = require('commander');
 const pkg = require('../package.json');
-const { initCommand, showBanner } = require('../src/commands/init');
-const { checkCommand } = require('../src/commands/check');
-const { versionCommand } = require('../src/commands/version');
-const { upgradeCommand } = require('../src/commands/upgrade');
-const { addAgentCommand } = require('../src/commands/add-agent');
-const { configGetCommand, configSetCommand, configListCommand } = require('../src/commands/config');
-const { feedbackCommand } = require('../src/commands/feedback');
-const { scoreCommand } = require('../src/commands/score');
-const { checkScoreCommand } = require('../src/commands/check-score');
-const { coachCommand } = require('../src/commands/coach');
-const { dashboardCommand } = require('../src/commands/dashboard');
-const { sftExtractCommand } = require('../src/commands/sft-extract');
-const { sftPreviewCommand } = require('../src/commands/sft-preview');
-const { sftValidateCommand } = require('../src/commands/sft-validate');
-const { sftBundleCommand } = require('../src/commands/sft-bundle');
-const { scoresCommand } = require('../src/commands/scores');
-const { ensureRunRuntimeContextCommand } = require('../src/commands/ensure-run-runtime-context');
-const { syncRuntimeContextFromSprintCommand } = require('../src/commands/sync-runtime-context-from-sprint');
-const { runtimeMcpCommand } = require('../src/commands/runtime-mcp');
-const { dashboardLiveCommand } = require('../src/commands/dashboard-live');
-const { dashboardStartCommand } = require('../src/commands/dashboard-start');
-const { dashboardStatusCommand } = require('../src/commands/dashboard-status');
-const { dashboardStopCommand } = require('../src/commands/dashboard-stop');
 const ttyUtils = require('../src/utils/tty');
+
+function loadCommand(modulePath, exportName) {
+  return require(modulePath)[exportName];
+}
 
 // Show banner for init (including init --help) when in TTY
 if (process.argv.includes('init') && ttyUtils.isTTY()) {
+  const { showBanner } = require('../src/commands/init');
   showBanner();
 }
 
@@ -76,7 +58,7 @@ program
   .option('--github-token <token>', 'GitHub API token')
   .option('--skip-tls', 'Skip SSL/TLS verification (not recommended)')
   .option('--offline', 'Use only local cache, no network')
-  .action(initCommand);
+  .action((...args) => loadCommand('../src/commands/init', 'initCommand')(...args));
 
 program
   .command('check')
@@ -85,7 +67,7 @@ program
   .option('--json', 'Output as JSON')
   .option('--ignore-agent-tools', 'Skip AI tool (detectCommand) detection')
   .action((opts) =>
-    checkCommand({
+    loadCommand('../src/commands/check', 'checkCommand')({
       cwd: process.cwd(),
       listAi: opts.listAi,
       json: opts.json,
@@ -97,7 +79,12 @@ program
   .command('version')
   .description('Show CLI version, template version, Node version')
   .option('--json', 'Output as JSON')
-  .action((opts) => versionCommand({ cwd: process.cwd(), json: opts.json }));
+  .action((opts) =>
+    loadCommand('../src/commands/version', 'versionCommand')({
+      cwd: process.cwd(),
+      json: opts.json,
+    })
+  );
 
 program
   .command('upgrade')
@@ -106,7 +93,7 @@ program
   .option('--template <tag>', 'Target version (latest, v1.0.0)')
   .option('--offline', 'Use only local cache')
   .action((opts) =>
-    upgradeCommand(process.cwd(), {
+    loadCommand('../src/commands/upgrade', 'upgradeCommand')(process.cwd(), {
       dryRun: opts.dryRun,
       template: opts.template,
       offline: opts.offline,
@@ -116,12 +103,12 @@ program
 program
   .command('add-agent <ai>')
   .description('Add AI agent infrastructure to an initialized project (e.g. bmad-speckit add-agent claude)')
-  .action((ai) => addAgentCommand(ai, { cwd: process.cwd() }));
+  .action((ai) => loadCommand('../src/commands/add-agent', 'addAgentCommand')(ai, { cwd: process.cwd() }));
 
 program
   .command('feedback')
   .description('Show feedback entry and full-flow compatible AI list')
-  .action(() => feedbackCommand());
+  .action(() => loadCommand('../src/commands/feedback', 'feedbackCommand')());
 
 const configCmd = program
   .command('config')
@@ -132,7 +119,10 @@ configCmd
   .description('Get config value by key')
   .option('--json', 'Output as JSON')
   .action((key, opts) => {
-    configGetCommand(process.cwd(), { key, json: opts.json });
+    loadCommand('../src/commands/config', 'configGetCommand')(process.cwd(), {
+      key,
+      json: opts.json,
+    });
   });
 
 configCmd
@@ -140,7 +130,11 @@ configCmd
   .description('Set config value')
   .option('--global', 'Force global scope')
   .action((key, value, opts) => {
-    configSetCommand(process.cwd(), { key, value, global: opts.global });
+    loadCommand('../src/commands/config', 'configSetCommand')(process.cwd(), {
+      key,
+      value,
+      global: opts.global,
+    });
   });
 
 configCmd
@@ -148,7 +142,9 @@ configCmd
   .description('List merged config (project overrides global)')
   .option('--json', 'Output as JSON')
   .action((opts) => {
-    configListCommand(process.cwd(), { json: opts.json });
+    loadCommand('../src/commands/config', 'configListCommand')(process.cwd(), {
+      json: opts.json,
+    });
   });
 
 program
@@ -174,7 +170,7 @@ program
   .option('--agent <agent>', 'Agent type (cursor|claude-code)')
   .option('--source <source>', 'Source type (cursor_command|claude_agent|claude_hook)')
   .action((opts) => {
-    scoreCommand(opts).catch((err) => {
+    loadCommand('../src/commands/score', 'scoreCommand')(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -187,7 +183,7 @@ program
   .requiredOption('--story <n>', 'Story number')
   .option('--dataPath <path>', 'Scoring data directory')
   .option('--stage <stage>', 'Stage filter (story|implement)')
-  .action((opts) => checkScoreCommand(opts));
+  .action((opts) => loadCommand('../src/commands/check-score', 'checkScoreCommand')(opts));
 
 program
   .command('coach')
@@ -200,7 +196,7 @@ program
   .option('--scenario <scenario>', 'Scenario filter (real_dev|eval_question|all)', 'real_dev')
   .option('--dataPath <path>', 'Scoring data directory')
   .action((opts) => {
-    coachCommand(opts).catch((err) => {
+    loadCommand('../src/commands/coach', 'coachCommand')(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -218,7 +214,18 @@ program
   .option('--json', 'Print runtime-aware dashboard snapshot as JSON')
   .option('--output-json <path>', 'JSON snapshot output path')
   .option('--include-runtime', 'Append runtime context sections to markdown output')
-  .action((opts) => dashboardCommand(opts));
+  .option('--show-deferred-gaps', 'Append deferred gap governance table to dashboard markdown')
+  .action((opts) => loadCommand('../src/commands/dashboard', 'dashboardCommand')(opts));
+
+program
+  .command('deferred-gap-audit')
+  .description('Audit readiness deferred gaps for drift, ownership, planning, and expiry')
+  .option('--output <path>', 'Write markdown or JSON audit output to file')
+  .option('--json', 'Print JSON audit output')
+  .option('--fail-on-alert', 'Exit non-zero when alerts are present')
+  .action((opts) =>
+    loadCommand('../src/commands/deferred-gap-audit', 'deferredGapAuditCommand')(opts)
+  );
 
 program
   .command('sft-extract')
@@ -236,7 +243,7 @@ program
   .option('--max-tokens <n>', 'Maximum token estimate allowed for canonical exporters')
   .option('--drop-no-code-pair', 'Reject samples without code pair in canonical exporters')
   .action((opts) => {
-    sftExtractCommand(opts).catch((err) => {
+    loadCommand('../src/commands/sft-extract', 'sftExtractCommand')(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -257,7 +264,7 @@ program
   .option('--max-tokens <n>', 'Maximum token estimate allowed')
   .option('--drop-no-code-pair', 'Reject samples without code pair')
   .action((opts) => {
-    sftPreviewCommand(opts).catch((err) => {
+    loadCommand('../src/commands/sft-preview', 'sftPreviewCommand')(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -278,7 +285,7 @@ program
   .option('--max-tokens <n>', 'Maximum token estimate allowed')
   .option('--drop-no-code-pair', 'Reject samples without code pair')
   .action((opts) => {
-    sftValidateCommand(opts).catch((err) => {
+    loadCommand('../src/commands/sft-validate', 'sftValidateCommand')(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -299,7 +306,7 @@ program
   .option('--max-tokens <n>', 'Maximum token estimate allowed')
   .option('--drop-no-code-pair', 'Reject samples without code pair')
   .action((opts) => {
-    sftBundleCommand(opts).catch((err) => {
+    loadCommand('../src/commands/sft-bundle', 'sftBundleCommand')(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -312,7 +319,7 @@ program
   .option('--story <x.y>', 'Story X.Y')
   .option('--dataPath <path>', 'Scoring data directory')
   .option('--limit <n>', 'Max records to display', String(100))
-  .action((opts) => scoresCommand(opts));
+  .action((opts) => loadCommand('../src/commands/scores', 'scoresCommand')(opts));
 
 program
   .command('ensure-run-runtime-context')
@@ -322,7 +329,7 @@ program
   .option('--persist', 'After sprint-status write: refresh registry using last-*-run.json')
   .action((opts) => {
     try {
-      ensureRunRuntimeContextCommand(opts);
+      loadCommand('../src/commands/ensure-run-runtime-context', 'ensureRunRuntimeContextCommand')(opts);
     } catch (err) {
       console.error(err);
       process.exit(1);
@@ -335,7 +342,10 @@ program
   .option('--story-key <key>', 'After sync, scope story context (S10; kebab-case story key)')
   .action((opts) => {
     try {
-      syncRuntimeContextFromSprintCommand(opts);
+      loadCommand(
+        '../src/commands/sync-runtime-context-from-sprint',
+        'syncRuntimeContextFromSprintCommand'
+      )(opts);
     } catch (err) {
       console.error(err);
       process.exit(1);
@@ -350,7 +360,7 @@ program
   .option('--dashboard-port <n>', 'Port to auto-start the dashboard on')
   .option('--host <host>', 'Dashboard host when auto-starting', '127.0.0.1')
   .action((opts) => {
-    runtimeMcpCommand(opts).catch((err) => {
+    loadCommand('../src/commands/runtime-mcp', 'runtimeMcpCommand')(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -364,7 +374,7 @@ program
   .option('--host <host>', 'Host to bind', '127.0.0.1')
   .option('--open', 'Open the dashboard in the default browser')
   .action((opts) => {
-    dashboardStartCommand(opts).catch((err) => {
+    loadCommand('../src/commands/dashboard-start', 'dashboardStartCommand')(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -374,7 +384,7 @@ program
   .command('dashboard-status')
   .description('Inspect the stable runtime dashboard server state and health')
   .action(() => {
-    dashboardStatusCommand().catch((err) => {
+    loadCommand('../src/commands/dashboard-status', 'dashboardStatusCommand')().catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -384,7 +394,7 @@ program
   .command('dashboard-stop')
   .description('Stop the stable runtime dashboard server and clear state')
   .action(() => {
-    dashboardStopCommand().catch((err) => {
+    loadCommand('../src/commands/dashboard-stop', 'dashboardStopCommand')().catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -398,7 +408,7 @@ program
   .option('--host <host>', 'Host to bind', '127.0.0.1')
   .option('--open', 'Start a stable background server and open the dashboard in the browser')
   .action((opts) => {
-    dashboardLiveCommand(opts).catch((err) => {
+    loadCommand('../src/commands/dashboard-live', 'dashboardLiveCommand')(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });

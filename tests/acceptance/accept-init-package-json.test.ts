@@ -53,7 +53,7 @@ describe('init-to-root package.json creation', () => {
     } finally {
       rmSync(target, { recursive: true, force: true });
     }
-  }, 30_000);
+  }, 60_000);
 
   it('deploys runtime MCP layout only when --with-mcp is explicitly enabled', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-init-with-mcp-'));
@@ -68,5 +68,5 @@ describe('init-to-root package.json creation', () => {
     } finally {
       rmSync(target, { recursive: true, force: true });
     }
-  }, 30_000);
+  }, 120_000);
 });

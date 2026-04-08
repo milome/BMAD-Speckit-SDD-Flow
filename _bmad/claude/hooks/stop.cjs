@@ -42,6 +42,7 @@ function resolvePresenterModule() {
 }
 
 const {
+  buildGovernanceRunnerCliPresentation,
   printGovernanceRunnerCliPresentation,
 } = resolvePresenterModule();
 
@@ -62,6 +63,163 @@ function resolveRuntimeWorkerHelper() {
 }
 
 /**
+ * @param {import('../../../scripts/governance-hook-types').GovernanceJourneyContractHintProjection[] | null | undefined} journeyContractHints
+ * @returns {import('../../../scripts/governance-hook-types').GovernanceExecutorRoutingProjection}
+ */
+function buildExecutorRoutingFromHints(journeyContractHints) {
+  const normalizedHints = Array.isArray(journeyContractHints) ? journeyContractHints : [];
+  const prioritizedSignals = [...new Set(normalizedHints
+    .map((hint) => (hint && typeof hint.signal === 'string' ? hint.signal : null))
+    .filter(Boolean))].sort();
+
+  if (prioritizedSignals.length > 0) {
+    return {
+      routingMode: 'targeted',
+      executorRoute: 'journey-contract-remediation',
+      prioritizedSignals,
+    };
+  }
+
+  return {
+    routingMode: 'generic',
+    executorRoute: 'default-gate-remediation',
+    prioritizedSignals: [],
+  };
+}
+
+/**
+ * @param {import('../../../scripts/governance-hook-types').GovernanceJourneyContractHintProjection[] | null | undefined} journeyContractHints
+ * @returns {string}
+ */
+function renderJourneyContractSignals(journeyContractHints) {
+  return [...new Set((Array.isArray(journeyContractHints) ? journeyContractHints : [])
+    .map((hint) => (hint && typeof hint.signal === 'string' ? hint.signal : null))
+    .filter(Boolean))].join(', ') || '(none)';
+}
+
+/**
+ * @param {string[] | null | undefined} lines
+ * @param {string} prefix
+ * @param {string} value
+ * @returns {string[]}
+ */
+function upsertSummaryLine(lines, prefix, value) {
+  const nextLines = Array.isArray(lines) ? [...lines] : [];
+  const renderedLine = `${prefix}${value}`;
+  const existingIndex = nextLines.findIndex(
+    (line) => typeof line === 'string' && line.startsWith(prefix)
+  );
+  if (existingIndex >= 0) {
+    nextLines[existingIndex] = renderedLine;
+    return nextLines;
+  }
+  nextLines.push(renderedLine);
+  return nextLines;
+}
+
+/**
+ * @param {import('../../../scripts/governance-hook-types').GovernanceWorkerResult} workerResult
+ * @param {import('../../../scripts/governance-hook-types').GovernanceJourneyContractHintProjection[] | undefined} journeyContractHints
+ * @param {import('../../../scripts/governance-hook-types').GovernanceExecutorRoutingProjection} executorRouting
+ * @param {string | null} stopReason
+ * @returns {import('../../../scripts/governance-hook-types').GovernanceRemediationAuditTrace}
+ */
+function buildNormalizedRemediationAuditTrace(
+  workerResult,
+  journeyContractHints,
+  executorRouting,
+  stopReason
+) {
+  const artifactPath =
+    (workerResult.remediationAuditTrace &&
+      typeof workerResult.remediationAuditTrace.artifactPath === 'string' &&
+      workerResult.remediationAuditTrace.artifactPath) ||
+    (typeof workerResult.artifactPath === 'string' ? workerResult.artifactPath : null);
+  const summaryLines = [
+    `Routing Mode: ${executorRouting.routingMode || '(unknown)'}`,
+    `Executor Route: ${executorRouting.executorRoute || '(unknown)'}`,
+    `Stop Reason: ${stopReason || '(none)'}`,
+    `Journey Contract Signals: ${renderJourneyContractSignals(journeyContractHints)}`,
+  ];
+
+  return {
+    artifactPath,
+    stopReason,
+    journeyContractHints,
+    routingMode: executorRouting.routingMode,
+    executorRoute: executorRouting.executorRoute,
+    prioritizedSignals: Array.isArray(executorRouting.prioritizedSignals)
+      ? executorRouting.prioritizedSignals
+      : [],
+    summaryLines,
+  };
+}
+
+/**
+ * @param {import('../../../scripts/governance-hook-types').GovernanceWorkerResult} workerResult
+ * @param {import('../../../scripts/governance-hook-types').GovernanceRemediationAuditTrace} remediationAuditTrace
+ * @returns {string[]}
+ */
+function buildNormalizedRunnerSummaryLines(workerResult, remediationAuditTrace) {
+  let lines = Array.isArray(workerResult.runnerSummaryLines)
+    ? workerResult.runnerSummaryLines.filter((line) => typeof line === 'string')
+    : [];
+
+  if (lines.length === 0) {
+    lines = [
+      '## Governance Remediation Runner Summary',
+      `- Loop State ID: ${workerResult.loopStateId || '(none)'}`,
+      `- Current Attempt Number: ${
+        workerResult.currentAttemptNumber !== undefined && workerResult.currentAttemptNumber !== null
+          ? workerResult.currentAttemptNumber
+          : '(none)'
+      }`,
+      `- Next Attempt Number: ${
+        workerResult.nextAttemptNumber !== undefined && workerResult.nextAttemptNumber !== null
+          ? workerResult.nextAttemptNumber
+          : '(none)'
+      }`,
+      `- Should Continue: ${
+        workerResult.shouldContinue === true
+          ? 'yes'
+          : workerResult.shouldContinue === false
+            ? 'no'
+            : '(unknown)'
+      }`,
+      `- Stop Reason: ${remediationAuditTrace.stopReason || '(none)'}`,
+      `- Artifact Path: ${remediationAuditTrace.artifactPath || '(none)'}`,
+      `- Executor Packet: ${
+        workerResult.packetPaths && Object.keys(workerResult.packetPaths).length > 0 ? 'yes' : 'no'
+      }`,
+      '',
+      '## Loop State Trace Summary',
+    ];
+  }
+
+  if (!lines.includes('## Governance Remediation Runner Summary')) {
+    lines.unshift('## Governance Remediation Runner Summary');
+  }
+  if (!lines.includes('## Loop State Trace Summary')) {
+    lines.push('', '## Loop State Trace Summary');
+  }
+
+  lines = upsertSummaryLine(lines, '- Routing Mode: ', remediationAuditTrace.routingMode || '(unknown)');
+  lines = upsertSummaryLine(
+    lines,
+    '- Executor Route: ',
+    remediationAuditTrace.executorRoute || '(unknown)'
+  );
+  lines = upsertSummaryLine(lines, '- Stop Reason: ', remediationAuditTrace.stopReason || '(none)');
+  lines = upsertSummaryLine(
+    lines,
+    '- Journey Contract Signals: ',
+    renderJourneyContractSignals(remediationAuditTrace.journeyContractHints)
+  );
+
+  return lines;
+}
+
+/**
  * @param {GovernanceWorkerResult | null | undefined} workerResult
  * @returns {GovernanceWorkerResult | null | undefined}
  */
@@ -75,6 +233,30 @@ function normalizeWorkerResult(workerResult) {
     : Array.isArray(workerResult.pendingJourneyContractHints)
       ? workerResult.pendingJourneyContractHints
       : undefined;
+  const executorRouting =
+    workerResult.executorRouting || buildExecutorRoutingFromHints(journeyContractHints);
+  const stopReason =
+    workerResult.stopReason !== undefined && workerResult.stopReason !== null
+      ? workerResult.stopReason
+      : null;
+  const remediationAuditTrace = buildNormalizedRemediationAuditTrace(
+    workerResult,
+    journeyContractHints,
+    executorRouting,
+    stopReason
+  );
+  const runnerSummaryLines = buildNormalizedRunnerSummaryLines(
+    workerResult,
+    remediationAuditTrace
+  );
+  const governancePresentation = buildGovernanceRunnerCliPresentation({
+    ...workerResult,
+    ...(journeyContractHints ? { journeyContractHints } : {}),
+    stopReason,
+    executorRouting,
+    remediationAuditTrace,
+    runnerSummaryLines,
+  });
   const { pendingJourneyContractHints, ...rest } = workerResult;
   void pendingJourneyContractHints;
 
@@ -84,14 +266,11 @@ function normalizeWorkerResult(workerResult) {
     ...(typeof workerResult.shouldContinue === 'boolean'
       ? { shouldContinue: workerResult.shouldContinue }
       : {}),
-    stopReason: workerResult.stopReason !== undefined ? workerResult.stopReason : null,
-    ...(workerResult.executorRouting ? { executorRouting: workerResult.executorRouting } : {}),
-    ...(workerResult.remediationAuditTrace
-      ? { remediationAuditTrace: workerResult.remediationAuditTrace }
-      : {}),
-    ...(workerResult.governancePresentation
-      ? { governancePresentation: workerResult.governancePresentation }
-      : {}),
+    stopReason,
+    executorRouting,
+    remediationAuditTrace,
+    runnerSummaryLines,
+    governancePresentation,
   };
 }
 

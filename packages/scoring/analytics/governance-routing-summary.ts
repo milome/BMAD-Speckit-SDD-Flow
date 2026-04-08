@@ -36,6 +36,8 @@ function compareEventTimestamp(
 /**
  * 从 scoring records 中提取最新 governance rerun executor routing 摘要。
  * 若最新事件没有 executor_routing，则继续向前回退到最近一条带 routing 的事件。
+ * @param {RunScoreRecord[]} records - scoring records
+ * @returns {GovernanceRoutingSummary | undefined} 最新 routing 摘要
  */
 export function summarizeGovernanceRouting(
   records: RunScoreRecord[]

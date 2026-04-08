@@ -16,8 +16,8 @@ import type {
 
 /**
  * Normalize governance runner summary lines.
- * @param {unknown} runnerSummaryLines
- * @returns {string[]}
+ * @param {unknown} runnerSummaryLines - candidate summary lines
+ * @returns {string[]} normalized summary lines
  */
 function normalizeGovernanceRunnerSummaryLines(runnerSummaryLines: unknown): string[] {
   if (!Array.isArray(runnerSummaryLines)) {
@@ -28,8 +28,8 @@ function normalizeGovernanceRunnerSummaryLines(runnerSummaryLines: unknown): str
 
 /**
  * Build governance latest raw event section lines.
- * @param {string[]} runnerSummaryLines
- * @returns {string[]}
+ * @param {string[]} runnerSummaryLines - normalized summary lines
+ * @returns {string[]} raw event section lines
  */
 function buildGovernanceLatestRawEventSectionLines(runnerSummaryLines: string[]): string[] {
   const normalized = normalizeGovernanceRunnerSummaryLines(runnerSummaryLines);

@@ -6,5 +6,7 @@ export default defineConfig({
     exclude: [...configDefaults.exclude, 'packages/bmad-speckit/tests/**/*', '.worktrees/**/*'],
     /** Reduce flaky timeout failures for integration tests (parse-and-write, dashboard-epic-aggregate, hash) */
     testTimeout: 20000,
+    /** Heavy npm pack/install and detached-worker acceptance tests are unstable under high parallelism on Windows. */
+    maxWorkers: 2,
   },
 });

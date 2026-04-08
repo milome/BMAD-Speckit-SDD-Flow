@@ -46,6 +46,8 @@ function isFailureOutcome(outcome: string): boolean {
 
 /**
  * 聚合 governance 历史中的 routing mode 分布。
+ * @param {RunScoreRecord[]} records - scoring records
+ * @returns {GovernanceRoutingModeDistributionEntry[]} routing mode 分布
  */
 export function summarizeGovernanceRoutingModeDistribution(
   records: RunScoreRecord[]
@@ -68,6 +70,8 @@ export function summarizeGovernanceRoutingModeDistribution(
 
 /**
  * 聚合 governance 历史中的 prioritized signals，输出热点 signal。
+ * @param {RunScoreRecord[]} records - scoring records
+ * @returns {GovernanceSignalHotspotEntry[]} signal 热点列表
  */
 export function summarizeGovernanceSignalHotspots(
   records: RunScoreRecord[]
@@ -109,6 +113,8 @@ export function summarizeGovernanceSignalHotspots(
 /**
  * 聚合 governance 历史中的 rerun gate 失败趋势。
  * 趋势规则：首事件非失败且最新事件为失败 => worsening；首事件失败且最新事件非失败 => improving；其余 flat。
+ * @param {RunScoreRecord[]} records - scoring records
+ * @returns {GovernanceRerunGateFailureTrendEntry[]} rerun gate 趋势列表
  */
 export function summarizeGovernanceRerunGateFailureTrend(
   records: RunScoreRecord[]

@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync } from 'node:fs';
+import { mkdtempSync } from 'node:fs';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -429,7 +429,7 @@ export async function createRuntimeDashboardFixture(
   });
 
   const lastRun = JSON.parse(
-    readFileSync(path.join(root, '_bmad-output', 'runtime', 'last-dev-story-run.json'), 'utf-8')
+    fs.readFileSync(path.join(root, '_bmad-output', 'runtime', 'last-dev-story-run.json'), 'utf-8')
   ) as { runId: string };
 
   const dataPath = path.join(root, 'packages', 'scoring', 'data');
@@ -444,7 +444,7 @@ export async function createRuntimeDashboardFixture(
       const variants = options.realToolTraceVariants ?? ['clean'];
       for (const variant of variants) {
         const config = getRealToolTraceVariantConfig(variant);
-        const toolTracePath = replayRealCursorToolTraceFixture(root, lastRun.runId, variant);
+        replayRealCursorToolTraceFixture(root, lastRun.runId, variant);
         await parseAndWriteScore({
           content: fs.readFileSync(config.reportFixturePath, 'utf-8'),
           stage: config.stage,
