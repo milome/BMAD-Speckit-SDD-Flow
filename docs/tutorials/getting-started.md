@@ -44,6 +44,19 @@ npx bmad-speckit init . --ai cursor-agent --yes
 
 此方式从 npm registry 拉取最新版，自动完成：核心目录部署 + AI 运行时同步 + 安装验证。适用于任何项目（含非 Node 项目）。
 
+这条路径的边界必须明确：
+
+- `npx bmad-speckit init` 是“上游快速初始化”入口
+- 它**不等价于**本仓库 `setup.ps1` / `init-to-root.js` 的完整定制部署
+- 如果你需要本仓库新增的 runtime governance 运行链细节，例如：
+  - `.claude/hooks/governance-runtime-worker.cjs`
+  - `.claude/hooks/governance-remediation-runner.cjs`
+  - `.cursor/hooks/governance-runtime-worker.cjs`
+  - `.cursor/hooks/governance-remediation-runner.cjs`
+  - 更新后的 `post-tool-use.cjs` / `stop.cjs` 可见日志
+  - 最新消费项目零-`scripts/` 治理链修复
+  则**不要只停留在 `npx init`**，必须改用方式二、三或四。
+
 > **注意**：`npx bmad-speckit init` 拉取的是上游 bmad-method 模板。若需本仓库的定制能力（运行时治理 hooks、双语 i18n 等），请使用方式二或方式四从本地 _bmad 部署。
 >
 > 若本仓库定制已发布到 npm（或自建 registry），`npx bmad-speckit init` 即可使用全部功能；当前建议方式二或四，是因为上游 npm 包可能尚未包含这些定制。
@@ -78,6 +91,28 @@ node D:\Dev\BMAD-Speckit-SDD-Flow\scripts\init-to-root.js D:\Dev\your-project --
 - `_bmad-output/config/` 空结构
 - `package.json` 中 `bmad-speckit` 依赖及 `check`、`speckit` 脚本
 
+但这里也要区分两层：
+
+1. `npm install --save-dev D:\Dev\BMAD-Speckit-SDD-Flow`
+   - 解决的是“把本仓库包安装到项目里”
+   - 你会得到 `npx bmad-speckit` / `npx bmad-speckit-init`
+   - 你会得到 `_bmad` 与默认 agent 的基础部署
+
+2. **如果你要确保 Claude / Cursor 两侧运行时 hooks 都是最新、完整、可执行的**
+   - 仍建议显式补跑：
+
+```powershell
+cd D:\Dev\your-project
+npx bmad-speckit-init --agent claude-code
+npx bmad-speckit-init --agent cursor
+```
+
+原因：
+
+- 这样可以把当前包内 `_bmad/runtime/hooks` 的共享 hook 资产，连同平台薄壳，一次性同步到项目的 `.claude/hooks` 与 `.cursor/hooks`
+- 对于 runtime governance，这一步是最稳妥的“安装后对齐动作”
+- 该流程仍然满足“消费项目根目录不创建治理运行所需 `scripts/`”的约束；真正落地的是 `.claude/hooks/`、`.cursor/hooks/` 和 `_bmad/runtime/hooks/`
+
 > **提示**：对于非 Node 项目，可使用 `--no-package-json` 标志跳过 `package.json` 创建：
 >
 > ```powershell
@@ -98,6 +133,22 @@ node scripts/init-to-root.js D:\Dev\your-project --agent cursor --full
 **何时选用**：无法使用 PowerShell 7（如部分 CI 环境、WSL 纯 Node 脚本）、或只需部署到单个项目且不需要全局 Skills 时。
 
 **部署内容**：与 setup.ps1 相同的核心部署（_bmad、.cursor、.claude、hooks、i18n、项目内 skills）。**项目内已有完整 skills**，打开该目标项目即可使用。若需 Skills 对其他项目全局可用，可参考 §3 手动复制到 `$env:USERPROFILE\.cursor\skills\`。安装后建议手动运行 `pwsh _bmad\speckit\scripts\powershell\check-prerequisites.ps1 -PathsOnly` 做校验。
+
+对于 runtime governance，`init-to-root.js` / `bmad-speckit-init` 的关键结果应当是：
+
+- `_bmad/runtime/hooks/governance-runtime-worker.cjs`
+- `_bmad/runtime/hooks/governance-remediation-runner.cjs`
+- `.claude/hooks/governance-runtime-worker.cjs`
+- `.claude/hooks/governance-remediation-runner.cjs`
+- `.cursor/hooks/governance-runtime-worker.cjs`
+- `.cursor/hooks/governance-remediation-runner.cjs`
+
+如果这些文件缺失，说明安装只做了“基础骨架”，还没有完成“最新 hooks 对齐”。此时直接补跑：
+
+```powershell
+npx bmad-speckit-init --agent claude-code
+npx bmad-speckit-init --agent cursor
+```
 
 ### 2.5 非交互式安装
 
@@ -209,6 +260,104 @@ foreach ($skill in $required) {
 cd D:\Dev\your-project
 pwsh _bmad\speckit\scripts\powershell\check-prerequisites.ps1 -PathsOnly
 ```
+
+### 4.1 最小复验命令列表
+
+下面这组命令是当前推荐的**最小复验清单**。如果你完成安装后只想快速判断“是否真的可用”，至少跑完这组：
+
+```powershell
+cd D:\Dev\your-project
+
+# 1. 基础骨架检查
+pwsh _bmad\speckit\scripts\powershell\check-prerequisites.ps1 -PathsOnly
+
+# 2. CLI 是否可解析
+npx bmad-speckit check
+
+# 3. 显式对齐 Claude / Cursor hooks（推荐）
+npx bmad-speckit-init --agent claude-code
+npx bmad-speckit-init --agent cursor
+```
+
+### 4.2 Runtime Governance 专项复验
+
+如果你关心的是 runtime governance 是否真正安装到位，额外检查这 4 层：
+
+```powershell
+$checks = @(
+  '._ignore',
+  '_bmad\runtime\hooks\governance-runtime-worker.cjs',
+  '_bmad\runtime\hooks\governance-remediation-runner.cjs',
+  '.claude\hooks\governance-runtime-worker.cjs',
+  '.claude\hooks\governance-remediation-runner.cjs',
+  '.cursor\hooks\governance-runtime-worker.cjs',
+  '.cursor\hooks\governance-remediation-runner.cjs',
+  '.claude\settings.json',
+  '.cursor\hooks.json'
+)
+
+foreach ($path in $checks) {
+    if ($path -eq '._ignore') { continue }
+    if (Test-Path $path) {
+        Write-Host "[OK] $path" -ForegroundColor Green
+    } else {
+        Write-Host "[MISSING] $path" -ForegroundColor Red
+    }
+}
+```
+
+其中：
+
+- `_bmad/runtime/hooks/*` 代表项目内共享运行时资产
+- `.claude/hooks/*` / `.cursor/hooks/*` 代表宿主真正执行的 hook 副本
+- `.claude/settings.json` / `.cursor/hooks.json` 代表宿主事件绑定是否存在
+
+### 4.3 npx 路径的明确说明
+
+`npx` 有两种常见含义，必须区分：
+
+1. `npx bmad-speckit init ...`
+   - 快速初始化
+   - 不保证带上本仓库所有最新定制
+
+2. `npm install --save-dev <本仓库>` 后再运行 `npx bmad-speckit-init --agent ...`
+   - 这是**本仓库定制能力**的推荐 npx 用法
+   - 能把当前包内最新 `_bmad/runtime/hooks` 同步到消费项目宿主目录
+
+如果你的目标是“消费项目里真的看到 governance-runtime-worker / governance-remediation-runner 并能执行”，请采用第 2 种，而不是只跑第 1 种。
+
+### 4.4 Hook 提示开关
+
+如果你希望项目 hooks 在执行时把提示信息直接打印出来，可开启：
+
+```json
+{
+  "env": {
+    "BMAD_HOOKS_VERBOSE": "1"
+  }
+}
+```
+
+推荐位置：
+
+- Claude Code：`<project>/.claude/settings.json`
+- 其他宿主：对应的项目级环境注入位置
+
+当前语义：
+
+- `BMAD_HOOKS_VERBOSE=0`
+  - 默认安静模式
+- `BMAD_HOOKS_VERBOSE=1`
+  - hook 会打印更多提示，例如：
+    - `pre-continue-check passed`
+    - `pre-continue-check failed`
+    - `pre-continue-check skipped: artifact self write`
+    - governance rerun queue 入队 / worker started / worker skipped
+
+这个开关适合排查两类问题：
+
+1. hook 有没有被调用
+2. hook 是真的拦截了，还是因为 self-write 被主动跳过
 
 手动验证关键路径：
 

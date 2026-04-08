@@ -10,6 +10,21 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
+function governanceLogPath(projectRoot) {
+  return path.join(projectRoot, '.claude', 'state', 'runtime', 'governance-hook.log');
+}
+
+function appendGovernanceLog(projectRoot, message) {
+  const line = `[${new Date().toISOString()}] ${message}`;
+  try {
+    fs.mkdirSync(path.dirname(governanceLogPath(projectRoot)), { recursive: true });
+    fs.appendFileSync(governanceLogPath(projectRoot), `${line}\n`, 'utf8');
+  } catch {
+    // ignore log write failures
+  }
+  console.log(line);
+}
+
 function resolvePresenterModule() {
   const candidates = [
     path.join(__dirname, 'governance-runner-summary-presenter.cjs'),
@@ -148,10 +163,20 @@ Generated: ${timestamp}
     }));
   }
 
-  console.log('[BMAD] Checkpoint saved');
+  appendGovernanceLog(projectRoot, '[BMAD] Checkpoint saved');
   if (workerResult && workerResult.started && !workerResult.skipped) {
-    console.log('[BMAD] Runtime worker triggered');
+    appendGovernanceLog(projectRoot, '[BMAD] Runtime worker triggered');
     logRemediationAuditTrace(workerResult);
+  } else if (workerResult && workerResult.skipped) {
+    appendGovernanceLog(
+      projectRoot,
+      `[Runtime Governance] stop hook skipped worker reason=${workerResult.reason || 'unknown'}`
+    );
+  } else if (!helper) {
+    appendGovernanceLog(
+      projectRoot,
+      '[Runtime Governance] stop hook worker helper unavailable'
+    );
   }
 
   return {

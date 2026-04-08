@@ -35,6 +35,52 @@
 
 所以这篇文档给出一条真正可执行的消费者路径。
 
+## 当前必须明确的安装事实
+
+### 1. 消费项目根目录不是 governance 运行入口落点
+
+当前设计下，消费项目**不应该**依赖根目录 `scripts/` 作为 runtime governance 主运行面。换句话说，下面这种路径缺失本身不是 bug：
+
+- `<consumer>/scripts/governance-runtime-worker.*`
+- `<consumer>/scripts/governance-remediation-runner.*`
+
+真正应该出现并被宿主消费的是：
+
+- `<consumer>/_bmad/runtime/hooks/governance-runtime-worker.cjs`
+- `<consumer>/_bmad/runtime/hooks/governance-remediation-runner.cjs`
+- `<consumer>/.claude/hooks/governance-runtime-worker.cjs`
+- `<consumer>/.claude/hooks/governance-remediation-runner.cjs`
+- `<consumer>/.cursor/hooks/governance-runtime-worker.cjs`
+- `<consumer>/.cursor/hooks/governance-remediation-runner.cjs`
+
+### 2. 仅完成 npm 安装，不等于两侧 hooks 已经全部对齐
+
+当前最稳妥的消费项目安装链分两步：
+
+1. 安装包
+2. 显式执行 agent 对齐
+
+示例：
+
+```powershell
+cd <consumer-root>
+npm install --save-dev D:\Dev\BMAD-Speckit-SDD-Flow
+npx bmad-speckit-init --agent claude-code
+npx bmad-speckit-init --agent cursor
+```
+
+如果你只做了第 1 步，可能已经拿到了 `_bmad` 和 CLI，但还没有把最新 hook 资产完整同步到 `.claude/hooks` / `.cursor/hooks`。
+
+### 3. `npx` 要区分“init”与“已安装后的 init 对齐”
+
+- `npx bmad-speckit init . --ai cursor-agent --yes`
+  - 更接近“快速初始化入口”
+  - 不保证等同于本仓库当前源码里的所有最新定制治理链
+
+- `npm install --save-dev <本仓库>` 之后执行 `npx bmad-speckit-init --agent ...`
+  - 这是当前推荐的消费者安装态对齐路径
+  - 可以把包内 `_bmad/runtime/hooks` 与平台 hook 薄壳同步到项目实际运行目录
+
 ## 安装路径选择
 
 ### 路径 A：推荐，用本仓库源代码直接部署
@@ -64,6 +110,12 @@ node scripts/init-to-root.js <消费项目根目录> --agent claude-code --full
 - 如果你只想装 Cursor，可只跑 `--agent cursor`
 - 如果你也要 Claude Code，补跑一次 `--agent claude-code`
 
+推荐安装后立即补一轮显式核对：
+
+```powershell
+pwsh _bmad\speckit\scripts\powershell\check-prerequisites.ps1 -PathsOnly
+```
+
 ### 路径 B：npm / npx 初始化
 
 适合：
@@ -75,10 +127,18 @@ node scripts/init-to-root.js <消费项目根目录> --agent claude-code --full
 npx bmad-speckit init . --ai cursor-agent --yes
 ```
 
+如果你随后要验证 runtime governance 是否真的完整落地，继续执行：
+
+```powershell
+npx bmad-speckit-init --agent claude-code
+npx bmad-speckit-init --agent cursor
+```
+
 注意：
 
 - 这条路径更接近“快速初始化”
 - 如果你明确需要本仓库里较新的运行时治理、双语或 dashboard 接线，优先回到路径 A
+- 对 runtime governance 来说，**不要把“跑过 npx init”误认为“宿主 hooks 已经全部更新”**；请以 `.claude/hooks`、`.cursor/hooks` 与 settings/hooks.json 的实际文件为准
 
 ## 安装后，消费项目里应该出现什么
 
@@ -126,6 +186,50 @@ foreach ($path in $checks) {
 
 如果这些都不存在或明显缺项，不要继续配 provider / MCP，先回头修安装。
 
+## 1.1 安装态核对清单
+
+下面这份清单专门回答“消费项目安装后到底有没有装对”。按 `node_modules`、`_bmad/runtime/hooks`、`.claude/hooks`、`.cursor/hooks`、宿主配置 五层一次性核对。
+
+```powershell
+cd <consumer-root>
+
+$checks = @(
+  'node_modules',
+  '_bmad\runtime\hooks\governance-runtime-worker.cjs',
+  '_bmad\runtime\hooks\governance-remediation-runner.cjs',
+  '.claude\hooks\governance-runtime-worker.cjs',
+  '.claude\hooks\governance-remediation-runner.cjs',
+  '.claude\hooks\post-tool-use.cjs',
+  '.cursor\hooks\governance-runtime-worker.cjs',
+  '.cursor\hooks\governance-remediation-runner.cjs',
+  '.cursor\hooks\post-tool-use.cjs',
+  '.claude\settings.json',
+  '.cursor\hooks.json'
+)
+
+foreach ($path in $checks) {
+  if (Test-Path $path) {
+    Write-Host "[OK] $path" -ForegroundColor Green
+  } else {
+    Write-Host "[MISSING] $path" -ForegroundColor Red
+  }
+}
+```
+
+通过标准：
+
+- `_bmad/runtime/hooks` 下两个 governance CJS 文件存在
+- `.claude/hooks` 下两个 governance CJS 文件存在
+- `.cursor/hooks` 下两个 governance CJS 文件存在
+- `.claude/settings.json` 与 `.cursor/hooks.json` 存在
+
+如果 `.claude/hooks/governance-runtime-worker.cjs` 或 `.cursor/hooks/governance-remediation-runner.cjs` 缺失，直接补跑：
+
+```powershell
+npx bmad-speckit-init --agent claude-code
+npx bmad-speckit-init --agent cursor
+```
+
 ## 第二步：配置 Cursor / Claude Code
 
 ### Cursor
@@ -138,8 +242,15 @@ foreach ($path in $checks) {
 消费者项目里你最需要确认的是：
 
 1. `.cursor/hooks.json` 存在
-2. `.cursor/hooks/` 下有 runtime dashboard 相关 hook 副本
+2. `.cursor/hooks/` 下有 runtime dashboard 与 governance 相关 hook 副本
 3. 进入 session 后 dashboard 能自动复用或自动启动
+
+最少核对这几个文件：
+
+- `.cursor/hooks/post-tool-use.cjs`
+- `.cursor/hooks/governance-runtime-worker.cjs`
+- `.cursor/hooks/governance-remediation-runner.cjs`
+- `.cursor/hooks.json`
 
 手动兜底命令：
 
@@ -160,6 +271,14 @@ npx bmad-speckit dashboard-status
 1. `.claude/hooks/` 存在 session-start 相关 hook
 2. `.claude/settings.json` 已包含对应 hook 配置
 3. 进入 Claude session 后 dashboard 能自动复用或启动
+
+最少核对这几个文件：
+
+- `.claude/hooks/post-tool-use.cjs`
+- `.claude/hooks/stop.cjs`
+- `.claude/hooks/governance-runtime-worker.cjs`
+- `.claude/hooks/governance-remediation-runner.cjs`
+- `.claude/settings.json`
 
 如果宿主不触发 hook，也可以手动执行：
 
@@ -281,6 +400,40 @@ node scripts/init-to-root.js <消费项目根目录> --agent claude-code --with-
 pwsh _bmad\speckit\scripts\powershell\check-prerequisites.ps1 -PathsOnly
 ```
 
+### 最小复验命令列表
+
+如果你只想保留一套最短、最有价值的复验命令，当前推荐这组：
+
+```powershell
+cd <consumer-root>
+
+# 1. 基础骨架
+pwsh _bmad\speckit\scripts\powershell\check-prerequisites.ps1 -PathsOnly
+
+# 2. CLI 是否可用
+npx bmad-speckit check
+
+# 3. 强制对齐 Claude / Cursor hooks
+npx bmad-speckit-init --agent claude-code
+npx bmad-speckit-init --agent cursor
+
+# 4. 手动核对治理关键文件
+Test-Path .claude\hooks\governance-runtime-worker.cjs
+Test-Path .claude\hooks\governance-remediation-runner.cjs
+Test-Path .cursor\hooks\governance-runtime-worker.cjs
+Test-Path .cursor\hooks\governance-remediation-runner.cjs
+
+# 5. dashboard smoke
+npx bmad-speckit dashboard-status
+```
+
+判定规则：
+
+- 第 1、2 步必须成功
+- 第 3 步必须无报错
+- 第 4 步四个 `Test-Path` 都应返回 `True`
+- 第 5 步至少应返回 dashboard 状态，不应报 CLI 解析失败
+
 ### dashboard 验活
 
 ```bash
@@ -295,6 +448,59 @@ npx bmad-speckit dashboard-status
 参考：
 
 - [provider-configuration.md](./provider-configuration.md)
+
+### Runtime Governance 验活说明
+
+当前仓库已经补齐消费项目零-`scripts/` 的治理运行链。也就是说：
+
+- runtime governance 真正使用的是 hooks / `_bmad/runtime/hooks`
+- 不是消费项目根的 `scripts/`
+
+因此验活时应当优先检查：
+
+- `.claude/hooks/governance-runtime-worker.cjs`
+- `.claude/hooks/governance-remediation-runner.cjs`
+- `.cursor/hooks/governance-runtime-worker.cjs`
+- `.cursor/hooks/governance-remediation-runner.cjs`
+
+而不是去找：
+
+- `<consumer>/scripts/governance-runtime-worker.*`
+- `<consumer>/scripts/governance-remediation-runner.*`
+
+## Hook 提示开关
+
+如果你希望本项目 hooks 在执行时把提示信息直接打印出来，可以打开：
+
+```json
+{
+  "env": {
+    "BMAD_HOOKS_VERBOSE": "1"
+  }
+}
+```
+
+推荐放置位置：
+
+- Claude Code：`<consumer>/.claude/settings.json`
+- 或宿主等效的项目级环境配置
+
+当前语义：
+
+- `BMAD_HOOKS_VERBOSE=0`
+  - 默认静默，只保留必要 hook 结果
+- `BMAD_HOOKS_VERBOSE=1`
+  - 输出 hook 级提示，包括：
+    - `pre-continue-check passed`
+    - `pre-continue-check failed`
+    - `pre-continue-check skipped: artifact self write`
+    - 以及 governance rerun 入队、worker started / skipped 等信息
+
+这能帮助你快速判断：
+
+1. hook 是否真的被调用
+2. 是否因为 self-write 被主动跳过
+3. 是否真的命中了 continue gate 拦截
 
 ## 推荐阅读顺序
 

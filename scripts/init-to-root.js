@@ -584,6 +584,8 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
       'render-audit-block.cjs not found; run: npm run build:runtime-emit — pre-agent-summary audit inject may be empty in target.'
     );
   }
+  const governanceWorkerSrc = path.join(pkgRoot, 'packages', 'runtime-emit', 'dist', 'governance-runtime-worker.cjs');
+  const governanceRunnerSrc = path.join(pkgRoot, 'packages', 'runtime-emit', 'dist', 'governance-remediation-runner.cjs');
   const wrcSrc = path.join(path.dirname(emitSrc), '..', 'write-runtime-context.cjs');
   const hookDirs = [
     path.join(targetDir, '.cursor', 'hooks'),
@@ -599,6 +601,12 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
     if (renderAuditSrc && fs.existsSync(renderAuditSrc)) {
       fs.copyFileSync(renderAuditSrc, path.join(d, 'render-audit-block.cjs'));
     }
+    if (fs.existsSync(governanceWorkerSrc)) {
+      fs.copyFileSync(governanceWorkerSrc, path.join(d, 'governance-runtime-worker.cjs'));
+    }
+    if (fs.existsSync(governanceRunnerSrc)) {
+      fs.copyFileSync(governanceRunnerSrc, path.join(d, 'governance-remediation-runner.cjs'));
+    }
     if (fs.existsSync(wrcSrc)) {
       fs.copyFileSync(wrcSrc, path.join(d, 'write-runtime-context.cjs'));
     }
@@ -611,7 +619,7 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
     return;
   }
   console.log(
-    'Deployed emit-runtime-policy.cjs, resolve-for-session.cjs, render-audit-block.cjs (+ write-runtime-context.cjs) under .cursor/hooks and/or .claude/hooks (no project-root scripts/).'
+    'Deployed emit-runtime-policy.cjs, resolve-for-session.cjs, render-audit-block.cjs, governance-runtime-worker.cjs, governance-remediation-runner.cjs (+ write-runtime-context.cjs) under .cursor/hooks and/or .claude/hooks (no project-root scripts/).'
   );
 }
 

@@ -26,6 +26,7 @@ import {
 import { writeRuntimeContext } from '../../scripts/runtime-context';
 import {
   linkRepoNodeModulesIntoProject,
+  linkRepoBmadRuntimeHooksIntoClaudeProject,
   linkRepoScriptsIntoProject,
   linkRepoTsconfigIntoProject,
 } from '../helpers/runtime-registry-fixture';
@@ -107,6 +108,7 @@ function createFixtureProject(): {
   seedScoringSchemaFixture(root);
   linkRepoNodeModulesIntoProject(root);
   linkRepoScriptsIntoProject(root);
+  linkRepoBmadRuntimeHooksIntoClaudeProject(root);
   linkRepoTsconfigIntoProject(root);
   const registry = defaultRuntimeContextRegistry(root);
   writeRuntimeContextRegistry(root, registry);

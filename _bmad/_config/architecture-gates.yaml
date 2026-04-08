@@ -234,6 +234,39 @@ gate_sets:
             required_sections:
               - Blockers Requiring Immediate Action
               - Deferred Gaps
+          - name: readiness_four_signal_contract_section
+            check: report 必须包含 Four-Signal Governance Contract Status 章节
+            required_sections:
+              - Four-Signal Governance Contract Status
+              - P0 Journey Coverage Matrix
+              - Smoke E2E Preconditions Traceability
+              - Cross-Document Traceability
+              - Four-Signal Contract Verification
+          - name: readiness_four_signal_traceability
+            check: report 必须显式总结四信号追溯性矩阵
+            section_scope:
+              - Four-Signal Governance Contract Status
+            required_keywords:
+              p0_journey:
+                - P0 Journey Coverage Matrix
+                - PRD Journey
+                - Arch P0 Key Path
+                - Epic Coverage
+              smoke_e2e:
+                - Smoke E2E Preconditions Traceability
+                - E2E test strategy
+                - Critical paths
+              evidence_proof:
+                - Evidence & Proof Chain
+                - Source Document
+                - Evidence Location
+                - Verification
+              traceability:
+                - Cross-Document Traceability
+                - PRD Requirement
+                - Architecture Decision
+                - Epic Story
+                - Traceability Status
           - name: readiness_journey_contract
             check: readiness 最终评估必须保留四信号 contract
             required_keywords:

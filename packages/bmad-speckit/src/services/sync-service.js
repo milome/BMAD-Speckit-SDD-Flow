@@ -195,6 +195,8 @@ function deployRuntimeGovernanceFromPackage(projectRoot) {
   const pkgRootRuntimeEmit =
     path.basename(path.dirname(emitSrc)) === 'dist' ? path.dirname(path.dirname(emitSrc)) : path.dirname(emitSrc);
   const wrcSrc = path.join(pkgRootRuntimeEmit, 'write-runtime-context.cjs');
+  const governanceWorkerSrc = path.join(pkgRootRuntimeEmit, 'dist', 'governance-runtime-worker.cjs');
+  const governanceRunnerSrc = path.join(pkgRootRuntimeEmit, 'dist', 'governance-remediation-runner.cjs');
   const hookDirs = [path.join(projectRoot, '.cursor', 'hooks'), path.join(projectRoot, '.claude', 'hooks')];
   let deployed = 0;
   for (const d of hookDirs) {
@@ -206,6 +208,12 @@ function deployRuntimeGovernanceFromPackage(projectRoot) {
     const preContinueSrc = path.join(projectRoot, '_bmad', 'runtime', 'hooks', 'pre-continue-check.cjs');
     if (fs.existsSync(preContinueSrc)) {
       fs.copyFileSync(preContinueSrc, path.join(d, 'pre-continue-check.cjs'));
+    }
+    if (fs.existsSync(governanceWorkerSrc)) {
+      fs.copyFileSync(governanceWorkerSrc, path.join(d, 'governance-runtime-worker.cjs'));
+    }
+    if (fs.existsSync(governanceRunnerSrc)) {
+      fs.copyFileSync(governanceRunnerSrc, path.join(d, 'governance-remediation-runner.cjs'));
     }
     deployed += 1;
   }
@@ -328,7 +336,13 @@ function deployCursorRuntimePolicyHooks(projectRoot, bmadRoot) {
     copyDirRecursive(sharedDir, destDir);
   }
 
-  const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs', 'pre-continue-check.cjs'];
+  const names = [
+    'emit-runtime-policy-cli.cjs',
+    'runtime-policy-inject.cjs',
+    'pre-continue-check.cjs',
+    'post-tool-use.cjs',
+    'runtime-dashboard-session-start.cjs',
+  ];
   for (const name of names) {
     const src = path.join(cursorHooksDir, name);
     const runtimeFallback = path.join(bmadRoot, 'runtime', 'hooks', name);
@@ -356,7 +370,14 @@ function deployClaudeRuntimePolicyHooks(projectRoot, bmadRoot) {
     copyDirRecursive(sharedDir, destDir);
   }
 
-  const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs', 'pre-continue-check.cjs'];
+  const names = [
+    'emit-runtime-policy-cli.cjs',
+    'runtime-policy-inject.cjs',
+    'pre-continue-check.cjs',
+    'post-tool-use.cjs',
+    'session-start.cjs',
+    'stop.cjs',
+  ];
   for (const name of names) {
     const src = path.join(claudeHooksDir, name);
     const runtimeFallback = path.join(bmadRoot, 'runtime', 'hooks', name);

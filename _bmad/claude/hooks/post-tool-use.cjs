@@ -21,6 +21,25 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
+function governanceLogPath(projectRoot) {
+  return path.join(projectRoot, '.claude', 'state', 'runtime', 'governance-hook.log');
+}
+
+function appendGovernanceLog(projectRoot, message) {
+  const line = `[${new Date().toISOString()}] ${message}`;
+  try {
+    fs.mkdirSync(path.dirname(governanceLogPath(projectRoot)), { recursive: true });
+    fs.appendFileSync(governanceLogPath(projectRoot), `${line}\n`, 'utf8');
+  } catch {
+    // ignore log write failures
+  }
+  try {
+    process.stdout.write(`${line}\n`);
+  } catch {
+    // ignore stdout failures
+  }
+}
+
 function resolvePresenterModule() {
   const candidates = [
     path.join(__dirname, 'governance-runner-summary-presenter.cjs'),
@@ -289,17 +308,48 @@ function postToolUse(event) {
   }
 
   const projectRoot = extractProjectRoot(event);
+  const rerunGate =
+    event.payload &&
+    event.payload.runnerInput &&
+    typeof event.payload.runnerInput.rerunGate === 'string'
+      ? event.payload.runnerInput.rerunGate
+      : 'unknown-gate';
+  appendGovernanceLog(
+    projectRoot,
+    `[Runtime Governance] received rerun-result gate=${rerunGate}`
+  );
 
   if (typeof helper.drainGovernanceStageEvents === 'function') {
     helper.drainGovernanceStageEvents(projectRoot);
   }
 
   const queuePath = helper.enqueueGovernanceRerunEvent(event);
+  appendGovernanceLog(
+    projectRoot,
+    `[Runtime Governance] queued rerun event path=${queuePath}`
+  );
   const backgroundTrigger = normalizeBackgroundTrigger(
     triggerDetachedBackgroundDrain(projectRoot, event),
     projectRoot,
     event
   );
+
+  if (!backgroundTrigger) {
+    appendGovernanceLog(
+      projectRoot,
+      '[Runtime Governance] worker helper unavailable; background drain not started'
+    );
+  } else if (backgroundTrigger.started) {
+    appendGovernanceLog(
+      projectRoot,
+      `[Runtime Governance] background worker started pid=${backgroundTrigger.pid || 'unknown'}`
+    );
+  } else if (backgroundTrigger.skipped) {
+    appendGovernanceLog(
+      projectRoot,
+      `[Runtime Governance] background worker skipped reason=${backgroundTrigger.reason || 'unknown'}`
+    );
+  }
 
   return {
     queuePath,

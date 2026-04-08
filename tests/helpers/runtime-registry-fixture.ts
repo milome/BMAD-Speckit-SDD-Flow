@@ -23,6 +23,20 @@ export function linkRepoScriptsIntoProject(projectRoot: string): void {
   }
 }
 
+export function linkRepoBmadRuntimeHooksIntoClaudeProject(projectRoot: string): void {
+  const src = path.join(REPO_ROOT, '_bmad', 'runtime', 'hooks');
+  const dest = path.join(projectRoot, '.claude', 'hooks');
+  fs.mkdirSync(dest, { recursive: true });
+  for (const name of fs.readdirSync(src)) {
+    const s = path.join(src, name);
+    const d = path.join(dest, name);
+    if (fs.statSync(s).isDirectory()) {
+      continue;
+    }
+    fs.copyFileSync(s, d);
+  }
+}
+
 export function linkRepoTsconfigIntoProject(projectRoot: string): void {
   for (const fileName of ['tsconfig.json', 'tsconfig.node.json']) {
     const src = path.join(REPO_ROOT, fileName);

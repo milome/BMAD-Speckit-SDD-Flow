@@ -96,5 +96,8 @@
         ]
       }
     ]
+  },
+  "env": {
+    "BMAD_HOOKS_VERBOSE": "0"
   }
 }

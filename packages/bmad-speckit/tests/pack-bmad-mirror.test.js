@@ -24,6 +24,8 @@ test('npm pack --dry-run includes packaged _bmad hook cjs files', () => {
     '_bmad/runtime/hooks/runtime-policy-inject-core.cjs',
     '_bmad/cursor/hooks/runtime-policy-inject.cjs',
     '_bmad/claude/hooks/runtime-policy-inject.cjs',
+    'node_modules/@bmad-speckit/runtime-emit/dist/governance-runtime-worker.cjs',
+    'node_modules/@bmad-speckit/runtime-emit/dist/governance-remediation-runner.cjs',
   ];
 
   for (const file of expected) {

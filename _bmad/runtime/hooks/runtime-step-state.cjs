@@ -3,7 +3,28 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const yaml = require('js-yaml');
+
+function resolveYamlModule() {
+  const candidates = [
+    'js-yaml',
+    path.join(process.cwd(), 'node_modules', 'js-yaml'),
+    path.join(process.cwd(), '..', 'BMAD-Speckit-SDD-Flow', 'node_modules', 'js-yaml'),
+    path.join(__dirname, '..', '..', '..', 'node_modules', 'js-yaml'),
+    path.join(__dirname, '..', '..', '..', '..', 'node_modules', 'js-yaml'),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      return require(candidate);
+    } catch {
+      // try next candidate
+    }
+  }
+
+  throw new Error('Cannot resolve js-yaml from hook runtime');
+}
+
+const yaml = resolveYamlModule();
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -466,7 +487,10 @@ function parseHookInput(hookInput) {
     workflow: direct.workflow || (typeof nested.workflow === 'string' ? nested.workflow : ''),
     step: direct.step || (typeof nested.step === 'string' ? nested.step : ''),
     artifactPath:
-      direct.artifactPath || (typeof nested.artifactPath === 'string' ? nested.artifactPath : ''),
+      direct.artifactPath ||
+      (typeof nested.artifactPath === 'string' ? nested.artifactPath : '') ||
+      (typeof nested.file_path === 'string' ? nested.file_path : '') ||
+      (typeof hookInput.file_path === 'string' ? hookInput.file_path : ''),
   };
 }
 

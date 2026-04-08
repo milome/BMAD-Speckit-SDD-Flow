@@ -12,9 +12,54 @@ const fs = require('node:fs');
 const path = require('node:path');
 const esbuild = require('esbuild');
 
+const governanceHookAliasPlugin = {
+  name: 'governance-hook-alias',
+  setup(build) {
+    const aliasMap = new Map([
+      [
+        '../_bmad/runtime/hooks/governance-runner-summary-presenter.cjs',
+        path.join(repoRoot, '_bmad', 'runtime', 'hooks', 'governance-runner-summary-presenter.cjs'),
+      ],
+      [
+        '../_bmad/runtime/hooks/governance-runner-summary-format.cjs',
+        path.join(repoRoot, '_bmad', 'runtime', 'hooks', 'governance-runner-summary-format.cjs'),
+      ],
+      [
+        '../_bmad/runtime/hooks/governance-stage-event-emitter.cjs',
+        path.join(repoRoot, '_bmad', 'runtime', 'hooks', 'governance-stage-event-emitter.cjs'),
+      ],
+    ]);
+
+    for (const [request, target] of aliasMap.entries()) {
+      build.onResolve({ filter: new RegExp('^' + request.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$') }, () => ({
+        path: target,
+      }));
+    }
+  },
+};
+
+const governanceRuntimeConsumerPathPlugin = {
+  name: 'governance-runtime-consumer-paths',
+  setup(build) {
+    build.onResolve({ filter: /^\.\.\/packages\/scoring\/(governance\/write-rerun-history|query\/loader|query)$/ }, (args) => {
+      const map = {
+        '../packages/scoring/governance/write-rerun-history': path.join(repoRoot, 'packages', 'scoring', 'governance', 'write-rerun-history.ts'),
+        '../packages/scoring/query/loader': path.join(repoRoot, 'packages', 'scoring', 'query', 'loader.ts'),
+        '../packages/scoring/query': path.join(repoRoot, 'packages', 'scoring', 'query', 'index.ts'),
+      };
+      return { path: map[args.path] };
+    });
+    build.onResolve({ filter: /^\.\/constants\/path$/ }, () => ({
+      path: path.join(repoRoot, 'packages', 'scoring', 'constants', 'path.ts'),
+    }));
+  },
+};
+
 const pkgDir = __dirname;
 const repoRoot = path.resolve(pkgDir, '../..');
 const outDir = path.join(pkgDir, 'dist');
+const workerEntry = path.join(repoRoot, 'scripts', 'bmad-runtime-worker.ts');
+const runnerEntry = path.join(repoRoot, 'scripts', 'governance-remediation-runner.ts');
 const bundles = [
   {
     entry: path.join(repoRoot, 'scripts', 'emit-runtime-policy.ts'),
@@ -36,21 +81,41 @@ const bundles = [
     outfile: path.join(outDir, 'consumer-mcp-server.cjs'),
     label: 'consumer-mcp-server',
   },
+  {
+    entry: workerEntry,
+    outfile: path.join(outDir, 'governance-runtime-worker.cjs'),
+    label: 'governance-runtime-worker',
+  },
+  {
+    entry: runnerEntry,
+    outfile: path.join(outDir, 'governance-remediation-runner.cjs'),
+    label: 'governance-remediation-runner',
+  },
 ];
 
 fs.mkdirSync(outDir, { recursive: true });
 
+async function main() {
 for (const { entry, outfile, label } of bundles) {
   if (!fs.existsSync(entry)) {
     console.error(`runtime-emit build: missing entry for ${label}:`, entry);
     process.exit(1);
   }
-  esbuild.buildSync({
+  await esbuild.build({
     entryPoints: [entry],
     bundle: true,
     platform: 'node',
     format: 'cjs',
+    target: 'node18',
+    plugins: [governanceHookAliasPlugin, governanceRuntimeConsumerPathPlugin],
     outfile,
   });
   console.log('runtime-emit: wrote', path.relative(repoRoot, outfile));
 }
+
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

@@ -11,7 +11,8 @@
     "src/",
     "tests/",
     "test-nonempty/",
-    "_bmad/"
+    "_bmad/",
+    "node_modules/@bmad-speckit/runtime-emit/dist/"
   ],
   "scripts": {
     "prepack": "node -e \"process.env.BMAD_PREPUBLISH_SILENT='1'; require('../../scripts/prepublish-check.js')\"",

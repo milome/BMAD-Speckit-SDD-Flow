@@ -728,10 +728,15 @@ function tryResolveModule(moduleId, projectRoot) {
  */
 function resolveWorkerEntry(projectRoot) {
   const candidates = [
-    path.join(projectRoot, 'scripts', 'bmad-runtime-worker.js'),
-    path.join(projectRoot, 'scripts', 'bmad-runtime-worker.ts'),
+    path.join(projectRoot, '.claude', 'hooks', 'governance-runtime-worker.cjs'),
+    path.join(projectRoot, '.cursor', 'hooks', 'governance-runtime-worker.cjs'),
+    path.join(projectRoot, '_bmad', 'runtime', 'hooks', 'governance-runtime-worker.cjs'),
+    path.join(projectRoot, 'node_modules', 'bmad-speckit', '_bmad', 'runtime', 'hooks', 'governance-runtime-worker.cjs'),
     path.join(projectRoot, 'node_modules', 'bmad-speckit', 'scripts', 'bmad-runtime-worker.js'),
     path.join(projectRoot, 'node_modules', 'bmad-speckit', 'scripts', 'bmad-runtime-worker.ts'),
+    path.resolve(__dirname, 'governance-runtime-worker.cjs'),
+    path.resolve(__dirname, '..', '..', 'runtime', 'hooks', 'governance-runtime-worker.cjs'),
+    path.resolve(__dirname, '..', '..', '..', '_bmad', 'runtime', 'hooks', 'governance-runtime-worker.cjs'),
     path.resolve(__dirname, '..', '..', 'scripts', 'bmad-runtime-worker.js'),
     path.resolve(__dirname, '..', '..', 'scripts', 'bmad-runtime-worker.ts'),
     path.resolve(__dirname, '..', '..', '..', 'scripts', 'bmad-runtime-worker.js'),
@@ -739,10 +744,9 @@ function resolveWorkerEntry(projectRoot) {
   ];
 
   const resolvedModules = [
+    tryResolveModule('bmad-speckit/_bmad/runtime/hooks/governance-runtime-worker.cjs', projectRoot),
     tryResolveModule('bmad-speckit/scripts/bmad-runtime-worker.js', projectRoot),
     tryResolveModule('bmad-speckit/scripts/bmad-runtime-worker.ts', projectRoot),
-    tryResolveModule('./scripts/bmad-runtime-worker.js', projectRoot),
-    tryResolveModule('./scripts/bmad-runtime-worker.ts', projectRoot),
   ];
 
   for (const candidate of [...resolvedModules, ...candidates]) {
@@ -808,31 +812,10 @@ function buildWorkerSpawnPlan(projectRoot) {
   if (!workerEntry) {
     throw new Error('bmad runtime worker entry not found');
   }
-
-  const tsconfigNode = path.join(projectRoot, 'tsconfig.node.json');
-  const tsconfigArgs = fs.existsSync(tsconfigNode) ? ['--project', tsconfigNode] : [];
-
-  if (workerEntry.endsWith('.js')) {
-    return {
-      command: process.execPath,
-      args: [workerEntry],
-      shell: false,
-    };
-  }
-
-  const tsNodeBin = resolveTsNodeBin(projectRoot, workerEntry);
-  if (tsNodeBin) {
-    return {
-      command: process.execPath,
-      args: [tsNodeBin, ...tsconfigArgs, '--transpile-only', workerEntry],
-      shell: false,
-    };
-  }
-
   return {
-    command: 'npx',
-    args: ['ts-node', ...tsconfigArgs, '--transpile-only', workerEntry],
-    shell: true,
+    command: process.execPath,
+    args: [workerEntry, projectRoot],
+    shell: false,
   };
 }
 

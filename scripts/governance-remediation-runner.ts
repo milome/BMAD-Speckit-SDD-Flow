@@ -1303,6 +1303,14 @@ async function main(): Promise<void> {
   }
 
   const args = process.argv.slice(2);
+  const jsonInputPath = argValue(args, '--jsonInputPath');
+  if (jsonInputPath) {
+    const payload = JSON.parse(fs.readFileSync(path.resolve(jsonInputPath), 'utf8')) as RunGovernanceRemediationInput;
+    const result = await runGovernanceRemediation(payload);
+    process.stdout.write(JSON.stringify(result));
+    return;
+  }
+
   const outputPath = argValue(args, '--outputPath');
   if (!outputPath) {
     throw new Error(

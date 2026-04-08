@@ -3,7 +3,28 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const yaml = require('js-yaml');
+
+function resolveYamlModule() {
+  const candidates = [
+    'js-yaml',
+    path.join(process.cwd(), 'node_modules', 'js-yaml'),
+    path.join(process.cwd(), '..', 'BMAD-Speckit-SDD-Flow', 'node_modules', 'js-yaml'),
+    path.join(__dirname, '..', '..', '..', 'node_modules', 'js-yaml'),
+    path.join(__dirname, '..', '..', '..', '..', 'node_modules', 'js-yaml'),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      return require(candidate);
+    } catch {
+      // try next candidate
+    }
+  }
+
+  throw new Error('Cannot resolve js-yaml from hook runtime');
+}
+
+const yaml = resolveYamlModule();
 const {
   buildGovernanceStageRerunResultEvent,
   persistGovernanceStageRerunResultEvent,
@@ -12,6 +33,19 @@ const {
   resolveRuntimeStepState,
   persistRuntimeStepState,
 } = require('./runtime-step-state.cjs');
+
+function isHookVerbose() {
+  return process.env.BMAD_HOOKS_VERBOSE === '1';
+}
+
+function emitHookInfo(message) {
+  if (!isHookVerbose()) return;
+  try {
+    process.stdout.write(`${JSON.stringify({ systemMessage: `[BMAD Hook] ${message}` })}\n`);
+  } catch {
+    // ignore verbose output failures
+  }
+}
 
 function readStdin() {
   return new Promise((resolve, reject) => {
@@ -29,6 +63,24 @@ function readStdin() {
     });
     process.stdin.on('error', reject);
   });
+}
+
+function extractHookWritePath(hookInput) {
+  if (!hookInput || typeof hookInput !== 'object') return '';
+  const nested = hookInput.tool_input && typeof hookInput.tool_input === 'object'
+    ? hookInput.tool_input
+    : {};
+  const direct = typeof hookInput.file_path === 'string' ? hookInput.file_path : '';
+  const nestedPath = typeof nested.file_path === 'string' ? nested.file_path : '';
+  return direct || nestedPath || '';
+}
+
+function shouldSkipForArtifactSelfWrite(projectRoot, hookInput, artifactPath) {
+  const writePath = extractHookWritePath(hookInput);
+  if (!writePath || !artifactPath) return false;
+  const normalizedWrite = path.resolve(projectRoot, writePath).replace(/\\/g, '/').toLowerCase();
+  const normalizedArtifact = path.resolve(artifactPath).replace(/\\/g, '/').toLowerCase();
+  return normalizedWrite === normalizedArtifact;
 }
 
 function enqueuePreContinueEvent(projectRoot, payload, result) {
@@ -303,7 +355,26 @@ async function main() {
   }
 
   const artifactPath = dynamic.artifactPath || resolveArtifactPath(projectRoot, defaults, runtimeContext);
+  if (shouldSkipForArtifactSelfWrite(projectRoot, hookInput, artifactPath)) {
+    emitHookInfo(
+      `pre-continue-check skipped: artifact self write; workflow=${routedWorkflow}; step=${routedStep}; gate=${gate.runtime?.gate || gateConfig.key}`
+    );
+    writeResult({
+      ok: true,
+      skipped: true,
+      reason: 'artifact-self-write',
+      workflow: routedWorkflow,
+      step: routedStep,
+      gate: gate.runtime?.gate || gateConfig.key,
+      artifactPath,
+    });
+    return;
+  }
+
   if (!artifactPath) {
+    emitHookInfo(
+      `pre-continue-check blocked: missing governed artifact; workflow=${routedWorkflow}; step=${routedStep}; gate=${gate.runtime?.gate || gateConfig.key}`
+    );
     const result = {
       ok: false,
       skipped: false,
@@ -362,6 +433,9 @@ async function main() {
   }, result);
 
   if (failures.length > 0) {
+    emitHookInfo(
+      `pre-continue-check failed: workflow=${routedWorkflow}; step=${routedStep}; gate=${gate.runtime?.gate || gateConfig.key}; failures=${failures.length}`
+    );
     persistGovernanceStageRerunResultEvent(
       buildGovernanceStageRerunResultEvent({
         projectRoot,
@@ -396,6 +470,11 @@ async function main() {
           updatedArtifacts: artifactPath ? [artifactPath] : [],
         },
       })
+    );
+  }
+  if (failures.length === 0) {
+    emitHookInfo(
+      `pre-continue-check passed: workflow=${routedWorkflow}; step=${routedStep}; gate=${gate.runtime?.gate || gateConfig.key}`
     );
   }
   writeResult(result);
