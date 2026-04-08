@@ -52,17 +52,22 @@
     "build:runtime-dashboard-ui": "npm run build:dashboard-ui -w @bmad-speckit/scoring",
     "build:runtime-context": "npm run build -w @bmad-speckit/runtime-context",
     "build:runtime-emit": "npm run build -w @bmad-speckit/runtime-emit",
-    "prepublishOnly": "npm run build:scoring && npm run build:runtime-context && npm run build:runtime-emit && node scripts/prepublish-check.js",
+    "verify:hooks": "node scripts/verify-hooks-no-ts-node.js",
+    "prepublishOnly": "npm run verify:hooks && npm run build:scoring && npm run build:runtime-context && npm run build:runtime-emit && node scripts/prepublish-check.js",
     "speckit": "npx bmad-speckit",
     "speckit:init": "npx bmad-speckit init",
     "check": "npx bmad-speckit check",
     "test:fresh-regression": "npx ts-node --transpile-only scripts/run-fresh-regression-matrix.ts"
   },
   "bin": {
+    "bmad-speckit": "scripts/bmad-speckit-cli.js",
     "bmad-speckit-init": "scripts/init-to-root.js",
     "bmad-speckit-setup": "scripts/setup.ps1",
     "bmad-speckit-setup-sh": "scripts/setup.sh"
   },
+  "bundleDependencies": [
+    "bmad-speckit"
+  ],
   "files": [
     "_bmad",
     "scripts"

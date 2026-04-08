@@ -35,6 +35,43 @@
 
 所以这篇文档给出一条真正可执行的消费者路径。
 
+## 最高优先级：另一台没有本仓库源码的机器
+
+这是当前文档里必须优先考虑的场景：
+
+- 目标机器上**没有** `BMAD-Speckit-SDD-Flow` 仓库
+- 你要把本仓库的定制能力装进一个消费项目
+- 你需要的不是“可能可用”，而是**已验证的安装路径**
+
+当前文档中，**已验证** 的 off-repo 安装方式是：
+
+```powershell
+cd <consumer-root>
+npm install --save-dev .\bmad-speckit-sdd-flow-<version>.tgz
+npx bmad-speckit version
+npx bmad-speckit check
+npx bmad-speckit-init --agent claude-code
+npx bmad-speckit-init --agent cursor
+```
+
+这条路径对应的仓库内验证证据是：
+
+- `tests/acceptance/accept-root-package-bmad-speckit-bin.test.ts`
+- `tests/acceptance/accept-install-consumer-cli.test.ts`
+
+如果你手里拿的是**发布到 registry 的根包**，只有在它与上述 tgz 来自**同一个已验证发布产物**时，才应视为等价路径。
+
+反过来，下面这条：
+
+```powershell
+npx bmad-speckit init . --ai cursor-agent --yes
+```
+
+在本文里只应被视为：
+
+- 上游 bootstrap / 快速初始化入口
+- **不是** 本仓库定制能力在 off-repo 场景下的最高优先级默认方案
+
 ## 当前必须明确的安装事实
 
 ### 1. 消费项目根目录不是 governance 运行入口落点
@@ -468,6 +505,66 @@ npx bmad-speckit dashboard-status
 - `<consumer>/scripts/governance-runtime-worker.*`
 - `<consumer>/scripts/governance-remediation-runner.*`
 
+如果你在真实 consumer 里遇到以下问题：
+
+- hook 执行时报 `MODULE_NOT_FOUND`
+- packaged worker 报 schema 缺失
+- governance rerun history 报 `RunScoreRecord stage enum` 校验失败
+
+先看：
+
+- [consumer-packaging-troubleshooting.md](./consumer-packaging-troubleshooting.md)
+
+### CLI 入口排障
+
+对消费项目来说，**不要依赖全局 `bmad-speckit` shim**。优先使用：
+
+```powershell
+cd <consumer-root>
+npx bmad-speckit version
+```
+
+原因：
+
+- `npx bmad-speckit` 会优先尝试当前项目安装树里的 CLI 入口
+- 直接输入 `bmad-speckit` 时，Windows 可能先命中全局 shim（例如 `nvm` / 全局 npm bin）
+- 一旦全局 shim 指向旧版本或不存在的安装树，就会出现“本地项目明明装了，但命令还是坏的”假象
+
+建议检查：
+
+```powershell
+where bmad-speckit
+```
+
+如果输出落在全局路径，例如：
+
+- `D:\nvm4w\nodejs\bmad-speckit.cmd`
+
+那说明你当前 shell 里存在全局 shim 干扰。此时：
+
+1. **不要**继续用裸命令 `bmad-speckit`
+2. 先在消费项目根目录执行 `npx bmad-speckit ...`
+3. 如果你怀疑 `npx` 也受环境污染，可改用：
+
+```powershell
+npm exec bmad-speckit -- version
+```
+
+最小验活建议：
+
+```powershell
+cd <consumer-root>
+npx bmad-speckit version
+npx bmad-speckit check
+```
+
+如果这两条能跑通，再继续执行：
+
+```powershell
+npx bmad-speckit-init --agent claude-code
+npx bmad-speckit-init --agent cursor
+```
+
 ## Hook 提示开关
 
 如果你希望本项目 hooks 在执行时把提示信息直接打印出来，可以打开：
@@ -511,6 +608,7 @@ npx bmad-speckit dashboard-status
 3. [cursor-setup.md](./cursor-setup.md) 或 [claude-code-setup.md](./claude-code-setup.md)
 4. [runtime-dashboard-stable-launcher.md](./runtime-dashboard-stable-launcher.md)
 5. [provider-configuration.md](./provider-configuration.md)
+6. [consumer-packaging-troubleshooting.md](./consumer-packaging-troubleshooting.md)
 
 ## 审计结论
 
