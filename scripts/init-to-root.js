@@ -486,6 +486,88 @@ function writeDefaultRuntimeContext(targetDir, pkgRoot) {
   }
 }
 
+function writeConsumerBmadSpeckitBinWrappers(targetDir, pkgRoot) {
+  const targetReal = fs.existsSync(targetDir) ? fs.realpathSync(targetDir) : path.resolve(targetDir);
+  const pkgReal = fs.existsSync(pkgRoot) ? fs.realpathSync(pkgRoot) : path.resolve(pkgRoot);
+  if (targetReal === pkgReal) {
+    return;
+  }
+
+  const binDir = path.join(targetDir, 'node_modules', '.bin');
+  if (!fs.existsSync(binDir)) {
+    return;
+  }
+
+  const jsRel = path.join('..', 'bmad-speckit-sdd-flow', 'scripts', 'bmad-speckit-cli.js');
+  const cmdBody = [
+    '@ECHO off',
+    'GOTO start',
+    ':find_dp0',
+    'SET dp0=%~dp0',
+    'EXIT /b',
+    ':start',
+    'SETLOCAL',
+    'CALL :find_dp0',
+    '',
+    'IF EXIST "%dp0%\\node.exe" (',
+    '  SET "_prog=%dp0%\\node.exe"',
+    ') ELSE (',
+    '  SET "_prog=node"',
+    '  SET PATHEXT=%PATHEXT:;.JS;=;%',
+    ')',
+    '',
+    `endLocal & goto #_undefined_# 2>NUL || title %COMSPEC% & "%_prog%"  "%dp0%\\${jsRel.replace(/\//g, '\\')}" %*`,
+    '',
+  ].join('\r\n');
+
+  const shBody = [
+    '#!/bin/sh',
+    "basedir=$(dirname \"$(echo \"$0\" | sed -e 's,\\\\,/,g')\")",
+    '',
+    'case `uname` in',
+    '    *CYGWIN*|*MINGW*|*MSYS*)',
+    '        if command -v cygpath > /dev/null 2>&1; then',
+    '            basedir=`cygpath -w "$basedir"`',
+    '        fi',
+    '    ;;',
+    'esac',
+    '',
+    'if [ -x "$basedir/node" ]; then',
+    `  exec "$basedir/node" "$basedir/${jsRel.replace(/\\/g, '/')}" "$@"`,
+    'else',
+    `  exec node "$basedir/${jsRel.replace(/\\/g, '/')}" "$@"`,
+    'fi',
+    '',
+  ].join('\n');
+
+  const ps1Body = [
+    '#!/usr/bin/env pwsh',
+    '$basedir = Split-Path $MyInvocation.MyCommand.Definition -Parent',
+    '',
+    '$exe = ""',
+    'if ($PSVersionTable.PSVersion -lt "6.0" -or $IsWindows) {',
+    '  $exe = ".exe"',
+    '}',
+    'if (Test-Path "$basedir/node$exe") {',
+    `  & "$basedir/node$exe"  "$basedir/${jsRel.replace(/\\/g, '/')}" $args`,
+    '} else {',
+    `  & "node$exe"  "$basedir/${jsRel.replace(/\\/g, '/')}" $args`,
+    '}',
+    'exit $LASTEXITCODE',
+    '',
+  ].join('\n');
+
+  fs.writeFileSync(path.join(binDir, 'bmad-speckit.cmd'), cmdBody, 'utf8');
+  fs.writeFileSync(path.join(binDir, 'bmad-speckit'), shBody, 'utf8');
+  fs.writeFileSync(path.join(binDir, 'bmad-speckit.ps1'), ps1Body, 'utf8');
+  try {
+    fs.chmodSync(path.join(binDir, 'bmad-speckit'), 0o755);
+  } catch {
+    // ignore on Windows
+  }
+  console.log('Repaired consumer node_modules/.bin/bmad-speckit wrappers');
+}
+
 /**
  * External installs only receive `_bmad/` by default; hooks need a pre-built emit (no ts-node).
  * Resolve `@bmad-speckit/runtime-emit` from pkgRoot node_modules (bmad-speckit 依赖树)，供复制到 hooks/emit-runtime-policy.cjs。
@@ -753,6 +835,7 @@ syncArchitectureGateConfig(TARGET, path.join(TARGET, '_bmad'));
 
 writeDefaultRuntimeRegistry(TARGET, PKG_ROOT);
 writeDefaultRuntimeContext(TARGET, PKG_ROOT);
+writeConsumerBmadSpeckitBinWrappers(TARGET, PKG_ROOT);
 materializeSkillMdByLanguage(TARGET);
 
 // Ensure _bmad-output/config exists (empty); never copy source's _bmad-output contents.

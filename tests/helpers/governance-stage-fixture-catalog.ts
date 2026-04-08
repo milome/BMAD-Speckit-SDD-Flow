@@ -89,6 +89,9 @@ export const GOVERNANCE_STAGE_FIXTURE_CATALOG: Record<string, GovernanceStageFix
       '## Deferred Gaps',
       '{{placeholder}}',
       '',
+      '## Deferred Gaps Tracking',
+      '{{placeholder}}',
+      '',
       'missing P0 Journey smoke E2E evidence traceability',
     ]
   ),

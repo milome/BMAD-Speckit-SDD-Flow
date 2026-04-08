@@ -42,6 +42,11 @@ input_file_patterns:
     whole: "{planning_artifacts}/*epic*.md"
     sharded: "{planning_artifacts}/*epic*/*.md"
     load_strategy: "FULL_LOAD"
+  readiness_reports:
+    description: "Implementation readiness reports that may carry Deferred Gaps"
+    whole: "{planning_artifacts}/implementation-readiness-report-*.md"
+    sharded: "{planning_artifacts}/*/implementation-readiness-report-*.md"
+    load_strategy: "LATEST"
 
 # Output configuration
 default_output_file: "{status_file}"

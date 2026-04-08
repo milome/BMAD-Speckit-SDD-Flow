@@ -37,6 +37,16 @@ Layer 5: 收尾层 (批量Push + PR自动生成 + 强制人工审核 + 发布)
 This skill includes speckit-workflow as a nested process of Layer 4.
 When the execution reaches "Phase 3: Dev Story Implementation", the complete process of speckit-workflow will be automatically triggered.
 
+## Deferred Gaps Dev Story Addendum
+
+This distributed English variant must keep the same Deferred Gaps guardrails as the main Chinese contract.
+
+- Before implementation, Dev Story must read and validate `deferred-gap-register.yaml`.
+- Dev Story must also read and validate `journey-ledger`, `trace-map`, and `closure-notes`.
+- Implementation must fail closed when an active gap has no task binding, `Smoke Task Chain`, `Closure Task ID`, or production path mapping.
+- Post-audit must inspect `closure_evidence`, `carry_forward_evidence`, `Production Path`, `Smoke Proof`, and `Acceptance Evidence`.
+- `module complete but journey not runnable` is a hard failure, not a warning.
+
 ---
 
 This skill defines the complete workflow of **Create Story → Audit → Dev Story → Post-Implementation Audit**. The Epic number and Story number are provided by the user or context as input parameters to the skill.

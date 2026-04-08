@@ -57,6 +57,10 @@ strict 审计不只检查“有无 gap”，还必须把以下 Wave 1B journey c
 - `Definition Gap Handling` / `Implementation Gap Handling`：两类 gap 必须保持分离；若把 definition gap 包装成已实现功能，或在审计结论里混写，仍判未通过。
 - `Shared Journey Ledger Path` / `Shared Invariant Ledger Path` / `Shared Trace Map Path`：multi-agent 审计必须验证所有 worker 使用同一份 shared artifacts。
 - `same path reference`：若不同 agent 只引用各自私有摘要，而没有回到同一份 ledger / trace map 路径，则该轮不得记为无 gap。
+- `Production Path`：每个 P0 journey 必须能定位到真实生产代码入口；若任务完成但入口未接线，该轮不得记为无 gap。
+- `Smoke Proof` / `Full E2E`：Smoke Proof 缺失直接判未通过；Full E2E 未完成时，closure note 中必须写 formal defer reason。
+- `Acceptance Evidence`：若 Journey 已宣称完成，但没有 acceptance evidence，该轮不得记为无 gap。
+- `Deferred Gap register`：若 gap 被标记为 resolved / carried_forward，但未同步 closure evidence 或 carry-forward evidence，该轮不得记为无 gap。
 
 ---
 

@@ -234,6 +234,7 @@ gate_sets:
             required_sections:
               - Blockers Requiring Immediate Action
               - Deferred Gaps
+              - Deferred Gaps Tracking
           - name: readiness_four_signal_contract_section
             check: report 必须包含 Four-Signal Governance Contract Status 章节
             required_sections:
@@ -369,6 +370,8 @@ gate_sets:
             check: spec 阶段必须定义 P0 journey、smoke E2E 与证据链
             required_sections:
               - User Journeys
+              - Inherited Deferred Gaps
+              - Deferred Gap Intake Mapping
             required_keywords:
               p0_journey:
                 - P0 Journey
@@ -378,6 +381,11 @@ gate_sets:
                 - evidence
               traceability:
                 - traceability
+          - name: deferred_gap_intake_contract
+            check: spec 阶段必须承接 inherited deferred gaps
+            required_sections:
+              - Inherited Deferred Gaps
+              - Deferred Gap Intake Mapping
 
   speckit_plan_gate:
     workflow_keys:
@@ -394,6 +402,7 @@ gate_sets:
             check: plan 阶段必须把 P0 journey 落到执行/验证链路
             required_sections:
               - Testing Strategy
+              - Deferred Gap Architecture Mapping
             required_keywords:
               p0_journey:
                 - P0 Journey
@@ -403,6 +412,10 @@ gate_sets:
                 - traceability
               evidence_proof:
                 - evidence
+          - name: deferred_gap_plan_mapping
+            check: plan 阶段必须把 deferred gaps 映射到 architecture / work items / journeys
+            required_sections:
+              - Deferred Gap Architecture Mapping
 
   speckit_gaps_gate:
     workflow_keys:
@@ -419,6 +432,7 @@ gate_sets:
             check: gaps 阶段必须显式列出 P0 journey / smoke E2E / evidence 缺口
             required_sections:
               - Implementation Gaps
+              - Deferred Gap Lifecycle Classification
             required_keywords:
               p0_journey:
                 - P0 Journey
@@ -428,6 +442,10 @@ gate_sets:
                 - evidence
               traceability:
                 - traceability
+          - name: deferred_gap_lifecycle_classification
+            check: gaps 阶段必须区分 inherited gap 与 new gap，并声明生命周期分类
+            required_sections:
+              - Deferred Gap Lifecycle Classification
 
   speckit_tasks_gate:
     workflow_keys:
@@ -445,6 +463,9 @@ gate_sets:
             required_sections:
               - Tasks
               - Testing
+              - Deferred Gap Task Binding
+              - P0 Journey Ledger
+              - Journey -> Task -> Test -> Closure
             required_keywords:
               p0_journey:
                 - P0 Journey
@@ -454,6 +475,14 @@ gate_sets:
                 - evidence
               traceability:
                 - task chain
+          - name: deferred_gap_task_binding
+            check: tasks 阶段必须把 deferred gap 落到 task binding 或 explicit defer reason
+            required_sections:
+              - Deferred Gap Task Binding
+          - name: journey_runnable_task_chain
+            check: tasks 阶段必须显式保留 Journey -> Task -> Test -> Closure 映射
+            required_sections:
+              - Journey -> Task -> Test -> Closure
 
   dev_story_gate:
     workflow_keys:
@@ -473,6 +502,9 @@ gate_sets:
               - Tasks
               - Testing
               - Review Findings
+              - P0 Journey Ledger
+              - Journey -> Task -> Test -> Closure
+              - Closure Notes
           - name: p0_journey_implementation_proof
             check: implement 阶段必须落地 P0 journey / smoke E2E / 证据链
             required_keywords:
@@ -484,6 +516,27 @@ gate_sets:
                 - evidence
               traceability:
                 - traceability
+          - name: deferred_gap_resolution_or_carry_forward
+            check: implement 阶段必须为 active deferred gaps 提供 closure evidence 或 carry-forward evidence
+            required_keywords:
+              evidence_proof:
+                - closure
+                - carry-forward
+          - name: journey_runnable_proof_gate
+            check: implement 阶段必须证明 P0 journey runnable
+            required_keywords:
+              p0_journey:
+                - P0 Journey
+              smoke_e2e:
+                - smoke E2E
+              evidence_proof:
+                - closure note
+          - name: production_path_integration_gate
+            check: implement 阶段必须证明真实 production path 已接通
+            required_keywords:
+              traceability:
+                - production path
+                - entrypoint
 
 rule_keywords:
   version_keywords:

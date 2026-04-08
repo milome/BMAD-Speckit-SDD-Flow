@@ -25,6 +25,24 @@ export interface GovernancePreContinuePayload {
   rerunGate?: string;
   sourceGateFailureIds?: string[];
   failures?: string[];
+  deferred_gap_count?: number;
+  deferred_gaps_explicit?: boolean;
+  deferred_gaps?: Array<{
+    gap_id?: string;
+    description?: string;
+    reason?: string;
+    resolution_target?: string;
+    owner?: string;
+    status?: string;
+    current_risk?: string;
+    journey_refs?: string[];
+    prod_path_refs?: string[];
+    smoke_test_refs?: string[];
+    full_e2e_refs?: string[];
+    closure_note_refs?: string[];
+  }>;
+  removed_without_evidence?: string[];
+  previous_report_path?: string | null;
 }
 
 export function governanceQueueDir(projectRoot: string): string {

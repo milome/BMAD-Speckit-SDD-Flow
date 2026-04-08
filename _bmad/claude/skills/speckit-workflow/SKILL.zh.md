@@ -46,6 +46,17 @@ Claude 版 `speckit-workflow` 必须满足：
   - handoff 协议
 - 不得将 Cursor Canonical Base、Claude Runtime Adapter、Repo Add-ons 混写为来源不明的重写版 prompt
 
+## Deferred Gaps 治理补充约束
+
+该中文分发副本必须与 `SKILL.md` 保持相同的 Deferred Gaps 语义，不得弱化。
+
+- `specify` 阶段必须承接 inherited gaps，补齐 `Inherited Deferred Gaps` 与 `Deferred Gap Intake Mapping`，并维护 `deferred-gap-register.yaml`
+- `plan` 阶段必须在 `Deferred Gap Architecture Mapping` 中把 active gap 映射到 architecture / work item / journey / production path
+- `IMPLEMENTATION_GAPS` 阶段必须显式区分 inherited gap 与 new gap
+- `tasks` 阶段必须维护 `Deferred Gap Task Binding` 与 `Journey -> Task -> Test -> Closure`，并写明 `Smoke Task Chain`、`Closure Task ID`
+- `implement / dev-story` 阶段必须读取 `deferred-gap-register.yaml`、`journey-ledger`、`trace-map`、`closure-notes`，并写入 `closure_evidence` 或 `carry_forward_evidence`
+- 若出现 module complete but journey not runnable，禁止宣称完成
+
 ---
 
 ## Cursor Canonical Base

@@ -733,69 +733,20 @@ function resolveWorkerEntry(projectRoot) {
     path.join(projectRoot, '_bmad', 'runtime', 'hooks', 'governance-runtime-worker.cjs'),
     path.join(projectRoot, 'node_modules', 'bmad-speckit', '_bmad', 'runtime', 'hooks', 'governance-runtime-worker.cjs'),
     path.join(projectRoot, 'node_modules', 'bmad-speckit', 'scripts', 'bmad-runtime-worker.js'),
-    path.join(projectRoot, 'node_modules', 'bmad-speckit', 'scripts', 'bmad-runtime-worker.ts'),
     path.resolve(__dirname, 'governance-runtime-worker.cjs'),
     path.resolve(__dirname, '..', '..', 'runtime', 'hooks', 'governance-runtime-worker.cjs'),
     path.resolve(__dirname, '..', '..', '..', '_bmad', 'runtime', 'hooks', 'governance-runtime-worker.cjs'),
     path.resolve(__dirname, '..', '..', 'scripts', 'bmad-runtime-worker.js'),
-    path.resolve(__dirname, '..', '..', 'scripts', 'bmad-runtime-worker.ts'),
     path.resolve(__dirname, '..', '..', '..', 'scripts', 'bmad-runtime-worker.js'),
-    path.resolve(__dirname, '..', '..', '..', 'scripts', 'bmad-runtime-worker.ts'),
   ];
 
   const resolvedModules = [
     tryResolveModule('bmad-speckit/_bmad/runtime/hooks/governance-runtime-worker.cjs', projectRoot),
     tryResolveModule('bmad-speckit/scripts/bmad-runtime-worker.js', projectRoot),
-    tryResolveModule('bmad-speckit/scripts/bmad-runtime-worker.ts', projectRoot),
   ];
 
   for (const candidate of [...resolvedModules, ...candidates]) {
     if (candidate && fs.existsSync(candidate)) {
-      return candidate;
-    }
-  }
-
-  return null;
-}
-
-/**
- * @param {string} projectRoot
- * @param {string} workerEntry
- * @returns {string | null}
- */
-function resolveTsNodeBin(projectRoot, workerEntry) {
-  const fromModules = tryResolveModule('ts-node/dist/bin.js', projectRoot);
-  if (fromModules && fs.existsSync(fromModules)) {
-    return fromModules;
-  }
-
-  const candidates = [
-    path.join(projectRoot, 'node_modules', 'ts-node', 'dist', 'bin.js'),
-    path.join(
-      projectRoot,
-      'node_modules',
-      'bmad-speckit',
-      'node_modules',
-      'ts-node',
-      'dist',
-      'bin.js'
-    ),
-    path.join(path.dirname(workerEntry), '..', '..', 'node_modules', 'ts-node', 'dist', 'bin.js'),
-    path.join(
-      path.dirname(workerEntry),
-      '..',
-      '..',
-      'node_modules',
-      'bmad-speckit',
-      'node_modules',
-      'ts-node',
-      'dist',
-      'bin.js'
-    ),
-  ];
-
-  for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) {
       return candidate;
     }
   }

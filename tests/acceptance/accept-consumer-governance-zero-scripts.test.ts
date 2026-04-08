@@ -2,6 +2,7 @@ import { execSync, spawnSync } from 'node:child_process';
 import {
   existsSync,
   mkdtempSync,
+  mkdirSync,
   readFileSync,
   readdirSync,
   rmSync,
@@ -65,9 +66,24 @@ describe('consumer governance zero-scripts install', () => {
 
       run('npx bmad-speckit-init --agent claude-code', consumer);
 
+      writeFileSync(
+        join(consumer, '_bmad', '_config', 'governance-remediation.yaml'),
+        [
+          'version: 1',
+          'primaryHost: claude',
+          'packetHosts:',
+          '  - claude',
+          'provider:',
+          '  mode: stub',
+          '  id: accept-consumer-zero-scripts',
+        ].join('\n'),
+        'utf8'
+      );
+
       expect(existsSync(join(consumer, '.claude', 'hooks', 'governance-runtime-worker.cjs'))).toBe(true);
       expect(existsSync(join(consumer, '.claude', 'hooks', 'governance-remediation-runner.cjs'))).toBe(true);
       expect(existsSync(join(consumer, '.claude', 'hooks', 'post-tool-use.cjs'))).toBe(true);
+      expect(existsSync(join(consumer, '.claude', 'hooks', 'deferred-gap-governance.cjs'))).toBe(true);
       expect(
         existsSync(
           join(
@@ -96,6 +112,83 @@ describe('consumer governance zero-scripts install', () => {
           )
         )
       ).toBe(true);
+
+      const readinessArtifact = join(
+        consumer,
+        '_bmad-output',
+        'planning-artifacts',
+        'dev',
+        'implementation-readiness-report-2026-04-08.md'
+      );
+      mkdirSync(join(consumer, '_bmad-output', 'planning-artifacts', 'dev'), { recursive: true });
+      writeFileSync(
+        readinessArtifact,
+        [
+          '# Implementation Readiness Report',
+          '',
+          '## Blockers Requiring Immediate Action',
+          '',
+          '- IR-BLK-001: missing proof chain',
+          '',
+          '## Deferred Gaps',
+          '',
+          '- J04-Smoke-E2E: P0 Journey J04 缺少 Smoke E2E',
+          '  - Reason: P2 优先级',
+          '  - Resolution Target: Sprint 2+',
+          '  - Owner: Dev Team',
+          '',
+          '## Deferred Gaps Tracking',
+          '',
+          '| Gap ID | 描述 | 原因 | 解决时机 | Owner | 状态检查点 |',
+          '|--------|------|------|----------|-------|-----------|',
+          '| J04-Smoke-E2E | P0 Journey J04 缺少 Smoke E2E | P2 优先级 | Sprint 2+ | Dev Team | Sprint Planning |',
+          '',
+          '## Four-Signal Governance Contract Status',
+          '',
+          'P0 Journey Coverage Matrix / Smoke E2E Preconditions Traceability / Cross-Document Traceability / Four-Signal Contract Verification',
+          '',
+          '## P0 Journey Coverage Matrix',
+          '',
+          '| PRD Journey ID | PRD Journey Name | Arch P0 Key Path | Epic Coverage | Status | Evidence |',
+          '|----------------|------------------|------------------|---------------|--------|----------|',
+          '| J01 | Demo | KP-01 | Epic 1 | ✅ | arch.md |',
+          '',
+          '## Smoke E2E Preconditions Traceability',
+          '',
+          '- E2E test strategy',
+          '- Critical paths',
+          '',
+          '## Cross-Document Traceability',
+          '',
+          '- PRD Requirement',
+          '- Architecture Decision',
+          '- Epic Story',
+          '- Traceability Status',
+          '',
+          '## Four-Signal Contract Verification',
+          '',
+          '- P0 Journey smoke E2E evidence traceability',
+          '',
+        ].join('\n'),
+        'utf8'
+      );
+
+      const preContinue = spawnSync(
+        process.execPath,
+        [join(consumer, '.claude', 'hooks', 'pre-continue-check.cjs'), 'check-implementation-readiness', 'step-06-final-assessment'],
+        {
+          cwd: consumer,
+          env: {
+            ...process.env,
+            BMAD_PRECONTINUE_ARTIFACT_PATH: readinessArtifact,
+          },
+          encoding: 'utf8',
+        }
+      );
+
+      expect(preContinue.stdout).toContain('"workflow":"bmad-check-implementation-readiness"');
+      expect(preContinue.stdout).toContain('"deferredGapAudit"');
+      expect(preContinue.stderr).not.toContain('Cannot find module');
 
       const event = {
         type: 'governance-rerun-result',
@@ -147,15 +240,6 @@ describe('consumer governance zero-scripts install', () => {
       const logText = readFileSync(logPath, 'utf8');
       expect(logText).toContain('received rerun-result gate=implementation-readiness');
 
-      const doneFile = join(
-        consumer,
-        '_bmad-output',
-        'runtime',
-        'governance',
-        'queue',
-        'done',
-        'gov-rerun-accept-zero-scripts-01.json'
-      );
       const currentRun = join(consumer, '_bmad-output', 'runtime', 'governance', 'current-run.json');
       const failedDebug = join(
         consumer,

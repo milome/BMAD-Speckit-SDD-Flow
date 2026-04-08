@@ -139,12 +139,17 @@
 - **Closure Note Path**: `closure-notes/J01.md`
 - **Definition Gap IDs**: `DG-01` / `N/A`
 - **Implementation Gap IDs**: `IG-01` / `N/A`
+- **Deferred Gap IDs**: `J04-Smoke-E2E` / `N/A`
+- **Production Path**: `src/app/checkout/page.tsx`
+- **Acceptance Evidence**: `reports/checkout-proof.md`
 ```
 
 **要求**：
 - 每个 runnable slice 都必须写全上述字段。
 - `Evidence Type` 不能留空；若一个 slice 有多个证据层，需逐条列出。
 - `Closure Note Path` 为空时，不得宣称 Journey 完成。
+- `Production Path` 为空时，说明真实生产代码入口还未绑定。
+- `Acceptance Evidence` 为空时，不得宣称该 Journey 已完成验收。
 
 ---
 
@@ -164,3 +169,21 @@
 - 验收必须明确写出“由哪条 closure note 收口”，不能只写“已记录”。
 - 若当前任务只是在消除 `definition gap`，必须明确标注为 `Definition Gap`，禁止借此宣称功能已可跑通。
 - 若当前任务是在修复代码或接线问题，标注为 `Implementation Gap`，并给出真实验证命令。
+
+---
+
+## 10. Deferred Gap 与 Journey 收口模板
+
+```markdown
+### Deferred Gap Closure / Carry-Forward
+
+| Gap ID | Journey IDs | Closure Evidence | Carry-Forward Evidence | Production Path Evidence | Smoke / Full E2E | Acceptance Evidence |
+|--------|-------------|------------------|------------------------|--------------------------|------------------|--------------------|
+| J04-Smoke-E2E | J04 | `commit:abc123` | `N/A` | `src/app/checkout/page.tsx` | `tests/e2e/smoke/checkout.spec.ts` / deferred nightly | `reports/checkout-proof.md` |
+| J09-Full-E2E | J04 | `N/A` | `carry-forward note in closure-notes/J04.md` | `src/app/checkout/page.tsx` | full deferred | `reports/checkout-proof.md` |
+```
+
+**要求**：
+- `resolved` gap 必须有 `Closure Evidence`
+- `carried_forward` gap 必须有 `Carry-Forward Evidence`
+- 影响真实功能的 gap 还必须同时给出 `Production Path Evidence`、`Smoke / Full E2E`、`Acceptance Evidence`

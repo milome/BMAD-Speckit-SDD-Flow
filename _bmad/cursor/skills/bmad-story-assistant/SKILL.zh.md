@@ -37,6 +37,16 @@ Layer 5: 收尾层 (批量Push + PR自动生成 + 强制人工审核 + 发布)
 本技能包含speckit-workflow作为Layer 4的嵌套流程。
 当执行到"阶段三：Dev Story实施"时，会自动触发speckit-workflow的完整流程。
 
+## Deferred Gaps Dev Story 补充约束
+
+该中文分发副本必须保持与主技能相同的 Deferred Gaps 约束。
+
+- Dev Story 实施前必须读取并验证 `deferred-gap-register.yaml`
+- Dev Story 必须同时读取并验证 `journey-ledger`、`trace-map`、`closure-notes`
+- 若 active deferred gap 缺少 task binding、`Smoke Task Chain`、`Closure Task ID` 或 production path 映射，必须阻断实施
+- 实施后审计必须检查 `closure_evidence`、`carry_forward_evidence`、`Production Path`、`Smoke Proof`、`Acceptance Evidence`
+- `module complete but journey not runnable` 属于硬失败，不得降级为提示
+
 ---
 
 本 skill 定义 **Create Story → 审计 → Dev Story → 实施后审计** 的完整工作流。Epic 编号与 Story 编号由用户或上下文提供，作为 skill 的输入参数。

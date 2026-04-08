@@ -27,6 +27,8 @@
 <action>Communicate in {communication_language} with {user_name}</action>
 <action>Look for all files matching `{epics_pattern}` in {epics_location}</action>
 <action>Could be a single `epics.md` file or multiple `epic-1.md`, `epic-2.md` files</action>
+<action>Look for the latest implementation readiness report under {planning_artifacts} matching `implementation-readiness-report-*.md` (branch-scoped file wins when both branch and root reports exist)</action>
+<action>If a readiness report exists, read the `## Deferred Gaps` and `## Deferred Gaps Tracking` sections before generating sprint status</action>
 
 <action>For each epic file found, extract:</action>
 
@@ -86,6 +88,15 @@ development_status:
 - Epic: `backlog` → `in-progress` → `done`
 - Story: `backlog` → `ready-for-dev` → `in-progress` → `review` → `done`
 - Retrospective: `optional` ↔ `done`
+
+<action>If the latest readiness report contains deferred gaps, build a `deferred_gap_plan` section in sprint-status.yaml:</action>
+
+- Every deferred gap must appear exactly once
+- Each deferred gap must either:
+  - reference one or more planned work items / story keys for this sprint, or
+  - carry an explicit defer reason that explains why it is not scheduled yet
+- If the gap is re-deferred, keep/update `resolution_target`
+- `owner` is mandatory
   </step>
 
 <step n="4" goal="Generate sprint status file">
@@ -137,6 +148,16 @@ story_location: { story_location }
 
 development_status:
   # All epics, stories, and retrospectives in order
+
+deferred_gap_plan:
+  source_report: [latest readiness report path or (none)]
+  items:
+    J04-Smoke-E2E:
+      status: deferred
+      resolution_target: Sprint 2+
+      owner: Dev Team
+      planned_work_items: []
+      explicit_reason: Carry forward to Sprint 2 because MVP scope keeps journey coverage on PRD only in Sprint 1.
 ```
 
 <action>Write the complete sprint status YAML to {status_file}</action>
@@ -153,6 +174,10 @@ development_status:
 - [ ] No items in {status_file} that don't exist in epic files
 - [ ] All status values are legal (match state machine definitions)
 - [ ] File is valid YAML syntax
+- [ ] Every deferred gap from the latest readiness report appears in `deferred_gap_plan.items`
+- [ ] Every deferred gap entry has `owner`
+- [ ] Every deferred gap entry has `resolution_target`
+- [ ] Every deferred gap entry either has `planned_work_items` or `explicit_reason`
 
 <action>Count totals:</action>
 

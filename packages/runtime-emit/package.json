@@ -26,6 +26,9 @@
   "engines": {
     "node": ">=18.0.0"
   },
+  "dependencies": {
+    "@bmad-speckit/schema": "file:../schema"
+  },
   "devDependencies": {
     "esbuild": "^0.25.0"
   }

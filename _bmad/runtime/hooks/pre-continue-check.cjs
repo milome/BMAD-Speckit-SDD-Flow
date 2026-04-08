@@ -33,6 +33,13 @@ const {
   resolveRuntimeStepState,
   persistRuntimeStepState,
 } = require('./runtime-step-state.cjs');
+const {
+  compareDeferredGapReports,
+  deriveReadinessRemediationArtifactPath,
+  findPreviousReadinessReport,
+  readDeferredGapsFromReport,
+  validateDeferredGapStageContract,
+} = require('./deferred-gap-governance.cjs');
 
 function isHookVerbose() {
   return process.env.BMAD_HOOKS_VERBOSE === '1';
@@ -97,6 +104,27 @@ function enqueuePreContinueEvent(projectRoot, payload, result) {
         timestamp: new Date().toISOString(),
         payload,
         result,
+      },
+      null,
+      2,
+    ) + '\n',
+    'utf8',
+  );
+}
+
+function enqueueDeferredGapRemediationRerun(projectRoot, payload) {
+  const pendingDir = path.join(projectRoot, '_bmad-output', 'runtime', 'governance', 'queue', 'pending');
+  fs.mkdirSync(pendingDir, { recursive: true });
+  const id = `deferred-gap-rerun-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const file = path.join(pendingDir, `${id}.json`);
+  fs.writeFileSync(
+    file,
+    JSON.stringify(
+      {
+        id,
+        type: 'governance-remediation-rerun',
+        timestamp: new Date().toISOString(),
+        payload,
       },
       null,
       2,
@@ -260,6 +288,7 @@ function resolveDynamicState(projectRoot, argv) {
     workflow: resolved.workflow,
     step: resolved.step,
     artifactPath: runtimeContext?.artifactPath || null,
+    artifactRoot: runtimeContext?.artifactRoot || null,
     branch: branchName(projectRoot),
     epicId: runtimeContext?.epicId || null,
     storyId: runtimeContext?.storyId || null,
@@ -289,6 +318,19 @@ function resolveRoute(routingConfig, workflow, step) {
   return null;
 }
 
+function isReadinessReportArtifact(artifactPath) {
+  return typeof artifactPath === 'string' && /implementation-readiness-report-\d{4}-\d{2}-\d{2}\.md$/i.test(path.basename(artifactPath));
+}
+
+function isReadinessDeferredGapCheckContext(input) {
+  return (
+    isReadinessReportArtifact(input.artifactPath) ||
+    input.workflow === 'bmad-check-implementation-readiness' ||
+    input.workflow === 'check-implementation-readiness' ||
+    input.rerunGate === 'implementation-readiness'
+  );
+}
+
 function writeResult(result) {
   process.stdout.write(JSON.stringify(result));
 }
@@ -309,6 +351,7 @@ async function main() {
       workflow: persisted.workflow,
       step: persisted.step,
       artifactPath: persisted.artifactPath,
+      artifactRoot: persisted.artifactRoot || null,
       branch: persisted.branch,
       epicId: persisted.epicId,
       storyId: persisted.storyId,
@@ -401,6 +444,85 @@ async function main() {
     failures.push(...evaluateRule(rule, step, sections, defaults, config));
   }
 
+  let deferredGapAudit = null;
+  if (isReadinessDeferredGapCheckContext({
+    workflow: routedWorkflow,
+    rerunGate: dynamic.rerunGate || route?.rerunGate || gate.runtime?.gate || gateConfig.key,
+    artifactPath,
+  })) {
+    const previousReportPath = findPreviousReadinessReport(artifactPath);
+    const comparison = compareDeferredGapReports(artifactPath, previousReportPath);
+    const currentDeferred = comparison.current ?? readDeferredGapsFromReport(artifactPath);
+
+    if (!sections.has('Deferred Gaps Tracking')) {
+      failures.push('readiness_deferred_gap_tracking: missing section content: Deferred Gaps Tracking');
+    }
+
+    for (const gap of currentDeferred.gaps) {
+      if (!gap.owner) {
+        failures.push(`deferred_gap_owner: gap ${gap.gap_id} is missing an owner`);
+      }
+      if (!gap.resolution_target) {
+        failures.push(`deferred_gap_resolution_target: gap ${gap.gap_id} is missing a resolution target`);
+      }
+    }
+
+    for (const removed of comparison.removed_without_evidence) {
+      failures.push(`deferred_gap_consistency: gap ${removed.gap_id} was removed without resolution evidence`);
+    }
+
+    deferredGapAudit = {
+      currentReportPath: artifactPath,
+      previousReportPath,
+      deferred_gap_count: currentDeferred.gaps.length,
+      deferred_gaps_explicit: currentDeferred.explicit,
+      deferred_gaps: currentDeferred.gaps,
+      removed_without_evidence: comparison.removed_without_evidence.map((item) => item.gap_id),
+      updated_resolution_targets: comparison.updated_resolution_targets,
+      new_gaps: comparison.new_gaps.map((gap) => gap.gap_id),
+    };
+  }
+
+  let deferredGapStageAudit = null;
+  if (
+    ['specify', 'plan', 'gaps', 'tasks', 'implement'].includes(
+      String(dynamic.stage || route?.stage || gate.runtime?.stage || '').toLowerCase()
+    ) &&
+    !isReadinessDeferredGapCheckContext({
+      workflow: routedWorkflow,
+      rerunGate: dynamic.rerunGate || route?.rerunGate || gate.runtime?.gate || gateConfig.key,
+      artifactPath,
+    })
+  ) {
+    const stageAudit = validateDeferredGapStageContract(projectRoot, {
+      stage: String(dynamic.stage || route?.stage || gate.runtime?.stage || '').toLowerCase(),
+      workflow: routedWorkflow,
+      artifactPath,
+      artifactRoot: dynamic.artifactRoot || null,
+      sections,
+    });
+    failures.push(...stageAudit.failures);
+    deferredGapStageAudit = {
+      stage: String(dynamic.stage || route?.stage || gate.runtime?.stage || '').toLowerCase(),
+      registerPath: stageAudit.register.register_path,
+      registerExists: stageAudit.register.exists,
+      activeGapCount: stageAudit.register.gaps.filter((gap) => gap.lifecycle_status !== 'resolved' && gap.lifecycle_status !== 'closed').length,
+      journeyArtifacts: stageAudit.journeyArtifacts
+        ? {
+            featureRoot: stageAudit.journeyArtifacts.feature_root,
+            tasksPath: stageAudit.journeyArtifacts.tasks_path,
+            journeyLedgerPath: stageAudit.journeyArtifacts.standalone?.journey_ledger || null,
+            invariantLedgerPath: stageAudit.journeyArtifacts.standalone?.invariant_ledger || null,
+            traceMapPath: stageAudit.journeyArtifacts.standalone?.trace_map || null,
+            closureNotesDir: stageAudit.journeyArtifacts.standalone?.closure_notes_dir || null,
+            closureNoteCount: Array.isArray(stageAudit.journeyArtifacts.closure_note_files)
+              ? stageAudit.journeyArtifacts.closure_note_files.length
+              : 0,
+          }
+        : null,
+    };
+  }
+
   const result = {
     ok: failures.length === 0,
     skipped: false,
@@ -414,6 +536,8 @@ async function main() {
       storyId: dynamic.storyId || runtimeContext?.storyId || null,
     },
     failures,
+    ...(deferredGapAudit ? { deferredGapAudit } : {}),
+    ...(deferredGapStageAudit ? { deferredGapStageAudit } : {}),
   };
   enqueuePreContinueEvent(projectRoot, {
     projectRoot,
@@ -430,6 +554,20 @@ async function main() {
     rerunGate: dynamic.rerunGate || (route && route.rerunGate) || gate.runtime?.gate || gateConfig.key,
     sourceGateFailureIds: failures.map((_, index) => `${(gate.runtime?.gate || gateConfig.key).toUpperCase()}-${index + 1}`),
     failures,
+    ...(deferredGapAudit ? {
+      deferred_gap_count: deferredGapAudit.deferred_gap_count,
+      deferred_gaps_explicit: deferredGapAudit.deferred_gaps_explicit,
+      deferred_gaps: deferredGapAudit.deferred_gaps,
+      removed_without_evidence: deferredGapAudit.removed_without_evidence,
+      previous_report_path: deferredGapAudit.previousReportPath,
+    } : {}),
+    ...(deferredGapStageAudit ? {
+      deferred_gap_stage: deferredGapStageAudit.stage,
+      deferred_gap_register_path: deferredGapStageAudit.registerPath,
+      deferred_gap_register_exists: deferredGapStageAudit.registerExists,
+      deferred_gap_active_count: deferredGapStageAudit.activeGapCount,
+      journey_artifacts: deferredGapStageAudit.journeyArtifacts,
+    } : {}),
   }, result);
 
   if (failures.length > 0) {
@@ -461,6 +599,11 @@ async function main() {
           rerunGate: dynamic.rerunGate || (route && route.rerunGate) || gate.runtime?.gate || gateConfig.key,
           outcome: 'blocked',
           hostKind: 'claude',
+          ...(deferredGapAudit ? {
+            deferredGapCount: deferredGapAudit.deferred_gap_count,
+            deferredGapsExplicit: deferredGapAudit.deferred_gaps_explicit,
+            deferredGaps: deferredGapAudit.deferred_gaps,
+          } : {}),
         },
         rerunGateResult: {
           gate: dynamic.rerunGate || (route && route.rerunGate) || gate.runtime?.gate || gateConfig.key,
@@ -471,6 +614,42 @@ async function main() {
         },
       })
     );
+
+    if (deferredGapAudit && deferredGapAudit.deferred_gap_count > 0) {
+      enqueueDeferredGapRemediationRerun(projectRoot, {
+        projectRoot,
+        deferred_gap_count: deferredGapAudit.deferred_gap_count,
+        deferred_gaps_explicit: deferredGapAudit.deferred_gaps_explicit,
+        deferred_gaps: deferredGapAudit.deferred_gaps,
+        previous_report_path: deferredGapAudit.previousReportPath,
+        runnerInput: {
+          projectRoot,
+          outputPath: deriveReadinessRemediationArtifactPath(artifactPath),
+          promptText: `Deferred gap governance follow-up for ${routedWorkflow} ${routedStep}: ${failures.join('; ')}`,
+          stageContextKnown: true,
+          gateFailureExists: true,
+          blockerOwnershipLocked: true,
+          rootTargetLocked: true,
+          equivalentAdapterCount: 1,
+          attemptId: `deferred-gap-followup-${Date.now()}`,
+          sourceGateFailureIds: failures.map((_, index) => `${(gate.runtime?.gate || gateConfig.key).toUpperCase()}-${index + 1}`),
+          capabilitySlot: 'qa.readiness',
+          canonicalAgent: 'PM + QA / readiness reviewer',
+          actualExecutor: 'implementation readiness workflow',
+          adapterPath: 'local workflow fallback',
+          targetArtifacts: artifactPath ? [artifactPath] : [],
+          expectedDelta: 'preserve deferred gap continuity, owners, and resolution targets',
+          rerunOwner: 'PM',
+          rerunGate: 'implementation-readiness',
+          outcome: 'blocked',
+          sharedArtifactsUpdated: ['implementation-readiness-report'],
+          hostKind: 'claude',
+          deferredGapCount: deferredGapAudit.deferred_gap_count,
+          deferredGapsExplicit: deferredGapAudit.deferred_gaps_explicit,
+          deferredGaps: deferredGapAudit.deferred_gaps,
+        },
+      });
+    }
   }
   if (failures.length === 0) {
     emitHookInfo(

@@ -14,7 +14,6 @@ const ROOT = path.resolve(__dirname, '..');
 const SPECKIT_DIR = path.join(ROOT, 'packages', 'bmad-speckit');
 const SPECKIT_BMAD_MIRROR = path.join(SPECKIT_DIR, '_bmad');
 const SPECKIT_SCOPED_NODE_MODULES = path.join(SPECKIT_DIR, 'node_modules', '@bmad-speckit');
-const SPECKIT_NODE_MODULES_ROOT = path.join(SPECKIT_DIR, 'node_modules');
 const SILENT = process.env.BMAD_PREPUBLISH_SILENT === '1';
 
 function info(message) {
@@ -22,6 +21,11 @@ function info(message) {
 }
 
 const BUNDLED = [
+  {
+    id: '@bmad-speckit/schema',
+    relDir: 'packages/schema',
+    distCheck: (dir) => fs.existsSync(path.join(dir, 'run-score-schema.json')),
+  },
   {
     id: '@bmad-speckit/scoring',
     relDir: 'packages/scoring',

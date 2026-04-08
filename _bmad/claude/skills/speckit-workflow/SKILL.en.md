@@ -47,6 +47,17 @@ Claude version of `speckit-workflow` must meet:
   - handoff protocol
 - Cursor Canonical Base, Claude Runtime Adapter, and Repo Add-ons must not be mixed into a rewritten version of prompt from unknown sources.
 
+## Deferred Gaps Governance Addendum
+
+This distributed English variant must preserve the same Deferred Gaps contract as `SKILL.md`.
+
+- `specify` must import inherited gaps into `Inherited Deferred Gaps` and `Deferred Gap Intake Mapping`, and maintain `deferred-gap-register.yaml`.
+- `plan` must map every active gap to architecture/work items/journeys/production paths in `Deferred Gap Architecture Mapping`.
+- `IMPLEMENTATION_GAPS` must classify inherited and newly discovered gaps explicitly.
+- `tasks` must keep `Deferred Gap Task Binding` and `Journey -> Task -> Test -> Closure`, including `Smoke Task Chain` and `Closure Task ID`.
+- `implement` / `dev-story` must read `deferred-gap-register.yaml`, `journey-ledger`, `trace-map`, and `closure-notes`, then write `closure_evidence` or `carry_forward_evidence`.
+- Completion claims are invalid when the module is complete but the journey is not runnable.
+
 ---
 
 ## Cursor Canonical Base

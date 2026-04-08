@@ -123,6 +123,23 @@ npx bmad-speckit dashboard --json --include-runtime --output-json _bmad-output/d
 - `score_detail` 给出当前 run 的细粒度 score records
 - `sft_summary` 给出 accepted / rejected / downgraded、target availability、rejection reasons、last bundle
 
+## 查看 Deferred Gaps 状态
+
+如果你要把 readiness / sprint planning 的 Deferred Gaps 一并带到 dashboard Markdown 里，执行：
+
+```bash
+npx bmad-speckit dashboard --show-deferred-gaps
+```
+
+这会在原 dashboard 后追加：
+
+- `Deferred Gap Governance Summary`
+- `Deferred Gaps Status`
+
+完整操作说明与 alert 语义见：
+
+- [`deferred-gap-governance-operations.md`](./deferred-gap-governance-operations.md)
+
 ## 直接查 live dashboard API
 
 启动 `dashboard-live` 后，可以直接请求：
