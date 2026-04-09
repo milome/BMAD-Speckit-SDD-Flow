@@ -204,7 +204,13 @@ function normalizeRuntimeOptions(defaults, payload) {
 
 async function getSftPreviewLocal(options) {
   const analytics = loadScoringAnalyticsRuntime();
-  if (!analytics || typeof analytics.buildCanonicalCandidates !== 'function') {
+  if (
+    !analytics ||
+    typeof analytics.buildCanonicalCandidates !== 'function' ||
+    typeof analytics.buildDatasetDuplicateSummary !== 'function' ||
+    typeof analytics.buildDatasetBalanceSummary !== 'function' ||
+    typeof analytics.buildDatasetTrainingViewSummary !== 'function'
+  ) {
     throw new Error('local SFT preview is unavailable until scoring analytics build is present');
   }
 
@@ -223,6 +229,9 @@ async function getSftPreviewLocal(options) {
     accepted: samples.filter((sample) => sample.quality.acceptance_decision === 'accepted').length,
     rejected: samples.filter((sample) => sample.quality.acceptance_decision === 'rejected').length,
     downgraded: samples.filter((sample) => sample.quality.acceptance_decision === 'downgraded').length,
+    duplicate_summary: analytics.buildDatasetDuplicateSummary(samples),
+    balance_summary: analytics.buildDatasetBalanceSummary(samples),
+    training_view_summary: analytics.buildDatasetTrainingViewSummary(samples),
     split_counts: samples.reduce(
       (acc, sample) => {
         acc[sample.split.assignment] += 1;
@@ -236,7 +245,11 @@ async function getSftPreviewLocal(options) {
 
 async function validateSftDatasetLocal(options) {
   const analytics = loadScoringAnalyticsRuntime();
-  if (!analytics || typeof analytics.buildCanonicalCandidates !== 'function') {
+  if (
+    !analytics ||
+    typeof analytics.buildCanonicalCandidates !== 'function' ||
+    typeof analytics.exportCanonicalSamples !== 'function'
+  ) {
     throw new Error('local SFT validation is unavailable until scoring analytics build is present');
   }
 
@@ -248,25 +261,12 @@ async function validateSftDatasetLocal(options) {
     splitSeed: options.splitSeed,
     requireCodePair: options.dropNoCodePair,
   });
-
-  const invalidSamples = samples.filter((sample) => !sample.sample_id || sample.messages.length === 0);
-  const rejectedSamples = samples
-    .filter((sample) => sample.quality.acceptance_decision === 'rejected')
-    .map((sample) => ({
-      sample_id: sample.sample_id,
-      run_id: sample.source.run_id,
-      split: sample.split.assignment,
-      reasons: sample.quality.rejection_reasons,
-      warnings: sample.quality.warnings,
-      acceptance_decision: sample.quality.acceptance_decision,
-    }));
-
+  const exportResult = analytics.exportCanonicalSamples(samples, options.target);
   return {
-    target: options.target,
-    schema_valid: invalidSamples.length === 0,
-    total_samples: samples.length,
-    invalid_samples: invalidSamples.map((sample) => sample.sample_id),
-    rejected_samples: rejectedSamples,
+    ...exportResult.validationReport,
+    accepted: exportResult.validationReport.counts.accepted,
+    rejected: exportResult.validationReport.counts.rejected,
+    rejection_report_path: null,
   };
 }
 

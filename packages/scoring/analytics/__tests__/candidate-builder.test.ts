@@ -26,6 +26,8 @@ function makeRecord(overrides: Partial<RunScoreRecord> = {}): RunScoreRecord {
     base_commit_hash: 'ad245b7',
     content_hash: 'sha256:content-001',
     source_hash: 'sha256:source-001',
+    host: 'cursor',
+    host_kind: 'cursor',
     ...overrides,
   };
 }
@@ -75,7 +77,8 @@ describe('canonical candidate builder', () => {
         tool_trace_ref: undefined,
       },
       metadata: {
-        host_kind: 'unknown',
+        host: 'cursor',
+        host_kind: 'cursor',
       },
       quality: {
         acceptance_decision: 'accepted',
@@ -97,6 +100,52 @@ describe('canonical candidate builder', () => {
       'user',
       'assistant',
     ]);
+  });
+
+  it('hydrates provider facts from governance rerun history when present', async () => {
+    const bugfixPath = path.join(tempDir, 'BUGFIX_runtime-dashboard-sft.md');
+    fs.writeFileSync(
+      bugfixPath,
+      `## §1 问题\n修复 dashboard runtime 观测缺口。\n\n## §4 修复方案\n补充 query core 与 live dashboard。\n`,
+      'utf-8'
+    );
+    fs.writeFileSync(
+      path.join(tempDir, 'record.json'),
+      JSON.stringify(
+        makeRecord({
+          source_path: bugfixPath,
+          governance_rerun_history: [
+            {
+              event_id: 'gov-1',
+              timestamp: '2026-03-28T00:10:00.000Z',
+              rerun_gate: 'implementation-readiness',
+              outcome: 'blocked',
+              provider_id: 'dashscope-coding-kimi',
+              provider_mode: 'openai-compatible',
+              host_kind: 'claude',
+            },
+          ],
+        })
+      ),
+      'utf-8'
+    );
+
+    vi.mocked(execSync).mockImplementation((command: string) => {
+      if (command.includes('rev-parse HEAD')) return 'f'.repeat(40);
+      if (command.includes('rev-parse --verify')) return 'ad245b7';
+      if (command.includes('git diff')) return '--- a/foo.ts\n+++ b/foo.ts\n-old code\n+new code';
+      return '';
+    });
+
+    const result = await buildCanonicalCandidates({
+      dataPath: tempDir,
+      cwd: tempDir,
+      minScore: 90,
+    });
+
+    expect(result.samples[0]?.source.provider_id).toBe('dashscope-coding-kimi');
+    expect(result.samples[0]?.source.provider_mode).toBe('openai-compatible');
+    expect(result.samples[0]?.metadata.host_kind).toBe('cursor');
   });
 
   it('prefers a persisted patch snapshot over runtime git diff reconstruction', async () => {

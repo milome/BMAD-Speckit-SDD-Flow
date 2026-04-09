@@ -5,6 +5,7 @@ import {
   type GovernanceExecutionLaunchInfo,
   updateGovernancePacketExecutionRecord,
 } from './governance-packet-execution-store';
+import { createGovernanceHostDispatchAdapter } from './governance-host-dispatch-adapter';
 
 export interface GovernancePacketDispatchAccepted {
   kind: 'accepted';
@@ -48,6 +49,8 @@ export interface GovernancePacketDispatchWorkerOptions {
   leaseTimeoutSeconds?: number;
   timeoutMinutes?: number;
   maxDispatchAttempts?: number;
+  launchEnv?: NodeJS.ProcessEnv;
+  startupTimeoutMs?: number;
 }
 
 export class StubGovernanceExecutionAdapter implements GovernancePacketDispatchAdapter {
@@ -75,12 +78,18 @@ function isLeaseActive(record: GovernancePacketExecutionRecord, now: Date): bool
 }
 
 function buildLaunchInfo(
-  outcome: GovernancePacketDispatchOutcome
+  outcome: GovernancePacketDispatchOutcome,
+  metadata: Record<string, unknown> = {}
 ): GovernanceExecutionLaunchInfo {
   return {
     externalRunId: 'externalRunId' in outcome ? (outcome.externalRunId ?? null) : null,
     note: 'reason' in outcome ? (outcome.reason ?? null) : null,
-    metadata: 'metadata' in outcome ? (outcome.metadata ?? null) : null,
+    metadata: {
+      ...(('metadata' in outcome && outcome.metadata && typeof outcome.metadata === 'object')
+        ? outcome.metadata
+        : {}),
+      ...metadata,
+    },
   };
 }
 
@@ -103,7 +112,12 @@ export async function processPendingExecutionRecords(
   options: GovernancePacketDispatchWorkerOptions = {}
 ): Promise<GovernancePacketExecutionRecord[]> {
   const config = readGovernanceRemediationConfig(projectRoot);
-  const adapter = options.adapter ?? createAcceptedPlaceholderDispatchAdapter();
+  const adapter =
+    options.adapter ??
+    createGovernanceHostDispatchAdapter({
+      env: options.launchEnv,
+      startupTimeoutMs: options.startupTimeoutMs,
+    });
   const now = options.now ?? new Date();
   const leaseOwner = options.leaseOwner ?? `dispatch-worker-${process.pid}`;
   const records = listGovernancePacketExecutionRecords(projectRoot).filter((record) =>
@@ -113,34 +127,6 @@ export async function processPendingExecutionRecords(
 
   for (const record of records) {
     if (record.status === 'leased' && isLeaseActive(record, now)) {
-      continue;
-    }
-
-    const packetPath = record.packetPaths[record.authoritativeHost];
-    if (!packetPath) {
-      updated.push(
-        updateGovernancePacketExecutionRecord(
-          projectRoot,
-          record.loopStateId,
-          record.attemptNumber,
-          (current) => ({
-            ...current,
-            status: 'escalated',
-            leaseOwner: null,
-            leaseAcquiredAt: null,
-            leaseExpiresAt: null,
-            lastDispatchError: `missing packet for authoritative host ${current.authoritativeHost}`,
-            history: [
-              ...current.history,
-              {
-                at: nowIso(now),
-                kind: 'escalated',
-                note: `missing packet for authoritative host ${current.authoritativeHost}`,
-              },
-            ],
-          })
-        )
-      );
       continue;
     }
 
@@ -163,61 +149,125 @@ export async function processPendingExecutionRecords(
         ],
       })
     );
-
-    const outcome = await adapter.launch({
-      executionId: leased.executionId,
-      authoritativeHost: leased.authoritativeHost,
-      packetPath,
-      leaseOwner,
-      timeoutMs:
-        (options.timeoutMinutes ?? config.execution?.execution.timeoutMinutes ?? 30) * 60 * 1000,
-      projectRoot,
-    });
     const observedAt = nowIso(now);
-    const nextDispatchAttemptCount = leased.dispatchAttemptCount + 1;
     const maxDispatchAttempts =
       options.maxDispatchAttempts ?? config.execution?.escalation.afterDispatchFailures ?? 3;
+    const hostCandidates = [leased.authoritativeHost, ...leased.fallbackHosts];
+    let dispatchAttemptCount = leased.dispatchAttemptCount;
+    let history = [...leased.history];
+    let lastDispatchError: string | null = leased.lastDispatchError ?? null;
+    let lastLaunch = leased.lastLaunch ?? null;
+    let acceptedRecord: GovernancePacketExecutionRecord | null = null;
 
+    for (const hostKind of hostCandidates) {
+      const packetPath = leased.packetPaths[hostKind];
+      dispatchAttemptCount += 1;
+
+      if (!packetPath) {
+        lastDispatchError = `missing packet for host ${hostKind}`;
+        history.push({
+          at: observedAt,
+          kind: 'dispatch-failed',
+          note: lastDispatchError,
+        });
+        if (dispatchAttemptCount >= maxDispatchAttempts) {
+          break;
+        }
+        continue;
+      }
+
+      const outcome = await adapter.launch({
+        executionId: leased.executionId,
+        authoritativeHost: hostKind,
+        packetPath,
+        leaseOwner,
+        timeoutMs:
+          (options.timeoutMinutes ?? config.execution?.execution.timeoutMinutes ?? 30) * 60 * 1000,
+        projectRoot,
+      });
+
+      lastLaunch = buildLaunchInfo(outcome, {
+        configuredAuthoritativeHost: leased.authoritativeHost,
+        dispatchedHost: hostKind,
+        fallbackUsed: hostKind !== leased.authoritativeHost,
+        packetPath,
+      });
+
+      if (outcome.kind === 'accepted') {
+        history.push({
+          at: observedAt,
+          kind: 'dispatch-accepted',
+          note:
+            hostKind === leased.authoritativeHost
+              ? outcome.reason ?? `accepted by ${hostKind}`
+              : `fallback ${hostKind} accepted${outcome.reason ? `: ${outcome.reason}` : ''}`,
+        });
+        acceptedRecord = updateGovernancePacketExecutionRecord(
+          projectRoot,
+          leased.loopStateId,
+          leased.attemptNumber,
+          (current) => ({
+            ...current,
+            status: 'running',
+            dispatchAttemptCount,
+            lastDispatchError: null,
+            lastLaunch,
+            history,
+          })
+        );
+        break;
+      }
+
+      lastDispatchError = outcome.reason;
+      history.push({
+        at: observedAt,
+        kind: outcome.kind === 'rejected' ? 'dispatch-rejected' : 'dispatch-failed',
+        note:
+          hostKind === leased.authoritativeHost
+            ? `${hostKind}: ${outcome.reason}`
+            : `fallback ${hostKind}: ${outcome.reason}`,
+      });
+
+      if (dispatchAttemptCount >= maxDispatchAttempts) {
+        break;
+      }
+    }
+
+    if (acceptedRecord) {
+      updated.push(acceptedRecord);
+      continue;
+    }
+
+    const shouldEscalate = dispatchAttemptCount >= maxDispatchAttempts;
     updated.push(
       updateGovernancePacketExecutionRecord(
         projectRoot,
         leased.loopStateId,
         leased.attemptNumber,
-        (current) => {
-          if (outcome.kind === 'accepted') {
-            return {
-              ...current,
-              status: 'running',
-              dispatchAttemptCount: nextDispatchAttemptCount,
-              lastDispatchError: null,
-              lastLaunch: buildLaunchInfo(outcome),
-              history: [
-                ...current.history,
-                { at: observedAt, kind: 'dispatch-accepted', note: outcome.reason ?? null },
-              ],
-            };
-          }
-
-          const shouldEscalate = nextDispatchAttemptCount >= maxDispatchAttempts;
-          return {
-            ...current,
-            status: shouldEscalate ? 'escalated' : 'retry_pending',
-            dispatchAttemptCount: nextDispatchAttemptCount,
-            leaseOwner: null,
-            leaseAcquiredAt: null,
-            leaseExpiresAt: null,
-            lastDispatchError: outcome.reason,
-            lastLaunch: buildLaunchInfo(outcome),
-            history: [
-              ...current.history,
-              {
-                at: observedAt,
-                kind: outcome.kind === 'rejected' ? 'dispatch-rejected' : 'dispatch-failed',
-                note: outcome.reason,
-              },
-            ],
-          };
-        }
+        (current) => ({
+          ...current,
+          status: shouldEscalate ? 'escalated' : 'retry_pending',
+          dispatchAttemptCount,
+          leaseOwner: null,
+          leaseAcquiredAt: null,
+          leaseExpiresAt: null,
+          lastDispatchError,
+          lastLaunch,
+          history: [
+            ...history,
+            ...(
+              shouldEscalate
+                ? [
+                    {
+                      at: observedAt,
+                      kind: 'escalated' as const,
+                      note: `dispatch failures reached ${maxDispatchAttempts}`,
+                    },
+                  ]
+                : []
+            ),
+          ],
+        })
       )
     );
   }

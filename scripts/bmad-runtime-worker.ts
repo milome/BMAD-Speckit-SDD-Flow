@@ -34,7 +34,10 @@ import {
   createGovernancePacketExecutionRecord,
   type GovernancePacketExecutionRecord,
 } from './governance-packet-execution-store';
-import { processPendingExecutionRecords } from './governance-packet-dispatch-worker';
+import {
+  processPendingExecutionRecords,
+  type GovernancePacketDispatchAdapter,
+} from './governance-packet-dispatch-worker';
 import { reconcileGovernanceExecutionRecords } from './governance-packet-reconciler';
 import {
   buildGovernanceRemediationRunnerSummaryLines,
@@ -413,6 +416,15 @@ async function processGovernanceRerunEvent(
     timestamp: processedAt,
     rerunGate: runnerInput.rerunGate,
     outcome: runnerInput.outcome,
+    providerId:
+      result.modelHintsCandidate && result.modelHintsCandidate.source === 'model-provider'
+        ? result.modelHintsCandidate.providerId
+        : undefined,
+    providerMode:
+      result.modelHintsCandidate && result.modelHintsCandidate.source === 'model-provider'
+        ? result.modelHintsCandidate.providerMode
+        : undefined,
+    hostKind: runnerInput.hostKind,
     decisionMode: executorRouting?.routingMode ?? rerunDecision.mode,
     attemptId: runnerInput.attemptId,
     loopStateId: result.loopState.loopStateId,
@@ -697,14 +709,26 @@ async function processGovernanceQueue(projectRoot: string): Promise<void> {
 
 export { governanceCurrentRunPath };
 
-export async function processQueue(projectRoot: string = process.cwd()): Promise<void> {
+export interface GovernanceProcessQueueOptions {
+  dispatchAdapter?: GovernancePacketDispatchAdapter;
+  dispatchLaunchEnv?: NodeJS.ProcessEnv;
+  dispatchStartupTimeoutMs?: number;
+}
+
+export async function processQueue(
+  projectRoot: string = process.cwd(),
+  options: GovernanceProcessQueueOptions = {}
+): Promise<void> {
   await processGovernanceQueue(projectRoot);
   const config = readGovernanceRemediationConfig(projectRoot);
   if (config.execution?.enabled) {
     const updatedRecords = await processPendingExecutionRecords(projectRoot, {
+      adapter: options.dispatchAdapter,
       leaseTimeoutSeconds: config.execution.dispatch.leaseTimeoutSeconds,
       timeoutMinutes: config.execution.execution.timeoutMinutes,
       maxDispatchAttempts: config.execution.dispatch.maxDispatchAttempts,
+      launchEnv: options.dispatchLaunchEnv,
+      startupTimeoutMs: options.dispatchStartupTimeoutMs,
     });
     syncExecutionProjectionIntoCurrentRun(projectRoot, updatedRecords);
     reconcileGovernanceExecutionRecords(projectRoot);

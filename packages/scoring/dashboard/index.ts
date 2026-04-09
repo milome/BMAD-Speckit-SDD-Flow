@@ -45,6 +45,7 @@ export type {
   RuntimeDashboardSelection,
   DashboardOverviewPanel,
   DashboardRuntimeContextPanel,
+  DashboardExecutionStateSummary,
   DashboardStageTimelineEntry,
   DashboardScoreDetailRecord,
   DashboardScoreDetailPayload,

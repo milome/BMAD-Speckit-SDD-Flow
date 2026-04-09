@@ -10,6 +10,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { processQueue } from '../../scripts/bmad-runtime-worker';
+import { createAcceptedPlaceholderDispatchAdapter } from '../../scripts/governance-packet-dispatch-worker';
 import {
   governancePendingQueueFilePath,
   readGovernanceCurrentRun,
@@ -175,7 +176,9 @@ describe('governance runtime worker execution record', () => {
         'utf8'
       );
 
-      await processQueue(fixture.root);
+      await processQueue(fixture.root, {
+        dispatchAdapter: createAcceptedPlaceholderDispatchAdapter('execution-record placeholder dispatch'),
+      });
 
       expect(existsSync(secondOutput.replace(/\.md$/i, '.cursor-packet.md'))).toBe(true);
       const records = listGovernancePacketExecutionRecords(fixture.root).filter(

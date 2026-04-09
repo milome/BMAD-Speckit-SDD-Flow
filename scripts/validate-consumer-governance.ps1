@@ -203,10 +203,27 @@ provider:
   id: consumer-validation-stub
 execution:
   enabled: true
-  authoritativeHost: cursor
+  authoritativeHost: claude
   fallbackHosts:
-    - claude
+    - cursor
 '@
+  $launchReceiptPath = Join-Path $SummaryRoot "$ValidationRunId-launch-receipt.json"
+  $launchStubPath = Join-Path $SummaryRoot "$ValidationRunId-host-launcher.cjs"
+  @"
+const fs = require('node:fs');
+fs.writeFileSync(process.argv[2], JSON.stringify({
+  executionId: process.env.BMAD_GOVERNANCE_EXECUTION_ID,
+  packetPath: process.env.BMAD_GOVERNANCE_PACKET_PATH,
+  projectRoot: process.env.BMAD_GOVERNANCE_PROJECT_ROOT,
+  leaseOwner: process.env.BMAD_GOVERNANCE_LEASE_OWNER,
+  authoritativeHost: process.env.BMAD_GOVERNANCE_DISPATCH_HOST
+}, null, 2));
+process.stdout.write(JSON.stringify({
+  kind: 'accepted',
+  externalRunId: 'consumer-validation-launch',
+  metadata: { launcher: 'consumer-validation-wrapper' }
+}));
+"@ | Set-Content -Path $launchStubPath -Encoding UTF8
   if (Test-Path $CanonicalConfigPath) { Copy-Item -Path $CanonicalConfigPath -Destination $ConfigBackupPath -Force }
   $configContent | Set-Content -Path $configPath -Encoding UTF8
   $configContent | Set-Content -Path $CanonicalConfigPath -Encoding UTF8
@@ -233,7 +250,13 @@ execution:
     $executionBefore = @(Get-ChildItem -Path $executionsDir -Filter *.json -File -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne 'reconciliation-report.json' } | Select-Object -ExpandProperty FullName)
     $failedDebug = Join-Path $ConsumerRoot '_bmad-output/runtime/governance/queue/last-failed-debug.json'
     $failedDebugMtimeBefore = if (Test-Path $failedDebug) { (Get-Item $failedDebug).LastWriteTimeUtc } else { $null }
-    $hook = Invoke-External -FilePath 'node.exe' -Arguments @('.cursor/hooks/post-tool-use.cjs') -WorkingDirectory $ConsumerRoot -LogName 'post-tool-use' -InputText $eventJson
+    $launchEnv = @{
+      BMAD_GOVERNANCE_CLAUDE_LAUNCH_COMMAND = 'node.exe'
+      BMAD_GOVERNANCE_CLAUDE_LAUNCH_ARGS_JSON = (@($launchStubPath, $launchReceiptPath) | ConvertTo-Json -Compress)
+      BMAD_GOVERNANCE_CLAUDE_LAUNCH_MODE = 'json-stdout'
+      BMAD_GOVERNANCE_CLAUDE_STARTUP_TIMEOUT_MS = '500'
+    }
+    $hook = Invoke-External -FilePath 'node.exe' -Arguments @('.cursor/hooks/post-tool-use.cjs') -WorkingDirectory $ConsumerRoot -LogName 'post-tool-use' -InputText $eventJson -Environment $launchEnv
     if ($hook.stdout -notmatch 'received rerun-result' -or $hook.stdout -notmatch 'queued rerun event') { throw 'post-tool-use hook did not emit expected queue logs' }
     Wait-Until {
       if (Test-Path $failedDebug) {
@@ -247,23 +270,35 @@ execution:
       $newDoneFile = (Get-JsonFiles $doneDir | Where-Object { $doneBefore -notcontains $_ } | Sort-Object | Select-Object -Last 1)
       [bool]$newDoneFile
     } 'queue done item'
-    $packetPath = $outputPath -replace '\.md$', '.cursor-packet.md'
-    Wait-Until { Test-Path $packetPath } 'cursor packet'
+    $cursorPacketPath = $outputPath -replace '\.md$', '.cursor-packet.md'
+    $claudePacketPath = $outputPath -replace '\.md$', '.claude-packet.md'
+    Wait-Until { (Test-Path $cursorPacketPath) -and (Test-Path $claudePacketPath) } 'cursor + claude packets'
     $executionFile = $null
     Wait-Until {
-      $executionFile = Get-ChildItem -Path $executionsDir -Filter *.json -File -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne 'reconciliation-report.json' -and $executionBefore -notcontains $_.FullName } | Sort-Object LastWriteTime | Select-Object -Last 1
-      if (-not $executionFile) { return $false }
-      ((Get-Content -Raw $executionFile.FullName | ConvertFrom-Json).status -eq 'running')
+      $candidate = Get-ChildItem -Path $executionsDir -Filter *.json -File -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne 'reconciliation-report.json' -and $executionBefore -notcontains $_.FullName } | Sort-Object LastWriteTime | Select-Object -Last 5 | ForEach-Object {
+        $parsed = Get-Content -Raw $_.FullName | ConvertFrom-Json
+        if ($parsed.artifactPath -eq $outputPath -and $parsed.status -eq 'running') { $_ }
+      } | Select-Object -Last 1
+      [bool]$candidate
     } 'execution record running'
+    $executionFile = Get-ChildItem -Path $executionsDir -Filter *.json -File -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne 'reconciliation-report.json' -and $executionBefore -notcontains $_.FullName } | Sort-Object LastWriteTime | Select-Object -Last 5 | ForEach-Object {
+      $parsed = Get-Content -Raw $_.FullName | ConvertFrom-Json
+      if ($parsed.artifactPath -eq $outputPath -and $parsed.status -eq 'running') { $_ }
+    } | Select-Object -Last 1
+    if (-not $executionFile) { throw 'Unable to resolve running execution record for validation output' }
     $record = Get-Content -Raw $executionFile.FullName | ConvertFrom-Json
-    [ordered]@{ queueDone = $true; doneFile = $newDoneFile; artifactPath = $outputPath; packetPath = $packetPath; executionFile = $executionFile.FullName; loopStateId = $record.loopStateId; attemptNumber = [int]$record.attemptNumber; executionStatus = $record.status; note = 'Validation uses unique run id and preserves all existing _bmad-output artifacts.' }
+    if (-not (Test-Path $launchReceiptPath)) { throw 'Launch wrapper did not write receipt file' }
+    if ($record.authoritativeHost -ne 'claude') { throw "Authoritative host was not claude: $($record.authoritativeHost)" }
+    if ($record.lastLaunch.externalRunId -ne 'consumer-validation-launch') { throw "Real launch adapter did not set expected externalRunId: $($record.lastLaunch.externalRunId)" }
+    [ordered]@{ queueDone = $true; doneFile = $newDoneFile; artifactPath = $outputPath; cursorPacketPath = $cursorPacketPath; authoritativePacketPath = $claudePacketPath; launchReceiptPath = $launchReceiptPath; executionFile = $executionFile.FullName; loopStateId = $record.loopStateId; attemptNumber = [int]$record.attemptNumber; executionStatus = $record.status; externalRunId = $record.lastLaunch.externalRunId; note = 'Validation uses unique run id, preserves all existing _bmad-output artifacts, and verifies the real launch wrapper path.' }
   } | Out-Null
 
   $executionStep = $script:Summary.steps | Where-Object { $_.name -eq 'verify-post-tool-use-and-background-worker' } | Select-Object -Last 1
   $loopStateId = [string]$executionStep.loopStateId
   $attemptNumber = [int]$executionStep.attemptNumber
+  $externalRunId = [string]$executionStep.externalRunId
   Run-Step 'verify-execution-closure' {
-    $executionPayload = ([ordered]@{ kind = 'execution'; projectRoot = $ConsumerRoot; loopStateId = $loopStateId; attemptNumber = $attemptNumber; result = [ordered]@{ outcome = 'completed'; observedAt = (Get-Date).ToString('o'); externalRunId = 'consumer-validation-run' } } | ConvertTo-Json -Compress -Depth 20)
+    $executionPayload = ([ordered]@{ kind = 'execution'; projectRoot = $ConsumerRoot; loopStateId = $loopStateId; attemptNumber = $attemptNumber; result = [ordered]@{ outcome = 'completed'; observedAt = (Get-Date).ToString('o'); externalRunId = $externalRunId } } | ConvertTo-Json -Compress -Depth 20)
     $awaiting = Invoke-External -FilePath 'node.exe' -Arguments @('.cursor/hooks/governance-execution-result-ingestor.cjs', $executionPayload) -WorkingDirectory $ConsumerRoot -LogName 'ingest-execution'
     $awaitingRecord = $awaiting.stdout | ConvertFrom-Json
     if ($awaitingRecord.status -ne 'awaiting_rerun_gate') { throw "Execution ingestor did not reach awaiting_rerun_gate: $($awaitingRecord.status)" }

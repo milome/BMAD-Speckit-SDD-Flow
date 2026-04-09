@@ -32,6 +32,9 @@ export interface WriteGovernanceRerunHistoryInput {
   timestamp: string;
   rerunGate: string;
   outcome: string;
+  providerId?: string;
+  providerMode?: string;
+  hostKind?: string;
   decisionMode?: 'targeted' | 'generic' | 'idle';
   attemptId?: string;
   loopStateId?: string;
@@ -236,6 +239,9 @@ export function writeGovernanceRerunHistory(
     timestamp: input.timestamp,
     rerun_gate: input.rerunGate,
     outcome: input.outcome,
+    ...(input.providerId != null ? { provider_id: input.providerId } : {}),
+    ...(input.providerMode != null ? { provider_mode: input.providerMode } : {}),
+    ...(input.hostKind != null ? { host_kind: input.hostKind } : {}),
     ...(input.decisionMode != null ? { decision_mode: input.decisionMode } : {}),
     ...(input.attemptId != null ? { attempt_id: input.attemptId } : {}),
     ...(input.loopStateId != null ? { loop_state_id: input.loopStateId } : {}),
@@ -260,6 +266,7 @@ export function writeGovernanceRerunHistory(
       }),
       scenario: 'real_dev',
       stage,
+      ...(input.hostKind != null ? { host_kind: input.hostKind } : {}),
       phase_score: 100,
       phase_weight: 0,
       check_items: [],
@@ -269,6 +276,9 @@ export function writeGovernanceRerunHistory(
       first_pass: true,
     }),
     ...(runGroupId != null ? { run_group_id: target?.run_group_id ?? runGroupId } : {}),
+    ...(input.hostKind != null && target?.host_kind == null
+      ? { host_kind: input.hostKind }
+      : {}),
     ...(input.runtimePolicy?.triggerStage != null && target?.trigger_stage == null
       ? { trigger_stage: input.runtimePolicy.triggerStage }
       : {}),

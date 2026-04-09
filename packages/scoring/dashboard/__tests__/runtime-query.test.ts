@@ -7,6 +7,10 @@ import type { CanonicalSftSample } from '../../analytics/types';
 import type { RuntimeEvent } from '../../runtime/types';
 import type { RunScoreRecord } from '../../writer/types';
 import { buildRuntimeDashboardModel } from '../runtime-query';
+import {
+  createGovernancePacketExecutionRecord,
+  updateGovernancePacketExecutionRecord,
+} from '../../../../scripts/governance-packet-execution-store';
 
 function makeEvent(overrides: Partial<RuntimeEvent> = {}): RuntimeEvent {
   return {
@@ -267,6 +271,7 @@ describe('runtime-aware dashboard query', () => {
         ],
         metadata: {
           schema_targets: ['openai_chat', 'hf_conversational'],
+          host_kind: 'claude',
           language: 'zh-CN',
           notes: [],
         },
@@ -284,7 +289,7 @@ describe('runtime-aware dashboard query', () => {
           iteration_count: 0,
           has_code_pair: true,
           token_estimate: 64,
-          dedupe_cluster_id: null,
+          dedupe_cluster_id: 'dup-runtime-query',
           safety_flags: [],
           rejection_reasons: [],
           warnings: [],
@@ -327,6 +332,8 @@ describe('runtime-aware dashboard query', () => {
           run_id: 'run-e15-s1-001',
           stage: 'implement',
           flow: 'story',
+          provider_id: 'dashscope-coding-kimi',
+          provider_mode: 'openai-compatible',
           score_record_id: 'run-e15-s1-001:implement',
           event_ids: ['score:run-e15-s1-001:implement'],
           artifact_refs: [
@@ -345,6 +352,7 @@ describe('runtime-aware dashboard query', () => {
         ],
         metadata: {
           schema_targets: ['openai_chat', 'hf_tool_calling'],
+          host_kind: 'claude',
           language: 'zh-CN',
           notes: ['tool_trace_injected'],
         },
@@ -358,7 +366,7 @@ describe('runtime-aware dashboard query', () => {
           iteration_count: 0,
           has_code_pair: true,
           token_estimate: 72,
-          dedupe_cluster_id: null,
+          dedupe_cluster_id: 'dup-runtime-query',
           safety_flags: [],
           rejection_reasons: [],
           warnings: ['warning_redacted_noncritical'],
@@ -418,6 +426,8 @@ describe('runtime-aware dashboard query', () => {
           run_id: 'run-e15-s1-001',
           stage: 'implement',
           flow: 'story',
+          provider_id: 'http-json-provider',
+          provider_mode: 'http-json',
           score_record_id: 'run-e15-s1-001:implement',
           event_ids: ['score:run-e15-s1-001:implement'],
           artifact_refs: [
@@ -436,6 +446,7 @@ describe('runtime-aware dashboard query', () => {
         ],
         metadata: {
           schema_targets: ['openai_chat', 'hf_tool_calling'],
+          host_kind: 'cursor',
           language: 'zh-CN',
           notes: ['tool_trace_injected'],
         },
@@ -614,6 +625,30 @@ describe('runtime-aware dashboard query', () => {
           snapshot.sft_summary.by_split.holdout
       ).toBe(3);
       expect(snapshot.sft_summary.target_availability.openai_chat.compatible).toBe(2);
+      expect(snapshot.sft_summary.duplicate_summary).toEqual(
+        expect.objectContaining({
+          duplicate_cluster_count: 1,
+          duplicated_sample_count: 2,
+        })
+      );
+      expect(snapshot.sft_summary.balance_summary).toEqual(
+        expect.objectContaining({
+          by_host_kind: expect.objectContaining({
+            claude: 2,
+            cursor: 1,
+          }),
+          by_source_scope: expect.objectContaining({
+            story_scoped: 3,
+          }),
+        })
+      );
+      expect(snapshot.sft_summary.training_view_summary).toEqual(
+        expect.objectContaining({
+          assistant_only_ready: 2,
+          completion_only_ready: 1,
+          tool_calling_ready: 1,
+        })
+      );
       expect(snapshot.sft_summary.redaction_status_counts).toEqual({
         clean: 1,
         redacted: 1,
@@ -671,6 +706,80 @@ describe('runtime-aware dashboard query', () => {
     } finally {
       fs.rmSync(fixture.root, { recursive: true, force: true });
     }
+  });
+
+  it('surfaces execution-state truth from governance execution records', () => {
+    const fixture = createSourceFixture();
+    createGovernancePacketExecutionRecord({
+      projectRoot: fixture.root,
+      queueItemId: 'queue-execution-state',
+      loopStateId: 'loop-15-1-runtime-dashboard-sft',
+      attemptNumber: 1,
+      rerunGate: 'implementation-readiness',
+      artifactPath: path.join(
+        fixture.root,
+        '_bmad-output',
+        'implementation-artifacts',
+        'epic-15',
+        'story-15-1-runtime-dashboard-sft',
+        'attempt-1.md'
+      ),
+      packetPaths: {
+        cursor: path.join(fixture.root, '_bmad-output', 'planning-artifacts', 'attempt-1.cursor-packet.md'),
+        claude: path.join(fixture.root, '_bmad-output', 'planning-artifacts', 'attempt-1.claude-packet.md'),
+      },
+      authoritativeHost: 'cursor',
+      fallbackHosts: ['claude'],
+    });
+    updateGovernancePacketExecutionRecord(
+      fixture.root,
+      'loop-15-1-runtime-dashboard-sft',
+      1,
+      (record) => ({
+        ...record,
+        status: 'running',
+        lastLaunch: {
+          externalRunId: 'dispatch-run-001',
+          metadata: {
+            dispatchedHost: 'claude',
+            fallbackUsed: true,
+          },
+        },
+      })
+    );
+
+    const snapshot = buildRuntimeDashboardModel({
+      root: fixture.root,
+      events: [
+        makeEvent({
+          run_id: 'run-e15-s1-active',
+          event_id: 'evt-200',
+          timestamp: '2026-03-28T01:00:00.000Z',
+          payload: { status: 'pending' },
+          scope: { story_key: '15-1-runtime-dashboard-sft', flow: 'story', epic_id: 'epic-15' },
+        }),
+      ],
+      scoreRecords: [
+        makeScoreRecord({
+          run_id: 'run-e15-s1-active',
+          source_path: fixture.sourcePath,
+        }),
+      ],
+      options: {
+        root: fixture.root,
+      },
+    });
+
+    expect(snapshot.execution_state).toEqual(
+      expect.objectContaining({
+        source: 'execution_record',
+        selection_match: 'work_item',
+        execution_status: 'running',
+        configured_authoritative_host: 'cursor',
+        dispatched_host: 'claude',
+        fallback_used: true,
+      })
+    );
   });
 
   it('gracefully falls back when runtime events exist but scores do not', () => {

@@ -164,6 +164,12 @@ program
   .option('--iterationReportPaths <paths>', 'Comma-separated failed iteration report paths')
   .option('--artifactDocPath <path>', 'Artifact document path')
   .option('--questionVersion <ver>', 'Question version')
+  .option('--host <host>', 'Host identifier, e.g. cursor or claude')
+  .option('--hostKind <kind>', 'Canonical host kind for provenance')
+  .option('--providerId <id>', 'Provider identifier for provenance')
+  .option('--providerMode <mode>', 'Provider mode for provenance')
+  .option('--toolTraceRef <hash>', 'Tool trace content hash reference')
+  .option('--toolTracePath <path>', 'Tool trace artifact path')
   .option('--skipTriggerCheck', 'Skip trigger check')
   .option('--baseCommitHash <hash>', 'Base commit hash')
   .option('--sourceHashFilePath <path>', 'Source hash file path')
@@ -361,6 +367,19 @@ program
   .option('--host <host>', 'Dashboard host when auto-starting', '127.0.0.1')
   .action((opts) => {
     loadCommand('../src/commands/runtime-mcp', 'runtimeMcpCommand')(opts).catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
+  });
+
+program
+  .command('provider-smoke')
+  .description('Run a provider connectivity and response-shape smoke check')
+  .option('--config <path>', 'Path to governance-remediation.yaml')
+  .option('--timeoutMs <ms>', 'Request timeout in ms')
+  .option('--prompt <text>', 'Custom smoke prompt')
+  .action((opts) => {
+    loadCommand('../src/commands/provider-smoke', 'providerSmokeCommand')(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });

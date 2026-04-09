@@ -56,6 +56,15 @@ const messages = {
     downgradedLabel: '降级',
     trainingReadyLabel: '训练就绪',
     compatible: '可用',
+    executionState: '执行状态',
+    executionHost: '执行宿主',
+    rerunGateStatus: '重跑门状态',
+    duplicateClusters: '重复簇',
+    duplicatedSamples: '重复样本',
+    assistantOnlyReady: 'Assistant-only 就绪',
+    completionOnlyReady: 'Completion-only 就绪',
+    toolCallingReady: 'Tool-calling 就绪',
+    balanceSummary: '数据平衡',
     failureStream: '问题流',
     lastEventAt: '最近事件',
     needAction: '需处理',
@@ -110,6 +119,15 @@ const messages = {
     downgradedLabel: 'Downgraded',
     trainingReadyLabel: 'Training Ready',
     compatible: 'Compatible',
+    executionState: 'Execution State',
+    executionHost: 'Execution Host',
+    rerunGateStatus: 'Rerun Gate',
+    duplicateClusters: 'Duplicate Clusters',
+    duplicatedSamples: 'Duplicated Samples',
+    assistantOnlyReady: 'Assistant-only Ready',
+    completionOnlyReady: 'Completion-only Ready',
+    toolCallingReady: 'Tool-calling Ready',
+    balanceSummary: 'Dataset Balance',
     failureStream: 'Failure Stream',
     lastEventAt: 'Last Event',
     needAction: 'Needs Action',
@@ -310,6 +328,7 @@ function App() {
   const findings = snapshot?.score_detail?.findings ?? [];
   const dimensions = Object.entries(snapshot?.score_detail?.records?.[0]?.dimension_scores ?? {});
   const sft = snapshot?.sft_summary ?? {};
+  const execution = snapshot?.execution_state ?? {};
   const timeline = snapshot?.stage_timeline ?? [];
   const isLoading = !snapshot && !error;
 
@@ -459,6 +478,11 @@ function App() {
                       <MetricCard label={msg.lastEventAt} value={formatNullable(msg, snapshot?.runtime_context?.last_event_at)} tone="mint" />
                       <MetricCard label={msg.scopedLatestBundle} value={formatNullable(msg, sft?.last_bundle?.bundle_id)} tone="amber" />
                     </div>
+                    <div className="mt-4 grid gap-3 md:grid-cols-3">
+                      <MetricCard label={msg.executionState} value={formatNullable(msg, execution?.execution_status)} tone="cyan" />
+                      <MetricCard label={msg.executionHost} value={formatNullable(msg, execution?.dispatched_host ?? execution?.configured_authoritative_host)} tone="mint" />
+                      <MetricCard label={msg.rerunGateStatus} value={formatNullable(msg, execution?.last_rerun_gate_status)} tone="amber" />
+                    </div>
                     <div className="mt-4">
                       <BundleMetaBlock title={msg.scopedLatestBundle} bundle={sft?.last_bundle} msg={msg} />
                     </div>
@@ -469,6 +493,14 @@ function App() {
 
             {activeTab === 'runtime' ? (
               <div className="grid gap-4" id="panel-runtime">
+                <section className="panel-card p-4">
+                  <div className="mb-3 text-[15px] font-semibold text-primary">{msg.executionState}</div>
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <MetricCard label={msg.executionState} value={formatNullable(msg, execution?.execution_status)} tone="cyan" />
+                    <MetricCard label={msg.executionHost} value={formatNullable(msg, execution?.dispatched_host ?? execution?.configured_authoritative_host)} tone="mint" />
+                    <MetricCard label={msg.rerunGateStatus} value={formatNullable(msg, execution?.last_rerun_gate_status)} tone="amber" />
+                  </div>
+                </section>
                 {timeline.length === 0 ? <div className="empty-note">{msg.noData}</div> : timeline.map((entry) => (
                   <div key={`${entry.stage}-${entry.timestamp ?? entry.started_at ?? 'na'}`} className={`panel-card p-4 ${entry.stage === activeWorkItem?.current_stage ? 'item-active' : ''}`}>
                     <div className="mb-3 flex items-start justify-between gap-3">
@@ -538,6 +570,11 @@ function App() {
                     <MetricCard label={msg.trainingReadyLabel} value={formatNullable(msg, sft.training_ready_candidates)} tone="mint" />
                     <MetricCard label={msg.compatible} value={formatNullable(msg, sft.target_availability?.openai_chat?.compatible)} tone="cyan" />
                     <MetricCard label={msg.blocked} value={formatNullable(msg, sft.target_availability?.hf_tool_calling?.compatible)} tone="amber" />
+                    <MetricCard label={msg.duplicateClusters} value={formatNullable(msg, sft.duplicate_summary?.duplicate_cluster_count)} tone="amber" />
+                    <MetricCard label={msg.duplicatedSamples} value={formatNullable(msg, sft.duplicate_summary?.duplicated_sample_count)} tone="coral" />
+                    <MetricCard label={msg.assistantOnlyReady} value={formatNullable(msg, sft.training_view_summary?.assistant_only_ready)} tone="mint" />
+                    <MetricCard label={msg.completionOnlyReady} value={formatNullable(msg, sft.training_view_summary?.completion_only_ready)} tone="cyan" />
+                    <MetricCard label={msg.toolCallingReady} value={formatNullable(msg, sft.training_view_summary?.tool_calling_ready)} tone="cyan" />
                   </div>
                   <div className="bundle-meta-grid">
                     <BundleMetaBlock title={msg.scopedLatestBundle} bundle={sft?.last_bundle} msg={msg} />
@@ -545,6 +582,8 @@ function App() {
                   </div>
                   <div className="mt-4 text-[15px] font-semibold text-primary">{msg.targetAvailability}</div>
                   <TargetAvailabilityGrid availability={sft?.target_availability} msg={msg} />
+                  <div className="mt-4 text-[15px] font-semibold text-primary">{msg.balanceSummary}</div>
+                  <ValidationSummary summary={sft?.balance_summary} msg={msg} />
                   <div className="mt-4 text-[15px] font-semibold text-primary">Validation Summary</div>
                   <ValidationSummary summary={sft?.last_bundle?.validation_summary ?? sft?.global_last_bundle?.validation_summary} msg={msg} />
                 </section>

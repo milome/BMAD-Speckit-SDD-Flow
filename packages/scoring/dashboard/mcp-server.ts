@@ -98,12 +98,13 @@ export async function invokeRuntimeMcpTool(
   switch (toolName) {
     case 'get_current_run_summary':
       return buildToolResult(
-        `run=${snapshot.selection.run_id ?? 'N/A'} status=${snapshot.overview.status} stage=${snapshot.runtime_context.current_stage ?? 'N/A'}`,
+        `run=${snapshot.selection.run_id ?? 'N/A'} status=${snapshot.overview.status} stage=${snapshot.runtime_context.current_stage ?? 'N/A'} execution=${snapshot.execution_state.execution_status ?? 'N/A'}`,
         {
           run_id: snapshot.selection.run_id,
           status: snapshot.overview.status,
           current_stage: snapshot.runtime_context.current_stage,
           health_score: snapshot.overview.health_score,
+          execution_state: snapshot.execution_state,
         }
       );
     case 'get_stage_status':
@@ -112,6 +113,7 @@ export async function invokeRuntimeMcpTool(
         {
           current_stage: snapshot.runtime_context.current_stage,
           timeline: snapshot.stage_timeline,
+          execution_state: snapshot.execution_state,
         }
       );
     case 'get_score_gate_result':

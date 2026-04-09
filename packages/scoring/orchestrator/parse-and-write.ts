@@ -46,6 +46,18 @@ export interface ParseAndWriteScoreOptions {
   sourceHashFilePath?: string;
   /** 触发评分的源文档路径（如 BUGFIX 文档），写入 record 的 source_path（B07） */
   artifactDocPath?: string;
+  /** 可选：评分记录宿主，如 cursor / claude */
+  host?: string;
+  /** 可选：宿主类型，进入 run score 和后续 canonical provenance */
+  host_kind?: string;
+  /** 可选：provider id，进入新数据链 provenance */
+  provider_id?: string;
+  /** 可选：provider mode，进入新数据链 provenance */
+  provider_mode?: string;
+  /** 可选：tool trace content hash reference */
+  tool_trace_ref?: string;
+  /** 可选：tool trace artifact path */
+  tool_trace_path?: string;
   /** 该 stage 审计未通过（fail）次数；0 表示一次通过；DEBATE 迭代次数作为评分因子 */
   iteration_count?: number;
   /** Story 9.1 T4: 触发阶段标识，写入 record.trigger_stage；如 speckit_5_2、bmad_story_stage4 */
@@ -232,6 +244,43 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
           dimension_scores: dimensionScores,
         }
       : record;
+
+  if (options.host != null && options.host !== '') {
+    baseRecord = {
+      ...baseRecord,
+      host: options.host,
+    };
+  }
+  if (options.host_kind != null && options.host_kind !== '') {
+    baseRecord = {
+      ...baseRecord,
+      host_kind: options.host_kind,
+    };
+  }
+  if (options.provider_id != null && options.provider_id !== '') {
+    baseRecord = {
+      ...baseRecord,
+      provider_id: options.provider_id,
+    };
+  }
+  if (options.provider_mode != null && options.provider_mode !== '') {
+    baseRecord = {
+      ...baseRecord,
+      provider_mode: options.provider_mode,
+    };
+  }
+  if (options.tool_trace_ref != null && options.tool_trace_ref !== '') {
+    baseRecord = {
+      ...baseRecord,
+      tool_trace_ref: options.tool_trace_ref,
+    };
+  }
+  if (options.tool_trace_path != null && options.tool_trace_path !== '') {
+    baseRecord = {
+      ...baseRecord,
+      tool_trace_path: options.tool_trace_path,
+    };
+  }
 
   if (options.iteration_count != null) {
     const validated = validateIterationCount(options.iteration_count);

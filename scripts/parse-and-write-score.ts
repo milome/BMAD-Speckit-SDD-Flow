@@ -82,6 +82,12 @@ async function main() {
   const skipAutoHash = args.skipAutoHash === 'true';
   const sourceHashFilePath = args.sourceHashFilePath;
   const artifactDocPath = args.artifactDocPath;
+  const host = args.host;
+  const hostKind = args.hostKind;
+  const providerId = args.providerId;
+  const providerMode = args.providerMode;
+  const toolTraceRef = args.toolTraceRef;
+  const toolTracePath = args.toolTracePath;
   const event = args.event ?? 'user_explicit_request';
   const agent = args.agent;
   const source = args.source;
@@ -105,7 +111,7 @@ async function main() {
 
   if (!reportPath) {
     console.error(
-      'Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records'
+      'Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records'
     );
     process.exit(1);
   }
@@ -141,6 +147,12 @@ async function main() {
     skipAutoHash,
     sourceHashFilePath,
     artifactDocPath,
+    host,
+    host_kind: hostKind,
+    provider_id: providerId,
+    provider_mode: providerMode,
+    tool_trace_ref: toolTraceRef,
+    tool_trace_path: toolTracePath,
     question_version: questionVersion,
     iteration_count: iterationCount,
     triggerStage: triggerStage !== stage ? triggerStage : undefined,

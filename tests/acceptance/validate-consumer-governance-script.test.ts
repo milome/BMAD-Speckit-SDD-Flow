@@ -24,4 +24,11 @@ describe('validate-consumer-governance script safety', () => {
     expect(content).toContain('qa.readiness.$ValidationRunId');
     expect(content).toContain('$ValidationRunId-auto-attempt.md');
   });
+
+  it('verifies the real launch wrapper path instead of placeholder dispatch only', () => {
+    expect(content).toContain('BMAD_GOVERNANCE_CLAUDE_LAUNCH_COMMAND');
+    expect(content).toContain('consumer-validation-launch');
+    expect(content).toContain('Launch wrapper did not write receipt file');
+    expect(content).toContain('authoritativeHost: claude');
+  });
 });

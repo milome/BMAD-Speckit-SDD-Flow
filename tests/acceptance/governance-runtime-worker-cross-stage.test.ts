@@ -11,6 +11,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { processQueue } from '../../scripts/bmad-runtime-worker';
+import { createAcceptedPlaceholderDispatchAdapter } from '../../scripts/governance-packet-dispatch-worker';
 import {
   readGovernanceCurrentRun,
   governanceCurrentRunPath,
@@ -290,7 +291,9 @@ describe('governance runtime worker cross-stage rerun queue', () => {
         'utf8'
       );
 
-      await processQueue(fixture.root);
+      await processQueue(fixture.root, {
+        dispatchAdapter: createAcceptedPlaceholderDispatchAdapter('cross-stage placeholder dispatch'),
+      });
 
       const currentRun = readGovernanceCurrentRun<GovernanceExecutionResult>(fixture.root);
       const loopStateRaw = JSON.parse(
@@ -420,7 +423,9 @@ describe('governance runtime worker cross-stage rerun queue', () => {
         'utf8'
       );
 
-      await processQueue(fixture.root);
+      await processQueue(fixture.root, {
+        dispatchAdapter: createAcceptedPlaceholderDispatchAdapter('cross-stage placeholder dispatch'),
+      });
 
       const donePath = governanceDoneQueueFilePath(fixture.root, 'queue-wave2a-tail-01');
       if (!existsSync(donePath)) {

@@ -39,6 +39,12 @@
     "patch_ref": { "type": "string", "description": "Stable patch snapshot SHA-256 reference for immutable diff provenance" },
     "patch_snapshot_path": { "type": "string", "description": "Absolute path to persisted immutable patch snapshot" },
     "source_path": { "type": "string", "description": "Path to artifact doc that triggered this scoring (e.g. BUGFIX)" },
+    "host": { "type": "string", "description": "Optional host identifier for this scoring record" },
+    "host_kind": { "type": "string", "description": "Optional canonical host kind for this scoring record" },
+    "provider_id": { "type": "string", "description": "Optional provider identifier for this scoring record" },
+    "provider_mode": { "type": "string", "description": "Optional provider mode for this scoring record" },
+    "tool_trace_ref": { "type": "string", "description": "Optional tool trace content hash reference for this scoring record" },
+    "tool_trace_path": { "type": "string", "description": "Optional tool trace artifact path for this scoring record" },
     "trigger_stage": { "type": "string", "description": "Stage identifier that triggered this scoring, e.g. speckit_5_2, bmad_story_stage4 (Story 9.1 T4)" },
     "run_group_id": { "type": "string", "description": "Optional logical run grouping key for multi-record runs and governance runtime events" },
     "journey_contract_signals": {

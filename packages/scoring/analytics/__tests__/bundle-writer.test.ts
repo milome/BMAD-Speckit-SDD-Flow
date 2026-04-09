@@ -80,8 +80,44 @@ function makeSample(
 describe('bundle writer', () => {
   it('writes split files, manifest, validation report, and excludes rejected samples from bundle outputs', async () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dataset-bundle-'));
-    const trainSample = makeSample('train-001', 'train');
+    const trainSample = makeSample('train-001', 'train', {
+      metadata: {
+        host_kind: 'claude',
+      },
+      quality: {
+        ...makeSample('template-a', 'train').quality,
+        trace_completeness: 'complete',
+        training_ready: true,
+        dedupe_cluster_id: 'dup-bundle-test',
+      },
+    });
     const validationSample = makeSample('validation-001', 'validation');
+    const duplicateTrainSample = makeSample('train-002', 'train', {
+      source: {
+        run_id: 'run-train-002',
+      },
+      messages: trainSample.messages,
+      metadata: {
+        ...trainSample.metadata,
+        host_kind: 'claude',
+      },
+      quality: {
+        ...trainSample.quality,
+        dedupe_cluster_id: 'dup-bundle-test',
+      },
+    });
+    const enrichedValidationSample = {
+      ...validationSample,
+      metadata: {
+        ...validationSample.metadata,
+        host_kind: 'cursor',
+      },
+      quality: {
+        ...validationSample.quality,
+        trace_completeness: 'complete',
+        training_ready: true,
+      },
+    };
     const rejectedSample = makeSample('rejected-001', 'test', {
       quality: {
         ...makeSample('template', 'test').quality,
@@ -95,7 +131,7 @@ describe('bundle writer', () => {
       },
     });
 
-    const result = await writeDatasetBundle([trainSample, validationSample, rejectedSample], {
+    const result = await writeDatasetBundle([trainSample, duplicateTrainSample, enrichedValidationSample, rejectedSample], {
       exportTarget: 'openai_chat',
       outputRoot: tempRoot,
       exporterVersion: 'v1-test',
@@ -127,7 +163,7 @@ describe('bundle writer', () => {
       fs.readFileSync(path.join(result.bundleDir, 'validation-report.json'), 'utf-8')
     );
 
-    expect(trainRows).toHaveLength(1);
+    expect(trainRows).toHaveLength(2);
     expect(validationRows).toHaveLength(1);
     expect(rejectionReport.rejected_samples).toEqual([
       expect.objectContaining({
@@ -136,12 +172,12 @@ describe('bundle writer', () => {
       }),
     ]);
     expect(manifest.counts).toMatchObject({
-      total_candidates: 3,
-      accepted: 2,
+      total_candidates: 4,
+      accepted: 3,
       rejected: 1,
       downgraded: 0,
       blocked: 0,
-      train: 1,
+      train: 2,
       validation: 1,
       test: 0,
     });
@@ -158,11 +194,48 @@ describe('bundle writer', () => {
     expect(manifest.validation_summary).toEqual(
       expect.objectContaining({
         schema_valid: true,
+        duplicate_cluster_count: 1,
+        duplicated_sample_count: 2,
+      })
+    );
+    expect(manifest.validation_summary).toEqual(
+      expect.objectContaining({
+        assistant_only_ready: 3,
+        completion_only_ready: 3,
+        source_scope_counts: expect.objectContaining({
+          story_scoped: 3,
+          orphan_scoped: 1,
+        }),
+        dominant_source_scope_share: 0.75,
+      })
+    );
+    expect(validationReport.duplicate_summary).toEqual(
+      expect.objectContaining({
+        duplicate_cluster_count: 1,
+        duplicated_sample_count: 2,
+      })
+    );
+    expect(validationReport.balance_summary).toEqual(
+      expect.objectContaining({
+        by_host_kind: expect.objectContaining({
+          claude: 2,
+          cursor: 1,
+        }),
+        by_source_scope: expect.objectContaining({
+          story_scoped: 3,
+          orphan_scoped: 1,
+        }),
+      })
+    );
+    expect(validationReport.training_view_summary).toEqual(
+      expect.objectContaining({
+        assistant_only_ready: 3,
+        completion_only_ready: 3,
       })
     );
     expect(validationReport.redaction_summary).toEqual({
       status_counts: {
-        clean: 3,
+        clean: 4,
         redacted: 0,
         blocked: 0,
       },

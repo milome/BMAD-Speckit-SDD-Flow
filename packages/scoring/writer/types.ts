@@ -34,6 +34,9 @@ export interface GovernanceRerunHistoryEntry {
   timestamp: string;
   rerun_gate: string;
   outcome: string;
+  provider_id?: string;
+  provider_mode?: string;
+  host_kind?: string;
   decision_mode?: 'targeted' | 'generic' | 'idle';
   attempt_id?: string;
   loop_state_id?: string;
@@ -63,6 +66,10 @@ export interface RunScoreRecord {
   artifact_root?: string;
   host?: string;
   host_kind?: string;
+  provider_id?: string;
+  provider_mode?: string;
+  tool_trace_ref?: string;
+  tool_trace_path?: string;
   phase_score: number;
   phase_weight: number;
   check_items: CheckItem[];

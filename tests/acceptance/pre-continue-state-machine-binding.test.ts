@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import { processQueue } from '../../scripts/bmad-runtime-worker';
+import { createAcceptedPlaceholderDispatchAdapter } from '../../scripts/governance-packet-dispatch-worker';
 import { runGovernanceRemediation } from '../../scripts/governance-remediation-runner';
 import { readGovernanceCurrentRun } from '../../scripts/governance-runtime-queue';
 import type { GovernanceExecutionResult } from '../../scripts/governance-hook-types';
@@ -196,7 +197,9 @@ describe('pre-continue state machine binding', () => {
         'utf8',
       );
 
-      await processQueue(project);
+      await processQueue(project, {
+        dispatchAdapter: createAcceptedPlaceholderDispatchAdapter('pre-continue placeholder dispatch'),
+      });
 
       const stageEventDir = join(
         project,
