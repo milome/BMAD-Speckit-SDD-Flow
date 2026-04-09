@@ -170,6 +170,7 @@ Hard rules:
 - Do not manually write `.cursor-packet.md` or `.claude-packet.md`
 - Packets must be derived only from `scripts/governance-remediation-runner.ts` / `writeGovernanceExecutorPacket()`
 - The only allowed host-specific differences are `Host Kind` and `Execution Mode`; all other packet sections must come from the same remediation artifact body
+- Host packet files must be blocked at PreToolUse if the model attempts to write them directly
 
 ### 6. Present Completion
 

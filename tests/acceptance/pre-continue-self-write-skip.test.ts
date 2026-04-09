@@ -1,7 +1,7 @@
 import { cpSync, existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 
 const ROOT = join(import.meta.dirname, '..', '..');
@@ -99,4 +99,60 @@ describe('pre-continue self-write skip', () => {
       rmSync(project, { recursive: true, force: true });
     }
   });
+
+  it.each(['cursor', 'claude', 'codex'] as const)(
+    'blocks generic %s packet writes before they reach disk even without workflow context',
+    (hostKind) => {
+      const project = mkdtempSync(join(tmpdir(), 'pre-continue-packet-block-'));
+      try {
+        cpSync(join(ROOT, '_bmad'), join(project, '_bmad'), { recursive: true });
+        mkdirSync(join(project, '_bmad-output', 'planning-artifacts', 'dev'), { recursive: true });
+
+        const packetPath = join(
+          project,
+          '_bmad-output',
+          'planning-artifacts',
+          'dev',
+          `attempt-1.${hostKind}-packet.md`
+        );
+
+        const command = spawnSync(
+          process.execPath,
+          [join(ROOT, '_bmad', 'runtime', 'hooks', 'pre-continue-check.cjs')],
+          {
+            cwd: project,
+            encoding: 'utf8',
+            input: JSON.stringify({
+              tool_name: 'Write',
+              tool_input: {
+                file_path: packetPath,
+              },
+            }),
+            stdio: ['pipe', 'pipe', 'pipe'],
+          }
+        );
+
+        expect(command.status).toBe(2);
+        const result = JSON.parse(command.stdout) as {
+          ok: boolean;
+          skipped: boolean;
+          reason?: string;
+          workflow?: string;
+          step?: string;
+          gate?: string;
+        };
+
+        expect(result.ok).toBe(false);
+        expect(result.skipped).toBe(false);
+        expect(result.reason).toBe('packet-write-blocked');
+        expect(typeof result.workflow === 'string' || typeof result.workflow === 'undefined').toBe(true);
+        expect(typeof result.step === 'string' || typeof result.step === 'undefined').toBe(true);
+        expect(typeof result.gate === 'string' || typeof result.gate === 'undefined').toBe(true);
+        expect(command.stderr).toContain('governance packet files are generated only by the local runner');
+        expect(existsSync(packetPath)).toBe(false);
+      } finally {
+        rmSync(project, { recursive: true, force: true });
+      }
+    }
+  );
 });
