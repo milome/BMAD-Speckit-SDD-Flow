@@ -45,8 +45,10 @@ describe('consumer-governance-validation skill mirrors', () => {
     const skill = readFileSync(`${canonicalRoot}/SKILL.md`, 'utf8');
     const reference = readFileSync(`${canonicalRoot}/${referenceFile}`, 'utf8');
     expect(skill).toContain('scripts/validate-consumer-governance.ps1');
+    expect(skill).toContain('绝不能删除 `_bmad-output`');
     expect(skill).toContain('post-tool-use');
     expect(reference).toContain('gate_passed');
     expect(reference).toContain('pending_dispatch');
+    expect(reference).toContain('保留 `_bmad-output`');
   });
 });

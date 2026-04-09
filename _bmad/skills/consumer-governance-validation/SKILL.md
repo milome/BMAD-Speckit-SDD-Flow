@@ -34,6 +34,19 @@ pwsh -NoProfile -File node_modules/bmad-speckit-sdd-flow/scripts/validate-consum
 - `verify-execution-closure`
 - summary 最终 `status=passed`
 
+## Safety Rule
+
+重新安装 consumer 时，**绝不能删除 `_bmad-output`**。
+
+只允许清理安装面：
+
+- `_bmad`
+- `.claude`
+- `.cursor`
+- `node_modules/bmad-speckit-sdd-flow`
+
+`_bmad-output` 是运行时工件目录，不是 disposable cache。
+
 ## Required Evidence
 
 不要只看一句 `background worker started`。至少同时检查：
@@ -70,6 +83,7 @@ rerun gate ingestor -> gate_passed
 
 ## Common Mistakes
 
+- 把 `_bmad-output` 当成可重建临时目录去删
 - 只跑 `npm install`，没用 `npm install --force`
 - 并行跑 `npm install` 和 `bmad-speckit-init`
 - 看到 queue 进 `done` 就以为闭环完成

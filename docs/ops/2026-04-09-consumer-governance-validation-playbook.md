@@ -25,11 +25,15 @@
 
 1. consumer 项目通过 `file:../BMAD-Speckit-SDD-Flow` 或 tarball 安装了 `bmad-speckit-sdd-flow`
 2. 主仓库已经先完成最新构建
-3. consumer 项目可以接受清理并重新生成：
+3. consumer 项目可以接受清理并重新生成安装面，但必须保留运行时工件：
    - `_bmad`
-   - `_bmad-output`
    - `.claude`
    - `.cursor`
+4. **绝不能删除 `_bmad-output`**。它不是“可随便重建的临时目录”，而是 consumer 的运行时工件目录，里面可能包含：
+   - planning artifacts
+   - implementation artifacts
+   - runtime context / governance records
+   - 其它仅存在于本机的执行产物
 
 如果你只是要做一次最小验证，也至少要准备：
 
@@ -54,15 +58,14 @@
 
 ---
 
-## Step 1: 清理旧安装面
+## Step 1: 仅清理安装面，保留 `_bmad-output`
 
-在 consumer 项目里，先只清理 BMAD 管理面，不要碰业务源码：
+在 consumer 项目里，只清理安装面，不要碰业务源码，也不要删除 `_bmad-output`：
 
 ```powershell
 $root = 'D:/Dev/claw-scope'
 $paths = @(
   "$root/_bmad",
-  "$root/_bmad-output",
   "$root/.claude",
   "$root/.cursor",
   "$root/node_modules/bmad-speckit-sdd-flow"
@@ -74,6 +77,8 @@ foreach ($p in $paths) {
 }
 ```
 
+`_bmad-output` 必须原地保留。重新安装所需的是 `_bmad`、hook/runtime 镜像、以及 `node_modules/bmad-speckit-sdd-flow` 的刷新，不是删掉运行时工件目录。
+
 如果 Windows 报 `EBUSY` / 文件锁：
 
 1. 先关闭 Cursor / Claude / Tauri dev 进程
@@ -81,6 +86,8 @@ foreach ($p in $paths) {
 3. 再重试清理
 
 不要一边 `npm install` 一边 `init`。这两步必须串行执行。
+
+如果只是为了重新安装 consumer，不需要也不能删除 `_bmad-output/runtime`、`_bmad-output/planning-artifacts`、`_bmad-output/implementation-artifacts`。
 
 ---
 
@@ -224,7 +231,7 @@ node .claude/hooks/pre-continue-check.cjs check-implementation-readiness step-06
 
 ## Step 7: 验证 post-tool-use 入队
 
-准备一个 `governance-rerun-result` 事件，然后在 consumer 自己的 cwd 下喂给 hook：
+准备一个唯一 run id 的 `governance-rerun-result` 事件，然后在 consumer 自己的 cwd 下喂给 hook。不要靠清空 `_bmad-output/runtime/governance` 来做“干净环境”：
 
 ```powershell
 $event = @{
@@ -285,7 +292,7 @@ try {
 
 ### 8.1 使用 `version: 2 + execution.enabled=true` 的临时 config
 
-不要污染项目默认 provider，给这轮验证单独写一个 `stub` 配置文件，并通过 event 的 `configPath` 指向它。
+不要删除 `_bmad-output` 来“清环境”。给这轮验证单独写一个带唯一 run id 的 `stub` 配置文件，并通过 event 的 `configPath` 指向它。
 
 核心字段：
 
@@ -304,7 +311,7 @@ execution:
 
 ### 8.2 只靠 hook 自动链验证
 
-调用 `post-tool-use.cjs` 后，不手跑 worker，直接轮询：
+调用 `post-tool-use.cjs` 后，不手跑 worker，直接轮询新的 done item / execution record：
 
 ```text
 _bmad-output/runtime/governance/queue/done/
@@ -320,7 +327,7 @@ _bmad-output/runtime/governance/queue/last-failed-debug.json
 
 ### 8.3 这次在 `claw-scope` 上踩到的真实坑
 
-这一步在 `claw-scope` 上暴露了 4 个真实问题，后续别的 consumer 项目也可能重复遇到：
+这一步在 `claw-scope` 上暴露了 5 个真实问题，后续别的 consumer 项目也可能重复遇到：
 
 1. **worker entry 解析顺序错误**
    `run-bmad-runtime-worker.cjs` 优先拿了项目里的 `.claude/hooks/governance-runtime-worker.cjs`，而不是与当前 wrapper 同目录的最新 worker。  
@@ -346,6 +353,10 @@ npm install --force
 ```
 
 这一步在 `claw-scope` 上是必须的。
+
+5. **验证脚本不能靠删 `_bmad-output` 做“重置”**
+   真实 consumer 上，`_bmad-output` 是运行时工件目录，不是 disposable cache。  
+   修复方式：验证时使用唯一 run id、唯一 outputPath、唯一 capabilitySlot / targetArtifacts，只比对新增的 queue item / execution record，不删除既有工件。
 
 ### 8.4 `claw-scope` 上最终验证结果
 
@@ -458,7 +469,7 @@ ENOENT: ... schema/run-score-schema.json
 
 以后在任何 consumer 项目上，建议固定按这个顺序验证：
 
-1. 清理旧安装面
+1. 仅清理安装面（保留 `_bmad-output`）
 2. 主仓库重建
 3. consumer `npm install --force`
 4. `npx bmad-speckit-init --agent cursor`
@@ -481,4 +492,4 @@ ENOENT: ... schema/run-score-schema.json
 1. `gates loop` 的 hook 调用链是活的
 2. 新的 packet 执行闭环在真实 consumer 上可成立
 
-后续别的 consumer 项目，直接复用这份 playbook 即可。\*\*\* End Patch
+后续别的 consumer 项目，直接复用这份 playbook 即可。

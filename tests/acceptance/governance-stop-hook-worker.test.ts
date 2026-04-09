@@ -301,4 +301,72 @@ describe('governance stop hook worker trigger', () => {
       fixture.cleanup();
     }
   }, 60000);
+
+  it('normalizes handwritten readiness packets on stop even when no pending queue exists', () => {
+    const fixture = createFixtureProject();
+    try {
+      const outDir = path.join(
+        fixture.root,
+        '_bmad-output',
+        'planning-artifacts',
+        'dev'
+      );
+      mkdirSync(outDir, { recursive: true });
+      const artifactPath = path.join(
+        outDir,
+        'implementation-readiness-remediation-2026-04-09.md'
+      );
+      writeFileSync(
+        artifactPath,
+        [
+          '# Governance Remediation Artifact',
+          '',
+          '## Core Fields',
+          '- Capability Slot: qa.readiness',
+          '- Canonical Agent: PM + QA / readiness reviewer',
+          '- Target Artifact(s):',
+          '- prd.md',
+          '- architecture.md',
+          '- epics.md',
+          '- Rerun Gate: implementation-readiness',
+          '',
+          '## Executor Routing Trace',
+          '- Routing Mode: generic',
+          '- Executor Route: default-gate-remediation',
+          '- Packet Strategy: default-remediation-packet',
+          '- Prioritized Signals: (none)',
+          '- Routing Reason: generic routing',
+        ].join('\n'),
+        'utf8'
+      );
+      const cursorPacketPath = artifactPath.replace(/\.md$/i, '.cursor-packet.md');
+      const claudePacketPath = artifactPath.replace(/\.md$/i, '.claude-packet.md');
+      writeFileSync(cursorPacketPath, '# Cursor Packet - handwritten\n', 'utf8');
+      writeFileSync(claudePacketPath, '# Claude Packet - handwritten\n', 'utf8');
+
+      const stopResult = stopHook.stop({
+        projectRoot: fixture.root,
+        waitForWorker: true,
+      }) as GovernanceStopHookResult;
+
+      const cursorPacket = readFileSync(cursorPacketPath, 'utf8');
+      const claudePacket = readFileSync(claudePacketPath, 'utf8');
+
+      expect(existsSync(stopResult.checkpointPath)).toBe(true);
+      expect(stopResult.workerResult?.skipped).toBe(true);
+      expect(cursorPacket).toContain('# Governance Remediation Executor Packet');
+      expect(claudePacket).toContain('# Governance Remediation Executor Packet');
+      expect(
+        cursorPacket
+          .replace(/- Host Kind: .+/g, '- Host Kind: <host>')
+          .replace(/- Execution Mode: .+/g, '- Execution Mode: <mode>')
+      ).toBe(
+        claudePacket
+          .replace(/- Host Kind: .+/g, '- Host Kind: <host>')
+          .replace(/- Execution Mode: .+/g, '- Execution Mode: <mode>')
+      );
+    } finally {
+      fixture.cleanup();
+    }
+  });
 });

@@ -167,6 +167,9 @@ Hard rules:
 - prompt hints may influence entry or adapter choice only; they may not change blocker ownership in this readiness gate
 - `cursor packet generated` and `claude packet generated` are mandatory unless config explicitly disables them
 - packet generation must reuse governance-owned routing fields; packet selection does not change blocker ownership or root target
+- Do not manually write `.cursor-packet.md` or `.claude-packet.md`
+- Packets must be derived only from `scripts/governance-remediation-runner.ts` / `writeGovernanceExecutorPacket()`
+- The only allowed host-specific differences are `Host Kind` and `Execution Mode`; all other packet sections must come from the same remediation artifact body
 
 ### 6. Present Completion
 
@@ -206,3 +209,4 @@ Implementation Readiness complete. Invoke the `bmad-help` skill.
 - No clear recommendations
 - Failing to generate the governance remediation artifact
 - Failing to generate required cursor/claude packet outputs
+- Hand-writing host-specific packets instead of deriving them from the governance remediation runner

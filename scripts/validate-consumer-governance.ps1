@@ -15,6 +15,7 @@ $SummaryRoot = [System.IO.Path]::GetFullPath($SummaryRoot)
 $LogsRoot = Join-Path $SummaryRoot 'logs'
 $CanonicalConfigPath = Join-Path $ConsumerRoot '_bmad/_config/governance-remediation.yaml'
 $ConfigBackupPath = Join-Path $SummaryRoot 'governance-remediation.backup.yaml'
+$ValidationRunId = 'consumer-validation-' + (Get-Date -Format 'yyyyMMddHHmmssfff')
 New-Item -ItemType Directory -Force -Path $SummaryRoot, $LogsRoot | Out-Null
 $script:SummaryPath = Join-Path $SummaryRoot 'summary.json'
 $script:Summary = [ordered]@{
@@ -93,16 +94,6 @@ function Wait-Until([scriptblock]$Predicate, [string]$Description) {
   throw "Timed out waiting for $Description"
 }
 
-function Reset-GovernanceState([string]$ProjectRoot) {
-  $targets = @(
-    '_bmad-output/runtime/governance/queue',
-    '_bmad-output/runtime/governance/executions',
-    '_bmad-output/runtime/governance/current-run.json',
-    '_bmad-output/runtime/governance/runner-lock.json'
-  )
-  foreach ($target in $targets) { Remove-PathWithRetry (Join-Path $ProjectRoot $target) }
-}
-
 function Invoke-InitWithRetry([string]$Agent) {
   for ($attempt = 1; $attempt -le $InitRetryCount; $attempt++) {
     try { return Invoke-External -FilePath 'npx.cmd' -Arguments @('bmad-speckit-init', '--agent', $Agent) -WorkingDirectory $ConsumerRoot -LogName "init-$Agent-$attempt" }
@@ -122,10 +113,14 @@ try {
   } | Out-Null
 
   if (-not $SkipCleanup) {
-    Run-Step 'cleanup-consumer-surface' {
-      $targets = @('_bmad', '_bmad-output', '.claude', '.cursor', 'node_modules/bmad-speckit-sdd-flow') | ForEach-Object { Join-Path $ConsumerRoot $_ }
+    Run-Step 'cleanup-install-surface' {
+      $targets = @('_bmad', '.claude', '.cursor', 'node_modules/bmad-speckit-sdd-flow') | ForEach-Object { Join-Path $ConsumerRoot $_ }
       foreach ($target in $targets) { Remove-PathWithRetry $target }
-      [ordered]@{ removed = $targets }
+      [ordered]@{
+        removed = $targets
+        preserved = @((Join-Path $ConsumerRoot '_bmad-output'))
+        note = '_bmad-output contains runtime artifacts and must never be deleted during consumer reinstall.'
+      }
     } | Out-Null
   }
 
@@ -163,7 +158,7 @@ try {
     [ordered]@{ output = $version.stdout.Trim() }
   } | Out-Null
 
-  $artifactPath = Join-Path $SummaryRoot 'implementation-readiness-report-2026-04-09.md'
+  $artifactPath = Join-Path $SummaryRoot "$ValidationRunId-implementation-readiness-report.md"
   Run-Step 'verify-pre-continue-check' {
     @'
 # Implementation Readiness Report
@@ -196,12 +191,7 @@ try {
     [ordered]@{ exitCode = $result.exitCode; pendingEvent = $newFile; eventType = $event.type }
   } | Out-Null
 
-  Run-Step 'reset-governance-state' {
-    Reset-GovernanceState $ConsumerRoot
-    [ordered]@{ reset = $true }
-  } | Out-Null
-
-  $configPath = Join-Path $SummaryRoot 'governance-remediation.validation.yaml'
+  $configPath = Join-Path $SummaryRoot "$ValidationRunId-governance-remediation.validation.yaml"
   $configContent = @'
 version: 2
 primaryHost: cursor
@@ -220,7 +210,7 @@ execution:
   if (Test-Path $CanonicalConfigPath) { Copy-Item -Path $CanonicalConfigPath -Destination $ConfigBackupPath -Force }
   $configContent | Set-Content -Path $configPath -Encoding UTF8
   $configContent | Set-Content -Path $CanonicalConfigPath -Encoding UTF8
-  $outputPath = Join-Path $SummaryRoot 'auto-attempt.md'
+  $outputPath = Join-Path $SummaryRoot "$ValidationRunId-auto-attempt.md"
   $eventPayload = [ordered]@{
     type = 'governance-rerun-result'
     payload = [ordered]@{
@@ -228,30 +218,45 @@ execution:
       sourceEventType = 'manual-validation'
       configPath = $configPath
       runnerInput = [ordered]@{
-        projectRoot = $ConsumerRoot; outputPath = $outputPath; promptText = 'consumer validation'; stageContextKnown = $true; gateFailureExists = $true; blockerOwnershipLocked = $true; rootTargetLocked = $true; equivalentAdapterCount = 1; attemptId = 'consumer-validate-01'; sourceGateFailureIds = @('CONSUMER-1'); capabilitySlot = 'qa.readiness'; canonicalAgent = 'PM + QA / readiness reviewer'; actualExecutor = 'implementation readiness workflow'; adapterPath = 'local workflow fallback'; targetArtifacts = @('prd.md', 'architecture.md'); expectedDelta = 'close readiness blockers'; rerunOwner = 'PM'; rerunGate = 'implementation-readiness'; outcome = 'blocked'; hostKind = 'cursor'
+        projectRoot = $ConsumerRoot; outputPath = $outputPath; promptText = "consumer validation $ValidationRunId"; stageContextKnown = $true; gateFailureExists = $true; blockerOwnershipLocked = $true; rootTargetLocked = $true; equivalentAdapterCount = 1; attemptId = $ValidationRunId; sourceGateFailureIds = @("CONSUMER-$ValidationRunId"); capabilitySlot = "qa.readiness.$ValidationRunId"; canonicalAgent = 'PM + QA / readiness reviewer'; actualExecutor = 'implementation readiness workflow'; adapterPath = 'local workflow fallback'; targetArtifacts = @('prd.md', 'architecture.md', "$ValidationRunId.md"); expectedDelta = 'close readiness blockers'; rerunOwner = 'PM'; rerunGate = 'implementation-readiness'; outcome = 'blocked'; hostKind = 'cursor'
       }
-      rerunGateResult = [ordered]@{ gate = 'implementation-readiness'; status = 'fail'; blockerIds = @('CONSUMER-1'); summary = 'Need validation attempt.' }
+      rerunGateResult = [ordered]@{ gate = 'implementation-readiness'; status = 'fail'; blockerIds = @("CONSUMER-$ValidationRunId"); summary = "Need validation attempt for $ValidationRunId." }
     }
   }
   $eventJson = $eventPayload | ConvertTo-Json -Depth 20
   $eventJson | Set-Content -Path (Join-Path $SummaryRoot 'post-tool-use-event.json') -Encoding UTF8
 
   Run-Step 'verify-post-tool-use-and-background-worker' {
+    $doneDir = Join-Path $ConsumerRoot '_bmad-output/runtime/governance/queue/done'
+    $executionsDir = Join-Path $ConsumerRoot '_bmad-output/runtime/governance/executions'
+    $doneBefore = Get-JsonFiles $doneDir
+    $executionBefore = @(Get-ChildItem -Path $executionsDir -Filter *.json -File -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne 'reconciliation-report.json' } | Select-Object -ExpandProperty FullName)
+    $failedDebug = Join-Path $ConsumerRoot '_bmad-output/runtime/governance/queue/last-failed-debug.json'
+    $failedDebugMtimeBefore = if (Test-Path $failedDebug) { (Get-Item $failedDebug).LastWriteTimeUtc } else { $null }
     $hook = Invoke-External -FilePath 'node.exe' -Arguments @('.cursor/hooks/post-tool-use.cjs') -WorkingDirectory $ConsumerRoot -LogName 'post-tool-use' -InputText $eventJson
     if ($hook.stdout -notmatch 'received rerun-result' -or $hook.stdout -notmatch 'queued rerun event') { throw 'post-tool-use hook did not emit expected queue logs' }
-    $failedDebug = Join-Path $ConsumerRoot '_bmad-output/runtime/governance/queue/last-failed-debug.json'
-    Wait-Until { if (Test-Path $failedDebug) { throw (Get-Content -Raw $failedDebug) }; Test-Path $outputPath } 'worker artifact output'
-    Wait-Until { @(Get-JsonFiles (Join-Path $ConsumerRoot '_bmad-output/runtime/governance/queue/done')).Count -gt 0 } 'queue done item'
+    Wait-Until {
+      if (Test-Path $failedDebug) {
+        $failedDebugItem = Get-Item $failedDebug
+        if (-not $failedDebugMtimeBefore -or $failedDebugItem.LastWriteTimeUtc -gt $failedDebugMtimeBefore) { throw (Get-Content -Raw $failedDebug) }
+      }
+      Test-Path $outputPath
+    } 'worker artifact output'
+    $newDoneFile = $null
+    Wait-Until {
+      $newDoneFile = (Get-JsonFiles $doneDir | Where-Object { $doneBefore -notcontains $_ } | Sort-Object | Select-Object -Last 1)
+      [bool]$newDoneFile
+    } 'queue done item'
     $packetPath = $outputPath -replace '\.md$', '.cursor-packet.md'
     Wait-Until { Test-Path $packetPath } 'cursor packet'
+    $executionFile = $null
     Wait-Until {
-      $executionFile = Get-ChildItem -Path (Join-Path $ConsumerRoot '_bmad-output/runtime/governance/executions') -Filter *.json -File -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne 'reconciliation-report.json' } | Sort-Object LastWriteTime | Select-Object -Last 1
+      $executionFile = Get-ChildItem -Path $executionsDir -Filter *.json -File -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne 'reconciliation-report.json' -and $executionBefore -notcontains $_.FullName } | Sort-Object LastWriteTime | Select-Object -Last 1
       if (-not $executionFile) { return $false }
       ((Get-Content -Raw $executionFile.FullName | ConvertFrom-Json).status -eq 'running')
     } 'execution record running'
-    $executionFile = Get-ChildItem -Path (Join-Path $ConsumerRoot '_bmad-output/runtime/governance/executions') -Filter *.json -File -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne 'reconciliation-report.json' } | Sort-Object LastWriteTime | Select-Object -Last 1
     $record = Get-Content -Raw $executionFile.FullName | ConvertFrom-Json
-    [ordered]@{ queueDone = $true; artifactPath = $outputPath; packetPath = $packetPath; executionFile = $executionFile.FullName; loopStateId = $record.loopStateId; attemptNumber = [int]$record.attemptNumber; executionStatus = $record.status }
+    [ordered]@{ queueDone = $true; doneFile = $newDoneFile; artifactPath = $outputPath; packetPath = $packetPath; executionFile = $executionFile.FullName; loopStateId = $record.loopStateId; attemptNumber = [int]$record.attemptNumber; executionStatus = $record.status; note = 'Validation uses unique run id and preserves all existing _bmad-output artifacts.' }
   } | Out-Null
 
   $executionStep = $script:Summary.steps | Where-Object { $_.name -eq 'verify-post-tool-use-and-background-worker' } | Select-Object -Last 1

@@ -62,6 +62,22 @@ function resolveRuntimeWorkerHelper() {
   return null;
 }
 
+function resolvePacketHardCloseoutHelper() {
+  const candidates = [
+    path.join(__dirname, 'governance-packet-hard-closeout.cjs'),
+    path.join(__dirname, '..', '..', 'runtime', 'hooks', 'governance-packet-hard-closeout.cjs'),
+    path.join(__dirname, '..', '..', '_bmad', 'runtime', 'hooks', 'governance-packet-hard-closeout.cjs'),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return require(candidate);
+    }
+  }
+
+  return null;
+}
+
 /**
  * @param {import('../../../scripts/governance-hook-types').GovernanceJourneyContractHintProjection[] | null | undefined} journeyContractHints
  * @returns {import('../../../scripts/governance-hook-types').GovernanceExecutorRoutingProjection}
@@ -356,6 +372,20 @@ Generated: ${timestamp}
       projectRoot,
       '[Runtime Governance] stop hook worker helper unavailable'
     );
+  }
+
+  const packetHardCloseout = resolvePacketHardCloseoutHelper();
+  if (
+    packetHardCloseout &&
+    typeof packetHardCloseout.normalizeRecentReadinessArtifacts === 'function'
+  ) {
+    const normalization = packetHardCloseout.normalizeRecentReadinessArtifacts(projectRoot);
+    if (normalization && normalization.normalized) {
+      appendGovernanceLog(
+        projectRoot,
+        `[Runtime Governance] stop hook normalized readiness packets count=${normalization.count}`
+      );
+    }
   }
 
   return {

@@ -92,6 +92,22 @@ function resolveRuntimeWorkerHelper() {
   return null;
 }
 
+function resolvePacketHardCloseoutHelper() {
+  const candidates = [
+    path.join(__dirname, 'governance-packet-hard-closeout.cjs'),
+    path.join(__dirname, '..', '..', 'runtime', 'hooks', 'governance-packet-hard-closeout.cjs'),
+    path.join(__dirname, '..', '..', '_bmad', 'runtime', 'hooks', 'governance-packet-hard-closeout.cjs'),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return require(candidate);
+    }
+  }
+
+  return null;
+}
+
 /**
  * @returns {Promise<GovernanceRerunEventLike | null>}
  */
@@ -297,6 +313,20 @@ function postToolUse(event) {
   }
 
   recordHighValueEvent(event);
+  const projectRoot = extractProjectRoot(event);
+  const packetHardCloseout = resolvePacketHardCloseoutHelper();
+  if (
+    packetHardCloseout &&
+    typeof packetHardCloseout.maybeNormalizeGovernancePackets === 'function'
+  ) {
+    const normalization = packetHardCloseout.maybeNormalizeGovernancePackets(projectRoot, event);
+    if (normalization && normalization.normalized) {
+      appendGovernanceLog(
+        projectRoot,
+        `[Runtime Governance] normalized readiness packets artifact=${normalization.artifactPath}`
+      );
+    }
+  }
 
   if (event.type !== 'governance-rerun-result') {
     return null;
@@ -307,7 +337,6 @@ function postToolUse(event) {
     return null;
   }
 
-  const projectRoot = extractProjectRoot(event);
   const rerunGate =
     event.payload &&
     event.payload.runnerInput &&

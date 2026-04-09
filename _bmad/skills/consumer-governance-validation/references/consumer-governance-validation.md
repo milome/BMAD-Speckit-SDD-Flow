@@ -43,15 +43,16 @@ pwsh -NoProfile -File node_modules/bmad-speckit-sdd-flow/scripts/validate-consum
 
 ## 手工验证顺序
 
-### 1. 清理旧安装面
+### 1. 仅清理安装面，保留 `_bmad-output`
 
 只清理 BMAD 管理面：
 
 - `_bmad`
-- `_bmad-output`
 - `.claude`
 - `.cursor`
 - `node_modules/bmad-speckit-sdd-flow`
+
+`_bmad-output` 绝不能删除。它包含 planning artifacts、implementation artifacts、runtime context、governance records 等运行时工件。
 
 Windows 上若遇到 `EBUSY`：
 
@@ -153,6 +154,8 @@ node .claude/hooks/pre-continue-check.cjs check-implementation-readiness step-06
 - record 状态推进到 `running`
 - 没有 `last-failed-debug.json`
 
+使用唯一 run id / outputPath / capabilitySlot 来区分本次验证结果，不要通过删除 `_bmad-output/runtime/governance` 来“重置环境”。
+
 ### 10. 验证 packet 闭环
 
 再喂 execution result 和 rerun gate result：
@@ -237,6 +240,19 @@ mod.ingestGovernanceRerunGateResult(...);
 - dispatch 阶段实际读取的是 canonical `_bmad/_config/governance-remediation.yaml`
 - 仅在事件里传 `configPath` 不一定够；验证阶段常常要临时覆写 canonical config，使 `version: 2` 且 `execution.enabled=true`
 - 验证结束后再恢复原配置
+
+### 6. 误删 `_bmad-output`
+
+症状：
+
+- `_bmad-output/planning-artifacts/...` 丢失
+- `_bmad-output/runtime/...` 丢失
+- consumer 上下文、历史记录或规划产物无法回滚
+
+处理：
+
+- 重新安装时只重装安装面，不碰 `_bmad-output`
+- 验证脚本使用唯一 run id 叠加新结果，而不是删除旧结果
 
 ## 证据优先级
 
