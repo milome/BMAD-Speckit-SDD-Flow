@@ -12,13 +12,21 @@ export function resolveRulesDir(options?: { rulesDir?: string }): string {
   if (options?.rulesDir) {
     return options.rulesDir;
   }
-  const cwdRules = path.join(process.cwd(), 'packages', 'scoring', 'rules');
-  if (fs.existsSync(cwdRules)) {
-    return cwdRules;
+  const candidates = [
+    path.join(process.cwd(), 'packages', 'scoring', 'rules'),
+    path.join(process.cwd(), 'node_modules', '@bmad-speckit', 'scoring', 'rules'),
+    path.join(process.cwd(), 'node_modules', 'bmad-speckit', 'node_modules', '@bmad-speckit', 'scoring', 'rules'),
+    path.join(process.cwd(), 'node_modules', 'bmad-speckit-sdd-flow', 'packages', 'scoring', 'rules'),
+    path.join(__dirname, '..', '..', 'rules'),
+    path.join(__dirname, '..', '..', 'scoring', 'rules'),
+    path.join(__dirname, '..', '..', '..', 'scoring', 'rules'),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
   }
-  // 包内 rules：从 dist/constants/path.js 出发，path.join(__dirname, '..', '..', 'rules')
-  const pkgRules = path.join(__dirname, '..', '..', 'rules');
-  return pkgRules;
+  return candidates[1]!;
 }
 
 /**
@@ -32,12 +40,21 @@ export function resolveSchemaDir(options?: { schemaDir?: string }): string {
   if (options?.schemaDir) {
     return options.schemaDir;
   }
-  const cwdSchema = path.join(process.cwd(), 'packages', 'scoring', 'schema');
-  if (fs.existsSync(cwdSchema)) {
-    return cwdSchema;
+  const candidates = [
+    path.join(process.cwd(), 'packages', 'scoring', 'schema'),
+    path.join(process.cwd(), 'node_modules', '@bmad-speckit', 'schema'),
+    path.join(process.cwd(), 'node_modules', 'bmad-speckit', 'node_modules', '@bmad-speckit', 'schema'),
+    path.join(process.cwd(), 'node_modules', 'bmad-speckit-sdd-flow', 'packages', 'schema'),
+    path.join(__dirname, '..', '..', 'schema'),
+    path.join(__dirname, '..', '..', 'scoring', 'schema'),
+    path.join(__dirname, '..', '..', '..', 'schema'),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
   }
-  const pkgSchema = path.join(__dirname, '..', '..', 'schema');
-  return pkgSchema;
+  return candidates[1]!;
 }
 
 /**

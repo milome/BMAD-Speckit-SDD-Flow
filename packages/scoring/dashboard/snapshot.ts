@@ -27,6 +27,10 @@ export function renderDashboardSnapshotMarkdown(
   lines.push(`- Status: ${snapshot.runtime_context.status}`);
   lines.push(`- Current Stage: ${snapshot.runtime_context.current_stage ?? 'N/A'}`);
   lines.push(`- Flow: ${snapshot.runtime_context.flow ?? 'N/A'}`);
+  if (snapshot.execution_state.execution_status) {
+    lines.push(`- Execution Status: ${snapshot.execution_state.execution_status}`);
+    lines.push(`- Execution Host: ${snapshot.execution_state.dispatched_host ?? snapshot.execution_state.configured_authoritative_host ?? 'N/A'}`);
+  }
   if (snapshot.runtime_context.scope?.story_key) {
     lines.push(`- Story Key: ${snapshot.runtime_context.scope.story_key}`);
   }

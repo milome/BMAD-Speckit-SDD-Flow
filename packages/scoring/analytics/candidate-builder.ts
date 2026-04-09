@@ -5,7 +5,7 @@ import { parseEpicStoryFromRecord } from '../query';
 import { loadAndDedupeRecords } from '../query/loader';
 import { computeStringHash, getGitHeadHashFull } from '../utils/hash';
 import { readPatchSnapshot } from '../utils/patch-snapshot';
-import type { RunScoreRecord } from '../writer/types';
+import type { GovernanceRerunHistoryEntry, RunScoreRecord } from '../writer/types';
 import {
   extractAssistantTarget,
   buildCanonicalMessages,
@@ -16,6 +16,7 @@ import {
 } from './canonical-sample';
 import { applyQualityGates, type QualityGateOptions } from './quality-gates';
 import { applyCanonicalRedaction } from './redaction';
+import { assignDedupeClusters } from './dataset-analytics';
 import { assignDeterministicSplit } from './split';
 import {
   computeTraceCompleteness,
@@ -573,6 +574,40 @@ function isVetoTriggered(record: RunScoreRecord): boolean {
   );
 }
 
+function latestGovernanceHistoryEntry(record: RunScoreRecord): GovernanceRerunHistoryEntry | null {
+  const history = record.governance_rerun_history ?? [];
+  if (history.length === 0) {
+    return null;
+  }
+  return [...history].sort((left, right) => right.timestamp.localeCompare(left.timestamp))[0] ?? null;
+}
+
+function resolveCanonicalProviderFacts(record: RunScoreRecord): {
+  providerId?: string;
+  providerMode?: string;
+  hostKind?: string;
+} {
+  const derived = record as RunScoreRecord & {
+    provider_id?: string;
+    provider_mode?: string;
+  };
+  const latestGovernanceHistory = latestGovernanceHistoryEntry(record);
+  const hostKind = record.host_kind ?? record.host ?? latestGovernanceHistory?.host_kind ?? undefined;
+  return {
+    providerId:
+      derived.provider_id ??
+      (typeof latestGovernanceHistory?.provider_id === 'string'
+        ? latestGovernanceHistory.provider_id
+        : undefined),
+    providerMode:
+      derived.provider_mode ??
+      (typeof latestGovernanceHistory?.provider_mode === 'string'
+        ? latestGovernanceHistory.provider_mode
+        : undefined),
+    hostKind,
+  };
+}
+
 function buildCanonicalSample(
   record: RunScoreRecord,
   sourceContent: string,
@@ -585,6 +620,7 @@ function buildCanonicalSample(
 ): CanonicalSftSample {
   const messages = buildMessagesWithToolTrace(instruction, assistantTarget, codePair, toolTrace);
   const parsedStory = parseEpicStoryFromRecord(record);
+  const providerFacts = resolveCanonicalProviderFacts(record);
   const split = assignDeterministicSplit({
     seed: options.splitSeed ?? 42,
     groupKey: parsedStory ? `epic-${parsedStory.epicId}/story-${parsedStory.storyId}` : record.run_id,
@@ -634,8 +670,8 @@ function buildCanonicalSample(
       epic_id: parsedStory ? `epic-${parsedStory.epicId}` : undefined,
       story_id: parsedStory ? `${parsedStory.storyId}` : undefined,
       story_slug: undefined,
-      provider_id: undefined,
-      provider_mode: undefined,
+      provider_id: providerFacts.providerId,
+      provider_mode: providerFacts.providerMode,
       tool_trace_ref: toolTrace?.traceRef,
       event_ids: [`score:${record.run_id}:${record.stage}`],
       score_record_id: `${record.run_id}:${record.stage}`,
@@ -646,7 +682,8 @@ function buildCanonicalSample(
     metadata: {
       schema_targets: toolTrace ? ['openai_chat', 'hf_tool_calling'] : ['openai_chat', 'hf_conversational'],
       sample_kind: sampleKind,
-      host_kind: 'unknown',
+      ...(record.host ? { host: record.host } : {}),
+      ...(providerFacts.hostKind ? { host_kind: providerFacts.hostKind } : {}),
       language: 'zh-CN',
       notes: [
         codePair.input || codePair.output ? 'legacy_flat_compat' : 'legacy_instruction_only',
@@ -779,7 +816,7 @@ export function buildCanonicalCandidatesFromRecordsSync(
     }
   }
 
-  const result = { samples };
+  const result = { samples: assignDedupeClusters(samples) };
   canonicalBuildCache.set(buildCacheKey, result);
   return result;
 }

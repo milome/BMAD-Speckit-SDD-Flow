@@ -100,6 +100,12 @@ async function scoreCommand(opts, deps = {}) {
   const baseCommitHash = opts.baseCommitHash;
   const sourceHashFilePath = opts.sourceHashFilePath;
   const artifactDocPath = opts.artifactDocPath;
+  const host = opts.host;
+  const hostKind = opts.hostKind;
+  const providerId = opts.providerId;
+  const providerMode = opts.providerMode;
+  const toolTraceRef = opts.toolTraceRef;
+  const toolTracePath = opts.toolTracePath;
   const event = opts.event || 'user_explicit_request';
   const agent = opts.agent;
   const source = opts.source;
@@ -160,6 +166,12 @@ async function scoreCommand(opts, deps = {}) {
     baseCommitHash,
     sourceHashFilePath,
     artifactDocPath,
+    host,
+    host_kind: hostKind,
+    provider_id: providerId,
+    provider_mode: providerMode,
+    tool_trace_ref: toolTraceRef,
+    tool_trace_path: toolTracePath,
     question_version: questionVersion,
     iteration_count: iterationCount,
     triggerStage: triggerStage !== stage ? triggerStage : undefined,

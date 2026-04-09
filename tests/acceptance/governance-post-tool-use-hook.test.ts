@@ -5,6 +5,10 @@ import { createRequire } from 'node:module';
 import { afterEach, describe, expect, it } from 'vitest';
 import { governancePendingQueueFilePath } from '../../scripts/governance-runtime-queue';
 import type { GovernancePostToolUseResult } from '../../scripts/governance-hook-types';
+import {
+  linkRepoNodeModulesIntoProject,
+  writeMinimalRegistryAndProjectContext,
+} from '../helpers/runtime-registry-fixture';
 
 const require = createRequire(import.meta.url);
 const cursorHook = require('../../_bmad/cursor/hooks/post-tool-use.cjs');
@@ -181,5 +185,148 @@ describe('governance post-tool-use hook', () => {
       )
     ).toBe(true);
     expect(existsSync(stagedEventPath)).toBe(false);
+  });
+
+  it.each([
+    ['claude', claudeHook],
+    ['cursor', cursorHook],
+  ])('normalizes readiness remediation packets after %s writes the artifact', (_, hook) => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'gov-post-tool-use-packet-artifact-'));
+    tempRoots.push(root);
+    mkdirSync(path.join(root, '_bmad'), { recursive: true });
+    linkRepoNodeModulesIntoProject(root);
+    writeMinimalRegistryAndProjectContext(root, { flow: 'story', stage: 'story_create' });
+    mkdirSync(path.join(root, '_bmad', '_config'), { recursive: true });
+    require('node:fs').writeFileSync(
+      path.join(root, '_bmad', '_config', 'governance-remediation.yaml'),
+      ['version: 1', 'primaryHost: cursor', 'packetHosts:', '  - cursor', '  - claude'].join('\n'),
+      'utf8'
+    );
+
+    const artifactPath = path.join(
+      root,
+      '_bmad-output',
+      'planning-artifacts',
+      'dev',
+      'implementation-readiness-remediation-2026-04-09.md'
+    );
+    mkdirSync(path.dirname(artifactPath), { recursive: true });
+    require('node:fs').writeFileSync(
+      artifactPath,
+      [
+        '---',
+        'reportType: Governance Remediation Artifact',
+        'source: Implementation Readiness Assessment',
+        'project: temp',
+        'branch: dev',
+        'date: 2026-04-09',
+        'attemptId: implementation-readiness-2026-04-09',
+        'capabilitySlot: qa.readiness',
+        'outcome: needs_work',
+        '---',
+        '',
+        '# Governance Remediation Artifact',
+        '',
+        '## Core Fields',
+        '',
+        '- Attempt ID: implementation-readiness-2026-04-09',
+        '- Capability Slot: qa.readiness',
+        '- Canonical Agent: PM + QA / readiness reviewer',
+        '- Target Artifact(s):',
+        '- prd.md',
+        '- architecture.md',
+        '- epics.md',
+        '- Rerun Gate: implementation-readiness',
+        '',
+        '## Executor Routing Trace',
+        '',
+        '- Routing Mode: generic',
+        '- Executor Route: default-gate-remediation',
+        '- Packet Strategy: default-remediation-packet',
+        '- Prioritized Signals: (none)',
+        '- Routing Reason: generic routing',
+      ].join('\n'),
+      'utf8'
+    );
+
+    process.chdir(root);
+    const result = hook.postToolUse({
+      tool_name: 'Write',
+      tool_input: {
+        file_path: artifactPath,
+      },
+    });
+
+    const cursorPacketPath = artifactPath.replace(/\.md$/i, '.cursor-packet.md');
+    const claudePacketPath = artifactPath.replace(/\.md$/i, '.claude-packet.md');
+    const cursorPacket = readFileSync(cursorPacketPath, 'utf8');
+    const claudePacket = readFileSync(claudePacketPath, 'utf8');
+
+    expect(result).toBeNull();
+    expect(existsSync(cursorPacketPath)).toBe(true);
+    expect(existsSync(claudePacketPath)).toBe(true);
+    expect(cursorPacket).toContain('# Governance Remediation Executor Packet');
+    expect(claudePacket).toContain('# Governance Remediation Executor Packet');
+    expect(
+      cursorPacket
+        .replace(/- Host Kind: .+/g, '- Host Kind: <host>')
+        .replace(/- Execution Mode: .+/g, '- Execution Mode: <mode>')
+    ).toBe(
+      claudePacket
+        .replace(/- Host Kind: .+/g, '- Host Kind: <host>')
+        .replace(/- Execution Mode: .+/g, '- Execution Mode: <mode>')
+    );
+  });
+
+  it.each([
+    ['claude', claudeHook],
+    ['cursor', cursorHook],
+  ])('re-overwrites handwritten readiness packet files after %s writes a packet path', (_, hook) => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'gov-post-tool-use-packet-overwrite-'));
+    tempRoots.push(root);
+    mkdirSync(path.join(root, '_bmad'), { recursive: true });
+    linkRepoNodeModulesIntoProject(root);
+    writeMinimalRegistryAndProjectContext(root, { flow: 'story', stage: 'story_create' });
+
+    const artifactPath = path.join(
+      root,
+      '_bmad-output',
+      'planning-artifacts',
+      'dev',
+      'implementation-readiness-remediation-2026-04-09.md'
+    );
+    mkdirSync(path.dirname(artifactPath), { recursive: true });
+    require('node:fs').writeFileSync(
+      artifactPath,
+      [
+        '# Governance Remediation Artifact',
+        '',
+        '## Core Fields',
+        '- Capability Slot: qa.readiness',
+        '- Target Artifact(s):',
+        '- prd.md',
+        '- architecture.md',
+        '- epics.md',
+        '- Rerun Gate: implementation-readiness',
+      ].join('\n'),
+      'utf8'
+    );
+
+    const cursorPacketPath = artifactPath.replace(/\.md$/i, '.cursor-packet.md');
+    const claudePacketPath = artifactPath.replace(/\.md$/i, '.claude-packet.md');
+    require('node:fs').writeFileSync(cursorPacketPath, '# Cursor Packet - handwritten\n', 'utf8');
+    require('node:fs').writeFileSync(claudePacketPath, '# Claude Packet - handwritten\n', 'utf8');
+
+    process.chdir(root);
+    const result = hook.postToolUse({
+      tool_name: 'Write',
+      tool_input: {
+        file_path: cursorPacketPath,
+      },
+    });
+
+    expect(result).toBeNull();
+    expect(readFileSync(cursorPacketPath, 'utf8')).toContain('# Governance Remediation Executor Packet');
+    expect(readFileSync(claudePacketPath, 'utf8')).toContain('# Governance Remediation Executor Packet');
   });
 });

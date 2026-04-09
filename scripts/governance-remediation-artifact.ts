@@ -648,7 +648,12 @@ function argValue(args: string[], flag: string): string | undefined {
 }
 
 function main(): void {
-  if (require.main !== module) {
+  const argvTokens = process.argv.map((value) => path.basename(String(value)).toLowerCase());
+  const isDirectArtifactCli = argvTokens.some((value) => value.includes('governance-remediation-artifact'));
+  if (process.env.BMAD_DISABLE_EMBEDDED_GOVERNANCE_CLIS === '1') {
+    return;
+  }
+  if (require.main !== module || !isDirectArtifactCli) {
     return;
   }
 

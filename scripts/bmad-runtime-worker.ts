@@ -31,6 +31,15 @@ import {
   readGovernanceRemediationConfig,
 } from './governance-remediation-config';
 import {
+  createGovernancePacketExecutionRecord,
+  type GovernancePacketExecutionRecord,
+} from './governance-packet-execution-store';
+import {
+  processPendingExecutionRecords,
+  type GovernancePacketDispatchAdapter,
+} from './governance-packet-dispatch-worker';
+import { reconcileGovernanceExecutionRecords } from './governance-packet-reconciler';
+import {
   buildGovernanceRemediationRunnerSummaryLines,
   createGovernanceExecutorPacket,
   runGovernanceRemediation,
@@ -45,15 +54,18 @@ import {
   governanceFailedQueueFilePath,
   governancePendingQueueFilePath,
   governanceProcessingQueueFilePath,
+  readGovernanceCurrentRun,
   type GovernancePreContinuePayload,
   type GovernanceRuntimeQueueItem,
 } from './governance-runtime-queue';
 import type {
   GovernanceExecutionResult,
+  GovernanceExecutionProjection,
   GovernanceExecutorRoutingProjection,
   GovernancePresentation,
   GovernanceRemediationAuditTrace,
 } from './governance-hook-types';
+import { ingestGovernanceRerunGateResult } from './governance-execution-result-ingestor';
 import {
   buildGovernanceStageRerunResultEvent,
   persistGovernanceStageRerunResultEvent,
@@ -262,6 +274,59 @@ function buildGovernancePresentationProjection(input: {
   });
 }
 
+function buildExecutionProjection(
+  record: GovernancePacketExecutionRecord | null | undefined
+): GovernanceExecutionProjection | undefined {
+  if (!record) {
+    return undefined;
+  }
+  return {
+    executionId: record.executionId,
+    executionStatus: record.status,
+    authoritativeHost: record.authoritativeHost,
+    lastRerunGateStatus: record.lastRerunGateResult?.status ?? null,
+  };
+}
+
+function syncExecutionProjectionIntoCurrentRun(
+  projectRoot: string,
+  executionRecords: GovernancePacketExecutionRecord[]
+): void {
+  if (executionRecords.length === 0) {
+    return;
+  }
+  const currentRun = readGovernanceCurrentRun<GovernanceExecutionResult>(projectRoot);
+  if (currentRun.length === 0) {
+    return;
+  }
+
+  const updated = currentRun.map((entry) => {
+    const loopStateId = entry.result?.loopStateId;
+    if (typeof loopStateId !== 'string' || !loopStateId) {
+      return entry;
+    }
+    const record = executionRecords.find((item) => item.loopStateId === loopStateId);
+    if (!record || !entry.result) {
+      return entry;
+    }
+
+    return {
+      ...entry,
+      result: {
+        ...entry.result,
+        executionProjection: buildExecutionProjection(record),
+      },
+    };
+  });
+
+  fs.mkdirSync(path.dirname(governanceCurrentRunPath(projectRoot)), { recursive: true });
+  fs.writeFileSync(
+    governanceCurrentRunPath(projectRoot),
+    JSON.stringify(updated, null, 2) + '\n',
+    'utf8'
+  );
+}
+
 async function processGovernanceRerunEvent(
   queueProjectRoot: string,
   item: GovernanceRuntimeQueueItem<GovernanceRemediationRerunPayload, GovernanceExecutionResult>
@@ -277,6 +342,19 @@ async function processGovernanceRerunEvent(
     throw new Error('governance-remediation-rerun queue item missing payload.runnerInput');
   }
 
+  let priorExecutionRecord: GovernancePacketExecutionRecord | null = null;
+  if (
+    config.execution?.enabled &&
+    typeof runnerInput.loopStateId === 'string' &&
+    runnerInput.loopStateId &&
+    runnerInput.rerunGateResult
+  ) {
+    priorExecutionRecord = ingestGovernanceRerunGateResult(runnerProjectRoot, {
+      loopStateId: runnerInput.loopStateId,
+      rerunGateResult: runnerInput.rerunGateResult,
+    });
+  }
+
   const result = await runGovernanceRemediation({
     ...runnerInput,
     projectRoot: runnerProjectRoot,
@@ -288,8 +366,16 @@ async function processGovernanceRerunEvent(
   const remediationAuditTrace = buildRemediationAuditTraceProjection({ result, executorRouting });
 
   const packetPaths: Record<string, string> = {};
+  let executionRecord: GovernancePacketExecutionRecord | null = null;
   if (result.artifactPath && result.artifactResult) {
-    for (const hostKind of config.packetHosts) {
+    const packetHosts = [...new Set(config.packetHosts)];
+    if (config.execution?.enabled) {
+      packetHosts.push(config.execution.authoritativeHost);
+      if (config.execution.projections.emitNonAuthoritativePackets) {
+        packetHosts.push(...config.execution.fallbackHosts);
+      }
+    }
+    for (const hostKind of [...new Set(packetHosts)]) {
       const packet = createGovernanceExecutorPacket({
         hostKind,
         runtimeContext: result.runtimeContext,
@@ -302,6 +388,19 @@ async function processGovernanceRerunEvent(
         rerunDecision,
       });
       packetPaths[hostKind] = writeGovernanceExecutorPacket(result.artifactPath, packet);
+    }
+    if (config.execution?.enabled) {
+      executionRecord = createGovernancePacketExecutionRecord({
+        projectRoot: runnerProjectRoot,
+        queueItemId: item.id,
+        loopStateId: result.loopState.loopStateId,
+        attemptNumber: result.currentAttemptNumber ?? result.loopState.attemptCount,
+        rerunGate: result.loopState.rerunGate,
+        artifactPath: result.artifactPath,
+        packetPaths,
+        authoritativeHost: config.execution.authoritativeHost,
+        fallbackHosts: config.execution.fallbackHosts,
+      });
     }
   }
 
@@ -317,6 +416,15 @@ async function processGovernanceRerunEvent(
     timestamp: processedAt,
     rerunGate: runnerInput.rerunGate,
     outcome: runnerInput.outcome,
+    providerId:
+      result.modelHintsCandidate && result.modelHintsCandidate.source === 'model-provider'
+        ? result.modelHintsCandidate.providerId
+        : undefined,
+    providerMode:
+      result.modelHintsCandidate && result.modelHintsCandidate.source === 'model-provider'
+        ? result.modelHintsCandidate.providerMode
+        : undefined,
+    hostKind: runnerInput.hostKind,
     decisionMode: executorRouting?.routingMode ?? rerunDecision.mode,
     attemptId: runnerInput.attemptId,
     loopStateId: result.loopState.loopStateId,
@@ -330,6 +438,7 @@ async function processGovernanceRerunEvent(
   });
 
   const resultPayload: GovernanceExecutionResult = {
+    executionProjection: buildExecutionProjection(executionRecord ?? priorExecutionRecord),
     artifactPath: result.artifactPath,
     packetPaths,
     executionIntentCandidate: result.executionIntentCandidate,
@@ -600,8 +709,30 @@ async function processGovernanceQueue(projectRoot: string): Promise<void> {
 
 export { governanceCurrentRunPath };
 
-export async function processQueue(projectRoot: string = process.cwd()): Promise<void> {
+export interface GovernanceProcessQueueOptions {
+  dispatchAdapter?: GovernancePacketDispatchAdapter;
+  dispatchLaunchEnv?: NodeJS.ProcessEnv;
+  dispatchStartupTimeoutMs?: number;
+}
+
+export async function processQueue(
+  projectRoot: string = process.cwd(),
+  options: GovernanceProcessQueueOptions = {}
+): Promise<void> {
   await processGovernanceQueue(projectRoot);
+  const config = readGovernanceRemediationConfig(projectRoot);
+  if (config.execution?.enabled) {
+    const updatedRecords = await processPendingExecutionRecords(projectRoot, {
+      adapter: options.dispatchAdapter,
+      leaseTimeoutSeconds: config.execution.dispatch.leaseTimeoutSeconds,
+      timeoutMinutes: config.execution.execution.timeoutMinutes,
+      maxDispatchAttempts: config.execution.dispatch.maxDispatchAttempts,
+      launchEnv: options.dispatchLaunchEnv,
+      startupTimeoutMs: options.dispatchStartupTimeoutMs,
+    });
+    syncExecutionProjectionIntoCurrentRun(projectRoot, updatedRecords);
+    reconcileGovernanceExecutionRecords(projectRoot);
+  }
   await processLegacyQueue(projectRoot);
 }
 

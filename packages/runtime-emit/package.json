@@ -10,7 +10,10 @@
     "./dist/render-audit-block.cjs": "./dist/render-audit-block.cjs",
     "./dist/consumer-mcp-server.cjs": "./dist/consumer-mcp-server.cjs",
     "./dist/governance-runtime-worker.cjs": "./dist/governance-runtime-worker.cjs",
-    "./dist/governance-remediation-runner.cjs": "./dist/governance-remediation-runner.cjs"
+    "./dist/governance-remediation-runner.cjs": "./dist/governance-remediation-runner.cjs",
+    "./dist/governance-packet-dispatch-worker.cjs": "./dist/governance-packet-dispatch-worker.cjs",
+    "./dist/governance-execution-result-ingestor.cjs": "./dist/governance-execution-result-ingestor.cjs",
+    "./dist/governance-packet-reconciler.cjs": "./dist/governance-packet-reconciler.cjs"
   },
   "files": [
     "dist",

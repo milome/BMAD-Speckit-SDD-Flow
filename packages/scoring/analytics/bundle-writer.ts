@@ -7,6 +7,12 @@ import {
   type DatasetExportTarget,
 } from './validation-report';
 import { computeStringHash } from '../utils/hash';
+import {
+  assignDedupeClusters,
+  buildDatasetBalanceSummary,
+  buildDatasetDuplicateSummary,
+  buildDatasetTrainingViewSummary,
+} from './dataset-analytics';
 
 export interface WriteDatasetBundleOptions {
   exportTarget: DatasetExportTarget;
@@ -39,7 +45,11 @@ export async function writeDatasetBundle(
   samples: CanonicalSftSample[],
   options: WriteDatasetBundleOptions
 ): Promise<DatasetBundleWriteResult> {
-  const exportResult = exportCanonicalSamples(samples, options.exportTarget);
+  const clusteredSamples = assignDedupeClusters(samples);
+  const duplicateSummary = buildDatasetDuplicateSummary(clusteredSamples);
+  const balanceSummary = buildDatasetBalanceSummary(clusteredSamples);
+  const trainingViewSummary = buildDatasetTrainingViewSummary(clusteredSamples);
+  const exportResult = exportCanonicalSamples(clusteredSamples, options.exportTarget);
   const serializedRows = [
     ...exportResult.rowsBySplit.train.map((row) => JSON.stringify(row)),
     ...exportResult.rowsBySplit.validation.map((row) => JSON.stringify(row)),
@@ -77,9 +87,9 @@ export async function writeDatasetBundle(
     exporter_version: options.exporterVersion ?? 'v1',
     generator_version: 'bundle-writer.v2',
     source_snapshot: {
-      sample_count: samples.length,
-      split_seed: samples[0]?.split.seed ?? 42,
-      split_strategy: samples[0]?.split.strategy ?? 'story_hash_v1',
+      sample_count: clusteredSamples.length,
+      split_seed: clusteredSamples[0]?.split.seed ?? 42,
+      split_strategy: clusteredSamples[0]?.split.strategy ?? 'story_hash_v1',
     },
     ...(options.sourceScope ? { source_scope: options.sourceScope } : {}),
     export_hash: exportHash,
@@ -89,7 +99,7 @@ export async function writeDatasetBundle(
       strategy: samples[0]?.split.strategy ?? 'story_hash_v1',
     },
     counts: {
-      total_candidates: samples.length,
+      total_candidates: clusteredSamples.length,
       accepted: exportResult.validationReport.counts.accepted,
       rejected: exportResult.validationReport.counts.rejected,
       downgraded: exportResult.validationReport.counts.downgraded,
@@ -99,8 +109,8 @@ export async function writeDatasetBundle(
       test: exportResult.validationReport.counts.test,
     },
     provider_summary: {
-      provider_ids: [...new Set(samples.map((sample) => sample.source.provider_id).filter(Boolean))],
-      provider_modes: [...new Set(samples.map((sample) => sample.source.provider_mode).filter(Boolean))],
+      provider_ids: [...new Set(clusteredSamples.map((sample) => sample.source.provider_id).filter(Boolean))],
+      provider_modes: [...new Set(clusteredSamples.map((sample) => sample.source.provider_mode).filter(Boolean))],
     },
     redaction_summary: exportResult.validationReport.redaction_summary,
     validation_summary: {
@@ -109,6 +119,16 @@ export async function writeDatasetBundle(
       trace_quality_passed: exportResult.validationReport.trace_quality_passed,
       provider_compatibility_passed: exportResult.validationReport.provider_compatibility_passed,
       training_ready_passed: exportResult.validationReport.training_ready_passed,
+      duplicate_cluster_count: duplicateSummary.duplicate_cluster_count,
+      duplicated_sample_count: duplicateSummary.duplicated_sample_count,
+      dominant_host_kind_share: balanceSummary.dominant_host_kind_share,
+      dominant_provider_share: balanceSummary.dominant_provider_share,
+      dominant_stage_share: balanceSummary.dominant_stage_share,
+      dominant_source_scope_share: balanceSummary.dominant_source_scope_share,
+      source_scope_counts: balanceSummary.by_source_scope,
+      assistant_only_ready: trainingViewSummary.assistant_only_ready,
+      completion_only_ready: trainingViewSummary.completion_only_ready,
+      tool_calling_ready: trainingViewSummary.tool_calling_ready,
     },
     artifacts: {
       train_path: trainFile,

@@ -197,6 +197,9 @@ function deployRuntimeGovernanceFromPackage(projectRoot) {
   const wrcSrc = path.join(pkgRootRuntimeEmit, 'write-runtime-context.cjs');
   const governanceWorkerSrc = path.join(pkgRootRuntimeEmit, 'dist', 'governance-runtime-worker.cjs');
   const governanceRunnerSrc = path.join(pkgRootRuntimeEmit, 'dist', 'governance-remediation-runner.cjs');
+  const governanceDispatchWorkerSrc = path.join(pkgRootRuntimeEmit, 'dist', 'governance-packet-dispatch-worker.cjs');
+  const governanceResultIngestorSrc = path.join(pkgRootRuntimeEmit, 'dist', 'governance-execution-result-ingestor.cjs');
+  const governanceReconcilerSrc = path.join(pkgRootRuntimeEmit, 'dist', 'governance-packet-reconciler.cjs');
   const hookDirs = [path.join(projectRoot, '.cursor', 'hooks'), path.join(projectRoot, '.claude', 'hooks')];
   let deployed = 0;
   for (const d of hookDirs) {
@@ -214,6 +217,15 @@ function deployRuntimeGovernanceFromPackage(projectRoot) {
     }
     if (fs.existsSync(governanceRunnerSrc)) {
       fs.copyFileSync(governanceRunnerSrc, path.join(d, 'governance-remediation-runner.cjs'));
+    }
+    if (fs.existsSync(governanceDispatchWorkerSrc)) {
+      fs.copyFileSync(governanceDispatchWorkerSrc, path.join(d, 'governance-packet-dispatch-worker.cjs'));
+    }
+    if (fs.existsSync(governanceResultIngestorSrc)) {
+      fs.copyFileSync(governanceResultIngestorSrc, path.join(d, 'governance-execution-result-ingestor.cjs'));
+    }
+    if (fs.existsSync(governanceReconcilerSrc)) {
+      fs.copyFileSync(governanceReconcilerSrc, path.join(d, 'governance-packet-reconciler.cjs'));
     }
     deployed += 1;
   }

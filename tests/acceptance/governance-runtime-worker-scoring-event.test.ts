@@ -11,6 +11,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { RunScoreRecord } from '../../packages/scoring/writer/types';
 import { processQueue } from '../../scripts/bmad-runtime-worker';
+import { createAcceptedPlaceholderDispatchAdapter } from '../../scripts/governance-packet-dispatch-worker';
 import { governancePendingQueueFilePath } from '../../scripts/governance-runtime-queue';
 import { runGovernanceRemediation } from '../../scripts/governance-remediation-runner';
 import { writeRuntimeContext } from '../../scripts/runtime-context';
@@ -187,7 +188,9 @@ describe('governance runtime worker scoring event persistence', () => {
         'utf8'
       );
 
-      await processQueue(fixture.root);
+      await processQueue(fixture.root, {
+        dispatchAdapter: createAcceptedPlaceholderDispatchAdapter('scoring-event placeholder dispatch'),
+      });
 
       const updatedRecord = JSON.parse(
         readFileSync(
@@ -198,6 +201,7 @@ describe('governance runtime worker scoring event persistence', () => {
         governance_rerun_history?: Array<{
           rerun_gate?: string;
           outcome?: string;
+          host_kind?: string;
           decision_mode?: string;
           runner_summary_lines?: string[];
           summary_lines?: string[];
@@ -215,6 +219,7 @@ describe('governance runtime worker scoring event persistence', () => {
       expect(updatedRecord.governance_rerun_history?.[0]).toMatchObject({
         rerun_gate: 'implementation-readiness',
         outcome: 'blocked',
+        host_kind: 'cursor',
         decision_mode: 'targeted',
         executor_routing: {
           routing_mode: 'targeted',

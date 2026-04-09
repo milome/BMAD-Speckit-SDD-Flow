@@ -92,6 +92,22 @@ function resolveRuntimeWorkerHelper() {
   return null;
 }
 
+function resolvePacketHardCloseoutHelper() {
+  const candidates = [
+    path.join(__dirname, 'governance-packet-hard-closeout.cjs'),
+    path.join(__dirname, '..', '..', 'runtime', 'hooks', 'governance-packet-hard-closeout.cjs'),
+    path.join(__dirname, '..', '..', '_bmad', 'runtime', 'hooks', 'governance-packet-hard-closeout.cjs'),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return require(candidate);
+    }
+  }
+
+  return null;
+}
+
 /**
  * @returns {Promise<GovernanceRerunEventLike | null>}
  */
@@ -266,6 +282,20 @@ function triggerDetachedBackgroundDrain(projectRoot) {
  */
 function postToolUse(event) {
   if (!event || typeof event !== 'object' || event.type !== 'governance-rerun-result') {
+    const projectRoot = extractProjectRoot(event);
+    const packetHardCloseout = resolvePacketHardCloseoutHelper();
+    if (
+      packetHardCloseout &&
+      typeof packetHardCloseout.maybeNormalizeGovernancePackets === 'function'
+    ) {
+      const normalization = packetHardCloseout.maybeNormalizeGovernancePackets(projectRoot, event);
+      if (normalization && normalization.normalized) {
+        appendGovernanceLog(
+          projectRoot,
+          `[Runtime Governance] normalized readiness packets artifact=${normalization.artifactPath}`
+        );
+      }
+    }
     return null;
   }
 
@@ -275,6 +305,19 @@ function postToolUse(event) {
   }
 
   const projectRoot = extractProjectRoot(event);
+  const packetHardCloseout = resolvePacketHardCloseoutHelper();
+  if (
+    packetHardCloseout &&
+    typeof packetHardCloseout.maybeNormalizeGovernancePackets === 'function'
+  ) {
+    const normalization = packetHardCloseout.maybeNormalizeGovernancePackets(projectRoot, event);
+    if (normalization && normalization.normalized) {
+      appendGovernanceLog(
+        projectRoot,
+        `[Runtime Governance] normalized readiness packets artifact=${normalization.artifactPath}`
+      );
+    }
+  }
   const rerunGate =
     event.payload &&
     event.payload.runnerInput &&

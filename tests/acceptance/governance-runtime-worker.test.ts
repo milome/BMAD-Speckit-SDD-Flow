@@ -12,6 +12,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { RunScoreRecord } from '../../packages/scoring/writer/types';
 import { processQueue } from '../../scripts/bmad-runtime-worker';
+import { createAcceptedPlaceholderDispatchAdapter } from '../../scripts/governance-packet-dispatch-worker';
 import {
   readGovernanceCurrentRun,
   governanceCurrentRunPath,
@@ -224,7 +225,9 @@ describe('governance runtime worker', () => {
         'utf8'
       );
 
-      await processQueue(fixture.root);
+      await processQueue(fixture.root, {
+        dispatchAdapter: createAcceptedPlaceholderDispatchAdapter('runtime-worker placeholder dispatch'),
+      });
 
       const currentRun = readGovernanceCurrentRun<GovernanceExecutionResult>(fixture.root);
       const loopStateRaw = JSON.parse(
@@ -388,7 +391,9 @@ describe('governance runtime worker', () => {
         'utf8'
       );
 
-      await processQueue(fixture.root);
+      await processQueue(fixture.root, {
+        dispatchAdapter: createAcceptedPlaceholderDispatchAdapter('runtime-worker placeholder dispatch'),
+      });
 
       const artifactText = readFileSync(secondOutput, 'utf8');
       const cursorPacket = readFileSync(secondOutput.replace(/\.md$/i, '.cursor-packet.md'), 'utf8');

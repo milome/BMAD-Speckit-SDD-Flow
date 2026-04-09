@@ -7,7 +7,16 @@ import { describe, expect, it } from 'vitest';
 const PKG_ROOT = join(import.meta.dirname, '..', '..');
 
 function run(cmd: string, cwd: string): string {
-  return execSync(cmd, { cwd, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+  return execSync(cmd, {
+    cwd,
+    encoding: 'utf8',
+    stdio: ['pipe', 'pipe', 'pipe'],
+    maxBuffer: 64 * 1024 * 1024,
+    env: {
+      ...process.env,
+      npm_config_loglevel: 'error',
+    },
+  });
 }
 
 describe('root package bmad-speckit bin', () => {

@@ -66,6 +66,10 @@ describe('readiness remediation artifact wiring', () => {
     expect(file).toContain('_bmad/_config/governance-remediation.yaml');
     expect(file).toContain('cursor packet generated');
     expect(file).toContain('claude packet generated');
+    expect(file).toContain('Do not manually write `.cursor-packet.md` or `.claude-packet.md`');
+    expect(file).toContain('Packets must be derived only from `scripts/governance-remediation-runner.ts`');
+    expect(file).toContain('The only allowed host-specific differences are `Host Kind` and `Execution Mode`');
+    expect(file).toContain('Host packet files must be blocked at PreToolUse if the model attempts to write them directly');
     expect(file).toContain('`PromptRoutingHints` are consumed only after `stage context -> gate failure -> artifact state`');
     expect(file).toContain('Blocker ownership affected: no');
     expect(file).toContain('Remediation artifact generated: {remediationArtifactFile}');
@@ -136,6 +140,10 @@ describe('readiness remediation artifact wiring', () => {
     expect(file).toContain('_bmad/_config/governance-remediation.yaml');
     expect(file).toContain('cursor packet generated');
     expect(file).toContain('claude packet generated');
+    expect(file).toContain('Do not manually write `.cursor-packet.md` or `.claude-packet.md`');
+    expect(file).toContain('Packets must be derived only from `scripts/governance-remediation-runner.ts`');
+    expect(file).toContain('The only allowed host-specific differences are `Host Kind` and `Execution Mode`');
+    expect(file).toContain('Host packet files must be blocked at PreToolUse if the model attempts to write them directly');
     expect(file).toContain('`PromptRoutingHints` are consumed only after `stage context -> gate failure -> artifact state`');
     expect(file).toContain('Blocker ownership affected: no');
     expect(file).toContain('Remediation artifact generated: {remediationArtifactFile}');

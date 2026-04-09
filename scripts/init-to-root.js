@@ -123,7 +123,7 @@ const REGISTERED_AGENT_PROFILES = {
       const crDest = path.join(targetDir, '.cursor', 'agents', 'code-reviewer-config.yaml');
       if (fs.existsSync(crSrc)) {
         fs.mkdirSync(path.dirname(crDest), { recursive: true });
-        fs.copyFileSync(crSrc, crDest);
+        copyFileWithRetry(crSrc, crDest);
         console.log('Sync _bmad/_config/code-reviewer-config.yaml -> .cursor/agents/');
         totalFiles += 1;
       }
@@ -284,6 +284,31 @@ const CORE_DIRS = ['_bmad'];
 const FULL_DIRS = ['_bmad'];
 const DIRS = fullMode ? FULL_DIRS : CORE_DIRS;
 
+function sleepMs(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+function isRetryableCopyError(error) {
+  return error && (error.code === 'EPERM' || error.code === 'EBUSY');
+}
+
+function copyFileWithRetry(src, dest, maxAttempts = 20) {
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      fs.copyFileSync(src, dest);
+      return;
+    } catch (error) {
+      if (isRetryableCopyError(error) && attempt < maxAttempts - 1) {
+        const delay = Math.min(50 * Math.pow(1.5, attempt), 1000);
+        sleepMs(delay);
+        continue;
+      }
+      throw error;
+    }
+  }
+}
+
 /**
  * Deep merge BMAD settings with global settings, preserving global hooks.
  * BMAD settings take precedence, but global hooks (like Stop notification) are appended.
@@ -335,8 +360,7 @@ function copyRecursive(src, dest) {
       copyRecursive(path.join(src, name), path.join(dest, name));
     }
   } else {
-    fs.mkdirSync(path.dirname(dest), { recursive: true });
-    fs.copyFileSync(src, dest);
+    copyFileWithRetry(src, dest);
   }
 }
 
@@ -387,7 +411,7 @@ function syncCursorRuntimePolicyHooks(targetDir, bmadRoot) {
     const runtimeFallback = path.join(bmadRoot, 'runtime', 'hooks', name);
     const source = fs.existsSync(src) ? src : runtimeFallback;
     if (fs.existsSync(source)) {
-      fs.copyFileSync(source, path.join(destDir, name));
+      copyFileWithRetry(source, path.join(destDir, name));
       console.log('Sync', path.relative(targetDir, source), '->', path.join('.cursor', 'hooks', name));
     } else {
       console.warn(`Skip Cursor hook override (missing): ${path.relative(targetDir, src)}`);
@@ -419,7 +443,7 @@ function syncClaudeRuntimePolicyHooks(targetDir, bmadRoot) {
     const runtimeFallback = path.join(bmadRoot, 'runtime', 'hooks', name);
     const source = fs.existsSync(src) ? src : runtimeFallback;
     if (fs.existsSync(source)) {
-      fs.copyFileSync(source, path.join(destDir, name));
+      copyFileWithRetry(source, path.join(destDir, name));
       console.log('Sync', path.relative(targetDir, source), '->', path.join('.claude', 'hooks', name));
     } else {
       console.warn(`Skip Claude hook override (missing): ${path.relative(targetDir, src)}`);
@@ -431,14 +455,13 @@ function syncArchitectureGateConfig(targetDir, bmadRoot) {
   const src = path.join(bmadRoot, '_config', 'architecture-gates.yaml');
   const dest = path.join(targetDir, '_bmad', '_config', 'architecture-gates.yaml');
   if (!fs.existsSync(src)) return;
-  fs.mkdirSync(path.dirname(dest), { recursive: true });
-  fs.copyFileSync(src, dest);
+  copyFileWithRetry(src, dest);
   console.log('Sync', path.relative(targetDir, src), '->', path.relative(targetDir, dest));
 
   const routingSrc = path.join(bmadRoot, '_config', 'continue-gate-routing.yaml');
   const routingDest = path.join(targetDir, '_bmad', '_config', 'continue-gate-routing.yaml');
   if (fs.existsSync(routingSrc)) {
-    fs.copyFileSync(routingSrc, routingDest);
+    copyFileWithRetry(routingSrc, routingDest);
     console.log('Sync', path.relative(targetDir, routingSrc), '->', path.relative(targetDir, routingDest));
   }
 }
@@ -668,6 +691,9 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
   }
   const governanceWorkerSrc = path.join(pkgRoot, 'packages', 'runtime-emit', 'dist', 'governance-runtime-worker.cjs');
   const governanceRunnerSrc = path.join(pkgRoot, 'packages', 'runtime-emit', 'dist', 'governance-remediation-runner.cjs');
+  const governanceDispatchWorkerSrc = path.join(pkgRoot, 'packages', 'runtime-emit', 'dist', 'governance-packet-dispatch-worker.cjs');
+  const governanceResultIngestorSrc = path.join(pkgRoot, 'packages', 'runtime-emit', 'dist', 'governance-execution-result-ingestor.cjs');
+  const governanceReconcilerSrc = path.join(pkgRoot, 'packages', 'runtime-emit', 'dist', 'governance-packet-reconciler.cjs');
   const wrcSrc = path.join(path.dirname(emitSrc), '..', 'write-runtime-context.cjs');
   const hookDirs = [
     path.join(targetDir, '.cursor', 'hooks'),
@@ -676,21 +702,30 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
   let deployed = 0;
   for (const d of hookDirs) {
     if (!fs.existsSync(d)) continue;
-    fs.copyFileSync(emitSrc, path.join(d, 'emit-runtime-policy.cjs'));
+    copyFileWithRetry(emitSrc, path.join(d, 'emit-runtime-policy.cjs'));
     if (resolveSessionSrc && fs.existsSync(resolveSessionSrc)) {
-      fs.copyFileSync(resolveSessionSrc, path.join(d, 'resolve-for-session.cjs'));
+      copyFileWithRetry(resolveSessionSrc, path.join(d, 'resolve-for-session.cjs'));
     }
     if (renderAuditSrc && fs.existsSync(renderAuditSrc)) {
-      fs.copyFileSync(renderAuditSrc, path.join(d, 'render-audit-block.cjs'));
+      copyFileWithRetry(renderAuditSrc, path.join(d, 'render-audit-block.cjs'));
     }
     if (fs.existsSync(governanceWorkerSrc)) {
-      fs.copyFileSync(governanceWorkerSrc, path.join(d, 'governance-runtime-worker.cjs'));
+      copyFileWithRetry(governanceWorkerSrc, path.join(d, 'governance-runtime-worker.cjs'));
     }
     if (fs.existsSync(governanceRunnerSrc)) {
-      fs.copyFileSync(governanceRunnerSrc, path.join(d, 'governance-remediation-runner.cjs'));
+      copyFileWithRetry(governanceRunnerSrc, path.join(d, 'governance-remediation-runner.cjs'));
+    }
+    if (fs.existsSync(governanceDispatchWorkerSrc)) {
+      copyFileWithRetry(governanceDispatchWorkerSrc, path.join(d, 'governance-packet-dispatch-worker.cjs'));
+    }
+    if (fs.existsSync(governanceResultIngestorSrc)) {
+      copyFileWithRetry(governanceResultIngestorSrc, path.join(d, 'governance-execution-result-ingestor.cjs'));
+    }
+    if (fs.existsSync(governanceReconcilerSrc)) {
+      copyFileWithRetry(governanceReconcilerSrc, path.join(d, 'governance-packet-reconciler.cjs'));
     }
     if (fs.existsSync(wrcSrc)) {
-      fs.copyFileSync(wrcSrc, path.join(d, 'write-runtime-context.cjs'));
+      copyFileWithRetry(wrcSrc, path.join(d, 'write-runtime-context.cjs'));
     }
     deployed += 1;
   }
@@ -701,7 +736,7 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
     return;
   }
   console.log(
-    'Deployed emit-runtime-policy.cjs, resolve-for-session.cjs, render-audit-block.cjs, governance-runtime-worker.cjs, governance-remediation-runner.cjs (+ write-runtime-context.cjs) under .cursor/hooks and/or .claude/hooks (no project-root scripts/).'
+    'Deployed emit-runtime-policy.cjs, resolve-for-session.cjs, render-audit-block.cjs, governance-runtime-worker.cjs, governance-remediation-runner.cjs, governance-packet-dispatch-worker.cjs, governance-execution-result-ingestor.cjs, governance-packet-reconciler.cjs (+ write-runtime-context.cjs) under .cursor/hooks and/or .claude/hooks (no project-root scripts/).'
   );
 }
 
@@ -740,7 +775,7 @@ function materializeSkillMdByLanguage(targetDir) {
       const primary = path.join(dir, 'SKILL.md');
       if (fs.existsSync(zh) && fs.existsSync(en)) {
         const src = mode === 'zh' ? zh : en;
-        fs.copyFileSync(src, primary);
+        copyFileWithRetry(src, primary);
       }
     }
   }

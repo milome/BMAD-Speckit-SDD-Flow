@@ -1298,7 +1298,12 @@ function renderGovernanceRemediationRunnerSummary(
 }
 
 async function main(): Promise<void> {
-  if (require.main !== module) {
+  const argvTokens = process.argv.map((value) => path.basename(String(value)).toLowerCase());
+  const isDirectRunnerCli = argvTokens.some((value) => value.includes('governance-remediation-runner'));
+  if (process.env.BMAD_DISABLE_EMBEDDED_GOVERNANCE_CLIS === '1') {
+    return;
+  }
+  if (require.main !== module || !isDirectRunnerCli) {
     return;
   }
 

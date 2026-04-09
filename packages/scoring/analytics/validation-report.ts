@@ -7,6 +7,14 @@ import type {
   DatasetBundleManifest,
   RedactionStatus,
 } from './types';
+import {
+  buildDatasetBalanceSummary,
+  buildDatasetDuplicateSummary,
+  buildDatasetTrainingViewSummary,
+  type DatasetBalanceSummary,
+  type DatasetDuplicateSummary,
+  type DatasetTrainingViewSummary,
+} from './dataset-analytics';
 
 export type DatasetExportTarget = DatasetBundleManifest['export_target'];
 
@@ -42,6 +50,24 @@ export interface DatasetValidationReport {
   trace_quality_passed: boolean;
   provider_compatibility_passed: boolean;
   training_ready_passed: boolean;
+  quality_thresholds?: {
+    accepted_ratio_min: number;
+    training_ready_ratio_min: number;
+    blocked_redaction_ratio_max: number;
+    host_kind_coverage_min: number;
+  };
+  quality_metrics?: {
+    total_seen: number;
+    accepted_ratio: number;
+    training_ready_ratio: number;
+    blocked_redaction_ratio: number;
+    host_kind_coverage: number;
+    provider_fact_coverage: number;
+  };
+  threshold_failures?: string[];
+  duplicate_summary?: DatasetDuplicateSummary;
+  balance_summary?: DatasetBalanceSummary;
+  training_view_summary?: DatasetTrainingViewSummary;
   counts: DatasetValidationCounts;
   exported_sample_ids: string[];
   invalid_samples: string[];
@@ -231,6 +257,13 @@ function toolCallIdsMatch(sample: CanonicalSftSample): boolean {
   return assistantToolCallIds.every((id) => toolResponseIds.has(id));
 }
 
+function safeRatio(numerator: number, denominator: number): number {
+  if (denominator <= 0) {
+    return 0;
+  }
+  return Number((numerator / denominator).toFixed(4));
+}
+
 function baseDecision(sample: CanonicalSftSample, target: DatasetExportTarget): ExportDecision {
   const reasons: string[] = [];
   const warnings = [...sample.quality.warnings];
@@ -334,6 +367,51 @@ export function finalizeValidationReport<Row>(
     .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
     .map(([reason, count]) => ({ reason, count }));
   const seenSamples = accumulator.seenSamples;
+  const qualityThresholds = {
+    accepted_ratio_min: 0.5,
+    training_ready_ratio_min: 0.5,
+    blocked_redaction_ratio_max: 0,
+    host_kind_coverage_min: 1,
+  };
+  const acceptedCount = accumulator.exportedSamples.filter(
+    (sample) => sample.quality.acceptance_decision === 'accepted'
+  ).length;
+  const trainingReadyCount = seenSamples.filter(
+    (sample) => sample.quality.training_ready === true
+  ).length;
+  const blockedCount = seenSamples.filter((sample) => sample.redaction.status === 'blocked').length;
+  const hostKindCount = seenSamples.filter(
+    (sample) => typeof sample.metadata.host_kind === 'string' && sample.metadata.host_kind.trim() !== ''
+  ).length;
+  const providerFactCount = seenSamples.filter(
+    (sample) =>
+      (typeof sample.source.provider_id === 'string' && sample.source.provider_id.trim() !== '') ||
+      (typeof sample.source.provider_mode === 'string' && sample.source.provider_mode.trim() !== '')
+  ).length;
+  const qualityMetrics = {
+    total_seen: seenSamples.length,
+    accepted_ratio: safeRatio(acceptedCount, seenSamples.length),
+    training_ready_ratio: safeRatio(trainingReadyCount, seenSamples.length),
+    blocked_redaction_ratio: safeRatio(blockedCount, seenSamples.length),
+    host_kind_coverage: safeRatio(hostKindCount, seenSamples.length),
+    provider_fact_coverage: safeRatio(providerFactCount, seenSamples.length),
+  };
+  const thresholdFailures: string[] = [];
+  if (qualityMetrics.total_seen > 0) {
+    if (qualityMetrics.accepted_ratio < qualityThresholds.accepted_ratio_min) {
+      thresholdFailures.push('accepted_ratio_below_threshold');
+    }
+    if (qualityMetrics.training_ready_ratio < qualityThresholds.training_ready_ratio_min) {
+      thresholdFailures.push('training_ready_ratio_below_threshold');
+    }
+    if (qualityMetrics.blocked_redaction_ratio > qualityThresholds.blocked_redaction_ratio_max) {
+      thresholdFailures.push('blocked_redaction_ratio_above_threshold');
+    }
+    if (qualityMetrics.host_kind_coverage < qualityThresholds.host_kind_coverage_min) {
+      thresholdFailures.push('host_kind_coverage_below_threshold');
+    }
+  }
+  const baseTrainingReadyPassed = seenSamples.every((sample) => sample.quality.training_ready !== false);
 
   return {
     export_target: target,
@@ -348,7 +426,13 @@ export function finalizeValidationReport<Row>(
     provider_compatibility_passed: seenSamples.every(
       (sample) => sample.export_compatibility[target].reasons.every((reason) => !reason.includes('provider'))
     ),
-    training_ready_passed: seenSamples.every((sample) => sample.quality.training_ready !== false),
+    training_ready_passed: baseTrainingReadyPassed && thresholdFailures.length === 0,
+    quality_thresholds: qualityThresholds,
+    quality_metrics: qualityMetrics,
+    threshold_failures: thresholdFailures,
+    duplicate_summary: buildDatasetDuplicateSummary(seenSamples),
+    balance_summary: buildDatasetBalanceSummary(seenSamples),
+    training_view_summary: buildDatasetTrainingViewSummary(seenSamples),
     counts: {
       accepted: accumulator.exportedSamples.length,
       rejected: accumulator.rejectedSamples.length,
@@ -398,6 +482,22 @@ export function renderValidationReportMarkdown(report: DatasetValidationReport):
     `- Trace Quality Passed: ${report.trace_quality_passed ? 'yes' : 'no'}`,
     `- Provider Compatibility Passed: ${report.provider_compatibility_passed ? 'yes' : 'no'}`,
     `- Training Ready Passed: ${report.training_ready_passed ? 'yes' : 'no'}`,
+    ...(report.quality_metrics
+      ? [
+          `- Accepted Ratio: ${report.quality_metrics.accepted_ratio}`,
+          `- Training Ready Ratio: ${report.quality_metrics.training_ready_ratio}`,
+          `- Blocked Redaction Ratio: ${report.quality_metrics.blocked_redaction_ratio}`,
+          `- Host Kind Coverage: ${report.quality_metrics.host_kind_coverage}`,
+          `- Provider Fact Coverage: ${report.quality_metrics.provider_fact_coverage}`,
+        ]
+      : []),
+    ...(report.duplicate_summary
+      ? [
+          `- Duplicate Clusters: ${report.duplicate_summary.duplicate_cluster_count}`,
+          `- Duplicated Samples: ${report.duplicate_summary.duplicated_sample_count}`,
+          `- Largest Cluster Size: ${report.duplicate_summary.largest_cluster_size}`,
+        ]
+      : []),
     `- Accepted: ${report.counts.accepted}`,
     `- Rejected: ${report.counts.rejected}`,
     `- Downgraded: ${report.counts.downgraded}`,
@@ -416,5 +516,30 @@ export function renderValidationReportMarkdown(report: DatasetValidationReport):
     ``,
     `## Rejected Samples`,
     rejectedSection,
+    ``,
+    `## Threshold Failures`,
+    report.threshold_failures && report.threshold_failures.length > 0
+      ? report.threshold_failures.map((item) => `- ${item}`).join('\n')
+      : '- none',
+    ``,
+    `## Balance Summary`,
+    report.balance_summary
+      ? [
+          `- Dominant Host Share: ${report.balance_summary.dominant_host_kind_share}`,
+          `- Dominant Provider Share: ${report.balance_summary.dominant_provider_share}`,
+          `- Dominant Stage Share: ${report.balance_summary.dominant_stage_share}`,
+          `- Dominant Source Scope Share: ${report.balance_summary.dominant_source_scope_share}`,
+          `- Dominant Sample Kind Share: ${report.balance_summary.dominant_sample_kind_share}`,
+        ].join('\n')
+      : '- none',
+    ``,
+    `## Training View Summary`,
+    report.training_view_summary
+      ? [
+          `- Assistant Only Ready: ${report.training_view_summary.assistant_only_ready}`,
+          `- Completion Only Ready: ${report.training_view_summary.completion_only_ready}`,
+          `- Tool Calling Ready: ${report.training_view_summary.tool_calling_ready}`,
+        ].join('\n')
+      : '- none',
   ].join('\n');
 }

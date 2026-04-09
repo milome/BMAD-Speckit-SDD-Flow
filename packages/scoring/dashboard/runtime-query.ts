@@ -8,6 +8,14 @@ import {
   type DatasetRedactionPreviewItem,
   type DatasetExportTarget,
 } from '../analytics/validation-report';
+import {
+  buildDatasetBalanceSummary,
+  buildDatasetDuplicateSummary,
+  buildDatasetTrainingViewSummary,
+  type DatasetBalanceSummary,
+  type DatasetDuplicateSummary,
+  type DatasetTrainingViewSummary,
+} from '../analytics/dataset-analytics';
 import type { CanonicalSftSample, DatasetBundleManifest } from '../analytics/types';
 import { loadAndDedupeRecords } from '../query/loader';
 import type { RunScoreRecord } from '../writer/types';
@@ -230,6 +238,9 @@ export interface DashboardSftSummary {
     finding_kinds: string[];
     rejection_reasons?: string[];
   }>;
+  duplicate_summary?: DatasetDuplicateSummary;
+  balance_summary?: DatasetBalanceSummary;
+  training_view_summary?: DatasetTrainingViewSummary;
   last_bundle: {
     bundle_id: string;
     export_target: DatasetExportTarget;
@@ -250,6 +261,28 @@ export interface DashboardSftSummary {
   } | null;
 }
 
+export interface DashboardExecutionStateSummary {
+  source: 'execution_record' | 'none';
+  selection_match: 'work_item' | 'global' | 'none';
+  execution_id: string | null;
+  execution_status:
+    | 'pending_dispatch'
+    | 'leased'
+    | 'running'
+    | 'awaiting_rerun_gate'
+    | 'retry_pending'
+    | 'gate_passed'
+    | 'escalated'
+    | null;
+  configured_authoritative_host: string | null;
+  dispatched_host: string | null;
+  fallback_used: boolean;
+  last_rerun_gate_status: 'pass' | 'fail' | null;
+  artifact_path: string | null;
+  packet_paths: Record<string, string>;
+  last_dispatch_error: string | null;
+}
+
 function normalizeRedactionPreviewStatus(
   status: DatasetRedactionPreviewItem['status']
 ): 'clean' | 'redacted' | 'blocked' {
@@ -261,6 +294,7 @@ export interface RuntimeDashboardSnapshot {
   selection: RuntimeDashboardSelection;
   overview: DashboardOverviewPanel;
   runtime_context: DashboardRuntimeContextPanel;
+  execution_state: DashboardExecutionStateSummary;
   stage_timeline: DashboardStageTimelineEntry[];
   score_detail: DashboardScoreDetailPayload;
   sft_summary: DashboardSftSummary;
@@ -330,6 +364,10 @@ function rankBoardStatus(status: DashboardBoardStatus): number {
 
 function normalizePath(value?: string | null): string {
   return (value ?? '').replace(/\\/g, '/');
+}
+
+function normalizePathLower(value?: string | null): string {
+  return normalizePath(value).toLowerCase();
 }
 
 function titleFromSlug(slug: string): string {
@@ -1182,6 +1220,134 @@ function bundleMatchesWorkItem(
   return false;
 }
 
+interface DashboardExecutionRecordLike {
+  executionId?: string;
+  status?: DashboardExecutionStateSummary['execution_status'];
+  authoritativeHost?: string | null;
+  artifactPath?: string | null;
+  packetPaths?: Record<string, string>;
+  lastDispatchError?: string | null;
+  lastLaunch?: {
+    metadata?: Record<string, unknown> | null;
+  } | null;
+  lastRerunGateResult?: {
+    status?: 'pass' | 'fail' | null;
+  } | null;
+  updatedAt?: string | null;
+  loopStateId?: string | null;
+}
+
+function listDashboardExecutionRecords(root: string): DashboardExecutionRecordLike[] {
+  const executionsRoot = path.join(root, '_bmad-output', 'runtime', 'governance', 'executions');
+  if (!fs.existsSync(executionsRoot)) {
+    return [];
+  }
+
+  const records: DashboardExecutionRecordLike[] = [];
+  for (const file of fs.readdirSync(executionsRoot, { recursive: true })) {
+    const fullPath = path.join(executionsRoot, String(file));
+    if (!fullPath.endsWith('.json') || fullPath.endsWith('reconciliation-report.json')) {
+      continue;
+    }
+    try {
+      const parsed = JSON.parse(fs.readFileSync(fullPath, 'utf-8')) as DashboardExecutionRecordLike;
+      if (parsed && typeof parsed === 'object' && parsed.executionId) {
+        records.push(parsed);
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return records.sort((left, right) => compareTimestamps(left.updatedAt, right.updatedAt));
+}
+
+function executionRecordMatchesWorkItem(
+  record: DashboardExecutionRecordLike,
+  activeWorkItem: DashboardWorkItem | null
+): boolean {
+  if (!activeWorkItem) {
+    return false;
+  }
+
+  const candidates = [
+    normalizePathLower(record.artifactPath),
+    typeof record.loopStateId === 'string' ? record.loopStateId.toLowerCase() : '',
+  ];
+
+  if (activeWorkItem.story_key) {
+    const storyKey = activeWorkItem.story_key.toLowerCase();
+    if (candidates.some((value) => value.includes(storyKey))) {
+      return true;
+    }
+  }
+
+  if (activeWorkItem.epic_id) {
+    const epicId = activeWorkItem.epic_id.toLowerCase();
+    if (candidates.some((value) => value.includes(epicId))) {
+      return true;
+    }
+  }
+
+  if (activeWorkItem.slug) {
+    const slug = activeWorkItem.slug.toLowerCase();
+    if (candidates.some((value) => value.includes(slug))) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function buildExecutionStateSummary(
+  root: string,
+  activeWorkItem: DashboardWorkItem | null
+): DashboardExecutionStateSummary {
+  const records = listDashboardExecutionRecords(root);
+  if (records.length === 0) {
+    return {
+      source: 'none',
+      selection_match: 'none',
+      execution_id: null,
+      execution_status: null,
+      configured_authoritative_host: null,
+      dispatched_host: null,
+      fallback_used: false,
+      last_rerun_gate_status: null,
+      artifact_path: null,
+      packet_paths: {},
+      last_dispatch_error: null,
+    };
+  }
+
+  const matched =
+    records.find((record) => executionRecordMatchesWorkItem(record, activeWorkItem)) ?? records[0]!;
+  const launchMetadata = matched.lastLaunch?.metadata ?? {};
+  const dispatchedHost =
+    typeof launchMetadata.dispatchedHost === 'string' ? launchMetadata.dispatchedHost : null;
+
+  return {
+    source: 'execution_record',
+    selection_match: executionRecordMatchesWorkItem(matched, activeWorkItem) ? 'work_item' : 'global',
+    execution_id: matched.executionId ?? null,
+    execution_status: matched.status ?? null,
+    configured_authoritative_host:
+      typeof matched.authoritativeHost === 'string' ? matched.authoritativeHost : null,
+    dispatched_host: dispatchedHost,
+    fallback_used: Boolean(launchMetadata.fallbackUsed),
+    last_rerun_gate_status: matched.lastRerunGateResult?.status ?? null,
+    artifact_path: matched.artifactPath ? path.relative(root, matched.artifactPath).replace(/\\/g, '/') : null,
+    packet_paths: Object.fromEntries(
+      Object.entries(matched.packetPaths ?? {}).map(([hostKind, packetPath]) => [
+        hostKind,
+        path.relative(root, packetPath).replace(/\\/g, '/'),
+      ])
+    ),
+    last_dispatch_error:
+      typeof matched.lastDispatchError === 'string' ? matched.lastDispatchError : null,
+  };
+}
+
 function toBundleSummary(
   root: string,
   bundleDir: string,
@@ -1293,6 +1459,33 @@ function buildSftSummary(
     redaction_applied_rules: [],
     redaction_finding_kinds: [],
     redaction_preview: [],
+    duplicate_summary: {
+      cluster_count: 0,
+      duplicate_cluster_count: 0,
+      duplicated_sample_count: 0,
+      largest_cluster_size: 0,
+      clusters: [],
+    },
+    balance_summary: {
+      by_host_kind: {},
+      by_provider_id: {},
+      by_stage: {},
+      by_source_scope: {},
+      by_sample_kind: {},
+      by_split: {},
+      by_target: {},
+      dominant_host_kind_share: 0,
+      dominant_provider_share: 0,
+      dominant_stage_share: 0,
+      dominant_source_scope_share: 0,
+      dominant_sample_kind_share: 0,
+    },
+    training_view_summary: {
+      assistant_only_ready: 0,
+      completion_only_ready: 0,
+      tool_calling_ready: 0,
+      schema_target_counts: {},
+    },
     last_bundle: latestBundles.scoped_last_bundle,
     global_last_bundle: latestBundles.global_last_bundle,
   };
@@ -1313,6 +1506,9 @@ function buildSftSummary(
   summary.redaction_status_counts = redactionSummary.status_counts;
   summary.redaction_applied_rules = redactionSummary.applied_rules;
   summary.redaction_finding_kinds = redactionSummary.finding_kinds;
+  summary.duplicate_summary = buildDatasetDuplicateSummary(samples);
+  summary.balance_summary = buildDatasetBalanceSummary(samples);
+  summary.training_view_summary = buildDatasetTrainingViewSummary(samples);
   summary.redaction_preview = buildDatasetRedactionPreview(samples).map((item) => ({
     sample_id: item.sample_id,
     status: normalizeRedactionPreviewStatus(item.status),
@@ -1356,6 +1552,10 @@ export function buildRuntimeDashboardModel(input: {
   });
   const workboard = workboardResolution.payload;
   const activeWorkItem = workboardResolution.active_work_item;
+  const executionState = buildExecutionStateSummary(
+    input.root ?? options.root ?? process.cwd(),
+    activeWorkItem
+  );
   const activeWorkItemScoreRecords = filterScoreRecordsForActiveWorkItem(workboardScoreRecords, activeWorkItem);
   const detailSourceRecords = activeWorkItemScoreRecords.length > 0 ? activeWorkItemScoreRecords : selectedScoreRecords;
   const scoreDetailRecords = buildScoreDetailRecords(detailSourceRecords);
@@ -1421,6 +1621,7 @@ export function buildRuntimeDashboardModel(input: {
         (scoreDetailRecords[0]?.timestamp ?? null),
     },
     runtime_context: runtimeContext,
+    execution_state: executionState,
     stage_timeline: buildStageTimeline(selectedProjection, scoreDetailRecords, activeWorkItem),
     score_detail: {
       run_id: selectedRunId,

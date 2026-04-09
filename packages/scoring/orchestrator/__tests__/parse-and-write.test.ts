@@ -174,6 +174,59 @@ describe('parseAndWriteScore', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
+  it('writes host and provider provenance fields when explicitly provided', async () => {
+    const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
+    const tempDir = path.join(os.tmpdir(), `scoring-provenance-${Date.now()}`);
+    const runId = `test-provenance-${Date.now()}`;
+
+    await parseAndWriteScore({
+      content,
+      stage: 'prd',
+      runId,
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+      host: 'claude',
+      host_kind: 'claude',
+      provider_id: 'dashscope-coding-kimi',
+      provider_mode: 'openai-compatible',
+    });
+
+    const filePath = path.join(tempDir, `${runId}.json`);
+    const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    expect(written.host).toBe('claude');
+    expect(written.host_kind).toBe('claude');
+    expect(written.provider_id).toBe('dashscope-coding-kimi');
+    expect(written.provider_mode).toBe('openai-compatible');
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('writes tool trace companion fields when explicitly provided', async () => {
+    const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
+    const tempDir = path.join(os.tmpdir(), `scoring-tool-trace-${Date.now()}`);
+    const runId = `test-tool-trace-${Date.now()}`;
+    const toolTracePath = path.join(tempDir, 'tool-trace.json');
+    fs.mkdirSync(tempDir, { recursive: true });
+    fs.writeFileSync(toolTracePath, JSON.stringify({ trace: true }), 'utf-8');
+
+    await parseAndWriteScore({
+      content,
+      stage: 'prd',
+      runId,
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+      tool_trace_ref: 'sha256:tool-trace-demo',
+      tool_trace_path: toolTracePath,
+    });
+
+    const filePath = path.join(tempDir, `${runId}.json`);
+    const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    expect(written.tool_trace_ref).toBe('sha256:tool-trace-demo');
+    expect(written.tool_trace_path).toBe(toolTracePath);
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
   it('uses provided baseCommitHash when explicitly passed (GAP-B01)', async () => {
     const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
     const tempDir = path.join(os.tmpdir(), `scoring-gapb01-override-${Date.now()}`);

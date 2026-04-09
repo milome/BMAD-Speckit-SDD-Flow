@@ -82,6 +82,16 @@ function extractHookWritePath(hookInput) {
   return direct || nestedPath || '';
 }
 
+function isGovernancePacketPath(projectRoot, hookInput) {
+  const writePath = extractHookWritePath(hookInput);
+  if (!writePath) return false;
+  const normalizedWrite = path
+    .resolve(projectRoot, writePath)
+    .replace(/\\/g, '/')
+    .toLowerCase();
+  return /\.(cursor|claude|codex)-packet\.md$/i.test(normalizedWrite);
+}
+
 function shouldSkipForArtifactSelfWrite(projectRoot, hookInput, artifactPath) {
   const writePath = extractHookWritePath(hookInput);
   if (!writePath || !artifactPath) return false;
@@ -335,6 +345,14 @@ function writeResult(result) {
   process.stdout.write(JSON.stringify(result));
 }
 
+function blockGovernancePacketWrite(result) {
+  writeResult(result);
+  process.stderr.write(
+    'GateFailure\n- governance packet files are generated only by the local runner, not by model Write/Edit actions.\nRemediationPlan\n- write the remediation artifact only; let governance-remediation-runner derive packet files.\n'
+  );
+  process.exitCode = 2;
+}
+
 async function main() {
   const projectRoot = process.cwd();
   const hookInput = await readStdin();
@@ -366,6 +384,21 @@ async function main() {
   const runtimeContext = dynamic.runtimeContext;
   const workflow = dynamic.workflow;
   const step = dynamic.step;
+
+  if (isGovernancePacketPath(projectRoot, hookInput)) {
+    emitHookInfo(
+      `pre-continue-check blocked packet write: workflow=${workflow || 'unknown'}; step=${step || 'unknown'}`
+    );
+    blockGovernancePacketWrite({
+      ok: false,
+      skipped: false,
+      reason: 'packet-write-blocked',
+      workflow: workflow || undefined,
+      step: step || undefined,
+      gate: dynamic.rerunGate || undefined,
+    });
+    return;
+  }
 
   if (!workflow) {
     writeResult({ ok: true, skipped: true, reason: 'no-workflow' });

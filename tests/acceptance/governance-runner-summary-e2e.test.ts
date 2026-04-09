@@ -5,6 +5,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { RunScoreRecord } from '../../packages/scoring/writer/types';
 import { processQueue } from '../../scripts/bmad-runtime-worker';
+import { createAcceptedPlaceholderDispatchAdapter } from '../../scripts/governance-packet-dispatch-worker';
 import { governancePendingQueueFilePath } from '../../scripts/governance-runtime-queue';
 import { runGovernanceRemediation } from '../../scripts/governance-remediation-runner';
 import { writeRuntimeContext } from '../../scripts/runtime-context';
@@ -183,7 +184,9 @@ describe('governance runner summary end-to-end flow', () => {
         'utf8'
       );
 
-      await processQueue(fixture.root);
+      await processQueue(fixture.root, {
+        dispatchAdapter: createAcceptedPlaceholderDispatchAdapter('runner-summary placeholder dispatch'),
+      });
 
       for (let attempt = 0; attempt < 20; attempt += 1) {
         const current = JSON.parse(
