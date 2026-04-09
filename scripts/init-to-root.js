@@ -668,6 +668,9 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
   }
   const governanceWorkerSrc = path.join(pkgRoot, 'packages', 'runtime-emit', 'dist', 'governance-runtime-worker.cjs');
   const governanceRunnerSrc = path.join(pkgRoot, 'packages', 'runtime-emit', 'dist', 'governance-remediation-runner.cjs');
+  const governanceDispatchWorkerSrc = path.join(pkgRoot, 'packages', 'runtime-emit', 'dist', 'governance-packet-dispatch-worker.cjs');
+  const governanceResultIngestorSrc = path.join(pkgRoot, 'packages', 'runtime-emit', 'dist', 'governance-execution-result-ingestor.cjs');
+  const governanceReconcilerSrc = path.join(pkgRoot, 'packages', 'runtime-emit', 'dist', 'governance-packet-reconciler.cjs');
   const wrcSrc = path.join(path.dirname(emitSrc), '..', 'write-runtime-context.cjs');
   const hookDirs = [
     path.join(targetDir, '.cursor', 'hooks'),
@@ -689,6 +692,15 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
     if (fs.existsSync(governanceRunnerSrc)) {
       fs.copyFileSync(governanceRunnerSrc, path.join(d, 'governance-remediation-runner.cjs'));
     }
+    if (fs.existsSync(governanceDispatchWorkerSrc)) {
+      fs.copyFileSync(governanceDispatchWorkerSrc, path.join(d, 'governance-packet-dispatch-worker.cjs'));
+    }
+    if (fs.existsSync(governanceResultIngestorSrc)) {
+      fs.copyFileSync(governanceResultIngestorSrc, path.join(d, 'governance-execution-result-ingestor.cjs'));
+    }
+    if (fs.existsSync(governanceReconcilerSrc)) {
+      fs.copyFileSync(governanceReconcilerSrc, path.join(d, 'governance-packet-reconciler.cjs'));
+    }
     if (fs.existsSync(wrcSrc)) {
       fs.copyFileSync(wrcSrc, path.join(d, 'write-runtime-context.cjs'));
     }
@@ -701,7 +713,7 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
     return;
   }
   console.log(
-    'Deployed emit-runtime-policy.cjs, resolve-for-session.cjs, render-audit-block.cjs, governance-runtime-worker.cjs, governance-remediation-runner.cjs (+ write-runtime-context.cjs) under .cursor/hooks and/or .claude/hooks (no project-root scripts/).'
+    'Deployed emit-runtime-policy.cjs, resolve-for-session.cjs, render-audit-block.cjs, governance-runtime-worker.cjs, governance-remediation-runner.cjs, governance-packet-dispatch-worker.cjs, governance-execution-result-ingestor.cjs, governance-packet-reconciler.cjs (+ write-runtime-context.cjs) under .cursor/hooks and/or .claude/hooks (no project-root scripts/).'
   );
 }
 

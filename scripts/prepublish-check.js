@@ -14,6 +14,8 @@ const ROOT = path.resolve(__dirname, '..');
 const SPECKIT_DIR = path.join(ROOT, 'packages', 'bmad-speckit');
 const SPECKIT_BMAD_MIRROR = path.join(SPECKIT_DIR, '_bmad');
 const SPECKIT_SCOPED_NODE_MODULES = path.join(SPECKIT_DIR, 'node_modules', '@bmad-speckit');
+const PACK_SESSION_FILE = path.join(SPECKIT_DIR, 'node_modules', '.pack-session-count.json');
+const PACK_SESSION_LOCK_DIR = path.join(SPECKIT_DIR, 'node_modules', '.pack-session.lock');
 const SILENT = process.env.BMAD_PREPUBLISH_SILENT === '1';
 
 function info(message) {
@@ -117,11 +119,16 @@ function rmWithRetry(target) {
   if (!fs.existsSync(target)) return;
   for (let attempt = 0; attempt < 10; attempt += 1) {
     try {
-      fs.rmSync(target, { recursive: true, force: true });
+      fs.rmSync(target, {
+        recursive: true,
+        force: true,
+        maxRetries: 20,
+        retryDelay: 100,
+      });
       return;
     } catch (error) {
       if (attempt === 9) throw error;
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 200);
     }
   }
 }
@@ -148,6 +155,75 @@ function renameWithRetry(oldPath, newPath, maxAttempts = 20) {
       throw error;
     }
   }
+}
+
+function readPackSessionCount() {
+  if (!fs.existsSync(PACK_SESSION_FILE)) return 0;
+  try {
+    const parsed = JSON.parse(fs.readFileSync(PACK_SESSION_FILE, 'utf8'));
+    return Number.isFinite(parsed?.count) && parsed.count > 0 ? parsed.count : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function writePackSessionCount(count) {
+  fs.mkdirSync(path.dirname(PACK_SESSION_FILE), { recursive: true });
+  if (count <= 0) {
+    rmWithRetry(PACK_SESSION_FILE);
+    return;
+  }
+  fs.writeFileSync(PACK_SESSION_FILE, JSON.stringify({ count }, null, 2) + '\n', 'utf8');
+}
+
+function acquirePersistentPackSessionLock(lockDir) {
+  fs.mkdirSync(path.dirname(lockDir), { recursive: true });
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    try {
+      fs.mkdirSync(lockDir);
+      return;
+    } catch (error) {
+      if (error.code !== 'EEXIST') {
+        throw error;
+      }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 250);
+    }
+  }
+  throw new Error(`Timed out acquiring pack session lock: ${lockDir}`);
+}
+
+/**
+ * 获取 prepublish 同步锁，避免并行 pack/prepublish 争抢同一 staging 目录
+ * @param {string} lockDir
+ */
+function acquirePrepublishSyncLock(lockDir) {
+  const payload = {
+    pid: process.pid,
+    acquiredAt: new Date().toISOString(),
+  };
+
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    try {
+      fs.mkdirSync(lockDir, { recursive: false });
+      fs.writeFileSync(path.join(lockDir, 'owner.json'), JSON.stringify(payload, null, 2) + '\n', 'utf8');
+      return;
+    } catch (error) {
+      if (error.code !== 'EEXIST') {
+        throw error;
+      }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 250);
+    }
+  }
+
+  throw new Error(`Timed out acquiring prepublish sync lock: ${lockDir}`);
+}
+
+/**
+ * 释放 prepublish 同步锁
+ * @param {string} lockDir
+ */
+function releasePrepublishSyncLock(lockDir) {
+  rmWithRetry(lockDir);
 }
 
 /**
@@ -249,7 +325,7 @@ function syncWorkspacePackageToBundled(relDir, scopedId) {
   const staging = path.join(parentDir, `${pkgName}.staging`);
 
   const pkg = JSON.parse(fs.readFileSync(path.join(pkgDir, 'package.json'), 'utf8'));
-  const publishFiles = (pkg.files || []).filter((f) => !String(f).includes('*'));
+  const publishFiles = pkg.files || [];
 
   // 清理可能存在的旧 staging
   rmWithRetry(staging);
@@ -261,9 +337,23 @@ function syncWorkspacePackageToBundled(relDir, scopedId) {
   if (fs.existsSync(readmeSrc)) {
     fs.copyFileSync(readmeSrc, path.join(staging, 'README.md'));
   }
-  for (const dir of publishFiles) {
-    const src = path.join(pkgDir, dir);
-    const out = path.join(staging, dir);
+  for (const entry of publishFiles) {
+    const value = String(entry);
+    if (value.includes('*')) {
+      const matcher = new RegExp(
+        '^' + value.split('*').map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$'
+      );
+      for (const name of fs.readdirSync(pkgDir)) {
+        if (!matcher.test(name)) continue;
+        const src = path.join(pkgDir, name);
+        const out = path.join(staging, name);
+        copyDirContents(src, out);
+      }
+      continue;
+    }
+
+    const src = path.join(pkgDir, value);
+    const out = path.join(staging, value);
     if (fs.existsSync(src)) {
       copyDirContents(src, out);
     }
@@ -282,75 +372,90 @@ function syncWorkspacePackageToBundled(relDir, scopedId) {
   atomicSwap(staging, targetDir);
 }
 
-for (const b of BUNDLED) {
-  info(`同步 ${b.id} → bmad-speckit/node_modules ...`);
-  syncWorkspacePackageToBundled(b.relDir, b.id);
-}
-info('同步 workspace scoped packages → packages/bmad-speckit/node_modules/@bmad-speckit ...');
-syncBundledWorkspaceScopes();
-info('同步 _bmad → packages/bmad-speckit/_bmad ...');
-syncBmadMirror();
-info('同步完成。\n');
+const PREPUBLISH_SYNC_LOCK_DIR = path.join(SPECKIT_DIR, 'node_modules', '.prepublish-sync.lock');
 
-const checks = [];
+const holdPackSessionLock = process.env.BMAD_PACK_SESSION === '1';
+acquirePersistentPackSessionLock(PACK_SESSION_LOCK_DIR);
+acquirePrepublishSyncLock(PREPUBLISH_SYNC_LOCK_DIR);
+try {
+  if (holdPackSessionLock) {
+    writePackSessionCount(readPackSessionCount() + 1);
+  }
+  for (const b of BUNDLED) {
+    info(`同步 ${b.id} → bmad-speckit/node_modules ...`);
+    syncWorkspacePackageToBundled(b.relDir, b.id);
+  }
+  info('同步 workspace scoped packages → packages/bmad-speckit/node_modules/@bmad-speckit ...');
+  syncBundledWorkspaceScopes();
+  info('同步 _bmad → packages/bmad-speckit/_bmad ...');
+  syncBmadMirror();
+  info('同步完成。\n');
 
-for (const b of BUNDLED) {
-  const pkgDir = path.join(ROOT, b.relDir);
-  checks.push({
-    label: `${b.relDir}/ 产物就绪`,
-    test: () => b.distCheck(pkgDir),
-  });
-  if (b.extraCheck) {
+  const checks = [];
+
+  for (const b of BUNDLED) {
+    const pkgDir = path.join(ROOT, b.relDir);
     checks.push({
-      label: `${b.relDir} extra`,
-      test: () => b.extraCheck(pkgDir),
+      label: `${b.relDir}/ 产物就绪`,
+      test: () => b.distCheck(pkgDir),
+    });
+    if (b.extraCheck) {
+      checks.push({
+        label: `${b.relDir} extra`,
+        test: () => b.extraCheck(pkgDir),
+      });
+    }
+    const parts = b.id.split('/');
+    const dest = path.join(SPECKIT_DIR, 'node_modules', ...parts);
+    checks.push({
+      label: `packages/bmad-speckit/node_modules/${b.id} 存在`,
+      test: () => fs.existsSync(dest),
     });
   }
-  const parts = b.id.split('/');
-  const dest = path.join(SPECKIT_DIR, 'node_modules', ...parts);
+
   checks.push({
-    label: `packages/bmad-speckit/node_modules/${b.id} 存在`,
-    test: () => fs.existsSync(dest),
+    label: 'packages/bmad-speckit/_bmad 存在',
+    test: () => fs.existsSync(SPECKIT_BMAD_MIRROR) && fs.statSync(SPECKIT_BMAD_MIRROR).isDirectory() && fs.readdirSync(SPECKIT_BMAD_MIRROR).length > 0,
   });
+
+  checks.push({
+    label: 'packages/bmad-speckit/_bmad 含 hooks/*.cjs',
+    test: () => {
+      const hookRoots = [
+        path.join(SPECKIT_BMAD_MIRROR, 'runtime', 'hooks'),
+        path.join(SPECKIT_BMAD_MIRROR, 'cursor', 'hooks'),
+        path.join(SPECKIT_BMAD_MIRROR, 'claude', 'hooks'),
+      ];
+      return hookRoots.every((dir) => fs.existsSync(dir) && fs.readdirSync(dir).some((name) => name.endsWith('.cjs')));
+    },
+  });
+
+  checks.push({
+    label: 'packages/bmad-speckit/package.json 包含 bundleDependencies（三项 @bmad-speckit/*）',
+    test: () => {
+      const pkg = JSON.parse(fs.readFileSync(path.join(SPECKIT_DIR, 'package.json'), 'utf8'));
+      const bd = pkg.bundleDependencies || pkg.bundledDependencies;
+      if (!Array.isArray(bd)) return false;
+      return BUNDLED.every((b) => bd.includes(b.id));
+    },
+  });
+
+  let allPassed = true;
+  for (const { label, test } of checks) {
+    const ok = test();
+    info(ok ? `  ✓ ${label}` : `  ✗ ${label}`);
+    if (!ok) allPassed = false;
+  }
+
+  if (!allPassed) {
+    console.error('\n发布前检查未通过，请修复上述问题后重试。');
+    process.exit(1);
+  }
+
+  info('\n发布前检查全部通过 ✓');
+} finally {
+  releasePrepublishSyncLock(PREPUBLISH_SYNC_LOCK_DIR);
+  if (!holdPackSessionLock) {
+    rmWithRetry(PACK_SESSION_LOCK_DIR);
+  }
 }
-
-checks.push({
-  label: 'packages/bmad-speckit/_bmad 存在',
-  test: () => fs.existsSync(SPECKIT_BMAD_MIRROR) && fs.statSync(SPECKIT_BMAD_MIRROR).isDirectory() && fs.readdirSync(SPECKIT_BMAD_MIRROR).length > 0,
-});
-
-checks.push({
-  label: 'packages/bmad-speckit/_bmad 含 hooks/*.cjs',
-  test: () => {
-    const hookRoots = [
-      path.join(SPECKIT_BMAD_MIRROR, 'runtime', 'hooks'),
-      path.join(SPECKIT_BMAD_MIRROR, 'cursor', 'hooks'),
-      path.join(SPECKIT_BMAD_MIRROR, 'claude', 'hooks'),
-    ];
-    return hookRoots.every((dir) => fs.existsSync(dir) && fs.readdirSync(dir).some((name) => name.endsWith('.cjs')));
-  },
-});
-
-checks.push({
-  label: 'packages/bmad-speckit/package.json 包含 bundleDependencies（三项 @bmad-speckit/*）',
-  test: () => {
-    const pkg = JSON.parse(fs.readFileSync(path.join(SPECKIT_DIR, 'package.json'), 'utf8'));
-    const bd = pkg.bundleDependencies || pkg.bundledDependencies;
-    if (!Array.isArray(bd)) return false;
-    return BUNDLED.every((b) => bd.includes(b.id));
-  },
-});
-
-let allPassed = true;
-for (const { label, test } of checks) {
-  const ok = test();
-  info(ok ? `  ✓ ${label}` : `  ✗ ${label}`);
-  if (!ok) allPassed = false;
-}
-
-if (!allPassed) {
-  console.error('\n发布前检查未通过，请修复上述问题后重试。');
-  process.exit(1);
-}
-
-info('\n发布前检查全部通过 ✓');

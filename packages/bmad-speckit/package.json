@@ -12,10 +12,10 @@
     "tests/",
     "test-nonempty/",
     "_bmad/",
-    "node_modules/@bmad-speckit/runtime-emit/dist/"
+    "node_modules/@bmad-speckit/"
   ],
   "scripts": {
-    "prepack": "node -e \"process.env.BMAD_PREPUBLISH_SILENT='1'; require('../../scripts/prepublish-check.js')\"",
+    "prepack": "npm run build:scoring --prefix ../.. && npm run build:runtime-context --prefix ../.. && npm run build:runtime-emit --prefix ../.. && node -e \"process.env.BMAD_PREPUBLISH_SILENT='1'; process.env.BMAD_PACK_SESSION='1'; require('../../scripts/prepublish-check.js')\"",
     "postpack": "node ../../scripts/cleanup-packed-bmad.js",
     "prepublishOnly": "node ../../scripts/prepublish-check.js",
     "test": "node --test tests/ 2>/dev/null || echo 'No tests yet'"

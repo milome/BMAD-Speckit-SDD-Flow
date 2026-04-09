@@ -60,6 +60,9 @@ const repoRoot = path.resolve(pkgDir, '../..');
 const outDir = path.join(pkgDir, 'dist');
 const workerEntry = path.join(repoRoot, 'scripts', 'bmad-runtime-worker.ts');
 const runnerEntry = path.join(repoRoot, 'scripts', 'governance-remediation-runner.ts');
+const dispatchWorkerEntry = path.join(repoRoot, 'scripts', 'governance-packet-dispatch-worker.ts');
+const executionResultIngestorEntry = path.join(repoRoot, 'scripts', 'governance-execution-result-ingestor.ts');
+const packetReconcilerEntry = path.join(repoRoot, 'scripts', 'governance-packet-reconciler.ts');
 const bundles = [
   {
     entry: path.join(repoRoot, 'scripts', 'emit-runtime-policy.ts'),
@@ -90,6 +93,21 @@ const bundles = [
     entry: runnerEntry,
     outfile: path.join(outDir, 'governance-remediation-runner.cjs'),
     label: 'governance-remediation-runner',
+  },
+  {
+    entry: dispatchWorkerEntry,
+    outfile: path.join(outDir, 'governance-packet-dispatch-worker.cjs'),
+    label: 'governance-packet-dispatch-worker',
+  },
+  {
+    entry: executionResultIngestorEntry,
+    outfile: path.join(outDir, 'governance-execution-result-ingestor.cjs'),
+    label: 'governance-execution-result-ingestor',
+  },
+  {
+    entry: packetReconcilerEntry,
+    outfile: path.join(outDir, 'governance-packet-reconciler.cjs'),
+    label: 'governance-packet-reconciler',
   },
 ];
 

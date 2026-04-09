@@ -30,7 +30,33 @@ export interface GovernanceRemediationAuditTrace {
   summaryLines?: string[];
 }
 
+export interface GovernanceExecutionProjection {
+  executionId?: string;
+  executionStatus?:
+    | 'pending_dispatch'
+    | 'leased'
+    | 'running'
+    | 'awaiting_rerun_gate'
+    | 'retry_pending'
+    | 'gate_passed'
+    | 'escalated';
+  authoritativeHost?: 'cursor' | 'claude' | 'codex' | 'generic';
+  lastRerunGateStatus?: 'pass' | 'fail' | null;
+}
+
 export interface GovernanceExecutionResult {
+  executionId?: string | null;
+  executionStatus?:
+    | 'pending_dispatch'
+    | 'leased'
+    | 'running'
+    | 'awaiting_rerun_gate'
+    | 'retry_pending'
+    | 'gate_passed'
+    | 'escalated'
+    | null;
+  authoritativeHost?: 'cursor' | 'claude' | 'codex' | 'generic' | null;
+  lastRerunGateStatus?: 'pass' | 'fail' | null;
   artifactPath?: string | null;
   packetPaths?: Record<string, string>;
   executionIntentCandidate?: ExecutionIntentCandidate | null;
@@ -44,6 +70,7 @@ export interface GovernanceExecutionResult {
   rerunGateResultIngested?: boolean;
   executorRouting?: GovernanceExecutorRoutingProjection;
   remediationAuditTrace?: GovernanceRemediationAuditTrace;
+  executionProjection?: GovernanceExecutionProjection;
   runnerSummaryLines?: string[];
   governancePresentation?: GovernancePresentation;
   gateCheck?: {

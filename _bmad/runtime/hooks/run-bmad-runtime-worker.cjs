@@ -728,16 +728,16 @@ function tryResolveModule(moduleId, projectRoot) {
  */
 function resolveWorkerEntry(projectRoot) {
   const candidates = [
-    path.join(projectRoot, '.claude', 'hooks', 'governance-runtime-worker.cjs'),
-    path.join(projectRoot, '.cursor', 'hooks', 'governance-runtime-worker.cjs'),
-    path.join(projectRoot, '_bmad', 'runtime', 'hooks', 'governance-runtime-worker.cjs'),
-    path.join(projectRoot, 'node_modules', 'bmad-speckit', '_bmad', 'runtime', 'hooks', 'governance-runtime-worker.cjs'),
-    path.join(projectRoot, 'node_modules', 'bmad-speckit', 'scripts', 'bmad-runtime-worker.js'),
     path.resolve(__dirname, 'governance-runtime-worker.cjs'),
     path.resolve(__dirname, '..', '..', 'runtime', 'hooks', 'governance-runtime-worker.cjs'),
     path.resolve(__dirname, '..', '..', '..', '_bmad', 'runtime', 'hooks', 'governance-runtime-worker.cjs'),
     path.resolve(__dirname, '..', '..', 'scripts', 'bmad-runtime-worker.js'),
     path.resolve(__dirname, '..', '..', '..', 'scripts', 'bmad-runtime-worker.js'),
+    path.join(projectRoot, '.claude', 'hooks', 'governance-runtime-worker.cjs'),
+    path.join(projectRoot, '.cursor', 'hooks', 'governance-runtime-worker.cjs'),
+    path.join(projectRoot, '_bmad', 'runtime', 'hooks', 'governance-runtime-worker.cjs'),
+    path.join(projectRoot, 'node_modules', 'bmad-speckit', '_bmad', 'runtime', 'hooks', 'governance-runtime-worker.cjs'),
+    path.join(projectRoot, 'node_modules', 'bmad-speckit', 'scripts', 'bmad-runtime-worker.js'),
   ];
 
   const resolvedModules = [
@@ -1084,7 +1084,7 @@ function runActualWorker(projectRoot) {
   const plan = buildWorkerSpawnPlan(projectRoot);
   return spawnSync(plan.command, plan.args, {
     cwd: projectRoot,
-    env: { ...process.env },
+    env: { ...process.env, BMAD_DISABLE_EMBEDDED_GOVERNANCE_CLIS: '1' },
     windowsHide: true,
     shell: plan.shell,
     encoding: 'utf8',
