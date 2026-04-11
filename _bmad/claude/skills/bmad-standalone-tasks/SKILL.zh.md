@@ -2,10 +2,10 @@
 name: bmad-standalone-tasks
 description: |
   Claude Code CLI / OMC 版 BMAD Standalone Tasks 适配入口。
-  以 Cursor bmad-standalone-tasks 为语义基线，按「解析未完成任务 → 子代理实施 → 实施后审计」执行 TASKS/BUGFIX 文档驱动的实施流程。
+  以 Cursor bmad-standalone-tasks 为语义基线，按「TASKS/BUGFIX 文档前置审计 → 解析未完成任务 → 子代理实施 → 实施后审计」执行 TASKS/BUGFIX 文档驱动的实施流程。
   主 Agent 发起任一子任务时**必须**将本 skill 内该阶段的「完整 prompt 模板」整段复制并填入占位符后传入，禁止省略、概括或自行改写提示词；
   主 Agent 禁止直接修改生产代码，实施须通过 Agent tool 子代理（subagent_type: general-purpose）。
-  审计优先 `.claude/agents/auditors/auditor-implement`，按 Fallback 链降级。
+  `auditor-tasks-doc` 属于 TASKS/BUGFIX 文档前置审计，必须先于实施执行通过；实施后审计优先 `.claude/agents/auditors/auditor-implement`，按 Fallback 链降级。
   遵循 ralph-method（prd.{stem}.json / progress.{stem}.txt）、TDD 红绿灯、speckit-workflow。
   适用场景：用户提供 TASKS/BUGFIX 文档并要求执行未完成任务。全程中文。
 when_to_use: |
@@ -29,7 +29,7 @@ references:
 
 目标不是简单复制 Cursor skill，而是：
 
-1. **继承 Cursor 已验证的 standalone 任务执行语义**（从 TASKS/BUGFIX 文档提取未完成任务 → 子代理实施 → 实施后审计）
+1. **继承 Cursor 已验证的 standalone 任务执行语义**（从 TASKS/BUGFIX 文档前置审计 → 提取未完成任务 → 子代理实施 → 实施后审计）
 2. **在 Claude/OMC 运行时中将执行体映射到 `.claude/agents/` 系列**（审计 → `auditor-implement`、`auditor-tasks-doc`；实施 → `speckit-implement` 或通用执行体）
 3. **接入仓库中已开发完成的 handoff、scoring、commit gate 机制**
 4. **确保在 Claude Code CLI 中能完整、连续、正确地执行 standalone 任务流程**
@@ -130,11 +130,11 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 | L3 | `.claude/skills/speckit-workflow/` 中 `code-review` skill | skill 级回退 |
 | L4 | 主 Agent 直接执行同一份三层结构 prompt | 最终回退 |
 
-#### 前置文档审计执行体（可选 Step 0）
+#### 前置文档审计执行体（实施前必做 Step 0）
 
 | 层级 | 执行体 | 说明 |
 |------|--------|------|
-| L1 | `.claude/agents/auditors/auditor-tasks-doc.md` prompt → Agent tool (`subagent_type: general-purpose`) | 主路径 |
+| L1 | `.claude/agents/auditors/auditor-tasks-doc.md` prompt → Agent tool (`subagent_type: general-purpose`) | 主路径；**必须先于实施执行通过** |
 | L2 | 通用 Agent tool + 审计 prompt | 回退 |
 | L3 | 主 Agent 直接执行 | 最终回退 |
 

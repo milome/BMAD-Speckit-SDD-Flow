@@ -178,9 +178,9 @@ Claude 端 Stage 2 Story 审计执行体，负责审计 Story 文档并决定是
   4. 是否有技术债或占位性表述
   5. 若 Story 含「由 Story X.Y 负责」，须验证对应 Story 文档存在且 scope/验收标准含该任务具体描述；否则判不通过
 - 报告结尾必须输出：结论（通过/未通过）+ 必达子项 + Story 阶段可解析评分块（总体评级 A/B/C/D + 四维评分：需求完整性 / 可测试性 / 一致性 / 可追溯性）。
-- 审计通过后必做：执行 `npx bmad-speckit score --stage story --event story_status_change --triggerStage bmad_story_stage2 --epic {epic_num} --story {story_num} --iteration-count {累计值}`。
+- 审计通过后必做：统一通过 `runAuditorHost` / 统一 auditor host runner 触发 story 审计后的自动动作；主 Agent 不再手工编排 `bmad-speckit score`。
 - 审计未通过时：审计子代理须在本轮内**直接修改被审 Story 文档**以消除 gap；若建议涉及创建或更新其他 Story，主 Agent 须先执行该建议，再重新审计当前 Story。
-- 阶段二准入检查：主 Agent 在收到阶段二通过结论后、进入阶段三之前，必须先执行 `npx bmad-speckit check-score`；若未写入则补跑 `npx bmad-speckit score`。
+- 阶段二准入检查：主 Agent 在收到阶段二通过结论后、进入阶段三之前，必须确认统一 auditor host runner 已完成 post-audit automation；若未完成，则先补跑 runner，而不是手工补 score CLI。
 
 ## Claude/OMC Runtime Adapter
 

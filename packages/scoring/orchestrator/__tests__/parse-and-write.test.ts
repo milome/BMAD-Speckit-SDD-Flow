@@ -82,7 +82,7 @@ describe('parseAndWriteScore', () => {
   }, 40000);
 
   it('writes record when given reportPath', async () => {
-    const reportPath = path.join(FIXTURES, 'sample-prd-report.md');
+    const reportPath = path.join(FIXTURES, 'sample-implement-report-with-four-dimensions.md');
     const tempDir = path.join(os.tmpdir(), `scoring-e3s3-path-${Date.now()}`);
     const runId = `test-path-${Date.now()}`;
 
@@ -127,27 +127,31 @@ describe('parseAndWriteScore', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('throws when scenario=eval_question but question_version missing (Story 4.3)', { timeout: 60000 }, async () => {
-    const content = fs.readFileSync(path.join(FIXTURES, 'sample-story-report.md'), 'utf-8');
-    const tempDir = path.join(os.tmpdir(), `scoring-e4s3-rej-${Date.now()}`);
+  it(
+    'throws when scenario=eval_question but question_version missing (Story 4.3)',
+    { timeout: 60000 },
+    async () => {
+      const content = fs.readFileSync(path.join(FIXTURES, 'sample-story-report.md'), 'utf-8');
+      const tempDir = path.join(os.tmpdir(), `scoring-e4s3-rej-${Date.now()}`);
 
-    await expect(
-      parseAndWriteScore({
-        content,
-        stage: 'story',
-        runId: `test-rej-${Date.now()}`,
-        scenario: 'eval_question',
-        writeMode: 'single_file',
-        dataPath: tempDir,
-      })
-    ).rejects.toThrow(/question_version.*必填/);
+      await expect(
+        parseAndWriteScore({
+          content,
+          stage: 'story',
+          runId: `test-rej-${Date.now()}`,
+          scenario: 'eval_question',
+          writeMode: 'single_file',
+          dataPath: tempDir,
+        })
+      ).rejects.toThrow(/question_version.*必填/);
 
-    try {
-      fs.rmSync(tempDir, { recursive: true, force: true });
-    } catch {
-      // ignore
+      try {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      } catch {
+        // ignore
+      }
     }
-  });
+  );
 
   it('includes base_commit_hash and content_hash in written record (GAP-B01)', async () => {
     const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
@@ -309,20 +313,25 @@ PRD审计报告
 `;
     const origKey = process.env.SCORING_LLM_API_KEY;
     process.env.SCORING_LLM_API_KEY = 'test-key';
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              grade: 'B',
-              issues: [],
-              veto_items: [],
-            }),
-          },
-        }],
-      }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  grade: 'B',
+                  issues: [],
+                  veto_items: [],
+                }),
+              },
+            },
+          ],
+        }),
+      })
+    );
 
     try {
       const tempDir = path.join(os.tmpdir(), `scoring-e5s3-llm-${Date.now()}`);
@@ -354,7 +363,10 @@ PRD审计报告
   });
 
   it('overrides phase_score by dimension weighted score when dimensions exist (B11)', async () => {
-    const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report-with-dimensions.md'), 'utf-8');
+    const content = fs.readFileSync(
+      path.join(FIXTURES, 'sample-prd-report-with-dimensions.md'),
+      'utf-8'
+    );
     const tempDir = path.join(os.tmpdir(), `scoring-e5s2-dim-${Date.now()}`);
     const runId = `test-dim-${Date.now()}`;
 
@@ -416,12 +428,14 @@ PRD审计报告
 
     const filePath = path.join(tempDir, `${runId}.json`);
     const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-    expect(written.source_path).toBe('_bmad-output/implementation-artifacts/5-5/BUGFIX_something.md');
+    expect(written.source_path).toBe(
+      '_bmad-output/implementation-artifacts/5-5/BUGFIX_something.md'
+    );
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
   it('T1: stage=implement + artifactDocPath=tasks path → source_path=reportPath', async () => {
-    const reportPath = path.join(FIXTURES, 'sample-prd-report.md');
+    const reportPath = path.join(FIXTURES, 'sample-implement-report-with-four-dimensions.md');
     const tasksPath = 'specs/epic-9/story-2-slug/tasks-E9-S2.md';
     const tempDir = path.join(os.tmpdir(), `scoring-t1-tasks-${Date.now()}`);
     const runId = `test-t1-tasks-${Date.now()}`;
@@ -447,7 +461,7 @@ PRD审计报告
   });
 
   it('T1: stage=implement + artifactDocPath=BUGFIX path → source_path=artifactDocPath', async () => {
-    const reportPath = path.join(FIXTURES, 'sample-prd-report.md');
+    const reportPath = path.join(FIXTURES, 'sample-implement-report-with-four-dimensions.md');
     const bugfixPath = '_bmad-output/implementation-artifacts/_orphan/BUGFIX_xxx.md';
     const tempDir = path.join(os.tmpdir(), `scoring-t1-bugfix-${Date.now()}`);
     const runId = `test-t1-bugfix-${Date.now()}`;
@@ -470,7 +484,10 @@ PRD审计报告
   });
 
   it('T1: stage=implement + artifactDocPath not passed → no source_path', async () => {
-    const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
+    const content = fs.readFileSync(
+      path.join(FIXTURES, 'sample-implement-report-with-four-dimensions.md'),
+      'utf-8'
+    );
     const tempDir = path.join(os.tmpdir(), `scoring-t1-noart-${Date.now()}`);
     const runId = `test-t1-noart-${Date.now()}`;
 
@@ -548,7 +565,10 @@ PRD审计报告
   });
 
   it('T5: parses stage=tasks checklist-style report (table+conclusion+parseable block)', async () => {
-    const content = fs.readFileSync(path.join(FIXTURES, 'sample-tasks-report-checklist-style.md'), 'utf-8');
+    const content = fs.readFileSync(
+      path.join(FIXTURES, 'sample-tasks-report-checklist-style.md'),
+      'utf-8'
+    );
     const tempDir = path.join(os.tmpdir(), `scoring-tasks-checklist-${Date.now()}`);
     const runId = `test-tasks-checklist-${Date.now()}`;
 
@@ -571,7 +591,9 @@ PRD审计报告
     expect(typeof written.phase_score).toBe('number');
     expect(written.dimension_scores).toBeInstanceOf(Array);
     expect(written.dimension_scores.length).toBe(4);
-    const dimNames = (written.dimension_scores as Array<{ dimension: string; score: number }>).map((d) => d.dimension);
+    const dimNames = (written.dimension_scores as Array<{ dimension: string; score: number }>).map(
+      (d) => d.dimension
+    );
     expect(dimNames).toContain('需求完整性');
     expect(dimNames).toContain('可测试性');
     expect(dimNames).toContain('一致性');
@@ -640,8 +662,14 @@ PRD审计报告
     const fail1 = path.join(tempDir, 'AUDIT_spec-E9-S4_round1.md');
     const fail2 = path.join(tempDir, 'AUDIT_spec-E9-S4_round2.md');
     const passContent = fs.readFileSync(path.join(FIXTURES, 'sample-spec-report.md'), 'utf-8');
-    fs.writeFileSync(fail1, `Spec 审计 round1\n总体评级: C\n维度评分:\n- 需求完整性: 60/100\n问题清单:\n1. [严重程度:高] 遗漏需求`);
-    fs.writeFileSync(fail2, `Spec 审计 round2\n总体评级: B\n维度评分:\n- 需求完整性: 75/100\n问题清单:\n1. [严重程度:中] 描述不清`);
+    fs.writeFileSync(
+      fail1,
+      `Spec 审计 round1\n总体评级: C\n维度评分:\n- 需求完整性: 60/100\n问题清单:\n1. [严重程度:高] 遗漏需求`
+    );
+    fs.writeFileSync(
+      fail2,
+      `Spec 审计 round2\n总体评级: B\n维度评分:\n- 需求完整性: 75/100\n问题清单:\n1. [严重程度:中] 描述不清`
+    );
     const passPath = path.join(tempDir, 'AUDIT_spec-E9-S4_pass.md');
     fs.writeFileSync(passPath, passContent);
     const runId = `test-iter-e9s4-${Date.now()}`;
@@ -715,7 +743,7 @@ PRD审计报告
   });
 
   it('T1: stage=implement + artifactDocPath=tasks path → source_path=reportPath', async () => {
-    const reportPath = path.join(FIXTURES, 'sample-prd-report.md');
+    const reportPath = path.join(FIXTURES, 'sample-implement-report-with-four-dimensions.md');
     const tempDir = path.join(os.tmpdir(), `scoring-t1-tasks-${Date.now()}`);
     const runId = `test-t1-tasks-${Date.now()}`;
 
@@ -740,7 +768,10 @@ PRD审计报告
   });
 
   it('T1: stage=implement + artifactDocPath=BUGFIX path → source_path=artifactDocPath', async () => {
-    const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
+    const content = fs.readFileSync(
+      path.join(FIXTURES, 'sample-implement-report-with-four-dimensions.md'),
+      'utf-8'
+    );
     const tempDir = path.join(os.tmpdir(), `scoring-t1-bugfix-${Date.now()}`);
     const runId = `test-t1-bugfix-${Date.now()}`;
     const bugfixPath = '_bmad-output/implementation-artifacts/_orphan/BUGFIX_xxx.md';
@@ -763,7 +794,10 @@ PRD审计报告
   });
 
   it('T1: stage=implement + artifactDocPath not provided → no source_path', async () => {
-    const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
+    const content = fs.readFileSync(
+      path.join(FIXTURES, 'sample-implement-report-with-four-dimensions.md'),
+      'utf-8'
+    );
     const tempDir = path.join(os.tmpdir(), `scoring-t1-no-artifact-${Date.now()}`);
     const runId = `test-t1-no-artifact-${Date.now()}`;
 
@@ -806,7 +840,9 @@ Dimension scores:
       });
 
       const errCalls = consoleSpy.mock.calls.flat().join(' ');
-      expect(errCalls.includes('WARN') && (errCalls.includes('B+') || errCalls.includes('forbidden'))).toBe(true);
+      expect(
+        errCalls.includes('WARN') && (errCalls.includes('B+') || errCalls.includes('forbidden'))
+      ).toBe(true);
     } finally {
       consoleSpy.mockRestore();
       try {
@@ -845,7 +881,9 @@ Dimension scores:
       const errCalls = consoleSpy.mock.calls.flat().join(' ');
       expect(
         errCalls.includes('WARN') &&
-          (errCalls.includes('B+') || errCalls.includes('forbidden') || errCalls.includes('modifier'))
+          (errCalls.includes('B+') ||
+            errCalls.includes('forbidden') ||
+            errCalls.includes('modifier'))
       ).toBe(true);
     } finally {
       consoleSpy.mockRestore();

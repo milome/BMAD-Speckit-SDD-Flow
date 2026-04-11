@@ -183,15 +183,12 @@ When the spec path is `specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/`, the
 
 - After generating or updating spec.md, **the code-review skill** must be called according to the convention in §0, using the **fixed audit prompt word**: [references/audit-prompts.md](references/audit-prompts.md) §1.
 - **This step can only be ended** when** the code-review audit report conclusion is "fully covered and verified".
-- #### Score writing is triggered after the audit is passed (mandatory)
+- #### Unified host close-out after the audit passes (mandatory)
   - **Report Path**: `specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_spec-E{epic}-S{story}.md` (epic/story/epic-slug is resolved from the current spec path).
   - When initiating an audit subtask, the prompt sent to the sub-Agent must include: After passing the audit, please save the report to {agreed path}. The path will be filled in by the main Agent based on epic, story, and slug.
-  - **Complete call example of parse-and-write-score** (including --iteration-count; add --iterationReportPaths when there is a fail round):
-    ```bash
-    npx bmad-speckit score --reportPath <上路径> --stage spec --event stage_audit_complete --triggerStage speckit_1_2 --epic {epic} --story {story} --artifactDocPath specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/spec-E{epic}-S{story}.md --iteration-count {累计值} [--iterationReportPaths path1,path2,...]
-    ```
+  - **Unified entry**: after the audit passes, the main Agent must not hand-run `bmad-speckit score` or `update-runtime-audit-index`; it must call `runAuditorHost` as the single post-audit entry.
 Among them, iterationReportPaths is the fail round report path (see §1.0.3); the verification round is not included.
-  - **Separation of Responsibilities**: The code-review sub-agent produces an audit report and places it in the above path; the main Agent executes parse-and-write-score after receiving the passing conclusion. Read `scoring_write_control.enabled` of `_bmad/_config/scoring-trigger-modes.yaml`; execute if enabled; **iteration_count passing (mandatory)**: The Agent executing the audit cycle passes in the current cumulative value (the number of rounds of failed/failed audits at this stage); 0 is passed for one pass; 3 consecutive verification rounds without gaps are not counted. iteration_count; omission is prohibited; eval_question is missing, question_version is recorded and SCORE_WRITE_INPUT_INVALID is not called; failure does not block the main process, and the resultCode is recorded as audit evidence.
+  - **Separation of Responsibilities**: The code-review sub-agent produces an audit report and places it in the above path; the main Agent invokes runAuditorHost after receiving the passing conclusion. Read `scoring_write_control.enabled` of `_bmad/_config/scoring-trigger-modes.yaml`; execute if enabled; **iteration_count passing (mandatory)**: The Agent executing the audit cycle passes in the current cumulative value (the number of rounds of failed/failed audits at this stage); 0 is passed for one pass; 3 consecutive verification rounds without gaps are not counted. iteration_count; omission is prohibited; eval_question is missing, question_version is recorded and SCORE_WRITE_INPUT_INVALID is not called; failure does not block the main process, and the resultCode is recorded as audit evidence.
 - If it fails: **Iteratively modify spec.md** (complete mapping table, complete missing chapters) based on the audit report, **call code-review** again until the report conclusion is passed.
 
 ---
@@ -220,14 +217,11 @@ Among them, iterationReportPaths is the fail round report path (see §1.0.3); th
 
 - After generating or updating plan.md, **the code-review skill** must be called according to the convention in §0, using the **fixed audit prompt word**: [references/audit-prompts.md](references/audit-prompts.md) §2.
 - **This step can only be ended** when** the code-review audit report conclusion is "fully covered and verified".
-- #### Score writing is triggered after the audit is passed (mandatory)
+- #### Unified host close-out after the audit passes (mandatory)
   - **Report Path**: `specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_plan-E{epic}-S{story}.md`.
   - When initiating an audit subtask, the prompt sent to the sub-Agent must include: After passing the audit, please save the report to {agreed path}. The path will be filled in by the main Agent based on epic, story, and slug.
-  - **parse-and-write-score complete call example** (including --iteration-count):
-    ```bash
-    npx bmad-speckit score --reportPath <上路径> --stage plan --event stage_audit_complete --triggerStage speckit_2_2 --epic {epic} --story {story} --artifactDocPath specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/plan-E{epic}-S{story}.md --iteration-count {累计值}
-    ```
-- **Division of Responsibilities**: The code-review sub-agent produces the report and places it on the market; the main Agent executes parse-and-write-score after receiving the passing conclusion. Same as §1.2 (including iteration_count transfer rule, failure record resultCode).
+  - **Unified entry**: after the audit passes, the main Agent calls `runAuditorHost`; it no longer hand-builds stage-specific score / auditIndex CLI sequences.
+- **Division of Responsibilities**: The code-review sub-agent produces the report and places it on the market; the main Agent invokes runAuditorHost after receiving the passing conclusion. Same as §1.2 (including iteration_count transfer rule, failure record resultCode).
 - If it fails: **iterately modify plan.md** based on the audit report, **call code-review** again, until the report conclusion is passed.
 - **Embedding step (must be executed when the plan involves multiple modules or complex architecture)**: After the plan audit passes and before the end of this step, **must execute `/speckit.checklist` or `.speckit.checklist` as part of the §2.2 audit step** - generate a quality checklist to verify the completeness, clarity and consistency of requirements; if the checklist finds problems, plan.md must be iteratively modified and **execute the code-review audit** again until the checklist Verification passed; cannot be skipped in scenarios that should be executed on the grounds of "optional".
 
@@ -271,14 +265,11 @@ Party-mode can be started in the planning phase when the following situations oc
 
 - After generating or updating IMPLEMENTATION_GAPS.md, **the code-review skill** must be called according to the convention in §0, using the **fixed audit prompt word**: [references/audit-prompts.md](references/audit-prompts.md) §3.
 - **This step can only be ended** when** the code-review audit report conclusion is "fully covered and verified".
-- #### Score writing is triggered after the audit is passed (mandatory)
+- #### Unified host close-out after the audit passes (mandatory)
   - **Report Path**: `specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_GAPS-E{epic}-S{story}.md`.
   - When initiating an audit subtask, the prompt sent to the sub-Agent must include: After passing the audit, please save the report to {agreed path}. The path will be filled in by the main Agent based on epic, story, and slug.
-  - **parse-and-write-score complete call example** (including --iteration-count):
-    ```bash
-    npx bmad-speckit score --reportPath <上路径> --stage gaps --event stage_audit_complete --triggerStage speckit_3_2 --epic {epic} --story {story} --artifactDocPath specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/IMPLEMENTATION_GAPS-E{epic}-S{story}.md --iteration-count {累计值}
-    ```
-- **Division of Responsibilities**: The code-review sub-agent produces the report and places it on the market; the main Agent executes parse-and-write-score after receiving the passing conclusion. The GAPS report format is plan-compatible, stage=plan. Same as §1.2 (including iteration_count transfer rule, failure record resultCode).
+  - **Unified entry**: after the audit passes, the main Agent calls `runAuditorHost`; it no longer hand-builds stage-specific score / auditIndex CLI sequences.
+- **Division of Responsibilities**: The code-review sub-agent produces the report and places it on the market; the main Agent invokes runAuditorHost after receiving the passing conclusion. The GAPS report remains compatible, but the host routes it as `stage=gaps`. Same as §1.2 (including iteration_count transfer rule, failure record resultCode).
 - If it fails: **iterately modify IMPLEMENTATION_GAPS.md** based on the audit report, **call code-review** again, until the report conclusion is passed.
 
 ---
@@ -305,14 +296,11 @@ Party-mode can be started in the planning phase when the following situations oc
 
 - After generating or updating tasks.md, **the code-review skill** must be called according to the convention in §0, using the **fixed audit prompt word**: [references/audit-prompts.md](references/audit-prompts.md) §4.
 - **This step can only be ended** when** the code-review audit report conclusion is "fully covered and verified".
-- #### Score writing is triggered after the audit is passed (mandatory)
+- #### Unified host close-out after the audit passes (mandatory)
   - **Report Path**: `specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_tasks-E{epic}-S{story}.md`.
   - When initiating an audit subtask, the prompt sent to the sub-Agent must include: After passing the audit, please save the report to {agreed path}. The path will be filled in by the main Agent based on epic, story, and slug.
-  - **parse-and-write-score complete call example** (including --iteration-count):
-    ```bash
-    npx bmad-speckit score --reportPath <上路径> --stage tasks --event stage_audit_complete --triggerStage speckit_4_2 --epic {epic} --story {story} --artifactDocPath specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/tasks-E{epic}-S{story}.md --iteration-count {累计值}
-    ```
-- **Division of Responsibilities**: The code-review sub-agent produces the report and places it on the market; the main Agent executes parse-and-write-score after receiving the passing conclusion. Same as §1.2 (including iteration_count transfer rule, failure record resultCode).
+  - **Unified entry**: after the audit passes, the main Agent calls `runAuditorHost`; it no longer hand-builds stage-specific score / auditIndex CLI sequences.
+- **Division of Responsibilities**: The code-review sub-agent produces the report and places it on the market; the main Agent invokes runAuditorHost after receiving the passing conclusion. Same as §1.2 (including iteration_count transfer rule, failure record resultCode).
 - If it fails: **iterately modify tasks.md** based on the audit report, **call code-review** again, until the report conclusion is passed.
 - **Embedded step (must be executed when the number of tasks is ≥10 or spans multiple artifacts)**: After the tasks audit is passed and before the end of this step, **must execute `/speckit.analyze` or `.speckit.analyze` as part of the §4.2 audit step** - do cross-artifact consistency analysis (alignment report of spec, plan, tasks, etc.); if analyze finds problems, tasks.md must be iteratively modified and **execute code-review again Audit** until the analyze verification is passed; it cannot be skipped in scenarios where it should be executed on the grounds of "optional".
 
@@ -444,14 +432,11 @@ When a user requests execution of an unfinished task in tasks.md (or tasks-v*.md
 - After executing the tasks in tasks.md (TDD traffic light mode), **the code-review skill** must be called according to the convention in §0, using the **fixed audit prompt word**: [references/audit-prompts.md](references/audit-prompts.md) §5.
 - **batch time**: A single pass is enough and the critical auditor section is qualified; **Final audit**: 3 consecutive rounds of convergence without gaps are required. For details, see audit-post-impl-rules.
 - Before initiating the second and third rounds of audits, the main Agent can output "Nth round of audit passed, continue verification..." to prompt the user.
-- #### Score writing is triggered after the audit is passed (mandatory)
+- #### Unified host close-out after the audit passes (mandatory)
   - **Report path**: `{project-root}/_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_implement-E{epic}-S{story}.md` (consistent with _bmad/_config/eval-lifecycle-report-paths.yaml); stage=implement (Story 9.2 extension, replacing the original stage=tasks + triggerStage=speckit_5_2).
   - When initiating an audit subtask, the prompt sent to the sub-Agent must include: After passing the audit, please save the report to {agreed path}. The path will be filled in by the main Agent based on epic, story, and slug.
-  - **parse-and-write-score complete call example** (including --iteration-count):
-    ```bash
-    npx bmad-speckit score --reportPath <上述路径> --stage implement --event stage_audit_complete --epic {epic} --story {story} --artifactDocPath <tasks 文档路径> --iteration-count {累计值}
-    ```
-- **Separation of Responsibilities**: The code-review sub-agent produces an audit report and places it in the above path; the main Agent executes parse-and-write-score after receiving the passing conclusion; failure does not block the main process and records the resultCode as audit evidence. **iteration_count passing (mandatory)**: The Agent executing the audit cycle passes in the current cumulative value (the number of rounds in which the audit failed/failed at this stage) when passing; pass 0 once. When using the **standalone speckit** process (without epic/story), the main Agent also passes in `--iteration-count {cumulative value}` when passing.
+  - **Unified entry**: after the audit passes, the main Agent calls `runAuditorHost`; it no longer hand-builds stage-specific score / auditIndex CLI sequences.
+- **Separation of Responsibilities**: The code-review sub-agent produces an audit report and places it in the above path; the main Agent invokes runAuditorHost after receiving the passing conclusion; failure does not block the main process and records the resultCode as audit evidence. **iteration_count passing (mandatory)**: The Agent executing the audit cycle passes in the current cumulative value (the number of rounds in which the audit failed/failed at this stage) when passing; pass 0 once. When using the **standalone speckit** process (without epic/story), the main Agent also passes in `--iteration-count {cumulative value}` when passing.
 - If it fails: **Iteratively execute the tasks in tasks.md** that have not passed the audit according to the audit report, **call code-review** again until the report conclusion is passed.
 
 **Integration and end-to-end test execution (required)**

@@ -1,6 +1,8 @@
 # Skills 参考
 
 > BMAD-Speckit-SDD-Flow 中所有 Skill 的定义与用途。
+> **Current path**: Skill 说明遵循 unified governance / `runAuditorHost` 分层
+> **Legacy path**: stage 文档直接指挥 `bmad-speckit score` 等手工 post-audit 步骤
 
 ---
 
@@ -38,9 +40,9 @@ BUG 修复全流程：根因分析 → BUGFIX 文档 → 审计 → 任务列表
 
 ### bmad-code-reviewer-lifecycle
 
-全链路 Code Reviewer：审计产出 → 解析 → scoring 写入。
+全链路 Code Reviewer：审计产出 → host 收口 → scoring / auditIndex / post-audit automation。
 
-- **职责**：编排各 stage 的审计流程，触发 `bmad-speckit score`
+- **职责**：编排各 stage 的审计流程，并统一通过 `runAuditorHost` 承接审计后的 scoring 写入、auditIndex 更新与其它自动动作
 - **依赖**：`_bmad/_config/code-reviewer-config.yaml`、`_bmad/_config/stage-mapping.yaml`
 
 ### code-review
@@ -54,19 +56,19 @@ BUG 修复全流程：根因分析 → BUGFIX 文档 → 审计 → 任务列表
 
 ## 推荐安装的 Skills
 
-| Skill | 说明 |
-|-------|------|
-| bmad-standalone-tasks | 按独立 TASKS/BUGFIX 文档执行任务 |
-| bmad-standalone-tasks-doc-review | TASKS 文档严格审计 |
-| bmad-customization-backup | `_bmad` 目录定制备份与迁移 |
-| bmad-orchestrator | BMAD 流程编排 |
-| bmad-rca-helper | 深度根因分析（Party-Mode + 审计） |
-| bmad-party-mode | 独立 Party-Mode 辩论编排 |
-| using-git-worktrees | Git Worktree 管理，Epic 级工作隔离 |
-| ralph-method | 任务原子化分解（prd.json + progress.txt） |
-| auto-commit-utf8 | 中文 commit 防乱码 |
-| git-push-monitor | 长时间 push 监控 |
-| speckit-scripts-backup | Speckit 脚本备份与迁移 |
+| Skill                            | 说明                                      |
+| -------------------------------- | ----------------------------------------- |
+| bmad-standalone-tasks            | 按独立 TASKS/BUGFIX 文档执行任务          |
+| bmad-standalone-tasks-doc-review | TASKS 文档严格审计                        |
+| bmad-customization-backup        | `_bmad` 目录定制备份与迁移                |
+| bmad-orchestrator                | BMAD 流程编排                             |
+| bmad-rca-helper                  | 深度根因分析（Party-Mode + 审计）         |
+| bmad-party-mode                  | 独立 Party-Mode 辩论编排                  |
+| using-git-worktrees              | Git Worktree 管理，Epic 级工作隔离        |
+| ralph-method                     | 任务原子化分解（prd.json + progress.txt） |
+| auto-commit-utf8                 | 中文 commit 防乱码                        |
+| git-push-monitor                 | 长时间 push 监控                          |
+| speckit-scripts-backup           | Speckit 脚本备份与迁移                    |
 
 ---
 

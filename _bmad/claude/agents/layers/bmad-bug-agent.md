@@ -8,6 +8,7 @@ Bug 修复专用流程。
 
 **关键门控要求：**
 - BUGFIX 文档审计通过前不得进入修复实现
+- `auditor-bugfix` 的语义固定为 **BUGFIX 文档审计**，不是实施后代码审计，也不是建议性检查
 - 实施后审计通过前不得进入提交阶段
 - 最终提交必须经过 **Master 门控**
 
@@ -52,6 +53,7 @@ Bug 修复专用流程。
 - 必读：`.claude/protocols/audit-result-schema.md`
 - 必读：`.claude/state/bmad-progress.yaml`
 - BUGFIX 文档审计通过前，不允许进入修复实现
+- BUGFIX 文档审计未执行、未通过或结论不明时，一律视为实现前阻断
 - 修复完成后必须进行实施后审计
 - 提交仅允许通过 `bmad-master` 的 `commit_request`
 - 返回必须包含：`execution_summary`、`artifacts`、`handoff`、`next_action`、`ready`
@@ -60,7 +62,7 @@ Bug 修复专用流程。
 ## Repo Add-ons
 
 - 本仓 handoff / state 协议
-- `parse-and-write-score.ts`
+- `runAuditorHost`（auditor 执行后的唯一标准自动化入口）
 - 本仓禁止词与模糊表述约束
 - 本仓执行可见性增强要求
 - BUGFIX / RCA 相关产物路径与审计报告路径约定
@@ -84,7 +86,9 @@ Bug 修复专用流程。
 - 解析 bug 描述与 RCA 输入
 - 生成或更新 BUGFIX 文档路径
 - 在进入修复实现前调用 `auditor-bugfix`
+- 在 `auditor-bugfix` PASS 后，必须由 invoking host/runner 调用 `runAuditorHost`
 - 在修复完成后调用 `auditor-implement`
+- 在 `auditor-implement` PASS 后，必须由 invoking host/runner 调用 `runAuditorHost`
 - 仅通过 `bmad-master` 进入 commit gate
 - 主 Agent 不得直接编辑生产代码或测试代码
 
@@ -95,9 +99,11 @@ Bug 修复专用流程。
 3. 分析 bug 描述并完成 Root Cause Analysis
 4. 生成 BUGFIX 文档
 5. 调用 `auditor-bugfix` 审计 BUGFIX 文档
-6. 通过后先写复现测试，再执行修复实现（含 TDD）
-7. 调用 `auditor-implement` 进行实施后审计
-8. PASS 后向 `bmad-master` 返回提交门控请求
+6. `auditor-bugfix` PASS 后，由 invoking host/runner 调用 `runAuditorHost`
+7. 通过后先写复现测试，再执行修复实现（含 TDD）
+8. 调用 `auditor-implement` 进行实施后审计
+9. `auditor-implement` PASS 后，由 invoking host/runner 调用 `runAuditorHost`
+10. PASS 后向 `bmad-master` 返回提交门控请求
 
 ## Implementation Prompt Requirements
 

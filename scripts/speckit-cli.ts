@@ -26,6 +26,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
+import { runAuditorHost } from './run-auditor-host';
 
 function buildCrossPlatformCommand(command: string): string {
   if (process.platform !== 'win32') {
@@ -325,41 +326,52 @@ function runValidation(projectPath: string = './'): void {
   process.exit(allValid ? 0 : 1);
 }
 
-function runAudit(stage: string, artifactPath: string, options: CliOptions): void {
-  const auditorMap: Record<string, string> = {
-    spec: 'auditor-spec',
-    plan: 'auditor-plan',
-    tasks: 'auditor-tasks',
-    implement: 'auditor-implement',
-  };
-
-  const auditor = auditorMap[stage];
-  if (!auditor) {
+export async function runAudit(
+  stage: string,
+  artifactPath: string,
+  options: CliOptions,
+  deps: {
+    runAuditorHostImpl?: typeof runAuditorHost;
+  } = {}
+): Promise<void> {
+  if (
+    ![
+      'story',
+      'spec',
+      'plan',
+      'gaps',
+      'tasks',
+      'implement',
+      'bugfix',
+      'document',
+      'standalone_tasks',
+    ].includes(stage)
+  ) {
     console.error(`Unknown stage: ${stage}`);
     process.exit(1);
   }
 
-  const auditorScript = path.resolve(`scripts/${auditor}.ts`);
-  if (!fs.existsSync(auditorScript)) {
-    console.error(`Auditor script not found: ${auditorScript}`);
-    process.exit(1);
-  }
+  const reportPath =
+    (typeof options.reportPath === 'string' && options.reportPath.trim() !== ''
+      ? options.reportPath
+      : undefined) ?? undefined;
 
-  const iteration = options.iterationCount || '1';
-  const cmd = buildCrossPlatformCommand(
-    `npx ts-node ${auditorScript} ${artifactPath} ${iteration}`
-  );
+  const runAuditorHostImpl = deps.runAuditorHostImpl ?? runAuditorHost;
+  const result = await runAuditorHostImpl({
+    projectRoot: process.cwd(),
+    stage,
+    artifactPath,
+    reportPath,
+    iterationCount: options.iterationCount as string | undefined,
+  });
 
-  console.log(`Running audit: ${cmd}`);
-  try {
-    execSync(cmd, { stdio: 'inherit' });
-  } catch {
+  if (result.status !== 'PASS') {
     console.error('Audit failed');
     process.exit(1);
   }
 }
 
-function main(): void {
+async function main(): Promise<void> {
   const args = process.argv.slice(2);
 
   if (args.length === 0 || args[0] === '--help' || args[0] === 'help') {
@@ -400,7 +412,7 @@ function main(): void {
       printUsage(command);
       process.exit(1);
     }
-    runAudit(options.stage as string, options.artifactPath as string, options);
+    await runAudit(options.stage as string, options.artifactPath as string, options);
     return;
   }
 
@@ -441,4 +453,9 @@ stage: ${COMMANDS[command].stage || 'N/A'}
   console.log(`\nHandoff written to: ${handoffPath}`);
 }
 
-main();
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}

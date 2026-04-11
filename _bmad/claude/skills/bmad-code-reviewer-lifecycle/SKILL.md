@@ -23,7 +23,7 @@ references:
   - audit-prompts-pr: PR 审计提示词；`.claude/skills/speckit-workflow/references/audit-prompts-pr.md`
   - code-reviewer-config: 多模式配置（prd/arch/code/pr）；`_bmad/_config/code-reviewer-config.yaml`
   - scoring/rules: 解析规则、item_id、veto_items；`scoring/rules/*.yaml`
-  - parseAndWriteScore (Story 3.3): 解析审计报告并写入 scoring 存储；`scoring/orchestrator/parse-and-write.ts`；CLI `scripts/parse-and-write-score.ts`
+  - runAuditorHost / 统一 auditor host runner：承接审计报告后的评分写入、auditIndex 更新与统一 post-audit automation
 ---
 
 # Claude Adapter: bmad-code-reviewer-lifecycle
@@ -49,7 +49,7 @@ Claude 版 `bmad-code-reviewer-lifecycle` 必须满足：
 - 各 stage 的审计执行器选择、fallback、评分写入均与 Cursor 已验证流程语义一致
 - 完整接入本仓新增的：
   - 多 auditor agent（auditor-spec、auditor-plan、auditor-tasks、auditor-implement、auditor-bugfix、auditor-document）
-  - 评分写入（`parse-and-write-score.ts`）
+- 统一 auditor host runner（`runAuditorHost`）
   - handoff 协议
 - 不得将 Cursor Canonical Base、Claude Runtime Adapter、Repo Add-ons 混写为来源不明的重写版 prompt
 
@@ -163,7 +163,7 @@ Claude 版 `bmad-code-reviewer-lifecycle` 必须满足：
 - 显式引用：`code-reviewer-config.yaml`
 - 显式引用：`stage-mapping.yaml`
 - 显式引用：`eval-lifecycle-report-paths.yaml`
-- 显式引用：`parse-and-write-score`
+- 显式引用：`runAuditorHost`
 - 返回必须包含：`execution_summary`、`artifacts`、`handoff`
 - 必须明确 mode → auditor / stage → scoring / stage → reportPath / event → trigger 的映射关系
 
@@ -197,7 +197,7 @@ next_steps:
   - {下一步操作描述}
 handoff:
   next_action: scoring_trigger|iterate_audit|proceed_to_next_stage
-  next_agent: bmad-master|auditor-{stage}|parse-and-write-score
+  next_agent: bmad-master|auditor-{stage}|runAuditorHost
   ready: true|false
 ```
 
@@ -212,33 +212,25 @@ handoff:
 1. **Pre-Audit**：读取配置（`code-reviewer-config.yaml`、`stage-mapping.yaml`、`eval-lifecycle-report-paths.yaml`），确定 mode、auditor 执行体、报告路径、scoring phases
 2. **Audit Execution**：通过 Primary Executor（或 Fallback）调度 auditor 执行体，传入对应 stage 的 audit-prompts 章节作为审计标准
 3. **Report Generation**：审计执行体产出审计报告并保存至约定路径；报告须含可解析评分块（「总体评级: [A|B|C|D]」与「维度评分: 维度名: XX/100」）
-4. **Scoring Trigger**：审计通过后，执行 `parse-and-write-score.ts` 解析报告并写入 scoring 存储
+4. **Host Trigger**：审计通过后，统一调用 `runAuditorHost` 承接评分写入、auditIndex 更新与 post-audit automation
 5. **Iteration Tracking**：追踪审计轮次（iteration_count），fail 轮须保存报告并记录 iterationReportPaths
 6. **Convergence Check**：按 strictness 检查收敛条件——standard 为单次通过；strict 为连续 3 轮无 gap + 批判审计员 >50%
 
-### parseAndWriteScore 前置条件（Checklist）
+### 统一 auditor host runner 前置条件（Checklist）
 
-各 stage 审计通过后、调用 `parseAndWriteScore` 前，**必须**确认：
+各 stage 审计通过后、调用统一 auditor host runner 前，**必须**确认：
 
 1. **报告包含可解析块**：报告结尾须含「总体评级: [A|B|C|D]」与「维度评分: 维度名: XX/100」块，否则解析失败、仪表盘不显示评级
 2. **逐条对照格式**：若报告为逐条对照格式（表格+结论），须在结论后追加上述可解析块
 3. **路径**：可使用 `--reportPath` 指定任意报告路径；约定路径为 `AUDIT_{stage}-E{epic}-S{story}.md`
 4. **参数完备**：`stage` / `triggerStage` / `artifactDocPath` / `iterationCount` 已准备完毕
 
-### parse-and-write-score CLI 调用示例
+### 统一 auditor host runner 调用约束
 
-```bash
-npx bmad-speckit score \
-  --reportPath <报告路径> \
-  --stage <stage> \
-  --event stage_audit_complete \
-  --triggerStage <triggerStage> \
-  --epic {epic} \
-  --story {story} \
-  --artifactDocPath <被审文档路径> \
-  --iteration-count {累计值} \
-  [--iterationReportPaths path1,path2,...]
-```
+统一 auditor host runner（`runAuditorHost`）负责承接：
+- 评分写入（原 `bmad-speckit score`）
+- auditIndex 更新
+- 统一 post-audit automation
 
 **iteration_count 传递（强制）**：执行审计循环的 Agent 在 pass 时传入当前累计值（本 stage 审计未通过/fail 的轮数）；一次通过传 0；连续 3 轮无 gap 的验证轮不计入 iteration_count。
 
@@ -254,8 +246,8 @@ npx bmad-speckit score \
 8. 调度 auditor 执行体（Primary → Fallback）
 9. 审计执行体读取实现产物并执行审查检查清单
 10. 审计执行体产出报告
-11. 校验 `parseAndWriteScore` 前置条件
-12. 触发 `parse-and-write-score`
+11. 校验统一 auditor host runner 前置条件
+12. 触发统一 auditor host runner
 13. 输出 **YAML Handoff**
 14. 更新审计状态
 
@@ -300,7 +292,7 @@ artifacts:
 `speckit-workflow` 各阶段（§1.2 spec、§2.2 plan、§3.2 gaps、§4.2 tasks、§5.2 implement）审计闭环中：
 1. 调用本 skill 确定当前 stage 的 auditor 执行体和 mode
 2. 本 skill 通过 Primary Executor / Fallback 链调度审计
-3. 审计通过后，本 skill 触发 `parse-and-write-score` 写入评分
+3. 审计通过后，本 skill 统一触发 `runAuditorHost`
 4. 输出 YAML Handoff 供 speckit-workflow 决定下一步操作
 
 ### bmad-story-assistant 协同

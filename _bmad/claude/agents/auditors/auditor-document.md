@@ -321,21 +321,7 @@ Gap 修复决策:
 
 1. 在Story 文档末尾追加：`<!-- AUDIT: PASSED by auditor-document -->`
 2. 保存完整报告至 `reportPath`
-3. 执行 parse-and-write-score：
-
-```bash
-npx bmad-speckit score \
-  --reportPath {reportPath} \
-  --stage implement \
-  --event stage_audit_complete \
-  --triggerStage speckit_5_2 \
-  --epic {epic} \
-  --story {story} \
-  --artifactDocPath {artifactDocPath} \
-  --iteration-count {iterationCount} \
-  --scenario real_dev \
-  --writeMode single_file
-```
+3. 将 `projectRoot`、`reportPath`、`artifactDocPath`、`stage=document` 返回给 invoking host/runner，由 host/runner 统一通过 `runAuditorHost` 承接评分写入、auditIndex 更新与其它 post-audit automation
 
 ### 审计未通过（FAIL）
 

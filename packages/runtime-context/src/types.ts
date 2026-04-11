@@ -3,6 +3,19 @@
  */
 export type RuntimeFlowId = 'story' | 'bugfix' | 'standalone_tasks' | 'epic' | 'unknown';
 
+export type RuntimeSourceMode = 'full_bmad' | 'seeded_solutioning' | 'standalone_story';
+
+export type ContextMaturity = 'minimal' | 'seeded' | 'full' | 'unclassified';
+
+export interface ContextMaturityEvidence {
+  artifactComplete?: boolean;
+  fourSignalsComplete?: boolean;
+  executionSpecific?: boolean;
+  governanceHealthy?: boolean;
+  runtimeScopeComplete?: boolean;
+  followUpBudgetExhausted?: boolean;
+}
+
 export type StageName =
   | 'prd'
   | 'arch'

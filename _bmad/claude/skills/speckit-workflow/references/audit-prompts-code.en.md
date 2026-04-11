@@ -42,4 +42,4 @@ Dimension scores:
 
 ## Post-audit actions
 
-When the audit **passes**, save the full report to `reportPath` given in the prompt. For implement stage, `reportPath` is usually `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_implement-E{epic}-S{story}.md` or `AUDIT_Story_{epic}-{story}_stage4.md`. State `reportPath` and `iteration_count` in the conclusion so the main Agent can call parse-and-write-score.
+When the audit **passes**, save the full report to `reportPath` given in the prompt. For implement stage, `reportPath` is usually `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_implement-E{epic}-S{story}.md` or `AUDIT_Story_{epic}-{story}_stage4.md`. State `reportPath` and `iteration_count` in the conclusion so the main Agent / host can call runAuditorHost.

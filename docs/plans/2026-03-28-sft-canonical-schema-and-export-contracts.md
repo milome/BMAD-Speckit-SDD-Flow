@@ -1,5 +1,8 @@
 # 2026-03-28 SFT Canonical Schema and Export Contracts
 
+> **Current path**: `runAuditorHost`
+> **Legacy path**: `bmad-speckit score` / `parse-and-write-score`
+
 ## 1. Purpose
 
 This document freezes the production contract for training-ready SFT data generation in this repository.

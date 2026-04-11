@@ -13,7 +13,7 @@ references:
   - audit-prompts: 各 stage 审计提示词；audit-prompts-prd.md、audit-prompts-arch.md 等
   - code-reviewer-config: 多模式配置（prd/arch/code/pr）；_bmad/_config/code-reviewer-config.yaml
   - scoring/rules: 解析规则、item_id、veto_items；scoring/rules/*.yaml
-  - parseAndWriteScore (Story 3.3): 解析审计报告并写入 scoring 存储；scoring/orchestrator/parse-and-write.ts；CLI scripts/parse-and-write-score.ts、验收 scripts/accept-e3-s3.ts
+  - runAuditorHost / unified auditor host runner：统一承接评分写入、auditIndex 更新与 post-audit automation
 ---
 
 # bmad-code-reviewer-lifecycle
@@ -46,14 +46,14 @@ references:
 
 ## 解析并写入（Story 3.3）
 
-本 Skill 调用 Story 3.3 的 `parseAndWriteScore` 完成「审计→解析→写入」闭环：
+本 Skill 统一通过 `runAuditorHost` 完成「审计→宿主收口」闭环：
 - **函数**：`scoring/orchestrator/parse-and-write.ts`
-- **CLI**：`scripts/parse-and-write-score.ts`、`scripts/accept-e3-s3.ts`
+- **CLI**：`scripts/run-auditor-host.ts`
 - **验收**：`npm run accept:e3-s3`
 
-## parseAndWriteScore 前置条件（Checklist）
+## 统一 auditor host runner 前置条件（Checklist）
 
-tasks 阶段审计通过后、调用 parseAndWriteScore 前，**必须**确认：
+tasks 阶段审计通过后、调用统一 auditor host runner 前，**必须**确认：
 
 1. **报告包含可解析块**：报告结尾须含「总体评级: [A|B|C|D]」与「维度评分: 维度名: XX/100」块，否则解析失败、仪表盘不显示评级。详见 `audit-prompts.md §4.1`、`audit-prompts-critical-auditor-appendix.md §7`。
 2. **逐条对照格式**：若报告为逐条对照格式（表格+结论），须在结论后追加上述可解析块。

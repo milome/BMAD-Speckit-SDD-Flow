@@ -1,5 +1,8 @@
 # SFT Future Target Extension Contract
 
+> **Current path**: `runAuditorHost`
+> **Legacy path**: `bmad-speckit score` / `parse-and-write-score`
+
 ## 目标
 
 这份契约定义 Batch H 之后 canonical SFT 数据链对 future target 的扩展边界，确保后续新增 preference / DPO / RFT 一类目标时，不需要重写现有 `candidate-builder -> validate -> bundle -> dashboard` 主链。

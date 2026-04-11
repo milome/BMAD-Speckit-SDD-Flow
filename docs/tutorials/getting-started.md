@@ -485,11 +485,10 @@ git checkout -b 001-my-first-feature
 - **bmad-bug-assistant**：描述问题时自动进入 Party-Mode，产出 BUGFIX 文档并生成修复任务
 - **bmad-standalone-tasks**：按单份 TASKS/BUGFIX 文档执行，用法示例：`/bmad 按 TASKS_xxx.md 中的未完成任务实施`
 
-**Scoring CLI 子命令**（审计评分、Coach 诊断等）：
+**审计后自动化 / 诊断 CLI**（统一 host、Coach 诊断等）：
 
 ```bash
-npx bmad-speckit score --reportPath <审计报告> --stage <spec|plan|tasks|implement>
-npx bmad-speckit check-score --epic 1 --story 1
+npx ts-node scripts/run-auditor-host.ts --projectRoot <项目根目录> --stage <story|spec|plan|gaps|tasks|implement|bugfix|document> --artifactPath <被审产物> --reportPath <审计报告>
 npx bmad-speckit coach
 npx bmad-speckit dashboard
 npx bmad-speckit sft-extract

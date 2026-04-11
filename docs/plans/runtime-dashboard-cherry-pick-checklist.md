@@ -1,5 +1,8 @@
 # Runtime Dashboard Cherry-Pick Checklist
 
+> **Current path**: `runAuditorHost`
+> **Legacy path**: `bmad-speckit score` / `parse-and-write-score`
+
 > 给模型直接执行的极简版操作单。只保留顺序、命令、冲突归属、验证要求。
 
 ## 0. 预处理

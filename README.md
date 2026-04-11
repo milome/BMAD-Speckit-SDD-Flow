@@ -74,7 +74,7 @@ npx bmad-speckit-init --agent cursor
 
 Use the root package tarball as the default install artifact. The same CI artifact also contains `bmad-speckit-<version>.tgz`, but that CLI-only package is not the primary consumer installation path documented here.
 
-> **Not sure what to do?** Run `/bmad-help` in your AI IDE. See [Installation & Migration Guide](docs/how-to/migration.md) for details.
+> **Not sure what to do?** Run `/bmad-help` in your AI IDE. 它会先识别你的 `flow / contextMaturity / complexity / implementationReadinessStatus`，再把路径标成 `recommended / allowed but not recommended / blocked`。See [Installation & Migration Guide](docs/how-to/migration.md) and [bmad-help 路由模型参考](docs/reference/bmad-help-routing-model.md) for details.
 
 **One-line deploy**:
 

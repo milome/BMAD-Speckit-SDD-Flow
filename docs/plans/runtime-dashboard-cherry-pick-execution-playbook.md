@@ -1,5 +1,8 @@
 # Runtime Dashboard Cherry-Pick Execution Playbook
 
+> **Current path**: `runAuditorHost`
+> **Legacy path**: `bmad-speckit score` / `parse-and-write-score`
+
 > 这是一份给模型直接执行的迁移操作单，不是摘要文档。目标是把 `runtime-dashboard-sft` worktree 的 runtime dashboard / SFT / runtime MCP 能力安全迁移到当前 `dev`，同时不破坏 `dev` 已经形成的治理主线。
 
 核心约束：

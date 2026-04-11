@@ -278,21 +278,7 @@ Gap 修复决策:
 
 1. 在plan.md 末尾追加：`<!-- AUDIT: PASSED by code-reviewer -->`
 2. 保存完整报告至 `reportPath`
-3. 执行 parse-and-write-score：
-
-```bash
-npx bmad-speckit score \
-  --reportPath {reportPath} \
-  --stage plan \
-  --event stage_audit_complete \
-  --triggerStage speckit_2_2 \
-  --epic {epic} \
-  --story {story} \
-  --artifactDocPath {artifactDocPath} \
-  --iteration-count {iterationCount} \
-  --scenario real_dev \
-  --writeMode single_file
-```
+3. 由 invoking host/runner 统一通过 `runAuditorHost` 承接评分写入、auditIndex 更新与其它 post-audit automation；审计执行体不再手工编排 `bmad-speckit score`
 
 ### 审计未通过（FAIL）
 

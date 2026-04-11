@@ -1,5 +1,8 @@
 # 运行时治理实现解析
 
+> **Current path**: `runAuditorHost`
+> **Legacy path**: `bmad-speckit score` / `parse-and-write-score`
+
 > 本文档解释 BMAD / Speckit Runtime Governance 在本仓库中的**真实接入方式**：
 > - upstream workflow / skill / agent 到底改了什么、没改什么
 > - runtime context registry / runtime context / emit / hook 的职责分工

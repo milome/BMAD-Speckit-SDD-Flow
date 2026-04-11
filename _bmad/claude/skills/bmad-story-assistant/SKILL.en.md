@@ -34,7 +34,7 @@ The Claude version of `bmad-story-assistant` must satisfy:
   - State machine
   -handoff
   - Audit executive
-  -parseAndWriteScore
+  - runAuditorHost
   -commit gate
 - Cursor Canonical Base, Claude Runtime Adapter, and Repo Add-ons must not be mixed into a rewritten version of prompt from unknown sources.
 
@@ -152,7 +152,7 @@ All stages must adhere to the following runtime contracts:
   - `iteration_count`
   - `next_action`
 - Must be triggered after passing the audit:
-  - `parse-and-write-score.ts`
+  - `run-auditor-host.ts`
   - Audit pass mark
   - Status updates
 - When the implementation is completed but post-audit is not executed, it is prohibited to re-enter the development phase.
@@ -179,7 +179,7 @@ The following content is an additional enhancement to the warehouse and does not
 - strict convergence (such as implement 3 consecutive rounds without gaps)
 
 ### Rating and storage enhancements
-- `parse-and-write-score.ts`
+- `run-auditor-host.ts`
 - `iteration_count`
 - `iterationReportPaths`
 - Parsable scoring block requirements
@@ -556,9 +556,9 @@ Goal:
   4. Is there technical debt or placeholder statements?
   5. If the Story contains "Responsible by Story
 - The end of the report must output: conclusion (passed/failed) + required sub-items + Story stage parsable scoring blocks (overall rating A/B/C/D + four-dimensional scoring: requirements completeness/testability/consistency/traceability).
-- Must do after passing the audit: execute `npx bmad-speckit score --stage story --event story_status_change --triggerStage bmad_story_stage2 --epic {epic_num} --story {story_num} --iteration-count {cumulative value}`.
+- Must do after passing the audit: return the fields required by `runAuditorHost` and let the invoking host/runner complete the story-stage close-out.
 - When the audit fails: The audit sub-agent must **directly modify the audited Story document** within this round to eliminate the gap; if the recommendation involves creating or updating other Stories, the main Agent must first implement the recommendation and then re-audit the current Story.
-- Phase 2 admission check: After receiving the phase 2 passing conclusion and before entering phase 3, the main agent must first execute `npx bmad-speckit check-score`; if it is not written, it must run `npx bmad-speckit score`.
+- Phase 2 admission check: after receiving the phase 2 passing conclusion and before entering phase 3, the main agent must first confirm that the unified auditor host runner has completed story-stage post-audit automation; if not, backfill `runAuditorHost` instead of hand-running score CLI.
 
 #### Stage 2 CLI output requirements before calling
 
@@ -595,8 +595,8 @@ subagent_type: general-purpose
   └─ Repo Add-ons
       ├─ 禁止词检查
       ├─ 批判审计员结论（>50%字数）
-      ├─ parseAndWriteScore 触发
-      └─ bmad-speckit check-score 准入检查
+      ├─ runAuditorHost 触发
+      └─ 统一 auditor host runner 完成态检查
 
 预期产物:
   • 审计报告: _bmad-output/.../AUDIT_story-{epic_num}-{story_num}.md
@@ -823,7 +823,7 @@ prompt: |
 
   **Repo Add-ons**：
   - 更新 `.claude/state/stories/{epic}-{story}-progress.yaml` 为 `implement_in_progress` / `implement_passed`
-  - 执行 `parse-and-write-score.ts` 记录进度
+  - 执行 `run-auditor-host.ts` 记录进度
   - handoff 到 Stage 4 Post Audit
 ```
 #### Stage 3 CLI output requirements before calling
@@ -1044,7 +1044,7 @@ Goal:
 - Use **code pattern dimensions** (functionality, code quality, test coverage, security)
 - Evidence of TDD traffic light execution must be verified
 - Must check ralph-method trace file
-- `parse-and-write-score` must be triggered after the audit passes
+- `runAuditorHost` must be triggered after the audit passes
 
 #### Subtask Template (STORY-A4-POSTAUDIT)
 ```yaml
@@ -1085,7 +1085,7 @@ prompt: |
   **Repo Add-ons**：
   - 禁止词检查
   - 批判审计员结论
-  - parseAndWriteScore 触发
+  - runAuditorHost 触发
   - commit gate 前置条件检查
 ```
 #### Stage 4 CLI output requirements before calling
@@ -1132,7 +1132,7 @@ strict convergence 检查:
   └─ Repo Add-ons
       ├─ 禁止词检查（含代码注释）
       ├─ 批判审计员结论（>50%字数）
-      ├─ parseAndWriteScore 触发
+      ├─ runAuditorHost 触发
       └─ strict 模式 3 轮收敛
 
 预期产物:
@@ -1172,7 +1172,7 @@ prompt: |
 
 **Runtime Contracts**
 - Audit report path: `_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT_Story_{epic}-{story}_stage4.md`
-- `parse-and-write-score.ts` must be executed after passing the audit
+- `run-auditor-host.ts` must be executed after passing the audit
 - Update story state to `implement_passed` after passing the audit
 - After audit failure, update story state to `implement_failed` and fall back to Stage 3 for repair
 
@@ -1180,7 +1180,7 @@ prompt: |
 
 - strict convergence (no gap for 3 consecutive rounds)
 - Criticize the auditor’s conclusions
-- parseAndWriteScore triggers
+- runAuditorHost triggers
 - commit gate precondition check
 - Check forbidden words in this warehouse
 
@@ -1441,7 +1441,7 @@ function detectStoryType(tasksPath: string, specPath?: string): 'code' | 'docume
 - Use **code pattern dimensions** (functionality, code quality, test coverage, security)
 - Evidence of TDD traffic light execution must be verified
 - Must check ralph-method trace file
-- `parse-and-write-score` must be triggered after the audit passes
+- `runAuditorHost` must be triggered after the audit passes
 
 **Document Mode**:
 
@@ -1451,7 +1451,7 @@ function detectStoryType(tasksPath: string, specPath?: string): 'code' | 'docume
 - No need to check TDD evidence (no code)
 - No need to check ralph-method file (no code)
 - Must verify that all tasks in tasks.md are marked complete
-- `parse-and-write-score` must be triggered after the audit passes
+- `runAuditorHost` must be triggered after the audit passes
 
 #### Code vs Document audit comparison
 
@@ -1507,7 +1507,7 @@ prompt: |
   **Repo Add-ons**：
   - 禁止词检查（Story 文档全文）
   - 批判审计员结论（>50%字数）
-  - parseAndWriteScore 触发
+  - runAuditorHost 触发
   - commit gate 前置条件检查
 ```
 ---
@@ -1651,13 +1651,13 @@ Document Mode:
 
 Code Mode:
 - Audit report path: `_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT_Story_{epic}-{story}_stage4.md`
-- `parse-and-write-score.ts` must be executed after passing the audit
+- `run-auditor-host.ts` must be executed after passing the audit
 - Update story state to `implement_passed` after passing the audit
 - After audit failure, update story state to `implement_failed` and fall back to Stage 3 for repair
 
 Document Mode:
 - Audit report path: `_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT-POST-{epic}-{story}.md`
-- `parse-and-write-score.ts` must be executed after passing the audit
+- `run-auditor-host.ts` must be executed after passing the audit
 - After passing the audit, update the story state to `implement_passed` (document-type Story is regarded as implemented)
 - After the audit fails, update the story state to `implement_failed` and return to the repair document
 
@@ -1668,7 +1668,7 @@ Document Mode:
 Code Mode:
 - strict convergence (no gap for 3 consecutive rounds)
 - Criticize the auditor’s conclusions
-- parseAndWriteScore triggers
+- runAuditorHost triggers
 - commit gate precondition check
 - Inspection of forbidden words in this warehouse (including code comments)
 - TDD traffic light review
@@ -1677,7 +1677,7 @@ Code Mode:
 Document Mode:
 - strict convergence (no gap for 3 consecutive rounds)
 - Criticize the auditor’s conclusion (≥50% word count)
-- parseAndWriteScore triggers
+- runAuditorHost triggers
 - commit gate precondition check
 - Check forbidden words in this warehouse (full text of Story document)
 - Document structural integrity check

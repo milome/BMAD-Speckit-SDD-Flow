@@ -33,19 +33,9 @@ Claude 版 `bmad-story-assistant` 必须满足：
   - 状态机
   - handoff
   - 审计执行体
-  - parseAndWriteScore
+  - runAuditorHost
   - commit gate
 - 不得将 Cursor Canonical Base、Claude Runtime Adapter、Repo Add-ons 混写为来源不明的重写版 prompt
-
-## Deferred Gaps Dev Story 补充约束
-
-该中文分发副本必须保持与主技能相同的 Deferred Gaps 约束。
-
-- Dev Story 实施前必须读取并验证 `deferred-gap-register.yaml`
-- Dev Story 必须同时读取并验证 `journey-ledger`、`trace-map`、`closure-notes`
-- 若 active deferred gap 缺少 task binding、`Smoke Task Chain`、`Closure Task ID` 或 production path 映射，必须阻断实施
-- 实施后审计必须检查 `closure_evidence`、`carry_forward_evidence`、`Production Path`、`Smoke Proof`、`Acceptance Evidence`
-- `module complete but journey not runnable` 属于硬失败，不得降级为提示
 
 ---
 
@@ -151,7 +141,7 @@ Claude 版 `bmad-story-assistant` 必须满足：
   - `iteration_count`
   - `next_action`
 - 审计通过后必须触发：
-  - `parse-and-write-score.ts`
+  - `run-auditor-host.ts`
   - 审计通过标记
   - 状态更新
 - 实施完成但 post-audit 未执行时，禁止重新进入开发阶段
@@ -178,7 +168,7 @@ Claude 版 `bmad-story-assistant` 必须满足：
 - strict convergence（如 implement 连续 3 轮无 gap）
 
 ### 评分与存储增强
-- `parse-and-write-score.ts`
+- `run-auditor-host.ts`
 - `iteration_count`
 - `iterationReportPaths`
 - 可解析评分块要求
@@ -569,9 +559,9 @@ Claude 端 Stage 2 Story 审计执行体，负责审计 Story 文档并决定是
   4. 是否有技术债或占位性表述
   5. 若 Story 含「由 Story X.Y 负责」，须验证对应 Story 文档存在且 scope/验收标准含该任务具体描述；否则判不通过
 - 报告结尾必须输出：结论（通过/未通过）+ 必达子项 + Story 阶段可解析评分块（总体评级 A/B/C/D + 四维评分：需求完整性 / 可测试性 / 一致性 / 可追溯性）。
-- 审计通过后必做：执行 `npx bmad-speckit score --stage story --event story_status_change --triggerStage bmad_story_stage2 --epic {epic_num} --story {story_num} --iteration-count {累计值}`。
+- 审计通过后必做：统一通过 `runAuditorHost` / 统一 auditor host runner 触发 story 审计后的自动动作；主 Agent 不再手工编排 `bmad-speckit score`。
 - 审计未通过时：审计子代理须在本轮内**直接修改被审 Story 文档**以消除 gap；若建议涉及创建或更新其他 Story，主 Agent 须先执行该建议，再重新审计当前 Story。
-- 阶段二准入检查：主 Agent 在收到阶段二通过结论后、进入阶段三之前，必须先执行 `npx bmad-speckit check-score`；若未写入则补跑 `npx bmad-speckit score`。
+- 阶段二准入检查：主 Agent 在收到阶段二通过结论后、进入阶段三之前，必须确认统一 auditor host runner 已完成 post-audit automation；若未完成，则先补跑 runner，而不是手工补 score CLI。
 
 #### Stage 2 调用前 CLI 输出要求
 
@@ -609,8 +599,8 @@ subagent_type: general-purpose
   └─ Repo Add-ons
       ├─ 禁止词检查
       ├─ 批判审计员结论（>50%字数）
-      ├─ parseAndWriteScore 触发
-      └─ bmad-speckit check-score 准入检查
+      ├─ runAuditorHost 触发
+      └─ 统一 auditor host runner 完成态检查
 
 预期产物:
   • 审计报告: _bmad-output/.../AUDIT_story-{epic_num}-{story_num}.md
@@ -825,6 +815,8 @@ prompt: |
   **Cursor Canonical Base - Dev Story 要求**：
   1. 前置检查：Story 审计必须已 PASS
   2. 读取 tasks.md、plan.md、IMPLEMENTATION_GAPS.md
+  2.1 读取并验证 `deferred-gap-register.yaml`
+  2.2 读取并验证 `journey-ledger`、`trace-map`、`closure-notes`
   3. 验证 ralph-method 文件存在（prd.json + progress.txt）
   4. 逐任务执行 TDD 红绿灯循环：
      - [TDD-RED] 编写失败的测试
@@ -832,6 +824,8 @@ prompt: |
      - [TDD-REFACTOR] 重构代码
   5. 实时更新 ralph-method 追踪文件
   6. 执行 batch 间审计和最终审计
+  6.1 若存在 active deferred gap 但无 task binding、Smoke Task Chain、Closure Task ID 或 production path 映射，不得继续实施
+  6.2 若 Journey runnable 状态发生变化，必须同步更新 `deferred-gap-register`、`journey-ledger`、`trace-map`、`closure-notes`
   7. 完成后必须发起 STORY-A4-POSTAUDIT
 
   **强制约束**：
@@ -842,7 +836,7 @@ prompt: |
 
   **Repo Add-ons**：
   - 更新 `.claude/state/stories/{epic}-{story}-progress.yaml` 为 `implement_in_progress` / `implement_passed`
-  - 执行 `parse-and-write-score.ts` 记录进度
+  - 执行 `run-auditor-host.ts` 记录进度
   - handoff 到 Stage 4 Post Audit
 ```
 
@@ -930,6 +924,7 @@ prompt: |
 - 每个 User Story 完成后更新 prd.json passes 状态
 - 必须记录 TDD 循环到 progress.txt
 - 实施后必须触发 Stage 4 Post Audit
+- 不得只勾选 tasks 复选框而不更新 `deferred-gap-register`、`journey-ledger`、`trace-map`、`closure-notes`
 
 #### Repo Add-ons
 
@@ -1070,7 +1065,10 @@ Claude 端 Stage 4 Post Audit 执行体，负责对 Dev Story 实施结果进行
 - 使用 **code 模式维度**（功能性、代码质量、测试覆盖、安全性）
 - 必须验证 TDD 红绿灯执行证据
 - 必须检查 ralph-method 追踪文件
-- 审计通过后必须触发 `parse-and-write-score`
+- 审计通过后必须触发 `runAuditorHost`
+- 必须额外检查 `deferred-gap-register` 的 closure / carry-forward evidence
+- 必须额外检查 `Production Path`、`Smoke Proof`、`Full E2E` / defer reason、`Closure Note`、`Acceptance Evidence`
+- 若出现 `module complete but journey not runnable`，必须判失败并回退到 Stage 3 修复
 
 #### Subtask Template (STORY-A4-POSTAUDIT)
 
@@ -1112,7 +1110,7 @@ prompt: |
   **Repo Add-ons**：
   - 禁止词检查
   - 批判审计员结论
-  - parseAndWriteScore 触发
+  - runAuditorHost 触发
   - commit gate 前置条件检查
 ```
 
@@ -1161,7 +1159,7 @@ strict convergence 检查:
   └─ Repo Add-ons
       ├─ 禁止词检查（含代码注释）
       ├─ 批判审计员结论（>50%字数）
-      ├─ parseAndWriteScore 触发
+      ├─ runAuditorHost 触发
       └─ strict 模式 3 轮收敛
 
 预期产物:
@@ -1204,7 +1202,7 @@ prompt: |
 
 **Runtime Contracts**
 - 审计报告路径：`_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT_Story_{epic}-{story}_stage4.md`
-- 审计通过后必须执行 `parse-and-write-score.ts`
+- 审计通过后必须执行 `run-auditor-host.ts`
 - 审计通过后更新 story state 为 `implement_passed`
 - 审计失败后更新 story state 为 `implement_failed`，回退到 Stage 3 修复
 
@@ -1212,7 +1210,7 @@ prompt: |
 
 - strict convergence（连续 3 轮无 gap）
 - 批判审计员结论
-- parseAndWriteScore 触发
+- runAuditorHost 触发
 - commit gate 前置条件检查
 - 本仓禁止词检查
 
@@ -1476,7 +1474,7 @@ function detectStoryType(tasksPath: string, specPath?: string): 'code' | 'docume
 - 使用 **code 模式维度**（功能性、代码质量、测试覆盖、安全性）
 - 必须验证 TDD 红绿灯执行证据
 - 必须检查 ralph-method 追踪文件
-- 审计通过后必须触发 `parse-and-write-score`
+- 审计通过后必须触发 `runAuditorHost`
 
 **Document Mode（文档审计模式）**：
 
@@ -1486,7 +1484,7 @@ function detectStoryType(tasksPath: string, specPath?: string): 'code' | 'docume
 - 无需检查 TDD 证据（无代码）
 - 无需检查 ralph-method 文件（无代码）
 - 必须验证 tasks.md 中所有任务已标记完成
-- 审计通过后必须触发 `parse-and-write-score`
+- 审计通过后必须触发 `runAuditorHost`
 
 #### Code vs Document 审计对比
 
@@ -1543,7 +1541,7 @@ prompt: |
   **Repo Add-ons**：
   - 禁止词检查（Story 文档全文）
   - 批判审计员结论（>50%字数）
-  - parseAndWriteScore 触发
+  - runAuditorHost 触发
   - commit gate 前置条件检查
 ```
 
@@ -1694,13 +1692,13 @@ Document Mode:
 
 Code Mode:
 - 审计报告路径：`_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT_Story_{epic}-{story}_stage4.md`
-- 审计通过后必须执行 `parse-and-write-score.ts`
+- 审计通过后必须执行 `run-auditor-host.ts`
 - 审计通过后更新 story state 为 `implement_passed`
 - 审计失败后更新 story state 为 `implement_failed`，回退到 Stage 3 修复
 
 Document Mode:
 - 审计报告路径：`_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT-POST-{epic}-{story}.md`
-- 审计通过后必须执行 `parse-and-write-score.ts`
+- 审计通过后必须执行 `run-auditor-host.ts`
 - 审计通过后更新 story state 为 `implement_passed`（文档型 Story 视为已实现）
 - 审计失败后更新 story state 为 `implement_failed`，返回修复文档
 
@@ -1711,7 +1709,7 @@ Document Mode:
 Code Mode:
 - strict convergence（连续 3 轮无 gap）
 - 批判审计员结论
-- parseAndWriteScore 触发
+- runAuditorHost 触发
 - commit gate 前置条件检查
 - 本仓禁止词检查（含代码注释）
 - TDD 红绿灯审查
@@ -1720,7 +1718,7 @@ Code Mode:
 Document Mode:
 - strict convergence（连续 3 轮无 gap）
 - 批判审计员结论（≥50%字数）
-- parseAndWriteScore 触发
+- runAuditorHost 触发
 - commit gate 前置条件检查
 - 本仓禁止词检查（Story 文档全文）
 - 文档结构完整性检查

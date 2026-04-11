@@ -1,5 +1,8 @@
 # Runtime Dashboard & Training-Ready SFT Implementation Plan
 
+> **Current path**: `runAuditorHost`
+> **Legacy path**: `bmad-speckit score` / `parse-and-write-score`
+
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** 把当前离线 `dashboard + scoring + sft-extract` 链路升级为统一的 runtime observability 与训练就绪 SFT 数据集构建系统，交付可近实时观察的 runtime dashboard，以及符合 OpenAI / Hugging Face 规范的高质量导出与下载能力。

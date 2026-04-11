@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as yaml from 'js-yaml';
+import { parseBmadAuditResult } from './parse-bmad-audit-result';
 
 export interface RuntimeContextRegistry {
   version: number;
@@ -21,6 +22,30 @@ export interface RuntimeContextRegistry {
   epicContexts: Record<string, { path: string; [key: string]: unknown }>;
   storyContexts: Record<string, { path: string; [key: string]: unknown }>;
   runContexts: Record<string, { path: string; [key: string]: unknown }>;
+  auditIndex: {
+    bugfix: Record<
+      string,
+      {
+        artifactDocPath: string;
+        reportPath: string;
+        status: 'PASS' | 'FAIL';
+        converged?: boolean;
+        iterationCount?: number;
+        updatedAt: string;
+      }
+    >;
+    standalone_tasks: Record<
+      string,
+      {
+        artifactDocPath: string;
+        reportPath: string;
+        status: 'PASS' | 'FAIL';
+        converged?: boolean;
+        iterationCount?: number;
+        updatedAt: string;
+      }
+    >;
+  };
   activeScope: {
     scopeType: 'project' | 'epic' | 'story' | 'run';
     epicId?: string;
@@ -56,6 +81,10 @@ export function defaultRuntimeContextRegistry(root: string): RuntimeContextRegis
     epicContexts: {},
     storyContexts: {},
     runContexts: {},
+    auditIndex: {
+      bugfix: {},
+      standalone_tasks: {},
+    },
     activeScope: {
       scopeType: 'project',
       resolvedContextPath: path.join('_bmad-output', 'runtime', 'context', 'project.json'),
@@ -88,7 +117,25 @@ export function writeRuntimeContextRegistry(root: string, registry: RuntimeConte
 export function readRuntimeContextRegistry(root: string): RuntimeContextRegistry {
   const file = runtimeContextRegistryPath(root);
   const raw = fs.readFileSync(file, 'utf8');
-  return JSON.parse(raw) as RuntimeContextRegistry;
+  const parsed = JSON.parse(raw) as RuntimeContextRegistry;
+  if (!parsed.auditIndex) {
+    parsed.auditIndex = {
+      bugfix: {},
+      standalone_tasks: {},
+    };
+  } else {
+    parsed.auditIndex.bugfix = parsed.auditIndex.bugfix ?? {};
+    parsed.auditIndex.standalone_tasks = parsed.auditIndex.standalone_tasks ?? {};
+  }
+  return parsed;
+}
+
+export function readRegistryOrDefault(root: string): RuntimeContextRegistry {
+  const file = runtimeContextRegistryPath(root);
+  if (!fs.existsSync(file)) {
+    return defaultRuntimeContextRegistry(root);
+  }
+  return readRuntimeContextRegistry(root);
 }
 
 export function buildProjectRegistryFromSprintStatus(
@@ -254,4 +301,99 @@ export function resolveContextPathFromActiveScope(
     default:
       return registry.projectContextPath;
   }
+}
+
+function normalizeText(value: unknown): string {
+  return String(value ?? '').trim();
+}
+
+function dateSortValue(filePath: string): number {
+  const match = path.basename(filePath).match(/(\d{4}-\d{2}-\d{2})/);
+  if (match) {
+    const time = Date.parse(`${match[1]}T00:00:00Z`);
+    if (!Number.isNaN(time)) {
+      return time;
+    }
+  }
+  try {
+    return fs.statSync(filePath).mtimeMs;
+  } catch {
+    return 0;
+  }
+}
+
+function listStructuredAuditReports(root: string): string[] {
+  const searchRoots = [path.join(root, '_bmad-output'), path.join(root, 'reports')];
+  const found: string[] = [];
+  const seen = new Set<string>();
+
+  const walk = (dir: string): void => {
+    if (!fs.existsSync(dir)) {
+      return;
+    }
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(fullPath);
+        continue;
+      }
+      if (!entry.isFile() || !/\.audit\.md$/i.test(entry.name)) {
+        continue;
+      }
+      const normalized = path.normalize(fullPath);
+      if (seen.has(normalized)) {
+        continue;
+      }
+      seen.add(normalized);
+      found.push(fullPath);
+    }
+  };
+
+  for (const searchRoot of searchRoots) {
+    walk(searchRoot);
+  }
+
+  return found.sort((left, right) => dateSortValue(right) - dateSortValue(left));
+}
+
+function inferAuditIndexFlow(artifactDocPath: string): 'bugfix' | 'standalone_tasks' | null {
+  const normalized = artifactDocPath.toLowerCase();
+  if (normalized.includes('bugfix')) {
+    return 'bugfix';
+  }
+  if (normalized.includes('tasks')) {
+    return 'standalone_tasks';
+  }
+  return null;
+}
+
+export function syncAuditIndexFromReport(root: string, reportPath: string): RuntimeContextRegistry {
+  const registry = readRegistryOrDefault(root);
+  const parsed = parseBmadAuditResult(fs.readFileSync(reportPath, 'utf8'));
+  const artifactDocPath = normalizeText(parsed.artifactDocPath);
+  const flow = inferAuditIndexFlow(artifactDocPath);
+
+  if (!artifactDocPath || !flow || (parsed.status !== 'PASS' && parsed.status !== 'FAIL')) {
+    return registry;
+  }
+
+  registry.auditIndex[flow][path.normalize(artifactDocPath)] = {
+    artifactDocPath,
+    reportPath: path.normalize(reportPath),
+    status: parsed.status,
+    converged: parsed.converged,
+    iterationCount: parsed.iterationCount,
+    updatedAt: new Date().toISOString(),
+  };
+  registry.updatedAt = new Date().toISOString();
+  writeRuntimeContextRegistry(root, registry);
+  return registry;
+}
+
+export function syncAuditIndexFromAllReports(root: string): RuntimeContextRegistry {
+  let registry = readRegistryOrDefault(root);
+  for (const reportPath of listStructuredAuditReports(root)) {
+    registry = syncAuditIndexFromReport(root, reportPath);
+  }
+  return registry;
 }

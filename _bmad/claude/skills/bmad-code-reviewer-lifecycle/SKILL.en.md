@@ -24,7 +24,7 @@ references:
   - audit-prompts-pr: PR audit prompts; `.claude/skills/speckit-workflow/references/audit-prompts-pr.md`
   - code-reviewer-config: multi-mode config (prd/arch/code/pr); `_bmad/_config/code-reviewer-config.yaml`
   - scoring/rules: parsing rules, item_id, veto_items; `scoring/rules/*.yaml`
-  - parseAndWriteScore (Story 3.3): parse audit report and write scoring; `scoring/orchestrator/parse-and-write.ts`; CLI `scripts/parse-and-write-score.ts`
+  - runAuditorHost / unified auditor host runner: single post-audit entry for score write, auditIndex update, and post-audit automation
 ---
 
 # Claude adapter: bmad-code-reviewer-lifecycle
@@ -50,7 +50,7 @@ The Claude variant of `bmad-code-reviewer-lifecycle` must:
 - Keep executor selection, fallback, and scoring write semantically aligned with the validated Cursor flow
 - Fully integrate:
   - Multiple auditor agents (`auditor-spec`, `auditor-plan`, `auditor-tasks`, `auditor-implement`, `auditor-bugfix`, `auditor-document`)
-  - Scoring write (`parse-and-write-score.ts`)
+  - Unified auditor host runner (`runAuditorHost`)
   - Handoff protocol
 - **Not** mix Cursor Canonical Base, Claude Runtime Adapter, and Repo Add-ons into an unclear rewrite of prompts
 
@@ -162,7 +162,7 @@ Examples:
 
 - Must read: `.claude/protocols/audit-result-schema.md`
 - Must read: `.claude/state/bmad-progress.yaml`
-- Must reference: `code-reviewer-config.yaml`, `stage-mapping.yaml`, `eval-lifecycle-report-paths.yaml`, `parse-and-write-score`
+- Must reference: `code-reviewer-config.yaml`, `stage-mapping.yaml`, `eval-lifecycle-report-paths.yaml`, `runAuditorHost`
 - Return must include: `execution_summary`, `artifacts`, `handoff`
 - Must state mode → auditor / stage → scoring / stage → reportPath / event → trigger
 
@@ -196,7 +196,7 @@ next_steps:
   - {next action}
 handoff:
   next_action: scoring_trigger|iterate_audit|proceed_to_next_stage
-  next_agent: bmad-master|auditor-{stage}|parse-and-write-score
+  next_agent: bmad-master|auditor-{stage}|runAuditorHost
   ready: true|false
 ```
 
@@ -211,33 +211,26 @@ Full audit lifecycle has six phases; each stage audit should go through:
 1. **Pre-audit**: read `code-reviewer-config.yaml`, `stage-mapping.yaml`, `eval-lifecycle-report-paths.yaml`; determine mode, auditor, report path, scoring phases
 2. **Audit execution**: schedule auditor (primary or fallback) with the correct audit-prompts section
 3. **Report generation**: save report to the agreed path; include parseable scoring blocks (“总体评级: [A|B|C|D]” and “维度评分: dimension: XX/100”)
-4. **Scoring trigger**: after pass, run `parse-and-write-score.ts`
+4. **Host trigger**: after pass, call `runAuditorHost`
 5. **Iteration tracking**: track `iteration_count`; failed rounds save reports and `iterationReportPaths`
 6. **Convergence check**: by strictness—`standard` = single pass; `strict` = 3 consecutive no-gap rounds + Critical Auditor >50%
 
-### parseAndWriteScore prerequisites (checklist)
+### Unified auditor host runner prerequisites (checklist)
 
-Before calling `parseAndWriteScore` after a stage passes:
+Before calling the unified auditor host runner after a stage passes:
 
 1. **Parseable blocks** at end of report: “总体评级: [A|B|C|D]” and “维度评分: dimension: XX/100”
 2. **Line-by-line format**: if table + conclusions, append parseable blocks after conclusions
 3. **Paths**: `--reportPath` allowed; convention `AUDIT_{stage}-E{epic}-S{story}.md`
 4. **Parameters ready**: `stage` / `triggerStage` / `artifactDocPath` / `iterationCount`
 
-### parse-and-write-score CLI example
+### Unified auditor host runner contract
 
-```bash
-npx bmad-speckit score \
-  --reportPath <path> \
-  --stage <stage> \
-  --event stage_audit_complete \
-  --triggerStage <triggerStage> \
-  --epic {epic} \
-  --story {story} \
-  --artifactDocPath <path> \
-  --iteration-count {n} \
-  [--iterationReportPaths path1,path2,...]
-```
+The unified auditor host runner (`runAuditorHost`) is responsible for:
+
+- score write
+- auditIndex update
+- post-audit automation
 
 **iteration_count (mandatory)**: the agent running the audit loop passes the cumulative count of failed rounds for this stage; pass 0 on first pass; verification rounds for “3 no-gap” do not add to `iteration_count`.
 
@@ -253,8 +246,8 @@ npx bmad-speckit score \
 8. Schedule auditor (primary → fallback)
 9. Auditor reads artifacts and runs checklist
 10. Auditor produces report
-11. Validate `parseAndWriteScore` prerequisites
-12. Trigger `parse-and-write-score`
+11. Validate unified auditor host runner prerequisites
+12. Trigger `runAuditorHost`
 13. Output **YAML handoff**
 14. Update audit state
 
@@ -300,7 +293,7 @@ For each phase (§1.2 spec, §2.2 plan, §3.2 gaps, §4.2 tasks, §5.2 implement
 
 1. This skill resolves auditor and mode for the current stage
 2. This skill schedules audit via primary/fallback
-3. After pass, triggers `parse-and-write-score`
+3. After pass, triggers `runAuditorHost`
 4. Outputs YAML handoff for speckit-workflow next step
 
 ### bmad-story-assistant

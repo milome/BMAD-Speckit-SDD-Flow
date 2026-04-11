@@ -1,9 +1,10 @@
-import { spawnSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { resolveRuntimePolicy } from '../../scripts/runtime-governance';
+import { resolveBmadHelpRuntimePolicy } from '../../scripts/bmad-config';
+import { readRuntimeContext } from '../../scripts/runtime-context';
 import { stableStringifyPolicy } from '../../scripts/stable-runtime-policy-json';
 import { mainEmitRuntimePolicy } from '../../scripts/emit-runtime-policy';
 import {
@@ -14,8 +15,21 @@ import {
 
 const repoRoot = process.cwd();
 
-describe('emit-runtime-policy vs resolveRuntimePolicy (stable JSON)', () => {
-  it('stdout matches stableStringify(resolveRuntimePolicy) for registry-backed flow/stage', () => {
+describe('emit-runtime-policy vs bmad-help runtime policy facade (stable JSON)', () => {
+  let runtimeEmitBuilt = false;
+
+  function ensureRuntimeEmitBuilt(): void {
+    if (runtimeEmitBuilt) {
+      return;
+    }
+    execFileSync(process.execPath, ['packages/runtime-emit/build.js'], {
+      cwd: repoRoot,
+      stdio: 'pipe',
+    });
+    runtimeEmitBuilt = true;
+  }
+
+  it('stdout matches stableStringify(resolveBmadHelpRuntimePolicy) for registry-backed flow/stage', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-emit-stable-'));
     fs.cpSync(path.join(repoRoot, '_bmad'), path.join(root, '_bmad'), { recursive: true });
     writeMinimalRegistryAndProjectContext(root, { flow: 'story', stage: 'specify' });
@@ -30,7 +44,12 @@ describe('emit-runtime-policy vs resolveRuntimePolicy (stable JSON)', () => {
     try {
       process.chdir(root);
       const expected = stableStringifyPolicy(
-        resolveRuntimePolicy({ flow: 'story', stage: 'specify' })
+        resolveBmadHelpRuntimePolicy({
+          projectRoot: root,
+          flow: 'story',
+          stage: 'specify',
+          runtimeContext: readRuntimeContext(root),
+        })
       );
       const code = mainEmitRuntimePolicy(['--cwd', root]);
       expect(code).toBe(0);
@@ -48,6 +67,7 @@ describe('emit-runtime-policy vs resolveRuntimePolicy (stable JSON)', () => {
   });
 
   it('emit-runtime-policy-cli.js resolves identity from registry-backed context only', async () => {
+    ensureRuntimeEmitBuilt();
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-emit-cli-id-'));
     fs.cpSync(path.join(repoRoot, '_bmad'), path.join(root, '_bmad'), { recursive: true });
     linkRepoNodeModulesIntoProject(root);
@@ -77,6 +97,8 @@ describe('emit-runtime-policy vs resolveRuntimePolicy (stable JSON)', () => {
     expect(policy.stage).toBe('implement');
     expect(policy.identity.storyId).toBe('14.1');
     expect(policy.identity.runId).toBe('run-emit-stable');
+    expect(policy.helpRouting.recommendedFlow).toBe('story');
+    expect(policy.helpRouting.recommendationLabel).toBe('blocked');
     fs.rmSync(root, { recursive: true, force: true });
   }, 60000);
 

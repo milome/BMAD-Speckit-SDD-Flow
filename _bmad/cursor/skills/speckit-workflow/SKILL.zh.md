@@ -41,17 +41,6 @@ description: |
 本技能是bmad-story-assistant的技术实现层嵌套流程。
 当bmad-story-assistant执行到"阶段三：Dev Story实施"时，会触发本技能的完整流程。
 
-## Deferred Gaps 治理补充约束
-
-该中文分发副本必须与 `SKILL.md` 保持相同的 Deferred Gaps 语义，不得弱化。
-
-- `specify` 阶段必须承接 inherited gaps，补齐 `Inherited Deferred Gaps` 与 `Deferred Gap Intake Mapping`，并维护 `deferred-gap-register.yaml`
-- `plan` 阶段必须在 `Deferred Gap Architecture Mapping` 中把 active gap 映射到 architecture / work item / journey / production path
-- `IMPLEMENTATION_GAPS` 阶段必须显式区分 inherited gap 与 new gap
-- `tasks` 阶段必须维护 `Deferred Gap Task Binding` 与 `Journey -> Task -> Test -> Closure`，并写明 `Smoke Task Chain`、`Closure Task ID`
-- `implement / dev-story` 阶段必须读取 `deferred-gap-register.yaml`、`journey-ledger`、`trace-map`、`closure-notes`，并写入 `closure_evidence` 或 `carry_forward_evidence`
-- 若出现 module complete but journey not runnable，禁止宣称完成
-
 ---
 
 ## §0.5 执行 constitution 之后（项目原则）
@@ -176,6 +165,7 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 - 在 **spec.md** 中按原始需求文档 **逐章节、逐条** 增加 **需求映射清单表格**。表头与列名固定模板见 [references/mapping-tables.md](references/mapping-tables.md) §1。
 
 - 确保原始需求文档的 **每一章、每一条** 在 spec.md 中有明确对应且标注覆盖状态。
+- 若存在上游 deferred gaps，spec.md 还必须显式新增 `Inherited Deferred Gaps` 与 `Deferred Gap Intake Mapping`，并同步创建/更新 `deferred-gap-register.yaml`。
 
 ### 1.2 审计闭环
 
@@ -183,15 +173,11 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 
 - 生成或更新 spec.md 后，**必须按 §0 约定调用 code-review 技能**，使用 **固定审计提示词**：[references/audit-prompts.md](references/audit-prompts.md) §1。
 - **仅在** code-review 审计报告结论为「完全覆盖、验证通过」时**可结束本步骤**。
-- #### 审计通过后评分写入触发（强制）
+- #### 审计通过后统一 Host 收口（强制）
   - **报告路径**：`specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_spec-E{epic}-S{story}.md`（epic/story/epic-slug 从当前 spec 路径解析）。
   - 发起审计子任务时，发给子 Agent 的 prompt 必须包含：审计通过后请将报告保存至 {约定路径}，路径由主 Agent 根据 epic、story、slug 填充。
-  - **parse-and-write-score 完整调用示例**（含 --iteration-count；有 fail 轮时加 --iterationReportPaths）：
-    ```bash
-    npx bmad-speckit score --reportPath <上路径> --stage spec --event stage_audit_complete --triggerStage speckit_1_2 --epic {epic} --story {story} --artifactDocPath specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/spec-E{epic}-S{story}.md --iteration-count {累计值} [--iterationReportPaths path1,path2,...]
-    ```
-    其中 iterationReportPaths 为 fail 轮报告路径（见 §1.0.3）；验证轮不列入。
-  - **责任划分**：code-review 子代理产出审计报告并落盘至上述路径；主 Agent 在收到通过结论后执行 parse-and-write-score。读 `_bmad/_config/scoring-trigger-modes.yaml` 的 `scoring_write_control.enabled`；若 enabled 则执行；**iteration_count 传递（强制）**：执行审计循环的 Agent 在 pass 时传入当前累计值（本 stage 审计未通过/fail 的轮数）；一次通过传 0；连续 3 轮无 gap 的验证轮不计入 iteration_count；禁止省略；eval_question 缺 question_version 记 SCORE_WRITE_INPUT_INVALID 且不调用；失败不阻断主流程，记录 resultCode 进审计证据。
+  - **统一入口**：审计通过后，主 Agent **不得**手工调用 `bmad-speckit score` 或 `update-runtime-audit-index`；必须统一调用 `runAuditorHost` 承接 post-audit automation。
+  - **责任划分**：code-review 子代理产出审计报告并落盘至上述路径；主 Agent 在收到通过结论后调用 `runAuditorHost`。读 `_bmad/_config/scoring-trigger-modes.yaml` 的 `scoring_write_control.enabled`；若 enabled 则执行；**iteration_count 传递（强制）**：执行审计循环的 Agent 在 pass 时传入当前累计值（本 stage 审计未通过/fail 的轮数）；一次通过传 0；连续 3 轮无 gap 的验证轮不计入 iteration_count；禁止省略；eval_question 缺 question_version 记 SCORE_WRITE_INPUT_INVALID 且不调用；失败不阻断主流程，记录 resultCode 进审计证据。
 - 若未通过：根据审计报告 **迭代修改 spec.md**（补全映射表、补全遗漏章节），**再次调用 code-review**，直至报告结论为通过。
 
 ---
@@ -207,6 +193,7 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 - 对照 **原始需求设计文档**、**spec.md** 与生成的 **plan.md**。
 - 在 **plan.md** 中按原始需求文档与 spec.md **逐章节、逐条** 增加 **需求映射清单表格**。表头与列名固定模板见 [references/mapping-tables.md](references/mapping-tables.md) §2。
 - 确保需求文档与 spec.md 的 **每一章、每一条** 在 plan.md 中有明确对应。
+- 若存在 active deferred gaps，plan.md 还必须新增 `Deferred Gap Architecture Mapping`，并把每条 gap 映射到 `architecture_refs`、`work_item_refs`、`journey_refs`、`prod_path_refs`（如适用）。
 
 **集成与端到端测试计划（必须）**
 
@@ -220,14 +207,11 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 
 - 生成或更新 plan.md 后，**必须按 §0 约定调用 code-review 技能**，使用 **固定审计提示词**：[references/audit-prompts.md](references/audit-prompts.md) §2。
 - **仅在** code-review 审计报告结论为「完全覆盖、验证通过」时**可结束本步骤**。
-- #### 审计通过后评分写入触发（强制）
+- #### 审计通过后统一 Host 收口（强制）
   - **报告路径**：`specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_plan-E{epic}-S{story}.md`。
   - 发起审计子任务时，发给子 Agent 的 prompt 必须包含：审计通过后请将报告保存至 {约定路径}，路径由主 Agent 根据 epic、story、slug 填充。
-  - **parse-and-write-score 完整调用示例**（含 --iteration-count）：
-    ```bash
-    npx bmad-speckit score --reportPath <上路径> --stage plan --event stage_audit_complete --triggerStage speckit_2_2 --epic {epic} --story {story} --artifactDocPath specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/plan-E{epic}-S{story}.md --iteration-count {累计值}
-    ```
-  - **责任划分**：code-review 子代理产出报告并落盘；主 Agent 在收到通过结论后执行 parse-and-write-score。余同 §1.2（含 iteration_count 传递规则、失败记录 resultCode）。
+  - **统一入口**：审计通过后，主 Agent 统一调用 `runAuditorHost`；不再手工拼装 plan 阶段的 score / auditIndex CLI。
+  - **责任划分**：code-review 子代理产出报告并落盘；主 Agent 在收到通过结论后调用 `runAuditorHost`。余同 §1.2（含 iteration_count 传递规则、失败记录 resultCode）。
 - 若未通过：根据审计报告 **迭代修改 plan.md**，**再次调用 code-review**，直至报告结论为通过。
 - **嵌入步骤（当 plan 涉及多模块或复杂架构时须执行）**：在 plan 审计通过后、本步骤结束前，**须将 `/speckit.checklist` 或 `.speckit.checklist` 作为 §2.2 审计步骤的一部分**执行——生成质量检查清单，验证需求完整性、清晰度与一致性；若 checklist 发现问题，须迭代修改 plan.md 并**再次执行 code-review 审计**，直至 checklist 验证通过；不得以「可选」为由在应执行场景下跳过。
 
@@ -258,13 +242,14 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 
 ## 3. 生成 tasks 之前（IMPLEMENTATION_GAPS.md）
 
-**必须执行的命令**：`/speckit.gaps` 或 `.speckit.gaps`。在 plan.md 已通过审计后，**模型必须执行深度分析**：对照 plan.md、原始需求文档与当前实现，逐章节逐条比较差异，生成 IMPLEMENTATION_GAPS.md。为兼容旧流程，当用户直接要求「生成 IMPLEMENTATION_GAPS」「生成 GAPS」，或在 `/speckit.tasks` 前检测到 gaps 缺失时，也可自动触发同一流程；但规范入口已变为 `/speckit.gaps`。
+**触发方式**：无独立命令。在 plan.md 已通过审计后，**模型必须自动执行深度分析**：对照 plan.md、原始需求文档与当前实现，逐章节逐条比较差异，生成 IMPLEMENTATION_GAPS.md。用户要求「生成 IMPLEMENTATION_GAPS」「生成 GAPS」时同样触发。
 
 ### 3.1 必须完成
 
 - 根据 **当前实现** 与 **原始需求设计文档**，按 **逐章节、逐条** 分析差异，生成 **IMPLEMENTATION_GAPS.md**。
 - **若用户明确给出更多参考文档**（例如单独的架构设计文档、设计说明书等），**必须**同时按 **逐章节、逐条** 对**所有给定参考文档**分析差异，确保全部作为有效输入参与 Gap 分析。
 - 文档结构需按需求文档（及所有参考文档）章节列出每条 Gap，并注明：需求/设计章节、当前实现状态、缺失/偏差说明。Gap 列表表头模板见 [references/mapping-tables.md](references/mapping-tables.md) §3。
+- 若存在 deferred gaps，IMPLEMENTATION_GAPS.md 还必须新增 `Deferred Gap Lifecycle Classification`，并显式区分 `inherited gap`、`new gap`、`definition gap`、`implementation gap`、`journey runnable gap`、`evidence gap`。
 
 ### 3.2 审计闭环
 
@@ -272,14 +257,11 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 
 - 生成或更新 IMPLEMENTATION_GAPS.md 后，**必须按 §0 约定调用 code-review 技能**，使用 **固定审计提示词**：[references/audit-prompts.md](references/audit-prompts.md) §3。
 - **仅在** code-review 审计报告结论为「完全覆盖、验证通过」时**可结束本步骤**。
-- #### 审计通过后评分写入触发（强制）
+- #### 审计通过后统一 Host 收口（强制）
   - **报告路径**：`specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_GAPS-E{epic}-S{story}.md`。
   - 发起审计子任务时，发给子 Agent 的 prompt 必须包含：审计通过后请将报告保存至 {约定路径}，路径由主 Agent 根据 epic、story、slug 填充。
-  - **parse-and-write-score 完整调用示例**（含 --iteration-count）：
-    ```bash
-    npx bmad-speckit score --reportPath <上路径> --stage gaps --event stage_audit_complete --triggerStage speckit_3_2 --epic {epic} --story {story} --artifactDocPath specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/IMPLEMENTATION_GAPS-E{epic}-S{story}.md --iteration-count {累计值}
-    ```
-  - **责任划分**：code-review 子代理产出报告并落盘；主 Agent 在收到通过结论后执行 parse-and-write-score。GAPS 报告格式与 plan 兼容，stage=plan。余同 §1.2（含 iteration_count 传递规则、失败记录 resultCode）。
+  - **统一入口**：审计通过后，主 Agent 统一调用 `runAuditorHost`；不再手工拼装 gaps 阶段的 score / auditIndex CLI。
+  - **责任划分**：code-review 子代理产出报告并落盘；主 Agent 在收到通过结论后调用 `runAuditorHost`。GAPS 报告格式与 plan 兼容，stage=gaps。余同 §1.2（含 iteration_count 传递规则、失败记录 resultCode）。
 - 若未通过：根据审计报告 **迭代修改 IMPLEMENTATION_GAPS.md**，**再次调用 code-review**，直至报告结论为通过。
 
 ---
@@ -291,29 +273,35 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 ### 4.1 必须完成
 
 - 对照 **原始需求设计文档**、**plan.md**、**IMPLEMENTATION_GAPS.md** 生成 **tasks.md**。
-- 使用项目 **tasks 模板**：`docs/speckit/tasks-template/tasks-template.md`（或项目内约定的模板路径）。
-- 在 **tasks.md** 中按原始需求文档、plan.md、IMPLEMENTATION_GAPS.md **逐章节、逐条** 增加 **需求映射清单表格**；表头与列名见 [references/mapping-tables.md](references/mapping-tables.md) §4–§8；Agent 执行规则、需求追溯格式、验收标准与验收执行规则见 [references/tasks-acceptance-templates.md](references/tasks-acceptance-templates.md)。
+- 使用项目 **tasks 模板**：`_bmad/speckit/templates/tasks-template.md`（或项目内约定的模板路径）。
+- 在 **tasks.md** 中按原始需求文档、plan.md、IMPLEMENTATION_GAPS.md **逐章节、逐条** 增加 **需求映射清单表格**；表头与列名见 [references/mapping-tables.md](references/mapping-tables.md) §4–§10；Agent 执行规则、需求追溯格式、验收标准与验收执行规则见 [references/tasks-acceptance-templates.md](references/tasks-acceptance-templates.md)。
+- tasks.md 顶层必须是 `journey-first`：至少包含 `P0 Journey Ledger`、`Invariant Ledger`、`Runnable Slice Milestones`、按 Journey 拆分的 runnable slices、`Closure Notes`。
+- 每个任务必须显式挂接 `Journey ID`、`Trace ID`、任务类型；setup / foundational 任务不得脱离 Journey 单独存在，且必须额外声明 `Journey Unlock` 与 `Smoke Path Unlock`。
+- 每个 runnable slice 必须声明 `Journey ID`、`Invariant ID`（或 `INV-N/A` + 原因）、`Evidence Type`、`Verification Command`、`Closure Note Path`、`Definition Gap Handling`、`Implementation Gap Handling`。
+- tasks.md 中必须同时存在 `Journey -> Task -> Test -> Closure` 映射表，以及 `Definition Gap vs Implementation Gap` 对照表；映射表中必须显式写出 `Smoke Task Chain` 与 `Closure Task ID`，两类 gap 不得混写后直接宣称功能已跑通。
+- 若 tasks.md 启用 multi-agent 模式，必须显式记录 `Shared Journey Ledger Path`、`Shared Invariant Ledger Path`、`Shared Trace Map Path`，并强调所有 agent 使用同一份 `same path reference`，禁止各自产生私有摘要。
+- 若存在 inherited deferred gaps，tasks 阶段必须同时维护 `deferred-gap-register.yaml`，并新增 `Deferred Gap Task Binding`；active gap 必须二选一：绑定 task 或写 explicit defer reason。
+- 若 deferred gap 影响某条 Journey，tasks 阶段必须把该 gap 映射到 `Journey ID`、`Smoke Task Chain`、`Closure Task ID`、`Production Path`。
 
 **集成与端到端测试用例（必须）**
 
-- tasks.md **必须**为每个功能模块/Phase 包含**集成测试与端到端功能测试任务及用例**，验证模块间协作与用户可见功能流程在生产代码关键路径上的完整性。
-- **严禁**验收标准仅依赖单元测试；每个模块的验收**必须**同时包含「该模块在生产代码关键路径中被导入、实例化并调用」的集成验证。
-- **严禁**出现「模块内部实现完整且可通过单元测试，但从未在生产代码关键路径中被导入、实例化或调用」的任务被标记为完成。
+- tasks.md **必须**为每条 `P0 journey` 至少生成一条 `smoke path` 任务链，并明确 full E2E 或 deferred reason。
+- **严禁**验收标准仅依赖单元测试；每个 runnable slice 的验收**必须**同时包含「该模块在生产代码关键路径中被导入、实例化并调用」的集成验证。
+- **严禁**出现「模块内部实现完整且可通过单元测试，但从未在生产代码关键路径中被导入、实例化或调用」的孤岛模块任务被标记为完成。
+- 每条 Journey **必须**有 `closure note` 任务；没有 closure note，不得宣称该 Journey 完成。
 
 ### 4.2 审计闭环
 
 **严格度**：**standard**（单次 + 批判审计员），见 [references/audit-prompts-critical-auditor-appendix.md](references/audit-prompts-critical-auditor-appendix.md)。
 
 - 生成或更新 tasks.md 后，**必须按 §0 约定调用 code-review 技能**，使用 **固定审计提示词**：[references/audit-prompts.md](references/audit-prompts.md) §4。
+- 审计必须额外检查：task 是否属于 runnable slice、是否存在 orphan module task、是否缺 `Evidence Type` / `Closure Note` / `Trace`、是否遗漏 `re-readiness` 触发条件。
 - **仅在** code-review 审计报告结论为「完全覆盖、验证通过」时**可结束本步骤**。
-- #### 审计通过后评分写入触发（强制）
+- #### 审计通过后统一 Host 收口（强制）
   - **报告路径**：`specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_tasks-E{epic}-S{story}.md`。
   - 发起审计子任务时，发给子 Agent 的 prompt 必须包含：审计通过后请将报告保存至 {约定路径}，路径由主 Agent 根据 epic、story、slug 填充。
-  - **parse-and-write-score 完整调用示例**（含 --iteration-count）：
-    ```bash
-    npx bmad-speckit score --reportPath <上路径> --stage tasks --event stage_audit_complete --triggerStage speckit_4_2 --epic {epic} --story {story} --artifactDocPath specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/tasks-E{epic}-S{story}.md --iteration-count {累计值}
-    ```
-  - **责任划分**：code-review 子代理产出报告并落盘；主 Agent 在收到通过结论后执行 parse-and-write-score。余同 §1.2（含 iteration_count 传递规则、失败记录 resultCode）。
+  - **统一入口**：审计通过后，主 Agent 统一调用 `runAuditorHost`；不再手工拼装 tasks 阶段的 score / auditIndex CLI。
+  - **责任划分**：code-review 子代理产出报告并落盘；主 Agent 在收到通过结论后调用 `runAuditorHost`。余同 §1.2（含 iteration_count 传递规则、失败记录 resultCode）。
 - 若未通过：根据审计报告 **迭代修改 tasks.md**，**再次调用 code-review**，直至报告结论为通过。
 - **嵌入步骤（当 tasks 数量≥10 或跨多 artifact 时须执行）**：在 tasks 审计通过后、本步骤结束前，**须将 `/speckit.analyze` 或 `.speckit.analyze` 作为 §4.2 审计步骤的一部分**执行——做跨 artifact 一致性分析（spec、plan、tasks 等对齐报告）；若 analyze 发现问题，须迭代修改 tasks.md 并**再次执行 code-review 审计**，直至 analyze 验证通过；不得以「可选」为由在应执行场景下跳过。
 
@@ -339,6 +327,7 @@ Batch N: Task ... → 执行 → code-review审计 → 通过
 2. 测试是否全部通过
 3. 是否有遗留问题影响下一批
 4. 是否需要调整后续批次计划
+5. 是否出现“模块做完了，但 Journey 仍不可跑”的漂移
 
 **异常处理**:
 - 如果某批审计未通过，修复后重新审计该批
@@ -386,14 +375,21 @@ Batch N: Task ... → 执行 → code-review审计 → 通过
    - 产出路径：与 tasks 同目录，或 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/`（BMAD 流程时）；
    - **禁止**在未创建上述文件前开始编码或执行涉及生产代码的任务。
 3. **阅读前置文档**：需求文档、plan.md、IMPLEMENTATION_GAPS.md，理解技术架构与需求范围。
+3.0 **读取 deferred-gap-register**：若存在 `deferred-gap-register.yaml`，必须在执行前加载；若已声明 inherited deferred gaps 却无此文件，不得继续宣称任务完成。
+3.1 **读取 ledger 工件**：若存在 `journey-ledger.md`、`invariant-ledger.md`、`trace-map.json`，必须在执行前加载；若仓库尚未拆分独立文件，则以 tasks.md 中对应 section 作为事实来源，并同步读取 `Smoke Task Chain`、`Closure Task ID`、`Journey Unlock`、`Smoke Path Unlock`。
+3.2 **先区分 gap 类型**：执行前必须标记哪些任务是在消除 `definition gap`，哪些是在修复 `implementation gap`；执行记录中必须保持 `Definition Gap Handling` 与 `Implementation Gap Handling` 分离，禁止混写并在同一轮里直接宣布 Journey 完成。
+3.3 **多 Agent 共用工件路径**：若为 multi-agent 执行，必须先锁定 `Shared Journey Ledger Path`、`Shared Invariant Ledger Path`、`Shared Trace Map Path`，并确认所有 agent 都消费同一份 `same path reference`，禁止改写为各自私有摘要。
 4. **使用 TodoWrite** 创建任务追踪列表，首个任务标记 `in_progress`。
 5. **逐任务执行 TDD 循环**（**每个 US 必须独立执行**，禁止仅对首个 US 执行 TDD 后对后续 US 跳过红灯直接实现）：
    - **红灯**：编写/补充覆盖当前任务验收标准的测试用例，运行确认**测试失败**（验证测试有效性）。
    - **绿灯**：编写最少量生产代码使测试通过。
    - **重构**：在测试保护下检查并优化代码质量（SOLID、命名、解耦、性能）。**无论是否有具体重构动作，均须在 progress 中记录 `[TDD-REFACTOR]` 一行**；无具体重构时写"无需重构 ✓"，集成任务写"无新增生产代码，各模块独立性已验证，无跨模块重构 ✓"。
 6. **完成后立即更新** tasks.md 中的复选框 `[ ]` → `[x]`，TodoWrite 标记 `completed`。
+6.1 **Journey 收口**：每当一个 `P0 journey` 达到 smoke runnable 状态，必须立即完成或更新对应 `Closure Task ID` 指向的 `closure note`，并校对 `Smoke Task Chain` 已闭合；closure note 必须写明 covered journey id、implementing task ids、smoke test ids、full E2E ids 或 deferred reason、未解决 deferred gaps。
+6.2 **Deferred Gap 收口**：若任务关闭了某条 deferred gap，必须同步写入 `deferred-gap-register.yaml` 的 `closure_evidence`；若继续延期，必须同步写入 `carry_forward_evidence`、新 `resolution_target` 与 closure note 摘要。
 7. **检查点验证**：遇到检查点时验证所有前置任务已完成，执行回归测试。
 7.1. **lint（必须）**：每完成一批任务或全部任务完成前，项目须按技术栈执行 Lint（见 lint-requirement-matrix）；若使用主流语言但未配置 Lint 须修复；已配置的须执行且无错误、无警告。禁止以「与本次任务不相关」为由豁免。
+7.2. **re-readiness 触发**：若本批变更触及 `P0 journey`、完成态定义、依赖语义、权限边界、fixture / environment 假设，必须回到 readiness 重新确认后再继续推进 implement 结论。
 8. **循环**直至所有任务完成，禁止提前停止。
 
 ### 5.1.1 tasks 与 prd 的映射约定
@@ -447,21 +443,21 @@ Batch N: Task ... → 执行 → code-review审计 → 通过
 - 执行 tasks.md 中的任务（TDD 红绿灯模式）后，**必须按 §0 约定调用 code-review 技能**，使用 **固定审计提示词**：[references/audit-prompts.md](references/audit-prompts.md) §5。
 - **batch 间**：单次通过且批判审计员段落合格即可；**最终审计**：须连续 3 轮无 gap 收敛，详见 audit-post-impl-rules。
 - 主 Agent 在发起第 2、3 轮审计前，可输出「第 N 轮审计通过，继续验证…」以提示用户。
-- #### 审计通过后评分写入触发（强制）
+- #### 审计通过后统一 Host 收口（强制）
   - **报告路径**：`{project-root}/_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_implement-E{epic}-S{story}.md`（与 _bmad/_config/eval-lifecycle-report-paths.yaml 一致）；stage=implement（Story 9.2 扩展，替代原 stage=tasks + triggerStage=speckit_5_2）。
   - 发起审计子任务时，发给子 Agent 的 prompt 必须包含：审计通过后请将报告保存至 {约定路径}，路径由主 Agent 根据 epic、story、slug 填充。
-  - **parse-and-write-score 完整调用示例**（含 --iteration-count）：
-    ```bash
-    npx bmad-speckit score --reportPath <上述路径> --stage implement --event stage_audit_complete --epic {epic} --story {story} --artifactDocPath <tasks 文档路径> --iteration-count {累计值}
-    ```
-  - **责任划分**：code-review 子代理产出审计报告并落盘至上述路径；主 Agent 在收到通过结论后执行 parse-and-write-score；失败不阻断主流程，记录 resultCode 进审计证据。**iteration_count 传递（强制）**：执行审计循环的 Agent 在 pass 时传入当前累计值（本 stage 审计未通过/fail 的轮数）；一次通过传 0。**standalone speckit** 流程（无 epic/story）时，主 Agent 在 pass 时同样传入 `--iteration-count {累计值}`。
+  - **统一入口**：审计通过后，主 Agent 统一调用 `runAuditorHost`；不再手工拼装 implement 阶段的 score / auditIndex CLI。
+  - **责任划分**：code-review 子代理产出审计报告并落盘至上述路径；主 Agent 在收到通过结论后调用 `runAuditorHost`；失败不阻断主流程，记录 resultCode 进审计证据。**iteration_count 传递（强制）**：执行审计循环的 Agent 在 pass 时传入当前累计值（本 stage 审计未通过/fail 的轮数）；一次通过传 0。**standalone speckit** 流程（无 epic/story）时，主 Agent 在 pass 时同样传入 `--iteration-count {累计值}`。
 - 若未通过：根据审计报告 **迭代执行 tasks.md 中审计未通过的任务**，**再次调用 code-review**，直至报告结论为通过。
+- batch 间审计必须额外检查：是否缺失 closure note、是否存在 `module complete but journey not runnable` 漂移、是否出现应触发而未触发的 `re-readiness`。
 
 **集成与端到端测试执行（必须）**
 
 - 执行阶段**必须**运行集成测试与端到端功能测试，验证模块间协作与用户可见功能流程在生产代码关键路径上工作正常。**严禁**仅运行单元测试即宣布完成。
 - **必须**验证每个新增或修改的模块**确实被生产代码关键路径导入、实例化并调用**（例如：grep 生产代码 import 路径、检查 UI 入口是否挂载、检查 Engine/主流程是否实际调用）。
 - 发现「模块内部实现完整且可通过单元测试，但从未在生产代码关键路径中被导入、实例化或调用」的情况时，**必须**将其作为 **未通过项** 报告并修复，而非标记为通过。
+- 每个 `P0 journey` 在审计前必须有 `closure note`；若 full E2E 延后，closure note 中必须写明 deferred reason 与 next gate。
+- 每个 `P0 journey` 在审计前还必须具备 `Production Path` 与 `Acceptance Evidence`；缺任一项，不得宣称真实功能已落地。
 
 ### 5.3 关键约束（15 条铁律摘要）
 
@@ -574,7 +570,7 @@ Layer 5: 收尾与集成
 | **0. constitution** | `/speckit.constitution` 或 `.speckit.constitution` | 无（入口阶段） | constitution.md 或 .specify/memory/constitution.md | 项目自定义或通用文档完整性 |
 | **1. specify** | `/speckit.specify` 或 `.speckit.specify` | constitution 已产出 | spec.md | audit-prompts.md §1 |
 | **2. plan** | `/speckit.plan` 或 `.speckit.plan` | spec.md 已通过审计 | plan.md | audit-prompts.md §2 |
-| **3. GAPS** | `/speckit.gaps` 或 `.speckit.gaps`；兼容：模型自动深度分析（对照 plan + 需求 + 当前实现）或 用户要求「生成 IMPLEMENTATION_GAPS」 | plan.md 已通过审计 | IMPLEMENTATION_GAPS.md | audit-prompts.md §3 |
+| **3. GAPS** | 无独立命令；模型自动深度分析（对照 plan + 需求 + 当前实现）或 用户要求「生成 IMPLEMENTATION_GAPS」 | plan.md 已通过审计 | IMPLEMENTATION_GAPS.md | audit-prompts.md §3 |
 | **4. tasks** | `/speckit.tasks` 或 `.speckit.tasks` 或 用户要求「生成 tasks」 | IMPLEMENTATION_GAPS.md 已通过审计 | tasks.md | audit-prompts.md §4 |
 | **5. 执行** | `/speckit.implement` 或 `.speckit.implement` 或 用户要求「执行 tasks」「完成 tasks 中的任务」 | tasks.md 已通过审计 | 可运行代码 + 测试 | audit-prompts.md §5 |
 
@@ -589,9 +585,9 @@ Layer 5: 收尾与集成
 | `/speckit.analyze` | **§4.2 tasks 审计闭环内** | tasks≥10 或跨多 artifact | 作为 §4.2 审计步骤的一部分；若发现问题则迭代 tasks → 再次审计 |
 
 **命令格式说明**：
-- `/speckit.xxx`：Cursor/Claude 斜杠命令（constitution、specify、plan、gaps、tasks、implement、clarify、analyze、checklist）
-- `.speckit.xxx`：点命令或项目内 `.speckit.xxx` 文件触发（含 `.speckit.gaps`）
-- **GAPS 已有独立命令**：规范入口为 `/speckit.gaps` 或 `.speckit.gaps`；模型在 plan 通过后自动深度分析生成，或用户要求「生成 IMPLEMENTATION_GAPS」时触发，属于兼容 fallback，不替代正式命令入口
+- `/speckit.xxx`：Cursor/Claude 斜杠命令（constitution、specify、plan、tasks、implement、clarify、analyze、checklist）
+- `.speckit.xxx`：点命令或项目内 `.speckit.xxx` 文件触发
+- **GAPS 无独立命令**：模型在 plan 通过后自动深度分析生成；或用户要求「生成 IMPLEMENTATION_GAPS」时触发
 
 ---
 

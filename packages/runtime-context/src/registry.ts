@@ -21,6 +21,30 @@ export interface RuntimeContextRegistry {
   epicContexts: Record<string, { path: string; [key: string]: unknown }>;
   storyContexts: Record<string, { path: string; [key: string]: unknown }>;
   runContexts: Record<string, { path: string; [key: string]: unknown }>;
+  auditIndex: {
+    bugfix: Record<
+      string,
+      {
+        artifactDocPath: string;
+        reportPath: string;
+        status: 'PASS' | 'FAIL';
+        converged?: boolean;
+        iterationCount?: number;
+        updatedAt: string;
+      }
+    >;
+    standalone_tasks: Record<
+      string,
+      {
+        artifactDocPath: string;
+        reportPath: string;
+        status: 'PASS' | 'FAIL';
+        converged?: boolean;
+        iterationCount?: number;
+        updatedAt: string;
+      }
+    >;
+  };
   activeScope: {
     scopeType: 'project' | 'epic' | 'story' | 'run';
     epicId?: string;
@@ -56,6 +80,10 @@ export function defaultRuntimeContextRegistry(root: string): RuntimeContextRegis
     epicContexts: {},
     storyContexts: {},
     runContexts: {},
+    auditIndex: {
+      bugfix: {},
+      standalone_tasks: {},
+    },
     activeScope: {
       scopeType: 'project',
       resolvedContextPath: path.join('_bmad-output', 'runtime', 'context', 'project.json'),
@@ -88,7 +116,17 @@ export function writeRuntimeContextRegistry(root: string, registry: RuntimeConte
 export function readRuntimeContextRegistry(root: string): RuntimeContextRegistry {
   const file = runtimeContextRegistryPath(root);
   const raw = fs.readFileSync(file, 'utf8');
-  return JSON.parse(raw) as RuntimeContextRegistry;
+  const parsed = JSON.parse(raw) as RuntimeContextRegistry;
+  if (!parsed.auditIndex) {
+    parsed.auditIndex = {
+      bugfix: {},
+      standalone_tasks: {},
+    };
+  } else {
+    parsed.auditIndex.bugfix = parsed.auditIndex.bugfix ?? {};
+    parsed.auditIndex.standalone_tasks = parsed.auditIndex.standalone_tasks ?? {};
+  }
+  return parsed;
 }
 
 /** Load existing registry from disk when present; otherwise a fresh default. */

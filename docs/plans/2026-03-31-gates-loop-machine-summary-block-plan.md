@@ -1,5 +1,8 @@
 # Gates Loop 机器摘要块分析与实施计划
 
+> **Current path**: `runAuditorHost`
+> **Legacy path**: `bmad-speckit score` / `parse-and-write-score`
+
 ## 1. 背景
 
 当前 gates loop 的审计/复核报告已经包含大量自然语言结论、表格、批判审计员结论以及可解析评分块。这些内容对人类可读性足够，但对 dashboard / analytics / 历史工件回放的机器消费仍有几个明显问题：

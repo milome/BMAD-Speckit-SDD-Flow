@@ -44,7 +44,7 @@ The Claude variant must:
 - Keep executor selection, fallback, and scoring write aligned with Cursor
 - Integrate:
   - `auditor-tasks-doc` executor
-  - Scoring write (`parse-and-write-score.ts`)
+  - Unified auditor host runner (`runAuditorHost`)
   - Handoff protocol
 - **Not** mix Cursor Canonical Base, Claude Runtime Adapter, and Repo Add-ons into unclear prompt rewrites
 
@@ -190,21 +190,9 @@ handoff:
 - `.claude/state/bmad-progress.yaml`: global BMAD progress
 - Handoff: structured YAML at end of each phase
 
-#### Scoring
+#### Post-audit automation close-out
 
-On pass:
-
-```bash
-npx bmad-speckit score \
-  --reportPath {path} \
-  --stage tasks_doc \
-  --event stage_audit_complete \
-  --triggerStage speckit_4_2 \
-  --artifactDocPath {path} \
-  --iteration-count {n} \
-  --scenario real_dev \
-  --writeMode single_file
-```
+On pass, do not hand-run `bmad-speckit score`. The executor only needs to return `projectRoot`, `reportPath`, and `artifactDocPath`; the invoking host/runner handles score write, audit-index updates, and the rest of post-audit automation.
 
 #### Commit gate
 

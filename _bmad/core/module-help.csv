@@ -1,7 +1,7 @@
 module,phase,name,code,sequence,workflow-file,command,required,agent,options,description,output-location,outputs
 core,anytime,Brainstorming,BSP,,skill:bmad-brainstorming,bmad-brainstorming,false,analyst,,"Generate diverse ideas through interactive techniques. Use early in ideation phase or when stuck generating ideas.",{output_folder}/brainstorming/brainstorming-session-{{date}}.md,,
 core,anytime,Party Mode,PM,,skill:bmad-party-mode,bmad-party-mode,false,party-mode facilitator,,"Orchestrate multi-agent discussions. Use when you need multiple agent perspectives or want agents to collaborate.",,
-core,anytime,bmad-help,BH,,skill:bmad-help,bmad-help,false,,,"Get unstuck by showing what workflow steps come next or answering BMad Method questions.",,
+core,anytime,bmad-help,BH,,skill:bmad-help,bmad-help,false,,,"Get unstuck with state-aware routing: derive flow, contextMaturity, complexity, and implementationReadinessStatus before recommending next steps.",,
 core,anytime,Index Docs,ID,,skill:bmad-index-docs,bmad-index-docs,false,,,"Create lightweight index for quick LLM scanning. Use when LLM needs to understand available docs without loading everything.",,
 core,anytime,Shard Document,SD,,skill:bmad-shard-doc,bmad-shard-doc,false,,,"Split large documents into smaller files by sections. Use when doc becomes too large (>500 lines) to manage effectively.",,
 core,anytime,Editorial Review - Prose,EP,,skill:bmad-editorial-review-prose,bmad-editorial-review-prose,false,,,"Review prose for clarity, tone, and communication issues. Use after drafting to polish written content.",report located with target document,"three-column markdown table with suggested fixes",

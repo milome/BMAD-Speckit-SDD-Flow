@@ -2,10 +2,10 @@
 name: bmad-standalone-tasks
 description: |
   Claude Code CLI / OMC 版 BMAD Standalone Tasks 适配入口。
-  以 Cursor bmad-standalone-tasks 为语义基线，按「解析未完成任务 → 子代理实施 → 实施后审计」执行 TASKS/BUGFIX 文档驱动的实施流程。
+  以 Cursor bmad-standalone-tasks 为语义基线，按「TASKS/BUGFIX 文档前置审计 → 解析未完成任务 → 子代理实施 → 实施后审计」执行 TASKS/BUGFIX 文档驱动的实施流程。
   主 Agent 发起任一子任务时**必须**将本 skill 内该阶段的「完整 prompt 模板」整段复制并填入占位符后传入，禁止省略、概括或自行改写提示词；
   主 Agent 禁止直接修改生产代码，实施须通过 Agent tool 子代理（subagent_type: general-purpose）。
-  审计优先 `.claude/agents/auditors/auditor-implement`，按 Fallback 链降级。
+  `auditor-tasks-doc` 属于 TASKS/BUGFIX 文档前置审计，必须先于实施执行通过；实施后审计优先 `.claude/agents/auditors/auditor-implement`，按 Fallback 链降级。
   遵循 ralph-method（prd.{stem}.json / progress.{stem}.txt）、TDD 红绿灯、speckit-workflow。
   适用场景：用户提供 TASKS/BUGFIX 文档并要求执行未完成任务。全程中文。
 when_to_use: |
@@ -29,7 +29,7 @@ references:
 
 目标不是简单复制 Cursor skill，而是：
 
-1. **继承 Cursor 已验证的 standalone 任务执行语义**（从 TASKS/BUGFIX 文档提取未完成任务 → 子代理实施 → 实施后审计）
+1. **继承 Cursor 已验证的 standalone 任务执行语义**（从 TASKS/BUGFIX 文档前置审计 → 提取未完成任务 → 子代理实施 → 实施后审计）
 2. **在 Claude/OMC 运行时中将执行体映射到 `.claude/agents/` 系列**（审计 → `auditor-implement`、`auditor-tasks-doc`；实施 → `speckit-implement` 或通用执行体）
 3. **接入仓库中已开发完成的 handoff、scoring、commit gate 机制**
 4. **确保在 Claude Code CLI 中能完整、连续、正确地执行 standalone 任务流程**
@@ -56,6 +56,8 @@ Claude 版 `bmad-standalone-tasks` 必须满足：
 以下内容继承自 Cursor `bmad-standalone-tasks`，属于业务语义基线，Claude 版不得擅自重写其意图。
 
 Execute unfinished work from a **single TASKS or BUGFIX document** in a single session. Implementation and code edits are **only** done by subagents; the main Agent orchestrates and audits.
+
+**实施前的 `auditor-tasks-doc` 属于 TASKS/BUGFIX 文档前置审计，且必须先于任何实施执行。** 不允许把前置审计降级成建议项、可选步骤或实施后补做项。
 
 ### When to use
 
@@ -91,6 +93,8 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 5. **Forbidden**
    - Do not add "将在后续迭代" (or similar) in task descriptions.
    - Do not mark a task complete if the behavior is not actually invoked or verified.
+6. **TASKS/BUGFIX 文档前置审计是实施前硬门槛**
+   `auditor-tasks-doc` 的职责是 **TASKS/BUGFIX 文档前置审计**。只要该审计尚未通过、尚未执行或结论不明，**禁止**进入任何实施执行、代码修改、测试实现或“先做再补审计”的路径。
 
 ### 主 Agent 传递提示词规则（必守）
 
@@ -130,11 +134,11 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 | L3 | `.claude/skills/speckit-workflow/` 中 `code-review` skill | skill 级回退 |
 | L4 | 主 Agent 直接执行同一份三层结构 prompt | 最终回退 |
 
-#### 前置文档审计执行体（可选 Step 0）
+#### 前置文档审计执行体（实施前必做 Step 0）
 
 | 层级 | 执行体 | 说明 |
 |------|--------|------|
-| L1 | `.claude/agents/auditors/auditor-tasks-doc.md` prompt → Agent tool (`subagent_type: general-purpose`) | 主路径 |
+| L1 | `.claude/agents/auditors/auditor-tasks-doc.md` prompt → Agent tool (`subagent_type: general-purpose`) | 主路径；**必须先于实施执行通过** |
 | L2 | 通用 Agent tool + 审计 prompt | 回退 |
 | L3 | 主 Agent 直接执行 | 最终回退 |
 
@@ -177,10 +181,41 @@ handoff:
 
 ### Main Agent responsibilities
 
+- **Do**: Before any implementation sub-task, ensure `auditor-tasks-doc` has audited the TASKS/BUGFIX document and passed.
 - **Do**: Resolve document path, read task list, **launch Agent tool subagent** (implementation and audit), pass full context, **collect and summarize** subagent output.
 - **Do**: If subagent returns incomplete, launch a **resume** Agent tool with the same agent ID or a new invocation with continuation context; do **not** replace the subagent by editing code yourself.
 - **Do not**: Edit production or test code (including any path listed in the TASKS/BUGFIX document as implementation target).
 - **Do not**: Directly edit `prd.{stem}.json` or `progress.{stem}.txt` (maintained by subagent per ralph-method).
+
+---
+
+## Step 0: Pre-Implementation Document Audit
+
+**Mandatory gate**: Before Step 1, the main Agent **must** launch `auditor-tasks-doc` and obtain PASS. This pre-audit is not optional and cannot be deferred until after implementation.
+
+### 发起前自检清单
+
+- [ ] DOC_PATH 已填入（绝对路径或相对项目根）
+- [ ] 已明确被执行文档是 TASKS 还是 BUGFIX
+- [ ] 已输出 CLI Calling Summary
+- [ ] 已准备完整审计 prompt 或完整 auditor-tasks-doc 执行体正文
+
+### CLI Calling Summary 示例
+
+```yaml
+=== CLI Calling Summary ===
+Input: DOC_PATH={文档路径}
+Template: Step 0 Pre-Implementation Document Audit
+Output: TASKS/BUGFIX 文档前置审计报告
+Fallback: L2 通用 Agent tool + 审计 prompt → L3 主 Agent 直接执行
+Acceptance: auditor-tasks-doc 结论为 PASS，方可进入 Step 1
+```
+
+### Mandatory rules
+
+1. `auditor-tasks-doc` 的语义是 **TASKS/BUGFIX 文档前置审计**。
+2. 只要 Step 0 未通过、未执行或结论不明，**禁止**进入 Step 1。
+3. Step 0 失败时必须先修正文档或回到用户补充信息阶段，不得“先实施后补审计”。
 
 ---
 
@@ -189,8 +224,11 @@ handoff:
 **Tool**: Agent tool
 **subagent_type**: `general-purpose`
 
+**Implementation precondition**: `auditor-tasks-doc` must have passed the TASKS/BUGFIX document pre-audit before this step starts.
+
 ### 发起前自检清单
 
+- [ ] `auditor-tasks-doc` 已完成 **TASKS/BUGFIX 文档前置审计** 且结论为 PASS；若未通过，已先返回文档修正流程
 - [ ] DOC_PATH 已填入（绝对路径或相对项目根）
 - [ ] TASK_LIST 已从文档解析并填入
 - [ ] 已输出 CLI Calling Summary
@@ -380,10 +418,11 @@ handoff:
 - 最终提交通过 `bmad-master` 门控
 - 禁止子代理自行 commit
 
-### Scoring 集成
+### Scoring / AuditIndex 集成
 
-- 审计报告须包含可解析评分块（供 `parse-and-write-score.ts` 提取）
-- 格式遵循 `.claude/skills/bmad-code-reviewer-lifecycle/SKILL.md` 定义
+- 审计报告须包含可解析评分块（供统一 auditor host runner 自动触发 score 写入）
+- `reportPath`、`artifactDocPath`、`stage` 必须完整，以便统一 auditor host runner 自动触发评分写入与 registry auditIndex 更新
+- 主 Agent **不得**在 standalone 路径里手工分别调用 `bmad-speckit score` 或 `update-runtime-audit-index`；统一通过 `runAuditorHost` / 统一 auditor host runner 承接
 
 ### 禁止词与模糊表述
 

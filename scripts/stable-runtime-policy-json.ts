@@ -3,8 +3,6 @@
  */
 /* eslint-disable jsdoc/require-description, jsdoc/require-param, jsdoc/require-returns */
 
-import type { RuntimePolicy } from './runtime-governance';
-
 function sortKeysDeep(value: unknown): unknown {
   if (value === null || typeof value !== 'object') {
     return value;
@@ -22,6 +20,6 @@ function sortKeysDeep(value: unknown): unknown {
 }
 
 /** Stable JSON for policy objects; arrays preserve element order. */
-export function stableStringifyPolicy(policy: RuntimePolicy): string {
-  return JSON.stringify(sortKeysDeep(policy) as RuntimePolicy);
+export function stableStringifyPolicy(policy: unknown): string {
+  return JSON.stringify(sortKeysDeep(policy));
 }

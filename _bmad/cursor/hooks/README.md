@@ -2,7 +2,7 @@
 
 源脚本与 Claude 共用治理内核，位于 `_bmad/claude/hooks/`：
 
-- `emit-runtime-policy-cli.js` — 优先 `node scripts/emit-runtime-policy.cjs`（来自 `@bmad-speckit/runtime-emit`，init 部署）；兼容旧名 `emit-runtime-policy.bundle.cjs`；否则 `ts-node` + `scripts/emit-runtime-policy.ts`
+- `emit-runtime-policy-cli.cjs` — 优先 hook 邻接 `emit-runtime-policy.cjs`；其次项目内 `scripts/emit-runtime-policy.cjs`；再使用 `@bmad-speckit/runtime-emit` bundle；最后才回退到 `ts-node` + `scripts/emit-runtime-policy.ts`
 - `runtime-policy-inject.js` — Cursor 宿主路径使用 `--cursor-host`，输出 Cursor-native hook JSON
 
 `init-to-root.js`（`--agent cursor`）与 install/sync 路径必须部署：

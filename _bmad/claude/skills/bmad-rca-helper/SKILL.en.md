@@ -43,7 +43,7 @@ The Claude variant of `bmad-rca-helper` must:
 - Keep executor selection, fallback, and scoring write aligned with the validated Cursor flow
 - Fully integrate:
   - `auditor-document` executor
-  - Scoring write (`parse-and-write-score.ts`)
+  - Unified auditor host runner (`runAuditorHost`)
   - Handoff protocol
 - **Not** mix Cursor Canonical Base, Claude Runtime Adapter, and Repo Add-ons into unclear prompt rewrites
 
@@ -215,19 +215,7 @@ handoff:
 
 #### Scoring
 
-On pass:
-
-```bash
-npx bmad-speckit score \
-  --reportPath {report path} \
-  --stage rca_doc \
-  --event stage_audit_complete \
-  --triggerStage speckit_4_2 \
-  --artifactDocPath {document path} \
-  --iteration-count {round} \
-  --scenario real_dev \
-  --writeMode single_file
-```
+On pass, do not hand-run `bmad-speckit score`. The executor only needs to return `projectRoot`, `reportPath`, and `artifactDocPath`; the invoking host/runner handles score write, audit-index updates, and the rest of post-audit automation.
 
 #### Commit gate
 

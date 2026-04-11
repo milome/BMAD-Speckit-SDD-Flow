@@ -640,13 +640,13 @@ prompt: |
 
   报告结尾必须按以下格式输出：结论：通过/未通过。必达子项：① 覆盖需求与 Epic；② 明确无禁止词；③ 多方案已共识；④ 无技术债/占位表述；⑤ 推迟闭环（若有「由 X.Y 负责」则 X.Y 存在且 scope 含该任务）；⑥ 本报告结论格式符合本段要求。若任一项不满足则结论为未通过，并列出不满足项及每条对应的修改建议。
 
-  【§Story 可解析块要求】报告结尾在结论与必达子项之后，**必须**追加可解析评分块（格式见 speckit-workflow/references/audit-prompts-critical-auditor-appendix.md §7）。须包含：独立一行「总体评级: [A|B|C|D]」及四行「- 需求完整性: XX/100」「- 可测试性: XX/100」「- 一致性: XX/100」「- 可追溯性: XX/100」。禁止用描述代替结构化块；总体评级仅限 A/B/C/D。禁止 B+、A-、C+、D- 等任意修饰符；介于两档时择一输出纯字母。映射建议：完全覆盖→A/90+；部分覆盖→B/80+；需修改→C/70+；不通过→D/60及以下。否则 parseAndWriteScore 无法解析、仪表盘无法显示评级。
+  【§Story 可解析块要求】报告结尾在结论与必达子项之后，**必须**追加可解析评分块（格式见 speckit-workflow/references/audit-prompts-critical-auditor-appendix.md §7）。须包含：独立一行「总体评级: [A|B|C|D]」及四行「- 需求完整性: XX/100」「- 可测试性: XX/100」「- 一致性: XX/100」「- 可追溯性: XX/100」。禁止用描述代替结构化块；总体评级仅限 A/B/C/D。禁止 B+、A-、C+、D- 等任意修饰符；介于两档时择一输出纯字母。映射建议：完全覆盖→A/90+；部分覆盖→B/80+；需修改→C/70+；不通过→D/60及以下。Otherwise the scoring parser cannot parse the block and the dashboard will not display grades.
 
   **Runtime sync (S10 - MANDATORY):** 审计结论为通过；通过判定之后、返回主 Agent 之前执行：
   `npx bmad-speckit sync-runtime-context-from-sprint --story-key <story_key>`
   `<story_key>` 填被审计 Story 的 kebab-case key，与 sprint-status `development_status` 中的键名相同。
 
-  【审计通过后必做】当结论为「通过」时，你（审计子代理）**在返回主 Agent 前必须**执行：`npx bmad-speckit score --reportPath <保存的报告路径> --stage story --event story_status_change --triggerStage bmad_story_stage2 --epic {epic_num} --story {story_num} --iteration-count {本 stage 累计 fail 轮数，0 表示一次通过}`。报告路径为 `_bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{story_num}-*/AUDIT_Story_{epic_num}-{story_num}_stage2.md`。若执行失败，在结论中注明 resultCode，不阻断返回。**禁止**在未执行上述命令前返回通过结论。
+  [Must do after passing the audit] When the conclusion is "pass", you (the audit subagent) **must** return `projectRoot`, `reportPath`, `artifactDocPath=<Story document path>`, and `stage=story` before returning to the main Agent, so the invoking host/runner can call `runAuditorHost`. The report path is `_bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{story_num}-*/AUDIT_Story_{epic_num}-{story_num}_stage2.md`. If the host/runner fails, indicate resultCode in the conclusion. **Do not** return a passing conclusion before the host close-out is complete.
 
   【审计未通过时】你（审计子代理）须在本轮内**直接修改被审 Story 文档**以消除 gap，修改完成后在报告中注明已修改内容；主 Agent 收到报告后发起下一轮审计。**禁止**仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules.md](../speckit-workflow/references/audit-document-iteration-rules.md)。
 ```
@@ -654,20 +654,20 @@ If the audit fails, **execute according to the report**: If the modification sug
 
 #### Step 2.3: Phase 2 admission check (mandatory, executed first)
 
-After receiving the passing conclusion of phase two and before entering phase three, the main agent must first execute `npx bmad-speckit check-score --epic {epic} --story {story}`. If the output is `STORY_SCORE_WRITTEN:yes`, there is no need to perform step 2.2 (the subagent has been written in [Must do after passing the audit]). If the output is `STORY_SCORE_WRITTEN:no` and the report file `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_Story_{epic}-{story}_stage2.md` exists, the main Agent performs step 2.2 to make up for the run. Failure non_blocking.
+After receiving the passing conclusion of phase two and before entering phase three, the main agent must first confirm that the unified auditor host runner has completed post-audit automation. If host execution is still missing and the report file `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_Story_{epic}-{story}_stage2.md` exists, the main Agent performs step 2.2 to backfill `runAuditorHost`. Failure remains non-blocking.
 
-#### Step 2.2: Run parse-and-write-score (executed when no is obtained in step 2.3)
+#### Step 2.2: Run runAuditorHost (executed when step 2.3 determines host close-out is missing)
 
-When step 2.3 results in `STORY_SCORE_WRITTEN:no` and the report file exists, the main Agent executes:
+When step 2.3 determines that host close-out is missing and the report file exists, the main Agent executes:
 ```bash
-npx bmad-speckit score --reportPath <报告路径> --stage story --event story_status_change --triggerStage bmad_story_stage2 --epic {epic} --story {story} --iteration-count 0
+npx ts-node scripts/run-auditor-host.ts --projectRoot <projectRoot> --stage story --artifactPath <Story document path> --reportPath <report path> --iterationCount 0
 ```
-After the make-up run, execute check again until yes or the report does not exist. Failure non_blocking.
+After the backfill run, confirm host close-out again until it is completed or the report no longer exists. Failure remains non-blocking.
 
-**Instructions for connection with T11**: The sub-agent will perform parse-and-write before returning in [Must do after passing the audit]; the main agent will first check step 2.3, and if yes, skip step 2.2 to avoid double writing.
+**T11 linkage**: the sub-agent only returns the fields required by the host runner; the main agent uses step 2.3 / 2.2 to ensure `runAuditorHost` has completed and to avoid duplicate close-out.
 
-#### Score writing is triggered after the audit passes (mandatory)
-- branch_id=bmad_story_stage2_audit_pass, event=story_status_change, triggerStage=bmad_story_stage2; the sub-agent executes parse-and-write in [Must do after passing the audit]; the main agent passes step 2.2/2.3 to do admission check and rerun; **must contain `--iteration-count {cumulative value}`**; stage=story; failure non_blocking, record resultCode.
+#### Unified host close-out after the audit passes (mandatory)
+- Story-stage score write, auditIndex update, and other post-audit automation are all handled by `runAuditorHost`; the main agent uses steps 2.2/2.3 to check completion and backfill when needed. **It must include `--iteration-count {cumulative value}`**; stage=story; failure remains non-blocking and resultCode must be recorded.
 
 ---
 
@@ -955,13 +955,13 @@ prompt: |
 
   请对 Story {epic_num}-{story_num} 执行 Dev Story 实施。
 
-  **各 stage 审计通过后落盘与 parseAndWriteScore 约束（强制）**：
+  **Post-audit persistence and unified host close-out for each stage (mandatory)**:
 
   （1）各 stage 审计通过时，将报告保存至 speckit-workflow §x.2 约定路径；spec/plan/GAPS/tasks 阶段路径分别为 specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/ 下的 AUDIT_spec-、AUDIT_plan-、AUDIT_GAPS-、AUDIT_tasks-E{epic_num}-S{story_num}.md；结论中注明保存路径及 iteration_count。
 
   （2）fail 轮报告保存至 AUDIT_{stage}-E{epic}-S{story}_round{N}.md。**验证轮**（连续 3 轮无 gap 的确认轮）报告**不列入 iterationReportPaths**，仅 fail 轮及最终 pass 轮参与收集。pass 时主 Agent 收集本 stage 所有 fail 轮报告路径，传入 `--iterationReportPaths path1,path2,...`（逗号分隔）；**一次通过或无 fail 轮时不传**。
 
-  （3）运行 `npx bmad-speckit score --reportPath <路径> --stage <spec|plan|tasks> --epic {epic_num} --story {story_num} --artifactDocPath <对应路径> --iteration-count {累计值}`；triggerStage 按阶段择 spec_1_2 等；必须含 --iteration-count。**iteration_count 传递（强制）**：执行审计循环的 Agent 在 pass 时传入当前累计值（本 stage 审计未通过/fail 的轮数）；**一次通过传 0**；**连续 3 轮无 gap 的验证轮不计入 iteration_count**；禁止省略。
+  （3）The invoking host/runner must call `runAuditorHost` for spec/plan/GAPS/tasks stage close-out; the main Agent no longer hand-runs `bmad-speckit score`. **iteration_count passing (mandatory)**: pass the cumulative number of failed rounds for the stage; use 0 for first-pass success; verification rounds in a 3-round no-gap check do not increment `iteration_count`; omission is prohibited.
 
   （4）implement 阶段 artifactDocPath 可为 story 子目录实现主文档路径或留空。
 
@@ -1025,9 +1025,9 @@ If any item fails, the audit must be completed first.
 
 ### Comprehensive audit
 
-Use `audit-prompts.md §5` for comprehensive validation. **Report parsable blocks must comply with §5.1** (four dimensions: functionality, code quality, test coverage, security), consistent with _bmad/_config/code-reviewer-config.yaml modes.code.dimensions, otherwise parseAndWriteScore(mode=code) cannot be parsed, and the dashboard displays "No data" in the four dimensions.
+Use `audit-prompts.md §5` for comprehensive validation. **Report parsable blocks must comply with §5.1** (four dimensions: functionality, code quality, test coverage, security), consistent with _bmad/_config/code-reviewer-config.yaml modes.code.dimensions, otherwise the code-mode scoring parser cannot parse them and the dashboard displays "No data" in the four dimensions.
 
-**[§5 Parsable block requirements (implement-only)]** The parsable scoring block at the end of the report **must** use the modes.code four dimension lines exactly as mandated in `audit-prompts.md` §5.1 / `code-reviewer-config.yaml` (Chinese labels for functionality, code quality, test coverage, security — copy verbatim from the STORY-A4-POSTAUDIT prompt fence). **Do not** use the story-stage four lines (requirements completeness, testability, consistency, traceability). The overall-rating line must use the bare `A|B|C|D` pattern with no `+`/`-` suffixes. Otherwise parseAndWriteScore(mode=code) cannot parse, and the dashboard shows empty dimension data.
+**[§5 Parsable block requirements (implement-only)]** The parsable scoring block at the end of the report **must** use the modes.code four dimension lines exactly as mandated in `audit-prompts.md` §5.1 / `code-reviewer-config.yaml` (Chinese labels for functionality, code quality, test coverage, security — copy verbatim from the STORY-A4-POSTAUDIT prompt fence). **Do not** use the story-stage four lines (requirements completeness, testability, consistency, traceability). The overall-rating line must use the bare `A|B|C|D` pattern with no `+`/`-` suffixes. Otherwise the code-mode scoring parser cannot parse the block and the dashboard shows empty dimension data.
 
 **Audit Dimensions**:
 1. Requirements coverage: Whether all requirements in the Story document are implemented
@@ -1049,17 +1049,17 @@ Use `audit-prompts.md §5` for comprehensive validation. **Report parsable block
 
 **Pass (Grade A/B)**:
 - Story marked as complete
-- #### Step 4.3: Story completes self-test (mandatory, executed first)
-  - Before **completion options** are provided, the master Agent **must first** execute: `npx bmad-speckit check-score --epic {epic} --story {story} [--stage implement]`
-  - If the output is `STORY_SCORE_WRITTEN:yes`, there is no need to perform step 4.2 (the subagent has been written in [Must do after passing the audit]).
-  - If the output is `STORY_SCORE_WRITTEN:no` and `AUDIT_Story_{epic}-{story}_stage4.md` exists, the main Agent performs step 4.2 to make up the run; check again after the make-up.
-  - If the output contains `DIMENSION_SCORES_MISSING:yes` (report dimension error), you must also make up for it: correct the report parsable block to code four dimensions, then re-parse-and-write-score, and check again until it passes.
-  - If the make-up fails, non_blocking, the main process continues.
-- #### Step 4.2: Run parse-and-write-score (executed when step 4.3 returns no or DIMENSION_SCORES_MISSING)
-  - When step 4.3 gets no and the report exists, the main Agent executes: `npx bmad-speckit score --reportPath <report path> --stage implement --event story_status_change --triggerStage bmad_story_stage4 --epic {epic} --story {story} --artifactDocPath <story document path> --iteration-count {The cumulative number of fail rounds for this stage, 0 means one pass}`
-  - If the call fails, record the resultCode and do not block the process (non_blocking).
-- #### Score writing is triggered after the audit is passed (mandatory)
-  - The sub-agent executes parse-and-write in [Must do after passing the audit]; the main agent passes step 4.3/4.2 to do admission check and make-up; **must contain `--iteration-count {cumulative value}`**; stage=implement; failure is non_blocking.
+- #### Step 4.3: Story completion self-check (mandatory, run first)
+  - Before **completion options** are provided, the main Agent **must first** confirm that the unified auditor host runner has completed implement-stage post-audit automation.
+  - If host close-out is already complete, there is no need to perform step 4.2.
+  - If host close-out is missing and `AUDIT_Story_{epic}-{story}_stage4.md` exists, the main Agent performs step 4.2 to backfill.
+  - If the report parsable block uses the wrong dimensions, fix the report first and then run `runAuditorHost` again.
+  - If the backfill fails, it remains non-blocking and the main flow continues.
+- #### Step 4.2: Run runAuditorHost (executed when step 4.3 determines host close-out is missing)
+  - When step 4.3 determines host close-out is missing and the report exists, the main Agent executes: `npx ts-node scripts/run-auditor-host.ts --projectRoot <projectRoot> --stage implement --artifactPath <story document path> --reportPath <report path> --iterationCount {The cumulative number of fail rounds for this stage, 0 means one pass}`
+  - If the call fails, record the resultCode and do not block the process (non-blocking).
+- #### Unified host close-out after the audit passes (mandatory)
+  - The sub-agent returns the fields required by the host runner in [Must do after passing the audit]; the main Agent uses steps 4.3/4.2 to verify completion and backfill when needed. **It must contain `--iteration-count {cumulative value}`**; stage=implement; failure remains non-blocking.
 - Provides completion options (see below)
 
 **Conditional Pass (Level C)**:
@@ -1437,7 +1437,7 @@ Execute after the subtask returns:
 
 ### 4.1 Audit sub-agent and prompt words
 
-Same as Phase 2: **Priority** Cursor Task schedules code-reviewer; **Fallback** mcp_task generalPurpose. The master Agent must copy the entire prompt template of **STORY-A4-POSTAUDIT** and replace the placeholders before passing it in. **The prompt passed into the audit subtask must contain [§5 parsable block requirements (implement-specific)]** (see the previous section on comprehensive auditing), and be accompanied by audit-prompts §5.1 or audit-prompts-code.md parsable block examples (functionality, code quality, test coverage, security). **[Must do after passing the audit]**: When the conclusion is "complete coverage, verification passed", you (audit subagent) **must** execute `npx bmad-speckit score --reportPath <report path> --stage implement --event story_status_change --triggerStage bmad_story_stage4 --epic {epic} --story {story} --artifactDocPath <story document path> --iteration-count {this stage before returning to the main Agent The cumulative number of fail rounds, 0 means one pass}`; the report path is `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_Story_{epic}-{story}_stage4.md`; if the execution fails, indicate the resultCode in the conclusion; **It is forbidden** to return a passing conclusion before execution. For detailed templates, see the historical version of this skill or speckit-workflow references.
+Same as Phase 2: **Priority** Cursor Task schedules code-reviewer; **Fallback** mcp_task generalPurpose. The main Agent must copy the entire prompt template of **STORY-A4-POSTAUDIT** and replace the placeholders before passing it in. **The prompt passed into the audit subtask must contain [§5 parsable block requirements (implement-specific)]** (see the previous section on comprehensive auditing), and be accompanied by audit-prompts §5.1 or audit-prompts-code.md parsable block examples (functionality, code quality, test coverage, security). **[Must do after passing the audit]**: when the conclusion is "complete coverage, verification passed", you (audit subagent) **must** return `projectRoot`, `reportPath`, `artifactDocPath=<story document path>`, and `stage=implement` so the invoking host/runner can call `runAuditorHost`; the report path is `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_Story_{epic}-{story}_stage4.md`; if host execution fails, indicate the resultCode in the conclusion; **it is forbidden** to return a passing conclusion before the host close-out is complete. For detailed templates, see the historical version of this skill or speckit-workflow references.
 
 If the audit conclusion is **failed**, **must** be modified according to the audit report and be initiated again until "complete coverage and verification passed".
 

@@ -1,5 +1,8 @@
 # 2026-03-27 Runtime Dashboard / Scoring / SFT 需求分析文档
 
+> **Current path**: `runAuditorHost`
+> **Legacy path**: `bmad-speckit score` / `parse-and-write-score`
+
 ## 0. 说明
 
 - **日期**：2026-03-27
@@ -769,4 +772,3 @@ runtime context / registry / run events
 - Hugging Face TRL SFTTrainer: <https://huggingface.co/docs/trl/sft_trainer>
 - Hugging Face TRL Dataset Formats: <https://huggingface.co/docs/trl/main/en/dataset_formats>
 - Hugging Face Transformers Chat Templating: <https://huggingface.co/docs/transformers/en/chat_templating>
-

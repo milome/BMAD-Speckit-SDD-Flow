@@ -1,12 +1,14 @@
 ---
 name: bmad-standalone-tasks
 description: |
-  Execute unfinished tasks from a user-provided TASKS/BUGFIX document via subagents only. Use when the user says "/bmad 按 {文档} 中的未完成任务实施" or "按 BUGFIX_xxx.md / TASKS_xxx.md 实施". Enforces mcp_task subagent for implementation, ralph-method (prd + progress, TDD), speckit-workflow (no pseudo-impl, acceptance commands), and code-reviewer audit with 批判审计员 >50% and 3 rounds no-gap convergence. Main Agent must NOT edit production code.
+  Execute unfinished tasks from a user-provided TASKS/BUGFIX document via subagents only. Use when the user says "/bmad 按 {文档} 中的未完成任务实施" or "按 BUGFIX_xxx.md / TASKS_xxx.md 实施". Enforces **TASKS/BUGFIX 文档前置审计先于实施执行**、mcp_task subagent for implementation, ralph-method (prd + progress, TDD), speckit-workflow (no pseudo-impl, acceptance commands), and code-reviewer audit with 批判审计员 >50% and 3 rounds no-gap convergence. Main Agent must NOT edit production code.
 ---
 
 # BMAD Standalone Tasks
 
 Execute unfinished work from a **single TASKS or BUGFIX document** in a single session. Implementation and code edits are **only** done by subagents; the main Agent orchestrates and audits.
+
+**实施前的 `auditor-tasks-doc` 属于 TASKS/BUGFIX 文档前置审计，且必须先于任何实施执行。** 不允许把文档前置审计降级成建议项、可选步骤或实施后补做项。
 
 ## When to use
 
@@ -42,8 +44,12 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 5. **Forbidden**  
    - Do not add "将在后续迭代" (or similar) in task descriptions.  
    - Do not mark a task complete if the behavior is not actually invoked or verified.
+6. **TASKS/BUGFIX 文档前置审计是实施前硬门槛**
+   `auditor-tasks-doc` 的职责是 **TASKS/BUGFIX 文档前置审计**。只要该审计尚未通过、尚未执行或结论不明，**禁止**进入任何实施执行、代码修改、测试实现或“先做再补审计”的路径。
 
 ## Main Agent responsibilities
+
+- **Do**: Before any implementation sub-task, ensure `auditor-tasks-doc` has audited the TASKS/BUGFIX document and passed.
 
 - **Do**: Resolve document path, read task list, **launch mcp_task** (implementation and audit), pass full context, **collect and summarize** subagent output.  
 - **Do**: If subagent returns incomplete, launch a **resume** mcp_task with the same agent ID; do **not** replace the subagent by editing code yourself.  
@@ -51,10 +57,29 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 
 ---
 
+## Step 0: Pre-Implementation Document Audit
+
+**Mandatory gate**: Before Step 1, the main Agent **must** launch a TASKS/BUGFIX document pre-audit and obtain PASS. This pre-audit is not optional and cannot be deferred until after implementation.
+
+**Tool**: 优先 Cursor Task 调度 `code-reviewer`；若不可用，则 `mcp_task` + `generalPurpose`
+
+**Audit target**:
+- TASKS 文档是否可执行、任务边界是否明确
+- BUGFIX 文档是否已具备可实施的 §7 / §8.1 任务列表
+- 文档中的验收命令、产出路径、范围限制是否足以支撑实施
+
+**Rule**:
+- PASS before implementation
+- FAIL or missing audit means **do not start Step 1**
+
+---
+
 ## Step 1: Implementation sub-task
 
 **Tool**: `mcp_task`  
 **subagent_type**: `generalPurpose`
+
+**Implementation precondition**: `auditor-tasks-doc` must have passed the TASKS/BUGFIX document pre-audit before this step starts.
 
 **Prompt template** (fill placeholders; pass full TASKS path and constraints):
 

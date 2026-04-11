@@ -152,10 +152,10 @@ describe('Speckit Implement Agent Definition', () => {
       expect(content).toMatch(/连续.*3.*轮/);
     });
 
-    it('should trigger bmad-speckit score', () => {
+    it('should trigger unified auditor host runner for final audit close-out', () => {
       const content = readFileSync(agentPath, 'utf8');
-      expect(content).toMatch(/bmad-speckit score/);
-      expect(content).toMatch(/stage implement/);
+      expect(content).toMatch(/runAuditorHost/);
+      expect(content).toMatch(/host\/runner/);
     });
   });
 

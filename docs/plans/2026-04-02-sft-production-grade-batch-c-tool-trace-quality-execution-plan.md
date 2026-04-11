@@ -1,5 +1,8 @@
 # SFT 生产级数据生成增强 Batch C Tool Trace + Quality Execution Plan
 
+> **Current path**: `runAuditorHost`
+> **Legacy path**: `bmad-speckit score` / `parse-and-write-score`
+
 ## 1. Plan 元信息
 
 - Internal grade: `M`

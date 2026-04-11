@@ -211,7 +211,7 @@ PROMPT_PATH="_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story
 - 对照基线:
   - `.claude/skills/speckit-workflow/references/audit-prompts.md` §1
 - 基线要求:
-  - 你是一位非常严苛的代码审计员，请帮我仔细审阅目前的 spec.md 是否完全覆盖了原始的需求设计文档所有章节，必须逐条进行检查和验证。若发现 spec 中存在模糊表述（如需求描述不明确、边界条件未定义、术语歧义等），须在报告中明确标注「spec 存在模糊表述」及具体位置，以便触发clarify 澄清流程。生成一个逐条描述详细检查内容、验证方式和验证结果的审计报告。报告结尾必须明确给出结论：是否「完全覆盖、验证通过」；若未通过，请列出遗漏章节、未覆盖要点或模糊表述位置。报告结尾必须包含§4.1 规定的可解析评分块（总体评级 + 维度评分），与 tasks 阶段一致，否则 parseAndWriteScore 无法解析、仪表盘无法显示评级。禁止用描述代替结构化块：不得在总结或正文中用「可解析评分块（总体评级 X，维度分 Y–Z）」等文字概括；必须在报告中输出完整的结构化块，包括独立一行总体评级: X 和四行- 维度名: XX/100。总体评级只能是A/B/C/D（禁止A-、B+、C+、D- 等任意修饰符）。维度分必须逐行写明，不得用区间或概括代替。【§1 可解析块要求】审计时须同时执行批判审计员检查，输出格式见 [audit-prompts-critical-auditor-appendix.md](audit-prompts-critical-auditor-appendix.md)。  - 审计通过时，审计子代理必须：①在被审文档末尾追加 `<!-- AUDIT: PASSED by code-reviewer -->`（若已存在则跳过）；②将完整报告保存至调用方指定的 reportPath，并在结论中注明保存路径及 iteration_count。  - 审计通过时，审计子代理在返回主 Agent 前必须执行：`npx bmad-speckit score --reportPath <reportPath> --stage spec --event stage_audit_complete --triggerStage speckit_1_2 --epic {epic} --story {story} --artifactDocPath specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/spec-E{epic}-S{story}.md --iteration-count {累计值} --scenario real_dev --writeMode single_file`、  - 保存报告时禁止重复输出「正在写入完整审计报告」「正在保存」等状态信息；使用 write 工具一次性写入即可。  - 审计未通过时，审计子代理须在本轮内直接修改被审文档以消除gap，修改完成后在报告中注明已修改内容；主 Agent 收到报告后发起下一轮审计。禁止仅输出修改建议而不修改文档。详见`audit-document-iteration-rules.md`。
+  - 你是一位非常严苛的代码审计员，请帮我仔细审阅目前的 spec.md 是否完全覆盖了原始的需求设计文档所有章节，必须逐条进行检查和验证。若发现 spec 中存在模糊表述（如需求描述不明确、边界条件未定义、术语歧义等），须在报告中明确标注「spec 存在模糊表述」及具体位置，以便触发clarify 澄清流程。生成一个逐条描述详细检查内容、验证方式和验证结果的审计报告。报告结尾必须明确给出结论：是否「完全覆盖、验证通过」；若未通过，请列出遗漏章节、未覆盖要点或模糊表述位置。报告结尾必须包含§4.1 规定的可解析评分块（总体评级 + 维度评分），与 tasks 阶段一致，否则 parseAndWriteScore 无法解析、仪表盘无法显示评级。禁止用描述代替结构化块：不得在总结或正文中用「可解析评分块（总体评级 X，维度分 Y–Z）」等文字概括；必须在报告中输出完整的结构化块，包括独立一行总体评级: X 和四行- 维度名: XX/100。总体评级只能是A/B/C/D（禁止A-、B+、C+、D- 等任意修饰符）。维度分必须逐行写明，不得用区间或概括代替。【§1 可解析块要求】审计时须同时执行批判审计员检查，输出格式见 [audit-prompts-critical-auditor-appendix.md](audit-prompts-critical-auditor-appendix.md)。  - 审计通过时，审计子代理必须：①在被审文档末尾追加 `<!-- AUDIT: PASSED by code-reviewer -->`（若已存在则跳过）；②将完整报告保存至调用方指定的 reportPath，并在结论中注明保存路径及 iteration_count；③返回 `projectRoot`、`reportPath`、`artifactDocPath`、`stage=spec` 供 invoking host/runner 使用。  - 审计通过后，评分写入、auditIndex 更新与其它 post-audit automation 统一由 invoking host/runner 通过 `runAuditorHost` 承接；审计子代理不得手工执行 `bmad-speckit score`。  - 保存报告时禁止重复输出「正在写入完整审计报告」「正在保存」等状态信息；使用 write 工具一次性写入即可。  - 审计未通过时，审计子代理须在本轮内直接修改被审文档以消除gap，修改完成后在报告中注明已修改内容；主 Agent 收到报告后发起下一轮审计。禁止仅输出修改建议而不修改文档。详见`audit-document-iteration-rules.md`。
 ## Claude/OMC Runtime Adapter
 
 本节只允许放置执行层适配信息，不得承载审计语义主要求。
@@ -231,7 +231,7 @@ PROMPT_PATH="_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story
 - 审计失败处理:
   - 主 Agent 根据 required_fixes 修改 spec 文档后重新发起下一轮审计- 审计通过处理:
   - 追加通过标记
-  - 触发评分写入
+  - 由 invoking host/runner 调用 `runAuditorHost`
   - 更新状态文件
 ## Repo Add-ons
 
@@ -293,7 +293,7 @@ Task({
 1. **FAIL**: 根据 required_fixes 修改 spec.md，**迭代计数+1**，重新执行Step 4
 2. **PASS**:
    - 在spec.md 末尾追加 `<!-- AUDIT: PASSED by code-reviewer -->`
-   - 触发评分写入
+   - 由 invoking host/runner 调用 `runAuditorHost`
    - 更新状态
 **审计报告路径** (Cursor speckit format):
 ```bash
@@ -309,21 +309,16 @@ specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/AUDIT_spec-E{epic}-S{st
 - 审计报告必须包含 `## 批判审计员结论` 段落
 - 该段落**字数占比 ≥70%**（批判审计员段落字数 ÷ 报告总字数≥0.7）；必须列出已检查的维度及每维度结论
 - 必须明确写出「本轮无新gap」或「本轮存在gap」。
-### Step 5: 评分写入
+### Step 5: 统一 Auditor Host Runner
 
 PASS 时执行
 ```bash
-npx bmad-speckit score \
-  --reportPath specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/AUDIT_spec-E{epic}-S{story}.md \
+npx ts-node scripts/run-auditor-host.ts \
+  --projectRoot {projectRoot} \
   --stage spec \
-  --event stage_audit_complete \
-  --triggerStage speckit_1_2 \
-  --epic {epic} \
-  --story {story} \
-  --artifactDocPath specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/spec-E{epic}-S{story}.md \
-  --iteration-count {count} \
-  --scenario real_dev \
-  --writeMode single_file
+  --artifactPath specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/spec-E{epic}-S{story}.md \
+  --reportPath specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/AUDIT_spec-E{epic}-S{story}.md \
+  --iterationCount {count}
 ```
 
 ### Step 6: 状态更新(Story-Specific)

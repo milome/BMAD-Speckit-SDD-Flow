@@ -1,5 +1,8 @@
 # Runtime Dashboard Cherry-Pick Decision Summary
 
+> **Current path**: `runAuditorHost`
+> **Legacy path**: `bmad-speckit score` / `parse-and-write-score`
+
 > 给人审阅的决策版摘要。用于快速决定哪些 commit 直接 cherry-pick，哪些 commit 必须模型手工迁移，以及每个阶段成功的判断标准。
 
 ## 核心结论

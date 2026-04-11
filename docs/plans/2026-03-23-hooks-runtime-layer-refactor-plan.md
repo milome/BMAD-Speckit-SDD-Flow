@@ -1,5 +1,8 @@
 # Hooks Runtime Layer Refactor Implementation Plan
 
+> **Current path**: `runAuditorHost`
+> **Legacy path**: `bmad-speckit score` / `parse-and-write-score`
+
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** 将当前分散在 `_bmad/claude/hooks/` 的共享运行时治理 hook 逻辑重构为清晰的三层结构：`_bmad/runtime/hooks/` 作为 shared canonical logic，`_bmad/claude/hooks/` 与 `_bmad/cursor/hooks/` 作为宿主 adapter，从而让治理逻辑归属、部署规则和宿主差异都清晰可维护。

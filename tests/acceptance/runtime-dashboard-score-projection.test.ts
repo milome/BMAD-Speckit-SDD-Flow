@@ -41,7 +41,10 @@ describe('runtime dashboard score projection wiring', () => {
     ) as { runId: string };
 
     await parseAndWriteScore({
-      content: fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8'),
+      content: fs.readFileSync(
+        path.join(FIXTURES, 'sample-implement-report-with-four-dimensions.md'),
+        'utf-8'
+      ),
       stage: 'implement',
       runId: lastRun.runId,
       scenario: 'real_dev',

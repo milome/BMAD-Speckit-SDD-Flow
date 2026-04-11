@@ -317,7 +317,7 @@ npx bmad-speckit dashboard-status
 - `.claude/hooks/governance-remediation-runner.cjs`
 - `.claude/settings.json`
 
-如果宿主不触发 hook，也可以手动执行：
+如果宿主没有执行相关 hook，仍可把下面命令当成安装校验或排障 fallback：
 
 ```bash
 npx bmad-speckit dashboard-start --open
@@ -326,6 +326,7 @@ npx bmad-speckit dashboard-start --open
 说明：
 
 - dashboard 的自动启动是通过宿主 hooks 完成的
+- 上面的手工命令只用于 dashboard 生命周期验证与排障，不代表治理或 post-audit 主路径需要人工触发
 - 默认不需要单独启动 MCP server，dashboard 本身即可提供人工可见的运行时观察能力
 - 只有当你明确需要工具化的 runtime 接口时，才考虑 `runtime-mcp`
 

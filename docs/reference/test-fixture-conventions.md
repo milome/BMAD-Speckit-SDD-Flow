@@ -1,5 +1,8 @@
 # Test Fixture Conventions
 
+> **Current path**: stage-semantic fixtures aligned to parser / runtime dashboard / host-runner consumers
+> **Legacy path**: cross-stage fixture reuse and semantic drift
+
 ## 目标
 
 测试 fixture 必须与被测 `stage`、评分模式、预期验收语义保持一致。  

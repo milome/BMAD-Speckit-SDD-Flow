@@ -36,11 +36,17 @@ describe('dashboard runtime snapshot integration', () => {
     });
 
     const lastRun = JSON.parse(
-      fs.readFileSync(path.join(root, '_bmad-output', 'runtime', 'last-dev-story-run.json'), 'utf-8')
+      fs.readFileSync(
+        path.join(root, '_bmad-output', 'runtime', 'last-dev-story-run.json'),
+        'utf-8'
+      )
     ) as { runId: string };
 
     await parseAndWriteScore({
-      content: fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8'),
+      content: fs.readFileSync(
+        path.join(FIXTURES, 'sample-implement-report-with-four-dimensions.md'),
+        'utf-8'
+      ),
       stage: 'implement',
       runId: lastRun.runId,
       scenario: 'real_dev',
@@ -178,7 +184,11 @@ describe('dashboard runtime snapshot integration', () => {
     return fixturePromise.then((fixture) => {
       roots.push(fixture.root);
 
-      const markdownPath = path.join(fixture.root, '_bmad-output', 'dashboard-real-tool-trace-matrix.md');
+      const markdownPath = path.join(
+        fixture.root,
+        '_bmad-output',
+        'dashboard-real-tool-trace-matrix.md'
+      );
       const jsonPath = path.join(
         fixture.root,
         '_bmad-output',
@@ -237,9 +247,7 @@ describe('dashboard runtime snapshot integration', () => {
         })
       );
       expect(snapshot.sft_summary.redaction_preview).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ status: 'clean' }),
-        ])
+        expect.arrayContaining([expect.objectContaining({ status: 'clean' })])
       );
       expect(markdown).toContain('Redaction Clean: 3');
     });

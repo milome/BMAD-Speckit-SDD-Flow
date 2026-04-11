@@ -472,18 +472,16 @@ Delete `_bmad-output/current_pytest_session_pid.txt` after execution is complete
 
 **Must be done when it fails (it is forbidden to run for only one round and end)**: If the audit conclusion is "**Failed**" or the audit report lists failed items and modification suggestions, the main Agent **must** execute according to the modification suggestions (entrust the sub-agent to modify the code or update BUGFIX/documentation), and then **initiate** the post-implementation audit again (using the same template BUG-A4-POSTAUDIT); repeat "Audit → If it fails, modify according to the suggestions → Re-audit" until the conclusion is "**fully covered and verified**". It is prohibited to complete only one round of auditing or report completion to the user when the conclusion is that it has failed.
 
-**Score writing after passing the audit (must be executed)**: After the post-implementation audit conclusion is "complete coverage, verification passed", the main Agent **must** call `parseAndWriteScore` to write the implement stage score into the scoring storage. When a BUGFIX document is present, `artifactDocPath=<BUGFIX document path>` must be passed in explicitly to ensure that `record.source_path` correctly points to the BUGFIX document (and not the audit report path).
+**Unified host close-out after passing the audit (must be executed)**: After the post-implementation audit conclusion is "complete coverage, verification passed", the main Agent **must not** hand-run `parseAndWriteScore` or any audit-index CLI. It must call `runAuditorHost` as the single post-audit entry. When a BUGFIX document is present, the host/runner must receive `artifactDocPath=<BUGFIX document path>` to ensure `record.source_path` and registry audit index both point to the BUGFIX document instead of the audit report path.
 
-**CLI call example** (executed in the project root directory):
+**Host call example** (executed in the project root directory):
 ```bash
-npx bmad-speckit score \
-  --reportPath <审计报告路径> \
-  --stage implement \
-  --epic {epic} \
-  --story {story} \
-  --artifactDocPath <BUGFIX 文档路径> \
-  --iteration-count <累计失败轮数，0 表示一次通过> \
-  --skipTriggerCheck true
+npx ts-node scripts/run-auditor-host.ts \
+  --projectRoot <projectRoot> \
+  --stage bugfix \
+  --artifactPath <BUGFIX document path> \
+  --reportPath <audit report path> \
+  --iterationCount <cumulative failed rounds, 0 means first-pass success>
 ```
 **Path Convention**: The value of `artifactDocPath` is consistent with the "Output Path Convention" - when there is story: `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/BUGFIX_{slug}.md`; without story When: `_bmad-output/implementation-artifacts/_orphan/BUGFIX_{slug}.md`.
 

@@ -1,6 +1,8 @@
 # Speckit Exception Log Template
 
 > 用于记录被显式允许的治理例外。默认策略来源于 [`../../_bmad/_config/speckit-governance.yaml`](../../_bmad/_config/speckit-governance.yaml) 的 `exception_policy`。
+> **Current path**: explicit governance debt ledger with owner + next gate
+> **Legacy path**: implicit waiver / later-fix note without traceability
 
 ---
 
@@ -31,15 +33,15 @@
 
 ## 必填字段
 
-| 字段 | 说明 |
-|---|---|
-| `exception_id` | 唯一 ID，例如 `EX-20260327-01` |
-| `risk_tier` | `low` / `medium` / `high` |
-| `affected_stage` | 受影响阶段，如 `readiness`、`tasks`、`implement`、`closure` |
-| `owner` | 谁对该例外负责收口 |
-| `reason` | 为什么必须开例外，而不是正常过 gate |
-| `mitigation` | 当前缓解动作 |
-| `expiry_or_next_gate` | 失效时间或下一次必须重新过的 gate |
+| 字段                  | 说明                                                        |
+| --------------------- | ----------------------------------------------------------- |
+| `exception_id`        | 唯一 ID，例如 `EX-20260327-01`                              |
+| `risk_tier`           | `low` / `medium` / `high`                                   |
+| `affected_stage`      | 受影响阶段，如 `readiness`、`tasks`、`implement`、`closure` |
+| `owner`               | 谁对该例外负责收口                                          |
+| `reason`              | 为什么必须开例外，而不是正常过 gate                         |
+| `mitigation`          | 当前缓解动作                                                |
+| `expiry_or_next_gate` | 失效时间或下一次必须重新过的 gate                           |
 
 推荐补充字段：
 

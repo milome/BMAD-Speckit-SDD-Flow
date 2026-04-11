@@ -1,6 +1,8 @@
 # Speckit Done Standards
 
 > 各阶段的退出标准参考。策略键来自 [`../../_bmad/_config/speckit-governance.yaml`](../../_bmad/_config/speckit-governance.yaml) 的 `stage_done_standards`。
+> **Current path**: readiness / implement / closure done 标准与统一治理和 post-audit artifacts 对齐
+> **Legacy path**: 文档基本齐全就算 done，closure 后置动作靠人工补
 
 ---
 
@@ -163,14 +165,14 @@
 
 ## 7. 快速判定表
 
-| Stage | 最关键的 blocker 问题 |
-|---|---|
-| PRD | P0 journey 与 completion state 是否可验证 |
+| Stage        | 最关键的 blocker 问题                                 |
+| ------------ | ----------------------------------------------------- |
+| PRD          | P0 journey 与 completion state 是否可验证             |
 | Architecture | key path、fixture strategy、smoke/full split 是否清楚 |
-| Readiness | blocker words 与 silent assumptions 是否已清掉 |
-| Tasks | 是否仍是 module queue 而非 runnable slice |
-| Implement | 是否出现 `module complete but journey not runnable` |
-| Closure | deferred gap、next gate、owner 是否都写清 |
+| Readiness    | blocker words 与 silent assumptions 是否已清掉        |
+| Tasks        | 是否仍是 module queue 而非 runnable slice             |
+| Implement    | 是否出现 `module complete but journey not runnable`   |
+| Closure      | deferred gap、next gate、owner 是否都写清             |
 
 ---
 

@@ -120,7 +120,8 @@ outputs/runtime/runtime-dashboard/server.json
 这意味着：
 
 - 理想路径下，用户不需要再手工敲 `dashboard-start`。
-- 若 host 没执行 hook，仍可手工执行 `dashboard-start --open` 作为 fallback。
+- 若 host 没执行 hook，仍可手工执行 `dashboard-start --open` 作为 dashboard fallback。
+- 这类手工 fallback 仅针对 dashboard 生命周期，不代表治理或 post-audit 主路径需要人工触发。
 
 ## Claude Code CLI 消费项目
 

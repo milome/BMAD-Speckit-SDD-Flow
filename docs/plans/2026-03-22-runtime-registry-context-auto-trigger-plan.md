@@ -1,5 +1,8 @@
 # Runtime Registry Context Auto Trigger Implementation Plan
 
+> **Current path**: `runAuditorHost`
+> **Legacy path**: `bmad-speckit score` / `parse-and-write-score`
+
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** 让 `full_bmad`、`seeded_solutioning`、`standalone_story` 三种模式都由系统入口自动生成并刷新 runtime registry / scoped context，而不是依赖调用方或用户记住何时手工补上下文。

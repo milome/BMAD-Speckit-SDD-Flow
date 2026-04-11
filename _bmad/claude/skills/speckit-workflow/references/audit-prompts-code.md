@@ -49,4 +49,4 @@ implement 阶段审计报告必须在结尾包含以下可解析块，与 `_bmad
 
 ## 审计后动作
 
-审计通过时，请将完整报告保存至调用方在本 prompt 中指定的 reportPath。implement 阶段的 reportPath 通常为 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_implement-E{epic}-S{story}.md` 或 `AUDIT_Story_{epic}-{story}_stage4.md`。并在结论中注明保存路径及 iteration_count，以便主 Agent 调用 parse-and-write-score。
+审计通过时，请将完整报告保存至调用方在本 prompt 中指定的 reportPath。implement 阶段的 reportPath 通常为 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_implement-E{epic}-S{story}.md` 或 `AUDIT_Story_{epic}-{story}_stage4.md`。并在结论中注明保存路径及 iteration_count，以便主 Agent / 宿主调用 runAuditorHost。

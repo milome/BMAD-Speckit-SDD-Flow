@@ -44,7 +44,7 @@ Claude 版 `bmad-bug-assistant` 必须满足：
 - 各阶段的执行器选择、fallback、评分写入均与 Cursor 已验证流程语义一致
 - 完整接入本仓新增的：
   - auditor-bugfix、auditor-implement 执行体
-  - 评分写入（`parse-and-write-score.ts`）
+  - 统一 auditor host runner（`runAuditorHost`）
   - handoff 协议
 - 不得将 Cursor Canonical Base、Claude Runtime Adapter、Repo Add-ons 混写为来源不明的重写版 prompt
 - **主 Agent 禁止直接修改生产代码**（FR20a）
@@ -55,7 +55,7 @@ Claude 版 `bmad-bug-assistant` 必须满足：
 
 以下内容继承自 Cursor `bmad-bug-assistant`，属于业务语义基线，Claude 版不得擅自重写其意图。
 
-本 skill 定义 **根因分析 → BUGFIX 文档 → 审计 →（可选）信息补充更新 → 任务列表补充 → 实施 → 实施后审计** 的完整工作流。**实施后审计为必须步骤，非可选。**未通过时必须按修改建议修复后再次审计，直至通过。
+本 skill 定义 **根因分析 → BUGFIX 文档 → 审计 →（可选）信息补充更新 → 任务列表补充 → 实施 → 实施后审计** 的完整工作流。**实施前的 `auditor-bugfix` 属于 BUGFIX 文档审计，且必须先于任何修复实现执行。** **实施后审计为必须步骤，非可选。**未通过时必须按修改建议修复后再次审计，直至通过。
 
 ### 强制约束（必须遵守）
 
@@ -64,6 +64,7 @@ Claude 版 `bmad-bug-assistant` 必须满足：
 3. **主 Agent 禁止直接改生产代码**：实施修复必须通过子代理执行；主 Agent 仅发起子任务、传入文档路径、收集输出。
 4. **主 Agent 禁止直接生成 BUGFIX 文档**：阶段一、二的 BUGFIX 文档（含 §1–§5）必须由 party-mode 或子代理产出；主 Agent 不得以「已有分析文档」「根因已共识」等为由跳过子代理并自行撰写 BUGFIX 文档。
 5. **凡更新必审计**：凡产出或更新 BUGFIX 文档（含 §4、§7），完成后**必须**发起审计子任务并迭代至通过；**禁止**省略审计步骤。无论是否经过辩论，审计闭环为必做项。
+6. **BUGFIX 文档审计是实施前硬门槛**：`auditor-bugfix` 的职责是 **BUGFIX 文档审计**，不是实施后代码审计。只要 `auditor-bugfix` 尚未通过，**禁止**进入任何修复实现、代码修改、测试实现或“先修后补审计”的路径。
 
 ### 主 Agent 传递提示词规则（必守）
 
@@ -97,6 +98,7 @@ Claude 版 `bmad-bug-assistant` 必须满足：
 | ---- | --------- |
 | **party-mode** | `{project-root}/_bmad/core/workflows/party-mode/`；轮次与收敛见 step-02（BUGFIX 产出最终方案与 §7 任务列表：至少 100 轮；其它：50 轮；收敛条件再结束）。 |
 | **auditor-bugfix 执行体** | `.claude/agents/auditors/auditor-bugfix.md`；找不到则按 Fallback Strategy 降级 |
+| **auditor-bugfix 的门槛语义** | `auditor-bugfix` = BUGFIX 文档审计执行体，**必须先于修复实现通过** |
 | **audit-prompts §5** | `references/audit-prompts-section5.md`（本 skill 内）或 `{project-root}/docs/speckit/skills/speckit-workflow/references/audit-prompts.md`；**仅作其他工作流参考，不用于本 skill 的 BUGFIX 文档审计**。 |
 | **audit-document-iteration-rules** | `.claude/skills/speckit-workflow/references/audit-document-iteration-rules.md`；阶段一、二、三的 BUGFIX **文档**审计须遵循：审计子代理在发现 gap 时须直接修改 BUGFIX 文档。阶段四为实施后审计（代码），不适用。 |
 | **ralph-method** | 使用 ralph-method skill：prd、progress 文件，按 US 顺序执行 |
@@ -243,6 +245,7 @@ Claude 版 `bmad-bug-assistant` 必须满足：
 - 返回必须包含：`execution_summary`、`artifacts`、`handoff`
 - 审计子任务类型按 `code-reviewer` 语义执行
 - PASS 后才允许进入下一阶段
+- `auditor-bugfix` 的 PASS 是进入修复实现前的硬门槛，不得被解释为建议项或实施后补审计
 - 修复完成后仍需实施后审计与 `bmad-master` commit gate
 
 ### CLI Calling Summary（Architecture Pattern 2）
@@ -285,19 +288,7 @@ handoff:
 
 ### 评分写入
 
-审计通过后评分写入（必须执行）：实施后审计结论为「完全覆盖、验证通过」后，主 Agent **必须**调用 `parseAndWriteScore` 将 implement 阶段评分写入 scoring 存储。当存在 BUGFIX 文档时，**必须**显式传入 `artifactDocPath=<BUGFIX 文档路径>`。
-
-**CLI 调用示例**（在项目根目录执行）：
-```bash
-npx bmad-speckit score \
-  --reportPath <审计报告路径> \
-  --stage implement \
-  --epic {epic} \
-  --story {story} \
-  --artifactDocPath <BUGFIX 文档路径> \
-  --iteration-count <累计失败轮数，0 表示一次通过> \
-  --skipTriggerCheck true
-```
+审计通过后评分写入与 audit index 更新（必须执行）：实施后审计结论为「完全覆盖、验证通过」后，主 Agent **不得**再手工分别编排 `parseAndWriteScore` 或 auditIndex CLI；应统一通过 `runAuditorHost` / 统一 auditor host runner 承接 post-audit automation。host runner 负责基于 `reportPath`、`artifactDocPath`、`stage` 自动触发评分写入与 registry auditIndex 更新。
 
 ### State Updates
 
@@ -544,6 +535,8 @@ artifacts:
 
 ### 4.1 发起实施子任务
 
+**实施前硬门槛**：进入本节前，`auditor-bugfix` 必须已对 BUGFIX 文档完成审计并给出通过结论。若 BUGFIX 文档审计未通过、未执行或结论不明，**禁止**发起实施子任务。
+
 | 项 | 内容 |
 | -- | ---- |
 | 子代理 | Agent tool（`subagent_type: general-purpose`） |
@@ -554,6 +547,7 @@ artifacts:
 
 在发起子任务前，**必须**确认 prompt 中包含以下全部内容，否则子代理无法遵守 ralph-method 与 TDD 红绿灯：
 
+- [ ] `auditor-bugfix` 已完成 **BUGFIX 文档审计**，且结论为通过；若未通过，已先返回文档审计迭代流程
 - [ ] ralph-method：prd/progress 创建与更新规则（含命名规则、每 US 完成后更新）
 - [ ] TDD 红绿灯：先改测试（红灯）→ 实现（绿灯）→ 重构；每步运行验收；progress 须含 [TDD-RED]/[TDD-GREEN]/[TDD-REFACTOR] 格式记录（见 bmad-story-assistant §3.2）
 - [ ] 「请读取 ralph-method 与 speckit-workflow 技能」或等效的**内联约束**（见下方模板）
@@ -641,7 +635,7 @@ Amelia 开发 的规范已在上方 5 条中列出，子代理按内联执行即
 
 **未通过时必做（禁止只跑一轮即结束）**：若审计结论为「**未通过**」或审计报告中列出未通过项及修改建议，主 Agent **必须**按修改建议执行（委托子代理修改代码或更新 BUGFIX/文档），然后**再次发起**实施后审计（使用同一模板 BUG-A4-POSTAUDIT）；重复「审计 → 若未通过则按建议修改 → 再审计」直至结论为「**完全覆盖、验证通过**」。禁止在结论为未通过时仅做一轮审计即结束或向用户报告完成。
 
-**审计通过后评分写入（必须执行）**：实施后审计结论为「完全覆盖、验证通过」后，主 Agent **必须**调用 `parseAndWriteScore` 将 implement 阶段评分写入 scoring 存储。当存在 BUGFIX 文档时，**必须**显式传入 `artifactDocPath=<BUGFIX 文档路径>`，以确保 `record.source_path` 正确指向 BUGFIX 文档（而非审计报告路径）。
+**审计通过后统一 Host 收口（必须执行）**：实施后审计结论为「完全覆盖、验证通过」后，主 Agent **不得**再手工调用 `parseAndWriteScore` 或其它 auditIndex CLI；必须统一调用 `runAuditorHost`。当存在 BUGFIX 文档时，必须确保 host/runner 收到 `artifactDocPath=<BUGFIX 文档路径>`，以保证评分记录与 registry auditIndex 都绑定到 BUGFIX 文档而非审计报告路径。
 
 **路径约定**：`artifactDocPath` 取值与「产出路径约定」一致——有 story 时：`_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/BUGFIX_{slug}.md`；无 story 时：`_bmad-output/implementation-artifacts/_orphan/BUGFIX_{slug}.md`。
 

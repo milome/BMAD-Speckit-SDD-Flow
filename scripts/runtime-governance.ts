@@ -19,9 +19,139 @@ import { loadConfig, getAuditConvergence, getStageConfig } from './bmad-config';
 import { scoringEnabledForTriggerStage } from '../packages/scoring/trigger/trigger-loader';
 import { parseRuntimePolicyTemplatesYaml } from './runtime-governance-template-schema';
 import { applyRegisteredAugmenters } from './runtime-governance-registry';
+import {
+  deriveContextMaturity,
+  type ContextMaturity,
+  type ContextMaturityEvidence,
+  type RuntimeSourceMode,
+} from '../packages/runtime-context/src/context';
 
 /** 流程类型（扩展时可与 orchestrator 枚举对齐） */
 export type RuntimeFlowId = 'story' | 'bugfix' | 'standalone_tasks' | 'epic' | 'unknown';
+
+export type ImplementationReadinessStatus =
+  | 'missing'
+  | 'blocked'
+  | 'repair_in_progress'
+  | 'ready_clean'
+  | 'repair_closed'
+  | 'stale_after_semantic_change';
+
+export type BmadHelpComplexity = 'low' | 'medium' | 'high';
+
+export interface BmadHelpComplexityFactors {
+  impactSurface: 0 | 1 | 2;
+  sharedContract: 0 | 1 | 2;
+  verificationCost: 0 | 1 | 2;
+  uncertainty: 0 | 1 | 2;
+  rollbackDifficulty: 0 | 1 | 2;
+  forcedReasons?: string[];
+}
+
+export interface ImplementationReadinessEvidence {
+  documentAuditPassed?: boolean;
+  readinessReportPresent?: boolean;
+  blockerCount?: number;
+  remediationState?: 'none' | 'in_progress' | 'closed';
+  rerunGateStatus?: 'unknown' | 'pass' | 'fail';
+  staleAfterSemanticChange?: boolean;
+}
+
+const DIRECT_HIGH_COMPLEXITY_REASONS = new Set([
+  'shared_contract',
+  'shared_types',
+  'schema',
+  'permission_boundary',
+  'completion_semantics',
+  'dependency_semantics',
+  'fixture_assumptions',
+  'ci',
+  'root_config',
+  'infra',
+  'data_migration',
+  'persistence_semantics',
+]);
+
+export function deriveBmadHelpContextMaturity(
+  sourceMode?: RuntimeSourceMode,
+  evidence: ContextMaturityEvidence = {}
+): ContextMaturity {
+  return deriveContextMaturity(sourceMode, evidence);
+}
+
+export function deriveBmadHelpComplexity(factors: BmadHelpComplexityFactors): {
+  score: number;
+  level: BmadHelpComplexity;
+  forcedReasons: string[];
+} {
+  const score =
+    factors.impactSurface +
+    factors.sharedContract +
+    factors.verificationCost +
+    factors.uncertainty +
+    factors.rollbackDifficulty;
+  const forcedReasons = factors.forcedReasons ?? [];
+
+  let level: BmadHelpComplexity = 'low';
+  if (score >= 7) {
+    level = 'high';
+  } else if (score >= 4) {
+    level = 'medium';
+  }
+
+  if (forcedReasons.some((reason) => DIRECT_HIGH_COMPLEXITY_REASONS.has(reason))) {
+    level = 'high';
+  } else if (forcedReasons.length > 0 && level === 'low') {
+    level = 'medium';
+  }
+
+  return { score, level, forcedReasons };
+}
+
+export function deriveImplementationReadinessStatus(
+  flow: RuntimeFlowId,
+  evidence: ImplementationReadinessEvidence = {}
+): ImplementationReadinessStatus {
+  if (evidence.staleAfterSemanticChange) {
+    return 'stale_after_semantic_change';
+  }
+
+  if (
+    (flow === 'bugfix' || flow === 'standalone_tasks') &&
+    evidence.documentAuditPassed === false
+  ) {
+    return 'blocked';
+  }
+
+  if (evidence.rerunGateStatus === 'pass' || evidence.remediationState === 'closed') {
+    return 'repair_closed';
+  }
+
+  if (evidence.remediationState === 'in_progress') {
+    return 'repair_in_progress';
+  }
+
+  if (!evidence.readinessReportPresent) {
+    return 'missing';
+  }
+
+  if ((evidence.blockerCount ?? 0) > 0) {
+    return 'blocked';
+  }
+
+  return 'ready_clean';
+}
+
+export function implementationReadinessPassed(status: ImplementationReadinessStatus): boolean {
+  return status === 'ready_clean' || status === 'repair_closed';
+}
+
+export function shouldUpgradeStandaloneTasksToStory(
+  flow: RuntimeFlowId,
+  complexity: BmadHelpComplexity
+): boolean {
+  return flow === 'standalone_tasks' && complexity === 'high';
+}
 
 /** 策略结果来源；对照测试通过 `setRuntimePolicyShadowModeForTests(true)` 产出 `shadow` */
 export type CompatibilitySource = 'legacy' | 'shadow' | 'governance';

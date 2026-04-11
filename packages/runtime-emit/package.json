@@ -13,7 +13,10 @@
     "./dist/governance-remediation-runner.cjs": "./dist/governance-remediation-runner.cjs",
     "./dist/governance-packet-dispatch-worker.cjs": "./dist/governance-packet-dispatch-worker.cjs",
     "./dist/governance-execution-result-ingestor.cjs": "./dist/governance-execution-result-ingestor.cjs",
-    "./dist/governance-packet-reconciler.cjs": "./dist/governance-packet-reconciler.cjs"
+    "./dist/governance-packet-reconciler.cjs": "./dist/governance-packet-reconciler.cjs",
+    "./dist/update-runtime-audit-index.cjs": "./dist/update-runtime-audit-index.cjs",
+    "./dist/auditor-post-actions.cjs": "./dist/auditor-post-actions.cjs",
+    "./dist/run-auditor-host.cjs": "./dist/run-auditor-host.cjs"
   },
   "files": [
     "dist",

@@ -35,9 +35,21 @@ describe('score auto scoped bundle smoke', () => {
           '# Audit Report',
           '',
           'Overall Grade: A',
+          '总体评级: A',
           '',
           '## Summary',
           'Auto scoped bundle validation passed.',
+          '',
+          '## Parseable scoring block (for parseAndWriteScore)',
+          '',
+          'Overall Grade: A',
+          '总体评级: A',
+          '',
+          'Dimension scores:',
+          '- Functionality: 97/100',
+          '- Code Quality: 94/100',
+          '- Test Coverage: 92/100',
+          '- Security: 95/100',
           '',
           'Issue List:',
           '(none)',
@@ -81,7 +93,13 @@ describe('score auto scoped bundle smoke', () => {
 
       expect(bundleLine).toBeTruthy();
       const bundleId = bundleLine!.trim().split(' ').pop()!;
-      const manifestPath = path.join(process.cwd(), '_bmad-output', 'datasets', bundleId, 'manifest.json');
+      const manifestPath = path.join(
+        process.cwd(),
+        '_bmad-output',
+        'datasets',
+        bundleId,
+        'manifest.json'
+      );
       const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as {
         source_scope?: Record<string, unknown>;
       };

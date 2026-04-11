@@ -6,7 +6,13 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as yaml from 'js-yaml';
-import type { RuntimeFlowId, StageName } from './types';
+import type {
+  ContextMaturity,
+  ContextMaturityEvidence,
+  RuntimeFlowId,
+  RuntimeSourceMode,
+  StageName,
+} from './types';
 import {
   buildProjectRegistryFromSprintStatus,
   defaultRuntimeContextRegistry,
@@ -39,7 +45,7 @@ export interface RuntimeContextFile {
   stage: StageName;
   workflow?: string;
   step?: string;
-  sourceMode?: 'full_bmad' | 'seeded_solutioning' | 'standalone_story';
+  sourceMode?: RuntimeSourceMode;
   templateId?: string;
   epicId?: string;
   storyId?: string;
@@ -50,6 +56,66 @@ export interface RuntimeContextFile {
   contextScope?: 'project' | 'story';
   languagePolicy?: { resolvedMode: 'zh' | 'en' | 'bilingual' };
   updatedAt: string;
+}
+
+export function contextMaturityCandidateFromSourceMode(
+  sourceMode?: RuntimeSourceMode
+): ContextMaturity {
+  switch (sourceMode) {
+    case 'standalone_story':
+      return 'minimal';
+    case 'seeded_solutioning':
+      return 'seeded';
+    case 'full_bmad':
+      return 'full';
+    default:
+      return 'unclassified';
+  }
+}
+
+export function deriveContextMaturity(
+  sourceMode?: RuntimeSourceMode,
+  evidence: ContextMaturityEvidence = {}
+): ContextMaturity {
+  const candidate = contextMaturityCandidateFromSourceMode(sourceMode);
+  const signals = [
+    evidence.artifactComplete,
+    evidence.fourSignalsComplete,
+    evidence.executionSpecific,
+    evidence.governanceHealthy,
+    evidence.runtimeScopeComplete,
+  ];
+  const knownCount = signals.filter((value) => value !== undefined).length;
+  const trueCount = signals.filter((value) => value === true).length;
+
+  if (evidence.followUpBudgetExhausted && knownCount === 0) {
+    return 'unclassified';
+  }
+
+  if (
+    candidate === 'full' &&
+    (evidence.governanceHealthy === false || evidence.runtimeScopeComplete === false)
+  ) {
+    return trueCount >= 2 ? 'seeded' : 'minimal';
+  }
+
+  if (trueCount === 5) {
+    return 'full';
+  }
+
+  if (trueCount >= 2) {
+    return 'seeded';
+  }
+
+  if (candidate === 'seeded') {
+    return 'seeded';
+  }
+
+  if (candidate === 'full') {
+    return 'seeded';
+  }
+
+  return candidate;
 }
 
 function isRuntimeFlowId(v: string): v is RuntimeFlowId {
@@ -195,11 +261,7 @@ export function readRuntimeContext(root: string, explicitPath?: string): Runtime
       throw new Error(`runtime-context.languagePolicy invalid: ${file}`);
     }
     const lp = o.languagePolicy as Record<string, unknown>;
-    if (
-      lp.resolvedMode !== 'zh' &&
-      lp.resolvedMode !== 'en' &&
-      lp.resolvedMode !== 'bilingual'
-    ) {
+    if (lp.resolvedMode !== 'zh' && lp.resolvedMode !== 'en' && lp.resolvedMode !== 'bilingual') {
       throw new Error(`runtime-context.languagePolicy.resolvedMode invalid: ${file}`);
     }
   }
@@ -228,17 +290,14 @@ export function readRuntimeContext(root: string, explicitPath?: string): Runtime
   if (typeof o.runId === 'string' && o.runId !== '') out.runId = o.runId;
   if (typeof o.artifactRoot === 'string' && o.artifactRoot !== '')
     out.artifactRoot = o.artifactRoot;
-  if (typeof o.artifactPath === 'string' && o.artifactPath !== '') out.artifactPath = o.artifactPath;
+  if (typeof o.artifactPath === 'string' && o.artifactPath !== '')
+    out.artifactPath = o.artifactPath;
   if (typeof o.workflow === 'string' && o.workflow !== '') out.workflow = o.workflow;
   if (typeof o.step === 'string' && o.step !== '') out.step = o.step;
   if (o.contextScope === 'project' || o.contextScope === 'story') out.contextScope = o.contextScope;
   if (o.languagePolicy && typeof o.languagePolicy === 'object') {
     const lp = o.languagePolicy as Record<string, unknown>;
-    if (
-      lp.resolvedMode === 'zh' ||
-      lp.resolvedMode === 'en' ||
-      lp.resolvedMode === 'bilingual'
-    ) {
+    if (lp.resolvedMode === 'zh' || lp.resolvedMode === 'en' || lp.resolvedMode === 'bilingual') {
       out.languagePolicy = { resolvedMode: lp.resolvedMode as 'zh' | 'en' | 'bilingual' };
     }
   }

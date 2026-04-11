@@ -1,6 +1,20 @@
 # Cursor Speckit-Workflow → Claude Code CLI 完整映射
 
 > **目标**: 零裁剪、完整准确地将 Cursor 的 speckit-workflow 适配到 Claude Code CLI
+> **Current path**: `runAuditorHost`（post-audit automation）
+> **Legacy path**: 直接把 `parse-and-write-score` / `bmad-speckit score` 当成上层审计收口入口
+
+---
+
+## Post-Audit 基础设施分层
+
+当前需要先固定一条口径：
+
+- `runAuditorHost` 是上层 post-audit automation 的标准入口
+- `bmad-speckit score` 是其下层 scoring CLI
+- `parseAndWriteScore` / `parse-and-write-score.ts` 是更底层的解析与兼容实现
+
+因此，主 Agent / 高层 Skill / host 文档不应再把 `bmad-speckit score` 直接写成默认收口入口；本页后续保留 score CLI 说明，是为了描述底层 CLI 能力与兼容参数。
 
 ---
 
@@ -13,7 +27,7 @@
 | `bmad-speckit dashboard --json --output-json <path>` | 生成 dashboard markdown，并落一份 runtime snapshot JSON              | `_bmad-output/dashboard/runtime-dashboard.json`，顶层含 `selection` / `overview` / `runtime_context` / `stage_timeline` / `score_detail` / `sft_summary` |
 | `bmad-speckit dashboard-start`                       | 启动或复用稳定后台 dashboard server                                  | JSON；含 `mode`、`url`、`port`、`pid`、`state_path`                                                                                                      |
 | `bmad-speckit dashboard-status`                      | 查看稳定 dashboard server 当前状态与 health                          | JSON；含 state/health/pid/url                                                                                                                            |
-| `bmad-speckit dashboard-stop`                        | 停止稳定 dashboard server 并清理 state                               | JSON；含停止前状态                                                                                                                                        |
+| `bmad-speckit dashboard-stop`                        | 停止稳定 dashboard server 并清理 state                               | JSON；含停止前状态                                                                                                                                       |
 | `bmad-speckit dashboard-live`                        | 启动本地 live dashboard web server                                   | stdout 打印 URL；提供 `/health`、`/api/snapshot`、`/api/runtime-context`、`/api/stage-timeline`、`/api/score-detail`、`/api/sft-summary`                 |
 | `bmad-speckit runtime-mcp`                           | 以 stdio 启动 runtime dashboard MCP server                           | 默认 `MCP-first`；若未提供 `--dashboard-url`，会自动拉起 live dashboard                                                                                  |
 | `bmad-speckit sft-preview`                           | 预览 canonical SFT 候选集                                            | JSON；含 accepted / rejected / downgraded、split 统计                                                                                                    |
@@ -166,7 +180,7 @@ python _bmad/speckit/scripts/python/generate_smoke_skeleton.py \
 │  §1 specify           ┌─────────────────┐                                  │
 │  ───────────────────→ │  生成spec.md    │ ──→ code-review 审计 §1.2         │
 │                       │ + 需求映射表格   │    (standard + 批判审计员)         │
-│                       │ + 验收标准      │ ──→ parse-and-write-score         │
+│                       │ + 验收标准      │ ──→ runAuditorHost                │
 │                       │ + 边界定义      │                                  │
 │                       └─────────────────┘                                  │
 │                                │                                            │
@@ -183,7 +197,7 @@ python _bmad/speckit/scripts/python/generate_smoke_skeleton.py \
 │  §2 plan              ┌─────────────────┐                                  │
 │  ───────────────────→ │  生成plan.md    │ ──→ code-review 审计 §2.2         │
 │                       │ + 需求映射表格   │    (standard + 批判审计员)         │
-│                       │ + 集成/端到端测试│ ──→ parse-and-write-score         │
+│                       │ + 集成/端到端测试│ ──→ runAuditorHost                │
 │                       │ + 技术架构      │                                  │
 │                       └─────────────────┘                                  │
 │                                │                                            │
@@ -200,7 +214,7 @@ python _bmad/speckit/scripts/python/generate_smoke_skeleton.py \
 │  §3 GAPS              ┌─────────────────────────┐                          │
 │  ───────────────────→ │ /speckit.gaps 正式入口   │ ──→ code-review 审计 §3.2  │
 │                       │ 兼容自动触发 / 深度分析   │    (standard + 批判审计员)  │
-│                       │ 生成IMPLEMENTATION_GAPS  │ ──→ parse-and-write-score  │
+│                       │ 生成IMPLEMENTATION_GAPS  │ ──→ runAuditorHost         │
 │                       └─────────────────────────┘                          │
 │                                │                                            │
 │                                ▼ (审计通过)                                 │
@@ -208,7 +222,7 @@ python _bmad/speckit/scripts/python/generate_smoke_skeleton.py \
 │  §4 tasks             ┌─────────────────────────┐                          │
 │  ───────────────────→ │   生成tasks.md          │ ──→ code-review 审计 §4.2  │
 │                       │ + 需求映射表格           │    (standard + 批判审计员)  │
-│                       │ + GAP → 任务映射         │ ──→ parse-and-write-score  │
+│                       │ + GAP → 任务映射         │ ──→ runAuditorHost         │
 │                       │ + 集成/端到端测试用例     │                          │
 │                       │ + 验收标准              │                          │
 │                       └─────────────────────────┘                          │
@@ -295,7 +309,7 @@ python _bmad/speckit/scripts/python/generate_smoke_skeleton.py \
 
 ### 4.3 审计报告格式要求
 
-**必须包含可解析评分块**（供 `bmad-speckit score` 解析）：
+**必须包含可解析评分块**（供 `runAuditorHost` 驱动的底层 scoring pipeline 解析）：
 
 ```markdown
 ## 可解析评分块（供 parseAndWriteScore）
@@ -314,7 +328,9 @@ python _bmad/speckit/scripts/python/generate_smoke_skeleton.py \
 
 ## 五、评分系统映射
 
-### 5.1 scoring CLI 调用参数
+### 5.1 底层 scoring CLI 调用参数
+
+> 当前自动化主路径是 `runAuditorHost`；本节保留 `bmad-speckit score` 参数，是为了说明 host-runner 在底层依赖的 scoring CLI contract，以及低层调试/基础设施脚本的调用方式。
 
 > 旧调用方式 `npx ts-node scripts/parse-and-write-score.ts` 已替换为 `npx bmad-speckit score`，参数不变。
 >

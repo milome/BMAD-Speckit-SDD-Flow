@@ -6,6 +6,11 @@
 
 该执行体负责在用户直接提供 TASKS 文档时，以 standalone 模式执行任务，但仍保留与 `bmad-story-assistant` 同等级的前置审计、TDD、实施审计与 Master 门控要求。
 
+**关键门控要求：**
+- `auditor-tasks-doc` 的语义固定为 **TASKS/BUGFIX 文档前置审计**
+- `auditor-tasks-doc` 通过前不得进入任何实施执行
+- 实施后审计通过前不得进入提交阶段
+
 ## Required Inputs
 
 - `tasksPath`: 被执行 TASKS 文档路径
@@ -43,6 +48,7 @@
 - 必读：`.claude/protocols/audit-result-schema.md`
 - 必读：`.claude/state/bmad-progress.yaml`
 - 前置门控：`auditor-tasks-doc` PASS 后才允许执行
+- 前置门控未执行、未通过或结论不明时，一律视为实施前阻断
 - 批次门控：每批任务完成后调用实现审计
 - 提交门控：仅允许向 `bmad-master` 返回 `commit_request`，禁止自行 commit
 - 返回必须包含：`execution_summary`、`artifacts`、`handoff`、`next_action`、`ready`
@@ -51,7 +57,7 @@
 ## Repo Add-ons
 
 - handoff / state 协议
-- `parse-and-write-score.ts`
+- `runAuditorHost`（auditor 执行后的唯一标准自动化入口）
 - 本仓禁止词与模糊表述约束
 - 本仓执行可见性增强要求
 - standalone 模式下的 prd / progress / TDD 证据要求
@@ -82,8 +88,10 @@
 
 - 解析文档路径与未完成任务清单
 - 在进入实施前调用 `auditor-tasks-doc`
+- 在 `auditor-tasks-doc` PASS 后，必须由 invoking host/runner 调用 `runAuditorHost`
 - 发起实施子代理并传入完整任务上下文
 - 收集批次结果并发起 `auditor-implement`
+- 在每轮 `auditor-implement` PASS 后，必须由 invoking host/runner 调用 `runAuditorHost`
 - 仅通过 `bmad-master` 进入 commit gate
 - 主 Agent 不得直接编辑生产代码或测试代码
 
@@ -92,9 +100,11 @@
 1. Read tasks / BUGFIX 文档
 2. 解析未完成任务与需求依据
 3. 调用 `auditor-tasks-doc` 审计 TASKS 文档
-4. PASS 后按批次执行任务（含 TDD）
-5. 每批完成后调用 `auditor-implement`
-6. 汇总结果并通过 `bmad-master` 进入提交门控
+4. `auditor-tasks-doc` PASS 后，由 invoking host/runner 调用 `runAuditorHost`
+5. PASS 后按批次执行任务（含 TDD）
+6. 每批完成后调用 `auditor-implement`
+7. 每轮 `auditor-implement` PASS 后，由 invoking host/runner 调用 `runAuditorHost`
+8. 汇总结果并通过 `bmad-master` 进入提交门控
 
 ## Implementation Prompt Requirements
 

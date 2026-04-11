@@ -37,16 +37,6 @@ Layer 5: 收尾层 (批量Push + PR自动生成 + 强制人工审核 + 发布)
 本技能包含speckit-workflow作为Layer 4的嵌套流程。
 当执行到"阶段三：Dev Story实施"时，会自动触发speckit-workflow的完整流程。
 
-## Deferred Gaps Dev Story 补充约束
-
-该中文分发副本必须保持与主技能相同的 Deferred Gaps 约束。
-
-- Dev Story 实施前必须读取并验证 `deferred-gap-register.yaml`
-- Dev Story 必须同时读取并验证 `journey-ledger`、`trace-map`、`closure-notes`
-- 若 active deferred gap 缺少 task binding、`Smoke Task Chain`、`Closure Task ID` 或 production path 映射，必须阻断实施
-- 实施后审计必须检查 `closure_evidence`、`carry_forward_evidence`、`Production Path`、`Smoke Proof`、`Acceptance Evidence`
-- `module complete but journey not runnable` 属于硬失败，不得降级为提示
-
 ---
 
 本 skill 定义 **Create Story → 审计 → Dev Story → 实施后审计** 的完整工作流。Epic 编号与 Story 编号由用户或上下文提供，作为 skill 的输入参数。
@@ -657,13 +647,13 @@ prompt: |
 
   报告结尾必须按以下格式输出：结论：通过/未通过。必达子项：① 覆盖需求与 Epic；② 明确无禁止词；③ 多方案已共识；④ 无技术债/占位表述；⑤ 推迟闭环（若有「由 X.Y 负责」则 X.Y 存在且 scope 含该任务）；⑥ 本报告结论格式符合本段要求。若任一项不满足则结论为未通过，并列出不满足项及每条对应的修改建议。
 
-  【§Story 可解析块要求】报告结尾在结论与必达子项之后，**必须**追加可解析评分块（格式见 speckit-workflow/references/audit-prompts-critical-auditor-appendix.md §7）。须包含：独立一行「总体评级: [A|B|C|D]」及四行「- 需求完整性: XX/100」「- 可测试性: XX/100」「- 一致性: XX/100」「- 可追溯性: XX/100」。禁止用描述代替结构化块；总体评级仅限 A/B/C/D。禁止 B+、A-、C+、D- 等任意修饰符；介于两档时择一输出纯字母。映射建议：完全覆盖→A/90+；部分覆盖→B/80+；需修改→C/70+；不通过→D/60及以下。否则 parseAndWriteScore 无法解析、仪表盘无法显示评级。
+  【§Story 可解析块要求】报告结尾在结论与必达子项之后，**必须**追加可解析评分块（格式见 speckit-workflow/references/audit-prompts-critical-auditor-appendix.md §7）。须包含：独立一行「总体评级: [A|B|C|D]」及四行「- 需求完整性: XX/100」「- 可测试性: XX/100」「- 一致性: XX/100」「- 可追溯性: XX/100」。禁止用描述代替结构化块；总体评级仅限 A/B/C/D。禁止 B+、A-、C+、D- 等任意修饰符；介于两档时择一输出纯字母。映射建议：完全覆盖→A/90+；部分覆盖→B/80+；需修改→C/70+；不通过→D/60及以下。否则评分解析器无法解析、仪表盘无法显示评级。
 
   **Runtime sync (S10 - MANDATORY):** 审计结论为通过；通过判定之后、返回主 Agent 之前执行：
   `npx bmad-speckit sync-runtime-context-from-sprint --story-key <story_key>`
   `<story_key>` 填被审计 Story 的 kebab-case key，与 sprint-status `development_status` 中的键名相同。
 
-  【审计通过后必做】当结论为「通过」时，你（审计子代理）**在返回主 Agent 前必须**执行：`npx bmad-speckit score --reportPath <保存的报告路径> --stage story --event story_status_change --triggerStage bmad_story_stage2 --epic {epic_num} --story {story_num} --iteration-count {本 stage 累计 fail 轮数，0 表示一次通过}`。报告路径为 `_bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{story_num}-*/AUDIT_Story_{epic_num}-{story_num}_stage2.md`。若执行失败，在结论中注明 resultCode，不阻断返回。**禁止**在未执行上述命令前返回通过结论。
+  【审计通过后必做】当结论为「通过」时，你（审计子代理）**在返回主 Agent 前必须**返回 `projectRoot`、`reportPath`、`artifactDocPath=<Story 文档路径>`、`stage=story` 这几个结果字段，交由 invoking host/runner 统一调用 `runAuditorHost`。报告路径为 `_bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{story_num}-*/AUDIT_Story_{epic_num}-{story_num}_stage2.md`。若 host/runner 执行失败，在结论中注明 resultCode；**禁止**在未完成上述 host 收口前返回通过结论。
 
   【审计未通过时】你（审计子代理）须在本轮内**直接修改被审 Story 文档**以消除 gap，修改完成后在报告中注明已修改内容；主 Agent 收到报告后发起下一轮审计。**禁止**仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules.md](../speckit-workflow/references/audit-document-iteration-rules.md)。
 ```
@@ -672,20 +662,20 @@ prompt: |
 
 #### 步骤 2.3：阶段二准入检查（强制，先执行）
 
-主 Agent 在收到阶段二通过结论后、进入阶段三之前，**必须先**执行 `npx bmad-speckit check-score --epic {epic} --story {story}`。若输出为 `STORY_SCORE_WRITTEN:yes`，则无需执行 步骤 2.2（子代理已在【审计通过后必做】中写入）。若输出为 `STORY_SCORE_WRITTEN:no` 且报告文件 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_Story_{epic}-{story}_stage2.md` 存在，则主 Agent 执行 步骤 2.2 补跑。失败 non_blocking。
+主 Agent 在收到阶段二通过结论后、进入阶段三之前，**必须先**确认统一 auditor host runner 已完成 post-audit automation。若 host 尚未执行且报告文件 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_Story_{epic}-{story}_stage2.md` 存在，则主 Agent 执行 步骤 2.2 补跑 `runAuditorHost`。失败 non_blocking。
 
-#### 步骤 2.2：补跑 parse-and-write-score（步骤 2.3 得 no 时执行）
+#### 步骤 2.2：补跑 runAuditorHost（步骤 2.3 判定 host 未完成时执行）
 
-当 步骤 2.3 得 `STORY_SCORE_WRITTEN:no` 且报告文件存在时，主 Agent 执行：
+当 步骤 2.3 判定 host 未完成且报告文件存在时，主 Agent 执行：
 ```bash
-npx bmad-speckit score --reportPath <报告路径> --stage story --event story_status_change --triggerStage bmad_story_stage2 --epic {epic} --story {story} --iteration-count 0
+npx ts-node scripts/run-auditor-host.ts --projectRoot <projectRoot> --stage story --artifactPath <Story 文档路径> --reportPath <报告路径> --iterationCount 0
 ```
-补跑后再次执行 check，直至 yes 或报告不存在。失败 non_blocking。
+补跑后再次确认 host 已完成收口；若报告不存在则停止。失败 non_blocking。
 
-**与 T11 衔接说明**：子代理在【审计通过后必做】中会在返回前执行 parse-and-write；主 Agent 先 步骤 2.3 check，若 yes 则免 步骤 2.2，避免双写。
+**与 T11 衔接说明**：子代理在【审计通过后必做】中只返回 host 所需字段；主 Agent 通过 步骤 2.3 / 2.2 确保 `runAuditorHost` 已完成，避免重复收口。
 
-#### 审计通过后评分写入触发（强制）
-- branch_id=bmad_story_stage2_audit_pass，event=story_status_change，triggerStage=bmad_story_stage2；子代理在【审计通过后必做】中执行 parse-and-write；主 Agent 通过 步骤 2.2/2.3 做准入检查与补跑；**必须含 `--iteration-count {累计值}`**；stage=story；失败 non_blocking，记录 resultCode。
+#### 审计通过后统一 Host 收口（强制）
+- story 阶段的评分写入、auditIndex 更新与其它 post-audit automation 统一由 `runAuditorHost` 承接；主 Agent 通过 步骤 2.2/2.3 做完成态检查与补跑；**必须含 `--iteration-count {累计值}`**；stage=story；失败 non_blocking，记录 resultCode。
 
 ---
 
@@ -949,6 +939,15 @@ prompt: |
      - 若不存在：子代理**必须**在开始执行 tasks 前，根据 tasks-E{epic_num}-S{story_num}.md 生成 prd 与 progress（符合 ralph-method schema），否则不得开始编码。
      - **progress 预填 TDD 槽位**：生成 progress 时，对每个 US 预填 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 或 [DONE] 占位行（`_pending_`），涉及生产代码的 US 含三者，仅文档/配置的含 [DONE]。
 
+  6. 验证 `deferred-gap-register.yaml` 已存在且可读
+     - 检查路径: specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/deferred-gap-register.yaml 或对应 story artifact root
+     - 若存在 active deferred gap，必须能读取到 task_binding / implementation 状态
+
+  7. 验证 Journey-first 工件已存在或有明确 fallback
+     - 优先检查独立工件: `journey-ledger`、`trace-map`、`closure-notes/`
+     - 若独立工件不存在，tasks 文档中必须至少有 `P0 Journey Ledger`、`Journey -> Task -> Test -> Closure`、`Closure Notes`
+     - 若存在 active deferred gap 但无 Smoke Task Chain、Closure Task ID 或 production path 映射，则拒绝执行
+
   如有任何一项不满足，立即返回错误：
   "前置检查失败: [具体原因]。请先完成 speckit-workflow 的完整流程（specify→plan→GAPS→tasks）。"
 
@@ -981,13 +980,13 @@ prompt: |
 
   请对 Story {epic_num}-{story_num} 执行 Dev Story 实施。
 
-  **各 stage 审计通过后落盘与 parseAndWriteScore 约束（强制）**：
+  **各 stage 审计通过后落盘与统一 host 收口约束（强制）**：
 
   （1）各 stage 审计通过时，将报告保存至 speckit-workflow §x.2 约定路径；spec/plan/GAPS/tasks 阶段路径分别为 specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/ 下的 AUDIT_spec-、AUDIT_plan-、AUDIT_GAPS-、AUDIT_tasks-E{epic_num}-S{story_num}.md；结论中注明保存路径及 iteration_count。
 
   （2）fail 轮报告保存至 AUDIT_{stage}-E{epic}-S{story}_round{N}.md。**验证轮**（连续 3 轮无 gap 的确认轮）报告**不列入 iterationReportPaths**，仅 fail 轮及最终 pass 轮参与收集。pass 时主 Agent 收集本 stage 所有 fail 轮报告路径，传入 `--iterationReportPaths path1,path2,...`（逗号分隔）；**一次通过或无 fail 轮时不传**。
 
-  （3）运行 `npx bmad-speckit score --reportPath <路径> --stage <spec|plan|tasks> --epic {epic_num} --story {story_num} --artifactDocPath <对应路径> --iteration-count {累计值}`；triggerStage 按阶段择 spec_1_2 等；必须含 --iteration-count。**iteration_count 传递（强制）**：执行审计循环的 Agent 在 pass 时传入当前累计值（本 stage 审计未通过/fail 的轮数）；**一次通过传 0**；**连续 3 轮无 gap 的验证轮不计入 iteration_count**；禁止省略。
+  （3）统一由 invoking host/runner 调用 `runAuditorHost` 承接 spec/plan/GAPS/tasks 阶段的评分写入、auditIndex 更新与 post-audit automation；主 Agent 不再手工编排 `bmad-speckit score`。**iteration_count 传递（强制）**：执行审计循环的 Agent 在 pass 时传入当前累计值（本 stage 审计未通过/fail 的轮数）；**一次通过传 0**；**连续 3 轮无 gap 的验证轮不计入 iteration_count**；禁止省略。
 
   （4）implement 阶段 artifactDocPath 可为 story 子目录实现主文档路径或留空。
 
@@ -1052,9 +1051,9 @@ cleanup 命令（按平台择一执行）：
 
 ### 综合审计
 
-使用 `audit-prompts.md §5` 进行综合验证。**报告可解析块须符合 §5.1**（四维：功能性、代码质量、测试覆盖、安全性），与 _bmad/_config/code-reviewer-config.yaml modes.code.dimensions 一致，否则 parseAndWriteScore(mode=code) 无法解析、仪表盘四维显示「无数据」。
+使用 `audit-prompts.md §5` 进行综合验证。**报告可解析块须符合 §5.1**（四维：功能性、代码质量、测试覆盖、安全性），与 _bmad/_config/code-reviewer-config.yaml modes.code.dimensions 一致，否则 code 模式评分解析器无法解析、仪表盘四维显示「无数据」。
 
-**【§5 可解析块要求（implement 专用）】** 报告结尾的可解析评分块**必须**使用 modes.code 四维：`- 功能性: XX/100`、`- 代码质量: XX/100`、`- 测试覆盖: XX/100`、`- 安全性: XX/100`。**禁止**使用 需求完整性、可测试性、一致性、可追溯性（该四维仅适用于 tasks/story 阶段）。总体评级禁止 B+、A-、C+、D- 等修饰符，仅限纯 A/B/C/D。否则 parseAndWriteScore(mode=code) 无法解析，仪表盘四维显示「无数据」。
+**【§5 可解析块要求（implement 专用）】** 报告结尾的可解析评分块**必须**使用 modes.code 四维：`- 功能性: XX/100`、`- 代码质量: XX/100`、`- 测试覆盖: XX/100`、`- 安全性: XX/100`。**禁止**使用 需求完整性、可测试性、一致性、可追溯性（该四维仅适用于 tasks/story 阶段）。总体评级禁止 B+、A-、C+、D- 等修饰符，仅限纯 A/B/C/D。否则 code 模式评分解析器无法解析，仪表盘四维显示「无数据」。
 
 **审计维度**：
 1. 需求覆盖度：是否实现了Story文档中的所有需求
@@ -1077,16 +1076,16 @@ cleanup 命令（按平台择一执行）：
 **通过（A/B级）**：
 - Story标记为完成
 - #### 步骤 4.3：Story 完成自检（强制，先执行）
-  - 在**提供完成选项之前**，主 Agent **必须先**执行：`npx bmad-speckit check-score --epic {epic} --story {story} [--stage implement]`
-  - 若输出为 `STORY_SCORE_WRITTEN:yes`，则无需执行 步骤 4.2（子代理已在【审计通过后必做】中写入）。
-  - 若输出为 `STORY_SCORE_WRITTEN:no` 且 `AUDIT_Story_{epic}-{story}_stage4.md` 存在，则主 Agent 执行 步骤 4.2 补跑；补跑后再次 check。
-  - 若输出含 `DIMENSION_SCORES_MISSING:yes`（报告维度错误），亦须补跑：修正报告可解析块为 code 四维后重新 parse-and-write-score，再次 check 直至通过。
+  - 在**提供完成选项之前**，主 Agent **必须先**确认统一 auditor host runner 已完成 implement 阶段 post-audit automation。
+  - 若 host 已完成，则无需执行 步骤 4.2。
+  - 若 host 未完成且 `AUDIT_Story_{epic}-{story}_stage4.md` 存在，则主 Agent 执行 步骤 4.2 补跑。
+  - 若报告可解析块维度错误，则先修正报告，再通过 `runAuditorHost` 重新收口。
   - 补跑失败 non_blocking，主流程继续。
-- #### 步骤 4.2：补跑 parse-and-write-score（步骤 4.3 得 no 或 DIMENSION_SCORES_MISSING 时执行）
-  - 当 步骤 4.3 得 no 且报告存在时，主 Agent 执行：`npx bmad-speckit score --reportPath <报告路径> --stage implement --event story_status_change --triggerStage bmad_story_stage4 --epic {epic} --story {story} --artifactDocPath <story 文档路径> --iteration-count {本 stage 累计 fail 轮数，0 表示一次通过}`
+- #### 步骤 4.2：补跑 runAuditorHost（步骤 4.3 判定 host 未完成时执行）
+  - 当 步骤 4.3 判定 host 未完成且报告存在时，主 Agent 执行：`npx ts-node scripts/run-auditor-host.ts --projectRoot <projectRoot> --stage implement --artifactPath <story 文档路径> --reportPath <报告路径> --iterationCount {本 stage 累计 fail 轮数，0 表示一次通过}`
   - 若调用失败，记录 resultCode，不阻断流程（non_blocking）。
-- #### 审计通过后评分写入触发（强制）
-  - 子代理在【审计通过后必做】中执行 parse-and-write；主 Agent 通过 步骤 4.3/4.2 做准入检查与补跑；**必须含 `--iteration-count {累计值}`**；stage=implement；失败 non_blocking。
+- #### 审计通过后统一 Host 收口（强制）
+  - 子代理在【审计通过后必做】中返回 host 所需字段；主 Agent 通过 步骤 4.3/4.2 做完成态检查与补跑；**必须含 `--iteration-count {累计值}`**；stage=implement；失败 non_blocking。
 - 提供完成选项（见下文）
 
 **有条件通过（C级）**：
@@ -1473,9 +1472,15 @@ if time_since_last_activity() > timedelta(hours=24):
 `npx bmad-speckit ensure-run-runtime-context --story-key {story_key} --lifecycle post_audit --persist`
 `{story_key}` 为当前 Story 的 kebab-case key。
 
+post-audit 前还必须追加以下检查：
+
+1. `deferred-gap-register.yaml` 已同步 closure / carry-forward evidence
+2. `journey-ledger`、`trace-map`、`closure-notes` 与 tasks 当前状态一致
+3. 若存在 `module complete but journey not runnable`、缺 `Production Path`、缺 `Smoke Proof`、缺 `Closure Note`、缺 `Acceptance Evidence`，则不得进入通过结论
+
 ### 4.1 审计子代理与提示词
 
-与阶段二相同：**优先** Cursor Task 调度 code-reviewer；**回退** mcp_task generalPurpose。主 Agent 须将 **STORY-A4-POSTAUDIT** 完整 prompt 模板整段复制并替换占位符后传入。**传入审计子任务的 prompt 必须包含【§5 可解析块要求（implement 专用）】**（见上节综合审计），并附 audit-prompts §5.1 或 audit-prompts-code.md 可解析块示例（功能性、代码质量、测试覆盖、安全性）。**【审计通过后必做】**：当结论为「完全覆盖、验证通过」时，你（审计子代理）**在返回主 Agent 前必须**执行 `npx bmad-speckit score --reportPath <报告路径> --stage implement --event story_status_change --triggerStage bmad_story_stage4 --epic {epic} --story {story} --artifactDocPath <story 文档路径> --iteration-count {本 stage 累计 fail 轮数，0 表示一次通过}`；报告路径为 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_Story_{epic}-{story}_stage4.md`；若执行失败，在结论中注明 resultCode；**禁止**在未执行前返回通过结论。详细模板见本 skill 历史版本或 speckit-workflow references。
+与阶段二相同：**优先** Cursor Task 调度 code-reviewer；**回退** mcp_task generalPurpose。主 Agent 须将 **STORY-A4-POSTAUDIT** 完整 prompt 模板整段复制并替换占位符后传入。**传入审计子任务的 prompt 必须包含【§5 可解析块要求（implement 专用）】**（见上节综合审计），并附 audit-prompts §5.1 或 audit-prompts-code.md 可解析块示例（功能性、代码质量、测试覆盖、安全性）。**【审计通过后必做】**：当结论为「完全覆盖、验证通过」时，你（审计子代理）**在返回主 Agent 前必须**返回 `projectRoot`、`reportPath`、`artifactDocPath=<story 文档路径>`、`stage=implement`，交由 invoking host/runner 统一调用 `runAuditorHost`；报告路径为 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_Story_{epic}-{story}_stage4.md`；若 host/runner 执行失败，在结论中注明 resultCode；**禁止**在未完成上述 host 收口前返回通过结论。详细模板见本 skill 历史版本或 speckit-workflow references。
 
 若审计结论为**未通过**，**必须**按审计报告修改后**再次发起**，直至「完全覆盖、验证通过」。
 

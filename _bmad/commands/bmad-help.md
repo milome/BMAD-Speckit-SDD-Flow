@@ -11,7 +11,8 @@ Load and execute the bmad-help skill to analyze current state and recommend next
 
 1. **LOAD** the bmad-help skill from `{project-root}/_bmad/core/skills/bmad-help/SKILL.md`
 2. **FOLLOW** the instructions in `./workflow.md` (same directory as SKILL.md)
-3. The workflow loads `{project-root}/_bmad/_config/bmad-help.csv` and presents recommendations based on module, phase, and artifacts
+3. The workflow loads `{project-root}/_bmad/_config/bmad-help.csv` and presents state-aware recommendations based on runtime state, flow, contextMaturity, complexity, implementationReadinessStatus, module, phase, and artifacts
+4. The first user-visible result must preserve the recommendation labels `recommended / allowed but not recommended / blocked`
 
 ## Trigger
 

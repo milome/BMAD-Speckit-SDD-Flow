@@ -31,9 +31,12 @@ const governanceHookAliasPlugin = {
     ]);
 
     for (const [request, target] of aliasMap.entries()) {
-      build.onResolve({ filter: new RegExp('^' + request.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$') }, () => ({
-        path: target,
-      }));
+      build.onResolve(
+        { filter: new RegExp('^' + request.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$') },
+        () => ({
+          path: target,
+        })
+      );
     }
   },
 };
@@ -41,14 +44,37 @@ const governanceHookAliasPlugin = {
 const governanceRuntimeConsumerPathPlugin = {
   name: 'governance-runtime-consumer-paths',
   setup(build) {
-    build.onResolve({ filter: /^\.\.\/packages\/scoring\/(governance\/write-rerun-history|query\/loader|query)$/ }, (args) => {
-      const map = {
-        '../packages/scoring/governance/write-rerun-history': path.join(repoRoot, 'packages', 'scoring', 'governance', 'write-rerun-history.ts'),
-        '../packages/scoring/query/loader': path.join(repoRoot, 'packages', 'scoring', 'query', 'loader.ts'),
-        '../packages/scoring/query': path.join(repoRoot, 'packages', 'scoring', 'query', 'index.ts'),
-      };
-      return { path: map[args.path] };
-    });
+    build.onResolve(
+      {
+        filter: /^\.\.\/packages\/scoring\/(governance\/write-rerun-history|query\/loader|query)$/,
+      },
+      (args) => {
+        const map = {
+          '../packages/scoring/governance/write-rerun-history': path.join(
+            repoRoot,
+            'packages',
+            'scoring',
+            'governance',
+            'write-rerun-history.ts'
+          ),
+          '../packages/scoring/query/loader': path.join(
+            repoRoot,
+            'packages',
+            'scoring',
+            'query',
+            'loader.ts'
+          ),
+          '../packages/scoring/query': path.join(
+            repoRoot,
+            'packages',
+            'scoring',
+            'query',
+            'index.ts'
+          ),
+        };
+        return { path: map[args.path] };
+      }
+    );
     build.onResolve({ filter: /^\.\/constants\/path$/ }, () => ({
       path: path.join(repoRoot, 'packages', 'scoring', 'constants', 'path.ts'),
     }));
@@ -61,8 +87,15 @@ const outDir = path.join(pkgDir, 'dist');
 const workerEntry = path.join(repoRoot, 'scripts', 'bmad-runtime-worker.ts');
 const runnerEntry = path.join(repoRoot, 'scripts', 'governance-remediation-runner.ts');
 const dispatchWorkerEntry = path.join(repoRoot, 'scripts', 'governance-packet-dispatch-worker.ts');
-const executionResultIngestorEntry = path.join(repoRoot, 'scripts', 'governance-execution-result-ingestor.ts');
+const executionResultIngestorEntry = path.join(
+  repoRoot,
+  'scripts',
+  'governance-execution-result-ingestor.ts'
+);
 const packetReconcilerEntry = path.join(repoRoot, 'scripts', 'governance-packet-reconciler.ts');
+const auditIndexEntry = path.join(repoRoot, 'scripts', 'update-runtime-audit-index.ts');
+const auditorPostActionsEntry = path.join(repoRoot, 'scripts', 'auditor-post-actions.ts');
+const auditorHostEntry = path.join(repoRoot, 'scripts', 'run-auditor-host.ts');
 const bundles = [
   {
     entry: path.join(repoRoot, 'scripts', 'emit-runtime-policy.ts'),
@@ -109,28 +142,42 @@ const bundles = [
     outfile: path.join(outDir, 'governance-packet-reconciler.cjs'),
     label: 'governance-packet-reconciler',
   },
+  {
+    entry: auditIndexEntry,
+    outfile: path.join(outDir, 'update-runtime-audit-index.cjs'),
+    label: 'update-runtime-audit-index',
+  },
+  {
+    entry: auditorPostActionsEntry,
+    outfile: path.join(outDir, 'auditor-post-actions.cjs'),
+    label: 'auditor-post-actions',
+  },
+  {
+    entry: auditorHostEntry,
+    outfile: path.join(outDir, 'run-auditor-host.cjs'),
+    label: 'run-auditor-host',
+  },
 ];
 
 fs.mkdirSync(outDir, { recursive: true });
 
 async function main() {
-for (const { entry, outfile, label } of bundles) {
-  if (!fs.existsSync(entry)) {
-    console.error(`runtime-emit build: missing entry for ${label}:`, entry);
-    process.exit(1);
+  for (const { entry, outfile, label } of bundles) {
+    if (!fs.existsSync(entry)) {
+      console.error(`runtime-emit build: missing entry for ${label}:`, entry);
+      process.exit(1);
+    }
+    await esbuild.build({
+      entryPoints: [entry],
+      bundle: true,
+      platform: 'node',
+      format: 'cjs',
+      target: 'node18',
+      plugins: [governanceHookAliasPlugin, governanceRuntimeConsumerPathPlugin],
+      outfile,
+    });
+    console.log('runtime-emit: wrote', path.relative(repoRoot, outfile));
   }
-  await esbuild.build({
-    entryPoints: [entry],
-    bundle: true,
-    platform: 'node',
-    format: 'cjs',
-    target: 'node18',
-    plugins: [governanceHookAliasPlugin, governanceRuntimeConsumerPathPlugin],
-    outfile,
-  });
-  console.log('runtime-emit: wrote', path.relative(repoRoot, outfile));
-}
-
 }
 
 main().catch((error) => {

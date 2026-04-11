@@ -1,5 +1,8 @@
 # Runtime Dashboard Host Bootstrap Release Notes
 
+> **Current path**: `runAuditorHost`
+> **Legacy path**: `bmad-speckit score` / `parse-and-write-score`
+
 ## 分层真相
 
 runtime dashboard 宿主自动接线现在按三层分工：
