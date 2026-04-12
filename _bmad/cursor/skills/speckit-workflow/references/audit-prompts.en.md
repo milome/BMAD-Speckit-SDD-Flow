@@ -1,3 +1,5 @@
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout terminology: in this document, a stage is considered complete only when `runAuditorHost` returns `closeout approved`. An audit report `PASS` only means the host close-out may start; `PASS` alone must not be treated as completion, admission, or release.
 # Audit prompts (fixed templates, copy-paste)
 
 **Report save anti-loop**: When the prompt includes “report save” or “save the full report to”, it **must** also forbid repeating status lines such as “writing full audit report”. See [audit-report-save-rules.md](audit-report-save-rules.md).
@@ -112,6 +114,9 @@ Dimension scores:
 
 **Do not substitute prose.** Dimension names must match `modes.code.dimensions` (`name` or `name_en`). Overall grade A/B/C/D only; no +/- modifiers. No score ranges.
 
+implement / post_audit reports must also include `## Structured Drift Signal Block` with the fixed columns `signal | status | evidence`. The five fixed signals are `smoke_task_chain`, `closure_task_id`, `journey_unlock`, `gap_split_contract`, and `shared_path_reference`. Missing this block must not be treated as “no drift”.
+
 **Invalid examples** (see also §4.1): prose summary of the block; `A-`/`B+`; ranges without four named lines; parseDimensionScores(mode=code) misses malformed lines.
 
 **[Post-audit actions]**On pass: save full report to reportPath (typically `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_implement-E{epic}-S{story}.md` or `AUDIT_Story_{epic}-{story}_stage4.md`). State reportPath and iteration_count. **Run parse-and-write-score before return:** `npx ts-node scripts/run-auditor-host.ts --projectRoot <projectRoot> --stage <stage> --artifactPath <artifactDocPath> --reportPath <reportPath> --iterationCount {累计值}`. On failure note resultCode. **Forbidden**: repeated “writing/saving” status lines.
+

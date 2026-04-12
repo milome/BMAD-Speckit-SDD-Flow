@@ -25,8 +25,11 @@ export interface ReviewerRoute {
 }
 
 export interface ReviewerHostRouteSummary {
+  carrierSourcePath: string;
+  runtimeTargetPath: string;
   preferredRoute: ReviewerRoute;
   fallbackRoute: ReviewerRoute;
+  fallbackReason: string;
 }
 
 export interface ReviewerAuditStageConsumer {
@@ -52,8 +55,34 @@ export interface ReviewerRouteExplainability {
   reviewerIdentity: 'bmad_code_reviewer';
   reviewerDisplayName: 'code-reviewer';
   registryVersion: 'reviewer_registry_v1';
+  sharedCore: {
+    version: 'reviewer_shared_core_v1';
+    rootPath: string;
+    basePromptPath: string;
+    profilePackPath: string;
+  };
   closeoutRunner: 'runAuditorHost';
+  routeReasonSummary: string;
+  fallbackStatus: 'fallback_ready';
+  isomorphismMaturity: 'projection_wired';
+  complexitySource: string;
+  remainingBlocker: string;
   supportedProfiles: readonly ReviewerProfileId[];
+  requiredRolloutProofs: readonly string[];
+  compatibilityGuards: {
+    codexNoopRequired: true;
+    codexBehaviorChangeAllowed: false;
+  };
+  rolloutGate: {
+    version: 'reviewer_rollout_gate_v1';
+    status: 'blocked' | 'ready';
+    requiredProofs: readonly string[];
+    completeProofs: readonly string[];
+    blockingProofs: readonly string[];
+    cleanupAllowed: boolean;
+    canClaimFullIsomorphism: boolean;
+    summary: string;
+  };
   hosts: Record<ReviewerHostId, ReviewerHostRouteSummary>;
   activeAuditConsumer: ReviewerAuditStageConsumer | null;
 }
@@ -64,6 +93,12 @@ export interface ReviewerContractProjection {
   reviewerDisplayName: 'code-reviewer';
   facilitatorIdentity: 'party_mode_facilitator';
   registryVersion: 'reviewer_registry_v1';
+  sharedCore: {
+    version: 'reviewer_shared_core_v1';
+    rootPath: string;
+    basePromptPath: string;
+    profilePackPath: string;
+  };
   schemaVersions: {
     input: 'review_input_v1';
     output: 'review_output_v1';
@@ -71,6 +106,36 @@ export interface ReviewerContractProjection {
     closeout: 'review_host_closeout_v1';
   };
   closeoutRunner: 'runAuditorHost';
+  governance: {
+    implementationReadinessStatusRequired: true;
+    implementationReadinessGateName: 'implementation-readiness';
+    gatesLoopRequired: true;
+    rerunGatesRequired: true;
+    packetExecutionClosureRequired: true;
+    packetExecutionClosureStatuses: readonly string[];
+    closeoutEnvelopeFields: readonly string[];
+  };
+  hostAdapterBoundary: {
+    projectionOnly: true;
+    hostLocalStageSemanticsForbidden: true;
+    hostLocalRoutePrecedenceForbidden: true;
+    hostLocalFallbackBusinessRulesForbidden: true;
+  };
+  compatibilityGuards: {
+    codexNoopRequired: true;
+    codexBehaviorChangeAllowed: false;
+  };
+  requiredRolloutProofs: readonly string[];
+  rolloutGate: {
+    version: 'reviewer_rollout_gate_v1';
+    status: 'blocked' | 'ready';
+    requiredProofs: readonly string[];
+    completeProofs: readonly string[];
+    blockingProofs: readonly string[];
+    cleanupAllowed: boolean;
+    canClaimFullIsomorphism: boolean;
+    summary: string;
+  };
   supportedProfiles: readonly ReviewerProfileId[];
   supportedAuditEntryStages: readonly ReviewerAuditEntryStage[];
   activeAuditConsumer: ReviewerAuditStageConsumer | null;
@@ -163,12 +228,20 @@ const AUDIT_CONSUMERS: Record<ReviewerAuditEntryStage, ReviewerAuditStageConsume
 
 const HOSTS: Record<ReviewerHostId, ReviewerHostRouteSummary> = {
   cursor: {
+    carrierSourcePath: '_bmad/cursor/agents/code-reviewer.md',
+    runtimeTargetPath: '.cursor/agents/code-reviewer.md',
     preferredRoute: { tool: 'cursor-task', subtypeOrExecutor: 'code-reviewer' },
     fallbackRoute: { tool: 'mcp_task', subtypeOrExecutor: 'generalPurpose' },
+    fallbackReason:
+      'Use mcp_task/generalPurpose when cursor-task/code-reviewer is unavailable, while preserving the shared reviewer contract and runAuditorHost closeout.',
   },
   claude: {
+    carrierSourcePath: '_bmad/claude/agents/code-reviewer.md',
+    runtimeTargetPath: '.claude/agents/code-reviewer.md',
     preferredRoute: { tool: 'Agent', subtypeOrExecutor: 'code-reviewer' },
     fallbackRoute: { tool: 'Agent', subtypeOrExecutor: 'general-purpose' },
+    fallbackReason:
+      'Use Agent/general-purpose only when Agent/code-reviewer is unavailable, while preserving the shared reviewer contract and runAuditorHost closeout.',
   },
 };
 
@@ -208,6 +281,12 @@ export function buildReviewerContractProjection(input?: {
     reviewerDisplayName: 'code-reviewer',
     facilitatorIdentity: 'party_mode_facilitator',
     registryVersion: 'reviewer_registry_v1',
+    sharedCore: {
+      version: 'reviewer_shared_core_v1',
+      rootPath: '_bmad/core/agents/code-reviewer',
+      basePromptPath: '_bmad/core/agents/code-reviewer/base-prompt.md',
+      profilePackPath: '_bmad/core/agents/code-reviewer/profiles.json',
+    },
     schemaVersions: {
       input: 'review_input_v1',
       output: 'review_output_v1',
@@ -215,6 +294,64 @@ export function buildReviewerContractProjection(input?: {
       closeout: 'review_host_closeout_v1',
     },
     closeoutRunner: 'runAuditorHost',
+    governance: {
+      implementationReadinessStatusRequired: true,
+      implementationReadinessGateName: 'implementation-readiness',
+      gatesLoopRequired: true,
+      rerunGatesRequired: true,
+      packetExecutionClosureRequired: true,
+      packetExecutionClosureStatuses: [
+        'awaiting_rerun_gate',
+        'retry_pending',
+        'gate_passed',
+        'escalated',
+      ],
+      closeoutEnvelopeFields: [
+        'resultCode',
+        'requiredFixes',
+        'requiredFixesDetail',
+        'rerunDecision',
+        'scoringFailureMode',
+        'packetExecutionClosureStatus',
+      ],
+    },
+    hostAdapterBoundary: {
+      projectionOnly: true,
+      hostLocalStageSemanticsForbidden: true,
+      hostLocalRoutePrecedenceForbidden: true,
+      hostLocalFallbackBusinessRulesForbidden: true,
+    },
+    compatibilityGuards: {
+      codexNoopRequired: true,
+      codexBehaviorChangeAllowed: false,
+    },
+    rolloutGate: {
+      version: 'reviewer_rollout_gate_v1',
+      status: 'blocked',
+      requiredProofs: [
+        'parity_proof',
+        'consumer_install_proof',
+        'rollback_proof',
+        'codex_noop_proof',
+      ],
+      completeProofs: [],
+      blockingProofs: [
+        'parity_proof',
+        'consumer_install_proof',
+        'rollback_proof',
+        'codex_noop_proof',
+      ],
+      cleanupAllowed: false,
+      canClaimFullIsomorphism: false,
+      summary:
+        'Blocked until proofs are complete: parity_proof, consumer_install_proof, rollback_proof, codex_noop_proof',
+    },
+    requiredRolloutProofs: [
+      'parity_proof',
+      'consumer_install_proof',
+      'rollback_proof',
+      'codex_noop_proof',
+    ],
     supportedProfiles: SUPPORTED_PROFILES,
     supportedAuditEntryStages: Object.keys(AUDIT_CONSUMERS) as ReviewerAuditEntryStage[],
     activeAuditConsumer: input?.auditEntryStage ? AUDIT_CONSUMERS[input.auditEntryStage] : null,
@@ -230,8 +367,53 @@ export function buildReviewerRouteExplainability(input?: {
     reviewerIdentity: 'bmad_code_reviewer',
     reviewerDisplayName: 'code-reviewer',
     registryVersion: 'reviewer_registry_v1',
+    sharedCore: {
+      version: 'reviewer_shared_core_v1',
+      rootPath: '_bmad/core/agents/code-reviewer',
+      basePromptPath: '_bmad/core/agents/code-reviewer/base-prompt.md',
+      profilePackPath: '_bmad/core/agents/code-reviewer/profiles.json',
+    },
     closeoutRunner: 'runAuditorHost',
+    routeReasonSummary:
+      'Registry-backed reviewer routing keeps shared-core semantics while preserving host-specific transport and carrier shape.',
+    fallbackStatus: 'fallback_ready',
+    isomorphismMaturity: 'projection_wired',
+    complexitySource:
+      'Dual-host carrier parity is in place, but legacy skill narrative cleanup and proof expansion still remain before rollout.',
+    remainingBlocker:
+      'Complete parity proof, rollback proof, Codex no-op proof, and rollout gate before declaring full isomorphism.',
     supportedProfiles: SUPPORTED_PROFILES,
+    requiredRolloutProofs: [
+      'parity_proof',
+      'consumer_install_proof',
+      'rollback_proof',
+      'codex_noop_proof',
+    ],
+    compatibilityGuards: {
+      codexNoopRequired: true,
+      codexBehaviorChangeAllowed: false,
+    },
+    rolloutGate: {
+      version: 'reviewer_rollout_gate_v1',
+      status: 'blocked',
+      requiredProofs: [
+        'parity_proof',
+        'consumer_install_proof',
+        'rollback_proof',
+        'codex_noop_proof',
+      ],
+      completeProofs: [],
+      blockingProofs: [
+        'parity_proof',
+        'consumer_install_proof',
+        'rollback_proof',
+        'codex_noop_proof',
+      ],
+      cleanupAllowed: false,
+      canClaimFullIsomorphism: false,
+      summary:
+        'Blocked until proofs are complete: parity_proof, consumer_install_proof, rollback_proof, codex_noop_proof',
+    },
     hosts: HOSTS,
     activeAuditConsumer: input?.auditEntryStage ? AUDIT_CONSUMERS[input.auditEntryStage] : null,
   };

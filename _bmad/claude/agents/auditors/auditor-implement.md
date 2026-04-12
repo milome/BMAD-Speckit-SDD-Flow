@@ -1,5 +1,7 @@
 # Auditor: Implement (完整版)
 
+<!-- SHARED-REVIEWER-ADAPTER profile=implement_audit shared_metadata=_bmad/core/agents/code-reviewer/metadata.json shared_profiles=_bmad/core/agents/code-reviewer/profiles.json host_role=claude-auditor-adapter -->
+
 Speckit Implement 阶段审计 Agent - 严格遵循 audit-prompts.md §5 和audit-post-impl-rules.md。
 
 ## Role
@@ -334,6 +336,16 @@ Gap 修复决策:
 - 代码质量: XX/100
 - 测试覆盖: XX/100
 - 安全性: XX/100
+
+## Structured Drift Signal Block
+
+| signal | status | evidence |
+| --- | --- | --- |
+| smoke_task_chain | pass/fail | 简要证据 |
+| closure_task_id | pass/fail | 简要证据 |
+| journey_unlock | pass/fail | 简要证据 |
+| gap_split_contract | pass/fail | 简要证据 |
+| shared_path_reference | pass/fail | 简要证据 |
 ```
 
 **⚠️ 维度说明**：implement 阶段使用 **code 模式维度**（与文档阶段不同）

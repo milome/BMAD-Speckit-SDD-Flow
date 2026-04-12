@@ -1,4 +1,5 @@
 <!-- BLOCK_LABEL_POLICY=B -->
+
 ---
 name: bmad-bug-assistant
 description: |
@@ -23,6 +24,9 @@ references:
   - ralph-method: prd, progress files, executed in US order
   - speckit-workflow: Fake implementation is prohibited, acceptance command must be run, architecture is faithful
 ---
+
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout terminology: in this document, a stage is considered complete only when `runAuditorHost` returns `closeout approved`. An audit report `PASS` only means the host close-out may start; `PASS` alone must not be treated as completion, admission, or release.
 
 # Claude Adapter: bmad-bug-assistant
 
@@ -689,3 +693,5 @@ User: "Implement fix as per BUGFIX documentation."
 Main Agent: Execute Phase 4 - Copy the entire "Phase 4 Implementation Detailed Prompt Word", replace only the BUGFIX document path and project root directory, and initiate a subtask through the Agent tool (`subagent_type: general-purpose`); after the implementation is completed, copy the entire "Phase 4 Post-implementation Audit Complete Prompt Template" and initiate the audit subtask; if the audit conclusion is failed, you must entrust the sub-agent to modify it according to the modification suggestions and initiate the audit again until the conclusion is "complete coverage, verification passed." Direct modification of production code is prohibited.
 
 <!-- ADAPTATION_COMPLETE: 2026-03-15 -->
+
+

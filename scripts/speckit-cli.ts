@@ -28,6 +28,7 @@ import * as path from 'path';
 import { execSync } from 'child_process';
 import { isReviewerAuditEntryStage } from './reviewer-registry';
 import { runAuditorHost } from './run-auditor-host';
+import { isReviewCloseoutApproved } from './reviewer-schema';
 
 function buildCrossPlatformCommand(command: string): string {
   if (process.platform !== 'win32') {
@@ -354,7 +355,23 @@ export async function runAudit(
     iterationCount: options.iterationCount as string | undefined,
   });
 
-  if (result.status !== 'PASS') {
+  const closeoutApproved =
+    result &&
+    typeof result === 'object' &&
+    'closeoutEnvelope' in result &&
+    result.closeoutEnvelope &&
+    typeof result.closeoutEnvelope === 'object'
+      ? isReviewCloseoutApproved(result.closeoutEnvelope as {
+          resultCode: 'approved' | 'required_fixes' | 'blocked' | 'unknown';
+          packetExecutionClosureStatus:
+            | 'awaiting_rerun_gate'
+            | 'retry_pending'
+            | 'gate_passed'
+            | 'escalated';
+        })
+      : result.status === 'PASS';
+
+  if (result.status !== 'PASS' || !closeoutApproved) {
     console.error('Audit failed');
     process.exit(1);
   }

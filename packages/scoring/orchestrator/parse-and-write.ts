@@ -13,11 +13,14 @@ import {
   stageToMode,
   extractOverallGrade,
   listDimensionNamesEn,
+  extractStructuredDriftSignalBlock,
 } from '../parsers';
 import type { AuditStage } from '../parsers';
+import { loadAndDedupeRecords } from '../query/loader';
 import { writeScoreRecordSync } from '../writer';
 import type { WriteMode } from '../writer';
 import { applyTierAndVeto } from '../veto';
+import { evaluateReadinessDrift } from '../governance/readiness-drift';
 import { resolveRulesDir } from '../constants/path';
 import { computeContentHash, computeStringHash, getGitHeadHash } from '../utils/hash';
 import { persistPatchSnapshot } from '../utils/patch-snapshot';
@@ -124,6 +127,26 @@ function deriveJourneyContractSignals(checkItems: CheckItem[]): JourneyContractS
   }
 
   return Object.keys(signals).length > 0 ? signals : undefined;
+}
+
+function deriveStructuredDriftSignals(
+  content: string
+): { blockPresent: boolean; signals?: JourneyContractSignals } {
+  const block = extractStructuredDriftSignalBlock(content);
+  if (!block.present) {
+    return { blockPresent: false };
+  }
+
+  const signals: JourneyContractSignals = {};
+  for (const entry of block.entries) {
+    if (!entry.triggered) continue;
+    signals[entry.signal] = true;
+  }
+
+  return {
+    blockPresent: true,
+    ...(Object.keys(signals).length > 0 ? { signals } : {}),
+  };
 }
 
 /** Story 9.4: 从问题清单解析最高严重等级 */
@@ -334,8 +357,23 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     iterationRecords = [...failRecords, passRecord];
   }
 
-  const journeyContractSignals = deriveJourneyContractSignals(baseRecord.check_items);
+  const structuredDrift =
+    stage === 'implement' || stage === 'post_impl'
+      ? deriveStructuredDriftSignals(content)
+      : { blockPresent: false as const };
+  const journeyContractSignals =
+    stage === 'implement' || stage === 'post_impl'
+      ? structuredDrift.signals
+      : deriveJourneyContractSignals(baseRecord.check_items);
   const resolvedDataPath = resolveScoreDataPath(dataPath);
+  const priorRecords = loadAndDedupeRecords(resolvedDataPath);
+  const readinessDrift = evaluateReadinessDrift({
+    stage,
+    signals: journeyContractSignals,
+    signalBlockPresent:
+      stage === 'implement' || stage === 'post_impl' ? structuredDrift.blockPresent : undefined,
+    allRecords: priorRecords,
+  });
   const patchSnapshot = persistPatchSnapshot({
     cwd: process.cwd(),
     dataPath: resolvedDataPath,
@@ -348,9 +386,31 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     ...baseRecord,
     iteration_records: iterationRecords,
     phase_score,
+    raw_phase_score: rawScore,
     veto_triggered,
     tier_coefficient,
     ...(journeyContractSignals != null ? { journey_contract_signals: journeyContractSignals } : {}),
+    ...(readinessDrift.readiness_baseline_run_id != null
+      ? { readiness_baseline_run_id: readinessDrift.readiness_baseline_run_id }
+      : {}),
+    ...(readinessDrift.drift_signals.length > 0
+      ? { drift_signals: readinessDrift.drift_signals }
+      : {}),
+    ...(readinessDrift.drifted_dimensions.length > 0
+      ? { drifted_dimensions: readinessDrift.drifted_dimensions }
+      : {}),
+    ...(readinessDrift.drift_severity !== 'none'
+      ? { drift_severity: readinessDrift.drift_severity }
+      : {}),
+    ...(readinessDrift.re_readiness_required
+      ? { re_readiness_required: readinessDrift.re_readiness_required }
+      : {}),
+    ...(readinessDrift.blocking_reason != null
+      ? { blocking_reason: readinessDrift.blocking_reason }
+      : {}),
+    ...(readinessDrift.effective_verdict !== 'unknown'
+      ? { effective_verdict: readinessDrift.effective_verdict }
+      : {}),
     ...(options.question_version != null ? { question_version: options.question_version } : {}),
     ...(baseCommitHash != null ? { base_commit_hash: baseCommitHash } : {}),
     ...(contentHash != null ? { content_hash: contentHash } : {}),
@@ -360,7 +420,7 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     ...(options.triggerStage != null ? { trigger_stage: options.triggerStage } : {}),
   };
 
-  if (stage === 'implement' && dimensionScores.length === 0) {
+  if ((stage === 'implement' || stage === 'post_impl') && dimensionScores.length === 0) {
     const expectedEn = listDimensionNamesEn('code');
     const dimHint =
       expectedEn.length > 0
@@ -368,6 +428,19 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
         : 'Functionality, Code Quality, Test Coverage, Security';
     scopedConsoleError(
       `WARN: implement stage report has no parseable dimension_scores. Expected dimensions (name_en from modes.code): ${dimHint}. Check report parseable block matches modes.code.dimensions.`
+    );
+  }
+
+  if ((stage === 'implement' || stage === 'post_impl') && structuredDrift.blockPresent === false) {
+    scopedConsoleError(
+      'WARN: implement/post_impl stage report is missing Structured Drift Signal Block; implementation verdict is not trustworthy until re-readiness evidence is regenerated.'
+    );
+  }
+
+  if ((stage === 'implement' || stage === 'post_impl') && readinessDrift.effective_verdict !== 'approved') {
+    const blocker = readinessDrift.blocking_reason ?? 'Readiness drift requires another gated pass.';
+    scopedConsoleError(
+      `WARN: implement stage effective verdict is ${readinessDrift.effective_verdict}. ${blocker}`
     );
   }
 

@@ -12,6 +12,9 @@ export const PHASE_WEIGHTS_TASKS = 0.2;
 /** Story 9.2: implement 环节 2 权重 25% */
 export const PHASE_WEIGHT_IMPLEMENT = 0.25;
 
+/** Batch 1: implementation_readiness scoring stage uses a planning-quality weight. */
+export const PHASE_WEIGHT_READINESS = 0.2;
+
 /**
  * 各环节满分
  */

@@ -1,5 +1,7 @@
 # Auditor: Tasks Doc
 
+<!-- SHARED-REVIEWER-ADAPTER profile=tasks_doc_audit shared_metadata=_bmad/core/agents/code-reviewer/metadata.json shared_profiles=_bmad/core/agents/code-reviewer/profiles.json host_role=claude-auditor-adapter -->
+
 独立 TASKS 文档严格审计 Agent，面向 standalone TASKS 执行前的文档质量门控。
 
 ## Role

@@ -6,6 +6,8 @@ audit-prompts-code.md
 - 可解析块部分明确为 §5.1 四维格式，与 modes.code.dimensions 一致（功能性、代码质量、测试覆盖、安全性）
 -->
 
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
 # Implement 阶段代码审计提示词（code 模式）
 
 本文件为 `_bmad/_config/code-reviewer-config.yaml` 中 modes.code 的 prompt_template，等效于 `audit-prompts.md` §5。用于 speckit-workflow §5.2 执行阶段审计及 bmad-story-assistant 阶段四实施后审计。
@@ -38,6 +40,22 @@ implement 阶段审计报告必须在结尾包含以下可解析块，与 `_bmad
 - 安全性: XX/100
 ```
 
+## Structured Drift Signal Block（强制）
+
+implement / post_audit 阶段审计报告还必须包含以下结构化 block。缺少该 block 不得视为“无 drift”。
+
+```markdown
+## Structured Drift Signal Block
+
+| signal | status | evidence |
+| --- | --- | --- |
+| smoke_task_chain | pass/fail | 简要证据 |
+| closure_task_id | pass/fail | 简要证据 |
+| journey_unlock | pass/fail | 简要证据 |
+| gap_split_contract | pass/fail | 简要证据 |
+| shared_path_reference | pass/fail | 简要证据 |
+```
+
 **禁止用描述代替结构化块**：不得在总结或正文中用「可解析评分块（总体评级 X，维度分 Y–Z）」等文字概括；必须在报告中输出**完整的结构化块**，包含独立一行 `总体评级: X` 以及四行 `- 维度名: XX/100`。维度名须与 config 中 `modes.code.dimensions` 的 `name` 完全一致（功能性、代码质量、测试覆盖、安全性）。总体评级只能是 **A/B/C/D**（不得使用 A-、C+ 等）。维度分须逐行写出，不得用区间或概括（如「92–95」「各维度 90+」）代替。
 
 **反例（无效输出）**：
@@ -50,3 +68,4 @@ implement 阶段审计报告必须在结尾包含以下可解析块，与 `_bmad
 ## 审计后动作
 
 审计通过时，请将完整报告保存至调用方在本 prompt 中指定的 reportPath。implement 阶段的 reportPath 通常为 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_implement-E{epic}-S{story}.md` 或 `AUDIT_Story_{epic}-{story}_stage4.md`。并在结论中注明保存路径及 iteration_count，以便主 Agent / 宿主调用 runAuditorHost。
+

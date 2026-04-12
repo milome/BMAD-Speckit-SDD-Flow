@@ -20,6 +20,7 @@ export {
   parseGenericReport,
   extractOverallGrade,
   extractCheckItems,
+  extractStructuredDriftSignalBlock,
   ReportFileNotFoundError,
   ParseError,
 } from './audit-index';

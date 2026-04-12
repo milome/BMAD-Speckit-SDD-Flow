@@ -20,6 +20,8 @@ references:
   - speckit-workflow: 禁止伪实现、必须运行验收命令、架构忠实
   - prompt-templates: `.claude/skills/bmad-standalone-tasks/references/prompt-templates.md`
 ---
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
 
 # Claude Adapter: bmad-standalone-tasks
 
@@ -449,3 +451,4 @@ handoff:
 - **主 Agent 禁止编辑**：prd.*.json、progress.*.txt 仅由子代理维护；主 Agent 不得为「补写 progress」等理由直接编辑上述文件。
 
 <!-- ADAPTATION_COMPLETE: 2026-03-16 -->
+

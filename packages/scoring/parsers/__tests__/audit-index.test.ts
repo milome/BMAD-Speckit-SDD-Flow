@@ -48,4 +48,20 @@ describe('parseAuditReport', () => {
     expect(result.phase_score).toBe(100);
     validateRunScoreRecord(result);
   });
+
+  it('dispatches to parseGenericReport when stage=implementation_readiness', async () => {
+    const content = fs.readFileSync(
+      path.join(FIXTURES, 'sample-readiness-report-with-four-dimensions.md'),
+      'utf-8'
+    );
+    const result = await parseAuditReport({
+      content,
+      stage: 'implementation_readiness',
+      runId: 'run-readiness-1',
+      scenario: 'real_dev',
+    });
+    expect(result.stage).toBe('implementation_readiness');
+    expect(result.phase_score).toBe(80);
+    validateRunScoreRecord(result);
+  });
 });

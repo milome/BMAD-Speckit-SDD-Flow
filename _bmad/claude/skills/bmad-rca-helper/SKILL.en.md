@@ -1,4 +1,5 @@
 <!-- BLOCK_LABEL_POLICY=B -->
+
 ---
 name: bmad-rca-helper
 description: |
@@ -19,6 +20,9 @@ references:
   - rca-iteration-rules: `.claude/skills/bmad-rca-helper/references/audit-document-iteration-rules.md`
   - party-mode: `{project-root}/_bmad/core/workflows/party-mode/workflow.md`
 ---
+
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout terminology: in this document, a stage is considered complete only when `runAuditorHost` returns `closeout approved`. An audit report `PASS` only means the host close-out may start; `PASS` alone must not be treated as completion, admission, or release.
 
 # Claude adapter: bmad-rca-helper
 
@@ -258,3 +262,5 @@ Do not omit format requirements for “final solution” and “final task list�
 - Ensure the audit subagent can access `audit-document-iteration-rules.md` and audit-prompts §4 context (paste key excerpts or paths in the prompt).
 
 <!-- ADAPTATION_COMPLETE: 2026-03-15 -->
+
+

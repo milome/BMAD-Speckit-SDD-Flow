@@ -33,7 +33,7 @@ function isAuditPassedEvent(event, triggerStage) {
 
 function shouldAutoWriteScopedBundle({ scenario, stage, phaseScore, reportPath, artifactDocPath, event, triggerStage }) {
   if (scenario !== 'real_dev') return false;
-  if (stage !== 'implement' && stage !== 'post_audit') return false;
+  if (stage !== 'implement' && stage !== 'post_audit' && stage !== 'post_impl') return false;
   if (typeof phaseScore !== 'number' || phaseScore < 90) return false;
   if (!isAuditPassedEvent(event, triggerStage)) return false;
   return Boolean(artifactDocPath || reportPath);
@@ -204,6 +204,13 @@ async function scoreCommand(opts, deps = {}) {
   if (bundleResult) {
     console.log(`sft-bundle: wrote scoped bundle ${bundleResult.bundle_id}`);
   }
+
+  return {
+    runId,
+    stage,
+    parsedRecord,
+    bundleResult: bundleResult || null,
+  };
 }
 
 module.exports = { scoreCommand };

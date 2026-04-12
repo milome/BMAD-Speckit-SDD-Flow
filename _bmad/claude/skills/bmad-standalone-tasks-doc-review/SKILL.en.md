@@ -1,4 +1,5 @@
 <!-- BLOCK_LABEL_POLICY=B -->
+
 ---
 name: bmad-standalone-tasks-doc-review
 description: |
@@ -20,6 +21,9 @@ references:
   - prompt-template-tasks-doc: `.claude/skills/bmad-standalone-tasks-doc-review/references/audit-prompt-tasks-doc.md`
   - prompt-template-impl: `.claude/skills/bmad-standalone-tasks-doc-review/references/audit-prompt-impl.md`
 ---
+
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout terminology: in this document, a stage is considered complete only when `runAuditorHost` returns `closeout approved`. An audit report `PASS` only means the host close-out may start; `PASS` alone must not be treated as completion, admission, or release.
 
 # Claude adapter: bmad-standalone-tasks-doc-review
 
@@ -228,3 +232,5 @@ When launching a TASKS document audit subtask, the main Agent **must** copy the 
 Post-implementation audit template: `references/audit-prompt-impl.md`.
 
 <!-- ADAPTATION_COMPLETE: 2026-03-15 -->
+
+

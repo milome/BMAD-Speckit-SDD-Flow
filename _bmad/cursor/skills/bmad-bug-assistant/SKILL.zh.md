@@ -3,6 +3,8 @@ name: bmad-bug-assistant
 description: |
   BMAD Bug 助手：按「根因分析 → BUGFIX 文档 → 审计 → 任务列表补充 → 实施 → 实施后审计」执行 BUG 修复全流程。主 Agent 发起任一子任务时**必须**将本 skill 内该阶段的「完整 prompt 模板」整段复制并填入占位符后传入，禁止省略、概括或自行改写提示词；主 Agent 禁止直接修改生产代码，实施须通过 mcp_task 子代理。使用 party-mode 或 mcp_task generalPurpose 进行**至少 100 轮**多角色辩论（BUGFIX 产出最终方案与 §7 任务列表，属 party-mode step-02「生成最终方案和最终任务列表」场景），满足收敛条件（共识 + 近 2–3 轮无新 gap）再结束；审计优先 code-reviewer，回退 mcp_task。遵循 ralph-method、TDD 红绿灯、speckit-workflow。适用场景：用户报告 BUG、要求根因分析、生成/更新 BUGFIX 文档、补充 §7 任务列表、实施 BUGFIX。全程中文。
 ---
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
 
 # BMAD Bug 助手
 
@@ -568,3 +570,4 @@ npx ts-node scripts/run-auditor-host.ts \
 用户：「按 BUGFIX 文档实施修复。」
 
 主 Agent：执行阶段四——将「阶段四实施详细提示词」整段复制，仅替换 BUGFIX 文档路径与项目根目录后发起 mcp_task；实施完成后，将「阶段四实施后审计完整 prompt 模板」整段复制后发起审计子任务；若审计结论为未通过，须按修改建议委托子代理修改后再次发起审计，直至结论为「完全覆盖、验证通过」。禁止直接改生产代码。
+

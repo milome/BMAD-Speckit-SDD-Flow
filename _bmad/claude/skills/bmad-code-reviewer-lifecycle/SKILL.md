@@ -25,6 +25,8 @@ references:
   - scoring/rules: 解析规则、item_id、veto_items；`scoring/rules/*.yaml`
   - runAuditorHost / 统一 auditor host runner：承接审计报告后的评分写入、auditIndex 更新与统一 post-audit automation
 ---
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
 
 # Claude Adapter: bmad-code-reviewer-lifecycle
 
@@ -311,3 +313,4 @@ artifacts:
 - TASKS 文档审计（document）
 
 <!-- ADAPTATION_COMPLETE: 2026-03-15 -->
+

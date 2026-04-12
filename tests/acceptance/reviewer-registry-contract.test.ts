@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { REVIEWER_PROFILES } from '../../scripts/reviewer-contract';
 import {
   REVIEWER_REGISTRY_VERSION,
+  REVIEWER_SHARED_CORE_VERSION,
   getReviewerConsumerByAuditStage,
   getReviewerRegistration,
   isReviewerAuditEntryStage,
@@ -17,15 +18,40 @@ describe('reviewer registry contract', () => {
 
     for (const registration of registrations) {
       expect(registration.identity).toBe('bmad_code_reviewer');
+      expect(registration.sharedCore.version).toBe(REVIEWER_SHARED_CORE_VERSION);
+      expect(registration.sharedCore.rootPath).toBe('_bmad/core/agents/code-reviewer');
+      expect(registration.hostAdapterBoundary.projectionOnly).toBe(true);
       expect(registration.hosts.cursor.preferredRoute.tool).toBe('cursor-task');
       expect(registration.hosts.cursor.fallbackRoute.tool).toBe('mcp_task');
       expect(registration.hosts.cursor.closeout.runner).toBe('runAuditorHost');
       expect(registration.hosts.cursor.closeout.contractVersion).toBe('review_host_closeout_v1');
+      expect(registration.hosts.cursor.governance).toMatchObject({
+        implementationReadinessStatusRequired: true,
+        implementationReadinessGateName: 'implementation-readiness',
+        gatesLoopRequired: true,
+        rerunGatesRequired: true,
+        packetExecutionClosureRequired: true,
+      });
+      expect(registration.hosts.cursor.governance.closeoutEnvelopeFields).toStrictEqual([
+        'resultCode',
+        'requiredFixes',
+        'requiredFixesDetail',
+        'rerunDecision',
+        'scoringFailureMode',
+        'packetExecutionClosureStatus',
+      ]);
 
       expect(registration.hosts.claude.preferredRoute.tool).toBe('Agent');
       expect(registration.hosts.claude.fallbackRoute.tool).toBe('Agent');
       expect(registration.hosts.claude.closeout.runner).toBe('runAuditorHost');
       expect(registration.hosts.claude.closeout.contractVersion).toBe('review_host_closeout_v1');
+      expect(registration.hosts.claude.governance).toMatchObject({
+        implementationReadinessStatusRequired: true,
+        implementationReadinessGateName: 'implementation-readiness',
+        gatesLoopRequired: true,
+        rerunGatesRequired: true,
+        packetExecutionClosureRequired: true,
+      });
     }
   });
 

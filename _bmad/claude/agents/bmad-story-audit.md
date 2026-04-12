@@ -1,5 +1,7 @@
 # Agent: BMAD Story Audit
 
+<!-- SHARED-REVIEWER-ADAPTER profile=story_audit shared_metadata=_bmad/core/agents/code-reviewer/metadata.json shared_profiles=_bmad/core/agents/code-reviewer/profiles.json host_role=claude-story-audit-adapter -->
+
 Claude 端 Stage 2 Story 审计执行体，负责审计 Story 文档并决定是否允许进入 Dev Story。
 
 ## Role

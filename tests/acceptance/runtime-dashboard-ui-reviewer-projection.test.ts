@@ -13,6 +13,17 @@ describe('runtime dashboard ui reviewer projection contract', () => {
     expect(source).toContain('reviewer_route_explainability');
     expect(source).toContain('Reviewer');
     expect(source).toContain('Closeout');
+    expect(source).toContain('latestCloseoutLabel');
+    expect(source).toContain('closeoutResultCodeLabel');
+    expect(source).toContain('packetClosureLabel');
+    expect(source).toContain('currentCarrier');
+    expect(source).toContain('routeReason');
+    expect(source).toContain('complexityLabel');
+    expect(source).toContain('blockerLabel');
+    expect(source).toContain('readinessBaselineLabel');
+    expect(source).toContain('effectiveVerdictLabel');
+    expect(source).toContain('driftSeverityLabel');
+    expect(source).toContain('ReadinessProjectionCard');
     expect(source).toContain('cursor');
     expect(source).toContain('claude');
   });

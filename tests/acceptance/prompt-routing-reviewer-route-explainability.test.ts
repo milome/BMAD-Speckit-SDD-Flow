@@ -48,16 +48,29 @@ describe('prompt-routing reviewer route explainability', () => {
         matchedSkillId: 'code-reviewer',
         reviewerIdentity: 'bmad_code_reviewer',
         registryVersion: 'reviewer_registry_v1',
+        sharedCore: expect.objectContaining({
+          version: 'reviewer_shared_core_v1',
+          rootPath: '_bmad/core/agents/code-reviewer',
+        }),
         closeoutRunner: 'runAuditorHost',
+        routeReasonSummary: expect.stringContaining('Registry-backed reviewer routing'),
+        fallbackStatus: 'fallback_ready',
+        isomorphismMaturity: 'projection_wired',
+        complexitySource: expect.stringContaining('legacy skill narrative cleanup'),
+        remainingBlocker: expect.stringContaining('rollout gate'),
         supportedProfiles: expect.arrayContaining(['implement_audit', 'bugfix_doc_audit']),
         hosts: expect.objectContaining({
           cursor: expect.objectContaining({
+            carrierSourcePath: '_bmad/cursor/agents/code-reviewer.md',
+            runtimeTargetPath: '.cursor/agents/code-reviewer.md',
             preferredRoute: expect.objectContaining({
               tool: 'cursor-task',
               subtypeOrExecutor: 'code-reviewer',
             }),
           }),
           claude: expect.objectContaining({
+            carrierSourcePath: '_bmad/claude/agents/code-reviewer.md',
+            runtimeTargetPath: '.claude/agents/code-reviewer.md',
             preferredRoute: expect.objectContaining({
               tool: 'Agent',
               subtypeOrExecutor: 'code-reviewer',

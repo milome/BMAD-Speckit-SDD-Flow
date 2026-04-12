@@ -13,7 +13,7 @@ export interface DimensionScore {
   score: number;
 }
 
-export type DimensionMode = 'code' | 'prd' | 'arch' | 'pr';
+export type DimensionMode = 'code' | 'prd' | 'arch' | 'pr' | 'readiness';
 
 const DIMENSION_SCORE_PATTERN = /^(?:[-*]\s*|\d+\.\s*)?(.+?)\s*[：:]\s*(\d+)\s*[/／]\s*100\s*$/;
 
@@ -27,7 +27,9 @@ function loadModeWeights(mode: DimensionMode, configPath?: string): Map<string, 
 
   const content = fs.readFileSync(resolved, 'utf-8');
   const parsed = yaml.load(content) as {
-    modes?: Partial<Record<DimensionMode, { dimensions?: Array<{ name?: unknown; weight?: unknown }> }>>;
+    modes?: Partial<
+      Record<DimensionMode, { dimensions?: Array<{ name?: unknown; weight?: unknown }> }>
+    >;
   };
   const dimensions = parsed?.modes?.[mode]?.dimensions;
   if (!Array.isArray(dimensions)) return new Map();
@@ -70,6 +72,8 @@ export function stageToMode(stage: string): DimensionMode {
       return 'code';
     case 'pr_review':
       return 'pr';
+    case 'implementation_readiness':
+      return 'readiness';
     default:
       return 'code';
   }

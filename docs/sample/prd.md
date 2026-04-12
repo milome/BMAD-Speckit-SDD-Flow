@@ -33,6 +33,8 @@ classification:
 
 # Product Requirements Document - BMAD-Speckit-SDD-Flow
 
+> 历史样例说明（2026-04-13）：本文保留 2026-03 的样例 PRD 语境，用于展示当时“三目录迁移 + Claude 适配”问题如何被定义。**当前 reviewer 产品路径已升级为 `shared reviewer core + host adapters + registry/schema + runAuditorHost closeout`。**文中出现的 `OMC reviewer`、旧 fallback 链、或“Cursor-only reviewer carrier”叙述，应视为历史样例，不是当前仓库 contract。
+
 **Author:** User
 **Date:** 2026-03-15
 

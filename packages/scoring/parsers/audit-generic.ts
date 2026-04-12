@@ -1,4 +1,4 @@
-import type { CheckItem, RunScoreRecord } from '../writer/types';
+import type { CheckItem, JourneyContractSignals, RunScoreRecord } from '../writer/types';
 import { ParseError } from './audit-prd';
 import { llmStructuredExtract, mapLlmResultToCheckItems } from './llm-fallback';
 import { resolveEmptyItemId, resolveItemId, type AuditStage as MappingStage } from './audit-item-mapping';
@@ -10,7 +10,30 @@ const GRADE_TO_SCORE: Record<string, number> = {
   D: 40,
 };
 
-export type GenericAuditStage = Extract<MappingStage, 'prd' | 'spec' | 'plan' | 'gaps' | 'tasks' | 'implement'>;
+export type GenericAuditStage = Extract<
+  MappingStage,
+  'prd' | 'spec' | 'plan' | 'gaps' | 'tasks' | 'implement' | 'post_impl' | 'implementation_readiness'
+>;
+
+export interface StructuredDriftSignalEntry {
+  signal: keyof JourneyContractSignals;
+  status: string;
+  evidence: string;
+  triggered: boolean;
+}
+
+export interface StructuredDriftSignalBlock {
+  present: boolean;
+  entries: StructuredDriftSignalEntry[];
+}
+
+const STRUCTURED_DRIFT_SIGNAL_IDS = new Set<keyof JourneyContractSignals>([
+  'smoke_task_chain',
+  'closure_task_id',
+  'journey_unlock',
+  'gap_split_contract',
+  'shared_path_reference',
+]);
 
 /**
  * Maps Chinese or English severity labels to score deltas (T3.2).
@@ -55,6 +78,90 @@ function findProblemSectionText(content: string): RegExpMatchArray | null {
   );
 }
 
+function normalizeStructuredSignalStatus(status: string): boolean {
+  const normalized = status.trim().toLowerCase();
+  if (
+    [
+      'pass',
+      'passed',
+      'ok',
+      'clean',
+      'resolved',
+      'true',
+      'no_drift',
+      'none',
+      'clear',
+    ].includes(normalized)
+  ) {
+    return false;
+  }
+  if (
+    [
+      'fail',
+      'failed',
+      'drift',
+      'triggered',
+      'missing',
+      'blocked',
+      'false',
+      'major',
+      'critical',
+      'required_fixes',
+    ].includes(normalized)
+  ) {
+    return true;
+  }
+  return normalized.length > 0 && normalized !== 'pass';
+}
+
+export function extractStructuredDriftSignalBlock(content: string): StructuredDriftSignalBlock {
+  const sectionMatch =
+    /##\s*(?:Structured Drift Signal Block|Structured Drift Signals|结构化 Drift Signal Block|结构化 Drift Signals)\s*\n([\s\S]*?)(?=\n##\s+|\n---|\n(?:问题清单|Issue List|Problem List|通过标准|Pass Criteria|下一步行动|Next Actions)\s*:|\n$)/i.exec(
+      content
+    ) ??
+    /##\s*(?:Journey Contract Signal Block|Journey Contract Signals Block)\s*\n([\s\S]*?)(?=\n##\s+|\n---|\n(?:问题清单|Issue List|Problem List|通过标准|Pass Criteria|下一步行动|Next Actions)\s*:|\n$)/i.exec(
+      content
+    );
+
+  if (!sectionMatch) {
+    return { present: false, entries: [] };
+  }
+
+  const lines = sectionMatch[1]
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const entries: StructuredDriftSignalEntry[] = [];
+  for (const line of lines) {
+    if (!line.startsWith('|')) continue;
+    const cells = line
+      .split('|')
+      .map((cell) => cell.trim())
+      .filter(Boolean);
+
+    if (cells.length < 3) continue;
+    if (/^signal$/i.test(cells[0]) || /^[-:]+$/.test(cells[0])) continue;
+
+    const signal = cells[0] as keyof JourneyContractSignals;
+    if (!STRUCTURED_DRIFT_SIGNAL_IDS.has(signal)) continue;
+
+    const status = cells[1];
+    const evidence = cells.slice(2).join(' | ');
+    entries.push({
+      signal,
+      status,
+      evidence,
+      triggered: normalizeStructuredSignalStatus(status),
+    });
+  }
+
+  return {
+    present: true,
+    entries,
+  };
+}
+
 /**
  * Extract check_items from 问题清单 section. Uses audit-item-mapping for item_id resolution.
  * @param {string} content - Full report text
@@ -63,11 +170,12 @@ function findProblemSectionText(content: string): RegExpMatchArray | null {
  */
 export function extractCheckItems(content: string, stage: GenericAuditStage): CheckItem[] {
   const items: CheckItem[] = [];
+  const mappingStage = stage === 'post_impl' ? 'implement' : stage;
   const problemSection = findProblemSectionText(content);
 
   if (!problemSection) {
     items.push({
-      item_id: resolveEmptyItemId(stage, 'overall', `${stage}_overall`),
+      item_id: resolveEmptyItemId(mappingStage, 'overall', `${stage}_overall`),
       passed: true,
       score_delta: 0,
       note: '未发现问题清单段落',
@@ -85,7 +193,7 @@ export function extractCheckItems(content: string, stage: GenericAuditStage): Ch
     /^n\/a$/i.test(emptyT)
   ) {
     items.push({
-      item_id: resolveEmptyItemId(stage, 'overall', `${stage}_overall`),
+      item_id: resolveEmptyItemId(mappingStage, 'overall', `${stage}_overall`),
       passed: true,
       score_delta: 0,
       note: '问题清单为空',
@@ -105,7 +213,7 @@ export function extractCheckItems(content: string, stage: GenericAuditStage): Ch
     const fallbackId = `${stage}-issue-${++idx}`;
 
     items.push({
-      item_id: resolveItemId(stage, description, fallbackId),
+      item_id: resolveItemId(mappingStage, description, fallbackId),
       passed: false,
       score_delta: normalizeSeverityDelta(severity),
       note: description,
@@ -114,7 +222,7 @@ export function extractCheckItems(content: string, stage: GenericAuditStage): Ch
 
   if (items.length === 0) {
     items.push({
-      item_id: resolveEmptyItemId(stage, 'dimensions', `${stage}_dimensions`),
+      item_id: resolveEmptyItemId(mappingStage, 'dimensions', `${stage}_dimensions`),
       passed: true,
       score_delta: 0,
       note: '从维度评分提取',

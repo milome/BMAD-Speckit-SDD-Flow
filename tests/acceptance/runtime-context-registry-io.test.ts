@@ -31,6 +31,7 @@ describe('runtime-context-registry io', () => {
       expect(loaded.sources.specsRoot).toBe('specs');
       expect(loaded.auditIndex.bugfix).toEqual({});
       expect(loaded.auditIndex.standalone_tasks).toEqual({});
+      expect(loaded.latestReviewerCloseout).toBeNull();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

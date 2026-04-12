@@ -168,39 +168,146 @@
     "reviewerContractProjection": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "version",
-        "reviewerIdentity",
-        "reviewerDisplayName",
-        "facilitatorIdentity",
-        "registryVersion",
-        "schemaVersions",
-        "closeoutRunner",
-        "supportedProfiles",
-        "supportedAuditEntryStages",
-        "activeAuditConsumer"
-      ],
-      "properties": {
+        "required": [
+          "version",
+          "reviewerIdentity",
+          "reviewerDisplayName",
+          "facilitatorIdentity",
+          "registryVersion",
+          "sharedCore",
+          "schemaVersions",
+          "closeoutRunner",
+          "governance",
+          "hostAdapterBoundary",
+          "compatibilityGuards",
+          "requiredRolloutProofs",
+          "rolloutGate",
+          "supportedProfiles",
+          "supportedAuditEntryStages",
+          "activeAuditConsumer"
+        ],
+        "properties": {
         "version": { "type": "string", "const": "reviewer_contract_projection_v1" },
         "reviewerIdentity": { "type": "string", "const": "bmad_code_reviewer" },
-        "reviewerDisplayName": { "type": "string", "const": "code-reviewer" },
-        "facilitatorIdentity": { "type": "string", "const": "party_mode_facilitator" },
-        "registryVersion": { "type": "string", "const": "reviewer_registry_v1" },
-        "schemaVersions": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["input", "output", "handoff", "closeout"],
+          "reviewerDisplayName": { "type": "string", "const": "code-reviewer" },
+          "facilitatorIdentity": { "type": "string", "const": "party_mode_facilitator" },
+          "registryVersion": { "type": "string", "const": "reviewer_registry_v1" },
+          "sharedCore": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["version", "rootPath", "basePromptPath", "profilePackPath"],
+            "properties": {
+              "version": { "type": "string", "const": "reviewer_shared_core_v1" },
+              "rootPath": { "type": "string" },
+              "basePromptPath": { "type": "string" },
+              "profilePackPath": { "type": "string" }
+            }
+          },
+          "schemaVersions": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["input", "output", "handoff", "closeout"],
           "properties": {
             "input": { "type": "string", "const": "review_input_v1" },
             "output": { "type": "string", "const": "review_output_v1" },
             "handoff": { "type": "string", "const": "review_handoff_v1" },
             "closeout": { "type": "string", "const": "review_host_closeout_v1" }
-          }
-        },
-        "closeoutRunner": { "type": "string", "const": "runAuditorHost" },
-        "supportedProfiles": {
-          "type": "array",
-          "items": { "type": "string" }
+            }
+          },
+          "closeoutRunner": { "type": "string", "const": "runAuditorHost" },
+          "governance": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "implementationReadinessStatusRequired",
+              "implementationReadinessGateName",
+              "gatesLoopRequired",
+              "rerunGatesRequired",
+              "packetExecutionClosureRequired",
+              "packetExecutionClosureStatuses",
+              "closeoutEnvelopeFields"
+            ],
+            "properties": {
+              "implementationReadinessStatusRequired": { "const": true },
+              "implementationReadinessGateName": { "type": "string", "const": "implementation-readiness" },
+              "gatesLoopRequired": { "const": true },
+              "rerunGatesRequired": { "const": true },
+              "packetExecutionClosureRequired": { "const": true },
+              "packetExecutionClosureStatuses": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "closeoutEnvelopeFields": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          },
+          "hostAdapterBoundary": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "projectionOnly",
+              "hostLocalStageSemanticsForbidden",
+              "hostLocalRoutePrecedenceForbidden",
+              "hostLocalFallbackBusinessRulesForbidden"
+            ],
+            "properties": {
+              "projectionOnly": { "const": true },
+              "hostLocalStageSemanticsForbidden": { "const": true },
+              "hostLocalRoutePrecedenceForbidden": { "const": true },
+              "hostLocalFallbackBusinessRulesForbidden": { "const": true }
+            }
+          },
+          "compatibilityGuards": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["codexNoopRequired", "codexBehaviorChangeAllowed"],
+            "properties": {
+              "codexNoopRequired": { "const": true },
+              "codexBehaviorChangeAllowed": { "const": false }
+            }
+          },
+          "requiredRolloutProofs": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "rolloutGate": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "version",
+              "status",
+              "requiredProofs",
+              "completeProofs",
+              "blockingProofs",
+              "cleanupAllowed",
+              "canClaimFullIsomorphism",
+              "summary"
+            ],
+            "properties": {
+              "version": { "type": "string", "const": "reviewer_rollout_gate_v1" },
+              "status": { "type": "string", "enum": ["blocked", "ready"] },
+              "requiredProofs": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "completeProofs": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "blockingProofs": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "cleanupAllowed": { "type": "boolean" },
+              "canClaimFullIsomorphism": { "type": "boolean" },
+              "summary": { "type": "string" }
+            }
+          },
+          "supportedProfiles": {
+            "type": "array",
+            "items": { "type": "string" }
         },
         "supportedAuditEntryStages": {
           "type": "array",

@@ -1,8 +1,17 @@
 import {
   FACILITATOR_PRODUCT_IDENTITY,
+  CLAUDE_REVIEWER_CANONICAL_SOURCE_PATH,
+  CLAUDE_REVIEWER_RUNTIME_TARGET_PATH,
+  CURSOR_REVIEWER_CANONICAL_SOURCE_PATH,
+  CURSOR_REVIEWER_RUNTIME_TARGET_PATH,
+  REVIEWER_CLOSEOUT_ENVELOPE_FIELDS,
+  REVIEWER_COMPATIBILITY_GUARDS,
   REVIEWER_DISPLAY_NAME,
+  REVIEWER_GOVERNANCE_GATE_CONTRACT,
+  REVIEWER_HOST_ADAPTER_BOUNDARY,
   REVIEWER_PRODUCT_IDENTITY,
   REVIEWER_PROFILES,
+  REVIEWER_REQUIRED_ROLLOUT_PROOFS,
   type ReviewerProfileId,
 } from './reviewer-contract';
 import {
@@ -14,6 +23,19 @@ import {
   type RunAuditorHostStage,
   type ReviewCloseoutStage,
 } from './reviewer-schema';
+import {
+  REVIEWER_SHARED_CORE_METADATA,
+  REVIEWER_SHARED_CORE_PROFILE_PACK,
+  REVIEWER_SHARED_CORE_VERSION,
+} from './reviewer-shared-core';
+import {
+  REVIEWER_ROLLOUT_GATE_VERSION,
+  buildReviewerRolloutGate,
+  type ReviewerRolloutGate,
+} from './reviewer-rollout-gate';
+
+export { REVIEWER_SHARED_CORE_VERSION } from './reviewer-shared-core';
+export { REVIEWER_ROLLOUT_GATE_VERSION } from './reviewer-rollout-gate';
 
 export const REVIEWER_REGISTRY_VERSION = 'reviewer_registry_v1' as const;
 export const REVIEWER_CONTRACT_PROJECTION_VERSION = 'reviewer_contract_projection_v1' as const;
@@ -32,21 +54,43 @@ export interface ReviewerHostCloseoutBinding {
   stage: ReviewCloseoutStage;
 }
 
+export interface ReviewerHostGovernanceBinding {
+  implementationReadinessStatusRequired: boolean;
+  implementationReadinessGateName: string;
+  gatesLoopRequired: boolean;
+  rerunGatesRequired: boolean;
+  packetExecutionClosureRequired: boolean;
+  packetExecutionClosureStatuses: readonly string[];
+  closeoutEnvelopeFields: readonly string[];
+}
+
 export interface ReviewerHostRegistration {
   preferredRoute: ReviewerRoute;
   fallbackRoute: ReviewerRoute;
   closeout: ReviewerHostCloseoutBinding;
+  governance: ReviewerHostGovernanceBinding;
 }
 
 export interface ReviewerRegistration {
   identity: typeof REVIEWER_PRODUCT_IDENTITY;
   profile: ReviewerProfileId;
+  sharedCore: {
+    version: typeof REVIEWER_SHARED_CORE_VERSION;
+    rootPath: string;
+    basePromptPath: string;
+    profilePackPath: string;
+    hostAdapterProjectionOnly: boolean;
+  };
+  hostAdapterBoundary: typeof REVIEWER_HOST_ADAPTER_BOUNDARY;
   hosts: Record<ReviewerHostId, ReviewerHostRegistration>;
 }
 
 export interface ReviewerHostRouteSummary {
+  carrierSourcePath: string;
+  runtimeTargetPath: string;
   preferredRoute: ReviewerRoute;
   fallbackRoute: ReviewerRoute;
+  fallbackReason: string;
 }
 
 export interface ReviewerAuditStageConsumer {
@@ -64,8 +108,22 @@ export interface ReviewerRouteExplainability {
   reviewerIdentity: typeof REVIEWER_PRODUCT_IDENTITY;
   reviewerDisplayName: typeof REVIEWER_DISPLAY_NAME;
   registryVersion: typeof REVIEWER_REGISTRY_VERSION;
+  sharedCore: {
+    version: typeof REVIEWER_SHARED_CORE_VERSION;
+    rootPath: string;
+    basePromptPath: string;
+    profilePackPath: string;
+  };
   closeoutRunner: typeof REVIEW_HOST_CLOSEOUT_RUNNER;
+  routeReasonSummary: string;
+  fallbackStatus: 'fallback_ready';
+  isomorphismMaturity: 'projection_wired';
+  complexitySource: string;
+  remainingBlocker: string;
   supportedProfiles: readonly ReviewerProfileId[];
+  requiredRolloutProofs: readonly string[];
+  compatibilityGuards: typeof REVIEWER_COMPATIBILITY_GUARDS;
+  rolloutGate: ReviewerRolloutGate;
   hosts: Record<ReviewerHostId, ReviewerHostRouteSummary>;
   activeAuditConsumer: ReviewerAuditStageConsumer | null;
 }
@@ -76,6 +134,12 @@ export interface ReviewerContractProjection {
   reviewerDisplayName: typeof REVIEWER_DISPLAY_NAME;
   facilitatorIdentity: typeof FACILITATOR_PRODUCT_IDENTITY;
   registryVersion: typeof REVIEWER_REGISTRY_VERSION;
+  sharedCore: {
+    version: typeof REVIEWER_SHARED_CORE_VERSION;
+    rootPath: string;
+    basePromptPath: string;
+    profilePackPath: string;
+  };
   schemaVersions: {
     input: typeof REVIEW_INPUT_V1_VERSION;
     output: typeof REVIEW_OUTPUT_V1_VERSION;
@@ -83,6 +147,11 @@ export interface ReviewerContractProjection {
     closeout: typeof REVIEW_HOST_CLOSEOUT_V1_VERSION;
   };
   closeoutRunner: typeof REVIEW_HOST_CLOSEOUT_RUNNER;
+  governance: ReviewerHostGovernanceBinding;
+  hostAdapterBoundary: typeof REVIEWER_HOST_ADAPTER_BOUNDARY;
+  compatibilityGuards: typeof REVIEWER_COMPATIBILITY_GUARDS;
+  requiredRolloutProofs: readonly string[];
+  rolloutGate: ReviewerRolloutGate;
   supportedProfiles: readonly ReviewerProfileId[];
   supportedAuditEntryStages: readonly RunAuditorHostStage[];
   activeAuditConsumer: ReviewerAuditStageConsumer | null;
@@ -92,9 +161,31 @@ function createRegistration(
   profile: ReviewerProfileId,
   stage: ReviewCloseoutStage
 ): ReviewerRegistration {
+  const governance: ReviewerHostGovernanceBinding = {
+    implementationReadinessStatusRequired:
+      REVIEWER_GOVERNANCE_GATE_CONTRACT.implementationReadinessStatusRequired,
+    implementationReadinessGateName:
+      REVIEWER_GOVERNANCE_GATE_CONTRACT.implementationReadinessGateName,
+    gatesLoopRequired: REVIEWER_GOVERNANCE_GATE_CONTRACT.gatesLoopRequired,
+    rerunGatesRequired: REVIEWER_GOVERNANCE_GATE_CONTRACT.rerunGatesRequired,
+    packetExecutionClosureRequired:
+      REVIEWER_GOVERNANCE_GATE_CONTRACT.packetExecutionClosureRequired,
+    packetExecutionClosureStatuses:
+      REVIEWER_GOVERNANCE_GATE_CONTRACT.packetExecutionClosureStatuses,
+    closeoutEnvelopeFields: REVIEWER_CLOSEOUT_ENVELOPE_FIELDS,
+  };
+
   return {
     identity: REVIEWER_PRODUCT_IDENTITY,
     profile,
+    sharedCore: {
+      version: REVIEWER_SHARED_CORE_VERSION,
+      rootPath: REVIEWER_SHARED_CORE_METADATA.rootPath,
+      basePromptPath: REVIEWER_SHARED_CORE_METADATA.basePromptPath,
+      profilePackPath: REVIEWER_SHARED_CORE_METADATA.profilePackPath,
+      hostAdapterProjectionOnly: REVIEWER_SHARED_CORE_METADATA.hostAdapterProjectionOnly,
+    },
+    hostAdapterBoundary: REVIEWER_HOST_ADAPTER_BOUNDARY,
     hosts: {
       cursor: {
         preferredRoute: {
@@ -110,6 +201,7 @@ function createRegistration(
           runner: REVIEW_HOST_CLOSEOUT_RUNNER,
           stage,
         },
+        governance,
       },
       claude: {
         preferredRoute: {
@@ -125,6 +217,7 @@ function createRegistration(
           runner: REVIEW_HOST_CLOSEOUT_RUNNER,
           stage,
         },
+        governance,
       },
     },
   };
@@ -139,6 +232,16 @@ export const REVIEWER_REGISTRY: Record<ReviewerProfileId, ReviewerRegistration> 
   bugfix_doc_audit: createRegistration('bugfix_doc_audit', 'bugfix'),
   tasks_doc_audit: createRegistration('tasks_doc_audit', 'standalone_tasks'),
 };
+
+const REVIEWER_SHARED_CORE_PROFILE_IDS = REVIEWER_SHARED_CORE_PROFILE_PACK.map(
+  (entry) => entry.profile
+);
+
+if (JSON.stringify(REVIEWER_SHARED_CORE_PROFILE_IDS) !== JSON.stringify([...REVIEWER_PROFILES])) {
+  throw new Error(
+    `Reviewer shared core registry mismatch: expected ${JSON.stringify(REVIEWER_PROFILES)}, got ${JSON.stringify(REVIEWER_SHARED_CORE_PROFILE_IDS)}`
+  );
+}
 
 export const REVIEWER_AUDIT_STAGE_CONSUMERS: Record<
   RunAuditorHostStage,
@@ -224,12 +327,20 @@ const REVIEWER_SUPPORTED_AUDIT_ENTRY_STAGES = Object.keys(
 
 const REVIEWER_HOST_ROUTE_SUMMARY: Record<ReviewerHostId, ReviewerHostRouteSummary> = {
   cursor: {
+    carrierSourcePath: CURSOR_REVIEWER_CANONICAL_SOURCE_PATH,
+    runtimeTargetPath: CURSOR_REVIEWER_RUNTIME_TARGET_PATH,
     preferredRoute: REVIEWER_REGISTRY.story_audit.hosts.cursor.preferredRoute,
     fallbackRoute: REVIEWER_REGISTRY.story_audit.hosts.cursor.fallbackRoute,
+    fallbackReason:
+      'Use mcp_task/generalPurpose when cursor-task/code-reviewer is unavailable, while preserving the shared reviewer contract and runAuditorHost closeout.',
   },
   claude: {
+    carrierSourcePath: CLAUDE_REVIEWER_CANONICAL_SOURCE_PATH,
+    runtimeTargetPath: CLAUDE_REVIEWER_RUNTIME_TARGET_PATH,
     preferredRoute: REVIEWER_REGISTRY.story_audit.hosts.claude.preferredRoute,
     fallbackRoute: REVIEWER_REGISTRY.story_audit.hosts.claude.fallbackRoute,
+    fallbackReason:
+      'Use Agent/general-purpose only when Agent/code-reviewer is unavailable, while preserving the shared reviewer contract and runAuditorHost closeout.',
   },
 };
 
@@ -262,8 +373,25 @@ export function buildReviewerRouteExplainability(input?: {
     reviewerIdentity: REVIEWER_PRODUCT_IDENTITY,
     reviewerDisplayName: REVIEWER_DISPLAY_NAME,
     registryVersion: REVIEWER_REGISTRY_VERSION,
+    sharedCore: {
+      version: REVIEWER_SHARED_CORE_VERSION,
+      rootPath: REVIEWER_SHARED_CORE_METADATA.rootPath,
+      basePromptPath: REVIEWER_SHARED_CORE_METADATA.basePromptPath,
+      profilePackPath: REVIEWER_SHARED_CORE_METADATA.profilePackPath,
+    },
     closeoutRunner: REVIEW_HOST_CLOSEOUT_RUNNER,
+    routeReasonSummary:
+      'Registry-backed reviewer routing keeps shared-core semantics while preserving host-specific transport and carrier shape.',
+    fallbackStatus: 'fallback_ready',
+    isomorphismMaturity: 'projection_wired',
+    complexitySource:
+      'Dual-host carrier parity is in place, but legacy skill narrative cleanup and proof expansion still remain before rollout.',
+    remainingBlocker:
+      'Complete parity proof, rollback proof, Codex no-op proof, and rollout gate before declaring full isomorphism.',
     supportedProfiles: REVIEWER_PROFILES,
+    requiredRolloutProofs: REVIEWER_REQUIRED_ROLLOUT_PROOFS,
+    compatibilityGuards: REVIEWER_COMPATIBILITY_GUARDS,
+    rolloutGate: buildReviewerRolloutGate(),
     hosts: REVIEWER_HOST_ROUTE_SUMMARY,
     activeAuditConsumer: input?.auditEntryStage
       ? getReviewerConsumerByAuditStage(input.auditEntryStage)
@@ -280,6 +408,12 @@ export function buildReviewerContractProjection(input?: {
     reviewerDisplayName: REVIEWER_DISPLAY_NAME,
     facilitatorIdentity: FACILITATOR_PRODUCT_IDENTITY,
     registryVersion: REVIEWER_REGISTRY_VERSION,
+    sharedCore: {
+      version: REVIEWER_SHARED_CORE_VERSION,
+      rootPath: REVIEWER_SHARED_CORE_METADATA.rootPath,
+      basePromptPath: REVIEWER_SHARED_CORE_METADATA.basePromptPath,
+      profilePackPath: REVIEWER_SHARED_CORE_METADATA.profilePackPath,
+    },
     schemaVersions: {
       input: REVIEW_INPUT_V1_VERSION,
       output: REVIEW_OUTPUT_V1_VERSION,
@@ -287,6 +421,11 @@ export function buildReviewerContractProjection(input?: {
       closeout: REVIEW_HOST_CLOSEOUT_V1_VERSION,
     },
     closeoutRunner: REVIEW_HOST_CLOSEOUT_RUNNER,
+    governance: REVIEWER_REGISTRY.implement_audit.hosts.cursor.governance,
+    hostAdapterBoundary: REVIEWER_HOST_ADAPTER_BOUNDARY,
+    compatibilityGuards: REVIEWER_COMPATIBILITY_GUARDS,
+    requiredRolloutProofs: REVIEWER_REQUIRED_ROLLOUT_PROOFS,
+    rolloutGate: buildReviewerRolloutGate(),
     supportedProfiles: REVIEWER_PROFILES,
     supportedAuditEntryStages: REVIEWER_SUPPORTED_AUDIT_ENTRY_STAGES,
     activeAuditConsumer: input?.auditEntryStage

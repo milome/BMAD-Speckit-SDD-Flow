@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as yaml from 'js-yaml';
+import type { ReviewerLatestCloseoutRecord } from './types';
 
 export interface RuntimeContextRegistry {
   version: number;
@@ -45,6 +46,7 @@ export interface RuntimeContextRegistry {
       }
     >;
   };
+  latestReviewerCloseout: ReviewerLatestCloseoutRecord | null;
   activeScope: {
     scopeType: 'project' | 'epic' | 'story' | 'run';
     epicId?: string;
@@ -84,6 +86,7 @@ export function defaultRuntimeContextRegistry(root: string): RuntimeContextRegis
       bugfix: {},
       standalone_tasks: {},
     },
+    latestReviewerCloseout: null,
     activeScope: {
       scopeType: 'project',
       resolvedContextPath: path.join('_bmad-output', 'runtime', 'context', 'project.json'),
@@ -126,6 +129,7 @@ export function readRuntimeContextRegistry(root: string): RuntimeContextRegistry
     parsed.auditIndex.bugfix = parsed.auditIndex.bugfix ?? {};
     parsed.auditIndex.standalone_tasks = parsed.auditIndex.standalone_tasks ?? {};
   }
+  parsed.latestReviewerCloseout = parsed.latestReviewerCloseout ?? null;
   return parsed;
 }
 

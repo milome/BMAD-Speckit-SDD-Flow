@@ -22,6 +22,8 @@ import type {
   ExecutionSkillInventoryEntry,
 } from './execution-intent-schema';
 import type { JourneyContractRemediationHint } from '../packages/scoring/analytics/journey-contract-remediation';
+import { buildReadinessDriftProjection } from '../packages/scoring/governance/readiness-drift';
+import { loadAndDedupeRecords } from '../packages/scoring/query/loader';
 
 export interface GovernanceRemediationArtifactInput {
   projectRoot: string;
@@ -254,9 +256,19 @@ function buildExecutionIntentCandidateLines(
     ...(
       candidate.reviewerRouteExplainability && candidate.reviewerRouteExplainability.length > 0
         ? candidate.reviewerRouteExplainability.flatMap((item) => [
-            `  - ${item.requestedSkillId} => identity=${item.reviewerIdentity}; registry=${item.registryVersion}; closeout=${item.closeoutRunner}`,
-            `    - cursor preferred: ${item.hosts.cursor.preferredRoute.tool}/${item.hosts.cursor.preferredRoute.subtypeOrExecutor} | fallback: ${item.hosts.cursor.fallbackRoute.tool}/${item.hosts.cursor.fallbackRoute.subtypeOrExecutor}`,
-            `    - claude preferred: ${item.hosts.claude.preferredRoute.tool}/${item.hosts.claude.preferredRoute.subtypeOrExecutor} | fallback: ${item.hosts.claude.fallbackRoute.tool}/${item.hosts.claude.fallbackRoute.subtypeOrExecutor}`,
+            `  - ${item.requestedSkillId} => identity=${item.reviewerIdentity}; registry=${item.registryVersion}; closeout=${item.closeoutRunner}; maturity=${item.isomorphismMaturity}`,
+            `    - shared core: ${item.sharedCore.rootPath} [${item.sharedCore.version}]`,
+            `    - cursor carrier: ${item.hosts.cursor.carrierSourcePath} -> ${item.hosts.cursor.runtimeTargetPath}`,
+            `      preferred=${item.hosts.cursor.preferredRoute.tool}/${item.hosts.cursor.preferredRoute.subtypeOrExecutor} | fallback=${item.hosts.cursor.fallbackRoute.tool}/${item.hosts.cursor.fallbackRoute.subtypeOrExecutor}`,
+            `      fallback reason: ${item.hosts.cursor.fallbackReason}`,
+            `    - claude carrier: ${item.hosts.claude.carrierSourcePath} -> ${item.hosts.claude.runtimeTargetPath}`,
+            `      preferred=${item.hosts.claude.preferredRoute.tool}/${item.hosts.claude.preferredRoute.subtypeOrExecutor} | fallback=${item.hosts.claude.fallbackRoute.tool}/${item.hosts.claude.fallbackRoute.subtypeOrExecutor}`,
+            `      fallback reason: ${item.hosts.claude.fallbackReason}`,
+            `    - route reason: ${item.routeReasonSummary}`,
+            `    - fallback status: ${item.fallbackStatus}`,
+            `    - complexity: ${item.complexitySource}`,
+            `    - blocker: ${item.remainingBlocker}`,
+            `    - rollout gate: ${item.rolloutGate.status} -> ${item.rolloutGate.summary}`,
           ])
         : ['  - (none)']
     ),
@@ -345,9 +357,19 @@ function buildExecutionPlanDecisionLines(
     ...(
       decision.reviewerRouteExplainability && decision.reviewerRouteExplainability.length > 0
         ? decision.reviewerRouteExplainability.flatMap((item) => [
-            `  - ${item.requestedSkillId} => identity=${item.reviewerIdentity}; registry=${item.registryVersion}; closeout=${item.closeoutRunner}`,
-            `    - cursor preferred: ${item.hosts.cursor.preferredRoute.tool}/${item.hosts.cursor.preferredRoute.subtypeOrExecutor} | fallback: ${item.hosts.cursor.fallbackRoute.tool}/${item.hosts.cursor.fallbackRoute.subtypeOrExecutor}`,
-            `    - claude preferred: ${item.hosts.claude.preferredRoute.tool}/${item.hosts.claude.preferredRoute.subtypeOrExecutor} | fallback: ${item.hosts.claude.fallbackRoute.tool}/${item.hosts.claude.fallbackRoute.subtypeOrExecutor}`,
+            `  - ${item.requestedSkillId} => identity=${item.reviewerIdentity}; registry=${item.registryVersion}; closeout=${item.closeoutRunner}; maturity=${item.isomorphismMaturity}`,
+            `    - shared core: ${item.sharedCore.rootPath} [${item.sharedCore.version}]`,
+            `    - cursor carrier: ${item.hosts.cursor.carrierSourcePath} -> ${item.hosts.cursor.runtimeTargetPath}`,
+            `      preferred=${item.hosts.cursor.preferredRoute.tool}/${item.hosts.cursor.preferredRoute.subtypeOrExecutor} | fallback=${item.hosts.cursor.fallbackRoute.tool}/${item.hosts.cursor.fallbackRoute.subtypeOrExecutor}`,
+            `      fallback reason: ${item.hosts.cursor.fallbackReason}`,
+            `    - claude carrier: ${item.hosts.claude.carrierSourcePath} -> ${item.hosts.claude.runtimeTargetPath}`,
+            `      preferred=${item.hosts.claude.preferredRoute.tool}/${item.hosts.claude.preferredRoute.subtypeOrExecutor} | fallback=${item.hosts.claude.fallbackRoute.tool}/${item.hosts.claude.fallbackRoute.subtypeOrExecutor}`,
+            `      fallback reason: ${item.hosts.claude.fallbackReason}`,
+            `    - route reason: ${item.routeReasonSummary}`,
+            `    - fallback status: ${item.fallbackStatus}`,
+            `    - complexity: ${item.complexitySource}`,
+            `    - blocker: ${item.remainingBlocker}`,
+            `    - rollout gate: ${item.rolloutGate.status} -> ${item.rolloutGate.summary}`,
           ])
         : ['  - (none)']
     ),
@@ -498,6 +520,29 @@ function buildExecutorRoutingLines(
   ];
 }
 
+function buildReadinessProjectionLines(projectRoot: string): string[] {
+  try {
+    const records = loadAndDedupeRecords(path.join(projectRoot, 'packages', 'scoring', 'data'));
+    const projection = buildReadinessDriftProjection({ allRecords: records });
+    return [
+      `- Readiness Baseline Run ID: ${projection.readiness_baseline_run_id ?? '(none)'}`,
+      `- Readiness Score: ${projection.readiness_score ?? '(none)'}`,
+      `- Effective Verdict: ${projection.effective_verdict}`,
+      `- Drift Severity: ${projection.drift_severity}`,
+      `- Re-Readiness Required: ${projection.re_readiness_required ? 'yes' : 'no'}`,
+      `- Drift Signals: ${projection.drift_signals.join(', ') || '(none)'}`,
+      `- Drifted Dimensions: ${projection.drifted_dimensions.join(', ') || '(none)'}`,
+      `- Blocking Reason: ${projection.blocking_reason ?? '(none)'}`,
+    ];
+  } catch (error) {
+    return [
+      `- Readiness projection unavailable: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    ];
+  }
+}
+
 export function buildRemediationAuditTraceSummaryLines(
   stopReason: string | undefined,
   journeyContractHints: JourneyContractRemediationHint[],
@@ -596,6 +641,10 @@ export function buildGovernanceRemediationArtifact(
     '## Journey Contract Remediation Hints',
     '',
     ...buildJourneyContractHintLines(journeyContractHints),
+    '',
+    '## Readiness Drift Projection',
+    '',
+    ...buildReadinessProjectionLines(input.projectRoot),
     '',
     '## Structured Deferred Gaps',
     '',

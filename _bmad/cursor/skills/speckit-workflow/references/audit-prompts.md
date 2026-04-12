@@ -1,3 +1,5 @@
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
 # 审计提示词（固定模板，可复制）
 
 **报告保存防死循环**：当 prompt 包含「报告保存」或「将完整报告保存至」时，**必须**同时包含禁止重复输出「正在写入完整审计报告」等状态信息的约束。详见 [audit-report-save-rules.md](audit-report-save-rules.md)。
@@ -107,6 +109,7 @@
 ### §5.1 Implement 阶段可解析评分块（强制）
 
 implement 阶段审计报告必须在结尾包含以下可解析块，与 `_bmad/_config/code-reviewer-config.yaml` 的 `modes.code.dimensions` 一致。禁止用描述代替。总体评级仅限 A/B/C/D。
+implement / post_audit 阶段审计报告还必须包含 `## Structured Drift Signal Block`，并以固定表格列输出五条 signal：`signal | status | evidence`；五条 signal 固定为 `smoke_task_chain`、`closure_task_id`、`journey_unlock`、`gap_split_contract`、`shared_path_reference`。缺少该 block 不得视为“无 drift”。
 
 ```markdown
 ## 可解析评分块（供 parseAndWriteScore）
@@ -129,3 +132,4 @@ implement 阶段审计报告必须在结尾包含以下可解析块，与 `_bmad
 - `维度分 92–95`、`各维度 90+` — 区间/概括，缺 `- 维度名: XX/100` 行级格式，解析不到
 
 【审计后动作】审计通过时，请将完整报告保存至调用方在本 prompt 中指定的 reportPath。implement 阶段的 reportPath 通常为 _bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_implement-E{epic}-S{story}.md 或 AUDIT_Story_{epic}-{story}_stage4.md。并在结论中注明保存路径及 iteration_count。**你（审计子代理）在返回主 Agent 前必须返回 projectRoot、reportPath、artifactDocPath、stage，由 invoking host/runner 统一调用 runAuditorHost**。审计通过时，在返回前必须执行：`npx ts-node scripts/run-auditor-host.ts --projectRoot <projectRoot> --stage <stage> --artifactPath <artifactDocPath> --reportPath <reportPath> --iterationCount {累计值}`；reportPath、epic、story、累计值由本 prompt 或调用方提供；失败在结论中注明 resultCode。**禁止**：保存时不得重复输出「正在写入完整审计报告」「正在保存」等状态信息；使用 write 工具一次性写入即可。
+

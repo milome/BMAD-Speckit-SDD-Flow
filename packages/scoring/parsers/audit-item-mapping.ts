@@ -7,7 +7,17 @@ import * as fs from 'fs';
 import * as path from 'path';
 import yaml from 'js-yaml';
 
-export type AuditStage = 'prd' | 'arch' | 'story' | 'spec' | 'plan' | 'gaps' | 'tasks' | 'implement';
+export type AuditStage =
+  | 'prd'
+  | 'arch'
+  | 'story'
+  | 'spec'
+  | 'plan'
+  | 'gaps'
+  | 'tasks'
+  | 'implement'
+  | 'post_impl'
+  | 'implementation_readiness';
 
 interface MappingCheck {
   text?: string;
@@ -41,6 +51,8 @@ function loadMapping(): Record<string, StageMapping> {
       gaps: { checks: [] },
       tasks: { checks: [] },
       implement: { checks: [] },
+      post_impl: { checks: [] },
+      implementation_readiness: { checks: [] },
     };
     return cachedMapping;
   }
@@ -48,7 +60,18 @@ function loadMapping(): Record<string, StageMapping> {
   const doc = yaml.load(content) as Record<string, unknown>;
   const result: Record<string, StageMapping> = {};
 
-  for (const stage of ['prd', 'arch', 'story', 'spec', 'plan', 'gaps', 'tasks', 'implement']) {
+  for (const stage of [
+    'prd',
+    'arch',
+    'story',
+    'spec',
+    'plan',
+    'gaps',
+    'tasks',
+    'implement',
+    'post_impl',
+    'implementation_readiness',
+  ]) {
     const stageDoc = doc[stage] as Record<string, unknown> | undefined;
     const checks: Array<{ patterns: string[]; item_id: string }> = [];
 
@@ -101,9 +124,10 @@ function loadMapping(): Record<string, StageMapping> {
 export function resolveItemId(stage: AuditStage, note: string, fallback: string): string {
   const mapping = loadMapping();
   const stageMap = mapping[stage];
-  if (!stageMap || stageMap.checks.length === 0) return fallback;
+  const effectiveStageMap = stage === 'post_impl' ? mapping.implement : stageMap;
+  if (!effectiveStageMap || effectiveStageMap.checks.length === 0) return fallback;
 
-  for (const { patterns, item_id } of stageMap.checks) {
+  for (const { patterns, item_id } of effectiveStageMap.checks) {
     for (const p of patterns) {
       if (note.includes(p)) return item_id;
     }
@@ -125,7 +149,7 @@ export function resolveEmptyItemId(
   fallback: string
 ): string {
   const mapping = loadMapping();
-  const stageMap = mapping[stage];
+  const stageMap = stage === 'post_impl' ? mapping.implement : mapping[stage];
   if (!stageMap) return fallback;
 
   if (type === 'overall' && stageMap.empty_overall) return stageMap.empty_overall;

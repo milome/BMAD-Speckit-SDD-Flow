@@ -1,0 +1,44 @@
+[
+  {
+    "profile": "story_audit",
+    "definitionSources": ["bmad-story-audit"],
+    "summary": "High-level story lifecycle audit profile.",
+    "hostAdapterProjectionOnly": true
+  },
+  {
+    "profile": "spec_audit",
+    "definitionSources": ["auditor-spec"],
+    "summary": "Specification audit profile.",
+    "hostAdapterProjectionOnly": true
+  },
+  {
+    "profile": "plan_audit",
+    "definitionSources": ["auditor-plan"],
+    "summary": "Implementation plan audit profile.",
+    "hostAdapterProjectionOnly": true
+  },
+  {
+    "profile": "tasks_audit",
+    "definitionSources": ["auditor-gaps", "auditor-tasks"],
+    "summary": "Journey / tasks audit profile shared by gaps and tasks stages.",
+    "hostAdapterProjectionOnly": true
+  },
+  {
+    "profile": "implement_audit",
+    "definitionSources": ["auditor-implement"],
+    "summary": "Post-implementation audit profile.",
+    "hostAdapterProjectionOnly": true
+  },
+  {
+    "profile": "bugfix_doc_audit",
+    "definitionSources": ["auditor-bugfix"],
+    "summary": "Bugfix document audit profile.",
+    "hostAdapterProjectionOnly": true
+  },
+  {
+    "profile": "tasks_doc_audit",
+    "definitionSources": ["auditor-tasks-doc"],
+    "summary": "Standalone tasks document audit profile.",
+    "hostAdapterProjectionOnly": true
+  }
+]

@@ -71,6 +71,7 @@ import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
   type RuntimeContextRegistry,
+  type ReviewerLatestCloseoutRecord,
 } from '../../scripts/runtime-context-registry';
 import type { RuntimeFlowId } from '../../scripts/runtime-governance';
 import type { StageName } from '../../scripts/bmad-config';
@@ -84,6 +85,7 @@ export interface MinimalRegistryOpts {
   storySlug?: string;
   runId?: string;
   artifactRoot?: string;
+  latestReviewerCloseout?: ReviewerLatestCloseoutRecord;
 }
 
 /** Write `_bmad-output/runtime/registry.json` + `context/project.json` under root. */
@@ -102,6 +104,7 @@ export function writeMinimalRegistryAndProjectContext(
     storySlug: opts.storySlug,
     runId: opts.runId,
     artifactRoot: opts.artifactRoot,
+    ...(opts.latestReviewerCloseout ? { latestReviewerCloseout: opts.latestReviewerCloseout } : {}),
     contextScope: 'project',
   });
   const dir = path.join(root, '_bmad-output', 'runtime', 'context');
@@ -114,5 +117,6 @@ export function writeMinimalRegistryAndProjectContext(
     resolvedContextPath: path.join('_bmad-output', 'runtime', 'context', 'project.json'),
     reason: 'test fixture',
   };
+  registry.latestReviewerCloseout = opts.latestReviewerCloseout ?? null;
   writeRuntimeContextRegistry(root, registry);
 }

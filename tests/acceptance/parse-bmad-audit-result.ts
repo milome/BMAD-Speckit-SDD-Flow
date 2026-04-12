@@ -9,6 +9,7 @@ export interface ParseBmadAuditResultInput {
   reportPath?: string;
   iterationCount?: number;
   requiredFixesCount?: number;
+  requiredFixes?: string[];
   scoreTriggerPresent?: boolean;
   artifactDocPath?: string;
   converged?: boolean;
@@ -42,6 +43,29 @@ function matchCanonicalThenCompatibility(
     matchCanonicalControlValue(input, canonicalPattern) ??
     matchCompatibilityControlValue(input, compatibilityPattern)
   );
+}
+
+function extractRequiredFixes(input: string): string[] {
+  const sectionMatch =
+    /(?:^|\n)##\s*(?:Required Fixes|待修复项|必须修复项)\s*\n([\s\S]*?)(?=\n##\s+|\n---|\n$)/im.exec(
+      input
+    ) ??
+    /(?:^|\n)(?:Required Fixes|待修复项|必须修复项)\s*:\s*\n([\s\S]*?)(?=\n##\s+|\n---|\n$)/im.exec(
+      input
+    );
+
+  if (!sectionMatch) {
+    return [];
+  }
+
+  return sectionMatch[1]
+    .split(/\r?\n/)
+    .map((line) => {
+      const bulletMatch = /^\s*(?:[-*]|\d+\.)\s+(.+?)\s*$/.exec(line);
+      return bulletMatch ? bulletMatch[1].trim() : null;
+    })
+    .filter((line): line is string => Boolean(line))
+    .filter((line) => !/^none$/i.test(line) && !/^无$/i.test(line));
 }
 
 export function parseBmadAuditResult(input: string): ParseBmadAuditResultInput {
@@ -82,12 +106,14 @@ export function parseBmadAuditResult(input: string): ParseBmadAuditResultInput {
     /converged:\s*(true|false)/,
     /是否已收敛:\s*(true|false)/
   );
+  const requiredFixes = extractRequiredFixes(input);
 
   return {
     status,
     reportPath,
     iterationCount: iterationCountRaw ? Number(iterationCountRaw) : 0,
     requiredFixesCount: requiredFixesCountRaw ? Number(requiredFixesCountRaw) : 0,
+    ...(requiredFixes.length > 0 ? { requiredFixes } : {}),
     scoreTriggerPresent: scoreTriggerPresentRaw === 'true',
     artifactDocPath,
     converged: convergedRaw === 'true',

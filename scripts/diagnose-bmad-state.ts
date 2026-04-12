@@ -5,6 +5,8 @@ import * as path from 'path';
 import { loadPolicyContextFromRegistry } from './emit-runtime-policy';
 import { resolveBmadHelpRuntimePolicy } from './bmad-config';
 import type { ReviewerContractProjection } from './reviewer-registry';
+import { loadAndDedupeRecords } from '../packages/scoring/query/loader';
+import { buildReadinessDriftProjection } from '../packages/scoring/governance/readiness-drift';
 
 interface BmadProgress {
   version?: string;
@@ -22,6 +24,10 @@ interface BmadProgress {
 
 export interface ReviewerProjectionDiagnosis {
   reviewerContract: ReviewerContractProjection | null;
+  lines: string[];
+}
+
+export interface ReadinessProjectionDiagnosis {
   lines: string[];
 }
 
@@ -48,11 +54,23 @@ export function collectReviewerProjectionDiagnosis(root: string): ReviewerProjec
       lines: [
         '【诊断项 4】Reviewer Projection:',
         `✅ reviewer contract: ${reviewerContract.reviewerIdentity} (${reviewerContract.version})`,
+        `   shared core: ${reviewerContract.sharedCore.rootPath} [${reviewerContract.sharedCore.version}]`,
         activeConsumer
           ? `   active consumer: ${activeConsumer.entryStage} -> ${activeConsumer.profile} -> ${activeConsumer.auditorScript} -> ${reviewerContract.closeoutRunner}`
           : '   active consumer: (none)',
+        `   cursor carrier: ${policy.reviewerRouteExplainability?.[0]?.hosts.cursor.carrierSourcePath ?? '_bmad/cursor/agents/code-reviewer.md'} -> ${policy.reviewerRouteExplainability?.[0]?.hosts.cursor.runtimeTargetPath ?? '.cursor/agents/code-reviewer.md'}`,
         `   cursor route: preferred=cursor-task/code-reviewer fallback=mcp_task/generalPurpose`,
+        `   claude carrier: ${policy.reviewerRouteExplainability?.[0]?.hosts.claude.carrierSourcePath ?? '_bmad/claude/agents/code-reviewer.md'} -> ${policy.reviewerRouteExplainability?.[0]?.hosts.claude.runtimeTargetPath ?? '.claude/agents/code-reviewer.md'}`,
         `   claude route: preferred=Agent/code-reviewer fallback=Agent/general-purpose`,
+        `   route reason: ${policy.reviewerRouteExplainability?.[0]?.routeReasonSummary ?? '(none)'}`,
+        `   fallback status: ${policy.reviewerRouteExplainability?.[0]?.fallbackStatus ?? '(none)'}`,
+        `   maturity: ${policy.reviewerRouteExplainability?.[0]?.isomorphismMaturity ?? '(none)'}`,
+        `   complexity: ${policy.reviewerRouteExplainability?.[0]?.complexitySource ?? '(none)'}`,
+        `   blocker: ${policy.reviewerRouteExplainability?.[0]?.remainingBlocker ?? '(none)'}`,
+        `   rollout gate: ${policy.reviewerContract.rolloutGate.status} -> ${policy.reviewerContract.rolloutGate.summary}`,
+        loaded.runtimeContext.latestReviewerCloseout
+          ? `   latest closeout: ${loaded.runtimeContext.latestReviewerCloseout.closeoutEnvelope.resultCode} / ${loaded.runtimeContext.latestReviewerCloseout.closeoutEnvelope.packetExecutionClosureStatus} / approved=${loaded.runtimeContext.latestReviewerCloseout.closeoutApproved ? 'yes' : 'no'}`
+          : '   latest closeout: (none)',
       ],
     };
   } catch (error) {
@@ -61,6 +79,34 @@ export function collectReviewerProjectionDiagnosis(root: string): ReviewerProjec
       lines: [
         '【诊断项 4】Reviewer Projection:',
         `⚠️ reviewer projection unavailable: ${error instanceof Error ? error.message : String(error)}`,
+      ],
+    };
+  }
+}
+
+export function collectReadinessProjectionDiagnosis(root: string): ReadinessProjectionDiagnosis {
+  try {
+    const records = loadAndDedupeRecords(path.join(root, 'packages', 'scoring', 'data'));
+    const projection = buildReadinessDriftProjection({ allRecords: records });
+
+    return {
+      lines: [
+        '【诊断项 5】Readiness Projection:',
+        `✅ readiness baseline run: ${projection.readiness_baseline_run_id ?? '(none)'}`,
+        `   readiness score: ${projection.readiness_score ?? '(none)'}`,
+        `   effective verdict: ${projection.effective_verdict}`,
+        `   drift severity: ${projection.drift_severity}`,
+        `   re-readiness required: ${projection.re_readiness_required ? 'yes' : 'no'}`,
+        `   drift signals: ${projection.drift_signals.join(', ') || '(none)'}`,
+        `   drifted dimensions: ${projection.drifted_dimensions.join(', ') || '(none)'}`,
+        `   blocking reason: ${projection.blocking_reason ?? '(none)'}`,
+      ],
+    };
+  } catch (error) {
+    return {
+      lines: [
+        '【诊断项 5】Readiness Projection:',
+        `⚠️ readiness projection unavailable: ${error instanceof Error ? error.message : String(error)}`,
       ],
     };
   }
@@ -132,6 +178,11 @@ export function diagnoseBmadState(root: string = process.cwd()): number {
 
   console.log('');
   for (const line of collectReviewerProjectionDiagnosis(root).lines) {
+    console.log(line);
+  }
+
+  console.log('');
+  for (const line of collectReadinessProjectionDiagnosis(root).lines) {
     console.log(line);
   }
 

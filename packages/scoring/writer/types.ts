@@ -23,6 +23,15 @@ export interface JourneyContractSignals {
   shared_path_reference?: boolean;
 }
 
+export type ReadinessDriftSeverity = 'none' | 'major' | 'critical';
+
+export type ReadinessEffectiveVerdict =
+  | 'approved'
+  | 'required_fixes'
+  | 'blocked'
+  | 'blocked_pending_rereadiness'
+  | 'unknown';
+
 export interface GovernanceExecutorRoutingRecord {
   routing_mode: 'targeted' | 'generic';
   executor_route: 'journey-contract-remediation' | 'default-gate-remediation';
@@ -78,6 +87,7 @@ export interface RunScoreRecord {
   iteration_records: IterationRecord[];
   first_pass: boolean;
   dimension_scores?: DimensionScore[];
+  raw_phase_score?: number;
   path_type?: string;
   model_version?: string;
   question_version?: string;
@@ -97,6 +107,20 @@ export interface RunScoreRecord {
   trigger_stage?: string;
   /** Wave 1B: 从 dedicated journey contract check_items 派生的结构化信号 */
   journey_contract_signals?: JourneyContractSignals;
+  /** Batch 2: 最新 readiness baseline run id used for drift comparison */
+  readiness_baseline_run_id?: string;
+  /** Batch 2: normalized drift signals derived from journey-contract contract checks */
+  drift_signals?: string[];
+  /** Batch 2: readiness dimensions impacted by drift */
+  drifted_dimensions?: string[];
+  /** Batch 2: deterministic drift severity */
+  drift_severity?: ReadinessDriftSeverity;
+  /** Batch 2: whether re-readiness is required before a trustworthy pass */
+  re_readiness_required?: boolean;
+  /** Batch 2: human-readable blocking explanation */
+  blocking_reason?: string;
+  /** Batch 2: user-visible final verdict after drift reduction */
+  effective_verdict?: ReadinessEffectiveVerdict;
   /** 将同一 run 的多条 stage score 归到同一 logical run group；dashboard 兼容字段 */
   run_group_id?: string;
   /** Governance rerun/runtime worker 追加的结构化历史事件 */

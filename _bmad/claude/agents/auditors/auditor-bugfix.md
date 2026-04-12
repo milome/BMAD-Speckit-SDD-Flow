@@ -1,5 +1,7 @@
 # Auditor: Bugfix
 
+<!-- SHARED-REVIEWER-ADAPTER profile=bugfix_doc_audit shared_metadata=_bmad/core/agents/code-reviewer/metadata.json shared_profiles=_bmad/core/agents/code-reviewer/profiles.json host_role=claude-auditor-adapter -->
+
 BUGFIX 文档严格审计 Agent，面向 bugfix 流程中的 BUGFIX 文档与修复策略审计。
 
 ## Role

@@ -61,6 +61,11 @@ describe('readiness remediation artifact wiring', () => {
     expect(step05).toContain("nextStepFile: './step-06-final-assessment.md'");
     expect(file).toContain("remediationArtifactFile: '{planning_artifacts}/{branch}/implementation-readiness-remediation-{{date}}.md'");
     expect(file).toContain('Deferred Gaps Tracking');
+    expect(file).toContain('## 可解析评分块（供 parseAndWriteScore）');
+    expect(file).toContain('P0 Journey Coverage');
+    expect(file).toContain('Smoke E2E Readiness');
+    expect(file).toContain('Evidence Proof Chain');
+    expect(file).toContain('Cross-Document Traceability');
     expect(file).toContain('the generated remediation artifact must include a `## Structured Deferred Gaps` section');
     expect(file).toContain('scripts/governance-remediation-runner.ts');
     expect(file).toContain('_bmad/_config/governance-remediation.yaml');
@@ -75,6 +80,11 @@ describe('readiness remediation artifact wiring', () => {
     expect(file).toContain('Remediation artifact generated: {remediationArtifactFile}');
     expect(template).toContain('## Deferred Gaps Tracking');
     expect(template).toContain('| Gap ID | 描述 | 原因 | 解决时机 | Owner | 状态检查点 |');
+    expect(template).toContain('## 可解析评分块（供 parseAndWriteScore）');
+    expect(template).toContain('P0 Journey Coverage');
+    expect(template).toContain('Smoke E2E Readiness');
+    expect(template).toContain('Evidence Proof Chain');
+    expect(template).toContain('Cross-Document Traceability');
   });
 
   it('bmad readiness workflow and final assessment mirror wire governance-remediation-runner generation', () => {
@@ -135,6 +145,11 @@ describe('readiness remediation artifact wiring', () => {
     expect(step05).toContain('Load ./step-06-final-assessment.md for final readiness assessment');
     expect(file).toContain("remediationArtifactFile: '{planning_artifacts}/implementation-readiness-remediation-{{date}}.md'");
     expect(file).toContain('Deferred Gaps Tracking');
+    expect(file).toContain('## 可解析评分块（供 parseAndWriteScore）');
+    expect(file).toContain('P0 Journey Coverage');
+    expect(file).toContain('Smoke E2E Readiness');
+    expect(file).toContain('Evidence Proof Chain');
+    expect(file).toContain('Cross-Document Traceability');
     expect(file).toContain('the generated remediation artifact must include a `## Structured Deferred Gaps` section');
     expect(file).toContain('scripts/governance-remediation-runner.ts');
     expect(file).toContain('_bmad/_config/governance-remediation.yaml');
@@ -149,5 +164,10 @@ describe('readiness remediation artifact wiring', () => {
     expect(file).toContain('Remediation artifact generated: {remediationArtifactFile}');
     expect(template).toContain('## Deferred Gaps Tracking');
     expect(template).toContain('| Gap ID | 描述 | 原因 | 解决时机 | Owner | 状态检查点 |');
+    expect(template).toContain('## 可解析评分块（供 parseAndWriteScore）');
+    expect(template).toContain('P0 Journey Coverage');
+    expect(template).toContain('Smoke E2E Readiness');
+    expect(template).toContain('Evidence Proof Chain');
+    expect(template).toContain('Cross-Document Traceability');
   });
 });

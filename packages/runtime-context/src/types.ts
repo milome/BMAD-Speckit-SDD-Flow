@@ -16,6 +16,33 @@ export interface ContextMaturityEvidence {
   followUpBudgetExhausted?: boolean;
 }
 
+export interface ReviewerLatestCloseoutRecord {
+  updatedAt: string;
+  runner: 'runAuditorHost';
+  profile: string;
+  stage: string;
+  artifactPath: string;
+  reportPath: string;
+  auditStatus: 'PASS' | 'FAIL' | 'UNKNOWN';
+  closeoutApproved: boolean;
+  governanceClosure: {
+    implementationReadinessStatusRequired: boolean;
+    implementationReadinessGateName: string;
+    gatesLoopRequired: boolean;
+    rerunGatesRequired: boolean;
+    packetExecutionClosureRequired: boolean;
+  };
+  closeoutEnvelope: {
+    resultCode: string;
+    requiredFixes: string[];
+    requiredFixesDetail: Array<{ id: string; summary: string; severity: string }>;
+    rerunDecision: string;
+    scoringFailureMode: string;
+    packetExecutionClosureStatus: string;
+  };
+  scoreError?: string;
+}
+
 export type StageName =
   | 'prd'
   | 'arch'

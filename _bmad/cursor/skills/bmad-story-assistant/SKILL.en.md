@@ -1,4 +1,5 @@
 <!-- BLOCK_LABEL_POLICY=B -->
+
 ---
 name: bmad-story-assistant
 description: |
@@ -9,6 +10,9 @@ description: |
   **It is prohibited to skip party-mode because Epic/Story already exists**: Create Story can be skipped only when the user explicitly says "party-mode has been passed and the audit has passed"; otherwise Create Story must be executed and party-mode must be entered for at least 100 rounds when it comes to solution selection or design decisions.
   Applicable scenarios: The user provides Epic and Story numbers (e.g. 4 and 1 for Story 4.1); produce the Story document, pass audit, run Dev Story, and complete post-implementation audit. Deliverables and subagent copy-paste prompts stay in Chinese per workflow and parser rules.
 ---
+
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout terminology: in this document, a stage is considered complete only when `runAuditorHost` returns `closeout approved`. An audit report `PASS` only means the host close-out may start; `PASS` alone must not be treated as completion, admission, or release.
 
 # BMAD Story Assistant
 
@@ -604,7 +608,7 @@ After the Story document is generated, you must initiate an audit subtask, using
 
 **Note**: The `subagent_type` of `mcp_task` currently only supports `generalPurpose`, `explore`, `shell`, and **does not support** `code-reviewer`.
 
-**Preferred**: If the project exists `.claude/agents/code-reviewer.md` or `.cursor/agents/code-reviewer.md`, Cursor will discover code-reviewer from it. Priority is given to scheduling code-reviewer to perform auditing through the **Cursor Task tool** (or equivalent mechanism), and passing in the audit prompt words applicable to this stage (see below). **MUST NOT** enforce "mcp_task must be used" in the audit step.
+**Preferred**: Under the current registry-backed contract, the Cursor audit primary path is fixed as the runtime carrier `.cursor/agents/code-reviewer.md` plus **Cursor Task -> code-reviewer**. This section documents the current product route, not an ad-hoc discovery order between `.claude/agents/` and `.cursor/agents/`. **MUST NOT** enforce "mcp_task must be used" in the audit step.
 
 **Fallback**: If code-reviewer is unavailable (no agents file, Task cannot be scheduled, etc.), fallback to `mcp_task` + `subagent_type: generalPurpose`, and pass in the audit prompt words applicable to this stage to ensure consistent audit standards.
 
@@ -1654,3 +1658,5 @@ The following data is retained when rolling back:
 - **BMad Master intervention (GAP-037 fix)**: When rolling back > 3 times or rolling back > 2 times, the user or project leader needs to confirm; Approval steps: Record the reason → User confirms "continue" or "terminate" → reset the count if continuing
 - Falling back to Layer 1 will reset the entire Epic plan
 - Rollback/rollback operations must record the reasons and decision-making process
+
+

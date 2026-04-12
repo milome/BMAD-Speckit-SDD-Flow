@@ -1,4 +1,5 @@
 <!-- BLOCK_LABEL_POLICY=B -->
+
 ---
 name: speckit-workflow
 description: |
@@ -13,6 +14,9 @@ description: |
   Strictly abide by 15 iron rules such as architectural fidelity, prohibition of false implementations, and active regression testing.
   Comply with the QA_Agent execution rules and ralph-wiggum rules at the same time.
 ---
+
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout terminology: in this document, a stage is considered complete only when `runAuditorHost` returns `closeout approved`. An audit report `PASS` only means the host close-out may start; `PASS` alone must not be treated as completion, admission, or release.
 
 # Speckit development process is improved
 
@@ -588,3 +592,5 @@ Each "iteration" is: **Call code-review skills according to the convention in §
 | Post-implementation audit rules (strict) | [references/audit-post-impl-rules.md](references/audit-post-impl-rules.md) |
 | audit_convergence configuration | [references/audit-config-schema.md](references/audit-config-schema.md); Validation script `_bmad/speckit/scripts/powershell/validate-audit-config.ps1` |
 | **Speckit Command Index** | See §8 |
+
+

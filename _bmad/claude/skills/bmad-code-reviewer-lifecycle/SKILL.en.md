@@ -1,4 +1,5 @@
 <!-- BLOCK_LABEL_POLICY=B -->
+
 ---
 name: bmad-code-reviewer-lifecycle
 description: |
@@ -26,6 +27,9 @@ references:
   - scoring/rules: parsing rules, item_id, veto_items; `scoring/rules/*.yaml`
   - runAuditorHost / unified auditor host runner: single post-audit entry for score write, auditIndex update, and post-audit automation
 ---
+
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout terminology: in this document, a stage is considered complete only when `runAuditorHost` returns `closeout approved`. An audit report `PASS` only means the host close-out may start; `PASS` alone must not be treated as completion, admission, or release.
 
 # Claude adapter: bmad-code-reviewer-lifecycle
 
@@ -312,3 +316,5 @@ For each phase (§1.2 spec, §2.2 plan, §3.2 gaps, §4.2 tasks, §5.2 implement
 - TASKS document audit (`document`)
 
 <!-- ADAPTATION_COMPLETE: 2026-03-15 -->
+
+

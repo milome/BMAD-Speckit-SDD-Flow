@@ -6,9 +6,15 @@ import * as path from 'node:path';
 import { parseBmadAuditResult } from './parse-bmad-audit-result';
 import { mainAuditorPostActions } from './auditor-post-actions';
 import { getReviewerConsumerByAuditStage } from './reviewer-registry';
+import { recordLatestReviewerCloseout } from './runtime-context-registry';
 import {
   buildReviewHostCloseoutV1,
+  buildReviewGovernanceClosureV1,
   buildRunAuditorHostInput,
+  deriveReviewCloseoutEnvelopeV1,
+  isReviewCloseoutApproved,
+  type ReviewCloseoutEnvelopeV1,
+  type ReviewGovernanceClosureV1,
   type RunAuditorHostInvocationInput,
 } from './reviewer-schema';
 const { scoreCommand: defaultScoreCommand } =
@@ -26,6 +32,14 @@ interface RunAuditorHostDeps {
     artifactPath: string;
     iteration: string;
   }) => void;
+}
+
+interface RunAuditorHostResult {
+  status: 'PASS' | 'FAIL' | 'UNKNOWN';
+  governanceClosure: ReviewGovernanceClosureV1;
+  closeoutEnvelope: ReviewCloseoutEnvelopeV1;
+  scoreRecord?: Record<string, unknown>;
+  scoreError?: string;
 }
 
 function parseArgs(argv: string[]): Record<string, string | undefined> {
@@ -88,7 +102,7 @@ function resolveDefaultReportPath(stage: string, artifactPath: string): string {
 export async function runAuditorHost(
   input: RunAuditorHostInput,
   deps: RunAuditorHostDeps = {}
-): Promise<{ status: 'PASS' | 'FAIL' | 'UNKNOWN' }> {
+): Promise<RunAuditorHostResult> {
   const consumer = getReviewerConsumerByAuditStage(input.stage);
   const normalizedInput = buildRunAuditorHostInput(
     buildReviewHostCloseoutV1({
@@ -137,18 +151,44 @@ export async function runAuditorHost(
   const content = fs.readFileSync(resolvedReportPath, 'utf8');
   const parsed = parseBmadAuditResult(content);
   const status = parsed.status ?? 'UNKNOWN';
+  const governanceClosure = buildReviewGovernanceClosureV1();
+  const requiredFixesFromReport =
+    parsed.requiredFixes && parsed.requiredFixes.length > 0
+      ? parsed.requiredFixes
+      : parsed.requiredFixesCount && parsed.requiredFixesCount > 0
+        ? Array.from({ length: parsed.requiredFixesCount }, (_, index) => `Required fix #${index + 1}`)
+        : [];
 
   const scoreCommand = deps.scoreCommand ?? defaultScoreCommand;
+  let scoreRecord: Record<string, unknown> | undefined;
+  let scoreError: string | undefined;
+  let scoringFailureMode: 'not_run' | 'succeeded' | 'non_blocking_failure' =
+    parsed.scoreTriggerPresent && scoreCommand ? 'succeeded' : 'not_run';
+
   if (parsed.scoreTriggerPresent && scoreCommand) {
-    await scoreCommand({
-      reportPath: resolvedReportPath,
-      stage: inferScoreStage(hostStage, parsed.artifactDocPath),
-      artifactDocPath: parsed.artifactDocPath,
-      event: inferEvent(hostStage),
-      triggerStage: inferTriggerStage(hostStage),
-      iterationCount: String(normalizedInput.iterationCount ?? parsed.iterationCount ?? '0'),
-      skipTriggerCheck: true,
-    });
+    try {
+      const scoreResult = await scoreCommand({
+        reportPath: resolvedReportPath,
+        stage: inferScoreStage(hostStage, parsed.artifactDocPath),
+        artifactDocPath: parsed.artifactDocPath,
+        event: inferEvent(hostStage),
+        triggerStage: inferTriggerStage(hostStage),
+        iterationCount: String(normalizedInput.iterationCount ?? parsed.iterationCount ?? '0'),
+        skipTriggerCheck: true,
+      });
+
+      if (scoreResult && typeof scoreResult === 'object') {
+        const candidate = scoreResult as {
+          parsedRecord?: Record<string, unknown>;
+          record?: Record<string, unknown>;
+        };
+        scoreRecord = candidate.parsedRecord ?? candidate.record;
+      }
+    } catch (error) {
+      scoringFailureMode = 'non_blocking_failure';
+      scoreError = error instanceof Error ? error.message : String(error);
+      console.error(`run-auditor-host: non-blocking score write failure: ${scoreError}`);
+    }
   }
 
   mainAuditorPostActions([
@@ -160,7 +200,57 @@ export async function runAuditorHost(
     hostStage,
   ]);
 
-  return { status };
+  const closeoutEnvelope = deriveReviewCloseoutEnvelopeV1({
+    auditStatus: status,
+    scoringFailureMode,
+    requiredFixes: requiredFixesFromReport,
+    scoreRecord:
+      scoreRecord &&
+      typeof scoreRecord.effective_verdict === 'string'
+        ? {
+            effective_verdict: scoreRecord.effective_verdict as
+              | 'approved'
+              | 'required_fixes'
+              | 'blocked'
+              | 'blocked_pending_rereadiness'
+              | 'unknown',
+            blocking_reason:
+              typeof scoreRecord.blocking_reason === 'string' ? scoreRecord.blocking_reason : undefined,
+            re_readiness_required:
+              typeof scoreRecord.re_readiness_required === 'boolean'
+                ? scoreRecord.re_readiness_required
+                : undefined,
+            drift_severity:
+              scoreRecord.drift_severity === 'major' || scoreRecord.drift_severity === 'critical'
+                ? scoreRecord.drift_severity
+                : scoreRecord.drift_severity === 'none'
+                  ? 'none'
+                  : undefined,
+          }
+        : null,
+  });
+
+  recordLatestReviewerCloseout(normalizedInput.projectRoot, {
+    updatedAt: new Date().toISOString(),
+    runner: 'runAuditorHost',
+    profile: consumer.profile,
+    stage: consumer.closeoutStage,
+    artifactPath: normalizedInput.artifactPath,
+    reportPath: resolvedReportPath,
+    auditStatus: status,
+    closeoutApproved: isReviewCloseoutApproved(closeoutEnvelope),
+    governanceClosure,
+    closeoutEnvelope,
+    ...(scoreError ? { scoreError } : {}),
+  });
+
+  return {
+    status,
+    governanceClosure,
+    closeoutEnvelope,
+    ...(scoreRecord ? { scoreRecord } : {}),
+    ...(scoreError ? { scoreError } : {}),
+  };
 }
 
 export async function mainRunAuditorHost(argv: string[]): Promise<number> {
@@ -185,7 +275,7 @@ export async function mainRunAuditorHost(argv: string[]): Promise<number> {
       iterationCount: args.iterationCount,
     });
     process.stdout.write(JSON.stringify(result));
-    return result.status === 'PASS' ? 0 : 1;
+    return result.status === 'PASS' && isReviewCloseoutApproved(result.closeoutEnvelope) ? 0 : 1;
   } catch (error) {
     console.error(`run-auditor-host: ${error instanceof Error ? error.message : String(error)}`);
     return 1;

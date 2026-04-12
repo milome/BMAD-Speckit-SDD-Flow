@@ -118,6 +118,23 @@ story:
       item_id: "story_implementability"
       patterns: ["可实施性", "实施"]
 
+implementation_readiness:
+  empty_overall: "readiness_overall"
+  empty_dimensions: "readiness_dimensions"
+  checks:
+    - text: "P0 Journey Coverage Matrix"
+      item_id: "readiness_p0_journey_coverage"
+      patterns: ["P0 Journey Coverage Matrix", "P0 Journey Coverage", "PRD Journey", "Arch P0 Key Path", "Epic Coverage"]
+    - text: "Smoke E2E Preconditions Traceability"
+      item_id: "readiness_smoke_e2e_readiness"
+      patterns: ["Smoke E2E Preconditions Traceability", "Smoke E2E", "E2E test strategy", "Critical paths", "fixture / environment readiness"]
+    - text: "Evidence & Proof Chain"
+      item_id: "readiness_evidence_proof_chain"
+      patterns: ["Evidence & Proof Chain", "Source Document", "Evidence Location", "Verification"]
+    - text: "Cross-Document Traceability"
+      item_id: "readiness_cross_document_traceability"
+      patterns: ["Cross-Document Traceability", "PRD Requirement", "Architecture Decision", "Epic Story", "Traceability Status"]
+
 tasks:
   empty_overall: "tasks_overall"
   empty_dimensions: "tasks_dimensions"

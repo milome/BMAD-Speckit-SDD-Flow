@@ -9,6 +9,7 @@ import * as yaml from 'js-yaml';
 import type {
   ContextMaturity,
   ContextMaturityEvidence,
+  ReviewerLatestCloseoutRecord,
   RuntimeFlowId,
   RuntimeSourceMode,
   StageName,
@@ -20,6 +21,7 @@ import {
   writeRuntimeContextRegistry,
 } from './registry';
 import { ensureFacilitatorRuntimeDefinition } from './facilitator';
+import { ensureReviewerRuntimeDefinition } from './reviewer';
 
 export const RUNTIME_CONTEXT_VERSION = 1 as const;
 
@@ -56,6 +58,7 @@ export interface RuntimeContextFile {
   artifactPath?: string;
   contextScope?: 'project' | 'story';
   languagePolicy?: { resolvedMode: 'zh' | 'en' | 'bilingual' };
+  latestReviewerCloseout?: ReviewerLatestCloseoutRecord;
   updatedAt: string;
 }
 
@@ -266,6 +269,11 @@ export function readRuntimeContext(root: string, explicitPath?: string): Runtime
       throw new Error(`runtime-context.languagePolicy.resolvedMode invalid: ${file}`);
     }
   }
+  if (o.latestReviewerCloseout !== undefined) {
+    if (!o.latestReviewerCloseout || typeof o.latestReviewerCloseout !== 'object') {
+      throw new Error(`runtime-context.latestReviewerCloseout invalid: ${file}`);
+    }
+  }
   if (typeof o.updatedAt !== 'string' || o.updatedAt.trim() === '') {
     throw new Error(`runtime-context.updatedAt missing: ${file}`);
   }
@@ -301,6 +309,9 @@ export function readRuntimeContext(root: string, explicitPath?: string): Runtime
     if (lp.resolvedMode === 'zh' || lp.resolvedMode === 'en' || lp.resolvedMode === 'bilingual') {
       out.languagePolicy = { resolvedMode: lp.resolvedMode as 'zh' | 'en' | 'bilingual' };
     }
+  }
+  if (o.latestReviewerCloseout && typeof o.latestReviewerCloseout === 'object') {
+    out.latestReviewerCloseout = o.latestReviewerCloseout as ReviewerLatestCloseoutRecord;
   }
   return out;
 }
@@ -365,6 +376,7 @@ export function ensureProjectRuntimeContext(
   });
   writeRuntimeContext(root, payload);
   ensureFacilitatorRuntimeDefinition(root);
+  ensureReviewerRuntimeDefinition(root);
 
   const sprintStatusPath = path.join(
     root,
@@ -405,6 +417,7 @@ export function ensureStoryRuntimeContext(
   });
   writeRuntimeContext(root, payload);
   ensureFacilitatorRuntimeDefinition(root);
+  ensureReviewerRuntimeDefinition(root);
 
   const registry = readRegistryOrDefault(root);
   const epicId = options.epicId || payload.epicId || 'epic-unknown';
@@ -446,6 +459,7 @@ export function ensureRunRuntimeContext(
   });
   writeRuntimeContext(root, payload);
   ensureFacilitatorRuntimeDefinition(root);
+  ensureReviewerRuntimeDefinition(root);
 
   const registry = readRegistryOrDefault(root);
   const epicId = options.epicId || payload.epicId || 'epic-unknown';

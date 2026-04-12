@@ -12,6 +12,8 @@ description: |
   严格遵守架构忠实性、禁止伪实现、主动回归测试等 15 条铁律。
   同时遵守 QA_Agent 执行规则与 ralph-wiggum 法则。
 ---
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
 
 # Speckit 开发流程完善
 
@@ -604,3 +606,4 @@ Layer 5: 收尾与集成
 | 实施后审计规则（strict） | [references/audit-post-impl-rules.md](references/audit-post-impl-rules.md) |
 | audit_convergence 配置 | [references/audit-config-schema.md](references/audit-config-schema.md)；校验脚本 `_bmad/speckit/scripts/powershell/validate-audit-config.ps1` |
 | **Speckit 命令索引** | 见 §8 |
+

@@ -11,7 +11,20 @@ export const REVIEWER_CONTRACT_FREEZE_VERSION = 'reviewer_contract_freeze_v1' as
 export const REVIEWER_PRODUCT_IDENTITY = 'bmad_code_reviewer' as const;
 export const REVIEWER_DISPLAY_NAME = 'code-reviewer' as const;
 export const CURSOR_REVIEWER_PREFERRED_EXECUTOR = 'code-reviewer' as const;
-export const CLAUDE_REVIEWER_DEFINITION_SOURCE_PATH = '.claude/agents/code-reviewer.md' as const;
+export const CURSOR_REVIEWER_CANONICAL_SOURCE_PATH =
+  '_bmad/cursor/agents/code-reviewer.md' as const;
+export const CURSOR_REVIEWER_RUNTIME_TARGET_PATH = '.cursor/agents/code-reviewer.md' as const;
+export const CLAUDE_REVIEWER_CANONICAL_SOURCE_PATH =
+  '_bmad/claude/agents/code-reviewer.md' as const;
+export const CLAUDE_REVIEWER_RUNTIME_TARGET_PATH = '.claude/agents/code-reviewer.md' as const;
+export const CLAUDE_REVIEWER_DEFINITION_SOURCE_PATH = CLAUDE_REVIEWER_RUNTIME_TARGET_PATH;
+export const REVIEWER_SHARED_CORE_ROOT = '_bmad/core/agents/code-reviewer' as const;
+export const REVIEWER_SHARED_CORE_METADATA_PATH =
+  `${REVIEWER_SHARED_CORE_ROOT}/metadata.json` as const;
+export const REVIEWER_SHARED_CORE_BASE_PROMPT_PATH =
+  `${REVIEWER_SHARED_CORE_ROOT}/base-prompt.md` as const;
+export const REVIEWER_SHARED_CORE_PROFILE_PACK_PATH =
+  `${REVIEWER_SHARED_CORE_ROOT}/profiles.json` as const;
 
 export const REVIEWER_PROFILES = [
   'story_audit',
@@ -37,6 +50,7 @@ export const REVIEWER_PROFILE_DEFINITION_SOURCES = {
   'bmad-story-audit': 'story_audit',
   'auditor-spec': 'spec_audit',
   'auditor-plan': 'plan_audit',
+  'auditor-gaps': 'tasks_audit',
   'auditor-tasks': 'tasks_audit',
   'auditor-implement': 'implement_audit',
   'auditor-bugfix': 'bugfix_doc_audit',
@@ -73,13 +87,65 @@ export const REVIEWER_HARD_CONSTRAINTS = {
   closeoutRunner: 'runAuditorHost',
 } as const;
 
+export const REVIEWER_GOVERNANCE_GATE_CONTRACT = {
+  implementationReadinessStatusRequired: true,
+  implementationReadinessGateName: 'implementation-readiness',
+  gatesLoopRequired: true,
+  rerunGatesRequired: true,
+  packetExecutionClosureRequired: true,
+  packetExecutionClosureStatuses: [
+    'awaiting_rerun_gate',
+    'retry_pending',
+    'gate_passed',
+    'escalated',
+  ] as const,
+} as const;
+
+export type ReviewerPacketExecutionClosureStatus =
+  (typeof REVIEWER_GOVERNANCE_GATE_CONTRACT.packetExecutionClosureStatuses)[number];
+
+export const REVIEWER_CLOSEOUT_ENVELOPE_FIELDS = [
+  'resultCode',
+  'requiredFixes',
+  'requiredFixesDetail',
+  'rerunDecision',
+  'scoringFailureMode',
+  'packetExecutionClosureStatus',
+] as const;
+
+export type ReviewerCloseoutEnvelopeFieldId = (typeof REVIEWER_CLOSEOUT_ENVELOPE_FIELDS)[number];
+
+export const REVIEWER_HOST_ADAPTER_BOUNDARY = {
+  projectionOnly: true,
+  hostLocalStageSemanticsForbidden: true,
+  hostLocalRoutePrecedenceForbidden: true,
+  hostLocalFallbackBusinessRulesForbidden: true,
+} as const;
+
+export const REVIEWER_COMPATIBILITY_GUARDS = {
+  codexNoopRequired: true,
+  codexBehaviorChangeAllowed: false,
+} as const;
+
+export const REVIEWER_REQUIRED_ROLLOUT_PROOFS = [
+  'parity_proof',
+  'consumer_install_proof',
+  'rollback_proof',
+  'codex_noop_proof',
+] as const;
+
+export type ReviewerRequiredRolloutProofId = (typeof REVIEWER_REQUIRED_ROLLOUT_PROOFS)[number];
+
 export const REVIEWER_STRICT_ALIGNMENT_EVIDENCE = [
   'cursor_preferred_vs_fallback',
   'claude_preferred_vs_fallback',
   'cross_host_output_parity',
   'closeout_contract_parity',
+  'governance_closure_parity',
   'parsable_scoring_block_parity',
   'result_code_and_required_fixes_parity',
+  'codex_noop_proof',
+  'rollback_proof',
 ] as const;
 
 export type ReviewerStrictAlignmentEvidenceId =
@@ -90,10 +156,20 @@ export interface ReviewerContractFreeze {
   readonly reviewer: {
     readonly identity: typeof REVIEWER_PRODUCT_IDENTITY;
     readonly displayName: typeof REVIEWER_DISPLAY_NAME;
+    readonly sharedCore: {
+      readonly rootPath: typeof REVIEWER_SHARED_CORE_ROOT;
+      readonly metadataPath: typeof REVIEWER_SHARED_CORE_METADATA_PATH;
+      readonly basePromptPath: typeof REVIEWER_SHARED_CORE_BASE_PROMPT_PATH;
+      readonly profilePackPath: typeof REVIEWER_SHARED_CORE_PROFILE_PACK_PATH;
+    };
     readonly cursor: {
       readonly preferredExecutor: typeof CURSOR_REVIEWER_PREFERRED_EXECUTOR;
+      readonly canonicalSourcePath: typeof CURSOR_REVIEWER_CANONICAL_SOURCE_PATH;
+      readonly runtimeTargetPath: typeof CURSOR_REVIEWER_RUNTIME_TARGET_PATH;
     };
     readonly claude: {
+      readonly canonicalSourcePath: typeof CLAUDE_REVIEWER_CANONICAL_SOURCE_PATH;
+      readonly runtimeTargetPath: typeof CLAUDE_REVIEWER_RUNTIME_TARGET_PATH;
       readonly definitionSourcePath: typeof CLAUDE_REVIEWER_DEFINITION_SOURCE_PATH;
     };
     readonly profiles: readonly ReviewerProfileId[];
@@ -111,6 +187,11 @@ export interface ReviewerContractFreeze {
     };
   };
   readonly hardConstraints: typeof REVIEWER_HARD_CONSTRAINTS;
+  readonly governanceGateContract: typeof REVIEWER_GOVERNANCE_GATE_CONTRACT;
+  readonly closeoutEnvelopeFields: readonly ReviewerCloseoutEnvelopeFieldId[];
+  readonly hostAdapterBoundary: typeof REVIEWER_HOST_ADAPTER_BOUNDARY;
+  readonly compatibilityGuards: typeof REVIEWER_COMPATIBILITY_GUARDS;
+  readonly requiredRolloutProofs: readonly ReviewerRequiredRolloutProofId[];
   readonly strictAlignmentEvidence: readonly ReviewerStrictAlignmentEvidenceId[];
 }
 
@@ -119,10 +200,20 @@ export const REVIEWER_CONTRACT_FREEZE: ReviewerContractFreeze = {
   reviewer: {
     identity: REVIEWER_PRODUCT_IDENTITY,
     displayName: REVIEWER_DISPLAY_NAME,
+    sharedCore: {
+      rootPath: REVIEWER_SHARED_CORE_ROOT,
+      metadataPath: REVIEWER_SHARED_CORE_METADATA_PATH,
+      basePromptPath: REVIEWER_SHARED_CORE_BASE_PROMPT_PATH,
+      profilePackPath: REVIEWER_SHARED_CORE_PROFILE_PACK_PATH,
+    },
     cursor: {
       preferredExecutor: CURSOR_REVIEWER_PREFERRED_EXECUTOR,
+      canonicalSourcePath: CURSOR_REVIEWER_CANONICAL_SOURCE_PATH,
+      runtimeTargetPath: CURSOR_REVIEWER_RUNTIME_TARGET_PATH,
     },
     claude: {
+      canonicalSourcePath: CLAUDE_REVIEWER_CANONICAL_SOURCE_PATH,
+      runtimeTargetPath: CLAUDE_REVIEWER_RUNTIME_TARGET_PATH,
       definitionSourcePath: CLAUDE_REVIEWER_DEFINITION_SOURCE_PATH,
     },
     profiles: REVIEWER_PROFILES,
@@ -140,6 +231,11 @@ export const REVIEWER_CONTRACT_FREEZE: ReviewerContractFreeze = {
     },
   },
   hardConstraints: REVIEWER_HARD_CONSTRAINTS,
+  governanceGateContract: REVIEWER_GOVERNANCE_GATE_CONTRACT,
+  closeoutEnvelopeFields: REVIEWER_CLOSEOUT_ENVELOPE_FIELDS,
+  hostAdapterBoundary: REVIEWER_HOST_ADAPTER_BOUNDARY,
+  compatibilityGuards: REVIEWER_COMPATIBILITY_GUARDS,
+  requiredRolloutProofs: REVIEWER_REQUIRED_ROLLOUT_PROOFS,
   strictAlignmentEvidence: REVIEWER_STRICT_ALIGNMENT_EVIDENCE,
 };
 

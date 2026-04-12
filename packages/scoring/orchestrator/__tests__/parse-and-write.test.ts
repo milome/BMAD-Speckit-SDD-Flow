@@ -81,6 +81,156 @@ describe('parseAndWriteScore', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }, 40000);
 
+  it('writes record when given content for implementation_readiness stage', async () => {
+    const content = fs.readFileSync(
+      path.join(FIXTURES, 'sample-readiness-report-with-four-dimensions.md'),
+      'utf-8'
+    );
+    const tempDir = path.join(os.tmpdir(), `scoring-readiness-${Date.now()}`);
+    const runId = `test-readiness-${Date.now()}`;
+
+    await parseAndWriteScore({
+      content,
+      stage: 'implementation_readiness',
+      runId,
+      scenario: 'real_dev',
+      writeMode: 'single_file',
+      dataPath: tempDir,
+      skipAutoHash: true,
+    });
+
+    const filePath = path.join(tempDir, `${runId}.json`);
+    expect(fs.existsSync(filePath)).toBe(true);
+    const written = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    expect(written.run_id).toBe(runId);
+    expect(written.stage).toBe('implementation_readiness');
+    expect(written.phase_weight).toBe(0.2);
+    expect(written.dimension_scores).toBeInstanceOf(Array);
+    expect(written.dimension_scores.length).toBe(4);
+    expect(written.phase_score).toBe(85);
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }, 40000);
+
+  it('blocks implement verdict when readiness baseline exists but structured drift signal block is missing', async () => {
+    const readinessContent = fs.readFileSync(
+      path.join(FIXTURES, 'sample-readiness-report-with-four-dimensions.md'),
+      'utf-8'
+    );
+    const implementContent = [
+      '总体评级: A',
+      '',
+      '## 可解析评分块（供 parseAndWriteScore）',
+      '',
+      '总体评级: A',
+      '',
+      '维度评分:',
+      '- 功能性: 95/100',
+      '- 代码质量: 94/100',
+      '- 测试覆盖: 93/100',
+      '- 安全性: 96/100',
+      '',
+      '问题清单:',
+      '(无)',
+    ].join('\n');
+    const tempDir = path.join(os.tmpdir(), `scoring-missing-drift-block-${Date.now()}`);
+
+    try {
+      await parseAndWriteScore({
+        content: readinessContent,
+        stage: 'implementation_readiness',
+        runId: 'baseline-readiness',
+        scenario: 'real_dev',
+        writeMode: 'single_file',
+        dataPath: tempDir,
+        skipAutoHash: true,
+      });
+
+      await parseAndWriteScore({
+        content: implementContent,
+        stage: 'implement',
+        runId: 'implement-missing-drift-block',
+        scenario: 'real_dev',
+        writeMode: 'single_file',
+        dataPath: tempDir,
+        skipAutoHash: true,
+      });
+
+      const written = JSON.parse(
+        fs.readFileSync(path.join(tempDir, 'implement-missing-drift-block.json'), 'utf-8')
+      );
+      expect(written.raw_phase_score).toBe(94.5);
+      expect(written.effective_verdict).toBe('blocked_pending_rereadiness');
+      expect(written.re_readiness_required).toBe(true);
+      expect(written.blocking_reason).toContain('Missing structured drift signal block');
+    } finally {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('writes post_impl verdict using the same structured drift contract', async () => {
+    const readinessContent = fs.readFileSync(
+      path.join(FIXTURES, 'sample-readiness-report-with-four-dimensions.md'),
+      'utf-8'
+    );
+    const postImplContent = [
+      '总体评级: B',
+      '',
+      '## 可解析评分块（供 parseAndWriteScore）',
+      '',
+      '总体评级: B',
+      '',
+      '维度评分:',
+      '- 功能性: 88/100',
+      '- 代码质量: 86/100',
+      '- 测试覆盖: 84/100',
+      '- 安全性: 89/100',
+      '',
+      '## Structured Drift Signal Block',
+      '',
+      '| signal | status | evidence |',
+      '| --- | --- | --- |',
+      '| smoke_task_chain | pass | Smoke chain still valid |',
+      '| closure_task_id | fail | Closure note no longer matches actual smoke proof |',
+      '| journey_unlock | pass | Unlock semantics intact |',
+      '| gap_split_contract | pass | Gap split intact |',
+      '| shared_path_reference | pass | Shared path intact |',
+      '',
+      '问题清单:',
+      '1. [严重程度:低] closure task 说明需要更新',
+    ].join('\n');
+    const tempDir = path.join(os.tmpdir(), `scoring-post-impl-${Date.now()}`);
+
+    try {
+      await parseAndWriteScore({
+        content: readinessContent,
+        stage: 'implementation_readiness',
+        runId: 'baseline-readiness-post-impl',
+        scenario: 'real_dev',
+        writeMode: 'single_file',
+        dataPath: tempDir,
+        skipAutoHash: true,
+      });
+
+      await parseAndWriteScore({
+        content: postImplContent,
+        stage: 'post_impl',
+        runId: 'post-impl-run',
+        scenario: 'real_dev',
+        writeMode: 'single_file',
+        dataPath: tempDir,
+        skipAutoHash: true,
+      });
+
+      const written = JSON.parse(fs.readFileSync(path.join(tempDir, 'post-impl-run.json'), 'utf-8'));
+      expect(written.stage).toBe('post_impl');
+      expect(written.drift_signals).toEqual(['closure_task_id']);
+      expect(written.drift_severity).toBe('critical');
+      expect(written.effective_verdict).toBe('blocked');
+    } finally {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
   it('writes record when given reportPath', async () => {
     const reportPath = path.join(FIXTURES, 'sample-implement-report-with-four-dimensions.md');
     const tempDir = path.join(os.tmpdir(), `scoring-e3s3-path-${Date.now()}`);

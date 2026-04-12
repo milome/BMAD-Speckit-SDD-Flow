@@ -1,4 +1,9 @@
 # code-reviewer多模式配置文件
+# Shared reviewer boundary:
+# - reviewer carrier truth: _bmad/core/agents/code-reviewer/*
+# - host carrier source: _bmad/cursor/agents/code-reviewer.md / _bmad/claude/agents/code-reviewer.md
+# - route precedence / fallback business rules: scripts/reviewer-registry.ts
+# This file now only owns mode/dimensions/prompt_template configuration and must not become the reviewer carrier truth source again.
 # audit-prompts 多语言：locale 来自 _bmad-output/runtime/context/project.json → languagePolicy.resolvedMode（非 env）。解析见
 # scripts/i18n/resolve-audit-prompt-path.ts；文件约定见 _bmad/_config/AUDIT_PROMPTS_STRATEGY.md（.md / .zh.md / .en.md）。
 # GAP-009 修复：prompt_template 路径规则
@@ -49,6 +54,45 @@ modes:
           - "输入验证"
           - "敏感数据处理"
           - "常见漏洞检查"
+
+  readiness:
+    name: "实施就绪度审计"
+    description: "审计 implementation readiness 的 Four-Signal Governance Contract"
+    prompt_template: "audit-prompts-readiness.md"
+    pass_criteria:
+      A: "四维完整且可追溯，可作为 clean baseline"
+      B: "主要维度完整，存在少量缺口但具备明确修复路径"
+      C: "存在明显缺口，需修复后重新生成 readiness baseline"
+      D: "关键维度缺失，禁止进入实施"
+    dimensions:
+      - name: "P0 Journey Coverage"
+        name_en: "P0 Journey Coverage"
+        weight: 25
+        checks:
+          - "P0 Journey Coverage Matrix 完整"
+          - "PRD Journey 到 Architecture Key Path 可追溯"
+          - "Epic Coverage 不缺关键路径"
+      - name: "Smoke E2E Readiness"
+        name_en: "Smoke E2E Readiness"
+        weight: 25
+        checks:
+          - "Smoke E2E Preconditions Traceability 完整"
+          - "关键 smoke path 可生成"
+          - "fixture / environment readiness 已声明"
+      - name: "Evidence Proof Chain"
+        name_en: "Evidence Proof Chain"
+        weight: 25
+        checks:
+          - "Evidence & Proof Chain 完整"
+          - "每项 claim 有 source document 与 verification"
+          - "证据位置可回查"
+      - name: "Cross-Document Traceability"
+        name_en: "Cross-Document Traceability"
+        weight: 25
+        checks:
+          - "Cross-Document Traceability 完整"
+          - "PRD -> Architecture -> Epic Story 可追溯"
+          - "Four-Signal Contract Verification 有结论"
 
   prd:
     name: "PRD审计"
@@ -235,6 +279,18 @@ items:
   journey_shared_path_reference:
     name: "Shared Ledger Path Reference 合同"
     description: "multi-agent 模式必须共享同一份 journey ledger / invariant ledger / trace map 路径引用"
+  readiness_p0_journey_coverage:
+    name: "Readiness P0 Journey Coverage"
+    description: "implementation readiness 报告中的 P0 Journey Coverage 维度"
+  readiness_smoke_e2e_readiness:
+    name: "Readiness Smoke E2E Readiness"
+    description: "implementation readiness 报告中的 Smoke E2E Readiness 维度"
+  readiness_evidence_proof_chain:
+    name: "Readiness Evidence Proof Chain"
+    description: "implementation readiness 报告中的 Evidence Proof Chain 维度"
+  readiness_cross_document_traceability:
+    name: "Readiness Cross-Document Traceability"
+    description: "implementation readiness 报告中的 Cross-Document Traceability 维度"
 
 veto_items:
   veto_core_logic:

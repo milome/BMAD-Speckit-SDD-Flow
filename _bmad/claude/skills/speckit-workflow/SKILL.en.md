@@ -1,4 +1,5 @@
 <!-- BLOCK_LABEL_POLICY=B -->
+
 ---
 name: speckit-workflow
 description: |
@@ -14,6 +15,9 @@ description: |
   Strictly abide by 15 iron rules such as architectural fidelity, prohibition of false implementations, and active regression testing.
   Comply with the QA_Agent execution rules and ralph-wiggum rules at the same time.
 ---
+
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout terminology: in this document, a stage is considered complete only when `runAuditorHost` returns `closeout approved`. An audit report `PASS` only means the host close-out may start; `PASS` alone must not be treated as completion, admission, or release.
 
 # Claude Adapter: Speckit development process is improved
 
@@ -171,8 +175,8 @@ handoff:
 Unified fallback strategy (4-layer Fallback, audit type):
 
 1. **Layer 1 — Primary Executor**: Use the auditor agent defined by the warehouse (such as `.claude/agents/auditors/auditor-spec.md`), call it through the Agent tool + `subagent_type: general-purpose`, and pass the entire main Agent into the agent file as a complete prompt
-2. **Layer 2 — OMC Reviewer**: If the primary executor is unavailable, fall back to `oh-my-claudecode:code-reviewer` or OMC reviewer
-3. **Layer 3 — Code-Review Skill**: If OMC reviewer is unavailable, fall back to `code-review` skill or equivalent capabilities
+2. **Layer 2 — Legacy Compatibility Reviewer**: If the primary executor is unavailable, fall back to `oh-my-claudecode:code-reviewer` or another compatibility reviewer. This is a compatibility path, not the current product truth source.
+3. **Layer 3 — Code-Review Skill**: If the compatibility reviewer is unavailable, fall back to `code-review` skill or equivalent capabilities
 4. **Layer 4 — Main Agent directly executes**: If none of the above are available, the main Agent directly executes the audit, using the corresponding chapter in `references/audit-prompts.md` as a checklist
 
 #### Fallback Downgrade Notice (FR26)
@@ -184,7 +188,7 @@ Unified fallback strategy (4-layer Fallback, audit type):
    影响：审计标准不变，仅执行器不同
 ```
 Example:
-- `⚠️ Fallback downgrade notification: The current audit uses Layer 2 executor (OMC reviewer)`
+- `⚠️ Fallback downgrade notification: The current audit uses Layer 2 executor (legacy compatibility reviewer)`
 - `⚠️ Fallback downgrade notification: The current audit uses Layer 4 execution body (directly executed by the main Agent)`
 
 ### Fallback constraints
@@ -272,8 +276,8 @@ The following content is an additional enhancement to the warehouse and does not
 3. Prompt words use `references/audit-prompts.md` corresponding to the chapter
 
 **Fallback strategy (4 layers Fallback)**:
-1. If the auditor agent is unavailable, fall back to the OMC reviewer
-2. If OMC reviewer is unavailable, fall back to `code-review` skill
+1. If the registry-backed auditor agent is unavailable, fall back to the legacy compatibility reviewer
+2. If the legacy compatibility reviewer is unavailable, fall back to `code-review` skill
 3. If the code-review skill is unavailable, the main Agent executes it directly
 4. Each downgrade must output a Fallback downgrade notification (FR26) to inform the user of the current execution body level.
 
@@ -808,3 +812,5 @@ Each "iteration" is: **Call code-review skills according to the convention in §
 | **Speckit Command Index** | See §8 |
 
 <!-- ADAPTATION_COMPLETE: 2026-03-15 -->
+
+

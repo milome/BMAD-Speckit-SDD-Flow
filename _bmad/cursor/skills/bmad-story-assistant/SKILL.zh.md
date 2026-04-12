@@ -8,6 +8,8 @@ description: |
   **禁止因 Epic/Story 已存在即跳过 party-mode**：仅当用户明确说「已通过 party-mode 且审计通过」时方可跳过 Create Story；否则必须执行 Create Story，涉及方案选择或设计决策时进入 party-mode 至少 100 轮。
   适用场景：用户提供 Epic 编号与 Story 编号（如 4、1 表示 Story 4.1），需生成 Story 文档、通过审计、执行 Dev Story 并完成实施后审计。全程中文。
 ---
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
 
 # BMAD Story 助手
 
@@ -1699,3 +1701,4 @@ prompt: |
 - **BMad Master 介入（GAP-037 修复）**：回退>3 次或回滚>2 次时，需用户或项目负责人确认；审批步骤：记录原因 → 用户确认「继续」或「终止」→ 若继续则重置计数
 - 回退到 Layer 1 会重置整个 Epic 的规划
 - 回退/回滚操作必须记录原因和决策过程
+

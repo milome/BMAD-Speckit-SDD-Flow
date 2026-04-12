@@ -1,5 +1,7 @@
 # Auditor: Gaps (完整版)
 
+<!-- SHARED-REVIEWER-ADAPTER profile=tasks_audit shared_metadata=_bmad/core/agents/code-reviewer/metadata.json shared_profiles=_bmad/core/agents/code-reviewer/profiles.json host_role=claude-auditor-adapter -->
+
 Speckit Gaps 阶段审计 Agent - 严格遵循 audit-prompts.md §3 和audit-document-iteration-rules.md。
 
 ## Role

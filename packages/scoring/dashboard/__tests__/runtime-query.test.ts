@@ -186,6 +186,129 @@ describe('runtime-aware dashboard query', () => {
     vi.restoreAllMocks();
   });
 
+  it('reads latest reviewer closeout from registry-backed runtime context', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'runtime-query-closeout-'));
+    try {
+      fs.mkdirSync(path.join(root, '_bmad-output', 'runtime', 'context'), { recursive: true });
+      fs.writeFileSync(
+        path.join(root, '_bmad-output', 'runtime', 'context', 'project.json'),
+        JSON.stringify(
+          {
+            version: 1,
+            flow: 'story',
+            stage: 'implement',
+            latestReviewerCloseout: {
+              updatedAt: '2026-04-13T12:00:00.000Z',
+              runner: 'runAuditorHost',
+              profile: 'implement_audit',
+              stage: 'implement',
+              artifactPath: 'specs/demo/tasks.md',
+              reportPath: 'specs/demo/tasks.audit.md',
+              auditStatus: 'PASS',
+              closeoutApproved: false,
+              governanceClosure: {
+                implementationReadinessStatusRequired: true,
+                implementationReadinessGateName: 'implementation-readiness',
+                gatesLoopRequired: true,
+                rerunGatesRequired: true,
+                packetExecutionClosureRequired: true,
+              },
+              closeoutEnvelope: {
+                resultCode: 'blocked',
+                requiredFixes: ['Need re-readiness rerun'],
+                requiredFixesDetail: [{ id: 'rf-1', summary: 'Need re-readiness rerun', severity: 'required' }],
+                rerunDecision: 'rerun_required',
+                scoringFailureMode: 'succeeded',
+                packetExecutionClosureStatus: 'awaiting_rerun_gate',
+              },
+            },
+            updatedAt: '2026-04-13T12:00:00.000Z',
+          },
+          null,
+          2
+        ),
+        'utf8'
+      );
+      fs.writeFileSync(
+        path.join(root, '_bmad-output', 'runtime', 'registry.json'),
+        JSON.stringify(
+          {
+            version: 1,
+            projectRoot: root,
+            generatedAt: '2026-04-13T12:00:00.000Z',
+            updatedAt: '2026-04-13T12:00:00.000Z',
+            sources: {
+              storyArtifactsRoot: '_bmad-output/implementation-artifacts',
+              specsRoot: 'specs',
+            },
+            project: {
+              activeEpicIds: [],
+              activeStoryIds: [],
+            },
+            projectContextPath: '_bmad-output/runtime/context/project.json',
+            epicContexts: {},
+            storyContexts: {},
+            runContexts: {},
+            auditIndex: {
+              bugfix: {},
+              standalone_tasks: {},
+            },
+            latestReviewerCloseout: {
+              updatedAt: '2026-04-13T12:00:00.000Z',
+              runner: 'runAuditorHost',
+              profile: 'implement_audit',
+              stage: 'implement',
+              artifactPath: 'specs/demo/tasks.md',
+              reportPath: 'specs/demo/tasks.audit.md',
+              auditStatus: 'PASS',
+              closeoutApproved: false,
+              governanceClosure: {
+                implementationReadinessStatusRequired: true,
+                implementationReadinessGateName: 'implementation-readiness',
+                gatesLoopRequired: true,
+                rerunGatesRequired: true,
+                packetExecutionClosureRequired: true,
+              },
+              closeoutEnvelope: {
+                resultCode: 'blocked',
+                requiredFixes: ['Need re-readiness rerun'],
+                requiredFixesDetail: [{ id: 'rf-1', summary: 'Need re-readiness rerun', severity: 'required' }],
+                rerunDecision: 'rerun_required',
+                scoringFailureMode: 'succeeded',
+                packetExecutionClosureStatus: 'awaiting_rerun_gate',
+              },
+            },
+            activeScope: {
+              scopeType: 'project',
+              resolvedContextPath: '_bmad-output/runtime/context/project.json',
+              reason: 'test fixture',
+            },
+          },
+          null,
+          2
+        ),
+        'utf8'
+      );
+
+      const snapshot = buildRuntimeDashboardModel({
+        root,
+        events: [],
+        scoreRecords: [],
+      });
+
+      expect(snapshot.runtime_context.latest_reviewer_closeout).toEqual(
+        expect.objectContaining({
+          result_code: 'blocked',
+          rerun_decision: 'rerun_required',
+          packet_execution_closure_status: 'awaiting_rerun_gate',
+          closeout_approved: false,
+        })
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('resolves the latest active runtime run ahead of older scored runs', () => {
     const snapshot = buildRuntimeDashboardModel({
       events: [
@@ -611,6 +734,13 @@ describe('runtime-aware dashboard query', () => {
           }),
         }),
       ]);
+      expect(snapshot.readiness_projection).toEqual(
+        expect.objectContaining({
+          readiness_baseline_run_id: null,
+          effective_verdict: 'blocked_pending_rereadiness',
+          re_readiness_required: true,
+        })
+      );
       expect(snapshot.stage_timeline).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ stage: 'brief', status: 'pending' }),
@@ -1004,6 +1134,26 @@ describe('runtime-aware dashboard query', () => {
           timestamp: '2026-03-28T00:15:00.000Z',
           phase_score: 91,
           source_path: 'docs/plans/story-15-1-runtime-dashboard.md',
+          readiness_baseline_run_id: 'run-readiness-001',
+          drift_signals: ['smoke_task_chain'],
+          drifted_dimensions: ['Smoke E2E Readiness', 'P0 Journey Coverage'],
+          drift_severity: 'critical',
+          re_readiness_required: true,
+          blocking_reason: 'Critical readiness drift detected against the current implementation baseline.',
+          effective_verdict: 'blocked',
+        }),
+        makeScoreRecord({
+          run_id: 'run-readiness-001',
+          stage: 'implementation_readiness',
+          timestamp: '2026-03-27T23:50:00.000Z',
+          phase_score: 84,
+          dimension_scores: [
+            { dimension: 'P0 Journey Coverage', weight: 25, score: 88 },
+            { dimension: 'Smoke E2E Readiness', weight: 25, score: 80 },
+            { dimension: 'Evidence Proof Chain', weight: 25, score: 84 },
+            { dimension: 'Cross-Document Traceability', weight: 25, score: 84 },
+          ],
+          source_path: 'docs/plans/story-15-1-runtime-dashboard.md',
         }),
       ],
       options: {
@@ -1013,6 +1163,15 @@ describe('runtime-aware dashboard query', () => {
     });
 
     expect(snapshot.stage_timeline.map((entry) => entry.stage)).toEqual(['brief', 'prd', 'arch', 'tasks', 'implement', 'plan']);
+    expect(snapshot.readiness_projection).toEqual(
+      expect.objectContaining({
+        readiness_baseline_run_id: 'run-readiness-001',
+        readiness_score: 84,
+        drift_severity: 'critical',
+        effective_verdict: 'blocked',
+        drift_signals: ['smoke_task_chain'],
+      })
+    );
     expect(snapshot.stage_timeline).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ stage: 'brief', status: 'pending' }),

@@ -47,6 +47,10 @@ import {
   type TrendDirection,
   type WeakEntry,
 } from './compute';
+import {
+  buildReadinessDriftProjection,
+  type ReadinessDriftProjection,
+} from '../governance/readiness-drift';
 import { buildVetoItemIds } from '../veto';
 
 type SelectionSource = 'runtime' | 'scores' | 'none';
@@ -95,6 +99,23 @@ export interface DashboardRuntimeContextPanel {
   scope: RuntimeScopeRef | null;
   last_event_at: string | null;
   reviewer_contract?: ReviewerContractProjection | null;
+  latest_reviewer_closeout?: {
+    updated_at: string;
+    runner: string;
+    profile: string;
+    stage: string;
+    artifact_path: string;
+    report_path: string;
+    audit_status: string;
+    closeout_approved: boolean;
+    result_code: string;
+    rerun_decision: string;
+    packet_execution_closure_status: string;
+    scoring_failure_mode: string;
+    blocking_reason?: string | null;
+    required_fixes: string[];
+    score_error?: string | null;
+  } | null;
   work_item?: {
     work_item_id: string;
     work_item_type: DashboardWorkItemType;
@@ -140,6 +161,13 @@ export interface DashboardScoreDetailRecord {
   source_path?: string;
   base_commit_hash?: string;
   dimension_scores?: Record<string, number>;
+  readiness_baseline_run_id?: string | null;
+  drift_signals?: string[];
+  drifted_dimensions?: string[];
+  drift_severity?: string | null;
+  re_readiness_required?: boolean;
+  blocking_reason?: string | null;
+  effective_verdict?: string | null;
   findings: DashboardScoreFinding[];
 }
 
@@ -306,6 +334,7 @@ export interface RuntimeDashboardSnapshot {
   execution_state: DashboardExecutionStateSummary;
   stage_timeline: DashboardStageTimelineEntry[];
   score_detail: DashboardScoreDetailPayload;
+  readiness_projection?: ReadinessDriftProjection | null;
   sft_summary: DashboardSftSummary;
   workboard: DashboardWorkboardPayload;
 }
@@ -328,6 +357,33 @@ interface RunWorkItemSeed {
   has_stage_execution: boolean;
   last_updated_at: string | null;
   score_records: RunScoreRecord[];
+}
+
+interface RuntimeLatestReviewerCloseoutRecord {
+  updatedAt: string;
+  runner: string;
+  profile: string;
+  stage: string;
+  artifactPath: string;
+  reportPath: string;
+  auditStatus: string;
+  closeoutApproved: boolean;
+  governanceClosure?: {
+    implementationReadinessStatusRequired?: boolean;
+    implementationReadinessGateName?: string;
+    gatesLoopRequired?: boolean;
+    rerunGatesRequired?: boolean;
+    packetExecutionClosureRequired?: boolean;
+  };
+  closeoutEnvelope: {
+    resultCode: string;
+    requiredFixes: string[];
+    requiredFixesDetail?: Array<{ id: string; summary: string; severity: string }>;
+    rerunDecision: string;
+    scoringFailureMode: string;
+    packetExecutionClosureStatus: string;
+  };
+  scoreError?: string;
 }
 
 interface ParsedRunIdentity {
@@ -1073,6 +1129,13 @@ function buildScoreDetailRecords(records: RunScoreRecord[]): DashboardScoreDetai
         source_path: record.source_path,
         base_commit_hash: record.base_commit_hash,
         dimension_scores: mapDimensionScores(record.dimension_scores),
+        readiness_baseline_run_id: record.readiness_baseline_run_id ?? null,
+        drift_signals: record.drift_signals,
+        drifted_dimensions: record.drifted_dimensions,
+        drift_severity: record.drift_severity ?? null,
+        re_readiness_required: record.re_readiness_required,
+        blocking_reason: record.blocking_reason ?? null,
+        effective_verdict: record.effective_verdict ?? null,
         findings: buildScoreFindings(record),
       };
     });
@@ -1093,6 +1156,7 @@ function buildSyntheticRuntimeContext(
         flow: null,
         stage: null,
       }).reviewerContract,
+      latest_reviewer_closeout: null,
     };
   }
 
@@ -1108,6 +1172,69 @@ function buildSyntheticRuntimeContext(
       flow: 'story',
       stage: latest.stage,
     }).reviewerContract,
+    latest_reviewer_closeout: null,
+  };
+}
+
+function loadLatestReviewerCloseoutFromRoot(
+  root: string
+): DashboardRuntimeContextPanel['latest_reviewer_closeout'] {
+  const registryPath = path.join(root, '_bmad-output', 'runtime', 'registry.json');
+  if (!fs.existsSync(registryPath)) {
+    return null;
+  }
+
+  let registry: {
+    latestReviewerCloseout?: RuntimeLatestReviewerCloseoutRecord | null;
+    activeScope?: { resolvedContextPath?: string };
+  };
+  try {
+    registry = JSON.parse(fs.readFileSync(registryPath, 'utf8')) as {
+      latestReviewerCloseout?: RuntimeLatestReviewerCloseoutRecord | null;
+      activeScope?: { resolvedContextPath?: string };
+    };
+  } catch {
+    return null;
+  }
+
+  const scopedPath = registry.activeScope?.resolvedContextPath
+    ? path.resolve(root, registry.activeScope.resolvedContextPath)
+    : null;
+  const scopedCloseout =
+    scopedPath && fs.existsSync(scopedPath)
+      ? (() => {
+          try {
+            const parsed = JSON.parse(fs.readFileSync(scopedPath, 'utf8')) as {
+              latestReviewerCloseout?: RuntimeLatestReviewerCloseoutRecord | null;
+            };
+            return parsed.latestReviewerCloseout ?? null;
+          } catch {
+            return null;
+          }
+        })()
+      : null;
+
+  const raw = scopedCloseout ?? registry.latestReviewerCloseout ?? null;
+  if (!raw) {
+    return null;
+  }
+
+  return {
+    updated_at: raw.updatedAt,
+    runner: raw.runner,
+    profile: raw.profile,
+    stage: raw.stage,
+    artifact_path: raw.artifactPath,
+    report_path: raw.reportPath,
+    audit_status: raw.auditStatus,
+    closeout_approved: raw.closeoutApproved,
+    result_code: raw.closeoutEnvelope.resultCode,
+    rerun_decision: raw.closeoutEnvelope.rerunDecision,
+    packet_execution_closure_status: raw.closeoutEnvelope.packetExecutionClosureStatus,
+    scoring_failure_mode: raw.closeoutEnvelope.scoringFailureMode,
+    blocking_reason: raw.closeoutEnvelope.requiredFixes[0] ?? null,
+    required_fixes: raw.closeoutEnvelope.requiredFixes ?? [],
+    score_error: raw.scoreError ?? null,
   };
 }
 
@@ -1576,6 +1703,7 @@ export function buildRuntimeDashboardModel(input: {
   options?: RuntimeDashboardQueryOptions;
 }): RuntimeDashboardSnapshot {
   const options = input.options ?? {};
+  const root = input.root ?? options.root ?? process.cwd();
   const scoreRecords = input.scoreRecords.filter((record) => record.scenario !== 'eval_question');
   const projections = buildRuntimeProjections(input.events);
   const selectedProjection = selectRuntimeProjection(projections);
@@ -1611,11 +1739,12 @@ export function buildRuntimeDashboardModel(input: {
           flow: selectedProjection.current_scope?.flow ?? null,
           stage: selectedProjection.current_stage,
         }).reviewerContract,
+        latest_reviewer_closeout: loadLatestReviewerCloseoutFromRoot(root),
         work_item: null,
       }
     : buildSyntheticRuntimeContext(scoreDetailRecords);
   const executionState = buildExecutionStateSummary(
-    input.root ?? options.root ?? process.cwd(),
+    root,
     activeWorkItem,
     runtimeContext
   );
@@ -1628,6 +1757,8 @@ export function buildRuntimeDashboardModel(input: {
   };
 
   if (runtimeContext) {
+    runtimeContext.latest_reviewer_closeout =
+      runtimeContext.latest_reviewer_closeout ?? loadLatestReviewerCloseoutFromRoot(root);
     runtimeContext.work_item = activeWorkItem
       ? {
           work_item_id: activeWorkItem.work_item_id,
@@ -1642,6 +1773,21 @@ export function buildRuntimeDashboardModel(input: {
 
   selection.work_item_id = activeWorkItem?.work_item_id ?? null;
   selection.board_group_id = workboard.active_board_group_id;
+
+  const readinessCarrierRecord =
+    detailSourceRecords.length > 0
+      ? selectedScoreRecords.find(
+          (record) =>
+            record.run_id === detailSourceRecords[0]!.run_id &&
+            record.stage === detailSourceRecords[0]!.stage &&
+            record.timestamp === detailSourceRecords[0]!.timestamp
+        ) ?? null
+      : null;
+
+  const readinessProjection = buildReadinessDriftProjection({
+    currentRecord: readinessCarrierRecord ?? null,
+    allRecords: scoreRecords,
+  });
 
   return {
     generated_at: new Date().toISOString(),
@@ -1674,9 +1820,10 @@ export function buildRuntimeDashboardModel(input: {
       records: scoreDetailRecords,
       findings: scoreFindings,
     },
+    readiness_projection: readinessProjection,
     sft_summary: buildSftSummary(
       selectedScoreRecords,
-      input.root ?? options.root ?? process.cwd(),
+      root,
       activeWorkItem,
       workboard.active_board_group_id ?? null
     ),

@@ -22,6 +22,8 @@ references:
   - ralph-method: prd、progress 文件，按 US 顺序执行
   - speckit-workflow: 禁止伪实现、必须运行验收命令、架构忠实
 ---
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
 
 # Claude Adapter: bmad-bug-assistant
 
@@ -705,3 +707,4 @@ Amelia 开发 的规范已在上方 5 条中列出，子代理按内联执行即
 主 Agent：执行阶段四——将「阶段四实施详细提示词」整段复制，仅替换 BUGFIX 文档路径与项目根目录后通过 Agent tool（`subagent_type: general-purpose`）发起子任务；实施完成后，将「阶段四实施后审计完整 prompt 模板」整段复制后发起审计子任务；若审计结论为未通过，须按修改建议委托子代理修改后再次发起审计，直至结论为「完全覆盖、验证通过」。禁止直接改生产代码。
 
 <!-- ADAPTATION_COMPLETE: 2026-03-15 -->
+

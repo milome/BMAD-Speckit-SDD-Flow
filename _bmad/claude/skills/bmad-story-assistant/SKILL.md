@@ -5,6 +5,8 @@ description: |
   以 Cursor bmad-story-assistant 为语义基线，完整编排 Story 创建 → 审计 → Dev Story → 实施后审计 → 失败回环，
   并接入仓库内已实现的多 agent、hooks、状态机、handoff、评分写入与 commit gate 机制。
 ---
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
 
 # Claude Adapter: BMAD Story Assistant
 
@@ -2132,3 +2134,4 @@ Claude 版 skill 落地后，至少应满足以下验证：
 > Claude 版 `bmad-story-assistant` 不是 Cursor skill 的直接复制品，而是一个以 Cursor 为语义基线、以 Claude/OMC 为执行适配层、以本仓规则为增强层的统一编排入口 skill。
 
 <!-- ADAPTATION_COMPLETE: 2026-03-15 -->
+

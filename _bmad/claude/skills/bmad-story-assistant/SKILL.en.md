@@ -1,4 +1,5 @@
 <!-- BLOCK_LABEL_POLICY=B -->
+
 ---
 name: bmad-story-assistant
 description: |
@@ -6,6 +7,9 @@ description: |
   Uses Cursor `bmad-story-assistant` as the semantic baseline to orchestrate Story creation → audit → Dev Story → post-implementation audit → failure loopback,
   and integrates this repository’s multi-agent, hooks, state machine, handoff, score writing, and commit gate mechanisms.
 ---
+
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout terminology: in this document, a stage is considered complete only when `runAuditorHost` returns `closeout approved`. An audit report `PASS` only means the host close-out may start; `PASS` alone must not be treated as completion, admission, or release.
 
 # Claude Adapter: BMAD Story Assistant
 
@@ -2086,3 +2090,5 @@ After the Claude version of the skill is launched, it should at least meet the f
 > The Claude version of `bmad-story-assistant` is not a direct copy of the Cursor skill, but a unified orchestration entry with Cursor as the semantic baseline, Claude/OMC as the execution adaptation layer, and repository-local rules as the enhancement layer.
 
 <!-- ADAPTATION_COMPLETE: 2026-03-15 -->
+
+

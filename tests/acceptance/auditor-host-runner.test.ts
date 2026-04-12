@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
@@ -8,6 +8,7 @@ import {
   writeRuntimeContextRegistry,
 } from '../../scripts/runtime-context-registry';
 import { runAuditorHost } from '../../scripts/run-auditor-host';
+import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
 
 describe('auditor host runner', () => {
   it.each([
@@ -217,6 +218,145 @@ describe('auditor host runner', () => {
       expect(registry.auditIndex.standalone_tasks[path.normalize(artifactDocPath)]?.status).toBe(
         'PASS'
       );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('projects drift blocking into runAuditorHost closeout truth for critical implement drift', async () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'auditor-host-drift-closeout-'));
+    try {
+      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+      writeRuntimeContext(
+        root,
+        defaultRuntimeContextFile({
+          flow: 'story',
+          stage: 'implement',
+          updatedAt: '2026-04-13T12:00:00.000Z',
+        })
+      );
+
+      const artifactDocPath = path.join(root, 'specs', 'demo', 'implement.md');
+      const reportPath = path.join(root, 'specs', 'demo', 'implement.audit.md');
+      mkdirSync(path.dirname(reportPath), { recursive: true });
+      writeFileSync(
+        reportPath,
+        [
+          'status: PASS',
+          `reportPath: ${reportPath.replace(/\\/g, '/')}`,
+          'iteration_count: 0',
+          'required_fixes_count: 0',
+          'score_trigger_present: true',
+          `artifactDocPath: ${artifactDocPath.replace(/\\/g, '/')}`,
+          'converged: true',
+          '',
+          '## Required Fixes',
+          '- Fix the missing smoke task chain before closeout.',
+        ].join('\n'),
+        'utf8'
+      );
+
+      const scoreCommand = vi.fn().mockResolvedValue({
+        parsedRecord: {
+          effective_verdict: 'blocked',
+          blocking_reason: 'Critical readiness drift detected against the current implementation baseline.',
+          re_readiness_required: true,
+          drift_severity: 'critical',
+        },
+      });
+
+      const result = await runAuditorHost(
+        {
+          projectRoot: root,
+          reportPath,
+          stage: 'implement',
+          artifactPath: artifactDocPath,
+        },
+        { scoreCommand, executeAuditorScript: vi.fn() }
+      );
+
+      expect(result.status).toBe('PASS');
+      expect(result.governanceClosure).toMatchObject({
+        implementationReadinessStatusRequired: true,
+        packetExecutionClosureRequired: true,
+      });
+      expect(result.closeoutEnvelope).toMatchObject({
+        resultCode: 'blocked',
+        rerunDecision: 'rerun_required',
+        packetExecutionClosureStatus: 'retry_pending',
+        scoringFailureMode: 'succeeded',
+        requiredFixes: [
+          'Critical readiness drift detected against the current implementation baseline.',
+        ],
+      });
+      const registry = readRuntimeContextRegistry(root);
+      expect(registry.latestReviewerCloseout).toMatchObject({
+        profile: 'implement_audit',
+        stage: 'implement',
+        closeoutApproved: false,
+        closeoutEnvelope: expect.objectContaining({
+          resultCode: 'blocked',
+          rerunDecision: 'rerun_required',
+        }),
+      });
+      const projectContext = JSON.parse(
+        readFileSync(path.join(root, '_bmad-output', 'runtime', 'context', 'project.json'), 'utf8')
+      );
+      expect(projectContext.latestReviewerCloseout).toMatchObject({
+        closeoutApproved: false,
+        closeoutEnvelope: expect.objectContaining({
+          resultCode: 'blocked',
+          packetExecutionClosureStatus: 'retry_pending',
+        }),
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps score write failures non-blocking while surfacing closeout evidence', async () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'auditor-host-score-failure-'));
+    try {
+      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+
+      const artifactDocPath = path.join(root, 'specs', 'demo', 'implement.md');
+      const reportPath = path.join(root, 'specs', 'demo', 'implement.audit.md');
+      mkdirSync(path.dirname(reportPath), { recursive: true });
+      writeFileSync(
+        reportPath,
+        [
+          'status: PASS',
+          `reportPath: ${reportPath.replace(/\\/g, '/')}`,
+          'iteration_count: 0',
+          'required_fixes_count: 0',
+          'score_trigger_present: true',
+          `artifactDocPath: ${artifactDocPath.replace(/\\/g, '/')}`,
+          'converged: true',
+        ].join('\n'),
+        'utf8'
+      );
+
+      const result = await runAuditorHost(
+        {
+          projectRoot: root,
+          reportPath,
+          stage: 'implement',
+          artifactPath: artifactDocPath,
+        },
+        {
+          scoreCommand: vi.fn().mockRejectedValue(new Error('score write boom')),
+          executeAuditorScript: vi.fn(),
+        }
+      );
+
+      expect(result.status).toBe('PASS');
+      expect(result.scoreError).toContain('score write boom');
+      expect(result.closeoutEnvelope).toMatchObject({
+        resultCode: 'approved',
+        rerunDecision: 'none',
+        scoringFailureMode: 'non_blocking_failure',
+        packetExecutionClosureStatus: 'gate_passed',
+      });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

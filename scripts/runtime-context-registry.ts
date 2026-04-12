@@ -3,6 +3,33 @@ import * as path from 'node:path';
 import * as yaml from 'js-yaml';
 import { parseBmadAuditResult } from './parse-bmad-audit-result';
 
+export interface ReviewerLatestCloseoutRecord {
+  updatedAt: string;
+  runner: 'runAuditorHost';
+  profile: string;
+  stage: string;
+  artifactPath: string;
+  reportPath: string;
+  auditStatus: 'PASS' | 'FAIL' | 'UNKNOWN';
+  closeoutApproved: boolean;
+  governanceClosure: {
+    implementationReadinessStatusRequired: boolean;
+    implementationReadinessGateName: string;
+    gatesLoopRequired: boolean;
+    rerunGatesRequired: boolean;
+    packetExecutionClosureRequired: boolean;
+  };
+  closeoutEnvelope: {
+    resultCode: string;
+    requiredFixes: string[];
+    requiredFixesDetail: Array<{ id: string; summary: string; severity: string }>;
+    rerunDecision: string;
+    scoringFailureMode: string;
+    packetExecutionClosureStatus: string;
+  };
+  scoreError?: string;
+}
+
 export interface RuntimeContextRegistry {
   version: number;
   projectRoot: string;
@@ -46,6 +73,7 @@ export interface RuntimeContextRegistry {
       }
     >;
   };
+  latestReviewerCloseout: ReviewerLatestCloseoutRecord | null;
   activeScope: {
     scopeType: 'project' | 'epic' | 'story' | 'run';
     epicId?: string;
@@ -85,6 +113,7 @@ export function defaultRuntimeContextRegistry(root: string): RuntimeContextRegis
       bugfix: {},
       standalone_tasks: {},
     },
+    latestReviewerCloseout: null,
     activeScope: {
       scopeType: 'project',
       resolvedContextPath: path.join('_bmad-output', 'runtime', 'context', 'project.json'),
@@ -127,6 +156,7 @@ export function readRuntimeContextRegistry(root: string): RuntimeContextRegistry
     parsed.auditIndex.bugfix = parsed.auditIndex.bugfix ?? {};
     parsed.auditIndex.standalone_tasks = parsed.auditIndex.standalone_tasks ?? {};
   }
+  parsed.latestReviewerCloseout = parsed.latestReviewerCloseout ?? null;
   return parsed;
 }
 
@@ -395,5 +425,62 @@ export function syncAuditIndexFromAllReports(root: string): RuntimeContextRegist
   for (const reportPath of listStructuredAuditReports(root)) {
     registry = syncAuditIndexFromReport(root, reportPath);
   }
+  return registry;
+}
+
+function writeJsonWithFsync(file: string, payload: unknown): void {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const body = JSON.stringify(payload, null, 2) + '\n';
+  const tmp = `${file}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, body, 'utf8');
+  let fd = fs.openSync(tmp, 'r+');
+  try {
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+  fs.renameSync(tmp, file);
+  fd = fs.openSync(file, 'r+');
+  try {
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
+function mergeLatestReviewerCloseoutIntoContextFile(
+  contextPath: string,
+  closeout: ReviewerLatestCloseoutRecord
+): void {
+  if (!fs.existsSync(contextPath)) {
+    return;
+  }
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(fs.readFileSync(contextPath, 'utf8')) as Record<string, unknown>;
+  } catch {
+    return;
+  }
+
+  parsed.latestReviewerCloseout = closeout;
+  parsed.updatedAt = new Date().toISOString();
+  writeJsonWithFsync(contextPath, parsed);
+}
+
+export function recordLatestReviewerCloseout(
+  root: string,
+  closeout: ReviewerLatestCloseoutRecord
+): RuntimeContextRegistry {
+  const registry = readRegistryOrDefault(root);
+  registry.latestReviewerCloseout = closeout;
+  registry.updatedAt = new Date().toISOString();
+  writeRuntimeContextRegistry(root, registry);
+
+  const scope = resolveActiveScope(registry, registry.activeScope);
+  const resolvedContextPath = path.isAbsolute(scope.resolvedContextPath ?? '')
+    ? (scope.resolvedContextPath as string)
+    : path.resolve(root, resolveContextPathFromActiveScope(registry, scope));
+  mergeLatestReviewerCloseoutIntoContextFile(resolvedContextPath, closeout);
   return registry;
 }

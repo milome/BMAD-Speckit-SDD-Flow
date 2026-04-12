@@ -1,9 +1,13 @@
 <!-- BLOCK_LABEL_POLICY=B -->
+
 ---
 name: bmad-bug-assistant
 description: |
   BMAD Bug Assistant: Follow the flow Root Cause Analysis → BUGFIX document → audit → task-list supplement → implementation → post-implementation audit for end-to-end bug repair. When the main agent initiates any subtask, the master agent must copy the entire "complete prompt template" of this stage in the skill and fill in the placeholders before passing it in. It is prohibited to omit, summarize or rewrite the prompt words on its own; the master agent is prohibited from directly modifying the production code, and the implementation must be through the mcp_task subagent. Use party-mode or mcp_task generalPurpose to conduct **at least 100 rounds** of multi-role debate (BUGFIX produces the final plan and §7 task list, which belongs to the party-mode step-02 "Generate final plan and final task list" scenario), and then end after meeting the convergence conditions (consensus + no new gaps in the past 2-3 rounds); audit priority code-reviewer, roll back mcp_task. Follow ralph-method, TDD traffic light, speckit-workflow. Applicable scenarios: user-reported bugs, root cause analysis, generating or updating BUGFIX docs, supplementing the §7 task list, implementing BUGFIX. Deliverables and subtask prompts remain in Chinese per workflow rules.
 ---
+
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout terminology: in this document, a stage is considered complete only when `runAuditorHost` returns `closeout approved`. An audit report `PASS` only means the host close-out may start; `PASS` alone must not be treated as completion, admission, or release.
 
 # BMAD Bug Assistant
 
@@ -545,3 +549,5 @@ Main Agent: Execute Phase 3 - Copy the entire section of "Stage 3 Task List Supp
 User: "Implement fix as per BUGFIX documentation."
 
 Main Agent: Execute Phase 4 - Copy the entire "Phase 4 Implementation Detailed Prompt Words", replace only the BUGFIX document path and project root directory, and initiate mcp_task; after the implementation is completed, copy the entire "Phase 4 Post-implementation Audit Complete Prompt Template" and initiate the audit subtask; if the audit conclusion is failed, you must entrust the sub-agent to modify according to the modification suggestions and initiate the audit again until the conclusion is "complete coverage, verification passed." Direct modification of production code is prohibited.
+
+
