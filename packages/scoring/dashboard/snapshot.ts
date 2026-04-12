@@ -37,6 +37,36 @@ export function renderDashboardSnapshotMarkdown(
   if (snapshot.runtime_context.scope?.resolved_context_path) {
     lines.push(`- Context Path: ${snapshot.runtime_context.scope.resolved_context_path}`);
   }
+  if (snapshot.runtime_context.reviewer_contract) {
+    lines.push('');
+    lines.push('## Reviewer Projection');
+    lines.push('');
+    lines.push(`- Reviewer Identity: ${snapshot.runtime_context.reviewer_contract.reviewerIdentity}`);
+    lines.push(`- Reviewer Registry: ${snapshot.runtime_context.reviewer_contract.registryVersion}`);
+    lines.push(
+      `- Active Reviewer Consumer: ${
+        snapshot.runtime_context.reviewer_contract.activeAuditConsumer
+          ? `${snapshot.runtime_context.reviewer_contract.activeAuditConsumer.entryStage} -> ${snapshot.runtime_context.reviewer_contract.activeAuditConsumer.profile}`
+          : 'N/A'
+      }`
+    );
+    lines.push(`- Reviewer Closeout: ${snapshot.runtime_context.reviewer_contract.closeoutRunner}`);
+    const reviewerRoute = snapshot.execution_state.reviewer_route_explainability?.[0] ?? null;
+    lines.push(
+      `- Cursor Route: ${
+        reviewerRoute
+          ? `${reviewerRoute.hosts.cursor.preferredRoute.tool}/${reviewerRoute.hosts.cursor.preferredRoute.subtypeOrExecutor}`
+          : 'N/A'
+      }`
+    );
+    lines.push(
+      `- Claude Route: ${
+        reviewerRoute
+          ? `${reviewerRoute.hosts.claude.preferredRoute.tool}/${reviewerRoute.hosts.claude.preferredRoute.subtypeOrExecutor}`
+          : 'N/A'
+      }`
+    );
+  }
   lines.push('');
   lines.push('## Stage Timeline');
   lines.push('');

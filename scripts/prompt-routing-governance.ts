@@ -17,6 +17,8 @@ import {
   filterModelGovernanceHintCandidate,
   toPromptRoutingHintsCompat,
 } from './model-governance-policy-filter';
+import { buildReviewerRouteExplainability } from './reviewer-registry';
+import type { ReviewerRouteExplainability } from './reviewer-registry';
 import { SKILL_SEMANTIC_FEATURES_CONFIG } from './skill-semantic-features-config';
 
 export type PromptHintApplicationTarget =
@@ -750,6 +752,10 @@ function buildExecutionIntentCandidate(input: {
   });
   const semanticFeatures = skillAvailability.semanticSkillFeatures;
   const semanticTopN = skillAvailability.semanticFeatureTopN;
+  const reviewerRouteExplainability = buildPromptReviewerRouteExplainability(
+    requestedSkillChain,
+    skillAvailability.skillMatchReasons
+  );
   const semanticStage = semanticTopN.stageHints[0]?.value;
   const semanticAction = semanticTopN.actionHints[0]?.value;
   const semanticInteractionMode = semanticTopN.interactionHints[0]?.value as
@@ -774,6 +780,7 @@ function buildExecutionIntentCandidate(input: {
     skillMatchReasons: skillAvailability.skillMatchReasons,
     semanticSkillFeatures: semanticFeatures,
     semanticFeatureTopN: semanticTopN,
+    ...(reviewerRouteExplainability ? { reviewerRouteExplainability } : {}),
     skillAvailabilityMode:
       skillAvailability.skillAvailabilityMode === 'not-provided'
         ? 'not-provided'
@@ -852,6 +859,9 @@ function buildExecutionPlanDecision(
     skillMatchReasons: skillAvailability.skillMatchReasons,
     semanticSkillFeatures: candidate.semanticSkillFeatures,
     semanticFeatureTopN: candidate.semanticFeatureTopN,
+    ...(candidate.reviewerRouteExplainability
+      ? { reviewerRouteExplainability: candidate.reviewerRouteExplainability }
+      : {}),
     skillAvailabilityMode: skillAvailability.skillAvailabilityMode,
     interactionMode: candidate.interactionMode,
     researchPolicy: candidate.researchPolicy,
@@ -875,6 +885,28 @@ function buildExecutionPlanDecision(
   };
   assertValidExecutionPlanDecision(decision);
   return decision;
+}
+
+function buildPromptReviewerRouteExplainability(
+  candidateSkillChain: string[],
+  skillMatchReasons: ExecutionSkillMatchReason[]
+): ReviewerRouteExplainability[] | undefined {
+  if (!candidateSkillChain.includes('code-reviewer')) {
+    return undefined;
+  }
+
+  const reviewerSkillMatch = skillMatchReasons.find(
+    (reason) => normalizeSkillId(reason.requestedSkill) === 'code-reviewer'
+  );
+
+  return [
+    buildReviewerRouteExplainability({
+      requestedSkillId: 'code-reviewer',
+      ...(reviewerSkillMatch?.matchedSkillId
+        ? { matchedSkillId: reviewerSkillMatch.matchedSkillId }
+        : {}),
+    }),
+  ];
 }
 
 function hasExplicitConstraint(hints: PromptRoutingHints): boolean {

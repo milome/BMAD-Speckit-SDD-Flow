@@ -284,6 +284,12 @@ describe('governance runtime worker', () => {
           '- Available Skills: speckit-workflow, code-reviewer',
           '- Matched Available Skills: speckit-workflow, code-reviewer',
           '- Missing Skills: (none)',
+          '- Reviewer Projection: code-reviewer => bmad_code_reviewer [registry=reviewer_registry_v1; closeout=runAuditorHost; active=plan/plan_audit]',
+        ])
+      );
+      expect(currentRun.at(-1)?.result?.governancePresentation?.combinedLines).toEqual(
+        expect.arrayContaining([
+          '- Reviewer Projection: code-reviewer => bmad_code_reviewer [registry=reviewer_registry_v1; closeout=runAuditorHost; active=plan/plan_audit]',
         ])
       );
       expect(loopStateRaw.attemptCount).toBe(2);
@@ -467,6 +473,12 @@ describe('governance runtime worker', () => {
           '## Governance Structured Metadata',
           '- Routing Mode: targeted',
           '- Executor Route: journey-contract-remediation',
+          '- Reviewer Projection: code-reviewer => bmad_code_reviewer [registry=reviewer_registry_v1; closeout=runAuditorHost; active=plan/plan_audit]',
+        ])
+      );
+      expect(currentRun.at(-1)?.result?.governancePresentation?.combinedLines).toEqual(
+        expect.arrayContaining([
+          '- Reviewer Projection: code-reviewer => bmad_code_reviewer [registry=reviewer_registry_v1; closeout=runAuditorHost; active=plan/plan_audit]',
         ])
       );
       expect(currentRun.at(-1)?.result?.governancePresentation?.rawEventLines).toEqual(

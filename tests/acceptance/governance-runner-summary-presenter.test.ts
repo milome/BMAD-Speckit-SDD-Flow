@@ -126,6 +126,35 @@ describe('governance runner summary presenter', () => {
             { value: 'minimal-patch', score: 10005, provenanceSkillIds: ['speckit-workflow'] },
           ],
         },
+        reviewerRouteExplainability: [
+          {
+            requestedSkillId: 'code-reviewer',
+            matchedSkillId: 'code-reviewer',
+            reviewerIdentity: 'bmad_code_reviewer',
+            reviewerDisplayName: 'code-reviewer',
+            registryVersion: 'reviewer_registry_v1',
+            closeoutRunner: 'runAuditorHost',
+            supportedProfiles: ['story_audit', 'implement_audit'],
+            hosts: {
+              cursor: {
+                preferredRoute: { tool: 'cursor-task', subtypeOrExecutor: 'code-reviewer' },
+                fallbackRoute: { tool: 'mcp_task', subtypeOrExecutor: 'generalPurpose' },
+              },
+              claude: {
+                preferredRoute: { tool: 'Agent', subtypeOrExecutor: 'code-reviewer' },
+                fallbackRoute: { tool: 'Agent', subtypeOrExecutor: 'general-purpose' },
+              },
+            },
+            activeAuditConsumer: {
+              entryStage: 'implement',
+              profile: 'implement_audit',
+              closeoutStage: 'implement',
+              auditorScript: 'auditor-implement',
+              scoreStage: 'implement',
+              triggerStage: 'speckit_5_2',
+            },
+          },
+        ],
         skillAvailabilityMode: 'execution-filtered',
         interactionMode: 'implement-first',
         researchPolicy: 'forbidden',
@@ -185,6 +214,7 @@ describe('governance runner summary presenter', () => {
       '- Execution Skill Chain: provider-recommended-skill, speckit-workflow',
       '- Semantic Skill Features: speckit-workflow [stage=architecture; action=patch; interaction=implement-first; research=forbidden; delegation=ask-me-first; constraints=minimal-patch]',
       '- Semantic Feature Top-N: stageHints=architecture@10004<-speckit-workflow || actionHints=patch@10004<-speckit-workflow || interactionHints=implement-first@8003<-speckit-workflow || researchPolicyHints=forbidden@10005<-speckit-workflow || delegationHints=ask-me-first@10004<-speckit-workflow || constraintHints=minimal-patch@10005<-speckit-workflow',
+      '- Reviewer Projection: code-reviewer => bmad_code_reviewer [registry=reviewer_registry_v1; closeout=runAuditorHost; active=implement/implement_audit]',
       '- Execution Subagent Roles: provider-reviewer',
       '- Governance Constraints: (none)',
       '- Blocked By Governance: (none)',

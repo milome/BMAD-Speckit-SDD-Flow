@@ -171,6 +171,42 @@ function buildProviderRecommendationItemsValue(recommendationItems) {
 }
 
 /**
+ * @param {unknown} reviewerRouteExplainability
+ * @returns {string}
+ */
+function buildReviewerProjectionValue(reviewerRouteExplainability) {
+  if (!Array.isArray(reviewerRouteExplainability) || reviewerRouteExplainability.length === 0) {
+    return '(none)';
+  }
+
+  return reviewerRouteExplainability
+    .map((item) => {
+      if (!item || typeof item !== 'object') {
+        return null;
+      }
+      const record = /** @type {Record<string, unknown>} */ (item);
+      const requestedSkillId =
+        typeof record.requestedSkillId === 'string' ? record.requestedSkillId : '(unknown)';
+      const reviewerIdentity =
+        typeof record.reviewerIdentity === 'string' ? record.reviewerIdentity : '(unknown)';
+      const registryVersion =
+        typeof record.registryVersion === 'string' ? record.registryVersion : '(unknown)';
+      const closeoutRunner =
+        typeof record.closeoutRunner === 'string' ? record.closeoutRunner : '(unknown)';
+      const activeAuditConsumer =
+        record.activeAuditConsumer && typeof record.activeAuditConsumer === 'object'
+          ? /** @type {Record<string, unknown>} */ (record.activeAuditConsumer)
+          : null;
+      const activeConsumerText = activeAuditConsumer
+        ? `${typeof activeAuditConsumer.entryStage === 'string' ? activeAuditConsumer.entryStage : '(none)'}/${typeof activeAuditConsumer.profile === 'string' ? activeAuditConsumer.profile : '(none)'}`
+        : '(none)';
+      return `${requestedSkillId} => ${reviewerIdentity} [registry=${registryVersion}; closeout=${closeoutRunner}; active=${activeConsumerText}]`;
+    })
+    .filter(Boolean)
+    .join(' || ');
+}
+
+/**
  * @param {GovernanceExecutionResult | null | undefined} [input]
  * @returns {string[]}
  */
@@ -312,6 +348,10 @@ function buildGovernanceStructuredMetadataSectionLines(input = {}) {
     `- Execution Skill Chain: ${executionSkillChain.join(', ') || '(none)'}`,
     `- Semantic Skill Features: ${buildSemanticSkillFeaturesValue(semanticSkillFeatures)}`,
     `- Semantic Feature Top-N: ${buildSemanticFeatureTopNValue(semanticFeatureTopN)}`,
+    `- Reviewer Projection: ${buildReviewerProjectionValue(
+      executionPlanDecision.reviewerRouteExplainability ||
+        executionIntentCandidate.reviewerRouteExplainability
+    )}`,
     `- Execution Subagent Roles: ${executionSubagentRoles.join(', ') || '(none)'}`,
     `- Governance Constraints: ${governanceConstraints.join(', ') || '(none)'}`,
     `- Blocked By Governance: ${governanceBlockedBy.join(', ') || '(none)'}`,

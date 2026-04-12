@@ -421,5 +421,15 @@ describe('governance remediation artifact entrypoint', () => {
     expect(result.markdown).toContain(
       '- Subagent Roles: provider-reviewer, critical-auditor'
     );
+    expect(result.markdown).toContain('- Reviewer Route Explainability:');
+    expect(result.markdown).toContain(
+      '  - code-reviewer => identity=bmad_code_reviewer; registry=reviewer_registry_v1; closeout=runAuditorHost'
+    );
+    expect(result.markdown).toContain(
+      '    - cursor preferred: cursor-task/code-reviewer | fallback: mcp_task/generalPurpose'
+    );
+    expect(result.markdown).toContain(
+      '    - claude preferred: Agent/code-reviewer | fallback: Agent/general-purpose'
+    );
   });
 });

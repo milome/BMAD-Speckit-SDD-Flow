@@ -165,6 +165,73 @@
         "executionRecordId": { "type": ["string", "null"] }
       }
     },
+    "reviewerContractProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "reviewerIdentity",
+        "reviewerDisplayName",
+        "facilitatorIdentity",
+        "registryVersion",
+        "schemaVersions",
+        "closeoutRunner",
+        "supportedProfiles",
+        "supportedAuditEntryStages",
+        "activeAuditConsumer"
+      ],
+      "properties": {
+        "version": { "type": "string", "const": "reviewer_contract_projection_v1" },
+        "reviewerIdentity": { "type": "string", "const": "bmad_code_reviewer" },
+        "reviewerDisplayName": { "type": "string", "const": "code-reviewer" },
+        "facilitatorIdentity": { "type": "string", "const": "party_mode_facilitator" },
+        "registryVersion": { "type": "string", "const": "reviewer_registry_v1" },
+        "schemaVersions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["input", "output", "handoff", "closeout"],
+          "properties": {
+            "input": { "type": "string", "const": "review_input_v1" },
+            "output": { "type": "string", "const": "review_output_v1" },
+            "handoff": { "type": "string", "const": "review_handoff_v1" },
+            "closeout": { "type": "string", "const": "review_host_closeout_v1" }
+          }
+        },
+        "closeoutRunner": { "type": "string", "const": "runAuditorHost" },
+        "supportedProfiles": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "supportedAuditEntryStages": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "activeAuditConsumer": {
+          "anyOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "entryStage",
+                "profile",
+                "closeoutStage",
+                "auditorScript",
+                "scoreStage"
+              ],
+              "properties": {
+                "entryStage": { "type": "string" },
+                "profile": { "type": "string" },
+                "closeoutStage": { "type": "string" },
+                "auditorScript": { "type": "string" },
+                "scoreStage": { "type": "string" },
+                "triggerStage": { "type": "string" }
+              }
+            }
+          ]
+        }
+      }
+    },
     "successPolicy": {
       "type": "object",
       "additionalProperties": false,
@@ -188,6 +255,7 @@
         "implementationReadinessStatus",
         "implementationEntryRecommended",
         "helpRouting",
+        "reviewerContract",
         "identity",
         "control",
         "language"
@@ -237,6 +305,7 @@
         },
         "implementationEntryRecommended": { "type": "boolean" },
         "helpRouting": { "$ref": "#/$defs/helpRouting" },
+        "reviewerContract": { "$ref": "#/$defs/reviewerContractProjection" },
         "identity": {
           "type": "object",
           "required": ["flow", "stage"],

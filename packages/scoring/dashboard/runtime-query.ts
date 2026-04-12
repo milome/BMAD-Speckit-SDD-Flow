@@ -21,6 +21,13 @@ import { loadAndDedupeRecords } from '../query/loader';
 import type { RunScoreRecord } from '../writer/types';
 import { readRuntimeEvents } from '../runtime/event-store';
 import { buildRunProjection } from '../runtime/projection';
+import {
+  buildReviewerContractProjection,
+  buildReviewerRouteExplainability,
+  mapFlowStageToReviewerAuditEntryStage,
+  type ReviewerContractProjection,
+  type ReviewerRouteExplainability,
+} from './reviewer-projection';
 import type {
   RuntimeEvent,
   RuntimeRunProjection,
@@ -87,6 +94,7 @@ export interface DashboardRuntimeContextPanel {
   flow: string | null;
   scope: RuntimeScopeRef | null;
   last_event_at: string | null;
+  reviewer_contract?: ReviewerContractProjection | null;
   work_item?: {
     work_item_id: string;
     work_item_type: DashboardWorkItemType;
@@ -281,6 +289,7 @@ export interface DashboardExecutionStateSummary {
   artifact_path: string | null;
   packet_paths: Record<string, string>;
   last_dispatch_error: string | null;
+  reviewer_route_explainability?: ReviewerRouteExplainability[] | null;
 }
 
 function normalizeRedactionPreviewStatus(
@@ -1080,6 +1089,10 @@ function buildSyntheticRuntimeContext(
       flow: null,
       scope: null,
       last_event_at: null,
+      reviewer_contract: buildDashboardReviewerProjection({
+        flow: null,
+        stage: null,
+      }).reviewerContract,
     };
   }
 
@@ -1091,6 +1104,10 @@ function buildSyntheticRuntimeContext(
     flow: 'story',
     scope: null,
     last_event_at: latest.timestamp,
+    reviewer_contract: buildDashboardReviewerProjection({
+      flow: 'story',
+      stage: latest.stage,
+    }).reviewerContract,
   };
 }
 
@@ -1299,10 +1316,32 @@ function executionRecordMatchesWorkItem(
   return false;
 }
 
+function buildDashboardReviewerProjection(input: {
+  flow: string | null | undefined;
+  stage: string | null | undefined;
+}): {
+  reviewerContract: ReviewerContractProjection;
+  reviewerRouteExplainability: ReviewerRouteExplainability[] | null;
+} {
+  const auditEntryStage = mapFlowStageToReviewerAuditEntryStage(input.flow, input.stage);
+  const reviewerContract = buildReviewerContractProjection({ auditEntryStage });
+  return {
+    reviewerContract,
+    reviewerRouteExplainability: auditEntryStage
+      ? [buildReviewerRouteExplainability({ requestedSkillId: 'code-reviewer', auditEntryStage })]
+      : null,
+  };
+}
+
 function buildExecutionStateSummary(
   root: string,
-  activeWorkItem: DashboardWorkItem | null
+  activeWorkItem: DashboardWorkItem | null,
+  runtimeContext: Pick<DashboardRuntimeContextPanel, 'flow' | 'current_stage'> | null
 ): DashboardExecutionStateSummary {
+  const reviewerProjection = buildDashboardReviewerProjection({
+    flow: runtimeContext?.flow ?? activeWorkItem?.flow ?? null,
+    stage: runtimeContext?.current_stage ?? null,
+  });
   const records = listDashboardExecutionRecords(root);
   if (records.length === 0) {
     return {
@@ -1317,6 +1356,7 @@ function buildExecutionStateSummary(
       artifact_path: null,
       packet_paths: {},
       last_dispatch_error: null,
+      reviewer_route_explainability: reviewerProjection.reviewerRouteExplainability,
     };
   }
 
@@ -1345,6 +1385,7 @@ function buildExecutionStateSummary(
     ),
     last_dispatch_error:
       typeof matched.lastDispatchError === 'string' ? matched.lastDispatchError : null,
+    reviewer_route_explainability: reviewerProjection.reviewerRouteExplainability,
   };
 }
 
@@ -1552,10 +1593,6 @@ export function buildRuntimeDashboardModel(input: {
   });
   const workboard = workboardResolution.payload;
   const activeWorkItem = workboardResolution.active_work_item;
-  const executionState = buildExecutionStateSummary(
-    input.root ?? options.root ?? process.cwd(),
-    activeWorkItem
-  );
   const activeWorkItemScoreRecords = filterScoreRecordsForActiveWorkItem(workboardScoreRecords, activeWorkItem);
   const detailSourceRecords = activeWorkItemScoreRecords.length > 0 ? activeWorkItemScoreRecords : selectedScoreRecords;
   const scoreDetailRecords = buildScoreDetailRecords(detailSourceRecords);
@@ -1570,9 +1607,18 @@ export function buildRuntimeDashboardModel(input: {
         flow: selectedProjection.current_scope?.flow ?? null,
         scope: selectedProjection.current_scope,
         last_event_at: selectedProjection.last_event_at,
+        reviewer_contract: buildDashboardReviewerProjection({
+          flow: selectedProjection.current_scope?.flow ?? null,
+          stage: selectedProjection.current_stage,
+        }).reviewerContract,
         work_item: null,
       }
     : buildSyntheticRuntimeContext(scoreDetailRecords);
+  const executionState = buildExecutionStateSummary(
+    input.root ?? options.root ?? process.cwd(),
+    activeWorkItem,
+    runtimeContext
+  );
 
   const selection: RuntimeDashboardSelection = {
     run_id: selectedRunId,

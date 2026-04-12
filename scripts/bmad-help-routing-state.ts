@@ -30,6 +30,10 @@ import {
 } from './runtime-governance';
 import type { RuntimeConfig, StageName } from './bmad-config';
 import { readRegistryOrDefault, syncAuditIndexFromAllReports } from './runtime-context-registry';
+import {
+  buildReviewerContractProjection,
+  mapFlowStageToReviewerAuditEntryStage,
+} from './reviewer-registry';
 
 const READINESS_REPORT_PATTERN = /^implementation-readiness-report-\d{4}-\d{2}-\d{2}\.md$/i;
 const IMPLEMENTATION_GATE_NAME = 'implementation-readiness' as const;
@@ -96,6 +100,7 @@ export type RuntimePolicyWithBmadHelp = RuntimePolicy & {
   implementationReadinessStatus: ImplementationReadinessStatus;
   implementationEntryRecommended: boolean;
   helpRouting: BmadHelpRoutingState;
+  reviewerContract: ReturnType<typeof buildReviewerContractProjection>;
 };
 
 interface LatestReadinessReportSummary {
@@ -718,5 +723,8 @@ export function resolveBmadHelpRuntimePolicy(
     implementationReadinessStatus: helpRouting.implementationReadinessStatus,
     implementationEntryRecommended: helpRouting.implementationEntryRecommended,
     helpRouting,
+    reviewerContract: buildReviewerContractProjection({
+      auditEntryStage: mapFlowStageToReviewerAuditEntryStage(input.flow, input.stage),
+    }),
   };
 }

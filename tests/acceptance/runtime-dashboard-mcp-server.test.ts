@@ -138,11 +138,17 @@ describe('runtime dashboard mcp server', () => {
             run_id: fixture.runId,
             status: 'running',
             current_stage: 'implement',
+            reviewer_contract: expect.objectContaining({
+              reviewerIdentity: 'bmad_code_reviewer',
+              registryVersion: 'reviewer_registry_v1',
+            }),
           })
         );
         expect(healthResponse.result?.structuredContent).toEqual(
           expect.objectContaining({
             dashboard_url: expect.stringMatching(/^http:\/\/127\.0\.0\.1:/),
+            reviewer_registry_version: 'reviewer_registry_v1',
+            reviewer_identity: 'bmad_code_reviewer',
           })
         );
         expect(consoleSpy.mock.calls.flat().join(' ')).not.toContain(

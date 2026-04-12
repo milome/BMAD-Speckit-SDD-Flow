@@ -5,18 +5,18 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { parseBmadAuditResult } from './parse-bmad-audit-result';
 import { mainAuditorPostActions } from './auditor-post-actions';
+import { getReviewerConsumerByAuditStage } from './reviewer-registry';
+import {
+  buildReviewHostCloseoutV1,
+  buildRunAuditorHostInput,
+  type RunAuditorHostInvocationInput,
+} from './reviewer-schema';
 const { scoreCommand: defaultScoreCommand } =
   require('../packages/bmad-speckit/src/commands/score.js') as {
     scoreCommand: (opts: Record<string, unknown>) => Promise<unknown>;
   };
 
-interface RunAuditorHostInput {
-  projectRoot: string;
-  stage: string;
-  artifactPath: string;
-  reportPath?: string;
-  iterationCount?: string | number;
-}
+type RunAuditorHostInput = RunAuditorHostInvocationInput;
 
 interface RunAuditorHostDeps {
   scoreCommand?: (opts: Record<string, unknown>) => Promise<unknown>;
@@ -47,44 +47,8 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
   return out;
 }
 
-const SCORE_STAGE_MAP: Record<string, string> = {
-  story: 'story',
-  spec: 'spec',
-  plan: 'plan',
-  gaps: 'gaps',
-  tasks: 'tasks',
-  implement: 'implement',
-  bugfix: 'implement',
-  document: 'tasks',
-  standalone_tasks: 'tasks',
-};
-
-const TRIGGER_STAGE_MAP: Record<string, string> = {
-  story: 'bmad_story_stage2',
-  spec: 'speckit_1_2',
-  plan: 'speckit_2_2',
-  gaps: 'speckit_3_2',
-  tasks: 'speckit_4_2',
-  implement: 'speckit_5_2',
-  bugfix: 'speckit_5_2',
-  document: 'speckit_4_2',
-  standalone_tasks: 'speckit_4_2',
-};
-
-const AUDITOR_SCRIPT_MAP: Record<string, string> = {
-  story: 'auditor-document',
-  spec: 'auditor-spec',
-  plan: 'auditor-plan',
-  gaps: 'auditor-gaps',
-  tasks: 'auditor-tasks',
-  implement: 'auditor-implement',
-  bugfix: 'auditor-bugfix',
-  document: 'auditor-tasks-doc',
-  standalone_tasks: 'auditor-tasks-doc',
-};
-
 function inferScoreStage(stage: string, artifactDocPath?: string): string {
-  const mapped = SCORE_STAGE_MAP[stage];
+  const mapped = getReviewerConsumerByAuditStage(stage as RunAuditorHostInput['stage'])?.scoreStage;
   if (mapped) {
     return mapped;
   }
@@ -104,7 +68,7 @@ function inferScoreStage(stage: string, artifactDocPath?: string): string {
 }
 
 function inferTriggerStage(stage: string): string | undefined {
-  return TRIGGER_STAGE_MAP[stage];
+  return getReviewerConsumerByAuditStage(stage as RunAuditorHostInput['stage'])?.triggerStage;
 }
 
 function inferEvent(stage: string): string {
@@ -125,21 +89,30 @@ export async function runAuditorHost(
   input: RunAuditorHostInput,
   deps: RunAuditorHostDeps = {}
 ): Promise<{ status: 'PASS' | 'FAIL' | 'UNKNOWN' }> {
-  const resolvedReportPath =
-    input.reportPath ?? resolveDefaultReportPath(input.stage, input.artifactPath);
+  const consumer = getReviewerConsumerByAuditStage(input.stage);
+  const normalizedInput = buildRunAuditorHostInput(
+    buildReviewHostCloseoutV1({
+      projectRoot: input.projectRoot,
+      profile: consumer.profile,
+      stage: consumer.closeoutStage,
+      artifactPath: input.artifactPath,
+      reportPath:
+        input.reportPath ?? resolveDefaultReportPath(input.stage, input.artifactPath),
+      ...(input.iterationCount !== undefined ? { iterationCount: input.iterationCount } : {}),
+    })
+  );
+  const hostStage = input.stage;
+  const resolvedReportPath = normalizedInput.reportPath!;
 
-  const auditor = AUDITOR_SCRIPT_MAP[input.stage];
-  const auditorScript = auditor
-    ? path.resolve(input.projectRoot, `scripts/${auditor}.ts`)
-    : undefined;
+  const auditorScript = path.resolve(normalizedInput.projectRoot, `scripts/${consumer.auditorScript}.ts`);
 
   if (!fs.existsSync(resolvedReportPath)) {
     if (!auditorScript || !fs.existsSync(auditorScript)) {
       throw new Error(
-        `missing audit report at ${resolvedReportPath} and no local auditor script is available for stage=${input.stage}`
+        `missing audit report at ${resolvedReportPath} and no local auditor script is available for stage=${hostStage}`
       );
     }
-    const iteration = String(input.iterationCount ?? '1');
+    const iteration = String(normalizedInput.iterationCount ?? '1');
     const executeAuditorScript =
       deps.executeAuditorScript ??
       ((args: {
@@ -154,9 +127,9 @@ export async function runAuditorHost(
         });
       });
     executeAuditorScript({
-      projectRoot: input.projectRoot,
+      projectRoot: normalizedInput.projectRoot,
       auditorScript,
-      artifactPath: input.artifactPath,
+      artifactPath: normalizedInput.artifactPath,
       iteration,
     });
   }
@@ -169,22 +142,22 @@ export async function runAuditorHost(
   if (parsed.scoreTriggerPresent && scoreCommand) {
     await scoreCommand({
       reportPath: resolvedReportPath,
-      stage: inferScoreStage(input.stage, parsed.artifactDocPath),
+      stage: inferScoreStage(hostStage, parsed.artifactDocPath),
       artifactDocPath: parsed.artifactDocPath,
-      event: inferEvent(input.stage),
-      triggerStage: inferTriggerStage(input.stage),
-      iterationCount: String(input.iterationCount ?? parsed.iterationCount ?? '0'),
+      event: inferEvent(hostStage),
+      triggerStage: inferTriggerStage(hostStage),
+      iterationCount: String(normalizedInput.iterationCount ?? parsed.iterationCount ?? '0'),
       skipTriggerCheck: true,
     });
   }
 
   mainAuditorPostActions([
     '--projectRoot',
-    input.projectRoot,
+    normalizedInput.projectRoot,
     '--reportPath',
     resolvedReportPath,
     '--stage',
-    input.stage,
+    hostStage,
   ]);
 
   return { status };

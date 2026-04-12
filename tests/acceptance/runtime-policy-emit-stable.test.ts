@@ -55,6 +55,13 @@ describe('emit-runtime-policy vs bmad-help runtime policy facade (stable JSON)',
       expect(code).toBe(0);
       const out = chunks.join('');
       expect(out).toBe(expected);
+      const policy = JSON.parse(out);
+      expect(policy.reviewerContract).toMatchObject({
+        version: 'reviewer_contract_projection_v1',
+        reviewerIdentity: 'bmad_code_reviewer',
+        registryVersion: 'reviewer_registry_v1',
+        closeoutRunner: 'runAuditorHost',
+      });
     } finally {
       process.stdout.write = origWrite;
       try {
@@ -99,6 +106,11 @@ describe('emit-runtime-policy vs bmad-help runtime policy facade (stable JSON)',
     expect(policy.identity.runId).toBe('run-emit-stable');
     expect(policy.helpRouting.recommendedFlow).toBe('story');
     expect(policy.helpRouting.recommendationLabel).toBe('blocked');
+    expect(policy.reviewerContract).toMatchObject({
+      version: 'reviewer_contract_projection_v1',
+      reviewerIdentity: 'bmad_code_reviewer',
+      registryVersion: 'reviewer_registry_v1',
+    });
     fs.rmSync(root, { recursive: true, force: true });
   }, 60000);
 

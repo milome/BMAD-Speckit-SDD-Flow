@@ -1,4 +1,5 @@
 import Ajv from 'ajv';
+import type { ReviewerRouteExplainability } from './reviewer-registry';
 import type {
   PromptRoutingDelegationPreference,
   PromptRoutingResearchPolicy,
@@ -89,6 +90,7 @@ export interface ExecutionIntentCandidate {
   skillMatchReasons: ExecutionSkillMatchReason[];
   semanticSkillFeatures: ExecutionSkillSemanticFeature[];
   semanticFeatureTopN: ExecutionSemanticFeatureTopN;
+  reviewerRouteExplainability?: ReviewerRouteExplainability[];
   skillAvailabilityMode: ExecutionSkillAvailabilityMode;
   interactionMode: ExecutionInteractionMode;
   researchPolicy: PromptRoutingResearchPolicy;
@@ -117,6 +119,7 @@ export interface ExecutionPlanDecision {
   skillMatchReasons: ExecutionSkillMatchReason[];
   semanticSkillFeatures: ExecutionSkillSemanticFeature[];
   semanticFeatureTopN: ExecutionSemanticFeatureTopN;
+  reviewerRouteExplainability?: ReviewerRouteExplainability[];
   skillAvailabilityMode: ExecutionSkillAvailabilityMode;
   interactionMode: ExecutionInteractionMode;
   researchPolicy: PromptRoutingResearchPolicy;
@@ -376,6 +379,113 @@ const executionIntentBaseSchema = {
               score: { type: 'number' },
               provenanceSkillIds: stringArraySchema,
             },
+          },
+        },
+      },
+    },
+    reviewerRouteExplainability: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: [
+          'requestedSkillId',
+          'reviewerIdentity',
+          'reviewerDisplayName',
+          'registryVersion',
+          'closeoutRunner',
+          'supportedProfiles',
+          'hosts',
+          'activeAuditConsumer',
+        ],
+        properties: {
+          requestedSkillId: { type: 'string', const: 'code-reviewer' },
+          matchedSkillId: { type: 'string' },
+          reviewerIdentity: { type: 'string', const: 'bmad_code_reviewer' },
+          reviewerDisplayName: { type: 'string', const: 'code-reviewer' },
+          registryVersion: { type: 'string', const: 'reviewer_registry_v1' },
+          closeoutRunner: { type: 'string', const: 'runAuditorHost' },
+          supportedProfiles: stringArraySchema,
+          hosts: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['cursor', 'claude'],
+            properties: {
+              cursor: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['preferredRoute', 'fallbackRoute'],
+                properties: {
+                  preferredRoute: {
+                    type: 'object',
+                    additionalProperties: false,
+                    required: ['tool', 'subtypeOrExecutor'],
+                    properties: {
+                      tool: { type: 'string' },
+                      subtypeOrExecutor: { type: 'string' },
+                    },
+                  },
+                  fallbackRoute: {
+                    type: 'object',
+                    additionalProperties: false,
+                    required: ['tool', 'subtypeOrExecutor'],
+                    properties: {
+                      tool: { type: 'string' },
+                      subtypeOrExecutor: { type: 'string' },
+                    },
+                  },
+                },
+              },
+              claude: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['preferredRoute', 'fallbackRoute'],
+                properties: {
+                  preferredRoute: {
+                    type: 'object',
+                    additionalProperties: false,
+                    required: ['tool', 'subtypeOrExecutor'],
+                    properties: {
+                      tool: { type: 'string' },
+                      subtypeOrExecutor: { type: 'string' },
+                    },
+                  },
+                  fallbackRoute: {
+                    type: 'object',
+                    additionalProperties: false,
+                    required: ['tool', 'subtypeOrExecutor'],
+                    properties: {
+                      tool: { type: 'string' },
+                      subtypeOrExecutor: { type: 'string' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          activeAuditConsumer: {
+            anyOf: [
+              { type: 'null' },
+              {
+                type: 'object',
+                additionalProperties: false,
+                required: [
+                  'entryStage',
+                  'profile',
+                  'closeoutStage',
+                  'auditorScript',
+                  'scoreStage',
+                ],
+                properties: {
+                  entryStage: { type: 'string' },
+                  profile: { type: 'string' },
+                  closeoutStage: { type: 'string' },
+                  auditorScript: { type: 'string' },
+                  scoreStage: { type: 'string' },
+                  triggerStage: { type: 'string' },
+                },
+              },
+            ],
           },
         },
       },

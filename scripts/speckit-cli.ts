@@ -26,6 +26,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
+import { isReviewerAuditEntryStage } from './reviewer-registry';
 import { runAuditorHost } from './run-auditor-host';
 
 function buildCrossPlatformCommand(command: string): string {
@@ -334,19 +335,7 @@ export async function runAudit(
     runAuditorHostImpl?: typeof runAuditorHost;
   } = {}
 ): Promise<void> {
-  if (
-    ![
-      'story',
-      'spec',
-      'plan',
-      'gaps',
-      'tasks',
-      'implement',
-      'bugfix',
-      'document',
-      'standalone_tasks',
-    ].includes(stage)
-  ) {
+  if (!isReviewerAuditEntryStage(stage)) {
     console.error(`Unknown stage: ${stage}`);
     process.exit(1);
   }

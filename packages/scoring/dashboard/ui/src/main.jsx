@@ -59,6 +59,12 @@ const messages = {
     executionState: '执行状态',
     executionHost: '执行宿主',
     rerunGateStatus: '重跑门状态',
+    reviewerIdentity: 'Reviewer 身份',
+    reviewerConsumer: 'Active Reviewer',
+    reviewerRoutes: 'Reviewer 路由',
+    closeoutRunner: 'Closeout',
+    cursorRoute: 'Cursor 路由',
+    claudeRoute: 'Claude 路由',
     duplicateClusters: '重复簇',
     duplicatedSamples: '重复样本',
     assistantOnlyReady: 'Assistant-only 就绪',
@@ -122,6 +128,12 @@ const messages = {
     executionState: 'Execution State',
     executionHost: 'Execution Host',
     rerunGateStatus: 'Rerun Gate',
+    reviewerIdentity: 'Reviewer Identity',
+    reviewerConsumer: 'Active Reviewer',
+    reviewerRoutes: 'Reviewer Routes',
+    closeoutRunner: 'Closeout',
+    cursorRoute: 'Cursor Route',
+    claudeRoute: 'Claude Route',
     duplicateClusters: 'Duplicate Clusters',
     duplicatedSamples: 'Duplicated Samples',
     assistantOnlyReady: 'Assistant-only Ready',
@@ -188,6 +200,61 @@ function formatSourceScope(scope, msg) {
   if (scope.story_key) parts.push(scope.story_key);
   if (scope.work_item_id) parts.push(scope.work_item_id);
   return parts.join(' · ');
+}
+
+function formatReviewerConsumer(msg, reviewerContract) {
+  const active = reviewerContract?.activeAuditConsumer;
+  if (!active) return msg.unavailable;
+  return `${active.entryStage} → ${active.profile}`;
+}
+
+function formatReviewerRoute(route, msg) {
+  if (!route) return msg.unavailable;
+  return `${route.tool}/${route.subtypeOrExecutor}`;
+}
+
+function ReviewerProjectionCard({ msg, reviewerContract, reviewerRoutes }) {
+  if (!reviewerContract && (!reviewerRoutes || reviewerRoutes.length === 0)) {
+    return <div className="empty-note">{msg.noData}</div>;
+  }
+
+  const activeRoutes = reviewerRoutes?.[0] ?? null;
+
+  return (
+    <section className="panel-card p-4">
+      <div className="mb-3 text-[15px] font-semibold text-primary">{msg.reviewerRoutes}</div>
+      <div className="grid gap-3 md:grid-cols-2">
+        <div className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-3">
+          <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.reviewerIdentity}</div>
+          <div className="text-[14px] font-semibold text-primary">
+            {formatNullable(msg, reviewerContract?.reviewerIdentity)}
+          </div>
+          <div className="mt-2 text-[12px] leading-5 text-secondary">
+            {msg.closeoutRunner}: {formatNullable(msg, reviewerContract?.closeoutRunner)}
+          </div>
+          <div className="mt-2 text-[12px] leading-5 text-secondary">
+            {msg.reviewerConsumer}: {formatReviewerConsumer(msg, reviewerContract)}
+          </div>
+        </div>
+        <div className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-3">
+          <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.cursorRoute}</div>
+          <div className="text-[13px] font-semibold text-primary">
+            {formatReviewerRoute(activeRoutes?.hosts?.cursor?.preferredRoute, msg)}
+          </div>
+          <div className="mt-2 text-[12px] leading-5 text-secondary">
+            fallback: {formatReviewerRoute(activeRoutes?.hosts?.cursor?.fallbackRoute, msg)}
+          </div>
+          <div className="mt-3 mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.claudeRoute}</div>
+          <div className="text-[13px] font-semibold text-primary">
+            {formatReviewerRoute(activeRoutes?.hosts?.claude?.preferredRoute, msg)}
+          </div>
+          <div className="mt-2 text-[12px] leading-5 text-secondary">
+            fallback: {formatReviewerRoute(activeRoutes?.hosts?.claude?.fallbackRoute, msg)}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function Badge({ label, tone }) {
@@ -329,6 +396,8 @@ function App() {
   const dimensions = Object.entries(snapshot?.score_detail?.records?.[0]?.dimension_scores ?? {});
   const sft = snapshot?.sft_summary ?? {};
   const execution = snapshot?.execution_state ?? {};
+  const reviewerContract = snapshot?.runtime_context?.reviewer_contract ?? null;
+  const reviewerRoutes = execution?.reviewer_route_explainability ?? [];
   const timeline = snapshot?.stage_timeline ?? [];
   const isLoading = !snapshot && !error;
 
@@ -486,6 +555,13 @@ function App() {
                     <div className="mt-4">
                       <BundleMetaBlock title={msg.scopedLatestBundle} bundle={sft?.last_bundle} msg={msg} />
                     </div>
+                    <div className="mt-4">
+                      <ReviewerProjectionCard
+                        msg={msg}
+                        reviewerContract={reviewerContract}
+                        reviewerRoutes={reviewerRoutes}
+                      />
+                    </div>
                   </section>
                 </div>
               </div>
@@ -501,6 +577,11 @@ function App() {
                     <MetricCard label={msg.rerunGateStatus} value={formatNullable(msg, execution?.last_rerun_gate_status)} tone="amber" />
                   </div>
                 </section>
+                <ReviewerProjectionCard
+                  msg={msg}
+                  reviewerContract={reviewerContract}
+                  reviewerRoutes={reviewerRoutes}
+                />
                 {timeline.length === 0 ? <div className="empty-note">{msg.noData}</div> : timeline.map((entry) => (
                   <div key={`${entry.stage}-${entry.timestamp ?? entry.started_at ?? 'na'}`} className={`panel-card p-4 ${entry.stage === activeWorkItem?.current_stage ? 'item-active' : ''}`}>
                     <div className="mb-3 flex items-start justify-between gap-3">

@@ -591,6 +591,26 @@ describe('runtime-aware dashboard query', () => {
       expect(snapshot.overview.veto_count).toBe(0);
       expect(snapshot.overview.trend).toBe('升');
       expect(snapshot.runtime_context.scope?.resolved_context_path).toContain('_bmad-output/runtime/context/runs');
+      expect(snapshot.runtime_context.reviewer_contract).toEqual(
+        expect.objectContaining({
+          reviewerIdentity: 'bmad_code_reviewer',
+          registryVersion: 'reviewer_registry_v1',
+          activeAuditConsumer: expect.objectContaining({
+            entryStage: 'implement',
+            profile: 'implement_audit',
+          }),
+        })
+      );
+      expect(snapshot.execution_state.reviewer_route_explainability).toEqual([
+        expect.objectContaining({
+          reviewerIdentity: 'bmad_code_reviewer',
+          closeoutRunner: 'runAuditorHost',
+          activeAuditConsumer: expect.objectContaining({
+            entryStage: 'implement',
+            closeoutStage: 'implement',
+          }),
+        }),
+      ]);
       expect(snapshot.stage_timeline).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ stage: 'brief', status: 'pending' }),

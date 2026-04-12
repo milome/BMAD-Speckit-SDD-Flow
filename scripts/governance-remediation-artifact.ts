@@ -250,6 +250,16 @@ function buildExecutionIntentCandidateLines(
     ),
     `- Skill Chain: ${candidate.skillChain.join(', ') || '(none)'}`,
     `- Subagent Roles: ${candidate.subagentRoles.join(', ') || '(none)'}`,
+    '- Reviewer Route Explainability:',
+    ...(
+      candidate.reviewerRouteExplainability && candidate.reviewerRouteExplainability.length > 0
+        ? candidate.reviewerRouteExplainability.flatMap((item) => [
+            `  - ${item.requestedSkillId} => identity=${item.reviewerIdentity}; registry=${item.registryVersion}; closeout=${item.closeoutRunner}`,
+            `    - cursor preferred: ${item.hosts.cursor.preferredRoute.tool}/${item.hosts.cursor.preferredRoute.subtypeOrExecutor} | fallback: ${item.hosts.cursor.fallbackRoute.tool}/${item.hosts.cursor.fallbackRoute.subtypeOrExecutor}`,
+            `    - claude preferred: ${item.hosts.claude.preferredRoute.tool}/${item.hosts.claude.preferredRoute.subtypeOrExecutor} | fallback: ${item.hosts.claude.fallbackRoute.tool}/${item.hosts.claude.fallbackRoute.subtypeOrExecutor}`,
+          ])
+        : ['  - (none)']
+    ),
     `- Constraints: ${candidate.constraints.join(', ') || '(none)'}`,
     `- Advisory Only: ${candidate.advisoryOnly ? 'yes' : 'no'}`,
   ];
@@ -331,6 +341,16 @@ function buildExecutionPlanDecisionLines(
     ),
     `- Skill Chain: ${decision.skillChain.join(', ') || '(none)'}`,
     `- Subagent Roles: ${decision.subagentRoles.join(', ') || '(none)'}`,
+    '- Reviewer Route Explainability:',
+    ...(
+      decision.reviewerRouteExplainability && decision.reviewerRouteExplainability.length > 0
+        ? decision.reviewerRouteExplainability.flatMap((item) => [
+            `  - ${item.requestedSkillId} => identity=${item.reviewerIdentity}; registry=${item.registryVersion}; closeout=${item.closeoutRunner}`,
+            `    - cursor preferred: ${item.hosts.cursor.preferredRoute.tool}/${item.hosts.cursor.preferredRoute.subtypeOrExecutor} | fallback: ${item.hosts.cursor.fallbackRoute.tool}/${item.hosts.cursor.fallbackRoute.subtypeOrExecutor}`,
+            `    - claude preferred: ${item.hosts.claude.preferredRoute.tool}/${item.hosts.claude.preferredRoute.subtypeOrExecutor} | fallback: ${item.hosts.claude.fallbackRoute.tool}/${item.hosts.claude.fallbackRoute.subtypeOrExecutor}`,
+          ])
+        : ['  - (none)']
+    ),
     `- Governance Constraints: ${decision.governanceConstraints.join(', ') || '(none)'}`,
     `- Blocked By Governance: ${decision.blockedByGovernance.join(', ') || '(none)'}`,
     `- Advisory Only: ${decision.advisoryOnly ? 'yes' : 'no'}`,
