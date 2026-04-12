@@ -5,6 +5,7 @@ description: |
   以 Cursor bmad-bug-assistant 为语义基线，按「根因分析 → BUGFIX 文档 → 审计 → 任务列表补充 → 实施 → 实施后审计」执行 BUG 修复全流程。
   主 Agent 发起任一子任务时**必须**将本 skill 内该阶段的「完整 prompt 模板」整段复制并填入占位符后传入，禁止省略、概括或自行改写提示词；
   主 Agent 禁止直接修改生产代码，实施须通过 Agent tool 子代理（subagent_type: general-purpose）。
+  party-mode 主路径已固定为 Claude specialized subtype：`.claude/agents/party-mode-facilitator.md` / `subagent_type: party-mode-facilitator`。
   使用 party-mode 进行**至少 100 轮**多角色辩论（BUGFIX 产出最终方案与 §7 任务列表，属 party-mode step-02「生成最终方案和最终任务列表」场景），
   满足收敛条件（共识 + 近 2–3 轮无新 gap）再结束；审计优先 `.claude/agents/auditors/auditor-bugfix`，按 Fallback 链降级。
   遵循 ralph-method、TDD 红绿灯、speckit-workflow。
@@ -17,6 +18,7 @@ references:
   - audit-prompts-section5: §5 审计提示词参考；`.claude/skills/bmad-bug-assistant/references/audit-prompts-section5.md`
   - audit-document-iteration-rules: 文档审计迭代规则；`.claude/skills/speckit-workflow/references/audit-document-iteration-rules.md`
   - party-mode: `{project-root}/_bmad/core/workflows/party-mode/`
+  - party-mode-facilitator: Party-mode specialized subtype；`.claude/agents/party-mode-facilitator.md`
   - ralph-method: prd、progress 文件，按 US 顺序执行
   - speckit-workflow: 禁止伪实现、必须运行验收命令、架构忠实
 ---
@@ -206,11 +208,11 @@ Claude 版 `bmad-bug-assistant` 必须满足：
 
 ### Primary Executor
 
-各阶段子任务通过 **Agent tool**（`subagent_type: general-purpose`）调度对应执行体：
+各阶段子任务根据执行体类型调度：
 
 | 阶段 | 执行体 | Agent 文件 |
 |------|--------|-----------|
-| 阶段一/二 根因辩论 | party-mode 多角色 | 主 Agent 在 prompt 中指定角色 |
+| 阶段一/二 根因辩论 | party-mode-facilitator | `.claude/agents/party-mode-facilitator.md` / Agent tool `subagent_type: party-mode-facilitator` |
 | 阶段一/二/三 审计 | auditor-bugfix | `.claude/agents/auditors/auditor-bugfix.md` |
 | 阶段四 实施 | general-purpose dev | Agent tool `subagent_type: general-purpose` |
 | 阶段四 实施后审计 | auditor-implement | `.claude/agents/auditors/auditor-implement.md` |
@@ -318,7 +320,7 @@ artifacts:
 
 **流程**：
 
-1. 根据用户提供的 BUG 问题信息，使用 **party-mode** 引入上述多角色，进行**至少 100 轮**互相质疑和辩论（BUGFIX 属「生成最终方案和最终任务列表」场景），满足收敛条件（根因共识 + 近 2–3 轮无新 gap）再结束；若无法调度 party-mode 子代理，则按 Fallback Strategy 降级，使用 Agent tool（`subagent_type: general-purpose`），在 prompt 中明确要求模拟多角色（Winston 架构师、Mary 分析师、Amelia 开发、Quinn 测试、John 产品经理）辩论并达成根因共识。
+1. 根据用户提供的 BUG 问题信息，使用 **party-mode** 引入上述多角色，进行**至少 100 轮**互相质疑和辩论（BUGFIX 属「生成最终方案和最终任务列表」场景），满足收敛条件（根因共识 + 近 2–3 轮无新 gap）再结束；主路径必须通过 `.claude/agents/party-mode-facilitator.md` 以 Agent tool（`subagent_type: party-mode-facilitator`）调度。若无法调度 specialized facilitator，才按 Fallback Strategy 降级，使用 Agent tool（`subagent_type: general-purpose`），在 prompt 中明确要求模拟多角色（Winston 架构师、Mary 分析师、Amelia 开发、Quinn 测试、John 产品经理）辩论并达成根因共识。
 2. 对根因做深入分析，直至达成根因共识。
 3. 生成 **BUGFIX 文档**，完成 BUG 上报（保存至 `_bmad-output/` 或 `bugfix/`）。
 4. 发起**审计子任务**：
@@ -682,7 +684,7 @@ Amelia 开发 的规范已在上方 5 条中列出，子代理按内联执行即
 
 用户：「多周期图表主图右键看不到「从图表同步 GDS」，请分析根因并生成 BUGFIX 文档。」
 
-主 Agent：执行阶段一——将「阶段一根因辩论完整 prompt 模板」整段复制并填入用户描述后，通过 Agent tool（`subagent_type: general-purpose`）发起子任务；子任务返回后，将「阶段一审计完整 prompt 模板」整段复制后发起审计子任务；迭代至审计通过。
+主 Agent：执行阶段一——将「阶段一根因辩论完整 prompt 模板」整段复制并填入用户描述后，优先通过 Agent tool（`subagent_type: party-mode-facilitator`）发起子任务；仅当 facilitator 不可用时才回退到 `general-purpose`。子任务返回后，将「阶段一审计完整 prompt 模板」整段复制后发起审计子任务；迭代至审计通过。
 
 ### 示例 2：补充信息后更新
 

@@ -2,6 +2,7 @@
 name: party-mode
 description: Orchestrates group discussions between all installed BMAD agents, enabling natural multi-agent conversations
 ---
+<!-- GENERATED FROM: _bmad/core/skills/bmad-party-mode/workflow.md ; DO NOT EDIT HERE -->
 
 # Party Mode Workflow
 
@@ -33,6 +34,7 @@ Load config from `{project-root}/_bmad/core/config.yaml` and resolve:
 - `communication_language`, `document_output_language`, `user_skill_level`
 - `date` as a system-generated value
 - Agent manifest path: `{project-root}/_bmad/_config/agent-manifest.csv`
+- Localized display profile registry: `{project-root}/_bmad/i18n/agent-display-names.yaml`
 
 ### Paths
 
@@ -81,11 +83,11 @@ Welcome {{user_name}}! All BMAD agents are here and ready for a dynamic group di
 
 **Let me introduce our collaborating agents:**
 
-[Load agent roster and display 2-3 most diverse agents as examples. 介绍时必须使用展示名（displayName），与 `_bmad/_config/agent-manifest.csv` 一致。示例：Winston 架构师、Amelia 开发、Mary 分析师、John 产品经理、BMad Master、Quinn 测试、Paige 技术写作、Sally UX、Barry Quick Flow、Bond Agent 构建、Morgan Module 构建、Wendy Workflow 构建、Victor 创新策略、Dr. Quinn 问题解决、Maya 设计思维、Carson 头脑风暴、Sophia 故事讲述、Caravaggio 演示、Murat 测试架构。]
+[Load agent roster and display 2-3 most diverse agents as examples. 介绍时必须优先使用 `_bmad/i18n/agent-display-names.yaml` 解析后的展示名与 title；若 registry 缺项，再回退 `_bmad/_config/agent-manifest.csv`。]
 
 **What would you like to discuss with the team today?**"
 
-> **发言格式（强制）**：整个 party-mode 会话期间，每轮每位角色发言**必须**使用格式 `[Icon Emoji] **[展示名]**: [发言内容]`。Icon 与展示名取自 `_bmad/_config/agent-manifest.csv`，禁止省略。详见 `steps/step-02-discussion-orchestration.md` 的 Response Structure。
+> **发言格式（强制）**：整个 party-mode 会话期间，每轮每位角色发言**必须**使用格式 `[Icon Emoji] **[展示名]**: [发言内容]`。Icon 取自 `_bmad/_config/agent-manifest.csv`，展示名与 title 优先取自 `_bmad/i18n/agent-display-names.yaml`，缺项时回退 manifest。详见 `steps/step-02-discussion-orchestration.md` 的 Response Structure。
 
 ### Agent Selection Intelligence
 
@@ -109,6 +111,22 @@ For each user message or topic:
 Load step: `./steps/step-02-discussion-orchestration.md`
 
 **Decision / root-cause sessions:** When the topic is multi-option choice or root-cause/design debate, apply the min-rounds and convergence rules in step-02 (100 rounds for final-solution+task-list output, 50 rounds for other scenarios; show [E] only after consensus and no new gaps for 2–3 rounds).
+
+### Stage-Aware Gate Profiles
+
+Party mode may also run as a stage-specific challenge harness. The current stage profiles are:
+
+- `brief-gate`
+- `prd-contract-gate`
+- `architecture-contract-gate`
+- `readiness-blocker-gate`
+
+When one of these profiles is active, load supporting guidance from:
+
+- `{project-root}/_bmad/bmm/data/party-mode-stage-profiles.md`
+- `{project-root}/_bmad/bmm/data/stage-specific-exit-criteria.md`
+
+The active profile determines the roster emphasis, blocker vocabulary, and what must be produced before the session is allowed to converge.
 
 > **角色参考**: [批判审计员详细操作指南]({project-root}/_bmad/core/agents/critical-auditor-guide.md) - Party Mode 中的专职挑战者角色，负责质疑假设、发现 gaps、挑战共识
 

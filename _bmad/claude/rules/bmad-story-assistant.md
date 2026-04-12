@@ -48,9 +48,14 @@
 
 ### Claude Code CLI 运行时调用约束
 
-Claude Code 环境下发起子任务时，使用：
+Claude Code 环境下发起子任务时，执行器分两类：
 
 ```text
+party-mode 主路径:
+tool: Agent tool (native subagent)
+subagent_type: party-mode-facilitator
+
+非 specialized 执行体:
 tool: Agent tool (native subagent)
 subagent_type: general-purpose
 ```
@@ -199,6 +204,7 @@ test -f scripts/bmad-config.ts && echo "PASS: bmad-config.ts exists"
 - `--audit-granularity`
 - `BMAD_AUDIT_GRANULARITY`
 - `Agent tool`
+- `party-mode-facilitator`
 - `general-purpose`
 - `full`
 - `story`

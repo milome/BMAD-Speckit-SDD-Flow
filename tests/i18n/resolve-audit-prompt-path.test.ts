@@ -6,6 +6,7 @@ import {
   getAuditPromptLocaleFromRuntimeContext,
   resolveAuditPromptPath,
 } from '../../scripts/i18n/resolve-audit-prompt-path';
+import { resolveLocalizedMarkdownPath } from '../../scripts/i18n/resolve-localized-markdown-path';
 
 describe('resolveAuditPromptPath', () => {
   let tmp: string;
@@ -47,6 +48,28 @@ describe('resolveAuditPromptPath', () => {
     const r = resolveAuditPromptPath(tmp, 'audit-prompts-code.md', 'zh');
     expect(r.resolvedPath).toBe(path.join(tmp, 'audit-prompts-code.md'));
     expect(r.variant).toBe('default');
+    expect(r.usedFallback).toBe(false);
+  });
+
+  it('stays contract-compatible with the generic localized markdown resolver', () => {
+    const genericEn = resolveLocalizedMarkdownPath({
+      basePath: path.join(tmp, 'audit-prompts-code.md'),
+      resolvedMode: 'en',
+    });
+    const auditEn = resolveAuditPromptPath(tmp, 'audit-prompts-code.md', 'en');
+    expect(auditEn.resolvedPath).toBe(genericEn.resolvedPath);
+    expect(auditEn.variant).toBe('en');
+    expect(auditEn.usedFallback).toBe(false);
+
+    fs.unlinkSync(path.join(tmp, 'audit-prompts-code.zh.md'));
+    const genericZh = resolveLocalizedMarkdownPath({
+      basePath: path.join(tmp, 'audit-prompts-code.md'),
+      resolvedMode: 'zh',
+    });
+    const auditZh = resolveAuditPromptPath(tmp, 'audit-prompts-code.md', 'zh');
+    expect(auditZh.resolvedPath).toBe(genericZh.resolvedPath);
+    expect(auditZh.variant).toBe('default');
+    expect(auditZh.usedFallback).toBe(false);
   });
 });
 

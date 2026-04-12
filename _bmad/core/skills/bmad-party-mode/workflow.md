@@ -1,4 +1,6 @@
 ---
+name: party-mode
+description: Orchestrates group discussions between all installed BMAD agents, enabling natural multi-agent conversations
 ---
 
 # Party Mode Workflow
@@ -31,9 +33,11 @@ Load config from `{project-root}/_bmad/core/config.yaml` and resolve:
 - `communication_language`, `document_output_language`, `user_skill_level`
 - `date` as a system-generated value
 - Agent manifest path: `{project-root}/_bmad/_config/agent-manifest.csv`
+- Localized display profile registry: `{project-root}/_bmad/i18n/agent-display-names.yaml`
 
 ### Paths
 
+- `installed_path` = resolved at runtime from skill location
 - `agent_manifest_path` = `{project-root}/_bmad/_config/agent-manifest.csv`
 - `standalone_mode` = `true` (party mode is an interactive workflow)
 
@@ -78,9 +82,11 @@ Welcome {{user_name}}! All BMAD agents are here and ready for a dynamic group di
 
 **Let me introduce our collaborating agents:**
 
-[Load agent roster and display 2-3 most diverse agents as examples]
+[Load agent roster and display 2-3 most diverse agents as examples. 介绍时必须优先使用 `_bmad/i18n/agent-display-names.yaml` 解析后的展示名与 title；若 registry 缺项，再回退 `_bmad/_config/agent-manifest.csv`。]
 
 **What would you like to discuss with the team today?**"
+
+> **发言格式（强制）**：整个 party-mode 会话期间，每轮每位角色发言**必须**使用格式 `[Icon Emoji] **[展示名]**: [发言内容]`。Icon 取自 `_bmad/_config/agent-manifest.csv`，展示名与 title 优先取自 `_bmad/i18n/agent-display-names.yaml`，缺项时回退 manifest。详见 `steps/step-02-discussion-orchestration.md` 的 Response Structure。
 
 ### Agent Selection Intelligence
 
@@ -103,6 +109,26 @@ For each user message or topic:
 
 Load step: `./steps/step-02-discussion-orchestration.md`
 
+**Decision / root-cause sessions:** When the topic is multi-option choice or root-cause/design debate, apply the min-rounds and convergence rules in step-02 (100 rounds for final-solution+task-list output, 50 rounds for other scenarios; show [E] only after consensus and no new gaps for 2–3 rounds).
+
+### Stage-Aware Gate Profiles
+
+Party mode may also run as a stage-specific challenge harness. The current stage profiles are:
+
+- `brief-gate`
+- `prd-contract-gate`
+- `architecture-contract-gate`
+- `readiness-blocker-gate`
+
+When one of these profiles is active, load supporting guidance from:
+
+- `{project-root}/_bmad/bmm/data/party-mode-stage-profiles.md`
+- `{project-root}/_bmad/bmm/data/stage-specific-exit-criteria.md`
+
+The active profile determines the roster emphasis, blocker vocabulary, and what must be produced before the session is allowed to converge.
+
+> **角色参考**: [批判审计员详细操作指南]({project-root}/_bmad/core/agents/critical-auditor-guide.md) - Party Mode 中的专职挑战者角色，负责质疑假设、发现 gaps、挑战共识
+
 ---
 
 ## WORKFLOW STATES
@@ -112,6 +138,7 @@ Load step: `./steps/step-02-discussion-orchestration.md`
 ```yaml
 ---
 stepsCompleted: [1]
+workflowType: 'party-mode'
 user_name: '{{user_name}}'
 date: '{{date}}'
 agents_loaded: true
@@ -130,6 +157,7 @@ exit_triggers: ['*exit', 'goodbye', 'end party', 'quit']
 - Use each agent's documented communication style consistently
 - Reference agent memories and context when relevant
 - Allow natural disagreements and different perspectives
+- In decision/root-cause mode, actively encourage challenging assumptions and surfacing gaps
 - Include personality-driven quirks and occasional humor
 
 ### Conversation Flow
@@ -179,6 +207,7 @@ If conversation naturally concludes:
 **Quality Control:**
 
 - If discussion becomes circular, have bmad-master summarize and redirect
+- Circular = multiple agents repeating same points with no progress. Challenging = challenger insisting on unanswered critique. Only redirect for circular, NOT for valid challenger persistence.
 - Balance fun and productivity based on conversation tone
 - Ensure all agents stay true to their merged personalities
 - Exit gracefully when user indicates completion

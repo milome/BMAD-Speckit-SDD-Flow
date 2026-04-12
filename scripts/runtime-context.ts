@@ -14,6 +14,7 @@ import {
   readRuntimeContextRegistry,
   writeRuntimeContextRegistry,
 } from './runtime-context-registry';
+import { ensureFacilitatorRuntimeDefinition } from './facilitator-runtime-definition';
 
 export const RUNTIME_CONTEXT_VERSION = 1 as const;
 
@@ -270,6 +271,7 @@ export function mergeLanguagePolicyIntoProjectContext(
       updatedAt: new Date().toISOString(),
     };
     writeRuntimeContext(root, next);
+    ensureFacilitatorRuntimeDefinition(root, { mode: languagePolicy.resolvedMode });
   } catch {
     /* ignore corrupt or legacy context */
   }
@@ -339,6 +341,9 @@ export function ensureProjectRuntimeContext(
     ...options,
   });
   writeRuntimeContext(root, payload);
+  if (payload.languagePolicy?.resolvedMode) {
+    ensureFacilitatorRuntimeDefinition(root, { mode: payload.languagePolicy.resolvedMode });
+  }
 
   const sprintStatusPath = path.join(
     root,
@@ -378,6 +383,9 @@ export function ensureStoryRuntimeContext(
     ...options,
   });
   writeRuntimeContext(root, payload);
+  if (payload.languagePolicy?.resolvedMode) {
+    ensureFacilitatorRuntimeDefinition(root, { mode: payload.languagePolicy.resolvedMode });
+  }
 
   const registry = readRegistryOrDefault(root);
   const epicId = options.epicId || payload.epicId || 'epic-unknown';
@@ -417,6 +425,9 @@ export function ensureRunRuntimeContext(
     ...options,
   });
   writeRuntimeContext(root, payload);
+  if (payload.languagePolicy?.resolvedMode) {
+    ensureFacilitatorRuntimeDefinition(root, { mode: payload.languagePolicy.resolvedMode });
+  }
 
   const registry = readRegistryOrDefault(root);
   const epicId = options.epicId || payload.epicId || 'epic-unknown';

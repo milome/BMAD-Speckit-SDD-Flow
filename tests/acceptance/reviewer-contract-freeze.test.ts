@@ -68,6 +68,7 @@ describe('reviewer contract freeze', () => {
     expect(
       existsSync(path.join(process.cwd(), CURSOR_FACILITATOR_DEFINITION_SOURCE_PATH))
     ).toBe(true);
+    expect(existsSync(path.join(process.cwd(), CLAUDE_FACILITATOR_TARGET_PATH))).toBe(true);
   });
 
   it('freezes non-weakenable review constraints and parity evidence requirements', () => {

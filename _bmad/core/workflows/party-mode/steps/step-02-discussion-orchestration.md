@@ -1,3 +1,4 @@
+<!-- GENERATED FROM: _bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md ; DO NOT EDIT HERE -->
 # Step 2: Discussion Orchestration and Multi-Agent Conversation
 
 ## MANDATORY EXECUTION RULES (READ FIRST):
@@ -21,7 +22,6 @@
 - Complete agent roster with merged personalities is available
 - User topic and conversation history guide agent selection
 - Exit triggers: `*exit`, `goodbye`, `end party`, `quit`
-- **i18n audit blocks**: When orchestration references speckit auditors or audit-parseable sections, align narrative with `_bmad/i18n/manifests/` templates; `languagePolicy.resolvedMode` is read from `_bmad-output/runtime/context/project.json` (same contract as `renderTemplate` + `loadManifest`).
 
 ## YOUR TASK:
 
@@ -87,10 +87,11 @@ When the selected agent is the designated challenger, prepend this instruction t
 
 **Response Structure:**
 [For each selected agent]:
-- 必须使用 **展示名（displayName）** 标注发言角色，与 `_bmad/_config/agent-manifest.csv` 一致。
-- 展示名示例：BMad Master、Mary 分析师、John 产品经理、Winston 架构师、Amelia 开发、Bob Scrum Master、Quinn 测试、Paige 技术写作、Sally UX、Barry Quick Flow、Bond Agent 构建、Morgan Module 构建、Wendy Workflow 构建、Victor 创新策略、Dr. Quinn 问题解决、Maya 设计思维、Carson 头脑风暴、Sophia 故事讲述、Caravaggio 演示、Murat 测试架构、批判性审计员。
+- 必须使用 **展示名（displayName）** 标注发言角色。
+- Icon 取自 `_bmad/_config/agent-manifest.csv`
+- 展示名与 title 优先取自 `_bmad/i18n/agent-display-names.yaml`，缺项时回退 `_bmad/_config/agent-manifest.csv`
 
-"[Icon Emoji] **[展示名 displayName]**: [Authentic in-character response]"
+"[Icon Emoji] **[Resolved displayName]**: [Authentic in-character response]"
 
 When a stage profile is active, the facilitator must also maintain these `mandatory outputs` in the round summary:
 - `resolved blockers`
@@ -109,7 +110,7 @@ Enable dynamic agent-to-agent interactions:
 
 **Cross-Talk Patterns:**
 
-- Agents can reference each other by 展示名: "As [Another Agent 展示名] mentioned..."（如「正如 Winston 架构师 所说…」）
+- Agents can reference each other by the same resolved displayName: "As [Another Agent] mentioned..."
 - Building on previous points: "[Another Agent] makes a great point about..."
 - Respectful disagreements: "I see it differently than [Another Agent]..."
 - Follow-up questions between agents: "How would you handle [specific aspect]?"
@@ -129,7 +130,7 @@ Manage different types of questions appropriately:
 When an agent asks the user a specific question:
 
 - End that response round immediately after the question
-- Clearly highlight: **[展示名 displayName] asks: [Their question]**（如 **Amelia 开发 asks: …**）
+- Clearly highlight: **[Resolved displayName] asks: [Their question]**
 - Display: _[Awaiting user response...]_
 - WAIT for user input before continuing
 

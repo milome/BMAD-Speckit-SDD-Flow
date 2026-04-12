@@ -39,6 +39,20 @@ Claude 版 `bmad-story-assistant` 必须满足：
 
 ---
 
+## Party-Mode Specialized Subtype Contract
+
+从本版本开始，Claude 分支中的 party-mode 不再以 `general-purpose` 作为主路径描述。
+
+- **主路径**：`.claude/agents/party-mode-facilitator.md`
+- **正式 subtype**：`subagent_type: party-mode-facilitator`
+- **适用范围**：凡需要多角色辩论、方案收敛、架构/范围取舍、Story 设计分歧澄清的 party-mode 场景
+- **兼容 fallback**：仅当 specialized facilitator 在当前运行时不可用时，才允许退回 `subagent_type: general-purpose` 并内联完整 facilitator contract
+- **非 party-mode 执行体**：`bmad-story-create`、`auditor-*`、`speckit-implement` 等非 specialized 执行体仍可继续使用 `general-purpose`
+
+因此，`general-purpose` 在 Claude Story 流程中仍然存在，但**不再是 party-mode 的推荐主路径**。
+
+---
+
 ## Cursor Canonical Base
 
 以下内容继承自 Cursor `bmad-story-assistant`，属于业务语义基线，Claude 版不得擅自重写其意图：
@@ -410,9 +424,24 @@ subagent_type: general-purpose
 
 主 Agent 使用本 skill 时，必须按以下方式调用执行体：
 
-**重要**：Claude Code CLI 的 `Agent` 工具没有专门的 `subagent_type` 对应 `.claude/agents/*.md` 文件。无论使用内置执行体还是自定义 agent 文件，都使用 `subagent_type: general-purpose`，并通过 `prompt` 参数传入完整的执行指令。
+**重要**：Claude Code CLI 的 `Agent` 工具已进入 specialized subtype 产品化阶段。凡 Stage 1 需要 party-mode 辩论时，必须优先使用 `.claude/agents/party-mode-facilitator.md` 对应的正式 subtype `party-mode-facilitator`；只有非 specialized 执行体才继续使用 `general-purpose`。
 
-1. **直接执行模式**（推荐）：
+1. **party-mode 辩论模式**（推荐，涉及方案分歧/架构取舍/范围澄清时必须优先走此路径）：
+   主 Agent 直接读取 `.claude/agents/party-mode-facilitator.md` 的完整内容，并以 specialized subtype 调用：
+   ```yaml
+   tool: Agent
+   subagent_type: party-mode-facilitator
+   description: "Run Stage 1 Party-Mode debate"
+   prompt: |
+     [读取 .claude/agents/party-mode-facilitator.md 的完整内容]
+
+     议题:
+     - Story Create 前的方案辩论 / 范围澄清 / 架构取舍
+     - 当前 Epic/Story 输入与约束
+     - 产出共识纪要，供后续 bmad-story-create 使用
+   ```
+
+2. **直接执行模式**（非 party-mode，或已拿到 facilitator 共识后继续生成 Story 文档）：
    主 Agent 直接读取本 skill 中 Stage 1 的完整 prompt（含上面的 Subtask Template），整段复制并替换占位符后，使用 `Agent` 工具调用执行体：
    ```yaml
    tool: Agent
@@ -422,8 +451,8 @@ subagent_type: general-purpose
      [本 skill Stage 1 的完整内容，含 Cursor Canonical Base + Subtask Template，所有占位符已替换]
    ```
 
-2. **Agent 文件引用模式**：
-   若使用 `.claude/agents/bmad-story-create.md` 作为执行体，必须先将该文件内容完整读入，然后作为 `prompt` 传入。`subagent_type` 仍然是 `general-purpose`：
+3. **Agent 文件引用模式**：
+   若使用 `.claude/agents/bmad-story-create.md` 作为执行体，必须先将该文件内容完整读入，然后作为 `prompt` 传入。此类非 specialized 执行体的 `subagent_type` 仍然是 `general-purpose`：
    ```yaml
    tool: Agent
    subagent_type: general-purpose
@@ -445,6 +474,7 @@ subagent_type: general-purpose
 **重要**：
 - 不得仅传入执行体文件路径让执行体自己去读，必须将完整 prompt 内容传入
 - 执行体本身不加载 skill，所有指令由主 Agent 通过 prompt 参数传递
+- party-mode 辩论主路径必须优先使用 `party-mode-facilitator`
 - 执行体返回后，主 Agent 必须校验 handoff 输出，并决定下一步路由
 
 ---

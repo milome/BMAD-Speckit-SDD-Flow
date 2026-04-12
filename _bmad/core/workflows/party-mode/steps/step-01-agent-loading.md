@@ -1,3 +1,4 @@
+<!-- GENERATED FROM: _bmad/core/skills/bmad-party-mode/steps/step-01-agent-loading.md ; DO NOT EDIT HERE -->
 # Step 1: Agent Loading and Party Mode Initialization
 
 ## MANDATORY EXECUTION RULES (READ FIRST):
@@ -20,6 +21,7 @@
 ## CONTEXT BOUNDARIES:
 
 - Agent manifest CSV is available at `{project-root}/_bmad/_config/agent-manifest.csv`
+- Localized display profile registry is available at `{project-root}/_bmad/i18n/agent-display-names.yaml`
 - User configuration from config.yaml is loaded and resolved
 - Party mode is standalone interactive workflow
 - All agent data is available for conversation orchestration
@@ -47,8 +49,9 @@ Parse CSV to extract complete agent information for each entry:
 **Agent Data Points:**
 
 - **name** (agent identifier for system calls)
-- **displayName** (agent's persona name for conversations；中文语境下使用 展示名，如 Mary 分析师、Winston 架构师)
-- **title** (formal position and role description)
+- **displayName** (canonical fallback persona name from manifest；中文语境下通常展示为解析后的展示名)
+- **title** (canonical fallback formal position/title)
+- **localized displayName/title** (resolved from `agent-display-names.yaml` first, then manifest fallback)
 - **icon** (visual identifier emoji)
 - **role** (capabilities and expertise summary)
 - **identity** (background and specialization details)
@@ -78,11 +81,11 @@ Welcome {{user_name}}! I'm excited to facilitate an incredible multi-agent discu
 
 **Our Collaborating Agents Include:**
 
-[Display 3-4 diverse agents to showcase variety；使用 展示名 标注，如 Winston 架构师、Amelia 开发、Mary 分析师]:
+[Display 3-4 diverse agents to showcase variety；优先使用 registry 解析后的展示名与 title 标注]:
 
-- [Icon Emoji] **[展示名 displayName]** ([Title]): [Brief role description]
-- [Icon Emoji] **[展示名 displayName]** ([Title]): [Brief role description]
-- [Icon Emoji] **[展示名 displayName]** ([Title]): [Brief role description]
+- [Icon Emoji] **[Resolved displayName]** ([Resolved title]): [Brief role description]
+- [Icon Emoji] **[Resolved displayName]** ([Resolved title]): [Brief role description]
+- [Icon Emoji] **[Resolved displayName]** ([Resolved title]): [Brief role description]
 
 When topic is expected to be decision/root-cause: In the agent introduction, **must include** the designated challenger (批判性审计员, Dr. Quinn, or Victor) and state: "本场为决策/根因讨论，[挑战者展示名] 将担任批判角色，主动质疑假设、发现 gaps，请期待质疑与反对。"
 

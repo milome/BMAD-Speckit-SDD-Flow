@@ -1,3 +1,4 @@
+<!-- GENERATED FROM: _bmad/core/skills/bmad-party-mode/steps/step-03-graceful-exit.md ; DO NOT EDIT HERE -->
 # Step 3: Graceful Exit and Party Mode Conclusion
 
 ## MANDATORY EXECUTION RULES (READ FIRST):

@@ -151,6 +151,31 @@ describe('install to consumer → CLI acceptance', () => {
     }
   }, 90_000);
 
+  it('npm install consumer deploys Claude facilitator specialized subtype via installed init entrypoint', () => {
+    const target = mkdtempSync(join(tmpdir(), 'accept-consumer-claude-facilitator-'));
+    try {
+      writeFileSync(
+        join(target, 'package.json'),
+        JSON.stringify({ name: 'consumer-app', version: '1.0.0', private: true }),
+        'utf8'
+      );
+
+      const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
+      run(`npm install --save-dev "file:${pkgPath}"`, target);
+      run('npx bmad-speckit-init --agent claude-code', target);
+
+      const canonical = join(target, '_bmad', 'claude', 'agents', 'party-mode-facilitator.md');
+      const runtime = join(target, '.claude', 'agents', 'party-mode-facilitator.md');
+
+      expect(existsSync(canonical)).toBe(true);
+      expect(existsSync(runtime)).toBe(true);
+      expect(readFileSync(runtime, 'utf8')).toBe(readFileSync(canonical, 'utf8'));
+      expect(readFileSync(runtime, 'utf8')).toContain('name: party-mode-facilitator');
+    } finally {
+      rmSync(target, { recursive: true, force: true });
+    }
+  }, 90_000);
+
   it('consumer install syncs runtime dashboard auto-start skeleton for Cursor hooks', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-dashboard-host-'));
     try {

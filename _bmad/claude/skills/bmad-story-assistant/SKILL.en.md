@@ -38,6 +38,18 @@ The Claude version of `bmad-story-assistant` must satisfy:
   -commit gate
 - Cursor Canonical Base, Claude Runtime Adapter, and Repo Add-ons must not be mixed into a rewritten version of prompt from unknown sources.
 
+## Party-Mode Specialized Subtype Contract
+
+From this revision onward, Claude-side party-mode is no longer described as a `general-purpose` main path.
+
+- **Primary path**: `.claude/agents/party-mode-facilitator.md`
+- **Formal subtype**: `subagent_type: party-mode-facilitator`
+- **Scope**: any party-mode debate that resolves design trade-offs, architecture decisions, scope ambiguity, or Story planning disagreements
+- **Compatibility fallback**: only when the specialized facilitator is unavailable may the flow fall back to `subagent_type: general-purpose` with the full facilitator contract inlined
+- **Non party-mode executors**: `bmad-story-create`, `auditor-*`, `speckit-implement`, and other non-specialized executors may still use `general-purpose`
+
+So `general-purpose` still exists in the Claude Story flow, but it is **no longer the recommended main path for party-mode**.
+
 ## Deferred Gaps Dev Story Addendum
 
 This distributed English variant must keep the same Deferred Gaps guardrails as the main Chinese contract.
@@ -411,9 +423,23 @@ The Agent tool is called immediately after output.
 
 When the main Agent uses this skill, it must call the execution body in the following way:
 
-**Important**: Claude Code CLI's `Agent` tool does not have a dedicated `subagent_type` corresponding to `.claude/agents/*.md` files. Regardless of whether you use the built-in executor or a custom agent file, use `subagent_type: general-purpose` and pass in the complete execution command through the `prompt` parameter.
+**Important**: Claude Code CLI's `Agent` tool now supports formal specialized subtype routing for this product path. Whenever Stage 1 requires party-mode debate, the main path must use `.claude/agents/party-mode-facilitator.md` with `subagent_type: party-mode-facilitator`. Only non-specialized executors continue to use `general-purpose`.
 
-1. **Direct execution mode** (recommended):
+1. **Party-mode debate mode** (preferred, and mandatory whenever design trade-offs, scope ambiguity, or architecture choices remain open):
+   The main Agent reads `.claude/agents/party-mode-facilitator.md` in full and invokes it as the specialized subtype:
+   ```yaml
+   tool: Agent
+   subagent_type: party-mode-facilitator
+   description: "Run Stage 1 Party-Mode debate"
+   prompt: |
+     [Full contents of .claude/agents/party-mode-facilitator.md]
+
+     Agenda:
+     - debate before Story Create
+     - current Epic/Story inputs and constraints
+     - produce a convergence memo for downstream bmad-story-create
+   ```
+2. **Direct execution mode** (non party-mode, or after the facilitator has already produced convergence output):
    The main Agent directly reads the complete prompt of Stage 1 in this skill (including the Subtask Template above), copies the entire section and replaces the placeholder, and then uses the `Agent` tool to call the executor:
    ```yaml
    tool: Agent
@@ -422,8 +448,8 @@ When the main Agent uses this skill, it must call the execution body in the foll
    prompt: |
      [本 skill Stage 1 的完整内容，含 Cursor Canonical Base + Subtask Template，所有占位符已替换]
    ```
-2. **Agent file reference mode**:
-   If you use `.claude/agents/bmad-story-create.md` as the executable body, you must first read the entire file content and then pass it in as `prompt`. `subagent_type` is still `general-purpose`:
+3. **Agent file reference mode**:
+   If you use `.claude/agents/bmad-story-create.md` as the executable body, you must first read the entire file content and then pass it in as `prompt`. These non-specialized executors still use `general-purpose`:
    ```yaml
    tool: Agent
    subagent_type: general-purpose
@@ -444,6 +470,7 @@ When the main Agent uses this skill, it must call the execution body in the foll
 **Important**:
 - You must not just pass in the executable file path and let the executor read it by itself. You must pass in the complete prompt content.
 - The execution body itself does not load skills, and all instructions are passed by the main Agent through the prompt parameter.
+- Party-mode debate must prefer `party-mode-facilitator` as the main path.
 - After the execution body returns, the main Agent must verify the handoff output and decide the next route
 
 ---

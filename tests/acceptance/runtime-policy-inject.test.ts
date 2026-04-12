@@ -47,6 +47,11 @@ describe('runtime-policy-inject (dual host entry)', () => {
   it('Cursor path: agent_message 请用英文 → systemMessage 含 resolvedMode en', () => {
     const tempRoot = makeEmitReadyRoot();
     try {
+      fs.mkdirSync(path.join(tempRoot, '.cursor', 'agents'), { recursive: true });
+      fs.copyFileSync(
+        path.join(tempRoot, '_bmad', 'cursor', 'agents', 'party-mode-facilitator.md'),
+        path.join(tempRoot, '.cursor', 'agents', 'party-mode-facilitator.md')
+      );
       const inject = path.join(repoRoot, '_bmad/claude/hooks/runtime-policy-inject.cjs');
       const stdin = JSON.stringify({
         cwd: tempRoot,
@@ -66,6 +71,12 @@ describe('runtime-policy-inject (dual host entry)', () => {
       expect(r.status).toBe(0);
       const out = JSON.parse(r.stdout || '{}');
       expect(out.systemMessage).toMatch(/"resolvedMode":\s*"en"/);
+      const runtime = fs.readFileSync(
+        path.join(tempRoot, '.cursor', 'agents', 'party-mode-facilitator.md'),
+        'utf8'
+      );
+      expect(runtime).toContain('RUNTIME-MATERIALIZED facilitator resolvedMode=en');
+      expect(runtime).toContain('_bmad/core/skills/bmad-party-mode/workflow.en.md');
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }
@@ -88,6 +99,46 @@ describe('runtime-policy-inject (dual host entry)', () => {
       expect(r.status).toBe(0);
       const out = JSON.parse(r.stdout || '{}');
       expect(out.systemMessage).toContain('本回合 Runtime Governance（JSON）');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  }, 45000);
+
+  it('Claude path: tool_input.prompt requesting english materializes the claude facilitator runtime target', () => {
+    const tempRoot = makeEmitReadyRoot();
+    try {
+      fs.mkdirSync(path.join(tempRoot, '.claude', 'agents'), { recursive: true });
+      fs.copyFileSync(
+        path.join(tempRoot, '_bmad', 'claude', 'agents', 'party-mode-facilitator.md'),
+        path.join(tempRoot, '.claude', 'agents', 'party-mode-facilitator.md')
+      );
+
+      const inject = path.join(repoRoot, '_bmad/claude/hooks/runtime-policy-inject.cjs');
+      const stdin = JSON.stringify({
+        tool_name: 'Agent',
+        tool_input: {
+          prompt: 'Please answer in English.',
+        },
+      });
+      const r = spawnSync(process.execPath, [inject], {
+        cwd: repoRoot,
+        input: stdin,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          CLAUDE_PROJECT_DIR: tempRoot,
+        },
+      });
+      expect(r.status).toBe(0);
+      const out = JSON.parse(r.stdout || '{}');
+      expect(out.systemMessage).toMatch(/"resolvedMode":\s*"en"/);
+
+      const runtime = fs.readFileSync(
+        path.join(tempRoot, '.claude', 'agents', 'party-mode-facilitator.md'),
+        'utf8'
+      );
+      expect(runtime).toContain('RUNTIME-MATERIALIZED facilitator resolvedMode=en');
+      expect(runtime).toContain('_bmad/core/skills/bmad-party-mode/workflow.en.md');
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }
