@@ -1,102 +1,79 @@
 # Step 3: Graceful Exit and Party Mode Conclusion
 
-## MANDATORY EXECUTION RULES (READ FIRST):
+## Mandatory Execution Rules
 
-- ✅ YOU ARE A PARTY MODE COORDINATOR concluding an engaging session
-- 🎯 PROVIDE SATISFYING AGENT FAREWELLS in authentic character voices
-- 📋 EXPRESS GRATITUDE to user for collaborative participation
-- 🔍 ACKNOWLEDGE SESSION HIGHLIGHTS and key insights gained
-- 💬 MAINTAIN POSITIVE ATMOSPHERE until the very end
-- ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
+- You are concluding an engaging Party Mode session
+- Provide satisfying agent farewells in authentic voice
+- Express gratitude to the user
+- Acknowledge session highlights
+- Keep the atmosphere positive through the end
 
-## EXECUTION PROTOCOLS:
+## Execution Protocols
 
-- 🎯 Generate characteristic agent goodbyes that reflect their personalities
-- ⚠️ Complete workflow exit after farewell sequence
-- 💾 Update frontmatter with final workflow completion
-- 📖 Clean up any active party mode state or temporary data
-- 🚫 FORBIDDEN abrupt exits without proper agent farewells
+- generate characteristic goodbyes
+- complete workflow exit after farewell sequence
+- update frontmatter with completion state
+- clean temporary Party Mode state
+- do not end abruptly
 
-## CONTEXT BOUNDARIES:
+## Context Boundaries
 
-- Party mode session is concluding naturally or via user request
-- Complete agent roster and conversation history are available
-- User has participated in collaborative multi-agent discussion
-- Final workflow completion and state cleanup required
+- the session is ending naturally or by user request
+- full agent roster and conversation history are available
+- final workflow cleanup is required
 
-## YOUR TASK:
+## Your Task
 
-Provide satisfying agent farewells and conclude the party mode session with gratitude and positive closure.
+Conclude the session with gratitude, agent farewells, and clean workflow shutdown.
 
-## GRACEFUL EXIT SEQUENCE:
+## Graceful Exit Sequence
 
 ### 1. Acknowledge Session Conclusion
 
-Begin exit process with warm acknowledgment:
+Start with a warm acknowledgement:
 
-"What an incredible collaborative session! Thank you {{user_name}} for engaging with our BMAD agent team in this dynamic discussion. Your questions and insights brought out the best in our agents and led to some truly valuable perspectives.
+"That was an excellent collaborative session. Thank you {{user_name}} for engaging with the BMAD team. Your questions and input brought out strong perspectives and useful insights.
 
-**Before we wrap up, let a few of our agents say goodbye...**"
+**Before we wrap up, let a few agents say goodbye...**"
 
-### 2. Challenger Final Review (Decision/Root-Cause Mode Only)
+### 2. Challenger Final Review (Decision / Root-Cause Mode Only)
 
-**When party was in decision/root-cause mode:**
-Before agent farewells, ensure Challenger Final Review is in session output. If not already captured in step-02's final round, extract from transcript and format:
-- Status: agree | conditional | reservations
-- Deferred Gaps (if any): [ID] 描述 | 影响 | 建议
-Append to session output. No new agent invocation—format only.
+If this was a decision/root-cause session, ensure the final challenger review is present in session output. If it was not captured in the last round, extract and format it from the transcript:
 
-> **参考**: [批判审计员详细操作指南 - 第六章]({project-root}/_bmad/core/agents/critical-auditor-guide.md#六退出标准与终审) - 了解终审陈述的详细规范和3种格式的使用场景
+- Status: `agree | conditional | reservations`
+- Deferred gaps (if any): `[ID] description | impact | recommendation`
+
+Append it to the session output. Do not invoke new agents for this step.
+
+> **Reference:** [Critical Auditor guide - exit and final review]({project-root}/_bmad/core/agents/critical-auditor-guide.md)
 
 ### 3. Generate Agent Farewells
 
-Select 2-3 agents who were most engaged or representative of the discussion:
-
-**Farewell Selection Criteria:**
-
-- Agents who made significant contributions to the discussion
-- Agents with distinct personalities that provide memorable goodbyes
-- Mix of expertise domains to showcase collaborative diversity
-- Agents who can reference session highlights meaningfully
-
-**Agent Farewell Format:**
+Choose 2-3 agents who contributed most meaningfully or best represent the discussion.
 
 For each selected agent:
 
-"[Icon Emoji] **[Agent Name]**: [Characteristic farewell reflecting their personality, communication style, and role. May reference session highlights, express gratitude, or offer final insights related to their expertise domain.]"
-
-**Example Farewells:**
-
-- **Architect/Winston**: "It's been a pleasure architecting solutions with you today! Remember to build on solid foundations and always consider scalability. Until next time! 🏗️"
-- **Innovator/Creative Agent**: "What an inspiring creative journey! Don't let those innovative ideas fade - nurture them and watch them grow. Keep thinking outside the box! 🎨"
-- **Strategist/Business Agent**: "Excellent strategic collaboration today! The insights we've developed will serve you well. Keep analyzing, keep optimizing, and keep winning! 📈"
+`[Icon Emoji] **[Resolved displayName]**: [Farewell reflecting their personality, style, and role. It may reference session highlights, gratitude, or a final insight.]`
 
 ### 4. Session Highlight Summary
 
-Briefly acknowledge key discussion outcomes:
+Summarize the session briefly:
 
-**Session Recognition:**
-"**Session Highlights:** Today we explored [main topic] through [number] different perspectives, generating valuable insights on [key outcomes]. The collaboration between our [relevant expertise domains] agents created a comprehensive understanding that wouldn't have been possible with any single viewpoint."
+"**Session Highlights:** Today we explored [topic] through [number] distinct perspectives and surfaced key insights on [outcomes]. The combination of [relevant expertise domains] created a stronger result than a single viewpoint could have produced."
 
 ### 5. Final Party Mode Conclusion
 
-End with enthusiastic and appreciative closure:
+Conclude with a positive close:
 
-"🎊 **Party Mode Session Complete!** 🎊
+"**Party Mode Session Complete**
 
-Thank you for bringing our BMAD agents together in this unique collaborative experience. The diverse perspectives, expert insights, and dynamic interactions we've shared demonstrate the power of multi-agent thinking.
+Thank you for bringing the BMAD team together. The discussion showed the value of multi-agent thinking, diverse expertise, and challenge-driven convergence.
 
-**Our agents learned from each other and from you** - that's what makes these collaborative sessions so valuable!
-
-**Ready for your next challenge**? Whether you need more focused discussions with specific agents or want to bring the whole team together again, we're always here to help you tackle complex problems through collaborative intelligence.
-
-**Until next time - keep collaborating, keep innovating, and keep enjoying the power of multi-agent teamwork!** 🚀"
+Whenever you need another deep collaborative discussion, the team will be ready."
 
 ### 6. Complete Workflow Exit
 
-Final workflow completion steps:
-
-**Frontmatter Update:**
+Update frontmatter:
 
 ```yaml
 ---
@@ -110,67 +87,41 @@ workflow_completed: true
 ---
 ```
 
-**State Cleanup:**
+Cleanup:
 
-- Clear any active conversation state
-- Reset agent selection cache
-- Mark party mode workflow as completed
+- clear active Party Mode state
+- reset selection cache
+- mark workflow as completed
 
 ### 7. Exit Workflow
 
-Execute final workflow termination:
+Finish with:
 
-"[PARTY MODE WORKFLOW COMPLETE]
+`[PARTY MODE WORKFLOW COMPLETE]`
 
-Thank you for using BMAD Party Mode for collaborative multi-agent discussions!"
+`Thank you for using BMAD Party Mode.`
 
-## SUCCESS METRICS:
+## Success Metrics
 
-✅ Satisfying agent farewells generated in authentic character voices
-✅ Session highlights and contributions acknowledged meaningfully
-✅ Positive and appreciative closure atmosphere maintained
-✅ Frontmatter properly updated with workflow completion
-✅ All workflow state cleaned up appropriately
-✅ User left with positive impression of collaborative experience
+- satisfying farewells
+- meaningful recognition of contributions
+- positive closure
+- correct frontmatter update
+- clean workflow state after exit
 
-## FAILURE MODES:
+## Failure Modes
 
-❌ Generic or impersonal agent farewells without character consistency
-❌ Missing acknowledgment of session contributions or insights
-❌ Abrupt exit without proper closure or appreciation
-❌ Not updating workflow completion status in frontmatter
-❌ Leaving party mode state active after conclusion
-❌ Negative or dismissive tone during exit process
+- generic farewells
+- missing highlights
+- abrupt exit
+- stale Party Mode state
+- dismissive tone
 
-## EXIT PROTOCOLS:
+## Return Protocol
 
-- Ensure all agents have opportunity to say goodbye appropriately
-- Maintain the positive, collaborative atmosphere established during session
-- Reference specific discussion highlights when possible for personalization
-- Express genuine appreciation for user's participation and engagement
-- Leave user with encouragement for future collaborative sessions
+If this workflow was invoked from a parent workflow:
 
-## RETURN PROTOCOL:
-
-If this workflow was invoked from within a parent workflow:
-
-1. Identify the parent workflow step or instructions file that invoked you
-2. Re-read that file now to restore context
-3. Resume from where the parent workflow directed you to invoke this sub-workflow
-4. Present any menus or options the parent workflow requires after sub-workflow completion
-
-Do not continue conversationally - explicitly return to parent workflow control flow.
-
-## WORKFLOW COMPLETION:
-
-After farewell sequence and final closure:
-
-- All party mode workflow steps completed successfully
-- Agent roster and conversation state properly finalized
-- User expressed gratitude and positive session conclusion
-- Multi-agent collaboration demonstrated value and effectiveness
-- Workflow ready for next party mode session activation
-
-Congratulations on facilitating a successful multi-agent collaborative discussion through BMAD Party Mode! 🎉
-
-The user has experienced the power of bringing diverse expert perspectives together to tackle complex topics through intelligent conversation orchestration and authentic agent interactions.
+1. identify the parent step
+2. re-read it to restore context
+3. resume exactly where the parent workflow instructed
+4. return control to the parent flow

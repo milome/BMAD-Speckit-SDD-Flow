@@ -103,6 +103,52 @@ function rewriteCanonicalBindings(
     );
 }
 
+function resolveRuntimeBindings(host: FacilitatorHostId, mode: FacilitatorMaterializedMode) {
+  if (mode === 'base') {
+    return {
+      facilitator: {
+        resolvedRelativePath:
+          host === 'cursor'
+            ? '_bmad/cursor/agents/party-mode-facilitator.md'
+            : '_bmad/claude/agents/party-mode-facilitator.md',
+      },
+      workflow: { resolvedRelativePath: '_bmad/core/skills/bmad-party-mode/workflow.md' },
+      step01: {
+        resolvedRelativePath: '_bmad/core/skills/bmad-party-mode/steps/step-01-agent-loading.md',
+      },
+      step02: {
+        resolvedRelativePath:
+          '_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md',
+      },
+      step03: {
+        resolvedRelativePath: '_bmad/core/skills/bmad-party-mode/steps/step-03-graceful-exit.md',
+      },
+    };
+  }
+
+  const workflow = resolveLocalizedRelativePath('_bmad/core/skills/bmad-party-mode/workflow.md', mode);
+  const step01 = resolveLocalizedRelativePath(
+    '_bmad/core/skills/bmad-party-mode/steps/step-01-agent-loading.md',
+    mode
+  );
+  const step02 = resolveLocalizedRelativePath(
+    '_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md',
+    mode
+  );
+  const step03 = resolveLocalizedRelativePath(
+    '_bmad/core/skills/bmad-party-mode/steps/step-03-graceful-exit.md',
+    mode
+  );
+
+  return {
+    facilitator: { resolvedRelativePath: resolveLocalizedRelativePath(sourceRelativePath(host), mode) },
+    workflow: { resolvedRelativePath: workflow },
+    step01: { resolvedRelativePath: step01 },
+    step02: { resolvedRelativePath: step02 },
+    step03: { resolvedRelativePath: step03 },
+  };
+}
+
 function detectMaterializedMode(
   projectRoot: string,
   explicitMode?: FacilitatorMaterializedMode
@@ -137,21 +183,8 @@ export function ensureFacilitatorRuntimeDefinition(
 ): FacilitatorRuntimeDefinitionReceipt[] {
   const mode = detectMaterializedMode(projectRoot, options?.mode);
   const hosts = options?.hosts ?? (['cursor', 'claude'] as FacilitatorHostId[]);
-  const workflow = resolveLocalizedRelativePath('_bmad/core/skills/bmad-party-mode/workflow.md', mode);
-  const step01 = resolveLocalizedRelativePath(
-    '_bmad/core/skills/bmad-party-mode/steps/step-01-agent-loading.md',
-    mode
-  );
-  const step02 = resolveLocalizedRelativePath(
-    '_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md',
-    mode
-  );
-  const step03 = resolveLocalizedRelativePath(
-    '_bmad/core/skills/bmad-party-mode/steps/step-03-graceful-exit.md',
-    mode
-  );
-
   return hosts.map((host) => {
+    const bindings = resolveRuntimeBindings(host, mode);
     const targetPath = path.join(projectRoot, targetRelativePath(host));
     const runtimeDir = path.dirname(targetPath);
     if (!fs.existsSync(runtimeDir)) {
@@ -163,51 +196,42 @@ export function ensureFacilitatorRuntimeDefinition(
         skippedReason: `runtime dir missing: ${path.relative(projectRoot, runtimeDir).replace(/\\/g, '/')}`,
       };
     }
-    if (mode === 'base') {
-      return {
-        host,
-        mode,
-        targetPath,
-        updated: false,
-        skippedReason: 'no languagePolicy.resolvedMode available',
-      };
-    }
-    const sourceRelative = resolveLocalizedRelativePath(sourceRelativePath(host), mode);
-    const sourcePath = path.join(projectRoot, sourceRelative);
+    const sourcePath = path.join(projectRoot, bindings.facilitator.resolvedRelativePath);
     if (!fs.existsSync(sourcePath)) {
       return {
         host,
         mode,
         targetPath,
         updated: false,
-        skippedReason: `source asset missing: ${sourceRelative}`,
+        skippedReason: `source asset missing: ${bindings.facilitator.resolvedRelativePath}`,
       };
     }
 
     const source = fs.readFileSync(sourcePath, 'utf8');
-    const materialized = injectGeneratedHeader(
-      rewriteCanonicalBindings(stripGeneratedHeader(source), {
-        workflow,
-        step01,
-        step02,
-        step03,
-      }),
-      {
-        mode,
-        sourceRelativePath: sourceRelative,
-        workflowRelativePath: workflow,
-        step01RelativePath: step01,
-        step02RelativePath: step02,
-        step03RelativePath: step03,
-      }
-    );
+    const rewritten = rewriteCanonicalBindings(stripGeneratedHeader(source), {
+      workflow: bindings.workflow.resolvedRelativePath,
+      step01: bindings.step01.resolvedRelativePath,
+      step02: bindings.step02.resolvedRelativePath,
+      step03: bindings.step03.resolvedRelativePath,
+    });
+    const materialized =
+      mode === 'base'
+        ? rewritten
+        : injectGeneratedHeader(rewritten, {
+            mode,
+            sourceRelativePath: bindings.facilitator.resolvedRelativePath,
+            workflowRelativePath: bindings.workflow.resolvedRelativePath,
+            step01RelativePath: bindings.step01.resolvedRelativePath,
+            step02RelativePath: bindings.step02.resolvedRelativePath,
+            step03RelativePath: bindings.step03.resolvedRelativePath,
+          });
     const previous = fs.existsSync(targetPath) ? fs.readFileSync(targetPath, 'utf8') : null;
     if (previous === materialized) {
       return {
         host,
         mode,
         targetPath,
-        sourceRelativePath: sourceRelative,
+        sourceRelativePath: bindings.facilitator.resolvedRelativePath,
         updated: false,
       };
     }
@@ -218,7 +242,7 @@ export function ensureFacilitatorRuntimeDefinition(
       host,
       mode,
       targetPath,
-      sourceRelativePath: sourceRelative,
+      sourceRelativePath: bindings.facilitator.resolvedRelativePath,
       updated: true,
     };
   });

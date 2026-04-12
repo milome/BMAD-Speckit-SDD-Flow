@@ -2,11 +2,6 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const CANONICAL_ROOT = path.join(ROOT, '_bmad', 'core', 'skills', 'bmad-party-mode');
-const MIRROR_ROOTS = [
-  path.join(ROOT, '_bmad', 'skills', 'bmad-party-mode'),
-  path.join(ROOT, '_bmad', 'core', 'workflows', 'party-mode'),
-];
 
 const RELATIVE_FILES = [
   'workflow.md',
@@ -45,14 +40,27 @@ export function stripGeneratedHeader(content: string): string {
     .replace(/^(---\r?\n[\s\S]*?\r?\n---\r?\n)<!-- GENERATED FROM: .*? -->\r?\n/u, '$1');
 }
 
-export function syncPartyModeMirrors(): void {
+function canonicalRootFor(root: string): string {
+  return path.join(root, '_bmad', 'core', 'skills', 'bmad-party-mode');
+}
+
+function mirrorRootsFor(root: string): string[] {
+  return [
+    path.join(root, '_bmad', 'skills', 'bmad-party-mode'),
+    path.join(root, '_bmad', 'core', 'workflows', 'party-mode'),
+  ];
+}
+
+export function syncPartyModeMirrors(root: string = ROOT): void {
+  const canonicalRoot = canonicalRootFor(root);
+  const mirrorRoots = mirrorRootsFor(root);
   for (const relativeFile of RELATIVE_FILES) {
-    const sourcePath = path.join(CANONICAL_ROOT, relativeFile);
+    const sourcePath = path.join(canonicalRoot, relativeFile);
     if (!fs.existsSync(sourcePath)) {
       continue;
     }
     const source = fs.readFileSync(sourcePath, 'utf8');
-    for (const mirrorRoot of MIRROR_ROOTS) {
+    for (const mirrorRoot of mirrorRoots) {
       const targetPath = path.join(mirrorRoot, relativeFile);
       fs.mkdirSync(path.dirname(targetPath), { recursive: true });
       fs.writeFileSync(targetPath, injectGeneratedHeader(source, relativeFile), 'utf8');

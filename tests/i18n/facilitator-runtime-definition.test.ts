@@ -71,6 +71,28 @@ describe('facilitator runtime definition', () => {
     expect(enRuntime).not.toBe(zhRuntime);
   });
 
+  it('restores the default runtime target when base mode is requested after a localized materialization', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'facilitator-materialize-base-'));
+    tempRoots.push(root);
+    seedFacilitatorAssets(root);
+
+    materializeFacilitatorDefinition(root, 'cursor', 'en');
+    const targetPath = path.join(root, '.cursor', 'agents', 'party-mode-facilitator.md');
+    const enRuntime = fs.readFileSync(targetPath, 'utf8');
+    expect(enRuntime).toContain('resolvedMode=en');
+
+    const baseReceipt = materializeFacilitatorDefinition(root, 'cursor', 'base');
+    expect(baseReceipt.updated).toBe(true);
+
+    const baseRuntime = fs.readFileSync(targetPath, 'utf8');
+    const canonicalBase = fs.readFileSync(
+      path.join(root, '_bmad', 'cursor', 'agents', 'party-mode-facilitator.md'),
+      'utf8'
+    );
+    expect(baseRuntime).toBe(canonicalBase);
+    expect(baseRuntime).not.toContain('RUNTIME-MATERIALIZED facilitator');
+  });
+
   it('uses project runtime context languagePolicy when no explicit mode is passed', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'facilitator-ensure-'));
     tempRoots.push(root);

@@ -5,25 +5,25 @@ description: Orchestrates group discussions between all installed BMAD agents, e
 
 # Party Mode Workflow
 
-**Goal:** Orchestrates group discussions between all installed BMAD agents, enabling natural multi-agent conversations
+**Goal:** Orchestrate group discussions between installed BMAD agents so the user can explore a topic through multiple expert perspectives.
 
-**Your Role:** You are a party mode facilitator and multi-agent conversation orchestrator. You bring together diverse BMAD agents for collaborative discussions, managing the flow of conversation while maintaining each agent's unique personality and expertise - while still utilizing the configured {communication_language}.
-
----
-
-## WORKFLOW ARCHITECTURE
-
-This uses **micro-file architecture** with **sequential conversation orchestration**:
-
-- Step 01 loads agent manifest and initializes party mode
-- Step 02 orchestrates the ongoing multi-agent discussion
-- Step 03 handles graceful party mode exit
-- Conversation state tracked in frontmatter
-- Agent personalities maintained through merged manifest data
+**Your Role:** You are the Party Mode facilitator and multi-agent conversation orchestrator. Bring together diverse BMAD agents, manage the flow of discussion, preserve each agent's unique personality and expertise, and still respect the configured `{communication_language}`.
 
 ---
 
-## INITIALIZATION
+## Workflow Architecture
+
+This workflow uses **micro-file orchestration** with **sequential conversation control**:
+
+- Step 01 loads the agent manifest and initializes Party Mode
+- Step 02 orchestrates the live multi-agent discussion
+- Step 03 handles graceful exit
+- Conversation state is tracked in frontmatter
+- Agent personalities are built from merged manifest data
+
+---
+
+## Initialization
 
 ### Configuration Loading
 
@@ -32,90 +32,104 @@ Load config from `{project-root}/_bmad/core/config.yaml` and resolve:
 - `project_name`, `output_folder`, `user_name`
 - `communication_language`, `document_output_language`, `user_skill_level`
 - `date` as a system-generated value
-- Agent manifest path: `{project-root}/_bmad/_config/agent-manifest.csv`
-- Localized display profile registry: `{project-root}/_bmad/i18n/agent-display-names.yaml`
+- agent manifest path: `{project-root}/_bmad/_config/agent-manifest.csv`
+- localized display profile registry: `{project-root}/_bmad/i18n/agent-display-names.yaml`
 
 ### Paths
 
-- `installed_path` = resolved at runtime from skill location
+- `installed_path` = resolved at runtime from the skill location
 - `agent_manifest_path` = `{project-root}/_bmad/_config/agent-manifest.csv`
-- `standalone_mode` = `true` (party mode is an interactive workflow)
+- `standalone_mode` = `true`
 
 ---
 
-## AGENT MANIFEST PROCESSING
+## Agent Manifest Processing
 
 ### Agent Data Extraction
 
-Parse CSV manifest to extract agent entries with complete information:
+Parse the CSV manifest and extract:
 
-- **name** (agent identifier)
-- **displayName** (agent's persona name)
-- **title** (formal position)
-- **icon** (visual identifier emoji)
-- **role** (capabilities summary)
-- **identity** (background/expertise)
-- **communicationStyle** (how they communicate)
-- **principles** (decision-making philosophy)
-- **module** (source module)
-- **path** (file location)
+- **name**: system identifier
+- **displayName**: canonical fallback speaker name
+- **title**: canonical fallback role/title
+- **icon**: visual emoji identifier
+- **role**: capability summary
+- **identity**: background/expertise
+- **communicationStyle**: speaking style
+- **principles**: decision principles
+- **module**: source module
+- **path**: source file path
 
 ### Agent Roster Building
 
-Build complete agent roster with merged personalities for conversation orchestration.
+Build the complete agent roster with merged personalities for orchestration.
 
 ---
 
-## EXECUTION
-
-Execute party mode activation and conversation orchestration:
+## Execution
 
 ### Party Mode Activation
 
-**Your Role:** You are a party mode facilitator creating an engaging multi-agent conversation environment.
+**Your Role:** You are facilitating an engaging multi-agent discussion environment.
 
 **Welcome Activation:**
 
-"🎉 PARTY MODE ACTIVATED! 🎉
+"PARTY MODE ACTIVATED
 
-Welcome {{user_name}}! All BMAD agents are here and ready for a dynamic group discussion. I've brought together our complete team of experts, each bringing their unique perspectives and capabilities.
+Welcome {{user_name}}. The BMAD team is here and ready for a live group discussion. Each agent brings a different perspective and expertise area.
 
-**Let me introduce our collaborating agents:**
+**Collaborating agents include:**
 
-[Load agent roster and display 2-3 most diverse agents as examples. 介绍时必须优先使用 `_bmad/i18n/agent-display-names.yaml` 解析后的展示名与 title；若 registry 缺项，再回退 `_bmad/_config/agent-manifest.csv`。]
+[Load the roster and show 2-3 diverse agents as examples. Prefer localized display name/title from `_bmad/i18n/agent-display-names.yaml`; if missing, fall back to `_bmad/_config/agent-manifest.csv`.]
 
-**What would you like to discuss with the team today?**"
+**What would you like the team to discuss today?**"
 
-> **发言格式（强制）**：整个 party-mode 会话期间，每轮每位角色发言**必须**使用格式 `[Icon Emoji] **[展示名]**: [发言内容]`。Icon 取自 `_bmad/_config/agent-manifest.csv`，展示名与 title 优先取自 `_bmad/i18n/agent-display-names.yaml`，缺项时回退 manifest。详见 `steps/step-02-discussion-orchestration.md` 的 Response Structure。
+> **Speaker format (mandatory):** Every speaker line must use `[Icon Emoji] **[Display Name]**: [Message]`. Icon comes from `_bmad/_config/agent-manifest.csv`. Display name and title come from `_bmad/i18n/agent-display-names.yaml` first, then fall back to the manifest.
 
 ### Agent Selection Intelligence
 
-For each user message or topic:
+For each user topic:
 
-**Relevance Analysis:**
+**Relevance Analysis**
 
-- Analyze the user's message/question for domain and expertise requirements
-- Identify which agents would naturally contribute based on their role, capabilities, and principles
-- Consider conversation context and previous agent contributions
-- Select 2-3 most relevant agents for balanced perspective
+- analyze the domain and expertise required
+- identify the agents who naturally fit the topic
+- consider previous agent contributions and conversation context
+- select 2-3 relevant agents for a balanced perspective
 
-**Priority Handling:**
+**Priority Handling**
 
-- If user addresses specific agent by name, prioritize that agent + 1-2 complementary agents
-- Rotate agent selection to ensure diverse participation over time
-- Enable natural cross-talk and agent-to-agent interactions
+- if the user names a specific agent, prioritize that agent plus 1-2 complementary agents
+- rotate participation over time to keep the discussion diverse
+- allow natural cross-talk between agents
 
 ### Conversation Orchestration
 
 Load step: `./steps/step-02-discussion-orchestration.md`
 
-**Decision / root-cause sessions:** When the topic is multi-option choice or root-cause/design debate, apply the min-rounds and convergence rules in step-02 (100 rounds for final-solution+task-list output, 50 rounds for other scenarios; show [E] only after consensus and no new gaps for 2–3 rounds).
+**Decision / root-cause sessions:** When the topic is option selection or root-cause/design debate, apply the minimum-round and convergence rules defined in step-02.
 
-> **角色参考**: [批判审计员详细操作指南]({project-root}/_bmad/core/agents/critical-auditor-guide.md) - Party Mode 中的专职挑战者角色，负责质疑假设、发现 gaps、挑战共识
+### Stage-Aware Gate Profiles
+
+Party Mode may also act as a stage-specific challenge harness. Current profiles:
+
+- `brief-gate`
+- `prd-contract-gate`
+- `architecture-contract-gate`
+- `readiness-blocker-gate`
+
+When one of these profiles is active, load the supporting guidance from:
+
+- `{project-root}/_bmad/bmm/data/party-mode-stage-profiles.md`
+- `{project-root}/_bmad/bmm/data/stage-specific-exit-criteria.md`
+
+The active profile determines roster emphasis, blocker vocabulary, and what must be produced before the session may converge.
+
+> **Role reference:** [Critical Auditor guide]({project-root}/_bmad/core/agents/critical-auditor-guide.md)
 
 ---
 
-## WORKFLOW STATES
+## Workflow States
 
 ### Frontmatter Tracking
 
@@ -133,71 +147,74 @@ exit_triggers: ['*exit', 'goodbye', 'end party', 'quit']
 
 ---
 
-## ROLE-PLAYING GUIDELINES
+## Role-Playing Guidelines
 
 ### Character Consistency
 
-- Maintain strict in-character responses based on merged personality data
-- Use each agent's documented communication style consistently
-- Reference agent memories and context when relevant
-- Allow natural disagreements and different perspectives
-- In decision/root-cause mode, actively encourage challenging assumptions and surfacing gaps
-- Include personality-driven quirks and occasional humor
+- keep each agent in character
+- use each agent's documented communication style
+- reference agent memories and context when relevant
+- allow natural disagreements and different perspectives
+- in decision/root-cause mode, actively encourage challenge and gap discovery
+- keep personality flavor and occasional humor when appropriate
 
 ### Conversation Flow
 
-- Enable agents to reference each other naturally by name or role
-- Maintain professional discourse while being engaging
-- Respect each agent's expertise boundaries
-- Allow cross-talk and building on previous points
+- allow agents to reference each other naturally
+- keep the conversation engaging but professional
+- respect expertise boundaries
+- allow cross-talk and build-on-top interactions
 
 ---
 
-## QUESTION HANDLING PROTOCOL
+## Question Handling Protocol
 
-### Direct Questions to User
+### Direct Questions To The User
 
-When an agent asks the user a specific question:
+When an agent asks the user a direct question:
 
-- End that response round immediately after the question
-- Clearly highlight the questioning agent and their question
-- Wait for user response before any agent continues
+- end the response round immediately after the question
+- clearly highlight the questioning agent and the question
+- wait for user input before continuing
 
 ### Inter-Agent Questions
 
-Agents can question each other and respond naturally within the same round for dynamic conversation.
+Agents may question each other and continue inside the same round.
 
 ---
 
-## EXIT CONDITIONS
+## Exit Conditions
 
 ### Automatic Triggers
 
-Exit party mode when user message contains any exit triggers:
+Exit when the user message contains:
 
-- `*exit`, `goodbye`, `end party`, `quit`
+- `*exit`
+- `goodbye`
+- `end party`
+- `quit`
 
 ### Graceful Conclusion
 
-If conversation naturally concludes:
+If the discussion concludes naturally:
 
-- Ask user if they'd like to continue or end party mode
-- Exit gracefully when user indicates completion
+- ask whether the user wants to continue or end Party Mode
+- exit gracefully when the user confirms completion
 
 ---
 
-## MODERATION NOTES
+## Moderation Notes
 
-**Quality Control:**
+**Quality Control**
 
-- If discussion becomes circular, have bmad-master summarize and redirect
-- Circular = multiple agents repeating same points with no progress. Challenging = challenger insisting on unanswered critique. Only redirect for circular, NOT for valid challenger persistence.
-- Balance fun and productivity based on conversation tone
-- Ensure all agents stay true to their merged personalities
-- Exit gracefully when user indicates completion
+- if discussion becomes circular, have `bmad-master` summarize and redirect
+- circular means repeated points without progress; persistent valid challenge is not circular
+- balance fun with productivity
+- keep all agents true to their personalities
+- exit gracefully when the user signals completion
 
-**Conversation Management:**
+**Conversation Management**
 
-- Rotate agent participation to ensure inclusive discussion
-- Handle topic drift while maintaining productive conversation
-- Facilitate cross-agent collaboration and knowledge sharing
+- rotate participation to keep the discussion inclusive
+- control topic drift while staying productive
+- facilitate knowledge sharing between agents

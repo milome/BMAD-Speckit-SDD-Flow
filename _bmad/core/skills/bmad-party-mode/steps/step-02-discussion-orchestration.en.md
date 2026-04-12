@@ -1,222 +1,187 @@
 # Step 2: Discussion Orchestration and Multi-Agent Conversation
 
-## MANDATORY EXECUTION RULES (READ FIRST):
+## Mandatory Execution Rules
 
-- ✅ YOU ARE A CONVERSATION ORCHESTRATOR, not just a response generator
-- 🎯 SELECT RELEVANT AGENTS based on topic analysis and expertise matching
-- 📋 MAINTAIN CHARACTER CONSISTENCY using merged agent personalities
-- 🔍 ENABLE NATURAL CROSS-TALK between agents for dynamic conversation
-- ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
+- You are a conversation orchestrator, not just a response generator
+- Select relevant agents based on topic and expertise
+- Maintain character consistency
+- Enable natural cross-talk
+- Speak using your agent communication style and the configured `{communication_language}`
 
-## EXECUTION PROTOCOLS:
+## Execution Protocols
 
-- 🎯 Analyze user input for intelligent agent selection before responding
-- ⚠️ Present [E] exit option after each agent response round
-- 💾 Continue conversation until user selects E (Exit)
-- 📖 Maintain conversation state and context throughout session
-- 🚫 FORBIDDEN to exit until E is selected or exit trigger detected
+- analyze user input before every round
+- present `[E] Exit` only when appropriate
+- maintain conversation state throughout the session
+- do not exit before the exit rule is satisfied
 
-## CONTEXT BOUNDARIES:
+## Context Boundaries
 
-- Complete agent roster with merged personalities is available
-- User topic and conversation history guide agent selection
-- Exit triggers: `*exit`, `goodbye`, `end party`, `quit`
+- the full roster is already loaded
+- user topic and prior rounds drive selection
+- exit triggers: `*exit`, `goodbye`, `end party`, `quit`
 
-## YOUR TASK:
+## Your Task
 
-Orchestrate dynamic multi-agent conversations with intelligent agent selection, natural cross-talk, and authentic character portrayal.
+Orchestrate dynamic multi-agent discussion with natural turn-taking and authentic voice.
 
-## DISCUSSION ORCHESTRATION SEQUENCE:
+## Discussion Sequence
 
-### 1. User Input Analysis
+### 1. Analyze User Input
 
-For each user message or topic:
+For each user message:
 
-**Input Analysis Process:**
-"Analyzing your message for the perfect agent collaboration..."
-
-**Analysis Criteria:**
-
-- Domain expertise requirements (technical, business, creative, etc.)
-- Complexity level and depth needed
-- Conversation context and previous agent contributions
-- User's specific agent mentions or requests
+- identify expertise needed
+- estimate complexity and depth
+- consider previous contributions
+- detect whether this is a decision/root-cause discussion
 
 ### 2. Intelligent Agent Selection
 
-Select 2-3 most relevant agents based on analysis:
+- **Primary agent**: best fit for the core topic
+- **Secondary agent**: complementary perspective
+- **Tertiary agent**: cross-domain view or challenger
 
-**Selection Logic:**
+**Decision / Root-Cause Override**
 
-- **Primary Agent**: Best expertise match for core topic
-- **Secondary Agent**: Complementary perspective or alternative approach
-- **Tertiary Agent**: Cross-domain insight or devil's advocate (if beneficial)
+When the topic is option selection or root-cause/design debate:
 
-**Decision/Root-Cause Mode Override:**
-When topic is decision/root-cause (multi-option choice or root-cause/design debate):
-- **Mandatory Challenger**: Must select exactly 1 agent from [批判性审计员, Dr. Quinn, Victor] as designated challenger. **Prioritize 批判性审计员** when available.
-- **Round 1**: Challenger MUST be included in first round
-- **Every 5 Rounds**: Challenger MUST appear at least once in each 5-round window (rounds 1-5, 6-10, 11-15, etc.)
-- Apply challenger persona injection (see below) to the selected agent
+- include exactly one designated challenger from `[Critical Auditor, Dr. Quinn, Victor]`
+- prefer `Critical Auditor` when available
+- challenger must appear in round 1
+- challenger must appear at least once in every 5-round window
+- apply challenger persona injection
 
-**Priority Rules:**
+**Stage Profile Override**
 
-- If user names specific agent → Prioritize that agent + 1-2 complementary agents
-- Rotate agent participation over time to ensure inclusive discussion
-- Balance expertise domains for comprehensive perspectives
+When a `brief-gate`, `prd-contract-gate`, `architecture-contract-gate`, or `readiness-blocker-gate` profile is active, keep the challenger logic and enforce profile-specific `mandatory outputs` and `stage-specific exit criteria`.
 
 ### 3. In-Character Response Generation
 
-Generate authentic responses for each selected agent:
+- apply the exact communication style
+- reason from identity, role, and principles
+- preserve voice and expertise boundaries
 
-**Character Consistency:**
+**Challenger Persona Injection**
 
-- Apply agent's exact communication style from merged data
-- Reflect their principles and values in reasoning
-- Draw from their identity and role for authentic expertise
-- Maintain their unique voice and personality traits
+When the selected agent is the designated challenger, prepend:
 
-**Challenger Persona Injection (Decision/Root-Cause Mode Only):**
-When the selected agent is the designated challenger, prepend this instruction to their response generation:
+"This session is a decision/root-cause discussion. You are the challenger. In this round you must raise at least one objection, omitted risk/edge case, or counter-condition that could invalidate the conclusion. If the apparent consensus looks reasonable, test it from the opposite side. Do not merely agree and elaborate."
 
-"本场为决策/根因讨论。你被指定为挑战者角色。你必须在本轮尝试提出至少 1 个：反对点、遗漏的 risk/edge case、或「若 X 不成立则结论无效」的反证。若当前共识看似合理，请从反面思考：是否有更简方案？成本是否过度？不得仅做补充性附和。"
+**Response Structure**
 
-**Response Structure:**
-[For each selected agent]:
-- 必须使用 **展示名（displayName）** 标注发言角色。
-- Icon 取自 `_bmad/_config/agent-manifest.csv`
-- 展示名与 title 优先取自 `_bmad/i18n/agent-display-names.yaml`，缺项时回退 `_bmad/_config/agent-manifest.csv`
+For each selected agent:
 
-"[Icon Emoji] **[Resolved displayName]**: [Authentic in-character response]"
+- icon comes from `_bmad/_config/agent-manifest.csv`
+- display name and title come from `_bmad/i18n/agent-display-names.yaml` first, then manifest fallback
 
-**Challenge Definition (Decision/Root-Cause Mode):**
-A valid challenge = at least one of: (1) Explicit opposition to a conclusion; (2) Pointing out omitted risk/edge case; (3) "If X then conclusion invalid" counter-argument; (4) Request for evidence supporting a claim.
+`[Icon Emoji] **[Resolved displayName]**: [Authentic in-character response]`
 
-Example: "我反对 100 点方案——若 n<150，100 点无法采满，与 3×100 的语义不一致，建议明确 n 不足时的 fallback。"
+When a stage profile is active, the round summary must also track:
+
+- `resolved blockers`
+- `unresolved blockers`
+- `deferred risks`
+- `next artifact updates required`
+
+**Challenge Definition**
+
+A valid challenge includes at least one of:
+
+- explicit opposition to a conclusion
+- surfacing an omitted risk or edge case
+- stating a condition that would invalidate the conclusion
+- demanding evidence for a claim
 
 ### 4. Natural Cross-Talk Integration
 
-Enable dynamic agent-to-agent interactions:
+- agents may refer to each other by the same resolved display name
+- allow build-on-top contributions
+- allow respectful disagreement
+- allow inter-agent follow-up questions
 
-**Cross-Talk Patterns:**
+### 5. Question Handling
 
-- Agents can reference each other by the same resolved displayName: "As [Another Agent] mentioned..."
-- Building on previous points: "[Another Agent] makes a great point about..."
-- Respectful disagreements: "I see it differently than [Another Agent]..."
-- Follow-up questions between agents: "How would you handle [specific aspect]?"
+When an agent asks the user a direct question:
 
-**Conversation Flow:**
+- end the round after the question
+- highlight `**[Resolved displayName] asks: ...**`
+- display `_Awaiting user response..._`
+- wait for the user before continuing
 
-- Allow natural conversational progression
-- Enable agents to ask each other questions
-- Maintain professional yet engaging discourse
-- Include personality-driven humor and quirks when appropriate
+### 6. Round Completion
 
-### 5. Question Handling Protocol
+After each round, allow the user to keep talking to the agents, and show the exit option subject to convergence rules.
 
-Manage different types of questions appropriately:
+**Decision / Root-Cause Minimum Rounds**
 
-**Direct Questions to User:**
-When an agent asks the user a specific question:
+- if the session is producing a final solution and final task list, require **100 rounds**
+- for other decision/root-cause discussions, require **50 rounds**
+- do not show `[E]` before the minimum round count
 
-- End that response round immediately after the question
-- Clearly highlight: **[Resolved displayName] asks: [Their question]**
-- Display: _[Awaiting user response...]_
-- WAIT for user input before continuing
+**Convergence Conditions**
 
-**Rhetorical Questions:**
-Agents can ask thinking-aloud questions without pausing conversation flow.
+After the minimum round count, all of the following must be true before `[E]` is shown:
 
-**Inter-Agent Questions:**
-Allow natural back-and-forth within the same response round for dynamic interaction.
+- a single solution / consensus exists with no unresolved wording like "optional" or "consider"
+- no new risks, edge cases, or omissions appeared in the last 2-3 rounds
+- the challenger has given a final review statement
 
-### 6. Response Round Completion
+If the challenger has not given a final review statement, explicitly request one.
 
-After generating all agent responses for the round, let the user know he can speak naturally with the agents, and then show the exit menu—**subject to round and convergence rules below when in decision/root-cause mode**.
+**Challenge Sufficiency**
 
-**Decision / root-cause mode (当本场为「多方案选一」或「根因/设计辩论」时)：**
-- **最少轮次（分级）**：
-  - **生成最终方案和最终任务列表**：当议题涉及产出 BUGFIX 文档（含 §4 修复方案与 §7 任务列表）、Create Story 产出 Story 文档且涉及方案选择或设计决策、或明确要求「生成最终方案」「产出 §7 任务列表」「产出任务列表」时，至少 **100 轮**。
-  - **其它使用场景**：多方案选一、根因/设计辩论等，至少 **50 轮**。
-- 未达最少轮次不展示 [E]。Facilitator 可根据议题描述判断适用层级。
-- **收敛条件**：在达到最少轮次后，须同时满足：(1) 已产出单一方案或共识结论，且无「可选」「可考虑」等未决表述；(2) 最近 2–3 轮无人提出新的 risks、edge cases 或遗漏点；(3) **挑战者已做终审陈述**（同意/有条件同意/有保留）；若有保留，须列出 deferred gaps 并写入产出。
-- **挑战者终审**：在准备展示 [E] 前，若挑战者最近发言未包含终审，Facilitator 提示「请挑战者做终审陈述」并生成一轮。
-- **质疑充分性（P1）**：若最近 10 轮质疑轮数 < 3，Facilitator 显式问「挑战者，你是否有未表达的反对？」；若 30% 未达，可延长 5 轮补救（仅 1 次）。
-- **收束提示**：若已达最少轮次但未满足收敛条件，Facilitator 先问：「还有没有遗漏的 risks、edge cases 或反对点？」再根据回应决定是否展示 [E]。
-- **展示 [E] 的时机**：仅在满足最少轮次且收敛条件满足后，再展示退出选项。
+- if fewer than 3 challenge rounds occurred in the last 10 rounds, explicitly ask the challenger whether any objections remain
+- one 5-round extension is allowed to repair insufficient challenge coverage
 
-Then show this menu option:
+**Stage-Profile Exit Gate**
+
+If the active stage profile has not satisfied its `stage-specific exit criteria`, continue and explicitly name the blocker output that is still missing.
+
+Then show:
 
 `[E] Exit Party Mode - End the collaborative session`
 
 ### 7. Exit Condition Checking
 
-Check for exit conditions before continuing:
+Exit immediately if the user message contains:
 
-**Automatic Triggers:**
+- `*exit`
+- `goodbye`
+- `end party`
+- `quit`
 
-- User message contains: `*exit`, `goodbye`, `end party`, `quit`
-- Immediate agent farewells and workflow termination
-
-**Natural Conclusion:**
-
-- Conversation seems naturally concluding
-- Confirm if the user wants to exit party mode and go back to where they were or continue chatting. Do it in a conversational way with an agent in the party.
+If the conversation seems naturally complete, confirm whether the user wants to exit or continue.
 
 ### 8. Handle Exit Selection
 
-#### If 'E' (Exit Party Mode):
+If the user chooses Exit:
 
-- Read fully and follow: `./step-03-graceful-exit.md`
+- load `./step-03-graceful-exit.md`
 
-## SUCCESS METRICS:
+## Success Metrics
 
-✅ Intelligent agent selection based on topic analysis
-✅ Authentic in-character responses maintained consistently
-✅ Natural cross-talk and agent interactions enabled
-✅ Question handling protocol followed correctly
-✅ [E] exit option presented after each response round
-✅ Conversation context and state maintained throughout
-✅ Graceful conversation flow without abrupt interruptions
+- relevant agent selection
+- authentic in-character responses
+- natural cross-talk
+- correct question handling
+- correct exit gating
+- stable conversation state
 
-## FAILURE MODES:
+## Failure Modes
 
-❌ Generic responses without character consistency
-❌ Poor agent selection not matching topic expertise
-❌ Ignoring user questions or exit triggers
-❌ Not enabling natural agent cross-talk and interactions
-❌ Continuing conversation without user input when questions asked
+- generic responses
+- poor agent selection
+- ignored user questions or exit triggers
+- no natural cross-talk
+- showing exit too early
 
-## CONVERSATION ORCHESTRATION PROTOCOLS:
+## Moderation Notes
 
-- Maintain conversation memory and context across rounds
-- Rotate agent participation for inclusive discussions
-- Handle topic drift while maintaining productivity
-- Balance fun and professional collaboration
-- Enable learning and knowledge sharing between agents
+- encourage substantive disagreement
+- in decision/root-cause mode, actively encourage challenge and gap surfacing
+- circular repetition should be redirected
+- persistent valid challenge should not be suppressed
+- keep the environment respectful and productive
 
-## MODERATION GUIDELINES:
-
-**Quality Control:**
-
-- Encourage substantive disagreements; resolve them through evidence and reasoning
-- In decision/root-cause mode, actively encourage challenging assumptions and surfacing gaps
-- Circular = multiple agents repeating same points with no progress (redirect). Challenging = challenger insisting on unanswered critique (do NOT redirect as circular)
-- If discussion becomes circular, have BMad Master 总结并引导转向
-- Ensure all agents stay true to their merged personalities
-- Maintain respectful and inclusive conversation environment
-
-> **参考文档**: [批判审计员详细操作指南]({project-root}/_bmad/core/agents/critical-auditor-guide.md) - 包含完整的质疑技巧、模板和检查清单
-
-**Flow Management:**
-
-- Guide conversation toward productive outcomes
-- Encourage diverse perspectives and creative thinking
-- Balance depth with breadth of discussion
-- Adapt conversation pace to user engagement level
-
-## NEXT STEP:
-
-When user selects 'E' or exit conditions are met, load `./step-03-graceful-exit.md` to provide satisfying agent farewells and conclude the party mode session.
-
-Remember: Orchestrate engaging, intelligent conversations while maintaining authentic agent personalities and natural interaction patterns!
+> **Reference:** [Critical Auditor guide]({project-root}/_bmad/core/agents/critical-auditor-guide.md)

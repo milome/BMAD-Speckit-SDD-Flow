@@ -116,6 +116,35 @@ function rewriteCanonicalBindings(
     );
 }
 
+function resolveRuntimeBindings(
+  projectRoot: string,
+  host: FacilitatorHostId,
+  mode: FacilitatorMaterializedMode
+) {
+  if (mode === 'base') {
+    const facilitator =
+      host === 'cursor'
+        ? '_bmad/cursor/agents/party-mode-facilitator.md'
+        : '_bmad/claude/agents/party-mode-facilitator.md';
+    return {
+      facilitator: { resolvedRelativePath: facilitator },
+      workflow: { resolvedRelativePath: '_bmad/core/skills/bmad-party-mode/workflow.md' },
+      step01: {
+        resolvedRelativePath: '_bmad/core/skills/bmad-party-mode/steps/step-01-agent-loading.md',
+      },
+      step02: {
+        resolvedRelativePath:
+          '_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md',
+      },
+      step03: {
+        resolvedRelativePath: '_bmad/core/skills/bmad-party-mode/steps/step-03-graceful-exit.md',
+      },
+    };
+  }
+
+  return resolveFacilitatorRuntimeBindings(projectRoot, host, mode);
+}
+
 export function materializeFacilitatorDefinition(
   projectRoot: string,
   host: FacilitatorHostId,
@@ -124,17 +153,7 @@ export function materializeFacilitatorDefinition(
   const targetRelativePath = runtimeTargetRelativePath(host);
   const targetPath = path.join(projectRoot, targetRelativePath);
 
-  if (mode === 'base') {
-    return {
-      host,
-      mode,
-      targetPath,
-      updated: false,
-      skippedReason: 'no languagePolicy.resolvedMode available',
-    };
-  }
-
-  const bindings = resolveFacilitatorRuntimeBindings(projectRoot, host, mode);
+  const bindings = resolveRuntimeBindings(projectRoot, host, mode);
   const sourcePath = path.join(projectRoot, bindings.facilitator.resolvedRelativePath);
   if (!fs.existsSync(sourcePath)) {
     return {
@@ -153,14 +172,17 @@ export function materializeFacilitatorDefinition(
     step02: bindings.step02.resolvedRelativePath,
     step03: bindings.step03.resolvedRelativePath,
   });
-  const materialized = injectGeneratedHeader(rewritten, {
-    mode,
-    sourceRelativePath: bindings.facilitator.resolvedRelativePath,
-    workflowRelativePath: bindings.workflow.resolvedRelativePath,
-    step01RelativePath: bindings.step01.resolvedRelativePath,
-    step02RelativePath: bindings.step02.resolvedRelativePath,
-    step03RelativePath: bindings.step03.resolvedRelativePath,
-  });
+  const materialized =
+    mode === 'base'
+      ? rewritten
+      : injectGeneratedHeader(rewritten, {
+          mode,
+          sourceRelativePath: bindings.facilitator.resolvedRelativePath,
+          workflowRelativePath: bindings.workflow.resolvedRelativePath,
+          step01RelativePath: bindings.step01.resolvedRelativePath,
+          step02RelativePath: bindings.step02.resolvedRelativePath,
+          step03RelativePath: bindings.step03.resolvedRelativePath,
+        });
 
   fs.mkdirSync(path.dirname(targetPath), { recursive: true });
   const previous = fs.existsSync(targetPath) ? fs.readFileSync(targetPath, 'utf8') : null;
