@@ -19,7 +19,7 @@ references:
   - auditor-implement: post-implementation audit execution body; `.claude/agents/auditors/auditor-implement.md`
   - audit-prompts-section5: §5 audit prompt word reference; `.claude/skills/bmad-bug-assistant/references/audit-prompts-section5.md`
   - audit-document-iteration-rules: document audit iteration rules; `.claude/skills/speckit-workflow/references/audit-document-iteration-rules.md`
-  - party-mode: `{project-root}/_bmad/core/workflows/party-mode/`
+  - party-mode: `{project-root}/_bmad/core/skills/bmad-party-mode/`
   - party-mode-facilitator: party-mode specialized subtype; `.claude/agents/party-mode-facilitator.md`
   - ralph-method: prd, progress files, executed in US order
   - speckit-workflow: Fake implementation is prohibited, acceptance command must be run, architecture is faithful
@@ -28,7 +28,11 @@ references:
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
 > Closeout terminology: in this document, a stage is considered complete only when `runAuditorHost` returns `closeout approved`. An audit report `PASS` only means the host close-out may start; `PASS` alone must not be treated as completion, admission, or release.
 
+> **Orphan bugfix closeout contract**: when the BUGFIX document lives under `_bmad-output/implementation-artifacts/_orphan/`, the structured audit report must explicitly carry `stage=bugfix`, `artifactDocPath`, and `reportPath`, and all three must match the real BUGFIX doc/report paths. Missing any field, or relying on prose-only `PASS`, must fail closeout conservatively.
+
 # Claude Adapter: bmad-bug-assistant
+
+> **Party-mode source of truth**: `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`. All party-mode rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit-gate semantics must follow that file; this skill must not define a second gate contract.
 
 ## Purpose
 
@@ -102,7 +106,7 @@ Each time a subtask (party-mode or Agent tool) is initiated, the main Agent **mu
 
 | Resources | Path/Description |
 | ---- | --------- |
-| **party-mode** | `{project-root}/_bmad/core/workflows/party-mode/`; For rounds and convergence, see step-02 (BUGFIX produces the final solution and §7 task list: at least 100 rounds; others: 50 rounds; end after convergence conditions). |
+| **party-mode** | `{project-root}/_bmad/core/skills/bmad-party-mode/`; all rounds / challenger ratio / recovery / evidence / exit-gate rules come from core step-02 (BUGFIX produces the final solution and §7 task list: 100 rounds; others: 50 rounds). |
 | **auditor-bugfix executable** | `.claude/agents/auditors/auditor-bugfix.md`; if not found, press Fallback Strategy to downgrade |
 | **audit-prompts §5** | `references/audit-prompts-section5.md` (within this skill) or `{project-root}/docs/speckit/skills/speckit-workflow/references/audit-prompts.md`; **Only for other workflow reference, not used for BUGFIX document auditing of this skill**. |
 | **audit-document-iteration-rules** | `.claude/skills/speckit-workflow/references/audit-document-iteration-rules.md`; BUGFIX **document** audits for phases one, two and three must follow: The audit subagent must directly modify the BUGFIX document when a gap is discovered. Phase four is post-implementation audit (code), not applicable. |
@@ -693,5 +697,3 @@ User: "Implement fix as per BUGFIX documentation."
 Main Agent: Execute Phase 4 - Copy the entire "Phase 4 Implementation Detailed Prompt Word", replace only the BUGFIX document path and project root directory, and initiate a subtask through the Agent tool (`subagent_type: general-purpose`); after the implementation is completed, copy the entire "Phase 4 Post-implementation Audit Complete Prompt Template" and initiate the audit subtask; if the audit conclusion is failed, you must entrust the sub-agent to modify it according to the modification suggestions and initiate the audit again until the conclusion is "complete coverage, verification passed." Direct modification of production code is prohibited.
 
 <!-- ADAPTATION_COMPLETE: 2026-03-15 -->
-
-

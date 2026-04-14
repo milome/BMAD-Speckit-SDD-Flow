@@ -61,6 +61,7 @@
 - parse-and-write-score 证据要求
 - 禁止词检查
 - 结构化审计结果字段：
+  - `stage`（必须固定为 `standalone_tasks`，缺失或仍写成 `document` 时 orphan host closeout 视为无效）
   - `round`
   - `gap_count`
   - `new_gap_count`
@@ -101,6 +102,7 @@
 round: [N]
 strictness: [standard/strict]
 artifactDocPath: [path]
+stage: standalone_tasks
 baselinePath: [path]
 reportPath: [path]
 subagent_type: code-reviewer
@@ -133,6 +135,7 @@ execution_summary:
   convergence_status: in_progress|converged
 artifacts:
   artifactDocPath: "..."
+  stage: standalone_tasks
   reportPath: "..."
 handoff:
   next_action: revise_tasks_doc|execute_standalone_tasks
@@ -184,11 +187,11 @@ handoff:
 
 ## Post-Audit Actions（审计通过时）
 
-审计通过时，执行体只负责保存报告并返回 `projectRoot`、`reportPath`、`artifactDocPath`、`stage=document`；评分写入、auditIndex 更新与其它 post-audit automation 统一由 invoking host/runner 通过 `runAuditorHost` 承接。若 host/runner 失败，必须在审计结论中注明 resultCode。
+审计通过时，执行体只负责保存报告并返回 `projectRoot`、`reportPath`、`artifactDocPath`、`stage=standalone_tasks`；其中 `stage / reportPath / artifactDocPath` 为 orphan closeout 必填字段，缺失任一项或仍返回 `stage=document` 时 host/runner 必须 fail-closed。评分写入、auditIndex 更新与其它 post-audit automation 统一由 invoking host/runner 通过 `runAuditorHost` 承接。若 host/runner 失败，必须在审计结论中注明 resultCode。
 
 **Orphan TASKS 说明**：若被审 TASKS 文档为 standalone/orphan（无 epic/story 上下文），则省略 `--epic` 与 `--story` 参数；评分将从 reportPath 解析或使用默认 runId。
 
-无论 PASS / FAIL，**在保存完整审计报告后必须由 invoking auditor host/runner 自动触发统一的 auditor post-actions runner**，由 host/runner 负责写入 runtime registry 的 `auditIndex.standalone_tasks`。执行体只需保证 `projectRoot`、`reportPath`、`artifactDocPath` 三个结果字段完整可用；不得再把 audit index CLI 当作人工或 prompt 级独立步骤。若 host/runner post-actions 失败，必须在审计结论中注明失败原因与 resultCode。
+无论 PASS / FAIL，**在保存完整审计报告后必须由 invoking auditor host/runner 自动触发统一的 auditor post-actions runner**，由 host/runner 负责写入 runtime registry 的 `auditIndex.standalone_tasks`。执行体只需保证 `projectRoot`、`reportPath`、`artifactDocPath`、`stage=standalone_tasks` 四个结果字段完整可用；不得再把 audit index CLI 当作人工或 prompt 级独立步骤。若 host/runner post-actions 失败，必须在审计结论中注明失败原因与 resultCode。
 
 ## Report Persistence Rules
 

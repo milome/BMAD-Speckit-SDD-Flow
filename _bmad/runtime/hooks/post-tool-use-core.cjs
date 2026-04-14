@@ -4,6 +4,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { createHash, randomUUID } = require('node:crypto');
+const { refreshSessionArtifacts } = require('./party-mode-session-runtime.cjs');
 
 const TRACE_VERSION = 1;
 const MAX_CAPTURE_CHARS = 16_000;
@@ -219,6 +220,54 @@ function readPathCandidate(input, candidates) {
   return undefined;
 }
 
+function extractWrittenFilePath(input) {
+  const value = readPathCandidate(input, [
+    ['tool_input', 'file_path'],
+    ['tool_input', 'path'],
+    ['toolInput', 'file_path'],
+    ['toolInput', 'path'],
+    ['file_path'],
+    ['path'],
+  ]);
+  return typeof value === 'string' ? value : '';
+}
+
+function extractShellCommand(input) {
+  const value = readPathCandidate(input, [
+    ['tool_input', 'command'],
+    ['tool_input', 'cmd'],
+    ['toolInput', 'command'],
+    ['toolInput', 'cmd'],
+    ['command'],
+  ]);
+  return typeof value === 'string' ? value : '';
+}
+
+function extractPartyModeSessionKey(input) {
+  const writtenPath = extractWrittenFilePath(input);
+  if (writtenPath) {
+    const normalized = normalizeRuntimePath(writtenPath);
+    const match = normalized.match(/_bmad-output\/party-mode\/sessions\/(.+?)\.(jsonl|meta\.json)$/u);
+    if (match) {
+      return match[1];
+    }
+  }
+
+  const shellCommand = extractShellCommand(input);
+  if (shellCommand && shellCommand.includes('party-mode-session-event.cjs')) {
+    const match = shellCommand.match(/--session-key\s+["']?([^"'\s]+)["']?/u);
+    if (match) {
+      return match[1];
+    }
+  }
+
+  return '';
+}
+
+function normalizeRuntimePath(targetPath) {
+  return String(targetPath || '').replace(/\\/g, '/');
+}
+
 function extractToolInvocation(input) {
   if (!isRecord(input)) {
     return null;
@@ -431,12 +480,22 @@ function captureToolTrace(input) {
   };
 }
 
+function refreshPartyModeSessionFromToolUse(input) {
+  const root = resolveProjectRoot(input);
+  const sessionKey = extractPartyModeSessionKey(input);
+  if (!sessionKey) {
+    return { refreshed: false, reason: 'no_party_mode_session_key' };
+  }
+  return refreshSessionArtifacts(root, sessionKey);
+}
+
 async function postToolUseCore(options = {}) {
   const host = options.host === 'cursor' ? 'cursor' : 'claude';
 
   try {
     const input = await readStdin();
     captureToolTrace(input);
+    refreshPartyModeSessionFromToolUse(input);
     return {
       exitCode: 0,
       output: host === 'cursor' ? '{}\n' : '',
@@ -453,5 +512,7 @@ async function postToolUseCore(options = {}) {
 
 module.exports = {
   captureToolTrace,
+  extractPartyModeSessionKey,
   postToolUseCore,
+  refreshPartyModeSessionFromToolUse,
 };

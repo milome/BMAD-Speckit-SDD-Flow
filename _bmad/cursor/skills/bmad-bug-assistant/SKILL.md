@@ -5,10 +5,12 @@ description: |
 ---
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
 > Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
+> **Orphan bugfix closeout contract**：当 BUGFIX 文档位于 `_bmad-output/implementation-artifacts/_orphan/` 时，结构化审计报告必须显式提供 `stage=bugfix`、`artifactDocPath`、`reportPath`，且三者必须与真实 BUGFIX 文档路径 / 报告路径一致；缺失任一字段或仍停留在 prose-only PASS 时，主 Agent 不得宣称通过，host closeout 必须 fail-closed。
 
 # BMAD Bug 助手
 
 > **【必读】使用本 skill 前，必须先读取并遵守 `{project-root}/.cursor/rules/bmad-bug-assistant.mdc` 中的自检规则。**发起 mcp_task 或 party-mode 子任务前，须完成该阶段「发起前自检清单」全部项并输出自检结果，否则不得发起。
+> **Party-mode source of truth**：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。所有 party-mode 的 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 不得定义第二套 gate 语义。
 
 本 skill 定义 **根因分析 → BUGFIX 文档 → 审计 →（可选）信息补充更新 → 任务列表补充 → 实施 → 实施后审计** 的完整工作流。**实施前的 `auditor-bugfix` 属于 BUGFIX 文档审计，且必须先于任何修复实现执行。** **实施后审计为必须步骤，非可选。**未通过时必须按修改建议修复后再次审计，直至通过。
 
@@ -51,7 +53,7 @@ description: |
 
 | 资源 | 路径/说明 |
 | ---- | --------- |
-| **party-mode** | `{project-root}/_bmad/core/workflows/party-mode/`；轮次与收敛见 step-02（BUGFIX 产出最终方案与 §7 任务列表：至少 100 轮；其它：50 轮；收敛条件再结束）。 |
+| **party-mode** | `{project-root}/_bmad/core/skills/bmad-party-mode/`；所有 rounds / challenger ratio / recovery / evidence / exit gate 规则以 core step-02 为准（BUGFIX 产出最终方案与 §7 任务列表：100 轮；其它：50 轮）。 |
 | **party-mode-facilitator 子代理** | `.cursor/agents/party-mode-facilitator.md`；优先 Cursor Task 调度，用户可见完整辩论；找不到则用 `mcp_task` + `generalPurpose` |
 | **code-reviewer 子代理** | `.claude/agents/code-reviewer.md` 或 `.cursor/agents/code-reviewer.md`；找不到则用 `mcp_task` 调用 `generalPurpose` |
 | **auditor-bugfix** | BUGFIX 文档审计执行体；属于实施前硬门槛，**必须先于修复实现通过** |

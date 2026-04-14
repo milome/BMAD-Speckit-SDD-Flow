@@ -56,8 +56,10 @@ Select 2-3 most relevant agents based on analysis:
 **Decision/Root-Cause Mode Override:**
 When topic is decision/root-cause (multi-option choice or root-cause/design debate):
 - **Mandatory Challenger**: Must select exactly 1 agent from [批判性审计员, Dr. Quinn, Victor] as designated challenger. **Prioritize 批判性审计员** when available.
+- **Stable Challenger Key**: Store the selected challenger as `designated_challenger_id` using a stable internal id/name from `_bmad/_config/agent-manifest.csv`. Do **not** use `displayName`, `title`, or localized labels as the statistics key.
 - **Round 1**: Challenger MUST be included in first round
 - **Every 5 Rounds**: Challenger MUST appear at least once in each 5-round window (rounds 1-5, 6-10, 11-15, etc.)
+- **Challenger Ratio Gate**: In decision/root-cause mode, `challenger_ratio > 0.60` is mandatory. A value `<= 0.60` is a failed gate and must block `[E]`.
 - Apply challenger persona injection (see below) to the selected agent
 
 **Stage Profile Override:**
@@ -149,12 +151,37 @@ After generating all agent responses for the round, let the user know he can spe
   - **生成最终方案和最终任务列表**：当议题涉及产出 BUGFIX 文档（含 §4 修复方案与 §7 任务列表）、Create Story 产出 Story 文档且涉及方案选择或设计决策、或明确要求「生成最终方案」「产出 §7 任务列表」「产出任务列表」时，至少 **100 轮**。
   - **其它使用场景**：多方案选一、根因/设计辩论等，至少 **50 轮**。
 - 未达最少轮次不展示 [E]。Facilitator 可根据议题描述判断适用层级。
+- **challenger ratio 统计口径（硬门禁）**：
+  - 统计主键：`designated_challenger_id`，来自 `_bmad/_config/agent-manifest.csv` 的稳定 agent id/name。
+  - 分子：`speaker_id === designated_challenger_id` 且 `counts_toward_ratio = true` 的有效 agent 发言轮次。
+  - 分母：同一 `session_key` 下 `counts_toward_ratio = true` 的总有效 agent 发言轮次。
+  - 不计入分母：facilitator 控制语句、菜单输出、系统提示、纯状态播报、未绑定 `speaker_id` 的文本。
+  - 通过条件：`challenger_ratio > 0.60`；`challenger_ratio <= 0.60` 直接判定为失败，不得展示或接受 [E]。
+- **session 真相源与证据写入链**：
+  - 会话开始前必须生成 `session_key`，并真实写入 `_bmad-output/party-mode/sessions/<session_key>.meta.json`。
+  - `.meta.json` 必须至少包含：`session_key`、`gate_profile_id`、`designated_challenger_id`、`min_rounds`、`ratio_threshold`、`tail_window`、`session_log_path`、`snapshot_path`、`convergence_record_path`、`audit_verdict_path`。
+  - 每轮 agent 发言后必须真实追加 `_bmad-output/party-mode/sessions/<session_key>.jsonl`；每条 agent 记录至少包含：`record_type = "agent_turn"`、`session_key`、`round_index`、`speaker_id`、`designated_challenger_id`、`counts_toward_ratio`、`has_new_gap`、`timestamp`。
+  - 每轮 agent 发言后必须刷新 `_bmad-output/party-mode/snapshots/<session_key>.latest.json`，且 snapshot 只能作为恢复入口，不能替代 session log 真相源。
+  - 收敛前必须真实写入 `_bmad-output/party-mode/evidence/<session_key>.convergence.json`；收口前必须真实写入 `_bmad-output/party-mode/evidence/<session_key>.audit.json`。
+- **gate profile 选择**：
+  - 若本场属于“生成最终方案和最终任务列表”，`gate_profile_id = "final_solution_task_list_100"`，并在 `.meta.json` 中固定 `min_rounds = 100`、`ratio_threshold = 0.60`、`tail_window = 3`。
+  - 其它决策 / 根因讨论，`gate_profile_id = "decision_root_cause_50"`，并在 `.meta.json` 中固定 `min_rounds = 50`、`ratio_threshold = 0.60`、`tail_window = 3`。
+- **checker 调用（退出前强制）**：
+  - 在准备展示 [E] 前，必须运行：
+    - `npx ts-node --project tsconfig.node.json --transpile-only scripts/party-mode-gate-check.ts --session-key <session_key> --write-all`
+  - 生产路径禁止用 CLI 参数覆盖 `.meta.json` 中的 `min_rounds / ratio_threshold / tail_window`。
+  - 若 checker 输出 `failed_checks` 非空，Facilitator 必须显式报告失败项并继续讨论，不得展示或接受 [E]。
 - **收敛条件**：在达到最少轮次后，须同时满足：(1) 已产出单一方案或共识结论，且无「可选」「可考虑」等未决表述；(2) 最近 2–3 轮无人提出新的 risks、edge cases 或遗漏点；(3) **挑战者已做终审陈述**（同意/有条件同意/有保留）；若有保留，须列出 deferred gaps 并写入产出。
 - **挑战者终审**：在准备展示 [E] 前，若挑战者最近发言未包含终审，Facilitator 提示「请挑战者做终审陈述」并生成一轮。
 - **质疑充分性（P1）**：若最近 10 轮质疑轮数 < 3，Facilitator 显式问「挑战者，你是否有未表达的反对？」；若 30% 未达，可延长 5 轮补救（仅 1 次）。
 - **收束提示**：若已达最少轮次但未满足收敛条件，Facilitator 先问：「还有没有遗漏的 risks、edge cases 或反对点？」再根据回应决定是否展示 [E]。
 - **展示 [E] 的时机**：仅在满足最少轮次且收敛条件满足后，再展示退出选项。
 - **Stage-profile exit gate**：若当前 profile 还未满足 its `stage-specific exit criteria`, even after the minimum rounds, continue the discussion and explicitly call out which blocker output is still missing.
+- **Convergence Record（固定模板）**：在收敛前必须写入 `_bmad-output/party-mode/evidence/<session_key>.convergence.json`，最少包含：`session_key`、`gate_profile_id`、`round_tail`、`challenger_ratio`、`gate_result`、`source_log_sha256`、`generated_at`。
+- **Audit Verdict（固定模板）**：在退出前必须写入 `_bmad-output/party-mode/evidence/<session_key>.audit.json`，最少包含：`session_key`、`gate_profile_id`、`min_rounds_check`、`challenger_ratio_check`、`last_tail_no_new_gap_check`、`final_result`、`source_log_sha256`、`generated_at`。
+- **恢复顺序（强制）**：先读取 `.meta.json`，再恢复 `.latest.json`，再用 session log 校验 `source_log_sha256`，再恢复最后 `tail_window` 轮原始记录，最后重新执行 `scripts/party-mode-gate-check.ts`。
+- **回滚触发条件（强制）**：checker 计算异常、`.meta.json / session log / snapshot / evidence` 路径引用失效、或恢复后统计值与 session log 重算结果不一致。
+- **回滚动作（强制）**：仅回滚本次 remediation 涉及的 party-mode 修订范围；回滚后必须重跑相关验收命令与 checker；未通过回滚后验证前，不得展示或接受 [E]。
 
 Then show this menu option:
 

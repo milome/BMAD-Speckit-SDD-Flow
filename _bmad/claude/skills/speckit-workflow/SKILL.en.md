@@ -435,6 +435,9 @@ Party-mode can be started in the plan phase when the following situations occur:
 
 **Start command**:
 ```
+> Party-mode source of truth: `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
+> This section only decides when a Story/plan flow should enter party-mode. Rounds, `designated_challenger_id`, `challenger_ratio > 0.60`, session/meta/snapshot/evidence, recovery, and exit-gate semantics must follow core step-02.
+
 进入 party-mode 讨论技术方案，建议 50 轮
 ```
 **Character setting**:

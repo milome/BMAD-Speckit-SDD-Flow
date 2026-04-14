@@ -17,7 +17,7 @@ references:
   - auditor-implement: 实施后审计执行体；`.claude/agents/auditors/auditor-implement.md`
   - audit-prompts-section5: §5 审计提示词参考；`.claude/skills/bmad-bug-assistant/references/audit-prompts-section5.md`
   - audit-document-iteration-rules: 文档审计迭代规则；`.claude/skills/speckit-workflow/references/audit-document-iteration-rules.md`
-  - party-mode: `{project-root}/_bmad/core/workflows/party-mode/`
+  - party-mode: `{project-root}/_bmad/core/skills/bmad-party-mode/`
   - party-mode-facilitator: Party-mode specialized subtype；`.claude/agents/party-mode-facilitator.md`
   - ralph-method: prd、progress 文件，按 US 顺序执行
   - speckit-workflow: 禁止伪实现、必须运行验收命令、架构忠实
@@ -25,7 +25,11 @@ references:
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
 > Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
 
+> **Orphan bugfix closeout contract**：当 BUGFIX 文档位于 `_bmad-output/implementation-artifacts/_orphan/` 时，结构化审计报告必须显式提供 `stage=bugfix`、`artifactDocPath`、`reportPath`，且三者必须与真实 BUGFIX 文档路径 / 报告路径一致；缺失任一字段或仍停留在 prose-only PASS 时，主 Agent 不得宣称通过，host closeout 必须 fail-closed。
+
 # Claude Adapter: bmad-bug-assistant
+
+> **Party-mode source of truth**：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。所有 party-mode 的 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 不得定义第二套 gate 语义。
 
 ## Purpose
 
@@ -100,7 +104,7 @@ Claude 版 `bmad-bug-assistant` 必须满足：
 
 | 资源 | 路径/说明 |
 | ---- | --------- |
-| **party-mode** | `{project-root}/_bmad/core/workflows/party-mode/`；轮次与收敛见 step-02（BUGFIX 产出最终方案与 §7 任务列表：至少 100 轮；其它：50 轮；收敛条件再结束）。 |
+| **party-mode** | `{project-root}/_bmad/core/skills/bmad-party-mode/`；所有 rounds / challenger ratio / recovery / evidence / exit gate 规则以 core step-02 为准（BUGFIX 产出最终方案与 §7 任务列表：100 轮；其它：50 轮）。 |
 | **auditor-bugfix 执行体** | `.claude/agents/auditors/auditor-bugfix.md`；找不到则按 Fallback Strategy 降级 |
 | **auditor-bugfix 的门槛语义** | `auditor-bugfix` = BUGFIX 文档审计执行体，**必须先于修复实现通过** |
 | **audit-prompts §5** | `references/audit-prompts-section5.md`（本 skill 内）或 `{project-root}/docs/speckit/skills/speckit-workflow/references/audit-prompts.md`；**仅作其他工作流参考，不用于本 skill 的 BUGFIX 文档审计**。 |

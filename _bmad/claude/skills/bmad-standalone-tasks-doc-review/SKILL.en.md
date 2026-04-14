@@ -25,6 +25,8 @@ references:
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
 > Closeout terminology: in this document, a stage is considered complete only when `runAuditorHost` returns `closeout approved`. An audit report `PASS` only means the host close-out may start; `PASS` alone must not be treated as completion, admission, or release.
 
+> **Orphan TASKS doc-review closeout contract**: when the audited document lives under `_orphan/`, the structured audit report must explicitly provide `stage=standalone_tasks`, `artifactDocPath`, and `reportPath`. Missing any field, returning `stage=document`, or relying on prose-only `PASS` must not count as authoritative closeout.
+
 # Claude adapter: bmad-standalone-tasks-doc-review
 
 ## Purpose

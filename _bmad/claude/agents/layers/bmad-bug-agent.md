@@ -37,7 +37,7 @@ Bug 修复专用流程。
 - 需求依据规则：
   - 若 BUGFIX 文档头部有“参考”字段，则以该路径为准
   - 否则以 RCA 摘要 / 用户问题描述为自洽依据
-- 若 RCA 后仍存在多个修复策略 / trade-off / 边界分歧，必须先进入 `party-mode`，多角色辩论至少 100 轮
+- 若 RCA 后仍存在多个修复策略 / trade-off / 边界分歧，必须先进入 `party-mode`，多角色辩论至少 100 轮；所有 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以 `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md` 为准
 
 ## Claude/OMC Runtime Adapter
 

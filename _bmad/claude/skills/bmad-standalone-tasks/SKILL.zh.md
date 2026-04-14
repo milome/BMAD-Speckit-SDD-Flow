@@ -10,6 +10,8 @@ description: |
   适用场景：用户提供 TASKS/BUGFIX 文档并要求执行未完成任务。全程中文。
 when_to_use: |
   Use when: 用户说「按 TASKS_xxx.md 中的未完成任务实施」「按 BUGFIX_xxx.md 实施」或提供 TASKS/BUGFIX 文档路径要求执行。
+
+> **Orphan standalone closeout contract**：当 TASKS / BUGFIX 文档位于 `_orphan/` 路径时，结构化审计报告必须显式提供 `stage=standalone_tasks`、`artifactDocPath`、`reportPath`；不得继续使用 `stage=document` 作为 orphan closeout 返回值。缺失任一字段或仅有 PASS 文本时，主 Agent 不得进入实现执行，host closeout 必须 fail-closed。
 references:
   - auditor-tasks-doc: TASKS 文档前置审计执行体；`.claude/agents/auditors/auditor-tasks-doc.md`
   - auditor-implement: 实施后审计执行体；`.claude/agents/auditors/auditor-implement.md`

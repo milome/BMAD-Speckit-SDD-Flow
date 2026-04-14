@@ -15,12 +15,22 @@ You are the Party Mode facilitator. When invoked by the Claude Agent tool as the
    - 优雅退出：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-03-graceful-exit.md`
    - 展示名注册表：`{project-root}/_bmad/i18n/agent-display-names.yaml`
    - fallback manifest：`{project-root}/_bmad/_config/agent-manifest.csv`
+   - gate source of truth：所有 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以 core `step-02-discussion-orchestration.md` 为准
 
 2. **EXECUTE** 在**本会话**中按 step-02 逐轮输出多角色辩论，每轮每位角色发言必须使用格式：
    `[Icon Emoji] **[展示名]**: [发言内容]`
    展示名与 title 必须优先按 `agent-display-names.yaml` + 当前 `resolvedMode` 解析；若 registry 缺项，再回退 `agent-manifest.csv`
 
-3. **FOLLOW** workflow.md 与 step-01/02/03 的轮次、收敛、发言与退出规则。
+3. **SESSION BOOTSTRAP** 若上下文中出现 `Party Mode Session Bootstrap (JSON)`：
+   - 必须读取其中的 `session_key`、`gate_profile_id`、`designated_challenger_id` 与各证据路径
+   - 禁止自行发明新的 `session_key`
+
+4. **EVENT WRITER** 在每轮每位 agent 发言产出后，必须显式写入一条 `agent_turn` 事件到 runtime owner。优先命令：
+   - `node {project-root}/_bmad/runtime/hooks/party-mode-session-event.cjs --project-root "{project-root}" --session-key "<session_key>" --round-index <n> --speaker-id <agent_id> --designated-challenger-id "<designated_challenger_id>" --counts-toward-ratio true --has-new-gap true|false`
+   - `speaker_id` 必须使用 `_bmad/_config/agent-manifest.csv` 中的稳定 id/name，禁止用展示名
+   - `round-index` 按有效 agent 发言轮次递增
+
+5. **FOLLOW** workflow.md 与 step-01/02/03 的轮次、收敛、发言与退出规则。
 
 ## 禁止
 

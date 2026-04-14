@@ -8,6 +8,12 @@ import {
   updateGovernancePacketExecutionRecord,
 } from '../../scripts/governance-packet-execution-store';
 import { mainEmitRuntimePolicy } from '../../scripts/emit-runtime-policy';
+import { runAuditorHost } from '../../scripts/run-auditor-host';
+import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
+import {
+  defaultRuntimeContextRegistry,
+  writeRuntimeContextRegistry,
+} from '../../scripts/runtime-context-registry';
 import { writeMinimalRegistryAndProjectContext } from '../helpers/runtime-registry-fixture';
 
 function writeMinimalReadinessReport(
@@ -148,9 +154,21 @@ describe('bmad-help runtime policy consumers', () => {
     }
   });
 
-  it('normalizes bugfix document-audit facts instead of defaulting to blocked when authoritative audit passed', () => {
+  it('normalizes bugfix document-audit facts instead of defaulting to blocked when authoritative audit passed', async () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'bmad-help-bugfix-audit-'));
     try {
+      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+      writeRuntimeContext(
+        root,
+        defaultRuntimeContextFile({
+          flow: 'bugfix',
+          stage: 'implement',
+          sourceMode: 'seeded_solutioning',
+          contextScope: 'project',
+          artifactPath: '_bmad-output/implementation-artifacts/_orphan/BUGFIX_login_loop.md',
+          updatedAt: new Date().toISOString(),
+        })
+      );
       const reportPath = path.join(
         root,
         '_bmad-output',
@@ -177,6 +195,7 @@ describe('bmad-help runtime policy consumers', () => {
         bugfixAuditReportPath,
         [
           'status: PASS',
+          'stage: bugfix',
           `reportPath: ${bugfixAuditReportPath.replace(/\\/g, '/')}`,
           'iteration_count: 1',
           'required_fixes_count: 0',
@@ -186,6 +205,12 @@ describe('bmad-help runtime policy consumers', () => {
         ].join('\n'),
         'utf8'
       );
+      await runAuditorHost({
+        projectRoot: root,
+        reportPath: bugfixAuditReportPath,
+        stage: 'bugfix',
+        artifactPath: bugfixPath,
+      });
 
       const policy = resolveBmadHelpRuntimePolicy({
         projectRoot: root,
@@ -210,9 +235,21 @@ describe('bmad-help runtime policy consumers', () => {
     }
   });
 
-  it('upgrades standalone_tasks + high complexity into real consumer routing state', () => {
+  it('upgrades standalone_tasks + high complexity into real consumer routing state', async () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'bmad-help-standalone-upgrade-'));
     try {
+      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+      writeRuntimeContext(
+        root,
+        defaultRuntimeContextFile({
+          flow: 'standalone_tasks',
+          stage: 'implement',
+          sourceMode: 'standalone_story',
+          contextScope: 'project',
+          artifactPath: '_bmad-output/implementation-artifacts/_orphan/TASKS_checkout_hardening.md',
+          updatedAt: new Date().toISOString(),
+        })
+      );
       const tasksPath = path.join(
         root,
         '_bmad-output',
@@ -231,6 +268,7 @@ describe('bmad-help runtime policy consumers', () => {
         tasksAuditReportPath,
         [
           'status: PASS',
+          'stage: standalone_tasks',
           `reportPath: ${tasksAuditReportPath.replace(/\\/g, '/')}`,
           'iteration_count: 1',
           'required_fixes_count: 0',
@@ -240,6 +278,13 @@ describe('bmad-help runtime policy consumers', () => {
         ].join('\n'),
         'utf8'
       );
+      await runAuditorHost({
+        projectRoot: root,
+        reportPath: tasksAuditReportPath,
+        stage: 'document',
+        artifactPath: tasksPath,
+        iterationCount: '1',
+      });
 
       const reportPath = path.join(
         root,
@@ -310,6 +355,120 @@ describe('bmad-help runtime policy consumers', () => {
           sourceMode: 'seeded_solutioning',
           contextScope: 'project',
           artifactPath: '_bmad-output/implementation-artifacts/_orphan/BUGFIX_false_positive.md',
+          updatedAt: new Date().toISOString(),
+        },
+      });
+
+      expect(policy.implementationReadinessStatus).toBe('blocked');
+      expect(policy.implementationEntryRecommended).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('does not treat a structured orphan audit report as authoritative when runAuditorHost closeout never completed', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'bmad-help-missing-closeout-'));
+    try {
+      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+      const bugfixPath = path.join(
+        root,
+        '_bmad-output',
+        'implementation-artifacts',
+        '_orphan',
+        'BUGFIX_closeout_missing.md'
+      );
+      mkdirSync(path.dirname(bugfixPath), { recursive: true });
+      writeFileSync(bugfixPath, '# BUGFIX\n', 'utf8');
+
+      const bugfixAuditReportPath = bugfixPath.replace(/\.md$/i, '.audit.md');
+      writeFileSync(
+        bugfixAuditReportPath,
+        [
+          'status: PASS',
+          'stage: bugfix',
+          `reportPath: ${bugfixAuditReportPath.replace(/\\/g, '/')}`,
+          'iteration_count: 1',
+          'required_fixes_count: 0',
+          'score_trigger_present: true',
+          `artifactDocPath: ${bugfixPath.replace(/\\/g, '/')}`,
+          'converged: true',
+        ].join('\n'),
+        'utf8'
+      );
+
+      const reportPath = path.join(
+        root,
+        '_bmad-output',
+        'planning-artifacts',
+        'implementation-readiness-report-2026-04-11.md'
+      );
+      writeMinimalReadinessReport(reportPath, 'READY');
+
+      const policy = resolveBmadHelpRuntimePolicy({
+        projectRoot: root,
+        config: loadConfig(),
+        flow: 'bugfix',
+        stage: 'implement',
+        runtimeContext: {
+          version: 1,
+          flow: 'bugfix',
+          stage: 'implement',
+          sourceMode: 'seeded_solutioning',
+          contextScope: 'project',
+          artifactPath: '_bmad-output/implementation-artifacts/_orphan/BUGFIX_closeout_missing.md',
+          updatedAt: new Date().toISOString(),
+        },
+      });
+
+      expect(policy.implementationReadinessStatus).toBe('blocked');
+      expect(policy.implementationEntryRecommended).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps orphan routing blocked when authoritative registration stage mismatches the flow', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'bmad-help-stage-mismatch-'));
+    try {
+      const registry = defaultRuntimeContextRegistry(root);
+      const bugfixPath = path.join(
+        root,
+        '_bmad-output',
+        'implementation-artifacts',
+        '_orphan',
+        'BUGFIX_stage_mismatch.md'
+      );
+      const bugfixAuditReportPath = bugfixPath.replace(/\.md$/i, '.audit.md');
+      registry.auditIndex.bugfix[path.normalize(bugfixPath)] = {
+        artifactDocPath: bugfixPath,
+        reportPath: bugfixAuditReportPath,
+        status: 'PASS',
+        stage: 'standalone_tasks',
+        closeoutApproved: true,
+        updatedAt: new Date().toISOString(),
+      };
+      writeRuntimeContextRegistry(root, registry);
+
+      const reportPath = path.join(
+        root,
+        '_bmad-output',
+        'planning-artifacts',
+        'implementation-readiness-report-2026-04-11.md'
+      );
+      writeMinimalReadinessReport(reportPath, 'READY');
+
+      const policy = resolveBmadHelpRuntimePolicy({
+        projectRoot: root,
+        config: loadConfig(),
+        flow: 'bugfix',
+        stage: 'implement',
+        runtimeContext: {
+          version: 1,
+          flow: 'bugfix',
+          stage: 'implement',
+          sourceMode: 'seeded_solutioning',
+          contextScope: 'project',
+          artifactPath: '_bmad-output/implementation-artifacts/_orphan/BUGFIX_stage_mismatch.md',
           updatedAt: new Date().toISOString(),
         },
       });

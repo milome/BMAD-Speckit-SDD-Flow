@@ -9,9 +9,12 @@ description: |
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
 > Closeout terminology: in this document, a stage is considered complete only when `runAuditorHost` returns `closeout approved`. An audit report `PASS` only means the host close-out may start; `PASS` alone must not be treated as completion, admission, or release.
 
+> **Orphan bugfix closeout contract**: when the BUGFIX document lives under `_bmad-output/implementation-artifacts/_orphan/`, the structured audit report must explicitly carry `stage=bugfix`, `artifactDocPath`, and `reportPath`, and all three must match the real BUGFIX doc/report paths. Missing any field, or relying on prose-only `PASS`, must fail closeout conservatively.
+
 # BMAD Bug Assistant
 
 > **Required reading:** Before using this skill, read and comply with the self-test rules in `{project-root}/.cursor/rules/bmad-bug-assistant.mdc`. **Before** initiating an mcp_task or party-mode subtask, complete every item in that stage’s “Pre-initiation self-test list” and output the self-test results, or do not initiate.
+> **Party-mode source of truth**: `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`. All party-mode rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit-gate semantics must follow that file; this skill must not define a second gate contract.
 
 This skill defines the complete workflow **Root Cause Analysis → BUGFIX documentation → audit → (optional) information updates → task-list supplement → implementation → post-implementation audit**. **Post-implementation audit is mandatory, not optional.** If it fails, apply the audit’s change requests and re-audit until it passes.
 
@@ -53,7 +56,7 @@ Each time a subtask (party-mode or mcp_task) is initiated, the main Agent **must
 
 | Resources | Path/Description |
 | ---- | --------- |
-| **party-mode** | `{project-root}/_bmad/core/workflows/party-mode/`; For rounds and convergence, see step-02 (BUGFIX produces the final solution and §7 task list: at least 100 rounds; others: 50 rounds; end after convergence conditions). |
+| **party-mode** | `{project-root}/_bmad/core/skills/bmad-party-mode/`; all rounds / challenger ratio / recovery / evidence / exit-gate rules come from core step-02 (BUGFIX produces the final solution and §7 task list: 100 rounds; others: 50 rounds). |
 | **party-mode-facilitator subagent** | `.cursor/agents/party-mode-facilitator.md`; Prioritize Cursor Task scheduling, users can see the complete debate; if not found, use `mcp_task` + `generalPurpose` |
 | **code-reviewer subagent** | `.claude/agents/code-reviewer.md` or `.cursor/agents/code-reviewer.md`; if not found, use `mcp_task` to call `generalPurpose` |
 | **audit-prompts §5** | `references/audit-prompts-section5.md` (within this skill) or `{project-root}/docs/speckit/skills/speckit-workflow/references/audit-prompts.md`; **Only for other workflow reference, not used for BUGFIX document auditing of this skill**. |
@@ -549,5 +552,3 @@ Main Agent: Execute Phase 3 - Copy the entire section of "Stage 3 Task List Supp
 User: "Implement fix as per BUGFIX documentation."
 
 Main Agent: Execute Phase 4 - Copy the entire "Phase 4 Implementation Detailed Prompt Words", replace only the BUGFIX document path and project root directory, and initiate mcp_task; after the implementation is completed, copy the entire "Phase 4 Post-implementation Audit Complete Prompt Template" and initiate the audit subtask; if the audit conclusion is failed, you must entrust the sub-agent to modify according to the modification suggestions and initiate the audit again until the conclusion is "complete coverage, verification passed." Direct modification of production code is prohibited.
-
-

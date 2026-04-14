@@ -3,7 +3,7 @@ name: bmad-rca-helper
 description: |
   Claude Code CLI / OMC 版 BMAD RCA 助手适配入口。
   以 Cursor bmad-rca-helper 为语义基线，按「Party-Mode 根因分析 → 最终方案 + 任务列表 → 审计收敛」执行深度分析。
-  Party-Mode 至少 100 轮，批判审计员 >70%，连续 3 轮无 gap 收敛；审计子代理在发现 gap 时直接修改被审文档。
+  Party-Mode 的 gate、recovery、snapshot、evidence 与 exit 语义以 `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md` 为准；当前 designated challenger 硬门禁为 `>60%`，不再由本 skill 自定义第二套阈值。对“最终方案 + 任务列表”场景至少 100 轮，连续 3 轮无 gap 收敛；审计子代理在发现 gap 时直接修改被审文档。
   审计优先 `.claude/agents/auditors/auditor-document`，按 Fallback 链降级。
   适用场景：用户请求 RCA、"根因分析"、"议题/问题深度分析"、"最优方案+任务列表"、或 "RCA 后审计任务文档"。全程中文。
 when_to_use: |
@@ -16,12 +16,14 @@ references:
   - audit-prompts-critical-auditor-appendix: 批判审计员附录；`.claude/skills/speckit-workflow/references/audit-prompts-critical-auditor-appendix.md`
   - prompt-template-rca-tasks: `.claude/skills/bmad-rca-helper/references/audit-prompt-rca-tasks.md`
   - rca-iteration-rules: `.claude/skills/bmad-rca-helper/references/audit-document-iteration-rules.md`
-  - party-mode: `{project-root}/_bmad/core/workflows/party-mode/workflow.md`
+  - party-mode: `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md`
 ---
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
 > Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
 
 # Claude Adapter: bmad-rca-helper
+
+> **Party-mode source of truth**：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。所有 party-mode 的 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 不得定义第二套 gate 语义。
 
 ## Purpose
 
@@ -60,14 +62,14 @@ Claude 版 `bmad-rca-helper` 必须满足：
 
 - 用户提供议题、问题描述、截图或具体问题，要求深度根因分析
 - 需要多角色辩论挖掘最优方案并生成可执行任务列表
-- 产出文档需经严格审计（批判审计员 >70%、连续 3 轮无 gap）后交付
+- 产出文档需经严格审计（审计阶段可要求批判审计员 >70%、连续 3 轮无 gap）后交付
 
 #### 强制约束
 
 | 约束 | 说明 |
 |------|------|
 | Party-Mode 轮次 | **至少 100 轮**（产出最终方案 + 任务列表场景） |
-| 批判审计员 | 必须引入，**发言占比 >70%**（总轮次中批判审计员发言轮数及篇幅占主导） |
+| 批判审计员 | 必须引入；party-mode 发言占比以 core step-02 为准（当前 designated challenger 硬门禁：`challenger_ratio > 0.60`） |
 | 收敛条件 | **最后 3 轮无新 gap** 才能结束辩论（FR23a：审计收敛条件须可验证） |
 | 方案与任务描述 | **禁止**模糊表述；**禁止**「可选、可考虑、后续、酌情」等不确定用语；**禁止**遗漏 |
 | 审计子任务 | 辩论收敛并产出文档后**必须**发起审计子任务 |
@@ -78,8 +80,8 @@ Claude 版 `bmad-rca-helper` 必须满足：
 ##### 阶段一：Party-Mode 根因分析与方案讨论
 
 1. **输入**：用户提供的议题/问题描述/截图/问题（主 Agent 归纳为统一议题描述）。
-2. **执行**：**必须读取** `{project-root}/_bmad/core/workflows/party-mode/workflow.md` 及 `steps/step-02-discussion-orchestration.md`，并**严格遵循** step-02 中的 Response Structure 格式编排多角色讨论。
-3. **角色**：**必须**引入 ⚔️ **批判性审计员**；可包含 🏗️ Winston 架构师、💻 Amelia 开发、📋 John 产品经理等（展示名与 `_bmad/_config/agent-manifest.csv` 一致）；批判审计员发言占比 **>70%**。
+2. **执行**：**必须读取** `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md` 及 `steps/step-02-discussion-orchestration.md`，并**严格遵循** step-02 中的 Response Structure 与 gate/recovery/evidence 规则编排多角色讨论。
+3. **角色**：**必须**引入 ⚔️ **批判性审计员**；可包含 🏗️ Winston 架构师、💻 Amelia 开发、📋 John 产品经理等（展示名与 `_bmad/_config/agent-manifest.csv` 一致）；批判审计员发言占比以 core step-02 为准，不在本技能中另立阈值。
 3b. **发言格式（强制）**：每轮每位角色发言**必须**使用格式 `[Icon Emoji] **[展示名]**: [发言内容]`（如 `🏗️ **Winston 架构师**: ...`、`⚔️ **批判性审计员**: ...`）。Icon 与展示名取自 `_bmad/_config/agent-manifest.csv`，禁止省略。
 4. **轮次与收敛**：
    - 讨论 **至少 100 轮**；
@@ -234,7 +236,7 @@ handoff:
 
 | 资源 | 路径/说明 |
 |------|-----------|
-| **party-mode** | `{project-root}/_bmad/core/workflows/party-mode/workflow.md`；step-02 讨论编排、100 轮与收敛规则 |
+| **party-mode** | `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md`；所有 rounds / challenger ratio / recovery / evidence / exit gate 规则以 core step-02 为准 |
 | **批判审计员** | `{project-root}/_bmad/core/agents/critical-auditor-guide.md`（若存在）；step-02 中批判性审计员为必选挑战者 |
 | **audit-prompts §4** | `.claude/skills/speckit-workflow/references/audit-prompts.md` §4（tasks 审计）；本技能审计 prompt 与之精神一致 |
 | **audit-document-iteration-rules** | `.claude/skills/speckit-workflow/references/audit-document-iteration-rules.md`；发现 gap 时审计子代理直接修改文档、3 轮无 gap 收敛 |

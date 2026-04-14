@@ -31,7 +31,7 @@
   - 实施过程必须遵循 TDD 红绿灯
   - 每批任务完成后进行实施审计
   - 架构必须忠实于 TASKS / BUGFIX 文档，禁止伪实现、占位、TODO 式实现
-- 若执行前存在多个实现路线、拆分方案、trade-off 或未决点，必须先进入 `party-mode`，多角色辩论至少 100 轮
+- 若执行前存在多个实现路线、拆分方案、trade-off 或未决点，必须先进入 `party-mode`，多角色辩论至少 100 轮；所有 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以 `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md` 为准
 
 ## Claude/OMC Runtime Adapter
 

@@ -16,6 +16,8 @@ description: |
 
 # BMAD Story Assistant
 
+> **Party-mode source of truth**: `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`. All party-mode rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit-gate semantics must follow that file; this skill only decides when Story flows enter party-mode.
+
 ## Quick Decision Guide
 
 ### Five-layer architecture overview
@@ -193,14 +195,14 @@ After the implementation is completed, a post-implementation audit will be initi
 **Prerequisite**: `_bmad` has been installed in the project (`{project-root}/_bmad/` exists).
 
 **Check logic**:
-1. Read `{project-root}/_bmad/core/workflows/party-mode/steps/step-02-discussion-orchestration.md` (use step-02 as the representative file of party-mode display name optimization status; if step-02 has been optimized, it is presumed that workflow.md and step-01 have been optimized simultaneously)
+1. Read `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md` (use canonical step-02 as the representative file for party-mode display-name optimization and gate semantics; if step-02 is updated, mirrors are generated afterward by the sync script)
 2. If step-02 **does not contain** the string `must use **display name` **and** `display name displayName`, it is determined that it is not optimized.
 
 **Execute Action**: Apply `search_replace` modifications to the following three files. If a file does not exist, skip it. If `old_string` is not completely consistent with the content of the current file, read the file first and then fine-tune `old_string` according to the actual format and try again; if it still fails, skip and prompt.
 
 ### Patch 1: workflow.md
 
-Path: `{project-root}/_bmad/core/workflows/party-mode/workflow.md`
+Path: `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md`
 ```yaml
 old_string: "[Load agent roster and display 2-3 most diverse agents as examples]"
 new_string: |
@@ -208,7 +210,7 @@ new_string: |
 ```
 ### Patch 2: step-01-agent-loading.md
 
-Path: `{project-root}/_bmad/core/workflows/party-mode/steps/step-01-agent-loading.md`
+Path: `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-01-agent-loading.md`
 
 Modification A:
 ```yaml
@@ -230,7 +232,7 @@ new_string: "[Display 3-4 diverse agents to showcase variety；使用 展示名 
 ```
 ### Patch 3: step-02-discussion-orchestration.md
 
-Path: `{project-root}/_bmad/core/workflows/party-mode/steps/step-02-discussion-orchestration.md`
+Path: `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
 
 Modify A (Response Structure):
 ```yaml
@@ -1570,7 +1572,7 @@ In all Party-Mode discussions, the Critical Auditor must speak first each round.
 | workflow.xml | `{project-root}/_bmad/core/tasks/workflow.xml` |
 | create-story workflow | `{project-root}/_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml` |
 | dev-story workflow | `{project-root}/_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml` |
-| party-mode workflow | `{project-root}/_bmad/core/workflows/party-mode/workflow.md` |
+| party-mode workflow | `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md` |
 | agent-manifest | `{project-root}/_bmad/_config/agent-manifest.csv` (including displayName, etc.) |
 | implementation_artifacts | `{project-root}/_bmad-output/implementation-artifacts/` |
 
@@ -1658,5 +1660,3 @@ The following data is retained when rolling back:
 - **BMad Master intervention (GAP-037 fix)**: When rolling back > 3 times or rolling back > 2 times, the user or project leader needs to confirm; Approval steps: Record the reason → User confirms "continue" or "terminate" → reset the count if continuing
 - Falling back to Layer 1 will reset the entire Epic plan
 - Rollback/rollback operations must record the reasons and decision-making process
-
-

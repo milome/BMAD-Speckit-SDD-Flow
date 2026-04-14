@@ -56,6 +56,8 @@ export interface RuntimeContextRegistry {
         artifactDocPath: string;
         reportPath: string;
         status: 'PASS' | 'FAIL';
+        stage?: 'bugfix' | 'standalone_tasks';
+        closeoutApproved?: boolean;
         converged?: boolean;
         iterationCount?: number;
         updatedAt: string;
@@ -67,6 +69,8 @@ export interface RuntimeContextRegistry {
         artifactDocPath: string;
         reportPath: string;
         status: 'PASS' | 'FAIL';
+        stage?: 'bugfix' | 'standalone_tasks';
+        closeoutApproved?: boolean;
         converged?: boolean;
         iterationCount?: number;
         updatedAt: string;
@@ -397,22 +401,72 @@ function inferAuditIndexFlow(artifactDocPath: string): 'bugfix' | 'standalone_ta
   return null;
 }
 
+function inferAuditIndexFlowFromParsedStage(
+  stage: string | undefined,
+  artifactDocPath: string
+): 'bugfix' | 'standalone_tasks' | null {
+  if (stage === 'bugfix' || stage === 'standalone_tasks') {
+    return stage;
+  }
+  return inferAuditIndexFlow(artifactDocPath);
+}
+
 export function syncAuditIndexFromReport(root: string, reportPath: string): RuntimeContextRegistry {
   const registry = readRegistryOrDefault(root);
   const parsed = parseBmadAuditResult(fs.readFileSync(reportPath, 'utf8'));
   const artifactDocPath = normalizeText(parsed.artifactDocPath);
-  const flow = inferAuditIndexFlow(artifactDocPath);
+  const flow = inferAuditIndexFlowFromParsedStage(parsed.stage, artifactDocPath);
 
   if (!artifactDocPath || !flow || (parsed.status !== 'PASS' && parsed.status !== 'FAIL')) {
     return registry;
   }
 
+  const existing = registry.auditIndex[flow][path.normalize(artifactDocPath)];
   registry.auditIndex[flow][path.normalize(artifactDocPath)] = {
     artifactDocPath,
     reportPath: path.normalize(reportPath),
     status: parsed.status,
-    converged: parsed.converged,
-    iterationCount: parsed.iterationCount,
+    ...(flow === 'bugfix' || flow === 'standalone_tasks'
+      ? { stage: parsed.stage === flow ? flow : existing?.stage ?? flow }
+      : {}),
+    ...(existing?.closeoutApproved !== undefined
+      ? { closeoutApproved: existing.closeoutApproved }
+      : {}),
+    converged: parsed.converged ?? existing?.converged,
+    iterationCount: parsed.iterationCount ?? existing?.iterationCount,
+    updatedAt: new Date().toISOString(),
+  };
+  registry.updatedAt = new Date().toISOString();
+  writeRuntimeContextRegistry(root, registry);
+  return registry;
+}
+
+export function recordAuthoritativeAuditCloseout(
+  root: string,
+  input: {
+    flow: 'bugfix' | 'standalone_tasks';
+    artifactDocPath: string;
+    reportPath: string;
+    status: 'PASS' | 'FAIL' | 'UNKNOWN';
+    closeoutApproved: boolean;
+  }
+): RuntimeContextRegistry {
+  const registry = readRegistryOrDefault(root);
+  const artifactKey = path.normalize(input.artifactDocPath);
+  const existing = registry.auditIndex[input.flow][artifactKey];
+  registry.auditIndex[input.flow][artifactKey] = {
+    artifactDocPath: input.artifactDocPath,
+    reportPath: path.normalize(input.reportPath),
+    status:
+      input.status === 'FAIL'
+        ? 'FAIL'
+        : input.status === 'PASS'
+          ? 'PASS'
+          : existing?.status ?? 'FAIL',
+    stage: input.flow,
+    closeoutApproved: input.closeoutApproved,
+    converged: existing?.converged,
+    iterationCount: existing?.iterationCount,
     updatedAt: new Date().toISOString(),
   };
   registry.updatedAt = new Date().toISOString();

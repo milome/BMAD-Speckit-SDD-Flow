@@ -9,6 +9,8 @@ description: |
 
 Run a strict audit on `TASKS_*.md`, `tasks-E*.md`, and similar task documents. Requires Critical Auditor >70%, three consecutive rounds with no new gap, and the audit subagent must **directly edit** the audited document when gaps are found.
 
+**Orphan TASKS doc-review closeout contract**: when the audited document lives under `_orphan/`, the structured audit report must explicitly provide `stage=standalone_tasks`, `artifactDocPath`, and `reportPath`. Missing any field, returning `stage=document`, or relying on prose-only `PASS` must not count as authoritative closeout.
+
 ## When to use
 
 - The user gives a document path and asks to launch an audit subtask

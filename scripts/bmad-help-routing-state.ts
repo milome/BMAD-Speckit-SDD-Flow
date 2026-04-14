@@ -110,8 +110,11 @@ interface LatestReadinessReportSummary {
 }
 
 interface AuditFactSummary {
-  artifactPath: string | null;
+  artifactDocPath: string | null;
+  reportPath: string | null;
+  stage: 'bugfix' | 'standalone_tasks' | null;
   auditPassed: boolean | null;
+  closeoutApproved: boolean | null;
 }
 
 function normalizeText(value: unknown): string {
@@ -404,11 +407,23 @@ function resolveAuditFactSummary(input: {
   runtimeContext: Partial<RuntimeContextFile> | null;
 }): AuditFactSummary {
   if (input.flow !== 'bugfix' && input.flow !== 'standalone_tasks') {
-    return { artifactPath: null, auditPassed: null };
+    return {
+      artifactDocPath: null,
+      reportPath: null,
+      stage: null,
+      auditPassed: null,
+      closeoutApproved: null,
+    };
   }
 
   if (!input.projectRoot) {
-    return { artifactPath: null, auditPassed: false };
+    return {
+      artifactDocPath: null,
+      reportPath: null,
+      stage: null,
+      auditPassed: false,
+      closeoutApproved: false,
+    };
   }
 
   syncAuditIndexFromAllReports(input.projectRoot);
@@ -421,13 +436,24 @@ function resolveAuditFactSummary(input: {
   ]);
 
   if (!currentArtifactPath) {
-    return { artifactPath: null, auditPassed: false };
+    return {
+      artifactDocPath: null,
+      reportPath: null,
+      stage: null,
+      auditPassed: false,
+      closeoutApproved: false,
+    };
   }
 
   const entry = registry.auditIndex[input.flow][path.normalize(currentArtifactPath)];
+  const expectedStage = input.flow;
+  const closeoutApproved = entry?.closeoutApproved === true && entry?.stage === expectedStage;
   return {
-    artifactPath: entry?.reportPath ?? null,
-    auditPassed: entry?.status === 'PASS',
+    artifactDocPath: entry?.artifactDocPath ?? null,
+    reportPath: entry?.reportPath ?? null,
+    stage: entry?.stage ?? null,
+    auditPassed: entry?.status === 'PASS' && closeoutApproved,
+    closeoutApproved,
   };
 }
 

@@ -50,6 +50,7 @@ describe('auditor post-actions runner', () => {
       expect(code).toBe(0);
       const registry = readRuntimeContextRegistry(root);
       expect(registry.auditIndex.bugfix[path.normalize(artifactDocPath)]?.status).toBe('PASS');
+      expect(registry.auditIndex.bugfix[path.normalize(artifactDocPath)]?.closeoutApproved).toBeUndefined();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

@@ -33,13 +33,7 @@ describe('party-mode mirror sync', () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'party-mode-mirror-'));
     try {
       fs.cpSync(path.join(ROOT, '_bmad'), path.join(tempRoot, '_bmad'), { recursive: true });
-      const drifted = path.join(
-        tempRoot,
-        '_bmad',
-        'skills',
-        'bmad-party-mode',
-        'workflow.en.md'
-      );
+      const drifted = path.join(tempRoot, '_bmad', 'skills', 'bmad-party-mode', 'workflow.en.md');
       fs.writeFileSync(drifted, 'drifted\n', 'utf8');
 
       syncPartyModeMirrors(tempRoot);

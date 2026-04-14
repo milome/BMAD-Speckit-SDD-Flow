@@ -13,6 +13,8 @@ description: |
 
 # BMAD Story 助手
 
+> **Party-mode source of truth**：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。所有 party-mode 的 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 只定义 Story 场景何时进入 party-mode，不得维护第二套 gate 语义。
+
 ## 快速决策指引
 
 ### 五层架构概览
@@ -182,14 +184,14 @@ Story 完整标识为 `{epic_num}-{story_num}`，例如 Epic 4、Story 4.1 → `
 **前提**：项目内已安装 `_bmad`（`{project-root}/_bmad/` 存在）。
 
 **检查逻辑**：
-1. 读取 `{project-root}/_bmad/core/workflows/party-mode/steps/step-02-discussion-orchestration.md`（以 step-02 作为 party-mode 展示名优化状态的代表文件；若 step-02 已优化，推定 workflow.md 与 step-01 同步已优化）
+1. 读取 `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`（以 canonical step-02 作为 party-mode 展示名优化与 gate 语义状态的代表文件；若 step-02 已优化，后续 mirror 通过同步脚本生成）
 2. 若 step-02 中**同时不含**字符串 `必须使用 **展示名` **与** `展示名 displayName`，则判定未优化
 
 **执行动作**：对以下三个文件应用 `search_replace` 修改。若某文件不存在则跳过。若 `old_string` 与当前文件内容不完全一致，先读取文件再根据实际格式微调 `old_string` 后重试；仍失败则跳过并提示。
 
 ### 补丁 1：workflow.md
 
-路径：`{project-root}/_bmad/core/workflows/party-mode/workflow.md`
+路径：`{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md`
 
 ```yaml
 old_string: "[Load agent roster and display 2-3 most diverse agents as examples]"
@@ -199,7 +201,7 @@ new_string: |
 
 ### 补丁 2：step-01-agent-loading.md
 
-路径：`{project-root}/_bmad/core/workflows/party-mode/steps/step-01-agent-loading.md`
+路径：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-01-agent-loading.md`
 
 修改 A：
 ```yaml
@@ -223,7 +225,7 @@ new_string: "[Display 3-4 diverse agents to showcase variety；使用 展示名 
 
 ### 补丁 3：step-02-discussion-orchestration.md
 
-路径：`{project-root}/_bmad/core/workflows/party-mode/steps/step-02-discussion-orchestration.md`
+路径：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
 
 修改 A（Response Structure）：
 ```yaml
@@ -1613,7 +1615,7 @@ prompt: |
 | workflow.xml | `{project-root}/_bmad/core/tasks/workflow.xml` |
 | create-story workflow | `{project-root}/_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml` |
 | dev-story workflow | `{project-root}/_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml` |
-| party-mode workflow | `{project-root}/_bmad/core/workflows/party-mode/workflow.md` |
+| party-mode workflow | `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md` |
 | agent-manifest | `{project-root}/_bmad/_config/agent-manifest.csv`（含 displayName 等） |
 | implementation_artifacts | `{project-root}/_bmad-output/implementation-artifacts/` |
 

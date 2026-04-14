@@ -23,6 +23,8 @@ references:
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
 > Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
 
+> **Orphan standalone closeout contract**：当 TASKS / BUGFIX 文档位于 `_orphan/` 路径时，结构化审计报告必须显式提供 `stage=standalone_tasks`、`artifactDocPath`、`reportPath`；不得继续使用 `stage=document` 作为 orphan closeout 返回值。缺失任一字段或仅有 PASS 文本时，主 Agent 不得进入实现执行，host closeout 必须 fail-closed。
+
 # Claude Adapter: bmad-standalone-tasks
 
 ## Purpose

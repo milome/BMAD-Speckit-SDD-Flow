@@ -13,6 +13,8 @@ description: |
 
 Execute unfinished work from a **single TASKS or BUGFIX document** in a single session. Implementation and code edits are **only** done by subagents; the main Agent orchestrates and audits.
 
+**Orphan standalone closeout contract**: when the TASKS / BUGFIX document lives under `_orphan/`, the structured audit report must explicitly provide `stage=standalone_tasks`, `artifactDocPath`, and `reportPath`. `stage=document` is no longer a valid orphan closeout return value. Missing any field, or relying on prose-only `PASS`, must fail closeout conservatively.
+
 ## When to use
 
 - User says: **"/bmad implement unfinished items in {document}"** or equivalent (e.g. implement per `BUGFIX_xxx.md`, `TASKS_xxx.md`).

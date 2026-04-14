@@ -219,6 +219,9 @@ speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-a
 
 ### Plan阶段可选Party-Mode
 
+> Party-mode source of truth：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
+> 本节只定义何时建议进入 party-mode。轮次分级、`designated_challenger_id`、`challenger_ratio > 0.60`、session/meta/snapshot/evidence、恢复与退出门禁都以 core step-02 为准。
+
 当以下情况出现时，可在plan阶段启动party-mode：
 1. 用户明确要求深入讨论技术方案
 2. Create Story阶段未能充分解决的技术争议

@@ -231,6 +231,9 @@ Among them, iterationReportPaths is the fail round report path (see §1.0.3); th
 
 ### Optional Party-Mode in Plan stage
 
+> Party-mode source of truth: `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
+> This section only decides when plan work should enter party-mode. Rounds, `designated_challenger_id`, `challenger_ratio > 0.60`, session/meta/snapshot/evidence, recovery, and exit-gate semantics must follow core step-02.
+
 Party-mode can be started in the planning phase when the following situations occur:
 1. Users clearly request in-depth discussion of technical solutions
 2. Technical disputes that were not fully resolved during the Create Story stage

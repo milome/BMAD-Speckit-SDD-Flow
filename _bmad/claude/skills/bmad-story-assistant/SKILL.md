@@ -10,6 +10,8 @@ description: |
 
 # Claude Adapter: BMAD Story Assistant
 
+> **Party-mode source of truth**：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。所有 party-mode 的 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 只定义 Story 场景何时进入 party-mode，不得维护第二套 gate 语义。
+
 ## Purpose
 
 本 skill 是 Cursor `bmad-story-assistant` 在 Claude Code CLI / OMC 环境下的统一适配入口。

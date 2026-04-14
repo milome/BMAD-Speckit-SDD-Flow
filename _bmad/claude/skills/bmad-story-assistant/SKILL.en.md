@@ -13,6 +13,8 @@ description: |
 
 # Claude Adapter: BMAD Story Assistant
 
+> **Party-mode source of truth**: `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`. All party-mode rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit-gate semantics must follow that file; this skill only decides when Story flows enter party-mode.
+
 ## Purpose
 
 This skill is the unified adaptation entrance of Cursor `bmad-story-assistant` in Claude Code CLI / OMC environment.
@@ -2090,5 +2092,4 @@ After the Claude version of the skill is launched, it should at least meet the f
 > The Claude version of `bmad-story-assistant` is not a direct copy of the Cursor skill, but a unified orchestration entry with Cursor as the semantic baseline, Claude/OMC as the execution adaptation layer, and repository-local rules as the enhancement layer.
 
 <!-- ADAPTATION_COMPLETE: 2026-03-15 -->
-
 

@@ -12,6 +12,11 @@ const {
   resolveRuntimeStepState,
   persistRuntimeStepState,
 } = require('./runtime-step-state.cjs');
+const {
+  bootstrapSession,
+  extractSubagentText,
+  isPartyModeFacilitatorStart,
+} = require('./party-mode-session-runtime.cjs');
 
 function readStdin() {
   return new Promise((resolve, reject) => {
@@ -129,6 +134,35 @@ function runResolveLanguagePolicyCli(root, userMessage, writeContext) {
   });
 }
 
+function buildPartyModeBootstrapBlock(projectRoot, hookMode, input) {
+  if (hookMode !== 'subagent' || !isPartyModeFacilitatorStart(input)) {
+    return '';
+  }
+  const bootstrap = bootstrapSession(projectRoot, {
+    inputText: extractSubagentText(input),
+  });
+  return `Party Mode Session Bootstrap (JSON):\n${JSON.stringify(
+    {
+      session_key: bootstrap.sessionKey,
+      gate_profile_id: bootstrap.meta.gate_profile_id,
+      designated_challenger_id: bootstrap.meta.designated_challenger_id,
+      agent_turn_event_source_mode: bootstrap.meta.agent_turn_event_source_mode,
+      host_native_agent_turn_supported: bootstrap.meta.host_native_agent_turn_supported,
+      host_native_agent_turn_reason: bootstrap.meta.host_native_agent_turn_reason,
+      session_log_path: bootstrap.meta.session_log_path,
+      snapshot_path: bootstrap.meta.snapshot_path,
+      convergence_record_path: bootstrap.meta.convergence_record_path,
+      audit_verdict_path: bootstrap.meta.audit_verdict_path,
+      event_writer_command:
+        `node {project-root}/_bmad/runtime/hooks/party-mode-session-event.cjs ` +
+        `--project-root "{project-root}" --session-key "${bootstrap.sessionKey}" ` +
+        `--round-index <n> --speaker-id <agent_id> --counts-toward-ratio true|false --has-new-gap true|false`,
+    },
+    null,
+    2
+  )}\n`;
+}
+
 function mergeGovernanceWithLanguage(govJsonLine, langStdout) {
   let govObj;
   try {
@@ -236,7 +270,8 @@ async function runtimePolicyInjectCore({ host }) {
 
   const rg = loadHookMessages(__dirname).runtimeGovernance || {};
   const prefix = rg.jsonBlockPrefix || '本回合 Runtime Governance（JSON）：';
-  const block = `${prefix}\n${mergedJson}\n`;
+  const bootstrapBlock = buildPartyModeBootstrapBlock(root, hookMode, input);
+  const block = `${prefix}\n${mergedJson}\n${bootstrapBlock}`;
   if (mode === 'subagent') {
     return {
       exitCode: 0,

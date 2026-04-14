@@ -5,7 +5,7 @@ name: bmad-rca-helper
 description: |
   Claude Code CLI / OMC adapter entry for the BMAD RCA helper.
   Uses Cursor bmad-rca-helper as the semantic baseline: Party-Mode root-cause analysis → final solution + task list → audit convergence.
-  Party-Mode at least 100 rounds, Critical Auditor >70%, three consecutive rounds with no new gap; the audit subagent edits the audited document when gaps are found.
+  Party-Mode gate, recovery, snapshot, evidence, and exit semantics are sourced from `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`; the current designated challenger hard gate is `>60%`, not a local override. For the "final solution + task list" scenario, require at least 100 rounds and three no-gap tail rounds before convergence; the audit subagent edits the audited document when gaps are found.
   Prefer `.claude/agents/auditors/auditor-document`; follow the fallback chain.
   Use when: RCA, deep root-cause analysis, issue/problem deep-dive, “optimal solution + task list”, or post-RCA audit of the task document.
 when_to_use: |
@@ -18,13 +18,15 @@ references:
   - audit-prompts-critical-auditor-appendix: `.claude/skills/speckit-workflow/references/audit-prompts-critical-auditor-appendix.md`
   - prompt-template-rca-tasks: `.claude/skills/bmad-rca-helper/references/audit-prompt-rca-tasks.md`
   - rca-iteration-rules: `.claude/skills/bmad-rca-helper/references/audit-document-iteration-rules.md`
-  - party-mode: `{project-root}/_bmad/core/workflows/party-mode/workflow.md`
+  - party-mode: `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md`
 ---
 
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
 > Closeout terminology: in this document, a stage is considered complete only when `runAuditorHost` returns `closeout approved`. An audit report `PASS` only means the host close-out may start; `PASS` alone must not be treated as completion, admission, or release.
 
 # Claude adapter: bmad-rca-helper
+
+> **Party-mode source of truth**: `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`. All party-mode rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit-gate semantics must follow that file; this skill must not define a second gate contract.
 
 ## Purpose
 
@@ -63,14 +65,14 @@ The Claude variant of `bmad-rca-helper` must:
 
 - User supplies a topic, problem statement, screenshot, or concrete issue and wants deep root-cause analysis
 - Multi-role debate to reach an optimal solution and an executable task list
-- Deliverables must pass strict audit (Critical Auditor >70%, three consecutive rounds with no new gap)
+- Deliverables must pass strict audit (audit-stage Critical Auditor >70% and three consecutive rounds with no new gap may still apply)
 
 #### Mandatory constraints
 
 | Constraint | Description |
 |------------|-------------|
 | Party-Mode rounds | **At least 100** (when producing final solution + task list) |
-| Critical Auditor | Required; **>70%** speaking share (round count and volume) |
+| Critical Auditor | Required; use the core step-02 challenger-share gate (current designated challenger hard gate: `challenger_ratio > 0.60`) |
 | Convergence | Debate ends only when **the last 3 rounds introduce no new gap** (FR23a: verifiable) |
 | Solution & tasks | **No** vague wording; **no** optional/later/TBD-style phrasing; **no** omissions |
 | Audit subtask | After debate converges and the doc exists, the main Agent **must** launch an audit subtask |
@@ -81,8 +83,8 @@ The Claude variant of `bmad-rca-helper` must:
 ##### Phase 1: Party-Mode RCA and solution discussion
 
 1. **Input**: topic / problem / screenshot / issue (main Agent normalizes to one topic statement).
-2. **Execution**: **Must read** `{project-root}/_bmad/core/workflows/party-mode/workflow.md` and `steps/step-02-discussion-orchestration.md`, and **strictly follow** the Response Structure in step-02.
-3. **Roles**: **Must** include ⚔️ **批判性审计员** (Critical Auditor); may include 🏗️ Winston (architect), 💻 Amelia (dev), 📋 John (PM), etc. Display names must match `_bmad/_config/agent-manifest.csv`; Critical Auditor share **>70%**.
+2. **Execution**: **Must read** `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md` and `steps/step-02-discussion-orchestration.md`, and **strictly follow** the Response Structure plus the gate/recovery/evidence contract in step-02.
+3. **Roles**: **Must** include ⚔️ **批判性审计员** (Critical Auditor); may include 🏗️ Winston (architect), 💻 Amelia (dev), 📋 John (PM), etc. Display names must match `_bmad/_config/agent-manifest.csv`; the challenger share threshold comes from core step-02, not this skill.
 3b. **Turn format (mandatory)**: each role each round **must** use `[Icon Emoji] **[displayName]**: [content]` (e.g. `🏗️ **Winston (Architect)**: ...`, `⚔️ **批判性审计员**: ...`). Icons and display names come from `agent-manifest.csv`; do not omit.
 4. **Rounds and convergence**:
    - **At least 100** rounds of discussion;
@@ -233,7 +235,7 @@ On pass, do not hand-run `bmad-speckit score`. The executor only needs to return
 
 | Resource | Path / note |
 |----------|-------------|
-| **party-mode** | `{project-root}/_bmad/core/workflows/party-mode/workflow.md`; step-02 orchestration, 100 rounds, convergence |
+| **party-mode** | `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md`; all rounds / challenger ratio / recovery / evidence / exit-gate rules come from core step-02 |
 | **Critical Auditor** | `{project-root}/_bmad/core/agents/critical-auditor-guide.md` if present; step-02 mandates the challenger role |
 | **audit-prompts §4** | `.claude/skills/speckit-workflow/references/audit-prompts.md` §4 (tasks audit); RCA audit prompt aligns in spirit |
 | **audit-document-iteration-rules** | `.claude/skills/speckit-workflow/references/audit-document-iteration-rules.md` |

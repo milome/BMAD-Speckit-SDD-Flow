@@ -6,7 +6,10 @@ import * as path from 'node:path';
 import { parseBmadAuditResult } from './parse-bmad-audit-result';
 import { mainAuditorPostActions } from './auditor-post-actions';
 import { getReviewerConsumerByAuditStage } from './reviewer-registry';
-import { recordLatestReviewerCloseout } from './runtime-context-registry';
+import {
+  recordAuthoritativeAuditCloseout,
+  recordLatestReviewerCloseout,
+} from './runtime-context-registry';
 import {
   buildReviewHostCloseoutV1,
   buildReviewGovernanceClosureV1,
@@ -92,6 +95,61 @@ function inferEvent(stage: string): string {
   return 'stage_audit_complete';
 }
 
+function isOrphanCloseoutStage(stage: string): stage is 'bugfix' | 'standalone_tasks' {
+  return stage === 'bugfix' || stage === 'standalone_tasks';
+}
+
+function normalizeComparablePath(value: string): string {
+  return path.normalize(value).replace(/\\/g, '/');
+}
+
+function validateOrphanCloseoutReport(input: {
+  expectedStage: 'bugfix' | 'standalone_tasks';
+  reportPath: string;
+  artifactPath: string;
+  parsedStage?: string;
+  parsedReportPath?: string;
+  parsedArtifactDocPath?: string;
+}): void {
+  const missingFields: string[] = [];
+  if (!input.parsedStage?.trim()) {
+    missingFields.push('stage');
+  }
+  if (!input.parsedReportPath?.trim()) {
+    missingFields.push('reportPath');
+  }
+  if (!input.parsedArtifactDocPath?.trim()) {
+    missingFields.push('artifactDocPath');
+  }
+  if (missingFields.length > 0) {
+    throw new Error(
+      `orphan closeout missing required fields for stage=${input.expectedStage}: ${missingFields.join(', ')}`
+    );
+  }
+
+  if (input.parsedStage !== input.expectedStage) {
+    throw new Error(
+      `orphan closeout stage mismatch: expected ${input.expectedStage}, got ${input.parsedStage}`
+    );
+  }
+
+  if (
+    normalizeComparablePath(input.parsedReportPath!) !== normalizeComparablePath(input.reportPath)
+  ) {
+    throw new Error(
+      `orphan closeout reportPath mismatch: expected ${input.reportPath}, got ${input.parsedReportPath}`
+    );
+  }
+
+  if (
+    normalizeComparablePath(input.parsedArtifactDocPath!) !== normalizeComparablePath(input.artifactPath)
+  ) {
+    throw new Error(
+      `orphan closeout artifactDocPath mismatch: expected ${input.artifactPath}, got ${input.parsedArtifactDocPath}`
+    );
+  }
+}
+
 function resolveDefaultReportPath(stage: string, artifactPath: string): string {
   if (stage === 'spec' || stage === 'plan' || stage === 'tasks') {
     return artifactPath.replace(/\.md$/i, '-audit.md');
@@ -151,6 +209,19 @@ export async function runAuditorHost(
   const content = fs.readFileSync(resolvedReportPath, 'utf8');
   const parsed = parseBmadAuditResult(content);
   const status = parsed.status ?? 'UNKNOWN';
+  const parsedArtifactDocPath = parsed.artifactDocPath?.trim();
+  const effectiveArtifactDocPath = parsedArtifactDocPath || normalizedInput.artifactPath;
+  const expectedCloseoutStage = consumer.closeoutStage;
+  if (isOrphanCloseoutStage(expectedCloseoutStage)) {
+    validateOrphanCloseoutReport({
+      expectedStage: expectedCloseoutStage,
+      reportPath: resolvedReportPath,
+      artifactPath: normalizedInput.artifactPath,
+      parsedStage: parsed.stage,
+      parsedReportPath: parsed.reportPath,
+      parsedArtifactDocPath,
+    });
+  }
   const governanceClosure = buildReviewGovernanceClosureV1();
   const requiredFixesFromReport =
     parsed.requiredFixes && parsed.requiredFixes.length > 0
@@ -169,8 +240,8 @@ export async function runAuditorHost(
     try {
       const scoreResult = await scoreCommand({
         reportPath: resolvedReportPath,
-        stage: inferScoreStage(hostStage, parsed.artifactDocPath),
-        artifactDocPath: parsed.artifactDocPath,
+        stage: inferScoreStage(hostStage, effectiveArtifactDocPath),
+        artifactDocPath: effectiveArtifactDocPath,
         event: inferEvent(hostStage),
         triggerStage: inferTriggerStage(hostStage),
         iterationCount: String(normalizedInput.iterationCount ?? parsed.iterationCount ?? '0'),
@@ -235,7 +306,7 @@ export async function runAuditorHost(
     runner: 'runAuditorHost',
     profile: consumer.profile,
     stage: consumer.closeoutStage,
-    artifactPath: normalizedInput.artifactPath,
+    artifactPath: effectiveArtifactDocPath,
     reportPath: resolvedReportPath,
     auditStatus: status,
     closeoutApproved: isReviewCloseoutApproved(closeoutEnvelope),
@@ -243,6 +314,16 @@ export async function runAuditorHost(
     closeoutEnvelope,
     ...(scoreError ? { scoreError } : {}),
   });
+
+  if (isOrphanCloseoutStage(consumer.closeoutStage)) {
+    recordAuthoritativeAuditCloseout(normalizedInput.projectRoot, {
+      flow: consumer.closeoutStage,
+      artifactDocPath: effectiveArtifactDocPath,
+      reportPath: resolvedReportPath,
+      status,
+      closeoutApproved: isReviewCloseoutApproved(closeoutEnvelope),
+    });
+  }
 
   return {
     status,
@@ -269,7 +350,7 @@ export async function mainRunAuditorHost(argv: string[]): Promise<number> {
   try {
     const result = await runAuditorHost({
       projectRoot,
-      stage,
+      stage: stage as RunAuditorHostInput['stage'],
       artifactPath,
       reportPath: args.reportPath,
       iterationCount: args.iterationCount,

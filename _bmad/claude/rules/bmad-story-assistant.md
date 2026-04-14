@@ -4,6 +4,9 @@
 
 ## Party-Mode 决策规则
 
+> Party-mode gate source of truth：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
+> 本规则只定义 Story 场景何时必须进入 party-mode。轮次分级、`designated_challenger_id`、`challenger_ratio > 0.60`、session/meta/snapshot/evidence、恢复与退出门禁都以 core step-02 为准。
+
 ### 触发条件
 
 凡涉及代码实现的 Story，**必须**进入 party-mode（至少 100 轮）。

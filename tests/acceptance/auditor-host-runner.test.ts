@@ -48,7 +48,7 @@ describe('auditor host runner', () => {
       expectedTriggerStage: 'speckit_5_2',
       expectedEvent: 'stage_audit_complete',
     },
-  ])(
+  ] as const)(
     'maps stage=$stage to the correct score + trigger stage when the report is already persisted',
     async ({ stage, expectedScoreStage, expectedTriggerStage, expectedEvent }) => {
       const root = mkdtempSync(path.join(os.tmpdir(), `auditor-host-${stage}-`));
@@ -107,6 +107,16 @@ describe('auditor host runner', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'auditor-host-runner-'));
     try {
       writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+      writeRuntimeContext(
+        root,
+        defaultRuntimeContextFile({
+          flow: 'bugfix',
+          stage: 'implement',
+          sourceMode: 'seeded_solutioning',
+          contextScope: 'project',
+          updatedAt: '2026-04-14T00:00:00.000Z',
+        })
+      );
 
       const artifactDocPath = path.join(
         root,
@@ -121,6 +131,7 @@ describe('auditor host runner', () => {
         reportPath,
         [
           'status: PASS',
+          'stage: bugfix',
           `reportPath: ${reportPath.replace(/\\/g, '/')}`,
           'iteration_count: 1',
           'required_fixes_count: 0',
@@ -156,7 +167,19 @@ describe('auditor host runner', () => {
         })
       );
       const registry = readRuntimeContextRegistry(root);
-      expect(registry.auditIndex.bugfix[path.normalize(artifactDocPath)]?.status).toBe('PASS');
+      expect(registry.auditIndex.bugfix[path.normalize(artifactDocPath)]).toMatchObject({
+        status: 'PASS',
+        stage: 'bugfix',
+        closeoutApproved: true,
+      });
+      const projectContext = JSON.parse(
+        readFileSync(path.join(root, '_bmad-output', 'runtime', 'context', 'project.json'), 'utf8')
+      );
+      expect(projectContext.latestReviewerCloseout).toMatchObject({
+        stage: 'bugfix',
+        artifactPath: artifactDocPath.replace(/\\/g, '/'),
+        closeoutApproved: true,
+      });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -166,6 +189,16 @@ describe('auditor host runner', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'auditor-host-document-'));
     try {
       writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+      writeRuntimeContext(
+        root,
+        defaultRuntimeContextFile({
+          flow: 'standalone_tasks',
+          stage: 'implement',
+          sourceMode: 'standalone_story',
+          contextScope: 'project',
+          updatedAt: '2026-04-14T00:00:00.000Z',
+        })
+      );
 
       const artifactDocPath = path.join(
         root,
@@ -180,6 +213,7 @@ describe('auditor host runner', () => {
         reportPath,
         [
           'status: PASS',
+          'stage: standalone_tasks',
           `reportPath: ${reportPath.replace(/\\/g, '/')}`,
           'iteration_count: 2',
           'required_fixes_count: 0',
@@ -215,9 +249,58 @@ describe('auditor host runner', () => {
         })
       );
       const registry = readRuntimeContextRegistry(root);
-      expect(registry.auditIndex.standalone_tasks[path.normalize(artifactDocPath)]?.status).toBe(
-        'PASS'
+      expect(registry.auditIndex.standalone_tasks[path.normalize(artifactDocPath)]).toMatchObject({
+        status: 'PASS',
+        stage: 'standalone_tasks',
+        closeoutApproved: true,
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed for orphan closeout when the structured report is missing the required stage field', async () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'auditor-host-orphan-stage-missing-'));
+    try {
+      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+
+      const artifactDocPath = path.join(
+        root,
+        '_bmad-output',
+        'implementation-artifacts',
+        '_orphan',
+        'BUGFIX_missing_stage.md'
       );
+      const reportPath = artifactDocPath.replace(/\.md$/i, '.audit.md');
+      mkdirSync(path.dirname(reportPath), { recursive: true });
+      writeFileSync(
+        reportPath,
+        [
+          'status: PASS',
+          `reportPath: ${reportPath.replace(/\\/g, '/')}`,
+          'iteration_count: 1',
+          'required_fixes_count: 0',
+          'score_trigger_present: true',
+          `artifactDocPath: ${artifactDocPath.replace(/\\/g, '/')}`,
+          'converged: true',
+        ].join('\n'),
+        'utf8'
+      );
+
+      await expect(
+        runAuditorHost(
+          {
+            projectRoot: root,
+            reportPath,
+            stage: 'bugfix',
+            artifactPath: artifactDocPath,
+          },
+          { scoreCommand: vi.fn().mockResolvedValue(undefined), executeAuditorScript: vi.fn() }
+        )
+      ).rejects.toThrow(/missing required fields/i);
+
+      const registry = readRuntimeContextRegistry(root);
+      expect(registry.auditIndex.bugfix[path.normalize(artifactDocPath)]?.closeoutApproved).toBeUndefined();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
