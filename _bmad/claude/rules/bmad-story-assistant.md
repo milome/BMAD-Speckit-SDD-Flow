@@ -56,7 +56,7 @@ Claude Code 环境下发起子任务时，执行器分两类：
 ```text
 party-mode 主路径:
 tool: Agent tool (native subagent)
-subagent_type: party-mode-facilitator
+显式调用示例: @"party-mode-facilitator (agent)"
 
 非 specialized 执行体:
 tool: Agent tool (native subagent)

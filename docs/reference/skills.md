@@ -36,7 +36,14 @@ Epic/Story 全生命周期管理：Create Story → 审计 → Dev Story → 实
 BUG 修复全流程：根因分析 → BUGFIX 文档 → 审计 → 任务列表 → 实施。
 
 - **职责**：自动进入 Party-Mode（≥100 轮），产出 BUGFIX 文档，通过子代理实施修复
-- **触发**：描述问题时由 `bmad-bug-auto-party-mode` 规则自动触发
+- **自动触发规则**：描述问题时由 **rule** `bmad-bug-auto-party-mode-rule` 自动触发
+
+### Rule 与 Skill 的边界
+
+- `bmad-bug-auto-party-mode-rule` 是 **rule**，不是 **skill**
+- rule 负责在“描述问题/BUG”场景下自动约束主 Agent 进入 party-mode
+- skill 负责被显式加载与执行，例如 `bmad-bug-assistant`
+- **禁止**通过 `Skill(...)` 工具调用 `bmad-bug-auto-party-mode-rule`
 
 ### bmad-code-reviewer-lifecycle
 

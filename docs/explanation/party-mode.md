@@ -57,7 +57,7 @@ Party-Mode 必须引入以下角色（展示名与 `_bmad/_config/agent-manifest
 | 场景 | 触发方式 |
 |------|----------|
 | Story 创建涉及多方案 | bmad-story-assistant 自动进入 |
-| 用户描述问题/BUG | bmad-bug-auto-party-mode 规则自动触发 |
+| 用户描述问题/BUG | bmad-bug-auto-party-mode-rule 规则自动触发 |
 | Plan 阶段重大架构决策 | speckit-workflow §2 可选触发 |
 | 用户显式请求 | 直接说「进入 party-mode」 |
 | 连续两个阶段 C 级评分 | speckit-workflow 强制升级 |

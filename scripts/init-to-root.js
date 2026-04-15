@@ -283,6 +283,12 @@ function deepMergeSettings(bmadSettings, globalSettings) {
 const CORE_DIRS = ['_bmad'];
 const FULL_DIRS = ['_bmad'];
 const DIRS = fullMode ? FULL_DIRS : CORE_DIRS;
+const DEPRECATED_TARGET_FILES = [
+  '_bmad/claude/rules/bmad-bug-auto-party-mode.md',
+  '_bmad/cursor/rules/bmad-bug-auto-party-mode.mdc',
+  '.claude/rules/bmad-bug-auto-party-mode.md',
+  '.cursor/rules/bmad-bug-auto-party-mode.mdc',
+];
 
 function sleepMs(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
@@ -361,6 +367,16 @@ function copyRecursive(src, dest) {
     }
   } else {
     copyFileWithRetry(src, dest);
+  }
+}
+
+function removeDeprecatedTargetFiles(targetDir) {
+  for (const relativePath of DEPRECATED_TARGET_FILES) {
+    const fullPath = path.join(targetDir, relativePath);
+    if (fs.existsSync(fullPath)) {
+      fs.rmSync(fullPath, { force: true });
+      console.log('Remove deprecated file', relativePath);
+    }
   }
 }
 
@@ -857,6 +873,8 @@ for (const dir of DIRS) {
   copyRecursive(src, dest);
   totalFiles += countFiles(dest);
 }
+
+removeDeprecatedTargetFiles(TARGET);
 
 totalFiles += agentProfile.sync(TARGET, PKG_ROOT);
 

@@ -49,7 +49,7 @@ The Claude version of `bmad-story-assistant` must satisfy:
 From this revision onward, Claude-side party-mode is no longer described as a `general-purpose` main path.
 
 - **Primary path**: `.claude/agents/party-mode-facilitator.md`
-- **Formal subtype**: `subagent_type: party-mode-facilitator`
+- **Explicit invocation example**: `@"party-mode-facilitator (agent)"`
 - **Scope**: any party-mode debate that resolves design trade-offs, architecture decisions, scope ambiguity, or Story planning disagreements
 - **Compatibility fallback**: only when the specialized facilitator is unavailable may the flow fall back to `subagent_type: general-purpose` with the full facilitator contract inlined
 - **Non party-mode executors**: `bmad-story-create`, `auditor-*`, `speckit-implement`, and other non-specialized executors may still use `general-purpose`
@@ -429,15 +429,16 @@ The Agent tool is called immediately after output.
 
 When the main Agent uses this skill, it must call the execution body in the following way:
 
-**Important**: Claude Code CLI's `Agent` tool now supports formal specialized subtype routing for this product path. Whenever Stage 1 requires party-mode debate, the main path must use `.claude/agents/party-mode-facilitator.md` with `subagent_type: party-mode-facilitator`. Only non-specialized executors continue to use `general-purpose`.
+**Important**: The explicit Claude Code CLI invocation example for party-mode is now standardized as `@"party-mode-facilitator (agent)"`. Whenever Stage 1 requires a party-mode debate, the main path must invoke `.claude/agents/party-mode-facilitator.md` via that agent mention. Only non-specialized executors continue to use `general-purpose`.
 
 1. **Party-mode debate mode** (preferred, and mandatory whenever design trade-offs, scope ambiguity, or architecture choices remain open):
-   The main Agent reads `.claude/agents/party-mode-facilitator.md` in full and invokes it as the specialized subtype:
+   The main Agent reads `.claude/agents/party-mode-facilitator.md` in full and invokes it via an explicit agent mention:
    ```yaml
    tool: Agent
-   subagent_type: party-mode-facilitator
    description: "Run Stage 1 Party-Mode debate"
    prompt: |
+     @"party-mode-facilitator (agent)"
+
      [Full contents of .claude/agents/party-mode-facilitator.md]
 
      Agenda:
@@ -476,7 +477,7 @@ When the main Agent uses this skill, it must call the execution body in the foll
 **Important**:
 - You must not just pass in the executable file path and let the executor read it by itself. You must pass in the complete prompt content.
 - The execution body itself does not load skills, and all instructions are passed by the main Agent through the prompt parameter.
-- Party-mode debate must prefer `party-mode-facilitator` as the main path.
+- Party-mode debate must prefer `@"party-mode-facilitator (agent)"` as the main path.
 - After the execution body returns, the main Agent must verify the handoff output and decide the next route
 
 ---
@@ -2092,4 +2093,3 @@ After the Claude version of the skill is launched, it should at least meet the f
 > The Claude version of `bmad-story-assistant` is not a direct copy of the Cursor skill, but a unified orchestration entry with Cursor as the semantic baseline, Claude/OMC as the execution adaptation layer, and repository-local rules as the enhancement layer.
 
 <!-- ADAPTATION_COMPLETE: 2026-03-15 -->
-

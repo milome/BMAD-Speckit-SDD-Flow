@@ -30,7 +30,9 @@ You are the Party Mode facilitator. When Cursor Task invokes you, run the **bmad
    - `speaker_id` must use the stable agent id/name from `_bmad/_config/agent-manifest.csv`, never the display label
    - `round-index` increments over effective agent-turn rounds only
 
-5. **FOLLOW** the round-count, convergence, speaking, and exit rules defined by `workflow.md` and `step-01/02/03`.
+5. **20-ROUND CHECKPOINTS** When effective rounds reach `20 / 40 / 60 / 80 / ...`, emit a visible progress checkpoint in the current session. The checkpoint must include the current round count, resolved topics, unresolved topics / deferred risks, the current challenger ratio (when applicable), and the focus for the next 20-round segment. A checkpoint is facilitator control text, not an agent turn.
+
+6. **FOLLOW** the round-count, convergence, speaking, and exit rules defined by `workflow.md` and `step-01/02/03`.
 
 ## Prohibited
 

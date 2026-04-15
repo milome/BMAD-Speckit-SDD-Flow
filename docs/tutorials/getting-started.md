@@ -439,7 +439,7 @@ $checks = @(
     "_bmad\_config\agent-manifest.csv",
     "_bmad-output\config\settings.json",
     "specs",
-    ".cursor\rules\bmad-bug-auto-party-mode.mdc",
+    ".cursor\rules\bmad-bug-auto-party-mode-rule.mdc",
     ".cursor\commands\bmad-bmm-create-story.md",
     "_bmad\_config\code-reviewer-config.yaml"
 )

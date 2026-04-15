@@ -237,7 +237,7 @@ foreach ($ag in $AgentList) {
     switch ($ag) {
         'cursor' {
             $checks += @(
-                @{ Path = '.cursor/rules/bmad-bug-auto-party-mode.mdc'; Desc = 'Cursor rules' }
+                @{ Path = '.cursor/rules/bmad-bug-auto-party-mode-rule.mdc'; Desc = 'Cursor rules' }
                 @{ Path = '.cursor/commands/speckit.specify.md'; Desc = 'Cursor speckit command' }
                 @{ Path = '.cursor/commands/bmad-bmm-create-story.md'; Desc = 'Cursor BMAD command' }
                 @{ Path = '.cursor/agents/code-reviewer-config.yaml'; Desc = 'Cursor Code Reviewer' }

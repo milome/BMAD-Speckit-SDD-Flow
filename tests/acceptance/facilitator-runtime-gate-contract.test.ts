@@ -77,5 +77,25 @@ describe('facilitator runtime gate contract', () => {
       'scripts/party-mode-gate-check.ts --session-key <session_key> --write-all'
     );
     expect(canonical).toContain('_bmad-output/party-mode/evidence/<session_key>.audit.json');
+    expect(canonical).toContain('20 / 40 / 60 / 80 / ...');
+    expect(canonical).toContain('阶段性进展 checkpoint');
+    expect(canonical).toContain('当前 challenger ratio');
+  });
+
+  it('facilitator carriers require visible 20-round checkpoints in-session', () => {
+    const cursorCarrier = fs.readFileSync(
+      path.join(ROOT, '_bmad', 'cursor', 'agents', 'party-mode-facilitator.md'),
+      'utf8'
+    );
+    const claudeCarrier = fs.readFileSync(
+      path.join(ROOT, '_bmad', 'claude', 'agents', 'party-mode-facilitator.md'),
+      'utf8'
+    );
+
+    for (const content of [cursorCarrier, claudeCarrier]) {
+      expect(content).toContain('20 / 40 / 60 / 80 / ...');
+      expect(content).toContain('阶段性进展 checkpoint');
+      expect(content).toContain('checkpoint 是 facilitator 控制文本');
+    }
   });
 });

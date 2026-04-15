@@ -12,6 +12,18 @@ description: |
 
 > **Party-mode source of truth**：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。所有 party-mode 的 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 只定义 Story 场景何时进入 party-mode，不得维护第二套 gate 语义。
 
+## Party-Mode 主 Agent 编排约束（Wave 4）
+
+- 进入 party-mode 前，主 Agent 必须先向用户展示 `20 / 50 / 100` 三档强度，并按请求类型推断默认值。
+- 普通 RCA / 方案分析默认 `decision_root_cause_50`；Create Story / Story 设计定稿 / 最终任务列表等高置信最终产物默认 `final_solution_task_list_100`。
+- `quick_probe_20` 仅用于 probe-only；若用户当前选择 `quick_probe_20` 或 `decision_root_cause_50`，却又明确要求高置信最终产物，主 Agent 必须拒绝当前档位并要求升级到 `final_solution_task_list_100`。
+- 每 20 轮必须向用户展示一次 checkpoint；checkpoint 展示后默认自动继续下一批，不要求逐批人工确认。
+- `S / F / C` 只在 checkpoint 窗口内有效；`checkpoint_window_ms = 15000`。
+- `C` 的语义固定为“立即继续下一批”，会立即关闭当前 checkpoint 窗口并跳过剩余等待时间。
+- 若用户在 checkpoint 窗口内输入普通业务补充文本，而不是 `S / F / C`，主 Agent 必须立即停止自动继续，取消窗口计时，并按新补充进入下一批前的重新编排。
+- checkpoint 窗口外的 `S / F / C` 必须显式拒绝，不缓存、不当作普通业务输入。
+- heartbeat 由 facilitator 负责；主 Agent 只负责批次结束后的 checkpoint 展示，不负责单批执行中的实时 heartbeat 插入。
+
 ## Purpose
 
 本 skill 是 Cursor `bmad-story-assistant` 在 Claude Code CLI / OMC 环境下的统一适配入口。
@@ -48,7 +60,7 @@ Claude 版 `bmad-story-assistant` 必须满足：
 从本版本开始，Claude 分支中的 party-mode 不再以 `general-purpose` 作为主路径描述。
 
 - **主路径**：`.claude/agents/party-mode-facilitator.md`
-- **正式 subtype**：`subagent_type: party-mode-facilitator`
+- **显式调用示例**：`@"party-mode-facilitator (agent)"`
 - **适用范围**：凡需要多角色辩论、方案收敛、架构/范围取舍、Story 设计分歧澄清的 party-mode 场景
 - **兼容 fallback**：仅当 specialized facilitator 在当前运行时不可用时，才允许退回 `subagent_type: general-purpose` 并内联完整 facilitator contract
 - **非 party-mode 执行体**：`bmad-story-create`、`auditor-*`、`speckit-implement` 等非 specialized 执行体仍可继续使用 `general-purpose`
@@ -341,7 +353,7 @@ Claude 端 Stage 1 Create Story 执行体，负责在 BMAD Story 流程中生成
   - 输出 Story 文档到 `_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/{epic_num}-{story_num}-<slug>.md`。
   - 创建 Story 文档时必须使用明确描述，禁止使用 Story 禁止词表中的词（可选、可考虑、后续、先实现、后续扩展、待定、酌情、视情况、技术债）。
   - 当功能不在本 Story 范围但属本 Epic 时，须写明「由 Story X.Y 负责」及任务具体描述；确保 X.Y 存在且 scope 含该功能。禁止模糊推迟表述。
-  - **party-mode 强制**：无论 Epic/Story 文档是否已存在，只要涉及以下任一情形，**必须**进入 party-mode 进行多角色辩论（最少 100 轮）：① 有多个实现方案可选；② 存在架构/设计决策或 trade-off；③ 方案或范围存在歧义或未决点。
+  - **party-mode 强制**：无论 Epic/Story 文档是否已存在，只要涉及以下任一情形，**必须**进入 party-mode 进行多角色辩论。主 Agent 在发起前必须先展示 `20 / 50 / 100` 强度选项；若要形成 Story 设计定稿或最终任务列表，默认 `final_solution_task_list_100`（100 轮）；仅普通分析可默认 `decision_root_cause_50`（50 轮）；`quick_probe_20` 不得用于定稿。
   - 全程必须使用中文。
 - Create Story 产出后，Story 文档通常保存在：`_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/{epic_num}-{story_num}-<slug>.md`。
 
@@ -368,7 +380,7 @@ prompt: |
   **强制约束**：
   - 创建 story 文档必须使用明确描述，禁止使用本 skill「§ 禁止词表（Story 文档）」中的词（可选、可考虑、后续、先实现、后续扩展、待定、酌情、视情况、技术债）。
   - 当功能不在本 Story 范围但属本 Epic 时，须写明「由 Story X.Y 负责」及任务具体描述；确保 X.Y 存在且 scope 含该功能（若 X.Y 不存在，审计将判不通过并建议创建）。禁止「先实现 X，或后续扩展」「其余由 X.Y 负责」等模糊表述。
-  - **party-mode 强制**：无论 Epic/Story 文档是否已存在，只要涉及以下任一情形，**必须**进入 party-mode 进行多角色辩论（**最少 100 轮**，见 party-mode step-02 的「生成最终方案和最终任务列表」或 Create Story 产出方案场景）：① 有多个实现方案可选；② 存在架构/设计决策或 trade-off；③ 方案或范围存在歧义或未决点。**禁止**以「Epic 已存在」「Story 已生成」为由跳过 party-mode。共识前须达最少轮次；若未达成单一方案或仍有未闭合的 gaps/risks，继续辩论直至满足或达上限轮次。
+  - **party-mode 强制**：无论 Epic/Story 文档是否已存在，只要涉及以下任一情形，**必须**进入 party-mode 进行多角色辩论：① 有多个实现方案可选；② 存在架构/设计决策或 trade-off；③ 方案或范围存在歧义或未决点。主 Agent 在发起前必须先展示 `20 / 50 / 100` 强度选项；若要形成 Story 设计定稿或最终任务列表，默认 `final_solution_task_list_100`（100 轮）；仅普通分析可默认 `decision_root_cause_50`（50 轮）；`quick_probe_20` 不得用于定稿。**禁止**以「Epic 已存在」「Story 已生成」为由跳过 party-mode。共识前须达最少轮次；若未达成单一方案或仍有未闭合的 gaps/risks，继续辩论直至满足或达上限轮次。每 20 轮必须展示一次 checkpoint，`S / F / C` 只在 `checkpoint_window_ms = 15000` 的窗口内有效；其中 `C` 表示“立即继续下一批”，普通业务补充会打断自动继续并进入重新编排。
   - 全程必须使用中文。
 ```
 
@@ -428,15 +440,16 @@ subagent_type: general-purpose
 
 主 Agent 使用本 skill 时，必须按以下方式调用执行体：
 
-**重要**：Claude Code CLI 的 `Agent` 工具已进入 specialized subtype 产品化阶段。凡 Stage 1 需要 party-mode 辩论时，必须优先使用 `.claude/agents/party-mode-facilitator.md` 对应的正式 subtype `party-mode-facilitator`；只有非 specialized 执行体才继续使用 `general-purpose`。
+**重要**：Claude Code CLI 的 party-mode 显式调用示例统一为 `@"party-mode-facilitator (agent)"`。凡 Stage 1 需要 party-mode 辩论时，必须优先以该 agent mention 调用 `.claude/agents/party-mode-facilitator.md`；只有非 specialized 执行体才继续使用 `general-purpose`。
 
 1. **party-mode 辩论模式**（推荐，涉及方案分歧/架构取舍/范围澄清时必须优先走此路径）：
-   主 Agent 直接读取 `.claude/agents/party-mode-facilitator.md` 的完整内容，并以 specialized subtype 调用：
+   主 Agent 直接读取 `.claude/agents/party-mode-facilitator.md` 的完整内容，并以显式 agent mention 调用：
    ```yaml
    tool: Agent
-   subagent_type: party-mode-facilitator
    description: "Run Stage 1 Party-Mode debate"
    prompt: |
+     @"party-mode-facilitator (agent)"
+
      [读取 .claude/agents/party-mode-facilitator.md 的完整内容]
 
      议题:
@@ -478,7 +491,7 @@ subagent_type: general-purpose
 **重要**：
 - 不得仅传入执行体文件路径让执行体自己去读，必须将完整 prompt 内容传入
 - 执行体本身不加载 skill，所有指令由主 Agent 通过 prompt 参数传递
-- party-mode 辩论主路径必须优先使用 `party-mode-facilitator`
+- party-mode 辩论主路径必须优先使用 `@"party-mode-facilitator (agent)"`
 - 执行体返回后，主 Agent 必须校验 handoff 输出，并决定下一步路由
 
 ---

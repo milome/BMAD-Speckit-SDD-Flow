@@ -36,6 +36,39 @@ function readStdin() {
   });
 }
 
+function isRecord(value) {
+  return value != null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function readInputPath(input, candidates) {
+  for (const candidate of candidates) {
+    let current = input;
+    let ok = true;
+    for (const part of candidate) {
+      if (!isRecord(current) || !(part in current)) {
+        ok = false;
+        break;
+      }
+      current = current[part];
+    }
+    if (ok && current !== undefined) {
+      return current;
+    }
+  }
+  return undefined;
+}
+
+function parseOptionalPositiveInt(value, field) {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(`Invalid ${field}: ${value}`);
+  }
+  return parsed;
+}
+
 /**
  * Prefer package resolution from project root, then init-deployed copies next to hooks.
  * @param {string} projectRoot
@@ -105,6 +138,98 @@ function extractUserMessage(input, hookMode) {
   return '';
 }
 
+function extractResolvedMode(langStdout) {
+  try {
+    const parsed = JSON.parse((langStdout || '').trim());
+    const mode = parsed?.resolvedMode;
+    if (mode === 'zh' || mode === 'en' || mode === 'bilingual') {
+      return mode;
+    }
+  } catch {
+    /* noop */
+  }
+  return undefined;
+}
+
+function extractPartyModeBootstrapOptions(input, inputText, resolvedMode) {
+  return {
+    sessionKey: readInputPath(input, [
+      ['sessionKey'],
+      ['session_key'],
+      ['partyModeBatch', 'sessionKey'],
+      ['party_mode_batch', 'session_key'],
+      ['partyModeSession', 'sessionKey'],
+      ['party_mode_session', 'session_key'],
+    ]),
+    gateProfileId: readInputPath(input, [
+      ['gateProfileId'],
+      ['gate_profile_id'],
+      ['partyModeBatch', 'gateProfileId'],
+      ['party_mode_batch', 'gate_profile_id'],
+      ['partyModeSession', 'gateProfileId'],
+      ['party_mode_session', 'gate_profile_id'],
+    ]),
+    batchIndex: parseOptionalPositiveInt(
+      readInputPath(input, [
+        ['batchIndex'],
+        ['batch_index'],
+        ['partyModeBatch', 'batchIndex'],
+        ['party_mode_batch', 'batch_index'],
+      ]),
+      'batch_index'
+    ),
+    batchStartRound: parseOptionalPositiveInt(
+      readInputPath(input, [
+        ['batchStartRound'],
+        ['batch_start_round'],
+        ['partyModeBatch', 'batchStartRound'],
+        ['party_mode_batch', 'batch_start_round'],
+      ]),
+      'batch_start_round'
+    ),
+    batchTargetRound: parseOptionalPositiveInt(
+      readInputPath(input, [
+        ['batchTargetRound'],
+        ['batch_target_round'],
+        ['partyModeBatch', 'batchTargetRound'],
+        ['party_mode_batch', 'batch_target_round'],
+      ]),
+      'batch_target_round'
+    ),
+    targetRoundsTotal: parseOptionalPositiveInt(
+      readInputPath(input, [
+        ['targetRoundsTotal'],
+        ['target_rounds_total'],
+        ['partyModeBatch', 'targetRoundsTotal'],
+        ['party_mode_batch', 'target_rounds_total'],
+      ]),
+      'target_rounds_total'
+    ),
+    checkpointWindowMs: parseOptionalPositiveInt(
+      readInputPath(input, [
+        ['checkpointWindowMs'],
+        ['checkpoint_window_ms'],
+        ['partyModeBatch', 'checkpointWindowMs'],
+        ['party_mode_batch', 'checkpoint_window_ms'],
+      ]),
+      'checkpoint_window_ms'
+    ),
+    topic:
+      readInputPath(input, [
+        ['topic'],
+        ['partyModeBatch', 'topic'],
+        ['party_mode_batch', 'topic'],
+      ]) || inputText,
+    resolvedMode:
+      readInputPath(input, [
+        ['resolvedMode'],
+        ['resolved_mode'],
+        ['partyModeBatch', 'resolvedMode'],
+        ['party_mode_batch', 'resolved_mode'],
+      ]) || resolvedMode,
+  };
+}
+
 function runResolveLanguagePolicyCli(root, userMessage, writeContext) {
   const cjsPath = resolveResolveSessionCjs(root);
   if (!cjsPath) {
@@ -134,17 +259,28 @@ function runResolveLanguagePolicyCli(root, userMessage, writeContext) {
   });
 }
 
-function buildPartyModeBootstrapBlock(projectRoot, hookMode, input) {
+function buildPartyModeBootstrapBlock(projectRoot, hookMode, input, resolvedMode) {
   if (hookMode !== 'subagent' || !isPartyModeFacilitatorStart(input)) {
     return '';
   }
+  const inputText = extractSubagentText(input);
   const bootstrap = bootstrapSession(projectRoot, {
-    inputText: extractSubagentText(input),
+    inputText,
+    ...extractPartyModeBootstrapOptions(input, inputText, resolvedMode),
   });
   return `Party Mode Session Bootstrap (JSON):\n${JSON.stringify(
     {
       session_key: bootstrap.sessionKey,
       gate_profile_id: bootstrap.meta.gate_profile_id,
+      closure_level: bootstrap.meta.closure_level,
+      batch_index: bootstrap.meta.current_batch_index,
+      batch_start_round: bootstrap.meta.current_batch_start_round,
+      batch_target_round: bootstrap.meta.current_batch_target_round,
+      target_rounds_total: bootstrap.meta.target_rounds_total,
+      checkpoint_window_ms: bootstrap.meta.checkpoint_window_ms,
+      current_batch_status: bootstrap.meta.current_batch_status,
+      topic: bootstrap.meta.topic,
+      resolved_mode: bootstrap.meta.resolved_mode,
       designated_challenger_id: bootstrap.meta.designated_challenger_id,
       agent_turn_event_source_mode: bootstrap.meta.agent_turn_event_source_mode,
       host_native_agent_turn_supported: bootstrap.meta.host_native_agent_turn_supported,
@@ -153,6 +289,9 @@ function buildPartyModeBootstrapBlock(projectRoot, hookMode, input) {
       snapshot_path: bootstrap.meta.snapshot_path,
       convergence_record_path: bootstrap.meta.convergence_record_path,
       audit_verdict_path: bootstrap.meta.audit_verdict_path,
+      checkpoint_json_path: bootstrap.paths.currentBatchCheckpointJsonPath,
+      checkpoint_markdown_path: bootstrap.paths.currentBatchCheckpointMarkdownPath,
+      checkpoint_receipt_path: bootstrap.paths.currentBatchReceiptPath,
       event_writer_command:
         `node {project-root}/_bmad/runtime/hooks/party-mode-session-event.cjs ` +
         `--project-root "{project-root}" --session-key "${bootstrap.sessionKey}" ` +
@@ -255,6 +394,7 @@ async function runtimePolicyInjectCore({ host }) {
   const json = (res.stdout || '').trim();
   const userMsg = extractUserMessage(input, hookMode);
   const langRes = runResolveLanguagePolicyCli(root, userMsg, true);
+  const resolvedMode = langRes.status === 0 ? extractResolvedMode(langRes.stdout) : undefined;
   let mergedJson = json;
   if (langRes.status === 0 && (langRes.stdout || '').trim()) {
     mergedJson = mergeGovernanceWithLanguage(json, langRes.stdout);
@@ -270,7 +410,7 @@ async function runtimePolicyInjectCore({ host }) {
 
   const rg = loadHookMessages(__dirname).runtimeGovernance || {};
   const prefix = rg.jsonBlockPrefix || '本回合 Runtime Governance（JSON）：';
-  const bootstrapBlock = buildPartyModeBootstrapBlock(root, hookMode, input);
+  const bootstrapBlock = buildPartyModeBootstrapBlock(root, hookMode, input, resolvedMode);
   const block = `${prefix}\n${mergedJson}\n${bootstrapBlock}`;
   if (mode === 'subagent') {
     return {

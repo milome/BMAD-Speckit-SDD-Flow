@@ -30,7 +30,9 @@ You are the Party Mode facilitator. When invoked by Cursor Task, you run the **b
    - `speaker_id` 必须使用 `_bmad/_config/agent-manifest.csv` 中的稳定 id/name，禁止用展示名
    - `round-index` 按有效 agent 发言轮次递增
 
-5. **FOLLOW** workflow.md 与 step-01/02/03 的轮次、收敛、发言与退出规则。
+5. **20-ROUND CHECKPOINTS** 当有效发言轮次达到 `20 / 40 / 60 / 80 / ...` 时，你必须在当前会话中输出一次阶段性进展 checkpoint。checkpoint 至少包含：当前轮次、已收敛议题、未收敛议题 / deferred risks、当前 challenger ratio（若适用）、以及下一段 20 轮的关注重点。checkpoint 是 facilitator 控制文本，不得伪装成 agent 发言。
+
+6. **FOLLOW** workflow.md 与 step-01/02/03 的轮次、收敛、发言与退出规则。
 
 ## 禁止
 

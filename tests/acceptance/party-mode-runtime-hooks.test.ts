@@ -49,6 +49,7 @@ describe('party-mode runtime hooks', () => {
       expect(output.hookSpecificOutput?.additionalContext).toContain(
         '"host_native_agent_turn_supported": false'
       );
+      expect(output.hookSpecificOutput?.additionalContext).toContain('"closure_level": "high_confidence"');
 
       const sessionsDir = path.join(tempRoot, '_bmad-output', 'party-mode', 'sessions');
       const metaFiles = fs.readdirSync(sessionsDir).filter((file) => file.endsWith('.meta.json'));
@@ -56,11 +57,13 @@ describe('party-mode runtime hooks', () => {
 
       const meta = JSON.parse(fs.readFileSync(path.join(sessionsDir, metaFiles[0]), 'utf8')) as {
         gate_profile_id: string;
+        closure_level: string;
         designated_challenger_id: string;
         agent_turn_event_source_mode: string;
         host_native_agent_turn_supported: boolean;
       };
       expect(meta.gate_profile_id).toBe('final_solution_task_list_100');
+      expect(meta.closure_level).toBe('high_confidence');
       expect(meta.designated_challenger_id).toBe('adversarial-reviewer');
       expect(meta.agent_turn_event_source_mode).toBe('explicit_event_writer_bridge');
       expect(meta.host_native_agent_turn_supported).toBe(false);
@@ -91,6 +94,13 @@ describe('party-mode runtime hooks', () => {
         gateProfileId: 'decision_root_cause_50',
         designatedChallengerId: 'adversarial-reviewer',
       });
+      const checkpointJsonPath = path.join(
+        tempRoot,
+        '_bmad-output',
+        'party-mode',
+        'checkpoints',
+        'pm-hook-001.round-020.json'
+      );
       const turns = Array.from({ length: 50 }, (_, index) => {
         const roundIndex = index + 1;
         return {
@@ -121,13 +131,16 @@ describe('party-mode runtime hooks', () => {
       expect(refresh.refreshed).toBe(true);
       expect(fs.existsSync(session.paths.snapshotPath)).toBe(true);
       expect(fs.existsSync(session.paths.auditVerdictPath)).toBe(true);
+      expect(fs.existsSync(checkpointJsonPath)).toBe(true);
 
       const audit = JSON.parse(fs.readFileSync(session.paths.auditVerdictPath, 'utf8')) as {
         final_result: string;
+        closure_level: string;
         agent_turn_event_source_mode: string;
         host_native_agent_turn_supported: boolean;
       };
       expect(audit.final_result).toBe('PASS');
+      expect(audit.closure_level).toBe('standard');
       expect(audit.agent_turn_event_source_mode).toBe('explicit_event_writer_bridge');
       expect(audit.host_native_agent_turn_supported).toBe(false);
     } finally {

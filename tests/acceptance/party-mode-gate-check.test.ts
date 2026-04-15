@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { KNOWN_GATE_PROFILES } from '../../scripts/party-mode-runtime';
 import { runCli } from '../../scripts/party-mode-gate-check';
 
 interface TempSessionOptions {
@@ -25,7 +26,8 @@ function createTempSession(options: TempSessionOptions = {}) {
   fs.mkdirSync(evidenceDir, { recursive: true });
 
   const gateProfileId = options.gateProfileId ?? 'final_solution_task_list_100';
-  const minRounds = options.minRounds ?? (gateProfileId === 'decision_root_cause_50' ? 50 : 100);
+  const profile = KNOWN_GATE_PROFILES[gateProfileId as keyof typeof KNOWN_GATE_PROFILES];
+  const minRounds = options.minRounds ?? profile?.minRounds ?? 100;
   const ratioThreshold = options.ratioThreshold ?? 0.6;
   const tailWindow = options.tailWindow ?? 3;
   const rounds = options.rounds ?? minRounds;
@@ -46,6 +48,7 @@ function createTempSession(options: TempSessionOptions = {}) {
     min_rounds: minRounds,
     ratio_threshold: ratioThreshold,
     tail_window: tailWindow,
+    closure_level: profile?.closureLevel ?? 'high_confidence',
     session_log_path: logPath,
     snapshot_path: snapshotPath,
     convergence_record_path: convergencePath,
@@ -145,14 +148,18 @@ describe('party-mode-gate-check', () => {
 
     const snapshot = JSON.parse(fs.readFileSync(temp.snapshotPath, 'utf8')) as {
       gate_profile_id: string;
+      closure_level: string;
       derived_rounds: number;
     };
     const audit = JSON.parse(fs.readFileSync(temp.auditPath, 'utf8')) as {
+      closure_level: string;
       final_result: string;
     };
 
     expect(snapshot.gate_profile_id).toBe('final_solution_task_list_100');
+    expect(snapshot.closure_level).toBe('high_confidence');
     expect(snapshot.derived_rounds).toBe(100);
+    expect(audit.closure_level).toBe('high_confidence');
     expect(audit.final_result).toBe('PASS');
   });
 });

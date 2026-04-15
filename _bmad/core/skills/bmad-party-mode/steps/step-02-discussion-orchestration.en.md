@@ -116,6 +116,18 @@ When an agent asks the user a direct question:
 
 After each round, allow the user to keep talking to the agents, and show the exit option subject to convergence rules.
 
+**20-Round Progress Checkpoint (Required)**
+- When effective agent-turn rounds reach `20 / 40 / 60 / 80 / ...`, the facilitator must emit a visible progress checkpoint before continuing.
+- The checkpoint must be shown in the main conversation output; writing only to files is not sufficient.
+- Each checkpoint must include at least:
+  - `current round count`
+  - `resolved topics / confirmed consensus`
+  - `unresolved topics / deferred risks`
+  - `current challenger ratio` (when challenger gating is active)
+  - `focus for the next 20-round segment`
+- A checkpoint is facilitator control text, not an agent turn. If any runtime path persists it, it must be recorded as a non-`agent_turn` artifact or with `counts_toward_ratio = false`.
+- The checkpoint must summarize only content already established in the current session truth source; it must not invent new conclusions.
+
 **Decision / Root-Cause Minimum Rounds**
 
 - if the session is producing a final solution and final task list, require **100 rounds**
@@ -129,13 +141,15 @@ After each round, allow the user to keep talking to the agents, and show the exi
   - pass condition: `challenger_ratio > 0.60`; `challenger_ratio <= 0.60` is a failed gate and `[E]` must not be shown or accepted
 - **Session truth source and evidence chain**
   - before round 1, create `session_key` and write `_bmad-output/party-mode/sessions/<session_key>.meta.json`
-  - `.meta.json` must include at least `session_key`, `gate_profile_id`, `designated_challenger_id`, `min_rounds`, `ratio_threshold`, `tail_window`, `session_log_path`, `snapshot_path`, `convergence_record_path`, and `audit_verdict_path`
+  - `.meta.json` must include at least `session_key`, `gate_profile_id`, `closure_level`, `designated_challenger_id`, `min_rounds`, `ratio_threshold`, `tail_window`, `session_log_path`, `snapshot_path`, `convergence_record_path`, and `audit_verdict_path`
   - after each agent response, append `_bmad-output/party-mode/sessions/<session_key>.jsonl` with at least `record_type = "agent_turn"`, `session_key`, `round_index`, `speaker_id`, `designated_challenger_id`, `counts_toward_ratio`, `has_new_gap`, and `timestamp`
   - after each agent response, refresh `_bmad-output/party-mode/snapshots/<session_key>.latest.json`; snapshot is a recovery accelerator only and must not replace the session log truth source
   - before convergence close-out, write `_bmad-output/party-mode/evidence/<session_key>.convergence.json`; before final exit, write `_bmad-output/party-mode/evidence/<session_key>.audit.json`
 - **Gate profile selection**
-  - for "final solution and final task list" sessions, use `gate_profile_id = "final_solution_task_list_100"` with `min_rounds = 100`, `ratio_threshold = 0.60`, and `tail_window = 3`
-  - for other decision/root-cause discussions, use `gate_profile_id = "decision_root_cause_50"` with `min_rounds = 50`, `ratio_threshold = 0.60`, and `tail_window = 3`
+  - `quick_probe_20`: `closure_level = "none"` with `min_rounds = 20`, `ratio_threshold = 0.60`, and `tail_window = 3`. This tier is probe-only and must never be presented as a final solution, final task list, BUGFIX §7, or Story finalization.
+  - `decision_root_cause_50`: `closure_level = "standard"` with `min_rounds = 50`, `ratio_threshold = 0.60`, and `tail_window = 3`. This tier is for normal RCA, option selection, and design debate, and may produce a **standard-confidence** closure only.
+  - `final_solution_task_list_100`: `closure_level = "high_confidence"` with `min_rounds = 100`, `ratio_threshold = 0.60`, and `tail_window = 3`. This tier is for **high-confidence final outputs** such as the final solution, final task list, BUGFIX §7, or Story finalization.
+  - If the selected `gate_profile_id` is `quick_probe_20` or `decision_root_cause_50` but the request explicitly asks for high-confidence final outputs, the host / orchestrator must refuse the current tier, report the tier mismatch explicitly, and require an upgrade to `final_solution_task_list_100`; lower-tier outputs must not pretend to satisfy a final-output request.
 - **Checker invocation before exit**
   - before showing `[E]`, run:
     - `npx ts-node --project tsconfig.node.json --transpile-only scripts/party-mode-gate-check.ts --session-key <session_key> --write-all`
@@ -164,12 +178,12 @@ If the active stage profile has not satisfied its `stage-specific exit criteria`
 **Convergence Record (required template)**
 
 - before convergence close-out, write `_bmad-output/party-mode/evidence/<session_key>.convergence.json`
-- include at least `session_key`, `gate_profile_id`, `round_tail`, `challenger_ratio`, `gate_result`, `source_log_sha256`, and `generated_at`
+- include at least `session_key`, `gate_profile_id`, `closure_level`, `round_tail`, `challenger_ratio`, `gate_result`, `source_log_sha256`, and `generated_at`
 
 **Audit Verdict (required template)**
 
 - before exit, write `_bmad-output/party-mode/evidence/<session_key>.audit.json`
-- include at least `session_key`, `gate_profile_id`, `min_rounds_check`, `challenger_ratio_check`, `last_tail_no_new_gap_check`, `final_result`, `source_log_sha256`, and `generated_at`
+- include at least `session_key`, `gate_profile_id`, `closure_level`, `min_rounds_check`, `challenger_ratio_check`, `last_tail_no_new_gap_check`, `final_result`, `source_log_sha256`, and `generated_at`
 
 **Recovery Order**
 

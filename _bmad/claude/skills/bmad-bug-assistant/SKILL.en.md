@@ -7,7 +7,7 @@ description: |
   Using Cursor bmad-bug-assistant as the semantic baseline, execute the entire BUG repair process according to "Root Cause Analysis → BUGFIX Document → Audit → Task List Supplement → Implementation → Post-Implementation Audit".
   When the main agent initiates any subtask, the master agent must copy the entire "complete prompt template" of this stage in the skill and fill in the placeholders before passing it in. It is prohibited to omit, summarize or rewrite the prompt words by yourself;
   The main Agent is prohibited from directly modifying the production code, and implementation must be through the Agent tool sub-agent (subagent_type: general-purpose).
-  The Claude-side party-mode main path is now fixed as the formal specialized subtype: `.claude/agents/party-mode-facilitator.md` / `subagent_type: party-mode-facilitator`.
+  The Claude-side party-mode primary invocation example is now standardized as: `.claude/agents/party-mode-facilitator.md` / `@"party-mode-facilitator (agent)"`.
   Use party-mode to conduct **at least 100 rounds** of multi-role debate (BUGFIX produces the final plan and §7 task list, which belongs to the party-mode step-02 "Generate the final plan and final task list" scenario),
   End after meeting the convergence conditions (consensus + no new gaps in the past 2–3 rounds); audit priority `.claude/agents/auditors/auditor-bugfix`, and downgrade according to the Fallback chain.
   Follow ralph-method, TDD traffic light, speckit-workflow.
@@ -219,7 +219,7 @@ Each stage schedules its subtask according to executor type:
 
 | Stage | Execution Body | Agent File |
 |------|--------|-----------|
-| Phase 1/2 Root Cause Debate | party-mode-facilitator | `.claude/agents/party-mode-facilitator.md` / Agent tool `subagent_type: party-mode-facilitator` |
+| Phase 1/2 Root Cause Debate | party-mode-facilitator | `.claude/agents/party-mode-facilitator.md` / explicit invocation `@"party-mode-facilitator (agent)"` |
 | Phase 1/2/3 Audit | auditor-bugfix | `.claude/agents/auditors/auditor-bugfix.md` |
 | Phase 4 Implementation | general-purpose dev | Agent tool `subagent_type: general-purpose` |
 | Phase 4 Post-implementation audit | auditor-implement | `.claude/agents/auditors/auditor-implement.md` |
@@ -329,7 +329,7 @@ artifacts:
 
 **Process**:
 
-1. Based on the BUG information provided by the user, use **party-mode** to introduce the roles above and conduct **at least 100 rounds** of mutual questioning and debate (BUGFIX belongs to the "generate final plan and final task list" scenario), then end only after the convergence conditions are met (root-cause consensus + no new gaps in the last 2–3 rounds). The primary route must schedule `.claude/agents/party-mode-facilitator.md` through the Agent tool with `subagent_type: party-mode-facilitator`. Only when the specialized facilitator is unavailable may the flow degrade according to the Fallback Strategy and use `subagent_type: general-purpose` with an explicit multi-role simulation prompt.
+1. Based on the BUG information provided by the user, use **party-mode** to introduce the roles above and conduct **at least 100 rounds** of mutual questioning and debate (BUGFIX belongs to the "generate final plan and final task list" scenario), then end only after the convergence conditions are met (root-cause consensus + no new gaps in the last 2–3 rounds). The primary route must explicitly invoke `.claude/agents/party-mode-facilitator.md`, with the prompt example standardized as `@"party-mode-facilitator (agent)"`. Only when the facilitator is unavailable may the flow degrade according to the Fallback Strategy and use `subagent_type: general-purpose` with an explicit multi-role simulation prompt.
 2. Conduct an in-depth analysis of the root cause until a consensus on the root cause is reached.
 3. Generate **BUGFIX document** and complete the BUG report (save to `_bmad-output/` or `bugfix/`).
 4. Initiate the **audit subtask**:
@@ -676,7 +676,7 @@ In the following example, when initiating a subtask, the main Agent must use the
 
 User: "You cannot see "Synchronize GDS from Chart" when you right-click on the main chart of a multi-period chart. Please analyze the root cause and generate a BUGFIX document. "
 
-Main Agent: Execute Phase 1 - Copy the entire "Phase 1 root-cause debate prompt template" and fill in the user description, then initiate the subtask through the Agent tool with `subagent_type: party-mode-facilitator`; only if the facilitator is unavailable may the flow fall back to `general-purpose`. After the subtask returns, copy the entire "Phase 1 audit prompt template" and initiate the audit subtask; iterate until the audit passes.
+Main Agent: Execute Phase 1 - Copy the entire "Phase 1 root-cause debate prompt template" and fill in the user description, then initiate the subtask by explicitly invoking `@"party-mode-facilitator (agent)"`; only if the facilitator is unavailable may the flow fall back to `general-purpose`. After the subtask returns, copy the entire "Phase 1 audit prompt template" and initiate the audit subtask; iterate until the audit passes.
 
 ### Example 2: Update after supplementary information
 

@@ -16,9 +16,9 @@ describe('Claude facilitator specialized subtype', () => {
     const skill = readFileSync('_bmad/claude/skills/bmad-story-assistant/SKILL.md', 'utf8');
 
     expect(rule).toContain('party-mode-facilitator');
-    expect(rule).toContain('subagent_type: party-mode-facilitator');
+    expect(rule).toContain('@"party-mode-facilitator (agent)"');
     expect(skill).toContain('.claude/agents/party-mode-facilitator.md');
-    expect(skill).toContain('subagent_type: party-mode-facilitator');
+    expect(skill).toContain('@"party-mode-facilitator (agent)"');
     expect(skill).toContain('general-purpose');
     expect(skill).not.toContain(
       'Claude Code CLI 的 `Agent` 工具没有专门的 `subagent_type` 对应 `.claude/agents/*.md` 文件。'
@@ -29,7 +29,7 @@ describe('Claude facilitator specialized subtype', () => {
     const skill = readFileSync('_bmad/claude/skills/bmad-bug-assistant/SKILL.md', 'utf8');
 
     expect(skill).toContain('.claude/agents/party-mode-facilitator.md');
-    expect(skill).toContain('subagent_type: party-mode-facilitator');
+    expect(skill).toContain('@"party-mode-facilitator (agent)"');
     expect(skill).toContain('Fallback Strategy');
     expect(skill).toContain('subagent_type: general-purpose');
   });

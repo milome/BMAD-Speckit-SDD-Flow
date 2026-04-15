@@ -6,15 +6,23 @@ const path = require('node:path');
 const { createHash, randomUUID } = require('node:crypto');
 
 const KNOWN_GATE_PROFILES = {
+  quick_probe_20: {
+    minRounds: 20,
+    ratioThreshold: 0.6,
+    tailWindow: 3,
+    closureLevel: 'none',
+  },
   final_solution_task_list_100: {
     minRounds: 100,
     ratioThreshold: 0.6,
     tailWindow: 3,
+    closureLevel: 'high_confidence',
   },
   decision_root_cause_50: {
     minRounds: 50,
     ratioThreshold: 0.6,
     tailWindow: 3,
+    closureLevel: 'standard',
   },
 };
 
@@ -23,6 +31,28 @@ const AGENT_TURN_EVENT_SOURCE_MODE = 'explicit_event_writer_bridge';
 const HOST_NATIVE_AGENT_TURN_SUPPORTED = false;
 const HOST_NATIVE_AGENT_TURN_REASON =
   'Current host hook surfaces expose session/subagent/tool boundaries only; no native per-turn agent-turn event is available.';
+const DEFAULT_BATCH_SIZE = 20;
+const DEFAULT_CHECKPOINT_WINDOW_MS = 15_000;
+
+const HIGH_CONFIDENCE_FINAL_OUTPUT_MARKERS = [
+  '§7',
+  'task list',
+  '任务列表',
+  '最终方案',
+  'bugfix',
+  'create story',
+  'story 设计定稿',
+  '设计定稿',
+];
+
+const QUICK_PROBE_MARKERS = [
+  'quick_probe_20',
+  'quick probe',
+  'quick-probe',
+  '快速分析',
+  '快速探查',
+  'probe only',
+];
 
 function normalizePath(value) {
   return String(value || '').replace(/\\/g, '/');
@@ -39,6 +69,38 @@ function writeJson(filePath, payload) {
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+}
+
+function includesAny(normalizedText, markers) {
+  return markers.some((marker) => normalizedText.includes(marker));
+}
+
+function assertPositiveInteger(value, field) {
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error(`Invalid ${field}: ${value}`);
+  }
+}
+
+function sanitizeSummaryList(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .map((entry) => String(entry ?? '').trim())
+    .filter((entry) => entry.length > 0);
+}
+
+function formatCheckpointRound(round) {
+  assertPositiveInteger(round, 'round');
+  return String(round).padStart(3, '0');
+}
+
+function requiresHighConfidenceFinalOutputs(inputText) {
+  return includesAny(String(inputText || '').toLowerCase(), HIGH_CONFIDENCE_FINAL_OUTPUT_MARKERS);
+}
+
+function requestsQuickProbe(inputText) {
+  return includesAny(String(inputText || '').toLowerCase(), QUICK_PROBE_MARKERS);
 }
 
 function deriveSessionPaths(projectRoot, sessionKey) {
@@ -63,6 +125,16 @@ function deriveSessionPaths(projectRoot, sessionKey) {
   };
 }
 
+function deriveBatchCheckpointPaths(projectRoot, sessionKey, batchTargetRound) {
+  const round = formatCheckpointRound(batchTargetRound);
+  const root = path.join(projectRoot, '_bmad-output', 'party-mode', 'checkpoints');
+  return {
+    checkpointJsonPath: path.join(root, `${sessionKey}.round-${round}.json`),
+    checkpointMarkdownPath: path.join(root, `${sessionKey}.round-${round}.md`),
+    receiptPath: path.join(root, `${sessionKey}.round-${round}.receipt.json`),
+  };
+}
+
 function getAgentTurnCapabilityContract() {
   return {
     agent_turn_event_source_mode: AGENT_TURN_EVENT_SOURCE_MODE,
@@ -72,18 +144,87 @@ function getAgentTurnCapabilityContract() {
 }
 
 function inferGateProfileId(inputText) {
-  const text = String(inputText || '').toLowerCase();
-  if (
-    text.includes('§7') ||
-    text.includes('task list') ||
-    text.includes('任务列表') ||
-    text.includes('最终方案') ||
-    text.includes('bugfix') ||
-    text.includes('create story')
-  ) {
+  if (requestsQuickProbe(inputText)) {
+    return 'quick_probe_20';
+  }
+  if (requiresHighConfidenceFinalOutputs(inputText)) {
     return 'final_solution_task_list_100';
   }
   return 'decision_root_cause_50';
+}
+
+function assertGateProfileSelectionAllowed(gateProfileId, inputText) {
+  const profile = KNOWN_GATE_PROFILES[gateProfileId];
+  if (!profile || !requiresHighConfidenceFinalOutputs(inputText)) {
+    return;
+  }
+  if (profile.closureLevel !== 'high_confidence') {
+    throw new Error(
+      `Selected gate profile ${gateProfileId} only supports ${profile.closureLevel} closure; upgrade to final_solution_task_list_100 for high-confidence final outputs`
+    );
+  }
+}
+
+function resolveBatchFields(options, existingMeta, gateProfileId, profile) {
+  const batchSize = options.batchSize ?? existingMeta?.batch_size ?? DEFAULT_BATCH_SIZE;
+  assertPositiveInteger(batchSize, 'batch_size');
+
+  const targetRoundsTotal = options.targetRoundsTotal ?? existingMeta?.target_rounds_total ?? profile.minRounds;
+  assertPositiveInteger(targetRoundsTotal, 'target_rounds_total');
+  if (targetRoundsTotal !== profile.minRounds) {
+    throw new Error(
+      `target_rounds_total for ${gateProfileId} must match min_rounds (${profile.minRounds}), got ${targetRoundsTotal}`
+    );
+  }
+
+  const batchIndex = options.batchIndex ?? existingMeta?.current_batch_index ?? 1;
+  assertPositiveInteger(batchIndex, 'current_batch_index');
+
+  const keepExistingRange =
+    existingMeta &&
+    options.batchIndex === undefined &&
+    options.batchStartRound === undefined &&
+    options.batchTargetRound === undefined &&
+    existingMeta.current_batch_index === batchIndex;
+
+  const computedBatchStartRound = (batchIndex - 1) * batchSize + 1;
+  const batchStartRound =
+    options.batchStartRound ??
+    (keepExistingRange ? existingMeta?.current_batch_start_round : undefined) ??
+    computedBatchStartRound;
+  assertPositiveInteger(batchStartRound, 'current_batch_start_round');
+
+  const defaultBatchTargetRound = Math.min(batchStartRound + batchSize - 1, targetRoundsTotal);
+  const batchTargetRound =
+    options.batchTargetRound ??
+    (keepExistingRange ? existingMeta?.current_batch_target_round : undefined) ??
+    defaultBatchTargetRound;
+  assertPositiveInteger(batchTargetRound, 'current_batch_target_round');
+
+  if (batchTargetRound < batchStartRound) {
+    throw new Error(
+      `Invalid batch range: current_batch_target_round (${batchTargetRound}) < current_batch_start_round (${batchStartRound})`
+    );
+  }
+  if (batchTargetRound > targetRoundsTotal) {
+    throw new Error(
+      `Invalid batch range: current_batch_target_round (${batchTargetRound}) > target_rounds_total (${targetRoundsTotal})`
+    );
+  }
+
+  const checkpointWindowMs =
+    options.checkpointWindowMs ?? existingMeta?.checkpoint_window_ms ?? DEFAULT_CHECKPOINT_WINDOW_MS;
+  assertPositiveInteger(checkpointWindowMs, 'checkpoint_window_ms');
+
+  return {
+    batch_size: batchSize,
+    current_batch_index: batchIndex,
+    current_batch_start_round: batchStartRound,
+    current_batch_target_round: batchTargetRound,
+    target_rounds_total: targetRoundsTotal,
+    checkpoint_window_ms: checkpointWindowMs,
+    current_batch_status: options.currentBatchStatus ?? 'pending',
+  };
 }
 
 function extractSubagentText(input) {
@@ -110,30 +251,53 @@ function bootstrapSession(projectRoot, options) {
     options.sessionKey ||
     `pm-${new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14)}-${randomUUID().slice(0, 8)}`;
   const gateProfileId = options.gateProfileId || inferGateProfileId(options.inputText);
+  assertGateProfileSelectionAllowed(gateProfileId, options.inputText);
   const profile = KNOWN_GATE_PROFILES[gateProfileId];
   if (!profile) {
     throw new Error(`Unknown gate profile: ${gateProfileId}`);
   }
   const paths = deriveSessionPaths(projectRoot, sessionKey);
   const now = new Date().toISOString();
+  const existingMeta = fs.existsSync(paths.metaPath) ? readJson(paths.metaPath) : null;
+  if (existingMeta && existingMeta.gate_profile_id !== gateProfileId) {
+    throw new Error(
+      `Session ${sessionKey} already exists with gate_profile_id=${existingMeta.gate_profile_id}; cannot switch to ${gateProfileId}`
+    );
+  }
+  const batchFields = resolveBatchFields(options, existingMeta, gateProfileId, profile);
   const meta = {
     session_key: sessionKey,
-    scenario_kind: gateProfileId,
+    scenario_kind: options.scenarioKind || existingMeta?.scenario_kind || gateProfileId,
     gate_profile_id: gateProfileId,
     designated_challenger_id:
-      options.designatedChallengerId || DEFAULT_DESIGNATED_CHALLENGER_ID,
+      options.designatedChallengerId ||
+      existingMeta?.designated_challenger_id ||
+      DEFAULT_DESIGNATED_CHALLENGER_ID,
     ...getAgentTurnCapabilityContract(),
     min_rounds: profile.minRounds,
     ratio_threshold: profile.ratioThreshold,
     tail_window: profile.tailWindow,
-    session_log_path: normalizePath(paths.sessionLogPath),
-    snapshot_path: normalizePath(paths.snapshotPath),
-    convergence_record_path: normalizePath(paths.convergenceRecordPath),
-    audit_verdict_path: normalizePath(paths.auditVerdictPath),
-    created_at: now,
+    closure_level: profile.closureLevel,
+    ...batchFields,
+    topic: options.topic || existingMeta?.topic || options.inputText || '',
+    resolved_mode: options.resolvedMode || existingMeta?.resolved_mode,
+    session_log_path: existingMeta?.session_log_path || normalizePath(paths.sessionLogPath),
+    snapshot_path: existingMeta?.snapshot_path || normalizePath(paths.snapshotPath),
+    convergence_record_path:
+      existingMeta?.convergence_record_path || normalizePath(paths.convergenceRecordPath),
+    audit_verdict_path: existingMeta?.audit_verdict_path || normalizePath(paths.auditVerdictPath),
+    created_at: existingMeta?.created_at || now,
     updated_at: now,
   };
   writeJson(paths.metaPath, meta);
+  const checkpointPaths = deriveBatchCheckpointPaths(
+    projectRoot,
+    sessionKey,
+    meta.current_batch_target_round
+  );
+  paths.currentBatchCheckpointJsonPath = checkpointPaths.checkpointJsonPath;
+  paths.currentBatchCheckpointMarkdownPath = checkpointPaths.checkpointMarkdownPath;
+  paths.currentBatchReceiptPath = checkpointPaths.receiptPath;
   ensureParentDir(paths.sessionLogPath);
   if (!fs.existsSync(paths.sessionLogPath)) {
     fs.writeFileSync(paths.sessionLogPath, '', 'utf8');
@@ -158,6 +322,21 @@ function computeGate(meta, turns, sourceLogSha256) {
   const profile = KNOWN_GATE_PROFILES[meta.gate_profile_id];
   if (!profile) {
     throw new Error(`Unknown gate_profile_id: ${meta.gate_profile_id}`);
+  }
+  if (
+    meta.min_rounds !== profile.minRounds ||
+    meta.ratio_threshold !== profile.ratioThreshold ||
+    meta.tail_window !== profile.tailWindow ||
+    (meta.closure_level !== undefined && meta.closure_level !== profile.closureLevel)
+  ) {
+    throw new Error(
+      `Meta gate profile mismatch for ${meta.gate_profile_id}: expected ${JSON.stringify(profile)}, got ${JSON.stringify({
+        minRounds: meta.min_rounds,
+        ratioThreshold: meta.ratio_threshold,
+        tailWindow: meta.tail_window,
+        closureLevel: meta.closure_level || null,
+      })}`
+    );
   }
   const matchingSessionTurns = turns.filter((turn) => turn.session_key === meta.session_key);
   const agentTurns = matchingSessionTurns.filter(
@@ -197,6 +376,7 @@ function computeGate(meta, turns, sourceLogSha256) {
     tail_window: profile.tailWindow,
     min_rounds: profile.minRounds,
     ratio_threshold: profile.ratioThreshold,
+    closure_level: profile.closureLevel,
     gate_pass: failedChecks.length === 0,
     failed_checks: failedChecks,
     source_log_sha256: sourceLogSha256,
@@ -214,6 +394,14 @@ function writeSnapshot(meta, result, sessionLogPath) {
     derived_last_tail_no_new_gap: result.last_tail_no_new_gap,
     tail_rounds: result.tail_window,
     gate_profile_id: result.gate_profile_id,
+    closure_level: result.closure_level,
+    batch_size: meta.batch_size,
+    current_batch_index: meta.current_batch_index,
+    current_batch_start_round: meta.current_batch_start_round,
+    current_batch_target_round: meta.current_batch_target_round,
+    target_rounds_total: meta.target_rounds_total,
+    checkpoint_window_ms: meta.checkpoint_window_ms,
+    current_batch_status: meta.current_batch_status,
     agent_turn_event_source_mode: meta.agent_turn_event_source_mode,
     host_native_agent_turn_supported: meta.host_native_agent_turn_supported,
     host_native_agent_turn_reason: meta.host_native_agent_turn_reason,
@@ -226,6 +414,7 @@ function writeConvergenceRecord(meta, result) {
   const payload = {
     session_key: result.session_key,
     gate_profile_id: result.gate_profile_id,
+    closure_level: result.closure_level,
     round_tail_window: result.tail_window,
     challenger_ratio: result.challenger_ratio,
     agent_turn_event_source_mode: meta.agent_turn_event_source_mode,
@@ -244,6 +433,7 @@ function writeAuditVerdict(meta, result) {
   const payload = {
     session_key: result.session_key,
     gate_profile_id: result.gate_profile_id,
+    closure_level: result.closure_level,
     agent_turn_event_source_mode: meta.agent_turn_event_source_mode,
     host_native_agent_turn_supported: meta.host_native_agent_turn_supported,
     host_native_agent_turn_reason: meta.host_native_agent_turn_reason,
@@ -269,7 +459,237 @@ function refreshSessionArtifacts(projectRoot, sessionKey) {
   writeSnapshot(meta, result, paths.sessionLogPath);
   writeConvergenceRecord(meta, result);
   writeAuditVerdict(meta, result);
+  maybeMaterializeCheckpointArtifacts(projectRoot, meta, result);
   return { refreshed: true, result };
+}
+
+function assertCurrentBatchState(meta) {
+  const requiredFields = [
+    'batch_size',
+    'current_batch_index',
+    'current_batch_start_round',
+    'current_batch_target_round',
+    'target_rounds_total',
+    'checkpoint_window_ms',
+    'current_batch_status',
+  ];
+  for (const field of requiredFields) {
+    if (meta[field] === undefined || meta[field] === null) {
+      throw new Error(`Missing batch state field in .meta.json: ${field}`);
+    }
+  }
+  return {
+    batch_size: meta.batch_size,
+    current_batch_index: meta.current_batch_index,
+    current_batch_start_round: meta.current_batch_start_round,
+    current_batch_target_round: meta.current_batch_target_round,
+    target_rounds_total: meta.target_rounds_total,
+    checkpoint_window_ms: meta.checkpoint_window_ms,
+    current_batch_status: meta.current_batch_status,
+  };
+}
+
+function assertCheckpointEligible(sessionKey, batchState, result) {
+  if (result.rounds < batchState.current_batch_target_round) {
+    throw new Error(
+      `Cannot write checkpoint for ${sessionKey} before batch target round ${batchState.current_batch_target_round} is reached`
+    );
+  }
+}
+
+function buildCheckpointArtifact(meta, batchState, result, summary = {}) {
+  assertCheckpointEligible(meta.session_key, batchState, result);
+  return {
+    version: 'party_mode_checkpoint_v1',
+    session_key: meta.session_key,
+    gate_profile_id: result.gate_profile_id,
+    closure_level: result.closure_level,
+    batch_index: batchState.current_batch_index,
+    batch_start_round: batchState.current_batch_start_round,
+    batch_end_round: batchState.current_batch_target_round,
+    deterministic_state: {
+      current_round: batchState.current_batch_target_round,
+      target_rounds_total: batchState.target_rounds_total,
+      remaining_rounds: Math.max(batchState.target_rounds_total - batchState.current_batch_target_round, 0),
+      challenger_ratio: result.challenger_ratio,
+      tail_window_no_new_gap: result.last_tail_no_new_gap,
+      source_log_sha256: `sha256:${result.source_log_sha256}`,
+    },
+    facilitator_summary: {
+      resolved_topics: sanitizeSummaryList(summary.resolvedTopics),
+      unresolved_topics: sanitizeSummaryList(summary.unresolvedTopics),
+      deferred_risks: sanitizeSummaryList(summary.deferredRisks),
+      next_focus: sanitizeSummaryList(summary.nextFocus),
+    },
+    generated_at: new Date().toISOString(),
+  };
+}
+
+function renderCheckpointMarkdown(artifact) {
+  const list = (items) => (items.length > 0 ? items.join(' | ') : '(none)');
+  return [
+    `# Party-Mode Checkpoint ${artifact.batch_end_round}/${artifact.deterministic_state.target_rounds_total}`,
+    '',
+    `- 已收敛议题: ${list(artifact.facilitator_summary.resolved_topics)}`,
+    `- 未收敛议题: ${list(artifact.facilitator_summary.unresolved_topics)}`,
+    `- Deferred Risks: ${list(artifact.facilitator_summary.deferred_risks)}`,
+    `- Challenger Ratio: ${artifact.deterministic_state.challenger_ratio}`,
+    `- 下一段 20 轮重点: ${list(artifact.facilitator_summary.next_focus)}`,
+    '',
+  ].join('\n');
+}
+
+function writeBatchReceipt(projectRoot, sessionKey) {
+  const paths = deriveSessionPaths(projectRoot, sessionKey);
+  const meta = readJson(paths.metaPath);
+  const batchState = assertCurrentBatchState(meta);
+  const checkpointPaths = deriveBatchCheckpointPaths(
+    projectRoot,
+    sessionKey,
+    batchState.current_batch_target_round
+  );
+  const payload = {
+    session_key: sessionKey,
+    gate_profile_id: meta.gate_profile_id,
+    closure_level: meta.closure_level,
+    batch_size: batchState.batch_size,
+    batch_index: batchState.current_batch_index,
+    batch_start_round: batchState.current_batch_start_round,
+    batch_target_round: batchState.current_batch_target_round,
+    target_rounds_total: batchState.target_rounds_total,
+    checkpoint_window_ms: batchState.checkpoint_window_ms,
+    status: 'checkpoint_ready',
+    checkpoint_json_path: normalizePath(checkpointPaths.checkpointJsonPath),
+    checkpoint_markdown_path: normalizePath(checkpointPaths.checkpointMarkdownPath),
+    generated_at: new Date().toISOString(),
+  };
+  writeJson(checkpointPaths.receiptPath, payload);
+  return checkpointPaths;
+}
+
+function writeCheckpointArtifacts(projectRoot, sessionKey, summary = {}) {
+  const paths = deriveSessionPaths(projectRoot, sessionKey);
+  const meta = readJson(paths.metaPath);
+  const batchState = assertCurrentBatchState(meta);
+  const { turns, sha256 } = readSessionLog(paths.sessionLogPath);
+  const result = computeGate(meta, turns, sha256);
+  const checkpointPaths = deriveBatchCheckpointPaths(
+    projectRoot,
+    sessionKey,
+    batchState.current_batch_target_round
+  );
+  const artifact = buildCheckpointArtifact(meta, batchState, result, summary);
+  writeJson(checkpointPaths.checkpointJsonPath, artifact);
+  ensureParentDir(checkpointPaths.checkpointMarkdownPath);
+  fs.writeFileSync(checkpointPaths.checkpointMarkdownPath, renderCheckpointMarkdown(artifact), 'utf8');
+  return checkpointPaths;
+}
+
+function maybeMaterializeCheckpointArtifacts(projectRoot, meta, result) {
+  const batchState = assertCurrentBatchState(meta);
+  if (
+    batchState.current_batch_status !== 'pending' ||
+    result.rounds < batchState.current_batch_target_round
+  ) {
+    return;
+  }
+  writeCheckpointArtifacts(projectRoot, meta.session_key);
+  writeBatchReceipt(projectRoot, meta.session_key);
+  markBatchCheckpointReady(projectRoot, meta.session_key);
+}
+
+function markBatchCheckpointReady(projectRoot, sessionKey) {
+  const paths = deriveSessionPaths(projectRoot, sessionKey);
+  const meta = readJson(paths.metaPath);
+  const batchState = assertCurrentBatchState(meta);
+  const checkpointPaths = deriveBatchCheckpointPaths(
+    projectRoot,
+    sessionKey,
+    batchState.current_batch_target_round
+  );
+  if (!fs.existsSync(checkpointPaths.checkpointJsonPath) || !fs.existsSync(checkpointPaths.checkpointMarkdownPath)) {
+    throw new Error(
+      `Cannot mark checkpoint_ready without checkpoint artifacts for batch ${batchState.current_batch_index}`
+    );
+  }
+  if (!fs.existsSync(checkpointPaths.receiptPath)) {
+    writeBatchReceipt(projectRoot, sessionKey);
+  }
+  const nextMeta = {
+    ...meta,
+    current_batch_status: 'checkpoint_ready',
+    updated_at: new Date().toISOString(),
+  };
+  writeJson(paths.metaPath, nextMeta);
+  return nextMeta;
+}
+
+function markBatchCompleted(projectRoot, sessionKey) {
+  const paths = deriveSessionPaths(projectRoot, sessionKey);
+  const meta = readJson(paths.metaPath);
+  const batchState = assertCurrentBatchState(meta);
+  const checkpointPaths = deriveBatchCheckpointPaths(
+    projectRoot,
+    sessionKey,
+    batchState.current_batch_target_round
+  );
+  if (
+    !fs.existsSync(checkpointPaths.checkpointJsonPath) ||
+    !fs.existsSync(checkpointPaths.checkpointMarkdownPath) ||
+    !fs.existsSync(checkpointPaths.receiptPath)
+  ) {
+    throw new Error(
+      `Cannot mark batch completed before checkpoint artifacts and receipt exist for batch ${batchState.current_batch_index}`
+    );
+  }
+  const nextMeta = {
+    ...meta,
+    current_batch_status: 'completed',
+    updated_at: new Date().toISOString(),
+  };
+  writeJson(paths.metaPath, nextMeta);
+  return nextMeta;
+}
+
+function recoverBatchProgress(projectRoot, sessionKey) {
+  const paths = deriveSessionPaths(projectRoot, sessionKey);
+  const meta = readJson(paths.metaPath);
+  const batchState = assertCurrentBatchState(meta);
+  const checkpointPaths = deriveBatchCheckpointPaths(
+    projectRoot,
+    sessionKey,
+    batchState.current_batch_target_round
+  );
+  const hasCheckpointArtifacts =
+    fs.existsSync(checkpointPaths.checkpointJsonPath) && fs.existsSync(checkpointPaths.checkpointMarkdownPath);
+  const hasReceipt = fs.existsSync(checkpointPaths.receiptPath);
+  let action;
+  if (batchState.current_batch_status === 'checkpoint_ready') {
+    action = 'replay_checkpoint';
+  } else if (batchState.current_batch_status === 'completed') {
+    action = 'advance_next_batch';
+  } else {
+    action = hasCheckpointArtifacts ? 'replay_checkpoint' : 'replay_current_batch';
+  }
+  const nextBatchStartRound =
+    batchState.current_batch_target_round >= batchState.target_rounds_total
+      ? null
+      : batchState.current_batch_target_round + 1;
+  const nextBatchIndex = nextBatchStartRound == null ? null : batchState.current_batch_index + 1;
+  const nextBatchTargetRound =
+    nextBatchStartRound == null
+      ? null
+      : Math.min(nextBatchStartRound + batchState.batch_size - 1, batchState.target_rounds_total);
+  return {
+    action,
+    meta,
+    checkpointPaths,
+    hasCheckpointArtifacts,
+    hasReceipt,
+    nextBatchIndex,
+    nextBatchStartRound,
+    nextBatchTargetRound,
+  };
 }
 
 function appendTurn(projectRoot, payload) {
@@ -288,6 +708,27 @@ function appendTurn(projectRoot, payload) {
   ensureParentDir(paths.sessionLogPath);
   fs.appendFileSync(paths.sessionLogPath, `${JSON.stringify(record)}\n`, 'utf8');
   return refreshSessionArtifacts(projectRoot, payload.sessionKey);
+}
+
+function appendControlRecord(projectRoot, payload) {
+  if (payload.recordType === 'agent_turn') {
+    throw new Error('Control records must not use record_type = "agent_turn"');
+  }
+  if (payload.countsTowardRatio !== false) {
+    throw new Error('Control records must set counts_toward_ratio = false');
+  }
+  const paths = deriveSessionPaths(projectRoot, payload.sessionKey);
+  const record = {
+    session_key: payload.sessionKey,
+    record_type: payload.recordType,
+    counts_toward_ratio: false,
+    timestamp: payload.timestamp || new Date().toISOString(),
+  };
+  if (payload.payload && typeof payload.payload === 'object' && !Array.isArray(payload.payload)) {
+    record.payload = payload.payload;
+  }
+  ensureParentDir(paths.sessionLogPath);
+  fs.appendFileSync(paths.sessionLogPath, `${JSON.stringify(record)}\n`, 'utf8');
 }
 
 function parseBoolean(value) {
@@ -343,12 +784,22 @@ module.exports = {
   DEFAULT_DESIGNATED_CHALLENGER_ID,
   bootstrapSession,
   appendTurn,
+  appendControlRecord,
   computeGate,
   getAgentTurnCapabilityContract,
   deriveSessionPaths,
+  deriveBatchCheckpointPaths,
   extractSubagentText,
+  assertGateProfileSelectionAllowed,
   inferGateProfileId,
   isPartyModeFacilitatorStart,
+  writeBatchReceipt,
+  writeCheckpointArtifacts,
+  markBatchCheckpointReady,
+  markBatchCompleted,
+  recoverBatchProgress,
+  requiresHighConfidenceFinalOutputs,
+  requestsQuickProbe,
   refreshSessionArtifacts,
 };
 

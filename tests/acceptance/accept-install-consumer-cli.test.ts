@@ -25,6 +25,12 @@ describe('install to consumer → CLI acceptance', () => {
       expect(existsSync(join(target, 'specs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy.cjs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'i18n'))).toBe(true);
+      expect(existsSync(join(target, '.cursor', 'rules', 'bmad-bug-auto-party-mode-rule.mdc'))).toBe(
+        true
+      );
+      expect(existsSync(join(target, '.cursor', 'rules', 'bmad-bug-auto-party-mode.mdc'))).toBe(
+        false
+      );
       expect(existsSync(join(target, '.mcp.json'))).toBe(false);
       expect(existsSync(join(target, '.runtime-mcp'))).toBe(false);
 
@@ -61,6 +67,12 @@ describe('install to consumer → CLI acceptance', () => {
       expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy.cjs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'hooks', 'runtime-dashboard-session-start.cjs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'i18n'))).toBe(true);
+      expect(existsSync(join(target, '.cursor', 'rules', 'bmad-bug-auto-party-mode-rule.mdc'))).toBe(
+        true
+      );
+      expect(existsSync(join(target, '.cursor', 'rules', 'bmad-bug-auto-party-mode.mdc'))).toBe(
+        false
+      );
       expect(existsSync(join(target, '.mcp.json'))).toBe(false);
       expect(existsSync(join(target, '.runtime-mcp'))).toBe(false);
       expect(existsSync(join(target, 'scripts', 'emit-runtime-policy.cjs'))).toBe(false);
@@ -146,6 +158,13 @@ describe('install to consumer → CLI acceptance', () => {
         expect(existsSync(runtime)).toBe(true);
         expect(readFileSync(runtime, 'utf8')).toBe(readFileSync(canonical, 'utf8'));
       }
+
+      expect(existsSync(join(target, '.claude', 'rules', 'bmad-bug-auto-party-mode-rule.md'))).toBe(
+        true
+      );
+      expect(existsSync(join(target, '.claude', 'rules', 'bmad-bug-auto-party-mode.md'))).toBe(
+        false
+      );
     } finally {
       rmSync(target, { recursive: true, force: true });
     }

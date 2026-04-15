@@ -5,9 +5,11 @@ description: |
   以 Cursor bmad-bug-assistant 为语义基线，按「根因分析 → BUGFIX 文档 → 审计 → 任务列表补充 → 实施 → 实施后审计」执行 BUG 修复全流程。
   主 Agent 发起任一子任务时**必须**将本 skill 内该阶段的「完整 prompt 模板」整段复制并填入占位符后传入，禁止省略、概括或自行改写提示词；
   主 Agent 禁止直接修改生产代码，实施须通过 Agent tool 子代理（subagent_type: general-purpose）。
-  party-mode 主路径已固定为 Claude specialized subtype：`.claude/agents/party-mode-facilitator.md` / `subagent_type: party-mode-facilitator`。
-  使用 party-mode 进行**至少 100 轮**多角色辩论（BUGFIX 产出最终方案与 §7 任务列表，属 party-mode step-02「生成最终方案和最终任务列表」场景），
-  满足收敛条件（共识 + 近 2–3 轮无新 gap）再结束；审计优先 `.claude/agents/auditors/auditor-bugfix`，按 Fallback 链降级。
+  party-mode 主路径显式调用示例已统一为：`.claude/agents/party-mode-facilitator.md` / `@"party-mode-facilitator (agent)"`。
+  主 Agent 进入 party-mode 前必须先展示 `20 / 50 / 100` 强度选项；普通 RCA / 方案分析默认 `decision_root_cause_50`，BUGFIX 最终方案与 §7 默认 `final_solution_task_list_100`。
+  `quick_probe_20` 仅用于 probe-only；若当前档位不足以产出高置信最终产物，主 Agent 必须拒绝当前档位并要求升级到 `final_solution_task_list_100`。
+  每 20 轮必须展示一次 checkpoint，且 `S / F / C` 仅在 `checkpoint_window_ms = 15000` 的窗口内生效；heartbeat 由 facilitator 负责。
+  审计优先 `.claude/agents/auditors/auditor-bugfix`，按 Fallback 链降级。
   遵循 ralph-method、TDD 红绿灯、speckit-workflow。
   适用场景：用户报告 BUG、要求根因分析、生成/更新 BUGFIX 文档、补充 §7 任务列表、实施 BUGFIX。全程中文。
 when_to_use: |
@@ -30,6 +32,18 @@ references:
 # Claude Adapter: bmad-bug-assistant
 
 > **Party-mode source of truth**：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。所有 party-mode 的 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 不得定义第二套 gate 语义。
+
+## Party-Mode 主 Agent 编排约束（Wave 4）
+
+- 进入 party-mode 前，主 Agent 必须先向用户展示 `20 / 50 / 100` 三档强度，并按请求类型推断默认值。
+- 普通 RCA / 方案分析默认 `decision_root_cause_50`；需要 BUGFIX §7 / 最终方案 / 最终任务列表等高置信最终产物时默认 `final_solution_task_list_100`。
+- `quick_probe_20` 仅用于 probe-only；若用户当前选择 `quick_probe_20` 或 `decision_root_cause_50`，却又明确要求高置信最终产物，主 Agent 必须拒绝当前档位并要求升级到 `final_solution_task_list_100`。
+- 每 20 轮必须向用户展示一次 checkpoint；checkpoint 展示后默认自动继续下一批，不要求逐批人工确认。
+- `S / F / C` 只在 checkpoint 窗口内有效；`checkpoint_window_ms = 15000`。
+- `C` 的语义固定为“立即继续下一批”，会立即关闭当前 checkpoint 窗口并跳过剩余等待时间。
+- 若用户在 checkpoint 窗口内输入普通业务补充文本，而不是 `S / F / C`，主 Agent 必须立即停止自动继续，取消窗口计时，并按新补充进入下一批前的重新编排。
+- checkpoint 窗口外的 `S / F / C` 必须显式拒绝，不缓存、不当作普通业务输入。
+- heartbeat 由 facilitator 负责；主 Agent 只负责批次结束后的 checkpoint 展示，不负责单批执行中的实时 heartbeat 插入。
 
 ## Purpose
 
@@ -218,7 +232,7 @@ Claude 版 `bmad-bug-assistant` 必须满足：
 
 | 阶段 | 执行体 | Agent 文件 |
 |------|--------|-----------|
-| 阶段一/二 根因辩论 | party-mode-facilitator | `.claude/agents/party-mode-facilitator.md` / Agent tool `subagent_type: party-mode-facilitator` |
+| 阶段一/二 根因辩论 | party-mode-facilitator | `.claude/agents/party-mode-facilitator.md` / 显式调用 `@"party-mode-facilitator (agent)"` |
 | 阶段一/二/三 审计 | auditor-bugfix | `.claude/agents/auditors/auditor-bugfix.md` |
 | 阶段四 实施 | general-purpose dev | Agent tool `subagent_type: general-purpose` |
 | 阶段四 实施后审计 | auditor-implement | `.claude/agents/auditors/auditor-implement.md` |
@@ -326,7 +340,7 @@ artifacts:
 
 **流程**：
 
-1. 根据用户提供的 BUG 问题信息，使用 **party-mode** 引入上述多角色，进行**至少 100 轮**互相质疑和辩论（BUGFIX 属「生成最终方案和最终任务列表」场景），满足收敛条件（根因共识 + 近 2–3 轮无新 gap）再结束；主路径必须通过 `.claude/agents/party-mode-facilitator.md` 以 Agent tool（`subagent_type: party-mode-facilitator`）调度。若无法调度 specialized facilitator，才按 Fallback Strategy 降级，使用 Agent tool（`subagent_type: general-purpose`），在 prompt 中明确要求模拟多角色（Winston 架构师、Mary 分析师、Amelia 开发、Quinn 测试、John 产品经理）辩论并达成根因共识。
+1. 根据用户提供的 BUG 问题信息，使用 **party-mode** 引入上述多角色，进行**至少 100 轮**互相质疑和辩论（BUGFIX 属「生成最终方案和最终任务列表」场景），满足收敛条件（根因共识 + 近 2–3 轮无新 gap）再结束；主路径必须显式调用 `.claude/agents/party-mode-facilitator.md`，提示词示例统一写为 `@"party-mode-facilitator (agent)"`。若无法调度 facilitator，才按 Fallback Strategy 降级，使用 Agent tool（`subagent_type: general-purpose`），在 prompt 中明确要求模拟多角色（Winston 架构师、Mary 分析师、Amelia 开发、Quinn 测试、John 产品经理）辩论并达成根因共识。
 2. 对根因做深入分析，直至达成根因共识。
 3. 生成 **BUGFIX 文档**，完成 BUG 上报（保存至 `_bmad-output/` 或 `bugfix/`）。
 4. 发起**审计子任务**：
@@ -690,7 +704,7 @@ Amelia 开发 的规范已在上方 5 条中列出，子代理按内联执行即
 
 用户：「多周期图表主图右键看不到「从图表同步 GDS」，请分析根因并生成 BUGFIX 文档。」
 
-主 Agent：执行阶段一——将「阶段一根因辩论完整 prompt 模板」整段复制并填入用户描述后，优先通过 Agent tool（`subagent_type: party-mode-facilitator`）发起子任务；仅当 facilitator 不可用时才回退到 `general-purpose`。子任务返回后，将「阶段一审计完整 prompt 模板」整段复制后发起审计子任务；迭代至审计通过。
+主 Agent：执行阶段一——将「阶段一根因辩论完整 prompt 模板」整段复制并填入用户描述后，优先通过显式调用 `@"party-mode-facilitator (agent)"` 发起子任务；仅当 facilitator 不可用时才回退到 `general-purpose`。子任务返回后，将「阶段一审计完整 prompt 模板」整段复制后发起审计子任务；迭代至审计通过。
 
 ### 示例 2：补充信息后更新
 

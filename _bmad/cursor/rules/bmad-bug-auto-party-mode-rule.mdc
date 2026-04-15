@@ -1,10 +1,12 @@
 ---
-description: 当用户描述问题（测试错误、运行错误、异常现象）时，主 Agent 必须自动发起 party-mode，引入批判审计员且其发言占比 >60%，至少 100 轮讨论、最后 3 轮无新 gap 收敛后产出 BUGFIX 文档，且禁止主 Agent 直接修改源代码
+description: 当用户描述问题（测试错误、运行错误、异常现象）时，主 Agent 必须自动发起 party-mode，并先展示 `20 / 50 / 100` 强度选项；普通 RCA 默认 50，BUGFIX 最终方案与 §7 默认 100。每 20 轮 checkpoint，`S / F / C` 仅在 checkpoint window 内有效，且禁止主 Agent 直接修改源代码
 globs:
 alwaysApply: true
 ---
 
-# 问题描述时自动 party-mode 与 BUGFIX 产出
+# RULE ONLY: 问题描述时自动 party-mode 与 BUGFIX 产出
+
+> 这是 **rule**，不是 **skill**。禁止通过 `Skill(...)` 工具调用 `bmad-bug-auto-party-mode-rule`。
 
 ## 适用时机
 
@@ -24,6 +26,9 @@ alwaysApply: true
 
 1. **自动发起 party-mode**  
    主 Agent 在识别到「用户描述问题」后，**第一条实质性回复**必须声明进入 party-mode（或等效表述），并说明将进行多角色辩论（目标：根因分析 + BUGFIX 文档）。不等待用户再说「用 party-mode」。
+   - 进入 party-mode 前，必须先展示 `20 / 50 / 100` 三档强度。  
+   - 普通 RCA / 方案分析默认 `decision_root_cause_50`；若当前轮要产出 BUGFIX 最终方案与 §7，则默认 `final_solution_task_list_100`。  
+   - `quick_probe_20` 仅用于 probe-only；若用户当前选择 `quick_probe_20` 或 `decision_root_cause_50`，却又明确要求高置信最终产物，主 Agent 必须拒绝当前档位并要求升级到 `final_solution_task_list_100`。  
 
 2. **执行 party-mode 与角色约束**  
    - **必须读取** `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md` 及 `steps/step-02-discussion-orchestration.md`，并**严格遵循** step-02 中的 Response Structure 与 gate/recovery/evidence 规则。  
@@ -31,10 +36,14 @@ alwaysApply: true
    - **发言格式（强制）**：每轮每位角色发言**必须**使用格式 `[Icon Emoji] **[展示名]**: [发言内容]`（如 `🏗️ **Winston 架构师**: ...`、`⚔️ **批判性审计员**: ...`）。禁止省略 Icon 或展示名。  
    - **批判审计员发言占比 > 60%**：即总轮数 100 时，至少 61 轮含批判审计员发言。批判审计员负责质疑可操作性、可验证性、被模型忽略风险、假 100 轮风险，并提出 gap 与边界情况。
 
-3. **轮次与收敛**  
-   - 讨论 **至少 100 轮**，对问题做根因级深入分析。  
-   - **收敛条件**：**最后 3 轮无新 gap** 才能结束辩论（例如第 98、99、100 轮均无新 gap）。  
-   - 禁止凑轮次：每轮须有实质角色发言，不得空转。
+3. **轮次、checkpoint 与收敛**  
+   - 每 20 轮必须展示一次 checkpoint；checkpoint 展示后默认自动继续下一批，不要求逐批人工确认。  
+   - `S / F / C` 只在 checkpoint 窗口内有效；`checkpoint_window_ms = 15000`。  
+   - `C` 的语义固定为“立即继续下一批”，会立即关闭当前 checkpoint 窗口并跳过剩余等待时间。  
+   - 若用户在 checkpoint 窗口内输入普通业务补充文本，而不是 `S / F / C`，主 Agent 必须立即停止自动继续，取消窗口计时，并按新补充进入下一批前的重新编排。  
+   - checkpoint 窗口外的 `S / F / C` 必须显式拒绝，不缓存、不当作普通业务输入。  
+   - heartbeat 由 facilitator 负责；主 Agent 只负责批次结束后的 checkpoint 展示，不负责单批执行中的实时 heartbeat 插入。  
+   - 收敛条件仍以 party-mode source of truth 为准；禁止凑轮次，每轮须有实质角色发言，不得空转。  
 
 4. **产出 BUGFIX 文档**  
    辩论收敛后，**必须**生成一份 BUGFIX 文档，包含：§1 现象/问题描述、§2 根因分析、§3 依据/参考（可选）、§4 修复方案、§5 流程/建议流程（可选）、§7 最终任务列表。路径：有 story 时 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/BUGFIX_{slug}.md`；无 story 时 `_bmad-output/implementation-artifacts/_orphan/BUGFIX_{slug}.md`。格式与禁止词表等与 bmad-bug-assistant 约定一致。

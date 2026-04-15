@@ -24,6 +24,7 @@ describe('party-mode runtime owner', () => {
     expect(meta.designated_challenger_id).toBe(DEFAULT_DESIGNATED_CHALLENGER_ID);
     expect(meta.gate_profile_id).toBe('decision_root_cause_50');
     expect(meta.min_rounds).toBe(50);
+    expect(meta.closure_level).toBe('standard');
     expect(meta.agent_turn_event_source_mode).toBe(AGENT_TURN_EVENT_SOURCE_MODE);
     expect(meta.host_native_agent_turn_supported).toBe(false);
     expect(meta.host_native_agent_turn_reason).toBe(HOST_NATIVE_AGENT_TURN_REASON);
@@ -82,17 +83,20 @@ describe('party-mode runtime owner', () => {
     expect(fs.existsSync(snapshotPath)).toBe(true);
 
     const audit = JSON.parse(fs.readFileSync(auditPath, 'utf8')) as {
+      closure_level: string;
       agent_turn_event_source_mode: string;
       host_native_agent_turn_supported: boolean;
       host_native_agent_turn_reason: string;
     };
     const snapshot = JSON.parse(fs.readFileSync(snapshotPath, 'utf8')) as {
+      closure_level: string;
       agent_turn_event_source_mode: string;
       host_native_agent_turn_supported: boolean;
       host_native_agent_turn_reason: string;
     };
 
     for (const artifact of [audit, snapshot]) {
+      expect(artifact.closure_level).toBe('standard');
       expect(artifact.agent_turn_event_source_mode).toBe(AGENT_TURN_EVENT_SOURCE_MODE);
       expect(artifact.host_native_agent_turn_supported).toBe(false);
       expect(artifact.host_native_agent_turn_reason).toBe(HOST_NATIVE_AGENT_TURN_REASON);
