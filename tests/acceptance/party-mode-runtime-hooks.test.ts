@@ -27,6 +27,7 @@ describe('party-mode runtime hooks', () => {
         cwd: ROOT,
         input: JSON.stringify({
           cwd: tempRoot,
+          gateProfileId: 'final_solution_task_list_100',
           task: 'Run party-mode-facilitator for BUGFIX final solution and §7 task list',
         }),
         encoding: 'utf8',
@@ -50,6 +51,10 @@ describe('party-mode runtime hooks', () => {
         '"host_native_agent_turn_supported": false'
       );
       expect(output.hookSpecificOutput?.additionalContext).toContain('"closure_level": "high_confidence"');
+      expect(output.hookSpecificOutput?.additionalContext).toContain(
+        '"event_writer_mode": "host_reconstruction_from_visible_output"'
+      );
+      expect(output.hookSpecificOutput?.additionalContext).not.toContain('event_writer_command');
 
       const sessionsDir = path.join(tempRoot, '_bmad-output', 'party-mode', 'sessions');
       const metaFiles = fs.readdirSync(sessionsDir).filter((file) => file.endsWith('.meta.json'));

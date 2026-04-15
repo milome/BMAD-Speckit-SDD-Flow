@@ -79,6 +79,8 @@ For each selected agent:
 - icon comes from `_bmad/_config/agent-manifest.csv`
 - display name and title come from `_bmad/i18n/agent-display-names.yaml` first, then manifest fallback
 
+`### Round <n>`
+
 `[Icon Emoji] **[Resolved displayName]**: [Authentic in-character response]`
 
 When a stage profile is active, the round summary must also track:
@@ -126,6 +128,13 @@ After each round, allow the user to keep talking to the agents, and show the exi
   - `unresolved topics / deferred risks`
   - `current challenger ratio` (when challenger gating is active)
   - `focus for the next 20-round segment`
+- The checkpoint must use the fixed machine-checkable heading: `## Checkpoint <current_round>/<target_rounds_total>`
+- The checkpoint must include these exact field lines:
+  - `- Resolved Topics: ...`
+  - `- Unresolved Topics: ...`
+  - `- Deferred Risks: ...`
+  - `- Challenger Ratio: ...`
+  - `- Next Focus: ...`
 - A checkpoint is facilitator control text, not an agent turn. If any runtime path persists it, it must be recorded as a non-`agent_turn` artifact or with `counts_toward_ratio = false`.
 - The checkpoint must summarize only content already established in the current session truth source; it must not invent new conclusions.
 
@@ -185,6 +194,16 @@ If the active stage profile has not satisfied its `stage-specific exit criteria`
 
 - before exit, write `_bmad-output/party-mode/evidence/<session_key>.audit.json`
 - include at least `session_key`, `gate_profile_id`, `closure_level`, `min_rounds_check`, `challenger_ratio_check`, `last_tail_no_new_gap_check`, `final_result`, `source_log_sha256`, and `generated_at`
+
+**Visible final gate evidence block (required template)**
+
+- before showing `[E]`, render a visible main-session block with the exact heading `## Final Gate Evidence`
+- include at least:
+  - `- Gate Profile: <gate_profile_id>`
+  - `- Total Rounds: <n>`
+  - `- Challenger Ratio Check: PASS|FAIL`
+  - `- Tail Window No New Gap: PASS|FAIL`
+  - `- Final Result: PASS|FAIL`
 
 **Recovery Order**
 

@@ -35,4 +35,28 @@ describe('party-mode upstream orchestration contract', () => {
       expect(content).toContain('升级到 `final_solution_task_list_100`');
     }
   });
+
+  it('requires Claude upstream callers to compile explicit user selection into facilitator prompts', () => {
+    const zhFiles = [
+      '_bmad/claude/skills/bmad-bug-assistant/SKILL.md',
+      '_bmad/claude/skills/bmad-bug-assistant/SKILL.zh.md',
+      '_bmad/claude/skills/bmad-story-assistant/SKILL.md',
+      '_bmad/claude/skills/bmad-story-assistant/SKILL.zh.md',
+      '_bmad/claude/rules/bmad-bug-auto-party-mode-rule.md',
+    ] as const;
+
+    for (const file of zhFiles) {
+      const content = readFileSync(file, 'utf8');
+      expect(content).toContain('## 用户选择');
+      expect(content).toContain('强度:');
+      expect(content).toMatch(/用户选择确认块|用户明确回复/u);
+      expect(content).toContain('自动编译');
+    }
+
+    const enFile = '_bmad/claude/skills/bmad-story-assistant/SKILL.en.md';
+    const enContent = readFileSync(enFile, 'utf8');
+    expect(enContent).toContain('## 用户选择');
+    expect(enContent).toContain('强度:');
+    expect(enContent).toContain('compile');
+  });
 });

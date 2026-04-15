@@ -31,7 +31,11 @@ tool: Agent tool (native subagent)
 1. **自动发起 party-mode**
    主 Agent 在识别到「用户描述问题」后，**第一条实质性回复**必须声明进入 party-mode（或等效表述），并说明将进行多角色辩论（目标：根因分析 + BUGFIX 文档）。不等待用户再说「用 party-mode」。
    - 进入 party-mode 前，必须先展示 `20 / 50 / 100` 三档强度。
-   - 普通 RCA / 方案分析默认 `decision_root_cause_50`；若当前轮要产出 BUGFIX 最终方案与 §7，则默认 `final_solution_task_list_100`。
+   - 普通 RCA / 方案分析推荐 `decision_root_cause_50`；若当前轮要产出 BUGFIX 最终方案与 §7，则推荐 `final_solution_task_list_100`。
+   - 必须等待用户明确回复 `20` / `50` / `100` 后，才能正式发起 `@"party-mode-facilitator (agent)"`；禁止把推荐档位表述成已替用户完成的选择。
+   - 用户一旦明确回复 `20` / `50` / `100`，主 Agent 必须将该回复自动编译进 facilitator prompt 的专用确认块：
+     `## 用户选择`
+     `强度: 50 (decision_root_cause_50)` / `强度: 20 (quick_probe_20)` / `强度: 100 (final_solution_task_list_100)`。
    - `quick_probe_20` 仅用于 probe-only；若用户当前选择 `quick_probe_20` 或 `decision_root_cause_50`，却又明确要求高置信最终产物，主 Agent 必须拒绝当前档位并要求升级到 `final_solution_task_list_100`。
 
 2. **执行 party-mode 与角色约束**

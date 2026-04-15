@@ -2,6 +2,17 @@
   "hooks": {
     "PreToolUse": [
       {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ./.claude/hooks/party-mode-turn-lock.cjs",
+            "timeout": 5,
+            "statusMessage": "Checking party-mode fail-closed turn lock..."
+          }
+        ]
+      },
+      {
         "matcher": "Agent",
         "hooks": [
           {

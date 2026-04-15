@@ -8,7 +8,7 @@ import {
 } from '../../scripts/facilitator-registry';
 
 describe('facilitator registry contract', () => {
-  it('registers facilitator as a formal cross-host product object with specialized Claude subtype routing', () => {
+  it('registers facilitator as a formal cross-host product object with explicit Claude agent mention routing', () => {
     expect(FACILITATOR_REGISTRY_VERSION).toBe('facilitator_registry_v1');
 
     const registration = getFacilitatorRegistration();
@@ -17,7 +17,7 @@ describe('facilitator registry contract', () => {
     expect(registration.cursorDefinitionSourcePath).toBe('.cursor/agents/party-mode-facilitator.md');
     expect(registration.claudeTarget).toStrictEqual({
       agentPath: '.claude/agents/party-mode-facilitator.md',
-      subagentType: 'party-mode-facilitator',
+      agentMention: '@"party-mode-facilitator (agent)"',
     });
 
     expect(registration.hosts.cursor.preferredRoute).toStrictEqual({
@@ -30,7 +30,7 @@ describe('facilitator registry contract', () => {
     });
     expect(registration.hosts.claude.preferredRoute).toStrictEqual({
       tool: 'Agent',
-      subtypeOrExecutor: 'party-mode-facilitator',
+      subtypeOrExecutor: '@"party-mode-facilitator (agent)"',
     });
     expect(registration.hosts.claude.fallbackRoute).toStrictEqual({
       tool: 'Agent',
@@ -50,7 +50,7 @@ describe('facilitator registry contract', () => {
       'utf8'
     );
     expect(claudeContent).toContain('name: party-mode-facilitator');
-    expect(claudeContent).toContain('formal `party-mode-facilitator` subtype');
+    expect(claudeContent).toContain('@"party-mode-facilitator (agent)"');
   });
 
   it('resolves facilitator and canonical party-mode assets through the shared localized resolver entry', () => {

@@ -67,7 +67,7 @@ export const CURSOR_FACILITATOR_DEFINITION_SOURCE_PATH =
   '.cursor/agents/party-mode-facilitator.md' as const;
 export const CLAUDE_FACILITATOR_TARGET_PATH =
   '.claude/agents/party-mode-facilitator.md' as const;
-export const CLAUDE_FACILITATOR_TARGET_SUBTYPE = 'party-mode-facilitator' as const;
+export const CLAUDE_FACILITATOR_AGENT_MENTION = '@"party-mode-facilitator (agent)"' as const;
 
 export const IMPLEMENT_AUDIT_REQUIRED_DIMENSIONS = [
   'functional_correctness',
@@ -183,7 +183,7 @@ export interface ReviewerContractFreeze {
     readonly cursorDefinitionSourcePath: typeof CURSOR_FACILITATOR_DEFINITION_SOURCE_PATH;
     readonly claudeTarget: {
       readonly agentPath: typeof CLAUDE_FACILITATOR_TARGET_PATH;
-      readonly subagentType: typeof CLAUDE_FACILITATOR_TARGET_SUBTYPE;
+      readonly agentMention: typeof CLAUDE_FACILITATOR_AGENT_MENTION;
     };
   };
   readonly hardConstraints: typeof REVIEWER_HARD_CONSTRAINTS;
@@ -227,7 +227,7 @@ export const REVIEWER_CONTRACT_FREEZE: ReviewerContractFreeze = {
     cursorDefinitionSourcePath: CURSOR_FACILITATOR_DEFINITION_SOURCE_PATH,
     claudeTarget: {
       agentPath: CLAUDE_FACILITATOR_TARGET_PATH,
-      subagentType: CLAUDE_FACILITATOR_TARGET_SUBTYPE,
+      agentMention: CLAUDE_FACILITATOR_AGENT_MENTION,
     },
   },
   hardConstraints: REVIEWER_HARD_CONSTRAINTS,

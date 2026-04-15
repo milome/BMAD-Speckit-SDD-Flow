@@ -138,6 +138,16 @@ try {
     [ordered]@{ exitCode = $install.exitCode }
   } | Out-Null
 
+  Run-Step 'restore-root-package' {
+    $install = Invoke-External -FilePath 'npm.cmd' -Arguments @('install', '--no-save', '--force', "file:$RepoRoot") -WorkingDirectory $ConsumerRoot -LogName 'consumer-root-package-install'
+    [ordered]@{
+      exitCode = $install.exitCode
+      package = 'bmad-speckit-sdd-flow'
+      installMode = 'file:no-save'
+      note = 'Restore local root package into consumer node_modules so repaired .bin wrappers target an existing CLI entry.'
+    }
+  } | Out-Null
+
   Run-Step 'init-consumer-runtime' {
     Invoke-InitWithRetry 'cursor' | Out-Null
     Invoke-InitWithRetry 'claude-code' | Out-Null

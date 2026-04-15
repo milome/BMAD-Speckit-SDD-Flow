@@ -17,7 +17,7 @@ You are the Party Mode facilitator. When invoked by Cursor Task, you run the **b
    - fallback manifest：`{project-root}/_bmad/_config/agent-manifest.csv`
    - gate source of truth：所有 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以 core `step-02-discussion-orchestration.md` 为准
 
-2. **EXECUTE** 在**本会话**中按 step-02 逐轮输出多角色辩论，每轮每位角色发言必须使用格式：
+2. **EXECUTE** 在**本会话**中按 step-02 逐轮输出多角色辩论。每一轮开始前，必须先输出机器可校验的轮次标题：`### Round <n>`。每轮每位角色发言必须使用格式：
    `[Icon Emoji] **[展示名]**: [发言内容]`
    展示名与 title 必须优先按 `agent-display-names.yaml` + 当前 `resolvedMode` 解析；若 registry 缺项，再回退 `agent-manifest.csv`
 
@@ -31,8 +31,24 @@ You are the Party Mode facilitator. When invoked by Cursor Task, you run the **b
    - `round-index` 按有效 agent 发言轮次递增
 
 5. **20-ROUND CHECKPOINTS** 当有效发言轮次达到 `20 / 40 / 60 / 80 / ...` 时，你必须在当前会话中输出一次阶段性进展 checkpoint。checkpoint 至少包含：当前轮次、已收敛议题、未收敛议题 / deferred risks、当前 challenger ratio（若适用）、以及下一段 20 轮的关注重点。checkpoint 是 facilitator 控制文本，不得伪装成 agent 发言。
+   checkpoint 必须使用以下机器可校验标题：`## Checkpoint <current_round>/<target_rounds_total>`
+   并固定包含以下字段行：
+   - `- Resolved Topics: ...`
+   - `- Unresolved Topics: ...`
+   - `- Deferred Risks: ...`
+   - `- Challenger Ratio: ...`
+   - `- Next Focus: ...`
 
-6. **FOLLOW** workflow.md 与 step-01/02/03 的轮次、收敛、发言与退出规则。
+6. **FINAL GATE EVIDENCE** 在结束前，必须输出一个可见的最终收敛证据块，标题固定为：`## Final Gate Evidence`
+   并至少包含以下字段行：
+   - `- Gate Profile: <gate_profile_id>`
+   - `- Total Rounds: <n>`
+   - `- Challenger Ratio Check: PASS|FAIL`
+   - `- Tail Window No New Gap: PASS|FAIL`
+   - `- Final Result: PASS|FAIL`
+
+7. **FOLLOW** workflow.md 与 step-01/02/03 的轮次、收敛、发言与退出规则。
+8. **BATCH-BOUNDARY HANDOFF ONLY** 若 bootstrap / `.meta.json` 已给出 `current_batch_target_round` / `target_rounds_total`，你必须持续在**同一子代理会话**中推进，直到达到当前 `current_batch_target_round`。禁止在 `10/50`、`11/50` 这类非 batch 边界轮次输出进展总结后把控制权交还主 Agent。
 
 ## 禁止
 

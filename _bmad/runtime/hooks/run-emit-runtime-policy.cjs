@@ -6,12 +6,12 @@ const path = require('node:path');
 const fs = require('node:fs');
 
 function emitCliPath(root) {
-  const canonical = path.join(root, '_bmad', 'claude', 'hooks', 'emit-runtime-policy-cli.cjs');
-  if (fs.existsSync(canonical)) return canonical;
   const deployed = path.join(root, '.claude', 'hooks', 'emit-runtime-policy-cli.cjs');
   if (fs.existsSync(deployed)) return deployed;
   const cursorDeployed = path.join(root, '.cursor', 'hooks', 'emit-runtime-policy-cli.cjs');
   if (fs.existsSync(cursorDeployed)) return cursorDeployed;
+  const canonical = path.join(root, '_bmad', 'claude', 'hooks', 'emit-runtime-policy-cli.cjs');
+  if (fs.existsSync(canonical)) return canonical;
   return canonical;
 }
 
@@ -29,4 +29,4 @@ function runEmitRuntimePolicy(root) {
   });
 }
 
-module.exports = { runEmitRuntimePolicy };
+module.exports = { emitCliPath, runEmitRuntimePolicy };

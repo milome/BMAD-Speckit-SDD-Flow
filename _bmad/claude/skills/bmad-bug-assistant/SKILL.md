@@ -6,7 +6,7 @@ description: |
   主 Agent 发起任一子任务时**必须**将本 skill 内该阶段的「完整 prompt 模板」整段复制并填入占位符后传入，禁止省略、概括或自行改写提示词；
   主 Agent 禁止直接修改生产代码，实施须通过 Agent tool 子代理（subagent_type: general-purpose）。
   party-mode 主路径显式调用示例已统一为：`.claude/agents/party-mode-facilitator.md` / `@"party-mode-facilitator (agent)"`。
-  主 Agent 进入 party-mode 前必须先展示 `20 / 50 / 100` 强度选项；普通 RCA / 方案分析默认 `decision_root_cause_50`，BUGFIX 最终方案与 §7 默认 `final_solution_task_list_100`。
+  主 Agent 进入 party-mode 前必须先展示 `20 / 50 / 100` 强度选项；普通 RCA / 方案分析推荐 `decision_root_cause_50`，BUGFIX 最终方案与 §7 推荐 `final_solution_task_list_100`；但必须等待用户明确回复后，才能发起 `@"party-mode-facilitator (agent)"`。
   `quick_probe_20` 仅用于 probe-only；若当前档位不足以产出高置信最终产物，主 Agent 必须拒绝当前档位并要求升级到 `final_solution_task_list_100`。
   每 20 轮必须展示一次 checkpoint，且 `S / F / C` 仅在 `checkpoint_window_ms = 15000` 的窗口内生效；heartbeat 由 facilitator 负责。
   审计优先 `.claude/agents/auditors/auditor-bugfix`，按 Fallback 链降级。
@@ -20,7 +20,7 @@ references:
   - audit-prompts-section5: §5 审计提示词参考；`.claude/skills/bmad-bug-assistant/references/audit-prompts-section5.md`
   - audit-document-iteration-rules: 文档审计迭代规则；`.claude/skills/speckit-workflow/references/audit-document-iteration-rules.md`
   - party-mode: `{project-root}/_bmad/core/skills/bmad-party-mode/`
-  - party-mode-facilitator: Party-mode specialized subtype；`.claude/agents/party-mode-facilitator.md`
+  - party-mode-facilitator: Party-mode dedicated facilitator agent；`.claude/agents/party-mode-facilitator.md`
   - ralph-method: prd、progress 文件，按 US 顺序执行
   - speckit-workflow: 禁止伪实现、必须运行验收命令、架构忠实
 ---
@@ -35,8 +35,13 @@ references:
 
 ## Party-Mode 主 Agent 编排约束（Wave 4）
 
-- 进入 party-mode 前，主 Agent 必须先向用户展示 `20 / 50 / 100` 三档强度，并按请求类型推断默认值。
-- 普通 RCA / 方案分析默认 `decision_root_cause_50`；需要 BUGFIX §7 / 最终方案 / 最终任务列表等高置信最终产物时默认 `final_solution_task_list_100`。
+- 进入 party-mode 前，主 Agent 必须先向用户展示 `20 / 50 / 100` 三档强度，并按请求类型给出推荐档位。
+- 普通 RCA / 方案分析推荐 `decision_root_cause_50`；需要 BUGFIX §7 / 最终方案 / 最终任务列表等高置信最终产物时推荐 `final_solution_task_list_100`。
+- 主 Agent 必须等待用户明确回复 `20` / `50` / `100` 后，才能正式发起 `@"party-mode-facilitator (agent)"`；禁止把推荐档位表述成已替用户完成的选择。
+- 用户一旦明确回复 `20` / `50` / `100`，主 Agent 必须将该回复自动编译进 facilitator prompt 的专用确认块：
+  `## 用户选择`
+  `强度: 50 (decision_root_cause_50)` / `强度: 20 (quick_probe_20)` / `强度: 100 (final_solution_task_list_100)`。
+- 若运行时已携带结构化 `gateProfileId` / `gate_profile_id`，其值必须与上述确认块一致；若 Agent tool 无法透传该字段，则仍必须保留确认块作为授权证明。
 - `quick_probe_20` 仅用于 probe-only；若用户当前选择 `quick_probe_20` 或 `decision_root_cause_50`，却又明确要求高置信最终产物，主 Agent 必须拒绝当前档位并要求升级到 `final_solution_task_list_100`。
 - 每 20 轮必须向用户展示一次 checkpoint；checkpoint 展示后默认自动继续下一批，不要求逐批人工确认。
 - `S / F / C` 只在 checkpoint 窗口内有效；`checkpoint_window_ms = 15000`。
@@ -352,7 +357,10 @@ artifacts:
 
 1. 将模板 **BUG-A1-ROOT**（阶段一根因辩论完整 prompt 模板）**整段复制**到 Agent tool 的 `prompt` 参数中。
 2. 将占位符 `{用户提供的 BUG 现象、复现步骤、环境信息}` 替换为用户实际描述（若用户未写清，可归纳为一段话），**禁止**留空或写「见上文」。
-3. 发起子任务；子任务返回后，若生成了 BUGFIX 文档，再发起审计子任务（使用模板 **BUG-A1-AUDIT**（阶段一审计完整 prompt 模板）整段复制）。
+3. 若用户已明确回复 `20` / `50` / `100`，必须将其自动编译进占位符 `{主 Agent 填入用户选择确认块}`，格式固定为：
+   `## 用户选择`
+   `强度: 20 (quick_probe_20)` / `强度: 50 (decision_root_cause_50)` / `强度: 100 (final_solution_task_list_100)`。
+4. 发起子任务；子任务返回后，若生成了 BUGFIX 文档，再发起审计子任务（使用模板 **BUG-A1-AUDIT**（阶段一审计完整 prompt 模板）整段复制）。
 
 ### 阶段一根因辩论完整 prompt 模板（主 Agent 必须完整复制并替换占位符后传入）
 
@@ -360,6 +368,11 @@ artifacts:
 
 ```
 【必读】本 prompt 须为完整模板且所有占位符已替换。若发现明显缺失或未替换的占位符，请勿执行，并回复：请主 Agent 将本 skill 中阶段一根因辩论完整 prompt 模板（ID BUG-A1-ROOT）整段复制并替换占位符后重新发起。
+
+{主 Agent 填入用户选择确认块；若用户已回复 20/50/100，则必须替换为：
+## 用户选择
+强度: 50 (decision_root_cause_50)
+}
 
 本任务以以下 BMAD 角色进行多角色辩论（**至少 100 轮**，BUGFIX 产出最终方案与 §7 任务列表；满足根因共识且近 2–3 轮无新 gap 再结束）。请对以下 BUG 进行根因分析并达成共识。
 
@@ -423,7 +436,8 @@ artifacts:
 
 1. 将模板 **BUG-A2-UPDATE**（阶段二信息补充辩论完整 prompt 模板）**整段复制**到 Agent tool 的 `prompt` 参数中。
 2. 替换占位符：`{用户补充的现象、步骤、环境等}` → 用户实际补充内容；`{主 Agent 填入路径}` → BUGFIX 文档的完整路径（如 `_bmad-output/BUGFIX_xxx_2026-02-27.md`）。
-3. 发起辩论子任务；子任务返回后，根据产出更新 BUGFIX 文档（若主 Agent 直接按分析更新文档，则本步可合并到步骤 2 的产出）。
+3. 若用户已明确回复 `20` / `50` / `100`，必须将其自动编译进 `{主 Agent 填入用户选择确认块}`；若有结构化 `gateProfileId`，须与确认块一致。
+4. 发起辩论子任务；子任务返回后，根据产出更新 BUGFIX 文档（若主 Agent 直接按分析更新文档，则本步可合并到步骤 2 的产出）。
 4. **【必做】** 发起审计子任务：使用模板 ID **BUG-A1-AUDIT**（阶段一审计完整 prompt 模板）整段复制，子代理为 `.claude/agents/auditors/auditor-bugfix.md` 或按 Fallback Strategy 降级。
 5. **【必做】** 若审计结论为未通过，**审计子代理须在本轮内直接修改 BUGFIX 文档**以消除 gap；主 Agent 收到报告后再次发起审计。禁止仅输出修改建议而不修改文档。文档审计迭代规则见 `.claude/skills/speckit-workflow/references/audit-document-iteration-rules.md`。重复直至结论为「完全覆盖、验证通过」。**禁止**在未通过时仅做一轮审计即结束。
 
@@ -433,6 +447,11 @@ artifacts:
 
 ```
 【必读】本 prompt 须为完整模板且所有占位符已替换。若发现明显缺失或未替换的占位符，请勿执行，并回复：请主 Agent 将本 skill 中阶段二信息补充辩论完整 prompt 模板（ID BUG-A2-UPDATE）整段复制并替换占位符后重新发起。
+
+{主 Agent 填入用户选择确认块；若用户已回复 20/50/100，则必须替换为：
+## 用户选择
+强度: 50 (decision_root_cause_50)
+}
 
 本任务以以下 BMAD 角色进行多角色辩论（**至少 100 轮**，BUGFIX 产出最终方案与 §7 任务列表；满足共识且近 2–3 轮无新 gap 再结束）。
 
@@ -477,13 +496,15 @@ artifacts:
 1. 将模板 **BUG-A3-TASKS**（阶段三任务列表补充完整 prompt 模板）**整段复制**到 Agent tool 的 `prompt` 参数中，并替换占位符：`{主 Agent 填入 BUGFIX 文档路径}` → 实际 BUGFIX 文档完整路径；`{project-root}` → 项目根目录绝对路径；若 BUGFIX 涉及具体代码位置，在「关键代码位置参考」中填入文件路径与行号或可定位片段。
 2. 执行发起前自检清单（见下方），逐项确认。
 3. 输出自检结果（格式见「主 Agent 传递提示词规则」中的自检结果示例）。
-4. 发起子任务；子代理应产出更新后的 BUGFIX 文档（含 §7），并写入原文件路径。
-5. **【必做】** 子任务返回后，发起审计子任务：使用模板 **BUG-A3-AUDIT**（阶段三 §7 审计完整 prompt 模板）整段复制，子代理为 `.claude/agents/auditors/auditor-bugfix.md` 或按 Fallback Strategy 降级。
-6. **【必做】** 若审计结论为未通过，**审计子代理须在本轮内直接修改 BUGFIX 文档**；主 Agent 收到报告后再次发起审计。禁止仅输出修改建议而不修改文档。文档审计迭代规则见 `.claude/skills/speckit-workflow/references/audit-document-iteration-rules.md`。重复直至结论为「通过」。**禁止**在未通过时仅做一轮审计即结束。
+4. 若用户已明确回复 `20` / `50` / `100`，必须将其自动编译进 `{主 Agent 填入用户选择确认块}`；若有结构化 `gateProfileId`，须与确认块一致。
+5. 发起子任务；子代理应产出更新后的 BUGFIX 文档（含 §7），并写入原文件路径。
+6. **【必做】** 子任务返回后，发起审计子任务：使用模板 **BUG-A3-AUDIT**（阶段三 §7 审计完整 prompt 模板）整段复制，子代理为 `.claude/agents/auditors/auditor-bugfix.md` 或按 Fallback Strategy 降级。
+7. **【必做】** 若审计结论为未通过，**审计子代理须在本轮内直接修改 BUGFIX 文档**；主 Agent 收到报告后再次发起审计。禁止仅输出修改建议而不修改文档。文档审计迭代规则见 `.claude/skills/speckit-workflow/references/audit-document-iteration-rules.md`。重复直至结论为「通过」。**禁止**在未通过时仅做一轮审计即结束。
 
 **禁止**：不得在未完成步骤 2、3 的情况下执行步骤 4。不得在步骤 4 产出 §7 后省略步骤 5、6。
 
 **发起前自检**：确认 prompt 中已包含 BUGFIX 文档路径、项目根目录；确认未省略「至少 100 轮」「完整复制」等要求。
+**发起前自检**：若用户已回复 `20` / `50` / `100`，确认 prompt 中已包含 `## 用户选择` 确认块，且内容与用户回复一致。
 
 ### 阶段三任务列表补充完整 prompt 模板（主 Agent 必须完整复制并替换占位符后传入）
 
@@ -491,6 +512,11 @@ artifacts:
 
 ```
 【必读】本 prompt 须为完整模板且所有占位符已替换。若发现明显缺失或未替换的占位符，请勿执行，并回复：请主 Agent 将本 skill 中阶段三任务列表补充完整 prompt 模板（ID BUG-A3-TASKS）整段复制并替换占位符后重新发起。
+
+{主 Agent 填入用户选择确认块；若用户已回复 20/50/100，则必须替换为：
+## 用户选择
+强度: 50 (decision_root_cause_50)
+}
 
 本任务以以下 BMAD 角色进行多角色辩论（**至少 100 轮**，BUGFIX 产出最终方案与 §7 任务列表；满足单一方案共识且近 2–3 轮无新 gap 再结束）。
 

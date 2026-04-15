@@ -14,9 +14,15 @@ const {
 } = require('./runtime-step-state.cjs');
 const {
   bootstrapSession,
+  buildPartyModeContractViolationMessage,
+  buildIntensitySelectionAskTemplate,
+  extractEmbeddedBootstrapJson,
   extractSubagentText,
+  isPartyModeFacilitatorIntent,
   isPartyModeFacilitatorStart,
+  resolveStructuredGateProfileSelection,
 } = require('./party-mode-session-runtime.cjs');
+const { writePartyModeTurnLock } = require('./party-mode-turn-lock.cjs');
 
 function readStdin() {
   return new Promise((resolve, reject) => {
@@ -67,6 +73,64 @@ function parseOptionalPositiveInt(value, field) {
     throw new Error(`Invalid ${field}: ${value}`);
   }
   return parsed;
+}
+
+function partyModeAgentRunStatePath(projectRoot, agentId) {
+  return path.join(projectRoot, '.claude', 'state', 'milestones', `${agentId}.party-mode.json`);
+}
+
+function deriveExpectedCheckpointRounds(targetRoundsTotal, batchSize) {
+  const rounds = [];
+  const safeBatchSize = Number.isInteger(batchSize) && batchSize > 0 ? batchSize : 20;
+  for (let round = safeBatchSize; round < targetRoundsTotal; round += safeBatchSize) {
+    rounds.push(round);
+  }
+  rounds.push(targetRoundsTotal);
+  return rounds;
+}
+
+function persistPartyModeAgentRunState(projectRoot, input, bootstrap) {
+  const agentId = typeof input?.agent_id === 'string' && input.agent_id.trim() ? input.agent_id.trim() : '';
+  if (!agentId) {
+    return;
+  }
+  const filePath = partyModeAgentRunStatePath(projectRoot, agentId);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(
+    filePath,
+    `${JSON.stringify(
+      {
+        agent_id: agentId,
+        agent_type:
+          typeof input?.agent_type === 'string' && input.agent_type.trim()
+            ? input.agent_type.trim()
+            : 'party-mode-facilitator',
+        session_key: bootstrap.sessionKey,
+        gate_profile_id: bootstrap.meta.gate_profile_id,
+        closure_level: bootstrap.meta.closure_level,
+        designated_challenger_id: bootstrap.meta.designated_challenger_id,
+        current_batch_index: bootstrap.meta.current_batch_index,
+        current_batch_start_round: bootstrap.meta.current_batch_start_round,
+        current_batch_target_round: bootstrap.meta.current_batch_target_round,
+        current_batch_status: bootstrap.meta.current_batch_status,
+        target_rounds_total: bootstrap.meta.target_rounds_total,
+        batch_size: bootstrap.meta.batch_size,
+        checkpoint_window_ms: bootstrap.meta.checkpoint_window_ms,
+        checkpoint_rounds: deriveExpectedCheckpointRounds(
+          bootstrap.meta.target_rounds_total,
+          bootstrap.meta.batch_size
+        ),
+        audit_verdict_path: bootstrap.meta.audit_verdict_path,
+        convergence_record_path: bootstrap.meta.convergence_record_path,
+        snapshot_path: bootstrap.meta.snapshot_path,
+        session_log_path: bootstrap.meta.session_log_path,
+        recorded_at: new Date().toISOString(),
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
 }
 
 /**
@@ -152,30 +216,35 @@ function extractResolvedMode(langStdout) {
 }
 
 function extractPartyModeBootstrapOptions(input, inputText, resolvedMode) {
+  const embeddedBootstrap = extractEmbeddedBootstrapJson(inputText);
   return {
     sessionKey: readInputPath(input, [
       ['sessionKey'],
       ['session_key'],
+      ['tool_input', 'sessionKey'],
+      ['tool_input', 'session_key'],
       ['partyModeBatch', 'sessionKey'],
       ['party_mode_batch', 'session_key'],
       ['partyModeSession', 'sessionKey'],
       ['party_mode_session', 'session_key'],
-    ]),
+    ]) || (embeddedBootstrap && (embeddedBootstrap.session_key || embeddedBootstrap.sessionKey)),
     gateProfileId: readInputPath(input, [
       ['gateProfileId'],
       ['gate_profile_id'],
+      ['tool_input', 'gateProfileId'],
+      ['tool_input', 'gate_profile_id'],
       ['partyModeBatch', 'gateProfileId'],
       ['party_mode_batch', 'gate_profile_id'],
       ['partyModeSession', 'gateProfileId'],
       ['party_mode_session', 'gate_profile_id'],
-    ]),
+    ]) || (embeddedBootstrap && (embeddedBootstrap.gate_profile_id || embeddedBootstrap.gateProfileId)),
     batchIndex: parseOptionalPositiveInt(
       readInputPath(input, [
         ['batchIndex'],
         ['batch_index'],
         ['partyModeBatch', 'batchIndex'],
         ['party_mode_batch', 'batch_index'],
-      ]),
+      ]) || (embeddedBootstrap && (embeddedBootstrap.batch_index || embeddedBootstrap.batchIndex)),
       'batch_index'
     ),
     batchStartRound: parseOptionalPositiveInt(
@@ -184,7 +253,7 @@ function extractPartyModeBootstrapOptions(input, inputText, resolvedMode) {
         ['batch_start_round'],
         ['partyModeBatch', 'batchStartRound'],
         ['party_mode_batch', 'batch_start_round'],
-      ]),
+      ]) || (embeddedBootstrap && (embeddedBootstrap.batch_start_round || embeddedBootstrap.batchStartRound)),
       'batch_start_round'
     ),
     batchTargetRound: parseOptionalPositiveInt(
@@ -193,7 +262,7 @@ function extractPartyModeBootstrapOptions(input, inputText, resolvedMode) {
         ['batch_target_round'],
         ['partyModeBatch', 'batchTargetRound'],
         ['party_mode_batch', 'batch_target_round'],
-      ]),
+      ]) || (embeddedBootstrap && (embeddedBootstrap.batch_target_round || embeddedBootstrap.batchTargetRound)),
       'batch_target_round'
     ),
     targetRoundsTotal: parseOptionalPositiveInt(
@@ -202,7 +271,11 @@ function extractPartyModeBootstrapOptions(input, inputText, resolvedMode) {
         ['target_rounds_total'],
         ['partyModeBatch', 'targetRoundsTotal'],
         ['party_mode_batch', 'target_rounds_total'],
-      ]),
+      ]) ||
+        (embeddedBootstrap &&
+          (embeddedBootstrap.target_rounds_total ||
+            embeddedBootstrap.targetRoundsTotal ||
+            embeddedBootstrap.min_rounds)),
       'target_rounds_total'
     ),
     checkpointWindowMs: parseOptionalPositiveInt(
@@ -211,7 +284,9 @@ function extractPartyModeBootstrapOptions(input, inputText, resolvedMode) {
         ['checkpoint_window_ms'],
         ['partyModeBatch', 'checkpointWindowMs'],
         ['party_mode_batch', 'checkpoint_window_ms'],
-      ]),
+      ]) ||
+        (embeddedBootstrap &&
+          (embeddedBootstrap.checkpoint_window_ms || embeddedBootstrap.checkpointWindowMs)),
       'checkpoint_window_ms'
     ),
     topic:
@@ -219,15 +294,113 @@ function extractPartyModeBootstrapOptions(input, inputText, resolvedMode) {
         ['topic'],
         ['partyModeBatch', 'topic'],
         ['party_mode_batch', 'topic'],
-      ]) || inputText,
+      ]) || (embeddedBootstrap && embeddedBootstrap.topic) || inputText,
     resolvedMode:
       readInputPath(input, [
         ['resolvedMode'],
         ['resolved_mode'],
         ['partyModeBatch', 'resolvedMode'],
         ['party_mode_batch', 'resolved_mode'],
-      ]) || resolvedMode,
+      ]) || (embeddedBootstrap && (embeddedBootstrap.resolved_mode || embeddedBootstrap.resolvedMode)) || resolvedMode,
   };
+}
+
+function isPartyModeFacilitatorPreflightRequest(input) {
+  if (!input || typeof input !== 'object' || input.tool_name !== 'Agent') {
+    return false;
+  }
+  const ti = input.tool_input;
+  if (!ti || typeof ti !== 'object') {
+    return false;
+  }
+  const joined = [ti.subagent_type, ti.description, ti.prompt]
+    .filter((value) => typeof value === 'string' && value.trim())
+    .join('\n')
+    .toLowerCase();
+  return isPartyModeFacilitatorIntent(joined) || joined.includes('party-mode:');
+}
+
+function getObservedPartyModeRoute(input) {
+  if (!input || typeof input !== 'object' || input.tool_name !== 'Agent') {
+    return 'unknown';
+  }
+  const ti = input.tool_input;
+  if (!ti || typeof ti !== 'object') {
+    return 'unknown';
+  }
+  const subtype =
+    typeof ti.subagent_type === 'string' && ti.subagent_type.trim()
+      ? ti.subagent_type.trim()
+      : 'unknown';
+  return subtype;
+}
+
+function hasAuthoritativePartyModeRoute(input) {
+  return getObservedPartyModeRoute(input) === 'party-mode-facilitator';
+}
+
+function isGeneralPurposePartyModeWrapperAttempt(input) {
+  if (!input || typeof input !== 'object' || input.tool_name !== 'Agent') {
+    return false;
+  }
+  const ti = input.tool_input;
+  if (!ti || typeof ti !== 'object') {
+    return false;
+  }
+  const subtype = typeof ti.subagent_type === 'string' ? ti.subagent_type.trim().toLowerCase() : '';
+  const joined = [ti.description, ti.prompt]
+    .filter((value) => typeof value === 'string' && value.trim())
+    .join('\n')
+    .toLowerCase();
+  return subtype === 'general-purpose' && isPartyModeFacilitatorIntent(joined);
+}
+
+function buildPartyModeUnknownRouteMessage(input) {
+  const observedRoute = getObservedPartyModeRoute(input);
+  return [
+    'Party-Mode facilitator launch failed closed because the Agent payload does not structurally identify the dedicated facilitator target.',
+    `Observed route token: \`${observedRoute}\``,
+    'Prompt-level text such as `@"party-mode-facilitator (agent)"` is not accepted as proof of correct dispatch once the Agent tool payload is already being emitted.',
+    'Do not retry with different model parameters or prompt formatting.',
+    'Main Agent must only continue when the host emits an authoritative facilitator route.',
+    'Required route:',
+    '- dedicated facilitator target visible to hooks',
+    '- then pass the user-selected structured `gateProfileId` / `gate_profile_id`',
+    'Note: the discussion topic may be Cursor custom subagents, but that does not change the required host-side facilitator route.',
+  ].join('\n');
+}
+
+function buildPreToolUseHardStop(errText, stopReason) {
+  return {
+    exitCode: 0,
+    output: JSON.stringify({
+      continue: false,
+      stopReason,
+      systemMessage: errText,
+    }),
+    stderr: '',
+  };
+}
+
+function derivePartyModeIntensityStopReason(errText) {
+  if (String(errText || '').includes('user-selected intensity was detected in free text')) {
+    return 'Party-Mode 已检测到用户已选档位，但当前 payload 未结构化；请沿用同一档位立即重试一次。';
+  }
+  return 'Party-Mode 启动前必须先由主 Agent 询问用户选择 20/50/100 强度。';
+}
+
+function buildPartyModePreToolUseHardStop(root, input, errText, stopReason) {
+  try {
+    writePartyModeTurnLock(root, {
+      reason: stopReason,
+      system_message: errText,
+      source_tool: 'Agent',
+      blocked_topic: extractUserMessage(input, 'pretooluse'),
+    });
+  } catch {
+    // ignore lock write failures and still fail closed for the current tool call
+  }
+  return buildPreToolUseHardStop(errText, stopReason);
 }
 
 function runResolveLanguagePolicyCli(root, userMessage, writeContext) {
@@ -264,10 +437,17 @@ function buildPartyModeBootstrapBlock(projectRoot, hookMode, input, resolvedMode
     return '';
   }
   const inputText = extractSubagentText(input);
+  const bootstrapOptions = extractPartyModeBootstrapOptions(input, inputText, resolvedMode);
+  const gateProfileId = resolveStructuredGateProfileSelection(
+    bootstrapOptions.gateProfileId,
+    inputText
+  );
   const bootstrap = bootstrapSession(projectRoot, {
     inputText,
-    ...extractPartyModeBootstrapOptions(input, inputText, resolvedMode),
+    ...bootstrapOptions,
+    gateProfileId,
   });
+  persistPartyModeAgentRunState(projectRoot, input, bootstrap);
   return `Party Mode Session Bootstrap (JSON):\n${JSON.stringify(
     {
       session_key: bootstrap.sessionKey,
@@ -292,10 +472,7 @@ function buildPartyModeBootstrapBlock(projectRoot, hookMode, input, resolvedMode
       checkpoint_json_path: bootstrap.paths.currentBatchCheckpointJsonPath,
       checkpoint_markdown_path: bootstrap.paths.currentBatchCheckpointMarkdownPath,
       checkpoint_receipt_path: bootstrap.paths.currentBatchReceiptPath,
-      event_writer_command:
-        `node {project-root}/_bmad/runtime/hooks/party-mode-session-event.cjs ` +
-        `--project-root "{project-root}" --session-key "${bootstrap.sessionKey}" ` +
-        `--round-index <n> --speaker-id <agent_id> --counts-toward-ratio true|false --has-new-gap true|false`,
+      event_writer_mode: 'host_reconstruction_from_visible_output',
     },
     null,
     2
@@ -348,6 +525,44 @@ async function runtimePolicyInjectCore({ host }) {
 
   if (cursorHost && !fs.existsSync(path.join(root, '_bmad'))) {
     return { exitCode: 0, output: JSON.stringify({ systemMessage: '' }), stderr: '' };
+  }
+
+  if (hookMode === 'pretooluse' && isGeneralPurposePartyModeWrapperAttempt(input)) {
+    const errText = buildPartyModeContractViolationMessage(extractUserMessage(input, hookMode));
+    return buildPartyModePreToolUseHardStop(
+      root,
+      input,
+      errText,
+      'Party-Mode 必须使用正式 facilitator contract，当前 general-purpose 包装调用已被阻止。'
+    );
+  }
+
+  if (hookMode === 'pretooluse' && isPartyModeFacilitatorPreflightRequest(input)) {
+    if (!hasAuthoritativePartyModeRoute(input)) {
+      const errText = buildPartyModeUnknownRouteMessage(input);
+      return buildPartyModePreToolUseHardStop(
+        root,
+        input,
+        errText,
+        'Party-Mode 调用未提供宿主可证明的 facilitator route，当前调用已被阻止。'
+      );
+    }
+  }
+
+  if (hookMode === 'pretooluse' && isPartyModeFacilitatorPreflightRequest(input)) {
+    const inputText = extractUserMessage(input, hookMode);
+    const bootstrapOptions = extractPartyModeBootstrapOptions(input, inputText, undefined);
+    try {
+      resolveStructuredGateProfileSelection(bootstrapOptions.gateProfileId, inputText);
+    } catch (error) {
+      const errText = error && error.message ? error.message : buildIntensitySelectionAskTemplate(inputText);
+      return buildPartyModePreToolUseHardStop(
+        root,
+        input,
+        errText,
+        derivePartyModeIntensityStopReason(errText)
+      );
+    }
   }
 
   let stateDiag = '';
@@ -410,7 +625,29 @@ async function runtimePolicyInjectCore({ host }) {
 
   const rg = loadHookMessages(__dirname).runtimeGovernance || {};
   const prefix = rg.jsonBlockPrefix || '本回合 Runtime Governance（JSON）：';
-  const bootstrapBlock = buildPartyModeBootstrapBlock(root, hookMode, input, resolvedMode);
+  let bootstrapBlock = '';
+  try {
+    bootstrapBlock = buildPartyModeBootstrapBlock(root, hookMode, input, resolvedMode);
+  } catch (error) {
+    const errText = error && error.message ? error.message : String(error);
+    if (mode === 'subagent') {
+      return {
+        exitCode: 1,
+        output: JSON.stringify({
+          hookSpecificOutput: {
+            hookEventName: 'SubagentStart',
+            additionalContext: errText,
+          },
+        }),
+        stderr: `${stderr}${errText}`,
+      };
+    }
+    return {
+      exitCode: 1,
+      output: JSON.stringify({ systemMessage: errText }),
+      stderr: `${stderr}${errText}`,
+    };
+  }
   const block = `${prefix}\n${mergedJson}\n${bootstrapBlock}`;
   if (mode === 'subagent') {
     return {

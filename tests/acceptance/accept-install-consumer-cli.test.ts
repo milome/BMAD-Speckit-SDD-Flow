@@ -141,6 +141,7 @@ describe('install to consumer → CLI acceptance', () => {
       run('npx bmad-speckit-init --agent claude-code', target);
 
       expect(existsSync(join(target, '.claude', 'hooks', 'session-start.cjs'))).toBe(true);
+      expect(existsSync(join(target, '.claude', 'hooks', 'party-mode-turn-lock.cjs'))).toBe(true);
       expect(existsSync(join(target, '_bmad', 'runtime', 'hooks', 'runtime-dashboard-auto-start.cjs'))).toBe(true);
 
       const aliases = [
@@ -170,7 +171,7 @@ describe('install to consumer → CLI acceptance', () => {
     }
   }, 90_000);
 
-  it('npm install consumer deploys Claude facilitator specialized subtype via installed init entrypoint', () => {
+  it('npm install consumer deploys Claude facilitator agent mention contract via installed init entrypoint', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-claude-facilitator-'));
     try {
       writeFileSync(

@@ -19,6 +19,12 @@ describe('validate-consumer-governance script safety', () => {
     expect(content).toContain('preserved');
   });
 
+  it('reinstalls the root package into consumer node_modules after cleanup', () => {
+    expect(content).toContain("Run-Step 'restore-root-package'");
+    expect(content).toContain("'install', '--no-save', '--force', \"file:$RepoRoot\"");
+    expect(content).toContain("package = 'bmad-speckit-sdd-flow'");
+  });
+
   it('uses unique validation ids instead of destructive reset', () => {
     expect(content).toContain('$ValidationRunId');
     expect(content).toContain('qa.readiness.$ValidationRunId');

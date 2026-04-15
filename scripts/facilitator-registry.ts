@@ -1,6 +1,6 @@
 import {
+  CLAUDE_FACILITATOR_AGENT_MENTION,
   CLAUDE_FACILITATOR_TARGET_PATH,
-  CLAUDE_FACILITATOR_TARGET_SUBTYPE,
   CURSOR_FACILITATOR_DEFINITION_SOURCE_PATH,
   FACILITATOR_DISPLAY_NAME,
   FACILITATOR_PRODUCT_IDENTITY,
@@ -33,7 +33,7 @@ export interface FacilitatorRegistration {
   cursorDefinitionSourcePath: typeof CURSOR_FACILITATOR_DEFINITION_SOURCE_PATH;
   claudeTarget: {
     agentPath: typeof CLAUDE_FACILITATOR_TARGET_PATH;
-    subagentType: typeof CLAUDE_FACILITATOR_TARGET_SUBTYPE;
+    agentMention: typeof CLAUDE_FACILITATOR_AGENT_MENTION;
   };
   hosts: Record<FacilitatorHostId, FacilitatorHostRegistration>;
 }
@@ -45,7 +45,7 @@ export const FACILITATOR_REGISTRY: FacilitatorRegistration = {
   cursorDefinitionSourcePath: CURSOR_FACILITATOR_DEFINITION_SOURCE_PATH,
   claudeTarget: {
     agentPath: CLAUDE_FACILITATOR_TARGET_PATH,
-    subagentType: CLAUDE_FACILITATOR_TARGET_SUBTYPE,
+    agentMention: CLAUDE_FACILITATOR_AGENT_MENTION,
   },
   hosts: {
     cursor: {
@@ -61,7 +61,7 @@ export const FACILITATOR_REGISTRY: FacilitatorRegistration = {
     claude: {
       preferredRoute: {
         tool: 'Agent',
-        subtypeOrExecutor: CLAUDE_FACILITATOR_TARGET_SUBTYPE,
+        subtypeOrExecutor: CLAUDE_FACILITATOR_AGENT_MENTION,
       },
       fallbackRoute: {
         tool: 'Agent',

@@ -2,9 +2,9 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  CLAUDE_FACILITATOR_AGENT_MENTION,
   CLAUDE_FACILITATOR_TARGET_PATH,
   CLAUDE_REVIEWER_CANONICAL_SOURCE_PATH,
-  CLAUDE_FACILITATOR_TARGET_SUBTYPE,
   CLAUDE_REVIEWER_DEFINITION_SOURCE_PATH,
   CLAUDE_REVIEWER_RUNTIME_TARGET_PATH,
   CURSOR_REVIEWER_CANONICAL_SOURCE_PATH,
@@ -102,11 +102,11 @@ describe('reviewer contract freeze', () => {
     );
   });
 
-  it('freezes facilitator as a formal specialized subtype target instead of a wrapper recommendation', () => {
+  it('freezes facilitator as a single Claude agent mention target instead of a subtype contract', () => {
     expect(FACILITATOR_PRODUCT_IDENTITY).toBe('party_mode_facilitator');
     expect(FACILITATOR_DISPLAY_NAME).toBe('party-mode-facilitator');
     expect(CLAUDE_FACILITATOR_TARGET_PATH).toBe('.claude/agents/party-mode-facilitator.md');
-    expect(CLAUDE_FACILITATOR_TARGET_SUBTYPE).toBe('party-mode-facilitator');
+    expect(CLAUDE_FACILITATOR_AGENT_MENTION).toBe('@"party-mode-facilitator (agent)"');
     expect(CURSOR_FACILITATOR_DEFINITION_SOURCE_PATH).toBe(
       '.cursor/agents/party-mode-facilitator.md'
     );

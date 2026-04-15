@@ -43,15 +43,15 @@ Claude 版 `bmad-story-assistant` 必须满足：
 
 ---
 
-## Party-Mode Specialized Subtype Contract
+## Party-Mode Agent Mention Contract
 
 从本版本开始，Claude 分支中的 party-mode 不再以 `general-purpose` 作为主路径描述。
 
 - **主路径**：`.claude/agents/party-mode-facilitator.md`
-- **显式调用示例**：`@"party-mode-facilitator (agent)"`
+- **唯一调用 contract**：`@"party-mode-facilitator (agent)"`
 - **适用范围**：凡需要多角色辩论、方案收敛、架构/范围取舍、Story 设计分歧澄清的 party-mode 场景
-- **兼容 fallback**：仅当 specialized facilitator 在当前运行时不可用时，才允许退回 `subagent_type: general-purpose` 并内联完整 facilitator contract
-- **非 party-mode 执行体**：`bmad-story-create`、`auditor-*`、`speckit-implement` 等非 specialized 执行体仍可继续使用 `general-purpose`
+- **兼容 fallback**：仅当 dedicated facilitator agent 在当前运行时不可用时，才允许退回 `subagent_type: general-purpose` 并内联完整 facilitator contract
+- **非 party-mode 执行体**：`bmad-story-create`、`auditor-*`、`speckit-implement` 等其他执行体仍可继续使用 `general-purpose`
 
 因此，`general-purpose` 在 Claude Story 流程中仍然存在，但**不再是 party-mode 的推荐主路径**。
 
@@ -438,6 +438,9 @@ subagent_type: general-purpose
    prompt: |
      @"party-mode-facilitator (agent)"
 
+      ## 用户选择
+      强度: {主 Agent 按用户明确回复填入，例如 50 (decision_root_cause_50)}
+
      [读取 .claude/agents/party-mode-facilitator.md 的完整内容]
 
      议题:
@@ -480,6 +483,7 @@ subagent_type: general-purpose
 - 不得仅传入执行体文件路径让执行体自己去读，必须将完整 prompt 内容传入
 - 执行体本身不加载 skill，所有指令由主 Agent 通过 prompt 参数传递
 - party-mode 辩论主路径必须优先使用 `@"party-mode-facilitator (agent)"`
+- 若用户已明确回复 `20` / `50` / `100`，主 Agent 必须先将该回复自动编译成 `## 用户选择` 确认块，再发起 `@"party-mode-facilitator (agent)"`
 - 执行体返回后，主 Agent 必须校验 handoff 输出，并决定下一步路由
 
 ---

@@ -14,8 +14,9 @@ description: |
 
 ## Party-Mode 主 Agent 编排约束（Wave 4）
 
-- 进入 party-mode 前，主 Agent 必须先向用户展示 `20 / 50 / 100` 三档强度，并按请求类型推断默认值。
-- 普通 RCA / 方案分析默认 `decision_root_cause_50`；Create Story / Story 设计定稿 / 最终任务列表等高置信最终产物默认 `final_solution_task_list_100`。
+- 进入 party-mode 前，主 Agent 必须先向用户展示 `20 / 50 / 100` 三档强度，并按请求类型给出推荐档位。
+- 普通 RCA / 方案分析推荐 `decision_root_cause_50`；Create Story / Story 设计定稿 / 最终任务列表等高置信最终产物推荐 `final_solution_task_list_100`。
+- 主 Agent 必须等待用户明确回复 `20` / `50` / `100` 后，才能正式发起 `@"party-mode-facilitator (agent)"`；禁止把推荐档位表述成已替用户完成的选择。
 - `quick_probe_20` 仅用于 probe-only；若用户当前选择 `quick_probe_20` 或 `decision_root_cause_50`，却又明确要求高置信最终产物，主 Agent 必须拒绝当前档位并要求升级到 `final_solution_task_list_100`。
 - 每 20 轮必须向用户展示一次 checkpoint；checkpoint 展示后默认自动继续下一批，不要求逐批人工确认。
 - `S / F / C` 只在 checkpoint 窗口内有效；`checkpoint_window_ms = 15000`。
@@ -55,15 +56,15 @@ Claude 版 `bmad-story-assistant` 必须满足：
 
 ---
 
-## Party-Mode Specialized Subtype Contract
+## Party-Mode Agent Mention Contract
 
 从本版本开始，Claude 分支中的 party-mode 不再以 `general-purpose` 作为主路径描述。
 
 - **主路径**：`.claude/agents/party-mode-facilitator.md`
-- **显式调用示例**：`@"party-mode-facilitator (agent)"`
+- **唯一调用 contract**：`@"party-mode-facilitator (agent)"`
 - **适用范围**：凡需要多角色辩论、方案收敛、架构/范围取舍、Story 设计分歧澄清的 party-mode 场景
-- **兼容 fallback**：仅当 specialized facilitator 在当前运行时不可用时，才允许退回 `subagent_type: general-purpose` 并内联完整 facilitator contract
-- **非 party-mode 执行体**：`bmad-story-create`、`auditor-*`、`speckit-implement` 等非 specialized 执行体仍可继续使用 `general-purpose`
+- **兼容 fallback**：仅当 dedicated facilitator agent 在当前运行时不可用时，才允许退回 `subagent_type: general-purpose` 并内联完整 facilitator contract
+- **非 party-mode 执行体**：`bmad-story-create`、`auditor-*`、`speckit-implement` 等其他执行体仍可继续使用 `general-purpose`
 
 因此，`general-purpose` 在 Claude Story 流程中仍然存在，但**不再是 party-mode 的推荐主路径**。
 
@@ -353,7 +354,7 @@ Claude 端 Stage 1 Create Story 执行体，负责在 BMAD Story 流程中生成
   - 输出 Story 文档到 `_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/{epic_num}-{story_num}-<slug>.md`。
   - 创建 Story 文档时必须使用明确描述，禁止使用 Story 禁止词表中的词（可选、可考虑、后续、先实现、后续扩展、待定、酌情、视情况、技术债）。
   - 当功能不在本 Story 范围但属本 Epic 时，须写明「由 Story X.Y 负责」及任务具体描述；确保 X.Y 存在且 scope 含该功能。禁止模糊推迟表述。
-  - **party-mode 强制**：无论 Epic/Story 文档是否已存在，只要涉及以下任一情形，**必须**进入 party-mode 进行多角色辩论。主 Agent 在发起前必须先展示 `20 / 50 / 100` 强度选项；若要形成 Story 设计定稿或最终任务列表，默认 `final_solution_task_list_100`（100 轮）；仅普通分析可默认 `decision_root_cause_50`（50 轮）；`quick_probe_20` 不得用于定稿。
+  - **party-mode 强制**：无论 Epic/Story 文档是否已存在，只要涉及以下任一情形，**必须**进入 party-mode 进行多角色辩论。主 Agent 在发起前必须先展示 `20 / 50 / 100` 强度选项；若要形成 Story 设计定稿或最终任务列表，推荐 `final_solution_task_list_100`（100 轮）；仅普通分析推荐 `decision_root_cause_50`（50 轮）；`quick_probe_20` 不得用于定稿。必须等待用户明确回复 `20` / `50` / `100` 后，才能正式发起 `@"party-mode-facilitator (agent)"`。
   - 全程必须使用中文。
 - Create Story 产出后，Story 文档通常保存在：`_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/{epic_num}-{story_num}-<slug>.md`。
 
@@ -380,7 +381,7 @@ prompt: |
   **强制约束**：
   - 创建 story 文档必须使用明确描述，禁止使用本 skill「§ 禁止词表（Story 文档）」中的词（可选、可考虑、后续、先实现、后续扩展、待定、酌情、视情况、技术债）。
   - 当功能不在本 Story 范围但属本 Epic 时，须写明「由 Story X.Y 负责」及任务具体描述；确保 X.Y 存在且 scope 含该功能（若 X.Y 不存在，审计将判不通过并建议创建）。禁止「先实现 X，或后续扩展」「其余由 X.Y 负责」等模糊表述。
-  - **party-mode 强制**：无论 Epic/Story 文档是否已存在，只要涉及以下任一情形，**必须**进入 party-mode 进行多角色辩论：① 有多个实现方案可选；② 存在架构/设计决策或 trade-off；③ 方案或范围存在歧义或未决点。主 Agent 在发起前必须先展示 `20 / 50 / 100` 强度选项；若要形成 Story 设计定稿或最终任务列表，默认 `final_solution_task_list_100`（100 轮）；仅普通分析可默认 `decision_root_cause_50`（50 轮）；`quick_probe_20` 不得用于定稿。**禁止**以「Epic 已存在」「Story 已生成」为由跳过 party-mode。共识前须达最少轮次；若未达成单一方案或仍有未闭合的 gaps/risks，继续辩论直至满足或达上限轮次。每 20 轮必须展示一次 checkpoint，`S / F / C` 只在 `checkpoint_window_ms = 15000` 的窗口内有效；其中 `C` 表示“立即继续下一批”，普通业务补充会打断自动继续并进入重新编排。
+  - **party-mode 强制**：无论 Epic/Story 文档是否已存在，只要涉及以下任一情形，**必须**进入 party-mode 进行多角色辩论：① 有多个实现方案可选；② 存在架构/设计决策或 trade-off；③ 方案或范围存在歧义或未决点。主 Agent 在发起前必须先展示 `20 / 50 / 100` 强度选项；若要形成 Story 设计定稿或最终任务列表，推荐 `final_solution_task_list_100`（100 轮）；仅普通分析推荐 `decision_root_cause_50`（50 轮）；`quick_probe_20` 不得用于定稿。**禁止**以「Epic 已存在」「Story 已生成」为由跳过 party-mode。必须等待用户明确回复 `20` / `50` / `100` 后，才能正式发起 `@"party-mode-facilitator (agent)"`。共识前须达最少轮次；若未达成单一方案或仍有未闭合的 gaps/risks，继续辩论直至满足或达上限轮次。每 20 轮必须展示一次 checkpoint，`S / F / C` 只在 `checkpoint_window_ms = 15000` 的窗口内有效；其中 `C` 表示“立即继续下一批”，普通业务补充会打断自动继续并进入重新编排。
   - 全程必须使用中文。
 ```
 
@@ -450,7 +451,10 @@ subagent_type: general-purpose
    prompt: |
      @"party-mode-facilitator (agent)"
 
-     [读取 .claude/agents/party-mode-facilitator.md 的完整内容]
+      ## 用户选择
+      强度: {主 Agent 按用户明确回复填入，例如 50 (decision_root_cause_50)}
+
+      [读取 .claude/agents/party-mode-facilitator.md 的完整内容]
 
      议题:
      - Story Create 前的方案辩论 / 范围澄清 / 架构取舍
@@ -492,6 +496,7 @@ subagent_type: general-purpose
 - 不得仅传入执行体文件路径让执行体自己去读，必须将完整 prompt 内容传入
 - 执行体本身不加载 skill，所有指令由主 Agent 通过 prompt 参数传递
 - party-mode 辩论主路径必须优先使用 `@"party-mode-facilitator (agent)"`
+- 若用户已明确回复 `20` / `50` / `100`，主 Agent 必须先将该回复自动编译成 `## 用户选择` 确认块，再发起 `@"party-mode-facilitator (agent)"`
 - 执行体返回后，主 Agent 必须校验 handoff 输出，并决定下一步路由
 
 ---

@@ -53,6 +53,10 @@ describe('facilitator runtime gate contract', () => {
         '_bmad/core/workflows/party-mode/steps/step-02-discussion-orchestration'
       );
       expect(runtime).toContain('RUNTIME-MATERIALIZED facilitator resolvedMode=en');
+      expect(runtime).toContain('## Checkpoint <current_round>/<target_rounds_total>');
+      expect(runtime).toContain('## Final Gate Evidence');
+      expect(runtime).toContain('BATCH-BOUNDARY HANDOFF ONLY');
+      expect(runtime).toContain('10/50');
     }
   });
 
@@ -80,9 +84,35 @@ describe('facilitator runtime gate contract', () => {
     expect(canonical).toContain('20 / 40 / 60 / 80 / ...');
     expect(canonical).toContain('阶段性进展 checkpoint');
     expect(canonical).toContain('当前 challenger ratio');
+    expect(canonical).toContain('### Round <n>');
+    expect(canonical).toContain('## Checkpoint <current_round>/<target_rounds_total>');
+    expect(canonical).toContain('## Final Gate Evidence');
+    expect(canonical).toContain('current_batch_target_round');
+    expect(canonical).toContain('10/50');
+    expect(canonical).toContain('current_batch_target_round');
+    expect(canonical).toContain('把控制权交还主 Agent');
   });
 
   it('facilitator carriers require visible 20-round checkpoints in-session', () => {
+    const carrierPaths = [
+      path.join(ROOT, '_bmad', 'cursor', 'agents', 'party-mode-facilitator.md'),
+      path.join(ROOT, '_bmad', 'cursor', 'agents', 'party-mode-facilitator.en.md'),
+      path.join(ROOT, '_bmad', 'cursor', 'agents', 'party-mode-facilitator.zh.md'),
+      path.join(ROOT, '_bmad', 'claude', 'agents', 'party-mode-facilitator.md'),
+      path.join(ROOT, '_bmad', 'claude', 'agents', 'party-mode-facilitator.en.md'),
+      path.join(ROOT, '_bmad', 'claude', 'agents', 'party-mode-facilitator.zh.md'),
+    ];
+
+    for (const content of carrierPaths.map((carrierPath) => fs.readFileSync(carrierPath, 'utf8'))) {
+      expect(content).toContain('20 / 40 / 60 / 80 / ...');
+      expect(content).toContain('## Checkpoint <current_round>/<target_rounds_total>');
+      expect(content).toContain('## Final Gate Evidence');
+      expect(content).toContain('BATCH-BOUNDARY HANDOFF ONLY');
+      expect(content).toContain('10/50');
+    }
+  });
+
+  it('base-language carriers keep the stronger zh-visible checkpoint instructions', () => {
     const cursorCarrier = fs.readFileSync(
       path.join(ROOT, '_bmad', 'cursor', 'agents', 'party-mode-facilitator.md'),
       'utf8'
@@ -93,9 +123,9 @@ describe('facilitator runtime gate contract', () => {
     );
 
     for (const content of [cursorCarrier, claudeCarrier]) {
-      expect(content).toContain('20 / 40 / 60 / 80 / ...');
       expect(content).toContain('阶段性进展 checkpoint');
       expect(content).toContain('checkpoint 是 facilitator 控制文本');
+      expect(content).toContain('## Checkpoint <current_round>/<target_rounds_total>');
     }
   });
 });

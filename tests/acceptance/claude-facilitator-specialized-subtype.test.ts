@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 
-describe('Claude facilitator specialized subtype', () => {
+describe('Claude facilitator agent mention contract', () => {
   it('ships a canonical Claude facilitator agent and mirrors it into runtime', () => {
     const canonicalPath = '_bmad/claude/agents/party-mode-facilitator.md';
     const runtimePath = '.claude/agents/party-mode-facilitator.md';
@@ -11,7 +11,7 @@ describe('Claude facilitator specialized subtype', () => {
     expect(readFileSync(runtimePath, 'utf8')).toBe(readFileSync(canonicalPath, 'utf8'));
   });
 
-  it('updates story assistant to route party-mode through the specialized facilitator subtype', () => {
+  it('updates story assistant to route party-mode through the explicit facilitator agent mention', () => {
     const rule = readFileSync('_bmad/claude/rules/bmad-story-assistant.md', 'utf8');
     const skill = readFileSync('_bmad/claude/skills/bmad-story-assistant/SKILL.md', 'utf8');
 
@@ -25,7 +25,7 @@ describe('Claude facilitator specialized subtype', () => {
     );
   });
 
-  it('updates bug assistant to route party-mode through the specialized facilitator subtype while retaining compatibility fallback', () => {
+  it('updates bug assistant to route party-mode through the explicit facilitator agent mention while retaining compatibility fallback', () => {
     const skill = readFileSync('_bmad/claude/skills/bmad-bug-assistant/SKILL.md', 'utf8');
 
     expect(skill).toContain('.claude/agents/party-mode-facilitator.md');

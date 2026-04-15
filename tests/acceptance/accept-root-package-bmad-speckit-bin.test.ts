@@ -73,4 +73,38 @@ describe('root package bmad-speckit bin', () => {
       rmSync(packDir, { recursive: true, force: true });
     }
   }, 240_000);
+
+  it('restores npx bmad-speckit after the package directory is deleted but stale .bin wrappers remain', () => {
+    const target = mkdtempSync(join(tmpdir(), 'accept-root-bin-repair-'));
+    try {
+      writeFileSync(
+        join(target, 'package.json'),
+        JSON.stringify({ name: 'consumer-root-bin-repair', version: '1.0.0', private: true }),
+        'utf8'
+      );
+
+      run(`npm install --save-dev "file:${PKG_ROOT.replace(/\\/g, '/')}"`, target);
+
+      const binCmd = join(target, 'node_modules', '.bin', 'bmad-speckit.cmd');
+      expect(existsSync(binCmd)).toBe(true);
+      expect(run('npx bmad-speckit version', target)).toMatch(/\d+\.\d+\.\d+/);
+
+      rmSync(join(target, 'node_modules', 'bmad-speckit-sdd-flow'), {
+        recursive: true,
+        force: true,
+      });
+
+      expect(existsSync(binCmd)).toBe(true);
+      expect(() => run('npx bmad-speckit version', target)).toThrowError(
+        /Cannot find module|MODULE_NOT_FOUND/
+      );
+
+      run(`npm install --no-save --force "file:${PKG_ROOT.replace(/\\/g, '/')}"`, target);
+
+      const out = run('npx bmad-speckit version', target);
+      expect(out).toMatch(/\d+\.\d+\.\d+/);
+    } finally {
+      rmSync(target, { recursive: true, force: true });
+    }
+  }, 180_000);
 });

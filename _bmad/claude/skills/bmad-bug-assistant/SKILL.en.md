@@ -20,7 +20,7 @@ references:
   - audit-prompts-section5: §5 audit prompt word reference; `.claude/skills/bmad-bug-assistant/references/audit-prompts-section5.md`
   - audit-document-iteration-rules: document audit iteration rules; `.claude/skills/speckit-workflow/references/audit-document-iteration-rules.md`
   - party-mode: `{project-root}/_bmad/core/skills/bmad-party-mode/`
-  - party-mode-facilitator: party-mode specialized subtype; `.claude/agents/party-mode-facilitator.md`
+  - party-mode-facilitator: dedicated party-mode facilitator agent; `.claude/agents/party-mode-facilitator.md`
   - ralph-method: prd, progress files, executed in US order
   - speckit-workflow: Fake implementation is prohibited, acceptance command must be run, architecture is faithful
 ---

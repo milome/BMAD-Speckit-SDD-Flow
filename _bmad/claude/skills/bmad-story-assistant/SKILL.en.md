@@ -44,15 +44,15 @@ The Claude version of `bmad-story-assistant` must satisfy:
   -commit gate
 - Cursor Canonical Base, Claude Runtime Adapter, and Repo Add-ons must not be mixed into a rewritten version of prompt from unknown sources.
 
-## Party-Mode Specialized Subtype Contract
+## Party-Mode Agent Mention Contract
 
 From this revision onward, Claude-side party-mode is no longer described as a `general-purpose` main path.
 
 - **Primary path**: `.claude/agents/party-mode-facilitator.md`
-- **Explicit invocation example**: `@"party-mode-facilitator (agent)"`
+- **Single invocation contract**: `@"party-mode-facilitator (agent)"`
 - **Scope**: any party-mode debate that resolves design trade-offs, architecture decisions, scope ambiguity, or Story planning disagreements
-- **Compatibility fallback**: only when the specialized facilitator is unavailable may the flow fall back to `subagent_type: general-purpose` with the full facilitator contract inlined
-- **Non party-mode executors**: `bmad-story-create`, `auditor-*`, `speckit-implement`, and other non-specialized executors may still use `general-purpose`
+- **Compatibility fallback**: only when the dedicated facilitator agent is unavailable may the flow fall back to `subagent_type: general-purpose` with the full facilitator contract inlined
+- **Non party-mode executors**: `bmad-story-create`, `auditor-*`, `speckit-implement`, and other executors may still use `general-purpose`
 
 So `general-purpose` still exists in the Claude Story flow, but it is **no longer the recommended main path for party-mode**.
 
@@ -439,7 +439,10 @@ When the main Agent uses this skill, it must call the execution body in the foll
    prompt: |
      @"party-mode-facilitator (agent)"
 
-     [Full contents of .claude/agents/party-mode-facilitator.md]
+      ## 用户选择
+      强度: {Main Agent fills from the user's explicit reply, e.g. 50 (decision_root_cause_50)}
+
+      [Full contents of .claude/agents/party-mode-facilitator.md]
 
      Agenda:
      - debate before Story Create
@@ -478,6 +481,7 @@ When the main Agent uses this skill, it must call the execution body in the foll
 - You must not just pass in the executable file path and let the executor read it by itself. You must pass in the complete prompt content.
 - The execution body itself does not load skills, and all instructions are passed by the main Agent through the prompt parameter.
 - Party-mode debate must prefer `@"party-mode-facilitator (agent)"` as the main path.
+- If the user has already explicitly replied `20` / `50` / `100`, the main Agent must first compile that reply into the `## 用户选择` confirmation block before invoking `@"party-mode-facilitator (agent)"`.
 - After the execution body returns, the main Agent must verify the handoff output and decide the next route
 
 ---

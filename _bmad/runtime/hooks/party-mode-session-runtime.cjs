@@ -54,6 +54,61 @@ const QUICK_PROBE_MARKERS = [
   'probe only',
 ];
 
+const PARTY_MODE_FACILITATOR_INTENT_MARKERS = [
+  'party-mode-facilitator',
+  'party-mode facilitator',
+  'party mode facilitator',
+  '@"party-mode-facilitator (agent)"',
+  'party mode activated',
+  'bmad-party-mode',
+];
+
+const EXPLICIT_SELECTION_PATTERNS = {
+  quick_probe_20: [/\bquick_probe_20\b/iu, /\b20\s*rounds?\b/iu, /20\s*轮/iu],
+  decision_root_cause_50: [/\bdecision_root_cause_50\b/iu, /\b50\s*rounds?\b/iu, /50\s*轮/iu],
+  final_solution_task_list_100: [
+    /\bfinal_solution_task_list_100\b/iu,
+    /\b100\s*rounds?\b/iu,
+    /100\s*轮/iu,
+  ],
+};
+
+const CONFIRMED_SELECTION_SECTION_PATTERNS = [
+  /^\s*(?:##\s*)?用户选择(?:\s|$|[:：])/imu,
+  /^\s*(?:##\s*)?User Selection(?:\s|$|[:：])/imu,
+  /^\s*(?:##\s*)?User Choice(?:\s|$|[:：])/imu,
+];
+
+const CONFIRMED_SELECTION_VALUE_PATTERNS = {
+  quick_probe_20: [
+    /强度\s*[:：]\s*20\b/iu,
+    /intensity\s*[:：]?\s*20\b/iu,
+    /\bquick_probe_20\b/iu,
+    /\bquick[_ -]?probe\b/iu,
+  ],
+  decision_root_cause_50: [
+    /强度\s*[:：]\s*50\b/iu,
+    /intensity\s*[:：]?\s*50\b/iu,
+    /\bdecision_root_cause_50\b/iu,
+    /\bdecision_root_cause\b/iu,
+  ],
+  final_solution_task_list_100: [
+    /强度\s*[:：]\s*100\b/iu,
+    /intensity\s*[:：]?\s*100\b/iu,
+    /\bfinal_solution_task_list_100\b/iu,
+    /\bfinal_solution_task_list\b/iu,
+  ],
+};
+
+const USER_SELECTION_ACK_PATTERNS = [
+  /用户(?:已)?选择/iu,
+  /用户明确回复/iu,
+  /确认[，,:：\s]*用户选择/iu,
+  /已确认(?:用户)?选择/iu,
+  /user(?:\s+has|\s+already)?\s+(?:selected|chose|confirmed)/iu,
+  /confirmed\s+user\s+selection/iu,
+];
+
 function normalizePath(value) {
   return String(value || '').replace(/\\/g, '/');
 }
@@ -101,6 +156,10 @@ function requiresHighConfidenceFinalOutputs(inputText) {
 
 function requestsQuickProbe(inputText) {
   return includesAny(String(inputText || '').toLowerCase(), QUICK_PROBE_MARKERS);
+}
+
+function isPartyModeFacilitatorIntent(inputText) {
+  return includesAny(String(inputText || '').toLowerCase(), PARTY_MODE_FACILITATOR_INTENT_MARKERS);
 }
 
 function deriveSessionPaths(projectRoot, sessionKey) {
@@ -151,6 +210,215 @@ function inferGateProfileId(inputText) {
     return 'final_solution_task_list_100';
   }
   return 'decision_root_cause_50';
+}
+
+function detectExplicitGateProfileMatches(inputText) {
+  const text = String(inputText || '');
+  return Object.keys(EXPLICIT_SELECTION_PATTERNS).filter((profileId) =>
+    EXPLICIT_SELECTION_PATTERNS[profileId].some((pattern) => pattern.test(text))
+  );
+}
+
+function detectExplicitGateProfileId(inputText) {
+  const matches = detectExplicitGateProfileMatches(inputText);
+  return matches.length === 1 ? matches[0] : null;
+}
+
+function hasConfirmedUserSelectionBlock(inputText) {
+  const text = String(inputText || '');
+  return CONFIRMED_SELECTION_SECTION_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+function detectConfirmedGateProfileId(inputText) {
+  const text = String(inputText || '');
+  if (!hasConfirmedUserSelectionBlock(text)) {
+    return null;
+  }
+  const matches = Object.keys(CONFIRMED_SELECTION_VALUE_PATTERNS).filter((profileId) =>
+    CONFIRMED_SELECTION_VALUE_PATTERNS[profileId].some((pattern) => pattern.test(text))
+  );
+  return matches.length === 1 ? matches[0] : null;
+}
+
+function hasAcknowledgedUserSelection(inputText) {
+  const text = String(inputText || '');
+  return USER_SELECTION_ACK_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+const EMBEDDED_BOOTSTRAP_LABEL_PATTERNS = [
+  /Party Mode Session Bootstrap \(JSON\)/iu,
+  /Session Bootstrap \(JSON\)/iu,
+];
+
+function extractBalancedJsonObject(source, startIndex) {
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let index = startIndex; index < source.length; index += 1) {
+    const ch = source[index];
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === '\\') {
+        escaped = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+    if (ch === '{') {
+      depth += 1;
+    } else if (ch === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return source.slice(startIndex, index + 1);
+      }
+    }
+  }
+  return null;
+}
+
+function extractEmbeddedBootstrapJson(inputText) {
+  const text = String(inputText || '');
+  for (const pattern of EMBEDDED_BOOTSTRAP_LABEL_PATTERNS) {
+    const match = pattern.exec(text);
+    if (!match) {
+      continue;
+    }
+    const braceIndex = text.indexOf('{', match.index + match[0].length);
+    if (braceIndex < 0) {
+      continue;
+    }
+    const objectText = extractBalancedJsonObject(text, braceIndex);
+    if (!objectText) {
+      continue;
+    }
+    try {
+      const parsed = JSON.parse(objectText);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed;
+      }
+    } catch {
+      // ignore malformed embedded bootstrap blocks
+    }
+  }
+  return null;
+}
+
+function describeRecommendedGateProfile(profileId) {
+  switch (profileId) {
+    case 'quick_probe_20':
+      return '检测到 quick probe / 快速探查意图，推荐快速分析';
+    case 'final_solution_task_list_100':
+      return '当前请求指向最终方案 / 最终任务列表 / BUGFIX §7 / Story 定稿，推荐高置信完整方案';
+    default:
+      return '当前请求更像普通 RCA / 方案比较，推荐标准分析';
+  }
+}
+
+function buildIntensitySelectionPreflightMessage(inputText) {
+  const matches = detectExplicitGateProfileMatches(inputText);
+  const recommended = inferGateProfileId(inputText);
+  const ambiguityLine =
+    matches.length > 1
+      ? `检测到多个候选档位：${matches.join(', ')}，宿主无法判定唯一强度。`
+      : '当前未检测到唯一明确的 20 / 50 / 100 强度选择。';
+
+  return [
+    'Party-Mode 启动前必须先明确选择讨论强度，当前已阻止 facilitator 启动。',
+    ambiguityLine,
+    '请先选择一个档位后再重试：',
+    '- 20 轮 -> quick_probe_20 -> 快速分析（预计 3-6 分钟，probe-only）',
+    '- 50 轮 -> decision_root_cause_50 -> 标准分析（预计 8-12 分钟，普通 RCA / 方案比较）',
+    '- 100 轮 -> final_solution_task_list_100 -> 完整方案（预计 15-25 分钟，高置信定稿）',
+    `推荐档位: ${recommended}。${describeRecommendedGateProfile(recommended)}`,
+    '可通过以下任一方式显式提供：',
+    '- 在 party-mode 启动 payload 中设置 `gateProfileId` / `gate_profile_id`',
+    '- 或在启动 prompt / task 中明确写出且只写出一个档位：`20轮` / `50轮` / `100轮` 或对应 profile id',
+  ].join('\n');
+}
+
+function buildIntensitySelectionAskTemplate(inputText) {
+  const recommended = inferGateProfileId(inputText);
+  return [
+    'Party-Mode preflight: main Agent must ask the user to choose intensity before invoking the facilitator.',
+    '请直接向用户发送以下模板，不要直接启动 facilitator：',
+    '',
+    '请选择本次 Party-Mode 讨论强度：',
+    '1. `20` 轮 -> `quick_probe_20` -> 快速分析（3-6 分钟，仅 probe，不承诺最终闭环）',
+    '2. `50` 轮 -> `decision_root_cause_50` -> 标准分析（8-12 分钟，普通 RCA / 方案比较）',
+    '3. `100` 轮 -> `final_solution_task_list_100` -> 完整方案（15-25 分钟，高置信最终方案 / 最终任务列表 / BUGFIX §7 / Story 定稿）',
+    '',
+    `推荐档位：\`${recommended}\``,
+    '必须等待用户明确回复 `20` / `50` / `100` 后再继续。',
+    '优先方式：将所选档位显式传入 `gateProfileId` / `gate_profile_id`。',
+    '若当前 Agent tool 无法透传该字段，则必须在 prompt 中加入专用确认块，例如：',
+    '## 用户选择',
+    '强度: 50 (decision_root_cause_50)',
+    '注意：只有这种专用“用户选择”确认块才算授权；普通 prompt 文本中的 `100轮` / `50轮` / `20轮` 只用于推荐，不算授权。',
+    '若你其实已经拿到用户在上一条消息中的明确回复，请不要再次询问；应把同一档位编译进 `gateProfileId` / `gate_profile_id` 或上述确认块后立即重试一次。',
+  ].join('\n');
+}
+
+function buildIntensitySelectionRetryTemplate(gateProfileId) {
+  const profileLabel =
+    gateProfileId === 'quick_probe_20'
+      ? '20 (quick_probe_20)'
+      : gateProfileId === 'final_solution_task_list_100'
+        ? '100 (final_solution_task_list_100)'
+        : '50 (decision_root_cause_50)';
+  return [
+    'Party-Mode preflight: a user-selected intensity was detected in free text, but the current Agent payload is not carrying an authoritative structured confirmation.',
+    '不要再次询问用户 20 / 50 / 100。',
+    '主 Agent 必须立即沿用同一档位重新发起一次 facilitator 调用。',
+    '',
+    '立即重试要求：',
+    `- 将 \`${gateProfileId}\` 显式传入 \`gateProfileId\` / \`gate_profile_id\``,
+    '- 或在 prompt 中加入专用确认块：',
+    '## 用户选择',
+    `强度: ${profileLabel}`,
+    '',
+    '然后立刻重新调用 `@"party-mode-facilitator (agent)"`。',
+    '若宿主仍然拒绝本次重试，再向用户显示简短提示：`已识别到您选择的档位，我将按同一档位重试；若仍失败，请再发送一次该档位数字。`',
+  ].join('\n');
+}
+
+function buildPartyModeContractViolationMessage(inputText) {
+  const recommended = inferGateProfileId(inputText);
+  return [
+    'Party-Mode facilitator must not be launched through `subagent_type: general-purpose`.',
+    'Main Agent must re-issue the call using the dedicated facilitator contract instead of a wrapper.',
+    'Required route:',
+    '- Claude Code CLI: `@"party-mode-facilitator (agent)"`',
+    `- Then pass the user-selected structured gate field: \`${recommended}\` via \`gateProfileId\` / \`gate_profile_id\``,
+    'Note: the discussion topic may be Cursor custom subagents, but the host-side facilitator route is still the dedicated party-mode contract, not general-purpose.',
+  ].join('\n');
+}
+
+function resolveExplicitGateProfileSelection(providedGateProfileId, inputText) {
+  const resolved = providedGateProfileId || detectExplicitGateProfileId(inputText);
+  if (!resolved) {
+    throw new Error(buildIntensitySelectionPreflightMessage(inputText));
+  }
+  assertGateProfileSelectionAllowed(resolved, inputText);
+  return resolved;
+}
+
+function resolveStructuredGateProfileSelection(providedGateProfileId, inputText) {
+  const resolved = providedGateProfileId || detectConfirmedGateProfileId(inputText);
+  if (!resolved) {
+    const explicit = detectExplicitGateProfileId(inputText);
+    if (explicit && hasAcknowledgedUserSelection(inputText)) {
+      throw new Error(buildIntensitySelectionRetryTemplate(explicit));
+    }
+    throw new Error(buildIntensitySelectionAskTemplate(inputText));
+  }
+  assertGateProfileSelectionAllowed(resolved, inputText);
+  return resolved;
 }
 
 function assertGateProfileSelectionAllowed(gateProfileId, inputText) {
@@ -240,8 +508,7 @@ function isPartyModeFacilitatorStart(input) {
   }
   const raw = JSON.stringify(input);
   return (
-    raw.includes('party-mode-facilitator') ||
-    raw.includes('bmad-party-mode') ||
+    isPartyModeFacilitatorIntent(raw) ||
     raw.includes('_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration')
   );
 }
@@ -791,8 +1058,19 @@ module.exports = {
   deriveBatchCheckpointPaths,
   extractSubagentText,
   assertGateProfileSelectionAllowed,
+  buildIntensitySelectionAskTemplate,
+  buildIntensitySelectionRetryTemplate,
+  buildPartyModeContractViolationMessage,
+  buildIntensitySelectionPreflightMessage,
+  detectExplicitGateProfileId,
+  detectExplicitGateProfileMatches,
+  hasAcknowledgedUserSelection,
+  extractEmbeddedBootstrapJson,
   inferGateProfileId,
+  isPartyModeFacilitatorIntent,
   isPartyModeFacilitatorStart,
+  resolveExplicitGateProfileSelection,
+  resolveStructuredGateProfileSelection,
   writeBatchReceipt,
   writeCheckpointArtifacts,
   markBatchCheckpointReady,
