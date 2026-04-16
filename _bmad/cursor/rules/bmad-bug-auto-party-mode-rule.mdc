@@ -1,5 +1,5 @@
 ---
-description: 当用户描述问题（测试错误、运行错误、异常现象）时，主 Agent 必须自动发起 party-mode，并先展示 `20 / 50 / 100` 强度选项；普通 RCA 默认 50，BUGFIX 最终方案与 §7 默认 100。每 20 轮 checkpoint，`S / F / C` 仅在 checkpoint window 内有效，且禁止主 Agent 直接修改源代码
+description: 当用户描述问题（测试错误、运行错误、异常现象）时，主 Agent 必须自动发起 Cursor party-mode：先展示 `20 / 50 / 100` 强度选项、等待用户选择、完成发起前自检、由宿主注入 Session Bootstrap，然后通过子代理一次性执行到用户选择的总轮次。禁止主 Agent 直接修改源代码
 globs:
 alwaysApply: true
 ---
@@ -36,14 +36,13 @@ alwaysApply: true
    - **发言格式（强制）**：每轮每位角色发言**必须**使用格式 `[Icon Emoji] **[展示名]**: [发言内容]`（如 `🏗️ **Winston 架构师**: ...`、`⚔️ **批判性审计员**: ...`）。禁止省略 Icon 或展示名。  
    - **批判审计员发言占比 > 60%**：即总轮数 100 时，至少 61 轮含批判审计员发言。批判审计员负责质疑可操作性、可验证性、被模型忽略风险、假 100 轮风险，并提出 gap 与边界情况。
 
-3. **轮次、checkpoint 与收敛**  
-   - 每 20 轮必须展示一次 checkpoint；checkpoint 展示后默认自动继续下一批，不要求逐批人工确认。  
-   - `S / F / C` 只在 checkpoint 窗口内有效；`checkpoint_window_ms = 15000`。  
-   - `C` 的语义固定为“立即继续下一批”，会立即关闭当前 checkpoint 窗口并跳过剩余等待时间。  
-   - 若用户在 checkpoint 窗口内输入普通业务补充文本，而不是 `S / F / C`，主 Agent 必须立即停止自动继续，取消窗口计时，并按新补充进入下一批前的重新编排。  
-   - checkpoint 窗口外的 `S / F / C` 必须显式拒绝，不缓存、不当作普通业务输入。  
-   - heartbeat 由 facilitator 负责；主 Agent 只负责批次结束后的 checkpoint 展示，不负责单批执行中的实时 heartbeat 插入。  
-   - 收敛条件仍以 party-mode source of truth 为准；禁止凑轮次，每轮须有实质角色发言，不得空转。  
+3. **Cursor 正确执行流程与收敛**  
+   - 必须先展示 `20 / 50 / 100`，等待用户明确选择。  
+   - 发起前必须完成自检清单并输出自检结果。  
+   - Session Bootstrap JSON 由宿主在 `SubagentStart` 注入。  
+   - Cursor 分支中**不使用 checkpoints**，也不在 `20 / 40 / ...` 轮次把控制权交还主 Agent。  
+   - 一旦子代理启动，必须在同一会话内执行到用户选择的总轮次（普通决策/根因为至少 50 轮；高置信最终产物为至少 100 轮）。  
+   - 若子代理在中途轮次（如 `22/50`）提前结束，主 Agent 不得自行续写讨论，必须沿用同一轮次与同一 gate profile 立即重发 facilitator。  
 
 4. **产出 BUGFIX 文档**  
    辩论收敛后，**必须**生成一份 BUGFIX 文档，包含：§1 现象/问题描述、§2 根因分析、§3 依据/参考（可选）、§4 修复方案、§5 流程/建议流程（可选）、§7 最终任务列表。路径：有 story 时 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/BUGFIX_{slug}.md`；无 story 时 `_bmad-output/implementation-artifacts/_orphan/BUGFIX_{slug}.md`。格式与禁止词表等与 bmad-bug-assistant 约定一致。

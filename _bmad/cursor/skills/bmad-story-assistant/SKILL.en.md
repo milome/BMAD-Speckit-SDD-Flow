@@ -7,7 +7,7 @@ description: |
   Phase zero: Automatically detect and patch party-mode display name optimization in new projects/worktree (if _bmad exists and is not optimized).
   Use subagent to perform tasks; the audit step prioritizes scheduling code-reviewer (.claude/agents/ or .cursor/agents/) through Cursor Task, and falls back to mcp_task generalPurpose if it fails.
   Follow ralph-method, TDD traffic lights, speckit-workflow constraints. The main agent is prohibited from directly modifying the production code.
-  **It is prohibited to skip party-mode because Epic/Story already exists**: Create Story can be skipped only when the user explicitly says "party-mode has been passed and the audit has passed"; otherwise Create Story must be executed and party-mode must be entered for at least 100 rounds when it comes to solution selection or design decisions.
+  **It is prohibited to skip party-mode because Epic/Story already exists**: Create Story can be skipped only when the user explicitly says "party-mode has been passed and the audit has passed"; otherwise Create Story must be executed. Before entering Cursor party-mode, the main Agent must show `20 / 50 / 100`, wait for the user's choice, complete the pre-launch self-check, and let the host inject `Party Mode Session Bootstrap (JSON)` on `SubagentStart`; party-mode still runs for at least 100 rounds when it comes to solution selection or design decisions.
   Applicable scenarios: The user provides Epic and Story numbers (e.g. 4 and 1 for Story 4.1); produce the Story document, pass audit, run Dev Story, and complete post-implementation audit. Deliverables and subagent copy-paste prompts stay in Chinese per workflow and parser rules.
 ---
 
@@ -17,6 +17,16 @@ description: |
 # BMAD Story Assistant
 
 > **Party-mode source of truth**: `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`. All party-mode rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit-gate semantics must follow that file; this skill only decides when Story flows enter party-mode.
+
+### Cursor Party-Mode Main-Agent Flow
+
+- Before entering Cursor party-mode, the main Agent must show the `20 / 50 / 100` options and infer the default tier from the request type.
+- Use `decision_root_cause_50` by default for ordinary RCA / option analysis and `final_solution_task_list_100` for high-confidence final outputs such as Story finalization.
+- `quick_probe_20` is probe-only; if the chosen tier cannot satisfy a high-confidence final-output request, the main Agent must reject it and require an upgrade to `final_solution_task_list_100`.
+- After the user chooses the tier, the main Agent must complete the pre-launch self-check checklist and print a `【自检完成】...可以发起。` result block.
+- Session Bootstrap JSON is injected by the host on `SubagentStart`; the main Agent must not skip that execution path.
+- The Cursor branch does **not** use checkpoints and does not hand control back to the main Agent at `20 / 40 / ...`. Once launched, the sub-agent must keep running in the same session until the user-selected total rounds are completed.
+- If the party-mode sub-agent stops early at rounds such as `22/50` or `10/50`, the main Agent must **not** continue the discussion itself and must **not** restart from Round 1. It must immediately re-issue facilitator with the same total rounds and same gate profile.
 
 ## Quick Decision Guide
 
@@ -563,7 +573,7 @@ prompt: |
   **强制约束**：
   - 创建 story 文档必须使用明确描述，禁止使用本 skill「§ 禁止词表（Story 文档）」中的词（可选、可考虑、后续、先实现、后续扩展、待定、酌情、视情况、技术债）。
   - 当功能不在本 Story 范围但属本 Epic 时，须写明「由 Story X.Y 负责」及任务具体描述；确保 X.Y 存在且 scope 含该功能（若 X.Y 不存在，审计将判不通过并建议创建）。禁止「先实现 X，或后续扩展」「其余由 X.Y 负责」等模糊表述。
-  - **party-mode 强制**：无论 Epic/Story 文档是否已存在，只要涉及以下任一情形，**必须**进入 party-mode 进行多角色辩论（**最少 100 轮**，见 party-mode step-02 的「生成最终方案和最终任务列表」或 Create Story 产出方案场景）：① 有多个实现方案可选；② 存在架构/设计决策或 trade-off；③ 方案或范围存在歧义或未决点。**禁止**以「Epic 已存在」「Story 已生成」为由跳过 party-mode。共识前须达最少轮次；若未达成单一方案或仍有未闭合的 gaps/risks，继续辩论直至满足或达上限轮次。
+  - **party-mode 强制**：无论 Epic/Story 文档是否已存在，只要涉及以下任一情形，**必须**进入 party-mode 进行多角色辩论：① 有多个实现方案可选；② 存在架构/设计决策或 trade-off；③ 方案或范围存在歧义或未决点。Before launch, the main Agent must show `20 / 50 / 100`, wait for the user's choice, complete the pre-launch self-check, and let the host inject `Party Mode Session Bootstrap (JSON)` on `SubagentStart`. Use `final_solution_task_list_100` (100 rounds) for Story finalization / final task lists and `decision_root_cause_50` (50 rounds) for ordinary analysis; `quick_probe_20` must not be used for finalization. **Do not** skip party-mode because “Epic already exists” or “Story already exists”. The Cursor branch uses **no checkpoints**; once the sub-agent starts, it must run in the same session until the user-selected total rounds are completed. If it stops early, re-issue the facilitator immediately with the same total rounds and gate profile.
   - 全程必须使用中文。
 ```
 Replace the above `{epic_num}`, `{story_num}`, `{project-root}` with actual values ​​(project-root is the absolute path to the project root directory).

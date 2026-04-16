@@ -5,7 +5,7 @@ description: |
   阶段零：在新项目/worktree 自动检测并补丁 party-mode 展示名优化（若 _bmad 存在且未优化）。
   使用 subagent 执行任务；审计步骤优先通过 Cursor Task 调度 code-reviewer（.claude/agents/ 或 .cursor/agents/），失败则回退 mcp_task generalPurpose。
   遵循 ralph-method、TDD 红绿灯、speckit-workflow 约束。主 Agent 禁止直接修改生产代码。
-  **禁止因 Epic/Story 已存在即跳过 party-mode**：仅当用户明确说「已通过 party-mode 且审计通过」时方可跳过 Create Story；否则必须执行 Create Story。主 Agent 在进入 party-mode 前必须先展示 `20 / 50 / 100` 强度选项；Story 设计定稿默认 `final_solution_task_list_100`，普通分析默认 `decision_root_cause_50`。
+  **禁止因 Epic/Story 已存在即跳过 party-mode**：仅当用户明确说「已通过 party-mode 且审计通过」时方可跳过 Create Story；否则必须执行 Create Story。主 Agent 在进入 Cursor party-mode 前必须先展示 `20 / 50 / 100` 强度选项、等待用户选择、完成发起前自检，并由宿主在 `SubagentStart` 注入 `Party Mode Session Bootstrap (JSON)`；Story 设计定稿默认 `final_solution_task_list_100`，普通分析默认 `decision_root_cause_50`。
   适用场景：用户提供 Epic 编号与 Story 编号（如 4、1 表示 Story 4.1），需生成 Story 文档、通过审计、执行 Dev Story 并完成实施后审计。全程中文。
 ---
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
@@ -15,17 +15,16 @@ description: |
 
 > **Party-mode source of truth**：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。所有 party-mode 的 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 只定义 Story 场景何时进入 party-mode，不得维护第二套 gate 语义。
 
-### Party-Mode 主 Agent 编排约束（Wave 4）
+### Party-Mode 主 Agent 编排约束（Cursor）
 
-- 进入 party-mode 前，主 Agent 必须先向用户展示 `20 / 50 / 100` 三档强度，并按请求类型推断默认值。
+- 进入 Cursor party-mode 前，主 Agent 必须先向用户展示 `20 / 50 / 100` 三档强度，并按请求类型推断默认值。
 - 普通 RCA / 方案分析默认 `decision_root_cause_50`；Create Story / Story 设计定稿 / 最终任务列表等高置信最终产物默认 `final_solution_task_list_100`。
 - `quick_probe_20` 仅用于 probe-only；若用户当前选择 `quick_probe_20` 或 `decision_root_cause_50`，却又明确要求高置信最终产物，主 Agent 必须拒绝当前档位并要求升级到 `final_solution_task_list_100`。
-- 每 20 轮必须向用户展示一次 checkpoint；checkpoint 展示后默认自动继续下一批，不要求逐批人工确认。
-- `S / F / C` 只在 checkpoint 窗口内有效；`checkpoint_window_ms = 15000`。
-- `C` 的语义固定为“立即继续下一批”，会立即关闭当前 checkpoint 窗口并跳过剩余等待时间。
-- 若用户在 checkpoint 窗口内输入普通业务补充文本，而不是 `S / F / C`，主 Agent 必须立即停止自动继续，取消窗口计时，并按新补充进入下一批前的重新编排。
-- checkpoint 窗口外的 `S / F / C` 必须显式拒绝，不缓存、不当作普通业务输入。
-- heartbeat 由 facilitator 负责；主 Agent 只负责批次结束后的 checkpoint 展示，不负责单批执行中的实时 heartbeat 插入。
+- 用户选择档位后，主 Agent **必须**完成发起前自检清单并输出 `【自检完成】...可以发起。`
+- Session Bootstrap JSON 由宿主在 `SubagentStart` 注入，主 Agent 不得省略该执行链。
+- Cursor 分支中**不使用 checkpoints**，也不在 `20 / 40 / ...` 轮次暂停交还主 Agent；子代理一旦启动，必须在同一会话内连续运行到用户选择的总轮次。
+- 若 party-mode 子代理在 `22/50`、`10/50` 等中途轮次提前结束，主 Agent **不得**自行续写讨论或从 Round 1 重新开始总结，必须沿用同一轮次与同一 gate profile 立即重发 facilitator。
+- 在当前 Cursor IDE 中，party-mode-facilitator 允许通过 `generalPurpose-compatible` 执行路径承载；`.cursor/agents/party-mode-facilitator.md` 仍是 canonical prompt/source asset，宿主必须在 `SubagentStart` 注入 `Party Mode Session Bootstrap (JSON)`。
 
 ## 快速决策指引
 
@@ -578,7 +577,7 @@ prompt: |
   **强制约束**：
   - 创建 story 文档必须使用明确描述，禁止使用本 skill「§ 禁止词表（Story 文档）」中的词（可选、可考虑、后续、先实现、后续扩展、待定、酌情、视情况、技术债）。
   - 当功能不在本 Story 范围但属本 Epic 时，须写明「由 Story X.Y 负责」及任务具体描述；确保 X.Y 存在且 scope 含该功能（若 X.Y 不存在，审计将判不通过并建议创建）。禁止「先实现 X，或后续扩展」「其余由 X.Y 负责」等模糊表述。
-  - **party-mode 强制**：无论 Epic/Story 文档是否已存在，只要涉及以下任一情形，**必须**进入 party-mode 进行多角色辩论：① 有多个实现方案可选；② 存在架构/设计决策或 trade-off；③ 方案或范围存在歧义或未决点。主 Agent 在发起前必须先展示 `20 / 50 / 100` 强度选项；若要形成 Story 设计定稿或最终任务列表，默认 `final_solution_task_list_100`（100 轮）；仅普通分析可默认 `decision_root_cause_50`（50 轮）；`quick_probe_20` 不得用于定稿。**禁止**以「Epic 已存在」「Story 已生成」为由跳过 party-mode。共识前须达最少轮次；若未达成单一方案或仍有未闭合的 gaps/risks，继续辩论直至满足或达上限轮次。每 20 轮必须展示一次 checkpoint，`S / F / C` 只在 `checkpoint_window_ms = 15000` 的窗口内有效；其中 `C` 表示“立即继续下一批”，普通业务补充会打断自动继续并进入重新编排。
+  - **party-mode 强制**：无论 Epic/Story 文档是否已存在，只要涉及以下任一情形，**必须**进入 party-mode 进行多角色辩论：① 有多个实现方案可选；② 存在架构/设计决策或 trade-off；③ 方案或范围存在歧义或未决点。主 Agent 在发起前必须先展示 `20 / 50 / 100` 强度选项、等待用户选择、完成发起前自检，并由宿主在 `SubagentStart` 注入 `Party Mode Session Bootstrap (JSON)`。若要形成 Story 设计定稿或最终任务列表，默认 `final_solution_task_list_100`（100 轮）；仅普通分析可默认 `decision_root_cause_50`（50 轮）；`quick_probe_20` 不得用于定稿。**禁止**以「Epic 已存在」「Story 已生成」为由跳过 party-mode。Cursor 分支中**不使用 checkpoints**，子代理一旦启动，必须在同一会话内连续运行到用户选择的总轮次；若中途提前结束，必须沿用同一总轮次与同一 gate profile 立即重发 facilitator。
   - 全程必须使用中文。
 ```
 

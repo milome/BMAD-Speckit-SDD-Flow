@@ -75,6 +75,61 @@ function parseOptionalPositiveInt(value, field) {
   return parsed;
 }
 
+function normalizePartyModeRouteToken(value) {
+  const token = String(value || '').trim();
+  if (!token) return '';
+  const lower = token.toLowerCase();
+  if (lower === 'generalpurpose' || lower === 'general-purpose') {
+    return 'general-purpose';
+  }
+  if (lower.includes('party-mode-facilitator')) {
+    return 'party-mode-facilitator';
+  }
+  return token;
+}
+
+function isCursorTaskLikeTool(input) {
+  const toolName = typeof input?.tool_name === 'string' ? input.tool_name.trim().toLowerCase() : '';
+  return toolName === 'task' || toolName === 'mcp_task';
+}
+
+function hasCursorFacilitatorRuntimeTarget(projectRoot) {
+  return fs.existsSync(path.join(projectRoot, '.cursor', 'agents', 'party-mode-facilitator.md'));
+}
+
+function hasCursorPartyModeSelfCheck(inputText) {
+  const text = String(inputText || '');
+  return (
+    text.includes('【自检完成】') ||
+    text.includes('自检完成，所有检查项已通过') ||
+    /self-check\s+completed/iu.test(text)
+  );
+}
+
+function isCursorPartyModeGeneralPurposeExecution(input, cursorHost) {
+  return (
+    cursorHost &&
+    getObservedPartyModeRoute(input) === 'general-purpose' &&
+    (
+      isPartyModeFacilitatorPreflightRequest(input) ||
+      isPartyModeFacilitatorIntent(
+        extractUserMessage(input, 'subagent') || extractUserMessage(input, 'pretooluse')
+      )
+    )
+  );
+}
+
+function resolveGateProfileMinRounds(gateProfileId) {
+  switch (gateProfileId) {
+    case 'quick_probe_20':
+      return 20;
+    case 'final_solution_task_list_100':
+      return 100;
+    default:
+      return 50;
+  }
+}
+
 function partyModeAgentRunStatePath(projectRoot, agentId) {
   return path.join(projectRoot, '.claude', 'state', 'milestones', `${agentId}.party-mode.json`);
 }
@@ -306,14 +361,30 @@ function extractPartyModeBootstrapOptions(input, inputText, resolvedMode) {
 }
 
 function isPartyModeFacilitatorPreflightRequest(input) {
-  if (!input || typeof input !== 'object' || input.tool_name !== 'Agent') {
+  if (!input || typeof input !== 'object') {
+    return false;
+  }
+  const toolName = typeof input.tool_name === 'string' ? input.tool_name.trim() : '';
+  if (toolName !== 'Agent' && !isCursorTaskLikeTool(input)) {
     return false;
   }
   const ti = input.tool_input;
   if (!ti || typeof ti !== 'object') {
     return false;
   }
-  const joined = [ti.subagent_type, ti.description, ti.prompt]
+  const joined = [
+    ti.subagent_type,
+    ti.subagentType,
+    ti.subtypeOrExecutor,
+    ti.executor,
+    ti.executor_name,
+    ti.agent_type,
+    ti.agent_name,
+    ti.description,
+    ti.prompt,
+    ti.task,
+    input.task,
+  ]
     .filter((value) => typeof value === 'string' && value.trim())
     .join('\n')
     .toLowerCase();
@@ -321,18 +392,31 @@ function isPartyModeFacilitatorPreflightRequest(input) {
 }
 
 function getObservedPartyModeRoute(input) {
-  if (!input || typeof input !== 'object' || input.tool_name !== 'Agent') {
+  if (!input || typeof input !== 'object') {
     return 'unknown';
   }
-  const ti = input.tool_input;
-  if (!ti || typeof ti !== 'object') {
-    return 'unknown';
+  const direct = readInputPath(input, [
+    ['tool_input', 'subagent_type'],
+    ['tool_input', 'subagentType'],
+    ['tool_input', 'subtypeOrExecutor'],
+    ['tool_input', 'executor'],
+    ['tool_input', 'executor_name'],
+    ['tool_input', 'agent_type'],
+    ['tool_input', 'agentType'],
+    ['tool_input', 'agent_name'],
+    ['tool_input', 'agentName'],
+    ['subagent_type'],
+    ['subagentType'],
+    ['subtypeOrExecutor'],
+    ['executor'],
+    ['agent_type'],
+    ['agent_name'],
+  ]);
+  const normalized = normalizePartyModeRouteToken(direct);
+  if (normalized) {
+    return normalized;
   }
-  const subtype =
-    typeof ti.subagent_type === 'string' && ti.subagent_type.trim()
-      ? ti.subagent_type.trim()
-      : 'unknown';
-  return subtype;
+  return 'unknown';
 }
 
 function hasAuthoritativePartyModeRoute(input) {
@@ -340,22 +424,19 @@ function hasAuthoritativePartyModeRoute(input) {
 }
 
 function isGeneralPurposePartyModeWrapperAttempt(input) {
-  if (!input || typeof input !== 'object' || input.tool_name !== 'Agent') {
+  if (!input || typeof input !== 'object') {
     return false;
   }
+  const subtype = getObservedPartyModeRoute(input);
   const ti = input.tool_input;
-  if (!ti || typeof ti !== 'object') {
-    return false;
-  }
-  const subtype = typeof ti.subagent_type === 'string' ? ti.subagent_type.trim().toLowerCase() : '';
-  const joined = [ti.description, ti.prompt]
+  const joined = [ti?.description, ti?.prompt, ti?.task, input.task]
     .filter((value) => typeof value === 'string' && value.trim())
     .join('\n')
     .toLowerCase();
   return subtype === 'general-purpose' && isPartyModeFacilitatorIntent(joined);
 }
 
-function buildPartyModeUnknownRouteMessage(input) {
+function buildPartyModeUnknownRouteMessage(input, cursorHost) {
   const observedRoute = getObservedPartyModeRoute(input);
   return [
     'Party-Mode facilitator launch failed closed because the Agent payload does not structurally identify the dedicated facilitator target.',
@@ -364,9 +445,70 @@ function buildPartyModeUnknownRouteMessage(input) {
     'Do not retry with different model parameters or prompt formatting.',
     'Main Agent must only continue when the host emits an authoritative facilitator route.',
     'Required route:',
-    '- dedicated facilitator target visible to hooks',
-    '- then pass the user-selected structured `gateProfileId` / `gate_profile_id`',
+    cursorHost
+      ? '- Cursor Task executor: `party-mode-facilitator`'
+      : '- dedicated facilitator target visible to hooks',
+    cursorHost
+      ? '- then pass the user-selected structured `gateProfileId` / `gate_profile_id` or dedicated confirmation block'
+      : '- then pass the user-selected structured `gateProfileId` / `gate_profile_id`',
     'Note: the discussion topic may be Cursor custom subagents, but that does not change the required host-side facilitator route.',
+  ].join('\n');
+}
+
+function buildCursorPartyModeFallbackForbiddenMessage(input) {
+  const observedRoute = getObservedPartyModeRoute(input);
+  return [
+    'Party-Mode fail-closed: Cursor already has `.cursor/agents/party-mode-facilitator.md`, so routing this discussion through `mcp_task/generalPurpose` is forbidden.',
+    `Observed route token: \`${observedRoute}\``,
+    'Do not let the main Agent continue with a general-purpose fallback.',
+    'Required recovery:',
+    '- re-issue the call through Cursor Task with executor `party-mode-facilitator`',
+    '- preserve the same user-selected gate profile / checkpoint state',
+    '- if the host cannot see the installed facilitator target, stop and tell the user to retry after re-syncing `.cursor/agents/party-mode-facilitator.md`',
+    'Main Agent must not summarize, continue, or restart the discussion from round 1 after this failure.',
+  ].join('\n');
+}
+
+function buildCursorGeneralPurposePartyModeMessage(gateProfileId, targetRoundsTotal) {
+  return [
+    'Cursor Party-Mode execution mode: generalPurpose compatibility path.',
+    'Current Cursor IDE sessions do not rely on checkpoints or a main-agent checkpoint handoff for party-mode.',
+    'Run the full discussion inside the current subagent session until the final round target is reached.',
+    `Gate profile: \`${gateProfileId}\``,
+    `Target rounds total: ${targetRoundsTotal}`,
+    'Cursor execution rules:',
+    '- do not emit checkpoints in the Cursor branch',
+    '- do not hand control back to the main Agent before the final round target',
+    '- do not restart discussion from round 1 after an intermediate progress summary',
+    'Return control only after the final summary / final gate evidence has been produced.',
+  ].join('\n');
+}
+
+function buildCursorPartyModeSelfCheckTemplate(gateProfileId) {
+  const profileLabel =
+    gateProfileId === 'quick_probe_20'
+      ? '20 (quick_probe_20)'
+      : gateProfileId === 'final_solution_task_list_100'
+        ? '100 (final_solution_task_list_100)'
+        : '50 (decision_root_cause_50)';
+  return [
+    'Cursor party-mode preflight: main Agent must complete the pre-launch self-check before invoking the facilitator-compatible subagent.',
+    '不要直接启动子代理；先严格完成以下流程：',
+    '1. 展示 `20 / 50 / 100` 强度选项',
+    '2. 等待用户明确回复档位',
+    '3. 完成发起前自检清单',
+    '4. 输出自检结果',
+    '5. 由宿主在 `SubagentStart` 自动注入 `Party Mode Session Bootstrap (JSON)`',
+    '',
+    '自检结果最小模板：',
+    '【自检完成】Cursor party-mode',
+    '- 强度选项: 已展示',
+    `- 用户选择: ${profileLabel}`,
+    '- 执行方式: generalPurpose-compatible facilitator',
+    '- Session Bootstrap: 由宿主在 SubagentStart 注入',
+    '可以发起。',
+    '',
+    '完成以上自检后，再沿用同一档位立即重试当前 party-mode 发起。'
   ].join('\n');
 }
 
@@ -386,6 +528,9 @@ function derivePartyModeIntensityStopReason(errText) {
   if (String(errText || '').includes('user-selected intensity was detected in free text')) {
     return 'Party-Mode 已检测到用户已选档位，但当前 payload 未结构化；请沿用同一档位立即重试一次。';
   }
+  if (String(errText || '').includes('main Agent must complete the pre-launch self-check')) {
+    return 'Cursor Party-Mode 发起前必须完成自检清单并输出自检结果。';
+  }
   return 'Party-Mode 启动前必须先由主 Agent 询问用户选择 20/50/100 强度。';
 }
 
@@ -394,7 +539,8 @@ function buildPartyModePreToolUseHardStop(root, input, errText, stopReason) {
     writePartyModeTurnLock(root, {
       reason: stopReason,
       system_message: errText,
-      source_tool: 'Agent',
+      source_tool:
+        typeof input?.tool_name === 'string' && input.tool_name.trim() ? input.tool_name.trim() : 'Agent',
       blocked_topic: extractUserMessage(input, 'pretooluse'),
     });
   } catch {
@@ -442,13 +588,31 @@ function buildPartyModeBootstrapBlock(projectRoot, hookMode, input, resolvedMode
     bootstrapOptions.gateProfileId,
     inputText
   );
+  const cursorGeneralPurposeMode = isCursorPartyModeGeneralPurposeExecution(input, true);
+  const normalizedTargetRoundsTotal =
+    bootstrapOptions.targetRoundsTotal ?? resolveGateProfileMinRounds(gateProfileId);
+  const finalBootstrapOptions = cursorGeneralPurposeMode
+    ? {
+        ...bootstrapOptions,
+        targetRoundsTotal: normalizedTargetRoundsTotal,
+        batchTargetRound: normalizedTargetRoundsTotal,
+        batchIndex: 1,
+        batchStartRound: 1,
+      }
+    : bootstrapOptions;
   const bootstrap = bootstrapSession(projectRoot, {
     inputText,
-    ...bootstrapOptions,
+    ...finalBootstrapOptions,
     gateProfileId,
   });
+  const modeDirective = cursorGeneralPurposeMode
+    ? `${buildCursorGeneralPurposePartyModeMessage(
+        gateProfileId,
+        bootstrap.meta.target_rounds_total
+      )}\n`
+    : '';
   persistPartyModeAgentRunState(projectRoot, input, bootstrap);
-  return `Party Mode Session Bootstrap (JSON):\n${JSON.stringify(
+  return `${modeDirective}Party Mode Session Bootstrap (JSON):\n${JSON.stringify(
     {
       session_key: bootstrap.sessionKey,
       gate_profile_id: bootstrap.meta.gate_profile_id,
@@ -528,6 +692,10 @@ async function runtimePolicyInjectCore({ host }) {
   }
 
   if (hookMode === 'pretooluse' && isGeneralPurposePartyModeWrapperAttempt(input)) {
+    if (cursorHost && hasCursorFacilitatorRuntimeTarget(root)) {
+      // Cursor IDE currently executes party-mode reliably through generalPurpose-compatible routing.
+      // Allow this path and rely on the subagentStart bootstrap override to keep the run inline/full-length.
+    } else {
     const errText = buildPartyModeContractViolationMessage(extractUserMessage(input, hookMode));
     return buildPartyModePreToolUseHardStop(
       root,
@@ -535,11 +703,12 @@ async function runtimePolicyInjectCore({ host }) {
       errText,
       'Party-Mode 必须使用正式 facilitator contract，当前 general-purpose 包装调用已被阻止。'
     );
+    }
   }
 
   if (hookMode === 'pretooluse' && isPartyModeFacilitatorPreflightRequest(input)) {
-    if (!hasAuthoritativePartyModeRoute(input)) {
-      const errText = buildPartyModeUnknownRouteMessage(input);
+    if (!hasAuthoritativePartyModeRoute(input) && !isCursorPartyModeGeneralPurposeExecution(input, cursorHost)) {
+      const errText = buildPartyModeUnknownRouteMessage(input, cursorHost);
       return buildPartyModePreToolUseHardStop(
         root,
         input,
@@ -553,7 +722,19 @@ async function runtimePolicyInjectCore({ host }) {
     const inputText = extractUserMessage(input, hookMode);
     const bootstrapOptions = extractPartyModeBootstrapOptions(input, inputText, undefined);
     try {
-      resolveStructuredGateProfileSelection(bootstrapOptions.gateProfileId, inputText);
+      const gateProfileId = resolveStructuredGateProfileSelection(
+        bootstrapOptions.gateProfileId,
+        inputText
+      );
+      if (cursorHost && !hasCursorPartyModeSelfCheck(inputText)) {
+        const errText = buildCursorPartyModeSelfCheckTemplate(gateProfileId);
+        return buildPartyModePreToolUseHardStop(
+          root,
+          input,
+          errText,
+          derivePartyModeIntensityStopReason(errText)
+        );
+      }
     } catch (error) {
       const errText = error && error.message ? error.message : buildIntensitySelectionAskTemplate(inputText);
       return buildPartyModePreToolUseHardStop(

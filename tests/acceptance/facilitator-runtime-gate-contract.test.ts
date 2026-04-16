@@ -53,11 +53,20 @@ describe('facilitator runtime gate contract', () => {
         '_bmad/core/workflows/party-mode/steps/step-02-discussion-orchestration'
       );
       expect(runtime).toContain('RUNTIME-MATERIALIZED facilitator resolvedMode=en');
-      expect(runtime).toContain('## Checkpoint <current_round>/<target_rounds_total>');
-      expect(runtime).toContain('## Final Gate Evidence');
-      expect(runtime).toContain('BATCH-BOUNDARY HANDOFF ONLY');
-      expect(runtime).toContain('10/50');
     }
+
+    expect(cursorRuntime).toContain('generalPurpose-compatible wrapper');
+    expect(cursorRuntime).toContain('NO CHECKPOINTS IN CURSOR');
+    expect(cursorRuntime).toContain('CURSOR INLINE FULL-RUN ONLY');
+    expect(cursorRuntime).toContain('10/50');
+    expect(cursorRuntime).toContain('20/50');
+    expect(cursorRuntime).toContain('## Final Gate Evidence');
+    expect(cursorRuntime).not.toContain('## Checkpoint <current_round>/<target_rounds_total>');
+
+    expect(claudeRuntime).toContain('## Checkpoint <current_round>/<target_rounds_total>');
+    expect(claudeRuntime).toContain('## Final Gate Evidence');
+    expect(claudeRuntime).toContain('BATCH-BOUNDARY HANDOFF ONLY');
+    expect(claudeRuntime).toContain('10/50');
   });
 
   it('canonical step-02 includes checker and evidence-chain requirements consumed by facilitator runtime', () => {
@@ -93,22 +102,32 @@ describe('facilitator runtime gate contract', () => {
     expect(canonical).toContain('把控制权交还主 Agent');
   });
 
-  it('facilitator carriers require visible 20-round checkpoints in-session', () => {
-    const carrierPaths = [
-      path.join(ROOT, '_bmad', 'cursor', 'agents', 'party-mode-facilitator.md'),
-      path.join(ROOT, '_bmad', 'cursor', 'agents', 'party-mode-facilitator.en.md'),
-      path.join(ROOT, '_bmad', 'cursor', 'agents', 'party-mode-facilitator.zh.md'),
+  it('Claude facilitator carriers keep visible checkpoints while Cursor carriers stay inline-only', () => {
+    const claudeCarrierPaths = [
       path.join(ROOT, '_bmad', 'claude', 'agents', 'party-mode-facilitator.md'),
       path.join(ROOT, '_bmad', 'claude', 'agents', 'party-mode-facilitator.en.md'),
       path.join(ROOT, '_bmad', 'claude', 'agents', 'party-mode-facilitator.zh.md'),
     ];
+    const cursorCarrierPaths = [
+      path.join(ROOT, '_bmad', 'cursor', 'agents', 'party-mode-facilitator.md'),
+      path.join(ROOT, '_bmad', 'cursor', 'agents', 'party-mode-facilitator.en.md'),
+      path.join(ROOT, '_bmad', 'cursor', 'agents', 'party-mode-facilitator.zh.md'),
+    ];
 
-    for (const content of carrierPaths.map((carrierPath) => fs.readFileSync(carrierPath, 'utf8'))) {
+    for (const content of claudeCarrierPaths.map((carrierPath) => fs.readFileSync(carrierPath, 'utf8'))) {
       expect(content).toContain('20 / 40 / 60 / 80 / ...');
       expect(content).toContain('## Checkpoint <current_round>/<target_rounds_total>');
       expect(content).toContain('## Final Gate Evidence');
       expect(content).toContain('BATCH-BOUNDARY HANDOFF ONLY');
       expect(content).toContain('10/50');
+    }
+
+    for (const content of cursorCarrierPaths.map((carrierPath) => fs.readFileSync(carrierPath, 'utf8'))) {
+      expect(content).toContain('generalPurpose-compatible wrapper');
+      expect(content).toContain('NO CHECKPOINTS IN CURSOR');
+      expect(content).toContain('CURSOR INLINE FULL-RUN ONLY');
+      expect(content).toContain('## Final Gate Evidence');
+      expect(content).not.toContain('## Checkpoint <current_round>/<target_rounds_total>');
     }
   });
 
@@ -122,10 +141,14 @@ describe('facilitator runtime gate contract', () => {
       'utf8'
     );
 
-    for (const content of [cursorCarrier, claudeCarrier]) {
-      expect(content).toContain('阶段性进展 checkpoint');
-      expect(content).toContain('checkpoint 是 facilitator 控制文本');
-      expect(content).toContain('## Checkpoint <current_round>/<target_rounds_total>');
-    }
+    expect(claudeCarrier).toContain('阶段性进展 checkpoint');
+    expect(claudeCarrier).toContain('checkpoint 是 facilitator 控制文本');
+    expect(claudeCarrier).toContain('## Checkpoint <current_round>/<target_rounds_total>');
+
+    expect(cursorCarrier).toContain('generalPurpose 兼容执行路径');
+    expect(cursorCarrier).toContain('NO CHECKPOINTS IN CURSOR');
+    expect(cursorCarrier).toContain('CURSOR INLINE FULL-RUN ONLY');
+    expect(cursorCarrier).not.toContain('BATCH-BOUNDARY HANDOFF ONLY');
+    expect(cursorCarrier).not.toContain('## Checkpoint <current_round>/<target_rounds_total>');
   });
 });
