@@ -3,6 +3,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { createHash } = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 const { shouldSkipRuntimePolicy } = require('./should-skip-runtime-policy.cjs');
 const { buildRuntimeErrorMessage } = require('./build-runtime-error-message.cjs');
@@ -22,7 +23,22 @@ const {
   isPartyModeFacilitatorStart,
   resolveStructuredGateProfileSelection,
 } = require('./party-mode-session-runtime.cjs');
+const {
+  derivePartyModeFinalSidecarPath,
+  derivePartyModeLaunchCapturePath,
+  derivePartyModeProgressSidecarPath,
+  derivePartyModeStartedSidecarPath,
+  derivePartyModeVisibleOutputCapturePath,
+  writePartyModeSidecar,
+  writePartyModeCurrentSessionState,
+} = require('./party-mode-current-session.cjs');
 const { writePartyModeTurnLock } = require('./party-mode-turn-lock.cjs');
+
+const PARTY_MODE_PENDING_LAUNCH_CONTRACT_TTL_MS = 5 * 60 * 1000;
+const CURSOR_PARTY_MODE_AGENT_TURN_EVENT_SOURCE_MODE =
+  'cursor_visible_output_reconstruction';
+const CURSOR_PARTY_MODE_AGENT_TURN_REASON =
+  'Cursor generalPurpose compatibility path has no native per-turn agent-turn surface; party-mode turns are reconstructed from visible subagent output after return.';
 
 function readStdin() {
   return new Promise((resolve, reject) => {
@@ -130,6 +146,75 @@ function resolveGateProfileMinRounds(gateProfileId) {
   }
 }
 
+function partyModePendingLaunchContractPath(projectRoot) {
+  return path.join(
+    projectRoot,
+    '_bmad-output',
+    'party-mode',
+    'runtime',
+    'pending-launch-contract.json'
+  );
+}
+
+function clearPendingPartyModeLaunchContract(projectRoot) {
+  try {
+    fs.unlinkSync(partyModePendingLaunchContractPath(projectRoot));
+  } catch {
+    // ignore
+  }
+}
+
+function readActivePendingPartyModeLaunchContract(projectRoot, now = Date.now()) {
+  const filePath = partyModePendingLaunchContractPath(projectRoot);
+  if (!fs.existsSync(filePath)) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const expiresAtMs = Date.parse(parsed?.expires_at || '');
+    if (!Number.isFinite(expiresAtMs) || expiresAtMs <= now) {
+      clearPendingPartyModeLaunchContract(projectRoot);
+      return null;
+    }
+    return parsed;
+  } catch {
+    clearPendingPartyModeLaunchContract(projectRoot);
+    return null;
+  }
+}
+
+function writePendingPartyModeLaunchContract(projectRoot, payload) {
+  const ttlMs =
+    Number.isInteger(payload?.ttl_ms) && payload.ttl_ms > 0
+      ? payload.ttl_ms
+      : PARTY_MODE_PENDING_LAUNCH_CONTRACT_TTL_MS;
+  const now = new Date();
+  const filePath = partyModePendingLaunchContractPath(projectRoot);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  const record = {
+    created_at: now.toISOString(),
+    expires_at: new Date(now.getTime() + ttlMs).toISOString(),
+    gate_profile_id: typeof payload?.gate_profile_id === 'string' ? payload.gate_profile_id : '',
+    source_tool: typeof payload?.source_tool === 'string' ? payload.source_tool : '',
+    source_route: typeof payload?.source_route === 'string' ? payload.source_route : '',
+    source_prompt_sha256: typeof payload?.source_prompt_sha256 === 'string' ? payload.source_prompt_sha256 : '',
+    source_excerpt: typeof payload?.source_excerpt === 'string' ? payload.source_excerpt : '',
+  };
+  fs.writeFileSync(filePath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+  return record;
+}
+
+function buildPendingLaunchContractMismatchMessage(expectedGateProfileId, actualGateProfileId) {
+  return [
+    'Party-Mode subagentStart blocked: the launch payload gate profile does not match the last confirmed preToolUse selection.',
+    `Confirmed preToolUse gate profile: \`${expectedGateProfileId}\``,
+    `SubagentStart gate profile: \`${actualGateProfileId}\``,
+    '这通常表示主 Agent 在展示 / 确认了一个档位后，真正发起子代理时又回退到了旧的推荐档位或旧模板。',
+    '不要继续使用这个错误 payload。',
+    '请沿用用户刚确认的档位，重新生成一致的自检块与 subagentStart payload 后再重试。',
+  ].join('\n');
+}
+
 function partyModeAgentRunStatePath(projectRoot, agentId) {
   return path.join(projectRoot, '.claude', 'state', 'milestones', `${agentId}.party-mode.json`);
 }
@@ -186,6 +271,152 @@ function persistPartyModeAgentRunState(projectRoot, input, bootstrap) {
     )}\n`,
     'utf8'
   );
+}
+
+function persistPartyModeCurrentSessionState(projectRoot, input, bootstrap, extras = {}) {
+  const sidecarStartedPath = derivePartyModeStartedSidecarPath(projectRoot, bootstrap.sessionKey);
+  const sidecarProgressPath = derivePartyModeProgressSidecarPath(projectRoot, bootstrap.sessionKey);
+  const sidecarFinalPath = derivePartyModeFinalSidecarPath(projectRoot, bootstrap.sessionKey);
+  return writePartyModeCurrentSessionState(projectRoot, {
+    source: extras.source || 'subagent_start',
+    host_kind: extras.hostKind || 'unknown',
+    execution_mode: extras.executionMode || 'default',
+    status: extras.status || 'launched',
+    agent_id:
+      typeof input?.agent_id === 'string' && input.agent_id.trim() ? input.agent_id.trim() : '',
+    agent_type:
+      typeof input?.agent_type === 'string' && input.agent_type.trim()
+        ? input.agent_type.trim()
+        : 'party-mode-facilitator',
+    session_key: bootstrap.sessionKey,
+    gate_profile_id: bootstrap.meta.gate_profile_id,
+    closure_level: bootstrap.meta.closure_level,
+    designated_challenger_id: bootstrap.meta.designated_challenger_id,
+    current_batch_index: bootstrap.meta.current_batch_index,
+    current_batch_start_round: bootstrap.meta.current_batch_start_round,
+    current_batch_target_round: bootstrap.meta.current_batch_target_round,
+    current_batch_status: bootstrap.meta.current_batch_status,
+    target_rounds_total: bootstrap.meta.target_rounds_total,
+    batch_size: bootstrap.meta.batch_size,
+    checkpoint_window_ms: bootstrap.meta.checkpoint_window_ms,
+    expected_document_paths: Array.isArray(extras.expected_document_paths)
+      ? extras.expected_document_paths
+      : [],
+    expected_document_count: Number.isFinite(Number(extras.expected_document_count))
+      ? Number(extras.expected_document_count)
+      : 0,
+    document_generation_required: Boolean(extras.document_generation_required),
+    session_log_path: bootstrap.meta.session_log_path,
+    snapshot_path: bootstrap.meta.snapshot_path,
+    convergence_record_path: bootstrap.meta.convergence_record_path,
+    audit_verdict_path: bootstrap.meta.audit_verdict_path,
+    agent_turn_event_source_mode: bootstrap.meta.agent_turn_event_source_mode,
+    host_native_agent_turn_supported: bootstrap.meta.host_native_agent_turn_supported,
+    host_native_agent_turn_reason: bootstrap.meta.host_native_agent_turn_reason,
+    visible_output_capture_path: derivePartyModeVisibleOutputCapturePath(
+      projectRoot,
+      bootstrap.sessionKey
+    ),
+    launch_payload_capture_path: derivePartyModeLaunchCapturePath(projectRoot, bootstrap.sessionKey),
+    sidecar_started_path: sidecarStartedPath,
+    sidecar_progress_path: sidecarProgressPath,
+    sidecar_final_path: sidecarFinalPath,
+  });
+}
+
+function writePartyModeStartedSidecar(projectRoot, bootstrap, extras = {}) {
+  const startedPath = derivePartyModeStartedSidecarPath(projectRoot, bootstrap.sessionKey);
+  return writePartyModeSidecar(startedPath, {
+    schema_version: 'party_mode_sidecar_v1',
+    sidecar_kind: 'started',
+    session_key: bootstrap.sessionKey,
+    gate_profile_id: bootstrap.meta.gate_profile_id,
+    closure_level: bootstrap.meta.closure_level,
+    designated_challenger_id: bootstrap.meta.designated_challenger_id,
+    status: extras.status || 'launched',
+    execution_mode: extras.executionMode || 'default',
+    host_kind: extras.hostKind || 'unknown',
+    current_batch_index: bootstrap.meta.current_batch_index,
+    current_batch_start_round: bootstrap.meta.current_batch_start_round,
+    current_batch_target_round: bootstrap.meta.current_batch_target_round,
+    target_rounds_total: bootstrap.meta.target_rounds_total,
+    session_log_path: bootstrap.meta.session_log_path,
+    snapshot_path: bootstrap.meta.snapshot_path,
+    convergence_record_path: bootstrap.meta.convergence_record_path,
+    audit_verdict_path: bootstrap.meta.audit_verdict_path,
+    agent_turn_event_source_mode: bootstrap.meta.agent_turn_event_source_mode,
+    host_native_agent_turn_supported: bootstrap.meta.host_native_agent_turn_supported,
+    host_native_agent_turn_reason: bootstrap.meta.host_native_agent_turn_reason,
+    sidecar_progress_path: derivePartyModeProgressSidecarPath(projectRoot, bootstrap.sessionKey),
+    sidecar_final_path: derivePartyModeFinalSidecarPath(projectRoot, bootstrap.sessionKey),
+    document_generation_required: Boolean(extras.document_generation_required),
+    expected_document_count: Number.isFinite(Number(extras.expected_document_count))
+      ? Number(extras.expected_document_count)
+      : 0,
+    expected_document_paths: Array.isArray(extras.expected_document_paths)
+      ? extras.expected_document_paths
+      : [],
+    created_at: new Date().toISOString(),
+    written_by: 'runtime_policy_inject_subagent_start',
+  });
+}
+
+function capturePartyModeLaunchPayload(projectRoot, sessionKey, input) {
+  const capturePath = derivePartyModeLaunchCapturePath(projectRoot, sessionKey);
+  fs.mkdirSync(path.dirname(capturePath), { recursive: true });
+  fs.writeFileSync(capturePath, `${JSON.stringify(input ?? {}, null, 2)}\n`, 'utf8');
+  return capturePath;
+}
+
+function computePartyModePromptHash(inputText) {
+  return createHash('sha256').update(String(inputText || ''), 'utf8').digest('hex');
+}
+
+function buildPartyModePromptExcerpt(inputText) {
+  return String(inputText || '').trim().slice(0, 240);
+}
+
+function applyCursorPartyModeAgentTurnCapabilityOverride(bootstrap, cursorGeneralPurposeMode) {
+  if (!cursorGeneralPurposeMode) {
+    return bootstrap;
+  }
+  bootstrap.meta.agent_turn_event_source_mode = CURSOR_PARTY_MODE_AGENT_TURN_EVENT_SOURCE_MODE;
+  bootstrap.meta.host_native_agent_turn_supported = false;
+  bootstrap.meta.host_native_agent_turn_reason = CURSOR_PARTY_MODE_AGENT_TURN_REASON;
+  if (bootstrap.paths && bootstrap.paths.metaPath) {
+    fs.writeFileSync(
+      bootstrap.paths.metaPath,
+      `${JSON.stringify(bootstrap.meta, null, 2)}\n`,
+      'utf8'
+    );
+  }
+  return bootstrap;
+}
+
+function extractExpectedPartyModeDocumentPaths(projectRoot, inputText) {
+  const text = String(inputText || '');
+  const matches = [];
+  const pattern = /(?:^|[\s`"'(])([^\s`"'()]+?\.md)\b/giu;
+  for (const match of text.matchAll(pattern)) {
+    const candidate = String(match[1] || '').trim();
+    if (!candidate) {
+      continue;
+    }
+    const normalizedCandidate = candidate.replace(/\\/g, '/');
+    const resolved = path.isAbsolute(normalizedCandidate)
+      ? path.resolve(normalizedCandidate)
+      : path.resolve(projectRoot, normalizedCandidate);
+    const normalizedResolved = String(resolved).replace(/\\/g, '/');
+    if (
+      normalizedResolved.includes('/_bmad-output/implementation-artifacts/') ||
+      normalizedResolved.includes('/specs/') ||
+      normalizedResolved.includes('/docs/requirements/') ||
+      normalizedResolved.includes('/docs/plans/')
+    ) {
+      matches.push(normalizedResolved);
+    }
+  }
+  return [...new Set(matches)];
 }
 
 /**
@@ -463,25 +694,36 @@ function buildCursorPartyModeFallbackForbiddenMessage(input) {
     'Do not let the main Agent continue with a general-purpose fallback.',
     'Required recovery:',
     '- re-issue the call through Cursor Task with executor `party-mode-facilitator`',
-    '- preserve the same user-selected gate profile / checkpoint state',
+    '- preserve the same user-selected gate profile / round-progress state',
     '- if the host cannot see the installed facilitator target, stop and tell the user to retry after re-syncing `.cursor/agents/party-mode-facilitator.md`',
     'Main Agent must not summarize, continue, or restart the discussion from round 1 after this failure.',
   ].join('\n');
 }
 
 function buildCursorGeneralPurposePartyModeMessage(gateProfileId, targetRoundsTotal) {
-  return [
+  const lines = [
     'Cursor Party-Mode execution mode: generalPurpose compatibility path.',
-    'Current Cursor IDE sessions do not rely on checkpoints or a main-agent checkpoint handoff for party-mode.',
+    'Current Cursor IDE sessions must stay inside one uninterrupted facilitator-compatible run.',
     'Run the full discussion inside the current subagent session until the final round target is reached.',
     `Gate profile: \`${gateProfileId}\``,
     `Target rounds total: ${targetRoundsTotal}`,
     'Cursor execution rules:',
-    '- do not emit checkpoints in the Cursor branch',
-    '- do not hand control back to the main Agent before the final round target',
+    '- do not pause or hand control back to the main Agent before the final round target',
     '- do not restart discussion from round 1 after an intermediate progress summary',
     'Return control only after the final summary / final gate evidence has been produced.',
-  ].join('\n');
+  ];
+  if (targetRoundsTotal >= 50) {
+    lines.push('Compact-mode requirements for this long run:');
+    lines.push('- prefer one short substantive speaker line per round');
+    lines.push('- the designated challenger may be the only speaker in a round');
+    lines.push('- defer long recaps, tables, and summaries to the final section');
+  }
+  lines.push('Sidecar persistence contract for zero-host-evidence recovery:');
+  lines.push('- the host has already written the `started` sidecar for this session');
+  lines.push('- before normal return, write the `final` sidecar JSON to the exact path from the bootstrap payload');
+  lines.push('- if you detect you are being forced to stop early, write the `progress` sidecar first, then exit');
+  lines.push('- these hidden sidecars are not user-visible progress markers; do not stop the discussion to announce them');
+  return lines.join('\n');
 }
 
 function buildCursorPartyModeSelfCheckTemplate(gateProfileId) {
@@ -578,7 +820,7 @@ function runResolveLanguagePolicyCli(root, userMessage, writeContext) {
   });
 }
 
-function buildPartyModeBootstrapBlock(projectRoot, hookMode, input, resolvedMode) {
+function buildPartyModeBootstrapBlock(projectRoot, hookMode, input, resolvedMode, cursorHost) {
   if (hookMode !== 'subagent' || !isPartyModeFacilitatorStart(input)) {
     return '';
   }
@@ -586,8 +828,24 @@ function buildPartyModeBootstrapBlock(projectRoot, hookMode, input, resolvedMode
   const bootstrapOptions = extractPartyModeBootstrapOptions(input, inputText, resolvedMode);
   const gateProfileId = resolveStructuredGateProfileSelection(
     bootstrapOptions.gateProfileId,
-    inputText
+    inputText,
+    { requireConfirmedBlock: cursorHost === true }
   );
+  const expectedDocumentPaths = extractExpectedPartyModeDocumentPaths(projectRoot, inputText);
+  const pendingLaunchContract = readActivePendingPartyModeLaunchContract(projectRoot);
+  if (
+    pendingLaunchContract &&
+    typeof pendingLaunchContract.gate_profile_id === 'string' &&
+    pendingLaunchContract.gate_profile_id &&
+    pendingLaunchContract.gate_profile_id !== gateProfileId
+  ) {
+    throw new Error(
+      buildPendingLaunchContractMismatchMessage(
+        pendingLaunchContract.gate_profile_id,
+        gateProfileId
+      )
+    );
+  }
   const cursorGeneralPurposeMode = isCursorPartyModeGeneralPurposeExecution(input, true);
   const normalizedTargetRoundsTotal =
     bootstrapOptions.targetRoundsTotal ?? resolveGateProfileMinRounds(gateProfileId);
@@ -605,6 +863,7 @@ function buildPartyModeBootstrapBlock(projectRoot, hookMode, input, resolvedMode
     ...finalBootstrapOptions,
     gateProfileId,
   });
+  applyCursorPartyModeAgentTurnCapabilityOverride(bootstrap, cursorGeneralPurposeMode);
   const modeDirective = cursorGeneralPurposeMode
     ? `${buildCursorGeneralPurposePartyModeMessage(
         gateProfileId,
@@ -612,32 +871,80 @@ function buildPartyModeBootstrapBlock(projectRoot, hookMode, input, resolvedMode
       )}\n`
     : '';
   persistPartyModeAgentRunState(projectRoot, input, bootstrap);
+  persistPartyModeCurrentSessionState(projectRoot, input, bootstrap, {
+    source: 'subagent_start',
+    hostKind: cursorGeneralPurposeMode ? 'cursor' : 'claude',
+    executionMode: cursorGeneralPurposeMode
+      ? 'cursor_generalPurpose_compat'
+      : 'facilitator_direct',
+    status: 'launched',
+    expected_document_paths: expectedDocumentPaths,
+    expected_document_count: expectedDocumentPaths.length,
+    document_generation_required: expectedDocumentPaths.length > 0,
+  });
+  writePartyModeStartedSidecar(projectRoot, bootstrap, {
+    hostKind: cursorGeneralPurposeMode ? 'cursor' : 'claude',
+    executionMode: cursorGeneralPurposeMode
+      ? 'cursor_generalPurpose_compat'
+      : 'facilitator_direct',
+    status: 'launched',
+    expected_document_paths: expectedDocumentPaths,
+    expected_document_count: expectedDocumentPaths.length,
+    document_generation_required: expectedDocumentPaths.length > 0,
+  });
+  capturePartyModeLaunchPayload(projectRoot, bootstrap.sessionKey, input);
+  clearPendingPartyModeLaunchContract(projectRoot);
+  const bootstrapPayload = cursorGeneralPurposeMode
+    ? {
+        session_key: bootstrap.sessionKey,
+        gate_profile_id: bootstrap.meta.gate_profile_id,
+        closure_level: bootstrap.meta.closure_level,
+        target_rounds_total: bootstrap.meta.target_rounds_total,
+        topic: bootstrap.meta.topic,
+        resolved_mode: bootstrap.meta.resolved_mode,
+        designated_challenger_id: bootstrap.meta.designated_challenger_id,
+        agent_turn_event_source_mode: bootstrap.meta.agent_turn_event_source_mode,
+        host_native_agent_turn_supported: bootstrap.meta.host_native_agent_turn_supported,
+        host_native_agent_turn_reason: bootstrap.meta.host_native_agent_turn_reason,
+        session_log_path: bootstrap.meta.session_log_path,
+        snapshot_path: bootstrap.meta.snapshot_path,
+        convergence_record_path: bootstrap.meta.convergence_record_path,
+        audit_verdict_path: bootstrap.meta.audit_verdict_path,
+        sidecar_started_path: derivePartyModeStartedSidecarPath(projectRoot, bootstrap.sessionKey),
+        sidecar_progress_path: derivePartyModeProgressSidecarPath(projectRoot, bootstrap.sessionKey),
+        sidecar_final_path: derivePartyModeFinalSidecarPath(projectRoot, bootstrap.sessionKey),
+        event_writer_mode: 'host_reconstruction_from_visible_output',
+      }
+    : {
+        session_key: bootstrap.sessionKey,
+        gate_profile_id: bootstrap.meta.gate_profile_id,
+        closure_level: bootstrap.meta.closure_level,
+        batch_index: bootstrap.meta.current_batch_index,
+        batch_start_round: bootstrap.meta.current_batch_start_round,
+        batch_target_round: bootstrap.meta.current_batch_target_round,
+        target_rounds_total: bootstrap.meta.target_rounds_total,
+        checkpoint_window_ms: bootstrap.meta.checkpoint_window_ms,
+        current_batch_status: bootstrap.meta.current_batch_status,
+        topic: bootstrap.meta.topic,
+        resolved_mode: bootstrap.meta.resolved_mode,
+        designated_challenger_id: bootstrap.meta.designated_challenger_id,
+        agent_turn_event_source_mode: bootstrap.meta.agent_turn_event_source_mode,
+        host_native_agent_turn_supported: bootstrap.meta.host_native_agent_turn_supported,
+        host_native_agent_turn_reason: bootstrap.meta.host_native_agent_turn_reason,
+        session_log_path: bootstrap.meta.session_log_path,
+        snapshot_path: bootstrap.meta.snapshot_path,
+        convergence_record_path: bootstrap.meta.convergence_record_path,
+        audit_verdict_path: bootstrap.meta.audit_verdict_path,
+        sidecar_started_path: derivePartyModeStartedSidecarPath(projectRoot, bootstrap.sessionKey),
+        sidecar_progress_path: derivePartyModeProgressSidecarPath(projectRoot, bootstrap.sessionKey),
+        sidecar_final_path: derivePartyModeFinalSidecarPath(projectRoot, bootstrap.sessionKey),
+        checkpoint_json_path: bootstrap.paths.currentBatchCheckpointJsonPath,
+        checkpoint_markdown_path: bootstrap.paths.currentBatchCheckpointMarkdownPath,
+        checkpoint_receipt_path: bootstrap.paths.currentBatchReceiptPath,
+        event_writer_mode: 'host_reconstruction_from_visible_output',
+      };
   return `${modeDirective}Party Mode Session Bootstrap (JSON):\n${JSON.stringify(
-    {
-      session_key: bootstrap.sessionKey,
-      gate_profile_id: bootstrap.meta.gate_profile_id,
-      closure_level: bootstrap.meta.closure_level,
-      batch_index: bootstrap.meta.current_batch_index,
-      batch_start_round: bootstrap.meta.current_batch_start_round,
-      batch_target_round: bootstrap.meta.current_batch_target_round,
-      target_rounds_total: bootstrap.meta.target_rounds_total,
-      checkpoint_window_ms: bootstrap.meta.checkpoint_window_ms,
-      current_batch_status: bootstrap.meta.current_batch_status,
-      topic: bootstrap.meta.topic,
-      resolved_mode: bootstrap.meta.resolved_mode,
-      designated_challenger_id: bootstrap.meta.designated_challenger_id,
-      agent_turn_event_source_mode: bootstrap.meta.agent_turn_event_source_mode,
-      host_native_agent_turn_supported: bootstrap.meta.host_native_agent_turn_supported,
-      host_native_agent_turn_reason: bootstrap.meta.host_native_agent_turn_reason,
-      session_log_path: bootstrap.meta.session_log_path,
-      snapshot_path: bootstrap.meta.snapshot_path,
-      convergence_record_path: bootstrap.meta.convergence_record_path,
-      audit_verdict_path: bootstrap.meta.audit_verdict_path,
-      checkpoint_json_path: bootstrap.paths.currentBatchCheckpointJsonPath,
-      checkpoint_markdown_path: bootstrap.paths.currentBatchCheckpointMarkdownPath,
-      checkpoint_receipt_path: bootstrap.paths.currentBatchReceiptPath,
-      event_writer_mode: 'host_reconstruction_from_visible_output',
-    },
+    bootstrapPayload,
     null,
     2
   )}\n`;
@@ -724,7 +1031,8 @@ async function runtimePolicyInjectCore({ host }) {
     try {
       const gateProfileId = resolveStructuredGateProfileSelection(
         bootstrapOptions.gateProfileId,
-        inputText
+        inputText,
+        { requireConfirmedBlock: cursorHost === true }
       );
       if (cursorHost && !hasCursorPartyModeSelfCheck(inputText)) {
         const errText = buildCursorPartyModeSelfCheckTemplate(gateProfileId);
@@ -735,6 +1043,16 @@ async function runtimePolicyInjectCore({ host }) {
           derivePartyModeIntensityStopReason(errText)
         );
       }
+      writePendingPartyModeLaunchContract(root, {
+        gate_profile_id: gateProfileId,
+        source_tool:
+          typeof input?.tool_name === 'string' && input.tool_name.trim()
+            ? input.tool_name.trim()
+            : 'Agent',
+        source_route: getObservedPartyModeRoute(input),
+        source_prompt_sha256: computePartyModePromptHash(inputText),
+        source_excerpt: buildPartyModePromptExcerpt(inputText),
+      });
     } catch (error) {
       const errText = error && error.message ? error.message : buildIntensitySelectionAskTemplate(inputText);
       return buildPartyModePreToolUseHardStop(
@@ -808,7 +1126,7 @@ async function runtimePolicyInjectCore({ host }) {
   const prefix = rg.jsonBlockPrefix || '本回合 Runtime Governance（JSON）：';
   let bootstrapBlock = '';
   try {
-    bootstrapBlock = buildPartyModeBootstrapBlock(root, hookMode, input, resolvedMode);
+    bootstrapBlock = buildPartyModeBootstrapBlock(root, hookMode, input, resolvedMode, cursorHost);
   } catch (error) {
     const errText = error && error.message ? error.message : String(error);
     if (mode === 'subagent') {

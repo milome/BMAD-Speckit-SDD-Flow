@@ -469,7 +469,9 @@ The complete constraint rules must be followed during execution, see [references
 - Proactively conduct regression testing and avoid covering up functional rollback issues.
 
 **Process Integrity**
-- Long-running scripts such as pytest use `block_until_ms: 0` and poll `terminals/` to check the results.
+- Long-running scripts such as pytest use `block_until_ms: 0` in the background. Polling `terminals/` is allowed **only for ordinary long-running tasks**; **do not** use this rule for party-mode return validation.
+- In Cursor / PowerShell environments, **do not** generate or execute mixed-shell polling commands such as `ls -la`, `mkdir -p`, `dir ... /b`, or `cmd || pwsh` fallback chains. If directory inspection is truly required, use PowerShell-native commands only, such as `Get-ChildItem`, `Test-Path`, and `Get-Content`.
+- For party-mode, the main Agent must **first read** `_bmad-output/party-mode/runtime/current-session.json` and prioritize `visible_output_summary`; **do not** probe `terminals/`, `_bmad-output/party-mode/`, or “whether session files exist” via shell commands before reading the runtime state file.
 - For reference design, check the pre-requirements document/plan document/IMPLEMENTATION_GAPS document.
 - Stopping development work until all outstanding tasks are actually implemented and completed is **prohibited**.
 

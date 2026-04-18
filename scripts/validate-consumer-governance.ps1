@@ -162,6 +162,22 @@ try {
     [ordered]@{ verifiedCount = $required.Count * 2 }
   } | Out-Null
 
+  Run-Step 'verify-party-mode-helper-surfaces' {
+    $required = @(
+      (Join-Path $ConsumerRoot '.cursor/hooks/party-mode-read-current-session.cjs'),
+      (Join-Path $ConsumerRoot '_bmad/runtime/hooks/party-mode-read-current-session.cjs')
+    )
+    $missing = @($required | Where-Object { -not (Test-Path $_) })
+    if ($missing.Count -gt 0) {
+      throw "Missing party-mode helper surfaces: $($missing -join '; ')"
+    }
+    [ordered]@{
+      requiredHelpers = $required
+      consumerScriptsRequired = $false
+      note = 'Consumer validation requires installed hook/runtime helpers and does not require scripts/party-mode-gate-check.ts.'
+    }
+  } | Out-Null
+
   Run-Step 'verify-cli-version' {
     $version = Invoke-External -FilePath 'npx.cmd' -Arguments @('bmad-speckit', 'version') -WorkingDirectory $ConsumerRoot -LogName 'cli-version'
     if ($version.stdout -notmatch 'version') { throw 'CLI version output did not include version text' }

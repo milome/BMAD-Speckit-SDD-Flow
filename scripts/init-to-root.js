@@ -119,6 +119,12 @@ const REGISTERED_AGENT_PROFILES = {
       totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'bmm', 'agents'), path.join(targetDir, '.cursor', 'skills'), targetDir);
       totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'core', 'tasks'), path.join(targetDir, '.cursor', 'skills'), targetDir);
       totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'core', 'skills'), path.join(targetDir, '.cursor', 'skills'), targetDir);
+      const cursorSkillOverridesSrc = path.join(bmadRoot, 'cursor', 'skills');
+      if (fs.existsSync(cursorSkillOverridesSrc)) {
+        console.log('Re-apply Cursor skill overrides', path.relative(targetDir, cursorSkillOverridesSrc), '-> .cursor/skills');
+        copyRecursive(cursorSkillOverridesSrc, path.join(targetDir, '.cursor', 'skills'));
+        totalFiles += countFiles(path.join(targetDir, '.cursor', 'skills'));
+      }
       const crSrc = path.join(targetDir, '_bmad', '_config', 'code-reviewer-config.yaml');
       const crDest = path.join(targetDir, '.cursor', 'agents', 'code-reviewer-config.yaml');
       if (fs.existsSync(crSrc)) {
@@ -289,13 +295,14 @@ const DEPRECATED_TARGET_FILES = [
   '.claude/rules/bmad-bug-auto-party-mode.md',
   '.cursor/rules/bmad-bug-auto-party-mode.mdc',
 ];
+const CRITICAL_RUNTIME_HOOK_FILES = ['party-mode-read-current-session.cjs'];
 
 function sleepMs(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
 function isRetryableCopyError(error) {
-  return error && (error.code === 'EPERM' || error.code === 'EBUSY');
+  return error && (error.code === 'EPERM' || error.code === 'EBUSY' || error.code === 'ENOENT');
 }
 
 function copyFileWithRetry(src, dest, maxAttempts = 20) {
@@ -306,13 +313,45 @@ function copyFileWithRetry(src, dest, maxAttempts = 20) {
       return;
     } catch (error) {
       if (isRetryableCopyError(error) && attempt < maxAttempts - 1) {
-        const delay = Math.min(50 * Math.pow(1.5, attempt), 1000);
+        const delay = Math.min(50 * Math.pow(1.5, attempt), error.code === 'ENOENT' ? 250 : 1000);
         sleepMs(delay);
         continue;
       }
       throw error;
     }
   }
+}
+
+function statPathWithRetry(targetPath, maxAttempts = 20) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      return fs.statSync(targetPath);
+    } catch (error) {
+      if (isRetryableCopyError(error) && attempt < maxAttempts - 1) {
+        const delay = Math.min(50 * Math.pow(1.5, attempt), error.code === 'ENOENT' ? 250 : 1000);
+        sleepMs(delay);
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error(`Unable to stat path after retries: ${targetPath}`);
+}
+
+function readDirWithRetry(targetPath, maxAttempts = 20) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      return fs.readdirSync(targetPath);
+    } catch (error) {
+      if (isRetryableCopyError(error) && attempt < maxAttempts - 1) {
+        const delay = Math.min(50 * Math.pow(1.5, attempt), error.code === 'ENOENT' ? 250 : 1000);
+        sleepMs(delay);
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error(`Unable to read dir after retries: ${targetPath}`);
 }
 
 /**
@@ -359,14 +398,25 @@ function deepMergeSettings(bmadSettings, globalSettings) {
 }
 
 function copyRecursive(src, dest) {
-  const stat = fs.statSync(src);
+  const stat = statPathWithRetry(src);
   if (stat.isDirectory()) {
     if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
-    for (const name of fs.readdirSync(src)) {
+    for (const name of readDirWithRetry(src)) {
       copyRecursive(path.join(src, name), path.join(dest, name));
     }
   } else {
     copyFileWithRetry(src, dest);
+  }
+}
+
+function ensureCriticalRuntimeHookCopies(sourceHooksDir, destHooksDir, logPrefix) {
+  if (!fs.existsSync(sourceHooksDir) || !fs.existsSync(destHooksDir)) return;
+  for (const fileName of CRITICAL_RUNTIME_HOOK_FILES) {
+    const src = path.join(sourceHooksDir, fileName);
+    if (!fs.existsSync(src)) continue;
+    const dest = path.join(destHooksDir, fileName);
+    copyFileWithRetry(src, dest);
+    console.log(`${logPrefix}${fileName}`);
   }
 }
 
@@ -419,6 +469,7 @@ function syncCursorRuntimePolicyHooks(targetDir, bmadRoot) {
   if (fs.existsSync(sharedDir)) {
     copyRecursive(sharedDir, destDir);
     console.log('Sync', path.relative(targetDir, sharedDir), '->', path.join('.cursor', 'hooks'));
+    ensureCriticalRuntimeHookCopies(sharedDir, destDir, 'Force-sync .cursor/hooks/');
   }
 
   const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs', 'post-tool-use.cjs', 'runtime-dashboard-session-start.cjs', 'pre-continue-check.cjs'];
@@ -871,6 +922,13 @@ for (const dir of DIRS) {
     console.warn('Target exists, merging:', dest);
   }
   copyRecursive(src, dest);
+  if (dir === '_bmad') {
+    ensureCriticalRuntimeHookCopies(
+      path.join(src, 'runtime', 'hooks'),
+      path.join(dest, 'runtime', 'hooks'),
+      'Force-sync _bmad/runtime/hooks/'
+    );
+  }
   totalFiles += countFiles(dest);
 }
 

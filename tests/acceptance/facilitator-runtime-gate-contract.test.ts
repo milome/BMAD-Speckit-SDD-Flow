@@ -45,10 +45,14 @@ describe('facilitator runtime gate contract', () => {
       'utf8'
     );
 
+    expect(cursorRuntime).toContain(
+      '_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.en.md'
+    );
+    expect(claudeRuntime).toContain(
+      '_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.en.md'
+    );
+
     for (const runtime of [cursorRuntime, claudeRuntime]) {
-      expect(runtime).toContain(
-        '_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.en.md'
-      );
       expect(runtime).not.toContain(
         '_bmad/core/workflows/party-mode/steps/step-02-discussion-orchestration'
       );
@@ -56,12 +60,13 @@ describe('facilitator runtime gate contract', () => {
     }
 
     expect(cursorRuntime).toContain('generalPurpose-compatible wrapper');
-    expect(cursorRuntime).toContain('NO CHECKPOINTS IN CURSOR');
+    expect(cursorRuntime).toContain('NO MID-RUN PAUSE IN CURSOR');
     expect(cursorRuntime).toContain('CURSOR INLINE FULL-RUN ONLY');
     expect(cursorRuntime).toContain('10/50');
     expect(cursorRuntime).toContain('20/50');
     expect(cursorRuntime).toContain('## Final Gate Evidence');
     expect(cursorRuntime).not.toContain('## Checkpoint <current_round>/<target_rounds_total>');
+    expect(cursorRuntime).not.toMatch(/checkpoint/iu);
 
     expect(claudeRuntime).toContain('## Checkpoint <current_round>/<target_rounds_total>');
     expect(claudeRuntime).toContain('## Final Gate Evidence');
@@ -86,9 +91,9 @@ describe('facilitator runtime gate contract', () => {
     expect(canonical).toContain('designated_challenger_id');
     expect(canonical).toContain('challenger_ratio > 0.60');
     expect(canonical).toContain('_bmad-output/party-mode/sessions/<session_key>.meta.json');
-    expect(canonical).toContain(
-      'scripts/party-mode-gate-check.ts --session-key <session_key> --write-all'
-    );
+    expect(canonical).toContain('.cursor/hooks/party-mode-read-current-session.cjs');
+    expect(canonical).toContain('_bmad/runtime/hooks/party-mode-read-current-session.cjs');
+    expect(canonical).toMatch(/consumer installs must not require a project-root `scripts\/` directory|consumer 安装不得要求项目根存在 `scripts\/` 目录/iu);
     expect(canonical).toContain('_bmad-output/party-mode/evidence/<session_key>.audit.json');
     expect(canonical).toContain('20 / 40 / 60 / 80 / ...');
     expect(canonical).toContain('阶段性进展 checkpoint');
@@ -124,10 +129,11 @@ describe('facilitator runtime gate contract', () => {
 
     for (const content of cursorCarrierPaths.map((carrierPath) => fs.readFileSync(carrierPath, 'utf8'))) {
       expect(content).toContain('generalPurpose-compatible wrapper');
-      expect(content).toContain('NO CHECKPOINTS IN CURSOR');
+      expect(content).toContain('NO MID-RUN PAUSE IN CURSOR');
       expect(content).toContain('CURSOR INLINE FULL-RUN ONLY');
       expect(content).toContain('## Final Gate Evidence');
       expect(content).not.toContain('## Checkpoint <current_round>/<target_rounds_total>');
+      expect(content).not.toMatch(/checkpoint/iu);
     }
   });
 
@@ -146,9 +152,10 @@ describe('facilitator runtime gate contract', () => {
     expect(claudeCarrier).toContain('## Checkpoint <current_round>/<target_rounds_total>');
 
     expect(cursorCarrier).toContain('generalPurpose 兼容执行路径');
-    expect(cursorCarrier).toContain('NO CHECKPOINTS IN CURSOR');
+    expect(cursorCarrier).toContain('NO MID-RUN PAUSE IN CURSOR');
     expect(cursorCarrier).toContain('CURSOR INLINE FULL-RUN ONLY');
     expect(cursorCarrier).not.toContain('BATCH-BOUNDARY HANDOFF ONLY');
     expect(cursorCarrier).not.toContain('## Checkpoint <current_round>/<target_rounds_total>');
+    expect(cursorCarrier).not.toMatch(/checkpoint/iu);
   });
 });

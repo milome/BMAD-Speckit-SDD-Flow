@@ -202,6 +202,9 @@ if (-not $SkipSkills) {
             $dest = Join-Path $skillsRoot $skill
             if ($src) {
                 Write-Output "[2] Copy skill: $skill -> $skillsRoot (from $(Split-Path $src -Parent | Split-Path -Leaf))"
+                if (Test-Path $dest) {
+                    Remove-Item -Path $dest -Recurse -Force
+                }
                 Copy-Item -Path $src -Destination $dest -Recurse -Force
                 if (-not (Test-Path (Join-Path $dest 'SKILL.md'))) {
                     Write-Warning "  $skill - SKILL.md not found after copy"

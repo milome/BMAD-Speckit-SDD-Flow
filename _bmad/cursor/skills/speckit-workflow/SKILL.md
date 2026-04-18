@@ -481,7 +481,9 @@ Batch N: Task ... → 执行 → code-review审计 → 通过
 - 主动进行回归测试，禁止掩盖功能回退问题。
 
 **流程完整性**
-- pytest 等长时间脚本使用 `block_until_ms: 0`，轮询 `terminals/` 检查结果。
+- pytest 等长时间脚本使用 `block_until_ms: 0` 后台运行。**仅对普通长任务**允许轮询 `terminals/` 检查结果；**禁止**把这一规则用于 party-mode 返回判定。
+- 若任务发生在 Cursor / PowerShell 环境中，**禁止**生成或执行混合 shell 命令（如 `ls -la`、`mkdir -p`、`dir ... /b`、`cmd || pwsh`）。如确需查看 `terminals/`，只能使用 PowerShell 原生命令（如 `Get-ChildItem`、`Test-Path`、`Get-Content`）。
+- 对 party-mode，返回后**必须先读取** `_bmad-output/party-mode/runtime/current-session.json`，并优先读取 `visible_output_summary`；**禁止**先用 shell 探测 `terminals/`、`_bmad-output/party-mode/` 或“session 文件是否存在”来判定完成/失败。
 - 如需参考设计，查看前置需求文档/plan文档/IMPLEMENTATION_GAPS文档。
 - 在所有未完成任务真正实现并完成之前**禁止**停止开发工作。
 

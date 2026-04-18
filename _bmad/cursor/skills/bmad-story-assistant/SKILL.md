@@ -13,17 +13,18 @@ description: |
 
 # BMAD Story 助手
 
-> **Party-mode source of truth**：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。所有 party-mode 的 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 只定义 Story 场景何时进入 party-mode，不得维护第二套 gate 语义。
+> **Party-mode source of truth（Cursor）**：`{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。Cursor 分支的 party-mode rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 只定义 Story 场景何时进入 party-mode，不得维护第二套 gate 语义。
 
 ### Party-Mode 主 Agent 编排约束（Cursor）
 
 - 进入 Cursor party-mode 前，主 Agent 必须先向用户展示 `20 / 50 / 100` 三档强度，并按请求类型推断默认值。
-- 普通 RCA / 方案分析默认 `decision_root_cause_50`；Create Story / Story 设计定稿 / 最终任务列表等高置信最终产物默认 `final_solution_task_list_100`。
+- 普通 RCA / 方案分析推荐 `decision_root_cause_50`；Create Story / Story 设计定稿 / 最终任务列表等高置信最终产物推荐 `final_solution_task_list_100`。**注意：推荐档位不等于用户已选档位；未收到用户明确回复前，主 Agent 不得把推荐档位写成“已选择”。**
+- 当主 Agent 展示档位选项时，该条消息必须停在提问处，等待下一条用户回复。**禁止**同一条助手消息里同时出现「请确认选择哪个档位」与「或按推荐档位开始」「现在启动 party-mode-facilitator」之类自动发起表述。
 - `quick_probe_20` 仅用于 probe-only；若用户当前选择 `quick_probe_20` 或 `decision_root_cause_50`，却又明确要求高置信最终产物，主 Agent 必须拒绝当前档位并要求升级到 `final_solution_task_list_100`。
 - 用户选择档位后，主 Agent **必须**完成发起前自检清单并输出 `【自检完成】...可以发起。`
 - Session Bootstrap JSON 由宿主在 `SubagentStart` 注入，主 Agent 不得省略该执行链。
-- Cursor 分支中**不使用 checkpoints**，也不在 `20 / 40 / ...` 轮次暂停交还主 Agent；子代理一旦启动，必须在同一会话内连续运行到用户选择的总轮次。
-- 若 party-mode 子代理在 `22/50`、`10/50` 等中途轮次提前结束，主 Agent **不得**自行续写讨论或从 Round 1 重新开始总结，必须沿用同一轮次与同一 gate profile 立即重发 facilitator。
+- Cursor 分支中不做中途暂停，也不在 `20 / 40 / ...` 轮次交还主 Agent；子代理一旦启动，必须在同一会话内连续运行到用户选择的总轮次。
+- 若 party-mode 子代理在 `22/50`、`10/50` 等中途轮次提前结束，主 Agent **不得**自行续写讨论或从 Round 1 重新开始总结。返回后必须**先读取** `_bmad-output/party-mode/runtime/current-session.json`，并以该文件作为唯一检查入口；**禁止**按修改时间猜测“最新 `pm-*` 会话”。检查顺序固定为：① `validation_status`、`status`、`session_key`、`target_rounds_total`；② **优先读取** `visible_output_summary` 与 `visible_fragment_record_present`，先看 `observed_visible_round_count`、`first_visible_round`、`last_visible_round`、`progress_current_round`、`progress_target_round`、`final_gate_present`、`final_gate_profile`、`final_gate_total_rounds`、`excerpt`；③ **仅在需要深挖时**再读取 `session_log_path`、`snapshot_path`、`audit_verdict_path`、`visible_output_capture_path`。**禁止**在读取 `visible_output_summary` 之前先翻 `session log` 或 `tool-result.md`。若 `validation_status != PASS` 或未达到用户选择的总轮次，必须沿用同一轮次与同一 gate profile 立即重发 facilitator。
 - 在当前 Cursor IDE 中，party-mode-facilitator 允许通过 `generalPurpose-compatible` 执行路径承载；`.cursor/agents/party-mode-facilitator.md` 仍是 canonical prompt/source asset，宿主必须在 `SubagentStart` 注入 `Party Mode Session Bootstrap (JSON)`。
 
 ## 快速决策指引
@@ -577,7 +578,7 @@ prompt: |
   **强制约束**：
   - 创建 story 文档必须使用明确描述，禁止使用本 skill「§ 禁止词表（Story 文档）」中的词（可选、可考虑、后续、先实现、后续扩展、待定、酌情、视情况、技术债）。
   - 当功能不在本 Story 范围但属本 Epic 时，须写明「由 Story X.Y 负责」及任务具体描述；确保 X.Y 存在且 scope 含该功能（若 X.Y 不存在，审计将判不通过并建议创建）。禁止「先实现 X，或后续扩展」「其余由 X.Y 负责」等模糊表述。
-  - **party-mode 强制**：无论 Epic/Story 文档是否已存在，只要涉及以下任一情形，**必须**进入 party-mode 进行多角色辩论：① 有多个实现方案可选；② 存在架构/设计决策或 trade-off；③ 方案或范围存在歧义或未决点。主 Agent 在发起前必须先展示 `20 / 50 / 100` 强度选项、等待用户选择、完成发起前自检，并由宿主在 `SubagentStart` 注入 `Party Mode Session Bootstrap (JSON)`。若要形成 Story 设计定稿或最终任务列表，默认 `final_solution_task_list_100`（100 轮）；仅普通分析可默认 `decision_root_cause_50`（50 轮）；`quick_probe_20` 不得用于定稿。**禁止**以「Epic 已存在」「Story 已生成」为由跳过 party-mode。Cursor 分支中**不使用 checkpoints**，子代理一旦启动，必须在同一会话内连续运行到用户选择的总轮次；若中途提前结束，必须沿用同一总轮次与同一 gate profile 立即重发 facilitator。
+  - **party-mode 强制**：无论 Epic/Story 文档是否已存在，只要涉及以下任一情形，**必须**进入 party-mode 进行多角色辩论：① 有多个实现方案可选；② 存在架构/设计决策或 trade-off；③ 方案或范围存在歧义或未决点。主 Agent 在发起前必须先展示 `20 / 50 / 100` 强度选项、等待用户选择、完成发起前自检，并由宿主在 `SubagentStart` 注入 `Party Mode Session Bootstrap (JSON)`。若要形成 Story 设计定稿或最终任务列表，默认 `final_solution_task_list_100`（100 轮）；仅普通分析可默认 `decision_root_cause_50`（50 轮）；`quick_probe_20` 不得用于定稿。**禁止**以「Epic 已存在」「Story 已生成」为由跳过 party-mode。Cursor 分支中不做中途暂停或分批回传；子代理一旦启动，必须在同一会话内连续运行到用户选择的总轮次；若中途提前结束，必须沿用同一总轮次与同一 gate profile 立即重发 facilitator。
   - 全程必须使用中文。
 ```
 

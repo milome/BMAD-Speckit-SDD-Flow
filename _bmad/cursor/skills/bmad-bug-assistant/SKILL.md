@@ -1,7 +1,7 @@
 ---
 name: bmad-bug-assistant
 description: |
-  BMAD Bug 助手：按「根因分析 → BUGFIX 文档 → 审计 → 任务列表补充 → 实施 → 实施后审计」执行 BUG 修复全流程。主 Agent 发起任一子任务时**必须**将本 skill 内该阶段的「完整 prompt 模板」整段复制并填入占位符后传入，禁止省略、概括或自行改写提示词；主 Agent 禁止直接修改生产代码，实施须通过 mcp_task 子代理。进入 Cursor party-mode 前必须先展示 `20 / 50 / 100` 强度选项，等待用户选择后完成发起前自检，并由宿主在 `SubagentStart` 注入 `Party Mode Session Bootstrap (JSON)`。普通 RCA / 方案分析默认 `decision_root_cause_50`，BUGFIX 最终方案与 §7 默认 `final_solution_task_list_100`。`quick_probe_20` 仅用于 probe-only；若当前档位不足以产出高置信最终产物，主 Agent 必须拒绝当前档位并要求升级到 `final_solution_task_list_100`。Cursor 分支中不使用 checkpoints；子代理一旦启动，必须在同一会话内连续运行至用户选择的总轮次。审计优先 code-reviewer，回退 mcp_task。遵循 ralph-method、TDD 红绿灯、speckit-workflow。适用场景：用户报告 BUG、要求根因分析、生成/更新 BUGFIX 文档、补充 §7 任务列表、实施 BUGFIX。全程中文。
+  BMAD Bug 助手：按「根因分析 → BUGFIX 文档 → 审计 → 任务列表补充 → 实施 → 实施后审计」执行 BUG 修复全流程。主 Agent 发起任一子任务时**必须**将本 skill 内该阶段的「完整 prompt 模板」整段复制并填入占位符后传入，禁止省略、概括或自行改写提示词；主 Agent 禁止直接修改生产代码，实施须通过 mcp_task 子代理。进入 Cursor party-mode 前必须先展示 `20 / 50 / 100` 强度选项，等待用户选择后完成发起前自检，并由宿主在 `SubagentStart` 注入 `Party Mode Session Bootstrap (JSON)`。普通 RCA / 方案分析默认 `decision_root_cause_50`，BUGFIX 最终方案与 §7 默认 `final_solution_task_list_100`。`quick_probe_20` 仅用于 probe-only；若当前档位不足以产出高置信最终产物，主 Agent 必须拒绝当前档位并要求升级到 `final_solution_task_list_100`。Cursor 分支中不做中途暂停或分批回传；子代理一旦启动，必须在同一会话内连续运行至用户选择的总轮次。审计优先 code-reviewer，回退 mcp_task。遵循 ralph-method、TDD 红绿灯、speckit-workflow。适用场景：用户报告 BUG、要求根因分析、生成/更新 BUGFIX 文档、补充 §7 任务列表、实施 BUGFIX。全程中文。
 ---
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
 > Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
@@ -10,14 +10,15 @@ description: |
 # BMAD Bug 助手
 
 > **【必读】使用本 skill 前，必须先读取并遵守 `{project-root}/.cursor/rules/bmad-bug-assistant.mdc` 中的自检规则。**发起 mcp_task 或 party-mode 子任务前，须完成该阶段「发起前自检清单」全部项并输出自检结果，否则不得发起。
-> **Party-mode source of truth**：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。所有 party-mode 的 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 不得定义第二套 gate 语义。
+> **Party-mode source of truth（Cursor）**：`{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。Cursor 分支的 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 不得定义第二套 gate 语义。
 
 ## Party-Mode 主 Agent 编排约束（Cursor）
 
 - 正确流程固定为：`展示 20 / 50 / 100 强度选项 → 用户选择 → 完成发起前自检清单 → 输出自检结果 → 由宿主在 SubagentStart 注入 Session Bootstrap JSON → 发起 party-mode-facilitator 子代理`。
-- 普通 RCA / 方案分析默认 `decision_root_cause_50`；需要 BUGFIX §7 / 最终方案 / 最终任务列表等高置信最终产物时默认 `final_solution_task_list_100`。
+- 普通 RCA / 方案分析推荐 `decision_root_cause_50`；需要 BUGFIX §7 / 最终方案 / 最终任务列表等高置信最终产物时推荐 `final_solution_task_list_100`。**注意：这只是推荐档位，不是用户已选档位；主 Agent 必须等待用户明确回复后，才可写入 `【自检完成】`。**
+- 当主 Agent 展示档位选项时，该条消息必须停在提问处，等待下一条用户回复。**禁止**同一条助手消息里同时出现「请确认选择哪个档位」与「或按推荐档位开始」「现在启动 party-mode-facilitator」之类自动发起表述。
 - `quick_probe_20` 仅用于 probe-only；若用户当前选择 `quick_probe_20` 或 `decision_root_cause_50`，却又明确要求高置信最终产物，主 Agent 必须拒绝当前档位并要求升级到 `final_solution_task_list_100`。
-- Cursor 分支中**不使用 checkpoints**，也不在 `20 / 40 / ...` 轮次暂停交还主 Agent；子代理一旦启动，必须在同一会话内连续运行到用户选择的总轮次。
+- Cursor 分支中不做中途暂停，也不在 `20 / 40 / ...` 轮次交还主 Agent；子代理一旦启动，必须在同一会话内连续运行到用户选择的总轮次。
 
 本 skill 定义 **根因分析 → BUGFIX 文档 → 审计 →（可选）信息补充更新 → 任务列表补充 → 实施 → 实施后审计** 的完整工作流。**实施前的 `auditor-bugfix` 属于 BUGFIX 文档审计，且必须先于任何修复实现执行。** **实施后审计为必须步骤，非可选。**未通过时必须按修改建议修复后再次审计，直至通过。
 
@@ -26,7 +27,7 @@ description: |
 1. **全程使用中文**：所有产出（BUGFIX 文档、任务列表、审计报告、子任务 prompt）及与用户的交互均使用中文。
 2. **party-mode 子代理**：在当前 Cursor IDE 中，允许通过 `generalPurpose` 兼容执行路径承载 **party-mode-facilitator** 合同；`.cursor/agents/party-mode-facilitator.md` 作为 canonical prompt/source asset 使用，宿主在 `SubagentStart` 负责注入 `Party Mode Session Bootstrap (JSON)`。使用 party-mode 时须按下方「BMAD Agent 展示名与命令对照」及各阶段的「推荐 Agent」引入角色；**禁止**跳过多角色辩论或改用单角色。
 3. **party-mode 发起前硬门槛（Cursor 专用）**：主 Agent 在发起 Cursor party-mode 前，必须先完成以下步骤：① 展示 `20 / 50 / 100` 选项；② 等待用户明确选择；③ 完成发起前自检清单；④ 输出 `【自检完成】...可以发起。` 自检结果。缺少任一步骤都不得发起子代理。
-4. **party-mode 返回合法性检查（Cursor 专用）**：由于 Cursor 当前无 `SubagentStop` hook，主 Agent 在 party-mode 子代理返回后，必须检查其是否已达到用户选择的总轮次，并输出最终总结 / `## Final Gate Evidence`。若在 `22/50`、`10/50` 等中途轮次提前结束，主 Agent **不得**自行续写讨论、不得从 Round 1 重新开始总结，必须沿用同一轮次与同一 gate profile 立即重发 facilitator。
+4. **party-mode 返回合法性检查（Cursor 专用）**：由于 Cursor 当前无 `SubagentStop` hook，主 Agent 在 party-mode 子代理返回后，必须**先读取** `_bmad-output/party-mode/runtime/current-session.json`，并且**只允许**按该文件检查当前 run；**禁止**按修改时间猜测“最新 `pm-*` 会话”。检查顺序固定为：① `validation_status`、`status`、`session_key`、`target_rounds_total`；② **优先读取** `visible_output_summary` 与 `visible_fragment_record_present`，用其中的 `observed_visible_round_count`、`first_visible_round`、`last_visible_round`、`progress_current_round`、`progress_target_round`、`final_gate_present`、`final_gate_profile`、`final_gate_total_rounds`、`excerpt` 判断本次返回是否只是提前退出或尾段可见输出；③ **仅在需要深挖时**再读取 `session_log_path`、`snapshot_path`、`audit_verdict_path`、`visible_output_capture_path`。**禁止**在读取 `visible_output_summary` 之前先翻 `session log` 或 `tool-result.md`。若 `current-session.json` 显示本次 run 未达到用户选择的总轮次，或 `validation_status != PASS`，或返回内容缺少最终总结 / `## Final Gate Evidence`，主 Agent **不得**自行续写讨论、不得从 Round 1 重新开始总结，必须沿用同一轮次与同一 gate profile 立即重发 facilitator。
 5. **主 Agent 禁止直接改生产代码**：实施修复必须通过子代理执行；主 Agent 仅发起子任务、传入文档路径、收集输出。
 6. **主 Agent 禁止直接生成 BUGFIX 文档**：阶段一、二的 BUGFIX 文档（含 §1–§5）必须由 party-mode 或 mcp_task 子代理产出；主 Agent 不得以「已有分析文档」「根因已共识」等为由跳过子代理并自行撰写 BUGFIX 文档。
 7. **凡更新必审计**：凡产出或更新 BUGFIX 文档（含 §4、§7），完成后**必须**发起审计子任务并迭代至通过；**禁止**省略审计步骤。无论是否经过辩论，审计闭环为必做项。
@@ -62,7 +63,7 @@ description: |
 
 | 资源 | 路径/说明 |
 | ---- | --------- |
-| **party-mode** | `{project-root}/_bmad/core/skills/bmad-party-mode/`；所有 rounds / challenger ratio / recovery / evidence / exit gate 规则以 core step-02 为准（BUGFIX 产出最终方案与 §7 任务列表：100 轮；其它：50 轮）。 |
+| **party-mode** | `{project-root}/_bmad/cursor/skills/bmad-party-mode/`；Cursor 分支的 rounds / challenger ratio / recovery / evidence / exit gate 规则以 Cursor step-02 override 为准（BUGFIX 产出最终方案与 §7 任务列表：100 轮；其它：50 轮）。 |
 | **party-mode-facilitator 子代理** | `.cursor/agents/party-mode-facilitator.md`；优先 Cursor Task 调度，用户可见完整辩论；找不到则用 `mcp_task` + `generalPurpose` |
 | **code-reviewer 子代理** | `.claude/agents/code-reviewer.md` 或 `.cursor/agents/code-reviewer.md`；找不到则用 `mcp_task` 调用 `generalPurpose` |
 | **auditor-bugfix** | BUGFIX 文档审计执行体；属于实施前硬门槛，**必须先于修复实现通过** |
@@ -217,7 +218,7 @@ description: |
 
 **产出要求**：
 1. 根因结论（一段话，无歧义）。
-2. 生成 BUGFIX 文档，包含：§1 问题描述、§2 根因分析、§3 影响范围、§4 修复方案（须为明确描述，禁止使用本 skill「§ 禁止词表」中的词：可选、可考虑、后续、待定、酌情、视情况、后续迭代）、§5 验收标准。保存至 _bmad-output/ 或 bugfix/。
+2. 生成 BUGFIX 文档，包含：§1 问题描述、§2 根因分析、§3 影响范围、§4 修复方案（须为明确描述，禁止使用本 skill「§ 禁止词表」中的词：可选、可考虑、后续、待定、酌情、视情况、后续迭代）、§5 验收标准。必须写入明确的 canonical BUGFIX 文档路径。
 3. 全程使用中文。
 ```
 

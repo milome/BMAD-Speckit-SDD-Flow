@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   resolveCanonicalPartyModeAsset,
+  resolveCursorPartyModeAsset,
   resolveFacilitatorSourceAsset,
   resolvePartyModeSpeakerProfile,
 } from '../../scripts/i18n/party-mode-runtime-assets';
@@ -45,6 +46,21 @@ describe('party-mode runtime assets', () => {
     const claude = resolveFacilitatorSourceAsset(process.cwd(), 'claude', 'en');
     expect(claude.resolvedRelativePath).toBe('_bmad/claude/agents/party-mode-facilitator.en.md');
     expect(claude.variant).toBe('en');
+  });
+
+  it('resolves the Cursor-specific step-02 override instead of the core checkpoint-bearing step-02', () => {
+    const cursorStep02 = resolveCursorPartyModeAsset(
+      process.cwd(),
+      'step-02-discussion-orchestration',
+      'zh'
+    );
+    expect(cursorStep02.baseRelativePath).toBe(
+      '_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md'
+    );
+    expect(cursorStep02.resolvedRelativePath).toBe(
+      '_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.zh.md'
+    );
+    expect(cursorStep02.variant).toBe('zh');
   });
 
   it('exposes localized speaker display profiles for party-mode consumers', () => {

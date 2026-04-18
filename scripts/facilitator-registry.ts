@@ -7,6 +7,7 @@ import {
 } from './reviewer-contract';
 import {
   resolveCanonicalPartyModeAsset,
+  resolveCursorPartyModeAsset,
   resolveFacilitatorSourceAsset,
 } from './i18n/party-mode-runtime-assets';
 import type { LocalizedMarkdownResolvedMode } from './i18n/resolve-localized-markdown-path';
@@ -84,11 +85,18 @@ export function resolveFacilitatorRuntimeBindings(
     facilitator: resolveFacilitatorSourceAsset(projectRoot, host, resolvedMode),
     workflow: resolveCanonicalPartyModeAsset(projectRoot, 'workflow', resolvedMode),
     step01: resolveCanonicalPartyModeAsset(projectRoot, 'step-01-agent-loading', resolvedMode),
-    step02: resolveCanonicalPartyModeAsset(
-      projectRoot,
-      'step-02-discussion-orchestration',
-      resolvedMode
-    ),
+    step02:
+      host === 'cursor'
+        ? resolveCursorPartyModeAsset(
+            projectRoot,
+            'step-02-discussion-orchestration',
+            resolvedMode
+          )
+        : resolveCanonicalPartyModeAsset(
+            projectRoot,
+            'step-02-discussion-orchestration',
+            resolvedMode
+          ),
     step03: resolveCanonicalPartyModeAsset(projectRoot, 'step-03-graceful-exit', resolvedMode),
   };
 }

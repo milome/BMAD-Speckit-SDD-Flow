@@ -355,7 +355,10 @@ function buildIntensitySelectionAskTemplate(inputText) {
     '',
     `推荐档位：\`${recommended}\``,
     '必须等待用户明确回复 `20` / `50` / `100` 后再继续。',
+    '提问消息必须停在这里，等待下一条用户回复。',
+    '禁止在同一条助手消息中追加「或按推荐档位开始」「现在启动」「我将开始多角色讨论」等自动发起表述。',
     '优先方式：将所选档位显式传入 `gateProfileId` / `gate_profile_id`。',
+    '注意：`推荐档位` / `默认档位` 不是用户授权，禁止直接写成“已选择档位”。',
     '若当前 Agent tool 无法透传该字段，则必须在 prompt 中加入专用确认块，例如：',
     '## 用户选择',
     '强度: 50 (decision_root_cause_50)',
@@ -387,6 +390,27 @@ function buildIntensitySelectionRetryTemplate(gateProfileId) {
   ].join('\n');
 }
 
+function buildStructuredSelectionNeedsConfirmationTemplate(gateProfileId) {
+  const profileLabel =
+    gateProfileId === 'quick_probe_20'
+      ? '20 (quick_probe_20)'
+      : gateProfileId === 'final_solution_task_list_100'
+        ? '100 (final_solution_task_list_100)'
+        : '50 (decision_root_cause_50)';
+  return [
+    'Party-Mode preflight: structured gate profile was present, but there is still no authoritative proof that the user explicitly chose the intensity.',
+    '当前 payload 中的 `gateProfileId` / `gate_profile_id` 只能承载“用户已确认”的结果，不能替代用户授权本身。',
+    '不要把推荐档位 / 默认档位 / 自检中的“已选择档位”当作用户回复。',
+    '若当前消息仍在询问用户档位，则本条助手消息必须停在问题处，禁止同条消息里继续写「现在启动」「开始多角色讨论」。',
+    '',
+    '请先向用户展示 20 / 50 / 100 选项并等待其明确回复；若你其实已经拿到用户回复，则必须把该回复编译进专用确认块：',
+    '## 用户选择',
+    `强度: ${profileLabel}`,
+    '',
+    '只有在当前 payload 中出现上述确认块后，才允许继续发起 facilitator。',
+  ].join('\n');
+}
+
 function buildPartyModeContractViolationMessage(inputText) {
   const recommended = inferGateProfileId(inputText);
   return [
@@ -408,8 +432,29 @@ function resolveExplicitGateProfileSelection(providedGateProfileId, inputText) {
   return resolved;
 }
 
-function resolveStructuredGateProfileSelection(providedGateProfileId, inputText) {
-  const resolved = providedGateProfileId || detectConfirmedGateProfileId(inputText);
+function resolveStructuredGateProfileSelection(providedGateProfileId, inputText, options = {}) {
+  const confirmed = detectConfirmedGateProfileId(inputText);
+  const requireConfirmedBlock = options.requireConfirmedBlock === true;
+  if (requireConfirmedBlock) {
+    if (confirmed) {
+      if (providedGateProfileId && providedGateProfileId !== confirmed) {
+        throw new Error(
+          `Structured gate profile ${providedGateProfileId} mismatches confirmed user selection ${confirmed}`
+        );
+      }
+      assertGateProfileSelectionAllowed(confirmed, inputText);
+      return confirmed;
+    }
+    if (providedGateProfileId) {
+      throw new Error(buildStructuredSelectionNeedsConfirmationTemplate(providedGateProfileId));
+    }
+    const explicit = detectExplicitGateProfileId(inputText);
+    if (explicit && hasAcknowledgedUserSelection(inputText)) {
+      throw new Error(buildIntensitySelectionRetryTemplate(explicit));
+    }
+    throw new Error(buildIntensitySelectionAskTemplate(inputText));
+  }
+  const resolved = providedGateProfileId || confirmed;
   if (!resolved) {
     const explicit = detectExplicitGateProfileId(inputText);
     if (explicit && hasAcknowledgedUserSelection(inputText)) {
@@ -1060,6 +1105,7 @@ module.exports = {
   assertGateProfileSelectionAllowed,
   buildIntensitySelectionAskTemplate,
   buildIntensitySelectionRetryTemplate,
+  buildStructuredSelectionNeedsConfirmationTemplate,
   buildPartyModeContractViolationMessage,
   buildIntensitySelectionPreflightMessage,
   detectExplicitGateProfileId,

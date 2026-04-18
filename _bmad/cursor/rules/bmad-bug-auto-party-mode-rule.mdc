@@ -27,7 +27,8 @@ alwaysApply: true
 1. **自动发起 party-mode**  
    主 Agent 在识别到「用户描述问题」后，**第一条实质性回复**必须声明进入 party-mode（或等效表述），并说明将进行多角色辩论（目标：根因分析 + BUGFIX 文档）。不等待用户再说「用 party-mode」。
    - 进入 party-mode 前，必须先展示 `20 / 50 / 100` 三档强度。  
-   - 普通 RCA / 方案分析默认 `decision_root_cause_50`；若当前轮要产出 BUGFIX 最终方案与 §7，则默认 `final_solution_task_list_100`。  
+   - 普通 RCA / 方案分析推荐 `decision_root_cause_50`；若当前轮要产出 BUGFIX 最终方案与 §7，则推荐 `final_solution_task_list_100`。**推荐档位不构成用户授权；未收到用户明确回复前，主 Agent 不得把推荐档位写成“已选择档位”。**  
+   - 当主 Agent 展示档位选项时，该条消息必须停在提问处。**禁止**同一条助手消息里同时出现「请确认选择哪个档位」与「或按推荐档位开始」「现在启动 party-mode-facilitator」之类自动发起表述。  
    - `quick_probe_20` 仅用于 probe-only；若用户当前选择 `quick_probe_20` 或 `decision_root_cause_50`，却又明确要求高置信最终产物，主 Agent 必须拒绝当前档位并要求升级到 `final_solution_task_list_100`。  
 
 2. **执行 party-mode 与角色约束**  
@@ -40,9 +41,11 @@ alwaysApply: true
    - 必须先展示 `20 / 50 / 100`，等待用户明确选择。  
    - 发起前必须完成自检清单并输出自检结果。  
    - Session Bootstrap JSON 由宿主在 `SubagentStart` 注入。  
-   - Cursor 分支中**不使用 checkpoints**，也不在 `20 / 40 / ...` 轮次把控制权交还主 Agent。  
+   - Cursor 分支中不做中途暂停，也不在 `20 / 40 / ...` 轮次把控制权交还主 Agent。  
    - 一旦子代理启动，必须在同一会话内执行到用户选择的总轮次（普通决策/根因为至少 50 轮；高置信最终产物为至少 100 轮）。  
-   - 若子代理在中途轮次（如 `22/50`）提前结束，主 Agent 不得自行续写讨论，必须沿用同一轮次与同一 gate profile 立即重发 facilitator。  
+  - 若子代理在中途轮次（如 `22/50`）提前结束，主 Agent 不得自行续写讨论。返回后必须先**单独运行** `node .cursor/hooks/party-mode-read-current-session.cjs --project-root "{project-root}"`；**禁止**把 fallback helper 拼成同一条 shell 命令，**禁止**使用 `||`、`2>&null`、`2>/dev/null`、`cmd /c`、`pwsh -c` 等回退链。仅当 `.cursor/hooks/party-mode-read-current-session.cjs` 真实不存在，或该单条命令明确返回 `MODULE_NOT_FOUND` / `ENOENT` 且指向 helper 文件本身时，才允许在**第二步单独运行** `node _bmad/runtime/hooks/party-mode-read-current-session.cjs --project-root "{project-root}"`。该 helper 会先读取 `_bmad-output/party-mode/runtime/current-session.json`，并输出统一的 JSON 诊断摘要。主 Agent 以该 helper 的 JSON 输出作为唯一检查入口；禁止按修改时间猜测“最新 `pm-*` 会话”。检查顺序固定为：先看 `validation_status`、`status`、`session_key`、`target_rounds_total`，再先看 `execution_evidence_level`。该字段固定为 `none|pending|partial|final`：`none` 表示当前 run 没有任何可见执行证据；`pending` 表示已有启动/进行中证据，当前 run 仍视为活跃；`partial` 表示已有部分执行证据，但还没有最终阶段 verdict；`final` 表示已有最终阶段证据或最终 verdict。之后再**优先读取** `visible_output_summary` 与 `visible_fragment_record_present`，并检查 `diagnostic_classification`、`quality_flags` 判断是「真正提前退出 / 尾段可见输出 / 机械占位符 / completion stub」中的哪一种；仅在需要深挖时再读取 `session_log_path`、`audit_verdict_path`、`visible_output_capture_path`。禁止在读取 `visible_output_summary` 之前先翻 `session log` 或 `tool-result.md`，也禁止使用 `ls -la`、`mkdir -p`、`dir ... /b`、`2>/dev/null` 一类目录/文件探测命令。**同样禁止**先去探测 Cursor 的 `terminals/`、`agent-transcripts/` 或其派生目录来判断 party-mode 是否成功。若 `diagnostic_classification=degenerate_placeholder_completion`，主 Agent 只能报告「结构完成但内容退化」，不得误判为 transport / Task tool 失效；若 `diagnostic_classification=stub_only_completion`，主 Agent 只能报告「该轮仅返回 completion stub」，不得仅凭这一轮上升为“当前环境的 Task tool 无法正确处理复杂的多轮 party-mode facilitator 任务”。只有当 `execution_evidence_level=none` 时，才允许进一步怀疑 transport / host 执行链失效。若 `validation_status != PASS` 或未达到用户选择的总轮次，必须沿用同一轮次与同一 gate profile 立即重发 facilitator。  
+  - 若 helper 输出 `recovered_from_newer_launch = true` 或 `pending_launch_evidence_present = true`，主 Agent 必须将当前 helper 结果解释为“存在更新的 pending / active launch”，不得再把更旧 completed session 作为本次 run 的结果做总结、失败归因或结束判定。  
+  - RCA 固定解释：以前“看起来更稳定”，并不等于以前更健康。早期 party-mode 返回判定更宽松，很多低质量输出会被默认吞掉；现在问题更显眼，一部分是旧问题从隐性变显性，另一部分才是近期治理链路新增状态面后引入的新回归。**禁止**主 Agent 把这两类原因混写成“Task tool / 当前环境全局无法处理 party-mode”。  
 
 4. **产出 BUGFIX 文档**  
    辩论收敛后，**必须**生成一份 BUGFIX 文档，包含：§1 现象/问题描述、§2 根因分析、§3 依据/参考（可选）、§4 修复方案、§5 流程/建议流程（可选）、§7 最终任务列表。路径：有 story 时 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/BUGFIX_{slug}.md`；无 story 时 `_bmad-output/implementation-artifacts/_orphan/BUGFIX_{slug}.md`。格式与禁止词表等与 bmad-bug-assistant 约定一致。

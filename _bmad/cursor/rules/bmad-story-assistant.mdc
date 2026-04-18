@@ -72,6 +72,25 @@ tool: mcp_task
 subagent_type: generalPurpose
 ```
 
+### Party-Mode 返回检查（Cursor）
+
+- 若 Cursor party-mode 子代理返回，主 Agent 必须先**单独运行** `node .cursor/hooks/party-mode-read-current-session.cjs --project-root "{project-root}"`；**禁止**把 fallback helper 拼成同一条 shell 命令，**禁止**使用 `||`、`2>&null`、`2>/dev/null`、`cmd /c`、`pwsh -c` 等回退链。仅当 `.cursor/hooks/party-mode-read-current-session.cjs` 真实不存在，或该单条命令明确返回 `MODULE_NOT_FOUND` / `ENOENT` 且指向 helper 文件本身时，才允许在**第二步单独运行** `node _bmad/runtime/hooks/party-mode-read-current-session.cjs --project-root "{project-root}"`；该 helper 会先读取 `_bmad-output/party-mode/runtime/current-session.json`。
+- 主 Agent 必须先读取 helper 输出中的 `execution_evidence_level`。该字段固定为 `none|pending|partial|final`：`none` 表示当前 run 没有任何可见执行证据；`pending` 表示已有启动/进行中证据，当前 run 仍视为活跃；`partial` 表示已有部分执行证据，但还没有最终阶段 verdict；`final` 表示已有最终阶段证据或最终 verdict。在此之后，再读取 `visible_output_summary` 与 `visible_fragment_record_present`，并根据 `observed_visible_round_count`、`first_visible_round`、`last_visible_round`、`progress_current_round`、`progress_target_round`、`final_gate_present`、`final_gate_profile`、`final_gate_total_rounds`、`diagnostic_classification`、`quality_flags`、`excerpt` 判断当前返回是完整完成、尾段可见、机械占位，还是仅返回 completion stub。
+- 若 helper 输出 `diagnostic_classification=degenerate_placeholder_completion`，主 Agent 只能表述为「结构完成但内容退化」，不得误写成“提前退出”；若 helper 输出 `diagnostic_classification=stub_only_completion`，主 Agent 只能表述为「本轮只返回 completion stub」，不得仅凭这一轮上升为“Task tool 全局无法处理 party-mode”。
+- 若 helper 输出 `recovered_from_newer_launch = true` 或 `pending_launch_evidence_present = true`，主 Agent 必须把它解释为**当前有更新的 pending / active launch**，不得继续读取更旧的 completed session 并把它当成当前 Story run 的结果。
+- 若 helper 输出 `execution_evidence_level = none`，主 Agent 只能报告「当前 run 缺少可见执行证据，暂时不可验证」；只有这种 `none` 场景，才允许进一步怀疑 transport / host 执行链失效。
+- **禁止**在读取 `visible_output_summary` 之前先翻 `session log` 或 `tool-result.md`；也**禁止**使用 `ls -la`、`mkdir -p`、`dir ... /b`、`2>/dev/null` 一类目录/文件探测命令。**同样禁止**先去探测 Cursor 的 `terminals/`、`agent-transcripts/` 或其派生目录来判断 party-mode 是否成功。只有在需要深挖时才读取 `session_log_path`、`audit_verdict_path`、`visible_output_capture_path`。
+
+### RCA 注记：为什么以前看起来更稳定
+
+- 以前表面更稳定，核心原因之一是**诊断更宽松**：只要有某种返回文本、`tool-result` 或最终块，很多低质量输出都会被默认视为“基本完成”。
+- 现在规则要求主 Agent 显式读取 `diagnostic_classification`、`quality_flags`，所以旧的隐藏问题会被显式暴露。
+- 与此同时，近期 party-mode 增加了更多运行时状态面，确实让同步链路更复杂，也带来了真实的新回归面。
+- 因此主 Agent 只能做**分层 RCA**：
+  - “旧问题以前被吞掉，现在被看见”
+  - “本轮治理改造引入了新的状态同步风险”
+- **禁止**把这两类原因合并成一句“Task tool 全局不稳定”或“现在环境整体坏了”。
+
 ### 阶段路由矩阵
 
 涉及的阶段包括：

@@ -98,6 +98,7 @@ if [[ "$SKIP_SKILLS" != "true" ]]; then
         DEST="$SKILLS_ROOT/$skill"
         if [[ -d "$SRC" ]]; then
             echo "[2] Copy skill: $skill"
+            rm -rf "$DEST"
             cp -Rf "$SRC" "$DEST"
             [[ -f "$DEST/SKILL.md" ]] || echo "  Warning: $skill - SKILL.md not found after copy"
         else

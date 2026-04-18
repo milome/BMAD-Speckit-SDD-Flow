@@ -15,7 +15,7 @@ Use **Party-Mode** to run deep root-cause analysis and solution design from the 
 - You need multi-role debate to surface an optimal plan and an executable task list.
 - The deliverable must pass strict audit (Critical Auditor >70%, three consecutive rounds with no new gap).
 
-> Party-mode source of truth: `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
+> Party-mode source of truth (Cursor): `{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
 > Rounds, `designated_challenger_id`, `challenger_ratio > 0.60`, session/meta/snapshot/evidence, recovery, and exit-gate semantics must come from core step-02. This skill must not define a second party-mode gate contract.
 
 ## Mandatory constraints
@@ -34,7 +34,7 @@ Use **Party-Mode** to run deep root-cause analysis and solution design from the 
 ### Phase 1: Party-Mode RCA and solution discussion
 
 1. **Input**: Topic / issue / screenshot / problem (main Agent normalizes into one issue statement).
-2. **Execution**: **Read** `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md` and `steps/step-02-discussion-orchestration.md`, and **follow** the step-02 Response Structure plus its gate/recovery/evidence contract for multi-role discussion.
+2. **Execution**: **Read** `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md` and `{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`, and **follow** the Cursor step-02 Response Structure plus its gate/recovery/evidence contract for multi-role discussion.
 3. **Roles**: **Include** ⚔️ **Critical Auditor**; you may include 🏗️ Winston (Architect), 💻 Amelia (Developer), 📋 John (Product Manager), etc. (display names must match `_bmad/_config/agent-manifest.csv`); the challenger share threshold comes from core step-02, not this skill.
 3b. **Speaking format (mandatory)**: Each speaker each round **must** use `[Icon Emoji] **[display name]**: [content]` (e.g. `🏗️ **Winston (Architect)**: ...`, `⚔️ **Critical Auditor**: ...`). Icons and names come from `agent-manifest.csv`; do not omit them.
 4. **Rounds and convergence**:
@@ -63,7 +63,7 @@ Suggested paths: if tied to a Story, use `_bmad-output/implementation-artifacts/
 
 | Resource | Path / note |
 |----------|----------------|
-| **party-mode** | `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md`; all rounds / challenger ratio / recovery / evidence / exit-gate rules come from core step-02 |
+| **party-mode** | `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md` + `{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`; Cursor-side rounds / challenger ratio / recovery / evidence / exit-gate rules come from the Cursor step-02 override |
 | **Critical Auditor** | `{project-root}/_bmad/core/agents/critical-auditor-guide.md` (if present); Critical Auditor is mandatory challenger in step-02 |
 | **audit-prompts §4** | `{project-root}/.cursor/skills/speckit-workflow/references/audit-prompts.md` §4 (tasks audit); RCA audit prompt aligns with this |
 | **audit-document-iteration-rules** | `{project-root}/.cursor/skills/speckit-workflow/references/audit-document-iteration-rules.md`; sub-agent edits doc on gap, 3-round no-gap convergence |

@@ -14,7 +14,7 @@ description: |
 - 需要多角色辩论挖掘最优方案并生成可执行任务列表
 - 产出文档需经严格审计（批判审计员 >70%、连续 3 轮无 gap）后交付
 
-> Party-mode 规则源：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
+> Party-mode 规则源（Cursor）：`{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
 > 说明：轮次分级、`designated_challenger_id`、`challenger_ratio > 0.60`、session/meta/snapshot/evidence、恢复与退出门禁都以 core step-02 为准。本技能不得自定义第二套 party-mode gate 语义。
 
 ## 强制约束
@@ -33,7 +33,7 @@ description: |
 ### 阶段一：Party-Mode 根因分析与方案讨论
 
 1. **输入**：用户提供的议题/问题描述/截图/问题（主 Agent 归纳为统一议题描述）。
-2. **执行**：**必须读取** `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md` 及 `steps/step-02-discussion-orchestration.md`，并**严格遵循** step-02 中的 Response Structure 与 gate/recovery/evidence 规则编排多角色讨论。
+2. **执行**：**必须读取** `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md` 及 `{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`，并**严格遵循** Cursor step-02 中的 Response Structure 与 gate/recovery/evidence 规则编排多角色讨论。
 3. **角色**：**必须**引入 ⚔️ **批判性审计员**；可包含 🏗️ Winston 架构师、💻 Amelia 开发、📋 John 产品经理等（展示名与 `_bmad/_config/agent-manifest.csv` 一致）；批判审计员发言占比以 core step-02 为准，不在本技能中另立阈值。
 3b. **发言格式（强制）**：每轮每位角色发言**必须**使用格式 `[Icon Emoji] **[展示名]**: [发言内容]`（如 `🏗️ **Winston 架构师**: ...`、`⚔️ **批判性审计员**: ...`）。Icon 与展示名取自 `_bmad/_config/agent-manifest.csv`，禁止省略。
 4. **轮次与收敛**：
@@ -62,7 +62,7 @@ description: |
 
 | 资源 | 路径/说明 |
 |------|-----------|
-| **party-mode** | `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md`；所有 rounds / challenger ratio / recovery / evidence / exit gate 规则以 core step-02 为准 |
+| **party-mode** | `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md` + `{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`；Cursor 分支的 rounds / challenger ratio / recovery / evidence / exit gate 规则以 Cursor step-02 override 为准 |
 | **批判审计员** | `{project-root}/_bmad/core/agents/critical-auditor-guide.md`（若存在）；step-02 中批判性审计员为必选挑战者 |
 | **audit-prompts §4** | `{project-root}/.cursor/skills/speckit-workflow/references/audit-prompts.md` §4（tasks 审计）；本技能审计 prompt 与之精神一致 |
 | **audit-document-iteration-rules** | `{project-root}/.cursor/skills/speckit-workflow/references/audit-document-iteration-rules.md`；发现 gap 时审计子代理直接修改文档、3 轮无 gap 收敛 |

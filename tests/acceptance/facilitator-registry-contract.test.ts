@@ -62,7 +62,7 @@ describe('facilitator registry contract', () => {
       '_bmad/core/skills/bmad-party-mode/workflow.zh.md'
     );
     expect(cursor.step02.resolvedRelativePath).toBe(
-      '_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.zh.md'
+      '_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.zh.md'
     );
 
     const claude = resolveFacilitatorRuntimeBindings(process.cwd(), 'claude', 'en');

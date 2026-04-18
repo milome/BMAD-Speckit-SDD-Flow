@@ -191,10 +191,14 @@ After generating all agent responses for the round, continue the discussion **in
   - `final_solution_task_list_100`：`closure_level = "high_confidence"`，并在 `.meta.json` 中固定 `min_rounds = 100`、`ratio_threshold = 0.60`、`tail_window = 3`。该层用于最终方案、最终任务列表、BUGFIX §7、Story 定稿等**高置信度最终产出**。
   - 若当前选中的 `gate_profile_id` 为 `quick_probe_20` 或 `decision_root_cause_50`，但用户请求中**明确要求**高置信度最终产出（如最终方案 / 最终任务列表 / BUGFIX §7 / Story 定稿），宿主 / 编排器（host / orchestrator）必须**拒绝当前层级**，显式报告层级不匹配（tier mismatch），并要求升级到 `final_solution_task_list_100`；禁止用低层级结果冒充最终产出（final output）。
 - **checker 调用（退出前强制）**：
-  - 在准备展示 [E] 前，必须运行：
-    - `npx ts-node --project tsconfig.node.json --transpile-only scripts/party-mode-gate-check.ts --session-key <session_key> --write-all`
+  - 在准备展示 [E] 前，必须重新运行**基于** `_bmad-output/party-mode/runtime/current-session.json` 的 runtime-owned checker 路径。
+  - consumer / runtime 路径固定为：
+    - `node .cursor/hooks/party-mode-read-current-session.cjs --project-root <project_root>`
+    - 若 project-local helper 缺失，回退为：
+      - `node _bmad/runtime/hooks/party-mode-read-current-session.cjs --project-root <project_root>`
+  - `scripts/party-mode-gate-check.ts` 仅是**仓库源码调试 wrapper**，consumer 安装不得要求项目根存在 `scripts/` 目录。
   - 生产路径禁止用 CLI 参数覆盖 `.meta.json` 中的 `min_rounds / ratio_threshold / tail_window`。
-  - 若 checker 输出 `failed_checks` 非空，Facilitator 必须显式报告失败项并继续讨论，不得展示或接受 [E]。
+  - 若 checker/helper 输出 `failed_checks` 非空，Facilitator 必须显式报告失败项并继续讨论，不得展示或接受 [E]。
 - **收敛条件**：在达到最少轮次后，须同时满足：(1) 已产出单一方案或共识结论，且无「可选」「可考虑」等未决表述；(2) 最近 2–3 轮无人提出新的 risks、edge cases 或遗漏点；(3) **挑战者已做终审陈述**（同意/有条件同意/有保留）；若有保留，须列出 deferred gaps 并写入产出。
 - **挑战者终审**：在准备展示 [E] 前，若挑战者最近发言未包含终审，Facilitator 提示「请挑战者做终审陈述」并生成一轮。
 - **质疑充分性（P1）**：若最近 10 轮质疑轮数 < 3，Facilitator 显式问「挑战者，你是否有未表达的反对？」；若 30% 未达，可延长 5 轮补救（仅 1 次）。
@@ -209,7 +213,7 @@ After generating all agent responses for the round, continue the discussion **in
   - `- Challenger Ratio Check: PASS|FAIL`
   - `- Tail Window No New Gap: PASS|FAIL`
   - `- Final Result: PASS|FAIL`
-- **恢复顺序（强制）**：先读取 `.meta.json`，再恢复 `.latest.json`，再用 session log 校验 `source_log_sha256`，再恢复最后 `tail_window` 轮原始记录，最后重新执行 `scripts/party-mode-gate-check.ts`。
+- **恢复顺序（强制）**：先读取 `.meta.json`，再恢复 `.latest.json`，再用 session log 校验 `source_log_sha256`，再恢复最后 `tail_window` 轮原始记录，最后重新执行基于 `current-session.json` 的 installed runtime checker/helper；consumer 项目不得要求 `scripts/party-mode-gate-check.ts`。
 - **回滚触发条件（强制）**：checker 计算异常、`.meta.json / session log / snapshot / evidence` 路径引用失效、或恢复后统计值与 session log 重算结果不一致。
 - **回滚动作（强制）**：仅回滚本次 remediation 涉及的 party-mode 修订范围；回滚后必须重跑相关验收命令与 checker；未通过回滚后验证前，不得展示或接受 [E]。
 

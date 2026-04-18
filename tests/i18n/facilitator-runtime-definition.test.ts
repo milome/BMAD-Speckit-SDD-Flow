@@ -48,7 +48,7 @@ describe('facilitator runtime definition', () => {
     expect(runtime).toContain('_bmad/cursor/agents/party-mode-facilitator.en.md');
     expect(runtime).toContain('_bmad/core/skills/bmad-party-mode/workflow.en.md');
     expect(runtime).toContain(
-      '_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.en.md'
+      '_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.en.md'
     );
   });
 

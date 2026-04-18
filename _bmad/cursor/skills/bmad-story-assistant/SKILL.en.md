@@ -16,17 +16,17 @@ description: |
 
 # BMAD Story Assistant
 
-> **Party-mode source of truth**: `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`. All party-mode rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit-gate semantics must follow that file; this skill only decides when Story flows enter party-mode.
+> **Party-mode source of truth (Cursor)**: `{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`. Cursor-side party-mode rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit-gate semantics must follow that file; this skill only decides when Story flows enter party-mode.
 
 ### Cursor Party-Mode Main-Agent Flow
 
 - Before entering Cursor party-mode, the main Agent must show the `20 / 50 / 100` options and infer the default tier from the request type.
-- Use `decision_root_cause_50` by default for ordinary RCA / option analysis and `final_solution_task_list_100` for high-confidence final outputs such as Story finalization.
+- Recommend `decision_root_cause_50` for ordinary RCA / option analysis and `final_solution_task_list_100` for high-confidence final outputs such as Story finalization. Recommendation is not authorization: before the user explicitly replies, the main Agent must not turn a recommended tier into “selected”.
 - `quick_probe_20` is probe-only; if the chosen tier cannot satisfy a high-confidence final-output request, the main Agent must reject it and require an upgrade to `final_solution_task_list_100`.
 - After the user chooses the tier, the main Agent must complete the pre-launch self-check checklist and print a `【自检完成】...可以发起。` result block.
 - Session Bootstrap JSON is injected by the host on `SubagentStart`; the main Agent must not skip that execution path.
-- The Cursor branch does **not** use checkpoints and does not hand control back to the main Agent at `20 / 40 / ...`. Once launched, the sub-agent must keep running in the same session until the user-selected total rounds are completed.
-- If the party-mode sub-agent stops early at rounds such as `22/50` or `10/50`, the main Agent must **not** continue the discussion itself and must **not** restart from Round 1. It must immediately re-issue facilitator with the same total rounds and same gate profile.
+- The Cursor branch does not pause mid-run and does not hand control back to the main Agent at `20 / 40 / ...`. Once launched, the sub-agent must keep running in the same session until the user-selected total rounds are completed.
+- If the party-mode sub-agent stops early at rounds such as `22/50` or `10/50`, the main Agent must **not** continue the discussion itself and must **not** restart from Round 1. After the sub-agent returns, it must **first read** `_bmad-output/party-mode/runtime/current-session.json` and use that file as the only validation entrypoint. **Do not** guess the latest `pm-*` session by file timestamp. The check order is fixed: ① `validation_status`, `status`, `session_key`, and `target_rounds_total`; ② **read `visible_output_summary` and `visible_fragment_record_present` first**, and inspect `observed_visible_round_count`, `first_visible_round`, `last_visible_round`, `progress_current_round`, `progress_target_round`, `final_gate_present`, `final_gate_profile`, `final_gate_total_rounds`, and `excerpt`; ③ **only when deeper investigation is needed** read `session_log_path`, `snapshot_path`, `audit_verdict_path`, and `visible_output_capture_path`. **Do not** open the session log or `tool-result.md` before checking `visible_output_summary`. If `validation_status != PASS` or the selected total rounds were not reached, re-issue the facilitator immediately with the same total rounds and gate profile.
 
 ## Quick Decision Guide
 
@@ -573,7 +573,7 @@ prompt: |
   **强制约束**：
   - 创建 story 文档必须使用明确描述，禁止使用本 skill「§ 禁止词表（Story 文档）」中的词（可选、可考虑、后续、先实现、后续扩展、待定、酌情、视情况、技术债）。
   - 当功能不在本 Story 范围但属本 Epic 时，须写明「由 Story X.Y 负责」及任务具体描述；确保 X.Y 存在且 scope 含该功能（若 X.Y 不存在，审计将判不通过并建议创建）。禁止「先实现 X，或后续扩展」「其余由 X.Y 负责」等模糊表述。
-  - **party-mode 强制**：无论 Epic/Story 文档是否已存在，只要涉及以下任一情形，**必须**进入 party-mode 进行多角色辩论：① 有多个实现方案可选；② 存在架构/设计决策或 trade-off；③ 方案或范围存在歧义或未决点。Before launch, the main Agent must show `20 / 50 / 100`, wait for the user's choice, complete the pre-launch self-check, and let the host inject `Party Mode Session Bootstrap (JSON)` on `SubagentStart`. Use `final_solution_task_list_100` (100 rounds) for Story finalization / final task lists and `decision_root_cause_50` (50 rounds) for ordinary analysis; `quick_probe_20` must not be used for finalization. **Do not** skip party-mode because “Epic already exists” or “Story already exists”. The Cursor branch uses **no checkpoints**; once the sub-agent starts, it must run in the same session until the user-selected total rounds are completed. If it stops early, re-issue the facilitator immediately with the same total rounds and gate profile.
+  - **party-mode 强制**：无论 Epic/Story 文档是否已存在，只要涉及以下任一情形，**必须**进入 party-mode 进行多角色辩论：① 有多个实现方案可选；② 存在架构/设计决策或 trade-off；③ 方案或范围存在歧义或未决点。Before launch, the main Agent must show `20 / 50 / 100`, wait for the user's choice, complete the pre-launch self-check, and let the host inject `Party Mode Session Bootstrap (JSON)` on `SubagentStart`. Use `final_solution_task_list_100` (100 rounds) for Story finalization / final task lists and `decision_root_cause_50` (50 rounds) for ordinary analysis; `quick_probe_20` must not be used for finalization. **Do not** skip party-mode because “Epic already exists” or “Story already exists”. The Cursor branch does not pause mid-run or hand control back in batches; once the sub-agent starts, it must run in the same session until the user-selected total rounds are completed. If it stops early, re-issue the facilitator immediately with the same total rounds and gate profile.
   - 全程必须使用中文。
 ```
 Replace the above `{epic_num}`, `{story_num}`, `{project-root}` with actual values ​​(project-root is the absolute path to the project root directory).

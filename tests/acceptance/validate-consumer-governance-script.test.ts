@@ -37,4 +37,12 @@ describe('validate-consumer-governance script safety', () => {
     expect(content).toContain('Launch wrapper did not write receipt file');
     expect(content).toContain('authoritativeHost: claude');
   });
+
+  it('requires installed party-mode helpers and does not require consumer scripts/party-mode-gate-check.ts', () => {
+    expect(content).toContain("Run-Step 'verify-party-mode-helper-surfaces'");
+    expect(content).toContain('.cursor/hooks/party-mode-read-current-session.cjs');
+    expect(content).toContain('_bmad/runtime/hooks/party-mode-read-current-session.cjs');
+    expect(content).toContain('consumerScriptsRequired = $false');
+    expect(content).not.toContain("Join-Path $ConsumerRoot 'scripts/party-mode-gate-check.ts'");
+  });
 });
