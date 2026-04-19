@@ -126,6 +126,48 @@ program
   .description('Show feedback entry and full-flow compatible AI list')
   .action(() => loadCommand('../src/commands/feedback', 'feedbackCommand')());
 
+const ralphCmd = program.command('ralph').description('Ralph tracking runtime helpers');
+
+ralphCmd
+  .command('prepare')
+  .description('Create or refresh Ralph tracking files for a tasks.md context')
+  .requiredOption('--tasksPath <path>', 'Path to tasks.md')
+  .option('--mode <mode>', 'Mode (standalone|bmad)', 'standalone')
+  .option('--epic <n>', 'Epic number')
+  .option('--story <n>', 'Story number')
+  .option('--epicSlug <slug>', 'Epic slug')
+  .option('--storySlug <slug>', 'Story slug')
+  .option('--taskDescription <text>', 'Override task description')
+  .option('--overwrite', 'Overwrite existing Ralph files')
+  .action((opts) => loadCommand('../src/commands/ralph', 'ralphPrepareCommand')(opts));
+
+ralphCmd
+  .command('record-phase')
+  .description('Record one Ralph phase transition for a specific user story')
+  .requiredOption('--tasksPath <path>', 'Path to tasks.md')
+  .requiredOption('--userStoryId <id>', 'User story id, e.g. US-001')
+  .requiredOption('--title <text>', 'User story title')
+  .requiredOption('--phase <phase>', 'Phase (TDD-RED|TDD-GREEN|TDD-REFACTOR|DONE)')
+  .requiredOption('--detail <text>', 'Phase detail line')
+  .option('--mode <mode>', 'Mode (standalone|bmad)', 'standalone')
+  .option('--epic <n>', 'Epic number')
+  .option('--story <n>', 'Story number')
+  .option('--epicSlug <slug>', 'Epic slug')
+  .option('--storySlug <slug>', 'Story slug')
+  .option('--storyLogTimestamp <iso>', 'ISO-8601 timestamp used for progress entry')
+  .action((opts) => loadCommand('../src/commands/ralph', 'ralphRecordPhaseCommand')(opts));
+
+ralphCmd
+  .command('verify')
+  .description('Verify Ralph tracking compliance for a tasks.md context')
+  .requiredOption('--tasksPath <path>', 'Path to tasks.md')
+  .option('--mode <mode>', 'Mode (standalone|bmad)', 'standalone')
+  .option('--epic <n>', 'Epic number')
+  .option('--story <n>', 'Story number')
+  .option('--epicSlug <slug>', 'Epic slug')
+  .option('--storySlug <slug>', 'Story slug')
+  .action((opts) => loadCommand('../src/commands/ralph', 'ralphVerifyCommand')(opts));
+
 const configCmd = program
   .command('config')
   .description('Get/set/list bmad-speckit config');

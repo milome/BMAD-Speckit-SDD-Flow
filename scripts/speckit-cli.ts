@@ -29,6 +29,14 @@ import { execSync } from 'child_process';
 import { isReviewerAuditEntryStage } from './reviewer-registry';
 import { runAuditorHost } from './run-auditor-host';
 import { isReviewCloseoutApproved } from './reviewer-schema';
+import {
+  buildSpeckitImplementRecordPhaseCommand,
+  prepareSpeckitImplementRalphTracking,
+  RALPH_SCRIPT_ENFORCED_SUBSET,
+  recordSpeckitImplementRalphPhase,
+  verifySpeckitImplementRalphTracking,
+} from './ralph-method/speckit-implement';
+import type { RalphTddPhase } from './ralph-method/types';
 
 function buildCrossPlatformCommand(command: string): string {
   if (process.platform !== 'win32') {
@@ -39,7 +47,7 @@ function buildCrossPlatformCommand(command: string): string {
   return `cmd.exe /d /s /c "${escaped}"`;
 }
 
-interface CliOptions {
+export interface CliOptions {
   [key: string]: string | boolean | undefined;
 }
 
@@ -227,7 +235,91 @@ function validateArgs(command: string, options: CliOptions): string | null {
   return null;
 }
 
-function buildAgentCommand(command: string, options: CliOptions): string {
+function resolveCurrentBranchName(projectRoot: string, tasksPath: string): string {
+  try {
+    const current = execSync(buildCrossPlatformCommand('git branch --show-current'), {
+      cwd: projectRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    if (current) {
+      return current;
+    }
+  } catch {
+    // Fall through to deterministic local fallback.
+  }
+
+  return `speckit-implement/${path.basename(tasksPath, path.extname(tasksPath))}`;
+}
+
+export function prepareImplementRalphTracking(
+  options: CliOptions,
+  deps: { projectRoot?: string } = {}
+) {
+  const projectRoot = path.resolve(deps.projectRoot ?? process.cwd());
+  const tasksPath = path.isAbsolute(String(options.tasksPath))
+    ? path.resolve(String(options.tasksPath))
+    : path.resolve(projectRoot, String(options.tasksPath));
+
+  return prepareSpeckitImplementRalphTracking({
+    projectRoot,
+    tasksPath: String(options.tasksPath),
+    mode: typeof options.mode === 'string' ? options.mode : undefined,
+    epic: typeof options.epic === 'string' ? options.epic : undefined,
+    story: typeof options.story === 'string' ? options.story : undefined,
+    epicSlug: typeof options.epicSlug === 'string' ? options.epicSlug : undefined,
+    storySlug: typeof options.storySlug === 'string' ? options.storySlug : undefined,
+    branchName: resolveCurrentBranchName(projectRoot, tasksPath),
+  });
+}
+
+export function verifyImplementRalphTracking(
+  options: CliOptions,
+  deps: { projectRoot?: string } = {}
+) {
+  const projectRoot = path.resolve(deps.projectRoot ?? process.cwd());
+  return verifySpeckitImplementRalphTracking({
+    projectRoot,
+    tasksPath: String(options.tasksPath),
+    mode: typeof options.mode === 'string' ? options.mode : undefined,
+    epic: typeof options.epic === 'string' ? options.epic : undefined,
+    story: typeof options.story === 'string' ? options.story : undefined,
+    epicSlug: typeof options.epicSlug === 'string' ? options.epicSlug : undefined,
+    storySlug: typeof options.storySlug === 'string' ? options.storySlug : undefined,
+  });
+}
+
+function getRequiredStringOption(options: CliOptions, key: string): string {
+  const value = options[key];
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new Error(`Missing required argument: --${key}`);
+  }
+  return value;
+}
+
+export function recordImplementRalphTddPhase(
+  options: CliOptions,
+  deps: { projectRoot?: string } = {}
+) {
+  const projectRoot = path.resolve(deps.projectRoot ?? process.cwd());
+  return recordSpeckitImplementRalphPhase({
+    projectRoot,
+    tasksPath: getRequiredStringOption(options, 'tasksPath'),
+    mode: typeof options.mode === 'string' ? options.mode : undefined,
+    epic: typeof options.epic === 'string' ? options.epic : undefined,
+    story: typeof options.story === 'string' ? options.story : undefined,
+    epicSlug: typeof options.epicSlug === 'string' ? options.epicSlug : undefined,
+    storySlug: typeof options.storySlug === 'string' ? options.storySlug : undefined,
+    userStoryId: getRequiredStringOption(options, 'userStoryId'),
+    title: getRequiredStringOption(options, 'title'),
+    phase: getRequiredStringOption(options, 'phase') as RalphTddPhase,
+    detail: getRequiredStringOption(options, 'detail'),
+    storyLogTimestamp:
+      typeof options.storyLogTimestamp === 'string' ? options.storyLogTimestamp : undefined,
+  });
+}
+
+export function buildAgentCommand(command: string, options: CliOptions): string {
   const config = COMMANDS[command];
   const agentPath = path.resolve(config.agentFile);
 
@@ -254,6 +346,62 @@ function buildAgentCommand(command: string, options: CliOptions): string {
     }
   });
 
+  const ralphSharedTrackingSection =
+    command === 'implement' &&
+    typeof options.prdPath === 'string' &&
+    typeof options.progressPath === 'string'
+      ? `
+## Ralph Shared Tracking
+- prdPath: ${options.prdPath}
+- progressPath: ${options.progressPath}
+- Final compliance gate: ${typeof options.ralphVerifyCommand === 'string' ? options.ralphVerifyCommand : 'n/a'}
+
+## Ralph Script-Enforced Subset
+${RALPH_SCRIPT_ENFORCED_SUBSET.map((item) => `- ${item}`).join('\n')}
+
+## Ralph Phase Hooks
+- TDD-RED hook: ${buildSpeckitImplementRecordPhaseCommand({
+  tasksPath: String(options.tasksPath),
+  mode: typeof options.mode === 'string' ? options.mode : undefined,
+  epic: typeof options.epic === 'string' ? options.epic : undefined,
+  story: typeof options.story === 'string' ? options.story : undefined,
+  epicSlug: typeof options.epicSlug === 'string' ? options.epicSlug : undefined,
+  storySlug: typeof options.storySlug === 'string' ? options.storySlug : undefined,
+  userStoryId: '<US-ID>',
+  title: '<US title>',
+  phase: 'TDD-RED',
+  detail: '<failing test command => N failed>',
+  storyLogTimestamp: '<ISO8601>',
+})}
+- TDD-GREEN hook: ${buildSpeckitImplementRecordPhaseCommand({
+  tasksPath: String(options.tasksPath),
+  mode: typeof options.mode === 'string' ? options.mode : undefined,
+  epic: typeof options.epic === 'string' ? options.epic : undefined,
+  story: typeof options.story === 'string' ? options.story : undefined,
+  epicSlug: typeof options.epicSlug === 'string' ? options.epicSlug : undefined,
+  storySlug: typeof options.storySlug === 'string' ? options.storySlug : undefined,
+  userStoryId: '<US-ID>',
+  title: '<US title>',
+  phase: 'TDD-GREEN',
+  detail: '<passing test command => N passed>',
+  storyLogTimestamp: '<ISO8601>',
+})}
+- TDD-REFACTOR hook: ${buildSpeckitImplementRecordPhaseCommand({
+  tasksPath: String(options.tasksPath),
+  mode: typeof options.mode === 'string' ? options.mode : undefined,
+  epic: typeof options.epic === 'string' ? options.epic : undefined,
+  story: typeof options.story === 'string' ? options.story : undefined,
+  epicSlug: typeof options.epicSlug === 'string' ? options.epicSlug : undefined,
+  storySlug: typeof options.storySlug === 'string' ? options.storySlug : undefined,
+  userStoryId: '<US-ID>',
+  title: '<US title>',
+  phase: 'TDD-REFACTOR',
+  detail: '<refactor summary>',
+  storyLogTimestamp: '<ISO8601>',
+})}
+`
+      : '';
+
   return `
 # Speckit CLI Command: ${command}
 # Description: ${config.description}
@@ -265,6 +413,7 @@ ${agentContext}
 ## Execution
 Execute the ${command} stage with the following parameters:
 ${args.join('\n')}
+${ralphSharedTrackingSection}
 
 ## Expected Output
 See agent definition for expected outputs and handoff protocol.
@@ -422,6 +571,28 @@ async function main(): Promise<void> {
     return;
   }
 
+  if (command === 'implement' && options.verifyRalph) {
+    const verification = verifyImplementRalphTracking(options);
+    if (verification.result.status !== 'pass') {
+      console.error('Ralph compliance verification failed');
+      verification.result.errors.forEach((error) => console.error(`- ${error}`));
+      process.exit(1);
+    }
+
+    console.log('Ralph compliance verification passed');
+    console.log(`prdPath: ${verification.paths.prdPath}`);
+    console.log(`progressPath: ${verification.paths.progressPath}`);
+    return;
+  }
+
+  if (command === 'implement' && options.recordTddPhase) {
+    const recorded = recordImplementRalphTddPhase(options);
+    console.log(`Recorded Ralph phase ${options.phase} for ${options.userStoryId}`);
+    console.log(`prdPath: ${recorded.paths.prdPath}`);
+    console.log(`progressPath: ${recorded.paths.progressPath}`);
+    return;
+  }
+
   // Validate command exists
   if (!COMMANDS[command]) {
     console.error(`Error: Unknown command '${command}'\n`);
@@ -435,6 +606,13 @@ async function main(): Promise<void> {
     console.error(`Error: ${error}\n`);
     printUsage(command);
     process.exit(1);
+  }
+
+  if (command === 'implement') {
+    const prepared = prepareImplementRalphTracking(options);
+    options.prdPath = prepared.paths.prdPath;
+    options.progressPath = prepared.paths.progressPath;
+    options.ralphVerifyCommand = prepared.verifyCommand;
   }
 
   // Build and output agent command

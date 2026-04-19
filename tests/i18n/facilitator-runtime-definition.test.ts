@@ -83,14 +83,20 @@ describe('facilitator runtime definition', () => {
 
     const baseReceipt = materializeFacilitatorDefinition(root, 'cursor', 'base');
     expect(baseReceipt.updated).toBe(true);
+    expect(baseReceipt.fallbackReason).toBe('explicit_base_override');
 
     const baseRuntime = fs.readFileSync(targetPath, 'utf8');
+    expect(baseRuntime).toContain('RUNTIME-MATERIALIZED facilitator resolvedMode=base');
+    expect(baseRuntime).toContain('fallbackReason=explicit_base_override');
     const canonicalBase = fs.readFileSync(
       path.join(root, '_bmad', 'cursor', 'agents', 'party-mode-facilitator.md'),
       'utf8'
     );
-    expect(baseRuntime).toBe(canonicalBase);
-    expect(baseRuntime).not.toContain('RUNTIME-MATERIALIZED facilitator');
+    const baseRuntimeWithoutHeader = baseRuntime.replace(
+      /<!-- RUNTIME-MATERIALIZED facilitator[\s\S]*? -->\r?\n?/u,
+      ''
+    );
+    expect(baseRuntimeWithoutHeader).toBe(canonicalBase);
   });
 
   it('uses project runtime context languagePolicy when no explicit mode is passed', () => {
@@ -124,5 +130,25 @@ describe('facilitator runtime definition', () => {
     expect(claudeRuntime).toContain('resolvedMode=bilingual');
     expect(claudeRuntime).toContain('_bmad/claude/agents/party-mode-facilitator.zh.md');
     expect(claudeRuntime).toContain('_bmad/core/skills/bmad-party-mode/workflow.zh.md');
+  });
+
+  it('materializes base mode with an explicit diagnostic header when project context is missing', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'facilitator-missing-context-'));
+    tempRoots.push(root);
+    seedFacilitatorAssets(root);
+
+    const receipts = ensureFacilitatorRuntimeDefinition(root);
+    expect(receipts.every((receipt) => receipt.mode === 'base')).toBe(true);
+    expect(receipts.every((receipt) => receipt.fallbackReason === 'project_context_missing')).toBe(
+      true
+    );
+
+    const cursorRuntime = fs.readFileSync(
+      path.join(root, '.cursor', 'agents', 'party-mode-facilitator.md'),
+      'utf8'
+    );
+    expect(cursorRuntime).toContain('resolvedMode=base');
+    expect(cursorRuntime).toContain('fallbackReason=project_context_missing');
+    expect(cursorRuntime).toContain('contextPath=_bmad-output/runtime/context/project.json');
   });
 });

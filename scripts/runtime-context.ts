@@ -58,6 +58,16 @@ export interface RuntimeContextFile {
   updatedAt: string;
 }
 
+export type LanguagePolicyContextSyncReason =
+  | 'project_context_missing'
+  | 'project_context_invalid';
+
+export interface LanguagePolicyContextSyncResult {
+  status: 'updated' | 'skipped';
+  reason?: LanguagePolicyContextSyncReason;
+  contextPath: string;
+}
+
 function isRuntimeFlowId(v: string): v is RuntimeFlowId {
   return (RUNTIME_FLOWS as string[]).includes(v);
 }
@@ -269,24 +279,37 @@ export function readRuntimeContext(root: string, explicitPath?: string): Runtime
 export function mergeLanguagePolicyIntoProjectContext(
   root: string,
   languagePolicy: { resolvedMode: 'zh' | 'en' | 'bilingual' }
-): void {
+): LanguagePolicyContextSyncResult {
   const file = projectContextPath(root);
   if (!fs.existsSync(file)) {
-    return;
-  }
-  try {
-    const ctx = readRuntimeContext(root);
-    const next: RuntimeContextFile = {
-      ...ctx,
-      languagePolicy: { resolvedMode: languagePolicy.resolvedMode },
-      updatedAt: new Date().toISOString(),
+    return {
+      status: 'skipped',
+      reason: 'project_context_missing',
+      contextPath: file,
     };
-    writeRuntimeContext(root, next);
-    ensureFacilitatorRuntimeDefinition(root);
-    ensureReviewerRuntimeDefinition(root);
-  } catch {
-    /* ignore corrupt or legacy context */
   }
+  let ctx: RuntimeContextFile;
+  try {
+    ctx = readRuntimeContext(root);
+  } catch {
+    return {
+      status: 'skipped',
+      reason: 'project_context_invalid',
+      contextPath: file,
+    };
+  }
+  const next: RuntimeContextFile = {
+    ...ctx,
+    languagePolicy: { resolvedMode: languagePolicy.resolvedMode },
+    updatedAt: new Date().toISOString(),
+  };
+  writeRuntimeContext(root, next);
+  ensureFacilitatorRuntimeDefinition(root);
+  ensureReviewerRuntimeDefinition(root);
+  return {
+    status: 'updated',
+    contextPath: file,
+  };
 }
 
 export function writeRuntimeContext(root: string, payload: RuntimeContextFile): void {

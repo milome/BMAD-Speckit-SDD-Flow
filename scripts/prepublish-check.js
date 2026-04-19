@@ -40,6 +40,16 @@ const BUNDLED = [
     extraCheck: (dir) => fs.existsSync(path.join(dir, 'rules')),
   },
   {
+    id: '@bmad-speckit/ralph-method',
+    relDir: 'packages/ralph-method',
+    distCheck: (dir) => {
+      const distDir = path.join(dir, 'dist');
+      if (!fs.existsSync(distDir)) return false;
+      const files = fs.readdirSync(distDir, { recursive: true });
+      return files.some((f) => String(f).endsWith('.js'));
+    },
+  },
+  {
     id: '@bmad-speckit/runtime-context',
     relDir: 'packages/runtime-context',
     distCheck: (dir) => {

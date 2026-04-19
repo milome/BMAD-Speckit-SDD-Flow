@@ -47,12 +47,19 @@
 
 ```powershell
 cd <consumer-root>
-npm install --save-dev .\bmad-speckit-sdd-flow-<version>.tgz
-npx bmad-speckit version
-npx bmad-speckit check
-npx bmad-speckit-init --agent claude-code
-npx bmad-speckit-init --agent cursor
+npx --yes --package .\bmad-speckit-sdd-flow-<version>.tgz bmad-speckit version
+npx --yes --package .\bmad-speckit-sdd-flow-<version>.tgz bmad-speckit check
+npx --yes --package .\bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --agent claude-code --full --no-package-json
+npx --yes --package .\bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --agent cursor --full --no-package-json
 ```
+
+这条路径是**非侵入式安装**：
+
+- 不把 `bmad-speckit-sdd-flow` 写入消费项目 `package.json`
+- 不重写消费项目 `package-lock.json`
+- 只部署 install surface（如 `_bmad`、`.claude`、`.cursor`、`_bmad-output`）
+
+如果目标是已有业务应用仓库，这应当是 off-repo 场景下的最高优先级默认方案。
 
 这条路径对应的仓库内验证证据是：
 
@@ -94,19 +101,18 @@ npx bmad-speckit init . --ai cursor-agent --yes
 
 当前最稳妥的消费项目安装链分两步：
 
-1. 安装包
+1. 安装包或临时执行包
 2. 显式执行 agent 对齐
 
 示例：
 
 ```powershell
 cd <consumer-root>
-npm install --save-dev D:\Dev\BMAD-Speckit-SDD-Flow
-npx bmad-speckit-init --agent claude-code
-npx bmad-speckit-init --agent cursor
+npx --yes --package .\bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --agent claude-code --full --no-package-json
+npx --yes --package .\bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --agent cursor --full --no-package-json
 ```
 
-如果你只做了第 1 步，可能已经拿到了 `_bmad` 和 CLI，但还没有把最新 hook 资产完整同步到 `.claude/hooks` / `.cursor/hooks`。
+如果你走的是持久化依赖模式，只做了 `npm install` 而没有做第 2 步，可能已经拿到了 `_bmad` 和 CLI，但还没有把最新 hook 资产完整同步到 `.claude/hooks` / `.cursor/hooks`。
 
 ### 3. `npx` 要区分“init”与“已安装后的 init 对齐”
 
@@ -153,28 +159,43 @@ node scripts/init-to-root.js <消费项目根目录> --agent claude-code --full
 pwsh _bmad\speckit\scripts\powershell\check-prerequisites.ps1 -PathsOnly
 ```
 
-### 路径 B：npm / npx 初始化
+### 路径 B：非侵入式 tgz 执行（推荐，应用仓库）
+
+适合：
+
+- 你手里有已验证的根包 tgz
+- 你不接受修改业务项目 `package.json/package-lock.json`
+- 你只想把 BMAD install surface 部署进项目
+
+```powershell
+npx --yes --package .\bmad-speckit-sdd-flow-<version>.tgz bmad-speckit version
+npx --yes --package .\bmad-speckit-sdd-flow-<version>.tgz bmad-speckit check
+npx --yes --package .\bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --agent claude-code --full --no-package-json
+npx --yes --package .\bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --agent cursor --full --no-package-json
+```
+
+说明：
+
+- `npx --package` 会把 tgz 放到 npm 的临时执行环境，而不是当前项目依赖树
+- `--no-package-json` 明确要求 install surface 部署不要碰项目依赖面
+- 对 runtime governance 来说，这条路径仍然必须以 `.claude/hooks`、`.cursor/hooks`、`settings.json/hooks.json` 的实际文件为准
+
+### 路径 C：npm / npx 初始化
 
 适合：
 
 - 你希望快速初始化一个消费项目
 - 你接受 npm 包当前提供的能力边界
+- 你接受“这条路径不一定拿到本仓库最新定制治理链”
 
 ```powershell
 npx bmad-speckit init . --ai cursor-agent --yes
 ```
 
-如果你随后要验证 runtime governance 是否真的完整落地，继续执行：
-
-```powershell
-npx bmad-speckit-init --agent claude-code
-npx bmad-speckit-init --agent cursor
-```
-
 注意：
 
 - 这条路径更接近“快速初始化”
-- 如果你明确需要本仓库里较新的运行时治理、双语或 dashboard 接线，优先回到路径 A
+- 如果你明确需要本仓库里较新的运行时治理、双语或 dashboard 接线，优先回到路径 A 或路径 B
 - 对 runtime governance 来说，**不要把“跑过 npx init”误认为“宿主 hooks 已经全部更新”**；请以 `.claude/hooks`、`.cursor/hooks` 与 settings/hooks.json 的实际文件为准
 
 ## 安装后，消费项目里应该出现什么

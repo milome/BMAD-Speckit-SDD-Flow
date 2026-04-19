@@ -15,7 +15,7 @@
     "node_modules/@bmad-speckit/"
   ],
   "scripts": {
-    "prepack": "npm run build:scoring --prefix ../.. && npm run build:runtime-context --prefix ../.. && npm run build:runtime-emit --prefix ../.. && node -e \"process.env.BMAD_PREPUBLISH_SILENT='1'; process.env.BMAD_PACK_SESSION='1'; require('../../scripts/prepublish-check.js')\"",
+    "prepack": "npm run build:scoring --prefix ../.. && npm run build:runtime-context --prefix ../.. && npm run build:runtime-emit --prefix ../.. && npm run build:ralph-method --prefix ../.. && node -e \"process.env.BMAD_PREPUBLISH_SILENT='1'; process.env.BMAD_PACK_SESSION='1'; require('../../scripts/prepublish-check.js')\"",
     "postpack": "node ../../scripts/cleanup-packed-bmad.js",
     "prepublishOnly": "node ../../scripts/prepublish-check.js",
     "test": "node --test tests/ 2>/dev/null || echo 'No tests yet'"
@@ -29,13 +29,15 @@
     "@bmad-speckit/schema",
     "@bmad-speckit/scoring",
     "@bmad-speckit/runtime-context",
-    "@bmad-speckit/runtime-emit"
+    "@bmad-speckit/runtime-emit",
+    "@bmad-speckit/ralph-method"
   ],
   "devDependencies": {
     "nock": "^15.0.0"
   },
   "dependencies": {
     "@bmad-speckit/schema": "file:../schema",
+    "@bmad-speckit/ralph-method": "file:../ralph-method",
     "@bmad-speckit/runtime-emit": "file:../runtime-emit",
     "@bmad-speckit/runtime-context": "file:../runtime-context",
     "@bmad-speckit/scoring": "file:../scoring",

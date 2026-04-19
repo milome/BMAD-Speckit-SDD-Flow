@@ -23,7 +23,11 @@ describe('mergeLanguagePolicyIntoProjectContext', () => {
       fs.mkdirSync(path.join(tempRoot, '_bmad-output', 'runtime', 'context'), { recursive: true });
       const ctxPath = projectContextPath(tempRoot);
       writeRuntimeContext(tempRoot, defaultRuntimeContextFile({ flow: 'story', stage: 'specify' }));
-      mergeLanguagePolicyIntoProjectContext(tempRoot, { resolvedMode: 'en' });
+      const result = mergeLanguagePolicyIntoProjectContext(tempRoot, { resolvedMode: 'en' });
+      expect(result).toMatchObject({
+        status: 'updated',
+        contextPath: ctxPath,
+      });
       const raw = JSON.parse(fs.readFileSync(ctxPath, 'utf8'));
       expect(raw.languagePolicy?.resolvedMode).toBe('en');
       const runtime = fs.readFileSync(
@@ -40,7 +44,12 @@ describe('mergeLanguagePolicyIntoProjectContext', () => {
   it('no-op when project context file is missing', () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ctx-lang-miss-'));
     try {
-      mergeLanguagePolicyIntoProjectContext(tempRoot, { resolvedMode: 'zh' });
+      const result = mergeLanguagePolicyIntoProjectContext(tempRoot, { resolvedMode: 'zh' });
+      expect(result).toMatchObject({
+        status: 'skipped',
+        reason: 'project_context_missing',
+        contextPath: projectContextPath(tempRoot),
+      });
       expect(fs.existsSync(projectContextPath(tempRoot))).toBe(false);
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
@@ -71,11 +80,17 @@ describe('mergeLanguagePolicyIntoProjectContext', () => {
       });
 
       const runtime = fs.readFileSync(runtimePath, 'utf8');
+      expect(runtime).toContain('resolvedMode=base');
+      expect(runtime).toContain('fallbackReason=language_policy_missing');
+      const runtimeWithoutHeader = runtime.replace(
+        /<!-- RUNTIME-MATERIALIZED facilitator[\s\S]*? -->\r?\n?/u,
+        ''
+      );
       const canonicalBase = fs.readFileSync(
         path.join(tempRoot, '_bmad', 'cursor', 'agents', 'party-mode-facilitator.md'),
         'utf8'
       );
-      expect(runtime).toBe(canonicalBase);
+      expect(runtimeWithoutHeader).toBe(canonicalBase);
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }

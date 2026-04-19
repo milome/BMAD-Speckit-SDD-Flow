@@ -425,6 +425,14 @@ stages:
 
 **执行 §5 implement 前必须验证**:
 
+**发布 CLI 入口**：
+
+```bash
+npx bmad-speckit ralph prepare --tasksPath <tasks.md>
+npx bmad-speckit ralph record-phase --tasksPath <tasks.md> --userStoryId <US-ID> --title "<US title>" --phase TDD-RED --detail "<failing test command => N failed>"
+npx bmad-speckit ralph verify --tasksPath <tasks.md>
+```
+
 ```yaml
 检查项:
   - prd文件存在: "prd.{stem}.json"

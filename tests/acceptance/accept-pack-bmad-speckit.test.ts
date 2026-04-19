@@ -97,6 +97,43 @@ describe('npm pack bmad-speckit → clean install → CLI', () => {
       );
       expect(runOut).toMatch(/RUN_ID:[0-9a-f-]{36}/);
 
+      const tasksDir = join(consumer, 'specs', 'story-1');
+      const tasksPath = join(tasksDir, 'tasks.md');
+      mkdirSync(tasksDir, { recursive: true });
+      writeFileSync(
+        tasksPath,
+        ['# Tasks', '', '- [ ] T001 Implement runtime flow in scripts/runtime-context.ts'].join('\n'),
+        'utf8'
+      );
+
+      const ralphPrepare = run(
+        `npx bmad-speckit ralph prepare --tasksPath "${tasksPath.replace(/\\/g, '/')}"`,
+        consumer
+      );
+      expect(ralphPrepare).toContain('Prepared Ralph tracking');
+      expect(existsSync(join(tasksDir, 'prd.tasks.json'))).toBe(true);
+      expect(existsSync(join(tasksDir, 'progress.tasks.txt'))).toBe(true);
+
+      const ralphRecord = run(
+        `npx bmad-speckit ralph record-phase --tasksPath "${tasksPath.replace(/\\/g, '/')}" --userStoryId "US-001" --title "T001 Implement runtime flow in scripts/runtime-context.ts" --phase TDD-RED --detail "T001 vitest tests/runtime.test.ts => 1 failed"`,
+        consumer
+      );
+      expect(ralphRecord).toContain('Recorded Ralph phase TDD-RED');
+
+      run(
+        `npx bmad-speckit ralph record-phase --tasksPath "${tasksPath.replace(/\\/g, '/')}" --userStoryId "US-001" --title "T001 Implement runtime flow in scripts/runtime-context.ts" --phase TDD-GREEN --detail "T001 vitest tests/runtime.test.ts => 1 passed"`,
+        consumer
+      );
+      run(
+        `npx bmad-speckit ralph record-phase --tasksPath "${tasksPath.replace(/\\/g, '/')}" --userStoryId "US-001" --title "T001 Implement runtime flow in scripts/runtime-context.ts" --phase TDD-REFACTOR --detail "T001 no refactor needed"`,
+        consumer
+      );
+      const ralphVerify = run(
+        `npx bmad-speckit ralph verify --tasksPath "${tasksPath.replace(/\\/g, '/')}"`,
+        consumer
+      );
+      expect(ralphVerify).toContain('Ralph compliance verification passed');
+
       cpSync(join(PKG_ROOT, '_bmad'), join(consumer, '_bmad'), { recursive: true });
       writeMinimalRegistryAndProjectContext(consumer, { flow: 'story', stage: 'specify' });
       expect(existsSync(join(consumer, 'scripts'))).toBe(false);

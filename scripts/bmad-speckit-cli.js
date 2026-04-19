@@ -4,6 +4,7 @@
 
 const path = require('node:path');
 const fs = require('node:fs');
+const Module = require('node:module');
 
 function resolveCliEntry() {
   const root = path.resolve(__dirname, '..');
@@ -27,6 +28,26 @@ function resolveCliEntry() {
   }
 }
 
+function installBundledDependencyNodePaths(root) {
+  const candidates = [
+    path.join(root, 'node_modules', 'bmad-speckit', 'node_modules'),
+    path.join(root, 'packages', 'bmad-speckit', 'node_modules'),
+  ].filter((candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isDirectory());
+
+  if (candidates.length === 0) {
+    return;
+  }
+
+  const current = process.env.NODE_PATH
+    ? process.env.NODE_PATH.split(path.delimiter).filter(Boolean)
+    : [];
+  const merged = [...new Set([...candidates, ...current])];
+  process.env.NODE_PATH = merged.join(path.delimiter);
+  Module._initPaths();
+}
+
+const root = path.resolve(__dirname, '..');
+installBundledDependencyNodePaths(root);
 const cliEntry = resolveCliEntry();
 if (!cliEntry) {
   process.stderr.write(

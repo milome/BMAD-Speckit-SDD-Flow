@@ -27,6 +27,52 @@ function removeEntry(absPath) {
   fs.rmSync(absPath, { recursive: true, force: true });
 }
 
+function isRetriableFsError(error) {
+  return (
+    error &&
+    typeof error === 'object' &&
+    ['EPERM', 'EBUSY', 'ENOTEMPTY'].includes(error.code)
+  );
+}
+
+function sleepMs(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+function withFsRetry(fn, options = {}) {
+  const attempts = Number.isInteger(options.attempts) ? options.attempts : 6;
+  const baseDelayMs = Number.isInteger(options.baseDelayMs) ? options.baseDelayMs : 120;
+  let lastError = null;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      return fn();
+    } catch (error) {
+      lastError = error;
+      if (!isRetriableFsError(error) || attempt === attempts - 1) {
+        throw error;
+      }
+      sleepMs(baseDelayMs * (attempt + 1));
+    }
+  }
+  throw lastError;
+}
+
+function safeRemoveEntry(absPath) {
+  return withFsRetry(() => removeEntry(absPath));
+}
+
+function restoreEntryFromSource(absPath, restoreSource) {
+  const sourceStat = fs.statSync(restoreSource);
+  if (!sourceStat.isDirectory()) {
+    return withFsRetry(() => copyRecursive(restoreSource, absPath));
+  }
+
+  return withFsRetry(() => {
+    removeEntry(absPath);
+    copyRecursive(restoreSource, absPath);
+  });
+}
+
 function cleanEmptyParents(startPath, stopRoots) {
   let current = path.dirname(startPath);
   while (current && !stopRoots.has(current)) {
@@ -137,8 +183,21 @@ function applyEntryAction({ projectRoot, entry, scope, requestedAgents, dryRun, 
       };
     }
     if (!dryRun) {
-      removeEntry(absPath);
-      cleanEmptyParents(absPath, stopRoots);
+      try {
+        safeRemoveEntry(absPath);
+        cleanEmptyParents(absPath, stopRoots);
+      } catch (error) {
+        return {
+          keep: true,
+          entry,
+          report: createSkipEntry(
+            entry.path,
+            classification,
+            `filesystem_${error.code || 'delete_failed'}`,
+            'manual cleanup required because managed entry is locked or inaccessible'
+          ),
+        };
+      }
     }
     return {
       keep: false,
@@ -174,9 +233,21 @@ function applyEntryAction({ projectRoot, entry, scope, requestedAgents, dryRun, 
       };
     }
     if (!dryRun) {
-      removeEntry(absPath);
-      copyRecursive(restoreSource, absPath);
-      cleanEmptyParents(absPath, stopRoots);
+      try {
+        restoreEntryFromSource(absPath, restoreSource);
+        cleanEmptyParents(absPath, stopRoots);
+      } catch (error) {
+        return {
+          keep: true,
+          entry,
+          report: createSkipEntry(
+            entry.path,
+            classification,
+            `filesystem_${error.code || 'restore_failed'}`,
+            'manual restore required because the destination is locked or inaccessible'
+          ),
+        };
+      }
     }
     return {
       keep: false,

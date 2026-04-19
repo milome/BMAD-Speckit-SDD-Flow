@@ -7,7 +7,14 @@ import {
   linkRepoNodeModulesIntoProject,
   writeMinimalRegistryAndProjectContext,
 } from '../helpers/runtime-registry-fixture';
-import { readRuntimeContext } from '../../scripts/runtime-context';
+import {
+  defaultRuntimeContextFile,
+  readRuntimeContext,
+} from '../../scripts/runtime-context';
+import {
+  defaultRuntimeContextRegistry,
+  writeRuntimeContextRegistry,
+} from '../../scripts/runtime-context-registry';
 
 const repoRoot = process.cwd();
 
@@ -17,6 +24,82 @@ function makeEmitReadyRoot(): string {
   fs.cpSync(path.join(repoRoot, '_bmad'), path.join(tempRoot, '_bmad'), { recursive: true });
   linkRepoNodeModulesIntoProject(tempRoot);
   writeMinimalRegistryAndProjectContext(tempRoot, { flow: 'story', stage: 'specify' });
+  return tempRoot;
+}
+
+function makeEmitRootWithoutLanguageResolver(): string {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-hook-inject-missing-lang-'));
+  fs.cpSync(path.join(repoRoot, '_bmad'), path.join(tempRoot, '_bmad'), { recursive: true });
+  fs.mkdirSync(path.join(tempRoot, '.claude', 'hooks'), { recursive: true });
+  fs.copyFileSync(
+    path.join(tempRoot, '_bmad', 'claude', 'hooks', 'emit-runtime-policy-cli.cjs'),
+    path.join(tempRoot, '.claude', 'hooks', 'emit-runtime-policy-cli.cjs')
+  );
+  fs.copyFileSync(
+    path.join(
+      repoRoot,
+      'node_modules',
+      '@bmad-speckit',
+      'runtime-emit',
+      'dist',
+      'emit-runtime-policy.cjs'
+    ),
+    path.join(tempRoot, '.claude', 'hooks', 'emit-runtime-policy.cjs')
+  );
+  writeMinimalRegistryAndProjectContext(tempRoot, { flow: 'story', stage: 'specify' });
+  return tempRoot;
+}
+
+function makeStoryScopedRootWithoutProjectContext(): string {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-hook-inject-story-scope-'));
+  fs.cpSync(path.join(repoRoot, '_bmad'), path.join(tempRoot, '_bmad'), { recursive: true });
+  linkRepoNodeModulesIntoProject(tempRoot);
+  fs.mkdirSync(path.join(tempRoot, '.cursor', 'agents'), { recursive: true });
+  fs.copyFileSync(
+    path.join(tempRoot, '_bmad', 'cursor', 'agents', 'party-mode-facilitator.md'),
+    path.join(tempRoot, '.cursor', 'agents', 'party-mode-facilitator.md')
+  );
+
+  const storyContextRelative = path.join(
+    '_bmad-output',
+    'runtime',
+    'context',
+    'stories',
+    'epic-1',
+    'story-1-1.json'
+  );
+  const storyContextPath = path.join(tempRoot, storyContextRelative);
+  fs.mkdirSync(path.dirname(storyContextPath), { recursive: true });
+  fs.writeFileSync(
+    storyContextPath,
+    JSON.stringify(
+      defaultRuntimeContextFile({
+        flow: 'story',
+        stage: 'specify',
+        contextScope: 'story',
+        epicId: 'epic-1',
+        storyId: 'story-1-1',
+      }),
+      null,
+      2
+    ),
+    'utf8'
+  );
+
+  const registry = defaultRuntimeContextRegistry(tempRoot);
+  registry.storyContexts['story-1-1'] = {
+    path: storyContextRelative.replace(/\\/g, '/'),
+    epicId: 'epic-1',
+    sourceMode: 'full_bmad',
+  };
+  registry.activeScope = {
+    scopeType: 'story',
+    epicId: 'epic-1',
+    storyId: 'story-1-1',
+    resolvedContextPath: storyContextRelative.replace(/\\/g, '/'),
+    reason: 'acceptance test story scope without project context',
+  };
+  writeRuntimeContextRegistry(tempRoot, registry);
   return tempRoot;
 }
 
@@ -77,6 +160,88 @@ describe('runtime-policy-inject (dual host entry)', () => {
       );
       expect(runtime).toContain('RUNTIME-MATERIALIZED facilitator resolvedMode=en');
       expect(runtime).toContain('_bmad/core/skills/bmad-party-mode/workflow.en.md');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  }, 45000);
+
+  it('surfaces language resolution diagnostics in hook output when resolve-for-session bundle is unavailable', () => {
+    const tempRoot = makeEmitRootWithoutLanguageResolver();
+    try {
+      const inject = path.join(repoRoot, '_bmad/claude/hooks/runtime-policy-inject.cjs');
+      const stdin = JSON.stringify({
+        tool_name: 'Agent',
+        tool_input: {
+          prompt: 'Please answer in English.',
+        },
+      });
+      const r = spawnSync(process.execPath, [inject], {
+        cwd: repoRoot,
+        input: stdin,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          CLAUDE_PROJECT_DIR: tempRoot,
+        },
+      });
+
+      expect(r.status).toBe(0);
+      const out = JSON.parse(r.stdout || '{}') as { systemMessage?: string };
+      expect(out.systemMessage).toContain('"languagePolicyDiagnostic"');
+      expect(out.systemMessage).toContain('"code": "resolve_for_session_failed"');
+      expect(out.systemMessage).toContain('resolve-for-session.cjs not found');
+      expect(out.systemMessage).not.toMatch(/"resolvedMode":\s*"en"/);
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  }, 45000);
+
+  it('resolve-for-session bundle uses temporary resolvedMode materialization when project context sync is skipped', () => {
+    const tempRoot = makeStoryScopedRootWithoutProjectContext();
+    try {
+      const resolveSession = require.resolve('@bmad-speckit/runtime-emit/dist/resolve-for-session.cjs', {
+        paths: [tempRoot],
+      });
+      const r = spawnSync(process.execPath, [resolveSession], {
+        cwd: tempRoot,
+        input: JSON.stringify({
+          projectRoot: tempRoot,
+          userMessage: '请用英文回答',
+          recentMessages: [],
+          writeContext: true,
+        }),
+        encoding: 'utf8',
+      });
+
+      expect(r.status).toBe(0);
+      const out = JSON.parse(r.stdout || '{}') as {
+        resolvedMode?: string;
+        contextSync?: { status?: string; reason?: string };
+        temporaryResolvedModeApplied?: {
+          resolvedMode?: string;
+          targets?: Array<{ host?: string; updated?: boolean }>;
+        };
+      };
+      expect(out.resolvedMode).toBe('en');
+      expect(out.contextSync?.status).toBe('skipped');
+      expect(out.contextSync?.reason).toBe('project_context_missing');
+      expect(out.temporaryResolvedModeApplied?.resolvedMode).toBe('en');
+      expect(out.temporaryResolvedModeApplied?.targets).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            host: 'cursor',
+          }),
+        ])
+      );
+
+      const runtime = fs.readFileSync(
+        path.join(tempRoot, '.cursor', 'agents', 'party-mode-facilitator.md'),
+        'utf8'
+      );
+      expect(runtime).toContain('RUNTIME-MATERIALIZED facilitator resolvedMode=en');
+      expect(fs.existsSync(path.join(tempRoot, '_bmad-output', 'runtime', 'context', 'project.json'))).toBe(
+        false
+      );
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }

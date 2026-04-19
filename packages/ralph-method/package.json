@@ -1,0 +1,57 @@
+{
+  "name": "@bmad-speckit/ralph-method",
+  "version": "0.1.0",
+  "description": "Shared Ralph tracking runtime for prepare, phase recording, and compliance verification",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./types": {
+      "require": "./dist/types.js",
+      "types": "./dist/types.d.ts"
+    },
+    "./schema": {
+      "require": "./dist/schema.js",
+      "types": "./dist/schema.d.ts"
+    },
+    "./write-tracking-files": {
+      "require": "./dist/write-tracking-files.js",
+      "types": "./dist/write-tracking-files.d.ts"
+    },
+    "./verify-tdd-trace": {
+      "require": "./dist/verify-tdd-trace.js",
+      "types": "./dist/verify-tdd-trace.d.ts"
+    },
+    "./verify-ralph-compliance": {
+      "require": "./dist/verify-ralph-compliance.js",
+      "types": "./dist/verify-ralph-compliance.d.ts"
+    },
+    "./speckit-implement": {
+      "require": "./dist/speckit-implement.js",
+      "types": "./dist/speckit-implement.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "ajv": "^8.18.0",
+    "ajv-formats": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.3",
+    "typescript": "^5.9.3"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

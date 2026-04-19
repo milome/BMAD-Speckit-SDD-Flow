@@ -488,17 +488,96 @@ function extractUserMessage(input, hookMode) {
   return '';
 }
 
-function extractResolvedMode(langStdout) {
+function parseLanguagePolicyPayload(langStdout) {
+  const text = String(langStdout || '').trim();
+  if (!text) {
+    return null;
+  }
   try {
-    const parsed = JSON.parse((langStdout || '').trim());
-    const mode = parsed?.resolvedMode;
-    if (mode === 'zh' || mode === 'en' || mode === 'bilingual') {
-      return mode;
-    }
+    const parsed = JSON.parse(text);
+    return isRecord(parsed) ? parsed : null;
   } catch {
-    /* noop */
+    return null;
+  }
+}
+
+function extractResolvedMode(langPayload) {
+  const mode = langPayload?.resolvedMode;
+  if (mode === 'zh' || mode === 'en' || mode === 'bilingual') {
+    return mode;
   }
   return undefined;
+}
+
+function sanitizeLanguagePolicyPayload(langPayload) {
+  if (!isRecord(langPayload)) {
+    return null;
+  }
+  const out = {};
+  for (const key of [
+    'resolvedMode',
+    'requestedMode',
+    'detectionSource',
+    'artifactLanguage',
+    'userLanguage',
+  ]) {
+    if (langPayload[key] !== undefined) {
+      out[key] = langPayload[key];
+    }
+  }
+  return out;
+}
+
+function extractLanguagePolicyContextSync(langPayload) {
+  if (!isRecord(langPayload) || !isRecord(langPayload.contextSync)) {
+    return null;
+  }
+  return langPayload.contextSync;
+}
+
+function extractTemporaryResolvedModeApplication(langPayload) {
+  if (!isRecord(langPayload) || !isRecord(langPayload.temporaryResolvedModeApplied)) {
+    return null;
+  }
+  return langPayload.temporaryResolvedModeApplied;
+}
+
+function buildLanguagePolicyDiagnostic(langRes, langPayload) {
+  if (langRes.status !== 0) {
+    const hint = (langRes.stderr || '').trim() || `resolve-for-session exit ${langRes.status}`;
+    return {
+      status: 'error',
+      code: 'resolve_for_session_failed',
+      message: hint,
+    };
+  }
+
+  const contextSync = extractLanguagePolicyContextSync(langPayload);
+  if (!contextSync || contextSync.status !== 'skipped') {
+    return null;
+  }
+
+  const reason =
+    typeof contextSync.reason === 'string' && contextSync.reason
+      ? contextSync.reason
+      : 'project_context_invalid';
+  const contextPath =
+    typeof contextSync.contextPath === 'string' && contextSync.contextPath
+      ? contextSync.contextPath
+      : '_bmad-output/runtime/context/project.json';
+  const message =
+    reason === 'project_context_missing'
+      ? `languagePolicy was resolved for this turn, but ${contextPath} is missing so resolvedMode was not persisted; temporary resolvedMode materialization is being used for this turn.`
+      : `languagePolicy was resolved for this turn, but ${contextPath} is invalid so resolvedMode was not persisted; temporary resolvedMode materialization is being used for this turn.`;
+  const temporaryResolvedMode = extractTemporaryResolvedModeApplication(langPayload);
+
+  return {
+    status: 'warning',
+    code: reason,
+    contextPath,
+    message,
+    ...(temporaryResolvedMode ? { temporaryResolvedModeApplied: temporaryResolvedMode } : {}),
+  };
 }
 
 function extractPartyModeBootstrapOptions(input, inputText, resolvedMode) {
@@ -950,23 +1029,30 @@ function buildPartyModeBootstrapBlock(projectRoot, hookMode, input, resolvedMode
   )}\n`;
 }
 
-function mergeGovernanceWithLanguage(govJsonLine, langStdout) {
+function mergeGovernanceWithLanguage(govJsonLine, langPayload, languagePolicyDiagnostic) {
   let govObj;
   try {
     govObj = JSON.parse((govJsonLine || '').trim());
   } catch {
     return govJsonLine;
   }
-  let langObj;
-  try {
-    langObj = JSON.parse((langStdout || '').trim());
-  } catch {
-    return JSON.stringify(govObj, null, 2);
+  const next = { ...govObj };
+  const languagePolicy = sanitizeLanguagePolicyPayload(langPayload);
+  if (languagePolicy) {
+    next.languagePolicy = languagePolicy;
   }
-  if (!langObj || typeof langObj !== 'object') {
-    return JSON.stringify(govObj, null, 2);
+  const contextSync = extractLanguagePolicyContextSync(langPayload);
+  if (contextSync && contextSync.status === 'skipped') {
+    next.languagePolicyContextSync = contextSync;
   }
-  return JSON.stringify({ ...govObj, languagePolicy: langObj }, null, 2);
+  const temporaryResolvedMode = extractTemporaryResolvedModeApplication(langPayload);
+  if (temporaryResolvedMode) {
+    next.languagePolicyTemporaryResolvedModeApplied = temporaryResolvedMode;
+  }
+  if (languagePolicyDiagnostic) {
+    next.languagePolicyDiagnostic = languagePolicyDiagnostic;
+  }
+  return JSON.stringify(next, null, 2);
 }
 
 async function runtimePolicyInjectCore({ host }) {
@@ -1108,11 +1194,10 @@ async function runtimePolicyInjectCore({ host }) {
   const json = (res.stdout || '').trim();
   const userMsg = extractUserMessage(input, hookMode);
   const langRes = runResolveLanguagePolicyCli(root, userMsg, true);
-  const resolvedMode = langRes.status === 0 ? extractResolvedMode(langRes.stdout) : undefined;
-  let mergedJson = json;
-  if (langRes.status === 0 && (langRes.stdout || '').trim()) {
-    mergedJson = mergeGovernanceWithLanguage(json, langRes.stdout);
-  }
+  const langPayload = langRes.status === 0 ? parseLanguagePolicyPayload(langRes.stdout) : null;
+  const resolvedMode = extractResolvedMode(langPayload);
+  const languagePolicyDiagnostic = buildLanguagePolicyDiagnostic(langRes, langPayload);
+  const mergedJson = mergeGovernanceWithLanguage(json, langPayload, languagePolicyDiagnostic);
   let langDiag = '';
   if (langRes.status !== 0) {
     const hint = (langRes.stderr || '').trim() || `resolve-for-session exit ${langRes.status}`;

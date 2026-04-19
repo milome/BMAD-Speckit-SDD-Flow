@@ -8,12 +8,25 @@ import type { FacilitatorHostId } from './facilitator-registry';
 import { resolveFacilitatorRuntimeBindings } from './facilitator-registry';
 
 export type FacilitatorMaterializedMode = 'base' | 'zh' | 'en' | 'bilingual';
+export type FacilitatorBaseFallbackReason =
+  | 'explicit_base_override'
+  | 'project_context_missing'
+  | 'project_context_invalid'
+  | 'language_policy_missing'
+  | 'language_policy_invalid';
+
+interface DetectedFacilitatorMaterializedMode {
+  mode: FacilitatorMaterializedMode;
+  contextPathRelative: string;
+  fallbackReason?: FacilitatorBaseFallbackReason;
+}
 
 export interface FacilitatorRuntimeDefinitionReceipt {
   host: FacilitatorHostId;
   mode: FacilitatorMaterializedMode;
   targetPath: string;
   sourceRelativePath?: string;
+  fallbackReason?: FacilitatorBaseFallbackReason;
   updated: boolean;
   skippedReason?: string;
 }
@@ -27,13 +40,24 @@ function runtimeTargetRelativePath(host: FacilitatorHostId): string {
 function detectMaterializedMode(
   projectRoot: string,
   explicitMode?: FacilitatorMaterializedMode
-): FacilitatorMaterializedMode {
+): DetectedFacilitatorMaterializedMode {
+  const ctxPathRelative = path
+    .relative(projectRoot, path.join(projectRoot, '_bmad-output', 'runtime', 'context', 'project.json'))
+    .replace(/\\/g, '/');
   if (explicitMode) {
-    return explicitMode;
+    return {
+      mode: explicitMode,
+      contextPathRelative: ctxPathRelative,
+      fallbackReason: explicitMode === 'base' ? 'explicit_base_override' : undefined,
+    };
   }
   const ctxPath = path.join(projectRoot, '_bmad-output', 'runtime', 'context', 'project.json');
   if (!fs.existsSync(ctxPath)) {
-    return 'base';
+    return {
+      mode: 'base',
+      contextPathRelative: ctxPathRelative,
+      fallbackReason: 'project_context_missing',
+    };
   }
   try {
     const raw = JSON.parse(fs.readFileSync(ctxPath, 'utf8')) as {
@@ -41,12 +65,30 @@ function detectMaterializedMode(
     };
     const mode = raw?.languagePolicy?.resolvedMode;
     if (mode === 'zh' || mode === 'en' || mode === 'bilingual') {
-      return mode;
+      return {
+        mode,
+        contextPathRelative: ctxPathRelative,
+      };
     }
+    if (raw?.languagePolicy == null) {
+      return {
+        mode: 'base',
+        contextPathRelative: ctxPathRelative,
+        fallbackReason: 'language_policy_missing',
+      };
+    }
+    return {
+      mode: 'base',
+      contextPathRelative: ctxPathRelative,
+      fallbackReason: 'language_policy_invalid',
+    };
   } catch {
-    /* ignore malformed runtime context */
+    return {
+      mode: 'base',
+      contextPathRelative: ctxPathRelative,
+      fallbackReason: 'project_context_invalid',
+    };
   }
-  return 'base';
 }
 
 function injectGeneratedHeader(
@@ -58,6 +100,8 @@ function injectGeneratedHeader(
     step01RelativePath: string;
     step02RelativePath: string;
     step03RelativePath: string;
+    contextPathRelative: string;
+    fallbackReason?: FacilitatorBaseFallbackReason;
   }
 ): string {
   const separator = content.includes('\r\n') ? '\r\n' : '\n';
@@ -67,7 +111,10 @@ function injectGeneratedHeader(
     ` workflow=${metadata.workflowRelativePath}` +
     ` step01=${metadata.step01RelativePath}` +
     ` step02=${metadata.step02RelativePath}` +
-    ` step03=${metadata.step03RelativePath} -->`;
+    ` step03=${metadata.step03RelativePath}` +
+    ` contextPath=${metadata.contextPathRelative}` +
+    (metadata.fallbackReason ? ` fallbackReason=${metadata.fallbackReason}` : '') +
+    ' -->';
 
   if (content.startsWith(`---${separator}`)) {
     const closingMarker = `${separator}---${separator}`;
@@ -148,18 +195,20 @@ function resolveRuntimeBindings(
 export function materializeFacilitatorDefinition(
   projectRoot: string,
   host: FacilitatorHostId,
-  mode: FacilitatorMaterializedMode
+  mode: FacilitatorMaterializedMode,
+  detectedMode: DetectedFacilitatorMaterializedMode = detectMaterializedMode(projectRoot, mode)
 ): FacilitatorRuntimeDefinitionReceipt {
   const targetRelativePath = runtimeTargetRelativePath(host);
   const targetPath = path.join(projectRoot, targetRelativePath);
 
-  const bindings = resolveRuntimeBindings(projectRoot, host, mode);
+  const bindings = resolveRuntimeBindings(projectRoot, host, detectedMode.mode);
   const sourcePath = path.join(projectRoot, bindings.facilitator.resolvedRelativePath);
   if (!fs.existsSync(sourcePath)) {
     return {
       host,
-      mode,
+      mode: detectedMode.mode,
       targetPath,
+      fallbackReason: detectedMode.fallbackReason,
       updated: false,
       skippedReason: `source asset missing: ${bindings.facilitator.resolvedRelativePath}`,
     };
@@ -172,26 +221,26 @@ export function materializeFacilitatorDefinition(
     step02: bindings.step02.resolvedRelativePath,
     step03: bindings.step03.resolvedRelativePath,
   });
-  const materialized =
-    mode === 'base'
-      ? rewritten
-      : injectGeneratedHeader(rewritten, {
-          mode,
-          sourceRelativePath: bindings.facilitator.resolvedRelativePath,
-          workflowRelativePath: bindings.workflow.resolvedRelativePath,
-          step01RelativePath: bindings.step01.resolvedRelativePath,
-          step02RelativePath: bindings.step02.resolvedRelativePath,
-          step03RelativePath: bindings.step03.resolvedRelativePath,
-        });
+  const materialized = injectGeneratedHeader(rewritten, {
+    mode: detectedMode.mode,
+    sourceRelativePath: bindings.facilitator.resolvedRelativePath,
+    workflowRelativePath: bindings.workflow.resolvedRelativePath,
+    step01RelativePath: bindings.step01.resolvedRelativePath,
+    step02RelativePath: bindings.step02.resolvedRelativePath,
+    step03RelativePath: bindings.step03.resolvedRelativePath,
+    contextPathRelative: detectedMode.contextPathRelative,
+    fallbackReason: detectedMode.mode === 'base' ? detectedMode.fallbackReason : undefined,
+  });
 
   fs.mkdirSync(path.dirname(targetPath), { recursive: true });
   const previous = fs.existsSync(targetPath) ? fs.readFileSync(targetPath, 'utf8') : null;
   if (previous === materialized) {
     return {
       host,
-      mode,
+      mode: detectedMode.mode,
       targetPath,
       sourceRelativePath: bindings.facilitator.resolvedRelativePath,
+      fallbackReason: detectedMode.fallbackReason,
       updated: false,
     };
   }
@@ -199,9 +248,10 @@ export function materializeFacilitatorDefinition(
   fs.writeFileSync(targetPath, materialized, 'utf8');
   return {
     host,
-    mode,
+    mode: detectedMode.mode,
     targetPath,
     sourceRelativePath: bindings.facilitator.resolvedRelativePath,
+    fallbackReason: detectedMode.fallbackReason,
     updated: true,
   };
 }
@@ -213,7 +263,7 @@ export function ensureFacilitatorRuntimeDefinition(
     hosts?: FacilitatorHostId[];
   }
 ): FacilitatorRuntimeDefinitionReceipt[] {
-  const mode = detectMaterializedMode(projectRoot, options?.mode);
+  const detectedMode = detectMaterializedMode(projectRoot, options?.mode);
   const hosts = options?.hosts ?? (['cursor', 'claude'] as FacilitatorHostId[]);
 
   return hosts.map((host) => {
@@ -224,12 +274,13 @@ export function ensureFacilitatorRuntimeDefinition(
     if (!fs.existsSync(runtimeDir)) {
       return {
         host,
-        mode,
+        mode: detectedMode.mode,
         targetPath: path.join(projectRoot, runtimeTargetRelativePath(host)),
+        fallbackReason: detectedMode.fallbackReason,
         updated: false,
         skippedReason: `runtime dir missing: ${path.relative(projectRoot, runtimeDir).replace(/\\/g, '/')}`,
       };
     }
-    return materializeFacilitatorDefinition(projectRoot, host, mode);
+    return materializeFacilitatorDefinition(projectRoot, host, detectedMode.mode, detectedMode);
   });
 }

@@ -74,6 +74,81 @@ describe('root package bmad-speckit bin', () => {
     }
   }, 240_000);
 
+  it('npx --package root tgz can deploy install surface without mutating package.json or package-lock.json', () => {
+    const packDir = mkdtempSync(join(tmpdir(), 'accept-root-npx-pack-'));
+    const target = mkdtempSync(join(tmpdir(), 'accept-root-npx-tgz-'));
+    try {
+      run(`npm pack --json --pack-destination "${packDir.replace(/\\/g, '/')}"`, PKG_ROOT);
+      const tgz = join(packDir, 'bmad-speckit-sdd-flow-0.1.0.tgz');
+      expect(existsSync(tgz)).toBe(true);
+
+      const packageJsonPath = join(target, 'package.json');
+      const packageLockPath = join(target, 'package-lock.json');
+      const packageJson = JSON.stringify(
+        { name: 'consumer-root-npx-tgz', version: '1.0.0', private: true },
+        null,
+        2
+      );
+      const packageLock = JSON.stringify(
+        { name: 'consumer-root-npx-tgz', lockfileVersion: 3 },
+        null,
+        2
+      );
+
+      writeFileSync(packageJsonPath, packageJson, 'utf8');
+      writeFileSync(packageLockPath, packageLock, 'utf8');
+
+      run(
+        `npx --yes --package "${tgz.replace(/\\/g, '/')}" bmad-speckit-init "." --agent cursor --full --no-package-json`,
+        target
+      );
+
+      expect(readFileSync(packageJsonPath, 'utf8')).toBe(packageJson);
+      expect(readFileSync(packageLockPath, 'utf8')).toBe(packageLock);
+      expect(existsSync(join(target, '_bmad'))).toBe(true);
+      expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy.cjs'))).toBe(true);
+      expect(existsSync(join(target, 'node_modules', 'bmad-speckit-sdd-flow'))).toBe(false);
+    } finally {
+      rmSync(target, { recursive: true, force: true });
+      rmSync(packDir, { recursive: true, force: true });
+    }
+  }, 240_000);
+
+  it('npx --package root tgz exposes ralph subcommands without requiring source-repo ts-node paths', () => {
+    const packDir = mkdtempSync(join(tmpdir(), 'accept-root-ralph-pack-'));
+    const target = mkdtempSync(join(tmpdir(), 'accept-root-ralph-tgz-'));
+    try {
+      run(`npm pack --json --pack-destination "${packDir.replace(/\\/g, '/')}"`, PKG_ROOT);
+      const tgz = join(packDir, 'bmad-speckit-sdd-flow-0.1.0.tgz');
+      expect(existsSync(tgz)).toBe(true);
+
+      writeFileSync(
+        join(target, 'package.json'),
+        JSON.stringify({ name: 'consumer-root-ralph-tgz', version: '1.0.0', private: true }),
+        'utf8'
+      );
+
+      const tasksPath = join(target, 'tasks.md');
+      writeFileSync(
+        tasksPath,
+        ['# Tasks', '', '- [ ] T001 Implement root tgz ralph smoke flow'].join('\n'),
+        'utf8'
+      );
+
+      const out = run(
+        `npx --yes --package "${tgz.replace(/\\/g, '/')}" bmad-speckit ralph prepare --tasksPath "${tasksPath.replace(/\\/g, '/')}"`,
+        target
+      );
+
+      expect(out).toContain('Prepared Ralph tracking');
+      expect(existsSync(join(target, 'prd.tasks.json'))).toBe(true);
+      expect(existsSync(join(target, 'progress.tasks.txt'))).toBe(true);
+    } finally {
+      rmSync(target, { recursive: true, force: true });
+      rmSync(packDir, { recursive: true, force: true });
+    }
+  }, 240_000);
+
   it('restores npx bmad-speckit after the package directory is deleted but stale .bin wrappers remain', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-root-bin-repair-'));
     try {

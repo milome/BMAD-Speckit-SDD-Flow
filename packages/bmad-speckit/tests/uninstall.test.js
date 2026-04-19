@@ -142,6 +142,159 @@ describe('uninstall command', () => {
     }
   });
 
+  it('retries transient EPERM when restoring overwritten file from snapshot', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'uninstall-overwritten-retry-'));
+    const originalCopyFileSync = fs.copyFileSync;
+    let failOnce = true;
+    try {
+      const targetFile = path.join(root, '.claude', 'commands', 'demo.md');
+      const snapshotFile = path.join(
+        root,
+        '_bmad-output',
+        'install-state',
+        'session-1',
+        'surface',
+        '.claude',
+        'commands',
+        'demo.md'
+      );
+      fs.mkdirSync(path.dirname(targetFile), { recursive: true });
+      fs.mkdirSync(path.dirname(snapshotFile), { recursive: true });
+      fs.writeFileSync(snapshotFile, 'before\n', 'utf8');
+      fs.writeFileSync(targetFile, 'after\n', 'utf8');
+
+      writeInstallManifest(
+        root,
+        createBaseManifest(root, {
+          managed_surface: [
+            {
+              path: '.claude/commands/demo.md',
+              kind: 'host_file',
+              owner_agents: ['claude-code'],
+              delete_policy: 'delete_entry_only',
+              preinstall_state: {
+                classification: 'overwritten',
+                path_existed: true,
+                path_kind_before: 'file',
+                content_hash_before: 'before',
+                snapshot_ref: '_bmad-output/install-state/session-1/surface/.claude/commands/demo.md',
+                backup_ref: '',
+                captured_at: new Date().toISOString(),
+              },
+              restore: {
+                strategy: 'restore_snapshot',
+                source_ref: '_bmad-output/install-state/session-1/surface/.claude/commands/demo.md',
+                skip_reason: '',
+              },
+              installed_state: {
+                path_exists_after_install: true,
+                path_kind_after_install: 'file',
+                content_hash_after_install: require('../src/services/install-surface-manifest').hashPath(targetFile),
+                captured_at: new Date().toISOString(),
+              },
+            },
+          ],
+          installed_tools: ['claude-code'],
+        })
+      );
+
+      fs.copyFileSync = (src, dest) => {
+        if (failOnce && dest === targetFile) {
+          failOnce = false;
+          const error = new Error('EPERM simulated');
+          error.code = 'EPERM';
+          throw error;
+        }
+        return originalCopyFileSync(src, dest);
+      };
+
+      uninstallCommand({ target: root, agent: 'claude-code' });
+
+      assert.strictEqual(fs.readFileSync(targetFile, 'utf8'), 'before\n');
+      assert.strictEqual(fs.existsSync(getInstallManifestPath(root)), false);
+    } finally {
+      fs.copyFileSync = originalCopyFileSync;
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('does not crash when restoring overwritten file keeps failing with EPERM', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'uninstall-overwritten-skip-'));
+    const originalCopyFileSync = fs.copyFileSync;
+    try {
+      const targetFile = path.join(root, '.claude', 'commands', 'demo.md');
+      const snapshotFile = path.join(
+        root,
+        '_bmad-output',
+        'install-state',
+        'session-1',
+        'surface',
+        '.claude',
+        'commands',
+        'demo.md'
+      );
+      fs.mkdirSync(path.dirname(targetFile), { recursive: true });
+      fs.mkdirSync(path.dirname(snapshotFile), { recursive: true });
+      fs.writeFileSync(snapshotFile, 'before\n', 'utf8');
+      fs.writeFileSync(targetFile, 'after\n', 'utf8');
+
+      writeInstallManifest(
+        root,
+        createBaseManifest(root, {
+          managed_surface: [
+            {
+              path: '.claude/commands/demo.md',
+              kind: 'host_file',
+              owner_agents: ['claude-code'],
+              delete_policy: 'delete_entry_only',
+              preinstall_state: {
+                classification: 'overwritten',
+                path_existed: true,
+                path_kind_before: 'file',
+                content_hash_before: 'before',
+                snapshot_ref: '_bmad-output/install-state/session-1/surface/.claude/commands/demo.md',
+                backup_ref: '',
+                captured_at: new Date().toISOString(),
+              },
+              restore: {
+                strategy: 'restore_snapshot',
+                source_ref: '_bmad-output/install-state/session-1/surface/.claude/commands/demo.md',
+                skip_reason: '',
+              },
+              installed_state: {
+                path_exists_after_install: true,
+                path_kind_after_install: 'file',
+                content_hash_after_install: require('../src/services/install-surface-manifest').hashPath(targetFile),
+                captured_at: new Date().toISOString(),
+              },
+            },
+          ],
+          installed_tools: ['claude-code'],
+        })
+      );
+
+      fs.copyFileSync = (src, dest) => {
+        if (dest === targetFile) {
+          const error = new Error('EPERM simulated');
+          error.code = 'EPERM';
+          throw error;
+        }
+        return originalCopyFileSync(src, dest);
+      };
+
+      uninstallCommand({ target: root, agent: 'claude-code' });
+
+      const report = JSON.parse(fs.readFileSync(getUninstallReportPath(root), 'utf8'));
+      assert.strictEqual(report.skipped_entries.length, 1);
+      assert.match(report.skipped_entries[0].skip_reason, /filesystem_EPERM/);
+      assert.strictEqual(fs.existsSync(getInstallManifestPath(root)), true);
+      assert.strictEqual(fs.readFileSync(targetFile, 'utf8'), 'after\n');
+    } finally {
+      fs.copyFileSync = originalCopyFileSync;
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('keeps preexisting-unmanaged entry and writes skipped report', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'uninstall-skip-'));
     try {
