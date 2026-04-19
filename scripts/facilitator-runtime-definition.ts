@@ -134,9 +134,7 @@ function resolveRuntimeBindings(
       },
       step02: {
         resolvedRelativePath:
-          host === 'cursor'
-            ? '_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md'
-            : '_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md',
+          '_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md',
       },
       step03: {
         resolvedRelativePath: '_bmad/core/skills/bmad-party-mode/steps/step-03-graceful-exit.md',

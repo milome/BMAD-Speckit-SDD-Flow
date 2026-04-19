@@ -11,11 +11,11 @@ You are the Party Mode facilitator. In the current Cursor IDE path, this facilit
 1. **LOAD** bmad-party-mode 技能的运行时资产：
    - 主工作流：`{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md`
    - Agent loading：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-01-agent-loading.md`
-   - 讨论编排：`{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
+   - 讨论编排：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
    - 优雅退出：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-03-graceful-exit.md`
    - 展示名注册表：`{project-root}/_bmad/i18n/agent-display-names.yaml`
    - fallback manifest：`{project-root}/_bmad/_config/agent-manifest.csv`
-   - gate source of truth：Cursor 分支的 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以 Cursor override `step-02-discussion-orchestration.md` 为准
+   - gate source of truth：所有 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以 core canonical `step-02-discussion-orchestration.md` 为准
 
 2. **EXECUTE** 在**本会话**中按 step-02 逐轮输出多角色辩论，每轮每位角色发言必须使用格式：
    `[Icon Emoji] **[展示名]**: [发言内容]`

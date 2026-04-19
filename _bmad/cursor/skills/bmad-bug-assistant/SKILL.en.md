@@ -14,7 +14,7 @@ description: |
 # BMAD Bug Assistant
 
 > **Required reading:** Before using this skill, read and comply with the self-test rules in `{project-root}/.cursor/rules/bmad-bug-assistant.mdc`. **Before** initiating an mcp_task or party-mode subtask, complete every item in that stage’s “Pre-initiation self-test list” and output the self-test results, or do not initiate.
-> **Party-mode source of truth (Cursor)**: `{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`. Cursor-side party-mode rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit-gate semantics must follow that file; this skill must not define a second gate contract.
+> **Party-mode source of truth (Cursor)**: `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`. All party-mode rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit-gate semantics must follow that file; this skill must not define a second gate contract.
 
 This skill defines the complete workflow **Root Cause Analysis → BUGFIX documentation → audit → (optional) information updates → task-list supplement → implementation → post-implementation audit**. **Post-implementation audit is mandatory, not optional.** If it fails, apply the audit’s change requests and re-audit until it passes.
 

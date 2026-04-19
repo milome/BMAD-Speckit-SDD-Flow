@@ -28,6 +28,7 @@ const os = require('node:os');
 const { spawnSync } = require('node:child_process');
 
 const PKG_ROOT = path.resolve(__dirname, '..');
+const ROOT_PACKAGE_JSON = require(path.join(PKG_ROOT, 'package.json'));
 const { syncSpecifyMirror } = require(path.join(
   PKG_ROOT,
   '_bmad',
@@ -36,6 +37,19 @@ const { syncSpecifyMirror } = require(path.join(
   'node',
   'speckit-mirror.js'
 ));
+
+function resolveInstallSurfaceManifestTools() {
+  const candidates = [
+    path.join(PKG_ROOT, 'packages', 'bmad-speckit', 'src', 'services', 'install-surface-manifest.js'),
+    path.join(PKG_ROOT, 'node_modules', 'bmad-speckit', 'src', 'services', 'install-surface-manifest.js'),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return require(candidate);
+    }
+  }
+  return null;
+}
 const args = process.argv.slice(2);
 const fullMode = args.includes('--full');
 const noPackageJson = args.includes('--no-package-json');
@@ -242,6 +256,32 @@ const targetArg = args.find(
 const TARGET = targetArg
   ? path.resolve(targetArg)
   : (process.env.INIT_CWD && path.resolve(process.env.INIT_CWD)) || process.cwd();
+const installSurfaceManifestTools = resolveInstallSurfaceManifestTools();
+const installTracker =
+  installSurfaceManifestTools &&
+  typeof installSurfaceManifestTools.createInstallStateTracker === 'function' &&
+  typeof installSurfaceManifestTools.collectManagedSurfaceSpecs === 'function'
+    ? installSurfaceManifestTools.createInstallStateTracker({
+        projectRoot: TARGET,
+        packageName: ROOT_PACKAGE_JSON.name,
+        packageVersion: ROOT_PACKAGE_JSON.version,
+        installedVia:
+          process.env.npm_lifecycle_event === 'postinstall' || process.env.INIT_CWD
+            ? 'postinstall'
+            : 'bmad-speckit-init',
+        installedTools: [agentTarget],
+      })
+    : null;
+
+if (installTracker) {
+  installTracker.registerProjectSpecs(
+    installSurfaceManifestTools.collectManagedSurfaceSpecs(
+      TARGET,
+      path.join(PKG_ROOT, '_bmad'),
+      [agentTarget]
+    )
+  );
+}
 
 /**
  * Deep merge BMAD settings with global settings, preserving global hooks.
@@ -955,6 +995,13 @@ const bmadOutputConfig = path.join(bmadOutputDir, 'config');
 if (!fs.existsSync(bmadOutputConfig)) {
   fs.mkdirSync(bmadOutputConfig, { recursive: true });
   console.log('Created _bmad-output/config/ (empty structure for target project)');
+}
+
+if (installTracker) {
+  installTracker.finalize();
+  console.log(
+    'Wrote install surface manifest + install-state snapshot metadata to _bmad-output/config/.'
+  );
 }
 
 // Speckit 规格根目录（与 docs/tutorials/getting-started.md、设计文档 §4.10 一致；具体 epic 由 /speckit.specify 等写入）

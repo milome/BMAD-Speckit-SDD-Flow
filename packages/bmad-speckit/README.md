@@ -12,6 +12,7 @@ BMAD-Speckit CLI：init、check、version 等子命令。
 | `upgrade` | 升级项目内模板版本 |
 | `config get/set/list` | 读写 bmad-speckit 配置 |
 | `feedback` | 显示反馈入口与全流程兼容 AI 列表 |
+| `uninstall` | 安全卸载当前项目中由安装器受管的 BMAD/Speckit 安装面 |
 
 ## 配置存储位置
 
@@ -19,6 +20,28 @@ BMAD-Speckit CLI：init、check、version 等子命令。
 - **全局**：`~/.bmad-speckit/config.json`
 
 项目配置覆盖全局同名键。
+
+## 卸载边界
+
+```bash
+npx bmad-speckit uninstall
+```
+
+可选参数：
+
+```bash
+npx bmad-speckit uninstall --agent cursor
+npx bmad-speckit uninstall --remove-global-skills
+npx bmad-speckit uninstall --dry-run
+```
+
+重要边界：
+
+- 只删除安装器记录为受管的安装面
+- 不直接整删 `.cursor`、`.claude`、全局 skills 根目录
+- **禁止删除 `_bmad-output`**
+- 对安装前已存在且被覆盖的条目，优先恢复快照；无法安全恢复时会 `skip + report`
+- 卸载报告写入：`_bmad-output/config/bmad-speckit-uninstall-report.json`
 
 ## 与 bmad-method 关系
 

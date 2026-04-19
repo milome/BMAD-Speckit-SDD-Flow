@@ -93,6 +93,18 @@ See [WSL / Shell scripts](docs/how-to/wsl-shell-scripts.md) for full shell scrip
 
 面向消费项目的完整安装入口见 [Consumer Installation Guide](docs/how-to/consumer-installation.md)。如果你需要继续配置 provider 的 `baseUrl` / `apiKeyEnv` / `model`，也从这篇开始。
 
+如果你后续需要安全卸载当前项目中的受管安装面，使用：
+
+```bash
+npx bmad-speckit uninstall
+```
+
+边界：
+
+- 只删除安装器受管条目
+- 不整删 `.cursor`、`.claude`、全局 skills 根目录
+- **禁止删除 `_bmad-output`**
+
 如果你后续确实需要把运行时信息通过工具接口暴露给 agent，再看 [Runtime MCP Installation](docs/how-to/runtime-mcp-installation.md)。该能力不是默认安装产物，需要显式启用。
 
 ---

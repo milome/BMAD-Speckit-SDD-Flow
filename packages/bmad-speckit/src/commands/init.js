@@ -15,6 +15,11 @@ const { resolveNetworkTimeoutMs: resolveNetworkTimeoutMsUtil } = require('../uti
 const exitCodes = require('../constants/exit-codes');
 const AIRegistry = require('../services/ai-registry');
 const { validateBmadStructure } = require('../utils/structure-validate');
+const {
+  createInstallStateTracker,
+  collectManagedGlobalSkillSpecs,
+  collectManagedSurfaceSpecs,
+} = require('../services/install-surface-manifest');
 const { getFeedbackHintText } = require('./feedback');
 const { postInitGuideMsg } = require('../messages/cli');
 
@@ -260,6 +265,22 @@ function syncAllAIs(targetPath, aiIds, options = {}) {
   return { published: [...new Set(allPublished)], skippedReasons: allSkipped, errors };
 }
 
+function createInitInstallTracker(targetPath, bmadRoot, selectedAIs, installedVia, options = {}) {
+  const tracker = createInstallStateTracker({
+    projectRoot: targetPath,
+    packageName: 'bmad-speckit',
+    packageVersion: require('../../package.json').version,
+    installedVia,
+    installedTools: selectedAIs,
+  });
+
+  tracker.registerProjectSpecs(collectManagedSurfaceSpecs(targetPath, bmadRoot, selectedAIs));
+  if (!(options.noAiSkills === true || options['no-ai-skills'] === true || options.aiSkills === false)) {
+    tracker.registerGlobalSpecs(collectManagedGlobalSkillSpecs(targetPath, bmadRoot, selectedAIs));
+  }
+  return tracker;
+}
+
 /**
  * Validate generic AI constraints for a list of AI IDs.
  * @param {string[]} aiIds - AI IDs to check.
@@ -359,6 +380,13 @@ async function runWorktreeFlow(targetPath, options, _log) {
 
   const bmadPathResolved = options.resolvedBmadPath;
   const { createWorktreeSkeleton, writeSelectedAI, runGitInit } = require('./init-skeleton');
+  const installTracker = createInitInstallTracker(
+    targetPath,
+    bmadPathResolved,
+    selectedAIs,
+    'bmad-speckit-init-worktree',
+    options
+  );
 
   createWorktreeSkeleton(targetPath, bmadPathResolved, selectedAIs[0]);
   const noAiSkills = options.noAiSkills === true || options['no-ai-skills'] === true || options.aiSkills === false;
@@ -370,6 +398,7 @@ async function runWorktreeFlow(targetPath, options, _log) {
     skillsPublished: publishResult.published,
     skippedReasons: publishResult.skippedReasons,
   });
+  installTracker.finalize();
   if (!options.noGit) runGitInit(targetPath);
   for (const aiId of selectedAIs) maybePrintSubagentHint(aiId, targetPath);
   console.log(chalk.green(`\n✓ Initialized (worktree) at ${targetPath} [${selectedAIs.join(', ')}]`));
@@ -409,6 +438,13 @@ async function runNonInteractiveFlow(targetPath, options, log) {
 
   try {
     if (options.resolvedBmadPath) {
+      const installTracker = createInitInstallTracker(
+        finalPath,
+        options.resolvedBmadPath,
+        selectedAIs,
+        'bmad-speckit-init-worktree',
+        options
+      );
       createWorktreeSkeleton(finalPath, options.resolvedBmadPath, selectedAIs[0]);
       const publishResult = syncAllAIs(finalPath, selectedAIs, {
         bmadPath: options.resolvedBmadPath,
@@ -418,6 +454,7 @@ async function runNonInteractiveFlow(targetPath, options, log) {
         skillsPublished: publishResult.published,
         skippedReasons: publishResult.skippedReasons,
       });
+      installTracker.finalize();
       generateScript(finalPath, options.resolvedScriptType);
       if (!options.noGit) runGitInit(finalPath);
     } else {
@@ -432,12 +469,20 @@ async function runNonInteractiveFlow(targetPath, options, log) {
         offline: options.offline,
       });
       const modules = options.modules ? options.modules.split(',').map((m) => m.trim()).filter(Boolean) : null;
+      const installTracker = createInitInstallTracker(
+        finalPath,
+        path.join(templateDir, '_bmad'),
+        selectedAIs,
+        'bmad-speckit-init-command',
+        options
+      );
       await generateSkeleton(finalPath, templateDir, modules, options.force);
       const publishResult = syncAllAIs(finalPath, selectedAIs, { noAiSkills });
       writeSelectedAI(finalPath, selectedAIs, tag, null, {
         skillsPublished: publishResult.published,
         skippedReasons: publishResult.skippedReasons,
       });
+      installTracker.finalize();
       generateScript(finalPath, options.resolvedScriptType);
       if (!options.noGit) runGitInit(finalPath);
     }
@@ -597,6 +642,13 @@ async function runInteractiveFlow(targetPath, options, log) {
       offline: options.offline,
     });
     const modules = options.modules ? options.modules.split(',').map((m) => m.trim()).filter(Boolean) : null;
+    const installTracker = createInitInstallTracker(
+      finalPath,
+      path.join(templateDir, '_bmad'),
+      selectedAIs,
+      'bmad-speckit-init-command',
+      options
+    );
     await generateSkeleton(finalPath, templateDir, modules, options.force);
     const noAiSkills = options.noAiSkills === true || options['no-ai-skills'] === true || options.aiSkills === false;
     const publishResult = syncAllAIs(finalPath, selectedAIs, { noAiSkills });
@@ -604,6 +656,7 @@ async function runInteractiveFlow(targetPath, options, log) {
       skillsPublished: publishResult.published,
       skippedReasons: publishResult.skippedReasons,
     });
+    installTracker.finalize();
     generateScript(finalPath, options.resolvedScriptType);
     if (!options.noGit) {
       const { runGitInit } = require('./init-skeleton');

@@ -604,9 +604,15 @@ export function resolveStructuredGateProfileSelection(
       return confirmed;
     }
     if (providedGateProfileId) {
-      throw new Error(buildStructuredSelectionNeedsConfirmationTemplate(providedGateProfileId));
+      assertGateProfileSelectionAllowed(providedGateProfileId, inputText);
     }
     const explicit = detectExplicitGateProfileId(inputText);
+    if (explicit) {
+      assertGateProfileSelectionAllowed(explicit, inputText);
+    }
+    if (providedGateProfileId) {
+      throw new Error(buildStructuredSelectionNeedsConfirmationTemplate(providedGateProfileId));
+    }
     if (explicit && hasAcknowledgedUserSelection(inputText)) {
       throw new Error(buildIntensitySelectionRetryTemplate(explicit));
     }
@@ -616,6 +622,9 @@ export function resolveStructuredGateProfileSelection(
   const resolved = providedGateProfileId ?? confirmed;
   if (!resolved) {
     const explicit = detectExplicitGateProfileId(inputText);
+    if (explicit) {
+      assertGateProfileSelectionAllowed(explicit, inputText);
+    }
     if (explicit && hasAcknowledgedUserSelection(inputText)) {
       throw new Error(buildIntensitySelectionRetryTemplate(explicit));
     }

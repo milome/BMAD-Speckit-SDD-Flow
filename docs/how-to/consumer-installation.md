@@ -566,6 +566,36 @@ npx bmad-speckit-init --agent claude-code
 npx bmad-speckit-init --agent cursor
 ```
 
+## 卸载边界
+
+如果你需要卸载当前项目中的 BMAD/Speckit 安装面，使用：
+
+```powershell
+cd <consumer-root>
+npx bmad-speckit uninstall
+```
+
+可选：
+
+```powershell
+npx bmad-speckit uninstall --agent cursor
+npx bmad-speckit uninstall --remove-global-skills
+npx bmad-speckit uninstall --dry-run
+```
+
+必须明确的边界：
+
+- uninstall 只删除安装器记录为受管的项目内文件、子树和可选全局 skill 目录
+- uninstall **不会**直接整删 `.cursor`、`.claude` 或全局 skills 根目录
+- **禁止删除 `_bmad-output`**
+- 对安装前已存在且被覆盖的条目，系统会优先恢复 install-state snapshot；无法安全恢复时会 `skip + report`
+
+卸载报告位置：
+
+```text
+<consumer-root>/_bmad-output/config/bmad-speckit-uninstall-report.json
+```
+
 ## Hook 提示开关
 
 如果你希望本项目 hooks 在执行时把提示信息直接打印出来，可以打开：

@@ -161,10 +161,14 @@ After each round, allow the user to keep talking to the agents, and show the exi
   - `final_solution_task_list_100`: `closure_level = "high_confidence"` with `min_rounds = 100`, `ratio_threshold = 0.60`, and `tail_window = 3`. This tier is for **high-confidence final outputs** such as the final solution, final task list, BUGFIX §7, or Story finalization.
   - If the selected `gate_profile_id` is `quick_probe_20` or `decision_root_cause_50` but the request explicitly asks for high-confidence final outputs, the host / orchestrator must refuse the current tier, report the tier mismatch explicitly, and require an upgrade to `final_solution_task_list_100`; lower-tier outputs must not pretend to satisfy a final-output request.
 - **Checker invocation before exit**
-  - before showing `[E]`, run:
-    - `npx ts-node --project tsconfig.node.json --transpile-only scripts/party-mode-gate-check.ts --session-key <session_key> --write-all`
+  - before showing `[E]`, rerun the runtime-owned checker path rooted in `_bmad-output/party-mode/runtime/current-session.json`
+  - consumer/runtime path:
+    - `node .cursor/hooks/party-mode-read-current-session.cjs --project-root <project_root>`
+    - if the project-local helper is absent, fallback to:
+      - `node _bmad/runtime/hooks/party-mode-read-current-session.cjs --project-root <project_root>`
+  - `scripts/party-mode-gate-check.ts` is a repo-source debugging wrapper only; consumer installs must not require a project-root `scripts/` directory
   - in the production path, do not pass CLI overrides for `min_rounds`, `ratio_threshold`, or `tail_window`; `.meta.json` is the source of truth
-  - if the checker returns any `failed_checks`, explicitly report them and continue the discussion; do not show or accept `[E]`
+  - if the checker/helper returns any `failed_checks`, explicitly report them and continue the discussion; do not show or accept `[E]`
 
 **Convergence Conditions**
 
@@ -173,6 +177,12 @@ After the minimum round count, all of the following must be true before `[E]` is
 - a single solution / consensus exists with no unresolved wording like "optional" or "consider"
 - no new risks, edge cases, or omissions appeared in the last 2-3 rounds
 - the challenger has given a final review statement
+
+**Batch handoff rule (mandatory)**
+
+- if `Party Mode Session Bootstrap (JSON)` or `.meta.json` contains `current_batch_target_round` / `target_rounds_total`, the facilitator must **not** hand control back to the main Agent before `current_batch_target_round`
+- do not stop at non-boundary progress snapshots such as `10/50` or `11/50`
+- return control only after the current batch target round is reached and the checkpoint has been rendered
 
 If the challenger has not given a final review statement, explicitly request one.
 
@@ -205,13 +215,19 @@ If the active stage profile has not satisfied its `stage-specific exit criteria`
   - `- Tail Window No New Gap: PASS|FAIL`
   - `- Final Result: PASS|FAIL`
 
+**When to show [E]**
+
+- show `[E]` only after the minimum rounds and convergence conditions are satisfied
+- if the current stop point is only a batch checkpoint and not the final convergence point, do not show `[E]`
+
 **Recovery Order**
 
 - read `.meta.json`
 - restore `.latest.json`
 - validate `source_log_sha256` against the session log
 - restore the last `tail_window` raw rounds
-- rerun `scripts/party-mode-gate-check.ts`
+- rerun the installed runtime checker/helper from `current-session.json`
+- do not require `scripts/party-mode-gate-check.ts` in consumer projects
 
 **Rollback Triggers**
 

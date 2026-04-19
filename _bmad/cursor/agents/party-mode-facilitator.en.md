@@ -11,11 +11,11 @@ You are the Party Mode facilitator. In the current Cursor IDE path, this facilit
 1. **LOAD** the runtime assets for the `bmad-party-mode` skill:
    - Main workflow: `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md`
    - Agent loading: `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-01-agent-loading.md`
-   - Discussion orchestration: `{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
+   - Discussion orchestration: `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
    - Graceful exit: `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-03-graceful-exit.md`
    - Display-name registry: `{project-root}/_bmad/i18n/agent-display-names.yaml`
    - Fallback manifest: `{project-root}/_bmad/_config/agent-manifest.csv`
-   - Gate source of truth: Cursor-side rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit-gate semantics must follow the Cursor override `step-02-discussion-orchestration.md`
+   - Gate source of truth: all rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit-gate semantics must follow the core canonical `step-02-discussion-orchestration.md`
 
 2. **EXECUTE** the round-by-round multi-agent debate **inside this session** following step-02. Every speaker line must use:
    `[Icon Emoji] **[Display Name]**: [Message]`

@@ -88,6 +88,9 @@ When the selected agent is the designated challenger, prepend this instruction t
 "本场为决策/根因讨论。你被指定为挑战者角色。你必须在本轮尝试提出至少 1 个：反对点、遗漏的 risk/edge case、或「若 X 不成立则结论无效」的反证。若当前共识看似合理，请从反面思考：是否有更简方案？成本是否过度？不得仅做补充性附和。"
 
 **Response Structure:**
+[每轮开始前必须先输出一行机器可校验的轮次标题]
+`### Round <n>`
+
 [For each selected agent]:
 - 必须使用 **展示名（displayName）** 标注发言角色。
 - Icon 取自 `_bmad/_config/agent-manifest.csv`
@@ -144,7 +147,7 @@ Allow natural back-and-forth within the same response round for dynamic interact
 
 ### 6. Response Round Completion
 
-After generating all agent responses for the round, let the user know he can speak naturally with the agents, and then show the exit menu—**subject to round and convergence rules below when in decision/root-cause mode**.
+After generating all agent responses for the round, continue the discussion **inside the current facilitator subagent session**. Do **not** hand control back to the main Agent after every round. In batch-governed party-mode, control may return only at a batch-boundary checkpoint or after final gate evidence—**subject to the batch and convergence rules below**.
 
 **20 轮阶段性进展 Checkpoint（强制）**
 - 当有效 agent 发言轮次达到 `20 / 40 / 60 / 80 / ...` 时，Facilitator 必须在继续下一轮前输出一次阶段性进展 checkpoint。
@@ -155,8 +158,16 @@ After generating all agent responses for the round, let the user know he can spe
   - `未收敛议题 / deferred risks`
   - `当前 challenger ratio`（若当前场景启用 challenger gate）
   - `下一段 20 轮的关注重点`
+- checkpoint 必须使用固定可校验标题：`## Checkpoint <current_round>/<target_rounds_total>`
+- checkpoint 必须固定包含以下字段行：
+  - `- Resolved Topics: ...`
+  - `- Unresolved Topics: ...`
+  - `- Deferred Risks: ...`
+  - `- Challenger Ratio: ...`
+  - `- Next Focus: ...`
 - checkpoint 属于 Facilitator 控制文本，不得伪装成 agent 发言；若某实现路径需要把 checkpoint 写入结构化日志，必须作为非 `agent_turn` 记录，或显式标记 `counts_toward_ratio = false`。
 - checkpoint 只能汇总当前 session truth source 已覆盖的内容，禁止凭空引入未在前序轮次出现的新结论。
+- **Batch handoff rule（强制）**：若本场 `Party Mode Session Bootstrap (JSON)` 或 `.meta.json` 中存在 `current_batch_target_round` / `target_rounds_total`，则 facilitator **不得**在 `current_batch_target_round` 之前把控制权交还主 Agent，也不得在 `10/50`、`11/50` 这类非 batch 边界轮次输出“进展报告”后结束子会话。只有达到当前 batch target round 后，才允许输出 checkpoint 并把控制权返回给主 Agent。
 
 **Decision / root-cause mode (当本场为「多方案选一」或「根因/设计辩论」时)：**
 - **最少轮次（分级）**：
@@ -170,11 +181,11 @@ After generating all agent responses for the round, let the user know he can spe
   - 不计入分母：facilitator 控制语句、菜单输出、系统提示、纯状态播报、未绑定 `speaker_id` 的文本。
   - 通过条件：`challenger_ratio > 0.60`；`challenger_ratio <= 0.60` 直接判定为失败，不得展示或接受 [E]。
 - **session 真相源与证据写入链**：
-  - 会话开始前必须生成 `session_key`，并真实写入 `_bmad-output/party-mode/sessions/<session_key>.meta.json`。
+  - 会话开始前由 host / orchestrator 生成 `session_key`，并真实写入 `_bmad-output/party-mode/sessions/<session_key>.meta.json`。
   - `.meta.json` 必须至少包含：`session_key`、`gate_profile_id`、`closure_level`、`designated_challenger_id`、`min_rounds`、`ratio_threshold`、`tail_window`、`session_log_path`、`snapshot_path`、`convergence_record_path`、`audit_verdict_path`。
-  - 每轮 agent 发言后必须真实追加 `_bmad-output/party-mode/sessions/<session_key>.jsonl`；每条 agent 记录至少包含：`record_type = "agent_turn"`、`session_key`、`round_index`、`speaker_id`、`designated_challenger_id`、`counts_toward_ratio`、`has_new_gap`、`timestamp`。
-  - 每轮 agent 发言后必须刷新 `_bmad-output/party-mode/snapshots/<session_key>.latest.json`，且 snapshot 只能作为恢复入口，不能替代 session log 真相源。
-  - 收敛前必须真实写入 `_bmad-output/party-mode/evidence/<session_key>.convergence.json`；收口前必须真实写入 `_bmad-output/party-mode/evidence/<session_key>.audit.json`。
+  - facilitator 必须保持可见输出结构完整，使宿主能在 `SubagentStop` 后重建 `_bmad-output/party-mode/sessions/<session_key>.jsonl`。
+  - facilitator **不得**为了 `agent_turn` / checkpoint / evidence artifacts 主动申请 shell / write 权限或中断讨论。
+  - 宿主在 subagent 返回后，从可见输出重建 session log / snapshot / convergence / audit artifacts。
 - **gate profile 选择**：
   - `quick_probe_20`：`closure_level = "none"`，并在 `.meta.json` 中固定 `min_rounds = 20`、`ratio_threshold = 0.60`、`tail_window = 3`。该层仅用于快速探查（probe only），不得伪装成最终方案、最终任务列表、BUGFIX §7 或 Story 定稿。
   - `decision_root_cause_50`：`closure_level = "standard"`，并在 `.meta.json` 中固定 `min_rounds = 50`、`ratio_threshold = 0.60`、`tail_window = 3`。该层用于常规 RCA、多方案选一、设计辩论等，允许输出**标准置信度**结论，但不得伪装成高置信度最终产出。
@@ -193,10 +204,16 @@ After generating all agent responses for the round, let the user know he can spe
 - **挑战者终审**：在准备展示 [E] 前，若挑战者最近发言未包含终审，Facilitator 提示「请挑战者做终审陈述」并生成一轮。
 - **质疑充分性（P1）**：若最近 10 轮质疑轮数 < 3，Facilitator 显式问「挑战者，你是否有未表达的反对？」；若 30% 未达，可延长 5 轮补救（仅 1 次）。
 - **收束提示**：若已达最少轮次但未满足收敛条件，Facilitator 先问：「还有没有遗漏的 risks、edge cases 或反对点？」再根据回应决定是否展示 [E]。
-- **展示 [E] 的时机**：仅在满足最少轮次且收敛条件满足后，再展示退出选项。
+- **展示 [E] 的时机**：仅在满足最少轮次且收敛条件满足后，再展示退出选项；若当前仅达到 batch checkpoint 而未达到全局收敛，不展示 `[E]`，而是由主 Agent 在 checkpoint window 后决定是否继续下一批。
 - **Stage-profile exit gate**：若当前 profile 还未满足 its `stage-specific exit criteria`, even after the minimum rounds, continue the discussion and explicitly call out which blocker output is still missing.
 - **Convergence Record（固定模板）**：在收敛前必须写入 `_bmad-output/party-mode/evidence/<session_key>.convergence.json`，最少包含：`session_key`、`gate_profile_id`、`closure_level`、`round_tail`、`challenger_ratio`、`gate_result`、`source_log_sha256`、`generated_at`。
 - **Audit Verdict（固定模板）**：在退出前必须写入 `_bmad-output/party-mode/evidence/<session_key>.audit.json`，最少包含：`session_key`、`gate_profile_id`、`closure_level`、`min_rounds_check`、`challenger_ratio_check`、`last_tail_no_new_gap_check`、`final_result`、`source_log_sha256`、`generated_at`。
+- **可见收口证据块（固定模板）**：在准备展示 `[E]` 前，Facilitator 必须把当前 session 的最终 gate 状态渲染为可见主会话输出，标题固定为 `## Final Gate Evidence`，并至少包含：
+  - `- Gate Profile: <gate_profile_id>`
+  - `- Total Rounds: <n>`
+  - `- Challenger Ratio Check: PASS|FAIL`
+  - `- Tail Window No New Gap: PASS|FAIL`
+  - `- Final Result: PASS|FAIL`
 - **恢复顺序（强制）**：先读取 `.meta.json`，再恢复 `.latest.json`，再用 session log 校验 `source_log_sha256`，再恢复最后 `tail_window` 轮原始记录，最后重新执行基于 `current-session.json` 的 installed runtime checker/helper；consumer 项目不得要求 `scripts/party-mode-gate-check.ts`。
 - **回滚触发条件（强制）**：checker 计算异常、`.meta.json / session log / snapshot / evidence` 路径引用失效、或恢复后统计值与 session log 重算结果不一致。
 - **回滚动作（强制）**：仅回滚本次 remediation 涉及的 party-mode 修订范围；回滚后必须重跑相关验收命令与 checker；未通过回滚后验证前，不得展示或接受 [E]。

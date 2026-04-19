@@ -36,7 +36,7 @@ if (process.argv.includes('init') && ttyUtils.isTTY()) {
 program
   .name('bmad-speckit')
   .version(pkg.version)
-  .description('BMAD-Speckit: init, check, version, upgrade, config, feedback');
+  .description('BMAD-Speckit: init, check, version, upgrade, uninstall, config, feedback');
 
 program
   .command('init [project-name]')
@@ -97,6 +97,22 @@ program
       dryRun: opts.dryRun,
       template: opts.template,
       offline: opts.offline,
+    })
+  );
+
+program
+  .command('uninstall')
+  .description('Safely uninstall managed bmad-speckit install surface from current project')
+  .option('--target <path>', 'Project root to uninstall from', '.')
+  .option('--agent <ids>', 'Optional agent filter (cursor|claude-code|cursor,claude-code)')
+  .option('--remove-global-skills', 'Also remove managed global skill directories')
+  .option('--dry-run', 'Preview uninstall actions without changing files')
+  .action((opts) =>
+    loadCommand('../src/commands/uninstall', 'uninstallCommand')({
+      target: opts.target,
+      agent: opts.agent,
+      removeGlobalSkills: opts.removeGlobalSkills,
+      dryRun: opts.dryRun,
     })
   );
 

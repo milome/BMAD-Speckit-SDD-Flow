@@ -33,6 +33,9 @@ describe('install to consumer → CLI acceptance', () => {
       );
       expect(existsSync(join(target, '.mcp.json'))).toBe(false);
       expect(existsSync(join(target, '.runtime-mcp'))).toBe(false);
+      expect(
+        existsSync(join(target, '_bmad-output', 'config', 'bmad-speckit-install-manifest.json'))
+      ).toBe(true);
 
       const out = run('npx bmad-speckit check', target);
       expect(out).toMatch(/Check OK|OK/i);
@@ -77,6 +80,9 @@ describe('install to consumer → CLI acceptance', () => {
       expect(existsSync(join(target, '.runtime-mcp'))).toBe(false);
       expect(existsSync(join(target, 'scripts', 'emit-runtime-policy.cjs'))).toBe(false);
       expect(existsSync(join(target, 'scripts', 'start-runtime-dashboard-server.cjs'))).toBe(false);
+      expect(
+        existsSync(join(target, '_bmad-output', 'config', 'bmad-speckit-install-manifest.json'))
+      ).toBe(true);
 
       const out = run('npx bmad-speckit check', target);
       expect(out).toMatch(/Check OK|OK/i);
@@ -191,6 +197,46 @@ describe('install to consumer → CLI acceptance', () => {
       expect(existsSync(runtime)).toBe(true);
       expect(readFileSync(runtime, 'utf8')).toBe(readFileSync(canonical, 'utf8'));
       expect(readFileSync(runtime, 'utf8')).toContain('name: party-mode-facilitator');
+    } finally {
+      rmSync(target, { recursive: true, force: true });
+    }
+  }, 90_000);
+
+  it('npm install consumer preserves prior managed surface when adding a second agent init pass', () => {
+    const target = mkdtempSync(join(tmpdir(), 'accept-consumer-manifest-merge-'));
+    try {
+      writeFileSync(
+        join(target, 'package.json'),
+        JSON.stringify({ name: 'consumer-app', version: '1.0.0', private: true }),
+        'utf8'
+      );
+
+      const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
+      run(`npm install --save-dev "file:${pkgPath}"`, target);
+
+      const manifestPath = join(
+        target,
+        '_bmad-output',
+        'config',
+        'bmad-speckit-install-manifest.json'
+      );
+      const before = JSON.parse(readFileSync(manifestPath, 'utf8'));
+      expect(before.installed_tools).toContain('cursor');
+      expect(
+        before.managed_surface.some((entry: { path: string }) => entry.path.startsWith('.cursor/'))
+      ).toBe(true);
+
+      run('npx bmad-speckit-init --agent claude-code', target);
+
+      const after = JSON.parse(readFileSync(manifestPath, 'utf8'));
+      expect(after.installed_tools).toContain('cursor');
+      expect(after.installed_tools).toContain('claude-code');
+      expect(
+        after.managed_surface.some((entry: { path: string }) => entry.path.startsWith('.cursor/'))
+      ).toBe(true);
+      expect(
+        after.managed_surface.some((entry: { path: string }) => entry.path.startsWith('.claude/'))
+      ).toBe(true);
     } finally {
       rmSync(target, { recursive: true, force: true });
     }
