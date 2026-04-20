@@ -25,15 +25,16 @@ describe('bmad-help entry surface contract', () => {
       expect(doc).toContain('implementationReadinessStatus');
       expect(doc).toContain('最多 1 到 2 个关键问题');
       expect(doc).toContain('recommended');
-      expect(doc).toContain('allowed but not recommended');
       expect(doc).toContain('blocked');
+      expect(doc).toContain('rerouteRequired');
       expect(doc).toContain('implementation-readiness');
     }
 
     expect(command).toMatch(/LOAD.*bmad-help.*SKILL\.md/);
     expect(command).toContain('contextMaturity');
     expect(command).toContain('implementationReadinessStatus');
-    expect(command).toContain('recommended / allowed but not recommended / blocked');
+    expect(command).toContain('recommended / blocked');
+    expect(command).toContain('rerouteRequired');
 
     for (const doc of [skillCard, coreSkillCard]) {
       expect(doc).toContain('contextMaturity');

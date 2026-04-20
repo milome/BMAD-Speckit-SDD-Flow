@@ -63,6 +63,8 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 
 **Mandatory gate**: Before Step 1, the main Agent **must** launch a TASKS/BUGFIX document pre-audit and obtain PASS. This pre-audit is not optional and cannot be deferred until after implementation.
 
+**Mandatory gate 2**: After `auditor-tasks-doc` PASS and before Step 1 starts, the main Agent **must** execute the unified `implementation-readiness` gate assertion. Only `decision=pass` may enter Step 1. `decision=block` means stop and repair facts first; `decision=reroute` means `standalone_tasks` may not continue directly and must switch to the recommended flow.
+
 **Tool**: 优先 Cursor Task 调度 `code-reviewer`；若不可用，则 `mcp_task` + `generalPurpose`
 
 **Audit target**:
@@ -81,7 +83,7 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 **Tool**: `mcp_task`  
 **subagent_type**: `generalPurpose`
 
-**Implementation precondition**: `auditor-tasks-doc` must have passed the TASKS/BUGFIX document pre-audit before this step starts.
+**Implementation precondition**: `auditor-tasks-doc` must have passed the TASKS/BUGFIX document pre-audit before this step starts, **and** the unified `implementation-readiness` gate assertion must currently return `decision=pass`.
 
 **Prompt template** (fill placeholders; pass full TASKS path and constraints):
 

@@ -20,7 +20,7 @@ description: |
 - `quick_probe_20` 仅用于 probe-only；若用户当前选择 `quick_probe_20` 或 `decision_root_cause_50`，却又明确要求高置信最终产物，主 Agent 必须拒绝当前档位并要求升级到 `final_solution_task_list_100`。
 - Cursor 分支中不做中途暂停，也不在 `20 / 40 / ...` 轮次交还主 Agent；子代理一旦启动，必须在同一会话内连续运行到用户选择的总轮次。
 
-本 skill 定义 **根因分析 → BUGFIX 文档 → 审计 →（可选）信息补充更新 → 任务列表补充 → 实施 → 实施后审计** 的完整工作流。**实施前的 `auditor-bugfix` 属于 BUGFIX 文档审计，且必须先于任何修复实现执行。** **实施后审计为必须步骤，非可选。**未通过时必须按修改建议修复后再次审计，直至通过。
+本 skill 定义 **根因分析 → BUGFIX 文档 → 审计 →（可选）信息补充更新 → 任务列表补充 → 实施 → 实施后审计** 的完整工作流。**实施前的 `auditor-bugfix` 属于 BUGFIX 文档审计，且必须先于任何修复实现执行。** `auditor-bugfix` 通过后，主 Agent **仍必须**执行统一 `implementation-readiness` gate 断言；仅当结果为 `decision=pass` 时，方可进入实施。**实施后审计为必须步骤，非可选。**未通过时必须按修改建议修复后再次审计，直至通过。
 
 ## 强制约束（必须遵守）
 

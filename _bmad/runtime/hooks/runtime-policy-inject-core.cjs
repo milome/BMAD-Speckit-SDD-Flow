@@ -110,6 +110,105 @@ function isCursorTaskLikeTool(input) {
   return toolName === 'task' || toolName === 'mcp_task';
 }
 
+function collectSubagentRouteText(input) {
+  const values = [
+    readInputPath(input, [['tool_input', 'subagent_type']]),
+    readInputPath(input, [['tool_input', 'subagentType']]),
+    readInputPath(input, [['tool_input', 'subtypeOrExecutor']]),
+    readInputPath(input, [['tool_input', 'executor']]),
+    readInputPath(input, [['tool_input', 'executor_name']]),
+    readInputPath(input, [['tool_input', 'agent_type']]),
+    readInputPath(input, [['tool_input', 'agentType']]),
+    readInputPath(input, [['tool_input', 'agent_name']]),
+    readInputPath(input, [['tool_input', 'agentName']]),
+    readInputPath(input, [['subagent_type']]),
+    readInputPath(input, [['subagentType']]),
+    readInputPath(input, [['subtypeOrExecutor']]),
+    readInputPath(input, [['executor']]),
+    readInputPath(input, [['agent_type']]),
+    readInputPath(input, [['agent_name']]),
+  ]
+    .filter((value) => typeof value === 'string' && value.trim())
+    .join('\n')
+    .toLowerCase();
+  return values;
+}
+
+function isAuditOrReviewRouteText(routeText, userText) {
+  const joined = `${String(routeText || '')}\n${String(userText || '')}`.toLowerCase();
+  return /code-reviewer|auditor-|audit|审计|review|评审/.test(joined);
+}
+
+function isImplementationEntryRelevantToolCall(input, hookMode, userText) {
+  if (hookMode === 'session') {
+    return false;
+  }
+  if (!input || typeof input !== 'object') {
+    return false;
+  }
+  const routeText = collectSubagentRouteText(input);
+  if (isAuditOrReviewRouteText(routeText, userText)) {
+    return false;
+  }
+  if (isPartyModeFacilitatorIntent(userText) || isPartyModeFacilitatorPreflightRequest(input)) {
+    return false;
+  }
+  if (hookMode === 'subagent') {
+    return true;
+  }
+  const toolName = typeof input?.tool_name === 'string' ? input.tool_name.trim() : '';
+  return toolName === 'Agent' || isCursorTaskLikeTool(input);
+}
+
+function buildImplementationEntryGateStopMessage(gate) {
+  const lines = [
+    'Implementation Entry Gate blocked the current execution.',
+    `gate: \`${gate?.gateName || 'implementation-readiness'}\``,
+    `decision: \`${gate?.decision || 'block'}\``,
+    `requestedFlow: \`${gate?.requestedFlow || 'unknown'}\``,
+    `recommendedFlow: \`${gate?.recommendedFlow || 'unknown'}\``,
+    `readinessStatus: \`${gate?.readinessStatus || 'unknown'}\``,
+  ];
+  const blockerSummary = Array.isArray(gate?.blockerSummary) ? gate.blockerSummary : [];
+  if (blockerSummary.length > 0) {
+    lines.push('blockers:');
+    for (const item of blockerSummary) {
+      lines.push(`- ${item}`);
+    }
+  }
+  if (gate?.rerouteRequired && gate?.recommendedFlow && gate.recommendedFlow !== gate.requestedFlow) {
+    lines.push(`必须先切换到 \`${gate.recommendedFlow}\` 路径，再继续进入实现。`);
+  } else {
+    lines.push('请先补齐 implementation-readiness 所需事实，再重试当前实现启动。');
+  }
+  return lines.join('\n');
+}
+
+function buildImplementationEntryGateHardStop(mode, gate, stderrPrefix = '') {
+  const errText = buildImplementationEntryGateStopMessage(gate);
+  if (mode === 'subagent') {
+    return {
+      exitCode: 1,
+      output: JSON.stringify({
+        hookSpecificOutput: {
+          hookEventName: 'SubagentStart',
+          additionalContext: errText,
+        },
+      }),
+      stderr: `${stderrPrefix}${errText}`,
+    };
+  }
+  return {
+    exitCode: 0,
+    output: JSON.stringify({
+      continue: false,
+      stopReason: 'Implementation Entry Gate blocked execution',
+      systemMessage: errText,
+    }),
+    stderr: `${stderrPrefix}${errText}`,
+  };
+}
+
 function hasCursorFacilitatorRuntimeTarget(projectRoot) {
   return fs.existsSync(path.join(projectRoot, '.cursor', 'agents', 'party-mode-facilitator.md'));
 }
@@ -1245,6 +1344,21 @@ async function runtimePolicyInjectCore({ host }) {
 
   const json = (res.stdout || '').trim();
   const userMsg = extractUserMessage(input, hookMode);
+  let parsedPolicy = null;
+  try {
+    parsedPolicy = JSON.parse(json);
+  } catch {
+    parsedPolicy = null;
+  }
+  if (
+    parsedPolicy &&
+    parsedPolicy.implementationEntryGate &&
+    parsedPolicy.stage === 'implement' &&
+    isImplementationEntryRelevantToolCall(input, hookMode, userMsg) &&
+    parsedPolicy.implementationEntryGate.decision !== 'pass'
+  ) {
+    return buildImplementationEntryGateHardStop(mode, parsedPolicy.implementationEntryGate, stateDiag);
+  }
   const langRes = runResolveLanguagePolicyCli(root, userMsg, true);
   const langPayload = langRes.status === 0 ? parseLanguagePolicyPayload(langRes.stdout) : null;
   const resolvedMode = extractResolvedMode(langPayload);

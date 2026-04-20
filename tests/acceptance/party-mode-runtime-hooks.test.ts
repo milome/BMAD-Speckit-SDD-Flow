@@ -28,7 +28,7 @@ describe('party-mode runtime hooks', () => {
         input: JSON.stringify({
           cwd: tempRoot,
           gateProfileId: 'final_solution_task_list_100',
-          task: 'Run party-mode-facilitator for BUGFIX final solution and §7 task list',
+          task: 'Run party-mode-facilitator for BUGFIX final solution and §7 task list. Canonical document path: _bmad-output/implementation-artifacts/_orphan/BUGFIX_party_mode_runtime_hooks.md',
         }),
         encoding: 'utf8',
         env: {

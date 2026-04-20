@@ -17,11 +17,16 @@ import {
   deriveBmadHelpComplexity,
   deriveBmadHelpContextMaturity,
   deriveImplementationReadinessStatus,
+  resolveImplementationEntryGate,
   implementationReadinessPassed,
   shouldUpgradeStandaloneTasksToStory,
   resolveRuntimePolicy,
   type BmadHelpComplexity,
   type BmadHelpComplexityFactors,
+  type ImplementationEntryDecision,
+  type ImplementationEntryEvidenceSources,
+  type ImplementationEntryFlowId,
+  type ImplementationEntryGate,
   type ImplementationReadinessEvidence,
   type ImplementationReadinessStatus,
   type ResolveRuntimePolicyInput,
@@ -51,6 +56,7 @@ export interface BmadHelpRoutingEvidenceSources {
   readinessReportPath: string | null;
   remediationArtifactPath: string | null;
   executionRecordPath: string | null;
+  authoritativeAuditReportPath: string | null;
 }
 
 export interface BmadHelpRoutingState {
@@ -61,10 +67,14 @@ export interface BmadHelpRoutingState {
   complexityForcedReasons: string[];
   implementationReadinessStatus: ImplementationReadinessStatus;
   implementationEntryRecommended: boolean;
+  implementationEntryDecision: ImplementationEntryDecision;
   shouldUpgradeStandaloneTasks: boolean;
   recommendedFlow: RuntimeFlowId;
-  recommendationLabel: 'recommended' | 'allowed but not recommended' | 'blocked';
+  recommendationLabel: 'recommended' | 'blocked';
+  rerouteRequired: boolean;
+  rerouteReason: string | null;
   canonicalImplementationGate: typeof IMPLEMENTATION_GATE_NAME;
+  implementationEntryGate: ImplementationEntryGate;
   evidence: {
     contextMaturity: ContextMaturityEvidence;
     implementationReadiness: ImplementationReadinessEvidence;
@@ -99,6 +109,8 @@ export type RuntimePolicyWithBmadHelp = RuntimePolicy & {
   complexity: BmadHelpComplexity;
   implementationReadinessStatus: ImplementationReadinessStatus;
   implementationEntryRecommended: boolean;
+  implementationEntryDecision: ImplementationEntryDecision;
+  implementationEntryGate: ImplementationEntryGate;
   helpRouting: BmadHelpRoutingState;
   reviewerContract: ReturnType<typeof buildReviewerContractProjection>;
 };
@@ -112,7 +124,7 @@ interface LatestReadinessReportSummary {
 interface AuditFactSummary {
   artifactDocPath: string | null;
   reportPath: string | null;
-  stage: 'bugfix' | 'standalone_tasks' | null;
+  stage: 'story' | 'bugfix' | 'standalone_tasks' | null;
   auditPassed: boolean | null;
   closeoutApproved: boolean | null;
 }
@@ -404,9 +416,13 @@ function findImplementationArtifactDocs(
 function resolveAuditFactSummary(input: {
   projectRoot?: string;
   flow: RuntimeFlowId;
+  stage: StageName;
   runtimeContext: Partial<RuntimeContextFile> | null;
 }): AuditFactSummary {
-  if (input.flow !== 'bugfix' && input.flow !== 'standalone_tasks') {
+  const requiresImplementationEntryAudit =
+    input.stage === 'implement' || input.stage === 'post_audit';
+
+  if (!requiresImplementationEntryAudit) {
     return {
       artifactDocPath: null,
       reportPath: null,
@@ -428,6 +444,58 @@ function resolveAuditFactSummary(input: {
 
   syncAuditIndexFromAllReports(input.projectRoot);
   const registry = readRegistryOrDefault(input.projectRoot);
+
+  if (input.flow === 'story') {
+    const closeout = registry.latestReviewerCloseout;
+    const candidateArtifactPath = normalizeText(closeout?.artifactPath);
+    const scopedHints = [
+      input.runtimeContext?.artifactRoot,
+      input.runtimeContext?.artifactPath,
+      input.runtimeContext?.storyId,
+      input.runtimeContext?.runId,
+      input.runtimeContext?.epicId,
+    ]
+      .map((value) => normalizeText(value))
+      .filter(Boolean);
+    const candidateMatchesScope =
+      scopedHints.length === 0 ||
+      scopedHints.some((hint) =>
+        candidateArtifactPath.toLowerCase().includes(hint.toLowerCase())
+      );
+
+    if (
+      closeout &&
+      closeout.stage === 'story' &&
+      candidateMatchesScope
+    ) {
+      return {
+        artifactDocPath: closeout.artifactPath ?? null,
+        reportPath: closeout.reportPath ?? null,
+        stage: 'story',
+        auditPassed: closeout.auditStatus === 'PASS' && closeout.closeoutApproved === true,
+        closeoutApproved: closeout.closeoutApproved === true,
+      };
+    }
+
+    return {
+      artifactDocPath: null,
+      reportPath: null,
+      stage: 'story',
+      auditPassed: false,
+      closeoutApproved: false,
+    };
+  }
+
+  if (input.flow !== 'bugfix' && input.flow !== 'standalone_tasks') {
+    return {
+      artifactDocPath: null,
+      reportPath: null,
+      stage: null,
+      auditPassed: null,
+      closeoutApproved: null,
+    };
+  }
+
   const currentArtifactPath = selectBestScopedPath(Object.keys(registry.auditIndex[input.flow]), [
     input.runtimeContext?.artifactPath,
     input.runtimeContext?.artifactRoot,
@@ -459,6 +527,7 @@ function resolveAuditFactSummary(input: {
 
 function inferReadinessEvidence(input: {
   flow: RuntimeFlowId;
+  stage: StageName;
   report: LatestReadinessReportSummary | null;
   remediationArtifactPath: string | null;
   executionRecord: GovernancePacketExecutionRecord | null;
@@ -496,7 +565,8 @@ function inferReadinessEvidence(input: {
   }
 
   if (
-    (input.flow === 'bugfix' || input.flow === 'standalone_tasks') &&
+    (input.flow === 'story' || input.flow === 'bugfix' || input.flow === 'standalone_tasks') &&
+    (input.stage === 'implement' || input.stage === 'post_audit') &&
     input.overrides?.documentAuditPassed === undefined
   ) {
     fromArtifacts.documentAuditPassed = input.auditFact.auditPassed ?? false;
@@ -596,6 +666,45 @@ function inferComplexityFactors(input: {
   };
 }
 
+function toImplementationEntryFlowId(flow: RuntimeFlowId): ImplementationEntryFlowId | null {
+  return flow === 'story' || flow === 'bugfix' || flow === 'standalone_tasks' ? flow : null;
+}
+
+function buildImplementationEntryBlockers(input: {
+  flow: RuntimeFlowId;
+  readinessStatus: ImplementationReadinessStatus;
+  auditFact: AuditFactSummary;
+}): { blockerCodes: string[]; blockerSummary: string[] } {
+  const blockerCodes: string[] = [];
+  const blockerSummary: string[] = [];
+
+  if (input.auditFact.auditPassed === false) {
+    switch (input.flow) {
+      case 'story':
+        blockerCodes.push('story_audit_not_closed');
+        blockerSummary.push('Story Audit authoritative closeout 尚未完成或未通过');
+        break;
+      case 'bugfix':
+        blockerCodes.push('bugfix_document_audit_not_closed');
+        blockerSummary.push('BUGFIX 文档 authoritative closeout 尚未完成或未通过');
+        break;
+      case 'standalone_tasks':
+        blockerCodes.push('standalone_tasks_document_audit_not_closed');
+        blockerSummary.push('TASKS/BUGFIX 文档前置审计 authoritative closeout 尚未完成或未通过');
+        break;
+      default:
+        break;
+    }
+  }
+
+  if (input.readinessStatus === 'stale_after_semantic_change') {
+    blockerCodes.push('stale_after_semantic_change');
+    blockerSummary.push('implementation-entry 语义基础已变化，必须重新通过 readiness');
+  }
+
+  return { blockerCodes, blockerSummary };
+}
+
 export function resolveBmadHelpRoutingState(
   input: ResolveBmadHelpRoutingStateInput
 ): BmadHelpRoutingState {
@@ -625,11 +734,13 @@ export function resolveBmadHelpRoutingState(
   const auditFact = resolveAuditFactSummary({
     projectRoot: input.projectRoot,
     flow: input.flow,
+    stage: input.stage,
     runtimeContext,
   });
 
   const implementationEvidence = inferReadinessEvidence({
     flow: input.flow,
+    stage: input.stage,
     report,
     remediationArtifactPath,
     executionRecord,
@@ -662,14 +773,59 @@ export function resolveBmadHelpRoutingState(
     input.flow,
     complexity.level
   );
-  const recommendedFlow: RuntimeFlowId =
-    shouldUpgradeStandaloneTasks && input.flow === 'standalone_tasks' ? 'story' : input.flow;
+  const blockerState = buildImplementationEntryBlockers({
+    flow: input.flow,
+    readinessStatus: implementationReadinessStatus,
+    auditFact,
+  });
+  const implementationEntryFlow = toImplementationEntryFlowId(input.flow);
+  const implementationEntryEvidenceSources: ImplementationEntryEvidenceSources = {
+    readinessReportPath: report?.reportPath ?? null,
+    remediationArtifactPath,
+    executionRecordPath:
+      executionRecord && input.projectRoot
+        ? path.join(
+            input.projectRoot,
+            '_bmad-output',
+            'runtime',
+            'governance',
+            'executions',
+            executionRecord.loopStateId,
+            `${String(executionRecord.attemptNumber).padStart(4, '0')}.json`
+          )
+        : null,
+    authoritativeAuditReportPath: auditFact.reportPath ?? null,
+  };
+  const semanticFingerprint = normalizeText(runtimeContext?.artifactPath) || null;
+  const implementationEntryGate =
+    implementationEntryFlow != null
+      ? resolveImplementationEntryGate({
+          requestedFlow: implementationEntryFlow,
+          readinessStatus: implementationReadinessStatus,
+          complexity: complexity.level,
+          evidenceSources: implementationEntryEvidenceSources,
+          semanticFingerprint,
+          evaluatedAt: normalizeText(runtimeContext?.updatedAt) || undefined,
+          blockerCodes: blockerState.blockerCodes,
+          blockerSummary: blockerState.blockerSummary,
+        })
+      : {
+          gateName: IMPLEMENTATION_GATE_NAME,
+          requestedFlow: 'story' as const,
+          recommendedFlow: 'story' as const,
+          decision: 'block' as const,
+          readinessStatus: implementationReadinessStatus,
+          blockerCodes: ['unsupported_implementation_entry_flow'],
+          blockerSummary: [`flow=${input.flow} 当前不支持 implementation-entry gate`],
+          rerouteRequired: false,
+          rerouteReason: null,
+          evidenceSources: implementationEntryEvidenceSources,
+          semanticFingerprint,
+          evaluatedAt: new Date().toISOString(),
+        };
+  const recommendedFlow: RuntimeFlowId = implementationEntryGate.recommendedFlow;
   const recommendationLabel: BmadHelpRoutingState['recommendationLabel'] =
-    implementationReadinessPassed(implementationReadinessStatus)
-      ? shouldUpgradeStandaloneTasks
-        ? 'allowed but not recommended'
-        : 'recommended'
-      : 'blocked';
+    implementationEntryGate.decision === 'pass' ? 'recommended' : 'blocked';
 
   return {
     sourceMode,
@@ -678,33 +834,21 @@ export function resolveBmadHelpRoutingState(
     complexityScore: complexity.score,
     complexityForcedReasons: complexity.forcedReasons,
     implementationReadinessStatus,
-    implementationEntryRecommended:
-      implementationReadinessPassed(implementationReadinessStatus) && !shouldUpgradeStandaloneTasks,
+    implementationEntryRecommended: implementationEntryGate.decision === 'pass',
+    implementationEntryDecision: implementationEntryGate.decision,
     shouldUpgradeStandaloneTasks,
     recommendedFlow,
     recommendationLabel,
+    rerouteRequired: implementationEntryGate.rerouteRequired,
+    rerouteReason: implementationEntryGate.rerouteReason,
     canonicalImplementationGate: IMPLEMENTATION_GATE_NAME,
+    implementationEntryGate,
     evidence: {
       contextMaturity: contextEvidence,
       implementationReadiness: implementationEvidence,
       complexityFactors,
     },
-    evidenceSources: {
-      readinessReportPath: report?.reportPath ?? null,
-      remediationArtifactPath,
-      executionRecordPath:
-        executionRecord && input.projectRoot
-          ? path.join(
-              input.projectRoot,
-              '_bmad-output',
-              'runtime',
-              'governance',
-              'executions',
-              executionRecord.loopStateId,
-              `${String(executionRecord.attemptNumber).padStart(4, '0')}.json`
-            )
-          : null,
-    },
+    evidenceSources: implementationEntryEvidenceSources,
     executionRecordId: executionRecord?.executionId ?? null,
   };
 }
@@ -748,6 +892,8 @@ export function resolveBmadHelpRuntimePolicy(
     complexity: helpRouting.complexity,
     implementationReadinessStatus: helpRouting.implementationReadinessStatus,
     implementationEntryRecommended: helpRouting.implementationEntryRecommended,
+    implementationEntryDecision: helpRouting.implementationEntryDecision,
+    implementationEntryGate: helpRouting.implementationEntryGate,
     helpRouting,
     reviewerContract: buildReviewerContractProjection({
       auditEntryStage: mapFlowStageToReviewerAuditEntryStage(input.flow, input.stage),

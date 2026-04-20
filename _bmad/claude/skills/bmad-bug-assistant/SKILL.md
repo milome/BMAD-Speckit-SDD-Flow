@@ -92,6 +92,7 @@ Claude 版 `bmad-bug-assistant` 必须满足：
 4. **主 Agent 禁止直接生成 BUGFIX 文档**：阶段一、二的 BUGFIX 文档（含 §1–§5）必须由 party-mode 或子代理产出；主 Agent 不得以「已有分析文档」「根因已共识」等为由跳过子代理并自行撰写 BUGFIX 文档。
 5. **凡更新必审计**：凡产出或更新 BUGFIX 文档（含 §4、§7），完成后**必须**发起审计子任务并迭代至通过；**禁止**省略审计步骤。无论是否经过辩论，审计闭环为必做项。
 6. **BUGFIX 文档审计是实施前硬门槛**：`auditor-bugfix` 的职责是 **BUGFIX 文档审计**，不是实施后代码审计。只要 `auditor-bugfix` 尚未通过，**禁止**进入任何修复实现、代码修改、测试实现或“先修后补审计”的路径。
+7. **Implementation Entry Gate 是实施前第二硬门槛**：`auditor-bugfix` 通过后，主 Agent **仍必须**执行统一 `implementation-readiness` gate 断言。仅当结果为 `decision=pass` 时，方可进入阶段四实施；若结果为 `block` 或 `reroute`，必须先补齐 readiness 事实或按推荐 flow 调整，禁止直接发起实现。
 
 ### 主 Agent 传递提示词规则（必守）
 
@@ -583,7 +584,11 @@ artifacts:
 
 ### 4.1 发起实施子任务
 
-**实施前硬门槛**：进入本节前，`auditor-bugfix` 必须已对 BUGFIX 文档完成审计并给出通过结论。若 BUGFIX 文档审计未通过、未执行或结论不明，**禁止**发起实施子任务。
+**实施前双重硬门槛**：进入本节前，必须同时满足：
+1. `auditor-bugfix` 已对 BUGFIX 文档完成审计并给出通过结论；
+2. 统一 `implementation-readiness` gate 断言结果为 `decision=pass`。
+
+若 BUGFIX 文档审计未通过、未执行、结论不明，或 gate 结果为 `block` / `reroute`，**禁止**发起实施子任务。
 
 | 项 | 内容 |
 | -- | ---- |

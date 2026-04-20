@@ -29,6 +29,6 @@ describe('bmad-help implementationReadinessStatus contract', () => {
     expect(doc).toContain('- `repair_closed`');
     expect(doc).toContain('其它状态只能输出：');
     expect(doc).toContain('- `blocked`');
-    expect(doc).toContain('- 或 `allowed but not recommended`');
+    expect(doc).toContain('- 或 `blocked + rerouteRequired=true`');
   });
 });

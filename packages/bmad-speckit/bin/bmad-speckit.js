@@ -417,6 +417,25 @@ program
   });
 
 program
+  .command('assert-implementation-entry')
+  .description('Assert the current implementation-entry gate from registry-backed runtime context')
+  .option('--cwd <path>', 'Project root used to resolve runtime context')
+  .action((opts) => {
+    try {
+      const gate = loadCommand(
+        '../src/commands/assert-implementation-entry',
+        'assertImplementationEntryCommand'
+      )(opts);
+      if (gate && gate.decision !== 'pass') {
+        process.exit(2);
+      }
+    } catch (err) {
+      console.error(err);
+      process.exit(1);
+    }
+  });
+
+program
   .command('runtime-mcp')
   .description('Start the runtime dashboard MCP server over stdio')
   .option('--dataPath <path>', 'Scoring data directory')

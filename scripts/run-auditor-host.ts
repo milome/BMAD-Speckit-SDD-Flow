@@ -7,6 +7,7 @@ import { parseBmadAuditResult } from './parse-bmad-audit-result';
 import { mainAuditorPostActions } from './auditor-post-actions';
 import { getReviewerConsumerByAuditStage } from './reviewer-registry';
 import {
+  invalidateImplementationEntryGates,
   recordAuthoritativeAuditCloseout,
   recordLatestReviewerCloseout,
 } from './runtime-context-registry';
@@ -322,6 +323,13 @@ export async function runAuditorHost(
       reportPath: resolvedReportPath,
       status,
       closeoutApproved: isReviewCloseoutApproved(closeoutEnvelope),
+    });
+    invalidateImplementationEntryGates(normalizedInput.projectRoot, {
+      flow: consumer.closeoutStage,
+    });
+  } else if (consumer.closeoutStage === 'story') {
+    invalidateImplementationEntryGates(normalizedInput.projectRoot, {
+      flow: 'story',
     });
   }
 

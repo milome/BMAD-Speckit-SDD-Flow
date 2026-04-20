@@ -151,7 +151,7 @@ Story 完整标识为 `{epic_num}-{story_num}`，例如 Epic 4、Story 4.1 → `
 0. （阶段零-前置）若 _bmad 存在且 party-mode 未做展示名优化，自动执行补丁
 1. 发起 Create Story 子任务（epic_num=4, story_num=1）
 2. 产出 `_bmad-output/implementation-artifacts/epic-4-*/story-1-<slug>/4-1-<slug>.md` 后，发起 Story 文档审计
-3. 审计通过后，发起 Dev Story 实施子任务，传入 TASKS 或 BUGFIX 文档路径
+3. 审计通过后，**必须先执行统一 Implementation Entry Gate 断言**（`implementation-readiness`；建议命令：`node scripts/assert-implementation-entry.ts --cwd {project-root}` 或等价 `bmad-speckit assert-implementation-entry`）。仅当结果为 `decision=pass` 时，方可发起 Dev Story 实施子任务；若结果为 `block` 或 `reroute`，主 Agent 不得进入阶段三
 4. 实施完成后，**必须**发起实施后审计（audit-prompts.md §5）（本步骤为必须，非可选）
 5. 审计通过即流程结束
 
@@ -753,15 +753,18 @@ Layer 4: specify → 产出spec-E{epic}-S{story}.md（技术规格化Story内容
 
 ## 阶段三：Dev Story 实施（增强版）
 
-审计通过后，执行 **/bmad-bmm-dev-story** 等价工作流，对 Story `{epic_num}-{story_num}` 进行开发实施。
+审计通过后，**必须先**执行统一 Implementation Entry Gate 断言（`implementation-readiness`）。仅当结果为 `decision=pass` 时，才能执行 **/bmad-bmm-dev-story** 等价工作流，对 Story `{epic_num}-{story_num}` 进行开发实施；若结果为 `block` 或 `reroute`，必须先补齐 readiness 事实或按推荐 flow 调整，禁止直接启动 Dev Story。
 
 ### 前置检查
 
 在开始实施前，必须确认以下检查项：
+- [ ] 已执行统一 Implementation Entry Gate 断言，且结果为 `decision=pass`
 - [ ] PRD需求追溯章节已补充（列出本Story涉及的所有PRD需求ID）
 - [ ] Architecture约束已传递到Story文档（列出相关的Architecture组件和约束）
 - [ ] 复杂度评估已完成（确认本Story的复杂度分数）
 - [ ] Epic/Story规划层的依赖分析已确认（确认前置Story已完成）
+
+**重算规则（强制）**：若 Dev Story 先进入 `specify / plan / gaps / tasks` 等纯文档子阶段，则在首个真正写生产代码 / 测试代码的 `implement` 子阶段启动前，主 Agent 或宿主必须**再次重算同一个 Implementation Entry Gate**。禁止把第一次通过结果当成永久通行证。
 
 ### spec 目录创建（路径须含 epic-slug 与 story-slug）
 

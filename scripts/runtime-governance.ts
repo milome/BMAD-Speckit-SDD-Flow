@@ -28,6 +28,7 @@ import {
 
 /** 流程类型（扩展时可与 orchestrator 枚举对齐） */
 export type RuntimeFlowId = 'story' | 'bugfix' | 'standalone_tasks' | 'epic' | 'unknown';
+export type ImplementationEntryFlowId = 'story' | 'bugfix' | 'standalone_tasks';
 
 export type ImplementationReadinessStatus =
   | 'missing'
@@ -36,6 +37,30 @@ export type ImplementationReadinessStatus =
   | 'ready_clean'
   | 'repair_closed'
   | 'stale_after_semantic_change';
+
+export type ImplementationEntryDecision = 'pass' | 'block' | 'reroute';
+
+export interface ImplementationEntryEvidenceSources {
+  readinessReportPath: string | null;
+  remediationArtifactPath: string | null;
+  executionRecordPath: string | null;
+  authoritativeAuditReportPath: string | null;
+}
+
+export interface ImplementationEntryGate {
+  gateName: 'implementation-readiness';
+  requestedFlow: ImplementationEntryFlowId;
+  recommendedFlow: ImplementationEntryFlowId;
+  decision: ImplementationEntryDecision;
+  readinessStatus: ImplementationReadinessStatus;
+  blockerCodes: string[];
+  blockerSummary: string[];
+  rerouteRequired: boolean;
+  rerouteReason: string | null;
+  evidenceSources: ImplementationEntryEvidenceSources;
+  semanticFingerprint: string | null;
+  evaluatedAt: string;
+}
 
 export type BmadHelpComplexity = 'low' | 'medium' | 'high';
 
@@ -55,6 +80,17 @@ export interface ImplementationReadinessEvidence {
   remediationState?: 'none' | 'in_progress' | 'closed';
   rerunGateStatus?: 'unknown' | 'pass' | 'fail';
   staleAfterSemanticChange?: boolean;
+}
+
+export interface ResolveImplementationEntryGateInput {
+  requestedFlow: ImplementationEntryFlowId;
+  readinessStatus: ImplementationReadinessStatus;
+  complexity: BmadHelpComplexity;
+  evidenceSources: ImplementationEntryEvidenceSources;
+  semanticFingerprint?: string | null;
+  evaluatedAt?: string;
+  blockerCodes?: string[];
+  blockerSummary?: string[];
 }
 
 const DIRECT_HIGH_COMPLEXITY_REASONS = new Set([
@@ -117,7 +153,7 @@ export function deriveImplementationReadinessStatus(
   }
 
   if (
-    (flow === 'bugfix' || flow === 'standalone_tasks') &&
+    (flow === 'story' || flow === 'bugfix' || flow === 'standalone_tasks') &&
     evidence.documentAuditPassed === false
   ) {
     return 'blocked';
@@ -144,6 +180,115 @@ export function deriveImplementationReadinessStatus(
 
 export function implementationReadinessPassed(status: ImplementationReadinessStatus): boolean {
   return status === 'ready_clean' || status === 'repair_closed';
+}
+
+function defaultReadinessBlockerCode(
+  status: ImplementationReadinessStatus
+): string {
+  switch (status) {
+    case 'missing':
+      return 'missing_readiness_evidence';
+    case 'blocked':
+      return 'readiness_blocked';
+    case 'repair_in_progress':
+      return 'readiness_repair_in_progress';
+    case 'stale_after_semantic_change':
+      return 'stale_after_semantic_change';
+    default:
+      return 'implementation_entry_blocked';
+  }
+}
+
+function defaultReadinessBlockerSummary(
+  status: ImplementationReadinessStatus
+): string {
+  switch (status) {
+    case 'missing':
+      return '缺少 implementation-readiness 所需证据';
+    case 'blocked':
+      return 'implementation-readiness 当前被阻断';
+    case 'repair_in_progress':
+      return 'implementation-readiness remediation 尚未闭环';
+    case 'stale_after_semantic_change':
+      return '语义基础已变化，原 implementation-readiness 结果失效';
+    default:
+      return '当前 implementation entry 不允许继续执行';
+  }
+}
+
+export function resolveImplementationEntryGate(
+  input: ResolveImplementationEntryGateInput
+): ImplementationEntryGate {
+  const evaluatedAt = input.evaluatedAt ?? new Date().toISOString();
+  const blockerCodes = [...(input.blockerCodes ?? [])];
+  const blockerSummary = [...(input.blockerSummary ?? [])];
+
+  if (!implementationReadinessPassed(input.readinessStatus)) {
+    if (blockerCodes.length === 0) {
+      blockerCodes.push(defaultReadinessBlockerCode(input.readinessStatus));
+    }
+    if (blockerSummary.length === 0) {
+      blockerSummary.push(defaultReadinessBlockerSummary(input.readinessStatus));
+    }
+    return {
+      gateName: 'implementation-readiness',
+      requestedFlow: input.requestedFlow,
+      recommendedFlow: input.requestedFlow,
+      decision: 'block',
+      readinessStatus: input.readinessStatus,
+      blockerCodes,
+      blockerSummary,
+      rerouteRequired: false,
+      rerouteReason: null,
+      evidenceSources: input.evidenceSources,
+      semanticFingerprint: input.semanticFingerprint ?? null,
+      evaluatedAt,
+    };
+  }
+
+  if (input.requestedFlow === 'standalone_tasks' && input.complexity === 'high') {
+    if (!blockerCodes.includes('standalone_tasks_high_complexity')) {
+      blockerCodes.push('standalone_tasks_high_complexity');
+    }
+    if (
+      !blockerSummary.includes(
+        'standalone_tasks 在 high complexity 下不得直接实现，必须升轨到 story'
+      )
+    ) {
+      blockerSummary.push(
+        'standalone_tasks 在 high complexity 下不得直接实现，必须升轨到 story'
+      );
+    }
+    return {
+      gateName: 'implementation-readiness',
+      requestedFlow: input.requestedFlow,
+      recommendedFlow: 'story',
+      decision: 'reroute',
+      readinessStatus: input.readinessStatus,
+      blockerCodes,
+      blockerSummary,
+      rerouteRequired: true,
+      rerouteReason: 'standalone_tasks_high_complexity',
+      evidenceSources: input.evidenceSources,
+      semanticFingerprint: input.semanticFingerprint ?? null,
+      evaluatedAt,
+    };
+  }
+
+  return {
+    gateName: 'implementation-readiness',
+    requestedFlow: input.requestedFlow,
+    recommendedFlow: input.requestedFlow,
+    decision: 'pass',
+    readinessStatus: input.readinessStatus,
+    blockerCodes,
+    blockerSummary,
+    rerouteRequired: false,
+    rerouteReason: null,
+    evidenceSources: input.evidenceSources,
+    semanticFingerprint: input.semanticFingerprint ?? null,
+    evaluatedAt,
+  };
 }
 
 export function shouldUpgradeStandaloneTasksToStory(

@@ -24,7 +24,7 @@ description: Get unstuck by showing what workflow steps come next or answering q
 - **最多 1 到 2 个关键问题** — ask only when evidence is insufficient
 - **Implementation entry may be `recommended` only when readiness is `ready_clean` or `repair_closed`**
 - **`standalone_tasks + high complexity` must upgrade to a story-oriented path**
-- **Present routes as `recommended`, `allowed but not recommended`, or `blocked`**
+- **Present routes as `recommended` or `blocked`** — when the current flow must be upgraded, surface `rerouteRequired` instead of treating it as a soft-allowed implementation path
 
 ## DISPLAY RULES
 
@@ -116,7 +116,7 @@ Determine what was just completed:
    - If present and helpful, include **Legacy command** as a compatibility alias rather than the primary invocation
    - **Agent** title and display name from the CSV (e.g., "🎨 Alex (Designer)")
    - Brief **description**
-   - where relevant: why it is `recommended`, `allowed but not recommended`, or `blocked`
+   - where relevant: why it is `recommended`, `blocked`, or `blocked + rerouteRequired`
 
 8. **Additional guidance to convey**:
    - Present all output in `{communication_language}`

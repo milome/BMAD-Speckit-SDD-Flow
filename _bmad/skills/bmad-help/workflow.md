@@ -20,7 +20,7 @@
 - **最多 1 到 2 个关键问题** — ask only when evidence is insufficient
 - **Implementation entry may be `recommended` only when readiness is `ready_clean` or `repair_closed`**
 - **`standalone_tasks + high complexity` must upgrade to a story-oriented path**
-- **Present routes as `recommended`, `allowed but not recommended`, or `blocked`**
+- **Present routes as `recommended` or `blocked`** — when the current flow must be upgraded, surface `rerouteRequired` instead of a soft-allowed implementation label
 
 ## DISPLAY RULES
 

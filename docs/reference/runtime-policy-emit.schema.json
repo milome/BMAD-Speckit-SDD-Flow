@@ -78,6 +78,78 @@
         }
       }
     },
+    "implementationEntryGate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gateName",
+        "requestedFlow",
+        "recommendedFlow",
+        "decision",
+        "readinessStatus",
+        "blockerCodes",
+        "blockerSummary",
+        "rerouteRequired",
+        "rerouteReason",
+        "evidenceSources",
+        "semanticFingerprint",
+        "evaluatedAt"
+      ],
+      "properties": {
+        "gateName": { "type": "string", "const": "implementation-readiness" },
+        "requestedFlow": {
+          "type": "string",
+          "enum": ["story", "bugfix", "standalone_tasks"]
+        },
+        "recommendedFlow": {
+          "type": "string",
+          "enum": ["story", "bugfix", "standalone_tasks"]
+        },
+        "decision": {
+          "type": "string",
+          "enum": ["pass", "block", "reroute"]
+        },
+        "readinessStatus": {
+          "type": "string",
+          "enum": [
+            "missing",
+            "blocked",
+            "repair_in_progress",
+            "ready_clean",
+            "repair_closed",
+            "stale_after_semantic_change"
+          ]
+        },
+        "blockerCodes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "blockerSummary": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "rerouteRequired": { "type": "boolean" },
+        "rerouteReason": { "type": ["string", "null"] },
+        "evidenceSources": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "readinessReportPath",
+            "remediationArtifactPath",
+            "executionRecordPath",
+            "authoritativeAuditReportPath"
+          ],
+          "properties": {
+            "readinessReportPath": { "type": ["string", "null"] },
+            "remediationArtifactPath": { "type": ["string", "null"] },
+            "executionRecordPath": { "type": ["string", "null"] },
+            "authoritativeAuditReportPath": { "type": ["string", "null"] }
+          }
+        },
+        "semanticFingerprint": { "type": ["string", "null"] },
+        "evaluatedAt": { "type": "string" }
+      }
+    },
     "helpRouting": {
       "type": "object",
       "additionalProperties": false,
@@ -89,10 +161,14 @@
         "complexityForcedReasons",
         "implementationReadinessStatus",
         "implementationEntryRecommended",
+        "implementationEntryDecision",
         "shouldUpgradeStandaloneTasks",
         "recommendedFlow",
         "recommendationLabel",
+        "rerouteRequired",
+        "rerouteReason",
         "canonicalImplementationGate",
+        "implementationEntryGate",
         "evidence",
         "evidenceSources",
         "executionRecordId"
@@ -127,6 +203,10 @@
           ]
         },
         "implementationEntryRecommended": { "type": "boolean" },
+        "implementationEntryDecision": {
+          "type": "string",
+          "enum": ["pass", "block", "reroute"]
+        },
         "shouldUpgradeStandaloneTasks": { "type": "boolean" },
         "recommendedFlow": {
           "type": "string",
@@ -134,12 +214,15 @@
         },
         "recommendationLabel": {
           "type": "string",
-          "enum": ["recommended", "allowed but not recommended", "blocked"]
+          "enum": ["recommended", "blocked"]
         },
+        "rerouteRequired": { "type": "boolean" },
+        "rerouteReason": { "type": ["string", "null"] },
         "canonicalImplementationGate": {
           "type": "string",
           "const": "implementation-readiness"
         },
+        "implementationEntryGate": { "$ref": "#/$defs/implementationEntryGate" },
         "evidence": {
           "type": "object",
           "additionalProperties": false,
@@ -155,11 +238,17 @@
         "evidenceSources": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["readinessReportPath", "remediationArtifactPath", "executionRecordPath"],
+          "required": [
+            "readinessReportPath",
+            "remediationArtifactPath",
+            "executionRecordPath",
+            "authoritativeAuditReportPath"
+          ],
           "properties": {
             "readinessReportPath": { "type": ["string", "null"] },
             "remediationArtifactPath": { "type": ["string", "null"] },
-            "executionRecordPath": { "type": ["string", "null"] }
+            "executionRecordPath": { "type": ["string", "null"] },
+            "authoritativeAuditReportPath": { "type": ["string", "null"] }
           }
         },
         "executionRecordId": { "type": ["string", "null"] }
@@ -361,6 +450,8 @@
         "complexity",
         "implementationReadinessStatus",
         "implementationEntryRecommended",
+        "implementationEntryDecision",
+        "implementationEntryGate",
         "helpRouting",
         "reviewerContract",
         "identity",
@@ -411,6 +502,11 @@
           ]
         },
         "implementationEntryRecommended": { "type": "boolean" },
+        "implementationEntryDecision": {
+          "type": "string",
+          "enum": ["pass", "block", "reroute"]
+        },
+        "implementationEntryGate": { "$ref": "#/$defs/implementationEntryGate" },
         "helpRouting": { "$ref": "#/$defs/helpRouting" },
         "reviewerContract": { "$ref": "#/$defs/reviewerContractProjection" },
         "identity": {

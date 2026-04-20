@@ -7,7 +7,13 @@ import {
 } from '../../scripts/runtime-governance';
 
 describe('bmad-help runtime-governance helpers', () => {
-  it('blocks bugfix and standalone implementation when document audit is missing', () => {
+  it('blocks story, bugfix, and standalone implementation when document audit is missing', () => {
+    expect(
+      deriveImplementationReadinessStatus('story', {
+        documentAuditPassed: false,
+      })
+    ).toBe('blocked');
+
     expect(
       deriveImplementationReadinessStatus('bugfix', {
         documentAuditPassed: false,

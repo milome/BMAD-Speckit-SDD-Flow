@@ -2,6 +2,10 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as yaml from 'js-yaml';
 import { parseBmadAuditResult } from './parse-bmad-audit-result';
+import type {
+  ImplementationEntryFlowId,
+  ImplementationEntryGate,
+} from './runtime-governance';
 
 export interface ReviewerLatestCloseoutRecord {
   updatedAt: string;
@@ -77,6 +81,11 @@ export interface RuntimeContextRegistry {
       }
     >;
   };
+  implementationEntryIndex: {
+    story: Record<string, ImplementationEntryGate>;
+    bugfix: Record<string, ImplementationEntryGate>;
+    standalone_tasks: Record<string, ImplementationEntryGate>;
+  };
   latestReviewerCloseout: ReviewerLatestCloseoutRecord | null;
   activeScope: {
     scopeType: 'project' | 'epic' | 'story' | 'run';
@@ -114,6 +123,11 @@ export function defaultRuntimeContextRegistry(root: string): RuntimeContextRegis
     storyContexts: {},
     runContexts: {},
     auditIndex: {
+      bugfix: {},
+      standalone_tasks: {},
+    },
+    implementationEntryIndex: {
+      story: {},
       bugfix: {},
       standalone_tasks: {},
     },
@@ -159,6 +173,18 @@ export function readRuntimeContextRegistry(root: string): RuntimeContextRegistry
   } else {
     parsed.auditIndex.bugfix = parsed.auditIndex.bugfix ?? {};
     parsed.auditIndex.standalone_tasks = parsed.auditIndex.standalone_tasks ?? {};
+  }
+  if (!parsed.implementationEntryIndex) {
+    parsed.implementationEntryIndex = {
+      story: {},
+      bugfix: {},
+      standalone_tasks: {},
+    };
+  } else {
+    parsed.implementationEntryIndex.story = parsed.implementationEntryIndex.story ?? {};
+    parsed.implementationEntryIndex.bugfix = parsed.implementationEntryIndex.bugfix ?? {};
+    parsed.implementationEntryIndex.standalone_tasks =
+      parsed.implementationEntryIndex.standalone_tasks ?? {};
   }
   parsed.latestReviewerCloseout = parsed.latestReviewerCloseout ?? null;
   return parsed;
@@ -536,5 +562,76 @@ export function recordLatestReviewerCloseout(
     ? (scope.resolvedContextPath as string)
     : path.resolve(root, resolveContextPathFromActiveScope(registry, scope));
   mergeLatestReviewerCloseoutIntoContextFile(resolvedContextPath, closeout);
+  return registry;
+}
+
+function normalizeImplementationEntryKey(value: string): string {
+  return path.normalize(value).replace(/\\/g, '/');
+}
+
+export function buildImplementationEntryIndexKey(input: {
+  flow: ImplementationEntryFlowId;
+  runId?: string | null;
+  artifactRoot?: string | null;
+  artifactDocPath?: string | null;
+  storyId?: string | null;
+}): string {
+  if (input.flow === 'story') {
+    const key =
+      normalizeText(input.runId) ||
+      normalizeText(input.artifactRoot) ||
+      normalizeText(input.storyId);
+    if (!key) {
+      throw new Error('buildImplementationEntryIndexKey: missing story key inputs');
+    }
+    return normalizeImplementationEntryKey(key);
+  }
+
+  const baseKey = normalizeText(input.artifactDocPath);
+  if (!baseKey) {
+    throw new Error('buildImplementationEntryIndexKey: missing artifactDocPath');
+  }
+  const runId = normalizeText(input.runId);
+  return normalizeImplementationEntryKey(runId ? `${baseKey}::${runId}` : baseKey);
+}
+
+export function recordImplementationEntryGate(
+  root: string,
+  input: {
+    flow: ImplementationEntryFlowId;
+    key: string;
+    gate: ImplementationEntryGate;
+  }
+): RuntimeContextRegistry {
+  const registry = readRegistryOrDefault(root);
+  registry.implementationEntryIndex[input.flow][normalizeImplementationEntryKey(input.key)] =
+    input.gate;
+  registry.updatedAt = new Date().toISOString();
+  writeRuntimeContextRegistry(root, registry);
+  return registry;
+}
+
+export function invalidateImplementationEntryGates(
+  root: string,
+  input?:
+    | { flow?: ImplementationEntryFlowId; key?: string | null }
+    | undefined
+): RuntimeContextRegistry {
+  const registry = readRegistryOrDefault(root);
+  const flow = input?.flow;
+  const key = normalizeText(input?.key);
+
+  if (!flow) {
+    registry.implementationEntryIndex.story = {};
+    registry.implementationEntryIndex.bugfix = {};
+    registry.implementationEntryIndex.standalone_tasks = {};
+  } else if (!key) {
+    registry.implementationEntryIndex[flow] = {};
+  } else {
+    delete registry.implementationEntryIndex[flow][normalizeImplementationEntryKey(key)];
+  }
+
+  registry.updatedAt = new Date().toISOString();
+  writeRuntimeContextRegistry(root, registry);
   return registry;
 }

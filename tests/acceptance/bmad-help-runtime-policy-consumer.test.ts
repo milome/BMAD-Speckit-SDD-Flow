@@ -16,6 +16,34 @@ import {
 } from '../../scripts/runtime-context-registry';
 import { writeMinimalRegistryAndProjectContext } from '../helpers/runtime-registry-fixture';
 
+function buildStoryCloseout(root: string, artifactPath: string) {
+  return {
+    updatedAt: new Date().toISOString(),
+    runner: 'runAuditorHost' as const,
+    profile: 'story_audit',
+    stage: 'story',
+    artifactPath,
+    reportPath: path.join(root, '_bmad-output', 'implementation-artifacts', 'AUDIT_story.md'),
+    auditStatus: 'PASS' as const,
+    closeoutApproved: true,
+    governanceClosure: {
+      implementationReadinessStatusRequired: true,
+      implementationReadinessGateName: 'implementation-readiness',
+      gatesLoopRequired: true,
+      rerunGatesRequired: true,
+      packetExecutionClosureRequired: true,
+    },
+    closeoutEnvelope: {
+      resultCode: 'approved',
+      requiredFixes: [],
+      requiredFixesDetail: [],
+      rerunDecision: 'none',
+      scoringFailureMode: 'not_run',
+      packetExecutionClosureStatus: 'gate_passed',
+    },
+  };
+}
+
 function writeMinimalReadinessReport(
   reportPath: string,
   status: 'READY' | 'NEEDS WORK' | 'NOT READY'
@@ -320,7 +348,10 @@ describe('bmad-help runtime policy consumers', () => {
       expect(policy.complexity).toBe('high');
       expect(policy.helpRouting.shouldUpgradeStandaloneTasks).toBe(true);
       expect(policy.helpRouting.recommendedFlow).toBe('story');
-      expect(policy.helpRouting.recommendationLabel).toBe('allowed but not recommended');
+      expect(policy.helpRouting.recommendationLabel).toBe('blocked');
+      expect(policy.helpRouting.rerouteRequired).toBe(true);
+      expect(policy.helpRouting.implementationEntryDecision).toBe('reroute');
+      expect(policy.implementationEntryDecision).toBe('reroute');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -483,6 +514,16 @@ describe('bmad-help runtime policy consumers', () => {
   it('exposes state-aware help routing through the bmad-config facade', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'bmad-help-runtime-policy-'));
     try {
+      writeMinimalRegistryAndProjectContext(root, {
+        flow: 'story',
+        stage: 'implement',
+        epicId: 'epic-14',
+        storyId: '14.1',
+        latestReviewerCloseout: buildStoryCloseout(
+          root,
+          '_bmad-output/implementation-artifacts/epic-14/14.1/story.md'
+        ),
+      });
       const reportPath = path.join(
         root,
         '_bmad-output',
@@ -513,9 +554,11 @@ describe('bmad-help runtime policy consumers', () => {
       expect(policy.complexity).toBe(policy.helpRouting.complexity);
       expect(policy.implementationReadinessStatus).toBe('ready_clean');
       expect(policy.implementationEntryRecommended).toBe(true);
+      expect(policy.implementationEntryDecision).toBe('pass');
       expect(policy.helpRouting.canonicalImplementationGate).toBe('implementation-readiness');
       expect(policy.helpRouting.sourceMode).toBe('full_bmad');
       expect(policy.helpRouting.evidenceSources.readinessReportPath).toBe(reportPath);
+      expect(policy.helpRouting.evidenceSources.authoritativeAuditReportPath).toContain('AUDIT_story.md');
       expect(policy.helpRouting.evidence.implementationReadiness.readinessReportPresent).toBe(true);
       expect(policy.helpRouting.recommendedFlow).toBe('story');
       expect(policy.helpRouting.recommendationLabel).toBe('recommended');
@@ -537,6 +580,10 @@ describe('bmad-help runtime policy consumers', () => {
         stage: 'implement',
         epicId: 'epic-14',
         storyId: '14.1',
+        latestReviewerCloseout: buildStoryCloseout(
+          root,
+          '_bmad-output/implementation-artifacts/epic-14/14.1/story.md'
+        ),
       });
 
       const reportPath = path.join(
@@ -586,6 +633,7 @@ describe('bmad-help runtime policy consumers', () => {
       const policy = JSON.parse(output) as {
         implementationReadinessStatus: string;
         implementationEntryRecommended: boolean;
+        implementationEntryDecision: string;
         helpRouting: {
           implementationReadinessStatus: string;
           executionRecordId: string | null;
@@ -595,6 +643,7 @@ describe('bmad-help runtime policy consumers', () => {
 
       expect(policy.implementationReadinessStatus).toBe('repair_closed');
       expect(policy.implementationEntryRecommended).toBe(true);
+      expect(policy.implementationEntryDecision).toBe('pass');
       expect(policy.helpRouting.implementationReadinessStatus).toBe('repair_closed');
       expect(policy.helpRouting.executionRecordId).toBe('gov-exec-loop-14-1-0001');
       expect(policy.helpRouting.canonicalImplementationGate).toBe('implementation-readiness');

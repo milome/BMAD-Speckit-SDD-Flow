@@ -16,6 +16,8 @@ import { resolveBmadHelpRuntimePolicy } from './bmad-config';
 import type { StageName } from './bmad-config';
 import { readRuntimeContext } from './runtime-context';
 import {
+  buildImplementationEntryIndexKey,
+  recordImplementationEntryGate,
   readRuntimeContextRegistry,
   resolveActiveScope,
   resolveContextPathFromActiveScope,
@@ -147,6 +149,30 @@ export function mainEmitRuntimePolicy(argv: string[]): number {
       runtimeContext: loaded.runtimeContext,
       runtimeContextPath: loaded.resolvedContextPath,
     });
+
+    if (
+      loaded.runtimeContext.flow === 'story' ||
+      loaded.runtimeContext.flow === 'bugfix' ||
+      loaded.runtimeContext.flow === 'standalone_tasks'
+    ) {
+      try {
+        const key = buildImplementationEntryIndexKey({
+          flow: loaded.runtimeContext.flow,
+          runId: loaded.runtimeContext.runId,
+          artifactRoot: loaded.runtimeContext.artifactRoot,
+          artifactDocPath: loaded.runtimeContext.artifactPath,
+          storyId: loaded.runtimeContext.storyId,
+        });
+        recordImplementationEntryGate(root, {
+          flow: loaded.runtimeContext.flow,
+          key,
+          gate: policy.implementationEntryGate,
+        });
+      } catch {
+        // Some non-implementation story contexts intentionally lack a stable implementation-entry key.
+      }
+    }
+
     process.stdout.write(stableStringifyPolicy(policy));
     return 0;
   } finally {

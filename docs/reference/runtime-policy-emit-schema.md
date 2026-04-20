@@ -13,9 +13,11 @@
 - **兼容策略**：当前成功响应同时包含顶层兼容字段与子结构字段：
   - 顶层：`flow`、`stage`、`auditRequired`、`validationLevel`、`strictness`、`generateDoc`、`convergence`、`mandatoryGate`、`granularityGoverned`、`skipAllowed`、`scoringEnabled`、`triggerStage`、`compatibilitySource`、`reason`
   - help 顶层镜像：`contextMaturity`、`complexity`、`implementationReadinessStatus`、`implementationEntryRecommended`
+  - implementation-entry 顶层字段：`implementationEntryDecision`、`implementationEntryGate`
   - 子结构：`identity`、`control`、`language`、`helpRouting`
 - **镜像约束**：`control.triggerStage`、`control.scoringEnabled`、`control.mandatoryGate`、`control.granularityGoverned` 等值必须与同名顶层兼容字段保持一致；`language` 子结构用于声明 machine-readable surfaces 不因 narrative 语言切换而被改写。
   `helpRouting.contextMaturity`、`helpRouting.complexity`、`helpRouting.implementationReadinessStatus`、`helpRouting.implementationEntryRecommended` 必须与同名顶层 help 镜像保持一致。
+  `implementationEntryGate.decision` 必须与顶层 `implementationEntryDecision` 一致；implementation-entry 兼容字段 `helpRouting.recommendedFlow`、`helpRouting.rerouteRequired`、`helpRouting.rerouteReason` 必须与 `implementationEntryGate` 同源，不允许宿主或 consumer 自行拼装第二套 implementation-entry 语义。
 - **identity 扩展**：在 `story` / `implement` 等真实运行场景下，`identity` 允许携带 `epicId`、`storyId`、`storySlug`、`runId`、`artifactRoot`、`contextSource`。这些字段是兼容扩展，不替代 `flow` / `stage` 作为最小 required identity。
 
 ## 失败响应（本仓库写死策略）

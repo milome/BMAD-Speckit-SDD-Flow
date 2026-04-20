@@ -3,6 +3,32 @@ import * as path from 'node:path';
 import * as yaml from 'js-yaml';
 import type { ReviewerLatestCloseoutRecord } from './types';
 
+export interface ImplementationEntryGateRecord {
+  gateName: 'implementation-readiness';
+  requestedFlow: 'story' | 'bugfix' | 'standalone_tasks';
+  recommendedFlow: 'story' | 'bugfix' | 'standalone_tasks';
+  decision: 'pass' | 'block' | 'reroute';
+  readinessStatus:
+    | 'missing'
+    | 'blocked'
+    | 'repair_in_progress'
+    | 'ready_clean'
+    | 'repair_closed'
+    | 'stale_after_semantic_change';
+  blockerCodes: string[];
+  blockerSummary: string[];
+  rerouteRequired: boolean;
+  rerouteReason: string | null;
+  evidenceSources: {
+    readinessReportPath: string | null;
+    remediationArtifactPath: string | null;
+    executionRecordPath: string | null;
+    authoritativeAuditReportPath: string | null;
+  };
+  semanticFingerprint: string | null;
+  evaluatedAt: string;
+}
+
 export interface RuntimeContextRegistry {
   version: number;
   projectRoot: string;
@@ -46,6 +72,11 @@ export interface RuntimeContextRegistry {
       }
     >;
   };
+  implementationEntryIndex: {
+    story: Record<string, ImplementationEntryGateRecord>;
+    bugfix: Record<string, ImplementationEntryGateRecord>;
+    standalone_tasks: Record<string, ImplementationEntryGateRecord>;
+  };
   latestReviewerCloseout: ReviewerLatestCloseoutRecord | null;
   activeScope: {
     scopeType: 'project' | 'epic' | 'story' | 'run';
@@ -83,6 +114,11 @@ export function defaultRuntimeContextRegistry(root: string): RuntimeContextRegis
     storyContexts: {},
     runContexts: {},
     auditIndex: {
+      bugfix: {},
+      standalone_tasks: {},
+    },
+    implementationEntryIndex: {
+      story: {},
       bugfix: {},
       standalone_tasks: {},
     },
@@ -128,6 +164,18 @@ export function readRuntimeContextRegistry(root: string): RuntimeContextRegistry
   } else {
     parsed.auditIndex.bugfix = parsed.auditIndex.bugfix ?? {};
     parsed.auditIndex.standalone_tasks = parsed.auditIndex.standalone_tasks ?? {};
+  }
+  if (!parsed.implementationEntryIndex) {
+    parsed.implementationEntryIndex = {
+      story: {},
+      bugfix: {},
+      standalone_tasks: {},
+    };
+  } else {
+    parsed.implementationEntryIndex.story = parsed.implementationEntryIndex.story ?? {};
+    parsed.implementationEntryIndex.bugfix = parsed.implementationEntryIndex.bugfix ?? {};
+    parsed.implementationEntryIndex.standalone_tasks =
+      parsed.implementationEntryIndex.standalone_tasks ?? {};
   }
   parsed.latestReviewerCloseout = parsed.latestReviewerCloseout ?? null;
   return parsed;

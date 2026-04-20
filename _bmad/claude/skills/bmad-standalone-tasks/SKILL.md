@@ -5,7 +5,7 @@ description: |
   以 Cursor bmad-standalone-tasks 为语义基线，按「TASKS/BUGFIX 文档前置审计 → 解析未完成任务 → 子代理实施 → 实施后审计」执行 TASKS/BUGFIX 文档驱动的实施流程。
   主 Agent 发起任一子任务时**必须**将本 skill 内该阶段的「完整 prompt 模板」整段复制并填入占位符后传入，禁止省略、概括或自行改写提示词；
   主 Agent 禁止直接修改生产代码，实施须通过 Agent tool 子代理（subagent_type: general-purpose）。
-  `auditor-tasks-doc` 属于 TASKS/BUGFIX 文档前置审计，必须先于实施执行通过；实施后审计优先 `.claude/agents/auditors/auditor-implement`，按 Fallback 链降级。
+  `auditor-tasks-doc` 属于 TASKS/BUGFIX 文档前置审计，必须先于实施执行通过；在真正进入实施前，主 Agent 仍必须执行统一 `implementation-readiness` gate 断言，只有 `decision=pass` 可继续；实施后审计优先 `.claude/agents/auditors/auditor-implement`，按 Fallback 链降级。
   遵循 ralph-method（prd.{stem}.json / progress.{stem}.txt）、TDD 红绿灯、speckit-workflow。
   适用场景：用户提供 TASKS/BUGFIX 文档并要求执行未完成任务。全程中文。
 when_to_use: |
@@ -99,6 +99,8 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
    - Do not mark a task complete if the behavior is not actually invoked or verified.
 6. **TASKS/BUGFIX 文档前置审计是实施前硬门槛**
    `auditor-tasks-doc` 的职责是 **TASKS/BUGFIX 文档前置审计**。只要该审计尚未通过、尚未执行或结论不明，**禁止**进入任何实施执行、代码修改、测试实现或“先做再补审计”的路径。
+7. **Implementation Entry Gate 是实施前第二硬门槛**
+   `auditor-tasks-doc` 通过后，主 Agent 仍必须执行统一 `implementation-readiness` gate 断言。仅 `decision=pass` 可进入实施；`decision=block` 表示必须先修复事实链，`decision=reroute` 表示不得继续 standalone 轻路径而必须升轨。
 
 ### 主 Agent 传递提示词规则（必守）
 
