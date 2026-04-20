@@ -21,6 +21,7 @@ const {
   extractSubagentText,
   isPartyModeFacilitatorIntent,
   isPartyModeFacilitatorStart,
+  requiresHighConfidenceFinalOutputs,
   resolveStructuredGateProfileSelection,
 } = require('./party-mode-session-runtime.cjs');
 const {
@@ -417,6 +418,36 @@ function extractExpectedPartyModeDocumentPaths(projectRoot, inputText) {
     }
   }
   return [...new Set(matches)];
+}
+
+function buildMissingCanonicalDocumentPathMessage(gateProfileId) {
+  return [
+    'Party-Mode preflight: high-confidence final outputs require a canonical markdown document path in the launch payload.',
+    `Gate profile: \`${gateProfileId}\``,
+    'Current request asks for a final solution / final task list / BUGFIX §7 / Story finalization, but no canonical `.md` path was found.',
+    'Required fix:',
+    '- include one concrete target path in the launch prompt or payload',
+    '- allowed roots: `_bmad-output/implementation-artifacts/`, `specs/`, `docs/requirements/`, or `docs/plans/`',
+    '- examples:',
+    '  - `_bmad-output/implementation-artifacts/_orphan/BUGFIX_<slug>.md`',
+    '  - `_bmad-output/implementation-artifacts/epic-<epic>-<slug>/story-<story>-<slug>/BUGFIX_<slug>.md`',
+    '  - `_bmad-output/implementation-artifacts/epic-<epic>-<slug>/story-<story>-<slug>/<story-doc>.md`',
+    '- the facilitator must write/update that document directly; do not leave the full document for the main Agent to write later.',
+  ].join('\n');
+}
+
+function validateCanonicalDocumentPathForHighConfidenceOutputs(projectRoot, gateProfileId, inputText) {
+  if (gateProfileId !== 'final_solution_task_list_100') {
+    return null;
+  }
+  if (!requiresHighConfidenceFinalOutputs(inputText)) {
+    return null;
+  }
+  const expectedDocumentPaths = extractExpectedPartyModeDocumentPaths(projectRoot, inputText);
+  if (expectedDocumentPaths.length > 0) {
+    return null;
+  }
+  return buildMissingCanonicalDocumentPathMessage(gateProfileId);
 }
 
 /**
@@ -910,6 +941,14 @@ function buildPartyModeBootstrapBlock(projectRoot, hookMode, input, resolvedMode
     inputText,
     { requireConfirmedBlock: cursorHost === true }
   );
+  const documentPathError = validateCanonicalDocumentPathForHighConfidenceOutputs(
+    projectRoot,
+    gateProfileId,
+    inputText
+  );
+  if (documentPathError) {
+    throw new Error(documentPathError);
+  }
   const expectedDocumentPaths = extractExpectedPartyModeDocumentPaths(projectRoot, inputText);
   const pendingLaunchContract = readActivePendingPartyModeLaunchContract(projectRoot);
   if (
@@ -1127,6 +1166,19 @@ async function runtimePolicyInjectCore({ host }) {
           input,
           errText,
           derivePartyModeIntensityStopReason(errText)
+        );
+      }
+      const documentPathError = validateCanonicalDocumentPathForHighConfidenceOutputs(
+        root,
+        gateProfileId,
+        inputText
+      );
+      if (documentPathError) {
+        return buildPartyModePreToolUseHardStop(
+          root,
+          input,
+          documentPathError,
+          '高置信终局必须在发起时提供 canonical 文档路径。'
         );
       }
       writePendingPartyModeLaunchContract(root, {

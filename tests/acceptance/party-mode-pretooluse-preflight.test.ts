@@ -95,6 +95,46 @@ describe('party-mode pretooluse preflight', () => {
     }
   }, 60000);
 
+  it('blocks Agent launch when high-confidence final outputs omit the canonical markdown document path', () => {
+    const tempRoot = makeHookReadyRoot();
+    try {
+      const inject = path.join(ROOT, '_bmad', 'claude', 'hooks', 'runtime-policy-inject.cjs');
+      const result = spawnSync(process.execPath, [inject], {
+        cwd: ROOT,
+        input: JSON.stringify({
+          tool_name: 'Agent',
+          tool_input: {
+            description: 'Party-mode: BUGFIX finalization',
+            subagent_type: 'party-mode-facilitator',
+            prompt:
+              '@"party-mode-facilitator (agent)"\n\n## 用户选择\n强度: 100 (final_solution_task_list_100)\n\n请给出 BUGFIX 最终方案与 §7 最终任务列表。',
+          },
+        }),
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          CLAUDE_PROJECT_DIR: tempRoot,
+        },
+      });
+
+      expect(result.status).toBe(0);
+      const out = JSON.parse(result.stdout || '{}') as {
+        continue?: boolean;
+        stopReason?: string;
+        systemMessage?: string;
+      };
+      expect(out.continue).toBe(false);
+      expect(out.stopReason).toContain('canonical 文档路径');
+      expect(out.systemMessage).toContain(
+        'high-confidence final outputs require a canonical markdown document path'
+      );
+      expect(out.systemMessage).toContain('_bmad-output/implementation-artifacts/_orphan/BUGFIX_<slug>.md');
+      expect(out.systemMessage).toContain('must write/update that document directly');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  }, 60000);
+
   it('allows Agent pretooluse to continue when the prompt uses a plain 用户选择 heading line', () => {
     const tempRoot = makeHookReadyRoot();
     try {

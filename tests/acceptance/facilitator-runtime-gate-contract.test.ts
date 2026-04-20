@@ -62,6 +62,13 @@ describe('facilitator runtime gate contract', () => {
     expect(cursorRuntime).toContain('generalPurpose-compatible wrapper');
     expect(cursorRuntime).toContain('NO MID-RUN PAUSE IN CURSOR');
     expect(cursorRuntime).toContain('CURSOR INLINE FULL-RUN ONLY');
+    expect(cursorRuntime).toContain('DOCUMENT OWNERSHIP');
+    expect(cursorRuntime).toMatch(
+      /must write \/ update directly in this run|必须直接写入 \/ 更新的交付物/u
+    );
+    expect(cursorRuntime).toMatch(
+      /do \*\*not\*\* say "the main Agent will write the full document later"|禁止.*主 Agent 将根据本会话摘要版写入完整文档/u
+    );
     expect(cursorRuntime).toContain('10/50');
     expect(cursorRuntime).toContain('20/50');
     expect(cursorRuntime).toContain('## Final Gate Evidence');
@@ -71,6 +78,10 @@ describe('facilitator runtime gate contract', () => {
     expect(claudeRuntime).toContain('## Checkpoint <current_round>/<target_rounds_total>');
     expect(claudeRuntime).toContain('## Final Gate Evidence');
     expect(claudeRuntime).toContain('BATCH-BOUNDARY HANDOFF ONLY');
+    expect(claudeRuntime).toContain('DOCUMENT OWNERSHIP');
+    expect(claudeRuntime).toMatch(
+      /do \*\*not\*\* say "the main Agent will write the full document later"|禁止.*主 Agent 将根据本会话摘要版写入完整文档/u
+    );
     expect(claudeRuntime).toContain('10/50');
   });
 
@@ -120,6 +131,7 @@ describe('facilitator runtime gate contract', () => {
     ];
 
     for (const content of claudeCarrierPaths.map((carrierPath) => fs.readFileSync(carrierPath, 'utf8'))) {
+      expect(content).toContain('DOCUMENT OWNERSHIP');
       expect(content).toContain('20 / 40 / 60 / 80 / ...');
       expect(content).toContain('## Checkpoint <current_round>/<target_rounds_total>');
       expect(content).toContain('## Final Gate Evidence');
@@ -129,11 +141,15 @@ describe('facilitator runtime gate contract', () => {
 
     for (const content of cursorCarrierPaths.map((carrierPath) => fs.readFileSync(carrierPath, 'utf8'))) {
       expect(content).toContain('generalPurpose-compatible wrapper');
+      expect(content).toContain('DOCUMENT OWNERSHIP');
       expect(content).toContain('NO MID-RUN PAUSE IN CURSOR');
       expect(content).toContain('CURSOR INLINE FULL-RUN ONLY');
       expect(content).toContain('## Final Gate Evidence');
       expect(content).not.toContain('## Checkpoint <current_round>/<target_rounds_total>');
       expect(content).not.toMatch(/checkpoint/iu);
+      expect(content).toMatch(
+        /do \*\*not\*\* say "the main Agent will write the full document later"|禁止.*主 Agent 将根据本会话摘要版写入完整文档/u
+      );
     }
   });
 

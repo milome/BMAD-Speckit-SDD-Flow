@@ -21,12 +21,12 @@ describe('facilitator registry contract', () => {
     });
 
     expect(registration.hosts.cursor.preferredRoute).toStrictEqual({
-      tool: 'mcp_task',
-      subtypeOrExecutor: 'generalPurpose',
-    });
-    expect(registration.hosts.cursor.fallbackRoute).toStrictEqual({
       tool: 'cursor-task',
       subtypeOrExecutor: 'party-mode-facilitator',
+    });
+    expect(registration.hosts.cursor.fallbackRoute).toStrictEqual({
+      tool: 'mcp_task',
+      subtypeOrExecutor: 'generalPurpose',
     });
     expect(registration.hosts.claude.preferredRoute).toStrictEqual({
       tool: 'Agent',

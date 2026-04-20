@@ -51,12 +51,12 @@ export const FACILITATOR_REGISTRY: FacilitatorRegistration = {
   hosts: {
     cursor: {
       preferredRoute: {
-        tool: 'mcp_task',
-        subtypeOrExecutor: 'generalPurpose',
-      },
-      fallbackRoute: {
         tool: 'cursor-task',
         subtypeOrExecutor: FACILITATOR_DISPLAY_NAME,
+      },
+      fallbackRoute: {
+        tool: 'mcp_task',
+        subtypeOrExecutor: 'generalPurpose',
       },
     },
     claude: {

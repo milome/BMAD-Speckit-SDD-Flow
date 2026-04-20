@@ -706,6 +706,64 @@ describe('runtime-policy-inject (dual host entry)', () => {
     }
   }, 45000);
 
+  it('Cursor path: preToolUse blocks high-confidence final outputs without a canonical document path', () => {
+    const tempRoot = makeEmitReadyRoot();
+    try {
+      fs.mkdirSync(path.join(tempRoot, '.cursor', 'agents'), { recursive: true });
+      fs.copyFileSync(
+        path.join(tempRoot, '_bmad', 'cursor', 'agents', 'party-mode-facilitator.md'),
+        path.join(tempRoot, '.cursor', 'agents', 'party-mode-facilitator.md')
+      );
+      const inject = path.join(repoRoot, '_bmad/claude/hooks/runtime-policy-inject.cjs');
+      const stdin = JSON.stringify({
+        cwd: tempRoot,
+        tool_name: 'Task',
+        tool_input: {
+          executor: 'party-mode-facilitator',
+          description: 'Party Mode: BUGFIX final solution',
+          prompt: [
+            '## 用户选择',
+            '强度: 100 (final_solution_task_list_100)',
+            '',
+            '【自检完成】Cursor party-mode',
+            '- 强度选项: 已展示',
+            '- 用户选择: 100 (final_solution_task_list_100)',
+            '- 执行方式: generalPurpose-compatible facilitator',
+            '- Session Bootstrap: 由宿主在 SubagentStart 注入',
+            '可以发起。',
+            '',
+            '请输出 BUGFIX 最终方案与 §7 最终任务列表。',
+          ].join('\n'),
+        },
+      });
+      const r = spawnSync(process.execPath, [inject, '--cursor-host'], {
+        cwd: repoRoot,
+        input: stdin,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          CURSOR_PROJECT_ROOT: tempRoot,
+          CLAUDE_PROJECT_DIR: tempRoot,
+        },
+      });
+      expect(r.status).toBe(0);
+      const out = JSON.parse(r.stdout || '{}') as {
+        continue?: boolean;
+        stopReason?: string;
+        systemMessage?: string;
+      };
+      expect(out.continue).toBe(false);
+      expect(out.stopReason).toContain('canonical 文档路径');
+      expect(out.systemMessage).toContain(
+        'high-confidence final outputs require a canonical markdown document path'
+      );
+      expect(out.systemMessage).toContain('_bmad-output/implementation-artifacts/_orphan/BUGFIX_<slug>.md');
+      expect(out.systemMessage).toContain('must write/update that document directly');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  }, 45000);
+
   it('Cursor path: preToolUse blocks when the assistant asks for tier confirmation but also tries to auto-start in the same message', () => {
     const tempRoot = makeEmitReadyRoot();
     try {
