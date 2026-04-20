@@ -20,9 +20,9 @@ describe('party-mode host-native capability boundary', () => {
     expect(Object.keys(cursorHooks.hooks).sort()).toEqual([
       'postToolUse',
       'preToolUse',
-      'preToolUseCommands',
       'sessionStart',
       'subagentStart',
+      'subagentStop',
     ]);
     expect(Object.keys(claudeSettings.hooks).sort()).toEqual([
       'PostToolUse',
@@ -51,8 +51,8 @@ describe('party-mode host-native capability boundary', () => {
     );
 
     expect(gapNote).toContain('仍不是 host 原生 agent-turn event');
-    expect(gapNote).toContain('只能稳定观察到');
-    expect(gapNote).toContain('sessionStart / subagentStart');
+    expect(gapNote).toContain('稳定观察到');
+    expect(gapNote).toContain('sessionStart / subagentStart / subagentStop');
     expect(gapNote).toContain('repo-owned explicit event writer + post-tool-use refresh bridge');
   });
 });

@@ -96,11 +96,14 @@ function writeCursorHooksJson(targetDir) {
         { command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host --session-start' },
         { command: 'node .cursor/hooks/runtime-dashboard-session-start.cjs' },
       ],
-      preToolUse: [{ command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host' }],
-      preToolUseCommands: [{ command: 'node .cursor/hooks/pre-continue-check.cjs' }],
+      preToolUse: [
+        { command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host' },
+        { command: 'node .cursor/hooks/pre-continue-check.cjs' },
+      ],
       subagentStart: [
         { command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host --subagent-start' },
       ],
+      subagentStop: [{ command: 'node .cursor/hooks/subagent-result-summary.cjs' }],
       postToolUse: [{ command: 'node .cursor/hooks/post-tool-use.cjs' }],
     },
   };
@@ -195,7 +198,9 @@ const REGISTERED_AGENT_PROFILES = {
       if (fs.existsSync(settingsSrc)) {
         fs.mkdirSync(path.dirname(settingsDest), { recursive: true });
         // Merge with global settings.json hooks (preserve user's global hooks like Stop notification)
-        const bmadSettings = JSON.parse(fs.readFileSync(settingsSrc, 'utf8'));
+        const bmadSettings = normalizeClaudeHookCommandRefs(
+          JSON.parse(fs.readFileSync(settingsSrc, 'utf8'))
+        );
         const globalSettingsPath = path.join(os.homedir(), '.claude', 'settings.json');
         let mergedSettings = bmadSettings;
         if (fs.existsSync(globalSettingsPath)) {
@@ -207,7 +212,7 @@ const REGISTERED_AGENT_PROFILES = {
               console.log('Merged global ~/.claude/settings.json hooks into project settings');
             }
           } catch (e) {
-            console.warn('Failed to read global settings, using BMAD defaults:', e.message);
+              console.warn('Failed to read global settings, using BMAD defaults:', e.message);
           }
         }
         fs.writeFileSync(settingsDest, JSON.stringify(mergedSettings, null, 2) + '\n', 'utf8');
@@ -324,6 +329,24 @@ function deepMergeSettings(bmadSettings, globalSettings) {
   }
 
   return merged;
+}
+
+function normalizeClaudeHookCommandRefs(settings) {
+  const normalized = JSON.parse(JSON.stringify(settings || {}));
+  if (!normalized.hooks || typeof normalized.hooks !== 'object') {
+    return normalized;
+  }
+  for (const hookEntries of Object.values(normalized.hooks)) {
+    if (!Array.isArray(hookEntries)) continue;
+    for (const entry of hookEntries) {
+      if (!entry || typeof entry !== 'object' || !Array.isArray(entry.hooks)) continue;
+      for (const hook of entry.hooks) {
+        if (!hook || typeof hook !== 'object' || typeof hook.command !== 'string') continue;
+        hook.command = hook.command.replace('runtime-policy-inject.js', 'runtime-policy-inject.cjs');
+      }
+    }
+  }
+  return normalized;
 }
 
 const CORE_DIRS = ['_bmad'];
@@ -513,7 +536,8 @@ function syncCursorRuntimePolicyHooks(targetDir, bmadRoot) {
   }
 
   const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs', 'post-tool-use.cjs', 'runtime-dashboard-session-start.cjs', 'pre-continue-check.cjs'];
-  for (const name of names) {
+  const extendedNames = [...names, 'subagent-result-summary.cjs'];
+  for (const name of extendedNames) {
     const src = path.join(cursorHooksDir, name);
     const runtimeFallback = path.join(bmadRoot, 'runtime', 'hooks', name);
     const source = fs.existsSync(src) ? src : runtimeFallback;

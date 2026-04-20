@@ -58,7 +58,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ./.claude/hooks/runtime-policy-inject.js --subagent-start",
+            "command": "node ./.claude/hooks/runtime-policy-inject.cjs --subagent-start",
             "timeout": 8,
             "statusMessage": "Injecting runtime governance policy..."
           },
