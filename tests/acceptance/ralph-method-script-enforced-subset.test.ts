@@ -15,7 +15,7 @@ describe('ralph-method script-enforced subset contract', () => {
 
   it('keeps speckit implement command and agent aligned with the script-enforced subset', () => {
     const command = readFileSync('_bmad/speckit/commands/speckit.implement.md', 'utf8');
-    const agent = readFileSync('.claude/agents/speckit-implement.md', 'utf8');
+    const agent = readFileSync('_bmad/claude/agents/speckit-implement.md', 'utf8');
 
     expect(command).toContain('Script-Enforced Subset');
     expect(command).toContain('bmad-speckit ralph record-phase');

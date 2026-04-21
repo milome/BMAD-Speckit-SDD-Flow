@@ -1,15 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
-  readBmadHelpExecutionPlan,
   readBmadHelpRoutingModel,
-  readBmadHelpTasksPlan,
 } from './helpers/bmad-help-doc-helpers';
+import { resolveImplementationEntryGate } from '../../scripts/runtime-governance';
 
 describe('bmad-help implementation block behavior', () => {
   it('prevents implementation-first recommendations when readiness is not clean or repair-closed', () => {
     const routingModel = readBmadHelpRoutingModel();
-    const tasksPlan = readBmadHelpTasksPlan();
-    const executionPlan = readBmadHelpExecutionPlan();
 
     expect(routingModel).toContain(
       '只要 `implementationReadinessStatus` 不是 `ready_clean` 或 `repair_closed`，实施入口不得是 `recommended`。'
@@ -20,15 +17,58 @@ describe('bmad-help implementation block behavior', () => {
       '帮助层只要看到这两类前置尚未通过，就不得把实现入口判成 `recommended`。'
     );
 
-    expect(tasksPlan).toContain('T014');
-    expect(tasksPlan).toContain('T016');
-    expect(tasksPlan).toContain('不得首推 implement');
+    const evidenceSources = {
+      readinessReportPath: null,
+      remediationArtifactPath: null,
+      executionRecordPath: null,
+      authoritativeAuditReportPath: null,
+    };
 
-    expect(executionPlan).toContain(
-      '`T014` and `T016` are present as explicit pre-implementation blockers'
-    );
-    expect(executionPlan).toContain(
-      'Do not begin product code implementation before the frozen Wave 4 tests stay green'
-    );
+    expect(
+      resolveImplementationEntryGate({
+        requestedFlow: 'story',
+        readinessStatus: 'blocked',
+        complexity: 'low',
+        evidenceSources,
+      }).decision
+    ).toBe('block');
+
+    expect(
+      resolveImplementationEntryGate({
+        requestedFlow: 'story',
+        readinessStatus: 'repair_in_progress',
+        complexity: 'low',
+        evidenceSources,
+      }).decision
+    ).toBe('block');
+
+    expect(
+      resolveImplementationEntryGate({
+        requestedFlow: 'story',
+        readinessStatus: 'stale_after_semantic_change',
+        complexity: 'low',
+        evidenceSources,
+      }).decision
+    ).toBe('block');
+
+    expect(
+      resolveImplementationEntryGate({
+        requestedFlow: 'story',
+        readinessStatus: 'repair_closed',
+        complexity: 'low',
+        evidenceSources,
+      }).decision
+    ).toBe('pass');
+
+    const standaloneHighComplexity = resolveImplementationEntryGate({
+      requestedFlow: 'standalone_tasks',
+      readinessStatus: 'ready_clean',
+      complexity: 'high',
+      evidenceSources,
+    });
+
+    expect(standaloneHighComplexity.decision).toBe('reroute');
+    expect(standaloneHighComplexity.recommendedFlow).toBe('story');
+    expect(standaloneHighComplexity.rerouteReason).toBe('standalone_tasks_high_complexity');
   });
 });

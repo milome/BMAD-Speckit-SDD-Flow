@@ -3,22 +3,22 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 describe('runtime language en end-to-end', () => {
-  it('documents english-only narrative requirement for all major output surfaces', () => {
+  it('documents language policy resolution and english audit-template selection on tracked docs', () => {
     const repoRoot = process.cwd();
-    const architectureDoc = readFileSync(
-      path.join(repoRoot, 'docs', 'plans', '2026-03-22-runtime-governance-正式架构设计文档-bmad原生上下文同步版.md'),
+    const localeDoc = readFileSync(
+      path.join(repoRoot, 'docs', 'how-to', 'runtime-locale-and-i18n-config.md'),
       'utf8'
     );
-    const implPlan = readFileSync(
-      path.join(repoRoot, 'docs', 'plans', '2026-03-21-runtime-governance-story-scoped-dual-host-implementation-plan.md'),
+    const governanceDoc = readFileSync(
+      path.join(repoRoot, 'docs', 'how-to', 'runtime-governance-auto-inject-cursor-claude.md'),
       'utf8'
     );
 
-    expect(architectureDoc).toContain('languagePolicy');
-    expect(architectureDoc).toContain('审计报告');
-    expect(architectureDoc).toContain('trace');
-    expect(architectureDoc).toContain('SFT');
-    expect(implPlan).toContain('language');
-    expect(implPlan).toContain('RuntimePolicy');
+    expect(localeDoc).toContain('languagePolicy');
+    expect(localeDoc).toContain('resolvedMode');
+    expect(localeDoc).toContain('audit-prompts');
+    expect(localeDoc).toContain('project.json');
+    expect(governanceDoc).toContain('RuntimePolicy schema');
+    expect(governanceDoc).toContain('Cursor native hooks');
   });
 });

@@ -12,7 +12,7 @@ describe('party-mode host-native capability boundary', () => {
       hooks: Record<string, unknown>;
     };
     const claudeSettings = JSON.parse(
-      fs.readFileSync(path.join(ROOT, '.claude', 'settings.json'), 'utf8')
+      fs.readFileSync(path.join(ROOT, '_bmad', 'claude', 'settings.json'), 'utf8')
     ) as {
       hooks: Record<string, unknown>;
     };
@@ -40,19 +40,19 @@ describe('party-mode host-native capability boundary', () => {
   });
 
   it('keeps the runtime gap note honest about bridge vs native support', () => {
-    const gapNote = fs.readFileSync(
+    const governanceGuide = fs.readFileSync(
       path.join(
         ROOT,
         'docs',
-        'plans',
-        '2026-04-14-party-mode-facilitator-runtime-hook-gap-note.md'
+        'how-to',
+        'runtime-governance-auto-inject-cursor-claude.md'
       ),
       'utf8'
     );
 
-    expect(gapNote).toContain('仍不是 host 原生 agent-turn event');
-    expect(gapNote).toContain('稳定观察到');
-    expect(gapNote).toContain('sessionStart / subagentStart / subagentStop');
-    expect(gapNote).toContain('repo-owned explicit event writer + post-tool-use refresh bridge');
+    expect(governanceGuide).toContain('Cursor 主路径');
+    expect(governanceGuide).toContain('.cursor/hooks.json');
+    expect(governanceGuide).toContain('Cursor 兼容路径');
+    expect(governanceGuide).toContain('third-party hooks / Claude-compatible hooks');
   });
 });

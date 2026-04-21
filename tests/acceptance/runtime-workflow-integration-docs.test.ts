@@ -3,16 +3,20 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 describe('runtime workflow integration docs', () => {
-  it('documents runtime context sync at BMAD workflow entry points', () => {
+  it('documents runtime context sync through tracked hook and registry references', () => {
     const root = process.cwd();
-    const implPlan = readFileSync(
-      path.join(root, 'docs', 'plans', '2026-03-21-runtime-governance-story-scoped-dual-host-implementation-plan.md'),
+    const hooksReference = readFileSync(
+      path.join(root, 'docs', 'reference', 'cursor-runtime-governance-hooks.md'),
+      'utf8'
+    );
+    const registrySource = readFileSync(
+      path.join(root, 'scripts', 'runtime-context-registry.ts'),
       'utf8'
     );
 
-    expect(implPlan).toContain('story-instance');
-    expect(implPlan).toContain('story-scoped');
-    expect(implPlan).toContain('runId');
-    expect(implPlan).toContain('Cursor native hooks');
+    expect(hooksReference).toContain('.cursor/hooks.json');
+    expect(hooksReference).toContain('story-scoped runtime context');
+    expect(registrySource).toContain('projectContextPath');
+    expect(registrySource).toContain('runId');
   });
 });

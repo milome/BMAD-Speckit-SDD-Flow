@@ -62,6 +62,14 @@ Speckit Implement Agent 是Layer 4 执行阶段的核心组件，负责：
    - Standalone: 与 tasks.md 同目录
 4. **验证前置条件**: prd.{stem}.json 和progress.{stem}.txt 必须存在
 
+## Script-Enforced Subset
+
+- `create/prepare tracking files`: 由 `npx bmad-speckit ralph prepare --tasksPath <path>` 在进入实现 prompt 前自动完成。
+- `record TDD-RED/TDD-GREEN/TDD-REFACTOR phase traces`: 必须通过 `npx bmad-speckit ralph record-phase --tasksPath <path> --userStoryId <US-ID> --title "<US title>" --phase TDD-RED|TDD-GREEN|TDD-REFACTOR|DONE --detail "<phase detail>"` 即时落盘。
+- `final compliance verification`: 最终收口必须运行 `npx bmad-speckit ralph verify --tasksPath <path>`。
+
+TodoWrite 纪律、测试/ lint 命令选择、gap 分类与 journey 收口仍属于 prompt-enforced responsibility，不能假定脚本已自动推断。
+
 ## Execution Flow
 
 ### Step 1: Ralph-Method 前置检查
