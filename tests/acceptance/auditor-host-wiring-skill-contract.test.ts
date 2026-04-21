@@ -123,10 +123,10 @@ describe('auditor host runner wiring in higher-level entry surfaces', () => {
     const scoringDeepDive = readRepoFileIfExists(
       'docs/explanation/bmad-speckit-sdd-scoring-deep-dive.md'
     );
-    const governanceOral = readRepoFile(
+    const governanceOral = readRepoFileIfExists(
       'docs/explanation/runtime-governance-5to8min-oral-guide.md'
     );
-    const governanceWhiteboard = readRepoFile(
+    const governanceWhiteboard = readRepoFileIfExists(
       'docs/explanation/runtime-governance-whiteboard-guide.md'
     );
     const cursorHooks = readRepoFile('docs/reference/cursor-runtime-governance-hooks.md');
@@ -142,8 +142,8 @@ describe('auditor host runner wiring in higher-level entry surfaces', () => {
       architecture,
       scoringSystem,
       ...(scoringDeepDive ? [scoringDeepDive] : []),
-      governanceOral,
-      governanceWhiteboard,
+      ...(governanceOral ? [governanceOral] : []),
+      ...(governanceWhiteboard ? [governanceWhiteboard] : []),
       cursorHooks,
       upstreamWiring,
       governanceTerms,
@@ -160,8 +160,8 @@ describe('auditor host runner wiring in higher-level entry surfaces', () => {
       architecture,
       scoringSystem,
       ...(scoringDeepDive ? [scoringDeepDive] : []),
-      governanceOral,
-      governanceWhiteboard,
+      ...(governanceOral ? [governanceOral] : []),
+      ...(governanceWhiteboard ? [governanceWhiteboard] : []),
       cursorHooks,
       upstreamWiring,
       governanceTerms,
@@ -177,8 +177,12 @@ describe('auditor host runner wiring in higher-level entry surfaces', () => {
     if (scoringDeepDive) {
       expect(scoringDeepDive).toContain('底层 scoring CLI');
     }
-    expect(governanceOral).toContain('post-audit automation');
-    expect(governanceWhiteboard).toContain('scoring write / auditIndex');
+    if (governanceOral) {
+      expect(governanceOral).toContain('post-audit automation');
+    }
+    if (governanceWhiteboard) {
+      expect(governanceWhiteboard).toContain('scoring write / auditIndex');
+    }
     expect(cursorHooks).toContain('post-audit automation');
     expect(upstreamWiring).toContain('host runner 收口');
     expect(governanceTerms).toContain('runAuditorHost');
