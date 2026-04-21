@@ -47,6 +47,8 @@ export function persistPatchSnapshot(input: {
   const diffCommands = [
     `git diff ${input.baseCommitHash} ${headHash}`,
     `git show --format= --patch ${headHash}`,
+    `git show -m --format= --patch ${headHash}`,
+    `git diff-tree --no-commit-id --patch -m -r ${headHash}`,
   ];
   for (const command of diffCommands) {
     try {
