@@ -115,10 +115,12 @@ jobs:
 
       - name: Pack bmad-speckit tgz
         run: |
-          npm pack --json -w bmad-speckit > .artifacts/npm/bmad-speckit-pack.json
+          BMAD_PREPUBLISH_SILENT=1 node scripts/prepublish-check.js
+          npm pack --json --ignore-scripts -w bmad-speckit > .artifacts/npm/bmad-speckit-pack.json
           CLI_TGZ=$(node -e "const fs=require('fs');const pack=JSON.parse(fs.readFileSync('.artifacts/npm/bmad-speckit-pack.json','utf8'));process.stdout.write(pack[0].filename)")
           CLI_TGZ_PATH=$(node -e "const fs=require('fs');const path=require('path');const pack=JSON.parse(fs.readFileSync('.artifacts/npm/bmad-speckit-pack.json','utf8'));const candidates=[path.join(process.cwd(), pack[0].filename), path.join(process.cwd(), 'packages', 'bmad-speckit', pack[0].filename)];const hit=candidates.find((candidate)=>fs.existsSync(candidate));if(!hit){console.error(`Cannot locate ${pack[0].filename}`);process.exit(1);}process.stdout.write(hit);")
           mv "$CLI_TGZ_PATH" ".artifacts/npm/$CLI_TGZ"
+          node scripts/cleanup-packed-bmad.js
 
       - name: Write npm package artifact manifest
         run: |
