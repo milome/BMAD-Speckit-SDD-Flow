@@ -1,5 +1,8 @@
 # Upstream Dependencies & Sync Strategy
 
+> **Current path**: upstream sync preserves runtime governance、scoped context 与 `runAuditorHost` wiring customizations
+> **Legacy path**: sync 覆盖 host-runner / governance wiring，或把旧 post-audit 命令链视为 canonical
+
 本文档说明 BMAD-Speckit-SDD-Flow 对上游的依赖、定制范围与同步策略。可参考 [BMAD-METHOD v6 Gaps 与同步建议](BMAD/BMAD-METHOD-v6-Gaps与同步建议.md)。
 
 ---

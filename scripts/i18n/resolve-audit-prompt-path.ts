@@ -7,6 +7,10 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
+import {
+  resolveLocalizedMarkdownPath,
+  type LocalizedMarkdownVariant,
+} from './resolve-localized-markdown-path';
 
 export type AuditPromptLocale = 'zh' | 'en';
 
@@ -69,20 +73,36 @@ export function resolveAuditPromptPath(
   templateBasename: string,
   locale: AuditPromptLocale
 ): ResolveAuditPromptResult {
-  const stem = templateBasename.replace(/\.md$/i, '');
-  const defaultPath = path.join(refsDir, `${stem}.md`);
-  const zhPath = path.join(refsDir, `${stem}.zh.md`);
-  const enPath = path.join(refsDir, `${stem}.en.md`);
+  const result = resolveLocalizedMarkdownPath({
+    basePath: path.join(refsDir, templateBasename),
+    resolvedMode: locale,
+  });
 
-  if (locale === 'en') {
-    if (fs.existsSync(enPath)) {
-      return { resolvedPath: enPath, usedFallback: false, variant: 'en' };
-    }
-    return { resolvedPath: defaultPath, usedFallback: true, variant: 'default' };
-  }
+  return {
+    resolvedPath: result.resolvedPath,
+    usedFallback: mapAuditPromptFallback(result.variant, result.usedFallback, locale),
+    variant: mapAuditPromptVariant(result.variant),
+  };
+}
 
-  if (fs.existsSync(zhPath)) {
-    return { resolvedPath: zhPath, usedFallback: false, variant: 'zh-explicit' };
+function mapAuditPromptVariant(variant: LocalizedMarkdownVariant): ResolveAuditPromptResult['variant'] {
+  switch (variant) {
+    case 'en':
+      return 'en';
+    case 'zh':
+      return 'zh-explicit';
+    default:
+      return 'default';
   }
-  return { resolvedPath: defaultPath, usedFallback: false, variant: 'default' };
+}
+
+function mapAuditPromptFallback(
+  variant: LocalizedMarkdownVariant,
+  usedFallback: boolean,
+  locale: AuditPromptLocale
+): boolean {
+  if (locale === 'zh' && variant === 'base') {
+    return false;
+  }
+  return usedFallback;
 }

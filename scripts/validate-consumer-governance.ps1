@@ -138,6 +138,16 @@ try {
     [ordered]@{ exitCode = $install.exitCode }
   } | Out-Null
 
+  Run-Step 'restore-root-package' {
+    $install = Invoke-External -FilePath 'npm.cmd' -Arguments @('install', '--no-save', '--force', "file:$RepoRoot") -WorkingDirectory $ConsumerRoot -LogName 'consumer-root-package-install'
+    [ordered]@{
+      exitCode = $install.exitCode
+      package = 'bmad-speckit-sdd-flow'
+      installMode = 'file:no-save'
+      note = 'Restore local root package into consumer node_modules so repaired .bin wrappers target an existing CLI entry.'
+    }
+  } | Out-Null
+
   Run-Step 'init-consumer-runtime' {
     Invoke-InitWithRetry 'cursor' | Out-Null
     Invoke-InitWithRetry 'claude-code' | Out-Null
@@ -150,6 +160,22 @@ try {
     foreach ($hookRoot in @('.cursor', '.claude')) { foreach ($file in $required) { $full = Join-Path $ConsumerRoot "$hookRoot/hooks/$file"; if (-not (Test-Path $full)) { $missing += $full } } }
     if ($missing.Count -gt 0) { throw "Missing hook-local files: $($missing -join '; ')" }
     [ordered]@{ verifiedCount = $required.Count * 2 }
+  } | Out-Null
+
+  Run-Step 'verify-party-mode-helper-surfaces' {
+    $required = @(
+      (Join-Path $ConsumerRoot '.cursor/hooks/party-mode-read-current-session.cjs'),
+      (Join-Path $ConsumerRoot '_bmad/runtime/hooks/party-mode-read-current-session.cjs')
+    )
+    $missing = @($required | Where-Object { -not (Test-Path $_) })
+    if ($missing.Count -gt 0) {
+      throw "Missing party-mode helper surfaces: $($missing -join '; ')"
+    }
+    [ordered]@{
+      requiredHelpers = $required
+      consumerScriptsRequired = $false
+      note = 'Consumer validation requires installed hook/runtime helpers and does not require scripts/party-mode-gate-check.ts.'
+    }
   } | Out-Null
 
   Run-Step 'verify-cli-version' {

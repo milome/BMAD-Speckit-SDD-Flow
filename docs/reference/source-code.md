@@ -1,5 +1,8 @@
 # 项目源代码文件清单
 
+> **Current path**: `runAuditorHost`（post-audit automation）
+> **Legacy path**: 手工 `bmad-speckit score` / `parse-and-write-score`
+
 **统计**：生产 16,416 行 | 测试 9,702 行 | 合计 26,118 行  
 **范围**：.ts / .js / .py / .ps1 / .sh（已排除 node_modules、\_bmad-output）
 
@@ -252,6 +255,7 @@
 
 > Scoring 相关脚本已整合进 `bmad-speckit` CLI 子命令。`scripts/*.ts` 保留为源仓库开发入口。
 > 对应关系：`parse-and-write-score.ts` → `npx bmad-speckit score`、`check-story-score-written.ts` → `npx bmad-speckit check-score`、`coach-diagnose.ts` → `npx bmad-speckit coach`、`dashboard-generate.ts` → `npx bmad-speckit dashboard`、`sft-extract.ts` → `npx bmad-speckit sft-extract`、`scores-summary.ts` → `npx bmad-speckit scores`。
+> 当前审计后自动化主路径：`scripts/run-auditor-host.ts` 负责 host 级收口，`scripts/auditor-post-actions.ts` 负责 post-actions 编排，必要时再调用 `scripts/update-runtime-audit-index.ts` 与底层 scoring 能力。
 
 [生产] scripts/accept-e1-s1.ts
 [生产] scripts/accept-e1-s2.ts
@@ -267,6 +271,7 @@
 [生产] scripts/analytics-prompt-optimize.ts
 [生产] scripts/analytics-rule-suggest.ts
 [生产] scripts/analytics-sft-extract.ts
+[生产] scripts/auditor-post-actions.ts
 [生产] scripts/bmad-sync-from-v6.ps1
 [生产] scripts/bmad-sync-from-v6.sh
 [生产] scripts/check-sprint-ready.ps1
@@ -279,10 +284,12 @@
 [生产] scripts/init-to-root.js
 [生产] scripts/parse-and-write-score.ts
 [生产] scripts/query-validate.ts
+[生产] scripts/run-auditor-host.ts
 [生产] scripts/scores-summary.ts
 [生产] scripts/setup.ps1
 [生产] scripts/setup.sh
 [生产] scripts/sft-extract.ts
+[生产] scripts/update-runtime-audit-index.ts
 
 ## skills
 

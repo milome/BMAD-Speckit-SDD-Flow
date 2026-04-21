@@ -16,6 +16,16 @@ Implement 审计报告
 - 测试覆盖: 78/100
 - 安全性: 90/100
 
+## Structured Drift Signal Block
+
+| signal | status | evidence |
+| --- | --- | --- |
+| smoke_task_chain | pass | Smoke task chain proof is present. |
+| closure_task_id | pass | Closure task note links are present. |
+| journey_unlock | pass | Journey unlock semantics remain intact. |
+| gap_split_contract | pass | Definition gap vs implementation gap remain separated. |
+| shared_path_reference | pass | Shared ledger / trace paths remain aligned. |
+
 问题清单:
 1. [严重程度:中] 功能正确性需补充边界测试
 2. [严重程度:低] 命名规范有少量不一致

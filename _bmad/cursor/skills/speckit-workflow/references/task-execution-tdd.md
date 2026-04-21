@@ -76,7 +76,9 @@
 ### 2.3 长时间脚本处理
 
 - pytest、构建脚本等长时间运行的命令使用 `block_until_ms: 0` 后台运行。
-- 启动后轮询 `terminals/` 目录检查结果文件。
+- 启动后可轮询 `terminals/` 目录检查结果文件，但**仅限普通长任务**；**禁止**将此规则用于 party-mode 返回状态判定。
+- 在 Cursor / PowerShell 环境中，**禁止**使用混合 shell 命令轮询目录（如 `ls -la`、`mkdir -p`、`dir ... /b`、`||` 风格回退链）。如确需轮询，只能使用 PowerShell 原生命令（如 `Get-ChildItem`、`Test-Path`、`Get-Content`）。
+- 若当前任务是 party-mode 返回检查，**不要**轮询 `terminals/` 或直接探测 `_bmad-output/party-mode/` 文件；必须先读取 `_bmad-output/party-mode/runtime/current-session.json`，优先看 `validation_status`、`status`、`target_rounds_total`、`visible_output_summary`、`visible_fragment_record_present`。
 - 使用指数退避策略轮询（2s → 4s → 8s → 16s...），根据命令预估时长调整。
 - 等待 `exit_code` 出现后读取完整输出判断结果。
 
@@ -117,7 +119,7 @@
 
 13. **TodoWrite 追踪进度**：使用 TodoWrite 追踪进度，每个任务标记 `in_progress` / `completed`。
 14. **立即更新复选框**：完成任务后立即更新 tasks.md（或 tasks-v*.md）中的复选框 `[ ]` → `[x]`。
-15. **长时间脚本后台运行**：pytest/长时间脚本使用 `block_until_ms: 0` 后台运行，然后轮询 `terminals/` 检查结果。
+15. **长时间脚本后台运行**：pytest/长时间脚本使用 `block_until_ms: 0` 后台运行，然后轮询 `terminals/` 检查结果；但 **party-mode 返回检查不适用此条**，必须走 `current-session.json` + `visible_output_summary` 诊断链路。
 16. **Journey 与 Deferred Gap 同步收口**：关闭 gap、生成 smoke/full E2E、完成 closure note、补 acceptance evidence 时，必须同步更新 `deferred-gap-register.yaml` 与 Journey-first 工件，禁止只改任务复选框。
 
 ---

@@ -1440,6 +1440,13 @@ if (require.main === module) {
     if (result.stdout) {
       process.stdout.write(result.stdout);
     }
+    if (
+      result.governancePresentation &&
+      Array.isArray(result.governancePresentation.combinedLines) &&
+      result.governancePresentation.combinedLines.length > 0
+    ) {
+      process.stdout.write(`${result.governancePresentation.combinedLines.join('\n')}\n`);
+    }
     if (result.stderr) {
       process.stderr.write(result.stderr);
     }

@@ -17,6 +17,10 @@ function readStdin() {
   });
 }
 
+function shouldSkipMilestoneTracking(agentType) {
+  return String(agentType || '').trim() === 'party-mode-facilitator';
+}
+
 async function main() {
   const input = await readStdin();
   if (!input) {
@@ -26,6 +30,18 @@ async function main() {
   const agentId = input.agent_id || 'unknown';
   const agentType = input.agent_type || 'unknown';
   const projectDir = input.cwd || process.cwd();
+
+  if (shouldSkipMilestoneTracking(agentType)) {
+    process.stdout.write(
+      JSON.stringify({
+        hookSpecificOutput: {
+          hookEventName: 'SubagentStart',
+          additionalContext: '',
+        },
+      })
+    );
+    return;
+  }
 
   const milestoneDir = path.join(projectDir, '.claude', 'state', 'milestones');
   const milestoneFile = path.join(milestoneDir, `${agentId}.jsonl`);

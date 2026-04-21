@@ -98,6 +98,7 @@ if [[ "$SKIP_SKILLS" != "true" ]]; then
         DEST="$SKILLS_ROOT/$skill"
         if [[ -d "$SRC" ]]; then
             echo "[2] Copy skill: $skill"
+            rm -rf "$DEST"
             cp -Rf "$SRC" "$DEST"
             [[ -f "$DEST/SKILL.md" ]] || echo "  Warning: $skill - SKILL.md not found after copy"
         else
@@ -121,8 +122,8 @@ CHECKS=(
     "_bmad-output/config:_bmad-output/config dir"
     "commands/speckit.specify.md:speckit command"
     "commands/bmad-bmm-create-story.md:BMAD command"
-    "rules/bmad-bug-auto-party-mode.mdc:rules"
-    ".cursor/rules/bmad-bug-auto-party-mode.mdc:Cursor rules"
+    "rules/bmad-bug-auto-party-mode-rule.mdc:rules"
+    ".cursor/rules/bmad-bug-auto-party-mode-rule.mdc:Cursor rules"
     ".cursor/commands/speckit.specify.md:Cursor speckit command"
     ".cursor/commands/bmad-bmm-create-story.md:Cursor BMAD command"
     ".cursor/agents/code-reviewer-config.yaml:Cursor Code Reviewer"

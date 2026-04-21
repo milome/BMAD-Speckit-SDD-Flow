@@ -1,23 +1,32 @@
 <!-- BLOCK_LABEL_POLICY=B -->
+
 ---
 name: bmad-bug-assistant
 description: |
-  BMAD Bug Assistant: Follow the flow Root Cause Analysis → BUGFIX document → audit → task-list supplement → implementation → post-implementation audit for end-to-end bug repair. When the main agent initiates any subtask, the master agent must copy the entire "complete prompt template" of this stage in the skill and fill in the placeholders before passing it in. It is prohibited to omit, summarize or rewrite the prompt words on its own; the master agent is prohibited from directly modifying the production code, and the implementation must be through the mcp_task subagent. Use party-mode or mcp_task generalPurpose to conduct **at least 100 rounds** of multi-role debate (BUGFIX produces the final plan and §7 task list, which belongs to the party-mode step-02 "Generate final plan and final task list" scenario), and then end after meeting the convergence conditions (consensus + no new gaps in the past 2-3 rounds); audit priority code-reviewer, roll back mcp_task. Follow ralph-method, TDD traffic light, speckit-workflow. Applicable scenarios: user-reported bugs, root cause analysis, generating or updating BUGFIX docs, supplementing the §7 task list, implementing BUGFIX. Deliverables and subtask prompts remain in Chinese per workflow rules.
+  BMAD Bug Assistant: Follow the flow Root Cause Analysis → BUGFIX document → audit → task-list supplement → implementation → post-implementation audit for end-to-end bug repair. When the main agent initiates any subtask, the master agent must copy the entire "complete prompt template" of this stage in the skill and fill in the placeholders before passing it in. It is prohibited to omit, summarize or rewrite the prompt words on its own; the master agent is prohibited from directly modifying the production code, and the implementation must be through the mcp_task subagent. In Cursor party-mode, always show the `20 / 50 / 100` options first, wait for the user's choice, complete the pre-launch self-check, and let the host inject `Party Mode Session Bootstrap (JSON)` on `SubagentStart`. Recommend `decision_root_cause_50` for ordinary RCA / option analysis and `final_solution_task_list_100` for BUGFIX final solution + §7, but recommendation is not authorization: the main Agent must not write `【自检完成】` until the user explicitly replies. The Cursor branch does not pause mid-run or hand control back in batches; once launched, the sub-agent must keep running in one session until the user-selected total rounds are completed. Audit priority code-reviewer, roll back mcp_task. Follow ralph-method, TDD traffic light, speckit-workflow. Applicable scenarios: user-reported bugs, root cause analysis, generating or updating BUGFIX docs, supplementing the §7 task list, implementing BUGFIX. Deliverables and subtask prompts remain in Chinese per workflow rules.
 ---
+
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout terminology: in this document, a stage is considered complete only when `runAuditorHost` returns `closeout approved`. An audit report `PASS` only means the host close-out may start; `PASS` alone must not be treated as completion, admission, or release.
+
+> **Orphan bugfix closeout contract**: when the BUGFIX document lives under `_bmad-output/implementation-artifacts/_orphan/`, the structured audit report must explicitly carry `stage=bugfix`, `artifactDocPath`, and `reportPath`, and all three must match the real BUGFIX doc/report paths. Missing any field, or relying on prose-only `PASS`, must fail closeout conservatively.
 
 # BMAD Bug Assistant
 
 > **Required reading:** Before using this skill, read and comply with the self-test rules in `{project-root}/.cursor/rules/bmad-bug-assistant.mdc`. **Before** initiating an mcp_task or party-mode subtask, complete every item in that stage’s “Pre-initiation self-test list” and output the self-test results, or do not initiate.
+> **Party-mode source of truth (Cursor)**: `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`. All party-mode rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit-gate semantics must follow that file; this skill must not define a second gate contract.
 
 This skill defines the complete workflow **Root Cause Analysis → BUGFIX documentation → audit → (optional) information updates → task-list supplement → implementation → post-implementation audit**. **Post-implementation audit is mandatory, not optional.** If it fails, apply the audit’s change requests and re-audit until it passes.
 
 ## Mandatory constraints (must be observed)
 
 1. **Chinese is used throughout**: All outputs (BUGFIX documents, task lists, audit reports, subtask prompts) and interactions with users are in Chinese.
-2. **party-mode subagent**: **Prefer** Cursor Task to schedule **party-mode-facilitator** (if `.cursor/agents/party-mode-facilitator.md` exists) so the user can see the full debate; otherwise fall back to `mcp_task` + `generalPurpose`. When using party-mode, follow the “BMAD Agent display names and command mapping” table below and each stage’s recommended agents to introduce roles; **do not** skip multi-role debate or collapse to a single role.
-3. **The main agent is prohibited from directly changing the production code**: The repair must be performed through the sub-agent; the main agent only initiates sub-tasks, passes in the document path, and collects output.
-4. **The main agent is prohibited from directly generating BUGFIX documents**: The BUGFIX documents in phases one and two (including §1–§5) must be produced by the party-mode or mcp_task sub-agent; the main agent must not skip the sub-agent and write the BUGFIX document by itself on the grounds of "existing analysis documents" or "root cause has been agreed upon".
-5. **Every update must be audited**: Whenever a BUGFIX document (including §4 and §7) is produced or updated, **start an audit subtask after completion** and iterate until it passes; **do not** skip the audit. Whether or not there was debate, the audit loop is mandatory.
+2. **party-mode subagent**: In the current Cursor IDE, the `party-mode-facilitator` contract may be carried through a `generalPurpose` compatibility execution path; `.cursor/agents/party-mode-facilitator.md` remains the canonical prompt/source asset and the host injects `Party Mode Session Bootstrap (JSON)` on `SubagentStart`. When using party-mode, follow the “BMAD Agent display names and command mapping” table below and each stage’s recommended agents to introduce roles; **do not** skip multi-role debate or collapse to a single role.
+3. **Cursor-only pre-launch hard gate**: before launching Cursor party-mode, the main Agent must: (1) show `20 / 50 / 100`, (2) wait for the user's explicit choice, (3) complete the pre-launch self-check checklist, and (4) print a `【自检完成】...可以发起。` result block. Missing any of these steps blocks the launch.
+4. **Cursor-only return validation**: Cursor now supports the `subagentStop` hook, and the host will automatically trigger party-mode closeout / summary refresh on `subagentStop`; however, after a party-mode sub-agent returns the main Agent must still **first read** `_bmad-output/party-mode/runtime/current-session.json`, and it must validate the current run only through that file. **Do not** guess the “latest `pm-*` session” by file timestamp. The check order is fixed: ① `validation_status`, `status`, `session_key`, and `target_rounds_total`; ② **read `visible_output_summary` and `visible_fragment_record_present` first**, and use `observed_visible_round_count`, `first_visible_round`, `last_visible_round`, `progress_current_round`, `progress_target_round`, `final_gate_present`, `final_gate_profile`, `final_gate_total_rounds`, and `excerpt` to decide whether this was only an early exit or a tail-only visible return; ③ **only when deeper investigation is needed** read `session_log_path`, `snapshot_path`, `audit_verdict_path`, and `visible_output_capture_path`. **Do not** open the session log or `tool-result.md` before checking `visible_output_summary`. If `current-session.json` shows that the run did not reach the user-selected total rounds, or `validation_status != PASS`, or the visible output is missing the final summary / `## Final Gate Evidence`, the main Agent must **not** continue the debate in the main thread and must **not** restart from Round 1. It must immediately re-issue the facilitator with the same total rounds and gate profile.
+5. **The main agent is prohibited from directly changing the production code**: The repair must be performed through the sub-agent; the main agent only initiates sub-tasks, passes in the document path, and collects output.
+6. **The main agent is prohibited from directly generating BUGFIX documents**: The BUGFIX documents in phases one and two (including §1–§5) must be produced by the party-mode or mcp_task sub-agent; the main agent must not skip the sub-agent and write the BUGFIX document by itself on the grounds of "existing analysis documents" or "root cause has been agreed upon".
+7. **Every update must be audited**: Whenever a BUGFIX document (including §4 and §7) is produced or updated, **start an audit subtask after completion** and iterate until it passes; **do not** skip the audit. Whether or not there was debate, the audit loop is mandatory.
 
 ## Master Agent’s rules for delivering prompt words (must be observed)
 
@@ -49,7 +58,7 @@ Each time a subtask (party-mode or mcp_task) is initiated, the main Agent **must
 
 | Resources | Path/Description |
 | ---- | --------- |
-| **party-mode** | `{project-root}/_bmad/core/workflows/party-mode/`; For rounds and convergence, see step-02 (BUGFIX produces the final solution and §7 task list: at least 100 rounds; others: 50 rounds; end after convergence conditions). |
+| **party-mode** | `{project-root}/_bmad/cursor/skills/bmad-party-mode/`; Cursor-side rounds / challenger ratio / recovery / evidence / exit-gate rules come from the Cursor step-02 override (BUGFIX produces the final solution and §7 task list: 100 rounds; others: 50 rounds). |
 | **party-mode-facilitator subagent** | `.cursor/agents/party-mode-facilitator.md`; Prioritize Cursor Task scheduling, users can see the complete debate; if not found, use `mcp_task` + `generalPurpose` |
 | **code-reviewer subagent** | `.claude/agents/code-reviewer.md` or `.cursor/agents/code-reviewer.md`; if not found, use `mcp_task` to call `generalPurpose` |
 | **audit-prompts §5** | `references/audit-prompts-section5.md` (within this skill) or `{project-root}/docs/speckit/skills/speckit-workflow/references/audit-prompts.md`; **Only for other workflow reference, not used for BUGFIX document auditing of this skill**. |
@@ -200,7 +209,7 @@ If there is no backup, no prompt will be given. This check does not block subseq
 
 **产出要求**：
 1. 根因结论（一段话，无歧义）。
-2. 生成 BUGFIX 文档，包含：§1 问题描述、§2 根因分析、§3 影响范围、§4 修复方案（须为明确描述，禁止使用本 skill「§ 禁止词表」中的词：可选、可考虑、后续、待定、酌情、视情况、后续迭代）、§5 验收标准。保存至 _bmad-output/ 或 bugfix/。
+2. 生成 BUGFIX 文档，包含：§1 问题描述、§2 根因分析、§3 影响范围、§4 修复方案（须为明确描述，禁止使用本 skill「§ 禁止词表」中的词：可选、可考虑、后续、待定、酌情、视情况、后续迭代）、§5 验收标准。必须写入明确的 canonical BUGFIX 文档路径。
 3. 全程使用中文。
 ```
 ### Phase 1 audit complete prompt template (the main Agent must be completely copied to the prompt of the audit subtask)
@@ -472,18 +481,16 @@ Delete `_bmad-output/current_pytest_session_pid.txt` after execution is complete
 
 **Must be done when it fails (it is forbidden to run for only one round and end)**: If the audit conclusion is "**Failed**" or the audit report lists failed items and modification suggestions, the main Agent **must** execute according to the modification suggestions (entrust the sub-agent to modify the code or update BUGFIX/documentation), and then **initiate** the post-implementation audit again (using the same template BUG-A4-POSTAUDIT); repeat "Audit → If it fails, modify according to the suggestions → Re-audit" until the conclusion is "**fully covered and verified**". It is prohibited to complete only one round of auditing or report completion to the user when the conclusion is that it has failed.
 
-**Score writing after passing the audit (must be executed)**: After the post-implementation audit conclusion is "complete coverage, verification passed", the main Agent **must** call `parseAndWriteScore` to write the implement stage score into the scoring storage. When a BUGFIX document is present, `artifactDocPath=<BUGFIX document path>` must be passed in explicitly to ensure that `record.source_path` correctly points to the BUGFIX document (and not the audit report path).
+**Unified host close-out after passing the audit (must be executed)**: After the post-implementation audit conclusion is "complete coverage, verification passed", the main Agent **must not** hand-run `parseAndWriteScore` or any audit-index CLI. It must call `runAuditorHost` as the single post-audit entry. When a BUGFIX document is present, the host/runner must receive `artifactDocPath=<BUGFIX document path>` to ensure `record.source_path` and registry audit index both point to the BUGFIX document instead of the audit report path.
 
-**CLI call example** (executed in the project root directory):
+**Host call example** (executed in the project root directory):
 ```bash
-npx bmad-speckit score \
-  --reportPath <审计报告路径> \
-  --stage implement \
-  --epic {epic} \
-  --story {story} \
-  --artifactDocPath <BUGFIX 文档路径> \
-  --iteration-count <累计失败轮数，0 表示一次通过> \
-  --skipTriggerCheck true
+npx ts-node scripts/run-auditor-host.ts \
+  --projectRoot <projectRoot> \
+  --stage bugfix \
+  --artifactPath <BUGFIX document path> \
+  --reportPath <audit report path> \
+  --iterationCount <cumulative failed rounds, 0 means first-pass success>
 ```
 **Path Convention**: The value of `artifactDocPath` is consistent with the "Output Path Convention" - when there is story: `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/BUGFIX_{slug}.md`; without story When: `_bmad-output/implementation-artifacts/_orphan/BUGFIX_{slug}.md`.
 

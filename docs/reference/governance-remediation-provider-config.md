@@ -1,6 +1,8 @@
 # Governance Remediation Provider 配置参考
 
 > 说明 `_bmad/_config/governance-remediation.yaml` 中 `provider` 段如何配置，以及 OpenAI / Anthropic 的最小可用示例。
+> **Current path**: provider 仅作为 governance remediation / hint sidecar
+> **Legacy path**: provider 直接充当 authoritative gate / routing / readiness 判定源
 
 ---
 
@@ -22,19 +24,19 @@
 
 常用字段：
 
-| 字段 | 含义 |
-|------|------|
-| `mode` | provider 协议模式 |
-| `id` | provider 标识，会写入治理 hint 元数据 |
-| `baseUrl` | provider API 基础地址 |
-| `endpoint` | `http-json` 模式下的目标接口地址 |
-| `method` | `http-json` 模式下的 HTTP 方法，支持 `POST` / `PUT` |
-| `model` | 请求使用的模型名 |
-| `apiKeyEnv` | 从环境变量读取 API Key |
-| `timeoutMs` | provider 请求超时 |
-| `systemPrompt` | 覆盖默认治理系统提示词 |
-| `maxTokens` | `anthropic-compatible` 模式下的 `max_tokens` |
-| `anthropicVersion` | `anthropic-compatible` 请求头版本 |
+| 字段               | 含义                                                |
+| ------------------ | --------------------------------------------------- |
+| `mode`             | provider 协议模式                                   |
+| `id`               | provider 标识，会写入治理 hint 元数据               |
+| `baseUrl`          | provider API 基础地址                               |
+| `endpoint`         | `http-json` 模式下的目标接口地址                    |
+| `method`           | `http-json` 模式下的 HTTP 方法，支持 `POST` / `PUT` |
+| `model`            | 请求使用的模型名                                    |
+| `apiKeyEnv`        | 从环境变量读取 API Key                              |
+| `timeoutMs`        | provider 请求超时                                   |
+| `systemPrompt`     | 覆盖默认治理系统提示词                              |
+| `maxTokens`        | `anthropic-compatible` 模式下的 `max_tokens`        |
+| `anthropicVersion` | `anthropic-compatible` 请求头版本                   |
 
 ---
 
@@ -155,7 +157,7 @@ provider:
   apiKeyEnv: ANTHROPIC_API_KEY
   timeoutMs: 30000
   maxTokens: 512
-  anthropicVersion: "2023-06-01"
+  anthropicVersion: '2023-06-01'
 ```
 
 说明：

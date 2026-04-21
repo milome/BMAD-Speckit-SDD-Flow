@@ -5,6 +5,9 @@
 - `dist/emit-runtime-policy.cjs`
 - `dist/resolve-for-session.cjs`
 - `dist/render-audit-block.cjs`
+- `dist/update-runtime-audit-index.cjs`
+- `dist/auditor-post-actions.cjs`
+- `dist/run-auditor-host.cjs`
 - `write-runtime-context.cjs`
 
 这些文件由 `bmad-speckit` 的安装/同步链复制到消费者项目的 `.cursor/hooks/` 与 `.claude/hooks/`，不再落到项目根 `scripts/`。

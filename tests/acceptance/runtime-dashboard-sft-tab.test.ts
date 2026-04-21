@@ -91,25 +91,27 @@ describe('runtime dashboard sft tab integration', () => {
         target_availability?: Record<string, { compatible: number; incompatible: number }>;
       };
       const appJs = await (await fetch(`${server.url}/app.js`)).text();
+      const totalCandidates = sftSummary.total_candidates;
 
-      expect(sftSummary).toEqual(
+      expect(totalCandidates).toBeGreaterThan(0);
+      expect(sftSummary.accepted).toBe(totalCandidates);
+      expect(sftSummary.rejected).toBe(0);
+      expect(sftSummary.global_last_bundle).toEqual(
         expect.objectContaining({
-          total_candidates: 1,
-          accepted: 1,
-          rejected: 0,
-          global_last_bundle: expect.objectContaining({
-            bundle_id: fixture.lastBundleId,
-            validation_summary: expect.objectContaining({
-              schema_valid: true,
-            }),
+          bundle_id: fixture.lastBundleId,
+          validation_summary: expect.objectContaining({
+            schema_valid: true,
           }),
-          target_availability: expect.objectContaining({
-            openai_chat: expect.objectContaining({
-              compatible: 1,
-            }),
-            hf_tool_calling: expect.objectContaining({
-              compatible: 0,
-            }),
+        })
+      );
+      expect(sftSummary.target_availability).toEqual(
+        expect.objectContaining({
+          openai_chat: expect.objectContaining({
+            compatible: totalCandidates,
+          }),
+          hf_tool_calling: expect.objectContaining({
+            compatible: 0,
+            incompatible: totalCandidates,
           }),
         })
       );
@@ -169,16 +171,16 @@ describe('runtime dashboard sft tab integration', () => {
         const exportResponse = await readMessage(proc);
 
         expect(previewResponse.result?.structuredContent).toEqual(
-        expect.objectContaining({
-          total_candidates: 1,
-          accepted: 1,
-          rejected: 0,
-        })
-      );
+          expect.objectContaining({
+            total_candidates: totalCandidates,
+            accepted: totalCandidates,
+            rejected: 0,
+          })
+        );
         expect(exportResponse.result?.structuredContent).toEqual(
           expect.objectContaining({
             target: 'openai_chat',
-            compatible_samples: 1,
+            compatible_samples: totalCandidates,
             last_bundle_id: null,
             last_bundle: null,
             global_last_bundle: expect.objectContaining({

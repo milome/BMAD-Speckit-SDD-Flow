@@ -101,11 +101,17 @@ The next actions are:
 
 ## Fresh Data Re-Run
 
-After the new provenance write path was added to `parseAndWriteScore`, a fresh dataset was generated under:
+After the new provenance write path was added to the scoring pipeline, a fresh dataset was generated under:
+
+Historical note:
+
+- this rerun was executed before `runAuditorHost` became the repository-wide post-audit entry
+- at that time, the provenance write step still used the lower-level `parseAndWriteScore` path directly
+- under the current path, the equivalent write step should be understood as `runAuditorHost` driving the same downstream scoring pipeline
 
 - [batch-f-fresh-data](/D:/Dev/BMAD-Speckit-SDD-Flow/outputs/runtime/vibe-sessions/2026-04-09-governance-dashboard-sft-production/batch-f-fresh-data)
 
-Commands:
+Historical commands used for this rerun:
 
 ```bash
 npx ts-node --project tsconfig.node.json scripts/parse-and-write-score.ts --reportPath <fresh-report> --stage implement --runId fresh-run-001 --scenario real_dev --writeMode single_file --dataPath <fresh-dataPath> --artifactDocPath <fresh-doc> --host claude --hostKind claude --providerId dashscope-coding-kimi --providerMode openai-compatible --toolTraceRef <sha256> --toolTracePath <tool-trace-path> --skipTriggerCheck true

@@ -8,6 +8,8 @@ description: |
 
 对 TASKS_*.md、tasks-E*.md 等任务文档发起严格审计，要求批判审计员 >70%、连续 3 轮无 gap 收敛，审计子代理在发现 gap 时直接修改被审文档。
 
+**Orphan TASKS doc-review closeout contract**：当被审文档位于 `_orphan/` 路径时，结构化审计报告必须显式提供 `stage=standalone_tasks`、`artifactDocPath`、`reportPath`。缺失任一字段、仍返回 `stage=document`、或仅写 PASS 文本时，不得视为 authoritative closeout。
+
 ## 适用场景
 
 - 用户指定文档路径并要求发起审计子任务

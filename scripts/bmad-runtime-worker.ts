@@ -47,6 +47,10 @@ import {
   writeGovernanceExecutorPacket,
 } from './governance-remediation-runner';
 import {
+  buildReviewerRouteExplainability,
+  mapFlowStageToReviewerAuditEntryStage,
+} from './reviewer-registry';
+import {
   appendGovernanceCurrentRun,
   ensureGovernanceQueueDirs,
   governanceCurrentRunPath,
@@ -255,13 +259,43 @@ function buildGovernancePresentationProjection(input: {
     | 'nextAttemptNumber'
     | 'loopStateId'
     | 'executorRouting'
-    | 'runnerSummaryLines'
+      | 'runnerSummaryLines'
   >;
   packetPaths: Record<string, string>;
+  runtimeContext?: RuntimeContextFile | null;
 }): GovernancePresentation {
+  const fallbackAuditEntryStage = input.runtimeContext
+    ? mapFlowStageToReviewerAuditEntryStage(input.runtimeContext.flow, input.runtimeContext.stage)
+    : null;
+  const fallbackReviewerRouteExplainability = fallbackAuditEntryStage
+    ? [buildReviewerRouteExplainability({ requestedSkillId: 'code-reviewer', auditEntryStage: fallbackAuditEntryStage })]
+    : undefined;
+  const existingReviewerRouteExplainability =
+    input.result.executionPlanDecision?.reviewerRouteExplainability ??
+    input.result.executionIntentCandidate?.reviewerRouteExplainability;
+  const reviewerRouteExplainability =
+    existingReviewerRouteExplainability && existingReviewerRouteExplainability.length > 0
+      ? existingReviewerRouteExplainability.map((entry) =>
+          entry.activeAuditConsumer || !fallbackAuditEntryStage
+            ? entry
+            : {
+                ...entry,
+                activeAuditConsumer:
+                  fallbackReviewerRouteExplainability?.[0]?.activeAuditConsumer ?? null,
+              }
+        )
+      : fallbackReviewerRouteExplainability;
+
   return buildGovernanceRunnerCliPresentation({
     executionIntentCandidate: input.result.executionIntentCandidate,
-    executionPlanDecision: input.result.executionPlanDecision,
+    executionPlanDecision: input.result.executionPlanDecision
+      ? {
+          ...input.result.executionPlanDecision,
+          ...(reviewerRouteExplainability
+            ? { reviewerRouteExplainability }
+            : {}),
+        }
+      : input.result.executionPlanDecision,
     shouldContinue: input.result.shouldContinue,
     stopReason: input.result.stopReason ?? null,
     loopStateId: input.result.loopStateId ?? null,
@@ -457,6 +491,7 @@ async function processGovernanceRerunEvent(
   resultPayload.governancePresentation = buildGovernancePresentationProjection({
     result: resultPayload,
     packetPaths,
+    runtimeContext: result.runtimeContext,
   });
 
   const finalizedItem: GovernanceRuntimeQueueItem<

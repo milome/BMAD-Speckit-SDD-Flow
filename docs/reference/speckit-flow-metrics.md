@@ -1,6 +1,8 @@
 # Speckit Flow Metrics
 
 > Speckit 治理层使用的核心指标词典。指标键来自 [`../../_bmad/_config/speckit-governance.yaml`](../../_bmad/_config/speckit-governance.yaml) 的 `health_metrics.keys`。
+> **Current path**: 治理指标由 readiness / closure / post-audit artifacts 汇总，其中 post-audit artifact 主收口由 `runAuditorHost` 承接
+> **Legacy path**: 把 implement 审计、post-audit、写分动作看成彼此割裂的独立步骤
 
 ---
 
@@ -114,24 +116,26 @@
 
 ## 3. 推荐解读方式
 
-| 现象 | 优先怀疑 |
-|---|---|
-| `first_smoke_pass_time` 长 + `definition_gap_count` 高 | PRD / architecture 定义不够硬 |
-| `implementation_gap_count` 高 + `definition_gap_count` 低 | tasks 切分或实现推进有问题 |
-| `re_readiness_count` 高 | 关键语义变更频繁，或前期 assumptions 未显式化 |
-| `deferred_gap_count` 高 | closure / exception discipline 可能不足 |
-| `challenge_density` 接近 0 | checklist / audit 可能失真 |
-| `exception_count` 高 | 需要审视 risk tier 是否被低估 |
+| 现象                                                      | 优先怀疑                                      |
+| --------------------------------------------------------- | --------------------------------------------- |
+| `first_smoke_pass_time` 长 + `definition_gap_count` 高    | PRD / architecture 定义不够硬                 |
+| `implementation_gap_count` 高 + `definition_gap_count` 低 | tasks 切分或实现推进有问题                    |
+| `re_readiness_count` 高                                   | 关键语义变更频繁，或前期 assumptions 未显式化 |
+| `deferred_gap_count` 高                                   | closure / exception discipline 可能不足       |
+| `challenge_density` 接近 0                                | checklist / audit 可能失真                    |
+| `exception_count` 高                                      | 需要审视 risk tier 是否被低估                 |
 
 ---
 
 ## 4. 建议数据来源
 
-| 指标 | 推荐数据来源 |
-|---|---|
-| `first_smoke_pass_time` | tasks 审计通过时间、smoke proof 时间、closure note 时间 |
-| `definition_gap_count` | readiness 报告、audit 报告、checklist 结果 |
-| `implementation_gap_count` | implement 审计、post-audit、task execution evidence |
+| 指标                       | 推荐数据来源                                            |
+| -------------------------- | ------------------------------------------------------- |
+| `first_smoke_pass_time`    | tasks 审计通过时间、smoke proof 时间、closure note 时间 |
+| `definition_gap_count`     | readiness 报告、audit 报告、checklist 结果              |
+| `implementation_gap_count` | implement 审计、post-audit、task execution evidence     |
+
+这里的 `post-audit` 在当前路径下应理解为：审计结果与其后续 artifact 统一经过 `runAuditorHost` 收口，再被指标消费面读取；不是要求人工分别维护独立步骤。
 | `re_readiness_count` | handoff、phase receipt、implement audit |
 | `deferred_gap_count` | closure note、exception log |
 | `challenge_density` | audit 报告、checklist 结果、批判审计员 findings |

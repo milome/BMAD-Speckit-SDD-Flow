@@ -1,4 +1,5 @@
 <!-- BLOCK_LABEL_POLICY=B -->
+
 ---
 name: bmad-bug-assistant
 description: |
@@ -6,6 +7,7 @@ description: |
   Using Cursor bmad-bug-assistant as the semantic baseline, execute the entire BUG repair process according to "Root Cause Analysis → BUGFIX Document → Audit → Task List Supplement → Implementation → Post-Implementation Audit".
   When the main agent initiates any subtask, the master agent must copy the entire "complete prompt template" of this stage in the skill and fill in the placeholders before passing it in. It is prohibited to omit, summarize or rewrite the prompt words by yourself;
   The main Agent is prohibited from directly modifying the production code, and implementation must be through the Agent tool sub-agent (subagent_type: general-purpose).
+  The Claude-side party-mode primary invocation example is now standardized as: `.claude/agents/party-mode-facilitator.md` / `@"party-mode-facilitator (agent)"`.
   Use party-mode to conduct **at least 100 rounds** of multi-role debate (BUGFIX produces the final plan and §7 task list, which belongs to the party-mode step-02 "Generate the final plan and final task list" scenario),
   End after meeting the convergence conditions (consensus + no new gaps in the past 2–3 rounds); audit priority `.claude/agents/auditors/auditor-bugfix`, and downgrade according to the Fallback chain.
   Follow ralph-method, TDD traffic light, speckit-workflow.
@@ -17,12 +19,20 @@ references:
   - auditor-implement: post-implementation audit execution body; `.claude/agents/auditors/auditor-implement.md`
   - audit-prompts-section5: §5 audit prompt word reference; `.claude/skills/bmad-bug-assistant/references/audit-prompts-section5.md`
   - audit-document-iteration-rules: document audit iteration rules; `.claude/skills/speckit-workflow/references/audit-document-iteration-rules.md`
-  - party-mode: `{project-root}/_bmad/core/workflows/party-mode/`
+  - party-mode: `{project-root}/_bmad/core/skills/bmad-party-mode/`
+  - party-mode-facilitator: dedicated party-mode facilitator agent; `.claude/agents/party-mode-facilitator.md`
   - ralph-method: prd, progress files, executed in US order
   - speckit-workflow: Fake implementation is prohibited, acceptance command must be run, architecture is faithful
 ---
 
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout terminology: in this document, a stage is considered complete only when `runAuditorHost` returns `closeout approved`. An audit report `PASS` only means the host close-out may start; `PASS` alone must not be treated as completion, admission, or release.
+
+> **Orphan bugfix closeout contract**: when the BUGFIX document lives under `_bmad-output/implementation-artifacts/_orphan/`, the structured audit report must explicitly carry `stage=bugfix`, `artifactDocPath`, and `reportPath`, and all three must match the real BUGFIX doc/report paths. Missing any field, or relying on prose-only `PASS`, must fail closeout conservatively.
+
 # Claude Adapter: bmad-bug-assistant
+
+> **Party-mode source of truth**: `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`. All party-mode rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit-gate semantics must follow that file; this skill must not define a second gate contract.
 
 ## Purpose
 
@@ -45,7 +55,7 @@ The Claude version of `bmad-bug-assistant` must satisfy:
 - The executor selection, fallback, and score writing at each stage are consistent with the Cursor verified process semantics.
 - Complete access to the new additions to this warehouse:
   - auditor-bugfix, auditor-implement execution body
-  - Score write (`parse-and-write-score.ts`)
+  - Unified auditor host runner (`runAuditorHost`)
   - handoff protocol
 - Cursor Canonical Base, Claude Runtime Adapter, and Repo Add-ons must not be mixed into a rewritten version of prompt from unknown sources.
 - **The main agent is prohibited from directly modifying the production code** (FR20a)
@@ -96,7 +106,7 @@ Each time a subtask (party-mode or Agent tool) is initiated, the main Agent **mu
 
 | Resources | Path/Description |
 | ---- | --------- |
-| **party-mode** | `{project-root}/_bmad/core/workflows/party-mode/`; For rounds and convergence, see step-02 (BUGFIX produces the final solution and §7 task list: at least 100 rounds; others: 50 rounds; end after convergence conditions). |
+| **party-mode** | `{project-root}/_bmad/core/skills/bmad-party-mode/`; all rounds / challenger ratio / recovery / evidence / exit-gate rules come from core step-02 (BUGFIX produces the final solution and §7 task list: 100 rounds; others: 50 rounds). |
 | **auditor-bugfix executable** | `.claude/agents/auditors/auditor-bugfix.md`; if not found, press Fallback Strategy to downgrade |
 | **audit-prompts §5** | `references/audit-prompts-section5.md` (within this skill) or `{project-root}/docs/speckit/skills/speckit-workflow/references/audit-prompts.md`; **Only for other workflow reference, not used for BUGFIX document auditing of this skill**. |
 | **audit-document-iteration-rules** | `.claude/skills/speckit-workflow/references/audit-document-iteration-rules.md`; BUGFIX **document** audits for phases one, two and three must follow: The audit subagent must directly modify the BUGFIX document when a gap is discovered. Phase four is post-implementation audit (code), not applicable. |
@@ -205,11 +215,11 @@ If there is no backup, no prompt will be given. This check does not block subseq
 
 ### Primary Executor
 
-The subtasks of each stage are scheduled through the **Agent tool** (`subagent_type: general-purpose`) to schedule the corresponding execution body:
+Each stage schedules its subtask according to executor type:
 
 | Stage | Execution Body | Agent File |
 |------|--------|-----------|
-| Phase 1/2 Root Cause Debate | party-mode multi-role | The main Agent specifies the role in the prompt |
+| Phase 1/2 Root Cause Debate | party-mode-facilitator | `.claude/agents/party-mode-facilitator.md` / explicit invocation `@"party-mode-facilitator (agent)"` |
 | Phase 1/2/3 Audit | auditor-bugfix | `.claude/agents/auditors/auditor-bugfix.md` |
 | Phase 4 Implementation | general-purpose dev | Agent tool `subagent_type: general-purpose` |
 | Phase 4 Post-implementation audit | auditor-implement | `.claude/agents/auditors/auditor-implement.md` |
@@ -280,18 +290,16 @@ handoff:
 
 ### Rating writing
 
-Score writing after the audit passes (must be executed): After the post-implementation audit conclusion is "complete coverage, verification passed", the main Agent **must** call `parseAndWriteScore` to write the implement stage score into the scoring storage. When a BUGFIX document exists, `artifactDocPath=<BUGFIX document path>` must be passed in explicitly.
+Unified host close-out after the audit passes (mandatory): After the post-implementation audit conclusion is "complete coverage, verification passed", the main Agent **must not** hand-run `parseAndWriteScore` or any audit-index CLI. It must call `runAuditorHost` as the single post-audit entry. When a BUGFIX document exists, the host/runner must receive `artifactDocPath=<BUGFIX document path>` so both score records and registry audit index bind to the BUGFIX document rather than the audit report.
 
-**CLI call example** (executed in the project root directory):
+**Host call example** (executed in the project root directory):
 ```bash
-npx bmad-speckit score \
-  --reportPath <审计报告路径> \
-  --stage implement \
-  --epic {epic} \
-  --story {story} \
-  --artifactDocPath <BUGFIX 文档路径> \
-  --iteration-count <累计失败轮数，0 表示一次通过> \
-  --skipTriggerCheck true
+npx ts-node scripts/run-auditor-host.ts \
+  --projectRoot <projectRoot> \
+  --stage bugfix \
+  --artifactPath <BUGFIX document path> \
+  --reportPath <audit report path> \
+  --iterationCount <cumulative failed rounds, 0 means first-pass success>
 ```
 
 ### State Updates
@@ -321,7 +329,7 @@ artifacts:
 
 **Process**:
 
-1. Based on the BUG problem information provided by the user, use **party-mode** to introduce the above multiple roles, conduct **at least 100 rounds** of mutual questioning and debate (BUGFIX belongs to the "generate final plan and final task list" scenario), and then end after meeting the convergence conditions (root cause consensus + no new gaps in the past 2–3 rounds); if the party-mode subagent cannot be scheduled, downgrade according to the Fallback Strategy and use the Agent tool (`subagent_type: general-purpose`), explicitly ask in the prompt to simulate multiple roles (Winston architect, Mary analyst, Amelia developer, Quinn tester, John product manager) to debate and reach root cause consensus.
+1. Based on the BUG information provided by the user, use **party-mode** to introduce the roles above and conduct **at least 100 rounds** of mutual questioning and debate (BUGFIX belongs to the "generate final plan and final task list" scenario), then end only after the convergence conditions are met (root-cause consensus + no new gaps in the last 2–3 rounds). The primary route must explicitly invoke `.claude/agents/party-mode-facilitator.md`, with the prompt example standardized as `@"party-mode-facilitator (agent)"`. Only when the facilitator is unavailable may the flow degrade according to the Fallback Strategy and use `subagent_type: general-purpose` with an explicit multi-role simulation prompt.
 2. Conduct an in-depth analysis of the root cause until a consensus on the root cause is reached.
 3. Generate **BUGFIX document** and complete the BUG report (save to `_bmad-output/` or `bugfix/`).
 4. Initiate the **audit subtask**:
@@ -352,7 +360,7 @@ artifacts:
 
 **产出要求**：
 1. 根因结论（一段话，无歧义）。
-2. 生成 BUGFIX 文档，包含：§1 问题描述、§2 根因分析、§3 影响范围、§4 修复方案（须为明确描述，禁止使用本 skill「§ 禁止词表」中的词：可选、可考虑、后续、待定、酌情、视情况、后续迭代）、§5 验收标准。保存至 _bmad-output/ 或 bugfix/。
+2. 生成 BUGFIX 文档，包含：§1 问题描述、§2 根因分析、§3 影响范围、§4 修复方案（须为明确描述，禁止使用本 skill「§ 禁止词表」中的词：可选、可考虑、后续、待定、酌情、视情况、后续迭代）、§5 验收标准。必须写入明确的 canonical BUGFIX 文档路径。
 3. 全程使用中文。
 ```
 ### Phase 1 audit complete prompt template (the main Agent must be completely copied to the prompt of the audit subtask)
@@ -623,7 +631,7 @@ Delete `_bmad-output/current_pytest_session_pid.txt` after execution is complete
 
 **Must be done when it fails (it is forbidden to run for only one round and end)**: If the audit conclusion is "**Failed**" or the audit report lists failed items and modification suggestions, the main Agent **must** execute according to the modification suggestions (entrust the sub-agent to modify the code or update BUGFIX/documentation), and then **initiate** the post-implementation audit again (using the same template BUG-A4-POSTAUDIT); repeat "Audit → If it fails, modify according to the suggestions → Re-audit" until the conclusion is "**fully covered and verified**". It is prohibited to complete only one round of auditing or report completion to the user when the conclusion is that it has failed.
 
-**Score writing after passing the audit (must be executed)**: After the post-implementation audit conclusion is "complete coverage, verification passed", the main Agent **must** call `parseAndWriteScore` to write the implement stage score into the scoring storage. When a BUGFIX document is present, `artifactDocPath=<BUGFIX document path>` must be passed in explicitly to ensure that `record.source_path` correctly points to the BUGFIX document (and not the audit report path).
+**Unified host close-out after passing the audit (must be executed)**: After the post-implementation audit conclusion is "complete coverage, verification passed", the main Agent **must not** hand-run `parseAndWriteScore` or any audit-index CLI. It must call `runAuditorHost` as the single post-audit entry. When a BUGFIX document is present, the host/runner must receive `artifactDocPath=<BUGFIX document path>` to ensure `record.source_path` and registry audit index both point to the BUGFIX document instead of the audit report path.
 
 **Path Convention**: The value of `artifactDocPath` is consistent with the "Output Path Convention" - when there is story: `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/BUGFIX_{slug}.md`; without story When: `_bmad-output/implementation-artifacts/_orphan/BUGFIX_{slug}.md`.
 
@@ -668,7 +676,7 @@ In the following example, when initiating a subtask, the main Agent must use the
 
 User: "You cannot see "Synchronize GDS from Chart" when you right-click on the main chart of a multi-period chart. Please analyze the root cause and generate a BUGFIX document. "
 
-Main Agent: Execute Phase 1 - Copy the entire "Phase 1 Audit Complete Prompt Template" and fill in the user description, then initiate the subtask through the Agent tool (`subagent_type: general-purpose`); after the subtask returns, copy the entire "Phase 1 Audit Complete Prompt Template" and initiate the audit subtask; iterate until the audit is passed.
+Main Agent: Execute Phase 1 - Copy the entire "Phase 1 root-cause debate prompt template" and fill in the user description, then initiate the subtask by explicitly invoking `@"party-mode-facilitator (agent)"`; only if the facilitator is unavailable may the flow fall back to `general-purpose`. After the subtask returns, copy the entire "Phase 1 audit prompt template" and initiate the audit subtask; iterate until the audit passes.
 
 ### Example 2: Update after supplementary information
 

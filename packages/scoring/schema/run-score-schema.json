@@ -8,7 +8,7 @@
     "run_id": { "type": "string", "description": "Unique run identifier" },
     "scenario": { "enum": ["real_dev", "eval_question"], "description": "real_dev | eval_question" },
     "stage": {
-      "enum": ["prd", "arch", "epics", "story", "spec", "specify", "plan", "gaps", "tasks", "implement", "post_impl", "pr_review"],
+      "enum": ["prd", "arch", "epics", "story", "spec", "specify", "plan", "gaps", "tasks", "implement", "post_impl", "pr_review", "implementation_readiness"],
       "description": "BMAD stage"
     },
     "path_type": { "type": "string", "description": "Optional; full for both scenarios" },
@@ -33,6 +33,7 @@
       "items": { "$ref": "#/definitions/IterationRecord" }
     },
     "first_pass": { "type": "boolean", "description": "true = 100% tier coefficient" },
+    "raw_phase_score": { "type": "number", "description": "Pre-tier / pre-block raw phase score" },
     "base_commit_hash": { "type": "string", "description": "Git HEAD commit hash at scoring time (pre-change baseline)" },
     "content_hash": { "type": "string", "description": "SHA-256 of audit report content passed to parseAndWriteScore" },
     "source_hash": { "type": "string", "description": "SHA-256 of audited source file for cross-stage version lock" },
@@ -47,6 +48,30 @@
     "tool_trace_path": { "type": "string", "description": "Optional tool trace artifact path for this scoring record" },
     "trigger_stage": { "type": "string", "description": "Stage identifier that triggered this scoring, e.g. speckit_5_2, bmad_story_stage4 (Story 9.1 T4)" },
     "run_group_id": { "type": "string", "description": "Optional logical run grouping key for multi-record runs and governance runtime events" },
+    "readiness_baseline_run_id": { "type": "string", "description": "Latest implementation readiness baseline run used for deterministic drift evaluation" },
+    "drift_signals": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Triggered drift signal ids"
+    },
+    "drifted_dimensions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Readiness dimensions impacted by drift"
+    },
+    "drift_severity": {
+      "enum": ["none", "major", "critical"],
+      "description": "Deterministic drift severity derived from signal mapping"
+    },
+    "re_readiness_required": {
+      "type": "boolean",
+      "description": "Whether a new readiness pass is required before a trustworthy implementation verdict"
+    },
+    "blocking_reason": { "type": "string", "description": "Human-readable drift blocking explanation" },
+    "effective_verdict": {
+      "enum": ["approved", "required_fixes", "blocked", "blocked_pending_rereadiness", "unknown"],
+      "description": "User-facing final verdict after deterministic drift reduction"
+    },
     "journey_contract_signals": {
       "$ref": "#/definitions/JourneyContractSignals",
       "description": "Wave 1B: structured journey contract gaps derived from dedicated check_items"

@@ -3,6 +3,8 @@ audit-prompts-code.en.md — English locale when `project.json` has `languagePol
 Equivalent to audit-prompts.md §5; maps to code-reviewer-config modes.code.
 -->
 
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout terminology: in this document, a stage is considered complete only when `runAuditorHost` returns `closeout approved`. An audit report `PASS` only means the host close-out may start; `PASS` alone must not be treated as completion, admission, or release.
 # Implement-stage code audit prompts (code mode)
 
 This file is `prompt_template` for `modes.code` in `_bmad/_config/code-reviewer-config.yaml`, equivalent to `audit-prompts.md` §5. Used for speckit-workflow §5.2 implement audit and bmad-story-assistant stage-4 post-implementation audit.
@@ -38,8 +40,25 @@ Dimension scores:
 
 **Do not substitute prose.** Dimension names must match `modes.code.dimensions`. Overall grade A/B/C/D only; no +/- modifiers.
 
+## Structured Drift Signal Block (mandatory)
+
+Implement / post_audit reports must also include the block below. Missing this block must not be treated as “no drift”.
+
+```markdown
+## Structured Drift Signal Block
+
+| signal | status | evidence |
+| --- | --- | --- |
+| smoke_task_chain | pass/fail | short evidence |
+| closure_task_id | pass/fail | short evidence |
+| journey_unlock | pass/fail | short evidence |
+| gap_split_contract | pass/fail | short evidence |
+| shared_path_reference | pass/fail | short evidence |
+```
+
 ---
 
 ## Post-audit actions
 
-When the audit **passes**, save the full report to `reportPath` given in the prompt. For implement stage, `reportPath` is usually `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_implement-E{epic}-S{story}.md` or `AUDIT_Story_{epic}-{story}_stage4.md`. State `reportPath` and `iteration_count` in the conclusion so the main Agent can call parse-and-write-score.
+When the audit **passes**, save the full report to `reportPath` given in the prompt. For implement stage, `reportPath` is usually `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_implement-E{epic}-S{story}.md` or `AUDIT_Story_{epic}-{story}_stage4.md`. State `reportPath` and `iteration_count` in the conclusion so the main Agent / host can call runAuditorHost.
+

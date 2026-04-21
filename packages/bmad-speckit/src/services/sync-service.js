@@ -48,6 +48,24 @@ function deepMerge(base, overlay) {
   return result;
 }
 
+function normalizeClaudeHookCommandRefs(settings) {
+  const normalized = JSON.parse(JSON.stringify(settings || {}));
+  if (!normalized.hooks || typeof normalized.hooks !== 'object') {
+    return normalized;
+  }
+  for (const hookEntries of Object.values(normalized.hooks)) {
+    if (!Array.isArray(hookEntries)) continue;
+    for (const entry of hookEntries) {
+      if (!entry || typeof entry !== 'object' || !Array.isArray(entry.hooks)) continue;
+      for (const hook of entry.hooks) {
+        if (!hook || typeof hook !== 'object' || typeof hook.command !== 'string') continue;
+        hook.command = hook.command.replace('runtime-policy-inject.js', 'runtime-policy-inject.cjs');
+      }
+    }
+  }
+  return normalized;
+}
+
 function loadSpeckitMirrorTools(bmadRoot) {
   const helperPath = path.join(bmadRoot, 'speckit', 'scripts', 'node', 'speckit-mirror.js');
   if (!fs.existsSync(helperPath)) {
@@ -322,6 +340,7 @@ function writeCursorHooksJson(projectRoot) {
       subagentStart: [
         { command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host --subagent-start' },
       ],
+      subagentStop: [{ command: 'node .cursor/hooks/subagent-result-summary.cjs' }],
     },
   };
   fs.writeFileSync(hooksJsonPath, `${JSON.stringify(hooksJson, null, 2)}\n`, 'utf8');
@@ -354,6 +373,7 @@ function deployCursorRuntimePolicyHooks(projectRoot, bmadRoot) {
     'pre-continue-check.cjs',
     'post-tool-use.cjs',
     'runtime-dashboard-session-start.cjs',
+    'subagent-result-summary.cjs',
   ];
   for (const name of names) {
     const src = path.join(cursorHooksDir, name);
@@ -430,7 +450,11 @@ function deployClaudeInfrastructure(projectRoot, bmadRoot) {
     if (!fs.existsSync(path.dirname(settingsDest))) {
       fs.mkdirSync(path.dirname(settingsDest), { recursive: true });
     }
-    fs.copyFileSync(settingsSrc, settingsDest);
+    const settings = normalizeClaudeHookCommandRefs(
+      JSON.parse(fs.readFileSync(settingsSrc, 'utf8'))
+    );
+    const nextSettings = settings;
+    fs.writeFileSync(settingsDest, JSON.stringify(nextSettings, null, 2) + '\n', 'utf8');
   }
 
   const stateSrc = path.join(claudeSrc, 'state');

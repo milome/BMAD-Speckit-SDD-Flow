@@ -1,7 +1,7 @@
 ---
 name: bmad-rca-helper
 description: |
-  Use Party-Mode to perform deep root cause analysis (RCA) and design optimal solutions from user-provided topics, issue descriptions, or screenshots. Requires 100 rounds of discussion, 批判审计员 (Critical Auditor) speaking share >70%, and last 3 rounds with no new gap to converge; then produce a final solution description and final task list with no vague/optional wording. After that, run a strict audit sub-task (code-reviewer, audit-prompts §4 / TASKS-doc style) with 批判审计员 >70% and 3-round no-gap convergence; when audit fails the sub-agent must directly edit the document to fix gaps, then re-audit until "完全覆盖、验证通过". Use when: user requests RCA, "根因分析", "议题/问题深度分析", "最优方案+任务列表", or "RCA 后审计任务文档".
+  Use Party-Mode to perform deep root cause analysis (RCA) and design optimal solutions from user-provided topics, issue descriptions, or screenshots. Party-mode gate, recovery, snapshot, evidence, and exit semantics are sourced from `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`; the current hard gate for the designated challenger is `>60%`, not a local override. For the "final solution + final task list" scenario, require 100 rounds and no new gap in the last 3 rounds before convergence; then produce a final solution description and final task list with no vague/optional wording. After that, run a strict audit sub-task (code-reviewer, audit-prompts §4 / TASKS-doc style) and re-audit until "完全覆盖、验证通过". Use when: user requests RCA, "根因分析", "议题/问题深度分析", "最优方案+任务列表", or "RCA 后审计任务文档".
 ---
 
 # BMAD RCA 助手
@@ -14,12 +14,15 @@ description: |
 - 需要多角色辩论挖掘最优方案并生成可执行任务列表
 - 产出文档需经严格审计（批判审计员 >70%、连续 3 轮无 gap）后交付
 
+> Party-mode 规则源（Cursor）：`{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
+> 说明：轮次分级、`designated_challenger_id`、`challenger_ratio > 0.60`、session/meta/snapshot/evidence、恢复与退出门禁都以 core step-02 为准。本技能不得自定义第二套 party-mode gate 语义。
+
 ## 强制约束
 
 | 约束 | 说明 |
 |------|------|
 | Party-Mode 轮次 | **至少 100 轮**（产出最终方案 + 任务列表场景） |
-| 批判审计员 | 必须引入，**发言占比 >70%**（总轮次中批判审计员发言轮数及篇幅占主导） |
+| 批判审计员 | 必须引入；party-mode 发言占比以 core step-02 为准（当前 designated challenger 硬门禁：`challenger_ratio > 0.60`） |
 | 收敛条件 | **最后 3 轮无新 gap** 才能结束辩论 |
 | 方案与任务描述 | **禁止**模糊表述；**禁止**「可选、可考虑、后续、酌情」等不确定用语；**禁止**遗漏 |
 | 审计子任务 | 辩论收敛并产出文档后**必须**发起审计子任务 |
@@ -30,8 +33,8 @@ description: |
 ### 阶段一：Party-Mode 根因分析与方案讨论
 
 1. **输入**：用户提供的议题/问题描述/截图/问题（主 Agent 归纳为统一议题描述）。
-2. **执行**：**必须读取** `{project-root}/_bmad/core/workflows/party-mode/workflow.md` 及 `steps/step-02-discussion-orchestration.md`，并**严格遵循** step-02 中的 Response Structure 格式编排多角色讨论。
-3. **角色**：**必须**引入 ⚔️ **批判性审计员**；可包含 🏗️ Winston 架构师、💻 Amelia 开发、📋 John 产品经理等（展示名与 `_bmad/_config/agent-manifest.csv` 一致）；批判审计员发言占比 **>70%**。
+2. **执行**：**必须读取** `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md` 及 `{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`，并**严格遵循** Cursor step-02 中的 Response Structure 与 gate/recovery/evidence 规则编排多角色讨论。
+3. **角色**：**必须**引入 ⚔️ **批判性审计员**；可包含 🏗️ Winston 架构师、💻 Amelia 开发、📋 John 产品经理等（展示名与 `_bmad/_config/agent-manifest.csv` 一致）；批判审计员发言占比以 core step-02 为准，不在本技能中另立阈值。
 3b. **发言格式（强制）**：每轮每位角色发言**必须**使用格式 `[Icon Emoji] **[展示名]**: [发言内容]`（如 `🏗️ **Winston 架构师**: ...`、`⚔️ **批判性审计员**: ...`）。Icon 与展示名取自 `_bmad/_config/agent-manifest.csv`，禁止省略。
 4. **轮次与收敛**：
    - 讨论 **至少 100 轮**；
@@ -59,7 +62,7 @@ description: |
 
 | 资源 | 路径/说明 |
 |------|-----------|
-| **party-mode** | `{project-root}/_bmad/core/workflows/party-mode/workflow.md`；step-02 讨论编排、100 轮与收敛规则 |
+| **party-mode** | `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md` + `{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`；Cursor 分支的 rounds / challenger ratio / recovery / evidence / exit gate 规则以 Cursor step-02 override 为准 |
 | **批判审计员** | `{project-root}/_bmad/core/agents/critical-auditor-guide.md`（若存在）；step-02 中批判性审计员为必选挑战者 |
 | **audit-prompts §4** | `{project-root}/.cursor/skills/speckit-workflow/references/audit-prompts.md` §4（tasks 审计）；本技能审计 prompt 与之精神一致 |
 | **audit-document-iteration-rules** | `{project-root}/.cursor/skills/speckit-workflow/references/audit-document-iteration-rules.md`；发现 gap 时审计子代理直接修改文档、3 轮无 gap 收敛 |

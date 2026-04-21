@@ -2,6 +2,11 @@
 import * as fs from 'fs';
 import * as yaml from 'js-yaml';
 import * as path from 'path';
+import { loadPolicyContextFromRegistry } from './emit-runtime-policy';
+import { resolveBmadHelpRuntimePolicy } from './bmad-config';
+import type { ReviewerContractProjection } from './reviewer-registry';
+import { loadAndDedupeRecords } from '../packages/scoring/query/loader';
+import { buildReadinessDriftProjection } from '../packages/scoring/governance/readiness-drift';
 
 interface BmadProgress {
   version?: string;
@@ -17,15 +22,105 @@ interface BmadProgress {
   }>;
 }
 
-function diagnoseBmadState(): void {
-  const progressPath = path.join('.claude', 'state', 'bmad-progress.yaml');
+export interface ReviewerProjectionDiagnosis {
+  reviewerContract: ReviewerContractProjection | null;
+  lines: string[];
+}
+
+export interface ReadinessProjectionDiagnosis {
+  lines: string[];
+}
+
+export function collectReviewerProjectionDiagnosis(root: string): ReviewerProjectionDiagnosis {
+  try {
+    const loaded = loadPolicyContextFromRegistry(root);
+    const policy = resolveBmadHelpRuntimePolicy({
+      projectRoot: root,
+      flow: loaded.flow,
+      stage: loaded.stage,
+      runtimeContext: loaded.runtimeContext,
+      runtimeContextPath: loaded.resolvedContextPath,
+      epicId: loaded.epicId,
+      storyId: loaded.storyId,
+      storySlug: loaded.storySlug,
+      runId: loaded.runId,
+      artifactRoot: loaded.artifactRoot,
+    });
+    const reviewerContract = policy.reviewerContract;
+    const activeConsumer = reviewerContract.activeAuditConsumer;
+
+    return {
+      reviewerContract,
+      lines: [
+        '【诊断项 4】Reviewer Projection:',
+        `✅ reviewer contract: ${reviewerContract.reviewerIdentity} (${reviewerContract.version})`,
+        `   shared core: ${reviewerContract.sharedCore.rootPath} [${reviewerContract.sharedCore.version}]`,
+        activeConsumer
+          ? `   active consumer: ${activeConsumer.entryStage} -> ${activeConsumer.profile} -> ${activeConsumer.auditorScript} -> ${reviewerContract.closeoutRunner}`
+          : '   active consumer: (none)',
+        `   cursor carrier: ${policy.reviewerRouteExplainability?.[0]?.hosts.cursor.carrierSourcePath ?? '_bmad/cursor/agents/code-reviewer.md'} -> ${policy.reviewerRouteExplainability?.[0]?.hosts.cursor.runtimeTargetPath ?? '.cursor/agents/code-reviewer.md'}`,
+        `   cursor route: preferred=cursor-task/code-reviewer fallback=mcp_task/generalPurpose`,
+        `   claude carrier: ${policy.reviewerRouteExplainability?.[0]?.hosts.claude.carrierSourcePath ?? '_bmad/claude/agents/code-reviewer.md'} -> ${policy.reviewerRouteExplainability?.[0]?.hosts.claude.runtimeTargetPath ?? '.claude/agents/code-reviewer.md'}`,
+        `   claude route: preferred=Agent/code-reviewer fallback=Agent/general-purpose`,
+        `   route reason: ${policy.reviewerRouteExplainability?.[0]?.routeReasonSummary ?? '(none)'}`,
+        `   fallback status: ${policy.reviewerRouteExplainability?.[0]?.fallbackStatus ?? '(none)'}`,
+        `   maturity: ${policy.reviewerRouteExplainability?.[0]?.isomorphismMaturity ?? '(none)'}`,
+        `   complexity: ${policy.reviewerRouteExplainability?.[0]?.complexitySource ?? '(none)'}`,
+        `   blocker: ${policy.reviewerRouteExplainability?.[0]?.remainingBlocker ?? '(none)'}`,
+        `   rollout gate: ${policy.reviewerContract.rolloutGate.status} -> ${policy.reviewerContract.rolloutGate.summary}`,
+        loaded.runtimeContext.latestReviewerCloseout
+          ? `   latest closeout: ${loaded.runtimeContext.latestReviewerCloseout.closeoutEnvelope.resultCode} / ${loaded.runtimeContext.latestReviewerCloseout.closeoutEnvelope.packetExecutionClosureStatus} / approved=${loaded.runtimeContext.latestReviewerCloseout.closeoutApproved ? 'yes' : 'no'}`
+          : '   latest closeout: (none)',
+      ],
+    };
+  } catch (error) {
+    return {
+      reviewerContract: null,
+      lines: [
+        '【诊断项 4】Reviewer Projection:',
+        `⚠️ reviewer projection unavailable: ${error instanceof Error ? error.message : String(error)}`,
+      ],
+    };
+  }
+}
+
+export function collectReadinessProjectionDiagnosis(root: string): ReadinessProjectionDiagnosis {
+  try {
+    const records = loadAndDedupeRecords(path.join(root, 'packages', 'scoring', 'data'));
+    const projection = buildReadinessDriftProjection({ allRecords: records });
+
+    return {
+      lines: [
+        '【诊断项 5】Readiness Projection:',
+        `✅ readiness baseline run: ${projection.readiness_baseline_run_id ?? '(none)'}`,
+        `   readiness score: ${projection.readiness_score ?? '(none)'}`,
+        `   effective verdict: ${projection.effective_verdict}`,
+        `   drift severity: ${projection.drift_severity}`,
+        `   re-readiness required: ${projection.re_readiness_required ? 'yes' : 'no'}`,
+        `   drift signals: ${projection.drift_signals.join(', ') || '(none)'}`,
+        `   drifted dimensions: ${projection.drifted_dimensions.join(', ') || '(none)'}`,
+        `   blocking reason: ${projection.blocking_reason ?? '(none)'}`,
+      ],
+    };
+  } catch (error) {
+    return {
+      lines: [
+        '【诊断项 5】Readiness Projection:',
+        `⚠️ readiness projection unavailable: ${error instanceof Error ? error.message : String(error)}`,
+      ],
+    };
+  }
+}
+
+export function diagnoseBmadState(root: string = process.cwd()): number {
+  const progressPath = path.join(root, '.claude', 'state', 'bmad-progress.yaml');
 
   console.log('=== BMAD 状态诊断 ===\n');
 
   if (!fs.existsSync(progressPath)) {
-    console.error(`❌ 文件不存在: ${progressPath}`);
+    console.error(`❌ 文件不存在: ${path.relative(root, progressPath)}`);
     console.log('建议: 运行 bmad-master 初始化流程创建状态文件');
-    process.exit(1);
+    return 1;
   }
 
   const content = fs.readFileSync(progressPath, 'utf-8');
@@ -70,18 +165,31 @@ function diagnoseBmadState(): void {
   }
 
   console.log('\n【诊断项 3】Story 状态文件一致性:');
-  const storiesDir = path.join('.claude', 'state', 'stories');
+  const storiesDir = path.join(root, '.claude', 'state', 'stories');
   if (fs.existsSync(storiesDir)) {
-    const storyFiles = fs.readdirSync(storiesDir).filter(f => f.endsWith('-progress.yaml'));
+    const storyFiles = fs.readdirSync(storiesDir).filter((f) => f.endsWith('-progress.yaml'));
     console.log(`   发现 ${storyFiles.length} 个 Story 状态文件`);
-    storyFiles.forEach(f => {
+    storyFiles.forEach((f) => {
       console.log(`   - ${f}`);
     });
   } else {
     console.warn('⚠️ stories 目录不存在');
   }
 
+  console.log('');
+  for (const line of collectReviewerProjectionDiagnosis(root).lines) {
+    console.log(line);
+  }
+
+  console.log('');
+  for (const line of collectReadinessProjectionDiagnosis(root).lines) {
+    console.log(line);
+  }
+
   console.log('\n=== 诊断完成 ===');
+  return 0;
 }
 
-diagnoseBmadState();
+if (require.main === module) {
+  process.exit(diagnoseBmadState());
+}

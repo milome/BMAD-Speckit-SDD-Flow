@@ -1,6 +1,8 @@
 # 架构概述
 
 > BMAD-Speckit-SDD-Flow 的五层架构与 Speckit 工作流。
+> **Current path**: `runAuditorHost`（post-audit automation）
+> **Legacy path**: 手工 `bmad-speckit score` / `update-runtime-audit-index`
 
 ---
 
@@ -13,7 +15,7 @@ Layer 1: Product Brief        → 定义产品愿景与核心问题
 Layer 2: PRD + Architecture   → 详细需求 + 技术架构
 Layer 3: Epic / Story         → 拆分为可执行的 Story 单元
 Layer 4: Speckit Workflow     → specify → plan → GAPS → tasks → implement
-Layer 5: 收尾与集成           → PR + human review + commit gate
+Layer 5: 收尾与集成           → runAuditorHost + PR + human review + commit gate
 ```
 
 ### Layer 1-2: 产品与架构定义
@@ -45,6 +47,7 @@ Layer 5: 收尾与集成           → PR + human review + commit gate
 ### Layer 5: 收尾与集成
 
 - 实施后审计（Post Audit）：强制门控，验证实现是否覆盖 tasks/spec/plan
+- Post-audit host runner：审计通过后的 scoring 写入、auditIndex 更新与其它自动动作统一由 `runAuditorHost` 收口
 - Commit Gate：审计通过后才能提交
 - PR + Human Review：最终人工审查
 

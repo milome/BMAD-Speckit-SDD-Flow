@@ -13,6 +13,18 @@ describe('dimension-parser', () => {
     expect(en).toEqual(['Functionality', 'Code Quality', 'Test Coverage', 'Security']);
   });
 
+  it('listDimensionNamesEn returns readiness name_en values', () => {
+    const cfg = path.join(__dirname, '../../../../_bmad/_config/code-reviewer-config.yaml');
+    if (!fs.existsSync(cfg)) return;
+    const en = listDimensionNamesEn('readiness', cfg);
+    expect(en).toEqual([
+      'P0 Journey Coverage',
+      'Smoke E2E Readiness',
+      'Evidence Proof Chain',
+      'Cross-Document Traceability',
+    ]);
+  });
+
   it('maps stage to mode with Story 5.2 rules', () => {
     expect(stageToMode('prd')).toBe('prd');
     expect(stageToMode('spec')).toBe('prd');
@@ -24,6 +36,7 @@ describe('dimension-parser', () => {
     expect(stageToMode('implement')).toBe('code');
     expect(stageToMode('post_impl')).toBe('code');
     expect(stageToMode('pr_review')).toBe('pr');
+    expect(stageToMode('implementation_readiness')).toBe('readiness');
   });
 
   it('extracts weighted dimensions from /100 style report', () => {
@@ -126,6 +139,36 @@ describe('dimension-parser', () => {
       dimension: '安全性',
       weight: 20,
       score: 90,
+    });
+  });
+
+  it('parses readiness report with four readiness dimensions', () => {
+    const content = fs.readFileSync(
+      path.join(FIXTURES, 'sample-readiness-report-with-four-dimensions.md'),
+      'utf-8'
+    );
+    const scores = parseDimensionScores(content, 'readiness');
+
+    expect(scores.length).toBe(4);
+    expect(scores[0]).toEqual({
+      dimension: 'P0 Journey Coverage',
+      weight: 25,
+      score: 92,
+    });
+    expect(scores[1]).toEqual({
+      dimension: 'Smoke E2E Readiness',
+      weight: 25,
+      score: 88,
+    });
+    expect(scores[2]).toEqual({
+      dimension: 'Evidence Proof Chain',
+      weight: 25,
+      score: 84,
+    });
+    expect(scores[3]).toEqual({
+      dimension: 'Cross-Document Traceability',
+      weight: 25,
+      score: 76,
     });
   });
 });

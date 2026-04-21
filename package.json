@@ -19,6 +19,9 @@
     "emit-runtime-policy": "npx ts-node --project tsconfig.node.json --transpile-only scripts/emit-runtime-policy.ts",
     "audit-prompt:resolve": "npx ts-node --project tsconfig.node.json --transpile-only scripts/i18n/print-resolved-audit-prompt.ts",
     "test:runtime-policy-inject": "vitest run tests/acceptance/runtime-policy-emit-stable.test.ts tests/acceptance/runtime-policy-inject.test.ts tests/acceptance/runtime-policy-emit-schema-ajv.test.ts",
+    "test:cursor-party-mode-hooks": "npm run test:cursor-party-mode-hooks:min",
+    "test:cursor-party-mode-hooks:min": "npx vitest run tests/acceptance/runtime-step-state-glob.test.ts tests/acceptance/runtime-policy-inject.test.ts",
+    "test:cursor-party-mode-hooks:extended": "npx vitest run tests/acceptance/runtime-step-state-glob.test.ts tests/acceptance/runtime-policy-inject.test.ts tests/acceptance/cursor-party-mode-current-session.test.ts tests/acceptance/party-mode-read-current-session.test.ts tests/acceptance/cursor-party-mode-return-diagnostic-contract.test.ts tests/acceptance/cursor-party-mode-document-path-contract.test.ts",
     "test:runtime-dashboard-ui-smoke": "npx ts-node --project tsconfig.node.json --transpile-only tests/acceptance/runtime-dashboard-ui-playwright.smoke.ts",
     "test:governance-audit:playwright-ui": "npm run test:runtime-dashboard-ui-smoke",
     "test:governance-audit:round1": "npx vitest run tests/acceptance/governance-post-tool-use-hook.test.ts tests/acceptance/governance-post-tool-use-background-worker.test.ts tests/acceptance/governance-remediation-runner.test.ts tests/acceptance/governance-runtime-worker.test.ts tests/acceptance/governance-stop-hook-worker.test.ts tests/acceptance/prompt-routing-governance.test.ts tests/acceptance/prompt-routing-hints.test.ts tests/acceptance/model-governance-policy-filter.test.ts tests/acceptance/governance-provider-adapter.test.ts",
@@ -49,18 +52,18 @@
     "verify:cursor-audit-granularity": "npx ts-node --project tsconfig.node.json scripts/verify-cursor-audit-granularity.ts",
     "eval-questions": "npx ts-node --project tsconfig.node.json scripts/eval-questions-cli.ts",
     "build:scoring": "cd packages/scoring && npm run build",
+    "build:ralph-method": "npm run build -w @bmad-speckit/ralph-method",
     "build:runtime-dashboard-ui": "npm run build:dashboard-ui -w @bmad-speckit/scoring",
     "build:runtime-context": "npm run build -w @bmad-speckit/runtime-context",
     "build:runtime-emit": "npm run build -w @bmad-speckit/runtime-emit",
     "verify:hooks": "node scripts/verify-hooks-no-ts-node.js",
-    "prepublishOnly": "npm run verify:hooks && npm run build:scoring && npm run build:runtime-context && npm run build:runtime-emit && node scripts/prepublish-check.js",
+    "prepublishOnly": "npm run verify:hooks && npm run build:scoring && npm run build:runtime-context && npm run build:runtime-emit && npm run build:ralph-method && node scripts/prepublish-check.js",
     "speckit": "npx bmad-speckit",
     "speckit:init": "npx bmad-speckit init",
     "check": "npx bmad-speckit check",
     "test:fresh-regression": "npx ts-node --transpile-only scripts/run-fresh-regression-matrix.ts"
   },
   "bin": {
-    "bmad-speckit": "scripts/bmad-speckit-cli.js",
     "bmad-speckit-init": "scripts/init-to-root.js",
     "bmad-speckit-setup": "scripts/setup.ps1",
     "bmad-speckit-setup-sh": "scripts/setup.sh"
@@ -69,6 +72,7 @@
     "bmad-speckit"
   ],
   "files": [
+    "bin",
     "_bmad",
     "scripts"
   ],

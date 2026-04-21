@@ -1,5 +1,7 @@
 # Auditor: Bugfix
 
+<!-- SHARED-REVIEWER-ADAPTER profile=bugfix_doc_audit shared_metadata=_bmad/core/agents/code-reviewer/metadata.json shared_profiles=_bmad/core/agents/code-reviewer/profiles.json host_role=claude-auditor-adapter -->
+
 BUGFIX 文档严格审计 Agent，面向 bugfix 流程中的 BUGFIX 文档与修复策略审计。
 
 ## Role
@@ -59,6 +61,7 @@ BUGFIX 文档严格审计 Agent，面向 bugfix 流程中的 BUGFIX 文档与修
 - parse-and-write-score 证据要求
 - 禁止词检查
 - 结构化审计结果字段：
+  - `stage`（必须固定为 `bugfix`，缺失时 orphan host closeout 视为无效）
   - `round`
   - `gap_count`
   - `new_gap_count`
@@ -99,6 +102,7 @@ BUGFIX 文档严格审计 Agent，面向 bugfix 流程中的 BUGFIX 文档与修
 round: [N]
 strictness: [standard/strict]
 artifactDocPath: [path]
+stage: bugfix
 baselinePath: [path]
 reportPath: [path]
 subagent_type: code-reviewer
@@ -131,6 +135,7 @@ execution_summary:
   convergence_status: in_progress|converged
 artifacts:
   artifactDocPath: "..."
+  stage: bugfix
   reportPath: "..."
 handoff:
   next_action: revise_bugfix_doc|implement_bugfix
@@ -182,7 +187,9 @@ handoff:
 
 ## Post-Audit Actions（审计通过时）
 
-审计通过时，须执行评分写入：`npx bmad-speckit score --reportPath <reportPath> --stage implement --event stage_audit_complete --triggerStage speckit_5_2 --epic {epic} --story {story} --artifactDocPath {artifactDocPath} --iteration-count {iterationCount} --scenario real_dev --writeMode single_file`；配置路径 `_bmad/_config/`；失败在结论中注明 resultCode。
+审计通过时，执行体只负责保存报告并返回 `projectRoot`、`reportPath`、`artifactDocPath`、`stage=bugfix`；其中 `stage / reportPath / artifactDocPath` 为 orphan closeout 必填字段，缺失任一项时 host/runner 必须 fail-closed。评分写入、auditIndex 更新与其它 post-audit automation 统一由 invoking host/runner 通过 `runAuditorHost` 承接。若 host/runner 失败，必须在审计结论中注明 resultCode。
+
+无论 PASS / FAIL，**在保存完整审计报告后必须由 invoking auditor host/runner 自动触发统一的 auditor post-actions runner**，由 host/runner 负责写入 runtime registry 的 `auditIndex.bugfix`。执行体只需保证 `projectRoot`、`reportPath`、`artifactDocPath` 三个结果字段完整可用；不得再把 audit index CLI 当作人工或 prompt 级独立步骤。若 host/runner post-actions 失败，必须在审计结论中注明失败原因与 resultCode。
 
 ## Report Persistence Rules
 
@@ -197,5 +204,5 @@ handoff:
 - 必须迭代至“完全覆盖、验证通过”
 - 必须连续 3 轮无 gap 才允许收敛
 - 发现 gap 时，不得直接进入修复实现
-- 若存在多个修复策略 / trade-off，必须先经 Party-Mode（至少 100 轮）收敛
+- 若存在多个修复策略 / trade-off，必须先经 Party-Mode（至少 100 轮）收敛；所有 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以 `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md` 为准
 - 禁止自行 commit

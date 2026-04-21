@@ -104,6 +104,9 @@ describe('governance remediation artifact entrypoint', () => {
     expect(result.promptHintUsage.hintIgnoredBecause).toContain('low confidence');
     expect(result.markdown).toContain('## Executor Routing Trace');
     expect(result.markdown).toContain('## Remediation Audit Trace Summary');
+    expect(result.markdown).toContain('## Readiness Drift Projection');
+    expect(result.markdown).toContain('Readiness Baseline Run ID:');
+    expect(result.markdown).toContain('Effective Verdict:');
     expect(result.markdown).toContain('- Routing Mode: generic');
     expect(result.markdown).toContain('Stop Reason: (none)');
     expect(result.markdown).toContain('- Blocker ownership affected: no');
@@ -153,6 +156,8 @@ describe('governance remediation artifact entrypoint', () => {
 
     expect(result.markdown).toContain('## Executor Routing Trace');
     expect(result.markdown).toContain('## Remediation Audit Trace Summary');
+    expect(result.markdown).toContain('## Readiness Drift Projection');
+    expect(result.markdown).toContain('Drift Signals:');
     expect(result.markdown).toContain('- Routing Mode: targeted');
     expect(result.markdown).toContain('- Executor Route: journey-contract-remediation');
     expect(result.markdown).toContain('- Prioritized Signals: smoke_task_chain');
@@ -420,6 +425,22 @@ describe('governance remediation artifact entrypoint', () => {
     );
     expect(result.markdown).toContain(
       '- Subagent Roles: provider-reviewer, critical-auditor'
+    );
+    expect(result.markdown).toContain('- Reviewer Route Explainability:');
+    expect(result.markdown).toContain(
+      '  - code-reviewer => identity=bmad_code_reviewer; registry=reviewer_registry_v1; closeout=runAuditorHost; maturity=projection_wired'
+    );
+    expect(result.markdown).toContain(
+      '    - cursor carrier: _bmad/cursor/agents/code-reviewer.md -> .cursor/agents/code-reviewer.md'
+    );
+    expect(result.markdown).toContain(
+      '      preferred=cursor-task/code-reviewer | fallback=mcp_task/generalPurpose'
+    );
+    expect(result.markdown).toContain(
+      '    - claude carrier: _bmad/claude/agents/code-reviewer.md -> .claude/agents/code-reviewer.md'
+    );
+    expect(result.markdown).toContain(
+      '      preferred=Agent/code-reviewer | fallback=Agent/general-purpose'
     );
   });
 });

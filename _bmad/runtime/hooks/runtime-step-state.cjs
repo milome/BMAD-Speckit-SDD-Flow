@@ -204,7 +204,7 @@ function basenameWithoutExt(file) {
 }
 
 function escapeRegex(source) {
-  return source.replace(/[|\\{}()[\]^$+?.]/g, '\\$&');
+  return source.replace(/[|\\{}()[\]^$+?.*]/g, '\\$&');
 }
 
 function globSegmentToRegex(segment) {

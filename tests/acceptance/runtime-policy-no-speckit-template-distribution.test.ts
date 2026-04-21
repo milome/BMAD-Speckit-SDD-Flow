@@ -3,18 +3,19 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 describe('runtime-policy no speckit template distribution', () => {
-  it('does not treat removed speckit template assets as formal runtime-context templates in implementation docs', () => {
+  it('does not treat removed speckit template assets as runtime-context inputs in tracked references', () => {
     const repoRoot = process.cwd();
-    const planDoc = readFileSync(
-      path.join(
-        repoRoot,
-        'docs',
-        'plans',
-        '2026-03-22-runtime-governance-runtime-context-重构实施计划文档.md'
-      ),
+    const runtimeContextRef = readFileSync(
+      path.join(repoRoot, 'docs', 'reference', 'runtime-context.md'),
       'utf8'
     );
-    expect(planDoc).toContain('已完全移除，不再作为 runtime context');
-    expect(planDoc).toContain('.speckit-state.yaml');
+    const migrationGuide = readFileSync(
+      path.join(repoRoot, 'docs', 'how-to', 'migration.md'),
+      'utf8'
+    );
+    expect(runtimeContextRef).toContain('`.speckit-state.yaml` 已完全移除');
+    expect(runtimeContextRef).toContain('不允许再回退');
+    expect(migrationGuide).toContain('.speckit-state.yaml');
+    expect(migrationGuide).toContain('不应创建、分发或复制该文件作为运行时治理依赖');
   });
 });

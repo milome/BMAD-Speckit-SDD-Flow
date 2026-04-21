@@ -139,7 +139,7 @@ describe('governance runtime worker', () => {
       const firstRun = await runGovernanceRemediation({
         projectRoot: fixture.root,
         outputPath: firstOutput,
-        promptText: '做 implementation readiness 修复，不要联网，最小修复。',
+        promptText: '\u505a implementation readiness \u4fee\u590d\uff0c\u4e0d\u8981\u8054\u7f51\uff0c\u6700\u5c0f\u4fee\u590d\u3002',
         stageContextKnown: true,
         gateFailureExists: true,
         blockerOwnershipLocked: true,
@@ -175,7 +175,7 @@ describe('governance runtime worker', () => {
                 projectRoot: fixture.root,
                 outputPath: secondOutput,
                 promptText:
-                  '继续 implementation readiness patch，critical auditor 最小修复，不要联网。',
+                  '\u7ee7\u7eed implementation readiness patch\uff0ccritical auditor \u6700\u5c0f\u4fee\u590d\uff0c\u4e0d\u8981\u8054\u7f51\u3002',
                 stageContextKnown: true,
                 gateFailureExists: true,
                 blockerOwnershipLocked: true,
@@ -284,6 +284,12 @@ describe('governance runtime worker', () => {
           '- Available Skills: speckit-workflow, code-reviewer',
           '- Matched Available Skills: speckit-workflow, code-reviewer',
           '- Missing Skills: (none)',
+          '- Reviewer Projection: code-reviewer => bmad_code_reviewer [registry=reviewer_registry_v1; closeout=runAuditorHost; active=plan/plan_audit; maturity=projection_wired; reason=Registry-backed reviewer routing keeps shared-core semantics while preserving host-specific transport and carrier shape.; complexity=Dual-host carrier parity is in place, but legacy skill narrative cleanup and proof expansion still remain before rollout.; blocker=Complete parity proof, rollback proof, Codex no-op proof, and rollout gate before declaring full isomorphism.]',
+        ])
+      );
+      expect(currentRun.at(-1)?.result?.governancePresentation?.combinedLines).toEqual(
+        expect.arrayContaining([
+          '- Reviewer Projection: code-reviewer => bmad_code_reviewer [registry=reviewer_registry_v1; closeout=runAuditorHost; active=plan/plan_audit; maturity=projection_wired; reason=Registry-backed reviewer routing keeps shared-core semantics while preserving host-specific transport and carrier shape.; complexity=Dual-host carrier parity is in place, but legacy skill narrative cleanup and proof expansion still remain before rollout.; blocker=Complete parity proof, rollback proof, Codex no-op proof, and rollout gate before declaring full isomorphism.]',
         ])
       );
       expect(loopStateRaw.attemptCount).toBe(2);
@@ -321,7 +327,7 @@ describe('governance runtime worker', () => {
       const firstRun = await runGovernanceRemediation({
         projectRoot: fixture.root,
         outputPath: firstOutput,
-        promptText: '做 implementation readiness 修复，不要联网，最小修复。',
+        promptText: '\u505a implementation readiness \u4fee\u590d\uff0c\u4e0d\u8981\u8054\u7f51\uff0c\u6700\u5c0f\u4fee\u590d\u3002',
         stageContextKnown: true,
         gateFailureExists: true,
         blockerOwnershipLocked: true,
@@ -356,7 +362,7 @@ describe('governance runtime worker', () => {
               runnerInput: {
                 projectRoot: fixture.root,
                 outputPath: secondOutput,
-                promptText: '继续 implementation readiness 修复，不要联网。',
+                promptText: '\u7ee7\u7eed implementation readiness \u4fee\u590d\uff0c\u4e0d\u8981\u8054\u7f51\u3002',
                 stageContextKnown: true,
                 gateFailureExists: true,
                 blockerOwnershipLocked: true,
@@ -467,6 +473,12 @@ describe('governance runtime worker', () => {
           '## Governance Structured Metadata',
           '- Routing Mode: targeted',
           '- Executor Route: journey-contract-remediation',
+          '- Reviewer Projection: code-reviewer => bmad_code_reviewer [registry=reviewer_registry_v1; closeout=runAuditorHost; active=plan/plan_audit; maturity=projection_wired; reason=Registry-backed reviewer routing keeps shared-core semantics while preserving host-specific transport and carrier shape.; complexity=Dual-host carrier parity is in place, but legacy skill narrative cleanup and proof expansion still remain before rollout.; blocker=Complete parity proof, rollback proof, Codex no-op proof, and rollout gate before declaring full isomorphism.]',
+        ])
+      );
+      expect(currentRun.at(-1)?.result?.governancePresentation?.combinedLines).toEqual(
+        expect.arrayContaining([
+          '- Reviewer Projection: code-reviewer => bmad_code_reviewer [registry=reviewer_registry_v1; closeout=runAuditorHost; active=plan/plan_audit; maturity=projection_wired; reason=Registry-backed reviewer routing keeps shared-core semantics while preserving host-specific transport and carrier shape.; complexity=Dual-host carrier parity is in place, but legacy skill narrative cleanup and proof expansion still remain before rollout.; blocker=Complete parity proof, rollback proof, Codex no-op proof, and rollout gate before declaring full isomorphism.]',
         ])
       );
       expect(currentRun.at(-1)?.result?.governancePresentation?.rawEventLines).toEqual(

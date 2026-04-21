@@ -5,6 +5,7 @@ description: |
   以 Cursor bmad-bug-assistant 为语义基线，按「根因分析 → BUGFIX 文档 → 审计 → 任务列表补充 → 实施 → 实施后审计」执行 BUG 修复全流程。
   主 Agent 发起任一子任务时**必须**将本 skill 内该阶段的「完整 prompt 模板」整段复制并填入占位符后传入，禁止省略、概括或自行改写提示词；
   主 Agent 禁止直接修改生产代码，实施须通过 Agent tool 子代理（subagent_type: general-purpose）。
+  party-mode 主路径显式调用示例已统一为：`.claude/agents/party-mode-facilitator.md` / `@"party-mode-facilitator (agent)"`。
   使用 party-mode 进行**至少 100 轮**多角色辩论（BUGFIX 产出最终方案与 §7 任务列表，属 party-mode step-02「生成最终方案和最终任务列表」场景），
   满足收敛条件（共识 + 近 2–3 轮无新 gap）再结束；审计优先 `.claude/agents/auditors/auditor-bugfix`，按 Fallback 链降级。
   遵循 ralph-method、TDD 红绿灯、speckit-workflow。
@@ -16,12 +17,19 @@ references:
   - auditor-implement: 实施后审计执行体；`.claude/agents/auditors/auditor-implement.md`
   - audit-prompts-section5: §5 审计提示词参考；`.claude/skills/bmad-bug-assistant/references/audit-prompts-section5.md`
   - audit-document-iteration-rules: 文档审计迭代规则；`.claude/skills/speckit-workflow/references/audit-document-iteration-rules.md`
-  - party-mode: `{project-root}/_bmad/core/workflows/party-mode/`
+  - party-mode: `{project-root}/_bmad/core/skills/bmad-party-mode/`
+  - party-mode-facilitator: Party-mode dedicated facilitator agent；`.claude/agents/party-mode-facilitator.md`
   - ralph-method: prd、progress 文件，按 US 顺序执行
   - speckit-workflow: 禁止伪实现、必须运行验收命令、架构忠实
 ---
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
+
+> **Orphan bugfix closeout contract**：当 BUGFIX 文档位于 `_bmad-output/implementation-artifacts/_orphan/` 时，结构化审计报告必须显式提供 `stage=bugfix`、`artifactDocPath`、`reportPath`，且三者必须与真实 BUGFIX 文档路径 / 报告路径一致；缺失任一字段或仍停留在 prose-only PASS 时，主 Agent 不得宣称通过，host closeout 必须 fail-closed。
 
 # Claude Adapter: bmad-bug-assistant
+
+> **Party-mode source of truth**：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。所有 party-mode 的 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 不得定义第二套 gate 语义。
 
 ## Purpose
 
@@ -44,7 +52,7 @@ Claude 版 `bmad-bug-assistant` 必须满足：
 - 各阶段的执行器选择、fallback、评分写入均与 Cursor 已验证流程语义一致
 - 完整接入本仓新增的：
   - auditor-bugfix、auditor-implement 执行体
-  - 评分写入（`parse-and-write-score.ts`）
+  - 统一 auditor host runner（`runAuditorHost`）
   - handoff 协议
 - 不得将 Cursor Canonical Base、Claude Runtime Adapter、Repo Add-ons 混写为来源不明的重写版 prompt
 - **主 Agent 禁止直接修改生产代码**（FR20a）
@@ -55,7 +63,7 @@ Claude 版 `bmad-bug-assistant` 必须满足：
 
 以下内容继承自 Cursor `bmad-bug-assistant`，属于业务语义基线，Claude 版不得擅自重写其意图。
 
-本 skill 定义 **根因分析 → BUGFIX 文档 → 审计 →（可选）信息补充更新 → 任务列表补充 → 实施 → 实施后审计** 的完整工作流。**实施后审计为必须步骤，非可选。**未通过时必须按修改建议修复后再次审计，直至通过。
+本 skill 定义 **根因分析 → BUGFIX 文档 → 审计 →（可选）信息补充更新 → 任务列表补充 → 实施 → 实施后审计** 的完整工作流。**实施前的 `auditor-bugfix` 属于 BUGFIX 文档审计，且必须先于任何修复实现执行。** **实施后审计为必须步骤，非可选。**未通过时必须按修改建议修复后再次审计，直至通过。
 
 ### 强制约束（必须遵守）
 
@@ -64,6 +72,7 @@ Claude 版 `bmad-bug-assistant` 必须满足：
 3. **主 Agent 禁止直接改生产代码**：实施修复必须通过子代理执行；主 Agent 仅发起子任务、传入文档路径、收集输出。
 4. **主 Agent 禁止直接生成 BUGFIX 文档**：阶段一、二的 BUGFIX 文档（含 §1–§5）必须由 party-mode 或子代理产出；主 Agent 不得以「已有分析文档」「根因已共识」等为由跳过子代理并自行撰写 BUGFIX 文档。
 5. **凡更新必审计**：凡产出或更新 BUGFIX 文档（含 §4、§7），完成后**必须**发起审计子任务并迭代至通过；**禁止**省略审计步骤。无论是否经过辩论，审计闭环为必做项。
+6. **BUGFIX 文档审计是实施前硬门槛**：`auditor-bugfix` 的职责是 **BUGFIX 文档审计**，不是实施后代码审计。只要 `auditor-bugfix` 尚未通过，**禁止**进入任何修复实现、代码修改、测试实现或“先修后补审计”的路径。
 
 ### 主 Agent 传递提示词规则（必守）
 
@@ -95,8 +104,9 @@ Claude 版 `bmad-bug-assistant` 必须满足：
 
 | 资源 | 路径/说明 |
 | ---- | --------- |
-| **party-mode** | `{project-root}/_bmad/core/workflows/party-mode/`；轮次与收敛见 step-02（BUGFIX 产出最终方案与 §7 任务列表：至少 100 轮；其它：50 轮；收敛条件再结束）。 |
+| **party-mode** | `{project-root}/_bmad/core/skills/bmad-party-mode/`；所有 rounds / challenger ratio / recovery / evidence / exit gate 规则以 core step-02 为准（BUGFIX 产出最终方案与 §7 任务列表：100 轮；其它：50 轮）。 |
 | **auditor-bugfix 执行体** | `.claude/agents/auditors/auditor-bugfix.md`；找不到则按 Fallback Strategy 降级 |
+| **auditor-bugfix 的门槛语义** | `auditor-bugfix` = BUGFIX 文档审计执行体，**必须先于修复实现通过** |
 | **audit-prompts §5** | `references/audit-prompts-section5.md`（本 skill 内）或 `{project-root}/docs/speckit/skills/speckit-workflow/references/audit-prompts.md`；**仅作其他工作流参考，不用于本 skill 的 BUGFIX 文档审计**。 |
 | **audit-document-iteration-rules** | `.claude/skills/speckit-workflow/references/audit-document-iteration-rules.md`；阶段一、二、三的 BUGFIX **文档**审计须遵循：审计子代理在发现 gap 时须直接修改 BUGFIX 文档。阶段四为实施后审计（代码），不适用。 |
 | **ralph-method** | 使用 ralph-method skill：prd、progress 文件，按 US 顺序执行 |
@@ -204,11 +214,11 @@ Claude 版 `bmad-bug-assistant` 必须满足：
 
 ### Primary Executor
 
-各阶段子任务通过 **Agent tool**（`subagent_type: general-purpose`）调度对应执行体：
+各阶段子任务根据执行体类型调度：
 
 | 阶段 | 执行体 | Agent 文件 |
 |------|--------|-----------|
-| 阶段一/二 根因辩论 | party-mode 多角色 | 主 Agent 在 prompt 中指定角色 |
+| 阶段一/二 根因辩论 | party-mode-facilitator | `.claude/agents/party-mode-facilitator.md` / 显式调用 `@"party-mode-facilitator (agent)"` |
 | 阶段一/二/三 审计 | auditor-bugfix | `.claude/agents/auditors/auditor-bugfix.md` |
 | 阶段四 实施 | general-purpose dev | Agent tool `subagent_type: general-purpose` |
 | 阶段四 实施后审计 | auditor-implement | `.claude/agents/auditors/auditor-implement.md` |
@@ -243,6 +253,7 @@ Claude 版 `bmad-bug-assistant` 必须满足：
 - 返回必须包含：`execution_summary`、`artifacts`、`handoff`
 - 审计子任务类型按 `code-reviewer` 语义执行
 - PASS 后才允许进入下一阶段
+- `auditor-bugfix` 的 PASS 是进入修复实现前的硬门槛，不得被解释为建议项或实施后补审计
 - 修复完成后仍需实施后审计与 `bmad-master` commit gate
 
 ### CLI Calling Summary（Architecture Pattern 2）
@@ -285,19 +296,7 @@ handoff:
 
 ### 评分写入
 
-审计通过后评分写入（必须执行）：实施后审计结论为「完全覆盖、验证通过」后，主 Agent **必须**调用 `parseAndWriteScore` 将 implement 阶段评分写入 scoring 存储。当存在 BUGFIX 文档时，**必须**显式传入 `artifactDocPath=<BUGFIX 文档路径>`。
-
-**CLI 调用示例**（在项目根目录执行）：
-```bash
-npx bmad-speckit score \
-  --reportPath <审计报告路径> \
-  --stage implement \
-  --epic {epic} \
-  --story {story} \
-  --artifactDocPath <BUGFIX 文档路径> \
-  --iteration-count <累计失败轮数，0 表示一次通过> \
-  --skipTriggerCheck true
-```
+审计通过后评分写入与 audit index 更新（必须执行）：实施后审计结论为「完全覆盖、验证通过」后，主 Agent **不得**再手工分别编排 `parseAndWriteScore` 或 auditIndex CLI；应统一通过 `runAuditorHost` / 统一 auditor host runner 承接 post-audit automation。host runner 负责基于 `reportPath`、`artifactDocPath`、`stage` 自动触发评分写入与 registry auditIndex 更新。
 
 ### State Updates
 
@@ -327,7 +326,7 @@ artifacts:
 
 **流程**：
 
-1. 根据用户提供的 BUG 问题信息，使用 **party-mode** 引入上述多角色，进行**至少 100 轮**互相质疑和辩论（BUGFIX 属「生成最终方案和最终任务列表」场景），满足收敛条件（根因共识 + 近 2–3 轮无新 gap）再结束；若无法调度 party-mode 子代理，则按 Fallback Strategy 降级，使用 Agent tool（`subagent_type: general-purpose`），在 prompt 中明确要求模拟多角色（Winston 架构师、Mary 分析师、Amelia 开发、Quinn 测试、John 产品经理）辩论并达成根因共识。
+1. 根据用户提供的 BUG 问题信息，使用 **party-mode** 引入上述多角色，进行**至少 100 轮**互相质疑和辩论（BUGFIX 属「生成最终方案和最终任务列表」场景），满足收敛条件（根因共识 + 近 2–3 轮无新 gap）再结束；主路径必须显式调用 `.claude/agents/party-mode-facilitator.md`，提示词示例统一写为 `@"party-mode-facilitator (agent)"`。若无法调度 facilitator，才按 Fallback Strategy 降级，使用 Agent tool（`subagent_type: general-purpose`），在 prompt 中明确要求模拟多角色（Winston 架构师、Mary 分析师、Amelia 开发、Quinn 测试、John 产品经理）辩论并达成根因共识。
 2. 对根因做深入分析，直至达成根因共识。
 3. 生成 **BUGFIX 文档**，完成 BUG 上报（保存至 `_bmad-output/` 或 `bugfix/`）。
 4. 发起**审计子任务**：
@@ -339,7 +338,10 @@ artifacts:
 
 1. 将模板 **BUG-A1-ROOT**（阶段一根因辩论完整 prompt 模板）**整段复制**到 Agent tool 的 `prompt` 参数中。
 2. 将占位符 `{用户提供的 BUG 现象、复现步骤、环境信息}` 替换为用户实际描述（若用户未写清，可归纳为一段话），**禁止**留空或写「见上文」。
-3. 发起子任务；子任务返回后，若生成了 BUGFIX 文档，再发起审计子任务（使用模板 **BUG-A1-AUDIT**（阶段一审计完整 prompt 模板）整段复制）。
+3. 若用户已明确回复 `20` / `50` / `100`，必须将其自动编译进占位符 `{主 Agent 填入用户选择确认块}`，格式固定为：
+   `## 用户选择`
+   `强度: 20 (quick_probe_20)` / `强度: 50 (decision_root_cause_50)` / `强度: 100 (final_solution_task_list_100)`。
+4. 发起子任务；子任务返回后，若生成了 BUGFIX 文档，再发起审计子任务（使用模板 **BUG-A1-AUDIT**（阶段一审计完整 prompt 模板）整段复制）。
 
 ### 阶段一根因辩论完整 prompt 模板（主 Agent 必须完整复制并替换占位符后传入）
 
@@ -347,6 +349,11 @@ artifacts:
 
 ```
 【必读】本 prompt 须为完整模板且所有占位符已替换。若发现明显缺失或未替换的占位符，请勿执行，并回复：请主 Agent 将本 skill 中阶段一根因辩论完整 prompt 模板（ID BUG-A1-ROOT）整段复制并替换占位符后重新发起。
+
+{主 Agent 填入用户选择确认块；若用户已回复 20/50/100，则必须替换为：
+## 用户选择
+强度: 50 (decision_root_cause_50)
+}
 
 本任务以以下 BMAD 角色进行多角色辩论（**至少 100 轮**，BUGFIX 产出最终方案与 §7 任务列表；满足根因共识且近 2–3 轮无新 gap 再结束）。请对以下 BUG 进行根因分析并达成共识。
 
@@ -359,7 +366,7 @@ artifacts:
 
 **产出要求**：
 1. 根因结论（一段话，无歧义）。
-2. 生成 BUGFIX 文档，包含：§1 问题描述、§2 根因分析、§3 影响范围、§4 修复方案（须为明确描述，禁止使用本 skill「§ 禁止词表」中的词：可选、可考虑、后续、待定、酌情、视情况、后续迭代）、§5 验收标准。保存至 _bmad-output/ 或 bugfix/。
+2. 生成 BUGFIX 文档，包含：§1 问题描述、§2 根因分析、§3 影响范围、§4 修复方案（须为明确描述，禁止使用本 skill「§ 禁止词表」中的词：可选、可考虑、后续、待定、酌情、视情况、后续迭代）、§5 验收标准。必须写入明确的 canonical BUGFIX 文档路径。
 3. 全程使用中文。
 ```
 
@@ -410,7 +417,8 @@ artifacts:
 
 1. 将模板 **BUG-A2-UPDATE**（阶段二信息补充辩论完整 prompt 模板）**整段复制**到 Agent tool 的 `prompt` 参数中。
 2. 替换占位符：`{用户补充的现象、步骤、环境等}` → 用户实际补充内容；`{主 Agent 填入路径}` → BUGFIX 文档的完整路径（如 `_bmad-output/BUGFIX_xxx_2026-02-27.md`）。
-3. 发起辩论子任务；子任务返回后，根据产出更新 BUGFIX 文档（若主 Agent 直接按分析更新文档，则本步可合并到步骤 2 的产出）。
+3. 若用户已明确回复 `20` / `50` / `100`，必须将其自动编译进 `{主 Agent 填入用户选择确认块}`；若有结构化 `gateProfileId`，须与确认块一致。
+4. 发起辩论子任务；子任务返回后，根据产出更新 BUGFIX 文档（若主 Agent 直接按分析更新文档，则本步可合并到步骤 2 的产出）。
 4. **【必做】** 发起审计子任务：使用模板 ID **BUG-A1-AUDIT**（阶段一审计完整 prompt 模板）整段复制，子代理为 `.claude/agents/auditors/auditor-bugfix.md` 或按 Fallback Strategy 降级。
 5. **【必做】** 若审计结论为未通过，**审计子代理须在本轮内直接修改 BUGFIX 文档**以消除 gap；主 Agent 收到报告后再次发起审计。禁止仅输出修改建议而不修改文档。文档审计迭代规则见 `.claude/skills/speckit-workflow/references/audit-document-iteration-rules.md`。重复直至结论为「完全覆盖、验证通过」。**禁止**在未通过时仅做一轮审计即结束。
 
@@ -420,6 +428,11 @@ artifacts:
 
 ```
 【必读】本 prompt 须为完整模板且所有占位符已替换。若发现明显缺失或未替换的占位符，请勿执行，并回复：请主 Agent 将本 skill 中阶段二信息补充辩论完整 prompt 模板（ID BUG-A2-UPDATE）整段复制并替换占位符后重新发起。
+
+{主 Agent 填入用户选择确认块；若用户已回复 20/50/100，则必须替换为：
+## 用户选择
+强度: 50 (decision_root_cause_50)
+}
 
 本任务以以下 BMAD 角色进行多角色辩论（**至少 100 轮**，BUGFIX 产出最终方案与 §7 任务列表；满足共识且近 2–3 轮无新 gap 再结束）。
 
@@ -464,13 +477,15 @@ artifacts:
 1. 将模板 **BUG-A3-TASKS**（阶段三任务列表补充完整 prompt 模板）**整段复制**到 Agent tool 的 `prompt` 参数中，并替换占位符：`{主 Agent 填入 BUGFIX 文档路径}` → 实际 BUGFIX 文档完整路径；`{project-root}` → 项目根目录绝对路径；若 BUGFIX 涉及具体代码位置，在「关键代码位置参考」中填入文件路径与行号或可定位片段。
 2. 执行发起前自检清单（见下方），逐项确认。
 3. 输出自检结果（格式见「主 Agent 传递提示词规则」中的自检结果示例）。
-4. 发起子任务；子代理应产出更新后的 BUGFIX 文档（含 §7），并写入原文件路径。
-5. **【必做】** 子任务返回后，发起审计子任务：使用模板 **BUG-A3-AUDIT**（阶段三 §7 审计完整 prompt 模板）整段复制，子代理为 `.claude/agents/auditors/auditor-bugfix.md` 或按 Fallback Strategy 降级。
-6. **【必做】** 若审计结论为未通过，**审计子代理须在本轮内直接修改 BUGFIX 文档**；主 Agent 收到报告后再次发起审计。禁止仅输出修改建议而不修改文档。文档审计迭代规则见 `.claude/skills/speckit-workflow/references/audit-document-iteration-rules.md`。重复直至结论为「通过」。**禁止**在未通过时仅做一轮审计即结束。
+4. 若用户已明确回复 `20` / `50` / `100`，必须将其自动编译进 `{主 Agent 填入用户选择确认块}`；若有结构化 `gateProfileId`，须与确认块一致。
+5. 发起子任务；子代理应产出更新后的 BUGFIX 文档（含 §7），并写入原文件路径。
+6. **【必做】** 子任务返回后，发起审计子任务：使用模板 **BUG-A3-AUDIT**（阶段三 §7 审计完整 prompt 模板）整段复制，子代理为 `.claude/agents/auditors/auditor-bugfix.md` 或按 Fallback Strategy 降级。
+7. **【必做】** 若审计结论为未通过，**审计子代理须在本轮内直接修改 BUGFIX 文档**；主 Agent 收到报告后再次发起审计。禁止仅输出修改建议而不修改文档。文档审计迭代规则见 `.claude/skills/speckit-workflow/references/audit-document-iteration-rules.md`。重复直至结论为「通过」。**禁止**在未通过时仅做一轮审计即结束。
 
 **禁止**：不得在未完成步骤 2、3 的情况下执行步骤 4。不得在步骤 4 产出 §7 后省略步骤 5、6。
 
 **发起前自检**：确认 prompt 中已包含 BUGFIX 文档路径、项目根目录；确认未省略「至少 100 轮」「完整复制」等要求。
+**发起前自检**：若用户已回复 `20` / `50` / `100`，确认 prompt 中已包含 `## 用户选择` 确认块，且内容与用户回复一致。
 
 ### 阶段三任务列表补充完整 prompt 模板（主 Agent 必须完整复制并替换占位符后传入）
 
@@ -478,6 +493,11 @@ artifacts:
 
 ```
 【必读】本 prompt 须为完整模板且所有占位符已替换。若发现明显缺失或未替换的占位符，请勿执行，并回复：请主 Agent 将本 skill 中阶段三任务列表补充完整 prompt 模板（ID BUG-A3-TASKS）整段复制并替换占位符后重新发起。
+
+{主 Agent 填入用户选择确认块；若用户已回复 20/50/100，则必须替换为：
+## 用户选择
+强度: 50 (decision_root_cause_50)
+}
 
 本任务以以下 BMAD 角色进行多角色辩论（**至少 100 轮**，BUGFIX 产出最终方案与 §7 任务列表；满足单一方案共识且近 2–3 轮无新 gap 再结束）。
 
@@ -544,6 +564,8 @@ artifacts:
 
 ### 4.1 发起实施子任务
 
+**实施前硬门槛**：进入本节前，`auditor-bugfix` 必须已对 BUGFIX 文档完成审计并给出通过结论。若 BUGFIX 文档审计未通过、未执行或结论不明，**禁止**发起实施子任务。
+
 | 项 | 内容 |
 | -- | ---- |
 | 子代理 | Agent tool（`subagent_type: general-purpose`） |
@@ -554,6 +576,7 @@ artifacts:
 
 在发起子任务前，**必须**确认 prompt 中包含以下全部内容，否则子代理无法遵守 ralph-method 与 TDD 红绿灯：
 
+- [ ] `auditor-bugfix` 已完成 **BUGFIX 文档审计**，且结论为通过；若未通过，已先返回文档审计迭代流程
 - [ ] ralph-method：prd/progress 创建与更新规则（含命名规则、每 US 完成后更新）
 - [ ] TDD 红绿灯：先改测试（红灯）→ 实现（绿灯）→ 重构；每步运行验收；progress 须含 [TDD-RED]/[TDD-GREEN]/[TDD-REFACTOR] 格式记录（见 bmad-story-assistant §3.2）
 - [ ] 「请读取 ralph-method 与 speckit-workflow 技能」或等效的**内联约束**（见下方模板）
@@ -641,7 +664,7 @@ Amelia 开发 的规范已在上方 5 条中列出，子代理按内联执行即
 
 **未通过时必做（禁止只跑一轮即结束）**：若审计结论为「**未通过**」或审计报告中列出未通过项及修改建议，主 Agent **必须**按修改建议执行（委托子代理修改代码或更新 BUGFIX/文档），然后**再次发起**实施后审计（使用同一模板 BUG-A4-POSTAUDIT）；重复「审计 → 若未通过则按建议修改 → 再审计」直至结论为「**完全覆盖、验证通过**」。禁止在结论为未通过时仅做一轮审计即结束或向用户报告完成。
 
-**审计通过后评分写入（必须执行）**：实施后审计结论为「完全覆盖、验证通过」后，主 Agent **必须**调用 `parseAndWriteScore` 将 implement 阶段评分写入 scoring 存储。当存在 BUGFIX 文档时，**必须**显式传入 `artifactDocPath=<BUGFIX 文档路径>`，以确保 `record.source_path` 正确指向 BUGFIX 文档（而非审计报告路径）。
+**审计通过后统一 Host 收口（必须执行）**：实施后审计结论为「完全覆盖、验证通过」后，主 Agent **不得**再手工调用 `parseAndWriteScore` 或其它 auditIndex CLI；必须统一调用 `runAuditorHost`。当存在 BUGFIX 文档时，必须确保 host/runner 收到 `artifactDocPath=<BUGFIX 文档路径>`，以保证评分记录与 registry auditIndex 都绑定到 BUGFIX 文档而非审计报告路径。
 
 **路径约定**：`artifactDocPath` 取值与「产出路径约定」一致——有 story 时：`_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/BUGFIX_{slug}.md`；无 story 时：`_bmad-output/implementation-artifacts/_orphan/BUGFIX_{slug}.md`。
 
@@ -688,7 +711,7 @@ Amelia 开发 的规范已在上方 5 条中列出，子代理按内联执行即
 
 用户：「多周期图表主图右键看不到「从图表同步 GDS」，请分析根因并生成 BUGFIX 文档。」
 
-主 Agent：执行阶段一——将「阶段一根因辩论完整 prompt 模板」整段复制并填入用户描述后，通过 Agent tool（`subagent_type: general-purpose`）发起子任务；子任务返回后，将「阶段一审计完整 prompt 模板」整段复制后发起审计子任务；迭代至审计通过。
+主 Agent：执行阶段一——将「阶段一根因辩论完整 prompt 模板」整段复制并填入用户描述后，优先通过显式调用 `@"party-mode-facilitator (agent)"` 发起子任务；仅当 facilitator 不可用时才回退到 `general-purpose`。子任务返回后，将「阶段一审计完整 prompt 模板」整段复制后发起审计子任务；迭代至审计通过。
 
 ### 示例 2：补充信息后更新
 
@@ -709,3 +732,4 @@ Amelia 开发 的规范已在上方 5 条中列出，子代理按内联执行即
 主 Agent：执行阶段四——将「阶段四实施详细提示词」整段复制，仅替换 BUGFIX 文档路径与项目根目录后通过 Agent tool（`subagent_type: general-purpose`）发起子任务；实施完成后，将「阶段四实施后审计完整 prompt 模板」整段复制后发起审计子任务；若审计结论为未通过，须按修改建议委托子代理修改后再次发起审计，直至结论为「完全覆盖、验证通过」。禁止直接改生产代码。
 
 <!-- ADAPTATION_COMPLETE: 2026-03-15 -->
+

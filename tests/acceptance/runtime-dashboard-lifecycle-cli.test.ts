@@ -9,7 +9,11 @@ const BIN = join(PKG_ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js')
 const { startRuntimeDashboardServer, getRuntimeDashboardStatus, stopServerByState } = require('../../scripts/start-runtime-dashboard-server.cjs');
 
 function run(cmd: string, cwd: string): string {
-  const result = spawnSync('cmd.exe', ['/c', cmd], {
+  const shell =
+    process.platform === 'win32'
+      ? { file: 'cmd.exe', args: ['/c', cmd] }
+      : { file: 'bash', args: ['-lc', cmd] };
+  const result = spawnSync(shell.file, shell.args, {
     cwd,
     encoding: 'utf8',
     timeout: 60000,

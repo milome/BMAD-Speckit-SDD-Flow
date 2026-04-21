@@ -40,6 +40,10 @@ import {
   createGovernanceProviderAdapterFromConfig,
   readGovernanceRemediationConfig,
 } from './governance-remediation-config';
+import {
+  buildReviewerContractProjection,
+  mapFlowStageToReviewerAuditEntryStage,
+} from './reviewer-registry';
 import type { JourneyContractRemediationHint } from '../packages/scoring/analytics/journey-contract-remediation';
 import { buildGateRemediationHints } from '../packages/scoring/gate/remediation-hints';
 import { loadAndDedupeRecords } from '../packages/scoring/query/loader';
@@ -1259,6 +1263,29 @@ function argValue(args: string[], flag: string): string | undefined {
 export function buildGovernanceRemediationRunnerSummaryLines(
   result: RunGovernanceRemediationResult
 ): string[] {
+  const reviewerProjection =
+    result.executionPlanDecision?.reviewerRouteExplainability?.[0] ??
+    result.executionIntentCandidate?.reviewerRouteExplainability?.[0] ??
+    (result.runtimeContext
+      ? (() => {
+          const contract = buildReviewerContractProjection({
+            auditEntryStage: mapFlowStageToReviewerAuditEntryStage(
+              result.runtimeContext?.flow,
+              result.runtimeContext?.stage
+            ),
+          });
+          return contract.activeAuditConsumer
+            ? {
+                requestedSkillId: 'code-reviewer',
+                reviewerIdentity: contract.reviewerIdentity,
+                registryVersion: contract.registryVersion,
+                closeoutRunner: contract.closeoutRunner,
+                activeAuditConsumer: contract.activeAuditConsumer,
+              }
+            : null;
+        })()
+      : null);
+
   const lines = [
     '## Governance Remediation Runner Summary',
     `- Loop State ID: ${result.loopState.loopStateId}`,
@@ -1268,6 +1295,11 @@ export function buildGovernanceRemediationRunnerSummaryLines(
     `- Stop Reason: ${result.stopReason ?? '(none)'}`,
     `- Artifact Path: ${result.artifactPath ?? '(none)'}`,
     `- Executor Packet: ${result.executorPacket ? 'yes' : 'no'}`,
+    `- Reviewer Projection: ${
+      reviewerProjection
+        ? `${reviewerProjection.requestedSkillId} => ${reviewerProjection.reviewerIdentity} [registry=${reviewerProjection.registryVersion}; closeout=${reviewerProjection.closeoutRunner}; active=${reviewerProjection.activeAuditConsumer?.entryStage ?? '(none)'}/${reviewerProjection.activeAuditConsumer?.profile ?? '(none)'}]`
+        : '(none)'
+    }`,
     '',
     '## Loop State Trace Summary',
     ...(result.loopState.remediationAuditTraceSummaryLines.length > 0

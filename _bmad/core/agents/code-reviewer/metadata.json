@@ -1,0 +1,8 @@
+{
+  "version": "reviewer_shared_core_v1",
+  "identity": "bmad_code_reviewer",
+  "hostAdapterProjectionOnly": true,
+  "rootPath": "_bmad/core/agents/code-reviewer",
+  "basePromptPath": "_bmad/core/agents/code-reviewer/base-prompt.md",
+  "profilePackPath": "_bmad/core/agents/code-reviewer/profiles.json"
+}

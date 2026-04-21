@@ -45,10 +45,11 @@ git clone <BMAD-Speckit-SDD-Flow-repo-url> D:\Dev\BMAD-Speckit-SDD-Flow
 
 1. 从 GitHub Actions 的 `CI` workflow 下载 `package` job 产出的 artifact：`npm-packages-<commit-sha>`
 2. 解压 artifact，获取根包发布产物：`bmad-speckit-sdd-flow-<version>.tgz`
-3. 在消费项目根目录安装该 tgz
-4. 先验证 `npx bmad-speckit version`
-5. 再验证 `npx bmad-speckit check`
-6. 最后执行 `npx bmad-speckit-init --agent claude-code` 与 `--agent cursor`
+3. 在消费项目根目录通过 `npx --package <tgz>` 临时执行 CLI，而不是把 tgz 持久化安装进项目依赖
+4. 先验证 `bmad-speckit version`
+5. 再验证 `bmad-speckit check`
+6. 最后执行 `bmad-speckit-init . --agent claude-code --full --no-package-json`
+7. 再执行 `bmad-speckit-init . --agent cursor --full --no-package-json`
 
 这组 artifact 当前会同时包含：
 
@@ -62,12 +63,17 @@ git clone <BMAD-Speckit-SDD-Flow-repo-url> D:\Dev\BMAD-Speckit-SDD-Flow
 
 ```powershell
 cd D:\Dev\your-project
-npm install --save-dev .\bmad-speckit-sdd-flow-<version>.tgz
-npx bmad-speckit version
-npx bmad-speckit check
-npx bmad-speckit-init --agent claude-code
-npx bmad-speckit-init --agent cursor
+npx --yes --package .\bmad-speckit-sdd-flow-<version>.tgz bmad-speckit version
+npx --yes --package .\bmad-speckit-sdd-flow-<version>.tgz bmad-speckit check
+npx --yes --package .\bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --agent claude-code --full --no-package-json
+npx --yes --package .\bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --agent cursor --full --no-package-json
 ```
+
+这条路径是**非侵入式安装**：
+
+- 不会把 `bmad-speckit-sdd-flow` 写入消费项目的 `package.json`
+- 不会重写消费项目的 `package-lock.json`
+- 只会把 BMAD install surface 部署到项目目录（如 `_bmad`、`.claude`、`.cursor`、`_bmad-output`）
 
 这条路径在仓库内有 acceptance 证据：
 
@@ -129,7 +135,7 @@ pwsh scripts/setup.ps1 -Target D:\Dev\your-project -Full
 
 该脚本自动完成：核心目录部署（含运行时治理 hooks、双语 i18n）+ `.cursor/` 同步 + 项目根 `specs/`（空目录）+ **全局 Skills 安装** + **安装验证**。验证本仓库定制能力（运行时治理、双语等）时优先用此方式。
 
-### 2.3 方式三：npm 本地安装
+### 2.3 方式三：npm 本地安装（仅限明确接受依赖持久化）
 
 ```powershell
 cd D:\Dev\your-project
@@ -140,6 +146,14 @@ npm install --save-dev D:\Dev\BMAD-Speckit-SDD-Flow
 # 若要生成 Claude Code 隔离运行时，显式执行
 node D:\Dev\BMAD-Speckit-SDD-Flow\scripts\init-to-root.js D:\Dev\your-project --agent claude-code
 ```
+
+这条路径的本质是“把 BMAD 当成项目本地依赖安装进当前仓库”。因此 npm 的默认行为就是：
+
+- 写入 `package.json`
+- 重写 `package-lock.json`
+- 更新 `node_modules`
+
+对业务应用仓库来说，这属于**侵入式安装**。只有在你明确希望把 BMAD 固定为项目 devDependency 时，才应使用它。
 
 `postinstall` 脚本会**自动完成**：
 
@@ -171,7 +185,7 @@ npx bmad-speckit-init --agent cursor
 - 对于 runtime governance，这一步是最稳妥的“安装后对齐动作”
   - 该流程仍然满足“消费项目根目录不创建治理运行所需 `scripts/`”的约束；真正落地的是 `.claude/hooks/`、`.cursor/hooks/` 和 `_bmad/runtime/hooks/`
 
-对于**没有本仓库源码的另一台机器**，把上面的本地路径替换为发布产物即可：
+对于**没有本仓库源码的另一台机器**，如果你**明确接受**把根包持久化为项目依赖，才使用下面这条：
 
 ```powershell
 cd D:\Dev\your-project
@@ -182,7 +196,7 @@ npx bmad-speckit-init --agent claude-code
 npx bmad-speckit-init --agent cursor
 ```
 
-这条 tgz 安装链属于**已验证路径**；不要把它和“裸 `npx bmad-speckit init` 免安装”混为一谈。
+这条 tgz 安装链属于**已验证路径**，但它是**持久化依赖模式**，不适合作为应用仓库默认方案。不要把它和上面的非侵入式 `npx --package <tgz>` 路径混为一谈。
 
 > **提示**：对于非 Node 项目，可使用 `--no-package-json` 标志跳过 `package.json` 创建：
 >
@@ -439,7 +453,7 @@ $checks = @(
     "_bmad\_config\agent-manifest.csv",
     "_bmad-output\config\settings.json",
     "specs",
-    ".cursor\rules\bmad-bug-auto-party-mode.mdc",
+    ".cursor\rules\bmad-bug-auto-party-mode-rule.mdc",
     ".cursor\commands\bmad-bmm-create-story.md",
     "_bmad\_config\code-reviewer-config.yaml"
 )
@@ -485,11 +499,10 @@ git checkout -b 001-my-first-feature
 - **bmad-bug-assistant**：描述问题时自动进入 Party-Mode，产出 BUGFIX 文档并生成修复任务
 - **bmad-standalone-tasks**：按单份 TASKS/BUGFIX 文档执行，用法示例：`/bmad 按 TASKS_xxx.md 中的未完成任务实施`
 
-**Scoring CLI 子命令**（审计评分、Coach 诊断等）：
+**审计后自动化 / 诊断 CLI**（统一 host、Coach 诊断等）：
 
 ```bash
-npx bmad-speckit score --reportPath <审计报告> --stage <spec|plan|tasks|implement>
-npx bmad-speckit check-score --epic 1 --story 1
+npx ts-node scripts/run-auditor-host.ts --projectRoot <项目根目录> --stage <story|spec|plan|gaps|tasks|implement|bugfix|document> --artifactPath <被审产物> --reportPath <审计报告>
 npx bmad-speckit coach
 npx bmad-speckit dashboard
 npx bmad-speckit sft-extract

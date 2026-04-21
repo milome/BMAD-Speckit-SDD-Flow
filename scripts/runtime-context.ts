@@ -12,8 +12,11 @@ import {
   buildProjectRegistryFromSprintStatus,
   defaultRuntimeContextRegistry,
   readRuntimeContextRegistry,
+  type ReviewerLatestCloseoutRecord,
   writeRuntimeContextRegistry,
 } from './runtime-context-registry';
+import { ensureFacilitatorRuntimeDefinition } from './facilitator-runtime-definition';
+import { ensureReviewerRuntimeDefinition } from './reviewer-runtime-definition';
 
 export const RUNTIME_CONTEXT_VERSION = 1 as const;
 
@@ -51,7 +54,18 @@ export interface RuntimeContextFile {
   contextScope?: 'project' | 'story';
   /** Session-scoped language resolution (Story 15.2 i18n); optional. */
   languagePolicy?: { resolvedMode: 'zh' | 'en' | 'bilingual' };
+  latestReviewerCloseout?: ReviewerLatestCloseoutRecord;
   updatedAt: string;
+}
+
+export type LanguagePolicyContextSyncReason =
+  | 'project_context_missing'
+  | 'project_context_invalid';
+
+export interface LanguagePolicyContextSyncResult {
+  status: 'updated' | 'skipped';
+  reason?: LanguagePolicyContextSyncReason;
+  contextPath: string;
 }
 
 function isRuntimeFlowId(v: string): v is RuntimeFlowId {
@@ -205,6 +219,11 @@ export function readRuntimeContext(root: string, explicitPath?: string): Runtime
       throw new Error(`runtime-context.languagePolicy.resolvedMode invalid: ${file}`);
     }
   }
+  if (o.latestReviewerCloseout !== undefined) {
+    if (!o.latestReviewerCloseout || typeof o.latestReviewerCloseout !== 'object') {
+      throw new Error(`runtime-context.latestReviewerCloseout invalid: ${file}`);
+    }
+  }
   if (typeof o.updatedAt !== 'string' || o.updatedAt.trim() === '') {
     throw new Error(`runtime-context.updatedAt missing: ${file}`);
   }
@@ -244,6 +263,9 @@ export function readRuntimeContext(root: string, explicitPath?: string): Runtime
       out.languagePolicy = { resolvedMode: lp.resolvedMode as 'zh' | 'en' | 'bilingual' };
     }
   }
+  if (o.latestReviewerCloseout && typeof o.latestReviewerCloseout === 'object') {
+    out.latestReviewerCloseout = o.latestReviewerCloseout as ReviewerLatestCloseoutRecord;
+  }
   return out;
 }
 
@@ -257,22 +279,37 @@ export function readRuntimeContext(root: string, explicitPath?: string): Runtime
 export function mergeLanguagePolicyIntoProjectContext(
   root: string,
   languagePolicy: { resolvedMode: 'zh' | 'en' | 'bilingual' }
-): void {
+): LanguagePolicyContextSyncResult {
   const file = projectContextPath(root);
   if (!fs.existsSync(file)) {
-    return;
-  }
-  try {
-    const ctx = readRuntimeContext(root);
-    const next: RuntimeContextFile = {
-      ...ctx,
-      languagePolicy: { resolvedMode: languagePolicy.resolvedMode },
-      updatedAt: new Date().toISOString(),
+    return {
+      status: 'skipped',
+      reason: 'project_context_missing',
+      contextPath: file,
     };
-    writeRuntimeContext(root, next);
-  } catch {
-    /* ignore corrupt or legacy context */
   }
+  let ctx: RuntimeContextFile;
+  try {
+    ctx = readRuntimeContext(root);
+  } catch {
+    return {
+      status: 'skipped',
+      reason: 'project_context_invalid',
+      contextPath: file,
+    };
+  }
+  const next: RuntimeContextFile = {
+    ...ctx,
+    languagePolicy: { resolvedMode: languagePolicy.resolvedMode },
+    updatedAt: new Date().toISOString(),
+  };
+  writeRuntimeContext(root, next);
+  ensureFacilitatorRuntimeDefinition(root);
+  ensureReviewerRuntimeDefinition(root);
+  return {
+    status: 'updated',
+    contextPath: file,
+  };
 }
 
 export function writeRuntimeContext(root: string, payload: RuntimeContextFile): void {
@@ -339,6 +376,8 @@ export function ensureProjectRuntimeContext(
     ...options,
   });
   writeRuntimeContext(root, payload);
+  ensureFacilitatorRuntimeDefinition(root);
+  ensureReviewerRuntimeDefinition(root);
 
   const sprintStatusPath = path.join(
     root,
@@ -378,6 +417,8 @@ export function ensureStoryRuntimeContext(
     ...options,
   });
   writeRuntimeContext(root, payload);
+  ensureFacilitatorRuntimeDefinition(root);
+  ensureReviewerRuntimeDefinition(root);
 
   const registry = readRegistryOrDefault(root);
   const epicId = options.epicId || payload.epicId || 'epic-unknown';
@@ -417,6 +458,8 @@ export function ensureRunRuntimeContext(
     ...options,
   });
   writeRuntimeContext(root, payload);
+  ensureFacilitatorRuntimeDefinition(root);
+  ensureReviewerRuntimeDefinition(root);
 
   const registry = readRegistryOrDefault(root);
   const epicId = options.epicId || payload.epicId || 'epic-unknown';

@@ -10,16 +10,16 @@ Which claims are already backed by real evidence, and which claims are still blo
 
 ## Status Summary
 
-| Area | Claim | Status | Evidence |
-| --- | --- | --- | --- |
-| Governance execution | Real authoritative dispatch path exists | Passed | Batch A tests + consumer validation |
-| Governance execution | Fallback execution works | Passed | Batch B fallback tests |
-| Governance observability | Dashboard / snapshot / MCP show execution state | Passed | Batch C tests |
-| Provider readiness | `provider-smoke` CLI exists and works for stub path | Passed | provider-smoke CLI tests |
-| SFT validation | `sft-validate` emits threshold-level output | Passed | Batch E tests |
-| SFT pilot | Production-like bundle run completed | Passed with findings | Batch F pilot report |
-| Claude host | Real Claude host AI session evidence exists | Passed | prior hook/session validation |
-| Cursor host | Real Cursor host AI session evidence exists | Blocked / unverified | no usable Cursor AI CLI entrypoint in current environment |
+| Area                     | Claim                                               | Status               | Evidence                                                  |
+| ------------------------ | --------------------------------------------------- | -------------------- | --------------------------------------------------------- |
+| Governance execution     | Real authoritative dispatch path exists             | Passed               | Batch A tests + consumer validation                       |
+| Governance execution     | Fallback execution works                            | Passed               | Batch B fallback tests                                    |
+| Governance observability | Dashboard / snapshot / MCP show execution state     | Passed               | Batch C tests                                             |
+| Provider readiness       | `provider-smoke` CLI exists and works for stub path | Passed               | provider-smoke CLI tests                                  |
+| SFT validation           | `sft-validate` emits threshold-level output         | Passed               | Batch E tests                                             |
+| SFT pilot                | Production-like bundle run completed                | Passed with findings | Batch F pilot report                                      |
+| Claude host              | Real Claude host AI session evidence exists         | Passed               | prior hook/session validation                             |
+| Cursor host              | Real Cursor host AI session evidence exists         | Blocked / unverified | no usable Cursor AI CLI entrypoint in current environment |
 
 ## Detailed Rows
 
@@ -97,7 +97,7 @@ Which claims are already backed by real evidence, and which claims are still blo
   - [batch-f-fresh-data](/D:/Dev/BMAD-Speckit-SDD-Flow/outputs/runtime/vibe-sessions/2026-04-09-governance-dashboard-sft-production/batch-f-fresh-data)
   - [2026-04-09-sft-production-pilot-report.md](/D:/Dev/BMAD-Speckit-SDD-Flow/docs/ops/2026-04-09-sft-production-pilot-report.md)
 - Notes:
-  - fresh scoring data written via `parse-and-write-score` with host/provider/tool-trace provenance now passes training-grade validation
+  - the historical fresh-data rerun used the legacy lower-level `parse-and-write-score` path; under the current path, the equivalent post-audit write step is `runAuditorHost` driving the same scoring pipeline
   - this proves the new data generation path is viable even though the old historical repo dataset still fails
 
 ### 6. Real Host Acceptance

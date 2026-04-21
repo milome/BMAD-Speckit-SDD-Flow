@@ -82,6 +82,49 @@ describe('SyncService (Story 12.2 T1)', () => {
     assert.ok(fs.existsSync(path.join(projectRoot, 'CLAUDE.md')), 'CLAUDE.md generated from template');
   });
 
+  it('T1.2c dual-host sync preserves full claude hook set while fixing command refs', () => {
+    const projectRoot = path.join(tmpRoot, 't1_2c');
+    mkdirp(projectRoot);
+    createBmadSource(path.join(projectRoot, '_bmad'));
+    fs.writeFileSync(
+      path.join(projectRoot, '_bmad', 'claude', 'settings.json'),
+      JSON.stringify(
+        {
+          hooks: {
+            PreToolUse: [{ matcher: '*', hooks: [{ type: 'command', command: 'node ./.claude/hooks/pre-continue-check.cjs' }] }],
+            PostToolUse: [{ hooks: [{ type: 'command', command: 'node ./.claude/hooks/post-tool-use.cjs' }] }],
+            Stop: [{ hooks: [{ type: 'command', command: 'node ./.claude/hooks/stop.cjs' }] }],
+            WorktreeCreate: [{ hooks: [{ type: 'command', command: 'node ./.claude/hooks/worktree-create-sibling.cjs' }] }],
+            SubagentStart: [{ hooks: [{ type: 'command', command: 'node ./.claude/hooks/runtime-policy-inject.js --subagent-start' }] }],
+            SubagentStop: [{ hooks: [{ type: 'command', command: 'node ./.claude/hooks/subagent-result-summary.cjs' }] }],
+          },
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+
+    const SyncService = require('../src/services/sync-service');
+    SyncService.syncCommandsRulesConfig(projectRoot, 'claude', {});
+    SyncService.syncCommandsRulesConfig(projectRoot, 'cursor-agent', {});
+
+    const settings = JSON.parse(
+      fs.readFileSync(path.join(projectRoot, '.claude', 'settings.json'), 'utf8')
+    );
+    assert.deepStrictEqual(Object.keys(settings.hooks).sort(), [
+      'PostToolUse',
+      'PreToolUse',
+      'Stop',
+      'SubagentStart',
+      'SubagentStop',
+      'WorktreeCreate',
+    ]);
+    const serialized = JSON.stringify(settings);
+    assert.ok(!serialized.includes('runtime-policy-inject.js --subagent-start'));
+    assert.ok(serialized.includes('runtime-policy-inject.cjs --subagent-start'));
+  });
+
   it('T1.3 sync opencode: .opencode/command from _bmad/commands/', () => {
     const projectRoot = path.join(tmpRoot, 't1_3');
     mkdirp(projectRoot);

@@ -4,6 +4,14 @@ description: Execute the implementation plan by processing and executing all tas
 
 **RALPH-METHOD 与 SPECKIT-WORKFLOW**：本命令执行 implement 时，须与 speckit-workflow SKILL §5.1 及 ralph-method SKILL 的 Mandatory Execution Rules 保持一致。若两者冲突，以 ralph-method 的「执行前创建」「每 US 完成即更新」为准。**TDD 红绿灯**：每个涉及生产代码的任务必须先写/补测试并运行得失败（红灯），再实现（绿灯）；禁止先写生产代码再补测试。progress 必须包含每任务的 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 记录，禁止省略；详见 speckit-workflow §5.1.1。
 
+## Script-Enforced Subset
+
+- `create/prepare tracking files`: 通过 `npx bmad-speckit ralph prepare --tasksPath <path>` 在 implement 启动前自动执行。
+- `record TDD-RED/TDD-GREEN/TDD-REFACTOR phase traces`: 通过 `npx bmad-speckit ralph record-phase --tasksPath <path> --userStoryId <US-ID> --title "<US title>" --phase TDD-RED|TDD-GREEN|TDD-REFACTOR|DONE --detail "<phase detail>"` 逐阶段落盘。
+- `final compliance verification`: 通过 `npx bmad-speckit ralph verify --tasksPath <path>` 收口校验。
+
+除以上脚本硬约束外，TodoWrite 纪律、测试/ lint 命令选择、gap 分类与 journey 收口仍属于 prompt-enforced workflow 责任。
+
 ## User Input
 
 ```text
@@ -126,7 +134,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **Follow TDD approach**: Execute test tasks before their corresponding implementation tasks
    - **File-based coordination**: Tasks affecting the same files must run sequentially
    - **Ledger-driven execution**: Keep `journey-ledger`, `invariant-ledger`, and `trace-map` aligned with task progress; multi-agent work must share the same artifacts through `Shared Journey Ledger Path`, `Shared Invariant Ledger Path`, and `Shared Trace Map Path`, using the same path reference for every agent
-   - **Per-US tracking**：**每个 US 须独立执行 RED→GREEN→REFACTOR**；禁止仅对首个 US 执行 TDD 后对后续 US 跳过红灯直接实现。每完成一个可验收任务（对应 prd 中的一个 US），**必须立即**：
+   - **Per-US tracking**：**每个 US 须独立执行 TDD-RED→TDD-GREEN→TDD-REFACTOR**；禁止仅对首个 US 执行 TDD 后对后续 US 跳过红灯直接实现。每完成一个可验收任务（对应 prd 中的一个 US），**必须立即**：
       1. 更新 prd：将对应 userStory 的 `passes` 设为 `true`；
       2. 更新 progress：必须同时追加以下内容：
         - story log：`[YYYY-MM-DD HH:MM] US-XXX: <title> - PASSED`；
@@ -136,6 +144,11 @@ You **MUST** consider the user input before proceeding (if not empty).
           - `[TDD-REFACTOR] <任务ID> [重构操作描述]`（必填：有重构则写具体操作；无则写「无重构（已符合最佳实践）」）
         - 参考：speckit-workflow SKILL §5.1.1、task-execution-tdd.md；禁止省略 REFACTOR 阶段。
       3. 禁止在全部任务完成后才批量更新 prd/progress。
+      4. 对涉及生产代码的 US，**必须**在每个阶段完成后立即调用脚本 hook 记录：
+        - TDD-RED：`npx bmad-speckit ralph record-phase --tasksPath <path> --userStoryId <US-ID> --title "<US title>" --phase TDD-RED --detail "<failing test command => N failed>"`
+        - TDD-GREEN：`npx bmad-speckit ralph record-phase --tasksPath <path> --userStoryId <US-ID> --title "<US title>" --phase TDD-GREEN --detail "<passing test command => N passed>"`
+        - TDD-REFACTOR：`npx bmad-speckit ralph record-phase --tasksPath <path> --userStoryId <US-ID> --title "<US title>" --phase TDD-REFACTOR --detail "<refactor summary>"`
+        - 文档/配置型 DONE：`npx bmad-speckit ralph record-phase --tasksPath <path> --userStoryId <US-ID> --title "<US title>" --phase DONE --detail "<done summary>"`
    - **Closure discipline**: Every time a `P0 journey` reaches runnable smoke status, write or update its closure note before moving on
    - **Validation checkpoints**: Verify each runnable slice completion before proceeding
    - **Re-readiness trigger**: If a change touches `P0 journey`, completion semantics, dependency semantics, permission boundaries, or smoke/full proof assumptions, stop and trigger `re-readiness` before continuing implementation claims

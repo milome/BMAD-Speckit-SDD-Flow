@@ -154,7 +154,7 @@ export async function processPendingExecutionRecords(
       options.maxDispatchAttempts ?? config.execution?.escalation.afterDispatchFailures ?? 3;
     const hostCandidates = [leased.authoritativeHost, ...leased.fallbackHosts];
     let dispatchAttemptCount = leased.dispatchAttemptCount;
-    let history = [...leased.history];
+    const history = [...leased.history];
     let lastDispatchError: string | null = leased.lastDispatchError ?? null;
     let lastLaunch = leased.lastLaunch ?? null;
     let acceptedRecord: GovernancePacketExecutionRecord | null = null;

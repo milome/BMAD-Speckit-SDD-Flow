@@ -28,6 +28,7 @@ const os = require('node:os');
 const { spawnSync } = require('node:child_process');
 
 const PKG_ROOT = path.resolve(__dirname, '..');
+const ROOT_PACKAGE_JSON = require(path.join(PKG_ROOT, 'package.json'));
 const { syncSpecifyMirror } = require(path.join(
   PKG_ROOT,
   '_bmad',
@@ -36,6 +37,19 @@ const { syncSpecifyMirror } = require(path.join(
   'node',
   'speckit-mirror.js'
 ));
+
+function resolveInstallSurfaceManifestTools() {
+  const candidates = [
+    path.join(PKG_ROOT, 'packages', 'bmad-speckit', 'src', 'services', 'install-surface-manifest.js'),
+    path.join(PKG_ROOT, 'node_modules', 'bmad-speckit', 'src', 'services', 'install-surface-manifest.js'),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return require(candidate);
+    }
+  }
+  return null;
+}
 const args = process.argv.slice(2);
 const fullMode = args.includes('--full');
 const noPackageJson = args.includes('--no-package-json');
@@ -82,11 +96,14 @@ function writeCursorHooksJson(targetDir) {
         { command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host --session-start' },
         { command: 'node .cursor/hooks/runtime-dashboard-session-start.cjs' },
       ],
-      preToolUse: [{ command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host' }],
-      preToolUseCommands: [{ command: 'node .cursor/hooks/pre-continue-check.cjs' }],
+      preToolUse: [
+        { command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host' },
+        { command: 'node .cursor/hooks/pre-continue-check.cjs' },
+      ],
       subagentStart: [
         { command: 'node .cursor/hooks/runtime-policy-inject.cjs --cursor-host --subagent-start' },
       ],
+      subagentStop: [{ command: 'node .cursor/hooks/subagent-result-summary.cjs' }],
       postToolUse: [{ command: 'node .cursor/hooks/post-tool-use.cjs' }],
     },
   };
@@ -119,6 +136,12 @@ const REGISTERED_AGENT_PROFILES = {
       totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'bmm', 'agents'), path.join(targetDir, '.cursor', 'skills'), targetDir);
       totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'core', 'tasks'), path.join(targetDir, '.cursor', 'skills'), targetDir);
       totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'core', 'skills'), path.join(targetDir, '.cursor', 'skills'), targetDir);
+      const cursorSkillOverridesSrc = path.join(bmadRoot, 'cursor', 'skills');
+      if (fs.existsSync(cursorSkillOverridesSrc)) {
+        console.log('Re-apply Cursor skill overrides', path.relative(targetDir, cursorSkillOverridesSrc), '-> .cursor/skills');
+        copyRecursive(cursorSkillOverridesSrc, path.join(targetDir, '.cursor', 'skills'));
+        totalFiles += countFiles(path.join(targetDir, '.cursor', 'skills'));
+      }
       const crSrc = path.join(targetDir, '_bmad', '_config', 'code-reviewer-config.yaml');
       const crDest = path.join(targetDir, '.cursor', 'agents', 'code-reviewer-config.yaml');
       if (fs.existsSync(crSrc)) {
@@ -175,7 +198,9 @@ const REGISTERED_AGENT_PROFILES = {
       if (fs.existsSync(settingsSrc)) {
         fs.mkdirSync(path.dirname(settingsDest), { recursive: true });
         // Merge with global settings.json hooks (preserve user's global hooks like Stop notification)
-        const bmadSettings = JSON.parse(fs.readFileSync(settingsSrc, 'utf8'));
+        const bmadSettings = normalizeClaudeHookCommandRefs(
+          JSON.parse(fs.readFileSync(settingsSrc, 'utf8'))
+        );
         const globalSettingsPath = path.join(os.homedir(), '.claude', 'settings.json');
         let mergedSettings = bmadSettings;
         if (fs.existsSync(globalSettingsPath)) {
@@ -187,7 +212,7 @@ const REGISTERED_AGENT_PROFILES = {
               console.log('Merged global ~/.claude/settings.json hooks into project settings');
             }
           } catch (e) {
-            console.warn('Failed to read global settings, using BMAD defaults:', e.message);
+              console.warn('Failed to read global settings, using BMAD defaults:', e.message);
           }
         }
         fs.writeFileSync(settingsDest, JSON.stringify(mergedSettings, null, 2) + '\n', 'utf8');
@@ -236,6 +261,32 @@ const targetArg = args.find(
 const TARGET = targetArg
   ? path.resolve(targetArg)
   : (process.env.INIT_CWD && path.resolve(process.env.INIT_CWD)) || process.cwd();
+const installSurfaceManifestTools = resolveInstallSurfaceManifestTools();
+const installTracker =
+  installSurfaceManifestTools &&
+  typeof installSurfaceManifestTools.createInstallStateTracker === 'function' &&
+  typeof installSurfaceManifestTools.collectManagedSurfaceSpecs === 'function'
+    ? installSurfaceManifestTools.createInstallStateTracker({
+        projectRoot: TARGET,
+        packageName: ROOT_PACKAGE_JSON.name,
+        packageVersion: ROOT_PACKAGE_JSON.version,
+        installedVia:
+          process.env.npm_lifecycle_event === 'postinstall' || process.env.INIT_CWD
+            ? 'postinstall'
+            : 'bmad-speckit-init',
+        installedTools: [agentTarget],
+      })
+    : null;
+
+if (installTracker) {
+  installTracker.registerProjectSpecs(
+    installSurfaceManifestTools.collectManagedSurfaceSpecs(
+      TARGET,
+      path.join(PKG_ROOT, '_bmad'),
+      [agentTarget]
+    )
+  );
+}
 
 /**
  * Deep merge BMAD settings with global settings, preserving global hooks.
@@ -280,16 +331,41 @@ function deepMergeSettings(bmadSettings, globalSettings) {
   return merged;
 }
 
+function normalizeClaudeHookCommandRefs(settings) {
+  const normalized = JSON.parse(JSON.stringify(settings || {}));
+  if (!normalized.hooks || typeof normalized.hooks !== 'object') {
+    return normalized;
+  }
+  for (const hookEntries of Object.values(normalized.hooks)) {
+    if (!Array.isArray(hookEntries)) continue;
+    for (const entry of hookEntries) {
+      if (!entry || typeof entry !== 'object' || !Array.isArray(entry.hooks)) continue;
+      for (const hook of entry.hooks) {
+        if (!hook || typeof hook !== 'object' || typeof hook.command !== 'string') continue;
+        hook.command = hook.command.replace('runtime-policy-inject.js', 'runtime-policy-inject.cjs');
+      }
+    }
+  }
+  return normalized;
+}
+
 const CORE_DIRS = ['_bmad'];
 const FULL_DIRS = ['_bmad'];
 const DIRS = fullMode ? FULL_DIRS : CORE_DIRS;
+const DEPRECATED_TARGET_FILES = [
+  '_bmad/claude/rules/bmad-bug-auto-party-mode.md',
+  '_bmad/cursor/rules/bmad-bug-auto-party-mode.mdc',
+  '.claude/rules/bmad-bug-auto-party-mode.md',
+  '.cursor/rules/bmad-bug-auto-party-mode.mdc',
+];
+const CRITICAL_RUNTIME_HOOK_FILES = ['party-mode-read-current-session.cjs'];
 
 function sleepMs(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
 function isRetryableCopyError(error) {
-  return error && (error.code === 'EPERM' || error.code === 'EBUSY');
+  return error && (error.code === 'EPERM' || error.code === 'EBUSY' || error.code === 'ENOENT');
 }
 
 function copyFileWithRetry(src, dest, maxAttempts = 20) {
@@ -300,13 +376,45 @@ function copyFileWithRetry(src, dest, maxAttempts = 20) {
       return;
     } catch (error) {
       if (isRetryableCopyError(error) && attempt < maxAttempts - 1) {
-        const delay = Math.min(50 * Math.pow(1.5, attempt), 1000);
+        const delay = Math.min(50 * Math.pow(1.5, attempt), error.code === 'ENOENT' ? 250 : 1000);
         sleepMs(delay);
         continue;
       }
       throw error;
     }
   }
+}
+
+function statPathWithRetry(targetPath, maxAttempts = 20) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      return fs.statSync(targetPath);
+    } catch (error) {
+      if (isRetryableCopyError(error) && attempt < maxAttempts - 1) {
+        const delay = Math.min(50 * Math.pow(1.5, attempt), error.code === 'ENOENT' ? 250 : 1000);
+        sleepMs(delay);
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error(`Unable to stat path after retries: ${targetPath}`);
+}
+
+function readDirWithRetry(targetPath, maxAttempts = 20) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      return fs.readdirSync(targetPath);
+    } catch (error) {
+      if (isRetryableCopyError(error) && attempt < maxAttempts - 1) {
+        const delay = Math.min(50 * Math.pow(1.5, attempt), error.code === 'ENOENT' ? 250 : 1000);
+        sleepMs(delay);
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error(`Unable to read dir after retries: ${targetPath}`);
 }
 
 /**
@@ -353,14 +461,35 @@ function deepMergeSettings(bmadSettings, globalSettings) {
 }
 
 function copyRecursive(src, dest) {
-  const stat = fs.statSync(src);
+  const stat = statPathWithRetry(src);
   if (stat.isDirectory()) {
     if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
-    for (const name of fs.readdirSync(src)) {
+    for (const name of readDirWithRetry(src)) {
       copyRecursive(path.join(src, name), path.join(dest, name));
     }
   } else {
     copyFileWithRetry(src, dest);
+  }
+}
+
+function ensureCriticalRuntimeHookCopies(sourceHooksDir, destHooksDir, logPrefix) {
+  if (!fs.existsSync(sourceHooksDir) || !fs.existsSync(destHooksDir)) return;
+  for (const fileName of CRITICAL_RUNTIME_HOOK_FILES) {
+    const src = path.join(sourceHooksDir, fileName);
+    if (!fs.existsSync(src)) continue;
+    const dest = path.join(destHooksDir, fileName);
+    copyFileWithRetry(src, dest);
+    console.log(`${logPrefix}${fileName}`);
+  }
+}
+
+function removeDeprecatedTargetFiles(targetDir) {
+  for (const relativePath of DEPRECATED_TARGET_FILES) {
+    const fullPath = path.join(targetDir, relativePath);
+    if (fs.existsSync(fullPath)) {
+      fs.rmSync(fullPath, { force: true });
+      console.log('Remove deprecated file', relativePath);
+    }
   }
 }
 
@@ -403,10 +532,12 @@ function syncCursorRuntimePolicyHooks(targetDir, bmadRoot) {
   if (fs.existsSync(sharedDir)) {
     copyRecursive(sharedDir, destDir);
     console.log('Sync', path.relative(targetDir, sharedDir), '->', path.join('.cursor', 'hooks'));
+    ensureCriticalRuntimeHookCopies(sharedDir, destDir, 'Force-sync .cursor/hooks/');
   }
 
   const names = ['emit-runtime-policy-cli.cjs', 'runtime-policy-inject.cjs', 'post-tool-use.cjs', 'runtime-dashboard-session-start.cjs', 'pre-continue-check.cjs'];
-  for (const name of names) {
+  const extendedNames = [...names, 'subagent-result-summary.cjs'];
+  for (const name of extendedNames) {
     const src = path.join(cursorHooksDir, name);
     const runtimeFallback = path.join(bmadRoot, 'runtime', 'hooks', name);
     const source = fs.existsSync(src) ? src : runtimeFallback;
@@ -521,7 +652,14 @@ function writeConsumerBmadSpeckitBinWrappers(targetDir, pkgRoot) {
     return;
   }
 
-  const jsRel = path.join('..', 'bmad-speckit-sdd-flow', 'scripts', 'bmad-speckit-cli.js');
+  const jsRel = path.join(
+    '..',
+    'bmad-speckit-sdd-flow',
+    'node_modules',
+    'bmad-speckit',
+    'bin',
+    'bmad-speckit.js'
+  );
   const cmdBody = [
     '@ECHO off',
     'GOTO start',
@@ -806,14 +944,30 @@ function installConsumerMcpLayout(targetDir, pkgRoot, options = {}) {
     return;
   }
 
-  const result = spawnSync(
-    'powershell.exe',
-    ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-TargetDir', targetDir],
-    {
-      cwd: targetDir,
-      stdio: 'inherit',
+  const shellCandidates =
+    process.platform === 'win32' ? ['powershell.exe', 'pwsh'] : ['pwsh', 'powershell'];
+  let result = null;
+  for (const shell of shellCandidates) {
+    result = spawnSync(
+      shell,
+      ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-TargetDir', targetDir],
+      {
+        cwd: targetDir,
+        stdio: 'inherit',
+      }
+    );
+    if (result.error?.code === 'ENOENT') {
+      result = null;
+      continue;
     }
-  );
+    break;
+  }
+
+  if (result == null) {
+    console.warn('Skip consumer MCP install: PowerShell runtime not found.');
+    return;
+  }
+
   if (result.status !== 0) {
     console.warn('install-consumer-mcp exited', result.status);
   }
@@ -855,8 +1009,17 @@ for (const dir of DIRS) {
     console.warn('Target exists, merging:', dest);
   }
   copyRecursive(src, dest);
+  if (dir === '_bmad') {
+    ensureCriticalRuntimeHookCopies(
+      path.join(src, 'runtime', 'hooks'),
+      path.join(dest, 'runtime', 'hooks'),
+      'Force-sync _bmad/runtime/hooks/'
+    );
+  }
   totalFiles += countFiles(dest);
 }
+
+removeDeprecatedTargetFiles(TARGET);
 
 totalFiles += agentProfile.sync(TARGET, PKG_ROOT);
 
@@ -879,6 +1042,13 @@ const bmadOutputConfig = path.join(bmadOutputDir, 'config');
 if (!fs.existsSync(bmadOutputConfig)) {
   fs.mkdirSync(bmadOutputConfig, { recursive: true });
   console.log('Created _bmad-output/config/ (empty structure for target project)');
+}
+
+if (installTracker) {
+  installTracker.finalize();
+  console.log(
+    'Wrote install surface manifest + install-state snapshot metadata to _bmad-output/config/.'
+  );
 }
 
 // Speckit 规格根目录（与 docs/tutorials/getting-started.md、设计文档 §4.10 一致；具体 epic 由 /speckit.specify 等写入）

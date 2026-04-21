@@ -9,6 +9,11 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { clearPartyModeTurnLock } = require(
+  fs.existsSync(path.join(__dirname, 'party-mode-turn-lock.cjs'))
+    ? './party-mode-turn-lock.cjs'
+    : '../../runtime/hooks/party-mode-turn-lock.cjs'
+);
 
 function governanceLogPath(projectRoot) {
   return path.join(projectRoot, '.claude', 'state', 'runtime', 'governance-hook.log');
@@ -335,6 +340,7 @@ function logRemediationAuditTrace(workerResult) {
  */
 function stop(options = {}) {
   const projectRoot = path.resolve(options.projectRoot || process.cwd());
+  clearPartyModeTurnLock(projectRoot);
   const checkpointDir = path.join(projectRoot, '.claude', 'state', 'runtime', 'checkpoints');
   const checkpointPath = path.join(checkpointDir, 'latest.md');
 

@@ -1,5 +1,8 @@
 # 环境要求
 
+> **Current path**: deployed hook bundles / runtime-emit artifacts / registry-scoped context inputs
+> **Legacy path**: 默认假设每个 consumer 项目都具备根目录 `scripts/*.ts` 与共享根 context
+
 本文档明确 BMAD-Speckit-SDD-Flow 项目的运行环境依赖。
 
 ## 必需/可选组件

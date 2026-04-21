@@ -59,6 +59,34 @@ const messages = {
     executionState: '执行状态',
     executionHost: '执行宿主',
     rerunGateStatus: '重跑门状态',
+    reviewerIdentity: 'Reviewer 身份',
+    reviewerConsumer: 'Active Reviewer',
+    reviewerRoutes: 'Reviewer 路由',
+    closeoutRunner: 'Closeout',
+    latestCloseoutLabel: '最近 Closeout',
+    closeoutApprovedLabel: 'Closeout Approved',
+    closeoutResultCodeLabel: 'Result Code',
+    rerunDecisionLabel: 'Rerun Decision',
+    packetClosureLabel: 'Packet Closure',
+    auditStatusLabel: 'Audit Status',
+    scoreFailureLabel: 'Score Failure',
+    cursorRoute: 'Cursor 路由',
+    claudeRoute: 'Claude 路由',
+    currentCarrier: '当前 Carrier',
+    routeReason: '路由原因',
+    fallbackStatusLabel: 'Fallback 状态',
+    maturityLabel: '同构成熟度',
+    complexityLabel: '复杂度来源',
+    blockerLabel: '剩余阻断',
+    rolloutGateLabel: 'Rollout Gate',
+    readinessScoreLabel: 'Readiness 分数',
+    readinessBaselineLabel: 'Readiness Baseline',
+    effectiveVerdictLabel: '最终结论',
+    driftSeverityLabel: '漂移严重度',
+    reReadinessLabel: '需要 Re-Readiness',
+    driftSignalsLabel: '漂移 Signals',
+    driftedDimensionsLabel: '漂移维度',
+    blockingReasonLabel: '阻断原因',
     duplicateClusters: '重复簇',
     duplicatedSamples: '重复样本',
     assistantOnlyReady: 'Assistant-only 就绪',
@@ -122,6 +150,34 @@ const messages = {
     executionState: 'Execution State',
     executionHost: 'Execution Host',
     rerunGateStatus: 'Rerun Gate',
+    reviewerIdentity: 'Reviewer Identity',
+    reviewerConsumer: 'Active Reviewer',
+    reviewerRoutes: 'Reviewer Routes',
+    closeoutRunner: 'Closeout',
+    latestCloseoutLabel: 'Latest Closeout',
+    closeoutApprovedLabel: 'Closeout Approved',
+    closeoutResultCodeLabel: 'Result Code',
+    rerunDecisionLabel: 'Rerun Decision',
+    packetClosureLabel: 'Packet Closure',
+    auditStatusLabel: 'Audit Status',
+    scoreFailureLabel: 'Score Failure',
+    cursorRoute: 'Cursor Route',
+    claudeRoute: 'Claude Route',
+    currentCarrier: 'Current Carrier',
+    routeReason: 'Route Reason',
+    fallbackStatusLabel: 'Fallback Status',
+    maturityLabel: 'Isomorphism Maturity',
+    complexityLabel: 'Complexity Source',
+    blockerLabel: 'Remaining Blocker',
+    rolloutGateLabel: 'Rollout Gate',
+    readinessScoreLabel: 'Readiness Score',
+    readinessBaselineLabel: 'Readiness Baseline',
+    effectiveVerdictLabel: 'Effective Verdict',
+    driftSeverityLabel: 'Drift Severity',
+    reReadinessLabel: 'Re-Readiness Required',
+    driftSignalsLabel: 'Drift Signals',
+    driftedDimensionsLabel: 'Drifted Dimensions',
+    blockingReasonLabel: 'Blocking Reason',
     duplicateClusters: 'Duplicate Clusters',
     duplicatedSamples: 'Duplicated Samples',
     assistantOnlyReady: 'Assistant-only Ready',
@@ -143,6 +199,7 @@ const stageLabels = {
   plan: { zh: 'Plan', en: 'Plan' },
   tasks: { zh: 'Tasks', en: 'Tasks' },
   implement: { zh: '实现', en: 'Implementation' },
+  implementation_readiness: { zh: '实施就绪度', en: 'Implementation Readiness' },
 };
 
 const statusLabels = {
@@ -188,6 +245,149 @@ function formatSourceScope(scope, msg) {
   if (scope.story_key) parts.push(scope.story_key);
   if (scope.work_item_id) parts.push(scope.work_item_id);
   return parts.join(' · ');
+}
+
+function formatReviewerConsumer(msg, reviewerContract) {
+  const active = reviewerContract?.activeAuditConsumer;
+  if (!active) return msg.unavailable;
+  return `${active.entryStage} → ${active.profile}`;
+}
+
+function formatReviewerRoute(route, msg) {
+  if (!route) return msg.unavailable;
+  return `${route.tool}/${route.subtypeOrExecutor}`;
+}
+
+function formatCurrentReviewerCarrier(msg, execution, reviewerRoutes) {
+  const activeRoutes = reviewerRoutes?.[0] ?? null;
+  const host = execution?.dispatched_host ?? execution?.configured_authoritative_host ?? null;
+  if (!host || !activeRoutes?.hosts?.[host]) return msg.unavailable;
+  const carrier = activeRoutes.hosts[host];
+  return `${host}: ${carrier.carrierSourcePath} → ${carrier.runtimeTargetPath}`;
+}
+
+function ReviewerProjectionCard({ msg, reviewerContract, reviewerRoutes, execution, latestCloseout }) {
+  if (!reviewerContract && (!reviewerRoutes || reviewerRoutes.length === 0)) {
+    return <div className="empty-note">{msg.noData}</div>;
+  }
+
+  const activeRoutes = reviewerRoutes?.[0] ?? null;
+
+  return (
+    <section className="panel-card p-4">
+      <div className="mb-3 text-[15px] font-semibold text-primary">{msg.reviewerRoutes}</div>
+      <div className="grid gap-3 md:grid-cols-2">
+        <div className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-3">
+          <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.reviewerIdentity}</div>
+          <div className="text-[14px] font-semibold text-primary">
+            {formatNullable(msg, reviewerContract?.reviewerIdentity)}
+          </div>
+          <div className="mt-2 text-[12px] leading-5 text-secondary">
+            {msg.closeoutRunner}: {formatNullable(msg, reviewerContract?.closeoutRunner)}
+          </div>
+          <div className="mt-2 text-[12px] leading-5 text-secondary">
+            {msg.reviewerConsumer}: {formatReviewerConsumer(msg, reviewerContract)}
+          </div>
+          <div className="mt-2 text-[12px] leading-5 text-secondary">
+            {msg.currentCarrier}: {formatCurrentReviewerCarrier(msg, execution, reviewerRoutes)}
+          </div>
+        </div>
+        <div className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-3">
+          <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.cursorRoute}</div>
+          <div className="text-[13px] font-semibold text-primary">
+            {formatReviewerRoute(activeRoutes?.hosts?.cursor?.preferredRoute, msg)}
+          </div>
+          <div className="mt-2 text-[12px] leading-5 text-secondary">
+            fallback: {formatReviewerRoute(activeRoutes?.hosts?.cursor?.fallbackRoute, msg)}
+          </div>
+          <div className="mt-3 mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.claudeRoute}</div>
+          <div className="text-[13px] font-semibold text-primary">
+            {formatReviewerRoute(activeRoutes?.hosts?.claude?.preferredRoute, msg)}
+          </div>
+          <div className="mt-2 text-[12px] leading-5 text-secondary">
+            fallback: {formatReviewerRoute(activeRoutes?.hosts?.claude?.fallbackRoute, msg)}
+          </div>
+        </div>
+      </div>
+      <div className="mt-3 grid gap-3 md:grid-cols-2">
+        <div className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-3 text-[12px] leading-5 text-secondary">
+          <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.routeReason}</div>
+          <div>{formatNullable(msg, activeRoutes?.routeReasonSummary)}</div>
+          <div className="mt-2">{msg.fallbackStatusLabel}: {formatNullable(msg, activeRoutes?.fallbackStatus)}</div>
+          <div className="mt-2">{msg.maturityLabel}: {formatNullable(msg, activeRoutes?.isomorphismMaturity)}</div>
+        </div>
+        <div className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-3 text-[12px] leading-5 text-secondary">
+          <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.complexityLabel}</div>
+          <div>{formatNullable(msg, activeRoutes?.complexitySource)}</div>
+          <div className="mt-2">{msg.blockerLabel}: {formatNullable(msg, activeRoutes?.remainingBlocker)}</div>
+          <div className="mt-2">{msg.rolloutGateLabel}: {formatNullable(msg, reviewerContract?.rolloutGate ? `${reviewerContract.rolloutGate.status} -> ${reviewerContract.rolloutGate.summary}` : null)}</div>
+        </div>
+      </div>
+      {latestCloseout ? (
+        <div className="mt-3 rounded-[14px] border border-soft bg-white/[0.025] px-3 py-3 text-[12px] leading-5 text-secondary">
+          <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.latestCloseoutLabel}</div>
+          <div>{msg.auditStatusLabel}: {formatNullable(msg, latestCloseout.audit_status)}</div>
+          <div className="mt-2">{msg.closeoutApprovedLabel}: {latestCloseout.closeout_approved ? 'yes' : 'no'}</div>
+          <div className="mt-2">{msg.closeoutResultCodeLabel}: {formatNullable(msg, latestCloseout.result_code)}</div>
+          <div className="mt-2">{msg.rerunDecisionLabel}: {formatNullable(msg, latestCloseout.rerun_decision)}</div>
+          <div className="mt-2">{msg.packetClosureLabel}: {formatNullable(msg, latestCloseout.packet_execution_closure_status)}</div>
+          <div className="mt-2">{msg.scoreFailureLabel}: {formatNullable(msg, latestCloseout.scoring_failure_mode)}</div>
+          <div className="mt-2">{msg.blockingReasonLabel}: {formatNullable(msg, latestCloseout.blocking_reason)}</div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function ReadinessProjectionCard({ msg, projection }) {
+  if (!projection) {
+    return <div className="empty-note">{msg.noData}</div>;
+  }
+
+  const readinessDimensions = Object.entries(projection.readiness_dimensions ?? {});
+
+  return (
+    <section className="panel-card p-4">
+      <div className="mb-3 text-[15px] font-semibold text-primary">{msg.readinessBaselineLabel}</div>
+      <div className="grid gap-3 md:grid-cols-2">
+        <div className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-3 text-[12px] leading-5 text-secondary">
+          <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.readinessBaselineLabel}</div>
+          <div>{formatNullable(msg, projection.readiness_baseline_run_id)}</div>
+          <div className="mt-2">{msg.readinessScoreLabel}: {formatNullable(msg, projection.readiness_score)}</div>
+          <div className="mt-2">{msg.rawScore}: {formatNullable(msg, projection.readiness_raw_score)}</div>
+          <div className="mt-2">{msg.effectiveVerdictLabel}: {formatNullable(msg, projection.effective_verdict)}</div>
+        </div>
+        <div className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-3 text-[12px] leading-5 text-secondary">
+          <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.driftSeverityLabel}</div>
+          <div>{formatNullable(msg, projection.drift_severity)}</div>
+          <div className="mt-2">{msg.reReadinessLabel}: {projection.re_readiness_required ? 'yes' : 'no'}</div>
+          <div className="mt-2">{msg.blockingReasonLabel}: {formatNullable(msg, projection.blocking_reason)}</div>
+        </div>
+      </div>
+      <div className="mt-3 grid gap-3 md:grid-cols-2">
+        <div className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-3 text-[12px] leading-5 text-secondary">
+          <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.driftSignalsLabel}</div>
+          <div>{projection.drift_signals?.length ? projection.drift_signals.join(', ') : msg.noData}</div>
+        </div>
+        <div className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-3 text-[12px] leading-5 text-secondary">
+          <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{msg.driftedDimensionsLabel}</div>
+          <div>{projection.drifted_dimensions?.length ? projection.drifted_dimensions.join(', ') : msg.noData}</div>
+        </div>
+      </div>
+      <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+        {readinessDimensions.length === 0 ? (
+          <div className="empty-note">{msg.noData}</div>
+        ) : (
+          readinessDimensions.map(([dimension, score]) => (
+            <div key={dimension} className="rounded-[14px] border border-soft bg-white/[0.025] px-3 py-2">
+              <div className="mb-1 text-[11px] uppercase tracking-[0.08em] text-secondary">{dimension}</div>
+              <div className="text-[14px] font-semibold text-primary">{String(score)}</div>
+            </div>
+          ))
+        )}
+      </div>
+    </section>
+  );
 }
 
 function Badge({ label, tone }) {
@@ -329,6 +529,10 @@ function App() {
   const dimensions = Object.entries(snapshot?.score_detail?.records?.[0]?.dimension_scores ?? {});
   const sft = snapshot?.sft_summary ?? {};
   const execution = snapshot?.execution_state ?? {};
+  const reviewerContract = snapshot?.runtime_context?.reviewer_contract ?? null;
+  const reviewerRoutes = execution?.reviewer_route_explainability ?? [];
+  const latestCloseout = snapshot?.runtime_context?.latest_reviewer_closeout ?? null;
+  const readinessProjection = snapshot?.readiness_projection ?? null;
   const timeline = snapshot?.stage_timeline ?? [];
   const isLoading = !snapshot && !error;
 
@@ -486,6 +690,15 @@ function App() {
                     <div className="mt-4">
                       <BundleMetaBlock title={msg.scopedLatestBundle} bundle={sft?.last_bundle} msg={msg} />
                     </div>
+                    <div className="mt-4">
+                      <ReviewerProjectionCard
+                        msg={msg}
+                        reviewerContract={reviewerContract}
+                        reviewerRoutes={reviewerRoutes}
+                        execution={execution}
+                        latestCloseout={latestCloseout}
+                      />
+                    </div>
                   </section>
                 </div>
               </div>
@@ -501,6 +714,14 @@ function App() {
                     <MetricCard label={msg.rerunGateStatus} value={formatNullable(msg, execution?.last_rerun_gate_status)} tone="amber" />
                   </div>
                 </section>
+                <ReviewerProjectionCard
+                  msg={msg}
+                  reviewerContract={reviewerContract}
+                  reviewerRoutes={reviewerRoutes}
+                  execution={execution}
+                  latestCloseout={latestCloseout}
+                />
+                <ReadinessProjectionCard msg={msg} projection={readinessProjection} />
                 {timeline.length === 0 ? <div className="empty-note">{msg.noData}</div> : timeline.map((entry) => (
                   <div key={`${entry.stage}-${entry.timestamp ?? entry.started_at ?? 'na'}`} className={`panel-card p-4 ${entry.stage === activeWorkItem?.current_stage ? 'item-active' : ''}`}>
                     <div className="mb-3 flex items-start justify-between gap-3">
@@ -538,6 +759,7 @@ function App() {
                       ))}
                     </div>
                   </section>
+                  <ReadinessProjectionCard msg={msg} projection={readinessProjection} />
                 </section>
                 <section className="panel-card p-4">
                   <div className="mb-3 text-[15px] font-semibold text-primary">{msg.failureStream}</div>

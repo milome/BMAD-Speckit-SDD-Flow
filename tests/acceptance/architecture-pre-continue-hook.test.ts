@@ -90,7 +90,9 @@ describe('architecture pre-continue gate hook', () => {
     expect(initScript).toContain('pre-continue-check.cjs');
     expect(syncService).toContain('pre-continue-check.cjs');
     expect(claudeSettings).toContain('pre-continue-check.cjs');
-    expect(initScript).toContain('preToolUseCommands');
+    expect(initScript).not.toContain('preToolUseCommands');
+    expect(initScript).toContain('preToolUse');
+    expect(claudeSettings).toContain('runtime-policy-inject.cjs --subagent-start');
     expect(syncService).toContain('deployPreContinueGateConfig');
     expect(initScript).toContain('continue-gate-routing.yaml');
     expect(syncService).toContain('continue-gate-routing.yaml');
@@ -114,7 +116,17 @@ describe('architecture pre-continue gate hook', () => {
 
       expect(existsSync(join(target, '.claude', 'hooks', 'pre-continue-check.cjs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'hooks', 'pre-continue-check.cjs'))).toBe(true);
-      expect(readFileSync(join(target, '.cursor', 'hooks.json'), 'utf8')).toContain('pre-continue-check.cjs');
+      const cursorHooksJson = readFileSync(join(target, '.cursor', 'hooks.json'), 'utf8');
+      const claudeSettingsJson = readFileSync(join(target, '.claude', 'settings.json'), 'utf8');
+      expect(cursorHooksJson).toContain('pre-continue-check.cjs');
+      expect(cursorHooksJson).not.toContain('preToolUseCommands');
+      expect(cursorHooksJson).toContain('subagentStop');
+      expect(existsSync(join(target, '.cursor', 'hooks', 'subagent-result-summary.cjs'))).toBe(true);
+      expect(claudeSettingsJson).toContain('runtime-policy-inject.cjs');
+      expect(claudeSettingsJson).not.toContain('runtime-policy-inject.js');
+      expect(claudeSettingsJson).toContain('WorktreeCreate');
+      expect(claudeSettingsJson).toContain('SubagentStart');
+      expect(claudeSettingsJson).toContain('SubagentStop');
       expect(existsSync(join(target, '_bmad', '_config', 'architecture-gates.yaml'))).toBe(true);
       expect(existsSync(join(target, '_bmad', '_config', 'continue-gate-routing.yaml'))).toBe(true);
     } finally {

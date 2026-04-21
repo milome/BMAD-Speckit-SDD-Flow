@@ -13,6 +13,16 @@ import {
   type ResolveRuntimePolicyInput,
   type RuntimeFlowId,
 } from './runtime-governance';
+export type {
+  BmadHelpRoutingState,
+  ResolveBmadHelpRuntimePolicyInput,
+  ResolveBmadHelpRoutingStateInput,
+  RuntimePolicyWithBmadHelp,
+} from './bmad-help-routing-state';
+export {
+  resolveBmadHelpRoutingState,
+  resolveBmadHelpRuntimePolicy,
+} from './bmad-help-routing-state';
 
 // =============================================================================
 // Runtime Governance delegation (U-1.6)
@@ -20,7 +30,9 @@ import {
 // Shadow **策略 B** — 并行对比仅在 `tests/acceptance/runtime-governance-shadow.test.ts`。
 // =============================================================================
 
-function callResolveRuntimePolicy(input: ResolveRuntimePolicyInput): import('./runtime-governance').RuntimePolicy {
+function callResolveRuntimePolicy(
+  input: ResolveRuntimePolicyInput
+): import('./runtime-governance').RuntimePolicy {
   return resolveRuntimePolicy(input);
 }
 

@@ -15,6 +15,11 @@ function run(cmd: string, cwd: string, env?: NodeJS.ProcessEnv): string {
   return execSync(cmd, { cwd, encoding: 'utf8', env: { ...process.env, ...env } });
 }
 
+function runRepoCli(args: string, cwd: string, env?: NodeJS.ProcessEnv): string {
+  const cli = `"${process.execPath}" "${join(PKG_ROOT, 'scripts', 'bmad-speckit-cli.js')}" ${args}`;
+  return run(cli, cwd, env);
+}
+
 describe('install to consumer → CLI acceptance', () => {
   it('init-to-root deploy → bmad-speckit check passes', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-init-'));
@@ -25,10 +30,19 @@ describe('install to consumer → CLI acceptance', () => {
       expect(existsSync(join(target, 'specs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy.cjs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'i18n'))).toBe(true);
+      expect(existsSync(join(target, '.cursor', 'rules', 'bmad-bug-auto-party-mode-rule.mdc'))).toBe(
+        true
+      );
+      expect(existsSync(join(target, '.cursor', 'rules', 'bmad-bug-auto-party-mode.mdc'))).toBe(
+        false
+      );
       expect(existsSync(join(target, '.mcp.json'))).toBe(false);
       expect(existsSync(join(target, '.runtime-mcp'))).toBe(false);
+      expect(
+        existsSync(join(target, '_bmad-output', 'config', 'bmad-speckit-install-manifest.json'))
+      ).toBe(true);
 
-      const out = run('npx bmad-speckit check', target);
+      const out = runRepoCli('check', target);
       expect(out).toMatch(/Check OK|OK/i);
     } finally {
       rmSync(target, { recursive: true, force: true });
@@ -39,7 +53,7 @@ describe('install to consumer → CLI acceptance', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-ver-'));
     try {
       run(`node scripts/init-to-root.js --full "${target}"`, PKG_ROOT);
-      const out = run('npx bmad-speckit version', target);
+      const out = runRepoCli('version', target);
       expect(out).toMatch(/\d+\.\d+\.\d+/);
     } finally {
       rmSync(target, { recursive: true, force: true });
@@ -61,10 +75,19 @@ describe('install to consumer → CLI acceptance', () => {
       expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy.cjs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'hooks', 'runtime-dashboard-session-start.cjs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'i18n'))).toBe(true);
+      expect(existsSync(join(target, '.cursor', 'rules', 'bmad-bug-auto-party-mode-rule.mdc'))).toBe(
+        true
+      );
+      expect(existsSync(join(target, '.cursor', 'rules', 'bmad-bug-auto-party-mode.mdc'))).toBe(
+        false
+      );
       expect(existsSync(join(target, '.mcp.json'))).toBe(false);
       expect(existsSync(join(target, '.runtime-mcp'))).toBe(false);
       expect(existsSync(join(target, 'scripts', 'emit-runtime-policy.cjs'))).toBe(false);
       expect(existsSync(join(target, 'scripts', 'start-runtime-dashboard-server.cjs'))).toBe(false);
+      expect(
+        existsSync(join(target, '_bmad-output', 'config', 'bmad-speckit-install-manifest.json'))
+      ).toBe(true);
 
       const out = run('npx bmad-speckit check', target);
       expect(out).toMatch(/Check OK|OK/i);
@@ -129,6 +152,7 @@ describe('install to consumer → CLI acceptance', () => {
       run('npx bmad-speckit-init --agent claude-code', target);
 
       expect(existsSync(join(target, '.claude', 'hooks', 'session-start.cjs'))).toBe(true);
+      expect(existsSync(join(target, '.claude', 'hooks', 'party-mode-turn-lock.cjs'))).toBe(true);
       expect(existsSync(join(target, '_bmad', 'runtime', 'hooks', 'runtime-dashboard-auto-start.cjs'))).toBe(true);
 
       const aliases = [
@@ -146,6 +170,78 @@ describe('install to consumer → CLI acceptance', () => {
         expect(existsSync(runtime)).toBe(true);
         expect(readFileSync(runtime, 'utf8')).toBe(readFileSync(canonical, 'utf8'));
       }
+
+      expect(existsSync(join(target, '.claude', 'rules', 'bmad-bug-auto-party-mode-rule.md'))).toBe(
+        true
+      );
+      expect(existsSync(join(target, '.claude', 'rules', 'bmad-bug-auto-party-mode.md'))).toBe(
+        false
+      );
+    } finally {
+      rmSync(target, { recursive: true, force: true });
+    }
+  }, 90_000);
+
+  it('npm install consumer deploys Claude facilitator agent mention contract via installed init entrypoint', () => {
+    const target = mkdtempSync(join(tmpdir(), 'accept-consumer-claude-facilitator-'));
+    try {
+      writeFileSync(
+        join(target, 'package.json'),
+        JSON.stringify({ name: 'consumer-app', version: '1.0.0', private: true }),
+        'utf8'
+      );
+
+      const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
+      run(`npm install --save-dev "file:${pkgPath}"`, target);
+      run('npx bmad-speckit-init --agent claude-code', target);
+
+      const canonical = join(target, '_bmad', 'claude', 'agents', 'party-mode-facilitator.md');
+      const runtime = join(target, '.claude', 'agents', 'party-mode-facilitator.md');
+
+      expect(existsSync(canonical)).toBe(true);
+      expect(existsSync(runtime)).toBe(true);
+      expect(readFileSync(runtime, 'utf8')).toBe(readFileSync(canonical, 'utf8'));
+      expect(readFileSync(runtime, 'utf8')).toContain('name: party-mode-facilitator');
+    } finally {
+      rmSync(target, { recursive: true, force: true });
+    }
+  }, 90_000);
+
+  it('npm install consumer preserves prior managed surface when adding a second agent init pass', () => {
+    const target = mkdtempSync(join(tmpdir(), 'accept-consumer-manifest-merge-'));
+    try {
+      writeFileSync(
+        join(target, 'package.json'),
+        JSON.stringify({ name: 'consumer-app', version: '1.0.0', private: true }),
+        'utf8'
+      );
+
+      const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
+      run(`npm install --save-dev "file:${pkgPath}"`, target);
+
+      const manifestPath = join(
+        target,
+        '_bmad-output',
+        'config',
+        'bmad-speckit-install-manifest.json'
+      );
+      const before = JSON.parse(readFileSync(manifestPath, 'utf8'));
+      expect(before.installed_tools).toContain('cursor');
+      expect(
+        before.managed_surface.some((entry: { path: string }) => entry.path.startsWith('.cursor/'))
+      ).toBe(true);
+
+      run('npx bmad-speckit-init --agent claude-code', target);
+
+      const after = JSON.parse(readFileSync(manifestPath, 'utf8'));
+      expect(after.installed_tools).toContain('cursor');
+      expect(after.installed_tools).toContain('claude-code');
+      expect(
+        after.managed_surface.some((entry: { path: string }) => entry.path.startsWith('.cursor/'))
+      ).toBe(true);
+      expect(
+        after.managed_surface.some((entry: { path: string }) => entry.path.startsWith('.claude/'))
+      ).toBe(true);
     } finally {
       rmSync(target, { recursive: true, force: true });
     }

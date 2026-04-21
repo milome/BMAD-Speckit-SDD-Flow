@@ -24,6 +24,7 @@ Before marking this step complete, you MUST verify:
 - [ ] Report contains "### Smoke E2E Preconditions Traceability" subsection
 - [ ] Report contains "### Cross-Document Traceability" subsection
 - [ ] Report contains "### Four-Signal Contract Verification" subsection
+- [ ] Report contains `## 可解析评分块（供 parseAndWriteScore）`
 - [ ] **Report contains VERIFICATION TOKEN (see below) in final section**
 
 **If ANY of these are missing, the report is INVALID and you must regenerate it.**
@@ -214,6 +215,16 @@ Append to {outputFile}:
 ### Final Note
 
 This assessment identified [X] issues across [Y] categories including four-signal governance contract status. Address the critical issues before proceeding to implementation. These findings can be used to improve the artifacts or you may choose to proceed as-is.
+
+## 可解析评分块（供 parseAndWriteScore）
+
+总体评级: [A|B|C|D]
+
+维度评分:
+- P0 Journey Coverage: XX/100
+- Smoke E2E Readiness: XX/100
+- Evidence Proof Chain: XX/100
+- Cross-Document Traceability: XX/100
 
 <!-- STEP_FILE_VERSION: 2026-04-08-FOUR-SIGNAL-MANDATORY -->
 <!-- VERIFICATION_TOKEN: STEP_06_FOUR_SIGNAL_READ_2026_04_08 -->

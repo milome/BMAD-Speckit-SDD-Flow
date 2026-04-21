@@ -98,22 +98,25 @@ export async function invokeRuntimeMcpTool(
   switch (toolName) {
     case 'get_current_run_summary':
       return buildToolResult(
-        `run=${snapshot.selection.run_id ?? 'N/A'} status=${snapshot.overview.status} stage=${snapshot.runtime_context.current_stage ?? 'N/A'} execution=${snapshot.execution_state.execution_status ?? 'N/A'}`,
+        `run=${snapshot.selection.run_id ?? 'N/A'} status=${snapshot.overview.status} stage=${snapshot.runtime_context.current_stage ?? 'N/A'} execution=${snapshot.execution_state.execution_status ?? 'N/A'} reviewer=${snapshot.runtime_context.reviewer_contract?.reviewerIdentity ?? 'N/A'}`,
         {
           run_id: snapshot.selection.run_id,
           status: snapshot.overview.status,
           current_stage: snapshot.runtime_context.current_stage,
           health_score: snapshot.overview.health_score,
           execution_state: snapshot.execution_state,
+          reviewer_contract: snapshot.runtime_context.reviewer_contract ?? null,
         }
       );
     case 'get_stage_status':
       return buildToolResult(
-        `timeline_entries=${snapshot.stage_timeline.length}`,
+        `timeline_entries=${snapshot.stage_timeline.length} reviewer_route=${snapshot.execution_state.reviewer_route_explainability?.[0]?.activeAuditConsumer?.profile ?? 'N/A'}`,
         {
           current_stage: snapshot.runtime_context.current_stage,
           timeline: snapshot.stage_timeline,
           execution_state: snapshot.execution_state,
+          reviewer_route_explainability:
+            snapshot.execution_state.reviewer_route_explainability ?? null,
         }
       );
     case 'get_score_gate_result':
@@ -162,11 +165,17 @@ export async function invokeRuntimeMcpTool(
         dashboard_url: dashboardUrl,
       });
     case 'get_runtime_service_health':
-      return buildToolResult('shared core healthy', {
+      return buildToolResult(
+        `shared core healthy reviewer=${snapshot.runtime_context.reviewer_contract?.reviewerIdentity ?? 'N/A'}`,
+        {
         mcp: 'up',
         shared_core: 'up',
         dashboard_url: dashboardUrl,
         dashboard_source: options.dashboardSource ?? 'mcp_owned',
+        reviewer_registry_version:
+          snapshot.runtime_context.reviewer_contract?.registryVersion ?? null,
+        reviewer_identity:
+          snapshot.runtime_context.reviewer_contract?.reviewerIdentity ?? null,
       });
     default:
       return buildToolResult(`unknown tool: ${toolName}`, {

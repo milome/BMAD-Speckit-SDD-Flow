@@ -1,4 +1,5 @@
 <!-- BLOCK_LABEL_POLICY=B -->
+
 ---
 name: bmad-code-reviewer-lifecycle
 description: |
@@ -14,8 +15,11 @@ references:
   - audit-prompts: per-stage audit prompts; audit-prompts-prd.md, audit-prompts-arch.md, etc.
   - code-reviewer-config: multi-mode config (prd/arch/code/pr); _bmad/_config/code-reviewer-config.yaml
   - scoring/rules: parsing rules, item_id, veto_items; scoring/rules/*.yaml
-  - parseAndWriteScore (Story 3.3): parse audit report and write scoring storage; scoring/orchestrator/parse-and-write.ts; CLI scripts/parse-and-write-score.ts; acceptance scripts/accept-e3-s3.ts
+  - runAuditorHost / unified auditor host runner: single post-audit entry for score write, auditIndex update, and post-audit automation
 ---
+
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout terminology: in this document, a stage is considered complete only when `runAuditorHost` returns `closeout approved`. An audit report `PASS` only means the host close-out may start; `PASS` alone must not be treated as completion, admission, or release.
 
 # bmad-code-reviewer-lifecycle
 
@@ -47,16 +51,18 @@ See `_bmad/_config/eval-lifecycle-report-paths.yaml` or `_bmad-output/implementa
 
 ## Parse and write (Story 3.3)
 
-This skill calls Story 3.3 `parseAndWriteScore` to close the “audit → parse → write” loop:
+This skill uses `runAuditorHost` to close the “audit → host close-out” loop:
 
 - **Function**: `scoring/orchestrator/parse-and-write.ts`
-- **CLI**: `scripts/parse-and-write-score.ts`, `scripts/accept-e3-s3.ts`
+- **CLI**: `scripts/run-auditor-host.ts`
 - **Acceptance**: `npm run accept:e3-s3`
 
-## parseAndWriteScore prerequisites (checklist)
+## Unified auditor host runner prerequisites (checklist)
 
-After the tasks-stage audit passes and before calling `parseAndWriteScore`, **confirm**:
+After the tasks-stage audit passes and before calling the unified auditor host runner, **confirm**:
 
 1. **Report contains parseable blocks**: The report must end with “总体评级: [A|B|C|D]” and “维度评分: 维度名: XX/100” blocks; otherwise parsing fails and the dashboard shows no rating. See `audit-prompts.md §4.1`, `audit-prompts-critical-auditor-appendix.md §7`.
 2. **Line-by-line format**: If the report uses table + conclusions, append the parseable blocks after the conclusions.
 3. **Paths**: You may pass `--reportPath` for any report path; the convention is `AUDIT_tasks-E{epic}-S{story}.md`; historical filename variants (e.g. a line-by-line audit suffix in the name) still work via `--reportPath`.
+
+

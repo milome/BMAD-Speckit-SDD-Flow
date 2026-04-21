@@ -90,6 +90,36 @@ function tryRenderAuditInjectSnippet(cwd) {
   return r.stdout.trim();
 }
 
+function isPartyModeFacilitatorCall(toolInput) {
+  if (!toolInput || typeof toolInput !== 'object') return false;
+  const joined = [toolInput.subagent_type, toolInput.description, toolInput.prompt]
+    .filter((value) => typeof value === 'string' && value.trim())
+    .join('\n')
+    .toLowerCase();
+  return (
+    joined.includes('party-mode-facilitator') ||
+    joined.includes('party mode session bootstrap') ||
+    (joined.includes('party-mode:') && joined.includes('subagent'))
+  );
+}
+
+function shouldInjectAuditPreview(toolInput) {
+  if (!toolInput || typeof toolInput !== 'object') return false;
+  if (isPartyModeFacilitatorCall(toolInput)) return false;
+  const joined = [toolInput.subagent_type, toolInput.description, toolInput.prompt]
+    .filter((value) => typeof value === 'string' && value.trim())
+    .join('\n')
+    .toLowerCase();
+
+  return (
+    joined.includes('code-reviewer') ||
+    joined.includes('auditor-') ||
+    joined.includes('spec auditor') ||
+    joined.includes('/agents/auditors/') ||
+    joined.includes('\\agents\\auditors\\')
+  );
+}
+
 async function main() {
   const input = await readStdin();
   if (!input || input.tool_name !== 'Agent') {
@@ -108,7 +138,7 @@ async function main() {
   const labels = ps.labels || {};
 
   const cwd = process.cwd();
-  const auditInject = tryRenderAuditInjectSnippet(cwd);
+  const auditInject = shouldInjectAuditPreview(ti) ? tryRenderAuditInjectSnippet(cwd) : '';
 
   const parts = [
     LINE,

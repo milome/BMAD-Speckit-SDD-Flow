@@ -1,6 +1,8 @@
 # 路径占位符约定
 
 > 本项目的路径占位符定义，用于跨平台文档与配置。
+> **Current path**: `_bmad` canonical sources + 宿主部署路径 + scoped runtime outputs
+> **Legacy path**: mixed legacy mirrors and ad hoc root-relative assumptions
 
 ## 三目录技能架构
 

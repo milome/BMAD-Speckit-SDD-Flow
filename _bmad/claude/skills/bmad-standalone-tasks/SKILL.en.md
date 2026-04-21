@@ -11,6 +11,8 @@ description: |
   Use when: the user provides a TASKS/BUGFIX document and asks to execute unfinished items.
 when_to_use: |
   Use when: the user says to implement unfinished items from TASKS_*.md / BUGFIX_*.md or supplies a TASKS/BUGFIX document path to execute.
+
+> **Orphan standalone closeout contract**: when the TASKS / BUGFIX document lives under `_orphan/`, the structured audit report must explicitly provide `stage=standalone_tasks`, `artifactDocPath`, and `reportPath`. `stage=document` is no longer a valid orphan closeout return value. Missing any field, or relying on prose-only `PASS`, must fail closeout conservatively.
 references:
   - auditor-tasks-doc: Pre-implementation TASKS audit executor; `.claude/agents/auditors/auditor-tasks-doc.md`
   - auditor-implement: Post-implementation audit executor; `.claude/agents/auditors/auditor-implement.md`

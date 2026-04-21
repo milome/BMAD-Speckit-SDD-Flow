@@ -23,3 +23,13 @@
 - [ ] 上次 deferred gaps 仍存在，或本次报告已提供明确解决证据
 - [ ] 每个 deferred gap 都有 Owner
 - [ ] 每个 deferred gap 都有 resolution_target
+
+## 可解析评分块（供 parseAndWriteScore）
+
+总体评级: [A|B|C|D]
+
+维度评分:
+- P0 Journey Coverage: [0-100]/100
+- Smoke E2E Readiness: [0-100]/100
+- Evidence Proof Chain: [0-100]/100
+- Cross-Document Traceability: [0-100]/100

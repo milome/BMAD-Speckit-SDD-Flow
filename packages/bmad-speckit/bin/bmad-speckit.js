@@ -36,7 +36,7 @@ if (process.argv.includes('init') && ttyUtils.isTTY()) {
 program
   .name('bmad-speckit')
   .version(pkg.version)
-  .description('BMAD-Speckit: init, check, version, upgrade, config, feedback');
+  .description('BMAD-Speckit: init, check, version, upgrade, uninstall, config, feedback');
 
 program
   .command('init [project-name]')
@@ -101,6 +101,22 @@ program
   );
 
 program
+  .command('uninstall')
+  .description('Safely uninstall managed bmad-speckit install surface from current project')
+  .option('--target <path>', 'Project root to uninstall from', '.')
+  .option('--agent <ids>', 'Optional agent filter (cursor|claude-code|cursor,claude-code)')
+  .option('--remove-global-skills', 'Also remove managed global skill directories')
+  .option('--dry-run', 'Preview uninstall actions without changing files')
+  .action((opts) =>
+    loadCommand('../src/commands/uninstall', 'uninstallCommand')({
+      target: opts.target,
+      agent: opts.agent,
+      removeGlobalSkills: opts.removeGlobalSkills,
+      dryRun: opts.dryRun,
+    })
+  );
+
+program
   .command('add-agent <ai>')
   .description('Add AI agent infrastructure to an initialized project (e.g. bmad-speckit add-agent claude)')
   .action((ai) => loadCommand('../src/commands/add-agent', 'addAgentCommand')(ai, { cwd: process.cwd() }));
@@ -109,6 +125,48 @@ program
   .command('feedback')
   .description('Show feedback entry and full-flow compatible AI list')
   .action(() => loadCommand('../src/commands/feedback', 'feedbackCommand')());
+
+const ralphCmd = program.command('ralph').description('Ralph tracking runtime helpers');
+
+ralphCmd
+  .command('prepare')
+  .description('Create or refresh Ralph tracking files for a tasks.md context')
+  .requiredOption('--tasksPath <path>', 'Path to tasks.md')
+  .option('--mode <mode>', 'Mode (standalone|bmad)', 'standalone')
+  .option('--epic <n>', 'Epic number')
+  .option('--story <n>', 'Story number')
+  .option('--epicSlug <slug>', 'Epic slug')
+  .option('--storySlug <slug>', 'Story slug')
+  .option('--taskDescription <text>', 'Override task description')
+  .option('--overwrite', 'Overwrite existing Ralph files')
+  .action((opts) => loadCommand('../src/commands/ralph', 'ralphPrepareCommand')(opts));
+
+ralphCmd
+  .command('record-phase')
+  .description('Record one Ralph phase transition for a specific user story')
+  .requiredOption('--tasksPath <path>', 'Path to tasks.md')
+  .requiredOption('--userStoryId <id>', 'User story id, e.g. US-001')
+  .requiredOption('--title <text>', 'User story title')
+  .requiredOption('--phase <phase>', 'Phase (TDD-RED|TDD-GREEN|TDD-REFACTOR|DONE)')
+  .requiredOption('--detail <text>', 'Phase detail line')
+  .option('--mode <mode>', 'Mode (standalone|bmad)', 'standalone')
+  .option('--epic <n>', 'Epic number')
+  .option('--story <n>', 'Story number')
+  .option('--epicSlug <slug>', 'Epic slug')
+  .option('--storySlug <slug>', 'Story slug')
+  .option('--storyLogTimestamp <iso>', 'ISO-8601 timestamp used for progress entry')
+  .action((opts) => loadCommand('../src/commands/ralph', 'ralphRecordPhaseCommand')(opts));
+
+ralphCmd
+  .command('verify')
+  .description('Verify Ralph tracking compliance for a tasks.md context')
+  .requiredOption('--tasksPath <path>', 'Path to tasks.md')
+  .option('--mode <mode>', 'Mode (standalone|bmad)', 'standalone')
+  .option('--epic <n>', 'Epic number')
+  .option('--story <n>', 'Story number')
+  .option('--epicSlug <slug>', 'Epic slug')
+  .option('--storySlug <slug>', 'Story slug')
+  .action((opts) => loadCommand('../src/commands/ralph', 'ralphVerifyCommand')(opts));
 
 const configCmd = program
   .command('config')
@@ -352,6 +410,25 @@ program
         '../src/commands/sync-runtime-context-from-sprint',
         'syncRuntimeContextFromSprintCommand'
       )(opts);
+    } catch (err) {
+      console.error(err);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('assert-implementation-entry')
+  .description('Assert the current implementation-entry gate from registry-backed runtime context')
+  .option('--cwd <path>', 'Project root used to resolve runtime context')
+  .action((opts) => {
+    try {
+      const gate = loadCommand(
+        '../src/commands/assert-implementation-entry',
+        'assertImplementationEntryCommand'
+      )(opts);
+      if (gate && gate.decision !== 'pass') {
+        process.exit(2);
+      }
     } catch (err) {
       console.error(err);
       process.exit(1);

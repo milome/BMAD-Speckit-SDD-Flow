@@ -11,6 +11,17 @@
 - **`required=true` blocks progress** — Required workflows must complete before proceeding to later phases
 - **Artifacts reveal completion** — Search resolved output paths for `outputs` patterns, fuzzy-match found files to workflow rows
 
+## STATE-AWARE ROUTING
+
+- **`flow` is the user-visible work-type dimension**
+- **`sourceMode` stays internal** — derive user-visible `contextMaturity` from runtime/artifact evidence
+- **Use explicit evidence before recommendation** — derive `implementationReadinessStatus` before any implementation-first suggestion
+- **Use the unified gate label `implementation-readiness`** when explaining implementation blocking or readiness repair
+- **最多 1 到 2 个关键问题** — ask only when evidence is insufficient
+- **Implementation entry may be `recommended` only when readiness is `ready_clean` or `repair_closed`**
+- **`standalone_tasks + high complexity` must upgrade to a story-oriented path**
+- **Present routes as `recommended` or `blocked`** — when the current flow must be upgraded, surface `rerouteRequired` instead of a soft-allowed implementation label
+
 ## DISPLAY RULES
 
 ## PRESENTATION PRIORITY

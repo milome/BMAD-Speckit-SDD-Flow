@@ -202,6 +202,9 @@ if (-not $SkipSkills) {
             $dest = Join-Path $skillsRoot $skill
             if ($src) {
                 Write-Output "[2] Copy skill: $skill -> $skillsRoot (from $(Split-Path $src -Parent | Split-Path -Leaf))"
+                if (Test-Path $dest) {
+                    Remove-Item -Path $dest -Recurse -Force
+                }
                 Copy-Item -Path $src -Destination $dest -Recurse -Force
                 if (-not (Test-Path (Join-Path $dest 'SKILL.md'))) {
                     Write-Warning "  $skill - SKILL.md not found after copy"
@@ -237,7 +240,7 @@ foreach ($ag in $AgentList) {
     switch ($ag) {
         'cursor' {
             $checks += @(
-                @{ Path = '.cursor/rules/bmad-bug-auto-party-mode.mdc'; Desc = 'Cursor rules' }
+                @{ Path = '.cursor/rules/bmad-bug-auto-party-mode-rule.mdc'; Desc = 'Cursor rules' }
                 @{ Path = '.cursor/commands/speckit.specify.md'; Desc = 'Cursor speckit command' }
                 @{ Path = '.cursor/commands/bmad-bmm-create-story.md'; Desc = 'Cursor BMAD command' }
                 @{ Path = '.cursor/agents/code-reviewer-config.yaml'; Desc = 'Cursor Code Reviewer' }

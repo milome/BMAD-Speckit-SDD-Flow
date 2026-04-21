@@ -24,9 +24,14 @@ describe('runtime-context-registry io', () => {
       const loaded = readRuntimeContextRegistry(root);
       expect(loaded.version).toBe(1);
       expect(loaded.projectRoot).toBe(root);
-      expect(loaded.projectContextPath).toContain(path.join('_bmad-output', 'runtime', 'context', 'project.json'));
+      expect(loaded.projectContextPath).toContain(
+        path.join('_bmad-output', 'runtime', 'context', 'project.json')
+      );
       expect(loaded.sources.storyArtifactsRoot).toBe('_bmad-output/implementation-artifacts');
       expect(loaded.sources.specsRoot).toBe('specs');
+      expect(loaded.auditIndex.bugfix).toEqual({});
+      expect(loaded.auditIndex.standalone_tasks).toEqual({});
+      expect(loaded.latestReviewerCloseout).toBeNull();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

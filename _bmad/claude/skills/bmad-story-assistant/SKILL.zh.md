@@ -5,8 +5,12 @@ description: |
   以 Cursor bmad-story-assistant 为语义基线，完整编排 Story 创建 → 审计 → Dev Story → 实施后审计 → 失败回环，
   并接入仓库内已实现的多 agent、hooks、状态机、handoff、评分写入与 commit gate 机制。
 ---
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
 
 # Claude Adapter: BMAD Story Assistant
+
+> **Party-mode source of truth**：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。所有 party-mode 的 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 只定义 Story 场景何时进入 party-mode，不得维护第二套 gate 语义。
 
 ## Purpose
 
@@ -33,19 +37,23 @@ Claude 版 `bmad-story-assistant` 必须满足：
   - 状态机
   - handoff
   - 审计执行体
-  - parseAndWriteScore
+  - runAuditorHost
   - commit gate
 - 不得将 Cursor Canonical Base、Claude Runtime Adapter、Repo Add-ons 混写为来源不明的重写版 prompt
 
-## Deferred Gaps Dev Story 补充约束
+---
 
-该中文分发副本必须保持与主技能相同的 Deferred Gaps 约束。
+## Party-Mode Agent Mention Contract
 
-- Dev Story 实施前必须读取并验证 `deferred-gap-register.yaml`
-- Dev Story 必须同时读取并验证 `journey-ledger`、`trace-map`、`closure-notes`
-- 若 active deferred gap 缺少 task binding、`Smoke Task Chain`、`Closure Task ID` 或 production path 映射，必须阻断实施
-- 实施后审计必须检查 `closure_evidence`、`carry_forward_evidence`、`Production Path`、`Smoke Proof`、`Acceptance Evidence`
-- `module complete but journey not runnable` 属于硬失败，不得降级为提示
+从本版本开始，Claude 分支中的 party-mode 不再以 `general-purpose` 作为主路径描述。
+
+- **主路径**：`.claude/agents/party-mode-facilitator.md`
+- **唯一调用 contract**：`@"party-mode-facilitator (agent)"`
+- **适用范围**：凡需要多角色辩论、方案收敛、架构/范围取舍、Story 设计分歧澄清的 party-mode 场景
+- **兼容 fallback**：仅当 dedicated facilitator agent 在当前运行时不可用时，才允许退回 `subagent_type: general-purpose` 并内联完整 facilitator contract
+- **非 party-mode 执行体**：`bmad-story-create`、`auditor-*`、`speckit-implement` 等其他执行体仍可继续使用 `general-purpose`
+
+因此，`general-purpose` 在 Claude Story 流程中仍然存在，但**不再是 party-mode 的推荐主路径**。
 
 ---
 
@@ -151,7 +159,7 @@ Claude 版 `bmad-story-assistant` 必须满足：
   - `iteration_count`
   - `next_action`
 - 审计通过后必须触发：
-  - `parse-and-write-score.ts`
+  - `run-auditor-host.ts`
   - 审计通过标记
   - 状态更新
 - 实施完成但 post-audit 未执行时，禁止重新进入开发阶段
@@ -178,7 +186,7 @@ Claude 版 `bmad-story-assistant` 必须满足：
 - strict convergence（如 implement 连续 3 轮无 gap）
 
 ### 评分与存储增强
-- `parse-and-write-score.ts`
+- `run-auditor-host.ts`
 - `iteration_count`
 - `iterationReportPaths`
 - 可解析评分块要求
@@ -420,9 +428,28 @@ subagent_type: general-purpose
 
 主 Agent 使用本 skill 时，必须按以下方式调用执行体：
 
-**重要**：Claude Code CLI 的 `Agent` 工具没有专门的 `subagent_type` 对应 `.claude/agents/*.md` 文件。无论使用内置执行体还是自定义 agent 文件，都使用 `subagent_type: general-purpose`，并通过 `prompt` 参数传入完整的执行指令。
+**重要**：Claude Code CLI 的 party-mode 显式调用示例统一为 `@"party-mode-facilitator (agent)"`。凡 Stage 1 需要 party-mode 辩论时，必须优先以该 agent mention 调用 `.claude/agents/party-mode-facilitator.md`；只有非 specialized 执行体才继续使用 `general-purpose`。
 
-1. **直接执行模式**（推荐）：
+1. **party-mode 辩论模式**（推荐，涉及方案分歧/架构取舍/范围澄清时必须优先走此路径）：
+   主 Agent 直接读取 `.claude/agents/party-mode-facilitator.md` 的完整内容，并以显式 agent mention 调用：
+   ```yaml
+   tool: Agent
+   description: "Run Stage 1 Party-Mode debate"
+   prompt: |
+     @"party-mode-facilitator (agent)"
+
+      ## 用户选择
+      强度: {主 Agent 按用户明确回复填入，例如 50 (decision_root_cause_50)}
+
+     [读取 .claude/agents/party-mode-facilitator.md 的完整内容]
+
+     议题:
+     - Story Create 前的方案辩论 / 范围澄清 / 架构取舍
+     - 当前 Epic/Story 输入与约束
+     - 产出共识纪要，供后续 bmad-story-create 使用
+   ```
+
+2. **直接执行模式**（非 party-mode，或已拿到 facilitator 共识后继续生成 Story 文档）：
    主 Agent 直接读取本 skill 中 Stage 1 的完整 prompt（含上面的 Subtask Template），整段复制并替换占位符后，使用 `Agent` 工具调用执行体：
    ```yaml
    tool: Agent
@@ -432,8 +459,8 @@ subagent_type: general-purpose
      [本 skill Stage 1 的完整内容，含 Cursor Canonical Base + Subtask Template，所有占位符已替换]
    ```
 
-2. **Agent 文件引用模式**：
-   若使用 `.claude/agents/bmad-story-create.md` 作为执行体，必须先将该文件内容完整读入，然后作为 `prompt` 传入。`subagent_type` 仍然是 `general-purpose`：
+3. **Agent 文件引用模式**：
+   若使用 `.claude/agents/bmad-story-create.md` 作为执行体，必须先将该文件内容完整读入，然后作为 `prompt` 传入。此类非 specialized 执行体的 `subagent_type` 仍然是 `general-purpose`：
    ```yaml
    tool: Agent
    subagent_type: general-purpose
@@ -455,6 +482,8 @@ subagent_type: general-purpose
 **重要**：
 - 不得仅传入执行体文件路径让执行体自己去读，必须将完整 prompt 内容传入
 - 执行体本身不加载 skill，所有指令由主 Agent 通过 prompt 参数传递
+- party-mode 辩论主路径必须优先使用 `@"party-mode-facilitator (agent)"`
+- 若用户已明确回复 `20` / `50` / `100`，主 Agent 必须先将该回复自动编译成 `## 用户选择` 确认块，再发起 `@"party-mode-facilitator (agent)"`
 - 执行体返回后，主 Agent 必须校验 handoff 输出，并决定下一步路由
 
 ---
@@ -569,9 +598,9 @@ Claude 端 Stage 2 Story 审计执行体，负责审计 Story 文档并决定是
   4. 是否有技术债或占位性表述
   5. 若 Story 含「由 Story X.Y 负责」，须验证对应 Story 文档存在且 scope/验收标准含该任务具体描述；否则判不通过
 - 报告结尾必须输出：结论（通过/未通过）+ 必达子项 + Story 阶段可解析评分块（总体评级 A/B/C/D + 四维评分：需求完整性 / 可测试性 / 一致性 / 可追溯性）。
-- 审计通过后必做：执行 `npx bmad-speckit score --stage story --event story_status_change --triggerStage bmad_story_stage2 --epic {epic_num} --story {story_num} --iteration-count {累计值}`。
+- 审计通过后必做：统一通过 `runAuditorHost` / 统一 auditor host runner 触发 story 审计后的自动动作；主 Agent 不再手工编排 `bmad-speckit score`。
 - 审计未通过时：审计子代理须在本轮内**直接修改被审 Story 文档**以消除 gap；若建议涉及创建或更新其他 Story，主 Agent 须先执行该建议，再重新审计当前 Story。
-- 阶段二准入检查：主 Agent 在收到阶段二通过结论后、进入阶段三之前，必须先执行 `npx bmad-speckit check-score`；若未写入则补跑 `npx bmad-speckit score`。
+- 阶段二准入检查：主 Agent 在收到阶段二通过结论后、进入阶段三之前，必须确认统一 auditor host runner 已完成 post-audit automation；若未完成，则先补跑 runner，而不是手工补 score CLI。
 
 #### Stage 2 调用前 CLI 输出要求
 
@@ -609,8 +638,8 @@ subagent_type: general-purpose
   └─ Repo Add-ons
       ├─ 禁止词检查
       ├─ 批判审计员结论（>50%字数）
-      ├─ parseAndWriteScore 触发
-      └─ bmad-speckit check-score 准入检查
+      ├─ runAuditorHost 触发
+      └─ 统一 auditor host runner 完成态检查
 
 预期产物:
   • 审计报告: _bmad-output/.../AUDIT_story-{epic_num}-{story_num}.md
@@ -825,6 +854,8 @@ prompt: |
   **Cursor Canonical Base - Dev Story 要求**：
   1. 前置检查：Story 审计必须已 PASS
   2. 读取 tasks.md、plan.md、IMPLEMENTATION_GAPS.md
+  2.1 读取并验证 `deferred-gap-register.yaml`
+  2.2 读取并验证 `journey-ledger`、`trace-map`、`closure-notes`
   3. 验证 ralph-method 文件存在（prd.json + progress.txt）
   4. 逐任务执行 TDD 红绿灯循环：
      - [TDD-RED] 编写失败的测试
@@ -832,6 +863,8 @@ prompt: |
      - [TDD-REFACTOR] 重构代码
   5. 实时更新 ralph-method 追踪文件
   6. 执行 batch 间审计和最终审计
+  6.1 若存在 active deferred gap 但无 task binding、Smoke Task Chain、Closure Task ID 或 production path 映射，不得继续实施
+  6.2 若 Journey runnable 状态发生变化，必须同步更新 `deferred-gap-register`、`journey-ledger`、`trace-map`、`closure-notes`
   7. 完成后必须发起 STORY-A4-POSTAUDIT
 
   **强制约束**：
@@ -842,7 +875,7 @@ prompt: |
 
   **Repo Add-ons**：
   - 更新 `.claude/state/stories/{epic}-{story}-progress.yaml` 为 `implement_in_progress` / `implement_passed`
-  - 执行 `parse-and-write-score.ts` 记录进度
+  - 执行 `run-auditor-host.ts` 记录进度
   - handoff 到 Stage 4 Post Audit
 ```
 
@@ -930,6 +963,7 @@ prompt: |
 - 每个 User Story 完成后更新 prd.json passes 状态
 - 必须记录 TDD 循环到 progress.txt
 - 实施后必须触发 Stage 4 Post Audit
+- 不得只勾选 tasks 复选框而不更新 `deferred-gap-register`、`journey-ledger`、`trace-map`、`closure-notes`
 
 #### Repo Add-ons
 
@@ -1070,7 +1104,10 @@ Claude 端 Stage 4 Post Audit 执行体，负责对 Dev Story 实施结果进行
 - 使用 **code 模式维度**（功能性、代码质量、测试覆盖、安全性）
 - 必须验证 TDD 红绿灯执行证据
 - 必须检查 ralph-method 追踪文件
-- 审计通过后必须触发 `parse-and-write-score`
+- 审计通过后必须触发 `runAuditorHost`
+- 必须额外检查 `deferred-gap-register` 的 closure / carry-forward evidence
+- 必须额外检查 `Production Path`、`Smoke Proof`、`Full E2E` / defer reason、`Closure Note`、`Acceptance Evidence`
+- 若出现 `module complete but journey not runnable`，必须判失败并回退到 Stage 3 修复
 
 #### Subtask Template (STORY-A4-POSTAUDIT)
 
@@ -1112,7 +1149,7 @@ prompt: |
   **Repo Add-ons**：
   - 禁止词检查
   - 批判审计员结论
-  - parseAndWriteScore 触发
+  - runAuditorHost 触发
   - commit gate 前置条件检查
 ```
 
@@ -1161,7 +1198,7 @@ strict convergence 检查:
   └─ Repo Add-ons
       ├─ 禁止词检查（含代码注释）
       ├─ 批判审计员结论（>50%字数）
-      ├─ parseAndWriteScore 触发
+      ├─ runAuditorHost 触发
       └─ strict 模式 3 轮收敛
 
 预期产物:
@@ -1204,7 +1241,7 @@ prompt: |
 
 **Runtime Contracts**
 - 审计报告路径：`_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT_Story_{epic}-{story}_stage4.md`
-- 审计通过后必须执行 `parse-and-write-score.ts`
+- 审计通过后必须执行 `run-auditor-host.ts`
 - 审计通过后更新 story state 为 `implement_passed`
 - 审计失败后更新 story state 为 `implement_failed`，回退到 Stage 3 修复
 
@@ -1212,7 +1249,7 @@ prompt: |
 
 - strict convergence（连续 3 轮无 gap）
 - 批判审计员结论
-- parseAndWriteScore 触发
+- runAuditorHost 触发
 - commit gate 前置条件检查
 - 本仓禁止词检查
 
@@ -1476,7 +1513,7 @@ function detectStoryType(tasksPath: string, specPath?: string): 'code' | 'docume
 - 使用 **code 模式维度**（功能性、代码质量、测试覆盖、安全性）
 - 必须验证 TDD 红绿灯执行证据
 - 必须检查 ralph-method 追踪文件
-- 审计通过后必须触发 `parse-and-write-score`
+- 审计通过后必须触发 `runAuditorHost`
 
 **Document Mode（文档审计模式）**：
 
@@ -1486,7 +1523,7 @@ function detectStoryType(tasksPath: string, specPath?: string): 'code' | 'docume
 - 无需检查 TDD 证据（无代码）
 - 无需检查 ralph-method 文件（无代码）
 - 必须验证 tasks.md 中所有任务已标记完成
-- 审计通过后必须触发 `parse-and-write-score`
+- 审计通过后必须触发 `runAuditorHost`
 
 #### Code vs Document 审计对比
 
@@ -1543,7 +1580,7 @@ prompt: |
   **Repo Add-ons**：
   - 禁止词检查（Story 文档全文）
   - 批判审计员结论（>50%字数）
-  - parseAndWriteScore 触发
+  - runAuditorHost 触发
   - commit gate 前置条件检查
 ```
 
@@ -1694,13 +1731,13 @@ Document Mode:
 
 Code Mode:
 - 审计报告路径：`_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT_Story_{epic}-{story}_stage4.md`
-- 审计通过后必须执行 `parse-and-write-score.ts`
+- 审计通过后必须执行 `run-auditor-host.ts`
 - 审计通过后更新 story state 为 `implement_passed`
 - 审计失败后更新 story state 为 `implement_failed`，回退到 Stage 3 修复
 
 Document Mode:
 - 审计报告路径：`_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT-POST-{epic}-{story}.md`
-- 审计通过后必须执行 `parse-and-write-score.ts`
+- 审计通过后必须执行 `run-auditor-host.ts`
 - 审计通过后更新 story state 为 `implement_passed`（文档型 Story 视为已实现）
 - 审计失败后更新 story state 为 `implement_failed`，返回修复文档
 
@@ -1711,7 +1748,7 @@ Document Mode:
 Code Mode:
 - strict convergence（连续 3 轮无 gap）
 - 批判审计员结论
-- parseAndWriteScore 触发
+- runAuditorHost 触发
 - commit gate 前置条件检查
 - 本仓禁止词检查（含代码注释）
 - TDD 红绿灯审查
@@ -1720,7 +1757,7 @@ Code Mode:
 Document Mode:
 - strict convergence（连续 3 轮无 gap）
 - 批判审计员结论（≥50%字数）
-- parseAndWriteScore 触发
+- runAuditorHost 触发
 - commit gate 前置条件检查
 - 本仓禁止词检查（Story 文档全文）
 - 文档结构完整性检查
@@ -2104,3 +2141,4 @@ Claude 版 skill 落地后，至少应满足以下验证：
 > Claude 版 `bmad-story-assistant` 不是 Cursor skill 的直接复制品，而是一个以 Cursor 为语义基线、以 Claude/OMC 为执行适配层、以本仓规则为增强层的统一编排入口 skill。
 
 <!-- ADAPTATION_COMPLETE: 2026-03-15 -->
+

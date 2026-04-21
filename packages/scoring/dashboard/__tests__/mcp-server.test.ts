@@ -30,6 +30,30 @@ describe('runtime dashboard MCP server', () => {
         flow: 'story',
         scope: null,
         last_event_at: '2026-03-28T00:05:00.000Z',
+        reviewer_contract: {
+          version: 'reviewer_contract_projection_v1',
+          reviewerIdentity: 'bmad_code_reviewer',
+          reviewerDisplayName: 'code-reviewer',
+          facilitatorIdentity: 'party_mode_facilitator',
+          registryVersion: 'reviewer_registry_v1',
+          schemaVersions: {
+            input: 'review_input_v1',
+            output: 'review_output_v1',
+            handoff: 'review_handoff_v1',
+            closeout: 'review_host_closeout_v1',
+          },
+          closeoutRunner: 'runAuditorHost',
+          supportedProfiles: ['story_audit', 'implement_audit'],
+          supportedAuditEntryStages: ['story', 'implement'],
+          activeAuditConsumer: {
+            entryStage: 'implement',
+            profile: 'implement_audit',
+            closeoutStage: 'implement',
+            auditorScript: 'auditor-implement',
+            scoreStage: 'implement',
+            triggerStage: 'speckit_5_2',
+          },
+        },
       },
       stage_timeline: [],
       score_detail: {
@@ -109,6 +133,48 @@ describe('runtime dashboard MCP server', () => {
           },
         },
       },
+      execution_state: {
+        source: 'execution_record',
+        selection_match: 'work_item',
+        execution_id: 'exec-001',
+        execution_status: 'running',
+        configured_authoritative_host: 'cursor',
+        dispatched_host: 'claude',
+        fallback_used: true,
+        last_rerun_gate_status: 'fail',
+        artifact_path: 'artifacts/attempt.md',
+        packet_paths: {},
+        last_dispatch_error: null,
+        reviewer_route_explainability: [
+          {
+            requestedSkillId: 'code-reviewer',
+            matchedSkillId: 'code-reviewer',
+            reviewerIdentity: 'bmad_code_reviewer',
+            reviewerDisplayName: 'code-reviewer',
+            registryVersion: 'reviewer_registry_v1',
+            closeoutRunner: 'runAuditorHost',
+            supportedProfiles: ['story_audit', 'implement_audit'],
+            hosts: {
+              cursor: {
+                preferredRoute: { tool: 'cursor-task', subtypeOrExecutor: 'code-reviewer' },
+                fallbackRoute: { tool: 'mcp_task', subtypeOrExecutor: 'generalPurpose' },
+              },
+              claude: {
+                preferredRoute: { tool: 'Agent', subtypeOrExecutor: 'code-reviewer' },
+                fallbackRoute: { tool: 'Agent', subtypeOrExecutor: 'general-purpose' },
+              },
+            },
+            activeAuditConsumer: {
+              entryStage: 'implement',
+              profile: 'implement_audit',
+              closeoutStage: 'implement',
+              auditorScript: 'auditor-implement',
+              scoreStage: 'implement',
+              triggerStage: 'speckit_5_2',
+            },
+          },
+        ],
+      },
       workboard: {
         active_board_group_id: null,
         active_work_item_id: null,
@@ -117,6 +183,24 @@ describe('runtime dashboard MCP server', () => {
       },
     });
 
+    const summary = await invokeRuntimeMcpTool(
+      'get_current_run_summary',
+      undefined,
+      'http://127.0.0.1:43123',
+      {}
+    );
+    const stageStatus = await invokeRuntimeMcpTool(
+      'get_stage_status',
+      undefined,
+      'http://127.0.0.1:43123',
+      {}
+    );
+    const health = await invokeRuntimeMcpTool(
+      'get_runtime_service_health',
+      undefined,
+      'http://127.0.0.1:43123',
+      {}
+    );
     const preview = await invokeRuntimeMcpTool('preview_sft', undefined, 'http://127.0.0.1:43123', {});
     const exportResult = await invokeRuntimeMcpTool(
       'export_sft',
@@ -125,6 +209,26 @@ describe('runtime dashboard MCP server', () => {
       {}
     );
 
+    expect(summary.structuredContent).toMatchObject({
+      reviewer_contract: expect.objectContaining({
+        reviewerIdentity: 'bmad_code_reviewer',
+        activeAuditConsumer: expect.objectContaining({
+          entryStage: 'implement',
+        }),
+      }),
+    });
+    expect(stageStatus.structuredContent).toMatchObject({
+      reviewer_route_explainability: expect.arrayContaining([
+        expect.objectContaining({
+          reviewerIdentity: 'bmad_code_reviewer',
+          closeoutRunner: 'runAuditorHost',
+        }),
+      ]),
+    });
+    expect(health.structuredContent).toMatchObject({
+      reviewer_registry_version: 'reviewer_registry_v1',
+      reviewer_identity: 'bmad_code_reviewer',
+    });
     expect(preview.structuredContent).toMatchObject({
       training_ready_candidates: 2,
       redaction_status_counts: {

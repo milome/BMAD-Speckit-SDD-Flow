@@ -3,13 +3,13 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 describe('runtime english milestone artifact references', () => {
-  it('keeps milestone tests discoverable from the implementation plan', () => {
+  it('keeps milestone contracts discoverable from tracked runtime governance references', () => {
     const root = process.cwd();
-    const implPlan = readFileSync(
-      path.join(root, 'docs', 'plans', '2026-03-22-runtime-governance-runtime-context-重构实施计划文档.md'),
+    const hooksReference = readFileSync(
+      path.join(root, 'docs', 'reference', 'cursor-runtime-governance-hooks.md'),
       'utf8'
     );
-    expect(implPlan).toContain('runtime-context-full-chain-milestone.test.ts');
-    expect(implPlan).toContain('runtime-language-english-chain-milestone.test.ts');
+    expect(hooksReference).toContain('Cursor native hooks 配置入口');
+    expect(hooksReference).toContain('story-scoped runtime context');
   });
 });

@@ -1,5 +1,5 @@
 /**
- * CLI: stdout = stable JSON policy from `resolveRuntimePolicy` (single evaluation source).
+ * CLI: stdout = stable JSON policy from the governance base policy plus the bmad-help routing facade.
  *
  * **唯一真相源**：`_bmad-output/runtime/registry.json` + activeScope 解析出的 scoped context JSON
  * （如 `project.json`）。不通过环境变量注入 flow/stage 或覆盖 registry 解析结果；不提供 CLI 参数覆盖 flow/stage（仅 `--cwd`）。
@@ -11,14 +11,13 @@
 /* eslint-disable no-console */
 
 import * as path from 'node:path';
-import {
-  resolveRuntimePolicy,
-  type ResolveRuntimePolicyInput,
-  type RuntimeFlowId,
-} from './runtime-governance';
+import type { ResolveRuntimePolicyInput, RuntimeFlowId } from './runtime-governance';
+import { resolveBmadHelpRuntimePolicy } from './bmad-config';
 import type { StageName } from './bmad-config';
 import { readRuntimeContext } from './runtime-context';
 import {
+  buildImplementationEntryIndexKey,
+  recordImplementationEntryGate,
   readRuntimeContextRegistry,
   resolveActiveScope,
   resolveContextPathFromActiveScope,
@@ -40,6 +39,8 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
  * Load flow/stage/identity **only** from registry-backed runtime context.
  * @param {string} root - Project root
  * @returns {{
+ *   resolvedContextPath: string;
+ *   runtimeContext: import('./runtime-context').RuntimeContextFile;
  *   flow: string;
  *   stage: string;
  *   templateId?: string;
@@ -51,6 +52,8 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
  * }} Registry-backed runtime policy context
  */
 export function loadPolicyContextFromRegistry(root: string): {
+  resolvedContextPath: string;
+  runtimeContext: ReturnType<typeof readRuntimeContext>;
   flow: string;
   stage: string;
   templateId?: string;
@@ -63,16 +66,18 @@ export function loadPolicyContextFromRegistry(root: string): {
   const registry = readRuntimeContextRegistry(root);
   const scope = resolveActiveScope(registry, registry.activeScope);
   const resolvedContextPath = resolveContextPathFromActiveScope(registry, scope);
-  const ctx = readRuntimeContext(root, resolvedContextPath);
+  const runtimeContext = readRuntimeContext(root, resolvedContextPath);
   return {
-    flow: ctx.flow,
-    stage: ctx.stage,
-    templateId: ctx.templateId,
-    epicId: ctx.epicId,
-    storyId: ctx.storyId,
-    storySlug: ctx.storySlug,
-    runId: ctx.runId,
-    artifactRoot: ctx.artifactRoot,
+    resolvedContextPath,
+    runtimeContext,
+    flow: runtimeContext.flow,
+    stage: runtimeContext.stage,
+    templateId: runtimeContext.templateId,
+    epicId: runtimeContext.epicId,
+    storyId: runtimeContext.storyId,
+    storySlug: runtimeContext.storySlug,
+    runId: runtimeContext.runId,
+    artifactRoot: runtimeContext.artifactRoot,
   };
 }
 
@@ -138,7 +143,36 @@ export function mainEmitRuntimePolicy(argv: string[]): number {
       input.templateId = templateId;
     }
 
-    const policy = resolveRuntimePolicy(input);
+    const policy = resolveBmadHelpRuntimePolicy({
+      ...input,
+      projectRoot: root,
+      runtimeContext: loaded.runtimeContext,
+      runtimeContextPath: loaded.resolvedContextPath,
+    });
+
+    if (
+      loaded.runtimeContext.flow === 'story' ||
+      loaded.runtimeContext.flow === 'bugfix' ||
+      loaded.runtimeContext.flow === 'standalone_tasks'
+    ) {
+      try {
+        const key = buildImplementationEntryIndexKey({
+          flow: loaded.runtimeContext.flow,
+          runId: loaded.runtimeContext.runId,
+          artifactRoot: loaded.runtimeContext.artifactRoot,
+          artifactDocPath: loaded.runtimeContext.artifactPath,
+          storyId: loaded.runtimeContext.storyId,
+        });
+        recordImplementationEntryGate(root, {
+          flow: loaded.runtimeContext.flow,
+          key,
+          gate: policy.implementationEntryGate,
+        });
+      } catch {
+        // Some non-implementation story contexts intentionally lack a stable implementation-entry key.
+      }
+    }
+
     process.stdout.write(stableStringifyPolicy(policy));
     return 0;
   } finally {

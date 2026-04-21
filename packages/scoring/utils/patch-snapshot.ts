@@ -44,13 +44,27 @@ export function persistPatchSnapshot(input: {
   }
 
   let diff = '';
-  try {
-    diff = execSync(`git diff ${input.baseCommitHash} ${headHash}`, {
-      cwd,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-  } catch {
+  const diffCommands = [
+    `git diff ${input.baseCommitHash} ${headHash}`,
+    `git show --format= --patch ${headHash}`,
+    `git show -m --format= --patch ${headHash}`,
+    `git diff-tree --no-commit-id --patch -m -r ${headHash}`,
+  ];
+  for (const command of diffCommands) {
+    try {
+      diff = execSync(command, {
+        cwd,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+    } catch {
+      diff = '';
+    }
+    if (diff.trim() !== '') {
+      break;
+    }
+  }
+  if (diff.trim() === '') {
     return null;
   }
 

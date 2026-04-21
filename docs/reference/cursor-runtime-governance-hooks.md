@@ -1,5 +1,8 @@
 # Cursor Runtime Governance Hooks Reference
 
+> **Current path**: `shared hook core + Cursor adapter + registry/activeScope`；post-audit automation 由 `runAuditorHost` 承接
+> **Legacy path**: Cursor 侧各自猜状态，或把 post-audit 收口混进宿主 hooks 逻辑
+
 ## 1. 目的
 
 本文档定义 Runtime Governance 在 **Cursor 宿主**上的正式 hooks 参考协议。
@@ -53,6 +56,11 @@ Runtime Governance 在 Cursor 宿主上的正式路径定义如下：
 
 third-party hooks 与手工 UI 注册都不是主推荐方案。
 
+补充边界：
+
+- Cursor hooks 负责 **执行前/执行中** 的治理注入与门控
+- 审计通过后的 scoring 写入、auditIndex 更新与其它 post-audit automation **不** 由 hooks 自己串联，统一由 `runAuditorHost` 承接
+
 ---
 
 ## 3. Cursor 宿主交付物
@@ -74,13 +82,13 @@ third-party hooks 与手工 UI 注册都不是主推荐方案。
 
 ### 3.2 这些文件的职责
 
-| 文件 | 职责 |
-|------|------|
-| `.cursor/hooks.json` | Cursor native hooks 配置入口；负责把事件挂到本地命令 |
-| `.cursor/hooks/emit-runtime-policy-cli.js` | 轻量 CLI 包装器；调用 `emit-runtime-policy` 并输出稳定 JSON |
-| `.cursor/hooks/runtime-policy-inject.js` | Cursor hook command 主入口；读取 hook stdin，调用 emit，并输出 Cursor-native envelope |
-| `.cursor/hooks/emit-runtime-policy.cjs` | hooks 可直接调用的运行时构建产物 |
-| `.cursor/hooks/write-runtime-context.js` | 写 runtime context 文件；供 init / 编排 / 调试使用 |
+| 文件                                       | 职责                                                                                  |
+| ------------------------------------------ | ------------------------------------------------------------------------------------- |
+| `.cursor/hooks.json`                       | Cursor native hooks 配置入口；负责把事件挂到本地命令                                  |
+| `.cursor/hooks/emit-runtime-policy-cli.js` | 轻量 CLI 包装器；调用 `emit-runtime-policy` 并输出稳定 JSON                           |
+| `.cursor/hooks/runtime-policy-inject.js`   | Cursor hook command 主入口；读取 hook stdin，调用 emit，并输出 Cursor-native envelope |
+| `.cursor/hooks/emit-runtime-policy.cjs`    | hooks 可直接调用的运行时构建产物                                                      |
+| `.cursor/hooks/write-runtime-context.js`   | 写 runtime context 文件；供 init / 编排 / 调试使用                                    |
 
 ### 3.3 缺失判定
 
@@ -112,12 +120,14 @@ Cursor 与 Claude 必须共用同一个治理内核：
 - `_bmad/cursor/hooks/`：Cursor adapter
 
 shared 层当前已承载：
+
 - `runtime-policy-inject-core.js`
 - `run-emit-runtime-policy.js`
 - `should-skip-runtime-policy.js`
 - `build-runtime-error-message.js`
 
 部署规则：
+
 - `.claude/hooks/` ← shared + Claude adapter
 - `.cursor/hooks/` ← shared + Cursor adapter（缺失时才 fallback Claude adapter）
 
@@ -157,12 +167,12 @@ Runtime Governance 的 Cursor native hooks 最低必须覆盖：
 
 ### 5.2 事件职责分工
 
-| 事件 | 职责 |
-|------|------|
-| `sessionStart` | 会话级基础 policy 注入；适合使用 `additional_context` |
-| `preToolUse` | 工具调用前门控、参数改写、校验；不是首选主注入通道 |
-| `subagentStart` | 子代理启动前补注入；确保 subagent 也收到治理上下文 |
-| `postToolUse` | 可选补充注入通道；适合在工具结果后追加上下文 |
+| 事件            | 职责                                                  |
+| --------------- | ----------------------------------------------------- |
+| `sessionStart`  | 会话级基础 policy 注入；适合使用 `additional_context` |
+| `preToolUse`    | 工具调用前门控、参数改写、校验；不是首选主注入通道    |
+| `subagentStart` | 子代理启动前补注入；确保 subagent 也收到治理上下文    |
+| `postToolUse`   | 可选补充注入通道；适合在工具结果后追加上下文          |
 
 ### 5.3 推荐优先级
 
@@ -363,12 +373,12 @@ Cursor host 下必须输出 **Cursor-native hook JSON**。
 
 根据事件不同，允许的目标字段不同：
 
-| 事件 | 允许/推荐输出 |
-|------|---------------|
-| `sessionStart` | `additional_context` |
-| `preToolUse` | `permission`、`updated_input`、`agent_message` |
+| 事件            | 允许/推荐输出                                      |
+| --------------- | -------------------------------------------------- |
+| `sessionStart`  | `additional_context`                               |
+| `preToolUse`    | `permission`、`updated_input`、`agent_message`     |
 | `subagentStart` | `permission`、`user_message`、子代理上下文相关字段 |
-| `postToolUse` | `additional_context` |
+| `postToolUse`   | `additional_context`                               |
 
 ### 8.3 Runtime Governance 推荐语义
 
@@ -461,12 +471,12 @@ Runtime Governance 默认策略应为：
 
 但具体到事件层，可按如下规则固定：
 
-| 事件 | 建议策略 |
-|------|----------|
-| `sessionStart` | `failClosed: true` |
-| `preToolUse` | `failClosed: true` |
-| `subagentStart` | `failClosed: true` |
-| `postToolUse` | 可与主方案一致，但不得与 how-to 冲突 |
+| 事件            | 建议策略                             |
+| --------------- | ------------------------------------ |
+| `sessionStart`  | `failClosed: true`                   |
+| `preToolUse`    | `failClosed: true`                   |
+| `subagentStart` | `failClosed: true`                   |
+| `postToolUse`   | 可与主方案一致，但不得与 how-to 冲突 |
 
 ---
 
@@ -531,14 +541,14 @@ Cursor Runtime Governance hooks 方案至少需要以下测试：
 
 ## 14. 与其他文档的边界
 
-| 文档 | 作用 |
-|------|------|
-| `runtime-policy-emit-schema.md` | 定义 emit 本体输出契约 |
-| `runtime-context.md` | 定义 runtime context 输入契约 |
-| `runtime-governance-auto-inject-cursor-claude.md` | 给使用者的 how-to |
-| `TASKS_RUNTIME_GOVERNANCE_AUTO_INJECT.md` | 自动注入专项任务书 |
-| `2026-03-21-runtime-governance-story-scoped-dual-host-implementation-plan.md` | 总实施任务书 |
-| **本文档** | 专门定义 Cursor native hooks 参考协议 |
+| 文档                                                                          | 作用                                  |
+| ----------------------------------------------------------------------------- | ------------------------------------- |
+| `runtime-policy-emit-schema.md`                                               | 定义 emit 本体输出契约                |
+| `runtime-context.md`                                                          | 定义 runtime context 输入契约         |
+| `runtime-governance-auto-inject-cursor-claude.md`                             | 给使用者的 how-to                     |
+| `TASKS_RUNTIME_GOVERNANCE_AUTO_INJECT.md`                                     | 自动注入专项任务书                    |
+| `2026-03-21-runtime-governance-story-scoped-dual-host-implementation-plan.md` | 总实施任务书                          |
+| **本文档**                                                                    | 专门定义 Cursor native hooks 参考协议 |
 
 ---
 

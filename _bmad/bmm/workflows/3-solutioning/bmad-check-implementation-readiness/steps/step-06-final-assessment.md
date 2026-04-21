@@ -32,6 +32,7 @@ To provide a comprehensive summary of all findings and give the report a final p
 - 🚫 Don't soften the message - be direct
 - 💬 Provide specific examples for problems
 - 🚪 Add final section to the report
+- 🧮 Emit a parseable readiness scoring block aligned with `_bmad/_config/code-reviewer-config.yaml` `modes.readiness`
 
 ## EXECUTION PROTOCOLS:
 
@@ -110,6 +111,16 @@ Append to {outputFile}:
 ### Final Note
 
 This assessment identified [X] issues across [Y] categories. Address the critical issues before proceeding to implementation. These findings can be used to improve the artifacts or you may choose to proceed as-is.
+
+## 可解析评分块（供 parseAndWriteScore）
+
+总体评级: [A|B|C|D]
+
+维度评分:
+- P0 Journey Coverage: XX/100
+- Smoke E2E Readiness: XX/100
+- Evidence Proof Chain: XX/100
+- Cross-Document Traceability: XX/100
 ```
 
 ### 4. Complete the Report
@@ -197,6 +208,7 @@ Implementation Readiness complete. Invoke the `bmad-help` skill.
 ### ✅ SUCCESS:
 
 - All findings compiled and summarized
+- Parseable readiness scoring block generated
 - Clear recommendations provided
 - Readiness status determined
 - Final report saved

@@ -41,14 +41,16 @@
 - 审计粒度配置模型
 - `_bmad/_config/bmad-story-config.yaml` 配置来源
 - TDD 红绿灯、ralph-method 追踪
+- reviewer contract / profile vocabulary / `runAuditorHost` closeout 收口
 
 ### 平台差异对照
 
 | 特性              | Cursor                                         | Claude Code CLI                                |
 | ----------------- | ---------------------------------------------- | ---------------------------------------------- |
 | **Skill 入口**    | `.cursor/skills/bmad-story-assistant/SKILL.md` | `.claude/skills/bmad-story-assistant/SKILL.md` |
-| **子代理工具**    | `mcp_task` / Task tool                         | `Agent`                                        |
-| **subagent_type** | `generalPurpose`                               | `general-purpose`                              |
+| **通用实现通道**  | `mcp_task -> generalPurpose`                   | `Agent -> general-purpose`                     |
+| **reviewer 首选** | `Task tool -> code-reviewer`                   | `Agent -> code-reviewer`                       |
+| **reviewer 回退** | `mcp_task -> generalPurpose`                   | `Agent -> general-purpose`                     |
 | **规则加载**      | `.cursor/rules/` 自动加载                      | `.claude/` 目录                                |
 | **Agent 定义**    | `.cursor/agents/`                              | `.claude/agents/`                              |
 | **总控**          | 通过 Skill 入口触发                            | 通过 `@bmad-master` 或 Skill 入口触发          |
@@ -156,29 +158,31 @@ auto_continue:
 
 ### 通用
 
-| 文件                                                              | 说明                                                                                               |
-| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `_bmad/_config/bmad-story-config.yaml`                            | 审计粒度、auto-continue 配置                                                                       |
-| `_bmad/skills/bmad-party-mode/workflow.md`                        | Party-Mode canonical skill 工作流（旧规则兼容路径：`_bmad/core/workflows/party-mode/workflow.md`） |
-| `_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml` | Create Story 工作流                                                                                |
-| `_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml`    | Dev Story 工作流                                                                                   |
-| `_bmad/_config/agent-manifest.csv`                                | Agent 清单                                                                                         |
-| `npx bmad-speckit score`                                          | 评分写入（CLI 子命令）                                                                             |
-| `scripts/bmad-config.ts`                                          | 配置加载                                                                                           |
+| 文件                                                              | 说明                                                                                                                                                                               |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `_bmad/_config/bmad-story-config.yaml`                            | 审计粒度、auto-continue 配置                                                                                                                                                       |
+| `_bmad/skills/bmad-party-mode/workflow.md`                        | Party-Mode canonical skill 工作流（旧规则兼容路径：`_bmad/core/workflows/party-mode/workflow.md`）                                                                                 |
+| `_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml` | Create Story 工作流                                                                                                                                                                |
+| `_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml`    | Dev Story 工作流                                                                                                                                                                   |
+| `_bmad/_config/agent-manifest.csv`                                | Agent 清单                                                                                                                                                                         |
+| `runAuditorHost` / `scripts/run-auditor-host.ts`                  | 审计通过后的统一 host-runner 能力；由 invoking host/runner 承接评分写入、auditIndex 更新与 post-audit automation。脚本路径主要用于仓库内实现与调试说明，不是面向最终使用者的主入口 |
+| `scripts/bmad-config.ts`                                          | 配置加载                                                                                                                                                                           |
 
 ### Cursor 专属
 
-| 文件                                           | 说明               |
-| ---------------------------------------------- | ------------------ |
-| `.cursor/skills/bmad-story-assistant/SKILL.md` | Skill 入口         |
-| `.cursor/agents/code-reviewer-config.yaml`     | Code Reviewer 配置 |
-| `.cursor/rules/bmad-story-assistant.mdc`       | 自检规则           |
+| 文件                                           | 说明                     |
+| ---------------------------------------------- | ------------------------ |
+| `.cursor/skills/bmad-story-assistant/SKILL.md` | Skill 入口               |
+| `.cursor/agents/code-reviewer.md`              | runtime reviewer carrier |
+| `.cursor/agents/code-reviewer-config.yaml`     | Code Reviewer 配置       |
+| `.cursor/rules/bmad-story-assistant.mdc`       | 自检规则                 |
 
 ### Claude Code 专属
 
 | 文件                                           | 说明                                     |
 | ---------------------------------------------- | ---------------------------------------- |
 | `.claude/skills/bmad-story-assistant/SKILL.md` | Claude Code skill 入口（当前仓库已提供） |
+| `.claude/agents/code-reviewer.md`              | runtime reviewer carrier                 |
 | `.claude/agents/bmad-master.md`                | 总控 Agent                               |
 | `.claude/agents/bmad-story-create.md`          | Story Create Agent                       |
 | `.claude/agents/bmad-story-audit.md`           | Story Audit Agent                        |

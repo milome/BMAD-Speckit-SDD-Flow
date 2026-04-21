@@ -34,7 +34,7 @@
 ### Fallback Strategy
 1. 各 auditor 直接复用本生命周期模板
 2. 无法统一时由主 Agent 按同一生命周期语义执行
-3. 最终评分触发使用 `npx bmad-speckit score`（非 ts-node）；配置路径 `_bmad/_config/scoring-trigger-modes.yaml`
+3. 最终评分触发、auditIndex 更新与 post-audit automation 统一由 `runAuditorHost` / auditor host runner 承接；不再由各 auditor 分散手工触发
 
 ### Runtime Contracts
 - 必读：`.claude/protocols/audit-result-schema.md`
@@ -42,7 +42,7 @@
 - 显式引用：`code-reviewer-config.yaml`
 - 显式引用：`stage-mapping.yaml`
 - 显式引用：`eval-lifecycle-report-paths.yaml`
-- 显式引用：`parse-and-write-score`
+- 显式引用：`runAuditorHost`
 - 返回必须包含：`execution_summary`、`artifacts`、`handoff`
 - 必须明确 mode → auditor / stage → scoring / stage → reportPath / event → trigger 的映射关系
 
@@ -100,9 +100,9 @@
 | `epic_pending_acceptance` | manual_or_auto | 环节 6 / Epic 综合 |
 | `user_explicit_request` | manual | 全环节 |
 
-## parseAndWriteScore Preconditions
+## Unified Auditor Host Runner Preconditions
 
-调用 `parse-and-write-score` 前，必须确认：
+调用统一 auditor host runner 前，必须确认：
 
 1. 报告包含可解析评分块
 2. 若报告为逐条对照格式，则已追加可解析评分块
@@ -118,8 +118,8 @@
 5. 读取 `eval-lifecycle-report-paths.yaml`
 6. 根据 stage 解析 mode / scoring / reportPath / trigger
 7. 读取实现产物并执行审查检查清单
-8. 校验 `parseAndWriteScore` 前置条件
-9. 触发 `parse-and-write-score`
+8. 校验统一 auditor host runner 前置条件
+9. 触发 `runAuditorHost`
 10. 更新 reviewer 状态
 
 ## Output / Handoff

@@ -224,6 +224,7 @@ describe('governance runner summary end-to-end flow', () => {
         expect.arrayContaining([
           '## Governance Remediation Runner Summary',
           '- Should Continue: yes',
+          '- Reviewer Projection: code-reviewer => bmad_code_reviewer [registry=reviewer_registry_v1; closeout=runAuditorHost; active=plan/plan_audit]',
           '## Loop State Trace Summary',
           '- Stop Reason: (none)',
         ])

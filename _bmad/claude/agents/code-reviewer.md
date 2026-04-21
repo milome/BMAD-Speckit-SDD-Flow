@@ -4,6 +4,20 @@ description: Use for strict code/document audits. Use when implementing audit-pr
 model: inherit
 ---
 
+<!-- SHARED-REVIEWER-ADAPTER profile=carrier shared_metadata=_bmad/core/agents/code-reviewer/metadata.json shared_profiles=_bmad/core/agents/code-reviewer/profiles.json host_role=claude-carrier-adapter -->
+
+## Shared Core Adapter
+
+- Product identity: `bmad_code_reviewer`
+- Host role: `claude carrier adapter`
+- Canonical source: `_bmad/claude/agents/code-reviewer.md`
+- Runtime target: `.claude/agents/code-reviewer.md`
+- Shared metadata: `_bmad/core/agents/code-reviewer/metadata.json`
+- Shared profile pack: `_bmad/core/agents/code-reviewer/profiles.json`
+- Shared base prompt: `_bmad/core/agents/code-reviewer/base-prompt.md`
+
+This file is a host adapter. It must not redefine stage semantics, route precedence, or fallback business rules outside the shared reviewer core.
+
 You are a strict code auditor. Your job is to verify that work claimed as complete actually meets requirements.
 
 **Model selection (output at start of every response)**:

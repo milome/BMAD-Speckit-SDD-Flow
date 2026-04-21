@@ -171,6 +171,52 @@ function buildProviderRecommendationItemsValue(recommendationItems) {
 }
 
 /**
+ * @param {unknown} reviewerRouteExplainability
+ * @returns {string}
+ */
+function buildReviewerProjectionValue(reviewerRouteExplainability) {
+  if (!Array.isArray(reviewerRouteExplainability) || reviewerRouteExplainability.length === 0) {
+    return '(none)';
+  }
+
+  return reviewerRouteExplainability
+    .map((item) => {
+      if (!item || typeof item !== 'object') {
+        return null;
+      }
+      const record = /** @type {Record<string, unknown>} */ (item);
+      const requestedSkillId =
+        typeof record.requestedSkillId === 'string' ? record.requestedSkillId : '(unknown)';
+      const reviewerIdentity =
+        typeof record.reviewerIdentity === 'string' ? record.reviewerIdentity : '(unknown)';
+      const registryVersion =
+        typeof record.registryVersion === 'string' ? record.registryVersion : '(unknown)';
+      const closeoutRunner =
+        typeof record.closeoutRunner === 'string' ? record.closeoutRunner : '(unknown)';
+      const maturity =
+        typeof record.isomorphismMaturity === 'string'
+          ? record.isomorphismMaturity
+          : '(unknown)';
+      const routeReason =
+        typeof record.routeReasonSummary === 'string' ? record.routeReasonSummary : '(none)';
+      const complexity =
+        typeof record.complexitySource === 'string' ? record.complexitySource : '(none)';
+      const blocker =
+        typeof record.remainingBlocker === 'string' ? record.remainingBlocker : '(none)';
+      const activeAuditConsumer =
+        record.activeAuditConsumer && typeof record.activeAuditConsumer === 'object'
+          ? /** @type {Record<string, unknown>} */ (record.activeAuditConsumer)
+          : null;
+      const activeConsumerText = activeAuditConsumer
+        ? `${typeof activeAuditConsumer.entryStage === 'string' ? activeAuditConsumer.entryStage : '(none)'}/${typeof activeAuditConsumer.profile === 'string' ? activeAuditConsumer.profile : '(none)'}`
+        : '(none)';
+      return `${requestedSkillId} => ${reviewerIdentity} [registry=${registryVersion}; closeout=${closeoutRunner}; active=${activeConsumerText}; maturity=${maturity}; reason=${routeReason}; complexity=${complexity}; blocker=${blocker}]`;
+    })
+    .filter(Boolean)
+    .join(' || ');
+}
+
+/**
  * @param {GovernanceExecutionResult | null | undefined} [input]
  * @returns {string[]}
  */
@@ -263,6 +309,26 @@ function buildGovernanceStructuredMetadataSectionLines(input = {}) {
           typeof executionIntentCandidate.semanticFeatureTopN === 'object'
         ? executionIntentCandidate.semanticFeatureTopN
         : null;
+  const reviewerRouteExplainability =
+    executionPlanDecision.reviewerRouteExplainability ||
+    executionIntentCandidate.reviewerRouteExplainability ||
+    [];
+  const firstReviewerProjection =
+    Array.isArray(reviewerRouteExplainability) && reviewerRouteExplainability.length > 0
+      ? reviewerRouteExplainability[0]
+      : null;
+  const reviewerSharedCore =
+    firstReviewerProjection && firstReviewerProjection.sharedCore
+      ? `${firstReviewerProjection.sharedCore.rootPath} [${firstReviewerProjection.sharedCore.version}]`
+      : '(none)';
+  const reviewerCursorCarrier =
+    firstReviewerProjection && firstReviewerProjection.hosts && firstReviewerProjection.hosts.cursor
+      ? `${firstReviewerProjection.hosts.cursor.carrierSourcePath} -> ${firstReviewerProjection.hosts.cursor.runtimeTargetPath}`
+      : '(none)';
+  const reviewerClaudeCarrier =
+    firstReviewerProjection && firstReviewerProjection.hosts && firstReviewerProjection.hosts.claude
+      ? `${firstReviewerProjection.hosts.claude.carrierSourcePath} -> ${firstReviewerProjection.hosts.claude.runtimeTargetPath}`
+      : '(none)';
 
   return [
     '## Governance Structured Metadata',
@@ -312,6 +378,20 @@ function buildGovernanceStructuredMetadataSectionLines(input = {}) {
     `- Execution Skill Chain: ${executionSkillChain.join(', ') || '(none)'}`,
     `- Semantic Skill Features: ${buildSemanticSkillFeaturesValue(semanticSkillFeatures)}`,
     `- Semantic Feature Top-N: ${buildSemanticFeatureTopNValue(semanticFeatureTopN)}`,
+    `- Reviewer Projection: ${buildReviewerProjectionValue(reviewerRouteExplainability)}`,
+    `- Reviewer Shared Core: ${reviewerSharedCore}`,
+    `- Reviewer Cursor Carrier: ${reviewerCursorCarrier}`,
+    `- Reviewer Claude Carrier: ${reviewerClaudeCarrier}`,
+    `- Reviewer Route Reason: ${firstReviewerProjection?.routeReasonSummary || '(none)'}`,
+    `- Reviewer Fallback Status: ${firstReviewerProjection?.fallbackStatus || '(none)'}`,
+    `- Reviewer Maturity: ${firstReviewerProjection?.isomorphismMaturity || '(none)'}`,
+    `- Reviewer Complexity: ${firstReviewerProjection?.complexitySource || '(none)'}`,
+    `- Reviewer Blocker: ${firstReviewerProjection?.remainingBlocker || '(none)'}`,
+    `- Reviewer Rollout Gate: ${
+      firstReviewerProjection?.rolloutGate
+        ? `${firstReviewerProjection.rolloutGate.status} -> ${firstReviewerProjection.rolloutGate.summary}`
+        : '(none)'
+    }`,
     `- Execution Subagent Roles: ${executionSubagentRoles.join(', ') || '(none)'}`,
     `- Governance Constraints: ${governanceConstraints.join(', ') || '(none)'}`,
     `- Blocked By Governance: ${governanceBlockedBy.join(', ') || '(none)'}`,

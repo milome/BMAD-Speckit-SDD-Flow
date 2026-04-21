@@ -7,6 +7,7 @@
 
 import * as path from 'node:path';
 import { loadConfig } from '../bmad-config';
+import { ensureFacilitatorRuntimeDefinition } from '../facilitator-runtime-definition';
 import { mergeLanguagePolicyIntoProjectContext } from '../runtime-context';
 import { resolveLanguagePolicyForSession } from './resolve-for-session';
 
@@ -45,7 +46,7 @@ async function main(): Promise<void> {
     process.chdir(projectRoot);
     const config = loadConfig();
     const policy = resolveLanguagePolicyForSession(config, userMessage, recentMessages);
-    const out = {
+    const out: Record<string, unknown> = {
       resolvedMode: policy.resolvedMode,
       requestedMode: policy.requestedMode,
       detectionSource: policy.detectionSource,
@@ -53,9 +54,27 @@ async function main(): Promise<void> {
       userLanguage: policy.userLanguage,
     };
     if (writeContext) {
-      mergeLanguagePolicyIntoProjectContext(projectRoot, {
+      out.contextSync = mergeLanguagePolicyIntoProjectContext(projectRoot, {
         resolvedMode: policy.resolvedMode,
       });
+      if (
+        out.contextSync &&
+        typeof out.contextSync === 'object' &&
+        (out.contextSync as { status?: string }).status === 'skipped'
+      ) {
+        const receipts = ensureFacilitatorRuntimeDefinition(projectRoot, {
+          mode: policy.resolvedMode,
+        });
+        out.temporaryResolvedModeApplied = {
+          resolvedMode: policy.resolvedMode,
+          targets: receipts
+            .filter((receipt) => receipt.skippedReason == null)
+            .map((receipt) => ({
+              host: receipt.host,
+              updated: receipt.updated,
+            })),
+        };
+      }
     }
     console.log(JSON.stringify(out));
   } finally {

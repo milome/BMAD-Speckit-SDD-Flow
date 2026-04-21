@@ -92,6 +92,22 @@ function resolveRuntimeWorkerHelper() {
   return null;
 }
 
+function resolvePostToolUseCoreHelper() {
+  const candidates = [
+    path.join(__dirname, 'post-tool-use-core.cjs'),
+    path.join(__dirname, '..', '..', 'runtime', 'hooks', 'post-tool-use-core.cjs'),
+    path.join(__dirname, '..', '..', '_bmad', 'runtime', 'hooks', 'post-tool-use-core.cjs'),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return require(candidate);
+    }
+  }
+
+  return null;
+}
+
 function resolvePacketHardCloseoutHelper() {
   const candidates = [
     path.join(__dirname, 'governance-packet-hard-closeout.cjs'),
@@ -372,6 +388,10 @@ async function main() {
   const event = await readStdin();
   if (!event) {
     return;
+  }
+  const core = resolvePostToolUseCoreHelper();
+  if (core && typeof core.postToolUseCore === 'function') {
+    await core.postToolUseCore({ host: 'cursor', input: event });
   }
   postToolUse(event);
 }

@@ -3,19 +3,21 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 describe('runtime workflow entrypoint contract', () => {
-  it('implementation plan explicitly binds runtime context sync to BMAD workflow entry points', () => {
+  it('tracked runtime context sources explicitly bind story/run scope to workflow entry points', () => {
     const root = process.cwd();
-    const implPlan = readFileSync(
-      path.join(root, 'docs', 'plans', '2026-03-22-runtime-governance-runtime-context-重构实施计划文档.md'),
+    const runtimeContextRef = readFileSync(
+      path.join(root, 'docs', 'reference', 'runtime-context.md'),
+      'utf8'
+    );
+    const registrySource = readFileSync(
+      path.join(root, 'scripts', 'runtime-context-registry.ts'),
       'utf8'
     );
 
-    expect(implPlan).toContain('sprint planning / sprint status');
-    expect(implPlan).toContain('create epics and stories');
-    expect(implPlan).toContain('create story');
-    expect(implPlan).toContain('story audit');
-    expect(implPlan).toContain('dev story');
-    expect(implPlan).toContain('post-audit');
-    expect(implPlan).toContain('自动写 registry/context');
+    expect(runtimeContextRef).toContain('story-scoped 模式');
+    expect(runtimeContextRef).toContain('story-scoped 运行上下文');
+    expect(registrySource).toContain('runContexts');
+    expect(registrySource).toContain('activeScope');
+    expect(registrySource).toContain("scopeType: 'run'");
   });
 });

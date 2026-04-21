@@ -2,10 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://bmad-speckit.local/schemas/runtime-policy-emit.json",
   "title": "RuntimePolicyEmit",
-  "oneOf": [
-    { "$ref": "#/$defs/successPolicy" },
-    { "$ref": "#/$defs/errorBody" }
-  ],
+  "oneOf": [{ "$ref": "#/$defs/successPolicy" }, { "$ref": "#/$defs/errorBody" }],
   "$defs": {
     "auditConvergence": {
       "type": "object",
@@ -28,6 +25,409 @@
       },
       "additionalProperties": false
     },
+    "contextMaturityEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "artifactComplete": { "type": "boolean" },
+        "fourSignalsComplete": { "type": "boolean" },
+        "executionSpecific": { "type": "boolean" },
+        "governanceHealthy": { "type": "boolean" },
+        "runtimeScopeComplete": { "type": "boolean" },
+        "followUpBudgetExhausted": { "type": "boolean" }
+      }
+    },
+    "implementationReadinessEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "documentAuditPassed": { "type": "boolean" },
+        "readinessReportPresent": { "type": "boolean" },
+        "blockerCount": { "type": "integer" },
+        "remediationState": {
+          "type": "string",
+          "enum": ["none", "in_progress", "closed"]
+        },
+        "rerunGateStatus": {
+          "type": "string",
+          "enum": ["unknown", "pass", "fail"]
+        },
+        "staleAfterSemanticChange": { "type": "boolean" }
+      }
+    },
+    "complexityFactors": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "impactSurface",
+        "sharedContract",
+        "verificationCost",
+        "uncertainty",
+        "rollbackDifficulty",
+        "forcedReasons"
+      ],
+      "properties": {
+        "impactSurface": { "type": "integer", "minimum": 0, "maximum": 2 },
+        "sharedContract": { "type": "integer", "minimum": 0, "maximum": 2 },
+        "verificationCost": { "type": "integer", "minimum": 0, "maximum": 2 },
+        "uncertainty": { "type": "integer", "minimum": 0, "maximum": 2 },
+        "rollbackDifficulty": { "type": "integer", "minimum": 0, "maximum": 2 },
+        "forcedReasons": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "implementationEntryGate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gateName",
+        "requestedFlow",
+        "recommendedFlow",
+        "decision",
+        "readinessStatus",
+        "blockerCodes",
+        "blockerSummary",
+        "rerouteRequired",
+        "rerouteReason",
+        "evidenceSources",
+        "semanticFingerprint",
+        "evaluatedAt"
+      ],
+      "properties": {
+        "gateName": { "type": "string", "const": "implementation-readiness" },
+        "requestedFlow": {
+          "type": "string",
+          "enum": ["story", "bugfix", "standalone_tasks"]
+        },
+        "recommendedFlow": {
+          "type": "string",
+          "enum": ["story", "bugfix", "standalone_tasks"]
+        },
+        "decision": {
+          "type": "string",
+          "enum": ["pass", "block", "reroute"]
+        },
+        "readinessStatus": {
+          "type": "string",
+          "enum": [
+            "missing",
+            "blocked",
+            "repair_in_progress",
+            "ready_clean",
+            "repair_closed",
+            "stale_after_semantic_change"
+          ]
+        },
+        "blockerCodes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "blockerSummary": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "rerouteRequired": { "type": "boolean" },
+        "rerouteReason": { "type": ["string", "null"] },
+        "evidenceSources": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "readinessReportPath",
+            "remediationArtifactPath",
+            "executionRecordPath",
+            "authoritativeAuditReportPath"
+          ],
+          "properties": {
+            "readinessReportPath": { "type": ["string", "null"] },
+            "remediationArtifactPath": { "type": ["string", "null"] },
+            "executionRecordPath": { "type": ["string", "null"] },
+            "authoritativeAuditReportPath": { "type": ["string", "null"] }
+          }
+        },
+        "semanticFingerprint": { "type": ["string", "null"] },
+        "evaluatedAt": { "type": "string" }
+      }
+    },
+    "helpRouting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceMode",
+        "contextMaturity",
+        "complexity",
+        "complexityScore",
+        "complexityForcedReasons",
+        "implementationReadinessStatus",
+        "implementationEntryRecommended",
+        "implementationEntryDecision",
+        "shouldUpgradeStandaloneTasks",
+        "recommendedFlow",
+        "recommendationLabel",
+        "rerouteRequired",
+        "rerouteReason",
+        "canonicalImplementationGate",
+        "implementationEntryGate",
+        "evidence",
+        "evidenceSources",
+        "executionRecordId"
+      ],
+      "properties": {
+        "sourceMode": {
+          "type": ["string", "null"],
+          "enum": ["full_bmad", "seeded_solutioning", "standalone_story", null]
+        },
+        "contextMaturity": {
+          "type": "string",
+          "enum": ["minimal", "seeded", "full", "unclassified"]
+        },
+        "complexity": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        },
+        "complexityScore": { "type": "integer" },
+        "complexityForcedReasons": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "implementationReadinessStatus": {
+          "type": "string",
+          "enum": [
+            "missing",
+            "blocked",
+            "repair_in_progress",
+            "ready_clean",
+            "repair_closed",
+            "stale_after_semantic_change"
+          ]
+        },
+        "implementationEntryRecommended": { "type": "boolean" },
+        "implementationEntryDecision": {
+          "type": "string",
+          "enum": ["pass", "block", "reroute"]
+        },
+        "shouldUpgradeStandaloneTasks": { "type": "boolean" },
+        "recommendedFlow": {
+          "type": "string",
+          "enum": ["story", "bugfix", "standalone_tasks", "epic", "unknown"]
+        },
+        "recommendationLabel": {
+          "type": "string",
+          "enum": ["recommended", "blocked"]
+        },
+        "rerouteRequired": { "type": "boolean" },
+        "rerouteReason": { "type": ["string", "null"] },
+        "canonicalImplementationGate": {
+          "type": "string",
+          "const": "implementation-readiness"
+        },
+        "implementationEntryGate": { "$ref": "#/$defs/implementationEntryGate" },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["contextMaturity", "implementationReadiness", "complexityFactors"],
+          "properties": {
+            "contextMaturity": { "$ref": "#/$defs/contextMaturityEvidence" },
+            "implementationReadiness": {
+              "$ref": "#/$defs/implementationReadinessEvidence"
+            },
+            "complexityFactors": { "$ref": "#/$defs/complexityFactors" }
+          }
+        },
+        "evidenceSources": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "readinessReportPath",
+            "remediationArtifactPath",
+            "executionRecordPath",
+            "authoritativeAuditReportPath"
+          ],
+          "properties": {
+            "readinessReportPath": { "type": ["string", "null"] },
+            "remediationArtifactPath": { "type": ["string", "null"] },
+            "executionRecordPath": { "type": ["string", "null"] },
+            "authoritativeAuditReportPath": { "type": ["string", "null"] }
+          }
+        },
+        "executionRecordId": { "type": ["string", "null"] }
+      }
+    },
+    "reviewerContractProjection": {
+      "type": "object",
+      "additionalProperties": false,
+        "required": [
+          "version",
+          "reviewerIdentity",
+          "reviewerDisplayName",
+          "facilitatorIdentity",
+          "registryVersion",
+          "sharedCore",
+          "schemaVersions",
+          "closeoutRunner",
+          "governance",
+          "hostAdapterBoundary",
+          "compatibilityGuards",
+          "requiredRolloutProofs",
+          "rolloutGate",
+          "supportedProfiles",
+          "supportedAuditEntryStages",
+          "activeAuditConsumer"
+        ],
+        "properties": {
+        "version": { "type": "string", "const": "reviewer_contract_projection_v1" },
+        "reviewerIdentity": { "type": "string", "const": "bmad_code_reviewer" },
+          "reviewerDisplayName": { "type": "string", "const": "code-reviewer" },
+          "facilitatorIdentity": { "type": "string", "const": "party_mode_facilitator" },
+          "registryVersion": { "type": "string", "const": "reviewer_registry_v1" },
+          "sharedCore": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["version", "rootPath", "basePromptPath", "profilePackPath"],
+            "properties": {
+              "version": { "type": "string", "const": "reviewer_shared_core_v1" },
+              "rootPath": { "type": "string" },
+              "basePromptPath": { "type": "string" },
+              "profilePackPath": { "type": "string" }
+            }
+          },
+          "schemaVersions": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["input", "output", "handoff", "closeout"],
+          "properties": {
+            "input": { "type": "string", "const": "review_input_v1" },
+            "output": { "type": "string", "const": "review_output_v1" },
+            "handoff": { "type": "string", "const": "review_handoff_v1" },
+            "closeout": { "type": "string", "const": "review_host_closeout_v1" }
+            }
+          },
+          "closeoutRunner": { "type": "string", "const": "runAuditorHost" },
+          "governance": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "implementationReadinessStatusRequired",
+              "implementationReadinessGateName",
+              "gatesLoopRequired",
+              "rerunGatesRequired",
+              "packetExecutionClosureRequired",
+              "packetExecutionClosureStatuses",
+              "closeoutEnvelopeFields"
+            ],
+            "properties": {
+              "implementationReadinessStatusRequired": { "const": true },
+              "implementationReadinessGateName": { "type": "string", "const": "implementation-readiness" },
+              "gatesLoopRequired": { "const": true },
+              "rerunGatesRequired": { "const": true },
+              "packetExecutionClosureRequired": { "const": true },
+              "packetExecutionClosureStatuses": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "closeoutEnvelopeFields": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          },
+          "hostAdapterBoundary": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "projectionOnly",
+              "hostLocalStageSemanticsForbidden",
+              "hostLocalRoutePrecedenceForbidden",
+              "hostLocalFallbackBusinessRulesForbidden"
+            ],
+            "properties": {
+              "projectionOnly": { "const": true },
+              "hostLocalStageSemanticsForbidden": { "const": true },
+              "hostLocalRoutePrecedenceForbidden": { "const": true },
+              "hostLocalFallbackBusinessRulesForbidden": { "const": true }
+            }
+          },
+          "compatibilityGuards": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["codexNoopRequired", "codexBehaviorChangeAllowed"],
+            "properties": {
+              "codexNoopRequired": { "const": true },
+              "codexBehaviorChangeAllowed": { "const": false }
+            }
+          },
+          "requiredRolloutProofs": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "rolloutGate": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "version",
+              "status",
+              "requiredProofs",
+              "completeProofs",
+              "blockingProofs",
+              "cleanupAllowed",
+              "canClaimFullIsomorphism",
+              "summary"
+            ],
+            "properties": {
+              "version": { "type": "string", "const": "reviewer_rollout_gate_v1" },
+              "status": { "type": "string", "enum": ["blocked", "ready"] },
+              "requiredProofs": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "completeProofs": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "blockingProofs": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "cleanupAllowed": { "type": "boolean" },
+              "canClaimFullIsomorphism": { "type": "boolean" },
+              "summary": { "type": "string" }
+            }
+          },
+          "supportedProfiles": {
+            "type": "array",
+            "items": { "type": "string" }
+        },
+        "supportedAuditEntryStages": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "activeAuditConsumer": {
+          "anyOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "entryStage",
+                "profile",
+                "closeoutStage",
+                "auditorScript",
+                "scoreStage"
+              ],
+              "properties": {
+                "entryStage": { "type": "string" },
+                "profile": { "type": "string" },
+                "closeoutStage": { "type": "string" },
+                "auditorScript": { "type": "string" },
+                "scoreStage": { "type": "string" },
+                "triggerStage": { "type": "string" }
+              }
+            }
+          ]
+        }
+      }
+    },
     "successPolicy": {
       "type": "object",
       "additionalProperties": false,
@@ -46,6 +446,14 @@
         "triggerStage",
         "compatibilitySource",
         "reason",
+        "contextMaturity",
+        "complexity",
+        "implementationReadinessStatus",
+        "implementationEntryRecommended",
+        "implementationEntryDecision",
+        "implementationEntryGate",
+        "helpRouting",
+        "reviewerContract",
         "identity",
         "control",
         "language"
@@ -74,6 +482,33 @@
           "enum": ["legacy", "shadow", "governance"]
         },
         "reason": { "type": "string" },
+        "contextMaturity": {
+          "type": "string",
+          "enum": ["minimal", "seeded", "full", "unclassified"]
+        },
+        "complexity": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        },
+        "implementationReadinessStatus": {
+          "type": "string",
+          "enum": [
+            "missing",
+            "blocked",
+            "repair_in_progress",
+            "ready_clean",
+            "repair_closed",
+            "stale_after_semantic_change"
+          ]
+        },
+        "implementationEntryRecommended": { "type": "boolean" },
+        "implementationEntryDecision": {
+          "type": "string",
+          "enum": ["pass", "block", "reroute"]
+        },
+        "implementationEntryGate": { "$ref": "#/$defs/implementationEntryGate" },
+        "helpRouting": { "$ref": "#/$defs/helpRouting" },
+        "reviewerContract": { "$ref": "#/$defs/reviewerContractProjection" },
         "identity": {
           "type": "object",
           "required": ["flow", "stage"],
@@ -83,7 +518,13 @@
               "type": "string",
               "enum": ["story", "bugfix", "standalone_tasks", "epic", "unknown"]
             },
-            "stage": { "type": "string" }
+            "stage": { "type": "string" },
+            "epicId": { "type": "string" },
+            "storyId": { "type": "string" },
+            "storySlug": { "type": "string" },
+            "runId": { "type": "string" },
+            "artifactRoot": { "type": "string" },
+            "contextSource": { "type": "string" }
           }
         },
         "control": {

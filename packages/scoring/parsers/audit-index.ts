@@ -10,10 +10,26 @@ import { parseArchReport } from './audit-arch';
 import { parseStoryReport } from './audit-story';
 import { parseGenericReport } from './audit-generic';
 import { ParseError, ReportFileNotFoundError } from './audit-prd';
-import { PHASE_WEIGHTS_SPEC, PHASE_WEIGHTS_PLAN, PHASE_WEIGHTS_TASKS, PHASE_WEIGHT_IMPLEMENT } from '../constants/weights';
+import {
+  PHASE_WEIGHTS_SPEC,
+  PHASE_WEIGHTS_PLAN,
+  PHASE_WEIGHTS_TASKS,
+  PHASE_WEIGHT_IMPLEMENT,
+  PHASE_WEIGHT_READINESS,
+} from '../constants/weights';
 
 /** Supported audit stages for report parsing. */
-export type AuditStage = 'prd' | 'arch' | 'story' | 'spec' | 'plan' | 'gaps' | 'tasks' | 'implement';
+export type AuditStage =
+  | 'prd'
+  | 'arch'
+  | 'story'
+  | 'spec'
+  | 'plan'
+  | 'gaps'
+  | 'tasks'
+  | 'implement'
+  | 'post_impl'
+  | 'implementation_readiness';
 
 /** Options for parseAuditReport. Either content or reportPath must be provided. */
 export interface ParseAuditReportOptions {
@@ -102,6 +118,22 @@ export async function parseAuditReport(options: ParseAuditReportOptions): Promis
         scenario,
         phaseWeight: PHASE_WEIGHT_IMPLEMENT,
       });
+    case 'post_impl':
+      return parseGenericReport({
+        content: getInlineContent(options),
+        stage: 'post_impl',
+        runId,
+        scenario,
+        phaseWeight: PHASE_WEIGHT_IMPLEMENT,
+      });
+    case 'implementation_readiness':
+      return parseGenericReport({
+        content: getInlineContent(options),
+        stage: 'implementation_readiness',
+        runId,
+        scenario,
+        phaseWeight: PHASE_WEIGHT_READINESS,
+      });
     default: {
       const _: never = stage;
       throw new Error(`Unknown audit stage: ${stage}`);
@@ -113,6 +145,7 @@ export { parsePrdReport } from './audit-prd';
 export { parseArchReport } from './audit-arch';
 export { parseStoryReport } from './audit-story';
 export { parseGenericReport, extractOverallGrade, extractCheckItems } from './audit-generic';
+export { extractStructuredDriftSignalBlock } from './audit-generic';
 export { ReportFileNotFoundError, ParseError } from './audit-prd';
 export {
   llmStructuredExtract,

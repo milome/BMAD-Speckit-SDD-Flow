@@ -2,7 +2,12 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import { parseAuditReport } from '../audit-index';
-import { extractCheckItems, extractOverallGrade, parseGenericReport } from '../audit-generic';
+import {
+  extractCheckItems,
+  extractOverallGrade,
+  extractStructuredDriftSignalBlock,
+  parseGenericReport,
+} from '../audit-generic';
 import { ParseError } from '../audit-prd';
 import { validateRunScoreRecord } from '../../writer/validate';
 
@@ -208,6 +213,89 @@ yes
         'journey_gap_split_contract',
         'shared_path_reference',
       ]);
+    });
+
+    it('maps readiness findings to dedicated readiness item_ids', () => {
+      const content = `
+总体评级: C
+
+问题清单:
+1. [严重程度:高] P0 Journey Coverage Matrix 缺少一个关键 PRD Journey 到 Epic Coverage 的映射
+2. [严重程度:中] Smoke E2E Preconditions Traceability 未说明 fixture / environment readiness
+3. [严重程度:中] Evidence & Proof Chain 缺少 Source Document 与 Verification
+4. [严重程度:低] Cross-Document Traceability 未覆盖一个 Architecture Decision 到 Epic Story 的链接
+
+通过标准:
+待修复
+`;
+
+      const items = extractCheckItems(content, 'implementation_readiness');
+
+      expect(items.map((item) => item.item_id)).toEqual([
+        'readiness_p0_journey_coverage',
+        'readiness_smoke_e2e_readiness',
+        'readiness_evidence_proof_chain',
+        'readiness_cross_document_traceability',
+      ]);
+    });
+  });
+
+  describe('Structured drift signal block', () => {
+    it('parses structured drift signal block rows deterministically', () => {
+      const content = `
+总体评级: B
+
+## Structured Drift Signal Block
+
+| signal | status | evidence |
+| --- | --- | --- |
+| smoke_task_chain | fail | Smoke chain proof missing |
+| closure_task_id | pass | Closure note exists |
+| journey_unlock | major | Unlock semantics drifted |
+| gap_split_contract | pass | Gap split preserved |
+| shared_path_reference | blocked | Shared path reference diverged |
+`;
+
+      const block = extractStructuredDriftSignalBlock(content);
+
+      expect(block.present).toBe(true);
+      expect(block.entries).toEqual([
+        {
+          signal: 'smoke_task_chain',
+          status: 'fail',
+          evidence: 'Smoke chain proof missing',
+          triggered: true,
+        },
+        {
+          signal: 'closure_task_id',
+          status: 'pass',
+          evidence: 'Closure note exists',
+          triggered: false,
+        },
+        {
+          signal: 'journey_unlock',
+          status: 'major',
+          evidence: 'Unlock semantics drifted',
+          triggered: true,
+        },
+        {
+          signal: 'gap_split_contract',
+          status: 'pass',
+          evidence: 'Gap split preserved',
+          triggered: false,
+        },
+        {
+          signal: 'shared_path_reference',
+          status: 'blocked',
+          evidence: 'Shared path reference diverged',
+          triggered: true,
+        },
+      ]);
+    });
+
+    it('returns present=false when structured drift signal block is absent', () => {
+      const block = extractStructuredDriftSignalBlock('总体评级: A\n\n问题清单:\n(无)\n');
+      expect(block).toEqual({ present: false, entries: [] });
     });
   });
 });

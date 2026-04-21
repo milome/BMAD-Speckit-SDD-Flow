@@ -1,4 +1,5 @@
 import Ajv from 'ajv';
+import type { ReviewerRouteExplainability } from './reviewer-registry';
 import type {
   PromptRoutingDelegationPreference,
   PromptRoutingResearchPolicy,
@@ -89,6 +90,7 @@ export interface ExecutionIntentCandidate {
   skillMatchReasons: ExecutionSkillMatchReason[];
   semanticSkillFeatures: ExecutionSkillSemanticFeature[];
   semanticFeatureTopN: ExecutionSemanticFeatureTopN;
+  reviewerRouteExplainability?: ReviewerRouteExplainability[];
   skillAvailabilityMode: ExecutionSkillAvailabilityMode;
   interactionMode: ExecutionInteractionMode;
   researchPolicy: PromptRoutingResearchPolicy;
@@ -117,6 +119,7 @@ export interface ExecutionPlanDecision {
   skillMatchReasons: ExecutionSkillMatchReason[];
   semanticSkillFeatures: ExecutionSkillSemanticFeature[];
   semanticFeatureTopN: ExecutionSemanticFeatureTopN;
+  reviewerRouteExplainability?: ReviewerRouteExplainability[];
   skillAvailabilityMode: ExecutionSkillAvailabilityMode;
   interactionMode: ExecutionInteractionMode;
   researchPolicy: PromptRoutingResearchPolicy;
@@ -376,6 +379,181 @@ const executionIntentBaseSchema = {
               score: { type: 'number' },
               provenanceSkillIds: stringArraySchema,
             },
+          },
+        },
+      },
+    },
+    reviewerRouteExplainability: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: [
+          'requestedSkillId',
+          'reviewerIdentity',
+          'reviewerDisplayName',
+          'registryVersion',
+          'closeoutRunner',
+          'supportedProfiles',
+          'hosts',
+          'activeAuditConsumer',
+        ],
+        properties: {
+          requestedSkillId: { type: 'string', const: 'code-reviewer' },
+          matchedSkillId: { type: 'string' },
+          reviewerIdentity: { type: 'string', const: 'bmad_code_reviewer' },
+          reviewerDisplayName: { type: 'string', const: 'code-reviewer' },
+          registryVersion: { type: 'string', const: 'reviewer_registry_v1' },
+          sharedCore: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['version', 'rootPath', 'basePromptPath', 'profilePackPath'],
+            properties: {
+              version: { type: 'string', const: 'reviewer_shared_core_v1' },
+              rootPath: { type: 'string', minLength: 1 },
+              basePromptPath: { type: 'string', minLength: 1 },
+              profilePackPath: { type: 'string', minLength: 1 },
+            },
+          },
+          closeoutRunner: { type: 'string', const: 'runAuditorHost' },
+          routeReasonSummary: { type: 'string', minLength: 1 },
+          fallbackStatus: { type: 'string', const: 'fallback_ready' },
+          isomorphismMaturity: { type: 'string', const: 'projection_wired' },
+          complexitySource: { type: 'string', minLength: 1 },
+          remainingBlocker: { type: 'string', minLength: 1 },
+          supportedProfiles: stringArraySchema,
+          requiredRolloutProofs: stringArraySchema,
+          compatibilityGuards: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['codexNoopRequired', 'codexBehaviorChangeAllowed'],
+            properties: {
+              codexNoopRequired: { const: true },
+              codexBehaviorChangeAllowed: { const: false },
+            },
+          },
+          rolloutGate: {
+            type: 'object',
+            additionalProperties: false,
+            required: [
+              'version',
+              'status',
+              'requiredProofs',
+              'completeProofs',
+              'blockingProofs',
+              'cleanupAllowed',
+              'canClaimFullIsomorphism',
+              'summary',
+            ],
+            properties: {
+              version: { type: 'string', const: 'reviewer_rollout_gate_v1' },
+              status: { type: 'string', enum: ['blocked', 'ready'] },
+              requiredProofs: stringArraySchema,
+              completeProofs: stringArraySchema,
+              blockingProofs: stringArraySchema,
+              cleanupAllowed: { type: 'boolean' },
+              canClaimFullIsomorphism: { type: 'boolean' },
+              summary: { type: 'string', minLength: 1 },
+            },
+          },
+          hosts: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['cursor', 'claude'],
+            properties: {
+              cursor: {
+                type: 'object',
+                additionalProperties: false,
+                required: [
+                  'carrierSourcePath',
+                  'runtimeTargetPath',
+                  'preferredRoute',
+                  'fallbackRoute',
+                  'fallbackReason',
+                ],
+                properties: {
+                  carrierSourcePath: { type: 'string', minLength: 1 },
+                  runtimeTargetPath: { type: 'string', minLength: 1 },
+                  preferredRoute: {
+                    type: 'object',
+                    additionalProperties: false,
+                    required: ['tool', 'subtypeOrExecutor'],
+                    properties: {
+                      tool: { type: 'string' },
+                      subtypeOrExecutor: { type: 'string' },
+                    },
+                  },
+                  fallbackRoute: {
+                    type: 'object',
+                    additionalProperties: false,
+                    required: ['tool', 'subtypeOrExecutor'],
+                    properties: {
+                      tool: { type: 'string' },
+                      subtypeOrExecutor: { type: 'string' },
+                    },
+                  },
+                  fallbackReason: { type: 'string', minLength: 1 },
+                },
+              },
+              claude: {
+                type: 'object',
+                additionalProperties: false,
+                required: [
+                  'carrierSourcePath',
+                  'runtimeTargetPath',
+                  'preferredRoute',
+                  'fallbackRoute',
+                  'fallbackReason',
+                ],
+                properties: {
+                  carrierSourcePath: { type: 'string', minLength: 1 },
+                  runtimeTargetPath: { type: 'string', minLength: 1 },
+                  preferredRoute: {
+                    type: 'object',
+                    additionalProperties: false,
+                    required: ['tool', 'subtypeOrExecutor'],
+                    properties: {
+                      tool: { type: 'string' },
+                      subtypeOrExecutor: { type: 'string' },
+                    },
+                  },
+                  fallbackRoute: {
+                    type: 'object',
+                    additionalProperties: false,
+                    required: ['tool', 'subtypeOrExecutor'],
+                    properties: {
+                      tool: { type: 'string' },
+                      subtypeOrExecutor: { type: 'string' },
+                    },
+                  },
+                  fallbackReason: { type: 'string', minLength: 1 },
+                },
+              },
+            },
+          },
+          activeAuditConsumer: {
+            anyOf: [
+              { type: 'null' },
+              {
+                type: 'object',
+                additionalProperties: false,
+                required: [
+                  'entryStage',
+                  'profile',
+                  'closeoutStage',
+                  'auditorScript',
+                  'scoreStage',
+                ],
+                properties: {
+                  entryStage: { type: 'string' },
+                  profile: { type: 'string' },
+                  closeoutStage: { type: 'string' },
+                  auditorScript: { type: 'string' },
+                  scoreStage: { type: 'string' },
+                  triggerStage: { type: 'string' },
+                },
+              },
+            ],
           },
         },
       },

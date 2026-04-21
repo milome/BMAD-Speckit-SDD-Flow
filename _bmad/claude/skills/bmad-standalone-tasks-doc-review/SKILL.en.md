@@ -1,4 +1,5 @@
 <!-- BLOCK_LABEL_POLICY=B -->
+
 ---
 name: bmad-standalone-tasks-doc-review
 description: |
@@ -20,6 +21,11 @@ references:
   - prompt-template-tasks-doc: `.claude/skills/bmad-standalone-tasks-doc-review/references/audit-prompt-tasks-doc.md`
   - prompt-template-impl: `.claude/skills/bmad-standalone-tasks-doc-review/references/audit-prompt-impl.md`
 ---
+
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout terminology: in this document, a stage is considered complete only when `runAuditorHost` returns `closeout approved`. An audit report `PASS` only means the host close-out may start; `PASS` alone must not be treated as completion, admission, or release.
+
+> **Orphan TASKS doc-review closeout contract**: when the audited document lives under `_orphan/`, the structured audit report must explicitly provide `stage=standalone_tasks`, `artifactDocPath`, and `reportPath`. Missing any field, returning `stage=document`, or relying on prose-only `PASS` must not count as authoritative closeout.
 
 # Claude adapter: bmad-standalone-tasks-doc-review
 
@@ -44,7 +50,7 @@ The Claude variant must:
 - Keep executor selection, fallback, and scoring write aligned with Cursor
 - Integrate:
   - `auditor-tasks-doc` executor
-  - Scoring write (`parse-and-write-score.ts`)
+  - Unified auditor host runner (`runAuditorHost`)
   - Handoff protocol
 - **Not** mix Cursor Canonical Base, Claude Runtime Adapter, and Repo Add-ons into unclear prompt rewrites
 
@@ -190,21 +196,9 @@ handoff:
 - `.claude/state/bmad-progress.yaml`: global BMAD progress
 - Handoff: structured YAML at end of each phase
 
-#### Scoring
+#### Post-audit automation close-out
 
-On pass:
-
-```bash
-npx bmad-speckit score \
-  --reportPath {path} \
-  --stage tasks_doc \
-  --event stage_audit_complete \
-  --triggerStage speckit_4_2 \
-  --artifactDocPath {path} \
-  --iteration-count {n} \
-  --scenario real_dev \
-  --writeMode single_file
-```
+On pass, do not hand-run `bmad-speckit score`. The executor only needs to return `projectRoot`, `reportPath`, and `artifactDocPath`; the invoking host/runner handles score write, audit-index updates, and the rest of post-audit automation.
 
 #### Commit gate
 
@@ -240,3 +234,5 @@ When launching a TASKS document audit subtask, the main Agent **must** copy the 
 Post-implementation audit template: `references/audit-prompt-impl.md`.
 
 <!-- ADAPTATION_COMPLETE: 2026-03-15 -->
+
+

@@ -19,6 +19,10 @@ references:
   - prompt-template-tasks-doc: `.claude/skills/bmad-standalone-tasks-doc-review/references/audit-prompt-tasks-doc.md`
   - prompt-template-impl: `.claude/skills/bmad-standalone-tasks-doc-review/references/audit-prompt-impl.md`
 ---
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
+
+> **Orphan TASKS doc-review closeout contract**：当被审文档位于 `_orphan/` 路径时，结构化审计报告必须显式提供 `stage=standalone_tasks`、`artifactDocPath`、`reportPath`。缺失任一字段、仍返回 `stage=document`、或仅写 PASS 文本时，不得视为 authoritative closeout。
 
 # Claude Adapter: bmad-standalone-tasks-doc-review
 
@@ -43,7 +47,7 @@ Claude 版 `bmad-standalone-tasks-doc-review` 必须满足：
 - 各阶段的执行器选择、fallback、评分写入均与 Cursor 已验证流程语义一致
 - 完整接入本仓新增的：
   - auditor-tasks-doc 执行体
-  - 评分写入（`parse-and-write-score.ts`）
+  - 统一 auditor host runner（`runAuditorHost`）
   - handoff 协议
 - 不得将 Cursor Canonical Base、Claude Runtime Adapter、Repo Add-ons 混写为来源不明的重写版 prompt
 
@@ -192,21 +196,9 @@ handoff:
 - `.claude/state/bmad-progress.yaml`：BMAD 全局进度跟踪
 - handoff 协议：每阶段结束输出结构化 YAML
 
-#### 评分写入
+#### 审计后自动化收口
 
-审计通过时执行 scoring pipeline：
-
-```bash
-npx bmad-speckit score \
-  --reportPath {报告路径} \
-  --stage tasks_doc \
-  --event stage_audit_complete \
-  --triggerStage speckit_4_2 \
-  --artifactDocPath {文档路径} \
-  --iteration-count {轮次} \
-  --scenario real_dev \
-  --writeMode single_file
-```
+审计通过时，不再由主 Agent 或审计子代理手工调用 `bmad-speckit score`。执行体只需保证 `projectRoot`、`reportPath`、`artifactDocPath` 三个结果字段完整可用，后续评分写入、auditIndex 更新与其它 post-audit automation 统一由 invoking host/runner 承接。
 
 #### Commit Gate
 
@@ -241,3 +233,4 @@ npx bmad-speckit score \
 实施后审计模板见 `references/audit-prompt-impl.md`。
 
 <!-- ADAPTATION_COMPLETE: 2026-03-15 -->
+

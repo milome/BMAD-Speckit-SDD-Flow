@@ -51,7 +51,9 @@ describe('SkillPublisher recursive workflow skill publishing', () => {
       '# workflow\n',
     );
 
-    const previousHome = process.env.USERPROFILE;
+    const previousHome = process.env.HOME;
+    const previousUserProfile = process.env.USERPROFILE;
+    process.env.HOME = homeRoot;
     process.env.USERPROFILE = homeRoot;
     try {
       const result = SkillPublisher.publish(projectRoot, 'test-ai');
@@ -62,7 +64,8 @@ describe('SkillPublisher recursive workflow skill publishing', () => {
       assert.ok(fs.existsSync(installedSkill), 'recursive workflow skill should be installed');
       assert.ok(fs.existsSync(installedWorkflow), 'workflow companion files should be installed');
     } finally {
-      process.env.USERPROFILE = previousHome;
+      process.env.HOME = previousHome;
+      process.env.USERPROFILE = previousUserProfile;
       fs.rmSync(root, { recursive: true, force: true });
     }
   });

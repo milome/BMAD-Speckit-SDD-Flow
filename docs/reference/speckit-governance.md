@@ -1,6 +1,8 @@
 # Speckit Governance 参考
 
 > Speckit 治理规则的人类可读摘要。策略金源仍然是 [`../../_bmad/_config/speckit-governance.yaml`](../../_bmad/_config/speckit-governance.yaml)。
+> **Current path**: readiness / closure / exception 由统一治理语义定义，post-audit automation 由 `runAuditorHost` 收口
+> **Legacy path**: 把 closure 之后的写分 / auditIndex / 后置动作拆成手工零散步骤
 
 ---
 
@@ -22,13 +24,13 @@
 
 来自 [`../../_bmad/_config/speckit-governance.yaml`](../../_bmad/_config/speckit-governance.yaml) 的默认值：
 
-| 项 | 值 |
-|---|---|
-| 默认 `risk tier` | `medium` |
-| 主目标 | `P0 journey runnable` |
-| smoke gate 模式 | `pr` |
-| full E2E 模式 | `nightly` |
-| omission policy | `block_on_silent_assumption` |
+| 项               | 值                           |
+| ---------------- | ---------------------------- |
+| 默认 `risk tier` | `medium`                     |
+| 主目标           | `P0 journey runnable`        |
+| smoke gate 模式  | `pr`                         |
+| full E2E 模式    | `nightly`                    |
+| omission policy  | `block_on_silent_assumption` |
 
 这意味着：
 
@@ -86,16 +88,16 @@
 
 ## 4. Owner Model
 
-| Stage | Owner | Support |
-|---|---|---|
-| `deep_interview` | `pm_or_feature_owner` | `architect` |
-| `prd` | `pm` | `feature_owner` |
-| `architecture` | `architect` | `tech_lead` |
-| `readiness` | `architect` | `pm`, `qa` |
-| `tasks` | `tech_lead` | `developer`, `qa` |
-| `implement` | `developer` | `tech_lead` |
-| `closure` | `developer` | `qa`, `feature_owner` |
-| `exception` | `feature_owner` | `architect`, `qa` |
+| Stage            | Owner                 | Support               |
+| ---------------- | --------------------- | --------------------- |
+| `deep_interview` | `pm_or_feature_owner` | `architect`           |
+| `prd`            | `pm`                  | `feature_owner`       |
+| `architecture`   | `architect`           | `tech_lead`           |
+| `readiness`      | `architect`           | `pm`, `qa`            |
+| `tasks`          | `tech_lead`           | `developer`, `qa`     |
+| `implement`      | `developer`           | `tech_lead`           |
+| `closure`        | `developer`           | `qa`, `feature_owner` |
+| `exception`      | `feature_owner`       | `architect`, `qa`     |
 
 解释：
 

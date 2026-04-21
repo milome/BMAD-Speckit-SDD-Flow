@@ -176,9 +176,9 @@ describe('T4: Claude adapted bmad-code-reviewer-lifecycle skill', () => {
     expect(content).toContain('next_steps');
   });
 
-  it('preserves scoring pipeline references', () => {
+  it('preserves unified host runner scoring pipeline references', () => {
     const content = readFileSync(skillPath, 'utf8');
-    expect(content).toContain('bmad-speckit score');
+    expect(content).toContain('runAuditorHost');
     expect(content).toContain('code-reviewer-config.yaml');
     expect(content).toContain('stage-mapping.yaml');
     expect(content).toContain('eval-lifecycle-report-paths.yaml');
@@ -189,7 +189,7 @@ describe('T4: Claude adapted bmad-code-reviewer-lifecycle skill', () => {
     expect(content).toMatch(/Pre-?[Aa]udit/);
     expect(content).toMatch(/Audit\s+execution/i);
     expect(content).toMatch(/Report\s+generation/i);
-    expect(content).toMatch(/Scoring\s+trigger/i);
+    expect(content).toMatch(/Host\s+trigger/i);
     expect(content).toMatch(/Iteration\s+tracking/i);
     expect(content).toMatch(/Convergence\s+check/i);
   });
@@ -479,7 +479,9 @@ describe('T7: Claude adapted bmad-standalone-tasks-doc-review skill', () => {
     const content = readFileSync(skillPath, 'utf8');
     expect(content).toMatch(/批判审计员|批判性审计员|Critical\s+Auditor/i);
     expect(content).toContain('>70%');
-    expect(content).toMatch(/3\s*轮无\s*gap|three\s+consecutive\s+rounds\s+with\s+no\s+new\s+gap|3\s+no-gap/i);
+    expect(content).toMatch(
+      /3\s*轮无\s*gap|three\s+consecutive\s+rounds\s+with\s+no\s+new\s+gap|3\s+no-gap/i
+    );
     expect(content).toMatch(/直接修改被审文档|edit\s+the\s+audited\s+document/i);
   });
 
@@ -575,7 +577,9 @@ describe('T8: Claude adapted bmad-rca-helper skill', () => {
     const content = readFileSync(skillPath, 'utf8');
     expect(content).toMatch(/批判审计员|批判性审计员|Critical\s+Auditor/i);
     expect(content).toContain('>70%');
-    expect(content).toMatch(/3\s*轮无\s*gap|three\s+consecutive\s+rounds\s+with\s+no\s+new\s+gap|three\s+consecutive\s+no-gap/i);
+    expect(content).toMatch(
+      /3\s*轮无\s*gap|three\s+consecutive\s+rounds\s+with\s+no\s+new\s+gap|three\s+consecutive\s+no-gap/i
+    );
     expect(content).toMatch(/直接修改被审文档|edit\s+the\s+audited\s+document/i);
   });
 
@@ -955,7 +959,7 @@ describe('extension agents', () => {
     expect(reviewer).toContain('code-reviewer-config.yaml');
     expect(reviewer).toContain('stage-mapping.yaml');
     expect(reviewer).toContain('eval-lifecycle-report-paths.yaml');
-    expect(reviewer).toContain('bmad-speckit score');
+    expect(reviewer).toContain('runAuditorHost');
 
     for (const content of [tasksDocAuditor, bugfixAuditor]) {
       expect(content).toContain('## 批判审计员结论');

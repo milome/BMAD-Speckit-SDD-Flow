@@ -27,6 +27,22 @@ describe('schema', () => {
     expect(validate(valid)).toBe(true);
   });
 
+  it('AC-2.1B: implementation_readiness stage is accepted', () => {
+    const valid = {
+      run_id: 'readiness-x',
+      scenario: 'real_dev',
+      stage: 'implementation_readiness',
+      phase_score: 22,
+      phase_weight: 0.2,
+      check_items: [{ item_id: 'a', passed: true, score_delta: 0 }],
+      timestamp: '2026-03-04T12:00:00.000Z',
+      iteration_count: 0,
+      iteration_records: [],
+      first_pass: true,
+    };
+    expect(validate(valid)).toBe(true);
+  });
+
   it('AC-2.2: scenario 枚举 real_dev | eval_question', () => {
     const invalid = {
       run_id: 'x',

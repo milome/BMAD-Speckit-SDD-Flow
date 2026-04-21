@@ -62,6 +62,14 @@ Speckit Implement Agent 是Layer 4 执行阶段的核心组件，负责：
    - Standalone: 与 tasks.md 同目录
 4. **验证前置条件**: prd.{stem}.json 和progress.{stem}.txt 必须存在
 
+## Script-Enforced Subset
+
+- `create/prepare tracking files`: 由 `npx bmad-speckit ralph prepare --tasksPath <path>` 在进入实现 prompt 前自动完成。
+- `record TDD-RED/TDD-GREEN/TDD-REFACTOR phase traces`: 必须通过 `npx bmad-speckit ralph record-phase --tasksPath <path> --userStoryId <US-ID> --title "<US title>" --phase TDD-RED|TDD-GREEN|TDD-REFACTOR|DONE --detail "<phase detail>"` 即时落盘。
+- `final compliance verification`: 最终收口必须运行 `npx bmad-speckit ralph verify --tasksPath <path>`。
+
+TodoWrite 纪律、测试/ lint 命令选择、gap 分类与 journey 收口仍属于 prompt-enforced responsibility，不能假定脚本已自动推断。
+
 ## Execution Flow
 
 ### Step 1: Ralph-Method 前置检查
@@ -174,7 +182,7 @@ progressPath="${baseDir}/progress.${stem}.txt"
 - 各 stage 审计通过后落盘与 `parseAndWriteScore` 约束（强制）：
   - spec / plan / GAPS / tasks 阶段报告必须保存至约定路径，并注明保存路径及 `iteration_count`
   - fail 轮报告保存至 `AUDIT_{stage}-..._round{N}.md`；验证轮不计入`iterationReportPaths`
-  - 必须执行 `npx bmad-speckit score`，并传入正确的`--stage`、`--epic`、`--story`、`--artifactDocPath`、`--iteration-count`
+  - 必须由 invoking host/runner 统一通过 `runAuditorHost` 承接评分写入、auditIndex 更新与 post-audit automation
   - implement 阶段 `artifactDocPath` 可为 story 子目录实现主文档路径或留空
   - 调用失败时记录`resultCode`，不阻断流程
 - 必须嵌套执行 speckit-workflow 完整流程：`specify →plan →GAPS →tasks →执行`
@@ -384,8 +392,9 @@ PROMPT_PATH="_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story
 - 基线要求:
   - 你是一位非常严苛的代码审计员以及资深的软件开发专家，请帮我仔细审阅目前基于 tasks.md 的执行所做的代码实现是否完全覆盖了原始的需求设计文档、plan.md 以及 IMPLEMENTATION_GAPS.md 所有章节，是否严格按照技术架构和技术选型决策，是否严格按照需求和功能范围实现，是否严格遵循软件开发最佳实践。此外，必须专项审查：（1）是否已执行集成测试与端到端功能测试（不仅仅是单元测试），验证模块间协作与用户可见功能流程在生产代码关键路径上工作正常；（2）每个新增或修改的模块是否确实被生产代码关键路径导入、实例化并调用（例如检查 UI 入口是否挂载、Engine/主流程是否实际调用）；（3）是否存在「模块内部实现完整且可通过单元测试，但从未在生产代码关键路径中被导入、实例化或调用」的孤岛模块——若存在，必须作为未通过项列出；（4）是否已创建并维护 ralph-method 追踪文件（prd.json 或 prd.{stem}.json、progress.txt 或 progress.{stem}.txt），且每完成一个 US 有对应更新（prd 中 passes=true、progress 中带时间戳的 story log，且涉及生产代码的**每个 US** 须在其对应段落内各含 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 至少一行（审计须逐 US 检查，不得以文件全局各有一行即判通过；[TDD-REFACTOR] 允许写"无需重构 ✓"，但禁止省略）；若未创建或未按 US 更新，必须作为未通过项列出；**审计不得豁免**：不得以「tasks 规范」「可选」「可后续补充」「非 §5 阻断」为由豁免 TDD 三项检查；涉及生产代码的 US 缺任一项即判未通过；（5）**必须**检查：审计通过后评分写入的 branch_id 是否在 _bmad/_config/scoring-trigger-modes.yaml 的 call_mapping 中配置且 scoring_write_control.enabled=true；（6）**必须**检查：parseAndWriteScore 调用的参数证据是否齐全（reportPath、stage、runId、scenario、writeMode）；（7）**必须**检查：scenario=eval_question 时 question_version 是否必填，缺则记 SCORE_WRITE_INPUT_INVALID 且不调用；（8）**必须**检查：评分写入失败是否 non_blocking 且记录 resultCode 进审计证据；（9）**必须**检查：项目须按技术栈配置并执行 Lint（见 lint-requirement-matrix）；若使用主流语言但未配置 Lint，须作为未通过项；已配置的须执行且无错误、无警告。**禁止**以「与本次任务不相关」豁免。必须逐条进行检查和验证，生成一个逐条描述详细检查内容、验证方式和验证结果的审计报告。报告结尾必须明确给出结论：是否「完全覆盖、验证通过」；若未通过，请列出遗漏章节或未覆盖要点。报告结尾必须包含§5.1 规定的可解析评分块（总体评级 + 四维维度评分），否则 parseAndWriteScore 无法解析、仪表盘无法显示评级。禁止用描述代替结构化块：不得在总结或正文中用「可解析评分块（总体评级 X，维度分 Y–Z）」等文字概括；必须在报告中输出完整的结构化块，包括独立一行总体评级: X 和四行- 维度名: XX/100。总体评级只能是A/B/C/D（禁止A-、B+、C+、D- 等任意修饰符）。维度分必须逐行写明，不得用区间或概括代替。【§5 可解析块要求】审计时须同时执行批判审计员检查，输出格式见 [audit-prompts-critical-auditor-appendix.md](audit-prompts-critical-auditor-appendix.md)。
   - implement 阶段审计报告必须在结尾包含以下可解析块：`## 可解析评分块（供 parseAndWriteScore）`、`总体评级: [A|B|C|D]`、四行维度评分（功能性/ 代码质量 / 测试覆盖 / 安全性）。维度名须与 `_bmad/_config/code-reviewer-config.yaml` 中`modes.code.dimensions` 完全一致。
+  - implement / post_audit 阶段审计报告还必须包含 `## Structured Drift Signal Block`，并以固定表格列输出五条 signal：`signal | status | evidence`；五条 signal 固定为 `smoke_task_chain`、`closure_task_id`、`journey_unlock`、`gap_split_contract`、`shared_path_reference`。缺少该 block 不得视为“无 drift”。
   - 审计通过时，请将完整报告保存至调用方在本 prompt 中指定的 reportPath，并在结论中注明保存路径及 iteration_count。
-  - 审计通过时，审计子代理在返回主 Agent 前必须执行：`npx bmad-speckit score --reportPath <reportPath> --stage implement --event stage_audit_complete --triggerStage speckit_5_2 --epic {epic} --story {story} --artifactDocPath <story 文档路径> --iteration-count {累计值} --scenario real_dev --writeMode single_file`。
+  - 审计通过时，评分写入、auditIndex 更新与其它 post-audit automation 由 invoking host/runner 统一通过 `runAuditorHost` 承接，审计子代理不再手工编排 `bmad-speckit score`。
   - 保存报告时禁止重复输出「正在写入完整审计报告」「正在保存」等状态信息；使用 write 工具一次性写入即可。
 
 ## Claude/OMC Runtime Adapter

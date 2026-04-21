@@ -73,10 +73,9 @@ describe('auditor agents', () => {
       expect(content).toContain('禁止仅输出建议');
     });
 
-    it('contains bmad-speckit score integration', () => {
-      expect(content).toContain('bmad-speckit score');
-      expect(content).toContain('--stage spec');
-      expect(content).toContain('--event stage_audit_complete');
+    it('contains unified auditor host runner integration', () => {
+      expect(content).toContain('runAuditorHost');
+      expect(content).toContain('invoking host/runner');
     });
 
     it('has AUDIT PASSED marker format', () => {
@@ -123,9 +122,9 @@ describe('auditor agents', () => {
       expect(content).toMatch(/- 需求完整.{1,3}\[?(?:XX|\d{2,3})\]?\/100/);
     });
 
-    it('contains bmad-speckit score integration', () => {
-      expect(content).toContain('bmad-speckit score');
-      expect(content).toContain('--stage plan');
+    it('contains unified auditor host runner integration', () => {
+      expect(content).toContain('runAuditorHost');
+      expect(content).toContain('invoking host/runner');
     });
   });
 
@@ -163,9 +162,9 @@ describe('auditor agents', () => {
       expect(content).toContain('可追溯');
     });
 
-    it('contains bmad-speckit score integration', () => {
-      expect(content).toContain('bmad-speckit score');
-      expect(content).toContain('--stage tasks');
+    it('contains unified auditor host runner integration', () => {
+      expect(content).toContain('runAuditorHost');
+      expect(content).toContain('invoking host/runner');
     });
   });
 
@@ -225,9 +224,9 @@ describe('auditor agents', () => {
       expect(content).toContain('主 Agent 委托');
     });
 
-    it('contains bmad-speckit score integration', () => {
-      expect(content).toContain('bmad-speckit score');
-      expect(content).toContain('--stage implement');
+    it('contains unified auditor host runner integration', () => {
+      expect(content).toContain('runAuditorHost');
+      expect(content).toContain('invoking host/runner');
     });
 
     it('notes difference from document audit', () => {

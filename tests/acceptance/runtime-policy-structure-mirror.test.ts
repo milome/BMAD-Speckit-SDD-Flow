@@ -28,4 +28,26 @@ describe('runtime-policy structure mirror', () => {
     expect(policy.convergence).toEqual(policy.control.convergence);
     expect(policy.reason).toBe(policy.control.reason);
   });
+
+  it('keeps bmad-help top-level routing fields mirrored from helpRouting', async () => {
+    const { resolveBmadHelpRuntimePolicy } = await import('../../scripts/bmad-config');
+    const policy = resolveBmadHelpRuntimePolicy({
+      flow: 'story',
+      stage: 'specify',
+      config: loadConfig(),
+    });
+
+    expect(policy.contextMaturity).toBe(policy.helpRouting.contextMaturity);
+    expect(policy.complexity).toBe(policy.helpRouting.complexity);
+    expect(policy.implementationReadinessStatus).toBe(
+      policy.helpRouting.implementationReadinessStatus
+    );
+    expect(policy.implementationEntryRecommended).toBe(
+      policy.helpRouting.implementationEntryRecommended
+    );
+    expect(policy.implementationEntryDecision).toBe(
+      policy.helpRouting.implementationEntryDecision
+    );
+    expect(policy.implementationEntryGate.decision).toBe(policy.implementationEntryDecision);
+  });
 });

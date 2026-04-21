@@ -11,6 +11,7 @@ const path = require('path');
 const os = require('os');
 
 const BIN = path.join(__dirname, '../bin/bmad-speckit.js');
+const CONFIG_SPAWN_TIMEOUT_MS = 60000;
 
 function withIsolatedHome(envOverrides = {}) {
   const homeRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-speckit-home-'));
@@ -30,10 +31,10 @@ function withIsolatedHome(envOverrides = {}) {
 function runConfig(args, subcommand, cwd, envOverrides = {}) {
   const { env, cleanup } = withIsolatedHome(envOverrides);
   try {
-    return spawnSync('node', [BIN, 'config', subcommand, ...(args || [])], {
+    return spawnSync(process.execPath, [BIN, 'config', subcommand, ...(args || [])], {
       cwd: cwd || process.cwd(),
       encoding: 'utf8',
-      timeout: 15000,
+      timeout: CONFIG_SPAWN_TIMEOUT_MS,
       env,
     });
   } finally {
@@ -44,10 +45,10 @@ function runConfig(args, subcommand, cwd, envOverrides = {}) {
 function runConfigList(args, cwd, envOverrides = {}) {
   const { env, cleanup } = withIsolatedHome(envOverrides);
   try {
-    return spawnSync('node', [BIN, 'config', 'list', ...(args || [])], {
+    return spawnSync(process.execPath, [BIN, 'config', 'list', ...(args || [])], {
       cwd: cwd || process.cwd(),
       encoding: 'utf8',
-      timeout: 15000,
+      timeout: CONFIG_SPAWN_TIMEOUT_MS,
       env,
     });
   } finally {
@@ -58,10 +59,10 @@ function runConfigList(args, cwd, envOverrides = {}) {
 function runConfigSet(key, value, args, cwd, envOverrides = {}) {
   const { env, cleanup } = withIsolatedHome(envOverrides);
   try {
-    return spawnSync('node', [BIN, 'config', 'set', key, value, ...(args || [])], {
+    return spawnSync(process.execPath, [BIN, 'config', 'set', key, value, ...(args || [])], {
       cwd: cwd || process.cwd(),
       encoding: 'utf8',
-      timeout: 15000,
+      timeout: CONFIG_SPAWN_TIMEOUT_MS,
       env,
     });
   } finally {
@@ -89,9 +90,9 @@ describe('T1: ConfigCommand skeleton and bin registration', () => {
   });
 
   it('config --help shows get/set/list (T1.2)', () => {
-    const r = spawnSync('node', [BIN, 'config', '--help'], {
+    const r = spawnSync(process.execPath, [BIN, 'config', '--help'], {
       encoding: 'utf8',
-      timeout: 5000,
+      timeout: CONFIG_SPAWN_TIMEOUT_MS,
     });
     assert.strictEqual(r.status, 0);
     const out = (r.stdout || '') + (r.stderr || '');

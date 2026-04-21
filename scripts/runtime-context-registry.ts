@@ -1,6 +1,38 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as yaml from 'js-yaml';
+import { parseBmadAuditResult } from './parse-bmad-audit-result';
+import type {
+  ImplementationEntryFlowId,
+  ImplementationEntryGate,
+} from './runtime-governance';
+
+export interface ReviewerLatestCloseoutRecord {
+  updatedAt: string;
+  runner: 'runAuditorHost';
+  profile: string;
+  stage: string;
+  artifactPath: string;
+  reportPath: string;
+  auditStatus: 'PASS' | 'FAIL' | 'UNKNOWN';
+  closeoutApproved: boolean;
+  governanceClosure: {
+    implementationReadinessStatusRequired: boolean;
+    implementationReadinessGateName: string;
+    gatesLoopRequired: boolean;
+    rerunGatesRequired: boolean;
+    packetExecutionClosureRequired: boolean;
+  };
+  closeoutEnvelope: {
+    resultCode: string;
+    requiredFixes: string[];
+    requiredFixesDetail: Array<{ id: string; summary: string; severity: string }>;
+    rerunDecision: string;
+    scoringFailureMode: string;
+    packetExecutionClosureStatus: string;
+  };
+  scoreError?: string;
+}
 
 export interface RuntimeContextRegistry {
   version: number;
@@ -21,6 +53,40 @@ export interface RuntimeContextRegistry {
   epicContexts: Record<string, { path: string; [key: string]: unknown }>;
   storyContexts: Record<string, { path: string; [key: string]: unknown }>;
   runContexts: Record<string, { path: string; [key: string]: unknown }>;
+  auditIndex: {
+    bugfix: Record<
+      string,
+      {
+        artifactDocPath: string;
+        reportPath: string;
+        status: 'PASS' | 'FAIL';
+        stage?: 'bugfix' | 'standalone_tasks';
+        closeoutApproved?: boolean;
+        converged?: boolean;
+        iterationCount?: number;
+        updatedAt: string;
+      }
+    >;
+    standalone_tasks: Record<
+      string,
+      {
+        artifactDocPath: string;
+        reportPath: string;
+        status: 'PASS' | 'FAIL';
+        stage?: 'bugfix' | 'standalone_tasks';
+        closeoutApproved?: boolean;
+        converged?: boolean;
+        iterationCount?: number;
+        updatedAt: string;
+      }
+    >;
+  };
+  implementationEntryIndex: {
+    story: Record<string, ImplementationEntryGate>;
+    bugfix: Record<string, ImplementationEntryGate>;
+    standalone_tasks: Record<string, ImplementationEntryGate>;
+  };
+  latestReviewerCloseout: ReviewerLatestCloseoutRecord | null;
   activeScope: {
     scopeType: 'project' | 'epic' | 'story' | 'run';
     epicId?: string;
@@ -56,6 +122,16 @@ export function defaultRuntimeContextRegistry(root: string): RuntimeContextRegis
     epicContexts: {},
     storyContexts: {},
     runContexts: {},
+    auditIndex: {
+      bugfix: {},
+      standalone_tasks: {},
+    },
+    implementationEntryIndex: {
+      story: {},
+      bugfix: {},
+      standalone_tasks: {},
+    },
+    latestReviewerCloseout: null,
     activeScope: {
       scopeType: 'project',
       resolvedContextPath: path.join('_bmad-output', 'runtime', 'context', 'project.json'),
@@ -88,7 +164,38 @@ export function writeRuntimeContextRegistry(root: string, registry: RuntimeConte
 export function readRuntimeContextRegistry(root: string): RuntimeContextRegistry {
   const file = runtimeContextRegistryPath(root);
   const raw = fs.readFileSync(file, 'utf8');
-  return JSON.parse(raw) as RuntimeContextRegistry;
+  const parsed = JSON.parse(raw) as RuntimeContextRegistry;
+  if (!parsed.auditIndex) {
+    parsed.auditIndex = {
+      bugfix: {},
+      standalone_tasks: {},
+    };
+  } else {
+    parsed.auditIndex.bugfix = parsed.auditIndex.bugfix ?? {};
+    parsed.auditIndex.standalone_tasks = parsed.auditIndex.standalone_tasks ?? {};
+  }
+  if (!parsed.implementationEntryIndex) {
+    parsed.implementationEntryIndex = {
+      story: {},
+      bugfix: {},
+      standalone_tasks: {},
+    };
+  } else {
+    parsed.implementationEntryIndex.story = parsed.implementationEntryIndex.story ?? {};
+    parsed.implementationEntryIndex.bugfix = parsed.implementationEntryIndex.bugfix ?? {};
+    parsed.implementationEntryIndex.standalone_tasks =
+      parsed.implementationEntryIndex.standalone_tasks ?? {};
+  }
+  parsed.latestReviewerCloseout = parsed.latestReviewerCloseout ?? null;
+  return parsed;
+}
+
+export function readRegistryOrDefault(root: string): RuntimeContextRegistry {
+  const file = runtimeContextRegistryPath(root);
+  if (!fs.existsSync(file)) {
+    return defaultRuntimeContextRegistry(root);
+  }
+  return readRuntimeContextRegistry(root);
 }
 
 export function buildProjectRegistryFromSprintStatus(
@@ -254,4 +361,277 @@ export function resolveContextPathFromActiveScope(
     default:
       return registry.projectContextPath;
   }
+}
+
+function normalizeText(value: unknown): string {
+  return String(value ?? '').trim();
+}
+
+function dateSortValue(filePath: string): number {
+  const match = path.basename(filePath).match(/(\d{4}-\d{2}-\d{2})/);
+  if (match) {
+    const time = Date.parse(`${match[1]}T00:00:00Z`);
+    if (!Number.isNaN(time)) {
+      return time;
+    }
+  }
+  try {
+    return fs.statSync(filePath).mtimeMs;
+  } catch {
+    return 0;
+  }
+}
+
+function listStructuredAuditReports(root: string): string[] {
+  const searchRoots = [path.join(root, '_bmad-output'), path.join(root, 'reports')];
+  const found: string[] = [];
+  const seen = new Set<string>();
+
+  const walk = (dir: string): void => {
+    if (!fs.existsSync(dir)) {
+      return;
+    }
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(fullPath);
+        continue;
+      }
+      if (!entry.isFile() || !/\.audit\.md$/i.test(entry.name)) {
+        continue;
+      }
+      const normalized = path.normalize(fullPath);
+      if (seen.has(normalized)) {
+        continue;
+      }
+      seen.add(normalized);
+      found.push(fullPath);
+    }
+  };
+
+  for (const searchRoot of searchRoots) {
+    walk(searchRoot);
+  }
+
+  return found.sort((left, right) => dateSortValue(right) - dateSortValue(left));
+}
+
+function inferAuditIndexFlow(artifactDocPath: string): 'bugfix' | 'standalone_tasks' | null {
+  const normalized = artifactDocPath.toLowerCase();
+  if (normalized.includes('bugfix')) {
+    return 'bugfix';
+  }
+  if (normalized.includes('tasks')) {
+    return 'standalone_tasks';
+  }
+  return null;
+}
+
+function inferAuditIndexFlowFromParsedStage(
+  stage: string | undefined,
+  artifactDocPath: string
+): 'bugfix' | 'standalone_tasks' | null {
+  if (stage === 'bugfix' || stage === 'standalone_tasks') {
+    return stage;
+  }
+  return inferAuditIndexFlow(artifactDocPath);
+}
+
+export function syncAuditIndexFromReport(root: string, reportPath: string): RuntimeContextRegistry {
+  const registry = readRegistryOrDefault(root);
+  const parsed = parseBmadAuditResult(fs.readFileSync(reportPath, 'utf8'));
+  const artifactDocPath = normalizeText(parsed.artifactDocPath);
+  const flow = inferAuditIndexFlowFromParsedStage(parsed.stage, artifactDocPath);
+
+  if (!artifactDocPath || !flow || (parsed.status !== 'PASS' && parsed.status !== 'FAIL')) {
+    return registry;
+  }
+
+  const existing = registry.auditIndex[flow][path.normalize(artifactDocPath)];
+  registry.auditIndex[flow][path.normalize(artifactDocPath)] = {
+    artifactDocPath,
+    reportPath: path.normalize(reportPath),
+    status: parsed.status,
+    ...(flow === 'bugfix' || flow === 'standalone_tasks'
+      ? { stage: parsed.stage === flow ? flow : existing?.stage ?? flow }
+      : {}),
+    ...(existing?.closeoutApproved !== undefined
+      ? { closeoutApproved: existing.closeoutApproved }
+      : {}),
+    converged: parsed.converged ?? existing?.converged,
+    iterationCount: parsed.iterationCount ?? existing?.iterationCount,
+    updatedAt: new Date().toISOString(),
+  };
+  registry.updatedAt = new Date().toISOString();
+  writeRuntimeContextRegistry(root, registry);
+  return registry;
+}
+
+export function recordAuthoritativeAuditCloseout(
+  root: string,
+  input: {
+    flow: 'bugfix' | 'standalone_tasks';
+    artifactDocPath: string;
+    reportPath: string;
+    status: 'PASS' | 'FAIL' | 'UNKNOWN';
+    closeoutApproved: boolean;
+  }
+): RuntimeContextRegistry {
+  const registry = readRegistryOrDefault(root);
+  const artifactKey = path.normalize(input.artifactDocPath);
+  const existing = registry.auditIndex[input.flow][artifactKey];
+  registry.auditIndex[input.flow][artifactKey] = {
+    artifactDocPath: input.artifactDocPath,
+    reportPath: path.normalize(input.reportPath),
+    status:
+      input.status === 'FAIL'
+        ? 'FAIL'
+        : input.status === 'PASS'
+          ? 'PASS'
+          : existing?.status ?? 'FAIL',
+    stage: input.flow,
+    closeoutApproved: input.closeoutApproved,
+    converged: existing?.converged,
+    iterationCount: existing?.iterationCount,
+    updatedAt: new Date().toISOString(),
+  };
+  registry.updatedAt = new Date().toISOString();
+  writeRuntimeContextRegistry(root, registry);
+  return registry;
+}
+
+export function syncAuditIndexFromAllReports(root: string): RuntimeContextRegistry {
+  let registry = readRegistryOrDefault(root);
+  for (const reportPath of listStructuredAuditReports(root)) {
+    registry = syncAuditIndexFromReport(root, reportPath);
+  }
+  return registry;
+}
+
+function writeJsonWithFsync(file: string, payload: unknown): void {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const body = JSON.stringify(payload, null, 2) + '\n';
+  const tmp = `${file}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, body, 'utf8');
+  let fd = fs.openSync(tmp, 'r+');
+  try {
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+  fs.renameSync(tmp, file);
+  fd = fs.openSync(file, 'r+');
+  try {
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
+function mergeLatestReviewerCloseoutIntoContextFile(
+  contextPath: string,
+  closeout: ReviewerLatestCloseoutRecord
+): void {
+  if (!fs.existsSync(contextPath)) {
+    return;
+  }
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(fs.readFileSync(contextPath, 'utf8')) as Record<string, unknown>;
+  } catch {
+    return;
+  }
+
+  parsed.latestReviewerCloseout = closeout;
+  parsed.updatedAt = new Date().toISOString();
+  writeJsonWithFsync(contextPath, parsed);
+}
+
+export function recordLatestReviewerCloseout(
+  root: string,
+  closeout: ReviewerLatestCloseoutRecord
+): RuntimeContextRegistry {
+  const registry = readRegistryOrDefault(root);
+  registry.latestReviewerCloseout = closeout;
+  registry.updatedAt = new Date().toISOString();
+  writeRuntimeContextRegistry(root, registry);
+
+  const scope = resolveActiveScope(registry, registry.activeScope);
+  const resolvedContextPath = path.isAbsolute(scope.resolvedContextPath ?? '')
+    ? (scope.resolvedContextPath as string)
+    : path.resolve(root, resolveContextPathFromActiveScope(registry, scope));
+  mergeLatestReviewerCloseoutIntoContextFile(resolvedContextPath, closeout);
+  return registry;
+}
+
+function normalizeImplementationEntryKey(value: string): string {
+  return path.normalize(value).replace(/\\/g, '/');
+}
+
+export function buildImplementationEntryIndexKey(input: {
+  flow: ImplementationEntryFlowId;
+  runId?: string | null;
+  artifactRoot?: string | null;
+  artifactDocPath?: string | null;
+  storyId?: string | null;
+}): string {
+  if (input.flow === 'story') {
+    const key =
+      normalizeText(input.runId) ||
+      normalizeText(input.artifactRoot) ||
+      normalizeText(input.storyId);
+    if (!key) {
+      throw new Error('buildImplementationEntryIndexKey: missing story key inputs');
+    }
+    return normalizeImplementationEntryKey(key);
+  }
+
+  const baseKey = normalizeText(input.artifactDocPath);
+  if (!baseKey) {
+    throw new Error('buildImplementationEntryIndexKey: missing artifactDocPath');
+  }
+  const runId = normalizeText(input.runId);
+  return normalizeImplementationEntryKey(runId ? `${baseKey}::${runId}` : baseKey);
+}
+
+export function recordImplementationEntryGate(
+  root: string,
+  input: {
+    flow: ImplementationEntryFlowId;
+    key: string;
+    gate: ImplementationEntryGate;
+  }
+): RuntimeContextRegistry {
+  const registry = readRegistryOrDefault(root);
+  registry.implementationEntryIndex[input.flow][normalizeImplementationEntryKey(input.key)] =
+    input.gate;
+  registry.updatedAt = new Date().toISOString();
+  writeRuntimeContextRegistry(root, registry);
+  return registry;
+}
+
+export function invalidateImplementationEntryGates(
+  root: string,
+  input?:
+    | { flow?: ImplementationEntryFlowId; key?: string | null }
+    | undefined
+): RuntimeContextRegistry {
+  const registry = readRegistryOrDefault(root);
+  const flow = input?.flow;
+  const key = normalizeText(input?.key);
+
+  if (!flow) {
+    registry.implementationEntryIndex.story = {};
+    registry.implementationEntryIndex.bugfix = {};
+    registry.implementationEntryIndex.standalone_tasks = {};
+  } else if (!key) {
+    registry.implementationEntryIndex[flow] = {};
+  } else {
+    delete registry.implementationEntryIndex[flow][normalizeImplementationEntryKey(key)];
+  }
+
+  registry.updatedAt = new Date().toISOString();
+  writeRuntimeContextRegistry(root, registry);
+  return registry;
 }
