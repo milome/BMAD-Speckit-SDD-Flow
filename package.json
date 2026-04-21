@@ -64,7 +64,6 @@
     "test:fresh-regression": "npx ts-node --transpile-only scripts/run-fresh-regression-matrix.ts"
   },
   "bin": {
-    "bmad-speckit": "scripts/bmad-speckit-cli.js",
     "bmad-speckit-init": "scripts/init-to-root.js",
     "bmad-speckit-setup": "scripts/setup.ps1",
     "bmad-speckit-setup-sh": "scripts/setup.sh"

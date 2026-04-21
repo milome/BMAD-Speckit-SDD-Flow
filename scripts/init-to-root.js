@@ -652,7 +652,14 @@ function writeConsumerBmadSpeckitBinWrappers(targetDir, pkgRoot) {
     return;
   }
 
-  const jsRel = path.join('..', 'bmad-speckit-sdd-flow', 'scripts', 'bmad-speckit-cli.js');
+  const jsRel = path.join(
+    '..',
+    'bmad-speckit-sdd-flow',
+    'node_modules',
+    'bmad-speckit',
+    'bin',
+    'bmad-speckit.js'
+  );
   const cmdBody = [
     '@ECHO off',
     'GOTO start',
