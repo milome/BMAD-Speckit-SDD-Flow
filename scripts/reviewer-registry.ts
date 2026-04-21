@@ -29,7 +29,6 @@ import {
   REVIEWER_SHARED_CORE_VERSION,
 } from './reviewer-shared-core';
 import {
-  REVIEWER_ROLLOUT_GATE_VERSION,
   buildReviewerRolloutGate,
   type ReviewerRolloutGate,
 } from './reviewer-rollout-gate';

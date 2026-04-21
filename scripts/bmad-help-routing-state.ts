@@ -198,14 +198,6 @@ function sharedPathScore(left: string, right: string): number {
   return score;
 }
 
-function fileContainsAnyPattern(filePath: string, patterns: RegExp[]): boolean {
-  if (!filePath || !fs.existsSync(filePath)) {
-    return false;
-  }
-  const text = fs.readFileSync(filePath, 'utf8');
-  return patterns.some((pattern) => pattern.test(text));
-}
-
 function selectBestScopedPath(
   candidates: string[],
   hints: Array<string | undefined | null>
@@ -380,37 +372,6 @@ function selectExecutionRecord(
   });
 
   return hintedRecords[0] ?? null;
-}
-
-function findImplementationArtifactDocs(
-  projectRoot: string | undefined,
-  patterns: RegExp[]
-): string[] {
-  if (!projectRoot) {
-    return [];
-  }
-  const root = path.join(projectRoot, '_bmad-output', 'implementation-artifacts');
-  if (!fs.existsSync(root)) {
-    return [];
-  }
-  const found: string[] = [];
-  const walk = (dir: string): void => {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      const fullPath = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        walk(fullPath);
-        continue;
-      }
-      if (!entry.isFile() || !/\.md$/i.test(entry.name)) {
-        continue;
-      }
-      if (fileContainsAnyPattern(fullPath, patterns)) {
-        found.push(fullPath);
-      }
-    }
-  };
-  walk(root);
-  return found.sort((left, right) => dateSortValue(right) - dateSortValue(left));
 }
 
 function resolveAuditFactSummary(input: {
