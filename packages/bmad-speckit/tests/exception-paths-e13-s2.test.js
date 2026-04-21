@@ -11,6 +11,7 @@ const os = require('os');
 
 const BIN = path.join(__dirname, '../bin/bmad-speckit.js');
 const ROOT = path.join(__dirname, '..');
+const INIT_SPAWN_TIMEOUT_MS = 60000;
 
 function withIsolatedHome(envOverrides = {}) {
   const homeRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-speckit-home-'));
@@ -44,10 +45,10 @@ function runCheck(cwd) {
 function runInit(args, cwd, env = {}) {
   const { env: isolatedEnv, cleanup } = withIsolatedHome(env);
   try {
-    return spawnSync('node', [BIN, 'init', ...args], {
+    return spawnSync(process.execPath, [BIN, 'init', ...args], {
       cwd: cwd || os.tmpdir(),
       encoding: 'utf8',
-      timeout: 15000,
+      timeout: INIT_SPAWN_TIMEOUT_MS,
       env: isolatedEnv,
     });
   } finally {

@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "description": "BMAD-Speckit CLI: init, check, version, upgrade, config, feedback",
   "bin": {
-    "bmad-speckit": "bin/bmad-speckit.js"
+    "bmad-speckit": "bin/bmad-speckit.js",
+    "bmad-speckit-init": "bin/bmad-speckit-init.js"
   },
   "files": [
     "README.md",

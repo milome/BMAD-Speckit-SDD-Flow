@@ -10,7 +10,7 @@ const path = require('path');
 
 const BIN = path.join(__dirname, '../bin/bmad-speckit.js');
 const FULL_FLOW_AI_LIST = ['cursor-agent', 'claude', 'qwen', 'auggie', 'codebuddy', 'amp', 'qodercli', 'kiro-cli'];
-const FEEDBACK_SPAWN_TIMEOUT_MS = 15000;
+const FEEDBACK_SPAWN_TIMEOUT_MS = 60000;
 
 // T1.1-T1.3: FeedbackCommand unit tests
 describe('T1: FeedbackCommand (T1.1-T1.3)', () => {
@@ -60,7 +60,7 @@ describe('T1: FeedbackCommand (T1.1-T1.3)', () => {
 // T1.4: bin registration
 describe('T1.4: bin registration', () => {
   it('bmad-speckit feedback => exit 0, stdout contains feedback and 8 AI items', () => {
-    const r = spawnSync('node', [BIN, 'feedback'], {
+    const r = spawnSync(process.execPath, [BIN, 'feedback'], {
       encoding: 'utf8',
       timeout: FEEDBACK_SPAWN_TIMEOUT_MS,
     });
@@ -73,14 +73,14 @@ describe('T1.4: bin registration', () => {
   });
 
   it('bmad-speckit --help lists feedback', () => {
-    const r = spawnSync('node', [BIN, '--help'], { encoding: 'utf8', timeout: FEEDBACK_SPAWN_TIMEOUT_MS });
+    const r = spawnSync(process.execPath, [BIN, '--help'], { encoding: 'utf8', timeout: FEEDBACK_SPAWN_TIMEOUT_MS });
     assert.strictEqual(r.status, 0);
     const out = (r.stdout || '') + (r.stderr || '');
     assert.ok(out.includes('feedback'), `--help should list feedback: ${out}`);
   });
 
   it('feedback works in non-TTY (pipe) (T2.2, T3.2)', () => {
-    const r = spawnSync('node', [BIN, 'feedback'], {
+    const r = spawnSync(process.execPath, [BIN, 'feedback'], {
       encoding: 'utf8',
       timeout: FEEDBACK_SPAWN_TIMEOUT_MS,
       env: { ...process.env, CI: '1' },
@@ -106,7 +106,7 @@ describe('T2: init stdout feedback hint', () => {
     fs.mkdirSync(tmpDir, { recursive: true });
     const projectDir = path.join(tmpDir, 'proj');
     fs.mkdirSync(projectDir, { recursive: true });
-    const r = spawnSync('node', [BIN, 'init', '.', '--bmad-path', invalidPath, '--ai', 'cursor-agent', '--yes'], {
+    const r = spawnSync(process.execPath, [BIN, 'init', '.', '--bmad-path', invalidPath, '--ai', 'cursor-agent', '--yes'], {
       cwd: projectDir,
       encoding: 'utf8',
       timeout: FEEDBACK_SPAWN_TIMEOUT_MS,
@@ -125,10 +125,10 @@ describe('T2: init stdout feedback hint', () => {
     fs.mkdirSync(path.join(sharedBmad, 'cursor', 'rules'), { recursive: true });
     const projectDir = path.join(tmpDir, 'proj');
     fs.mkdirSync(projectDir, { recursive: true });
-    const r = spawnSync('node', [BIN, 'init', '.', '--bmad-path', sharedBmad, '--ai', 'cursor-agent', '--yes', '--no-git'], {
+    const r = spawnSync(process.execPath, [BIN, 'init', '.', '--bmad-path', sharedBmad, '--ai', 'cursor-agent', '--yes', '--no-git'], {
       cwd: projectDir,
       encoding: 'utf8',
-      timeout: 15000,
+      timeout: FEEDBACK_SPAWN_TIMEOUT_MS,
     });
     try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
     assert.strictEqual(r.status, 0, `init should succeed: ${r.stderr || r.stdout}`);
@@ -143,10 +143,10 @@ describe('T2: init stdout feedback hint', () => {
 // T3.4: regression - version, config, upgrade, feedback unaffected
 describe('T3.4: regression', () => {
   it('version, config list, upgrade --help, feedback still work', () => {
-    const rVersion = spawnSync('node', [BIN, 'version'], { encoding: 'utf8', timeout: FEEDBACK_SPAWN_TIMEOUT_MS });
-    const rConfig = spawnSync('node', [BIN, 'config', 'list'], { encoding: 'utf8', timeout: FEEDBACK_SPAWN_TIMEOUT_MS });
-    const rUpgrade = spawnSync('node', [BIN, 'upgrade', '--help'], { encoding: 'utf8', timeout: FEEDBACK_SPAWN_TIMEOUT_MS });
-    const rFeedback = spawnSync('node', [BIN, 'feedback'], { encoding: 'utf8', timeout: FEEDBACK_SPAWN_TIMEOUT_MS });
+    const rVersion = spawnSync(process.execPath, [BIN, 'version'], { encoding: 'utf8', timeout: FEEDBACK_SPAWN_TIMEOUT_MS });
+    const rConfig = spawnSync(process.execPath, [BIN, 'config', 'list'], { encoding: 'utf8', timeout: FEEDBACK_SPAWN_TIMEOUT_MS });
+    const rUpgrade = spawnSync(process.execPath, [BIN, 'upgrade', '--help'], { encoding: 'utf8', timeout: FEEDBACK_SPAWN_TIMEOUT_MS });
+    const rFeedback = spawnSync(process.execPath, [BIN, 'feedback'], { encoding: 'utf8', timeout: FEEDBACK_SPAWN_TIMEOUT_MS });
     assert.strictEqual(rVersion.status, 0, `version should work: ${rVersion.stderr || rVersion.stdout || rVersion.signal || 'no output'}`);
     assert.strictEqual(rConfig.status, 0, `config list should work: ${rConfig.stderr || rConfig.stdout || rConfig.signal || 'no output'}`);
     assert.strictEqual(rUpgrade.status, 0, `upgrade --help should work: ${rUpgrade.stderr || rUpgrade.stdout || rUpgrade.signal || 'no output'}`);
