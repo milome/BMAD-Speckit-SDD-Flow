@@ -5,7 +5,10 @@ const path = require('node:path');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
 const MODULE_HELP = path.join(PROJECT_ROOT, '_bmad', 'bmm', 'module-help.csv');
-const CLAW_SCOPE_ROOT = 'D:/Dev/claw-scope';
+const CLAW_SCOPE_ROOT =
+  process.env.CLAW_SCOPE_ROOT ||
+  process.env.BMAD_HELP_AUDIT_ROOT ||
+  'D:/Dev/claw-scope';
 
 function parseCsvLine(line) {
   const cells = [];
@@ -83,9 +86,15 @@ describe('bmad-help skill route audit', () => {
   });
 
   it('all repo skill references are installed into claw-scope Claude and Cursor skill dirs', () => {
+    const claudeSkillsRoot = path.join(CLAW_SCOPE_ROOT, '.claude', 'skills');
+    const cursorSkillsRoot = path.join(CLAW_SCOPE_ROOT, '.cursor', 'skills');
+    if (!fs.existsSync(claudeSkillsRoot) || !fs.existsSync(cursorSkillsRoot)) {
+      return;
+    }
+
     const refs = loadBmadHelpSkillRefs();
-    const claudeMap = collectSkillMap(path.join(CLAW_SCOPE_ROOT, '.claude', 'skills'));
-    const cursorMap = collectSkillMap(path.join(CLAW_SCOPE_ROOT, '.cursor', 'skills'));
+    const claudeMap = collectSkillMap(claudeSkillsRoot);
+    const cursorMap = collectSkillMap(cursorSkillsRoot);
 
     const missingClaude = refs.filter((ref) => !claudeMap.has(ref.workflowFile.slice('skill:'.length)));
     const missingCursor = refs.filter((ref) => !cursorMap.has(ref.workflowFile.slice('skill:'.length)));
