@@ -652,7 +652,7 @@ function writeConsumerBmadSpeckitBinWrappers(targetDir, pkgRoot) {
     return;
   }
 
-  const jsRel = path.join('..', 'bmad-speckit-sdd-flow', 'bin', 'bmad-speckit.js');
+  const jsRel = path.join('..', 'bmad-speckit-sdd-flow', 'scripts', 'bmad-speckit-cli.js');
   const cmdBody = [
     '@ECHO off',
     'GOTO start',
@@ -937,14 +937,30 @@ function installConsumerMcpLayout(targetDir, pkgRoot, options = {}) {
     return;
   }
 
-  const result = spawnSync(
-    'powershell.exe',
-    ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-TargetDir', targetDir],
-    {
-      cwd: targetDir,
-      stdio: 'inherit',
+  const shellCandidates =
+    process.platform === 'win32' ? ['powershell.exe', 'pwsh'] : ['pwsh', 'powershell'];
+  let result = null;
+  for (const shell of shellCandidates) {
+    result = spawnSync(
+      shell,
+      ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-TargetDir', targetDir],
+      {
+        cwd: targetDir,
+        stdio: 'inherit',
+      }
+    );
+    if (result.error?.code === 'ENOENT') {
+      result = null;
+      continue;
     }
-  );
+    break;
+  }
+
+  if (result == null) {
+    console.warn('Skip consumer MCP install: PowerShell runtime not found.');
+    return;
+  }
+
   if (result.status !== 0) {
     console.warn('install-consumer-mcp exited', result.status);
   }

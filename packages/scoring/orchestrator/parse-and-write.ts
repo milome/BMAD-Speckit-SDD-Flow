@@ -61,6 +61,8 @@ export interface ParseAndWriteScoreOptions {
   tool_trace_ref?: string;
   /** 可选：tool trace artifact path */
   tool_trace_path?: string;
+  /** 可选：git patch snapshot / git hash 采集工作目录（测试或隔离仓库场景） */
+  gitCwd?: string;
   /** 该 stage 审计未通过（fail）次数；0 表示一次通过；DEBATE 迭代次数作为评分因子 */
   iteration_count?: number;
   /** Story 9.1 T4: 触发阶段标识，写入 record.trigger_stage；如 speckit_5_2、bmad_story_stage4 */
@@ -320,9 +322,10 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     { rulesDir: resolveRulesDir() }
   );
 
+  const gitCwd = options.gitCwd ?? process.cwd();
   const baseCommitHash = options.skipAutoHash
     ? options.baseCommitHash
-    : (options.baseCommitHash ?? getGitHeadHash());
+    : (options.baseCommitHash ?? getGitHeadHash(gitCwd));
   const contentHash = options.skipAutoHash
     ? undefined
     : computeStringHash(content);
@@ -375,7 +378,7 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     allRecords: priorRecords,
   });
   const patchSnapshot = persistPatchSnapshot({
-    cwd: process.cwd(),
+    cwd: gitCwd,
     dataPath: resolvedDataPath,
     runId,
     stage,

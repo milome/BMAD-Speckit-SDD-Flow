@@ -37,7 +37,7 @@ describe('root package bmad-speckit bin', () => {
       expect(existsSync(binCmd)).toBe(true);
       const binText = readFileSync(binCmd, 'utf8');
       expect(binText).toContain('bmad-speckit-sdd-flow');
-      expect(binText).toContain('bin\\bmad-speckit.js');
+      expect(binText).toContain('scripts\\bmad-speckit-cli.js');
 
       const out = run('npx bmad-speckit version', target);
       expect(out).toMatch(/\d+\.\d+\.\d+/);
@@ -66,7 +66,7 @@ describe('root package bmad-speckit bin', () => {
       expect(existsSync(binCmd)).toBe(true);
       const binText = readFileSync(binCmd, 'utf8');
       expect(binText).toContain('bmad-speckit-sdd-flow');
-      expect(binText).toContain('bin\\bmad-speckit.js');
+      expect(binText).toContain('scripts\\bmad-speckit-cli.js');
 
       const out = run('npx bmad-speckit version', target);
       expect(out).toMatch(/\d+\.\d+\.\d+/);

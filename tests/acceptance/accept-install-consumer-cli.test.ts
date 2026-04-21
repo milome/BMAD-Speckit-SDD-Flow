@@ -15,6 +15,11 @@ function run(cmd: string, cwd: string, env?: NodeJS.ProcessEnv): string {
   return execSync(cmd, { cwd, encoding: 'utf8', env: { ...process.env, ...env } });
 }
 
+function runRepoCli(args: string, cwd: string, env?: NodeJS.ProcessEnv): string {
+  const cli = `"${process.execPath}" "${join(PKG_ROOT, 'scripts', 'bmad-speckit-cli.js')}" ${args}`;
+  return run(cli, cwd, env);
+}
+
 describe('install to consumer → CLI acceptance', () => {
   it('init-to-root deploy → bmad-speckit check passes', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-init-'));
@@ -37,7 +42,7 @@ describe('install to consumer → CLI acceptance', () => {
         existsSync(join(target, '_bmad-output', 'config', 'bmad-speckit-install-manifest.json'))
       ).toBe(true);
 
-      const out = run('npx bmad-speckit check', target);
+      const out = runRepoCli('check', target);
       expect(out).toMatch(/Check OK|OK/i);
     } finally {
       rmSync(target, { recursive: true, force: true });
@@ -48,7 +53,7 @@ describe('install to consumer → CLI acceptance', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-ver-'));
     try {
       run(`node scripts/init-to-root.js --full "${target}"`, PKG_ROOT);
-      const out = run('npx bmad-speckit version', target);
+      const out = runRepoCli('version', target);
       expect(out).toMatch(/\d+\.\d+\.\d+/);
     } finally {
       rmSync(target, { recursive: true, force: true });
