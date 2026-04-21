@@ -16,13 +16,21 @@ function run(command: string, cwd: string): string {
   }).trim();
 }
 
+function resolveBaseCommitHash(cwd: string): string {
+  try {
+    return run('git rev-parse --short=8 HEAD~1', cwd);
+  } catch {
+    return run('git rev-parse --short=8 HEAD', cwd);
+  }
+}
+
 describe('parseAndWriteScore stable patch snapshot', () => {
   it('persists an immutable patch snapshot and records its metadata when git diff is available', async () => {
     const dataPath = fs.mkdtempSync(path.join(os.tmpdir(), 'scoring-patch-snapshot-'));
 
     try {
       const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report.md'), 'utf-8');
-      const baseCommitHash = run('git rev-parse --short=8 HEAD~1', process.cwd());
+      const baseCommitHash = resolveBaseCommitHash(process.cwd());
       const runId = `patch-snapshot-${Date.now()}`;
 
       await parseAndWriteScore({

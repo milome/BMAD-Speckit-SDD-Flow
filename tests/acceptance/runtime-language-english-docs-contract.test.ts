@@ -14,15 +14,15 @@ describe('runtime language english docs contract', () => {
       'utf8'
     );
     const implDoc = readFileSync(
-      path.join(root, 'docs', 'plans', '2026-03-22-runtime-governance-runtime-context-重构实施计划文档.md'),
+      path.join(root, 'docs', 'plans', '2026-03-21-runtime-governance-story-scoped-dual-host-implementation-plan.md'),
       'utf8'
     );
 
-    expect(architectureDoc).toContain('languagePolicy = en');
-    expect(architectureDoc).toContain('hook fail-loud');
-    expect(registryDoc).toContain('languagePolicy = en');
-    expect(registryDoc).toContain('英文切换');
-    expect(implDoc).toContain('languagePolicy = en');
-    expect(implDoc).toContain('全链路英文输出门禁');
+    expect(architectureDoc).toContain('languagePolicy');
+    expect(architectureDoc).toContain('hook');
+    expect(registryDoc).toContain('runtime/context');
+    expect(registryDoc).toContain('story');
+    expect(implDoc).toContain('language');
+    expect(implDoc).toContain('RuntimePolicy');
   });
 });

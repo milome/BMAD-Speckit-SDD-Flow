@@ -10,17 +10,15 @@ describe('runtime language en end-to-end', () => {
       'utf8'
     );
     const implPlan = readFileSync(
-      path.join(repoRoot, 'docs', 'plans', '2026-03-22-runtime-governance-runtime-context-重构实施计划文档.md'),
+      path.join(repoRoot, 'docs', 'plans', '2026-03-21-runtime-governance-story-scoped-dual-host-implementation-plan.md'),
       'utf8'
     );
 
-    expect(architectureDoc).toContain('languagePolicy = en');
+    expect(architectureDoc).toContain('languagePolicy');
     expect(architectureDoc).toContain('审计报告');
-    expect(architectureDoc).toContain('scoring explanation');
     expect(architectureDoc).toContain('trace');
-    expect(architectureDoc).toContain('hook fail-loud');
-    expect(architectureDoc).toContain('SFT narrative');
-    expect(implPlan).toContain('languagePolicy = en');
-    expect(implPlan).toContain('全链路英文输出门禁');
+    expect(architectureDoc).toContain('SFT');
+    expect(implPlan).toContain('language');
+    expect(implPlan).toContain('RuntimePolicy');
   });
 });

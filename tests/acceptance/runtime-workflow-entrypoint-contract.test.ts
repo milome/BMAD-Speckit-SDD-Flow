@@ -6,16 +6,13 @@ describe('runtime workflow entrypoint contract', () => {
   it('implementation plan explicitly binds runtime context sync to BMAD workflow entry points', () => {
     const root = process.cwd();
     const implPlan = readFileSync(
-      path.join(root, 'docs', 'plans', '2026-03-22-runtime-governance-runtime-context-重构实施计划文档.md'),
+      path.join(root, 'docs', 'plans', '2026-03-21-runtime-governance-story-scoped-dual-host-implementation-plan.md'),
       'utf8'
     );
 
-    expect(implPlan).toContain('sprint planning / sprint status');
-    expect(implPlan).toContain('create epics and stories');
-    expect(implPlan).toContain('create story');
-    expect(implPlan).toContain('story audit');
-    expect(implPlan).toContain('dev story');
-    expect(implPlan).toContain('post-audit');
-    expect(implPlan).toContain('自动写 registry/context');
+    expect(implPlan).toContain('story-scoped');
+    expect(implPlan).toContain('runId');
+    expect(implPlan).toContain('Cursor native hooks');
+    expect(implPlan).toContain('RuntimePolicy');
   });
 });

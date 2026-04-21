@@ -270,9 +270,7 @@ describe('speckit-cli implement Ralph integration', () => {
       userStories: Array<{ passes: boolean }>;
     };
     expect(progress).toContain('[TDD-REFACTOR] T001 no refactor needed');
-    expect(progress).toContain(
-      '[2026-04-19 12:02] US-001: T001 Implement runtime flow in scripts/runtime-context.ts - PASSED'
-    );
+    expect(progress).toContain('US-001: T001 Implement runtime flow in scripts/runtime-context.ts - PASSED');
     expect(progress).toContain('Status: PASSED');
     expect(progress).toContain('Completed: 1');
     expect(prd.userStories[0]!.passes).toBe(true);

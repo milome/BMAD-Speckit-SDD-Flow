@@ -10,11 +10,11 @@ describe('runtime-policy no speckit template distribution', () => {
         repoRoot,
         'docs',
         'plans',
-        '2026-03-22-runtime-governance-runtime-context-重构实施计划文档.md'
+        '2026-03-21-runtime-governance-story-scoped-dual-host-implementation-plan.md'
       ),
       'utf8'
     );
-    expect(planDoc).toContain('已完全移除，不再作为 runtime context');
     expect(planDoc).toContain('.speckit-state.yaml');
+    expect(planDoc).toContain('不作为并发模式 fallback');
   });
 });
