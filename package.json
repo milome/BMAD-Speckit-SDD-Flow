@@ -36,7 +36,7 @@
     "test:ci:dual": "npm run init:claude && npm run init:cursor && npm run test:speckit-mirror-sync && vitest run && npm run test:bmad-speckit && npm run test:runtime-policy-inject",
     "test:scoring": "vitest run packages/scoring",
     "test:speckit-mirror-sync": "node scripts/verify-speckit-mirror-sync.js",
-    "test:bmad-speckit": "cd packages/bmad-speckit && node --test tests/",
+    "test:bmad-speckit": "npm run test --prefix packages/bmad-speckit",
     "accept:e1-s1": "npx ts-node --project tsconfig.node.json tests/epic-acceptance/accept-e1-s1.ts",
     "accept:e1-s2": "npx ts-node --project tsconfig.node.json tests/epic-acceptance/accept-e1-s2.ts",
     "accept:e2-s1": "npx ts-node --project tsconfig.node.json tests/epic-acceptance/accept-e2-s1.ts",
