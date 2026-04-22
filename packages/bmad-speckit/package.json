@@ -1,7 +1,8 @@
 {
   "name": "bmad-speckit",
   "version": "0.1.0",
-  "description": "BMAD-Speckit CLI: init, check, version, upgrade, config, feedback",
+  "description": "Internal BMAD-Speckit CLI workspace bundled by bmad-speckit-sdd-flow",
+  "private": true,
   "bin": {
     "bmad-speckit": "bin/bmad-speckit.js",
     "bmad-speckit-init": "bin/bmad-speckit-init.js"

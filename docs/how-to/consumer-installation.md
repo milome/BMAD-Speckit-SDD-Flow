@@ -71,7 +71,7 @@ npx --yes --package .\bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --
 反过来，下面这条：
 
 ```powershell
-npx bmad-speckit init . --ai cursor-agent --yes
+npx --yes --package bmad-speckit-sdd-flow bmad-speckit init . --ai cursor-agent --yes
 ```
 
 在本文里只应被视为：
@@ -116,7 +116,7 @@ npx --yes --package .\bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --
 
 ### 3. `npx` 要区分“init”与“已安装后的 init 对齐”
 
-- `npx bmad-speckit init . --ai cursor-agent --yes`
+- `npx --yes --package bmad-speckit-sdd-flow bmad-speckit init . --ai cursor-agent --yes`
   - 更接近“快速初始化入口”
   - 不保证等同于本仓库当前源码里的所有最新定制治理链
 
@@ -185,11 +185,11 @@ npx --yes --package .\bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --
 适合：
 
 - 你希望快速初始化一个消费项目
-- 你接受 npm 包当前提供的能力边界
+- 你接受通过**公开 root 包**临时执行 bundled `bmad-speckit` CLI
 - 你接受“这条路径不一定拿到本仓库最新定制治理链”
 
 ```powershell
-npx bmad-speckit init . --ai cursor-agent --yes
+npx --yes --package bmad-speckit-sdd-flow bmad-speckit init . --ai cursor-agent --yes
 ```
 
 注意：

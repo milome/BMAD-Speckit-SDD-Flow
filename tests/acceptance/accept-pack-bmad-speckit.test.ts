@@ -1,6 +1,6 @@
 /**
- * Acceptance: npm pack → clean consumer dir → npm install .tgz → runtime CLI subcommands.
- * Requires: root `npm run prepublishOnly` so bundleDependencies are synced under packages/bmad-speckit/node_modules.
+ * Acceptance: root npm pack → clean consumer dir → npm install .tgz → runtime CLI subcommands.
+ * Requires: root `npm run prepublishOnly` so bundleDependencies are synced into the root package tarball.
  * Story 15.2 D: bundled `resolve-for-session.cjs` smoke (no consumer `scripts/`).
  */
 import { execSync, spawnSync } from 'node:child_process';
@@ -33,18 +33,19 @@ function run(cmd: string, cwd: string): string {
   });
 }
 
-describe('npm pack bmad-speckit → clean install → CLI', () => {
+function findFirstExistingPath(candidates: string[]): string | null {
+  return candidates.find((candidate) => existsSync(candidate)) ?? null;
+}
+
+describe('npm pack root package → clean install → CLI', () => {
   it('prepublishOnly → pack → install tgz → version + sync + ensure-run', () => {
     run('npm run prepublishOnly', PKG_ROOT);
 
-    // Pack into an isolated temp dir so parallel vitest workers do not delete each other's tarball under packages/bmad-speckit.
-    const packDir = mkdtempSync(join(tmpdir(), 'bmad-speckit-pack-'));
-    run(
-      `npm pack -w bmad-speckit --pack-destination "${packDir.replace(/\\/g, '/')}"`,
-      PKG_ROOT
-    );
+    // Pack into an isolated temp dir so parallel vitest workers do not delete each other's tarball.
+    const packDir = mkdtempSync(join(tmpdir(), 'bmad-speckit-root-pack-'));
+    run(`npm pack --pack-destination "${packDir.replace(/\\/g, '/')}"`, PKG_ROOT);
     const tgzName = readdirSync(packDir).find(
-      (f) => f.startsWith('bmad-speckit') && f.endsWith('.tgz')
+      (f) => f.startsWith('bmad-speckit-sdd-flow-') && f.endsWith('.tgz')
     );
     expect(tgzName).toBeTruthy();
     const tgzPath = join(packDir, tgzName!);
@@ -61,19 +62,34 @@ describe('npm pack bmad-speckit → clean install → CLI', () => {
       const ver = run('npx bmad-speckit version', consumer);
       expect(ver).toMatch(/0\.1\.0/);
 
-      const bundledRe = join(
-        consumer,
-        'node_modules',
-        'bmad-speckit',
-        'node_modules',
-        '@bmad-speckit',
-        'runtime-emit',
-        'dist'
-      );
+      const rootInstallDir = join(consumer, 'node_modules', 'bmad-speckit-sdd-flow');
+      const bundledRe =
+        findFirstExistingPath([
+          join(
+            rootInstallDir,
+            'packages',
+            'bmad-speckit',
+            'node_modules',
+            '@bmad-speckit',
+            'runtime-emit',
+            'dist'
+          ),
+          join(
+            rootInstallDir,
+            'node_modules',
+            'bmad-speckit',
+            'node_modules',
+            '@bmad-speckit',
+            'runtime-emit',
+            'dist'
+          ),
+          join(rootInstallDir, 'node_modules', '@bmad-speckit', 'runtime-emit', 'dist'),
+        ]) ?? '';
       const reEmit = join(bundledRe, 'emit-runtime-policy.cjs');
       const reResolve = join(bundledRe, 'resolve-for-session.cjs');
       const reGovWorker = join(bundledRe, 'governance-runtime-worker.cjs');
       const reGovRunner = join(bundledRe, 'governance-remediation-runner.cjs');
+      expect(bundledRe).toBeTruthy();
       expect(existsSync(reEmit)).toBe(true);
       expect(existsSync(reResolve)).toBe(true);
       expect(existsSync(reGovWorker)).toBe(true);

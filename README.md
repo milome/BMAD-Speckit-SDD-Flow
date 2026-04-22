@@ -37,19 +37,19 @@ What this adds in practice:
 **Prerequisites**: [Node.js](https://nodejs.org) v18+
 
 ```bash
-# Initialize in current directory
-npx bmad-speckit init . --ai cursor-agent --yes
+# Run the published root package without persisting it
+npx --yes --package bmad-speckit-sdd-flow bmad-speckit init . --ai cursor-agent --yes
 
 # Or create a new project
-npx bmad-speckit init my-project --ai cursor-agent --yes
+npx --yes --package bmad-speckit-sdd-flow bmad-speckit init my-project --ai cursor-agent --yes
 
 # Verify installation
-npx bmad-speckit check
+npx --yes --package bmad-speckit-sdd-flow bmad-speckit check
 ```
 
 **Important boundary**:
 
-- The commands above are the **upstream quick bootstrap path**
+- The commands above execute the **single public root package** and expose the bundled `bmad-speckit` CLI
 - They are **not** the highest-confidence installation path for BMAD-Speckit-SDD-Flow custom consumer features on another machine
 - If your priority scenario is **installing into a consumer project on another machine without this repository checked out**, use the verified off-repo path in [Consumer Installation Guide](docs/how-to/consumer-installation.md)
 - In this repository, the verified off-repo path is: install the **root package release artifact** (`bmad-speckit-sdd-flow-<version>.tgz` or the equivalent published package), then run `npx bmad-speckit version` / `check` / `bmad-speckit-init`
@@ -72,7 +72,7 @@ npx bmad-speckit-init --agent claude-code
 npx bmad-speckit-init --agent cursor
 ```
 
-Use the root package tarball as the default install artifact. The same CI artifact also contains `bmad-speckit-<version>.tgz`, but that CLI-only package is not the primary consumer installation path documented here.
+Use the root package tarball as the default install artifact. The CI artifact manifest is only there to help you verify filename, version, and checksum metadata.
 
 > **Not sure what to do?** Run `/bmad-help` in your AI IDE. 它会先识别你的 `flow / contextMaturity / complexity / implementationReadinessStatus`，再把路径标成 `recommended / allowed but not recommended / blocked`。See [Installation & Migration Guide](docs/how-to/migration.md) and [bmad-help 路由模型参考](docs/reference/bmad-help-routing-model.md) for details.
 
@@ -131,7 +131,7 @@ BMAD-Speckit-SDD-Flow/
 │   ├── scoring/                        # Scoring system
 │   └── _config/                        # Configuration files
 ├── packages/                           # Source code (monorepo)
-│   ├── bmad-speckit/                   # CLI package
+│   ├── bmad-speckit/                   # Internal CLI workspace bundled into the root package
 │   └── scoring/                        # Scoring extensions (see [packages/scoring/README.md](packages/scoring/README.md))
 ├── tests/                              # Test suite (acceptance/, epic-acceptance/)
 ├── scripts/                            # Deployment/utility scripts only

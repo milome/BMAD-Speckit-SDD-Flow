@@ -55,15 +55,12 @@ describe('consumer uninstall preserves _bmad-output and host shared roots', () =
   }, 120_000);
 
   it('package init path can uninstall managed surface and preserve _bmad-output', () => {
-    const packDir = mkdtempSync(join(tmpdir(), 'accept-bmad-speckit-pack-'));
+    const packDir = mkdtempSync(join(tmpdir(), 'accept-root-package-pack-'));
     const target = mkdtempSync(join(tmpdir(), 'accept-package-init-uninstall-'));
     const appRoot = join(target, 'app');
     try {
-      run(
-        `npm pack -w bmad-speckit --pack-destination "${packDir.replace(/\\/g, '/')}"`,
-        PKG_ROOT
-      );
-      const tgz = readdirSync(packDir).find((name) => name.endsWith('.tgz'));
+      run(`npm pack --pack-destination "${packDir.replace(/\\/g, '/')}"`, PKG_ROOT);
+      const tgz = readdirSync(packDir).find((name) => name.startsWith('bmad-speckit-sdd-flow-'));
       expect(tgz).toBeTruthy();
 
       writeFileSync(

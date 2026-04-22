@@ -26,7 +26,7 @@ git clone <BMAD-Speckit-SDD-Flow-repo-url> D:\Dev\BMAD-Speckit-SDD-Flow
 
 | 方式                    | 部署内容                     | 额外步骤               | 适用场景                                                              |
 | ----------------------- | ---------------------------- | ---------------------- | --------------------------------------------------------------------- |
-| **方式一 npx**          | 上游模板（npm）              | 无                     | 无 clone、无 PowerShell；注意：可能无本仓库定制（运行时治理、双语等） |
+| **方式一 npx**          | 公开 root 包临时执行         | 无                     | 无 clone、无 PowerShell；注意：可能无本仓库最新定制（运行时治理、双语等） |
 | **方式二 setup.ps1**    | 本仓库 \_bmad 全量           | 全局 Skills + 自动校验 | **首选**：有 PowerShell 7 时，一键完整安装                            |
 | **方式三 npm install**  | 本仓库 \_bmad（postinstall） | 会创建 node_modules    | 需要本地 bmad-speckit 依赖的项目                                      |
 | **方式四 init-to-root** | 本仓库 \_bmad 全量           | 无；Skills 已在项目内  | 无 PowerShell、CI/CD、或只需部署到单项目时                            |
@@ -51,10 +51,9 @@ git clone <BMAD-Speckit-SDD-Flow-repo-url> D:\Dev\BMAD-Speckit-SDD-Flow
 6. 最后执行 `bmad-speckit-init . --agent claude-code --full --no-package-json`
 7. 再执行 `bmad-speckit-init . --agent cursor --full --no-package-json`
 
-这组 artifact 当前会同时包含：
+这组 artifact 当前会包含：
 
 - `bmad-speckit-sdd-flow-<version>.tgz`
-- `bmad-speckit-<version>.tgz`
 - `manifest.json`
 
 默认应优先使用 **根包 tgz**，也就是 `bmad-speckit-sdd-flow-<version>.tgz`。
@@ -90,10 +89,9 @@ npx --yes --package .\bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --
 | 文件                                  | 用途                                   | 是否默认用于消费项目安装 |
 | ------------------------------------- | -------------------------------------- | ------------------------ |
 | `bmad-speckit-sdd-flow-<version>.tgz` | 根包，包含 consumer 安装主路径所需骨架 | **是**                   |
-| `bmad-speckit-<version>.tgz`          | CLI-only 包                            | 否，除非你明确只要 CLI   |
 | `manifest.json`                       | artifact 元数据，帮助核对版本与文件名  | 建议保留                 |
 
-如果你是“另一台没有本仓库源码的机器”这个场景，不要优先拿 `bmad-speckit-<version>.tgz` 代替根包路径。
+如果你是“另一台没有本仓库源码的机器”这个场景，直接选择根包 tgz 即可。
 
 ### 2.1 方式一：npx 免安装
 
@@ -101,16 +99,16 @@ npx --yes --package .\bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --
 
 ```powershell
 cd D:\Dev\your-project
-npx bmad-speckit init . --ai cursor-agent --yes
+npx --yes --package bmad-speckit-sdd-flow bmad-speckit init . --ai cursor-agent --yes
 ```
 
-此方式应理解为**上游快速初始化入口**。它是否包含本仓库当前所有定制能力，取决于 npm 上实际发布的包内容。
+此方式应理解为**公开 root 包的快速初始化入口**。它是否包含本仓库当前所有定制能力，取决于 npm 上实际发布的包内容。
 
 **本文不把它当作“另一台没有本仓库源码的机器”的最高优先级默认方案。**
 
 这条路径的边界必须明确：
 
-- `npx bmad-speckit init` 是“上游快速初始化”入口
+- `npx --package bmad-speckit-sdd-flow bmad-speckit init` 是“公开 root 包快速初始化”入口
 - 它**不等价于**本仓库 `setup.ps1` / `init-to-root.js` 的完整定制部署
 - 如果你需要本仓库新增的 runtime governance 运行链细节，例如：
   - `.claude/hooks/governance-runtime-worker.cjs`
@@ -121,9 +119,9 @@ npx bmad-speckit init . --ai cursor-agent --yes
   - 最新消费项目零-`scripts/` 治理链修复
     则**不要只停留在 `npx init`**，必须改用方式二、三或四。
 
-> **注意**：`npx bmad-speckit init` 拉取的是上游 bmad-method 模板。若需本仓库的定制能力（运行时治理 hooks、双语 i18n 等），请使用方式二或方式四从本地 \_bmad 部署。
+> **注意**：`npx --package bmad-speckit-sdd-flow bmad-speckit init` 使用的是公开 root 包里的 bundled CLI。若需本仓库未发布的最新定制能力（运行时治理 hooks、双语 i18n 等），请使用方式二或方式四从本地 \_bmad 部署。
 >
-> 若本仓库定制已发布到 npm（或自建 registry），`npx bmad-speckit init` 即可使用全部功能；当前建议方式二或四，是因为上游 npm 包可能尚未包含这些定制。
+> 若本仓库定制已发布到 npm（或自建 registry），`npx --package bmad-speckit-sdd-flow bmad-speckit init` 即可使用全部功能；当前建议方式二或方式四，是因为公开 npm 包可能尚未包含未发布改动。
 
 ### 2.2 方式二：PowerShell 一键安装（推荐，有 PowerShell 时）
 
@@ -239,11 +237,11 @@ npx bmad-speckit-init --agent cursor
 
 > 适用于：CI/CD 流水线、脚本化安装、批量部署、已知配置的快速安装。参考 [BMAD Method 非交互式安装](https://docs.bmad-method.org/how-to/non-interactive-installation/)。
 
-**说明**：`npx bmad-speckit init` 从上游 bmad-method 模板拉取；`setup.ps1` 与 `init-to-root.js` 从本仓库的 `_bmad` 部署。若需 BMAD-Speckit-SDD-Flow 的定制内容，优先使用 setup.ps1 或 init-to-root.js。
+**说明**：`npx --package bmad-speckit-sdd-flow bmad-speckit init` 使用公开 root 包；`setup.ps1` 与 `init-to-root.js` 从本仓库的 `_bmad` 部署。若需 BMAD-Speckit-SDD-Flow 的最新定制内容，优先使用 setup.ps1 或 init-to-root.js。
 
 #### bmad-speckit init 可用选项
 
-通过 `npx bmad-speckit init` 初始化时，可使用以下标志跳过交互：
+通过 `npx --package bmad-speckit-sdd-flow bmad-speckit init` 初始化时，可使用以下标志跳过交互：
 
 | 标志                    | 说明                              | 示例                                              |
 | ----------------------- | --------------------------------- | ------------------------------------------------- |
@@ -263,13 +261,13 @@ npx bmad-speckit-init --agent cursor
 
 ```powershell
 cd D:\Dev\your-project
-npx bmad-speckit init . --ai cursor-agent --yes
+npx --yes --package bmad-speckit-sdd-flow bmad-speckit init . --ai cursor-agent --yes
 ```
 
 **CI/CD 流水线示例**（需先安装已发布根包或其 tgz 产物）：
 
 ```powershell
-npx bmad-speckit init "${GITHUB_WORKSPACE}" --ai cursor-agent --modules bmm --yes --no-git
+npx --yes --package bmad-speckit-sdd-flow bmad-speckit init "${GITHUB_WORKSPACE}" --ai cursor-agent --modules bmm --yes --no-git
 ```
 
 #### setup.ps1 可用选项
@@ -401,7 +399,7 @@ foreach ($path in $checks) {
 
 `npx` 有两种常见含义，必须区分：
 
-1. `npx bmad-speckit init ...`
+1. `npx --package bmad-speckit-sdd-flow bmad-speckit init ...`
    - 快速初始化
    - 不保证带上本仓库所有最新定制
 

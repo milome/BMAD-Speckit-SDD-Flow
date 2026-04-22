@@ -3,14 +3,6 @@ name: Publish npm
 on:
   workflow_dispatch:
     inputs:
-      package_target:
-        description: Package to publish to npmjs.org
-        required: true
-        type: choice
-        default: root
-        options:
-          - root
-          - bmad-speckit
       npm_tag:
         description: npm dist-tag
         required: true
@@ -46,31 +38,21 @@ jobs:
       - name: Verify npm auth on npmjs.org
         run: npm whoami --registry="$NPM_REGISTRY"
 
-      - name: Pack selected publish artifact
-        env:
-          PACKAGE_TARGET: ${{ inputs.package_target }}
+      - name: Pack root publish artifact
         run: |
           mkdir -p .artifacts/npm
-
-          if [ "$PACKAGE_TARGET" = "root" ]; then
-            npm pack --json > .artifacts/npm/publish-pack.json
-          else
-            npm pack --json -w bmad-speckit > .artifacts/npm/publish-pack.json
-          fi
-
+          npm pack --json > .artifacts/npm/publish-pack.json
           TGZ_NAME=$(node -e "const fs=require('fs');const pack=JSON.parse(fs.readFileSync('.artifacts/npm/publish-pack.json','utf8'));process.stdout.write(pack[0].filename)")
-          TGZ_PATH=$(node -e "const fs=require('fs');const path=require('path');const pack=JSON.parse(fs.readFileSync('.artifacts/npm/publish-pack.json','utf8'));const candidates=[path.join(process.cwd(), pack[0].filename), path.join(process.cwd(), 'packages', 'bmad-speckit', pack[0].filename)];const hit=candidates.find((candidate)=>fs.existsSync(candidate));if(!hit){console.error(`Cannot locate ${pack[0].filename}`);process.exit(1);}process.stdout.write(hit);")
-          mv "$TGZ_PATH" ".artifacts/npm/$TGZ_NAME"
+          mv "$TGZ_NAME" ".artifacts/npm/$TGZ_NAME"
 
-      - name: Upload selected publish artifact
+      - name: Upload root publish artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: npm-publish-${{ inputs.package_target }}-${{ github.run_id }}
+          name: npm-publish-root-${{ github.run_id }}
           path: .artifacts/npm/
 
       - name: Publish root package to npmjs.org
-        if: inputs.package_target == 'root'
         env:
           DRY_RUN: ${{ inputs.dry_run }}
           NPM_TAG: ${{ inputs.npm_tag }}
@@ -79,16 +61,4 @@ jobs:
             npm publish --dry-run --tag "$NPM_TAG" --registry="$NPM_REGISTRY"
           else
             npm publish --tag "$NPM_TAG" --registry="$NPM_REGISTRY"
-          fi
-
-      - name: Publish bmad-speckit package to npmjs.org
-        if: inputs.package_target == 'bmad-speckit'
-        env:
-          DRY_RUN: ${{ inputs.dry_run }}
-          NPM_TAG: ${{ inputs.npm_tag }}
-        run: |
-          if [ "$DRY_RUN" = "true" ]; then
-            npm publish -w bmad-speckit --dry-run --tag "$NPM_TAG" --registry="$NPM_REGISTRY"
-          else
-            npm publish -w bmad-speckit --tag "$NPM_TAG" --registry="$NPM_REGISTRY"
           fi
