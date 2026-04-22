@@ -50,11 +50,17 @@ function removeDirWithRetry(target: string, attempts = 15, intervalMs = 300): vo
   }
 }
 
+function findFirstExistingPath(candidates: string[]): string | null {
+  return candidates.find((candidate) => existsSync(candidate)) ?? null;
+}
+
 describe('consumer governance zero-scripts install', () => {
   it('keeps consumer root free of governance scripts and runs governance via hook-local entries', () => {
-    const packDir = mkdtempSync(join(tmpdir(), 'gov-zero-scripts-pack-'));
-    run(`npm pack -w bmad-speckit --pack-destination "${packDir.replace(/\\/g, '/')}"`, PKG_ROOT);
-    const tgzName = readdirSync(packDir).find((f) => f.startsWith('bmad-speckit') && f.endsWith('.tgz'));
+    const packDir = mkdtempSync(join(tmpdir(), 'gov-zero-scripts-root-pack-'));
+    run(`npm pack --pack-destination "${packDir.replace(/\\/g, '/')}"`, PKG_ROOT);
+    const tgzName = readdirSync(packDir).find(
+      (f) => f.startsWith('bmad-speckit-sdd-flow-') && f.endsWith('.tgz')
+    );
     expect(tgzName).toBeTruthy();
 
     const consumer = mkdtempSync(join(tmpdir(), 'gov-zero-scripts-consumer-'));
@@ -70,8 +76,17 @@ describe('consumer governance zero-scripts install', () => {
       run('npx bmad-speckit-init --agent cursor', consumer);
 
       expect(existsSync(join(consumer, 'scripts', 'governance-remediation-runner.ts'))).toBe(false);
-      expect(existsSync(join(consumer, 'node_modules', 'bmad-speckit', '_bmad', 'runtime', 'hooks', 'governance-runtime-worker.cjs'))).toBe(true);
-      expect(existsSync(join(consumer, 'node_modules', 'bmad-speckit', '_bmad', 'runtime', 'hooks', 'governance-remediation-runner.cjs'))).toBe(true);
+      const rootInstallDir = join(consumer, 'node_modules', 'bmad-speckit-sdd-flow');
+      expect(
+        existsSync(
+          join(rootInstallDir, '_bmad', 'runtime', 'hooks', 'governance-runtime-worker.cjs')
+        )
+      ).toBe(true);
+      expect(
+        existsSync(
+          join(rootInstallDir, '_bmad', 'runtime', 'hooks', 'governance-remediation-runner.cjs')
+        )
+      ).toBe(true);
 
       run('npx bmad-speckit-init --agent claude-code', consumer);
 
@@ -93,34 +108,31 @@ describe('consumer governance zero-scripts install', () => {
       expect(existsSync(join(consumer, '.claude', 'hooks', 'governance-remediation-runner.cjs'))).toBe(true);
       expect(existsSync(join(consumer, '.claude', 'hooks', 'post-tool-use.cjs'))).toBe(true);
       expect(existsSync(join(consumer, '.claude', 'hooks', 'deferred-gap-governance.cjs'))).toBe(true);
-      expect(
-        existsSync(
+      const runtimeEmitDist =
+        findFirstExistingPath([
           join(
-            consumer,
+            rootInstallDir,
+            'packages',
+            'bmad-speckit',
+            'node_modules',
+            '@bmad-speckit',
+            'runtime-emit',
+            'dist'
+          ),
+          join(
+            rootInstallDir,
             'node_modules',
             'bmad-speckit',
             'node_modules',
             '@bmad-speckit',
             'runtime-emit',
-            'dist',
-            'governance-runtime-worker.cjs'
-          )
-        )
-      ).toBe(true);
-      expect(
-        existsSync(
-          join(
-            consumer,
-            'node_modules',
-            'bmad-speckit',
-            'node_modules',
-            '@bmad-speckit',
-            'runtime-emit',
-            'dist',
-            'governance-remediation-runner.cjs'
-          )
-        )
-      ).toBe(true);
+            'dist'
+          ),
+          join(rootInstallDir, 'node_modules', '@bmad-speckit', 'runtime-emit', 'dist'),
+        ]) ?? '';
+      expect(runtimeEmitDist).toBeTruthy();
+      expect(existsSync(join(runtimeEmitDist, 'governance-runtime-worker.cjs'))).toBe(true);
+      expect(existsSync(join(runtimeEmitDist, 'governance-remediation-runner.cjs'))).toBe(true);
 
       const readinessArtifact = join(
         consumer,

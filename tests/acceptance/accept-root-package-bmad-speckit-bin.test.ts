@@ -70,6 +70,9 @@ describe('root package bmad-speckit bin', () => {
 
       const out = run('npx bmad-speckit version', target);
       expect(out).toMatch(/\d+\.\d+\.\d+/);
+
+      const metadata = JSON.parse(run('npm ls --all --json', target));
+      expect(metadata.problems ?? []).toEqual([]);
     } finally {
       rmSync(target, { recursive: true, force: true });
       rmSync(packDir, { recursive: true, force: true });

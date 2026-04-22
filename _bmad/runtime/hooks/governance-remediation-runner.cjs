@@ -8,6 +8,8 @@ function resolvePackagedRunner(projectRoot) {
   const candidates = [
     path.join(projectRoot, 'node_modules', '@bmad-speckit', 'runtime-emit', 'dist', 'governance-remediation-runner.cjs'),
     path.join(projectRoot, 'node_modules', 'bmad-speckit', 'node_modules', '@bmad-speckit', 'runtime-emit', 'dist', 'governance-remediation-runner.cjs'),
+    path.join(projectRoot, 'node_modules', 'bmad-speckit-sdd-flow', 'node_modules', '@bmad-speckit', 'runtime-emit', 'dist', 'governance-remediation-runner.cjs'),
+    path.join(projectRoot, 'node_modules', 'bmad-speckit-sdd-flow', 'packages', 'bmad-speckit', 'node_modules', '@bmad-speckit', 'runtime-emit', 'dist', 'governance-remediation-runner.cjs'),
     path.join(projectRoot, 'node_modules', 'bmad-speckit-sdd-flow', 'packages', 'runtime-emit', 'dist', 'governance-remediation-runner.cjs'),
   ];
 

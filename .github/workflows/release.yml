@@ -1,0 +1,168 @@
+name: Release Publish
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Optional tag to validate against package versions (for example v0.1.0)
+        required: false
+        type: string
+      npm_tag:
+        description: npm dist-tag
+        required: true
+        default: latest
+        type: string
+      dry_run:
+        description: Use npm publish --dry-run instead of a real publish
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      NPM_REGISTRY: https://registry.npmjs.org
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve release metadata
+        id: meta
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "tag_name=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+            echo "npm_tag=latest" >> "$GITHUB_OUTPUT"
+            echo "dry_run=false" >> "$GITHUB_OUTPUT"
+            echo "should_upload_release_assets=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag_name=${{ inputs.release_tag }}" >> "$GITHUB_OUTPUT"
+            echo "npm_tag=${{ inputs.npm_tag }}" >> "$GITHUB_OUTPUT"
+            echo "dry_run=${{ inputs.dry_run }}" >> "$GITHUB_OUTPUT"
+            echo "should_upload_release_assets=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify release tag and internal version parity
+        env:
+          TAG_NAME: ${{ steps.meta.outputs.tag_name }}
+        run: |
+          node - <<'NODE'
+          const rootPkg = require('./package.json');
+          const cliPkg = require('./packages/bmad-speckit/package.json');
+          const tagName = process.env.TAG_NAME || '';
+
+          if (rootPkg.version !== cliPkg.version) {
+            console.error(
+              `Version mismatch: root=${rootPkg.version}, internal bmad-speckit workspace=${cliPkg.version}`
+            );
+            process.exit(1);
+          }
+
+          if (tagName) {
+            const expectedTag = `v${rootPkg.version}`;
+            if (tagName !== expectedTag) {
+              console.error(`Release tag mismatch: expected ${expectedTag}, got ${tagName}`);
+              process.exit(1);
+            }
+          }
+          NODE
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          registry-url: https://registry.npmjs.org
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build release artifacts
+        run: |
+          npm run build:scoring
+          npm run build:runtime-context
+          npm run build:runtime-emit
+          npm run build:ralph-method
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Run CI-equivalent tests
+        run: npm run test:ci
+
+      - name: Verify npm auth on npmjs.org
+        if: steps.meta.outputs.dry_run != 'true'
+        run: npm whoami --registry="$NPM_REGISTRY"
+
+      - name: Prepare npm package artifacts
+        run: |
+          mkdir -p .artifacts/npm
+
+          npm pack --json > .artifacts/npm/root-pack.json
+          ROOT_TGZ=$(node -e "const fs=require('fs');const pack=JSON.parse(fs.readFileSync('.artifacts/npm/root-pack.json','utf8'));process.stdout.write(pack[0].filename)")
+          mv "$ROOT_TGZ" ".artifacts/npm/$ROOT_TGZ"
+
+      - name: Write npm artifact manifest
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const base = '.artifacts/npm';
+          const summarize = (filename) => {
+            const pack = JSON.parse(fs.readFileSync(filename, 'utf8'))[0];
+            return {
+              name: pack.name,
+              version: pack.version,
+              filename: pack.filename,
+              size: pack.size,
+              unpackedSize: pack.unpackedSize,
+              shasum: pack.shasum,
+            };
+          };
+
+          const manifest = {
+            generatedAt: new Date().toISOString(),
+            root: summarize(`${base}/root-pack.json`),
+          };
+
+          fs.writeFileSync(`${base}/manifest.json`, JSON.stringify(manifest, null, 2));
+          NODE
+
+      - name: Publish root package
+        env:
+          NPM_TAG: ${{ steps.meta.outputs.npm_tag }}
+          DRY_RUN: ${{ steps.meta.outputs.dry_run }}
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            npm publish --dry-run --tag "$NPM_TAG" --registry="$NPM_REGISTRY"
+          else
+            npm publish --tag "$NPM_TAG" --registry="$NPM_REGISTRY"
+          fi
+
+      - name: Upload npm artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-npm-artifacts-${{ github.run_id }}
+          path: .artifacts/npm/
+
+      - name: Upload tgz assets to GitHub Release
+        if: steps.meta.outputs.should_upload_release_assets == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ steps.meta.outputs.tag_name }}
+        run: |
+          gh release upload "$TAG_NAME" \
+            .artifacts/npm/*.tgz \
+            .artifacts/npm/manifest.json \
+            --clobber

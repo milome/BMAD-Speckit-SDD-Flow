@@ -95,6 +95,7 @@ docs/how-to/codex-consumer-mcp-install-layout.md
 docs/pr/
 docs/plans/
 docs/requirements/
+docs/testplan/
 
 # Test story generated code (temporary, not part of project source)
 src/story-assistant-validation/
