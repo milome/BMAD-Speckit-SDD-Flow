@@ -1,6 +1,6 @@
 {
   "name": "@bmad-speckit/runtime-emit",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Pre-bundled emit-runtime-policy, resolve-for-session, and render-audit-block CLIs for Claude/Cursor hooks without ts-node",
   "main": "dist/emit-runtime-policy.cjs",
   "exports": {
@@ -27,13 +27,19 @@
     "prepare": "node build.js",
     "prepublishOnly": "node build.js"
   },
-  "keywords": ["bmad", "speckit", "runtime", "policy", "mcp"],
+  "keywords": [
+    "bmad",
+    "speckit",
+    "runtime",
+    "policy",
+    "mcp"
+  ],
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@bmad-speckit/schema": "file:../schema"
+    "@bmad-speckit/schema": "1.0.1"
   },
   "devDependencies": {
     "esbuild": "^0.25.0"
