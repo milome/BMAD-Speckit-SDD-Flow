@@ -187,7 +187,7 @@ npx bmad-speckit-init --agent cursor
 
 ```powershell
 cd D:\Dev\your-project
-npm install --save-dev .\bmad-speckit-sdd-flow-0.1.0.tgz
+npm install --save-dev .\bmad-speckit-sdd-flow-<version>.tgz
 npx bmad-speckit version
 npx bmad-speckit check
 npx bmad-speckit-init --agent claude-code

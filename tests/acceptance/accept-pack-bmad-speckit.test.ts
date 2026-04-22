@@ -9,6 +9,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   readdirSync,
   rmSync,
   writeFileSync,
@@ -19,6 +20,7 @@ import { describe, expect, it } from 'vitest';
 import { writeMinimalRegistryAndProjectContext } from '../helpers/runtime-registry-fixture';
 
 const PKG_ROOT = join(import.meta.dirname, '..', '..');
+const ROOT_PACKAGE_VERSION = JSON.parse(readFileSync(join(PKG_ROOT, 'package.json'), 'utf8')).version;
 
 function run(cmd: string, cwd: string): string {
   return execSync(cmd, {
@@ -60,7 +62,7 @@ describe('npm pack root package → clean install → CLI', () => {
       run(`npm install "${tgzPath.replace(/\\/g, '/')}"`, consumer);
 
       const ver = run('npx bmad-speckit version', consumer);
-      expect(ver).toMatch(/0\.1\.0/);
+      expect(ver).toContain(ROOT_PACKAGE_VERSION);
 
       const rootInstallDir = join(consumer, 'node_modules', 'bmad-speckit-sdd-flow');
       const bundledRe =

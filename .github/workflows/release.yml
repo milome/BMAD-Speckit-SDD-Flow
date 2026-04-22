@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: Optional tag to validate against package versions (for example v0.1.0)
+        description: Optional tag to validate against package versions (for example v1.0.0)
         required: false
         type: string
       npm_tag:

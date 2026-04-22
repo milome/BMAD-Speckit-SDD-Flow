@@ -54,7 +54,7 @@ npm link bmad-speckit
 **验证链接是否成功:**
 ```bash
 npx bmad-speckit --version
-# 应输出: 0.1.0
+# 应输出当前包版本（本次发布链目标为 1.0.0）
 ```
 
 ### 步骤 5: 运行完整测试

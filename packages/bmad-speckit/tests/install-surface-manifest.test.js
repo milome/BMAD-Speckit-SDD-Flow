@@ -11,6 +11,7 @@ const {
   normalizeAgentList,
   readInstallManifest,
 } = require('../src/services/install-surface-manifest');
+const ROOT_PACKAGE_VERSION = require('../../../package.json').version;
 
 function writeJson(filePath, payload) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -32,7 +33,7 @@ describe('install-surface-manifest helper', () => {
       const tracker = createInstallStateTracker({
         projectRoot: root,
         packageName: 'bmad-speckit-sdd-flow',
-        packageVersion: '0.1.0',
+        packageVersion: ROOT_PACKAGE_VERSION,
         installedVia: 'postinstall',
         installedTools: ['cursor'],
       });
@@ -72,7 +73,7 @@ describe('install-surface-manifest helper', () => {
       const tracker = createInstallStateTracker({
         projectRoot: root,
         packageName: 'bmad-speckit',
-        packageVersion: '0.1.0',
+        packageVersion: ROOT_PACKAGE_VERSION,
         installedVia: 'bmad-speckit-init-command',
         installedTools: ['cursor-agent'],
       });
@@ -105,7 +106,7 @@ describe('install-surface-manifest helper', () => {
         manifest_version: 2,
         install_session_id: 'old-session',
         package_name: 'bmad-speckit-sdd-flow',
-        package_version: '0.1.0',
+        package_version: ROOT_PACKAGE_VERSION,
         installed_via: 'postinstall',
         generated_at: new Date().toISOString(),
         project_root: root,
@@ -139,7 +140,7 @@ describe('install-surface-manifest helper', () => {
       const tracker = createInstallStateTracker({
         projectRoot: root,
         packageName: 'bmad-speckit-sdd-flow',
-        packageVersion: '0.1.0',
+        packageVersion: ROOT_PACKAGE_VERSION,
         installedVia: 'bmad-speckit-init',
         installedTools: ['claude-code'],
       });

@@ -1,6 +1,6 @@
 {
   "name": "@bmad-speckit/runtime-emit",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Pre-bundled emit-runtime-policy, resolve-for-session, and render-audit-block CLIs for Claude/Cursor hooks without ts-node",
   "main": "dist/emit-runtime-policy.cjs",
   "exports": {

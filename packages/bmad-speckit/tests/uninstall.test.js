@@ -8,6 +8,7 @@ const { spawnSync } = require('child_process');
 const BIN = path.join(__dirname, '../bin/bmad-speckit.js');
 const { uninstallCommand } = require('../src/commands/uninstall');
 const { getInstallManifestPath, getUninstallReportPath, writeInstallManifest } = require('../src/services/install-surface-manifest');
+const ROOT_PACKAGE_VERSION = require('../../../package.json').version;
 
 function writeJson(filePath, payload) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -19,7 +20,7 @@ function createBaseManifest(projectRoot, overrides = {}) {
     manifest_version: 2,
     install_session_id: 'session-1',
     package_name: 'bmad-speckit-sdd-flow',
-    package_version: '0.1.0',
+    package_version: ROOT_PACKAGE_VERSION,
     installed_via: 'postinstall',
     generated_at: new Date().toISOString(),
     project_root: projectRoot,
