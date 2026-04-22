@@ -92,6 +92,14 @@
   "workspaces": [
     "packages/*"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/milome/BMAD-Speckit-SDD-Flow"
+  },
+  "bugs": {
+    "url": "https://github.com/milome/BMAD-Speckit-SDD-Flow/issues"
+  },
+  "homepage": "https://github.com/milome/BMAD-Speckit-SDD-Flow",
   "license": "MIT",
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
