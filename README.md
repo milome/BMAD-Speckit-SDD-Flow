@@ -72,6 +72,8 @@ Ensure you have **[Node.js](https://nodejs.org) v18+** installed.
 
 Use the published root package directly. This is the current recommended path when you're installing into a consumer project without cloning this repository.
 
+This is the verified off-repo path for the published package contract.
+
 ```bash
 npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit version
 npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent claude-code --full --no-package-json
