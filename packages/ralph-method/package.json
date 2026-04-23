@@ -1,6 +1,6 @@
 {
   "name": "@bmad-speckit/ralph-method",
-  "version": "0.1.0",
+  "version": "1.0.1",
   "description": "Shared Ralph tracking runtime for prepare, phase recording, and compliance verification",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

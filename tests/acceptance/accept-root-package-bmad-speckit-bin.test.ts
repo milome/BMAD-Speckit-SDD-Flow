@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 const PKG_ROOT = join(import.meta.dirname, '..', '..');
 const NPM_CACHE_DIR = mkdtempSync(join(tmpdir(), 'accept-root-bin-npm-cache-'));
+const ROOT_PACKAGE_VERSION = JSON.parse(readFileSync(join(PKG_ROOT, 'package.json'), 'utf8')).version;
 
 function run(cmd: string, cwd: string): string {
   return execSync(cmd, {
@@ -51,7 +52,7 @@ describe('root package bmad-speckit bin', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-root-bin-tgz-'));
     try {
       run(`npm pack --json --pack-destination "${packDir.replace(/\\/g, '/')}"`, PKG_ROOT);
-      const tgz = join(packDir, 'bmad-speckit-sdd-flow-0.1.0.tgz');
+      const tgz = join(packDir, `bmad-speckit-sdd-flow-${ROOT_PACKAGE_VERSION}.tgz`);
       expect(existsSync(tgz)).toBe(true);
 
       writeFileSync(
@@ -84,7 +85,7 @@ describe('root package bmad-speckit bin', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-root-npx-tgz-'));
     try {
       run(`npm pack --json --pack-destination "${packDir.replace(/\\/g, '/')}"`, PKG_ROOT);
-      const tgz = join(packDir, 'bmad-speckit-sdd-flow-0.1.0.tgz');
+      const tgz = join(packDir, `bmad-speckit-sdd-flow-${ROOT_PACKAGE_VERSION}.tgz`);
       expect(existsSync(tgz)).toBe(true);
 
       const packageJsonPath = join(target, 'package.json');
@@ -124,7 +125,7 @@ describe('root package bmad-speckit bin', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-root-ralph-tgz-'));
     try {
       run(`npm pack --json --pack-destination "${packDir.replace(/\\/g, '/')}"`, PKG_ROOT);
-      const tgz = join(packDir, 'bmad-speckit-sdd-flow-0.1.0.tgz');
+      const tgz = join(packDir, `bmad-speckit-sdd-flow-${ROOT_PACKAGE_VERSION}.tgz`);
       expect(existsSync(tgz)).toBe(true);
 
       writeFileSync(

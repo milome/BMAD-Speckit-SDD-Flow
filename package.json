@@ -1,6 +1,6 @@
 {
   "name": "bmad-speckit-sdd-flow",
-  "version": "0.1.0",
+  "version": "1.0.1",
   "description": "BMAD + Speckit workflow and scoring skeleton; deploy _bmad to project root",
   "scripts": {
     "lint": "eslint . --ext .ts,.js",
@@ -36,7 +36,7 @@
     "test:ci:dual": "npm run init:claude && npm run init:cursor && npm run test:speckit-mirror-sync && vitest run && npm run test:bmad-speckit && npm run test:runtime-policy-inject",
     "test:scoring": "vitest run packages/scoring",
     "test:speckit-mirror-sync": "node scripts/verify-speckit-mirror-sync.js",
-    "test:bmad-speckit": "cd packages/bmad-speckit && node --test tests/",
+    "test:bmad-speckit": "npm run test --prefix packages/bmad-speckit",
     "accept:e1-s1": "npx ts-node --project tsconfig.node.json tests/epic-acceptance/accept-e1-s1.ts",
     "accept:e1-s2": "npx ts-node --project tsconfig.node.json tests/epic-acceptance/accept-e1-s2.ts",
     "accept:e2-s1": "npx ts-node --project tsconfig.node.json tests/epic-acceptance/accept-e2-s1.ts",
@@ -92,6 +92,14 @@
   "workspaces": [
     "packages/*"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/milome/BMAD-Speckit-SDD-Flow"
+  },
+  "bugs": {
+    "url": "https://github.com/milome/BMAD-Speckit-SDD-Flow/issues"
+  },
+  "homepage": "https://github.com/milome/BMAD-Speckit-SDD-Flow",
   "license": "MIT",
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
@@ -99,7 +107,7 @@
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "@vitest/coverage-v8": "^4.0.18",
-    "bmad-speckit": "file:packages/bmad-speckit",
+    "bmad-speckit": "1.0.1",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-jsdoc": "^62.7.1",
@@ -110,14 +118,14 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@bmad-speckit/ralph-method": "file:packages/ralph-method",
-    "@bmad-speckit/runtime-context": "file:packages/runtime-context",
-    "@bmad-speckit/runtime-emit": "file:packages/runtime-emit",
-    "@bmad-speckit/schema": "file:packages/schema",
-    "@bmad-speckit/scoring": "file:packages/scoring",
+    "@bmad-speckit/ralph-method": "1.0.1",
+    "@bmad-speckit/runtime-context": "1.0.1",
+    "@bmad-speckit/runtime-emit": "1.0.1",
+    "@bmad-speckit/schema": "1.0.1",
+    "@bmad-speckit/scoring": "1.0.1",
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",
-    "bmad-speckit": "file:packages/bmad-speckit",
+    "bmad-speckit": "1.0.1",
     "js-yaml": "^4.1.1"
   }
 }

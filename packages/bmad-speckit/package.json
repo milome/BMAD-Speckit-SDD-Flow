@@ -1,6 +1,6 @@
 {
   "name": "bmad-speckit",
-  "version": "0.1.0",
+  "version": "1.0.1",
   "description": "Internal BMAD-Speckit CLI workspace bundled by bmad-speckit-sdd-flow",
   "private": true,
   "bin": {
@@ -20,9 +20,14 @@
     "prepack": "npm run build:scoring --prefix ../.. && npm run build:runtime-context --prefix ../.. && npm run build:runtime-emit --prefix ../.. && npm run build:ralph-method --prefix ../.. && node -e \"process.env.BMAD_PREPUBLISH_SILENT='1'; process.env.BMAD_PACK_SESSION='1'; require('../../scripts/prepublish-check.js')\"",
     "postpack": "node ../../scripts/cleanup-packed-bmad.js",
     "prepublishOnly": "node ../../scripts/prepublish-check.js",
-    "test": "node --test tests/ 2>/dev/null || echo 'No tests yet'"
+    "test": "node scripts/run-node-tests.cjs"
   },
-  "keywords": ["bmad", "speckit", "sdd", "init"],
+  "keywords": [
+    "bmad",
+    "speckit",
+    "sdd",
+    "init"
+  ],
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"
@@ -38,11 +43,11 @@
     "nock": "^15.0.0"
   },
   "dependencies": {
-    "@bmad-speckit/schema": "file:../schema",
-    "@bmad-speckit/ralph-method": "file:../ralph-method",
-    "@bmad-speckit/runtime-emit": "file:../runtime-emit",
-    "@bmad-speckit/runtime-context": "file:../runtime-context",
-    "@bmad-speckit/scoring": "file:../scoring",
+    "@bmad-speckit/schema": "1.0.1",
+    "@bmad-speckit/ralph-method": "1.0.1",
+    "@bmad-speckit/runtime-emit": "1.0.1",
+    "@bmad-speckit/runtime-context": "1.0.1",
+    "@bmad-speckit/scoring": "1.0.1",
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",
     "chalk": "^5.3.0",

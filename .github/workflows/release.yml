@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: Optional tag to validate against package versions (for example v0.1.0)
+        description: Optional tag to validate against package versions (for example v1.0.0)
         required: false
         type: string
       npm_tag:
@@ -28,7 +28,6 @@ jobs:
       id-token: write
     env:
       NPM_REGISTRY: https://registry.npmjs.org
-      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -76,7 +75,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
           registry-url: https://registry.npmjs.org
 
@@ -100,10 +99,6 @@ jobs:
 
       - name: Run CI-equivalent tests
         run: npm run test:ci
-
-      - name: Verify npm auth on npmjs.org
-        if: steps.meta.outputs.dry_run != 'true'
-        run: npm whoami --registry="$NPM_REGISTRY"
 
       - name: Prepare npm package artifacts
         run: |
@@ -138,15 +133,15 @@ jobs:
           fs.writeFileSync(`${base}/manifest.json`, JSON.stringify(manifest, null, 2));
           NODE
 
-      - name: Publish root package
+      - name: Publish root package via npm trusted publishing
         env:
           NPM_TAG: ${{ steps.meta.outputs.npm_tag }}
           DRY_RUN: ${{ steps.meta.outputs.dry_run }}
         run: |
           if [ "$DRY_RUN" = "true" ]; then
-            npm publish --dry-run --tag "$NPM_TAG" --registry="$NPM_REGISTRY"
+            npm publish --dry-run --access public --tag "$NPM_TAG" --registry="$NPM_REGISTRY"
           else
-            npm publish --tag "$NPM_TAG" --registry="$NPM_REGISTRY"
+            npm publish --access public --tag "$NPM_TAG" --registry="$NPM_REGISTRY"
           fi
 
       - name: Upload npm artifacts
