@@ -316,7 +316,7 @@ const ENV_CURSOR: EnvironmentConfig = {
   subagentTool: 'mcp_task',
   subagentType: 'generalPurpose',
   skillsRoot: '.cursor/skills',
-  agentsRoot: '.claude/agents',
+  agentsRoot: '.cursor/agents',
   configPath: DEFAULT_CONFIG_PATH,
 };
 

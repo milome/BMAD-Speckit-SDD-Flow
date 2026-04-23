@@ -95,6 +95,7 @@ describe('auditor host runner', () => {
             triggerStage: expectedTriggerStage,
             event: expectedEvent,
             iterationCount: '0',
+            sourceHashFilePath: artifactDocPath.replace(/\\/g, '/'),
           })
         );
       } finally {
@@ -440,6 +441,158 @@ describe('auditor host runner', () => {
         scoringFailureMode: 'non_blocking_failure',
         packetExecutionClosureStatus: 'gate_passed',
       });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed for story-flow spec closeout when storyPath is missing', async () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'auditor-host-spec-storypath-missing-'));
+    try {
+      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+
+      const artifactDocPath = path.join(
+        root,
+        'specs',
+        'epic-1-demo',
+        'story-1-login',
+        'spec-E1-S1.md'
+      );
+      const reportPath = path.join(
+        root,
+        'specs',
+        'epic-1-demo',
+        'story-1-login',
+        'AUDIT_spec-E1-S1.md'
+      );
+      mkdirSync(path.dirname(reportPath), { recursive: true });
+      writeFileSync(
+        reportPath,
+        [
+          'status: PASS',
+          'stage: spec',
+          `reportPath: ${reportPath.replace(/\\/g, '/')}`,
+          'iteration_count: 0',
+          'required_fixes_count: 0',
+          'score_trigger_present: true',
+          `artifactDocPath: ${artifactDocPath.replace(/\\/g, '/')}`,
+          'converged: true',
+        ].join('\n'),
+        'utf8'
+      );
+
+      await expect(
+        runAuditorHost(
+          {
+            projectRoot: root,
+            reportPath,
+            stage: 'spec',
+            artifactPath: artifactDocPath,
+          },
+          { scoreCommand: vi.fn().mockResolvedValue(undefined), executeAuditorScript: vi.fn() }
+        )
+      ).rejects.toThrow(/storyPath/i);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks story-flow spec closeout when Story→Spec source_hash lock detects drift', async () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'auditor-host-spec-version-lock-'));
+    try {
+      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+
+      const artifactDocPath = path.join(
+        root,
+        'specs',
+        'epic-1-demo',
+        'story-1-login',
+        'spec-E1-S1.md'
+      );
+      const storyPath = path.join(
+        root,
+        '_bmad-output',
+        'implementation-artifacts',
+        'epic-1-demo',
+        'story-1-login',
+        '1-1-login.md'
+      );
+      const reportPath = path.join(
+        root,
+        'specs',
+        'epic-1-demo',
+        'story-1-login',
+        'AUDIT_spec-E1-S1.md'
+      );
+      mkdirSync(path.dirname(reportPath), { recursive: true });
+      mkdirSync(path.dirname(storyPath), { recursive: true });
+      writeFileSync(storyPath, '# story\n', 'utf8');
+      writeFileSync(
+        reportPath,
+        [
+          'status: PASS',
+          'stage: spec',
+          `reportPath: ${reportPath.replace(/\\/g, '/')}`,
+          `storyPath: ${storyPath.replace(/\\/g, '/')}`,
+          'iteration_count: 0',
+          'required_fixes_count: 0',
+          'score_trigger_present: true',
+          `artifactDocPath: ${artifactDocPath.replace(/\\/g, '/')}`,
+          'converged: true',
+        ].join('\n'),
+        'utf8'
+      );
+
+      const scoreCommand = vi.fn().mockResolvedValue(undefined);
+      const loadLatestRecordByStage = vi.fn().mockReturnValue({
+        source_hash: 'sha256:stale',
+      });
+      const checkPreconditionHash = vi.fn().mockReturnValue({
+        passed: false,
+        action: 'block',
+        actual_hash: 'sha256:current',
+        expected_hash: 'sha256:stale',
+        preconditionFile: storyPath,
+        reason: 'hash mismatch',
+      });
+
+      const result = await runAuditorHost(
+        {
+          projectRoot: root,
+          reportPath,
+          stage: 'spec',
+          artifactPath: artifactDocPath,
+        },
+        {
+          scoreCommand,
+          executeAuditorScript: vi.fn(),
+          loadLatestRecordByStage,
+          checkPreconditionHash,
+        }
+      );
+
+      expect(result.status).toBe('PASS');
+      expect(loadLatestRecordByStage).toHaveBeenCalledWith(
+        'story',
+        undefined,
+        storyPath.replace(/\\/g, '/')
+      );
+      expect(checkPreconditionHash).toHaveBeenCalledWith(
+        'spec',
+        storyPath.replace(/\\/g, '/'),
+        'sha256:stale'
+      );
+      expect(scoreCommand).not.toHaveBeenCalled();
+      expect(result.closeoutEnvelope).toMatchObject({
+        resultCode: 'blocked',
+        rerunDecision: 'rerun_required',
+        packetExecutionClosureStatus: 'retry_pending',
+        scoringFailureMode: 'not_run',
+      });
+      expect(result.closeoutEnvelope.requiredFixes[0]).toContain('Story→Spec source_hash lock blocked');
+      expect(result.closeoutEnvelope.requiredFixes[0]).toContain('storyPath drift detected');
+      const registry = readRuntimeContextRegistry(root);
+      expect(registry.latestReviewerCloseout?.closeoutApproved).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

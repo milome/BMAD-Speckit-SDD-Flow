@@ -2,6 +2,7 @@ export interface ParseBmadAuditResultInput {
   status?: 'PASS' | 'FAIL';
   stage?: string;
   reportPath?: string;
+  storyPath?: string;
   iterationCount?: number;
   requiredFixesCount?: number;
   requiredFixes?: string[];
@@ -63,6 +64,11 @@ export function parseBmadAuditResult(input: string): ParseBmadAuditResultInput {
     /reportPath:\s*(.+)/,
     /报告路径:\s*(.+)/
   );
+  const storyPath = matchCanonicalThenCompatibility(
+    input,
+    /storyPath:\s*(.+)/,
+    /Story\s*文档路径:\s*(.+)/
+  );
   const iterationCountRaw = matchCanonicalThenCompatibility(
     input,
     /iteration_count:\s*(\d+)/,
@@ -94,6 +100,7 @@ export function parseBmadAuditResult(input: string): ParseBmadAuditResultInput {
     status,
     stage,
     reportPath,
+    storyPath,
     iterationCount: iterationCountRaw ? Number(iterationCountRaw) : 0,
     requiredFixesCount: requiredFixesCountRaw ? Number(requiredFixesCountRaw) : 0,
     ...(requiredFixes.length > 0 ? { requiredFixes } : {}),

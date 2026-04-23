@@ -20,7 +20,7 @@ function makeRuntimeConfig(): RuntimeConfig {
       subagentTool: 'mcp_task',
       subagentType: 'generalPurpose',
       skillsRoot: '.cursor/skills',
-      agentsRoot: '.claude/agents',
+      agentsRoot: '.cursor/agents',
       configPath: '_bmad/_config/bmad-story-config.yaml',
     },
   };

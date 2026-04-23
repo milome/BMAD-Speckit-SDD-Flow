@@ -16,6 +16,27 @@ export interface VersionLockResult {
   reason: string;
 }
 
+function normalizeComparablePath(input: string): string {
+  return path.normalize(input).replace(/\\/g, '/');
+}
+
+function matchesSourcePath(
+  recordSourcePath: string | undefined,
+  expectedSourcePath: string | undefined
+): boolean {
+  if (!expectedSourcePath) return true;
+  if (!recordSourcePath) return false;
+
+  const normalizedRecord = normalizeComparablePath(recordSourcePath);
+  const normalizedExpected = normalizeComparablePath(expectedSourcePath);
+
+  return (
+    normalizedRecord === normalizedExpected ||
+    normalizedRecord.endsWith(normalizedExpected) ||
+    normalizedExpected.endsWith(normalizedRecord)
+  );
+}
+
 /**
  * 校验前置阶段源文件的 hash 是否与上一阶段审计记录中的 source_hash 一致。
  * hash 匹配→proceed；不匹配→block；异常→warn_and_proceed。
@@ -94,7 +115,11 @@ export function checkPreconditionHash(
  * @param {string} [dataPath] - 数据目录路径，默认为 scoring/data
  * @returns {RunScoreRecord | null} 最新的运行评分记录，若无则返回 null
  */
-export function loadLatestRecordByStage(stage: string, dataPath?: string): RunScoreRecord | null {
+export function loadLatestRecordByStage(
+  stage: string,
+  dataPath?: string,
+  sourcePath?: string
+): RunScoreRecord | null {
   const base = dataPath ?? path.resolve(process.cwd(), 'packages', 'scoring', 'data');
   let dir: string[];
   try {
@@ -109,7 +134,7 @@ export function loadLatestRecordByStage(stage: string, dataPath?: string): RunSc
     try {
       const content = fs.readFileSync(fp, 'utf-8');
       const r = JSON.parse(content) as RunScoreRecord;
-      if (r.stage === stage && r.timestamp) {
+      if (r.stage === stage && r.timestamp && matchesSourcePath(r.source_path, sourcePath)) {
         records.push(r);
       }
     } catch {

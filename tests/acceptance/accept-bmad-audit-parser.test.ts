@@ -6,6 +6,7 @@ describe('parseBmadAuditResult', () => {
     const result = parseBmadAuditResult(`
 status: PASS
 reportPath: reports/spec.md
+storyPath: _bmad-output/implementation-artifacts/epic-1/story-1/1-1.md
 iteration_count: 2
 required_fixes_count: 0
 score_trigger_present: true
@@ -17,6 +18,7 @@ summary: ok
     expect(result).toEqual({
       status: 'PASS',
       reportPath: 'reports/spec.md',
+      storyPath: '_bmad-output/implementation-artifacts/epic-1/story-1/1-1.md',
       iterationCount: 2,
       requiredFixesCount: 0,
       scoreTriggerPresent: true,
@@ -29,6 +31,7 @@ summary: ok
     const result = parseBmadAuditResult(`
 status: FAIL
 reportPath: reports/spec.md
+storyPath: _bmad-output/implementation-artifacts/epic-1/story-1/1-1.md
 iteration_count: 1
 required_fixes_count: 3
 score_trigger_present: false
@@ -38,6 +41,7 @@ summary: has issues
 `);
 
     expect(result.status).toBe('FAIL');
+    expect(result.storyPath).toBe('_bmad-output/implementation-artifacts/epic-1/story-1/1-1.md');
     expect(result.requiredFixesCount).toBe(3);
     expect(result.scoreTriggerPresent).toBe(false);
   });
@@ -48,6 +52,8 @@ status: PASS
 状态: FAIL
 reportPath: reports/canonical.md
 报告路径: reports/localized.md
+storyPath: specs/story-canonical.md
+Story 文档路径: specs/story-localized.md
 iteration_count: 2
 迭代次数: 99
 required_fixes_count: 0
@@ -63,6 +69,7 @@ converged: false
     expect(result).toEqual({
       status: 'PASS',
       reportPath: 'reports/canonical.md',
+      storyPath: 'specs/story-canonical.md',
       iterationCount: 2,
       requiredFixesCount: 0,
       scoreTriggerPresent: true,
@@ -79,6 +86,7 @@ converged: false
 
 状态: PASS
 报告路径: reports/tasks-audit.md
+Story 文档路径: _bmad-output/implementation-artifacts/epic-1/story-1/1-1.md
 迭代次数: 3
 待修复项数: 1
 已检测到评分触发器: true
@@ -92,6 +100,7 @@ Conclusion: one gap remains, but the loop converged.
     expect(result).toEqual({
       status: 'PASS',
       reportPath: 'reports/tasks-audit.md',
+      storyPath: '_bmad-output/implementation-artifacts/epic-1/story-1/1-1.md',
       iterationCount: 3,
       requiredFixesCount: 1,
       scoreTriggerPresent: true,

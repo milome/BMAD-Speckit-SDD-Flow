@@ -21,6 +21,11 @@ import {
   type ReviewGovernanceClosureV1,
   type RunAuditorHostInvocationInput,
 } from './reviewer-schema';
+import {
+  checkPreconditionHash,
+  loadLatestRecordByStage,
+  type VersionLockResult,
+} from '../packages/scoring/gate/version-lock';
 const { scoreCommand: defaultScoreCommand } =
   require('../packages/bmad-speckit/src/commands/score.js') as {
     scoreCommand: (opts: Record<string, unknown>) => Promise<unknown>;
@@ -36,6 +41,8 @@ interface RunAuditorHostDeps {
     artifactPath: string;
     iteration: string;
   }) => void;
+  loadLatestRecordByStage?: typeof loadLatestRecordByStage;
+  checkPreconditionHash?: typeof checkPreconditionHash;
 }
 
 interface RunAuditorHostResult {
@@ -102,6 +109,22 @@ function isOrphanCloseoutStage(stage: string): stage is 'bugfix' | 'standalone_t
 
 function normalizeComparablePath(value: string): string {
   return path.normalize(value).replace(/\\/g, '/');
+}
+
+function isStoryFlowSpecArtifact(artifactPath: string): boolean {
+  return /^spec-E[^\\/]+-S[^\\/]+\.md$/i.test(path.basename(artifactPath));
+}
+
+function buildStorySpecVersionLockMessage(storyPath: string, result: VersionLockResult): string {
+  const normalizedStoryPath = storyPath.replace(/\\/g, '/');
+  switch (result.reason) {
+    case 'hash mismatch':
+      return `Story→Spec source_hash lock blocked: storyPath drift detected for ${normalizedStoryPath}. Re-run Story audit or regenerate spec against the latest Story document.`;
+    case 'no prior record':
+      return `Story→Spec source_hash lock warning: no prior story audit record found for ${normalizedStoryPath}; proceed with explicit caution.`;
+    default:
+      return `Story→Spec source_hash lock blocked: ${result.reason} (${normalizedStoryPath}).`;
+  }
 }
 
 function validateOrphanCloseoutReport(input: {
@@ -211,6 +234,7 @@ export async function runAuditorHost(
   const parsed = parseBmadAuditResult(content);
   const status = parsed.status ?? 'UNKNOWN';
   const parsedArtifactDocPath = parsed.artifactDocPath?.trim();
+  const parsedStoryPath = parsed.storyPath?.trim();
   const effectiveArtifactDocPath = parsedArtifactDocPath || normalizedInput.artifactPath;
   const expectedCloseoutStage = consumer.closeoutStage;
   if (isOrphanCloseoutStage(expectedCloseoutStage)) {
@@ -232,17 +256,47 @@ export async function runAuditorHost(
         : [];
 
   const scoreCommand = deps.scoreCommand ?? defaultScoreCommand;
+  const loadLatestRecordForStage = deps.loadLatestRecordByStage ?? loadLatestRecordByStage;
+  const checkPreconditionHashFn = deps.checkPreconditionHash ?? checkPreconditionHash;
   let scoreRecord: Record<string, unknown> | undefined;
   let scoreError: string | undefined;
   let scoringFailureMode: 'not_run' | 'succeeded' | 'non_blocking_failure' =
     parsed.scoreTriggerPresent && scoreCommand ? 'succeeded' : 'not_run';
+  let storySpecVersionLock: VersionLockResult | undefined;
 
-  if (parsed.scoreTriggerPresent && scoreCommand) {
+  if (hostStage === 'spec' && isStoryFlowSpecArtifact(effectiveArtifactDocPath)) {
+    if (!parsedStoryPath) {
+      throw new Error(
+        'story-flow spec closeout missing required fields: storyPath'
+      );
+    }
+
+    const priorStoryRecord = loadLatestRecordForStage('story', undefined, parsedStoryPath);
+    storySpecVersionLock = checkPreconditionHashFn(
+      'spec',
+      parsedStoryPath,
+      priorStoryRecord?.source_hash ?? null
+    );
+
+    if (storySpecVersionLock.action === 'warn_and_proceed') {
+      console.warn(buildStorySpecVersionLockMessage(parsedStoryPath, storySpecVersionLock));
+    }
+  }
+
+  if (storySpecVersionLock?.action === 'block') {
+    const blockingReason = buildStorySpecVersionLockMessage(parsedStoryPath!, storySpecVersionLock);
+    scoreRecord = {
+      effective_verdict: 'blocked',
+      blocking_reason: blockingReason,
+    };
+    scoringFailureMode = 'not_run';
+  } else if (parsed.scoreTriggerPresent && scoreCommand) {
     try {
       const scoreResult = await scoreCommand({
         reportPath: resolvedReportPath,
         stage: inferScoreStage(hostStage, effectiveArtifactDocPath),
         artifactDocPath: effectiveArtifactDocPath,
+        sourceHashFilePath: effectiveArtifactDocPath,
         event: inferEvent(hostStage),
         triggerStage: inferTriggerStage(hostStage),
         iterationCount: String(normalizedInput.iterationCount ?? parsed.iterationCount ?? '0'),
