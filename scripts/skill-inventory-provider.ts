@@ -7,7 +7,6 @@ import type { ExecutionSkillInventoryEntry } from './execution-intent-schema';
 export type SkillInventorySource =
   | 'project-host'
   | 'project-agents'
-  | 'project-workspace'
   | 'global-host'
   | 'global-agents';
 
@@ -102,11 +101,6 @@ function candidateRoots(input: ResolveGovernanceSkillInventoryInput): SkillInven
     rootPath: path.join(input.projectRoot, '.agents', 'skills'),
     source: 'project-agents',
     priority: 90,
-  });
-  roots.push({
-    rootPath: path.join(input.projectRoot, 'skills'),
-    source: 'project-workspace',
-    priority: 80,
   });
 
   if (globalHostRoot) {

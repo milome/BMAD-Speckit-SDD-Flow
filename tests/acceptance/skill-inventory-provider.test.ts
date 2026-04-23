@@ -37,23 +37,21 @@ describe('skill inventory provider', () => {
         'bmad-party-mode',
         'speckit-workflow',
         'requesting-code-review',
-        'code-review',
         'code-reviewer',
       ]);
       expect(result.skillInventory.map((entry) => [entry.skillId, entry.source, entry.priority])).toEqual([
         ['bmad-party-mode', 'project-host', 100],
         ['speckit-workflow', 'project-host', 100],
         ['requesting-code-review', 'project-agents', 90],
-        ['code-review', 'project-workspace', 80],
         ['code-reviewer', 'global-host', 70],
       ]);
       expect(result.skillPaths).toEqual([
         path.join(root, '.cursor', 'skills', 'bmad-party-mode', 'SKILL.md').replace(/\\/g, '/'),
         path.join(root, '.cursor', 'skills', 'speckit-workflow', 'SKILL.md').replace(/\\/g, '/'),
         path.join(root, '.agents', 'skills', 'requesting-code-review', 'SKILL.md').replace(/\\/g, '/'),
-        path.join(root, 'skills', 'code-review', 'SKILL.md').replace(/\\/g, '/'),
         path.join(home, '.cursor', 'skills', 'code-reviewer', 'SKILL.md').replace(/\\/g, '/'),
       ]);
+      expect(result.availableSkills).not.toContain('code-review');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
