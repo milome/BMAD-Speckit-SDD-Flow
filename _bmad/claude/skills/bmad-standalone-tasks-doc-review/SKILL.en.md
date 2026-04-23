@@ -40,6 +40,21 @@ The goal is **not** to blindly copy the Cursor skill, but to:
 3. **Integrate** handoff, scoring, and commit gate
 4. **Ensure** Claude Code CLI can run TASKS document audits end-to-end
 
+## Host Guard (must run first)
+
+If the actual host is **Cursor IDE**, or the invocation context clearly uses Cursor semantics (for example `mcp_task`, `generalPurpose`, or `Cursor Task`), then:
+
+1. **Stop immediately**
+2. Print the exact message below:
+
+```text
+HOST_MISMATCH: Loaded the Claude variant of bmad-standalone-tasks-doc-review under a Cursor host. Use `.cursor/skills/bmad-standalone-tasks-doc-review/SKILL.md` instead.
+```
+
+3. **Do not** continue into this Claude adapter’s fallback logic
+
+Continue with the rest of this file **only** when the real host is Claude Code CLI / OMC.
+
 ---
 
 ## Core acceptance criteria
@@ -234,5 +249,4 @@ When launching a TASKS document audit subtask, the main Agent **must** copy the 
 Post-implementation audit template: `references/audit-prompt-impl.md`.
 
 <!-- ADAPTATION_COMPLETE: 2026-03-15 -->
-
 

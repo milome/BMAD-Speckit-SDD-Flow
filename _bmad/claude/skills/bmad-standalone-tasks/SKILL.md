@@ -38,6 +38,22 @@ references:
 3. **接入仓库中已开发完成的 handoff、scoring、commit gate 机制**
 4. **确保在 Claude Code CLI 中能完整、连续、正确地执行 standalone 任务流程**
 
+## Host Guard（必须先执行）
+
+若当前实际宿主是 **Cursor IDE**，或调用上下文明显使用 Cursor 语义（例如 `mcp_task`、`generalPurpose`、`Cursor Task`，或调用方明确说“在 Cursor 宿主中执行”），则：
+
+1. **立即停止**本 Claude adapter 的后续执行
+2. 输出以下固定提示：
+
+```text
+HOST_MISMATCH: 当前误加载了 Claude 版 bmad-standalone-tasks，但实际宿主是 Cursor。请改用 `.cursor/skills/bmad-standalone-tasks/SKILL.md`。
+```
+
+3. **禁止**继续执行本 Claude adapter 的 `L1/L2/L3/L4` Fallback 降级逻辑
+4. **禁止**输出任何基于 `.claude/agents/speckit-implement.md`、`auditor-implement`、`Agent tool` 的降级通知
+
+只有在 **Claude Code CLI / OMC** 宿主中，才允许继续执行本文件后续内容。
+
 ---
 
 ## 核心验收标准
@@ -455,4 +471,3 @@ handoff:
 - **主 Agent 禁止编辑**：prd.*.json、progress.*.txt 仅由子代理维护；主 Agent 不得为「补写 progress」等理由直接编辑上述文件。
 
 <!-- ADAPTATION_COMPLETE: 2026-03-16 -->
-
