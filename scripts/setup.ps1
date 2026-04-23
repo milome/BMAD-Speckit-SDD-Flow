@@ -52,6 +52,7 @@ $OPTIONAL_SKILLS = @(
     'bmad-rca-helper',
     'bmad-customization-backup',
     'bmad-orchestrator',
+    'npm-public-release',
     'using-git-worktrees',
     'pr-template-generator',
     'auto-commit-utf8',

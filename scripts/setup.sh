@@ -15,7 +15,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PKG_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 REQUIRED_SKILLS=(speckit-workflow bmad-story-assistant bmad-bug-assistant bmad-code-reviewer-lifecycle code-review)
-OPTIONAL_SKILLS=(bmad-standalone-tasks bmad-customization-backup bmad-orchestrator using-git-worktrees pr-template-generator auto-commit-utf8 git-push-monitor)
+OPTIONAL_SKILLS=(bmad-standalone-tasks bmad-customization-backup bmad-orchestrator npm-public-release using-git-worktrees pr-template-generator auto-commit-utf8 git-push-monitor)
 
 show_help() {
     echo "BMAD-Speckit-SDD-Flow setup script (shell)"
@@ -93,10 +93,27 @@ node "$PKG_ROOT/scripts/init-to-root.js" --full "$TARGET_RESOLVED"
 SKILLS_ROOT="${HOME}/.cursor/skills"
 if [[ "$SKIP_SKILLS" != "true" ]]; then
     mkdir -p "$SKILLS_ROOT"
+
+    find_skill_source() {
+        local skill_name="$1"
+        local candidates=(
+            "$PKG_ROOT/skills/$skill_name"
+            "$PKG_ROOT/_bmad/skills/$skill_name"
+            "$PKG_ROOT/_bmad/core/skills/$skill_name"
+        )
+        for candidate in "${candidates[@]}"; do
+            if [[ -d "$candidate" ]]; then
+                echo "$candidate"
+                return 0
+            fi
+        done
+        return 1
+    }
+
     for skill in "${REQUIRED_SKILLS[@]}" "${OPTIONAL_SKILLS[@]}"; do
-        SRC="$PKG_ROOT/skills/$skill"
+        SRC="$(find_skill_source "$skill" || true)"
         DEST="$SKILLS_ROOT/$skill"
-        if [[ -d "$SRC" ]]; then
+        if [[ -n "$SRC" && -d "$SRC" ]]; then
             echo "[2] Copy skill: $skill"
             rm -rf "$DEST"
             cp -Rf "$SRC" "$DEST"

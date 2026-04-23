@@ -1,82 +1,137 @@
 # BMAD-Speckit-SDD-Flow
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org)
+English | [简体中文](README.zh-CN.md)
 
 <p align="center">
   <img src="docs/assets/readme-slogan.final.svg" alt="BMAD-Speckit-SDD-Flow slogan banner" width="100%" />
 </p>
 
-**Built on** [BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD) and [github/spec-kit](https://github.com/github/spec-kit).
-**Extended with** audit loops, critical auditor, scoring system, AI Coach, and SFT fine-tuning data extraction.
+<h3 align="center">
+  Governed Spec-Driven AI Delivery for Cursor and Claude Code
+</h3>
 
-100% free and open source. No paywalls.
+<p align="center">
+  <strong>Built on <a href="https://github.com/bmad-code-org/BMAD-METHOD">BMAD-METHOD</a> and <a href="https://github.com/github/spec-kit">Spec-Kit</a>.</strong><br>
+  <em>Runtime governance, mandatory audit loops, dashboard observability, and published npm installation in one flow.</em>
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen" alt="Node.js Version"></a>
+</p>
 
 ---
 
-## Why BMAD-Speckit-SDD-Flow?
+## Why This Flow?
 
-Traditional AI tools do the thinking for you. BMAD-Speckit-SDD-Flow combines **BMAD Method** (agile, party-mode, multi-agent) with **Spec-Driven Development** (specify → plan → GAPS → tasks → TDD).
+Traditional AI tooling often stops at prompt orchestration. BMAD-Speckit-SDD-Flow turns that into a governed delivery pipeline: specify, plan, audit, enter implementation through readiness gates, run runtime governance during execution, then close out into scoring, dashboard, coach, and SFT data.
 
 <p align="center">
   <img src="docs/assets/readme-architecture-overview.final.svg" alt="BMAD-Speckit-SDD-Flow architecture overview" width="100%" />
 </p>
 
-What this adds in practice:
+### Key Capabilities
 
-- **Five-layer architecture** — Product Brief → PRD → Architecture → Epic/Story → speckit specify/plan/GAPS/tasks → TDD implement → PR + human review
-- **Mandatory audit loops** — Each stage requires code-review pass before proceeding
-- **Critical Auditor** — Dedicated challenger role, >60% share in party-mode
-- **Scoring system** — Multi-stage weighted scores, one-vote veto, AI Coach diagnosis
-- **SFT extraction** — Instruction-response pairs from low-score runs for fine-tuning
+- **5-layer delivery architecture**: Product Def → Epic Planning → Story Dev → Technical Implementation → Finish.
+- **Mandatory audit loops**: governed stages require review closure before continuing.
+- **Four-Signal implementation readiness**: implementation entry is blocked unless the readiness baseline covers `P0 Journey Coverage`, `Smoke E2E Readiness`, `Evidence Proof Chain`, and `Cross-Document Traceability`.
+- **Runtime gate loops and rerun gates**: governed routes can re-enter, rerun, or block with the same runtime truth path instead of silently bypassing failed close-out.
+- **Packet execution and closure evidence**: pass, required-fixes, blocked, and rerun outcomes are recorded as packet execution truth instead of host-local guesswork.
+- **Dashboard, coach, and SFT extraction**: runtime and scoring outputs feed the same downstream observability and optimization surfaces.
+
+> Image strategy: README assets live in `docs/assets/` and are tracked in Git. The package `README.md` is rendered on npm as GitHub Flavored Markdown, so keeping repository assets tracked and using repository-relative paths is the most reliable cross-surface strategy for GitHub and npm. Source: [About package README files](https://docs.npmjs.com/about-package-readme-files)
 
 ---
 
-## Quick Start
+## Runtime Governance At A Glance
 
-**Prerequisites**: [Node.js](https://nodejs.org) v18+
+- **Four-Signal readiness gate** runs before implementation entry and keeps readiness scoring separate from implementation scoring.
+- **Runtime gates loop** keeps workflow progression aligned with stage truth instead of letting hosts continue optimistically.
+- **Rerun gates** carry remediation and re-entry through the same governed path after fixes.
+- **Packet execution closure** preserves evidence for every governed execution outcome across Cursor and Claude Code hosts.
+- **Post-audit close-out** feeds scoring, dashboard, coach, and SFT extraction from the same runtime close-out path.
+
+## Dashboard And MCP
+
+- **Dashboard is default**: the published package supports runtime dashboard status, start/stop helpers, and runtime snapshot generation without any extra MCP setup.
+- **Runtime MCP is optional**: enable it only when you want runtime data exposed as agent tools via `--with-mcp`.
+- **Dashboard and runtime governance do not depend on MCP**: live dashboard, hooks, scoring projection, and runtime close-out all work without `.mcp.json`.
+
+Quick mental model:
+
+- `dashboard`: human-facing runtime and scoring visibility
+- `runtime-mcp`: explicit agent-tool surface over the same runtime data
+
+---
+
+## Recommended npm Installation
+
+Ensure you have **[Node.js](https://nodejs.org) v18+** installed.
+
+### Recommended Off-Repo Install From npm
+
+Use the published root package directly. This is the current recommended path when you're installing into a consumer project without cloning this repository.
+
+This is the verified off-repo path for the published package contract.
 
 ```bash
-# Run the published root package without persisting it
-npx --yes --package bmad-speckit-sdd-flow bmad-speckit init . --ai cursor-agent --yes
-
-# Or create a new project
-npx --yes --package bmad-speckit-sdd-flow bmad-speckit init my-project --ai cursor-agent --yes
-
-# Verify installation
-npx --yes --package bmad-speckit-sdd-flow bmad-speckit check
+npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit version
+npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent claude-code --full --no-package-json
+npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent cursor --full --no-package-json
+npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit check
+npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit dashboard-status
 ```
 
-**Important boundary**:
+Why this is the recommended path:
 
-- The commands above execute the **single public root package** and expose the bundled `bmad-speckit` CLI
-- They are **not** the highest-confidence installation path for BMAD-Speckit-SDD-Flow custom consumer features on another machine
-- If your priority scenario is **installing into a consumer project on another machine without this repository checked out**, use the verified off-repo path in [Consumer Installation Guide](docs/how-to/consumer-installation.md)
-- In this repository, the verified off-repo path is: install the **root package release artifact** (`bmad-speckit-sdd-flow-<version>.tgz` or the equivalent published package), then run `npx bmad-speckit version` / `check` / `bmad-speckit-init`
+- it uses the published single public root package
+- it aligns both host surfaces explicitly
+- it preserves the non-invasive `--no-package-json` consumer install style
+- it matches the validated published package flow rather than an older bootstrap-only shortcut
 
-### Install From A CI Artifact
+### Persistent Install In A Project
 
-If you need to install this into a consumer project on another machine without cloning this repository, use the tarball produced by the CI `package` job:
+If you want the package present in the consumer project's dependency tree:
 
-1. Download the GitHub Actions artifact named `npm-packages-<commit-sha>`
-2. Extract the artifact and locate `bmad-speckit-sdd-flow-<version>.tgz`
-3. Install that root package tarball in the consumer project
-4. Run the verification commands before initializing host hooks
-
-```powershell
-cd D:\Dev\your-project
-npm install --save-dev .\bmad-speckit-sdd-flow-<version>.tgz
-npx bmad-speckit version
+```bash
+npm install --save-dev bmad-speckit-sdd-flow@latest
+npx bmad-speckit-init . --agent claude-code --full --no-package-json
+npx bmad-speckit-init . --agent cursor --full --no-package-json
 npx bmad-speckit check
-npx bmad-speckit-init --agent claude-code
-npx bmad-speckit-init --agent cursor
 ```
 
-Use the root package tarball as the default install artifact. The CI artifact manifest is only there to help you verify filename, version, and checksum metadata.
+### Quick Bootstrap Path
 
-> **Not sure what to do?** Run `/bmad-help` in your AI IDE. 它会先识别你的 `flow / contextMaturity / complexity / implementationReadinessStatus`，再把路径标成 `recommended / allowed but not recommended / blocked`。See [Installation & Migration Guide](docs/how-to/migration.md) and [bmad-help 路由模型参考](docs/reference/bmad-help-routing-model.md) for details.
+The faster bootstrap command still exists:
 
-**One-line deploy**:
+```bash
+npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit init . --ai cursor-agent --yes
+```
+
+Treat that as a quick initializer, not the highest-confidence installation path for the full runtime governance surface. If you care about the latest published hooks, runtime governance, dashboard wiring, and dual-host alignment, use the recommended installation path above.
+
+> Need help choosing the next governed route? Run `/bmad-help` in your AI IDE. It evaluates `flow`, `contextMaturity`, `complexity`, and `implementationReadinessStatus` before recommending or blocking routes.
+
+### Alternative Deployments
+
+<details>
+<summary><b>Install via CI Artifact (Consumer Projects)</b></summary>
+<br>
+If you are installing from a release artifact instead of npm registry:
+
+1. Download the `npm-packages-<commit-sha>` artifact from GitHub Actions.
+2. Extract the `bmad-speckit-sdd-flow-<version>.tgz` tarball.
+3. Install and initialize:
+   ```bash
+   npx --yes --package ./bmad-speckit-sdd-flow-<version>.tgz bmad-speckit version
+   npx --yes --package ./bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --agent claude-code --full --no-package-json
+   npx --yes --package ./bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --agent cursor --full --no-package-json
+   ```
+   </details>
+
+<details>
+<summary><b>One-Line Deploy Scripts</b></summary>
+<br>
 
 ```powershell
 # Windows
@@ -86,93 +141,74 @@ pwsh scripts/setup.ps1 -Target <project-path>
 ```bash
 # WSL / Linux / macOS
 bash scripts/setup.sh -Target <project-path>
-# or: npm run setup:sh -- -Target <path>
 ```
 
-See [WSL / Shell scripts](docs/how-to/wsl-shell-scripts.md) for full shell script reference.
+</details>
 
-面向消费项目的完整安装入口见 [Consumer Installation Guide](docs/how-to/consumer-installation.md)。如果你需要继续配置 provider 的 `baseUrl` / `apiKeyEnv` / `model`，也从这篇开始。
-
-如果你后续需要安全卸载当前项目中的受管安装面，使用：
+<details>
+<summary><b>Safe Uninstallation</b></summary>
+<br>
+To remove managed installation surfaces in the current project:
 
 ```bash
-npx bmad-speckit uninstall
+npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit uninstall
 ```
 
-边界：
+This only removes installer-managed entries. It does not delete `.cursor`, `.claude`, or global skills, and it never deletes `_bmad-output`.
 
-- 只删除安装器受管条目
-- 不整删 `.cursor`、`.claude`、全局 skills 根目录
-- **禁止删除 `_bmad-output`**
-
-如果你后续确实需要把运行时信息通过工具接口暴露给 agent，再看 [Runtime MCP Installation](docs/how-to/runtime-mcp-installation.md)。该能力不是默认安装产物，需要显式启用。
+</details>
 
 ---
 
-## Built On
+## Architecture And Modules
 
-| Upstream                                                    | Purpose                                                      |
-| ----------------------------------------------------------- | ------------------------------------------------------------ |
-| [BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD) | Agile workflows, Party Mode, 34+ workflows                   |
-| [github/spec-kit](https://github.com/github/spec-kit)       | Spec-Driven Development (constitution, specify, plan, tasks) |
+### Core Components
 
-**Our extensions**: scoring, critical auditor, speckit-workflow audit loops, bmad-story-assistant, bmad-bug-assistant.
+| Component                   | Purpose                                                                                             |
+| :-------------------------- | :-------------------------------------------------------------------------------------------------- |
+| **`_bmad/`**                | Canonical source of truth for workflow modules, hooks, prompts, routing, and host-facing assets.    |
+| **`packages/scoring/`**     | Scoring engine, readiness drift evaluation, dashboard projection, coach inputs, and SFT extraction. |
+| **`dashboard`**             | Default runtime observability surface: live dashboard, runtime snapshots, and scoring projections.  |
+| **`runtime-mcp`**           | Optional MCP surface for agent tools over runtime data; enabled explicitly with `--with-mcp`.       |
+| **`speckit-workflow`**      | Specify -> Plan -> GAPS -> Tasks -> TDD with mandatory audit loops.                                 |
+| **`bmad-story-assistant`**  | Story lifecycle path: Create Story -> Party Mode -> Dev Story -> Implement.                         |
+| **`bmad-bug-assistant`**    | Bug lifecycle path: RCA -> Party Mode -> BUGFIX -> Implement.                                       |
+| **`bmad-standalone-tasks`** | Standalone execution path for TASKS or BUGFIX documents through governed subagent delivery.         |
 
----
+<details>
+<summary><b>View Folder Structure</b></summary>
 
-## Project Structure
-
-```
+```text
 BMAD-Speckit-SDD-Flow/
-├── _bmad/                              # BMAD core modules (single source of truth)
-│   ├── speckit/                        # Speckit module (commands, templates, workflows, scripts)
-│   ├── core/                           # Core BMAD functionality
-│   ├── bmm/, bmb/, cis/, tea/          # Other BMAD modules
-│   ├── scoring/                        # Scoring system
-│   └── _config/                        # Configuration files
-├── packages/                           # Source code (monorepo)
-│   ├── bmad-speckit/                   # Internal CLI workspace bundled into the root package
-│   └── scoring/                        # Scoring extensions (see [packages/scoring/README.md](packages/scoring/README.md))
-├── tests/                              # Test suite (acceptance/, epic-acceptance/)
-├── scripts/                            # Deployment/utility scripts only
-│   └── _config/                        # Project configuration (merged from former root config/)
-├── specs/                              # Story specifications (generated)
-├── docs/                               # Documentation (Diataxis)
-│   ├── tutorials/                      # Learning-oriented
-│   ├── how-to/                         # Task-oriented
-│   ├── explanation/                    # Understanding-oriented
-│   ├── reference/                      # Information-oriented
-│   └── sample/                         # Example documents
-└── package.json
+├── _bmad/                # Core modules and configuration
+├── packages/             # Monorepo packages (CLI, scoring)
+├── scripts/              # Setup and deployment utilities
+├── docs/                 # Diataxis-style documentation
+├── tests/                # Acceptance & epic testing
+└── specs/                # Generated story specs
 ```
 
-## Modules & Components
-
-| Component                 | Purpose                                                                                                                                                      |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **\_bmad/**               | BMAD core (core, bmm, bmb, cis, tea, scoring)                                                                                                                |
-| **packages/scoring/**     | Scoring extensions: audit report parsing, score persistence, Coach diagnosis, Dashboard, SFT extraction                                                      |
-| **scripts/**              | Deployment/utility scripts: init-to-root, setup. Scoring 已整合进 bmad-speckit CLI，目标项目使用 `npx bmad-speckit score/coach/dashboard/sft-extract/scores` |
-| **speckit-workflow**      | specify → plan → GAPS → tasks → TDD with mandatory audits                                                                                                    |
-| **bmad-story-assistant**  | Create Story → Party-Mode → Dev Story → implement                                                                                                            |
-| **bmad-bug-assistant**    | Bug description → Party-Mode → BUGFIX doc                                                                                                                    |
-| **bmad-standalone-tasks** | Execute TASKS/BUGFIX docs via subagents                                                                                                                      |
+</details>
 
 ---
 
 ## Documentation
 
+Key entry points:
+
 - [Getting Started](docs/tutorials/getting-started.md)
 - [Consumer Installation Guide](docs/how-to/consumer-installation.md)
-- [Installation & Migration Guide](docs/how-to/migration.md)
+- [Runtime Dashboard Guide](docs/how-to/runtime-dashboard.md)
+- [Runtime MCP Installation](docs/how-to/runtime-mcp-installation.md)
+- [Provider Configuration](docs/how-to/provider-configuration.md)
 - [Cursor Setup](docs/how-to/cursor-setup.md)
 - [Claude Code Setup](docs/how-to/claude-code-setup.md)
-- [Provider Configuration](docs/how-to/provider-configuration.md)
-- [Runtime MCP Installation](docs/how-to/runtime-mcp-installation.md)
 - [WSL / Shell Scripts](docs/how-to/wsl-shell-scripts.md)
 
 ---
 
-## License
-
-MIT License — see [LICENSE](LICENSE) for details.
+<p align="center">
+  <a href="LICENSE">MIT License</a> •
+  <a href="https://github.com/bmad-code-org/BMAD-METHOD">BMAD-METHOD</a> •
+  <a href="https://github.com/github/spec-kit">Spec-Kit</a>
+</p>

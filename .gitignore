@@ -82,7 +82,6 @@ tests/typecheck/
 
 # Documentation archives
 docs/BMAD/
-docs/assets/
 docs/design/
 docs/explanation/
 docs/examples/

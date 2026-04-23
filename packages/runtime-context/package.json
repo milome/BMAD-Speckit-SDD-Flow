@@ -1,6 +1,6 @@
 {
   "name": "@bmad-speckit/runtime-context",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Runtime context registry and ensure-run CLI for BMAD workflows (published like @bmad-speckit/scoring)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
