@@ -81,7 +81,9 @@
   "files": [
     "bin",
     "_bmad",
-    "scripts"
+    "scripts",
+    "docs/assets",
+    "README.zh-CN.md"
   ],
   "keywords": [
     "bmad",
