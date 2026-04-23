@@ -112,6 +112,9 @@ describe('root package bmad-speckit bin', () => {
       expect(readFileSync(packageJsonPath, 'utf8')).toBe(packageJson);
       expect(readFileSync(packageLockPath, 'utf8')).toBe(packageLock);
       expect(existsSync(join(target, '_bmad'))).toBe(true);
+      expect(existsSync(join(target, '.cursor', 'skills', 'npm-public-release', 'SKILL.md'))).toBe(
+        true
+      );
       expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy.cjs'))).toBe(true);
       expect(existsSync(join(target, 'node_modules', 'bmad-speckit-sdd-flow'))).toBe(false);
     } finally {

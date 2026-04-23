@@ -72,6 +72,9 @@ describe('install to consumer → CLI acceptance', () => {
       run(`npm install --save-dev "file:${pkgPath}"`, target);
       expect(existsSync(join(target, '_bmad'))).toBe(true);
       expect(existsSync(join(target, '.cursor'))).toBe(true);
+      expect(existsSync(join(target, '.cursor', 'skills', 'npm-public-release', 'SKILL.md'))).toBe(
+        true
+      );
       expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy.cjs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'hooks', 'runtime-dashboard-session-start.cjs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'i18n'))).toBe(true);
@@ -200,6 +203,9 @@ describe('install to consumer → CLI acceptance', () => {
 
       expect(existsSync(canonical)).toBe(true);
       expect(existsSync(runtime)).toBe(true);
+      expect(existsSync(join(target, '.claude', 'skills', 'npm-public-release', 'SKILL.md'))).toBe(
+        true
+      );
       expect(readFileSync(runtime, 'utf8')).toBe(readFileSync(canonical, 'utf8'));
       expect(readFileSync(runtime, 'utf8')).toContain('name: party-mode-facilitator');
     } finally {
