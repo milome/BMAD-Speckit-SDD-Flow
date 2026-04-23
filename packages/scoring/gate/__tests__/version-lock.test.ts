@@ -73,6 +73,30 @@ describe('version-lock', () => {
     expect(latest?.run_id).toBe('b');
   });
 
+  it('loadLatestRecordByStage 按 source_path 过滤同 stage 记录', () => {
+    const base = {
+      scenario: 'real_dev' as const,
+      stage: 'story',
+      phase_score: 80,
+      phase_weight: 0.2,
+      check_items: [],
+      iteration_count: 0,
+      iteration_records: [],
+      first_pass: true,
+    };
+    const storyA = path.join(TMP, 'story-a.md').replace(/\\/g, '/');
+    const storyB = path.join(TMP, 'story-b.md').replace(/\\/g, '/');
+    const r1 = { ...base, run_id: 'story-a-old', timestamp: '2026-03-05T10:00:00Z', source_path: storyA };
+    const r2 = { ...base, run_id: 'story-b-new', timestamp: '2026-03-05T12:00:00Z', source_path: storyB };
+    const r3 = { ...base, run_id: 'story-a-new', timestamp: '2026-03-05T13:00:00Z', source_path: storyA };
+    fs.writeFileSync(path.join(TMP, 'a-old.json'), JSON.stringify(r1), 'utf-8');
+    fs.writeFileSync(path.join(TMP, 'b-new.json'), JSON.stringify(r2), 'utf-8');
+    fs.writeFileSync(path.join(TMP, 'a-new.json'), JSON.stringify(r3), 'utf-8');
+
+    const latest = loadLatestRecordByStage('story', TMP, storyA);
+    expect(latest?.run_id).toBe('story-a-new');
+  });
+
   it('loadLatestRecordByStage dataPath 不可读 → 函数内部异常 → warn_and_proceed 场景由调用方处理', () => {
     const latest = loadLatestRecordByStage('spec', path.join(TMP, 'nonexistent_dir'));
     expect(latest).toBeNull();

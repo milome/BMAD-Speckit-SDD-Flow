@@ -141,7 +141,7 @@ Gap 修复决策:
 
 - `artifactDocPath`: 被审 spec.md 文件路径（必填）
 - `reportPath`: 审计报告保存路径（必填）
-- `storyPath`: 原始 Story 文档路径（可选）
+- `storyPath`: 原始 Story 文档路径（**Story-flow 下必填**；standalone speckit 可不传）
 - `prdPath`: PRD 文档路径（可选）
 - `archPath`: 架构文档路径（可选）
 - `epic`: Epic 编号
@@ -157,8 +157,14 @@ Gap 修复决策:
 2. **读取批判审计员规范**：`.claude/skills/speckit-workflow/references/audit-prompts-critical-auditor-appendix.md`
 3. **读取文档迭代规则**：`.claude/skills/speckit-workflow/references/audit-document-iteration-rules.md`
 4. **读取被审文档**：`artifactDocPath` 指定的spec.md
-5. **读取原始需求文档**：Story/PRD/ARCH（如果提供路径）
+5. **读取原始需求文档**：Story/PRD/ARCH（如果提供路径；若当前为 Story-flow，则必须读取 `storyPath`）
 6. **检查前置审计标记**：查看spec.md 末尾是否有`<!-- AUDIT: PASSED` 标记
+
+### Story-flow 硬约束
+
+- 若 `artifactDocPath` 属于 Story-flow `spec-E{epic}-S{story}.md`，则 `storyPath` 为**强制输入**，不得省略。
+- 审计报告控制字段中必须显式回传 `storyPath: <path>`，供 `runAuditorHost` 执行 `Story -> Spec` 版本锁。
+- 缺失 `storyPath` 时，结论不得视为可 closeout。
 
 ## Execution Flow
 

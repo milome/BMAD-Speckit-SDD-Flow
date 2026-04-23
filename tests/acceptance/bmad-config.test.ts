@@ -43,6 +43,8 @@ describe('bmad-config', () => {
       expect(env.platform).toBe('cursor');
       expect(env.subagentTool).toBe('mcp_task');
       expect(env.subagentType).toBe('generalPurpose');
+      expect(env.skillsRoot).toBe('.cursor/skills');
+      expect(env.agentsRoot).toBe('.cursor/agents');
     });
 
     it('should detect claude environment from env variable', () => {
@@ -51,6 +53,8 @@ describe('bmad-config', () => {
       expect(env.platform).toBe('claude');
       expect(env.subagentTool).toBe('Agent');
       expect(env.subagentType).toBe('general-purpose');
+      expect(env.skillsRoot).toBe('.claude/skills');
+      expect(env.agentsRoot).toBe('.claude/agents');
     });
 
     it('should read environment from runtime config when provided', () => {

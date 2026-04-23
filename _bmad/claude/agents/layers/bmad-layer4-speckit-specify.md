@@ -228,6 +228,9 @@ PROMPT_PATH="_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story
   - `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/PROMPT_audit-spec-E{epic}-S{story}_round{N}.md`
 - 审计报告输出路径:
   - `specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/AUDIT_spec-E{epic}-S{story}.md`
+- Story-flow 约束:
+  - 若当前产物为 `spec-E{epic}-S{story}.md`，则审计子任务必须显式携带 `storyPath`
+  - 审计报告控制字段必须回传 `storyPath: <Story 文档路径>`，供 `runAuditorHost` 执行 `Story -> Spec` source_hash 版本锁
 - 审计失败处理:
   - 主 Agent 根据 required_fixes 修改 spec 文档后重新发起下一轮审计- 审计通过处理:
   - 追加通过标记
@@ -275,6 +278,8 @@ Task({
 **Claude/OMC Runtime Adapter**
 - 审计报告输出至
   specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/AUDIT_spec-E{epic}-S{story}.md
+- Story-flow 必须携带
+  - `storyPath: _bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/{epic}-{story}-{story-slug}.md`
 - 同时保存本轮 Prompt 存档至
   _bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/PROMPT_audit-spec-E{epic}-S{story}_round{N}.md
 
