@@ -116,7 +116,13 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 6. **TASKS/BUGFIX 文档前置审计是实施前硬门槛**
    `auditor-tasks-doc` 的职责是 **TASKS/BUGFIX 文档前置审计**。只要该审计尚未通过、尚未执行或结论不明，**禁止**进入任何实施执行、代码修改、测试实现或“先做再补审计”的路径。
 7. **Implementation Entry Gate 是实施前第二硬门槛**
-   `auditor-tasks-doc` 通过后，主 Agent 仍必须执行统一 `implementation-readiness` gate 断言。仅 `decision=pass` 可进入实施；`decision=block` 表示必须先修复事实链，`decision=reroute` 表示不得继续 standalone 轻路径而必须升轨。
+   `auditor-tasks-doc` 通过后，主 Agent 仍必须执行统一 `implementation-readiness` gate 断言。仅 `decision=pass` 可进入实施；`decision=block` 表示必须先进入**自动修复 + rerun gate loop**，修复 facts 后立即重算 gate，不得把常规 fact repair 回退成用户确认点；`decision=reroute` 表示不得继续 standalone 轻路径而必须升轨。
+
+8. **Standalone gate UX contract**
+   对 `standalone_tasks`，Implementation Entry Gate 的默认行为必须类似 rerun gate loop：
+   - 若阻断原因属于当前项目事实可自动修复的范围（例如 authoritative `auditor-tasks-doc` closeout 已存在，但统一 gate 仍缺少足够的 machine-readable evidence），主 Agent / host 必须自动补齐事实并立即 rerun gate；
+   - gate 修复后必须继续原执行链，恢复 Ralph / implement / post-audit 闭环，不得把用户重新拉回中间确认；
+   - 仅当阻断属于真实不可自动修复 blocker，或 gate 返回 `reroute` 时，才允许向用户显式升级。
 
 ### 主 Agent 传递提示词规则（必守）
 
@@ -215,6 +221,8 @@ handoff:
 
 **Mandatory gate**: Before Step 1, the main Agent **must** launch `auditor-tasks-doc` and obtain PASS. This pre-audit is not optional and cannot be deferred until after implementation.
 
+**Loop rule**: If Step 0 returns gaps that can be repaired directly on the TASKS / BUGFIX document, the main Agent should enter a document-audit auto-remediation loop, repair the document through the delegated path, rerun `auditor-tasks-doc`, and continue without asking the user for routine progression approval.
+
 ### 发起前自检清单
 
 - [ ] DOC_PATH 已填入（绝对路径或相对项目根）
@@ -246,7 +254,7 @@ Acceptance: auditor-tasks-doc 结论为 PASS，方可进入 Step 1
 **Tool**: Agent tool
 **subagent_type**: `general-purpose`
 
-**Implementation precondition**: `auditor-tasks-doc` must have passed the TASKS/BUGFIX document pre-audit before this step starts.
+**Implementation precondition**: `auditor-tasks-doc` must have passed the TASKS/BUGFIX document pre-audit before this step starts, and `implementation-readiness` must be `decision=pass` **after** any required auto-remediation / rerun gate loop has completed.
 
 ### 发起前自检清单
 

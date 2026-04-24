@@ -64,4 +64,13 @@ describe('bmad-help runtime-governance helpers', () => {
     expect(implementationReadinessPassed('blocked')).toBe(false);
     expect(shouldUpgradeStandaloneTasksToStory('standalone_tasks', high.level)).toBe(true);
   });
+
+  it('keeps standalone_tasks at missing when doc audit passed but readiness provider has not been materialized yet', () => {
+    expect(
+      deriveImplementationReadinessStatus('standalone_tasks', {
+        documentAuditPassed: true,
+        readinessReportPresent: false,
+      })
+    ).toBe('missing');
+  });
 });

@@ -9,7 +9,7 @@
 **关键门控要求：**
 - `auditor-tasks-doc` 的语义固定为 **TASKS/BUGFIX 文档前置审计**
 - `auditor-tasks-doc` 通过前不得进入任何实施执行
-- `auditor-tasks-doc` 通过后、真正进入实施前，仍必须通过统一 `implementation-readiness` Implementation Entry Gate；若结果为 `block` 或 `reroute`，不得继续实施
+- `auditor-tasks-doc` 通过后、真正进入实施前，仍必须通过统一 `implementation-readiness` Implementation Entry Gate；若结果为 `block`，优先进入自动修复 + rerun gate loop，修复后立即重算；若结果为 `reroute`，不得继续实施
 - 实施后审计通过前不得进入提交阶段
 
 ## Required Inputs
@@ -102,7 +102,7 @@
 2. 解析未完成任务与需求依据
 3. 调用 `auditor-tasks-doc` 审计 TASKS 文档
 4. `auditor-tasks-doc` PASS 后，由 invoking host/runner 调用 `runAuditorHost`
-5. 执行统一 `implementation-readiness` gate 断言；仅 `decision=pass` 可继续，`reroute` 必须升轨
+5. 执行统一 `implementation-readiness` gate 断言；若 `decision=block` 且属当前 artifact facts 可自动修复范围，则先自动修复并 rerun gate；仅最终 `decision=pass` 可继续，`reroute` 必须升轨
 6. PASS 后按批次执行任务（含 TDD）
 7. 每批完成后调用 `auditor-implement`
 8. 每轮 `auditor-implement` PASS 后，由 invoking host/runner 调用 `runAuditorHost`

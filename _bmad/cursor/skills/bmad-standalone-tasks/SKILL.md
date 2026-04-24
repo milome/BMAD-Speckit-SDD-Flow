@@ -1,7 +1,7 @@
 ---
 name: bmad-standalone-tasks
 description: |
-  Execute unfinished tasks from a user-provided TASKS/BUGFIX document via subagents only. Use when the user says "/bmad 按 {文档} 中的未完成任务实施" or "按 BUGFIX_xxx.md / TASKS_xxx.md 实施". Enforces **TASKS/BUGFIX 文档前置审计先于实施执行**、mcp_task subagent for implementation, ralph-method (prd + progress, TDD), speckit-workflow (no pseudo-impl, acceptance commands), and code-reviewer audit with 批判审计员 >50% and 3 rounds no-gap convergence. Main Agent must NOT edit production code.
+  Execute unfinished tasks from a user-provided TASKS/BUGFIX document via subagents only. Use when the user says "/bmad 按 {文档} 中的未完成任务实施" or "按 BUGFIX_xxx.md / TASKS_xxx.md 实施". Enforces **TASKS/BUGFIX 文档前置审计先于实施执行**、mcp_task subagent for implementation, ralph-method (prd + progress, TDD), speckit-workflow (no pseudo-impl, acceptance commands), and code-reviewer audit with 批判审计员 >50% and 3 rounds no-gap convergence. Standalone implementation-entry gating must prefer **auto-remediation loop** over user-facing pause: if readiness facts are incomplete but auto-repairable, the host/main Agent should repair facts and immediately continue the same execution. Main Agent must NOT edit production code.
 ---
 
 # BMAD Standalone Tasks
@@ -63,7 +63,13 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 
 **Mandatory gate**: Before Step 1, the main Agent **must** launch a TASKS/BUGFIX document pre-audit and obtain PASS. This pre-audit is not optional and cannot be deferred until after implementation.
 
-**Mandatory gate 2**: After `auditor-tasks-doc` PASS and before Step 1 starts, the main Agent **must** execute the unified `implementation-readiness` gate assertion. Only `decision=pass` may enter Step 1. `decision=block` means stop and repair facts first; `decision=reroute` means `standalone_tasks` may not continue directly and must switch to the recommended flow.
+**Mandatory gate 2**: After `auditor-tasks-doc` PASS and before Step 1 starts, the main Agent **must** execute the unified `implementation-readiness` gate assertion. Only `decision=pass` may enter Step 1. `decision=block` means **repair facts first via auto-remediation loop and then immediately re-run the same gate**; do not bounce the user back for routine fact repair. `decision=reroute` means `standalone_tasks` may not continue directly and must switch to the recommended flow.
+
+**Auto-remediation preference (critical UX rule)**:
+- For `standalone_tasks`, `implementation-readiness` is **not** a user-facing pause by default.
+- If the gate is blocked because implementation-entry facts are incomplete but can be normalized from the current TASKS/BUGFIX artifact set (for example: authoritative `auditor-tasks-doc` closeout exists but the unified gate still lacks enough machine-readable evidence), the host/main Agent must **repair those facts automatically**, re-run the gate, and continue the same execution.
+- Only escalate to the user when the gate returns a **real blocker** that cannot be repaired from current project facts, or when the gate returns `reroute`.
+- The desired behavior is analogous to a **rerun gate loop**: repair facts -> re-evaluate gate -> continue Ralph / implementation / audit loop without adding user burden.
 
 **Tool**: 优先 Cursor Task 调度 `code-reviewer`；若不可用，则 `mcp_task` + `generalPurpose`
 
@@ -83,7 +89,7 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 **Tool**: `mcp_task`  
 **subagent_type**: `generalPurpose`
 
-**Implementation precondition**: `auditor-tasks-doc` must have passed the TASKS/BUGFIX document pre-audit before this step starts, **and** the unified `implementation-readiness` gate assertion must currently return `decision=pass`.
+**Implementation precondition**: `auditor-tasks-doc` must have passed the TASKS/BUGFIX document pre-audit before this step starts, **and** the unified `implementation-readiness` gate assertion must currently return `decision=pass` after any required auto-remediation loop has been completed.
 
 **Prompt template** (fill placeholders; pass full TASKS path and constraints):
 
