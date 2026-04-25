@@ -378,6 +378,13 @@ describe('auditor host runner', () => {
         profile: 'implement_audit',
         stage: 'implement',
         closeoutApproved: false,
+        canMainAgentContinue: false,
+        scoreWriteResult: 'ok',
+        handoffPersisted: true,
+        driftSeverity: 'critical',
+        reReadinessRequired: true,
+        blockingReason: 'Critical readiness drift detected against the current implementation baseline.',
+        effectiveVerdict: 'blocked',
         closeoutEnvelope: expect.objectContaining({
           resultCode: 'blocked',
           rerunDecision: 'rerun_required',
@@ -388,6 +395,13 @@ describe('auditor host runner', () => {
       );
       expect(projectContext.latestReviewerCloseout).toMatchObject({
         closeoutApproved: false,
+        canMainAgentContinue: false,
+        scoreWriteResult: 'ok',
+        handoffPersisted: true,
+        driftSeverity: 'critical',
+        reReadinessRequired: true,
+        blockingReason: 'Critical readiness drift detected against the current implementation baseline.',
+        effectiveVerdict: 'blocked',
         closeoutEnvelope: expect.objectContaining({
           resultCode: 'blocked',
           packetExecutionClosureStatus: 'retry_pending',
@@ -398,7 +412,7 @@ describe('auditor host runner', () => {
     }
   });
 
-  it('keeps score write failures non-blocking while surfacing closeout evidence', async () => {
+  it('fails closeout when score write fails, even if the audit body passed', async () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'auditor-host-score-failure-'));
     try {
       writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
@@ -436,10 +450,23 @@ describe('auditor host runner', () => {
       expect(result.status).toBe('PASS');
       expect(result.scoreError).toContain('score write boom');
       expect(result.closeoutEnvelope).toMatchObject({
-        resultCode: 'approved',
-        rerunDecision: 'none',
+        resultCode: 'blocked',
+        rerunDecision: 'rerun_required',
         scoringFailureMode: 'non_blocking_failure',
-        packetExecutionClosureStatus: 'gate_passed',
+        packetExecutionClosureStatus: 'retry_pending',
+        requiredFixes: ['Score write failed: score write boom'],
+      });
+
+      const registry = readRuntimeContextRegistry(root);
+      expect(registry.latestReviewerCloseout).toMatchObject({
+        closeoutApproved: false,
+        canMainAgentContinue: false,
+        scoreWriteResult: 'failed',
+        handoffPersisted: true,
+        closeoutEnvelope: expect.objectContaining({
+          resultCode: 'blocked',
+          packetExecutionClosureStatus: 'retry_pending',
+        }),
       });
     } finally {
       rmSync(root, { recursive: true, force: true });

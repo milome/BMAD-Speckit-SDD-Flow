@@ -29,6 +29,22 @@ references:
 
 本 skill 是 Cursor `bmad-standalone-tasks` 在 Claude Code CLI / OMC 环境下的统一适配入口。
 
+## 主 Agent 编排面（强制）
+
+交互模式下，在主 Agent 启动、恢复或收口 `standalone_tasks` 执行链之前，必须先读取：
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action inspect
+```
+
+如需生成正式派发计划，则读取：
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan
+```
+
+`mainAgentNextAction / mainAgentReady` 仅为 compatibility summary；真正权威状态始终是 `orchestrationState + pendingPacket + continueDecision`。
+
 目标不是简单复制 Cursor skill，而是：
 
 1. **继承 Cursor 已验证的 standalone 任务执行语义**（从 TASKS/BUGFIX 文档前置审计 → 提取未完成任务 → 子代理实施 → 实施后审计）
@@ -191,6 +207,8 @@ handoff:
   next_action: implement_next_batch|post_batch_audit|commit_gate|revise_tasks_doc
   next_agent: bmad-standalone-tasks|auditor-implement|bmad-master|auditor-tasks-doc
   ready: true|false
+  mainAgentNextAction: dispatch_implement|dispatch_review|dispatch_remediation|run_closeout|await_user
+  mainAgentReady: true|false
 ```
 
 ### Main Agent responsibilities
@@ -275,6 +293,8 @@ handoff:
   next_action: post_batch_audit
   next_agent: auditor-implement
   ready: true
+  mainAgentNextAction: dispatch_review
+  mainAgentReady: true
 ```
 
 ---
@@ -368,6 +388,8 @@ handoff:
   next_action: implement_next_batch|commit_gate|revise_and_reaudit
   next_agent: bmad-standalone-tasks|bmad-master|auditor-implement
   ready: true|false
+  mainAgentNextAction: dispatch_implement|dispatch_review|dispatch_remediation|run_closeout|await_user
+  mainAgentReady: true|false
 ```
 
 ---

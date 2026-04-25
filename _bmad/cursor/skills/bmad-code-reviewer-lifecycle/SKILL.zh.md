@@ -53,6 +53,20 @@ references:
 - **CLI**：`scripts/run-auditor-host.ts`
 - **验收**：`npm run accept:e3-s3`
 
+## 主 Agent 编排面（强制）
+
+交互模式下，本 skill 必须以 repo-native `main-agent-orchestration` 作为唯一编排权威。`runAuditorHost` 只负责审计后的 close-out，不能替代主 Agent 的下一步分支决策。
+
+在发起任何 auditor、整改子任务或其他 bounded execution 前，主 Agent 必须：
+
+1. 执行 `npm run main-agent-orchestration -- --cwd {project-root} --action inspect`
+2. 读取 `orchestrationState`、`pendingPacketStatus`、`pendingPacket`、`continueDecision`、`mainAgentNextAction`、`mainAgentReady`
+3. 若下一分支可派发但尚无可用 packet，执行 `npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan`
+4. 仅依据返回的 packet / instruction 派发 bounded execution，不得只凭审计 prose、评分结论或 handoff 摘要直接推进
+5. 每次子代理返回后，以及每次 `runAuditorHost` 收口后，都再次 `inspect`，再决定下一全局分支
+
+`mainAgentNextAction / mainAgentReady` 仅为 compatibility summary；真正权威状态始终是 `orchestrationState + pendingPacket + continueDecision`。
+
 ## 统一 auditor host runner 前置条件（Checklist）
 
 tasks 阶段审计通过后、调用统一 auditor host runner 前，**必须**确认：

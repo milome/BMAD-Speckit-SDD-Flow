@@ -1,6 +1,6 @@
 {
   "name": "@bmad-speckit/runtime-emit",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Pre-bundled emit-runtime-policy, resolve-for-session, and render-audit-block CLIs for Claude/Cursor hooks without ts-node",
   "main": "dist/emit-runtime-policy.cjs",
   "exports": {
@@ -9,11 +9,6 @@
     "./dist/resolve-for-session.cjs": "./dist/resolve-for-session.cjs",
     "./dist/render-audit-block.cjs": "./dist/render-audit-block.cjs",
     "./dist/consumer-mcp-server.cjs": "./dist/consumer-mcp-server.cjs",
-    "./dist/governance-runtime-worker.cjs": "./dist/governance-runtime-worker.cjs",
-    "./dist/governance-remediation-runner.cjs": "./dist/governance-remediation-runner.cjs",
-    "./dist/governance-packet-dispatch-worker.cjs": "./dist/governance-packet-dispatch-worker.cjs",
-    "./dist/governance-execution-result-ingestor.cjs": "./dist/governance-execution-result-ingestor.cjs",
-    "./dist/governance-packet-reconciler.cjs": "./dist/governance-packet-reconciler.cjs",
     "./dist/update-runtime-audit-index.cjs": "./dist/update-runtime-audit-index.cjs",
     "./dist/auditor-post-actions.cjs": "./dist/auditor-post-actions.cjs",
     "./dist/run-auditor-host.cjs": "./dist/run-auditor-host.cjs"
@@ -39,7 +34,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@bmad-speckit/schema": "1.0.2"
+    "@bmad-speckit/schema": "1.0.3"
   },
   "devDependencies": {
     "esbuild": "^0.25.0"

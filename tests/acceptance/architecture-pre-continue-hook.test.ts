@@ -75,8 +75,15 @@ describe('architecture pre-continue gate hook', () => {
       expect(stdout).toContain('"workflow":"bmad-create-architecture"');
       expect(stderr).toContain('GateFailure');
       expect(stderr).toContain('RemediationPlan');
-      const pendingDir = join(project, '_bmad-output', 'runtime', 'governance', 'queue', 'pending');
-      expect(readdirSync(pendingDir).some((file) => file.endsWith('.json'))).toBe(true);
+      const stageEventDir = join(
+        project,
+        '_bmad-output',
+        'runtime',
+        'governance',
+        'queue',
+        'pending-events'
+      );
+      expect(readdirSync(stageEventDir).some((file) => file.endsWith('.json'))).toBe(true);
     } finally {
       rmSync(project, { recursive: true, force: true });
     }

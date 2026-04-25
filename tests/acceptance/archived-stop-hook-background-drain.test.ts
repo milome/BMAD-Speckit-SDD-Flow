@@ -109,8 +109,8 @@ function createFixtureProject(): {
   };
 }
 
-describe('governance stop hook worker trigger', () => {
-  it('drains pending governance rerun work on stop', async () => {
+describe.skip('legacy archived: stop-hook background drain trigger', () => {
+  it('drains pending governance rerun work on stop in the archived path', async () => {
     const fixture = createFixtureProject();
     try {
       const outDir = path.join(fixture.root, '_bmad-output', 'planning-artifacts', 'feature-stop');

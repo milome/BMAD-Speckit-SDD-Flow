@@ -113,6 +113,7 @@ export function checkPreconditionHash(
  * 扫描 *.json 文件（排除 scores.jsonl），按 timestamp 降序取最新。
  * @param {string} stage - 阶段名称
  * @param {string} [dataPath] - 数据目录路径，默认为 scoring/data
+ * @param {string} [sourcePath] - 可选 source_path 过滤条件
  * @returns {RunScoreRecord | null} 最新的运行评分记录，若无则返回 null
  */
 export function loadLatestRecordByStage(

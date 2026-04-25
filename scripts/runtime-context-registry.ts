@@ -31,7 +31,17 @@ export interface ReviewerLatestCloseoutRecord {
     scoringFailureMode: string;
     packetExecutionClosureStatus: string;
   };
+  canMainAgentContinue?: boolean;
+  scoreWriteResult?: 'ok' | 'failed' | null;
+  handoffPersisted?: boolean;
   scoreError?: string;
+  readinessBaselineRunId?: string | null;
+  driftSignals?: string[];
+  driftedDimensions?: string[];
+  driftSeverity?: 'none' | 'major' | 'critical' | null;
+  reReadinessRequired?: boolean;
+  blockingReason?: string | null;
+  effectiveVerdict?: string | null;
 }
 
 export interface RuntimeContextRegistry {

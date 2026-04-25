@@ -23,4 +23,18 @@ describe('runtime-emit package exports', () => {
     expect(readme).toContain('dist/auditor-post-actions.cjs');
     expect(readme).toContain('dist/run-auditor-host.cjs');
   });
+
+  it('does not publish legacy worker-era bundles as accepted consumer exports', () => {
+    const pkg = JSON.parse(
+      readFileSync(join(ROOT, 'packages/runtime-emit/package.json'), 'utf8')
+    ) as { exports: Record<string, string> };
+    const exportKeys = Object.keys(pkg.exports);
+    expect(
+      exportKeys.filter((key) =>
+        /\/dist\/(?:run-bmad-.*|governance-cursor-agent-.*|governance-.*(?:worker|runner|ingestor|reconciler))\.cjs$/i.test(
+          key
+        )
+      )
+    ).toHaveLength(0);
+  });
 });

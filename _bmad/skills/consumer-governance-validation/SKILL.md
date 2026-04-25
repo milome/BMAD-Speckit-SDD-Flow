@@ -1,90 +1,51 @@
 ---
 name: consumer-governance-validation
-description: Use when changing runtime hooks, runtime-emit bundles, init deployment, or governance queue/worker/dispatch/ingestor logic and needing to verify a real consumer project reaches pre-continue, post-tool-use, background worker queue draining, execution record creation, and packet closure to gate_passed.
+description: Historical / forensic validation skill for pre-hard-cut consumer governance flows. Use only when you need to inspect old worker-era evidence or migrate old consumer docs. It is no longer the accepted runtime validation path.
 ---
 
 # Consumer Governance Validation
 
-验证 hook / runtime governance 改动是否在真实 consumer 项目上形成执行闭环，而不是只在本仓库测试里通过。
+## Status
 
-## When to Use
+This skill is now **historical / archived**.
 
-- 改了 `.claude/hooks` / `.cursor/hooks`
-- 改了 `packages/runtime-emit`
-- 改了 `scripts/init-to-root.js` 或 `bmad-speckit-init`
-- 改了 governance queue / worker / dispatch / ingestor / packet 闭环
-- 需要确认真实 consumer 上 `gates loop` 和 packet closure 仍然健康
+It records how consumer governance was validated before autonomous fallback and background-worker queue draining were hard cut from the accepted runtime path.
 
-## Quick Start
+## Current Accepted Path
 
-优先直接跑自动验证脚本：
+Do **not** use this skill as the default proof surface for current runtime success.
 
-```powershell
-# 在源仓库内
-pwsh -NoProfile -File scripts/validate-consumer-governance.ps1 -ConsumerRoot <consumer-root>
+The accepted path is now:
 
-# 在已安装 consumer 内
-pwsh -NoProfile -File node_modules/bmad-speckit-sdd-flow/scripts/validate-consumer-governance.ps1 -ConsumerRoot <consumer-root>
-```
+1. hook writes `orchestration_state` and `pending_packet`
+2. main Agent runs `npm run main-agent-orchestration -- --cwd {project-root} --action inspect`
+3. main Agent runs `dispatch-plan` when packet materialization is needed
+4. main Agent dispatches bounded child work
+5. main Agent re-reads state and decides the next step
+6. `runAuditorHost` remains post-audit close-out only
+7. `fallbackAutonomousMode=false`
 
-期待至少看到：
+## When To Read This Skill
 
-- `verify-pre-continue-check`
-- `verify-post-tool-use-and-background-worker`
-- `verify-execution-closure`
-- summary 最终 `status=passed`
+Read this skill only when:
 
-## Safety Rule
+- you are forensically comparing current behavior against the old worker-era design
+- you are cleaning legacy docs or migration notes
+- you need to explain why worker/queue auto-drain is no longer the accepted runtime proof
 
-重新安装 consumer 时，**绝不能删除 `_bmad-output`**。
+## Do Not Use As Success Criteria
 
-只允许清理安装面：
+The following are no longer current success criteria:
 
-- `_bmad`
-- `.claude`
-- `.cursor`
-- `node_modules/bmad-speckit-sdd-flow`
-
-`_bmad-output` 是运行时工件目录，不是 disposable cache。
-
-## Required Evidence
-
-不要只看一句 `background worker started`。至少同时检查：
-
-- hook stdout / stderr
-- `.claude/state/runtime/governance-hook.log` 或 `.cursor/state/runtime/governance-hook.log`
-- `_bmad-output/runtime/governance/queue/pending|done|failed`
-- `_bmad-output/runtime/governance/queue/last-failed-debug.json`
-- `_bmad-output/runtime/governance/executions/*.json`
-
-## Closure Standard
-
-真正通过的证据链是：
-
-```text
-pre-continue-check -> governance-rerun-result
-post-tool-use -> queue/pending
-background worker -> queue/done
-execution record -> running
-execution ingestor -> awaiting_rerun_gate
-rerun gate ingestor -> gate_passed
-```
-
-`queue/done` 不是终点；`gate_passed` 才是闭环完成。
+- `background worker started`
+- queue auto-draining from `pending` to `done`
+- execution record auto-advancing to `running`
+- `gate_passed` reached through autonomous fallback
 
 ## Read Next
 
-以下情况读取 `references/consumer-governance-validation.md`：
-
-- 自动脚本不存在
-- 自动脚本失败，需要手工定位哪一跳断了
-- 想复用手工 playbook 到别的 consumer
-- 需要排查 `pending_dispatch`、`EBUSY`、旧 worker entry、schema fallback 之类的真实坑
-
-## Common Mistakes
-
-- 把 `_bmad-output` 当成可重建临时目录去删
-- 只跑 `npm install`，没用 `npm install --force`
-- 并行跑 `npm install` 和 `bmad-speckit-init`
-- 看到 queue 进 `done` 就以为闭环完成
-- 忽略 canonical `_bmad/_config/governance-remediation.yaml`，导致 execution record 卡在 `pending_dispatch`
+- `docs/reference/main-agent-orchestration.md`
+- `docs/ops/2026-04-25-main-agent-orchestration-live-smoke.md`
+- `docs/ops/2026-04-25-speckit-workflow-main-agent-smoke.md`
+- `tests/acceptance/fallback-autonomous-dispatch-mode.test.ts`
+- `tests/acceptance/governance-runtime-worker.test.ts`

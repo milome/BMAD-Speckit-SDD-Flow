@@ -26,6 +26,27 @@ description: |
 
 每回合在执行本 skill 任一阶段任务前，须已具备由 **hook + `emit-runtime-policy`**（`scripts/emit-runtime-policy.ts` / `.claude|cursor/hooks/emit-runtime-policy-cli.js`）注入上下文的治理 JSON 块；契约见 `docs/reference/runtime-policy-emit-schema.md`。**禁止**手写与 `resolveRuntimePolicy` 不一致的示例 policy；若上下文中无该块，须先修复 `.bmad/runtime-context.json` 与 hook，不得臆造字段。
 
+## 主 Agent 编排面（强制）
+
+交互模式下，本 skill 必须以仓库原生 `main-agent-orchestration` 作为**唯一**编排权威。`runAuditorHost` 只负责审计后的 host 收口，**不能**替代主 Agent 的下一步分支决策。
+
+在派发任何 implement / audit / remediate / document 执行体之前，主 Agent **必须**：
+
+1. 执行 `npm run main-agent-orchestration -- --cwd {project-root} --action inspect`
+2. 读取 `orchestrationState`、`pendingPacketStatus`、`pendingPacket`、`continueDecision`、`mainAgentNextAction`、`mainAgentReady`
+3. 若下一分支可派发但 `pendingPacketStatus` 为 `none` 或 `missing_packet_file`，执行 `npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan`
+4. 只依据返回的 packet / instruction 派发，不得仅凭审计报告文本或 reviewer prose 手工拼 prompt
+5. 按 `claim` → 子代理 bounded execution → `dispatch` → 子结果回读 / `complete` / `invalidate` 的顺序驱动 packet 生命周期
+6. 每次子结果返回后，以及每次 `runAuditorHost` 收口后，都必须再次执行 `npm run main-agent-orchestration -- --cwd {project-root} --action inspect`，再决定下一全局分支
+
+兼容规则：
+- `mainAgentNextAction` 与 `mainAgentReady` 只是兼容汇总字段；真正权威状态始终是 `orchestrationState + pendingPacket + continueDecision`。
+
+硬禁止事项：
+- 未重新读取 `main-agent-orchestration` 前，禁止仅根据 `PASS`、reviewer prose、host summary 直接继续派发。
+- interactive mode 下禁止手写 packet 文件或默认写 worker-consumable queue item。
+- 禁止让子代理决定下一条全局执行链；子代理只执行 bounded packet，下一步永远由主 Agent 回读 state 后决定。
+
 ## 快速决策指引
 
 ### 何时使用本技能
@@ -371,6 +392,12 @@ Batch N: Task ... → 执行 → code-review审计 → 通过
 
 ### 5.1 执行流程
 
+在本阶段开始执行 tasks 或拉起任何执行体前，主 Agent 必须先：
+- 执行 `npm run main-agent-orchestration -- --cwd {project-root} --action inspect`，消费当前 `orchestrationState` 与 `pendingPacket`
+- 当 `mainAgentNextAction` 可派发但尚无可用 packet 时，执行 `npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan`
+- 通过 `main-agent-orchestration` 生命周期动作 claim / dispatch packet，而不是绕过 state 直接派发
+- 每次 bounded 子结果返回后，以及每次 `runAuditorHost` 调用后，都再次 `inspect`，再进入下一批任务或下一审计分支
+
 1. **读取 tasks.md**（或 tasks-v*.md），识别所有未完成任务（`[ ]` 复选框）。
 2. **【ralph-method 强制前置】创建 prd 与 progress 追踪文件**：
    - 若与 tasks 同目录或 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/` 下不存在 `prd.{stem}.json` 与 `progress.{stem}.txt`，**必须**在开始执行任何任务前创建；
@@ -609,4 +636,3 @@ Layer 5: 收尾与集成
 | 实施后审计规则（strict） | [references/audit-post-impl-rules.md](references/audit-post-impl-rules.md) |
 | audit_convergence 配置 | [references/audit-config-schema.md](references/audit-config-schema.md)；校验脚本 `_bmad/speckit/scripts/powershell/validate-audit-config.ps1` |
 | **Speckit 命令索引** | 见 §8 |
-

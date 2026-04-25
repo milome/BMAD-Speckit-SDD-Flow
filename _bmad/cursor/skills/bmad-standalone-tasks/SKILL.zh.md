@@ -6,6 +6,22 @@ description: |
 
 # BMAD Standalone Tasks
 
+## 主 Agent 编排面（强制）
+
+交互模式下，在主 Agent 启动、恢复或收口 `standalone_tasks` 执行链之前，必须先读取：
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action inspect
+```
+
+如需生成正式派发计划，则读取：
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan
+```
+
+`mainAgentNextAction / mainAgentReady` 仅为 compatibility summary；真正权威状态始终是 `orchestrationState + pendingPacket + continueDecision`。
+
 Execute unfinished work from a **single TASKS or BUGFIX document** in a single session. Implementation and code edits are **only** done by subagents; the main Agent orchestrates and audits.
 
 **Orphan standalone closeout contract**：当 TASKS / BUGFIX 文档位于 `_orphan/` 路径时，结构化审计报告必须显式提供 `stage=standalone_tasks`、`artifactDocPath`、`reportPath`；不得继续使用 `stage=document` 作为 orphan closeout 返回值。缺失任一字段或仅有 PASS 文本时，主 Agent 不得进入实现执行，host closeout 必须 fail-closed。

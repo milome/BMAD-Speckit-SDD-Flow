@@ -17,6 +17,20 @@ Run a strict audit on `TASKS_*.md`, `tasks-E*.md`, and similar task documents. R
 - Quality gate before implementing a TASKS document
 - Document audit that must reach “full coverage, verified pass” with 3-round no-gap convergence
 
+## Main-Agent Orchestration Surface (Mandatory)
+
+In interactive mode, this skill must treat repo-native `main-agent-orchestration` as the only orchestration authority. `runAuditorHost` is only the post-audit close-out entry; it must not replace the main Agent's next-branch decision.
+
+Before launching any audit subtask, remediation subtask, or other bounded execution, the main Agent must:
+
+1. Run `npm run main-agent-orchestration -- --cwd {project-root} --action inspect`
+2. Read `orchestrationState`, `pendingPacketStatus`, `pendingPacket`, `continueDecision`, `mainAgentNextAction`, and `mainAgentReady`
+3. If the next branch is dispatchable but no usable packet exists yet, run `npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan`
+4. Dispatch only from the returned packet / instruction instead of continuing from audit prose or document-review prose alone
+5. Re-run `inspect` after each child result and after each `runAuditorHost` close-out before choosing the next global branch
+
+`mainAgentNextAction / mainAgentReady` remain compatibility summary fields only; authoritative runtime truth is `orchestrationState + pendingPacket + continueDecision`.
+
 ## Mandatory constraints
 
 | Constraint | Description |

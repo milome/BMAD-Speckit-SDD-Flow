@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import { spawn, spawnSync, type SpawnOptions, type SpawnSyncReturns } from 'node:child_process';
+import { readGovernanceRemediationConfig } from './governance-remediation-config';
 import type {
   GovernanceHostKind,
 } from './governance-remediation-runner';
@@ -143,6 +144,10 @@ function resolveHostLaunchSpec(
 
   if (hostKind === 'claude') {
     return defaultClaudeLaunchSpec(input.projectRoot, envStartupTimeoutMs ?? undefined);
+  }
+
+  if (hostKind === 'cursor') {
+    return null;
   }
 
   return null;
@@ -362,6 +367,22 @@ export async function launchGovernanceExecutionViaHost(
   options: GovernanceHostDispatchAdapterOptions = {}
 ): Promise<GovernancePacketDispatchOutcome> {
   const env = options.env ?? process.env;
+  const config = readGovernanceRemediationConfig(input.projectRoot);
+  if (
+    config.execution?.interactiveMode === 'main-agent' &&
+    env.BMAD_GOVERNANCE_ALLOW_AUTONOMOUS_FALLBACK !== '1'
+  ) {
+    return rejected('autonomous governance dispatch disabled unless explicit fallback mode is enabled', {
+      interactiveMode: config.execution?.interactiveMode,
+      fallbackAutonomousMode: config.execution?.fallbackAutonomousMode,
+    });
+  }
+  if (config.execution?.fallbackAutonomousMode === false) {
+    return rejected('autonomous fallback dispatch is disabled by configuration', {
+      interactiveMode: config.execution?.interactiveMode,
+      fallbackAutonomousMode: config.execution?.fallbackAutonomousMode,
+    });
+  }
   const spec = resolveHostLaunchSpec(input, options);
   if (!spec) {
     return rejected(

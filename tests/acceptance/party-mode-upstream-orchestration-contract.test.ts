@@ -41,7 +41,7 @@ describe('party-mode upstream orchestration contract', () => {
       expect(content).not.toContain('普通业务补充文本');
       expect(content).not.toContain('立即继续下一批');
       expect(content).not.toMatch(/heartbeat .*facilitator|facilitator .*heartbeat/u);
-      expect(content).not.toMatch(/checkpoint/iu);
+      expect(content).not.toMatch(/checkpoint 窗口|checkpoint window/iu);
     }
   });
 

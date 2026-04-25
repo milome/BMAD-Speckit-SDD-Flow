@@ -274,9 +274,10 @@ PROMPT_PATH="_bmad-output/epic-{epic}-{epic-slug}/PROMPT_audit-epic-{epic}_round
 #### Step 3.2: 调用审计 Agent
 
 **Primary Executor**: `auditor-epic`
+**当前 accepted path（强制）**：本执行体不得在自身上下文里直接 `Task(...)` 派发 auditor；以下内容只能作为返回给主 Agent 的 dispatch request / compatibility hint。真实派发必须回到主 Agent，由主 Agent 重新读取 `main-agent-orchestration inspect`，必要时执行 `dispatch-plan`，再决定是否派发 auditor。
 
 ```typescript
-Task({
+MainAgentDispatchRequest({
   description: "审计 Epic {epic} 完成状态",
   subagent_type: "general-purpose",
   prompt: `
@@ -391,6 +392,8 @@ audit_report: "_bmad-output/epic-E001-test-epic/AUDIT_Epic_E001.md"
 completion_report: "_bmad-output/epic-E001-test-epic/EPIC_COMPLETION_REPORT.md"
 next_action: "proceed_to_layer_5"  # 进入收尾层
 ```
+
+说明：该 handoff 只作为 compatibility hint。Epic 审计后是否进入下一层，必须回到主 Agent，由主 Agent 重新读取 authoritative surface 后决定。
 
 ## Constraints
 

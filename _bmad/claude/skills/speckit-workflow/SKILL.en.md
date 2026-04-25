@@ -36,6 +36,27 @@ The goal is not to simply copy the Cursor skill, but to:
 
 Before executing any stage task of this skill in each round, there must be a governance JSON block injected into the context by **hook + `emit-runtime-policy`** (`scripts/emit-runtime-policy.ts` / `.claude|cursor/hooks/emit-runtime-policy-cli.js`); see `docs/reference/runtime-policy-emit-schema.md` for the contract. **Prohibited** Hand-written sample policies that are inconsistent with `resolveRuntimePolicy` are prohibited; if there is no such block in the context, `.bmad/runtime-context.json` and hook must be repaired first, and fields must not be made up.
 
+## Main-Agent Orchestration Surface (Mandatory)
+
+In interactive mode, this skill must use the repo-native `main-agent-orchestration` surface as the **only** orchestration authority. `runAuditorHost` is only the post-audit host close-out entry; it must not replace main-agent branching authority.
+
+Before dispatching any implement / audit / remediate / document execution body, the main Agent **must**:
+
+1. Run `npm run main-agent-orchestration -- --cwd {project-root} --action inspect`
+2. Read `orchestrationState`, `pendingPacketStatus`, `pendingPacket`, `continueDecision`, `mainAgentNextAction`, and `mainAgentReady`
+3. If the next branch is dispatchable but `pendingPacketStatus` is `none` or `missing_packet_file`, run `npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan`
+4. Dispatch strictly from the returned packet / instruction instead of hand-building prompts from audit prose alone
+5. Drive packet lifecycle through `claim` → bounded child execution → `dispatch` → child result ingest / `complete` / `invalidate`
+6. Re-run `npm run main-agent-orchestration -- --cwd {project-root} --action inspect` after every child result and after every `runAuditorHost` close-out before choosing the next global branch
+
+Compatibility rule:
+- `mainAgentNextAction` and `mainAgentReady` are compatibility summary fields only; authoritative runtime truth remains `orchestrationState + pendingPacket + continueDecision`.
+
+Hard prohibitions:
+- Do not dispatch directly from `PASS`, reviewer prose, or host summary without re-reading `main-agent-orchestration`.
+- Do not hand-write packet files or queue items in interactive mode.
+- Do not let a child agent decide the next global branch; the child only executes the bounded packet, and the main Agent must re-read state and decide the next step.
+
 ---
 
 ## Core Acceptance Criteria
@@ -146,6 +167,13 @@ This section defines how Cursor semantics are implemented in Claude Code CLI/OMC
 ### Execution body calling specification (Architecture D2)
 
 All execution bodies use `subagent_type: general-purpose`, and the main Agent passes in the entire `.claude/agents/*.md` as the complete prompt.
+
+Every Agent tool call in this skill must be derived from `main-agent-orchestration`:
+- First run `npm run main-agent-orchestration -- --cwd {project-root} --action inspect`
+- Then run `npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan` when the next branch is dispatchable and packet hydration is required
+- Dispatch only the bounded packet returned by that surface; the subagent must not decide the next global branch on its own
+- After the subagent returns, the main Agent must update packet lifecycle state and re-run `inspect` before continuing
+- `mainAgentNextAction` and `mainAgentReady` are compatibility fields only; the authoritative runtime truth remains `orchestrationState + pendingPacket + continueDecision`
 
 #### CLI Calling Summary (must be output before each call to the subagent)
 
@@ -581,6 +609,12 @@ When a user requests execution of an unfinished task in tasks.md (or tasks-v*.md
 
 ### 5.1 Execution process
 
+Before starting task execution or launching any execution body in this stage, the main Agent must:
+- Run `npm run main-agent-orchestration -- --cwd {project-root} --action inspect` and consume the current `orchestrationState` + `pendingPacket`
+- Run `npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan` when `mainAgentNextAction` is dispatchable but no usable packet is materialized yet
+- Claim and dispatch the packet through `main-agent-orchestration` lifecycle actions instead of bypassing state
+- Re-run `inspect` after each bounded child result and after each `runAuditorHost` call before continuing the next scoped batch or audit branch
+
 1. **Read tasks.md** (or tasks-v*.md) and identify all outstanding tasks (`[ ]` checkbox).
 2. **【ralph-method forced prefix】Create prd and progress tracking files**:
    - If `prd.{stem}.json` and `progress.{stem}.txt` do not exist in the same directory as tasks or in `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/`, they **must** be created before starting any task;
@@ -588,6 +622,7 @@ When a user requests execution of an unfinished task in tasks.md (or tasks-v*.md
    - The prd structure must conform to the ralph-method schema, mapping the acceptable tasks in tasks to US-001, US-002... (or one-to-one correspondence with the tasks number);
    - **progress pre-fills TDD slots**: When generating progress, the following placeholder lines are pre-filled for each US; US involving production code is pre-filled `[TDD-RED] _pending_`, `[TDD-GREEN] _pending_`, `[TDD-REFACTOR] _pending_`; US only for documentation/configuration is pre-filled `[DONE] _pending_`. Replace `_pending_` with the actual result when executing (e.g. `[TDD-RED] T1 pytest ... => N failed`);
    - Output path: the same directory as tasks, or `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/` (in BMAD process);
+   - **不中断执行 contract**: once task execution begins, the execution body must continue through all remaining scoped tasks/User Stories in sequence without stopping for milestone approvals. Control returns to the main Agent only when all scoped work is complete and ready for audit/closeout, a real blocker requires reroute, or an explicit audit/checkpoint boundary is reached.
    - **DO NOT** start coding or perform tasks involving production code without creating the above files.
 3. **Read the pre-requisite documents**: requirements document, plan.md, IMPLEMENTATION_GAPS.md, and understand the technical architecture and demand scope.
 4. **Use TodoWrite** to create a task tracking list, and the first task is marked `in_progress`.

@@ -159,7 +159,7 @@ Claude 端 Stage 1 Create Story 执行体，负责在 BMAD Story 流程中生成
 ### Runtime Contracts
 - 产物路径：`_bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{story_num}-{story_slug}/{epic_num}-{story_num}-{story_slug}.md`（与 create-story workflow、bmad-story-assistant 一致：story 子目录为 `story-{story}-{slug}`，不含 epic 编号）
 - Story 产出完成后，必须将 story state 更新为 `story_created`
-- 必须写入 handoff，交由 `bmad-story-audit` 执行 Stage 2
+- 必须写入 handoff；`next_agent: bmad-story-audit` 只作为 compatibility hint，真正是否进入 Stage 2 必须回到主 Agent，由主 Agent 重新读取 `main-agent-orchestration` surface 后决定
 - 若用户明确跳过 Create Story，必须记录跳过依据并直接进入 Story 审计
 
 ## Repo Add-ons
@@ -180,3 +180,5 @@ artifactPath: _bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/
 next_action: story_audit
 next_agent: bmad-story-audit
 ```
+
+说明：本执行体不得直接把控制链交给 `bmad-story-audit`；handoff 只是给主 Agent 的兼容提示。

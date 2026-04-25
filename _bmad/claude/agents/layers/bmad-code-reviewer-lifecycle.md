@@ -136,7 +136,11 @@ handoff:
   next_action: scoring_trigger|return_to_auditor
   next_agent: bmad-master|auditor-implement
   ready: true|false
+  mainAgentNextAction: dispatch_review
+  mainAgentReady: true|false
 ```
+
+说明：这里的 `next_agent`、`mainAgentNextAction`、`mainAgentReady` 只作为 compatibility hint。review 返回后，主 Agent 必须重新读取 `main-agent-orchestration` surface，再决定下一条全局分支。
 
 ## State Updates
 

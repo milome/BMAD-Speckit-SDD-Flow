@@ -35,6 +35,22 @@ references:
 
 本 skill 是 Cursor `bmad-bug-assistant` 在 Claude Code CLI / OMC 环境下的统一适配入口。
 
+## 主 Agent 编排面（强制）
+
+交互模式下，在主 Agent 启动、恢复或收口 `bugfix` 执行链之前，必须先读取：
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action inspect
+```
+
+如需生成正式派发计划，则读取：
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan
+```
+
+`mainAgentNextAction / mainAgentReady` 仅为 compatibility summary；真正权威状态始终是 `orchestrationState + pendingPacket + continueDecision`。
+
 目标不是简单复制 Cursor skill，而是：
 
 1. **继承 Cursor 已验证的 BUG 修复全流程语义**（根因分析 → BUGFIX 文档 → 审计 → 实施 → 实施后审计）
@@ -288,6 +304,8 @@ handoff:
   next_action: phase_2_update|phase_3_tasks|phase_4_impl|post_audit|commit_gate|iterate_audit
   next_agent: auditor-bugfix|auditor-implement|bmad-master|general-purpose
   ready: true|false
+  mainAgentNextAction: dispatch_remediation|dispatch_implement|dispatch_review|run_closeout
+  mainAgentReady: true|false
 ```
 
 ---

@@ -163,12 +163,158 @@ function loadContinueGateRouting(projectRoot) {
   return readYaml(routingPath);
 }
 
+function loadGovernanceExecutionPolicy(projectRoot) {
+  const defaults = {
+    interactiveMode: 'main-agent',
+    fallbackAutonomousMode: false,
+  };
+  const file = path.join(projectRoot, '_bmad', '_config', 'governance-remediation.yaml');
+  if (!fs.existsSync(file)) return defaults;
+  try {
+    const parsed = readYaml(file) || {};
+    const execution = parsed && typeof parsed === 'object' ? parsed.execution || {} : {};
+    return {
+      interactiveMode:
+        execution &&
+        typeof execution.interactiveMode === 'string' &&
+        ['main-agent'].includes(execution.interactiveMode)
+          ? execution.interactiveMode
+          : defaults.interactiveMode,
+      fallbackAutonomousMode:
+        defaults.fallbackAutonomousMode,
+    };
+  } catch {
+    return defaults;
+  }
+}
+
 function branchName(projectRoot) {
   const headPath = path.join(projectRoot, '.git', 'HEAD');
   if (!fs.existsSync(headPath)) return 'dev';
   const raw = fs.readFileSync(headPath, 'utf8').trim();
   const match = /^ref: refs\/heads\/(.+)$/.exec(raw);
   return match ? match[1] : 'dev';
+}
+
+function sanitizeToken(value) {
+  return String(value || '')
+    .replace(/[^a-zA-Z0-9._-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function orchestrationStateDir(projectRoot) {
+  return path.join(projectRoot, '_bmad-output', 'runtime', 'governance', 'orchestration-state');
+}
+
+function orchestrationStatePath(projectRoot, sessionId) {
+  return path.join(orchestrationStateDir(projectRoot), `${sessionId}.json`);
+}
+
+function packetDir(projectRoot, sessionId) {
+  return path.join(projectRoot, '_bmad-output', 'runtime', 'governance', 'packets', sessionId);
+}
+
+function packetPath(projectRoot, sessionId, packetId) {
+  return path.join(packetDir(projectRoot, sessionId), `${packetId}.json`);
+}
+
+function writeJsonAtomic(filePath, payload) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  const tempPath = `${filePath}.tmp`;
+  fs.writeFileSync(tempPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+  fs.renameSync(tempPath, filePath);
+}
+
+function deriveInteractiveSessionId(dynamic, routedWorkflow, routedStep, artifactPath) {
+  const runId = sanitizeToken(dynamic.runtimeContext?.runId || '');
+  if (runId) return runId;
+  const storyId = sanitizeToken(dynamic.runtimeContext?.storyId || '');
+  if (storyId) return `${sanitizeToken(dynamic.flow || 'flow')}-${storyId}`;
+  const base = sanitizeToken(`${routedWorkflow}-${routedStep}`);
+  const artifactHash = sanitizeToken(path.basename(artifactPath || 'artifact'));
+  return `${base}-${artifactHash || 'handoff'}`;
+}
+
+function persistInteractiveMainAgentHandoff(projectRoot, input) {
+  const sessionId = deriveInteractiveSessionId(
+    input.dynamic,
+    input.workflow,
+    input.step,
+    input.artifactPath
+  );
+  const packetId = `recommendation-${Date.now()}`;
+  const stateFile = orchestrationStatePath(projectRoot, sessionId);
+  const packetFile = packetPath(projectRoot, sessionId, packetId);
+  const packet = {
+    packetId,
+    parentSessionId: sessionId,
+    flow: input.dynamic.flow || 'story',
+    phase: input.dynamic.stage || 'implement',
+    recommendedRole: 'remediation-worker',
+    recommendedTaskType: 'remediate',
+    inputArtifacts: input.artifactPath ? [input.artifactPath] : [],
+    allowedWriteScope: ['_bmad-output/**', 'specs/**', 'docs/**', 'src/**', 'tests/**'],
+    expectedDelta: `repair governed contract failures for ${input.workflow} ${input.step}`,
+    successCriteria: [
+      'return a bounded Task Report',
+      'preserve governance semantics',
+      'provide enough evidence for the main agent to rerun the gate',
+    ],
+    stopConditions: [
+      'true blocker detected',
+      'scope must widen beyond the governed artifact',
+    ],
+    providerReasoning: `gate=${input.gate}; rerunGate=${input.rerunGate}`,
+    originalPromptText: `GateFailure for ${input.workflow} ${input.step}: ${input.failures.join('; ')}`,
+  };
+  const state = {
+    version: 1,
+    sessionId,
+    host: 'claude',
+    flow: input.dynamic.flow || 'story',
+    currentPhase: input.dynamic.stage || 'implement',
+    nextAction: 'dispatch_remediation',
+    pendingPacket: {
+      packetId,
+      packetPath: packetFile,
+      packetKind: 'recommendation',
+      status: 'ready_for_main_agent',
+      createdAt: new Date().toISOString(),
+      claimOwner: null,
+    },
+    originalExecutionPacketId: null,
+    fourSignal: {
+      latestStatus: 'block',
+      latestHits: input.failures,
+      driftDetected: false,
+      missingEvidence: false,
+    },
+    latestGate: {
+      gateId: input.rerunGate,
+      decision: 'auto_repairable_block',
+      reason: input.failures.join('; '),
+    },
+    gatesLoop: {
+      retryCount: 0,
+      maxRetries: 3,
+      noProgressCount: 0,
+      circuitOpen: false,
+    },
+    closeout: {
+      invoked: false,
+      approved: false,
+      scoreWriteResult: null,
+      handoffPersisted: false,
+      resultCode: null,
+    },
+  };
+  writeJsonAtomic(packetFile, packet);
+  writeJsonAtomic(stateFile, state);
+  return {
+    sessionId,
+    statePath: stateFile,
+    packetPath: packetFile,
+  };
 }
 
 function collectSections(markdown) {
@@ -348,7 +494,7 @@ function writeResult(result) {
 function blockGovernancePacketWrite(result) {
   writeResult(result);
   process.stderr.write(
-    'GateFailure\n- governance packet files are generated only by the local runner, not by model Write/Edit actions.\nRemediationPlan\n- write the remediation artifact only; let governance-remediation-runner derive packet files.\n'
+    'GateFailure\n- governance packet/state are owned by main-agent orchestration, not by direct model Write/Edit actions.\nRemediationPlan\n- write the remediation artifact only; let the main-agent orchestration surface regenerate and claim pending_packet from state.\n'
   );
   process.exitCode = 2;
 }
@@ -572,6 +718,84 @@ async function main() {
     ...(deferredGapAudit ? { deferredGapAudit } : {}),
     ...(deferredGapStageAudit ? { deferredGapStageAudit } : {}),
   };
+  const executionPolicy = loadGovernanceExecutionPolicy(projectRoot);
+  if (failures.length > 0 && executionPolicy.interactiveMode === 'main-agent') {
+    const handoff = persistInteractiveMainAgentHandoff(projectRoot, {
+      dynamic,
+      workflow: routedWorkflow,
+      step: routedStep,
+      gate: gate.runtime?.gate || gateConfig.key,
+      rerunGate:
+        dynamic.rerunGate || (route && route.rerunGate) || gate.runtime?.gate || gateConfig.key,
+      artifactPath,
+      failures,
+    });
+    persistGovernanceStageRerunResultEvent(
+      buildGovernanceStageRerunResultEvent({
+        projectRoot,
+        sourceEventType: 'governance-pre-continue-check',
+        runnerInput: {
+          projectRoot,
+          outputPath:
+            deriveReadinessRemediationArtifactPath &&
+            typeof deriveReadinessRemediationArtifactPath === 'function'
+              ? deriveReadinessRemediationArtifactPath(artifactPath)
+              : artifactPath,
+          promptText: `GateFailure for ${routedWorkflow} ${routedStep}: ${failures.join('; ')}`,
+          stageContextKnown: true,
+          gateFailureExists: true,
+          blockerOwnershipLocked: true,
+          rootTargetLocked: true,
+          equivalentAdapterCount: 1,
+          attemptId: `pre-continue-${Date.now()}`,
+          sourceGateFailureIds: failures.map((issue, index) => {
+            const normalized = sanitizeToken(String(issue || '').toUpperCase());
+            return normalized || `PRE-CONTINUE-${index + 1}`;
+          }),
+          capabilitySlot: `${routedWorkflow}.${routedStep}`,
+          canonicalAgent: 'PM + QA / readiness reviewer',
+          actualExecutor: 'pre-continue-check',
+          adapterPath: '_bmad/runtime/hooks/pre-continue-check.cjs',
+          targetArtifacts: artifactPath ? [artifactPath] : [],
+          expectedDelta: `repair governed contract failures for ${routedWorkflow} ${routedStep}`,
+          rerunOwner: 'PM',
+          rerunGate:
+            dynamic.rerunGate || (route && route.rerunGate) || gate.runtime?.gate || gateConfig.key,
+          outcome: 'blocked',
+          hostKind: 'claude',
+        },
+        rerunGateResult: {
+          gate:
+            dynamic.rerunGate || (route && route.rerunGate) || gate.runtime?.gate || gateConfig.key,
+          status: 'fail',
+          blockerIds: failures.map((issue, index) => {
+            const normalized = sanitizeToken(String(issue || '').toUpperCase());
+            return normalized || `PRE-CONTINUE-${index + 1}`;
+          }),
+          summary: failures.join('; '),
+          updatedArtifacts: artifactPath ? [artifactPath] : [],
+        },
+      })
+    );
+    const interactiveResult = {
+      ...result,
+      next_action: 'dispatch_remediation',
+      ready: true,
+      orchestration_state: handoff.statePath,
+      pending_packet: handoff.packetPath,
+      session_id: handoff.sessionId,
+    };
+    emitHookInfo(
+      `pre-continue-check handed off to main agent: workflow=${routedWorkflow}; step=${routedStep}; gate=${gate.runtime?.gate || gateConfig.key}`
+    );
+    writeResult(interactiveResult);
+    process.stderr.write(
+      `GateFailure\n${failures.map((issue) => `- ${issue}`).join('\n')}\nRemediationPlan\n- read orchestration_state and pending_packet, then let the main agent dispatch remediation.\n`
+    );
+    process.exitCode = 2;
+    return;
+  }
+
   enqueuePreContinueEvent(projectRoot, {
     projectRoot,
     workflow: routedWorkflow,

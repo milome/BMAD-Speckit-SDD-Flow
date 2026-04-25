@@ -16,6 +16,22 @@ description: |
 
 # BMAD Story Assistant
 
+## Main-Agent Orchestration Surface (Mandatory)
+
+In interactive main-agent mode, before the main Agent starts, resumes, or closes out the `story` chain, it must first read:
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action inspect
+```
+
+If an official dispatch plan is needed, read:
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan
+```
+
+`mainAgentNextAction / mainAgentReady` remain compatibility summary fields only; authoritative runtime truth is `orchestrationState + pendingPacket + continueDecision`.
+
 > **Party-mode source of truth (Cursor)**: `{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`. Cursor-side party-mode rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit-gate semantics must follow that file; this skill only decides when Story flows enter party-mode.
 
 ### Cursor Party-Mode Main-Agent Flow
@@ -1456,6 +1472,8 @@ Execute after the subtask returns:
 Same as Phase 2: **Priority** Cursor Task schedules code-reviewer; **Fallback** mcp_task generalPurpose. The main Agent must copy the entire prompt template of **STORY-A4-POSTAUDIT** and replace the placeholders before passing it in. **The prompt passed into the audit subtask must contain [§5 parsable block requirements (implement-specific)]** (see the previous section on comprehensive auditing), and be accompanied by audit-prompts §5.1 or audit-prompts-code.md parsable block examples (functionality, code quality, test coverage, security). **[Must do after passing the audit]**: when the conclusion is "complete coverage, verification passed", you (audit subagent) **must** return `projectRoot`, `reportPath`, `artifactDocPath=<story document path>`, and `stage=implement` so the invoking host/runner can call `runAuditorHost`; the report path is `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_Story_{epic}-{story}_stage4.md`; if host execution fails, indicate the resultCode in the conclusion; **it is forbidden** to return a passing conclusion before the host close-out is complete. For detailed templates, see the historical version of this skill or speckit-workflow references.
 
 If the audit conclusion is **failed**, **must** be modified according to the audit report and be initiated again until "complete coverage and verification passed".
+
+**不中断执行 contract**: The implementation subagent must continuously complete all remaining scoped User Stories/tasks. It must not pause after a milestone and wait for main-Agent approval. Control may return to the main Agent only when: ① all work in the current scope is finished and the flow can enter post-audit; ② a real blocker requires reroute / remediation; ③ an explicit audit or checkpoint boundary defined by this skill has been reached. 换言之，子代理必须连续完成当前作用域内的全部剩余 User Story/任务。
 
 ---
 

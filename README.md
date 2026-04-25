@@ -46,10 +46,11 @@ Traditional AI tooling often stops at prompt orchestration. BMAD-Speckit-SDD-Flo
 ## Runtime Governance At A Glance
 
 - **Four-Signal readiness gate** runs before implementation entry and keeps readiness scoring separate from implementation scoring.
-- **Runtime gates loop** keeps workflow progression aligned with stage truth instead of letting hosts continue optimistically.
-- **Rerun gates** carry remediation and re-entry through the same governed path after fixes.
-- **Packet execution closure** preserves evidence for every governed execution outcome across Cursor and Claude Code hosts.
-- **Post-audit close-out** feeds scoring, dashboard, coach, and SFT extraction from the same runtime close-out path.
+- **`main-agent-orchestration inspect` is the first read**: the main agent reads the repo-native authoritative surface before choosing the next global branch.
+- **`dispatch-plan` is conditional**: only materialize a plan when the surface says the next branch should dispatch a packet.
+- **Child agents only execute a bounded packet**: they return packet results, but they do not choose the next global branch.
+- **`runAuditorHost` is post-audit close-out only**: it closes approved audits into scoring, dashboard, coach, and SFT outputs, then the main agent re-reads `inspect`.
+- **Legacy worker/manual close-out playbooks are historical evidence**: keep them for auditability, but they are not the active accepted runtime path.
 
 ## Dashboard And MCP
 
@@ -164,16 +165,16 @@ This only removes installer-managed entries. It does not delete `.cursor`, `.cla
 
 ### Core Components
 
-| Component                   | Purpose                                                                                             |
-| :-------------------------- | :-------------------------------------------------------------------------------------------------- |
-| **`_bmad/`**                | Canonical source of truth for workflow modules, hooks, prompts, routing, and host-facing assets.    |
-| **`packages/scoring/`**     | Scoring engine, readiness drift evaluation, dashboard projection, coach inputs, and SFT extraction. |
-| **`dashboard`**             | Default runtime observability surface: live dashboard, runtime snapshots, and scoring projections.  |
-| **`runtime-mcp`**           | Optional MCP surface for agent tools over runtime data; enabled explicitly with `--with-mcp`.       |
-| **`speckit-workflow`**      | Specify -> Plan -> GAPS -> Tasks -> TDD with mandatory audit loops.                                 |
-| **`bmad-story-assistant`**  | Story lifecycle path: Create Story -> Party Mode -> Dev Story -> Implement.                         |
-| **`bmad-bug-assistant`**    | Bug lifecycle path: RCA -> Party Mode -> BUGFIX -> Implement.                                       |
-| **`bmad-standalone-tasks`** | Standalone execution path for TASKS or BUGFIX documents through governed subagent delivery.         |
+| Component                   | Purpose                                                                                                                                    |
+| :-------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------- |
+| **`_bmad/`**                | Canonical source of truth for workflow modules, hooks, prompts, routing, and host-facing assets.                                           |
+| **`packages/scoring/`**     | Scoring engine, readiness drift evaluation, dashboard projection, coach inputs, and SFT extraction.                                        |
+| **`dashboard`**             | Default runtime observability surface: live dashboard, runtime snapshots, and scoring projections.                                         |
+| **`runtime-mcp`**           | Optional MCP surface for agent tools over runtime data; enabled explicitly with `--with-mcp`.                                              |
+| **`speckit-workflow`**      | Specify -> Plan -> GAPS -> Tasks -> TDD with mandatory audit loops.                                                                        |
+| **`bmad-story-assistant`**  | Story lifecycle entry: main agent reads `inspect`, dispatches bounded packets when needed, and closes post-audit through `runAuditorHost`. |
+| **`bmad-bug-assistant`**    | Bug lifecycle path: RCA -> Party Mode -> BUGFIX -> Implement, while the main Agent still owns the global `inspect -> dispatch-plan -> closeout` chain. |
+| **`bmad-standalone-tasks`** | TASKS/BUGFIX execution still follows the main-agent path: `inspect` first, `dispatch-plan` only when needed, then bounded subagent work.             |
 
 <details>
 <summary><b>View Folder Structure</b></summary>
@@ -197,6 +198,7 @@ BMAD-Speckit-SDD-Flow/
 Key entry points:
 
 - [Getting Started](docs/tutorials/getting-started.md)
+- [Main-Agent Orchestration Reference](docs/reference/main-agent-orchestration.md)
 - [Consumer Installation Guide](docs/how-to/consumer-installation.md)
 - [Runtime Dashboard Guide](docs/how-to/runtime-dashboard.md)
 - [Runtime MCP Installation](docs/how-to/runtime-mcp-installation.md)

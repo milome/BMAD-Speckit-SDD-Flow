@@ -56,8 +56,9 @@ Bug 修复专用流程。
 - BUGFIX 文档审计未执行、未通过或结论不明时，一律视为实现前阻断
 - 修复完成后必须进行实施后审计
 - 提交仅允许通过 `bmad-master` 的 `commit_request`
-- 返回必须包含：`execution_summary`、`artifacts`、`handoff`、`next_action`、`ready`
+- 返回必须包含：`execution_summary`、`artifacts`、`handoff`、`next_action`、`ready`、`mainAgentNextAction`、`mainAgentReady`
 - 修复流程必须保留 RCA / BUGFIX / repro test / post-audit 的完整链路证据
+- parent 主 Agent 在发起或回收本执行体前，必须优先读取 `npm run main-agent-orchestration -- --cwd {project-root} --action inspect|dispatch-plan`
 
 ## Repo Add-ons
 
@@ -109,6 +110,7 @@ Bug 修复专用流程。
 
 - 主 Agent 调用执行体时，必须完整复制 Cursor 侧 bug assistant / bugfix workflow 的对应正文模板，不得摘要化
 - 不得只传文件路径让执行体自行推断规则
+- parent 主 Agent 不得只根据 `mainAgentNextAction / mainAgentReady` 派发本执行体；若 repo-native orchestration surface 可用，必须优先消费该 surface
 - 必须显式传入：
   - bug 描述
   - RCA 摘要或 RCA 文档路径
@@ -130,7 +132,11 @@ handoff:
   next_action: implement_bugfix|post_audit|commit_gate|revise_bugfix_doc
   next_agent: bmad-bug-agent|auditor-implement|bmad-master|auditor-bugfix
   ready: true|false
+  mainAgentNextAction: dispatch_implement|dispatch_review|dispatch_remediation|run_closeout|await_user
+  mainAgentReady: true|false
 ```
+
+说明：这里的 `next_agent`、`mainAgentNextAction`、`mainAgentReady` 只作为 compatibility hint。bugfix 子执行体返回后，主 Agent 必须重新读取 `main-agent-orchestration` surface，再决定下一条全局分支。
 
 ## State Updates
 

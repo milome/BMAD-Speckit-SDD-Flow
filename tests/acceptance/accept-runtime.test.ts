@@ -11,7 +11,8 @@ describe('runtime hooks and worker', () => {
     expect(sessionStart).toContain('checkpoint');
     expect(postToolUse).toContain('event');
     expect(stop).toContain('checkpoint');
-    expect(stop).toContain('runBmadRuntimeWorker');
+    expect(stop).not.toContain('run-bmad-');
+    expect(stop).toContain('legacy autonomous background drain removed');
     expect(worker).toContain('pending');
     expect(worker).toContain('processing');
     expect(worker).toContain('done');

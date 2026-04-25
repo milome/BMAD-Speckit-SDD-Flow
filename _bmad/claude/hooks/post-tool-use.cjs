@@ -77,18 +77,6 @@ function resolveGovernanceQueueHelper() {
 }
 
 function resolveRuntimeWorkerHelper() {
-  const candidates = [
-    path.join(__dirname, 'run-bmad-runtime-worker.cjs'),
-    path.join(__dirname, '..', '..', 'runtime', 'hooks', 'run-bmad-runtime-worker.cjs'),
-    path.join(__dirname, '..', '..', '_bmad', 'runtime', 'hooks', 'run-bmad-runtime-worker.cjs'),
-  ];
-
-  for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) {
-      return require(candidate);
-    }
-  }
-
   return null;
 }
 
@@ -297,26 +285,13 @@ function normalizeBackgroundTrigger(backgroundTrigger, projectRoot, event) {
  */
 function triggerDetachedBackgroundDrain(projectRoot, event) {
   const executorRouting = buildExecutorRoutingPreview(event);
-  if (process.env.BMAD_SKIP_GOVERNANCE_BACKGROUND_DRAIN === '1') {
-    return {
-      started: false,
-      skipped: true,
-      reason: 'disabled by BMAD_SKIP_GOVERNANCE_BACKGROUND_DRAIN',
-      projectRoot,
-      executorRouting,
-    };
-  }
-
-  const helper = resolveRuntimeWorkerHelper();
-  if (!helper || typeof helper.runBmadRuntimeWorker !== 'function') {
-    return null;
-  }
-
-  return helper.runBmadRuntimeWorker({
+  return {
+    started: false,
+    skipped: true,
+    reason: 'legacy autonomous background drain removed; main agent must continue from orchestration state and packet',
     projectRoot,
-    wait: false,
-    onlyWhenPending: true,
-  });
+    executorRouting,
+  };
 }
 
 /**
@@ -379,20 +354,10 @@ function postToolUse(event) {
     event
   );
 
-  if (!backgroundTrigger) {
+  if (backgroundTrigger && backgroundTrigger.skipped) {
     appendGovernanceLog(
       projectRoot,
-      '[Runtime Governance] worker helper unavailable; background drain not started'
-    );
-  } else if (backgroundTrigger.started) {
-    appendGovernanceLog(
-      projectRoot,
-      `[Runtime Governance] background worker started pid=${backgroundTrigger.pid || 'unknown'}`
-    );
-  } else if (backgroundTrigger.skipped) {
-    appendGovernanceLog(
-      projectRoot,
-      `[Runtime Governance] background worker skipped reason=${backgroundTrigger.reason || 'unknown'}`
+      `[Runtime Governance] legacy background drain skipped reason=${backgroundTrigger.reason || 'unknown'}`
     );
   }
 

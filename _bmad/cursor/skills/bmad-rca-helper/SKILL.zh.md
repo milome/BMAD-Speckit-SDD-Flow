@@ -14,6 +14,20 @@ description: |
 - 需要多角色辩论挖掘最优方案并生成可执行任务列表
 - 产出文档需经严格审计（批判审计员 >70%、连续 3 轮无 gap）后交付
 
+## 主 Agent 编排面（强制）
+
+交互模式下，本 skill 必须以 repo-native `main-agent-orchestration` 作为唯一编排权威。`runAuditorHost` 只负责审计后的 close-out，不能替代主 Agent 的下一步分支决策。
+
+在发起任何审计子任务、实施子任务或其他 bounded execution 前，主 Agent 必须：
+
+1. 执行 `npm run main-agent-orchestration -- --cwd {project-root} --action inspect`
+2. 读取 `orchestrationState`、`pendingPacketStatus`、`pendingPacket`、`continueDecision`、`mainAgentNextAction`、`mainAgentReady`
+3. 若下一分支可派发但尚无可用 packet，执行 `npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan`
+4. 仅依据返回的 packet / instruction 派发子代理，不得只凭 party-mode prose、RCA prose 或 handoff 摘要继续推进
+5. 每次子代理返回后，以及每次 `runAuditorHost` 收口后，都再次 `inspect`，再决定下一全局分支
+
+`mainAgentNextAction / mainAgentReady` 仅为 compatibility summary；真正权威状态始终是 `orchestrationState + pendingPacket + continueDecision`。
+
 > Party-mode 规则源（Cursor）：`{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
 > 说明：轮次分级、`designated_challenger_id`、`challenger_ratio > 0.60`、session/meta/snapshot/evidence、恢复与退出门禁都以 core step-02 为准。本技能不得自定义第二套 party-mode gate 语义。
 

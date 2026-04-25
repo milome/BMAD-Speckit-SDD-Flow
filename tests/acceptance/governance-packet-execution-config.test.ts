@@ -23,6 +23,8 @@ describe('governance packet execution config', () => {
           '  id: test-provider',
           'execution:',
           '  enabled: true',
+          '  interactiveMode: main-agent',
+          '  fallbackAutonomousMode: true',
           '  authoritativeHost: cursor',
           '  fallbackHosts:',
           '    - claude',
@@ -52,6 +54,8 @@ describe('governance packet execution config', () => {
       const config = readGovernanceRemediationConfig(root);
       expect(config.version).toBe(2);
       expect(config.execution?.enabled).toBe(true);
+      expect(config.execution?.interactiveMode).toBe('main-agent');
+      expect(config.execution?.fallbackAutonomousMode).toBe(false);
       expect(config.execution?.authoritativeHost).toBe('cursor');
       expect(config.execution?.fallbackHosts).toEqual(['claude', 'codex']);
       expect(config.execution?.dispatch.maxDispatchAttempts).toBe(4);
@@ -62,6 +66,8 @@ describe('governance packet execution config', () => {
       const fallback = readGovernanceRemediationConfig(root);
       expect(fallback.version).toBe(1);
       expect(fallback.execution?.enabled).toBe(false);
+      expect(fallback.execution?.interactiveMode).toBe('main-agent');
+      expect(fallback.execution?.fallbackAutonomousMode).toBe(false);
       expect(fallback.primaryHost).toBe('cursor');
     } finally {
       rmSync(root, { recursive: true, force: true });

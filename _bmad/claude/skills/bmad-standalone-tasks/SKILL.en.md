@@ -30,6 +30,28 @@ references:
 
 This skill is the unified Claude Code CLI / OMC entry for Cursor `bmad-standalone-tasks`.
 
+## Main Agent Orchestration Surface
+
+In interactive main-agent mode, before the main Agent starts, resumes, or closes out the `standalone_tasks` chain, it must first read:
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action inspect
+```
+
+If an official dispatch plan is needed, read:
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan
+```
+
+`mainAgentNextAction / mainAgentReady` remain compatibility summary fields only; authoritative runtime truth is `orchestrationState + pendingPacket + continueDecision`.
+
+## Uninterrupted Execution Contract
+
+- 不中断执行 contract：implementation subagents must **连续完成当前作用域内的全部剩余 US/任务** until a real blocker or audit boundary is reached.
+- The main Agent may only use `resume` / continuation prompts to continue the chain.
+- It must not hand the remaining implementation back to the user before `runAuditorHost` closeout is ready.
+
 The goal is **not** to blindly copy the Cursor skill, but to:
 
 1. **Inherit validated standalone execution semantics** (extract unfinished items from TASKS/BUGFIX → subagent implement → post-implementation audit)
@@ -39,7 +61,7 @@ The goal is **not** to blindly copy the Cursor skill, but to:
 
 ## Host Guard (must run first)
 
-If the actual host is **Cursor IDE**, or the invocation context clearly uses Cursor semantics (for example `mcp_task`, `generalPurpose`, `Cursor Task`, or the caller explicitly says this is running under Cursor), then:
+If the actual host is **Cursor IDE**, or the invocation context clearly uses Cursor-side task semantics (for example Cursor-native task payloads, Cursor-specific executors, or the caller explicitly says this is running under Cursor), then:
 
 1. **Stop immediately**
 2. Print the exact message below:
@@ -190,6 +212,8 @@ handoff:
   next_action: implement_next_batch|post_batch_audit|commit_gate|revise_tasks_doc
   next_agent: bmad-standalone-tasks|auditor-implement|bmad-master|auditor-tasks-doc
   ready: true|false
+  mainAgentNextAction: dispatch_implement|dispatch_review|dispatch_remediation|run_closeout|await_user
+  mainAgentReady: true|false
 ```
 
 ### Main Agent responsibilities
@@ -274,6 +298,8 @@ handoff:
   next_action: post_batch_audit
   next_agent: auditor-implement
   ready: true
+  mainAgentNextAction: dispatch_review
+  mainAgentReady: true
 ```
 
 ---
@@ -367,6 +393,8 @@ handoff:
   next_action: implement_next_batch|commit_gate|revise_and_reaudit
   next_agent: bmad-standalone-tasks|bmad-master|auditor-implement
   ready: true|false
+  mainAgentNextAction: dispatch_implement|dispatch_review|dispatch_remediation|run_closeout|await_user
+  mainAgentReady: true|false
 ```
 
 ---

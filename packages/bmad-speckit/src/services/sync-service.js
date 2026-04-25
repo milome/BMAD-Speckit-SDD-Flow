@@ -7,6 +7,9 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const AIRegistry = require('./ai-registry');
+const {
+  removeUnexpectedLegacyConsumerHookFiles,
+} = require('./install-surface-manifest');
 
 /**
  * Recursively copy directory contents to dest.
@@ -188,7 +191,7 @@ function syncCommandsRulesConfig(projectRoot, selectedAI, options = {}) {
 
   deploySpecifyDir(projectRoot, bmadRoot);
 
-  /** Align with monorepo `init-to-root`: hooks dir gets `emit-runtime-policy.cjs` + `write-runtime-context.cjs`; default project context lives under `_bmad-output/runtime/context/project.json`. */
+  /** Align with monorepo `init-to-root`: hooks dir gets the accepted main-agent governance surface, not legacy worker/dispatch bundles. */
   deployRuntimeGovernanceFromPackage(projectRoot);
 
   fs.mkdirSync(path.join(projectRoot, 'specs'), { recursive: true });
@@ -213,11 +216,6 @@ function deployRuntimeGovernanceFromPackage(projectRoot) {
   const pkgRootRuntimeEmit =
     path.basename(path.dirname(emitSrc)) === 'dist' ? path.dirname(path.dirname(emitSrc)) : path.dirname(emitSrc);
   const wrcSrc = path.join(pkgRootRuntimeEmit, 'write-runtime-context.cjs');
-  const governanceWorkerSrc = path.join(pkgRootRuntimeEmit, 'dist', 'governance-runtime-worker.cjs');
-  const governanceRunnerSrc = path.join(pkgRootRuntimeEmit, 'dist', 'governance-remediation-runner.cjs');
-  const governanceDispatchWorkerSrc = path.join(pkgRootRuntimeEmit, 'dist', 'governance-packet-dispatch-worker.cjs');
-  const governanceResultIngestorSrc = path.join(pkgRootRuntimeEmit, 'dist', 'governance-execution-result-ingestor.cjs');
-  const governanceReconcilerSrc = path.join(pkgRootRuntimeEmit, 'dist', 'governance-packet-reconciler.cjs');
   const hookDirs = [path.join(projectRoot, '.cursor', 'hooks'), path.join(projectRoot, '.claude', 'hooks')];
   let deployed = 0;
   for (const d of hookDirs) {
@@ -230,21 +228,7 @@ function deployRuntimeGovernanceFromPackage(projectRoot) {
     if (fs.existsSync(preContinueSrc)) {
       fs.copyFileSync(preContinueSrc, path.join(d, 'pre-continue-check.cjs'));
     }
-    if (fs.existsSync(governanceWorkerSrc)) {
-      fs.copyFileSync(governanceWorkerSrc, path.join(d, 'governance-runtime-worker.cjs'));
-    }
-    if (fs.existsSync(governanceRunnerSrc)) {
-      fs.copyFileSync(governanceRunnerSrc, path.join(d, 'governance-remediation-runner.cjs'));
-    }
-    if (fs.existsSync(governanceDispatchWorkerSrc)) {
-      fs.copyFileSync(governanceDispatchWorkerSrc, path.join(d, 'governance-packet-dispatch-worker.cjs'));
-    }
-    if (fs.existsSync(governanceResultIngestorSrc)) {
-      fs.copyFileSync(governanceResultIngestorSrc, path.join(d, 'governance-execution-result-ingestor.cjs'));
-    }
-    if (fs.existsSync(governanceReconcilerSrc)) {
-      fs.copyFileSync(governanceReconcilerSrc, path.join(d, 'governance-packet-reconciler.cjs'));
-    }
+    removeUnexpectedLegacyConsumerHookFiles(d);
     deployed += 1;
   }
   if (deployed === 0) return;

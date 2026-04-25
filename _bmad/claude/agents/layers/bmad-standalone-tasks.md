@@ -52,8 +52,9 @@
 - 前置门控未执行、未通过或结论不明时，一律视为实施前阻断
 - 批次门控：每批任务完成后调用实现审计
 - 提交门控：仅允许向 `bmad-master` 返回 `commit_request`，禁止自行 commit
-- 返回必须包含：`execution_summary`、`artifacts`、`handoff`、`next_action`、`ready`
+- 返回必须包含：`execution_summary`、`artifacts`、`handoff`、`next_action`、`ready`、`mainAgentNextAction`、`mainAgentReady`
 - 实施过程必须维护 standalone 模式下的 prd/progress 产物
+- parent 主 Agent 在发起或回收本执行体前，必须优先读取 `npm run main-agent-orchestration -- --cwd {project-root} --action inspect|dispatch-plan`
 
 ## Repo Add-ons
 
@@ -112,6 +113,7 @@
 
 - 主 Agent 调用实施子代理时，必须完整复制 Cursor 侧对应正文模板，不得摘要化
 - 不得只传文件路径让子代理自行推断规则
+- parent 主 Agent 不得只根据 `mainAgentNextAction / mainAgentReady` 派发本执行体；若 repo-native orchestration surface 可用，必须优先消费该 surface
 - 必须显式传入：
   - 文档路径
   - 未完成任务清单
@@ -134,7 +136,11 @@ handoff:
   next_action: implement_next_batch|post_batch_audit|commit_gate|revise_tasks_doc
   next_agent: bmad-standalone-tasks|auditor-implement|bmad-master|auditor-tasks-doc
   ready: true|false
+  mainAgentNextAction: dispatch_implement|dispatch_review|dispatch_remediation|run_closeout|await_user
+  mainAgentReady: true|false
 ```
+
+说明：这里的 `next_agent`、`mainAgentNextAction`、`mainAgentReady` 只作为 compatibility hint。standalone 执行体返回后，主 Agent 必须重新读取 `main-agent-orchestration` surface，再决定下一条全局分支。
 
 ## State Updates
 

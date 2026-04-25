@@ -148,7 +148,9 @@ describe('pre-continue self-write skip', () => {
         expect(typeof result.workflow === 'string' || typeof result.workflow === 'undefined').toBe(true);
         expect(typeof result.step === 'string' || typeof result.step === 'undefined').toBe(true);
         expect(typeof result.gate === 'string' || typeof result.gate === 'undefined').toBe(true);
-        expect(command.stderr).toContain('governance packet files are generated only by the local runner');
+        expect(command.stderr).toContain(
+          'governance packet/state are owned by main-agent orchestration'
+        );
         expect(existsSync(packetPath)).toBe(false);
       } finally {
         rmSync(project, { recursive: true, force: true });

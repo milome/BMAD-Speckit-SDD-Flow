@@ -1,8 +1,18 @@
 # Cursor Speckit-Workflow → Claude Code CLI 完整映射
 
 > **目标**: 零裁剪、完整准确地将 Cursor 的 speckit-workflow 适配到 Claude Code CLI
-> **Current path**: `runAuditorHost`（post-audit automation）
-> **Legacy path**: 直接把 `parse-and-write-score` / `bmad-speckit score` 当成上层审计收口入口
+> **Current path**: `main-agent-orchestration inspect` →（必要时）`dispatch-plan` → child agent 执行 `bounded packet` → `runAuditorHost` 做 post-audit close-out
+> **Legacy path**: 直接把 `runAuditorHost`、`parse-and-write-score` / `bmad-speckit score` 当成上层 interactive 主路径
+
+---
+
+## Interactive 主链分层
+
+- `main-agent-orchestration` 是 interactive 模式下的正式主控消费面
+- 主 Agent 必须先读 `inspect`
+- 只有 surface 需要 materialize packet 时，才执行 `dispatch-plan`
+- 子代理只执行 `bounded packet`，不负责决定下一条全局分支
+- `runAuditorHost` 只在审计通过后做 post-audit close-out
 
 ---
 
@@ -10,11 +20,12 @@
 
 当前需要先固定一条口径：
 
-- `runAuditorHost` 是上层 post-audit automation 的标准入口
+- `main-agent-orchestration` 是上层 interactive 主控入口
+- `runAuditorHost` 是 post-audit automation 的标准 close-out 入口
 - `bmad-speckit score` 是其下层 scoring CLI
 - `parseAndWriteScore` / `parse-and-write-score.ts` 是更底层的解析与兼容实现
 
-因此，主 Agent / 高层 Skill / host 文档不应再把 `bmad-speckit score` 直接写成默认收口入口；本页后续保留 score CLI 说明，是为了描述底层 CLI 能力与兼容参数。
+因此，主 Agent / 高层 Skill / host 文档不应再把 `runAuditorHost` 或 `bmad-speckit score` 直接写成 interactive 主入口；本页后续保留 score CLI 说明，是为了描述 close-out 底层 CLI 能力与兼容参数。
 
 ---
 
@@ -273,6 +284,8 @@ python _bmad/speckit/scripts/python/generate_smoke_skeleton.py \
 
 ### 3.2 过程控制文件
 
+> **Current path**：这些过程控制文件主要属于历史兼容 / stage artifact 观察面。interactive 模式下真正的主控事实源应优先读取 `main-agent-orchestration inspect` 与 `dispatch-plan`，而不是把 `bmad-progress.yaml` / `bmad-lock.yaml` 当成唯一运行真相。
+
 | 文件                  | 用途             | 更新时机                                |
 | --------------------- | ---------------- | --------------------------------------- |
 | `bmad-progress.yaml`  | BMAD 状态跟踪    | 每阶段完成后                            |
@@ -330,7 +343,7 @@ python _bmad/speckit/scripts/python/generate_smoke_skeleton.py \
 
 ### 5.1 底层 scoring CLI 调用参数
 
-> 当前自动化主路径是 `runAuditorHost`；本节保留 `bmad-speckit score` 参数，是为了说明 host-runner 在底层依赖的 scoring CLI contract，以及低层调试/基础设施脚本的调用方式。
+> 当前 interactive 主路径是 `main-agent-orchestration`；`runAuditorHost` 只负责 post-audit close-out。本节保留 `bmad-speckit score` 参数，是为了说明 host-runner 在底层依赖的 scoring CLI contract，以及低层调试/基础设施脚本的调用方式。
 
 > 旧调用方式 `npx ts-node scripts/parse-and-write-score.ts` 已替换为 `npx bmad-speckit score`，参数不变。
 >

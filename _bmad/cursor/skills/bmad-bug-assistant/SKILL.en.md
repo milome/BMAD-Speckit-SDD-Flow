@@ -13,6 +13,22 @@ description: |
 
 # BMAD Bug Assistant
 
+## Main-Agent Orchestration Surface (Mandatory)
+
+In interactive main-agent mode, before the main Agent starts, resumes, or closes out the `bugfix` chain, it must first read:
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action inspect
+```
+
+If an official dispatch plan is needed, read:
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan
+```
+
+`mainAgentNextAction / mainAgentReady` remain compatibility summary fields only; authoritative runtime truth is `orchestrationState + pendingPacket + continueDecision`.
+
 > **Required reading:** Before using this skill, read and comply with the self-test rules in `{project-root}/.cursor/rules/bmad-bug-assistant.mdc`. **Before** initiating an mcp_task or party-mode subtask, complete every item in that stage’s “Pre-initiation self-test list” and output the self-test results, or do not initiate.
 > **Party-mode source of truth (Cursor)**: `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`. All party-mode rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit-gate semantics must follow that file; this skill must not define a second gate contract.
 
@@ -482,6 +498,8 @@ Delete `_bmad-output/current_pytest_session_pid.txt` after execution is complete
 **Must be done when it fails (it is forbidden to run for only one round and end)**: If the audit conclusion is "**Failed**" or the audit report lists failed items and modification suggestions, the main Agent **must** execute according to the modification suggestions (entrust the sub-agent to modify the code or update BUGFIX/documentation), and then **initiate** the post-implementation audit again (using the same template BUG-A4-POSTAUDIT); repeat "Audit → If it fails, modify according to the suggestions → Re-audit" until the conclusion is "**fully covered and verified**". It is prohibited to complete only one round of auditing or report completion to the user when the conclusion is that it has failed.
 
 **Unified host close-out after passing the audit (must be executed)**: After the post-implementation audit conclusion is "complete coverage, verification passed", the main Agent **must not** hand-run `parseAndWriteScore` or any audit-index CLI. It must call `runAuditorHost` as the single post-audit entry. When a BUGFIX document is present, the host/runner must receive `artifactDocPath=<BUGFIX document path>` to ensure `record.source_path` and registry audit index both point to the BUGFIX document instead of the audit report path.
+
+**不中断执行 contract**: The implementation subagent must continuously complete all remaining scoped US/tasks. It must not stop after a milestone, after a single task, or just to “report progress first”. Control may return to the main Agent only when: ① every task in the current scope is finished and the flow can enter post-audit; ② a real blocker requires reroute / remediation; ③ an explicit audit or checkpoint boundary defined by this workflow has been reached. 换言之，子代理必须连续完成当前作用域内的全部剩余 US/任务。
 
 **Host call example** (executed in the project root directory):
 ```bash

@@ -54,9 +54,23 @@ The Claude variant of `bmad-code-reviewer-lifecycle` must:
 - Keep executor selection, fallback, and scoring write semantically aligned with the validated Cursor flow
 - Fully integrate:
   - Multiple auditor agents (`auditor-spec`, `auditor-plan`, `auditor-tasks`, `auditor-implement`, `auditor-bugfix`, `auditor-document`)
-  - Unified auditor host runner (`runAuditorHost`)
+  - 统一 auditor host runner（`runAuditorHost`）
   - Handoff protocol
 - **Not** mix Cursor Canonical Base, Claude Runtime Adapter, and Repo Add-ons into an unclear rewrite of prompts
+
+## Main-Agent Orchestration Surface (mandatory)
+
+In interactive mode, this skill must treat repo-native `main-agent-orchestration` as the only orchestration authority. `runAuditorHost` is only the post-audit close-out entry; it must not replace the main Agent's next-branch decision.
+
+Before launching any auditor, remediation subtask, or other bounded execution, the main Agent must:
+
+1. Run `npm run main-agent-orchestration -- --cwd {project-root} --action inspect`
+2. Read `orchestrationState`, `pendingPacketStatus`, `pendingPacket`, `continueDecision`, `mainAgentNextAction`, and `mainAgentReady`
+3. If the next branch is dispatchable but no usable packet exists yet, run `npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan`
+4. Dispatch only from the returned packet / instruction instead of continuing from audit prose, scoring prose, or handoff summary alone
+5. Re-run `inspect` after each child result and after each `runAuditorHost` close-out before choosing the next global branch
+
+`mainAgentNextAction / mainAgentReady` remain compatibility summary fields only; authoritative runtime truth is `orchestrationState + pendingPacket + continueDecision`.
 
 ---
 
@@ -202,7 +216,11 @@ handoff:
   next_action: scoring_trigger|iterate_audit|proceed_to_next_stage
   next_agent: bmad-master|auditor-{stage}|runAuditorHost
   ready: true|false
+  mainAgentNextAction: dispatch_review|dispatch_remediation|dispatch_implement
+  mainAgentReady: true|false
 ```
+
+`mainAgentNextAction / mainAgentReady` in this handoff block are compatibility summary fields only. Before any global branch change, the main Agent must re-read `main-agent-orchestration`.
 
 ---
 
@@ -269,7 +287,11 @@ handoff:
   next_action: scoring_trigger|return_to_auditor
   next_agent: bmad-master|auditor-implement
   ready: true|false
+  mainAgentNextAction: dispatch_review
+  mainAgentReady: true|false
 ```
+
+Again, the handoff block is compatibility-only; interactive control must return to `main-agent-orchestration`.
 
 ### State updates
 

@@ -56,15 +56,18 @@ export function ingestGovernanceExecutionResult(
     input.loopStateId,
     input.attemptNumber,
     (record) => {
-      if (record.status !== 'running') {
+      if (!['running', 'pending_dispatch'].includes(record.status)) {
         return record;
       }
 
       const isSuccess = input.result.outcome === 'completed';
+      const completesWithoutRerunGate = isSuccess && record.rerunGate === 'implementation-resume';
       const failureCount = countHistoryEntries(record, 'execution-result') + (isSuccess ? 0 : 1);
       return {
         ...record,
-        status: isSuccess
+        status: completesWithoutRerunGate
+          ? 'gate_passed'
+          : isSuccess
           ? 'awaiting_rerun_gate'
           : failureCount >= maxFailures
             ? 'escalated'
@@ -74,7 +77,14 @@ export function ingestGovernanceExecutionResult(
         leaseExpiresAt: null,
         executionAttemptCount: record.executionAttemptCount + 1,
         lastExecutionResult: input.result,
-        rerunGateSchedule: isSuccess
+        rerunGateSchedule: completesWithoutRerunGate
+          ? {
+              status: 'completed',
+              scheduledAt: null,
+              observedAt: input.result.observedAt,
+              note: 'implementation resume completed without an additional rerun gate',
+            }
+          : isSuccess
           ? {
               status: config.execution?.rerunGate.autoSchedule ? 'scheduled' : 'pending',
               scheduledAt: config.execution?.rerunGate.autoSchedule ? nowIso() : null,

@@ -87,6 +87,14 @@ export interface GovernanceRerunGateResult {
   observedAt?: string;
 }
 
+export interface GovernanceResumeOriginalExecution {
+  toolName?: string;
+  routeHint?: string | null;
+  promptText?: string | null;
+  requestedFlow?: string | null;
+  blockedByGate?: string | null;
+}
+
 export interface GovernanceRerunStage {
   rerunGate: string;
   capabilitySlot: string;
@@ -98,6 +106,8 @@ export interface GovernanceRerunStage {
   rerunOwner?: string;
   sourceGateFailureIds?: string[];
   outcome?: string;
+  stageKind?: 'remediation' | 'resume_original_flow';
+  resumeOriginalExecution?: GovernanceResumeOriginalExecution | null;
 }
 
 export interface GovernanceAttemptHistoryEntry {
@@ -350,6 +360,32 @@ function normalizeRerunStage(stage: GovernanceRerunStage): GovernanceRerunStage 
     ...stage,
     targetArtifacts: unique(stage.targetArtifacts ?? []),
     sourceGateFailureIds: unique(stage.sourceGateFailureIds ?? []),
+    stageKind: stage.stageKind === 'resume_original_flow' ? 'resume_original_flow' : 'remediation',
+    resumeOriginalExecution:
+      stage.resumeOriginalExecution &&
+      typeof stage.resumeOriginalExecution === 'object' &&
+      typeof stage.resumeOriginalExecution.promptText === 'string' &&
+      stage.resumeOriginalExecution.promptText.trim() !== ''
+        ? {
+            toolName:
+              typeof stage.resumeOriginalExecution.toolName === 'string'
+                ? stage.resumeOriginalExecution.toolName
+                : undefined,
+            routeHint:
+              typeof stage.resumeOriginalExecution.routeHint === 'string'
+                ? stage.resumeOriginalExecution.routeHint
+                : null,
+            promptText: stage.resumeOriginalExecution.promptText,
+            requestedFlow:
+              typeof stage.resumeOriginalExecution.requestedFlow === 'string'
+                ? stage.resumeOriginalExecution.requestedFlow
+                : null,
+            blockedByGate:
+              typeof stage.resumeOriginalExecution.blockedByGate === 'string'
+                ? stage.resumeOriginalExecution.blockedByGate
+                : null,
+          }
+        : null,
   };
 }
 
@@ -365,6 +401,7 @@ function createRerunStageFromInput(input: RunGovernanceRemediationInput): Govern
     rerunOwner: input.rerunOwner,
     sourceGateFailureIds: input.sourceGateFailureIds,
     outcome: input.outcome,
+    stageKind: 'remediation',
   });
 }
 
@@ -636,6 +673,7 @@ function buildPacketPrompt(input: {
   artifactMarkdown: string;
   journeyContractHints: JourneyContractRemediationHint[];
   executorRouting: GovernanceExecutorRouting;
+  rerunStage?: GovernanceRerunStage | null;
 }): string {
   const runtimeLines = input.runtimeContext
     ? [
@@ -655,6 +693,62 @@ function buildPacketPrompt(input: {
         `- Mandatory Gate: ${input.runtimePolicy.mandatoryGate ? 'yes' : 'no'}`,
       ]
     : ['- (none)'];
+  const resumeExecution =
+    input.rerunStage?.stageKind === 'resume_original_flow'
+      ? input.rerunStage.resumeOriginalExecution ?? null
+      : null;
+  const isResumeStage = Boolean(resumeExecution?.promptText);
+  if (isResumeStage && resumeExecution) {
+    const resume = resumeExecution;
+    return [
+      '# Governance Resume Original Execution Packet',
+      '',
+      '## Runtime Context',
+      ...runtimeLines,
+      '',
+      '## Runtime Policy',
+      ...policyLines,
+      '',
+      '## Attempt Loop State',
+      `- Loop State ID: ${input.loopState.loopStateId}`,
+      `- Current Attempt Number: ${input.currentAttemptNumber}`,
+      `- Attempt Count So Far: ${input.loopState.attemptCount}`,
+      `- Max Attempts: ${input.loopState.maxAttempts}`,
+      `- No-Progress Repeat Count: ${input.loopState.noProgressRepeatCount}`,
+      `- Resume Gate: ${input.rerunGate}`,
+      `- Previous Gate Result: ${input.loopState.lastGateResult?.status ?? 'none'}`,
+      '',
+      '## Resume Original Execution',
+      `- Requested Flow: ${resume.requestedFlow ?? '(unknown)'}`,
+      `- Blocked By Gate: ${resume.blockedByGate ?? 'implementation-readiness'}`,
+      `- Original Tool: ${resume.toolName ?? '(unknown)'}`,
+      `- Route Hint: ${resume.routeHint ?? '(none)'}`,
+      '',
+      '## Guardrails',
+      '- Resume the previously blocked implementation flow without widening scope.',
+      '- Do not reopen implementation-readiness unless a genuinely new blocker is discovered.',
+      '- Preserve blocker ownership, target artifact scope, and post-audit closeout contracts.',
+      '',
+      '## Success Criteria',
+      '- Relaunch the original blocked implementation flow automatically.',
+      '- Keep the same implementation target and same user-approved scope.',
+      '- Continue only because the implementation-entry blocker has already been remediated.',
+      '',
+      '## Stop Conditions',
+      '- Stop if a genuinely new blocker requires reopening implementation-readiness.',
+      '- Stop if governance-owned fields would need to change.',
+      '- Stop if max attempts is reached or no-progress repeats exceed the policy limit.',
+      '',
+      '## Original Blocked Prompt',
+      '',
+      resume.promptText ?? '',
+      '',
+      '## Governance Remediation Artifact',
+      '',
+      input.artifactMarkdown,
+      '',
+    ].join('\n');
+  }
   return [
     '# Governance Remediation Task Packet',
     '',
@@ -724,6 +818,7 @@ function buildExecutorPacket(input: {
   journeyContractHints: JourneyContractRemediationHint[];
   rerunDecision?: GovernanceRerunDecision;
   executorRouting?: GovernanceExecutorRouting;
+  rerunStage?: GovernanceRerunStage | null;
 }): GovernanceExecutorPacket {
   const executorRouting =
     input.executorRouting ??
@@ -741,6 +836,9 @@ function buildExecutorPacket(input: {
         ]
       : []),
   ];
+  const isResumeStage =
+    input.rerunStage?.stageKind === 'resume_original_flow' &&
+    Boolean(input.rerunStage.resumeOriginalExecution?.promptText);
   return {
     hostKind: input.hostKind,
     executionMode: toExecutionMode(input.hostKind),
@@ -753,19 +851,38 @@ function buildExecutorPacket(input: {
       ...input,
       executorRouting,
     }),
-    guardrails: [
-      'Do not change blocker ownership.',
-      'Do not change failed-check severity.',
-      'Do not change artifact-derived root target.',
-      'Do not continue downstream while the blocker gate remains open.',
-    ],
-    successCriteria,
-    stopConditions: [
-      'Stop if the rerun gate passes.',
-      'Stop if governance-owned fields would need to change.',
-      'Stop if max attempts is reached.',
-      'Stop if no-progress repeats exceed the policy limit.',
-    ],
+    guardrails: isResumeStage
+      ? [
+          'Do not widen scope beyond the original blocked implementation flow.',
+          'Do not reopen implementation-readiness unless a genuinely new blocker is discovered.',
+          'Do not bypass post-audit closeout contracts.',
+        ]
+      : [
+          'Do not change blocker ownership.',
+          'Do not change failed-check severity.',
+          'Do not change artifact-derived root target.',
+          'Do not continue downstream while the blocker gate remains open.',
+        ],
+    successCriteria: isResumeStage
+      ? [
+          'Relaunch the original blocked implementation flow automatically.',
+          'Keep the same implementation target and same user-approved scope.',
+          `Leave the work ready for completion of ${input.rerunGate}.`,
+        ]
+      : successCriteria,
+    stopConditions: isResumeStage
+      ? [
+          'Stop if a genuinely new blocker requires reopening implementation-readiness.',
+          'Stop if governance-owned fields would need to change.',
+          'Stop if max attempts is reached.',
+          'Stop if no-progress repeats exceed the policy limit.',
+        ]
+      : [
+          'Stop if the rerun gate passes.',
+          'Stop if governance-owned fields would need to change.',
+          'Stop if max attempts is reached.',
+          'Stop if no-progress repeats exceed the policy limit.',
+        ],
   };
 }
 
@@ -780,6 +897,7 @@ export function createGovernanceExecutorPacket(input: {
   journeyContractHints: JourneyContractRemediationHint[];
   rerunDecision?: GovernanceRerunDecision;
   executorRouting?: GovernanceExecutorRouting;
+  rerunStage?: GovernanceRerunStage | null;
 }): GovernanceExecutorPacket {
   return buildExecutorPacket(input);
 }
@@ -1170,6 +1288,7 @@ export async function runGovernanceRemediation(
     journeyContractHints: artifactResult.journeyContractHints,
     rerunDecision: input.rerunDecision,
     executorRouting,
+    rerunStage: stage,
   });
 
   const artifactWithRunnerSummary: GovernanceRemediationArtifactResult = {
@@ -1210,6 +1329,7 @@ export async function runGovernanceRemediation(
     journeyContractHints: artifactWithRunnerSummary.journeyContractHints,
     rerunDecision: input.rerunDecision,
     executorRouting,
+    rerunStage: stage,
   });
 
   return {

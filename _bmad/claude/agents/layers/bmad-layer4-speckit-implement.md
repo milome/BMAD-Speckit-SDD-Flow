@@ -420,9 +420,10 @@ PROMPT_PATH="_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story
 #### Step 5.2: 调用审计 Agent
 
 **Primary Executor**: `auditor-implement` 通过 `subagent_type: general-purpose` 调用
+**当前 accepted path（强制）**：本执行体不得在自身上下文里直接 `Task(...)` 派发 auditor；以下内容只能作为返回给主 Agent 的 dispatch request / compatibility hint。真实派发必须回到主 Agent，由主 Agent 重新读取 `main-agent-orchestration inspect`，必要时执行 `dispatch-plan`，再决定是否派发 auditor。
 
 ```typescript
-Task({
+MainAgentDispatchRequest({
   description: "审计 implement 阶段代码实现",
   subagent_type: "general-purpose",
   prompt: `
@@ -546,6 +547,8 @@ tddSummary:
   failedUS: 0
 next_action: commit_gate
 ```
+
+说明：handoff 只作为 compatibility hint；是否进入 closeout / commit gate，必须回到主 Agent，由主 Agent 重新读取 authoritative surface 后决定。
 
 ## Constraints
 

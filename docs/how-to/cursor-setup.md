@@ -26,6 +26,17 @@
 
 不等同于 Claude Code CLI / OMC 中的同名文档。
 
+## 当前 accepted runtime path
+
+Cursor 侧当前 accepted runtime path 已经收敛为：
+
+1. `.cursor/hooks/runtime-policy-inject.cjs`
+2. `.cursor/hooks/pre-continue-check.cjs`
+3. repo-native `npm run main-agent-orchestration -- --action inspect|dispatch-plan`
+4. 主 Agent 读取 authoritative surface 后决定是否 claim / dispatch / complete / invalidate
+
+旧 worker 相关 start/skip 日志只应视为 legacy compatibility 提示，不再是当前成功标准。
+
 ## Hook 提示开关
 
 如果你希望 Cursor 项目里的 hooks 在执行时把更多提示信息直接打印出来，可在项目级环境配置中开启：
@@ -38,8 +49,6 @@
 }
 ```
 
-对于当前仓库，推荐与 Claude 侧一起统一开启，便于比对宿主差异。
-
 当前效果：
 
 - `BMAD_HOOKS_VERBOSE=0`
@@ -49,14 +58,13 @@
     - `pre-continue-check passed`
     - `pre-continue-check failed`
     - `pre-continue-check skipped: artifact self write`
-    - governance rerun queue 入队
-    - background worker started / skipped
+    - `runtime-policy-inject` blocked-flow / handoff 提示
 
 这个开关适合验证：
 
 1. `.cursor/hooks.json` 是否真的接到了事件
-2. `post-tool-use.cjs` 是否真的被执行
-3. governance worker 是启动了、跳过了，还是根本没进链路
+2. `runtime-policy-inject.cjs` / `pre-continue-check.cjs` 是否真的被执行
+3. 主 Agent 能否通过 `main-agent-orchestration` 读取 authoritative surface
 
 ## Skill 与 Command 依赖
 
@@ -67,8 +75,6 @@
 | `/bmad-coach` | bmad-eval-analytics | Coach 诊断 |
 | `/bmad-sft-extract` | bmad-eval-analytics | SFT 数据提取 |
 
-**安装**：执行 `pwsh scripts/setup.ps1 -Target <项目根>` 将 skills 部署到 `{SKILLS_ROOT}`。**init 后须 setup**：`init-to-root` 仅部署 commands，skills 需单独安装。
-
-**衔接步骤**：Create Story 产出 Story 文档后，须**显式触发** `/bmad-bmm-dev-story` 完成 Dev Story 流程，无自动衔接。
-
+**安装**：执行 `pwsh scripts/setup.ps1 -Target <项目根>` 将 skills 部署到 `{SKILLS_ROOT}`。**init 后须 setup**：`init-to-root` 仅部署 commands，skills 需单独安装。  
+**衔接步骤**：Create Story 产出 Story 文档后，须**显式触发** `/bmad-bmm-dev-story` 完成 Dev Story 流程，无自动衔接。  
 **Manifest**：结构化依赖见 `_bmad/_config/skill-command-mapping.yaml`。

@@ -16,6 +16,22 @@ const TOOL_TO_REGISTRY_ID = {
 const MANIFEST_REL_PATH = path.join('_bmad-output', 'config', 'bmad-speckit-install-manifest.json');
 const UNINSTALL_REPORT_REL_PATH = path.join('_bmad-output', 'config', 'bmad-speckit-uninstall-report.json');
 const INSTALL_STATE_ROOT_REL_PATH = path.join('_bmad-output', 'install-state');
+const ACCEPTED_CONSUMER_MAIN_AGENT_HOOK_FILES = Object.freeze([
+  'emit-runtime-policy.cjs',
+  'resolve-for-session.cjs',
+  'render-audit-block.cjs',
+  'runtime-policy-inject.cjs',
+  'post-tool-use.cjs',
+  'pre-continue-check.cjs',
+  'write-runtime-context.cjs',
+]);
+const LEGACY_CONSUMER_HOOK_PATTERNS = Object.freeze([
+  /^run-bmad-.*\.cjs$/i,
+  /^governance-cursor-agent-.*\.cjs$/i,
+  /^governance-.*worker\.cjs$/i,
+  /^governance-.*runner\.cjs$/i,
+  /^governance-.*(?:ingestor|reconciler)\.cjs$/i,
+]);
 
 function toPortablePath(value) {
   return String(value).replace(/\\/g, '/');
@@ -42,6 +58,36 @@ function writeJson(filePath, value) {
 function removePath(targetPath) {
   if (!fs.existsSync(targetPath)) return;
   fs.rmSync(targetPath, { recursive: true, force: true });
+}
+
+function isAcceptedConsumerMainAgentHookFile(fileName) {
+  return ACCEPTED_CONSUMER_MAIN_AGENT_HOOK_FILES.includes(String(fileName || ''));
+}
+
+function isUnexpectedLegacyConsumerHookFile(fileName) {
+  const normalized = String(fileName || '');
+  if (!normalized || isAcceptedConsumerMainAgentHookFile(normalized)) {
+    return false;
+  }
+  return LEGACY_CONSUMER_HOOK_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
+function listUnexpectedLegacyConsumerHookFiles(hookDir) {
+  if (!fs.existsSync(hookDir) || !fs.statSync(hookDir).isDirectory()) {
+    return [];
+  }
+  return fs
+    .readdirSync(hookDir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && isUnexpectedLegacyConsumerHookFile(entry.name))
+    .map((entry) => path.join(hookDir, entry.name));
+}
+
+function removeUnexpectedLegacyConsumerHookFiles(hookDir) {
+  const removed = listUnexpectedLegacyConsumerHookFiles(hookDir);
+  for (const filePath of removed) {
+    removePath(filePath);
+  }
+  return removed;
 }
 
 function copyRecursive(src, dest) {
@@ -365,11 +411,6 @@ function collectManagedSurfaceSpecs(projectRoot, bmadRoot, installedTools) {
         'emit-runtime-policy.cjs',
         'resolve-for-session.cjs',
         'render-audit-block.cjs',
-        'governance-runtime-worker.cjs',
-        'governance-remediation-runner.cjs',
-        'governance-packet-dispatch-worker.cjs',
-        'governance-execution-result-ingestor.cjs',
-        'governance-packet-reconciler.cjs',
         'write-runtime-context.cjs',
       ]) {
         add({
@@ -417,11 +458,6 @@ function collectManagedSurfaceSpecs(projectRoot, bmadRoot, installedTools) {
         'emit-runtime-policy.cjs',
         'resolve-for-session.cjs',
         'render-audit-block.cjs',
-        'governance-runtime-worker.cjs',
-        'governance-remediation-runner.cjs',
-        'governance-packet-dispatch-worker.cjs',
-        'governance-execution-result-ingestor.cjs',
-        'governance-packet-reconciler.cjs',
         'write-runtime-context.cjs',
       ]) {
         add({
@@ -655,6 +691,8 @@ function createSkipEntry(pathValue, classification, skipReason, recommendedManua
 module.exports = {
   KNOWN_AGENT_IDS,
   AGENT_ID_ALIASES,
+  ACCEPTED_CONSUMER_MAIN_AGENT_HOOK_FILES,
+  LEGACY_CONSUMER_HOOK_PATTERNS,
   normalizeAgentId,
   normalizeAgentList,
   getInstallManifestPath,
@@ -672,4 +710,8 @@ module.exports = {
   collectManagedSurfaceSpecs,
   collectManagedGlobalSkillSpecs,
   createSkipEntry,
+  isAcceptedConsumerMainAgentHookFile,
+  isUnexpectedLegacyConsumerHookFile,
+  listUnexpectedLegacyConsumerHookFiles,
+  removeUnexpectedLegacyConsumerHookFiles,
 };

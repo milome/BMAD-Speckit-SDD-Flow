@@ -70,6 +70,8 @@ BUGFIX 文档严格审计 Agent，面向 bugfix 流程中的 BUGFIX 文档与修
   - `convergence_status`
   - `next_action`
   - `ready`
+  - `mainAgentNextAction`
+  - `mainAgentReady`
 
 ## Mandatory Startup
 
@@ -141,7 +143,11 @@ handoff:
   next_action: revise_bugfix_doc|implement_bugfix
   next_agent: auditor-bugfix|bmad-bug-agent
   ready: true|false
+  mainAgentNextAction: dispatch_remediation|dispatch_implement
+  mainAgentReady: true|false
 ```
+
+说明：这里的 `next_agent`、`mainAgentNextAction`、`mainAgentReady` 只作为 compatibility hint。审计返回后，真正的下一条全局分支必须回到主 Agent，并重新读取 `main-agent-orchestration` surface 后决定。
 
 ## Lifecycle
 

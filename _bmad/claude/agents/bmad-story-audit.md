@@ -201,7 +201,7 @@ Claude 端 Stage 2 Story 审计执行体，负责审计 Story 文档并决定是
 
 ### Runtime Contracts
 - 审计报告路径：`_bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{story_num}-{story_slug}/AUDIT_story-{epic_num}-{story_num}.md`（与 create-story workflow、bmad-story-assistant 一致：story 子目录为 `story-{story}-{slug}`）
-- 审计通过：更新 story state 为 `story_audit_passed`，handoff 到 `speckit-implement`
+- 审计通过：更新 story state 为 `story_audit_passed`；`handoff -> speckit-implement` 只作为 compatibility hint，真正是否进入 Dev Story 必须回到主 Agent，由主 Agent 重新读取 `main-agent-orchestration` surface 后决定
 - 审计失败：更新 story state 为 `story_audit_failed`，要求修 Story 文档后重新审计
 
 ## Repo Add-ons
@@ -223,6 +223,8 @@ next_action: dev_story
 next_agent: speckit-implement
 ```
 
+说明：`next_agent: speckit-implement` 只作为 compatibility hint。
+
 ### FAIL
 ```yaml
 layer: 3
@@ -232,3 +234,5 @@ auditReportPath: _bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slu
 next_action: revise_story
 next_agent: bmad-story-create
 ```
+
+说明：`next_agent: bmad-story-create` 同样只作为 compatibility hint。

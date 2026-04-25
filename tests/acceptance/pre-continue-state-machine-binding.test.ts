@@ -1,4 +1,4 @@
-import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, readdirSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -7,6 +7,7 @@ import { processQueue } from '../../scripts/bmad-runtime-worker';
 import { createAcceptedPlaceholderDispatchAdapter } from '../../scripts/governance-packet-dispatch-worker';
 import { runGovernanceRemediation } from '../../scripts/governance-remediation-runner';
 import { readGovernanceCurrentRun } from '../../scripts/governance-runtime-queue';
+import { readOrchestrationState } from '../../scripts/orchestration-state';
 import type { GovernanceExecutionResult } from '../../scripts/governance-hook-types';
 
 const ROOT = join(import.meta.dirname, '..', '..');
@@ -21,6 +22,25 @@ describe('pre-continue state machine binding', () => {
       mkdirSync(join(project, '.git'), { recursive: true });
       writeFileSync(join(project, '.git', 'HEAD'), 'ref: refs/heads/feature-x\n', 'utf8');
       writeFileSync(join(project, '_bmad', '_config', 'architecture-gates.yaml'), readFileSync(join(ROOT, '_bmad', '_config', 'architecture-gates.yaml'), 'utf8'), 'utf8');
+      writeFileSync(
+        join(project, '_bmad', '_config', 'governance-remediation.yaml'),
+        [
+          'version: 2',
+          'primaryHost: claude',
+          'packetHosts:',
+          '  - claude',
+          'provider:',
+          '  mode: stub',
+          '  id: pre-continue-test',
+          'execution:',
+          '  enabled: true',
+          '  interactiveMode: main-agent',
+          '  fallbackAutonomousMode: true',
+          '  authoritativeHost: claude',
+          '  fallbackHosts: []',
+        ].join('\n'),
+        'utf8',
+      );
       writeFileSync(
         join(project, '_bmad-output', 'planning-artifacts', 'feature-x', 'architecture.md'),
         ['## P0 Key Path Sequences', '{{journey_key_path_sequences}}'].join('\n'),
@@ -54,6 +74,11 @@ describe('pre-continue state machine binding', () => {
         artifactPath: string;
         scope: { branch: string; epicId: string | null; storyId: string | null };
         failures: string[];
+        next_action?: string;
+        ready?: boolean;
+        orchestration_state?: string;
+        pending_packet?: string;
+        session_id?: string;
       };
 
       expect(hookResult.ok).toBe(false);
@@ -65,85 +90,42 @@ describe('pre-continue state machine binding', () => {
         join(project, '_bmad-output', 'planning-artifacts', 'feature-x', 'architecture.md').replace(/\\/g, '/'),
       );
       expect(hookResult.failures.length).toBeGreaterThan(0);
+      expect(hookResult.next_action).toBe('dispatch_remediation');
+      expect(hookResult.ready).toBe(true);
+      expect(typeof hookResult.orchestration_state).toBe('string');
+      expect(typeof hookResult.pending_packet).toBe('string');
+      expect(typeof hookResult.session_id).toBe('string');
+      expect(existsSync(hookResult.orchestration_state!)).toBe(true);
+      expect(existsSync(hookResult.pending_packet!)).toBe(true);
 
-      const pendingDir = join(project, '_bmad-output', 'runtime', 'governance', 'queue', 'pending');
-      const pendingFiles = readdirSync(pendingDir).filter((file) => file.endsWith('.json'));
-      expect(pendingFiles.length).toBe(1);
+      const state = readOrchestrationState(project, hookResult.session_id!);
+      expect(state?.currentPhase).toBe('arch');
+      expect(state?.nextAction).toBe('dispatch_remediation');
+      expect(state?.latestGate?.decision).toBe('auto_repairable_block');
+      expect(state?.pendingPacket?.status).toBe('ready_for_main_agent');
 
-      const stageEventDir = join(
-        project,
-        '_bmad-output',
-        'runtime',
-        'governance',
-        'queue',
-        'pending-events'
-      );
-      const stageEventFiles = existsSync(stageEventDir)
-        ? readdirSync(stageEventDir).filter((file) => file.endsWith('.json'))
-        : [];
-      expect(stageEventFiles.length).toBe(1);
-      const stageEvent = JSON.parse(
-        readFileSync(join(stageEventDir, stageEventFiles[0]), 'utf8')
-      ) as {
-        type: string;
-        payload: {
-          sourceEventType?: string;
-          runnerInput?: { rerunGate?: string; capabilitySlot?: string };
-          rerunGateResult?: { gate?: string; status?: string };
-        };
-      };
-      expect(stageEvent.type).toBe('governance-rerun-result');
-      expect(stageEvent.payload.sourceEventType).toBe('governance-pre-continue-check');
-      expect(stageEvent.payload.runnerInput?.rerunGate).toBe('architecture-contract-gate');
-      expect(stageEvent.payload.runnerInput?.capabilitySlot).toBe(
-        'bmad-create-architecture.step-04-decisions'
-      );
-      expect(stageEvent.payload.rerunGateResult?.gate).toBe('architecture-contract-gate');
-      expect(stageEvent.payload.rerunGateResult?.status).toBe('fail');
-
-      const queued = JSON.parse(readFileSync(join(pendingDir, pendingFiles[0]), 'utf8')) as {
-        type: string;
-        payload: {
-          workflow: string;
-          step: string;
-          gate: string;
-          rerunGate: string;
-          branch: string;
-          artifactPath: string;
-          sourceGateFailureIds: string[];
-          failures: string[];
-        };
-      };
-
-      expect(queued.type).toBe('governance-pre-continue-check');
-      expect(queued.payload.workflow).toBe('bmad-create-architecture');
-      expect(queued.payload.step).toBe('step-04-decisions');
-      expect(queued.payload.gate).toBe('architecture-contract-gate');
-      expect(queued.payload.rerunGate).toBe('architecture-contract-gate');
-      expect(queued.payload.branch).toBe('feature-x');
-      expect(queued.payload.artifactPath).toBe(hookResult.artifactPath);
-      expect(queued.payload.failures).toEqual(hookResult.failures);
-      expect(queued.payload.sourceGateFailureIds.length).toBe(hookResult.failures.length);
+      const queuePendingDir = join(project, '_bmad-output', 'runtime', 'governance', 'queue', 'pending');
+      expect(existsSync(queuePendingDir)).toBe(false);
 
       const remediation = await runGovernanceRemediation({
         projectRoot: project,
         outputPath: join(project, '_bmad-output', 'planning-artifacts', 'feature-x', 'attempt-remediate.md'),
-        promptText: `GateFailure for ${queued.payload.workflow} ${queued.payload.step}: ${queued.payload.failures.join('; ')}`,
+        promptText: `GateFailure for ${hookResult.workflow} ${hookResult.step}: ${hookResult.failures.join('; ')}`,
         stageContextKnown: true,
         gateFailureExists: true,
         blockerOwnershipLocked: true,
         rootTargetLocked: true,
         equivalentAdapterCount: 1,
         attemptId: 'pre-continue-retry-01',
-        sourceGateFailureIds: queued.payload.sourceGateFailureIds,
-        capabilitySlot: `${queued.payload.workflow}.${queued.payload.step}`,
+        sourceGateFailureIds: hookResult.failures.map((_, index) => `ARCHITECTURE-CONTRACT-GATE-${index + 1}`),
+        capabilitySlot: `${hookResult.workflow}.${hookResult.step}`,
         canonicalAgent: 'Governance Gate Runner',
         actualExecutor: 'pre-continue-check',
         adapterPath: '_bmad/runtime/hooks/pre-continue-check.cjs',
-        targetArtifacts: [queued.payload.artifactPath],
+        targetArtifacts: [hookResult.artifactPath],
         expectedDelta: 'repair governed contract sections before Continue',
         rerunOwner: 'PM',
-        rerunGate: queued.payload.rerunGate,
+        rerunGate: hookResult.gate,
         outcome: 'blocked',
         hostKind: 'claude',
       });
@@ -160,7 +142,7 @@ describe('pre-continue state machine binding', () => {
     }
   });
 
-  it('worker keeps pre-continue queue items at shouldContinue=false while preserving rerunGate semantics', async () => {
+  it('worker leaves pre-continue queue items untouched after the hard cut', async () => {
     const project = mkdtempSync(join(tmpdir(), 'pre-continue-worker-'));
     try {
       cpSync(join(ROOT, '_bmad'), join(project, '_bmad'), { recursive: true });
@@ -198,6 +180,7 @@ describe('pre-continue state machine binding', () => {
       );
 
       await processQueue(project, {
+        allowAutonomousFallback: true,
         dispatchAdapter: createAcceptedPlaceholderDispatchAdapter('pre-continue placeholder dispatch'),
       });
 
@@ -209,19 +192,11 @@ describe('pre-continue state machine binding', () => {
         'queue',
         'pending-events'
       );
-      const stageEventFiles = existsSync(stageEventDir)
-        ? readdirSync(stageEventDir).filter((file) => file.endsWith('.json'))
-        : [];
-      expect(stageEventFiles.length).toBe(1);
+      expect(existsSync(stageEventDir)).toBe(false);
 
       const currentRun = readGovernanceCurrentRun<GovernanceExecutionResult>(project);
-      expect(currentRun.length).toBe(1);
-      expect(currentRun[0]?.type).toBe('governance-pre-continue-check');
-      expect(currentRun[0]?.result?.shouldContinue).toBe(false);
-      expect(currentRun[0]?.result?.gateCheck?.rerunGate).toBe('architecture-contract-gate');
-      expect(currentRun[0]?.result?.runnerSummaryLines).toEqual(
-        expect.arrayContaining([expect.stringContaining('Should Continue: no')]),
-      );
+      expect(currentRun.length).toBe(0);
+      expect(existsSync(join(project, '_bmad-output', 'runtime', 'governance', 'queue', 'pending', 'pc-1.json'))).toBe(true);
     } finally {
       rmSync(project, { recursive: true, force: true });
     }

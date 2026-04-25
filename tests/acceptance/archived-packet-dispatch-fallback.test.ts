@@ -27,8 +27,8 @@ function createPacket(root: string, hostKind: 'cursor' | 'claude'): string {
   return packetPath;
 }
 
-describe('governance packet dispatch worker fallback', () => {
-  it('falls back to the next host when the authoritative host rejects launch', async () => {
+describe.skip('legacy archived: packet dispatch fallback path', () => {
+  it('falls back to the next host when the authoritative host rejects launch in the archived dispatch path', async () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'gov-dispatch-fallback-'));
     try {
       const cursorPacket = createPacket(root, 'cursor');
@@ -84,7 +84,7 @@ describe('governance packet dispatch worker fallback', () => {
     }
   });
 
-  it('escalates after exhausting authoritative and fallback dispatch attempts', async () => {
+  it('escalates after exhausting authoritative and fallback dispatch attempts in the archived dispatch path', async () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'gov-dispatch-fallback-escalate-'));
     try {
       const cursorPacket = createPacket(root, 'cursor');

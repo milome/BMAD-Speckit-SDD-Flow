@@ -8,17 +8,18 @@
 
 - `bmad-story-assistant`：Story 流程入口语义（统一文档，Cursor + Claude Code）
 - `bmad-master`：其背后的总控、状态机、路由与门控执行机制
+- 当前 accepted runtime path：主 Agent 先读 `main-agent-orchestration inspect`，必要时才执行 `dispatch-plan`，子代理只执行 `bounded packet`，`runAuditorHost` 仅负责 post-audit close-out
 
 ## 文档列表
 
 ### Story 工作流
 
-- [`bmad-story-assistant.md`](./bmad-story-assistant.md) — Story 助手统一使用说明（Cursor + Claude Code 差异分节）
+- [`bmad-story-assistant.md`](./bmad-story-assistant.md) — Story 助手统一使用说明；明确 `inspect -> dispatch-plan -> bounded packet -> runAuditorHost close-out` 这条当前主链
 
 适合以下场景：
 
 - 想了解 `bmad-story-assistant` 的完整工作流
-- 想知道 Story 从创建到审计、实现、Post Audit 的阶段关系
+- 想知道 Story 从创建到审计、实现、Post Audit 的阶段关系，以及 `inspect` / `dispatch-plan` 的触发点
 - 想理解 Cursor 与 Claude Code 两个运行时的差异
 - 想使用 `--continue` / `--audit-granularity=full|story|epic`
 
@@ -42,7 +43,7 @@
 - [`deferred-gap-governance-operations.md`](./deferred-gap-governance-operations.md) — 查看 `dashboard --show-deferred-gaps` 输出、运行 `deferred-gap-audit`，以及理解 alert 语义
 - [`training-ready-sft-export.md`](./training-ready-sft-export.md) — 基于 `CanonicalSftSample` 预览、校验、打包 OpenAI / Hugging Face 训练数据
 - [`runtime-locale-and-i18n-config.md`](./runtime-locale-and-i18n-config.md) — 运行时语言（`languagePolicy`）与 BMAD i18n YAML 如何配置、何时生效；与审计提示词选稿的关系
-- [`multi-story.md`](./multi-story.md) — 多 Story 并行管理
+- [`multi-story.md`](./multi-story.md) — 多 Story 并行管理；当前主链与 legacy state/lock 参考分开展示
 - [`cursor-setup.md`](./cursor-setup.md) — Cursor IDE 配置
 - [`claude-code-setup.md`](./claude-code-setup.md) — Claude Code 配置
 - [`migration.md`](./migration.md) — 现有项目迁移

@@ -27,49 +27,171 @@ function resolveYamlModule() {
   return null;
 }
 
-function resolveRunnerModule(projectRoot) {
-  const candidates = [
-    path.join(
-      projectRoot,
-      'node_modules',
-      '@bmad-speckit',
-      'runtime-emit',
-      'dist',
-      'governance-remediation-runner.cjs'
-    ),
-    path.join(
-      projectRoot,
-      'node_modules',
-      'bmad-speckit',
-      'node_modules',
-      '@bmad-speckit',
-      'runtime-emit',
-      'dist',
-      'governance-remediation-runner.cjs'
-    ),
-    path.join(
-      projectRoot,
-      'node_modules',
-      'bmad-speckit-sdd-flow',
-      'packages',
-      'runtime-emit',
-      'dist',
-      'governance-remediation-runner.cjs'
-    ),
-  ];
-
-  for (const candidate of candidates) {
-    if (!candidate || !fs.existsSync(candidate)) {
-      continue;
-    }
-    try {
-      return require(candidate);
-    } catch {
-      // try next candidate
-    }
-  }
-
+function resolveRunnerModule(_projectRoot) {
   return null;
+}
+
+function toExecutionMode(hostKind) {
+  switch (hostKind) {
+    case 'cursor':
+      return 'cursor-mcp-task';
+    case 'claude':
+      return 'claude-agent-tool';
+    case 'codex':
+      return 'codex-spawn-agent';
+    default:
+      return 'generic-prompt-packet';
+  }
+}
+
+function buildPacketPrompt(input) {
+  const runtimeContext = input.runtimeContext || {};
+  const runtimeLines = [
+    `- Flow: ${runtimeContext.flow || '(unknown)'}`,
+    `- Stage: ${runtimeContext.stage || '(unknown)'}`,
+    `- Epic ID: ${runtimeContext.epicId || '(none)'}`,
+    `- Story ID: ${runtimeContext.storyId || '(none)'}`,
+    `- Story Slug: ${runtimeContext.storySlug || '(none)'}`,
+    `- Run ID: ${runtimeContext.runId || '(none)'}`,
+    `- Artifact Root: ${runtimeContext.artifactRoot || '(none)'}`,
+  ];
+  const guardrailLines = [
+    '- Do not change blocker ownership.',
+    '- Do not change failed-check severity.',
+    '- Do not change artifact-derived root target.',
+    '- Do not continue downstream while the blocker gate remains open.',
+  ];
+  const successCriteria = [
+    '- Apply the minimal remediation needed to close the named blockers.',
+    '- Update only the target artifacts required by the remediation artifact.',
+    `- Leave the work ready for rerun of \`${input.rerunGate}\`.`,
+  ];
+  if (input.executorRouting.routingMode === 'targeted') {
+    successCriteria.push(
+      '- Resolve the prioritized journey contract signals first and keep the same Journey Slice evidence chain intact.'
+    );
+  }
+  const stopConditions = [
+    '- Stop if the rerun gate passes.',
+    '- Stop if governance-owned fields would need to change.',
+    '- Stop if max attempts is reached.',
+    '- Stop if no-progress repeats exceed the policy limit.',
+  ];
+  const hintLines =
+    Array.isArray(input.journeyContractHints) && input.journeyContractHints.length > 0
+      ? input.journeyContractHints.map(
+          (hint) => `- ${hint.signal}: ${hint.recommendation || '(no recommendation)'}` 
+        )
+      : ['- (none)'];
+  return [
+    '# Governance Remediation Task Packet',
+    '',
+    '## Runtime Context',
+    ...runtimeLines,
+    '',
+    '## Attempt Loop State',
+    `- Loop State ID: ${input.loopState.loopStateId}`,
+    `- Current Attempt Number: ${input.currentAttemptNumber}`,
+    `- Attempt Count So Far: ${input.loopState.attemptCount}`,
+    `- Max Attempts: ${input.loopState.maxAttempts}`,
+    `- No-Progress Repeat Count: ${input.loopState.noProgressRepeatCount}`,
+    `- Awaiting Rerun Gate: ${input.rerunGate}`,
+    `- Previous Gate Result: ${input.loopState.lastGateResult?.status ?? 'none'}`,
+    '',
+    '## Executor Routing Decision',
+    `- Routing Mode: ${input.executorRouting.routingMode}`,
+    `- Executor Route: ${input.executorRouting.executorRoute}`,
+    `- Packet Strategy: ${input.executorRouting.packetStrategy}`,
+    `- Prioritized Signals: ${input.executorRouting.prioritizedSignals.join(', ') || '(none)'}`,
+    `- Routing Reason: ${input.executorRouting.reason}`,
+    '',
+    '## Guardrails',
+    ...guardrailLines,
+    '',
+    '## Success Criteria',
+    ...successCriteria,
+    '',
+    '## Stop Conditions',
+    ...stopConditions,
+    '',
+    '## Targeted Remediation Actions',
+    ...hintLines,
+    '',
+    '## Remediation Artifact',
+    '',
+    input.artifactMarkdown,
+    '',
+  ].join('\n');
+}
+
+function createFallbackGovernanceExecutorPacket(input) {
+  return {
+    hostKind: input.hostKind,
+    executionMode: toExecutionMode(input.hostKind),
+    routingMode: input.executorRouting.routingMode,
+    executorRoute: input.executorRouting.executorRoute,
+    prioritizedSignals: input.executorRouting.prioritizedSignals,
+    packetStrategy: input.executorRouting.packetStrategy,
+    routingReason: input.executorRouting.reason,
+    prompt: buildPacketPrompt(input),
+    guardrails: [
+      'Do not change blocker ownership.',
+      'Do not change failed-check severity.',
+      'Do not change artifact-derived root target.',
+      'Do not continue downstream while the blocker gate remains open.',
+    ],
+    successCriteria: [
+      'Apply the minimal remediation needed to close the named blockers.',
+      'Update only the target artifacts required by the remediation artifact.',
+      `Leave the work ready for rerun of ${input.rerunGate}.`,
+      ...(input.executorRouting.routingMode === 'targeted'
+        ? [
+            'Resolve the prioritized journey contract signals first and keep the same Journey Slice evidence chain intact.',
+          ]
+        : []),
+    ],
+    stopConditions: [
+      'Stop if the rerun gate passes.',
+      'Stop if governance-owned fields would need to change.',
+      'Stop if max attempts is reached.',
+      'Stop if no-progress repeats exceed the policy limit.',
+    ],
+  };
+}
+
+function renderFallbackGovernanceExecutorPacket(packet) {
+  return [
+    '# Governance Remediation Executor Packet',
+    '',
+    `- Host Kind: ${packet.hostKind}`,
+    `- Execution Mode: ${packet.executionMode}`,
+    `- Routing Mode: ${packet.routingMode}`,
+    `- Executor Route: ${packet.executorRoute}`,
+    `- Packet Strategy: ${packet.packetStrategy}`,
+    `- Prioritized Signals: ${packet.prioritizedSignals.join(', ') || '(none)'}`,
+    `- Routing Reason: ${packet.routingReason}`,
+    '',
+    '## Guardrails',
+    ...packet.guardrails.map((line) => `- ${line}`),
+    '',
+    '## Success Criteria',
+    ...packet.successCriteria.map((line) => `- ${line}`),
+    '',
+    '## Stop Conditions',
+    ...packet.stopConditions.map((line) => `- ${line}`),
+    '',
+    '## Prompt',
+    '',
+    packet.prompt,
+    '',
+  ].join('\n');
+}
+
+function writeFallbackGovernanceExecutorPacket(artifactPath, packet) {
+  const file = artifactPath.replace(/\.md$/i, `.${packet.hostKind}-packet.md`);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, renderFallbackGovernanceExecutorPacket(packet), 'utf8');
+  return file;
 }
 
 function extractWritePath(event) {
@@ -325,13 +447,14 @@ function normalizeGovernancePacketsForArtifactPath(projectRoot, artifactPath) {
     return { normalized: false, reason: 'artifact-missing' };
   }
   const runnerModule = resolveRunnerModule(projectRoot);
-  if (
-    !runnerModule ||
-    typeof runnerModule.createGovernanceExecutorPacket !== 'function' ||
-    typeof runnerModule.writeGovernanceExecutorPacket !== 'function'
-  ) {
-    return { normalized: false, reason: 'runner-module-unavailable' };
-  }
+  const createPacket =
+    runnerModule && typeof runnerModule.createGovernanceExecutorPacket === 'function'
+      ? runnerModule.createGovernanceExecutorPacket
+      : createFallbackGovernanceExecutorPacket;
+  const writePacket =
+    runnerModule && typeof runnerModule.writeGovernanceExecutorPacket === 'function'
+      ? runnerModule.writeGovernanceExecutorPacket
+      : writeFallbackGovernanceExecutorPacket;
 
   const artifactMarkdown = fs.readFileSync(artifactPath, 'utf8');
   const metadata = parseArtifactMetadata(artifactMarkdown, artifactPath);
@@ -341,7 +464,7 @@ function normalizeGovernancePacketsForArtifactPath(projectRoot, artifactPath) {
   const packetPaths = {};
 
   for (const hostKind of packetHosts) {
-    const packet = runnerModule.createGovernanceExecutorPacket({
+    const packet = createPacket({
       hostKind,
       runtimeContext,
       runtimePolicy: null,
@@ -357,7 +480,7 @@ function normalizeGovernancePacketsForArtifactPath(projectRoot, artifactPath) {
       },
       executorRouting: metadata.executorRouting,
     });
-    packetPaths[hostKind] = runnerModule.writeGovernanceExecutorPacket(artifactPath, packet);
+    packetPaths[hostKind] = writePacket(artifactPath, packet);
   }
 
   return {

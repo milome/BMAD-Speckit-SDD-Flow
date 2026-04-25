@@ -37,7 +37,10 @@ import {
 
 const require = createRequire(import.meta.url);
 const claudeHook = require('../../_bmad/claude/hooks/post-tool-use.cjs');
-const runtimeWorkerHelper = require('../../_bmad/runtime/hooks/run-bmad-runtime-worker.cjs');
+
+function governanceRunnerLockPath(projectRoot: string): string {
+  return path.join(projectRoot, '_bmad-output', 'runtime', 'governance', 'runner-lock.json');
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -64,7 +67,7 @@ async function waitForWorkerSettled(
   timeoutMs = 60000,
   intervalMs = 200
 ): Promise<void> {
-  const lockPath = runtimeWorkerHelper.governanceRunnerLockPath(projectRoot) as string;
+  const lockPath = governanceRunnerLockPath(projectRoot);
   await waitFor(() => predicate(), timeoutMs, intervalMs);
   await waitFor(() => !existsSync(lockPath), timeoutMs, intervalMs).catch(() => {});
 }
@@ -251,8 +254,8 @@ function wave2aTailBaseInput(root: string, outputPath: string, attemptId: string
   };
 }
 
-describe('governance post-tool-use detached background worker', () => {
-  it('auto-drains the governance queue without waiting for stop', async () => {
+describe.skip('legacy archived: post-tool-use detached background drain', () => {
+  it('auto-drains the governance queue without waiting for stop in the archived path', async () => {
     const fixture = createFixtureProject();
     try {
       const outDir = path.join(
@@ -404,13 +407,13 @@ describe('governance post-tool-use detached background worker', () => {
       expect(loopStateRaw.attemptCount).toBe(2);
       expect(loopStateRaw.attempts[1]?.attemptId).toBe('attempt-background-02');
     } finally {
-      const lockPath = runtimeWorkerHelper.governanceRunnerLockPath(fixture.root) as string;
+      const lockPath = governanceRunnerLockPath(fixture.root);
       await waitFor(() => !existsSync(lockPath), 15000, 200);
       await fixture.cleanup();
     }
   }, 120000);
 
-  it('preserves the Wave 2A human-review hold through the detached background worker path on Windows-style hook hosts', async () => {
+  it('preserves the Wave 2A human-review hold through the archived detached background drain path on Windows-style hook hosts', async () => {
     const fixture = createWave2aTailFixtureProject();
     try {
       const outDir = path.join(
@@ -535,7 +538,7 @@ describe('governance post-tool-use detached background worker', () => {
       expect(loopStateRaw.lastStopReason).toBe('await human review');
       expect(loopStateRaw.rerunGate).toBe('pr_review');
     } finally {
-      const lockPath = runtimeWorkerHelper.governanceRunnerLockPath(fixture.root) as string;
+      const lockPath = governanceRunnerLockPath(fixture.root);
       await waitFor(() => !existsSync(lockPath), 15000, 200).catch(() => {});
       await fixture.cleanup();
     }

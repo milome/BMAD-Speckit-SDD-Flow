@@ -18,6 +18,22 @@ description: |
 
 # BMAD Bug 助手
 
+## 主 Agent 编排面（强制）
+
+交互模式下，在主 Agent 启动、恢复或收口 `bugfix` 执行链之前，必须先读取：
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action inspect
+```
+
+如需生成正式派发计划，则读取：
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan
+```
+
+`mainAgentNextAction / mainAgentReady` 仅为 compatibility summary；真正权威状态始终是 `orchestrationState + pendingPacket + continueDecision`。
+
 > **【必读】使用本 skill 前，必须先读取并遵守 `{project-root}/.cursor/rules/bmad-bug-assistant.mdc` 中的自检规则。**发起 mcp_task 或 party-mode 子任务前，须完成该阶段「发起前自检清单」全部项并输出自检结果，否则不得发起。
 > **Party-mode source of truth（Cursor）**：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。所有 party-mode 的 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 不得定义第二套 gate 语义。
 
@@ -599,4 +615,3 @@ npx ts-node scripts/run-auditor-host.ts \
 用户：「按 BUGFIX 文档实施修复。」
 
 主 Agent：执行阶段四——将「阶段四实施详细提示词」整段复制，仅替换 BUGFIX 文档路径与项目根目录后发起 mcp_task；实施完成后，将「阶段四实施后审计完整 prompt 模板」整段复制后发起审计子任务；若审计结论为未通过，须按修改建议委托子代理修改后再次发起审计，直至结论为「完全覆盖、验证通过」。禁止直接改生产代码。
-

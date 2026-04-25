@@ -263,9 +263,10 @@ PROMPT_PATH="_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story
 
 **子任务prompt 不得再只是"读取并执行某个 Prompt 文件"。**
 **必须保证子任务收到的主文本基线仍然是 Cursor §1，而不是无法区分来源的本地重写版。**
+**当前 accepted path（强制）**：本执行体不得在自身上下文里直接 `Task(...)` 派发 auditor；以下内容只能作为返回给主 Agent 的 dispatch request / compatibility hint。真实派发必须回到主 Agent，由主 Agent 重新读取 `main-agent-orchestration inspect`，必要时执行 `dispatch-plan`，再决定是否派发 auditor。
 
 ```typescript
-Task({
+MainAgentDispatchRequest({
   description: "审计spec-E{epic}-S{story}.md",
   subagent_type: "general-purpose",
   prompt: `
@@ -367,6 +368,8 @@ artifactDocPath: specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/spec-E
 auditReportPath: specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/AUDIT_spec-E{epic}-S{story}.md
 next_action: proceed_to_plan
 ```
+
+说明：handoff 只作为 compatibility hint；是否进入 `plan`，必须回到主 Agent，由主 Agent 重新读取 authoritative surface 后决定。
 
 ## Constraints
 

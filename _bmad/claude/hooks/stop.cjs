@@ -52,18 +52,6 @@ const {
 } = resolvePresenterModule();
 
 function resolveRuntimeWorkerHelper() {
-  const candidates = [
-    path.join(__dirname, 'run-bmad-runtime-worker.cjs'),
-    path.join(__dirname, '..', '..', 'runtime', 'hooks', 'run-bmad-runtime-worker.cjs'),
-    path.join(__dirname, '..', '..', '_bmad', 'runtime', 'hooks', 'run-bmad-runtime-worker.cjs'),
-  ];
-
-  for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) {
-      return require(candidate);
-    }
-  }
-
   return null;
 }
 
@@ -356,27 +344,19 @@ Generated: ${timestamp}
 
   let workerResult = null;
   const helper = resolveRuntimeWorkerHelper();
-  if (helper && typeof helper.runBmadRuntimeWorker === 'function') {
-    workerResult = normalizeWorkerResult(helper.runBmadRuntimeWorker({
-      projectRoot,
-      wait: options.waitForWorker !== false,
-      onlyWhenPending: true,
-    }));
+  if (!helper) {
+    workerResult = normalizeWorkerResult({
+      started: false,
+      skipped: true,
+      reason: 'legacy autonomous background drain removed; main agent must continue from orchestration state and packet',
+    });
   }
 
   appendGovernanceLog(projectRoot, '[BMAD] Checkpoint saved');
-  if (workerResult && workerResult.started && !workerResult.skipped) {
-    appendGovernanceLog(projectRoot, '[BMAD] Runtime worker triggered');
-    logRemediationAuditTrace(workerResult);
-  } else if (workerResult && workerResult.skipped) {
+  if (workerResult && workerResult.skipped) {
     appendGovernanceLog(
       projectRoot,
-      `[Runtime Governance] stop hook skipped worker reason=${workerResult.reason || 'unknown'}`
-    );
-  } else if (!helper) {
-    appendGovernanceLog(
-      projectRoot,
-      '[Runtime Governance] stop hook worker helper unavailable'
+      `[Runtime Governance] stop hook legacy background drain skipped reason=${workerResult.reason || 'unknown'}`
     );
   }
 

@@ -66,6 +66,20 @@ Claude 版 `bmad-standalone-tasks-doc-review` 必须满足：
   - handoff 协议
 - 不得将 Cursor Canonical Base、Claude Runtime Adapter、Repo Add-ons 混写为来源不明的重写版 prompt
 
+## 主 Agent 编排面（强制）
+
+交互模式下，本 skill 的全局推进必须由 repo-native `main-agent-orchestration` 决定。`runAuditorHost` 只负责审计后的 host close-out，不能替代主 Agent 的下一步分支决策。
+
+在发起 TASKS 文档审计子任务、修复子任务或任何 bounded execution 前，主 Agent 必须：
+
+1. 执行 `npm run main-agent-orchestration -- --cwd {project-root} --action inspect`
+2. 读取 `orchestrationState`、`pendingPacketStatus`、`pendingPacket`、`continueDecision`、`mainAgentNextAction`、`mainAgentReady`
+3. 若下一分支可派发但尚无可用 packet，执行 `npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan`
+4. 仅依据返回的 packet / instruction 派发子代理，不得只凭审计 prose 或 doc-review 结论直接续跑
+5. 每次子代理返回后，以及每次 `runAuditorHost` 收口后，都再次 `inspect`，再决定下一全局分支
+
+`mainAgentNextAction / mainAgentReady` 仅为 compatibility summary；真正权威状态始终是 `orchestrationState + pendingPacket + continueDecision`。
+
 ---
 
 ## 三层架构
@@ -197,6 +211,8 @@ handoff:
   next_action: revise_tasks_doc|execute_standalone_tasks
   next_agent: auditor-tasks-doc|bmad-standalone-tasks
   ready: true|false
+  mainAgentNextAction: dispatch_remediation|dispatch_implement
+  mainAgentReady: true|false
 ---
 ```
 

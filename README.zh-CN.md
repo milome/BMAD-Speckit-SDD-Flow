@@ -46,10 +46,11 @@
 ## 运行时管控一览
 
 - **四信号就绪检查**：在进入实现阶段前执行，与实现评分保持独立
-- **运行时管控循环**：工作流推进与阶段事实保持一致，不允许宿主"乐观继续"
-- **重跑检查点**：修复后沿同一条治理路径回到重试或重新进入
-- **执行闭环证据**：Cursor 与 Claude Code 两侧都保留完整的治理执行记录
-- **事后审计收口**：通过同一条运行时收口路径驱动评分、看板、诊断和训练数据提取
+- **先读 `main-agent-orchestration inspect`**：主 Agent 必须先读取 repo-native authoritative surface，再决定下一条全局分支
+- **按需执行 `dispatch-plan`**：只有 surface 明确需要 materialize packet 时，才生成正式派发计划
+- **子代理只执行 `bounded packet`**：子代理只返回 packet 结果，不负责决定下一条全局执行链
+- **`runAuditorHost` 只负责 post-audit close-out**：审计通过后统一写入评分、看板、诊断和训练数据，然后主 Agent 重新读取 `inspect`
+- **旧 worker / 手工 close-out 口径仅保留为历史证据**：可继续审计追溯，但不再是当前 accepted runtime path
 
 ## 看板与 MCP
 
@@ -164,16 +165,16 @@ npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit uninstall
 
 ### 核心组件
 
-| 组件                        | 说明                                                                  |
-| :-------------------------- | :-------------------------------------------------------------------- |
-| **`_bmad/`**                | 工作流模块、钩子、提示词、路由与宿主侧资产的规范源                    |
-| **`packages/scoring/`**     | 评分引擎、就绪漂移评估、看板投影、诊断输入与训练数据提取              |
-| **`dashboard`**             | 默认运行时可观测层：实时看板、运行时快照、评分投影                    |
-| **`runtime-mcp`**           | 可选的 MCP 工具接口，通过 `--with-mcp` 显式启用                       |
-| **`speckit-workflow`**      | Specify → Plan → GAPS → Tasks → TDD，并带强制审计循环                 |
-| **`bmad-story-assistant`**  | Story 生命周期路径：Create Story → Party Mode → Dev Story → Implement |
-| **`bmad-bug-assistant`**    | Bug 生命周期路径：RCA → Party Mode → BUGFIX → Implement               |
-| **`bmad-standalone-tasks`** | 针对 TASKS 或 BUGFIX 文档的独立受管子代理执行路径                     |
+| 组件                        | 说明                                                                                                               |
+| :-------------------------- | :----------------------------------------------------------------------------------------------------------------- |
+| **`_bmad/`**                | 工作流模块、钩子、提示词、路由与宿主侧资产的规范源                                                                 |
+| **`packages/scoring/`**     | 评分引擎、就绪漂移评估、看板投影、诊断输入与训练数据提取                                                           |
+| **`dashboard`**             | 默认运行时可观测层：实时看板、运行时快照、评分投影                                                                 |
+| **`runtime-mcp`**           | 可选的 MCP 工具接口，通过 `--with-mcp` 显式启用                                                                    |
+| **`speckit-workflow`**      | Specify → Plan → GAPS → Tasks → TDD，并带强制审计循环                                                              |
+| **`bmad-story-assistant`**  | Story 生命周期入口：主 Agent 先读 `inspect`，按需派发 bounded packet，并在 post-audit 后通过 `runAuditorHost` 收口 |
+| **`bmad-bug-assistant`**    | Bug 生命周期路径：RCA → Party Mode → BUGFIX → Implement，但全局 `inspect -> dispatch-plan -> closeout` 主链仍由主 Agent 控制 |
+| **`bmad-standalone-tasks`** | 针对 TASKS 或 BUGFIX 文档的执行仍先经过主 Agent `inspect`，必要时 `dispatch-plan`，再进入 bounded 子代理实施       |
 
 <details>
 <summary><b>查看目录结构</b></summary>
@@ -195,6 +196,7 @@ BMAD-Speckit-SDD-Flow/
 ## 文档入口
 
 - [快速开始](docs/tutorials/getting-started.md)
+- [主 Agent 编排参考](docs/reference/main-agent-orchestration.md)
 - [消费项目安装指南](docs/how-to/consumer-installation.md)
 - [运行时看板指南](docs/how-to/runtime-dashboard.md)
 - [运行时 MCP 安装](docs/how-to/runtime-mcp-installation.md)

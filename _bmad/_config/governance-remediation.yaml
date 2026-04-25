@@ -4,6 +4,32 @@ packetHosts:
   - cursor
   - claude
   - codex
+execution:
+  enabled: true
+  interactiveMode: main-agent
+  fallbackAutonomousMode: false
+  authoritativeHost: cursor
+  fallbackHosts:
+    - claude
+    - codex
+  dispatch:
+    leaseTimeoutSeconds: 900
+    heartbeatIntervalSeconds: 60
+    maxDispatchAttempts: 3
+  execution:
+    timeoutMinutes: 30
+    maxExecutionAttempts: 2
+  rerunGate:
+    required: true
+    autoSchedule: true
+    maxGateRetries: 2
+  escalation:
+    afterDispatchFailures: 3
+    afterExecutionFailures: 2
+    afterGateFailures: 2
+  projections:
+    emitNonAuthoritativePackets: true
+    archivePath: _bmad-output/runtime/governance/archive
 provider:
   mode: openai-compatible
   id: openai-governance

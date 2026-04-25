@@ -238,6 +238,8 @@ describe('bmad-help runtime policy consumers', () => {
         reportPath: bugfixAuditReportPath,
         stage: 'bugfix',
         artifactPath: bugfixPath,
+      }, {
+        scoreCommand: async () => ({ parsedRecord: { effective_verdict: 'approved' } }),
       });
 
       const policy = resolveBmadHelpRuntimePolicy({
@@ -258,6 +260,74 @@ describe('bmad-help runtime policy consumers', () => {
 
       expect(policy.implementationReadinessStatus).toBe('ready_clean');
       expect(policy.implementationEntryRecommended).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('projects canMainAgentContinue from runtime context / active scope reading side', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'bmad-help-continue-state-'));
+    try {
+      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+      writeRuntimeContext(
+        root,
+        defaultRuntimeContextFile({
+          flow: 'story',
+          stage: 'implement',
+          sourceMode: 'full_bmad',
+          contextScope: 'story',
+          storyId: '14.1',
+          runId: 'run-14-1',
+          artifactRoot: '_bmad-output/implementation-artifacts/epic-14/story-14-1',
+          latestReviewerCloseout: {
+            updatedAt: new Date().toISOString(),
+            runner: 'runAuditorHost',
+            profile: 'story_audit',
+            stage: 'story',
+            artifactPath: 'story.md',
+            reportPath: 'story.audit.md',
+            auditStatus: 'PASS',
+            closeoutApproved: false,
+            governanceClosure: {
+              implementationReadinessStatusRequired: true,
+              implementationReadinessGateName: 'implementation-readiness',
+              gatesLoopRequired: true,
+              rerunGatesRequired: true,
+              packetExecutionClosureRequired: true,
+            },
+            closeoutEnvelope: {
+              resultCode: 'blocked',
+              requiredFixes: ['closeout blocked'],
+              requiredFixesDetail: [],
+              rerunDecision: 'rerun_required',
+              scoringFailureMode: 'not_run',
+              packetExecutionClosureStatus: 'retry_pending',
+            },
+            canMainAgentContinue: false,
+            scoreWriteResult: 'failed',
+            handoffPersisted: true,
+          },
+          updatedAt: new Date().toISOString(),
+        })
+      );
+
+      const policy = resolveBmadHelpRuntimePolicy({
+        projectRoot: root,
+        config: loadConfig(),
+        flow: 'story',
+        stage: 'implement',
+      });
+
+      expect(policy.mainAgentCanContinue).toBe(false);
+      expect(policy.continueStateSource).toBe('runtimeContext');
+      expect(policy.continueDecision).toBe('rerun');
+      expect(policy.mainAgentNextAction).toBe('dispatch_remediation');
+      expect(policy.mainAgentReady).toBe(true);
+      expect(policy.helpRouting.mainAgentCanContinue).toBe(false);
+      expect(policy.helpRouting.continueStateSource).toBe('runtimeContext');
+      expect(policy.helpRouting.continueDecision).toBe('rerun');
+      expect(policy.helpRouting.mainAgentNextAction).toBe('dispatch_remediation');
+      expect(policy.helpRouting.mainAgentReady).toBe(true);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -312,6 +382,8 @@ describe('bmad-help runtime policy consumers', () => {
         stage: 'document',
         artifactPath: tasksPath,
         iterationCount: '1',
+      }, {
+        scoreCommand: async () => ({ parsedRecord: { effective_verdict: 'approved' } }),
       });
 
       const reportPath = path.join(
@@ -352,6 +424,8 @@ describe('bmad-help runtime policy consumers', () => {
       expect(policy.helpRouting.rerouteRequired).toBe(true);
       expect(policy.helpRouting.implementationEntryDecision).toBe('reroute');
       expect(policy.implementationEntryDecision).toBe('reroute');
+      expect(policy.mainAgentNextAction).toBe('await_user');
+      expect(policy.mainAgentReady).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

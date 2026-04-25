@@ -699,20 +699,29 @@ export function isAutoContinueEnabled(config?: RuntimeConfig): boolean {
 }
 
 export function shouldAutoContinue(
-  handoff: { next_action?: string; ready?: boolean } | undefined,
+  handoff:
+    | {
+        next_action?: string;
+        ready?: boolean;
+        mainAgentNextAction?: string;
+        mainAgentReady?: boolean;
+      }
+    | undefined,
   config?: RuntimeConfig
 ): boolean {
   const cfg = config || loadConfig();
+  const effectiveNextAction = handoff?.mainAgentNextAction ?? handoff?.next_action;
+  const effectiveReady = handoff?.mainAgentReady ?? handoff?.ready;
 
   if (!cfg.auto_continue.enabled) {
     return false;
   }
 
-  if (cfg.auto_continue.require_next_action && !handoff?.next_action) {
+  if (cfg.auto_continue.require_next_action && !effectiveNextAction) {
     return false;
   }
 
-  if (cfg.auto_continue.require_ready_flag && handoff?.ready !== true) {
+  if (cfg.auto_continue.require_ready_flag && effectiveReady !== true) {
     return false;
   }
 

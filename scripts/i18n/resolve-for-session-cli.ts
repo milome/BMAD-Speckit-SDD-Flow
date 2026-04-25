@@ -46,6 +46,11 @@ async function main(): Promise<void> {
     process.chdir(projectRoot);
     const config = loadConfig();
     const policy = resolveLanguagePolicyForSession(config, userMessage, recentMessages);
+    const receipts = writeContext
+      ? ensureFacilitatorRuntimeDefinition(projectRoot, {
+          mode: policy.resolvedMode,
+        })
+      : [];
     const out: Record<string, unknown> = {
       resolvedMode: policy.resolvedMode,
       requestedMode: policy.requestedMode,
@@ -62,9 +67,6 @@ async function main(): Promise<void> {
         typeof out.contextSync === 'object' &&
         (out.contextSync as { status?: string }).status === 'skipped'
       ) {
-        const receipts = ensureFacilitatorRuntimeDefinition(projectRoot, {
-          mode: policy.resolvedMode,
-        });
         out.temporaryResolvedModeApplied = {
           resolvedMode: policy.resolvedMode,
           targets: receipts
