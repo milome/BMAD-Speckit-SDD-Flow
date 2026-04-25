@@ -1473,6 +1473,8 @@ Same as Phase 2: **Priority** Cursor Task schedules code-reviewer; **Fallback** 
 
 If the audit conclusion is **failed**, **must** be modified according to the audit report and be initiated again until "complete coverage and verification passed".
 
+**不中断执行 contract**: The implementation subagent must continuously complete all remaining scoped User Stories/tasks. It must not pause after a milestone and wait for main-Agent approval. Control may return to the main Agent only when: ① all work in the current scope is finished and the flow can enter post-audit; ② a real blocker requires reroute / remediation; ③ an explicit audit or checkpoint boundary defined by this skill has been reached. 换言之，子代理必须连续完成当前作用域内的全部剩余 User Story/任务。
+
 ---
 
 ## Phase 5: Skill self-audit (when skill is created)

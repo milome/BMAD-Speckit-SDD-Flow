@@ -152,6 +152,8 @@ Main Agent only: invoke mcp_task with this prompt, then collect and summarize (a
 
 Main Agent: run this mcp_task after Step 1 (and any resume). You may print “round N passed, continuing…” between rounds. If the audit verdict is fail, launch implementation (or resume) so the subagent fixes code/prd/progress; the main Agent may edit docs-only files, not `prd.*`, `progress.*`, or production code. Repeat audit until three consecutive no-gap rounds.
 
+**不中断执行 contract**: The implementation subagent must start from the first remaining item in the current batch and continuously complete all remaining scoped US/tasks. It must not pause at single-item completion, mid-batch milestones, or “wait for approval first” checkpoints. Control may return to the main Agent only when: ① all work in the current scope is finished and the flow can enter post-audit / closeout; ② a real blocker requires reroute / remediation; ③ an explicit audit boundary or resume checkpoint defined by this skill has been reached. 换言之，子代理必须连续完成当前作用域内的全部剩余 US/任务。
+
 ---
 
 ## Step 3: Main Agent prohibitions (reminder)
