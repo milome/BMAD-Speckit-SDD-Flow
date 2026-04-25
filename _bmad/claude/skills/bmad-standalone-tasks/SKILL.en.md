@@ -59,6 +59,22 @@ The goal is **not** to blindly copy the Cursor skill, but to:
 3. **Integrate** handoff, scoring, and commit gate
 4. **Ensure** Claude Code CLI can run the standalone task flow end-to-end
 
+## Host Guard (must run first)
+
+If the actual host is **Cursor IDE**, or the invocation context clearly uses Cursor semantics (for example `mcp_task`, `generalPurpose`, `Cursor Task`, or the caller explicitly says this is running under Cursor), then:
+
+1. **Stop immediately**
+2. Print the exact message below:
+
+```text
+HOST_MISMATCH: Loaded the Claude variant of bmad-standalone-tasks under a Cursor host. Use `.cursor/skills/bmad-standalone-tasks/SKILL.md` instead.
+```
+
+3. **Do not** continue into this Claude adapter’s `L1/L2/L3/L4` fallback chain
+4. **Do not** emit downgrade notices derived from `.claude/agents/speckit-implement.md`, `auditor-implement`, or `Agent tool`
+
+Continue with the rest of this file **only** when the real host is Claude Code CLI / OMC.
+
 ---
 
 ## Core acceptance criteria

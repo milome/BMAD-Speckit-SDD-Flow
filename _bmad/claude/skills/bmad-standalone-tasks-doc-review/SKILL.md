@@ -40,6 +40,21 @@ The goal is **not** to blindly copy the Cursor skill, but to:
 3. **Integrate** handoff, scoring, and commit gate
 4. **Ensure** Claude Code CLI can run TASKS document audits end-to-end
 
+## Host Guard（必须先执行）
+
+若当前实际宿主是 **Cursor IDE**，或调用上下文明显使用 Cursor 语义（例如 `mcp_task`、`generalPurpose`、`Cursor Task`），则：
+
+1. **立即停止**本 Claude adapter 的后续执行
+2. 输出以下固定提示：
+
+```text
+HOST_MISMATCH: 当前误加载了 Claude 版 bmad-standalone-tasks-doc-review，但实际宿主是 Cursor。请改用 `.cursor/skills/bmad-standalone-tasks-doc-review/SKILL.md`。
+```
+
+3. **禁止**继续执行本 Claude adapter 的 Fallback 降级逻辑
+
+只有在 **Claude Code CLI / OMC** 宿主中，才允许继续执行本文件后续内容。
+
 ---
 
 ## Core acceptance criteria
