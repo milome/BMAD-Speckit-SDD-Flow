@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import type { GovernanceRerunStage } from './governance-remediation-runner';
 export type GovernanceQueueBucket = 'pending' | 'processing' | 'done' | 'failed';
 
 export interface GovernanceRuntimeQueueItem<TPayload = unknown, TResult = unknown> {
@@ -43,6 +44,7 @@ export interface GovernancePreContinuePayload {
   }>;
   removed_without_evidence?: string[];
   previous_report_path?: string | null;
+  rerunChain?: GovernanceRerunStage[];
 }
 
 export function governanceQueueDir(projectRoot: string): string {

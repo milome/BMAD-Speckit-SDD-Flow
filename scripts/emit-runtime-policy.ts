@@ -307,7 +307,13 @@ export function mainEmitRuntimePolicy(argv: string[]): number {
       }
     }
 
-    process.stdout.write(stableStringifyPolicy(policy));
+    process.stdout.write(
+      stableStringifyPolicy({
+        flow: loaded.runtimeContext.flow,
+        stage: loaded.runtimeContext.stage,
+        ...policy,
+      })
+    );
     return 0;
   } finally {
     if (needChdir) {

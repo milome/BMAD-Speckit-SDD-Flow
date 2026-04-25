@@ -149,6 +149,7 @@ export interface ReviewHandoffV1 {
 export interface ReviewCloseoutEnvelopeDerivationInput {
   auditStatus: ReviewResult;
   scoringFailureMode?: ReviewScoringFailureMode;
+  scoringFailureReason?: string | null;
   requiredFixes?: string[];
   requiredFixesDetail?: ReviewRequiredFixDetailV1[];
   scoreRecord?: Pick<
@@ -400,6 +401,14 @@ function normalizeRequiredFixes(
   const requiredFixes = [...new Set((input.requiredFixes ?? []).map((item) => item.trim()).filter(Boolean))];
 
   if (
+    input.scoringFailureMode === 'non_blocking_failure' &&
+    input.scoringFailureReason &&
+    !requiredFixes.includes(input.scoringFailureReason)
+  ) {
+    requiredFixes.push(input.scoringFailureReason);
+  }
+
+  if (
     requiredFixes.length === 0 &&
     blockingReason &&
     effectiveVerdict &&
@@ -417,8 +426,12 @@ function normalizeRequiredFixes(
 
 function deriveResultCode(
   auditStatus: ReviewResult,
-  effectiveVerdict?: ReadinessEffectiveVerdict
+  effectiveVerdict?: ReadinessEffectiveVerdict,
+  scoringFailureMode?: ReviewScoringFailureMode
 ): ReviewResultCode {
+  if (scoringFailureMode === 'non_blocking_failure') {
+    return 'blocked';
+  }
   if (effectiveVerdict === 'blocked' || effectiveVerdict === 'blocked_pending_rereadiness') {
     return 'blocked';
   }
@@ -456,8 +469,12 @@ function deriveRerunDecision(
 function derivePacketExecutionClosureStatus(
   resultCode: ReviewResultCode,
   effectiveVerdict: ReadinessEffectiveVerdict | undefined,
-  driftSeverity: ReadinessDriftSeverity | undefined
+  driftSeverity: ReadinessDriftSeverity | undefined,
+  scoringFailureMode?: ReviewScoringFailureMode
 ): ReviewPacketExecutionClosureStatus {
+  if (scoringFailureMode === 'non_blocking_failure') {
+    return 'retry_pending';
+  }
   if (resultCode === 'approved') {
     return 'gate_passed';
   }
@@ -484,12 +501,17 @@ export function deriveReviewCloseoutEnvelopeV1(
     effectiveVerdict,
     blockingReason
   );
-  const resultCode = deriveResultCode(input.auditStatus, effectiveVerdict);
+  const resultCode = deriveResultCode(
+    input.auditStatus,
+    effectiveVerdict,
+    input.scoringFailureMode
+  );
   const rerunDecision = deriveRerunDecision(resultCode, effectiveVerdict);
   const packetExecutionClosureStatus = derivePacketExecutionClosureStatus(
     resultCode,
     effectiveVerdict,
-    driftSeverity
+    driftSeverity,
+    input.scoringFailureMode
   );
 
   return buildReviewCloseoutEnvelopeV1({

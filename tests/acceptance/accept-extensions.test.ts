@@ -91,6 +91,16 @@ describe('T3: Claude adapted speckit-workflow skill', () => {
     expect(content).toContain('next_steps');
   });
 
+  it('documents main-agent-orchestration as the canonical dispatch surface', () => {
+    const content = readFileSync(skillPath, 'utf8');
+    expect(content).toContain('main-agent-orchestration');
+    expect(content).toContain('dispatch-plan');
+    expect(content).toContain('mainAgentNextAction');
+    expect(content).toContain('mainAgentReady');
+    expect(content).toContain('pendingPacketStatus');
+    expect(content).toMatch(/compatibility summary fields only|compatibility fields only/i);
+  });
+
   it('.claude/agents/ references point to .claude/skills/speckit-workflow/ not .cursor/', () => {
     const agentFiles = [
       '.claude/agents/auditors/auditor-spec.md',
@@ -847,6 +857,8 @@ describe('T11: Claude adapted bmad-story-assistant skill', () => {
     const content = readFileSync(skillPath, 'utf8');
     expect(content).toContain('handoff');
     expect(content).toContain('next_action');
+    expect(content).toContain('mainAgentNextAction');
+    expect(content).toContain('mainAgentReady');
   });
 });
 
@@ -921,6 +933,8 @@ describe('extension agents', () => {
       expect(content).toContain('handoff');
       expect(content).toContain('next_action');
       expect(content).toContain('ready');
+      expect(content).toContain('mainAgentNextAction');
+      expect(content).toContain('mainAgentReady');
     }
 
     expect(standalone).toContain('auditor-tasks-doc');

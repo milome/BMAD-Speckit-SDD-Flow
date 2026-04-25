@@ -44,6 +44,8 @@ export interface GovernanceRemediationConfig {
 
 export interface GovernanceRemediationExecutionConfig {
   enabled: boolean;
+  interactiveMode: 'main-agent' | 'autonomous-runner';
+  fallbackAutonomousMode: boolean;
   authoritativeHost: GovernanceHostKind;
   fallbackHosts: GovernanceHostKind[];
   dispatch: {
@@ -90,6 +92,8 @@ export function defaultGovernanceRemediationConfig(): GovernanceRemediationConfi
     packetHosts: ['cursor', 'claude', 'codex'],
     execution: {
       enabled: false,
+      interactiveMode: 'main-agent',
+      fallbackAutonomousMode: false,
       authoritativeHost: 'cursor',
       fallbackHosts: ['claude', 'codex'],
       dispatch: {
@@ -186,6 +190,14 @@ export function readGovernanceRemediationConfig(
         typeof execution?.enabled === 'boolean'
           ? execution.enabled
           : base.execution?.enabled ?? false,
+      interactiveMode:
+        execution &&
+        typeof execution === 'object' &&
+        typeof execution.interactiveMode === 'string' &&
+        execution.interactiveMode === 'main-agent'
+          ? 'main-agent'
+          : base.execution?.interactiveMode ?? 'main-agent',
+      fallbackAutonomousMode: false,
       authoritativeHost,
       fallbackHosts,
       dispatch: {

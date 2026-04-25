@@ -2,8 +2,6 @@ import { execSync, spawnSync } from 'node:child_process';
 import {
   existsSync,
   mkdtempSync,
-  mkdirSync,
-  readFileSync,
   readdirSync,
   rmSync,
   writeFileSync,
@@ -11,6 +9,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { listUnexpectedLegacyConsumerHookFiles } from '../../packages/bmad-speckit/src/services/install-surface-manifest';
 
 const PKG_ROOT = join(import.meta.dirname, '..', '..');
 
@@ -27,15 +26,6 @@ function run(cmd: string, cwd: string): string {
   });
 }
 
-function waitFor(predicate: () => boolean, timeoutMs = 30000, intervalMs = 200): void {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    if (predicate()) return;
-    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, intervalMs);
-  }
-  throw new Error(`Timed out after ${timeoutMs}ms`);
-}
-
 function removeDirWithRetry(target: string, attempts = 15, intervalMs = 300): void {
   for (let index = 0; index < attempts; index += 1) {
     try {
@@ -48,10 +38,6 @@ function removeDirWithRetry(target: string, attempts = 15, intervalMs = 300): vo
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, intervalMs);
     }
   }
-}
-
-function findFirstExistingPath(candidates: string[]): string | null {
-  return candidates.find((candidate) => existsSync(candidate)) ?? null;
 }
 
 describe('consumer governance zero-scripts install', () => {
@@ -76,209 +62,133 @@ describe('consumer governance zero-scripts install', () => {
       run('npx bmad-speckit-init --agent cursor', consumer);
 
       expect(existsSync(join(consumer, 'scripts', 'governance-remediation-runner.ts'))).toBe(false);
-      const rootInstallDir = join(consumer, 'node_modules', 'bmad-speckit-sdd-flow');
-      expect(
-        existsSync(
-          join(rootInstallDir, '_bmad', 'runtime', 'hooks', 'governance-runtime-worker.cjs')
-        )
-      ).toBe(true);
-      expect(
-        existsSync(
-          join(rootInstallDir, '_bmad', 'runtime', 'hooks', 'governance-remediation-runner.cjs')
-        )
-      ).toBe(true);
+      expect(listUnexpectedLegacyConsumerHookFiles(join(consumer, '.cursor', 'hooks'))).toHaveLength(0);
 
       run('npx bmad-speckit-init --agent claude-code', consumer);
 
       writeFileSync(
         join(consumer, '_bmad', '_config', 'governance-remediation.yaml'),
         [
-          'version: 1',
+          'version: 2',
           'primaryHost: claude',
           'packetHosts:',
           '  - claude',
           'provider:',
           '  mode: stub',
           '  id: accept-consumer-zero-scripts',
+          'execution:',
+          '  enabled: true',
+          '  interactiveMode: main-agent',
+          '  fallbackAutonomousMode: false',
+          '  authoritativeHost: claude',
+          '  fallbackHosts: []',
         ].join('\n'),
         'utf8'
       );
 
-      expect(existsSync(join(consumer, '.claude', 'hooks', 'governance-runtime-worker.cjs'))).toBe(true);
-      expect(existsSync(join(consumer, '.claude', 'hooks', 'governance-remediation-runner.cjs'))).toBe(true);
+      expect(listUnexpectedLegacyConsumerHookFiles(join(consumer, '.claude', 'hooks'))).toHaveLength(0);
       expect(existsSync(join(consumer, '.claude', 'hooks', 'post-tool-use.cjs'))).toBe(true);
       expect(existsSync(join(consumer, '.claude', 'hooks', 'deferred-gap-governance.cjs'))).toBe(true);
-      const runtimeEmitDist =
-        findFirstExistingPath([
-          join(
-            rootInstallDir,
-            'packages',
-            'bmad-speckit',
-            'node_modules',
-            '@bmad-speckit',
-            'runtime-emit',
-            'dist'
-          ),
-          join(
-            rootInstallDir,
-            'node_modules',
-            'bmad-speckit',
-            'node_modules',
-            '@bmad-speckit',
-            'runtime-emit',
-            'dist'
-          ),
-          join(rootInstallDir, 'node_modules', '@bmad-speckit', 'runtime-emit', 'dist'),
-        ]) ?? '';
-      expect(runtimeEmitDist).toBeTruthy();
-      expect(existsSync(join(runtimeEmitDist, 'governance-runtime-worker.cjs'))).toBe(true);
-      expect(existsSync(join(runtimeEmitDist, 'governance-remediation-runner.cjs'))).toBe(true);
+      expect(existsSync(join(consumer, '.claude', 'hooks', 'runtime-policy-inject.cjs'))).toBe(
+        true
+      );
+      expect(existsSync(join(consumer, '.claude', 'hooks', 'write-runtime-context.cjs'))).toBe(
+        true
+      );
 
-      const readinessArtifact = join(
+      const runtimeContextPath = join(
         consumer,
         '_bmad-output',
-        'planning-artifacts',
-        'dev',
-        'implementation-readiness-report-2026-04-08.md'
+        'runtime',
+        'context',
+        'project.json'
       );
-      mkdirSync(join(consumer, '_bmad-output', 'planning-artifacts', 'dev'), { recursive: true });
-      writeFileSync(
-        readinessArtifact,
-        [
-          '# Implementation Readiness Report',
-          '',
-          '## Blockers Requiring Immediate Action',
-          '',
-          '- IR-BLK-001: missing proof chain',
-          '',
-          '## Deferred Gaps',
-          '',
-          '- J04-Smoke-E2E: P0 Journey J04 缺少 Smoke E2E',
-          '  - Reason: P2 优先级',
-          '  - Resolution Target: Sprint 2+',
-          '  - Owner: Dev Team',
-          '',
-          '## Deferred Gaps Tracking',
-          '',
-          '| Gap ID | 描述 | 原因 | 解决时机 | Owner | 状态检查点 |',
-          '|--------|------|------|----------|-------|-----------|',
-          '| J04-Smoke-E2E | P0 Journey J04 缺少 Smoke E2E | P2 优先级 | Sprint 2+ | Dev Team | Sprint Planning |',
-          '',
-          '## Four-Signal Governance Contract Status',
-          '',
-          'P0 Journey Coverage Matrix / Smoke E2E Preconditions Traceability / Cross-Document Traceability / Four-Signal Contract Verification',
-          '',
-          '## P0 Journey Coverage Matrix',
-          '',
-          '| PRD Journey ID | PRD Journey Name | Arch P0 Key Path | Epic Coverage | Status | Evidence |',
-          '|----------------|------------------|------------------|---------------|--------|----------|',
-          '| J01 | Demo | KP-01 | Epic 1 | ✅ | arch.md |',
-          '',
-          '## Smoke E2E Preconditions Traceability',
-          '',
-          '- E2E test strategy',
-          '- Critical paths',
-          '',
-          '## Cross-Document Traceability',
-          '',
-          '- PRD Requirement',
-          '- Architecture Decision',
-          '- Epic Story',
-          '- Traceability Status',
-          '',
-          '## Four-Signal Contract Verification',
-          '',
-          '- P0 Journey smoke E2E evidence traceability',
-          '',
-        ].join('\n'),
-        'utf8'
-      );
-
-      const preContinue = spawnSync(
+      const writeContext = spawnSync(
         process.execPath,
-        [join(consumer, '.claude', 'hooks', 'pre-continue-check.cjs'), 'check-implementation-readiness', 'step-06-final-assessment'],
+        [
+          join(consumer, '.claude', 'hooks', 'write-runtime-context.cjs'),
+          runtimeContextPath,
+          'story',
+          'implement',
+          '',
+          'epic-20',
+          '20.1',
+          'accept-consumer-zero-scripts',
+          'accept-zero-scripts-run',
+          '_bmad-output/implementation-artifacts/epic-20/story-20.1',
+          'story',
+          '',
+          '',
+          '_bmad-output/implementation-artifacts/epic-20/story-20.1/spec.md',
+        ],
         {
           cwd: consumer,
-          env: {
-            ...process.env,
-            BMAD_PRECONTINUE_ARTIFACT_PATH: readinessArtifact,
-          },
           encoding: 'utf8',
         }
       );
 
-      expect(preContinue.stdout).toContain('"workflow":"bmad-check-implementation-readiness"');
-      expect(preContinue.stdout).toContain('"deferredGapAudit"');
-      expect(preContinue.stderr).not.toContain('Cannot find module');
+      expect(writeContext.status).toBe(0);
+      expect(writeContext.stdout).toContain('Wrote');
 
-      const event = {
-        type: 'governance-rerun-result',
-        payload: {
-          projectRoot: consumer,
-          sourceEventType: 'governance-pre-continue-check',
-          runnerInput: {
-            projectRoot: consumer,
-            rerunGate: 'implementation-readiness',
-            attemptId: 'accept-zero-scripts-01',
-            capabilitySlot: 'qa.readiness',
-            canonicalAgent: 'PM + QA / readiness reviewer',
-            targetArtifacts: ['prd.md', 'architecture.md'],
-            expectedDelta: 'close readiness blockers',
-            outputPath: join(consumer, '_bmad-output', 'planning-artifacts', 'dev', 'accept-out.md'),
-            promptText: 'consumer zero scripts packaged rerun',
-            stageContextKnown: true,
-            gateFailureExists: true,
-            blockerOwnershipLocked: true,
-            rootTargetLocked: true,
-            equivalentAdapterCount: 1,
-            sourceGateFailureIds: ['CONSUMER-1'],
-            actualExecutor: 'implementation readiness workflow',
-            adapterPath: 'local workflow fallback',
-            rerunOwner: 'PM',
-            outcome: 'blocked',
-            hostKind: 'claude',
+      const inject = spawnSync(
+        process.execPath,
+        [join(consumer, '.claude', 'hooks', 'runtime-policy-inject.cjs')],
+        {
+          cwd: consumer,
+          env: {
+            ...process.env,
+            CLAUDE_PROJECT_DIR: consumer,
           },
-          rerunGateResult: {
-            gate: 'implementation-readiness',
-            status: 'fail',
-          },
-        },
-      };
-
-      const hook = spawnSync(process.execPath, [join(consumer, '.claude', 'hooks', 'post-tool-use.cjs')], {
-        cwd: consumer,
-        input: JSON.stringify(event),
-        encoding: 'utf8',
-      });
-
-      expect(hook.status).toBe(0);
-      const stdout = `${hook.stdout || ''}${hook.stderr || ''}`;
-      expect(stdout).toContain('received rerun-result');
-      expect(stdout).toContain('queued rerun event');
-
-      const logPath = join(consumer, '.claude', 'state', 'runtime', 'governance-hook.log');
-      waitFor(() => existsSync(logPath));
-      const logText = readFileSync(logPath, 'utf8');
-      expect(logText).toContain('received rerun-result gate=implementation-readiness');
-
-      const currentRun = join(consumer, '_bmad-output', 'runtime', 'governance', 'current-run.json');
-      const failedDebug = join(
-        consumer,
-        '_bmad-output',
-        'runtime',
-        'governance',
-        'queue',
-        'last-failed-debug.json'
+          input: JSON.stringify({
+            tool_name: 'Agent',
+            tool_input: {
+              subagent_type: 'general-purpose',
+              prompt: 'Execute Story implementation now.',
+            },
+          }),
+          encoding: 'utf8',
+        }
       );
-      waitFor(() => existsSync(currentRun) || existsSync(failedDebug), 30000, 250);
-      if (existsSync(failedDebug)) {
-        throw new Error(readFileSync(failedDebug, 'utf8'));
+
+      expect(inject.status).toBe(0);
+      const injectOut = JSON.parse(inject.stdout || '{}') as {
+        continue?: boolean;
+        stopReason?: string;
+        systemMessage?: string;
+        decision?: string;
+        hookSpecificOutput?: { additionalContext?: string };
+      };
+      const effectiveContinue =
+        typeof injectOut.continue === 'boolean'
+          ? injectOut.continue
+          : injectOut.decision === 'block'
+            ? false
+            : undefined;
+      const effectiveText = [
+        injectOut.stopReason,
+        injectOut.systemMessage,
+        injectOut.hookSpecificOutput?.additionalContext,
+        inject.stdout,
+      ]
+        .filter(Boolean)
+        .join('\n');
+      if (typeof effectiveContinue === 'boolean') {
+        expect(effectiveContinue).toBe(false);
       }
-      const currentRunText = readFileSync(currentRun, 'utf8');
-      expect(currentRunText).toContain('implementation-readiness');
+      const mainAgentSurfaceShown =
+        effectiveText.includes('mainAgentNextAction') &&
+        effectiveText.includes('mainAgentReady');
+      const blockedFlowShown =
+        effectiveText.includes('Implementation Entry Gate') &&
+        effectiveText.includes('Main Agent') &&
+        effectiveText.includes('orchestration_state') &&
+        effectiveText.includes('pending_packet');
+      expect(mainAgentSurfaceShown || blockedFlowShown).toBe(true);
+
+      expect(
+        existsSync(join(consumer, '_bmad-output', 'runtime', 'governance', 'current-run.json'))
+      ).toBe(false);
     } finally {
-      const lockPath = join(consumer, '_bmad-output', 'runtime', 'governance', 'runner-lock.json');
-      waitFor(() => !existsSync(lockPath), 15000, 200);
       removeDirWithRetry(consumer);
       removeDirWithRetry(packDir);
     }

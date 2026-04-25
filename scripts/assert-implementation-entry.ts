@@ -1,14 +1,8 @@
 /* eslint-disable no-console */
 
 import * as path from 'node:path';
-import { resolveBmadHelpRuntimePolicy } from './bmad-config';
-import { type ResolveRuntimePolicyInput, type RuntimeFlowId } from './runtime-governance';
-import type { StageName } from './bmad-config';
-import {
-  buildImplementationEntryIndexKey,
-  recordImplementationEntryGate,
-} from './runtime-context-registry';
-import { loadPolicyContextFromRegistry } from './emit-runtime-policy';
+import { mainEmitRuntimePolicy, loadPolicyContextFromRegistry } from './emit-runtime-policy';
+import { type RuntimeFlowId } from './runtime-governance';
 
 function parseArgs(argv: string[]): Record<string, string | undefined> {
   const out: Record<string, string | undefined> = {};
@@ -47,38 +41,30 @@ export function mainAssertImplementationEntry(argv: string[]): number {
     return 1;
   }
 
-  const input: ResolveRuntimePolicyInput = {
-    flow,
-    stage: loaded.stage as StageName,
-    ...(loaded.epicId ? { epicId: loaded.epicId } : {}),
-    ...(loaded.storyId ? { storyId: loaded.storyId } : {}),
-    ...(loaded.storySlug ? { storySlug: loaded.storySlug } : {}),
-    ...(loaded.runId ? { runId: loaded.runId } : {}),
-    ...(loaded.artifactRoot ? { artifactRoot: loaded.artifactRoot } : {}),
+  const stdoutChunks: string[] = [];
+  const originalWrite = process.stdout.write.bind(process.stdout);
+  (process.stdout as { write: typeof process.stdout.write }).write = (
+    chunk: string | Uint8Array
+  ) => {
+    stdoutChunks.push(typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf8'));
+    return true;
   };
 
-  const policy = resolveBmadHelpRuntimePolicy({
-    ...input,
-    projectRoot: root,
-    runtimeContext: loaded.runtimeContext,
-    runtimeContextPath: loaded.resolvedContextPath,
-  });
+  try {
+    const code = mainEmitRuntimePolicy(['--cwd', root]);
+    if (code !== 0) {
+      console.error('assert-implementation-entry: emit-runtime-policy failed');
+      return 1;
+    }
+  } finally {
+    (process.stdout as { write: typeof process.stdout.write }).write = originalWrite;
+  }
 
-  const key = buildImplementationEntryIndexKey({
-    flow,
-    runId: loaded.runtimeContext.runId,
-    artifactRoot: loaded.runtimeContext.artifactRoot,
-    artifactDocPath: loaded.runtimeContext.artifactPath,
-    storyId: loaded.runtimeContext.storyId,
-  });
-  recordImplementationEntryGate(root, {
-    flow,
-    key,
-    gate: policy.implementationEntryGate,
-  });
-
-  process.stdout.write(`${JSON.stringify(policy.implementationEntryGate, null, 2)}\n`);
-  return policy.implementationEntryGate.decision === 'pass' ? 0 : 2;
+  const policy = JSON.parse(stdoutChunks.join('')) as {
+    implementationEntryGate?: { decision?: string };
+  };
+  process.stdout.write(`${JSON.stringify(policy.implementationEntryGate ?? {}, null, 2)}\n`);
+  return policy.implementationEntryGate?.decision === 'pass' ? 0 : 2;
 }
 
 if (require.main === module) {

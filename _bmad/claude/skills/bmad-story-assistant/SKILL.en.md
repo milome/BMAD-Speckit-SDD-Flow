@@ -19,6 +19,28 @@ description: |
 
 This skill is the unified adaptation entrance of Cursor `bmad-story-assistant` in Claude Code CLI / OMC environment.
 
+## Main Agent Orchestration Surface
+
+In interactive main-agent mode, before the main Agent starts, resumes, or closes out the `story` chain, it must first read:
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action inspect
+```
+
+If an official dispatch plan is needed, read:
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan
+```
+
+`mainAgentNextAction / mainAgentReady` remain compatibility summary fields only; authoritative runtime truth is `orchestrationState + pendingPacket + continueDecision`.
+
+## Uninterrupted Execution Contract
+
+- Story implementation must continue through all remaining scoped User Stories/tasks until the blocker or post-audit boundary is reached.
+- If post-audit fails, the main Agent must resume the same execution chain instead of stopping for manual continuation.
+- post-audit is ready only after `runAuditorHost` confirms closeout and the ralph-method tracking files remain aligned.
+
 The goal is not to simply copy the Cursor skill, but to:
 
 1. **Inherit Cursor’s verified process semantics**
@@ -549,6 +571,8 @@ handoff:
   next_action: story_audit
   next_agent: bmad-story-audit
   ready: true
+  mainAgentNextAction: dispatch_review
+  mainAgentReady: true
 ```
 ### Stage 2: Story Audit
 
@@ -750,6 +774,8 @@ handoff:
   next_action: dev_story
   next_agent: speckit-implement
   ready: true
+  mainAgentNextAction: dispatch_implement
+  mainAgentReady: true
 ```
 
 **FAIL**
@@ -792,6 +818,8 @@ handoff:
   next_action: revise_story
   next_agent: bmad-story-create
   ready: true
+  mainAgentNextAction: dispatch_remediation
+  mainAgentReady: true
 ```
 ### Stage 3: Dev Story / `STORY-A3-DEV`
 
@@ -1034,6 +1062,8 @@ handoff:
   next_agent: auditor-implement
   next_stage: 4
   ready: true
+  mainAgentNextAction: dispatch_review
+  mainAgentReady: true
   prerequisites_met:
     - tdd_cycle_complete
     - ralph_method_tracked
@@ -1312,6 +1342,8 @@ handoff:
   next_agent: bmad-master
   next_stage: commit
   ready: true
+  mainAgentNextAction: run_closeout
+  mainAgentReady: true
   prerequisites_met:
     - audit_passed
     - score_written
@@ -1416,6 +1448,8 @@ handoff:
   next_agent: speckit-implement
   next_stage: 3
   ready: true
+  mainAgentNextAction: dispatch_remediation
+  mainAgentReady: true
   fix_required: true
   prerequisites_met:
     - audit_completed
@@ -1813,6 +1847,8 @@ handoff:
   next_agent: bmad-master
   next_stage: commit
   ready: true
+  mainAgentNextAction: run_closeout
+  mainAgentReady: true
   prerequisites_met:
     - audit_passed
     - score_written
@@ -1905,6 +1941,8 @@ handoff:
   next_agent: bmad-master
   next_stage: commit
   ready: true
+  mainAgentNextAction: run_closeout
+  mainAgentReady: true
   prerequisites_met:
     - audit_passed
     - score_written
@@ -2007,6 +2045,8 @@ handoff:
   next_agent: auditor-document
   next_stage: 4
   ready: true
+  mainAgentNextAction: dispatch_remediation
+  mainAgentReady: true
   fix_required: true
   prerequisites_met:
     - audit_completed

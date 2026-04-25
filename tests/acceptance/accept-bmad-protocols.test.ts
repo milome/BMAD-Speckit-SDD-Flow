@@ -11,6 +11,11 @@ describe('protocol documents', () => {
     expect(auditSchema).toContain('PASS');
     expect(auditSchema).toContain('FAIL');
     expect(handoff).toContain('artifactDocPath');
+    expect(handoff).toContain('main-agent-orchestration');
+    expect(handoff).toContain('dispatch-plan');
+    expect(handoff).toContain('pendingPacketStatus');
+    expect(handoff).toContain('mainAgentNextAction');
+    expect(handoff).toContain('mainAgentReady');
     expect(commitProtocol).toContain('commit_request');
     expect(commitProtocol).toContain('bmad-master');
   });

@@ -21,6 +21,7 @@ import {
   type ReviewGovernanceClosureV1,
   type RunAuditorHostInvocationInput,
 } from './reviewer-schema';
+import { canMainAgentContinueFromCloseout } from './continue-state-contract';
 import {
   checkPreconditionHash,
   loadLatestRecordByStage,
@@ -313,7 +314,7 @@ export async function runAuditorHost(
     } catch (error) {
       scoringFailureMode = 'non_blocking_failure';
       scoreError = error instanceof Error ? error.message : String(error);
-      console.error(`run-auditor-host: non-blocking score write failure: ${scoreError}`);
+      console.error(`run-auditor-host: score write failure blocks closeout: ${scoreError}`);
     }
   }
 
@@ -329,6 +330,7 @@ export async function runAuditorHost(
   const closeoutEnvelope = deriveReviewCloseoutEnvelopeV1({
     auditStatus: status,
     scoringFailureMode,
+    ...(scoreError ? { scoringFailureReason: `Score write failed: ${scoreError}` } : {}),
     requiredFixes: requiredFixesFromReport,
     scoreRecord:
       scoreRecord &&
@@ -357,6 +359,18 @@ export async function runAuditorHost(
   });
 
   recordLatestReviewerCloseout(normalizedInput.projectRoot, {
+    canMainAgentContinue: canMainAgentContinueFromCloseout({
+      closeoutApproved: isReviewCloseoutApproved(closeoutEnvelope),
+      scoreWriteResult:
+        scoringFailureMode === 'succeeded'
+          ? 'ok'
+          : scoringFailureMode === 'non_blocking_failure'
+            ? 'failed'
+            : null,
+      handoffPersisted: true,
+      latestGateDecision: isReviewCloseoutApproved(closeoutEnvelope) ? 'pass' : 'true_blocker',
+      fourSignalStatus: requiredFixesFromReport.length > 0 ? 'block' : 'pass',
+    }),
     updatedAt: new Date().toISOString(),
     runner: 'runAuditorHost',
     profile: consumer.profile,
@@ -366,9 +380,44 @@ export async function runAuditorHost(
     auditStatus: status,
     closeoutApproved: isReviewCloseoutApproved(closeoutEnvelope),
     governanceClosure,
-    closeoutEnvelope,
-    ...(scoreError ? { scoreError } : {}),
-  });
+      closeoutEnvelope,
+      scoreWriteResult:
+        scoringFailureMode === 'succeeded'
+          ? 'ok'
+          : scoringFailureMode === 'non_blocking_failure'
+            ? 'failed'
+            : null,
+      handoffPersisted: true,
+      ...(typeof scoreRecord?.readiness_baseline_run_id === 'string'
+        ? { readinessBaselineRunId: scoreRecord.readiness_baseline_run_id }
+        : {}),
+      ...(Array.isArray(scoreRecord?.drift_signals)
+        ? { driftSignals: scoreRecord.drift_signals as string[] }
+        : {}),
+      ...(Array.isArray(scoreRecord?.drifted_dimensions)
+        ? { driftedDimensions: scoreRecord.drifted_dimensions as string[] }
+        : {}),
+      ...(typeof scoreRecord?.drift_severity === 'string'
+        ? {
+            driftSeverity:
+              scoreRecord.drift_severity === 'major' ||
+              scoreRecord.drift_severity === 'critical' ||
+              scoreRecord.drift_severity === 'none'
+                ? scoreRecord.drift_severity
+                : null,
+          }
+        : {}),
+      ...(typeof scoreRecord?.re_readiness_required === 'boolean'
+        ? { reReadinessRequired: scoreRecord.re_readiness_required }
+        : {}),
+      ...(typeof scoreRecord?.blocking_reason === 'string'
+        ? { blockingReason: scoreRecord.blocking_reason }
+        : {}),
+      ...(typeof scoreRecord?.effective_verdict === 'string'
+        ? { effectiveVerdict: scoreRecord.effective_verdict }
+        : {}),
+      ...(scoreError ? { scoreError } : {}),
+    });
 
   if (isOrphanCloseoutStage(consumer.closeoutStage)) {
     recordAuthoritativeAuditCloseout(normalizedInput.projectRoot, {

@@ -24,12 +24,12 @@ git clone <BMAD-Speckit-SDD-Flow-repo-url> D:\Dev\BMAD-Speckit-SDD-Flow
 
 ### 2.0 安装方式对比与选择
 
-| 方式                    | 部署内容                     | 额外步骤               | 适用场景                                                              |
-| ----------------------- | ---------------------------- | ---------------------- | --------------------------------------------------------------------- |
+| 方式                    | 部署内容                     | 额外步骤               | 适用场景                                                                  |
+| ----------------------- | ---------------------------- | ---------------------- | ------------------------------------------------------------------------- |
 | **方式一 npx**          | 公开 root 包临时执行         | 无                     | 无 clone、无 PowerShell；注意：可能无本仓库最新定制（运行时治理、双语等） |
-| **方式二 setup.ps1**    | 本仓库 \_bmad 全量           | 全局 Skills + 自动校验 | **首选**：有 PowerShell 7 时，一键完整安装                            |
-| **方式三 npm install**  | 本仓库 \_bmad（postinstall） | 会创建 node_modules    | 需要本地 bmad-speckit 依赖的项目                                      |
-| **方式四 init-to-root** | 本仓库 \_bmad 全量           | 无；Skills 已在项目内  | 无 PowerShell、CI/CD、或只需部署到单项目时                            |
+| **方式二 setup.ps1**    | 本仓库 \_bmad 全量           | 全局 Skills + 自动校验 | **首选**：有 PowerShell 7 时，一键完整安装                                |
+| **方式三 npm install**  | 本仓库 \_bmad（postinstall） | 会创建 node_modules    | 需要本地 bmad-speckit 依赖的项目                                          |
+| **方式四 init-to-root** | 本仓库 \_bmad 全量           | 无；Skills 已在项目内  | 无 PowerShell、CI/CD、或只需部署到单项目时                                |
 
 **setup.ps1 与 init-to-root 的关系**：setup.ps1 内部调用 init-to-root，并额外完成「全局 Skills 安装」和「安装验证」。单独使用 init-to-root 时，项目内 `.cursor/skills` 已有完整 skills，**项目可正常工作**；仅当希望其他未安装 BMAD 的项目也能用这些 skills 时，才需要手动复制到全局。
 
@@ -111,11 +111,11 @@ npx --yes --package bmad-speckit-sdd-flow bmad-speckit init . --ai cursor-agent 
 - `npx --package bmad-speckit-sdd-flow bmad-speckit init` 是“公开 root 包快速初始化”入口
 - 它**不等价于**本仓库 `setup.ps1` / `init-to-root.js` 的完整定制部署
 - 如果你需要本仓库新增的 runtime governance 运行链细节，例如：
-  - `.claude/hooks/governance-runtime-worker.cjs`
-  - `.claude/hooks/governance-remediation-runner.cjs`
-  - `.cursor/hooks/governance-runtime-worker.cjs`
-  - `.cursor/hooks/governance-remediation-runner.cjs`
-  - 更新后的 `post-tool-use.cjs` / `stop.cjs` 可见日志
+  - `.claude/hooks/runtime-policy-inject.cjs`
+  - `.claude/hooks/pre-continue-check.cjs`
+  - `.cursor/hooks/runtime-policy-inject.cjs`
+  - `.cursor/hooks/pre-continue-check.cjs`
+  - repo-native `npm run main-agent-orchestration -- --action inspect|dispatch-plan`
   - 最新消费项目零-`scripts/` 治理链修复
     则**不要只停留在 `npx init`**，必须改用方式二、三或四。
 
@@ -219,12 +219,12 @@ node scripts/init-to-root.js D:\Dev\your-project --agent cursor --full
 
 对于 runtime governance，`init-to-root.js` / `bmad-speckit-init` 的关键结果应当是：
 
-- `_bmad/runtime/hooks/governance-runtime-worker.cjs`
-- `_bmad/runtime/hooks/governance-remediation-runner.cjs`
-- `.claude/hooks/governance-runtime-worker.cjs`
-- `.claude/hooks/governance-remediation-runner.cjs`
-- `.cursor/hooks/governance-runtime-worker.cjs`
-- `.cursor/hooks/governance-remediation-runner.cjs`
+- `_bmad/runtime/hooks/runtime-policy-inject-core.cjs`
+- `_bmad/runtime/hooks/pre-continue-check.cjs`
+- `.claude/hooks/runtime-policy-inject.cjs`
+- `.claude/hooks/pre-continue-check.cjs`
+- `.cursor/hooks/runtime-policy-inject.cjs`
+- `.cursor/hooks/pre-continue-check.cjs`
 
 如果这些文件缺失，说明安装只做了“基础骨架”，还没有完成“最新 hooks 对齐”。此时直接补跑：
 
@@ -331,7 +331,7 @@ foreach ($skill in $required) {
 }
 ```
 
-**推荐安装的 Skills**：bmad-standalone-tasks、bmad-customization-backup、bmad-orchestrator、using-git-worktrees、ralph-method、auto-commit-utf8、git-push-monitor。
+**推荐安装的 Skills**：bmad-standalone-tasks、bmad-customization-backup、bmad-orchestrator、using-git-worktrees、ralph-method、auto-commit-utf8、git-push-monitor。注意：`bmad-standalone-tasks` 的“独立”仅表示文档作用域独立，不表示它绕过主 Agent 主链。
 
 ---
 
@@ -364,17 +364,17 @@ npx bmad-speckit-init --agent cursor
 
 ### 4.2 Runtime Governance 专项复验
 
-如果你关心的是 runtime governance 是否真正安装到位，额外检查这 4 层：
+如果你关心的是 runtime governance 是否真正安装到位，额外检查 accepted main-agent path，而不是 background worker / autonomous fallback：
 
 ```powershell
 $checks = @(
   '._ignore',
-  '_bmad\runtime\hooks\governance-runtime-worker.cjs',
-  '_bmad\runtime\hooks\governance-remediation-runner.cjs',
-  '.claude\hooks\governance-runtime-worker.cjs',
-  '.claude\hooks\governance-remediation-runner.cjs',
-  '.cursor\hooks\governance-runtime-worker.cjs',
-  '.cursor\hooks\governance-remediation-runner.cjs',
+  '_bmad\runtime\hooks\runtime-policy-inject-core.cjs',
+  '_bmad\runtime\hooks\pre-continue-check.cjs',
+  '.claude\hooks\runtime-policy-inject.cjs',
+  '.claude\hooks\pre-continue-check.cjs',
+  '.cursor\hooks\runtime-policy-inject.cjs',
+  '.cursor\hooks\pre-continue-check.cjs',
   '.claude\settings.json',
   '.cursor\hooks.json'
 )
@@ -389,11 +389,32 @@ foreach ($path in $checks) {
 }
 ```
 
+然后再验证 repo-native 编排入口：
+
+```powershell
+npm run main-agent-orchestration -- --cwd . --action inspect
+```
+
+必要时：
+
+```powershell
+npm run main-agent-orchestration -- --cwd . --action dispatch-plan
+```
+
 其中：
 
 - `_bmad/runtime/hooks/*` 代表项目内共享运行时资产
 - `.claude/hooks/*` / `.cursor/hooks/*` 代表宿主真正执行的 hook 副本
 - `.claude/settings.json` / `.cursor/hooks.json` 代表宿主事件绑定是否存在
+- `main-agent-orchestration` 是 interactive 模式下的正式主控消费面
+
+accepted runtime path 需要这样理解：
+
+1. 主 Agent 先执行 `main-agent-orchestration inspect`
+2. 只有 surface 明确要求 materialize packet 时，才执行 `dispatch-plan`
+3. 子代理只执行 `bounded packet`，不替主 Agent 决定下一条全局分支
+4. `runAuditorHost` 只在审计通过后做 post-audit close-out
+5. close-out 完成后，主 Agent 再次回到 `inspect`
 
 ### 4.3 npx 路径的明确说明
 
@@ -407,7 +428,7 @@ foreach ($path in $checks) {
    - 这是**本仓库定制能力**的推荐 npx 用法
    - 能把当前包内最新 `_bmad/runtime/hooks` 同步到消费项目宿主目录
 
-如果你的目标是“消费项目里真的看到 governance-runtime-worker / governance-remediation-runner 并能执行”，请采用第 2 种，而不是只跑第 1 种。
+如果你的目标是“消费项目里真的验证主 Agent 主链能工作”，请采用第 2 种，并验证 `.claude/.cursor` 的 `runtime-policy-inject.cjs`、`pre-continue-check.cjs` 以及 repo-native `main-agent-orchestration` 入口，而不是再追求 background worker 自动吃队列。
 
 ### 4.4 Hook 提示开关
 
@@ -435,7 +456,7 @@ foreach ($path in $checks) {
     - `pre-continue-check passed`
     - `pre-continue-check failed`
     - `pre-continue-check skipped: artifact self write`
-    - governance rerun queue 入队 / worker started / worker skipped
+    - governance rerun queue 入 state / legacy compatibility wrapper skipped
 
 这个开关适合排查两类问题：
 
@@ -495,9 +516,9 @@ git checkout -b 001-my-first-feature
 
 - **bmad-story-assistant**：Story 全流程（Create Story → Dev Story），对应命令 `/bmad-bmm-create-story`、`/bmad-bmm-dev-story`
 - **bmad-bug-assistant**：描述问题时自动进入 Party-Mode，产出 BUGFIX 文档并生成修复任务
-- **bmad-standalone-tasks**：按单份 TASKS/BUGFIX 文档执行，用法示例：`/bmad 按 TASKS_xxx.md 中的未完成任务实施`
+- **bmad-standalone-tasks**：按单份 TASKS/BUGFIX 文档执行，但当前 accepted path 仍是主 Agent 先 `inspect`，必要时 `dispatch-plan`，再派发 bounded packet；用法示例：`/bmad 按 TASKS_xxx.md 中的未完成任务实施`
 
-**审计后自动化 / 诊断 CLI**（统一 host、Coach 诊断等）：
+**Post-audit close-out / 诊断 CLI**（用于审计后的 close-out、Coach 诊断等；不是 interactive 主控入口）：
 
 ```bash
 npx ts-node scripts/run-auditor-host.ts --projectRoot <项目根目录> --stage <story|spec|plan|gaps|tasks|implement|bugfix|document> --artifactPath <被审产物> --reportPath <审计报告>
@@ -506,6 +527,8 @@ npx bmad-speckit dashboard
 npx bmad-speckit sft-extract
 npx bmad-speckit scores
 ```
+
+> Legacy / maintenance 说明：这里保留 `runAuditorHost` 命令，是为了仓库内 close-out 调试、host-runner 验证和历史证据追溯；当前 accepted runtime path 仍然是主 Agent 先读 `main-agent-orchestration inspect`，必要时才 `dispatch-plan`，而不是把 `runAuditorHost` 当作主入口。
 
 **更多资源**：
 

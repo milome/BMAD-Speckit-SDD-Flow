@@ -9,7 +9,7 @@
  *   - Claude agents/skills/hooks/rules: _bmad/claude/
  *
  * 用途：部署 BMAD 目录结构。
- * 对外部目标目录：从 @bmad-speckit/runtime-emit 将 emit-runtime-policy.cjs、resolve-for-session.cjs、render-audit-block.cjs 与 write-runtime-context.cjs 复制到 **.cursor/hooks** 与/或 **.claude/hooks**（与 hook 脚本同目录，不在项目根创建 scripts/）。
+ * 对外部目标目录：从 @bmad-speckit/runtime-emit 将 emit-runtime-policy.cjs、resolve-for-session.cjs、render-audit-block.cjs 与 write-runtime-context.cjs 复制到 **.cursor/hooks** 与/或 **.claude/hooks**（与 hook 脚本同目录，不在项目根创建 scripts/）；legacy worker/dispatch hook-local bundle 不再属于正式安装 contract。
  * `--agent cursor`：`syncCursorRuntimePolicyHooks` 先将 `_bmad/runtime/hooks` 下 4 个共享 JS 复制到 `.cursor/hooks`，再覆盖 `emit-runtime-policy-cli.cjs`、`runtime-policy-inject.cjs`（薄壳，`./runtime-policy-inject-core` 优先）。
  * `--agent claude-code`：`syncClaudeRuntimePolicyHooks` 同样将上述 4 个文件复制到 `.claude/hooks` 后再覆盖薄壳与 CLI，与 Cursor 侧分层一致。
  * 外部目标默认**不**创建 package.json、不执行 npm install；若需在消费者目录安装本地 bmad-speckit CLI 依赖，传入 **--with-package-json**。
@@ -276,6 +276,11 @@ const installTracker =
             : 'bmad-speckit-init',
         installedTools: [agentTarget],
       })
+    : null;
+const removeUnexpectedLegacyConsumerHookFiles =
+  installSurfaceManifestTools &&
+  typeof installSurfaceManifestTools.removeUnexpectedLegacyConsumerHookFiles === 'function'
+    ? installSurfaceManifestTools.removeUnexpectedLegacyConsumerHookFiles
     : null;
 
 if (installTracker) {
@@ -827,11 +832,6 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
       'render-audit-block.cjs not found; run: npm run build:runtime-emit — pre-agent-summary audit inject may be empty in target.'
     );
   }
-  const governanceWorkerSrc = path.join(pkgRoot, 'packages', 'runtime-emit', 'dist', 'governance-runtime-worker.cjs');
-  const governanceRunnerSrc = path.join(pkgRoot, 'packages', 'runtime-emit', 'dist', 'governance-remediation-runner.cjs');
-  const governanceDispatchWorkerSrc = path.join(pkgRoot, 'packages', 'runtime-emit', 'dist', 'governance-packet-dispatch-worker.cjs');
-  const governanceResultIngestorSrc = path.join(pkgRoot, 'packages', 'runtime-emit', 'dist', 'governance-execution-result-ingestor.cjs');
-  const governanceReconcilerSrc = path.join(pkgRoot, 'packages', 'runtime-emit', 'dist', 'governance-packet-reconciler.cjs');
   const wrcSrc = path.join(path.dirname(emitSrc), '..', 'write-runtime-context.cjs');
   const hookDirs = [
     path.join(targetDir, '.cursor', 'hooks'),
@@ -847,20 +847,8 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
     if (renderAuditSrc && fs.existsSync(renderAuditSrc)) {
       copyFileWithRetry(renderAuditSrc, path.join(d, 'render-audit-block.cjs'));
     }
-    if (fs.existsSync(governanceWorkerSrc)) {
-      copyFileWithRetry(governanceWorkerSrc, path.join(d, 'governance-runtime-worker.cjs'));
-    }
-    if (fs.existsSync(governanceRunnerSrc)) {
-      copyFileWithRetry(governanceRunnerSrc, path.join(d, 'governance-remediation-runner.cjs'));
-    }
-    if (fs.existsSync(governanceDispatchWorkerSrc)) {
-      copyFileWithRetry(governanceDispatchWorkerSrc, path.join(d, 'governance-packet-dispatch-worker.cjs'));
-    }
-    if (fs.existsSync(governanceResultIngestorSrc)) {
-      copyFileWithRetry(governanceResultIngestorSrc, path.join(d, 'governance-execution-result-ingestor.cjs'));
-    }
-    if (fs.existsSync(governanceReconcilerSrc)) {
-      copyFileWithRetry(governanceReconcilerSrc, path.join(d, 'governance-packet-reconciler.cjs'));
+    if (removeUnexpectedLegacyConsumerHookFiles) {
+      removeUnexpectedLegacyConsumerHookFiles(d);
     }
     if (fs.existsSync(wrcSrc)) {
       copyFileWithRetry(wrcSrc, path.join(d, 'write-runtime-context.cjs'));
@@ -874,7 +862,7 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
     return;
   }
   console.log(
-    'Deployed emit-runtime-policy.cjs, resolve-for-session.cjs, render-audit-block.cjs, governance-runtime-worker.cjs, governance-remediation-runner.cjs, governance-packet-dispatch-worker.cjs, governance-execution-result-ingestor.cjs, governance-packet-reconciler.cjs (+ write-runtime-context.cjs) under .cursor/hooks and/or .claude/hooks (no project-root scripts/).'
+    'Deployed emit-runtime-policy.cjs, resolve-for-session.cjs, render-audit-block.cjs (+ write-runtime-context.cjs) under .cursor/hooks and/or .claude/hooks; removed legacy worker/dispatch/launcher hook-local bundles from the accepted install surface (no project-root scripts/).'
   );
 }
 

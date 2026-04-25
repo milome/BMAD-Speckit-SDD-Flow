@@ -13,6 +13,22 @@ description: |
 
 # BMAD Story 助手
 
+## 主 Agent 编排面（强制）
+
+交互模式下，在主 Agent 启动、恢复或收口 `story` 执行链之前，必须先读取：
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action inspect
+```
+
+如需生成正式派发计划，则读取：
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan
+```
+
+`mainAgentNextAction / mainAgentReady` 仅为 compatibility summary；真正权威状态始终是 `orchestrationState + pendingPacket + continueDecision`。
+
 > **Party-mode source of truth（Cursor）**：`{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。Cursor 分支的 party-mode rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 只定义 Story 场景何时进入 party-mode，不得维护第二套 gate 语义。
 
 ### Party-Mode 主 Agent 编排约束（Cursor）
@@ -1731,4 +1747,3 @@ prompt: |
 - **BMad Master 介入（GAP-037 修复）**：回退>3 次或回滚>2 次时，需用户或项目负责人确认；审批步骤：记录原因 → 用户确认「继续」或「终止」→ 若继续则重置计数
 - 回退到 Layer 1 会重置整个 Epic 的规划
 - 回退/回滚操作必须记录原因和决策过程
-

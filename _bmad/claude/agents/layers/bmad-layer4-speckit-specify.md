@@ -228,9 +228,6 @@ PROMPT_PATH="_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story
   - `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/PROMPT_audit-spec-E{epic}-S{story}_round{N}.md`
 - 审计报告输出路径:
   - `specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/AUDIT_spec-E{epic}-S{story}.md`
-- Story-flow 约束:
-  - 若当前产物为 `spec-E{epic}-S{story}.md`，则审计子任务必须显式携带 `storyPath`
-  - 审计报告控制字段必须回传 `storyPath: <Story 文档路径>`，供 `runAuditorHost` 执行 `Story -> Spec` source_hash 版本锁
 - 审计失败处理:
   - 主 Agent 根据 required_fixes 修改 spec 文档后重新发起下一轮审计- 审计通过处理:
   - 追加通过标记
@@ -263,9 +260,10 @@ PROMPT_PATH="_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story
 
 **子任务prompt 不得再只是"读取并执行某个 Prompt 文件"。**
 **必须保证子任务收到的主文本基线仍然是 Cursor §1，而不是无法区分来源的本地重写版。**
+**当前 accepted path（强制）**：本执行体不得在自身上下文里直接 `Task(...)` 派发 auditor；以下内容只能作为返回给主 Agent 的 dispatch request / compatibility hint。真实派发必须回到主 Agent，由主 Agent 重新读取 `main-agent-orchestration inspect`，必要时执行 `dispatch-plan`，再决定是否派发 auditor。
 
 ```typescript
-Task({
+MainAgentDispatchRequest({
   description: "审计spec-E{epic}-S{story}.md",
   subagent_type: "general-purpose",
   prompt: `
@@ -278,8 +276,6 @@ Task({
 **Claude/OMC Runtime Adapter**
 - 审计报告输出至
   specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/AUDIT_spec-E{epic}-S{story}.md
-- Story-flow 必须携带
-  - `storyPath: _bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/{epic}-{story}-{story-slug}.md`
 - 同时保存本轮 Prompt 存档至
   _bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/PROMPT_audit-spec-E{epic}-S{story}_round{N}.md
 
@@ -367,6 +363,8 @@ artifactDocPath: specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/spec-E
 auditReportPath: specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/AUDIT_spec-E{epic}-S{story}.md
 next_action: proceed_to_plan
 ```
+
+说明：handoff 只作为 compatibility hint；是否进入 `plan`，必须回到主 Agent，由主 Agent 重新读取 authoritative surface 后决定。
 
 ## Constraints
 

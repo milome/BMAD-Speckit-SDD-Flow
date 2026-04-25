@@ -1,8 +1,9 @@
-import { cpSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
+import { readOrchestrationState } from '../../scripts/orchestration-state';
 
 const ROOT = join(import.meta.dirname, '..', '..');
 
@@ -145,6 +146,11 @@ describe('deferred gap governance', () => {
       const result = JSON.parse(stdout) as {
         ok: boolean;
         failures: string[];
+        next_action?: string;
+        ready?: boolean;
+        orchestration_state?: string;
+        pending_packet?: string;
+        session_id?: string;
         deferredGapAudit?: {
           deferred_gap_count: number;
           deferred_gaps_explicit: boolean;
@@ -158,22 +164,20 @@ describe('deferred gap governance', () => {
           'deferred_gap_consistency: gap J04-Smoke-E2E was removed without resolution evidence',
         ])
       );
+      expect(result.next_action).toBe('dispatch_remediation');
+      expect(result.ready).toBe(true);
+      expect(typeof result.orchestration_state).toBe('string');
+      expect(typeof result.pending_packet).toBe('string');
+      expect(typeof result.session_id).toBe('string');
       expect(result.deferredGapAudit?.deferred_gap_count).toBe(1);
       expect(result.deferredGapAudit?.deferred_gaps_explicit).toBe(true);
 
+      const state = readOrchestrationState(project, result.session_id!);
+      expect(state?.nextAction).toBe('dispatch_remediation');
+      expect(state?.pendingPacket?.status).toBe('ready_for_main_agent');
+
       const pendingDir = join(project, '_bmad-output', 'runtime', 'governance', 'queue', 'pending');
-      const queued = readdirSync(pendingDir)
-        .filter((file) => file.endsWith('.json'))
-        .map((file) => JSON.parse(readFileSync(join(pendingDir, file), 'utf8')) as { type: string; payload: any });
-
-      expect(queued.map((item) => item.type)).toEqual(
-        expect.arrayContaining(['governance-pre-continue-check', 'governance-remediation-rerun'])
-      );
-
-      const rerun = queued.find((item) => item.type === 'governance-remediation-rerun');
-      expect(rerun?.payload?.deferred_gap_count).toBe(1);
-      expect(rerun?.payload?.deferred_gaps_explicit).toBe(true);
-      expect(rerun?.payload?.runnerInput?.rerunGate).toBe('implementation-readiness');
+      expect(existsSync(pendingDir)).toBe(false);
     } finally {
       rmSync(project, { recursive: true, force: true });
     }

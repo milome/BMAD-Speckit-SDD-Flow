@@ -11,6 +11,22 @@ description: |
 
 # BMAD Standalone Tasks
 
+## Main-Agent Orchestration Surface (Mandatory)
+
+In interactive main-agent mode, before the main Agent starts, resumes, or closes out the `standalone_tasks` chain, it must first read:
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action inspect
+```
+
+If an official dispatch plan is needed, read:
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan
+```
+
+`mainAgentNextAction / mainAgentReady` remain compatibility summary fields only; authoritative runtime truth is `orchestrationState + pendingPacket + continueDecision`.
+
 Execute unfinished work from a **single TASKS or BUGFIX document** in a single session. Implementation and code edits are **only** done by subagents; the main Agent orchestrates and audits.
 
 **Orphan standalone closeout contract**: when the TASKS / BUGFIX document lives under `_orphan/`, the structured audit report must explicitly provide `stage=standalone_tasks`, `artifactDocPath`, and `reportPath`. `stage=document` is no longer a valid orphan closeout return value. Missing any field, or relying on prose-only `PASS`, must fail closeout conservatively.

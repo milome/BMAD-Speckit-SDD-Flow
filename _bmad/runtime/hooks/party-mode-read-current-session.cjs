@@ -889,8 +889,7 @@ function maybePreferNewerPendingLaunch(projectRoot, state) {
     .filter(
       (entry) =>
         hasPendingLaunchEvidence(entry.files) &&
-        entry.timestamp > currentLaunchOrderTs &&
-        now - entry.timestamp <= PENDING_LAUNCH_FRESHNESS_MS
+        entry.timestamp > currentLaunchOrderTs
     )
     .sort((left, right) => {
       if (right.timestamp !== left.timestamp) {

@@ -243,9 +243,10 @@ PROMPT_PATH="_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story
 #### Step 3.2: 调用审计 Agent
 
 **Primary Executor**: `auditor-gaps` 通过 `subagent_type: general-purpose` 调用
+**当前 accepted path（强制）**：本执行体不得在自身上下文里直接 `Task(...)` 派发 auditor；以下内容只能作为返回给主 Agent 的 dispatch request / compatibility hint。真实派发必须回到主 Agent，由主 Agent 重新读取 `main-agent-orchestration inspect`，必要时执行 `dispatch-plan`，再决定是否派发 auditor。
 
 ```typescript
-Task({
+MainAgentDispatchRequest({
   description: "审计 IMPLEMENTATION_GAPS-E{epic}-S{story}.md",
   subagent_type: "general-purpose",
   prompt: `
@@ -336,6 +337,8 @@ artifactDocPath: specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/IMPLEM
 auditReportPath: specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/AUDIT_GAPS-E{epic}-S{story}.md
 next_action: proceed_to_tasks
 ```
+
+说明：handoff 只作为 compatibility hint；是否进入 `tasks`，必须回到主 Agent，由主 Agent 重新读取 authoritative surface 后决定。
 
 ## Constraints
 

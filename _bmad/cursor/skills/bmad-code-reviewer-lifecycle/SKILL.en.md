@@ -15,7 +15,7 @@ references:
   - audit-prompts: per-stage audit prompts; audit-prompts-prd.md, audit-prompts-arch.md, etc.
   - code-reviewer-config: multi-mode config (prd/arch/code/pr); _bmad/_config/code-reviewer-config.yaml
   - scoring/rules: parsing rules, item_id, veto_items; scoring/rules/*.yaml
-  - runAuditorHost / unified auditor host runner: single post-audit entry for score write, auditIndex update, and post-audit automation
+  - runAuditorHost / 统一 auditor host runner: single post-audit entry for score write, auditIndex update, and post-audit automation
 ---
 
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
@@ -56,6 +56,20 @@ This skill uses `runAuditorHost` to close the “audit → host close-out” loo
 - **Function**: `scoring/orchestrator/parse-and-write.ts`
 - **CLI**: `scripts/run-auditor-host.ts`
 - **Acceptance**: `npm run accept:e3-s3`
+
+## Main-Agent Orchestration Surface (Mandatory)
+
+In interactive mode, this skill must treat repo-native `main-agent-orchestration` as the only orchestration authority. `runAuditorHost` is only the post-audit close-out entry; it must not replace the main Agent's next-branch decision.
+
+Before launching any auditor, remediation subtask, or other bounded execution, the main Agent must:
+
+1. Run `npm run main-agent-orchestration -- --cwd {project-root} --action inspect`
+2. Read `orchestrationState`, `pendingPacketStatus`, `pendingPacket`, `continueDecision`, `mainAgentNextAction`, and `mainAgentReady`
+3. If the next branch is dispatchable but no usable packet exists yet, run `npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan`
+4. Dispatch only from the returned packet / instruction instead of continuing from audit prose, scoring prose, or handoff summary alone
+5. Re-run `inspect` after each child result and after each `runAuditorHost` close-out before choosing the next global branch
+
+`mainAgentNextAction / mainAgentReady` remain compatibility summary fields only; authoritative runtime truth is `orchestrationState + pendingPacket + continueDecision`.
 
 ## Unified auditor host runner prerequisites (checklist)
 

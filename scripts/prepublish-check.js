@@ -62,14 +62,13 @@ const BUNDLED = [
   {
     id: '@bmad-speckit/runtime-emit',
     relDir: 'packages/runtime-emit',
-    // 只保留两个主消费产物作为正式产物
+    // 只保留 accepted main-agent/runtime host bundles 作为正式产物
     distCheck: (dir) => {
-      const governanceWorker = path.join(dir, 'dist', 'governance-runtime-worker.cjs');
-      const governanceRunner = path.join(dir, 'dist', 'governance-remediation-runner.cjs');
-      return (
-        fs.existsSync(governanceWorker) &&
-        fs.existsSync(governanceRunner)
-      );
+      const emitRuntimePolicy = path.join(dir, 'dist', 'emit-runtime-policy.cjs');
+      const resolveForSession = path.join(dir, 'dist', 'resolve-for-session.cjs');
+      const renderAuditBlock = path.join(dir, 'dist', 'render-audit-block.cjs');
+      const runAuditorHost = path.join(dir, 'dist', 'run-auditor-host.cjs');
+      return fs.existsSync(emitRuntimePolicy) && fs.existsSync(resolveForSession) && fs.existsSync(renderAuditBlock) && fs.existsSync(runAuditorHost);
     },
   },
 ];

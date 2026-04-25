@@ -6,8 +6,35 @@ description: |
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
 > Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
 > **Orphan bugfix closeout contract**：当 BUGFIX 文档位于 `_bmad-output/implementation-artifacts/_orphan/` 时，结构化审计报告必须显式提供 `stage=bugfix`、`artifactDocPath`、`reportPath`，且三者必须与真实 BUGFIX 文档路径 / 报告路径一致；缺失任一字段或仍停留在 prose-only PASS 时，主 Agent 不得宣称通过，host closeout 必须 fail-closed。
+> **统一 closeout 硬门禁（适用于本技能全部审计闭环）**：
+> - 主 Agent 在每个阶段的完整 prompt 模板结尾、resume 指令结尾、以及审计通过后的 host 收口指令结尾，必须原样追加下列固定句；同时必须自动写入评分数据与本技能要求的交接文档（handoff / state / progress / 审计收口文档），禁止留给用户手动完成。
+> - 未执行 `runAuditorHost` 并验证评分写入成功前，禁止结束、禁止交还用户手动操作。
+> - 只有 `runAuditorHost` 返回 `closeout approved` 才算完成；其余都算未完成。
+> - 禁止给“你可以手动做下一步”的建议，除非用户明确要求。
+> - `runAuditorHost` 失败时必须自动重试，并在每次重试时记录失败原因与修复动作；未成功前不得退出当前闭环。
+> - 最终回复必须显式包含以下 4 行，缺一视为未完成：
+>   - `runAuditorHost 调用参数`
+>   - `runAuditorHost 返回结果`
+>   - `评分写入结果（成功/失败码）`
+>   - `closeout 状态（approved/未approved）`
 
 # BMAD Bug 助手
+
+## Main Agent Orchestration Surface
+
+在 interactive main-agent 模式下，主 Agent 在发起、继续或收口 `bugfix` 链路前，必须优先读取：
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action inspect
+```
+
+如需生成正式派发计划，则读取：
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan
+```
+
+`mainAgentNextAction / mainAgentReady` 仍保留为 handoff compatibility 字段，但不再是唯一 runtime truth。
 
 > **【必读】使用本 skill 前，必须先读取并遵守 `{project-root}/.cursor/rules/bmad-bug-assistant.mdc` 中的自检规则。**发起 mcp_task 或 party-mode 子任务前，须完成该阶段「发起前自检清单」全部项并输出自检结果，否则不得发起。
 > **Party-mode source of truth（Cursor）**：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。所有 party-mode 的 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 不得定义第二套 gate 语义。
@@ -507,6 +534,9 @@ Amelia 开发 的规范已在上方 5 条中列出，子代理按内联执行即
 **未通过时必做（禁止只跑一轮即结束）**：若审计结论为「**未通过**」或审计报告中列出未通过项及修改建议，主 Agent **必须**按修改建议执行（委托子代理修改代码或更新 BUGFIX/文档），然后**再次发起**实施后审计（使用同一模板 BUG-A4-POSTAUDIT）；重复「审计 → 若未通过则按建议修改 → 再审计」直至结论为「**完全覆盖、验证通过**」。禁止在结论为未通过时仅做一轮审计即结束或向用户报告完成。
 
 **审计通过后统一 Host 收口（必须执行）**：实施后审计结论为「完全覆盖、验证通过」后，主 Agent **不得**再手工调用 `parseAndWriteScore` 或其它 auditIndex CLI；必须统一调用 `runAuditorHost`。当存在 BUGFIX 文档时，必须确保 host/runner 收到 `artifactDocPath=<BUGFIX 文档路径>`，以保证评分记录与 registry auditIndex 都绑定到 BUGFIX 文档而非审计报告路径。
+调用 `runAuditorHost` 后，主 Agent 必须验证评分写入成功与 `closeout approved`；若失败，必须自动重试并记录失败原因与修复动作，未成功前不得结束或交还用户手动操作。
+
+**不中断执行 contract**：实施子代理必须连续完成当前作用域内的全部剩余 US/任务，不得在 milestone、单个任务完成后或“先汇报进度”时停下等待批准。控制权仅可在以下三种情况下返回主 Agent：① 当前作用域内所有任务已完成且可进入 post-audit；② 出现真实 blocker，需要 reroute / remediation；③ 本 workflow 明确定义的审计或 checkpoint 边界已到达。
 
 **Host 调用示例**（在项目根目录执行）：
 ```bash
@@ -582,4 +612,3 @@ npx ts-node scripts/run-auditor-host.ts \
 用户：「按 BUGFIX 文档实施修复。」
 
 主 Agent：执行阶段四——将「阶段四实施详细提示词」整段复制，仅替换 BUGFIX 文档路径与项目根目录后发起 mcp_task；实施完成后，将「阶段四实施后审计完整 prompt 模板」整段复制后发起审计子任务；若审计结论为未通过，须按修改建议委托子代理修改后再次发起审计，直至结论为「完全覆盖、验证通过」。禁止直接改生产代码。
-

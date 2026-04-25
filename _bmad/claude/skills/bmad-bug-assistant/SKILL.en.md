@@ -38,6 +38,28 @@ references:
 
 This skill is the unified adaptation entrance of Cursor `bmad-bug-assistant` in Claude Code CLI / OMC environment.
 
+## Main Agent Orchestration Surface
+
+In interactive main-agent mode, before the main Agent starts, resumes, or closes out the `bugfix` chain, it must first read:
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action inspect
+```
+
+If an official dispatch plan is needed, read:
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan
+```
+
+`mainAgentNextAction / mainAgentReady` remain compatibility summary fields only; authoritative runtime truth is `orchestrationState + pendingPacket + continueDecision`.
+
+## Uninterrupted Execution Contract
+
+- 不中断执行 contract：bugfix implementation must **连续完成当前作用域内的全部剩余 US/任务** until a blocker or post-audit boundary is reached.
+- If post-audit fails, the main Agent must rerun implementation and rerun audit instead of stopping after one failed audit.
+- The chain remains active until `runAuditorHost` confirms post-audit is ready.
+
 The goal is not to simply copy the Cursor skill, but to:
 
 1. **Inherit Cursor’s verified BUG repair process semantics** (Root cause analysis → BUGFIX document → Audit → Implementation → Post-implementation audit)
@@ -283,6 +305,8 @@ handoff:
   next_action: phase_2_update|phase_3_tasks|phase_4_impl|post_audit|commit_gate|iterate_audit
   next_agent: auditor-bugfix|auditor-implement|bmad-master|general-purpose
   ready: true|false
+  mainAgentNextAction: dispatch_remediation|dispatch_implement|dispatch_review|run_closeout
+  mainAgentReady: true|false
 ```
 ---
 

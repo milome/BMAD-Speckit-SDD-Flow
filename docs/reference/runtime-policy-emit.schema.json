@@ -171,7 +171,13 @@
         "implementationEntryGate",
         "evidence",
         "evidenceSources",
-        "executionRecordId"
+        "executionRecordId",
+        "mainAgentCanContinue",
+        "continueStateSource",
+        "continueDecision",
+        "mainAgentNextAction",
+        "mainAgentReady",
+        "mainAgentOrchestration"
       ],
       "properties": {
         "sourceMode": {
@@ -251,7 +257,74 @@
             "authoritativeAuditReportPath": { "type": ["string", "null"] }
           }
         },
-        "executionRecordId": { "type": ["string", "null"] }
+        "executionRecordId": { "type": ["string", "null"] },
+        "mainAgentCanContinue": { "type": ["boolean", "null"] },
+        "continueStateSource": {
+          "type": "string",
+          "enum": ["runtimeContext", "registry", "none"]
+        },
+        "continueDecision": {
+          "type": ["string", "null"],
+          "enum": ["continue", "rerun", "blocked", null]
+        },
+        "mainAgentNextAction": { "type": ["string", "null"] },
+        "mainAgentReady": { "type": ["boolean", "null"] },
+        "mainAgentOrchestration": { "$ref": "#/$defs/mainAgentOrchestration" }
+      }
+    },
+    "mainAgentOrchestration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "sessionId",
+        "orchestrationStatePath",
+        "orchestrationState",
+        "pendingPacketStatus",
+        "pendingPacket",
+        "fourSignal",
+        "latestGate",
+        "gatesLoop",
+        "closeout",
+        "drift",
+        "mainAgentCanContinue",
+        "continueDecision",
+        "mainAgentNextAction",
+        "mainAgentReady"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": ["orchestration_state", "reviewer_closeout", "implementation_entry_gate", "none"]
+        },
+        "sessionId": { "type": ["string", "null"] },
+        "orchestrationStatePath": { "type": ["string", "null"] },
+        "orchestrationState": { "type": ["object", "null"] },
+        "pendingPacketStatus": {
+          "type": "string",
+          "enum": [
+            "none",
+            "ready_for_main_agent",
+            "claimed_by_main_agent",
+            "dispatched",
+            "completed",
+            "invalidated",
+            "missing_packet_file"
+          ]
+        },
+        "pendingPacket": { "type": ["object", "null"] },
+        "fourSignal": { "type": ["object", "null"] },
+        "latestGate": { "type": ["object", "null"] },
+        "gatesLoop": { "type": ["object", "null"] },
+        "closeout": { "type": ["object", "null"] },
+        "drift": { "type": ["object", "null"] },
+        "mainAgentCanContinue": { "type": ["boolean", "null"] },
+        "continueDecision": {
+          "type": ["string", "null"],
+          "enum": ["continue", "rerun", "blocked", null]
+        },
+        "mainAgentNextAction": { "type": ["string", "null"] },
+        "mainAgentReady": { "type": ["boolean", "null"] }
       }
     },
     "reviewerContractProjection": {
@@ -453,6 +526,12 @@
         "implementationEntryDecision",
         "implementationEntryGate",
         "helpRouting",
+        "mainAgentCanContinue",
+        "continueStateSource",
+        "continueDecision",
+        "mainAgentNextAction",
+        "mainAgentReady",
+        "mainAgentOrchestration",
         "reviewerContract",
         "identity",
         "control",
@@ -508,6 +587,18 @@
         },
         "implementationEntryGate": { "$ref": "#/$defs/implementationEntryGate" },
         "helpRouting": { "$ref": "#/$defs/helpRouting" },
+        "mainAgentCanContinue": { "type": ["boolean", "null"] },
+        "continueStateSource": {
+          "type": "string",
+          "enum": ["runtimeContext", "registry", "none"]
+        },
+        "continueDecision": {
+          "type": ["string", "null"],
+          "enum": ["continue", "rerun", "blocked", null]
+        },
+        "mainAgentNextAction": { "type": ["string", "null"] },
+        "mainAgentReady": { "type": ["boolean", "null"] },
+        "mainAgentOrchestration": { "$ref": "#/$defs/mainAgentOrchestration" },
         "reviewerContract": { "$ref": "#/$defs/reviewerContractProjection" },
         "identity": {
           "type": "object",

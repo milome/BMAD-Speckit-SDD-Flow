@@ -161,6 +161,14 @@ auto_continue:
   require_next_action: true
 ```
 
+`require_next_action` / `require_ready_flag` 保留的是 legacy 配置名。运行时判断自动续跑时，应优先读取 repo-native `main-agent-orchestration` surface；仅在该 surface 不可用时，才回退到归一化后的 `mainAgentNextAction / mainAgentReady`，最后才回退到 `next_action / ready`。
+
+正式入口：
+
+```bash
+npm run main-agent-orchestration -- --cwd <project-root> --action inspect
+```
+
 ### 两类阶段的区别
 
 `bmad-story-config.yaml` 主要控制的是 **granularity-governed** 阶段，也就是会随 `full / story / epic` 模式变化而改变审计或验证行为的阶段。

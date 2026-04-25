@@ -29,7 +29,7 @@ Which claims are already backed by real evidence, and which claims are still blo
 
 - Status: `passed`
 - Evidence:
-  - [governance-packet-dispatch-worker-real-adapter.test.ts](/D:/Dev/BMAD-Speckit-SDD-Flow/tests/acceptance/governance-packet-dispatch-worker-real-adapter.test.ts)
+  - [archived-packet-dispatch-real-adapter.test.ts](/D:/Dev/BMAD-Speckit-SDD-Flow/tests/acceptance/archived-packet-dispatch-real-adapter.test.ts)
   - [validate-consumer-governance.ps1](/D:/Dev/BMAD-Speckit-SDD-Flow/scripts/validate-consumer-governance.ps1)
 - Notes:
   - dispatch no longer depends only on placeholder accept semantics
@@ -39,7 +39,7 @@ Which claims are already backed by real evidence, and which claims are still blo
 
 - Status: `passed`
 - Evidence:
-  - [governance-packet-dispatch-worker-fallback.test.ts](/D:/Dev/BMAD-Speckit-SDD-Flow/tests/acceptance/governance-packet-dispatch-worker-fallback.test.ts)
+  - [archived-packet-dispatch-fallback.test.ts](/D:/Dev/BMAD-Speckit-SDD-Flow/tests/acceptance/archived-packet-dispatch-fallback.test.ts)
 - Notes:
   - authoritative reject/fail now has a tested failover path
 

@@ -112,10 +112,16 @@ export async function processPendingExecutionRecords(
   options: GovernancePacketDispatchWorkerOptions = {}
 ): Promise<GovernancePacketExecutionRecord[]> {
   const config = readGovernanceRemediationConfig(projectRoot);
+  if (config.execution?.fallbackAutonomousMode === false) {
+    return [];
+  }
   const adapter =
     options.adapter ??
     createGovernanceHostDispatchAdapter({
-      env: options.launchEnv,
+      env: {
+        ...(options.launchEnv ?? process.env),
+        BMAD_GOVERNANCE_ALLOW_AUTONOMOUS_FALLBACK: '1',
+      },
       startupTimeoutMs: options.startupTimeoutMs,
     });
   const now = options.now ?? new Date();

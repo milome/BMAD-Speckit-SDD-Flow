@@ -15,6 +15,20 @@ Use **Party-Mode** to run deep root-cause analysis and solution design from the 
 - You need multi-role debate to surface an optimal plan and an executable task list.
 - The deliverable must pass strict audit (Critical Auditor >70%, three consecutive rounds with no new gap).
 
+## Main-Agent Orchestration Surface (Mandatory)
+
+In interactive mode, this skill must treat repo-native `main-agent-orchestration` as the only orchestration authority. `runAuditorHost` is only the post-audit close-out entry; it must not replace the main Agent's next-branch decision.
+
+Before launching any audit subtask, implementation subtask, or other bounded execution, the main Agent must:
+
+1. Run `npm run main-agent-orchestration -- --cwd {project-root} --action inspect`
+2. Read `orchestrationState`, `pendingPacketStatus`, `pendingPacket`, `continueDecision`, `mainAgentNextAction`, and `mainAgentReady`
+3. If the next branch is dispatchable but no usable packet exists yet, run `npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan`
+4. Dispatch only from the returned packet / instruction instead of continuing from party-mode prose, RCA prose, or handoff summary alone
+5. Re-run `inspect` after each child result and after each `runAuditorHost` close-out before choosing the next global branch
+
+`mainAgentNextAction / mainAgentReady` remain compatibility summary fields only; authoritative runtime truth is `orchestrationState + pendingPacket + continueDecision`.
+
 > Party-mode source of truth (Cursor): `{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
 > Rounds, `designated_challenger_id`, `challenger_ratio > 0.60`, session/meta/snapshot/evidence, recovery, and exit-gate semantics must come from core step-02. This skill must not define a second party-mode gate contract.
 

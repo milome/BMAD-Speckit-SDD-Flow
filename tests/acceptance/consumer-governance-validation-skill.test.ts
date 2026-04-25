@@ -41,14 +41,14 @@ describe('consumer-governance-validation skill mirrors', () => {
     expect(claudeReference).toBe(canonicalReference);
   });
 
-  it('skill content points to the validation script and packet closure evidence', () => {
+  it('marks the skill as archived and redirects readers to the current main-agent path', () => {
     const skill = readFileSync(`${canonicalRoot}/SKILL.md`, 'utf8');
     const reference = readFileSync(`${canonicalRoot}/${referenceFile}`, 'utf8');
-    expect(skill).toContain('scripts/validate-consumer-governance.ps1');
-    expect(skill).toContain('绝不能删除 `_bmad-output`');
-    expect(skill).toContain('post-tool-use');
-    expect(reference).toContain('gate_passed');
-    expect(reference).toContain('pending_dispatch');
-    expect(reference).toContain('保留 `_bmad-output`');
+    expect(skill).toContain('historical / archived');
+    expect(skill).toContain('main-agent-orchestration');
+    expect(skill).toContain('fallbackAutonomousMode=false');
+    expect(reference).toContain('historical / forensic reference');
+    expect(reference).toContain('main-agent-orchestration inspect');
+    expect(reference).toContain('dispatch-plan');
   });
 });

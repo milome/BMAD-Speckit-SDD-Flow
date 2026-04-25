@@ -9,7 +9,7 @@
 **关键门控要求：**
 - `auditor-tasks-doc` 的语义固定为 **TASKS/BUGFIX 文档前置审计**
 - `auditor-tasks-doc` 通过前不得进入任何实施执行
-- `auditor-tasks-doc` 通过后、真正进入实施前，仍必须通过统一 `implementation-readiness` Implementation Entry Gate；若结果为 `block`，优先进入自动修复 + rerun gate loop，修复后立即重算；若结果为 `reroute`，不得继续实施
+- `auditor-tasks-doc` 通过后、真正进入实施前，仍必须通过统一 `implementation-readiness` Implementation Entry Gate；若结果为 `block` 或 `reroute`，不得继续实施
 - 实施后审计通过前不得进入提交阶段
 
 ## Required Inputs
@@ -52,8 +52,9 @@
 - 前置门控未执行、未通过或结论不明时，一律视为实施前阻断
 - 批次门控：每批任务完成后调用实现审计
 - 提交门控：仅允许向 `bmad-master` 返回 `commit_request`，禁止自行 commit
-- 返回必须包含：`execution_summary`、`artifacts`、`handoff`、`next_action`、`ready`
+- 返回必须包含：`execution_summary`、`artifacts`、`handoff`、`next_action`、`ready`、`mainAgentNextAction`、`mainAgentReady`
 - 实施过程必须维护 standalone 模式下的 prd/progress 产物
+- parent 主 Agent 在发起或回收本执行体前，必须优先读取 `npm run main-agent-orchestration -- --cwd {project-root} --action inspect|dispatch-plan`
 
 ## Repo Add-ons
 
@@ -102,7 +103,7 @@
 2. 解析未完成任务与需求依据
 3. 调用 `auditor-tasks-doc` 审计 TASKS 文档
 4. `auditor-tasks-doc` PASS 后，由 invoking host/runner 调用 `runAuditorHost`
-5. 执行统一 `implementation-readiness` gate 断言；若 `decision=block` 且属当前 artifact facts 可自动修复范围，则先自动修复并 rerun gate；仅最终 `decision=pass` 可继续，`reroute` 必须升轨
+5. 执行统一 `implementation-readiness` gate 断言；仅 `decision=pass` 可继续，`reroute` 必须升轨
 6. PASS 后按批次执行任务（含 TDD）
 7. 每批完成后调用 `auditor-implement`
 8. 每轮 `auditor-implement` PASS 后，由 invoking host/runner 调用 `runAuditorHost`
@@ -112,6 +113,7 @@
 
 - 主 Agent 调用实施子代理时，必须完整复制 Cursor 侧对应正文模板，不得摘要化
 - 不得只传文件路径让子代理自行推断规则
+- parent 主 Agent 不得只根据 `mainAgentNextAction / mainAgentReady` 派发本执行体；若 repo-native orchestration surface 可用，必须优先消费该 surface
 - 必须显式传入：
   - 文档路径
   - 未完成任务清单
@@ -134,7 +136,11 @@ handoff:
   next_action: implement_next_batch|post_batch_audit|commit_gate|revise_tasks_doc
   next_agent: bmad-standalone-tasks|auditor-implement|bmad-master|auditor-tasks-doc
   ready: true|false
+  mainAgentNextAction: dispatch_implement|dispatch_review|dispatch_remediation|run_closeout|await_user
+  mainAgentReady: true|false
 ```
+
+说明：这里的 `next_agent`、`mainAgentNextAction`、`mainAgentReady` 只作为 compatibility hint。standalone 执行体返回后，主 Agent 必须重新读取 `main-agent-orchestration` surface，再决定下一条全局分支。
 
 ## State Updates
 

@@ -16,6 +16,22 @@ description: |
 
 本 skill 是 Cursor `bmad-story-assistant` 在 Claude Code CLI / OMC 环境下的统一适配入口。
 
+## 主 Agent 编排面（强制）
+
+交互模式下，在主 Agent 启动、恢复或收口 `story` 执行链之前，必须先读取：
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action inspect
+```
+
+如需生成正式派发计划，则读取：
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan
+```
+
+`mainAgentNextAction / mainAgentReady` 仅为 compatibility summary；真正权威状态始终是 `orchestrationState + pendingPacket + continueDecision`。
+
 目标不是简单复制 Cursor skill，而是：
 
 1. **继承 Cursor 已验证的流程语义**
@@ -552,6 +568,8 @@ handoff:
   next_action: story_audit
   next_agent: bmad-story-audit
   ready: true
+  mainAgentNextAction: dispatch_review
+  mainAgentReady: true
 ```
 
 ### Stage 2: Story 审计
@@ -758,6 +776,8 @@ handoff:
   next_action: dev_story
   next_agent: speckit-implement
   ready: true
+  mainAgentNextAction: dispatch_implement
+  mainAgentReady: true
 ```
 
 **FAIL**
@@ -800,6 +820,8 @@ handoff:
   next_action: revise_story
   next_agent: bmad-story-create
   ready: true
+  mainAgentNextAction: dispatch_remediation
+  mainAgentReady: true
 ```
 
 ### Stage 3: Dev Story / `STORY-A3-DEV`
@@ -1055,6 +1077,8 @@ handoff:
   next_agent: auditor-implement
   next_stage: 4
   ready: true
+  mainAgentNextAction: dispatch_review
+  mainAgentReady: true
   prerequisites_met:
     - tdd_cycle_complete
     - ralph_method_tracked
@@ -1343,6 +1367,8 @@ handoff:
   next_agent: bmad-master
   next_stage: commit
   ready: true
+  mainAgentNextAction: run_closeout
+  mainAgentReady: true
   prerequisites_met:
     - audit_passed
     - score_written
@@ -1447,6 +1473,8 @@ handoff:
   next_agent: speckit-implement
   next_stage: 3
   ready: true
+  mainAgentNextAction: dispatch_remediation
+  mainAgentReady: true
   fix_required: true
   prerequisites_met:
     - audit_completed
@@ -1856,6 +1884,8 @@ handoff:
   next_agent: bmad-master
   next_stage: commit
   ready: true
+  mainAgentNextAction: run_closeout
+  mainAgentReady: true
   prerequisites_met:
     - audit_passed
     - score_written
@@ -1948,6 +1978,8 @@ handoff:
   next_agent: bmad-master
   next_stage: commit
   ready: true
+  mainAgentNextAction: run_closeout
+  mainAgentReady: true
   prerequisites_met:
     - audit_passed
     - score_written
@@ -2050,6 +2082,8 @@ handoff:
   next_agent: auditor-document
   next_stage: 4
   ready: true
+  mainAgentNextAction: dispatch_remediation
+  mainAgentReady: true
   fix_required: true
   prerequisites_met:
     - audit_completed

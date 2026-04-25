@@ -39,6 +39,10 @@ import {
   buildReviewerContractProjection,
   mapFlowStageToReviewerAuditEntryStage,
 } from './reviewer-registry';
+import {
+  resolveMainAgentOrchestrationSurface,
+  type MainAgentOrchestrationSurface,
+} from './main-agent-orchestration';
 
 const READINESS_REPORT_PATTERN = /^implementation-readiness-report-\d{4}-\d{2}-\d{2}\.md$/i;
 const IMPLEMENTATION_GATE_NAME = 'implementation-readiness' as const;
@@ -82,6 +86,12 @@ export interface BmadHelpRoutingState {
   };
   evidenceSources: BmadHelpRoutingEvidenceSources;
   executionRecordId: string | null;
+  mainAgentCanContinue: boolean | null;
+  continueStateSource: 'runtimeContext' | 'registry' | 'none';
+  continueDecision: 'continue' | 'rerun' | 'blocked' | null;
+  mainAgentNextAction: string | null;
+  mainAgentReady: boolean | null;
+  mainAgentOrchestration: MainAgentOrchestrationSurface;
 }
 
 export interface ResolveBmadHelpRoutingStateInput {
@@ -113,6 +123,12 @@ export type RuntimePolicyWithBmadHelp = RuntimePolicy & {
   implementationEntryGate: ImplementationEntryGate;
   helpRouting: BmadHelpRoutingState;
   reviewerContract: ReturnType<typeof buildReviewerContractProjection>;
+  mainAgentCanContinue: boolean | null;
+  continueStateSource: 'runtimeContext' | 'registry' | 'none';
+  continueDecision: 'continue' | 'rerun' | 'blocked' | null;
+  mainAgentNextAction: string | null;
+  mainAgentReady: boolean | null;
+  mainAgentOrchestration: MainAgentOrchestrationSurface;
 };
 
 interface LatestReadinessReportSummary {
@@ -127,6 +143,12 @@ interface AuditFactSummary {
   stage: 'story' | 'bugfix' | 'standalone_tasks' | null;
   auditPassed: boolean | null;
   closeoutApproved: boolean | null;
+}
+
+interface ContinueStateSummary {
+  mainAgentCanContinue: boolean | null;
+  source: 'runtimeContext' | 'registry' | 'none';
+  continueDecision: 'continue' | 'rerun' | 'blocked' | null;
 }
 
 function normalizeText(value: unknown): string {
@@ -486,6 +508,83 @@ function resolveAuditFactSummary(input: {
   };
 }
 
+function resolveContinueStateSummary(input: {
+  projectRoot?: string;
+  runtimeContext: Partial<RuntimeContextFile> | null;
+}): ContinueStateSummary {
+  const contextCloseout = input.runtimeContext?.latestReviewerCloseout;
+  if (contextCloseout && typeof contextCloseout.canMainAgentContinue === 'boolean') {
+    return {
+      mainAgentCanContinue: contextCloseout.canMainAgentContinue,
+      source: 'runtimeContext',
+      continueDecision: contextCloseout.canMainAgentContinue
+        ? 'continue'
+        : contextCloseout.closeoutEnvelope?.rerunDecision &&
+            contextCloseout.closeoutEnvelope.rerunDecision !== 'none'
+          ? 'rerun'
+          : 'blocked',
+    };
+  }
+
+  if (!input.projectRoot) {
+    return { mainAgentCanContinue: null, source: 'none' };
+  }
+
+  const registry = readRegistryOrDefault(input.projectRoot);
+  if (
+    registry.latestReviewerCloseout &&
+    typeof registry.latestReviewerCloseout.canMainAgentContinue === 'boolean'
+  ) {
+    return {
+      mainAgentCanContinue: registry.latestReviewerCloseout.canMainAgentContinue,
+      source: 'registry',
+      continueDecision: registry.latestReviewerCloseout.canMainAgentContinue
+        ? 'continue'
+        : registry.latestReviewerCloseout.closeoutEnvelope?.rerunDecision &&
+            registry.latestReviewerCloseout.closeoutEnvelope.rerunDecision !== 'none'
+          ? 'rerun'
+          : 'blocked',
+    };
+  }
+
+  return { mainAgentCanContinue: null, source: 'none', continueDecision: null };
+}
+
+function deriveMainAgentNextAction(input: {
+  stage: StageName;
+  continueDecision: 'continue' | 'rerun' | 'blocked' | null;
+  implementationEntryDecision: ImplementationEntryDecision;
+}): { nextAction: string | null; ready: boolean | null } {
+  if (input.implementationEntryDecision === 'reroute') {
+    return { nextAction: 'await_user', ready: false };
+  }
+
+  if (input.implementationEntryDecision === 'block') {
+    return { nextAction: 'dispatch_remediation', ready: true };
+  }
+
+  if (input.continueDecision === 'rerun') {
+    return { nextAction: 'dispatch_remediation', ready: true };
+  }
+
+  if (input.continueDecision === 'blocked') {
+    return { nextAction: 'await_user', ready: false };
+  }
+
+  if (input.continueDecision === 'continue') {
+    if (input.stage === 'post_audit') {
+      return { nextAction: 'run_closeout', ready: true };
+    }
+    return { nextAction: 'dispatch_implement', ready: true };
+  }
+
+  if (input.stage === 'post_audit') {
+    return { nextAction: 'run_closeout', ready: true };
+  }
+
+  return { nextAction: 'dispatch_implement', ready: true };
+}
+
 function inferReadinessEvidence(input: {
   flow: RuntimeFlowId;
   stage: StageName;
@@ -684,6 +783,10 @@ export function resolveBmadHelpRoutingState(
     });
 
   const runtimeContext = mergeRuntimeContext(input);
+  const continueState = resolveContinueStateSummary({
+    projectRoot: input.projectRoot,
+    runtimeContext,
+  });
   const sourceMode = input.sourceMode ?? runtimeContext?.sourceMode ?? null;
   const report = resolveScopedReadinessReport(input.projectRoot, runtimeContext);
   const remediationArtifactPath = remediationPathFromReport(report?.reportPath ?? null);
@@ -787,6 +890,40 @@ export function resolveBmadHelpRoutingState(
   const recommendedFlow: RuntimeFlowId = implementationEntryGate.recommendedFlow;
   const recommendationLabel: BmadHelpRoutingState['recommendationLabel'] =
     implementationEntryGate.decision === 'pass' ? 'recommended' : 'blocked';
+  const mainAgentOrchestration = resolveMainAgentOrchestrationSurface({
+    projectRoot: input.projectRoot,
+    runtimeContext,
+    runtimeContextPath: input.runtimeContextPath,
+    flow: input.flow,
+    stage: input.stage,
+    implementationEntryGate,
+  });
+  const mainAgentAction =
+    mainAgentOrchestration.mainAgentNextAction != null ||
+    mainAgentOrchestration.mainAgentReady != null
+      ? {
+          nextAction: mainAgentOrchestration.mainAgentNextAction,
+          ready: mainAgentOrchestration.mainAgentReady,
+        }
+      : deriveMainAgentNextAction({
+          stage: input.stage,
+          continueDecision: continueState.continueDecision,
+          implementationEntryDecision: implementationEntryGate.decision,
+        });
+  const effectiveContinueState =
+    mainAgentOrchestration.continueDecision != null ||
+    mainAgentOrchestration.mainAgentCanContinue != null
+      ? {
+          mainAgentCanContinue: mainAgentOrchestration.mainAgentCanContinue,
+          source:
+            mainAgentOrchestration.source === 'reviewer_closeout'
+              ? continueState.source
+              : mainAgentOrchestration.source === 'orchestration_state'
+                ? ('runtimeContext' as const)
+                : continueState.source,
+          continueDecision: mainAgentOrchestration.continueDecision,
+        }
+      : continueState;
 
   return {
     sourceMode,
@@ -811,6 +948,12 @@ export function resolveBmadHelpRoutingState(
     },
     evidenceSources: implementationEntryEvidenceSources,
     executionRecordId: executionRecord?.executionId ?? null,
+    mainAgentCanContinue: effectiveContinueState.mainAgentCanContinue,
+    continueStateSource: effectiveContinueState.source,
+    continueDecision: effectiveContinueState.continueDecision,
+    mainAgentNextAction: mainAgentAction.nextAction,
+    mainAgentReady: mainAgentAction.ready,
+    mainAgentOrchestration,
   };
 }
 
@@ -859,5 +1002,11 @@ export function resolveBmadHelpRuntimePolicy(
     reviewerContract: buildReviewerContractProjection({
       auditEntryStage: mapFlowStageToReviewerAuditEntryStage(input.flow, input.stage),
     }),
+    mainAgentCanContinue: helpRouting.mainAgentCanContinue,
+    continueStateSource: helpRouting.continueStateSource,
+    continueDecision: helpRouting.continueDecision,
+    mainAgentNextAction: helpRouting.mainAgentNextAction,
+    mainAgentReady: helpRouting.mainAgentReady,
+    mainAgentOrchestration: helpRouting.mainAgentOrchestration,
   };
 }

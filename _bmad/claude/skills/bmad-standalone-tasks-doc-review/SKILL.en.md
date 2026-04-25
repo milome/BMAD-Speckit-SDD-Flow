@@ -40,21 +40,6 @@ The goal is **not** to blindly copy the Cursor skill, but to:
 3. **Integrate** handoff, scoring, and commit gate
 4. **Ensure** Claude Code CLI can run TASKS document audits end-to-end
 
-## Host Guard (must run first)
-
-If the actual host is **Cursor IDE**, or the invocation context clearly uses Cursor semantics (for example `mcp_task`, `generalPurpose`, or `Cursor Task`), then:
-
-1. **Stop immediately**
-2. Print the exact message below:
-
-```text
-HOST_MISMATCH: Loaded the Claude variant of bmad-standalone-tasks-doc-review under a Cursor host. Use `.cursor/skills/bmad-standalone-tasks-doc-review/SKILL.md` instead.
-```
-
-3. **Do not** continue into this Claude adapter’s fallback logic
-
-Continue with the rest of this file **only** when the real host is Claude Code CLI / OMC.
-
 ---
 
 ## Core acceptance criteria
@@ -68,6 +53,20 @@ The Claude variant must:
   - Unified auditor host runner (`runAuditorHost`)
   - Handoff protocol
 - **Not** mix Cursor Canonical Base, Claude Runtime Adapter, and Repo Add-ons into unclear prompt rewrites
+
+## Main-Agent Orchestration Surface (mandatory)
+
+In interactive mode, this skill must treat repo-native `main-agent-orchestration` as the only orchestration authority. `runAuditorHost` is only the post-audit close-out entry; it must not replace the main Agent's next-branch decision.
+
+Before launching any TASKS doc-review audit subtask, remediation subtask, or other bounded execution, the main Agent must:
+
+1. Run `npm run main-agent-orchestration -- --cwd {project-root} --action inspect`
+2. Read `orchestrationState`, `pendingPacketStatus`, `pendingPacket`, `continueDecision`, `mainAgentNextAction`, and `mainAgentReady`
+3. If the next branch is dispatchable but no usable packet exists yet, run `npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan`
+4. Dispatch only from the returned packet / instruction instead of continuing from audit prose or document-review prose alone
+5. Re-run `inspect` after each child result and after each `runAuditorHost` close-out before choosing the next global branch
+
+`mainAgentNextAction / mainAgentReady` remain compatibility summary fields only; authoritative runtime truth is `orchestrationState + pendingPacket + continueDecision`.
 
 ---
 
@@ -197,8 +196,12 @@ handoff:
   next_action: revise_tasks_doc|execute_standalone_tasks
   next_agent: auditor-tasks-doc|bmad-standalone-tasks
   ready: true|false
+  mainAgentNextAction: dispatch_remediation|dispatch_implement
+  mainAgentReady: true|false
 ---
 ```
+
+`mainAgentNextAction / mainAgentReady` in this handoff block are compatibility summary fields only. Before any global branch change, the main Agent must re-read `main-agent-orchestration`.
 
 ---
 
@@ -249,4 +252,5 @@ When launching a TASKS document audit subtask, the main Agent **must** copy the 
 Post-implementation audit template: `references/audit-prompt-impl.md`.
 
 <!-- ADAPTATION_COMPLETE: 2026-03-15 -->
+
 

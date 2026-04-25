@@ -5,10 +5,15 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { spawnSync } = require('node:child_process');
+const yaml = require('js-yaml');
 const { shouldSkipRuntimePolicy } = require('./should-skip-runtime-policy.cjs');
 const { buildRuntimeErrorMessage } = require('./build-runtime-error-message.cjs');
 const { runEmitRuntimePolicy } = require('./run-emit-runtime-policy.cjs');
 const { loadHookMessages } = require('./hook-load-messages.cjs');
+const {
+  buildGovernanceStageRerunResultEvent,
+  persistGovernanceStageRerunResultEvent,
+} = require('./governance-stage-event-emitter.cjs');
 const {
   resolveRuntimeStepState,
   persistRuntimeStepState,
@@ -160,9 +165,11 @@ function isImplementationEntryRelevantToolCall(input, hookMode, userText) {
   return toolName === 'Agent' || isCursorTaskLikeTool(input);
 }
 
-function buildImplementationEntryGateStopMessage(gate) {
+function buildImplementationEntryGateStopMessage(gate, remediation, mainAgentHandoff) {
   const lines = [
-    'Implementation Entry Gate blocked the current execution.',
+    mainAgentHandoff && mainAgentHandoff.nextAction === 'dispatch_implement'
+      ? 'Implementation Entry Control returned the current execution to the Main Agent.'
+      : 'Implementation Entry Gate blocked the current execution.',
     `gate: \`${gate?.gateName || 'implementation-readiness'}\``,
     `decision: \`${gate?.decision || 'block'}\``,
     `requestedFlow: \`${gate?.requestedFlow || 'unknown'}\``,
@@ -178,14 +185,498 @@ function buildImplementationEntryGateStopMessage(gate) {
   }
   if (gate?.rerouteRequired && gate?.recommendedFlow && gate.recommendedFlow !== gate.requestedFlow) {
     lines.push(`必须先切换到 \`${gate.recommendedFlow}\` 路径，再继续进入实现。`);
+  } else if (mainAgentHandoff && mainAgentHandoff.ready) {
+    lines.push('已生成主代理 / Main Agent 接管所需的 orchestration state 与 recommendation packet；请由主 Agent 读取 state 后继续 dispatch。');
+  } else if (remediation && remediation.queued) {
+    lines.push('宿主已触发 implementation-readiness 自动修复与 rerun gate 队列，请勿手动继续当前实现启动。');
   } else {
     lines.push('请先补齐 implementation-readiness 所需事实，再重试当前实现启动。');
+  }
+  if (mainAgentHandoff && mainAgentHandoff.ready) {
+    lines.push(`orchestration_session_id: \`${mainAgentHandoff.sessionId}\``);
+    lines.push(`orchestration_state: \`${String(mainAgentHandoff.statePath).replace(/\\/g, '/')}\``);
+    lines.push(`pending_packet: \`${String(mainAgentHandoff.packetPath).replace(/\\/g, '/')}\``);
+    lines.push(`next_action: \`${mainAgentHandoff.nextAction || 'dispatch_remediation'}\``);
+  }
+  if (remediation && remediation.queued) {
+    if (remediation.queuePath) {
+      lines.push(`remediation_queue_item: \`${String(remediation.queuePath).replace(/\\/g, '/')}\``);
+    }
+    if (remediation.eventPath) {
+      lines.push(`remediation_stage_event: \`${String(remediation.eventPath).replace(/\\/g, '/')}\``);
+    }
+    if (remediation.backgroundTrigger?.started) {
+      lines.push(
+        `background_worker_started: pid=${remediation.backgroundTrigger.pid || 'unknown'}`
+      );
+    } else if (remediation.backgroundTrigger?.skipped) {
+      lines.push(
+        `background_worker_skipped: ${remediation.backgroundTrigger.reason || 'unknown'}`
+      );
+    }
   }
   return lines.join('\n');
 }
 
-function buildImplementationEntryGateHardStop(mode, gate, stderrPrefix = '') {
-  const errText = buildImplementationEntryGateStopMessage(gate);
+function governanceRemediationConfigPath(projectRoot) {
+  return path.join(projectRoot, '_bmad', '_config', 'governance-remediation.yaml');
+}
+
+function readGovernanceInteractiveExecutionPolicy(projectRoot) {
+  const defaults = {
+    enabled: false,
+    interactiveMode: 'main-agent',
+    fallbackAutonomousMode: false,
+  };
+  const file = governanceRemediationConfigPath(projectRoot);
+  if (!fs.existsSync(file)) {
+    return defaults;
+  }
+  try {
+    const parsed = yaml.load(fs.readFileSync(file, 'utf8')) || {};
+    const execution = parsed && typeof parsed === 'object' ? parsed.execution || {} : {};
+    return {
+      enabled:
+        execution && typeof execution.enabled === 'boolean'
+          ? execution.enabled
+          : defaults.enabled,
+      interactiveMode:
+        execution &&
+        typeof execution.interactiveMode === 'string' &&
+        ['main-agent'].includes(execution.interactiveMode)
+          ? execution.interactiveMode
+          : defaults.interactiveMode,
+      fallbackAutonomousMode:
+        defaults.fallbackAutonomousMode,
+    };
+  } catch {
+    return defaults;
+  }
+}
+
+function orchestrationStateDir(projectRoot) {
+  return path.join(projectRoot, '_bmad-output', 'runtime', 'governance', 'orchestration-state');
+}
+
+function orchestrationStatePath(projectRoot, sessionId) {
+  return path.join(orchestrationStateDir(projectRoot), `${sessionId}.json`);
+}
+
+function recommendationPacketDir(projectRoot, sessionId) {
+  return path.join(projectRoot, '_bmad-output', 'runtime', 'governance', 'packets', sessionId);
+}
+
+function recommendationPacketPath(projectRoot, sessionId, packetId) {
+  return path.join(recommendationPacketDir(projectRoot, sessionId), `${packetId}.json`);
+}
+
+function writeJsonAtomic(filePath, value) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  const tempPath = `${filePath}.tmp`;
+  fs.writeFileSync(tempPath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+  fs.renameSync(tempPath, filePath);
+}
+
+function mapImplementationEntryDecisionForMainAgent(gate) {
+  if (gate?.rerouteRequired && gate?.recommendedFlow && gate.recommendedFlow !== gate.requestedFlow) {
+    return 'reroute';
+  }
+  if (gate?.decision === 'pass') {
+    return 'pass';
+  }
+  return 'auto_repairable_block';
+}
+
+function deriveImplementationEntrySessionId(projectRoot, policy, gate) {
+  const runId =
+    typeof policy?.runId === 'string' && policy.runId.trim()
+      ? sanitizeGovernanceToken(policy.runId)
+      : '';
+  if (runId) {
+    return runId;
+  }
+  const storyId =
+    typeof policy?.storyId === 'string' && policy.storyId.trim()
+      ? sanitizeGovernanceToken(policy.storyId)
+      : '';
+  const requestedFlow =
+    typeof gate?.requestedFlow === 'string' && gate.requestedFlow.trim()
+      ? sanitizeGovernanceToken(gate.requestedFlow)
+      : 'implementation';
+  if (storyId) {
+    return `${requestedFlow}-${storyId}`;
+  }
+  const artifactPath = deriveImplementationEntryArtifactPath(gate) || '';
+  const branch = readCurrentGitBranch(projectRoot) || '';
+  const stableSource = artifactPath || branch || projectRoot;
+  const shortHash = createHash('sha256').update(stableSource).digest('hex').slice(0, 12);
+  return `${requestedFlow}-${shortHash}`;
+}
+
+function persistImplementationEntryMainAgentHandoff(projectRoot, policy, gate, input, userMessage, hostKind) {
+  if (!gate) {
+    return null;
+  }
+  const mappedDecision = mapImplementationEntryDecisionForMainAgent(gate);
+  const sessionId = deriveImplementationEntrySessionId(projectRoot, policy, gate);
+  const packetId = `recommendation-${Date.now()}`;
+  const packetPath = recommendationPacketPath(projectRoot, sessionId, packetId);
+  const statePath = orchestrationStatePath(projectRoot, sessionId);
+  const artifactPath = deriveImplementationEntryArtifactPath(gate);
+  const routeHint = collectSubagentRouteText(input) || null;
+  const blockedPromptText = extractBlockedImplementationPrompt(input, userMessage);
+  const role =
+    mappedDecision === 'reroute'
+      ? 'reroute-controller'
+      : mappedDecision === 'pass'
+        ? 'implementation-worker'
+        : 'remediation-worker';
+  const nextAction =
+    mappedDecision === 'reroute'
+      ? 'await_user'
+      : mappedDecision === 'pass'
+        ? 'dispatch_implement'
+        : 'dispatch_remediation';
+  const packet = {
+    packetId,
+    parentSessionId: sessionId,
+    flow:
+      typeof gate.requestedFlow === 'string' && gate.requestedFlow.trim()
+        ? gate.requestedFlow.trim()
+        : 'story',
+    phase: 'implement',
+    recommendedRole: role,
+    recommendedTaskType:
+      mappedDecision === 'reroute'
+        ? 'document'
+        : mappedDecision === 'pass'
+          ? 'implement'
+          : 'remediate',
+    inputArtifacts: artifactPath ? [artifactPath] : [],
+    allowedWriteScope: ['src/**', 'tests/**', '_bmad-output/**'],
+    expectedDelta:
+      mappedDecision === 'reroute'
+        ? `reroute the blocked ${gate.requestedFlow || 'implementation'} flow to ${gate.recommendedFlow || 'the recommended flow'}`
+        : mappedDecision === 'pass'
+          ? `execute implement through the main-agent controlled runtime loop for ${gate.requestedFlow || 'implementation'}`
+          : 'repair implementation-entry blockers and re-run the readiness gate',
+    successCriteria: [
+      'produce a bounded Task Report',
+      'preserve the original flow scope',
+      'return enough evidence for the main agent to rerun the gate',
+    ],
+    stopConditions: [
+      'true blocker detected',
+      'governance-owned scope must widen',
+      'closeout semantics would change without approval',
+    ],
+    providerReasoning: `host=${hostKind}; routeHint=${routeHint || '(none)'}`,
+    originalPromptText: blockedPromptText,
+  };
+  const state = {
+    version: 1,
+    sessionId,
+    host: hostKind,
+    flow: packet.flow,
+    currentPhase: 'implement',
+    nextAction,
+    pendingPacket: {
+      packetId,
+      packetPath,
+      packetKind: 'recommendation',
+      status: 'ready_for_main_agent',
+      createdAt: new Date().toISOString(),
+      claimOwner: null,
+    },
+    originalExecutionPacketId: null,
+    fourSignal: {
+      latestStatus: mappedDecision === 'pass' ? 'pass' : 'warn',
+      latestHits: Array.isArray(gate.blockerCodes) ? gate.blockerCodes : [],
+      driftDetected: false,
+      missingEvidence: Array.isArray(gate.blockerCodes)
+        ? gate.blockerCodes.includes('missing_readiness_evidence')
+        : false,
+    },
+    latestGate: {
+      gateId: gate.gateName || 'implementation-readiness',
+      decision: mappedDecision,
+      reason:
+        Array.isArray(gate.blockerSummary) && gate.blockerSummary.length > 0
+          ? gate.blockerSummary.join('; ')
+          : mappedDecision === 'pass'
+            ? 'Implementation Entry Control rerouted execution through the main-agent loop'
+            : 'Implementation Entry Gate blocked execution',
+    },
+    gatesLoop: {
+      retryCount: 0,
+      maxRetries: 3,
+      noProgressCount: 0,
+      circuitOpen: false,
+    },
+    closeout: {
+      invoked: false,
+      approved: false,
+      scoreWriteResult: null,
+      handoffPersisted: false,
+      resultCode: null,
+    },
+  };
+  writeJsonAtomic(packetPath, packet);
+  writeJsonAtomic(statePath, state);
+  return {
+    ready: true,
+    sessionId,
+    packetId,
+    packetPath,
+    statePath,
+    nextAction,
+  };
+}
+
+function governancePendingQueueDir(projectRoot) {
+  return path.join(projectRoot, '_bmad-output', 'runtime', 'governance', 'queue', 'pending');
+}
+
+function sanitizeGovernanceToken(value) {
+  return String(value || '')
+    .replace(/[^a-zA-Z0-9._-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function readCurrentGitBranch(projectRoot) {
+  try {
+    const headPath = path.join(projectRoot, '.git', 'HEAD');
+    if (!fs.existsSync(headPath)) return null;
+    const raw = fs.readFileSync(headPath, 'utf8').trim();
+    const match = /^ref: refs\/heads\/(.+)$/.exec(raw);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
+
+function deriveImplementationEntryArtifactPath(gate) {
+  const sources = gate && gate.evidenceSources ? gate.evidenceSources : {};
+  const candidates = [
+    sources.readinessReportPath,
+    sources.authoritativeAuditReportPath,
+    sources.remediationArtifactPath,
+    sources.executionRecordPath,
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+function deriveImplementationEntryRemediationOutputPath(projectRoot, gate) {
+  const date = new Date().toISOString().slice(0, 10);
+  const flow =
+    typeof gate?.requestedFlow === 'string' && gate.requestedFlow.trim()
+      ? gate.requestedFlow.trim()
+      : 'implementation-entry';
+  return path.join(
+    projectRoot,
+    '_bmad-output',
+    'planning-artifacts',
+    flow,
+    `implementation-entry-remediation-${date}.md`
+  );
+}
+
+function triggerDetachedBackgroundDrain(projectRoot) {
+  return {
+    started: false,
+    skipped: true,
+    reason: 'legacy autonomous background drain removed; main agent must continue from orchestration state and packet',
+    projectRoot,
+  };
+}
+
+function extractBlockedImplementationPrompt(input, fallbackUserMessage) {
+  const candidates = [
+    readInputPath(input, [['tool_input', 'prompt']]),
+    readInputPath(input, [['tool_input', 'message']]),
+    readInputPath(input, [['prompt']]),
+    fallbackUserMessage,
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+  return 'Resume the blocked implementation flow using the same scoped task intent.';
+}
+
+function buildImplementationEntryRerunChain(gate, input, userMessage) {
+  const rerunGate =
+    typeof gate?.gateName === 'string' && gate.gateName.trim()
+      ? gate.gateName.trim()
+      : 'implementation-readiness';
+  const artifactPath = deriveImplementationEntryArtifactPath(gate);
+  const blockedPromptText = extractBlockedImplementationPrompt(input, userMessage);
+  const originalToolName =
+    typeof input?.tool_name === 'string' && input.tool_name.trim() ? input.tool_name.trim() : '';
+  const routeHint = collectSubagentRouteText(input) || null;
+  const requestedFlow =
+    typeof gate?.requestedFlow === 'string' && gate.requestedFlow.trim()
+      ? gate.requestedFlow.trim()
+      : null;
+  const targetArtifacts = artifactPath
+    ? [artifactPath]
+    : [`${requestedFlow || 'implementation'}-flow`];
+
+  return [
+    {
+      rerunGate,
+      capabilitySlot: `${requestedFlow || 'unknown'}.implementation-entry`,
+      canonicalAgent: 'PM + QA / readiness reviewer',
+      targetArtifacts,
+      expectedDelta: 'repair implementation-entry blockers and re-run the implementation-readiness gate',
+      actualExecutor: 'runtime-policy-inject',
+      adapterPath: '_bmad/runtime/hooks/runtime-policy-inject-core.cjs',
+      rerunOwner: 'PM',
+      outcome: 'blocked',
+      stageKind: 'remediation',
+    },
+    {
+      rerunGate: 'implementation-resume',
+      capabilitySlot: `${requestedFlow || 'unknown'}.implementation-resume`,
+      canonicalAgent: 'Original Implementation Executor',
+      targetArtifacts,
+      expectedDelta: `resume the blocked ${requestedFlow || 'implementation'} flow after implementation-readiness passed`,
+      actualExecutor: originalToolName || 'unknown-tool',
+      adapterPath: '_bmad/runtime/hooks/runtime-policy-inject-core.cjs',
+      rerunOwner: 'PM',
+      outcome: 'resume',
+      stageKind: 'resume_original_flow',
+      resumeOriginalExecution: {
+        toolName: originalToolName || undefined,
+        routeHint,
+        promptText: blockedPromptText,
+        requestedFlow,
+        blockedByGate: rerunGate,
+      },
+    },
+  ];
+}
+
+function enqueueImplementationEntryGovernanceEvent(projectRoot, gate, hostKind, input, userMessage) {
+  if (!gate || gate.decision !== 'block') {
+    return null;
+  }
+
+  const rerunGate =
+    typeof gate.gateName === 'string' && gate.gateName.trim()
+      ? gate.gateName.trim()
+      : 'implementation-readiness';
+  const workflow = 'implementation-entry';
+  const step = `${gate.requestedFlow || 'unknown'}-implement`;
+  const artifactPath = deriveImplementationEntryArtifactPath(gate);
+  const failures =
+    Array.isArray(gate.blockerSummary) && gate.blockerSummary.length > 0
+      ? gate.blockerSummary
+      : ['Implementation Entry Gate blocked execution'];
+  const blockerCodes =
+    Array.isArray(gate.blockerCodes) && gate.blockerCodes.length > 0
+      ? gate.blockerCodes
+      : failures.map((_, index) => `implementation-entry-${index + 1}`);
+  const sourceGateFailureIds = blockerCodes.map((code, index) => {
+    const normalized = sanitizeGovernanceToken(String(code || '').toUpperCase());
+    return normalized || `IMPLEMENTATION-ENTRY-${index + 1}`;
+  });
+  const attemptId = `implementation-entry-${Date.now()}`;
+  const outputPath = deriveImplementationEntryRemediationOutputPath(projectRoot, gate);
+  const branch = readCurrentGitBranch(projectRoot);
+  const rerunChain = buildImplementationEntryRerunChain(gate, input, userMessage);
+
+  const queueDir = governancePendingQueueDir(projectRoot);
+  fs.mkdirSync(queueDir, { recursive: true });
+  const queueItemId = `${attemptId}-${Math.random().toString(36).slice(2, 8)}`;
+  const queuePath = path.join(queueDir, `${queueItemId}.json`);
+  fs.writeFileSync(
+    queuePath,
+    JSON.stringify(
+      {
+        id: queueItemId,
+        type: 'governance-pre-continue-check',
+        timestamp: new Date().toISOString(),
+        payload: {
+          projectRoot,
+          workflow,
+          step,
+          artifactPath,
+          branch,
+          gate: rerunGate,
+          status: 'fail',
+          rerunGate,
+          rerunChain,
+          sourceGateFailureIds,
+          failures,
+        },
+      },
+      null,
+      2
+    ) + '\n',
+    'utf8'
+  );
+
+  const eventPath = persistGovernanceStageRerunResultEvent(
+    buildGovernanceStageRerunResultEvent({
+      projectRoot,
+      sourceEventType: 'governance-implementation-entry-check',
+      runnerInput: {
+        projectRoot,
+        outputPath,
+        promptText: `Implementation Entry Gate blocked for ${gate.requestedFlow || 'unknown'}: ${failures.join('; ')}`,
+        stageContextKnown: true,
+        gateFailureExists: true,
+        blockerOwnershipLocked: true,
+        rootTargetLocked: true,
+        equivalentAdapterCount: 1,
+        attemptId,
+        sourceGateFailureIds,
+        capabilitySlot: `${gate.requestedFlow || 'unknown'}.implementation-entry`,
+        canonicalAgent: 'PM + QA / readiness reviewer',
+        actualExecutor: 'runtime-policy-inject',
+        adapterPath: '_bmad/runtime/hooks/runtime-policy-inject-core.cjs',
+        targetArtifacts: artifactPath ? [artifactPath] : [],
+        expectedDelta: 'repair implementation-entry blockers and re-run the implementation-readiness gate',
+        rerunOwner: 'PM',
+        rerunGate,
+        rerunChain,
+        outcome: 'blocked',
+        hostKind,
+      },
+      rerunGateResult: {
+        gate: rerunGate,
+        status: 'fail',
+        blockerIds: sourceGateFailureIds,
+        summary: failures.join('; '),
+        updatedArtifacts: artifactPath ? [artifactPath] : [],
+      },
+    })
+  );
+
+  const backgroundTrigger = triggerDetachedBackgroundDrain(projectRoot);
+  return {
+    queued: true,
+    queuePath,
+    eventPath,
+    backgroundTrigger,
+  };
+}
+
+function buildImplementationEntryGateHardStop(
+  mode,
+  gate,
+  stderrPrefix = '',
+  remediation = null,
+  mainAgentHandoff = null
+) {
+  const errText = buildImplementationEntryGateStopMessage(gate, remediation, mainAgentHandoff);
   if (mode === 'subagent') {
     return {
       exitCode: 1,
@@ -1354,10 +1845,48 @@ async function runtimePolicyInjectCore({ host }) {
     parsedPolicy &&
     parsedPolicy.implementationEntryGate &&
     parsedPolicy.stage === 'implement' &&
-    isImplementationEntryRelevantToolCall(input, hookMode, userMsg) &&
-    parsedPolicy.implementationEntryGate.decision !== 'pass'
+    isImplementationEntryRelevantToolCall(input, hookMode, userMsg)
   ) {
-    return buildImplementationEntryGateHardStop(mode, parsedPolicy.implementationEntryGate, stateDiag);
+    const executionPolicy = readGovernanceInteractiveExecutionPolicy(root);
+    const hostKind = cursorHost ? 'cursor' : 'claude';
+    if (executionPolicy.interactiveMode === 'main-agent') {
+      const mainAgentHandoff = persistImplementationEntryMainAgentHandoff(
+        root,
+        parsedPolicy,
+        parsedPolicy.implementationEntryGate,
+        input,
+        userMsg,
+        hostKind
+      );
+      return buildImplementationEntryGateHardStop(
+        mode,
+        parsedPolicy.implementationEntryGate,
+        stateDiag,
+        null,
+        mainAgentHandoff
+      );
+    }
+    if (parsedPolicy.implementationEntryGate.decision === 'pass') {
+      return {
+        exitCode: 0,
+        output: JSON.stringify({ systemMessage: json }),
+        stderr: stateDiag,
+      };
+    }
+    const remediation = enqueueImplementationEntryGovernanceEvent(
+      root,
+      parsedPolicy.implementationEntryGate,
+      hostKind,
+      input,
+      userMsg
+    );
+    return buildImplementationEntryGateHardStop(
+      mode,
+      parsedPolicy.implementationEntryGate,
+      stateDiag,
+      remediation,
+      null
+    );
   }
   const langRes = runResolveLanguagePolicyCli(root, userMsg, true);
   const langPayload = langRes.status === 0 ? parseLanguagePolicyPayload(langRes.stdout) : null;

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 const {
@@ -44,6 +45,7 @@ import {
   createGovernanceExecutorPacket,
   runGovernanceRemediation,
   type GovernanceRerunDecision,
+  type GovernanceRerunStage,
   writeGovernanceExecutorPacket,
 } from './governance-remediation-runner';
 import {
@@ -180,6 +182,21 @@ function deriveRerunDecisionFromPayload(
     hintCount: 0,
     reason: 'no journey contract hints attached to governance rerun queue item',
   };
+}
+
+function activeRerunStageFromLoopState(loopState: {
+  rerunChain?: Array<Record<string, unknown>>;
+  rerunStageIndex?: number;
+}): Record<string, unknown> | null {
+  const chain = Array.isArray(loopState.rerunChain) ? loopState.rerunChain : [];
+  if (chain.length === 0) {
+    return null;
+  }
+  const index =
+    typeof loopState.rerunStageIndex === 'number' && loopState.rerunStageIndex >= 0
+      ? Math.min(loopState.rerunStageIndex, chain.length - 1)
+      : 0;
+  return chain[index] ?? null;
 }
 
 function deriveExecutorRoutingProjection(input: {
@@ -402,6 +419,7 @@ async function processGovernanceRerunEvent(
   const packetPaths: Record<string, string> = {};
   let executionRecord: GovernancePacketExecutionRecord | null = null;
   if (result.artifactPath && result.artifactResult) {
+    const activeStage = activeRerunStageFromLoopState(result.loopState) as GovernanceRerunStage | null;
     const packetHosts = [...new Set(config.packetHosts)];
     if (config.execution?.enabled) {
       packetHosts.push(config.execution.authoritativeHost);
@@ -420,6 +438,7 @@ async function processGovernanceRerunEvent(
         artifactMarkdown: result.artifactResult.markdown,
         journeyContractHints: result.artifactResult.journeyContractHints,
         rerunDecision,
+        rerunStage: activeStage,
       });
       packetPaths[hostKind] = writeGovernanceExecutorPacket(result.artifactPath, packet);
     }
@@ -563,9 +582,11 @@ async function processGovernanceEvent(
     };
 
     if (payload.status === 'fail' && payload.rerunGate) {
+      const runnerProjectRoot = payload.projectRoot ?? queueProjectRoot;
+      const config = readGovernanceRemediationConfig(runnerProjectRoot);
       const remediationResult = await runGovernanceRemediation({
-        projectRoot: payload.projectRoot ?? queueProjectRoot,
-        outputPath: payload.artifactPath ?? path.join(payload.projectRoot ?? queueProjectRoot, '_bmad-output', 'planning-artifacts', 'gate-remediation.md'),
+        projectRoot: runnerProjectRoot,
+        outputPath: payload.artifactPath ?? path.join(runnerProjectRoot, '_bmad-output', 'planning-artifacts', 'gate-remediation.md'),
         promptText: `GateFailure for ${payload.workflow || 'unknown-workflow'} ${payload.step || 'workflow'}: ${gateFailures.join('; ')}`,
         stageContextKnown: true,
         gateFailureExists: true,
@@ -582,16 +603,70 @@ async function processGovernanceEvent(
         expectedDelta: 'repair governed contract sections before Continue',
         rerunOwner: 'PM',
         rerunGate: payload.rerunGate,
+        rerunChain: payload.rerunChain,
         outcome: 'blocked',
         hostKind: 'claude',
       });
 
+      const rerunDecision = deriveRerunDecisionFromPayload({
+        runnerInput: {
+          rerunGate: payload.rerunGate,
+        },
+      });
+        const activeStage = activeRerunStageFromLoopState(
+          remediationResult.loopState
+        ) as GovernanceRerunStage | null;
+
+      const packetPaths: Record<string, string> = {};
+      let executionRecord: GovernancePacketExecutionRecord | null = null;
+      if (remediationResult.artifactPath && remediationResult.artifactResult) {
+        const packetHosts = [...new Set(config.packetHosts)];
+        if (config.execution?.enabled) {
+          packetHosts.push(config.execution.authoritativeHost);
+          if (config.execution.projections.emitNonAuthoritativePackets) {
+            packetHosts.push(...config.execution.fallbackHosts);
+          }
+        }
+        for (const hostKind of [...new Set(packetHosts)]) {
+          const packet = createGovernanceExecutorPacket({
+            hostKind,
+            runtimeContext: remediationResult.runtimeContext,
+            runtimePolicy: remediationResult.runtimePolicy,
+            loopState: remediationResult.loopState,
+            currentAttemptNumber:
+              remediationResult.currentAttemptNumber ?? remediationResult.loopState.attemptCount,
+            rerunGate: remediationResult.loopState.rerunGate,
+            artifactMarkdown: remediationResult.artifactResult.markdown,
+            journeyContractHints: remediationResult.artifactResult.journeyContractHints,
+            rerunDecision,
+            rerunStage: activeStage,
+          });
+          packetPaths[hostKind] = writeGovernanceExecutorPacket(remediationResult.artifactPath, packet);
+        }
+
+        if (config.execution?.enabled) {
+          executionRecord = createGovernancePacketExecutionRecord({
+            projectRoot: runnerProjectRoot,
+            queueItemId: item.id,
+            loopStateId: remediationResult.loopState.loopStateId,
+            attemptNumber:
+              remediationResult.currentAttemptNumber ?? remediationResult.loopState.attemptCount,
+            rerunGate: remediationResult.loopState.rerunGate,
+            artifactPath: remediationResult.artifactPath,
+            packetPaths,
+            authoritativeHost: config.execution.authoritativeHost,
+            fallbackHosts: config.execution.fallbackHosts,
+          });
+        }
+      }
+
       result.stopReason = remediationResult.stopReason ?? result.stopReason;
-      result.shouldContinue = false;
+      result.shouldContinue = remediationResult.shouldContinue;
       result.currentAttemptNumber = remediationResult.currentAttemptNumber;
       result.nextAttemptNumber = remediationResult.nextAttemptNumber;
       result.loopStateId = remediationResult.loopState.loopStateId;
       result.rerunGateResultIngested = remediationResult.rerunGateResultIngested;
+      result.executionProjection = buildExecutionProjection(executionRecord);
       result.executorRouting = remediationResult.executorPacket
         ? {
             routingMode: remediationResult.executorPacket.routingMode,
@@ -601,10 +676,11 @@ async function processGovernanceEvent(
         : undefined;
       result.runnerSummaryLines = buildGovernanceRemediationRunnerSummaryLines({
         ...remediationResult,
-        shouldContinue: false,
+        packetPaths,
+        shouldContinue: remediationResult.shouldContinue,
         stopReason: result.stopReason ?? null,
       });
-      result.packetPaths = remediationResult.packetPaths;
+      result.packetPaths = packetPaths;
       result.artifactPath = remediationResult.artifactPath;
     }
 
@@ -744,33 +820,25 @@ async function processGovernanceQueue(projectRoot: string): Promise<void> {
 
 export { governanceCurrentRunPath };
 
+export const AUTONOMOUS_FALLBACK_DISABLED_REASON =
+  'autonomous fallback execution has been hard disabled; main agent must continue from orchestration state and packet';
+
 export interface GovernanceProcessQueueOptions {
   dispatchAdapter?: GovernancePacketDispatchAdapter;
   dispatchLaunchEnv?: NodeJS.ProcessEnv;
   dispatchStartupTimeoutMs?: number;
+  allowAutonomousFallback?: boolean;
 }
 
 export async function processQueue(
   projectRoot: string = process.cwd(),
   options: GovernanceProcessQueueOptions = {}
 ): Promise<void> {
-  await processGovernanceQueue(projectRoot);
-  const config = readGovernanceRemediationConfig(projectRoot);
-  if (config.execution?.enabled) {
-    const updatedRecords = await processPendingExecutionRecords(projectRoot, {
-      adapter: options.dispatchAdapter,
-      leaseTimeoutSeconds: config.execution.dispatch.leaseTimeoutSeconds,
-      timeoutMinutes: config.execution.execution.timeoutMinutes,
-      maxDispatchAttempts: config.execution.dispatch.maxDispatchAttempts,
-      launchEnv: options.dispatchLaunchEnv,
-      startupTimeoutMs: options.dispatchStartupTimeoutMs,
-    });
-    syncExecutionProjectionIntoCurrentRun(projectRoot, updatedRecords);
-    reconcileGovernanceExecutionRecords(projectRoot);
-  }
-  await processLegacyQueue(projectRoot);
+  void projectRoot;
+  void options;
+  return;
 }
 
 if (require.main === module) {
-  void processQueue();
+  void processQueue(process.cwd());
 }

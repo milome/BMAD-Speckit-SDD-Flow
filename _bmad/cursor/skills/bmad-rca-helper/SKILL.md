@@ -1,86 +1,101 @@
+<!-- BLOCK_LABEL_POLICY=B -->
 ---
 name: bmad-rca-helper
 description: |
-  Use Party-Mode to perform deep root cause analysis (RCA) and design optimal solutions from user-provided topics, issue descriptions, or screenshots. Party-mode gate, recovery, snapshot, evidence, and exit semantics are sourced from `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`; the current hard gate for the designated challenger is `>60%`, not a local override. For the "final solution + final task list" scenario, require 100 rounds and no new gap in the last 3 rounds before convergence; then produce a final solution description and final task list with no vague/optional wording. After that, run a strict audit sub-task (code-reviewer, audit-prompts §4 / TASKS-doc style) and re-audit until "完全覆盖、验证通过". Use when: user requests RCA, "根因分析", "议题/问题深度分析", "最优方案+任务列表", or "RCA 后审计任务文档".
+  Use Party-Mode for deep root cause analysis (RCA) and optimal solution design from user topics, issue descriptions, or screenshots. Party-mode gate, recovery, snapshot, evidence, and exit semantics are sourced from `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`; the current hard gate for the designated challenger is `>60%`, not a local override. For the "final solution + final task list" scenario, require 100 discussion rounds and no new gaps in the last 3 rounds before convergence; then produce a final solution description and final task list with no vague or optional wording. After that, run a strict audit sub-task (code-reviewer, audit-prompts §4 / TASKS-doc style) and re-audit until the report meets the literal pass phrase required by the audit protocol (see body). Use when: the user requests RCA, root-cause analysis, deep analysis of an issue, optimal plan plus task list, or post-RCA audit of a task document.
 ---
 
-# BMAD RCA 助手
+# BMAD RCA helper
 
-基于 Party-Mode 对用户提供的**议题/问题描述/截图/问题**进行深度根因分析与最优方案讨论，产出**最终方案描述**与**最终任务列表**；随后对产出的任务文档发起严格审计并迭代至「完全覆盖、验证通过」。
+Use **Party-Mode** to run deep root-cause analysis and solution design from the user’s **topic / issue description / screenshot / problem**, producing a **final solution description** and **final task list**; then run a strict audit loop on the artifact until the protocol-defined pass condition is met (see phase two).
 
-## 适用场景
+## When to use
 
-- 用户提供议题、问题描述、截图或具体问题，要求深度根因分析
-- 需要多角色辩论挖掘最优方案并生成可执行任务列表
-- 产出文档需经严格审计（批判审计员 >70%、连续 3 轮无 gap）后交付
+- The user supplies a topic, problem description, screenshot, or concrete issue and wants deep RCA.
+- You need multi-role debate to surface an optimal plan and an executable task list.
+- The deliverable must pass strict audit (Critical Auditor >70%, three consecutive rounds with no new gap).
 
-> Party-mode 规则源（Cursor）：`{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
-> 说明：轮次分级、`designated_challenger_id`、`challenger_ratio > 0.60`、session/meta/snapshot/evidence、恢复与退出门禁都以 core step-02 为准。本技能不得自定义第二套 party-mode gate 语义。
+## Main-Agent Orchestration Surface (Mandatory)
 
-## 强制约束
+In interactive mode, this skill must treat repo-native `main-agent-orchestration` as the only orchestration authority. `runAuditorHost` is only the post-audit close-out entry; it must not replace the main Agent's next-branch decision.
 
-| 约束 | 说明 |
-|------|------|
-| Party-Mode 轮次 | **至少 100 轮**（产出最终方案 + 任务列表场景） |
-| 批判审计员 | 必须引入；party-mode 发言占比以 core step-02 为准（当前 designated challenger 硬门禁：`challenger_ratio > 0.60`） |
-| 收敛条件 | **最后 3 轮无新 gap** 才能结束辩论 |
-| 方案与任务描述 | **禁止**模糊表述；**禁止**「可选、可考虑、后续、酌情」等不确定用语；**禁止**遗漏 |
-| 审计子任务 | 辩论收敛并产出文档后**必须**发起审计子任务 |
-| 审计收敛 | 审计须**连续 3 轮无 gap**；未通过时**审计子代理直接修改被审文档**，禁止仅输出建议 |
+Before launching any audit subtask, implementation subtask, or other bounded execution, the main Agent must:
 
-## 工作流
+1. Run `npm run main-agent-orchestration -- --cwd {project-root} --action inspect`
+2. Read `orchestrationState`, `pendingPacketStatus`, `pendingPacket`, `continueDecision`, `mainAgentNextAction`, and `mainAgentReady`
+3. If the next branch is dispatchable but no usable packet exists yet, run `npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan`
+4. Dispatch only from the returned packet / instruction instead of continuing from party-mode prose, RCA prose, or handoff summary alone
+5. Re-run `inspect` after each child result and after each `runAuditorHost` close-out before choosing the next global branch
 
-### 阶段一：Party-Mode 根因分析与方案讨论
+`mainAgentNextAction / mainAgentReady` remain compatibility summary fields only; authoritative runtime truth is `orchestrationState + pendingPacket + continueDecision`.
 
-1. **输入**：用户提供的议题/问题描述/截图/问题（主 Agent 归纳为统一议题描述）。
-2. **执行**：**必须读取** `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md` 及 `{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`，并**严格遵循** Cursor step-02 中的 Response Structure 与 gate/recovery/evidence 规则编排多角色讨论。
-3. **角色**：**必须**引入 ⚔️ **批判性审计员**；可包含 🏗️ Winston 架构师、💻 Amelia 开发、📋 John 产品经理等（展示名与 `_bmad/_config/agent-manifest.csv` 一致）；批判审计员发言占比以 core step-02 为准，不在本技能中另立阈值。
-3b. **发言格式（强制）**：每轮每位角色发言**必须**使用格式 `[Icon Emoji] **[展示名]**: [发言内容]`（如 `🏗️ **Winston 架构师**: ...`、`⚔️ **批判性审计员**: ...`）。Icon 与展示名取自 `_bmad/_config/agent-manifest.csv`，禁止省略。
-4. **轮次与收敛**：
-   - 讨论 **至少 100 轮**；
-   - **收敛条件**：**最后 3 轮无新 gap** 才能结束（如第 98、99、100 轮均无新 gap）；
-   - 禁止凑轮次：每轮须有实质角色发言。
-5. **产出**：
-   - 最终方案描述：高质量、准确、无模糊表述、无「可选/可考虑/后续/酌情」、无遗漏；
-   - 最终任务列表：可执行、可验收、与方案一一对应。
+> Party-mode source of truth (Cursor): `{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
+> Rounds, `designated_challenger_id`, `challenger_ratio > 0.60`, session/meta/snapshot/evidence, recovery, and exit-gate semantics must come from core step-02. This skill must not define a second party-mode gate contract.
 
-产出文档建议命名与路径：若与 Story 关联则置于 `_bmad-output/implementation-artifacts/epic-{epic}-{slug}/story-{story}-{slug}/`，否则置于 `_bmad-output/implementation-artifacts/_orphan/`；如 `RCA_{议题slug}.md` 或 `TASKS_RCA_{议题slug}.md`（含 §1 问题简述、§2 约束、§3 根因与方案、§4 任务列表、§5 验收等）。
+## Mandatory constraints
 
-### 阶段二：审计子任务（必做）
+| Constraint | Detail |
+|------------|--------|
+| Party-Mode rounds | **At least 100** (when producing final plan + task list) |
+| Critical Auditor | Required; use the core step-02 challenger-share gate (current designated challenger hard gate: `challenger_ratio > 0.60`) |
+| Convergence | Debate ends only when **the last 3 rounds introduce no new gaps** |
+| Plan and tasks | **No** vague wording; **forbid** phrases like “optional”, “we could”, “later”, “as appropriate”; **no** omissions |
+| Audit subtask | After phase one converges and the doc exists, the main Agent **must** launch an audit subtask |
+| Audit convergence | **Three consecutive rounds with no gap**; on failure the **audit sub-agent edits the audited document in-round**, not “advice only” |
 
-1. **触发**：阶段一收敛并生成最终方案 + 任务列表文档后，主 Agent **必须**发起审计子任务。
-2. **子代理**：优先 **code-reviewer**（Cursor Task）；若不可用则 `mcp_task` + `subagent_type: generalPurpose`。
-3. **审计依据**：使用 [references/audit-prompt-rca-tasks.md](references/audit-prompt-rca-tasks.md) 中的完整 prompt 模板（audit-prompts §4 精神 + TASKS 文档适配）；或项目内 `.cursor/skills/speckit-workflow/references/audit-prompts.md` §4 的适配版本。
-4. **审计要求**：
-   - **批判审计员必须出场**，发言占比 **>70%**；
-   - **收敛条件**：**连续 3 轮无 gap**（针对被审文档）；
-   - **未通过时**：**审计子代理须在本轮内直接修改被审文档**以消除 gap，修改完成后输出报告并注明已修改内容；主 Agent 收到报告后发起下一轮审计；**禁止**仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules](references/audit-document-iteration-rules.md) 或 `{project-root}/.cursor/skills/speckit-workflow/references/audit-document-iteration-rules.md`。
-5. **迭代**：重复审计直至报告结论为「**完全覆盖、验证通过**」且连续 3 轮无 gap。
-6. **报告落盘**：每轮审计报告（无论通过与否）均须保存至约定路径，如 `_bmad-output/implementation-artifacts/_orphan/AUDIT_TASKS_RCA_{slug}_§4_round{N}.md`。
+## Workflow
 
-## 引用与依赖
+### Phase 1: Party-Mode RCA and solution discussion
 
-| 资源 | 路径/说明 |
-|------|-----------|
-| **party-mode** | `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md` + `{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`；Cursor 分支的 rounds / challenger ratio / recovery / evidence / exit gate 规则以 Cursor step-02 override 为准 |
-| **批判审计员** | `{project-root}/_bmad/core/agents/critical-auditor-guide.md`（若存在）；step-02 中批判性审计员为必选挑战者 |
-| **audit-prompts §4** | `{project-root}/.cursor/skills/speckit-workflow/references/audit-prompts.md` §4（tasks 审计）；本技能审计 prompt 与之精神一致 |
-| **audit-document-iteration-rules** | `{project-root}/.cursor/skills/speckit-workflow/references/audit-document-iteration-rules.md`；发现 gap 时审计子代理直接修改文档、3 轮无 gap 收敛 |
-| **本技能审计模板** | [references/audit-prompt-rca-tasks.md](references/audit-prompt-rca-tasks.md) |
+1. **Input**: Topic / issue / screenshot / problem (main Agent normalizes into one issue statement).
+2. **Execution**: **Read** `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md` and `{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`, and **follow** the Cursor step-02 Response Structure plus its gate/recovery/evidence contract for multi-role discussion.
+3. **Roles**: **Include** ⚔️ **Critical Auditor**; you may include 🏗️ Winston (Architect), 💻 Amelia (Developer), 📋 John (Product Manager), etc. (display names must match `_bmad/_config/agent-manifest.csv`); the challenger share threshold comes from core step-02, not this skill.
+3b. **Speaking format (mandatory)**: Each speaker each round **must** use `[Icon Emoji] **[display name]**: [content]` (e.g. `🏗️ **Winston (Architect)**: ...`, `⚔️ **Critical Auditor**: ...`). Icons and names come from `agent-manifest.csv`; do not omit them.
+4. **Rounds and convergence**:
+   - **At least 100** rounds;
+   - **Convergence**: **No new gaps in the last 3 rounds** (e.g. rounds 98–100);
+   - No padding: each round must have substantive role speech.
+5. **Outputs**:
+   - Final solution: high quality, precise, no vague wording, no forbidden hedging, no gaps;
+   - Final task list: executable, verifiable, mapped to the solution.
 
-## § 禁止词表（方案与任务描述）
+Suggested paths: if tied to a Story, use `_bmad-output/implementation-artifacts/epic-{epic}-{slug}/story-{story}-{slug}/`; else `_bmad-output/implementation-artifacts/_orphan/`. Example names: `RCA_{topic-slug}.md` or `TASKS_RCA_{topic-slug}.md` (sections §1 problem, §2 constraints, §3 RCA + solution, §4 tasks, §5 acceptance, etc.).
 
-以下词不得出现在最终方案描述与任务列表中。审计时若发现任一词，结论为未通过。
+### Phase 2: Audit subtask (required)
 
-| 禁止词/短语 | 替代方向 |
-|-------------|----------|
-| 可选、可考虑、可以考虑 | 明确写「采用方案 A」并简述理由 |
-| 后续、后续迭代、待后续 | 若本阶段不做则不在文档中写；若做则写清本阶段完成范围 |
-| 待定、酌情、视情况 | 改为明确条件与对应动作（如「若 X 则 Y」） |
-| 技术债、先这样后续再改 | 单独开 Story 或不在本次范围；不在 RCA 产出中留技术债 |
+1. **Trigger**: After phase one converges and the final plan + task document exists, the main Agent **must** start an audit subtask.
+2. **Sub-agent**: Prefer **code-reviewer** (Cursor Task); else `mcp_task` with `subagent_type: generalPurpose`.
+3. **Basis**: Use the full prompt template in [references/audit-prompt-rca-tasks.md](references/audit-prompt-rca-tasks.md) (audit-prompts §4 spirit + TASKS-style doc); or the project’s `.cursor/skills/speckit-workflow/references/audit-prompts.md` §4 adaptation.
+4. **Audit rules**:
+   - **Critical Auditor must appear**, **>70%** share;
+   - **Convergence**: **three consecutive rounds with no gap** on the audited doc;
+   - **On failure**: the **audit sub-agent edits the audited document in the same round** to remove gaps, then reports what changed; main Agent starts the next round; **forbidden** to only suggest edits. See [audit-document-iteration-rules](references/audit-document-iteration-rules.md) or `{project-root}/.cursor/skills/speckit-workflow/references/audit-document-iteration-rules.md`.
+5. **Iterate** until the report conclusion matches the **literal** pass phrases expected by your audit template (often including `完全覆盖、验证通过`) **and** three consecutive no-gap rounds.
+6. **Persist reports**: Each round’s report (pass or fail) must be saved to the agreed path, e.g. `_bmad-output/implementation-artifacts/_orphan/AUDIT_TASKS_RCA_{slug}_§4_round{N}.md`.
 
-## 主 Agent 发起审计时的必守规则
+## References
 
-- 将 **references/audit-prompt-rca-tasks.md** 中的完整 prompt **整段复制**到审计子任务，替换 `{文档路径}`、`{需求依据路径}`、`{项目根}`、`{报告路径}`、`{轮次}`。
-- **报告保存**：模板中须为「每轮报告（无论通过与否）均须保存至 {报告路径}」。
-- 若使用 code-reviewer，确保其可访问项目内 `audit-document-iteration-rules.md` 及 audit-prompts §4 精神说明（可在 prompt 中粘贴关键段落或路径）。
+| Resource | Path / note |
+|----------|----------------|
+| **party-mode** | `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md` + `{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`; Cursor-side rounds / challenger ratio / recovery / evidence / exit-gate rules come from the Cursor step-02 override |
+| **Critical Auditor** | `{project-root}/_bmad/core/agents/critical-auditor-guide.md` (if present); Critical Auditor is mandatory challenger in step-02 |
+| **audit-prompts §4** | `{project-root}/.cursor/skills/speckit-workflow/references/audit-prompts.md` §4 (tasks audit); RCA audit prompt aligns with this |
+| **audit-document-iteration-rules** | `{project-root}/.cursor/skills/speckit-workflow/references/audit-document-iteration-rules.md`; sub-agent edits doc on gap, 3-round no-gap convergence |
+| **RCA audit template** | [references/audit-prompt-rca-tasks.md](references/audit-prompt-rca-tasks.md) |
+
+## Forbidden wording (solution and task list)
+
+The following must **not** appear in the final solution or task list. If the audit finds any, the verdict is fail.
+
+| Disallowed pattern | Replace with |
+|--------------------|--------------|
+| Optional / “we could consider” | State **“Adopt option A”** with a short rationale |
+| Later / next iteration / backlog hand-waving | Omit if out of scope; if in scope, define what this phase delivers |
+| TBD / “depends” / “as appropriate” | Explicit conditionals (**if X then Y**) |
+| Technical debt / “ship now, fix later” | Open a Story or exclude from scope; do not leave debt in the RCA artifact |
+
+## Rules when the main Agent launches audit
+
+- **Copy the full prompt** from **references/audit-prompt-rca-tasks.md** into the subtask, replacing every placeholder the template defines (e.g. document path, baseline path, project root, report path, round number).
+- **Report save**: The template must require **every** round’s report to be written to the configured report path.
+- If using code-reviewer, ensure it can access `audit-document-iteration-rules.md` and audit-prompts §4 (paste key excerpts or paths in the prompt).

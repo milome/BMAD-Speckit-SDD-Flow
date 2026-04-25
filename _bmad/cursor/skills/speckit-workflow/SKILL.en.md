@@ -29,6 +29,27 @@ This skill defines **constitution → spec.md → plan.md → IMPLEMENTATION_GAP
 
 Before executing any stage task of this skill in each round, there must be a governance JSON block injected into the context by **hook + `emit-runtime-policy`** (`scripts/emit-runtime-policy.ts` / `.claude|cursor/hooks/emit-runtime-policy-cli.js`); see `docs/reference/runtime-policy-emit-schema.md` for the contract. **Prohibited** Hand-written sample policies that are inconsistent with `resolveRuntimePolicy` are prohibited; if there is no such block in the context, `.bmad/runtime-context.json` and hook must be repaired first, and fields must not be made up.
 
+## Main-Agent Orchestration Surface (Mandatory)
+
+In interactive mode, this skill must use the repo-native `main-agent-orchestration` surface as the **only** orchestration authority. `runAuditorHost` is only the post-audit host close-out entry; it must not replace main-agent branching authority.
+
+Before dispatching any implement / audit / remediate / document execution body, the main Agent **must**:
+
+1. Run `npm run main-agent-orchestration -- --cwd {project-root} --action inspect`
+2. Read `orchestrationState`, `pendingPacketStatus`, `pendingPacket`, `continueDecision`, `mainAgentNextAction`, and `mainAgentReady`
+3. If the next branch is dispatchable but `pendingPacketStatus` is `none` or `missing_packet_file`, run `npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan`
+4. Dispatch strictly from the returned packet / instruction instead of hand-building prompts from audit prose alone
+5. Drive packet lifecycle through `claim` → bounded child execution → `dispatch` → child result ingest / `complete` / `invalidate`
+6. Re-run `npm run main-agent-orchestration -- --cwd {project-root} --action inspect` after every child result and after every `runAuditorHost` close-out before choosing the next global branch
+
+Compatibility rule:
+- `mainAgentNextAction` and `mainAgentReady` are compatibility summary fields only; authoritative runtime truth remains `orchestrationState + pendingPacket + continueDecision`.
+
+Hard prohibitions:
+- Do not dispatch directly from `PASS`, reviewer prose, or host summary without re-reading `main-agent-orchestration`.
+- Do not hand-write packet files or queue items in interactive mode.
+- Do not let a child agent decide the next global branch; the child only executes the bounded packet, and the main Agent must re-read state and decide the next step.
+
 ## Quick Decision Guide
 
 ### When to use this skill
@@ -370,6 +391,12 @@ When a user requests execution of an unfinished task in tasks.md (or tasks-v*.md
 
 ### 5.1 Execution process
 
+Before starting task execution or launching any execution body in this stage, the main Agent must:
+- Run `npm run main-agent-orchestration -- --cwd {project-root} --action inspect` and consume the current `orchestrationState` + `pendingPacket`
+- Run `npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan` when `mainAgentNextAction` is dispatchable but no usable packet is materialized yet
+- Claim and dispatch the packet through `main-agent-orchestration` lifecycle actions instead of bypassing state
+- Re-run `inspect` after each bounded child result and after each `runAuditorHost` call before continuing the next scoped batch or audit branch
+
 1. **Read tasks.md** (or tasks-v*.md) and identify all outstanding tasks (`[ ]` checkbox).
 2. **【ralph-method forced prefix】Create prd and progress tracking files**:
    - If `prd.{stem}.json` and `progress.{stem}.txt` do not exist in the same directory as tasks or in `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/`, they **must** be created before starting any task;
@@ -445,6 +472,8 @@ When a user requests execution of an unfinished task in tasks.md (or tasks-v*.md
   - **Unified entry**: after the audit passes, the main Agent calls `runAuditorHost`; it no longer hand-builds stage-specific score / auditIndex CLI sequences.
 - **Separation of Responsibilities**: The code-review sub-agent produces an audit report and places it in the above path; the main Agent invokes runAuditorHost after receiving the passing conclusion; failure does not block the main process and records the resultCode as audit evidence. **iteration_count passing (mandatory)**: The Agent executing the audit cycle passes in the current cumulative value (the number of rounds in which the audit failed/failed at this stage) when passing; pass 0 once. When using the **standalone speckit** process (without epic/story), the main Agent also passes in `--iteration-count {cumulative value}` when passing.
 - If it fails: **Iteratively execute the tasks in tasks.md** that have not passed the audit according to the audit report, **call code-review** again until the report conclusion is passed.
+
+- **不中断执行 contract**：一旦 tasks 执行开始，执行体必须按顺序连续完成当前作用域内全部剩余任务/User Stories，不得在 milestone 完成后暂停等待批准。控制权仅可在以下三种情况下返回主 Agent：① 当前作用域工作已完成且可进入 audit/closeout；② 出现真实 blocker，需要 reroute；③ 本工作流显式定义的 audit/checkpoint 边界已到达。
 
 **Integration and end-to-end test execution (required)**
 

@@ -16,6 +16,22 @@ description: |
 
 # BMAD Story Assistant
 
+## Main-Agent Orchestration Surface (Mandatory)
+
+In interactive main-agent mode, before the main Agent starts, resumes, or closes out the `story` chain, it must first read:
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action inspect
+```
+
+If an official dispatch plan is needed, read:
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan
+```
+
+`mainAgentNextAction / mainAgentReady` remain compatibility summary fields only; authoritative runtime truth is `orchestrationState + pendingPacket + continueDecision`.
+
 > **Party-mode source of truth (Cursor)**: `{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`. Cursor-side party-mode rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit-gate semantics must follow that file; this skill only decides when Story flows enter party-mode.
 
 ### Cursor Party-Mode Main-Agent Flow

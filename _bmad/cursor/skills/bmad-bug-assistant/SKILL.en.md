@@ -13,6 +13,22 @@ description: |
 
 # BMAD Bug Assistant
 
+## Main-Agent Orchestration Surface (Mandatory)
+
+In interactive main-agent mode, before the main Agent starts, resumes, or closes out the `bugfix` chain, it must first read:
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action inspect
+```
+
+If an official dispatch plan is needed, read:
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan
+```
+
+`mainAgentNextAction / mainAgentReady` remain compatibility summary fields only; authoritative runtime truth is `orchestrationState + pendingPacket + continueDecision`.
+
 > **Required reading:** Before using this skill, read and comply with the self-test rules in `{project-root}/.cursor/rules/bmad-bug-assistant.mdc`. **Before** initiating an mcp_task or party-mode subtask, complete every item in that stage’s “Pre-initiation self-test list” and output the self-test results, or do not initiate.
 > **Party-mode source of truth (Cursor)**: `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`. All party-mode rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit-gate semantics must follow that file; this skill must not define a second gate contract.
 

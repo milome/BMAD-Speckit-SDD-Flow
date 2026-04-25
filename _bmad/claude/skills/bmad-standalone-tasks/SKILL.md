@@ -23,6 +23,18 @@ references:
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
 > Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
 
+> **统一 closeout 硬门禁（适用于本技能全部审计闭环）**：
+> - 主 Agent 在每个阶段的完整 prompt 模板结尾、resume 指令结尾、以及审计通过后的 host 收口指令结尾，必须原样追加下列固定句；同时必须自动写入评分数据与本技能要求的交接文档（handoff / state / progress / 审计收口文档），禁止留给用户手动完成。
+> - 未执行 `runAuditorHost` 并验证评分写入成功前，禁止结束、禁止交还用户手动操作。
+> - 只有 `runAuditorHost` 返回 `closeout approved` 才算完成；其余都算未完成。
+> - 禁止给“你可以手动做下一步”的建议，除非用户明确要求。
+> - `runAuditorHost` 失败时必须自动重试，并在每次重试时记录失败原因与修复动作；未成功前不得退出当前闭环。
+> - 最终回复必须显式包含以下 4 行，缺一视为未完成：
+>   - `runAuditorHost 调用参数`
+>   - `runAuditorHost 返回结果`
+>   - `评分写入结果（成功/失败码）`
+>   - `closeout 状态（approved/未approved）`
+
 > **Orphan standalone closeout contract**：当 TASKS / BUGFIX 文档位于 `_orphan/` 路径时，结构化审计报告必须显式提供 `stage=standalone_tasks`、`artifactDocPath`、`reportPath`；不得继续使用 `stage=document` 作为 orphan closeout 返回值。缺失任一字段或仅有 PASS 文本时，主 Agent 不得进入实现执行，host closeout 必须 fail-closed。
 
 # Claude Adapter: bmad-standalone-tasks
@@ -30,6 +42,28 @@ references:
 ## Purpose
 
 本 skill 是 Cursor `bmad-standalone-tasks` 在 Claude Code CLI / OMC 环境下的统一适配入口。
+
+## Main Agent Orchestration Surface
+
+在 interactive main-agent 模式下，主 Agent 在发起、继续或收口 `standalone_tasks` 链路前，必须优先读取：
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action inspect
+```
+
+如需生成正式派发计划，则读取：
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan
+```
+
+`mainAgentNextAction / mainAgentReady` 仍保留为 handoff compatibility 字段，但不再是唯一 runtime truth。
+
+## Uninterrupted Execution Contract
+
+- 不中断执行 contract：implementation subagents must **连续完成当前作用域内的全部剩余 US/任务** until a real blocker or audit boundary is reached.
+- The main Agent may only use `resume` / continuation prompts to continue the chain.
+- It must not hand the remaining implementation back to the user before `runAuditorHost` closeout is ready.
 
 目标不是简单复制 Cursor skill，而是：
 
@@ -205,6 +239,8 @@ handoff:
   next_action: implement_next_batch|post_batch_audit|commit_gate|revise_tasks_doc
   next_agent: bmad-standalone-tasks|auditor-implement|bmad-master|auditor-tasks-doc
   ready: true|false
+  mainAgentNextAction: dispatch_implement|dispatch_review|dispatch_remediation|run_closeout|await_user
+  mainAgentReady: true|false
 ```
 
 ### Main Agent responsibilities
@@ -325,6 +361,8 @@ handoff:
   next_action: post_batch_audit
   next_agent: auditor-implement
   ready: true
+  mainAgentNextAction: dispatch_review
+  mainAgentReady: true
 ```
 
 ---
@@ -418,6 +456,8 @@ handoff:
   next_action: implement_next_batch|commit_gate|revise_and_reaudit
   next_agent: bmad-standalone-tasks|bmad-master|auditor-implement
   ready: true|false
+  mainAgentNextAction: dispatch_implement|dispatch_review|dispatch_remediation|run_closeout|await_user
+  mainAgentReady: true|false
 ```
 
 ---

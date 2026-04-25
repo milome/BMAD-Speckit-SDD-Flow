@@ -1,63 +1,82 @@
+<!-- BLOCK_LABEL_POLICY=B -->
+
 ---
 name: bmad-code-reviewer-lifecycle
 description: |
-  全链路 Code Reviewer Skill：编排 BMAD 工作流各 stage 的审计产出→解析→scoring 写入。
-  定义触发时机、stage 映射、报告路径约定；引用 code-reviewer、audit-prompts、code-reviewer-config、scoring/rules。
-  与 speckit-workflow、bmad-story-assistant 协同，stage 审计通过后调用解析并写入 scoring 存储。
+  End-to-end Code Reviewer skill: orchestrates audit output → parsing → scoring write for each BMAD workflow stage.
+  Defines trigger timing, stage mapping, and report path conventions; references code-reviewer, audit-prompts, code-reviewer-config, scoring/rules.
+  Works with speckit-workflow and bmad-story-assistant; after a stage audit passes, call parsing and write to scoring storage.
 when_to_use: |
-  Use when: BMAD 工作流各 stage（prd/arch/story/specify/plan/gaps/tasks/implement/post_impl）审计通过后需触发评分解析与写入；
-  或 speckit-workflow、bmad-story-assistant 的 stage 完成步骤需调用全链路「解析并写入」逻辑；
-  或用户显式请求「全链路评分」时。
+  Use when: after any BMAD workflow stage audit (prd/arch/story/specify/plan/gaps/tasks/implement/post_impl) you need score parsing and write;
+  or speckit-workflow / bmad-story-assistant stage completion must invoke end-to-end “parse and write” logic;
+  or the user explicitly asks for “end-to-end scoring”.
 references:
-  - code-reviewer: 执行各 stage 审计；Cursor Task 调度，按 stage 传 mode 与 prompt_template
-  - audit-prompts: 各 stage 审计提示词；audit-prompts-prd.md、audit-prompts-arch.md 等
-  - code-reviewer-config: 多模式配置（prd/arch/code/pr）；_bmad/_config/code-reviewer-config.yaml
-  - scoring/rules: 解析规则、item_id、veto_items；scoring/rules/*.yaml
-  - runAuditorHost / unified auditor host runner：统一承接评分写入、auditIndex 更新与 post-audit automation
+  - code-reviewer: run stage audits; Cursor Task dispatch, pass mode and prompt_template per stage
+  - audit-prompts: per-stage audit prompts; audit-prompts-prd.md, audit-prompts-arch.md, etc.
+  - code-reviewer-config: multi-mode config (prd/arch/code/pr); _bmad/_config/code-reviewer-config.yaml
+  - scoring/rules: parsing rules, item_id, veto_items; scoring/rules/*.yaml
+  - runAuditorHost / 统一 auditor host runner: single post-audit entry for score write, auditIndex update, and post-audit automation
 ---
+
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
-> Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
+> Closeout terminology: in this document, a stage is considered complete only when `runAuditorHost` returns `closeout approved`. An audit report `PASS` only means the host close-out may start; `PASS` alone must not be treated as completion, admission, or release.
 
 # bmad-code-reviewer-lifecycle
 
-全链路 Code Reviewer Skill，编排 BMAD 工作流各 stage 的审计→解析→scoring 写入闭环。
+End-to-end Code Reviewer skill: orchestrates audit → parse → scoring write for each BMAD workflow stage.
 
-## 引用关系（Architecture §2.2、§10.2）
+## References (Architecture §2.2, §10.2)
 
-| 引用组件 | 职责 | 引用方式 |
-|----------|------|----------|
-| code-reviewer | 执行各 stage 审计 | Cursor Task 调度，按 stage 传 mode 与 prompt_template |
-| audit-prompts | 各 stage 审计提示词 | audit-prompts-prd.md、audit-prompts-arch.md 等 |
-| code-reviewer-config | 多模式配置（prd/arch/code/pr） | 按 mode 读取 dimensions、pass_criteria |
-| scoring/rules | 解析规则、item_id、veto_items | 用于解析审计产出并映射环节得分 |
+| Component | Role | How it is used |
+|-----------|------|----------------|
+| code-reviewer | Run stage audits | Cursor Task dispatch; pass `mode` and `prompt_template` per stage |
+| audit-prompts | Stage audit prompts | audit-prompts-prd.md, audit-prompts-arch.md, etc. |
+| code-reviewer-config | Multi-mode config (prd/arch/code/pr) | Read dimensions, pass_criteria by mode |
+| scoring/rules | Parsing rules, item_id, veto_items | Map audit output to stage scores |
 
-## 引用路径
+## Paths
 
-- **code-reviewer**: `.cursor/agents/code-reviewer.md` 或 `.claude/agents/code-reviewer.md`
-- **audit-prompts**: `{SKILLS_ROOT}/speckit-workflow/references/audit-prompts-prd.md`、`audit-prompts-arch.md` 等
+- **code-reviewer**: `.cursor/agents/code-reviewer.md` or `.claude/agents/code-reviewer.md`
+- **audit-prompts**: `{SKILLS_ROOT}/speckit-workflow/references/audit-prompts-prd.md`, `audit-prompts-arch.md`, etc.
 - **code-reviewer-config**: `_bmad/_config/code-reviewer-config.yaml`
-- **scoring/rules**: `scoring/rules/`（含 default/、gaps-scoring.yaml、iteration-tier.yaml）
+- **scoring/rules**: `scoring/rules/` (including `default/`, `gaps-scoring.yaml`, `iteration-tier.yaml`)
 
-## stage 映射与触发
+## Stage mapping and triggers
 
-详见 `_bmad/_config/stage-mapping.yaml`。
+See `_bmad/_config/stage-mapping.yaml`.
 
-## 报告路径约定
+## Report path conventions
 
-详见 `_bmad/_config/eval-lifecycle-report-paths.yaml` 或 `_bmad-output/implementation-artifacts/epic-3-feature-eval-lifecycle-skill/story-1-eval-lifecycle-skill-def/CONTRACT_E3-S1-to-3.2-3.3.md`。
+See `_bmad/_config/eval-lifecycle-report-paths.yaml` or `_bmad-output/implementation-artifacts/epic-3-feature-eval-lifecycle-skill/story-1-eval-lifecycle-skill-def/CONTRACT_E3-S1-to-3.2-3.3.md`.
 
-## 解析并写入（Story 3.3）
+## Parse and write (Story 3.3)
 
-本 Skill 统一通过 `runAuditorHost` 完成「审计→宿主收口」闭环：
-- **函数**：`scoring/orchestrator/parse-and-write.ts`
-- **CLI**：`scripts/run-auditor-host.ts`
-- **验收**：`npm run accept:e3-s3`
+This skill uses `runAuditorHost` to close the “audit → host close-out” loop:
 
-## 统一 auditor host runner 前置条件（Checklist）
+- **Function**: `scoring/orchestrator/parse-and-write.ts`
+- **CLI**: `scripts/run-auditor-host.ts`
+- **Acceptance**: `npm run accept:e3-s3`
 
-tasks 阶段审计通过后、调用统一 auditor host runner 前，**必须**确认：
+## Main-Agent Orchestration Surface (Mandatory)
 
-1. **报告包含可解析块**：报告结尾须含「总体评级: [A|B|C|D]」与「维度评分: 维度名: XX/100」块，否则解析失败、仪表盘不显示评级。详见 `audit-prompts.md §4.1`、`audit-prompts-critical-auditor-appendix.md §7`。
-2. **逐条对照格式**：若报告为逐条对照格式（表格+结论），须在结论后追加上述可解析块。
-3. **路径**：可使用 `--reportPath` 指定任意报告路径；约定路径为 `AUDIT_tasks-E{epic}-S{story}.md`，历史命名变体（如含「逐条对照」后缀）亦可通过 `--reportPath` 解析。
+In interactive mode, this skill must treat repo-native `main-agent-orchestration` as the only orchestration authority. `runAuditorHost` is only the post-audit close-out entry; it must not replace the main Agent's next-branch decision.
+
+Before launching any auditor, remediation subtask, or other bounded execution, the main Agent must:
+
+1. Run `npm run main-agent-orchestration -- --cwd {project-root} --action inspect`
+2. Read `orchestrationState`, `pendingPacketStatus`, `pendingPacket`, `continueDecision`, `mainAgentNextAction`, and `mainAgentReady`
+3. If the next branch is dispatchable but no usable packet exists yet, run `npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan`
+4. Dispatch only from the returned packet / instruction instead of continuing from audit prose, scoring prose, or handoff summary alone
+5. Re-run `inspect` after each child result and after each `runAuditorHost` close-out before choosing the next global branch
+
+`mainAgentNextAction / mainAgentReady` remain compatibility summary fields only; authoritative runtime truth is `orchestrationState + pendingPacket + continueDecision`.
+
+## Unified auditor host runner prerequisites (checklist)
+
+After the tasks-stage audit passes and before calling the unified auditor host runner, **confirm**:
+
+1. **Report contains parseable blocks**: The report must end with “总体评级: [A|B|C|D]” and “维度评分: 维度名: XX/100” blocks; otherwise parsing fails and the dashboard shows no rating. See `audit-prompts.md §4.1`, `audit-prompts-critical-auditor-appendix.md §7`.
+2. **Line-by-line format**: If the report uses table + conclusions, append the parseable blocks after the conclusions.
+3. **Paths**: You may pass `--reportPath` for any report path; the convention is `AUDIT_tasks-E{epic}-S{story}.md`; historical filename variants (e.g. a line-by-line audit suffix in the name) still work via `--reportPath`.
+
 

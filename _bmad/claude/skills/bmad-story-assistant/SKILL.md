@@ -8,6 +8,18 @@ description: |
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
 > Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
 
+> **统一 closeout 硬门禁（适用于本技能全部审计闭环）**：
+> - 主 Agent 在每个阶段的完整 prompt 模板结尾、resume 指令结尾、以及审计通过后的 host 收口指令结尾，必须原样追加下列固定句；同时必须自动写入评分数据与本技能要求的交接文档（handoff / state / progress / 审计收口文档），禁止留给用户手动完成。
+> - 未执行 `runAuditorHost` 并验证评分写入成功前，禁止结束、禁止交还用户手动操作。
+> - 只有 `runAuditorHost` 返回 `closeout approved` 才算完成；其余都算未完成。
+> - 禁止给“你可以手动做下一步”的建议，除非用户明确要求。
+> - `runAuditorHost` 失败时必须自动重试，并在每次重试时记录失败原因与修复动作；未成功前不得退出当前闭环。
+> - 最终回复必须显式包含以下 4 行，缺一视为未完成：
+>   - `runAuditorHost 调用参数`
+>   - `runAuditorHost 返回结果`
+>   - `评分写入结果（成功/失败码）`
+>   - `closeout 状态（approved/未approved）`
+
 # Claude Adapter: BMAD Story Assistant
 
 > **Party-mode source of truth**：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。所有 party-mode 的 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 只定义 Story 场景何时进入 party-mode，不得维护第二套 gate 语义。
@@ -28,6 +40,28 @@ description: |
 ## Purpose
 
 本 skill 是 Cursor `bmad-story-assistant` 在 Claude Code CLI / OMC 环境下的统一适配入口。
+
+## Main Agent Orchestration Surface
+
+在 interactive main-agent 模式下，主 Agent 在发起、继续或收口 `story` 链路前，必须优先读取：
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action inspect
+```
+
+如需生成正式派发计划，则读取：
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan
+```
+
+`mainAgentNextAction / mainAgentReady` 仍保留为 handoff compatibility 字段，但不再是唯一 runtime truth。
+
+## Uninterrupted Execution Contract
+
+- Story implementation must continue through all remaining scoped User Stories/tasks until the blocker or post-audit boundary is reached.
+- If post-audit fails, the main Agent must resume the same execution chain instead of stopping for manual continuation.
+- post-audit is ready only after `runAuditorHost` confirms closeout and the ralph-method tracking files remain aligned.
 
 目标不是简单复制 Cursor skill，而是：
 
@@ -566,6 +600,8 @@ handoff:
   next_action: story_audit
   next_agent: bmad-story-audit
   ready: true
+  mainAgentNextAction: dispatch_review
+  mainAgentReady: true
 ```
 
 ### Stage 2: Story 审计
@@ -772,6 +808,8 @@ handoff:
   next_action: dev_story
   next_agent: speckit-implement
   ready: true
+  mainAgentNextAction: dispatch_implement
+  mainAgentReady: true
 ```
 
 **FAIL**
@@ -814,6 +852,8 @@ handoff:
   next_action: revise_story
   next_agent: bmad-story-create
   ready: true
+  mainAgentNextAction: dispatch_remediation
+  mainAgentReady: true
 ```
 
 ### Stage 3: Dev Story / `STORY-A3-DEV`
@@ -1070,6 +1110,8 @@ handoff:
   next_agent: auditor-implement
   next_stage: 4
   ready: true
+  mainAgentNextAction: dispatch_review
+  mainAgentReady: true
   prerequisites_met:
     - tdd_cycle_complete
     - ralph_method_tracked
@@ -1358,6 +1400,8 @@ handoff:
   next_agent: bmad-master
   next_stage: commit
   ready: true
+  mainAgentNextAction: run_closeout
+  mainAgentReady: true
   prerequisites_met:
     - audit_passed
     - score_written
@@ -1462,6 +1506,8 @@ handoff:
   next_agent: speckit-implement
   next_stage: 3
   ready: true
+  mainAgentNextAction: dispatch_remediation
+  mainAgentReady: true
   fix_required: true
   prerequisites_met:
     - audit_completed
@@ -1871,6 +1917,8 @@ handoff:
   next_agent: bmad-master
   next_stage: commit
   ready: true
+  mainAgentNextAction: run_closeout
+  mainAgentReady: true
   prerequisites_met:
     - audit_passed
     - score_written
@@ -1963,6 +2011,8 @@ handoff:
   next_agent: bmad-master
   next_stage: commit
   ready: true
+  mainAgentNextAction: run_closeout
+  mainAgentReady: true
   prerequisites_met:
     - audit_passed
     - score_written
@@ -2065,6 +2115,8 @@ handoff:
   next_agent: auditor-document
   next_stage: 4
   ready: true
+  mainAgentNextAction: dispatch_remediation
+  mainAgentReady: true
   fix_required: true
   prerequisites_met:
     - audit_completed
@@ -2156,4 +2208,3 @@ Claude 版 skill 落地后，至少应满足以下验证：
 > Claude 版 `bmad-story-assistant` 不是 Cursor skill 的直接复制品，而是一个以 Cursor 为语义基线、以 Claude/OMC 为执行适配层、以本仓规则为增强层的统一编排入口 skill。
 
 <!-- ADAPTATION_COMPLETE: 2026-03-15 -->
-

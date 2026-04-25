@@ -29,28 +29,28 @@ references:
 
 本 skill 是 Cursor `bmad-standalone-tasks` 在 Claude Code CLI / OMC 环境下的统一适配入口。
 
+## 主 Agent 编排面（强制）
+
+交互模式下，在主 Agent 启动、恢复或收口 `standalone_tasks` 执行链之前，必须先读取：
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action inspect
+```
+
+如需生成正式派发计划，则读取：
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan
+```
+
+`mainAgentNextAction / mainAgentReady` 仅为 compatibility summary；真正权威状态始终是 `orchestrationState + pendingPacket + continueDecision`。
+
 目标不是简单复制 Cursor skill，而是：
 
 1. **继承 Cursor 已验证的 standalone 任务执行语义**（从 TASKS/BUGFIX 文档前置审计 → 提取未完成任务 → 子代理实施 → 实施后审计）
 2. **在 Claude/OMC 运行时中将执行体映射到 `.claude/agents/` 系列**（审计 → `auditor-implement`、`auditor-tasks-doc`；实施 → `speckit-implement` 或通用执行体）
 3. **接入仓库中已开发完成的 handoff、scoring、commit gate 机制**
 4. **确保在 Claude Code CLI 中能完整、连续、正确地执行 standalone 任务流程**
-
-## Host Guard（必须先执行）
-
-若当前实际宿主是 **Cursor IDE**，或调用上下文明显使用 Cursor 语义（例如 `mcp_task`、`generalPurpose`、`Cursor Task`，或调用方明确说“在 Cursor 宿主中执行”），则：
-
-1. **立即停止**本 Claude adapter 的后续执行
-2. 输出以下固定提示：
-
-```text
-HOST_MISMATCH: 当前误加载了 Claude 版 bmad-standalone-tasks，但实际宿主是 Cursor。请改用 `.cursor/skills/bmad-standalone-tasks/SKILL.md`。
-```
-
-3. **禁止**继续执行本 Claude adapter 的 `L1/L2/L3/L4` Fallback 降级逻辑
-4. **禁止**输出任何基于 `.claude/agents/speckit-implement.md`、`auditor-implement`、`Agent tool` 的降级通知
-
-只有在 **Claude Code CLI / OMC** 宿主中，才允许继续执行本文件后续内容。
 
 ---
 
@@ -191,6 +191,8 @@ handoff:
   next_action: implement_next_batch|post_batch_audit|commit_gate|revise_tasks_doc
   next_agent: bmad-standalone-tasks|auditor-implement|bmad-master|auditor-tasks-doc
   ready: true|false
+  mainAgentNextAction: dispatch_implement|dispatch_review|dispatch_remediation|run_closeout|await_user
+  mainAgentReady: true|false
 ```
 
 ### Main Agent responsibilities
@@ -275,6 +277,8 @@ handoff:
   next_action: post_batch_audit
   next_agent: auditor-implement
   ready: true
+  mainAgentNextAction: dispatch_review
+  mainAgentReady: true
 ```
 
 ---
@@ -368,6 +372,8 @@ handoff:
   next_action: implement_next_batch|commit_gate|revise_and_reaudit
   next_agent: bmad-standalone-tasks|bmad-master|auditor-implement
   ready: true|false
+  mainAgentNextAction: dispatch_implement|dispatch_review|dispatch_remediation|run_closeout|await_user
+  mainAgentReady: true|false
 ```
 
 ---

@@ -84,15 +84,6 @@ const governanceRuntimeConsumerPathPlugin = {
 const pkgDir = __dirname;
 const repoRoot = path.resolve(pkgDir, '../..');
 const outDir = path.join(pkgDir, 'dist');
-const workerEntry = path.join(repoRoot, 'scripts', 'bmad-runtime-worker.ts');
-const runnerEntry = path.join(repoRoot, 'scripts', 'governance-remediation-runner.ts');
-const dispatchWorkerEntry = path.join(repoRoot, 'scripts', 'governance-packet-dispatch-worker.ts');
-const executionResultIngestorEntry = path.join(
-  repoRoot,
-  'scripts',
-  'governance-execution-result-ingestor.ts'
-);
-const packetReconcilerEntry = path.join(repoRoot, 'scripts', 'governance-packet-reconciler.ts');
 const auditIndexEntry = path.join(repoRoot, 'scripts', 'update-runtime-audit-index.ts');
 const auditorPostActionsEntry = path.join(repoRoot, 'scripts', 'auditor-post-actions.ts');
 const auditorHostEntry = path.join(repoRoot, 'scripts', 'run-auditor-host.ts');
@@ -116,31 +107,6 @@ const bundles = [
     entry: path.join(pkgDir, 'src', 'consumer-mcp-server.js'),
     outfile: path.join(outDir, 'consumer-mcp-server.cjs'),
     label: 'consumer-mcp-server',
-  },
-  {
-    entry: workerEntry,
-    outfile: path.join(outDir, 'governance-runtime-worker.cjs'),
-    label: 'governance-runtime-worker',
-  },
-  {
-    entry: runnerEntry,
-    outfile: path.join(outDir, 'governance-remediation-runner.cjs'),
-    label: 'governance-remediation-runner',
-  },
-  {
-    entry: dispatchWorkerEntry,
-    outfile: path.join(outDir, 'governance-packet-dispatch-worker.cjs'),
-    label: 'governance-packet-dispatch-worker',
-  },
-  {
-    entry: executionResultIngestorEntry,
-    outfile: path.join(outDir, 'governance-execution-result-ingestor.cjs'),
-    label: 'governance-execution-result-ingestor',
-  },
-  {
-    entry: packetReconcilerEntry,
-    outfile: path.join(outDir, 'governance-packet-reconciler.cjs'),
-    label: 'governance-packet-reconciler',
   },
   {
     entry: auditIndexEntry,

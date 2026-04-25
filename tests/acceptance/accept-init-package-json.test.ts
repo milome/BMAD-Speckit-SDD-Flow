@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
+import { listUnexpectedLegacyConsumerHookFiles } from '../../packages/bmad-speckit/src/services/install-surface-manifest';
 
 const PKG_ROOT = join(import.meta.dirname, '..', '..');
 
@@ -30,6 +31,7 @@ describe('init-to-root package.json creation', () => {
       expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy-cli.cjs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'hooks', 'runtime-policy-inject.cjs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'hooks', 'write-runtime-context.cjs'))).toBe(true);
+      expect(listUnexpectedLegacyConsumerHookFiles(join(target, '.cursor', 'hooks'))).toHaveLength(0);
       expect(existsSync(join(target, 'scripts', 'emit-runtime-policy.cjs'))).toBe(false);
     } finally {
       rmSync(target, { recursive: true, force: true });
@@ -46,6 +48,7 @@ describe('init-to-root package.json creation', () => {
       expect(existsSync(join(target, '.claude', 'hooks', 'emit-runtime-policy.cjs'))).toBe(true);
       expect(existsSync(join(target, '.claude', 'hooks', 'resolve-for-session.cjs'))).toBe(true);
       expect(existsSync(join(target, '.claude', 'hooks', 'write-runtime-context.cjs'))).toBe(true);
+      expect(listUnexpectedLegacyConsumerHookFiles(join(target, '.claude', 'hooks'))).toHaveLength(0);
       expect(existsSync(join(target, '.claude', 'i18n'))).toBe(true);
       expect(existsSync(join(target, 'scripts', 'emit-runtime-policy.cjs'))).toBe(false);
       expect(existsSync(join(target, '.mcp.json'))).toBe(false);

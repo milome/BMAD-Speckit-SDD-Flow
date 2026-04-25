@@ -6,11 +6,39 @@ description: |
 
 # BMAD Standalone Tasks
 
+## Main Agent Orchestration Surface
+
+在 interactive main-agent 模式下，主 Agent 在发起、继续或收口 `standalone_tasks` 链路前，必须优先读取：
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action inspect
+```
+
+如需生成正式派发计划，则读取：
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan
+```
+
+`mainAgentNextAction / mainAgentReady` 仍保留为 handoff compatibility 字段，但不再是唯一 runtime truth。
+
 Execute unfinished work from a **single TASKS or BUGFIX document** in a single session. Implementation and code edits are **only** done by subagents; the main Agent orchestrates and audits.
 
 **实施前的 `auditor-tasks-doc` 属于 TASKS/BUGFIX 文档前置审计，且必须先于任何实施执行。** 不允许把文档前置审计降级成建议项、可选步骤或实施后补做项。
 
 **Orphan standalone closeout contract**：当 TASKS / BUGFIX 文档位于 `_orphan/` 路径时，结构化审计报告必须显式提供 `stage=standalone_tasks`、`artifactDocPath`、`reportPath`；不得继续使用 `stage=document` 作为 orphan closeout 返回值。缺失任一字段或仅有 PASS 文本时，主 Agent 不得进入实现执行，host closeout 必须 fail-closed。
+
+**统一 closeout 硬门禁（适用于本技能全部审计闭环）**：
+- 主 Agent 在每个阶段的完整 prompt 模板结尾、resume 指令结尾、以及审计通过后的 host 收口指令结尾，必须原样追加下列固定句；同时必须自动写入评分数据与本技能要求的交接文档（handoff / state / progress / 审计收口文档），禁止留给用户手动完成。
+- 未执行 `runAuditorHost` 并验证评分写入成功前，禁止结束、禁止交还用户手动操作。
+- 只有 `runAuditorHost` 返回 `closeout approved` 才算完成；其余都算未完成。
+- 禁止给“你可以手动做下一步”的建议，除非用户明确要求。
+- `runAuditorHost` 失败时必须自动重试，并在每次重试时记录失败原因与修复动作；未成功前不得退出当前闭环。
+- 最终回复必须显式包含以下 4 行，缺一视为未完成：
+  - `runAuditorHost 调用参数`
+  - `runAuditorHost 返回结果`
+  - `评分写入结果（成功/失败码）`
+  - `closeout 状态（approved/未approved）`
 
 ## When to use
 
@@ -161,6 +189,8 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 ```
 
 - Main Agent: launch this mcp_task after Step 1 (and after any resume). 主 Agent 在发起第 2、3 轮审计前，可输出「第 N 轮审计通过，继续验证…」以提示用户。If the report is "未通过"，主 Agent 通过再次发起实施子任务（或 resume）由子代理修复代码与 prd/progress；主 Agent 仅可做说明性/文档类编辑，不得编辑 prd.*.json、progress.*.txt 或生产代码。然后重新发起审计直至连续 3 轮无 gap 收敛。
+
+- **不中断执行 contract**：实施子代理必须从当前批次的第一项开始，连续完成当前作用域内的全部剩余 US/任务，不得在单项完成、批中 milestone 或“先等你确认”节点暂停。控制权仅可在以下三种情况下返回主 Agent：① 当前作用域任务全部完成且进入 post-audit / closeout；② 出现真实 blocker，需要 reroute / remediation；③ 本技能显式定义的审计边界或 resume checkpoint 到达。
 
 ---
 

@@ -70,6 +70,8 @@
   - `convergence_status`
   - `next_action`
   - `ready`
+  - `mainAgentNextAction`
+  - `mainAgentReady`
 
 ## Mandatory Startup
 
@@ -141,7 +143,11 @@ handoff:
   next_action: revise_tasks_doc|execute_standalone_tasks
   next_agent: auditor-tasks-doc|bmad-standalone-tasks
   ready: true|false
+  mainAgentNextAction: dispatch_remediation|dispatch_implement
+  mainAgentReady: true|false
 ```
+
+说明：这里的 `next_agent`、`mainAgentNextAction`、`mainAgentReady` 只作为 compatibility hint。审计返回后，真正的下一条全局分支必须回到主 Agent，并重新读取 `main-agent-orchestration` surface 后决定。
 
 ## Lifecycle
 

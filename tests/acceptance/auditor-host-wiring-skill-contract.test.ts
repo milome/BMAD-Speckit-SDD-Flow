@@ -54,6 +54,28 @@ describe('auditor host runner wiring in higher-level entry surfaces', () => {
     }
   });
 
+  it('enforces closeout hard gates and final response checklist across bug/story/standalone skills', () => {
+    const docs = [
+      readRepoFile('_bmad/cursor/skills/bmad-bug-assistant/SKILL.md'),
+      readRepoFile('_bmad/cursor/skills/bmad-story-assistant/SKILL.md'),
+      readRepoFile('_bmad/cursor/skills/bmad-standalone-tasks/SKILL.md'),
+      readRepoFile('_bmad/claude/skills/bmad-bug-assistant/SKILL.md'),
+      readRepoFile('_bmad/claude/skills/bmad-story-assistant/SKILL.md'),
+      readRepoFile('_bmad/claude/skills/bmad-standalone-tasks/SKILL.md'),
+    ];
+
+    for (const doc of docs) {
+      expect(doc).toContain('未执行 `runAuditorHost` 并验证评分写入成功前，禁止结束、禁止交还用户手动操作。');
+      expect(doc).toContain('只有 `runAuditorHost` 返回 `closeout approved` 才算完成；其余都算未完成。');
+      expect(doc).toContain('禁止给“你可以手动做下一步”的建议，除非用户明确要求。');
+      expect(doc).toContain('`runAuditorHost` 失败时必须自动重试，并在每次重试时记录失败原因与修复动作；未成功前不得退出当前闭环。');
+      expect(doc).toContain('`runAuditorHost 调用参数`');
+      expect(doc).toContain('`runAuditorHost 返回结果`');
+      expect(doc).toContain('`评分写入结果（成功/失败码）`');
+      expect(doc).toContain('`closeout 状态（approved/未approved）`');
+    }
+  });
+
   it('removes direct score/check-score walkthroughs from cleaned wave docs and mirrors', () => {
     const cleanedDocs = [
       '_bmad/claude/skills/bmad-bug-assistant/SKILL.zh.md',

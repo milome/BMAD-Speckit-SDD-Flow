@@ -11,7 +11,35 @@ description: |
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
 > Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
 
+> **统一 closeout 硬门禁（适用于本技能全部审计闭环）**：
+> - 主 Agent 在每个阶段的完整 prompt 模板结尾、resume 指令结尾、以及审计通过后的 host 收口指令结尾，必须原样追加下列固定句；同时必须自动写入评分数据与本技能要求的交接文档（handoff / state / progress / 审计收口文档），禁止留给用户手动完成。
+> - 未执行 `runAuditorHost` 并验证评分写入成功前，禁止结束、禁止交还用户手动操作。
+> - 只有 `runAuditorHost` 返回 `closeout approved` 才算完成；其余都算未完成。
+> - 禁止给“你可以手动做下一步”的建议，除非用户明确要求。
+> - `runAuditorHost` 失败时必须自动重试，并在每次重试时记录失败原因与修复动作；未成功前不得退出当前闭环。
+> - 最终回复必须显式包含以下 4 行，缺一视为未完成：
+>   - `runAuditorHost 调用参数`
+>   - `runAuditorHost 返回结果`
+>   - `评分写入结果（成功/失败码）`
+>   - `closeout 状态（approved/未approved）`
+
 # BMAD Story 助手
+
+## Main Agent Orchestration Surface
+
+在 interactive main-agent 模式下，主 Agent 在发起、继续或收口 `story` 链路前，必须优先读取：
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action inspect
+```
+
+如需生成正式派发计划，则读取：
+
+```bash
+npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan
+```
+
+`mainAgentNextAction / mainAgentReady` 仍保留为 handoff compatibility 字段，但不再是唯一 runtime truth。
 
 > **Party-mode source of truth（Cursor）**：`{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。Cursor 分支的 party-mode rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 只定义 Story 场景何时进入 party-mode，不得维护第二套 gate 语义。
 
@@ -678,7 +706,7 @@ prompt: |
 
 #### 步骤 2.3：阶段二准入检查（强制，先执行）
 
-主 Agent 在收到阶段二通过结论后、进入阶段三之前，**必须先**确认统一 auditor host runner 已完成 post-audit automation。若 host 尚未执行且报告文件 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_Story_{epic}-{story}_stage2.md` 存在，则主 Agent 执行 步骤 2.2 补跑 `runAuditorHost`。失败 non_blocking。
+主 Agent 在收到阶段二通过结论后、进入阶段三之前，**必须先**确认统一 auditor host runner 已完成 post-audit automation。若 host 尚未执行且报告文件 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_Story_{epic}-{story}_stage2.md` 存在，则主 Agent 执行 步骤 2.2 补跑 `runAuditorHost`。未获得 `closeout approved` 前不得进入阶段三。
 
 #### 步骤 2.2：补跑 runAuditorHost（步骤 2.3 判定 host 未完成时执行）
 
@@ -686,12 +714,12 @@ prompt: |
 ```bash
 npx ts-node scripts/run-auditor-host.ts --projectRoot <projectRoot> --stage story --artifactPath <Story 文档路径> --reportPath <报告路径> --iterationCount 0
 ```
-补跑后再次确认 host 已完成收口；若报告不存在则停止。失败 non_blocking。
+补跑后再次确认 host 已完成收口；若报告不存在则停止并明确缺失原因。若调用失败，必须自动重试、记录每次失败原因与修复动作，直到获得 `closeout approved` 或确认存在真实 blocker。
 
 **与 T11 衔接说明**：子代理在【审计通过后必做】中只返回 host 所需字段；主 Agent 通过 步骤 2.3 / 2.2 确保 `runAuditorHost` 已完成，避免重复收口。
 
 #### 审计通过后统一 Host 收口（强制）
-- story 阶段的评分写入、auditIndex 更新与其它 post-audit automation 统一由 `runAuditorHost` 承接；主 Agent 通过 步骤 2.2/2.3 做完成态检查与补跑；**必须含 `--iteration-count {累计值}`**；stage=story；失败 non_blocking，记录 resultCode。
+- story 阶段的评分写入、auditIndex 更新与其它 post-audit automation 统一由 `runAuditorHost` 承接；主 Agent 通过 步骤 2.2/2.3 做完成态检查与补跑；**必须含 `--iteration-count {累计值}`**；stage=story。若失败，必须自动重试并记录 `resultCode`、失败原因、修复动作；未获得 `closeout approved` 前不得继续。
 
 ---
 
@@ -1009,7 +1037,7 @@ prompt: |
 
   （4）implement 阶段 artifactDocPath 可为 story 子目录实现主文档路径或留空。
 
-  （5）调用失败时记录 resultCode 进审计证据，不阻断流程。
+  （5）调用失败时记录 `resultCode`、失败原因与修复动作进审计证据，并立即自动重试；未获得 `closeout approved` 前不得结束当前 stage、不得交还用户手动操作。
 
   **必须嵌套执行 speckit-workflow 完整流程**：specify → plan → GAPS → tasks → 执行。
 
@@ -1099,12 +1127,12 @@ cleanup 命令（按平台择一执行）：
   - 若 host 已完成，则无需执行 步骤 4.2。
   - 若 host 未完成且 `AUDIT_Story_{epic}-{story}_stage4.md` 存在，则主 Agent 执行 步骤 4.2 补跑。
   - 若报告可解析块维度错误，则先修正报告，再通过 `runAuditorHost` 重新收口。
-  - 补跑失败 non_blocking，主流程继续。
+  - 补跑失败时不得继续主流程；必须自动重试并记录每次失败原因与修复动作，直到获得 `closeout approved` 或确认真实 blocker。
 - #### 步骤 4.2：补跑 runAuditorHost（步骤 4.3 判定 host 未完成时执行）
   - 当 步骤 4.3 判定 host 未完成且报告存在时，主 Agent 执行：`npx ts-node scripts/run-auditor-host.ts --projectRoot <projectRoot> --stage implement --artifactPath <story 文档路径> --reportPath <报告路径> --iterationCount {本 stage 累计 fail 轮数，0 表示一次通过}`
-  - 若调用失败，记录 resultCode，不阻断流程（non_blocking）。
+  - 若调用失败，记录 `resultCode`、失败原因与修复动作，并自动重试；未获得 `closeout approved` 前不得提供完成选项。
 - #### 审计通过后统一 Host 收口（强制）
-  - 子代理在【审计通过后必做】中返回 host 所需字段；主 Agent 通过 步骤 4.3/4.2 做完成态检查与补跑；**必须含 `--iteration-count {累计值}`**；stage=implement；失败 non_blocking。
+  - 子代理在【审计通过后必做】中返回 host 所需字段；主 Agent 通过 步骤 4.3/4.2 做完成态检查与补跑；**必须含 `--iteration-count {累计值}`**；stage=implement。若失败，必须自动重试并记录 `resultCode`、失败原因、修复动作；未获得 `closeout approved` 前不得结束。
 - 提供完成选项（见下文）
 
 **有条件通过（C级）**：
@@ -1503,6 +1531,8 @@ post-audit 前还必须追加以下检查：
 
 若审计结论为**未通过**，**必须**按审计报告修改后**再次发起**，直至「完全覆盖、验证通过」。
 
+- **不中断执行 contract**：实施子代理必须连续完成当前作用域内的全部剩余 User Story/任务，不得在 milestone 完成后暂停等待主 Agent 批准。控制权仅可在以下三种情况下返回主 Agent：① 当前作用域工作全部完成且可进入 post-audit；② 出现真实 blocker，需要 reroute / remediation；③ 本技能显式定义的审计或 checkpoint 边界已到达。
+
 ---
 
 ## 阶段五：Skill 自审计（技能创建时）
@@ -1718,4 +1748,3 @@ prompt: |
 - **BMad Master 介入（GAP-037 修复）**：回退>3 次或回滚>2 次时，需用户或项目负责人确认；审批步骤：记录原因 → 用户确认「继续」或「终止」→ 若继续则重置计数
 - 回退到 Layer 1 会重置整个 Epic 的规划
 - 回退/回滚操作必须记录原因和决策过程
-

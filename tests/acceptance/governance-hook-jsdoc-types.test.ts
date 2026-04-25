@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { listUnexpectedLegacyConsumerHookFiles } from '../../packages/bmad-speckit/src/services/install-surface-manifest';
 
 const repoRoot = process.cwd();
 
@@ -28,11 +29,6 @@ describe('governance hook jsdoc typing', () => {
         typedefs: ['GovernanceStopHookResult', 'GovernanceWorkerResult'],
         returns: '@returns {GovernanceStopHookResult}',
       },
-      {
-        file: path.join(repoRoot, '_bmad', 'runtime', 'hooks', 'run-bmad-runtime-worker.cjs'),
-        typedefs: ['GovernanceWorkerResult'],
-        returns: '@returns {GovernanceWorkerResult}',
-      },
     ];
 
     for (const testCase of cases) {
@@ -45,18 +41,8 @@ describe('governance hook jsdoc typing', () => {
       }
       expect(content).toContain(testCase.returns);
     }
-
-    const runtimeWorkerContent = readFileSync(
-      path.join(repoRoot, '_bmad', 'runtime', 'hooks', 'run-bmad-runtime-worker.cjs'),
-      'utf8'
-    );
-    expect(runtimeWorkerContent).toContain(
-      "@typedef {import('../../../scripts/governance-hook-types').GovernanceWorkerResult} GovernanceWorkerResult"
-    );
-    expect(runtimeWorkerContent).toContain('* @typedef {{');
-    expect(runtimeWorkerContent).toContain('* }} GovernanceWorkerOptions');
-    expect(runtimeWorkerContent).toContain('/**\n * @param {GovernanceWorkerOptions} [options]');
-    expect(runtimeWorkerContent).toContain('function runWorkerWithRunnerLock(options = {})');
-    expect(runtimeWorkerContent).toContain('function runBmadRuntimeWorker(options = {})');
+    expect(
+      listUnexpectedLegacyConsumerHookFiles(path.join(repoRoot, '_bmad', 'runtime', 'hooks'))
+    ).toHaveLength(0);
   });
 });
