@@ -42,7 +42,7 @@ The goal is **not** to blindly copy the Cursor skill, but to:
 
 ## Host Guard (must run first)
 
-If the actual host is **Cursor IDE**, or the invocation context clearly uses Cursor semantics (for example `mcp_task`, `generalPurpose`, or `Cursor Task`), then:
+If the actual host is **Cursor IDE**, or the invocation context clearly uses Cursor-side task semantics (for example Cursor-native task payloads or Cursor-specific executors), then:
 
 1. **Stop immediately**
 2. Print the exact message below:
@@ -267,4 +267,3 @@ When launching a TASKS document audit subtask, the main Agent **must** copy the 
 Post-implementation audit template: `references/audit-prompt-impl.md`.
 
 <!-- ADAPTATION_COMPLETE: 2026-03-15 -->
-

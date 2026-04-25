@@ -61,7 +61,7 @@ The goal is **not** to blindly copy the Cursor skill, but to:
 
 ## Host Guard (must run first)
 
-If the actual host is **Cursor IDE**, or the invocation context clearly uses Cursor semantics (for example `mcp_task`, `generalPurpose`, `Cursor Task`, or the caller explicitly says this is running under Cursor), then:
+If the actual host is **Cursor IDE**, or the invocation context clearly uses Cursor-side task semantics (for example Cursor-native task payloads, Cursor-specific executors, or the caller explicitly says this is running under Cursor), then:
 
 1. **Stop immediately**
 2. Print the exact message below:
