@@ -1,11 +1,12 @@
 <svg width="1600" height="960" viewBox="0 0 1600 960" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
   <title id="title">BMAD-Speckit-SDD-Flow architecture overview</title>
-  <desc id="desc">A structured, modern horizontal diagram showcasing the five layers of product intent to audited delivery with nested technical workflows and strict governance loops.</desc>
+  <desc id="desc">A structured, modern horizontal diagram showcasing the five layers of product intent to audited delivery with nested technical workflows.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="960" gradientUnits="userSpaceOnUse">
       <stop stop-color="#050505"/>
       <stop offset="1" stop-color="#0A0A0A"/>
     </linearGradient>
+    <!-- Pipeline Line Glow -->
     <linearGradient id="pipelineStroke" x1="160" y1="480" x2="1440" y2="480" gradientUnits="userSpaceOnUse">
       <stop stop-color="#3b82f6"/>
       <stop offset="0.25" stop-color="#8b5cf6"/>
@@ -26,15 +27,6 @@
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
-    
-    <!-- Markers for Feedback Loops -->
-    <marker id="arrow-rose" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#f43f5e"/>
-    </marker>
-    <marker id="arrow-amber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#f59e0b"/>
-    </marker>
-
     <style>
       .eyebrow { font: 700 14px "Inter", -apple-system, sans-serif; letter-spacing: 0.25em; fill: #6B7280; }
       .title { font: 800 48px "Inter", -apple-system, sans-serif; fill: #F3F4F6; letter-spacing: -0.02em; }
@@ -43,14 +35,13 @@
       .layerTitle { font: 700 20px "Inter", -apple-system, sans-serif; fill: #F9FAFB; }
       .layerText { font: 400 15px "Inter", -apple-system, sans-serif; fill: #6B7280; line-height: 1.5; }
       .nestedTag { font: 600 11px "Inter", -apple-system, sans-serif; letter-spacing: 0.1em; fill: #FFFFFF; }
-      .gateLabel { font: 700 11px monospace; letter-spacing: 0.15em; }
-      .loopLabel { font: 600 12px monospace; letter-spacing: 0.1em; fill: #f43f5e; }
+      .arrowLine { stroke: #374151; stroke-width: 2; stroke-dasharray: 4 6; }
     </style>
   </defs>
 
   <!-- Background -->
   <rect width="1600" height="960" rx="32" fill="url(#bg)"/>
-  
+
   <g stroke="#1F2937" stroke-width="1" stroke-dasharray="2 4" opacity="0.3">
     <path d="M0 80 H1600 M0 160 H1600 M0 240 H1600 M0 320 H1600 M0 400 H1600 M0 480 H1600 M0 560 H1600 M0 640 H1600 M0 720 H1600 M0 800 H1600 M0 880 H1600"/>
     <path d="M160 0 V960 M320 0 V960 M480 0 V960 M640 0 V960 M800 0 V960 M960 0 V960 M1120 0 V960 M1280 0 V960 M1440 0 V960"/>
@@ -66,37 +57,6 @@
   <!-- Pipeline Backdrop -->
   <path d="M220 540 L1380 540" stroke="#1F2937" stroke-width="8" stroke-linecap="round"/>
   <path d="M220 540 L1380 540" stroke="url(#pipelineStroke)" stroke-width="4" stroke-linecap="round" filter="url(#glowEffect)"/>
-
-  <!-- ================= GOVERNANCE OVERLAY: LOOPS & GATES ================= -->
-  <g id="governance-layer">
-    
-    <!-- RE-RUN LOOP: Layer 4 (Spec) back to Layer 3 (Story Dev) -->
-    <path d="M 1070 560 C 1070 740, 770 740, 770 565" fill="none" stroke="#f43f5e" stroke-width="2" stroke-dasharray="6 6" marker-end="url(#arrow-rose)" filter="url(#glowEffect)"/>
-    <text x="920" y="705" text-anchor="middle" class="loopLabel">RE-RUN / SPEC REJECTION</text>
-
-    <!-- RE-RUN LOOP: Layer 3 (Story Dev) back to Layer 2 (Epic Planning) -->
-    <path d="M 750 560 C 750 680, 510 680, 510 565" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6 6" marker-end="url(#arrow-amber)"/>
-    <text x="630" y="650" text-anchor="middle" class="loopLabel" fill="#f59e0b">ITERATION LOOP</text>
-
-    <!-- PIPELINE GATE: EPIC_GATE (Between L2 and L3) -->
-    <g transform="translate(635, 540)">
-      <rect x="-6" y="-30" width="12" height="60" rx="4" fill="#f59e0b" stroke="#f59e0b" stroke-width="2" filter="url(#glowEffect)"/>
-      <circle cx="0" cy="0" r="16" fill="#0A0A0A" stroke="#f59e0b" stroke-width="3"/>
-      <!-- Lock/Shield Icon -->
-      <path d="M -5 -4 L 5 -4 L 5 4 C 5 8, 0 10, 0 10 C 0 10, -5 8, -5 4 Z" fill="none" stroke="#f59e0b" stroke-width="2"/>
-      <text x="0" y="-45" text-anchor="middle" class="gateLabel" fill="#f59e0b">EPIC_GATE</text>
-    </g>
-
-    <!-- PIPELINE GATE: STORY_AUDIT_GATE (Between L3 and L4) -->
-    <g transform="translate(900, 540)">
-      <rect x="-6" y="-40" width="12" height="80" rx="4" fill="#10b981" stroke="#10b981" stroke-width="2" filter="url(#glowEffect)"/>
-      <circle cx="0" cy="0" r="20" fill="#0A0A0A" stroke="#10b981" stroke-width="3"/>
-      <!-- Lock/Shield Icon -->
-      <path d="M -6 -5 L 6 -5 L 6 6 C 6 11, 0 14, 0 14 C 0 14, -6 11, -6 6 Z" fill="none" stroke="#10b981" stroke-width="2"/>
-      <text x="0" y="-55" text-anchor="middle" class="gateLabel" fill="#10b981">STORY_AUDIT_GATE</text>
-    </g>
-
-  </g>
 
   <!-- ================= L1 Block ================= -->
   <g transform="translate(160, 440)">
@@ -147,7 +107,7 @@
     <foreignObject x="0" y="8" width="180" height="80">
       <div xmlns="http://www.w3.org/1999/xhtml" style="color: #9CA3AF; font: 400 13px 'Inter', sans-serif; line-height: 1.5;">
         Create → Refine → Story Doc.<br/><br/>
-        Output is pure business/UX requirements, ready for engineering.
+        Story work can recurse. First hard checkpoint lives here.
       </div>
     </foreignObject>
   </g>
@@ -159,22 +119,18 @@
     <!-- Node on Pipeline -->
     <circle cx="150" cy="100" r="16" fill="#111827" stroke="#f43f5e" stroke-width="4" filter="url(#glowEffect)"/>
     <circle cx="150" cy="100" r="6" fill="#f43f5e"/>
-    
+
     <!-- Content -->
     <text x="0" y="-100" class="layerLabel" fill="#f43f5e">LAYER 4</text>
     <text x="0" y="-72" class="layerTitle">Technical Implementation</text>
     <foreignObject x="0" y="-56" width="300" height="40">
       <div xmlns="http://www.w3.org/1999/xhtml" style="color: #9CA3AF; font: 400 13px 'Inter', sans-serif; line-height: 1.5;">
-        Translates Story into Tech Spec, then executes via SDD pipeline.
+        Nested Speckit-Workflow pipeline.
       </div>
     </foreignObject>
 
     <!-- Sub-pipeline -->
     <path d="M0 -8 L300 -8" stroke="#374151" stroke-width="2" stroke-linecap="round"/>
-    
-    <!-- INTERNAL LAYER 4 RE-RUN LOOP -->
-    <path d="M 150 -20 C 150 -60, 15 -60, 15 -20" fill="none" stroke="#f43f5e" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrow-rose)"/>
-    <text x="82" y="-45" text-anchor="middle" class="gateLabel" fill="#f43f5e">GATES_LOOP</text>
 
     <g transform="translate(0, -8)">
       <circle cx="15" cy="0" r="8" fill="#1F2937" stroke="#3b82f6" stroke-width="2"/>
@@ -185,9 +141,7 @@
       <rect x="66" y="16" width="32" height="18" rx="6" fill="#8b5cf6" opacity="0.15"/>
       <text x="82" y="29" text-anchor="middle" class="nestedTag" fill="#8b5cf6">plan</text>
 
-      <!-- Gaps Checkpoint (The internal audit) -->
-      <circle cx="150" cy="0" r="10" fill="#f43f5e" fill-opacity="0.2" stroke="#f43f5e" stroke-width="2" filter="url(#glowEffect)"/>
-      <circle cx="150" cy="0" r="4" fill="#f43f5e"/>
+      <circle cx="150" cy="0" r="8" fill="#1F2937" stroke="#f43f5e" stroke-width="2"/>
       <rect x="132" y="16" width="36" height="18" rx="6" fill="#f43f5e" opacity="0.15"/>
       <text x="150" y="29" text-anchor="middle" class="nestedTag" fill="#f43f5e">GAPS</text>
 
