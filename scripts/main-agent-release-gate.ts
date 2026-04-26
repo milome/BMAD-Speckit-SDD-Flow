@@ -1,6 +1,8 @@
 import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import Ajv2020 from 'ajv/dist/2020';
+import addFormats from 'ajv-formats';
 
 interface GateCheckResult {
   id: string;
@@ -21,8 +23,42 @@ interface ReleaseGateReport {
   blocking_reasons: string[];
 }
 
+interface ReleaseGateCliOptions {
+  ledgerPath?: string;
+}
+
+interface ExecutionAuditLedgerItem {
+  taskId: string;
+  status: 'todo' | 'in_progress' | 'pass' | 'partial' | 'fail' | 'blocked';
+  updatedAt: string;
+  dependsOn?: string[];
+  evidenceRefs: string[];
+  notes?: string;
+}
+
+interface ExecutionAuditLedger {
+  version: 1;
+  ledgerType: 'execution_audit';
+  runId: string;
+  taskSetId?: string;
+  generatedAt: string;
+  items: ExecutionAuditLedgerItem[];
+}
+
 function normalizeText(value: string | null | undefined): string {
   return (value ?? '').trim();
+}
+
+function parseArgs(argv: string[]): ReleaseGateCliOptions {
+  const out: ReleaseGateCliOptions = {};
+  for (let index = 0; index < argv.length; index += 1) {
+    const token = argv[index];
+    if (token === '--ledgerPath' && argv[index + 1]) {
+      out.ledgerPath = argv[index + 1];
+      index += 1;
+    }
+  }
+  return out;
 }
 
 function runCommand(command: string): {
@@ -52,10 +88,114 @@ function writeReport(report: ReleaseGateReport): string {
   return targetPath;
 }
 
-function main(): number {
+function resolveOptionalPath(root: string, raw: string | undefined): string | null {
+  const normalized = normalizeText(raw);
+  if (!normalized) {
+    return null;
+  }
+  return path.isAbsolute(normalized) ? normalized : path.resolve(root, normalized);
+}
+
+function executionAuditLedgerSchemaPath(root: string): string {
+  return path.join(root, 'docs', 'reference', 'execution-audit-ledger.schema.json');
+}
+
+function validateExecutionAuditLedger(
+  root: string,
+  ledgerPath: string
+): { passed: true; summary: string } | { passed: false; reason: string } {
+  if (!fs.existsSync(ledgerPath)) {
+    return {
+      passed: false,
+      reason: `execution audit ledger missing: ${ledgerPath}`,
+    };
+  }
+
+  const schemaPath = executionAuditLedgerSchemaPath(root);
+  if (!fs.existsSync(schemaPath)) {
+    return {
+      passed: false,
+      reason: `execution audit ledger schema missing: ${schemaPath}`,
+    };
+  }
+
+  let ledger: ExecutionAuditLedger;
+  let schema: unknown;
+  try {
+    ledger = JSON.parse(fs.readFileSync(ledgerPath, 'utf8')) as ExecutionAuditLedger;
+    schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
+  } catch (error) {
+    return {
+      passed: false,
+      reason: `execution audit ledger parse failed: ${error instanceof Error ? error.message : String(error)}`,
+    };
+  }
+
+  const ajv = new Ajv2020({ allErrors: true, strict: false });
+  addFormats(ajv);
+  const validate = ajv.compile(schema);
+  if (!validate(ledger)) {
+    const details = (validate.errors ?? [])
+      .map((item) => `${item.instancePath || '/'} ${item.message || 'invalid'}`)
+      .join('; ');
+    return {
+      passed: false,
+      reason: `execution audit ledger schema validation failed: ${details}`,
+    };
+  }
+
+  const seen = new Set<string>();
+  for (const item of ledger.items) {
+    if (seen.has(item.taskId)) {
+      return {
+        passed: false,
+        reason: `execution audit ledger contains duplicate taskId: ${item.taskId}`,
+      };
+    }
+    seen.add(item.taskId);
+  }
+
+  const taskMap = new Map<string, ExecutionAuditLedgerItem>(
+    ledger.items.map((item) => [item.taskId, item])
+  );
+
+  for (const item of ledger.items) {
+    for (const dep of item.dependsOn ?? []) {
+      const upstream = taskMap.get(dep);
+      if (!upstream) {
+        return {
+          passed: false,
+          reason: `execution audit ledger dependency missing: ${item.taskId} depends on unknown task ${dep}`,
+        };
+      }
+
+      if (
+        (item.status === 'pass' || item.status === 'in_progress') &&
+        (upstream.status === 'fail' || upstream.status === 'blocked')
+      ) {
+        return {
+          passed: false,
+          reason: `execution audit ledger inconsistent: downstream ${item.taskId}=${item.status} while upstream ${dep}=${upstream.status}`,
+        };
+      }
+    }
+  }
+
+  return {
+    passed: true,
+    summary: `execution audit ledger validated: ${ledger.items.length} items`,
+  };
+}
+
+function main(argv: string[]): number {
+  const args = parseArgs(argv);
+  const root = process.cwd();
   const e2eCommand =
     normalizeText(process.env.MAIN_AGENT_RELEASE_GATE_E2E_COMMAND) ||
     'npm run test:e2e:dual-host:journey';
+  const ledgerPath =
+    resolveOptionalPath(root, args.ledgerPath) ??
+    resolveOptionalPath(root, process.env.MAIN_AGENT_RELEASE_GATE_LEDGER_PATH);
 
   const e2eResult = runCommand(e2eCommand);
   const checks: GateCheckResult[] = [
@@ -74,6 +214,23 @@ function main(): number {
           }),
     },
   ];
+
+  if (ledgerPath) {
+    const ledgerCheck = validateExecutionAuditLedger(root, ledgerPath);
+    checks.push({
+      id: 'execution-audit-ledger',
+      passed: ledgerCheck.passed,
+      command: `validate-ledger ${ledgerPath}`,
+      exitCode: ledgerCheck.passed ? 0 : 1,
+      stdout: ledgerCheck.passed ? ledgerCheck.summary : '',
+      stderr: ledgerCheck.passed ? '' : ledgerCheck.reason,
+      ...(ledgerCheck.passed
+        ? {}
+        : {
+            failureReason: `禁止更新 sprint-status：execution audit ledger 校验失败（${ledgerCheck.reason}）。`,
+          }),
+    });
+  }
 
   const blockingReasons = checks
     .filter((item) => !item.passed)
@@ -110,4 +267,4 @@ function main(): number {
   return 0;
 }
 
-process.exit(main());
+process.exit(main(process.argv.slice(2)));
