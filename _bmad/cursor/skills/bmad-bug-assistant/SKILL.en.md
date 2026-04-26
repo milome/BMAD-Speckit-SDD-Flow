@@ -499,6 +499,8 @@ Delete `_bmad-output/current_pytest_session_pid.txt` after execution is complete
 
 **Unified host close-out after passing the audit (must be executed)**: After the post-implementation audit conclusion is "complete coverage, verification passed", the main Agent **must not** hand-run `parseAndWriteScore` or any audit-index CLI. It must call `runAuditorHost` as the single post-audit entry. When a BUGFIX document is present, the host/runner must receive `artifactDocPath=<BUGFIX document path>` to ensure `record.source_path` and registry audit index both point to the BUGFIX document instead of the audit report path.
 
+**不中断执行 contract**: The implementation subagent must continuously complete all remaining scoped US/tasks. It must not stop after a milestone, after a single task, or just to “report progress first”. Control may return to the main Agent only when: ① every task in the current scope is finished and the flow can enter post-audit; ② a real blocker requires reroute / remediation; ③ an explicit audit or checkpoint boundary defined by this workflow has been reached. 换言之，子代理必须连续完成当前作用域内的全部剩余 US/任务。
+
 **Host call example** (executed in the project root directory):
 ```bash
 npx ts-node scripts/run-auditor-host.ts \
