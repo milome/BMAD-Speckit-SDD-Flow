@@ -40,8 +40,12 @@ describe('main-agent dual-host PR orchestration', () => {
   it('accepts gh auth status as GitHub credentials even without token environment variables', () => {
     const previousGithubToken = process.env.GITHUB_TOKEN;
     const previousGhToken = process.env.GH_TOKEN;
+    const previousPatToken = process.env.GITHUB_PAT_TOKEN;
+    const previousPersonalAccessToken = process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
     delete process.env.GITHUB_TOKEN;
     delete process.env.GH_TOKEN;
+    delete process.env.GITHUB_PAT_TOKEN;
+    delete process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
     try {
       const report = runDualHostPrOrchestration({
         provider: 'real',
@@ -64,6 +68,57 @@ describe('main-agent dual-host PR orchestration', () => {
         delete process.env.GH_TOKEN;
       } else {
         process.env.GH_TOKEN = previousGhToken;
+      }
+      if (previousPatToken == null) {
+        delete process.env.GITHUB_PAT_TOKEN;
+      } else {
+        process.env.GITHUB_PAT_TOKEN = previousPatToken;
+      }
+      if (previousPersonalAccessToken == null) {
+        delete process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
+      } else {
+        process.env.GITHUB_PERSONAL_ACCESS_TOKEN = previousPersonalAccessToken;
+      }
+    }
+  });
+
+  it('accepts common personal access token environment variable names', () => {
+    const previousGithubToken = process.env.GITHUB_TOKEN;
+    const previousGhToken = process.env.GH_TOKEN;
+    const previousPatToken = process.env.GITHUB_PAT_TOKEN;
+    const previousPersonalAccessToken = process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
+    delete process.env.GITHUB_TOKEN;
+    delete process.env.GH_TOKEN;
+    process.env.GITHUB_PAT_TOKEN = 'test-token';
+    delete process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
+    try {
+      const report = runDualHostPrOrchestration({
+        provider: 'real',
+        checkCommand: (command) => ['gh', 'claude', 'codex'].includes(command),
+      });
+      expect(report.providerPreflight.find((check) => check.id === 'github-auth')?.passed).toBe(
+        true
+      );
+    } finally {
+      if (previousGithubToken == null) {
+        delete process.env.GITHUB_TOKEN;
+      } else {
+        process.env.GITHUB_TOKEN = previousGithubToken;
+      }
+      if (previousGhToken == null) {
+        delete process.env.GH_TOKEN;
+      } else {
+        process.env.GH_TOKEN = previousGhToken;
+      }
+      if (previousPatToken == null) {
+        delete process.env.GITHUB_PAT_TOKEN;
+      } else {
+        process.env.GITHUB_PAT_TOKEN = previousPatToken;
+      }
+      if (previousPersonalAccessToken == null) {
+        delete process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
+      } else {
+        process.env.GITHUB_PERSONAL_ACCESS_TOKEN = previousPersonalAccessToken;
       }
     }
   });

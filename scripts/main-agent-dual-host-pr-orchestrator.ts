@@ -13,6 +13,12 @@ import { runDualHostJourneyRunner } from './e2e-dual-host-journey-runner';
 
 type ProviderMode = 'mock' | 'real';
 type CommandChecker = (command: string, args?: string[]) => boolean;
+const GITHUB_TOKEN_ENV_NAMES = [
+  'GITHUB_TOKEN',
+  'GH_TOKEN',
+  'GITHUB_PAT_TOKEN',
+  'GITHUB_PERSONAL_ACCESS_TOKEN',
+];
 
 export interface DualHostPrOrchestrationReport {
   reportType: 'main_agent_dual_host_pr_orchestration';
@@ -60,7 +66,10 @@ function commandSucceeds(command: string, args: string[] = []): boolean {
 }
 
 function githubAuthAvailable(checkCommand: CommandChecker): boolean {
-  return Boolean(process.env.GITHUB_TOKEN || process.env.GH_TOKEN) || checkCommand('gh', ['auth', 'status']);
+  return (
+    GITHUB_TOKEN_ENV_NAMES.some((name) => Boolean(process.env[name])) ||
+    checkCommand('gh', ['auth', 'status'])
+  );
 }
 
 function providerPreflight(
@@ -78,7 +87,8 @@ function providerPreflight(
     {
       id: 'github-auth',
       passed: githubAuthAvailable(checkCommand),
-      detail: 'GITHUB_TOKEN/GH_TOKEN or gh auth status must be available',
+      detail:
+        'GITHUB_TOKEN/GH_TOKEN/GITHUB_PAT_TOKEN/GITHUB_PERSONAL_ACCESS_TOKEN or gh auth status must be available',
     },
   ];
 }
