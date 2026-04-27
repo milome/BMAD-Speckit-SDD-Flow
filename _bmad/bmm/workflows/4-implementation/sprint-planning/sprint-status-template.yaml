@@ -55,7 +55,7 @@ development_status:
   epic-2-retrospective: optional
 
 deferred_gap_plan:
-  source_report: "_bmad-output/planning-artifacts/implementation-readiness-report-2026-04-08.md"
+  source_report: "_bmad-output/planning-artifacts/{branch}/implementation-readiness-report-2026-04-08.md"
   items:
     J04-Smoke-E2E:
       status: deferred

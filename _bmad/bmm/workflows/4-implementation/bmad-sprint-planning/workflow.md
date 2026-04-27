@@ -1,4 +1,4 @@
-# Sprint Planning Workflow
+﻿# Sprint Planning Workflow
 
 **Goal:** Generate sprint status tracking from epics, detecting current story statuses and building a complete sprint-status.yaml file.
 
@@ -33,7 +33,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 
 | Input | Path | Load Strategy |
 |-------|------|---------------|
-| Epics | `{planning_artifacts}/*epic*.md` (whole) or `{planning_artifacts}/*epic*/*.md` (sharded) | FULL_LOAD |
+| Epics | `{planning_artifacts}/{branch}/epics.md` (whole) or `` (sharded) | FULL_LOAD |
 
 ### Context
 
@@ -109,7 +109,7 @@ development_status:
 **Story file detection:**
 
 - Check: `{story_location_absolute}/{story-key}.md` (e.g., `stories/1-1-user-authentication.md`)
-- If exists → upgrade status to at least `ready-for-dev`
+- If exists 鈫?upgrade status to at least `ready-for-dev`
 
 **Preservation rule:**
 
@@ -118,9 +118,9 @@ development_status:
 
 **Status Flow Reference:**
 
-- Epic: `backlog` → `in-progress` → `done`
-- Story: `backlog` → `ready-for-dev` → `in-progress` → `review` → `done`
-- Retrospective: `optional` ↔ `done`
+- Epic: `backlog` 鈫?`in-progress` 鈫?`done`
+- Story: `backlog` 鈫?`ready-for-dev` 鈫?`in-progress` 鈫?`review` 鈫?`done`
+- Retrospective: `optional` 鈫?`done`
   </step>
 
 <step n="4" goal="Generate sprint status file">
@@ -144,8 +144,8 @@ development_status:
 #   - done: All stories in epic completed
 #
 # Epic Status Transitions:
-#   - backlog → in-progress: Automatically when first story is created (via create-story)
-#   - in-progress → done: Manually when all stories reach 'done' status
+#   - backlog 鈫?in-progress: Automatically when first story is created (via create-story)
+#   - in-progress 鈫?done: Manually when all stories reach 'done' status
 #
 # Story Status:
 #   - backlog: Story only exists in epic file
@@ -226,7 +226,7 @@ development_status:
 **Epic Status Flow:**
 
 ```
-backlog → in-progress → done
+backlog 鈫?in-progress 鈫?done
 ```
 
 - **backlog**: Epic not yet started
@@ -236,7 +236,7 @@ backlog → in-progress → done
 **Story Status Flow:**
 
 ```
-backlog → ready-for-dev → in-progress → review → done
+backlog 鈫?ready-for-dev 鈫?in-progress 鈫?review 鈫?done
 ```
 
 - **backlog**: Story only exists in epic file
@@ -248,7 +248,7 @@ backlog → ready-for-dev → in-progress → review → done
 **Retrospective Status:**
 
 ```
-optional ↔ done
+optional 鈫?done
 ```
 
 - **optional**: Ready to be conducted but not required
@@ -261,3 +261,4 @@ optional ↔ done
 3. **Parallel Work Supported**: Multiple stories can be `in-progress` if team capacity allows
 4. **Review Before Done**: Stories should pass through `review` before `done`
 5. **Learning Transfer**: SM typically creates next story after previous one is `done` to incorporate learnings
+

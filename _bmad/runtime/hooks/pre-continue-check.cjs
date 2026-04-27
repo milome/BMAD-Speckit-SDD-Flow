@@ -189,11 +189,36 @@ function loadGovernanceExecutionPolicy(projectRoot) {
 }
 
 function branchName(projectRoot) {
-  const headPath = path.join(projectRoot, '.git', 'HEAD');
-  if (!fs.existsSync(headPath)) return 'dev';
+  const gitEntry = path.join(projectRoot, '.git');
+  if (!fs.existsSync(gitEntry)) return 'dev';
+  let headPath = null;
+  try {
+    const stat = fs.lstatSync(gitEntry);
+    if (stat.isDirectory()) {
+      headPath = path.join(gitEntry, 'HEAD');
+    } else if (stat.isFile()) {
+      const raw = fs.readFileSync(gitEntry, 'utf8').trim();
+      const gitDirMatch = /^gitdir:\s*(.+)$/iu.exec(raw);
+      if (gitDirMatch) {
+        const gitDir = path.isAbsolute(gitDirMatch[1])
+          ? gitDirMatch[1]
+          : path.resolve(projectRoot, gitDirMatch[1]);
+        headPath = path.join(gitDir, 'HEAD');
+      }
+    }
+  } catch {
+    return 'dev';
+  }
+  if (!headPath || !fs.existsSync(headPath)) return 'dev';
   const raw = fs.readFileSync(headPath, 'utf8').trim();
-  const match = /^ref: refs\/heads\/(.+)$/.exec(raw);
-  return match ? match[1] : 'dev';
+  const match = /^ref:\s+refs\/heads\/(.+)$/iu.exec(raw);
+  if (match) {
+    return String(match[1]).replace(/[^a-zA-Z0-9._-]+/g, '-');
+  }
+  if (/^[0-9a-f]{7,40}$/iu.test(raw)) {
+    return `detached-${raw.slice(0, 7)}`;
+  }
+  return 'dev';
 }
 
 function sanitizeToken(value) {

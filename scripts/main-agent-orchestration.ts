@@ -31,11 +31,16 @@ import {
   readRegistryOrDefault,
   type ReviewerLatestCloseoutRecord,
 } from './runtime-context-registry';
+import { runAdaptiveIntakeGovernanceGate } from './adaptive-intake-governance-gate';
 import type {
   ImplementationEntryDecision,
   ImplementationEntryGate,
   RuntimeFlowId,
 } from './runtime-governance';
+import {
+  readUserStoryMappingIndexOrDefault,
+  selectBestMappingForRuntimeContext,
+} from './user-story-mapping';
 import { canMainAgentContinue } from './continue-state-contract';
 import { buildReadinessDriftProjection } from '../packages/scoring/governance/readiness-drift';
 import { loadAndDedupeRecords } from '../packages/scoring/query/loader';
@@ -72,11 +77,7 @@ export interface MainAgentOrchestrationSurface {
   orchestrationStatePath: string | null;
   orchestrationState: OrchestrationState | null;
   pendingPacketStatus: MainAgentPendingPacketStatus;
-  pendingPacket:
-    | RecommendationPacket
-    | ExecutionPacket
-    | ResumePacket
-    | null;
+  pendingPacket: RecommendationPacket | ExecutionPacket | ResumePacket | null;
   fourSignal: OrchestrationState['fourSignal'] | null;
   latestGate:
     | OrchestrationState['latestGate']
@@ -110,7 +111,10 @@ export interface MainAgentDispatchInstruction {
   expectedDelta: string;
 }
 
-function deriveNextActionFromTaskType(taskType: 'implement' | 'audit' | 'remediate' | 'document', stage: string): OrchestrationNextAction {
+function deriveNextActionFromTaskType(
+  taskType: 'implement' | 'audit' | 'remediate' | 'document',
+  stage: string
+): OrchestrationNextAction {
   switch (taskType) {
     case 'implement':
       return 'dispatch_review';
@@ -197,7 +201,38 @@ function listScopedOrchestrationStatePaths(projectRoot?: string): string[] {
     .map((file) => path.join(dir, file));
 }
 
-function resolveScopedOrchestrationState(projectRoot: string | undefined, runtimeContext: Partial<RuntimeContextFile> | null): {
+function mergeAllowedWriteScope(base: string[], extras: string[]): string[] {
+  return Array.from(new Set([...base, ...extras]));
+}
+
+function resolveMappedAllowedWriteScope(
+  projectRoot: string,
+  runtimeContext: Partial<RuntimeContextFile> | null,
+  flow: RuntimeFlowId,
+  taskType: 'implement' | 'audit' | 'remediate' | 'document'
+): string[] | null {
+  const mapping = selectBestMappingForRuntimeContext(
+    readUserStoryMappingIndexOrDefault(projectRoot),
+    runtimeContext,
+    flow
+  );
+  if (!mapping) {
+    return null;
+  }
+  if (taskType === 'audit') {
+    return mergeAllowedWriteScope(mapping.allowedWriteScope, [
+      'docs/**',
+      '_bmad-output/**',
+      'specs/**',
+    ]);
+  }
+  return mapping.allowedWriteScope;
+}
+
+function resolveScopedOrchestrationState(
+  projectRoot: string | undefined,
+  runtimeContext: Partial<RuntimeContextFile> | null
+): {
   sessionId: string | null;
   statePath: string | null;
   state: OrchestrationState | null;
@@ -306,7 +341,11 @@ function normalizePendingPacketStatus(
   if (!state?.pendingPacket) {
     return 'none';
   }
-  if (!packetPayload && state.pendingPacket.packetPath && !fs.existsSync(state.pendingPacket.packetPath)) {
+  if (
+    !packetPayload &&
+    state.pendingPacket.packetPath &&
+    !fs.existsSync(state.pendingPacket.packetPath)
+  ) {
     return 'missing_packet_file';
   }
   return state.pendingPacket.status;
@@ -445,10 +484,7 @@ function resolveImplementationEntryGateFromRegistry(
   runtimeContext: Partial<RuntimeContextFile> | null,
   flow: RuntimeFlowId
 ): ImplementationEntryGate | null {
-  if (
-    !projectRoot ||
-    (flow !== 'story' && flow !== 'bugfix' && flow !== 'standalone_tasks')
-  ) {
+  if (!projectRoot || (flow !== 'story' && flow !== 'bugfix' && flow !== 'standalone_tasks')) {
     return null;
   }
 
@@ -568,8 +604,7 @@ function deriveNextActionFromSurface(input: {
   ) {
     return {
       nextAction: input.state.nextAction,
-      ready:
-        input.state.nextAction !== 'await_user' && input.state.nextAction !== 'blocked',
+      ready: input.state.nextAction !== 'await_user' && input.state.nextAction !== 'blocked',
       source: 'orchestration_state',
     };
   }
@@ -605,15 +640,11 @@ function deriveNextActionFromSurface(input: {
   return { nextAction: 'dispatch_implement', ready: true, source: 'implementation_entry_gate' };
 }
 
-function inferLatestGateFromState(
-  state: OrchestrationState | null
-):
-  | {
-      gateId: string;
-      decision: 'pass' | 'auto_repairable_block' | 'true_blocker' | 'reroute';
-      reason: string;
-    }
-  | null {
+function inferLatestGateFromState(state: OrchestrationState | null): {
+  gateId: string;
+  decision: 'pass' | 'auto_repairable_block' | 'true_blocker' | 'reroute';
+  reason: string;
+} | null {
   if (!state) {
     return null;
   }
@@ -631,7 +662,11 @@ function inferLatestGateFromState(
       reason: 'orchestration state currently blocks continuation',
     };
   }
-  if (state.nextAction === 'dispatch_implement' || state.nextAction === 'dispatch_review' || state.nextAction === 'run_closeout') {
+  if (
+    state.nextAction === 'dispatch_implement' ||
+    state.nextAction === 'dispatch_review' ||
+    state.nextAction === 'run_closeout'
+  ) {
     return {
       gateId: 'implementation-readiness',
       decision: 'pass',
@@ -706,19 +741,35 @@ export function resolveMainAgentOrchestrationSurface(
   };
 }
 
-export function claimMainAgentPendingPacket(projectRoot: string, sessionId: string, owner = 'main-agent'): OrchestrationState {
+export function claimMainAgentPendingPacket(
+  projectRoot: string,
+  sessionId: string,
+  owner = 'main-agent'
+): OrchestrationState {
   return claimPendingPacket(projectRoot, sessionId, owner);
 }
 
-export function markMainAgentPacketDispatched(projectRoot: string, sessionId: string, packetId: string): OrchestrationState {
+export function markMainAgentPacketDispatched(
+  projectRoot: string,
+  sessionId: string,
+  packetId: string
+): OrchestrationState {
   return markPendingPacketDispatched(projectRoot, sessionId, packetId);
 }
 
-export function completeMainAgentPendingPacket(projectRoot: string, sessionId: string, packetId: string): OrchestrationState {
+export function completeMainAgentPendingPacket(
+  projectRoot: string,
+  sessionId: string,
+  packetId: string
+): OrchestrationState {
   return completePendingPacket(projectRoot, sessionId, packetId);
 }
 
-export function invalidateMainAgentPendingPacket(projectRoot: string, sessionId: string, packetId: string): OrchestrationState {
+export function invalidateMainAgentPendingPacket(
+  projectRoot: string,
+  sessionId: string,
+  packetId: string
+): OrchestrationState {
   return invalidatePendingPacket(projectRoot, sessionId, packetId);
 }
 
@@ -786,7 +837,10 @@ export function ensureMainAgentDispatchPacket(
 ): MainAgentOrchestrationSurface {
   const runtimeContext = loadRuntimeContextForMainAgent(input);
   const currentSurface = resolveMainAgentOrchestrationSurface(input);
-  if (currentSurface.pendingPacketStatus !== 'none' && currentSurface.pendingPacketStatus !== 'missing_packet_file') {
+  if (
+    currentSurface.pendingPacketStatus !== 'none' &&
+    currentSurface.pendingPacketStatus !== 'missing_packet_file'
+  ) {
     return currentSurface;
   }
   if (!input.projectRoot) {
@@ -809,9 +863,10 @@ export function ensureMainAgentDispatchPacket(
     normalizeText(currentSurface.closeout?.reportPath),
   ].filter(Boolean);
   const allowedWriteScope =
-    taskType === 'audit'
+    resolveMappedAllowedWriteScope(input.projectRoot, runtimeContext, input.flow, taskType) ??
+    (taskType === 'audit'
       ? ['docs/**', '_bmad-output/**', 'specs/**']
-      : ['src/**', 'tests/**', 'docs/**', '_bmad-output/**'];
+      : ['src/**', 'tests/**', 'docs/**', '_bmad-output/**']);
 
   const packet =
     currentSurface.orchestrationState?.originalExecutionPacketId != null
@@ -843,8 +898,7 @@ export function ensureMainAgentDispatchPacket(
           stopConditions: ['true blocker detected', 'scope must widen'],
         });
 
-  const packetKind: PacketKind =
-    'originalExecutionPacketId' in packet ? 'resume' : 'execution';
+  const packetKind: PacketKind = 'originalExecutionPacketId' in packet ? 'resume' : 'execution';
   const packetPath = writePacketFile(input.projectRoot, sessionId, packetId, packet);
 
   let writtenState: OrchestrationState;
@@ -877,13 +931,19 @@ export function ensureMainAgentDispatchPacket(
     writtenState = {
       version: 1,
       sessionId,
-      host: currentSurface.closeout?.runner === 'runAuditorHost'
-        ? (readGovernanceRemediationConfig(input.projectRoot).primaryHost === 'claude' ? 'claude' : 'cursor')
-        : (readGovernanceRemediationConfig(input.projectRoot).primaryHost === 'claude' ? 'claude' : 'cursor'),
+      host:
+        currentSurface.closeout?.runner === 'runAuditorHost'
+          ? readGovernanceRemediationConfig(input.projectRoot).primaryHost === 'claude'
+            ? 'claude'
+            : 'cursor'
+          : readGovernanceRemediationConfig(input.projectRoot).primaryHost === 'claude'
+            ? 'claude'
+            : 'cursor',
       flow: input.flow as 'story' | 'bugfix' | 'standalone_tasks',
       currentPhase: input.stage as OrchestrationState['currentPhase'],
       nextAction:
-        (currentSurface.mainAgentNextAction as OrchestrationState['nextAction']) ?? 'dispatch_implement',
+        (currentSurface.mainAgentNextAction as OrchestrationState['nextAction']) ??
+        'dispatch_implement',
       pendingPacket: {
         packetId,
         packetPath,
@@ -923,7 +983,10 @@ export function ensureMainAgentDispatchPacket(
   return {
     source: 'orchestration_state',
     sessionId,
-    orchestrationStatePath: path.join(orchestrationStateDir(input.projectRoot), `${sessionId}.json`),
+    orchestrationStatePath: path.join(
+      orchestrationStateDir(input.projectRoot),
+      `${sessionId}.json`
+    ),
     orchestrationState: writtenState,
     pendingPacketStatus: 'ready_for_main_agent',
     pendingPacket: packet,
@@ -945,7 +1008,9 @@ export function buildMainAgentDispatchInstruction(
     hydratePacket?: boolean;
   }
 ): MainAgentDispatchInstruction | null {
-  const surface = input.hydratePacket ? ensureMainAgentDispatchPacket(input) : resolveMainAgentOrchestrationSurface(input);
+  const surface = input.hydratePacket
+    ? ensureMainAgentDispatchPacket(input)
+    : resolveMainAgentOrchestrationSurface(input);
   const nextAction = surface.mainAgentNextAction;
   const taskType = taskTypeFromNextAction(nextAction);
   if (!nextAction || !taskType || !surface.mainAgentReady) {
@@ -977,7 +1042,8 @@ export function buildMainAgentDispatchInstruction(
       (surface.pendingPacket as ExecutionPacket | RecommendationPacket | ResumePacket).role ??
       (surface.pendingPacket as RecommendationPacket).recommendedRole ??
       defaultPacketRole(taskType),
-    expectedDelta: (surface.pendingPacket as ExecutionPacket | ResumePacket).expectedDelta ??
+    expectedDelta:
+      (surface.pendingPacket as ExecutionPacket | ResumePacket).expectedDelta ??
       (surface.pendingPacket as RecommendationPacket).expectedDelta,
   };
 }
@@ -1000,6 +1066,12 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.packetId = argv[++index];
     } else if (token === '--owner' && argv[index + 1]) {
       out.owner = argv[++index];
+    } else if (token === '--input' && argv[index + 1]) {
+      out.input = argv[++index];
+    } else if (token === '--payload' && argv[index + 1]) {
+      out.payload = argv[++index];
+    } else if (token === '--apply') {
+      out.apply = 'true';
     }
   }
   return out;
@@ -1029,7 +1101,8 @@ function resolveSessionAndPacketFromSurface(
 ): { sessionId: string; packetId: string } {
   const sessionId = normalizeText(args.sessionId) || normalizeText(surface.sessionId);
   const packetId =
-    normalizeText(args.packetId) || normalizeText(surface.orchestrationState?.pendingPacket?.packetId);
+    normalizeText(args.packetId) ||
+    normalizeText(surface.orchestrationState?.pendingPacket?.packetId);
   if (!sessionId || !packetId) {
     throw new Error('sessionId and packetId are required for packet lifecycle actions');
   }
@@ -1039,13 +1112,33 @@ function resolveSessionAndPacketFromSurface(
 export function mainMainAgentOrchestration(argv: string[]): number {
   const args = parseArgs(argv);
   const root = pickRoot(args);
+  const action = normalizeText(args.action) || 'inspect';
+
+  if (action === 'route-intake' || action === 'adaptive-intake') {
+    const inputPath = normalizeText(args.input);
+    const payload = normalizeText(args.payload);
+    if (!inputPath && !payload) {
+      console.error(
+        'main-agent-orchestration: route-intake requires --input <json-file> or --payload <json>'
+      );
+      return 1;
+    }
+    const candidate = JSON.parse(
+      payload || fs.readFileSync(path.resolve(root, inputPath), 'utf8')
+    ) as Parameters<typeof runAdaptiveIntakeGovernanceGate>[1];
+    const result = runAdaptiveIntakeGovernanceGate(root, candidate, {
+      apply: args.apply === 'true',
+    });
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    return result.decision.verdict === 'block' ? 1 : 0;
+  }
+
   const { flow, stage } = resolveFlowAndStage(root, args);
   const surface = resolveMainAgentOrchestrationSurface({
     projectRoot: root,
     flow,
     stage,
   });
-  const action = normalizeText(args.action) || 'inspect';
 
   switch (action) {
     case 'inspect': {
@@ -1065,7 +1158,11 @@ export function mainMainAgentOrchestration(argv: string[]): number {
     }
     case 'claim': {
       const { sessionId } = resolveSessionAndPacketFromSurface(surface, args);
-      const state = claimMainAgentPendingPacket(root, sessionId, normalizeText(args.owner) || 'main-agent');
+      const state = claimMainAgentPendingPacket(
+        root,
+        sessionId,
+        normalizeText(args.owner) || 'main-agent'
+      );
       process.stdout.write(`${JSON.stringify(state, null, 2)}\n`);
       return 0;
     }

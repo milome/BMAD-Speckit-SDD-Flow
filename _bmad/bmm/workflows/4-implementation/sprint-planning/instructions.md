@@ -9,25 +9,19 @@
 
 **Epic Discovery Process:**
 
-1. **Search for whole document first** - Look for `epics.md`, `bmm-epics.md`, or any `*epic*.md` file
-2. **Check for sharded version** - If whole document not found, look for `epics/index.md`
-3. **If sharded version found**:
-   - Read `index.md` to understand the document structure
-   - Read ALL epic section files listed in the index (e.g., `epic-1.md`, `epic-2.md`, etc.)
-   - Process all epics and their stories from the combined content
-   - This ensures complete sprint status coverage
-4. **Priority**: If both whole and sharded versions exist, use the whole document
-
-**Fuzzy matching**: Be flexible with document names - users may use variations like `epics.md`, `bmm-epics.md`, `user-stories.md`, etc.
+1. **Resolve branch-scoped canonical path** - run `git rev-parse --abbrev-ref HEAD`; if result is `HEAD`, use `detached-{short-sha}`; replace `/` with `-`; then check `{planning_artifacts}/{branch}/epics.md`
+2. **Require canonical whole document** - if the branch-scoped file is missing, HALT and instruct the user to generate `{planning_artifacts}/{branch}/epics.md`
+3. **Process canonical content only** - read all epics and stories from the branch-scoped whole document
 
 <workflow>
 
 <step n="1" goal="Parse epic files and extract all work items">
 <action>Load {project_context} for project-wide patterns and conventions (if exists)</action>
 <action>Communicate in {communication_language} with {user_name}</action>
-<action>Look for all files matching `{epics_pattern}` in {epics_location}</action>
-<action>Could be a single `epics.md` file or multiple `epic-1.md`, `epic-2.md` files</action>
-<action>Look for the latest implementation readiness report under {planning_artifacts} matching `implementation-readiness-report-*.md` (branch-scoped file wins when both branch and root reports exist)</action>
+<action>Resolve `branch_ref_sanitized`: run `git rev-parse --abbrev-ref HEAD`; if result is `HEAD`, use `detached-{short-sha}`; replace `/` with `-`</action>
+<action>Check for canonical whole document: `{planning_artifacts}/{branch_ref_sanitized}/epics.md`</action>
+<action>If canonical whole document is absent, HALT and instruct the user to generate `{planning_artifacts}/{branch_ref_sanitized}/epics.md`</action>
+<action>Look for the latest implementation readiness report under `{planning_artifacts}/{branch_ref_sanitized}` matching `implementation-readiness-report-*.md`</action>
 <action>If a readiness report exists, read the `## Deferred Gaps` and `## Deferred Gaps Tracking` sections before generating sprint status</action>
 
 <action>For each epic file found, extract:</action>

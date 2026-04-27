@@ -1,9 +1,11 @@
 ---
-outputFile: '{planning_artifacts}/implementation-readiness-report-{{date}}.md'
-remediationArtifactFile: '{planning_artifacts}/implementation-readiness-remediation-{{date}}.md'
+outputFile: '{planning_artifacts}/{branch}/implementation-readiness-report-{{date}}.md'
+remediationArtifactFile: '{planning_artifacts}/{branch}/implementation-readiness-remediation-{{date}}.md'
 ---
 
 # Step 6: Final Assessment
+
+> Legacy compatibility step only. Canonical readiness outputs are branch-scoped under `{planning_artifacts}/{branch}/`.
 
 ## STEP GOAL:
 

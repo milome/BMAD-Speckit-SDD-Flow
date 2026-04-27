@@ -1,8 +1,10 @@
----
-outputFile: '{planning_artifacts}/implementation-readiness-report-{{date}}.md'
+﻿---
+outputFile: '{planning_artifacts}/{branch}/implementation-readiness-report-{{date}}.md'
 ---
 
 # Step 3: Epic Coverage Validation
+
+> Legacy compatibility step only. Canonical readiness report path is `{planning_artifacts}/{branch}/implementation-readiness-report-{{date}}.md`.
 
 ## STEP GOAL:
 
@@ -12,32 +14,32 @@ To validate that all Functional Requirements from the PRD are captured in the ep
 
 ### Universal Rules:
 
-- 🛑 NEVER generate content without user input
-- 📖 CRITICAL: Read the complete step file before taking any action
-- 🔄 CRITICAL: When loading next step with 'C', ensure entire file is read
-- 📋 YOU ARE A FACILITATOR, not a content generator
-- ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
+- 馃洃 NEVER generate content without user input
+- 馃摉 CRITICAL: Read the complete step file before taking any action
+- 馃攧 CRITICAL: When loading next step with 'C', ensure entire file is read
+- 馃搵 YOU ARE A FACILITATOR, not a content generator
+- 鉁?YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
 
 ### Role Reinforcement:
 
-- ✅ You are an expert Product Manager and Scrum Master
-- ✅ Your expertise is in requirements traceability
-- ✅ You ensure no requirements fall through the cracks
-- ✅ Success is measured in complete FR coverage
+- 鉁?You are an expert Product Manager and Scrum Master
+- 鉁?Your expertise is in requirements traceability
+- 鉁?You ensure no requirements fall through the cracks
+- 鉁?Success is measured in complete FR coverage
 
 ### Step-Specific Rules:
 
-- 🎯 Focus ONLY on FR coverage validation
-- 🚫 Don't analyze story quality (that's later)
-- 💬 Compare PRD FRs against epic coverage list
-- 🚪 Document every missing FR
+- 馃幆 Focus ONLY on FR coverage validation
+- 馃毇 Don't analyze story quality (that's later)
+- 馃挰 Compare PRD FRs against epic coverage list
+- 馃毆 Document every missing FR
 
 ## EXECUTION PROTOCOLS:
 
-- 🎯 Load epics document completely
-- 💾 Extract FR coverage from epics
-- 📖 Compare against PRD FR list
-- 🚫 FORBIDDEN to proceed without documenting gaps
+- 馃幆 Load epics document completely
+- 馃捑 Extract FR coverage from epics
+- 馃摉 Compare against PRD FR list
+- 馃毇 FORBIDDEN to proceed without documenting gaps
 
 ## EPIC COVERAGE VALIDATION PROCESS:
 
@@ -95,9 +97,9 @@ Create coverage matrix:
 
 | FR Number | PRD Requirement | Epic Coverage  | Status    |
 | --------- | --------------- | -------------- | --------- |
-| FR1       | [PRD text]      | Epic X Story Y | ✓ Covered |
-| FR2       | [PRD text]      | **NOT FOUND**  | ❌ MISSING |
-| FR3       | [PRD text]      | Epic Z Story A | ✓ Covered |
+| FR1       | [PRD text]      | Epic X Story Y | 鉁?Covered |
+| FR2       | [PRD text]      | **NOT FOUND**  | 鉂?MISSING |
+| FR3       | [PRD text]      | Epic Z Story A | 鉁?Covered |
 ```
 
 ### 5. Document Missing Coverage
@@ -150,16 +152,16 @@ Epic coverage validation complete. Read fully and follow: `./step-04-ux-alignmen
 
 ---
 
-## 🚨 SYSTEM SUCCESS/FAILURE METRICS
+## 馃毃 SYSTEM SUCCESS/FAILURE METRICS
 
-### ✅ SUCCESS:
+### 鉁?SUCCESS:
 
 - Epics document loaded completely
 - FR coverage extracted accurately
 - All gaps identified and documented
 - Coverage matrix created
 
-### ❌ SYSTEM FAILURE:
+### 鉂?SYSTEM FAILURE:
 
 - Not reading complete epics document
 - Missing FRs in comparison
@@ -167,3 +169,4 @@ Epic coverage validation complete. Read fully and follow: `./step-04-ux-alignmen
 - Incomplete coverage analysis
 
 **Master Rule:** Every FR must have a traceable implementation path.
+

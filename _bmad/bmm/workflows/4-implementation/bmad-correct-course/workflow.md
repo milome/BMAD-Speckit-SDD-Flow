@@ -1,4 +1,4 @@
-# Correct Course - Sprint Change Management Workflow
+﻿# Correct Course - Sprint Change Management Workflow
 
 **Goal:** Manage significant changes during sprint execution by analyzing impact across all project artifacts and producing a structured Sprint Change Proposal.
 
@@ -33,7 +33,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 | Input | Path | Load Strategy |
 |-------|------|---------------|
 | PRD | `{planning_artifacts}/*prd*.md` (whole) or `{planning_artifacts}/*prd*/*.md` (sharded) | FULL_LOAD |
-| Epics | `{planning_artifacts}/*epic*.md` (whole) or `{planning_artifacts}/*epic*/*.md` (sharded) | FULL_LOAD |
+| Epics | `{planning_artifacts}/{branch}/epics.md` (whole) or `` (sharded) | FULL_LOAD |
 | Architecture | `{planning_artifacts}/*architecture*.md` (whole) or `{planning_artifacts}/*architecture*/*.md` (sharded) | FULL_LOAD |
 | UX Design | `{planning_artifacts}/*ux*.md` (whole) or `{planning_artifacts}/*ux*/*.md` (sharded) | FULL_LOAD |
 | Tech Spec | `{planning_artifacts}/*tech-spec*.md` (whole) | FULL_LOAD |
@@ -65,10 +65,10 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 
 1. **Search for index file** - Look for `{project_knowledge}/index.md`
 2. **If found**: Read the index to understand available documentation sections
-3. **Selectively load sections** based on relevance to the change being analyzed — do NOT load everything, only sections that relate to the impacted areas
-4. **This document is optional** — skip if `{project_knowledge}` does not exist (greenfield projects)
+3. **Selectively load sections** based on relevance to the change being analyzed 鈥?do NOT load everything, only sections that relate to the impacted areas
+4. **This document is optional** 鈥?skip if `{project_knowledge}` does not exist (greenfield projects)
 
-**Fuzzy matching**: Be flexible with document names — users may use variations like `prd.md`, `bmm-prd.md`, `product-requirements.md`, etc.
+**Fuzzy matching**: Be flexible with document names 鈥?users may use variations like `prd.md`, `bmm-prd.md`, `product-requirements.md`, etc.
 
 **Missing documents**: Not all documents may exist. PRD and Epics are essential; Architecture, UX Design, Tech Spec, and Document Project are loaded if available. HALT if PRD or Epics cannot be found.
 
@@ -111,7 +111,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 
 <action>For Story changes:</action>
 
-- Show old → new text format
+- Show old 鈫?new text format
 - Include story ID and section being modified
 - Provide rationale for each change
 - Example format:
@@ -265,3 +265,4 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 </step>
 
 </workflow>
+

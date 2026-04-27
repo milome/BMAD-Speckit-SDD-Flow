@@ -27,8 +27,8 @@ story_location: "{implementation_artifacts}" # Relative path for file-system, Fu
 story_location_absolute: "{implementation_artifacts}" # Absolute path for file operations
 
 # Source files (file-system only)
-epics_location: "{planning_artifacts}" # Directory containing epic*.md files
-epics_pattern: "epic*.md" # Pattern to find epic files
+epics_location: "{planning_artifacts}/{branch}"
+epics_pattern: "epics.md"
 
 # Output configuration
 status_file: "{implementation_artifacts}/sprint-status.yaml"
@@ -39,13 +39,13 @@ status_file: "{implementation_artifacts}/sprint-status.yaml"
 input_file_patterns:
   epics:
     description: "All epics with user stories"
-    whole: "{planning_artifacts}/*epic*.md"
-    sharded: "{planning_artifacts}/*epic*/*.md"
+    whole: "{planning_artifacts}/{branch}/epics.md"
+    sharded: ""
     load_strategy: "FULL_LOAD"
   readiness_reports:
     description: "Implementation readiness reports that may carry Deferred Gaps"
-    whole: "{planning_artifacts}/implementation-readiness-report-*.md"
-    sharded: "{planning_artifacts}/*/implementation-readiness-report-*.md"
+    whole: "{planning_artifacts}/{branch}/implementation-readiness-report-*.md"
+    sharded: ""
     load_strategy: "LATEST"
 
 # Output configuration

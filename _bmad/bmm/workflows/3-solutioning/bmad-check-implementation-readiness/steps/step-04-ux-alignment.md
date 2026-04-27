@@ -1,8 +1,10 @@
----
-outputFile: '{planning_artifacts}/implementation-readiness-report-{{date}}.md'
+﻿---
+outputFile: '{planning_artifacts}/{branch}/implementation-readiness-report-{{date}}.md'
 ---
 
 # Step 4: UX Alignment
+
+> Legacy compatibility step only. Canonical readiness report path is `{planning_artifacts}/{branch}/implementation-readiness-report-{{date}}.md`.
 
 ## STEP GOAL:
 
@@ -12,32 +14,32 @@ To check if UX documentation exists and validate that it aligns with PRD require
 
 ### Universal Rules:
 
-- 🛑 NEVER generate content without user input
-- 📖 CRITICAL: Read the complete step file before taking any action
-- 🔄 CRITICAL: When loading next step with 'C', ensure entire file is read
-- 📋 YOU ARE A FACILITATOR, not a content generator
-- ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
+- 馃洃 NEVER generate content without user input
+- 馃摉 CRITICAL: Read the complete step file before taking any action
+- 馃攧 CRITICAL: When loading next step with 'C', ensure entire file is read
+- 馃搵 YOU ARE A FACILITATOR, not a content generator
+- 鉁?YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
 
 ### Role Reinforcement:
 
-- ✅ You are a UX VALIDATOR ensuring user experience is properly addressed
-- ✅ UX requirements must be supported by architecture
-- ✅ Missing UX documentation is a warning if UI is implied
-- ✅ Alignment gaps must be documented
+- 鉁?You are a UX VALIDATOR ensuring user experience is properly addressed
+- 鉁?UX requirements must be supported by architecture
+- 鉁?Missing UX documentation is a warning if UI is implied
+- 鉁?Alignment gaps must be documented
 
 ### Step-Specific Rules:
 
-- 🎯 Check for UX document existence first
-- 🚫 Don't assume UX is not needed
-- 💬 Validate alignment between UX, PRD, and Architecture
-- 🚪 Add findings to the output report
+- 馃幆 Check for UX document existence first
+- 馃毇 Don't assume UX is not needed
+- 馃挰 Validate alignment between UX, PRD, and Architecture
+- 馃毆 Add findings to the output report
 
 ## EXECUTION PROTOCOLS:
 
-- 🎯 Search for UX documentation
-- 💾 If found, validate alignment
-- 📖 If not found, assess if UX is implied
-- 🚫 FORBIDDEN to proceed without completing assessment
+- 馃幆 Search for UX documentation
+- 馃捑 If found, validate alignment
+- 馃摉 If not found, assess if UX is implied
+- 馃毇 FORBIDDEN to proceed without completing assessment
 
 ## UX ALIGNMENT PROCESS:
 
@@ -61,13 +63,13 @@ Search patterns:
 
 ### 3. If UX Document Exists
 
-#### A. UX ↔ PRD Alignment
+#### A. UX 鈫?PRD Alignment
 
 - Check UX requirements reflected in PRD
 - Verify user journeys in UX match PRD use cases
 - Identify UX requirements not in PRD
 
-#### B. UX ↔ Architecture Alignment
+#### B. UX 鈫?Architecture Alignment
 
 - Verify architecture supports UX requirements
 - Check performance needs (responsiveness, load times)
@@ -113,17 +115,18 @@ UX alignment assessment complete. Read fully and follow: `./step-05-epic-quality
 
 ---
 
-## 🚨 SYSTEM SUCCESS/FAILURE METRICS
+## 馃毃 SYSTEM SUCCESS/FAILURE METRICS
 
-### ✅ SUCCESS:
+### 鉁?SUCCESS:
 
 - UX document existence checked
 - Alignment validated if UX exists
 - Warning issued if UX implied but missing
 - Findings added to report
 
-### ❌ SYSTEM FAILURE:
+### 鉂?SYSTEM FAILURE:
 
 - Not checking for UX document
 - Ignoring alignment issues
 - Not documenting warnings
+

@@ -27,11 +27,26 @@ describe('runtime-context-registry io', () => {
       expect(loaded.projectContextPath).toContain(
         path.join('_bmad-output', 'runtime', 'context', 'project.json')
       );
+      expect(loaded.sources.epicsPath).toBe('_bmad-output/planning-artifacts/dev/epics.md');
       expect(loaded.sources.storyArtifactsRoot).toBe('_bmad-output/implementation-artifacts');
       expect(loaded.sources.specsRoot).toBe('specs');
       expect(loaded.auditIndex.bugfix).toEqual({});
       expect(loaded.auditIndex.standalone_tasks).toEqual({});
       expect(loaded.latestReviewerCloseout).toBeNull();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('normalizes legacy epicsPath metadata when older registry files still store bare epics.md', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'runtime-registry-legacy-'));
+    try {
+      const legacy = defaultRuntimeContextRegistry(root);
+      legacy.sources.epicsPath = 'epics.md';
+      writeRuntimeContextRegistry(root, legacy);
+
+      const loaded = readRuntimeContextRegistry(root);
+      expect(loaded.sources.epicsPath).toBe('_bmad-output/planning-artifacts/dev/epics.md');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

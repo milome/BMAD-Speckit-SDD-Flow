@@ -1,4 +1,4 @@
-# Review Story Workflow
+﻿# Review Story Workflow
 name: code-review
 description: "Perform an ADVERSARIAL Senior Developer code review that finds 3-10 specific problems in every story. Challenges everything: code quality, test coverage, architecture compliance, security, performance. NEVER accepts `looks good` - must find minimum issues and can auto-fix with user approval."
 author: "BMad"
@@ -38,7 +38,8 @@ input_file_patterns:
     load_strategy: "FULL_LOAD"
   epics:
     description: "Epic containing story being reviewed"
-    whole: "{planning_artifacts}/*epic*.md"
-    sharded_index: "{planning_artifacts}/*epic*/index.md"
-    sharded_single: "{planning_artifacts}/*epic*/epic-{{epic_num}}.md"
+    whole: "{planning_artifacts}/{branch}/epics.md"
+    sharded_index: ""
+    sharded_single: ""
     load_strategy: "SELECTIVE_LOAD"
+
