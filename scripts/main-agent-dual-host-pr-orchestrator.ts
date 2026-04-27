@@ -12,6 +12,7 @@ import {
 import { runDualHostJourneyRunner } from './e2e-dual-host-journey-runner';
 
 type ProviderMode = 'mock' | 'real';
+type CommandChecker = (command: string, args?: string[]) => boolean;
 
 export interface DualHostPrOrchestrationReport {
   reportType: 'main_agent_dual_host_pr_orchestration';
@@ -50,18 +51,34 @@ function commandExists(command: string): boolean {
   return result.status === 0;
 }
 
-function providerPreflight(provider: ProviderMode): DualHostPrOrchestrationReport['providerPreflight'] {
+function commandSucceeds(command: string, args: string[] = []): boolean {
+  const result = spawnSync(command, args, {
+    encoding: 'utf8',
+    shell: false,
+  });
+  return result.status === 0;
+}
+
+function githubAuthAvailable(checkCommand: CommandChecker): boolean {
+  return Boolean(process.env.GITHUB_TOKEN || process.env.GH_TOKEN) || checkCommand('gh', ['auth', 'status']);
+}
+
+function providerPreflight(
+  provider: ProviderMode,
+  checkCommand: CommandChecker = (command, args) =>
+    args && args.length > 0 ? commandSucceeds(command, args) : commandExists(command)
+): DualHostPrOrchestrationReport['providerPreflight'] {
   if (provider === 'mock') {
     return [{ id: 'mock-provider', passed: true, detail: 'deterministic local provider' }];
   }
   return [
-    { id: 'github-cli', passed: commandExists('gh'), detail: 'gh CLI must be available' },
-    { id: 'claude-cli', passed: commandExists('claude'), detail: 'claude CLI must be available' },
-    { id: 'codex-cli', passed: commandExists('codex'), detail: 'codex CLI must be available' },
+    { id: 'github-cli', passed: checkCommand('gh'), detail: 'gh CLI must be available' },
+    { id: 'claude-cli', passed: checkCommand('claude'), detail: 'claude CLI must be available' },
+    { id: 'codex-cli', passed: checkCommand('codex'), detail: 'codex CLI must be available' },
     {
-      id: 'github-token',
-      passed: Boolean(process.env.GITHUB_TOKEN || process.env.GH_TOKEN),
-      detail: 'GITHUB_TOKEN or GH_TOKEN must be set',
+      id: 'github-auth',
+      passed: githubAuthAvailable(checkCommand),
+      detail: 'GITHUB_TOKEN/GH_TOKEN or gh auth status must be available',
     },
   ];
 }
@@ -94,8 +111,9 @@ function makeJourneyRoot(): string {
 export function runDualHostPrOrchestration(input: {
   provider: ProviderMode;
   projectRoot?: string;
+  checkCommand?: CommandChecker;
 }): DualHostPrOrchestrationReport {
-  const providerChecks = providerPreflight(input.provider);
+  const providerChecks = providerPreflight(input.provider, input.checkCommand);
   const providerOk = providerChecks.every((check) => check.passed);
   const journeyRoot = input.projectRoot ? path.resolve(input.projectRoot) : makeJourneyRoot();
   const journeyReportPath = path.join(journeyRoot, '_bmad-output', 'runtime', 'e2e', 'dual-host-pr-journey.json');
