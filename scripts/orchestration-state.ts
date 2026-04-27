@@ -38,6 +38,12 @@ export interface PendingPacketPointer {
     | 'invalidated';
   createdAt: string;
   claimOwner?: string | null;
+  lease_owner?: string | null;
+  lease_expires_ts?: string | null;
+  last_heartbeat_ts?: string | null;
+  heartbeat_seq?: number;
+  retry_count?: number;
+  stale_recovered_count?: number;
 }
 
 export interface OrchestrationState {
@@ -59,6 +65,18 @@ export interface OrchestrationState {
     gateId: string;
     decision: 'pass' | 'auto_repairable_block' | 'true_blocker' | 'reroute';
     reason: string;
+  };
+  longRun?: {
+    policyVersion: string;
+    policyHash: string;
+    loop_seq: number;
+    running_for_ms: number;
+    last_tick_ts: string;
+    last_progress_ts: string;
+    degradation_level: 'none' | 'soft' | 'hard';
+    active_host_mode: string;
+    resume_count: number;
+    resumed_from_checkpoint?: boolean;
   };
   gatesLoop?: {
     retryCount: number;

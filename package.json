@@ -19,6 +19,8 @@
     "main-agent-orchestration": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts",
     "main-agent:release-gate": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-release-gate.ts",
     "main-agent:quality-gate": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-quality-gate.ts",
+    "main-agent:architecture-drift-check": "npx ts-node --project tsconfig.node.json --transpile-only scripts/architecture-drift-check.ts",
+    "main-agent:soak-contract": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-soak-runner.ts --contract-8h",
     "test:main-agent-chaos": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-chaos-scenarios.ts",
     "e2e:dual-host:journey": "npx ts-node --project tsconfig.node.json --transpile-only scripts/e2e-dual-host-journey-runner.ts --mode mock --hosts claude,codex",
     "test:e2e:dual-host:journey": "npx vitest run tests/acceptance/e2e-dual-host-journey-runner.test.ts",
@@ -72,7 +74,11 @@
     "speckit": "npx bmad-speckit",
     "speckit:init": "npx bmad-speckit init",
     "check": "npx bmad-speckit check",
-    "test:fresh-regression": "npx ts-node --transpile-only scripts/run-fresh-regression-matrix.ts"
+    "test:fresh-regression": "npx ts-node --transpile-only scripts/run-fresh-regression-matrix.ts",
+    "validate:single-source-whitelist": "npx ts-node --project tsconfig.node.json --transpile-only scripts/validate-single-source-whitelist.ts",
+    "test:main-agent-rerun-gate-e2e-loop": "npx vitest run tests/acceptance/governance-rerun-gate-closure.test.ts",
+    "main-agent:inspect": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts --cwd . --action inspect",
+    "main-agent:dispatch-plan": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts --cwd . --action dispatch-plan"
   },
   "bin": {
     "bmad-speckit-init": "scripts/init-to-root.js",
