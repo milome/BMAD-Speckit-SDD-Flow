@@ -13,6 +13,11 @@ import { runDualHostJourneyRunner } from './e2e-dual-host-journey-runner';
 
 type ProviderMode = 'mock' | 'real';
 type CommandChecker = (command: string, args?: string[]) => boolean;
+type CommandRunner = (command: string, args: string[], cwd: string) => {
+  id?: string;
+  exitCode: number;
+  detail: string;
+};
 const GITHUB_TOKEN_ENV_NAMES = [
   'GITHUB_TOKEN',
   'GH_TOKEN',
@@ -128,11 +133,40 @@ function makeJourneyRoot(): string {
   return root;
 }
 
-function runGhStep(id: string, args: string[], cwd: string): { id: string; exitCode: number; detail: string } {
+function runCommandStep(
+  id: string,
+  command: string,
+  args: string[],
+  cwd: string,
+  runner?: CommandRunner
+): { id: string; exitCode: number; detail: string } {
+  if (runner) {
+    const result = runner(command, args, cwd);
+    return { id, exitCode: result.exitCode, detail: result.detail };
+  }
+  const result = spawnSync(command, args, {
+    cwd,
+    encoding: 'utf8',
+    shell: false,
+  });
+  return {
+    id,
+    exitCode: result.status ?? (result.error ? 1 : 0),
+    detail: (result.stdout || result.stderr || result.error?.message || '').trim(),
+  };
+}
+
+function runGhStep(
+  id: string,
+  args: string[],
+  cwd: string,
+  runner?: CommandRunner
+): { id: string; exitCode: number; detail: string } {
+  if (runner) return runCommandStep(id, 'gh', args, cwd, runner);
   const result = spawnSync('gh', args, {
     cwd,
     encoding: 'utf8',
-    shell: process.platform === 'win32',
+    shell: false,
   });
   return {
     id,
@@ -145,7 +179,7 @@ function currentGitBranch(cwd: string): string {
   const result = spawnSync('git', ['branch', '--show-current'], {
     cwd,
     encoding: 'utf8',
-    shell: process.platform === 'win32',
+    shell: false,
   });
   return (result.stdout || 'dev').trim() || 'dev';
 }
@@ -156,6 +190,7 @@ function runGithubPrApiOrchestration(input: {
   providerOk: boolean;
   journeyPassed: boolean;
   enableRealPrApi?: boolean;
+  runCommand?: CommandRunner;
 }): DualHostPrOrchestrationReport['githubPrApi'] {
   if (input.provider !== 'real') {
     return { attempted: false, passed: true, steps: [], prUrl: null };
@@ -184,7 +219,13 @@ function runGithubPrApiOrchestration(input: {
   }
 
   const branchName = `codex/main-agent-smoke-${Date.now()}`;
-  const proofPath = path.join(input.projectRoot, '_bmad-output', 'runtime', 'pr', `${branchName.replace(/[\\/]/g, '-')}.md`);
+  const proofPath = path.join(
+    input.projectRoot,
+    'docs',
+    'ops',
+    'pr-api-smoke',
+    `${branchName.replace(/[\\/]/g, '-')}.md`
+  );
   fs.mkdirSync(path.dirname(proofPath), { recursive: true });
   fs.writeFileSync(
     proofPath,
@@ -194,39 +235,19 @@ function runGithubPrApiOrchestration(input: {
 
   const baseBranch = currentGitBranch(input.projectRoot);
   const steps = [
-    runGhStep('auth-status', ['auth', 'status'], input.projectRoot),
-    runGhStep('checkout-branch', ['repo', 'set-default', '--view'], input.projectRoot),
+    runGhStep('auth-status', ['auth', 'status'], input.projectRoot, input.runCommand),
+    runGhStep('checkout-branch', ['repo', 'set-default', '--view'], input.projectRoot, input.runCommand),
   ];
-  const checkout = spawnSync('git', ['checkout', '-b', branchName], {
-    cwd: input.projectRoot,
-    encoding: 'utf8',
-    shell: process.platform === 'win32',
-  });
-  steps.push({
-    id: 'git-checkout-branch',
-    exitCode: checkout.status ?? (checkout.error ? 1 : 0),
-    detail: (checkout.stdout || checkout.stderr || checkout.error?.message || '').trim(),
-  });
-  const add = spawnSync('git', ['add', proofPath], {
-    cwd: input.projectRoot,
-    encoding: 'utf8',
-    shell: process.platform === 'win32',
-  });
-  steps.push({
-    id: 'git-add-proof',
-    exitCode: add.status ?? (add.error ? 1 : 0),
-    detail: (add.stdout || add.stderr || add.error?.message || '').trim(),
-  });
-  const commit = spawnSync('git', ['commit', '-m', 'test: codex pr api smoke'], {
-    cwd: input.projectRoot,
-    encoding: 'utf8',
-    shell: process.platform === 'win32',
-  });
-  steps.push({
-    id: 'git-commit-proof',
-    exitCode: commit.status ?? (commit.error ? 1 : 0),
-    detail: (commit.stdout || commit.stderr || commit.error?.message || '').trim(),
-  });
+  steps.push(
+    runCommandStep('git-checkout-branch', 'git', ['checkout', '-b', branchName], input.projectRoot, input.runCommand)
+  );
+  steps.push(runCommandStep('git-add-proof', 'git', ['add', proofPath], input.projectRoot, input.runCommand));
+  steps.push(
+    runCommandStep('git-commit-proof', 'git', ['commit', '-m', 'test: codex pr api smoke'], input.projectRoot, input.runCommand)
+  );
+  steps.push(
+    runCommandStep('git-push-proof', 'git', ['push', '-u', 'origin', branchName], input.projectRoot, input.runCommand)
+  );
   const push = runGhStep('pr-create', [
     'pr',
     'create',
@@ -239,22 +260,42 @@ function runGithubPrApiOrchestration(input: {
     'Codex PR API smoke',
     '--body',
     'Automated fail-close smoke for Codex branch orchestration.',
-  ], input.projectRoot);
+  ], input.projectRoot, input.runCommand);
   steps.push(push);
   const prUrl = push.exitCode === 0 ? push.detail.split(/\r?\n/).find((line) => line.includes('http')) ?? null : null;
   if (prUrl) {
-    steps.push(runGhStep('pr-close', ['pr', 'close', prUrl, '--delete-branch'], input.projectRoot));
+    steps.push(runGhStep('pr-close', ['pr', 'close', prUrl], input.projectRoot, input.runCommand));
+    steps.push(
+      runCommandStep(
+        'git-delete-remote-branch',
+        'git',
+        ['push', 'origin', '--delete', branchName],
+        input.projectRoot,
+        input.runCommand
+      )
+    );
   }
-  const back = spawnSync('git', ['checkout', baseBranch], {
-    cwd: input.projectRoot,
-    encoding: 'utf8',
-    shell: process.platform === 'win32',
-  });
-  steps.push({
-    id: 'git-checkout-back',
-    exitCode: back.status ?? (back.error ? 1 : 0),
-    detail: (back.stdout || back.stderr || back.error?.message || '').trim(),
-  });
+  steps.push(runCommandStep('git-checkout-back', 'git', ['checkout', baseBranch], input.projectRoot, input.runCommand));
+  if (!prUrl && steps.find((step) => step.id === 'git-push-proof')?.exitCode === 0) {
+    steps.push(
+      runCommandStep(
+        'git-delete-remote-branch',
+        'git',
+        ['push', 'origin', '--delete', branchName],
+        input.projectRoot,
+        input.runCommand
+      )
+    );
+  }
+  steps.push(
+    runCommandStep(
+      'git-delete-local-branch',
+      'git',
+      ['branch', '-D', branchName],
+      input.projectRoot,
+      input.runCommand
+    )
+  );
   return {
     attempted: true,
     passed: steps.every((step) => step.exitCode === 0) && Boolean(prUrl),
@@ -268,6 +309,7 @@ export function runDualHostPrOrchestration(input: {
   projectRoot?: string;
   checkCommand?: CommandChecker;
   enableRealPrApi?: boolean;
+  runCommand?: CommandRunner;
 }): DualHostPrOrchestrationReport {
   const providerChecks = providerPreflight(input.provider, input.checkCommand);
   const providerOk = providerChecks.every((check) => check.passed);
@@ -310,6 +352,7 @@ export function runDualHostPrOrchestration(input: {
     providerOk,
     journeyPassed: journeyReport.finalPassed === true && hostsPassed.claude && hostsPassed.codex,
     enableRealPrApi: input.enableRealPrApi,
+    runCommand: input.runCommand,
   });
 
   const plan = buildParallelMissionPlan({

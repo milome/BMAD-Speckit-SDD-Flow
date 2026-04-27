@@ -144,6 +144,35 @@ describe('main-agent dual-host PR orchestration', () => {
     expect(report.prTopology.all_affected_stories_passed).toBe(false);
   });
 
+  it('records a real PR API success path only after git push, PR create, and PR close succeed', () => {
+    const steps: string[] = [];
+    const report = runDualHostPrOrchestration({
+      provider: 'real',
+      enableRealPrApi: true,
+      checkCommand: (command, args = []) => {
+        if (command === 'gh' && args.join(' ') === 'auth status') return true;
+        return ['gh', 'claude', 'codex'].includes(command);
+      },
+      runCommand: (command, args) => {
+        const key = `${command} ${args.join(' ')}`;
+        steps.push(key);
+        if (command === 'gh' && args[0] === 'pr' && args[1] === 'create') {
+          return { exitCode: 0, detail: 'https://example.invalid/pull/42' };
+        }
+        return { exitCode: 0, detail: key };
+      },
+    });
+
+    expect(report.githubPrApi.passed).toBe(true);
+    expect(report.githubPrApi.prUrl).toBe('https://example.invalid/pull/42');
+    expect(steps.some((step) => step.startsWith('git push -u origin'))).toBe(true);
+    expect(steps.some((step) => step.startsWith('gh pr close https://example.invalid/pull/42'))).toBe(
+      true
+    );
+    expect(report.prTopology.all_affected_stories_passed).toBe(true);
+    expect(report.finalPassed).toBe(true);
+  });
+
   it('writes standard truth-gate evidence artifacts from the CLI', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dual-host-pr-evidence-'));
     try {

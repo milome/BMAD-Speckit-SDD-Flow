@@ -1,17 +1,14 @@
 #!/usr/bin/env node
 /**
- * bmad-speckit CLI 主入口 (ARCH §3.1)
+ * bmad-speckit CLI 涓诲叆鍙?(ARCH 搂3.1)
  *
  * @description
- * BMAD-Speckit CLI：提供 init、check、version、upgrade、config、feedback 等子命令，
- * 用于初始化项目、校验配置、管理模板版本等。
+ * BMAD-Speckit CLI锛氭彁渚?init銆乧heck銆乿ersion銆乽pgrade銆乧onfig銆乫eedback 绛夊瓙鍛戒护锛? * 鐢ㄤ簬鍒濆鍖栭」鐩€佹牎楠岄厤缃€佺鐞嗘ā鏉跨増鏈瓑銆? *
+ * 杩愯鏂瑰紡锛? * - 椤圭洰鏍? npx bmad-speckit <cmd> 鎴?npm run speckit -- <cmd>
+ * - 鍖呯洰褰? node bin/bmad-speckit.js <cmd>
+ * - 鍏ㄥ眬: bmad-speckit <cmd> (npm link 鍚?
  *
- * 运行方式：
- * - 项目根: npx bmad-speckit <cmd> 或 npm run speckit -- <cmd>
- * - 包目录: node bin/bmad-speckit.js <cmd>
- * - 全局: bmad-speckit <cmd> (npm link 后)
- *
- * 退出码约定（见 constants/exit-codes.js）：
+ * 閫€鍑虹爜绾﹀畾锛堣 constants/exit-codes.js锛夛細
  * - 0: SUCCESS
  * - 1: GENERAL_ERROR
  * - 2: AI_INVALID
@@ -20,11 +17,36 @@
  * - 5: OFFLINE_CACHE_MISSING
  */
 const { program } = require('commander');
+const { spawnSync } = require('child_process');
+const path = require('path');
 const pkg = require('../package.json');
 const ttyUtils = require('../src/utils/tty');
 
 function loadCommand(modulePath, exportName) {
   return require(modulePath)[exportName];
+}
+
+function runRepoScript(scriptName, args) {
+  const candidates = [
+    path.resolve(__dirname, '..', '..', '..', 'scripts', scriptName),
+    path.resolve(__dirname, '..', 'scripts', scriptName),
+    path.resolve(process.cwd(), 'node_modules', 'bmad-speckit-sdd-flow', 'scripts', scriptName),
+    path.resolve(process.cwd(), 'node_modules', 'bmad-speckit', 'scripts', scriptName),
+  ];
+  const scriptPath = candidates.find((candidate) => require('fs').existsSync(candidate));
+  if (!scriptPath) {
+    console.error(`bmad-speckit: cannot locate script ${scriptName}`);
+    process.exit(1);
+  }
+  const runner = scriptPath.endsWith('.ts')
+    ? ['npx', ['--no-install', 'tsx', scriptPath, ...args]]
+    : [process.execPath, [scriptPath, ...args]];
+  const result = spawnSync(runner[0], runner[1], {
+    cwd: process.cwd(),
+    stdio: 'inherit',
+    shell: process.platform === 'win32',
+  });
+  process.exit(result.status ?? (result.error ? 1 : 0));
 }
 
 // Show banner for init (including init --help) when in TTY
@@ -104,7 +126,7 @@ program
   .command('uninstall')
   .description('Safely uninstall managed bmad-speckit install surface from current project')
   .option('--target <path>', 'Project root to uninstall from', '.')
-  .option('--agent <ids>', 'Optional agent filter (cursor|claude-code|cursor,claude-code)')
+  .option('--agent <ids>', 'Optional agent filter (cursor|claude-code|codex|cursor,claude-code,codex)')
   .option('--remove-global-skills', 'Also remove managed global skill directories')
   .option('--dry-run', 'Preview uninstall actions without changing files')
   .action((opts) =>
@@ -231,7 +253,7 @@ program
   .option('--skipTriggerCheck', 'Skip trigger check')
   .option('--baseCommitHash <hash>', 'Base commit hash')
   .option('--sourceHashFilePath <path>', 'Source hash file path')
-  .option('--agent <agent>', 'Agent type (cursor|claude-code)')
+  .option('--agent <agent>', 'Agent type (cursor|claude-code|codex)')
   .option('--source <source>', 'Source type (cursor_command|claude_agent|claude_hook)')
   .action((opts) => {
     loadCommand('../src/commands/score', 'scoreCommand')(opts).catch((err) => {
@@ -509,5 +531,61 @@ program
       process.exit(1);
     });
   });
+
+program
+  .command('main-agent-orchestration')
+  .description('Run the BMAD main-agent orchestration CLI surface')
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .action(() => runRepoScript('main-agent-orchestration.ts', process.argv.slice(3)));
+
+program
+  .command('main-agent:bmad-help-five-layer-matrix')
+  .description('Run the BMAD help five-layer routing matrix CLI surface')
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .action(() => runRepoScript('main-agent-bmad-help-five-layer-matrix.ts', process.argv.slice(3)));
+
+program
+  .command('main-agent:quality-gate')
+  .description('Run the BMAD main-agent quality gate CLI surface')
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .action(() => runRepoScript('main-agent-quality-gate.ts', process.argv.slice(3)));
+
+program
+  .command('main-agent:release-gate')
+  .description('Run the BMAD main-agent release gate CLI surface')
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .action(() => runRepoScript('main-agent-release-gate.ts', process.argv.slice(3)));
+
+program
+  .command('main-agent:delivery-truth-gate')
+  .description('Run the BMAD main-agent delivery truth gate CLI surface')
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .action(() => runRepoScript('main-agent-delivery-truth-gate.ts', process.argv.slice(3)));
+
+program
+  .command('write-runtime-context')
+  .description('Run the BMAD runtime context writer CLI surface')
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .action(() => runRepoScript('write-runtime-context.cjs', process.argv.slice(3)));
+
+program
+  .command('run-auditor-host')
+  .description('Run the BMAD auditor host CLI surface')
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .action(() => runRepoScript('run-auditor-host.ts', process.argv.slice(3)));
+
+program
+  .command('eval-questions')
+  .description('Run the BMAD evaluation question CLI surface')
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .action(() => runRepoScript('eval-questions-cli.ts', process.argv.slice(3)));
 
 program.parse();

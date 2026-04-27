@@ -1,11 +1,10 @@
 # TASKS_v1 Audit Log
 
-> 用途：执行 `TASKS_v1.md` 时的持续审计记录。  
-> 规则：每完成一个任务（T*）立即追加一条记录；未通过 Gate 的任务不得标记完成。
->
-> 统一引用（single source）：
-> - 策略层：`_bmad/_config/orchestration-governance.contract.yaml`
-> - 事实层：`_bmad-output/runtime/governance/user_story_mapping.json`
+> 鐢ㄩ€旓細鎵ц `docs/plans/TASKS_v1.md` 鏃剁殑鎸佺画瀹¤璁板綍銆?
+> 瑙勫垯锛氭瘡瀹屾垚涓€涓换鍔★紙T*锛夌珛鍗宠拷鍔犱竴鏉¤褰曪紱鏈€氳繃 Gate 鐨勪换鍔′笉寰楁爣璁板畬鎴愩€?>
+> 缁熶竴寮曠敤锛坰ingle source锛夛細
+> - 绛栫暐灞傦細`_bmad/_config/orchestration-governance.contract.yaml`
+> - 浜嬪疄灞傦細`_bmad-output/runtime/governance/user_story_mapping.json`
 
 ---
 
@@ -17,7 +16,7 @@
 - Branch:
 - Environment (Cursor/Claude/no-hooks):
 - Reference:
-  - `TASKS_v1.md`
+  - `docs/plans/TASKS_v1.md`
   - `TASKS_v1.audit.md`
 - Governance Sources:
   - Contract: `_bmad/_config/orchestration-governance.contract.yaml`
@@ -29,13 +28,12 @@
   - orchestration entrypoint: inspect surface only
   - CI single-source tests: pass required
 - Field Whitelist Check (required):
-  - whitelist ref: `TASKS_v1.md` §0.1.2
+  - whitelist ref: `docs/plans/TASKS_v1.md` 搂0.1.2
   - contract whitelist: pass/fail
   - mapping whitelist: pass/fail
   - runtimePolicy whitelist: pass/fail
   - inspect-surface-only decision path: pass/fail
-- 编排时序图（现状 / 目标态 / Host parity 泳道）：见 `TASKS_v1.md` 第 **0.3** 节（含 **0.3.3**）。
-
+- 缂栨帓鏃跺簭鍥撅紙鐜扮姸 / 鐩爣鎬?/ Host parity 娉抽亾锛夛細瑙?`docs/plans/TASKS_v1.md` 绗?**0.3** 鑺傦紙鍚?**0.3.3**锛夈€?
 ---
 
 ## 1. Status Board
@@ -73,8 +71,7 @@
 
 ## 2. Audit Entries
 
-> 复制以下模板，每个任务至少 1 条记录；若修复后重审，可对同一 Task ID 增加多条。
-
+> 澶嶅埗浠ヤ笅妯℃澘锛屾瘡涓换鍔¤嚦灏?1 鏉¤褰曪紱鑻ヤ慨澶嶅悗閲嶅锛屽彲瀵瑰悓涓€ Task ID 澧炲姞澶氭潯銆?
 ### Entry Template
 
 ```md
@@ -96,9 +93,9 @@
   - `<file path>`
 
 #### Gates
-- G0 (完整性): pass | partial | fail
-- G1 (主循环契约): pass | partial | fail
-- G2 (状态机恢复): pass | partial | fail
+- G0 (瀹屾暣鎬?: pass | partial | fail
+- G1 (涓诲惊鐜绾?: pass | partial | fail
+- G2 (鐘舵€佹満鎭㈠): pass | partial | fail
 - G3 (Host Parity): pass | partial | fail
 - G4 (Closeout): pass | partial | fail
 - G5 (Contract/Index): pass | partial | fail
@@ -153,109 +150,99 @@
 
 ## 3. Task-Specific Log Sections
 
-### T1.1 - Host Parity 回归矩阵
+### T1.1 - Host Parity 鍥炲綊鐭╅樀
 
-<!-- 在此追加 Audit Record -->
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
-### T1.2 - State 幂等与重入
+### T1.2 - State 骞傜瓑涓庨噸鍏?
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
-<!-- 在此追加 Audit Record -->
+### T1.3 - Gates Loop 寮傚父琛ュ伩
 
-### T1.3 - Gates Loop 异常补偿
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
-<!-- 在此追加 Audit Record -->
+### T1.4 - Contract/Index 鏀舵暃鎺ュ叆
 
-### T1.4 - Contract/Index 收敛接入
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
-<!-- 在此追加 Audit Record -->
+### T1.5 - StageName 瀵归綈娌荤悊鍚堝悓
 
-### T1.5 - StageName 对齐治理合同
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
-<!-- 在此追加 Audit Record -->
+### T1.6 - 杩斿伐闂幆鑷姩缁窇
 
-### T1.6 - 返工闭环自动续跑
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
-<!-- 在此追加 Audit Record -->
+### T1.7 - Release Gate 鎬绘帶鑴氭湰
 
-### T1.7 - Release Gate 总控脚本
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
-<!-- 在此追加 Audit Record -->
+### T1.8 - 浠ｇ爜璐ㄩ噺閫€鍖栫‖闃堝€?
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
-### T1.8 - 代码质量退化硬阈值
+### T1.9 - 瀹¤鐘舵€佽嚜鍔ㄥ洖鍐?
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
-<!-- 在此追加 Audit Record -->
+### T1.10 - 鏁呴殰娉ㄥ叆涓庢仮澶嶉獙鏀?
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
-### T1.9 - 审计状态自动回写
+### T1.11 - P0 纭牎楠岋紙validate-single-source-whitelist锛?
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
-<!-- 在此追加 Audit Record -->
+### T1.12 - P0 闂幆鏍￠獙锛坢ain-agent-rerun-gate-e2e-loop锛?
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
-### T1.10 - 故障注入与恢复验收
+### T1.13 - P0 鎬婚棬绂侊紙main-agent:release-gate锛?
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
-<!-- 在此追加 Audit Record -->
+### T1.14 - P0 鍐欏叆鍓嶇疆闂幆锛坰print-status 璧勬牸浠ょ墝锛?
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
-### T1.11 - P0 硬校验（validate-single-source-whitelist）
+### T1.15 - P0 鐪熺敤鎴疯矾寰?E2E锛堝弻瀹夸富 Claude/Codex锛?
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
-<!-- 在此追加 Audit Record -->
+### T1.16 - P0 鍙嶆梺璺‖闂ㄧ锛坰print-status 鍐欒矾寰勶級
 
-### T1.12 - P0 闭环校验（main-agent-rerun-gate-e2e-loop）
-
-<!-- 在此追加 Audit Record -->
-
-### T1.13 - P0 总门禁（main-agent:release-gate）
-
-<!-- 在此追加 Audit Record -->
-
-### T1.14 - P0 写入前置闭环（sprint-status 资格令牌）
-
-<!-- 在此追加 Audit Record -->
-
-### T1.15 - P0 真用户路径 E2E（双宿主 Claude/Codex）
-
-<!-- 在此追加 Audit Record -->
-
-### T1.16 - P0 反旁路硬门禁（sprint-status 写路径）
-
-<!-- 在此追加 Audit Record -->
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
 ### T2.1 - Long-Run Runtime Policy
 
-<!-- 在此追加 Audit Record -->
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
 ### T2.2 - Soak Test (>=8h)
 
-<!-- 在此追加 Audit Record -->
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
-### T3.1 - Churn-in 路由评分器
+### T3.1 - Churn-in 璺敱璇勫垎鍣?
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
-<!-- 在此追加 Audit Record -->
+### T3.2 - Sprint Epic/Story Queue 鑷姩鑱斿姩
 
-### T3.2 - Sprint Epic/Story Queue 自动联动
-
-<!-- 在此追加 Audit Record -->
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
 ### T3.3 - Adaptive Intake Governance Gate
 
-<!-- 在此追加 Audit Record -->
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
 ### T4.1 - Parallel Planner + Write Scope Lock
 
-<!-- 在此追加 Audit Record -->
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
 ### T4.2 - PR Topology Orchestration
 
-<!-- 在此追加 Audit Record -->
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
 ### T5.1 - ADR Drift Guard
 
-<!-- 在此追加 Audit Record -->
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
-### T5.2 - 三向追踪矩阵
+### T5.2 - 涓夊悜杩借釜鐭╅樀
 
-<!-- 在此追加 Audit Record -->
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
 ### T5.3 - Single Source Guard
 
-<!-- 在此追加 Audit Record -->
+<!-- 鍦ㄦ杩藉姞 Audit Record -->
 
 ---
 
@@ -298,12 +285,11 @@
 - Closeout Date:
 - Final Result: pass | partial | fail
 - Acceptance Summary:
-  - [ ] P0 全部通过
-  - [ ] 8h soak 达标
-  - [ ] 并行冲突治理达标
-  - [ ] closeout 语义严格执行
+  - [ ] P0 鍏ㄩ儴閫氳繃
+  - [ ] 8h soak 杈炬爣
+  - [ ] 骞惰鍐茬獊娌荤悊杈炬爣
+  - [ ] closeout 璇箟涓ユ牸鎵ц
 - Residual Risks:
   - `<none or risks>`
 - Follow-up Plan:
   - `<actions>`
-

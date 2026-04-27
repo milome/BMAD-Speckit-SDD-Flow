@@ -25,6 +25,11 @@ export interface ParallelMissionPlan {
 export interface PrTopology {
   version: 1;
   batch_id: string;
+  evidence_provenance?: {
+    runId: string;
+    storyKey: string;
+    evidenceBundleId: string;
+  };
   required_nodes: Array<{
     node_id: string;
     target_pr: string;

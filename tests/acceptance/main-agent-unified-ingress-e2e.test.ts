@@ -38,7 +38,53 @@ function prepareRoot(hostKind: MainAgentHostKind, hookAvailable: boolean): strin
       'utf8'
     );
   }
+  if (hostKind === 'codex') {
+    fs.mkdirSync(path.join(root, '.codex', 'agents'), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, '.codex', 'agents', 'implementation-worker.toml'),
+      [
+        'name = "implementation-worker"',
+        'description = "Ingress Codex worker"',
+        'sandbox_mode = "workspace-write"',
+        'developer_instructions = """Follow dispatch packet instructions."""',
+        '',
+      ].join('\n'),
+      'utf8'
+    );
+  }
   return root;
+}
+
+function writeFakeCodexBinary(root: string): string {
+  const fakeCodexPath = path.join(root, 'fake-codex.cjs');
+  fs.writeFileSync(
+    fakeCodexPath,
+    [
+      "const fs = require('fs');",
+      "const input = fs.readFileSync(0, 'utf8');",
+      "const reportPath = input.match(/write a JSON TaskReport to: (.+)/i)?.[1]?.trim();",
+      "const packetId = input.match(/Packet ID: (.+)/i)?.[1]?.trim();",
+      "if (!reportPath || !packetId) process.exit(2);",
+      "fs.mkdirSync(require('path').dirname(reportPath), { recursive: true });",
+      "fs.writeFileSync(reportPath, JSON.stringify({ packetId, status: 'done', filesChanged: [], validationsRun: ['fake-codex-unified-ingress'], evidence: ['fake-codex-unified-ingress'], downstreamContext: ['codex cli ingress completed'] }, null, 2) + '\\n', 'utf8');",
+      "process.exit(0);",
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  const fakeCodexBin =
+    process.platform === 'win32' ? path.join(root, 'fake-codex.cmd') : path.join(root, 'fake-codex');
+  fs.writeFileSync(
+    fakeCodexBin,
+    process.platform === 'win32'
+      ? `@echo off\r\n"${process.execPath}" "${fakeCodexPath}" %*\r\n`
+      : `#!/usr/bin/env sh\n"${process.execPath}" "${fakeCodexPath}" "$@"\n`,
+    'utf8'
+  );
+  if (process.platform !== 'win32') {
+    fs.chmodSync(fakeCodexBin, 0o755);
+  }
+  return fakeCodexBin;
 }
 
 describe('main-agent unified ingress e2e', () => {
@@ -54,6 +100,7 @@ describe('main-agent unified ingress e2e', () => {
 
       expect(receipt.hostMode).toBe('hooks_enabled');
       expect(receipt.orchestrationEntry).toBe('hook_ingress');
+      expect(receipt.degradationLevel).toBe('none');
       expect(receipt.controlPlane).toBe('main-agent-orchestration');
       expect(receipt.runLoop.status).toBe('completed');
       expect(receipt.runLoop.pendingPacketStatus).toBe('completed');
@@ -74,7 +121,9 @@ describe('main-agent unified ingress e2e', () => {
 
       expect(receipt.hostMode).toBe('no_hooks');
       expect(receipt.orchestrationEntry).toBe('cli_ingress');
-      expect(receipt.degradationReason).toContain('hook unavailable');
+      expect(receipt.degradationLevel).toBe('hook_lost');
+      expect(receipt.degradationReason?.code).toBe('hook_unavailable');
+      expect(receipt.degradationReason?.reason).toContain('hook unavailable');
       expect(receipt.controlPlane).toBe('main-agent-orchestration');
       expect(receipt.runLoop.status).toBe('completed');
     } finally {
@@ -82,9 +131,11 @@ describe('main-agent unified ingress e2e', () => {
     }
   });
 
-  it('supports codex as a no-hooks cli_ingress branch on the shared control plane', () => {
+  it('supports codex as a native no-hooks cli_ingress branch with non-smoke worker execution', () => {
     const root = prepareRoot('codex', false);
+    const previous = process.env.CODEX_WORKER_ADAPTER_BIN;
     try {
+      process.env.CODEX_WORKER_ADAPTER_BIN = writeFakeCodexBinary(root);
       const receipt = runUnifiedIngress({
         projectRoot: root,
         hostKind: 'codex',
@@ -94,11 +145,19 @@ describe('main-agent unified ingress e2e', () => {
 
       expect(receipt.hostMode).toBe('no_hooks');
       expect(receipt.orchestrationEntry).toBe('cli_ingress');
-      expect(receipt.degradationReason).toBe('codex has no hook adapter');
+      expect(receipt.degradationLevel).toBe('none');
+      expect(receipt.degradationReason).toBeNull();
       expect(receipt.controlPlane).toBe('main-agent-orchestration');
       expect(receipt.runLoop.status).toBe('completed');
+      expect(receipt.runLoop.resolvedHost).toBe('codex');
+      expect(receipt.runLoop.pendingPacketStatus).toBe('completed');
       expect(receipt.sameControlPlane).toBe(true);
     } finally {
+      if (previous === undefined) {
+        delete process.env.CODEX_WORKER_ADAPTER_BIN;
+      } else {
+        process.env.CODEX_WORKER_ADAPTER_BIN = previous;
+      }
       fs.rmSync(root, { recursive: true, force: true });
     }
   });

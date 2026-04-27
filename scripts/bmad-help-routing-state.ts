@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import * as yaml from 'js-yaml';
 import {
   readRuntimeContext,
   type RuntimeContextFile,
@@ -55,6 +56,14 @@ const ACTIVE_REMEDIATION_STATUSES = new Set([
 ]);
 const READY_STATUSES = new Set(['READY']);
 const BLOCKED_STATUSES = new Set(['NEEDS WORK', 'NOT READY']);
+type FiveLayerId = 'layer_1' | 'layer_2' | 'layer_3' | 'layer_4' | 'layer_5';
+
+export interface BmadHelpFiveLayerRoutingProgress {
+  currentLayer: FiveLayerId;
+  currentStage: StageName;
+  nextRequiredLayer: FiveLayerId;
+  completedLayers: FiveLayerId[];
+}
 
 export interface BmadHelpRoutingEvidenceSources {
   readinessReportPath: string | null;
@@ -92,6 +101,7 @@ export interface BmadHelpRoutingState {
   mainAgentNextAction: string | null;
   mainAgentReady: boolean | null;
   mainAgentOrchestration: MainAgentOrchestrationSurface;
+  fiveLayerProgress: BmadHelpFiveLayerRoutingProgress | null;
 }
 
 export interface ResolveBmadHelpRoutingStateInput {
@@ -129,6 +139,7 @@ export type RuntimePolicyWithBmadHelp = RuntimePolicy & {
   mainAgentNextAction: string | null;
   mainAgentReady: boolean | null;
   mainAgentOrchestration: MainAgentOrchestrationSurface;
+  fiveLayerProgress: BmadHelpFiveLayerRoutingProgress | null;
 };
 
 interface LatestReadinessReportSummary {
@@ -143,6 +154,104 @@ interface AuditFactSummary {
   stage: 'story' | 'bugfix' | 'standalone_tasks' | null;
   auditPassed: boolean | null;
   closeoutApproved: boolean | null;
+}
+
+function outputRootForLayer(layerId: FiveLayerId): string {
+  switch (layerId) {
+    case 'layer_1':
+      return '_bmad-output/runtime/context';
+    case 'layer_2':
+      return 'docs/architecture';
+    case 'layer_3':
+      return 'docs/stories';
+    case 'layer_4':
+      return 'specs';
+    case 'layer_5':
+      return '_bmad-output/runtime/gates';
+  }
+}
+
+function normalizeLayerStage(stage: string): StageName {
+  if (stage === 'story') return 'story_create' as StageName;
+  if (stage === 'post_impl') return 'post_audit' as StageName;
+  return stage as StageName;
+}
+
+function stageArtifactAliases(stage: StageName): string[] {
+  const normalized = String(stage).toLowerCase();
+  const dashed = normalized.replace(/_/g, '-');
+  const aliases = [normalized, dashed];
+  if (stage === 'prd') aliases.push('project.json');
+  if (stage === 'arch') aliases.push('architecture.md', 'architecture.json', 'arch.md', 'arch.json');
+  if (stage === 'epics') aliases.push('epic', 'epics');
+  if (stage === ('story_create' as StageName)) aliases.push('story', 'story-create');
+  if (stage === 'post_audit') aliases.push('post-audit', 'audit');
+  if (stage === ('release_gate' as StageName)) aliases.push('main-agent-release-gate-report');
+  if (stage === ('delivery_truth_gate' as StageName)) aliases.push('main-agent-delivery-truth-gate-report');
+  return aliases;
+}
+
+function loadFiveLayerDefinitions(projectRoot: string): Array<{ id: FiveLayerId; stages: StageName[] }> {
+  const mappingPath = path.join(projectRoot, '_bmad', '_config', 'stage-mapping.yaml');
+  const parsed = yaml.load(fs.readFileSync(mappingPath, 'utf8')) as {
+    layer_to_stages?: Record<string, { stages?: string[]; closeout_stages?: string[] }>;
+  };
+  const raw = parsed.layer_to_stages ?? {};
+  return (['layer_1', 'layer_2', 'layer_3', 'layer_4', 'layer_5'] as const).map((id) => {
+    const stages = id === 'layer_5' && raw[id]?.closeout_stages ? raw[id].closeout_stages : raw[id]?.stages;
+    return {
+      id,
+      stages: Array.from(new Set((stages ?? []).map(normalizeLayerStage))),
+    };
+  });
+}
+
+function hasFiveLayerEvidence(projectRoot: string, layerId: FiveLayerId, stage: StageName): boolean {
+  const explicitPath = path.join(projectRoot, outputRootForLayer(layerId), `${layerId}-${stage}.complete.json`);
+  if (fs.existsSync(explicitPath)) return true;
+  const root = path.join(projectRoot, outputRootForLayer(layerId));
+  if (!fs.existsSync(root)) return false;
+  const names = fs.readdirSync(root, { withFileTypes: true }).map((entry) => entry.name.toLowerCase());
+  const aliases = stageArtifactAliases(stage);
+  return names.some(
+    (name) =>
+      (name.endsWith('.json') || name.endsWith('.md')) &&
+      aliases.some((alias) => name.includes(alias))
+  );
+}
+
+function resolveFiveLayerRoutingProgress(projectRoot?: string): BmadHelpFiveLayerRoutingProgress | null {
+  if (!projectRoot) return null;
+  try {
+    const root = path.resolve(projectRoot);
+    const layers = loadFiveLayerDefinitions(root);
+    const statuses = layers.flatMap((layer) =>
+      layer.stages.map((stage) => ({
+        layer: layer.id,
+        stage,
+        completed: hasFiveLayerEvidence(root, layer.id, stage),
+      }))
+    );
+    const firstIncomplete = statuses.find((item) => !item.completed) ?? statuses.at(-1);
+    if (!firstIncomplete) return null;
+    const completedLayers = layers
+      .filter(
+        (layer) =>
+          layer.stages.length > 0 &&
+          layer.stages.every((stage) =>
+            statuses.some((item) => item.layer === layer.id && item.stage === stage && item.completed)
+          )
+      )
+      .map((layer) => layer.id);
+    return {
+      currentLayer: firstIncomplete.layer,
+      currentStage: firstIncomplete.stage,
+      nextRequiredLayer: firstIncomplete.layer,
+      completedLayers,
+    };
+  } catch {
+    return null;
+  }
 }
 
 interface ContinueStateSummary {
@@ -742,15 +851,15 @@ function buildImplementationEntryBlockers(input: {
     switch (input.flow) {
       case 'story':
         blockerCodes.push('story_audit_not_closed');
-        blockerSummary.push('Story Audit authoritative closeout 尚未完成或未通过');
+        blockerSummary.push('Story Audit authoritative closeout 灏氭湭瀹屾垚鎴栨湭閫氳繃');
         break;
       case 'bugfix':
         blockerCodes.push('bugfix_document_audit_not_closed');
-        blockerSummary.push('BUGFIX 文档 authoritative closeout 尚未完成或未通过');
+        blockerSummary.push('BUGFIX 鏂囨。 authoritative closeout 灏氭湭瀹屾垚鎴栨湭閫氳繃');
         break;
       case 'standalone_tasks':
         blockerCodes.push('standalone_tasks_document_audit_not_closed');
-        blockerSummary.push('TASKS/BUGFIX 文档前置审计 authoritative closeout 尚未完成或未通过');
+        blockerSummary.push('TASKS/BUGFIX 鏂囨。鍓嶇疆瀹¤ authoritative closeout 灏氭湭瀹屾垚鎴栨湭閫氳繃');
         break;
       default:
         break;
@@ -759,7 +868,7 @@ function buildImplementationEntryBlockers(input: {
 
   if (input.readinessStatus === 'stale_after_semantic_change') {
     blockerCodes.push('stale_after_semantic_change');
-    blockerSummary.push('implementation-entry 语义基础已变化，必须重新通过 readiness');
+    blockerSummary.push('implementation-entry 璇箟鍩虹宸插彉鍖栵紝蹇呴』閲嶆柊閫氳繃 readiness');
   }
 
   return { blockerCodes, blockerSummary };
@@ -880,7 +989,7 @@ export function resolveBmadHelpRoutingState(
           decision: 'block' as const,
           readinessStatus: implementationReadinessStatus,
           blockerCodes: ['unsupported_implementation_entry_flow'],
-          blockerSummary: [`flow=${input.flow} 当前不支持 implementation-entry gate`],
+          blockerSummary: [`flow=${input.flow} 褰撳墠涓嶆敮鎸?implementation-entry gate`],
           rerouteRequired: false,
           rerouteReason: null,
           evidenceSources: implementationEntryEvidenceSources,
@@ -924,6 +1033,7 @@ export function resolveBmadHelpRoutingState(
           continueDecision: mainAgentOrchestration.continueDecision,
         }
       : continueState;
+  const fiveLayerProgress = resolveFiveLayerRoutingProgress(input.projectRoot);
 
   return {
     sourceMode,
@@ -954,6 +1064,7 @@ export function resolveBmadHelpRoutingState(
     mainAgentNextAction: mainAgentAction.nextAction,
     mainAgentReady: mainAgentAction.ready,
     mainAgentOrchestration,
+    fiveLayerProgress,
   };
 }
 
@@ -1008,5 +1119,6 @@ export function resolveBmadHelpRuntimePolicy(
     mainAgentNextAction: helpRouting.mainAgentNextAction,
     mainAgentReady: helpRouting.mainAgentReady,
     mainAgentOrchestration: helpRouting.mainAgentOrchestration,
+    fiveLayerProgress: helpRouting.fiveLayerProgress,
   };
 }

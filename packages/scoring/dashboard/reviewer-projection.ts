@@ -1,4 +1,4 @@
-export type ReviewerHostId = 'cursor' | 'claude';
+export type ReviewerHostId = 'cursor' | 'claude' | 'codex';
 export type ReviewerProfileId =
   | 'story_audit'
   | 'spec_audit'
@@ -20,7 +20,7 @@ export type ReviewerAuditEntryStage =
   | 'standalone_tasks';
 
 export interface ReviewerRoute {
-  tool: 'cursor-task' | 'mcp_task' | 'Agent';
+  tool: 'cursor-task' | 'mcp_task' | 'Agent' | 'codex';
   subtypeOrExecutor: string;
 }
 
@@ -70,8 +70,8 @@ export interface ReviewerRouteExplainability {
   supportedProfiles: readonly ReviewerProfileId[];
   requiredRolloutProofs: readonly string[];
   compatibilityGuards: {
-    codexNoopRequired: true;
-    codexBehaviorChangeAllowed: false;
+    codexNoopRequired: false;
+    codexBehaviorChangeAllowed: true;
   };
   rolloutGate: {
     version: 'reviewer_rollout_gate_v1';
@@ -122,8 +122,8 @@ export interface ReviewerContractProjection {
     hostLocalFallbackBusinessRulesForbidden: true;
   };
   compatibilityGuards: {
-    codexNoopRequired: true;
-    codexBehaviorChangeAllowed: false;
+    codexNoopRequired: false;
+    codexBehaviorChangeAllowed: true;
   };
   requiredRolloutProofs: readonly string[];
   rolloutGate: {
@@ -150,6 +150,31 @@ const SUPPORTED_PROFILES: readonly ReviewerProfileId[] = [
   'bugfix_doc_audit',
   'tasks_doc_audit',
 ] as const;
+
+const REQUIRED_ROLLOUT_PROOFS = [
+  'parity_proof',
+  'consumer_install_proof',
+  'rollback_proof',
+  'codex_parity_proof',
+  'codex_closeout_proof',
+  'codex_scoring_proof',
+] as const;
+
+const REVIEWER_ROLLOUT_BLOCKER =
+  'Complete parity proof, rollback proof, Codex parity, Codex closeout, Codex scoring, and rollout gate before declaring full isomorphism.';
+
+function buildBlockedReviewerRolloutGate(): ReviewerRouteExplainability['rolloutGate'] {
+  return {
+    version: 'reviewer_rollout_gate_v1',
+    status: 'blocked',
+    requiredProofs: REQUIRED_ROLLOUT_PROOFS,
+    completeProofs: [],
+    blockingProofs: REQUIRED_ROLLOUT_PROOFS,
+    cleanupAllowed: false,
+    canClaimFullIsomorphism: false,
+    summary: 'Reviewer rollout remains blocked until Codex closeout and scoring proofs are present.',
+  };
+}
 
 const AUDIT_CONSUMERS: Record<ReviewerAuditEntryStage, ReviewerAuditStageConsumer> = {
   story: {
@@ -243,6 +268,14 @@ const HOSTS: Record<ReviewerHostId, ReviewerHostRouteSummary> = {
     fallbackReason:
       'Use Agent/general-purpose only when Agent/code-reviewer is unavailable, while preserving the shared reviewer contract and runAuditorHost closeout.',
   },
+  codex: {
+    carrierSourcePath: '_bmad/codex/agents/code-reviewer.toml',
+    runtimeTargetPath: '.codex/agents/code-reviewer.toml',
+    preferredRoute: { tool: 'codex', subtypeOrExecutor: 'worker:audit' },
+    fallbackRoute: { tool: 'codex', subtypeOrExecutor: 'worker:audit' },
+    fallbackReason:
+      'Codex uses the no-hooks worker adapter for audit packets; flat or no-op reviewer fallback is disabled.',
+  },
 };
 
 export function mapFlowStageToReviewerAuditEntryStage(
@@ -322,36 +355,11 @@ export function buildReviewerContractProjection(input?: {
       hostLocalFallbackBusinessRulesForbidden: true,
     },
     compatibilityGuards: {
-      codexNoopRequired: true,
-      codexBehaviorChangeAllowed: false,
+      codexNoopRequired: false,
+      codexBehaviorChangeAllowed: true,
     },
-    rolloutGate: {
-      version: 'reviewer_rollout_gate_v1',
-      status: 'blocked',
-      requiredProofs: [
-        'parity_proof',
-        'consumer_install_proof',
-        'rollback_proof',
-        'codex_noop_proof',
-      ],
-      completeProofs: [],
-      blockingProofs: [
-        'parity_proof',
-        'consumer_install_proof',
-        'rollback_proof',
-        'codex_noop_proof',
-      ],
-      cleanupAllowed: false,
-      canClaimFullIsomorphism: false,
-      summary:
-        'Blocked until proofs are complete: parity_proof, consumer_install_proof, rollback_proof, codex_noop_proof',
-    },
-    requiredRolloutProofs: [
-      'parity_proof',
-      'consumer_install_proof',
-      'rollback_proof',
-      'codex_noop_proof',
-    ],
+    rolloutGate: buildBlockedReviewerRolloutGate(),
+    requiredRolloutProofs: REQUIRED_ROLLOUT_PROOFS,
     supportedProfiles: SUPPORTED_PROFILES,
     supportedAuditEntryStages: Object.keys(AUDIT_CONSUMERS) as ReviewerAuditEntryStage[],
     activeAuditConsumer: input?.auditEntryStage ? AUDIT_CONSUMERS[input.auditEntryStage] : null,
@@ -379,41 +387,15 @@ export function buildReviewerRouteExplainability(input?: {
     fallbackStatus: 'fallback_ready',
     isomorphismMaturity: 'projection_wired',
     complexitySource:
-      'Dual-host carrier parity is in place, but legacy skill narrative cleanup and proof expansion still remain before rollout.',
-    remainingBlocker:
-      'Complete parity proof, rollback proof, Codex no-op proof, and rollout gate before declaring full isomorphism.',
+      'Tri-host carrier parity is wired, but Codex closeout and scoring proofs are required before rollout.',
+    remainingBlocker: REVIEWER_ROLLOUT_BLOCKER,
     supportedProfiles: SUPPORTED_PROFILES,
-    requiredRolloutProofs: [
-      'parity_proof',
-      'consumer_install_proof',
-      'rollback_proof',
-      'codex_noop_proof',
-    ],
+    requiredRolloutProofs: REQUIRED_ROLLOUT_PROOFS,
     compatibilityGuards: {
-      codexNoopRequired: true,
-      codexBehaviorChangeAllowed: false,
+      codexNoopRequired: false,
+      codexBehaviorChangeAllowed: true,
     },
-    rolloutGate: {
-      version: 'reviewer_rollout_gate_v1',
-      status: 'blocked',
-      requiredProofs: [
-        'parity_proof',
-        'consumer_install_proof',
-        'rollback_proof',
-        'codex_noop_proof',
-      ],
-      completeProofs: [],
-      blockingProofs: [
-        'parity_proof',
-        'consumer_install_proof',
-        'rollback_proof',
-        'codex_noop_proof',
-      ],
-      cleanupAllowed: false,
-      canClaimFullIsomorphism: false,
-      summary:
-        'Blocked until proofs are complete: parity_proof, consumer_install_proof, rollback_proof, codex_noop_proof',
-    },
+    rolloutGate: buildBlockedReviewerRolloutGate(),
     hosts: HOSTS,
     activeAuditConsumer: input?.auditEntryStage ? AUDIT_CONSUMERS[input.auditEntryStage] : null,
   };

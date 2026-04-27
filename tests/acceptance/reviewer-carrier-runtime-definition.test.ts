@@ -10,6 +10,7 @@ function createFixtureRoot(): string {
   cpSync(path.join(process.cwd(), '_bmad'), path.join(root, '_bmad'), { recursive: true });
   mkdirSync(path.join(root, '.cursor', 'agents'), { recursive: true });
   mkdirSync(path.join(root, '.claude', 'agents'), { recursive: true });
+  mkdirSync(path.join(root, '.codex', 'agents'), { recursive: true });
   return root;
 }
 
@@ -18,17 +19,21 @@ describe('reviewer carrier runtime definition', () => {
     const root = createFixtureRoot();
     try {
       const receipts = ensureReviewerRuntimeDefinition(root);
-      expect(receipts.map((entry) => entry.host)).toStrictEqual(['cursor', 'claude']);
+      expect(receipts.map((entry) => entry.host)).toStrictEqual(['cursor', 'claude', 'codex']);
 
       const cursorRuntime = readFileSync(path.join(root, '.cursor', 'agents', 'code-reviewer.md'), 'utf8');
       const claudeRuntime = readFileSync(path.join(root, '.claude', 'agents', 'code-reviewer.md'), 'utf8');
+      const codexRuntime = readFileSync(path.join(root, '.codex', 'agents', 'code-reviewer.toml'), 'utf8');
 
       expect(cursorRuntime).toContain('RUNTIME-MATERIALIZED reviewer');
       expect(cursorRuntime).toContain('source=_bmad/cursor/agents/code-reviewer.md');
       expect(claudeRuntime).toContain('RUNTIME-MATERIALIZED reviewer');
       expect(claudeRuntime).toContain('source=_bmad/claude/agents/code-reviewer.md');
+      expect(codexRuntime).toContain('RUNTIME-MATERIALIZED reviewer');
+      expect(codexRuntime).toContain('source=_bmad/codex/agents/code-reviewer.toml');
       expect(cursorRuntime).toContain('_bmad/core/agents/code-reviewer/profiles.json');
       expect(claudeRuntime).toContain('_bmad/core/agents/code-reviewer/profiles.json');
+      expect(codexRuntime).toContain('_bmad/core/agents/code-reviewer/profiles.json');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

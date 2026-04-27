@@ -89,7 +89,8 @@
     "validate:single-source-whitelist": "npx ts-node --project tsconfig.node.json --transpile-only scripts/validate-single-source-whitelist.ts",
     "test:main-agent-rerun-gate-e2e-loop": "npx vitest run tests/acceptance/governance-rerun-gate-closure.test.ts",
     "main-agent:inspect": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts --cwd . --action inspect",
-    "main-agent:dispatch-plan": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts --cwd . --action dispatch-plan"
+    "main-agent:dispatch-plan": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts --cwd . --action dispatch-plan",
+    "test:ci:codex": "npm run init:codex && npx vitest run tests/acceptance/main-agent-codex-agent-parity.test.ts tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts tests/acceptance/main-agent-run-loop-e2e.test.ts tests/acceptance/main-agent-unified-ingress-e2e.test.ts tests/acceptance/orchestration-dispatch-contract.test.ts tests/acceptance/e2e-dual-host-real-codex-smoke.test.ts tests/acceptance/main-agent-release-gate-contract.test.ts tests/acceptance/main-agent-delivery-truth-gate.test.ts tests/acceptance/main-agent-quality-gate-thresholds.test.ts tests/acceptance/main-agent-bmad-help-five-layer-matrix-e2e.test.ts tests/acceptance/main-agent-codex-consumer-five-layer-e2e.test.ts tests/acceptance/main-agent-codex-asset-host-leakage.test.ts tests/acceptance/reviewer-projection-parity.test.ts tests/acceptance/accept-install-consumer-cli.test.ts"
   },
   "bin": {
     "bmad-speckit-init": "scripts/init-to-root.js",
@@ -109,7 +110,11 @@
     "_bmad",
     "scripts",
     "docs/assets",
-    "README.zh-CN.md"
+    "README.zh-CN.md",
+    "docs/how-to/codex-setup.md",
+    "packages/scoring",
+    "packages/runtime-context/src",
+    "packages/runtime-context/package.json"
   ],
   "keywords": [
     "bmad",
@@ -154,6 +159,7 @@
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",
     "bmad-speckit": "1.0.3",
-    "js-yaml": "^4.1.1"
+    "js-yaml": "^4.1.1",
+    "tsx": "^4.21.0"
   }
 }

@@ -1,5 +1,5 @@
 /**
- * Acceptance: Install to temp consumer → run CLI (check, version).
+ * Acceptance: Install to temp consumer 鈫?run CLI (check, version).
  * Covers setup.ps1, setup.sh, npm install, init-to-root flows.
  * Runs in CI (ubuntu-latest).
  */
@@ -20,8 +20,8 @@ function runRepoCli(args: string, cwd: string, env?: NodeJS.ProcessEnv): string 
   return run(cli, cwd, env);
 }
 
-describe('install to consumer → CLI acceptance', () => {
-  it('init-to-root deploy → bmad-speckit check passes', () => {
+describe('install to consumer 鈫?CLI acceptance', () => {
+  it('init-to-root deploy 鈫?bmad-speckit check passes', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-init-'));
     try {
       run(`node scripts/init-to-root.js --full "${target}"`, PKG_ROOT);
@@ -30,6 +30,10 @@ describe('install to consumer → CLI acceptance', () => {
       expect(existsSync(join(target, 'specs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy.cjs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'i18n'))).toBe(true);
+      expect(existsSync(join(target, '.cursor', 'commands', 'bmad-speckit.md'))).toBe(true);
+      expect(existsSync(join(target, '.cursor', 'commands', 'bmads.md'))).toBe(true);
+      expect(existsSync(join(target, '.cursor', 'skills', 'bmad-speckit', 'SKILL.md'))).toBe(true);
+      expect(existsSync(join(target, '.cursor', 'skills', 'bmads', 'SKILL.md'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'rules', 'bmad-bug-auto-party-mode-rule.mdc'))).toBe(
         true
       );
@@ -49,7 +53,7 @@ describe('install to consumer → CLI acceptance', () => {
     }
   }, 90_000);
 
-  it('init-to-root deploy → bmad-speckit version runs', () => {
+  it('init-to-root deploy 鈫?bmad-speckit version runs', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-ver-'));
     try {
       run(`node scripts/init-to-root.js --full "${target}"`, PKG_ROOT);
@@ -60,7 +64,7 @@ describe('install to consumer → CLI acceptance', () => {
     }
   }, 90_000);
 
-  it('npm install → postinstall deploys → bmad-speckit check passes', () => {
+  it('npm install 鈫?postinstall deploys 鈫?bmad-speckit check passes', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-npm-'));
     try {
       writeFileSync(
@@ -75,6 +79,10 @@ describe('install to consumer → CLI acceptance', () => {
       expect(existsSync(join(target, '.cursor', 'skills', 'npm-public-release', 'SKILL.md'))).toBe(
         true
       );
+      expect(existsSync(join(target, '.cursor', 'commands', 'bmad-speckit.md'))).toBe(true);
+      expect(existsSync(join(target, '.cursor', 'commands', 'bmads.md'))).toBe(true);
+      expect(existsSync(join(target, '.cursor', 'skills', 'bmad-speckit', 'SKILL.md'))).toBe(true);
+      expect(existsSync(join(target, '.cursor', 'skills', 'bmads', 'SKILL.md'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy.cjs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'hooks', 'runtime-dashboard-session-start.cjs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'i18n'))).toBe(true);
@@ -139,7 +147,7 @@ describe('install to consumer → CLI acceptance', () => {
     } finally {
       rmSync(target, { recursive: true, force: true });
     }
-  }, 90_000);
+  }, 180_000);
 
   it('npm install consumer can deploy Claude top-level speckit aliases via installed init entrypoint', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-claude-aliases-'));
@@ -156,6 +164,10 @@ describe('install to consumer → CLI acceptance', () => {
 
       expect(existsSync(join(target, '.claude', 'hooks', 'session-start.cjs'))).toBe(true);
       expect(existsSync(join(target, '.claude', 'hooks', 'party-mode-turn-lock.cjs'))).toBe(true);
+      expect(existsSync(join(target, '.claude', 'commands', 'bmad-speckit.md'))).toBe(true);
+      expect(existsSync(join(target, '.claude', 'commands', 'bmads.md'))).toBe(true);
+      expect(existsSync(join(target, '.claude', 'skills', 'bmad-speckit', 'SKILL.md'))).toBe(true);
+      expect(existsSync(join(target, '.claude', 'skills', 'bmads', 'SKILL.md'))).toBe(true);
       expect(existsSync(join(target, '_bmad', 'runtime', 'hooks', 'runtime-dashboard-auto-start.cjs'))).toBe(true);
 
       const aliases = [
@@ -267,9 +279,30 @@ describe('install to consumer → CLI acceptance', () => {
       run('npx bmad-speckit-init --agent codex', target);
 
       expect(existsSync(join(target, '.codex', 'commands', 'bmad-help.md'))).toBe(true);
+      expect(existsSync(join(target, '.codex', 'commands', 'bmad-speckit.md'))).toBe(true);
+      expect(existsSync(join(target, '.codex', 'commands', 'bmads.md'))).toBe(true);
       expect(existsSync(join(target, '.codex', 'skills', 'bmad-help', 'SKILL.md'))).toBe(true);
+      expect(existsSync(join(target, '.codex', 'skills', 'bmad-speckit', 'SKILL.md'))).toBe(true);
+      expect(existsSync(join(target, '.codex', 'skills', 'bmads', 'SKILL.md'))).toBe(true);
+      expect(existsSync(join(target, '.codex', 'skills', 'speckit-workflow', 'SKILL.md'))).toBe(true);
+      expect(existsSync(join(target, '.codex', 'skills', 'bmad-story-assistant', 'SKILL.md'))).toBe(true);
+      expect(existsSync(join(target, '.codex', 'skills', 'bmad-standalone-tasks', 'SKILL.md'))).toBe(true);
+      expect(
+        existsSync(join(target, '.codex', 'skills', 'bmad-standalone-tasks-doc-review', 'SKILL.md'))
+      ).toBe(true);
+      expect(existsSync(join(target, '.codex', 'skills', 'bmad-rca-helper', 'SKILL.md'))).toBe(true);
+      expect(
+        existsSync(join(target, '.codex', 'skills', 'bmad-code-reviewer-lifecycle', 'SKILL.md'))
+      ).toBe(true);
+      expect(existsSync(join(target, '.codex', 'protocols', 'audit-result-schema.md'))).toBe(true);
+      expect(existsSync(join(target, '.codex', 'protocols', 'handoff-schema.md'))).toBe(true);
+      expect(existsSync(join(target, '.codex', 'protocols', 'commit-protocol.md'))).toBe(true);
       expect(existsSync(join(target, '.codex', 'README.md'))).toBe(true);
       expect(existsSync(join(target, '.codex', 'hooks'))).toBe(false);
+      const config = JSON.parse(
+        readFileSync(join(target, '_bmad-output', 'config', 'bmad-speckit.json'), 'utf8')
+      );
+      expect(config.selectedAI).toBe('codex');
 
       const manifest = JSON.parse(
         readFileSync(
@@ -281,10 +314,30 @@ describe('install to consumer → CLI acceptance', () => {
       expect(
         manifest.managed_surface.some((entry: { path: string }) => entry.path.startsWith('.codex/'))
       ).toBe(true);
+      expect(
+        manifest.managed_surface.some((entry: { path: string }) =>
+          entry.path.startsWith('.codex/protocols')
+        )
+      ).toBe(true);
+
+      const ok = run('npx bmad-speckit check', target);
+      expect(ok).toMatch(/Check OK|OK/i);
+
+      rmSync(join(target, '.codex', 'skills'), { recursive: true, force: true });
+      expect(() => run('npx bmad-speckit check', target)).toThrow(/\.codex\/skills/);
+      run('npx bmad-speckit-init --agent codex', target);
+      rmSync(join(target, '.codex', 'commands', 'bmad-speckit.md'), { force: true });
+      expect(() => run('npx bmad-speckit check', target)).toThrow(/bmad-speckit\.md/);
+      run('npx bmad-speckit-init --agent codex', target);
+      rmSync(join(target, '.codex', 'protocols', 'audit-result-schema.md'), { force: true });
+      expect(() => run('npx bmad-speckit check', target)).toThrow(/audit-result-schema\.md/);
+      run('npx bmad-speckit-init --agent codex', target);
+      rmSync(join(target, '.codex', 'skills', 'speckit-workflow'), { recursive: true, force: true });
+      expect(() => run('npx bmad-speckit check', target)).toThrow(/speckit-workflow/);
     } finally {
       rmSync(target, { recursive: true, force: true });
     }
-  }, 90_000);
+  }, 180_000);
 
   it('consumer install syncs runtime dashboard auto-start skeleton for Cursor hooks', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-dashboard-host-'));

@@ -428,8 +428,8 @@ const executionIntentBaseSchema = {
             additionalProperties: false,
             required: ['codexNoopRequired', 'codexBehaviorChangeAllowed'],
             properties: {
-              codexNoopRequired: { const: true },
-              codexBehaviorChangeAllowed: { const: false },
+              codexNoopRequired: { const: false },
+              codexBehaviorChangeAllowed: { const: true },
             },
           },
           rolloutGate: {
@@ -459,7 +459,7 @@ const executionIntentBaseSchema = {
           hosts: {
             type: 'object',
             additionalProperties: false,
-            required: ['cursor', 'claude'],
+            required: ['cursor', 'claude', 'codex'],
             properties: {
               cursor: {
                 type: 'object',
@@ -496,6 +496,40 @@ const executionIntentBaseSchema = {
                 },
               },
               claude: {
+                type: 'object',
+                additionalProperties: false,
+                required: [
+                  'carrierSourcePath',
+                  'runtimeTargetPath',
+                  'preferredRoute',
+                  'fallbackRoute',
+                  'fallbackReason',
+                ],
+                properties: {
+                  carrierSourcePath: { type: 'string', minLength: 1 },
+                  runtimeTargetPath: { type: 'string', minLength: 1 },
+                  preferredRoute: {
+                    type: 'object',
+                    additionalProperties: false,
+                    required: ['tool', 'subtypeOrExecutor'],
+                    properties: {
+                      tool: { type: 'string' },
+                      subtypeOrExecutor: { type: 'string' },
+                    },
+                  },
+                  fallbackRoute: {
+                    type: 'object',
+                    additionalProperties: false,
+                    required: ['tool', 'subtypeOrExecutor'],
+                    properties: {
+                      tool: { type: 'string' },
+                      subtypeOrExecutor: { type: 'string' },
+                    },
+                  },
+                  fallbackReason: { type: 'string', minLength: 1 },
+                },
+              },
+              codex: {
                 type: 'object',
                 additionalProperties: false,
                 required: [

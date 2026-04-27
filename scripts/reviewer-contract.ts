@@ -18,6 +18,9 @@ export const CLAUDE_REVIEWER_CANONICAL_SOURCE_PATH =
   '_bmad/claude/agents/code-reviewer.md' as const;
 export const CLAUDE_REVIEWER_RUNTIME_TARGET_PATH = '.claude/agents/code-reviewer.md' as const;
 export const CLAUDE_REVIEWER_DEFINITION_SOURCE_PATH = CLAUDE_REVIEWER_RUNTIME_TARGET_PATH;
+export const CODEX_REVIEWER_CANONICAL_SOURCE_PATH =
+  '_bmad/codex/agents/code-reviewer.toml' as const;
+export const CODEX_REVIEWER_RUNTIME_TARGET_PATH = '.codex/agents/code-reviewer.toml' as const;
 export const REVIEWER_SHARED_CORE_ROOT = '_bmad/core/agents/code-reviewer' as const;
 export const REVIEWER_SHARED_CORE_METADATA_PATH =
   `${REVIEWER_SHARED_CORE_ROOT}/metadata.json` as const;
@@ -68,6 +71,8 @@ export const CURSOR_FACILITATOR_DEFINITION_SOURCE_PATH =
 export const CLAUDE_FACILITATOR_TARGET_PATH =
   '.claude/agents/party-mode-facilitator.md' as const;
 export const CLAUDE_FACILITATOR_AGENT_MENTION = '@"party-mode-facilitator (agent)"' as const;
+export const CODEX_FACILITATOR_TARGET_PATH =
+  '.codex/agents/party-mode-facilitator.toml' as const;
 
 export const IMPLEMENT_AUDIT_REQUIRED_DIMENSIONS = [
   'functional_correctness',
@@ -123,15 +128,17 @@ export const REVIEWER_HOST_ADAPTER_BOUNDARY = {
 } as const;
 
 export const REVIEWER_COMPATIBILITY_GUARDS = {
-  codexNoopRequired: true,
-  codexBehaviorChangeAllowed: false,
+  codexNoopRequired: false,
+  codexBehaviorChangeAllowed: true,
 } as const;
 
 export const REVIEWER_REQUIRED_ROLLOUT_PROOFS = [
   'parity_proof',
   'consumer_install_proof',
   'rollback_proof',
-  'codex_noop_proof',
+  'codex_parity_proof',
+  'codex_closeout_proof',
+  'codex_scoring_proof',
 ] as const;
 
 export type ReviewerRequiredRolloutProofId = (typeof REVIEWER_REQUIRED_ROLLOUT_PROOFS)[number];
@@ -144,7 +151,9 @@ export const REVIEWER_STRICT_ALIGNMENT_EVIDENCE = [
   'governance_closure_parity',
   'parsable_scoring_block_parity',
   'result_code_and_required_fixes_parity',
-  'codex_noop_proof',
+  'codex_parity_proof',
+  'codex_closeout_proof',
+  'codex_scoring_proof',
   'rollback_proof',
 ] as const;
 
@@ -172,6 +181,10 @@ export interface ReviewerContractFreeze {
       readonly runtimeTargetPath: typeof CLAUDE_REVIEWER_RUNTIME_TARGET_PATH;
       readonly definitionSourcePath: typeof CLAUDE_REVIEWER_DEFINITION_SOURCE_PATH;
     };
+    readonly codex: {
+      readonly canonicalSourcePath: typeof CODEX_REVIEWER_CANONICAL_SOURCE_PATH;
+      readonly runtimeTargetPath: typeof CODEX_REVIEWER_RUNTIME_TARGET_PATH;
+    };
     readonly profiles: readonly ReviewerProfileId[];
     readonly specializedProfiles: readonly SpecializedReviewerProfileId[];
     readonly definitionSources: Record<ReviewerDefinitionSourceId, ReviewerProfileId>;
@@ -184,6 +197,9 @@ export interface ReviewerContractFreeze {
     readonly claudeTarget: {
       readonly agentPath: typeof CLAUDE_FACILITATOR_TARGET_PATH;
       readonly agentMention: typeof CLAUDE_FACILITATOR_AGENT_MENTION;
+    };
+    readonly codexTarget: {
+      readonly agentPath: typeof CODEX_FACILITATOR_TARGET_PATH;
     };
   };
   readonly hardConstraints: typeof REVIEWER_HARD_CONSTRAINTS;
@@ -216,6 +232,10 @@ export const REVIEWER_CONTRACT_FREEZE: ReviewerContractFreeze = {
       runtimeTargetPath: CLAUDE_REVIEWER_RUNTIME_TARGET_PATH,
       definitionSourcePath: CLAUDE_REVIEWER_DEFINITION_SOURCE_PATH,
     },
+    codex: {
+      canonicalSourcePath: CODEX_REVIEWER_CANONICAL_SOURCE_PATH,
+      runtimeTargetPath: CODEX_REVIEWER_RUNTIME_TARGET_PATH,
+    },
     profiles: REVIEWER_PROFILES,
     specializedProfiles: SPECIALIZED_REVIEWER_PROFILES,
     definitionSources: REVIEWER_PROFILE_DEFINITION_SOURCES,
@@ -228,6 +248,9 @@ export const REVIEWER_CONTRACT_FREEZE: ReviewerContractFreeze = {
     claudeTarget: {
       agentPath: CLAUDE_FACILITATOR_TARGET_PATH,
       agentMention: CLAUDE_FACILITATOR_AGENT_MENTION,
+    },
+    codexTarget: {
+      agentPath: CODEX_FACILITATOR_TARGET_PATH,
     },
   },
   hardConstraints: REVIEWER_HARD_CONSTRAINTS,

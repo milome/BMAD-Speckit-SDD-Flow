@@ -6,6 +6,8 @@
   "maxMissingKeyPaths": 0,
   "requiredKeyPaths": [
     "scripts/main-agent-orchestration.ts",
+    "scripts/main-agent-unified-ingress.ts",
+    "scripts/main-agent-codex-worker-adapter.ts",
     "scripts/main-agent-release-gate.ts",
     "scripts/main-agent-delivery-truth-gate.ts",
     "scripts/main-agent-quality-gate.ts",
@@ -14,13 +16,28 @@
     "_bmad-output/runtime/governance/user_story_mapping.json",
     "tests/acceptance/main-agent-release-gate-contract.test.ts",
     "tests/acceptance/main-agent-delivery-truth-gate.test.ts",
-    "tests/acceptance/governance-rerun-gate-closure.test.ts"
+    "tests/acceptance/governance-rerun-gate-closure.test.ts",
+    "tests/acceptance/main-agent-dual-host-pr-orchestration.test.ts",
+    "tests/acceptance/sprint-status-authorized-update.test.ts",
+    "docs/ops/main-agent-capability-traceability-matrix.md"
   ],
   "requiredAcceptanceTests": [
     "tests/acceptance/main-agent-quality-gate-thresholds.test.ts",
     "tests/acceptance/main-agent-release-gate-contract.test.ts",
     "tests/acceptance/main-agent-delivery-truth-gate.test.ts",
-    "tests/acceptance/governance-rerun-gate-closure.test.ts"
+    "tests/acceptance/governance-rerun-gate-closure.test.ts",
+    "tests/acceptance/main-agent-dual-host-pr-orchestration.test.ts",
+    "tests/acceptance/main-agent-run-loop-e2e.test.ts",
+    "tests/acceptance/main-agent-codex-agent-parity.test.ts",
+    "tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts",
+    "tests/acceptance/main-agent-unified-ingress-e2e.test.ts"
+  ],
+  "requiredCodexProofPaths": [
+    "tests/acceptance/main-agent-codex-agent-parity.test.ts",
+    "tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts",
+    "tests/acceptance/main-agent-codex-consumer-five-layer-e2e.test.ts",
+    "tests/acceptance/reviewer-codex-noop-guard.test.ts",
+    "tests/acceptance/reviewer-rollout-rollback-proof.test.ts"
   ],
   "forbiddenTodoMarkers": [
     "failTodo('main-agent-quality-gate'",

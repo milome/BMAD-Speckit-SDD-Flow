@@ -8,12 +8,22 @@ type DeliveryStatus = 'complete' | 'partial' | 'blocked';
 interface ReleaseGateEvidence {
   critical_failures: number;
   blocked_sprint_status_update: boolean;
+  evidence_provenance?: EvidenceProvenance;
+  completion_intent?: {
+    token: string;
+    storyKey: string;
+    contractHash: string;
+    gateReportHash: string;
+    singleUse: boolean;
+    expiresAt: string;
+  };
 }
 
 interface DualHostEvidence {
   journeyMode: 'mock' | 'real';
   journeyE2EPassed: boolean;
   hostsPassed: Record<'claude' | 'codex', boolean>;
+  evidence_provenance?: EvidenceProvenance;
 }
 
 interface SoakEvidence {
@@ -38,14 +48,45 @@ interface SoakEvidence {
       taskReportStatus: string | null;
       evidence: string[];
       finalNextAction: string | null;
+      tickCommand?: {
+        command: string;
+        exitCode: number | null;
+        stdoutPath: string;
+        stderrPath: string;
+        diffHashBefore: string;
+        diffHashAfter: string;
+      };
     }>;
   };
+  evidence_provenance?: EvidenceProvenance;
 }
 
 interface SprintStatusAuditEvidence {
   storyKey: string;
   status: string;
   authorized: boolean;
+  releaseGateReportPath?: string;
+  gateReportHash?: string;
+  contractHash?: string;
+  fromStatus?: string;
+  toStatus?: string;
+  token?: string;
+  singleUse?: boolean;
+  expiresAt?: string;
+  evidence_provenance?: EvidenceProvenance;
+}
+
+interface QualityGateEvidence {
+  critical_failures: number;
+  evidence_provenance?: EvidenceProvenance;
+}
+
+interface EvidenceProvenance {
+  runId: string;
+  storyKey: string;
+  evidenceBundleId: string;
+  contractHash?: string;
+  gateReportHash?: string;
 }
 
 export interface DeliveryTruthGateReport {
@@ -115,6 +156,13 @@ function defaultEvidencePaths(root: string): Record<string, string> {
       'governance',
       'sprint-status-update-audit.json'
     ),
+    qualityGate: path.join(
+      root,
+      '_bmad-output',
+      'runtime',
+      'gates',
+      'main-agent-quality-gate-report.json'
+    ),
   };
 }
 
@@ -126,9 +174,16 @@ function checkReleaseGate(evidence: ReleaseGateEvidence | null): {
     passed:
       evidence != null &&
       evidence.critical_failures === 0 &&
-      evidence.blocked_sprint_status_update === false,
+      evidence.blocked_sprint_status_update === false &&
+      evidence.completion_intent != null &&
+      evidence.completion_intent.token !== '' &&
+      evidence.completion_intent.storyKey !== '' &&
+      evidence.completion_intent.contractHash !== '' &&
+      evidence.completion_intent.gateReportHash !== '' &&
+      evidence.completion_intent.singleUse === true &&
+      Date.parse(evidence.completion_intent.expiresAt) > Date.now(),
     summary: evidence
-      ? `critical_failures=${evidence.critical_failures}, blocked_sprint_status_update=${evidence.blocked_sprint_status_update}`
+      ? `critical_failures=${evidence.critical_failures}, blocked_sprint_status_update=${evidence.blocked_sprint_status_update}, completion_intent=${evidence.completion_intent ? 'present' : 'missing'}`
       : 'missing',
   };
 }
@@ -165,9 +220,19 @@ function checkSoak(evidence: SoakEvidence | null): { passed: boolean; summary: s
       evidence.developmentRun.runLoopInvocations.length === evidence.developmentRun.tick_count &&
       evidence.developmentRun.runLoopInvocations.every(
         (item) => item.runId !== '' && item.packetId !== null && item.taskReportStatus === 'done'
+      ) &&
+      evidence.developmentRun.runLoopInvocations.some(
+        (item) =>
+          item.tickCommand != null &&
+          item.tickCommand.command !== '' &&
+          item.tickCommand.exitCode === 0 &&
+          item.tickCommand.stdoutPath !== '' &&
+          item.tickCommand.stderrPath !== '' &&
+          item.tickCommand.diffHashBefore !== '' &&
+          item.tickCommand.diffHashAfter !== ''
       ),
     summary: evidence
-      ? `mode=${evidence.mode}, run_kind=${evidence.run_kind ?? 'missing'}, target=${evidence.target_duration_ms}, observed=${evidence.observed_duration_ms}, recovery=${evidence.recovery_success_rate}, development_ticks=${evidence.developmentRun?.tick_count ?? 0}, completed_ticks=${evidence.developmentRun?.completed_ticks ?? 0}`
+      ? `mode=${evidence.mode}, run_kind=${evidence.run_kind ?? 'missing'}, target=${evidence.target_duration_ms}, observed=${evidence.observed_duration_ms}, recovery=${evidence.recovery_success_rate}, development_ticks=${evidence.developmentRun?.tick_count ?? 0}, completed_ticks=${evidence.developmentRun?.completed_ticks ?? 0}, tick_commands=${evidence.developmentRun?.runLoopInvocations.filter((item) => item.tickCommand?.exitCode === 0).length ?? 0}`
       : 'missing',
   };
 }
@@ -194,10 +259,78 @@ function checkSprintAudit(evidence: SprintStatusAuditEvidence | null): {
   summary: string;
 } {
   return {
-    passed: evidence != null && evidence.authorized === true && evidence.storyKey !== '',
+    passed:
+      evidence != null &&
+      evidence.authorized === true &&
+      evidence.storyKey !== '' &&
+      evidence.releaseGateReportPath != null &&
+      evidence.gateReportHash != null &&
+      evidence.gateReportHash !== '' &&
+      evidence.contractHash != null &&
+      evidence.contractHash !== '' &&
+      evidence.fromStatus != null &&
+      evidence.fromStatus !== '' &&
+      evidence.toStatus === evidence.status &&
+      evidence.token != null &&
+      evidence.token !== '' &&
+      evidence.singleUse === true &&
+      evidence.expiresAt != null &&
+      Date.parse(evidence.expiresAt) > Date.now(),
     summary: evidence
-      ? `storyKey=${evidence.storyKey}, status=${evidence.status}, authorized=${evidence.authorized}`
+      ? `storyKey=${evidence.storyKey}, status=${evidence.status}, authorized=${evidence.authorized}, strongAudit=${Boolean(evidence.gateReportHash && evidence.contractHash && evidence.singleUse)}`
       : 'missing',
+  };
+}
+
+function checkQualityGate(evidence: QualityGateEvidence | null): {
+  passed: boolean;
+  summary: string;
+} {
+  return {
+    passed: evidence != null && evidence.critical_failures === 0,
+    summary: evidence ? `critical_failures=${evidence.critical_failures}` : 'missing',
+  };
+}
+
+function checkEvidenceProvenance(input: {
+  releaseGate: ReleaseGateEvidence | null;
+  dualHost: DualHostEvidence | null;
+  soak: SoakEvidence | null;
+  prTopology: PrTopology | null;
+  sprintAudit: SprintStatusAuditEvidence | null;
+  qualityGate?: QualityGateEvidence | null;
+}): { passed: boolean; summary: string } {
+  const entries = [
+    ['releaseGate', input.releaseGate?.evidence_provenance],
+    ['dualHost', input.dualHost?.evidence_provenance],
+    ['soak', input.soak?.evidence_provenance],
+    ['prTopology', input.prTopology?.evidence_provenance],
+    ['sprintAudit', input.sprintAudit?.evidence_provenance],
+    ['qualityGate', input.qualityGate?.evidence_provenance],
+  ] as const;
+  const present = entries.filter(([, value]) => value != null);
+  if (present.length === 0) {
+    return { passed: false, summary: 'missing evidence_provenance on all delivery artifacts' };
+  }
+  if (present.length !== entries.length) {
+    return {
+      passed: false,
+      summary: `partial evidence_provenance: ${present.map(([id]) => id).join(',')}`,
+    };
+  }
+  const first = present[0][1]!;
+  const mismatches = present.filter(([, value]) =>
+    value == null ||
+    value.runId !== first.runId ||
+    value.storyKey !== first.storyKey ||
+    value.evidenceBundleId !== first.evidenceBundleId
+  );
+  return {
+    passed: mismatches.length === 0 && first.runId !== '' && first.storyKey !== '' && first.evidenceBundleId !== '',
+    summary:
+      mismatches.length === 0
+        ? `runId=${first.runId}, storyKey=${first.storyKey}, evidenceBundleId=${first.evidenceBundleId}`
+        : `provenance mismatch: ${mismatches.map(([id]) => id).join(',')}`,
   };
 }
 
@@ -207,6 +340,7 @@ export function evaluateDeliveryTruthGate(input: {
   soak: SoakEvidence | null;
   prTopology: PrTopology | null;
   sprintAudit: SprintStatusAuditEvidence | null;
+  qualityGate?: QualityGateEvidence | null;
   missingEvidence?: string[];
   evidencePaths?: Record<string, string | null>;
 }): DeliveryTruthGateReport {
@@ -216,6 +350,8 @@ export function evaluateDeliveryTruthGate(input: {
     { id: 'wall-clock-8h-soak', ...checkSoak(input.soak) },
     { id: 'pr-topology-closed', ...checkPrTopology(input.prTopology) },
     { id: 'authorized-sprint-status-write', ...checkSprintAudit(input.sprintAudit) },
+    { id: 'quality-gate', ...checkQualityGate(input.qualityGate ?? null) },
+    { id: 'same-run-evidence-provenance', ...checkEvidenceProvenance(input) },
   ];
   const failedEvidence = checks
     .filter((check) => !check.passed)
@@ -255,18 +391,21 @@ export function main(argv: string[]): number {
     soak: args.soakPath ?? defaults.soak,
     prTopology: args.prTopologyPath ?? defaults.prTopology,
     sprintAudit: args.sprintAuditPath ?? defaults.sprintAudit,
+    qualityGate: args.qualityGatePath ?? defaults.qualityGate,
   };
   const releaseGate = readJson<ReleaseGateEvidence>(evidencePaths.releaseGate);
   const dualHost = readJson<DualHostEvidence>(evidencePaths.dualHost);
   const soak = readJson<SoakEvidence>(evidencePaths.soak);
   const prTopology = readJson<PrTopology>(evidencePaths.prTopology);
   const sprintAudit = readJson<SprintStatusAuditEvidence>(evidencePaths.sprintAudit);
+  const qualityGate = readJson<QualityGateEvidence>(evidencePaths.qualityGate);
   for (const [id, result] of Object.entries({
     releaseGate,
     dualHost,
     soak,
     prTopology,
     sprintAudit,
+    qualityGate,
   })) {
     const evidencePath = evidencePaths[id as keyof typeof evidencePaths];
     if (result.missing) missingEvidence.push(`${id}: ${evidencePath}`);
@@ -278,6 +417,7 @@ export function main(argv: string[]): number {
     soak: soak.value,
     prTopology: prTopology.value,
     sprintAudit: sprintAudit.value,
+    qualityGate: qualityGate.value,
     missingEvidence,
     evidencePaths,
   });

@@ -1,26 +1,17 @@
 #!/usr/bin/env node
 /**
- * Init-to-root: 将 _bmad、_bmad-output 部署到项目根，再按 agent 从 _bmad/ 同步到运行时目录。
- *
- * 源路径约定：_bmad/ 是唯一内容源。
- *   - 共享 commands: _bmad/commands/
- *   - 共享 i18n: _bmad/i18n/
+ * Init-to-root: 灏?_bmad銆乢bmad-output 閮ㄧ讲鍒伴」鐩牴锛屽啀鎸?agent 浠?_bmad/ 鍚屾鍒拌繍琛屾椂鐩綍銆? *
+ * 婧愯矾寰勭害瀹氾細_bmad/ 鏄敮涓€鍐呭婧愩€? *   - 鍏变韩 commands: _bmad/commands/
+ *   - 鍏变韩 i18n: _bmad/i18n/
  *   - Cursor rules/skills: _bmad/cursor/
  *   - Claude agents/skills/hooks/rules: _bmad/claude/
  *
- * 用途：部署 BMAD 目录结构。
- * 对外部目标目录：从 @bmad-speckit/runtime-emit 将 emit-runtime-policy.cjs、resolve-for-session.cjs、render-audit-block.cjs 与 write-runtime-context.cjs 复制到 **.cursor/hooks** 与/或 **.claude/hooks**（与 hook 脚本同目录，不在项目根创建 scripts/）；legacy worker/dispatch hook-local bundle 不再属于正式安装 contract。
- * `--agent cursor`：`syncCursorRuntimePolicyHooks` 先将 `_bmad/runtime/hooks` 下 4 个共享 JS 复制到 `.cursor/hooks`，再覆盖 `emit-runtime-policy-cli.cjs`、`runtime-policy-inject.cjs`（薄壳，`./runtime-policy-inject-core` 优先）。
- * `--agent claude-code`：`syncClaudeRuntimePolicyHooks` 同样将上述 4 个文件复制到 `.claude/hooks` 后再覆盖薄壳与 CLI，与 Cursor 侧分层一致。
- * 外部目标默认**不**创建 package.json、不执行 npm install；若需在消费者目录安装本地 bmad-speckit CLI 依赖，传入 **--with-package-json**。
- * 外部目标默认**不**生成 runtime MCP 布局；如需启用，显式传入 **--with-mcp**。
- * speckit commands 从 _bmad/speckit/commands/ 合并；.specify/ 部署 templates/workflows/scripts。
+ * 鐢ㄩ€旓細閮ㄧ讲 BMAD 鐩綍缁撴瀯銆? * 瀵瑰閮ㄧ洰鏍囩洰褰曪細浠?@bmad-speckit/runtime-emit 灏?emit-runtime-policy.cjs銆乺esolve-for-session.cjs銆乺ender-audit-block.cjs 涓?write-runtime-context.cjs 澶嶅埗鍒?**.cursor/hooks** 涓?鎴?**.claude/hooks**锛堜笌 hook 鑴氭湰鍚岀洰褰曪紝涓嶅湪椤圭洰鏍瑰垱寤?scripts/锛夛紱legacy worker/dispatch hook-local bundle 涓嶅啀灞炰簬姝ｅ紡瀹夎 contract銆? * `--agent cursor`锛歚syncCursorRuntimePolicyHooks` 鍏堝皢 `_bmad/runtime/hooks` 涓?4 涓叡浜?JS 澶嶅埗鍒?`.cursor/hooks`锛屽啀瑕嗙洊 `emit-runtime-policy-cli.cjs`銆乣runtime-policy-inject.cjs`锛堣杽澹筹紝`./runtime-policy-inject-core` 浼樺厛锛夈€? * `--agent claude-code`锛歚syncClaudeRuntimePolicyHooks` 鍚屾牱灏嗕笂杩?4 涓枃浠跺鍒跺埌 `.claude/hooks` 鍚庡啀瑕嗙洊钖勫３涓?CLI锛屼笌 Cursor 渚у垎灞備竴鑷淬€? * 澶栭儴鐩爣榛樿**涓?*鍒涘缓 package.json銆佷笉鎵ц npm install锛涜嫢闇€鍦ㄦ秷璐硅€呯洰褰曞畨瑁呮湰鍦?bmad-speckit CLI 渚濊禆锛屼紶鍏?**--with-package-json**銆? * 澶栭儴鐩爣榛樿**涓?*鐢熸垚 runtime MCP 甯冨眬锛涘闇€鍚敤锛屾樉寮忎紶鍏?**--with-mcp**銆? * speckit commands 浠?_bmad/speckit/commands/ 鍚堝苟锛?specify/ 閮ㄧ讲 templates/workflows/scripts銆? *
+ * CLI 鍙傛暟锛歔targetDir], --full, --agent cursor|claude-code|codex, --no-package-json, --with-package-json, --with-mcp
  *
- * CLI 参数：[targetDir], --full, --agent cursor|claude-code|codex, --no-package-json, --with-package-json, --with-mcp
+ * 绀轰緥锛歯ode scripts/init-to-root.js
  *
- * 示例：node scripts/init-to-root.js
- *
- * 退出码：0=成功
+ * 閫€鍑虹爜锛?=鎴愬姛
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -60,16 +51,7 @@ let requestedAgentTarget =
   agentArgIndex >= 0 && args[agentArgIndex + 1] ? args[agentArgIndex + 1] : null;
 
 if (!requestedAgentTarget) {
-  try {
-    const configPath = path.join(PKG_ROOT, '_bmad-output', 'config', 'bmad-speckit.json');
-    if (fs.existsSync(configPath)) {
-      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      requestedAgentTarget = config.selectedAI || 'cursor';
-    }
-  } catch {
-    /* ignore */
-  }
-  if (!requestedAgentTarget) requestedAgentTarget = 'cursor';
+  requestedAgentTarget = 'cursor';
 }
 /**
  * Deploy .specify/ runtime directory from _bmad/speckit/ source.
@@ -243,6 +225,9 @@ const REGISTERED_AGENT_PROFILES = {
         { src: path.join(bmadRoot, 'skills'), dest: '.codex/skills' },
         { src: path.join(bmadRoot, 'core', 'skills'), dest: '.codex/skills' },
         { src: path.join(bmadRoot, 'i18n'), dest: '.codex/i18n' },
+        { src: path.join(bmadRoot, 'codex', 'agents'), dest: '.codex/agents' },
+        { src: path.join(bmadRoot, 'codex', 'protocols'), dest: '.codex/protocols' },
+        { src: path.join(bmadRoot, 'codex', 'skills'), dest: '.codex/skills' },
       ];
       let totalFiles = 0;
       for (const { src, dest } of codexSync) {
@@ -270,6 +255,12 @@ const REGISTERED_AGENT_PROFILES = {
           '- `npm run main-agent-orchestration -- --action dispatch-plan`',
           '- `npm run main-agent:run-loop -- --taskReportPath <path>`',
           '',
+          'Custom Codex agents are installed under `.codex/agents/`.',
+          'Codex protocols are installed under `.codex/protocols/` and required by reviewer/auditor/closeout agents.',
+          'BMAD dispatch packets resolve `role` to these TOML agents and fail closed if a role is missing.',
+          'Five-layer entry: `bmad-help` -> `layer_1_intake` -> `layer_2_architecture` -> `layer_3_story` -> `layer_4_speckit` -> `layer_5_closeout`.',
+          'Governed runtime entry: `$bmad-speckit`, `/bmad-speckit`, or `bmad-speckit`; short aliases `$bmads`, `/bmads`, and `bmads` are equivalent.',
+          '',
         ].join('\n'),
         'utf8'
       );
@@ -281,6 +272,11 @@ const REGISTERED_AGENT_PROFILES = {
 const AGENT_ID_ALIASES = {
   'cursor-agent': 'cursor',
   claude: 'claude-code',
+};
+const AGENT_TO_SELECTED_AI = {
+  cursor: 'cursor-agent',
+  'claude-code': 'claude',
+  codex: 'codex',
 };
 const normalizedAgent = AGENT_ID_ALIASES[requestedAgentTarget] || requestedAgentTarget;
 const agentProfile = REGISTERED_AGENT_PROFILES[normalizedAgent];
@@ -780,8 +776,7 @@ function writeConsumerBmadSpeckitBinWrappers(targetDir, pkgRoot) {
 
 /**
  * External installs only receive `_bmad/` by default; hooks need a pre-built emit (no ts-node).
- * Resolve `@bmad-speckit/runtime-emit` from pkgRoot node_modules (bmad-speckit 依赖树)，供复制到 hooks/emit-runtime-policy.cjs。
- * @param {string} pkgRoot - BMAD-Speckit-SDD-Flow root (init script location).
+ * Resolve `@bmad-speckit/runtime-emit` from pkgRoot node_modules (bmad-speckit 渚濊禆鏍?锛屼緵澶嶅埗鍒?hooks/emit-runtime-policy.cjs銆? * @param {string} pkgRoot - BMAD-Speckit-SDD-Flow root (init script location).
  * @param {string} targetDir - Consumer project root.
  */
 function resolveRuntimeEmitCjs(pkgRoot) {
@@ -860,20 +855,20 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
   const emitSrc = resolveRuntimeEmitCjs(pkgRoot);
   if (!emitSrc || !fs.existsSync(emitSrc)) {
     console.warn(
-      '@bmad-speckit/runtime-emit not found; run: npm install && npm run build:runtime-emit — policy hooks may fail in target.'
+      '@bmad-speckit/runtime-emit not found; run: npm install && npm run build:runtime-emit 鈥?policy hooks may fail in target.'
     );
     return;
   }
   const resolveSessionSrc = resolveRuntimeResolveSessionCjs(pkgRoot);
   if (!resolveSessionSrc || !fs.existsSync(resolveSessionSrc)) {
     console.warn(
-      'resolve-for-session.cjs not found; run: npm run build:runtime-emit — runtime-policy-inject i18n merge may fail in target.'
+      'resolve-for-session.cjs not found; run: npm run build:runtime-emit 鈥?runtime-policy-inject i18n merge may fail in target.'
     );
   }
   const renderAuditSrc = resolveRuntimeRenderAuditBlockCjs(pkgRoot);
   if (!renderAuditSrc || !fs.existsSync(renderAuditSrc)) {
     console.warn(
-      'render-audit-block.cjs not found; run: npm run build:runtime-emit — pre-agent-summary audit inject may be empty in target.'
+      'render-audit-block.cjs not found; run: npm run build:runtime-emit 鈥?pre-agent-summary audit inject may be empty in target.'
     );
   }
   const wrcSrc = path.join(path.dirname(emitSrc), '..', 'write-runtime-context.cjs');
@@ -1084,12 +1079,57 @@ if (installTracker) {
   );
 }
 
-// Speckit 规格根目录（与 docs/tutorials/getting-started.md、设计文档 §4.10 一致；具体 epic 由 /speckit.specify 等写入）
+function writeProjectSelectedAI(targetDir, selectedAgent, packageRoot) {
+  const selectedAI = AGENT_TO_SELECTED_AI[selectedAgent];
+  if (!selectedAI) return;
+  const configPath = path.join(targetDir, '_bmad-output', 'config', 'bmad-speckit.json');
+  let existing = {};
+  if (fs.existsSync(configPath)) {
+    try {
+      existing = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    } catch {
+      existing = {};
+    }
+  }
+  const selectedAIs = Array.from(
+    new Set([...(Array.isArray(existing.selectedAIs) ? existing.selectedAIs : []), selectedAI])
+  );
+  const packageJsonPath = path.join(packageRoot, 'package.json');
+  let templateVersion = existing.templateVersion || 'latest';
+  if (fs.existsSync(packageJsonPath)) {
+    try {
+      templateVersion = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')).version || templateVersion;
+    } catch {
+      /* keep existing */
+    }
+  }
+  const next = {
+    ...existing,
+    selectedAI,
+    selectedAIs,
+    templateVersion,
+    initLog: {
+      ...(existing.initLog || {}),
+      timestamp: new Date().toISOString(),
+      selectedAI,
+      selectedAIs,
+      templateVersion,
+      installedVia:
+        process.env.npm_lifecycle_event === 'postinstall' || process.env.INIT_CWD
+          ? 'postinstall'
+          : 'bmad-speckit-init',
+    },
+  };
+  fs.mkdirSync(path.dirname(configPath), { recursive: true });
+  fs.writeFileSync(configPath, JSON.stringify(next, null, 2) + '\n', 'utf8');
+}
+
+writeProjectSelectedAI(TARGET, agentTarget, PKG_ROOT);
+
+// Speckit 瑙勬牸鏍圭洰褰曪紙涓?docs/tutorials/getting-started.md銆佽璁℃枃妗?搂4.10 涓€鑷达紱鍏蜂綋 epic 鐢?/speckit.specify 绛夊啓鍏ワ級
 fs.mkdirSync(path.join(TARGET, 'specs'), { recursive: true });
 
-// 外部项目：默认不创建 package.json（npx bmad-speckit 可不依赖本地 package.json）。
-// --with-package-json：写入 devDependencies + npm install（旧行为）。
-// --no-package-json：显式跳过（与默认等价，保留兼容）。
+// 澶栭儴椤圭洰锛氶粯璁や笉鍒涘缓 package.json锛坣px bmad-speckit 鍙笉渚濊禆鏈湴 package.json锛夈€?// --with-package-json锛氬啓鍏?devDependencies + npm install锛堟棫琛屼负锛夈€?// --no-package-json锛氭樉寮忚烦杩囷紙涓庨粯璁ょ瓑浠凤紝淇濈暀鍏煎锛夈€?const targetReal = fs.realpathSync(TARGET, { encoding: 'utf8' });
 const targetReal = fs.realpathSync(TARGET, { encoding: 'utf8' });
 const pkgRootReal = fs.realpathSync(PKG_ROOT, { encoding: 'utf8' });
 if (noPackageJson || !withPackageJson) {

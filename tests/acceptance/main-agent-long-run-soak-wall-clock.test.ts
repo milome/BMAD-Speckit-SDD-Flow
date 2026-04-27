@@ -78,6 +78,7 @@ describe('main-agent long-run wall-clock soak', () => {
         developmentRunLoop: true,
         flow: 'story',
         stage: 'implement',
+        tickCommand: `${process.execPath} -e "console.log('real tick validation')"`,
       });
 
       expect(report.run_kind).toBe('development_run_loop');
@@ -85,6 +86,8 @@ describe('main-agent long-run wall-clock soak', () => {
       expect(report.developmentRun?.completed_ticks).toBeGreaterThan(0);
       expect(report.developmentRun?.runLoopInvocations[0].packetId).toBeTruthy();
       expect(report.developmentRun?.runLoopInvocations[0].evidence).toContain('soak-tick-1');
+      expect(report.developmentRun?.runLoopInvocations[0].tickCommand?.exitCode).toBe(0);
+      expect(report.developmentRun?.runLoopInvocations[0].tickCommand?.diffHashBefore).toBeTruthy();
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
@@ -152,6 +155,11 @@ describe('main-agent long-run wall-clock soak', () => {
           '--tickIntervalMs',
           '5',
           '--startBackground',
+          '--developmentRunLoop',
+          '--hostKind',
+          'codex',
+          '--tickCommand',
+          `${process.execPath} -e "console.log('background real tick validation')"`,
         ],
         { cwd: root, encoding: 'utf8' }
       );
@@ -171,13 +179,26 @@ describe('main-agent long-run wall-clock soak', () => {
         'main-agent-soak-report.json'
       );
       expect(fs.existsSync(metadataPath)).toBe(true);
+      const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8')) as {
+        developmentRunLoop: boolean;
+        hostKind: string;
+      };
+      expect(metadata.developmentRunLoop).toBe(true);
+      expect(metadata.hostKind).toBe('codex');
+      expect(metadata).toMatchObject({
+        tickCommand: `${process.execPath} -e "console.log('background real tick validation')"`,
+      });
       await waitForFile(reportPath, 5_000);
       const report = JSON.parse(fs.readFileSync(reportPath, 'utf8')) as {
         mode: string;
         target_duration_ms: number;
         observed_duration_ms: number;
+        run_kind: string;
+        developmentRun?: { hostKind: string };
       };
       expect(report.mode).toBe('wall_clock');
+      expect(report.run_kind).toBe('development_run_loop');
+      expect(report.developmentRun?.hostKind).toBe('codex');
       expect(report.observed_duration_ms).toBeGreaterThanOrEqual(report.target_duration_ms);
     } finally {
       rmEventually(root);

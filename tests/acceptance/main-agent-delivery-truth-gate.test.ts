@@ -5,6 +5,12 @@ import { describe, expect, it } from 'vitest';
 import { evaluateDeliveryTruthGate } from '../../scripts/main-agent-delivery-truth-gate';
 import { buildPrTopology, buildParallelMissionPlan } from '../../scripts/parallel-mission-control';
 
+const evidence_provenance = {
+  runId: 'run-delivery-truth',
+  storyKey: 'S1',
+  evidenceBundleId: 'bundle-delivery-truth',
+};
+
 function closedPrTopology() {
   const plan = buildParallelMissionPlan({
     batchId: 'delivery-truth',
@@ -21,17 +27,51 @@ function closedPrTopology() {
       },
     ],
   });
-  return buildPrTopology({ plan, states: { n1: 'merged' } });
+  return { ...buildPrTopology({ plan, states: { n1: 'merged' } }), evidence_provenance };
+}
+
+function releaseGateEvidence() {
+  return {
+    critical_failures: 0,
+    blocked_sprint_status_update: false,
+    evidence_provenance,
+    completion_intent: {
+      token: 'release-gate:pass:S1',
+      storyKey: 'S1',
+      contractHash: 'contract-hash',
+      gateReportHash: 'gate-report-hash',
+      singleUse: true,
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    },
+  };
+}
+
+function sprintAuditEvidence() {
+  return {
+    storyKey: 'S1',
+    status: 'done',
+    authorized: true,
+    releaseGateReportPath: 'release-gate.json',
+    gateReportHash: 'gate-report-hash',
+    contractHash: 'contract-hash',
+    fromStatus: 'in_progress',
+    toStatus: 'done',
+    token: 'release-gate:pass:S1',
+    singleUse: true,
+    expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    evidence_provenance,
+  };
 }
 
 describe('main-agent delivery truth gate', () => {
   it('blocks completion language for mock journey and short soak evidence', () => {
     const report = evaluateDeliveryTruthGate({
-      releaseGate: { critical_failures: 0, blocked_sprint_status_update: false },
+      releaseGate: releaseGateEvidence(),
       dualHost: {
         journeyMode: 'mock',
         journeyE2EPassed: true,
         hostsPassed: { claude: true, codex: true },
+        evidence_provenance,
       },
       soak: {
         mode: 'wall_clock',
@@ -43,9 +83,11 @@ describe('main-agent delivery truth gate', () => {
         silent_hangs: 0,
         false_completions: 0,
         recovery_success_rate: 1,
+        evidence_provenance,
       },
       prTopology: closedPrTopology(),
-      sprintAudit: { storyKey: 'S1', status: 'done', authorized: true },
+      sprintAudit: sprintAuditEvidence(),
+      qualityGate: { critical_failures: 0, evidence_provenance },
     });
 
     expect(report.completionAllowed).toBe(false);
@@ -56,11 +98,12 @@ describe('main-agent delivery truth gate', () => {
 
   it('allows completion language only with real 8h and closed PR evidence', () => {
     const report = evaluateDeliveryTruthGate({
-      releaseGate: { critical_failures: 0, blocked_sprint_status_update: false },
+      releaseGate: releaseGateEvidence(),
       dualHost: {
         journeyMode: 'real',
         journeyE2EPassed: true,
         hostsPassed: { claude: true, codex: true },
+        evidence_provenance,
       },
       soak: {
         mode: 'wall_clock',
@@ -85,12 +128,22 @@ describe('main-agent delivery truth gate', () => {
               taskReportStatus: 'done',
               evidence: ['soak-tick-1'],
               finalNextAction: 'dispatch_review',
+              tickCommand: {
+                command: 'python -m pytest tests/trader/test_backtester_run_in_subprocess_menu.py -q',
+                exitCode: 0,
+                stdoutPath: '_bmad-output/runtime/soak/tick-evidence/tick-1-stdout.log',
+                stderrPath: '_bmad-output/runtime/soak/tick-evidence/tick-1-stderr.log',
+                diffHashBefore: 'abc',
+                diffHashAfter: 'def',
+              },
             },
           ],
         },
+        evidence_provenance,
       },
       prTopology: closedPrTopology(),
-      sprintAudit: { storyKey: 'S1', status: 'done', authorized: true },
+      sprintAudit: sprintAuditEvidence(),
+      qualityGate: { critical_failures: 0, evidence_provenance },
     });
 
     expect(report.completionAllowed).toBe(true);
@@ -98,13 +151,126 @@ describe('main-agent delivery truth gate', () => {
     expect(report.completionLanguage).toBe('complete_allowed');
   });
 
-  it('rejects heartbeat-only 8h evidence because real development run-loop proof is required', () => {
+  it('rejects completion when delivery artifacts are not bound to the same evidence provenance', () => {
     const report = evaluateDeliveryTruthGate({
-      releaseGate: { critical_failures: 0, blocked_sprint_status_update: false },
+      releaseGate: releaseGateEvidence(),
       dualHost: {
         journeyMode: 'real',
         journeyE2EPassed: true,
         hostsPassed: { claude: true, codex: true },
+        evidence_provenance: { ...evidence_provenance, runId: 'other-run' },
+      },
+      soak: {
+        mode: 'wall_clock',
+        run_kind: 'development_run_loop',
+        target_duration_ms: 8 * 60 * 60 * 1000,
+        observed_duration_ms: 8 * 60 * 60 * 1000,
+        tick_count: 1,
+        manual_restarts: 0,
+        silent_hangs: 0,
+        false_completions: 0,
+        recovery_success_rate: 1,
+        evidence_provenance,
+        developmentRun: {
+          tick_count: 1,
+          completed_ticks: 1,
+          blocked_ticks: 0,
+          runLoopInvocations: [
+            {
+              tick: 1,
+              runId: 'main-agent-run-loop-1',
+              status: 'completed',
+              packetId: 'packet-1',
+              taskReportStatus: 'done',
+              evidence: ['soak-tick-1'],
+              finalNextAction: 'dispatch_review',
+              tickCommand: {
+                command: 'pytest',
+                exitCode: 0,
+                stdoutPath: 'stdout.log',
+                stderrPath: 'stderr.log',
+                diffHashBefore: 'abc',
+                diffHashAfter: 'def',
+              },
+            },
+          ],
+        },
+      },
+      prTopology: closedPrTopology(),
+      sprintAudit: sprintAuditEvidence(),
+      qualityGate: { critical_failures: 0, evidence_provenance },
+    });
+
+    expect(report.completionAllowed).toBe(false);
+    expect(report.failedEvidence.join('\n')).toContain('same-run-evidence-provenance');
+  });
+
+  it('rejects completion when PR topology is not bound to the same evidence provenance', () => {
+    const report = evaluateDeliveryTruthGate({
+      releaseGate: releaseGateEvidence(),
+      dualHost: {
+        journeyMode: 'real',
+        journeyE2EPassed: true,
+        hostsPassed: { claude: true, codex: true },
+        evidence_provenance,
+      },
+      soak: {
+        mode: 'wall_clock',
+        run_kind: 'development_run_loop',
+        target_duration_ms: 8 * 60 * 60 * 1000,
+        observed_duration_ms: 8 * 60 * 60 * 1000,
+        tick_count: 1,
+        manual_restarts: 0,
+        silent_hangs: 0,
+        false_completions: 0,
+        recovery_success_rate: 1,
+        evidence_provenance,
+        developmentRun: {
+          tick_count: 1,
+          completed_ticks: 1,
+          blocked_ticks: 0,
+          runLoopInvocations: [
+            {
+              tick: 1,
+              runId: 'main-agent-run-loop-1',
+              status: 'completed',
+              packetId: 'packet-1',
+              taskReportStatus: 'done',
+              evidence: ['soak-tick-1'],
+              finalNextAction: 'dispatch_review',
+              tickCommand: {
+                command: 'pytest',
+                exitCode: 0,
+                stdoutPath: 'stdout.log',
+                stderrPath: 'stderr.log',
+                diffHashBefore: 'abc',
+                diffHashAfter: 'def',
+              },
+            },
+          ],
+        },
+      },
+      prTopology: {
+        ...closedPrTopology(),
+        evidence_provenance: { ...evidence_provenance, runId: 'other-run' },
+      },
+      sprintAudit: sprintAuditEvidence(),
+      qualityGate: { critical_failures: 0, evidence_provenance },
+    });
+
+    expect(report.completionAllowed).toBe(false);
+    expect(report.failedEvidence.join('\n')).toContain('same-run-evidence-provenance');
+    expect(report.failedEvidence.join('\n')).toContain('prTopology');
+  });
+
+  it('rejects heartbeat-only 8h evidence because real development run-loop proof is required', () => {
+    const report = evaluateDeliveryTruthGate({
+      releaseGate: releaseGateEvidence(),
+      dualHost: {
+        journeyMode: 'real',
+        journeyE2EPassed: true,
+        hostsPassed: { claude: true, codex: true },
+        evidence_provenance,
       },
       soak: {
         mode: 'wall_clock',
@@ -116,9 +282,11 @@ describe('main-agent delivery truth gate', () => {
         silent_hangs: 0,
         false_completions: 0,
         recovery_success_rate: 1,
+        evidence_provenance,
       },
       prTopology: closedPrTopology(),
-      sprintAudit: { storyKey: 'S1', status: 'done', authorized: true },
+      sprintAudit: sprintAuditEvidence(),
+      qualityGate: { critical_failures: 0, evidence_provenance },
     });
 
     expect(report.completionAllowed).toBe(false);

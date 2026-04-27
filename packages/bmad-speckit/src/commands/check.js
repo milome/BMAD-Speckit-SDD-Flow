@@ -1,5 +1,5 @@
 /**
- * CheckCommand - check subcommand (ARCH §3.2, Story 10.5, 12.1, 12.2, 13.1)
+ * CheckCommand - check subcommand (ARCH 鎼?.2, Story 10.5, 12.1, 12.2, 13.1)
  * - bmadPath: validate path exists and structure; exit 4 if not.
  * - selectedAI: validate target directories per configTemplate; exit 1 if not.
  * - --list-ai: list available AI ids from AIRegistry; --json for JSON array.
@@ -55,7 +55,7 @@ function getProjectSelectedAI(cwd) {
 }
 
 /**
- * Story 12.2: Validate selectedAI target directories per spec §4.2 / PRD §5.5.
+ * Story 12.2: Validate selectedAI target directories per spec 鎼?.2 / PRD 鎼?.5.
  * Checks that the AI-specific config dirs (e.g. .cursor, .claude) exist and have required subdirs.
  * @param {string} [cwd] - Working directory to validate against.
  * @param {string} [selectedAI] - AI id (e.g. 'cursor-agent', 'claude').
@@ -76,6 +76,60 @@ function validateSelectedAITargets(cwd, selectedAI) {
     const sub = path.join(full, requiredSub);
     return fs.existsSync(sub) && fs.statSync(sub).isDirectory();
   };
+  const hasFile = (relPath) => {
+    const full = path.join(cwd, relPath);
+    return fs.existsSync(full) && fs.statSync(full).isFile();
+  };
+  const requireGovernedEntryAliases = (rootDir) => {
+    for (const alias of ['bmad-speckit', 'bmads']) {
+      if (!hasFile(path.join(rootDir, 'commands', `${alias}.md`))) {
+        missing.push(`${rootDir}/commands/${alias}.md`);
+      }
+      if (!hasFile(path.join(rootDir, 'skills', alias, 'SKILL.md'))) {
+        missing.push(`${rootDir}/skills/${alias}/SKILL.md`);
+      }
+    }
+  };
+  const requireCodexProtocolFiles = () => {
+    for (const name of ['audit-result-schema.md', 'handoff-schema.md', 'commit-protocol.md']) {
+      if (!hasFile(path.join('.codex', 'protocols', name))) {
+        missing.push(`.codex/protocols/${name}`);
+      }
+    }
+  };
+  const requireCodexSkills = () => {
+    for (const skill of [
+      'speckit-workflow',
+      'bmad-story-assistant',
+      'bmad-standalone-tasks',
+      'bmad-standalone-tasks-doc-review',
+      'bmad-rca-helper',
+      'bmad-code-reviewer-lifecycle',
+    ]) {
+      if (!hasFile(path.join('.codex', 'skills', skill, 'SKILL.md'))) {
+        missing.push(`.codex/skills/${skill}/SKILL.md`);
+      }
+    }
+  };
+  const requireCodexPublicCliSurface = () => {
+    const cliPath = path.join(__dirname, '..', '..', 'bin', 'bmad-speckit.js');
+    if (!fs.existsSync(cliPath)) {
+      missing.push('bmad-speckit public CLI missing');
+      return;
+    }
+    const help = spawnSync(process.execPath, [cliPath, '--help'], {
+      cwd,
+      encoding: 'utf8',
+      timeout: 10_000,
+      shell: process.platform === 'win32',
+    });
+    const output = `${help.stdout ?? ''}\n${help.stderr ?? ''}`;
+    for (const command of ['main-agent-orchestration', 'write-runtime-context', 'run-auditor-host']) {
+      if (!output.includes(command)) {
+        missing.push(`bmad-speckit public CLI missing ${command}`);
+      }
+    }
+  };
 
   if (selectedAI === 'cursor-agent') {
     if (!hasDir('.cursor')) missing.push('.cursor');
@@ -84,6 +138,7 @@ function validateSelectedAITargets(cwd, selectedAI) {
       const hasRules = hasDir('.cursor', 'rules');
       const hasAgents = hasDir('.cursor', 'agents');
       if (!hasCmd && !hasRules && !hasAgents) missing.push('.cursor must have commands/, rules/, or agents/');
+      requireGovernedEntryAliases('.cursor');
     }
   } else if (selectedAI === 'claude') {
     if (!hasDir('.claude')) missing.push('.claude');
@@ -91,6 +146,7 @@ function validateSelectedAITargets(cwd, selectedAI) {
       const hasCmd = hasDir('.claude', 'commands');
       const hasRules = hasDir('.claude', 'rules');
       if (!hasCmd && !hasRules) missing.push('.claude must have commands/ or rules/');
+      requireGovernedEntryAliases('.claude');
     }
   } else if (selectedAI === 'opencode') {
     if (!hasDir('.opencode')) missing.push('.opencode');
@@ -103,7 +159,51 @@ function validateSelectedAITargets(cwd, selectedAI) {
     else if (!hasDir('.shai', 'commands')) missing.push('.shai/commands');
   } else if (selectedAI === 'codex') {
     if (!hasDir('.codex')) missing.push('.codex');
-    else if (!hasDir('.codex', 'commands')) missing.push('.codex/commands');
+    else {
+      if (!hasDir('.codex', 'commands')) missing.push('.codex/commands');
+      if (!hasDir('.codex', 'agents')) missing.push('.codex/agents');
+      if (!hasDir('.codex', 'skills')) missing.push('.codex/skills');
+      if (!hasDir('.codex', 'protocols')) missing.push('.codex/protocols');
+      if (!hasDir('.codex', 'i18n')) missing.push('.codex/i18n');
+      requireGovernedEntryAliases('.codex');
+      requireCodexProtocolFiles();
+      requireCodexSkills();
+      requireCodexPublicCliSurface();
+      const readmePath = path.join(cwd, '.codex', 'README.md');
+      if (!fs.existsSync(readmePath) || !fs.statSync(readmePath).isFile()) {
+        missing.push('.codex/README.md');
+      }
+    }
+    const manifestPath = path.join(
+      cwd,
+      '_bmad-output',
+      'config',
+      'bmad-speckit-install-manifest.json'
+    );
+    if (!fs.existsSync(manifestPath)) {
+      missing.push('_bmad-output/config/bmad-speckit-install-manifest.json');
+    } else {
+      try {
+        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+        if (!Array.isArray(manifest.installed_tools) || !manifest.installed_tools.includes('codex')) {
+          missing.push('install manifest missing codex installed_tools');
+        }
+        if (
+          !Array.isArray(manifest.managed_surface) ||
+          !manifest.managed_surface.some((entry) => String(entry.path || '').startsWith('.codex/'))
+        ) {
+          missing.push('install manifest missing .codex managed_surface');
+        }
+        if (
+          !Array.isArray(manifest.managed_surface) ||
+          !manifest.managed_surface.some((entry) => String(entry.path || '').startsWith('.codex/protocols'))
+        ) {
+          missing.push('install manifest missing .codex/protocols managed_surface');
+        }
+      } catch (_) {
+        missing.push('_bmad-output/config/bmad-speckit-install-manifest.json invalid');
+      }
+    }
   } else if (selectedAI === 'gemini') {
     if (!hasDir('.gemini')) missing.push('.gemini');
     else if (!hasDir('.gemini', 'commands')) missing.push('.gemini/commands');
@@ -146,7 +246,7 @@ function validateBmadOutput(cwd) {
 }
 
 /**
- * Story 13.1: Validate .cursor for backward compat when no selectedAI (spec §5.4).
+ * Story 13.1: Validate .cursor for backward compat when no selectedAI (spec 鎼?.4).
  * Ensures .cursor exists with commands/, rules/, or agents/ subdir.
  * @param {string} [cwd] - Working directory to check.
  * @returns {{ valid: boolean, missing: string[] }} Validation result; missing lists absent paths.
@@ -284,7 +384,7 @@ function checkCommand(options = {}) {
     console.log('CLI version:', report.cliVersion);
     console.log('Template version:', report.templateVersion || 'unknown');
     console.log('Selected AI:', report.selectedAI || 'none');
-    console.log('子代理支持等级:', report.subagentSupport);
+    console.log('Subagent support:', report.subagentSupport);
     if (report.aiToolsInstalled && report.aiToolsInstalled.length > 0) {
       console.log('Installed AI tools:', report.aiToolsInstalled.join(', '));
     }
@@ -292,7 +392,7 @@ function checkCommand(options = {}) {
       console.log('Key env vars:', JSON.stringify(report.envVars));
     }
     if (report.subagentSupport === 'none' || report.subagentSupport === 'limited') {
-      console.log('所选 AI 不支持或仅部分支持子代理，BMAD/Speckit 全流程（party-mode、审计子任务等）可能不可用');
+      console.log('Selected AI has no or limited subagent support; some BMAD/Speckit flows may be unavailable.');
     }
     console.log('Check OK.');
   }

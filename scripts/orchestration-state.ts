@@ -6,7 +6,7 @@ import type {
   TaskReport,
 } from './orchestration-dispatch-contract';
 
-export type OrchestrationHost = 'cursor' | 'claude';
+export type OrchestrationHost = 'cursor' | 'claude' | 'codex';
 export type OrchestrationPhase =
   | 'create'
   | 'audit'

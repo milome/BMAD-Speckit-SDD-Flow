@@ -1,9 +1,21 @@
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import path from 'node:path';
 
 type ReleaseGateReport = {
+  generatedAt?: string;
   critical_failures: number;
   blocked_sprint_status_update: boolean;
+  checks?: unknown[];
+  blocking_reasons?: string[];
+  completion_intent?: {
+    token: string;
+    storyKey: string;
+    contractHash: string;
+    gateReportHash: string;
+    singleUse: boolean;
+    expiresAt: string;
+  };
 };
 
 type UpdateInput = {
@@ -55,13 +67,64 @@ function readReleaseGateReport(root: string, reportPath: string): ReleaseGateRep
   return JSON.parse(fs.readFileSync(fullPath, 'utf8')) as ReleaseGateReport;
 }
 
+function sha256File(filePath: string): string {
+  return crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
+}
+
+function releaseGateReportHash(report: ReleaseGateReport): string {
+  return crypto
+    .createHash('sha256')
+    .update(
+      JSON.stringify({
+        generatedAt: report.generatedAt,
+        checks: report.checks ?? [],
+        blocking_reasons: report.blocking_reasons ?? [],
+      })
+    )
+    .digest('hex');
+}
+
+function contractHash(root: string): string {
+  return sha256File(path.join(root, '_bmad', '_config', 'orchestration-governance.contract.yaml'));
+}
+
 function assertAuthorized(root: string, input: UpdateInput): void {
   if (!input.token.startsWith(TOKEN_PREFIX)) {
     throw new Error('sprint-status update denied: invalid release token');
   }
-  const report = readReleaseGateReport(root, input.releaseGateReportPath);
+  const reportPath = path.isAbsolute(input.releaseGateReportPath)
+    ? input.releaseGateReportPath
+    : path.resolve(root, input.releaseGateReportPath);
+  const report = readReleaseGateReport(root, reportPath);
   if (report.critical_failures !== 0 || report.blocked_sprint_status_update) {
     throw new Error('sprint-status update denied: release gate did not pass');
+  }
+  const auditPath =
+    input.auditPath ??
+    path.join(root, '_bmad-output', 'runtime', 'governance', 'sprint-status-update-audit.json');
+  if (fs.existsSync(auditPath)) {
+    const audit = JSON.parse(fs.readFileSync(auditPath, 'utf8')) as { token?: string };
+    if (audit.token === input.token) {
+      throw new Error('sprint-status update denied: completion intent token already used');
+    }
+  }
+  const intent = report.completion_intent;
+  if (!intent) {
+    throw new Error('sprint-status update denied: missing completion intent');
+  }
+  if (
+    intent.token !== input.token ||
+    intent.storyKey !== input.storyKey ||
+    intent.singleUse !== true ||
+    Date.parse(intent.expiresAt) <= Date.now()
+  ) {
+    throw new Error('sprint-status update denied: completion intent mismatch');
+  }
+  if (intent.gateReportHash !== releaseGateReportHash(report)) {
+    throw new Error('sprint-status update denied: release gate hash mismatch');
+  }
+  if (intent.contractHash !== contractHash(root)) {
+    throw new Error('sprint-status update denied: contract hash mismatch');
   }
 }
 
@@ -83,11 +146,29 @@ function updateSprintStatus(root: string, input: UpdateInput): string {
   return target;
 }
 
-function writeAudit(root: string, input: UpdateInput, targetPath: string): void {
+function currentStoryStatus(root: string, storyKey: string): string | null {
+  const target = sprintStatusPath(root);
+  if (!fs.existsSync(target)) return null;
+  const match = fs
+    .readFileSync(target, 'utf8')
+    .match(new RegExp(`^\\s*${storyKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}:\\s*(.+?)\\s*$`, 'm'));
+  return match?.[1] ?? null;
+}
+
+function writeAudit(
+  root: string,
+  input: UpdateInput,
+  targetPath: string,
+  fromStatus: string | null
+): void {
   const auditPath =
     input.auditPath ??
     path.join(root, '_bmad-output', 'runtime', 'governance', 'sprint-status-update-audit.json');
   fs.mkdirSync(path.dirname(auditPath), { recursive: true });
+  const reportPath = path.isAbsolute(input.releaseGateReportPath)
+    ? input.releaseGateReportPath
+    : path.resolve(root, input.releaseGateReportPath);
+  const report = readReleaseGateReport(root, reportPath);
   fs.writeFileSync(
     auditPath,
     `${JSON.stringify(
@@ -96,7 +177,14 @@ function writeAudit(root: string, input: UpdateInput, targetPath: string): void 
         status: input.status,
         authorized: true,
         targetPath,
+        releaseGateReportPath: reportPath,
+        gateReportHash: report.completion_intent?.gateReportHash ?? releaseGateReportHash(report),
+        contractHash: report.completion_intent?.contractHash ?? contractHash(root),
+        fromStatus: fromStatus ?? 'missing',
+        toStatus: input.status,
         token: input.token,
+        singleUse: true,
+        expiresAt: report.completion_intent?.expiresAt ?? null,
         updatedAt: new Date().toISOString(),
       },
       null,
@@ -114,8 +202,9 @@ export function runSprintStatusAuthorizedUpdate(
   sprintStatusPath: string;
 } {
   assertAuthorized(root, input);
+  const fromStatus = currentStoryStatus(root, input.storyKey);
   const targetPath = updateSprintStatus(root, input);
-  writeAudit(root, input, targetPath);
+  writeAudit(root, input, targetPath, fromStatus);
   return { updated: true, sprintStatusPath: targetPath };
 }
 

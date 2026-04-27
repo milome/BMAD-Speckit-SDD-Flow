@@ -1,7 +1,8 @@
 /* eslint-disable no-console */
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import crypto from 'node:crypto';
 import {
   runMainAgentAutomaticLoop,
   writeMainAgentRunLoopTaskReport,
@@ -53,6 +54,15 @@ export interface SoakReport {
       taskReportStatus: string | null;
       evidence: string[];
       finalNextAction: string | null;
+      tickCommand?: {
+        command: string;
+        exitCode: number | null;
+        stdoutPath: string;
+        stderrPath: string;
+        diffHashBefore: string;
+        diffHashAfter: string;
+        timeoutMs: number;
+      };
     }>;
   };
 }
@@ -115,6 +125,17 @@ export function evaluateSoakReport(report: SoakReport): { passed: boolean; reaso
   if (report.recovery_success_rate < 0.95) {
     reasons.push('recovery success rate below 95%');
   }
+  if (report.run_kind === 'development_run_loop') {
+    if (!report.developmentRun) {
+      reasons.push('missing development run evidence');
+    } else if (
+      !report.developmentRun.runLoopInvocations.some(
+        (item) => item.tickCommand && item.tickCommand.exitCode === 0
+      )
+    ) {
+      reasons.push('no successful real tick command evidence');
+    }
+  }
   for (const event of report.recoveries) {
     if (!event.fault_detected_at || !event.mitigation_started_at || !event.resumed_at) {
       reasons.push(`recovery timeline incomplete at tick ${event.tick}`);
@@ -153,6 +174,14 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.stage = argv[++index];
     } else if (token === '--hostKind' && argv[index + 1]) {
       out.hostKind = argv[++index];
+    } else if (token === '--tickCommand' && argv[index + 1]) {
+      out.tickCommand = argv[++index];
+    } else if (token === '--tickCommandTimeoutMs' && argv[index + 1]) {
+      out.tickCommandTimeoutMs = argv[++index];
+    } else if (token === '--evidenceSessionDir' && argv[index + 1]) {
+      out.evidenceSessionDir = argv[++index];
+    } else if (token === '--initialTickOffset' && argv[index + 1]) {
+      out.initialTickOffset = argv[++index];
     } else if (!token.startsWith('--')) {
       positional.push(token);
     }
@@ -175,6 +204,14 @@ function startBackgroundSoak(input: {
   tickIntervalMs: number;
   reportPath: string;
   injectRecoverableFault?: boolean;
+  developmentRunLoop?: boolean;
+  flow?: RuntimeFlowId;
+  stage?: string;
+  hostKind?: 'cursor' | 'claude' | 'codex';
+  tickCommand?: string;
+  tickCommandTimeoutMs?: number;
+  evidenceSessionDir?: string;
+  initialTickOffset?: number;
 }): { pid: number | null; metadataPath: string; reportPath: string } {
   const root = process.cwd();
   const toolRoot = path.resolve(__dirname, '..');
@@ -193,7 +230,16 @@ function startBackgroundSoak(input: {
     input.reportPath,
   ];
   if (input.injectRecoverableFault) args.push('--injectRecoverableFault');
-  args.push('--developmentRunLoop');
+  if (input.developmentRunLoop) args.push('--developmentRunLoop');
+  if (input.flow) args.push('--flow', input.flow);
+  if (input.stage) args.push('--stage', input.stage);
+  if (input.hostKind) args.push('--hostKind', input.hostKind);
+  if (input.tickCommand) args.push('--tickCommand', input.tickCommand);
+  if (input.tickCommandTimeoutMs) {
+    args.push('--tickCommandTimeoutMs', String(input.tickCommandTimeoutMs));
+  }
+  if (input.evidenceSessionDir) args.push('--evidenceSessionDir', input.evidenceSessionDir);
+  if (input.initialTickOffset) args.push('--initialTickOffset', String(input.initialTickOffset));
   const child = spawn(process.execPath, args, {
     cwd: root,
     detached: true,
@@ -208,6 +254,14 @@ function startBackgroundSoak(input: {
     durationMs: input.durationMs,
     tickIntervalMs: input.tickIntervalMs,
     reportPath: input.reportPath,
+    developmentRunLoop: input.developmentRunLoop === true,
+    flow: input.flow ?? 'story',
+    stage: input.stage ?? 'implement',
+    hostKind: input.hostKind ?? 'cursor',
+    tickCommand: input.tickCommand ?? null,
+    tickCommandTimeoutMs: input.tickCommandTimeoutMs ?? null,
+    evidenceSessionDir: input.evidenceSessionDir ?? null,
+    initialTickOffset: input.initialTickOffset ?? 0,
     completionCheck:
       'Run npm run main-agent:delivery-truth-gate after the background process exits; do not claim 8h completion before the report observed_duration_ms reaches target_duration_ms.',
   };
@@ -230,6 +284,10 @@ export async function runWallClockSoak(input: {
   flow?: RuntimeFlowId;
   stage?: string;
   hostKind?: 'cursor' | 'claude' | 'codex';
+  tickCommand?: string;
+  tickCommandTimeoutMs?: number;
+  evidenceSessionDir?: string;
+  initialTickOffset?: number;
 }): Promise<SoakReport> {
   const start = Date.now();
   const heartbeats: SoakReport['heartbeats'] = [];
@@ -239,9 +297,12 @@ export async function runWallClockSoak(input: {
   const flow = input.flow ?? 'story';
   const stage = input.stage ?? 'implement';
   const hostKind = input.hostKind ?? 'cursor';
-  let tick = 0;
+  const tickEvidenceDir = path.join(projectRoot, '_bmad-output', 'runtime', 'soak', 'tick-evidence');
+  let tick = input.initialTickOffset ?? 0;
+  let runTickCount = 0;
   while (Date.now() - start < input.durationMs) {
     tick += 1;
+    runTickCount += 1;
     const now = new Date().toISOString();
     heartbeats.push({
       tick,
@@ -264,6 +325,48 @@ export async function runWallClockSoak(input: {
       });
     }
     if (input.developmentRunLoop) {
+      let tickCommand:
+        | NonNullable<
+            NonNullable<SoakReport['developmentRun']>['runLoopInvocations'][number]['tickCommand']
+          >
+        | undefined;
+      if (input.tickCommand) {
+        const evidenceRoot = input.evidenceSessionDir
+          ? path.resolve(input.evidenceSessionDir)
+          : tickEvidenceDir;
+        const tickDir = path.join(evidenceRoot, `tick-${String(tick).padStart(3, '0')}`);
+        fs.mkdirSync(tickDir, { recursive: true });
+        const stdoutPath = path.join(tickDir, 'runner-stdout.log');
+        const stderrPath = path.join(tickDir, 'runner-stderr.log');
+        const diffHashBefore = gitDiffHash(projectRoot);
+        const timeoutMs =
+          input.tickCommandTimeoutMs && input.tickCommandTimeoutMs > 0
+            ? input.tickCommandTimeoutMs
+            : Math.max(1_000, Math.min(input.tickIntervalMs - 1_000, 120_000));
+        const commandResult = spawnSync(input.tickCommand, {
+          cwd: projectRoot,
+          shell: true,
+          encoding: 'utf8',
+          timeout: timeoutMs,
+          env: {
+            ...process.env,
+            BMAD_REAL_DEV_SESSION_DIR: evidenceRoot,
+            BMAD_REAL_DEV_TICK: String(tick),
+            BMAD_REAL_DEV_TICK_DIR: tickDir,
+          },
+        });
+        fs.writeFileSync(stdoutPath, commandResult.stdout ?? '', 'utf8');
+        fs.writeFileSync(stderrPath, commandResult.stderr ?? '', 'utf8');
+        tickCommand = {
+          command: input.tickCommand,
+          exitCode: commandResult.status,
+          stdoutPath,
+          stderrPath,
+          diffHashBefore,
+          diffHashAfter: gitDiffHash(projectRoot),
+          timeoutMs,
+        };
+      }
       const result = runMainAgentAutomaticLoop({
         projectRoot,
         flow,
@@ -285,6 +388,7 @@ export async function runWallClockSoak(input: {
         taskReportStatus: result.taskReport?.status ?? null,
         evidence: result.taskReport?.evidence ?? [],
         finalNextAction: result.finalSurface.mainAgentNextAction,
+        ...(tickCommand ? { tickCommand } : {}),
       });
     }
     await sleep(
@@ -299,7 +403,7 @@ export async function runWallClockSoak(input: {
     run_kind: input.developmentRunLoop ? 'development_run_loop' : 'heartbeat_only',
     target_duration_ms: input.durationMs,
     observed_duration_ms: observed,
-    tick_count: tick,
+    tick_count: runTickCount,
     manual_restarts: 0,
     silent_hangs: 0,
     false_completions: 0,
@@ -317,8 +421,22 @@ export async function runWallClockSoak(input: {
       completed_ticks: runLoopInvocations.filter((item) => item.status === 'completed').length,
       blocked_ticks: runLoopInvocations.filter((item) => item.status === 'blocked').length,
       runLoopInvocations,
-    };
-  }
+  };
+}
+
+function gitDiffHash(projectRoot: string): string {
+  const result = spawnSync('git', ['diff', '--binary'], {
+    cwd: projectRoot,
+    encoding: 'utf8',
+    shell: process.platform === 'win32',
+    timeout: 30_000,
+  });
+  return crypto
+    .createHash('sha256')
+    .update(result.stdout ?? '')
+    .update(result.stderr ?? '')
+    .digest('hex');
+}
   return report;
 }
 
@@ -340,6 +458,17 @@ export function main(argv: string[]): number {
       tickIntervalMs,
       reportPath,
       injectRecoverableFault: args.injectRecoverableFault === 'true',
+      developmentRunLoop: args.developmentRunLoop === 'true',
+      flow: args.flow as RuntimeFlowId | undefined,
+      stage: args.stage,
+      hostKind:
+        args.hostKind === 'codex' || args.hostKind === 'claude' || args.hostKind === 'cursor'
+          ? args.hostKind
+          : undefined,
+      tickCommand: args.tickCommand,
+      tickCommandTimeoutMs: Number(args.tickCommandTimeoutMs),
+      evidenceSessionDir: args.evidenceSessionDir,
+      initialTickOffset: Number(args.initialTickOffset),
     });
     console.log(JSON.stringify(result, null, 2));
     return 0;
@@ -366,6 +495,10 @@ export function main(argv: string[]): number {
         args.hostKind === 'codex' || args.hostKind === 'claude' || args.hostKind === 'cursor'
           ? args.hostKind
           : undefined,
+      tickCommand: args.tickCommand,
+      tickCommandTimeoutMs: Number(args.tickCommandTimeoutMs),
+      evidenceSessionDir: args.evidenceSessionDir,
+      initialTickOffset: Number(args.initialTickOffset),
     })
       .then((report) => {
         process.exitCode = emit(report);

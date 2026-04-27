@@ -12,6 +12,7 @@ import {
   createResumePacket,
   packetArtifactPath,
   resolveDispatchRoute,
+  type OrchestrationHost,
 } from './orchestration-dispatch-contract';
 import {
   claimPendingPacket,
@@ -32,6 +33,8 @@ import {
   type ReviewerLatestCloseoutRecord,
 } from './runtime-context-registry';
 import { runAdaptiveIntakeGovernanceGate } from './adaptive-intake-governance-gate';
+import { runCodexWorkerAdapter } from './main-agent-codex-worker-adapter';
+import { applyLongRunPolicyToState } from './long-run-runtime-policy';
 import type {
   ImplementationEntryDecision,
   ImplementationEntryGate,
@@ -99,7 +102,7 @@ export interface MainAgentOrchestrationSurface {
 export interface MainAgentDispatchInstruction {
   flow: RuntimeFlowId;
   stage: string;
-  host: 'cursor' | 'claude';
+  host: OrchestrationHost;
   nextAction: string;
   taskType: 'implement' | 'audit' | 'remediate' | 'document';
   route: DispatchRoute;
@@ -407,11 +410,27 @@ function defaultPacketRole(taskType: 'implement' | 'audit' | 'remediate' | 'docu
   }
 }
 
+function resolveMainAgentHost(
+  projectRoot: string | undefined,
+  explicitHost: OrchestrationHost | undefined,
+  surface?: MainAgentOrchestrationSurface | null
+): OrchestrationHost {
+  if (explicitHost) {
+    return explicitHost;
+  }
+  if (surface?.orchestrationState?.host) {
+    return surface.orchestrationState.host;
+  }
+  const root = projectRoot ?? process.cwd();
+  return readGovernanceRemediationConfig(root).primaryHost === 'claude' ? 'claude' : 'cursor';
+}
+
 function taskTypeFromNextAction(
   nextAction: string | null
 ): 'implement' | 'audit' | 'remediate' | 'document' | null {
   switch (nextAction) {
     case 'dispatch_review':
+    case 'rerun_gate':
       return 'audit';
     case 'dispatch_remediation':
       return 'remediate';
@@ -856,13 +875,15 @@ export function ingestMainAgentTaskReport(
 }
 
 export function ensureMainAgentDispatchPacket(
-  input: ResolveMainAgentOrchestrationInput
+  input: ResolveMainAgentOrchestrationInput & { host?: OrchestrationHost }
 ): MainAgentOrchestrationSurface {
   const runtimeContext = loadRuntimeContextForMainAgent(input);
   const currentSurface = resolveMainAgentOrchestrationSurface(input);
   if (
     currentSurface.pendingPacketStatus !== 'none' &&
-    currentSurface.pendingPacketStatus !== 'missing_packet_file'
+    currentSurface.pendingPacketStatus !== 'missing_packet_file' &&
+    currentSurface.pendingPacketStatus !== 'completed' &&
+    currentSurface.pendingPacketStatus !== 'invalidated'
   ) {
     return currentSurface;
   }
@@ -877,6 +898,7 @@ export function ensureMainAgentDispatchPacket(
 
   const sessionId =
     currentSurface.sessionId ?? deriveSessionIdFromRuntimeContext(input.flow, runtimeContext);
+  const host = resolveMainAgentHost(input.projectRoot, input.host, currentSurface);
   const packetId = `${taskType}-${Date.now()}`;
   const role = defaultPacketRole(taskType);
   const inputArtifacts = [
@@ -928,6 +950,7 @@ export function ensureMainAgentDispatchPacket(
   if (currentSurface.orchestrationState) {
     updateOrchestrationState(input.projectRoot, sessionId, (current) => ({
       ...current,
+      host,
       pendingPacket: {
         packetId,
         packetPath,
@@ -954,14 +977,7 @@ export function ensureMainAgentDispatchPacket(
     writtenState = {
       version: 1,
       sessionId,
-      host:
-        currentSurface.closeout?.runner === 'runAuditorHost'
-          ? readGovernanceRemediationConfig(input.projectRoot).primaryHost === 'claude'
-            ? 'claude'
-            : 'cursor'
-          : readGovernanceRemediationConfig(input.projectRoot).primaryHost === 'claude'
-            ? 'claude'
-            : 'cursor',
+      host,
       flow: input.flow as 'story' | 'bugfix' | 'standalone_tasks',
       currentPhase: input.stage as OrchestrationState['currentPhase'],
       nextAction:
@@ -1027,7 +1043,7 @@ export function ensureMainAgentDispatchPacket(
 
 export function buildMainAgentDispatchInstruction(
   input: ResolveMainAgentOrchestrationInput & {
-    host?: 'cursor' | 'claude';
+    host?: OrchestrationHost;
     hydratePacket?: boolean;
   }
 ): MainAgentDispatchInstruction | null {
@@ -1043,12 +1059,7 @@ export function buildMainAgentDispatchInstruction(
     return null;
   }
 
-  const host =
-    input.host ??
-    surface.orchestrationState?.host ??
-    (readGovernanceRemediationConfig(input.projectRoot ?? process.cwd()).primaryHost === 'claude'
-      ? 'claude'
-      : 'cursor');
+  const host = resolveMainAgentHost(input.projectRoot, input.host, surface);
   const route = resolveDispatchRoute(host, taskType);
   return {
     flow: input.flow,
@@ -1084,6 +1095,8 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.stage = argv[++index];
     } else if (token === '--action' && argv[index + 1]) {
       out.action = argv[++index];
+    } else if ((token === '--host' || token === '--hostKind') && argv[index + 1]) {
+      out.host = argv[++index];
     } else if (token === '--sessionId' && argv[index + 1]) {
       out.sessionId = argv[++index];
     } else if (token === '--packetId' && argv[index + 1]) {
@@ -1096,6 +1109,12 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.reportEvidence = argv[++index];
     } else if (token === '--taskReportPath' && argv[index + 1]) {
       out.taskReportPath = argv[++index];
+    } else if (token === '--codexSmoke') {
+      out.codexSmoke = 'true';
+    } else if (token === '--codexSmokeTargetPath' && argv[index + 1]) {
+      out.codexSmokeTargetPath = argv[++index];
+    } else if (token === '--codexTimeoutMs' && argv[index + 1]) {
+      out.codexTimeoutMs = argv[++index];
     } else if (token === '--filesChanged' && argv[index + 1]) {
       out.filesChanged = argv[++index];
     } else if (token === '--validationsRun' && argv[index + 1]) {
@@ -1130,6 +1149,14 @@ function resolveFlowAndStage(
     flow: flow as RuntimeFlowId,
     stage,
   };
+}
+
+function parseOrchestrationHost(value: string | undefined): OrchestrationHost | undefined {
+  const normalized = normalizeText(value);
+  if (normalized === 'cursor' || normalized === 'claude' || normalized === 'codex') {
+    return normalized;
+  }
+  return undefined;
 }
 
 function resolveSessionAndPacketFromSurface(
@@ -1225,6 +1252,7 @@ export function runMainAgentAutomaticLoop(input: {
   projectRoot: string;
   flow: RuntimeFlowId;
   stage: string;
+  host?: OrchestrationHost;
   args?: Record<string, string | undefined>;
   executor?: MainAgentRunLoopExecutor;
 }): MainAgentRunLoopResult {
@@ -1245,6 +1273,7 @@ export function runMainAgentAutomaticLoop(input: {
     projectRoot: input.projectRoot,
     flow: input.flow,
     stage: input.stage,
+    host: input.host,
     hydratePacket: true,
   });
   if (!instruction) {
@@ -1276,10 +1305,21 @@ export function runMainAgentAutomaticLoop(input: {
   });
 
   claimMainAgentPendingPacket(input.projectRoot, instruction.sessionId, 'main-agent-run-loop');
+  updateOrchestrationState(input.projectRoot, instruction.sessionId, (current) =>
+    applyLongRunPolicyToState(current, {
+      nowIso: new Date().toISOString(),
+      activeHostMode: instruction.host,
+    })
+  );
   steps.push({
     step: 'claim',
     status: 'pass',
     summary: `owner=main-agent-run-loop`,
+  });
+  steps.push({
+    step: 'long-run-policy.attach',
+    status: 'pass',
+    summary: `host=${instruction.host}`,
   });
 
   markMainAgentPacketDispatched(input.projectRoot, instruction.sessionId, instruction.packetId);
@@ -1299,6 +1339,30 @@ export function runMainAgentAutomaticLoop(input: {
     const taskReportPath = normalizeText(args.taskReportPath);
     if (!taskReport && taskReportPath) {
       taskReport = readTaskReportFromFile(taskReportPath, instruction.packetId);
+    }
+    if (!taskReport && instruction.host === 'codex') {
+      const adapterReport = runCodexWorkerAdapter({
+        projectRoot: input.projectRoot,
+        packetPath: instruction.packetPath,
+        taskReportPath: taskReportPath || undefined,
+        smoke: args.codexSmoke === 'true',
+        smokeTargetPath: normalizeText(args.codexSmokeTargetPath) || undefined,
+        timeoutMs: Number(args.codexTimeoutMs) > 0 ? Number(args.codexTimeoutMs) : undefined,
+      });
+      steps.push({
+        step: 'codex-worker-adapter',
+        status:
+          adapterReport.exitCode === 0 &&
+          adapterReport.scopePassed &&
+          adapterReport.taskReport.status === 'done'
+            ? 'pass'
+            : 'fail',
+        summary: `mode=${adapterReport.mode}, report=${path.relative(
+          input.projectRoot,
+          adapterReport.taskReportPath
+        )}`,
+      });
+      taskReport = adapterReport.taskReport;
     }
   } catch (error) {
     const finalSurface = resolveMainAgentOrchestrationSurface({
@@ -1403,6 +1467,7 @@ export function mainMainAgentOrchestration(argv: string[]): number {
   }
 
   const { flow, stage } = resolveFlowAndStage(root, args);
+  const host = parseOrchestrationHost(args.host);
   const surface = resolveMainAgentOrchestrationSurface({
     projectRoot: root,
     flow,
@@ -1420,6 +1485,7 @@ export function mainMainAgentOrchestration(argv: string[]): number {
         projectRoot: root,
         flow,
         stage,
+        host,
         hydratePacket: true,
       });
       process.stdout.write(`${JSON.stringify(instruction, null, 2)}\n`);
@@ -1430,9 +1496,13 @@ export function mainMainAgentOrchestration(argv: string[]): number {
         projectRoot: root,
         flow,
         stage,
+        host,
         args,
         executor:
-          args.taskReportPath || args.reportEvidence
+          args.taskReportPath
+            ? ({ instruction, args: runArgs }) =>
+                readTaskReportFromFile(path.resolve(runArgs.taskReportPath!), instruction.packetId)
+            : args.reportEvidence && host !== 'codex'
             ? ({ projectRoot, instruction, args: runArgs }) => {
                 const reportPath = writeMainAgentRunLoopTaskReport(
                   projectRoot,

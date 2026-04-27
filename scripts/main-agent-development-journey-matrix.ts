@@ -4,8 +4,6 @@ import * as path from 'node:path';
 import { runBmadHelpFiveLayerMatrix } from './main-agent-bmad-help-five-layer-matrix';
 import { runUnifiedIngress, type MainAgentHostKind } from './main-agent-unified-ingress';
 import { runDualHostPrOrchestration } from './main-agent-dual-host-pr-orchestrator';
-import { evaluateDeliveryTruthGate } from './main-agent-delivery-truth-gate';
-import { buildParallelMissionPlan, buildPrTopology } from './parallel-mission-control';
 import { defaultRuntimeContextFile, writeRuntimeContext } from './runtime-context';
 import {
   defaultRuntimeContextRegistry,
@@ -27,27 +25,9 @@ export interface DevelopmentJourneyMatrixReport {
   allPassed: boolean;
 }
 
-function closedTopology() {
-  const plan = buildParallelMissionPlan({
-    batchId: 'journey-matrix',
-    nodes: [
-      {
-        node_id: 'matrix-node',
-        story_key: 'S-matrix',
-        packet_id: 'packet-matrix',
-        write_scope: ['scripts/**'],
-        depends_on: [],
-        assigned_agent: 'codex',
-        target_branch: 'task/matrix',
-        target_pr: 'PR-MATRIX',
-      },
-    ],
-  });
-  return buildPrTopology({ plan, states: { 'matrix-node': 'merged' } });
-}
-
 function prepareHostBranchRoot(root: string, hostKind: MainAgentHostKind): string {
   const branchRoot = path.join(root, '_bmad-output', 'runtime', 'journey-matrix', hostKind);
+  fs.rmSync(branchRoot, { recursive: true, force: true });
   fs.mkdirSync(branchRoot, { recursive: true });
   writeRuntimeContextRegistry(branchRoot, defaultRuntimeContextRegistry(branchRoot));
   writeRuntimeContext(
@@ -78,6 +58,7 @@ function prepareHostBranchRoot(root: string, hostKind: MainAgentHostKind): strin
 
 function prepareDualHostRoot(root: string): string {
   const dualHostRoot = path.join(root, '_bmad-output', 'runtime', 'journey-matrix', 'dual-host');
+  fs.rmSync(dualHostRoot, { recursive: true, force: true });
   fs.mkdirSync(path.join(dualHostRoot, '_bmad', '_config'), { recursive: true });
   fs.mkdirSync(path.join(dualHostRoot, '_bmad-output', 'implementation-artifacts'), {
     recursive: true,
@@ -101,46 +82,6 @@ function prepareDualHostRoot(root: string): string {
     'utf8'
   );
   return dualHostRoot;
-}
-
-function truthGateWithDevelopmentEvidence() {
-  return evaluateDeliveryTruthGate({
-    releaseGate: { critical_failures: 0, blocked_sprint_status_update: false },
-    dualHost: {
-      journeyMode: 'real',
-      journeyE2EPassed: true,
-      hostsPassed: { claude: true, codex: true },
-    },
-    soak: {
-      mode: 'wall_clock',
-      run_kind: 'development_run_loop',
-      target_duration_ms: 8 * 60 * 60 * 1000,
-      observed_duration_ms: 8 * 60 * 60 * 1000,
-      tick_count: 1,
-      manual_restarts: 0,
-      silent_hangs: 0,
-      false_completions: 0,
-      recovery_success_rate: 1,
-      developmentRun: {
-        tick_count: 1,
-        completed_ticks: 1,
-        blocked_ticks: 0,
-        runLoopInvocations: [
-          {
-            tick: 1,
-            runId: 'matrix-run-loop',
-            status: 'completed',
-            packetId: 'packet-matrix',
-            taskReportStatus: 'done',
-            evidence: ['matrix-development-run-loop'],
-            finalNextAction: 'dispatch_review',
-          },
-        ],
-      },
-    },
-    prTopology: closedTopology(),
-    sprintAudit: { storyKey: 'S-matrix', status: 'done', authorized: true },
-  });
 }
 
 export function runDevelopmentJourneyMatrix(input: {
@@ -215,12 +156,12 @@ export function runDevelopmentJourneyMatrix(input: {
       .join(','),
   });
 
-  const truthGate = truthGateWithDevelopmentEvidence();
   steps.push({
-    id: 'delivery-truth-contract',
+    id: 'delivery-truth-live',
     sequence: 'R1-R10/S39-S43',
-    passed: truthGate.completionAllowed,
-    evidence: truthGate.failedEvidence.join('; ') || 'completionAllowed=true',
+    passed: false,
+    evidence:
+      'not synthesized; run main-agent:delivery-truth-gate with real evidence bundle for completion verdict',
   });
 
   return {

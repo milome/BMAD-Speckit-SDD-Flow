@@ -484,6 +484,9 @@ function collectManagedSurfaceSpecs(projectRoot, bmadRoot, installedTools) {
       for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'commands'), '.codex/commands', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
       for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'speckit', 'commands'), '.codex/commands', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
       for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'i18n'), '.codex/i18n', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
+      for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'codex', 'agents'), '.codex/agents', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
+      for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'codex', 'protocols'), '.codex/protocols', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
+      for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'codex', 'skills'), '.codex/skills', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
       add({
         logicalPath: '.codex/README.md',
         kind: 'host_generated_file',

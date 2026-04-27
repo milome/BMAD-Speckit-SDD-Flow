@@ -1,28 +1,28 @@
-# BMAD Layer → 阶段（表 A）、阶段 → 评分环节（表 B）、触发模式表
-# Architecture §3、§4、§10.3；Story 3.1 产出
+# BMAD Layer 鈫?闃舵锛堣〃 A锛夈€侀樁娈?鈫?璇勫垎鐜妭锛堣〃 B锛夈€佽Е鍙戞ā寮忚〃
+# Architecture 搂3銆伮?銆伮?0.3锛汼tory 3.1 浜у嚭
 
 version: "1.0"
 
-# 表 A：BMAD Layer → 阶段
+# 琛?A锛欱MAD Layer 鈫?闃舵
 layer_to_stages:
   layer_1:
-    name: 产品定义层
-    stages: [prd, arch]
+    name: Product Definition Layer
+    stages: [prd]
   layer_2:
-    name: Epic/Story 规划层
-    stages: [epics]
+    name: Architecture Layer
+    stages: [arch]
   layer_3:
-    name: Story 开发层
-    stages: [story]
+    name: Epic/Story Planning Layer
+    stages: [epics, story]
   layer_4:
-    name: 技术实现层
+    name: 鎶€鏈疄鐜板眰
     stages: [specify, plan, gaps, tasks, implement]
   layer_5:
-    name: 收尾层
-    stages: [post_impl, pr_review]
+    name: Closeout Layer
+    stages: [post_impl, pr_review, release_gate, delivery_truth_gate]
+    closeout_stages: [post_audit, pr_review, release_gate, delivery_truth_gate]
 
-# 表 B：阶段 → 评分环节（1–6）
-stage_to_phase:
+# 琛?B锛氶樁娈?鈫?璇勫垎鐜妭锛?鈥?锛?stage_to_phase:
   prd: [1]
   arch: [1, 2]
   epics: [1]
@@ -34,28 +34,27 @@ stage_to_phase:
   implement: [2, 3, 4, 5, 6]
   post_impl: [2, 3, 4, 5, 6]
   pr_review: [6]
+  release_gate: [6]
+  delivery_truth_gate: [6]
 
-# 触发模式表（Architecture §10.3）
 trigger_modes:
   - event: stage_audit_complete
     trigger: auto
-    scope: 该 stage 对应环节
+    scope: 璇?stage 瀵瑰簲鐜妭
   - event: story_status_change
     trigger: auto
     configurable: true
-    scope: 环节 1–6
+    scope: 鐜妭 1鈥?
   - event: mr_created
     trigger: auto
     configurable: true
-    scope: 环节 2–6
+    scope: 鐜妭 2鈥?
   - event: epic_pending_acceptance
     trigger: manual_or_auto
-    scope: 环节 6、Epic 综合
+    scope: 鐜妭 6銆丒pic 缁煎悎
   - event: user_explicit_request
     trigger: manual
-    scope: 全环节
-
-# Runtime Governance: (flow, stage) → scoring trigger_stage_id（与 scoring-trigger-modes call_mapping.stage 逐字对齐）
+    scope: 鍏ㄧ幆鑺?
 runtime_flow_stage_to_trigger_stage:
   story:
     specify: speckit_1_2
@@ -65,6 +64,9 @@ runtime_flow_stage_to_trigger_stage:
     implement: speckit_5_2
     story_audit: bmad_story_stage2
     post_audit: bmad_story_stage4
+    pr_review: bmad_story_stage6
+    release_gate: bmad_story_stage6
+    delivery_truth_gate: bmad_story_stage6
   bugfix:
     specify: speckit_1_2
     plan: speckit_2_2

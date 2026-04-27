@@ -27,6 +27,18 @@ function prepareCodexRoot(): string {
       runId: 'codex-worker-run',
     })
   );
+  fs.mkdirSync(path.join(root, '.codex', 'agents'), { recursive: true });
+  fs.writeFileSync(
+    path.join(root, '.codex', 'agents', 'implementation-worker.toml'),
+    [
+      'name = "implementation-worker"',
+      'description = "Test implementation worker"',
+      'sandbox_mode = "workspace-write"',
+      'developer_instructions = """Follow BMAD implementation worker test instructions."""',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
   return root;
 }
 
@@ -61,8 +73,12 @@ describe('main-agent codex worker adapter e2e', () => {
 
       expect(adapter.exitCode).toBe(0);
       expect(adapter.scopePassed).toBe(true);
+      expect(adapter.runtimeGovernanceStatus).toBe('resolved');
+      expect(adapter.agentRole).toBe('implementation-worker');
+      expect(adapter.agentSpecPath).toContain('implementation-worker.toml');
       expect(adapter.taskReport.status).toBe('done');
       expect(fs.existsSync(path.join(root, `src/codex/${instruction!.packetId}.md`))).toBe(true);
+      expect(adapter.codexCommand).toEqual(['codex', 'worker-adapter-smoke']);
 
       const result = runMainAgentAutomaticLoop({
         projectRoot: root,
@@ -77,6 +93,189 @@ describe('main-agent codex worker adapter e2e', () => {
       expect(result.finalSurface.orchestrationState?.lastTaskReport?.evidence).toContain(
         `codex-smoke:src/codex/${instruction!.packetId}.md`
       );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed when runtime governance cannot resolve even in smoke mode', () => {
+    const root = prepareCodexRoot();
+    try {
+      fs.rmSync(path.join(root, '_bmad-output', 'runtime', 'registry.json'), { force: true });
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'story',
+        stage: 'implement',
+        host: 'claude',
+        hydratePacket: true,
+      });
+      const taskReportPath = path.join(root, 'policy-blocked-task-report.json');
+
+      const adapter = runCodexWorkerAdapter({
+        projectRoot: root,
+        packetPath: instruction!.packetPath,
+        taskReportPath,
+        smoke: true,
+      });
+
+      expect(adapter.exitCode).toBe(1);
+      expect(adapter.scopePassed).toBe(false);
+      expect(adapter.runtimeGovernanceStatus).toBe('blocked');
+      expect(adapter.runtimeGovernanceError).toBeTruthy();
+      expect(adapter.taskReport.status).toBe('blocked');
+      expect(adapter.taskReport.validationsRun).toContain('codex-worker-adapter-runtime-governance');
+      expect(fs.existsSync(path.join(root, `src/codex/${instruction!.packetId}.md`))).toBe(false);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('runs non-smoke codex exec through a controlled Codex binary and ingests TaskReport', () => {
+    const root = prepareCodexRoot();
+    try {
+      const fakeCodexPath = path.join(root, 'fake-codex.cjs');
+      fs.writeFileSync(
+        fakeCodexPath,
+        [
+          "const fs = require('fs');",
+          "const input = fs.readFileSync(0, 'utf8');",
+          "const reportPath = input.match(/write a JSON TaskReport to: (.+)/i)?.[1]?.trim();",
+          "const packetId = input.match(/Packet ID: (.+)/i)?.[1]?.trim();",
+          "if (!reportPath || !packetId) process.exit(2);",
+          "fs.mkdirSync(require('path').dirname(reportPath), { recursive: true });",
+          "fs.writeFileSync(reportPath, JSON.stringify({ packetId, status: 'done', filesChanged: [], validationsRun: ['fake-codex-exec'], evidence: ['fake-codex-task-report'], downstreamContext: ['fake codex exec completed'] }, null, 2) + '\\n', 'utf8');",
+          "process.exit(0);",
+          '',
+        ].join('\n'),
+        'utf8'
+      );
+      const fakeCodexBin =
+        process.platform === 'win32' ? path.join(root, 'fake-codex.cmd') : path.join(root, 'fake-codex');
+      fs.writeFileSync(
+        fakeCodexBin,
+        process.platform === 'win32'
+          ? `@echo off\r\n"${process.execPath}" "${fakeCodexPath}" %*\r\n`
+          : `#!/usr/bin/env sh\n"${process.execPath}" "${fakeCodexPath}" "$@"\n`,
+        'utf8'
+      );
+      if (process.platform !== 'win32') {
+        fs.chmodSync(fakeCodexBin, 0o755);
+      }
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'story',
+        stage: 'implement',
+        host: 'claude',
+        hydratePacket: true,
+      });
+      const taskReportPath = path.join(root, 'fake-codex-task-report.json');
+      const adapter = runCodexWorkerAdapter({
+        projectRoot: root,
+        packetPath: instruction!.packetPath,
+        taskReportPath,
+        smoke: false,
+        codexBinary: fakeCodexBin,
+        timeoutMs: 30_000,
+      });
+
+      expect(adapter.mode).toBe('codex_exec');
+      expect(adapter.codexCommand[0]).toBe(fakeCodexBin);
+      expect(adapter.exitCode).toBe(0);
+      expect(adapter.scopePassed).toBe(true);
+      expect(adapter.taskReport.status).toBe('done');
+      expect(adapter.taskReport.validationsRun).toContain('fake-codex-exec');
+      expect(adapter.stdinPath).toBeTruthy();
+      expect(fs.readFileSync(adapter.stdinPath!, 'utf8')).toContain('Runtime Governance JSON');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed when a dispatch role has no installed Codex agent spec', () => {
+    const root = prepareCodexRoot();
+    try {
+      fs.rmSync(path.join(root, '.codex', 'agents'), { recursive: true, force: true });
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'story',
+        stage: 'implement',
+        host: 'claude',
+        hydratePacket: true,
+      });
+      const taskReportPath = path.join(root, 'missing-agent-task-report.json');
+
+      const adapter = runCodexWorkerAdapter({
+        projectRoot: root,
+        packetPath: instruction!.packetPath,
+        taskReportPath,
+        smoke: true,
+      });
+
+      expect(adapter.exitCode).toBe(1);
+      expect(adapter.scopePassed).toBe(false);
+      expect(adapter.agentSpecPath).toBeNull();
+      expect(adapter.taskReport.status).toBe('blocked');
+      expect(adapter.taskReport.evidence).toContain(
+        'missing codex agent spec for role=implementation-worker'
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('injects Runtime Governance JSON into real codex exec prompts', () => {
+    const root = prepareCodexRoot();
+    try {
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'story',
+        stage: 'implement',
+        host: 'codex',
+        hydratePacket: true,
+      });
+
+      const adapter = runCodexWorkerAdapter({
+        projectRoot: root,
+        packetPath: instruction!.packetPath,
+        taskReportPath: path.join(root, 'policy-injected-task-report.json'),
+        smoke: false,
+        timeoutMs: 1,
+      });
+
+      expect(adapter.mode).toBe('codex_exec');
+      expect(adapter.stdinPath).toBeTruthy();
+      const prompt = fs.readFileSync(adapter.stdinPath!, 'utf8');
+      expect(prompt).toContain('--- Runtime Governance JSON ---');
+      expect(prompt).toContain('"implementationEntryGate"');
+      expect(prompt).toContain('"stage":"implement"');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('accepts UTF-8 BOM dispatch packets written by Windows tooling', () => {
+    const root = prepareCodexRoot();
+    try {
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'story',
+        stage: 'implement',
+        host: 'claude',
+        hydratePacket: true,
+      });
+      const raw = fs.readFileSync(instruction!.packetPath, 'utf8');
+      fs.writeFileSync(instruction!.packetPath, `\uFEFF${raw}`, 'utf8');
+
+      const adapter = runCodexWorkerAdapter({
+        projectRoot: root,
+        packetPath: instruction!.packetPath,
+        taskReportPath: path.join(root, 'bom-packet-task-report.json'),
+        smoke: true,
+      });
+
+      expect(adapter.exitCode).toBe(0);
+      expect(adapter.agentSpecPath).toContain('implementation-worker.toml');
+      expect(adapter.taskReport.status).toBe('done');
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
@@ -121,6 +320,49 @@ describe('main-agent codex worker adapter e2e', () => {
       expect(adapter.scopePassed).toBe(false);
       const rewritten = JSON.parse(fs.readFileSync(taskReportPath, 'utf8')) as { status: string };
       expect(rewritten.status).toBe('blocked');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('normalizes UTF-16LE BOM TaskReport output and rewrites strict UTF-8 JSON', () => {
+    const root = prepareCodexRoot();
+    try {
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'story',
+        stage: 'implement',
+        host: 'claude',
+        hydratePacket: true,
+      });
+      const taskReportPath = path.join(root, 'utf16-task-report.json');
+      const report = JSON.stringify(
+        {
+          packetId: instruction!.packetId,
+          status: 'completed',
+          filesChanged: ['src/codex/proof.md'],
+          validationsRun: ['external-real-validation'],
+          evidence: ['external-real-evidence'],
+          downstreamContext: ['utf16 report should be normalized'],
+        },
+        null,
+        2
+      );
+      fs.writeFileSync(taskReportPath, Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(report, 'utf16le')]));
+
+      const adapter = runCodexWorkerAdapter({
+        projectRoot: root,
+        packetPath: instruction!.packetPath,
+        taskReportPath,
+        smoke: false,
+        timeoutMs: 1,
+      });
+
+      expect(adapter.taskReport.status).toBe('done');
+      const rewrittenRaw = fs.readFileSync(taskReportPath);
+      expect([...rewrittenRaw.subarray(0, 2)]).not.toEqual([0xff, 0xfe]);
+      const rewritten = JSON.parse(rewrittenRaw.toString('utf8')) as { status: string };
+      expect(rewritten.status).toBe('done');
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

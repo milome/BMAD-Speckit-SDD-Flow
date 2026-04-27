@@ -30,6 +30,26 @@ describe('orchestration dispatch contract', () => {
       subtype: 'code-reviewer',
       fallback: 'Agent:general-purpose',
     });
+    expect(resolveDispatchRoute('codex', 'implement')).toEqual({
+      tool: 'codex',
+      subtype: 'worker:implement',
+      fallback: 'disabled',
+    });
+    expect(resolveDispatchRoute('codex', 'audit')).toEqual({
+      tool: 'codex',
+      subtype: 'worker:audit',
+      fallback: 'disabled',
+    });
+    expect(resolveDispatchRoute('codex', 'remediate')).toEqual({
+      tool: 'codex',
+      subtype: 'worker:remediate',
+      fallback: 'disabled',
+    });
+    expect(resolveDispatchRoute('codex', 'document')).toEqual({
+      tool: 'codex',
+      subtype: 'worker:document',
+      fallback: 'disabled',
+    });
   });
 
   it('hard-disables autonomous fallback dispatch', () => {

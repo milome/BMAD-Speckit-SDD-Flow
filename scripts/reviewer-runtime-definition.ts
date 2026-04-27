@@ -3,6 +3,8 @@ import * as path from 'node:path';
 import {
   CLAUDE_REVIEWER_CANONICAL_SOURCE_PATH,
   CLAUDE_REVIEWER_RUNTIME_TARGET_PATH,
+  CODEX_REVIEWER_CANONICAL_SOURCE_PATH,
+  CODEX_REVIEWER_RUNTIME_TARGET_PATH,
   CURSOR_REVIEWER_CANONICAL_SOURCE_PATH,
   CURSOR_REVIEWER_RUNTIME_TARGET_PATH,
   REVIEWER_SHARED_CORE_BASE_PROMPT_PATH,
@@ -10,7 +12,7 @@ import {
   REVIEWER_SHARED_CORE_PROFILE_PACK_PATH,
 } from './reviewer-contract';
 
-export type ReviewerRuntimeHostId = 'cursor' | 'claude';
+export type ReviewerRuntimeHostId = 'cursor' | 'claude' | 'codex';
 
 export interface ReviewerRuntimeDefinitionReceipt {
   host: ReviewerRuntimeHostId;
@@ -21,15 +23,15 @@ export interface ReviewerRuntimeDefinitionReceipt {
 }
 
 function sourceRelativePath(host: ReviewerRuntimeHostId): string {
-  return host === 'cursor'
-    ? CURSOR_REVIEWER_CANONICAL_SOURCE_PATH
-    : CLAUDE_REVIEWER_CANONICAL_SOURCE_PATH;
+  if (host === 'cursor') return CURSOR_REVIEWER_CANONICAL_SOURCE_PATH;
+  if (host === 'codex') return CODEX_REVIEWER_CANONICAL_SOURCE_PATH;
+  return CLAUDE_REVIEWER_CANONICAL_SOURCE_PATH;
 }
 
 function targetRelativePath(host: ReviewerRuntimeHostId): string {
-  return host === 'cursor'
-    ? CURSOR_REVIEWER_RUNTIME_TARGET_PATH
-    : CLAUDE_REVIEWER_RUNTIME_TARGET_PATH;
+  if (host === 'cursor') return CURSOR_REVIEWER_RUNTIME_TARGET_PATH;
+  if (host === 'codex') return CODEX_REVIEWER_RUNTIME_TARGET_PATH;
+  return CLAUDE_REVIEWER_RUNTIME_TARGET_PATH;
 }
 
 function injectGeneratedHeader(
@@ -107,11 +109,13 @@ export function ensureReviewerRuntimeDefinition(
   projectRoot: string,
   options?: { hosts?: ReviewerRuntimeHostId[] }
 ): ReviewerRuntimeDefinitionReceipt[] {
-  const hosts = options?.hosts ?? (['cursor', 'claude'] as ReviewerRuntimeHostId[]);
+  const hosts = options?.hosts ?? (['cursor', 'claude', 'codex'] as ReviewerRuntimeHostId[]);
   return hosts.map((host) => {
     const runtimeDir =
       host === 'cursor'
         ? path.join(projectRoot, '.cursor', 'agents')
+        : host === 'codex'
+          ? path.join(projectRoot, '.codex', 'agents')
         : path.join(projectRoot, '.claude', 'agents');
     if (!fs.existsSync(runtimeDir)) {
       return {

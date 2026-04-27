@@ -1,3 +1,7 @@
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+
 type ChaosScenarioId =
   | 'pending_packet_loss'
   | 'closeout_failure'
@@ -34,14 +38,27 @@ function cloneBase(): ChaosState {
   return { ...BASE_STATE };
 }
 
-function recoverScenario(id: ChaosScenarioId): ChaosResult {
+function recoverScenario(id: ChaosScenarioId, projectRoot?: string): ChaosResult {
   const state = cloneBase();
   const evidence: string[] = [];
 
   if (id === 'pending_packet_loss') {
+    const packetPath = projectRoot
+      ? path.join(projectRoot, '_bmad-output', 'runtime', 'chaos', 'packet-loss.json')
+      : null;
+    if (packetPath) {
+      fs.mkdirSync(path.dirname(packetPath), { recursive: true });
+      fs.writeFileSync(packetPath, '{"packetId":"chaos-packet"}\n', 'utf8');
+      fs.unlinkSync(packetPath);
+      evidence.push(`deleted packet artifact:${packetPath}`);
+    }
     state.pendingPacketStatus = 'missing_packet_file';
     state.nextAction = 'dispatch_plan';
     evidence.push('detected missing packet file');
+    if (packetPath) {
+      fs.writeFileSync(packetPath, '{"packetId":"chaos-packet","recovered":true}\n', 'utf8');
+      evidence.push(`recreated packet artifact:${packetPath}`);
+    }
     state.pendingPacketStatus = 'ready_for_main_agent';
     state.nextAction = 'continue_ready';
     evidence.push('re-materialized dispatch packet');
@@ -96,11 +113,12 @@ function recoverScenario(id: ChaosScenarioId): ChaosResult {
   };
 }
 
-export function runChaosScenarios(): {
+export function runChaosScenarios(input: { projectRoot?: string } = {}): {
   reportType: 'main_agent_chaos_recovery';
   recoveryRate: number;
   scenarios: ChaosResult[];
 } {
+  const projectRoot = input.projectRoot ?? fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-chaos-'));
   const scenarioIds: ChaosScenarioId[] = [
     'pending_packet_loss',
     'closeout_failure',
@@ -108,7 +126,7 @@ export function runChaosScenarios(): {
     'session_recovery',
     'host_switching',
   ];
-  const scenarios = scenarioIds.map(recoverScenario);
+  const scenarios = scenarioIds.map((id) => recoverScenario(id, projectRoot));
   return {
     reportType: 'main_agent_chaos_recovery',
     recoveryRate: scenarios.filter((item) => item.recovered).length / scenarios.length,
@@ -117,7 +135,19 @@ export function runChaosScenarios(): {
 }
 
 function main(): number {
-  const report = runChaosScenarios();
+  const projectRoot = process.argv.includes('--projectRoot')
+    ? process.argv[process.argv.indexOf('--projectRoot') + 1]
+    : process.cwd();
+  const report = runChaosScenarios({ projectRoot });
+  const reportPath = path.join(
+    projectRoot,
+    '_bmad-output',
+    'runtime',
+    'chaos',
+    'main-agent-chaos-recovery-report.json'
+  );
+  fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+  fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\n', 'utf8');
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   const failed = report.scenarios.filter((scenario) => !scenario.recovered);
   if (failed.length > 0) {

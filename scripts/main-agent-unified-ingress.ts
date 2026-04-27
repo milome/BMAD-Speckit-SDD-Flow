@@ -10,6 +10,18 @@ import type { RuntimeFlowId } from './runtime-governance';
 export type MainAgentHostMode = 'hooks_enabled' | 'no_hooks';
 export type MainAgentHostKind = 'cursor' | 'claude' | 'codex';
 export type MainAgentOrchestrationEntry = 'hook_ingress' | 'cli_ingress';
+export type MainAgentDegradationLevel =
+  | 'none'
+  | 'hook_lost'
+  | 'transport_degraded'
+  | 'cli_forced';
+
+export interface MainAgentDegradationReason {
+  code: string;
+  hostKind: MainAgentHostKind;
+  hookPath: string | null;
+  reason: string;
+}
 
 export interface UnifiedIngressReceipt {
   reportType: 'main_agent_unified_ingress';
@@ -19,7 +31,8 @@ export interface UnifiedIngressReceipt {
   hostMode: MainAgentHostMode;
   orchestrationEntry: MainAgentOrchestrationEntry;
   hookAvailable: boolean;
-  degradationReason: string | null;
+  degradationLevel: MainAgentDegradationLevel;
+  degradationReason: MainAgentDegradationReason | null;
   controlPlane: 'main-agent-orchestration';
   flow: RuntimeFlowId;
   stage: string;
@@ -27,6 +40,7 @@ export interface UnifiedIngressReceipt {
     runId: string;
     status: 'completed' | 'blocked';
     packetId: string | null;
+    resolvedHost: string | null;
     finalNextAction: string | null;
     pendingPacketStatus: string;
   };
@@ -57,16 +71,31 @@ function resolveEntry(input: {
   forceNoHooks?: boolean;
 }): Pick<
   UnifiedIngressReceipt,
-  'hostMode' | 'orchestrationEntry' | 'hookAvailable' | 'degradationReason'
+  'hostMode' | 'orchestrationEntry' | 'hookAvailable' | 'degradationLevel' | 'degradationReason'
 > {
   const hookPath = hookPathFor(input.projectRoot, input.hostKind);
   const hookAvailable = hookPath != null && fs.existsSync(hookPath);
-  if (input.forceNoHooks || input.hostKind === 'codex') {
+  if (input.hostKind === 'codex') {
     return {
       hostMode: 'no_hooks',
       orchestrationEntry: 'cli_ingress',
       hookAvailable,
-      degradationReason: input.hostKind === 'codex' ? 'codex has no hook adapter' : null,
+      degradationLevel: 'none',
+      degradationReason: null,
+    };
+  }
+  if (input.forceNoHooks) {
+    return {
+      hostMode: 'no_hooks',
+      orchestrationEntry: 'cli_ingress',
+      hookAvailable,
+      degradationLevel: 'cli_forced',
+      degradationReason: {
+        code: 'forced_no_hooks',
+        hostKind: input.hostKind,
+        hookPath,
+        reason: 'forceNoHooks requested; using cli_ingress',
+      },
     };
   }
   if (hookAvailable) {
@@ -74,6 +103,7 @@ function resolveEntry(input: {
       hostMode: 'hooks_enabled',
       orchestrationEntry: 'hook_ingress',
       hookAvailable,
+      degradationLevel: 'none',
       degradationReason: null,
     };
   }
@@ -81,7 +111,13 @@ function resolveEntry(input: {
     hostMode: 'no_hooks',
     orchestrationEntry: 'cli_ingress',
     hookAvailable,
-    degradationReason: 'hook unavailable; degraded to cli_ingress',
+    degradationLevel: 'hook_lost',
+    degradationReason: {
+      code: 'hook_unavailable',
+      hostKind: input.hostKind,
+      hookPath,
+      reason: 'hook unavailable; degraded to cli_ingress',
+    },
   };
 }
 
@@ -102,13 +138,17 @@ export function runUnifiedIngress(input: {
     projectRoot,
     flow: input.flow,
     stage: input.stage,
+    host: input.hostKind,
     args: {
       reportEvidence: `${entry.orchestrationEntry}:${input.hostKind}`,
     },
-    executor: ({ projectRoot: runRoot, instruction, args }) => {
-      const reportPath = writeMainAgentRunLoopTaskReport(runRoot, instruction, args);
-      return JSON.parse(fs.readFileSync(reportPath, 'utf8'));
-    },
+    executor:
+      input.hostKind === 'codex'
+        ? undefined
+        : ({ projectRoot: runRoot, instruction, args }) => {
+            const reportPath = writeMainAgentRunLoopTaskReport(runRoot, instruction, args);
+            return JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+          },
   });
   return {
     reportType: 'main_agent_unified_ingress',
@@ -123,6 +163,7 @@ export function runUnifiedIngress(input: {
       runId: runLoop.runId,
       status: runLoop.status,
       packetId: runLoop.dispatchInstruction?.packetId ?? null,
+      resolvedHost: runLoop.dispatchInstruction?.host ?? null,
       finalNextAction: runLoop.finalSurface.mainAgentNextAction,
       pendingPacketStatus: runLoop.finalSurface.pendingPacketStatus,
     },

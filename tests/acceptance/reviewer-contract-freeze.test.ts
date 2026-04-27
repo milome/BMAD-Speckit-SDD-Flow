@@ -156,14 +156,16 @@ describe('reviewer contract freeze', () => {
       hostLocalFallbackBusinessRulesForbidden: true,
     });
     expect(REVIEWER_COMPATIBILITY_GUARDS).toStrictEqual({
-      codexNoopRequired: true,
-      codexBehaviorChangeAllowed: false,
+      codexNoopRequired: false,
+      codexBehaviorChangeAllowed: true,
     });
     expect(REVIEWER_REQUIRED_ROLLOUT_PROOFS).toStrictEqual([
       'parity_proof',
       'consumer_install_proof',
       'rollback_proof',
-      'codex_noop_proof',
+      'codex_parity_proof',
+      'codex_closeout_proof',
+      'codex_scoring_proof',
     ]);
     expect(REVIEWER_STRICT_ALIGNMENT_EVIDENCE).toStrictEqual([
       'cursor_preferred_vs_fallback',
@@ -173,7 +175,9 @@ describe('reviewer contract freeze', () => {
       'governance_closure_parity',
       'parsable_scoring_block_parity',
       'result_code_and_required_fixes_parity',
-      'codex_noop_proof',
+      'codex_parity_proof',
+      'codex_closeout_proof',
+      'codex_scoring_proof',
       'rollback_proof',
     ]);
   });

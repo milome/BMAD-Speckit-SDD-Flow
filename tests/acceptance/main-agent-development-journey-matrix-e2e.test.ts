@@ -13,7 +13,7 @@ describe('main-agent development journey matrix e2e', () => {
         realProvider: false,
       });
 
-      expect(report.allPassed).toBe(true);
+      expect(report.allPassed).toBe(false);
       expect(report.steps.map((step) => step.sequence)).toEqual([
         'BH1-L1-L5',
         'S3c-S3e',
@@ -29,7 +29,9 @@ describe('main-agent development journey matrix e2e', () => {
       expect(report.steps.find((step) => step.id === 'ingress-codex')?.evidence).toContain(
         'no_hooks/cli_ingress'
       );
-      expect(report.steps.find((step) => step.id === 'delivery-truth-contract')?.passed).toBe(true);
+      const deliveryTruth = report.steps.find((step) => step.id === 'delivery-truth-live');
+      expect(deliveryTruth?.passed).toBe(false);
+      expect(deliveryTruth?.evidence).toContain('not synthesized');
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

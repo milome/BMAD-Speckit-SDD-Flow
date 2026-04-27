@@ -1,6 +1,6 @@
 # BMAD-Speckit-SDD-Flow
 
-English | [简体中文](README.zh-CN.md)
+English | [绠€浣撲腑鏂嘳(README.zh-CN.md)
 
 <p align="center">
   <img src="docs/assets/readme-slogan.final.svg" alt="BMAD-Speckit-SDD-Flow slogan banner" width="100%" />
@@ -32,7 +32,7 @@ Traditional AI tooling often stops at prompt orchestration. BMAD-Speckit-SDD-Flo
 
 ### Key Capabilities
 
-- **5-layer delivery architecture**: Product Def → Epic Planning → Story Dev → Technical Implementation → Finish.
+- **5-layer delivery architecture**: Product Def 鈫?Epic Planning 鈫?Story Dev 鈫?Technical Implementation 鈫?Finish.
 - **Mandatory audit loops**: governed stages require review closure before continuing.
 - **Four-Signal implementation readiness**: implementation entry is blocked unless the readiness baseline covers `P0 Journey Coverage`, `Smoke E2E Readiness`, `Evidence Proof Chain`, and `Cross-Document Traceability`.
 - **Runtime gate loops and rerun gates**: governed routes can re-enter, rerun, or block with the same runtime truth path instead of silently bypassing failed close-out.
@@ -79,6 +79,7 @@ This is the verified off-repo path for the published package contract.
 npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit version
 npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent claude-code --full --no-package-json
 npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent cursor --full --no-package-json
+npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent codex --full --no-package-json
 npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit check
 npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit dashboard-status
 ```
@@ -98,8 +99,23 @@ If you want the package present in the consumer project's dependency tree:
 npm install --save-dev bmad-speckit-sdd-flow@latest
 npx bmad-speckit-init . --agent claude-code --full --no-package-json
 npx bmad-speckit-init . --agent cursor --full --no-package-json
+npx bmad-speckit-init . --agent codex --full --no-package-json
 npx bmad-speckit check
 ```
+
+### Codex no-hooks five-layer path
+
+Codex is a first-class no-hooks host. Use `bmad-help` as the user-facing entry, then run the same main-agent five-layer flow: `layer_1_intake -> layer_2_architecture -> layer_3_story -> layer_4_speckit -> layer_5_closeout`.
+
+Use `$bmad-speckit`, `/bmad-speckit`, or `bmad-speckit` when you want BMAD-Speckit-SDD-Flow to take root governed runtime control. Short aliases `$bmads`, `/bmads`, and `bmads` are equivalent. The project intentionally does not reserve `$bmad` to avoid upstream BMAD Method conflicts.
+
+```bash
+npx bmad-speckit-init . --agent codex --full --no-package-json
+npx bmad-speckit check
+npm run main-agent:run-loop -- --host codex
+```
+
+See `docs/how-to/codex-setup.md` for the Codex install and runtime contract.
 
 ### Quick Bootstrap Path
 
@@ -181,12 +197,12 @@ This only removes installer-managed entries. It does not delete `.cursor`, `.cla
 
 ```text
 BMAD-Speckit-SDD-Flow/
-├── _bmad/                # Core modules and configuration
-├── packages/             # Monorepo packages (CLI, scoring)
-├── scripts/              # Setup and deployment utilities
-├── docs/                 # Diataxis-style documentation
-├── tests/                # Acceptance & epic testing
-└── specs/                # Generated story specs
+鈹溾攢鈹€ _bmad/                # Core modules and configuration
+鈹溾攢鈹€ packages/             # Monorepo packages (CLI, scoring)
+鈹溾攢鈹€ scripts/              # Setup and deployment utilities
+鈹溾攢鈹€ docs/                 # Diataxis-style documentation
+鈹溾攢鈹€ tests/                # Acceptance & epic testing
+鈹斺攢鈹€ specs/                # Generated story specs
 ```
 
 </details>
@@ -210,7 +226,5 @@ Key entry points:
 ---
 
 <p align="center">
-  <a href="LICENSE">MIT License</a> •
-  <a href="https://github.com/bmad-code-org/BMAD-METHOD">BMAD-METHOD</a> •
-  <a href="https://github.com/github/spec-kit">Spec-Kit</a>
+  <a href="LICENSE">MIT License</a> 鈥?  <a href="https://github.com/bmad-code-org/BMAD-METHOD">BMAD-METHOD</a> 鈥?  <a href="https://github.com/github/spec-kit">Spec-Kit</a>
 </p>

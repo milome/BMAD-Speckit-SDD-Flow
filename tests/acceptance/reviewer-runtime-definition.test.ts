@@ -14,6 +14,7 @@ function createFixtureRoot(): string {
   cpSync(path.join(repoRoot, '_bmad'), path.join(root, '_bmad'), { recursive: true });
   mkdirSync(path.join(root, '.cursor', 'agents'), { recursive: true });
   mkdirSync(path.join(root, '.claude', 'agents'), { recursive: true });
+  mkdirSync(path.join(root, '.codex', 'agents'), { recursive: true });
   return root;
 }
 
@@ -33,15 +34,17 @@ describe('reviewer runtime definition', () => {
     }
   });
 
-  it('ensures both cursor and claude runtime reviewer carriers when runtime dirs exist', () => {
+  it('ensures cursor, claude, and codex runtime reviewer carriers when runtime dirs exist', () => {
     const root = createFixtureRoot();
     try {
       const receipts = ensureReviewerRuntimeDefinition(root);
-      expect(receipts.map((entry) => entry.host)).toStrictEqual(['cursor', 'claude']);
+      expect(receipts.map((entry) => entry.host)).toStrictEqual(['cursor', 'claude', 'codex']);
       const cursorRuntime = readFileSync(path.join(root, '.cursor', 'agents', 'code-reviewer.md'), 'utf8');
       const claudeRuntime = readFileSync(path.join(root, '.claude', 'agents', 'code-reviewer.md'), 'utf8');
+      const codexRuntime = readFileSync(path.join(root, '.codex', 'agents', 'code-reviewer.toml'), 'utf8');
       expect(cursorRuntime).toContain('source=_bmad/cursor/agents/code-reviewer.md');
       expect(claudeRuntime).toContain('source=_bmad/claude/agents/code-reviewer.md');
+      expect(codexRuntime).toContain('source=_bmad/codex/agents/code-reviewer.toml');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
