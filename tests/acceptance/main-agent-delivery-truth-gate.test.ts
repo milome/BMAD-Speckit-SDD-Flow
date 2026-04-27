@@ -1,0 +1,112 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { describe, expect, it } from 'vitest';
+import { evaluateDeliveryTruthGate } from '../../scripts/main-agent-delivery-truth-gate';
+import { buildPrTopology, buildParallelMissionPlan } from '../../scripts/parallel-mission-control';
+
+function closedPrTopology() {
+  const plan = buildParallelMissionPlan({
+    batchId: 'delivery-truth',
+    nodes: [
+      {
+        node_id: 'n1',
+        story_key: 'S1',
+        packet_id: 'p1',
+        write_scope: ['src/a.ts'],
+        depends_on: [],
+        assigned_agent: 'claude',
+        target_branch: 'task/a',
+        target_pr: 'PR-1',
+      },
+    ],
+  });
+  return buildPrTopology({ plan, states: { n1: 'merged' } });
+}
+
+describe('main-agent delivery truth gate', () => {
+  it('blocks completion language for mock journey and short soak evidence', () => {
+    const report = evaluateDeliveryTruthGate({
+      releaseGate: { critical_failures: 0, blocked_sprint_status_update: false },
+      dualHost: {
+        journeyMode: 'mock',
+        journeyE2EPassed: true,
+        hostsPassed: { claude: true, codex: true },
+      },
+      soak: {
+        mode: 'wall_clock',
+        target_duration_ms: 30,
+        observed_duration_ms: 30,
+        manual_restarts: 0,
+        silent_hangs: 0,
+        false_completions: 0,
+        recovery_success_rate: 1,
+      },
+      prTopology: closedPrTopology(),
+      sprintAudit: { storyKey: 'S1', status: 'done', authorized: true },
+    });
+
+    expect(report.completionAllowed).toBe(false);
+    expect(report.completionLanguage).toBe('partial_only');
+    expect(report.failedEvidence.join('\n')).toContain('dual-host-real-journey');
+    expect(report.failedEvidence.join('\n')).toContain('wall-clock-8h-soak');
+  });
+
+  it('allows completion language only with real 8h and closed PR evidence', () => {
+    const report = evaluateDeliveryTruthGate({
+      releaseGate: { critical_failures: 0, blocked_sprint_status_update: false },
+      dualHost: {
+        journeyMode: 'real',
+        journeyE2EPassed: true,
+        hostsPassed: { claude: true, codex: true },
+      },
+      soak: {
+        mode: 'wall_clock',
+        target_duration_ms: 8 * 60 * 60 * 1000,
+        observed_duration_ms: 8 * 60 * 60 * 1000,
+        manual_restarts: 0,
+        silent_hangs: 0,
+        false_completions: 0,
+        recovery_success_rate: 1,
+      },
+      prTopology: closedPrTopology(),
+      sprintAudit: { storyKey: 'S1', status: 'done', authorized: true },
+    });
+
+    expect(report.completionAllowed).toBe(true);
+    expect(report.deliveryStatus).toBe('complete');
+    expect(report.completionLanguage).toBe('complete_allowed');
+  });
+
+  it('emits a blocked report when required evidence files are missing', async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'delivery-truth-missing-'));
+    try {
+      const reportPath = path.join(root, 'report.json');
+      const { spawnSync } = await import('node:child_process');
+      const run = spawnSync(
+        process.execPath,
+        [
+          path.join(process.cwd(), 'node_modules', 'ts-node', 'dist', 'bin.js'),
+          '--project',
+          path.join(process.cwd(), 'tsconfig.node.json'),
+          '--transpile-only',
+          path.join(process.cwd(), 'scripts', 'main-agent-delivery-truth-gate.ts'),
+          '--reportPath',
+          reportPath,
+        ],
+        { encoding: 'utf8' }
+      );
+      expect(run.status).toBe(1);
+      const report = JSON.parse(fs.readFileSync(reportPath, 'utf8')) as {
+        completionAllowed: boolean;
+        deliveryStatus: string;
+        missingEvidence: string[];
+      };
+      expect(report.completionAllowed).toBe(false);
+      expect(report.deliveryStatus).toBe('blocked');
+      expect(report.missingEvidence).toContain('releaseGate');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+});

@@ -7,16 +7,19 @@
   "requiredKeyPaths": [
     "scripts/main-agent-orchestration.ts",
     "scripts/main-agent-release-gate.ts",
+    "scripts/main-agent-delivery-truth-gate.ts",
     "scripts/main-agent-quality-gate.ts",
     "scripts/main-agent-chaos-scenarios.ts",
     "_bmad/_config/orchestration-governance.contract.yaml",
     "_bmad-output/runtime/governance/user_story_mapping.json",
     "tests/acceptance/main-agent-release-gate-contract.test.ts",
+    "tests/acceptance/main-agent-delivery-truth-gate.test.ts",
     "tests/acceptance/governance-rerun-gate-closure.test.ts"
   ],
   "requiredAcceptanceTests": [
     "tests/acceptance/main-agent-quality-gate-thresholds.test.ts",
     "tests/acceptance/main-agent-release-gate-contract.test.ts",
+    "tests/acceptance/main-agent-delivery-truth-gate.test.ts",
     "tests/acceptance/governance-rerun-gate-closure.test.ts"
   ],
   "forbiddenTodoMarkers": [
