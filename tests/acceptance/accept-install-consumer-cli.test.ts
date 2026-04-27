@@ -253,6 +253,39 @@ describe('install to consumer → CLI acceptance', () => {
     }
   }, 90_000);
 
+  it('consumer install can initialize the Codex no-hooks branch', () => {
+    const target = mkdtempSync(join(tmpdir(), 'accept-consumer-codex-'));
+    try {
+      writeFileSync(
+        join(target, 'package.json'),
+        JSON.stringify({ name: 'consumer-codex-app', version: '1.0.0', private: true }),
+        'utf8'
+      );
+
+      const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
+      run(`npm install --save-dev "file:${pkgPath}"`, target);
+      run('npx bmad-speckit-init --agent codex', target);
+
+      expect(existsSync(join(target, '.codex', 'commands', 'bmad-help.md'))).toBe(true);
+      expect(existsSync(join(target, '.codex', 'skills', 'bmad-help', 'SKILL.md'))).toBe(true);
+      expect(existsSync(join(target, '.codex', 'README.md'))).toBe(true);
+      expect(existsSync(join(target, '.codex', 'hooks'))).toBe(false);
+
+      const manifest = JSON.parse(
+        readFileSync(
+          join(target, '_bmad-output', 'config', 'bmad-speckit-install-manifest.json'),
+          'utf8'
+        )
+      );
+      expect(manifest.installed_tools).toContain('codex');
+      expect(
+        manifest.managed_surface.some((entry: { path: string }) => entry.path.startsWith('.codex/'))
+      ).toBe(true);
+    } finally {
+      rmSync(target, { recursive: true, force: true });
+    }
+  }, 90_000);
+
   it('consumer install syncs runtime dashboard auto-start skeleton for Cursor hooks', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-dashboard-host-'));
     try {

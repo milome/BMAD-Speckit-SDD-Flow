@@ -7,6 +7,8 @@ import {
   writeRuntimeContextRegistry,
 } from './runtime-context-registry';
 import { defaultRuntimeContextFile, writeRuntimeContext } from './runtime-context';
+import { buildMainAgentDispatchInstruction } from './main-agent-orchestration';
+import { runCodexWorkerAdapter } from './main-agent-codex-worker-adapter';
 
 type HostId = 'claude' | 'codex';
 type JourneyMode = 'mock' | 'real';
@@ -41,6 +43,12 @@ interface HostJourneyResult {
     stdout: string;
     stderr: string;
     parsed: boolean;
+  };
+  workerSmoke?: {
+    attempted: boolean;
+    passed: boolean;
+    taskReportPath: string | null;
+    detail: string;
   };
 }
 
@@ -289,11 +297,74 @@ function runInspectCheck(projectRoot: string) {
 function runHostJourney(projectRoot: string, mode: JourneyMode, host: HostId): HostJourneyResult {
   const transportCheck = runHostTransportCheck(mode, host, projectRoot);
   const inspectCheck = runInspectCheck(projectRoot);
+  let workerSmoke: HostJourneyResult['workerSmoke'];
+  if (mode === 'real' && host === 'codex' && transportCheck.exitCode === 0 && inspectCheck.parsed) {
+    const smokeRoot = path.join(
+      projectRoot,
+      '_bmad-output',
+      'runtime',
+      'dual-host-codex-smoke',
+      `${Date.now()}-${process.pid}`
+    );
+    fs.mkdirSync(smokeRoot, { recursive: true });
+    writeRuntimeContextRegistry(smokeRoot, defaultRuntimeContextRegistry(smokeRoot));
+    writeRuntimeContext(
+      smokeRoot,
+      defaultRuntimeContextFile({
+        flow: 'story',
+        stage: 'implement',
+        sourceMode: 'full_bmad',
+        contextScope: 'story',
+        storyId: 'dual-host-codex-smoke',
+        runId: 'dual-host-codex-smoke',
+      })
+    );
+    const instruction = buildMainAgentDispatchInstruction({
+      projectRoot: smokeRoot,
+      flow: 'story',
+      stage: 'implement',
+      host: 'claude',
+      hydratePacket: true,
+    });
+    if (instruction) {
+      const taskReportPath = path.join(
+        smokeRoot,
+        '_bmad-output',
+        'runtime',
+        'codex',
+        'dual-host-smoke',
+        `${instruction.packetId}.json`
+      );
+      const smoke = runCodexWorkerAdapter({
+        projectRoot: smokeRoot,
+        packetPath: instruction.packetPath,
+        taskReportPath,
+        smoke: true,
+        smokeTargetPath: `src/codex/${instruction.packetId}.md`,
+      });
+      workerSmoke = {
+        attempted: true,
+        passed: smoke.exitCode === 0 && smoke.scopePassed && smoke.taskReport.status === 'done',
+        taskReportPath,
+        detail: `codex worker adapter smoke ${smoke.taskReport.status}`,
+      };
+    } else {
+      workerSmoke = {
+        attempted: true,
+        passed: false,
+        taskReportPath: null,
+        detail: 'no dispatch instruction available for codex worker smoke',
+      };
+    }
+  }
+  const smokePassed = workerSmoke ? workerSmoke.passed : true;
   return {
     host,
-    passed: transportCheck.exitCode === 0 && inspectCheck.exitCode === 0 && inspectCheck.parsed,
+    passed:
+      transportCheck.exitCode === 0 && inspectCheck.exitCode === 0 && inspectCheck.parsed && smokePassed,
     transportCheck,
     inspectCheck,
+    ...(workerSmoke ? { workerSmoke } : {}),
   };
 }
 

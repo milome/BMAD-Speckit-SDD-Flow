@@ -41,6 +41,7 @@ export interface SoakReport {
     projectRoot: string;
     flow: RuntimeFlowId;
     stage: string;
+    hostKind: 'cursor' | 'claude' | 'codex';
     tick_count: number;
     completed_ticks: number;
     blocked_ticks: number;
@@ -150,6 +151,8 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.flow = argv[++index];
     } else if (token === '--stage' && argv[index + 1]) {
       out.stage = argv[++index];
+    } else if (token === '--hostKind' && argv[index + 1]) {
+      out.hostKind = argv[++index];
     } else if (!token.startsWith('--')) {
       positional.push(token);
     }
@@ -226,6 +229,7 @@ export async function runWallClockSoak(input: {
   developmentRunLoop?: boolean;
   flow?: RuntimeFlowId;
   stage?: string;
+  hostKind?: 'cursor' | 'claude' | 'codex';
 }): Promise<SoakReport> {
   const start = Date.now();
   const heartbeats: SoakReport['heartbeats'] = [];
@@ -234,6 +238,7 @@ export async function runWallClockSoak(input: {
   const projectRoot = path.resolve(input.projectRoot ?? process.cwd());
   const flow = input.flow ?? 'story';
   const stage = input.stage ?? 'implement';
+  const hostKind = input.hostKind ?? 'cursor';
   let tick = 0;
   while (Date.now() - start < input.durationMs) {
     tick += 1;
@@ -265,6 +270,7 @@ export async function runWallClockSoak(input: {
         stage,
         args: {
           reportEvidence: `soak-tick-${tick}`,
+          validationsRun: `main-agent-soak:${hostKind}`,
         },
         executor: ({ projectRoot: runRoot, instruction, args }) => {
           const reportPath = writeMainAgentRunLoopTaskReport(runRoot, instruction, args);
@@ -306,6 +312,7 @@ export async function runWallClockSoak(input: {
       projectRoot,
       flow,
       stage,
+      hostKind,
       tick_count: runLoopInvocations.length,
       completed_ticks: runLoopInvocations.filter((item) => item.status === 'completed').length,
       blocked_ticks: runLoopInvocations.filter((item) => item.status === 'blocked').length,
@@ -355,6 +362,10 @@ export function main(argv: string[]): number {
       developmentRunLoop: args.developmentRunLoop === 'true',
       flow: args.flow as RuntimeFlowId | undefined,
       stage: args.stage,
+      hostKind:
+        args.hostKind === 'codex' || args.hostKind === 'claude' || args.hostKind === 'cursor'
+          ? args.hostKind
+          : undefined,
     })
       .then((report) => {
         process.exitCode = emit(report);

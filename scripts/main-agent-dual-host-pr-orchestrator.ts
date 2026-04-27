@@ -28,6 +28,12 @@ export interface DualHostPrOrchestrationReport {
   hostsPassed: Record<'claude' | 'codex', boolean>;
   prTopology: PrTopology;
   providerPreflight: Array<{ id: string; passed: boolean; detail: string }>;
+  githubPrApi: {
+    attempted: boolean;
+    passed: boolean;
+    steps: Array<{ id: string; exitCode: number; detail: string }>;
+    prUrl: string | null;
+  };
   finalPassed: boolean;
 }
 
@@ -44,6 +50,8 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.reportPath = argv[++index];
     } else if (token === '--prTopologyPath' && argv[index + 1]) {
       out.prTopologyPath = argv[++index];
+    } else if (token === '--enableRealPrApi' && argv[index + 1]) {
+      out.enableRealPrApi = argv[++index];
     } else if (!token.startsWith('--')) {
       positional.push(token);
     }
@@ -120,10 +128,146 @@ function makeJourneyRoot(): string {
   return root;
 }
 
+function runGhStep(id: string, args: string[], cwd: string): { id: string; exitCode: number; detail: string } {
+  const result = spawnSync('gh', args, {
+    cwd,
+    encoding: 'utf8',
+    shell: process.platform === 'win32',
+  });
+  return {
+    id,
+    exitCode: result.status ?? (result.error ? 1 : 0),
+    detail: (result.stdout || result.stderr || result.error?.message || '').trim(),
+  };
+}
+
+function currentGitBranch(cwd: string): string {
+  const result = spawnSync('git', ['branch', '--show-current'], {
+    cwd,
+    encoding: 'utf8',
+    shell: process.platform === 'win32',
+  });
+  return (result.stdout || 'dev').trim() || 'dev';
+}
+
+function runGithubPrApiOrchestration(input: {
+  provider: ProviderMode;
+  projectRoot: string;
+  providerOk: boolean;
+  journeyPassed: boolean;
+  enableRealPrApi?: boolean;
+}): DualHostPrOrchestrationReport['githubPrApi'] {
+  if (input.provider !== 'real') {
+    return { attempted: false, passed: true, steps: [], prUrl: null };
+  }
+  if (!input.enableRealPrApi) {
+    return {
+      attempted: true,
+      passed: false,
+      steps: [
+        {
+          id: 'real-pr-api-disabled',
+          exitCode: 1,
+          detail: 'pass --enableRealPrApi true to create/close a real GitHub PR',
+        },
+      ],
+      prUrl: null,
+    };
+  }
+  if (!input.providerOk || !input.journeyPassed) {
+    return {
+      attempted: true,
+      passed: false,
+      steps: [{ id: 'precondition', exitCode: 1, detail: 'provider or journey precondition failed' }],
+      prUrl: null,
+    };
+  }
+
+  const branchName = `codex/main-agent-smoke-${Date.now()}`;
+  const proofPath = path.join(input.projectRoot, '_bmad-output', 'runtime', 'pr', `${branchName.replace(/[\\/]/g, '-')}.md`);
+  fs.mkdirSync(path.dirname(proofPath), { recursive: true });
+  fs.writeFileSync(
+    proofPath,
+    `# Codex PR API Smoke\n\nbranch: ${branchName}\ngeneratedAt: ${new Date().toISOString()}\n`,
+    'utf8'
+  );
+
+  const baseBranch = currentGitBranch(input.projectRoot);
+  const steps = [
+    runGhStep('auth-status', ['auth', 'status'], input.projectRoot),
+    runGhStep('checkout-branch', ['repo', 'set-default', '--view'], input.projectRoot),
+  ];
+  const checkout = spawnSync('git', ['checkout', '-b', branchName], {
+    cwd: input.projectRoot,
+    encoding: 'utf8',
+    shell: process.platform === 'win32',
+  });
+  steps.push({
+    id: 'git-checkout-branch',
+    exitCode: checkout.status ?? (checkout.error ? 1 : 0),
+    detail: (checkout.stdout || checkout.stderr || checkout.error?.message || '').trim(),
+  });
+  const add = spawnSync('git', ['add', proofPath], {
+    cwd: input.projectRoot,
+    encoding: 'utf8',
+    shell: process.platform === 'win32',
+  });
+  steps.push({
+    id: 'git-add-proof',
+    exitCode: add.status ?? (add.error ? 1 : 0),
+    detail: (add.stdout || add.stderr || add.error?.message || '').trim(),
+  });
+  const commit = spawnSync('git', ['commit', '-m', 'test: codex pr api smoke'], {
+    cwd: input.projectRoot,
+    encoding: 'utf8',
+    shell: process.platform === 'win32',
+  });
+  steps.push({
+    id: 'git-commit-proof',
+    exitCode: commit.status ?? (commit.error ? 1 : 0),
+    detail: (commit.stdout || commit.stderr || commit.error?.message || '').trim(),
+  });
+  const push = runGhStep('pr-create', [
+    'pr',
+    'create',
+    '--draft',
+    '--base',
+    baseBranch,
+    '--head',
+    branchName,
+    '--title',
+    'Codex PR API smoke',
+    '--body',
+    'Automated fail-close smoke for Codex branch orchestration.',
+  ], input.projectRoot);
+  steps.push(push);
+  const prUrl = push.exitCode === 0 ? push.detail.split(/\r?\n/).find((line) => line.includes('http')) ?? null : null;
+  if (prUrl) {
+    steps.push(runGhStep('pr-close', ['pr', 'close', prUrl, '--delete-branch'], input.projectRoot));
+  }
+  const back = spawnSync('git', ['checkout', baseBranch], {
+    cwd: input.projectRoot,
+    encoding: 'utf8',
+    shell: process.platform === 'win32',
+  });
+  steps.push({
+    id: 'git-checkout-back',
+    exitCode: back.status ?? (back.error ? 1 : 0),
+    detail: (back.stdout || back.stderr || back.error?.message || '').trim(),
+  });
+  return {
+    attempted: true,
+    passed: steps.every((step) => step.exitCode === 0) && Boolean(prUrl),
+    steps,
+    prUrl,
+  };
+}
+
 export function runDualHostPrOrchestration(input: {
   provider: ProviderMode;
   projectRoot?: string;
   checkCommand?: CommandChecker;
+  enableRealPrApi?: boolean;
 }): DualHostPrOrchestrationReport {
   const providerChecks = providerPreflight(input.provider, input.checkCommand);
   const providerOk = providerChecks.every((check) => check.passed);
@@ -160,6 +304,13 @@ export function runDualHostPrOrchestration(input: {
     claude: journeyReport.journeys.find((item) => item.host === 'claude')?.passed === true,
     codex: journeyReport.journeys.find((item) => item.host === 'codex')?.passed === true,
   };
+  const githubPrApi = runGithubPrApiOrchestration({
+    provider: input.provider,
+    projectRoot: journeyRoot,
+    providerOk,
+    journeyPassed: journeyReport.finalPassed === true && hostsPassed.claude && hostsPassed.codex,
+    enableRealPrApi: input.enableRealPrApi,
+  });
 
   const plan = buildParallelMissionPlan({
     batchId: 'dual-host-pr-batch',
@@ -190,7 +341,10 @@ export function runDualHostPrOrchestration(input: {
     plan,
     states:
       journeyExit === 0 && providerOk
-        ? { 'claude-node': 'merged', 'codex-node': 'closed_not_needed' }
+        ? {
+            'claude-node': githubPrApi.passed ? 'merged' : 'blocked',
+            'codex-node': githubPrApi.passed ? 'closed_not_needed' : 'blocked',
+          }
         : { 'claude-node': 'blocked', 'codex-node': 'blocked' },
   });
   const prGate = validatePrTopologyForReleaseGate(prTopology);
@@ -200,6 +354,7 @@ export function runDualHostPrOrchestration(input: {
     journeyReport.finalPassed === true &&
     hostsPassed.claude &&
     hostsPassed.codex &&
+    githubPrApi.passed &&
     prGate.passed;
 
   return {
@@ -210,6 +365,7 @@ export function runDualHostPrOrchestration(input: {
     hostsPassed,
     prTopology,
     providerPreflight: providerChecks,
+    githubPrApi,
     finalPassed,
   };
 }
@@ -221,6 +377,7 @@ export function main(argv: string[]): number {
   const report = runDualHostPrOrchestration({
     provider,
     projectRoot,
+    enableRealPrApi: args.enableRealPrApi === 'true',
   });
   const reportPath = path.resolve(
     args.reportPath ??

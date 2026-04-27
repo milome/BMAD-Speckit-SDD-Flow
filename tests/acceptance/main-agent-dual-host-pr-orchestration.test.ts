@@ -127,6 +127,23 @@ describe('main-agent dual-host PR orchestration', () => {
     }
   });
 
+  it('fails closed in real provider mode unless real PR API mutation is explicitly enabled', () => {
+    const report = runDualHostPrOrchestration({
+      provider: 'real',
+      checkCommand: (command, args = []) => {
+        if (command === 'gh' && args.join(' ') === 'auth status') return true;
+        return ['gh', 'claude', 'codex'].includes(command);
+      },
+    });
+
+    expect(report.providerPreflight.every((check) => check.passed)).toBe(true);
+    expect(report.githubPrApi.attempted).toBe(true);
+    expect(report.githubPrApi.passed).toBe(false);
+    expect(report.githubPrApi.steps[0].id).toBe('real-pr-api-disabled');
+    expect(report.finalPassed).toBe(false);
+    expect(report.prTopology.all_affected_stories_passed).toBe(false);
+  });
+
   it('writes standard truth-gate evidence artifacts from the CLI', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dual-host-pr-evidence-'));
     try {

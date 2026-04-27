@@ -16,7 +16,7 @@
  * 外部目标默认**不**生成 runtime MCP 布局；如需启用，显式传入 **--with-mcp**。
  * speckit commands 从 _bmad/speckit/commands/ 合并；.specify/ 部署 templates/workflows/scripts。
  *
- * CLI 参数：[targetDir], --full, --agent cursor|claude-code, --no-package-json, --with-package-json, --with-mcp
+ * CLI 参数：[targetDir], --full, --agent cursor|claude-code|codex, --no-package-json, --with-package-json, --with-mcp
  *
  * 示例：node scripts/init-to-root.js
  *
@@ -230,6 +230,50 @@ const REGISTERED_AGENT_PROFILES = {
       }
       totalFiles += deploySpecify(targetDir);
       syncClaudeRuntimePolicyHooks(targetDir, bmadRoot);
+      return totalFiles;
+    },
+  },
+  codex: {
+    runtimeRoot: '.codex',
+    sync(targetDir) {
+      const bmadRoot = path.join(targetDir, '_bmad');
+      const codexSync = [
+        { src: path.join(bmadRoot, 'commands'), dest: '.codex/commands' },
+        { src: path.join(bmadRoot, 'speckit', 'commands'), dest: '.codex/commands' },
+        { src: path.join(bmadRoot, 'skills'), dest: '.codex/skills' },
+        { src: path.join(bmadRoot, 'core', 'skills'), dest: '.codex/skills' },
+        { src: path.join(bmadRoot, 'i18n'), dest: '.codex/i18n' },
+      ];
+      let totalFiles = 0;
+      for (const { src, dest } of codexSync) {
+        const destPath = path.join(targetDir, dest);
+        if (fs.existsSync(src)) {
+          console.log('Sync', path.relative(targetDir, src), '->', dest);
+          copyRecursive(src, destPath);
+          totalFiles += countFiles(destPath);
+        }
+      }
+      totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'bmm', 'workflows'), path.join(targetDir, '.codex', 'skills'), targetDir);
+      totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'bmm', 'agents'), path.join(targetDir, '.codex', 'skills'), targetDir);
+      totalFiles += copySkillDirsRecursive(path.join(bmadRoot, 'core', 'tasks'), path.join(targetDir, '.codex', 'skills'), targetDir);
+      totalFiles += deploySpecify(targetDir);
+      const codexReadme = path.join(targetDir, '.codex', 'README.md');
+      fs.mkdirSync(path.dirname(codexReadme), { recursive: true });
+      fs.writeFileSync(
+        codexReadme,
+        [
+          '# BMAD-Speckit Codex Runtime',
+          '',
+          'Codex uses the no-hooks path. Run main-agent orchestration through CLI surfaces such as:',
+          '',
+          '- `npm run main-agent-orchestration -- --action inspect`',
+          '- `npm run main-agent-orchestration -- --action dispatch-plan`',
+          '- `npm run main-agent:run-loop -- --taskReportPath <path>`',
+          '',
+        ].join('\n'),
+        'utf8'
+      );
+      totalFiles += 1;
       return totalFiles;
     },
   },
@@ -884,6 +928,7 @@ function materializeSkillMdByLanguage(targetDir) {
   const skillRoots = [
     path.join(targetDir, '.cursor', 'skills'),
     path.join(targetDir, '.claude', 'skills'),
+    path.join(targetDir, '.codex', 'skills'),
   ];
   for (const root of skillRoots) {
     if (!fs.existsSync(root)) continue;
