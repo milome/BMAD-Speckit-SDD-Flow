@@ -75,11 +75,14 @@ function prepareHostBranchRoot(root: string, hostKind: MainAgentHostKind): strin
   return branchRoot;
 }
 
-function prepareDualHostRoot(root: string): void {
-  fs.mkdirSync(path.join(root, '_bmad', '_config'), { recursive: true });
-  fs.mkdirSync(path.join(root, '_bmad-output', 'implementation-artifacts'), { recursive: true });
+function prepareDualHostRoot(root: string): string {
+  const dualHostRoot = path.join(root, '_bmad-output', 'runtime', 'journey-matrix', 'dual-host');
+  fs.mkdirSync(path.join(dualHostRoot, '_bmad', '_config'), { recursive: true });
+  fs.mkdirSync(path.join(dualHostRoot, '_bmad-output', 'implementation-artifacts'), {
+    recursive: true,
+  });
   fs.writeFileSync(
-    path.join(root, '_bmad', '_config', 'orchestration-governance.contract.yaml'),
+    path.join(dualHostRoot, '_bmad', '_config', 'orchestration-governance.contract.yaml'),
     [
       'signals: {}',
       'stage_requirements:',
@@ -92,10 +95,11 @@ function prepareDualHostRoot(root: string): void {
     'utf8'
   );
   fs.writeFileSync(
-    path.join(root, '_bmad-output', 'implementation-artifacts', 'sprint-status.yaml'),
+    path.join(dualHostRoot, '_bmad-output', 'implementation-artifacts', 'sprint-status.yaml'),
     'development_status:\n  S-matrix: in_progress\n',
     'utf8'
   );
+  return dualHostRoot;
 }
 
 function truthGateWithDevelopmentEvidence() {
@@ -146,7 +150,7 @@ export function runDevelopmentJourneyMatrix(input: {
   const projectRoot = path.resolve(input.projectRoot);
   const hostKinds = input.hostKinds ?? ['cursor', 'claude', 'codex'];
   const steps: JourneyMatrixStep[] = [];
-  prepareDualHostRoot(projectRoot);
+  const dualHostRoot = prepareDualHostRoot(projectRoot);
 
   for (const hostKind of hostKinds) {
     const branchRoot = prepareHostBranchRoot(projectRoot, hostKind);
@@ -171,7 +175,7 @@ export function runDevelopmentJourneyMatrix(input: {
 
   const dualHost = runDualHostPrOrchestration({
     provider: input.realProvider ? 'real' : 'mock',
-    projectRoot,
+    projectRoot: dualHostRoot,
   });
   steps.push({
     id: 'dual-host-e2e',
