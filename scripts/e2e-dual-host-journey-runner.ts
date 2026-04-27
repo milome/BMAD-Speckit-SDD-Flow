@@ -123,7 +123,13 @@ function parseArgs(argv: string[]): RunnerArgs {
 }
 
 function ensureRuntimeBootstrap(projectRoot: string): void {
-  const runtimeContextPath = path.join(projectRoot, '_bmad-output', 'runtime', 'context', 'project.json');
+  const runtimeContextPath = path.join(
+    projectRoot,
+    '_bmad-output',
+    'runtime',
+    'context',
+    'project.json'
+  );
   const registryPath = path.join(projectRoot, '_bmad-output', 'runtime', 'registry.json');
   if (!fs.existsSync(registryPath)) {
     writeRuntimeContextRegistry(projectRoot, defaultRuntimeContextRegistry(projectRoot));
@@ -151,7 +157,12 @@ function loadYamlObject(filePath: string): Record<string, unknown> {
 }
 
 function runContractPreflight(projectRoot: string): { passed: boolean; checks: GateCheck[] } {
-  const contractPath = path.join(projectRoot, '_bmad', '_config', 'orchestration-governance.contract.yaml');
+  const contractPath = path.join(
+    projectRoot,
+    '_bmad',
+    '_config',
+    'orchestration-governance.contract.yaml'
+  );
   const sprintStatusPath = path.join(
     projectRoot,
     '_bmad-output',
@@ -215,11 +226,11 @@ function runContractPreflight(projectRoot: string): { passed: boolean; checks: G
   };
 }
 
-function spawnCommand(command: string, args: string[], cwd: string) {
+function spawnCommand(command: string, args: string[], cwd: string, shell = false) {
   const result = spawnSync(command, args, {
     cwd,
     encoding: 'utf8',
-    shell: false,
+    shell,
   });
   return {
     exitCode: result.status ?? (result.error ? 1 : 0),
@@ -238,10 +249,10 @@ function runHostTransportCheck(mode: JourneyMode, host: HostId, projectRoot: str
   }
 
   const hostBinary = host === 'claude' ? 'claude' : 'codex';
-  const command = process.platform === 'win32' ? `${hostBinary}.cmd` : hostBinary;
+  const command = hostBinary;
   return {
     command: [command, '--version'],
-    ...spawnCommand(command, ['--version'], projectRoot),
+    ...spawnCommand(command, ['--version'], projectRoot, process.platform === 'win32'),
   };
 }
 
@@ -430,7 +441,11 @@ export function runDualHostJourneyRunner(argv: string[]): number {
   const allJourneysPassed = journeys.every((item) => item.passed);
 
   const sprintStatusUpdate = args.writeSprintStatus
-    ? applySprintStatusUpdate(args.projectRoot, args.storyKey, preflight.passed && allJourneysPassed)
+    ? applySprintStatusUpdate(
+        args.projectRoot,
+        args.storyKey,
+        preflight.passed && allJourneysPassed
+      )
     : {
         attempted: false,
         applied: false,

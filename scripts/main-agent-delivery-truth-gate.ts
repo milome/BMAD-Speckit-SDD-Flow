@@ -34,11 +34,13 @@ interface SprintStatusAuditEvidence {
 
 export interface DeliveryTruthGateReport {
   reportType: 'main_agent_delivery_truth_gate';
+  generatedAt: string;
   completionAllowed: boolean;
   deliveryStatus: DeliveryStatus;
   completionLanguage: 'complete_allowed' | 'partial_only' | 'blocked_only';
   missingEvidence: string[];
   failedEvidence: string[];
+  evidencePaths: Record<string, string | null>;
   checks: Array<{ id: string; passed: boolean; summary: string }>;
 }
 
@@ -53,7 +55,11 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
   return out;
 }
 
-function readJson<T>(filePath: string | undefined): { value: T | null; missing: boolean; error?: string } {
+function readJson<T>(filePath: string | undefined): {
+  value: T | null;
+  missing: boolean;
+  error?: string;
+} {
   if (!filePath) return { value: null, missing: true };
   const resolved = path.resolve(filePath);
   if (!fs.existsSync(resolved)) return { value: null, missing: true };
@@ -68,7 +74,38 @@ function readJson<T>(filePath: string | undefined): { value: T | null; missing: 
   }
 }
 
-function checkReleaseGate(evidence: ReleaseGateEvidence | null): { passed: boolean; summary: string } {
+function defaultEvidencePaths(root: string): Record<string, string> {
+  return {
+    releaseGate: path.join(
+      root,
+      '_bmad-output',
+      'runtime',
+      'gates',
+      'main-agent-release-gate-report.json'
+    ),
+    dualHost: path.join(
+      root,
+      '_bmad-output',
+      'runtime',
+      'e2e',
+      'dual-host-pr-orchestration-report.json'
+    ),
+    soak: path.join(root, '_bmad-output', 'runtime', 'soak', 'main-agent-soak-report.json'),
+    prTopology: path.join(root, '_bmad-output', 'runtime', 'pr', 'pr_topology.json'),
+    sprintAudit: path.join(
+      root,
+      '_bmad-output',
+      'runtime',
+      'governance',
+      'sprint-status-update-audit.json'
+    ),
+  };
+}
+
+function checkReleaseGate(evidence: ReleaseGateEvidence | null): {
+  passed: boolean;
+  summary: string;
+} {
   return {
     passed:
       evidence != null &&
@@ -118,7 +155,8 @@ function checkPrTopology(evidence: PrTopology | null): { passed: boolean; summar
       ['merged', 'closed_not_needed'].includes(node.state)
     ) === true;
   return {
-    passed: evidence != null && validation.passed && evidence.all_affected_stories_passed && allClosed,
+    passed:
+      evidence != null && validation.passed && evidence.all_affected_stories_passed && allClosed,
     summary: evidence
       ? `all_affected_stories_passed=${evidence.all_affected_stories_passed}, nodes=${evidence.required_nodes
           .map((node) => `${node.node_id}:${node.state}`)
@@ -146,6 +184,7 @@ export function evaluateDeliveryTruthGate(input: {
   prTopology: PrTopology | null;
   sprintAudit: SprintStatusAuditEvidence | null;
   missingEvidence?: string[];
+  evidencePaths?: Record<string, string | null>;
 }): DeliveryTruthGateReport {
   const checks = [
     { id: 'release-gate', ...checkReleaseGate(input.releaseGate) },
@@ -166,6 +205,7 @@ export function evaluateDeliveryTruthGate(input: {
       : 'partial';
   return {
     reportType: 'main_agent_delivery_truth_gate',
+    generatedAt: new Date().toISOString(),
     completionAllowed,
     deliveryStatus,
     completionLanguage: completionAllowed
@@ -175,21 +215,38 @@ export function evaluateDeliveryTruthGate(input: {
         : 'blocked_only',
     missingEvidence,
     failedEvidence,
+    evidencePaths: input.evidencePaths ?? {},
     checks,
   };
 }
 
 export function main(argv: string[]): number {
   const args = parseArgs(argv);
+  const root = path.resolve(args.cwd ?? process.cwd());
+  const defaults = defaultEvidencePaths(root);
   const missingEvidence: string[] = [];
-  const releaseGate = readJson<ReleaseGateEvidence>(args.releaseGatePath);
-  const dualHost = readJson<DualHostEvidence>(args.dualHostPath);
-  const soak = readJson<SoakEvidence>(args.soakPath);
-  const prTopology = readJson<PrTopology>(args.prTopologyPath);
-  const sprintAudit = readJson<SprintStatusAuditEvidence>(args.sprintAuditPath);
-  for (const [id, result] of Object.entries({ releaseGate, dualHost, soak, prTopology, sprintAudit })) {
-    if (result.missing) missingEvidence.push(id);
-    if (result.error) missingEvidence.push(`${id}: ${result.error}`);
+  const evidencePaths = {
+    releaseGate: args.releaseGatePath ?? defaults.releaseGate,
+    dualHost: args.dualHostPath ?? defaults.dualHost,
+    soak: args.soakPath ?? defaults.soak,
+    prTopology: args.prTopologyPath ?? defaults.prTopology,
+    sprintAudit: args.sprintAuditPath ?? defaults.sprintAudit,
+  };
+  const releaseGate = readJson<ReleaseGateEvidence>(evidencePaths.releaseGate);
+  const dualHost = readJson<DualHostEvidence>(evidencePaths.dualHost);
+  const soak = readJson<SoakEvidence>(evidencePaths.soak);
+  const prTopology = readJson<PrTopology>(evidencePaths.prTopology);
+  const sprintAudit = readJson<SprintStatusAuditEvidence>(evidencePaths.sprintAudit);
+  for (const [id, result] of Object.entries({
+    releaseGate,
+    dualHost,
+    soak,
+    prTopology,
+    sprintAudit,
+  })) {
+    const evidencePath = evidencePaths[id as keyof typeof evidencePaths];
+    if (result.missing) missingEvidence.push(`${id}: ${evidencePath}`);
+    if (result.error) missingEvidence.push(`${id}: ${evidencePath}: ${result.error}`);
   }
   const report = evaluateDeliveryTruthGate({
     releaseGate: releaseGate.value,
@@ -198,14 +255,22 @@ export function main(argv: string[]): number {
     prTopology: prTopology.value,
     sprintAudit: sprintAudit.value,
     missingEvidence,
+    evidencePaths,
   });
-  if (args.reportPath) {
-    const reportPath = path.resolve(args.reportPath);
-    fs.mkdirSync(path.dirname(reportPath), { recursive: true });
-    fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\n', 'utf8');
-  }
+  const reportPath = path.resolve(
+    args.reportPath ??
+      path.join(
+        root,
+        '_bmad-output',
+        'runtime',
+        'gates',
+        'main-agent-delivery-truth-gate-report.json'
+      )
+  );
+  fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+  fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\n', 'utf8');
   console.log(JSON.stringify(report, null, 2));
-  return report.completionAllowed ? 0 : 1;
+  return report.completionAllowed || args.allowPartialExitZero === 'true' ? 0 : 1;
 }
 
 if (require.main === module) {

@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import { spawn } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -116,6 +117,8 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.reportPath = argv[++index];
     } else if (token === '--injectRecoverableFault') {
       out.injectRecoverableFault = 'true';
+    } else if (token === '--startBackground') {
+      out.startBackground = 'true';
     } else if (!token.startsWith('--')) {
       positional.push(token);
     }
@@ -123,6 +126,60 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
   if (!out.durationMs && positional[0]) out.durationMs = positional[0];
   if (!out.tickIntervalMs && positional[1]) out.tickIntervalMs = positional[1];
   return out;
+}
+
+function defaultReportPath(root: string): string {
+  return path.join(root, '_bmad-output', 'runtime', 'soak', 'main-agent-soak-report.json');
+}
+
+function metadataPath(root: string): string {
+  return path.join(root, '_bmad-output', 'runtime', 'soak', 'main-agent-soak-background.json');
+}
+
+function startBackgroundSoak(input: {
+  durationMs: number;
+  tickIntervalMs: number;
+  reportPath: string;
+  injectRecoverableFault?: boolean;
+}): { pid: number | null; metadataPath: string; reportPath: string } {
+  const root = process.cwd();
+  const toolRoot = path.resolve(__dirname, '..');
+  const tsNodeBin = path.join(toolRoot, 'node_modules', 'ts-node', 'dist', 'bin.js');
+  const args = [
+    tsNodeBin,
+    '--project',
+    path.join(toolRoot, 'tsconfig.node.json'),
+    '--transpile-only',
+    __filename,
+    '--durationMs',
+    String(input.durationMs),
+    '--tickIntervalMs',
+    String(input.tickIntervalMs),
+    '--reportPath',
+    input.reportPath,
+  ];
+  if (input.injectRecoverableFault) args.push('--injectRecoverableFault');
+  const child = spawn(process.execPath, args, {
+    cwd: root,
+    detached: true,
+    stdio: 'ignore',
+    windowsHide: true,
+  });
+  child.unref();
+  const metadata = {
+    reportType: 'main_agent_soak_background_run',
+    startedAt: new Date().toISOString(),
+    pid: child.pid ?? null,
+    durationMs: input.durationMs,
+    tickIntervalMs: input.tickIntervalMs,
+    reportPath: input.reportPath,
+    completionCheck:
+      'Run npm run main-agent:delivery-truth-gate after the background process exits; do not claim 8h completion before the report observed_duration_ms reaches target_duration_ms.',
+  };
+  const target = metadataPath(root);
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, JSON.stringify(metadata, null, 2) + '\n', 'utf8');
+  return { pid: child.pid ?? null, metadataPath: target, reportPath: input.reportPath };
 }
 
 function sleep(ms: number): Promise<void> {
@@ -161,7 +218,9 @@ export async function runWallClockSoak(input: {
         originalExecutionPacketId: 'packet-original-wall-clock',
       });
     }
-    await sleep(Math.min(input.tickIntervalMs, Math.max(0, input.durationMs - (Date.now() - start))));
+    await sleep(
+      Math.min(input.tickIntervalMs, Math.max(0, input.durationMs - (Date.now() - start)))
+    );
   }
   const observed = Date.now() - start;
   const totalFaults = recoveries.length;
@@ -182,6 +241,7 @@ export async function runWallClockSoak(input: {
 
 export function main(argv: string[]): number {
   const args = parseArgs(argv);
+  const projectRoot = process.cwd();
   const durationMs =
     Number(args.durationMs) > 0
       ? Number(args.durationMs)
@@ -189,15 +249,24 @@ export function main(argv: string[]): number {
         ? 8 * 60 * 60 * 1000
         : 2 * 60 * 60 * 1000;
   const tickIntervalMs = Number(args.tickIntervalMs) > 0 ? Number(args.tickIntervalMs) : 30_000;
+  const reportPath = path.resolve(args.reportPath ?? defaultReportPath(projectRoot));
+
+  if (args.startBackground === 'true') {
+    const result = startBackgroundSoak({
+      durationMs,
+      tickIntervalMs,
+      reportPath,
+      injectRecoverableFault: args.injectRecoverableFault === 'true',
+    });
+    console.log(JSON.stringify(result, null, 2));
+    return 0;
+  }
 
   const emit = (report: SoakReport): number => {
     const result = evaluateSoakReport(report);
     const payload = { ...report, evaluation: result };
-    if (args.reportPath) {
-      const reportPath = path.resolve(args.reportPath);
-      fs.mkdirSync(path.dirname(reportPath), { recursive: true });
-      fs.writeFileSync(reportPath, JSON.stringify(payload, null, 2) + '\n', 'utf8');
-    }
+    fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+    fs.writeFileSync(reportPath, JSON.stringify(payload, null, 2) + '\n', 'utf8');
     console.log(JSON.stringify(payload, null, 2));
     return result.passed ? 0 : 1;
   };

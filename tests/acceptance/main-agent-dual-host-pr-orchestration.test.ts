@@ -1,3 +1,7 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import { runDualHostPrOrchestration } from '../../scripts/main-agent-dual-host-pr-orchestrator';
 
@@ -120,6 +124,69 @@ describe('main-agent dual-host PR orchestration', () => {
       } else {
         process.env.GITHUB_PERSONAL_ACCESS_TOKEN = previousPersonalAccessToken;
       }
+    }
+  });
+
+  it('writes standard truth-gate evidence artifacts from the CLI', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dual-host-pr-evidence-'));
+    try {
+      fs.mkdirSync(path.join(root, '_bmad', '_config'), { recursive: true });
+      fs.mkdirSync(path.join(root, '_bmad-output', 'implementation-artifacts'), {
+        recursive: true,
+      });
+      fs.writeFileSync(
+        path.join(root, '_bmad', '_config', 'orchestration-governance.contract.yaml'),
+        [
+          'signals: {}',
+          'stage_requirements:',
+          '  implement: {}',
+          'mapping_contract: {}',
+          'adaptiveIntakeGovernanceGate:',
+          '  matchScoring: {}',
+          '  decisionThresholds: {}',
+        ].join('\n') + '\n',
+        'utf8'
+      );
+      fs.writeFileSync(
+        path.join(root, '_bmad-output', 'implementation-artifacts', 'sprint-status.yaml'),
+        'development_status:\n  S1: in_progress\n',
+        'utf8'
+      );
+      const run = spawnSync(
+        process.execPath,
+        [
+          path.join(process.cwd(), 'node_modules', 'ts-node', 'dist', 'bin.js'),
+          '--project',
+          path.join(process.cwd(), 'tsconfig.node.json'),
+          '--transpile-only',
+          path.join(process.cwd(), 'scripts', 'main-agent-dual-host-pr-orchestrator.ts'),
+          '--provider',
+          'mock',
+          '--projectRoot',
+          root,
+        ],
+        { encoding: 'utf8' }
+      );
+      if (run.status !== 0) {
+        throw new Error(`dual-host CLI failed\nstdout=${run.stdout}\nstderr=${run.stderr}`);
+      }
+      expect(run.status).toBe(0);
+      expect(
+        fs.existsSync(
+          path.join(
+            root,
+            '_bmad-output',
+            'runtime',
+            'e2e',
+            'dual-host-pr-orchestration-report.json'
+          )
+        )
+      ).toBe(true);
+      expect(
+        fs.existsSync(path.join(root, '_bmad-output', 'runtime', 'pr', 'pr_topology.json'))
+      ).toBe(true);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
     }
   });
 });

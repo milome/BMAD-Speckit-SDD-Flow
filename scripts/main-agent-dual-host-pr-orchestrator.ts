@@ -42,6 +42,8 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.projectRoot = argv[++index];
     } else if (token === '--reportPath' && argv[index + 1]) {
       out.reportPath = argv[++index];
+    } else if (token === '--prTopologyPath' && argv[index + 1]) {
+      out.prTopologyPath = argv[++index];
     } else if (!token.startsWith('--')) {
       positional.push(token);
     }
@@ -126,7 +128,13 @@ export function runDualHostPrOrchestration(input: {
   const providerChecks = providerPreflight(input.provider, input.checkCommand);
   const providerOk = providerChecks.every((check) => check.passed);
   const journeyRoot = input.projectRoot ? path.resolve(input.projectRoot) : makeJourneyRoot();
-  const journeyReportPath = path.join(journeyRoot, '_bmad-output', 'runtime', 'e2e', 'dual-host-pr-journey.json');
+  const journeyReportPath = path.join(
+    journeyRoot,
+    '_bmad-output',
+    'runtime',
+    'e2e',
+    'dual-host-pr-journey.json'
+  );
   const journeyExit =
     providerOk || input.provider === 'mock'
       ? runDualHostJourneyRunner([
@@ -209,15 +217,29 @@ export function runDualHostPrOrchestration(input: {
 export function main(argv: string[]): number {
   const args = parseArgs(argv);
   const provider: ProviderMode = args.provider === 'real' ? 'real' : 'mock';
+  const projectRoot = path.resolve(args.projectRoot ?? process.cwd());
   const report = runDualHostPrOrchestration({
     provider,
-    projectRoot: args.projectRoot,
+    projectRoot,
   });
-  if (args.reportPath) {
-    const reportPath = path.resolve(args.reportPath);
-    fs.mkdirSync(path.dirname(reportPath), { recursive: true });
-    fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\n', 'utf8');
-  }
+  const reportPath = path.resolve(
+    args.reportPath ??
+      path.join(
+        projectRoot,
+        '_bmad-output',
+        'runtime',
+        'e2e',
+        'dual-host-pr-orchestration-report.json'
+      )
+  );
+  const prTopologyPath = path.resolve(
+    args.prTopologyPath ??
+      path.join(projectRoot, '_bmad-output', 'runtime', 'pr', 'pr_topology.json')
+  );
+  fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+  fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\n', 'utf8');
+  fs.mkdirSync(path.dirname(prTopologyPath), { recursive: true });
+  fs.writeFileSync(prTopologyPath, JSON.stringify(report.prTopology, null, 2) + '\n', 'utf8');
   console.log(JSON.stringify(report, null, 2));
   return report.finalPassed ? 0 : 1;
 }

@@ -91,6 +91,8 @@ describe('main-agent delivery truth gate', () => {
           path.join(process.cwd(), 'tsconfig.node.json'),
           '--transpile-only',
           path.join(process.cwd(), 'scripts', 'main-agent-delivery-truth-gate.ts'),
+          '--cwd',
+          root,
           '--reportPath',
           reportPath,
         ],
@@ -104,7 +106,39 @@ describe('main-agent delivery truth gate', () => {
       };
       expect(report.completionAllowed).toBe(false);
       expect(report.deliveryStatus).toBe('blocked');
-      expect(report.missingEvidence).toContain('releaseGate');
+      expect(report.missingEvidence.some((item) => item.startsWith('releaseGate:'))).toBe(true);
+      expect(fs.existsSync(reportPath)).toBe(true);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('writes the default delivery truth report path for the project root', async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'delivery-truth-default-'));
+    try {
+      const { spawnSync } = await import('node:child_process');
+      const run = spawnSync(
+        process.execPath,
+        [
+          path.join(process.cwd(), 'node_modules', 'ts-node', 'dist', 'bin.js'),
+          '--project',
+          path.join(process.cwd(), 'tsconfig.node.json'),
+          '--transpile-only',
+          path.join(process.cwd(), 'scripts', 'main-agent-delivery-truth-gate.ts'),
+          '--cwd',
+          root,
+        ],
+        { encoding: 'utf8' }
+      );
+      expect(run.status).toBe(1);
+      const defaultReportPath = path.join(
+        root,
+        '_bmad-output',
+        'runtime',
+        'gates',
+        'main-agent-delivery-truth-gate-report.json'
+      );
+      expect(fs.existsSync(defaultReportPath)).toBe(true);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

@@ -25,6 +25,7 @@
     "main-agent:long-run-soak": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-soak-runner.ts",
     "main-agent:dual-host-pr-orchestrate": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-dual-host-pr-orchestrator.ts",
     "main-agent:delivery-truth-gate": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-delivery-truth-gate.ts",
+    "main-agent:delivery-evidence-run": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-delivery-evidence-run.ts",
     "main-agent:adaptive-intake-proof": "npx ts-node --project tsconfig.node.json --transpile-only scripts/adaptive-intake-proof-gate.ts --contract-fixture",
     "test:main-agent-chaos": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-chaos-scenarios.ts",
     "test:main-agent-sprint-status-write-gate": "npx vitest run tests/acceptance/sprint-status-authorized-update.test.ts tests/acceptance/sprint-status-unauthorized-write-deny.test.ts",

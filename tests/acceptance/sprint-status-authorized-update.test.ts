@@ -28,9 +28,28 @@ describe('sprint-status authorized update', () => {
       );
       expect(
         fs.existsSync(
-          path.join(root, '_bmad-output', 'runtime', 'governance', 'sprint-status-update-audit.json')
+          path.join(
+            root,
+            '_bmad-output',
+            'runtime',
+            'governance',
+            'sprint-status-update-audit.json'
+          )
         )
       ).toBe(true);
+      const audit = JSON.parse(
+        fs.readFileSync(
+          path.join(
+            root,
+            '_bmad-output',
+            'runtime',
+            'governance',
+            'sprint-status-update-audit.json'
+          ),
+          'utf8'
+        )
+      ) as { authorized: boolean };
+      expect(audit.authorized).toBe(true);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

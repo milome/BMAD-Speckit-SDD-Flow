@@ -72,7 +72,9 @@ function sprintStatusPath(root: string): string {
 function updateSprintStatus(root: string, input: UpdateInput): string {
   const target = sprintStatusPath(root);
   fs.mkdirSync(path.dirname(target), { recursive: true });
-  const existing = fs.existsSync(target) ? fs.readFileSync(target, 'utf8') : 'development_status:\n';
+  const existing = fs.existsSync(target)
+    ? fs.readFileSync(target, 'utf8')
+    : 'development_status:\n';
   const line = `  ${input.storyKey}: ${input.status}`;
   const next = existing.includes(`${input.storyKey}:`)
     ? existing.replace(new RegExp(`^\\s*${input.storyKey}:.*$`, 'm'), line)
@@ -92,6 +94,7 @@ function writeAudit(root: string, input: UpdateInput, targetPath: string): void 
       {
         storyKey: input.storyKey,
         status: input.status,
+        authorized: true,
         targetPath,
         token: input.token,
         updatedAt: new Date().toISOString(),
@@ -103,7 +106,10 @@ function writeAudit(root: string, input: UpdateInput, targetPath: string): void 
   );
 }
 
-export function runSprintStatusAuthorizedUpdate(root: string, input: UpdateInput): {
+export function runSprintStatusAuthorizedUpdate(
+  root: string,
+  input: UpdateInput
+): {
   updated: true;
   sprintStatusPath: string;
 } {

@@ -20,8 +20,6 @@ describe('main-agent soak 8h contract', () => {
       recoveredFaults: 18,
       failedRecoveries: 2,
     });
-    expect(evaluateSoakReport(weakRecovery).reasons).toContain(
-      'recovery success rate below 95%'
-    );
+    expect(evaluateSoakReport(weakRecovery).reasons).toContain('recovery success rate below 95%');
   });
 });
