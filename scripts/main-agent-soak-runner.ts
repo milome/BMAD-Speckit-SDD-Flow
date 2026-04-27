@@ -2,6 +2,8 @@
 import { spawn } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { runMainAgentAutomaticLoop, type MainAgentRunLoopResult } from './main-agent-orchestration';
+import type { RuntimeFlowId } from './runtime-governance';
 
 export interface SoakTimelineEvent {
   tick: number;
@@ -16,6 +18,7 @@ export interface SoakTimelineEvent {
 export interface SoakReport {
   version: 1;
   mode: 'deterministic_contract' | 'wall_clock';
+  run_kind: 'heartbeat_only' | 'development_run_loop';
   target_duration_ms: number;
   observed_duration_ms: number;
   tick_count: number;
@@ -30,6 +33,23 @@ export interface SoakReport {
   }>;
   recoveries: SoakTimelineEvent[];
   recovery_success_rate: number;
+  developmentRun?: {
+    projectRoot: string;
+    flow: RuntimeFlowId;
+    stage: string;
+    tick_count: number;
+    completed_ticks: number;
+    blocked_ticks: number;
+    runLoopInvocations: Array<{
+      tick: number;
+      runId: string;
+      status: MainAgentRunLoopResult['status'];
+      packetId: string | null;
+      taskReportStatus: string | null;
+      evidence: string[];
+      finalNextAction: string | null;
+    }>;
+  };
 }
 
 export function buildDeterministicSoakReport(input: {
@@ -57,6 +77,7 @@ export function buildDeterministicSoakReport(input: {
   return {
     version: 1,
     mode: 'deterministic_contract',
+    run_kind: 'heartbeat_only',
     target_duration_ms: input.targetDurationMs,
     observed_duration_ms: input.observedDurationMs ?? input.targetDurationMs,
     tick_count: input.recoveredFaults,
@@ -119,6 +140,12 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.injectRecoverableFault = 'true';
     } else if (token === '--startBackground') {
       out.startBackground = 'true';
+    } else if (token === '--developmentRunLoop') {
+      out.developmentRunLoop = 'true';
+    } else if (token === '--flow' && argv[index + 1]) {
+      out.flow = argv[++index];
+    } else if (token === '--stage' && argv[index + 1]) {
+      out.stage = argv[++index];
     } else if (!token.startsWith('--')) {
       positional.push(token);
     }
@@ -159,6 +186,7 @@ function startBackgroundSoak(input: {
     input.reportPath,
   ];
   if (input.injectRecoverableFault) args.push('--injectRecoverableFault');
+  args.push('--developmentRunLoop');
   const child = spawn(process.execPath, args, {
     cwd: root,
     detached: true,
@@ -190,10 +218,18 @@ export async function runWallClockSoak(input: {
   durationMs: number;
   tickIntervalMs: number;
   injectRecoverableFault?: boolean;
+  projectRoot?: string;
+  developmentRunLoop?: boolean;
+  flow?: RuntimeFlowId;
+  stage?: string;
 }): Promise<SoakReport> {
   const start = Date.now();
   const heartbeats: SoakReport['heartbeats'] = [];
   const recoveries: SoakTimelineEvent[] = [];
+  const runLoopInvocations: NonNullable<SoakReport['developmentRun']>['runLoopInvocations'] = [];
+  const projectRoot = path.resolve(input.projectRoot ?? process.cwd());
+  const flow = input.flow ?? 'story';
+  const stage = input.stage ?? 'implement';
   let tick = 0;
   while (Date.now() - start < input.durationMs) {
     tick += 1;
@@ -218,15 +254,35 @@ export async function runWallClockSoak(input: {
         originalExecutionPacketId: 'packet-original-wall-clock',
       });
     }
+    if (input.developmentRunLoop) {
+      const result = runMainAgentAutomaticLoop({
+        projectRoot,
+        flow,
+        stage,
+        args: {
+          reportEvidence: `soak-tick-${tick}`,
+        },
+      });
+      runLoopInvocations.push({
+        tick,
+        runId: result.runId,
+        status: result.status,
+        packetId: result.dispatchInstruction?.packetId ?? null,
+        taskReportStatus: result.taskReport?.status ?? null,
+        evidence: result.taskReport?.evidence ?? [],
+        finalNextAction: result.finalSurface.mainAgentNextAction,
+      });
+    }
     await sleep(
       Math.min(input.tickIntervalMs, Math.max(0, input.durationMs - (Date.now() - start)))
     );
   }
   const observed = Date.now() - start;
   const totalFaults = recoveries.length;
-  return {
+  const report: SoakReport = {
     version: 1,
     mode: 'wall_clock',
+    run_kind: input.developmentRunLoop ? 'development_run_loop' : 'heartbeat_only',
     target_duration_ms: input.durationMs,
     observed_duration_ms: observed,
     tick_count: tick,
@@ -237,6 +293,18 @@ export async function runWallClockSoak(input: {
     recoveries,
     recovery_success_rate: totalFaults === 0 ? 1 : recoveries.length / totalFaults,
   };
+  if (input.developmentRunLoop) {
+    report.developmentRun = {
+      projectRoot,
+      flow,
+      stage,
+      tick_count: runLoopInvocations.length,
+      completed_ticks: runLoopInvocations.filter((item) => item.status === 'completed').length,
+      blocked_ticks: runLoopInvocations.filter((item) => item.status === 'blocked').length,
+      runLoopInvocations,
+    };
+  }
+  return report;
 }
 
 export function main(argv: string[]): number {
@@ -276,6 +344,9 @@ export function main(argv: string[]): number {
       durationMs,
       tickIntervalMs,
       injectRecoverableFault: args.injectRecoverableFault === 'true',
+      developmentRunLoop: args.developmentRunLoop === 'true',
+      flow: args.flow as RuntimeFlowId | undefined,
+      stage: args.stage,
     })
       .then((report) => {
         process.exitCode = emit(report);

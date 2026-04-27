@@ -461,8 +461,25 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
 export function mainAdaptiveIntakeGovernanceGate(argv: string[]): number {
   const args = parseArgs(argv);
   const projectRoot = path.resolve(args.cwd ?? process.cwd());
+  const inputPath = args.input ? path.resolve(projectRoot, args.input) : null;
+  if (
+    !args.payload &&
+    (!inputPath || !fs.existsSync(inputPath) || fs.statSync(inputPath).isDirectory())
+  ) {
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          skipped: true,
+          reason: 'adaptive intake candidate not provided',
+        },
+        null,
+        2
+      )}\n`
+    );
+    return 0;
+  }
   const candidate = JSON.parse(
-    args.payload ?? fs.readFileSync(path.resolve(projectRoot, args.input ?? ''), 'utf8')
+    args.payload ?? fs.readFileSync(inputPath as string, 'utf8')
   ) as AdaptiveIntakeCandidate;
   const result = runAdaptiveIntakeGovernanceGate(projectRoot, candidate, {
     apply: args.apply === 'true',
@@ -471,6 +488,10 @@ export function mainAdaptiveIntakeGovernanceGate(argv: string[]): number {
   return result.decision.verdict === 'block' ? 1 : 0;
 }
 
-if (require.main === module) {
+function isAdaptiveIntakeGovernanceGateEntry(entry: string | undefined): boolean {
+  return /(^|[\\/])adaptive-intake-governance-gate(\.[cm]?js|\.ts)?$/iu.test(entry ?? '');
+}
+
+if (require.main === module && isAdaptiveIntakeGovernanceGateEntry(process.argv[1])) {
   process.exit(mainAdaptiveIntakeGovernanceGate(process.argv.slice(2)));
 }

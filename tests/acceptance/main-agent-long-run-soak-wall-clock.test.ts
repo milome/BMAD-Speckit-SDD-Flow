@@ -4,6 +4,11 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import { evaluateSoakReport, runWallClockSoak } from '../../scripts/main-agent-soak-runner';
+import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
+import {
+  defaultRuntimeContextRegistry,
+  writeRuntimeContextRegistry,
+} from '../../scripts/runtime-context-registry';
 
 function waitForFile(filePath: string, timeoutMs: number): Promise<void> {
   const started = Date.now();
@@ -23,6 +28,18 @@ function waitForFile(filePath: string, timeoutMs: number): Promise<void> {
   });
 }
 
+function rmEventually(target: string): void {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    try {
+      fs.rmSync(target, { recursive: true, force: true });
+      return;
+    } catch (error) {
+      if (attempt === 9) throw error;
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
+    }
+  }
+}
+
 describe('main-agent long-run wall-clock soak', () => {
   it('records real elapsed ticks heartbeats and recovery timeline', async () => {
     const report = await runWallClockSoak({
@@ -36,6 +53,41 @@ describe('main-agent long-run wall-clock soak', () => {
     expect(report.heartbeats).toHaveLength(report.tick_count);
     expect(report.recoveries[0].fault_detected_at).toBeTruthy();
     expect(evaluateSoakReport(report).passed).toBe(true);
+  });
+
+  it('records real main-agent run-loop invocations for development soak evidence', async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'wall-clock-development-soak-'));
+    try {
+      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+      writeRuntimeContext(
+        root,
+        defaultRuntimeContextFile({
+          flow: 'story',
+          stage: 'implement',
+          sourceMode: 'full_bmad',
+          contextScope: 'story',
+          storyId: 'S-development-soak',
+          runId: 'development-soak-test',
+        })
+      );
+
+      const report = await runWallClockSoak({
+        durationMs: 30,
+        tickIntervalMs: 5,
+        projectRoot: root,
+        developmentRunLoop: true,
+        flow: 'story',
+        stage: 'implement',
+      });
+
+      expect(report.run_kind).toBe('development_run_loop');
+      expect(report.developmentRun?.tick_count).toBe(report.tick_count);
+      expect(report.developmentRun?.completed_ticks).toBeGreaterThan(0);
+      expect(report.developmentRun?.runLoopInvocations[0].packetId).toBeTruthy();
+      expect(report.developmentRun?.runLoopInvocations[0].evidence).toContain('soak-tick-1');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it('can persist the wall-clock report artifact shape', async () => {
@@ -128,7 +180,7 @@ describe('main-agent long-run wall-clock soak', () => {
       expect(report.mode).toBe('wall_clock');
       expect(report.observed_duration_ms).toBeGreaterThanOrEqual(report.target_duration_ms);
     } finally {
-      fs.rmSync(root, { recursive: true, force: true });
+      rmEventually(root);
     }
   });
 });

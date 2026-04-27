@@ -18,12 +18,28 @@ interface DualHostEvidence {
 
 interface SoakEvidence {
   mode: 'deterministic_contract' | 'wall_clock';
+  run_kind?: 'heartbeat_only' | 'development_run_loop';
   target_duration_ms: number;
   observed_duration_ms: number;
   manual_restarts: number;
   silent_hangs: number;
   false_completions: number;
   recovery_success_rate: number;
+  tick_count?: number;
+  developmentRun?: {
+    tick_count: number;
+    completed_ticks: number;
+    blocked_ticks: number;
+    runLoopInvocations: Array<{
+      tick: number;
+      runId: string;
+      status: 'completed' | 'blocked';
+      packetId: string | null;
+      taskReportStatus: string | null;
+      evidence: string[];
+      finalNextAction: string | null;
+    }>;
+  };
 }
 
 interface SprintStatusAuditEvidence {
@@ -136,14 +152,22 @@ function checkSoak(evidence: SoakEvidence | null): { passed: boolean; summary: s
     passed:
       evidence != null &&
       evidence.mode === 'wall_clock' &&
+      evidence.run_kind === 'development_run_loop' &&
       evidence.target_duration_ms >= 8 * 60 * 60 * 1000 &&
       evidence.observed_duration_ms >= evidence.target_duration_ms &&
       evidence.manual_restarts === 0 &&
       evidence.silent_hangs === 0 &&
       evidence.false_completions === 0 &&
-      evidence.recovery_success_rate >= 0.95,
+      evidence.recovery_success_rate >= 0.95 &&
+      evidence.developmentRun != null &&
+      evidence.developmentRun.tick_count === evidence.tick_count &&
+      evidence.developmentRun.completed_ticks > 0 &&
+      evidence.developmentRun.runLoopInvocations.length === evidence.developmentRun.tick_count &&
+      evidence.developmentRun.runLoopInvocations.every(
+        (item) => item.runId !== '' && item.packetId !== null && item.taskReportStatus === 'done'
+      ),
     summary: evidence
-      ? `mode=${evidence.mode}, target=${evidence.target_duration_ms}, observed=${evidence.observed_duration_ms}, recovery=${evidence.recovery_success_rate}`
+      ? `mode=${evidence.mode}, run_kind=${evidence.run_kind ?? 'missing'}, target=${evidence.target_duration_ms}, observed=${evidence.observed_duration_ms}, recovery=${evidence.recovery_success_rate}, development_ticks=${evidence.developmentRun?.tick_count ?? 0}, completed_ticks=${evidence.developmentRun?.completed_ticks ?? 0}`
       : 'missing',
   };
 }

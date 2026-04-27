@@ -35,8 +35,10 @@ describe('main-agent delivery truth gate', () => {
       },
       soak: {
         mode: 'wall_clock',
+        run_kind: 'heartbeat_only',
         target_duration_ms: 30,
         observed_duration_ms: 30,
+        tick_count: 1,
         manual_restarts: 0,
         silent_hangs: 0,
         false_completions: 0,
@@ -62,8 +64,54 @@ describe('main-agent delivery truth gate', () => {
       },
       soak: {
         mode: 'wall_clock',
+        run_kind: 'development_run_loop',
         target_duration_ms: 8 * 60 * 60 * 1000,
         observed_duration_ms: 8 * 60 * 60 * 1000,
+        tick_count: 1,
+        manual_restarts: 0,
+        silent_hangs: 0,
+        false_completions: 0,
+        recovery_success_rate: 1,
+        developmentRun: {
+          tick_count: 1,
+          completed_ticks: 1,
+          blocked_ticks: 0,
+          runLoopInvocations: [
+            {
+              tick: 1,
+              runId: 'main-agent-run-loop-1',
+              status: 'completed',
+              packetId: 'packet-1',
+              taskReportStatus: 'done',
+              evidence: ['soak-tick-1'],
+              finalNextAction: 'dispatch_review',
+            },
+          ],
+        },
+      },
+      prTopology: closedPrTopology(),
+      sprintAudit: { storyKey: 'S1', status: 'done', authorized: true },
+    });
+
+    expect(report.completionAllowed).toBe(true);
+    expect(report.deliveryStatus).toBe('complete');
+    expect(report.completionLanguage).toBe('complete_allowed');
+  });
+
+  it('rejects heartbeat-only 8h evidence because real development run-loop proof is required', () => {
+    const report = evaluateDeliveryTruthGate({
+      releaseGate: { critical_failures: 0, blocked_sprint_status_update: false },
+      dualHost: {
+        journeyMode: 'real',
+        journeyE2EPassed: true,
+        hostsPassed: { claude: true, codex: true },
+      },
+      soak: {
+        mode: 'wall_clock',
+        run_kind: 'heartbeat_only',
+        target_duration_ms: 8 * 60 * 60 * 1000,
+        observed_duration_ms: 8 * 60 * 60 * 1000,
+        tick_count: 960,
         manual_restarts: 0,
         silent_hangs: 0,
         false_completions: 0,
@@ -73,9 +121,8 @@ describe('main-agent delivery truth gate', () => {
       sprintAudit: { storyKey: 'S1', status: 'done', authorized: true },
     });
 
-    expect(report.completionAllowed).toBe(true);
-    expect(report.deliveryStatus).toBe('complete');
-    expect(report.completionLanguage).toBe('complete_allowed');
+    expect(report.completionAllowed).toBe(false);
+    expect(report.failedEvidence.join('\n')).toContain('run_kind=heartbeat_only');
   });
 
   it('emits a blocked report when required evidence files are missing', async () => {
