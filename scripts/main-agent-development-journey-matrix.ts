@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { runBmadHelpFiveLayerMatrix } from './main-agent-bmad-help-five-layer-matrix';
 import { runUnifiedIngress, type MainAgentHostKind } from './main-agent-unified-ingress';
 import { runDualHostPrOrchestration } from './main-agent-dual-host-pr-orchestrator';
 import { evaluateDeliveryTruthGate } from './main-agent-delivery-truth-gate';
@@ -148,9 +149,27 @@ export function runDevelopmentJourneyMatrix(input: {
   realProvider?: boolean;
 }): DevelopmentJourneyMatrixReport {
   const projectRoot = path.resolve(input.projectRoot);
+  const canonicalBmadRoot = path.join(__dirname, '..', '_bmad');
+  if (!fs.existsSync(path.join(projectRoot, '_bmad')) && fs.existsSync(canonicalBmadRoot)) {
+    fs.cpSync(canonicalBmadRoot, path.join(projectRoot, '_bmad'), { recursive: true });
+  }
   const hostKinds = input.hostKinds ?? ['cursor', 'claude', 'codex'];
   const steps: JourneyMatrixStep[] = [];
   const dualHostRoot = prepareDualHostRoot(projectRoot);
+
+  const bmadHelpFiveLayer = runBmadHelpFiveLayerMatrix({ projectRoot });
+  steps.push({
+    id: 'bmad-help-five-layer-main-agent',
+    sequence: 'BH1-L1-L5',
+    passed:
+      bmadHelpFiveLayer.allPassed &&
+      bmadHelpFiveLayer.bmadHelpEntry.catalogLoaded &&
+      bmadHelpFiveLayer.layers.map((layer) => layer.id).join(',') ===
+        'layer_1,layer_2,layer_3,layer_4,layer_5',
+    evidence: bmadHelpFiveLayer.layers
+      .map((layer) => `${layer.id}:${layer.passed ? 'passed' : 'failed'}`)
+      .join(','),
+  });
 
   for (const hostKind of hostKinds) {
     const branchRoot = prepareHostBranchRoot(projectRoot, hostKind);

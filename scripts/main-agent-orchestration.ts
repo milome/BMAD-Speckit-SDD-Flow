@@ -124,6 +124,16 @@ export interface MainAgentRunLoopResult {
   finalSurface: MainAgentOrchestrationSurface;
 }
 
+export interface MainAgentRunLoopExecutorContext {
+  projectRoot: string;
+  instruction: MainAgentDispatchInstruction;
+  args: Record<string, string | undefined>;
+}
+
+export type MainAgentRunLoopExecutor = (
+  context: MainAgentRunLoopExecutorContext
+) => TaskReport | null;
+
 function deriveNextActionFromTaskType(
   taskType: 'implement' | 'audit' | 'remediate' | 'document',
   stage: string
@@ -1084,6 +1094,12 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.reportStatus = argv[++index];
     } else if (token === '--reportEvidence' && argv[index + 1]) {
       out.reportEvidence = argv[++index];
+    } else if (token === '--taskReportPath' && argv[index + 1]) {
+      out.taskReportPath = argv[++index];
+    } else if (token === '--filesChanged' && argv[index + 1]) {
+      out.filesChanged = argv[++index];
+    } else if (token === '--validationsRun' && argv[index + 1]) {
+      out.validationsRun = argv[++index];
     } else if (token === '--input' && argv[index + 1]) {
       out.input = argv[++index];
     } else if (token === '--payload' && argv[index + 1]) {
@@ -1138,22 +1154,71 @@ function parseTaskReportStatus(value: string | undefined): TaskReport['status'] 
   return 'done';
 }
 
-function buildSyntheticTaskReport(
+function validateTaskReportShape(value: unknown): value is TaskReport {
+  const report = value as Partial<TaskReport>;
+  return (
+    typeof report?.packetId === 'string' &&
+    (report.status === 'done' || report.status === 'blocked' || report.status === 'partial') &&
+    Array.isArray(report.filesChanged) &&
+    Array.isArray(report.validationsRun) &&
+    Array.isArray(report.evidence) &&
+    Array.isArray(report.downstreamContext)
+  );
+}
+
+function readTaskReportFromFile(reportPath: string, packetId: string): TaskReport {
+  const resolved = path.resolve(reportPath);
+  const parsed = JSON.parse(fs.readFileSync(resolved, 'utf8')) as unknown;
+  if (!validateTaskReportShape(parsed)) {
+    throw new Error(`Invalid task report shape: ${resolved}`);
+  }
+  if (parsed.packetId !== packetId) {
+    throw new Error(`Task report packetId mismatch: expected ${packetId}, got ${parsed.packetId}`);
+  }
+  return parsed;
+}
+
+export function writeMainAgentRunLoopTaskReport(
+  projectRoot: string,
   instruction: MainAgentDispatchInstruction,
-  args: Record<string, string | undefined>
-): TaskReport {
+  args: Record<string, string | undefined> = {}
+): string {
   const evidence = normalizeText(args.reportEvidence)
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
-  return {
+  const report: TaskReport = {
     packetId: instruction.packetId,
     status: parseTaskReportStatus(args.reportStatus),
-    filesChanged: [],
-    validationsRun: ['main-agent:run-loop'],
+    filesChanged: normalizeText(args.filesChanged)
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean),
+    validationsRun: normalizeText(args.validationsRun)
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean),
     evidence: evidence.length > 0 ? evidence : [instruction.packetPath],
     downstreamContext: [instruction.expectedDelta],
   };
+  if (report.validationsRun.length === 0) {
+    report.validationsRun.push('main-agent:run-loop-task-report');
+  }
+  const reportPath = path.resolve(
+    args.taskReportPath ??
+      path.join(
+        projectRoot,
+        '_bmad-output',
+        'runtime',
+        'governance',
+        'task-reports',
+        instruction.sessionId,
+        `${instruction.packetId}.json`
+      )
+  );
+  fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+  fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\n', 'utf8');
+  return reportPath;
 }
 
 export function runMainAgentAutomaticLoop(input: {
@@ -1161,6 +1226,7 @@ export function runMainAgentAutomaticLoop(input: {
   flow: RuntimeFlowId;
   stage: string;
   args?: Record<string, string | undefined>;
+  executor?: MainAgentRunLoopExecutor;
 }): MainAgentRunLoopResult {
   const args = input.args ?? {};
   const steps: MainAgentRunLoopResult['steps'] = [];
@@ -1223,7 +1289,62 @@ export function runMainAgentAutomaticLoop(input: {
     summary: `route=${instruction.route.tool}:${instruction.route.subtype}`,
   });
 
-  const taskReport = buildSyntheticTaskReport(instruction, args);
+  let taskReport: TaskReport | null = null;
+  try {
+    taskReport = input.executor?.({
+      projectRoot: input.projectRoot,
+      instruction,
+      args,
+    }) ?? null;
+    const taskReportPath = normalizeText(args.taskReportPath);
+    if (!taskReport && taskReportPath) {
+      taskReport = readTaskReportFromFile(taskReportPath, instruction.packetId);
+    }
+  } catch (error) {
+    const finalSurface = resolveMainAgentOrchestrationSurface({
+      projectRoot: input.projectRoot,
+      flow: input.flow,
+      stage: input.stage,
+    });
+    return {
+      runId: `main-agent-run-loop-${Date.now()}`,
+      status: 'blocked',
+      steps: [
+        ...steps,
+        {
+          step: 'task-report.load',
+          status: 'fail',
+          summary: error instanceof Error ? error.message : String(error),
+        },
+      ],
+      dispatchInstruction: instruction,
+      taskReport: null,
+      finalSurface,
+    };
+  }
+  if (!taskReport) {
+    const finalSurface = resolveMainAgentOrchestrationSurface({
+      projectRoot: input.projectRoot,
+      flow: input.flow,
+      stage: input.stage,
+    });
+    return {
+      runId: `main-agent-run-loop-${Date.now()}`,
+      status: 'blocked',
+      steps: [
+        ...steps,
+        {
+          step: 'task-report.load',
+          status: 'fail',
+          summary:
+            'missing real task report artifact; pass --taskReportPath or provide an executor',
+        },
+      ],
+      dispatchInstruction: instruction,
+      taskReport: null,
+      finalSurface,
+    };
+  }
   const completedState = ingestMainAgentTaskReport(
     input.projectRoot,
     instruction.sessionId,
@@ -1310,6 +1431,17 @@ export function mainMainAgentOrchestration(argv: string[]): number {
         flow,
         stage,
         args,
+        executor:
+          args.taskReportPath || args.reportEvidence
+            ? ({ projectRoot, instruction, args: runArgs }) => {
+                const reportPath = writeMainAgentRunLoopTaskReport(
+                  projectRoot,
+                  instruction,
+                  runArgs
+                );
+                return readTaskReportFromFile(reportPath, instruction.packetId);
+              }
+            : undefined,
       });
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
       return result.status === 'completed' ? 0 : 1;

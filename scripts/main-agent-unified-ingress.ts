@@ -1,7 +1,10 @@
 /* eslint-disable no-console */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { runMainAgentAutomaticLoop } from './main-agent-orchestration';
+import {
+  runMainAgentAutomaticLoop,
+  writeMainAgentRunLoopTaskReport,
+} from './main-agent-orchestration';
 import type { RuntimeFlowId } from './runtime-governance';
 
 export type MainAgentHostMode = 'hooks_enabled' | 'no_hooks';
@@ -101,6 +104,10 @@ export function runUnifiedIngress(input: {
     stage: input.stage,
     args: {
       reportEvidence: `${entry.orchestrationEntry}:${input.hostKind}`,
+    },
+    executor: ({ projectRoot: runRoot, instruction, args }) => {
+      const reportPath = writeMainAgentRunLoopTaskReport(runRoot, instruction, args);
+      return JSON.parse(fs.readFileSync(reportPath, 'utf8'));
     },
   });
   return {

@@ -15,6 +15,7 @@ describe('main-agent development journey matrix e2e', () => {
 
       expect(report.allPassed).toBe(true);
       expect(report.steps.map((step) => step.sequence)).toEqual([
+        'BH1-L1-L5',
         'S3c-S3e',
         'S3c-S3e',
         'S3c-S3e',
@@ -22,6 +23,9 @@ describe('main-agent development journey matrix e2e', () => {
         'S37-S38',
         'R1-R10/S39-S43',
       ]);
+      expect(
+        report.steps.find((step) => step.id === 'bmad-help-five-layer-main-agent')?.evidence
+      ).toContain('layer_5:passed');
       expect(report.steps.find((step) => step.id === 'ingress-codex')?.evidence).toContain(
         'no_hooks/cli_ingress'
       );

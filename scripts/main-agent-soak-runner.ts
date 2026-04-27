@@ -2,7 +2,11 @@
 import { spawn } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { runMainAgentAutomaticLoop, type MainAgentRunLoopResult } from './main-agent-orchestration';
+import {
+  runMainAgentAutomaticLoop,
+  writeMainAgentRunLoopTaskReport,
+  type MainAgentRunLoopResult,
+} from './main-agent-orchestration';
 import type { RuntimeFlowId } from './runtime-governance';
 
 export interface SoakTimelineEvent {
@@ -261,6 +265,10 @@ export async function runWallClockSoak(input: {
         stage,
         args: {
           reportEvidence: `soak-tick-${tick}`,
+        },
+        executor: ({ projectRoot: runRoot, instruction, args }) => {
+          const reportPath = writeMainAgentRunLoopTaskReport(runRoot, instruction, args);
+          return JSON.parse(fs.readFileSync(reportPath, 'utf8'));
         },
       });
       runLoopInvocations.push({
