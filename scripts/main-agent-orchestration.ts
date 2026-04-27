@@ -111,6 +111,19 @@ export interface MainAgentDispatchInstruction {
   expectedDelta: string;
 }
 
+export interface MainAgentRunLoopResult {
+  runId: string;
+  status: 'completed' | 'blocked';
+  steps: Array<{
+    step: string;
+    status: 'pass' | 'skip' | 'fail';
+    summary: string;
+  }>;
+  dispatchInstruction: MainAgentDispatchInstruction | null;
+  taskReport: TaskReport | null;
+  finalSurface: MainAgentOrchestrationSurface;
+}
+
 function deriveNextActionFromTaskType(
   taskType: 'implement' | 'audit' | 'remediate' | 'document',
   stage: string
@@ -1050,6 +1063,7 @@ export function buildMainAgentDispatchInstruction(
 
 function parseArgs(argv: string[]): Record<string, string | undefined> {
   const out: Record<string, string | undefined> = {};
+  const positional: string[] = [];
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
     if (token === '--cwd' && argv[index + 1]) {
@@ -1066,14 +1080,21 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.packetId = argv[++index];
     } else if (token === '--owner' && argv[index + 1]) {
       out.owner = argv[++index];
+    } else if (token === '--reportStatus' && argv[index + 1]) {
+      out.reportStatus = argv[++index];
+    } else if (token === '--reportEvidence' && argv[index + 1]) {
+      out.reportEvidence = argv[++index];
     } else if (token === '--input' && argv[index + 1]) {
       out.input = argv[++index];
     } else if (token === '--payload' && argv[index + 1]) {
       out.payload = argv[++index];
     } else if (token === '--apply') {
       out.apply = 'true';
+    } else if (!token.startsWith('--')) {
+      positional.push(token);
     }
   }
+  if (!out.cwd && positional[0]) out.cwd = positional[0];
   return out;
 }
 
@@ -1107,6 +1128,133 @@ function resolveSessionAndPacketFromSurface(
     throw new Error('sessionId and packetId are required for packet lifecycle actions');
   }
   return { sessionId, packetId };
+}
+
+function parseTaskReportStatus(value: string | undefined): TaskReport['status'] {
+  const normalized = normalizeText(value);
+  if (normalized === 'blocked' || normalized === 'partial') {
+    return normalized;
+  }
+  return 'done';
+}
+
+function buildSyntheticTaskReport(
+  instruction: MainAgentDispatchInstruction,
+  args: Record<string, string | undefined>
+): TaskReport {
+  const evidence = normalizeText(args.reportEvidence)
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return {
+    packetId: instruction.packetId,
+    status: parseTaskReportStatus(args.reportStatus),
+    filesChanged: [],
+    validationsRun: ['main-agent:run-loop'],
+    evidence: evidence.length > 0 ? evidence : [instruction.packetPath],
+    downstreamContext: [instruction.expectedDelta],
+  };
+}
+
+export function runMainAgentAutomaticLoop(input: {
+  projectRoot: string;
+  flow: RuntimeFlowId;
+  stage: string;
+  args?: Record<string, string | undefined>;
+}): MainAgentRunLoopResult {
+  const args = input.args ?? {};
+  const steps: MainAgentRunLoopResult['steps'] = [];
+  const initialSurface = resolveMainAgentOrchestrationSurface({
+    projectRoot: input.projectRoot,
+    flow: input.flow,
+    stage: input.stage,
+  });
+  steps.push({
+    step: 'inspect.initial',
+    status: 'pass',
+    summary: `nextAction=${initialSurface.mainAgentNextAction ?? 'none'}, pending=${initialSurface.pendingPacketStatus}`,
+  });
+
+  const instruction = buildMainAgentDispatchInstruction({
+    projectRoot: input.projectRoot,
+    flow: input.flow,
+    stage: input.stage,
+    hydratePacket: true,
+  });
+  if (!instruction) {
+    const finalSurface = resolveMainAgentOrchestrationSurface({
+      projectRoot: input.projectRoot,
+      flow: input.flow,
+      stage: input.stage,
+    });
+    return {
+      runId: `main-agent-run-loop-${Date.now()}`,
+      status: 'blocked',
+      steps: [
+        ...steps,
+        {
+          step: 'dispatch-plan',
+          status: 'fail',
+          summary: 'no dispatch instruction available',
+        },
+      ],
+      dispatchInstruction: null,
+      taskReport: null,
+      finalSurface,
+    };
+  }
+  steps.push({
+    step: 'dispatch-plan',
+    status: 'pass',
+    summary: `packet=${instruction.packetId}, taskType=${instruction.taskType}`,
+  });
+
+  claimMainAgentPendingPacket(input.projectRoot, instruction.sessionId, 'main-agent-run-loop');
+  steps.push({
+    step: 'claim',
+    status: 'pass',
+    summary: `owner=main-agent-run-loop`,
+  });
+
+  markMainAgentPacketDispatched(input.projectRoot, instruction.sessionId, instruction.packetId);
+  steps.push({
+    step: 'dispatch',
+    status: 'pass',
+    summary: `route=${instruction.route.tool}:${instruction.route.subtype}`,
+  });
+
+  const taskReport = buildSyntheticTaskReport(instruction, args);
+  const completedState = ingestMainAgentTaskReport(
+    input.projectRoot,
+    instruction.sessionId,
+    taskReport,
+    { currentStage: input.stage }
+  );
+  steps.push({
+    step: 'task-report.ingest',
+    status: taskReport.status === 'done' ? 'pass' : 'fail',
+    summary: `report=${taskReport.status}, nextAction=${completedState.nextAction}`,
+  });
+
+  const finalSurface = resolveMainAgentOrchestrationSurface({
+    projectRoot: input.projectRoot,
+    flow: input.flow,
+    stage: input.stage,
+  });
+  steps.push({
+    step: 'inspect.final',
+    status: 'pass',
+    summary: `nextAction=${finalSurface.mainAgentNextAction ?? 'none'}, pending=${finalSurface.pendingPacketStatus}`,
+  });
+
+  return {
+    runId: `main-agent-run-loop-${Date.now()}`,
+    status: taskReport.status === 'done' ? 'completed' : 'blocked',
+    steps,
+    dispatchInstruction: instruction,
+    taskReport,
+    finalSurface,
+  };
 }
 
 export function mainMainAgentOrchestration(argv: string[]): number {
@@ -1155,6 +1303,16 @@ export function mainMainAgentOrchestration(argv: string[]): number {
       });
       process.stdout.write(`${JSON.stringify(instruction, null, 2)}\n`);
       return instruction ? 0 : 1;
+    }
+    case 'run-loop': {
+      const result = runMainAgentAutomaticLoop({
+        projectRoot: root,
+        flow,
+        stage,
+        args,
+      });
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return result.status === 'completed' ? 0 : 1;
     }
     case 'claim': {
       const { sessionId } = resolveSessionAndPacketFromSurface(surface, args);
