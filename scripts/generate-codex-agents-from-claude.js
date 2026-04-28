@@ -17,6 +17,7 @@ const REQUIRED_CODEX_SKILLS = [
   '.codex/skills/bmad-rca-helper/SKILL.md',
   '.codex/skills/bmad-code-reviewer-lifecycle/SKILL.md',
 ];
+const CODEX_ONLY_AGENT_FILES = new Set(['release-quality-proof-worker.toml']);
 
 function walkMarkdown(dir) {
   if (!fs.existsSync(dir)) return [];
@@ -266,6 +267,10 @@ function main() {
   const stale = [];
   if (fs.existsSync(CODEX_AGENTS)) {
     for (const file of walkToml(CODEX_AGENTS)) {
+      const relative = toPortable(path.relative(CODEX_AGENTS, file));
+      if (CODEX_ONLY_AGENT_FILES.has(relative)) {
+        continue;
+      }
       if (!generated.some((item) => path.resolve(item.target) === path.resolve(file))) {
         stale.push(toPortable(path.relative(ROOT, file)));
       }

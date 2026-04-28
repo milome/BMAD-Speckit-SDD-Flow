@@ -106,8 +106,47 @@ function validateSelectedAITargets(cwd, selectedAI) {
       'bmad-rca-helper',
       'bmad-code-reviewer-lifecycle',
     ]) {
-      if (!hasFile(path.join('.codex', 'skills', skill, 'SKILL.md'))) {
+      const skillPath = path.join('.codex', 'skills', skill, 'SKILL.md');
+      if (!hasFile(skillPath)) {
         missing.push(`.codex/skills/${skill}/SKILL.md`);
+        continue;
+      }
+      const fullSkillPath = path.join(cwd, skillPath);
+      const content = fs.readFileSync(fullSkillPath, 'utf8').replace(/^\uFEFF/, '');
+      const lines = content.split(/\r?\n/);
+      if (lines[0] !== '---') {
+        missing.push(`.codex/skills/${skill}/SKILL.md missing YAML frontmatter`);
+        continue;
+      }
+      const endIndex = lines.findIndex((line, index) => index > 0 && line.trim() === '---');
+      if (endIndex < 0) {
+        missing.push(`.codex/skills/${skill}/SKILL.md missing YAML frontmatter close`);
+        continue;
+      }
+      const frontmatter = lines.slice(1, endIndex).join('\n');
+      const nameMatch = frontmatter.match(/^name:\s*(.+)$/m);
+      const descriptionMatch = frontmatter.match(/^description:\s*(.+)$/m);
+      if (!nameMatch || !descriptionMatch) {
+        missing.push(`.codex/skills/${skill}/SKILL.md missing name/description frontmatter`);
+        continue;
+      }
+      const rawDescription = descriptionMatch[1].trim();
+      let description = rawDescription;
+      if (
+        (rawDescription.startsWith('"') && rawDescription.endsWith('"')) ||
+        (rawDescription.startsWith("'") && rawDescription.endsWith("'"))
+      ) {
+        try {
+          description = rawDescription.startsWith('"')
+            ? JSON.parse(rawDescription)
+            : rawDescription.slice(1, -1);
+        } catch (_) {
+          missing.push(`.codex/skills/${skill}/SKILL.md invalid Codex description frontmatter`);
+          continue;
+        }
+      }
+      if (!description || description.length > 1024) {
+        missing.push(`.codex/skills/${skill}/SKILL.md invalid Codex description frontmatter`);
       }
     }
   };

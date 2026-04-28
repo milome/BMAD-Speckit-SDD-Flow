@@ -1,27 +1,6 @@
-﻿<!-- BLOCK_LABEL_POLICY=B -->
 ---
-name: bmad-standalone-tasks
-description: |
-  Codex CLI / OMC adapter entry for BMAD Standalone Tasks.
-  Uses Cursor bmad-standalone-tasks as the semantic baseline: parse unfinished work 鈫?subagent implementation 鈫?post-implementation audit for TASKS/BUGFIX-driven execution.
-  When the main Agent starts any subtask, it **must** copy the full prompt template for that phase and fill placeholders鈥攏o omission, summary, or paraphrase.
-  The main Agent must not edit production code; implementation uses Agent tool subagents (`subagent_type: general-purpose`).
-  Prefer `.codex/agents/auditors/auditor-implement`; follow the fallback chain.
-  Follows ralph-method (`prd.{stem}.json` / `progress.{stem}.txt`), TDD red鈥揼reen鈥搑efactor, and speckit-workflow.
-  Use when: the user provides a TASKS/BUGFIX document and asks to execute unfinished items.
-when_to_use: |
-  Use when: the user says to implement unfinished items from TASKS_*.md / BUGFIX_*.md or supplies a TASKS/BUGFIX document path to execute.
-
-> **Orphan standalone closeout contract**: when the TASKS / BUGFIX document lives under `_orphan/`, the structured audit report must explicitly provide `stage=standalone_tasks`, `artifactDocPath`, and `reportPath`. `stage=document` is no longer a valid orphan closeout return value. Missing any field, or relying on prose-only `PASS`, must fail closeout conservatively.
-references:
-  - auditor-tasks-doc: Pre-implementation TASKS audit executor; `.codex/agents/auditors/auditor-tasks-doc.md`
-  - auditor-implement: Post-implementation audit executor; `.codex/agents/auditors/auditor-implement.md`
-  - speckit-implement: Implementation executor; `.codex/agents/speckit-implement.md`
-  - audit-post-impl-rules: `.codex/skills/speckit-workflow/references/audit-post-impl-rules.md`
-  - audit-document-iteration-rules: `.codex/skills/speckit-workflow/references/audit-document-iteration-rules.md`
-  - ralph-method: prd + progress files, US order
-  - speckit-workflow: no pseudo-impl, run acceptance commands, architecture fidelity
-  - prompt-templates: `.codex/skills/bmad-standalone-tasks/references/prompt-templates.md`
+name: "bmad-standalone-tasks"
+description: "Codex CLI / OMC adapter entry for BMAD Standalone Tasks. Uses Cursor bmad-standalone-tasks as the semantic baseline: parse unfinished work 鈫?subagent implementation 鈫?post-implementation audit for TASKS/BUGFIX-driven execution. When the main Agent starts any subtask, it **must** copy the full prompt template for that phase and fill placeholders鈥攏o omission, summary, or paraphrase. The main Agent must not edit production code; implementation uses Agent tool subagents (`subagent_type: general-purp"
 ---
 
 # Codex adapter: bmad-standalone-tasks

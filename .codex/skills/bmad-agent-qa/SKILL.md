@@ -1,6 +1,6 @@
 ---
-name: bmad-agent-qa
-description: QA engineer for test automation and coverage. Use when the user asks to talk to Quinn or requests the QA engineer.
+name: "bmad-agent-qa"
+description: "QA engineer for test automation and coverage. Use when the user asks to talk to Quinn or requests the QA engineer."
 ---
 
 # Quinn

@@ -4,8 +4,13 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
+import { buildEvidenceProvenance, sameRunSummary } from './evidence-provenance';
 import { validatePrTopologyForReleaseGate, type PrTopology } from './parallel-mission-control';
 import { runSprintStatusAuthorizedUpdate } from './sprint-status-authorized-update';
+import { runCodexWorkerAdapter } from './main-agent-codex-worker-adapter';
+import type { ExecutionPacket } from './orchestration-dispatch-contract';
+
+const SOURCE_ROOT = path.resolve(__dirname, '..');
 
 interface GateCheckResult {
   id: string;
@@ -20,6 +25,7 @@ interface GateCheckResult {
 interface ReleaseGateReport {
   generatedAt: string;
   gate: 'main-agent-release-gate';
+  evidence_provenance: EvidenceProvenance;
   critical_failures: number;
   blocked_sprint_status_update: boolean;
   checks: GateCheckResult[];
@@ -36,7 +42,7 @@ interface ReleaseGateReport {
 
 interface ReleaseGateCliOptions {
   ledgerPath?: string;
-  dualHostPath?: string;
+  hostMatrixPath?: string;
   prTopologyPath?: string;
   qualityGatePath?: string;
   runId?: string;
@@ -48,9 +54,11 @@ interface ReleaseGateCliOptions {
 }
 
 interface EvidenceProvenance {
-  runId?: string;
-  storyKey?: string;
-  evidenceBundleId?: string;
+  runId: string;
+  storyKey: string;
+  evidenceBundleId: string;
+  contractHash?: string;
+  gateReportHash?: string;
 }
 
 interface ExecutionAuditLedgerItem {
@@ -180,33 +188,119 @@ function checkJsonFile<T>(
 
 function validateEvidenceProvenance(
   value: { evidence_provenance?: EvidenceProvenance },
-  expected: { runId?: string; storyKey?: string; evidenceBundleId?: string }
+  expected: EvidenceProvenance
 ): { passed: boolean; summary: string } {
-  if (!expected.runId && !expected.storyKey && !expected.evidenceBundleId) {
-    return { passed: true, summary: 'provenance=not-required' };
-  }
   const provenance = value.evidence_provenance;
   const mismatches: string[] = [];
   if (!provenance) {
     mismatches.push('missing evidence_provenance');
   } else {
-    if (expected.runId && provenance.runId !== expected.runId) {
+    if (provenance.runId !== expected.runId) {
       mismatches.push(`runId=${provenance.runId ?? 'missing'}`);
     }
-    if (expected.storyKey && provenance.storyKey !== expected.storyKey) {
+    if (provenance.storyKey !== expected.storyKey) {
       mismatches.push(`storyKey=${provenance.storyKey ?? 'missing'}`);
     }
-    if (expected.evidenceBundleId && provenance.evidenceBundleId !== expected.evidenceBundleId) {
+    if (provenance.evidenceBundleId !== expected.evidenceBundleId) {
       mismatches.push(`evidenceBundleId=${provenance.evidenceBundleId ?? 'missing'}`);
+    }
+    if (!normalizeText(provenance.gateReportHash)) {
+      mismatches.push('gateReportHash=missing');
     }
   }
   return {
     passed: mismatches.length === 0,
     summary:
       mismatches.length === 0
-        ? `provenance=matched runId=${expected.runId ?? '*'} storyKey=${expected.storyKey ?? '*'} evidenceBundleId=${expected.evidenceBundleId ?? '*'}`
+        ? `provenance=matched ${sameRunSummary(expected)}`
         : `provenance mismatch: ${mismatches.join(', ')}`,
   };
+}
+
+function appendProvenanceArgs(command: string, provenance: EvidenceProvenance): string {
+  const quoted = {
+    runId: JSON.stringify(provenance.runId),
+    storyKey: JSON.stringify(provenance.storyKey),
+    evidenceBundleId: JSON.stringify(provenance.evidenceBundleId),
+  };
+  return `${command} -- --runId ${quoted.runId} --storyKey ${quoted.storyKey} --evidenceBundleId ${quoted.evidenceBundleId}`;
+}
+
+function appendScriptProvenanceArgs(command: string, provenance: EvidenceProvenance): string {
+  const quoted = {
+    runId: JSON.stringify(provenance.runId),
+    storyKey: JSON.stringify(provenance.storyKey),
+    evidenceBundleId: JSON.stringify(provenance.evidenceBundleId),
+  };
+  return `${command} --runId ${quoted.runId} --storyKey ${quoted.storyKey} --evidenceBundleId ${quoted.evidenceBundleId}`;
+}
+
+function commandSupportsScriptProvenance(command: string): boolean {
+  return /main-agent-(host-matrix|dual-host)-pr-orchestrator\.(ts|js)\b/u.test(command);
+}
+
+function writeRunScopedCodexQualityProof(root: string, provenance: EvidenceProvenance): string | null {
+  const proofDir = path.join(root, '_bmad-output', 'runtime', 'gates', 'codex-quality-proof');
+  const packetPath = path.join(proofDir, `${provenance.runId}.packet.json`);
+  const taskReportPath = path.join(proofDir, `${provenance.runId}.task-report.json`);
+  const adapterReportPath = path.join(proofDir, `${provenance.runId}.adapter-report.json`);
+  const proofPath = path.join(proofDir, `${provenance.runId}.proof.json`);
+  fs.mkdirSync(proofDir, { recursive: true });
+  const packet: ExecutionPacket = {
+    packetId: `release-quality-proof-${sha256(provenance.runId).slice(0, 12)}`,
+    parentSessionId: `release-quality-proof-${provenance.runId}`,
+    sourceRecommendationPacketId: null,
+    flow: 'story',
+    phase: 'post_audit',
+    taskType: 'audit',
+    role: 'release-quality-proof-worker',
+    inputArtifacts: [
+      '_bmad/_config/main-agent-quality-gate.thresholds.json',
+      'scripts/main-agent-quality-gate.ts',
+      'scripts/main-agent-release-gate.ts',
+    ],
+    allowedWriteScope: ['_bmad-output/runtime/gates/codex-quality-proof/**'],
+    expectedDelta:
+      'Inspect release quality gate inputs and write the required TaskReport only; do not modify source files.',
+    successCriteria: [
+      'Codex CLI executes through main-agent-codex-worker-adapter in codex_exec mode.',
+      'TaskReport status is done with evidence for same-run release quality proof.',
+      'No source files outside _bmad-output/runtime/gates/codex-quality-proof are changed.',
+    ],
+    stopConditions: [
+      'Do not claim completion without writing a strict JSON TaskReport.',
+      'Do not edit application source or tests for this proof packet.',
+    ],
+    downstreamConsumer: 'main-agent-quality-gate-run-scoped-proof',
+  };
+  fs.writeFileSync(packetPath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
+  const adapter = runCodexWorkerAdapter({
+    projectRoot: root,
+    packetPath,
+    taskReportPath,
+    timeoutMs: 120_000,
+  });
+  fs.writeFileSync(adapterReportPath, `${JSON.stringify(adapter, null, 2)}\n`, 'utf8');
+  if (!adapter.scopePassed || adapter.taskReport.status !== 'done') {
+    return null;
+  }
+  const proof = {
+    reportType: 'codex_run_scoped_quality_proof',
+    generatedAt: new Date().toISOString(),
+    evidence_provenance: provenance,
+    codex: {
+      hostKind: 'codex',
+      mode: adapter.mode,
+      adapterExitCode: adapter.exitCode,
+      taskReportStatus: adapter.taskReport.status,
+      validationsRun: adapter.taskReport.validationsRun,
+      adapterReportPath,
+      taskReportPath,
+      packetPath,
+    },
+  };
+  fs.writeFileSync(proofPath, `${JSON.stringify(proof, null, 2)}\n`, 'utf8');
+  return proofPath;
 }
 
 function resolveOptionalPath(root: string, raw: string | undefined): string | null {
@@ -218,12 +312,17 @@ function resolveOptionalPath(root: string, raw: string | undefined): string | nu
 }
 
 function executionAuditLedgerSchemaPath(root: string): string {
-  return path.join(root, 'docs', 'reference', 'execution-audit-ledger.schema.json');
+  const consumerSchema = path.join(root, 'docs', 'reference', 'execution-audit-ledger.schema.json');
+  if (fs.existsSync(consumerSchema)) {
+    return consumerSchema;
+  }
+  return path.join(SOURCE_ROOT, 'docs', 'reference', 'execution-audit-ledger.schema.json');
 }
 
 function validateExecutionAuditLedger(
   root: string,
-  ledgerPath: string
+  ledgerPath: string,
+  expectedProvenance: EvidenceProvenance
 ): { passed: true; summary: string } | { passed: false; reason: string } {
   if (!fs.existsSync(ledgerPath)) {
     return {
@@ -264,6 +363,12 @@ function validateExecutionAuditLedger(
       reason: `execution audit ledger schema validation failed: ${details}`,
     };
   }
+  if (ledger.runId !== expectedProvenance.runId) {
+    return {
+      passed: false,
+      reason: `execution audit ledger runId mismatch: ${ledger.runId} !== ${expectedProvenance.runId}`,
+    };
+  }
 
   const seen = new Set<string>();
   for (const item of ledger.items) {
@@ -279,8 +384,26 @@ function validateExecutionAuditLedger(
   const taskMap = new Map<string, ExecutionAuditLedgerItem>(
     ledger.items.map((item) => [item.taskId, item])
   );
+  const ledgerDir = path.dirname(ledgerPath);
 
   for (const item of ledger.items) {
+    if (!Array.isArray(item.evidenceRefs) || item.evidenceRefs.length === 0) {
+      return {
+        passed: false,
+        reason: `execution audit ledger item has no evidenceRefs: ${item.taskId}`,
+      };
+    }
+    for (const evidenceRef of item.evidenceRefs) {
+      const candidates = path.isAbsolute(evidenceRef)
+        ? [evidenceRef]
+        : [path.resolve(root, evidenceRef), path.resolve(ledgerDir, evidenceRef)];
+      if (!candidates.some((candidate) => fs.existsSync(candidate))) {
+        return {
+          passed: false,
+          reason: `execution audit ledger evidenceRef missing: ${item.taskId} -> ${evidenceRef}`,
+        };
+      }
+    }
     for (const dep of item.dependsOn ?? []) {
       const upstream = taskMap.get(dep);
       if (!upstream) {
@@ -313,14 +436,14 @@ function main(argv: string[]): number {
   const root = process.cwd();
   const e2eCommand =
     normalizeText(process.env.MAIN_AGENT_RELEASE_GATE_E2E_COMMAND) ||
-    'npm run test:e2e:dual-host:journey';
+    'node node_modules/ts-node/dist/bin.js --project tsconfig.node.json --transpile-only scripts/main-agent-host-matrix-pr-orchestrator.ts --provider real --enableRealPrApi true';
   const ledgerPath =
     resolveOptionalPath(root, args.ledgerPath) ??
     resolveOptionalPath(root, process.env.MAIN_AGENT_RELEASE_GATE_LEDGER_PATH) ??
     path.join(root, '_bmad-output', 'runtime', 'governance', 'execution-audit-ledger.json');
-  const dualHostPath =
-    resolveOptionalPath(root, args.dualHostPath) ??
-    path.join(root, '_bmad-output', 'runtime', 'e2e', 'dual-host-pr-orchestration-report.json');
+  const hostMatrixPath =
+    resolveOptionalPath(root, args.hostMatrixPath) ??
+    path.join(root, '_bmad-output', 'runtime', 'e2e', 'multi-host-pr-orchestration-report.json');
   const prTopologyPath =
     resolveOptionalPath(root, args.prTopologyPath) ??
     path.join(root, '_bmad-output', 'runtime', 'pr', 'pr_topology.json');
@@ -328,50 +451,85 @@ function main(argv: string[]): number {
     resolveOptionalPath(root, args.qualityGatePath) ??
     path.join(root, '_bmad-output', 'runtime', 'gates', 'main-agent-quality-gate-report.json');
 
-  const e2eResult = runCommand(e2eCommand);
   const storyKey = normalizeText(args.storyKey) || 'S-release-gate';
-  const requireSameRunProvenance =
-    Boolean(normalizeText(args.runId)) || Boolean(normalizeText(args.evidenceBundleId));
-  const expectedProvenance = {
-    runId: normalizeText(args.runId) || undefined,
-    storyKey: requireSameRunProvenance ? storyKey : undefined,
-    evidenceBundleId: normalizeText(args.evidenceBundleId) || undefined,
-  };
+  const expectedProvenance = buildEvidenceProvenance({
+    root,
+    runId: args.runId,
+    storyKey,
+    evidenceBundleId: args.evidenceBundleId,
+    prefix: 'release-gate',
+  });
+  if (!args.qualityGatePath && !process.env.MAIN_AGENT_RELEASE_GATE_SKIP_QUALITY_PRODUCER) {
+    const codexProofPath = writeRunScopedCodexQualityProof(root, expectedProvenance);
+    const qualityCommand = appendScriptProvenanceArgs(
+      'node node_modules/ts-node/dist/bin.js --project tsconfig.node.json --transpile-only scripts/main-agent-quality-gate.ts',
+      expectedProvenance
+    );
+    runCommand(
+      codexProofPath
+        ? `${qualityCommand} --codexProofPath ${JSON.stringify(codexProofPath)}`
+        : qualityCommand
+    );
+  }
+  const e2eCommandWithProvenance = commandSupportsScriptProvenance(e2eCommand)
+    ? appendScriptProvenanceArgs(e2eCommand, expectedProvenance)
+    : e2eCommand;
+  const useExplicitHostMatrixArtifact = Boolean(args.hostMatrixPath && fs.existsSync(hostMatrixPath));
+  const e2eResult = useExplicitHostMatrixArtifact
+    ? {
+        exitCode: 0,
+        stdout: `using explicit hostMatrixPath: ${hostMatrixPath}`,
+        stderr: '',
+      }
+    : runCommand(e2eCommandWithProvenance);
 
   const checks: GateCheckResult[] = [
     {
-      id: 'dual-host-e2e-journey',
+      id: 'multi-host-e2e-journey',
       passed: e2eResult.exitCode === 0,
-      command: e2eCommand,
+      command: useExplicitHostMatrixArtifact ? `use-explicit-host-matrix-artifact ${hostMatrixPath}` : e2eCommandWithProvenance,
       exitCode: e2eResult.exitCode,
       stdout: e2eResult.stdout,
       stderr: e2eResult.stderr,
       ...(e2eResult.exitCode === 0
         ? {}
         : {
-            failureReason: 'dual-host E2E journey failed',
+            failureReason: 'multi-host E2E journey failed',
           }),
     },
     checkJsonFile<{
       journeyMode: string;
       journeyE2EPassed: boolean;
       hostsPassed: Record<'claude' | 'codex', boolean>;
+      hostMatrix?: {
+        matrixType: string;
+        requiredHosts: Array<'cursor' | 'claude' | 'codex'>;
+        hostsPassed: Record<'cursor' | 'claude' | 'codex', boolean>;
+        allRequiredHostsPassed: boolean;
+      };
       githubPrApi?: { passed: boolean; prUrl: string | null };
       evidence_provenance?: EvidenceProvenance;
-    }>('dual-host-real-artifact', dualHostPath, (value) => {
+    }>('multi-host-real-artifact', hostMatrixPath, (value) => {
       const provenance = validateEvidenceProvenance(value, expectedProvenance);
+      const requiredHosts = new Set(value.hostMatrix?.requiredHosts ?? []);
+      const hasAllRequiredHosts =
+        requiredHosts.has('cursor') && requiredHosts.has('claude') && requiredHosts.has('codex');
       const passed =
         value.journeyMode === 'real' &&
         value.journeyE2EPassed === true &&
-        value.hostsPassed?.claude === true &&
-        value.hostsPassed?.codex === true &&
+        value.hostMatrix?.matrixType === 'main_agent_multi_host_matrix' &&
+        hasAllRequiredHosts &&
+        value.hostMatrix?.hostsPassed?.cursor === true &&
+        value.hostMatrix?.hostsPassed?.claude === true &&
+        value.hostMatrix?.hostsPassed?.codex === true &&
+        value.hostMatrix?.allRequiredHostsPassed === true &&
         value.githubPrApi?.passed === true &&
         typeof value.githubPrApi.prUrl === 'string' &&
         value.githubPrApi.prUrl.length > 0 &&
         provenance.passed;
       return {
         passed,
-        summary: `mode=${value.journeyMode}, journey=${value.journeyE2EPassed}, claude=${value.hostsPassed?.claude}, codex=${value.hostsPassed?.codex}, githubPrApi=${value.githubPrApi?.passed}, prUrl=${value.githubPrApi?.prUrl ?? 'missing'}, ${provenance.summary}`,
+        summary: `mode=${value.journeyMode}, journey=${value.journeyE2EPassed}, cursor=${value.hostMatrix?.hostsPassed?.cursor}, claude=${value.hostMatrix?.hostsPassed?.claude}, codex=${value.hostMatrix?.hostsPassed?.codex}, allRequiredHostsPassed=${value.hostMatrix?.allRequiredHostsPassed}, githubPrApi=${value.githubPrApi?.passed}, prUrl=${value.githubPrApi?.prUrl ?? 'missing'}, ${provenance.summary}`,
       };
     }),
     checkJsonFile<PrTopology & { evidence_provenance?: EvidenceProvenance }>('pr-topology-release-artifact', prTopologyPath, (value) => {
@@ -415,7 +573,7 @@ function main(argv: string[]): number {
   }
 
   {
-    const ledgerCheck = validateExecutionAuditLedger(root, ledgerPath);
+    const ledgerCheck = validateExecutionAuditLedger(root, ledgerPath, expectedProvenance);
     checks.push({
       id: 'execution-audit-ledger',
       passed: ledgerCheck.passed,
@@ -437,6 +595,7 @@ function main(argv: string[]): number {
   const report: ReleaseGateReport = {
     generatedAt: new Date().toISOString(),
     gate: 'main-agent-release-gate',
+    evidence_provenance: expectedProvenance,
     critical_failures: blockingReasons.length,
     blocked_sprint_status_update: blockingReasons.length > 0,
     checks,
@@ -461,6 +620,10 @@ function main(argv: string[]): number {
       singleUse: true,
       expiresAt,
     };
+    report.evidence_provenance = {
+      ...report.evidence_provenance,
+      gateReportHash,
+    };
   }
   const reportPath = writeReport(report);
   if (blockingReasons.length === 0 && args.skipSprintStatusUpdate !== 'true') {
@@ -472,6 +635,8 @@ function main(argv: string[]): number {
       status: 'done',
       releaseGateReportPath: reportPath,
       token: report.completion_intent.token,
+      runId: report.evidence_provenance.runId,
+      evidenceBundleId: report.evidence_provenance.evidenceBundleId,
     });
   }
   writeReportAt(report, reportPath);

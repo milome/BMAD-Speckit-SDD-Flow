@@ -17,7 +17,7 @@
     "tests/acceptance/main-agent-release-gate-contract.test.ts",
     "tests/acceptance/main-agent-delivery-truth-gate.test.ts",
     "tests/acceptance/governance-rerun-gate-closure.test.ts",
-    "tests/acceptance/main-agent-dual-host-pr-orchestration.test.ts",
+    "tests/acceptance/main-agent-host-matrix-pr-orchestration.test.ts",
     "tests/acceptance/sprint-status-authorized-update.test.ts",
     "docs/ops/main-agent-capability-traceability-matrix.md"
   ],
@@ -26,7 +26,7 @@
     "tests/acceptance/main-agent-release-gate-contract.test.ts",
     "tests/acceptance/main-agent-delivery-truth-gate.test.ts",
     "tests/acceptance/governance-rerun-gate-closure.test.ts",
-    "tests/acceptance/main-agent-dual-host-pr-orchestration.test.ts",
+    "tests/acceptance/main-agent-host-matrix-pr-orchestration.test.ts",
     "tests/acceptance/main-agent-run-loop-e2e.test.ts",
     "tests/acceptance/main-agent-codex-agent-parity.test.ts",
     "tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts",

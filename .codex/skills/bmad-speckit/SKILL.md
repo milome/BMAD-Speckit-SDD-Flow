@@ -1,6 +1,6 @@
-﻿---
-name: bmad-speckit
-description: Root governed runtime entry for BMAD-Speckit-SDD-Flow. Use $bmad-speckit, /bmad-speckit, or bmad-speckit to let this framework take project governance control.
+---
+name: "bmad-speckit"
+description: "Root governed runtime entry for BMAD-Speckit-SDD-Flow. Use $bmad-speckit, /bmad-speckit, or bmad-speckit to let this framework take project governance control."
 ---
 
 # BMAD-Speckit Governed Runtime Entry

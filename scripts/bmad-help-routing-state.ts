@@ -177,18 +177,36 @@ function normalizeLayerStage(stage: string): StageName {
   return stage as StageName;
 }
 
-function stageArtifactAliases(stage: StageName): string[] {
+function stageEvidenceNames(stage: StageName): Set<string> {
   const normalized = String(stage).toLowerCase();
   const dashed = normalized.replace(/_/g, '-');
-  const aliases = [normalized, dashed];
-  if (stage === 'prd') aliases.push('project.json');
-  if (stage === 'arch') aliases.push('architecture.md', 'architecture.json', 'arch.md', 'arch.json');
-  if (stage === 'epics') aliases.push('epic', 'epics');
-  if (stage === ('story_create' as StageName)) aliases.push('story', 'story-create');
-  if (stage === 'post_audit') aliases.push('post-audit', 'audit');
-  if (stage === ('release_gate' as StageName)) aliases.push('main-agent-release-gate-report');
-  if (stage === ('delivery_truth_gate' as StageName)) aliases.push('main-agent-delivery-truth-gate-report');
-  return aliases;
+  const names = new Set([`${normalized}.json`, `${normalized}.md`, `${dashed}.json`, `${dashed}.md`]);
+  if (stage === 'prd') names.add('project.json');
+  if (stage === 'arch') {
+    for (const item of ['architecture.md', 'architecture.json', 'arch.md', 'arch.json']) names.add(item);
+  }
+  if (stage === 'epics') {
+    names.add('epics.md');
+    names.add('epics.json');
+  }
+  if (stage === ('story_create' as StageName)) {
+    names.add('story-create.md');
+    names.add('story-create.json');
+  }
+  if (stage === 'post_audit') {
+    names.add('post-audit.md');
+    names.add('post-audit.json');
+  }
+  return names;
+}
+
+function gateReportPassed(filePath: string, predicate: (value: Record<string, unknown>) => boolean): boolean {
+  if (!fs.existsSync(filePath)) return false;
+  try {
+    return predicate(JSON.parse(fs.readFileSync(filePath, 'utf8')) as Record<string, unknown>);
+  } catch {
+    return false;
+  }
 }
 
 function loadFiveLayerDefinitions(projectRoot: string): Array<{ id: FiveLayerId; stages: StageName[] }> {
@@ -207,17 +225,24 @@ function loadFiveLayerDefinitions(projectRoot: string): Array<{ id: FiveLayerId;
 }
 
 function hasFiveLayerEvidence(projectRoot: string, layerId: FiveLayerId, stage: StageName): boolean {
-  const explicitPath = path.join(projectRoot, outputRootForLayer(layerId), `${layerId}-${stage}.complete.json`);
-  if (fs.existsSync(explicitPath)) return true;
   const root = path.join(projectRoot, outputRootForLayer(layerId));
   if (!fs.existsSync(root)) return false;
-  const names = fs.readdirSync(root, { withFileTypes: true }).map((entry) => entry.name.toLowerCase());
-  const aliases = stageArtifactAliases(stage);
-  return names.some(
-    (name) =>
-      (name.endsWith('.json') || name.endsWith('.md')) &&
-      aliases.some((alias) => name.includes(alias))
-  );
+  if (stage === ('release_gate' as StageName)) {
+    return gateReportPassed(path.join(root, 'main-agent-release-gate-report.json'), (value) =>
+      value.critical_failures === 0 && value.blocked_sprint_status_update === false
+    );
+  }
+  if (stage === ('delivery_truth_gate' as StageName)) {
+    return gateReportPassed(path.join(root, 'main-agent-delivery-truth-gate-report.json'), (value) =>
+      value.completionAllowed === true
+    );
+  }
+  const explicitPath = path.join(root, `${layerId}-${stage}.complete.json`);
+  if (fs.existsSync(explicitPath)) return true;
+  const names = stageEvidenceNames(stage);
+  return fs
+    .readdirSync(root, { withFileTypes: true })
+    .some((entry) => names.has(entry.name.toLowerCase()));
 }
 
 function resolveFiveLayerRoutingProgress(projectRoot?: string): BmadHelpFiveLayerRoutingProgress | null {

@@ -1,24 +1,6 @@
-﻿<!-- BLOCK_LABEL_POLICY=B -->
-
 ---
-name: bmad-rca-helper
-description: |
-  Codex CLI / OMC adapter entry for the BMAD RCA helper.
-  Uses Cursor bmad-rca-helper as the semantic baseline: Party-Mode root-cause analysis 鈫?final solution + task list 鈫?audit convergence.
-  Party-Mode gate, recovery, snapshot, evidence, and exit semantics are sourced from `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`; the current designated challenger hard gate is `>60%`, not a local override. For the "final solution + task list" scenario, require at least 100 rounds and three no-gap tail rounds before convergence; the audit subagent edits the audited document when gaps are found.
-  Prefer `.codex/agents/auditors/auditor-document`; follow the fallback chain.
-  Use when: RCA, deep root-cause analysis, issue/problem deep-dive, 鈥渙ptimal solution + task list鈥? or post-RCA audit of the task document.
-when_to_use: |
-  Use when: (1) the user requests deep RCA, (2) root-cause / issue deep analysis, (3) optimal solution plus executable task list, (4) auditing the RCA task document after RCA.
-references:
-  - auditor-document: RCA document audit executor; `.codex/agents/auditors/auditor-document.md`
-  - auditor-bugfix: Bugfix audit executor; `.codex/agents/auditors/auditor-bugfix.md`
-  - audit-document-iteration-rules: `.codex/skills/speckit-workflow/references/audit-document-iteration-rules.md`
-  - audit-prompts: `.codex/skills/speckit-workflow/references/audit-prompts.md`
-  - audit-prompts-critical-auditor-appendix: `.codex/skills/speckit-workflow/references/audit-prompts-critical-auditor-appendix.md`
-  - prompt-template-rca-tasks: `.codex/skills/bmad-rca-helper/references/audit-prompt-rca-tasks.md`
-  - rca-iteration-rules: `.codex/skills/bmad-rca-helper/references/audit-document-iteration-rules.md`
-  - party-mode: `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md`
+name: "bmad-rca-helper"
+description: "Codex CLI / OMC adapter entry for the BMAD RCA helper. Uses Cursor bmad-rca-helper as the semantic baseline: Party-Mode root-cause analysis 鈫?final solution + task list 鈫?audit convergence. Party-Mode gate, recovery, snapshot, evidence, and exit semantics are sourced from `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`; the current designated challenger hard gate is `>60%`, not a local override. For the \"final solution + task list\" scenario, require a"
 ---
 
 <!-- CLOSEOUT-APPROVED-CANONICAL -->

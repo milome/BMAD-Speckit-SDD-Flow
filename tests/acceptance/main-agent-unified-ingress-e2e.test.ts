@@ -11,6 +11,7 @@ import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
 } from '../../scripts/runtime-context-registry';
+import { readOrchestrationState } from '../../scripts/orchestration-state';
 
 function prepareRoot(hostKind: MainAgentHostKind, hookAvailable: boolean): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), `main-agent-ingress-${hostKind}-`));
@@ -101,6 +102,12 @@ describe('main-agent unified ingress e2e', () => {
       expect(receipt.hostMode).toBe('hooks_enabled');
       expect(receipt.orchestrationEntry).toBe('hook_ingress');
       expect(receipt.degradationLevel).toBe('none');
+      expect(receipt.hostRecovery).toMatchObject({
+        degradation_cleared_at: null,
+        recovery_probe_count: 0,
+        recovered_host_mode: null,
+        recovered_orchestration_entry: null,
+      });
       expect(receipt.controlPlane).toBe('main-agent-orchestration');
       expect(receipt.runLoop.status).toBe('completed');
       expect(receipt.runLoop.pendingPacketStatus).toBe('completed');
@@ -124,8 +131,177 @@ describe('main-agent unified ingress e2e', () => {
       expect(receipt.degradationLevel).toBe('hook_lost');
       expect(receipt.degradationReason?.code).toBe('hook_unavailable');
       expect(receipt.degradationReason?.reason).toContain('hook unavailable');
+      expect(receipt.degradationReason?.detected_at).toEqual(expect.any(String));
+      expect(receipt.degradationReason?.failed_capability).toBe('runtime_policy_hook');
+      expect(receipt.degradationReason?.fallback_entry).toBe('cli_ingress');
+      expect(receipt.degradationReason?.expected_behavior_change).toContain('CLI ingress');
+      expect(receipt.hostRecovery.degradation_cleared_at).toBeNull();
+      expect(receipt.hostRecovery.recovery_probe_count).toBeGreaterThanOrEqual(
+        receipt.hostRecovery.required_probe_count
+      );
+      expect(receipt.hostRecovery.recovered_host_mode).toBeNull();
+      expect(receipt.hostRecovery.recovered_orchestration_entry).toBeNull();
+      expect(receipt.hostRecovery.parity_diff.degradationCleared).toBe(false);
+      expect(receipt.hostRecovery.before_parity_snapshot.inspect?.status).toBe('completed');
+      expect(receipt.hostRecovery.after_parity_snapshot.inspect).toBeNull();
+      expect(receipt.hostRecovery.recovery_log_path).toEqual(expect.any(String));
+      expect(fs.existsSync(receipt.hostRecovery.recovery_log_path as string)).toBe(true);
       expect(receipt.controlPlane).toBe('main-agent-orchestration');
       expect(receipt.runLoop.status).toBe('completed');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('emits S3f recovery/back-switch fields when forced cli ingress can recover hooks', () => {
+    const root = prepareRoot('cursor', true);
+    try {
+      const receipt = runUnifiedIngress({
+        projectRoot: root,
+        hostKind: 'cursor',
+        flow: 'story',
+        stage: 'implement',
+        forceNoHooks: true,
+      });
+
+      expect(receipt.degradationLevel).toBe('cli_forced');
+      expect(receipt.degradationReason?.failed_capability).toBe('operator_override');
+      expect(receipt.hostRecovery.recovery_probe_count).toBeGreaterThanOrEqual(
+        receipt.hostRecovery.required_probe_count
+      );
+      expect(receipt.hostRecovery.recovered_host_mode).toBe('hooks_enabled');
+      expect(receipt.hostRecovery.recovered_orchestration_entry).toBe('hook_ingress');
+      expect(receipt.hostRecovery.degradation_cleared_at).toEqual(expect.any(String));
+      expect(receipt.hostRecovery.before_parity_snapshot.orchestrationEntry).toBe('cli_ingress');
+      expect(receipt.hostRecovery.after_parity_snapshot.orchestrationEntry).toBe('hook_ingress');
+      expect(receipt.hostRecovery.before_parity_snapshot.inspect?.resolvedHost).toBe('cursor');
+      expect(receipt.hostRecovery.after_parity_snapshot.inspect?.pendingPacketStatus).toBe(
+        'completed'
+      );
+      expect(receipt.hostRecovery.before_parity_snapshot.inspect).not.toBe(
+        receipt.hostRecovery.after_parity_snapshot.inspect
+      );
+      expect(receipt.hostRecovery.parity_diff).toMatchObject({
+        hostModeChanged: true,
+        orchestrationEntryChanged: true,
+        degradationCleared: true,
+      });
+      expect(receipt.hostRecovery.recovery_log_path).toEqual(expect.any(String));
+      expect(fs.existsSync(receipt.hostRecovery.recovery_log_path as string)).toBe(true);
+      const state = readOrchestrationState(root, receipt.runLoop.sessionId!);
+      expect(state?.hostRecovery).toMatchObject({
+        degradation_level: 'cli_forced',
+        active_host_mode: 'no_hooks',
+        orchestration_entry: 'cli_ingress',
+        recovered_host_mode: 'hooks_enabled',
+        recovered_orchestration_entry: 'hook_ingress',
+      });
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('does not back-switch when hook health probe fails despite hook file existing', () => {
+    const root = prepareRoot('cursor', true);
+    try {
+      fs.writeFileSync(path.join(root, '.cursor', 'hooks.json'), '{not-json}\n', 'utf8');
+      const receipt = runUnifiedIngress({
+        projectRoot: root,
+        hostKind: 'cursor',
+        flow: 'story',
+        stage: 'implement',
+        forceNoHooks: true,
+      });
+
+      expect(receipt.degradationLevel).toBe('cli_forced');
+      expect(receipt.hostRecovery.recovered_host_mode).toBeNull();
+      expect(receipt.hostRecovery.recovered_orchestration_entry).toBeNull();
+      expect(receipt.hostRecovery.parity_diff.degradationCleared).toBe(false);
+      const log = JSON.parse(
+        fs.readFileSync(receipt.hostRecovery.recovery_log_path as string, 'utf8')
+      ) as { probes: Array<{ hookAvailable: boolean; hookExecutable: boolean }> };
+      expect(log.probes.every((probe) => probe.hookAvailable)).toBe(true);
+      expect(log.probes.every((probe) => probe.hookExecutable)).toBe(false);
+      const state = readOrchestrationState(root, receipt.runLoop.sessionId!);
+      expect(state?.hostRecovery?.degradation_level).toBe('cli_forced');
+      expect(state?.hostRecovery?.recovered_host_mode).toBeNull();
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('emits host_partial and transport_degraded degradation branches', () => {
+    const hostPartialRoot = prepareRoot('codex', false);
+    const transportRoot = prepareRoot('cursor', true);
+    try {
+      const hostPartial = runUnifiedIngress({
+        projectRoot: hostPartialRoot,
+        hostKind: 'codex',
+        flow: 'story',
+        stage: 'implement',
+        forceHostPartial: true,
+      });
+      expect(hostPartial.degradationLevel).toBe('host_partial');
+      expect(hostPartial.degradationReason?.failed_capability).toBe('host_capability');
+      expect(hostPartial.hostRecovery.parity_diff.degradationCleared).toBe(false);
+
+      const transport = runUnifiedIngress({
+        projectRoot: transportRoot,
+        hostKind: 'cursor',
+        flow: 'story',
+        stage: 'implement',
+        forceTransportDegraded: true,
+      });
+      expect(transport.degradationLevel).toBe('transport_degraded');
+      expect(transport.degradationReason?.failed_capability).toBe('transport');
+      expect(transport.hostRecovery.recovery_log_path).toEqual(expect.any(String));
+    } finally {
+      fs.rmSync(hostPartialRoot, { recursive: true, force: true });
+      fs.rmSync(transportRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed when host recovery cannot write orchestration state', () => {
+    const root = prepareRoot('cursor', true);
+    try {
+      expect(() =>
+        runUnifiedIngress({
+          projectRoot: root,
+          hostKind: 'cursor',
+          flow: 'story',
+          stage: 'implement',
+          forceNoHooks: true,
+          forceStateWriteFailure: true,
+        })
+      ).toThrow(/host recovery state write failed/u);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks S3f back-switch when inspect parity does not match the recovering host', () => {
+    const root = prepareRoot('cursor', true);
+    try {
+      const receipt = runUnifiedIngress({
+        projectRoot: root,
+        hostKind: 'cursor',
+        flow: 'story',
+        stage: 'implement',
+        forceNoHooks: true,
+        recoveryInspectHostOverride: 'codex',
+      });
+      expect(receipt.hostRecovery.recovered_host_mode).toBeNull();
+      expect(receipt.hostRecovery.recovered_orchestration_entry).toBeNull();
+      expect(receipt.hostRecovery.degradation_cleared_at).toBeNull();
+      expect(receipt.hostRecovery.parity_diff.degradationCleared).toBe(false);
+
+      const logPath = receipt.hostRecovery.recovery_log_path as string;
+      const log = JSON.parse(fs.readFileSync(logPath, 'utf8')) as {
+        inspect_parity_passed: boolean;
+        back_switch_allowed: boolean;
+      };
+      expect(log.inspect_parity_passed).toBe(false);
+      expect(log.back_switch_allowed).toBe(false);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
@@ -134,7 +310,9 @@ describe('main-agent unified ingress e2e', () => {
   it('supports codex as a native no-hooks cli_ingress branch with non-smoke worker execution', () => {
     const root = prepareRoot('codex', false);
     const previous = process.env.CODEX_WORKER_ADAPTER_BIN;
+    const previousAllow = process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
     try {
+      process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = 'true';
       process.env.CODEX_WORKER_ADAPTER_BIN = writeFakeCodexBinary(root);
       const receipt = runUnifiedIngress({
         projectRoot: root,
@@ -157,6 +335,11 @@ describe('main-agent unified ingress e2e', () => {
         delete process.env.CODEX_WORKER_ADAPTER_BIN;
       } else {
         process.env.CODEX_WORKER_ADAPTER_BIN = previous;
+      }
+      if (previousAllow === undefined) {
+        delete process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
+      } else {
+        process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = previousAllow;
       }
       fs.rmSync(root, { recursive: true, force: true });
     }

@@ -159,6 +159,13 @@ describe('bmad-help five-layer main-agent matrix', () => {
         layer: 'layer_5',
         stage: 'release_gate' as any,
       });
+      let markerOnlyState = resolveBmadHelpFiveLayerProgressState({ projectRoot: root });
+      expect(markerOnlyState.currentStage).toBe('release_gate');
+      fs.writeFileSync(
+        path.join(root, '_bmad-output', 'runtime', 'gates', 'main-agent-release-gate-report.json'),
+        '{"critical_failures":0,"blocked_sprint_status_update":false}\n',
+        'utf8'
+      );
       const deliveryState = resolveBmadHelpFiveLayerProgressState({ projectRoot: root });
       expect(deliveryState.currentLayer).toBe('layer_5');
       expect(deliveryState.currentStage).toBe('delivery_truth_gate');
@@ -196,7 +203,7 @@ describe('bmad-help five-layer main-agent matrix', () => {
       }
       fs.writeFileSync(
         path.join(root, '_bmad-output', 'runtime', 'gates', 'main-agent-release-gate-report.json'),
-        '{"critical_failures":0}\n',
+        '{"critical_failures":0,"blocked_sprint_status_update":false}\n',
         'utf8'
       );
       state = resolveBmadHelpFiveLayerProgressState({ projectRoot: root });
@@ -205,6 +212,20 @@ describe('bmad-help five-layer main-agent matrix', () => {
       fs.writeFileSync(
         path.join(root, '_bmad-output', 'runtime', 'gates', 'main-agent-delivery-truth-gate-report.json'),
         '{"completionAllowed":false}\n',
+        'utf8'
+      );
+      markBmadHelpFiveLayerStageComplete({
+        projectRoot: root,
+        layer: 'layer_5',
+        stage: 'delivery_truth_gate' as any,
+      });
+      state = resolveBmadHelpFiveLayerProgressState({ projectRoot: root });
+      expect(state.currentStage).toBe('delivery_truth_gate');
+      expect(state.completedLayers).not.toContain('layer_5');
+
+      fs.writeFileSync(
+        path.join(root, '_bmad-output', 'runtime', 'gates', 'main-agent-delivery-truth-gate-report.json'),
+        '{"completionAllowed":true}\n',
         'utf8'
       );
       state = resolveBmadHelpFiveLayerProgressState({ projectRoot: root });

@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+﻿import { execFileSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
@@ -56,8 +56,8 @@ describe('main-agent release gate contract', () => {
         },
         false,
         [
-          '--dualHostPath',
-        path.join(reportDir, 'missing-dual-host.json'),
+          '--hostMatrixPath',
+        path.join(reportDir, 'missing-host-matrix.json'),
           '--prTopologyPath',
           path.join(reportDir, 'missing-pr-topology.json'),
           '--qualityGatePath',
@@ -70,7 +70,7 @@ describe('main-agent release gate contract', () => {
       );
 
       expect(run.exitCode).toBe(1);
-      expect(run.stderr).toContain('dual-host E2E journey failed');
+      expect(run.stderr).toContain('multi-host E2E journey failed');
       expect(fs.existsSync(reportPath)).toBe(true);
       const report = JSON.parse(fs.readFileSync(reportPath, 'utf8')) as {
         critical_failures: number;
@@ -79,7 +79,7 @@ describe('main-agent release gate contract', () => {
       };
       expect(report.critical_failures).toBeGreaterThan(0);
       expect(report.blocked_sprint_status_update).toBe(true);
-      expect(report.blocking_reasons.join('\n')).toContain('dual-host E2E journey failed');
+      expect(report.blocking_reasons.join('\n')).toContain('multi-host E2E journey failed');
     } finally {
       fs.rmSync(reportDir, { recursive: true, force: true });
     }
@@ -87,24 +87,32 @@ describe('main-agent release gate contract', () => {
 
   function writeReleaseGateEvidence(
     dir: string,
-    provenance?: { runId: string; storyKey: string; evidenceBundleId: string }
+    provenance?: { runId: string; storyKey: string; evidenceBundleId: string; gateReportHash?: string }
   ) {
     const evidence_provenance = provenance
       ? {
           runId: provenance.runId,
           storyKey: provenance.storyKey,
           evidenceBundleId: provenance.evidenceBundleId,
+          gateReportHash: provenance.gateReportHash ?? 'release-gate-test-artifact-hash',
         }
       : undefined;
-    const dualHostPath = path.join(dir, 'dual-host.json');
+    const hostMatrixPath = path.join(dir, 'host-matrix.json');
     const prTopologyPath = path.join(dir, 'pr-topology.json');
     const qualityGatePath = path.join(dir, 'quality-gate.json');
     fs.writeFileSync(
-      dualHostPath,
+      hostMatrixPath,
       JSON.stringify({
         journeyMode: 'real',
         journeyE2EPassed: true,
         hostsPassed: { claude: true, codex: true },
+        hostMatrix: {
+          matrixType: 'main_agent_multi_host_matrix',
+          requiredHosts: ['cursor', 'claude', 'codex'],
+          hostsPassed: { cursor: true, claude: true, codex: true },
+          allRequiredHostsPassed: true,
+          legacyDualHostPassed: true,
+        },
         githubPrApi: { passed: true, prUrl: 'https://example.invalid/pull/1' },
         ...(evidence_provenance ? { evidence_provenance } : {}),
       }),
@@ -138,21 +146,96 @@ describe('main-agent release gate contract', () => {
       }),
       'utf8'
     );
-    return { dualHostPath, prTopologyPath, qualityGatePath };
+    return { hostMatrixPath, prTopologyPath, qualityGatePath };
   }
+
+  function writeEvidenceRef(dir: string, name: string): string {
+    const evidencePath = path.join(dir, name);
+    fs.mkdirSync(path.dirname(evidencePath), { recursive: true });
+    fs.writeFileSync(evidencePath, '{"status":"pass"}\n', 'utf8');
+    return name;
+  }
+
+  function writePassingLedger(dir: string): string {
+    const ledgerPath = path.join(dir, 'ledger.json');
+    fs.writeFileSync(
+      ledgerPath,
+      JSON.stringify(
+        {
+          version: 1,
+          ledgerType: 'execution_audit',
+          runId: 'run-pass',
+          generatedAt: '2026-04-27T00:00:00.000Z',
+          items: [
+            {
+              taskId: 'T1',
+              status: 'pass',
+              updatedAt: '2026-04-27T00:00:00.000Z',
+              evidenceRefs: [writeEvidenceRef(dir, 'outputs/evidence/T1.json')],
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+    return ledgerPath;
+  }
+
+  it('fails closed when legacy dual-host evidence is missing cursor in host matrix', () => {
+    const reportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'release-gate-legacy-host-matrix-'));
+    try {
+      const reportPath = path.join(reportDir, 'report.json');
+      const evidence = writeReleaseGateEvidence(reportDir, {
+        runId: 'run-pass',
+        storyKey: 'S-release',
+        evidenceBundleId: 'bundle-pass',
+      });
+      const legacy = JSON.parse(fs.readFileSync(evidence.hostMatrixPath, 'utf8')) as {
+        hostMatrix: {
+          requiredHosts: string[];
+          hostsPassed: Record<string, boolean>;
+          allRequiredHostsPassed: boolean;
+        };
+      };
+      legacy.hostMatrix.requiredHosts = ['claude', 'codex'];
+      legacy.hostMatrix.hostsPassed.cursor = false;
+      legacy.hostMatrix.allRequiredHostsPassed = false;
+      fs.writeFileSync(evidence.hostMatrixPath, JSON.stringify(legacy), 'utf8');
+      const ledgerPath = writePassingLedger(reportDir);
+      const run = runReleaseGate(
+        {
+          MAIN_AGENT_RELEASE_GATE_REPORT_PATH: reportPath,
+          MAIN_AGENT_RELEASE_GATE_SKIP_QUALITY_PRODUCER: 'true',
+        },
+        false,
+        [...strongArgs(evidence), ...sameRunArgs(), '--ledgerPath', ledgerPath]
+      );
+      expect(run.exitCode).toBe(1);
+      const report = JSON.parse(fs.readFileSync(reportPath, 'utf8')) as {
+        checks: Array<{ id: string; passed: boolean; stderr: string }>;
+      };
+      const matrixCheck = report.checks.find((item) => item.id === 'multi-host-real-artifact');
+      expect(matrixCheck?.passed).toBe(false);
+      expect(matrixCheck?.stderr).toContain('cursor=false');
+    } finally {
+      fs.rmSync(reportDir, { recursive: true, force: true });
+    }
+  });
 
   function sameRunArgs(): string[] {
     return ['--runId', 'run-pass', '--storyKey', 'S-release', '--evidenceBundleId', 'bundle-pass'];
   }
 
   function strongArgs(evidence: {
-    dualHostPath: string;
+    hostMatrixPath: string;
     prTopologyPath: string;
     qualityGatePath: string;
   }): string[] {
     return [
-      '--dualHostPath',
-      evidence.dualHostPath,
+      '--hostMatrixPath',
+      evidence.hostMatrixPath,
       '--prTopologyPath',
       evidence.prTopologyPath,
       '--qualityGatePath',
@@ -177,8 +260,8 @@ describe('main-agent release gate contract', () => {
         },
         false,
         [
-          '--dualHostPath',
-          path.join(reportDir, 'missing-dual-host.json'),
+          '--hostMatrixPath',
+          path.join(reportDir, 'missing-host-matrix.json'),
           '--prTopologyPath',
           path.join(reportDir, 'missing-pr-topology.json'),
           '--qualityGatePath',
@@ -207,7 +290,11 @@ describe('main-agent release gate contract', () => {
     const reportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'release-gate-no-ledger-'));
     try {
       const reportPath = path.join(reportDir, 'report.json');
-      const evidence = writeReleaseGateEvidence(reportDir);
+      const evidence = writeReleaseGateEvidence(reportDir, {
+        runId: 'run-pass',
+        storyKey: 'S-release',
+        evidenceBundleId: 'bundle-pass',
+      });
       const missingLedgerPath = path.join(reportDir, 'missing-ledger.json');
       const run = runReleaseGate(
         {
@@ -235,7 +322,11 @@ describe('main-agent release gate contract', () => {
     try {
       const reportPath = path.join(reportDir, 'report.json');
       const ledgerPath = path.join(reportDir, 'ledger.json');
-      const evidence = writeReleaseGateEvidence(reportDir);
+      const evidence = writeReleaseGateEvidence(reportDir, {
+        runId: 'run-pass',
+        storyKey: 'S-release',
+        evidenceBundleId: 'bundle-pass',
+      });
       fs.writeFileSync(
         ledgerPath,
         JSON.stringify(
@@ -249,14 +340,14 @@ describe('main-agent release gate contract', () => {
                 taskId: 'T1',
                 status: 'pass',
                 updatedAt: '2026-04-27T00:00:00.000Z',
-                evidenceRefs: ['outputs/evidence/T1.json'],
+                evidenceRefs: [writeEvidenceRef(reportDir, 'outputs/evidence/T1.json')],
               },
               {
                 taskId: 'T2',
                 status: 'pass',
                 updatedAt: '2026-04-27T00:01:00.000Z',
                 dependsOn: ['T1'],
-                evidenceRefs: ['outputs/evidence/T2.json'],
+                evidenceRefs: [writeEvidenceRef(reportDir, 'outputs/evidence/T2.json')],
               },
             ],
           },
@@ -272,7 +363,7 @@ describe('main-agent release gate contract', () => {
           MAIN_AGENT_RELEASE_GATE_REPORT_PATH: reportPath,
         },
         true,
-        [...strongArgs(evidence), '--ledgerPath', ledgerPath]
+        [...strongArgs(evidence), ...sameRunArgs(), '--ledgerPath', ledgerPath]
       );
 
       expect(run.exitCode).toBe(0);
@@ -298,6 +389,11 @@ describe('main-agent release gate contract', () => {
         storyKey: string;
         status: string;
         authorized: boolean;
+        evidence_provenance: {
+          runId: string;
+          storyKey: string;
+          evidenceBundleId: string;
+        };
         gateReportHash: string;
         contractHash: string;
         token: string;
@@ -326,6 +422,11 @@ describe('main-agent release gate contract', () => {
         contractHash: report.completion_intent?.contractHash,
         token: report.completion_intent?.token,
         singleUse: true,
+        evidence_provenance: {
+          runId: 'run-pass',
+          storyKey: 'S-release',
+          evidenceBundleId: 'bundle-pass',
+        },
       });
     } finally {
       fs.rmSync(reportDir, { recursive: true, force: true });
@@ -354,7 +455,7 @@ describe('main-agent release gate contract', () => {
               taskId: 'T1',
               status: 'pass',
               updatedAt: '2026-04-27T00:00:00.000Z',
-              evidenceRefs: ['outputs/evidence/T1.json'],
+              evidenceRefs: [writeEvidenceRef(reportDir, 'outputs/evidence/T1.json')],
             },
           ],
         }),
@@ -375,8 +476,60 @@ describe('main-agent release gate contract', () => {
         checks: Array<{ id: string; passed: boolean; stderr: string }>;
         blocking_reasons: string[];
       };
-      expect(report.checks.find((item) => item.id === 'dual-host-real-artifact')?.passed).toBe(false);
+      expect(report.checks.find((item) => item.id === 'multi-host-real-artifact')?.passed).toBe(false);
       expect(report.blocking_reasons.join('\n')).toContain('provenance mismatch');
+    } finally {
+      fs.rmSync(reportDir, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed when execution ledger evidenceRefs do not exist', () => {
+    const reportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'release-gate-ledger-missing-ref-'));
+    try {
+      const reportPath = path.join(reportDir, 'report.json');
+      const ledgerPath = path.join(reportDir, 'ledger.json');
+      const evidence = writeReleaseGateEvidence(reportDir, {
+        runId: 'run-pass',
+        storyKey: 'S-release',
+        evidenceBundleId: 'bundle-pass',
+      });
+      fs.writeFileSync(
+        ledgerPath,
+        JSON.stringify(
+          {
+            version: 1,
+            ledgerType: 'execution_audit',
+            runId: 'run-pass',
+            generatedAt: '2026-04-27T00:00:00.000Z',
+            items: [
+              {
+                taskId: 'T1',
+                status: 'pass',
+                updatedAt: '2026-04-27T00:00:00.000Z',
+                evidenceRefs: ['outputs/evidence/missing.json'],
+              },
+            ],
+          },
+          null,
+          2
+        ),
+        'utf8'
+      );
+
+      const run = runReleaseGate(
+        {
+          MAIN_AGENT_RELEASE_GATE_E2E_COMMAND: `${process.execPath} -e "process.exit(0)"`,
+          MAIN_AGENT_RELEASE_GATE_REPORT_PATH: reportPath,
+        },
+        false,
+        [...strongArgs(evidence), ...sameRunArgs(), '--ledgerPath', ledgerPath]
+      );
+
+      expect(run.exitCode).toBe(1);
+      const report = JSON.parse(fs.readFileSync(reportPath, 'utf8')) as {
+        blocking_reasons: string[];
+      };
+      expect(report.blocking_reasons.join('\n')).toContain('evidenceRef missing');
     } finally {
       fs.rmSync(reportDir, { recursive: true, force: true });
     }
@@ -404,7 +557,7 @@ describe('main-agent release gate contract', () => {
               taskId: 'T1',
               status: 'pass',
               updatedAt: '2026-04-27T00:00:00.000Z',
-              evidenceRefs: ['outputs/evidence/T1.json'],
+              evidenceRefs: [writeEvidenceRef(reportDir, 'outputs/evidence/T1.json')],
             },
           ],
         }),
@@ -448,14 +601,14 @@ describe('main-agent release gate contract', () => {
                 taskId: 'T1',
                 status: 'fail',
                 updatedAt: '2026-04-27T00:00:00.000Z',
-                evidenceRefs: ['outputs/evidence/T1.json'],
+                evidenceRefs: [writeEvidenceRef(reportDir, 'outputs/evidence/T1.json')],
               },
               {
                 taskId: 'T2',
                 status: 'pass',
                 updatedAt: '2026-04-27T00:01:00.000Z',
                 dependsOn: ['T1'],
-                evidenceRefs: ['outputs/evidence/T2.json'],
+                evidenceRefs: [writeEvidenceRef(reportDir, 'outputs/evidence/T2.json')],
               },
             ],
           },
@@ -487,3 +640,5 @@ describe('main-agent release gate contract', () => {
     }
   });
 });
+
+

@@ -430,6 +430,50 @@ function copyFileWithRetry(src, dest, maxAttempts = 20) {
   }
 }
 
+function normalizeCodexSkillFrontmatterFile(filePath) {
+  const portablePath = filePath.replace(/\\/g, '/');
+  if (!portablePath.includes('/.codex/skills/') && !portablePath.startsWith('.codex/skills/')) return;
+  if (path.basename(filePath) !== 'SKILL.md') return;
+  const raw = fs.readFileSync(filePath, 'utf8').replace(/^\uFEFF/u, '');
+  const withoutPolicy = raw.replace(/^<!--\s*BLOCK_LABEL_POLICY=[^>]*-->\s*\r?\n?/u, '');
+  const skillName = path.basename(path.dirname(filePath));
+  let frontmatter = '';
+  let body = withoutPolicy;
+  const lines = withoutPolicy.split(/\r?\n/u);
+  if (lines[0] === '---') {
+    const endIndex = lines.findIndex((line, index) => index > 0 && line.trim() === '---');
+    if (endIndex > 0) {
+      frontmatter = lines.slice(1, endIndex).join('\n');
+      body = lines.slice(endIndex + 1).join('\n').replace(/^\s*\r?\n/u, '');
+    }
+  }
+  const name =
+    frontmatter.match(/^name:\s*['"]?([^'"\r\n]+)['"]?\s*$/mu)?.[1]?.trim() || skillName;
+  const blockDescriptionMatch = frontmatter.match(/^description:\s*\|\s*\n((?:[ \t]+.*\n?)*)/mu);
+  const inlineDescriptionMatch = frontmatter.match(/^description:\s*(.+)$/mu);
+  const rawDescription = blockDescriptionMatch
+    ? blockDescriptionMatch[1]
+        .split(/\r?\n/u)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .join(' ')
+    : inlineDescriptionMatch?.[1]?.replace(/^['"]|['"]$/gu, '').trim();
+  const description = (rawDescription || `BMAD Codex skill ${name}.`)
+    .replace(/\s+/gu, ' ')
+    .slice(0, 500);
+  const normalized = [
+    '---',
+    `name: ${JSON.stringify(name)}`,
+    `description: ${JSON.stringify(description)}`,
+    '---',
+    '',
+    body,
+  ].join('\n');
+  if (normalized !== raw) {
+    fs.writeFileSync(filePath, normalized, 'utf8');
+  }
+}
+
 function statPathWithRetry(targetPath, maxAttempts = 20) {
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     try {
@@ -514,6 +558,7 @@ function copyRecursive(src, dest) {
     }
   } else {
     copyFileWithRetry(src, dest);
+    normalizeCodexSkillFrontmatterFile(dest);
   }
 }
 
@@ -942,6 +987,7 @@ function materializeSkillMdByLanguage(targetDir) {
       if (fs.existsSync(zh) && fs.existsSync(en)) {
         const src = mode === 'zh' ? zh : en;
         copyFileWithRetry(src, primary);
+        normalizeCodexSkillFrontmatterFile(primary);
       }
     }
   }

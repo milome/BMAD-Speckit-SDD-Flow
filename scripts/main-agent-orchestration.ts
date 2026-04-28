@@ -28,6 +28,7 @@ import {
   type OrchestrationState,
 } from './orchestration-state';
 import { readRuntimeContext, type RuntimeContextFile } from './runtime-context';
+import { loadPolicyContextFromRegistry } from './emit-runtime-policy';
 import {
   readRegistryOrDefault,
   type ReviewerLatestCloseoutRecord,
@@ -207,7 +208,10 @@ function loadRuntimeContextForMainAgent(
     return null;
   }
   try {
-    return readRuntimeContext(input.projectRoot, input.runtimeContextPath);
+    if (input.runtimeContextPath) {
+      return readRuntimeContext(input.projectRoot, input.runtimeContextPath);
+    }
+    return loadPolicyContextFromRegistry(input.projectRoot).runtimeContext;
   } catch {
     return null;
   }
@@ -878,7 +882,8 @@ export function ensureMainAgentDispatchPacket(
   input: ResolveMainAgentOrchestrationInput & { host?: OrchestrationHost }
 ): MainAgentOrchestrationSurface {
   const runtimeContext = loadRuntimeContextForMainAgent(input);
-  const currentSurface = resolveMainAgentOrchestrationSurface(input);
+  const resolvedInput = runtimeContext ? { ...input, runtimeContext } : input;
+  const currentSurface = resolveMainAgentOrchestrationSurface(resolvedInput);
   if (
     currentSurface.pendingPacketStatus !== 'none' &&
     currentSurface.pendingPacketStatus !== 'missing_packet_file' &&
@@ -1014,7 +1019,7 @@ export function ensureMainAgentDispatchPacket(
     fs.writeFileSync(file, JSON.stringify(writtenState, null, 2) + '\n', 'utf8');
   }
 
-  const refreshed = resolveMainAgentOrchestrationSurface(input);
+  const refreshed = resolveMainAgentOrchestrationSurface(resolvedInput);
   if (refreshed.pendingPacketStatus !== 'none') {
     return refreshed;
   }
@@ -1142,7 +1147,7 @@ function resolveFlowAndStage(
   root: string,
   args: Record<string, string | undefined>
 ): { flow: RuntimeFlowId; stage: string } {
-  const runtimeContext = readRuntimeContext(root);
+  const runtimeContext = loadPolicyContextFromRegistry(root).runtimeContext;
   const flow = normalizeText(args.flow) || runtimeContext.flow;
   const stage = normalizeText(args.stage) || runtimeContext.stage;
   return {
@@ -1258,10 +1263,19 @@ export function runMainAgentAutomaticLoop(input: {
 }): MainAgentRunLoopResult {
   const args = input.args ?? {};
   const steps: MainAgentRunLoopResult['steps'] = [];
-  const initialSurface = resolveMainAgentOrchestrationSurface({
+  const runtimeContext = loadRuntimeContextForMainAgent({
     projectRoot: input.projectRoot,
     flow: input.flow,
     stage: input.stage,
+  });
+  const surfaceInput = {
+    projectRoot: input.projectRoot,
+    flow: input.flow,
+    stage: input.stage,
+    ...(runtimeContext ? { runtimeContext } : {}),
+  };
+  const initialSurface = resolveMainAgentOrchestrationSurface({
+    ...surfaceInput,
   });
   steps.push({
     step: 'inspect.initial',
@@ -1270,17 +1284,13 @@ export function runMainAgentAutomaticLoop(input: {
   });
 
   const instruction = buildMainAgentDispatchInstruction({
-    projectRoot: input.projectRoot,
-    flow: input.flow,
-    stage: input.stage,
+    ...surfaceInput,
     host: input.host,
     hydratePacket: true,
   });
   if (!instruction) {
     const finalSurface = resolveMainAgentOrchestrationSurface({
-      projectRoot: input.projectRoot,
-      flow: input.flow,
-      stage: input.stage,
+      ...surfaceInput,
     });
     return {
       runId: `main-agent-run-loop-${Date.now()}`,
@@ -1338,7 +1348,21 @@ export function runMainAgentAutomaticLoop(input: {
     }) ?? null;
     const taskReportPath = normalizeText(args.taskReportPath);
     if (!taskReport && taskReportPath) {
-      taskReport = readTaskReportFromFile(taskReportPath, instruction.packetId);
+      if (process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT === 'true') {
+        taskReport = readTaskReportFromFile(taskReportPath, instruction.packetId);
+      } else {
+        taskReport = {
+          packetId: instruction.packetId,
+          status: 'blocked',
+          filesChanged: [],
+          validationsRun: ['main-agent-external-task-report-denied'],
+          evidence: [
+            'External TaskReport ingestion requires MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT=true',
+          ],
+          downstreamContext: [instruction.expectedDelta],
+          driftFlags: ['external-task-report-denied'],
+        };
+      }
     }
     if (!taskReport && instruction.host === 'codex') {
       const adapterReport = runCodexWorkerAdapter({
@@ -1422,9 +1446,7 @@ export function runMainAgentAutomaticLoop(input: {
   });
 
   const finalSurface = resolveMainAgentOrchestrationSurface({
-    projectRoot: input.projectRoot,
-    flow: input.flow,
-    stage: input.stage,
+    ...surfaceInput,
   });
   steps.push({
     step: 'inspect.final',
@@ -1501,7 +1523,9 @@ export function mainMainAgentOrchestration(argv: string[]): number {
         executor:
           args.taskReportPath
             ? ({ instruction, args: runArgs }) =>
-                readTaskReportFromFile(path.resolve(runArgs.taskReportPath!), instruction.packetId)
+                process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT === 'true'
+                  ? readTaskReportFromFile(path.resolve(runArgs.taskReportPath!), instruction.packetId)
+                  : null
             : args.reportEvidence && host !== 'codex'
             ? ({ projectRoot, instruction, args: runArgs }) => {
                 const reportPath = writeMainAgentRunLoopTaskReport(

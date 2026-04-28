@@ -29,6 +29,8 @@ export interface PrTopology {
     runId: string;
     storyKey: string;
     evidenceBundleId: string;
+    contractHash?: string;
+    gateReportHash?: string;
   };
   required_nodes: Array<{
     node_id: string;
@@ -106,6 +108,7 @@ export function buildParallelMissionPlan(input: {
 export function buildPrTopology(input: {
   plan: ParallelMissionPlan;
   states?: Record<string, PrTopology['required_nodes'][number]['state']>;
+  evidence_provenance?: PrTopology['evidence_provenance'];
 }): PrTopology {
   const required_nodes = input.plan.nodes.map((node) => ({
     node_id: node.node_id,
@@ -119,6 +122,7 @@ export function buildPrTopology(input: {
   return {
     version: 1,
     batch_id: input.plan.batch_id,
+    ...(input.evidence_provenance ? { evidence_provenance: input.evidence_provenance } : {}),
     required_nodes,
     all_affected_stories_passed,
   };

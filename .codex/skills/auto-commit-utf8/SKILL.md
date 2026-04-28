@@ -1,6 +1,6 @@
 ---
-name: auto-commit-utf8
-description: Generate a Chinese git commit message from current code/doc changes and commit using a temporary UTF-8 txt file to avoid PowerShell encoding issues. Use when the user asks to summarize changes into a commit, requires Chinese commit messages, or needs automated garble-checking and correction via amend for the last commit.
+name: "auto-commit-utf8"
+description: "Generate a Chinese git commit message from current code/doc changes and commit using a temporary UTF-8 txt file to avoid PowerShell encoding issues. Use when the user asks to summarize changes into a commit, requires Chinese commit messages, or needs automated garble-checking and correction via amend for the last commit."
 ---
 
 # Auto Commit UTF-8

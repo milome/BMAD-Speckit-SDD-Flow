@@ -1,18 +1,18 @@
-import fs from 'node:fs';
+﻿import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import * as yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
-import { runDualHostJourneyRunner } from '../../scripts/e2e-dual-host-journey-runner';
+import { runHostMatrixJourneyRunner } from '../../scripts/e2e-host-matrix-journey-runner';
 import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
 } from '../../scripts/runtime-context-registry';
 
-describe('dual-host real codex smoke', () => {
+describe('host-matrix real codex smoke', () => {
   it('uses the codex worker adapter smoke in real mode instead of only checking codex --version', () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dual-host-real-codex-'));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'host-matrix-real-codex-'));
     try {
       const contractPath = path.join(root, '_bmad', '_config', 'orchestration-governance.contract.yaml');
       const sprintStatusPath = path.join(root, '_bmad-output', 'implementation-artifacts', 'sprint-status.yaml');
@@ -40,7 +40,7 @@ describe('dual-host real codex smoke', () => {
       );
 
       const reportPath = path.join(root, '_bmad-output', 'runtime', 'e2e', 'real-codex.json');
-      const exitCode = runDualHostJourneyRunner([
+      const exitCode = runHostMatrixJourneyRunner([
         '--project-root',
         root,
         '--mode',
@@ -69,3 +69,4 @@ describe('dual-host real codex smoke', () => {
     }
   }, 120_000);
 });
+

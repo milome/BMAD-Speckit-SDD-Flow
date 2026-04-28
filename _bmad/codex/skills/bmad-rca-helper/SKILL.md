@@ -1,5 +1,3 @@
-﻿<!-- BLOCK_LABEL_POLICY=B -->
-
 ---
 name: bmad-rca-helper
 description: |

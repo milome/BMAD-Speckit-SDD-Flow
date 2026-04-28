@@ -1,25 +1,6 @@
-﻿<!-- BLOCK_LABEL_POLICY=B -->
-
 ---
-name: bmad-standalone-tasks-doc-review
-description: |
-  Codex CLI / OMC adapter entry for BMAD standalone TASKS document audit.
-  Uses Cursor bmad-standalone-tasks-doc-review as the semantic baseline for strict TASKS document quality gates.
-  Critical Auditor >70%, three consecutive rounds with no new gap; the audit subagent must edit the audited document when gaps are found.
-  When the main Agent launches an audit subtask, it **must** copy the full prompt template from this skill and fill placeholders鈥攏o omission, summary, or paraphrase.
-  Prefer `.codex/agents/auditors/auditor-tasks-doc`; follow the fallback chain.
-  Use when: TASKS document audit, 鈥渁udit subtask on {path}鈥? or pre-implementation quality gate.
-when_to_use: |
-  Use when: (1) the user requests a strict TASKS document audit, (2) 鈥渁udit subtask on {document path}鈥?or 鈥淭ASKS document audit鈥? (3) pre-implementation document quality gate.
-references:
-  - auditor-tasks-doc: TASKS doc audit executor; `.codex/agents/auditors/auditor-tasks-doc.md`
-  - auditor-document: document audit executor; `.codex/agents/auditors/auditor-document.md`
-  - audit-document-iteration-rules: `.codex/skills/speckit-workflow/references/audit-document-iteration-rules.md`
-  - audit-prompts: `.codex/skills/speckit-workflow/references/audit-prompts.md`
-  - audit-prompts-critical-auditor-appendix: `.codex/skills/speckit-workflow/references/audit-prompts-critical-auditor-appendix.md`
-  - audit-post-impl-rules: `.codex/skills/speckit-workflow/references/audit-post-impl-rules.md`
-  - prompt-template-tasks-doc: `.codex/skills/bmad-standalone-tasks-doc-review/references/audit-prompt-tasks-doc.md`
-  - prompt-template-impl: `.codex/skills/bmad-standalone-tasks-doc-review/references/audit-prompt-impl.md`
+name: "bmad-standalone-tasks-doc-review"
+description: "Codex CLI / OMC adapter entry for BMAD standalone TASKS document audit. Uses Cursor bmad-standalone-tasks-doc-review as the semantic baseline for strict TASKS document quality gates. Critical Auditor >70%, three consecutive rounds with no new gap; the audit subagent must edit the audited document when gaps are found. When the main Agent launches an audit subtask, it **must** copy the full prompt template from this skill and fill placeholders鈥攏o omission, summary, or paraphrase. Prefer `.codex/ag"
 ---
 
 <!-- CLOSEOUT-APPROVED-CANONICAL -->

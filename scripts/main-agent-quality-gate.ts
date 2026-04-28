@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { buildEvidenceProvenance, sha256 } from './evidence-provenance';
 
 type Thresholds = {
   version: number;
@@ -27,6 +28,7 @@ type Check = {
 };
 
 const ROOT = process.cwd();
+const SOURCE_ROOT = path.resolve(__dirname, '..');
 const THRESHOLDS_PATH = '_bmad/_config/main-agent-quality-gate.thresholds.json';
 const EXPECTED_VERSION = 1;
 
@@ -46,17 +48,17 @@ function normalizeText(value: string | null | undefined): string {
 }
 
 function readThresholds(): Thresholds {
-  const fullPath = path.join(ROOT, THRESHOLDS_PATH);
+  const fullPath = path.join(SOURCE_ROOT, THRESHOLDS_PATH);
   const parsed = JSON.parse(fs.readFileSync(fullPath, 'utf8')) as Thresholds;
   return parsed;
 }
 
 function exists(relativePath: string): boolean {
-  return fs.existsSync(path.join(ROOT, relativePath));
+  return fs.existsSync(path.join(SOURCE_ROOT, relativePath));
 }
 
 function readIfExists(relativePath: string): string {
-  const fullPath = path.join(ROOT, relativePath);
+  const fullPath = path.join(SOURCE_ROOT, relativePath);
   return fs.existsSync(fullPath) ? fs.readFileSync(fullPath, 'utf8') : '';
 }
 
@@ -202,23 +204,29 @@ function main(argv = process.argv.slice(2)): number {
   const thresholds = readThresholds();
   const checks = buildChecks(thresholds, args);
   const failed = checks.filter((check) => !check.passed);
-  const runId = normalizeText(args.runId);
-  const storyKey = normalizeText(args.storyKey);
-  const evidenceBundleId = normalizeText(args.evidenceBundleId);
+  const evidence_provenance = buildEvidenceProvenance({
+    root: SOURCE_ROOT,
+    runId: args.runId,
+    storyKey: args.storyKey,
+    evidenceBundleId: args.evidenceBundleId,
+    prefix: 'quality-gate',
+  });
   const report = {
     reportType: 'main_agent_quality_gate',
     thresholdsPath: THRESHOLDS_PATH,
-    ...(runId && storyKey && evidenceBundleId
-      ? {
-          evidence_provenance: {
-            runId,
-            storyKey,
-            evidenceBundleId,
-          },
-        }
-      : {}),
+    evidence_provenance,
     critical_failures: failed.length,
     checks,
+  };
+  report.evidence_provenance = {
+    ...report.evidence_provenance,
+    gateReportHash: sha256(
+      JSON.stringify({
+        thresholdsPath: report.thresholdsPath,
+        critical_failures: report.critical_failures,
+        checks: report.checks,
+      })
+    ),
   };
   const reportPath = path.join(
     ROOT,

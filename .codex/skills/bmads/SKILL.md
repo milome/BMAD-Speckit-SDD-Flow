@@ -1,6 +1,6 @@
-﻿---
-name: bmads
-description: Short alias for bmad-speckit root governed runtime entry.
+---
+name: "bmads"
+description: "Short alias for bmad-speckit root governed runtime entry."
 ---
 
 # BMADS Alias

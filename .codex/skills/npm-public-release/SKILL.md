@@ -1,6 +1,6 @@
 ---
-name: npm-public-release
-description: Prepare, validate, and publish public npm packages and GitHub Releases for repositories that ship JavaScript or TypeScript packages. Use when handling first-time npm publication, Trusted Publishing or token-based publish setup, semver version bumps, release dry-runs, GitHub Release publishing, dist-tag management, monorepo release coordination, package artifact validation, or post-release verification.
+name: "npm-public-release"
+description: "Prepare, validate, and publish public npm packages and GitHub Releases for repositories that ship JavaScript or TypeScript packages. Use when handling first-time npm publication, Trusted Publishing or token-based publish setup, semver version bumps, release dry-runs, GitHub Release publishing, dist-tag management, monorepo release coordination, package artifact validation, or post-release verification."
 ---
 
 # NPM Public Release

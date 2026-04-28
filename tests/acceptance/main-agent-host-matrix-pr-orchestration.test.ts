@@ -1,16 +1,23 @@
-import fs from 'node:fs';
+﻿import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
-import { runDualHostPrOrchestration } from '../../scripts/main-agent-dual-host-pr-orchestrator';
+import { runHostMatrixPrOrchestration } from '../../scripts/main-agent-host-matrix-pr-orchestrator';
 
-describe('main-agent dual-host PR orchestration', () => {
+describe('main-agent host-matrix PR orchestration', () => {
   it('passes in deterministic mock provider mode with closed PR topology', () => {
-    const report = runDualHostPrOrchestration({ provider: 'mock' });
+    const report = runHostMatrixPrOrchestration({ provider: 'mock' });
     expect(report.finalPassed).toBe(true);
     expect(report.journeyE2EPassed).toBe(true);
     expect(report.hostsPassed).toEqual({ claude: true, codex: true });
+    expect(report.hostMatrix).toMatchObject({
+      matrixType: 'main_agent_multi_host_matrix',
+      requiredHosts: ['cursor', 'claude', 'codex'],
+      hostsPassed: { cursor: true, claude: true, codex: true },
+      allRequiredHostsPassed: true,
+      legacyDualHostPassed: true,
+    });
     expect(report.prTopology.all_affected_stories_passed).toBe(true);
   });
 
@@ -20,7 +27,7 @@ describe('main-agent dual-host PR orchestration', () => {
     delete process.env.GITHUB_TOKEN;
     delete process.env.GH_TOKEN;
     try {
-      const report = runDualHostPrOrchestration({
+      const report = runHostMatrixPrOrchestration({
         provider: 'real',
         checkCommand: () => false,
       });
@@ -51,7 +58,7 @@ describe('main-agent dual-host PR orchestration', () => {
     delete process.env.GITHUB_PAT_TOKEN;
     delete process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
     try {
-      const report = runDualHostPrOrchestration({
+      const report = runHostMatrixPrOrchestration({
         provider: 'real',
         checkCommand: (command, args = []) => {
           if (command === 'gh' && args.join(' ') === 'auth status') return true;
@@ -96,7 +103,7 @@ describe('main-agent dual-host PR orchestration', () => {
     process.env.GITHUB_PAT_TOKEN = 'test-token';
     delete process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
     try {
-      const report = runDualHostPrOrchestration({
+      const report = runHostMatrixPrOrchestration({
         provider: 'real',
         checkCommand: (command) => ['gh', 'claude', 'codex'].includes(command),
       });
@@ -128,7 +135,7 @@ describe('main-agent dual-host PR orchestration', () => {
   });
 
   it('fails closed in real provider mode unless real PR API mutation is explicitly enabled', () => {
-    const report = runDualHostPrOrchestration({
+    const report = runHostMatrixPrOrchestration({
       provider: 'real',
       checkCommand: (command, args = []) => {
         if (command === 'gh' && args.join(' ') === 'auth status') return true;
@@ -146,7 +153,7 @@ describe('main-agent dual-host PR orchestration', () => {
 
   it('records a real PR API success path only after git push, PR create, and PR close succeed', () => {
     const steps: string[] = [];
-    const report = runDualHostPrOrchestration({
+    const report = runHostMatrixPrOrchestration({
       provider: 'real',
       enableRealPrApi: true,
       checkCommand: (command, args = []) => {
@@ -174,7 +181,7 @@ describe('main-agent dual-host PR orchestration', () => {
   });
 
   it('writes standard truth-gate evidence artifacts from the CLI', () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dual-host-pr-evidence-'));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'host-matrix-pr-evidence-'));
     try {
       fs.mkdirSync(path.join(root, '_bmad', '_config'), { recursive: true });
       fs.mkdirSync(path.join(root, '_bmad-output', 'implementation-artifacts'), {
@@ -205,7 +212,7 @@ describe('main-agent dual-host PR orchestration', () => {
           '--project',
           path.join(process.cwd(), 'tsconfig.node.json'),
           '--transpile-only',
-          path.join(process.cwd(), 'scripts', 'main-agent-dual-host-pr-orchestrator.ts'),
+          path.join(process.cwd(), 'scripts', 'main-agent-host-matrix-pr-orchestrator.ts'),
           '--provider',
           'mock',
           '--projectRoot',
@@ -214,7 +221,7 @@ describe('main-agent dual-host PR orchestration', () => {
         { encoding: 'utf8' }
       );
       if (run.status !== 0) {
-        throw new Error(`dual-host CLI failed\nstdout=${run.stdout}\nstderr=${run.stderr}`);
+        throw new Error(`host-matrix CLI failed\nstdout=${run.stdout}\nstderr=${run.stderr}`);
       }
       expect(run.status).toBe(0);
       expect(
@@ -224,7 +231,18 @@ describe('main-agent dual-host PR orchestration', () => {
             '_bmad-output',
             'runtime',
             'e2e',
-            'dual-host-pr-orchestration-report.json'
+            'multi-host-pr-orchestration-report.json'
+          )
+        )
+      ).toBe(true);
+      expect(
+        fs.existsSync(
+          path.join(
+            root,
+            '_bmad-output',
+            'runtime',
+            'e2e',
+            'host-matrix-pr-orchestration-report.json'
           )
         )
       ).toBe(true);
@@ -236,3 +254,4 @@ describe('main-agent dual-host PR orchestration', () => {
     }
   });
 });
+

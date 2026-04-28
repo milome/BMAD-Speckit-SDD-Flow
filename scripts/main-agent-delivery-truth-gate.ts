@@ -19,10 +19,16 @@ interface ReleaseGateEvidence {
   };
 }
 
-interface DualHostEvidence {
+interface HostMatrixEvidence {
   journeyMode: 'mock' | 'real';
   journeyE2EPassed: boolean;
-  hostsPassed: Record<'claude' | 'codex', boolean>;
+  hostMatrix?: {
+    matrixType: 'main_agent_multi_host_matrix';
+    requiredHosts: Array<'cursor' | 'claude' | 'codex'>;
+    hostsPassed: Record<'cursor' | 'claude' | 'codex', boolean>;
+    allRequiredHostsPassed: boolean;
+    legacyDualHostPassed?: boolean;
+  };
   evidence_provenance?: EvidenceProvenance;
 }
 
@@ -140,12 +146,12 @@ function defaultEvidencePaths(root: string): Record<string, string> {
       'gates',
       'main-agent-release-gate-report.json'
     ),
-    dualHost: path.join(
+    hostMatrix: path.join(
       root,
       '_bmad-output',
       'runtime',
       'e2e',
-      'dual-host-pr-orchestration-report.json'
+      'multi-host-pr-orchestration-report.json'
     ),
     soak: path.join(root, '_bmad-output', 'runtime', 'soak', 'main-agent-soak-report.json'),
     prTopology: path.join(root, '_bmad-output', 'runtime', 'pr', 'pr_topology.json'),
@@ -188,21 +194,41 @@ function checkReleaseGate(evidence: ReleaseGateEvidence | null): {
   };
 }
 
-function checkDualHost(evidence: DualHostEvidence | null): { passed: boolean; summary: string } {
+function checkHostMatrix(evidence: HostMatrixEvidence | null): {
+  passed: boolean;
+  summary: string;
+} {
+  const requiredHosts = new Set(evidence?.hostMatrix?.requiredHosts ?? []);
+  const hasAllRequiredHosts =
+    requiredHosts.has('cursor') && requiredHosts.has('claude') && requiredHosts.has('codex');
   return {
     passed:
       evidence != null &&
       evidence.journeyMode === 'real' &&
       evidence.journeyE2EPassed === true &&
-      evidence.hostsPassed.claude === true &&
-      evidence.hostsPassed.codex === true,
+      evidence.hostMatrix?.matrixType === 'main_agent_multi_host_matrix' &&
+      hasAllRequiredHosts &&
+      evidence.hostMatrix.hostsPassed.cursor === true &&
+      evidence.hostMatrix.hostsPassed.claude === true &&
+      evidence.hostMatrix.hostsPassed.codex === true &&
+      evidence.hostMatrix.allRequiredHostsPassed === true,
     summary: evidence
-      ? `mode=${evidence.journeyMode}, passed=${evidence.journeyE2EPassed}, claude=${evidence.hostsPassed.claude}, codex=${evidence.hostsPassed.codex}`
+      ? `mode=${evidence.journeyMode}, journey=${evidence.journeyE2EPassed}, cursor=${evidence.hostMatrix?.hostsPassed.cursor}, claude=${evidence.hostMatrix?.hostsPassed.claude}, codex=${evidence.hostMatrix?.hostsPassed.codex}, allRequiredHostsPassed=${evidence.hostMatrix?.allRequiredHostsPassed}`
       : 'missing',
   };
 }
 
 function checkSoak(evidence: SoakEvidence | null): { passed: boolean; summary: string } {
+  const invocations = evidence?.developmentRun?.runLoopInvocations ?? [];
+  const completed = invocations.filter((item) => item.status === 'completed');
+  const blocked = invocations.filter((item) => item.status === 'blocked');
+  const last = invocations[invocations.length - 1];
+  const hasRealPatch = invocations.some(
+    (item) => item.tickCommand?.diffHashBefore && item.tickCommand.diffHashBefore !== item.tickCommand.diffHashAfter
+  );
+  const blockedTicksRecovered =
+    blocked.length === 0 ||
+    blocked.every((item) => completed.some((candidate) => candidate.tick > item.tick));
   return {
     passed:
       evidence != null &&
@@ -218,9 +244,11 @@ function checkSoak(evidence: SoakEvidence | null): { passed: boolean; summary: s
       evidence.developmentRun.tick_count === evidence.tick_count &&
       evidence.developmentRun.completed_ticks > 0 &&
       evidence.developmentRun.runLoopInvocations.length === evidence.developmentRun.tick_count &&
-      evidence.developmentRun.runLoopInvocations.every(
-        (item) => item.runId !== '' && item.packetId !== null && item.taskReportStatus === 'done'
-      ) &&
+      invocations.every((item) => item.runId !== '' && item.packetId !== null) &&
+      completed.every((item) => item.taskReportStatus === 'done') &&
+      last?.status === 'completed' &&
+      blockedTicksRecovered &&
+      hasRealPatch &&
       evidence.developmentRun.runLoopInvocations.some(
         (item) =>
           item.tickCommand != null &&
@@ -232,7 +260,7 @@ function checkSoak(evidence: SoakEvidence | null): { passed: boolean; summary: s
           item.tickCommand.diffHashAfter !== ''
       ),
     summary: evidence
-      ? `mode=${evidence.mode}, run_kind=${evidence.run_kind ?? 'missing'}, target=${evidence.target_duration_ms}, observed=${evidence.observed_duration_ms}, recovery=${evidence.recovery_success_rate}, development_ticks=${evidence.developmentRun?.tick_count ?? 0}, completed_ticks=${evidence.developmentRun?.completed_ticks ?? 0}, tick_commands=${evidence.developmentRun?.runLoopInvocations.filter((item) => item.tickCommand?.exitCode === 0).length ?? 0}`
+      ? `mode=${evidence.mode}, run_kind=${evidence.run_kind ?? 'missing'}, target=${evidence.target_duration_ms}, observed=${evidence.observed_duration_ms}, recovery=${evidence.recovery_success_rate}, development_ticks=${evidence.developmentRun?.tick_count ?? 0}, completed_ticks=${evidence.developmentRun?.completed_ticks ?? 0}, blocked_ticks=${blocked.length}, recovered_blocked=${blockedTicksRecovered}, real_patch=${hasRealPatch}, tick_commands=${evidence.developmentRun?.runLoopInvocations.filter((item) => item.tickCommand?.exitCode === 0).length ?? 0}`
       : 'missing',
   };
 }
@@ -294,7 +322,7 @@ function checkQualityGate(evidence: QualityGateEvidence | null): {
 
 function checkEvidenceProvenance(input: {
   releaseGate: ReleaseGateEvidence | null;
-  dualHost: DualHostEvidence | null;
+  hostMatrix: HostMatrixEvidence | null;
   soak: SoakEvidence | null;
   prTopology: PrTopology | null;
   sprintAudit: SprintStatusAuditEvidence | null;
@@ -302,7 +330,7 @@ function checkEvidenceProvenance(input: {
 }): { passed: boolean; summary: string } {
   const entries = [
     ['releaseGate', input.releaseGate?.evidence_provenance],
-    ['dualHost', input.dualHost?.evidence_provenance],
+    ['hostMatrix', input.hostMatrix?.evidence_provenance],
     ['soak', input.soak?.evidence_provenance],
     ['prTopology', input.prTopology?.evidence_provenance],
     ['sprintAudit', input.sprintAudit?.evidence_provenance],
@@ -323,35 +351,57 @@ function checkEvidenceProvenance(input: {
     value == null ||
     value.runId !== first.runId ||
     value.storyKey !== first.storyKey ||
-    value.evidenceBundleId !== first.evidenceBundleId
+    value.evidenceBundleId !== first.evidenceBundleId ||
+    value.gateReportHash == null ||
+    value.gateReportHash === ''
   );
   return {
-    passed: mismatches.length === 0 && first.runId !== '' && first.storyKey !== '' && first.evidenceBundleId !== '',
+    passed:
+      mismatches.length === 0 &&
+      first.runId !== '' &&
+      first.storyKey !== '' &&
+      first.evidenceBundleId !== '' &&
+      first.gateReportHash != null &&
+      first.gateReportHash !== '',
     summary:
       mismatches.length === 0
-        ? `runId=${first.runId}, storyKey=${first.storyKey}, evidenceBundleId=${first.evidenceBundleId}`
+        ? `runId=${first.runId}, storyKey=${first.storyKey}, evidenceBundleId=${first.evidenceBundleId}, gateReportHash=present`
         : `provenance mismatch: ${mismatches.map(([id]) => id).join(',')}`,
   };
 }
 
 export function evaluateDeliveryTruthGate(input: {
   releaseGate: ReleaseGateEvidence | null;
-  dualHost: DualHostEvidence | null;
+  hostMatrix?: HostMatrixEvidence | null;
+  dualHost?: unknown;
   soak: SoakEvidence | null;
   prTopology: PrTopology | null;
   sprintAudit: SprintStatusAuditEvidence | null;
   qualityGate?: QualityGateEvidence | null;
   missingEvidence?: string[];
   evidencePaths?: Record<string, string | null>;
+  env?: NodeJS.ProcessEnv;
 }): DeliveryTruthGateReport {
+  const env = input.env ?? process.env;
   const checks = [
     { id: 'release-gate', ...checkReleaseGate(input.releaseGate) },
-    { id: 'dual-host-real-journey', ...checkDualHost(input.dualHost) },
+    { id: 'multi-host-host-matrix', ...checkHostMatrix(input.hostMatrix ?? null) },
     { id: 'wall-clock-8h-soak', ...checkSoak(input.soak) },
     { id: 'pr-topology-closed', ...checkPrTopology(input.prTopology) },
     { id: 'authorized-sprint-status-write', ...checkSprintAudit(input.sprintAudit) },
     { id: 'quality-gate', ...checkQualityGate(input.qualityGate ?? null) },
     { id: 'same-run-evidence-provenance', ...checkEvidenceProvenance(input) },
+    {
+      id: 'test-dev-seams-disabled',
+      passed:
+        env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT !== 'true' &&
+        env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE !== 'true',
+      summary:
+        env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT === 'true' ||
+        env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE === 'true'
+          ? `unsafe seam enabled: MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT=${env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT ?? 'unset'}, MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE=${env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE ?? 'unset'}`
+          : 'test/dev seams disabled',
+    },
   ];
   const failedEvidence = checks
     .filter((check) => !check.passed)
@@ -387,21 +437,21 @@ export function main(argv: string[]): number {
   const missingEvidence: string[] = [];
   const evidencePaths = {
     releaseGate: args.releaseGatePath ?? defaults.releaseGate,
-    dualHost: args.dualHostPath ?? defaults.dualHost,
+    hostMatrix: args.hostMatrixPath ?? defaults.hostMatrix,
     soak: args.soakPath ?? defaults.soak,
     prTopology: args.prTopologyPath ?? defaults.prTopology,
     sprintAudit: args.sprintAuditPath ?? defaults.sprintAudit,
     qualityGate: args.qualityGatePath ?? defaults.qualityGate,
   };
   const releaseGate = readJson<ReleaseGateEvidence>(evidencePaths.releaseGate);
-  const dualHost = readJson<DualHostEvidence>(evidencePaths.dualHost);
+  const hostMatrix = readJson<HostMatrixEvidence>(evidencePaths.hostMatrix);
   const soak = readJson<SoakEvidence>(evidencePaths.soak);
   const prTopology = readJson<PrTopology>(evidencePaths.prTopology);
   const sprintAudit = readJson<SprintStatusAuditEvidence>(evidencePaths.sprintAudit);
   const qualityGate = readJson<QualityGateEvidence>(evidencePaths.qualityGate);
   for (const [id, result] of Object.entries({
     releaseGate,
-    dualHost,
+    hostMatrix,
     soak,
     prTopology,
     sprintAudit,
@@ -413,7 +463,7 @@ export function main(argv: string[]): number {
   }
   const report = evaluateDeliveryTruthGate({
     releaseGate: releaseGate.value,
-    dualHost: dualHost.value,
+    hostMatrix: hostMatrix.value,
     soak: soak.value,
     prTopology: prTopology.value,
     sprintAudit: sprintAudit.value,

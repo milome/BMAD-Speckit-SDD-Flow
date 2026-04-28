@@ -1,29 +1,6 @@
 ---
-name: ralph-method
-description: |
-  ⚠️ **重要限制**: 本技能只能在tasks.md生成后使用！
-
-  **禁止场景**:
-  - ❌ 未生成plan.md直接使用本技能
-  - ❌ 未生成IMPLEMENTATION_GAPS.md直接使用本技能
-  - ❌ 未生成tasks.md直接使用本技能
-
-  **正确流程**:
-  1. 先执行speckit-workflow完整流程（specify→plan→GAPS→tasks）
-  2. 获得tasks.md后，使用本技能细化任务分解
-  3. 生成的prd.json必须与tasks.md保持一致
-
-  **违规后果**: 如检测到前置文档缺失，本技能将拒绝执行。
-
-  Apply Ralph Wiggum Method patterns for decomposing tasks into atomic user stories
-user-invocable: true
-when_to_use: |
-  Use this skill when:
-  - Breaking down a feature or task into implementable user stories
-  - Planning work for autonomous AI-assisted coding loops
-  - Creating prd.json or story breakdown artifacts
-  - Evaluating if a story is atomic enough for single-iteration completion
-  - Generating Ralph Wiggum Method artifacts
+name: "ralph-method"
+description: "⚠️ **重要限制**: 本技能只能在tasks.md生成后使用！"
 ---
 
 # Ralph Wiggum Method

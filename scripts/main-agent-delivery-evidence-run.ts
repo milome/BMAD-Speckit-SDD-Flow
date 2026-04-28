@@ -76,8 +76,8 @@ function main(argv: string[]): number {
   steps.push(runStep('release-gate', tsNodeScript('scripts/main-agent-release-gate.ts'), true));
   steps.push(
     runStep(
-      'dual-host-pr-orchestration',
-      tsNodeScript('scripts/main-agent-dual-host-pr-orchestrator.ts', ['--provider', provider]),
+      'multi-host-pr-orchestration',
+      tsNodeScript('scripts/main-agent-host-matrix-pr-orchestrator.ts', ['--provider', provider]),
       true
     )
   );

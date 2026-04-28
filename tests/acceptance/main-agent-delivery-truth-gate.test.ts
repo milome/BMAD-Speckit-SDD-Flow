@@ -1,4 +1,4 @@
-import fs from 'node:fs';
+﻿import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -9,6 +9,7 @@ const evidence_provenance = {
   runId: 'run-delivery-truth',
   storyKey: 'S1',
   evidenceBundleId: 'bundle-delivery-truth',
+  gateReportHash: 'artifact-gate-hash',
 };
 
 function closedPrTopology() {
@@ -63,16 +64,27 @@ function sprintAuditEvidence() {
   };
 }
 
+function hostMatrixEvidence(overrides: Record<string, unknown> = {}) {
+  return {
+    journeyMode: 'real',
+    journeyE2EPassed: true,
+    hostMatrix: {
+      matrixType: 'main_agent_multi_host_matrix',
+      requiredHosts: ['cursor', 'claude', 'codex'],
+      hostsPassed: { cursor: true, claude: true, codex: true },
+      allRequiredHostsPassed: true,
+      legacyDualHostPassed: true,
+    },
+    evidence_provenance,
+    ...overrides,
+  };
+}
+
 describe('main-agent delivery truth gate', () => {
   it('blocks completion language for mock journey and short soak evidence', () => {
     const report = evaluateDeliveryTruthGate({
       releaseGate: releaseGateEvidence(),
-      dualHost: {
-        journeyMode: 'mock',
-        journeyE2EPassed: true,
-        hostsPassed: { claude: true, codex: true },
-        evidence_provenance,
-      },
+      hostMatrix: hostMatrixEvidence({ journeyMode: 'mock' }),
       soak: {
         mode: 'wall_clock',
         run_kind: 'heartbeat_only',
@@ -92,19 +104,14 @@ describe('main-agent delivery truth gate', () => {
 
     expect(report.completionAllowed).toBe(false);
     expect(report.completionLanguage).toBe('partial_only');
-    expect(report.failedEvidence.join('\n')).toContain('dual-host-real-journey');
+    expect(report.failedEvidence.join('\n')).toContain('multi-host-host-matrix');
     expect(report.failedEvidence.join('\n')).toContain('wall-clock-8h-soak');
   });
 
   it('allows completion language only with real 8h and closed PR evidence', () => {
     const report = evaluateDeliveryTruthGate({
       releaseGate: releaseGateEvidence(),
-      dualHost: {
-        journeyMode: 'real',
-        journeyE2EPassed: true,
-        hostsPassed: { claude: true, codex: true },
-        evidence_provenance,
-      },
+      hostMatrix: hostMatrixEvidence(),
       soak: {
         mode: 'wall_clock',
         run_kind: 'development_run_loop',
@@ -151,15 +158,124 @@ describe('main-agent delivery truth gate', () => {
     expect(report.completionLanguage).toBe('complete_allowed');
   });
 
+  it('rejects legacy dual-host evidence when cursor is missing from the host matrix', () => {
+    const report = evaluateDeliveryTruthGate({
+      releaseGate: releaseGateEvidence(),
+      hostMatrix: hostMatrixEvidence({
+        hostMatrix: {
+          matrixType: 'main_agent_multi_host_matrix',
+          requiredHosts: ['claude', 'codex'],
+          hostsPassed: { cursor: false, claude: true, codex: true },
+          allRequiredHostsPassed: false,
+          legacyDualHostPassed: true,
+        },
+      }),
+      soak: {
+        mode: 'wall_clock',
+        run_kind: 'development_run_loop',
+        target_duration_ms: 8 * 60 * 60 * 1000,
+        observed_duration_ms: 8 * 60 * 60 * 1000,
+        tick_count: 1,
+        manual_restarts: 0,
+        silent_hangs: 0,
+        false_completions: 0,
+        recovery_success_rate: 1,
+        developmentRun: {
+          tick_count: 1,
+          completed_ticks: 1,
+          blocked_ticks: 0,
+          runLoopInvocations: [
+            {
+              tick: 1,
+              runId: 'main-agent-run-loop-1',
+              status: 'completed',
+              packetId: 'packet-1',
+              taskReportStatus: 'done',
+              evidence: ['soak-tick-1'],
+              finalNextAction: 'dispatch_review',
+              tickCommand: {
+                command: 'pytest',
+                exitCode: 0,
+                stdoutPath: 'stdout.log',
+                stderrPath: 'stderr.log',
+                diffHashBefore: 'abc',
+                diffHashAfter: 'def',
+              },
+            },
+          ],
+        },
+        evidence_provenance,
+      },
+      prTopology: closedPrTopology(),
+      sprintAudit: sprintAuditEvidence(),
+      qualityGate: { critical_failures: 0, evidence_provenance },
+    });
+
+    expect(report.completionAllowed).toBe(false);
+    expect(report.failedEvidence.join('\n')).toContain('multi-host-host-matrix');
+    expect(report.failedEvidence.join('\n')).toContain('cursor=false');
+  });
+
+  it('fails closed when test/dev execution seams are enabled in delivery environment', () => {
+    const report = evaluateDeliveryTruthGate({
+      releaseGate: releaseGateEvidence(),
+      hostMatrix: hostMatrixEvidence(),
+      soak: {
+        mode: 'wall_clock',
+        run_kind: 'development_run_loop',
+        target_duration_ms: 8 * 60 * 60 * 1000,
+        observed_duration_ms: 8 * 60 * 60 * 1000,
+        tick_count: 1,
+        manual_restarts: 0,
+        silent_hangs: 0,
+        false_completions: 0,
+        recovery_success_rate: 1,
+        developmentRun: {
+          tick_count: 1,
+          completed_ticks: 1,
+          blocked_ticks: 0,
+          runLoopInvocations: [
+            {
+              tick: 1,
+              runId: 'run-delivery-truth',
+              status: 'completed',
+              packetId: 'p1',
+              taskReportStatus: 'done',
+              evidence: ['real_patch'],
+              finalNextAction: 'dispatch_review',
+              tickCommand: {
+                command: 'npm test',
+                exitCode: 0,
+                stdoutPath: 'stdout.log',
+                stderrPath: 'stderr.log',
+                diffHashBefore: 'before',
+                diffHashAfter: 'after',
+              },
+            },
+          ],
+        },
+        evidence_provenance,
+      },
+      prTopology: closedPrTopology(),
+      sprintAudit: sprintAuditEvidence(),
+      qualityGate: { critical_failures: 0, evidence_provenance },
+      env: {
+        MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT: 'true',
+        MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE: 'true',
+      },
+    });
+
+    expect(report.completionAllowed).toBe(false);
+    expect(report.failedEvidence.join('\n')).toContain('test-dev-seams-disabled');
+    expect(report.failedEvidence.join('\n')).toContain('unsafe seam enabled');
+  });
+
   it('rejects completion when delivery artifacts are not bound to the same evidence provenance', () => {
     const report = evaluateDeliveryTruthGate({
       releaseGate: releaseGateEvidence(),
-      dualHost: {
-        journeyMode: 'real',
-        journeyE2EPassed: true,
-        hostsPassed: { claude: true, codex: true },
+      hostMatrix: hostMatrixEvidence({
         evidence_provenance: { ...evidence_provenance, runId: 'other-run' },
-      },
+      }),
       soak: {
         mode: 'wall_clock',
         run_kind: 'development_run_loop',
@@ -208,12 +324,7 @@ describe('main-agent delivery truth gate', () => {
   it('rejects completion when PR topology is not bound to the same evidence provenance', () => {
     const report = evaluateDeliveryTruthGate({
       releaseGate: releaseGateEvidence(),
-      dualHost: {
-        journeyMode: 'real',
-        journeyE2EPassed: true,
-        hostsPassed: { claude: true, codex: true },
-        evidence_provenance,
-      },
+      hostMatrix: hostMatrixEvidence(),
       soak: {
         mode: 'wall_clock',
         run_kind: 'development_run_loop',
@@ -266,12 +377,7 @@ describe('main-agent delivery truth gate', () => {
   it('rejects heartbeat-only 8h evidence because real development run-loop proof is required', () => {
     const report = evaluateDeliveryTruthGate({
       releaseGate: releaseGateEvidence(),
-      dualHost: {
-        journeyMode: 'real',
-        journeyE2EPassed: true,
-        hostsPassed: { claude: true, codex: true },
-        evidence_provenance,
-      },
+      hostMatrix: hostMatrixEvidence(),
       soak: {
         mode: 'wall_clock',
         run_kind: 'heartbeat_only',
@@ -359,3 +465,4 @@ describe('main-agent delivery truth gate', () => {
     }
   });
 });
+

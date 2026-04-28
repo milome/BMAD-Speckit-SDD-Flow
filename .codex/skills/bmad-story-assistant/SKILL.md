@@ -1,11 +1,6 @@
-﻿<!-- BLOCK_LABEL_POLICY=B -->
-
 ---
-name: bmad-story-assistant
-description: |
-  Codex CLI / OMC entry for the BMAD Story Assistant.
-  Uses Cursor `bmad-story-assistant` as the semantic baseline to orchestrate Story creation 鈫?audit 鈫?Dev Story 鈫?post-implementation audit 鈫?failure loopback,
-  and integrates this repository鈥檚 multi-agent, hooks, state machine, handoff, score writing, and commit gate mechanisms.
+name: "bmad-story-assistant"
+description: "Codex CLI / OMC entry for the BMAD Story Assistant. Uses Cursor `bmad-story-assistant` as the semantic baseline to orchestrate Story creation 鈫?audit 鈫?Dev Story 鈫?post-implementation audit 鈫?failure loopback, and integrates this repository鈥檚 multi-agent, hooks, state machine, handoff, score writing, and commit gate mechanisms."
 ---
 
 <!-- CLOSEOUT-APPROVED-CANONICAL -->

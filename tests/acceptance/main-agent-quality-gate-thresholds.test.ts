@@ -143,15 +143,18 @@ describe('main-agent quality gate thresholds', () => {
           runId: string;
           storyKey: string;
           evidenceBundleId: string;
+          gateReportHash?: string;
         };
         checks: Array<{ id: string; passed: boolean }>;
       };
       expect(report.critical_failures).toBe(0);
-      expect(report.evidence_provenance).toEqual({
+      expect(report.evidence_provenance).toMatchObject({
         runId: 'run-quality',
         storyKey: 'S-quality',
         evidenceBundleId: 'bundle-quality',
+        contractHash: expect.any(String),
       });
+      expect(report.evidence_provenance?.gateReportHash).toEqual(expect.any(String));
       expect(report.checks.find((check) => check.id === 'codex-run-scoped-proof')?.passed).toBe(
         true
       );

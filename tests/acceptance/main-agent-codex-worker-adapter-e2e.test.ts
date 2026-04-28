@@ -45,7 +45,9 @@ function prepareCodexRoot(): string {
 describe('main-agent codex worker adapter e2e', () => {
   it('runs codex no-hooks smoke, writes scoped changes, emits TaskReport, and lets run-loop ingest it', () => {
     const root = prepareCodexRoot();
+    const previousAllow = process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT;
     try {
+      process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT = 'true';
       const instruction = buildMainAgentDispatchInstruction({
         projectRoot: root,
         flow: 'story',
@@ -94,6 +96,11 @@ describe('main-agent codex worker adapter e2e', () => {
         `codex-smoke:src/codex/${instruction!.packetId}.md`
       );
     } finally {
+      if (previousAllow === undefined) {
+        delete process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT;
+      } else {
+        process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT = previousAllow;
+      }
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
@@ -132,7 +139,9 @@ describe('main-agent codex worker adapter e2e', () => {
 
   it('runs non-smoke codex exec through a controlled Codex binary and ingests TaskReport', () => {
     const root = prepareCodexRoot();
+    const previousAllow = process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
     try {
+      process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = 'true';
       const fakeCodexPath = path.join(root, 'fake-codex.cjs');
       fs.writeFileSync(
         fakeCodexPath,
@@ -187,6 +196,45 @@ describe('main-agent codex worker adapter e2e', () => {
       expect(adapter.stdinPath).toBeTruthy();
       expect(fs.readFileSync(adapter.stdinPath!, 'utf8')).toContain('Runtime Governance JSON');
     } finally {
+      if (previousAllow === undefined) {
+        delete process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
+      } else {
+        process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = previousAllow;
+      }
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed when Codex binary override is not explicitly authorized', () => {
+    const root = prepareCodexRoot();
+    const previousAllow = process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
+    try {
+      delete process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'story',
+        stage: 'implement',
+        host: 'codex',
+        hydratePacket: true,
+      });
+      const adapter = runCodexWorkerAdapter({
+        projectRoot: root,
+        packetPath: instruction!.packetPath,
+        taskReportPath: path.join(root, 'override-denied-task-report.json'),
+        smoke: false,
+        codexBinary: path.join(root, 'fake-codex'),
+      });
+
+      expect(adapter.exitCode).toBe(1);
+      expect(adapter.scopePassed).toBe(false);
+      expect(adapter.taskReport.status).toBe('blocked');
+      expect(adapter.taskReport.driftFlags).toContain('codex-binary-override-denied');
+    } finally {
+      if (previousAllow === undefined) {
+        delete process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
+      } else {
+        process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = previousAllow;
+      }
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
@@ -325,7 +373,7 @@ describe('main-agent codex worker adapter e2e', () => {
     }
   });
 
-  it('normalizes UTF-16LE BOM TaskReport output and rewrites strict UTF-8 JSON', () => {
+  it('fails closed when TaskReport is not strict UTF-8 no-BOM JSON', () => {
     const root = prepareCodexRoot();
     try {
       const instruction = buildMainAgentDispatchInstruction({
@@ -358,12 +406,84 @@ describe('main-agent codex worker adapter e2e', () => {
         timeoutMs: 1,
       });
 
-      expect(adapter.taskReport.status).toBe('done');
+      expect(adapter.taskReport.status).toBe('blocked');
+      expect(adapter.scopePassed).toBe(false);
       const rewrittenRaw = fs.readFileSync(taskReportPath);
       expect([...rewrittenRaw.subarray(0, 2)]).not.toEqual([0xff, 0xfe]);
       const rewritten = JSON.parse(rewrittenRaw.toString('utf8')) as { status: string };
-      expect(rewritten.status).toBe('done');
+      expect(rewritten.status).toBe('blocked');
     } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed when Codex modifies an actual file outside allowedWriteScope without reporting it', () => {
+    const root = prepareCodexRoot();
+    const previousAllow = process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
+    try {
+      process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = 'true';
+      const fakeCodexPath = path.join(root, 'fake-codex-hidden-write.cjs');
+      fs.writeFileSync(
+        fakeCodexPath,
+        [
+          "const fs = require('fs');",
+          "const path = require('path');",
+          "const input = fs.readFileSync(0, 'utf8');",
+          "const reportPath = input.match(/write a JSON TaskReport to: (.+)/i)?.[1]?.trim();",
+          "const packetId = input.match(/Packet ID: (.+)/i)?.[1]?.trim();",
+          "if (!reportPath || !packetId) process.exit(2);",
+          "fs.mkdirSync(path.dirname(reportPath), { recursive: true });",
+          "fs.mkdirSync('outside', { recursive: true });",
+          "fs.writeFileSync('outside/hidden.md', 'hidden out-of-scope write\\n', 'utf8');",
+          "fs.writeFileSync(reportPath, JSON.stringify({ packetId, status: 'done', filesChanged: [], validationsRun: ['fake-codex-hidden-write'], evidence: ['reported clean'], downstreamContext: [] }, null, 2) + '\\n', 'utf8');",
+          "process.exit(0);",
+          '',
+        ].join('\n'),
+        'utf8'
+      );
+      const fakeCodexBin =
+        process.platform === 'win32' ? path.join(root, 'fake-codex-hidden-write.cmd') : path.join(root, 'fake-codex-hidden-write');
+      fs.writeFileSync(
+        fakeCodexBin,
+        process.platform === 'win32'
+          ? `@echo off\r\n"${process.execPath}" "${fakeCodexPath}" %*\r\n`
+          : `#!/usr/bin/env sh\n"${process.execPath}" "${fakeCodexPath}" "$@"\n`,
+        'utf8'
+      );
+      if (process.platform !== 'win32') {
+        fs.chmodSync(fakeCodexBin, 0o755);
+      }
+
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'story',
+        stage: 'implement',
+        host: 'codex',
+        hydratePacket: true,
+      });
+      const taskReportPath = path.join(root, 'hidden-write-task-report.json');
+
+      const adapter = runCodexWorkerAdapter({
+        projectRoot: root,
+        packetPath: instruction!.packetPath,
+        taskReportPath,
+        smoke: false,
+        codexBinary: fakeCodexBin,
+      });
+
+      expect(adapter.exitCode).toBe(0);
+      expect(adapter.scopePassed).toBe(false);
+      expect(adapter.actualFilesChanged).toContain('outside/hidden.md');
+      expect(adapter.taskReport.status).toBe('blocked');
+      expect(adapter.taskReport.evidence.join('\n')).toContain(
+        'actual file outside allowedWriteScope: outside/hidden.md'
+      );
+    } finally {
+      if (previousAllow === undefined) {
+        delete process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
+      } else {
+        process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = previousAllow;
+      }
       fs.rmSync(root, { recursive: true, force: true });
     }
   });

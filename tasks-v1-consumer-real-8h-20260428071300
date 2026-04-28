@@ -1,0 +1,17 @@
+{
+  "reportType": "codex_run_scoped_quality_proof",
+  "generatedAt": "2026-04-28T08:24:44.868Z",
+  "evidence_provenance": {
+    "runId": "S-backtest-independent-process-phase2",
+    "storyKey": "tasks-v1-consumer-real-8h-20260428071300:bundle",
+    "gateReportHash": "6a72be2f435501b06b8cf89594b34164a007becb87eae1a361e9728286ad0676"
+  },
+  "codex": {
+    "hostKind": "codex",
+    "mode": "codex_exec",
+    "taskReportStatus": "done",
+    "validationsRun": [
+      "real-8h-development-run-loop"
+    ]
+  }
+}

@@ -1,6 +1,6 @@
 ---
-name: consumer-governance-validation
-description: Historical / forensic validation skill for pre-hard-cut consumer governance flows. Use only when you need to inspect old worker-era evidence or migrate old consumer docs. It is no longer the accepted runtime validation path.
+name: "consumer-governance-validation"
+description: "Historical / forensic validation skill for pre-hard-cut consumer governance flows. Use only when you need to inspect old worker-era evidence or migrate old consumer docs. It is no longer the accepted runtime validation path."
 ---
 
 # Consumer Governance Validation

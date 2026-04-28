@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import {
   runMainAgentAutomaticLoop,
@@ -120,6 +120,78 @@ describe('main-agent automatic run-loop', () => {
     }
   });
 
+  it('resolves runtime context from registry activeScope instead of flat project fallback', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-run-loop-scope-'));
+    try {
+      const registry = defaultRuntimeContextRegistry(root);
+      const projectContext = defaultRuntimeContextFile({
+        flow: 'story',
+        stage: 'story_create',
+        sourceMode: 'full_bmad',
+        contextScope: 'project',
+        runId: 'flat-project-run',
+      });
+      writeRuntimeContext(root, projectContext);
+
+      const scopedContextPath = path.join(
+        root,
+        '_bmad-output',
+        'runtime',
+        'context',
+        'runs',
+        'epic-registry',
+        'S-registry',
+        'registry-run.json'
+      );
+      fs.mkdirSync(path.dirname(scopedContextPath), { recursive: true });
+      fs.writeFileSync(
+        scopedContextPath,
+        JSON.stringify(
+          defaultRuntimeContextFile({
+            flow: 'story',
+            stage: 'implement',
+            sourceMode: 'full_bmad',
+            contextScope: 'run',
+            epicId: 'epic-registry',
+            storyId: 'S-registry',
+            storySlug: 'registry-scope',
+            runId: 'registry-run',
+          }),
+          null,
+          2
+        ) + '\n',
+        'utf8'
+      );
+      registry.runContexts['registry-run'] = {
+        path: path.relative(root, scopedContextPath).replace(/\\/g, '/'),
+        epicId: 'epic-registry',
+        storyId: 'S-registry',
+      };
+      registry.activeScope = {
+        scopeType: 'run',
+        runId: 'registry-run',
+        resolvedContextPath: registry.runContexts['registry-run'].path,
+        reason: 'test registry active scope',
+      };
+      writeRuntimeContextRegistry(root, registry);
+
+      const result = runMainAgentAutomaticLoop({
+        projectRoot: root,
+        flow: 'story',
+        stage: 'implement',
+        executor: ({ projectRoot, instruction, args }) => {
+          const reportPath = writeMainAgentRunLoopTaskReport(projectRoot, instruction, args);
+          return JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+        },
+      });
+
+      expect(result.dispatchInstruction?.sessionId).toContain('registry-run');
+      expect(result.finalSurface.orchestrationState?.currentPhase).toBe('implement');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('blocks instead of synthesizing completion when no real task report is provided', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-run-loop-no-report-'));
     try {
@@ -231,6 +303,7 @@ describe('main-agent automatic run-loop', () => {
   it('runs Codex worker adapter in non-smoke mode through run-loop when a Codex binary is available', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-run-loop-codex-exec-'));
     const previous = process.env.CODEX_WORKER_ADAPTER_BIN;
+    const previousAllow = process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
     try {
       writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
       writeRuntimeContext(
@@ -246,6 +319,7 @@ describe('main-agent automatic run-loop', () => {
       );
       writeCodexImplementationWorker(root);
       const fakeCodexBin = writeFakeCodexBinary(root, 'fake-codex-exec');
+      process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = 'true';
       process.env.CODEX_WORKER_ADAPTER_BIN = fakeCodexBin;
 
       const result = runMainAgentAutomaticLoop({
@@ -267,6 +341,11 @@ describe('main-agent automatic run-loop', () => {
         delete process.env.CODEX_WORKER_ADAPTER_BIN;
       } else {
         process.env.CODEX_WORKER_ADAPTER_BIN = previous;
+      }
+      if (previousAllow === undefined) {
+        delete process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
+      } else {
+        process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = previousAllow;
       }
       fs.rmSync(root, { recursive: true, force: true });
     }
@@ -328,6 +407,7 @@ describe('main-agent automatic run-loop', () => {
   it('continues rerun_gate remediation and review through the Codex worker adapter', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-rerun-gate-codex-adapter-'));
     const previous = process.env.CODEX_WORKER_ADAPTER_BIN;
+    const previousAllow = process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
     try {
       writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
       writeRuntimeContext(
@@ -342,6 +422,7 @@ describe('main-agent automatic run-loop', () => {
         })
       );
       writeCodexImplementationWorker(root);
+      process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = 'true';
       process.env.CODEX_WORKER_ADAPTER_BIN = writeFakeCodexBinary(root, 'fake-rerun-codex');
 
       const remediate = runMainAgentAutomaticLoop({
@@ -375,13 +456,20 @@ describe('main-agent automatic run-loop', () => {
       } else {
         process.env.CODEX_WORKER_ADAPTER_BIN = previous;
       }
+      if (previousAllow === undefined) {
+        delete process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
+      } else {
+        process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = previousAllow;
+      }
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
 
   it('CLI --taskReportPath ingests an existing report without overwriting it', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-run-loop-cli-report-'));
+    const previousAllow = process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT;
     try {
+      process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT = 'true';
       writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
       writeRuntimeContext(
         root,
@@ -430,7 +518,7 @@ describe('main-agent automatic run-loop', () => {
         'utf8'
       );
 
-      const output = execFileSync(
+      const resultProcess = spawnSync(
         process.execPath,
         [
           path.join(process.cwd(), 'node_modules', 'ts-node', 'dist', 'bin.js'),
@@ -447,7 +535,8 @@ describe('main-agent automatic run-loop', () => {
         ],
         { cwd: process.cwd(), encoding: 'utf8' }
       );
-      const result = JSON.parse(output) as {
+      expect(resultProcess.status).toBe(0);
+      const result = JSON.parse(resultProcess.stdout) as {
         status: string;
         taskReport: { validationsRun: string[]; evidence: string[] };
       };
@@ -462,6 +551,78 @@ describe('main-agent automatic run-loop', () => {
       expect(after.validationsRun).toEqual(['external-real-validation']);
       expect(after.evidence).toEqual(['external-real-evidence']);
     } finally {
+      if (previousAllow === undefined) {
+        delete process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT;
+      } else {
+        process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT = previousAllow;
+      }
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('CLI --taskReportPath fails closed by default without explicit test authorization', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-run-loop-cli-report-deny-'));
+    const previousAllow = process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT;
+    try {
+      delete process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT;
+      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+      writeRuntimeContext(
+        root,
+        defaultRuntimeContextFile({
+          flow: 'story',
+          stage: 'implement',
+          sourceMode: 'full_bmad',
+          contextScope: 'story',
+          storyId: 'S-run-loop-cli-report-deny',
+          runId: 'run-loop-cli-report-deny-test',
+        })
+      );
+      const reportPath = path.join(root, 'external-report.json');
+      fs.writeFileSync(
+        reportPath,
+        JSON.stringify({
+          packetId: 'placeholder',
+          status: 'done',
+          filesChanged: [],
+          validationsRun: ['external'],
+          evidence: ['external'],
+          downstreamContext: [],
+        }) + '\n',
+        'utf8'
+      );
+
+      const resultProcess = spawnSync(
+        process.execPath,
+        [
+          'node_modules/ts-node/dist/bin.js',
+          '--project',
+          'tsconfig.node.json',
+          '--transpile-only',
+          'scripts/main-agent-orchestration.ts',
+          '--cwd',
+          root,
+          '--action',
+          'run-loop',
+          '--flow',
+          'story',
+          '--stage',
+          'implement',
+          '--taskReportPath',
+          reportPath,
+        ],
+        { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8' }
+      );
+      expect(resultProcess.status).toBe(1);
+      const result = JSON.parse(resultProcess.stdout) as { status: string; taskReport?: { status: string; driftFlags?: string[] } };
+      expect(result.status).toBe('blocked');
+      expect(result.taskReport?.status).toBe('blocked');
+      expect(result.taskReport?.driftFlags).toContain('external-task-report-denied');
+    } finally {
+      if (previousAllow === undefined) {
+        delete process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT;
+      } else {
+        process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT = previousAllow;
+      }
       fs.rmSync(root, { recursive: true, force: true });
     }
   });

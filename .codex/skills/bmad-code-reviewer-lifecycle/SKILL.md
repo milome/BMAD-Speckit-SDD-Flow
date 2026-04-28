@@ -1,31 +1,6 @@
-﻿<!-- BLOCK_LABEL_POLICY=B -->
-
 ---
-name: bmad-code-reviewer-lifecycle
-description: |
-  Codex CLI / OMC adapter entry for the end-to-end Code Reviewer Lifecycle skill.
-  Uses the Cursor bmad-code-reviewer-lifecycle semantics as the baseline: orchestrate audit output 鈫?parse 鈫?scoring write for each BMAD stage.
-  Defines triggers, stage mapping, and report paths; references auditor-* executors, audit-prompts, code-reviewer-config, scoring/rules.
-  Coordinates with speckit-workflow and bmad-story-assistant; after a stage audit passes, invoke parsing and write to scoring storage.
-when_to_use: |
-  Use when: after any BMAD workflow stage (prd/arch/story/specify/plan/gaps/tasks/implement/post_impl) audit you need score parsing and write;
-  or speckit-workflow / bmad-story-assistant stage completion must run end-to-end 鈥減arse and write鈥?
-  or the user explicitly asks for 鈥渆nd-to-end scoring鈥?
-references:
-  - auditor-spec: spec-stage audit executor; `.codex/agents/auditors/auditor-spec.md`
-  - auditor-plan: plan-stage audit executor; `.codex/agents/auditors/auditor-plan.md`
-  - auditor-tasks: tasks-stage audit executor; `.codex/agents/auditors/auditor-tasks.md`
-  - auditor-implement: implement-stage audit executor; `.codex/agents/auditors/auditor-implement.md`
-  - auditor-bugfix: bugfix-stage audit executor; `.codex/agents/auditors/auditor-bugfix.md`
-  - auditor-document: document-stage audit executor; `.codex/agents/auditors/auditor-document.md`
-  - audit-prompts: per-stage prompts; `.codex/skills/speckit-workflow/references/audit-prompts.md`
-  - audit-prompts-prd: PRD audit prompts; `.codex/skills/speckit-workflow/references/audit-prompts-prd.md`
-  - audit-prompts-arch: architecture audit prompts; `.codex/skills/speckit-workflow/references/audit-prompts-arch.md`
-  - audit-prompts-code: code audit prompts; `.codex/skills/speckit-workflow/references/audit-prompts-code.md`
-  - audit-prompts-pr: PR audit prompts; `.codex/skills/speckit-workflow/references/audit-prompts-pr.md`
-  - code-reviewer-config: multi-mode config (prd/arch/code/pr); `_bmad/_config/code-reviewer-config.yaml`
-  - scoring/rules: parsing rules, item_id, veto_items; `scoring/rules/*.yaml`
-  - runAuditorHost / unified auditor host runner: single post-audit entry for score write, auditIndex update, and post-audit automation
+name: "bmad-code-reviewer-lifecycle"
+description: "Codex CLI / OMC adapter entry for the end-to-end Code Reviewer Lifecycle skill. Uses the Cursor bmad-code-reviewer-lifecycle semantics as the baseline: orchestrate audit output 鈫?parse 鈫?scoring write for each BMAD stage. Defines triggers, stage mapping, and report paths; references auditor-* executors, audit-prompts, code-reviewer-config, scoring/rules. Coordinates with speckit-workflow and bmad-story-assistant; after a stage audit passes, invoke parsing and write to scoring storage."
 ---
 
 <!-- CLOSEOUT-APPROVED-CANONICAL -->

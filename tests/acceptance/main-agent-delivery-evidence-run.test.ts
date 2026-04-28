@@ -59,7 +59,7 @@ describe('main-agent delivery evidence run', () => {
         failedEvidence: string[];
       };
       expect(report.completionAllowed).toBe(false);
-      expect(report.failedEvidence.join('\n')).toContain('dual-host-real-journey');
+      expect(report.failedEvidence.join('\n')).toContain('multi-host-host-matrix');
       expect(report.failedEvidence.join('\n')).toContain('wall-clock-8h-soak');
     } finally {
       fs.rmSync(root, { recursive: true, force: true });

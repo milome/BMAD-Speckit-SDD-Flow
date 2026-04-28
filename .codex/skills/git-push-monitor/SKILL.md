@@ -1,7 +1,6 @@
-<!-- BLOCK_LABEL_POLICY=B -->
 ---
-name: git-push-monitor
-description: Automatically monitor long-running git push operations in the background. Continuously checks push status until completion, displays progress, and verifies success. Use when pushing large commits/files that may timeout or hang, or when you need to track push progress without blocking the terminal.
+name: "git-push-monitor"
+description: "Automatically monitor long-running git push operations in the background. Continuously checks push status until completion, displays progress, and verifies success. Use when pushing large commits/files that may timeout or hang, or when you need to track push progress without blocking the terminal."
 ---
 
 # Git Push Monitor

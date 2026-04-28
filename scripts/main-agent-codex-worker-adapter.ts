@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type {
@@ -34,6 +35,7 @@ export interface CodexWorkerAdapterReport {
   agentSpecPath: string | null;
   runtimeGovernanceStatus: 'resolved' | 'blocked';
   runtimeGovernanceError: string | null;
+  actualFilesChanged: string[];
 }
 
 interface RuntimeGovernanceResolution {
@@ -83,7 +85,7 @@ function pathMatchesScope(filePath: string, scopes: string[]): boolean {
 }
 
 function readPacket(packetPath: string): Packet {
-  return JSON.parse(extractJsonObject(decodeTaskReportBuffer(fs.readFileSync(packetPath)))) as Packet;
+  return JSON.parse(readStrictUtf8JsonText(packetPath, { allowUtf8Bom: true })) as Packet;
 }
 
 function packetExpectedDelta(packet: Packet): string {
@@ -168,6 +170,7 @@ function buildPrompt(input: {
   packet: Packet;
   packetPath: string;
   taskReportPath: string;
+  codexWritableTaskReportPath: string;
   smokeTargetPath: string | null;
   agentRole: string;
   agentSpec: { path: string; content: string } | null;
@@ -193,8 +196,12 @@ function buildPrompt(input: {
     `Allowed write scope: ${packetAllowedWriteScope(input.packet).join(', ') || '(none)'}`,
     `Expected delta: ${packetExpectedDelta(input.packet)}`,
     smokeLine,
-    `When finished, write a JSON TaskReport to: ${input.taskReportPath}`,
+    `When finished, write a JSON TaskReport to: ${input.codexWritableTaskReportPath}`,
+    input.codexWritableTaskReportPath === input.taskReportPath
+      ? ''
+      : `The BMAD evidence path is ${input.taskReportPath}; the adapter will copy your report there after Codex exits.`,
     'TaskReport schema: { packetId, status, filesChanged, validationsRun, evidence, downstreamContext, driftFlags? }.',
+    'The TaskReport file must be UTF-8 without BOM and strict JSON only. Do not wrap it in Markdown.',
     'If blocked, write status=blocked and explain evidence. Do not claim completion without writing the report.',
   ].join('\n');
 }
@@ -226,31 +233,25 @@ function writeSmokeProof(projectRoot: string, relativePath: string, packet: Pack
 }
 
 function readTaskReport(taskReportPath: string): TaskReport {
-  const raw = fs.readFileSync(taskReportPath);
-  const decoded = decodeTaskReportBuffer(raw);
-  const parsed = JSON.parse(extractJsonObject(decoded)) as TaskReport;
+  const parsed = JSON.parse(readStrictUtf8JsonText(taskReportPath, { allowUtf8Bom: false })) as TaskReport;
   return normalizeTaskReport(parsed);
 }
 
-function decodeTaskReportBuffer(raw: Buffer): string {
+function readStrictUtf8JsonText(filePath: string, options: { allowUtf8Bom: boolean }): string {
+  const raw = fs.readFileSync(filePath);
   if (raw.length >= 2 && raw[0] === 0xff && raw[1] === 0xfe) {
-    return raw.subarray(2).toString('utf16le');
+    throw new Error(`strict JSON must be UTF-8 no BOM: ${filePath}`);
   }
   if (raw.length >= 2 && raw[0] === 0xfe && raw[1] === 0xff) {
-    throw new Error('unsupported UTF-16BE TaskReport encoding');
+    throw new Error(`strict JSON must be UTF-8 no BOM: ${filePath}`);
   }
-  return raw.toString('utf8').replace(/^\uFEFF/u, '');
-}
-
-function extractJsonObject(value: string): string {
-  const trimmed = value.trim();
-  if (trimmed.startsWith('{') && trimmed.endsWith('}')) return trimmed;
-  const first = value.indexOf('{');
-  const last = value.lastIndexOf('}');
-  if (first < 0 || last <= first) {
-    throw new Error('TaskReport does not contain a JSON object');
+  if (raw.length >= 3 && raw[0] === 0xef && raw[1] === 0xbb && raw[2] === 0xbf) {
+    if (!options.allowUtf8Bom) {
+      throw new Error(`strict JSON must be UTF-8 no BOM: ${filePath}`);
+    }
+    return raw.subarray(3).toString('utf8');
   }
-  return value.slice(first, last + 1);
+  return raw.toString('utf8');
 }
 
 function normalizeTaskReport(report: TaskReport): TaskReport {
@@ -289,9 +290,103 @@ function validateTaskReport(report: TaskReport, packet: Packet, scopes: string[]
   return errors;
 }
 
+function listGitVisibleFiles(projectRoot: string): string[] {
+  const result = spawnSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], {
+    cwd: projectRoot,
+    encoding: 'buffer',
+    shell: process.platform === 'win32',
+  });
+  if ((result.status ?? 1) !== 0) {
+    return [];
+  }
+  return result.stdout
+    .toString('utf8')
+    .split('\0')
+    .map((file) => normalizePath(file.trim()))
+    .filter(Boolean);
+}
+
+function listFilesystemVisibleFiles(projectRoot: string): string[] {
+  const out: string[] = [];
+  const ignored = new Set(['.git', 'node_modules']);
+  const walk = (dir: string): void => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (ignored.has(entry.name)) continue;
+      const absolute = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(absolute);
+      } else if (entry.isFile()) {
+        out.push(normalizePath(path.relative(projectRoot, absolute)));
+      }
+    }
+  };
+  walk(projectRoot);
+  return out.sort();
+}
+
+function snapshotGitVisibleFiles(projectRoot: string): Map<string, string> {
+  const snapshot = new Map<string, string>();
+  const files = listGitVisibleFiles(projectRoot);
+  for (const file of files.length > 0 ? files : listFilesystemVisibleFiles(projectRoot)) {
+    const absolute = path.join(projectRoot, file);
+    if (!fs.existsSync(absolute) || !fs.statSync(absolute).isFile()) continue;
+    const digest = createHash('sha256').update(fs.readFileSync(absolute)).digest('hex');
+    snapshot.set(file, digest);
+  }
+  return snapshot;
+}
+
+function diffFileSnapshots(before: Map<string, string>, after: Map<string, string>): string[] {
+  const changed = new Set<string>();
+  for (const [file, digest] of after.entries()) {
+    if (before.get(file) !== digest) {
+      changed.add(file);
+    }
+  }
+  for (const file of before.keys()) {
+    if (!after.has(file)) {
+      changed.add(file);
+    }
+  }
+  return [...changed].sort();
+}
+
+function isAdapterOwnedPath(projectRoot: string, candidate: string, ownedPaths: Array<string | null>): boolean {
+  const normalized = normalizePath(candidate);
+  return ownedPaths.some((owned) => {
+    if (!owned) return false;
+    return normalizePath(path.relative(projectRoot, owned)) === normalized;
+  });
+}
+
 function writeTaskReport(taskReportPath: string, report: TaskReport): void {
   fs.mkdirSync(path.dirname(taskReportPath), { recursive: true });
   fs.writeFileSync(taskReportPath, JSON.stringify(report, null, 2) + '\n', 'utf8');
+}
+
+function resolveCodexWritableTaskReportPath(projectRoot: string, taskReportPath: string): string {
+  const root = path.resolve(projectRoot);
+  const requested = path.resolve(taskReportPath);
+  if (requested === root || requested.startsWith(`${root}${path.sep}`)) {
+    return requested;
+  }
+  return path.join(
+    projectRoot,
+    '_bmad-output',
+    'runtime',
+    'codex',
+    'task-reports',
+    path.basename(path.dirname(requested)),
+    path.basename(requested)
+  );
+}
+
+function copyTaskReportIfNeeded(sourcePath: string, targetPath: string): void {
+  if (path.resolve(sourcePath) === path.resolve(targetPath) || !fs.existsSync(sourcePath)) {
+    return;
+  }
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+  fs.copyFileSync(sourcePath, targetPath);
 }
 
 export function runCodexWorkerAdapter(input: {
@@ -320,6 +415,10 @@ export function runCodexWorkerAdapter(input: {
         'task-reports',
         `${packet.packetId}.json`
       )
+  );
+  const codexWritableTaskReportPath = resolveCodexWritableTaskReportPath(
+    projectRoot,
+    taskReportPath
   );
   const smokeTargetPath = input.smokeTargetPath ?? `src/codex/${packet.packetId}.md`;
   if (!agentSpec) {
@@ -351,6 +450,7 @@ export function runCodexWorkerAdapter(input: {
       agentSpecPath: null,
       runtimeGovernanceStatus: 'blocked',
       runtimeGovernanceError: 'codex agent spec missing',
+      actualFilesChanged: [],
     };
   }
   const runtimeGovernance = resolveRuntimeGovernanceBlock(projectRoot);
@@ -383,12 +483,14 @@ export function runCodexWorkerAdapter(input: {
       agentSpecPath: agentSpec.path,
       runtimeGovernanceStatus: runtimeGovernance.status,
       runtimeGovernanceError: runtimeGovernance.error,
+      actualFilesChanged: [],
     };
   }
   const prompt = buildPrompt({
     packet,
     packetPath,
     taskReportPath,
+    codexWritableTaskReportPath,
     smokeTargetPath: input.smoke ? smokeTargetPath : null,
     agentRole,
     agentSpec,
@@ -399,6 +501,39 @@ export function runCodexWorkerAdapter(input: {
   let stdinPath: string | null = null;
   let stdoutPath: string | null = null;
   let stderrPath: string | null = null;
+  const allowCodexBinaryOverride = process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE === 'true';
+  if (!input.smoke && (input.codexBinary || process.env.CODEX_WORKER_ADAPTER_BIN) && !allowCodexBinaryOverride) {
+    const blockedReport: TaskReport = {
+      packetId: packet.packetId,
+      status: 'blocked',
+      filesChanged: [],
+      validationsRun: ['codex-worker-adapter-binary-override-denied'],
+      evidence: ['Codex binary override requires MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE=true'],
+      downstreamContext: [packetExpectedDelta(packet)],
+      driftFlags: ['codex-binary-override-denied'],
+    };
+    writeTaskReport(taskReportPath, blockedReport);
+    return {
+      reportType: 'main_agent_codex_worker_adapter',
+      generatedAt: new Date().toISOString(),
+      projectRoot,
+      packetPath,
+      taskReportPath,
+      mode: 'codex_exec',
+      codexCommand: [],
+      exitCode: 1,
+      scopePassed: false,
+      taskReport: blockedReport,
+      stdinPath: null,
+      stdoutPath: null,
+      stderrPath: null,
+      agentRole,
+      agentSpecPath: agentSpec.path,
+      runtimeGovernanceStatus: runtimeGovernance.status,
+      runtimeGovernanceError: runtimeGovernance.error,
+      actualFilesChanged: [],
+    };
+  }
   const codexCommand = input.smoke
     ? ['codex', 'worker-adapter-smoke']
     : [
@@ -412,6 +547,8 @@ export function runCodexWorkerAdapter(input: {
         'workspace-write',
         '-',
       ];
+
+  const beforeFileSnapshot = snapshotGitVisibleFiles(projectRoot);
 
   if (input.smoke) {
     writeSmokeProof(projectRoot, smokeTargetPath, packet);
@@ -442,8 +579,25 @@ export function runCodexWorkerAdapter(input: {
     fs.writeFileSync(stderrPath, result.stderr ?? result.error?.message ?? '', 'utf8');
   }
 
-  const taskReport = fs.existsSync(taskReportPath)
-    ? readTaskReport(taskReportPath)
+  copyTaskReportIfNeeded(codexWritableTaskReportPath, taskReportPath);
+  let taskReportStrictJsonError: string | null = null;
+  let taskReport = fs.existsSync(taskReportPath)
+    ? (() => {
+        try {
+          return readTaskReport(taskReportPath);
+        } catch (error) {
+          taskReportStrictJsonError = error instanceof Error ? error.message : String(error);
+          return {
+            packetId: packet.packetId,
+            status: 'blocked',
+            filesChanged: [],
+            validationsRun: ['codex-worker-adapter-strict-task-report'],
+            evidence: [`TaskReport strict JSON validation failed: ${taskReportStrictJsonError}`],
+            downstreamContext: [packetExpectedDelta(packet)],
+            driftFlags: ['codex-task-report-strict-json-invalid'],
+          } satisfies TaskReport;
+        }
+      })()
     : {
         packetId: packet.packetId,
         status: 'blocked',
@@ -452,15 +606,35 @@ export function runCodexWorkerAdapter(input: {
         evidence: ['codex did not produce task report'],
         downstreamContext: [packetExpectedDelta(packet)],
       };
+  const actualFilesChanged = diffFileSnapshots(beforeFileSnapshot, snapshotGitVisibleFiles(projectRoot))
+    .filter((file) =>
+      !isAdapterOwnedPath(projectRoot, file, [
+        taskReportPath,
+        codexWritableTaskReportPath,
+        stdinPath,
+        stdoutPath,
+        stderrPath,
+      ])
+    );
   if (!fs.existsSync(taskReportPath)) {
     writeTaskReport(taskReportPath, taskReport);
   } else {
     writeTaskReport(taskReportPath, taskReport);
   }
-  const validationErrors = validateTaskReport(taskReport, packet, scopes);
+  const validationErrors = [
+    ...(taskReportStrictJsonError ? [`TaskReport strict JSON validation failed: ${taskReportStrictJsonError}`] : []),
+    ...validateTaskReport(taskReport, packet, scopes),
+    ...actualFilesChanged
+      .filter((changed) => !pathMatchesScope(changed, scopes))
+      .map((changed) => `actual file outside allowedWriteScope: ${changed}`),
+  ];
   const scopePassed = validationErrors.length === 0;
   if (!scopePassed && taskReport.status === 'done') {
     taskReport.status = 'blocked';
+    taskReport.evidence = [...taskReport.evidence, ...validationErrors];
+    writeTaskReport(taskReportPath, taskReport);
+  }
+  if (!scopePassed && taskReport.status !== 'done') {
     taskReport.evidence = [...taskReport.evidence, ...validationErrors];
     writeTaskReport(taskReportPath, taskReport);
   }
@@ -483,6 +657,7 @@ export function runCodexWorkerAdapter(input: {
     agentSpecPath: agentSpec.path,
     runtimeGovernanceStatus: runtimeGovernance.status,
     runtimeGovernanceError: runtimeGovernance.error,
+    actualFilesChanged,
   };
 }
 

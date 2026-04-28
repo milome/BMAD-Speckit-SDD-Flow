@@ -1,11 +1,6 @@
-<!-- BLOCK_LABEL_POLICY=B -->
 ---
-name: bmad-eval-analytics
-description: |
-  bmad-eval-analytics: trigger Coach diagnostics or SFT extraction from natural language.
-  Coach: when the user asks to see weak points, the latest Coach report, a diagnosis, or scoring gaps, run `npx bmad-speckit coach` and show the output. Shares the script with the /bmad-coach command.
-  SFT: when the user asks to extract a fine-tuning dataset, generate SFT training data, or generate SFT data, run `npx bmad-speckit sft-extract` and show a summary. Shares the script with the /bmad-sft-extract command.
-  Use when users ask about evaluation gaps, Coach reports, scoring diagnosis, or extracting or generating SFT / fine-tuning training data.
+name: "bmad-eval-analytics"
+description: "bmad-eval-analytics: trigger Coach diagnostics or SFT extraction from natural language. Coach: when the user asks to see weak points, the latest Coach report, a diagnosis, or scoring gaps, run `npx bmad-speckit coach` and show the output. Shares the script with the /bmad-coach command. SFT: when the user asks to extract a fine-tuning dataset, generate SFT training data, or generate SFT data, run `npx bmad-speckit sft-extract` and show a summary. Shares the script with the /bmad-sft-extract comma"
 ---
 
 # bmad-eval-analytics skill

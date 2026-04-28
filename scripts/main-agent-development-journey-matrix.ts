@@ -3,7 +3,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { runBmadHelpFiveLayerMatrix } from './main-agent-bmad-help-five-layer-matrix';
 import { runUnifiedIngress, type MainAgentHostKind } from './main-agent-unified-ingress';
-import { runDualHostPrOrchestration } from './main-agent-dual-host-pr-orchestrator';
+import { runHostMatrixPrOrchestration } from './main-agent-host-matrix-pr-orchestrator';
 import { defaultRuntimeContextFile, writeRuntimeContext } from './runtime-context';
 import {
   defaultRuntimeContextRegistry,
@@ -56,15 +56,15 @@ function prepareHostBranchRoot(root: string, hostKind: MainAgentHostKind): strin
   return branchRoot;
 }
 
-function prepareDualHostRoot(root: string): string {
-  const dualHostRoot = path.join(root, '_bmad-output', 'runtime', 'journey-matrix', 'dual-host');
-  fs.rmSync(dualHostRoot, { recursive: true, force: true });
-  fs.mkdirSync(path.join(dualHostRoot, '_bmad', '_config'), { recursive: true });
-  fs.mkdirSync(path.join(dualHostRoot, '_bmad-output', 'implementation-artifacts'), {
+function prepareHostMatrixRoot(root: string): string {
+  const hostMatrixRoot = path.join(root, '_bmad-output', 'runtime', 'journey-matrix', 'host-matrix');
+  fs.rmSync(hostMatrixRoot, { recursive: true, force: true });
+  fs.mkdirSync(path.join(hostMatrixRoot, '_bmad', '_config'), { recursive: true });
+  fs.mkdirSync(path.join(hostMatrixRoot, '_bmad-output', 'implementation-artifacts'), {
     recursive: true,
   });
   fs.writeFileSync(
-    path.join(dualHostRoot, '_bmad', '_config', 'orchestration-governance.contract.yaml'),
+    path.join(hostMatrixRoot, '_bmad', '_config', 'orchestration-governance.contract.yaml'),
     [
       'signals: {}',
       'stage_requirements:',
@@ -77,11 +77,11 @@ function prepareDualHostRoot(root: string): string {
     'utf8'
   );
   fs.writeFileSync(
-    path.join(dualHostRoot, '_bmad-output', 'implementation-artifacts', 'sprint-status.yaml'),
+    path.join(hostMatrixRoot, '_bmad-output', 'implementation-artifacts', 'sprint-status.yaml'),
     'development_status:\n  S-matrix: in_progress\n',
     'utf8'
   );
-  return dualHostRoot;
+  return hostMatrixRoot;
 }
 
 export function runDevelopmentJourneyMatrix(input: {
@@ -96,7 +96,7 @@ export function runDevelopmentJourneyMatrix(input: {
   }
   const hostKinds = input.hostKinds ?? ['cursor', 'claude', 'codex'];
   const steps: JourneyMatrixStep[] = [];
-  const dualHostRoot = prepareDualHostRoot(projectRoot);
+  const hostMatrixRoot = prepareHostMatrixRoot(projectRoot);
 
   const bmadHelpFiveLayer = runBmadHelpFiveLayerMatrix({ projectRoot });
   steps.push({
@@ -133,25 +133,24 @@ export function runDevelopmentJourneyMatrix(input: {
     });
   }
 
-  const dualHost = runDualHostPrOrchestration({
+  const hostMatrix = runHostMatrixPrOrchestration({
     provider: input.realProvider ? 'real' : 'mock',
-    projectRoot: dualHostRoot,
+    projectRoot: hostMatrixRoot,
   });
   steps.push({
-    id: 'dual-host-e2e',
+    id: 'multi-host-host-matrix',
     sequence: 'S31-S32',
     passed:
-      dualHost.journeyMode === (input.realProvider ? 'real' : 'mock') &&
-      dualHost.journeyE2EPassed &&
-      dualHost.hostsPassed.claude &&
-      dualHost.hostsPassed.codex,
-    evidence: `${dualHost.journeyMode}/${dualHost.finalPassed}`,
+      hostMatrix.journeyMode === (input.realProvider ? 'real' : 'mock') &&
+      hostMatrix.journeyE2EPassed &&
+      hostMatrix.hostMatrix.allRequiredHostsPassed,
+    evidence: `${hostMatrix.journeyMode}/${hostMatrix.finalPassed}/${JSON.stringify(hostMatrix.hostMatrix.hostsPassed)}`,
   });
   steps.push({
     id: 'pr-topology',
     sequence: 'S37-S38',
-    passed: dualHost.prTopology.all_affected_stories_passed,
-    evidence: dualHost.prTopology.required_nodes
+    passed: hostMatrix.prTopology.all_affected_stories_passed,
+    evidence: hostMatrix.prTopology.required_nodes
       .map((node) => `${node.node_id}:${node.state}`)
       .join(','),
   });

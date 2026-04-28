@@ -52,6 +52,7 @@ describe('Codex agent parity with Claude branch', () => {
       'document-worker.toml',
       'general-purpose.toml',
       'codex-no-hooks-worker.toml',
+      'release-quality-proof-worker.toml',
     ]) {
       expect(codexAgents.has(alias)).toBe(true);
     }
@@ -89,7 +90,9 @@ describe('Codex agent parity with Claude branch', () => {
       expect(paths).toContain('.codex/protocols/audit-result-schema.md');
       expect(paths).toContain('.codex/skills/speckit-workflow');
       expect(fs.existsSync(path.join(target, '.codex', 'protocols', 'handoff-schema.md'))).toBe(true);
-      expect(fs.existsSync(path.join(target, '.codex', 'skills', 'bmad-story-assistant', 'SKILL.md'))).toBe(true);
+      const storySkillPath = path.join(target, '.codex', 'skills', 'bmad-story-assistant', 'SKILL.md');
+      expect(fs.existsSync(storySkillPath)).toBe(true);
+      expect(fs.readFileSync(storySkillPath, 'utf8').startsWith('---')).toBe(true);
       expect(validateSelectedAITargets(target, 'codex')).toEqual({ valid: true, missing: [] });
     } finally {
       fs.rmSync(target, { recursive: true, force: true });

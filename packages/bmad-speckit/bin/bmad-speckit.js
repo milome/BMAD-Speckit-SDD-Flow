@@ -554,6 +554,13 @@ program
   .action(() => runRepoScript('main-agent-quality-gate.ts', process.argv.slice(3)));
 
 program
+  .command('main-agent:host-matrix-pr-orchestrate')
+  .description('Run the BMAD multi-host host matrix PR orchestration CLI surface')
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .action(() => runRepoScript('main-agent-host-matrix-pr-orchestrator.ts', process.argv.slice(3)));
+
+program
   .command('main-agent:release-gate')
   .description('Run the BMAD main-agent release gate CLI surface')
   .allowUnknownOption(true)

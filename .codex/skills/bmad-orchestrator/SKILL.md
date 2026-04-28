@@ -1,12 +1,6 @@
 ---
-name: bmad-orchestrator
-keyword: bmad
-description: Orchestrates BMAD workflows for structured AI-driven development. Routes work across Analysis, Planning, Solutioning, and Implementation phases.
-allowed-tools: [Read, Write, Bash, Grep, Glob]
-tags: [bmad, orchestrator, workflow, planning, implementation]
-platforms: [Claude, Gemini, Codex, OpenCode]
-version: 1.0.0
-source: user-installed skill
+name: "bmad-orchestrator"
+description: "Orchestrates BMAD workflows for structured AI-driven development. Routes work across Analysis, Planning, Solutioning, and Implementation phases."
 ---
 
 # bmad-orchestrator - BMAD Workflow Orchestration

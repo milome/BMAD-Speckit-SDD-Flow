@@ -72,26 +72,19 @@ describe('Codex consumer five-layer main-agent e2e', () => {
         )
       ).toBe(true);
 
-      writeJson(path.join(target, '_bmad-output', 'runtime', 'registry.json'), {
-        version: 1,
-        activeScope: 'story:S-codex-consumer',
-        scopes: {
-          'story:S-codex-consumer': {
-            contextPath: '_bmad-output/runtime/context/stories/S-codex-consumer.json',
-          },
-        },
-      });
-      writeJson(path.join(target, '_bmad-output', 'runtime', 'context', 'stories', 'S-codex-consumer.json'), {
-        version: 1,
-        flow: 'story',
-        stage: 'implement',
-        sourceMode: 'full_bmad',
-        contextScope: 'story',
-        storyId: 'S-codex-consumer',
-        runId: 'codex-consumer-five-layer-run',
-        artifactRoot: '_bmad-output/implementation-artifacts/S-codex-consumer',
-        updatedAt: new Date().toISOString(),
-      });
+      run('npx bmad-speckit ensure-run-runtime-context --story-key 16-1-codex-consumer --lifecycle dev_story', target);
+      const registryPath = path.join(target, '_bmad-output', 'runtime', 'registry.json');
+      expect(fs.existsSync(registryPath)).toBe(true);
+      const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8')) as {
+        activeScope?: { scopeType?: string; runId?: string; resolvedContextPath?: string };
+        runContexts?: Record<string, { path?: string }>;
+      };
+      expect(registry.activeScope?.scopeType).toBe('run');
+      expect(registry.activeScope?.runId).toEqual(expect.any(String));
+      expect(registry.runContexts?.[registry.activeScope?.runId ?? '']?.path).toBe(
+        registry.activeScope?.resolvedContextPath
+      );
+      expect(fs.existsSync(registry.activeScope?.resolvedContextPath ?? '')).toBe(true);
 
       const fakeCodexBin = writeFakeCodexBinary(target);
       const output = execSync(
@@ -99,7 +92,7 @@ describe('Codex consumer five-layer main-agent e2e', () => {
         {
           cwd: target,
           encoding: 'utf8',
-          env: { ...process.env, CODEX_WORKER_ADAPTER_BIN: fakeCodexBin },
+          env: { ...process.env, CODEX_WORKER_ADAPTER_BIN: fakeCodexBin, MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE: 'true' },
         }
       );
       const result = JSON.parse(output) as {
@@ -123,9 +116,9 @@ describe('Codex consumer five-layer main-agent e2e', () => {
       );
       expect(JSON.parse(deliveryOutput).orchestrationState.host).toBe('codex');
 
-      writeText(path.join(target, '_bmad-output', 'runtime', 'context', 'project.json'), 'project-context\n');
-      writeText(path.join(target, '_bmad-output', 'runtime', 'gates', 'main-agent-release-gate-report.json'), '{}\n');
-      writeText(path.join(target, '_bmad-output', 'runtime', 'gates', 'main-agent-delivery-truth-gate-report.json'), '{}\n');
+      writeJson(path.join(target, 'docs', 'architecture', 'architecture.json'), { architecture: true });
+      writeJson(path.join(target, 'docs', 'stories', 'epics.json'), { epics: [] });
+      writeJson(path.join(target, 'docs', 'stories', 'story-create.json'), { stories: [] });
       const matrixOutput = run('npx bmad-speckit main-agent:bmad-help-five-layer-matrix', target);
       const matrix = JSON.parse(matrixOutput) as {
         allPassed: boolean;
@@ -139,9 +132,9 @@ describe('Codex consumer five-layer main-agent e2e', () => {
       };
       expect(matrix.allPassed).toBe(true);
       expect(matrix.bmadHelpEntry?.docsExposeCodex).toBe(true);
-      expect(matrix.progressState?.currentLayer).toBe('layer_2');
-      expect(matrix.progressState?.currentStage).toBe('arch');
-      expect(matrix.progressState?.nextRequiredLayer).toBe('layer_2');
+      expect(matrix.progressState?.currentLayer).toBe('layer_4');
+      expect(matrix.progressState?.currentStage).toBe('specify');
+      expect(matrix.progressState?.nextRequiredLayer).toBe('layer_4');
       expect(matrix.layers?.flatMap((layer) => layer.stages)).toEqual(
         expect.arrayContaining(['post_audit', 'pr_review', 'release_gate', 'delivery_truth_gate'])
       );
@@ -181,6 +174,61 @@ describe('Codex consumer five-layer main-agent e2e', () => {
     }
   }, 180_000);
 
+  it('fails closed instead of claiming success when real Codex CLI produces no TaskReport', () => {
+    const target = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-consumer-real-cli-'));
+    try {
+      run('codex --version', ROOT);
+      fs.writeFileSync(
+        path.join(target, 'package.json'),
+        JSON.stringify({ name: 'codex-consumer-real-cli', version: '1.0.0', private: true }),
+        'utf8'
+      );
+      run(`npm install --save-dev "file:${ROOT.replace(/\\/g, '/')}"`, target);
+      run('npx --no-install bmad-speckit-init --agent codex', target);
+      run(
+        'npx --no-install bmad-speckit ensure-run-runtime-context --story-key 16-3-codex-real-cli --lifecycle dev_story',
+        target
+      );
+      let output = '';
+      expect(() => {
+        output = run(
+          'npx --no-install bmad-speckit main-agent-orchestration --action run-loop --flow story --stage implement --host codex',
+          target
+        );
+      }).toThrow();
+      const reportPath = path.join(
+        target,
+        '_bmad-output',
+        'runtime',
+        'codex',
+        'task-reports'
+      );
+      const taskReports = fs.existsSync(reportPath) ? fs.readdirSync(reportPath) : [];
+      expect(taskReports.length).toBeGreaterThan(0);
+      const blockedReport = JSON.parse(
+        fs.readFileSync(path.join(reportPath, taskReports[0]), 'utf8')
+      ) as {
+        status: string;
+        evidence?: string[];
+      };
+      expect(blockedReport.status).toBe('blocked');
+      expect(blockedReport.evidence).toContain('codex did not produce task report');
+      expect(output).toBe('');
+      const stateFilesRoot = path.join(target, '_bmad-output', 'runtime', 'governance', 'orchestration-state');
+      const stateFile = fs.readdirSync(stateFilesRoot).find((name) => name.endsWith('.json'));
+      expect(stateFile).toEqual(expect.any(String));
+      const state = JSON.parse(fs.readFileSync(path.join(stateFilesRoot, stateFile as string), 'utf8')) as {
+        status: string;
+        host?: string;
+        lastTaskReport?: { status?: string };
+      };
+      expect(state.host).toBe('codex');
+      expect(state.lastTaskReport?.status).toBe('blocked');
+    } finally {
+      fs.rmSync(target, { recursive: true, force: true });
+    }
+  }, 240_000);
+
   it('installs from packed tgz and exposes Codex public closeout CLI without transient tool install', () => {
     const packRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-pack-root-'));
     const target = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-packed-consumer-'));
@@ -209,7 +257,43 @@ describe('Codex consumer five-layer main-agent e2e', () => {
         )
       ).toBe(true);
 
-      writeText(path.join(target, '_bmad-output', 'runtime', 'context', 'project.json'), 'project-context\n');
+      run(
+        'npx --no-install bmad-speckit ensure-run-runtime-context --story-key 16-2-codex-packed --lifecycle dev_story',
+        target
+      );
+      const registryPath = path.join(target, '_bmad-output', 'runtime', 'registry.json');
+      expect(fs.existsSync(registryPath)).toBe(true);
+      const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8')) as {
+        activeScope?: { scopeType?: string; runId?: string; resolvedContextPath?: string };
+        runContexts?: Record<string, { path?: string }>;
+      };
+      expect(registry.activeScope?.scopeType).toBe('run');
+      expect(registry.activeScope?.runId).toEqual(expect.any(String));
+      expect(registry.runContexts?.[registry.activeScope?.runId ?? '']?.path).toBe(
+        registry.activeScope?.resolvedContextPath
+      );
+      expect(fs.existsSync(registry.activeScope?.resolvedContextPath ?? '')).toBe(true);
+      const fakeCodexBin = writeFakeCodexBinary(target);
+      const runLoop = JSON.parse(
+        execSync(
+          'npx --no-install bmad-speckit main-agent-orchestration --action run-loop --flow story --stage implement --host codex',
+          {
+            cwd: target,
+            encoding: 'utf8',
+            env: { ...process.env, CODEX_WORKER_ADAPTER_BIN: fakeCodexBin, MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE: 'true' },
+          }
+        )
+      ) as {
+        status: string;
+        dispatchInstruction?: { host?: string };
+        taskReport?: { status?: string; validationsRun?: string[] };
+        finalSurface?: { pendingPacketStatus?: string };
+      };
+      expect(runLoop.status).toBe('completed');
+      expect(runLoop.dispatchInstruction?.host).toBe('codex');
+      expect(runLoop.taskReport?.status).toBe('done');
+      expect(runLoop.taskReport?.validationsRun).toContain('fake-codex-consumer-exec');
+      expect(runLoop.finalSurface?.pendingPacketStatus).toBe('completed');
       const matrix = JSON.parse(run('npx --no-install bmad-speckit main-agent:bmad-help-five-layer-matrix', target)) as {
         allPassed: boolean;
         bmadHelpEntry?: { docsExposeCodex?: boolean };
@@ -217,15 +301,193 @@ describe('Codex consumer five-layer main-agent e2e', () => {
       expect(matrix.allPassed).toBe(true);
       expect(matrix.bmadHelpEntry?.docsExposeCodex).toBe(true);
 
-      expect(run('npx --no-install bmad-speckit main-agent:quality-gate --help', target)).toContain(
-        'main-agent:quality-gate'
+      const runId = 'codex-packed-run';
+      const storyKey = 'S-codex-packed';
+      const evidenceBundleId = 'codex-packed-run:bundle';
+      const gatesRoot = path.join(target, '_bmad-output', 'runtime', 'gates');
+      const codexProofPath = path.join(gatesRoot, 'codex-quality-proof', `${runId}.proof.json`);
+      writeJson(codexProofPath, {
+        reportType: 'codex_run_scoped_quality_proof',
+        evidence_provenance: { runId, storyKey, evidenceBundleId },
+        codex: { hostKind: 'codex', mode: 'codex_exec', taskReportStatus: 'done' },
+      });
+      const qualityOutput = run(
+        [
+          'npx --no-install bmad-speckit main-agent:quality-gate',
+          '--runId',
+          runId,
+          '--storyKey',
+          storyKey,
+          '--evidenceBundleId',
+          evidenceBundleId,
+          '--codexProofPath',
+          `"${codexProofPath}"`,
+        ].join(' '),
+        target
       );
-      expect(run('npx --no-install bmad-speckit main-agent:release-gate --help', target)).toContain(
-        'main-agent:release-gate'
+      const quality = JSON.parse(qualityOutput) as { critical_failures: number; evidence_provenance?: unknown };
+      expect(quality.critical_failures).toBe(0);
+      expect(quality.evidence_provenance).toMatchObject({ runId, storyKey, evidenceBundleId });
+
+      const hostMatrixPath = path.join(target, '_bmad-output', 'runtime', 'e2e', 'multi-host-pr-orchestration-report.json');
+      const prTopologyPath = path.join(target, '_bmad-output', 'runtime', 'pr', 'pr_topology.json');
+      const ledgerPath = path.join(target, '_bmad-output', 'runtime', 'governance', 'execution-audit-ledger.json');
+      const ledgerEvidencePath = path.join(target, '_bmad-output', 'runtime', 'governance', 'ledger-evidence.json');
+      writeJson(hostMatrixPath, {
+        journeyMode: 'real',
+        journeyE2EPassed: true,
+        hostsPassed: { claude: true, codex: true },
+        hostMatrix: {
+          matrixType: 'main_agent_multi_host_matrix',
+          requiredHosts: ['cursor', 'claude', 'codex'],
+          hostsPassed: { cursor: true, claude: true, codex: true },
+          allRequiredHostsPassed: true,
+          legacyDualHostPassed: true,
+        },
+        githubPrApi: { passed: true, prUrl: 'https://example.invalid/pull/1' },
+        evidence_provenance: { runId, storyKey, evidenceBundleId, gateReportHash: 'host-matrix-hash' },
+      });
+      writeJson(prTopologyPath, {
+        version: 1,
+        batch_id: 'codex-packed',
+        evidence_provenance: { runId, storyKey, evidenceBundleId, gateReportHash: 'pr-topology-hash' },
+        required_nodes: [
+          { node_id: 'codex-node', target_pr: 'https://example.invalid/pull/1', depends_on: [], state: 'merged' },
+        ],
+        all_affected_stories_passed: true,
+      });
+      writeJson(ledgerEvidencePath, { status: 'pass' });
+      writeJson(ledgerPath, {
+        version: 1,
+        ledgerType: 'execution_audit',
+        runId,
+        generatedAt: '2026-04-28T00:00:00.000Z',
+        items: [
+          {
+            taskId: 'codex-packed-closeout',
+            status: 'pass',
+            updatedAt: '2026-04-28T00:00:00.000Z',
+            evidenceRefs: ['_bmad-output/runtime/governance/ledger-evidence.json'],
+          },
+        ],
+      });
+      const qualityGatePath = path.join(gatesRoot, 'main-agent-quality-gate-report.json');
+      run(
+        [
+          'npx --no-install bmad-speckit main-agent:release-gate',
+          '--runId',
+          runId,
+          '--storyKey',
+          storyKey,
+          '--evidenceBundleId',
+          evidenceBundleId,
+          '--hostMatrixPath',
+          `"${hostMatrixPath}"`,
+          '--prTopologyPath',
+          `"${prTopologyPath}"`,
+          '--qualityGatePath',
+          `"${qualityGatePath}"`,
+          '--ledgerPath',
+          `"${ledgerPath}"`,
+          '--singleSourceCommand',
+          `"${process.execPath} -e \\"process.exit(0)\\""`,
+          '--rerunGateCommand',
+          `"${process.execPath} -e \\"process.exit(0)\\""`,
+        ].join(' '),
+        target
       );
-      expect(run('npx --no-install bmad-speckit main-agent:delivery-truth-gate --help', target)).toContain(
-        'main-agent:delivery-truth-gate'
+      const releaseReportPath = path.join(gatesRoot, 'main-agent-release-gate-report.json');
+      const releaseOutput = fs.readFileSync(releaseReportPath, 'utf8');
+      const release = JSON.parse(releaseOutput) as {
+        critical_failures: number;
+        completion_intent?: { gateReportHash?: string };
+      };
+      expect(release.critical_failures).toBe(0);
+      expect(release.completion_intent?.gateReportHash).toEqual(expect.any(String));
+
+      const soakPath = path.join(target, '_bmad-output', 'runtime', 'soak', 'main-agent-soak-report.json');
+      writeJson(soakPath, {
+        mode: 'wall_clock',
+        run_kind: 'development_run_loop',
+        target_duration_ms: 28_800_000,
+        observed_duration_ms: 28_800_001,
+        manual_restarts: 0,
+        silent_hangs: 0,
+        false_completions: 0,
+        recovery_success_rate: 1,
+        tick_count: 2,
+        evidence_provenance: { runId, storyKey, evidenceBundleId, gateReportHash: 'soak-hash' },
+        developmentRun: {
+          tick_count: 2,
+          completed_ticks: 2,
+          blocked_ticks: 0,
+          runLoopInvocations: [
+            {
+              tick: 1,
+              runId,
+              status: 'completed',
+              packetId: 'packet-1',
+              taskReportStatus: 'done',
+              evidence: ['real patch evidence'],
+              finalNextAction: 'final_inspect',
+              tickCommand: {
+                command: 'codex worker adapter',
+                exitCode: 0,
+                stdoutPath: 'stdout.log',
+                stderrPath: 'stderr.log',
+                diffHashBefore: 'before',
+                diffHashAfter: 'after',
+              },
+            },
+            {
+              tick: 2,
+              runId,
+              status: 'completed',
+              packetId: 'packet-2',
+              taskReportStatus: 'done',
+              evidence: ['gate rerun evidence'],
+              finalNextAction: 'done',
+              tickCommand: {
+                command: 'gate rerun',
+                exitCode: 0,
+                stdoutPath: 'stdout.log',
+                stderrPath: 'stderr.log',
+                diffHashBefore: 'after',
+                diffHashAfter: 'after',
+              },
+            },
+          ],
+        },
+      });
+      const sprintAuditPath = path.join(target, '_bmad-output', 'runtime', 'governance', 'sprint-status-update-audit.json');
+      const sprintAudit = JSON.parse(fs.readFileSync(sprintAuditPath, 'utf8')) as {
+        authorized: boolean;
+        evidence_provenance?: { gateReportHash?: string };
+      };
+      expect(sprintAudit.authorized).toBe(true);
+      expect(sprintAudit.evidence_provenance?.gateReportHash).toBe(release.completion_intent?.gateReportHash);
+      const deliveryOutput = run(
+        [
+          'npx --no-install bmad-speckit main-agent:delivery-truth-gate',
+          '--cwd',
+          '.',
+          '--releaseGatePath',
+          `"${releaseReportPath}"`,
+          '--hostMatrixPath',
+          `"${hostMatrixPath}"`,
+          '--soakPath',
+          `"${soakPath}"`,
+          '--prTopologyPath',
+          `"${prTopologyPath}"`,
+          '--sprintAuditPath',
+          `"${sprintAuditPath}"`,
+          '--qualityGatePath',
+          `"${qualityGatePath}"`,
+        ].join(' '),
+        target
       );
+      const delivery = JSON.parse(deliveryOutput) as { completionAllowed: boolean };
+      expect(delivery.completionAllowed).toBe(true);
     } finally {
       fs.rmSync(packRoot, { recursive: true, force: true });
       fs.rmSync(target, { recursive: true, force: true });

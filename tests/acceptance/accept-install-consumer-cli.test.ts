@@ -285,6 +285,10 @@ describe('install to consumer 鈫?CLI acceptance', () => {
       expect(existsSync(join(target, '.codex', 'skills', 'bmad-speckit', 'SKILL.md'))).toBe(true);
       expect(existsSync(join(target, '.codex', 'skills', 'bmads', 'SKILL.md'))).toBe(true);
       expect(existsSync(join(target, '.codex', 'skills', 'speckit-workflow', 'SKILL.md'))).toBe(true);
+      expect(
+        readFileSync(join(target, '.codex', 'skills', 'speckit-workflow', 'SKILL.md'), 'utf8')
+          .startsWith('---')
+      ).toBe(true);
       expect(existsSync(join(target, '.codex', 'skills', 'bmad-story-assistant', 'SKILL.md'))).toBe(true);
       expect(existsSync(join(target, '.codex', 'skills', 'bmad-standalone-tasks', 'SKILL.md'))).toBe(true);
       expect(
@@ -334,6 +338,13 @@ describe('install to consumer 鈫?CLI acceptance', () => {
       run('npx bmad-speckit-init --agent codex', target);
       rmSync(join(target, '.codex', 'skills', 'speckit-workflow'), { recursive: true, force: true });
       expect(() => run('npx bmad-speckit check', target)).toThrow(/speckit-workflow/);
+      run('npx bmad-speckit-init --agent codex', target);
+      writeFileSync(
+        join(target, '.codex', 'skills', 'speckit-workflow', 'SKILL.md'),
+        '<!-- BLOCK_LABEL_POLICY=B -->\n---\nname: speckit-workflow\n---\n',
+        'utf8'
+      );
+      expect(() => run('npx bmad-speckit check', target)).toThrow(/YAML frontmatter/);
     } finally {
       rmSync(target, { recursive: true, force: true });
     }

@@ -1,6 +1,6 @@
 ---
-name: pr-template-generator
-description: Automatically analyze all commits since the last PR and generate a detailed PR template as a markdown file. Analyzes commit history, categorizes changes (features, improvements, fixes, docs), generates detailed summaries with problem/fix descriptions, and saves to docs/PR directory. Use when preparing pull requests, reviewing branch changes, or documenting work since last merge.
+name: "pr-template-generator"
+description: "Automatically analyze all commits since the last PR and generate a detailed PR template as a markdown file. Analyzes commit history, categorizes changes (features, improvements, fixes, docs), generates detailed summaries with problem/fix descriptions, and saves to docs/PR directory. Use when preparing pull requests, reviewing branch changes, or documenting work since last merge."
 ---
 
 # PR Template Generator

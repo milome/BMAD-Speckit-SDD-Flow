@@ -73,10 +73,29 @@ export interface OrchestrationState {
     running_for_ms: number;
     last_tick_ts: string;
     last_progress_ts: string;
-    degradation_level: 'none' | 'soft' | 'hard';
+    degradation_level:
+      | 'none'
+      | 'hook_lost'
+      | 'transport_degraded'
+      | 'host_partial'
+      | 'cli_forced';
     active_host_mode: string;
     resume_count: number;
     resumed_from_checkpoint?: boolean;
+  };
+  hostRecovery?: {
+    degradation_level:
+      | 'none'
+      | 'hook_lost'
+      | 'transport_degraded'
+      | 'host_partial'
+      | 'cli_forced';
+    active_host_mode: string;
+    orchestration_entry: string;
+    recovered_host_mode?: string | null;
+    recovered_orchestration_entry?: string | null;
+    recovery_log_path?: string | null;
+    updated_at: string;
   };
   gatesLoop?: {
     retryCount: number;

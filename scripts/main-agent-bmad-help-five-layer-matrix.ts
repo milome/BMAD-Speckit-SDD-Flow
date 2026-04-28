@@ -148,30 +148,60 @@ function stageEvidencePath(
 }
 
 function hasStageEvidence(projectRoot: string, layer: LayerDefinition, stage: StageName): boolean {
-  const explicitStageMarker = stageEvidencePath(projectRoot, layer, stage);
-  if (fs.existsSync(explicitStageMarker)) {
-    return true;
-  }
   const root = path.join(projectRoot, layer.outputRoot);
   if (!fs.existsSync(root)) {
     return false;
   }
-  const names = fs.readdirSync(root, { withFileTypes: true }).map((entry) => entry.name.toLowerCase());
-  const stageLower = String(stage).toLowerCase();
-  const aliases = [
-    stageLower,
-    stageLower.replace(/_/g, '-'),
-    ...(stage === 'prd' ? ['project.json'] : []),
-    ...(stage === 'arch' ? ['architecture.md', 'architecture.json', 'arch.md', 'arch.json'] : []),
-    ...(stage === 'epics' ? ['epic', 'epics'] : []),
-    ...(stage === 'story_create' ? ['story', 'story-create'] : []),
-    ...(stage === 'post_audit' ? ['post-audit', 'audit'] : []),
-    ...(stage === ('release_gate' as StageName) ? ['main-agent-release-gate-report'] : []),
-    ...(stage === ('delivery_truth_gate' as StageName)
-      ? ['main-agent-delivery-truth-gate-report']
-      : []),
-  ];
-  return names.some((name) => aliases.some((alias) => name.includes(alias)));
+  if (stage === ('release_gate' as StageName)) {
+    return gateReportPassed(path.join(root, 'main-agent-release-gate-report.json'), (value) =>
+      value.critical_failures === 0 && value.blocked_sprint_status_update === false
+    );
+  }
+  if (stage === ('delivery_truth_gate' as StageName)) {
+    return gateReportPassed(path.join(root, 'main-agent-delivery-truth-gate-report.json'), (value) =>
+      value.completionAllowed === true
+    );
+  }
+  const explicitStageMarker = stageEvidencePath(projectRoot, layer, stage);
+  if (fs.existsSync(explicitStageMarker)) {
+    return true;
+  }
+  const exactNames = exactStageEvidenceNames(stage);
+  return fs
+    .readdirSync(root, { withFileTypes: true })
+    .some((entry) => exactNames.has(entry.name.toLowerCase()));
+}
+
+function exactStageEvidenceNames(stage: StageName): Set<string> {
+  const normalized = String(stage).toLowerCase();
+  const dashed = normalized.replace(/_/g, '-');
+  const names = new Set([`${normalized}.json`, `${normalized}.md`, `${dashed}.json`, `${dashed}.md`]);
+  if (stage === 'prd') names.add('project.json');
+  if (stage === 'arch') {
+    for (const item of ['architecture.md', 'architecture.json', 'arch.md', 'arch.json']) names.add(item);
+  }
+  if (stage === 'epics') {
+    names.add('epics.md');
+    names.add('epics.json');
+  }
+  if (stage === 'story_create') {
+    names.add('story-create.md');
+    names.add('story-create.json');
+  }
+  if (stage === 'post_audit') {
+    names.add('post-audit.md');
+    names.add('post-audit.json');
+  }
+  return names;
+}
+
+function gateReportPassed(filePath: string, predicate: (value: Record<string, unknown>) => boolean): boolean {
+  if (!fs.existsSync(filePath)) return false;
+  try {
+    return predicate(JSON.parse(fs.readFileSync(filePath, 'utf8')) as Record<string, unknown>);
+  } catch {
+    return false;
+  }
 }
 
 export function markBmadHelpFiveLayerStageComplete(input: {

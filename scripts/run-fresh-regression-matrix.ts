@@ -1,13 +1,13 @@
-/**
+﻿/**
  * Fresh consumer worktree regression matrix (Story E14-S1).
- * SSOT: docs/plans/FRESH_INSTALL_REGRESSION_STORY_E14_S1.md §3,
- * docs/plans/PRODUCTION_INTEGRATION_SDDA_T1_T10_2026-03-20.md §0 rows 2–3.
+ * SSOT: docs/plans/FRESH_INSTALL_REGRESSION_STORY_E14_S1.md 搂3,
+ * docs/plans/PRODUCTION_INTEGRATION_SDDA_T1_T10_2026-03-20.md 搂0 rows 2鈥?.
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-/** Vitest files aligned with FRESH §3 row 7 and PRODUCTION §0 row 3 */
+/** Vitest files aligned with FRESH 搂3 row 7 and PRODUCTION 搂0 row 3 */
 export const GOVERNANCE_VITEST_FILES = [
   'tests/acceptance/bmad-config.test.ts',
   'tests/acceptance/runtime-governance-matrix.test.ts',
@@ -158,11 +158,11 @@ function appendSummary(repoRoot: string, lines: string[]): void {
   fs.appendFileSync(p, `${lines.join('\n')}\n`, 'utf8');
 }
 
-export function resolveDualHostGateMode(
+export function resolveHostMatrixGateMode(
   scripts: Record<string, string>
-): 'dual_script' | 'legacy_split' | 'invalid' {
-  if (scripts['test:ci:dual']) {
-    return 'dual_script';
+): 'host_matrix_script' | 'legacy_split' | 'invalid' {
+  if (scripts['test:ci:host-matrix']) {
+    return 'host_matrix_script';
   }
   if (scripts['test:ci']) {
     return 'legacy_split';
@@ -170,15 +170,15 @@ export function resolveDualHostGateMode(
   return 'invalid';
 }
 
-function runDualHostGate(cwd: string, scripts: Record<string, string>, log: string[]): number {
-  const mode = resolveDualHostGateMode(scripts);
+function runHostMatrixGate(cwd: string, scripts: Record<string, string>, log: string[]): number {
+  const mode = resolveHostMatrixGateMode(scripts);
 
-  if (mode === 'dual_script') {
-    return runNpmScript(cwd, 'test:ci:dual', log);
+  if (mode === 'host_matrix_script') {
+    return runNpmScript(cwd, 'test:ci:host-matrix', log);
   }
 
   if (mode === 'invalid') {
-    log.push('FAIL: test:ci missing while test:ci:dual absent');
+    log.push('FAIL: test:ci missing while test:ci:host-matrix absent');
     return 1;
   }
 
@@ -256,7 +256,7 @@ export function runFreshRegressionMatrixMain(): number {
       label: 'build:runtime-emit',
       fn: () => runOptionalNpmScript(freshRoot, scripts, 'build:runtime-emit', logLines),
     },
-    { label: 'dual-host', fn: () => runDualHostGate(freshRoot, scripts, logLines) },
+    { label: 'host-matrix', fn: () => runHostMatrixGate(freshRoot, scripts, logLines) },
     { label: 'lint', fn: () => runNpmScript(freshRoot, 'lint', logLines) },
     { label: 'test:bmad', fn: () => runNpmScript(freshRoot, 'test:bmad', logLines) },
     { label: 'test:scoring', fn: () => runNpmScript(freshRoot, 'test:scoring', logLines) },
@@ -337,3 +337,4 @@ export function runFreshRegressionMatrixMain(): number {
 if (require.main === module) {
   process.exitCode = runFreshRegressionMatrixMain();
 }
+

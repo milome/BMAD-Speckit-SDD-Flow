@@ -1,9 +1,11 @@
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
+import { buildEvidenceProvenance, type EvidenceProvenance } from './evidence-provenance';
 
 type ReleaseGateReport = {
   generatedAt?: string;
+  evidence_provenance?: EvidenceProvenance;
   critical_failures: number;
   blocked_sprint_status_update: boolean;
   checks?: unknown[];
@@ -24,6 +26,8 @@ type UpdateInput = {
   releaseGateReportPath: string;
   token: string;
   auditPath?: string;
+  runId?: string;
+  evidenceBundleId?: string;
 };
 
 const TOKEN_PREFIX = 'release-gate:pass:';
@@ -47,6 +51,12 @@ function parseArgs(argv: string[]): Partial<UpdateInput> {
       index += 1;
     } else if (token === '--auditPath' && value) {
       out.auditPath = value;
+      index += 1;
+    } else if (token === '--runId' && value) {
+      out.runId = value;
+      index += 1;
+    } else if (token === '--evidenceBundleId' && value) {
+      out.evidenceBundleId = value;
       index += 1;
     }
   }
@@ -169,6 +179,14 @@ function writeAudit(
     ? input.releaseGateReportPath
     : path.resolve(root, input.releaseGateReportPath);
   const report = readReleaseGateReport(root, reportPath);
+  const evidence_provenance = buildEvidenceProvenance({
+    root,
+    runId: input.runId ?? report.evidence_provenance?.runId,
+    storyKey: input.storyKey,
+    evidenceBundleId: input.evidenceBundleId ?? report.evidence_provenance?.evidenceBundleId,
+    gateReportHash: report.completion_intent?.gateReportHash ?? releaseGateReportHash(report),
+    prefix: 'sprint-status-update',
+  });
   fs.writeFileSync(
     auditPath,
     `${JSON.stringify(
@@ -176,6 +194,7 @@ function writeAudit(
         storyKey: input.storyKey,
         status: input.status,
         authorized: true,
+        evidence_provenance,
         targetPath,
         releaseGateReportPath: reportPath,
         gateReportHash: report.completion_intent?.gateReportHash ?? releaseGateReportHash(report),

@@ -71,6 +71,22 @@ describe('main-agent long-run wall-clock soak', () => {
         })
       );
 
+      const tickScript = path.join(root, 'tick.js');
+      fs.writeFileSync(
+        tickScript,
+        [
+          "const fs = require('node:fs');",
+          "const path = require('node:path');",
+          "const tickDir = process.env.BMAD_REAL_DEV_TICK_DIR;",
+          "const tick = Number(process.env.BMAD_REAL_DEV_TICK || '0');",
+          "const report = { packetId: `packet-${tick}`, status: 'done', filesChanged: ['src/example.js'], validationsRun: ['tick-test'], evidence: [`real-tick-${tick}`], downstreamContext: [] };",
+          "const record = { packetId: report.packetId, taskReport: report, runLoopIngest: { exitCode: 0 }, evidence: { taskReportPath: path.join(tickDir, 'task-report.json'), runLoopIngestPath: path.join(tickDir, 'ingest.json') } };",
+          "fs.mkdirSync(tickDir, { recursive: true });",
+          "fs.writeFileSync(path.join(tickDir, 'task-report.json'), JSON.stringify(report));",
+          "fs.writeFileSync(path.join(tickDir, 'tick-record.json'), JSON.stringify(record));",
+        ].join('\n'),
+        'utf8'
+      );
       const report = await runWallClockSoak({
         durationMs: 30,
         tickIntervalMs: 5,
@@ -78,14 +94,14 @@ describe('main-agent long-run wall-clock soak', () => {
         developmentRunLoop: true,
         flow: 'story',
         stage: 'implement',
-        tickCommand: `${process.execPath} -e "console.log('real tick validation')"`,
+        tickCommand: `"${process.execPath}" "${tickScript}"`,
       });
 
       expect(report.run_kind).toBe('development_run_loop');
       expect(report.developmentRun?.tick_count).toBe(report.tick_count);
       expect(report.developmentRun?.completed_ticks).toBeGreaterThan(0);
       expect(report.developmentRun?.runLoopInvocations[0].packetId).toBeTruthy();
-      expect(report.developmentRun?.runLoopInvocations[0].evidence).toContain('soak-tick-1');
+      expect(report.developmentRun?.runLoopInvocations[0].evidence).toContain('real-tick-1');
       expect(report.developmentRun?.runLoopInvocations[0].tickCommand?.exitCode).toBe(0);
       expect(report.developmentRun?.runLoopInvocations[0].tickCommand?.diffHashBefore).toBeTruthy();
     } finally {

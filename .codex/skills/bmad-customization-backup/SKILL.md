@@ -1,8 +1,6 @@
-<!-- BLOCK_LABEL_POLICY=B -->
 ---
-name: bmad-customization-backup
-description: |
-  Record and back up `_bmad` directory customizations in the current worktree so they can be migrated to a new worktree after reinstalling bmad-method. Use when: (1) Backing up `_bmad` optimizations before creating a new worktree or reinstalling BMAD, (2) Preparing a portable backup of `_bmad` changes for reuse, (3) Applying a previously saved backup to a fresh `_bmad` install in the current or another worktree. Requires project root and `_bmad` path; backups go under `_bmad-output/bmad-customization-backups/`.
+name: "bmad-customization-backup"
+description: "Record and back up `_bmad` directory customizations in the current worktree so they can be migrated to a new worktree after reinstalling bmad-method. Use when: (1) Backing up `_bmad` optimizations before creating a new worktree or reinstalling BMAD, (2) Preparing a portable backup of `_bmad` changes for reuse, (3) Applying a previously saved backup to a fresh `_bmad` install in the current or another worktree. Requires project root and `_bmad` path; backups go under `_bmad-output/bmad-customizat"
 ---
 
 # BMAD customization backup and migration

@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+﻿import { execSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -14,9 +14,9 @@ function shellQuote(value: string): string {
   return `"${value.replace(/"/g, '\\"')}"`;
 }
 
-describe('e2e dual host journey runner', () => {
-  it('runs mock dual-host journey and updates sprint-status only after gates pass', () => {
-    const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dual-host-e2e-'));
+describe('e2e host matrix journey runner', () => {
+  it('runs mock host-matrix journey and updates sprint-status only after gates pass', () => {
+    const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'host-matrix-e2e-'));
     try {
       const contractPath = path.join(
         fixtureRoot,
@@ -73,11 +73,11 @@ describe('e2e dual host journey runner', () => {
         '--project',
         'tsconfig.node.json',
         '--transpile-only',
-        'scripts/e2e-dual-host-journey-runner.ts',
+        'scripts/e2e-host-matrix-journey-runner.ts',
         '--project-root',
         shellQuote(fixtureRoot),
         '--mode mock',
-        '--hosts claude,codex',
+        '--hosts cursor,claude,codex',
         '--write-sprint-status',
       ].join(' ');
 
@@ -97,7 +97,7 @@ describe('e2e dual host journey runner', () => {
       };
 
       expect(report.finalPassed).toBe(true);
-      expect(report.journeys).toHaveLength(2);
+      expect(report.journeys).toHaveLength(3);
       expect(report.journeys.every((item) => item.passed)).toBe(true);
       expect(report.sprintStatusUpdate.applied).toBe(true);
       expect(report.sprintStatusUpdate.storyKey).toBe('99-1-sample-story');
@@ -112,3 +112,4 @@ describe('e2e dual host journey runner', () => {
     }
   }, 120000);
 });
+

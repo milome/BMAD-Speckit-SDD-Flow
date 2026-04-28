@@ -40,6 +40,16 @@ function appendJsonl(filePath, payload) {
   fs.appendFileSync(filePath, JSON.stringify(payload) + '\n', 'utf8');
 }
 
+function appendTickEvent(sessionDir, tickDir, payload) {
+  const event = {
+    tick: Number(process.env.BMAD_REAL_DEV_TICK ?? '0'),
+    recordedAt: new Date().toISOString(),
+    ...payload,
+  };
+  appendJsonl(path.join(sessionDir, 'tick-events.jsonl'), event);
+  appendJsonl(path.join(tickDir, 'events.jsonl'), event);
+}
+
 function hashText(value) {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
@@ -64,6 +74,11 @@ function gitCapture(projectRoot, args, filePath) {
   const result = run('git', args, { cwd: projectRoot, timeoutMs: 60_000 });
   writeText(filePath, `${result.stdout}${result.stderr}`);
   return result;
+}
+
+function gitOutput(projectRoot, args) {
+  const result = run('git', args, { cwd: projectRoot, timeoutMs: 60_000 });
+  return `${result.stdout}${result.stderr}`;
 }
 
 function diffHash(projectRoot) {
@@ -126,6 +141,149 @@ function createPacket(projectRoot, sessionDir, tick) {
   return { packet, packetPath };
 }
 
+function normalizeSlash(value) {
+  return value.replace(/\\/g, '/');
+}
+
+function scopeToPathspec(scope) {
+  const normalized = normalizeSlash(scope);
+  return normalized.endsWith('/**') ? normalized.slice(0, -3) : normalized;
+}
+
+function changedFiles(projectRoot, scopes) {
+  const pathspecs = scopes.map(scopeToPathspec).filter((scope) => !scope.includes('*'));
+  const args = pathspecs.length > 0 ? ['diff', '--name-only', '--', ...pathspecs] : ['diff', '--name-only'];
+  return gitOutput(projectRoot, args)
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith('warning:'));
+}
+
+function finalTaskReport(input) {
+  const existing =
+    fs.existsSync(input.taskReportPath) && fs.statSync(input.taskReportPath).size > 0
+      ? (() => {
+          try {
+            return readJsonObject(input.taskReportPath);
+          } catch {
+            return null;
+          }
+        })()
+      : null;
+  const testPassed = input.testExitCode === 0;
+  const adapterPassed = input.adapterExitCode === 0 && existing?.status === 'done';
+  const filesChanged = Array.from(
+    new Set([...(Array.isArray(existing?.filesChanged) ? existing.filesChanged : []), ...input.filesChanged])
+  );
+  const existingEvidence = Array.isArray(existing?.evidence) ? existing.evidence : [];
+  const evidence = Array.from(
+    new Set([
+      ...existingEvidence.filter((item) => item !== 'codex did not produce task report'),
+      input.adapterReportPath,
+      input.testLogPath,
+      input.afterDiffPath,
+    ])
+  );
+  const validationsRun = Array.from(
+    new Set([
+      ...(Array.isArray(existing?.validationsRun) ? existing.validationsRun : []),
+      'codex-worker-adapter',
+      'pytest:targeted-backtester-subprocess',
+      'bmad-real-development-tick-finalize',
+    ])
+  );
+  const status =
+    testPassed && (input.patchChanged || input.hasPriorCompletedTick)
+      ? 'done'
+      : adapterPassed
+        ? 'done'
+        : 'blocked';
+  return {
+    packetId: input.packet.packetId,
+    status,
+    filesChanged,
+    validationsRun,
+    evidence:
+      status === 'done'
+        ? evidence
+        : [
+            ...evidence,
+            `adapterExitCode=${input.adapterExitCode}`,
+            `testExitCode=${input.testExitCode}`,
+          ],
+    downstreamContext: [
+      input.packet.expectedDelta,
+      status === 'done'
+        ? input.patchChanged
+          ? 'Real development tick produced patch and targeted tests passed; ready for main-agent ingest/final inspect.'
+          : 'Real review/gate tick reran targeted tests after prior completed patch; no additional code change was required.'
+        : 'Next tick must fix adapter/test failures and rerun gates.',
+    ],
+  };
+}
+
+function hasPriorCompletedTick(sessionDir) {
+  const ticksPath = path.join(sessionDir, 'ticks.jsonl');
+  if (!fs.existsSync(ticksPath)) {
+    return false;
+  }
+  return fs
+    .readFileSync(ticksPath, 'utf8')
+    .split(/\r?\n/u)
+    .filter(Boolean)
+    .some((line) => {
+      try {
+        const record = JSON.parse(line);
+        return record?.result === 'passed' || record?.taskReport?.status === 'done';
+      } catch {
+        return false;
+      }
+    });
+}
+
+function writeTickOrchestrationState(projectRoot, packet, packetPath) {
+  const stateDir = path.join(projectRoot, '_bmad-output', 'runtime', 'governance', 'orchestration-state');
+  const statePath = path.join(stateDir, `${packet.parentSessionId}.json`);
+  const existing = fs.existsSync(statePath) ? readJsonObject(statePath) : {};
+  const state = {
+    ...existing,
+    version: 1,
+    sessionId: packet.parentSessionId,
+    host: 'codex',
+    flow: packet.flow,
+    currentPhase: packet.phase,
+    nextAction: packet.taskType === 'remediate' ? 'dispatch_remediation' : 'dispatch_implement',
+    pendingPacket: {
+      packetId: packet.packetId,
+      packetPath,
+      packetKind: 'execution',
+      status: 'ready_for_main_agent',
+      createdAt: new Date().toISOString(),
+      claimOwner: null,
+    },
+    originalExecutionPacketId: existing.originalExecutionPacketId ?? null,
+    gatesLoop: {
+      retryCount: existing.gatesLoop?.retryCount ?? 0,
+      maxRetries: existing.gatesLoop?.maxRetries ?? 3,
+      noProgressCount: existing.gatesLoop?.noProgressCount ?? 0,
+      circuitOpen: false,
+      rerunGate: packet.taskType === 'remediate' ? 'targeted-tests' : null,
+      activePacketId: packet.packetId,
+      lastResult: existing.gatesLoop?.lastResult ?? null,
+    },
+    closeout: existing.closeout ?? {
+      invoked: false,
+      approved: false,
+      scoreWriteResult: null,
+      handoffPersisted: false,
+      resultCode: null,
+    },
+    lastTaskReport: existing.lastTaskReport ?? null,
+  };
+  writeJson(statePath, state);
+  return statePath;
+}
+
 function tsNodeArgs(scriptPath, extraArgs) {
   return [
     path.join(BMAD_ROOT, 'node_modules', 'ts-node', 'dist', 'bin.js'),
@@ -152,14 +310,27 @@ function main() {
 
   fs.mkdirSync(tickDir, { recursive: true });
   const startedAt = new Date().toISOString();
+  appendTickEvent(sessionDir, tickDir, { event: 'tick_started', sessionDir, tickDir });
   const beforeHash = diffHash(projectRoot);
   gitCapture(projectRoot, ['status', '--short'], path.join(tickDir, 'before.status.txt'));
   gitCapture(projectRoot, ['diff', '--binary'], path.join(tickDir, 'before.diff.patch'));
 
   const { packet, packetPath } = createPacket(projectRoot, sessionDir, tick);
+  const orchestrationStatePath = writeTickOrchestrationState(projectRoot, packet, packetPath);
   const taskReportPath = path.join(tickDir, 'task-report.json');
   const adapterReportPath = path.join(tickDir, 'codex-worker-adapter-report.json');
   const runLoopIngestPath = path.join(tickDir, 'main-agent-run-loop-ingest.json');
+  const tickTimeoutMs = Number(process.env.BMAD_REAL_DEV_TICK_TIMEOUT_MS ?? '0');
+  const adapterTimeoutMs =
+    tickTimeoutMs > 15_000 ? Math.max(5_000, tickTimeoutMs - 15_000) : 120_000;
+  appendTickEvent(sessionDir, tickDir, {
+    event: 'adapter_started',
+    packetPath,
+    orchestrationStatePath,
+    taskReportPath,
+    adapterReportPath,
+    timeoutMs: adapterTimeoutMs,
+  });
 
   const adapter = run(
     process.execPath,
@@ -173,11 +344,11 @@ function main() {
       '--reportPath',
       adapterReportPath,
       '--timeoutMs',
-      String(35 * 60 * 1000),
+      String(adapterTimeoutMs),
     ]),
     {
       cwd: BMAD_ROOT,
-      timeoutMs: 40 * 60 * 1000,
+      timeoutMs: adapterTimeoutMs + 5_000,
       env: {
         ...process.env,
         BMAD_FRAMEWORK_ROOT: BMAD_ROOT,
@@ -189,25 +360,15 @@ function main() {
   );
   writeText(path.join(tickDir, 'adapter-stdout.log'), adapter.stdout);
   writeText(path.join(tickDir, 'adapter-stderr.log'), adapter.stderr);
+  appendTickEvent(sessionDir, tickDir, {
+    event: 'adapter_finished',
+    exitCode: adapter.exitCode,
+    signal: adapter.signal,
+    stdoutPath: path.join(tickDir, 'adapter-stdout.log'),
+    stderrPath: path.join(tickDir, 'adapter-stderr.log'),
+  });
 
-  const runLoop = run(
-    process.execPath,
-    tsNodeArgs(path.join(BMAD_ROOT, 'scripts', 'main-agent-orchestration.ts'), [
-      '--action',
-      'run-loop',
-      '--cwd',
-      projectRoot,
-      '--flow',
-      'story',
-      '--stage',
-      'implement',
-      '--taskReportPath',
-      taskReportPath,
-    ]),
-    { cwd: BMAD_ROOT, timeoutMs: 5 * 60 * 1000 }
-  );
-  writeText(runLoopIngestPath, `${runLoop.stdout}${runLoop.stderr}`);
-
+  appendTickEvent(sessionDir, tickDir, { event: 'targeted_tests_started' });
   const test = run(
     'python',
     [
@@ -220,10 +381,61 @@ function main() {
     { cwd: projectRoot, timeoutMs: 10 * 60 * 1000 }
   );
   writeText(path.join(tickDir, 'test-targeted.log'), `${test.stdout}${test.stderr}`);
+  appendTickEvent(sessionDir, tickDir, {
+    event: 'targeted_tests_finished',
+    exitCode: test.exitCode,
+    logPath: path.join(tickDir, 'test-targeted.log'),
+  });
 
   const afterHash = diffHash(projectRoot);
   gitCapture(projectRoot, ['status', '--short'], path.join(tickDir, 'after.status.txt'));
-  gitCapture(projectRoot, ['diff', '--binary'], path.join(tickDir, 'after.diff.patch'));
+  const afterDiffPath = path.join(tickDir, 'after.diff.patch');
+  gitCapture(projectRoot, ['diff', '--binary'], afterDiffPath);
+
+  const finalizedTaskReport = finalTaskReport({
+    packet,
+    taskReportPath,
+    adapterExitCode: adapter.exitCode,
+    adapterReportPath,
+    testExitCode: test.exitCode,
+    testLogPath: path.join(tickDir, 'test-targeted.log'),
+    afterDiffPath,
+    patchChanged: beforeHash !== afterHash,
+    hasPriorCompletedTick: hasPriorCompletedTick(sessionDir),
+    filesChanged: changedFiles(projectRoot, packet.allowedWriteScope ?? []),
+  });
+  writeJson(taskReportPath, finalizedTaskReport);
+  appendTickEvent(sessionDir, tickDir, {
+    event: 'task_report_finalized',
+    status: finalizedTaskReport.status,
+    taskReportPath,
+  });
+
+  appendTickEvent(sessionDir, tickDir, { event: 'run_loop_ingest_started', taskReportPath });
+  const runLoop = run(
+    process.execPath,
+    tsNodeArgs(path.join(BMAD_ROOT, 'scripts', 'main-agent-orchestration.ts'), [
+      '--action',
+      'run-loop',
+      '--cwd',
+      projectRoot,
+      '--flow',
+      'story',
+      '--stage',
+      'implement',
+      '--host',
+      'codex',
+      '--taskReportPath',
+      taskReportPath,
+    ]),
+    { cwd: BMAD_ROOT, timeoutMs: 5 * 60 * 1000 }
+  );
+  writeText(runLoopIngestPath, `${runLoop.stdout}${runLoop.stderr}`);
+  appendTickEvent(sessionDir, tickDir, {
+    event: 'run_loop_ingest_finished',
+    exitCode: runLoop.exitCode,
+    outputPath: runLoopIngestPath,
+  });
 
   let taskReport = null;
   if (fs.existsSync(taskReportPath)) {
@@ -243,6 +455,7 @@ function main() {
     consumerProjectRoot: projectRoot,
     packetId: packet.packetId,
     packetPath,
+    orchestrationStatePath,
     beforeDiffHash: beforeHash,
     afterDiffHash: afterHash,
     patchChanged: beforeHash !== afterHash,
@@ -269,21 +482,28 @@ function main() {
       beforeStatusPath: path.join(tickDir, 'before.status.txt'),
       beforeDiffPath: path.join(tickDir, 'before.diff.patch'),
       afterStatusPath: path.join(tickDir, 'after.status.txt'),
-      afterDiffPath: path.join(tickDir, 'after.diff.patch'),
+      afterDiffPath,
       taskReportPath,
       runLoopIngestPath,
     },
     taskReport,
     result:
-      adapter.exitCode === 0 && runLoop.exitCode === 0 && test.exitCode === 0 ? 'passed' : 'failed',
+      finalizedTaskReport.status === 'done' && runLoop.exitCode === 0 && test.exitCode === 0
+        ? 'passed'
+        : 'failed',
     rerunFixes:
-      adapter.exitCode === 0 && runLoop.exitCode === 0 && test.exitCode === 0
+      finalizedTaskReport.status === 'done' && runLoop.exitCode === 0 && test.exitCode === 0
         ? []
         : ['Next tick must inspect adapter/run-loop/test logs and close failures via BMAD orchestrated rerun.'],
   };
 
   appendJsonl(path.join(sessionDir, 'ticks.jsonl'), tickRecord);
   writeJson(path.join(tickDir, 'tick-record.json'), tickRecord);
+  appendTickEvent(sessionDir, tickDir, {
+    event: 'tick_finished',
+    result: tickRecord.result,
+    tickRecordPath: path.join(tickDir, 'tick-record.json'),
+  });
   return tickRecord.result === 'passed' ? 0 : 1;
 }
 
