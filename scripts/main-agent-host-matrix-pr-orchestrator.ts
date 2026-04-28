@@ -323,6 +323,7 @@ export function runHostMatrixPrOrchestration(input: {
   provider: ProviderMode;
   projectRoot?: string;
   checkCommand?: CommandChecker;
+  runJourney?: (args: string[]) => number;
   enableRealPrApi?: boolean;
   runCommand?: CommandRunner;
   runId?: string;
@@ -348,7 +349,7 @@ export function runHostMatrixPrOrchestration(input: {
   );
   const journeyExit =
     providerOk || input.provider === 'mock'
-      ? runHostMatrixJourneyRunner([
+      ? (input.runJourney ?? runHostMatrixJourneyRunner)([
           '--project-root',
           journeyRoot,
           '--mode',

@@ -173,6 +173,10 @@ export function main(argv: string[]): number {
   return 0;
 }
 
-if (require.main === module) {
+function isDirectLongRunRuntimePolicyCli(entry: string | undefined): boolean {
+  return /(^|[\\/])long-run-runtime-policy(\.[cm]?js|\.ts)?$/iu.test(entry ?? '');
+}
+
+if (require.main === module && isDirectLongRunRuntimePolicyCli(process.argv[1])) {
   process.exitCode = main(process.argv.slice(2));
 }

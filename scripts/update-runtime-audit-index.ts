@@ -40,6 +40,10 @@ export function mainUpdateRuntimeAuditIndex(argv: string[]): number {
   }
 }
 
-if (require.main === module) {
+function isDirectUpdateRuntimeAuditIndexCli(entry: string | undefined): boolean {
+  return /(^|[\\/])update-runtime-audit-index(\.[cm]?js|\.ts)?$/iu.test(entry ?? '');
+}
+
+if (require.main === module && isDirectUpdateRuntimeAuditIndexCli(process.argv[1])) {
   process.exit(mainUpdateRuntimeAuditIndex(process.argv.slice(2)));
 }

@@ -18,6 +18,7 @@
 - **Use explicit evidence before recommendation** 鈥?derive `implementationReadinessStatus` before any implementation-first suggestion
 - **Use the unified gate label `implementation-readiness`** when explaining implementation blocking or readiness repair
 - **鏈€澶?1 鍒?2 涓叧閿棶棰?* 鈥?ask only when evidence is insufficient
+- **最多 1 到 2 个关键问题** — ask only when evidence is insufficient
 - **Implementation entry may be `recommended` only when readiness is `ready_clean` or `repair_closed`**
 - **`standalone_tasks + high complexity` must upgrade to a story-oriented path**
 - **Present routes as `recommended` or `blocked`** 鈥?when the current flow must be upgraded, surface `rerouteRequired` instead of a soft-allowed implementation label

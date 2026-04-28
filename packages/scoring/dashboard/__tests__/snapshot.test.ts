@@ -15,7 +15,7 @@ describe('runtime dashboard snapshot markdown', () => {
       overview: {
         status: 'running',
         health_score: 91,
-        trend: '鍗?,
+        trend: 'stable',
         veto_count: 0,
         dimensions: [],
         weak_top3: [],

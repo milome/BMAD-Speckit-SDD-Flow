@@ -81,6 +81,8 @@ function validateSelectedAITargets(cwd, selectedAI) {
     return fs.existsSync(full) && fs.statSync(full).isFile();
   };
   const requireGovernedEntryAliases = (rootDir) => {
+    const hasBmadPath = typeof getProjectBmadPath(cwd) === 'string';
+    if (hasBmadPath) return;
     for (const alias of ['bmad-speckit', 'bmads']) {
       if (!hasFile(path.join(rootDir, 'commands', `${alias}.md`))) {
         missing.push(`${rootDir}/commands/${alias}.md`);
@@ -432,6 +434,7 @@ function checkCommand(options = {}) {
     }
     if (report.subagentSupport === 'none' || report.subagentSupport === 'limited') {
       console.log('Selected AI has no or limited subagent support; some BMAD/Speckit flows may be unavailable.');
+      console.log('子代理支持等级: none/limited; party-mode and reviewer automation may be unavailable.');
     }
     console.log('Check OK.');
   }

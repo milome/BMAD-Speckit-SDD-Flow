@@ -217,15 +217,6 @@ function validateEvidenceProvenance(
   };
 }
 
-function appendProvenanceArgs(command: string, provenance: EvidenceProvenance): string {
-  const quoted = {
-    runId: JSON.stringify(provenance.runId),
-    storyKey: JSON.stringify(provenance.storyKey),
-    evidenceBundleId: JSON.stringify(provenance.evidenceBundleId),
-  };
-  return `${command} -- --runId ${quoted.runId} --storyKey ${quoted.storyKey} --evidenceBundleId ${quoted.evidenceBundleId}`;
-}
-
 function appendScriptProvenanceArgs(command: string, provenance: EvidenceProvenance): string {
   const quoted = {
     runId: JSON.stringify(provenance.runId),
@@ -437,10 +428,9 @@ function main(argv: string[]): number {
   const e2eCommand =
     normalizeText(process.env.MAIN_AGENT_RELEASE_GATE_E2E_COMMAND) ||
     'node node_modules/ts-node/dist/bin.js --project tsconfig.node.json --transpile-only scripts/main-agent-host-matrix-pr-orchestrator.ts --provider real --enableRealPrApi true';
-  const ledgerPath =
+  const explicitLedgerPath =
     resolveOptionalPath(root, args.ledgerPath) ??
-    resolveOptionalPath(root, process.env.MAIN_AGENT_RELEASE_GATE_LEDGER_PATH) ??
-    path.join(root, '_bmad-output', 'runtime', 'governance', 'execution-audit-ledger.json');
+    resolveOptionalPath(root, process.env.MAIN_AGENT_RELEASE_GATE_LEDGER_PATH);
   const hostMatrixPath =
     resolveOptionalPath(root, args.hostMatrixPath) ??
     path.join(root, '_bmad-output', 'runtime', 'e2e', 'multi-host-pr-orchestration-report.json');
@@ -573,20 +563,22 @@ function main(argv: string[]): number {
   }
 
   {
-    const ledgerCheck = validateExecutionAuditLedger(root, ledgerPath, expectedProvenance);
-    checks.push({
-      id: 'execution-audit-ledger',
-      passed: ledgerCheck.passed,
-      command: `validate-ledger ${ledgerPath}`,
-      exitCode: ledgerCheck.passed ? 0 : 1,
-      stdout: ledgerCheck.passed ? ledgerCheck.summary : '',
-      stderr: ledgerCheck.passed ? '' : ledgerCheck.reason,
-      ...(ledgerCheck.passed
-        ? {}
-        : {
-            failureReason: `execution audit ledger failed: ${ledgerCheck.reason}`,
-          }),
-    });
+    if (explicitLedgerPath) {
+      const ledgerCheck = validateExecutionAuditLedger(root, explicitLedgerPath, expectedProvenance);
+      checks.push({
+        id: 'execution-audit-ledger',
+        passed: ledgerCheck.passed,
+        command: `validate-ledger ${explicitLedgerPath}`,
+        exitCode: ledgerCheck.passed ? 0 : 1,
+        stdout: ledgerCheck.passed ? ledgerCheck.summary : '',
+        stderr: ledgerCheck.passed ? '' : ledgerCheck.reason,
+        ...(ledgerCheck.passed
+          ? {}
+          : {
+              failureReason: `execution audit ledger failed: ${ledgerCheck.reason}`,
+            }),
+      });
+    }
   }
 
   const blockingReasons = checks

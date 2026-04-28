@@ -159,7 +159,7 @@ describe('bmad-help five-layer main-agent matrix', () => {
         layer: 'layer_5',
         stage: 'release_gate' as any,
       });
-      let markerOnlyState = resolveBmadHelpFiveLayerProgressState({ projectRoot: root });
+      const markerOnlyState = resolveBmadHelpFiveLayerProgressState({ projectRoot: root });
       expect(markerOnlyState.currentStage).toBe('release_gate');
       fs.writeFileSync(
         path.join(root, '_bmad-output', 'runtime', 'gates', 'main-agent-release-gate-report.json'),

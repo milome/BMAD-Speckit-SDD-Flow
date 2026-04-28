@@ -581,7 +581,7 @@ export function runCodexWorkerAdapter(input: {
 
   copyTaskReportIfNeeded(codexWritableTaskReportPath, taskReportPath);
   let taskReportStrictJsonError: string | null = null;
-  let taskReport = fs.existsSync(taskReportPath)
+  const taskReport = fs.existsSync(taskReportPath)
     ? (() => {
         try {
           return readTaskReport(taskReportPath);
@@ -688,6 +688,10 @@ export function main(argv: string[]): number {
     : 1;
 }
 
-if (require.main === module) {
+function isDirectMainAgentCodexWorkerAdapterCli(entry: string | undefined): boolean {
+  return /(^|[\\/])main-agent-codex-worker-adapter(\.[cm]?js|\.ts)?$/iu.test(entry ?? '');
+}
+
+if (require.main === module && isDirectMainAgentCodexWorkerAdapterCli(process.argv[1])) {
   process.exitCode = main(process.argv.slice(2));
 }

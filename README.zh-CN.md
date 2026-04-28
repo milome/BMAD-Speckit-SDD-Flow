@@ -1,5 +1,7 @@
 # BMAD-Speckit-SDD-Flow
 
+主 Agent 入口遵循 `inspect -> dispatch-plan -> closeout` 主链。
+
 [English](README.md) | 绠€浣撲腑鏂?
 <p align="center">
   <img src="docs/assets/readme-slogan.final.svg" alt="BMAD-Speckit-SDD-Flow" width="100%" />

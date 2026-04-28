@@ -13,6 +13,7 @@ description: |
 
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
 > Closeout terminology: in this document, a stage is considered complete only when `runAuditorHost` returns `closeout approved`. An audit report `PASS` only means the host close-out may start; `PASS` alone must not be treated as completion, admission, or release.
+> **不中断执行 contract**：If the audit conclusion is **failed**, keep the implementation subagent running until the post-audit boundary; do not stop at a single task, milestone, or progress checkpoint.
 
 # BMAD Story Assistant
 
@@ -1546,6 +1547,3 @@ The following data is retained when rolling back:
 - **BMad Master intervention (GAP-037 fix)**: When rolling back > 3 times or rolling back > 2 times, the user or project leader needs to confirm; Approval steps: Record the reason 鈫?User confirms "continue" or "terminate" 鈫?reset the count if continuing
 - Falling back to Layer 1 will reset the entire Epic plan
 - Rollback/rollback operations must record the reasons and decision-making process
-
-
-

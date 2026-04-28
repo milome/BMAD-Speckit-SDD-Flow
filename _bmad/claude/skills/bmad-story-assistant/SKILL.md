@@ -6,6 +6,8 @@ description: |
   并接入仓库内已实现的多 agent、hooks、状态机、handoff、评分写入与 commit gate 机制。
 ---
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Deferred gap contract：读取并验证 `deferred-gap-register.yaml`；读取并验证 `journey-ledger`、`trace-map`、`closure-notes`；若存在 active deferred gap 但无 task binding、Smoke Task Chain、Closure Task ID 或 production path 映射，不得进入实施。
+> Party-mode final-output contract：`quick_probe_20`、`decision_root_cause_50`、`final_solution_task_list_100` 均可展示；若低档位被要求产出最终方案，必须拒绝当前档位并升级到 `final_solution_task_list_100`。
 > Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
 
 > **统一 closeout 硬门禁（适用于本技能全部审计闭环）**：

@@ -11,6 +11,10 @@ import { describe, expect, it } from 'vitest';
 
 const PKG_ROOT = join(import.meta.dirname, '..', '..');
 
+function cleanupTempDir(target: string): void {
+  rmSync(target, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+}
+
 function run(cmd: string, cwd: string, env?: NodeJS.ProcessEnv): string {
   return execSync(cmd, { cwd, encoding: 'utf8', env: { ...process.env, ...env } });
 }
@@ -49,7 +53,7 @@ describe('install to consumer 鈫?CLI acceptance', () => {
       const out = runRepoCli('check', target);
       expect(out).toMatch(/Check OK|OK/i);
     } finally {
-      rmSync(target, { recursive: true, force: true });
+      cleanupTempDir(target);
     }
   }, 90_000);
 
@@ -60,7 +64,7 @@ describe('install to consumer 鈫?CLI acceptance', () => {
       const out = runRepoCli('version', target);
       expect(out).toMatch(/\d+\.\d+\.\d+/);
     } finally {
-      rmSync(target, { recursive: true, force: true });
+      cleanupTempDir(target);
     }
   }, 90_000);
 
@@ -103,7 +107,7 @@ describe('install to consumer 鈫?CLI acceptance', () => {
       const out = run('npx bmad-speckit check', target);
       expect(out).toMatch(/Check OK|OK/i);
     } finally {
-      rmSync(target, { recursive: true, force: true });
+      cleanupTempDir(target);
     }
   }, 60_000);
 
@@ -145,7 +149,7 @@ describe('install to consumer 鈫?CLI acceptance', () => {
       expect(readFileSync(mirroredTemplate, 'utf8')).toBe(readFileSync(canonicalTemplate, 'utf8'));
       expect(readFileSync(mirroredScript, 'utf8')).toBe(readFileSync(canonicalScript, 'utf8'));
     } finally {
-      rmSync(target, { recursive: true, force: true });
+      cleanupTempDir(target);
     }
   }, 180_000);
 
@@ -193,7 +197,7 @@ describe('install to consumer 鈫?CLI acceptance', () => {
         false
       );
     } finally {
-      rmSync(target, { recursive: true, force: true });
+      cleanupTempDir(target);
     }
   }, 90_000);
 
@@ -221,7 +225,7 @@ describe('install to consumer 鈫?CLI acceptance', () => {
       expect(readFileSync(runtime, 'utf8')).toBe(readFileSync(canonical, 'utf8'));
       expect(readFileSync(runtime, 'utf8')).toContain('name: party-mode-facilitator');
     } finally {
-      rmSync(target, { recursive: true, force: true });
+      cleanupTempDir(target);
     }
   }, 90_000);
 
@@ -261,7 +265,7 @@ describe('install to consumer 鈫?CLI acceptance', () => {
         after.managed_surface.some((entry: { path: string }) => entry.path.startsWith('.claude/'))
       ).toBe(true);
     } finally {
-      rmSync(target, { recursive: true, force: true });
+      cleanupTempDir(target);
     }
   }, 90_000);
 
@@ -346,7 +350,7 @@ describe('install to consumer 鈫?CLI acceptance', () => {
       );
       expect(() => run('npx bmad-speckit check', target)).toThrow(/YAML frontmatter/);
     } finally {
-      rmSync(target, { recursive: true, force: true });
+      cleanupTempDir(target);
     }
   }, 180_000);
 
@@ -371,7 +375,7 @@ describe('install to consumer 鈫?CLI acceptance', () => {
       const sharedHelper = readFileSync(join(target, '_bmad', 'runtime', 'hooks', 'runtime-dashboard-auto-start.cjs'), 'utf8');
       expect(sharedHelper).toContain('ensureRuntimeDashboardServer');
     } finally {
-      rmSync(target, { recursive: true, force: true });
+      cleanupTempDir(target);
     }
   }, 90_000);
 
@@ -383,7 +387,7 @@ describe('install to consumer 鈫?CLI acceptance', () => {
       expect(existsSync(join(target, '.mcp.json'))).toBe(true);
       expect(existsSync(join(target, '.runtime-mcp', 'server', 'dist', 'index.cjs'))).toBe(true);
     } finally {
-      rmSync(target, { recursive: true, force: true });
+      cleanupTempDir(target);
     }
   }, 90_000);
 });

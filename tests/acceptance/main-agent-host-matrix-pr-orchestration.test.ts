@@ -5,6 +5,25 @@ import { spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import { runHostMatrixPrOrchestration } from '../../scripts/main-agent-host-matrix-pr-orchestrator';
 
+function fastPassingJourney(args: string[]): number {
+  const reportPath = args[args.indexOf('--report-path') + 1];
+  fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+  fs.writeFileSync(
+    reportPath,
+    JSON.stringify({
+      mode: 'real',
+      journeys: [
+        { host: 'cursor', passed: true },
+        { host: 'claude', passed: true },
+        { host: 'codex', passed: true },
+      ],
+      finalPassed: true,
+    }),
+    'utf8'
+  );
+  return 0;
+}
+
 describe('main-agent host-matrix PR orchestration', () => {
   it('passes in deterministic mock provider mode with closed PR topology', () => {
     const report = runHostMatrixPrOrchestration({ provider: 'mock' });
@@ -60,6 +79,7 @@ describe('main-agent host-matrix PR orchestration', () => {
     try {
       const report = runHostMatrixPrOrchestration({
         provider: 'real',
+        runJourney: fastPassingJourney,
         checkCommand: (command, args = []) => {
           if (command === 'gh' && args.join(' ') === 'auth status') return true;
           return ['gh', 'claude', 'codex'].includes(command);
@@ -105,6 +125,7 @@ describe('main-agent host-matrix PR orchestration', () => {
     try {
       const report = runHostMatrixPrOrchestration({
         provider: 'real',
+        runJourney: fastPassingJourney,
         checkCommand: (command) => ['gh', 'claude', 'codex'].includes(command),
       });
       expect(report.providerPreflight.find((check) => check.id === 'github-auth')?.passed).toBe(
@@ -137,6 +158,7 @@ describe('main-agent host-matrix PR orchestration', () => {
   it('fails closed in real provider mode unless real PR API mutation is explicitly enabled', () => {
     const report = runHostMatrixPrOrchestration({
       provider: 'real',
+      runJourney: fastPassingJourney,
       checkCommand: (command, args = []) => {
         if (command === 'gh' && args.join(' ') === 'auth status') return true;
         return ['gh', 'claude', 'codex'].includes(command);
@@ -156,6 +178,7 @@ describe('main-agent host-matrix PR orchestration', () => {
     const report = runHostMatrixPrOrchestration({
       provider: 'real',
       enableRealPrApi: true,
+      runJourney: fastPassingJourney,
       checkCommand: (command, args = []) => {
         if (command === 'gh' && args.join(' ') === 'auth status') return true;
         return ['gh', 'claude', 'codex'].includes(command);

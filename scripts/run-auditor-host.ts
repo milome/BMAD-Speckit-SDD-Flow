@@ -474,6 +474,10 @@ export async function mainRunAuditorHost(argv: string[]): Promise<number> {
   }
 }
 
-if (require.main === module) {
+function isDirectRunAuditorHostCli(entry: string | undefined): boolean {
+  return /(^|[\\/])run-auditor-host(\.[cm]?js|\.ts)?$/iu.test(entry ?? '');
+}
+
+if (require.main === module && isDirectRunAuditorHostCli(process.argv[1])) {
   mainRunAuditorHost(process.argv.slice(2)).then((code) => process.exit(code));
 }

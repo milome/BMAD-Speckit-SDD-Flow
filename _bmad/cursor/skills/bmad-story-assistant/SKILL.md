@@ -3,6 +3,15 @@ name: bmad-story-assistant
 description: |
   BMAD Story 鍔╂墜锛氭寜 Epic/Story 缂栧彿鎵ц瀹屾暣鐨?Create Story 鈫?瀹¤ 鈫?Dev Story 鈫?瀹炴柦鍚庡璁?宸ヤ綔娴併€?  闃舵闆讹細鍦ㄦ柊椤圭洰/worktree 鑷姩妫€娴嬪苟琛ヤ竵 party-mode 灞曠ず鍚嶄紭鍖栵紙鑻?_bmad 瀛樺湪涓旀湭浼樺寲锛夈€?  浣跨敤 subagent 鎵ц浠诲姟锛涘璁℃楠や紭鍏堥€氳繃 Cursor Task 璋冨害 code-reviewer锛?claude/agents/ 鎴?.cursor/agents/锛夛紝澶辫触鍒欏洖閫€ mcp_task generalPurpose銆?  閬靛惊 ralph-method銆乀DD 绾㈢豢鐏€乻peckit-workflow 绾︽潫銆備富 Agent 绂佹鐩存帴淇敼鐢熶骇浠ｇ爜銆?  **绂佹鍥?Epic/Story 宸插瓨鍦ㄥ嵆璺宠繃 party-mode**锛氫粎褰撶敤鎴锋槑纭銆屽凡閫氳繃 party-mode 涓斿璁￠€氳繃銆嶆椂鏂瑰彲璺宠繃 Create Story锛涘惁鍒欏繀椤绘墽琛?Create Story銆備富 Agent 鍦ㄨ繘鍏?Cursor party-mode 鍓嶅繀椤诲厛灞曠ず `20 / 50 / 100` 寮哄害閫夐」銆佺瓑寰呯敤鎴烽€夋嫨銆佸畬鎴愬彂璧峰墠鑷锛屽苟鐢卞涓诲湪 `SubagentStart` 娉ㄥ叆 `Party Mode Session Bootstrap (JSON)`锛汼tory 璁捐瀹氱榛樿 `final_solution_task_list_100`锛屾櫘閫氬垎鏋愰粯璁?`decision_root_cause_50`銆?  閫傜敤鍦烘櫙锛氱敤鎴锋彁渚?Epic 缂栧彿涓?Story 缂栧彿锛堝 4銆? 琛ㄧず Story 4.1锛夛紝闇€鐢熸垚 Story 鏂囨。銆侀€氳繃瀹¤銆佹墽琛?Dev Story 骞跺畬鎴愬疄鏂藉悗瀹¤銆傚叏绋嬩腑鏂囥€?---
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
+> - 未执行 `runAuditorHost` 并验证评分写入成功前，禁止结束、禁止交还用户手动操作。
+> - 只有 `runAuditorHost` 返回 `closeout approved` 才算完成；其余都算未完成。
+> - 禁止给“你可以手动做下一步”的建议，除非用户明确要求。
+> - `runAuditorHost` 失败时必须自动重试，并在每次重试时记录失败原因与修复动作；未成功前不得退出当前闭环。
+> - 最终回复必须显式包含：`runAuditorHost 调用参数`、`runAuditorHost 返回结果`、`评分写入结果（成功/失败码）`、`closeout 状态（approved/未approved）`。
+> **不中断执行 contract**：If the audit conclusion is **failed** / 若审计结论为**未通过**，keep the implementation subagent running until the post-audit boundary.
+> Create Story output contract：输出 Story 文档到 {project-root}/_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/{epic_num}-{story_num}-<slug>.md。Story 文档通常保存在：`_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/{epic_num}-{story_num}-<slug>.md`。
+> Deferred gap contract：验证 `deferred-gap-register.yaml` 已存在且可读；优先检查独立工件: `journey-ledger`、`trace-map`、`closure-notes/`；若存在 active deferred gap 但无 Smoke Task Chain、Closure Task ID 或 production path 映射，不得进入 Dev Story 实施。
+> Party-mode final-output contract：`quick_probe_20`、`decision_root_cause_50`、`final_solution_task_list_100` 均可展示；若低档位被要求产出最终方案，必须拒绝当前档位并升级到 `final_solution_task_list_100`。
 > Closeout 鏈鏀剁揣锛氭湰鏂囦欢涓€滃畬鎴?/ 閫氳繃 / 鍙繘鍏ヤ笅涓€闃舵鈥濅竴寰嬫寚 `runAuditorHost` 杩斿洖 `closeout approved`銆傚璁℃姤鍛?`PASS` 浠呰〃绀哄彲浠ヨ繘鍏?host close-out锛屽崟鐙殑 `PASS` 涓嶅緱瑙嗕负瀹屾垚銆佸噯鍏ユ垨鏀捐銆?
 > **缁熶竴 closeout 纭棬绂侊紙閫傜敤浜庢湰鎶€鑳藉叏閮ㄥ璁￠棴鐜級**锛?> - 涓?Agent 鍦ㄦ瘡涓樁娈电殑瀹屾暣 prompt 妯℃澘缁撳熬銆乺esume 鎸囦护缁撳熬銆佷互鍙婂璁￠€氳繃鍚庣殑 host 鏀跺彛鎸囦护缁撳熬锛屽繀椤诲師鏍疯拷鍔犱笅鍒楀浐瀹氬彞锛涘悓鏃跺繀椤昏嚜鍔ㄥ啓鍏ヨ瘎鍒嗘暟鎹笌鏈妧鑳借姹傜殑浜ゆ帴鏂囨。锛坔andoff / state / progress / 瀹¤鏀跺彛鏂囨。锛夛紝绂佹鐣欑粰鐢ㄦ埛鎵嬪姩瀹屾垚銆?> - 鏈墽琛?`runAuditorHost` 骞堕獙璇佽瘎鍒嗗啓鍏ユ垚鍔熷墠锛岀姝㈢粨鏉熴€佺姝氦杩樼敤鎴锋墜鍔ㄦ搷浣溿€?> - 鍙湁 `runAuditorHost` 杩斿洖 `closeout approved` 鎵嶇畻瀹屾垚锛涘叾浣欓兘绠楁湭瀹屾垚銆?> - 绂佹缁欌€滀綘鍙互鎵嬪姩鍋氫笅涓€姝モ€濈殑寤鸿锛岄櫎闈炵敤鎴锋槑纭姹傘€?> - `runAuditorHost` 澶辫触鏃跺繀椤昏嚜鍔ㄩ噸璇曪紝骞跺湪姣忔閲嶈瘯鏃惰褰曞け璐ュ師鍥犱笌淇鍔ㄤ綔锛涙湭鎴愬姛鍓嶄笉寰楅€€鍑哄綋鍓嶉棴鐜€?> - 鏈€缁堝洖澶嶅繀椤绘樉寮忓寘鍚互涓?4 琛岋紝缂轰竴瑙嗕负鏈畬鎴愶細
 >   - `runAuditorHost 璋冪敤鍙傛暟`
