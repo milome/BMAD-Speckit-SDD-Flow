@@ -107,7 +107,8 @@ jobs:
         run: |
           mkdir -p .artifacts/npm
 
-          npm pack --json > .artifacts/npm/root-pack.json
+          npm pack --json > .artifacts/npm/root-pack.raw
+          node scripts/extract-npm-pack-json.js .artifacts/npm/root-pack.raw .artifacts/npm/root-pack.json
           ROOT_TGZ=$(node -e "const fs=require('fs');const pack=JSON.parse(fs.readFileSync('.artifacts/npm/root-pack.json','utf8'));process.stdout.write(pack[0].filename)")
           mv "$ROOT_TGZ" ".artifacts/npm/$ROOT_TGZ"
 
