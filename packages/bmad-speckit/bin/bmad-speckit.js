@@ -23,7 +23,7 @@ function loadCommand(modulePath, exportName) {
   return require(modulePath)[exportName];
 }
 
-function runRepoScript(scriptName, args) {
+function resolveRepoScript(scriptName) {
   const candidates = [
     path.resolve(__dirname, '..', '..', '..', 'scripts', scriptName),
     path.resolve(__dirname, '..', 'scripts', scriptName),
@@ -35,14 +35,28 @@ function runRepoScript(scriptName, args) {
     console.error(`bmad-speckit: cannot locate script ${scriptName}`);
     process.exit(1);
   }
+  return scriptPath;
+}
+
+function runScriptPath(scriptPath, args, options = {}) {
   const runner = scriptPath.endsWith('.ts')
     ? ['npx', ['--no-install', 'tsx', scriptPath, ...args]]
     : [process.execPath, [scriptPath, ...args]];
-  const result = spawnSync(runner[0], runner[1], {
+  return spawnSync(runner[0], runner[1], {
     cwd: process.cwd(),
-    stdio: 'inherit',
+    stdio: options.silent ? ['inherit', 'ignore', 'inherit'] : 'inherit',
     shell: process.platform === 'win32',
   });
+}
+
+function runRepoScript(scriptName, args, options = {}) {
+  for (const prerequisite of options.before ?? []) {
+    const result = runScriptPath(resolveRepoScript(prerequisite), [], { silent: true });
+    if ((result.status ?? (result.error ? 1 : 0)) !== 0) {
+      process.exit(result.status ?? 1);
+    }
+  }
+  const result = runScriptPath(resolveRepoScript(scriptName), args);
   process.exit(result.status ?? (result.error ? 1 : 0));
 }
 
@@ -569,7 +583,11 @@ program
   .description('Run the BMAD main-agent quality gate CLI surface')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .action(() => runRepoScript('main-agent-quality-gate.ts', process.argv.slice(3)));
+  .action(() =>
+    runRepoScript('main-agent-quality-gate.ts', process.argv.slice(3), {
+      before: ['ensure-governance-user-story-mapping-fixture.js'],
+    })
+  );
 
 program
   .command('main-agent:host-matrix-pr-orchestrate')
@@ -583,7 +601,11 @@ program
   .description('Run the BMAD main-agent release gate CLI surface')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .action(() => runRepoScript('main-agent-release-gate.ts', process.argv.slice(3)));
+  .action(() =>
+    runRepoScript('main-agent-release-gate.ts', process.argv.slice(3), {
+      before: ['ensure-governance-user-story-mapping-fixture.js'],
+    })
+  );
 
 program
   .command('main-agent:delivery-truth-gate')

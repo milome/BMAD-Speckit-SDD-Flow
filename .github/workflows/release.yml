@@ -97,6 +97,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Generate governance mapping fixture
+        run: npm run test:governance-fixtures
+
       - name: Run CI-equivalent tests
         run: npm run test:ci
 

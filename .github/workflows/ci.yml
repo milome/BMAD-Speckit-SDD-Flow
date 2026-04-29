@@ -37,6 +37,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Generate governance mapping fixture
+        run: npm run test:governance-fixtures
+
       - name: Validate Wave 2 schemas
         run: |
           python -m json.tool docs/reference/speckit-journey-ledger.schema.json > /dev/null
