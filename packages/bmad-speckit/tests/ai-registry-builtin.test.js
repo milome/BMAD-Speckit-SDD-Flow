@@ -1,7 +1,7 @@
 /**
- * Story 12.1 T2.1-T2.3: ai-registry-builtin 鍗曞厓娴嬭瘯
- * 楠屾敹: 22鏉°€佹瘡鏉″惈 id/name/description/configTemplate銆乧onfigTemplate 鍚?commandsDir/rulesDir/skillsDir/agentsDir|configDir/subagentSupport
- * spec-kit 瀵归綈: opencode鈫?opencode/command, auggie鈫?augment/rules, bob鈫?bob/commands, shai鈫?shai/commands, codex鈫?codex/commands
+ * Story 12.1 T2.1-T2.3: ai-registry-builtin 单元测试
+ * 验收: 22条、每条含 id/name/description/configTemplate、configTemplate 含 commandsDir/rulesDir/skillsDir/agentsDir|configDir/subagentSupport
+ * spec-kit 对齐: opencode→.opencode/command, auggie→.augment/rules, bob→.bob/commands, shai→.shai/commands, codex→.codex/commands
  */
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
@@ -73,7 +73,7 @@ describe('ai-registry-builtin (Story 12.1 T2)', () => {
     assert.strictEqual(e.configTemplate.configDir, undefined);
   });
 
-  it('commandsDir or rulesDir at least one (condition) - except cody/tabnine per spec 搂4.3', () => {
+  it('commandsDir or rulesDir at least one (condition) - except cody/tabnine per spec §4.3', () => {
     const exempt = ['cody', 'tabnine', 'generic']; // spec: cody configDir only, tabnine skillsDir only, generic from registry
     for (const entry of builtin) {
       if (exempt.includes(entry.id)) continue;

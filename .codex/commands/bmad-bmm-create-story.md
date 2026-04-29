@@ -10,7 +10,7 @@ disable-model-invocation: true
 
 **Prerequisites**: sprint-planning is a prerequisite for create-story. If `sprint-status.yaml` is missing, run `sprint-planning` first or explicitly confirm bypass. See the `bmad-bmm-sprint-planning` command.
 
-**Story docs path exemption**: If the user supplies a **story docs path** (greenfield: a folder path containing story documents), that path may be accepted as a valid entry when sprint-status is missing; authoritative behavior and ordering are in `@{project-root}/_bmad/bmm/workflows/4-implementation/create-story/instructions.xml` step 1 (comments mark the greenfield / 搂2.2-style exemption). Epic鈥搒tory IDs (e.g. 2-4) still require gate confirmation when sprint-status is missing.
+**Story docs path exemption**: If the user supplies a **story docs path** (greenfield: a folder path containing story documents), that path may be accepted as a valid entry when sprint-status is missing; authoritative behavior and ordering are in `@{project-root}/_bmad/bmm/workflows/4-implementation/create-story/instructions.xml` step 1 (comments mark the greenfield / §2.2-style exemption). Epic–story IDs (e.g. 2-4) still require gate confirmation when sprint-status is missing.
 
 **Output path (MANDATORY)**: `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/{epic}-{story}-{slug}.md`. Same as bmad-story-assistant; the story subdirectory contains only the story segment (`story-{story}-{slug}`), not the epic segment.
 

@@ -1,10 +1,11 @@
 name = "layers__bmad-layer4-speckit-gaps"
 description = "BMAD Codex custom agent for Layer 4 Agent: GAPS (改进版)."
 sandbox_mode = "read-only"
-source_behavior_contract = "_bmad/claude/agents/layers/bmad-layer4-speckit-gaps.md"
-host_role = "codex-no-hooks"
 
 developer_instructions = """You are running as a BMAD Codex custom agent on the no-hooks worker adapter.
+
+BMAD runtime metadata:
+- host_role: codex-no-hooks
 
 Source behavior contract: _bmad/claude/agents/layers/bmad-layer4-speckit-gaps.md
 
@@ -39,7 +40,7 @@ BMAD Speckit SDD Layer 4 的GAPS 阶段执行 Agent。
 
 执行计划:
   [ ] 步骤1: 读取前置产物
-  [ ] 步骤2: 三层审计结构检查（Cursor/Runtime/Repo）
+  [ ] 步骤2: 三层审计结构检查（Codex/Runtime/Repo）
   [ ] 步骤3: 文档生成/修改
   [ ] 步骤4: 禁止词检查
   [ ] 步骤5: 文档持久化
@@ -202,7 +203,7 @@ PROMPT_PATH="_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story
 
 ## Codex Canonical Base
 
-以下主文本基线必须对应Cursor `.codex/skills/speckit-workflow/references/audit-prompts.md` §3。本节只允许放置Cursor §3 的完整审计要求。
+以下主文本基线必须对应Codex `.codex/skills/speckit-workflow/references/audit-prompts.md` §3。本节只允许放置Codex §3 的完整审计要求。
 - 被审文档:
   - `specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/IMPLEMENTATION_GAPS-E{epic}-S{story}.md`
 - 前置对照文档:
@@ -234,7 +235,7 @@ PROMPT_PATH="_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story
 
 ## Repo Add-ons
 
-**以下内容为仓库附加约束，不属于Cursor §3 基线。**
+**以下内容为仓库附加约束，不属于Codex §3 基线。**
 
 ### GAPS 阶段专项审查
 - 差距项是否可量化和可验证
@@ -313,7 +314,7 @@ MainAgentDispatchRequest({
 
 PASS 时执行
 ```bash
-npx --no-install bmad-speckit run-auditor-host \\
+npx --no-install bmad-speckit run-auditor-host.ts \\
   --projectRoot {projectRoot} \\
   --stage gaps \\
   --artifactPath specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/IMPLEMENTATION_GAPS-E{epic}-S{story}.md \\

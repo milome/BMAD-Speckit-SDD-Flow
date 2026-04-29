@@ -1,12 +1,11 @@
-﻿<!-- BLOCK_LABEL_POLICY=B -->
+<!-- BLOCK_LABEL_POLICY=B -->
 
 ---
 name: speckit-workflow
 description: |
-  Codex CLI / OMC version Speckit development process adaptation entrance.
-  Using Codex speckit-workflow as the semantic baseline, fully orchestrate constitution 鈫?specify 鈫?plan 鈫?GAPS 鈫?tasks 鈫?implement,
-  Requirement mapping and auditing closed loops are mandatory at each stage, and TDD traffic light mode (red light-green light-refactoring) development is mandatory in the execution stage.
-  After executing /speckit.constitution, /speckit.specify, /speckit.plan, /speckit.tasks, /speckit.implement (or .speckit.* equivalent); the enhanced command clarify/checklist/analyze **must be embedded in the corresponding audit closed-loop iteration for execution**: 搂1.2 spec audit report states that "there is an ambiguous statement" 鈫?clarify (within 搂1.2 iteration); 搂2.2 plan within the audit closed-loop, when plan When involving multiple modules or complex architecture 鈫?checklist as part of the 搂2.2 audit step; 搂4.2 tasks In the audit closed loop, when tasks 鈮?10 or across multiple artifacts 鈫?analyze as part of the 搂4.2 audit step; cannot be skipped in scenarios that should be executed on the grounds of "optional";
+  Improve the Speckit development process: force requirement mapping and audit closed loop at each stage of specify/plan/gaps/tasks,
+  and forcing TDD traffic light mode (red light-green light-refactor) development when executing tasks in tasks.md.
+  After executing /speckit.constitution, /speckit.specify, /speckit.plan, /speckit.tasks, /speckit.implement (or .speckit.* equivalent); the enhanced command clarify/checklist/analyze **must be embedded in the corresponding audit closed-loop iteration for execution**: §1.2 spec audit report states that "there is an ambiguous statement" → clarify (within §1.2 iteration); §2.2 plan within the audit closed-loop, when plan When involving multiple modules or complex architecture → checklist as part of the §2.2 audit step; §4.2 tasks In the audit closed loop, when tasks ≥ 10 or across multiple artifacts → analyze as part of the §4.2 audit step; cannot be skipped in scenarios that should be executed on the grounds of "optional";
   Or when the model automatically generates IMPLEMENTATION_GAPS through in-depth analysis, or the user requests "generate tasks" or "execute tasks",
   The requirements mapping list must be added according to the rules of this skill and **call the code-review skill** for audit until passed.
   This skill **depends on the code-review skill**, which must be explicitly called in the audit closed-loop step and cannot be skipped or declared passed on its own.
@@ -19,18 +18,12 @@ description: |
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
 > Closeout terminology: in this document, a stage is considered complete only when `runAuditorHost` returns `closeout approved`. An audit report `PASS` only means the host close-out may start; `PASS` alone must not be treated as completion, admission, or release.
 
-# Claude Adapter: Speckit development process is improved
+# Speckit development process is improved
 
-## Purpose
+> 🚨 **Mandatory constraints - cannot be skipped**
+> Must be executed in order: specify → plan → GAPS → tasks → execute. Each stage must pass the code-review audit before entering the next stage. Skipping any stage or audit is strictly prohibited!
 
-This skill is the unified adaptation entrance of Cursor `speckit-workflow` in the Codex CLI / OMC environment.
-
-The goal is not to simply copy the Cursor skill, but to:
-
-1. **Inherit the verified process semantics of Cursor** (constitution 鈫?specify 鈫?plan 鈫?GAPS 鈫?tasks 鈫?implement mandatory steps in each stage)
-2. **Select the correct executor and define fallback in Codex no-hooks Runtime**
-3. **Access to the audit execution body, state machine, handoff, and score writing mechanism that have been developed in the warehouse**
-4. **Ensure that the audit closed loop and TDD implementation of Speckit at each stage can be completed, continuously, and correctly executed in Codex CLI**
+This skill defines **constitution → spec.md → plan.md → IMPLEMENTATION_GAPS.md → tasks.md → tasks execution** Mandatory steps in each phase: constitution establishes project principles; the documentation phase is **requirements mapping form** + **code-review audit cycle** (until the audit is passed); the execution phase is **TDD red light-green light-refactoring cycle** + **15 iron rules** (until all tasks are completed).
 
 ## Runtime Governance for this round (JSON)
 
@@ -46,7 +39,7 @@ Before dispatching any implement / audit / remediate / document execution body, 
 2. Read `orchestrationState`, `pendingPacketStatus`, `pendingPacket`, `continueDecision`, `mainAgentNextAction`, and `mainAgentReady`
 3. If the next branch is dispatchable but `pendingPacketStatus` is `none` or `missing_packet_file`, run `npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action dispatch-plan`
 4. Dispatch strictly from the returned packet / instruction instead of hand-building prompts from audit prose alone
-5. Drive packet lifecycle through `claim` 鈫?bounded child execution 鈫?`dispatch` 鈫?child result ingest / `complete` / `invalidate`
+5. Drive packet lifecycle through `claim` → bounded child execution → `dispatch` → child result ingest / `complete` / `invalidate`
 6. Re-run `npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action inspect` after every child result and after every `runAuditorHost` close-out before choosing the next global branch
 
 Compatibility rule:
@@ -57,20 +50,22 @@ Hard prohibitions:
 - Do not hand-write packet files or queue items in interactive mode.
 - Do not let a child agent decide the next global branch; the child only executes the bounded packet, and the main Agent must re-read state and decide the next step.
 
----
+## Quick Decision Guide
 
-## Core Acceptance Criteria
+### When to use this skill
+- The technical implementation plan has been clarified and a detailed execution plan is required
+- There is already a Story document that needs to be converted into technical specifications.
+- Need TDD traffic light model to guide development
 
-Claude version of `speckit-workflow` must meet:
+### When to use bmad-story-assistant
+- The complete process needs to start from Product Brief
+- Requires PRD/Architecture depth generation
+- Requires Epic/Story planning and splitting
+- Not sure about the technical solution and need to discuss the solution selection
 
-- Can be used as the **unified entrance** of Codex CLI to continuously arrange constitution 鈫?specify 鈫?plan 鈫?GAPS 鈫?tasks 鈫?implement each stage
-- The audit closed loop, executor selection, fallback, and score writing at each stage are semantically consistent with the Cursor verified process
-- Complete access to the new additions to this warehouse:
-  - Multiple auditor agents (auditor-spec, auditor-plan, auditor-gaps, auditor-tasks, auditor-implement)
-  - Layer 4 execution body (bmad-layer4-speckit-specify/plan/gaps/tasks/implement)
-  - Unified auditor host runner (`runAuditorHost`)
-  - handoff protocol
-- Codex Canonical Base, Claude Runtime Adapter, and Repo Add-ons must not be mixed into a rewritten version of prompt from unknown sources.
+### The relationship between the two
+This skill is the technical implementation layer nesting process of bmad-story-assistant.
+When bmad-story-assistant is executed to "Phase 3: Dev Story Implementation", the complete process of this skill will be triggered.
 
 ## Deferred Gaps Governance Addendum
 
@@ -85,194 +80,7 @@ This distributed English variant must preserve the same Deferred Gaps contract a
 
 ---
 
-## Codex Canonical Base
-
-The following content is inherited from Cursor `speckit-workflow` and belongs to the business semantic baseline. The Claude version is not allowed to rewrite its intention without authorization:
-
-### Stage model
-
-> 馃毃 **Mandatory constraints - cannot be skipped**
-> Must be executed in order: constitution 鈫?specify 鈫?plan 鈫?GAPS 鈫?tasks 鈫?execute. Each stage must pass the code-review audit before entering the next stage. Skipping any stage or audit is strictly prohibited!
-
-This skill defines **constitution 鈫?spec.md 鈫?plan.md 鈫?IMPLEMENTATION_GAPS.md 鈫?tasks.md 鈫?tasks execution** Mandatory steps in each phase: constitution establishes project principles; the documentation phase is **requirements mapping form** + **code-review audit cycle** (until the audit is passed); the execution phase is **TDD red light-green light-refactoring cycle** + **15 iron rules** (until all tasks are completed).
-
-### Quick Decision Guide
-
-#### When to use this skill
-- The technical implementation plan has been clarified and a detailed execution plan is required
-- Existing Story document needs to be converted into technical specifications
-- Requires TDD traffic light model to guide development
-
-#### When to use bmad-story-assistant
-- The complete process needs to start with Product Brief
-- Requires PRD/Architecture depth generation
-- Requires Epic/Story planning and splitting
-- Not sure about the technical solution and need to discuss the solution selection
-
-#### The relationship between the two
-This skill is the technical implementation layer nesting process of bmad-story-assistant.
-When bmad-story-assistant is executed to "Phase 3: Dev Story Implementation", the complete process of this skill will be triggered.
-
-### Baseline semantics that must be preserved
-
-- The master agent must not bypass any stage
-- The output of each stage must pass the audit before entering the next stage
-- constitution must be completed before specifying
-- The code-review skill must be explicitly called in the audit closed loop
-- It is prohibited to self-declare that the audit has passed
-- TDD sequence (red light 鈫?green light 鈫?refactoring) cannot be skipped
-- Enhanced commands must be embedded in the corresponding audit closed-loop iteration for execution
-- ralph-method (prd/progress file) forced fronting
-
-### Content that does not belong to Codex Canonical Base
-The following content is prohibited from being written to Cursor Base and should be placed in Runtime Adapter or Repo Add-ons:
-- Specific agent name of Codex no-hooks
-- `auditor-spec` / `auditor-plan` / `auditor-gaps` / `auditor-tasks` / `auditor-implement`
-- Warehouse local scoring, forbidden words, critical auditor format, state update details
-
----
-
-## Codex no-hooks Runtime Adapter
-
-This section defines how Cursor semantics are implemented in Codex CLI/OMC.
-
-### Stage Routing Map
-
-| Cursor stage | Claude entry/execution body | Description |
-|------|------|------|
-| constitution | Main Agent executes directly | No independent sub-agent requirements |
-| specify (搂1.2 Audit) | `.codex/agents/auditors/auditor-spec.md` | primary |
-| plan (搂2.2 Auditing) | `.codex/agents/auditors/auditor-plan.md` | primary |
-| GAPS (搂3.2 Auditing) | `.codex/agents/auditors/auditor-gaps.md` | primary |
-| tasks (搂4.2 Auditing) | `.codex/agents/auditors/auditor-tasks.md` | primary |
-| implement (搂5.2 Auditing) | `.codex/agents/auditors/auditor-implement.md` | primary |
-| Layer 4 specify | `.codex/agents/layers/bmad-layer4-speckit-specify.md` | Optional executable |
-| Layer 4 plan | `.codex/agents/layers/bmad-layer4-speckit-plan.md` | Optional executable |
-| Layer 4 gaps | `.codex/agents/layers/bmad-layer4-speckit-gaps.md` | Optional executable |
-| Layer 4 tasks | `.codex/agents/layers/bmad-layer4-speckit-tasks.md` | Optional executable |
-| Layer 4 implement | `.codex/agents/layers/bmad-layer4-speckit-implement.md` | Optional executable body |
-| speckit-implement | `.codex/agents/speckit-implement.md` | Dev Story implementation |
-
-### Primary Executors
-
-- During the audit phase, the auditor agent defined by the warehouse is preferred:
-  - spec audit 鈫?`auditor-spec`
-  - plan audit 鈫?`auditor-plan`
-  - GAPS audit 鈫?`auditor-gaps`
-  - tasks audit 鈫?`auditor-tasks`
-  - implement audit 鈫?`auditor-implement`
-- Layer 4 execution body is used for document generation at each stage
-- Use `speckit-implement.md` during the implementation phase
-
-### Execution body calling specification (Architecture D2)
-
-All execution bodies use `subagent_type: general-purpose`, and the main Agent passes in the entire `.codex/agents/*.md` as the complete prompt.
-
-Every Agent tool call in this skill must be derived from `main-agent-orchestration`:
-- First run `npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action inspect`
-- Then run `npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action dispatch-plan` when the next branch is dispatchable and packet hydration is required
-- Dispatch only the bounded packet returned by that surface; the subagent must not decide the next global branch on its own
-- After the subagent returns, the main Agent must update packet lifecycle state and re-run `inspect` before continuing
-- `mainAgentNextAction` and `mainAgentReady` are compatibility fields only; the authoritative runtime truth remains `orchestrationState + pendingPacket + continueDecision`
-
-#### CLI Calling Summary (must be output before each call to the subagent)
-
-Before each call to a subagent, the master Agent must output the following 5-field summary:
-```yaml
-cli_calling_summary:
-  input: <杈撳叆鍙傛暟璇存槑>
-  template: <浣跨敤鐨勬ā鏉?agent 鏂囦欢璺緞>
-  output: <棰勬湡浜у嚭>
-  fallback: <闄嶇骇鏂规>
-  acceptance: <楠屾敹鏍囧噯>
-```
-#### YAML Handoff (output at the end of each stage)
-
-After each stage, the main Agent must output YAML Handoff:
-```yaml
-handoff:
-  execution_summary: <鏈樁娈垫墽琛岀粨鏋滄憳瑕?
-  artifacts:
-    - path: <浜у嚭鏂囦欢璺緞>
-      status: <created/updated/verified>
-  next_steps:
-    - <涓嬩竴姝ユ搷浣滄弿杩?
-```
-### Fallback Strategy
-
-Unified fallback strategy (4-layer Fallback, audit type):
-
-1. **Layer 1 鈥?Primary Executor**: Use the auditor agent defined by the warehouse (such as `.codex/agents/auditors/auditor-spec.md`), call it through the Agent tool + `subagent_type: general-purpose`, and pass the entire main Agent into the agent file as a complete prompt
-2. **Layer 2 鈥?Legacy Compatibility Reviewer**: If the primary executor is unavailable, fall back to `Codex-native reviewer:code-reviewer` or another compatibility reviewer. This is a compatibility path, not the current product truth source.
-3. **Layer 3 鈥?Code-Review Skill**: If the compatibility reviewer is unavailable, fall back to `code-review` skill or equivalent capabilities
-4. **Layer 4 鈥?Main Agent directly executes**: If none of the above are available, the main Agent directly executes the audit, using the corresponding chapter in `references/audit-prompts.md` as a checklist
-
-#### Fallback Downgrade Notice (FR26)
-
-**When Fallback is triggered, the main Agent must display the currently used execution body level to the user** in the following format:
-```
-鈿狅笍 Fallback 闄嶇骇閫氱煡锛氬綋鍓嶅璁′娇鐢?Layer N 鎵ц浣擄紙{鎵ц浣撳悕绉皚锛?   鍘熷洜锛歿闄嶇骇鍘熷洜}
-   褰卞搷锛氬璁℃爣鍑嗕笉鍙橈紝浠呮墽琛屽櫒涓嶅悓
-```
-Example:
-- `鈿狅笍 Fallback downgrade notification: The current audit uses Layer 2 executor (legacy compatibility reviewer)`
-- `鈿狅笍 Fallback downgrade notification: The current audit uses Layer 4 execution body (directly executed by the main Agent)`
-
-### Fallback constraints
-
-fallback is only allowed to change the executor, not:
-- Codex Canonical Base
--Repo Add-ons
-- Output format
-- Rating block
-- Auditing standards
-- handoff / state update rules
-
-### Runtime Contracts
-
-All stages must adhere to the following runtime contracts:
-
-- Handoff information must be maintained:
-  - `artifactDocPath`
-  - `reportPath`
-  - `iteration_count`
-  - `next_action`
-- Must be triggered after passing the audit:
-  - `run-auditor-host.ts`
-  - Audit pass mark
-  - Status updates
-- execution_summary must contain:
-  - current stage
-  - Audit results
-  - Output file path
-  - Next steps
-
----
-
-## Repo Add-ons
-
-The following content is an additional enhancement to the warehouse and does not belong to the original semantics of Cursor.
-
-### Audit enhancement
-- Forbidden word check
-- Critique auditor output format
-- `No new gap in this round / There is a gap in this round`
-- strict convergence (such as implement 3 consecutive rounds without gaps)
-
-### Rating and storage enhancements
-- `run-auditor-host.ts`
-- `iteration_count`
-- `iterationReportPaths`
-- Parsable scoring block requirements
-
-### Configure system integration
-- `_bmad/_config/scoring-trigger-modes.yaml`
-- `_bmad/_config/code-reviewer-config.yaml`
-- `_bmad/_config/eval-lifecycle-report-paths.yaml`
-
----
-
-## 搂0.5 After executing constitution (project principles)
+## §0.5 After executing constitution (project principles)
 
 **Commands that must be executed**: `/speckit.constitution` or `.speckit.constitution` (executed in the project or function directory, **must be completed before specify**)
 
@@ -284,33 +92,33 @@ The following content is an additional enhancement to the warehouse and does not
 
 ### 0.5.2 Audit closed loop
 
-- After the constitution is generated, it is **recommended** to call the code-review skill according to the 搂0 convention to check whether it contains project principles, technology stacks, constraints, etc.; **If the project does not have a special constitution audit prompt word, you can use a general document integrity check**.
+- After the constitution is generated, it is **recommended** to call the code-review skill according to the §0 convention to check whether it contains project principles, technology stacks, constraints, etc.; **If the project does not have a special constitution audit prompt word, you can use a general document integrity check**.
 - If it fails: iteratively modify the constitution based on the audit report until the integrity requirements of the project principles are met.
 
 ---
 
-## 搂0 Skill dependency: code-review calling convention (must be followed for audit closed loop)
-
-**This skill depends on the code-review skill**. All audit closed-loop steps (搂0.5.2, 搂1.2, 搂2.2, 搂3.2, 搂4.2, 搂5.2) must **explicitly call the code-review skill** and may not be replaced by self-review or announced in advance. 搂0.5.2 General document integrity checks are optional.
+## §0 Skill dependency: code-review calling convention (must be followed for audit closed loop)
+**This skill depends on the code-review skill**. All audit closed-loop steps (§0.5.2, §1.2, §2.2, §3.2, §4.2, §5.2) must **explicitly call the code-review skill** and may not be replaced by self-review or announced in advance. §0.5.2 General document integrity checks are optional.
 
 ### 0.1 Calling method
 
 ### Code-Review calling strategy
 
-**Priority Strategy (Codex CLI)**:
-1. Check whether there is an auditor agent for the corresponding stage under `.codex/agents/auditors/`
-2. If it exists, use the Agent tool + `subagent_type: general-purpose` to schedule the corresponding auditor for auditing
-3. Prompt words use `references/audit-prompts.md` corresponding to the chapter
+**Priority Strategy**:
+1. Check `.codex/agents/code-reviewer.md` and `.codex/agents/code-reviewer.md`; **GAP-041 fix**: When both coexist, use `.cursor` first
+2. If it exists, use Codex worker dispatch to schedule code-reviewer for auditing
+3. Use `audit-prompts.md` for prompt words corresponding to chapters; (**GAP-070 fix**: use audit-prompts.md §1–§5 for each stage of speckit audit; use the newly created audit-prompts-prd/arch/pr.md for PRD/Arch/PR audit)
 
-**Fallback strategy (4 layers Fallback)**:
-1. If the registry-backed auditor agent is unavailable, fall back to the legacy compatibility reviewer
-2. If the legacy compatibility reviewer is unavailable, fall back to `code-review` skill
-3. If the code-review skill is unavailable, the main Agent executes it directly
-4. Each downgrade must output a Fallback downgrade notification (FR26) to inform the user of the current execution body level.
+**Fallback Strategy**:
+1. If code-reviewer is not available, use `Codex worker adapter` + `subagent_type: general-purpose`
+2. Pass in the corresponding chapter content of `audit-prompts.md` as prompt
+3. Require the sub-agent to check item by item according to the audit checklist
+
+**Note**: The subagent_type of Codex worker adapter currently only supports general-purpose, explore, and shell, and does not support code-reviewer.
 
 ### 0.1.1 Skill binding rules when sub-Agent executes code-review
 
-When initiating a code-review audit via the Agent tool, **must** be observed:
+When initiating a code-review audit via **Method B (subagent/task)**, **MUST** follow:
 
 1. **Check available skills**: Before initiating a sub-Agent, check whether there are skills named `code-review`, `code-reviewer`, `requesting-code-review` or the function description contains "code review" or "code review" in the current environment.
 2. **Forced binding of skills**: If there is a skill with the same name or similar function as mentioned above, the sub-Agent's prompt must clearly instruct it to read and follow the workflow of the skill (for example, add "Please read and follow the workflow of the code-review skill first" at the beginning of the prompt or attach the skill through `@code-review`).
@@ -318,9 +126,10 @@ When initiating a code-review audit via the Agent tool, **must** be observed:
 4. **Downgrade when no skills are available**: If the current environment does not have any code-review related skills, the sub-Agent can independently perform the audit according to the prompt words in audit-prompts.md, but **must** indicate "code-review skills not detected, use built-in audit standards" at the beginning of the audit report.
 
 ### 0.2 Prohibited matters
+
 - **Prohibited** self-declaring "complete coverage and verification passed" without calling the code-review skill.
-- **It is prohibited** to combine "review + modification" into one step and directly give a passing conclusion; it must first **audit 鈫?report 鈫?modify if it fails 鈫?audit again**.
-- **Disabled** In the case where the code-review (or the skill with the same name/similar function) is available, the sub-Agent performs auditing without loading the skill (see 搂0.1.1).
+- **It is prohibited** to combine "review + modification" into one step and directly give a passing conclusion; it must first **audit → report → modify if it fails → audit again**.
+- **Disabled** In the case where the code-review (or the skill with the same name/similar function) is available, the sub-Agent performs auditing without loading the skill (see §0.1.1).
 
 ### 0.3 Iteration rules
 
@@ -345,9 +154,9 @@ When initiating a code-review audit via the Agent tool, **must** be observed:
 **Slug source rules** (by priority, if it cannot be deduced, the user is required to provide it explicitly):
 | Priority | Source | Example |
 |--------|------|------|
-| 1 | Story document title (take the first few words and convert to kebab-case) | "Implement base cache class" 鈫?`implement-base-cache` |
-| 2 | Epic name (remove `feature-` prefix) | `feature-metrics-cache` 鈫?`metrics-cache` |
-| 3 | Story scope Keywords in the first sentence (redirected to kebab-case) | "Basic implementation of cache service" 鈫?`cache-service-base` |
+| 1 | Story document title (take the first few words and convert to kebab-case) | "Implement base cache class" → `implement-base-cache` |
+| 2 | Epic name (remove `feature-` prefix) | `feature-metrics-cache` → `metrics-cache` |
+| 3 | Story scope Keywords in the first sentence (redirected to kebab-case) | "Basic implementation of cache service" → `cache-service-base` |
 | 4 | Back to top | `E4-S1` as slug (guaranteed to be unique, least readable) |
 
 **standalone process** (the user executes speckit directly without going through BMAD):
@@ -382,13 +191,14 @@ In each stage (spec/plan/gaps/tasks/implement) audit cycle, **each round of audi
 - **pass**: The main agent collects all fail round report paths of this stage and passes in `--iterationReportPaths path1, path2,...` (comma separated); it is not passed when it passes once or there is no fail round.
 
 ### 1.0.4 BMAD output corresponds to the _bmad-output subdirectory
+
 The speckit output is in the spec subdirectory; the BMAD output is in `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/`.
 When the spec path is `specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/`, the corresponding BMAD subdirectory is `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/`.
 
 ### 1.1 Must be completed
 
 - Compare **original requirements/design document** with generated **spec.md**.
-- Add **Requirements Mapping List Table** in **spec.md** according to the original requirements document **chapter by chapter, item by item**. For fixed templates of table headers and column names, see [references/mapping-tables.md](references/mapping-tables.md) 搂1.
+- Add **Requirements Mapping List Table** in **spec.md** according to the original requirements document **chapter by chapter, item by item**. For fixed templates of table headers and column names, see [references/mapping-tables.md](references/mapping-tables.md) §1.
 
 - Ensure that **each chapter and each item** of the original requirements document has a clear correspondence in spec.md and is marked with coverage status.
 
@@ -396,20 +206,14 @@ When the spec path is `specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/`, the
 
 **Strength**: **standard** (single + critical auditor), see [references/audit-prompts-critical-auditor-appendix.md](references/audit-prompts-critical-auditor-appendix.md).
 
-- After generating or updating spec.md, **the code-review skill** must be called according to the convention in 搂0, using the **fixed audit prompt word**: [references/audit-prompts.md](references/audit-prompts.md) 搂1.
-
-**Claude execution body call**:
-1. Read `.codex/agents/auditors/auditor-spec.md`
-2. Use Agent tool + `subagent_type: general-purpose` to initiate audit subtask
-3. Pass in the full text of auditor-spec.md as prompt, and append: audit object path, report saving path after the audit passes
-4. If auditor-spec is unavailable, press Fallback Strategy to downgrade and output the downgrade notification.
-
+- After generating or updating spec.md, **the code-review skill** must be called according to the convention in §0, using the **fixed audit prompt word**: [references/audit-prompts.md](references/audit-prompts.md) §1.
 - **This step can only be ended** when** the code-review audit report conclusion is "fully covered and verified".
 - #### Unified host close-out after the audit passes (mandatory)
   - **Report Path**: `specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_spec-E{epic}-S{story}.md` (epic/story/epic-slug is resolved from the current spec path).
   - When initiating an audit subtask, the prompt sent to the sub-Agent must include: After passing the audit, please save the report to {agreed path}. The path will be filled in by the main Agent based on epic, story, and slug.
   - **Unified entry**: after the audit passes, the main Agent must not hand-run `bmad-speckit score` or `update-runtime-audit-index`; it must call `runAuditorHost` as the single post-audit entry.
-  - **Separation of responsibilities**: the code-review sub-agent only persists the audit report to the agreed path; the main Agent invokes `runAuditorHost` after receiving the passing conclusion. Read `scoring_write_control.enabled` from `_bmad/_config/scoring-trigger-modes.yaml`; execute when enabled. **iteration_count passing (mandatory)** remains the same as 搂1.2: pass the cumulative number of failed rounds for this stage; first-pass success uses 0; verification rounds in the 鈥? consecutive no-gap鈥?check do not increment `iteration_count`; omit nothing; when `eval_question` lacks `question_version`, record `SCORE_WRITE_INPUT_INVALID` and do not call; host failure is non-blocking and the resultCode must be recorded in audit evidence.
+Among them, iterationReportPaths is the fail round report path (see §1.0.3); the verification round is not included.
+  - **Separation of Responsibilities**: The code-review sub-agent produces an audit report and places it in the above path; the main Agent invokes runAuditorHost after receiving the passing conclusion. Read `scoring_write_control.enabled` of `_bmad/_config/scoring-trigger-modes.yaml`; execute if enabled; **iteration_count passing (mandatory)**: The Agent executing the audit cycle passes in the current cumulative value (the number of rounds of failed/failed audits at this stage); 0 is passed for one pass; 3 consecutive verification rounds without gaps are not counted. iteration_count; omission is prohibited; eval_question is missing, question_version is recorded and SCORE_WRITE_INPUT_INVALID is not called; failure does not block the main process, and the resultCode is recorded as audit evidence.
 - If it fails: **Iteratively modify spec.md** (complete mapping table, complete missing chapters) based on the audit report, **call code-review** again until the report conclusion is passed.
 
 ---
@@ -418,12 +222,12 @@ When the spec path is `specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/`, the
 
 **Commands that must be executed**: `/speckit.plan` or `.speckit.plan` (in the function directory, execute after spec.md has been generated)
 
-**Pre-step (anchored 搂1.2 spec audit closed loop)**: When the 搂1.2 spec audit report indicates that "spec has ambiguous expressions", `/speckit.clarify` or `.speckit.clarify` must be executed within the **搂1.2 iteration** to clarify 鈫?update spec.md 鈫?**call 搂1.2 audit** again, and then execute it until it passes plan; cannot be skipped in scenarios that should be executed on the grounds of "optional".
+**Pre-step (anchored §1.2 spec audit closed loop)**: When the §1.2 spec audit report indicates that "spec has ambiguous expressions", `/speckit.clarify` or `.speckit.clarify` must be executed within the **§1.2 iteration** to clarify → update spec.md → **call §1.2 audit** again, and then execute it until it passes plan; cannot be skipped in scenarios that should be executed on the grounds of "optional".
 
 ### 2.1 Must be completed
 
 - Compare the **original requirements design document**, **spec.md** and the generated **plan.md**.
-- Add **Requirements Mapping List Table** in **plan.md** according to the original requirements document and spec.md **chapter by chapter, item by item**. For fixed templates of table headers and column names, see [references/mapping-tables.md](references/mapping-tables.md) 搂2.
+- Add **Requirements Mapping List Table** in **plan.md** according to the original requirements document and spec.md **chapter by chapter, item by item**. For fixed templates of table headers and column names, see [references/mapping-tables.md](references/mapping-tables.md) §2.
 - Ensure that the requirements document clearly corresponds to each chapter and item of spec.md in plan.md.
 
 **Integration and end-to-end test plan (required)**
@@ -436,36 +240,30 @@ When the spec path is `specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/`, the
 
 **Strength**: **standard** (single + critical auditor), see [references/audit-prompts-critical-auditor-appendix.md](references/audit-prompts-critical-auditor-appendix.md).
 
-- After generating or updating plan.md, **the code-review skill** must be called according to the convention in 搂0, using the **fixed audit prompt word**: [references/audit-prompts.md](references/audit-prompts.md) 搂2.
-
-**Claude execution body call**:
-1. Read `.codex/agents/auditors/auditor-plan.md`
-2. Use Agent tool + `subagent_type: general-purpose` to initiate audit subtask
-3. Pass in the full text of auditor-plan.md as prompt
-4. If auditor-plan is unavailable, press Fallback Strategy to downgrade and output the downgrade notification.
-
+- After generating or updating plan.md, **the code-review skill** must be called according to the convention in §0, using the **fixed audit prompt word**: [references/audit-prompts.md](references/audit-prompts.md) §2.
 - **This step can only be ended** when** the code-review audit report conclusion is "fully covered and verified".
 - #### Unified host close-out after the audit passes (mandatory)
   - **Report Path**: `specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_plan-E{epic}-S{story}.md`.
   - When initiating an audit subtask, the prompt sent to the sub-Agent must include: After passing the audit, please save the report to {agreed path}. The path will be filled in by the main Agent based on epic, story, and slug.
-  - **Unified entry**: after the audit passes, the main Agent calls `runAuditorHost`; it no longer hand-builds a plan-stage score / auditIndex CLI sequence.
-  - **Separation of responsibilities**: the code-review sub-agent produces the report and persists it; the main Agent invokes `runAuditorHost` after the passing conclusion. Same `iteration_count` rule and non-blocking failure handling as 搂1.2.
+  - **Unified entry**: after the audit passes, the main Agent calls `runAuditorHost`; it no longer hand-builds stage-specific score / auditIndex CLI sequences.
+- **Division of Responsibilities**: The code-review sub-agent produces the report and places it on the market; the main Agent invokes runAuditorHost after receiving the passing conclusion. Same as §1.2 (including iteration_count transfer rule, failure record resultCode).
 - If it fails: **iterately modify plan.md** based on the audit report, **call code-review** again, until the report conclusion is passed.
-- **Embedding step (must be executed when the plan involves multiple modules or complex architecture)**: After the plan audit passes and before the end of this step, **must execute `/speckit.checklist` or `.speckit.checklist` as part of the 搂2.2 audit step** - generate a quality checklist to verify the completeness, clarity and consistency of requirements; if the checklist finds problems, plan.md must be iteratively modified and **execute the code-review audit** again until the checklist Verification passed; cannot be skipped in scenarios that should be executed on the grounds of "optional".
+- **Embedding step (must be executed when the plan involves multiple modules or complex architecture)**: After the plan audit passes and before the end of this step, **must execute `/speckit.checklist` or `.speckit.checklist` as part of the §2.2 audit step** - generate a quality checklist to verify the completeness, clarity and consistency of requirements; if the checklist finds problems, plan.md must be iteratively modified and **execute the code-review audit** again until the checklist Verification passed; cannot be skipped in scenarios that should be executed on the grounds of "optional".
 
-### Plan stage optional Party-Mode
+### Optional Party-Mode in Plan stage
 
-Party-mode can be started in the plan phase when the following situations occur:
+> Party-mode source of truth: `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
+> This section only decides when plan work should enter party-mode. Rounds, `designated_challenger_id`, `challenger_ratio > 0.60`, session/meta/snapshot/evidence, recovery, and exit-gate semantics must follow core step-02.
+
+Party-mode can be started in the planning phase when the following situations occur:
 1. Users clearly request in-depth discussion of technical solutions
 2. Technical disputes that were not fully resolved during the Create Story stage
 3. Involving major architectural decisions (such as database selection, service splitting)
 
 **Start command**:
 ```
-> Party-mode source of truth: `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
-> This section only decides when a Story/plan flow should enter party-mode. Rounds, `designated_challenger_id`, `challenger_ratio > 0.60`, session/meta/snapshot/evidence, recovery, and exit-gate semantics must follow core step-02.
-
-杩涘叆 party-mode 璁ㄨ鎶€鏈柟妗堬紝寤鸿 50 杞?```
+进入party-mode讨论技术方案，建议50轮
+```
 **Character setting**:
 - Winston (Architect)
 - Amelia (Developer)
@@ -481,32 +279,25 @@ Party-mode can be started in the plan phase when the following situations occur:
 
 ## 3. Before generating tasks (IMPLEMENTATION_GAPS.md)
 
-**Triggering method**: No independent command. After plan.md has passed the audit, the **model must automatically perform in-depth analysis**: compare plan.md, the original requirements document and the current implementation, compare the differences chapter by chapter, and generate IMPLEMENTATION_GAPS.md. It is also triggered when the user requests "Generate IMPLEMENTATION_GAPS" or "Generate GAPS".
+**Required command**: `/speckit.gaps` or `.speckit.gaps`. After plan.md has passed the audit, the **model must perform in-depth analysis**: compare plan.md, the original requirements document, and the current implementation chapter by chapter and item by item, then generate IMPLEMENTATION_GAPS.md. For backward compatibility, the same flow may still auto-trigger when the user directly asks to "Generate IMPLEMENTATION_GAPS" / "Generate GAPS", or when `/speckit.tasks` detects that gaps are missing; however, the normative entrypoint is now `/speckit.gaps`.
 
 ### 3.1 Must be completed
 
 - Based on **current implementation** and **original requirements design document**, analyze the differences **chapter by chapter and item by item** to generate **IMPLEMENTATION_GAPS.md**.
 - **If the user explicitly provides more reference documents** (such as separate architectural design documents, design instructions, etc.), **must** analyze the differences **chapter by chapter, item by item** at the same time to ensure that all given reference documents** are used as valid inputs to participate in gap analysis.
-- The document structure must list each Gap according to requirements document (and all reference documents) chapters, and indicate: requirements/design chapters, current implementation status, and description of missing/deviations. For the Gap list header template, see [references/mapping-tables.md](references/mapping-tables.md) 搂3.
+- The document structure must list each Gap according to requirements document (and all reference documents) chapters, and indicate: requirements/design chapters, current implementation status, and description of missing/deviations. For the Gap list header template, see [references/mapping-tables.md](references/mapping-tables.md) §3.
 
 ### 3.2 Audit closed loop
 
 **Strength**: **standard** (single + critical auditor), see [references/audit-prompts-critical-auditor-appendix.md](references/audit-prompts-critical-auditor-appendix.md).
 
-- After generating or updating IMPLEMENTATION_GAPS.md, **the code-review skill** must be called according to the convention in 搂0, using the **fixed audit prompt word**: [references/audit-prompts.md](references/audit-prompts.md) 搂3.
-
-**Claude execution body call**:
-1. Read `.codex/agents/auditors/auditor-gaps.md`
-2. Use Agent tool + `subagent_type: general-purpose` to initiate audit subtask
-3. Pass in the full text of auditor-gaps.md as prompt
-4. If auditor-gaps is unavailable, press Fallback Strategy to downgrade and output the downgrade notification.
-
+- After generating or updating IMPLEMENTATION_GAPS.md, **the code-review skill** must be called according to the convention in §0, using the **fixed audit prompt word**: [references/audit-prompts.md](references/audit-prompts.md) §3.
 - **This step can only be ended** when** the code-review audit report conclusion is "fully covered and verified".
 - #### Unified host close-out after the audit passes (mandatory)
   - **Report Path**: `specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_GAPS-E{epic}-S{story}.md`.
   - When initiating an audit subtask, the prompt sent to the sub-Agent must include: After passing the audit, please save the report to {agreed path}. The path will be filled in by the main Agent based on epic, story, and slug.
-  - **Unified entry**: after the audit passes, the main Agent calls `runAuditorHost`; it no longer hand-builds a gaps-stage score / auditIndex CLI sequence.
-  - **Separation of responsibilities**: the code-review sub-agent produces the report and persists it; the main Agent invokes `runAuditorHost` after the passing conclusion. The GAPS report format remains compatible, but the host now routes it as `stage=gaps`. Same `iteration_count` rule and non-blocking failure handling as 搂1.2.
+  - **Unified entry**: after the audit passes, the main Agent calls `runAuditorHost`; it no longer hand-builds stage-specific score / auditIndex CLI sequences.
+- **Division of Responsibilities**: The code-review sub-agent produces the report and places it on the market; the main Agent invokes runAuditorHost after receiving the passing conclusion. The GAPS report remains compatible, but the host routes it as `stage=gaps`. Same as §1.2 (including iteration_count transfer rule, failure record resultCode).
 - If it fails: **iterately modify IMPLEMENTATION_GAPS.md** based on the audit report, **call code-review** again, until the report conclusion is passed.
 
 ---
@@ -519,7 +310,7 @@ Party-mode can be started in the plan phase when the following situations occur:
 
 - Generate **tasks.md** against **original requirements design document**, **plan.md**, **IMPLEMENTATION_GAPS.md**.
 - Use the project **tasks template**: `docs/speckit/tasks-template/tasks-template.md` (or the template path agreed within the project).
-- Add **Requirements Mapping List Table** in **tasks.md** according to the original requirements document, plan.md, IMPLEMENTATION_GAPS.md **chapter by chapter, item by item**; see [references/mapping-tables.md](references/mapping-tables.md) for headers and column names 搂4鈥撀?; see Agent execution rules, requirements traceability format, acceptance standards and acceptance execution rules [references/tasks-acceptance-templates.md](references/tasks-acceptance-templates.md).
+- Add **Requirements Mapping List Table** in **tasks.md** according to the original requirements document, plan.md, IMPLEMENTATION_GAPS.md **chapter by chapter, item by item**; see [references/mapping-tables.md](references/mapping-tables.md) for headers and column names §4–§8; see Agent execution rules, requirements traceability format, acceptance standards and acceptance execution rules [references/tasks-acceptance-templates.md](references/tasks-acceptance-templates.md).
 
 **Integration and end-to-end test cases (required)**
 
@@ -531,38 +322,31 @@ Party-mode can be started in the plan phase when the following situations occur:
 
 **Strength**: **standard** (single + critical auditor), see [references/audit-prompts-critical-auditor-appendix.md](references/audit-prompts-critical-auditor-appendix.md).
 
-- After generating or updating tasks.md, **the code-review skill** must be called according to the convention in 搂0, using the **fixed audit prompt word**: [references/audit-prompts.md](references/audit-prompts.md) 搂4.
-
-**Claude execution body call**:
-1. Read `.codex/agents/auditors/auditor-tasks.md`
-2. Use Agent tool + `subagent_type: general-purpose` to initiate audit subtask
-3. Pass in the full text of auditor-tasks.md as prompt
-4. If auditor-tasks are unavailable, press Fallback Strategy to downgrade and output the downgrade notification.
-
+- After generating or updating tasks.md, **the code-review skill** must be called according to the convention in §0, using the **fixed audit prompt word**: [references/audit-prompts.md](references/audit-prompts.md) §4.
 - **This step can only be ended** when** the code-review audit report conclusion is "fully covered and verified".
 - #### Unified host close-out after the audit passes (mandatory)
   - **Report Path**: `specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_tasks-E{epic}-S{story}.md`.
   - When initiating an audit subtask, the prompt sent to the sub-Agent must include: After passing the audit, please save the report to {agreed path}. The path will be filled in by the main Agent based on epic, story, and slug.
-  - **Unified entry**: after the audit passes, the main Agent calls `runAuditorHost`; it no longer hand-builds a tasks-stage score / auditIndex CLI sequence.
-  - **Separation of responsibilities**: the code-review sub-agent produces the report and persists it; the main Agent invokes `runAuditorHost` after the passing conclusion. Same `iteration_count` rule and non-blocking failure handling as 搂1.2.
+  - **Unified entry**: after the audit passes, the main Agent calls `runAuditorHost`; it no longer hand-builds stage-specific score / auditIndex CLI sequences.
+- **Division of Responsibilities**: The code-review sub-agent produces the report and places it on the market; the main Agent invokes runAuditorHost after receiving the passing conclusion. Same as §1.2 (including iteration_count transfer rule, failure record resultCode).
 - If it fails: **iterately modify tasks.md** based on the audit report, **call code-review** again, until the report conclusion is passed.
-- **Embedded step (must be executed when the number of tasks is 鈮?0 or spans multiple artifacts)**: After the tasks audit is passed and before the end of this step, **must execute `/speckit.analyze` or `.speckit.analyze` as part of the 搂4.2 audit step** - do cross-artifact consistency analysis (alignment report of spec, plan, tasks, etc.); if analyze finds problems, tasks.md must be iteratively modified and **execute code-review again Audit** until the analyze verification is passed; it cannot be skipped in scenarios where it should be executed on the grounds of "optional".
+- **Embedded step (must be executed when the number of tasks is ≥10 or spans multiple artifacts)**: After the tasks audit is passed and before the end of this step, **must execute `/speckit.analyze` or `.speckit.analyze` as part of the §4.2 audit step** - do cross-artifact consistency analysis (alignment report of spec, plan, tasks, etc.); if analyze finds problems, tasks.md must be iteratively modified and **execute code-review again Audit** until the analyze verification is passed; it cannot be skipped in scenarios where it should be executed on the grounds of "optional".
 
 ### Task batch execution mechanism
 
-When the number of tasks in tasks-E{epic}-S{story}.md exceeds 20, they must be executed in batches: (20 is the experience threshold, taking into account single-batch manageability and audit cost; it can be overridden through configuration)
+When the number of tasks in tasks-E{epic}-S{story}.md exceeds 20, they must be executed in batches: (**GAP-044 fix**: 20 is the experience threshold, taking into account single-batch manageability and audit cost; it can be overridden through configuration)
 
 **Batching Rules**:
 - Maximum of 20 tasks per batch
-- Conduct code-review audit after each batch execution
+- Conduct code-review after each batch is executed
 - The next batch can only start after the audit is passed.
 
 **Execution Process**:
 ```
-Batch 1: Task 1-20 鈫?鎵ц 鈫?code-review 瀹¤ 鈫?閫氳繃
-Batch 2: Task 21-40 鈫?鎵ц 鈫?code-review 瀹¤ 鈫?閫氳繃
+Batch 1: Task 1-20 → 执行 → code-review审计 → 通过
+Batch 2: Task 21-40 → 执行 → code-review审计 → 通过
 ...
-Batch N: Task ... 鈫?鎵ц 鈫?code-review 瀹¤ 鈫?閫氳繃
+Batch N: Task ... → 执行 → code-review审计 → 通过
 ```
 **Checkpoint audit content**:
 1. Are all tasks in this batch completed?
@@ -576,7 +360,7 @@ Batch N: Task ... 鈫?鎵ц 鈫?code-review 瀹¤ 鈫?閫氳繃
 
 ### Audit quality rating (A/B/C/D)
 
-Since party-mode is not mandatory at all stages of speckit, quality assurance is compensated through audit quality ratings:
+Since party-mode is not mandatory at each stage of speckit, quality assurance is compensated through audit quality ratings:
 
 | Rating | Meaning | Treatment |
 |-----|------|---------|
@@ -588,12 +372,12 @@ Since party-mode is not mandatory at all stages of speckit, quality assurance is
 **Rating Dimensions**:
 1. Completeness (30%): Whether all demand points are covered
 2. Correctness (30%): Is the technical solution correct?
-3. Test verification (25%): production code integration test verification, new code coverage 鈮?5%
+3. Test verification (25%): Production code integration test verification, **GAP-087 fix**: "New code" = new/modified code for this Story or this batch of tasks; new code coverage ≥ 85%;
 4. Quality (15%): Is the code/document quality up to standard?
 
 **Forced upgrade rules**:
 - Rated C level for two consecutive stages, and forced to enter party-mode in the third stage
-- If any stage is rated D, you must review it and consider returning to Layer 3 to create Story again.
+- If any stage is rated D, you must review it and consider returning to Layer 3 to create the story again.
 
 ---
 
@@ -614,28 +398,27 @@ Before starting task execution or launching any execution body in this stage, th
 - Re-run `inspect` after each bounded child result and after each `runAuditorHost` call before continuing the next scoped batch or audit branch
 
 1. **Read tasks.md** (or tasks-v*.md) and identify all outstanding tasks (`[ ]` checkbox).
-2. **銆恟alph-method forced prefix銆慍reate prd and progress tracking files**:
+2. **【ralph-method forced prefix】Create prd and progress tracking files**:
    - If `prd.{stem}.json` and `progress.{stem}.txt` do not exist in the same directory as tasks or in `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/`, they **must** be created before starting any task;
-   - stem is the tasks document stem (such as tasks-E1-S1 鈫?`tasks-E1-S1`; when there is no BMAD context, use the tasks file name stem);
+   - stem is the tasks document stem (such as tasks-E1-S1 → `tasks-E1-S1`; when there is no BMAD context, use the tasks file name stem);
    - The prd structure must conform to the ralph-method schema, mapping the acceptable tasks in tasks to US-001, US-002... (or one-to-one correspondence with the tasks number);
    - **progress pre-fills TDD slots**: When generating progress, the following placeholder lines are pre-filled for each US; US involving production code is pre-filled `[TDD-RED] _pending_`, `[TDD-GREEN] _pending_`, `[TDD-REFACTOR] _pending_`; US only for documentation/configuration is pre-filled `[DONE] _pending_`. Replace `_pending_` with the actual result when executing (e.g. `[TDD-RED] T1 pytest ... => N failed`);
    - Output path: the same directory as tasks, or `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/` (in BMAD process);
-   - **涓嶄腑鏂墽琛?contract**: once task execution begins, the execution body must continue through all remaining scoped tasks/User Stories in sequence without stopping for milestone approvals. Control returns to the main Agent only when all scoped work is complete and ready for audit/closeout, a real blocker requires reroute, or an explicit audit/checkpoint boundary is reached.
    - **DO NOT** start coding or perform tasks involving production code without creating the above files.
 3. **Read the pre-requisite documents**: requirements document, plan.md, IMPLEMENTATION_GAPS.md, and understand the technical architecture and demand scope.
 4. **Use TodoWrite** to create a task tracking list, and the first task is marked `in_progress`.
 5. **Execute TDD loop task by task** (**Each US must be executed independently**, it is prohibited to only execute TDD on the first US and then skip the red light for subsequent US directly):
    - **Red light**: Write/supplement test cases covering the current task acceptance criteria, and run to confirm **test failure** (verify test validity).
    - **Green Light**: Write the minimum amount of production code to make the test pass.
-   - **Refactoring**: Check and optimize code quality (SOLID, naming, decoupling, performance) under test protection. **Regardless of whether there is a specific refactoring action, the `[TDD-REFACTOR]` line must be recorded in progress**; if there is no specific refactoring, write "No need to refactor 鉁?, and for integration tasks, write "No new production code, the independence of each module has been verified, and no cross-module refactoring 鉁?.
-6. **Update immediately after completion** Checkbox `[ ]` 鈫?`[x]` in tasks.md, TodoWrite marks `completed`.
+   - **Refactoring**: Check and optimize code quality (SOLID, naming, decoupling, performance) under test protection. **Regardless of whether there is a specific refactoring action, the `[TDD-REFACTOR]` line must be recorded in progress**; if there is no specific refactoring, write "No need to refactor ✓", and for integration tasks, write "No new production code, the independence of each module has been verified, and no cross-module refactoring ✓".
+6. **Update immediately after completion** Checkbox `[ ]` → `[x]` in tasks.md, TodoWrite marks `completed`.
 7. **Checkpoint verification**: When a checkpoint is encountered, verify that all prerequisite tasks have been completed and perform regression testing.
 7.1. **lint (required)**: Every time a batch of tasks is completed or before all tasks are completed, the project must execute Lint according to the technology stack (see lint-requirement-matrix); if a mainstream language is used but Lint is not configured, it must be repaired; configured ones must be executed without errors or warnings. Exemptions on the grounds of "not relevant to this mission" are prohibited.
 8. **Loop** until all tasks are completed, early stopping is prohibited.
 
 ### 5.1.1 Mapping convention between tasks and prd
 
-- When tasks use T1, T2, T1.1, T1.2 and other formats: T1 can be mapped to US-001, T1.1鈥揟1.n as subtasks of US-001; or top-level tasks T1鈥揟5 can be mapped to US-001鈥揢S-005;
+- When tasks use T1, T2, T1.1, T1.2 and other formats: T1 can be mapped to US-001, T1.1–T1.n as subtasks of US-001; or top-level tasks T1–T5 can be mapped to US-001–US-005;
 - The userStories of prd must correspond one-to-one with the acceptable tasks in tasks or be traceable;
 - The specific mapping strategy is determined by the execution agent when generating prd, but it must be ensured that each acceptable task in tasks has a corresponding US in prd and the acceptance criteria are consistent.
 
@@ -643,23 +426,23 @@ Before starting task execution or launching any execution body in this stage, th
 
 **Uniform format template**:
 ```markdown
-## Task X: 瀹炵幇 YYY 鍔熻兘
+## Task X: 实现YYY功能
 
-**绾㈢伅闃舵锛圷YYY-MM-DD HH:MM锛?*
+**红灯阶段（YYYY-MM-DD HH:MM）**
 [TDD-RED] TX pytest tests/test_xxx.py -v => N failed
-[閿欒淇℃伅鎽樿]
+[错误信息摘要]
 
-**缁跨伅闃舵锛圷YYY-MM-DD HH:MM锛?*
+**绿灯阶段（YYYY-MM-DD HH:MM）**
 [TDD-GREEN] TX pytest tests/test_xxx.py -v => N passed
-[瀹炵幇瑕佺偣鎽樿]
+[实现要点摘要]
 
-**閲嶆瀯闃舵锛圷YYY-MM-DD HH:MM锛?*
-[TDD-REFACTOR] TX [閲嶆瀯鎿嶄綔鎻忚堪 | 鏃犻渶閲嶆瀯 鉁?| 闆嗘垚浠诲姟: 鏃犳柊澧炵敓浜т唬鐮侊紝鍚勬ā鍧楃嫭绔嬫€у凡楠岃瘉 鉁揮
-[浼樺寲鐐规憳瑕乚
+**重构阶段（YYYY-MM-DD HH:MM）**
+[TDD-REFACTOR] TX [重构操作描述 | 无需重构 ✓ | 集成任务: 无新增生产代码，各模块独立性已验证 ✓]
+[优化点摘要]
 
-**鏇存柊 ralph-method 杩涘害**
+**更新ralph-method进度**
 - prd.md: US-00X passes=true
-- progress.md: 娣诲姞 TDD 璁板綍閾炬帴
+- progress.md: 添加TDD记录链接
 ```
 **Required fields**:
 1. `[TDD-RED]` - marks the beginning of the red light phase
@@ -678,24 +461,19 @@ Before starting task execution or launching any execution body in this stage, th
 
 **Strength rating** (reference [references/audit-post-impl-rules.md](references/audit-post-impl-rules.md)):
 - **Inter-batch audit** (intermediate checkpoint after each batch of tasks is completed): **standard** (single + critical auditor), no need for 3 rounds.
-- **Final 搂5.2 Audit** (total audit after all tasks have been performed): **strict**, must have 3 consecutive rounds with no gap + critical auditor >50%.
+- **Final §5.2 Audit** (total audit after all tasks have been performed): **strict**, must have 3 consecutive rounds with no gap + critical auditor >50%.
 
-- After executing the tasks in tasks.md (TDD traffic light mode), **the code-review skill** must be called according to the convention in 搂0, using the **fixed audit prompt word**: [references/audit-prompts.md](references/audit-prompts.md) 搂5.
-
-**Claude execution body call**:
-1. Read `.codex/agents/auditors/auditor-implement.md`
-2. Use Agent tool + `subagent_type: general-purpose` to initiate audit subtask
-3. Pass in the full text of auditor-implement.md as prompt
-4. If auditor-implement is unavailable, press Fallback Strategy to downgrade and output the downgrade notification.
-
+- After executing the tasks in tasks.md (TDD traffic light mode), **the code-review skill** must be called according to the convention in §0, using the **fixed audit prompt word**: [references/audit-prompts.md](references/audit-prompts.md) §5.
 - **batch time**: A single pass is enough and the critical auditor section is qualified; **Final audit**: 3 consecutive rounds of convergence without gaps are required. For details, see audit-post-impl-rules.
 - Before initiating the second and third rounds of audits, the main Agent can output "Nth round of audit passed, continue verification..." to prompt the user.
 - #### Unified host close-out after the audit passes (mandatory)
-  - **Report Paths**: `{project-root}/_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_implement-E{epic}-S{story}.md` (consistent with _bmad/_config/eval-lifecycle-report-paths.yaml); stage=implement (Story 9.2 extension).
+  - **Report path**: `{project-root}/_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_implement-E{epic}-S{story}.md` (consistent with _bmad/_config/eval-lifecycle-report-paths.yaml); stage=implement (Story 9.2 extension, replacing the original stage=tasks + triggerStage=speckit_5_2).
   - When initiating an audit subtask, the prompt sent to the sub-Agent must include: After passing the audit, please save the report to {agreed path}. The path will be filled in by the main Agent based on epic, story, and slug.
-  - **Unified entry**: after the audit passes, the main Agent calls `runAuditorHost`; it no longer hand-builds an implement-stage score / auditIndex CLI sequence.
-- **Separation of responsibilities**: The code-review sub-agent produces and persists the audit report; the main Agent invokes `runAuditorHost` after the passing conclusion; failure remains non-blocking and the resultCode must be recorded as audit evidence. **iteration_count passing (mandatory)** stays unchanged: pass the cumulative number of failed rounds for this stage; pass 0 on first-pass success. In the **standalone speckit** process (without epic/story), the main Agent still passes `--iteration-count {cumulative value}` to the host runner.
+  - **Unified entry**: after the audit passes, the main Agent calls `runAuditorHost`; it no longer hand-builds stage-specific score / auditIndex CLI sequences.
+- **Separation of Responsibilities**: The code-review sub-agent produces an audit report and places it in the above path; the main Agent invokes runAuditorHost after receiving the passing conclusion; failure does not block the main process and records the resultCode as audit evidence. **iteration_count passing (mandatory)**: The Agent executing the audit cycle passes in the current cumulative value (the number of rounds in which the audit failed/failed at this stage) when passing; pass 0 once. When using the **standalone speckit** process (without epic/story), the main Agent also passes in `--iteration-count {cumulative value}` when passing.
 - If it fails: **Iteratively execute the tasks in tasks.md** that have not passed the audit according to the audit report, **call code-review** again until the report conclusion is passed.
+
+- **不中断执行 contract**：一旦 tasks 执行开始，执行体必须按顺序连续完成当前作用域内全部剩余任务/User Stories，不得在 milestone 完成后暂停等待批准。控制权仅可在以下三种情况下返回主 Agent：① 当前作用域工作已完成且可进入 audit/closeout；② 出现真实 blocker，需要 reroute；③ 本工作流显式定义的 audit/checkpoint 边界已到达。
 
 **Integration and end-to-end test execution (required)**
 
@@ -720,15 +498,17 @@ The complete constraint rules must be followed during execution, see [references
 - Proactively conduct regression testing and avoid covering up functional rollback issues.
 
 **Process Integrity**
-- Long-running scripts such as pytest use `block_until_ms: 0` and poll `terminals/` to check the results.
-- For reference design, view the pre-requirements document/plan document/IMPLEMENTATION_GAPS document.
+- Long-running scripts such as pytest use `block_until_ms: 0` in the background. Polling `terminals/` is allowed **only for ordinary long-running tasks**; **do not** use this rule for party-mode return validation.
+- In Codex / PowerShell environments, **do not** generate or execute mixed-shell polling commands such as `ls -la`, `mkdir -p`, `dir ... /b`, or `cmd || pwsh` fallback chains. If directory inspection is truly required, use PowerShell-native commands only, such as `Get-ChildItem`, `Test-Path`, and `Get-Content`.
+- For party-mode, the main Agent must **first read** `_bmad-output/party-mode/runtime/current-session.json` and prioritize `visible_output_summary`; **do not** probe `terminals/`, `_bmad-output/party-mode/`, or “whether session files exist” via shell commands before reading the runtime state file.
+- For reference design, check the pre-requirements document/plan document/IMPLEMENTATION_GAPS document.
 - Stopping development work until all outstanding tasks are actually implemented and completed is **prohibited**.
 
 ---
 
 ## 6. Agent execution rules (plan.md / tasks.md must comply)
 
-When generating plan.md and tasks.md, in addition to the above mapping and auditing, the following Agent execution rules must be followed (consistent with QA_Agent task execution best practices 搂397鈥?09):
+When generating plan.md and tasks.md, in addition to the above mapping and auditing, the following Agent execution rules must be followed (consistent with QA_Agent task execution best practices §397–409):
 
 **Prohibited Matters**
 
@@ -744,21 +524,21 @@ When generating plan.md and tasks.md, in addition to the above mapping and audit
 1. The integration task must modify the production code path.
 2. A verification command must be run to confirm that the feature is enabled.
 3. When encountering a situation that cannot be completed, you should report blocking instead of delaying yourself.
-4. Before implementing functions/configuration/UI related tasks, you must first retrieve and read the relevant chapters of the requirements document (搂9 Requirements Traceability and Closed Loop).
+4. Before implementing functions/configuration/UI related tasks, you must first retrieve and read the relevant chapters of the requirements document (§9 Requirements Traceability and Closed Loop).
 5. Requirements traceability (required before implementation): question keywords, search scope, relevant chapters, summary of existing agreements, and whether the plan is consistent with the requirements.
 
-### Enforcement description (responsibility for checking prohibited items)
+### Enforcement instructions (responsibility for checking prohibited items)
 
 **Prohibited items at each stage and person responsible for inspection**:
 
 | Stage | Prohibited matters | Person responsible for inspection | Inspection method |
 |-----|---------|-----------|---------|
-| specify | pseudo-implementation | auditor-spec | code review |
-| specify | scope creep | auditor-spec | compare Story documentation |
-| plan | no test plan | auditor-plan | inspect plan-E{epic}-S{story}.md |
-| plan | over-design | auditor-plan | architectural rationality assessment |
-| GAPS | Missing critical gaps | auditor-gaps | Sanity check |
-| tasks | task not executable | auditor-tasks | feasibility assessment |
+| specify | pseudo implementation | code-reviewer | code review |
+| specify | scope creep | code-reviewer | compare Story documents |
+| plan | no test plan | code-reviewer | check plan-E{epic}-S{story}.md |
+| plan | over-design | code-reviewer | architectural rationality assessment |
+| GAPS | Missing critical gaps | code-reviewer | Sanity check |
+| tasks | Task is not executable | code-reviewer | Feasibility assessment |
 | Execute | Skip TDD red light | bmad-story-assistant | Check TDD records |
 | Execute | Omit refactoring | bmad-story-assistant | Check TDD records |
 
@@ -768,7 +548,7 @@ When generating plan.md and tasks.md, in addition to the above mapping and audit
 3. Serious violations: record and report to BMad Master
 
 **Exemption conditions**:
-- By consensus in party-mode discussion
+- unanimously agreed after party-mode discussion
 - Have clear reasons for ADR recording decisions
 - Obtain critical auditor approval
 
@@ -783,49 +563,53 @@ For the complete Agent execution rules and requirements traceability format, see
 
 ## 7. Process summary
 
-**銆怐ev Story complete process - no steps can be skipped銆?*
+**[Dev Story complete process - no steps can be skipped]**
 ```
 Layer 3: Create Story
-    鈫?Layer 4: speckit-workflow锛坈onstitution 鈫?specify 鈫?plan 鈫?GAPS 鈫?tasks 鈫?implement锛?    鈫?Layer 5: 鏀跺熬涓庨泦鎴?```
-| speckit stage | output | audit basis | bmad corresponding stage | Claude executor | description |
-|----------------|------|---------|-------------|-------------|------|
-| specify | spec-E{epic}-S{story}.md | audit-prompts.md 搂1 | Layer 4 start | auditor-spec | Technical specification Story content |
-| plan | plan-E{epic}-S{story}.md | audit-prompts.md 搂2 | Layer 4 Continue | auditor-plan | Develop implementation plan |
-| GAPS | IMPLEMENTATION_GAPS-E{epic}-S{story}.md | audit-prompts.md 搂3 | Layer 4 continued | auditor-gaps | Identify implementation gaps |
-| tasks | tasks-E{epic}-S{story}.md | audit-prompts.md 搂4 | Layer 4 Continue | auditor-tasks | Disassemble execution tasks |
-| Execution | Runnable code | audit-prompts.md 搂5 | Layer 4 end | auditor-implement | TDD traffic light development |
+    →
+Layer 4: speckit-workflow（constitution → specify → plan → GAPS → tasks → implement）
+    →
+Layer 5: 收尾与集成
+```
+| speckit stage | output | audit basis | bmad corresponding stage | description |
+|----------------|------|---------|-------------|------|
+| specify | spec-E{epic}-S{story}.md | audit-prompts.md §1 | Starting from Layer 4 | Technically standardized Story content; the file name must contain the Epic/Story serial number |
+| plan | plan-E{epic}-S{story}.md | audit-prompts.md §2 | Layer 4 continues | Develop an implementation plan; the file name must contain the Epic/Story serial number |
+| GAPS | IMPLEMENTATION_GAPS-E{epic}-S{story}.md | audit-prompts.md §3 | Layer 4 continues | Identify implementation gaps; the file name must contain the Epic/Story serial number |
+| tasks | tasks-E{epic}-S{story}.md | audit-prompts.md §4 | Layer 4 continues | Disassemble and execute tasks; the file name must contain the Epic/Story serial number |
+| Execution | Runnable code | audit-prompts.md §5 | End of Layer 4 | TDD traffic light development |
 
-**Document naming rules**: The output file name must contain the Epic serial number and Story serial number; the Epic name (such as feature-metrics-cache) is reflected in the path or document metadata. Example: Epic 4 Story 1 鈫?spec-E4-S1.md, plan-E4-S1.md.
+**Document naming rules**: The output file name must contain the Epic serial number and Story serial number; the Epic name (such as feature-metrics-cache) is reflected in the path or document metadata. Example: Epic 4 Story 1 → spec-E4-S1.md, plan-E4-S1.md.
 
-Each "iteration" is: **Call code-review skills according to the convention in 搂0** 鈫?Obtain the audit report 鈫?Modify the corresponding document if it fails 鈫?**Call code-review again** 鈫?Until the report conclusion is complete coverage and verification is passed. The same goes for the tasks execution phase: TDD traffic light cycle 鈫?task-by-task completion 鈫?checkpoint verification 鈫?**Press 搂0 to call the code-review skill** 鈫?until the report conclusion is passed.
+Each "iteration" is: **Call code-review skills according to the convention in §0** → Obtain the audit report → Modify the corresponding document if it fails → **Call code-review again** → Until the report conclusion is complete coverage and verification is passed. The same goes for the tasks execution phase: TDD traffic light cycle → task-by-task completion → checkpoint verification → **Press §0 to call the code-review skill** → until the report conclusion is passed.
 
 ---
 
 ## 8. Speckit process command index (must be executed)
 
-| Stage | Commands that must be executed | Preconditions | Output | Audit basis | Claude executor |
-|------|----------------|----------|------|----------|-------------|
-| **0.constitution** | `/speckit.constitution` or `.speckit.constitution` | None (entry stage) | constitution.md or .specify/memory/constitution.md | Project customization or general document integrity | Main Agent direct execution |
-| **1. specify** | `/speckit.specify` or `.speckit.specify` | constitution produced | spec.md | audit-prompts.md 搂1 | auditor-spec |
-| **2. plan** | `/speckit.plan` or `.speckit.plan` | spec.md passed audit | plan.md | audit-prompts.md 搂2 | auditor-plan |
-| **3. GAPS** | No independent commands; model automatic in-depth analysis or user requirements | plan.md passed audit | IMPLEMENTATION_GAPS.md | audit-prompts.md 搂3 | auditor-gaps |
-| **4. tasks** | `/speckit.tasks` or `.speckit.tasks` or user request "generate tasks" | IMPLEMENTATION_GAPS.md passed audit | tasks.md | audit-prompts.md 搂4 | auditor-tasks |
-| **5. Execute** | `/speckit.implement` or `.speckit.implement` or user request "Execute tasks" | tasks.md passed audit | Runnable code + test | audit-prompts.md 搂5 | auditor-implement |
+| Stage | Commands that must be executed | Preconditions | Output | Audit basis |
+|------|----------------|----------|------|----------|
+| **0.constitution** | `/speckit.constitution` or `.speckit.constitution` | None (entry stage) | constitution.md or .specify/memory/constitution.md | Project custom or universal documentation integrity |
+| **1. specify** | `/speckit.specify` or `.speckit.specify` | constitution produced | spec.md | audit-prompts.md §1 |
+| **2. plan** | `/speckit.plan` or `.speckit.plan` | spec.md passed audit | plan.md | audit-prompts.md §2 |
+| **3. GAPS** | `/speckit.gaps` or `.speckit.gaps`; compatibility: automatic in-depth analysis of the model (compare plan + requirements + current implementation) or user request "Generate IMPLEMENTATION_GAPS" | plan.md has passed the audit | IMPLEMENTATION_GAPS.md | audit-prompts.md §3 |
+| **4. tasks** | `/speckit.tasks` or `.speckit.tasks` or user request "generate tasks" | IMPLEMENTATION_GAPS.md passed audit | tasks.md | audit-prompts.md §4 |
+| **5. Execution** | `/speckit.implement` or `.speckit.implement` or user request "execute tasks" "complete tasks in tasks" | tasks.md has passed audit | Runnable code + test | audit-prompts.md §5 |
 
-**Command execution sequence**: 0 鈫?1 鈫?2 鈫?3 鈫?4 鈫?5, cannot be skipped. constitution must be completed before specify; the output of each stage must pass the code-review audit (搂0) before entering the next stage.
+**Command execution sequence**: 0 → 1 → 2 → 3 → 4 → 5, cannot be skipped. constitution must be completed before specify; the output of each stage must pass the code-review audit (§0) before entering the next stage.
 
 **Enhanced command (must be embedded in the corresponding audit closed-loop iteration and executed as part of the audit step, and cannot be skipped as "optional")**:
 
 | Command | Embed link | Trigger condition | Purpose |
 |------|----------|----------|------|
-| `/speckit.clarify` | **搂1.2 spec audit within closed-loop iteration** | 搂1.2 The audit report pointed out that "there is a vague statement in the spec" | Clarify 鈫?Update spec 鈫?搂1.2 Audit again |
-| `/speckit.checklist` | **搂2.2 plan within the audit closed loop** | plan involves multiple modules or complex architecture | as part of the 搂2.2 audit step; if problems are found, iterate the plan 鈫?audit again |
-| `/speckit.analyze` | **搂4.2 tasks within the audit closed loop** | tasks鈮?0 or across multiple artifacts | As part of the 搂4.2 audit step; if problems are found, iterate tasks 鈫?audit again |
+| `/speckit.clarify` | **§1.2 spec audit within closed-loop iteration** | §1.2 The audit report pointed out that "there is a vague statement in the spec" | Clarify → Update spec → §1.2 Audit again |
+| `/speckit.checklist` | **§2.2 plan within the audit closed loop** | plan involves multiple modules or complex architecture | as part of the §2.2 audit step; if problems are found, iterate the plan → audit again |
+| `/speckit.analyze` | **§4.2 tasks within the audit closed loop** | tasks≥10 or across multiple artifacts | As part of the §4.2 audit step; if problems are found, iterate tasks → audit again |
 
 **Command format description**:
-- `/speckit.xxx`: Cursor/Claude slash commands (constitution, specify, plan, tasks, implement, clarify, analyze, checklist)
-- `.speckit.xxx`: Triggered by point command or `.speckit.xxx` file in the project
-- **GAPS has no independent command**: the model is automatically generated by in-depth analysis after the plan is passed; or triggered when the user requests "Generate IMPLEMENTATION_GAPS"
+- `/speckit.xxx`: Codex/Codex slash commands (constitution, specify, plan, gaps, tasks, implement, clarify, analyze, checklist)
+- `.speckit.xxx`: Triggered by point command or `.speckit.xxx` file in the project (including `.speckit.gaps`)
+- **GAPS now has an independent command**: the normative entrypoint is `/speckit.gaps` or `.speckit.gaps`; auto-generation after plan passes, or when the user requests "Generate IMPLEMENTATION_GAPS", remains a compatibility fallback rather than the primary command entrypoint
 
 ---
 
@@ -833,14 +617,14 @@ Each "iteration" is: **Call code-review skills according to the convention in �
 
 | Purpose | Documentation |
 |------|------|
-| **Skill dependency** | **code-review** (or requesting-code-review): The audit loop must be called explicitly, see 搂0 |
+| **Skill dependency** | **code-review** (or requesting-code-review): The audit loop must be called explicitly, see §0 |
 | Audit prompt words (can be copied) | [references/audit-prompts.md](references/audit-prompts.md) |
 | Mapping table column names and structures | [references/mapping-tables.md](references/mapping-tables.md) |
 | Tasks acceptance and execution template | [references/tasks-acceptance-templates.md](references/tasks-acceptance-templates.md) |
 | Agent execution rules (complete) | [references/qa-agent-rules.md](references/qa-agent-rules.md) |
 | **Tasks execution TDD rules (complete)** | **[references/task-execution-tdd.md](references/task-execution-tdd.md)** |
 | Post-implementation audit rules (strict) | [references/audit-post-impl-rules.md](references/audit-post-impl-rules.md) |
-| audit_convergence configuration | [references/audit-config-schema.md](references/audit-config-schema.md) |
-| **Speckit Command Index** | See 搂8 |
+| audit_convergence configuration | [references/audit-config-schema.md](references/audit-config-schema.md); Validation script `_bmad/speckit/scripts/powershell/validate-audit-config.ps1` |
+| **Speckit Command Index** | See §8 |
 
-<!-- ADAPTATION_COMPLETE: 2026-03-15 -->
+

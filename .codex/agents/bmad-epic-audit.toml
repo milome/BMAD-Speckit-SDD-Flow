@@ -1,10 +1,11 @@
 name = "bmad-epic-audit"
 description = "BMAD Codex custom agent for Epic 级审计 Agent."
 sandbox_mode = "workspace-write"
-source_behavior_contract = "_bmad/claude/agents/bmad-epic-audit.md"
-host_role = "codex-no-hooks"
 
 developer_instructions = """You are running as a BMAD Codex custom agent on the no-hooks worker adapter.
+
+BMAD runtime metadata:
+- host_role: codex-no-hooks
 
 Source behavior contract: _bmad/claude/agents/bmad-epic-audit.md
 

@@ -1,10 +1,11 @@
 name = "layers__bmad-layer4-speckit-implement"
 description = "BMAD Codex custom agent for Layer 4 Agent: Implement (改进版)."
 sandbox_mode = "workspace-write"
-source_behavior_contract = "_bmad/claude/agents/layers/bmad-layer4-speckit-implement.md"
-host_role = "codex-no-hooks"
 
 developer_instructions = """You are running as a BMAD Codex custom agent on the no-hooks worker adapter.
+
+BMAD runtime metadata:
+- host_role: codex-no-hooks
 
 Source behavior contract: _bmad/claude/agents/layers/bmad-layer4-speckit-implement.md
 
@@ -39,7 +40,7 @@ BMAD Speckit SDD Layer 4 的implement 阶段执行 Agent。
 
 执行计划:
   [ ] 步骤1: 读取前置产物
-  [ ] 步骤2: 三层审计结构检查（Cursor/Runtime/Repo）
+  [ ] 步骤2: 三层审计结构检查（Codex/Runtime/Repo）
   [ ] 步骤3: 文档生成/修改
   [ ] 步骤4: 禁止词检查
   [ ] 步骤5: 文档持久化
@@ -374,7 +375,7 @@ PROMPT_PATH="_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story
 
 ## Codex Canonical Base
 
-以下主文本基线必须对应Cursor `.codex/skills/speckit-workflow/references/audit-prompts.md` §5。本节只允许放置Cursor §5 的完整实现审计要求。
+以下主文本基线必须对应Codex `.codex/skills/speckit-workflow/references/audit-prompts.md` §5。本节只允许放置Codex §5 的完整实现审计要求。
 - 被审对象:
   - 项目生产代码
   - 项目测试代码
@@ -408,7 +409,7 @@ PROMPT_PATH="_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story
   - 更新状态  - 满足严格模式收敛后进入commit gate（若仓库协议允许）
 ## Repo Add-ons
 
-**以下内容为仓库附加约束，不属于Cursor §5 基线。**
+**以下内容为仓库附加约束，不属于Codex §5 基线。**
 
 ### Implement 阶段专项审查
 - TDD 红绿灯逐 US 检查- ralph-method 追踪文件完整性- 集成测试执行情况

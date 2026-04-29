@@ -1,112 +1,126 @@
-﻿# 鏄犲皠琛ㄥ垪鍚嶄笌缁撴瀯锛堝浐瀹氭ā鏉匡紝鍙鍒讹級
+# 映射表列名与结构（固定模板，可复制）
 
-浠ヤ笅涓哄悇闃舵闇€姹傛槧灏勬竻鍗曠殑**琛ㄥご涓庡垪鍚?*鍥哄畾妯℃澘锛屽彲鐩存帴澶嶅埗鍒?spec.md / plan.md / IMPLEMENTATION_GAPS.md / tasks.md 涓娇鐢ㄣ€?
+以下为各阶段需求映射清单的**表头与列名**固定模板，可直接复制到 spec.md / plan.md / IMPLEMENTATION_GAPS.md / tasks.md 中使用。
+
 ---
 
-## 1. spec.md锛氶渶姹傛槧灏勬竻鍗曪紙spec 鈫?鍘熷闇€姹傛枃妗ｏ級
+## 1. spec.md：需求映射清单（spec ↔ 原始需求文档）
 
 ```markdown
-## 闇€姹傛槧灏勬竻鍗曪紙spec.md 鈫?鍘熷闇€姹傛枃妗ｏ級
+## 需求映射清单（spec.md ↔ 原始需求文档）
 
-| 鍘熷鏂囨。绔犺妭 | 鍘熷闇€姹傝鐐?| spec.md 瀵瑰簲浣嶇疆 | 瑕嗙洊鐘舵€?|
+| 原始文档章节 | 原始需求要点 | spec.md 对应位置 | 覆盖状态 |
 |-------------|-------------|------------------|----------|
-| 搂1 姒傝堪     | 锛堢畝杩帮級    | spec 搂...        | 鉁?/ 鉂?  |
-| 搂2 ...      | ...         | spec 搂...        | 鉁?/ 鉂?  |
+| §1 概述     | （简述）    | spec §...        | ✅ / ❌   |
+| §2 ...      | ...         | spec §...        | ✅ / ❌   |
 ```
 
-**璇存槑**锛氬師濮嬮渶姹傛枃妗ｇ殑姣忎竴绔犮€佹瘡涓€鏉￠』鍦?spec.md 涓湁鏄庣‘瀵瑰簲骞舵爣娉ㄨ鐩栫姸鎬併€?
+**说明**：原始需求文档的每一章、每一条须在 spec.md 中有明确对应并标注覆盖状态。
+
 ---
 
-## 2. plan.md锛氶渶姹傛槧灏勬竻鍗曪紙plan 鈫?闇€姹傛枃妗?+ spec锛?
+## 2. plan.md：需求映射清单（plan ↔ 需求文档 + spec）
+
 ```markdown
-## 闇€姹傛槧灏勬竻鍗曪紙plan.md 鈫?闇€姹傛枃妗?+ spec.md锛?
-| 闇€姹傛枃妗ｇ珷鑺?| spec.md 瀵瑰簲 | plan.md 瀵瑰簲 | 瑕嗙洊鐘舵€?|
+## 需求映射清单（plan.md ↔ 需求文档 + spec.md）
+
+| 需求文档章节 | spec.md 对应 | plan.md 对应 | 覆盖状态 |
 |-------------|-------------|-------------|----------|
-| 搂1          | spec 搂...   | plan Phase 1 / 搂... | 鉁?/ 鉂?|
-| 搂2          | spec 搂...   | plan 搂...   | 鉁?/ 鉂?  |
+| §1          | spec §...   | plan Phase 1 / §... | ✅ / ❌ |
+| §2          | spec §...   | plan §...   | ✅ / ❌   |
 ```
 
-**璇存槑**锛氶渶姹傛枃妗ｄ笌 spec.md 鐨勬瘡涓€绔犮€佹瘡涓€鏉￠』鍦?plan.md 涓湁鏄庣‘瀵瑰簲銆?
+**说明**：需求文档与 spec.md 的每一章、每一条须在 plan.md 中有明确对应。
+
 ---
 
-## 2A. plan.md锛欴eferred Gap Architecture Mapping
+## 2A. plan.md：Deferred Gap Architecture Mapping
 
 ```markdown
 ## Deferred Gap Architecture Mapping
 
-| Gap ID | 鏉ユ簮 | Architecture Refs | Work Item Refs | Journey Refs | Production Path Refs | 鐘舵€?|
+| Gap ID | 来源 | Architecture Refs | Work Item Refs | Journey Refs | Production Path Refs | 状态 |
 |--------|------|-------------------|----------------|--------------|----------------------|------|
 | J04-Smoke-E2E | readiness | `architecture.md#checkout` | `T021,T022` | `J04` | `src/app/checkout/page.tsx` | mapped |
 ```
 
-**璇存槑**锛歛ctive Deferred Gaps 鍦?plan 闃舵蹇呴』鑷冲皯鏄犲皠鍒?architecture/work item锛涜嫢褰卞搷鐪熷疄鍔熻兘鍙敤鎬э紝杩樺繀椤绘樉寮忓啓鍑?`Journey Refs` 涓?`Production Path Refs`銆?
+**说明**：active Deferred Gaps 在 plan 阶段必须至少映射到 architecture/work item；若影响真实功能可用性，还必须显式写出 `Journey Refs` 与 `Production Path Refs`。
+
 ---
 
-## 3. IMPLEMENTATION_GAPS.md锛欸ap 鍒楄〃琛ㄥご锛堟寜闇€姹傛枃妗ｇ珷鑺傦級
+## 3. IMPLEMENTATION_GAPS.md：Gap 列表表头（按需求文档章节）
 
 ```markdown
-## Gaps 娓呭崟锛堟寜闇€姹傛枃妗ｇ珷鑺傦級
+## Gaps 清单（按需求文档章节）
 
-| 闇€姹傛枃妗ｇ珷鑺?| Gap ID | 闇€姹傝鐐?| 褰撳墠瀹炵幇鐘舵€?| 缂哄け/鍋忓樊璇存槑 |
+| 需求文档章节 | Gap ID | 需求要点 | 当前实现状态 | 缺失/偏差说明 |
 |-------------|--------|----------|-------------|---------------|
-| 绗?N 绔?    | GAP-x.y | 锛堢畝杩帮級 | 宸插疄鐜?閮ㄥ垎/鏈疄鐜?| ... |
+| 第 N 章     | GAP-x.y | （简述） | 已实现/部分/未实现 | ... |
 ```
 
-**璇存槑**锛氭寜鍘熷闇€姹傛枃妗ｉ€愮珷鑺傚垪鍑烘瘡鏉?Gap锛屾敞鏄庡疄鐜扮姸鎬佷笌缂哄け/鍋忓樊銆?
+**说明**：按原始需求文档逐章节列出每条 Gap，注明实现状态与缺失/偏差。
+
 ---
 
-## 3A. IMPLEMENTATION_GAPS.md锛欴eferred Gap Lifecycle Classification
+## 3A. IMPLEMENTATION_GAPS.md：Deferred Gap Lifecycle Classification
 
 ```markdown
 ## Deferred Gap Lifecycle Classification
 
-| Gap ID | Gap Origin | Lifecycle Classification | Gap Type | 璇存槑 |
+| Gap ID | Gap Origin | Lifecycle Classification | Gap Type | 说明 |
 |--------|------------|--------------------------|----------|------|
-| J04-Smoke-E2E | inherited | inherited_open | journey runnable gap | smoke proof 浠嶆湭褰㈡垚 |
-| J07-Async-Proof | new | new_gap | evidence gap | 鏂板彂鐜扮殑 acceptance evidence 缂哄彛 |
+| J04-Smoke-E2E | inherited | inherited_open | journey runnable gap | smoke proof 仍未形成 |
+| J07-Async-Proof | new | new_gap | evidence gap | 新发现的 acceptance evidence 缺口 |
 ```
 
-**璇存槑**锛氳繖閲屽繀椤绘妸 inherited gap 鍜?new gap 鍒嗗紑锛沗Gap Type` 杩樺繀椤诲尯鍒?`definition gap`銆乣implementation gap`銆乣journey runnable gap`銆乣evidence gap`銆?
+**说明**：这里必须把 inherited gap 和 new gap 分开；`Gap Type` 还必须区分 `definition gap`、`implementation gap`、`journey runnable gap`、`evidence gap`。
+
 ---
 
-## 4. tasks.md锛氭湰鎵逛换鍔?鈫?闇€姹傝拷婧?
+## 4. tasks.md：本批任务 ↔ 需求追溯
+
 ```markdown
-## 鏈壒浠诲姟 鈫?闇€姹傝拷婧?
-| 浠诲姟 ID | 闇€姹傛枃妗?| 绔犺妭 | 闇€姹傝鐐?|
+## 本批任务 ↔ 需求追溯
+
+| 任务 ID | 需求文档 | 章节 | 需求要点 |
 |---------|----------|------|----------|
-| Txxxx鈥揟xxxx | 锛堥渶姹傛枃妗ｆ枃浠跺悕锛?| 搂N, 搂M | 锛堢畝瑕佽鐐癸級 |
+| Txxxx–Txxxx | （需求文档文件名） | §N, §M | （简要要点） |
 ```
 
-**璇存槑**锛氫换鍔?ID 鍙负鍗曚换鍔℃垨鑼冨洿锛涢渶姹傛枃妗ｃ€佺珷鑺傘€佽鐐归』鍙拷婧埌鍏蜂綋闇€姹傘€?
+**说明**：任务 ID 可为单任务或范围；需求文档、章节、要点须可追溯到具体需求。
+
 ---
 
-## 5. tasks.md锛欸aps 鈫?浠诲姟鏄犲皠锛堟寜闇€姹傛枃妗ｇ珷鑺傦級
+## 5. tasks.md：Gaps → 任务映射（按需求文档章节）
 
 ```markdown
-## Gaps 鈫?浠诲姟鏄犲皠锛堟寜闇€姹傛枃妗ｇ珷鑺傦級
+## Gaps → 任务映射（按需求文档章节）
 
-**鏍稿瑙勫垯**锛欼MPLEMENTATION_GAPS.md 涓嚭鐜扮殑姣忎竴鏉?Gap 蹇呴』鍦ㄦ湰浠诲姟琛ㄤ腑鍑虹幇骞跺搴斿埌鍏蜂綋浠诲姟锛涗笉寰楅仐婕忋€?
-| 绔犺妭 | Gap ID | 鏈换鍔¤〃琛?| 瀵瑰簲浠诲姟 |
+**核对规则**：IMPLEMENTATION_GAPS.md 中出现的每一条 Gap 必须在本任务表中出现并对应到具体任务；不得遗漏。
+
+| 章节 | Gap ID | 本任务表行 | 对应任务 |
 |------|--------|------------|----------|
-| 绗?N 绔?| GAP-x.y | 鉁?鏈?| Txxxx, Txxxx |
+| 第 N 章 | GAP-x.y | ✓ 有 | Txxxx, Txxxx |
 ```
 
 ---
 
-## 6. tasks.md锛欸aps 鈫?浠诲姟鏄犲皠锛堝洓绫绘眹鎬伙紝濡?D/S/I/M锛?
+## 6. tasks.md：Gaps → 任务映射（四类汇总，如 D/S/I/M）
+
 ```markdown
-## Gaps 鈫?浠诲姟鏄犲皠锛堝洓绫绘眹鎬伙級
+## Gaps → 任务映射（四类汇总）
 
-| 绫诲埆 | Gap ID | 鏈换鍔¤〃琛?| 瀵瑰簲浠诲姟 |
+| 类别 | Gap ID | 本任务表行 | 对应任务 |
 |------|--------|------------|----------|
-| 鏁版嵁鍔犺浇 | D1, D2, ... | 鉁?鏈?| Txxxx, ... |
-| 鏁版嵁鍏变韩 | S1, S2, ... | 鉁?鏈?| Txxxx, ... |
+| 数据加载 | D1, D2, ... | ✓ 有 | Txxxx, ... |
+| 数据共享 | S1, S2, ... | ✓ 有 | Txxxx, ... |
 ```
 
-**璇存槑**锛氳嫢 IMPLEMENTATION_GAPS 浣跨敤銆屾寜绔犺妭 + 鍥涚被姹囨€汇€嶅弻瑙嗚锛屽垯涓よ〃鍧囬渶瀛樺湪涓旀棤閬楁紡銆?
+**说明**：若 IMPLEMENTATION_GAPS 使用「按章节 + 四类汇总」双视角，则两表均需存在且无遗漏。
+
 ---
 
-## 6A. tasks.md锛欴eferred Gap Task Binding
+## 6A. tasks.md：Deferred Gap Task Binding
 
 ```markdown
 ## Deferred Gap Task Binding
@@ -117,42 +131,49 @@
 | J09-Full-E2E | explicitly_deferred |  |  |  | Nightly suite owned by QA backlog | Epic 3 Planning |
 ```
 
-**璇存槑**锛歛ctive Deferred Gap 蹇呴』浜岄€変竴锛氳涔堢粦瀹?task锛岃涔堝啓 `Explicit Defer Reason`銆傝嫢 gap 褰卞搷鏌愭潯 Journey锛屽繀椤诲悓鏃跺啓 `Smoke Task IDs` 涓?`Closure Task ID`銆?
+**说明**：active Deferred Gap 必须二选一：要么绑定 task，要么写 `Explicit Defer Reason`。若 gap 影响某条 Journey，必须同时写 `Smoke Task IDs` 与 `Closure Task ID`。
+
 ---
 
-## 7. tasks.md锛氶獙鏀惰〃澶达紙鎸?Gap 閫愭潯楠岃瘉锛?
+## 7. tasks.md：验收表头（按 Gap 逐条验证）
+
 ```markdown
-### 鎸夐渶姹傛枃妗ｇ珷鑺傦紙GAP-x.y锛?
-琛ㄥご璇存槑锛?*鐢熶骇浠ｇ爜瀹炵幇瑕佺偣**椤诲垪鍑烘枃浠躲€佺被銆佹柟娉曘€佷唬鐮佸疄鐜扮粏鑺傦紱**闆嗘垚娴嬭瘯瑕佹眰**椤诲垪鍑烘祴璇曟枃浠躲€佺敤渚嬪悕銆佹墽琛屽懡浠ゃ€侀鏈熺粨鏋滐紱**鎵ц鎯呭喌**楠屾敹鏃跺繀濉紙寰呮墽琛?閫氳繃/澶辫触鍙婂師鍥狅級锛涗粎褰撲袱鑰呮弧瓒充笖鎵ц鎯呭喌涓洪€氳繃鏃跺彲鍕鹃€?*楠岃瘉閫氳繃**銆?
-| Gap ID | 瀵瑰簲浠诲姟 | 鐢熶骇浠ｇ爜瀹炵幇瑕佺偣锛堟枃浠?绫?鏂规硶/瀹炵幇缁嗚妭锛?| 闆嗘垚娴嬭瘯瑕佹眰锛堟祴璇曟枃浠?鐢ㄤ緥/鍛戒护/棰勬湡锛?| 鎵ц鎯呭喌 | 楠岃瘉閫氳繃 |
+### 按需求文档章节（GAP-x.y）
+
+表头说明：**生产代码实现要点**须列出文件、类、方法、代码实现细节；**集成测试要求**须列出测试文件、用例名、执行命令、预期结果；**执行情况**验收时必填（待执行/通过/失败及原因）；仅当两者满足且执行情况为通过时可勾选**验证通过**。
+
+| Gap ID | 对应任务 | 生产代码实现要点（文件/类/方法/实现细节） | 集成测试要求（测试文件/用例/命令/预期） | 执行情况 | 验证通过 |
 |--------|----------|------------------------------------------|----------------------------------------|----------|----------|
-| GAP-x.y | Txxxx | ... | ... | [ ] 寰呮墽琛?/ [x] 閫氳繃 / [ ] 澶辫触锛堝師鍥狅級 | [ ] / [x] |
+| GAP-x.y | Txxxx | ... | ... | [ ] 待执行 / [x] 通过 / [ ] 失败（原因） | [ ] / [x] |
 ```
 
 ---
 
-## 8. tasks.md锛氬洓绫绘眹鎬婚獙鏀惰〃澶?
+## 8. tasks.md：四类汇总验收表头
+
 ```markdown
-### 鍥涚被姹囨€伙紙D/S/I/M锛?
-| Gap ID | 瀵瑰簲浠诲姟 | 鐢熶骇浠ｇ爜瀹炵幇瑕佺偣锛堟枃浠?绫?鏂规硶/瀹炵幇缁嗚妭锛?| 闆嗘垚娴嬭瘯瑕佹眰锛堟祴璇曟枃浠?鐢ㄤ緥/鍛戒护/棰勬湡锛?| 鎵ц鎯呭喌 | 楠岃瘉閫氳繃 |
+### 四类汇总（D/S/I/M）
+
+| Gap ID | 对应任务 | 生产代码实现要点（文件/类/方法/实现细节） | 集成测试要求（测试文件/用例/命令/预期） | 执行情况 | 验证通过 |
 |--------|----------|------------------------------------------|----------------------------------------|----------|----------|
-| D1 | Txxxx, ... | ... | ... | [ ] / [x] 閫氳繃 / [ ] 澶辫触 | [ ] / [x] |
+| D1 | Txxxx, ... | ... | ... | [ ] / [x] 通过 / [ ] 失败 | [ ] / [x] |
 ```
 
 ---
 
-## 9. tasks.md锛欽ourney -> Task -> Test -> Closure 鏄犲皠
+## 9. tasks.md：Journey -> Task -> Test -> Closure 映射
 
 ```markdown
-## Journey -> Task -> Test -> Closure 鏄犲皠
+## Journey -> Task -> Test -> Closure 映射
 
 | Journey ID | Invariant IDs | Task IDs | Smoke Proof | Full E2E | Closure Note |
 |------------|---------------|----------|-------------|----------|--------------|
-| J01 | INV-01, INV-02 | T021, T022, T023 | `tests/e2e/smoke/...` | `tests/e2e/full/...` 鎴?deferred reason | `closure-notes/J01.md` |
-| J02 | INV-03 | T024, T025 | `tests/e2e/smoke/...` | `N/A`锛堝啓鏄庡師鍥狅級 | `closure-notes/J02.md` |
+| J01 | INV-01, INV-02 | T021, T022, T023 | `tests/e2e/smoke/...` | `tests/e2e/full/...` 或 deferred reason | `closure-notes/J01.md` |
+| J02 | INV-03 | T024, T025 | `tests/e2e/smoke/...` | `N/A`（写明原因） | `closure-notes/J02.md` |
 ```
 
-**璇存槑**锛氭瘡鏉?`P0 journey` 閮藉繀椤昏兘浠?`journey -> task -> test -> closure` 涓€璺拷婧紝绂佹鍙垪妯″潡浠诲姟鑰屾棤 smoke proof / closure 鏀跺彛銆?
+**说明**：每条 `P0 journey` 都必须能从 `journey -> task -> test -> closure` 一路追溯，禁止只列模块任务而无 smoke proof / closure 收口。
+
 ---
 
 ## 9A. Journey Runtime Proof Mapping
@@ -166,10 +187,11 @@
 | J02 | `src/server/orders/create-order.ts` | `tests/e2e/smoke/order.spec.ts` | deferred: nightly owned by QA | `closure-notes/J02.md` | `reports/order-proof.md` |
 ```
 
-**璇存槑**锛氳繖涓€琛ㄤ笓闂ㄩ槻鈥滀换鍔″畬鎴愪絾 Journey 涓?runnable鈥濄€俙Production Path`銆乣Smoke Proof`銆乣Closure Note`銆乣Acceptance Evidence` 缂轰换涓€椤癸紝Journey 閮戒笉鑳藉绉板畬鎴愩€?
+**说明**：这一表专门防“任务完成但 Journey 不 runnable”。`Production Path`、`Smoke Proof`、`Closure Note`、`Acceptance Evidence` 缺任一项，Journey 都不能宣称完成。
+
 ---
 
-## 10. Gap 鍒嗙被锛欴efinition Gap vs Implementation Gap
+## 10. Gap 分类：Definition Gap vs Implementation Gap
 
 ```markdown
 ## Definition Gap vs Implementation Gap
@@ -180,4 +202,7 @@
 | Implementation Gap | tasks / implement / verification / audit | code change / test fix / closure note | Dev / QA / Owner | implement / audit |
 ```
 
-**璇存槑**锛?- `Definition Gap` 鎸囬渶姹傘€佸畬鎴愭€併€佹潈闄愯竟鐣屻€乫ixture / environment銆佷緷璧栬涔夌瓑瀹氫箟灞傜己鍙ｃ€?- `Implementation Gap` 鎸囦唬鐮佽矾寰勩€佺敓浜ф帴绾裤€乻moke/full 璇佹嵁銆乧losure note 绛夊疄鐜板眰缂哄彛銆?- 涓ょ被 gap **蹇呴』鍒嗗紑璁板綍**锛屼笉寰楀湪涓€鏉♀€滃紑鍙戜换鍔♀€濋噷娣峰啓鍚庣洿鎺ュ绉板姛鑳藉凡璺戦€氥€?
+**说明**：
+- `Definition Gap` 指需求、完成态、权限边界、fixture / environment、依赖语义等定义层缺口。
+- `Implementation Gap` 指代码路径、生产接线、smoke/full 证据、closure note 等实现层缺口。
+- 两类 gap **必须分开记录**，不得在一条“开发任务”里混写后直接宣称功能已跑通。

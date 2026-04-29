@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
  * Bundles repo-root CLIs into dist/*.cjs:
- * - scripts/emit-runtime-policy.ts 鈫?emit-runtime-policy.cjs
- * - scripts/i18n/resolve-for-session-cli.ts 鈫?resolve-for-session.cjs
- * - scripts/i18n/render-audit-block-cli.ts 鈫?render-audit-block.cjs
+ * - scripts/emit-runtime-policy.ts ->emit-runtime-policy.cjs
+ * - scripts/i18n/resolve-for-session-cli.ts ->resolve-for-session.cjs
+ * - scripts/i18n/render-audit-block-cli.ts ->render-audit-block.cjs
  * Invoked by prepare/prepublishOnly and `npm run build` from this package.
  */
 'use strict';

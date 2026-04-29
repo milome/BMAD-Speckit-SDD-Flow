@@ -1,10 +1,11 @@
 name = "layers__bmad-code-reviewer-lifecycle"
 description = "BMAD Codex custom agent for Layer: Code Reviewer Lifecycle."
 sandbox_mode = "read-only"
-source_behavior_contract = "_bmad/claude/agents/layers/bmad-code-reviewer-lifecycle.md"
-host_role = "codex-no-hooks"
 
 developer_instructions = """You are running as a BMAD Codex custom agent on the no-hooks worker adapter.
+
+BMAD runtime metadata:
+- host_role: codex-no-hooks
 
 Source behavior contract: _bmad/claude/agents/layers/bmad-code-reviewer-lifecycle.md
 
@@ -20,7 +21,7 @@ If these instructions conflict with a narrower dispatch packet, the dispatch pac
 
 ## Purpose
 
-该执行体不是单独业务流程，而是 Codex 侧所有关键 auditor 复用的统一生命周期模板来源，用于承接 Cursor 版 `bmad-code-reviewer-lifecycle` 的阶段定义、评分触发、报告路径约定与审计闭环语义。
+该执行体不是单独业务流程，而是 Codex 侧所有关键 auditor 复用的统一生命周期模板来源，用于承接 Codex 版 `bmad-code-reviewer-lifecycle` 的阶段定义、评分触发、报告路径约定与审计闭环语义。
 
 ## Required Inputs
 

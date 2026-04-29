@@ -1,34 +1,51 @@
-﻿# Tasks 鎵ц瑙勫垯锛歍DD 绾㈢豢鐏ā寮忥紙璇︾粏鍙傝€冿級
+# Tasks 执行规则：TDD 红绿灯模式（详细参考）
 
-鎵ц tasks.md锛堟垨 tasks-v*.md锛変腑鐨勬湭瀹屾垚浠诲姟鏃跺繀椤婚伒瀹堟湰鏂囦欢鐨勫叏閮ㄨ鍒欍€?
-**鎵ц椤哄簭**锛歐RITE test 鈫?RUN 鈫?ASSERT FAIL 鈫?WRITE code 鈫?RUN 鈫?ASSERT PASS 鈫?REFACTOR銆傜姝㈠厛鍐欑敓浜т唬鐮佸啀琛ユ祴璇曘€?
-**銆怲DD 绾㈢豢鐏樆濉炵害鏉熴€?* prd 涓瘡涓?involvesProductionCode=true 鐨?US 蹇呴』**鐙珛**鎵ц涓€娆″畬鏁村惊鐜€傛墽琛岄『搴忎负锛?1. 鍏堝啓/琛ユ祴璇曞苟杩愯楠屾敹 鈫?蹇呴』寰楀埌澶辫触缁撴灉锛堢孩鐏級
-2. 绔嬪嵆鍦?progress 杩藉姞 [TDD-RED] <浠诲姟ID> <楠屾敹鍛戒护> => N failed
-3. 鍐嶅疄鐜板苟閫氳繃楠屾敹 鈫?寰楀埌閫氳繃缁撴灉锛堢豢鐏級
-4. 绔嬪嵆鍦?progress 杩藉姞 [TDD-GREEN] <浠诲姟ID> <楠屾敹鍛戒护> => N passed
-5. 鑻ユ湁閲嶆瀯锛屽湪 progress 杩藉姞 [TDD-REFACTOR] <浠诲姟ID> <鍐呭>
-绂佹鍦ㄦ湭瀹屾垚姝ラ 1鈥? 涔嬪墠鎵ц姝ラ 3銆?*绂佹浠呭棣栦釜 US 鎵ц TDD锛屽悗缁?US 璺宠繃绾㈢伅鐩存帴瀹炵幇**銆傜姝㈡墍鏈変换鍔″畬鎴愬悗闆嗕腑琛ュ啓 TDD 璁板綍銆?
+执行 tasks.md（或 tasks-v*.md）中的未完成任务时必须遵守本文件的全部规则。
+
+**执行顺序**：WRITE test → RUN → ASSERT FAIL → WRITE code → RUN → ASSERT PASS → REFACTOR。禁止先写生产代码再补测试。
+
+**【TDD 红绿灯阻塞约束】** prd 中每个 involvesProductionCode=true 的 US 必须**独立**执行一次完整循环。执行顺序为：
+1. 先写/补测试并运行验收 → 必须得到失败结果（红灯）
+2. 立即在 progress 追加 [TDD-RED] <任务ID> <验收命令> => N failed
+3. 再实现并通过验收 → 得到通过结果（绿灯）
+4. 立即在 progress 追加 [TDD-GREEN] <任务ID> <验收命令> => N passed
+5. 若有重构，在 progress 追加 [TDD-REFACTOR] <任务ID> <内容>
+禁止在未完成步骤 1–2 之前执行步骤 3。**禁止仅对首个 US 执行 TDD，后续 US 跳过红灯直接实现**。禁止所有任务完成后集中补写 TDD 记录。
+
 ---
 
-## 1. TDD 绾㈢伅-缁跨伅-閲嶆瀯寰幆
+## 1. TDD 红灯-绿灯-重构循环
 
-### 1.1 绾㈢伅闃舵锛堢紪鍐欐祴璇曪級
+### 1.1 红灯阶段（编写测试）
 
-- 闃呰褰撳墠浠诲姟鐨勯渶姹傝拷婧紝妫€绱㈠苟闃呰鐩稿叧闇€姹傛枃妗ｇ珷鑺傘€?- 缂栧啓鎴栬ˉ鍏呰鐩栧綋鍓嶄换鍔￠獙鏀舵爣鍑嗙殑娴嬭瘯鐢ㄤ緥銆?- 杩愯娴嬭瘯锛?*纭娴嬭瘯澶辫触**锛堢孩鐏級锛岄獙璇佹祴璇曠殑鏈夋晥鎬с€?- 鑻ユ祴璇曠洿鎺ラ€氳繃锛岃鏄庢祴璇曟棤鏁堟垨鍔熻兘宸插瓨鍦紝闇€淇娴嬭瘯鎴栫‘璁ゅ悗璺宠繃璇ユ祴璇曘€?
-### 1.2 缁跨伅闃舵锛堟渶灏忓疄鐜帮級
+- 阅读当前任务的需求追溯，检索并阅读相关需求文档章节。
+- 编写或补充覆盖当前任务验收标准的测试用例。
+- 运行测试，**确认测试失败**（红灯），验证测试的有效性。
+- 若测试直接通过，说明测试无效或功能已存在，需修正测试或确认后跳过该测试。
 
-- 缂栧啓**鏈€灏戦噺**鐢熶骇浠ｇ爜浣挎祴璇曢€氳繃銆?- 杩愯娴嬭瘯锛岀‘璁ゅ叏閮ㄩ€氳繃锛堢豢鐏級銆?- 姝ら樁娈典笉杩芥眰浠ｇ爜璐ㄩ噺锛屼粎杩芥眰娴嬭瘯閫氳繃銆?
-### 1.3 閲嶆瀯闃舵锛堜唬鐮佷紭鍖栵級
+### 1.2 绿灯阶段（最小实现）
 
-- 鍦ㄦ祴璇曚繚鎶や笅浼樺寲浠ｇ爜锛氬懡鍚嶃€佽В鑰︺€佹秷闄ら噸澶嶃€佹敼鍠勫彲璇绘€с€?- 瀵圭収涓氱晫鏈€浣冲疄璺靛瑙嗗疄鐜帮細SOLID 鍘熷垯銆佽璁℃ā寮忋€佹€ц兘浼樺寲銆?- 姣忔閲嶆瀯鍚庤繍琛屾祴璇曪紝纭繚浠嶅叏閮ㄩ€氳繃銆?- **閲嶆瀯鑷崇鍚堟渶浣冲疄璺靛悗鏂瑰彲缁撴潫鏈樁娈?*锛屼笉寰楄烦杩囬噸鏋勩€?
+- 编写**最少量**生产代码使测试通过。
+- 运行测试，确认全部通过（绿灯）。
+- 此阶段不追求代码质量，仅追求测试通过。
+
+### 1.3 重构阶段（代码优化）
+
+- 在测试保护下优化代码：命名、解耦、消除重复、改善可读性。
+- 对照业界最佳实践审视实现：SOLID 原则、设计模式、性能优化。
+- 每次重构后运行测试，确保仍全部通过。
+- **重构至符合最佳实践后方可结束本阶段**，不得跳过重构。
+
 ---
 
-## 2. 杩涘害杩借釜涓庣姸鎬佹洿鏂?
-### 2.0 progress 妯℃澘棰勫～ TDD 妲戒綅
+## 2. 进度追踪与状态更新
 
-鐢熸垚 progress 鏃讹紝瀵规瘡涓?US 棰勫～浠ヤ笅鍗犱綅琛岋紱妯″瀷鎵ц鏃跺皢 `_pending_` 鏇挎崲涓哄疄闄呯粨鏋滐細
+### 2.0 progress 模板预填 TDD 槽位
 
-**娑夊強鐢熶骇浠ｇ爜鐨?US**锛?```
+生成 progress 时，对每个 US 预填以下占位行；模型执行时将 `_pending_` 替换为实际结果：
+
+**涉及生产代码的 US**：
+```
 # US-001: Create user entity
 [TDD-RED]   _pending_
 [TDD-GREEN] _pending_
@@ -36,95 +53,140 @@
 ---
 ```
 
-**浠呮枃妗?閰嶇疆鐨?US**锛?```
+**仅文档/配置的 US**：
+```
 # US-002: Add config value
 [DONE] _pending_
 ---
 ```
 
-鏇挎崲鏍煎紡绀轰緥锛歚[TDD-RED] T1 pytest tests/test_xxx.py -v => N failed`
+替换格式示例：`[TDD-RED] T1 pytest tests/test_xxx.py -v => N failed`
 
-### 2.1 TodoWrite 杩借釜
+### 2.1 TodoWrite 追踪
 
-- 寮€濮嬫墽琛屽墠锛屼娇鐢?TodoWrite 鍒涘缓鎵€鏈夋湭瀹屾垚浠诲姟鐨勮拷韪垪琛ㄣ€?- 姣忎釜浠诲姟寮€濮嬫椂鏍囪 `in_progress`锛屽畬鎴愭椂鏍囪 `completed`銆?- 鍚屼竴鏃堕棿浠呬竴涓换鍔″浜?`in_progress` 鐘舵€併€?
-### 2.2 tasks.md 澶嶉€夋鏇存柊
+- 开始执行前，使用 TodoWrite 创建所有未完成任务的追踪列表。
+- 每个任务开始时标记 `in_progress`，完成时标记 `completed`。
+- 同一时间仅一个任务处于 `in_progress` 状态。
 
-- 浠诲姟瀹屾垚鍚?*绔嬪嵆**鏇存柊 tasks.md锛堟垨 tasks-v*.md锛変腑鐨勫閫夋 `[ ]` 鈫?`[x]`銆?- 绂佹鎵归噺寤惰繜鏇存柊锛涙瘡瀹屾垚涓€涓换鍔″嵆鏇存柊涓€娆°€?
-### 2.3 闀挎椂闂磋剼鏈鐞?
-- pytest銆佹瀯寤鸿剼鏈瓑闀挎椂闂磋繍琛岀殑鍛戒护浣跨敤 `block_until_ms: 0` 鍚庡彴杩愯銆?- 鍚姩鍚庤疆璇?`terminals/` 鐩綍妫€鏌ョ粨鏋滄枃浠躲€?- 浣跨敤鎸囨暟閫€閬跨瓥鐣ヨ疆璇紙2s 鈫?4s 鈫?8s 鈫?16s...锛夛紝鏍规嵁鍛戒护棰勪及鏃堕暱璋冩暣銆?- 绛夊緟 `exit_code` 鍑虹幇鍚庤鍙栧畬鏁磋緭鍑哄垽鏂粨鏋溿€?
----
+### 2.2 tasks.md 复选框更新
 
-## 3. 鎵ц绾︽潫锛?5 鏉￠搧寰嬶級
+- 任务完成后**立即**更新 tasks.md（或 tasks-v*.md）中的复选框 `[ ]` → `[x]`。
+- 禁止批量延迟更新；每完成一个任务即更新一次。
 
-### 绗竴绫伙細鏋舵瀯涓庨渶姹傚繝瀹炴€?
-1. **涓ユ牸鎸夋枃妗ｆ妧鏈灦鏋勫疄鏂?*锛氬繀椤讳弗鏍兼寜鐓ф枃妗ｄ腑璁板綍鐨勬妧鏈灦鏋勫拰閫夊瀷杩涜瀹炴柦锛岀姝㈡搮鑷慨鏀瑰疄鏂界殑鎶€鏈灦鏋勫拰閫夊瀷銆?2. **涓ユ牸鎸夋枃妗ｉ渶姹傝寖鍥村疄鏂?*锛氬繀椤讳弗鏍兼寜鐓ф枃妗ｄ腑璁板綍鐨勯渶姹傝寖鍥村拰鍔熻兘鑼冨洿杩涜瀹炴柦锛岀姝㈡搮鑷慨鏀归渶姹傝寖鍥村拰鍔熻兘鑼冨洿锛岀姝互鍏堝疄鏂芥渶灏忓疄鐜颁负鐢辨搮鑷亸绂荤敤鎴风殑鐪熸闇€姹傚拰鎰忓浘銆?
-### 绗簩绫伙細绂佹浼疄鐜?
-3. **绂佹鏍囪瀹屾垚浣嗗姛鑳芥湭瀹為檯璋冪敤**锛氫换鍔℃爣璁颁负瀹屾垚鏃讹紝瀵瑰簲鍔熻兘蹇呴』宸插湪鐢熶骇浠ｇ爜鐨勫叧閿矾寰勪腑琚疄闄呰皟鐢ㄣ€?4. **绂佹浠呭垵濮嬪寲瀵硅薄鑰屼笉鍦ㄥ叧閿矾寰勪腑浣跨敤**锛氬垱寤虹殑瀵硅薄銆佺被銆佹ā鍧楀繀椤诲湪鐢熶骇浠ｇ爜璺緞涓鐪熸浣跨敤锛屼笉寰椾粎瀛樺湪浜庡垵濮嬪寲闃舵銆?5. **绂佹鐢ㄣ€岄鐣欍€嶃€屽崰浣嶃€嶇瓑璇嶈閬垮疄鐜?*锛氭墍鏈夊姛鑳藉繀椤诲畬鏁村疄鐜帮紝涓嶅緱鐢ㄥ崰浣嶇銆乀ODO 娉ㄩ噴鎴栭鐣欐帴鍙ｄ唬鏇跨湡瀹炲疄鐜般€?6. **绂佹鍋囧畬鎴愩€佺姝吉瀹炵幇**锛氭墍鏈変换鍔″繀椤绘湁鐪熷疄鐨勫姛鑳藉疄鐜板拰鍙獙璇佺殑杩愯缁撴灉銆?
-### 绗笁绫伙細娴嬭瘯涓庡洖褰?
-7. **涓诲姩淇娴嬭瘯鑴氭湰**锛氬繀椤讳富鍔ㄨ繘琛屾祴璇曡剼鏈殑淇锛岀姝互娴嬭瘯鐢ㄤ緥涓庢湰娆″紑鍙戞棤鍏充负鐢遍€冮伩淇銆傚彂鐜扮殑娴嬭瘯闂鏃犺鏉ユ簮鍧囬渶淇銆?8. **涓诲姩鍥炲綊娴嬭瘯**锛氬繀椤讳富鍔ㄨ繘琛屽洖褰掓祴璇曪紝搴斿敖鏃╁彂鐜板姛鑳藉洖閫€闂锛岀姝㈡帺鐩栭棶棰樸€傛瘡瀹屾垚涓€涓换鍔″悗杩愯鐩稿叧娴嬭瘯濂椾欢锛屾瘡瀹屾垚涓€涓鏌ョ偣鍚庤繍琛屽叏閲忓洖褰掋€?
-### 绗洓绫伙細閲嶆瀯鏍囧噯
+### 2.3 长时间脚本处理
 
-9. **涓诲姩閲嶆瀯鑷虫渶浣冲疄璺?*锛氬鏋滅敓鎴愮殑浠ｇ爜涓嶇鍚堟渶浣冲疄璺碉紝搴旇鍦ㄧ孩缁跨伅鐨勯噸鏋勯樁娈典富鍔ㄨ繘琛岄噸鏋勶紝鐩村埌绗﹀悎鏈€浣冲疄璺典负姝€傚瑙嗘爣鍑嗗寘鎷細SOLID 鍘熷垯銆丏RY銆佹竻鏅板懡鍚嶃€侀€傚綋鎶借薄灞傛銆侀敊璇鐞嗐€佹€ц兘鑰冮噺銆?
-### 绗簲绫伙細娴佺▼瀹屾暣鎬?
-10. **绂佹鎻愬墠鍋滄**锛氱姝㈠湪鎵€鏈夋湭瀹屾垚浠诲姟鐪熸瀹炵幇骞跺畬鎴愪箣鍓嶆搮鑷仠姝㈠紑鍙戝伐浣溿€傚繀椤绘寔缁帹杩涚洿鍒版墍鏈変换鍔″畬鎴愭垨閬囧埌涓嶅彲瑙ｅ喅鐨勯樆濉炪€?11. **妫€鏌ョ偣鍓嶉獙璇佸墠缃换鍔?*锛氶亣鍒版鏌ョ偣鏃堕獙璇佹墍鏈夊墠缃换鍔″凡瀹屾垚銆傚垪鍑哄墠缃换鍔℃竻鍗曪紝閫愪竴纭鐘舵€佷负 completed锛岃繍琛屾鏌ョ偣瑕佹眰鐨勫叏閮ㄩ獙璇佸懡浠ゃ€?12. **鏌ラ槄鍓嶇疆鏂囨。**锛氬闇€鍙傝€冭璁★紝鏌ョ湅鍓嶇疆鐩稿叧鐨勯渶姹傛枃妗?plan鏂囨。/IMPLEMENTATION_GAPS鏂囨。銆傚疄鏂藉墠鎵ц闇€姹傝拷婧紙瑙佷笅 搂5锛夈€?12.1 **璇诲彇 Deferred Gaps 宸ヤ欢**锛氳嫢瀛樺湪 `deferred-gap-register.yaml`锛屽繀椤诲湪鎵ц鍓嶅姞杞斤紱鑻ュ０鏄庡瓨鍦?inherited deferred gaps 鍗存湭璇诲彇璇ユ枃浠讹紝涓嶅緱缁х画鎶婁换鍔℃爣璁颁负瀹屾垚銆?12.2 **璇诲彇 Journey-first 宸ヤ欢**锛氫紭鍏堣鍙栫嫭绔?`journey-ledger`銆乣invariant-ledger`銆乣trace-map`銆乣closure-notes`锛涗粎褰撹繖浜涚嫭绔嬪伐浠朵笉瀛樺湪鏃讹紝鎵嶅厑璁稿洖閫€鍒?tasks.md 鍐呭祵 section銆?
-### 绗叚绫伙細杩涘害杩借釜
-
-13. **TodoWrite 杩借釜杩涘害**锛氫娇鐢?TodoWrite 杩借釜杩涘害锛屾瘡涓换鍔℃爣璁?`in_progress` / `completed`銆?14. **绔嬪嵆鏇存柊澶嶉€夋**锛氬畬鎴愪换鍔″悗绔嬪嵆鏇存柊 tasks.md锛堟垨 tasks-v*.md锛変腑鐨勫閫夋 `[ ]` 鈫?`[x]`銆?15. **闀挎椂闂磋剼鏈悗鍙拌繍琛?*锛歱ytest/闀挎椂闂磋剼鏈娇鐢?`block_until_ms: 0` 鍚庡彴杩愯锛岀劧鍚庤疆璇?`terminals/` 妫€鏌ョ粨鏋溿€?16. **Journey 涓?Deferred Gap 鍚屾鏀跺彛**锛氬叧闂?gap銆佺敓鎴?smoke/full E2E銆佸畬鎴?closure note銆佽ˉ acceptance evidence 鏃讹紝蹇呴』鍚屾鏇存柊 `deferred-gap-register.yaml` 涓?Journey-first 宸ヤ欢锛岀姝㈠彧鏀逛换鍔″閫夋銆?
----
-
-## 4. 妫€鏌ョ偣楠岃瘉娴佺▼
-
-閬囧埌浠诲姟妫€鏌ョ偣锛圕heckpoint锛夋椂锛?
-1. 鍒楀嚭鎵€鏈夊墠缃换鍔★紝纭 TodoWrite 鐘舵€佸潎涓?`completed`锛宼asks.md 涓閫夋鍧囦负 `[x]`銆?2. 杩愯璇ユ鏌ョ偣瑕佹眰鐨勬墍鏈夐獙璇佸懡浠ゃ€?3. 鎵ц鍏ㄩ噺鍥炲綊娴嬭瘯锛坄pytest` 鐩稿叧娴嬭瘯鐩綍锛夛紝纭繚鏃犲姛鑳藉洖閫€銆?4. 浠呭綋鎵€鏈夐獙璇侀€氳繃鍚庢柟鍙户缁悗缁换鍔°€?5. 鑻ラ獙璇佸け璐ワ紝鍥為€€淇闂浠诲姟锛屼慨澶嶅悗閲嶆柊杩愯楠岃瘉鐩磋嚦閫氳繃銆?
----
-
-## 5. 闇€姹傝拷婧紙姣忎釜浠诲姟瀹炴柦鍓嶅繀濉級
-
-姣忎釜浠诲姟寮€濮嬪疄鏂藉墠锛岄』瀹屾垚闇€姹傝拷婧細
-
-- **闂鍏抽敭璇?*: 褰撳墠浠诲姟娑夊強鐨勬牳蹇冩蹇碉紙濡?DuckDB銆佸壇鍥惧彔鍔犮€丼haredMemory锛?- **妫€绱㈣寖鍥?*: specs/ 涓嬬浉鍏抽渶姹傛枃妗ｃ€佽璁℃枃妗?- **鐩稿叧绔犺妭**: 闇€姹傛枃妗ｄ腑鐨勫叿浣撶珷鑺傜紪鍙凤紙濡?搂3.1, 搂4.2锛?- **鏃㈡湁绾﹀畾鎽樿**: 宸叉湁璁捐鍐崇瓥鍜岀害瀹氾紙濡傛妧鏈€夊瀷銆佹暟鎹粨鏋勫畾涔夛級
-- **鏂规鏄惁涓庨渶姹備竴鑷?*: 鏄?/ 鍚︼紙鑻ュ惁锛岃鏄庡師鍥犲強鏄惁闇€瑕佹洿鏂伴渶姹傦級
+- pytest、构建脚本等长时间运行的命令使用 `block_until_ms: 0` 后台运行。
+- 启动后可轮询 `terminals/` 目录检查结果文件，但**仅限普通长任务**；**禁止**将此规则用于 party-mode 返回状态判定。
+- 在 Codex / PowerShell 环境中，**禁止**使用混合 shell 命令轮询目录（如 `ls -la`、`mkdir -p`、`dir ... /b`、`||` 风格回退链）。如确需轮询，只能使用 PowerShell 原生命令（如 `Get-ChildItem`、`Test-Path`、`Get-Content`）。
+- 若当前任务是 party-mode 返回检查，**不要**轮询 `terminals/` 或直接探测 `_bmad-output/party-mode/` 文件；必须先读取 `_bmad-output/party-mode/runtime/current-session.json`，优先看 `validation_status`、`status`、`target_rounds_total`、`visible_output_summary`、`visible_fragment_record_present`。
+- 使用指数退避策略轮询（2s → 4s → 8s → 16s...），根据命令预估时长调整。
+- 等待 `exit_code` 出现后读取完整输出判断结果。
 
 ---
 
-## 6. 鍗曚换鍔℃墽琛屼吉浠ｇ爜
+## 3. 执行约束（15 条铁律）
+
+### 第一类：架构与需求忠实性
+
+1. **严格按文档技术架构实施**：必须严格按照文档中记录的技术架构和选型进行实施，禁止擅自修改实施的技术架构和选型。
+2. **严格按文档需求范围实施**：必须严格按照文档中记录的需求范围和功能范围进行实施，禁止擅自修改需求范围和功能范围，禁止以先实施最小实现为由擅自偏离用户的真正需求和意图。
+
+### 第二类：禁止伪实现
+
+3. **禁止标记完成但功能未实际调用**：任务标记为完成时，对应功能必须已在生产代码的关键路径中被实际调用。
+4. **禁止仅初始化对象而不在关键路径中使用**：创建的对象、类、模块必须在生产代码路径中被真正使用，不得仅存在于初始化阶段。
+5. **禁止用「预留」「占位」等词规避实现**：所有功能必须完整实现，不得用占位符、TODO 注释或预留接口代替真实实现。
+6. **禁止假完成、禁止伪实现**：所有任务必须有真实的功能实现和可验证的运行结果。
+
+### 第三类：测试与回归
+
+7. **主动修复测试脚本**：必须主动进行测试脚本的修复，禁止以测试用例与本次开发无关为由逃避修复。发现的测试问题无论来源均需修复。
+8. **主动回归测试**：必须主动进行回归测试，应尽早发现功能回退问题，禁止掩盖问题。每完成一个任务后运行相关测试套件，每完成一个检查点后运行全量回归。
+
+### 第四类：重构标准
+
+9. **主动重构至最佳实践**：如果生成的代码不符合最佳实践，应该在红绿灯的重构阶段主动进行重构，直到符合最佳实践为止。审视标准包括：SOLID 原则、DRY、清晰命名、适当抽象层次、错误处理、性能考量。
+
+### 第五类：流程完整性
+
+10. **禁止提前停止**：禁止在所有未完成任务真正实现并完成之前擅自停止开发工作。必须持续推进直到所有任务完成或遇到不可解决的阻塞。
+11. **检查点前验证前置任务**：遇到检查点时验证所有前置任务已完成。列出前置任务清单，逐一确认状态为 completed，运行检查点要求的全部验证命令。
+12. **查阅前置文档**：如需参考设计，查看前置相关的需求文档/plan文档/IMPLEMENTATION_GAPS文档。实施前执行需求追溯（见下 §5）。
+12.1 **读取 Deferred Gaps 工件**：若存在 `deferred-gap-register.yaml`，必须在执行前加载；若声明存在 inherited deferred gaps 却未读取该文件，不得继续把任务标记为完成。
+12.2 **读取 Journey-first 工件**：优先读取独立 `journey-ledger`、`invariant-ledger`、`trace-map`、`closure-notes`；仅当这些独立工件不存在时，才允许回退到 tasks.md 内嵌 section。
+
+### 第六类：进度追踪
+
+13. **TodoWrite 追踪进度**：使用 TodoWrite 追踪进度，每个任务标记 `in_progress` / `completed`。
+14. **立即更新复选框**：完成任务后立即更新 tasks.md（或 tasks-v*.md）中的复选框 `[ ]` → `[x]`。
+15. **长时间脚本后台运行**：pytest/长时间脚本使用 `block_until_ms: 0` 后台运行，然后轮询 `terminals/` 检查结果；但 **party-mode 返回检查不适用此条**，必须走 `current-session.json` + `visible_output_summary` 诊断链路。
+16. **Journey 与 Deferred Gap 同步收口**：关闭 gap、生成 smoke/full E2E、完成 closure note、补 acceptance evidence 时，必须同步更新 `deferred-gap-register.yaml` 与 Journey-first 工件，禁止只改任务复选框。
+
+---
+
+## 4. 检查点验证流程
+
+遇到任务检查点（Checkpoint）时：
+
+1. 列出所有前置任务，确认 TodoWrite 状态均为 `completed`，tasks.md 中复选框均为 `[x]`。
+2. 运行该检查点要求的所有验证命令。
+3. 执行全量回归测试（`pytest` 相关测试目录），确保无功能回退。
+4. 仅当所有验证通过后方可继续后续任务。
+5. 若验证失败，回退修复问题任务，修复后重新运行验证直至通过。
+
+---
+
+## 5. 需求追溯（每个任务实施前必填）
+
+每个任务开始实施前，须完成需求追溯：
+
+- **问题关键词**: 当前任务涉及的核心概念（如 DuckDB、副图叠加、SharedMemory）
+- **检索范围**: specs/ 下相关需求文档、设计文档
+- **相关章节**: 需求文档中的具体章节编号（如 §3.1, §4.2）
+- **既有约定摘要**: 已有设计决策和约定（如技术选型、数据结构定义）
+- **方案是否与需求一致**: 是 / 否（若否，说明原因及是否需要更新需求）
+
+---
+
+## 6. 单任务执行伪代码
 
 ```
 FOR EACH uncompleted_task IN tasks_md:
     TodoWrite(task.id, status="in_progress")
 
-    # 闇€姹傝拷婧?    READ related requirement docs (specs/, plan.md, IMPLEMENTATION_GAPS.md)
+    # 需求追溯
+    READ related requirement docs (specs/, plan.md, IMPLEMENTATION_GAPS.md)
     FILL requirement traceability fields
     READ deferred-gap-register.yaml when present
     READ journey-ledger / trace-map / closure-notes when present
 
-    # 绾㈢伅
+    # 红灯
     WRITE test cases covering acceptance criteria
-    RUN tests 鈫?ASSERT tests FAIL (red)
+    RUN tests → ASSERT tests FAIL (red)
 
-    # 缁跨伅
+    # 绿灯
     WRITE minimum production code
-    RUN tests 鈫?ASSERT tests PASS (green)
+    RUN tests → ASSERT tests PASS (green)
 
-    # 閲嶆瀯
+    # 重构
     WHILE code does NOT meet best practices:
         REFACTOR code (SOLID, DRY, naming, decoupling, performance)
-        RUN tests 鈫?ASSERT tests STILL PASS
+        RUN tests → ASSERT tests STILL PASS
     END WHILE
 
-    # 鍥炲綊
+    # 回归
     RUN regression tests for related modules
     IF regression failure:
-        FIX regression 鈫?RE-RUN until all pass
+        FIX regression → RE-RUN until all pass
     END IF
 
-    # 鏇存柊杩涘害
-    UPDATE tasks_md checkbox [ ] 鈫?[x]
+    # 更新进度
+    UPDATE tasks_md checkbox [ ] → [x]
     TodoWrite(task.id, status="completed")
     UPDATE deferred-gap-register closure_evidence or carry_forward_evidence
     UPDATE journey-ledger / trace-map / closure-note when journey state changes
 
-    # 妫€鏌ョ偣锛堝鏈夛級
+    # 检查点（如有）
     IF task is checkpoint:
         VERIFY all prerequisite tasks completed
         RUN full regression suite

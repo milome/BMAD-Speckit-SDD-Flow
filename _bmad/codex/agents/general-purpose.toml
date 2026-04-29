@@ -1,11 +1,12 @@
 name = "general-purpose"
 description = "BMAD general-purpose Codex agent."
 sandbox_mode = "workspace-write"
-source_behavior_contract = "_bmad/claude/agents/bmad-master.md"
-host_role = "codex-no-hooks"
-alias_for_dispatch_role = "general-purpose"
 
 developer_instructions = """You are running as a BMAD Codex custom agent alias on the no-hooks worker adapter.
+
+BMAD runtime metadata:
+- host_role: codex-no-hooks
+- alias_for_dispatch_role: general-purpose
 
 Alias name: general-purpose
 Source behavior contract: _bmad/claude/agents/bmad-master.md

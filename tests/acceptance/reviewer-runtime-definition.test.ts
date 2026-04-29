@@ -45,6 +45,8 @@ describe('reviewer runtime definition', () => {
       expect(cursorRuntime).toContain('source=_bmad/cursor/agents/code-reviewer.md');
       expect(claudeRuntime).toContain('source=_bmad/claude/agents/code-reviewer.md');
       expect(codexRuntime).toContain('source=_bmad/codex/agents/code-reviewer.toml');
+      expect(codexRuntime).toMatch(/^# RUNTIME-MATERIALIZED reviewer/mu);
+      expect(codexRuntime).not.toMatch(/^<!-- RUNTIME-MATERIALIZED reviewer/mu);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

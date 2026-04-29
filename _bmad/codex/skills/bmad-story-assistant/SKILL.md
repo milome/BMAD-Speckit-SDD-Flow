@@ -1,1868 +1,1750 @@
-﻿---
+---
 name: bmad-story-assistant
 description: |
-  Codex CLI / OMC 鐗?BMAD Story Assistant 閫傞厤鍏ュ彛銆?  浠?Cursor bmad-story-assistant 涓鸿涔夊熀绾匡紝瀹屾暣缂栨帓 Story 鍒涘缓 鈫?瀹¤ 鈫?Dev Story 鈫?瀹炴柦鍚庡璁?鈫?澶辫触鍥炵幆锛?  骞舵帴鍏ヤ粨搴撳唴宸插疄鐜扮殑澶?agent銆乭ooks銆佺姸鎬佹満銆乭andoff銆佽瘎鍒嗗啓鍏ヤ笌 commit gate 鏈哄埗銆?---
+  BMAD Story 助手：按 Epic/Story 编号执行完整的 Create Story → 审计 → Dev Story → 实施后审计 工作流。
+  阶段零：在新项目/worktree 自动检测并补丁 party-mode 展示名优化（若 _bmad 存在且未优化）。
+  使用 subagent 执行任务；审计步骤优先通过 Codex worker dispatch 调度 code-reviewer（.codex/agents/ 或 .codex/agents/），失败则回退 Codex worker adapter general-purpose。
+  遵循 ralph-method、TDD 红绿灯、speckit-workflow 约束。主 Agent 禁止直接修改生产代码。
+  **禁止因 Epic/Story 已存在即跳过 party-mode**：仅当用户明确说「已通过 party-mode 且审计通过」时方可跳过 Create Story；否则必须执行 Create Story。主 Agent 在进入 Codex party-mode 前必须先展示 `20 / 50 / 100` 强度选项、等待用户选择、完成发起前自检，并由宿主在 `SubagentStart` 注入 `Party Mode Session Bootstrap (JSON)`；Story 设计定稿默认 `final_solution_task_list_100`，普通分析默认 `decision_root_cause_50`。
+  适用场景：用户提供 Epic 编号与 Story 编号（如 4、1 表示 Story 4.1），需生成 Story 文档、通过审计、执行 Dev Story 并完成实施后审计。全程中文。
+---
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
-> Closeout 鏈鏀剁揣锛氭湰鏂囦欢涓€滃畬鎴?/ 閫氳繃 / 鍙繘鍏ヤ笅涓€闃舵鈥濅竴寰嬫寚 `runAuditorHost` 杩斿洖 `closeout approved`銆傚璁℃姤鍛?`PASS` 浠呰〃绀哄彲浠ヨ繘鍏?host close-out锛屽崟鐙殑 `PASS` 涓嶅緱瑙嗕负瀹屾垚銆佸噯鍏ユ垨鏀捐銆?
-> **缁熶竴 closeout 纭棬绂侊紙閫傜敤浜庢湰鎶€鑳藉叏閮ㄥ璁￠棴鐜級**锛?> - 涓?Agent 鍦ㄦ瘡涓樁娈电殑瀹屾暣 prompt 妯℃澘缁撳熬銆乺esume 鎸囦护缁撳熬銆佷互鍙婂璁￠€氳繃鍚庣殑 host 鏀跺彛鎸囦护缁撳熬锛屽繀椤诲師鏍疯拷鍔犱笅鍒楀浐瀹氬彞锛涘悓鏃跺繀椤昏嚜鍔ㄥ啓鍏ヨ瘎鍒嗘暟鎹笌鏈妧鑳借姹傜殑浜ゆ帴鏂囨。锛坔andoff / state / progress / 瀹¤鏀跺彛鏂囨。锛夛紝绂佹鐣欑粰鐢ㄦ埛鎵嬪姩瀹屾垚銆?> - 鏈墽琛?`runAuditorHost` 骞堕獙璇佽瘎鍒嗗啓鍏ユ垚鍔熷墠锛岀姝㈢粨鏉熴€佺姝氦杩樼敤鎴锋墜鍔ㄦ搷浣溿€?> - 鍙湁 `runAuditorHost` 杩斿洖 `closeout approved` 鎵嶇畻瀹屾垚锛涘叾浣欓兘绠楁湭瀹屾垚銆?> - 绂佹缁欌€滀綘鍙互鎵嬪姩鍋氫笅涓€姝モ€濈殑寤鸿锛岄櫎闈炵敤鎴锋槑纭姹傘€?> - `runAuditorHost` 澶辫触鏃跺繀椤昏嚜鍔ㄩ噸璇曪紝骞跺湪姣忔閲嶈瘯鏃惰褰曞け璐ュ師鍥犱笌淇鍔ㄤ綔锛涙湭鎴愬姛鍓嶄笉寰楅€€鍑哄綋鍓嶉棴鐜€?> - 鏈€缁堝洖澶嶅繀椤绘樉寮忓寘鍚互涓?4 琛岋紝缂轰竴瑙嗕负鏈畬鎴愶細
->   - `runAuditorHost 璋冪敤鍙傛暟`
->   - `runAuditorHost 杩斿洖缁撴灉`
->   - `璇勫垎鍐欏叆缁撴灉锛堟垚鍔?澶辫触鐮侊級`
->   - `closeout 鐘舵€侊紙approved/鏈猘pproved锛塦
+> Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
 
-# Claude Adapter: BMAD Story Assistant
+> **统一 closeout 硬门禁（适用于本技能全部审计闭环）**：
+> - 主 Agent 在每个阶段的完整 prompt 模板结尾、resume 指令结尾、以及审计通过后的 host 收口指令结尾，必须原样追加下列固定句；同时必须自动写入评分数据与本技能要求的交接文档（handoff / state / progress / 审计收口文档），禁止留给用户手动完成。
+> - 未执行 `runAuditorHost` 并验证评分写入成功前，禁止结束、禁止交还用户手动操作。
+> - 只有 `runAuditorHost` 返回 `closeout approved` 才算完成；其余都算未完成。
+> - 禁止给“你可以手动做下一步”的建议，除非用户明确要求。
+> - `runAuditorHost` 失败时必须自动重试，并在每次重试时记录失败原因与修复动作；未成功前不得退出当前闭环。
+> - 最终回复必须显式包含以下 4 行，缺一视为未完成：
+>   - `runAuditorHost 调用参数`
+>   - `runAuditorHost 返回结果`
+>   - `评分写入结果（成功/失败码）`
+>   - `closeout 状态（approved/未approved）`
 
-> **Party-mode source of truth**锛歚{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`銆傛墍鏈?party-mode 鐨?rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 璇箟閮戒互璇ユ枃浠朵负鍑嗭紱鏈?skill 鍙畾涔?Story 鍦烘櫙浣曟椂杩涘叆 party-mode锛屼笉寰楃淮鎶ょ浜屽 gate 璇箟銆?
-## Party-Mode 涓?Agent 缂栨帓绾︽潫锛圵ave 4锛?
-- 杩涘叆 party-mode 鍓嶏紝涓?Agent 蹇呴』鍏堝悜鐢ㄦ埛灞曠ず `20 / 50 / 100` 涓夋。寮哄害锛屽苟鎸夎姹傜被鍨嬬粰鍑烘帹鑽愭。浣嶃€?- 鏅€?RCA / 鏂规鍒嗘瀽鎺ㄨ崘 `decision_root_cause_50`锛汣reate Story / Story 璁捐瀹氱 / 鏈€缁堜换鍔″垪琛ㄧ瓑楂樼疆淇℃渶缁堜骇鐗╂帹鑽?`final_solution_task_list_100`銆?- 涓?Agent 蹇呴』绛夊緟鐢ㄦ埛鏄庣‘鍥炲 `20` / `50` / `100` 鍚庯紝鎵嶈兘姝ｅ紡鍙戣捣 `@"party-mode-facilitator (agent)"`锛涚姝㈡妸鎺ㄨ崘妗ｄ綅琛ㄨ堪鎴愬凡鏇跨敤鎴峰畬鎴愮殑閫夋嫨銆?- `quick_probe_20` 浠呯敤浜?probe-only锛涜嫢鐢ㄦ埛褰撳墠閫夋嫨 `quick_probe_20` 鎴?`decision_root_cause_50`锛屽嵈鍙堟槑纭姹傞珮缃俊鏈€缁堜骇鐗╋紝涓?Agent 蹇呴』鎷掔粷褰撳墠妗ｄ綅骞惰姹傚崌绾у埌 `final_solution_task_list_100`銆?- 姣?20 杞繀椤诲悜鐢ㄦ埛灞曠ず涓€娆?checkpoint锛沜heckpoint 灞曠ず鍚庨粯璁よ嚜鍔ㄧ户缁笅涓€鎵癸紝涓嶈姹傞€愭壒浜哄伐纭銆?- `S / F / C` 鍙湪 checkpoint 绐楀彛鍐呮湁鏁堬紱`checkpoint_window_ms = 15000`銆?- `C` 鐨勮涔夊浐瀹氫负鈥滅珛鍗崇户缁笅涓€鎵光€濓紝浼氱珛鍗冲叧闂綋鍓?checkpoint 绐楀彛骞惰烦杩囧墿浣欑瓑寰呮椂闂淬€?- 鑻ョ敤鎴峰湪 checkpoint 绐楀彛鍐呰緭鍏ユ櫘閫氫笟鍔¤ˉ鍏呮枃鏈紝鑰屼笉鏄?`S / F / C`锛屼富 Agent 蹇呴』绔嬪嵆鍋滄鑷姩缁х画锛屽彇娑堢獥鍙ｈ鏃讹紝骞舵寜鏂拌ˉ鍏呰繘鍏ヤ笅涓€鎵瑰墠鐨勯噸鏂扮紪鎺掋€?- checkpoint 绐楀彛澶栫殑 `S / F / C` 蹇呴』鏄惧紡鎷掔粷锛屼笉缂撳瓨銆佷笉褰撲綔鏅€氫笟鍔¤緭鍏ャ€?- heartbeat 鐢?facilitator 璐熻矗锛涗富 Agent 鍙礋璐ｆ壒娆＄粨鏉熷悗鐨?checkpoint 灞曠ず锛屼笉璐熻矗鍗曟壒鎵ц涓殑瀹炴椂 heartbeat 鎻掑叆銆?
-## Purpose
+# BMAD Story 助手
 
-鏈?skill 鏄?Cursor `bmad-story-assistant` 鍦?Codex CLI / OMC 鐜涓嬬殑缁熶竴閫傞厤鍏ュ彛銆?
 ## Main Agent Orchestration Surface
 
-鍦?interactive main-agent 妯″紡涓嬶紝涓?Agent 鍦ㄥ彂璧枫€佺户缁垨鏀跺彛 `story` 閾捐矾鍓嶏紝蹇呴』浼樺厛璇诲彇锛?
+在 interactive main-agent 模式下，主 Agent 在发起、继续或收口 `story` 链路前，必须优先读取：
+
 ```bash
 npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action inspect
 ```
 
-濡傞渶鐢熸垚姝ｅ紡娲惧彂璁″垝锛屽垯璇诲彇锛?
+如需生成正式派发计划，则读取：
+
 ```bash
 npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action dispatch-plan
 ```
 
-`mainAgentNextAction / mainAgentReady` 浠嶄繚鐣欎负 handoff compatibility 瀛楁锛屼絾涓嶅啀鏄敮涓€ runtime truth銆?
-## Uninterrupted Execution Contract
+`mainAgentNextAction / mainAgentReady` 仍保留为 handoff compatibility 字段，但不再是唯一 runtime truth。
 
-- Story implementation must continue through all remaining scoped User Stories/tasks until the blocker or post-audit boundary is reached.
-- If post-audit fails, the main Agent must resume the same execution chain instead of stopping for manual continuation.
-- post-audit is ready only after `runAuditorHost` confirms closeout and the ralph-method tracking files remain aligned.
+> **Party-mode source of truth（Codex）**：`{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。Codex 分支的 party-mode rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 只定义 Story 场景何时进入 party-mode，不得维护第二套 gate 语义。
 
-鐩爣涓嶆槸绠€鍗曞鍒?Cursor skill锛岃€屾槸锛?
-1. **缁ф壙 Cursor 宸查獙璇佺殑娴佺▼璇箟**
-2. **鍦?Codex no-hooks 杩愯鏃朵腑閫夋嫨姝ｇ‘鎵ц鍣ㄥ苟瀹氫箟 fallback**
-3. **鎺ュ叆浠撳簱涓凡寮€鍙戝畬鎴愮殑鐘舵€佹満銆乭ooks銆乭andoff銆佸璁￠棴鐜€佽瘎鍒嗗啓鍏ヤ笌 commit gate**
-4. **纭繚鍦?Codex CLI 涓兘瀹屾暣銆佽繛缁€佹纭湴鎵ц Story 鍒涘缓 鈫?寮€鍙?鈫?瀹¤闂幆杩唬绛夊叏娴佺▼**
+### Party-Mode 主 Agent 编排约束（Codex）
 
----
+- 进入 Codex party-mode 前，主 Agent 必须先向用户展示 `20 / 50 / 100` 三档强度，并按请求类型推断默认值。
+- 普通 RCA / 方案分析推荐 `decision_root_cause_50`；Create Story / Story 设计定稿 / 最终任务列表等高置信最终产物推荐 `final_solution_task_list_100`。**注意：推荐档位不等于用户已选档位；未收到用户明确回复前，主 Agent 不得把推荐档位写成“已选择”。**
+- 当主 Agent 展示档位选项时，该条消息必须停在提问处，等待下一条用户回复。**禁止**同一条助手消息里同时出现「请确认选择哪个档位」与「或按推荐档位开始」「现在启动 party-mode-facilitator」之类自动发起表述。
+- `quick_probe_20` 仅用于 probe-only；若用户当前选择 `quick_probe_20` 或 `decision_root_cause_50`，却又明确要求高置信最终产物，主 Agent 必须拒绝当前档位并要求升级到 `final_solution_task_list_100`。
+- 用户选择档位后，主 Agent **必须**完成发起前自检清单并输出 `【自检完成】...可以发起。`
+- Session Bootstrap JSON 由宿主在 `SubagentStart` 注入，主 Agent 不得省略该执行链。
+- Codex 分支中不做中途暂停，也不在 `20 / 40 / ...` 轮次交还主 Agent；子代理一旦启动，必须在同一会话内连续运行到用户选择的总轮次。
+- 若 party-mode 子代理在 `22/50`、`10/50` 等中途轮次提前结束，主 Agent **不得**自行续写讨论或从 Round 1 重新开始总结。Codex 现已支持 `subagentStop` hook，宿主会在 `subagentStop` 自动触发 party-mode 返回收口与摘要刷新；但返回后必须**先读取** `_bmad-output/party-mode/runtime/current-session.json`，并以该文件作为唯一检查入口；**禁止**按修改时间猜测“最新 `pm-*` 会话”。检查顺序固定为：① `validation_status`、`status`、`session_key`、`target_rounds_total`；② **优先读取** `visible_output_summary` 与 `visible_fragment_record_present`，先看 `observed_visible_round_count`、`first_visible_round`、`last_visible_round`、`progress_current_round`、`progress_target_round`、`final_gate_present`、`final_gate_profile`、`final_gate_total_rounds`、`excerpt`；③ **仅在需要深挖时**再读取 `session_log_path`、`snapshot_path`、`audit_verdict_path`、`visible_output_capture_path`。**禁止**在读取 `visible_output_summary` 之前先翻 `session log` 或 `tool-result.md`。若 `validation_status != PASS` 或未达到用户选择的总轮次，必须沿用同一轮次与同一 gate profile 立即重发 facilitator。
+- 在当前 Codex IDE 中，party-mode-facilitator 允许通过 `general-purpose-compatible` 执行路径承载；`.codex/agents/party-mode-facilitator.md` 仍是 canonical prompt/source asset，宿主必须在 `SubagentStart` 注入 `Party Mode Session Bootstrap (JSON)`。
 
-## 鏍稿績楠屾敹鏍囧噯
+## 快速决策指引
 
-Claude 鐗?`bmad-story-assistant` 蹇呴』婊¤冻锛?
-- 鑳戒綔涓?Codex CLI 鐨?*缁熶竴鍏ュ彛**锛岃繛缁紪鎺?Story 鍒涘缓銆侀樁娈靛璁°€丏ev Story 瀹炴柦銆佸疄鏂藉悗瀹¤涓庡け璐ュ洖鐜?- 鍚勯樁娈佃烦杞€佹墽琛屽櫒閫夋嫨銆乫allback銆佺姸鎬佽惤鐩樸€佽瘎鍒嗗啓鍏ヤ笌瀹¤闂幆鍧囦笌 Cursor 宸查獙璇佹祦绋嬭涔変竴鑷?- 瀹屾暣鎺ュ叆鏈粨鏂板鐨勶細
-  - 澶?agent
-  - hooks
-  - 鐘舵€佹満
-  - handoff
-  - 瀹¤鎵ц浣?  - runAuditorHost
-  - commit gate
-- 涓嶅緱灏?Codex Canonical Base銆丆laude Runtime Adapter銆丷epo Add-ons 娣峰啓涓烘潵婧愪笉鏄庣殑閲嶅啓鐗?prompt
+### 五层架构概览
+```
+Layer 1: 产品定义层 (Product Brief → 复杂度评估 → PRD → Architecture)
+Layer 2: Epic/Story规划层 (create-epics-and-stories)
+Layer 3: Story开发层 (Create Story → Party-Mode → Story文档)
+Layer 4: 技术实现层 (嵌套speckit-workflow: specify→plan→GAPS→tasks→TDD)
+Layer 5: 收尾层 (批量Push + PR自动生成 + 强制人工审核 + 发布)
+```
 
----
+### 何时使用本技能
+- 需要从Product Brief开始完整的产品开发流程
+- 需要PRD/Architecture的深度生成和Party-Mode讨论
+- 需要进行Epic/Story的规划和拆分
+- 需要在Story级别进行方案选择和设计决策
 
-## Party-Mode Agent Mention Contract
+### 何时使用speckit-workflow
+- 已明确技术实现方案，只需要详细执行
+- 已有Story文档，需要转换为技术规格和代码
+- 不需要产品层面的讨论和决策
 
-浠庢湰鐗堟湰寮€濮嬶紝Claude 鍒嗘敮涓殑 party-mode 涓嶅啀浠?`general-purpose` 浣滀负涓昏矾寰勬弿杩般€?
-- **涓昏矾寰?*锛歚.codex/agents/party-mode-facilitator.md`
-- **鍞竴璋冪敤 contract**锛歚@"party-mode-facilitator (agent)"`
-- **閫傜敤鑼冨洿**锛氬嚒闇€瑕佸瑙掕壊杈╄銆佹柟妗堟敹鏁涖€佹灦鏋?鑼冨洿鍙栬垗銆丼tory 璁捐鍒嗘婢勬竻鐨?party-mode 鍦烘櫙
-- **鍏煎 fallback**锛氫粎褰?dedicated facilitator agent 鍦ㄥ綋鍓嶈繍琛屾椂涓嶅彲鐢ㄦ椂锛屾墠鍏佽閫€鍥?`subagent_type: general-purpose` 骞跺唴鑱斿畬鏁?facilitator contract
-- **闈?party-mode 鎵ц浣?*锛歚bmad-story-create`銆乣auditor-*`銆乣speckit-implement` 绛夊叾浠栨墽琛屼綋浠嶅彲缁х画浣跨敤 `general-purpose`
-
-鍥犳锛宍general-purpose` 鍦?Claude Story 娴佺▼涓粛鐒跺瓨鍦紝浣?*涓嶅啀鏄?party-mode 鐨勬帹鑽愪富璺緞**銆?
----
-
-## Codex Canonical Base
-
-浠ヤ笅鍐呭缁ф壙鑷?Cursor `bmad-story-assistant`锛屽睘浜庝笟鍔¤涔夊熀绾匡紝Claude 鐗堜笉寰楁搮鑷噸鍐欏叾鎰忓浘锛?
-### 闃舵妯″瀷
-1. Create Story
-2. Story 瀹¤
-3. Dev Story / `STORY-A3-DEV`
-4. 瀹炴柦鍚庡璁?/ `STORY-A4-POSTAUDIT`
-5. 澶辫触鍥炵幆涓庨噸鏂板璁?
-### 鍏抽敭妯℃澘鍩虹嚎
-- `STORY-A3-DEV`
-- `STORY-A4-POSTAUDIT`
-- Story 鏂囨。闃舵瀹¤瑕佹眰
-- 鍓嶇疆妫€鏌ャ€乀DD 绾㈢豢鐏€乺alph-method銆乸ost-audit 鐨勫熀绾跨害鏉?
-### 蹇呴』淇濈暀鐨勫熀绾胯涔?- 涓?Agent 涓嶅緱缁曡繃鍏抽敭闃舵
-- 鍓嶇疆鏂囨。蹇呴』宸查€氳繃瀹¤
-- Dev Story 涓嶅緱鍦ㄥ疄鏂藉凡缁撴潫鍚庨噸澶嶈Е鍙?- 瀹炴柦瀹屾垚鍚庡繀椤诲彂璧?post-audit
-- TDD 椤哄簭涓庤褰曡姹備笉鍙烦杩?- 瀛愪换鍔¤繑鍥炲悗 cleanup / post-audit 鐨勯『搴忓繀椤讳繚鎸?
-### 涓嶅睘浜?Codex Canonical Base 鐨勫唴瀹?浠ヤ笅鍐呭绂佹鍐欏叆 Cursor Base锛屽簲鏀惧叆 Runtime Adapter 鎴?Repo Add-ons锛?- Claude / OMC 鐨勫叿浣?agent 鍚嶇О
-- `Codex-native reviewer:code-reviewer`
-- `code-review` skill
-- `auditor-spec` / `auditor-plan` / `auditor-tasks` / `auditor-implement`
-- 浠撳簱鏈湴 scoring銆佺姝㈣瘝銆佹壒鍒ゅ璁″憳鏍煎紡銆乻tate 鏇存柊缁嗚妭
+### 两者关系
+本技能包含speckit-workflow作为Layer 4的嵌套流程。
+当执行到"阶段三：Dev Story实施"时，会自动触发speckit-workflow的完整流程。
 
 ---
 
-## Codex no-hooks Runtime Adapter
+本 skill 定义 **Create Story → 审计 → Dev Story → 实施后审计** 的完整工作流。Epic 编号与 Story 编号由用户或上下文提供，作为 skill 的输入参数。
 
-鏈妭瀹氫箟 Cursor 璇箟鍦?Codex CLI / OMC 涓殑鍏蜂綋鎵ц鏂瑰紡銆?
-### Stage Routing Map
+## 强制约束
 
-| Cursor 闃舵 | Claude 鍏ュ彛 / 鎵ц浣?| 璇存槑 |
+- **主 Agent 禁止直接生成 Story 文档**：阶段一 Create Story 产出的 Story 文档必须由 Codex worker adapter 子代理产出；主 Agent 不得以「已有需求文档」「Epic 已明确」等为由跳过子代理并自行撰写 Story 文档。
+- **主 Agent 禁止直接修改生产代码**：实施必须通过 Codex worker adapter 子代理执行。
+- **禁止因 Epic/Story 已存在即跳过 party-mode**：仅当用户**明确**说明「Story 已通过 party-mode 且审计通过，跳过 Create Story」或符合例外场景时，方可跳过阶段一、二；否则，即使 Epic/Story 文档已存在（可能由简单 bmad 命令生成、未经 party-mode 深入讨论），**必须**执行 Create Story。凡涉及代码实现的 Story，**必须**进入 party-mode 至少 100 轮辩论（例外场景见阶段一 §1.0）。
+
+---
+
+## 输入参数
+
+| 参数 | 说明 | 示例 |
 |------|------|------|
-| Create Story | Claude 鐗?`bmad-story-assistant` adapter skill 鈫?story/create 鎵ц浣?| 褰撳墠浠ヨ璁′綅淇濈暀锛屽悗缁簲鏄犲皠鍒?`.codex/agents/...` |
-| Story 瀹¤ | Story 瀹¤鎵ц浣?/ reviewer | 褰撳墠浠ヨ璁′綅淇濈暀锛屽悗缁簲鏍囧噯鍖?|
-| `STORY-A3-DEV` | `.codex/agents/speckit-implement.md` | 宸蹭笁灞傚寲锛屽苟瀵归綈 `STORY-A3-DEV` |
-| `STORY-A4-POSTAUDIT` | `.codex/agents/layers/bmad-layer4-speckit-implement.md` + `auditor-implement` | 宸蹭笁灞傚寲锛宎uditor 浼樺厛 |
-| spec 瀹¤ | `auditor-spec` | primary |
-| plan 瀹¤ | `auditor-plan` | primary |
-| tasks 瀹¤ | `auditor-tasks` | primary |
-| implement 瀹¤ | `auditor-implement` | primary |
-| bugfix 瀹¤ | `auditor-bugfix` | primary |
+| `epic_num` | Epic 编号 | 4 |
+| `story_num` | Story 子编号（如 1 表示 Story 4.1） | 1 |
 
-### Primary Executors
-
-- Story / Layer 4 / implement/post-audit 鐨?primary executor 浼樺厛浣跨敤浠撳簱鑷畾涔夋墽琛屼綋
-- 瀹¤闃舵浼樺厛浣跨敤锛?  - `auditor-spec`
-  - `auditor-plan`
-  - `auditor-tasks`
-  - `auditor-implement`
-  - `auditor-bugfix`
-- Dev Story 瀹炴柦浼樺厛浣跨敤锛?  - `.codex/agents/speckit-implement.md`
-
-### Optional Reuse
-
-濡傝繍琛屾椂鍙敤锛屽彲澶嶇敤锛?- `Codex-native reviewer:code-reviewer`
-- `code-review` skill
-- OMC executor / reviewer 鍨?agent
-- 娴嬭瘯 / lint 涓撶敤鎵ц鍣?
-### Fallback Strategy
-
-缁熶竴鍥為€€绛栫暐濡備笅锛?
-1. 浼樺厛浣跨敤浠撳簱瀹氫箟鐨?primary executor
-2. 鑻?primary executor 鍦ㄥ綋鍓嶇幆澧冧笉鍙洿鎺ヨ皟鐢紝鍒欏洖閫€鍒?Codex reviewer / executor
-3. 鑻?Codex reviewer / executor 涓嶅彲鐢紝鍒欏洖閫€鍒?`code-review` skill 鎴栫瓑浠疯兘鍔?4. 鑻ヤ笂杩版墽琛屼綋鍧囦笉鍙敤锛屽垯鐢变富 Agent 鐩存帴鎵ц鍚屼竴浠戒笁灞傜粨鏋?prompt
-5. fallback 浠呭厑璁告敼鍙樻墽琛屽櫒锛屼笉寰楁敼鍙橈細
-   - Codex Canonical Base
-   - Repo Add-ons
-   - 杈撳嚭鏍煎紡
-   - 璇勫垎鍧?   - required_fixes 缁撴瀯
-   - handoff / state 鏇存柊瑙勫垯
-
-### Runtime Contracts
-
-鎵€鏈夐樁娈靛繀椤婚伒瀹堜互涓嬭繍琛屾椂濂戠害锛?
-- 蹇呴』缁存姢锛?  - `.codex/state/bmad-progress.yaml`
-  - `.codex/state/stories/*-progress.yaml`锛堝閫傜敤锛?- 蹇呴』缁存姢 handoff 淇℃伅锛?  - `artifactDocPath`
-  - `reportPath`
-  - `iteration_count`
-  - `next_action`
-- 瀹¤閫氳繃鍚庡繀椤昏Е鍙戯細
-  - `run-auditor-host.ts`
-  - 瀹¤閫氳繃鏍囪
-  - 鐘舵€佹洿鏂?- 瀹¤閫氳繃鍚庛€佺湡姝ｈ繘鍏?Dev Story 鍓嶏紝蹇呴』鎵ц缁熶竴 `implementation-readiness` gate 鏂█锛涗粎 `decision=pass` 鍙繘鍏ュ疄鐜?- 瀹炴柦瀹屾垚浣?post-audit 鏈墽琛屾椂锛岀姝㈤噸鏂拌繘鍏ュ紑鍙戦樁娈?- 濡?hooks 鍙敤锛屼粎鍏佽 hooks 鍋氾細
-  - 瑙傛祴
-  - checkpoint
-  - 鎭㈠鎻愮ず
-  - 闈炰笟鍔￠棬鎺?- hooks 涓嶅緱鏇夸唬锛?  - 闃舵鏀捐
-  - commit 鏀捐
-  - 涓荤姸鎬佹満鍐崇瓥
+Story 完整标识为 `{epic_num}-{story_num}`，例如 Epic 4、Story 4.1 → `4-1`。用户可直接给出（如「4、1」），或从 sprint-status 等文档解析。
 
 ---
 
-## Repo Add-ons
+## § 禁止词表（Story 文档）
 
-浠ヤ笅鍐呭涓轰粨搴撻檮鍔犲寮猴紝涓嶅睘浜?Cursor 鍘熷璇箟銆?
-### 瀹¤澧炲己
-- 绂佹璇嶆鏌?- 鎵瑰垽瀹¤鍛樿緭鍑烘牸寮?- `鏈疆鏃犳柊 gap / 鏈疆瀛樺湪 gap`
-- strict convergence锛堝 implement 杩炵画 3 杞棤 gap锛?
-### 璇勫垎涓庡瓨鍌ㄥ寮?- `run-auditor-host.ts`
-- `iteration_count`
-- `iterationReportPaths`
-- 鍙В鏋愯瘎鍒嗗潡瑕佹眰
+以下词不得出现在 Story 文档的产出中。阶段一产出、阶段二审计须引用本表；审计时若 Story 文档中存在任一词，结论为未通过。
 
-### 鐘舵€佷笌闂ㄦ帶澧炲己
-- `.codex/state/bmad-progress.yaml`
-- `.codex/state/stories/*.yaml`
-- commit gate
-- handoff 鍗忚
+| 禁止词/短语 | 替代方向 |
+|-------------|----------|
+| 可选、可考虑、可以考虑 | 明确写「采用方案 A」，并简述理由。 |
+| 后续、后续迭代、待后续 | 若不做且功能在 Epic 范围内，须写明由哪个 Story 负责；禁止无归属排除。若不在产品范围，须引用 Epic/PRD 依据。若做则写清本阶段完成范围。 |
+| 先实现、后续扩展、或后续扩展 | 本 Story 实现 X；Y 由 Story A.B 负责（A.B 须存在且 scope 含 Y，且表述须含 Y 的具体描述）。 |
+| 待定、酌情、视情况 | 改为明确条件与对应动作（如「若 X 则 Y」）。 |
+| 技术债、先这样后续再改 | 不在 Story 文档中留技术债；单独开 Story 或不在本次范围。 |
+| 既有问题可排除、与本次无关、历史问题暂不处理、环境问题可忽略 | 在验收/审计结论、任务完成说明中出现且**无正式排除记录**时禁止；若有正式排除记录，可在记录中作客观描述但须带客观依据（如 issue 号、复现步骤）。 |
 
-### 閰嶇疆绯荤粺闆嗘垚锛堝璁＄矑搴︼級
+### Story 范围表述示例（推迟闭环）
 
-鏈?skill 鏀寔閫氳繃閰嶇疆绯荤粺鎺у埗瀹¤绮掑害锛屽疄鐜?`full`/`story`/`epic` 涓夌妯″紡銆?
-#### 閰嶇疆鍔犺浇
+**正确示例**：
+> 本 Story 实现 use_adaptive_threshold=0 路径。use_adaptive_threshold 非零时的分支逻辑由 Story 5.6 负责。（审计时须验证 Story 5.6 存在且 scope 含该描述）
 
-涓?Agent 蹇呴』鍦?skill 鍚姩鏃跺姞杞介厤缃細
+**错误示例**：
+> 本 Story 先实现 use_adaptive_threshold=0 路径，或后续扩展。（禁止词：先实现、或后续扩展）
+> 本 Story 实现 0 路径；其余由 Story 5.6 负责。（「其余」过于模糊，审计员无法验证）
 
-```typescript
-import { loadConfig, shouldAudit, shouldValidate } from './scripts/bmad-config';
-
-const config = loadConfig();
-```
-
-#### 閰嶇疆鏉ユ簮锛堟寜浼樺厛绾э級
-
-1. **CLI 鍙傛暟**: `--audit-granularity=story` | `--continue`
-2. **鐜鍙橀噺**: `BMAD_AUDIT_GRANULARITY=story` | `BMAD_AUTO_CONTINUE=true`
-3. **椤圭洰閰嶇疆**: `_bmad/_config/bmad-story-config.yaml`
-4. **榛樿鍊?*: `audit-granularity=full`, `auto_continue=false`
-
-#### 鏉′欢瀹¤璺敱
-
-姣忎釜 Layer 4 闃舵锛坰pecify/plan/gaps/tasks/implement锛夊繀椤绘牴鎹厤缃喅瀹氭墽琛岃矾寰勶細
-
-```typescript
-// 鏉′欢瀹¤閫昏緫妯℃澘
-const stageConfig = getStageConfig('specify'); // 鎴栧綋鍓嶉樁娈?
-if (stageConfig.audit) {
-  // 璺緞 1: 瀹屾暣瀹¤锛堥粯璁?full 妯″紡锛?  await executeFullAudit({
-    strictness: stageConfig.strictness, // 'standard' | 'strict'
-    subagentTool: 'Agent',
-    subagentType: 'general-purpose'
-  });
-} else if (stageConfig.validation) {
-  // 璺緞 2: 鍩虹楠岃瘉锛坰tory 妯″紡鐨勪腑闂撮樁娈碉級
-  await executeBasicValidation({
-    level: stageConfig.validation,      // 'basic' | 'test_only'
-    checks: stageConfig.checks          // 楠岃瘉椤瑰垪琛?  });
-  // 楠岃瘉閫氳繃鍚庣洿鎺ユ爣璁伴樁娈靛畬鎴愶紝涓嶇敓鎴?AUDIT_鎶ュ憡
-  await markStageAsPassedWithoutAudit();
-} else {
-  // 璺緞 3: 浠呯敓鎴愭枃妗ｏ紙epic 妯″紡鐨?story 闃舵锛?  await markStageAsPassedWithoutAudit();
-}
-```
-
-#### 鍚勬ā寮忚涓?
-| 妯″紡 | Story鍒涘缓 | 涓棿闃舵 | 瀹炴柦鍚?| Epic瀹¤ |
-|------|-----------|----------|--------|----------|
-| **full** | 瀹¤ | 鍏ㄩ儴瀹¤ | 瀹¤ | - |
-| **story** | 瀹¤ | 鍩虹楠岃瘉 | 瀹¤ | - |
-| **epic** | 涓嶅璁?| 涓嶅璁?| 涓嶅璁?| 瀹¤ |
-
-#### 楠岃瘉绾у埆瀹氫箟
-
-**basic 楠岃瘉**锛堢敤浜?story 妯″紡涓棿闃舵锛夛細
-- 鏂囨。瀛樺湪鎬ф鏌?- 鍩烘湰缁撴瀯妫€鏌?- 蹇呴渶绔犺妭妫€鏌?
-**test_only 楠岃瘉**锛堢敤浜?story 妯″紡 implement 闃舵锛夛細
-- 鎵€鏈夋祴璇曢€氳繃
-- Lint 鏃犻敊璇?- 鏂囨。瀛樺湪
-
-#### 鎵ц浣撹皟鐢ㄦ柟寮?
-浣跨敤閰嶇疆绯荤粺鍚庯紝鎵ц浣撹皟鐢ㄦā鏉挎洿鏂颁负锛?
-```yaml
-tool: Agent
-subagent_type: general-purpose  # 濮嬬粓浣跨敤 general-purpose锛岄€氳繃 prompt 浼犻€掗厤缃?description: "Execute Stage with config-aware routing"
-prompt: |
-  銆愬繀璇汇€戞湰 prompt 鍖呭惈閰嶇疆涓婁笅鏂囥€?
-  **閰嶇疆涓婁笅鏂?*:
-  - audit_mode: "story"  # full | story | epic
-  - stage: "specify"     # 褰撳墠闃舵
-  - should_audit: false  # 鏍规嵁閰嶇疆璁＄畻
-  - validation: "basic"  # 褰?audit: false 鏃剁殑楠岃瘉绾у埆
-
-  **鎵ц閫昏緫**:
-  1. 璇诲彇閰嶇疆骞惰В鏋?should_audit
-  2. 濡傛灉 should_audit: true 鈫?鎵ц瀹屾暣瀹¤娴佺▼锛圫tep 4 瀹¤寰幆锛?  3. 濡傛灉 should_audit: false:
-     - 鑻?validation: "basic" 鈫?鎵ц鍩虹楠岃瘉
-     - 鑻?validation: "test_only" 鈫?鎵ц娴嬭瘯楠岃瘉
-     - 鑻?validation: null 鈫?鐩存帴鏍囪闃舵閫氳繃
-  4. 鏍规嵁缁撴灉鏇存柊鐘舵€佹枃浠?```
-
-### 杩愯鏃舵不鐞嗗寮?- ralph-method 杩借釜鏂囦欢
-- progress / prd 蹇呭～
-- hooks / state / runtime adapter 琛屼负
+**使用说明**：阶段一 Create Story 产出要求须引用本表或贴出上表精简版；阶段二 Story 文档审计须写「若 Story 文档存在本表任一词，结论为未通过」。阶段四实施后审计须写「若验收/审计结论中出现上表「失败排除」相关禁止词且无对应正式排除记录，结论为未通过」。
 
 ---
 
-## Stage-by-Stage Orchestration
+## 正式排除失败用例的规定（与 bmad-bug-assistant 保持一致）
 
-### Stage 1: Create Story
+**原则**：任何在本次验收/回归中出现的失败用例，均须在本轮内**修复**或**列入正式排除清单**并接受审计；不得以任何未记录、未审计的理由忽略失败。
 
-Claude 绔?Stage 1 Create Story 鎵ц浣擄紝璐熻矗鍦?BMAD Story 娴佺▼涓敓鎴?Story 鏂囨。锛屽苟灏嗘祦绋嬫帹杩涘埌 Story 瀹¤闃舵銆?
-#### Purpose
+**禁止自动生成**：审计子代理、实施子代理**禁止**自动创建或更新 EXCLUDED_TESTS_*.md 或类似排除清单文件。
 
-鏈樁娈垫槸 Cursor `bmad-story-assistant` 涓?Create Story 闃舵鍦?Codex CLI / OMC 鐜涓嬬殑鎵ц閫傞厤鍣ㄣ€?
-鐩爣锛?- 缁ф壙 Cursor Create Story 闃舵鐨勪笟鍔¤涔?- 鍦?Claude 杩愯鏃朵笅瀹氫箟娓呮櫚鐨勬墽琛屽櫒銆佽緭鍏ャ€佺姸鎬佹洿鏂颁笌 handoff
-- 涓哄悗缁?Stage 2 Story 瀹¤鎻愪緵鏍囧噯浜х墿
+**须先询问用户**：当验收/回归存在失败用例且拟列入正式排除时，主 Agent 或子代理必须**先向用户询问**「是否批准将以下用例列入正式排除清单」，用户明确批准后，方可创建或更新排除清单；若用户拒绝，必须进入修复流程，不得创建排除清单。
 
-#### Required Inputs
+**排除记录路径（Story 用）**：`_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/EXCLUDED_TESTS_{epic_num}-{story_num}.md`。必备字段与可接受/不可接受判定与 bmad-bug-assistant「正式排除失败用例的规定」一致（用例 ID、排除理由、客观依据、本 Story 标识、审计结论）。
 
-- `epic_num`
-- `story_num`
-- `epic_slug`
-- `story_slug`
-- `project_root`
-- 濡傚瓨鍦細`sprint-status.yaml`銆佺浉鍏抽渶姹傛枃妗ｃ€佸墠缃?Epic/Story 瑙勫垝鏂囨。
+---
 
-#### Codex Canonical Base
+## § 何时可跳过 party-mode 与 code-review 补偿规则
 
-- 涓绘枃鏈熀绾挎潵婧愶細Cursor `bmad-story-assistant` skill 鐨?Stage 1 Create Story锛坄STORY-A1-CREATE`锛夋ā鏉裤€?- 涓?Agent 鍦ㄥ彂璧?Create Story 瀛愪换鍔?*涔嬪墠**蹇呴』鍏堟墽琛?sprint-status 鍓嶇疆妫€鏌ワ細
-  1. 褰撶敤鎴烽€氳繃 `epic_num/story_num`锛堟垨銆?銆?銆嶇瓑褰㈠紡锛夋寚瀹?Story锛屾垨浠?sprint-status 瑙ｆ瀽涓嬩竴 Story 鏃讹紝蹇呴』鍏堟鏌?sprint-status 鏄惁瀛樺湪銆?  2. 鍙皟鐢?`scripts/check-sprint-ready.ps1 -Json` 鎴?`_bmad/speckit/scripts/powershell/check-sprint-ready.ps1 -Json`锛堣嫢椤圭洰鏍规湁 `scripts/` 鍒欎紭鍏堬級锛屽苟瑙ｆ瀽 `SPRINT_READY`銆?  3. 鑻?sprint-status 涓嶅瓨鍦紝蹇呴』鎻愮ず鐢ㄦ埛銆屸殸锔?sprint-status.yaml 涓嶅瓨鍦紝寤鸿鍏堣繍琛?sprint-planning銆嶏紝瑕佹眰鐢ㄦ埛鏄惧紡纭銆屽凡鐭ョ粫杩囷紝缁х画銆嶆垨鍏堟墽琛?sprint-planning锛涙湭纭鍓嶄笉寰楀彂璧?Create Story 瀛愪换鍔°€?  4. 鑻?sprint-status 瀛樺湪锛屽彲闄勫甫銆宻print-status 宸茬‘璁ゃ€嶆爣蹇椾簬瀛愪换鍔?prompt锛岀畝鍖栧瓙浠诲姟閫昏緫銆?  5. 浠呭綋鐢ㄦ埛鏄庣‘銆屽凡閫氳繃 party-mode 涓斿璁￠€氳繃锛岃烦杩?Create Story銆嶅苟浠呰姹?Dev Story 鏃讹紝鏂瑰彲璞佸厤鏈樁娈点€?- 閫氳繃瀛愪换鍔¤皟鐢?Create Story 宸ヤ綔娴佹椂锛屼富 Agent 椤诲皢 **瀹屾暣妯℃澘** `STORY-A1-CREATE` 鏁存澶嶅埗骞舵浛鎹㈠崰浣嶇锛?*绂佹**姒傛嫭鎴栫缉鍐欐ā鏉裤€?- 璺宠繃鍒ゆ柇锛氫粎褰撶敤鎴?*鏄庣‘**璇村嚭銆屽凡閫氳繃 party-mode 涓斿璁￠€氳繃銆嶃€岃烦杩?Create Story銆嶆椂锛屼富 Agent 鏂瑰彲璺宠繃闃舵涓€銆佷簩銆傝嫢鐢ㄦ埛浠呮彁渚?Epic/Story 缂栧彿鎴栬銆孲tory 宸插瓨鍦ㄣ€嶈€屾湭鏄庣‘涓婅堪琛ㄨ堪锛?*蹇呴』**鎵ц Create Story銆?- Create Story 妯℃澘瑕佹眰锛?  - 閫氳繃瀛愪换鍔℃墽琛?`/bmad-bmm-create-story` 绛変环宸ヤ綔娴侊紝鐢熸垚 Epic `{epic_num}`銆丼tory `{epic_num}-{story_num}` 鐨?Story 鏂囨。銆?  - 杈撳嚭 Story 鏂囨。鍒?`_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/{epic_num}-{story_num}-<slug>.md`銆?  - 鍒涘缓 Story 鏂囨。鏃跺繀椤讳娇鐢ㄦ槑纭弿杩帮紝绂佹浣跨敤 Story 绂佹璇嶈〃涓殑璇嶏紙鍙€夈€佸彲鑰冭檻銆佸悗缁€佸厛瀹炵幇銆佸悗缁墿灞曘€佸緟瀹氥€侀厡鎯呫€佽鎯呭喌銆佹妧鏈€猴級銆?  - 褰撳姛鑳戒笉鍦ㄦ湰 Story 鑼冨洿浣嗗睘鏈?Epic 鏃讹紝椤诲啓鏄庛€岀敱 Story X.Y 璐熻矗銆嶅強浠诲姟鍏蜂綋鎻忚堪锛涚‘淇?X.Y 瀛樺湪涓?scope 鍚鍔熻兘銆傜姝㈡ā绯婃帹杩熻〃杩般€?  - **party-mode 寮哄埗**锛氭棤璁?Epic/Story 鏂囨。鏄惁宸插瓨鍦紝鍙娑夊強浠ヤ笅浠讳竴鎯呭舰锛?*蹇呴』**杩涘叆 party-mode 杩涜澶氳鑹茶京璁恒€備富 Agent 鍦ㄥ彂璧峰墠蹇呴』鍏堝睍绀?`20 / 50 / 100` 寮哄害閫夐」锛涜嫢瑕佸舰鎴?Story 璁捐瀹氱鎴栨渶缁堜换鍔″垪琛紝鎺ㄨ崘 `final_solution_task_list_100`锛?00 杞級锛涗粎鏅€氬垎鏋愭帹鑽?`decision_root_cause_50`锛?0 杞級锛沗quick_probe_20` 涓嶅緱鐢ㄤ簬瀹氱銆傚繀椤荤瓑寰呯敤鎴锋槑纭洖澶?`20` / `50` / `100` 鍚庯紝鎵嶈兘姝ｅ紡鍙戣捣 `@"party-mode-facilitator (agent)"`銆?  - 鍏ㄧ▼蹇呴』浣跨敤涓枃銆?- Create Story 浜у嚭鍚庯紝Story 鏂囨。閫氬父淇濆瓨鍦細`_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/{epic_num}-{story_num}-<slug>.md`銆?
-#### Subtask Template (STORY-A1-CREATE)
+**说明**：本节描述跳过 party-mode 后的补偿机制。是否可跳过的判断以「阶段一 §1.0 Party-Mode 决策检查」为准。
 
-鍙戣捣鍒涘缓 Story 瀛愪换鍔℃椂锛屽繀椤讳娇鐢ㄤ互涓嬪畬鏁存ā鏉匡紙鎵€鏈夊崰浣嶇闇€棰勫厛鏇挎崲锛夛細
+### 何时可跳过 party-mode（Create Story）
 
-**妯℃澘 ID**锛歋TORY-A1-CREATE
+**唯一允许条件**：用户**明确**说明「Story 已通过 party-mode 且审计通过，跳过 Create Story」时，可跳过阶段一、二。
+
+**禁止**：仅因 Epic/Story 文档已存在即跳过；可能由简单 bmad 命令生成、未经 party-mode 深入讨论的文档，**必须**执行 Create Story。
+
+### party-mode 跳过时 code-review 补偿规则
+
+当 party-mode 被跳过时，阶段二（Story 文档审计）需**补偿**缺失的深度，否则质量门控不足。
+
+| 情形 | 阶段二严格度 | 理由 |
+|------|--------------|------|
+| 用户明确说「跳过 party-mode」 | **strict** | 用户主动跳过，需补偿深度 |
+| 无 party-mode 产出物（story 目录下无 `DEBATE_共识_*`、`party-mode 收敛纪要` 等） | **strict** | 补偿缺失的 party-mode 深度；连续 3 轮无 gap + 批判审计员 >50% |
+| 有 party-mode 产出物存在 | **standard** | 已有深度，验证即可；单次 + 批判审计员 |
+| 用户显式要求 strict | **strict** | 以用户为准 |
+
+**产出物检测**：主 Agent 在阶段二审计前，检查 story 目录是否存在 party-mode 产出物；若有且用户未强制 strict，则用 standard；若无或用户要求 strict，则用 strict。
+
+---
+
+## 使用示例
+
+### 示例 1：完整流程（Epic 4、Story 4.1）
+
+用户说：「使用 bmad story 助手，生成 Epic 4、Story 4.1，并执行完整流程。」
+
+**sprint-status 要求**：若 sprint-status.yaml 不存在，须先运行 sprint-planning 或显式确认 bypass；否则不得发起 Create Story 子任务。
+
+主 Agent 执行顺序：
+0. （阶段零-前置）若 _bmad 存在且 party-mode 未做展示名优化，自动执行补丁
+1. 发起 Create Story 子任务（epic_num=4, story_num=1）
+2. 产出 `_bmad-output/implementation-artifacts/epic-4-*/story-1-<slug>/4-1-<slug>.md` 后，发起 Story 文档审计
+3. 审计通过后，**必须先执行统一 Implementation Entry Gate 断言**（`implementation-readiness`；建议命令：`node scripts/assert-implementation-entry.ts --cwd {project-root}` 或等价 `bmad-speckit assert-implementation-entry`）。仅当结果为 `decision=pass` 时，方可发起 Dev Story 实施子任务；若结果为 `block` 或 `reroute`，主 Agent 不得进入阶段三
+4. 实施完成后，**必须**发起实施后审计（audit-prompts.md §5）（本步骤为必须，非可选）
+5. 审计通过即流程结束
+
+### 示例 2：仅 Create Story + 审计（Epic 3、Story 2）
+
+用户说：「帮我创建 Story 3.2 并做审计。」
+
+主 Agent 执行：
+1. Codex worker adapter 发起 Create Story（epic_num=3, story_num=2）
+2. 产出 `3-2-<title>.md` 后发起审计子任务
+3. 若未通过则修改文档并再次审计，直至通过
+
+### 示例 3：从 sprint-status 解析后执行
+
+用户说：「按 sprint-status 里的下一个 Story 执行 bmad story 助手。」
+
+**sprint-status 要求**：此示例仅在 sprint-status.yaml 存在时可行；若不存在，须先运行 sprint-planning 或显式确认 bypass。
+
+主 Agent 先读取 `_bmad-output/implementation-artifacts/sprint-status.yaml`，解析出下一待办 Story（如 `4-1`），再按示例 1 的流程执行，将 epic_num=4、story_num=1 代入各阶段的 prompt。
+
+### 示例 4：仅 Dev Story（用户明确确认已通过 party-mode 且审计）
+
+用户说：「Story 4-1 文档已存在，**已通过 party-mode 且审计通过**，请执行 Dev Story。」
+
+主 Agent 方可跳过阶段一、二，直接发起 Dev Story 实施子任务，传入：
+- Story 文档路径：`_bmad-output/implementation-artifacts/epic-4-*/story-1-*/*.md`
+- TASKS 文档路径：（如 `_bmad-output/implementation-artifacts/epic-4-*/story-1-*/TASKS_4-1-*.md`）
+- 项目根目录
+
+实施完成后按阶段四发起实施后审计。
+
+**注意**：若用户仅说「Story 已存在」而未明确「已通过 party-mode 且审计通过」，主 Agent **不得**跳过 Create Story；须执行阶段一（含 party-mode 100 轮辩论，若有方案选择或设计决策），再审计、再 Dev Story。
+
+---
+
+## 阶段零（前置）：展示名文件检查与自动优化
+
+**说明**：本阶段为技术补丁，在 Layer 1 产品定义层之前执行。与下文的「阶段零：Layer 1产品定义层」区分：前者为展示名优化，后者为产品定义。
+
+**触发时机**：用户在本项目或 worktree 首次使用本 skill 时，或用户明确要求「检查/优化展示名」时。
+
+**前提**：项目内已安装 `_bmad`（`{project-root}/_bmad/` 存在）。
+
+**检查逻辑**：
+1. 读取 `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`（以 canonical step-02 作为 party-mode 展示名优化与 gate 语义状态的代表文件；若 step-02 已优化，后续 mirror 通过同步脚本生成）
+2. 若 step-02 中**同时不含**字符串 `必须使用 **展示名` **与** `展示名 displayName`，则判定未优化
+
+**执行动作**：对以下三个文件应用 `search_replace` 修改。若某文件不存在则跳过。若 `old_string` 与当前文件内容不完全一致，先读取文件再根据实际格式微调 `old_string` 后重试；仍失败则跳过并提示。
+
+### 补丁 1：workflow.md
+
+路径：`{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md`
 
 ```yaml
+old_string: "[Load agent roster and display 2-3 most diverse agents as examples]"
+new_string: |
+  [Load agent roster and display 2-3 most diverse agents as examples. 介绍时必须使用展示名（displayName），与 `_bmad/_config/agent-manifest.csv` 保持一致。示例：Winston 架构师、Amelia 开发、Mary 分析师、John 产品经理、BMad Master、Quinn 测试、Paige 技术写作、Sally UX、Barry Quick Flow、Bond Agent 构建、Morgan Module 构建、Wendy Workflow 构建、Victor 创新策略、Dr. Quinn 问题解决、Maya 设计思维、Carson 头脑风暴、Sophia 故事讲述、Caravaggio 演示、Murat 测试架构、批判性审计员。]
+```
+
+### 补丁 2：step-01-agent-loading.md
+
+路径：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-01-agent-loading.md`
+
+修改 A：
+```yaml
+old_string: "- **displayName** (agent's persona name for conversations)"
+new_string: "- **displayName** (agent's persona name for conversations；中文语境下使用 展示名，如 Mary 分析师、Winston 架构师)"
+```
+
+修改 B：
+```yaml
+old_string: "[Display 3-4 diverse agents to showcase variety]:
+
+- [Icon Emoji] **[Agent Name]** ([Title]): [Brief role description]
+- [Icon Emoji] **[Agent Name]** ([Title]): [Brief role description]
+- [Icon Emoji] **[Agent Name]** ([Title]): [Brief role description]"
+new_string: "[Display 3-4 diverse agents to showcase variety；使用 展示名 标注，如 Winston 架构师、Amelia 开发、Mary 分析师]:
+
+- [Icon Emoji] **[展示名 displayName]** ([Title]): [Brief role description]
+- [Icon Emoji] **[展示名 displayName]** ([Title]): [Brief role description]
+- [Icon Emoji] **[展示名 displayName]** ([Title]): [Brief role description]"
+```
+
+### 补丁 3：step-02-discussion-orchestration.md
+
+路径：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
+
+修改 A（Response Structure）：
+```yaml
+old_string: "**Response Structure:**
+[For each selected agent]:
+
+\"[Icon Emoji] **[Agent Name]**: [Authentic in-character response]\""
+new_string: "**Response Structure:**
+[For each selected agent]:
+- 必须使用 **展示名（displayName）** 标注发言角色，与 `_bmad/_config/agent-manifest.csv` 保持一致。
+- 展示名示例：BMad Master、Mary 分析师、John 产品经理、Winston 架构师、Amelia 开发、Bob Scrum Master、Quinn 测试、Paige 技术写作、Sally UX、Barry Quick Flow、Bond Agent 构建、Morgan Module 构建、Wendy Workflow 构建、Victor 创新策略、Dr. Quinn 问题解决、Maya 设计思维、Carson 头脑风暴、Sophia 故事讲述、Caravaggio 演示、Murat 测试架构、批判性审计员。
+
+\"[Icon Emoji] **[展示名 displayName]**: [Authentic in-character response]\""
+```
+
+修改 B（Cross-Talk）：
+```yaml
+old_string: "- Agents can reference each other by name: \"As [Another Agent] mentioned...\""
+new_string: "- Agents can reference each other by 展示名: \"As [Another Agent 展示名] mentioned...\"（如「正如 Winston 架构师 所说…」）"
+```
+
+修改 C（Question Handling）：
+```yaml
+old_string: "- Clearly highlight: **[Agent Name] asks: [Their question]**"
+new_string: "- Clearly highlight: **[展示名 displayName] asks: [Their question]**（如 **Amelia 开发 asks: …**）"
+```
+
+修改 D（Moderation）：
+```yaml
+old_string: "- If discussion becomes circular, have bmad-master summarize and redirect"
+new_string: "- If discussion becomes circular, have BMad Master 总结并引导转向"
+```
+
+**执行顺序**：阶段零在阶段一之前执行；若检测到未优化则先完成补丁，再继续后续阶段。若 `_bmad` 不存在，跳过阶段零并提示用户安装 BMAD。
+
+**新 worktree 检测与 _bmad 定制迁移提示**：
+- 若检测到当前为新 worktree（例如 cwd 为与项目根平级的 worktree 目录如 `{repo名}-{branch}`，或 `_bmad` 为全新安装），且 `_bmad-output/bmad-customization-backups/` 存在备份，则提示用户：
+  > 检测到当前为新 worktree。若需恢复 _bmad 定制，可运行：`python {SKILLS_ROOT}/bmad-customization-backup/scripts/apply_bmad_backup.py --backup-path "{最新备份路径}" --project-root "{当前项目根}"`。最新备份路径为 `_bmad-output/bmad-customization-backups/` 下按时间戳排序的最新目录。
+- 若无备份，不提示。
+
+---
+
+### 产出路径约定
+
+**pre-speckit 产出（按 branch 子目录）**：
+| 产出 | 路径 |
+|------|------|
+| Epic/Story 规划 | `_bmad-output/planning-artifacts/{branch}/epics.md` |
+| 就绪报告 | `_bmad-output/planning-artifacts/{branch}/implementation-readiness-report-{date}.md` |
+| prd（planning 级） | `_bmad-output/planning-artifacts/{branch}/prd.{ref}.json` |
+| 架构设计 | `_bmad-output/planning-artifacts/{branch}/architecture.{ref}.md` 或 `ARCH_*.md` |
+
+**branch 解析**：`git rev-parse --abbrev-ref HEAD`；若为 `HEAD` 则 `detached-{short-sha}`；`/` 替换为 `-`。
+**归档**：`--archive` 时先复制到 `_archive/{branch}/{date}-{seq}/` 再写入。
+
+**post-speckit 产出（入 story 子目录）**：
+| 产出 | 路径 |
+|------|------|
+| Story 文档 | `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/{epic}-{story}-{slug}.md` |
+| TASKS | `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/TASKS_{epic}-{story}-{slug}.md` |
+| prd、progress | `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/prd.{ref}.json`、`progress.{ref}.txt` |
+| DEBATE 共识 | `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/DEBATE_共识_{slug}_{date}.md` |
+| 跨 Story DEBATE | `_bmad-output/implementation-artifacts/_shared/DEBATE_共识_{slug}_{date}.md` |
+
+**子目录创建**：Create Story 产出时，若 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/` 不存在，须先创建。子目录由 create-new-feature.ps1 -ModeBmad 在创建 spec 时同步创建，或由 bmad-story-assistant 在首次写入 Story 时创建。
+
+---
+
+## 阶段零：Layer 1产品定义层
+
+**说明**：与上文的「阶段零（前置）：展示名文件检查与自动优化」区分：本阶段为产品定义层，包含 Product Brief、复杂度评估、PRD、Architecture。
+
+在用户明确要创建新Epic或重大功能时，首先执行产品定义层。
+
+### Step 1: Product Brief
+创建或读取Product Brief文档，包含：
+- 产品概述和目标
+- 目标用户群体
+- 核心价值和差异化
+- 成功指标
+
+### Step 2: 复杂度评估
+填写三维复杂度评估问卷：
+```yaml
+业务复杂度 (1-5分):
+  - 领域知识: [熟悉(1分)/部分新(3分)/全新(5分)]
+  - 利益相关方数量: [≤2(1分)/3-5(3分)/>5(5分)]
+  - 合规要求: [无(1分)/一般(3分)/严格(5分)]
+
+技术复杂度 (1-5分):
+  - 技术栈: [现有(1分)/部分新(3分)/全新(5分)]
+  - 架构挑战: [无(1分)/中等(3分)/高并发大数据(5分)]
+  - 集成难度: [独立(1分)/少量依赖(3分)/复杂网络(5分)]
+
+影响范围 (1-5分):
+  - [单个Story(1分)/单个模块(3分)/跨模块(4分)/全系统(5分)]
+```
+
+**聚合公式（GAP-019 修复；GAP-071 修复）**：每维度取子项**最高分**（默认保守）或**平均分**（四舍五入）；**选择条件**：默认取最高分；若用户显式选择「乐观模式」则取平均分；总分 = 业务 + 技术 + 影响，范围 3~15。
+
+### Step 3: PRD生成
+根据总分决定PRD生成方式（GAP-004 修复：边界值归属规则）：
+
+| 总分 | PRD生成方式 |
+|------|-------------|
+| ≤6分（含 6 分） | 直接生成PRD |
+| 7-10分（含 7、10 分） | 50轮Party-Mode后生成 |
+| 11-15分（含 11、15 分） | 80轮Party-Mode后生成 |
+| 15分（满分） | 80轮Party-Mode + 外部专家Review；（**GAP-081 修复**：总分范围 3~15，无 >15；满分 15 时触发）；（GAP-038 修复：专家来源可为项目内资深架构师或外部顾问，输出格式为「Review 意见 + 通过/有条件通过/不通过」） |
+
+PRD必须包含：
+- 详细需求列表（带ID）
+- 验收标准
+- 优先级排序
+- 依赖关系
+
+### Step 4: Architecture生成（如需）
+当总分≥7分时，需要生成Architecture文档：
+- 技术架构图
+- 模块划分和接口定义
+- 技术选型及Tradeoff分析（使用ADR格式）
+- 安全和性能考量
+
+Architecture Party-Mode角色（GAP-020 修复：与 Plan Party-Mode 差异说明）：
+- 系统架构师、性能工程师、安全架构师、运维工程师、成本分析师、批判审计员
+- Plan 阶段偏技术方案，Architecture 阶段偏架构决策，角色可复用；若项目有专门架构师可扩展
+
+### 阶段零产出
+- Product Brief文档
+- 复杂度评估结果
+- PRD文档（含需求追溯表）
+- Architecture文档（如需要）
+
+---
+
+## Layer 2 Epic/Story规划层
+
+在执行Create Story之前，先进行Epic/Story规划。
+
+### create-epics-and-stories
+
+基于PRD和Architecture文档，执行以下步骤：
+
+1. **Epic定义**
+   - 确定Epic边界和范围
+   - 命名规范：`feature-{domain}-{capability}`
+   - 估算Epic总体工作量
+
+2. **Story拆分**
+   - 按功能模块拆分Story
+   - 每个Story可独立交付
+   - 命名规范：`{epic_num}.{story_num} {description}`
+
+3. **依赖关系分析**
+   - 识别Story间的依赖关系
+   - 生成依赖图（文本或图形）
+   - 确定执行顺序
+
+4. **粗粒度估算**
+   - 每个Story的初步工作量估算
+   - 识别高风险Story
+   - 标记需要Spike的Story
+
+### 产出物
+
+1. **Epic列表**
+   ```markdown
+   | Epic ID | 名称 | 描述 | 预估工时 | 优先级 |
+   |---------|------|------|---------|--------|
+   | 4 | feature-metrics-cache | 指标缓存优化 | 80h | P0 |
+   ```
+
+2. **Story列表（粗粒度）**
+   ```markdown
+   | Story ID | 所属Epic | 描述 | 依赖 | 预估工时 | 风险 |
+   |----------|---------|------|------|---------|------|
+   | 4.1 | 4 | 基础缓存类实现 | 无 | 8h | 低 |
+   | 4.2 | 4 | TTL机制实现 | 4.1 | 12h | 中 |
+   ```
+
+3. **依赖图**
+   ```
+   Story 4.1 ─┐
+              ├─→ Story 4.3 ─→ Story 4.5
+   Story 4.2 ─┘
+   ```
+
+### 进入阶段一的条件
+- Epic和Story列表已完成
+- 依赖关系已明确
+- 已获得用户确认
+
+---
+
+## 主 Agent 传递提示词规则（必守）
+
+- **使用完整模板、整段复制、禁止概括**：发起各阶段子任务时，必须将该阶段完整 prompt 模板整段复制到 prompt 中并替换占位符，禁止用概括语替代（如「请按 story-assistant 阶段二审计执行」「请参考技能阶段二」「审计要求见上文」）。
+- **错误示例**（禁止）：「请按 story-assistant 阶段二审计执行」「请参考技能阶段二」「审计要求见上文」。
+- **正确示例**：prompt 含该阶段完整模板全文、占位符已替换、发起前已输出自检结果。
+- **占位符清单**：
+
+| 阶段 | 占位符 | 含义 | 示例值 | 未替换后果 |
+|------|--------|------|--------|------------|
+| 阶段一 | epic_num, story_num, project-root | Epic 编号、Story 子编号、项目根目录 | 4, 1, d:/Dev/my-project | 子任务无法定位产出路径 |
+| 阶段二 | Story 文档路径, project-root | 已产出 Story 文件路径、项目根 | _bmad-output/.../4-1-xxx.md | 审计对象错误或缺失 |
+| 阶段三 | epic_num, story_num, epic_slug, slug, project-root | Epic/Story 编号、epic_slug（从 epics.md 推导）、story slug、项目根 | 11, 1, speckit-template-offline, template-fetch, d:/Dev/... | 子代理创建 specs 时用无 slug 路径 |
+| 阶段四 | 同上及审计依据路径 | tasks/plan/GAPS 路径 | 由主 Agent 传入 | 审计依据缺失 |
+
+- **自检强制**：未完成该阶段发起前自检清单并输出自检结果，不得发起；禁止先发起后补自检。
+- **自检结果格式示例**：「【自检完成】阶段 X：已整段复制模板 [模板 ID]；占位符 [已替换/列出]；[其他必选项]。可以发起。」
+
+### 主Agent发起子任务前自检清单
+
+在发起任何子任务（Codex worker adapter或Codex worker dispatch）前，必须完成以下检查：
+
+**sprint-status 检查**（阶段一 Create Story 发起前必须执行，TASKS_sprint-planning-gate T4）：
+- [ ] 当用户通过 epic_num/story_num 或从 sprint-status 解析指定 Story 时，主 Agent 须在发起 Create Story 子任务**之前**检查 sprint-status 是否存在。
+- [ ] 可调用 `{project-root}/scripts/check-sprint-ready.ps1 -Json`（若存在）或等价逻辑；若 `SPRINT_READY=false` 且用户未显式确认「已知绕过，继续」，不得发起 Create Story 子任务。
+- [ ] 自检结果中须包含「sprint-status 已确认存在」或「用户已确认 bypass」或等价声明。
+
+**文档存在性扫描**（阶段三 Dev Story 发起前必须执行）：
+- [ ] 在发起阶段三 Dev Story 子任务前，必须执行：
+  `python _bmad/speckit/scripts/python/check_speckit_prerequisites.py --epic {epic} --story {story} --project-root {project_root}`
+  且退出码为 0；否则不得发起。
+- [ ] 自检结果中须包含「已运行前置检查脚本且通过」或等价声明（可与 IMP-003 自检报告示例对齐：spec/plan/GAPS/tasks 四类文档存在 + 审计通过）。
+
+**准备阶段检查**:
+- [ ] 已读取相关skill文件获取最新内容
+- [ ] 已确认当前处于正确的阶段（Layer 1/2/3/4/5）
+- [ ] 已准备好所有必要的上下文信息
+- [ ] 已确认前一阶段已完成并通过审计
+
+**子任务配置检查**:
+- [ ] subagent_type设置正确（general-purpose/explore/shell）
+- [ ] prompt包含完整的背景信息和具体要求
+- [ ] 引用了正确的audit-prompts.md章节（如适用）
+- [ ] 设置了合理的超时时间
+
+**审计相关检查**:
+- [ ] 已确认code-reviewer可用性或准备了回退方案
+- [ ] 已准备好audit-prompts.md对应章节内容
+- [ ] 已明确审计通过标准（A/B/C/D级）
+- [ ] 已规划审计失败后的处理流程
+
+**禁止事项自查**:
+- [ ] 没有直接修改生产代码（必须通过子任务）
+- [ ] 没有跳过必要的审计步骤
+- [ ] 没有使用模糊的指令（如"考虑一下"、"看看能不能"）
+- [ ] 没有遗漏需求映射或追溯
+
+**自检确认**：
+以上所有检查项完成后，在回复中明确声明：
+"自检完成，所有检查项已通过，现在发起子任务。"
+
+---
+
+## 阶段一：Create Story
+
+### 1.0 发起前自检（强制，新增）
+
+主 Agent 在发起 Create Story 子任务前，**必须**执行以下检查并输出结果：
+
+**Party-Mode 决策检查**：
+
+| 检查项 | 结果选项 | 规则 |
+|--------|----------|------|
+| Story 是否涉及代码实现？ | 是/否 | 参见下方「代码实现定义」 |
+| Party-Mode 决策 | 进入/跳过 | 默认进入，仅例外场景可跳过 |
+| 跳过理由（若跳过） | 例外场景编号 | 必须匹配下方例外场景 |
+| 阶段二严格度预期 | strict/standard | 跳过 party-mode → strict；完成 party-mode → standard |
+
+**代码实现定义**：
+- 新增或修改函数、类、模块、组件
+- 新增或修改业务逻辑、算法、数据处理
+- 新增或修改 API、接口、数据库操作
+
+**例外场景（仅限以下情况可跳过 party-mode）**：
+1. 用户明确说「跳过 party-mode」或「已通过 party-mode 且审计通过」
+2. Story 为纯文档更新，无代码实现
+3. Story 为纯配置修改，无业务逻辑变更
+
+**不算「跳过 party-mode」的表述示例**：
+- 「简单实现」「快速实现」「小改动」
+- 「简单的代码实现」「简单的功能」
+
+**算「跳过 party-mode」的表述示例**：
+- 「跳过 party-mode」
+- 「已通过 party-mode 且审计通过」
+
+**自检输出格式**：
+```
+【自检完成】阶段一 Create Story
+- Story 是否涉及代码实现：[是/否]
+- Party-Mode 决策：[进入 party-mode / 跳过 party-mode]
+- 跳过理由（若跳过）：[例外场景编号或"不适用"]
+- 阶段二严格度预期：[strict/standard]
+```
+
+**禁止**：
+- 未输出自检结果不得发起子任务
+- 不得以「功能简单」「用户说简单」等理由跳过 party-mode
+
+### 1.1 sprint-status 前置检查（TASKS_sprint-planning-gate T4）
+
+**执行时机**：主 Agent 在发起 Create Story 子任务**之前**必须执行。
+
+**检查动作**：
+1. 当用户通过 epic_num/story_num（或「4、1」等形式）指定 Story 时，或从 sprint-status 解析下一 Story（示例 3）时，主 Agent **必须先**检查 sprint-status 是否存在。
+2. 可调用 `scripts/check-sprint-ready.ps1 -Json` 或 `_bmad/speckit/scripts/powershell/check-sprint-ready.ps1 -Json`（若项目根有 scripts/ 则优先）。解析输出的 `SPRINT_READY`。
+3. **若 sprint-status 不存在**：输出「⚠️ sprint-status.yaml 不存在，建议先运行 sprint-planning。」要求用户显式确认「已知绕过，继续」或先执行 sprint-planning；未确认前不得发起 Create Story 子任务。
+4. **若 sprint-status 存在**：可附带「sprint-status 已确认」标志于子任务 prompt，简化子任务逻辑。
+5. **豁免**：若用户明确「已通过 party-mode 且审计通过，跳过 Create Story」并仅请求 Dev Story，可按现有逻辑执行（Dev Story 由 dev-story 流程内部门控）。
+
+通过 **Codex worker adapter** 调用 subagent，执行 `/bmad-bmm-create-story` 等价工作流，生成 Epic `{epic_num}`、Story `{epic_num}-{story_num}` 文档。主 Agent 须将模板 **STORY-A1-CREATE**（阶段一 Create Story prompt）整段复制并替换占位符。
+
+**跳过判断**：仅当用户**明确**说出「已通过 party-mode 且审计通过」「跳过 Create Story」时，主 Agent 方可跳过阶段一、二。若用户仅提供 Epic/Story 编号或说「Story 已存在」而未明确上述表述，**必须**执行 Create Story（主 Agent 先展示 `20 / 50 / 100` 强度选项；若涉及设计定稿则默认 `final_solution_task_list_100`）。
+
+### 1.1 发起子任务
+
+**模板 ID**：STORY-A1-CREATE。**模板边界**：自代码块内首行至「…全程必须使用中文。」止。
+
+```yaml
+tool: Codex worker adapter
+subagent_type: general-purpose
 description: "Create Story {epic_num}-{story_num} via BMAD create-story workflow"
 prompt: |
-  銆愬繀璇汇€戞湰 prompt 椤讳负瀹屾暣妯℃澘涓旀墍鏈夊崰浣嶇宸叉浛鎹€傝嫢鍙戠幇鏄庢樉缂哄け鎴栨湭鏇挎崲鐨勫崰浣嶇锛岃鍕挎墽琛岋紝骞跺洖澶嶏細璇蜂富 Agent 灏嗘湰 skill 涓樁娈典竴 Create Story prompt 妯℃澘锛圛D STORY-A1-CREATE锛夋暣娈靛鍒跺苟鏇挎崲鍗犱綅绗﹀悗閲嶆柊鍙戣捣銆?
-  璇锋墽琛?BMAD Create Story 宸ヤ綔娴侊紝鐢熸垚 Epic {epic_num}銆丼tory {epic_num}-{story_num} 鐨?Story 鏂囨。銆?
-  **宸ヤ綔娴佹楠?*锛?  1. 鍔犺浇 {project-root}/_bmad/core/tasks/workflow.xml
-  2. 璇诲彇鍏跺叏閮ㄥ唴瀹?  3. 浠?{project-root}/_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml 浣滀负 workflow-config 鍙傛暟
-  4. 鎸夌収 workflow.xml 鐨勬寚绀烘墽琛?create-story 宸ヤ綔娴?  5. 杈撳嚭 Story 鏂囨。鍒?{project-root}/_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/{epic_num}-{story_num}-<slug>.md锛坰lug 浠?Story 鏍囬鎴栫敤鎴疯緭鍏ユ帹瀵硷級
+  【必读】本 prompt 须为完整模板且所有占位符已替换。若发现明显缺失或未替换的占位符，请勿执行，并回复：请主 Agent 将本 skill 中阶段一 Create Story prompt 模板（ID STORY-A1-CREATE）整段复制并替换占位符后重新发起。
 
-  **寮哄埗绾︽潫**锛?  - 鍒涘缓 story 鏂囨。蹇呴』浣跨敤鏄庣‘鎻忚堪锛岀姝娇鐢ㄦ湰 skill銆屄?绂佹璇嶈〃锛圫tory 鏂囨。锛夈€嶄腑鐨勮瘝锛堝彲閫夈€佸彲鑰冭檻銆佸悗缁€佸厛瀹炵幇銆佸悗缁墿灞曘€佸緟瀹氥€侀厡鎯呫€佽鎯呭喌銆佹妧鏈€猴級銆?  - 褰撳姛鑳戒笉鍦ㄦ湰 Story 鑼冨洿浣嗗睘鏈?Epic 鏃讹紝椤诲啓鏄庛€岀敱 Story X.Y 璐熻矗銆嶅強浠诲姟鍏蜂綋鎻忚堪锛涚‘淇?X.Y 瀛樺湪涓?scope 鍚鍔熻兘锛堣嫢 X.Y 涓嶅瓨鍦紝瀹¤灏嗗垽涓嶉€氳繃骞跺缓璁垱寤猴級銆傜姝€屽厛瀹炵幇 X锛屾垨鍚庣画鎵╁睍銆嶃€屽叾浣欑敱 X.Y 璐熻矗銆嶇瓑妯＄硦琛ㄨ堪銆?  - **party-mode 寮哄埗**锛氭棤璁?Epic/Story 鏂囨。鏄惁宸插瓨鍦紝鍙娑夊強浠ヤ笅浠讳竴鎯呭舰锛?*蹇呴』**杩涘叆 party-mode 杩涜澶氳鑹茶京璁猴細鈶?鏈夊涓疄鐜版柟妗堝彲閫夛紱鈶?瀛樺湪鏋舵瀯/璁捐鍐崇瓥鎴?trade-off锛涒憿 鏂规鎴栬寖鍥村瓨鍦ㄦ涔夋垨鏈喅鐐广€備富 Agent 鍦ㄥ彂璧峰墠蹇呴』鍏堝睍绀?`20 / 50 / 100` 寮哄害閫夐」锛涜嫢瑕佸舰鎴?Story 璁捐瀹氱鎴栨渶缁堜换鍔″垪琛紝鎺ㄨ崘 `final_solution_task_list_100`锛?00 杞級锛涗粎鏅€氬垎鏋愭帹鑽?`decision_root_cause_50`锛?0 杞級锛沗quick_probe_20` 涓嶅緱鐢ㄤ簬瀹氱銆?*绂佹**浠ャ€孍pic 宸插瓨鍦ㄣ€嶃€孲tory 宸茬敓鎴愩€嶄负鐢辫烦杩?party-mode銆傚繀椤荤瓑寰呯敤鎴锋槑纭洖澶?`20` / `50` / `100` 鍚庯紝鎵嶈兘姝ｅ紡鍙戣捣 `@"party-mode-facilitator (agent)"`銆傚叡璇嗗墠椤昏揪鏈€灏戣疆娆★紱鑻ユ湭杈炬垚鍗曚竴鏂规鎴栦粛鏈夋湭闂悎鐨?gaps/risks锛岀户缁京璁虹洿鑷虫弧瓒虫垨杈句笂闄愯疆娆°€傛瘡 20 杞繀椤诲睍绀轰竴娆?checkpoint锛宍S / F / C` 鍙湪 `checkpoint_window_ms = 15000` 鐨勭獥鍙ｅ唴鏈夋晥锛涘叾涓?`C` 琛ㄧず鈥滅珛鍗崇户缁笅涓€鎵光€濓紝鏅€氫笟鍔¤ˉ鍏呬細鎵撴柇鑷姩缁х画骞惰繘鍏ラ噸鏂扮紪鎺掋€?  - 鍏ㄧ▼蹇呴』浣跨敤涓枃銆?```
+  请执行 BMAD Create Story 工作流，生成 Epic {epic_num}、Story {epic_num}-{story_num} 的 Story 文档。
 
-**鍗犱綅绗︽浛鎹㈣鏄?*锛?- `{epic_num}` 鈫?瀹為檯 Epic 缂栧彿锛堝 `4`锛?- `{story_num}` 鈫?瀹為檯 Story 缂栧彿锛堝 `1`锛?- `{epic-slug}` 鈫?Epic 鐭悕锛堝 `cli-integration`锛?- `{slug}` 鈫?Story 鐭悕锛堜粠鏍囬鎴栬緭鍏ユ帹瀵硷級
-- `{project-root}` 鈫?椤圭洰鏍圭洰褰曠粷瀵硅矾寰?
-#### Stage 1 璋冪敤鍓?CLI 杈撳嚭瑕佹眰
+  **工作流步骤**：
+  1. 加载 {project-root}/_bmad/core/tasks/workflow.xml
+  2. 读取其全部内容
+  3. 以 {project-root}/_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml 作为 workflow-config 参数
+  4. 按照 workflow.xml 的指示执行 create-story 工作流
+  5. 输出 Story 文档到 {project-root}/_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/{epic_num}-{story_num}-<slug>.md（slug 从 Story 标题或用户输入推导）
 
-涓?Agent 蹇呴』鍦ㄨ皟鐢?Stage 1 鎵ц浣撲箣鍓嶏紝鍏堝湪褰撳墠 session CLI 杈撳嚭浠ヤ笅鏍煎紡鐨勮皟鐢ㄦ憳瑕侊細
-
+  **强制约束**：
+  - 创建 story 文档必须使用明确描述，禁止使用本 skill「§ 禁止词表（Story 文档）」中的词（可选、可考虑、后续、先实现、后续扩展、待定、酌情、视情况、技术债）。
+  - 当功能不在本 Story 范围但属本 Epic 时，须写明「由 Story X.Y 负责」及任务具体描述；确保 X.Y 存在且 scope 含该功能（若 X.Y 不存在，审计将判不通过并建议创建）。禁止「先实现 X，或后续扩展」「其余由 X.Y 负责」等模糊表述。
+  - **party-mode 强制**：无论 Epic/Story 文档是否已存在，只要涉及以下任一情形，**必须**进入 party-mode 进行多角色辩论：① 有多个实现方案可选；② 存在架构/设计决策或 trade-off；③ 方案或范围存在歧义或未决点。主 Agent 在发起前必须先展示 `20 / 50 / 100` 强度选项、等待用户选择、完成发起前自检，并由宿主在 `SubagentStart` 注入 `Party Mode Session Bootstrap (JSON)`。若要形成 Story 设计定稿或最终任务列表，默认 `final_solution_task_list_100`（100 轮）；仅普通分析可默认 `decision_root_cause_50`（50 轮）；`quick_probe_20` 不得用于定稿。**禁止**以「Epic 已存在」「Story 已生成」为由跳过 party-mode。Codex 分支中不做中途暂停或分批回传；子代理一旦启动，必须在同一会话内连续运行到用户选择的总轮次；若中途提前结束，必须沿用同一总轮次与同一 gate profile 立即重发 facilitator。
+  - 全程必须使用中文。
 ```
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?Stage 1: Create Story - 瀛愪唬鐞嗚皟鐢ㄦ憳瑕?鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?鎵ц浣? bmad-story-create
-subagent_type: general-purpose
-璋冪敤鏃堕棿: {timestamp}
 
-杈撳叆鍙傛暟:
-  鈥?epic_num: {瀹為檯鍊紏
-  鈥?story_num: {瀹為檯鍊紏
-  鈥?epic_slug: {瀹為檯鍊紏
-  鈥?story_slug: {瀹為檯鍊紏
-  鈥?project_root: {瀹為檯鍊紏
+将上述 `{epic_num}`、`{story_num}`、`{project-root}` 替换为实际值（project-root 为项目根目录绝对路径）。
 
-鎻愮ず璇嶇粨鏋勬憳瑕?
-  鈹溾攢 Codex Canonical Base
-  鈹?  鈹溾攢 sprint-status 鍓嶇疆妫€鏌ヨ姹?  鈹?  鈹溾攢 STORY-A1-CREATE 瀹屾暣妯℃澘
-  鈹?  鈹溾攢 party-mode 寮哄埗瑕佹眰锛?00杞京璁猴級
-  鈹?  鈹斺攢 Story 绂佹璇嶈〃绾︽潫
-  鈹溾攢 Codex no-hooks Runtime Adapter
-  鈹?  鈹溾攢 Primary Executor: bmad-story-create
-  鈹?  鈹溾攢 Fallback: 涓?Agent 鐩存帴鎵ц
-  鈹?  鈹斺攢 Runtime Contracts: 浜х墿璺緞銆佺姸鎬佹洿鏂?  鈹斺攢 Repo Add-ons
-      鈹溾攢 绂佹璇嶆鏌?      鈹溾攢 鏈粨鐩綍瑙勮寖
-      鈹斺攢 BMAD 鐘舵€佹満鍏煎
+### 1.2 文档产出路径
 
-棰勬湡浜х墿:
-  鈥?Story 鏂囨。: _bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{story_num}-{story_slug}/{epic_num}-{story_num}-{story_slug}.md
-  鈥?鐘舵€佹洿鏂? story_created
-  鈥?Handoff 鐩爣: bmad-story-audit
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?```
+Story 文档通常保存在：`_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/{epic_num}-{story_num}-<slug>.md`。
 
-杈撳嚭鍚庣珛鍗宠皟鐢?Agent 宸ュ叿銆?
-#### Codex no-hooks Runtime Adapter
-
-**鎵ц浣撹皟鐢ㄦ柟寮?*
-
-涓?Agent 浣跨敤鏈?skill 鏃讹紝蹇呴』鎸変互涓嬫柟寮忚皟鐢ㄦ墽琛屼綋锛?
-**閲嶈**锛欳odex CLI 鐨?party-mode 鏄惧紡璋冪敤绀轰緥缁熶竴涓?`@"party-mode-facilitator (agent)"`銆傚嚒 Stage 1 闇€瑕?party-mode 杈╄鏃讹紝蹇呴』浼樺厛浠ヨ agent mention 璋冪敤 `.codex/agents/party-mode-facilitator.md`锛涘彧鏈夐潪 specialized 鎵ц浣撴墠缁х画浣跨敤 `general-purpose`銆?
-1. **party-mode 杈╄妯″紡**锛堟帹鑽愶紝娑夊強鏂规鍒嗘/鏋舵瀯鍙栬垗/鑼冨洿婢勬竻鏃跺繀椤讳紭鍏堣蛋姝よ矾寰勶級锛?   涓?Agent 鐩存帴璇诲彇 `.codex/agents/party-mode-facilitator.md` 鐨勫畬鏁村唴瀹癸紝骞朵互鏄惧紡 agent mention 璋冪敤锛?   ```yaml
-   tool: Agent
-   description: "Run Stage 1 Party-Mode debate"
-   prompt: |
-     @"party-mode-facilitator (agent)"
-
-      ## 鐢ㄦ埛閫夋嫨
-      寮哄害: {涓?Agent 鎸夌敤鎴锋槑纭洖澶嶅～鍏ワ紝渚嬪 50 (decision_root_cause_50)}
-
-      [璇诲彇 .codex/agents/party-mode-facilitator.md 鐨勫畬鏁村唴瀹筣
-
-     璁:
-     - Story Create 鍓嶇殑鏂规杈╄ / 鑼冨洿婢勬竻 / 鏋舵瀯鍙栬垗
-     - 褰撳墠 Epic/Story 杈撳叆涓庣害鏉?     - 浜у嚭鍏辫瘑绾锛屼緵鍚庣画 bmad-story-create 浣跨敤
-   ```
-
-2. **鐩存帴鎵ц妯″紡**锛堥潪 party-mode锛屾垨宸叉嬁鍒?facilitator 鍏辫瘑鍚庣户缁敓鎴?Story 鏂囨。锛夛細
-   涓?Agent 鐩存帴璇诲彇鏈?skill 涓?Stage 1 鐨勫畬鏁?prompt锛堝惈涓婇潰鐨?Subtask Template锛夛紝鏁存澶嶅埗骞舵浛鎹㈠崰浣嶇鍚庯紝浣跨敤 `Agent` 宸ュ叿璋冪敤鎵ц浣擄細
-   ```yaml
-   tool: Agent
-   subagent_type: general-purpose
-   description: "Execute Stage 1 Create Story"
-   prompt: |
-     [鏈?skill Stage 1 鐨勫畬鏁村唴瀹癸紝鍚?Codex Canonical Base + Subtask Template锛屾墍鏈夊崰浣嶇宸叉浛鎹
-   ```
-
-3. **Agent 鏂囦欢寮曠敤妯″紡**锛?   鑻ヤ娇鐢?`.codex/agents/bmad-story-create.md` 浣滀负鎵ц浣擄紝蹇呴』鍏堝皢璇ユ枃浠跺唴瀹瑰畬鏁磋鍏ワ紝鐒跺悗浣滀负 `prompt` 浼犲叆銆傛绫婚潪 specialized 鎵ц浣撶殑 `subagent_type` 浠嶇劧鏄?`general-purpose`锛?   ```yaml
-   tool: Agent
-   subagent_type: general-purpose
-   description: "Create Story via bmad-story-create agent"
-   prompt: |
-     浣犱綔涓?bmad-story-create 鎵ц浣擄紝鎵ц浠ヤ笅 Stage 1 Create Story 娴佺▼锛?
-     [璇诲彇 .codex/agents/bmad-story-create.md 鐨勫畬鏁村唴瀹癸紝鍚細]
-     [1. Role]
-     [2. Input Reception - 纭鎺ユ敹鍒扮殑鍙傛暟]
-     [3. Required Inputs - 鏇挎崲涓哄疄闄呭€糫
-     [4. Codex Canonical Base - 瀹屾暣澶嶅埗]
-     [5. Subtask Template - 瀹屾暣澶嶅埗锛屽崰浣嶇宸叉浛鎹
-     [6. Mandatory Startup]
-     [7. Execution Flow]
-     [8. Output / Handoff 瑕佹眰]
-   ```
-
-**閲嶈**锛?- 涓嶅緱浠呬紶鍏ユ墽琛屼綋鏂囦欢璺緞璁╂墽琛屼綋鑷繁鍘昏锛屽繀椤诲皢瀹屾暣 prompt 鍐呭浼犲叆
-- 鎵ц浣撴湰韬笉鍔犺浇 skill锛屾墍鏈夋寚浠ょ敱涓?Agent 閫氳繃 prompt 鍙傛暟浼犻€?- party-mode 杈╄涓昏矾寰勫繀椤讳紭鍏堜娇鐢?`@"party-mode-facilitator (agent)"`
-- 鑻ョ敤鎴峰凡鏄庣‘鍥炲 `20` / `50` / `100`锛屼富 Agent 蹇呴』鍏堝皢璇ュ洖澶嶈嚜鍔ㄧ紪璇戞垚 `## 鐢ㄦ埛閫夋嫨` 纭鍧楋紝鍐嶅彂璧?`@"party-mode-facilitator (agent)"`
-- 鎵ц浣撹繑鍥炲悗锛屼富 Agent 蹇呴』鏍￠獙 handoff 杈撳嚭锛屽苟鍐冲畾涓嬩竴姝ヨ矾鐢?
 ---
 
-**Primary Executor**
-- `.codex/agents/bmad-story-create.md`锛堥€氳繃 Agent 宸ュ叿璋冪敤锛屽畬鏁?prompt 鐢变富 Agent 浼犲叆锛?
-**Optional Reuse**
-- 鍙鐢ㄥ凡鏈?discussion / brainstorming / party-mode 绛変环鑳藉姏杈呭姪鐢熸垚 Story 鏂囨。
-- 鍙鐢?`speckit-constitution.md`銆乣speckit-analyze.md`銆乣speckit-checklist.md` 浣滀负杈撳叆绾︽潫涓庢鏌ヨ緟鍔?
-**Fallback Strategy**
-1. 浼樺厛鐢?`bmad-story-create` agent 鐩存帴鐢熸垚 Story 鏂囨。
-2. 鑻ラ渶瑕佹繁鍏ヨ璁轰笖 OMC / 瀵硅瘽寮忔墽琛屽櫒鍙敤锛屽垯澶嶇敤鍏跺畬鎴愭柟妗堟敹鏁涳紝浣嗘渶缁?Story 浜х墿浠嶇敱鏈樁娈佃礋璐ｈ惤鐩?3. 鑻ュ閮?executor 涓嶅彲鐢紝鍒欑敱涓?Agent 椤哄簭鎵ц闇€姹傛敹闆嗐€佺粨鏋勫寲鐢熸垚銆佽川閲忚嚜妫€
-4. fallback 涓嶅緱鏀瑰彉 Codex Canonical Base 鐨勮涔夎姹?
-**Runtime Contracts**
-- 浜х墿璺緞锛歚_bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{story_num}-{story_slug}/{epic_num}-{story_num}-{story_slug}.md`
-- Story 浜у嚭瀹屾垚鍚庯紝蹇呴』灏?story state 鏇存柊涓?`story_created`
-- 蹇呴』鍐欏叆 handoff锛屼氦鐢?`bmad-story-audit` 鎵ц Stage 2
-- 鑻ョ敤鎴锋槑纭烦杩?Create Story锛屽繀椤昏褰曡烦杩囦緷鎹苟鐩存帴杩涘叆 Story 瀹¤
+## 阶段二：Story 文档审计
 
-#### Repo Add-ons
+### 2.0 前置检查（新增）
 
-- Story 鏂囨。蹇呴』閬靛畧鏈粨绂佹璇嶈鍒?- Story 鏂囨。蹇呴』鍙璁★紝涓嶅緱鍑虹幇鏃犳硶鏄犲皠鍒板悗缁樁娈电殑妯＄硦鑼冨洿
-- 浜у嚭鐩綍涓庡懡鍚嶅繀椤荤鍚堟湰浠?BMAD story 鐩綍瑙勮寖
-- 鐘舵€佹枃浠朵笌 handoff 蹇呴』鍏煎 `.codex/state/bmad-progress.yaml` 涓?`.codex/state/stories/*-progress.yaml`
+主 Agent 在发起阶段二审计前，**必须**执行以下检查：
 
-#### Output / Handoff
+**检查项**：
+- [ ] 阶段一是否输出了自检结果？
+  - 若无自检输出，阶段二默认使用 **strict**
+- [ ] 是否有 party-mode 产出物？
+  - 检查 story 目录下是否存在 `DEBATE_共识_*` 或 `party-mode 收敛纪要` 文件
+  - 若无产物，阶段二使用 **strict**
+  - 若有产物，阶段二使用 **standard**
 
-瀹屾垚鍚庤緭鍑?handoff锛?
+**严格度选择规则**（强制）：
+- 用户明确说「跳过 party-mode」→ strict
+- 正常完成 party-mode（有产物）→ standard
+- 其他情况（无产物且无用户确认）→ strict
+
+**禁止**：不得在无 party-mode 产物时使用 standard
+
+Story 文档生成后，**必须**发起审计子任务，使用 audit-prompts.md §5 精神（或适用于 Story 文档的审计提示词），迭代直至「完全覆盖、验证通过」。
+
+### 严格度选择（strict / standard）
+
+- **strict**：连续 3 轮无 gap + 批判审计员 >50%，引用 [audit-post-impl-rules.md](../speckit-workflow/references/audit-post-impl-rules.md)。
+- **standard**：单次 + 批判审计员，引用 [audit-prompts-critical-auditor-appendix.md](../speckit-workflow/references/audit-prompts-critical-auditor-appendix.md)。
+
+**选择逻辑**：
+- 若无 party-mode 产出物（story 目录下无 `DEBATE_共识_*`、`party-mode 收敛纪要` 等）或用户要求 strict → **strict**（补偿缺失的 party-mode 深度）。
+- 若有 party-mode 产出物存在且用户未强制 strict → **standard**（party-mode 已提供深度，验证即可）。
+
+### 2.1 审计子代理优先顺序
+
+**说明**：`Codex worker adapter` 的 `subagent_type` 目前仅支持 `general-purpose`、`explore`、`shell`，**不支持** `code-reviewer`。
+
+**优先**：若项目存在 `.codex/agents/code-reviewer.md` 或 `.codex/agents/code-reviewer.md`，Codex 会从中发现 code-reviewer。优先通过 **Codex worker dispatch 工具**（或等效机制）调度 code-reviewer 执行审计，并传入本阶段适用的审计提示词（见下文）。**不得**在审计步骤中强制「必须用 Codex worker adapter」。
+
+**回退**：若 code-reviewer 不可用（无 agents 文件、Task 无法调度等），则回退到 `Codex worker adapter` + `subagent_type: general-purpose`，并传入本阶段适用的审计提示词，保证审计标准一致。
+
+**提示词**：**必须**使用本 skill 内阶段二 Story 审计完整 prompt 模板（ID STORY-A2-AUDIT）整段复制到审计子任务 prompt 中，**不得**使用其他通用审计提示词。
+
+### 2.2 审计子任务
+
+**模板 ID**：STORY-A2-AUDIT。**模板边界**：自代码块内首行至报告结尾格式段止；主 Agent 须整段复制并替换占位符。
+
 ```yaml
-layer: 3
-stage: story_create
-
-execution_summary:
-  agent: bmad-story-create
-  started_at: "{timestamp}"
-  completed_at: "{timestamp}"
-  duration_seconds: {seconds}
-  status: completed
-
-  steps_completed:
-    - step: sprint_status_check
-      status: passed
-      result: "sprint-status.yaml 宸茬‘璁?
-    - step: story_generation
-      status: completed
-      result: "Story 鏂囨。宸茬敓鎴?
-    - step: document_persistence
-      status: completed
-      result: "鏂囨。宸插啓鍏?
-    - step: state_update
-      status: completed
-      result: "鐘舵€佸凡鏇存柊涓?story_created"
-
-artifacts:
-  story_doc:
-    path: "_bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{story_num}-{story_slug}/{epic_num}-{story_num}-{story_slug}.md"
-    exists: true
-
-handoff:
-  next_action: story_audit
-  next_agent: bmad-story-audit
-  ready: true
-  mainAgentNextAction: dispatch_review
-  mainAgentReady: true
-```
-
-### Stage 2: Story 瀹¤
-
-Claude 绔?Stage 2 Story 瀹¤鎵ц浣擄紝璐熻矗瀹¤ Story 鏂囨。骞跺喅瀹氭槸鍚﹀厑璁歌繘鍏?Dev Story銆?
-#### Purpose
-
-鏈樁娈垫槸 Cursor `bmad-story-assistant` 涓?Story 鏂囨。瀹¤闃舵鍦?Codex CLI / OMC 鐜涓嬬殑鎵ц閫傞厤鍣ㄣ€?
-鐩爣锛?- 缁ф壙 Cursor Story 瀹¤璇箟
-- 瀵?Story 鏂囨。杩涜 pass/fail 鍒ゅ畾
-- 瀹¤閫氳繃鍚?handoff 鍒?Dev Story
-- 瀹¤澶辫触鍚庡洖鐜慨 Story 鏂囨。
-
-#### Required Inputs
-
-- `storyDocPath`
-- `epic_num`
-- `story_num`
-- `epic_slug`
-- `story_slug`
-- 鐩稿叧闇€姹傛潵婧?/ Epic / Story 瑙勫垝鏂囨。 / 绾︽潫鏂囨。锛堝瀛樺湪锛?
-#### Codex Canonical Base
-
-- 涓绘枃鏈熀绾挎潵婧愶細Cursor `bmad-story-assistant` skill 鐨?Stage 2 Story 瀹¤妯℃澘锛坄STORY-A2-AUDIT`锛夈€?- Story 鏂囨。鐢熸垚鍚庯紝**蹇呴』**鍙戣捣瀹¤瀛愪换鍔★紝杩唬鐩磋嚦銆屽畬鍏ㄨ鐩栥€侀獙璇侀€氳繃銆嶃€?- 涓ユ牸搴﹂€夋嫨锛?  - **strict**锛氳繛缁?3 杞棤 gap + 鎵瑰垽瀹¤鍛?>50%
-  - **standard**锛氬崟娆?+ 鎵瑰垽瀹¤鍛?- 閫夋嫨閫昏緫锛?  - 鑻ユ棤 party-mode 浜у嚭鐗╋紙story 鐩綍涓嬫棤 `DEBATE_鍏辫瘑_*`銆乣party-mode 鏀舵暃绾` 绛夛級鎴栫敤鎴疯姹?strict 鈫?浣跨敤 **strict**锛堣ˉ鍋跨己澶辩殑 party-mode 娣卞害锛?  - 鑻ユ湁 party-mode 浜у嚭鐗╁瓨鍦ㄤ笖鐢ㄦ埛鏈己鍒?strict 鈫?浣跨敤 **standard**
-- 瀹¤瀛愪唬鐞嗕紭鍏堥『搴忥細
-  - 浼樺厛閫氳繃 code-reviewer / 绛夋晥 reviewer 鎵ц Story 瀹¤
-  - 鑻?reviewer 涓嶅彲鐢紝鍒欏洖閫€鍒伴€氱敤鎵ц浣擄紝浣嗗繀椤讳紶鍏?**瀹屾暣** `STORY-A2-AUDIT` 妯℃澘锛?*涓嶅緱**浣跨敤鍏朵粬閫氱敤瀹¤鎻愮ず璇嶆浛浠?- 涓?Agent 椤绘暣娈靛鍒?`STORY-A2-AUDIT` 妯℃澘骞舵浛鎹㈠崰浣嶇锛?*绂佹**姒傛嫭銆佺缉鍐欐垨鍙紶鎽樿銆?- 瀹¤鍐呭蹇呴』閫愰」楠岃瘉锛?  1. Story 鏂囨。鏄惁瀹屽叏瑕嗙洊鍘熷闇€姹備笌 Epic 瀹氫箟
-  2. 鑻?Story 鏂囨。涓瓨鍦ㄧ姝㈣瘝琛ㄤ换涓€璇嶏紝涓€寰嬪垽涓烘湭閫氳繃
-  3. 澶氭柟妗堝満鏅槸鍚﹀凡閫氳繃杈╄杈炬垚鍏辫瘑骞堕€夊畾鏈€浼樻柟妗?  4. 鏄惁鏈夋妧鏈€烘垨鍗犱綅鎬ц〃杩?  5. 鑻?Story 鍚€岀敱 Story X.Y 璐熻矗銆嶏紝椤婚獙璇佸搴?Story 鏂囨。瀛樺湪涓?scope/楠屾敹鏍囧噯鍚浠诲姟鍏蜂綋鎻忚堪锛涘惁鍒欏垽涓嶉€氳繃
-- 鎶ュ憡缁撳熬蹇呴』杈撳嚭锛氱粨璁猴紙閫氳繃/鏈€氳繃锛? 蹇呰揪瀛愰」 + Story 闃舵鍙В鏋愯瘎鍒嗗潡锛堟€讳綋璇勭骇 A/B/C/D + 鍥涚淮璇勫垎锛氶渶姹傚畬鏁存€?/ 鍙祴璇曟€?/ 涓€鑷存€?/ 鍙拷婧€э級銆?- 瀹¤閫氳繃鍚庡繀鍋氾細缁熶竴閫氳繃 `runAuditorHost` / 缁熶竴 auditor host runner 瑙﹀彂 story 瀹¤鍚庣殑鑷姩鍔ㄤ綔锛涗富 Agent 涓嶅啀鎵嬪伐缂栨帓 `bmad-speckit score`銆?- 瀹¤鏈€氳繃鏃讹細瀹¤瀛愪唬鐞嗛』鍦ㄦ湰杞唴**鐩存帴淇敼琚 Story 鏂囨。**浠ユ秷闄?gap锛涜嫢寤鸿娑夊強鍒涘缓鎴栨洿鏂板叾浠?Story锛屼富 Agent 椤诲厛鎵ц璇ュ缓璁紝鍐嶉噸鏂板璁″綋鍓?Story銆?- 闃舵浜屽噯鍏ユ鏌ワ細涓?Agent 鍦ㄦ敹鍒伴樁娈典簩閫氳繃缁撹鍚庛€佽繘鍏ラ樁娈典笁涔嬪墠锛屽繀椤荤‘璁ょ粺涓€ auditor host runner 宸插畬鎴?post-audit automation锛涜嫢鏈畬鎴愶紝鍒欏厛琛ヨ窇 runner锛岃€屼笉鏄墜宸ヨˉ score CLI銆?
-#### Stage 2 璋冪敤鍓?CLI 杈撳嚭瑕佹眰
-
-涓?Agent 蹇呴』鍦ㄨ皟鐢?Stage 2 鎵ц浣撲箣鍓嶏紝鍏堝湪褰撳墠 session CLI 杈撳嚭浠ヤ笅鏍煎紡鐨勮皟鐢ㄦ憳瑕侊細
-
-```
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?Stage 2: Story 瀹¤ - 瀛愪唬鐞嗚皟鐢ㄦ憳瑕?鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?鎵ц浣? bmad-story-audit
+# 优先：Codex worker dispatch 调度 code-reviewer（若 .codex/agents/ 或 .codex/agents/ 存在）
+# 回退：Codex worker adapter（因 Codex worker adapter 不支持 code-reviewer，回退时使用 general-purpose）
+tool: Codex worker adapter
 subagent_type: general-purpose
-璋冪敤鏃堕棿: {timestamp}
-
-杈撳叆鍙傛暟:
-  鈥?storyDocPath: {瀹為檯鍊紏
-  鈥?epic_num: {瀹為檯鍊紏
-  鈥?story_num: {瀹為檯鍊紏
-  鈥?epic_slug: {瀹為檯鍊紏
-  鈥?story_slug: {瀹為檯鍊紏
-
-瀹¤涓ユ牸搴?
-  鈥?褰撳墠妯″紡: {strict|standard}
-  鈥?鍒ゅ畾渚濇嵁: {鏃?party-mode 浜х墿 鈫?strict / 鏈?party-mode 鈫?standard}
-
-鎻愮ず璇嶇粨鏋勬憳瑕?
-  鈹溾攢 Codex Canonical Base
-  鈹?  鈹溾攢 STORY-A2-AUDIT 瀹屾暣妯℃澘
-  鈹?  鈹溾攢 閫愰」楠岃瘉瑕佹眰锛?澶ч獙璇侀」锛?  鈹?  鈹溾攢 鎵瑰垽瀹¤鍛樹粙鍏ヨ姹?  鈹?  鈹斺攢 鍙В鏋愯瘎鍒嗗潡鏍煎紡瑕佹眰
-  鈹溾攢 Codex no-hooks Runtime Adapter
-  鈹?  鈹溾攢 Primary Executor: bmad-story-audit
-  鈹?  鈹溾攢 Fallback: Codex reviewer 鈫?code-review skill 鈫?涓?Agent
-  鈹?  鈹斺攢 Runtime Contracts: 鎶ュ憡璺緞銆佺姸鎬佹洿鏂?  鈹斺攢 Repo Add-ons
-      鈹溾攢 绂佹璇嶆鏌?      鈹溾攢 鎵瑰垽瀹¤鍛樼粨璁猴紙>50%瀛楁暟锛?      鈹溾攢 runAuditorHost 瑙﹀彂
-      鈹斺攢 缁熶竴 auditor host runner 瀹屾垚鎬佹鏌?
-棰勬湡浜х墿:
-  鈥?瀹¤鎶ュ憡: _bmad-output/.../AUDIT_story-{epic_num}-{story_num}.md
-  鈥?璇勫垎鍐欏叆: scoring/data/...json
-  鈥?鐘舵€佹洿鏂? story_audit_passed / story_audit_failed
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?```
-
-杈撳嚭鍚庣珛鍗宠皟鐢?Agent 宸ュ叿銆?
-#### Codex no-hooks Runtime Adapter
-
-**鎵ц浣撹皟鐢ㄦ柟寮?*
-
-涓?Agent 璋冪敤 Stage 2 鎵ц浣撴椂锛屽繀椤诲皢鏈?skill 涓?Stage 2 鐨勫畬鏁村唴瀹癸紙鍚?Codex Canonical Base 鐨勬墍鏈夊璁¤姹傦級閫氳繃 `Agent` 宸ュ叿浼犲叆锛?
-```yaml
-tool: Agent
-subagent_type: general-purpose
-description: "Execute Stage 2 Story Audit"
+description: "Audit Story {epic_num}-{story_num} document"
 prompt: |
-  浣犱綔涓?bmad-story-audit 鎵ц浣擄紝鎵ц浠ヤ笅 Stage 2 Story 瀹¤娴佺▼锛?
-  **Required Inputs**锛堝凡鏇挎崲涓哄疄闄呭€硷級锛?  - storyDocPath: {瀹為檯璺緞}
-  - epic_num: {瀹為檯鍊紏
-  - story_num: {瀹為檯鍊紏
-  - ...
+  【必读】本 prompt 须为完整审计模板且所有占位符已替换。若发现明显缺失或未替换的占位符，请勿执行，并回复：请主 Agent 将本 skill 中阶段二 Story 审计完整 prompt 模板（ID STORY-A2-AUDIT）整段复制并替换占位符后重新发起。
 
-  **Codex Canonical Base - 瀹¤瑕佹眰**锛堝畬鏁村鍒舵湰 skill Stage 2 閮ㄥ垎锛夛細
-  [1. Story 鏂囨。鐢熸垚鍚庯紝蹇呴』鍙戣捣瀹¤瀛愪换鍔?..]
-  [2. 涓ユ牸搴﹂€夋嫨锛歴trict/standard...]
-  [3. 瀹¤鍐呭閫愰」楠岃瘉...]
-  [4. 鎶ュ憡缁撳熬蹇呴』杈撳嚭...]
-  [5. 瀹¤閫氳繃鍚庡繀鍋?..]
+  你是一位非常严苛的代码审计员（对应 BMAD 工作流中的 code-reviewer 审计职责）。请对「已创建的 Story {epic_num}-{story_num} 文档」进行审计。
 
-  **Repo Add-ons**锛?  - 蹇呴』鎵ц绂佹璇嶆鏌?  - 蹇呴』杈撳嚭鎵瑰垽瀹¤鍛樼粨璁?  - 蹇呴』杈撳嚭鍙В鏋愯瘎鍒嗗潡
+  审计依据：
+  - 原始需求/Epic 文档
+  - plan.md、IMPLEMENTATION_GAPS.md（如存在）
+  - 实际生成的 Story 文档内容
 
-  **Runtime Contracts**锛?  - 瀹¤鎶ュ憡璺緞锛?..
-  - 瀹¤閫氳繃鍚庢洿鏂?state 涓?story_audit_passed
+  审计内容（必须逐项验证）：
+  1. Story 文档是否完全覆盖原始需求与 Epic 定义。
+  2. 若 Story 文档中存在本 skill § 禁止词表（Story 文档）任一词，一律判为未通过，并在修改建议中注明删除或改为明确描述。
+  3. 多方案场景是否已通过辩论达成共识并选定最优方案。
+  4. 是否有技术债或占位性表述。
+  5. **推迟闭环**：若 Story 含「由 Story X.Y 负责」，须验证 `_bmad-output/implementation-artifacts/epic-{X}-*/story-{Y}-*/` 下 Story 文档存在且 scope/验收标准含该任务的具体描述；否则判不通过。「由 X.Y 负责」的表述须含被推迟任务的**具体描述**，便于 grep 验证。修改建议（三选一）：① 若 X.Y 不存在：创建 Story X.Y，scope 含 [任务具体描述]；② 若 X.Y 存在但 scope 不含：更新 Story X.Y，将 [任务具体描述] 加入 scope；③ 若不应推迟：删除「由 X.Y 负责」，改为本 Story 实现。
+  
+  验证方式：阅读 Story 文档；若含「由 Story X.Y 负责」，读取 `{project-root}/_bmad-output/implementation-artifacts/epic-{X}-*/story-{Y}-*/` 下 Story 文档，检查 scope/验收标准是否含该任务；grep 被推迟任务的关键词。
 
-  瀹屾垚鍚庤緭鍑?PASS/FAIL handoff 鏍煎紡銆?```
+  报告结尾必须按以下格式输出：结论：通过/未通过。必达子项：① 覆盖需求与 Epic；② 明确无禁止词；③ 多方案已共识；④ 无技术债/占位表述；⑤ 推迟闭环（若有「由 X.Y 负责」则 X.Y 存在且 scope 含该任务）；⑥ 本报告结论格式符合本段要求。若任一项不满足则结论为未通过，并列出不满足项及每条对应的修改建议。
 
-**閲嶈**锛氭墽琛屼綋鏈韩涓嶅姞杞?skill锛屾墍鏈夊璁℃寚浠ゃ€佹鏌ラ」銆佽緭鍑烘牸寮忚姹傚繀椤荤敱涓?Agent 閫氳繃 prompt 鍙傛暟瀹屾暣浼犻€掋€?
+  【§Story 可解析块要求】报告结尾在结论与必达子项之后，**必须**追加可解析评分块（格式见 speckit-workflow/references/audit-prompts-critical-auditor-appendix.md §7）。须包含：独立一行「总体评级: [A|B|C|D]」及四行「- 需求完整性: XX/100」「- 可测试性: XX/100」「- 一致性: XX/100」「- 可追溯性: XX/100」。禁止用描述代替结构化块；总体评级仅限 A/B/C/D。禁止 B+、A-、C+、D- 等任意修饰符；介于两档时择一输出纯字母。映射建议：完全覆盖→A/90+；部分覆盖→B/80+；需修改→C/70+；不通过→D/60及以下。否则评分解析器无法解析、仪表盘无法显示评级。
+
+  **Runtime sync (S10 - MANDATORY):** 审计结论为通过；通过判定之后、返回主 Agent 之前执行：
+  `npx bmad-speckit sync-runtime-context-from-sprint --story-key <story_key>`
+  `<story_key>` 填被审计 Story 的 kebab-case key，与 sprint-status `development_status` 中的键名相同。
+
+  【审计通过后必做】当结论为「通过」时，你（审计子代理）**在返回主 Agent 前必须**返回 `projectRoot`、`reportPath`、`artifactDocPath=<Story 文档路径>`、`stage=story` 这几个结果字段，交由 invoking host/runner 统一调用 `runAuditorHost`。报告路径为 `_bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{story_num}-*/AUDIT_Story_{epic_num}-{story_num}_stage2.md`。若 host/runner 执行失败，在结论中注明 resultCode；**禁止**在未完成上述 host 收口前返回通过结论。
+
+  【审计未通过时】你（审计子代理）须在本轮内**直接修改被审 Story 文档**以消除 gap，修改完成后在报告中注明已修改内容；主 Agent 收到报告后发起下一轮审计。**禁止**仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules.md](../speckit-workflow/references/audit-document-iteration-rules.md)。
+```
+
+若审计未通过，**根据报告执行**：若修改建议含「创建 Story X.Y」或「更新 Story X.Y」，主 Agent 须**先执行**该建议（发起 Create Story 或更新子任务），再次发起对当前 Story 的审计；若仅需修改当前 Story 文档，**审计子代理须在本轮内直接修改**该文档，主 Agent 收到报告后再次发起审计。**禁止**仅修改当前 Story 文档即再审计，当修改建议含创建/更新其他 Story 时。文档审计迭代规则见 [audit-document-iteration-rules.md](../speckit-workflow/references/audit-document-iteration-rules.md)。每次审计均遵循 §2.1 的优先顺序（先 code-reviewer，失败则 general-purpose）。
+
+#### 步骤 2.3：阶段二准入检查（强制，先执行）
+
+主 Agent 在收到阶段二通过结论后、进入阶段三之前，**必须先**确认统一 auditor host runner 已完成 post-audit automation。若 host 尚未执行且报告文件 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_Story_{epic}-{story}_stage2.md` 存在，则主 Agent 执行 步骤 2.2 补跑 `runAuditorHost`。未获得 `closeout approved` 前不得进入阶段三。
+
+#### 步骤 2.2：补跑 runAuditorHost（步骤 2.3 判定 host 未完成时执行）
+
+当 步骤 2.3 判定 host 未完成且报告文件存在时，主 Agent 执行：
+```bash
+npx --no-install bmad-speckit run-auditor-host --projectRoot <projectRoot> --stage story --artifactPath <Story 文档路径> --reportPath <报告路径> --iterationCount 0
+```
+补跑后再次确认 host 已完成收口；若报告不存在则停止并明确缺失原因。若调用失败，必须自动重试、记录每次失败原因与修复动作，直到获得 `closeout approved` 或确认存在真实 blocker。
+
+**与 T11 衔接说明**：子代理在【审计通过后必做】中只返回 host 所需字段；主 Agent 通过 步骤 2.3 / 2.2 确保 `runAuditorHost` 已完成，避免重复收口。
+
+#### 审计通过后统一 Host 收口（强制）
+- story 阶段的评分写入、auditIndex 更新与其它 post-audit automation 统一由 `runAuditorHost` 承接；主 Agent 通过 步骤 2.2/2.3 做完成态检查与补跑；**必须含 `--iteration-count {累计值}`**；stage=story。若失败，必须自动重试并记录 `resultCode`、失败原因、修复动作；未获得 `closeout approved` 前不得继续。
+
 ---
 
-**Primary Executor**
-- `.codex/agents/bmad-story-audit.md`锛堥€氳繃 Agent 宸ュ叿璋冪敤锛屽畬鏁?prompt 鐢变富 Agent 浼犲叆锛?
-**Optional Reuse**
-- 鍙鐢?`code-review` / reviewer 鑳藉姏杈呭姪鐢熸垚瀹¤鎶ュ憡
-- 鍙鐢ㄧ幇鏈変粨搴撳璁℃牸寮忋€佹壒鍒ゅ璁″憳瑕佹眰涓庤瘎鍒嗗潡瑕佹眰
+## 文档映射关系（与speckit-workflow）
 
-**Fallback Strategy**
-1. 浼樺厛鐢?`bmad-story-audit` agent 鎵ц Story 瀹¤
-2. 鑻?Codex reviewer 鍙敤锛屽垯澶嶇敤鍏惰繘琛岃緟鍔╁鏌ワ紝浣嗘渶缁堝垽瀹氫粛鐢辨湰闃舵姹囨€诲苟钀界洏
-3. 鑻?reviewer 涓嶅彲鐢紝鍒欑敱涓?Agent 鐩存帴鎵ц鍚屼竴浠戒笁灞傜粨鏋勫璁?prompt
-4. fallback 涓嶅緱闄嶄綆瀹¤涓ユ牸搴?
-**Runtime Contracts**
-- 瀹¤鎶ュ憡璺緞锛歚_bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{story_num}-{story_slug}/AUDIT_story-{epic_num}-{story_num}.md`
-- 瀹¤閫氳繃锛氭洿鏂?story state 涓?`story_audit_passed`锛宧andoff 鍒?`speckit-implement`
-- 瀹¤澶辫触锛氭洿鏂?story state 涓?`story_audit_failed`锛岃姹備慨 Story 鏂囨。鍚庨噸鏂板璁?
-#### Repo Add-ons
+### 文档对应矩阵
 
-- Story 瀹¤蹇呴』鎵ц鏈粨绂佹璇嶆鏌?- 蹇呴』杈撳嚭鎵瑰垽瀹¤鍛樼粨璁?- 蹇呴』鏄庣‘鏍囨敞 pass / fail / required_fixes
-- state 涓?handoff 闇€鍏煎鏈粨 BMAD story 鐘舵€佹満
+| bmad产出 | speckit产出 | 映射关系 | 阶段对应 |
+|---------|------------|---------|---------|
+| Product Brief | - | 源头文档 | Layer 1起点 |
+| PRD | - | 需求规格 | Layer 1产出 |
+| Architecture | - | 技术架构 | Layer 1产出 |
+| Epic/Story列表 | - | 功能拆分 | Layer 2产出 |
+| Story文档 | spec-E{epic}-S{story}.md | Story功能章节 ↔ spec功能规格章节 | Layer 3 → Layer 4 specify |
+| plan + tasks（实现方案与任务列表） | plan-E{epic}-S{story}.md + tasks-E{epic}-S{story}.md | 功能清单 ↔ 任务列表 | Layer 3 → Layer 4 plan/tasks |
+| BUGFIX文档 | IMPLEMENTATION_GAPS-E{epic}-S{story}.md | **GAP-063 修复**：BUGFIX 修复项可转化为 GAPS 中的「待实现差距」条目，两者为转化关系非等同 | Layer 3 → Layer 4 GAPS |
+| progress.md | TDD记录 | 执行进度 ↔ 测试记录 | Layer 4执行 → 记录 |
 
-#### Output / Handoff
+### 需求追溯链
 
-**PASS**
-```yaml
-layer: 3
-stage: story_audit_passed
+**扩展映射表格式**（必须在Story文档中包含）：
 
-execution_summary:
-  agent: bmad-story-audit
-  started_at: "{timestamp}"
-  completed_at: "{timestamp}"
-  duration_seconds: {seconds}
-  status: passed
-  strictness: {strict|standard}
+| PRD需求ID | PRD需求描述 | Architecture组件 | Story | spec章节 | task | 状态 |
+|----------|------------|-----------------|-------|---------|------|------|
+| REQ-001 | 用户登录 | AuthService | 4.1 | §2.1 | Task 1 | 已覆盖 |
+| REQ-002 | JWT刷新 | AuthService | 4.1 | §2.2 | Task 2 | 推迟 |
 
-audit_summary:
-  gaps_found: 0
-  criteria_verified:
-    - requirement_coverage: passed
-    - forbidden_words_check: passed
-    - multi_solution_consensus: passed
-    - tech_debt_check: passed
-    - story_references_valid: passed
-  critical_auditor_percentage: "{XX}%"
-  score_block_generated: true
+**追溯要求**：
+1. 每个PRD需求必须映射到至少一个Story
+2. 每个Architecture组件必须映射到至少一个task
+3. 每个Story必须包含PRD需求追溯章节
+4. 每个spec-E{epic}-S{story}.md必须包含Architecture约束章节
 
-artifacts:
-  story_doc:
-    path: "{storyDocPath}"
-    exists: true
-  audit_report:
-    path: "_bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{story_num}-{story_slug}/AUDIT_story-{epic_num}-{story_num}.md"
-    exists: true
-  score_data:
-    path: "scoring/data/{epic_num}-{story_num}-story-audit.json"
-    written: true
-
-handoff:
-  next_action: dev_story
-  next_agent: speckit-implement
-  ready: true
-  mainAgentNextAction: dispatch_implement
-  mainAgentReady: true
-```
-
-**FAIL**
-```yaml
-layer: 3
-stage: story_audit_failed
-
-execution_summary:
-  agent: bmad-story-audit
-  started_at: "{timestamp}"
-  completed_at: "{timestamp}"
-  duration_seconds: {seconds}
-  status: failed
-
-audit_summary:
-  gaps_found: {N}
-  criteria_failed:
-    - {鍏蜂綋澶辫触椤箎
-  critical_auditor_percentage: "{XX}%"
-
-required_fixes_detail:
-  fixes:
-    - fix_id: FIX-001
-      description: "{淇鎻忚堪}"
-      location: "{鏂囨。浣嶇疆}"
-      severity: critical|high|medium
-  fix_strategy: direct_modify
-  iteration_required: true
-
-artifacts:
-  story_doc:
-    path: "{storyDocPath}"
-    exists: true
-    modified_in_round: true
-  audit_report:
-    path: "_bmad-output/implementation-artifacts/epic-{epic_num}-{epic_slug}/story-{story_num}-{story_slug}/AUDIT_story-{epic_num}-{story_num}.md"
-    exists: true
-
-handoff:
-  next_action: revise_story
-  next_agent: bmad-story-create
-  ready: true
-  mainAgentNextAction: dispatch_remediation
-  mainAgentReady: true
-```
-
-### Stage 3: Dev Story / `STORY-A3-DEV`
-
-Claude 绔?Stage 3 Dev Story 鎵ц浣擄紝璐熻矗鎸?TDD 绾㈢豢鐏ā寮忔墽琛屼换鍔″苟瀹屾垚浠ｇ爜瀹炵幇銆?
-#### Purpose
-
-鏈樁娈垫槸 Cursor `bmad-story-assistant` 涓?Dev Story 闃舵鍦?Codex CLI / OMC 鐜涓嬬殑鎵ц閫傞厤鍣ㄣ€?
-鐩爣锛?- 缁ф壙 Cursor Dev Story 闃舵涓氬姟璇箟
-- 涓ユ牸鎵ц TDD 绾㈢豢鐏『搴?- 缁存姢 ralph-method 杩借釜鏂囦欢
-- 瀹炴柦鍚庡繀椤诲彂璧?Stage 4 Post Audit
-- 杩涘叆 Dev Story 鍓嶅繀椤绘弧瓒崇粺涓€ `implementation-readiness` gate锛涜嫢鍏堢粡杩囩函鏂囨。瀛愰樁娈碉紝鍒欏湪棣栦釜 `implement` 瀛愰樁娈靛墠鍐嶆閲嶇畻鍚屼竴涓?gate
-
-#### Required Inputs
-
-- `tasksPath`: tasks.md 鏂囦欢璺緞
-- `epic`: Epic 缂栧彿
-- `story`: Story 缂栧彿
-- `epicSlug`: Epic 鍚嶇О slug
-- `storySlug`: Story 鍚嶇О slug
-- `mode`: `bmad` 鎴?`standalone`
-
-#### Codex Canonical Base
-
-- 浠?`STORY-A3-DEV` 涓轰富鏂囨湰鍩虹嚎
-- 鍓嶇疆鏂囨。蹇呴』 PASS锛圫tory 瀹¤閫氳繃鐘舵€侊級
-- TDD 绾㈢豢鐏『搴忓繀椤诲畬鏁达紙RED 鈫?GREEN 鈫?REFACTOR锛?- 蹇呴』缁存姢 ralph-method 杩借釜鏂囦欢锛坧rd.json + progress.txt锛?- 瀛愪换鍔¤繑鍥炲悗蹇呴』鍙戣捣 `STORY-A4-POSTAUDIT`
-- 瀹炴柦杩囩▼涓繀椤婚伒瀹?15 鏉￠搧寰?
-#### Subtask Template (STORY-A3-DEV)
-
-```yaml
-description: "Execute Dev Story {epic}-{story} via STORY-A3-DEV workflow"
-prompt: |
-  銆愬繀璇汇€戞湰 prompt 椤讳负瀹屾暣妯℃澘涓旀墍鏈夊崰浣嶇宸叉浛鎹€?
-  浣犱綔涓?speckit-implement / bmad-layer4-speckit-implement 鎵ц浣擄紝鎵ц BMAD Stage 3 Dev Story 娴佺▼銆?
-  **Required Inputs**锛堝凡鏇挎崲涓哄疄闄呭€硷級锛?  - tasksPath: {瀹為檯璺緞}
-  - epic: {瀹為檯鍊紏
-  - story: {瀹為檯鍊紏
-  - epicSlug: {瀹為檯鍊紏
-  - storySlug: {瀹為檯鍊紏
-  - mode: bmad
-
-  **Codex Canonical Base - Dev Story 瑕佹眰**锛?  1. 鍓嶇疆妫€鏌ワ細Story 瀹¤蹇呴』宸?PASS
-  2. 璇诲彇 tasks.md銆乸lan.md銆両MPLEMENTATION_GAPS.md
-  2.1 璇诲彇骞堕獙璇?`deferred-gap-register.yaml`
-  2.2 璇诲彇骞堕獙璇?`journey-ledger`銆乣trace-map`銆乣closure-notes`
-  3. 楠岃瘉 ralph-method 鏂囦欢瀛樺湪锛坧rd.json + progress.txt锛?  4. 閫愪换鍔℃墽琛?TDD 绾㈢豢鐏惊鐜細
-     - [TDD-RED] 缂栧啓澶辫触鐨勬祴璇?     - [TDD-GREEN] 缂栧啓鏈€灏忓疄鐜颁娇娴嬭瘯閫氳繃
-     - [TDD-REFACTOR] 閲嶆瀯浠ｇ爜
-  5. 瀹炴椂鏇存柊 ralph-method 杩借釜鏂囦欢
-  6. 鎵ц batch 闂村璁″拰鏈€缁堝璁?  6.1 鑻ュ瓨鍦?active deferred gap 浣嗘棤 task binding銆丼moke Task Chain銆丆losure Task ID 鎴?production path 鏄犲皠锛屼笉寰楃户缁疄鏂?  6.2 鑻?Journey runnable 鐘舵€佸彂鐢熷彉鍖栵紝蹇呴』鍚屾鏇存柊 `deferred-gap-register`銆乣journey-ledger`銆乣trace-map`銆乣closure-notes`
-  7. 瀹屾垚鍚庡繀椤诲彂璧?STORY-A4-POSTAUDIT
-
-  **寮哄埗绾︽潫**锛?  - 绂佹鍦ㄦ湭鍒涘缓 prd/progress 鍓嶅紑濮嬬紪鐮?  - 绂佹鍏堝啓鐢熶骇浠ｇ爜鍐嶈ˉ娴嬭瘯
-  - 绂佹璺宠繃閲嶆瀯闃舵
-  - 蹇呴』閬靛畧 15 鏉￠搧寰?
-  **Repo Add-ons**锛?  - 鏇存柊 `.codex/state/stories/{epic}-{story}-progress.yaml` 涓?`implement_in_progress` / `implement_passed`
-  - 鎵ц `run-auditor-host.ts` 璁板綍杩涘害
-  - handoff 鍒?Stage 4 Post Audit
-```
-
-#### Stage 3 璋冪敤鍓?CLI 杈撳嚭瑕佹眰
-
-涓?Agent 蹇呴』鍦ㄨ皟鐢?Stage 3 鎵ц浣撲箣鍓嶏紝鍏堝湪褰撳墠 session CLI 杈撳嚭浠ヤ笅鏍煎紡鐨勮皟鐢ㄦ憳瑕侊細
+### 时序关系
 
 ```
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?Stage 3: Dev Story - 瀛愪唬鐞嗚皟鐢ㄦ憳瑕?鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?鎵ц浣? bmad-layer4-dev-story
-type: agent-sequence (5 sub-agents)
-璋冪敤鏃堕棿: {timestamp}
-
-杈撳叆鍙傛暟:
-  鈥?tasksPath: {瀹為檯鍊紏
-  鈥?epic: {瀹為檯鍊紏
-  鈥?story: {瀹為檯鍊紏
-  鈥?epicSlug: {瀹為檯鍊紏
-  鈥?storySlug: {瀹為檯鍊紏
-  鈥?mode: {瀹為檯鍊紏
-
-TDD 绾㈢豢鐏『搴忓己璋?
-  1. RED: 鍏堝啓娴嬭瘯 鈫?娴嬭瘯澶辫触
-  2. GREEN: 瀹炵幇浠ｇ爜 鈫?娴嬭瘯閫氳繃
-  3. IMPROVE: 閲嶆瀯浠ｇ爜 鈫?淇濇寔閫氳繃
-
-鎻愮ず璇嶇粨鏋勬憳瑕?
-  鈹溾攢 Codex Canonical Base
-  鈹?  鈹溾攢 Layer 4 浜旈樁娈垫墽琛屽簭鍒?(specify 鈫?plan 鈫?gaps 鈫?tasks 鈫?implement)
-  鈹?  鈹溾攢 姣忛樁娈?handoff 妫€鏌ョ偣
-  鈹?  鈹斺攢 寮哄埗 TDD 瑕佹眰
-  鈹溾攢 Codex no-hooks Runtime Adapter
-  鈹?  鈹溾攢 Primary: bmad-layer4-dev-story (sequence coordinator)
-  鈹?  鈹溾攢 Sub-agents: specify, plan, gaps, tasks, implement
-  鈹?  鈹斺攢 Runtime Contracts: 姣忛樁娈典骇鐗╄矾寰勩€佺姸鎬佹洿鏂?  鈹斺攢 Repo Add-ons
-      鈹溾攢 绂佹璇嶆鏌?      鈹溾攢 ralph-method 杩借釜
-      鈹斺攢 TDD 璇佹嵁瀹℃煡
-
-棰勬湡浜х墿:
-  鈥?璁捐鏂囨。: _bmad-output/.../DESIGN-{epic}-{story}.md
-  鈥?瀹炵幇浠ｇ爜: src/... (鏍规嵁 story 鑰屽畾)
-  鈥?娴嬭瘯浠ｇ爜: tests/... (鏍规嵁 story 鑰屽畾)
-  鈥?鐘舵€佹洿鏂? story_development_completed
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?```
-
-杈撳嚭鍚庣珛鍗宠皟鐢?Agent 宸ュ叿銆?
-#### Codex no-hooks Runtime Adapter
-
-**鎵ц浣撹皟鐢ㄦ柟寮?*
-
-涓?Agent 璋冪敤 Stage 3 鎵ц浣撴椂锛屽繀椤诲皢鏈?skill 涓?Stage 3 鐨勫畬鏁村唴瀹归€氳繃 `Agent` 宸ュ叿浼犲叆锛?
-```yaml
-tool: Agent
-subagent_type: general-purpose
-description: "Execute Stage 3 Dev Story"
-prompt: |
-  浣犱綔涓?speckit-implement / bmad-layer4-speckit-implement 鎵ц浣擄紝鎵ц浠ヤ笅 Stage 3 Dev Story 娴佺▼锛?
-  [鏈?skill Stage 3 鐨勫畬鏁村唴瀹癸紝鍚?Required Inputs銆丆ursor Canonical Base銆丼ubtask Template锛屾墍鏈夊崰浣嶇宸叉浛鎹
+Layer 1: Product Brief → PRD → Architecture
+              ↓
+Layer 2: create-epics-and-stories → Epic/Story列表
+              ↓
+Layer 3: Create Story → 产出Story文档
+              ↓
+Layer 4: specify → 产出spec-E{epic}-S{story}.md（技术规格化Story内容）
+              ↓
+         plan → 产出plan-E{epic}-S{story}.md（实现方案）
+              ↓
+         Story文档审计（依据包含plan-E{epic}-S{story}.md）
 ```
 
-**閲嶈**锛氭墽琛屼綋鏈韩涓嶅姞杞?skill锛屾墍鏈夋寚浠ょ敱涓?Agent 閫氳繃 prompt 鍙傛暟瀹屾暣浼犻€掋€?
+### 变更管理
+
+当PRD或Architecture发生变更时：
+1. 标记受影响的Story
+2. 更新Story文档的需求追溯章节
+3. 通知相关开发人员
+4. 重新审计受影响的部分
+
 ---
 
-**Primary Executor**
-- `.codex/agents/speckit-implement.md`
-- `.codex/agents/layers/bmad-layer4-speckit-implement.md`锛圔MAD 妯″紡锛?
-**Fallback Strategy**
-1. 浼樺厛鐢?speckit-implement / bmad-layer4-speckit-implement 鎵ц
-2. 鑻ヤ笉鍙敤锛屽洖閫€鍒颁富 Agent 鐩存帴鎵ц TDD 寰幆
-3. batch 瀹¤涓庢渶缁堝璁＄敱 `auditor-implement` 鎴栦富 Agent 鎵ц
+## 阶段三：Dev Story 实施（增强版）
 
-**Runtime Contracts**
-- 蹇呴』鍒涘缓/鏇存柊 ralph-method 杩借釜鏂囦欢锛坧rd.json + progress.txt锛?- 蹇呴』鎸?TDD 椤哄簭鎵ц锛圧ED 鈫?GREEN 鈫?REFACTOR锛?- 姣忎釜 User Story 瀹屾垚鍚庢洿鏂?prd.json passes 鐘舵€?- 蹇呴』璁板綍 TDD 寰幆鍒?progress.txt
-- 瀹炴柦鍚庡繀椤昏Е鍙?Stage 4 Post Audit
-- 涓嶅緱鍙嬀閫?tasks 澶嶉€夋鑰屼笉鏇存柊 `deferred-gap-register`銆乣journey-ledger`銆乣trace-map`銆乣closure-notes`
+审计通过后，**必须先**执行统一 Implementation Entry Gate 断言（`implementation-readiness`）。仅当结果为 `decision=pass` 时，才能执行 **/bmad-bmm-dev-story** 等价工作流，对 Story `{epic_num}-{story_num}` 进行开发实施；若结果为 `block` 或 `reroute`，必须先补齐 readiness 事实或按推荐 flow 调整，禁止直接启动 Dev Story。
 
-#### Repo Add-ons
+### 前置检查
 
-- progress / prd 鏇存柊瑕佹眰
-- 鏈粨 scoring / handoff / lint / key path 瑕佹眰
-- 涓ユ牸鏀舵暃妫€鏌ワ紙continuous 3 rounds no gap锛?- 鎵瑰垽瀹¤鍛樹粙鍏?
-#### Output / Handoff
+在开始实施前，必须确认以下检查项：
+- [ ] 已执行统一 Implementation Entry Gate 断言，且结果为 `decision=pass`
+- [ ] PRD需求追溯章节已补充（列出本Story涉及的所有PRD需求ID）
+- [ ] Architecture约束已传递到Story文档（列出相关的Architecture组件和约束）
+- [ ] 复杂度评估已完成（确认本Story的复杂度分数）
+- [ ] Epic/Story规划层的依赖分析已确认（确认前置Story已完成）
 
-瀹屾垚鍚庤緭鍑?handoff锛?
-```yaml
-layer: 4
-stage: implement_passed
+**重算规则（强制）**：若 Dev Story 先进入 `specify / plan / gaps / tasks` 等纯文档子阶段，则在首个真正写生产代码 / 测试代码的 `implement` 子阶段启动前，主 Agent 或宿主必须**再次重算同一个 Implementation Entry Gate**。禁止把第一次通过结果当成永久通行证。
 
-execution_summary:
-  agent: speckit-implement
-  started_at: "{timestamp}"
-  completed_at: "{timestamp}"
-  duration_seconds: {seconds}
-  status: completed
+### spec 目录创建（路径须含 epic-slug 与 story-slug）
 
-  steps_completed:
-    - step: party_mode_check
-      status: passed
-      result: "party-mode.yaml 宸茬‘璁?
-    - step: spec_read
-      status: completed
-      result: "spec.md 宸茶鍙?
-    - step: plan_read
-      status: completed
-      result: "plan.md 宸茶鍙?
-    - step: tasks_read
-      status: completed
-      result: "tasks.md 宸茶鍙?
-    - step: tdd_red
-      status: completed
-      result: "娴嬭瘯宸茬紪鍐欙紝澶辫触鐘舵€佺‘璁?
-    - step: tdd_green
-      status: completed
-      result: "瀹炵幇宸茬紪鍐欙紝娴嬭瘯閫氳繃"
-    - step: tdd_refactor
-      status: completed
-      result: "浠ｇ爜宸查噸鏋?
-    - step: state_update
-      status: completed
-      result: "story state 宸叉洿鏂颁负 implement_passed"
+在 Create Story 产出 Story 文档后、执行 speckit specify 之前，**必须**确保 spec 目录已存在：
 
-tdd_summary:
-  red_phase:
-    tests_written: {count}
-    tests_failed_initially: {count}
-    status: completed
-  green_phase:
-    implementation_complete: true
-    tests_passing: {count}
-    status: completed
-  refactor_phase:
-    code_quality_checks_passed: true
-    test_coverage: "{percent}%"
-    status: completed
+- **路径格式**：`specs/epic-{epic}-{epic_slug}/story-{story}-{slug}/`
+- **epic_slug 必选**，来源：`_bmad-output/config/epic-{N}.json` 的 slug/name，或 `_bmad-output/planning-artifacts/{branch}/epics.md` 中 `##/### Epic N: Title` 的 Title 转 kebab-case（与 create-new-feature.ps1 一致）
+- **story slug 必选**，来源见 speckit-workflow SKILL.md §1.0（优先级：Story 标题 → Epic 名称 → Story scope → 兜底 E{epic}-S{story}）
+- **创建方式**：优先由 `create-new-feature.ps1 -ModeBmad -Epic N -Story N` 创建（脚本自动推导 epic_slug）；子代理自行创建时**必须**从 epics.md 推导 epic_slug 并用于路径，禁止使用 `specs/epic-{epic}/` 无 slug 路径
+- **若无法推导**：须在发起 Dev Story 子任务前向用户询问，不得使用空 slug 或纯数字路径
 
-ralph_method_status:
-  prd_json_updated: true
-  progress_txt_updated: true
-  passes_status: "all_passed"
+**引用**：路径约定详见 speckit-workflow SKILL.md §1.0、epics-md-format-for-slug-derivation.md、IMPROVEMENT_epic路径增加slug可读性。
 
-artifacts:
-  story_doc:
-    path: "{storyDocPath}"
-    exists: true
-  implementation_code:
-    path: "{implementationPath}"
-    exists: true
-    file_count: {count}
-  test_files:
-    path: "{testPath}"
-    exists: true
-    coverage: "{percent}%"
-  ralph_artifacts:
-    path: "_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/"
-    files:
-      - "prd.json"
-      - "progress.txt"
+### Dev Story实施流程
 
-handoff:
-  next_action: post_audit
-  next_agent: auditor-implement
-  next_stage: 4
-  ready: true
-  mainAgentNextAction: dispatch_review
-  mainAgentReady: true
-  prerequisites_met:
-    - tdd_cycle_complete
-    - ralph_method_tracked
-    - state_updated
+**必须嵌套执行 speckit-workflow 完整流程**，按以下顺序：
+
+1. **specify** → 生成 spec-E{epic}-S{story}.md → code-review审计（迭代直至通过）
+   - 输入：Story文档
+   - 输出：spec-E{epic}-S{story}.md（技术规格，文件名必含Epic/Story序号）
+   - 审计：code-review §1，必须通过A/B级
+
+2. **plan** → 生成 plan-E{epic}-S{story}.md → code-review审计（迭代直至通过，必要时可进入party-mode 50轮）
+   - 输入：spec-E{epic}-S{story}.md
+   - 输出：plan-E{epic}-S{story}.md（实现方案）
+   - 审计：code-review §2，必须通过A/B级
+   - 可选：如有技术争议，启动50轮party-mode
+
+3. **GAPS** → 生成 IMPLEMENTATION_GAPS-E{epic}-S{story}.md → code-review审计（迭代直至通过）
+   - 输入：plan-E{epic}-S{story}.md + 现有代码
+   - 输出：IMPLEMENTATION_GAPS-E{epic}-S{story}.md（实现差距）
+   - 审计：code-review §3，必须通过A/B级
+
+4. **tasks** → 生成 tasks-E{epic}-S{story}.md → code-review审计（迭代直至通过）
+   - 输入：GAPS + plan
+   - 输出：tasks-E{epic}-S{story}.md（执行任务列表）
+   - 审计：code-review §4，必须通过A/B级
+   - 注意：如任务数>20，启用分批执行机制
+
+5. **执行** → TDD红绿灯模式（红灯→绿灯→重构）→ code-review审计（迭代直至通过）
+   - 输入：tasks-E{epic}-S{story}.md
+   - 输出：可运行代码 + TDD记录
+   - 审计：code-review §5，必须通过A/B级
+   - 要求：严格按照[TDD-RED]→[TDD-GREEN]→[TDD-REFACTOR]格式记录
+
+6. **实施后审计（必须）**：子任务返回后，主 Agent 必须按阶段四发起实施后审计，禁止跳过。
+
+### Worktree策略（修订版）
+
+**story_count 来源（GAP-005 修复；GAP-072 修复）**：按优先级取 (1) Epic 配置 `epic.story_count`；(2) Story 列表 `len(epic.stories)`；(3) 用户输入 `--story-count N`。**冲突处理**：若 (1) 与 (2) 不同，记录警告并采用 (1)。**story_count=0 时（GAP-022 修复）**：禁止创建 worktree，提示用户先完成 Epic/Story 规划；或采用 story-level 占位策略（单 Story 占位）。
+
+**自动检测逻辑**：
+```python
+worktree_base = Path(repo_root).parent  # 项目根父目录
+repo_name = Path(repo_root).name  # 与 using-git-worktrees 一致
+if story_count <= 2:
+    worktree_type = "story-level"
+    path = str(worktree_base / f"{repo_name}-story-{epic_num}-{story_num}")
+elif story_count >= 3:
+    worktree_type = "epic-level"
+    path = str(worktree_base / f"{repo_name}-feature-epic-{epic_num}")
+    branch = f"story-{epic_num}-{story_num}"
 ```
 
-**Runtime Governance (S11 - post-audit):** 涓?Agent 鍦ㄨ皟鐢?post-audit 瀛愪换鍔′箣鍓嶆墽琛岋細
+**Story级worktree**（Story数≤2）：
+- 路径：`{父目录}/{repo名}-story-{epic_num}-{story_num}`（与项目根平级，repo名=目录名，与 using-git-worktrees 一致）
+- 每个Story独立worktree
+- 完全隔离，适合强依赖或高风险Story
+
+**Epic级worktree**（Story数≥3）：
+- 路径：`{父目录}/{repo名}-feature-epic-{epic_num}`（与项目根平级，repo名=目录名，与 using-git-worktrees 一致）
+- 在Epic worktree内创建Story分支
+- 分支名：`story-{epic_num}-{story_num}`
+- 减少87%上下文切换时间
+
+**串行/并行模式切换**：
+```bash
+# 切换到并行模式（需满足文件范围无重叠）
+/bmad-set-worktree-mode epic=4 mode=parallel
+
+# 切换到串行模式（默认）
+/bmad-set-worktree-mode epic=4 mode=serial
+
+# 回退到Story级
+/bmad-set-worktree-mode epic=4 mode=story-level
+```
+
+### Solo 快速迭代模式（无新 worktree/branch）
+
+**适用**：solo 开发、多 epic/story 同 branch、快速迭代、bugfix 穿插。`create-new-feature.ps1 -ModeBmad` 默认不创建 branch、不创建 worktree。
+
+**不创建时的路径约定**：
+- **spec**：`specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/`，与 BMAD 一致（epic-slug 与 create-new-feature.ps1 推导一致）
+- **产出路径**：`_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/`，与 BMAD 一致
+- **planning-artifacts**：按 `{branch}/` 子目录，`_bmad-output/planning-artifacts/{branch}/epics.md` 等
+
+**多 epic/story 同 branch**：各 story 独立子目录 `specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/` 及 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/`，互不覆盖。
+
+**Dev Story 执行**：在当前目录执行，不调用 worktree 创建。
+
+### 需求追溯要求
+
+**spec-E{epic}-S{story}.md必须包含**（文件名必含Epic/Story序号）：
+```markdown
+## 需求追溯
+
+| PRD需求ID | PRD需求描述 | 对应spec章节 | 实现状态 |
+|----------|------------|-------------|---------|
+| REQ-001 | XXX | §2.1 | 已实现 |
+```
+
+**tasks-E{epic}-S{story}.md必须包含**（文件名必含Epic/Story序号）：
+```markdown
+## Architecture约束
+
+| Architecture组件 | 约束描述 | 对应task | 验证方式 |
+|-----------------|---------|---------|---------|
+| CacheService | 必须支持TTL | Task 2 | 单元测试 |
+```
+
+### 冲突处理和回退
+
+**如果发现Story文档与spec/plan冲突**：
+1. 尝试在speckit阶段内解决（修改spec/plan）
+2. 如无法解决，回退到Create Story重新澄清
+3. 如涉及重大方案变更，重新进入party-mode
+
+**回退命令**：
+```
+/bmad-bmm-correct-course epic=4 story=1 reason="需求冲突"
+```
+
+### 3.1 强制约束（保留）
+
+1. **ralph-method**：必须创建并维护 `prd` 与 `progress` 文件；每完成一个 US 必须更新 prd（passes=true）、progress（追加 story log）；按 US-001～US-005 顺序执行。
+2. **TDD 红绿灯**：每 US 必达顺序为红灯→绿灯→重构。涉及生产代码的任务：须先写/补测试并运行验收得失败（红灯），再实现并运行验收得通过（绿灯）；**progress 必须包含**每子步骤的验收命令与结果。禁止用「最终回归全部通过」替代逐任务的 TDD 记录。
+3. **speckit-workflow**：禁止伪实现、占位；必须运行验收命令；架构忠实于 BUGFIX/需求文档。
+4. **禁止**：在任务描述中添加「将在后续迭代」；标记完成但功能未实际调用。
+
+### 3.2 主 Agent 职责
+
+**主 Agent 必须执行的步骤**：1 推导 epic_slug（从 `_bmad-output/planning-artifacts/epics.md` 中 `### Epic N：Title` 的 Title 转 kebab-case，或从 `_bmad-output/implementation-artifacts/epic-{N}-*/` 已有目录名解析）→ 2 准备 prompt（将模板 STORY-A3-DEV 整段复制并替换占位符 epic_num、story_num、epic_slug、slug、project-root）→ 3 执行发起前自检清单 → 4 输出自检结果 → 5 发起子任务。**禁止**：不得在未完成步骤 3、4 的情况下执行步骤 5；不得省略 epic_slug 占位符，否则子代理会创建无 slug 的 specs/epic-N/ 路径。
+
+- **仅负责**：发起 Codex worker adapter、传入 BUGFIX/TASKS 文档路径、收集 subagent 输出。
+- **禁止**：主 Agent 直接对生产代码执行 `search_replace` 或 `write`。
+- **必须**：通过 Codex worker adapter 将实施任务委托给 subagent。
+
+#### 3.2.1 阶段判断与禁止重复 Dev Story（防止反复执行阶段三）
+
+**现象**：Dev Story 实施已结束（子代理已完成 specify→plan→GAPS→tasks→执行），主 Agent 却再次发起阶段三 Dev Story 子任务，而不进入阶段四实施后审计。
+
+**根因**：未在发起阶段三前做「实施是否已完成」判断；子任务返回后也未明确「仅允许进入阶段四、禁止再次发起 Dev Story」。
+
+**强制规则**：
+
+1. **发起阶段三之前**：主 Agent 必须检查该 Story 的产出目录 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/` 是否已存在 `progress.*.txt` 且内容含 `Completed: N`（N≥1）及对应 `prd.*.json`，且该目录下已有 tasks 对应的实现产物。若**已存在**上述条件，视为**实施已结束**，**禁止**再次发起阶段三 Dev Story 子任务；**必须**直接进入阶段四（实施后审计）。
+2. **子任务（STORY-A3-DEV）返回或超时之后**：主 Agent **仅允许**执行 3.3.1 兜底 cleanup，然后**立即**发起阶段四（STORY-A4-POSTAUDIT）。**禁止**以任何理由再次发起阶段三 Dev Story 子任务（例如不得因「用户说继续」或「下一项」而重新发起 Dev Story）。
+
+### 3.3 发起实施子任务（STORY-A3-DEV 模板）
+
+主 Agent 须将以下模板整段复制并替换占位符后传入 Codex worker adapter：
+
+```yaml
+tool: Codex worker adapter
+subagent_type: general-purpose
+description: "Dev Story {epic_num}-{story_num} implementation"
+prompt: |
+  【必读】本 prompt 须为完整模板且所有占位符已替换。若发现明显缺失或未替换的占位符，请勿执行，并回复：请主 Agent 将本 skill 中阶段三 Dev Story 实施 prompt 模板（ID STORY-A3-DEV）整段复制并替换占位符后重新发起。
+
+  【强制前置检查】执行以下验证，任一失败则拒绝执行并返回错误：
+
+  1. 验证 spec-E{epic_num}-S{story_num}.md 存在且已通过审计
+     - 检查路径: specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/spec-E{epic_num}-S{story_num}.md
+     - 必须包含审计标记: <!-- AUDIT: PASSED by code-reviewer -->
+     - **若 spec 目录不存在**：须先创建 specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/，epic_slug 从 _bmad-output/planning-artifacts/epics.md 中 `### Epic {epic_num}：Title` 的 Title 转 kebab-case 推导，禁止使用 specs/epic-{epic_num}/ 无 slug 路径
+
+  2. 验证 plan-E{epic_num}-S{story_num}.md 存在且已通过审计
+     - 检查路径: specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/plan-E{epic_num}-S{story_num}.md
+     - 必须包含审计标记: <!-- AUDIT: PASSED by code-reviewer -->
+
+  3. 验证 IMPLEMENTATION_GAPS-E{epic_num}-S{story_num}.md 存在且已通过审计
+     - 检查路径: specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/IMPLEMENTATION_GAPS-E{epic_num}-S{story_num}.md
+     - 必须包含审计标记: <!-- AUDIT: PASSED by code-reviewer -->
+
+  4. 验证 tasks-E{epic_num}-S{story_num}.md 存在且已通过审计
+     - 检查路径: specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/tasks-E{epic_num}-S{story_num}.md
+     - 必须包含审计标记: <!-- AUDIT: PASSED by code-reviewer -->
+
+  5. 验证 ralph-method 追踪文件已创建或将在执行首步创建
+     - 检查路径: _bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{story_num}-*/prd.*.json 与 progress.*.txt
+     - 若不存在：子代理**必须**在开始执行 tasks 前，根据 tasks-E{epic_num}-S{story_num}.md 生成 prd 与 progress（符合 ralph-method schema），否则不得开始编码。
+     - **progress 预填 TDD 槽位**：生成 progress 时，对每个 US 预填 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 或 [DONE] 占位行（`_pending_`），涉及生产代码的 US 含三者，仅文档/配置的含 [DONE]。
+
+  6. 验证 `deferred-gap-register.yaml` 已存在且可读
+     - 检查路径: specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/deferred-gap-register.yaml 或对应 story artifact root
+     - 若存在 active deferred gap，必须能读取到 task_binding / implementation 状态
+
+  7. 验证 Journey-first 工件已存在或有明确 fallback
+     - 优先检查独立工件: `journey-ledger`、`trace-map`、`closure-notes/`
+     - 若独立工件不存在，tasks 文档中必须至少有 `P0 Journey Ledger`、`Journey -> Task -> Test -> Closure`、`Closure Notes`
+     - 若存在 active deferred gap 但无 Smoke Task Chain、Closure Task ID 或 production path 映射，则拒绝执行
+
+  如有任何一项不满足，立即返回错误：
+  "前置检查失败: [具体原因]。请先完成 speckit-workflow 的完整流程（specify→plan→GAPS→tasks）。"
+
+  ---
+
+  你是一位非常资深的开发专家 Amelia 开发（对应 BMAD 开发职责），负责按 Story/TASKS 执行实施。请按以下规范执行。
+
+  **【TDD 执行顺序（不可跳过）】**
+  对 prd 中每个 involvesProductionCode=true 的 US，必须独立执行一次完整循环；禁止仅对首个 US 执行 TDD 后对后续 US 跳过红灯直接实现。每个涉及生产代码的任务，必须严格按以下顺序执行：
+  1. 红灯：先写或补充覆盖该任务验收标准的测试，运行验收命令，确认失败。
+  2. 绿灯：再写最少量的生产代码使测试通过。
+  3. 重构：在测试保护下优化代码，并在 progress 中记录 [TDD-REFACTOR]。
+  禁止：先写生产代码再补测试；禁止在未看到红灯（测试失败）前进入绿灯阶段。
+
+  **【TDD 红绿灯阻塞约束】** prd 中每个 involvesProductionCode=true 的 US 必须**独立**执行一次完整 RED→GREEN→REFACTOR 循环。执行顺序为：
+  1. 先写/补测试并运行验收 → 必须得到失败结果（红灯）
+  2. 立即在 progress 追加 [TDD-RED] <任务ID> <验收命令> => N failed
+  3. 再实现并通过验收 → 得到通过结果（绿灯）
+  4. 立即在 progress 追加 [TDD-GREEN] <任务ID> <验收命令> => N passed
+  5. **无论是否有重构**，在 progress 追加 [TDD-REFACTOR] <任务ID> <内容>（无具体重构时写「无需重构 ✓」）
+  禁止在未完成步骤 1–2 之前执行步骤 3。**禁止仅对首个 US 执行 TDD，后续 US 跳过红灯直接实现**；禁止所有任务完成后集中补写 TDD 记录。
+
+  **【TDD 红绿灯记录与验收】**
+  每完成一个涉及生产代码的任务的绿灯后，立即在 progress 追加三行：
+  `[TDD-RED] <任务ID> <验收命令> => N failed`
+  `[TDD-GREEN] <任务ID> <验收命令> => N passed`
+  `[TDD-REFACTOR] <任务ID> <内容> | 无需重构 ✓`
+  集成任务 REFACTOR 可写「无新增生产代码，各模块独立性已验证，无跨模块重构 ✓」。
+  交付前自检：对每个涉及生产代码的任务，progress 须含 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR]（或「Txx 无需重构 ✓」）各至少一行；且 [TDD-RED] 行须在 [TDD-GREEN] 行之前。缺任一项则补充后再交付。禁止所有 US 完成后才集中补写。
+
+  请对 Story {epic_num}-{story_num} 执行 Dev Story 实施。
+
+  **各 stage 审计通过后落盘与统一 host 收口约束（强制）**：
+
+  （1）各 stage 审计通过时，将报告保存至 speckit-workflow §x.2 约定路径；spec/plan/GAPS/tasks 阶段路径分别为 specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/ 下的 AUDIT_spec-、AUDIT_plan-、AUDIT_GAPS-、AUDIT_tasks-E{epic_num}-S{story_num}.md；结论中注明保存路径及 iteration_count。
+
+  （2）fail 轮报告保存至 AUDIT_{stage}-E{epic}-S{story}_round{N}.md。**验证轮**（连续 3 轮无 gap 的确认轮）报告**不列入 iterationReportPaths**，仅 fail 轮及最终 pass 轮参与收集。pass 时主 Agent 收集本 stage 所有 fail 轮报告路径，传入 `--iterationReportPaths path1,path2,...`（逗号分隔）；**一次通过或无 fail 轮时不传**。
+
+  （3）统一由 invoking host/runner 调用 `runAuditorHost` 承接 spec/plan/GAPS/tasks 阶段的评分写入、auditIndex 更新与 post-audit automation；主 Agent 不再手工编排 `bmad-speckit score`。**iteration_count 传递（强制）**：执行审计循环的 Agent 在 pass 时传入当前累计值（本 stage 审计未通过/fail 的轮数）；**一次通过传 0**；**连续 3 轮无 gap 的验证轮不计入 iteration_count**；禁止省略。
+
+  （4）implement 阶段 artifactDocPath 可为 story 子目录实现主文档路径或留空。
+
+  （5）调用失败时记录 `resultCode`、失败原因与修复动作进审计证据，并立即自动重试；未获得 `closeout approved` 前不得结束当前 stage、不得交还用户手动操作。
+
+  **必须嵌套执行 speckit-workflow 完整流程**：specify → plan → GAPS → tasks → 执行。
+
+  **上下文与路径**：
+  - Story 文档：{project-root}/_bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{story_num}-*/*.md
+  - 产出路径：Story 文档入 story 子目录 `epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/{epic_num}-{story_num}-{slug}.md`
+  - BUGFIX/TASKS 文档：（由主 Agent 传入实际路径）
+  - 项目根目录：{project-root}
+
+  **必须遵守**：ralph-method（执行前**必须**在 `_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/` 创建 prd.{stem}.json 与 progress.{stem}.txt（stem 为 tasks 文档 stem）；每完成一个 US 必须更新 prd（passes=true）、progress（追加 story log）；按 US 顺序执行。**禁止**在未创建上述文件前开始编码）、TDD 红绿灯、speckit-workflow、禁止伪实现、失败用例须修或记、pytest 在项目根目录运行。
+
+**implement 执行约束**：执行 implement（或等价执行 tasks）时，子 Agent 必须加载 speckit-workflow 与 ralph-method 技能，或至少遵守 commands/speckit.implement.md 中嵌入的 ralph 步骤（步骤 3.5、6、8）；不得仅凭「执行 tasks」的泛化理解而跳过 prd/progress 创建与 per-US 更新。
+
+  请读取 ralph-method 技能与 speckit-workflow 技能，严格按照其规则执行。
+
+  子任务返回后，主 Agent 必须发起阶段四实施后审计（STORY-A4-POSTAUDIT），禁止跳过。实施后审计为必须步骤，非可选。
+```
+
+#### 3.3.1 子任务返回后兜底 cleanup（主 Agent 强制步骤）
+
+子任务（STORY-A3-DEV）返回或超时后，主 Agent **必须**按顺序执行且**禁止**跳过：
+
+1. **cleanup**：检查 `_bmad-output/current_pytest_session_pid.txt`；若文件存在，**必须**执行以下对应平台的命令并删除该文件；**禁止**跳过。
+2. **下一步唯一允许动作**：**立即**发起阶段四实施后审计（STORY-A4-POSTAUDIT）。**禁止**再次发起阶段三 Dev Story 子任务。
+
+cleanup 命令（按平台择一执行）：
+
+- **Linux/macOS**：`python tools/cleanup_test_processes.py --only-from-file --session-pid $(cat _bmad-output/current_pytest_session_pid.txt)`
+- **Windows (PowerShell)**：`python tools/cleanup_test_processes.py --only-from-file --session-pid (Get-Content _bmad-output/current_pytest_session_pid.txt)`
+- **Windows (cmd)**：`for /f %i in (_bmad-output\current_pytest_session_pid.txt) do python tools/cleanup_test_processes.py --only-from-file --session-pid %i`
+
+执行完成后删除 `_bmad-output/current_pytest_session_pid.txt`。
+
+---
+
+## 阶段四：实施后审计（增强版）
+
+本阶段为**必须**步骤，非可选。主 Agent 在子任务返回后必须发起，不得跳过。**严格度：strict**，须遵循 [audit-post-impl-rules.md](../speckit-workflow/references/audit-post-impl-rules.md)（路径：`.codex/skills/speckit-workflow/references/audit-post-impl-rules.md`）。
+
+### 收敛条件（strict，必须）
+
+- **连续 3 轮无 gap**：连续 3 次审计结论均为「完全覆盖、验证通过」，且该 3 次报告中批判审计员结论段均注明「本轮无新 gap」。任一轮为「存在 gap」则从下一轮重新计数。
+- **批判审计员 >50%**：报告须包含「## 批判审计员结论」段落，该段落字数或条目数不少于报告其余部分；必填结构见 [audit-prompts-critical-auditor-appendix.md](../speckit-workflow/references/audit-prompts-critical-auditor-appendix.md)。
+- 主 Agent 在发起第 2、3 轮审计前，可输出「第 N 轮审计通过，继续验证…」以提示用户。
+
+### 前置检查
+
+在进行实施后审计前，必须确认：
+- [ ] speckit specify阶段code-review审计已通过（§1）
+- [ ] speckit plan阶段code-review审计已通过（§2）
+- [ ] speckit GAPS阶段code-review审计已通过（§3）
+- [ ] speckit tasks阶段code-review审计已通过（§4）
+- [ ] speckit执行阶段code-review审计已通过（§5）
+- [ ] TDD记录完整（包含RED/GREEN/REFACTOR三个阶段）
+- [ ] ralph-method进度文件已更新
+
+如有任何一项未通过，必须先完成该项审计。
+
+### 综合审计
+
+使用 `audit-prompts.md §5` 进行综合验证。**报告可解析块须符合 §5.1**（四维：功能性、代码质量、测试覆盖、安全性），与 _bmad/_config/code-reviewer-config.yaml modes.code.dimensions 一致，否则 code 模式评分解析器无法解析、仪表盘四维显示「无数据」。
+
+**【§5 可解析块要求（implement 专用）】** 报告结尾的可解析评分块**必须**使用 modes.code 四维：`- 功能性: XX/100`、`- 代码质量: XX/100`、`- 测试覆盖: XX/100`、`- 安全性: XX/100`。**禁止**使用 需求完整性、可测试性、一致性、可追溯性（该四维仅适用于 tasks/story 阶段）。总体评级禁止 B+、A-、C+、D- 等修饰符，仅限纯 A/B/C/D。否则 code 模式评分解析器无法解析，仪表盘四维显示「无数据」。
+
+**审计维度**：
+1. 需求覆盖度：是否实现了Story文档中的所有需求
+2. 测试完整性：单元测试、集成测试是否充分
+3. 代码质量：是否符合项目编码规范
+3.1. lint：项目须按技术栈配置并执行 Lint（见 lint-requirement-matrix）；若使用主流语言但未配置 Lint 须作为未通过项；已配置的须执行且无错误、无警告。禁止以「与本次任务不相关」豁免。
+4. 文档一致性：Story文档、spec、plan、代码是否一致
+5. 可追溯性：PRD需求→Story→spec→task→代码的链路是否完整
+
+**强制审计项（与 bmad-bug-assistant BUG-A4-POSTAUDIT 一致）**：
+- **TDD 顺序验证**：对每个任务的 progress 记录，[TDD-RED] 须在 [TDD-GREEN] 之前出现；若 [TDD-GREEN] 在 [TDD-RED] 之前或缺少 [TDD-RED]，判为「事后补写」，结论未通过。
+- **回归判定强制规则**：任何在本 Story 实施前已存在的测试用例，若实施后失败，一律视为回归，须修复或经用户批准后列入正式排除清单。禁止以「与 Story X 相关」「与本 Story 无关」「来自前置 Story」等理由排除。强制步骤：执行全量回归、逐条判定是否回归；若出现「与本 Story 无关」排除且无正式排除记录，结论为未通过。
+
+**审计方式**：
+- 优先：Codex worker dispatch调度code-reviewer
+- 回退：Codex worker adapter general-purpose + audit-prompts.md §5内容
+
+### 审计结论处理
+
+**通过（A/B级）**：
+- Story标记为完成
+- #### 步骤 4.3：Story 完成自检（强制，先执行）
+  - 在**提供完成选项之前**，主 Agent **必须先**确认统一 auditor host runner 已完成 implement 阶段 post-audit automation。
+  - 若 host 已完成，则无需执行 步骤 4.2。
+  - 若 host 未完成且 `AUDIT_Story_{epic}-{story}_stage4.md` 存在，则主 Agent 执行 步骤 4.2 补跑。
+  - 若报告可解析块维度错误，则先修正报告，再通过 `runAuditorHost` 重新收口。
+  - 补跑失败时不得继续主流程；必须自动重试并记录每次失败原因与修复动作，直到获得 `closeout approved` 或确认真实 blocker。
+- #### 步骤 4.2：补跑 runAuditorHost（步骤 4.3 判定 host 未完成时执行）
+  - 当 步骤 4.3 判定 host 未完成且报告存在时，主 Agent 执行：`npx --no-install bmad-speckit run-auditor-host --projectRoot <projectRoot> --stage implement --artifactPath <story 文档路径> --reportPath <报告路径> --iterationCount {本 stage 累计 fail 轮数，0 表示一次通过}`
+  - 若调用失败，记录 `resultCode`、失败原因与修复动作，并自动重试；未获得 `closeout approved` 前不得提供完成选项。
+- #### 审计通过后统一 Host 收口（强制）
+  - 子代理在【审计通过后必做】中返回 host 所需字段；主 Agent 通过 步骤 4.3/4.2 做完成态检查与补跑；**必须含 `--iteration-count {累计值}`**；stage=implement。若失败，必须自动重试并记录 `resultCode`、失败原因、修复动作；未获得 `closeout approved` 前不得结束。
+- 提供完成选项（见下文）
+
+**有条件通过（C级）**：
+- 列出必须修复的问题
+- 修复后重新审计
+
+**不通过（D级）**：
+- 列出重大问题
+- 可能需要回退到Layer 3重新Create Story
+- 或回退到speckit特定阶段重新执行
+
+### 完成后选项
+
+当Story审计通过后，提供以下选项（详细实现见 **Phase 5: 收尾与集成（增强版）**）：
+
+**[0] 提交代码**
+- 询问是否将当前改动提交到本地仓库
+- 若选择是，自动调用 auto-commit-utf8 技能生成中文 commit message 并提交
+
+**[1] 开始下一个Story**
+- 在同一Epic worktree内切换到下一个Story分支
+- 自动检测并处理跨Story依赖
+
+**[2] 创建PR并等待review**
+- 推送当前Story分支到远程
+- 创建PR（调用pr-template-generator生成描述）
+- 进入强制人工审核流程
+
+**[3] 批量Push所有Story分支**
+- 推送Epic下所有已完成的Story分支
+- 为每个Story创建PR
+- 进入批量人工审核流程
+
+**[4] 保留分支稍后处理**
+- 保持当前分支状态
+- 允许稍后继续
+
+### Epic完成检查
+
+当Epic下所有Story都完成后：
+1. 验证所有Story的PR都已merge到feature-epic-{num}分支
+2. 执行Epic级集成测试
+3. 创建Epic级别的PR（合并到main）
+4. 再次进入强制人工审核
+5. 清理Epic worktree（可选）；（**GAP-045 修复**：清理条件：Epic PR 已 merge 且无未决问题；保留时长：建议 7 天；恢复：从 main 重新 checkout feature-epic-{num} 分支）；（**GAP-086 修复**：由用户选择是否清理；或系统建议后用户确认）
+
+### Phase 5: 收尾与集成（增强版）
+
+**GAP-074 前置条件**：执行选项 [2] 或 [3] 前，须确认 pr-template-generator 已安装或已在前置探测中确认。若不存在，输出安装指引（如 `cursor skills install pr-template-generator` 或参考 Codex skills 文档）并跳过 PR 描述生成；可使用占位模板替代。
+
+当所有Story完成后，提供以下选项：
+
+#### 选项 [0] 提交代码
+- 询问是否将当前改动提交到本地仓库
+- 若选择是，自动调用 auto-commit-utf8 技能生成中文 commit message 并提交
+
+#### 选项 [1] 继续下一个Story
+- 在同一Epic worktree内切换到下一个Story分支
+- 自动检测并处理跨Story依赖
+- 如果前置Story未完成，提示等待
+
+#### 选项 [2] 创建PR并等待review
+- 推送当前Story分支到远程
+- **自动调用pr-template-generator生成PR描述**（前置条件见上方 GAP-074）
+- 创建PR并进入强制人工审核流程
+
+**pr-template-generator调用**：
+```bash
+# 分析当前分支的commits
+analyze_commits(story_branch)
+
+# 生成PR模板
+pr_template = generate_pr_template(
+    story_id="4.1",
+    story_title="metrics cache fix",
+    commits=commit_history,
+    files_changed=changed_files,
+    tests_added=test_files
+)
+
+# PR模板内容包括：
+# - Story背景和目的
+# - 主要改动点（基于commit message）
+# - 测试覆盖情况
+# - 影响范围
+# - 回滚方案
+```
+
+#### 选项 [3] 批量Push所有Story分支
+- 推送Epic下所有已完成的Story分支到远程
+- **为每个Story自动创建PR（使用pr-template-generator，前置条件见 GAP-074）**
+- 进入批量人工审核流程
+
+**批量处理流程**：
+```
+For each completed_story in epic.stories:
+    1. Push story_branch to origin
+    2. Generate PR template using pr-template-generator
+    3. Create PR with generated template
+    4. Add to batch_review_queue
+
+Display batch review summary:
+- Total PRs created: N
+- Epic: feature-epic-4
+- Ready for review
+```
+
+**批量Push实现细节**：
+
+**前置条件检查**：
+```python
+def batch_push_precheck(epic_id):
+    # 1. 检查所有Story是否已完成
+    incomplete_stories = get_incomplete_stories(epic_id)
+    if incomplete_stories:
+        warn(f"以下Story未完成: {incomplete_stories}")
+        if not user_confirm("是否只推送已完成的Story？"):
+            return False
+
+    # 2. 检查远程仓库连接
+    if not test_remote_connection():
+        error("无法连接到远程仓库")
+        return False
+
+    # 3. 检查权限
+    if not has_push_permission():
+        error("没有推送权限")
+        return False
+
+    return True
+```
+
+**批量推送流程**：
+```python
+def batch_push_stories(epic_id):
+    results = []
+
+    for story in get_completed_stories(epic_id):
+        try:
+            # 1. 切换到Story分支
+            checkout_branch(f"story-{epic_id}-{story.num}")
+
+            # 2. 拉取最新代码（避免冲突）
+            pull_latest()  # GAP-082 修复：pull 失败（如冲突）时默认 skip 该 Story 继续下一 Story 并记录；可选「提示用户解决」模式
+
+            # 3. 推送到远程
+            push_to_remote(f"story-{epic_id}-{story.num}")
+
+            # 4. 生成PR模板
+            pr_template = generate_pr_template(story)
+
+            # 5. 创建PR
+            pr_url = create_pull_request(
+                title=f"Story {epic_id}.{story.num}: {story.title}",
+                body=pr_template,
+                head=f"story-{epic_id}-{story.num}",
+                base=f"feature-epic-{epic_id}"
+            )
+
+            results.append({
+                "story": story.num,
+                "status": "success",
+                "pr_url": pr_url
+            })
+
+        except Exception as e:
+            results.append({
+                "story": story.num,
+                "status": "failed",
+                "error": str(e)
+            })
+
+    return results
+```
+
+**错误处理**：
+- 单个Story推送失败不影响其他Story
+- 记录失败的Story和原因
+- 提供重试机制
+
+**进度显示**：
+```
+批量推送中...
+[1/7] Story 4.1: 推送中... ✅ 完成，PR #123
+[2/7] Story 4.2: 推送中... ✅ 完成，PR #124
+[3/7] Story 4.3: 推送中... ❌ 失败（网络错误）
+[4/7] Story 4.4: 推送中... ✅ 完成，PR #125
+...
+
+推送完成：6/7 成功
+失败：Story 4.3
+是否重试失败的Story？[Y/n]
+```
+
+#### 选项 [4] 保留分支稍后处理
+- 保持当前分支状态
+- 允许稍后继续
+- 记录当前进度到元数据
+
+#### 强制人工审核流程
+
+无论选择哪个选项，PR Merge环节**绝对不能自动merge**：
+
+**单PR审核界面**：
+```
+╔════════════════════════════════════════════════════════════╗
+║                    🔒 PR审核请求                            ║
+╠════════════════════════════════════════════════════════════╣
+║  Epic: feature-epic-4 (用户管理系统重构)                    ║
+║  PR: #123 Story 4.1: metrics cache fix                     ║
+╟────────────────────────────────────────────────────────────╢
+║  📊 CI状态:        ✅ 全部通过                              ║
+║  📈 覆盖率变化:    +2.3%                                   ║
+║  🔍 代码审查:      ✅ 已通过 code-reviewer（**GAP-059 修复**：调用时传入 mode=pr，从 code-reviewer-config 读取 pr 模式提示词）                 ║
+║  📁 影响文件:      12个                                    ║
+║  📝 PR描述:        [由pr-template-generator生成]           ║
+║                                                            ║
+║  ❓ 请选择操作：                                            ║
+║  [1] ✅ 批准并Merge                                        ║
+║  [2] ❌ 拒绝，返回修改                                      ║
+║  [3] 👀 查看详细diff                                       ║
+║  [4] ⏭️  跳过此PR                                          ║
+╚════════════════════════════════════════════════════════════╝
+```
+
+**批量审核界面**：
+```
+╔════════════════════════════════════════════════════════════╗
+║                 🔒 批量PR审核请求                           ║
+╠════════════════════════════════════════════════════════════╣
+║  Epic: feature-epic-4                                       ║
+║  待审核PR: 3个                                              ║
+╟────────────────────────────────────────────────────────────╢
+║  [#123] Story 4.1 - ✅ CI通过 - ✅ 审计A级                  ║
+║  [#124] Story 4.2 - ✅ CI通过 - ✅ 审计B级                  ║
+║  [#125] Story 4.3 - ✅ CI通过 - ⚠️  审计C级（需关注）       ║
+╟────────────────────────────────────────────────────────────╢
+║  ❓ 请选择操作：                                            ║
+║  [1] ✅ 批准全部并逐个Merge                                ║
+║  [2] ✅ 批准部分（选择）                                   ║
+║  [3] ❌ 拒绝全部，返回修改                                 ║
+║  [4] 👀 逐个查看详情                                       ║
+╚════════════════════════════════════════════════════════════╝
+```
+
+**重要约束**：
+- 必须等待用户明确选择[1]并确认后才能merge
+- 严禁自动merge
+- 审核不通过的PR不能merge
+
+#### 强制人工审核界面实现
+
+**核心原则**：绝对不能自动merge，必须停止等待人工确认。
+
+**单PR审核界面**：
+```python
+def show_pr_review_interface(pr_info):
+    # 获取PR详细信息
+    ci_status = get_ci_status(pr_info.id)
+    coverage_change = get_coverage_change(pr_info.id)
+    code_review_result = get_code_review_result(pr_info.id)
+    affected_files = get_affected_files(pr_info.id)
+
+    # 显示审核界面
+    display(f"""
+╔════════════════════════════════════════════════════════════╗
+║                    🔒 PR审核请求                            ║
+╠════════════════════════════════════════════════════════════╣
+║  Epic: {pr_info.epic_name}                                  ║
+║  PR: #{pr_info.id} {pr_info.title}                         ║
+╟────────────────────────────────────────────────────────────╢
+║  📊 CI状态:        {ci_status.emoji} {ci_status.text}       ║
+║  📈 覆盖率变化:    {coverage_change}                        ║
+║  🔍 代码审查:      {code_review_result.emoji} {code_review_result.grade}级 ║
+║  📁 影响文件:      {len(affected_files)}个                  ║
+║  📝 PR描述:        [由pr-template-generator生成]           ║
+║                                                            ║
+║  ❓ 请选择操作：                                            ║
+║  [1] ✅ 批准并Merge                                        ║
+║  [2] ❌ 拒绝，返回修改                                      ║
+║  [3] 👀 查看详细diff                                       ║
+║  [4] ⏭️  跳过此PR                                          ║
+╚════════════════════════════════════════════════════════════╝
+    """)
+
+    # 等待用户输入（轮询模式，24h超时）
+    # GAP-010 修复：Codex/Codex 无现成 wait_for_user_input_with_polling API，需自行实现
+    # 实现建议：输出 prompt 后结束本轮；用户在下条消息回复 1/2/3/4
+    # 超时/提醒：仅在会话中打印提示信息，暂不集成邮件/Slack 等外接
+    choice = wait_for_user_input_with_polling(
+        timeout_hours=24,
+        poll_interval_minutes=30,
+        on_timeout=lambda: print(f"[超时提醒] PR #{pr_info.id} 待审核已超过24小时。请尽快完成审核，或选择跳过/拒绝。")
+    )
+
+    if choice == "1":
+        confirm = ask("确定要批准并Merge此PR？ [yes/no]: ")
+        if confirm.lower() == "yes":
+            merge_pull_request(pr_info.id)
+            return "merged"
+        else:
+            return "cancelled"
+    elif choice == "2":
+        reason = ask("拒绝原因: ")
+        reject_pull_request(pr_info.id, reason)
+        return "rejected"
+    elif choice == "3":
+        show_diff(pr_info.id)
+        return show_pr_review_interface(pr_info)  # 递归显示
+    elif choice == "4":
+        return "skipped"
+```
+
+**批量审核界面**：
+```python
+def show_batch_review_interface(epic_id, pr_list):
+    pr_statuses = [get_pr_status(pr) for pr in pr_list]
+
+    display(f"""
+╔════════════════════════════════════════════════════════════╗
+║                 🔒 批量PR审核请求                           ║
+╠════════════════════════════════════════════════════════════╣
+║  Epic: {epic_id}                                            ║
+║  待审核PR: {len(pr_list)}个                                 ║
+╟────────────────────────────────────────────────────────────╢
+""")
+
+    for i, (pr, status) in enumerate(zip(pr_list, pr_statuses), 1):
+        display(f"║  [#{pr.id}] Story {pr.story_id} - {status.ci_emoji} CI{status.ci_status} - {status.review_emoji} 审计{status.grade}级")
+
+    display("""
+╟────────────────────────────────────────────────────────────╢
+║  ❓ 请选择操作：                                            ║
+║  [1] ✅ 批准全部并逐个Merge                                ║
+║  [2] ✅ 批准部分（选择）                                   ║
+║  [3] ❌ 拒绝全部，返回修改                                 ║
+║  [4] 👀 逐个查看详情                                       ║
+╚════════════════════════════════════════════════════════════╝
+    """)
+
+    choice = wait_for_user_input_with_polling(timeout_hours=24, poll_interval_minutes=30)
+
+    if choice == "1":
+        confirm = ask(f"确定要批准全部{len(pr_list)}个PR并逐个Merge？ [yes/no]: ")
+        if confirm.lower() == "yes":
+            for pr in pr_list:
+                merge_pull_request(pr.id)
+            return "all_merged"
+    elif choice == "2":
+        # GAP-046/GAP-088 修复：select_prs_to_merge UI 交互
+        selected = select_prs_to_merge(pr_list)
+        for pr in selected:
+            merge_pull_request(pr.id)
+        return f"{len(selected)}_merged"
+    # ... 其他选项
+```
+
+**select_prs_to_merge UI 交互（GAP-046/GAP-088）**：
+```python
+def select_prs_to_merge(pr_list):
+    """批准部分PR时的选择逻辑"""
+    display(pr_list with indices 1..n)
+    raw = input("输入序号，逗号或范围，如 1,3,5 或 1-3: ")
+    indices = parse_indices(raw, max_n=len(pr_list))
+    # 空输入→[]；非法格式→提示重输；越界→忽略
+    return [pr_list[i-1] for i in indices if 1 <= i <= len(pr_list)]
+```
+
+**审核提醒机制**（仅在会话中打印，暂不集成邮件/Slack）：
+```python
+# GAP-056 修复：已知限制——用户关闭会话后 reopen 时提醒无法送达；可补充「会话恢复时检查待审核 PR 并提示」
+if time_since_last_activity() > timedelta(hours=24):
+    print(f"[提醒] Epic {epic_id} 有待审核PR，共 {pending_pr_count} 个已超过24小时，请尽快处理。")
+```
+
+**审核SLA约定**（建议）：
+- P0 PR：4小时内响应
+- P1 PR：24小时内响应
+- P2 PR：72小时内响应
+
+**Runtime Governance (S11 - post-audit):** 主 Agent 在调用 post-audit 子任务之前执行：
 `npx bmad-speckit ensure-run-runtime-context --story-key {story_key} --lifecycle post_audit`
-瀛愪换鍔¤繑鍥炰箣鍚庢墽琛岋細
+子任务返回之后执行：
 `npx bmad-speckit ensure-run-runtime-context --story-key {story_key} --lifecycle post_audit --persist`
-`{story_key}` 涓哄綋鍓?Story 鐨?kebab-case key銆?
-### Stage 4: Post Audit / `STORY-A4-POSTAUDIT`
+`{story_key}` 为当前 Story 的 kebab-case key。
 
-Claude 绔?Stage 4 Post Audit 鎵ц浣擄紝璐熻矗瀵?Dev Story 瀹炴柦缁撴灉杩涜涓ユ牸瀹¤銆?
-#### Purpose
+post-audit 前还必须追加以下检查：
 
-鏈樁娈垫槸 Cursor `bmad-story-assistant` 涓?Post Audit 闃舵鍦?Codex CLI / OMC 鐜涓嬬殑鎵ц閫傞厤鍣ㄣ€?
-鐩爣锛?- 缁ф壙 Cursor Post Audit 璇箟
-- 楠岃瘉浠ｇ爜瀹炵幇瀹屽叏瑕嗙洊 tasks銆乻pec銆乸lan
-- 涓撻」瀹℃煡 TDD 鎵ц璇佹嵁鍜?ralph-method 杩借釜鏂囦欢
-- 鍐冲畾鏄惁鍏佽杩涘叆 commit gate
+1. `deferred-gap-register.yaml` 已同步 closure / carry-forward evidence
+2. `journey-ledger`、`trace-map`、`closure-notes` 与 tasks 当前状态一致
+3. 若存在 `module complete but journey not runnable`、缺 `Production Path`、缺 `Smoke Proof`、缺 `Closure Note`、缺 `Acceptance Evidence`，则不得进入通过结论
 
-#### Required Inputs
+### 4.1 审计子代理与提示词
 
-- `artifactDocPath`: 琚浠ｇ爜/鏂囨。璺緞
-- `reportPath`: 瀹¤鎶ュ憡淇濆瓨璺緞
-- `tasksPath`: tasks.md 璺緞锛堝鐓х敤锛?- `specPath`: spec.md 璺緞锛堝鐓х敤锛屽彲閫夛級
-- `planPath`: plan.md 璺緞锛堝鐓х敤锛屽彲閫夛級
-- `epic`: Epic 缂栧彿
-- `story`: Story 缂栧彿
-- `epicSlug`: Epic 鍚嶇О slug
-- `storySlug`: Story 鍚嶇О slug
-- `iterationCount`: 褰撳墠杩唬杞暟锛堥粯璁?0锛?- `strictness`: 涓ユ牸搴︽ā寮忥紙simple/standard/strict锛岄粯璁?standard锛?
-#### Codex Canonical Base
+与阶段二相同：**优先** Codex worker dispatch 调度 code-reviewer；**回退** Codex worker adapter general-purpose。主 Agent 须将 **STORY-A4-POSTAUDIT** 完整 prompt 模板整段复制并替换占位符后传入。**传入审计子任务的 prompt 必须包含【§5 可解析块要求（implement 专用）】**（见上节综合审计），并附 audit-prompts §5.1 或 audit-prompts-code.md 可解析块示例（功能性、代码质量、测试覆盖、安全性）。**【审计通过后必做】**：当结论为「完全覆盖、验证通过」时，你（审计子代理）**在返回主 Agent 前必须**返回 `projectRoot`、`reportPath`、`artifactDocPath=<story 文档路径>`、`stage=implement`，交由 invoking host/runner 统一调用 `runAuditorHost`；报告路径为 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_Story_{epic}-{story}_stage4.md`；若 host/runner 执行失败，在结论中注明 resultCode；**禁止**在未完成上述 host 收口前返回通过结论。详细模板见本 skill 历史版本或 speckit-workflow references。
 
-- 浠?Cursor post-audit 璇箟涓哄熀绾?- post-audit 鏄繀椤绘楠わ紝闈炲彲閫?- 琚瀵硅薄鏄?*浠ｇ爜瀹炵幇**锛屼笉鏄枃妗?- 鍙戠幇 gap 鏃?*涓嶇洿鎺ヤ慨鏀逛唬鐮?*锛堢敱涓?Agent 濮旀墭瀹炴柦瀛愪唬鐞嗕慨鏀癸級
-- 浣跨敤 **code 妯″紡缁村害**锛堝姛鑳芥€с€佷唬鐮佽川閲忋€佹祴璇曡鐩栥€佸畨鍏ㄦ€э級
-- 蹇呴』楠岃瘉 TDD 绾㈢豢鐏墽琛岃瘉鎹?- 蹇呴』妫€鏌?ralph-method 杩借釜鏂囦欢
-- 瀹¤閫氳繃鍚庡繀椤昏Е鍙?`runAuditorHost`
-- 蹇呴』棰濆妫€鏌?`deferred-gap-register` 鐨?closure / carry-forward evidence
-- 蹇呴』棰濆妫€鏌?`Production Path`銆乣Smoke Proof`銆乣Full E2E` / defer reason銆乣Closure Note`銆乣Acceptance Evidence`
-- 鑻ュ嚭鐜?`module complete but journey not runnable`锛屽繀椤诲垽澶辫触骞跺洖閫€鍒?Stage 3 淇
+若审计结论为**未通过**，**必须**按审计报告修改后**再次发起**，直至「完全覆盖、验证通过」。
 
-#### Subtask Template (STORY-A4-POSTAUDIT)
+- **不中断执行 contract**：实施子代理必须连续完成当前作用域内的全部剩余 User Story/任务，不得在 milestone 完成后暂停等待主 Agent 批准。控制权仅可在以下三种情况下返回主 Agent：① 当前作用域工作全部完成且可进入 post-audit；② 出现真实 blocker，需要 reroute / remediation；③ 本技能显式定义的审计或 checkpoint 边界已到达。
+
+---
+
+## 阶段五：Skill 自审计（技能创建时）
+
+当本 skill 被**新建或重大修改**后，应对 skill 文件发起审计子任务。遵循 §2.1 / §4.1 优先顺序（先 code-reviewer，失败则 general-purpose）。
 
 ```yaml
-description: "Execute Post Audit for {epic}-{story} via STORY-A4-POSTAUDIT"
+# 回退方案示例
+tool: Codex worker adapter
+subagent_type: general-purpose
+description: "Audit bmad-story-assistant skill"
 prompt: |
-  銆愬繀璇汇€戞湰 prompt 椤讳负瀹屾暣妯℃澘涓旀墍鏈夊崰浣嶇宸叉浛鎹€?
-  浣犱綔涓?auditor-implement 鎵ц浣擄紝鎵ц BMAD Stage 4 Post Audit 娴佺▼銆?
-  **Required Inputs**锛堝凡鏇挎崲涓哄疄闄呭€硷級锛?  - artifactDocPath: {瀹為檯璺緞}
-  - reportPath: {瀹為檯璺緞}
-  - tasksPath: {瀹為檯璺緞}
-  - specPath: {瀹為檯璺緞}
-  - planPath: {瀹為檯璺緞}
-  - epic: {瀹為檯鍊紏
-  - story: {瀹為檯鍊紏
-  - iterationCount: {瀹為檯鍊紏
-  - strictness: {standard|strict}
+  你是一位非常严苛的代码审计员。请对「bmad-story-assistant SKILL.md」进行审计。
 
-  **Codex Canonical Base - Post Audit 瑕佹眰**锛?  1. 璇诲彇 audit-prompts.md 搂5
-  2. 璇诲彇鎵瑰垽瀹¤鍛樿鑼?  3. 璇诲彇瀹炴柦鍚庡璁¤鍒?  4. 璇诲彇 tasks.md銆乻pec.md銆乸lan.md 浣滀负瀵圭収鍩虹嚎
-  5. 璇诲彇 ralph-method 杩借釜鏂囦欢锛坧rd.json + progress.txt锛?  6. 閫愰」楠岃瘉浠ｇ爜瀹炵幇瑕嗙洊搴?  7. 涓撻」瀹℃煡 TDD 绾㈢豢鐏墽琛岃瘉鎹?  8. 鐢熸垚鍖呭惈鎵瑰垽瀹¤鍛樼粨璁虹殑瀹屾暣鎶ュ憡
-  9. 鎶ュ憡缁撳熬杈撳嚭鍙В鏋愯瘎鍒嗗潡
+  审计内容：
+  1. 是否完整覆盖用户要求的 Create Story、审计、Dev Story、实施后审计、Skill 自审计 全流程。
+  2. Epic/Story 编号作为输入的说明是否清晰，占位符 {epic_num}、{story_num}、{project-root} 是否一致。
+  3. 引用的命令、技能是否准确：/bmad-bmm-create-story、/bmad-bmm-dev-story、Codex worker adapter、ralph-method、speckit-workflow、audit-prompts.md §5。
+  4. 主 Agent 禁止直接修改生产代码、必须通过 Codex worker adapter 委托等约束是否明确。
+  5. 中文表述是否清晰无歧义。
+  6. 审计步骤是否明确：Codex worker adapter 不支持 code-reviewer；优先 Codex worker dispatch 调度 code-reviewer、失败则回退 Codex worker adapter general-purpose；是否避免强制「必须用 Codex worker adapter」；阶段二使用 Story 专用提示词、阶段四使用完整 audit-prompts §5。
+  7. **推迟闭环**：禁止词表是否含「先实现、后续扩展、或后续扩展」；是否含「Story 范围表述示例」；阶段二审计是否含「由 Story X.Y 负责」的验证项；审计未通过时主 Agent 是否须先执行「创建/更新 Story X.Y」再再次审计；Create Story 是否含正面指引（功能不在本 Story 但属 Epic 时须写明归属）。
 
-  **瀹¤缁村害**锛?  - 鍔熻兘鎬у疄鐜板畬鏁存€?  - 浠ｇ爜璐ㄩ噺鏍囧噯
-  - 娴嬭瘯瑕嗙洊鐜?  - 瀹夊叏鎬ф鏌?
-  **Repo Add-ons**锛?  - 绂佹璇嶆鏌?  - 鎵瑰垽瀹¤鍛樼粨璁?  - runAuditorHost 瑙﹀彂
-  - commit gate 鍓嶇疆鏉′欢妫€鏌?```
-
-#### Stage 4 璋冪敤鍓?CLI 杈撳嚭瑕佹眰
-
-涓?Agent 蹇呴』鍦ㄨ皟鐢?Stage 4 鎵ц浣撲箣鍓嶏紝鍏堝湪褰撳墠 session CLI 杈撳嚭浠ヤ笅鏍煎紡鐨勮皟鐢ㄦ憳瑕侊細
-
-```
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?Stage 4: Post Audit - 瀛愪唬鐞嗚皟鐢ㄦ憳瑕?鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?鎵ц浣? bmad-story-post-audit
-subagent_type: general-purpose
-璋冪敤鏃堕棿: {timestamp}
-
-杈撳叆鍙傛暟:
-  鈥?artifactDocPath: {瀹為檯鍊紏
-  鈥?reportPath: {瀹為檯鍊紏
-  鈥?tasksPath: {瀹為檯鍊紏
-  鈥?specPath: {瀹為檯鍊紏
-  鈥?planPath: {瀹為檯鍊紏
-  鈥?gapsPath: {瀹為檯鍊紏
-  鈥?implementationPath: {瀹為檯鍊紏
-
-浠ｇ爜妯″紡缁村害寮鸿皟:
-  鈥?绂佹璇嶆鏌? 鏃犳ā绯婅〃杩般€佹棤寤舵湡鎵胯
-  鈥?涓€鑷存€ф鏌? 瀹炵幇涓?spec/plan/tasks 瀵归綈
-  鈥?TDD 璇佹嵁瀹℃煡: 娴嬭瘯瑕嗙洊鐜?鈮?80%
-  鈥?浠ｇ爜璐ㄩ噺: 鍑芥暟 < 50 琛岋紝鏂囦欢 < 800 琛?
-strict convergence 妫€鏌?
-  鈥?绗?杞? 鍒濇瀹¤锛屽彂鐜版墍鏈?gap
-  鈥?绗?杞? 楠岃瘉淇锛岀‘璁ゆ棤鏂?gap
-  鈥?绗?杞? 鏈€缁堢‘璁わ紝杈撳嚭閫氳繃鏍囪
-
-鎻愮ず璇嶇粨鏋勬憳瑕?
-  鈹溾攢 Codex Canonical Base
-  鈹?  鈹溾攢 POST-AUDIT-PROTOCOL 瀹屾暣妯℃澘
-  鈹?  鈹溾攢 5澶т唬鐮佸璁＄淮搴︼紙绂佹璇?涓€鑷存€?TDD/璐ㄩ噺/瀹夊叏锛?  鈹?  鈹溾攢 鎵瑰垽瀹¤鍛樹粙鍏ヨ姹?  鈹?  鈹斺攢 鍙В鏋愯瘎鍒嗗潡鏍煎紡
-  鈹溾攢 Codex no-hooks Runtime Adapter
-  鈹?  鈹溾攢 Primary Executor: bmad-story-post-audit
-  鈹?  鈹溾攢 Fallback: auditor-spec/plan/tasks/implement 搴忓垪
-  鈹?  鈹斺攢 Runtime Contracts: 瀹¤鎶ュ憡璺緞銆佽瘎鍒嗗啓鍏?  鈹斺攢 Repo Add-ons
-      鈹溾攢 绂佹璇嶆鏌ワ紙鍚唬鐮佹敞閲婏級
-      鈹溾攢 鎵瑰垽瀹¤鍛樼粨璁猴紙>50%瀛楁暟锛?      鈹溾攢 runAuditorHost 瑙﹀彂
-      鈹斺攢 strict 妯″紡 3 杞敹鏁?
-棰勬湡浜х墿:
-  鈥?瀹¤鎶ュ憡: _bmad-output/.../AUDIT-POST-{epic}-{story}.md
-  鈥?璇勫垎鍐欏叆: scoring/data/...json
-  鈥?鐘舵€佹洿鏂? story_audit_passed / story_audit_failed
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?```
-
-杈撳嚭鍚庣珛鍗宠皟鐢?Agent 宸ュ叿銆?
-#### Codex no-hooks Runtime Adapter
-
-**鎵ц浣撹皟鐢ㄦ柟寮?*
-
-涓?Agent 璋冪敤 Stage 4 鎵ц浣撴椂锛屽繀椤诲皢鏈?skill 涓?Stage 4 鐨勫畬鏁村唴瀹归€氳繃 `Agent` 宸ュ叿浼犲叆锛?
-```yaml
-tool: Agent
-subagent_type: general-purpose
-description: "Execute Stage 4 Post Audit"
-prompt: |
-  浣犱綔涓?auditor-implement 鎵ц浣擄紝鎵ц浠ヤ笅 Stage 4 Post Audit 娴佺▼锛?
-  [鏈?skill Stage 4 鐨勫畬鏁村唴瀹癸紝鍚?Required Inputs銆丆ursor Canonical Base銆丼ubtask Template锛屾墍鏈夊崰浣嶇宸叉浛鎹
+  报告结尾必须明确给出结论：是否「完全覆盖、验证通过」；若未通过，请列出未通过项及修改建议。
 ```
 
-**閲嶈**锛氭墽琛屼綋鏈韩涓嶅姞杞?skill锛屾墍鏈夊璁℃寚浠ょ敱涓?Agent 閫氳繃 prompt 鍙傛暟瀹屾暣浼犻€掋€?
----
-
-**Primary Executor**
-- `.codex/agents/auditors/auditor-implement.md`
-
-**Fallback Strategy**
-1. 浼樺厛鐢?`auditor-implement` agent 鎵ц Post Audit
-2. 鑻ヤ笉鍙敤锛屽洖閫€鍒?Codex reviewer
-3. 鍐嶄笉鍙敤锛屽洖閫€鍒?`code-review` skill
-4. 鏈€鍚庡洖閫€鍒颁富 Agent 鐩存帴鎵ц鍚屼竴浠戒笁灞?audit prompt
-
-**Runtime Contracts**
-- 瀹¤鎶ュ憡璺緞锛歚_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT_Story_{epic}-{story}_stage4.md`
-- 瀹¤閫氳繃鍚庡繀椤绘墽琛?`run-auditor-host.ts`
-- 瀹¤閫氳繃鍚庢洿鏂?story state 涓?`implement_passed`
-- 瀹¤澶辫触鍚庢洿鏂?story state 涓?`implement_failed`锛屽洖閫€鍒?Stage 3 淇
-
-#### Repo Add-ons
-
-- strict convergence锛堣繛缁?3 杞棤 gap锛?- 鎵瑰垽瀹¤鍛樼粨璁?- runAuditorHost 瑙﹀彂
-- commit gate 鍓嶇疆鏉′欢妫€鏌?- 鏈粨绂佹璇嶆鏌?
-#### Output / Handoff
-
-**PASS**
-```yaml
-layer: 4
-stage: implement_audit_passed
-
-execution_summary:
-  agent: auditor-implement
-  started_at: "{timestamp}"
-  completed_at: "{timestamp}"
-  duration_seconds: {seconds}
-  status: completed
-
-  steps_completed:
-    - step: config_read
-      status: passed
-      result: "bmad-story-config.yaml 宸茶鍙?
-    - step: strictness_determination
-      status: passed
-      result: "瀹¤涓ユ牸搴? {simple|standard|strict}"
-    - step: artifact_read
-      status: completed
-      result: "浠ｇ爜瀹炵幇宸茶鍙?
-    - step: tasks_comparison
-      status: completed
-      result: "tasks 瑕嗙洊搴﹀凡楠岃瘉"
-    - step: spec_comparison
-      status: completed
-      result: "spec 瀵归綈搴﹀凡楠岃瘉"
-    - step: tdd_evidence_review
-      status: completed
-      result: "TDD 绾㈢豢鐏瘉鎹凡瀹℃煡"
-    - step: ralph_method_check
-      status: completed
-      result: "ralph-method 杩借釜鏂囦欢宸叉鏌?
-    - step: reviewer_invocation
-      status: completed
-      result: "鎵瑰垽瀹¤鍛樺凡浠嬪叆"
-    - step: parse_and_write_score
-      status: completed
-      result: "璇勫垎宸插啓鍏?scoring/data/"
-    - step: state_update
-      status: completed
-      result: "story state 宸叉洿鏂颁负 implement_audit_passed"
-
-audit_summary:
-  coverage:
-    tasks_verified: {percent}%
-    spec_verified: {percent}%
-    plan_verified: {percent}%
-  tdd_evidence:
-    red_phase_confirmed: true
-    green_phase_confirmed: true
-    refactor_phase_confirmed: true
-    test_coverage: "{percent}%"
-  ralph_method_check:
-    prd_json_complete: true
-    progress_txt_complete: true
-    all_stories_passed: true
-  code_quality:
-    avg_function_lines: {number}
-    avg_file_lines: {number}
-    no_banned_words: true
-    security_checks_passed: true
-  reviewer_conclusion:
-    reviewer_word_count: {count}
-    total_report_word_count: {count}
-    reviewer_percentage: "{percent}%"
-    verdict: "PASS"
-    critical_gaps: 0
-
-artifacts:
-  story_doc:
-    path: "{storyDocPath}"
-    exists: true
-  audit_report:
-    path: "_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT_Story_{epic}-{story}_stage4.md"
-    exists: true
-    reviewer_conclusion_included: true
-    parseable_score_block: true
-  scoring_data:
-    path: "scoring/data/dev-{epic}-{story}-implement-{timestamp}.json"
-    exists: true
-
-handoff:
-  next_action: commit_gate
-  next_agent: bmad-master
-  next_stage: commit
-  ready: true
-  mainAgentNextAction: run_closeout
-  mainAgentReady: true
-  prerequisites_met:
-    - audit_passed
-    - score_written
-    - state_updated
-    - reviewer_conclusion_verified
-```
-
-**FAIL**
-```yaml
-layer: 4
-stage: implement_audit_failed
-
-execution_summary:
-  agent: auditor-implement
-  started_at: "{timestamp}"
-  completed_at: "{timestamp}"
-  duration_seconds: {seconds}
-  status: completed
-
-  steps_completed:
-    - step: config_read
-      status: passed
-      result: "bmad-story-config.yaml 宸茶鍙?
-    - step: strictness_determination
-      status: passed
-      result: "瀹¤涓ユ牸搴? {simple|standard|strict}"
-    - step: artifact_read
-      status: completed
-      result: "浠ｇ爜瀹炵幇宸茶鍙?
-    - step: tasks_comparison
-      status: failed
-      result: "鍙戠幇 tasks 鏈鐩栭」"
-    - step: spec_comparison
-      status: failed
-      result: "鍙戠幇 spec 鍋忕椤?
-    - step: tdd_evidence_review
-      status: failed
-      result: "TDD 璇佹嵁涓嶈冻"
-    - step: ralph_method_check
-      status: failed
-      result: "ralph-method 杩借釜涓嶅畬鏁?
-    - step: reviewer_invocation
-      status: completed
-      result: "鎵瑰垽瀹¤鍛樺凡浠嬪叆"
-    - step: gap_documentation
-      status: completed
-      result: "鎵€鏈?gap 宸茶褰?
-
-audit_summary:
-  coverage:
-    tasks_verified: {percent}%
-    spec_verified: {percent}%
-    plan_verified: {percent}%
-  gaps_found:
-    total: {count}
-    critical: {count}
-    major: {count}
-    minor: {count}
-  required_fixes:
-    - category: "tasks_coverage"
-      description: "{gap_description}"
-      priority: critical
-    - category: "spec_alignment"
-      description: "{gap_description}"
-      priority: major
-    - category: "tdd_evidence"
-      description: "{gap_description}"
-      priority: major
-  reviewer_conclusion:
-    reviewer_word_count: {count}
-    total_report_word_count: {count}
-    reviewer_percentage: "{percent}%"
-    verdict: "FAIL"
-    critical_gaps: {count}
-
-required_fixes_detail:
-  fix_strategy: "return_to_stage_3"
-  estimated_fix_time: "{duration}"
-  fix_categories:
-    - category: "implementation"
-      items: [{gap_items}]
-    - category: "tests"
-      items: [{gap_items}]
-    - category: "documentation"
-      items: [{gap_items}]
-
-artifacts:
-  story_doc:
-    path: "{storyDocPath}"
-    exists: true
-  audit_report:
-    path: "_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT_Story_{epic}-{story}_stage4.md"
-    exists: true
-    reviewer_conclusion_included: true
-    parseable_score_block: true
-  gaps_list:
-    path: "_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/GAPS_{epic}-{story}_stage4.md"
-    exists: true
-
-handoff:
-  next_action: fix_implement
-  next_agent: speckit-implement
-  next_stage: 3
-  ready: true
-  mainAgentNextAction: dispatch_remediation
-  mainAgentReady: true
-  fix_required: true
-  prerequisites_met:
-    - audit_completed
-    - gaps_documented
-    - reviewer_conclusion_verified
-```
+迭代修改 SKILL.md 并再次审计，直至报告结论为「完全覆盖、验证通过」。
 
 ---
 
-#### Story Type Detection (Code vs Document Mode)
+## BMAD Agent 展示名与命令对照
 
-Stage 4 鏀寔涓ょ瀹¤妯″紡锛屾牴鎹?Story 绫诲瀷鑷姩璺敱锛?
-| Story 绫诲瀷 | 妫€娴嬩緷鎹?| 瀹¤妯″紡 | 鎵ц浣?|
-|-----------|---------|---------|--------|
-| **浠ｇ爜瀹炵幇鍨?* | tasks.md 鍖呭惈浠ｇ爜浠诲姟銆乻pec.md 瀹氫箟鎺ュ彛/瀹炵幇 | Code Mode | `auditor-implement` |
-| **鏂囨。楠岃瘉鍨?* | tasks.md 浠诲姟涓虹函鏂囨。/楠岃瘉宸ヤ綔锛屾棤鐢熶骇浠ｇ爜 | Document Mode | `auditor-document` |
+在 Codex worker adapter 子任务调用、Party Mode 多轮对话、工作流指引等场景中，应使用以下**展示名**指代各 Agent，以保持上下文一致性与用户体验。
 
-**鑷姩妫€娴嬮€昏緫**锛堜富 Agent 鎵ц锛夛細
+| Agent 展示名 | 命令名 | 模块 |
+|--------------|--------|------|
+| BMad Master | `bmad-agent-bmad-master` | core |
+| Mary 分析师 | `bmad-agent-bmm-analyst` | bmm |
+| John 产品经理 | `bmad-agent-bmm-pm` | bmm |
+| Winston 架构师 | `bmad-agent-bmm-architect` | bmm |
+| Amelia 开发 | `bmad-agent-bmm-dev` | bmm |
+| Bob Scrum Master | `bmad-agent-bmm-sm` | bmm |
+| Quinn 测试 | `bmad-agent-bmm-qa` | bmm |
+| Paige 技术写作 | `bmad-agent-bmm-tech-writer` | bmm |
+| Sally UX | `bmad-agent-bmm-ux-designer` | bmm |
+| Barry Quick Flow | `bmad-agent-bmm-quick-flow-solo-dev` | bmm |
+| Bond Agent 构建 | `bmad-agent-bmb-agent-builder` | bmb |
+| Morgan Module 构建 | `bmad-agent-bmb-module-builder` | bmb |
+| Wendy Workflow 构建 | `bmad-agent-bmb-workflow-builder` | bmb |
+| Victor 创新策略 | `bmad-agent-cis-innovation-strategist` | cis |
+| Dr. Quinn 问题解决 | `bmad-agent-cis-creative-problem-solver` | cis |
+| Maya 设计思维 | `bmad-agent-cis-design-thinking-coach` | cis |
+| Carson 头脑风暴 | `bmad-agent-cis-brainstorming-coach` | cis |
+| Sophia 故事讲述 | `bmad-agent-cis-storyteller` | cis |
+| Caravaggio 演示 | `bmad-agent-cis-presentation-master` | cis |
+| Murat 测试架构 | `bmad-agent-tea-tea` | tea |
+| 批判性审计员 | （仅 party-mode 内使用，无独立命令） | core |
 
-```typescript
-// TypeScript 妫€娴嬮€昏緫绀轰緥
-function detectStoryType(tasksPath: string, specPath?: string): 'code' | 'document' {
-  const tasksContent = readFile(tasksPath);
-
-  // 鏂囨。鍨嬬壒寰侊細浠诲姟鍧囦负鏂囨。鍒涘缓銆侀獙璇併€佹祴璇曢厤缃瓑
-  const documentPatterns = [
-    /鍒涘缓.*鏂囨。/i,
-    /楠岃瘉.*杈撳嚭/i,
-    /妫€鏌?*閰嶇疆/i,
-    /娴嬭瘯.*Story/i,
-    /鏂囨。.*鐢熸垚/i,
-    /鏍煎紡.*楠岃瘉/i,
-  ];
-
-  // 浠ｇ爜鍨嬬壒寰侊細娑夊強鐢熶骇浠ｇ爜銆佹帴鍙ｅ疄鐜般€佹ā鍧楀紑鍙?  const codePatterns = [
-    /瀹炵幇.*鍑芥暟/i,
-    /鍒涘缓.*妯″潡/i,
-    /娣诲姞.*鎺ュ彛/i,
-    /缂栧啓.*浠ｇ爜/i,
-    /寮€鍙?*鍔熻兘/i,
-    /refactor|閲嶆瀯/i,
-  ];
-
-  const docMatches = documentPatterns.filter(p => p.test(tasksContent)).length;
-  const codeMatches = codePatterns.filter(p => p.test(tasksContent)).length;
-
-  // 浼樺厛鍒ゆ柇锛氬鏋滄湁浠ｇ爜鐩稿叧浠诲姟锛岃涓轰唬鐮佸瀷
-  if (codeMatches > 0) return 'code';
-  if (docMatches > 0 && codeMatches === 0) return 'document';
-
-  // 榛樿淇濆畧绛栫暐锛氭寜浠ｇ爜鍨嬪鐞嗭紙鏇翠弗鏍硷級
-  return 'code';
-}
-```
-
-#### Extended Codex Canonical Base (Code vs Document)
-
-**Code Mode锛堜唬鐮佸璁℃ā寮忥級**锛?
-- 琚瀵硅薄鏄?*浠ｇ爜瀹炵幇**锛屼笉鏄枃妗?- 鍙戠幇 gap 鏃?*涓嶇洿鎺ヤ慨鏀逛唬鐮?*锛堢敱涓?Agent 濮旀墭瀹炴柦瀛愪唬鐞嗕慨鏀癸級
-- 浣跨敤 **code 妯″紡缁村害**锛堝姛鑳芥€с€佷唬鐮佽川閲忋€佹祴璇曡鐩栥€佸畨鍏ㄦ€э級
-- 蹇呴』楠岃瘉 TDD 绾㈢豢鐏墽琛岃瘉鎹?- 蹇呴』妫€鏌?ralph-method 杩借釜鏂囦欢
-- 瀹¤閫氳繃鍚庡繀椤昏Е鍙?`runAuditorHost`
-
-**Document Mode锛堟枃妗ｅ璁℃ā寮忥級**锛?
-- 琚瀵硅薄鏄?*Story 鏂囨。鏈韩**锛屼笉鏄唬鐮?- 鍙戠幇 gap 鏃?*鐩存帴淇敼琚鏂囨。**锛坅uditor 鑷淇锛?- 浣跨敤 **document 妯″紡缁村害**锛堟枃妗ｅ畬鏁存€с€佷换鍔″畬鎴愬害銆佷竴鑷存€с€佸彲杩芥函鎬э級
-- 鏃犻渶妫€鏌?TDD 璇佹嵁锛堟棤浠ｇ爜锛?- 鏃犻渶妫€鏌?ralph-method 鏂囦欢锛堟棤浠ｇ爜锛?- 蹇呴』楠岃瘉 tasks.md 涓墍鏈変换鍔″凡鏍囪瀹屾垚
-- 瀹¤閫氳繃鍚庡繀椤昏Е鍙?`runAuditorHost`
-
-#### Code vs Document 瀹¤瀵规瘮
-
-| 椤圭洰 | Code 瀹¤锛坅uditor-implement锛?| Document 瀹¤锛坅uditor-document锛?|
-|------|-------------------------------|----------------------------------|
-| **琚瀵硅薄** | 浠ｇ爜瀹炵幇 | Story 鏂囨。鏈韩 |
-| **鍙戠幇 gap 鏃?* | **涓嶄慨鏀逛唬鐮?*锛堜富 Agent 濮旀墭淇敼锛?| **鐩存帴淇敼鏂囨。**锛坅uditor 鑷淇锛?|
-| **缁村害** | 鍔熻兘鎬?浠ｇ爜璐ㄩ噺/娴嬭瘯瑕嗙洊/瀹夊叏鎬?| 鏂囨。瀹屾暣鎬?浠诲姟瀹屾垚搴?涓€鑷存€?鍙拷婧€?|
-| **TDD 妫€鏌?* | 閫?US 寮哄埗妫€鏌?| 鏃狅紙鏃犱唬鐮侊級 |
-| **ralph-method** | 寮哄埗妫€鏌?prd.json + progress.txt | 鏃狅紙鏃犱唬鐮侊級 |
-| **tasks 妫€鏌?* | 楠岃瘉浠ｇ爜瑕嗙洊 tasks | 楠岃瘉浠诲姟鏍囪瀹屾垚 |
-| **绂佹璇嶆鏌?* | progress.txt + 浠ｇ爜娉ㄩ噴 | Story 鏂囨。鍏ㄦ枃 |
-| **杩唬鏀舵暃** | 杩炵画 3 杞棤 gap锛坰trict锛?| 杩炵画 3 杞棤 gap锛坰trict锛?|
-| **鎵瑰垽瀹¤鍛?* | 鈮?0% 瀛楁暟 | 鈮?0% 瀛楁暟 |
+**使用说明**：
+- **Codex worker adapter 子任务上下文**：在 prompt 中引用 BMAD 工作流或推荐下一步时，使用展示名（如「可交由 Winston 架构师 做架构检查」）。
+- **Party Mode 多轮对话**：Facilitator 介绍与发言时，必须使用展示名标注角色（如「🏗️ **Winston 架构师**：…」「💻 **Amelia 开发**：…」），与 `_bmad/_config/agent-manifest.csv` 的 `displayName` 及上表保持一致。
 
 ---
 
-### Document Mode Subtask Template (STORY-A4-DOCUMENT-AUDIT)
+## 角色配置
 
-```yaml
-description: "Execute Document Post Audit for {epic}-{story} via STORY-A4-DOCUMENT-AUDIT"
-prompt: |
-  銆愬繀璇汇€戞湰 prompt 椤讳负瀹屾暣妯℃澘涓旀墍鏈夊崰浣嶇宸叉浛鎹€?
-  浣犱綔涓?auditor-document 鎵ц浣擄紝鎵ц BMAD Stage 4 Post Audit锛堟枃妗ｅ璁℃ā寮忥級娴佺▼銆?
-  **Required Inputs**锛堝凡鏇挎崲涓哄疄闄呭€硷級锛?  - artifactDocPath: {瀹為檯璺緞}锛堣瀹?Story 鏂囨。璺緞锛?  - tasksPath: {瀹為檯璺緞}锛堥獙璇佷换鍔″畬鎴愮姸鎬侊級
-  - reportPath: {瀹為檯璺緞}锛堝璁℃姤鍛婁繚瀛樿矾寰勶級
-  - epic: {瀹為檯鍊紏
-  - story: {瀹為檯鍊紏
-  - iterationCount: {瀹為檯鍊紏
-  - strictness: {standard|strict}
+### 批判审计员（Critical Auditor）
 
-  **Codex Canonical Base - Document Audit 瑕佹眰**锛?  1. 璇诲彇 audit-prompts.md 搂1锛堝€熺敤 spec 瀹¤鐨勬枃妗ｆ鏌ユ柟娉曪級
-  2. 璇诲彇鎵瑰垽瀹¤鍛樿鑼?  3. 璇诲彇鏂囨。杩唬瑙勫垯
-  4. 璇诲彇琚 Story 鏂囨。
-  5. 璇诲彇 tasks.md锛岄獙璇佹墍鏈変换鍔″凡鏍囪瀹屾垚
-  6. 妫€鏌?Story 鏂囨。璐ㄩ噺锛堝畬鏁存€с€佸噯纭€с€佽鑼冩€э級
-  7. 妫€鏌ユ枃妗ｄ腑鏃犵姝㈣瘝銆佹棤妯＄硦琛ㄨ堪
-  8. 鍙戠幇 gap 鏃剁洿鎺ヤ慨鏀硅瀹℃枃妗?  9. 鐢熸垚鍖呭惈鎵瑰垽瀹¤鍛樼粨璁虹殑瀹屾暣鎶ュ憡
-  10. 鎶ュ憡缁撳熬杈撳嚭鍙В鏋愯瘎鍒嗗潡
+**角色定位**：
+独立的批判性思维专家，专注于发现方案漏洞、质疑假设、挑战设计决策。
+在所有Party-Mode讨论中，批判审计员必须每轮首先发言。
 
-  **瀹¤缁村害**锛圖ocument Mode锛夛細
-  - 鏂囨。瀹屾暣鎬э細缁撴瀯瀹屾暣銆佺珷鑺傞綈鍏ㄣ€佹牸寮忚鑼?  - 浠诲姟瀹屾垚搴︼細tasks.md 涓墍鏈変换鍔″凡鏍囪瀹屾垚
-  - 涓€鑷存€э細鏂囨。鍐呴儴涓€鑷淬€佷笌鍓嶇疆鏂囨。涓€鑷?  - 鍙拷婧€э細闇€姹傚彲杩芥函鍒伴獙鏀舵爣鍑?
-  **Repo Add-ons**锛?  - 绂佹璇嶆鏌ワ紙Story 鏂囨。鍏ㄦ枃锛?  - 鎵瑰垽瀹¤鍛樼粨璁猴紙>50%瀛楁暟锛?  - runAuditorHost 瑙﹀彂
-  - commit gate 鍓嶇疆鏉′欢妫€鏌?```
+**核心职责**：
+1. 在Layer 1 PRD Party-Mode阶段积极参与辩论（强制）
+2. 在Layer 1 Architecture Party-Mode阶段积极参与辩论（强制）
+3. 在Layer 3 Create Story Party-Mode阶段积极参与辩论（强制）
+4. 对每个关键决策提出至少5个深度质疑
+5. 记录所有未解决的gap和假设
+6. 在方案未达成共识前持续挑战，不轻易妥协
+7. 确保审计清单（audit-prompts.md）被严格执行
 
----
+**权力与权限**：
+1. **暂停权**：发现重大漏洞时，可要求暂停流程
+2. **记录权**：所有质疑必须被记录并追踪
+3. **复验权**：可要求对修改后的方案再次审计
+4. **一票否决权**：当发现致命缺陷时，可否决方案进入下一阶段；（**GAP-060 修复**：skill 执行环境下，批判审计员行使否决权时，由 Facilitator/主 Agent 负责暂停并记录，不得进入下一阶段）
 
-#### Stage 4 璋冪敤鍓?CLI 杈撳嚭瑕佹眰锛堝弻妯″紡锛?
-**Code Mode 璋冪敤鎽樿**锛?
-```
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?Stage 4: Post Audit (Code Mode) - 瀛愪唬鐞嗚皟鐢ㄦ憳瑕?鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?鎵ц浣? auditor-implement
-subagent_type: general-purpose
-璋冪敤鏃堕棿: {timestamp}
+**介入阶段**：
+1. **Layer 1 PRD Party-Mode**（强制）：质疑需求完整性、用户价值、市场定位
+2. **Layer 1 Architecture Party-Mode**（强制）：质疑技术可行性、tradeoff合理性、过度设计
+3. **Layer 3 Create Story Party-Mode**（强制）：质疑方案选择、范围界定、验收标准
+4. **speckit.plan阶段**（按需）：用户明确要求或技术争议时介入
+5. **审计阶段**（强化）：与code-review协同工作
 
-Story 绫诲瀷妫€娴?
-  鈥?妫€娴嬩緷鎹? tasks.md 鍐呭鍒嗘瀽
-  鈥?妫€娴嬬粨鏋? 浠ｇ爜瀹炵幇鍨嬶紙Code Mode锛?
-杈撳叆鍙傛暟:
-  鈥?artifactDocPath: {瀹為檯鍊紏
-  鈥?reportPath: {瀹為檯鍊紏
-  鈥?tasksPath: {瀹為檯鍊紏
-  鈥?specPath: {瀹為檯鍊紏
-  鈥?planPath: {瀹為檯鍊紏
+**退出标准**：
+1. 所有质疑都得到满意回应
+2. 达到收敛条件（共识 + 近3轮无新gap）
+3. 用户明确接受风险并继续
+4. 记录完整的质疑清单和解决状态
 
-浠ｇ爜妯″紡缁村害寮鸿皟:
-  鈥?绂佹璇嶆鏌? 鏃犳ā绯婅〃杩般€佹棤寤舵湡鎵胯
-  鈥?涓€鑷存€ф鏌? 瀹炵幇涓?spec/plan/tasks 瀵归綈
-  鈥?TDD 璇佹嵁瀹℃煡: 娴嬭瘯瑕嗙洊鐜?鈮?80%
-  鈥?浠ｇ爜璐ㄩ噺: 鍑芥暟 < 50 琛岋紝鏂囦欢 < 800 琛?
-strict convergence 妫€鏌?
-  鈥?绗?杞? 鍒濇瀹¤锛屽彂鐜版墍鏈?gap
-  鈥?绗?杞? 楠岃瘉淇锛岀‘璁ゆ棤鏂?gap
-  鈥?绗?杞? 鏈€缁堢‘璁わ紝杈撳嚭閫氳繃鏍囪
+**能力要求**：
+1. 熟悉审计清单（audit-prompts.md）
+2. 具备批判性思维和逻辑分析能力
+3. 了解技术架构和实现约束
+4. 有丰富的项目经验和风险识别能力
 
-棰勬湡浜х墿:
-  鈥?瀹¤鎶ュ憡: _bmad-output/.../AUDIT-POST-{epic}-{story}.md
-  鈥?璇勫垎鍐欏叆: scoring/data/...json
-  鈥?鐘舵€佹洿鏂? implement_audit_passed / implement_audit_failed
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?```
-
-**Document Mode 璋冪敤鎽樿**锛?
-```
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?Stage 4: Post Audit (Document Mode) - 瀛愪唬鐞嗚皟鐢ㄦ憳瑕?鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?鎵ц浣? auditor-document
-subagent_type: general-purpose
-璋冪敤鏃堕棿: {timestamp}
-
-Story 绫诲瀷妫€娴?
-  鈥?妫€娴嬩緷鎹? tasks.md 鍐呭鍒嗘瀽
-  鈥?妫€娴嬬粨鏋? 鏂囨。楠岃瘉鍨嬶紙Document Mode锛?
-杈撳叆鍙傛暟:
-  鈥?artifactDocPath: {瀹為檯鍊紏
-  鈥?tasksPath: {瀹為檯鍊紏
-  鈥?reportPath: {瀹為檯鍊紏
-
-鏂囨。妯″紡缁村害寮鸿皟:
-  鈥?鏂囨。瀹屾暣鎬? 缁撴瀯瀹屾暣銆佺珷鑺傞綈鍏ㄣ€佹牸寮忚鑼?  鈥?浠诲姟瀹屾垚搴? tasks.md 涓墍鏈変换鍔″凡鏍囪瀹屾垚
-  鈥?涓€鑷存€? 鏂囨。鍐呴儴涓€鑷淬€佷笌鍓嶇疆鏂囨。涓€鑷?  鈥?鍙拷婧€? 闇€姹傚彲杩芥函鍒伴獙鏀舵爣鍑?
-鍏抽敭鍖哄埆:
-  鈥?琚瀵硅薄: Story 鏂囨。鏈韩锛堥潪浠ｇ爜锛?  鈥?Gap 淇: 瀹¤瀛愪唬鐞嗙洿鎺ヤ慨鏀规枃妗?  鈥?鏃?TDD 妫€鏌? 鏃犱唬鐮佸疄鐜?  鈥?鏃?ralph-method: 鏃犱唬鐮佸疄鐜?
-strict convergence 妫€鏌?
-  鈥?绗?杞? 鍒濇瀹¤锛屽彂鐜版墍鏈?gap
-  鈥?绗?杞? 楠岃瘉淇锛岀‘璁ゆ棤鏂?gap
-  鈥?绗?杞? 鏈€缁堢‘璁わ紝杈撳嚭閫氳繃鏍囪
-
-棰勬湡浜х墿:
-  鈥?瀹¤鎶ュ憡: _bmad-output/.../AUDIT-POST-{epic}-{story}.md
-  鈥?璇勫垎鍐欏叆: scoring/data/...json
-  鈥?Gap 淇: 鐩存帴淇敼 Story 鏂囨。
-  鈥?鐘舵€佹洿鏂? implement_audit_passed / implement_audit_failed
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?```
-
-杈撳嚭鍚庣珛鍗宠皟鐢?Agent 宸ュ叿銆?
----
-
-#### Codex no-hooks Runtime Adapter锛堝弻妯″紡锛?
-**鎵ц浣撹皟鐢ㄦ柟寮?*
-
-涓?Agent 璋冪敤 Stage 4 鎵ц浣撴椂锛屽繀椤绘牴鎹?Story 绫诲瀷閫夋嫨姝ｇ‘鐨勬墽琛屼綋锛?
-```typescript
-// 涓?Agent 璺敱閫昏緫
-const storyType = detectStoryType(tasksPath, specPath);
-
-if (storyType === 'code') {
-  // Code Mode - 浣跨敤 auditor-implement
-  await Agent({
-    subagent_type: 'general-purpose',
-    description: "Execute Stage 4 Post Audit (Code Mode)",
-    prompt: codeModePrompt // 瀹屾暣 STORY-A4-POSTAUDIT 妯℃澘
-  });
-} else {
-  // Document Mode - 浣跨敤 auditor-document
-  await Agent({
-    subagent_type: 'general-purpose',
-    description: "Execute Stage 4 Post Audit (Document Mode)",
-    prompt: documentModePrompt // 瀹屾暣 STORY-A4-DOCUMENT-AUDIT 妯℃澘
-  });
-}
-```
-
-**Primary Executor锛堟寜妯″紡锛?*
-
-| 妯″紡 | Primary Executor | Agent 鏂囦欢 |
-|------|------------------|------------|
-| Code Mode | `auditor-implement` | `.codex/agents/auditors/auditor-implement.md` |
-| Document Mode | `auditor-document` | `.codex/agents/auditors/auditor-document.md` |
-
-**Fallback Strategy锛堝弻妯″紡锛?*
-
-Code Mode:
-1. 浼樺厛鐢?`auditor-implement` agent 鎵ц Post Audit
-2. 鑻ヤ笉鍙敤锛屽洖閫€鍒?Codex reviewer
-3. 鍐嶄笉鍙敤锛屽洖閫€鍒?`code-review` skill
-4. 鏈€鍚庡洖閫€鍒颁富 Agent 鐩存帴鎵ц鍚屼竴浠戒笁灞?audit prompt
-
-Document Mode:
-1. 浼樺厛鐢?`auditor-document` agent 鎵ц Post Audit
-2. 鑻ヤ笉鍙敤锛屽洖閫€鍒?Codex reviewer
-3. 鍐嶄笉鍙敤锛屽洖閫€鍒?`code-review` skill
-4. 鏈€鍚庡洖閫€鍒颁富 Agent 鐩存帴鎵ц鍚屼竴浠戒笁灞?audit prompt
-
-**閲嶈**锛氭墽琛屼綋鏈韩涓嶅姞杞?skill锛屾墍鏈夊璁℃寚浠ょ敱涓?Agent 閫氳繃 prompt 鍙傛暟瀹屾暣浼犻€掋€?
----
-
-**Runtime Contracts锛堝弻妯″紡锛?*
-
-Code Mode:
-- 瀹¤鎶ュ憡璺緞锛歚_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT_Story_{epic}-{story}_stage4.md`
-- 瀹¤閫氳繃鍚庡繀椤绘墽琛?`run-auditor-host.ts`
-- 瀹¤閫氳繃鍚庢洿鏂?story state 涓?`implement_passed`
-- 瀹¤澶辫触鍚庢洿鏂?story state 涓?`implement_failed`锛屽洖閫€鍒?Stage 3 淇
-
-Document Mode:
-- 瀹¤鎶ュ憡璺緞锛歚_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT-POST-{epic}-{story}.md`
-- 瀹¤閫氳繃鍚庡繀椤绘墽琛?`run-auditor-host.ts`
-- 瀹¤閫氳繃鍚庢洿鏂?story state 涓?`implement_passed`锛堟枃妗ｅ瀷 Story 瑙嗕负宸插疄鐜帮級
-- 瀹¤澶辫触鍚庢洿鏂?story state 涓?`implement_failed`锛岃繑鍥炰慨澶嶆枃妗?
----
-
-#### Repo Add-ons锛堝弻妯″紡锛?
-Code Mode:
-- strict convergence锛堣繛缁?3 杞棤 gap锛?- 鎵瑰垽瀹¤鍛樼粨璁?- runAuditorHost 瑙﹀彂
-- commit gate 鍓嶇疆鏉′欢妫€鏌?- 鏈粨绂佹璇嶆鏌ワ紙鍚唬鐮佹敞閲婏級
-- TDD 绾㈢豢鐏鏌?- ralph-method 杩借釜鏂囦欢瀹℃煡
-
-Document Mode:
-- strict convergence锛堣繛缁?3 杞棤 gap锛?- 鎵瑰垽瀹¤鍛樼粨璁猴紙鈮?0%瀛楁暟锛?- runAuditorHost 瑙﹀彂
-- commit gate 鍓嶇疆鏉′欢妫€鏌?- 鏈粨绂佹璇嶆鏌ワ紙Story 鏂囨。鍏ㄦ枃锛?- 鏂囨。缁撴瀯瀹屾暣鎬ф鏌?- 浠诲姟瀹屾垚搴﹂獙璇?
----
-
-#### Output / Handoff锛堝弻妯″紡锛?
-**Code Mode - PASS**
-
-```yaml
-layer: 4
-stage: implement_audit_passed
-
-execution_summary:
-  agent: auditor-implement
-  started_at: "{timestamp}"
-  completed_at: "{timestamp}"
-  duration_seconds: {seconds}
-  status: completed
-
-  steps_completed:
-    - step: config_read
-      status: passed
-      result: "bmad-story-config.yaml 宸茶鍙?
-    - step: strictness_determination
-      status: passed
-      result: "瀹¤涓ユ牸搴? {simple|standard|strict}"
-    - step: artifact_read
-      status: completed
-      result: "浠ｇ爜瀹炵幇宸茶鍙?
-    - step: tasks_comparison
-      status: completed
-      result: "tasks 瑕嗙洊搴﹀凡楠岃瘉"
-    - step: spec_comparison
-      status: completed
-      result: "spec 瀵归綈搴﹀凡楠岃瘉"
-    - step: tdd_evidence_review
-      status: completed
-      result: "TDD 绾㈢豢鐏瘉鎹凡瀹℃煡"
-    - step: ralph_method_check
-      status: completed
-      result: "ralph-method 杩借釜鏂囦欢宸叉鏌?
-    - step: reviewer_invocation
-      status: completed
-      result: "鎵瑰垽瀹¤鍛樺凡浠嬪叆"
-    - step: parse_and_write_score
-      status: completed
-      result: "璇勫垎宸插啓鍏?scoring/data/"
-    - step: state_update
-      status: completed
-      result: "story state 宸叉洿鏂颁负 implement_audit_passed"
-
-audit_summary:
-  coverage:
-    tasks_verified: {percent}%
-    spec_verified: {percent}%
-    plan_verified: {percent}%
-  tdd_evidence:
-    red_phase_confirmed: true
-    green_phase_confirmed: true
-    refactor_phase_confirmed: true
-    test_coverage: "{percent}%"
-  ralph_method_check:
-    prd_json_complete: true
-    progress_txt_complete: true
-    all_stories_passed: true
-  code_quality:
-    avg_function_lines: {number}
-    avg_file_lines: {number}
-    no_banned_words: true
-    security_checks_passed: true
-  reviewer_conclusion:
-    reviewer_word_count: {count}
-    total_report_word_count: {count}
-    reviewer_percentage: "{percent}%"
-    verdict: "PASS"
-    critical_gaps: 0
-
-artifacts:
-  story_doc:
-    path: "{storyDocPath}"
-    exists: true
-  audit_report:
-    path: "_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT_Story_{epic}-{story}_stage4.md"
-    exists: true
-    reviewer_conclusion_included: true
-    parseable_score_block: true
-  scoring_data:
-    path: "scoring/data/dev-{epic}-{story}-implement-{timestamp}.json"
-    exists: true
-
-handoff:
-  next_action: commit_gate
-  next_agent: bmad-master
-  next_stage: commit
-  ready: true
-  mainAgentNextAction: run_closeout
-  mainAgentReady: true
-  prerequisites_met:
-    - audit_passed
-    - score_written
-    - state_updated
-    - reviewer_conclusion_verified
-```
-
-**Document Mode - PASS**
-
-```yaml
-layer: 4
-stage: implement_audit_passed
-
-execution_summary:
-  agent: auditor-document
-  started_at: "{timestamp}"
-  completed_at: "{timestamp}"
-  duration_seconds: {seconds}
-  status: completed
-
-  steps_completed:
-    - step: config_read
-      status: passed
-      result: "bmad-story-config.yaml 宸茶鍙?
-    - step: strictness_determination
-      status: passed
-      result: "瀹¤涓ユ牸搴? {simple|standard|strict}"
-    - step: document_read
-      status: completed
-      result: "Story 鏂囨。宸茶鍙?
-    - step: tasks_read
-      status: completed
-      result: "tasks.md 宸茶鍙栵紝鎵€鏈変换鍔″凡鏍囪瀹屾垚"
-    - step: document_structure_check
-      status: completed
-      result: "鏂囨。缁撴瀯瀹屾暣鎬у凡楠岃瘉"
-    - step: forbidden_words_check
-      status: completed
-      result: "绂佹璇嶆鏌ラ€氳繃"
-    - step: document_consistency_check
-      status: completed
-      result: "鏂囨。涓€鑷存€у凡楠岃瘉"
-    - step: reviewer_invocation
-      status: completed
-      result: "鎵瑰垽瀹¤鍛樺凡浠嬪叆"
-    - step: parse_and_write_score
-      status: completed
-      result: "璇勫垎宸插啓鍏?scoring/data/"
-    - step: state_update
-      status: completed
-      result: "story state 宸叉洿鏂颁负 implement_audit_passed"
-
-audit_summary:
-  coverage:
-    document_complete: true
-    tasks_all_completed: true
-    no_gaps_found: true
-  document_quality:
-    structure_complete: true
-    format_compliant: true
-    no_banned_words: true
-    links_valid: true
-  document_consistency:
-    internal_consistent: true
-    aligned_with_spec: true
-    aligned_with_plan: true
-  reviewer_conclusion:
-    reviewer_word_count: {count}
-    total_report_word_count: {count}
-    reviewer_percentage: "{percent}%"
-    verdict: "PASS"
-    critical_gaps: 0
-
-artifacts:
-  story_doc:
-    path: "{artifactDocPath}"
-    exists: true
-    modified_in_round: false
-  audit_report:
-    path: "_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT-POST-{epic}-{story}.md"
-    exists: true
-    reviewer_conclusion_included: true
-    parseable_score_block: true
-  scoring_data:
-    path: "scoring/data/dev-{epic}-{story}-implement-{timestamp}.json"
-    exists: true
-
-handoff:
-  next_action: commit_gate
-  next_agent: bmad-master
-  next_stage: commit
-  ready: true
-  mainAgentNextAction: run_closeout
-  mainAgentReady: true
-  prerequisites_met:
-    - audit_passed
-    - score_written
-    - state_updated
-    - reviewer_conclusion_verified
-```
-
-**Document Mode - FAIL**
-
-```yaml
-layer: 4
-stage: implement_audit_failed
-
-execution_summary:
-  agent: auditor-document
-  started_at: "{timestamp}"
-  completed_at: "{timestamp}"
-  duration_seconds: {seconds}
-  status: completed
-
-  steps_completed:
-    - step: config_read
-      status: passed
-      result: "bmad-story-config.yaml 宸茶鍙?
-    - step: strictness_determination
-      status: passed
-      result: "瀹¤涓ユ牸搴? {simple|standard|strict}"
-    - step: document_read
-      status: completed
-      result: "Story 鏂囨。宸茶鍙?
-    - step: tasks_read
-      status: failed
-      result: "鍙戠幇鏈畬鎴愪换鍔?
-    - step: document_structure_check
-      status: failed
-      result: "鏂囨。缁撴瀯涓嶅畬鏁?
-    - step: forbidden_words_check
-      status: failed
-      result: "鍙戠幇绂佹璇?
-    - step: reviewer_invocation
-      status: completed
-      result: "鎵瑰垽瀹¤鍛樺凡浠嬪叆"
-    - step: gap_fix_document
-      status: completed
-      result: "宸茬洿鎺ヤ慨鏀?Story 鏂囨。"
-    - step: gap_documentation
-      status: completed
-      result: "鎵€鏈?gap 宸茶褰?
-
-audit_summary:
-  gaps_found:
-    total: {count}
-    critical: {count}
-    major: {count}
-    minor: {count}
-  required_fixes:
-    - category: "tasks_completion"
-      description: "{gap_description}"
-      priority: critical
-    - category: "document_structure"
-      description: "{gap_description}"
-      priority: major
-    - category: "forbidden_words"
-      description: "{gap_description}"
-      priority: major
-  reviewer_conclusion:
-    reviewer_word_count: {count}
-    total_report_word_count: {count}
-    reviewer_percentage: "{percent}%"
-    verdict: "FAIL"
-    critical_gaps: {count}
-
-required_fixes_detail:
-  fix_strategy: "direct_document_modify"
-  estimated_fix_time: "{duration}"
-  fix_categories:
-    - category: "document_structure"
-      items: [{gap_items}]
-    - category: "forbidden_words"
-      items: [{gap_items}]
-    - category: "tasks_completion"
-      items: [{gap_items}]
-
-artifacts:
-  story_doc:
-    path: "{artifactDocPath}"
-    exists: true
-    modified_in_round: true
-  audit_report:
-    path: "_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/AUDIT-POST-{epic}-{story}.md"
-    exists: true
-    reviewer_conclusion_included: true
-    parseable_score_block: true
-  gaps_list:
-    path: "_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/GAPS_{epic}-{story}_stage4.md"
-    exists: true
-
-handoff:
-  next_action: fix_document
-  next_agent: auditor-document
-  next_stage: 4
-  ready: true
-  mainAgentNextAction: dispatch_remediation
-  mainAgentReady: true
-  fix_required: true
-  prerequisites_met:
-    - audit_completed
-    - gaps_documented
-    - document_modified
-    - reviewer_conclusion_verified
-```
+**典型质疑问题**：
+- "这个需求的用户价值是什么？有数据支撑吗？"
+- "这个技术方案是否过度工程化？有更简单的替代吗？"
+- "这个范围界定是否清晰？边界条件考虑了吗？"
+- "这个验收标准是否可测试？如何验证？"
+- "未来3年的扩展性如何？技术债务会在哪里积累？"
 
 ---
 
-## Failure / Recovery Matrix
+## 引用与路径
 
-| 鍦烘櫙 | Primary 鍔ㄤ綔 | Fallback | 缁撴灉 |
-|------|------|------|------|
-| Story 瀹¤澶辫触 | 淇 Story 鏂囨。骞堕噸瀹?| reviewer fallback | 涓嶅緱杩涘叆 Dev Story |
-| spec 瀹¤澶辫触 | 淇 spec 骞堕噸瀹?| `auditor-spec` fallback | 涓嶅緱杩涘叆 plan |
-| plan 瀹¤澶辫触 | 淇 plan 骞堕噸瀹?| `auditor-plan` fallback | 涓嶅緱杩涘叆 tasks |
-| tasks 瀹¤澶辫触 | 淇 tasks 骞堕噸瀹?| `auditor-tasks` fallback | 涓嶅緱杩涘叆 implement |
-| implement 瀹¤澶辫触锛圕ode Mode锛?| 淇浠ｇ爜/鏂囨。骞堕噸瀹?| `auditor-implement` fallback | 涓嶅緱杩涘叆 commit gate |
-| implement 瀹¤澶辫触锛圖ocument Mode锛?| 鐩存帴淇敼鏂囨。鍚庨噸瀹?| `auditor-document` fallback | 涓嶅緱杩涘叆 commit gate |
-| OMC 涓嶅彲鐢?| 鍥為€€鍒颁粨搴撳畾涔?reviewer / skill / main agent | 閫愮骇 fallback | 淇濇寔璇箟涓庤緭鍑哄绾︿笉鍙?|
-| state drift | 璇诲彇 `.codex/state/...` 鎭㈠涓婁笅鏂?| handoff + report 鍏滃簳 | 鎭㈠鍚庣户缁纭樁娈?|
-| 浜х墿缂哄け | 鍋滄骞惰姹傝ˉ榻愬墠缃枃浠?| 鏃?| 涓嶅緱璺抽樁娈?|
+| 引用 | 路径/说明 |
+|------|-----------|
+| Create Story 命令 | `/bmad-bmm-create-story`（或命令文件 `bmad-bmm-create-story.md`） |
+| Dev Story 命令 | `/bmad-bmm-dev-story`（或命令文件 `bmad-bmm-dev-story.md`） |
+| ralph-method 技能 | `ralph-method` SKILL.md |
+| speckit-workflow 技能 | `speckit-workflow` SKILL.md |
+| audit-prompts.md §5 | 首选：全局 skills `speckit-workflow/references/audit-prompts.md` 第 5 节（如 `~/.codex/skills/` 下）；备选：项目内 `{project-root}/docs/speckit/skills/speckit-workflow/references/audit-prompts.md` |
+| workflow.xml | `{project-root}/_bmad/core/tasks/workflow.xml` |
+| create-story workflow | `{project-root}/_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml` |
+| dev-story workflow | `{project-root}/_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml` |
+| party-mode workflow | `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md` |
+| agent-manifest | `{project-root}/_bmad/_config/agent-manifest.csv`（含 displayName 等） |
+| implementation_artifacts | `{project-root}/_bmad-output/implementation-artifacts/` |
+
+**说明**：`_bmad` 为项目内安装目录，不提交至版本库；各 worktree 需单独安装 BMAD 后 `_bmad` 路径方存在。
+
+### speckit-workflow引用约束
+
+当本技能执行到"阶段三：Dev Story实施"时，必须遵循以下约束：
+
+1. **流程约束**
+   - 必须按顺序执行：specify → plan → GAPS → tasks → 执行
+   - 每个阶段必须通过code-review审计才能进入下一阶段
+   - 严禁跳过任何阶段或审计
+
+2. **文档约束**
+   - Story文档必须包含PRD需求追溯章节
+   - spec-E{epic}-S{story}.md必须引用Story文档的功能描述
+   - plan-E{epic}-S{story}.md必须包含测试计划
+   - tasks-E{epic}-S{story}.md必须包含Architecture组件约束
+
+3. **TDD约束**
+   - 必须使用统一的[TDD-RED]/[TDD-GREEN]/[TDD-REFACTOR]格式
+   - 必须更新ralph-method进度文件
+   - 严禁跳过红灯阶段或重构阶段
+
+4. **审计约束**
+   - 优先使用Codex worker dispatch调度code-reviewer
+   - code-reviewer不可用时使用Codex worker adapter回退
+   - 所有审计必须达到A/B级才能继续
+
+5. **Worktree约束**
+   - Story数≤2使用Story级worktree
+   - Story数≥3使用Epic级worktree
+   - Story分支切换时必须commit/stash未提交变更
+
+**违规处理**：
+- 发现违规立即暂停执行
+- 记录违规事项和原因
+- 根据严重程度决定：警告/返回上一阶段/重新Create Story
 
 ---
 
-## State / Audit / Handoff Contracts
+## 回退机制
 
-### 鐘舵€佺湡鐩告簮
-- `bmad-progress.yaml` 鏄叏灞€闃舵鐪熺浉婧?- `stories/*-progress.yaml` 鏄?story 绾х湡鐩告簮
+当在实施过程中发现重大问题，允许回退到之前的阶段。
 
-### 瀹¤瑙勫垯
-- 鏈€氳繃瀹¤ = 闃舵鏈畬鎴?- fail = 蹇呴』鍥炰慨
-- pass = 鎵嶈兘鏇存柊鐘舵€?/ 缁х画涓嬩竴闃舵
-- implement 瀹¤蹇呴』婊¤冻 strict convergence锛堣嫢浠撳簱褰撳墠瑙勫垯瑕佹眰锛?
-### handoff 鏈€灏忓瓧娈?- `layer`
-- `stage`
-- `artifactDocPath` / `artifacts`
-- `auditReportPath`
-- `iteration_count`
-- `next_action`
+### 回退场景和命令
 
----
+**场景1：speckit阶段发现Story文档不清晰**
+- 症状：specify/plan阶段反复审计不通过，原因是需求不明确
+- 回退命令：`/bmad-bmm-correct-course epic={num} story={num} reason="需求不清晰"`
+- 回退目标：Layer 3 Create Story阶段
+- 操作：重新进入party-mode澄清需求，更新Story文档
 
-## 杩愯鏃剁姝簨椤?
-1. 绂佹鎶?Codex Canonical Base銆丷untime Adapter銆丷epo Add-ons 娣峰啓鎴愭潵婧愪笉鏄庣殑閲嶅啓鐗?prompt
-2. 绂佹鎶?fallback 褰撴垚闄嶇骇璇箟鐨勫€熷彛
-3. 绂佹缁曡繃 post-audit
-4. 绂佹 state 鏈洿鏂板氨鎺ㄨ繘闃舵
-5. 绂佹鍦ㄦ湭婊¤冻瀹¤闂ㄦ帶鍓?commit
+**场景2：发现技术方案有重大缺陷**
+- 症状：plan阶段发现技术方案不可行，需要重新设计
+- 回退命令：`/bmad-bmm-correct-course epic={num} story={num} reason="技术方案缺陷"`
+- 回退目标：Layer 3 Create Story阶段
+- 操作：重新进入party-mode讨论技术方案
 
----
+**场景3：TDD执行发现架构问题**
+- 症状：执行阶段发现需要修改架构才能通过测试
+- 回退命令：`/bmad-bmm-correct-course epic={num} story={num} reason="架构问题"`
+- 回退目标：speckit plan阶段
+- 操作：修改plan-E{epic}-S{story}.md，必要时回到Create Story
 
-## 瀹炴柦寤鸿锛堝悗缁級
+**场景4：PRD/Architecture需要变更**
+- 症状：实施过程中发现PRD或Architecture有遗漏或错误
+- 回退命令：`/bmad-bmm-correct-course epic={num} story={num} reason="PRD变更"`
+- 回退目标：Layer 1产品定义层
+- 操作：更新PRD/Architecture，重新评估影响范围
 
-1. 鐢ㄦ湰 skill 浣滀负 Codex CLI 涓?`bmad-story-assistant` 鐨勭粺涓€鍏ュ彛
-2. 鍚庣画琛ラ綈锛?   - Story Create 鐨?Claude 鎵ц鍣ㄦ槧灏?   - Story 瀹¤鐨勬爣鍑嗘墽琛屼綋
-3. 灏嗙幇鏈?`.codex/agents/*.md` 涓殑閫傞厤瑙勫垯閫愭缁熶竴鍥炴敹涓猴細
-   - skill 鎬诲叆鍙?   - 闃舵鎵ц鍣?   - 闃舵瀹¤鎵ц鍣?
----
+### 回退数据保留
 
-## Verification Requirements
+回退时保留以下数据：
+- 原Story文档（备份为`story-{epic}-{story}-v{N}.md`）
+- 已生成的spec/plan（用于参考）
+- TDD记录（如有）
+- 审计历史记录
 
-Claude 鐗?skill 钀藉湴鍚庯紝鑷冲皯搴旀弧瓒充互涓嬮獙璇侊細
+### 回退限制（GAP-006 修复：与回滚区分）
 
-- 涓嶅緱鍑虹幇纭紪鐮佹湰鍦扮粷瀵硅矾寰?- Canonical Base 蹇呴』缁戝畾鏄庣‘鐨?Cursor 妯℃澘/闃舵
-- Runtime Adapter 蹇呴』鏈夛細
-  - `Primary Executor`
-  - `Fallback Strategy`
-  - `Runtime Contracts`
-- 鐩稿叧 accept 娴嬭瘯蹇呴』閫氳繃
-- 瀹¤ fail / pass / retry / resume 璺緞蹇呴』鑳介€氳繃 grep 涓庣姸鎬佹枃浠堕獙璇?
----
-
-## 涓€鍙ヨ瘽缁撹
-
-> Claude 鐗?`bmad-story-assistant` 涓嶆槸 Cursor skill 鐨勭洿鎺ュ鍒跺搧锛岃€屾槸涓€涓互 Cursor 涓鸿涔夊熀绾裤€佷互 Codex no-hooks 涓烘墽琛岄€傞厤灞傘€佷互鏈粨瑙勫垯涓哄寮哄眰鐨勭粺涓€缂栨帓鍏ュ彛 skill銆?
-<!-- ADAPTATION_COMPLETE: 2026-03-15 -->
+- **回退**（correct-course）：回到 Create Story/speckit 等阶段，按 **Story** 计；同一 Story 最多回退 3 次，超过需要 BMad Master 介入
+- **回滚**（rollback-worktree）：worktree 从 Epic 级回到 Story 级，按 **Epic** 计；同一 Epic 最多回滚 2 次（见任务 3.6）
+- **BMad Master 介入（GAP-037 修复）**：回退>3 次或回滚>2 次时，需用户或项目负责人确认；审批步骤：记录原因 → 用户确认「继续」或「终止」→ 若继续则重置计数
+- 回退到 Layer 1 会重置整个 Epic 的规划
+- 回退/回滚操作必须记录原因和决策过程

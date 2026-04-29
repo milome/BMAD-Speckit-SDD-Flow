@@ -1,4 +1,4 @@
-﻿# Closure Note 妯℃澘
+# Closure Note 模板
 
 ```markdown
 # Closure Note: J01
@@ -10,10 +10,13 @@
 - **Definition Gaps Still Open**: `DG-01` / `N/A`
 - **Implementation Gaps Still Open**: `IG-01` / `N/A`
 - **Verification Commands**:
-  - `[鍛戒护 1]`
-  - `[鍛戒护 2]`
-- **Deferred Reason / Next Gate**: `[濡?full E2E 寤跺悗锛屽啓鏄庝笅涓€ gate]`
-- **Summary**: [鏈?Journey 鍒板簳宸茬粡璺戦€氬埌浠€涔堢▼搴
+  - `[命令 1]`
+  - `[命令 2]`
+- **Deferred Reason / Next Gate**: `[如 full E2E 延后，写明下一 gate]`
+- **Summary**: [本 Journey 到底已经跑通到什么程度]
 ```
 
-**濉啓瑕佹眰**锛?- 蹇呴』鏄庣‘鍖哄垎 `Definition Gap` 涓?`Implementation Gap`銆?- 鑻?full E2E 寤跺悗锛屼笉寰楀啓鎴愨€滃悗缁ˉ榻愨€濆悗缁撴潫锛涘繀椤诲啓鍘熷洜涓庝笅涓€ gate銆?- Closure note 鏄?Journey 瀹屾垚澹版槑鐨勪竴閮ㄥ垎锛屼笉鏄彲閫夐檮浠躲€?
+**填写要求**：
+- 必须明确区分 `Definition Gap` 与 `Implementation Gap`。
+- 若 full E2E 延后，不得写成“后续补齐”后结束；必须写原因与下一 gate。
+- Closure note 是 Journey 完成声明的一部分，不是可选附件。

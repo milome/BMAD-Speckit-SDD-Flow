@@ -1,6 +1,8 @@
-﻿# Lint 宸ュ叿闇€姹傜煩闃碉紙鎸夎瑷€锛?
-**鐢ㄩ€?*锛氶獙鏀舵爣鍑嗐€佸疄鏂藉悗瀹¤銆佹壒鍒ゅ璁″憳妫€鏌ユ椂锛屾寜椤圭洰鎶€鏈爤纭畾 Lint 宸ュ叿涓庢墽琛屽懡浠ゃ€傝嫢椤圭洰浣跨敤琛ㄤ腑鏌愪富娴佽瑷€浣嗘湭閰嶇疆璇ヨ瑷€鐨?Lint 宸ュ叿锛岄』浣滀负閲嶈璐ㄩ噺闂淇锛屽璁′笉浜堥€氳繃銆?
-| 璇█ | 椤圭洰鐗瑰緛 | 涓绘祦宸ュ叿 | 寤鸿鎵ц鍛戒护 |
+# Lint 工具需求矩阵（按语言）
+
+**用途**：验收标准、实施后审计、批判审计员检查时，按项目技术栈确定 Lint 工具与执行命令。若项目使用表中某主流语言但未配置该语言的 Lint 工具，须作为重要质量问题修复，审计不予通过。
+
+| 语言 | 项目特征 | 主流工具 | 建议执行命令 |
 |------|----------|----------|--------------|
 | C/C++ | CMakeLists.txt, Makefile, *.c, *.cpp | Clang-Tidy, Cppcheck, cpplint | clang-tidy / cppcheck / cpplint |
 | Java | pom.xml, build.gradle, *.java | Checkstyle, SpotBugs, PMD | mvn checkstyle:check / gradlew check |
@@ -22,4 +24,4 @@
 | YAML | *.yaml, *.yml | yamllint | yamllint . |
 | Dockerfile | Dockerfile | hadolint | hadolint Dockerfile |
 
-**閫氱敤寮曠敤琛ㄨ堪**锛氶」鐩』鎸夊叾鎵€鐢ㄦ妧鏈爤閰嶇疆骞舵墽琛屽搴旂殑 Lint 宸ュ叿锛涢獙鏀跺墠椤绘墽琛屼笖鏃犻敊璇€佹棤璀﹀憡銆傝嫢椤圭洰浣跨敤 C/C++銆丣ava銆丳ython銆丣S/TS銆丟o銆丷ust銆丳HP銆丷uby銆丼wift銆並otlin銆丆#銆丼hell銆丏art銆丩ua銆丷銆丼QL 绛変富娴佽瑷€涔嬩竴浣嗘湭閰嶇疆璇ヨ瑷€鐨?Lint 宸ュ叿锛岄』浣滀负閲嶈璐ㄩ噺闂淇锛屽璁′笉浜堥€氳繃銆傜姝互銆屼笌鏈浠诲姟涓嶇浉鍏炽€嶄负鐢辫眮鍏嶃€?
+**通用引用表述**：项目须按其所用技术栈配置并执行对应的 Lint 工具；验收前须执行且无错误、无警告。若项目使用 C/C++、Java、Python、JS/TS、Go、Rust、PHP、Ruby、Swift、Kotlin、C#、Shell、Dart、Lua、R、SQL 等主流语言之一但未配置该语言的 Lint 工具，须作为重要质量问题修复，审计不予通过。禁止以「与本次任务不相关」为由豁免。

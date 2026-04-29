@@ -31,6 +31,8 @@ describe('reviewer carrier runtime definition', () => {
       expect(claudeRuntime).toContain('source=_bmad/claude/agents/code-reviewer.md');
       expect(codexRuntime).toContain('RUNTIME-MATERIALIZED reviewer');
       expect(codexRuntime).toContain('source=_bmad/codex/agents/code-reviewer.toml');
+      expect(codexRuntime).toMatch(/^# RUNTIME-MATERIALIZED reviewer/mu);
+      expect(codexRuntime).not.toMatch(/^<!-- RUNTIME-MATERIALIZED reviewer/mu);
       expect(cursorRuntime).toContain('_bmad/core/agents/code-reviewer/profiles.json');
       expect(claudeRuntime).toContain('_bmad/core/agents/code-reviewer/profiles.json');
       expect(codexRuntime).toContain('_bmad/core/agents/code-reviewer/profiles.json');

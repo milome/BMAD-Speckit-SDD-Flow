@@ -1,10 +1,8 @@
-﻿---
-outputFile: '{planning_artifacts}/{branch}/implementation-readiness-report-{{date}}.md'
+---
+outputFile: '{planning_artifacts}/implementation-readiness-report-{{date}}.md'
 ---
 
 # Step 1: Document Discovery
-
-> Legacy compatibility step only. Canonical readiness report path is `{planning_artifacts}/{branch}/implementation-readiness-report-{{date}}.md`.
 
 ## STEP GOAL:
 
@@ -14,32 +12,32 @@ To discover, inventory, and organize all project documents, identifying duplicat
 
 ### Universal Rules:
 
-- 馃洃 NEVER generate content without user input
-- 馃摉 CRITICAL: Read the complete step file before taking any action
-- 馃攧 CRITICAL: When loading next step with 'C', ensure entire file is read
-- 馃搵 YOU ARE A FACILITATOR, not a content generator
-- 鉁?YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
+- 🛑 NEVER generate content without user input
+- 📖 CRITICAL: Read the complete step file before taking any action
+- 🔄 CRITICAL: When loading next step with 'C', ensure entire file is read
+- 📋 YOU ARE A FACILITATOR, not a content generator
+- ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
 
 ### Role Reinforcement:
 
-- 鉁?You are an expert Product Manager and Scrum Master
-- 鉁?Your focus is on finding organizing and documenting what exists
-- 鉁?You identify ambiguities and ask for clarification
-- 鉁?Success is measured in clear file inventory and conflict resolution
+- ✅ You are an expert Product Manager and Scrum Master
+- ✅ Your focus is on finding organizing and documenting what exists
+- ✅ You identify ambiguities and ask for clarification
+- ✅ Success is measured in clear file inventory and conflict resolution
 
 ### Step-Specific Rules:
 
-- 馃幆 Focus ONLY on finding and organizing files
-- 馃毇 Don't read or analyze file contents
-- 馃挰 Identify duplicate documents clearly
-- 馃毆 Get user confirmation on file selections
+- 🎯 Focus ONLY on finding and organizing files
+- 🚫 Don't read or analyze file contents
+- 💬 Identify duplicate documents clearly
+- 🚪 Get user confirmation on file selections
 
 ## EXECUTION PROTOCOLS:
 
-- 馃幆 Search for all document types systematically
-- 馃捑 Group sharded files together
-- 馃摉 Flag duplicates for user resolution
-- 馃毇 FORBIDDEN to proceed with unresolved duplicates
+- 🎯 Search for all document types systematically
+- 💾 Group sharded files together
+- 📖 Flag duplicates for user resolution
+- 🚫 FORBIDDEN to proceed with unresolved duplicates
 
 ## DOCUMENT DISCOVERY PROCESS:
 
@@ -70,8 +68,8 @@ Search for each document type using these patterns:
 
 #### C. Epics & Stories Documents
 
-- Whole: `{planning_artifacts}/{branch}/epics.md`
-- Sharded: `` and related files
+- Whole: `{planning_artifacts}/*epic*.md`
+- Sharded: `{planning_artifacts}/*epic*/index.md` and related files
 
 #### D. UX Design Documents
 
@@ -101,7 +99,7 @@ For each document type found:
 If both whole and sharded versions exist:
 
 ```
-鈿狅笍 CRITICAL ISSUE: Duplicate document formats found
+⚠️ CRITICAL ISSUE: Duplicate document formats found
 - PRD exists as both whole.md AND prd/ folder
 - YOU MUST choose which version to use
 - Remove or rename the other version to avoid confusion
@@ -112,7 +110,7 @@ If both whole and sharded versions exist:
 If required documents not found:
 
 ```
-鈿狅笍 WARNING: Required document not found
+⚠️ WARNING: Required document not found
 - Architecture document not found
 - Will impact assessment completeness
 ```
@@ -162,16 +160,16 @@ ONLY WHEN C is selected and document inventory is saved will you load ./step-02-
 
 ---
 
-## 馃毃 SYSTEM SUCCESS/FAILURE METRICS
+## 🚨 SYSTEM SUCCESS/FAILURE METRICS
 
-### 鉁?SUCCESS:
+### ✅ SUCCESS:
 
 - All document types searched systematically
 - Files organized and inventoried clearly
 - Duplicates identified and flagged for resolution
 - User confirmed file selections
 
-### 鉂?SYSTEM FAILURE:
+### ❌ SYSTEM FAILURE:
 
 - Not searching all document types
 - Ignoring duplicate document conflicts
@@ -179,5 +177,3 @@ ONLY WHEN C is selected and document inventory is saved will you load ./step-02-
 - Not saving document inventory
 
 **Master Rule:** Clear file identification is essential for accurate assessment.
-
-

@@ -1,4 +1,4 @@
-﻿const fs = require('node:fs');
+const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -67,6 +67,9 @@ function codexizeMarkdown(markdown) {
     .replace(/\.claude\/agents/gu, '.codex/agents')
     .replace(/\.claude\/protocols/gu, '.codex/protocols')
     .replace(/\.claude\//gu, '.codex/')
+    .replace(/\.cursor\/skills/gu, '.codex/skills')
+    .replace(/\.cursor\/commands/gu, '.codex/commands')
+    .replace(/\.cursor\//gu, '.codex/')
     .replace(/_bmad\/claude\/hooks/gu, '_bmad/runtime/hooks')
     .replace(/Claude\/OMC Runtime/gu, 'Codex no-hooks Runtime')
     .replace(/Claude Agent Definition/gu, 'Codex Agent Source Contract')
@@ -78,6 +81,7 @@ function codexizeMarkdown(markdown) {
     .replace(/Cursor speckit-workflow/giu, 'Codex speckit-workflow')
     .replace(/Cursor Canonical Base/giu, 'Codex Canonical Base')
     .replace(/Cursor Command/giu, 'Codex command')
+    .replace(/Cursor/gu, 'Codex')
     .replace(/mcp_task/giu, 'Codex worker adapter')
     .replace(/mcp-task/giu, 'Codex worker adapter')
     .replace(/generalPurpose/gu, 'general-purpose')
@@ -89,6 +93,8 @@ function codexizeMarkdown(markdown) {
     .replace(/npm run main-agent-orchestration -- --cwd \{project-root\} --action inspect\|dispatch-plan/gu, 'npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action inspect|dispatch-plan')
     .replace(/npm run main-agent-orchestration -- --cwd \{project-root\} --action inspect/gu, 'npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action inspect')
     .replace(/npm run main-agent-orchestration -- --cwd \{project-root\} --action dispatch-plan/gu, 'npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action dispatch-plan')
+    .replace(/npm run main-agent/giu, 'npx --no-install bmad-speckit main-agent')
+    .replace(/npx ts-node scripts\//giu, 'npx --no-install bmad-speckit ')
     .replace(/npx ts-node scripts\/run-auditor-host\.ts/gu, 'npx --no-install bmad-speckit run-auditor-host')
     .replace(/`scripts\/bmad-config\.ts`/gu, '`_bmad/_config/bmad-story-config.yaml`')
     .replace(/scripts\/bmad-config\.ts/gu, '_bmad/_config/bmad-story-config.yaml')
@@ -122,6 +128,9 @@ function renderToml(relativePath, markdown) {
   const body = [
     'You are running as a BMAD Codex custom agent on the no-hooks worker adapter.',
     '',
+    'BMAD runtime metadata:',
+    '- host_role: codex-no-hooks',
+    '',
     `Source behavior contract: ${sourcePath}`,
     '',
     'Preserve the same responsibilities, constraints, output contracts, and verification discipline.',
@@ -136,8 +145,6 @@ function renderToml(relativePath, markdown) {
     `name = ${tomlString(name)}`,
     `description = ${tomlString(descriptionFromMarkdown(codexMarkdown, name))}`,
     `sandbox_mode = ${tomlString(sandboxMode(name, codexMarkdown))}`,
-    `source_behavior_contract = ${tomlString(sourcePath)}`,
-    `host_role = "codex-no-hooks"`,
     '',
     `developer_instructions = ${tomlMultiline(body)}`,
     '',
@@ -227,6 +234,10 @@ function renderAliasToml(name, relativePath, markdown, description) {
   const body = [
     'You are running as a BMAD Codex custom agent alias on the no-hooks worker adapter.',
     '',
+    'BMAD runtime metadata:',
+    '- host_role: codex-no-hooks',
+    `- alias_for_dispatch_role: ${name}`,
+    '',
     `Alias name: ${name}`,
     `Source behavior contract: ${sourcePath}`,
     '',
@@ -241,9 +252,6 @@ function renderAliasToml(name, relativePath, markdown, description) {
     `name = ${tomlString(name)}`,
     `description = ${tomlString(description)}`,
     `sandbox_mode = ${tomlString(sandboxMode(name, codexMarkdown))}`,
-    `source_behavior_contract = ${tomlString(sourcePath)}`,
-    `host_role = "codex-no-hooks"`,
-    `alias_for_dispatch_role = ${tomlString(name)}`,
     '',
     `developer_instructions = ${tomlMultiline(body)}`,
     '',

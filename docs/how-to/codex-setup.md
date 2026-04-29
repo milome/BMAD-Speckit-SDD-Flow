@@ -1,4 +1,4 @@
-﻿# Codex Setup
+# Codex Setup
 
 Codex is a first-class no-hooks host for BMAD-Speckit-SDD-Flow. It uses the same main-agent control plane as Cursor and Claude, but enters through `cli_ingress` and dispatch packets instead of hook events.
 
@@ -14,7 +14,7 @@ The install is valid only when `.codex/commands`, `.codex/agents`, `.codex/skill
 
 ## Five-Layer Entry
 
-Start from `bmad-help`, then follow the main-agent five-layer flow:
+Start from `bmads`, then follow the main-agent five-layer flow. Use `bmad-help` separately for upstream BMAD Method workflow guidance:
 
 1. `layer_1_intake`: intake and runtime context.
 2. `layer_2_architecture`: architecture constraints.

@@ -1,31 +1,35 @@
-﻿# audit_convergence 閰嶇疆璇存槑锛圙AP-CONV-10锛?
-## 閰嶇疆浣嶇疆涓庝紭鍏堢骇
+# audit_convergence 配置说明（GAP-CONV-10）
 
-| 浼樺厛绾?| 鏉ユ簮 | 璇存槑 |
+## 配置位置与优先级
+
+| 优先级 | 来源 | 说明 |
 |--------|------|------|
-| 1 | CLI 鍙傛暟 `--audit-mode` | 鍗曟鍛戒护瑕嗙洊 |
-| 2 | 椤圭洰 `_bmad/_config/speckit.yaml` | 椤圭洰绾ч粯璁?|
-| 3 | skill 榛樿 | standard |
+| 1 | CLI 参数 `--audit-mode` | 单次命令覆盖 |
+| 2 | 项目 `_bmad/_config/speckit.yaml` | 项目级默认 |
+| 3 | skill 默认 | standard |
 
-## 鍙栧€?
-| 鍊?| 璇存槑 | 閫傜敤 |
+## 取值
+
+| 值 | 说明 | 适用 |
 |----|------|------|
-| strict | 杩炵画 3 杞棤 gap + 鎵瑰垽瀹¤鍛?>50% | 瀹炴柦鍚庡璁°€佸彂甯冨墠闂ㄦ帶 |
-| standard | 鍗曟 + 鎵瑰垽瀹¤鍛?>50% | 榛樿锛屽父瑙勫紑鍙?|
-| simple | 鍗曟閫氳繃鍗冲彲锛屽彲鐪佺暐鎵瑰垽瀹¤鍛?| **浠?CLI 鍙€?*锛屽揩閫熼獙璇侊紝涓嶄繚璇佽川閲?|
+| strict | 连续 3 轮无 gap + 批判审计员 >50% | 实施后审计、发布前门控 |
+| standard | 单次 + 批判审计员 >50% | 默认，常规开发 |
+| simple | 单次通过即可，可省略批判审计员 | **仅 CLI 可选**，快速验证，不保证质量 |
 
-## 绂佹浜嬮」
+## 禁止事项
 
-**椤圭洰绾?simple 绂佹**锛歚_bmad/_config/speckit.yaml` 涓笉寰楄缃?`audit_convergence: simple`銆傝嫢璁剧疆锛宻kill 鍏ュ彛鎴栨牎楠岃剼鏈簲鎷掔粷骞舵姤閿欙紙exit code 鈮?0锛夈€?
-**鏍￠獙鑴氭湰**锛歚_bmad/speckit/scripts/powershell/validate-audit-config.ps1`銆傛墽琛岃鑴氭湰鏃讹紝鑻ラ」鐩?config 鍚?`audit_convergence: simple`锛岄鏈熸姤閿欎笖 exit code 鈮?0銆?
-## 楠屾敹绀轰緥
+**项目级 simple 禁止**：`_bmad/_config/speckit.yaml` 中不得设置 `audit_convergence: simple`。若设置，skill 入口或校验脚本应拒绝并报错（exit code ≠ 0）。
+
+**校验脚本**：`_bmad/speckit/scripts/powershell/validate-audit-config.ps1`。执行该脚本时，若项目 config 含 `audit_convergence: simple`，预期报错且 exit code ≠ 0。
+
+## 验收示例
 
 ```powershell
-# 1. 鍐欏叆 _bmad/_config/speckit.yaml 骞惰缃?audit_convergence: simple
+# 1. 写入 _bmad/_config/speckit.yaml 并设置 audit_convergence: simple
 Set-Content -Path "config\speckit.yaml" -Value "audit_convergence: simple"
 
-# 2. 鎵ц鏍￠獙鑴氭湰
+# 2. 执行校验脚本
 & "_bmad\scripts\bmad-speckit\powershell\validate-audit-config.ps1"
 
-# 3. 棰勬湡锛?LASTEXITCODE -ne 0锛屼笖杈撳嚭鍚?AUDIT_CONVERGENCE_SIMPLE_FORBIDDEN
+# 3. 预期：$LASTEXITCODE -ne 0，且输出含 AUDIT_CONVERGENCE_SIMPLE_FORBIDDEN
 ```

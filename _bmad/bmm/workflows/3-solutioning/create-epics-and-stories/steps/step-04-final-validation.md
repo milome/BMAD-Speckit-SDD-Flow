@@ -32,15 +32,15 @@ To validate complete coverage of all requirements and ensure stories are ready f
 - 📖 CRITICAL: Read the complete step file before taking any action
 - 🔄 CRITICAL: Process validation sequentially without skipping
 - 📋 YOU ARE A FACILITATOR, not a content generator
-- �?YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
+- ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
 
 ### Role Reinforcement:
 
-- �?You are a product strategist and technical specifications writer
-- �?If you already have been given communication or persona patterns, continue to use those while playing this new role
-- �?We engage in collaborative dialogue, not command-response
-- �?You bring validation expertise and quality assurance
-- �?User brings their implementation priorities and final review
+- ✅ You are a product strategist and technical specifications writer
+- ✅ If you already have been given communication or persona patterns, continue to use those while playing this new role
+- ✅ We engage in collaborative dialogue, not command-response
+- ✅ You bring validation expertise and quality assurance
+- ✅ User brings their implementation priorities and final review
 
 ### Step-Specific Rules:
 
@@ -88,8 +88,8 @@ Review the complete epic and story breakdown to ensure EVERY FR is covered:
 **Database/Entity Creation Validation:**
 
 - Are database tables/entities created ONLY when needed by stories?
-- �?WRONG: Epic 1 creates all tables upfront
-- �?RIGHT: Tables created as part of the first story that needs them
+- ❌ WRONG: Epic 1 creates all tables upfront
+- ✅ RIGHT: Tables created as part of the first story that needs them
 - Each story should create/modify ONLY what it needs
 
 ### 3. Story Quality Validation
@@ -119,8 +119,8 @@ Review the complete epic and story breakdown to ensure EVERY FR is covered:
 - Does each epic deliver COMPLETE functionality for its domain?
 - Can Epic 2 function without Epic 3 being implemented?
 - Can Epic 3 function standalone using Epic 1 & 2 outputs?
-- �?WRONG: Epic 2 requires Epic 3 features to work
-- �?RIGHT: Each epic is independently valuable
+- ❌ WRONG: Epic 2 requires Epic 3 features to work
+- ✅ RIGHT: Each epic is independently valuable
 
 **Within-Epic Story Dependency Check:**
 For each epic, review stories in order:
@@ -128,9 +128,9 @@ For each epic, review stories in order:
 - Can Story N.1 be completed without Stories N.2, N.3, etc.?
 - Can Story N.2 be completed using only Story N.1 output?
 - Can Story N.3 be completed using only Stories N.1 & N.2 outputs?
-- �?WRONG: "This story depends on a future story"
-- �?WRONG: Story references features not yet implemented
-- �?RIGHT: Each story builds only on previous stories
+- ❌ WRONG: "This story depends on a future story"
+- ❌ WRONG: Story references features not yet implemented
+- ✅ RIGHT: Each story builds only on previous stories
 
 ### 6. Complete and Save
 
@@ -140,16 +140,22 @@ If all validations pass:
 - Ensure proper formatting
 - Save the final epics.md
 
-**Runtime Governance (S9 - MANDATORY):** ? step ??? `_bmad-output/implementation-artifacts/sprint-status.yaml` ????sprint-planning ??????? epics.md ?????
-`npx bmad-speckit sync-runtime-context-from-sprint`
-Exit code must be 0. Stdout must contain the line starting with `OK: registry and project context synced`.
-???????????????????????? sprint-planning??? create-epics-and-stories ? Step 1 ???
+**Runtime Governance (S9 - MANDATORY):** Before this step starts,
+`_bmad-output/implementation-artifacts/sprint-status.yaml` must already
+exist from sprint planning. After saving `epics.md`, execute:
+
+```bash
+npx bmad-speckit sync-runtime-context-from-sprint
+```
+
+The sync must complete successfully before the workflow is considered ready for
+implementation handoff.
 
 **Present Final Menu:**
 **All validations complete!** [C] Complete Workflow
 
 When C is selected, the workflow is complete and the epics.md is ready for development.
 
-Epics and Stories complete. Read fully and follow: `{project-root}/_bmad/core/tasks/help.md` with argument `Create Epics and Stories`.
+Epics and Stories complete. Read fully and follow: `_bmad/core/tasks/help.md` with argument `Create Epics and Stories`.
 
 Upon Completion of task output: offer to answer any questions about the Epics and Stories.

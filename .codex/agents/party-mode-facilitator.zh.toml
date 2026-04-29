@@ -1,10 +1,11 @@
 name = "party-mode-facilitator.zh"
 description = "BMAD Codex custom agent party-mode-facilitator.zh."
 sandbox_mode = "workspace-write"
-source_behavior_contract = "_bmad/claude/agents/party-mode-facilitator.zh.md"
-host_role = "codex-no-hooks"
 
 developer_instructions = """You are running as a BMAD Codex custom agent on the no-hooks worker adapter.
+
+BMAD runtime metadata:
+- host_role: codex-no-hooks
 
 Source behavior contract: _bmad/claude/agents/party-mode-facilitator.zh.md
 

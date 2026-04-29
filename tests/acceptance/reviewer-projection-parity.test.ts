@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { buildReviewerRouteExplainability as buildScriptRoute } from '../../scripts/reviewer-registry';
 import { buildReviewerRouteExplainability as buildDashboardRoute } from '../../packages/scoring/dashboard/reviewer-projection';
 

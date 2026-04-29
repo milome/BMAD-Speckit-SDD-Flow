@@ -1,33 +1,37 @@
 ---
 name: bmad-sft-extract
-description: SFT 寰皟鏁版嵁闆嗘彁鍙栵細浠?phase_score>=minScore 鐨勮瘎鍒嗚褰曟彁鍙?instruction+浠ｇ爜瀵癸紝杈撳嚭 JSONL
+description: SFT 微调数据集提取：从 phase_score>=minScore 的评分记录提取 instruction+代码对，输出 JSONL
 ---
 
 # /bmad-sft-extract
 
-瑙﹀彂 SFT 寰皟鏁版嵁闆嗘彁鍙栵紝鍩轰簬 `scoring/data/`锛堟垨 `getScoringDataPath()`锛変笅璇勫垎璁板綍锛岀瓫閫?phase_score>=minScore 鐨勬潯鐩紙榛樿 90锛夛紝鎻愬彇 BUGFIX 搂1+搂4 浣滀负 instruction锛実it diff 浣滀负 input/output 浠ｇ爜瀵癸紝杈撳嚭鍒?`scoring/data/sft-dataset.jsonl`銆?
-## 瑙﹀彂鏂瑰紡
+触发 SFT 微调数据集提取，基于 `scoring/data/`（或 `getScoringDataPath()`）下评分记录，筛选 phase_score>=minScore 的条目（默认 90），提取 BUGFIX §1+§4 作为 instruction，git diff 作为 input/output 代码对，输出到 `scoring/data/sft-dataset.jsonl`。
 
-- Codex command锛歚/bmad-sft-extract`
-- CLI锛歚npx bmad-speckit sft-extract`
+## 触发方式
 
-## 璋冪敤妯″紡
+- Codex command：`/bmad-sft-extract`
+- CLI：`npx bmad-speckit sft-extract`
 
-| 妯″紡 | 鍛戒护 | 杈撳嚭 |
+## 调用模式
+
+| 模式 | 命令 | 输出 |
 |------|------|------|
-| 榛樿 | `npx bmad-speckit sft-extract` | sft-dataset.jsonl 鑷?scoring/data/锛沵inScore 90 |
-| 鑷畾涔?minScore | `npx bmad-speckit sft-extract --min-score 95` | 浠?phase_score>=95 鍙備笌锛圢 涓嶅彲浣庝簬 90锛?|
-| 鑷畾涔夎緭鍑?| `npx bmad-speckit sft-extract --output /path/to/out.jsonl` | 鍐欏叆鎸囧畾璺緞 |
+| 默认 | `npx bmad-speckit sft-extract` | sft-dataset.jsonl 至 scoring/data/；minScore 90 |
+| 自定义 minScore | `npx bmad-speckit sft-extract --min-score 95` | 仅 phase_score>=95 参与（N 不可低于 90） |
+| 自定义输出 | `npx bmad-speckit sft-extract --output /path/to/out.jsonl` | 写入指定路径 |
 
-## 鍙傛暟
+## 参数
 
-- `--min-score N`锛氭渶浣?phase_score锛堥粯璁?90锛屼笉鍙綆浜?90锛夛紱phase_score>=N 鐨勮褰曟墠鍙備笌鎻愬彇锛涜嫢 N<90 浼氭姤閿欐彁绀洪噸鏂拌缃?- `--output PATH`锛氳緭鍑?JSONL 璺緞锛堥粯璁?scoring/data/sft-dataset.jsonl锛?
-## 杈撳嚭鏍煎紡
+- `--min-score N`：最低 phase_score（默认 90，不可低于 90）；phase_score>=N 的记录才参与提取；若 N<90 会报错提示重新设置
+- `--output PATH`：输出 JSONL 路径（默认 scoring/data/sft-dataset.jsonl）
 
-- JSONL锛氭瘡琛屽惈 instruction銆乮nput銆乷utput銆乻ource_run_id銆乥ase_commit_hash銆乭as_code_pair銆乻ource_path锛堝彲閫夛級
-- has_code_pair: false 鏃?input/output 涓虹┖锛坓it diff 澶辫触 fallback 涓?instruction-only锛?- 鎽樿锛歚鍏辨彁鍙?N 鏉★紝瑕嗙洊 M 涓?Story锛涜烦杩?K 鏉★紙鍘熷洜锛氣€︼級`
+## 输出格式
 
-## 楠屾敹鍛戒护
+- JSONL：每行含 instruction、input、output、source_run_id、base_commit_hash、has_code_pair、source_path（可选）
+- has_code_pair: false 时 input/output 为空（git diff 失败 fallback 为 instruction-only）
+- 摘要：`共提取 N 条，覆盖 M 个 Story；跳过 K 条（原因：…）`
+
+## 验收命令
 
 ```bash
 npx bmad-speckit sft-extract

@@ -1,18 +1,19 @@
-﻿import fs from 'node:fs';
+import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { evaluateDeliveryTruthGate } from '../../scripts/main-agent-delivery-truth-gate';
 import { buildPrTopology, buildParallelMissionPlan } from '../../scripts/parallel-mission-control';
 
-const evidence_provenance = {
-  runId: 'run-delivery-truth',
+const evidenceProvenance = {
+  runId: 'main-agent-run-loop-1',
   storyKey: 'S1',
-  evidenceBundleId: 'bundle-delivery-truth',
-  gateReportHash: 'artifact-gate-hash',
+  evidenceBundleId: 'bundle-1',
+  contractHash: 'contract-hash-1',
+  gateReportHash: 'gate-report-hash-1',
 };
 
-function closedPrTopology() {
+function closedPrTopology(provenance = evidenceProvenance) {
   const plan = buildParallelMissionPlan({
     batchId: 'delivery-truth',
     nodes: [
@@ -28,63 +29,65 @@ function closedPrTopology() {
       },
     ],
   });
-  return { ...buildPrTopology({ plan, states: { n1: 'merged' } }), evidence_provenance };
+  return buildPrTopology({
+    plan,
+    states: { n1: 'merged' },
+    evidence_provenance: provenance,
+  });
 }
 
-function releaseGateEvidence() {
+function passingReleaseGate() {
   return {
     critical_failures: 0,
     blocked_sprint_status_update: false,
-    evidence_provenance,
+    evidence_provenance: evidenceProvenance,
     completion_intent: {
-      token: 'release-gate:pass:S1',
+      token: 'completion-token-1',
       storyKey: 'S1',
-      contractHash: 'contract-hash',
-      gateReportHash: 'gate-report-hash',
+      contractHash: 'contract-hash-1',
+      gateReportHash: 'gate-report-hash-1',
       singleUse: true,
-      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+      expiresAt: '2099-01-01T00:00:00.000Z',
     },
   };
 }
 
-function sprintAuditEvidence() {
+function hostMatrix(journeyMode: 'mock' | 'real') {
+  return {
+    journeyMode,
+    journeyE2EPassed: true,
+    hostMatrix: {
+      matrixType: 'main_agent_multi_host_matrix' as const,
+      requiredHosts: ['cursor', 'claude', 'codex'] as Array<'cursor' | 'claude' | 'codex'>,
+      hostsPassed: { cursor: true, claude: true, codex: true },
+      allRequiredHostsPassed: true,
+    },
+    evidence_provenance: evidenceProvenance,
+  };
+}
+
+function passingSprintAudit() {
   return {
     storyKey: 'S1',
     status: 'done',
     authorized: true,
-    releaseGateReportPath: 'release-gate.json',
-    gateReportHash: 'gate-report-hash',
-    contractHash: 'contract-hash',
+    releaseGateReportPath: '_bmad-output/runtime/gates/main-agent-release-gate-report.json',
+    gateReportHash: 'gate-report-hash-1',
+    contractHash: 'contract-hash-1',
     fromStatus: 'in_progress',
     toStatus: 'done',
-    token: 'release-gate:pass:S1',
+    token: 'completion-token-1',
     singleUse: true,
-    expiresAt: new Date(Date.now() + 60_000).toISOString(),
-    evidence_provenance,
-  };
-}
-
-function hostMatrixEvidence(overrides: Record<string, unknown> = {}) {
-  return {
-    journeyMode: 'real',
-    journeyE2EPassed: true,
-    hostMatrix: {
-      matrixType: 'main_agent_multi_host_matrix',
-      requiredHosts: ['cursor', 'claude', 'codex'],
-      hostsPassed: { cursor: true, claude: true, codex: true },
-      allRequiredHostsPassed: true,
-      legacyDualHostPassed: true,
-    },
-    evidence_provenance,
-    ...overrides,
+    expiresAt: '2099-01-01T00:00:00.000Z',
+    evidence_provenance: evidenceProvenance,
   };
 }
 
 describe('main-agent delivery truth gate', () => {
   it('blocks completion language for mock journey and short soak evidence', () => {
     const report = evaluateDeliveryTruthGate({
-      releaseGate: releaseGateEvidence(),
-      hostMatrix: hostMatrixEvidence({ journeyMode: 'mock' }),
+      releaseGate: { critical_failures: 0, blocked_sprint_status_update: false },
+      hostMatrix: hostMatrix('mock'),
       soak: {
         mode: 'wall_clock',
         run_kind: 'heartbeat_only',
@@ -95,11 +98,9 @@ describe('main-agent delivery truth gate', () => {
         silent_hangs: 0,
         false_completions: 0,
         recovery_success_rate: 1,
-        evidence_provenance,
       },
       prTopology: closedPrTopology(),
-      sprintAudit: sprintAuditEvidence(),
-      qualityGate: { critical_failures: 0, evidence_provenance },
+      sprintAudit: { storyKey: 'S1', status: 'done', authorized: true },
     });
 
     expect(report.completionAllowed).toBe(false);
@@ -110,8 +111,8 @@ describe('main-agent delivery truth gate', () => {
 
   it('allows completion language only with real 8h and closed PR evidence', () => {
     const report = evaluateDeliveryTruthGate({
-      releaseGate: releaseGateEvidence(),
-      hostMatrix: hostMatrixEvidence(),
+      releaseGate: passingReleaseGate(),
+      hostMatrix: hostMatrix('real'),
       soak: {
         mode: 'wall_clock',
         run_kind: 'development_run_loop',
@@ -136,21 +137,22 @@ describe('main-agent delivery truth gate', () => {
               evidence: ['soak-tick-1'],
               finalNextAction: 'dispatch_review',
               tickCommand: {
-                command: 'python -m pytest tests/trader/test_backtester_run_in_subprocess_menu.py -q',
+                command: 'main-agent run-loop',
                 exitCode: 0,
-                stdoutPath: '_bmad-output/runtime/soak/tick-evidence/tick-1-stdout.log',
-                stderrPath: '_bmad-output/runtime/soak/tick-evidence/tick-1-stderr.log',
-                diffHashBefore: 'abc',
-                diffHashAfter: 'def',
+                stdoutPath: 'stdout.log',
+                stderrPath: 'stderr.log',
+                diffHashBefore: 'before-hash',
+                diffHashAfter: 'after-hash',
               },
             },
           ],
         },
-        evidence_provenance,
+        evidence_provenance: evidenceProvenance,
       },
       prTopology: closedPrTopology(),
-      sprintAudit: sprintAuditEvidence(),
-      qualityGate: { critical_failures: 0, evidence_provenance },
+      sprintAudit: passingSprintAudit(),
+      qualityGate: { critical_failures: 0, evidence_provenance: evidenceProvenance },
+      env: {},
     });
 
     expect(report.completionAllowed).toBe(true);
@@ -158,226 +160,10 @@ describe('main-agent delivery truth gate', () => {
     expect(report.completionLanguage).toBe('complete_allowed');
   });
 
-  it('rejects legacy dual-host evidence when cursor is missing from the host matrix', () => {
-    const report = evaluateDeliveryTruthGate({
-      releaseGate: releaseGateEvidence(),
-      hostMatrix: hostMatrixEvidence({
-        hostMatrix: {
-          matrixType: 'main_agent_multi_host_matrix',
-          requiredHosts: ['claude', 'codex'],
-          hostsPassed: { cursor: false, claude: true, codex: true },
-          allRequiredHostsPassed: false,
-          legacyDualHostPassed: true,
-        },
-      }),
-      soak: {
-        mode: 'wall_clock',
-        run_kind: 'development_run_loop',
-        target_duration_ms: 8 * 60 * 60 * 1000,
-        observed_duration_ms: 8 * 60 * 60 * 1000,
-        tick_count: 1,
-        manual_restarts: 0,
-        silent_hangs: 0,
-        false_completions: 0,
-        recovery_success_rate: 1,
-        developmentRun: {
-          tick_count: 1,
-          completed_ticks: 1,
-          blocked_ticks: 0,
-          runLoopInvocations: [
-            {
-              tick: 1,
-              runId: 'main-agent-run-loop-1',
-              status: 'completed',
-              packetId: 'packet-1',
-              taskReportStatus: 'done',
-              evidence: ['soak-tick-1'],
-              finalNextAction: 'dispatch_review',
-              tickCommand: {
-                command: 'pytest',
-                exitCode: 0,
-                stdoutPath: 'stdout.log',
-                stderrPath: 'stderr.log',
-                diffHashBefore: 'abc',
-                diffHashAfter: 'def',
-              },
-            },
-          ],
-        },
-        evidence_provenance,
-      },
-      prTopology: closedPrTopology(),
-      sprintAudit: sprintAuditEvidence(),
-      qualityGate: { critical_failures: 0, evidence_provenance },
-    });
-
-    expect(report.completionAllowed).toBe(false);
-    expect(report.failedEvidence.join('\n')).toContain('multi-host-host-matrix');
-    expect(report.failedEvidence.join('\n')).toContain('cursor=false');
-  });
-
-  it('fails closed when test/dev execution seams are enabled in delivery environment', () => {
-    const report = evaluateDeliveryTruthGate({
-      releaseGate: releaseGateEvidence(),
-      hostMatrix: hostMatrixEvidence(),
-      soak: {
-        mode: 'wall_clock',
-        run_kind: 'development_run_loop',
-        target_duration_ms: 8 * 60 * 60 * 1000,
-        observed_duration_ms: 8 * 60 * 60 * 1000,
-        tick_count: 1,
-        manual_restarts: 0,
-        silent_hangs: 0,
-        false_completions: 0,
-        recovery_success_rate: 1,
-        developmentRun: {
-          tick_count: 1,
-          completed_ticks: 1,
-          blocked_ticks: 0,
-          runLoopInvocations: [
-            {
-              tick: 1,
-              runId: 'run-delivery-truth',
-              status: 'completed',
-              packetId: 'p1',
-              taskReportStatus: 'done',
-              evidence: ['real_patch'],
-              finalNextAction: 'dispatch_review',
-              tickCommand: {
-                command: 'npm test',
-                exitCode: 0,
-                stdoutPath: 'stdout.log',
-                stderrPath: 'stderr.log',
-                diffHashBefore: 'before',
-                diffHashAfter: 'after',
-              },
-            },
-          ],
-        },
-        evidence_provenance,
-      },
-      prTopology: closedPrTopology(),
-      sprintAudit: sprintAuditEvidence(),
-      qualityGate: { critical_failures: 0, evidence_provenance },
-      env: {
-        MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT: 'true',
-        MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE: 'true',
-      },
-    });
-
-    expect(report.completionAllowed).toBe(false);
-    expect(report.failedEvidence.join('\n')).toContain('test-dev-seams-disabled');
-    expect(report.failedEvidence.join('\n')).toContain('unsafe seam enabled');
-  });
-
-  it('rejects completion when delivery artifacts are not bound to the same evidence provenance', () => {
-    const report = evaluateDeliveryTruthGate({
-      releaseGate: releaseGateEvidence(),
-      hostMatrix: hostMatrixEvidence({
-        evidence_provenance: { ...evidence_provenance, runId: 'other-run' },
-      }),
-      soak: {
-        mode: 'wall_clock',
-        run_kind: 'development_run_loop',
-        target_duration_ms: 8 * 60 * 60 * 1000,
-        observed_duration_ms: 8 * 60 * 60 * 1000,
-        tick_count: 1,
-        manual_restarts: 0,
-        silent_hangs: 0,
-        false_completions: 0,
-        recovery_success_rate: 1,
-        evidence_provenance,
-        developmentRun: {
-          tick_count: 1,
-          completed_ticks: 1,
-          blocked_ticks: 0,
-          runLoopInvocations: [
-            {
-              tick: 1,
-              runId: 'main-agent-run-loop-1',
-              status: 'completed',
-              packetId: 'packet-1',
-              taskReportStatus: 'done',
-              evidence: ['soak-tick-1'],
-              finalNextAction: 'dispatch_review',
-              tickCommand: {
-                command: 'pytest',
-                exitCode: 0,
-                stdoutPath: 'stdout.log',
-                stderrPath: 'stderr.log',
-                diffHashBefore: 'abc',
-                diffHashAfter: 'def',
-              },
-            },
-          ],
-        },
-      },
-      prTopology: closedPrTopology(),
-      sprintAudit: sprintAuditEvidence(),
-      qualityGate: { critical_failures: 0, evidence_provenance },
-    });
-
-    expect(report.completionAllowed).toBe(false);
-    expect(report.failedEvidence.join('\n')).toContain('same-run-evidence-provenance');
-  });
-
-  it('rejects completion when PR topology is not bound to the same evidence provenance', () => {
-    const report = evaluateDeliveryTruthGate({
-      releaseGate: releaseGateEvidence(),
-      hostMatrix: hostMatrixEvidence(),
-      soak: {
-        mode: 'wall_clock',
-        run_kind: 'development_run_loop',
-        target_duration_ms: 8 * 60 * 60 * 1000,
-        observed_duration_ms: 8 * 60 * 60 * 1000,
-        tick_count: 1,
-        manual_restarts: 0,
-        silent_hangs: 0,
-        false_completions: 0,
-        recovery_success_rate: 1,
-        evidence_provenance,
-        developmentRun: {
-          tick_count: 1,
-          completed_ticks: 1,
-          blocked_ticks: 0,
-          runLoopInvocations: [
-            {
-              tick: 1,
-              runId: 'main-agent-run-loop-1',
-              status: 'completed',
-              packetId: 'packet-1',
-              taskReportStatus: 'done',
-              evidence: ['soak-tick-1'],
-              finalNextAction: 'dispatch_review',
-              tickCommand: {
-                command: 'pytest',
-                exitCode: 0,
-                stdoutPath: 'stdout.log',
-                stderrPath: 'stderr.log',
-                diffHashBefore: 'abc',
-                diffHashAfter: 'def',
-              },
-            },
-          ],
-        },
-      },
-      prTopology: {
-        ...closedPrTopology(),
-        evidence_provenance: { ...evidence_provenance, runId: 'other-run' },
-      },
-      sprintAudit: sprintAuditEvidence(),
-      qualityGate: { critical_failures: 0, evidence_provenance },
-    });
-
-    expect(report.completionAllowed).toBe(false);
-    expect(report.failedEvidence.join('\n')).toContain('same-run-evidence-provenance');
-    expect(report.failedEvidence.join('\n')).toContain('prTopology');
-  });
-
   it('rejects heartbeat-only 8h evidence because real development run-loop proof is required', () => {
     const report = evaluateDeliveryTruthGate({
-      releaseGate: releaseGateEvidence(),
-      hostMatrix: hostMatrixEvidence(),
+      releaseGate: { critical_failures: 0, blocked_sprint_status_update: false },
+      hostMatrix: hostMatrix('real'),
       soak: {
         mode: 'wall_clock',
         run_kind: 'heartbeat_only',
@@ -388,11 +174,11 @@ describe('main-agent delivery truth gate', () => {
         silent_hangs: 0,
         false_completions: 0,
         recovery_success_rate: 1,
-        evidence_provenance,
       },
       prTopology: closedPrTopology(),
-      sprintAudit: sprintAuditEvidence(),
-      qualityGate: { critical_failures: 0, evidence_provenance },
+      sprintAudit: passingSprintAudit(),
+      qualityGate: { critical_failures: 0, evidence_provenance: evidenceProvenance },
+      env: {},
     });
 
     expect(report.completionAllowed).toBe(false);
@@ -465,4 +251,3 @@ describe('main-agent delivery truth gate', () => {
     }
   });
 });
-

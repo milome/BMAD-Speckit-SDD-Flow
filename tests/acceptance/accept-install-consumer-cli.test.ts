@@ -1,5 +1,5 @@
 /**
- * Acceptance: Install to temp consumer 鈫?run CLI (check, version).
+ * Acceptance: Install to temp consumer ->run CLI (check, version).
  * Covers setup.ps1, setup.sh, npm install, init-to-root flows.
  * Runs in CI (ubuntu-latest).
  */
@@ -24,8 +24,8 @@ function runRepoCli(args: string, cwd: string, env?: NodeJS.ProcessEnv): string 
   return run(cli, cwd, env);
 }
 
-describe('install to consumer 鈫?CLI acceptance', () => {
-  it('init-to-root deploy 鈫?bmad-speckit check passes', () => {
+describe('install to consumer ->CLI acceptance', () => {
+  it('init-to-root deploy ->bmad-speckit check passes', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-init-'));
     try {
       run(`node scripts/init-to-root.js --full "${target}"`, PKG_ROOT);
@@ -57,7 +57,7 @@ describe('install to consumer 鈫?CLI acceptance', () => {
     }
   }, 90_000);
 
-  it('init-to-root deploy 鈫?bmad-speckit version runs', () => {
+  it('init-to-root deploy ->bmad-speckit version runs', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-ver-'));
     try {
       run(`node scripts/init-to-root.js --full "${target}"`, PKG_ROOT);
@@ -68,7 +68,7 @@ describe('install to consumer 鈫?CLI acceptance', () => {
     }
   }, 90_000);
 
-  it('npm install 鈫?postinstall deploys 鈫?bmad-speckit check passes', () => {
+  it('npm install ->postinstall deploys ->bmad-speckit check passes', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-npm-'));
     try {
       writeFileSync(

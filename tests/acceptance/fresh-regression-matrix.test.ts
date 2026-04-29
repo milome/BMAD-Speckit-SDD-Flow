@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -10,6 +10,7 @@ import {
   GOVERNANCE_VITEST_FILES,
   runOptionalNpmScript,
   resolveHostMatrixGateMode,
+  resolveDualHostGateMode,
 } from '../../scripts/run-fresh-regression-matrix';
 
 describe('fresh-regression-matrix helpers', () => {
@@ -111,7 +112,7 @@ describe('fresh-regression-matrix helpers', () => {
     expect(shouldRunRealSftExtract(tmpBase)).toBe(false);
   });
 
-  it('GOVERNANCE_VITEST_FILES matches PRODUCTION 搂0 row 3 file set', () => {
+  it('GOVERNANCE_VITEST_FILES matches PRODUCTION §0 row 3 file set', () => {
     const expected = [
       'tests/acceptance/bmad-config.test.ts',
       'tests/acceptance/runtime-governance-matrix.test.ts',
@@ -131,15 +132,45 @@ describe('fresh-regression-matrix helpers', () => {
     expect(log).toContain('SKIP: build:runtime-emit missing; treat as OK');
   });
 
-  it('resolveHostMatrixGateMode falls back to legacy split gate when host-matrix scripts are unavailable', () => {
-    expect(resolveHostMatrixGateMode({ 'test:ci': 'npm run init:claude && vitest run' })).toBe(
+  it('resolveDualHostGateMode falls back to legacy split gate when dual-host scripts are unavailable', () => {
+    expect(resolveDualHostGateMode({ 'test:ci': 'npm run init:claude && vitest run' })).toBe(
       'legacy_split'
     );
     expect(
+      resolveDualHostGateMode({
+        'test:ci:claude-cursor': 'npm run init:claude && npm run init:cursor && vitest run',
+        'test:ci:dual': 'npm run test:ci:claude-cursor',
+      })
+    ).toBe('claude_cursor_script');
+    expect(
+      resolveDualHostGateMode({
+        'test:ci:dual': 'npm run init:claude && npm run init:cursor && vitest run',
+      })
+    ).toBe('dual_script');
+  });
+
+  it('resolveHostMatrixGateMode prefers explicit host matrix and Claude+Cursor scripts before legacy aliases', () => {
+    expect(
       resolveHostMatrixGateMode({
-        'test:ci:host-matrix': 'npm run init:claude && npm run init:cursor && vitest run',
+        'test:ci:host-matrix': 'npm run test:ci:claude-cursor && npm run test:ci:codex',
+        'test:ci:claude-cursor': 'npm run init:claude && npm run init:cursor && vitest run',
+        'test:ci:dual': 'npm run test:ci:claude-cursor',
+        'test:ci': 'npm run init:claude && vitest run',
       })
     ).toBe('host_matrix_script');
+    expect(
+      resolveHostMatrixGateMode({
+        'test:ci:claude-cursor': 'npm run init:claude && npm run init:cursor && vitest run',
+        'test:ci:dual': 'npm run test:ci:claude-cursor',
+        'test:ci': 'npm run init:claude && vitest run',
+      })
+    ).toBe('claude_cursor_script');
+    expect(
+      resolveHostMatrixGateMode({
+        'test:ci:dual': 'npm run init:claude && npm run init:cursor && vitest run',
+        'test:ci': 'npm run init:claude && vitest run',
+      })
+    ).toBe('dual_script');
   });
 
   it('keeps runtime dashboard and SFT smoke help commands in the fresh regression matrix', () => {
@@ -164,4 +195,3 @@ describe.skipIf(process.env.RUN_FRESH_REGRESSION_MATRIX !== '1')(
     });
   }
 );
-

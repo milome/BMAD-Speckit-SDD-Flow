@@ -1,10 +1,11 @@
 name = "layers__bmad-layer4-speckit-specify"
 description = "BMAD Codex custom agent for Layer 4 Agent: Specify (改进版)."
 sandbox_mode = "workspace-write"
-source_behavior_contract = "_bmad/claude/agents/layers/bmad-layer4-speckit-specify.md"
-host_role = "codex-no-hooks"
 
 developer_instructions = """You are running as a BMAD Codex custom agent on the no-hooks worker adapter.
+
+BMAD runtime metadata:
+- host_role: codex-no-hooks
 
 Source behavior contract: _bmad/claude/agents/layers/bmad-layer4-speckit-specify.md
 
@@ -42,7 +43,7 @@ BMAD Speckit SDD Layer 4 的specify 阶段执行 Agent。
 
 执行计划:
   [ ] 步骤1: 读取前置产物
-  [ ] 步骤2: 三层审计结构检查（Cursor/Runtime/Repo）
+  [ ] 步骤2: 三层审计结构检查（Codex/Runtime/Repo）
   [ ] 步骤3: 文档生成/修改
   [ ] 步骤4: 禁止词检查
   [ ] 步骤5: 文档持久化
@@ -221,7 +222,7 @@ PROMPT_PATH="_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story
 
 ## Codex Canonical Base
 
-以下主文本基线必须对应Cursor `.codex/skills/speckit-workflow/references/audit-prompts.md` §1、本节只允许放置Cursor §1 的完整审计要求，不允许混入运行时适配或仓库附加约束。
+以下主文本基线必须对应Codex `.codex/skills/speckit-workflow/references/audit-prompts.md` §1、本节只允许放置Codex §1 的完整审计要求，不允许混入运行时适配或仓库附加约束。
 - 被审文档:
   - `specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/spec-E{epic}-S{story}.md`
 - 对照基线:
@@ -254,7 +255,7 @@ PROMPT_PATH="_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story
   - 更新状态文件
 ## Repo Add-ons
 
-**以下内容为仓库附加约束，不属于Cursor `audit-prompts.md` §1 原始基线。**
+**以下内容为仓库附加约束，不属于Codex `audit-prompts.md` §1 原始基线。**
 
 ### 禁止词检查检查spec.md 中是否出现以下模糊延期表述，- 可选、可考虑
 - 后续、后续迭代、v2再做
@@ -278,7 +279,7 @@ PROMPT_PATH="_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story
 **Primary Executor**: `auditor-spec` 通过 `subagent_type: general-purpose` 调用
 
 **子任务prompt 不得再只是"读取并执行某个 Prompt 文件"。**
-**必须保证子任务收到的主文本基线仍然是 Cursor §1，而不是无法区分来源的本地重写版。**
+**必须保证子任务收到的主文本基线仍然是 Codex §1，而不是无法区分来源的本地重写版。**
 **当前 accepted path（强制）**：本执行体不得在自身上下文里直接 `Task(...)` 派发 auditor；以下内容只能作为返回给主 Agent 的 dispatch request / compatibility hint。真实派发必须回到主 Agent，由主 Agent 重新读取 `main-agent-orchestration inspect`，必要时执行 `dispatch-plan`，再决定是否派发 auditor。
 
 ```typescript
@@ -290,7 +291,7 @@ MainAgentDispatchRequest({
 **Codex Canonical Base**
 - 主文本基线 .codex/skills/speckit-workflow/references/audit-prompts.md §1
 - 被审文档: specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/spec-E{epic}-S{story}.md
-- 你必须以 Cursor §1 为主文本基线执行审计，不得以本仓附加层替代基线层
+- 你必须以 Codex §1 为主文本基线执行审计，不得以本仓附加层替代基线层
 
 **Codex no-hooks Runtime Adapter**
 - 审计报告输出至
@@ -335,7 +336,7 @@ specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/AUDIT_spec-E{epic}-S{st
 
 PASS 时执行
 ```bash
-npx --no-install bmad-speckit run-auditor-host \\
+npx --no-install bmad-speckit run-auditor-host.ts \\
   --projectRoot {projectRoot} \\
   --stage spec \\
   --artifactPath specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/spec-E{epic}-S{story}.md \\

@@ -1,4 +1,4 @@
-﻿import { execFileSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
@@ -428,6 +428,99 @@ describe('main-agent release gate contract', () => {
           evidenceBundleId: 'bundle-pass',
         },
       });
+    } finally {
+      fs.rmSync(reportDir, { recursive: true, force: true });
+    }
+  });
+
+  it('produces a same-run Codex proof when using the default quality producer', () => {
+    const reportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'release-gate-codex-proof-'));
+    try {
+      const runId = 'run-release-quality-proof-pass';
+      const storyKey = 'S-release';
+      const evidenceBundleId = 'bundle-pass';
+      const reportPath = path.join(reportDir, 'report.json');
+      const ledgerPath = path.join(reportDir, 'ledger.json');
+      const evidence = writeReleaseGateEvidence(reportDir, { runId, storyKey, evidenceBundleId });
+      fs.writeFileSync(
+        ledgerPath,
+        JSON.stringify(
+          {
+            version: 1,
+            ledgerType: 'execution_audit',
+            runId,
+            generatedAt: '2026-04-27T00:00:00.000Z',
+            items: [
+              {
+                taskId: 'T1',
+                status: 'pass',
+                updatedAt: '2026-04-27T00:00:00.000Z',
+                evidenceRefs: [writeEvidenceRef(reportDir, 'outputs/evidence/T1.json')],
+              },
+            ],
+          },
+          null,
+          2
+        ),
+        'utf8'
+      );
+
+      const run = runReleaseGate(
+        {
+          MAIN_AGENT_RELEASE_GATE_CODEX_PROOF_MODE: '',
+          MAIN_AGENT_RELEASE_GATE_E2E_COMMAND: `${process.execPath} -e "process.exit(0)"`,
+          MAIN_AGENT_RELEASE_GATE_REPORT_PATH: reportPath,
+        },
+        true,
+        [
+          '--hostMatrixPath',
+          evidence.hostMatrixPath,
+          '--prTopologyPath',
+          evidence.prTopologyPath,
+          '--singleSourceCommand',
+          `${process.execPath} -e "process.exit(0)"`,
+          '--rerunGateCommand',
+          `${process.execPath} -e "process.exit(0)"`,
+          '--runId',
+          runId,
+          '--storyKey',
+          storyKey,
+          '--evidenceBundleId',
+          evidenceBundleId,
+          '--ledgerPath',
+          ledgerPath,
+          '--skipSprintStatusUpdate',
+          'true',
+        ]
+      );
+
+      expect(run.exitCode).toBe(0);
+      const proofPath = path.join(
+        process.cwd(),
+        '_bmad-output',
+        'runtime',
+        'gates',
+        'codex-quality-proof',
+        `${runId}.proof.json`
+      );
+      const proof = JSON.parse(fs.readFileSync(proofPath, 'utf8')) as {
+        evidence_provenance?: { runId?: string; storyKey?: string; evidenceBundleId?: string };
+        codex?: {
+          mode?: string;
+          proofMode?: string;
+          taskReportStatus?: string;
+          validationsRun?: string[];
+        };
+      };
+      expect(proof.evidence_provenance).toMatchObject({ runId, storyKey, evidenceBundleId });
+      expect(proof.codex).toMatchObject({
+        mode: 'codex_exec',
+        proofMode: 'deterministic_release_shim',
+        taskReportStatus: 'done',
+      });
+      expect(proof.codex?.validationsRun).toContain(
+        'release-quality-proof-deterministic-codex-exec-shim'
+      );
     } finally {
       fs.rmSync(reportDir, { recursive: true, force: true });
     }

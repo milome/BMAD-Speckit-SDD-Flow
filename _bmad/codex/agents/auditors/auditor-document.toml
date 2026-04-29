@@ -1,10 +1,11 @@
 name = "auditors__auditor-document"
 description = "BMAD Codex custom agent for Auditor: Document (Stage 4 文档审计)."
 sandbox_mode = "read-only"
-source_behavior_contract = "_bmad/claude/agents/auditors/auditor-document.md"
-host_role = "codex-no-hooks"
 
 developer_instructions = """You are running as a BMAD Codex custom agent on the no-hooks worker adapter.
+
+BMAD runtime metadata:
+- host_role: codex-no-hooks
 
 Source behavior contract: _bmad/claude/agents/auditors/auditor-document.md
 

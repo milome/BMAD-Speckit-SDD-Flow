@@ -1,4 +1,4 @@
-﻿const crypto = require('node:crypto');
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');

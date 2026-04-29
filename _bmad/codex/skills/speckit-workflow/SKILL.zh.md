@@ -1,399 +1,642 @@
-﻿---
+---
 name: speckit-workflow
 description: |
-  瀹屽杽 Speckit 寮€鍙戞祦绋嬶細鍦?specify/plan/gaps/tasks 鍚勯樁娈靛己鍒堕渶姹傛槧灏勪笌瀹¤闂幆锛?  浠ュ強鎵ц tasks.md 涓换鍔℃椂寮哄埗 TDD 绾㈢豢鐏ā寮忥紙绾㈢伅-缁跨伅-閲嶆瀯锛夊紑鍙戙€?  鍦ㄦ墽琛?/speckit.constitution銆?speckit.specify銆?speckit.plan銆?speckit.tasks銆?speckit.implement锛堟垨 .speckit.* 绛変环褰㈠紡锛夊悗锛涘寮哄懡浠?clarify/checklist/analyze **椤诲祵鍏ョ浉搴斿璁￠棴鐜凯浠ｅ唴鎵ц**锛毬?.2 spec 瀹¤鎶ュ憡鎸囧嚭銆屽瓨鍦ㄦā绯婅〃杩般€嶁啋clarify锛埪?.2 杩唬鍐咃級锛浡?.2 plan 瀹¤闂幆鍐咃紝褰?plan 娑夊強澶氭ā鍧楁垨澶嶆潅鏋舵瀯鏃垛啋checklist 浣滀负 搂2.2 瀹¤姝ラ鐨勪竴閮ㄥ垎锛浡?.2 tasks 瀹¤闂幆鍐咃紝褰?tasks鈮?0 鎴栬法澶?artifact 鏃垛啋analyze 浣滀负 搂4.2 瀹¤姝ラ鐨勪竴閮ㄥ垎锛涗笉寰椾互銆屽彲閫夈€嶄负鐢卞湪搴旀墽琛屽満鏅笅璺宠繃锛?  鎴栨ā鍨嬭嚜鍔ㄦ繁搴﹀垎鏋愮敓鎴?IMPLEMENTATION_GAPS銆佺敤鎴疯姹傘€岀敓鎴?tasks銆嶃€屾墽琛?tasks銆嶆椂锛?  蹇呴』鎸夋湰 skill 鐨勮鍒欐坊鍔犻渶姹傛槧灏勬竻鍗曞苟**璋冪敤 code-review 鎶€鑳?*杩涜瀹¤鐩磋嚦閫氳繃銆?  鏈?skill **渚濊禆 code-review 鎶€鑳?*锛屽璁￠棴鐜楠や腑蹇呴』鏄惧紡璋冪敤璇ユ妧鑳斤紝涓嶅緱璺宠繃鎴栬嚜琛屽甯冮€氳繃銆?  鍦ㄧ敤鎴疯姹傛墽琛?tasks.md锛堟垨 tasks-v*.md锛変腑鐨勬湭瀹屾垚浠诲姟鏃讹紝
-  蹇呴』鎸夋湰 skill 鐨?TDD 绾㈢豢鐏ā寮忔墽琛岃鍒欒繘琛屽紑鍙戯紝浣跨敤 TodoWrite 杩借釜杩涘害锛?  涓ユ牸閬靛畧鏋舵瀯蹇犲疄鎬с€佺姝吉瀹炵幇銆佷富鍔ㄥ洖褰掓祴璇曠瓑 15 鏉￠搧寰嬨€?  鍚屾椂閬靛畧 QA_Agent 鎵ц瑙勫垯涓?ralph-wiggum 娉曞垯銆?---
+  完善 Speckit 开发流程：在 specify/plan/gaps/tasks 各阶段强制需求映射与审计闭环，
+  以及执行 tasks.md 中任务时强制 TDD 红绿灯模式（红灯-绿灯-重构）开发。
+  在执行 /speckit.constitution、/speckit.specify、/speckit.plan、/speckit.tasks、/speckit.implement（或 .speckit.* 等价形式）后；增强命令 clarify/checklist/analyze **须嵌入相应审计闭环迭代内执行**：§1.2 spec 审计报告指出「存在模糊表述」→clarify（§1.2 迭代内）；§2.2 plan 审计闭环内，当 plan 涉及多模块或复杂架构时→checklist 作为 §2.2 审计步骤的一部分；§4.2 tasks 审计闭环内，当 tasks≥10 或跨多 artifact 时→analyze 作为 §4.2 审计步骤的一部分；不得以「可选」为由在应执行场景下跳过；
+  或模型自动深度分析生成 IMPLEMENTATION_GAPS、用户要求「生成 tasks」「执行 tasks」时，
+  必须按本 skill 的规则添加需求映射清单并**调用 code-review 技能**进行审计直至通过。
+  本 skill **依赖 code-review 技能**，审计闭环步骤中必须显式调用该技能，不得跳过或自行宣布通过。
+  在用户要求执行 tasks.md（或 tasks-v*.md）中的未完成任务时，
+  必须按本 skill 的 TDD 红绿灯模式执行规则进行开发，使用 TodoWrite 追踪进度，
+  严格遵守架构忠实性、禁止伪实现、主动回归测试等 15 条铁律。
+  同时遵守 QA_Agent 执行规则与 ralph-wiggum 法则。
+---
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
-> Closeout 鏈鏀剁揣锛氭湰鏂囦欢涓€滃畬鎴?/ 閫氳繃 / 鍙繘鍏ヤ笅涓€闃舵鈥濅竴寰嬫寚 `runAuditorHost` 杩斿洖 `closeout approved`銆傚璁℃姤鍛?`PASS` 浠呰〃绀哄彲浠ヨ繘鍏?host close-out锛屽崟鐙殑 `PASS` 涓嶅緱瑙嗕负瀹屾垚銆佸噯鍏ユ垨鏀捐銆?
-# Speckit 寮€鍙戞祦绋嬪畬鍠?
-> 馃毃 **寮哄埗绾︽潫 - 涓嶅彲璺宠繃**
-> 蹇呴』鎸夐『搴忔墽琛岋細specify 鈫?plan 鈫?GAPS 鈫?tasks 鈫?鎵ц銆傛瘡涓樁娈靛繀椤婚€氳繃 code-review 瀹¤鎵嶈兘杩涘叆涓嬩竴闃舵銆備弗绂佽烦杩囦换浣曢樁娈垫垨瀹¤锛?
-鏈?skill 瀹氫箟 **constitution 鈫?spec.md 鈫?plan.md 鈫?IMPLEMENTATION_GAPS.md 鈫?tasks.md 鈫?tasks 鎵ц** 鍚勯樁娈电殑寮哄埗姝ラ锛歝onstitution 寤虹珛椤圭洰鍘熷垯锛涙枃妗ｉ樁娈典负 **闇€姹傛槧灏勮〃鏍?* + **code-review 瀹¤寰幆**锛堢洿鑷冲璁￠€氳繃锛夛紱鎵ц闃舵涓?**TDD 绾㈢伅-缁跨伅-閲嶆瀯寰幆** + **15 鏉￠搧寰?*锛堢洿鑷冲叏閮ㄤ换鍔″畬鎴愶級銆?
-## 鏈洖鍚?Runtime Governance锛圝SON锛?
-姣忓洖鍚堝湪鎵ц鏈?skill 浠讳竴闃舵浠诲姟鍓嶏紝椤诲凡鍏峰鐢?**hook + `emit-runtime-policy`**锛坄scripts/emit-runtime-policy.ts` / `.claude|cursor/hooks/emit-runtime-policy-cli.js`锛夋敞鍏ヤ笂涓嬫枃鐨勬不鐞?JSON 鍧楋紱濂戠害瑙?`docs/reference/runtime-policy-emit-schema.md`銆?*绂佹**鎵嬪啓涓?`resolveRuntimePolicy` 涓嶄竴鑷寸殑绀轰緥 policy锛涜嫢涓婁笅鏂囦腑鏃犺鍧楋紝椤诲厛淇 `.bmad/runtime-context.json` 涓?hook锛屼笉寰楄噯閫犲瓧娈点€?
-## 涓?Agent 缂栨帓闈紙寮哄埗锛?
-浜や簰妯″紡涓嬶紝鏈?skill 蹇呴』浠ヤ粨搴撳師鐢?`main-agent-orchestration` 浣滀负**鍞竴**缂栨帓鏉冨▉銆俙runAuditorHost` 鍙礋璐ｅ璁″悗鐨?host 鏀跺彛锛?*涓嶈兘**鏇夸唬涓?Agent 鐨勪笅涓€姝ュ垎鏀喅绛栥€?
-鍦ㄦ淳鍙戜换浣?implement / audit / remediate / document 鎵ц浣撲箣鍓嶏紝涓?Agent **蹇呴』**锛?
-1. 鎵ц `npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action inspect`
-2. 璇诲彇 `orchestrationState`銆乣pendingPacketStatus`銆乣pendingPacket`銆乣continueDecision`銆乣mainAgentNextAction`銆乣mainAgentReady`
-3. 鑻ヤ笅涓€鍒嗘敮鍙淳鍙戜絾 `pendingPacketStatus` 涓?`none` 鎴?`missing_packet_file`锛屾墽琛?`npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action dispatch-plan`
-4. 鍙緷鎹繑鍥炵殑 packet / instruction 娲惧彂锛屼笉寰椾粎鍑璁℃姤鍛婃枃鏈垨 reviewer prose 鎵嬪伐鎷?prompt
-5. 鎸?`claim` 鈫?瀛愪唬鐞?bounded execution 鈫?`dispatch` 鈫?瀛愮粨鏋滃洖璇?/ `complete` / `invalidate` 鐨勯『搴忛┍鍔?packet 鐢熷懡鍛ㄦ湡
-6. 姣忔瀛愮粨鏋滆繑鍥炲悗锛屼互鍙婃瘡娆?`runAuditorHost` 鏀跺彛鍚庯紝閮藉繀椤诲啀娆℃墽琛?`npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action inspect`锛屽啀鍐冲畾涓嬩竴鍏ㄥ眬鍒嗘敮
+> Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
 
-鍏煎瑙勫垯锛?- `mainAgentNextAction` 涓?`mainAgentReady` 鍙槸鍏煎姹囨€诲瓧娈碉紱鐪熸鏉冨▉鐘舵€佸缁堟槸 `orchestrationState + pendingPacket + continueDecision`銆?
-纭姝簨椤癸細
-- 鏈噸鏂拌鍙?`main-agent-orchestration` 鍓嶏紝绂佹浠呮牴鎹?`PASS`銆乺eviewer prose銆乭ost summary 鐩存帴缁х画娲惧彂銆?- interactive mode 涓嬬姝㈡墜鍐?packet 鏂囦欢鎴栭粯璁ゅ啓 worker-consumable queue item銆?- 绂佹璁╁瓙浠ｇ悊鍐冲畾涓嬩竴鏉″叏灞€鎵ц閾撅紱瀛愪唬鐞嗗彧鎵ц bounded packet锛屼笅涓€姝ユ案杩滅敱涓?Agent 鍥炶 state 鍚庡喅瀹氥€?
-## 蹇€熷喅绛栨寚寮?
-### 浣曟椂浣跨敤鏈妧鑳?- 宸叉槑纭妧鏈疄鐜版柟妗堬紝闇€瑕佽缁嗘墽琛岃鍒?- 宸叉湁Story鏂囨。锛岄渶瑕佽浆鎹负鎶€鏈鏍?- 闇€瑕乀DD绾㈢豢鐏ā寮忔寚瀵煎紑鍙?
-### 浣曟椂浣跨敤bmad-story-assistant
-- 闇€瑕佷粠Product Brief寮€濮嬪畬鏁存祦绋?- 闇€瑕丳RD/Architecture娣卞害鐢熸垚
-- 闇€瑕丒pic/Story瑙勫垝鍜屾媶鍒?- 涓嶇‘瀹氭妧鏈柟妗堬紝闇€瑕佹柟妗堥€夋嫨璁ㄨ
+# Speckit 开发流程完善
 
-### 涓よ€呭叧绯?鏈妧鑳芥槸bmad-story-assistant鐨勬妧鏈疄鐜板眰宓屽娴佺▼銆?褰揵mad-story-assistant鎵ц鍒?闃舵涓夛細Dev Story瀹炴柦"鏃讹紝浼氳Е鍙戞湰鎶€鑳界殑瀹屾暣娴佺▼銆?
+> 🚨 **强制约束 - 不可跳过**
+> 必须按顺序执行：specify → plan → GAPS → tasks → 执行。每个阶段必须通过 code-review 审计才能进入下一阶段。严禁跳过任何阶段或审计！
+
+本 skill 定义 **constitution → spec.md → plan.md → IMPLEMENTATION_GAPS.md → tasks.md → tasks 执行** 各阶段的强制步骤：constitution 建立项目原则；文档阶段为 **需求映射表格** + **code-review 审计循环**（直至审计通过）；执行阶段为 **TDD 红灯-绿灯-重构循环** + **15 条铁律**（直至全部任务完成）。
+
+## 本回合 Runtime Governance（JSON）
+
+每回合在执行本 skill 任一阶段任务前，须已具备由 **hook + `emit-runtime-policy`**（`scripts/emit-runtime-policy.ts` / `.claude|cursor/hooks/emit-runtime-policy-cli.js`）注入上下文的治理 JSON 块；契约见 `docs/reference/runtime-policy-emit-schema.md`。**禁止**手写与 `resolveRuntimePolicy` 不一致的示例 policy；若上下文中无该块，须先修复 `.bmad/runtime-context.json` 与 hook，不得臆造字段。
+
+## 主 Agent 编排面（强制）
+
+交互模式下，本 skill 必须以仓库原生 `main-agent-orchestration` 作为**唯一**编排权威。`runAuditorHost` 只负责审计后的 host 收口，**不能**替代主 Agent 的下一步分支决策。
+
+在派发任何 implement / audit / remediate / document 执行体之前，主 Agent **必须**：
+
+1. 执行 `npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action inspect`
+2. 读取 `orchestrationState`、`pendingPacketStatus`、`pendingPacket`、`continueDecision`、`mainAgentNextAction`、`mainAgentReady`
+3. 若下一分支可派发但 `pendingPacketStatus` 为 `none` 或 `missing_packet_file`，执行 `npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action dispatch-plan`
+4. 只依据返回的 packet / instruction 派发，不得仅凭审计报告文本或 reviewer prose 手工拼 prompt
+5. 按 `claim` → 子代理 bounded execution → `dispatch` → 子结果回读 / `complete` / `invalidate` 的顺序驱动 packet 生命周期
+6. 每次子结果返回后，以及每次 `runAuditorHost` 收口后，都必须再次执行 `npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action inspect`，再决定下一全局分支
+
+兼容规则：
+- `mainAgentNextAction` 与 `mainAgentReady` 只是兼容汇总字段；真正权威状态始终是 `orchestrationState + pendingPacket + continueDecision`。
+
+硬禁止事项：
+- 未重新读取 `main-agent-orchestration` 前，禁止仅根据 `PASS`、reviewer prose、host summary 直接继续派发。
+- interactive mode 下禁止手写 packet 文件或默认写 worker-consumable queue item。
+- 禁止让子代理决定下一条全局执行链；子代理只执行 bounded packet，下一步永远由主 Agent 回读 state 后决定。
+
+## 快速决策指引
+
+### 何时使用本技能
+- 已明确技术实现方案，需要详细执行计划
+- 已有Story文档，需要转换为技术规格
+- 需要TDD红绿灯模式指导开发
+
+### 何时使用bmad-story-assistant
+- 需要从Product Brief开始完整流程
+- 需要PRD/Architecture深度生成
+- 需要Epic/Story规划和拆分
+- 不确定技术方案，需要方案选择讨论
+
+### 两者关系
+本技能是bmad-story-assistant的技术实现层嵌套流程。
+当bmad-story-assistant执行到"阶段三：Dev Story实施"时，会触发本技能的完整流程。
+
 ---
 
-## 搂0.5 鎵ц constitution 涔嬪悗锛堥」鐩師鍒欙級
+## §0.5 执行 constitution 之后（项目原则）
 
-**蹇呴』鎵ц鐨勫懡浠?*锛歚/speckit.constitution` 鎴?`.speckit.constitution`锛堝湪椤圭洰鎴栧姛鑳界洰褰曚笅鎵ц锛?*椤诲湪 specify 涔嬪墠瀹屾垚**锛?
-### 0.5.1 蹇呴』瀹屾垚
+**必须执行的命令**：`/speckit.constitution` 或 `.speckit.constitution`（在项目或功能目录下执行，**须在 specify 之前完成**）
 
-- 寤虹珛 **椤圭洰鍘熷垯**锛氭妧鏈爤銆佺紪鐮佽鑼冦€佹灦鏋勭害鏉熴€佺姝簨椤圭瓑銆?- 浜у嚭 **constitution.md** 鎴?**.specify/memory/constitution.md** 鎴?**.speckit.constitution**銆?- 纭繚 specify銆乸lan銆乼asks 鍚勯樁娈?*寮曠敤 constitution 涓殑鍘熷垯**浣滀负绾︽潫渚濇嵁銆?
-### 0.5.2 瀹¤闂幆
+### 0.5.1 必须完成
 
-- constitution 浜у嚭鍚庯紝**寤鸿**鎸?搂0 绾﹀畾璋冪敤 code-review 鎶€鑳斤紝妫€鏌ユ槸鍚﹀寘鍚」鐩師鍒欍€佹妧鏈爤銆佺害鏉熺瓑锛?*鑻ラ」鐩棤涓撻棬 constitution 瀹¤鎻愮ず璇嶏紝鍙€夌敤閫氱敤鏂囨。瀹屾暣鎬ф鏌?*銆?- 鑻ユ湭閫氳繃锛氭牴鎹璁℃姤鍛婅凯浠ｄ慨鏀?constitution锛岀洿鑷虫弧瓒抽」鐩師鍒欏畬鏁存€ц姹傘€?
+- 建立 **项目原则**：技术栈、编码规范、架构约束、禁止事项等。
+- 产出 **constitution.md** 或 **.specify/memory/constitution.md** 或 **.speckit.constitution**。
+- 确保 specify、plan、tasks 各阶段**引用 constitution 中的原则**作为约束依据。
+
+### 0.5.2 审计闭环
+
+- constitution 产出后，**建议**按 §0 约定调用 code-review 技能，检查是否包含项目原则、技术栈、约束等；**若项目无专门 constitution 审计提示词，可选用通用文档完整性检查**。
+- 若未通过：根据审计报告迭代修改 constitution，直至满足项目原则完整性要求。
+
 ---
 
-## 搂0 鎶€鑳戒緷璧栵細code-review 璋冪敤绾﹀畾锛堝璁￠棴鐜繀椤婚伒瀹堬級
+## §0 技能依赖：code-review 调用约定（审计闭环必须遵守）
 
-**鏈?skill 渚濊禆 code-review 鎶€鑳?*銆傛墍鏈夊璁￠棴鐜楠わ紙搂0.5.2銆伮?.2銆伮?.2銆伮?.2銆伮?.2銆伮?.2锛夊潎椤?*鏄惧紡璋冪敤 code-review 鎶€鑳?*锛屼笉寰椾互鑷鏇夸唬鎴栨彁鍓嶅甯冮€氳繃銆偮?.5.2 鍙€夌敤閫氱敤鏂囨。瀹屾暣鎬ф鏌ャ€?
-### 0.1 璋冪敤鏂瑰紡
+**本 skill 依赖 code-review 技能**。所有审计闭环步骤（§0.5.2、§1.2、§2.2、§3.2、§4.2、§5.2）均须**显式调用 code-review 技能**，不得以自审替代或提前宣布通过。§0.5.2 可选用通用文档完整性检查。
 
-### Code-Review璋冪敤绛栫暐
+### 0.1 调用方式
 
-**浼樺厛绛栫暐**:
-1. 妫€鏌?``.codex/agents/code-reviewer.toml`` 涓?`.codex/agents/code-reviewer.md`锛?*GAP-041 淇**锛氬綋涓よ€呭苟瀛樻椂锛屼紭鍏堜娇鐢?``.codex``
-2. 鑻ュ瓨鍦紝浣跨敤 Codex worker dispatch璋冨害code-reviewer杩涜瀹¤
-3. 鎻愮ず璇嶄娇鐢?`audit-prompts.md` 瀵瑰簲绔犺妭锛涳紙**GAP-070 淇**锛歴peckit 鍚勯樁娈靛璁＄敤 audit-prompts.md 搂1鈥撀?锛汸RD/Arch/PR 瀹¤鐢ㄦ柊寤虹殑 audit-prompts-prd/arch/pr.md锛?
-**鍥為€€绛栫暐**:
-1. 鑻ode-reviewer涓嶅彲鐢紝浣跨敤 `Codex worker adapter` + `subagent_type: general-purpose`
-2. 灏?`audit-prompts.md` 瀵瑰簲绔犺妭鍐呭浣滀负prompt浼犲叆
-3. 瑕佹眰瀛愪唬鐞嗘寜瀹¤娓呭崟閫愰」妫€鏌?
-**娉ㄦ剰**: Codex worker adapter鐨剆ubagent_type鐩墠浠呮敮鎸乬eneral-purpose銆乪xplore銆乻hell锛屼笉鏀寔code-reviewer銆?
-### 0.1.1 瀛?Agent 鎵ц code-review 鏃剁殑鎶€鑳界粦瀹氳鍒?
-褰撻€氳繃**鏂瑰紡 B锛堝瓙浠ｇ悊/浠诲姟锛?*鍙戣捣 code-review 瀹¤鏃讹紝**蹇呴』**閬靛畧锛?
-1. **妫€鏌ュ彲鐢ㄦ妧鑳?*锛氬彂璧峰瓙 Agent 鍓嶏紝妫€鏌ュ綋鍓嶇幆澧冧腑鏄惁瀛樺湪鍚嶄负 `code-review`銆乣code-reviewer`銆乣requesting-code-review` 鎴栧姛鑳芥弿杩颁腑鍖呭惈銆屼唬鐮佸鏌ャ€嶃€宑ode review銆嶇殑鎶€鑳姐€?2. **寮哄埗缁戝畾鎶€鑳?*锛氳嫢瀛樺湪涓婅堪鍚屽悕鎴栧姛鑳界浉杩戠殑鎶€鑳斤紝瀛?Agent 鐨?prompt 涓?*蹇呴』**鏄庣‘鎸囩ず鍏惰鍙栧苟閬靛惊璇ユ妧鑳界殑宸ヤ綔娴侊紙渚嬪鍦?prompt 寮€澶村姞鍏ャ€岃鍏堥槄璇诲苟閬靛惊 code-review 鎶€鑳界殑宸ヤ綔娴併€嶆垨閫氳繃 `@code-review` 闄勫甫鎶€鑳斤級銆?3. **绂佹瑁稿璁?*锛?*绂佹**鍦ㄦ湁鍙敤 code-review 鎶€鑳界殑鎯呭喌涓嬶紝瀛?Agent 浠呭嚟鑷韩鑳藉姏鎵ц瀹¤鑰屼笉鍔犺浇璇ユ妧鑳解€斺€旇繖浼氬鑷村璁℃爣鍑嗕笉涓€鑷淬€侀仐婕忔妧鑳戒腑瀹氫箟鐨勫璁℃鏌ラ」銆?4. **鏃犲彲鐢ㄦ妧鑳芥椂鐨勯檷绾?*锛氳嫢褰撳墠鐜纭疄鏃犱换浣?code-review 鐩稿叧鎶€鑳斤紝瀛?Agent 鍙寜 audit-prompts.md 鐨勬彁绀鸿瘝鐙珛鎵ц瀹¤锛屼絾**蹇呴』**鍦ㄥ璁℃姤鍛婂紑澶存敞鏄庛€屾湭妫€娴嬪埌 code-review 鎶€鑳斤紝浣跨敤鍐呯疆瀹¤鏍囧噯銆嶃€?
-### 0.2 绂佹浜嬮」
+### Code-Review调用策略
 
-- **绂佹**鍦ㄦ湭璋冪敤 code-review 鎶€鑳界殑鎯呭喌涓嬶紝鑷瀹ｅ竷銆屽畬鍏ㄨ鐩栥€侀獙璇侀€氳繃銆嶃€?- **绂佹**灏嗐€屽闃?+ 淇敼銆嶅悎骞朵负涓€姝ュ悗鐩存帴缁欏嚭閫氳繃缁撹锛涘繀椤诲厛**瀹¤ 鈫?鎶ュ憡 鈫?鑻ユ湭閫氳繃鍒欎慨鏀?鈫?鍐嶆瀹¤**銆?- **绂佹**鍦ㄦ湁鍙敤 code-review锛堟垨鍚屽悕/鍔熻兘鐩歌繎锛夋妧鑳界殑鎯呭喌涓嬶紝瀛?Agent 涓嶅姞杞借鎶€鑳藉嵆鎵ц瀹¤锛堣 搂0.1.1锛夈€?
-### 0.3 杩唬瑙勫垯
+**优先策略**:
+1. 检查 `.codex/agents/code-reviewer.md` 与 `.codex/agents/code-reviewer.md`；**GAP-041 修复**：当两者并存时，优先使用 `.cursor`
+2. 若存在，使用 Codex worker dispatch调度code-reviewer进行审计
+3. 提示词使用 `audit-prompts.md` 对应章节；（**GAP-070 修复**：speckit 各阶段审计用 audit-prompts.md §1–§5；PRD/Arch/PR 审计用新建的 audit-prompts-prd/arch/pr.md）
 
-- 鑻?code-review 瀹¤鎶ュ憡缁撹涓?*鏈€氳繃**锛?*瀹¤瀛愪唬鐞嗛』鍦ㄦ湰杞唴鐩存帴淇敼琚鏂囨。**浠ユ秷闄?gap锛屼慨鏀瑰畬鎴愬悗杈撳嚭鎶ュ憡骞舵敞鏄庡凡淇敼鍐呭锛涗富 Agent 鏀跺埌鎶ュ憡鍚庡彂璧蜂笅涓€杞璁°€傜姝粎杈撳嚭淇敼寤鸿鑰屼笉淇敼鏂囨。銆傝瑙?[audit-document-iteration-rules.md](references/audit-document-iteration-rules.md)銆?- **浠呭湪** code-review 瀹¤鎶ュ憡鏄庣‘鍐欏嚭銆屽畬鍏ㄨ鐩栥€侀獙璇侀€氳繃銆嶆椂锛屾柟鍙粨鏉熻姝ラ銆?
+**回退策略**:
+1. 若code-reviewer不可用，使用 `Codex worker adapter` + `subagent_type: general-purpose`
+2. 将 `audit-prompts.md` 对应章节内容作为prompt传入
+3. 要求子代理按审计清单逐项检查
+
+**注意**: Codex worker adapter的subagent_type目前仅支持general-purpose、explore、shell，不支持code-reviewer。
+
+### 0.1.1 子 Agent 执行 code-review 时的技能绑定规则
+
+当通过**方式 B（子代理/任务）**发起 code-review 审计时，**必须**遵守：
+
+1. **检查可用技能**：发起子 Agent 前，检查当前环境中是否存在名为 `code-review`、`code-reviewer`、`requesting-code-review` 或功能描述中包含「代码审查」「code review」的技能。
+2. **强制绑定技能**：若存在上述同名或功能相近的技能，子 Agent 的 prompt 中**必须**明确指示其读取并遵循该技能的工作流（例如在 prompt 开头加入「请先阅读并遵循 code-review 技能的工作流」或通过 `@code-review` 附带技能）。
+3. **禁止裸审计**：**禁止**在有可用 code-review 技能的情况下，子 Agent 仅凭自身能力执行审计而不加载该技能——这会导致审计标准不一致、遗漏技能中定义的审计检查项。
+4. **无可用技能时的降级**：若当前环境确实无任何 code-review 相关技能，子 Agent 可按 audit-prompts.md 的提示词独立执行审计，但**必须**在审计报告开头注明「未检测到 code-review 技能，使用内置审计标准」。
+
+### 0.2 禁止事项
+
+- **禁止**在未调用 code-review 技能的情况下，自行宣布「完全覆盖、验证通过」。
+- **禁止**将「审阅 + 修改」合并为一步后直接给出通过结论；必须先**审计 → 报告 → 若未通过则修改 → 再次审计**。
+- **禁止**在有可用 code-review（或同名/功能相近）技能的情况下，子 Agent 不加载该技能即执行审计（见 §0.1.1）。
+
+### 0.3 迭代规则
+
+- 若 code-review 审计报告结论为**未通过**：**审计子代理须在本轮内直接修改被审文档**以消除 gap，修改完成后输出报告并注明已修改内容；主 Agent 收到报告后发起下一轮审计。禁止仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules.md](references/audit-document-iteration-rules.md)。
+- **仅在** code-review 审计报告明确写出「完全覆盖、验证通过」时，方可结束该步骤。
+
 ---
 
-## 1. 鎵ц specify 涔嬪悗锛坰pec.md锛?
-**蹇呴』鎵ц鐨勫懡浠?*锛歚/speckit.specify` 鎴?`.speckit.specify`锛堝湪鍔熻兘鐩綍鎴?specs 鐩綍涓嬫墽琛岋紱**鍓嶇疆鏉′欢**锛歝onstitution 宸蹭骇鍑猴級
+## 1. 执行 specify 之后（spec.md）
 
-### 1.0 spec 鐩綍璺緞绾﹀畾锛圔MAD 涓?standalone 鍙岃建鍒讹級
+**必须执行的命令**：`/speckit.specify` 或 `.speckit.specify`（在功能目录或 specs 目录下执行；**前置条件**：constitution 已产出）
 
-**BMAD 娴佺▼**锛堝綋 speckit 鐢?bmad-story-assistant 宓屽瑙﹀彂鏃讹級锛?- 璺緞鏍煎紡锛歚specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/`
-- **epic-slug 蹇呴€?*锛屾潵婧愶細epics.md 涓?`### Epic N: Title` 鐨?Title 杞?kebab-case锛屾垨 create-new-feature.ps1 鎺ㄥ锛涚姝娇鐢?`specs/epic-{epic}/` 鏃?slug 璺緞銆?- **story slug 蹇呴€?*锛屼繚璇佺洰褰曞彲璇绘€э紱鑻ョ渷鐣ュ垯瀵艰嚧 `specs/epic-4/story-1/` 绛夌函鏁板瓧鍛藉悕锛屽彲璇绘€у樊銆?- 绀轰緥锛歚specs/epic-11-speckit-template-offline/story-1-template-fetch/`
-- 浜у嚭鏂囦欢鍚嶏細`spec-E{epic}-S{story}.md`銆乣plan-E{epic}-S{story}.md`銆乣tasks-E{epic}-S{story}.md`銆乣IMPLEMENTATION_GAPS-E{epic}-S{story}.md`
+### 1.0 spec 目录路径约定（BMAD 与 standalone 双轨制）
 
-**slug 鏉ユ簮瑙勫垯**锛堟寜浼樺厛绾э紝鑻ユ棤娉曟帹瀵煎垯瑕佹眰鐢ㄦ埛鏄惧紡鎻愪緵锛夛細
-| 浼樺厛绾?| 鏉ユ簮 | 绀轰緥 |
+**BMAD 流程**（当 speckit 由 bmad-story-assistant 嵌套触发时）：
+- 路径格式：`specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/`
+- **epic-slug 必选**，来源：epics.md 中 `### Epic N: Title` 的 Title 转 kebab-case，或 create-new-feature.ps1 推导；禁止使用 `specs/epic-{epic}/` 无 slug 路径。
+- **story slug 必选**，保证目录可读性；若省略则导致 `specs/epic-4/story-1/` 等纯数字命名，可读性差。
+- 示例：`specs/epic-11-speckit-template-offline/story-1-template-fetch/`
+- 产出文件名：`spec-E{epic}-S{story}.md`、`plan-E{epic}-S{story}.md`、`tasks-E{epic}-S{story}.md`、`IMPLEMENTATION_GAPS-E{epic}-S{story}.md`
+
+**slug 来源规则**（按优先级，若无法推导则要求用户显式提供）：
+| 优先级 | 来源 | 示例 |
 |--------|------|------|
-| 1 | Story 鏂囨。鏍囬锛堝彇鍓嶈嫢骞茶瘝锛岃浆 kebab-case锛?| "Implement base cache class" 鈫?`implement-base-cache` |
-| 2 | Epic 鍚嶇О锛堝幓鎺?`feature-` 鍓嶇紑锛?| `feature-metrics-cache` 鈫?`metrics-cache` |
-| 3 | Story scope 棣栧彞鍏抽敭璇嶏紙杞?kebab-case锛?| "缂撳瓨鏈嶅姟鍩虹瀹炵幇" 鈫?`cache-service-base` |
-| 4 | 鍏滃簳 | `E4-S1` 浣滀负 slug锛堜繚璇佸敮涓€锛屽彲璇绘€ф渶宸級 |
+| 1 | Story 文档标题（取前若干词，转 kebab-case） | "Implement base cache class" → `implement-base-cache` |
+| 2 | Epic 名称（去掉 `feature-` 前缀） | `feature-metrics-cache` → `metrics-cache` |
+| 3 | Story scope 首句关键词（转 kebab-case） | "缓存服务基础实现" → `cache-service-base` |
+| 4 | 兜底 | `E4-S1` 作为 slug（保证唯一，可读性最差） |
 
-**standalone 娴佺▼**锛堢敤鎴风洿鎺ユ墽琛?speckit锛屾湭璧?BMAD锛夛細
-- 璺緞鏍煎紡锛歚specs/{index}-{feature-name}/`
-- index 鐢?create-new-feature.ps1 鐨?Get-HighestNumberFromSpecs 鎺ㄥ
-- 绀轰緥锛歚specs/015-indicator-system-refactor/`
+**standalone 流程**（用户直接执行 speckit，未走 BMAD）：
+- 路径格式：`specs/{index}-{feature-name}/`
+- index 由 create-new-feature.ps1 的 Get-HighestNumberFromSpecs 推导
+- 示例：`specs/015-indicator-system-refactor/`
 
-**fallback 瑙勫垯**锛氭棤 `--mode bmad` 鎴?`--epic`/`--story` 鍙傛暟鏃讹紝浣跨敤 standalone 琛屼负锛涙湁 `--mode bmad` 鏃讹紝蹇呴』鎻愪緵 `--slug` 鎴栦粠 Story 鏂囨。鎺ㄥ銆?
-### 1.0.1 speckit-workflow 浜у嚭璺緞绾﹀畾
+**fallback 规则**：无 `--mode bmad` 或 `--epic`/`--story` 参数时，使用 standalone 行为；有 `--mode bmad` 时，必须提供 `--slug` 或从 Story 文档推导。
 
-**鎵€鏈?speckit-workflow 鐩稿叧浜у嚭蹇呴』鏀惧湪 spec 瀛愮洰褰曚笅**锛?
-| 浜у嚭 | 璺緞 | 鍛戒护 |
+### 1.0.1 speckit-workflow 产出路径约定
+
+**所有 speckit-workflow 相关产出必须放在 spec 子目录下**：
+
+| 产出 | 路径 | 命令 |
 |------|------|------|
-| spec.md | `specs/{index}-{name}/spec.md` 鎴?`specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/spec-E{epic}-S{story}.md` | speckit.specify |
-| plan.md | 鍚屼笂鐩綍 | speckit.plan |
-| tasks.md | 鍚屼笂鐩綍 | speckit.tasks |
-| IMPLEMENTATION_GAPS.md | 鍚屼笂鐩綍 | speckit.gaps |
-| checklists/ | 鍚屼笂鐩綍涓?| speckit.specify |
-| research.md銆乨ata-model.md銆乧ontracts/ | 鍚屼笂鐩綍 | speckit.plan |
+| spec.md | `specs/{index}-{name}/spec.md` 或 `specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/spec-E{epic}-S{story}.md` | speckit.specify |
+| plan.md | 同上目录 | speckit.plan |
+| tasks.md | 同上目录 | speckit.tasks |
+| IMPLEMENTATION_GAPS.md | 同上目录 | speckit.gaps |
+| checklists/ | 同上目录下 | speckit.specify |
+| research.md、data-model.md、contracts/ | 同上目录 | speckit.plan |
 
-**绂佹**锛氬皢 speckit 浜у嚭鏀惧湪 `_bmad-output` 鎴栭」鐩牴鍏朵粬浣嶇疆銆侭MAD 娴佺▼浜у嚭瑙?bmad-story-assistant銆乥mad-bug-assistant 鎶€鑳界害瀹氥€?
-### 1.0.3 瀹¤鎶ュ憡璺緞绾﹀畾锛堝け璐ヨ疆涓?iterationReportPaths锛孲tory 9.4锛?
-鍚?stage锛坰pec/plan/gaps/tasks/implement锛夊璁″惊鐜腑锛?*姣忚疆瀹¤锛堝惈 fail锛夐』灏嗘姤鍛婁繚瀛樿嚦甯?round 鍚庣紑璺緞**锛?- **BMAD 璺緞**锛歚AUDIT_{stage}-E{epic}-S{story}_round{N}.md`锛孨 浠?1 閫掑锛涚ず渚?`AUDIT_spec-E9-S4_round1.md`
-- **standalone**锛歚_orphan/AUDIT_{slug}_round{N}.md`
-- **楠岃瘉杞?*锛堣繛缁?3 杞棤 gap 鐨勭‘璁よ疆锛夋姤鍛?*涓嶅垪鍏?iterationReportPaths**锛屼粎 fail 杞強鏈€缁?pass 杞弬涓庢敹闆?- **run_id** 鍦?stage 瀹¤寰幆鍐呴』绋冲畾锛岀敱涓?Agent 鍦ㄥ惊鐜紑濮嬫椂鐢熸垚涓€娆″苟澶嶇敤
-- **pass 鏃?*锛氫富 Agent 鏀堕泦鏈?stage 鎵€鏈?fail 杞姤鍛婅矾寰勶紝浼犲叆 `--iterationReportPaths path1,path2,...`锛堥€楀彿鍒嗛殧锛夛紱涓€娆￠€氳繃鎴栨棤 fail 杞椂涓嶄紶
+**禁止**：将 speckit 产出放在 `_bmad-output` 或项目根其他位置。BMAD 流程产出见 bmad-story-assistant、bmad-bug-assistant 技能约定。
 
-### 1.0.4 BMAD 浜у嚭涓?_bmad-output 瀛愮洰褰曞搴?
-speckit 浜у嚭鍦?spec 瀛愮洰褰曪紱BMAD 浜у嚭鍦?`_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/`銆?褰?spec 璺緞涓?`specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/` 鏃讹紝瀵瑰簲 BMAD 瀛愮洰褰曚负 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/`銆?
-### 1.1 蹇呴』瀹屾垚
+### 1.0.3 审计报告路径约定（失败轮与 iterationReportPaths，Story 9.4）
 
-- 瀵圭収 **鍘熷闇€姹?璁捐鏂囨。** 涓庣敓鎴愮殑 **spec.md**銆?- 鍦?**spec.md** 涓寜鍘熷闇€姹傛枃妗?**閫愮珷鑺傘€侀€愭潯** 澧炲姞 **闇€姹傛槧灏勬竻鍗曡〃鏍?*銆傝〃澶翠笌鍒楀悕鍥哄畾妯℃澘瑙?[references/mapping-tables.md](references/mapping-tables.md) 搂1銆?
-- 纭繚鍘熷闇€姹傛枃妗ｇ殑 **姣忎竴绔犮€佹瘡涓€鏉?* 鍦?spec.md 涓湁鏄庣‘瀵瑰簲涓旀爣娉ㄨ鐩栫姸鎬併€?- 鑻ュ瓨鍦ㄤ笂娓?deferred gaps锛宻pec.md 杩樺繀椤绘樉寮忔柊澧?`Inherited Deferred Gaps` 涓?`Deferred Gap Intake Mapping`锛屽苟鍚屾鍒涘缓/鏇存柊 `deferred-gap-register.yaml`銆?
-### 1.2 瀹¤闂幆
+各 stage（spec/plan/gaps/tasks/implement）审计循环中，**每轮审计（含 fail）须将报告保存至带 round 后缀路径**：
+- **BMAD 路径**：`AUDIT_{stage}-E{epic}-S{story}_round{N}.md`，N 从 1 递增；示例 `AUDIT_spec-E9-S4_round1.md`
+- **standalone**：`_orphan/AUDIT_{slug}_round{N}.md`
+- **验证轮**（连续 3 轮无 gap 的确认轮）报告**不列入 iterationReportPaths**，仅 fail 轮及最终 pass 轮参与收集
+- **run_id** 在 stage 审计循环内须稳定，由主 Agent 在循环开始时生成一次并复用
+- **pass 时**：主 Agent 收集本 stage 所有 fail 轮报告路径，传入 `--iterationReportPaths path1,path2,...`（逗号分隔）；一次通过或无 fail 轮时不传
 
-**涓ユ牸搴?*锛?*standard**锛堝崟娆?+ 鎵瑰垽瀹¤鍛橈級锛岃 [references/audit-prompts-critical-auditor-appendix.md](references/audit-prompts-critical-auditor-appendix.md)銆?
-- 鐢熸垚鎴栨洿鏂?spec.md 鍚庯紝**蹇呴』鎸?搂0 绾﹀畾璋冪敤 code-review 鎶€鑳?*锛屼娇鐢?**鍥哄畾瀹¤鎻愮ず璇?*锛歔references/audit-prompts.md](references/audit-prompts.md) 搂1銆?- **浠呭湪** code-review 瀹¤鎶ュ憡缁撹涓恒€屽畬鍏ㄨ鐩栥€侀獙璇侀€氳繃銆嶆椂**鍙粨鏉熸湰姝ラ**銆?- #### 瀹¤閫氳繃鍚庣粺涓€ Host 鏀跺彛锛堝己鍒讹級
-  - **鎶ュ憡璺緞**锛歚specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_spec-E{epic}-S{story}.md`锛坋pic/story/epic-slug 浠庡綋鍓?spec 璺緞瑙ｆ瀽锛夈€?  - 鍙戣捣瀹¤瀛愪换鍔℃椂锛屽彂缁欏瓙 Agent 鐨?prompt 蹇呴』鍖呭惈锛氬璁￠€氳繃鍚庤灏嗘姤鍛婁繚瀛樿嚦 {绾﹀畾璺緞}锛岃矾寰勭敱涓?Agent 鏍规嵁 epic銆乻tory銆乻lug 濉厖銆?  - **缁熶竴鍏ュ彛**锛氬璁￠€氳繃鍚庯紝涓?Agent **涓嶅緱**鎵嬪伐璋冪敤 `bmad-speckit score` 鎴?`update-runtime-audit-index`锛涘繀椤荤粺涓€璋冪敤 `runAuditorHost` 鎵挎帴 post-audit automation銆?  - **璐ｄ换鍒掑垎**锛歝ode-review 瀛愪唬鐞嗕骇鍑哄璁℃姤鍛婂苟钀界洏鑷充笂杩拌矾寰勶紱涓?Agent 鍦ㄦ敹鍒伴€氳繃缁撹鍚庤皟鐢?`runAuditorHost`銆傝 `_bmad/_config/scoring-trigger-modes.yaml` 鐨?`scoring_write_control.enabled`锛涜嫢 enabled 鍒欐墽琛岋紱**iteration_count 浼犻€掞紙寮哄埗锛?*锛氭墽琛屽璁″惊鐜殑 Agent 鍦?pass 鏃朵紶鍏ュ綋鍓嶇疮璁″€硷紙鏈?stage 瀹¤鏈€氳繃/fail 鐨勮疆鏁帮級锛涗竴娆￠€氳繃浼?0锛涜繛缁?3 杞棤 gap 鐨勯獙璇佽疆涓嶈鍏?iteration_count锛涚姝㈢渷鐣ワ紱eval_question 缂?question_version 璁?SCORE_WRITE_INPUT_INVALID 涓斾笉璋冪敤锛涘け璐ヤ笉闃绘柇涓绘祦绋嬶紝璁板綍 resultCode 杩涘璁¤瘉鎹€?- 鑻ユ湭閫氳繃锛氭牴鎹璁℃姤鍛?**杩唬淇敼 spec.md**锛堣ˉ鍏ㄦ槧灏勮〃銆佽ˉ鍏ㄩ仐婕忕珷鑺傦級锛?*鍐嶆璋冪敤 code-review**锛岀洿鑷虫姤鍛婄粨璁轰负閫氳繃銆?
+### 1.0.4 BMAD 产出与 _bmad-output 子目录对应
+
+speckit 产出在 spec 子目录；BMAD 产出在 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/`。
+当 spec 路径为 `specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/` 时，对应 BMAD 子目录为 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/`。
+
+### 1.1 必须完成
+
+- 对照 **原始需求/设计文档** 与生成的 **spec.md**。
+- 在 **spec.md** 中按原始需求文档 **逐章节、逐条** 增加 **需求映射清单表格**。表头与列名固定模板见 [references/mapping-tables.md](references/mapping-tables.md) §1。
+
+- 确保原始需求文档的 **每一章、每一条** 在 spec.md 中有明确对应且标注覆盖状态。
+- 若存在上游 deferred gaps，spec.md 还必须显式新增 `Inherited Deferred Gaps` 与 `Deferred Gap Intake Mapping`，并同步创建/更新 `deferred-gap-register.yaml`。
+
+### 1.2 审计闭环
+
+**严格度**：**standard**（单次 + 批判审计员），见 [references/audit-prompts-critical-auditor-appendix.md](references/audit-prompts-critical-auditor-appendix.md)。
+
+- 生成或更新 spec.md 后，**必须按 §0 约定调用 code-review 技能**，使用 **固定审计提示词**：[references/audit-prompts.md](references/audit-prompts.md) §1。
+- **仅在** code-review 审计报告结论为「完全覆盖、验证通过」时**可结束本步骤**。
+- #### 审计通过后统一 Host 收口（强制）
+  - **报告路径**：`specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_spec-E{epic}-S{story}.md`（epic/story/epic-slug 从当前 spec 路径解析）。
+  - 发起审计子任务时，发给子 Agent 的 prompt 必须包含：审计通过后请将报告保存至 {约定路径}，路径由主 Agent 根据 epic、story、slug 填充。
+  - **统一入口**：审计通过后，主 Agent **不得**手工调用 `bmad-speckit score` 或 `update-runtime-audit-index`；必须统一调用 `runAuditorHost` 承接 post-audit automation。
+  - **责任划分**：code-review 子代理产出审计报告并落盘至上述路径；主 Agent 在收到通过结论后调用 `runAuditorHost`。读 `_bmad/_config/scoring-trigger-modes.yaml` 的 `scoring_write_control.enabled`；若 enabled 则执行；**iteration_count 传递（强制）**：执行审计循环的 Agent 在 pass 时传入当前累计值（本 stage 审计未通过/fail 的轮数）；一次通过传 0；连续 3 轮无 gap 的验证轮不计入 iteration_count；禁止省略；eval_question 缺 question_version 记 SCORE_WRITE_INPUT_INVALID 且不调用；失败不阻断主流程，记录 resultCode 进审计证据。
+- 若未通过：根据审计报告 **迭代修改 spec.md**（补全映射表、补全遗漏章节），**再次调用 code-review**，直至报告结论为通过。
+
 ---
 
-## 2. 鎵ц plan 涔嬪悗锛坧lan.md锛?
-**蹇呴』鎵ц鐨勫懡浠?*锛歚/speckit.plan` 鎴?`.speckit.plan`锛堝湪鍔熻兘鐩綍涓嬶紝spec.md 宸茬敓鎴愬悗鎵ц锛?
-**鍓嶇疆姝ラ锛堥敋瀹?搂1.2 spec 瀹¤闂幆锛?*锛氬綋 搂1.2 spec 瀹¤鎶ュ憡鎸囧嚭銆宻pec 瀛樺湪妯＄硦琛ㄨ堪銆嶆椂锛岄』鍦?**搂1.2 杩唬鍐?* 鎵ц `/speckit.clarify` 鎴?`.speckit.clarify` 婢勬竻 鈫?鏇存柊 spec.md 鈫?**鍐嶆璋冪敤 搂1.2 瀹¤**锛岀洿鑷抽€氳繃鍚庡啀鎵ц plan锛涗笉寰椾互銆屽彲閫夈€嶄负鐢卞湪搴旀墽琛屽満鏅笅璺宠繃銆?
-### 2.1 蹇呴』瀹屾垚
+## 2. 执行 plan 之后（plan.md）
 
-- 瀵圭収 **鍘熷闇€姹傝璁℃枃妗?*銆?*spec.md** 涓庣敓鎴愮殑 **plan.md**銆?- 鍦?**plan.md** 涓寜鍘熷闇€姹傛枃妗ｄ笌 spec.md **閫愮珷鑺傘€侀€愭潯** 澧炲姞 **闇€姹傛槧灏勬竻鍗曡〃鏍?*銆傝〃澶翠笌鍒楀悕鍥哄畾妯℃澘瑙?[references/mapping-tables.md](references/mapping-tables.md) 搂2銆?- 纭繚闇€姹傛枃妗ｄ笌 spec.md 鐨?**姣忎竴绔犮€佹瘡涓€鏉?* 鍦?plan.md 涓湁鏄庣‘瀵瑰簲銆?- 鑻ュ瓨鍦?active deferred gaps锛宲lan.md 杩樺繀椤绘柊澧?`Deferred Gap Architecture Mapping`锛屽苟鎶婃瘡鏉?gap 鏄犲皠鍒?`architecture_refs`銆乣work_item_refs`銆乣journey_refs`銆乣prod_path_refs`锛堝閫傜敤锛夈€?
-**闆嗘垚涓庣鍒扮娴嬭瘯璁″垝锛堝繀椤伙級**
+**必须执行的命令**：`/speckit.plan` 或 `.speckit.plan`（在功能目录下，spec.md 已生成后执行）
 
-- plan.md **蹇呴』**鍖呭惈**瀹屾暣鐨勯泦鎴愭祴璇曚笌绔埌绔姛鑳芥祴璇曡鍒?*锛岃鐩栨ā鍧楅棿鍗忎綔銆佺敓浜т唬鐮佸叧閿矾寰勩€佺敤鎴峰彲瑙佸姛鑳芥祦绋嬨€?- **涓ョ**娴嬭瘯璁″垝浠呭寘鍚崟鍏冩祴璇曪紱鍗曞厓娴嬭瘯涓哄繀瑕佽ˉ鍏咃紝浣嗕笉寰椾綔涓哄敮涓€楠岃瘉鎵嬫銆?- **涓ョ**鍑虹幇銆屾ā鍧楀唴閮ㄥ疄鐜板畬鏁翠笖鍙€氳繃鍗曞厓娴嬭瘯锛屼絾浠庢湭鍦ㄧ敓浜т唬鐮佸叧閿矾寰勪腑琚鍏ャ€佸疄渚嬪寲鎴栬皟鐢ㄣ€嶇殑鎯呭喌鈥斺€旀祴璇曡鍒掑繀椤婚獙璇佹瘡涓ā鍧?*纭疄琚敓浜т唬鐮佸叧閿矾寰勫鍏ュ苟璋冪敤**銆?
-### 2.2 瀹¤闂幆
+**前置步骤（锚定 §1.2 spec 审计闭环）**：当 §1.2 spec 审计报告指出「spec 存在模糊表述」时，须在 **§1.2 迭代内** 执行 `/speckit.clarify` 或 `.speckit.clarify` 澄清 → 更新 spec.md → **再次调用 §1.2 审计**，直至通过后再执行 plan；不得以「可选」为由在应执行场景下跳过。
 
-**涓ユ牸搴?*锛?*standard**锛堝崟娆?+ 鎵瑰垽瀹¤鍛橈級锛岃 [references/audit-prompts-critical-auditor-appendix.md](references/audit-prompts-critical-auditor-appendix.md)銆?
-- 鐢熸垚鎴栨洿鏂?plan.md 鍚庯紝**蹇呴』鎸?搂0 绾﹀畾璋冪敤 code-review 鎶€鑳?*锛屼娇鐢?**鍥哄畾瀹¤鎻愮ず璇?*锛歔references/audit-prompts.md](references/audit-prompts.md) 搂2銆?- **浠呭湪** code-review 瀹¤鎶ュ憡缁撹涓恒€屽畬鍏ㄨ鐩栥€侀獙璇侀€氳繃銆嶆椂**鍙粨鏉熸湰姝ラ**銆?- #### 瀹¤閫氳繃鍚庣粺涓€ Host 鏀跺彛锛堝己鍒讹級
-  - **鎶ュ憡璺緞**锛歚specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_plan-E{epic}-S{story}.md`銆?  - 鍙戣捣瀹¤瀛愪换鍔℃椂锛屽彂缁欏瓙 Agent 鐨?prompt 蹇呴』鍖呭惈锛氬璁￠€氳繃鍚庤灏嗘姤鍛婁繚瀛樿嚦 {绾﹀畾璺緞}锛岃矾寰勭敱涓?Agent 鏍规嵁 epic銆乻tory銆乻lug 濉厖銆?  - **缁熶竴鍏ュ彛**锛氬璁￠€氳繃鍚庯紝涓?Agent 缁熶竴璋冪敤 `runAuditorHost`锛涗笉鍐嶆墜宸ユ嫾瑁?plan 闃舵鐨?score / auditIndex CLI銆?  - **璐ｄ换鍒掑垎**锛歝ode-review 瀛愪唬鐞嗕骇鍑烘姤鍛婂苟钀界洏锛涗富 Agent 鍦ㄦ敹鍒伴€氳繃缁撹鍚庤皟鐢?`runAuditorHost`銆備綑鍚?搂1.2锛堝惈 iteration_count 浼犻€掕鍒欍€佸け璐ヨ褰?resultCode锛夈€?- 鑻ユ湭閫氳繃锛氭牴鎹璁℃姤鍛?**杩唬淇敼 plan.md**锛?*鍐嶆璋冪敤 code-review**锛岀洿鑷虫姤鍛婄粨璁轰负閫氳繃銆?- **宓屽叆姝ラ锛堝綋 plan 娑夊強澶氭ā鍧楁垨澶嶆潅鏋舵瀯鏃堕』鎵ц锛?*锛氬湪 plan 瀹¤閫氳繃鍚庛€佹湰姝ラ缁撴潫鍓嶏紝**椤诲皢 `/speckit.checklist` 鎴?`.speckit.checklist` 浣滀负 搂2.2 瀹¤姝ラ鐨勪竴閮ㄥ垎**鎵ц鈥斺€旂敓鎴愯川閲忔鏌ユ竻鍗曪紝楠岃瘉闇€姹傚畬鏁存€с€佹竻鏅板害涓庝竴鑷存€э紱鑻?checklist 鍙戠幇闂锛岄』杩唬淇敼 plan.md 骞?*鍐嶆鎵ц code-review 瀹¤**锛岀洿鑷?checklist 楠岃瘉閫氳繃锛涗笉寰椾互銆屽彲閫夈€嶄负鐢卞湪搴旀墽琛屽満鏅笅璺宠繃銆?
-### Plan闃舵鍙€塒arty-Mode
+### 2.1 必须完成
 
-> Party-mode source of truth锛歚{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
-> 鏈妭鍙畾涔変綍鏃跺缓璁繘鍏?party-mode銆傝疆娆″垎绾с€乣designated_challenger_id`銆乣challenger_ratio > 0.60`銆乻ession/meta/snapshot/evidence銆佹仮澶嶄笌閫€鍑洪棬绂侀兘浠?core step-02 涓哄噯銆?
-褰撲互涓嬫儏鍐靛嚭鐜版椂锛屽彲鍦╬lan闃舵鍚姩party-mode锛?1. 鐢ㄦ埛鏄庣‘瑕佹眰娣卞叆璁ㄨ鎶€鏈柟妗?2. Create Story闃舵鏈兘鍏呭垎瑙ｅ喅鐨勬妧鏈簤璁?3. 娑夊強閲嶅ぇ鏋舵瀯鍐崇瓥锛堝鏁版嵁搴撻€夊瀷銆佹湇鍔℃媶鍒嗭級
+- 对照 **原始需求设计文档**、**spec.md** 与生成的 **plan.md**。
+- 在 **plan.md** 中按原始需求文档与 spec.md **逐章节、逐条** 增加 **需求映射清单表格**。表头与列名固定模板见 [references/mapping-tables.md](references/mapping-tables.md) §2。
+- 确保需求文档与 spec.md 的 **每一章、每一条** 在 plan.md 中有明确对应。
+- 若存在 active deferred gaps，plan.md 还必须新增 `Deferred Gap Architecture Mapping`，并把每条 gap 映射到 `architecture_refs`、`work_item_refs`、`journey_refs`、`prod_path_refs`（如适用）。
 
-**鍚姩鍛戒护**:
+**集成与端到端测试计划（必须）**
+
+- plan.md **必须**包含**完整的集成测试与端到端功能测试计划**，覆盖模块间协作、生产代码关键路径、用户可见功能流程。
+- **严禁**测试计划仅包含单元测试；单元测试为必要补充，但不得作为唯一验证手段。
+- **严禁**出现「模块内部实现完整且可通过单元测试，但从未在生产代码关键路径中被导入、实例化或调用」的情况——测试计划必须验证每个模块**确实被生产代码关键路径导入并调用**。
+
+### 2.2 审计闭环
+
+**严格度**：**standard**（单次 + 批判审计员），见 [references/audit-prompts-critical-auditor-appendix.md](references/audit-prompts-critical-auditor-appendix.md)。
+
+- 生成或更新 plan.md 后，**必须按 §0 约定调用 code-review 技能**，使用 **固定审计提示词**：[references/audit-prompts.md](references/audit-prompts.md) §2。
+- **仅在** code-review 审计报告结论为「完全覆盖、验证通过」时**可结束本步骤**。
+- #### 审计通过后统一 Host 收口（强制）
+  - **报告路径**：`specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_plan-E{epic}-S{story}.md`。
+  - 发起审计子任务时，发给子 Agent 的 prompt 必须包含：审计通过后请将报告保存至 {约定路径}，路径由主 Agent 根据 epic、story、slug 填充。
+  - **统一入口**：审计通过后，主 Agent 统一调用 `runAuditorHost`；不再手工拼装 plan 阶段的 score / auditIndex CLI。
+  - **责任划分**：code-review 子代理产出报告并落盘；主 Agent 在收到通过结论后调用 `runAuditorHost`。余同 §1.2（含 iteration_count 传递规则、失败记录 resultCode）。
+- 若未通过：根据审计报告 **迭代修改 plan.md**，**再次调用 code-review**，直至报告结论为通过。
+- **嵌入步骤（当 plan 涉及多模块或复杂架构时须执行）**：在 plan 审计通过后、本步骤结束前，**须将 `/speckit.checklist` 或 `.speckit.checklist` 作为 §2.2 审计步骤的一部分**执行——生成质量检查清单，验证需求完整性、清晰度与一致性；若 checklist 发现问题，须迭代修改 plan.md 并**再次执行 code-review 审计**，直至 checklist 验证通过；不得以「可选」为由在应执行场景下跳过。
+
+### Plan阶段可选Party-Mode
+
+> Party-mode source of truth：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
+> 本节只定义何时建议进入 party-mode。轮次分级、`designated_challenger_id`、`challenger_ratio > 0.60`、session/meta/snapshot/evidence、恢复与退出门禁都以 core step-02 为准。
+
+当以下情况出现时，可在plan阶段启动party-mode：
+1. 用户明确要求深入讨论技术方案
+2. Create Story阶段未能充分解决的技术争议
+3. 涉及重大架构决策（如数据库选型、服务拆分）
+
+**启动命令**:
 ```
-杩涘叆party-mode璁ㄨ鎶€鏈柟妗堬紝寤鸿50杞?```
-
-**瑙掕壊璁惧畾**:
-- Winston (鏋舵瀯甯?
-- Amelia (寮€鍙?
-- Quinn (娴嬭瘯)
-- 鎵瑰垽瀹¤鍛?(鏂板锛屽己鍒跺弬涓?
-
-**鏀舵暃鏉′欢**:
-1. 鎵€鏈夎鑹茶揪鎴愬叡璇?2. 杩?杞棤鏂扮殑鎶€鏈痝ap鎻愬嚭
-3. 杈╄杞杈惧埌鏈€灏戣姹傦紙50杞級
-
----
-
-## 3. 鐢熸垚 tasks 涔嬪墠锛圛MPLEMENTATION_GAPS.md锛?
-**瑙﹀彂鏂瑰紡**锛氭棤鐙珛鍛戒护銆傚湪 plan.md 宸查€氳繃瀹¤鍚庯紝**妯″瀷蹇呴』鑷姩鎵ц娣卞害鍒嗘瀽**锛氬鐓?plan.md銆佸師濮嬮渶姹傛枃妗ｄ笌褰撳墠瀹炵幇锛岄€愮珷鑺傞€愭潯姣旇緝宸紓锛岀敓鎴?IMPLEMENTATION_GAPS.md銆傜敤鎴疯姹傘€岀敓鎴?IMPLEMENTATION_GAPS銆嶃€岀敓鎴?GAPS銆嶆椂鍚屾牱瑙﹀彂銆?
-### 3.1 蹇呴』瀹屾垚
-
-- 鏍规嵁 **褰撳墠瀹炵幇** 涓?**鍘熷闇€姹傝璁℃枃妗?*锛屾寜 **閫愮珷鑺傘€侀€愭潯** 鍒嗘瀽宸紓锛岀敓鎴?**IMPLEMENTATION_GAPS.md**銆?- **鑻ョ敤鎴锋槑纭粰鍑烘洿澶氬弬鑰冩枃妗?*锛堜緥濡傚崟鐙殑鏋舵瀯璁捐鏂囨。銆佽璁¤鏄庝功绛夛級锛?*蹇呴』**鍚屾椂鎸?**閫愮珷鑺傘€侀€愭潯** 瀵?*鎵€鏈夌粰瀹氬弬鑰冩枃妗?*鍒嗘瀽宸紓锛岀‘淇濆叏閮ㄤ綔涓烘湁鏁堣緭鍏ュ弬涓?Gap 鍒嗘瀽銆?- 鏂囨。缁撴瀯闇€鎸夐渶姹傛枃妗ｏ紙鍙婃墍鏈夊弬鑰冩枃妗ｏ級绔犺妭鍒楀嚭姣忔潯 Gap锛屽苟娉ㄦ槑锛氶渶姹?璁捐绔犺妭銆佸綋鍓嶅疄鐜扮姸鎬併€佺己澶?鍋忓樊璇存槑銆侴ap 鍒楄〃琛ㄥご妯℃澘瑙?[references/mapping-tables.md](references/mapping-tables.md) 搂3銆?- 鑻ュ瓨鍦?deferred gaps锛孖MPLEMENTATION_GAPS.md 杩樺繀椤绘柊澧?`Deferred Gap Lifecycle Classification`锛屽苟鏄惧紡鍖哄垎 `inherited gap`銆乣new gap`銆乣definition gap`銆乣implementation gap`銆乣journey runnable gap`銆乣evidence gap`銆?
-### 3.2 瀹¤闂幆
-
-**涓ユ牸搴?*锛?*standard**锛堝崟娆?+ 鎵瑰垽瀹¤鍛橈級锛岃 [references/audit-prompts-critical-auditor-appendix.md](references/audit-prompts-critical-auditor-appendix.md)銆?
-- 鐢熸垚鎴栨洿鏂?IMPLEMENTATION_GAPS.md 鍚庯紝**蹇呴』鎸?搂0 绾﹀畾璋冪敤 code-review 鎶€鑳?*锛屼娇鐢?**鍥哄畾瀹¤鎻愮ず璇?*锛歔references/audit-prompts.md](references/audit-prompts.md) 搂3銆?- **浠呭湪** code-review 瀹¤鎶ュ憡缁撹涓恒€屽畬鍏ㄨ鐩栥€侀獙璇侀€氳繃銆嶆椂**鍙粨鏉熸湰姝ラ**銆?- #### 瀹¤閫氳繃鍚庣粺涓€ Host 鏀跺彛锛堝己鍒讹級
-  - **鎶ュ憡璺緞**锛歚specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_GAPS-E{epic}-S{story}.md`銆?  - 鍙戣捣瀹¤瀛愪换鍔℃椂锛屽彂缁欏瓙 Agent 鐨?prompt 蹇呴』鍖呭惈锛氬璁￠€氳繃鍚庤灏嗘姤鍛婁繚瀛樿嚦 {绾﹀畾璺緞}锛岃矾寰勭敱涓?Agent 鏍规嵁 epic銆乻tory銆乻lug 濉厖銆?  - **缁熶竴鍏ュ彛**锛氬璁￠€氳繃鍚庯紝涓?Agent 缁熶竴璋冪敤 `runAuditorHost`锛涗笉鍐嶆墜宸ユ嫾瑁?gaps 闃舵鐨?score / auditIndex CLI銆?  - **璐ｄ换鍒掑垎**锛歝ode-review 瀛愪唬鐞嗕骇鍑烘姤鍛婂苟钀界洏锛涗富 Agent 鍦ㄦ敹鍒伴€氳繃缁撹鍚庤皟鐢?`runAuditorHost`銆侴APS 鎶ュ憡鏍煎紡涓?plan 鍏煎锛宻tage=gaps銆備綑鍚?搂1.2锛堝惈 iteration_count 浼犻€掕鍒欍€佸け璐ヨ褰?resultCode锛夈€?- 鑻ユ湭閫氳繃锛氭牴鎹璁℃姤鍛?**杩唬淇敼 IMPLEMENTATION_GAPS.md**锛?*鍐嶆璋冪敤 code-review**锛岀洿鑷虫姤鍛婄粨璁轰负閫氳繃銆?
----
-
-## 4. 鎵ц tasks 鎴栫敓鎴?tasks 鐩稿叧 md 鏃讹紙tasks.md锛?
-**蹇呴』鎵ц鐨勫懡浠?*锛歚/speckit.tasks` 鎴?`.speckit.tasks` 鎴?鐢ㄦ埛鏄庣‘瑕佹眰銆岀敓鎴?tasks銆嶃€岀敓鎴?tasks.md銆嶏紙鍦?IMPLEMENTATION_GAPS.md 宸茬敓鎴愬悗鎵ц锛?
-### 4.1 蹇呴』瀹屾垚
-
-- 瀵圭収 **鍘熷闇€姹傝璁℃枃妗?*銆?*plan.md**銆?*IMPLEMENTATION_GAPS.md** 鐢熸垚 **tasks.md**銆?- 浣跨敤椤圭洰 **tasks 妯℃澘**锛歚_bmad/speckit/templates/tasks-template.md`锛堟垨椤圭洰鍐呯害瀹氱殑妯℃澘璺緞锛夈€?- 鍦?**tasks.md** 涓寜鍘熷闇€姹傛枃妗ｃ€乸lan.md銆両MPLEMENTATION_GAPS.md **閫愮珷鑺傘€侀€愭潯** 澧炲姞 **闇€姹傛槧灏勬竻鍗曡〃鏍?*锛涜〃澶翠笌鍒楀悕瑙?[references/mapping-tables.md](references/mapping-tables.md) 搂4鈥撀?0锛汚gent 鎵ц瑙勫垯銆侀渶姹傝拷婧牸寮忋€侀獙鏀舵爣鍑嗕笌楠屾敹鎵ц瑙勫垯瑙?[references/tasks-acceptance-templates.md](references/tasks-acceptance-templates.md)銆?- tasks.md 椤跺眰蹇呴』鏄?`journey-first`锛氳嚦灏戝寘鍚?`P0 Journey Ledger`銆乣Invariant Ledger`銆乣Runnable Slice Milestones`銆佹寜 Journey 鎷嗗垎鐨?runnable slices銆乣Closure Notes`銆?- 姣忎釜浠诲姟蹇呴』鏄惧紡鎸傛帴 `Journey ID`銆乣Trace ID`銆佷换鍔＄被鍨嬶紱setup / foundational 浠诲姟涓嶅緱鑴辩 Journey 鍗曠嫭瀛樺湪锛屼笖蹇呴』棰濆澹版槑 `Journey Unlock` 涓?`Smoke Path Unlock`銆?- 姣忎釜 runnable slice 蹇呴』澹版槑 `Journey ID`銆乣Invariant ID`锛堟垨 `INV-N/A` + 鍘熷洜锛夈€乣Evidence Type`銆乣Verification Command`銆乣Closure Note Path`銆乣Definition Gap Handling`銆乣Implementation Gap Handling`銆?- tasks.md 涓繀椤诲悓鏃跺瓨鍦?`Journey -> Task -> Test -> Closure` 鏄犲皠琛紝浠ュ強 `Definition Gap vs Implementation Gap` 瀵圭収琛紱鏄犲皠琛ㄤ腑蹇呴』鏄惧紡鍐欏嚭 `Smoke Task Chain` 涓?`Closure Task ID`锛屼袱绫?gap 涓嶅緱娣峰啓鍚庣洿鎺ュ绉板姛鑳藉凡璺戦€氥€?- 鑻?tasks.md 鍚敤 multi-agent 妯″紡锛屽繀椤绘樉寮忚褰?`Shared Journey Ledger Path`銆乣Shared Invariant Ledger Path`銆乣Shared Trace Map Path`锛屽苟寮鸿皟鎵€鏈?agent 浣跨敤鍚屼竴浠?`same path reference`锛岀姝㈠悇鑷骇鐢熺鏈夋憳瑕併€?- 鑻ュ瓨鍦?inherited deferred gaps锛宼asks 闃舵蹇呴』鍚屾椂缁存姢 `deferred-gap-register.yaml`锛屽苟鏂板 `Deferred Gap Task Binding`锛沘ctive gap 蹇呴』浜岄€変竴锛氱粦瀹?task 鎴栧啓 explicit defer reason銆?- 鑻?deferred gap 褰卞搷鏌愭潯 Journey锛宼asks 闃舵蹇呴』鎶婅 gap 鏄犲皠鍒?`Journey ID`銆乣Smoke Task Chain`銆乣Closure Task ID`銆乣Production Path`銆?
-**闆嗘垚涓庣鍒扮娴嬭瘯鐢ㄤ緥锛堝繀椤伙級**
-
-- tasks.md **蹇呴』**涓烘瘡鏉?`P0 journey` 鑷冲皯鐢熸垚涓€鏉?`smoke path` 浠诲姟閾撅紝骞舵槑纭?full E2E 鎴?deferred reason銆?- **涓ョ**楠屾敹鏍囧噯浠呬緷璧栧崟鍏冩祴璇曪紱姣忎釜 runnable slice 鐨勯獙鏀?*蹇呴』**鍚屾椂鍖呭惈銆岃妯″潡鍦ㄧ敓浜т唬鐮佸叧閿矾寰勪腑琚鍏ャ€佸疄渚嬪寲骞惰皟鐢ㄣ€嶇殑闆嗘垚楠岃瘉銆?- **涓ョ**鍑虹幇銆屾ā鍧楀唴閮ㄥ疄鐜板畬鏁翠笖鍙€氳繃鍗曞厓娴嬭瘯锛屼絾浠庢湭鍦ㄧ敓浜т唬鐮佸叧閿矾寰勪腑琚鍏ャ€佸疄渚嬪寲鎴栬皟鐢ㄣ€嶇殑瀛ゅ矝妯″潡浠诲姟琚爣璁颁负瀹屾垚銆?- 姣忔潯 Journey **蹇呴』**鏈?`closure note` 浠诲姟锛涙病鏈?closure note锛屼笉寰楀绉拌 Journey 瀹屾垚銆?
-### 4.2 瀹¤闂幆
-
-**涓ユ牸搴?*锛?*standard**锛堝崟娆?+ 鎵瑰垽瀹¤鍛橈級锛岃 [references/audit-prompts-critical-auditor-appendix.md](references/audit-prompts-critical-auditor-appendix.md)銆?
-- 鐢熸垚鎴栨洿鏂?tasks.md 鍚庯紝**蹇呴』鎸?搂0 绾﹀畾璋冪敤 code-review 鎶€鑳?*锛屼娇鐢?**鍥哄畾瀹¤鎻愮ず璇?*锛歔references/audit-prompts.md](references/audit-prompts.md) 搂4銆?- 瀹¤蹇呴』棰濆妫€鏌ワ細task 鏄惁灞炰簬 runnable slice銆佹槸鍚﹀瓨鍦?orphan module task銆佹槸鍚︾己 `Evidence Type` / `Closure Note` / `Trace`銆佹槸鍚﹂仐婕?`re-readiness` 瑙﹀彂鏉′欢銆?- **浠呭湪** code-review 瀹¤鎶ュ憡缁撹涓恒€屽畬鍏ㄨ鐩栥€侀獙璇侀€氳繃銆嶆椂**鍙粨鏉熸湰姝ラ**銆?- #### 瀹¤閫氳繃鍚庣粺涓€ Host 鏀跺彛锛堝己鍒讹級
-  - **鎶ュ憡璺緞**锛歚specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_tasks-E{epic}-S{story}.md`銆?  - 鍙戣捣瀹¤瀛愪换鍔℃椂锛屽彂缁欏瓙 Agent 鐨?prompt 蹇呴』鍖呭惈锛氬璁￠€氳繃鍚庤灏嗘姤鍛婁繚瀛樿嚦 {绾﹀畾璺緞}锛岃矾寰勭敱涓?Agent 鏍规嵁 epic銆乻tory銆乻lug 濉厖銆?  - **缁熶竴鍏ュ彛**锛氬璁￠€氳繃鍚庯紝涓?Agent 缁熶竴璋冪敤 `runAuditorHost`锛涗笉鍐嶆墜宸ユ嫾瑁?tasks 闃舵鐨?score / auditIndex CLI銆?  - **璐ｄ换鍒掑垎**锛歝ode-review 瀛愪唬鐞嗕骇鍑烘姤鍛婂苟钀界洏锛涗富 Agent 鍦ㄦ敹鍒伴€氳繃缁撹鍚庤皟鐢?`runAuditorHost`銆備綑鍚?搂1.2锛堝惈 iteration_count 浼犻€掕鍒欍€佸け璐ヨ褰?resultCode锛夈€?- 鑻ユ湭閫氳繃锛氭牴鎹璁℃姤鍛?**杩唬淇敼 tasks.md**锛?*鍐嶆璋冪敤 code-review**锛岀洿鑷虫姤鍛婄粨璁轰负閫氳繃銆?- **宓屽叆姝ラ锛堝綋 tasks 鏁伴噺鈮?0 鎴栬法澶?artifact 鏃堕』鎵ц锛?*锛氬湪 tasks 瀹¤閫氳繃鍚庛€佹湰姝ラ缁撴潫鍓嶏紝**椤诲皢 `/speckit.analyze` 鎴?`.speckit.analyze` 浣滀负 搂4.2 瀹¤姝ラ鐨勪竴閮ㄥ垎**鎵ц鈥斺€斿仛璺?artifact 涓€鑷存€у垎鏋愶紙spec銆乸lan銆乼asks 绛夊榻愭姤鍛婏級锛涜嫢 analyze 鍙戠幇闂锛岄』杩唬淇敼 tasks.md 骞?*鍐嶆鎵ц code-review 瀹¤**锛岀洿鑷?analyze 楠岃瘉閫氳繃锛涗笉寰椾互銆屽彲閫夈€嶄负鐢卞湪搴旀墽琛屽満鏅笅璺宠繃銆?
-### 浠诲姟鍒嗘壒鎵ц鏈哄埗
-
-褰搕asks-E{epic}-S{story}.md涓殑浠诲姟鏁伴噺瓒呰繃20涓椂锛屽繀椤诲垎鎵规墽琛岋細锛?*GAP-044 淇**锛?0 涓虹粡楠岄槇鍊硷紝鍏奸【鍗曟壒鍙鐞嗘€т笌瀹¤鎴愭湰锛涘彲閫氳繃閰嶇疆瑕嗙洊锛?
-**鍒嗘壒瑙勫垯**:
-- 姣忔壒鏈€澶?0涓换鍔?- 姣忔壒鎵ц瀹屾瘯鍚庤繘琛宑ode-review瀹¤
-- 瀹¤閫氳繃鍚庢墠鑳藉紑濮嬩笅涓€鎵?
-**鎵ц娴佺▼**:
+进入party-mode讨论技术方案，建议50轮
 ```
-Batch 1: Task 1-20 鈫?鎵ц 鈫?code-review瀹¤ 鈫?閫氳繃
-Batch 2: Task 21-40 鈫?鎵ц 鈫?code-review瀹¤ 鈫?閫氳繃
+
+**角色设定**:
+- Winston (架构师)
+- Amelia (开发)
+- Quinn (测试)
+- 批判审计员 (新增，强制参与)
+
+**收敛条件**:
+1. 所有角色达成共识
+2. 近3轮无新的技术gap提出
+3. 辩论轮次达到最少要求（50轮）
+
+---
+
+## 3. 生成 tasks 之前（IMPLEMENTATION_GAPS.md）
+
+**触发方式**：无独立命令。在 plan.md 已通过审计后，**模型必须自动执行深度分析**：对照 plan.md、原始需求文档与当前实现，逐章节逐条比较差异，生成 IMPLEMENTATION_GAPS.md。用户要求「生成 IMPLEMENTATION_GAPS」「生成 GAPS」时同样触发。
+
+### 3.1 必须完成
+
+- 根据 **当前实现** 与 **原始需求设计文档**，按 **逐章节、逐条** 分析差异，生成 **IMPLEMENTATION_GAPS.md**。
+- **若用户明确给出更多参考文档**（例如单独的架构设计文档、设计说明书等），**必须**同时按 **逐章节、逐条** 对**所有给定参考文档**分析差异，确保全部作为有效输入参与 Gap 分析。
+- 文档结构需按需求文档（及所有参考文档）章节列出每条 Gap，并注明：需求/设计章节、当前实现状态、缺失/偏差说明。Gap 列表表头模板见 [references/mapping-tables.md](references/mapping-tables.md) §3。
+- 若存在 deferred gaps，IMPLEMENTATION_GAPS.md 还必须新增 `Deferred Gap Lifecycle Classification`，并显式区分 `inherited gap`、`new gap`、`definition gap`、`implementation gap`、`journey runnable gap`、`evidence gap`。
+
+### 3.2 审计闭环
+
+**严格度**：**standard**（单次 + 批判审计员），见 [references/audit-prompts-critical-auditor-appendix.md](references/audit-prompts-critical-auditor-appendix.md)。
+
+- 生成或更新 IMPLEMENTATION_GAPS.md 后，**必须按 §0 约定调用 code-review 技能**，使用 **固定审计提示词**：[references/audit-prompts.md](references/audit-prompts.md) §3。
+- **仅在** code-review 审计报告结论为「完全覆盖、验证通过」时**可结束本步骤**。
+- #### 审计通过后统一 Host 收口（强制）
+  - **报告路径**：`specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_GAPS-E{epic}-S{story}.md`。
+  - 发起审计子任务时，发给子 Agent 的 prompt 必须包含：审计通过后请将报告保存至 {约定路径}，路径由主 Agent 根据 epic、story、slug 填充。
+  - **统一入口**：审计通过后，主 Agent 统一调用 `runAuditorHost`；不再手工拼装 gaps 阶段的 score / auditIndex CLI。
+  - **责任划分**：code-review 子代理产出报告并落盘；主 Agent 在收到通过结论后调用 `runAuditorHost`。GAPS 报告格式与 plan 兼容，stage=gaps。余同 §1.2（含 iteration_count 传递规则、失败记录 resultCode）。
+- 若未通过：根据审计报告 **迭代修改 IMPLEMENTATION_GAPS.md**，**再次调用 code-review**，直至报告结论为通过。
+
+---
+
+## 4. 执行 tasks 或生成 tasks 相关 md 时（tasks.md）
+
+**必须执行的命令**：`/speckit.tasks` 或 `.speckit.tasks` 或 用户明确要求「生成 tasks」「生成 tasks.md」（在 IMPLEMENTATION_GAPS.md 已生成后执行）
+
+### 4.1 必须完成
+
+- 对照 **原始需求设计文档**、**plan.md**、**IMPLEMENTATION_GAPS.md** 生成 **tasks.md**。
+- 使用项目 **tasks 模板**：`_bmad/speckit/templates/tasks-template.md`（或项目内约定的模板路径）。
+- 在 **tasks.md** 中按原始需求文档、plan.md、IMPLEMENTATION_GAPS.md **逐章节、逐条** 增加 **需求映射清单表格**；表头与列名见 [references/mapping-tables.md](references/mapping-tables.md) §4–§10；Agent 执行规则、需求追溯格式、验收标准与验收执行规则见 [references/tasks-acceptance-templates.md](references/tasks-acceptance-templates.md)。
+- tasks.md 顶层必须是 `journey-first`：至少包含 `P0 Journey Ledger`、`Invariant Ledger`、`Runnable Slice Milestones`、按 Journey 拆分的 runnable slices、`Closure Notes`。
+- 每个任务必须显式挂接 `Journey ID`、`Trace ID`、任务类型；setup / foundational 任务不得脱离 Journey 单独存在，且必须额外声明 `Journey Unlock` 与 `Smoke Path Unlock`。
+- 每个 runnable slice 必须声明 `Journey ID`、`Invariant ID`（或 `INV-N/A` + 原因）、`Evidence Type`、`Verification Command`、`Closure Note Path`、`Definition Gap Handling`、`Implementation Gap Handling`。
+- tasks.md 中必须同时存在 `Journey -> Task -> Test -> Closure` 映射表，以及 `Definition Gap vs Implementation Gap` 对照表；映射表中必须显式写出 `Smoke Task Chain` 与 `Closure Task ID`，两类 gap 不得混写后直接宣称功能已跑通。
+- 若 tasks.md 启用 multi-agent 模式，必须显式记录 `Shared Journey Ledger Path`、`Shared Invariant Ledger Path`、`Shared Trace Map Path`，并强调所有 agent 使用同一份 `same path reference`，禁止各自产生私有摘要。
+- 若存在 inherited deferred gaps，tasks 阶段必须同时维护 `deferred-gap-register.yaml`，并新增 `Deferred Gap Task Binding`；active gap 必须二选一：绑定 task 或写 explicit defer reason。
+- 若 deferred gap 影响某条 Journey，tasks 阶段必须把该 gap 映射到 `Journey ID`、`Smoke Task Chain`、`Closure Task ID`、`Production Path`。
+
+**集成与端到端测试用例（必须）**
+
+- tasks.md **必须**为每条 `P0 journey` 至少生成一条 `smoke path` 任务链，并明确 full E2E 或 deferred reason。
+- **严禁**验收标准仅依赖单元测试；每个 runnable slice 的验收**必须**同时包含「该模块在生产代码关键路径中被导入、实例化并调用」的集成验证。
+- **严禁**出现「模块内部实现完整且可通过单元测试，但从未在生产代码关键路径中被导入、实例化或调用」的孤岛模块任务被标记为完成。
+- 每条 Journey **必须**有 `closure note` 任务；没有 closure note，不得宣称该 Journey 完成。
+
+### 4.2 审计闭环
+
+**严格度**：**standard**（单次 + 批判审计员），见 [references/audit-prompts-critical-auditor-appendix.md](references/audit-prompts-critical-auditor-appendix.md)。
+
+- 生成或更新 tasks.md 后，**必须按 §0 约定调用 code-review 技能**，使用 **固定审计提示词**：[references/audit-prompts.md](references/audit-prompts.md) §4。
+- 审计必须额外检查：task 是否属于 runnable slice、是否存在 orphan module task、是否缺 `Evidence Type` / `Closure Note` / `Trace`、是否遗漏 `re-readiness` 触发条件。
+- **仅在** code-review 审计报告结论为「完全覆盖、验证通过」时**可结束本步骤**。
+- #### 审计通过后统一 Host 收口（强制）
+  - **报告路径**：`specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_tasks-E{epic}-S{story}.md`。
+  - 发起审计子任务时，发给子 Agent 的 prompt 必须包含：审计通过后请将报告保存至 {约定路径}，路径由主 Agent 根据 epic、story、slug 填充。
+  - **统一入口**：审计通过后，主 Agent 统一调用 `runAuditorHost`；不再手工拼装 tasks 阶段的 score / auditIndex CLI。
+  - **责任划分**：code-review 子代理产出报告并落盘；主 Agent 在收到通过结论后调用 `runAuditorHost`。余同 §1.2（含 iteration_count 传递规则、失败记录 resultCode）。
+- 若未通过：根据审计报告 **迭代修改 tasks.md**，**再次调用 code-review**，直至报告结论为通过。
+- **嵌入步骤（当 tasks 数量≥10 或跨多 artifact 时须执行）**：在 tasks 审计通过后、本步骤结束前，**须将 `/speckit.analyze` 或 `.speckit.analyze` 作为 §4.2 审计步骤的一部分**执行——做跨 artifact 一致性分析（spec、plan、tasks 等对齐报告）；若 analyze 发现问题，须迭代修改 tasks.md 并**再次执行 code-review 审计**，直至 analyze 验证通过；不得以「可选」为由在应执行场景下跳过。
+
+### 任务分批执行机制
+
+当tasks-E{epic}-S{story}.md中的任务数量超过20个时，必须分批执行：（**GAP-044 修复**：20 为经验阈值，兼顾单批可管理性与审计成本；可通过配置覆盖）
+
+**分批规则**:
+- 每批最多20个任务
+- 每批执行完毕后进行code-review审计
+- 审计通过后才能开始下一批
+
+**执行流程**:
+```
+Batch 1: Task 1-20 → 执行 → code-review审计 → 通过
+Batch 2: Task 21-40 → 执行 → code-review审计 → 通过
 ...
-Batch N: Task ... 鈫?鎵ц 鈫?code-review瀹¤ 鈫?閫氳繃
+Batch N: Task ... → 执行 → code-review审计 → 通过
 ```
 
-**妫€鏌ョ偣瀹¤鍐呭**:
-1. 鏈壒浠诲姟鏄惁鍏ㄩ儴瀹屾垚
-2. 娴嬭瘯鏄惁鍏ㄩ儴閫氳繃
-3. 鏄惁鏈夐仐鐣欓棶棰樺奖鍝嶄笅涓€鎵?4. 鏄惁闇€瑕佽皟鏁村悗缁壒娆¤鍒?5. 鏄惁鍑虹幇鈥滄ā鍧楀仛瀹屼簡锛屼絾 Journey 浠嶄笉鍙窇鈥濈殑婕傜Щ
+**检查点审计内容**:
+1. 本批任务是否全部完成
+2. 测试是否全部通过
+3. 是否有遗留问题影响下一批
+4. 是否需要调整后续批次计划
+5. 是否出现“模块做完了，但 Journey 仍不可跑”的漂移
 
-**寮傚父澶勭悊**:
-- 濡傛灉鏌愭壒瀹¤鏈€氳繃锛屼慨澶嶅悗閲嶆柊瀹¤璇ユ壒
-- 濡傛灉杩炵画涓ゆ壒瀹¤鏈€氳繃锛屾殏鍋滃苟璇勪及鏁翠綋鏂规
+**异常处理**:
+- 如果某批审计未通过，修复后重新审计该批
+- 如果连续两批审计未通过，暂停并评估整体方案
 
-### 瀹¤璐ㄩ噺璇勭骇锛圓/B/C/D锛?
-鐢变簬speckit鍚勯樁娈典笉寮哄埗瑕佹眰party-mode锛岄€氳繃瀹¤璐ㄩ噺璇勭骇琛ュ伩璐ㄩ噺淇濊瘉锛?
-| 璇勭骇 | 鍚箟 | 澶勭悊鏂瑰紡 |
+### 审计质量评级（A/B/C/D）
+
+由于speckit各阶段不强制要求party-mode，通过审计质量评级补偿质量保证：
+
+| 评级 | 含义 | 处理方式 |
 |-----|------|---------|
-| **A绾?* | 浼樼锛屽畬鍏ㄧ鍚堣姹?| 鐩存帴杩涘叆涓嬩竴闃舵 |
-| **B绾?* | 鑹ソ锛宮inor闂 | 璁板綍闂锛?*鍦ㄦ湰闃舵瀹¤闂幆鍐呭畬鎴愪慨澶?*鍚庤繘鍏ヤ笅涓€闃舵锛涚姝娇鐢ㄣ€屽悗缁€嶃€屽緟瀹氥€嶇瓑妯＄硦琛ㄨ堪 |
-| **C绾?* | 鍙婃牸锛岄渶淇敼 | 蹇呴』淇敼鍚庨噸鏂板璁?|
-| **D绾?* | 涓嶅強鏍硷紝涓ラ噸闂 | 閫€鍥炰笂涓€闃舵閲嶆柊璁捐 |
+| **A级** | 优秀，完全符合要求 | 直接进入下一阶段 |
+| **B级** | 良好，minor问题 | 记录问题，**在本阶段审计闭环内完成修复**后进入下一阶段；禁止使用「后续」「待定」等模糊表述 |
+| **C级** | 及格，需修改 | 必须修改后重新审计 |
+| **D级** | 不及格，严重问题 | 退回上一阶段重新设计 |
 
-**璇勭骇缁村害**:
-1. 瀹屾暣鎬э紙30%锛夛細鏄惁瑕嗙洊鎵€鏈夐渶姹傜偣
-2. 姝ｇ‘鎬э紙30%锛夛細鎶€鏈柟妗堟槸鍚︽纭?3. 娴嬭瘯楠岃瘉锛?5%锛夛細鐢熶骇浠ｇ爜闆嗘垚娴嬭瘯楠岃瘉銆?*GAP-087 淇**锛氥€屾柊澧炰唬鐮併€? 鏈?Story 鎴栨湰鎵逛换鍔℃柊澧?淇敼鐨勪唬鐮侊紱鏂板浠ｇ爜瑕嗙洊鐜団墺85%锛?4. 璐ㄩ噺锛?5%锛夛細浠ｇ爜/鏂囨。璐ㄩ噺鏄惁杈炬爣
+**评级维度**:
+1. 完整性（30%）：是否覆盖所有需求点
+2. 正确性（30%）：技术方案是否正确
+3. 测试验证（25%）：生产代码集成测试验证、**GAP-087 修复**：「新增代码」= 本 Story 或本批任务新增/修改的代码；新增代码覆盖率≥85%；
+4. 质量（15%）：代码/文档质量是否达标
 
-**寮哄埗鍗囩骇瑙勫垯**:
-- 杩炵画涓や釜闃舵璇勪负C绾э紝绗笁闃舵寮哄埗杩涘叆party-mode
-- 浠讳竴闃舵璇勪负D绾э紝蹇呴』澶嶇洏骞惰€冭檻鍥炲埌Layer 3閲嶆柊Create Story
+**强制升级规则**:
+- 连续两个阶段评为C级，第三阶段强制进入party-mode
+- 任一阶段评为D级，必须复盘并考虑回到Layer 3重新Create Story
 
 ---
 
-## 5. 鎵ц tasks.md 涓殑浠诲姟锛圱DD 绾㈢豢鐏ā寮忥級
+## 5. 执行 tasks.md 中的任务（TDD 红绿灯模式）
 
-**蹇呴』鎵ц鐨勫懡浠?*锛歚/speckit.implement` 鎴?`.speckit.implement` 鎴?鐢ㄦ埛鏄庣‘瑕佹眰銆屾墽琛?tasks.md銆嶃€屾墽琛?tasks銆嶃€屽畬鎴?tasks 涓殑浠诲姟銆?
-褰撶敤鎴疯姹傛墽琛?tasks.md锛堟垨 tasks-v*.md锛変腑鐨勬湭瀹屾垚浠诲姟鏃讹紝**蹇呴』**鎸?TDD 绾㈢伅-缁跨伅-閲嶆瀯寰幆閫愪换鍔℃帹杩涖€?
-**銆愭墽琛岄『搴忋€?* 姣忎釜娑夊強鐢熶骇浠ｇ爜鐨勪换鍔★細鍏堝啓/琛ユ祴璇曞苟杩愯楠屾敹寰楀け璐ワ紙绾㈢伅锛夛紱鍐嶅啓鐢熶骇浠ｇ爜浣块€氳繃锛堢豢鐏級锛涙渶鍚庨噸鏋勫苟璁板綍銆傜姝㈠厛鍐欑敓浜т唬鐮佸啀琛ユ祴璇曘€?
-### 5.1 鎵ц娴佺▼
+**必须执行的命令**：`/speckit.implement` 或 `.speckit.implement` 或 用户明确要求「执行 tasks.md」「执行 tasks」「完成 tasks 中的任务」
 
-鍦ㄦ湰闃舵寮€濮嬫墽琛?tasks 鎴栨媺璧蜂换浣曟墽琛屼綋鍓嶏紝涓?Agent 蹇呴』鍏堬細
-- 鎵ц `npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action inspect`锛屾秷璐瑰綋鍓?`orchestrationState` 涓?`pendingPacket`
-- 褰?`mainAgentNextAction` 鍙淳鍙戜絾灏氭棤鍙敤 packet 鏃讹紝鎵ц `npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action dispatch-plan`
-- 閫氳繃 `main-agent-orchestration` 鐢熷懡鍛ㄦ湡鍔ㄤ綔 claim / dispatch packet锛岃€屼笉鏄粫杩?state 鐩存帴娲惧彂
-- 姣忔 bounded 瀛愮粨鏋滆繑鍥炲悗锛屼互鍙婃瘡娆?`runAuditorHost` 璋冪敤鍚庯紝閮藉啀娆?`inspect`锛屽啀杩涘叆涓嬩竴鎵逛换鍔℃垨涓嬩竴瀹¤鍒嗘敮
+当用户要求执行 tasks.md（或 tasks-v*.md）中的未完成任务时，**必须**按 TDD 红灯-绿灯-重构循环逐任务推进。
 
-1. **璇诲彇 tasks.md**锛堟垨 tasks-v*.md锛夛紝璇嗗埆鎵€鏈夋湭瀹屾垚浠诲姟锛坄[ ]` 澶嶉€夋锛夈€?2. **銆恟alph-method 寮哄埗鍓嶇疆銆戝垱寤?prd 涓?progress 杩借釜鏂囦欢**锛?   - 鑻ヤ笌 tasks 鍚岀洰褰曟垨 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/` 涓嬩笉瀛樺湪 `prd.{stem}.json` 涓?`progress.{stem}.txt`锛?*蹇呴』**鍦ㄥ紑濮嬫墽琛屼换浣曚换鍔″墠鍒涘缓锛?   - stem 涓?tasks 鏂囨。 stem锛堝 tasks-E1-S1 鈫?`tasks-E1-S1`锛涙棤 BMAD 涓婁笅鏂囨椂鐢?tasks 鏂囦欢鍚?stem锛夛紱
-   - prd 缁撴瀯椤荤鍚?ralph-method schema锛屽皢 tasks 涓殑鍙獙鏀朵换鍔℃槧灏勪负 US-001銆乁S-002鈥︼紙鎴栦笌 tasks 缂栧彿涓€涓€瀵瑰簲锛夛紱
-   - **progress 棰勫～ TDD 妲戒綅**锛氱敓鎴?progress 鏃讹紝瀵规瘡涓?US 棰勫～浠ヤ笅鍗犱綅琛岋紱娑夊強鐢熶骇浠ｇ爜鐨?US 棰勫～ `[TDD-RED] _pending_`銆乣[TDD-GREEN] _pending_`銆乣[TDD-REFACTOR] _pending_`锛涗粎鏂囨。/閰嶇疆鐨?US 棰勫～ `[DONE] _pending_`銆傛墽琛屾椂灏?`_pending_` 鏇挎崲涓哄疄闄呯粨鏋滐紙濡?`[TDD-RED] T1 pytest ... => N failed`锛夛紱
-   - 浜у嚭璺緞锛氫笌 tasks 鍚岀洰褰曪紝鎴?`_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/`锛圔MAD 娴佺▼鏃讹級锛?   - **绂佹**鍦ㄦ湭鍒涘缓涓婅堪鏂囦欢鍓嶅紑濮嬬紪鐮佹垨鎵ц娑夊強鐢熶骇浠ｇ爜鐨勪换鍔°€?3. **闃呰鍓嶇疆鏂囨。**锛氶渶姹傛枃妗ｃ€乸lan.md銆両MPLEMENTATION_GAPS.md锛岀悊瑙ｆ妧鏈灦鏋勪笌闇€姹傝寖鍥淬€?3.0 **璇诲彇 deferred-gap-register**锛氳嫢瀛樺湪 `deferred-gap-register.yaml`锛屽繀椤诲湪鎵ц鍓嶅姞杞斤紱鑻ュ凡澹版槑 inherited deferred gaps 鍗存棤姝ゆ枃浠讹紝涓嶅緱缁х画瀹ｇО浠诲姟瀹屾垚銆?3.1 **璇诲彇 ledger 宸ヤ欢**锛氳嫢瀛樺湪 `journey-ledger.md`銆乣invariant-ledger.md`銆乣trace-map.json`锛屽繀椤诲湪鎵ц鍓嶅姞杞斤紱鑻ヤ粨搴撳皻鏈媶鍒嗙嫭绔嬫枃浠讹紝鍒欎互 tasks.md 涓搴?section 浣滀负浜嬪疄鏉ユ簮锛屽苟鍚屾璇诲彇 `Smoke Task Chain`銆乣Closure Task ID`銆乣Journey Unlock`銆乣Smoke Path Unlock`銆?3.2 **鍏堝尯鍒?gap 绫诲瀷**锛氭墽琛屽墠蹇呴』鏍囪鍝簺浠诲姟鏄湪娑堥櫎 `definition gap`锛屽摢浜涙槸鍦ㄤ慨澶?`implementation gap`锛涙墽琛岃褰曚腑蹇呴』淇濇寔 `Definition Gap Handling` 涓?`Implementation Gap Handling` 鍒嗙锛岀姝㈡贩鍐欏苟鍦ㄥ悓涓€杞噷鐩存帴瀹ｅ竷 Journey 瀹屾垚銆?3.3 **澶?Agent 鍏辩敤宸ヤ欢璺緞**锛氳嫢涓?multi-agent 鎵ц锛屽繀椤诲厛閿佸畾 `Shared Journey Ledger Path`銆乣Shared Invariant Ledger Path`銆乣Shared Trace Map Path`锛屽苟纭鎵€鏈?agent 閮芥秷璐瑰悓涓€浠?`same path reference`锛岀姝㈡敼鍐欎负鍚勮嚜绉佹湁鎽樿銆?4. **浣跨敤 TodoWrite** 鍒涘缓浠诲姟杩借釜鍒楄〃锛岄涓换鍔℃爣璁?`in_progress`銆?5. **閫愪换鍔℃墽琛?TDD 寰幆**锛?*姣忎釜 US 蹇呴』鐙珛鎵ц**锛岀姝粎瀵归涓?US 鎵ц TDD 鍚庡鍚庣画 US 璺宠繃绾㈢伅鐩存帴瀹炵幇锛夛細
-   - **绾㈢伅**锛氱紪鍐?琛ュ厖瑕嗙洊褰撳墠浠诲姟楠屾敹鏍囧噯鐨勬祴璇曠敤渚嬶紝杩愯纭**娴嬭瘯澶辫触**锛堥獙璇佹祴璇曟湁鏁堟€э級銆?   - **缁跨伅**锛氱紪鍐欐渶灏戦噺鐢熶骇浠ｇ爜浣挎祴璇曢€氳繃銆?   - **閲嶆瀯**锛氬湪娴嬭瘯淇濇姢涓嬫鏌ュ苟浼樺寲浠ｇ爜璐ㄩ噺锛圫OLID銆佸懡鍚嶃€佽В鑰︺€佹€ц兘锛夈€?*鏃犺鏄惁鏈夊叿浣撻噸鏋勫姩浣滐紝鍧囬』鍦?progress 涓褰?`[TDD-REFACTOR]` 涓€琛?*锛涙棤鍏蜂綋閲嶆瀯鏃跺啓"鏃犻渶閲嶆瀯 鉁?锛岄泦鎴愪换鍔″啓"鏃犳柊澧炵敓浜т唬鐮侊紝鍚勬ā鍧楃嫭绔嬫€у凡楠岃瘉锛屾棤璺ㄦā鍧楅噸鏋?鉁?銆?6. **瀹屾垚鍚庣珛鍗虫洿鏂?* tasks.md 涓殑澶嶉€夋 `[ ]` 鈫?`[x]`锛孴odoWrite 鏍囪 `completed`銆?6.1 **Journey 鏀跺彛**锛氭瘡褰撲竴涓?`P0 journey` 杈惧埌 smoke runnable 鐘舵€侊紝蹇呴』绔嬪嵆瀹屾垚鎴栨洿鏂板搴?`Closure Task ID` 鎸囧悜鐨?`closure note`锛屽苟鏍″ `Smoke Task Chain` 宸查棴鍚堬紱closure note 蹇呴』鍐欐槑 covered journey id銆乮mplementing task ids銆乻moke test ids銆乫ull E2E ids 鎴?deferred reason銆佹湭瑙ｅ喅 deferred gaps銆?6.2 **Deferred Gap 鏀跺彛**锛氳嫢浠诲姟鍏抽棴浜嗘煇鏉?deferred gap锛屽繀椤诲悓姝ュ啓鍏?`deferred-gap-register.yaml` 鐨?`closure_evidence`锛涜嫢缁х画寤舵湡锛屽繀椤诲悓姝ュ啓鍏?`carry_forward_evidence`銆佹柊 `resolution_target` 涓?closure note 鎽樿銆?7. **妫€鏌ョ偣楠岃瘉**锛氶亣鍒版鏌ョ偣鏃堕獙璇佹墍鏈夊墠缃换鍔″凡瀹屾垚锛屾墽琛屽洖褰掓祴璇曘€?7.1. **lint锛堝繀椤伙級**锛氭瘡瀹屾垚涓€鎵逛换鍔℃垨鍏ㄩ儴浠诲姟瀹屾垚鍓嶏紝椤圭洰椤绘寜鎶€鏈爤鎵ц Lint锛堣 lint-requirement-matrix锛夛紱鑻ヤ娇鐢ㄤ富娴佽瑷€浣嗘湭閰嶇疆 Lint 椤讳慨澶嶏紱宸查厤缃殑椤绘墽琛屼笖鏃犻敊璇€佹棤璀﹀憡銆傜姝互銆屼笌鏈浠诲姟涓嶇浉鍏炽€嶄负鐢辫眮鍏嶃€?7.2. **re-readiness 瑙﹀彂**锛氳嫢鏈壒鍙樻洿瑙﹀強 `P0 journey`銆佸畬鎴愭€佸畾涔夈€佷緷璧栬涔夈€佹潈闄愯竟鐣屻€乫ixture / environment 鍋囪锛屽繀椤诲洖鍒?readiness 閲嶆柊纭鍚庡啀缁х画鎺ㄨ繘 implement 缁撹銆?8. **寰幆**鐩磋嚦鎵€鏈変换鍔″畬鎴愶紝绂佹鎻愬墠鍋滄銆?
-### 5.1.1 tasks 涓?prd 鐨勬槧灏勭害瀹?
-- tasks 浣跨敤 T1銆乀2銆乀1.1銆乀1.2 绛夋牸寮忔椂锛氬彲灏?T1 鏄犲皠涓?US-001锛孴1.1鈥揟1.n 浣滀负 US-001 鐨勫瓙浠诲姟锛涙垨鎸夐《灞備换鍔?T1鈥揟5 鏄犲皠涓?US-001鈥揢S-005锛?- prd 鐨?userStories 椤讳笌 tasks 涓殑鍙獙鏀朵换鍔′竴涓€瀵瑰簲鎴栧彲杩芥函锛?- 鍏蜂綋鏄犲皠绛栫暐鐢辨墽琛?Agent 鍦ㄧ敓鎴?prd 鏃剁‘瀹氾紝浣嗛』淇濊瘉 tasks 涓瘡鏉″彲楠屾敹浠诲姟鍦?prd 涓湁瀵瑰簲 US 涓旈獙鏀舵爣鍑嗕竴鑷淬€?
-### TDD绾㈢豢鐏褰曟牸寮忥紙涓巄mad-story-assistant缁熶竴锛?
-**缁熶竴鏍煎紡妯℃澘**:
+**【执行顺序】** 每个涉及生产代码的任务：先写/补测试并运行验收得失败（红灯）；再写生产代码使通过（绿灯）；最后重构并记录。禁止先写生产代码再补测试。
+
+### 5.1 执行流程
+
+在本阶段开始执行 tasks 或拉起任何执行体前，主 Agent 必须先：
+- 执行 `npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action inspect`，消费当前 `orchestrationState` 与 `pendingPacket`
+- 当 `mainAgentNextAction` 可派发但尚无可用 packet 时，执行 `npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action dispatch-plan`
+- 通过 `main-agent-orchestration` 生命周期动作 claim / dispatch packet，而不是绕过 state 直接派发
+- 每次 bounded 子结果返回后，以及每次 `runAuditorHost` 调用后，都再次 `inspect`，再进入下一批任务或下一审计分支
+
+1. **读取 tasks.md**（或 tasks-v*.md），识别所有未完成任务（`[ ]` 复选框）。
+2. **【ralph-method 强制前置】创建 prd 与 progress 追踪文件**：
+   - 若与 tasks 同目录或 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/` 下不存在 `prd.{stem}.json` 与 `progress.{stem}.txt`，**必须**在开始执行任何任务前创建；
+   - stem 为 tasks 文档 stem（如 tasks-E1-S1 → `tasks-E1-S1`；无 BMAD 上下文时用 tasks 文件名 stem）；
+   - prd 结构须符合 ralph-method schema，将 tasks 中的可验收任务映射为 US-001、US-002…（或与 tasks 编号一一对应）；
+   - **progress 预填 TDD 槽位**：生成 progress 时，对每个 US 预填以下占位行；涉及生产代码的 US 预填 `[TDD-RED] _pending_`、`[TDD-GREEN] _pending_`、`[TDD-REFACTOR] _pending_`；仅文档/配置的 US 预填 `[DONE] _pending_`。执行时将 `_pending_` 替换为实际结果（如 `[TDD-RED] T1 pytest ... => N failed`）；
+   - 产出路径：与 tasks 同目录，或 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/`（BMAD 流程时）；
+   - **禁止**在未创建上述文件前开始编码或执行涉及生产代码的任务。
+3. **阅读前置文档**：需求文档、plan.md、IMPLEMENTATION_GAPS.md，理解技术架构与需求范围。
+3.0 **读取 deferred-gap-register**：若存在 `deferred-gap-register.yaml`，必须在执行前加载；若已声明 inherited deferred gaps 却无此文件，不得继续宣称任务完成。
+3.1 **读取 ledger 工件**：若存在 `journey-ledger.md`、`invariant-ledger.md`、`trace-map.json`，必须在执行前加载；若仓库尚未拆分独立文件，则以 tasks.md 中对应 section 作为事实来源，并同步读取 `Smoke Task Chain`、`Closure Task ID`、`Journey Unlock`、`Smoke Path Unlock`。
+3.2 **先区分 gap 类型**：执行前必须标记哪些任务是在消除 `definition gap`，哪些是在修复 `implementation gap`；执行记录中必须保持 `Definition Gap Handling` 与 `Implementation Gap Handling` 分离，禁止混写并在同一轮里直接宣布 Journey 完成。
+3.3 **多 Agent 共用工件路径**：若为 multi-agent 执行，必须先锁定 `Shared Journey Ledger Path`、`Shared Invariant Ledger Path`、`Shared Trace Map Path`，并确认所有 agent 都消费同一份 `same path reference`，禁止改写为各自私有摘要。
+4. **使用 TodoWrite** 创建任务追踪列表，首个任务标记 `in_progress`。
+5. **逐任务执行 TDD 循环**（**每个 US 必须独立执行**，禁止仅对首个 US 执行 TDD 后对后续 US 跳过红灯直接实现）：
+   - **红灯**：编写/补充覆盖当前任务验收标准的测试用例，运行确认**测试失败**（验证测试有效性）。
+   - **绿灯**：编写最少量生产代码使测试通过。
+   - **重构**：在测试保护下检查并优化代码质量（SOLID、命名、解耦、性能）。**无论是否有具体重构动作，均须在 progress 中记录 `[TDD-REFACTOR]` 一行**；无具体重构时写"无需重构 ✓"，集成任务写"无新增生产代码，各模块独立性已验证，无跨模块重构 ✓"。
+6. **完成后立即更新** tasks.md 中的复选框 `[ ]` → `[x]`，TodoWrite 标记 `completed`。
+6.1 **Journey 收口**：每当一个 `P0 journey` 达到 smoke runnable 状态，必须立即完成或更新对应 `Closure Task ID` 指向的 `closure note`，并校对 `Smoke Task Chain` 已闭合；closure note 必须写明 covered journey id、implementing task ids、smoke test ids、full E2E ids 或 deferred reason、未解决 deferred gaps。
+6.2 **Deferred Gap 收口**：若任务关闭了某条 deferred gap，必须同步写入 `deferred-gap-register.yaml` 的 `closure_evidence`；若继续延期，必须同步写入 `carry_forward_evidence`、新 `resolution_target` 与 closure note 摘要。
+7. **检查点验证**：遇到检查点时验证所有前置任务已完成，执行回归测试。
+7.1. **lint（必须）**：每完成一批任务或全部任务完成前，项目须按技术栈执行 Lint（见 lint-requirement-matrix）；若使用主流语言但未配置 Lint 须修复；已配置的须执行且无错误、无警告。禁止以「与本次任务不相关」为由豁免。
+7.2. **re-readiness 触发**：若本批变更触及 `P0 journey`、完成态定义、依赖语义、权限边界、fixture / environment 假设，必须回到 readiness 重新确认后再继续推进 implement 结论。
+8. **循环**直至所有任务完成，禁止提前停止。
+
+### 5.1.1 tasks 与 prd 的映射约定
+
+- tasks 使用 T1、T2、T1.1、T1.2 等格式时：可将 T1 映射为 US-001，T1.1–T1.n 作为 US-001 的子任务；或按顶层任务 T1–T5 映射为 US-001–US-005；
+- prd 的 userStories 须与 tasks 中的可验收任务一一对应或可追溯；
+- 具体映射策略由执行 Agent 在生成 prd 时确定，但须保证 tasks 中每条可验收任务在 prd 中有对应 US 且验收标准一致。
+
+### TDD红绿灯记录格式（与bmad-story-assistant统一）
+
+**统一格式模板**:
 ```markdown
-## Task X: 瀹炵幇YYY鍔熻兘
+## Task X: 实现YYY功能
 
-**绾㈢伅闃舵锛圷YYY-MM-DD HH:MM锛?*
+**红灯阶段（YYYY-MM-DD HH:MM）**
 [TDD-RED] TX pytest tests/test_xxx.py -v => N failed
-[閿欒淇℃伅鎽樿]
+[错误信息摘要]
 
-**缁跨伅闃舵锛圷YYY-MM-DD HH:MM锛?*
+**绿灯阶段（YYYY-MM-DD HH:MM）**
 [TDD-GREEN] TX pytest tests/test_xxx.py -v => N passed
-[瀹炵幇瑕佺偣鎽樿]
+[实现要点摘要]
 
-**閲嶆瀯闃舵锛圷YYY-MM-DD HH:MM锛?*
-[TDD-REFACTOR] TX [閲嶆瀯鎿嶄綔鎻忚堪 | 鏃犻渶閲嶆瀯 鉁?| 闆嗘垚浠诲姟: 鏃犳柊澧炵敓浜т唬鐮侊紝鍚勬ā鍧楃嫭绔嬫€у凡楠岃瘉 鉁揮
-[浼樺寲鐐规憳瑕乚
+**重构阶段（YYYY-MM-DD HH:MM）**
+[TDD-REFACTOR] TX [重构操作描述 | 无需重构 ✓ | 集成任务: 无新增生产代码，各模块独立性已验证 ✓]
+[优化点摘要]
 
-**鏇存柊ralph-method杩涘害**
+**更新ralph-method进度**
 - prd.md: US-00X passes=true
-- progress.md: 娣诲姞TDD璁板綍閾炬帴
+- progress.md: 添加TDD记录链接
 ```
 
-**蹇呭～瀛楁**:
-1. `[TDD-RED]` - 鏍囪绾㈢伅闃舵寮€濮?2. `[TDD-GREEN]` - 鏍囪缁跨伅闃舵瀹屾垚
-3. `[TDD-REFACTOR]` - 鏍囪閲嶆瀯闃舵锛堝繀椤昏褰曞垽鏂粨鏋滐紝鏃犺鏄惁鏈夊叿浣撻噸鏋勫姩浣滐紱绂佹鐪佺暐姝よ锛?4. `TX` - 鏃堕棿鎴冲墠缂€
-5. 娴嬭瘯鍛戒护鍜岀粨鏋?6. ralph-method杩涘害鏇存柊
+**必填字段**:
+1. `[TDD-RED]` - 标记红灯阶段开始
+2. `[TDD-GREEN]` - 标记绿灯阶段完成
+3. `[TDD-REFACTOR]` - 标记重构阶段（必须记录判断结果，无论是否有具体重构动作；禁止省略此行）
+4. `TX` - 时间戳前缀
+5. 测试命令和结果
+6. ralph-method进度更新
 
-**绂佹浜嬮」**:
-- 璺宠繃绾㈢伅闃舵鐩存帴缁跨伅
-- 鐪佺暐閲嶆瀯闃舵
-- 涓嶆洿鏂皉alph-method杩涘害
+**禁止事项**:
+- 跳过红灯阶段直接绿灯
+- 省略重构阶段
+- 不更新ralph-method进度
 
-### 5.2 瀹¤闂幆
+### 5.2 审计闭环
 
-**涓ユ牸搴﹀垎绾?*锛堝紩鐢?[references/audit-post-impl-rules.md](references/audit-post-impl-rules.md)锛夛細
-- **batch 闂村璁?*锛堟瘡鎵?tasks 瀹屾垚鍚庣殑涓棿妫€鏌ョ偣锛夛細**standard**锛堝崟娆?+ 鎵瑰垽瀹¤鍛橈級锛屼笉蹇?3 杞€?- **鏈€缁?搂5.2 瀹¤**锛堝叏閮?tasks 鎵ц瀹屾瘯鍚庣殑鎬诲璁★級锛?*strict**锛屽繀椤昏繛缁?3 杞棤 gap + 鎵瑰垽瀹¤鍛?>50%銆?
-- 鎵ц tasks.md 涓殑浠诲姟锛圱DD 绾㈢豢鐏ā寮忥級鍚庯紝**蹇呴』鎸?搂0 绾﹀畾璋冪敤 code-review 鎶€鑳?*锛屼娇鐢?**鍥哄畾瀹¤鎻愮ず璇?*锛歔references/audit-prompts.md](references/audit-prompts.md) 搂5銆?- **batch 闂?*锛氬崟娆￠€氳繃涓旀壒鍒ゅ璁″憳娈佃惤鍚堟牸鍗冲彲锛?*鏈€缁堝璁?*锛氶』杩炵画 3 杞棤 gap 鏀舵暃锛岃瑙?audit-post-impl-rules銆?- 涓?Agent 鍦ㄥ彂璧风 2銆? 杞璁″墠锛屽彲杈撳嚭銆岀 N 杞璁￠€氳繃锛岀户缁獙璇佲€︺€嶄互鎻愮ず鐢ㄦ埛銆?- #### 瀹¤閫氳繃鍚庣粺涓€ Host 鏀跺彛锛堝己鍒讹級
-  - **鎶ュ憡璺緞**锛歚{project-root}/_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_implement-E{epic}-S{story}.md`锛堜笌 _bmad/_config/eval-lifecycle-report-paths.yaml 涓€鑷达級锛泂tage=implement锛圫tory 9.2 鎵╁睍锛屾浛浠ｅ師 stage=tasks + triggerStage=speckit_5_2锛夈€?  - 鍙戣捣瀹¤瀛愪换鍔℃椂锛屽彂缁欏瓙 Agent 鐨?prompt 蹇呴』鍖呭惈锛氬璁￠€氳繃鍚庤灏嗘姤鍛婁繚瀛樿嚦 {绾﹀畾璺緞}锛岃矾寰勭敱涓?Agent 鏍规嵁 epic銆乻tory銆乻lug 濉厖銆?  - **缁熶竴鍏ュ彛**锛氬璁￠€氳繃鍚庯紝涓?Agent 缁熶竴璋冪敤 `runAuditorHost`锛涗笉鍐嶆墜宸ユ嫾瑁?implement 闃舵鐨?score / auditIndex CLI銆?  - **璐ｄ换鍒掑垎**锛歝ode-review 瀛愪唬鐞嗕骇鍑哄璁℃姤鍛婂苟钀界洏鑷充笂杩拌矾寰勶紱涓?Agent 鍦ㄦ敹鍒伴€氳繃缁撹鍚庤皟鐢?`runAuditorHost`锛涘け璐ヤ笉闃绘柇涓绘祦绋嬶紝璁板綍 resultCode 杩涘璁¤瘉鎹€?*iteration_count 浼犻€掞紙寮哄埗锛?*锛氭墽琛屽璁″惊鐜殑 Agent 鍦?pass 鏃朵紶鍏ュ綋鍓嶇疮璁″€硷紙鏈?stage 瀹¤鏈€氳繃/fail 鐨勮疆鏁帮級锛涗竴娆￠€氳繃浼?0銆?*standalone speckit** 娴佺▼锛堟棤 epic/story锛夋椂锛屼富 Agent 鍦?pass 鏃跺悓鏍蜂紶鍏?`--iteration-count {绱鍊紏`銆?- 鑻ユ湭閫氳繃锛氭牴鎹璁℃姤鍛?**杩唬鎵ц tasks.md 涓璁℃湭閫氳繃鐨勪换鍔?*锛?*鍐嶆璋冪敤 code-review**锛岀洿鑷虫姤鍛婄粨璁轰负閫氳繃銆?- batch 闂村璁″繀椤婚澶栨鏌ワ細鏄惁缂哄け closure note銆佹槸鍚﹀瓨鍦?`module complete but journey not runnable` 婕傜Щ銆佹槸鍚﹀嚭鐜板簲瑙﹀彂鑰屾湭瑙﹀彂鐨?`re-readiness`銆?
-**闆嗘垚涓庣鍒扮娴嬭瘯鎵ц锛堝繀椤伙級**
+**严格度分级**（引用 [references/audit-post-impl-rules.md](references/audit-post-impl-rules.md)）：
+- **batch 间审计**（每批 tasks 完成后的中间检查点）：**standard**（单次 + 批判审计员），不必 3 轮。
+- **最终 §5.2 审计**（全部 tasks 执行完毕后的总审计）：**strict**，必须连续 3 轮无 gap + 批判审计员 >50%。
 
-- 鎵ц闃舵**蹇呴』**杩愯闆嗘垚娴嬭瘯涓庣鍒扮鍔熻兘娴嬭瘯锛岄獙璇佹ā鍧楅棿鍗忎綔涓庣敤鎴峰彲瑙佸姛鑳芥祦绋嬪湪鐢熶骇浠ｇ爜鍏抽敭璺緞涓婂伐浣滄甯搞€?*涓ョ**浠呰繍琛屽崟鍏冩祴璇曞嵆瀹ｅ竷瀹屾垚銆?- **蹇呴』**楠岃瘉姣忎釜鏂板鎴栦慨鏀圭殑妯″潡**纭疄琚敓浜т唬鐮佸叧閿矾寰勫鍏ャ€佸疄渚嬪寲骞惰皟鐢?*锛堜緥濡傦細grep 鐢熶骇浠ｇ爜 import 璺緞銆佹鏌?UI 鍏ュ彛鏄惁鎸傝浇銆佹鏌?Engine/涓绘祦绋嬫槸鍚﹀疄闄呰皟鐢級銆?- 鍙戠幇銆屾ā鍧楀唴閮ㄥ疄鐜板畬鏁翠笖鍙€氳繃鍗曞厓娴嬭瘯锛屼絾浠庢湭鍦ㄧ敓浜т唬鐮佸叧閿矾寰勪腑琚鍏ャ€佸疄渚嬪寲鎴栬皟鐢ㄣ€嶇殑鎯呭喌鏃讹紝**蹇呴』**灏嗗叾浣滀负 **鏈€氳繃椤?* 鎶ュ憡骞朵慨澶嶏紝鑰岄潪鏍囪涓洪€氳繃銆?- 姣忎釜 `P0 journey` 鍦ㄥ璁″墠蹇呴』鏈?`closure note`锛涜嫢 full E2E 寤跺悗锛宑losure note 涓繀椤诲啓鏄?deferred reason 涓?next gate銆?- 姣忎釜 `P0 journey` 鍦ㄥ璁″墠杩樺繀椤诲叿澶?`Production Path` 涓?`Acceptance Evidence`锛涚己浠讳竴椤癸紝涓嶅緱瀹ｇО鐪熷疄鍔熻兘宸茶惤鍦般€?
-### 5.3 鍏抽敭绾︽潫锛?5 鏉￠搧寰嬫憳瑕侊級
+- 执行 tasks.md 中的任务（TDD 红绿灯模式）后，**必须按 §0 约定调用 code-review 技能**，使用 **固定审计提示词**：[references/audit-prompts.md](references/audit-prompts.md) §5。
+- **batch 间**：单次通过且批判审计员段落合格即可；**最终审计**：须连续 3 轮无 gap 收敛，详见 audit-post-impl-rules。
+- 主 Agent 在发起第 2、3 轮审计前，可输出「第 N 轮审计通过，继续验证…」以提示用户。
+- #### 审计通过后统一 Host 收口（强制）
+  - **报告路径**：`{project-root}/_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_implement-E{epic}-S{story}.md`（与 _bmad/_config/eval-lifecycle-report-paths.yaml 一致）；stage=implement（Story 9.2 扩展，替代原 stage=tasks + triggerStage=speckit_5_2）。
+  - 发起审计子任务时，发给子 Agent 的 prompt 必须包含：审计通过后请将报告保存至 {约定路径}，路径由主 Agent 根据 epic、story、slug 填充。
+  - **统一入口**：审计通过后，主 Agent 统一调用 `runAuditorHost`；不再手工拼装 implement 阶段的 score / auditIndex CLI。
+- **责任划分**：code-review 子代理产出审计报告并落盘至上述路径；主 Agent 在收到通过结论后调用 `runAuditorHost`；失败不阻断主流程，记录 resultCode 进审计证据。**iteration_count 传递（强制）**：执行审计循环的 Agent 在 pass 时传入当前累计值（本 stage 审计未通过/fail 的轮数）；一次通过传 0。**standalone speckit** 流程（无 epic/story）时，主 Agent 在 pass 时同样传入 `--iteration-count {累计值}`。
+- 若未通过：根据审计报告 **迭代执行 tasks.md 中审计未通过的任务**，**再次调用 code-review**，直至报告结论为通过。
 
-鎵ц鏃跺繀椤婚伒瀹堝畬鏁寸害鏉熻鍒欙紝璇﹁ [references/task-execution-tdd.md](references/task-execution-tdd.md)銆傛牳蹇冭鐐癸細
+- **不中断执行 contract**：一旦 tasks 执行开始，执行体必须按顺序连续完成当前作用域内全部剩余任务/User Stories，不得在 milestone 完成后暂停等待批准。控制权仅可在以下三种情况下返回主 Agent：① 当前作用域工作已完成且可进入 audit/closeout；② 出现真实 blocker，需要 reroute；③ 本工作流显式定义的 audit/checkpoint 边界已到达。
+- batch 间审计必须额外检查：是否缺失 closure note、是否存在 `module complete but journey not runnable` 漂移、是否出现应触发而未触发的 `re-readiness`。
 
-**鏋舵瀯涓庨渶姹傚繝瀹炴€?*
-- 涓ユ牸鎸夋枃妗ｈ褰曠殑鎶€鏈灦鏋勫拰閫夊瀷瀹炴柦锛?*绂佹**鎿呰嚜淇敼銆?- 涓ユ牸鎸夋枃妗ｈ褰曠殑闇€姹傝寖鍥村拰鍔熻兘鑼冨洿瀹炴柦锛?*绂佹**浠ユ渶灏忓疄鐜颁负鐢卞亸绂婚渶姹傘€?
-**绂佹浼疄鐜?*
-- **绂佹**鍋囧畬鎴愩€佷吉瀹炵幇銆佸崰浣嶅疄鐜般€?- **绂佹**鏍囪瀹屾垚浣嗗姛鑳芥湭瀹為檯璋冪敤鎴栨湭鍦ㄥ叧閿矾寰勪腑浣跨敤銆?
-**娴嬭瘯涓庡洖褰?*
-- 涓诲姩淇娴嬭瘯鑴氭湰锛岀姝互鏃犲叧涓虹敱閫冮伩銆?- 涓诲姩杩涜鍥炲綊娴嬭瘯锛岀姝㈡帺鐩栧姛鑳藉洖閫€闂銆?
-**娴佺▼瀹屾暣鎬?*
-- pytest 绛夐暱鏃堕棿鑴氭湰浣跨敤 `block_until_ms: 0`锛岃疆璇?`terminals/` 妫€鏌ョ粨鏋溿€?- 濡傞渶鍙傝€冭璁★紝鏌ョ湅鍓嶇疆闇€姹傛枃妗?plan鏂囨。/IMPLEMENTATION_GAPS鏂囨。銆?- 鍦ㄦ墍鏈夋湭瀹屾垚浠诲姟鐪熸瀹炵幇骞跺畬鎴愪箣鍓?*绂佹**鍋滄寮€鍙戝伐浣溿€?
+**集成与端到端测试执行（必须）**
+
+- 执行阶段**必须**运行集成测试与端到端功能测试，验证模块间协作与用户可见功能流程在生产代码关键路径上工作正常。**严禁**仅运行单元测试即宣布完成。
+- **必须**验证每个新增或修改的模块**确实被生产代码关键路径导入、实例化并调用**（例如：grep 生产代码 import 路径、检查 UI 入口是否挂载、检查 Engine/主流程是否实际调用）。
+- 发现「模块内部实现完整且可通过单元测试，但从未在生产代码关键路径中被导入、实例化或调用」的情况时，**必须**将其作为 **未通过项** 报告并修复，而非标记为通过。
+- 每个 `P0 journey` 在审计前必须有 `closure note`；若 full E2E 延后，closure note 中必须写明 deferred reason 与 next gate。
+- 每个 `P0 journey` 在审计前还必须具备 `Production Path` 与 `Acceptance Evidence`；缺任一项，不得宣称真实功能已落地。
+
+### 5.3 关键约束（15 条铁律摘要）
+
+执行时必须遵守完整约束规则，详见 [references/task-execution-tdd.md](references/task-execution-tdd.md)。核心要点：
+
+**架构与需求忠实性**
+- 严格按文档记录的技术架构和选型实施，**禁止**擅自修改。
+- 严格按文档记录的需求范围和功能范围实施，**禁止**以最小实现为由偏离需求。
+
+**禁止伪实现**
+- **禁止**假完成、伪实现、占位实现。
+- **禁止**标记完成但功能未实际调用或未在关键路径中使用。
+
+**测试与回归**
+- 主动修复测试脚本，禁止以无关为由逃避。
+- 主动进行回归测试，禁止掩盖功能回退问题。
+
+**流程完整性**
+- pytest 等长时间脚本使用 `block_until_ms: 0` 后台运行。**仅对普通长任务**允许轮询 `terminals/` 检查结果；**禁止**把这一规则用于 party-mode 返回判定。
+- 若任务发生在 Codex / PowerShell 环境中，**禁止**生成或执行混合 shell 命令（如 `ls -la`、`mkdir -p`、`dir ... /b`、`cmd || pwsh`）。如确需查看 `terminals/`，只能使用 PowerShell 原生命令（如 `Get-ChildItem`、`Test-Path`、`Get-Content`）。
+- 对 party-mode，返回后**必须先读取** `_bmad-output/party-mode/runtime/current-session.json`，并优先读取 `visible_output_summary`；**禁止**先用 shell 探测 `terminals/`、`_bmad-output/party-mode/` 或“session 文件是否存在”来判定完成/失败。
+- 如需参考设计，查看前置需求文档/plan文档/IMPLEMENTATION_GAPS文档。
+- 在所有未完成任务真正实现并完成之前**禁止**停止开发工作。
+
 ---
 
-## 6. Agent 鎵ц瑙勫垯锛坧lan.md / tasks.md 蹇呴』閬靛畧锛?
-鐢熸垚 plan.md 涓?tasks.md 鏃讹紝闄や笂杩版槧灏勪笌瀹¤澶栵紝**杩樺繀椤?* 閬靛畧浠ヤ笅 Agent 鎵ц瑙勫垯锛堜笌 QA_Agent 浠诲姟鎵ц鏈€浣冲疄璺?搂397鈥?09 涓€鑷达級锛?
-**绂佹浜嬮」**
+## 6. Agent 执行规则（plan.md / tasks.md 必须遵守）
 
-1. 绂佹鍦ㄤ换鍔℃弿杩颁腑娣诲姞銆屾敞: 灏嗗湪鍚庣画杩唬...銆嶃€?2. 绂佹鏍囪浠诲姟瀹屾垚浣嗗姛鑳芥湭瀹為檯璋冪敤銆?3. 绂佹浠呭垵濮嬪寲瀵硅薄鑰屼笉鍦ㄥ叧閿矾寰勪腑浣跨敤銆?4. 绂佹鐢ㄣ€岄鐣欍€嶃€屽崰浣嶃€嶇瓑璇嶈閬垮疄鐜般€?5. **绂佹**妯″潡鍐呴儴瀹炵幇瀹屾暣涓斿彲閫氳繃鍗曞厓娴嬭瘯锛屼絾浠庢湭鍦ㄧ敓浜т唬鐮佸叧閿矾寰勪腑琚鍏ャ€佸疄渚嬪寲鎴栬皟鐢紙銆屽宀涙ā鍧椼€嶅弽妯″紡锛夈€?6. **绂佹**浠呬娇鐢ㄥ崟鍏冩祴璇曢獙鏀朵换鍔★紱闆嗘垚娴嬭瘯涓庣鍒扮鍔熻兘娴嬭瘯涓哄繀椤婚獙鏀堕」銆?
-**蹇呴』浜嬮」**
+生成 plan.md 与 tasks.md 时，除上述映射与审计外，**还必须** 遵守以下 Agent 执行规则（与 QA_Agent 任务执行最佳实践 §397–409 一致）：
 
-1. 闆嗘垚浠诲姟蹇呴』淇敼鐢熶骇浠ｇ爜璺緞銆?2. 蹇呴』杩愯楠岃瘉鍛戒护纭鍔熻兘鍚敤銆?3. 閬囧埌鏃犳硶瀹屾垚鐨勬儏鍐碉紝搴旀姤鍛婇樆濉炶€岄潪鑷寤惰繜銆?4. 鍔熻兘/閰嶇疆/UI 鐩稿叧浠诲姟瀹炴柦鍓嶅繀椤诲厛妫€绱㈠苟闃呰闇€姹傛枃妗ｇ浉鍏崇珷鑺傦紙搂9 闇€姹傝拷婧笌闂幆锛夈€?5. 闇€姹傝拷婧紙瀹炴柦鍓嶅繀濉級锛氶棶棰樺叧閿瘝銆佹绱㈣寖鍥淬€佺浉鍏崇珷鑺傘€佹棦鏈夌害瀹氭憳瑕併€佹柟妗堟槸鍚︿笌闇€姹備竴鑷淬€?
-### Enforcement璇存槑锛堢姝簨椤规鏌ヨ矗浠伙級
+**禁止事项**
 
-**鍚勯樁娈电姝簨椤瑰強妫€鏌ヨ矗浠讳汉**:
+1. 禁止在任务描述中添加「注: 将在后续迭代...」。
+2. 禁止标记任务完成但功能未实际调用。
+3. 禁止仅初始化对象而不在关键路径中使用。
+4. 禁止用「预留」「占位」等词规避实现。
+5. **禁止**模块内部实现完整且可通过单元测试，但从未在生产代码关键路径中被导入、实例化或调用（「孤岛模块」反模式）。
+6. **禁止**仅使用单元测试验收任务；集成测试与端到端功能测试为必须验收项。
 
-| 闃舵 | 绂佹浜嬮」 | 妫€鏌ヨ矗浠讳汉 | 妫€鏌ユ柟寮?|
+**必须事项**
+
+1. 集成任务必须修改生产代码路径。
+2. 必须运行验证命令确认功能启用。
+3. 遇到无法完成的情况，应报告阻塞而非自行延迟。
+4. 功能/配置/UI 相关任务实施前必须先检索并阅读需求文档相关章节（§9 需求追溯与闭环）。
+5. 需求追溯（实施前必填）：问题关键词、检索范围、相关章节、既有约定摘要、方案是否与需求一致。
+
+### Enforcement说明（禁止事项检查责任）
+
+**各阶段禁止事项及检查责任人**:
+
+| 阶段 | 禁止事项 | 检查责任人 | 检查方式 |
 |-----|---------|-----------|---------|
-| specify | 浼疄鐜?| code-reviewer | 浠ｇ爜瀹℃煡 |
-| specify | 鑼冨洿钄撳欢 | code-reviewer | 瀵规瘮Story鏂囨。 |
-| plan | 鏃犳祴璇曡鍒?| code-reviewer | 妫€鏌lan-E{epic}-S{story}.md |
-| plan | 杩囧害璁捐 | code-reviewer | 鏋舵瀯鍚堢悊鎬ц瘎浼?|
-| GAPS | 閬楁紡鍏抽敭宸窛 | code-reviewer | 瀹屾暣鎬ф鏌?|
-| tasks | 浠诲姟涓嶅彲鎵ц | code-reviewer | 鍙鎬ц瘎浼?|
-| 鎵ц | 璺宠繃TDD绾㈢伅 | bmad-story-assistant | 妫€鏌DD璁板綍 |
-| 鎵ц | 鐪佺暐閲嶆瀯 | bmad-story-assistant | 妫€鏌DD璁板綍 |
+| specify | 伪实现 | code-reviewer | 代码审查 |
+| specify | 范围蔓延 | code-reviewer | 对比Story文档 |
+| plan | 无测试计划 | code-reviewer | 检查plan-E{epic}-S{story}.md |
+| plan | 过度设计 | code-reviewer | 架构合理性评估 |
+| GAPS | 遗漏关键差距 | code-reviewer | 完整性检查 |
+| tasks | 任务不可执行 | code-reviewer | 可行性评估 |
+| 执行 | 跳过TDD红灯 | bmad-story-assistant | 检查TDD记录 |
+| 执行 | 省略重构 | bmad-story-assistant | 检查TDD记录 |
 
-**杩濊澶勭悊**:
-1. 棣栨杩濊锛氳鍛婂苟瑕佹眰绔嬪嵆淇
-2. 閲嶅杩濊锛氭殏鍋滄墽琛岋紝杩斿洖涓婁竴闃舵
-3. 涓ラ噸杩濊锛氳褰曞苟涓婃姤缁橞Mad Master
+**违规处理**:
+1. 首次违规：警告并要求立即修正
+2. 重复违规：暂停执行，返回上一阶段
+3. 严重违规：记录并上报给BMad Master
 
-**璞佸厤鏉′欢**:
-- 缁弍arty-mode璁ㄨ涓€鑷村悓鎰?- 鏈夋槑纭殑ADR璁板綍鍐崇瓥鐞嗙敱
-- 鑾峰緱鎵瑰垽瀹¤鍛樿鍙?
-**Ralph-Wiggum 娉曞垯**
+**豁免条件**:
+- 经party-mode讨论一致同意
+- 有明确的ADR记录决策理由
+- 获得批判审计员认可
 
-- 绂佹鍋囪瀹屾垚锛岀姝㈡帺鐩栦吉瀹炵幇鐨勪簨瀹烇紝绂佹浠ユ椂闂磋繃闀夸负鐢遍€冮伩浠诲姟銆?- 鍦ㄦ墍鏈変换鍔¤鐪熸楠屾敹骞舵爣璁颁负瀹屾垚涔嬪墠锛岀姝㈤€€鍑恒€?
-瀹屾暣 Agent 鎵ц瑙勫垯涓庨渶姹傝拷婧牸寮忚 [references/qa-agent-rules.md](references/qa-agent-rules.md)銆?
+**Ralph-Wiggum 法则**
+
+- 禁止假装完成，禁止掩盖伪实现的事实，禁止以时间过长为由逃避任务。
+- 在所有任务被真正验收并标记为完成之前，禁止退出。
+
+完整 Agent 执行规则与需求追溯格式见 [references/qa-agent-rules.md](references/qa-agent-rules.md)。
+
 ---
 
-## 7. 娴佺▼灏忕粨
+## 7. 流程小结
 
-**銆怐ev Story瀹屾暣娴佺▼ - 涓嶅彲璺宠繃浠讳綍姝ラ銆?*
+**【Dev Story完整流程 - 不可跳过任何步骤】**
 
 ```
 Layer 3: Create Story
-    鈫?Layer 4: speckit-workflow锛坈onstitution 鈫?specify 鈫?plan 鈫?GAPS 鈫?tasks 鈫?implement锛?    鈫?Layer 5: 鏀跺熬涓庨泦鎴?```
+    →
+Layer 4: speckit-workflow（constitution → specify → plan → GAPS → tasks → implement）
+    →
+Layer 5: 收尾与集成
+```
 
-| speckit闃舵 | 浜у嚭 | 瀹¤渚濇嵁 | bmad瀵瑰簲闃舵 | 璇存槑 |
+| speckit阶段 | 产出 | 审计依据 | bmad对应阶段 | 说明 |
 |------------|------|---------|-------------|------|
-| specify | spec-E{epic}-S{story}.md | audit-prompts.md 搂1 | Layer 4寮€濮?| 鎶€鏈鏍煎寲Story鍐呭锛涙枃浠跺悕蹇呭惈Epic/Story搴忓彿 |
-| plan | plan-E{epic}-S{story}.md | audit-prompts.md 搂2 | Layer 4缁х画 | 鍒跺畾瀹炵幇鏂规锛涙枃浠跺悕蹇呭惈Epic/Story搴忓彿 |
-| GAPS | IMPLEMENTATION_GAPS-E{epic}-S{story}.md | audit-prompts.md 搂3 | Layer 4缁х画 | 璇嗗埆瀹炵幇宸窛锛涙枃浠跺悕蹇呭惈Epic/Story搴忓彿 |
-| tasks | tasks-E{epic}-S{story}.md | audit-prompts.md 搂4 | Layer 4缁х画 | 鎷嗚В鎵ц浠诲姟锛涙枃浠跺悕蹇呭惈Epic/Story搴忓彿 |
-| 鎵ц | 鍙繍琛屼唬鐮?| audit-prompts.md 搂5 | Layer 4缁撴潫 | TDD绾㈢豢鐏紑鍙?|
+| specify | spec-E{epic}-S{story}.md | audit-prompts.md §1 | Layer 4开始 | 技术规格化Story内容；文件名必含Epic/Story序号 |
+| plan | plan-E{epic}-S{story}.md | audit-prompts.md §2 | Layer 4继续 | 制定实现方案；文件名必含Epic/Story序号 |
+| GAPS | IMPLEMENTATION_GAPS-E{epic}-S{story}.md | audit-prompts.md §3 | Layer 4继续 | 识别实现差距；文件名必含Epic/Story序号 |
+| tasks | tasks-E{epic}-S{story}.md | audit-prompts.md §4 | Layer 4继续 | 拆解执行任务；文件名必含Epic/Story序号 |
+| 执行 | 可运行代码 | audit-prompts.md §5 | Layer 4结束 | TDD红绿灯开发 |
 
-**鏂囨。鍛藉悕瑙勫垯**锛氫骇鍑烘枃浠跺悕蹇呴』鍖呭惈 Epic 搴忓彿銆丼tory 搴忓彿锛汦pic 鍚嶇О锛堝 feature-metrics-cache锛夊湪璺緞鎴栨枃妗ｅ厓鏁版嵁涓綋鐜般€傜ず渚嬶細Epic 4 Story 1 鈫?spec-E4-S1.md銆乸lan-E4-S1.md銆?
-姣忔銆岃凯浠ｃ€嶅潎涓猴細**鎸?搂0 绾﹀畾璋冪敤 code-review 鎶€鑳?* 鈫?鑾峰緱瀹¤鎶ュ憡 鈫?鑻ユ湭閫氳繃鍒欎慨鏀瑰搴旀枃妗?鈫?**鍐嶆璋冪敤 code-review** 鈫?鐩磋嚦鎶ュ憡缁撹涓哄畬鍏ㄨ鐩栥€侀獙璇侀€氳繃銆倀asks 鎵ц闃舵鍚岀悊锛歍DD 绾㈢豢鐏惊鐜?鈫?閫愪换鍔″畬鎴?鈫?妫€鏌ョ偣楠岃瘉 鈫?**鎸?搂0 璋冪敤 code-review 鎶€鑳?* 鈫?鐩磋嚦鎶ュ憡缁撹涓洪€氳繃銆?
+**文档命名规则**：产出文件名必须包含 Epic 序号、Story 序号；Epic 名称（如 feature-metrics-cache）在路径或文档元数据中体现。示例：Epic 4 Story 1 → spec-E4-S1.md、plan-E4-S1.md。
+
+每次「迭代」均为：**按 §0 约定调用 code-review 技能** → 获得审计报告 → 若未通过则修改对应文档 → **再次调用 code-review** → 直至报告结论为完全覆盖、验证通过。tasks 执行阶段同理：TDD 红绿灯循环 → 逐任务完成 → 检查点验证 → **按 §0 调用 code-review 技能** → 直至报告结论为通过。
+
 ---
 
-## 8. Speckit 娴佺▼鍛戒护绱㈠紩锛堝繀椤绘墽琛岋級
+## 8. Speckit 流程命令索引（必须执行）
 
-| 闃舵 | 蹇呴』鎵ц鐨勫懡浠?| 鍓嶇疆鏉′欢 | 浜у嚭 | 瀹¤渚濇嵁 |
+| 阶段 | 必须执行的命令 | 前置条件 | 产出 | 审计依据 |
 |------|----------------|----------|------|----------|
-| **0. constitution** | `/speckit.constitution` 鎴?`.speckit.constitution` | 鏃狅紙鍏ュ彛闃舵锛?| constitution.md 鎴?.specify/memory/constitution.md | 椤圭洰鑷畾涔夋垨閫氱敤鏂囨。瀹屾暣鎬?|
-| **1. specify** | `/speckit.specify` 鎴?`.speckit.specify` | constitution 宸蹭骇鍑?| spec.md | audit-prompts.md 搂1 |
-| **2. plan** | `/speckit.plan` 鎴?`.speckit.plan` | spec.md 宸查€氳繃瀹¤ | plan.md | audit-prompts.md 搂2 |
-| **3. GAPS** | 鏃犵嫭绔嬪懡浠わ紱妯″瀷鑷姩娣卞害鍒嗘瀽锛堝鐓?plan + 闇€姹?+ 褰撳墠瀹炵幇锛夋垨 鐢ㄦ埛瑕佹眰銆岀敓鎴?IMPLEMENTATION_GAPS銆?| plan.md 宸查€氳繃瀹¤ | IMPLEMENTATION_GAPS.md | audit-prompts.md 搂3 |
-| **4. tasks** | `/speckit.tasks` 鎴?`.speckit.tasks` 鎴?鐢ㄦ埛瑕佹眰銆岀敓鎴?tasks銆?| IMPLEMENTATION_GAPS.md 宸查€氳繃瀹¤ | tasks.md | audit-prompts.md 搂4 |
-| **5. 鎵ц** | `/speckit.implement` 鎴?`.speckit.implement` 鎴?鐢ㄦ埛瑕佹眰銆屾墽琛?tasks銆嶃€屽畬鎴?tasks 涓殑浠诲姟銆?| tasks.md 宸查€氳繃瀹¤ | 鍙繍琛屼唬鐮?+ 娴嬭瘯 | audit-prompts.md 搂5 |
+| **0. constitution** | `/speckit.constitution` 或 `.speckit.constitution` | 无（入口阶段） | constitution.md 或 .specify/memory/constitution.md | 项目自定义或通用文档完整性 |
+| **1. specify** | `/speckit.specify` 或 `.speckit.specify` | constitution 已产出 | spec.md | audit-prompts.md §1 |
+| **2. plan** | `/speckit.plan` 或 `.speckit.plan` | spec.md 已通过审计 | plan.md | audit-prompts.md §2 |
+| **3. GAPS** | 无独立命令；模型自动深度分析（对照 plan + 需求 + 当前实现）或 用户要求「生成 IMPLEMENTATION_GAPS」 | plan.md 已通过审计 | IMPLEMENTATION_GAPS.md | audit-prompts.md §3 |
+| **4. tasks** | `/speckit.tasks` 或 `.speckit.tasks` 或 用户要求「生成 tasks」 | IMPLEMENTATION_GAPS.md 已通过审计 | tasks.md | audit-prompts.md §4 |
+| **5. 执行** | `/speckit.implement` 或 `.speckit.implement` 或 用户要求「执行 tasks」「完成 tasks 中的任务」 | tasks.md 已通过审计 | 可运行代码 + 测试 | audit-prompts.md §5 |
 
-**鍛戒护鎵ц椤哄簭**锛? 鈫?1 鈫?2 鈫?3 鈫?4 鈫?5锛屼笉鍙烦杩囥€俢onstitution 椤诲湪 specify 涔嬪墠瀹屾垚锛涙瘡闃舵浜у嚭蹇呴』閫氳繃 code-review 瀹¤锛埪?锛夊悗鏂瑰彲杩涘叆涓嬩竴闃舵銆?
-**澧炲己鍛戒护锛堥』宓屽叆鐩稿簲瀹¤闂幆杩唬鍐呮墽琛岋紝浣滀负瀹¤姝ラ鐨勪竴閮ㄥ垎锛屼笉寰椾互銆屽彲閫夈€嶄负鐢辫烦杩囷級**锛?
-| 鍛戒护 | 宓屽叆鐜妭 | 瑙﹀彂鏉′欢 | 鐢ㄩ€?|
+**命令执行顺序**：0 → 1 → 2 → 3 → 4 → 5，不可跳过。constitution 须在 specify 之前完成；每阶段产出必须通过 code-review 审计（§0）后方可进入下一阶段。
+
+**增强命令（须嵌入相应审计闭环迭代内执行，作为审计步骤的一部分，不得以「可选」为由跳过）**：
+
+| 命令 | 嵌入环节 | 触发条件 | 用途 |
 |------|----------|----------|------|
-| `/speckit.clarify` | **搂1.2 spec 瀹¤闂幆杩唬鍐?* | 搂1.2 瀹¤鎶ュ憡鎸囧嚭銆宻pec 瀛樺湪妯＄硦琛ㄨ堪銆?| 婢勬竻 鈫?鏇存柊 spec 鈫?鍐嶆 搂1.2 瀹¤ |
-| `/speckit.checklist` | **搂2.2 plan 瀹¤闂幆鍐?* | plan 娑夊強澶氭ā鍧楁垨澶嶆潅鏋舵瀯 | 浣滀负 搂2.2 瀹¤姝ラ鐨勪竴閮ㄥ垎锛涜嫢鍙戠幇闂鍒欒凯浠?plan 鈫?鍐嶆瀹¤ |
-| `/speckit.analyze` | **搂4.2 tasks 瀹¤闂幆鍐?* | tasks鈮?0 鎴栬法澶?artifact | 浣滀负 搂4.2 瀹¤姝ラ鐨勪竴閮ㄥ垎锛涜嫢鍙戠幇闂鍒欒凯浠?tasks 鈫?鍐嶆瀹¤ |
+| `/speckit.clarify` | **§1.2 spec 审计闭环迭代内** | §1.2 审计报告指出「spec 存在模糊表述」 | 澄清 → 更新 spec → 再次 §1.2 审计 |
+| `/speckit.checklist` | **§2.2 plan 审计闭环内** | plan 涉及多模块或复杂架构 | 作为 §2.2 审计步骤的一部分；若发现问题则迭代 plan → 再次审计 |
+| `/speckit.analyze` | **§4.2 tasks 审计闭环内** | tasks≥10 或跨多 artifact | 作为 §4.2 审计步骤的一部分；若发现问题则迭代 tasks → 再次审计 |
 
-**鍛戒护鏍煎紡璇存槑**锛?- `/speckit.xxx`锛欳ursor/Claude 鏂滄潬鍛戒护锛坈onstitution銆乻pecify銆乸lan銆乼asks銆乮mplement銆乧larify銆乤nalyze銆乧hecklist锛?- `.speckit.xxx`锛氱偣鍛戒护鎴栭」鐩唴 `.speckit.xxx` 鏂囦欢瑙﹀彂
-- **GAPS 鏃犵嫭绔嬪懡浠?*锛氭ā鍨嬪湪 plan 閫氳繃鍚庤嚜鍔ㄦ繁搴﹀垎鏋愮敓鎴愶紱鎴栫敤鎴疯姹傘€岀敓鎴?IMPLEMENTATION_GAPS銆嶆椂瑙﹀彂
+**命令格式说明**：
+- `/speckit.xxx`：Codex/Codex 斜杠命令（constitution、specify、plan、tasks、implement、clarify、analyze、checklist）
+- `.speckit.xxx`：点命令或项目内 `.speckit.xxx` 文件触发
+- **GAPS 无独立命令**：模型在 plan 通过后自动深度分析生成；或用户要求「生成 IMPLEMENTATION_GAPS」时触发
 
 ---
 
-## 9. 鍥哄畾妯℃澘涓庡弬鑰冩枃浠?
-| 鐢ㄩ€?| 鏂囦欢 |
+## 9. 固定模板与参考文件
+
+| 用途 | 文件 |
 |------|------|
-| **鎶€鑳戒緷璧?* | **code-review**锛堟垨 requesting-code-review锛夛細瀹¤闂幆蹇呴』鏄惧紡璋冪敤锛岃 搂0 |
-| 瀹¤鎻愮ず璇嶏紙鍙鍒讹級 | [references/audit-prompts.md](references/audit-prompts.md) |
-| 鏄犲皠琛ㄥ垪鍚嶄笌缁撴瀯 | [references/mapping-tables.md](references/mapping-tables.md) |
-| Tasks 楠屾敹涓庢墽琛屾ā鏉?| [references/tasks-acceptance-templates.md](references/tasks-acceptance-templates.md) |
-| Agent 鎵ц瑙勫垯锛堝畬鏁达級 | [references/qa-agent-rules.md](references/qa-agent-rules.md) |
-| **Tasks 鎵ц TDD 瑙勫垯锛堝畬鏁达級** | **[references/task-execution-tdd.md](references/task-execution-tdd.md)** |
-| 瀹炴柦鍚庡璁¤鍒欙紙strict锛?| [references/audit-post-impl-rules.md](references/audit-post-impl-rules.md) |
-| audit_convergence 閰嶇疆 | [references/audit-config-schema.md](references/audit-config-schema.md)锛涙牎楠岃剼鏈?`_bmad/speckit/scripts/powershell/validate-audit-config.ps1` |
-| **Speckit 鍛戒护绱㈠紩** | 瑙?搂8 |
+| **技能依赖** | **code-review**（或 requesting-code-review）：审计闭环必须显式调用，见 §0 |
+| 审计提示词（可复制） | [references/audit-prompts.md](references/audit-prompts.md) |
+| 映射表列名与结构 | [references/mapping-tables.md](references/mapping-tables.md) |
+| Tasks 验收与执行模板 | [references/tasks-acceptance-templates.md](references/tasks-acceptance-templates.md) |
+| Agent 执行规则（完整） | [references/qa-agent-rules.md](references/qa-agent-rules.md) |
+| **Tasks 执行 TDD 规则（完整）** | **[references/task-execution-tdd.md](references/task-execution-tdd.md)** |
+| 实施后审计规则（strict） | [references/audit-post-impl-rules.md](references/audit-post-impl-rules.md) |
+| audit_convergence 配置 | [references/audit-config-schema.md](references/audit-config-schema.md)；校验脚本 `_bmad/speckit/scripts/powershell/validate-audit-config.ps1` |
+| **Speckit 命令索引** | 见 §8 |

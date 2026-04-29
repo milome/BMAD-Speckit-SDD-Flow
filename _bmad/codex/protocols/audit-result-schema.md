@@ -1,133 +1,43 @@
-﻿# Audit Result Schema (Codex speckit format)
+# Audit Result Schema (Codex speckit format)
 
-缁撴瀯鍖栧璁℃姤鍛婃牸寮忥紝鎵€鏈?auditor 蹇呴』杈撳嚭绗﹀悎姝?schema 鐨勭粨鏋溿€?
+This protocol defines the structured audit report that Codex no-hooks workers and reviewers must produce. It is host-neutral and is consumed by BMAD-Speckit-SDD-Flow gates.
+
 ## Required Sections
 
-瀹¤鎶ュ憡蹇呴』鍖呭惈浠ヤ笅绔犺妭锛?
-### 搂1 閫愭潯瀵圭収楠岃瘉
+### 1. Requirement Traceability
 
-瀵圭収鍘熷闇€姹傛枃妗ｉ€愭潯楠岃瘉锛?
-```markdown
-## 搂1 閫愭潯瀵圭収楠岃瘉
+Map every original requirement, acceptance criterion, task, PRD reference, and architecture reference to concrete implementation or document evidence.
 
-### 1.1 Story 鏈?Story 鑼冨洿
+| Source | Requirement | Evidence | Result |
+| --- | --- | --- | --- |
+| Story | Example requirement | path/to/evidence | pass |
 
-| 鍘熷瑕佺偣 | 楠岃瘉鏂瑰紡 | spec 瀵瑰簲 | 楠岃瘉缁撴灉 |
-|----------|----------|-----------|----------|
-| 瑕佺偣1 | 瀵圭収 Story | FR-001 | 鉁?|
-| 瑕佺偣2 | 瀵圭収 AC-1 | FR-002 | 鉁?|
+### 2. Ambiguity Review
 
-### 1.2 Acceptance Criteria 閫愭潯
+Identify vague wording, undefined defaults, missing boundaries, and assumptions that could cause implementation drift.
 
-| AC | 瑕佺偣 | 楠岃瘉鏂瑰紡 | spec 瀵瑰簲 | 楠岃瘉缁撴灉 |
-|----|------|----------|-----------|----------|
-| AC-1 | ... | 閫愭潯瀵圭収 | FR-001 | 鉁?|
+| Location | Ambiguity | Risk | Required clarification |
+| --- | --- | --- | --- |
+| FR-001 | Example vague text | medium | Define exact behavior |
 
-### 1.3 Tasks 鏄犲皠
+### 3. Omission And Boundary Review
 
-| Task | 瑕佺偣 | 楠岃瘉鏂瑰紡 | spec 瀵瑰簲 | 楠岃瘉缁撴灉 |
-|------|------|----------|-----------|----------|
-| T1 | ... | 瀵圭収 Tasks | FR-001 | 鉁?|
+Check whether edge cases, error paths, security constraints, persistence behavior, and non-goals are explicitly handled.
 
-### 1.4 PRD 鐩稿叧绔犺妭
+### 4. Audit Conclusion
 
-| PRD 绔犺妭 | 瑕佺偣 | 楠岃瘉鏂瑰紡 | spec 瀵瑰簲 | 楠岃瘉缁撴灉 |
-|----------|------|----------|-----------|----------|
-| 搂5.2 | ... | 閫愭潯瀵圭収 | FR-001 | 鉁?|
+The conclusion must be one of: `pass`, `fail`, or `blocked`. A pass requires traceability, no unresolved critical ambiguity, and all required evidence paths present.
 
-### 1.5 ARCH 鐩稿叧绔犺妭
+## Machine-Readable Footer
 
-| ARCH 绔犺妭 | 瑕佺偣 | 楠岃瘉鏂瑰紡 | spec 瀵瑰簲 | 楠岃瘉缁撴灉 |
-|-----------|------|----------|-----------|----------|
-| 搂3.1 | ... | 閫愭潯瀵圭収 | FR-001 | 鉁?|
+Auditors should include a final JSON block when possible:
+
+```json
+{
+  "schemaVersion": "audit-result/v1",
+  "status": "pass",
+  "evidence": [],
+  "blockers": [],
+  "nextAction": "proceed"
+}
 ```
-
-### 搂2 妯＄硦琛ㄨ堪妫€鏌?
-璇嗗埆鏂囨。涓殑妯＄硦琛ㄨ堪锛?
-```markdown
-## 搂2 妯＄硦琛ㄨ堪妫€鏌?
-| 浣嶇疆 | 琛ㄨ堪 | 闂绫诲瀷 | 寤鸿婢勬竻 |
-|------|------|----------|----------|
-| FR-006 | 銆屽彲缂栬緫鎴栨帴鍙楅粯璁ゃ€?| 榛樿鍊兼湭瀹氫箟 | 榛樿鍊间负... |
-| FR-007 | 銆屾寚瀹?tag銆?| 杈撳叆鏂瑰紡鏈畾涔?| 鐢ㄦ埛鍙緭鍏?.. |
-
-**缁撹**锛歴pec 瀛樺湪 X 澶勬ā绯婅〃杩帮紝宸叉爣娉ㄤ綅缃€?```
-
-### 搂3 閬楁紡涓庤竟鐣屾鏌?
-妫€鏌ラ仐婕忛渶姹傚拰杈圭晫鏉′欢锛?
-```markdown
-## 搂3 閬楁紡涓庤竟鐣屾鏌?
-| 妫€鏌ラ」 | 楠岃瘉缁撴灉 |
-|--------|----------|
-| Story 闈炴湰 Story 鑼冨洿鏄惁琚敊璇撼鍏?| 鉁?鏈撼鍏?|
-| 鐩爣璺緞涓嶅彲鍐?| 鉁?Edge Cases 宸茶鐩?|
-| 妯℃澘鎷夊彇瓒呮椂 | 鉁?Edge Cases 宸茶鐩?|
-| 闈炵┖鐩綍鍒ゅ畾 | 鉁?FR-019 鏄庣‘瀹氫箟 |
-```
-
-### 搂4 缁撹
-
-鏄庣‘鐨勫璁＄粨璁猴細
-
-```markdown
-## 搂4 缁撹
-
-**瀹屽叏瑕嗙洊銆侀獙璇侀€氳繃銆?*
-
-spec-E{epic}-S{story}.md 宸茶鐩?Story {epic}-{story}銆丳RD銆丄RCH 涓笌鏈?Story 鐩稿叧鐨勫叏閮ㄨ鐐广€?
-**鎶ュ憡淇濆瓨璺緞**锛歴pecs/epic-{epic}-{slug}/story-{story}-{slug}/AUDIT_spec-E{epic}-S{story}.md
-**iteration_count**锛歿count}
-```
-
-### 鎵瑰垽瀹¤鍛樼粨璁?(搂4 瀛愯妭)
-
-璇︾粏鐨勫缁村害妫€鏌ワ細
-
-```markdown
-## 鎵瑰垽瀹¤鍛樼粨璁?
-**宸叉鏌ョ淮搴?*锛氶仐婕忛渶姹傜偣銆佽竟鐣屾湭瀹氫箟銆侀獙鏀朵笉鍙墽琛屻€佷笌鍓嶇疆鏂囨。鐭涚浘銆佹湳璇涔夈€佽竟鐣屾潯浠跺畬鏁存€с€侀渶姹傚彲杩芥函鎬с€佷笌 Story 鑼冨洿涓€鑷存€с€?
-**姣忕淮搴︾粨璁?*锛?
-- **閬楁紡闇€姹傜偣**锛氬凡閫愭潯瀵圭収 Story...鏃犻仐婕忋€?- **杈圭晫鏈畾涔?*锛?..杈圭晫鏉′欢宸茶鐩栥€?- **楠屾敹涓嶅彲鎵ц**锛?..楠屾敹鍙墽琛屻€?- **涓庡墠缃枃妗ｇ煕鐩?*锛?..鏃犵煕鐩俱€?- **鏈姝т箟**锛毬? 宸叉爣娉?X 澶勬ā绯婅〃杩般€?- **杈圭晫鏉′欢瀹屾暣鎬?*锛?..瀹屾暣銆?- **闇€姹傚彲杩芥函鎬?*锛?..鍙拷婧€ц壇濂姐€?- **涓?Story 鑼冨洿涓€鑷存€?*锛?..涓€鑷淬€?
-**鏈疆缁撹**锛氭湰杞棤鏂?gap銆俿pec 瀹屽叏瑕嗙洊鍘熷闇€姹傘€?```
-
-### 鍙В鏋愯瘎鍒嗗潡
-
-渚?parseAndWriteScore 瑙ｆ瀽锛?
-```markdown
-## 鍙В鏋愯瘎鍒嗗潡锛堜緵 parseAndWriteScore锛?
-鎬讳綋璇勭骇: A
-
-缁村害璇勫垎:
-- 闇€姹傚畬鏁存€? 95/100
-- 鍙祴璇曟€? 92/100
-- 涓€鑷存€? 90/100
-- 鍙拷婧€? 94/100
-```
-
-## Required Fields
-
-- `status`: `PASS` | `FAIL` 鈥?瀹¤缁撹
-- `summary`: string 鈥?瀹¤鎽樿
-- `findings`: array 鈥?鍙戠幇鐨勯棶棰樺垪琛?- `required_fixes`: array 鈥?蹇呴』淇鐨勯」鐩?- `reportPath`: string 鈥?瀹屾暣瀹¤鎶ュ憡璺緞
-- `score_trigger`: boolean 鈥?鏄惁瑙﹀彂璇勫垎鍐欏叆
-- `iteration_count`: number 鈥?褰撳墠杩唬杞
-
-## Example
-
-```yaml
-status: PASS
-summary: 瑙勮寖鏂囨。绗﹀悎瑕佹眰
-findings: []
-required_fixes: []
-reportPath: specs/epic-10-speckit-init-core/story-1-interactive-init/AUDIT_spec-E10-S1.md
-score_trigger: true
-iteration_count: 0
-```
-
-## Rules
-
-1. 涓嶅厑璁告ā绯婅〃杩帮紝缁撹蹇呴』鏄?PASS 鎴?FAIL
-2. FAIL 鏃跺繀椤诲垪鍑烘墍鏈?required_fixes
-3. PASS 鏃跺繀椤昏Е鍙戣瘎鍒嗗啓鍏?4. 蹇呴』鍖呭惈 搂1-搂4 瀹屾暣绔犺妭缁撴瀯
-5. 蹇呴』鍖呭惈鍙В鏋愯瘎鍒嗗潡
-6. 鎶ュ憡璺緞浣跨敤 Codex speckit 鏍煎紡锛歚specs/epic-{number}-{name}/story-{number}-{name}/AUDIT_{type}-E{epic}-S{story}.md`

@@ -3,14 +3,39 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  buildLayer1PrdCompletionMarker,
   markBmadHelpFiveLayerStageComplete,
   resolveBmadHelpFiveLayerProgressState,
   runBmadHelpFiveLayerMatrix,
+  validateLayer1PrdCompletionMarker,
+  writeLayer1PrdCompletionMarker,
 } from '../../scripts/main-agent-bmad-help-five-layer-matrix';
 import { resolveBmadHelpRuntimePolicy } from '../../scripts/bmad-help-routing-state';
 
-describe('bmad-help five-layer main-agent matrix', () => {
-  it('proves the bmad-help first-screen route can drive every canonical layer through the main-agent control plane', () => {
+describe('BMADS five-layer main-agent matrix', () => {
+  function writeLayer1Inputs(root: string): void {
+    fs.mkdirSync(path.join(root, '_bmad-output', 'planning-artifacts', 'dev'), {
+      recursive: true,
+    });
+    fs.mkdirSync(path.join(root, '_bmad-output', 'runtime', 'context'), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, '_bmad-output', 'planning-artifacts', 'dev', 'prd.md'),
+      '# PRD\n\nLayer 1 PRD evidence.\n',
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(root, '_bmad-output', 'planning-artifacts', 'product-brief-demo.md'),
+      '# Product Brief\n\nLayer 1 product brief evidence.\n',
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(root, '_bmad-output', 'runtime', 'context', 'project.json'),
+      '{"flow":"story","stage":"prd"}\n',
+      'utf8'
+    );
+  }
+
+  it('proves the BMADS runtime route can drive every canonical layer through the main-agent control plane', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-help-five-layer-'));
     try {
       fs.cpSync(path.resolve('_bmad'), path.join(root, '_bmad'), { recursive: true });
@@ -25,6 +50,8 @@ describe('bmad-help five-layer main-agent matrix', () => {
       expect(report.bmadHelpEntry.codexFirstClass).toBe(true);
       expect(report.bmadHelpEntry.fiveLayerCatalog).toBe(true);
       expect(report.bmadHelpEntry.docsExposeCodex).toBe(true);
+      expect(report.bmadHelpEntry.bmadsRuntimeContract).toBe(true);
+      expect(report.bmadHelpEntry.bmadHelpIsUpstreamOnly).toBe(true);
       expect(report.progressState.currentLayer).toBe('layer_1');
       expect(report.progressState.currentStage).toBe('prd');
       expect(report.progressState.nextRequiredLayer).toBe('layer_1');
@@ -50,6 +77,7 @@ describe('bmad-help five-layer main-agent matrix', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-help-five-layer-progress-'));
     try {
       fs.cpSync(path.resolve('_bmad'), path.join(root, '_bmad'), { recursive: true });
+      writeLayer1Inputs(root);
 
       for (const [layer, stages] of [
         ['layer_1', ['prd']],
@@ -76,6 +104,7 @@ describe('bmad-help five-layer main-agent matrix', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-help-five-layer-closeout-'));
     try {
       fs.cpSync(path.resolve('_bmad'), path.join(root, '_bmad'), { recursive: true });
+      writeLayer1Inputs(root);
 
       for (const [layer, stages] of [
         ['layer_1', ['prd']],
@@ -103,6 +132,7 @@ describe('bmad-help five-layer main-agent matrix', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-help-routing-five-layer-'));
     try {
       fs.cpSync(path.resolve('_bmad'), path.join(root, '_bmad'), { recursive: true });
+      writeLayer1Inputs(root);
       markBmadHelpFiveLayerStageComplete({ projectRoot: root, layer: 'layer_1', stage: 'prd' as any });
 
       const policy = resolveBmadHelpRuntimePolicy({
@@ -136,6 +166,7 @@ describe('bmad-help five-layer main-agent matrix', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-help-layer5-closeout-stages-'));
     try {
       fs.cpSync(path.resolve('_bmad'), path.join(root, '_bmad'), { recursive: true });
+      writeLayer1Inputs(root);
       for (const [layer, stages] of [
         ['layer_1', ['prd']],
         ['layer_2', ['arch']],
@@ -175,12 +206,12 @@ describe('bmad-help five-layer main-agent matrix', () => {
     }
   });
 
-  it('recognizes real artifact filenames without synthetic completion markers', () => {
+  it('requires a real layer_1 PRD completion marker instead of project.json fallback', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-help-real-artifacts-'));
     try {
       fs.cpSync(path.resolve('_bmad'), path.join(root, '_bmad'), { recursive: true });
-      fs.mkdirSync(path.join(root, '_bmad-output', 'runtime', 'context'), { recursive: true });
       fs.mkdirSync(path.join(root, '_bmad-output', 'runtime', 'gates'), { recursive: true });
+      fs.mkdirSync(path.join(root, '_bmad-output', 'runtime', 'context'), { recursive: true });
       fs.writeFileSync(
         path.join(root, '_bmad-output', 'runtime', 'context', 'project.json'),
         '{"flow":"story","stage":"prd"}\n',
@@ -188,6 +219,34 @@ describe('bmad-help five-layer main-agent matrix', () => {
       );
 
       let state = resolveBmadHelpFiveLayerProgressState({ projectRoot: root });
+      expect(state.currentLayer).toBe('layer_1');
+      expect(state.currentStage).toBe('prd');
+
+      writeLayer1Inputs(root);
+      const markerPath = markBmadHelpFiveLayerStageComplete({
+        projectRoot: root,
+        layer: 'layer_1',
+        stage: 'prd' as any,
+      });
+      const marker = JSON.parse(fs.readFileSync(markerPath, 'utf8'));
+      expect(validateLayer1PrdCompletionMarker({ projectRoot: root, markerPath })).toBe(true);
+      expect(marker.schemaVersion).toBe('layer_1_prd_completion/v1');
+      expect(marker.inputs.prds).toEqual(['_bmad-output/planning-artifacts/dev/prd.md']);
+      expect(marker.inputs.productBriefs).toEqual([
+        '_bmad-output/planning-artifacts/product-brief-demo.md',
+      ]);
+      expect(marker.inputs.runtimeContext).toBe('_bmad-output/runtime/context/project.json');
+      expect(marker.sources.branch).toBe('dev');
+      expect(marker.acceptance).toMatchObject({
+        prdPresent: true,
+        productBriefPresent: true,
+        contextPresent: true,
+        layer1Complete: true,
+      });
+      expect(marker.hashes['_bmad-output/planning-artifacts/dev/prd.md']).toMatch(/^[a-f0-9]{64}$/);
+      expect(marker.handoff).toMatchObject({ nextLayer: 'layer_2', nextStage: 'arch' });
+
+      state = resolveBmadHelpFiveLayerProgressState({ projectRoot: root });
       expect(state.currentLayer).toBe('layer_2');
       expect(state.currentStage).toBe('arch');
 
@@ -230,6 +289,90 @@ describe('bmad-help five-layer main-agent matrix', () => {
       );
       state = resolveBmadHelpFiveLayerProgressState({ projectRoot: root });
       expect(state.completedLayers).toContain('layer_5');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('fails layer_1 marker validation when PRD or product brief evidence is missing', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-help-layer1-marker-invalid-'));
+    try {
+      fs.cpSync(path.resolve('_bmad'), path.join(root, '_bmad'), { recursive: true });
+      fs.mkdirSync(path.join(root, '_bmad-output', 'runtime', 'context'), { recursive: true });
+      fs.writeFileSync(
+        path.join(root, '_bmad-output', 'runtime', 'context', 'project.json'),
+        '{"flow":"story","stage":"prd"}\n',
+        'utf8'
+      );
+
+      const marker = buildLayer1PrdCompletionMarker({
+        projectRoot: root,
+        generatedAt: '2026-04-29T00:00:00.000Z',
+      });
+      expect(marker.acceptance).toMatchObject({
+        prdPresent: false,
+        productBriefPresent: false,
+        contextPresent: true,
+        layer1Complete: false,
+      });
+
+      const markerPath = path.join(
+        root,
+        '_bmad-output',
+        'runtime',
+        'context',
+        'layer_1-prd.complete.json'
+      );
+      fs.writeFileSync(markerPath, `${JSON.stringify(marker, null, 2)}\n`, 'utf8');
+      expect(validateLayer1PrdCompletionMarker({ projectRoot: root, markerPath })).toBe(false);
+      expect(() => writeLayer1PrdCompletionMarker({ projectRoot: root })).toThrow(
+        /productBriefPresent=false/
+      );
+      const state = resolveBmadHelpFiveLayerProgressState({ projectRoot: root });
+      expect(state.currentLayer).toBe('layer_1');
+      expect(state.currentStage).toBe('prd');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('derives user-facing progress from upstream BMAD planning artifacts without treating them as strict markers', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-help-upstream-artifacts-'));
+    try {
+      fs.cpSync(path.resolve('_bmad'), path.join(root, '_bmad'), { recursive: true });
+      fs.mkdirSync(path.join(root, '_bmad-output', 'planning-artifacts'), { recursive: true });
+      fs.mkdirSync(path.join(root, '_bmad-output', 'runtime', 'context'), { recursive: true });
+      fs.writeFileSync(
+        path.join(root, '_bmad-output', 'runtime', 'context', 'project.json'),
+        '{"flow":"story","stage":"prd"}\n',
+        'utf8'
+      );
+      fs.writeFileSync(path.join(root, '_bmad-output', 'planning-artifacts', 'prd.md'), '# PRD\n', 'utf8');
+      fs.writeFileSync(
+        path.join(root, '_bmad-output', 'planning-artifacts', 'architecture.md'),
+        '# Architecture\n',
+        'utf8'
+      );
+      fs.writeFileSync(path.join(root, '_bmad-output', 'planning-artifacts', 'epics.md'), '# Epics\n', 'utf8');
+
+      const state = resolveBmadHelpFiveLayerProgressState({ projectRoot: root });
+
+      expect(state.currentLayer).toBe('layer_3');
+      expect(state.currentStage).toBe('story_create');
+      expect(state.completedLayers).toEqual(['layer_1', 'layer_2']);
+      expect(state.stageStatuses).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ layer: 'layer_1', stage: 'prd', evidenceKind: 'upstream_artifact' }),
+          expect.objectContaining({ layer: 'layer_2', stage: 'arch', evidenceKind: 'upstream_artifact' }),
+          expect.objectContaining({ layer: 'layer_3', stage: 'epics', evidenceKind: 'upstream_artifact' }),
+        ])
+      );
+      expect(
+        validateLayer1PrdCompletionMarker({
+          projectRoot: root,
+          markerPath: path.join(root, '_bmad-output', 'runtime', 'context', 'layer_1-prd.complete.json'),
+        })
+      ).toBe(false);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

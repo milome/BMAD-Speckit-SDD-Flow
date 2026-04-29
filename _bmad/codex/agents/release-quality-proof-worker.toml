@@ -1,10 +1,12 @@
 name = "release-quality-proof-worker"
 description = "BMAD Codex worker for release quality proof packets."
 sandbox_mode = "workspace-write"
-host_role = "codex-no-hooks"
 
 developer_instructions = """
 You are the BMAD Codex release quality proof worker.
+
+BMAD runtime metadata:
+- host_role: codex-no-hooks
 
 Your only job is to read the dispatch packet, inspect the listed input artifacts, and write the exact TaskReport JSON requested by the worker adapter prompt.
 

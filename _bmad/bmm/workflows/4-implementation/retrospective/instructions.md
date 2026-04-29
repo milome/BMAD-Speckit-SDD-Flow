@@ -1,10 +1,10 @@
-﻿# Retrospective - Epic Completion Review Instructions
+# Retrospective - Epic Completion Review Instructions
 
 <critical>The workflow execution engine is governed by: {project-root}/_bmad/core/tasks/workflow.xml</critical>
 <critical>You MUST have already loaded and processed: {project-root}/_bmad/bmm/workflows/4-implementation/retrospective/workflow.yaml</critical>
 <critical>Communicate all responses in {communication_language} and language MUST be tailored to {user_skill_level}</critical>
 <critical>Generate all documents in {document_output_language}</critical>
-<critical>鈿狅笍 ABSOLUTELY NO TIME ESTIMATES - NEVER mention hours, days, weeks, months, or ANY time-based predictions. AI has fundamentally changed development speed - what once took teams weeks/months can now be done by one person in hours. DO NOT give ANY time estimates whatsoever.</critical>
+<critical>⚠️ ABSOLUTELY NO TIME ESTIMATES - NEVER mention hours, days, weeks, months, or ANY time-based predictions. AI has fundamentally changed development speed - what once took teams weeks/months can now be done by one person in hours. DO NOT give ANY time estimates whatsoever.</critical>
 
 <critical>
   DOCUMENT OUTPUT: Retrospective analysis. Concise insights, lessons learned, action items. User skill level ({user_skill_level}) affects conversation style ONLY, not retrospective content.
@@ -284,7 +284,7 @@ Bob (Scrum Master): "I found our retrospectives from Epic {{prev_epic_num}}. Let
     **Action Item Follow-Through:**
     - For each action item from Epic {{prev_epic_num}} retro, check if it was completed
     - Look for evidence in current epic's story records
-    - Mark each action item: 鉁?Completed, 鈴?In Progress, 鉂?Not Addressed
+    - Mark each action item: ✅ Completed, ⏳ In Progress, ❌ Not Addressed
 
     **Lessons Applied:**
     - For each lesson from Epic {{prev_epic_num}}, check if team applied it in Epic {{epic_number}}
@@ -366,10 +366,10 @@ Alice (Product Owner): "Good thinking - helps us connect what we learned to what
 <action>Attempt to load next epic using selective loading strategy:</action>
 
 **Try sharded first (more specific):**
-<action>Check if file exists: {planning_artifacts}/{branch}/epics.md</action>
+<action>Check if file exists: {planning_artifacts}/{branch}/epics/epic-{{next_epic_num}}.md</action>
 
 <check if="sharded epic file found">
-  <action>Load {planning_artifacts}/{branch}/epics.md</action>
+  <action>Load {planning_artifacts}/{branch}/epics/epic-{{next_epic_num}}.md</action>
   <action>Set {{next_epic_source}} = "sharded"</action>
 </check>
 
@@ -451,8 +451,10 @@ Bob (Scrum Master): "No problem. We'll still do a thorough retro on Epic {{epic_
 <output>
 Bob (Scrum Master): "Alright team, everyone's here. Let me set the stage for our retrospective."
 
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?馃攧 TEAM RETROSPECTIVE - Epic {{epic_number}}: {{epic_title}}
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?
+═══════════════════════════════════════════════════════════
+🔄 TEAM RETROSPECTIVE - Epic {{epic_number}}: {{epic_title}}
+═══════════════════════════════════════════════════════════
+
 Bob (Scrum Master): "Here's what we accomplished together."
 
 **EPIC {{epic_number}} SUMMARY:**
@@ -484,8 +486,10 @@ Charlie (Senior Dev): "I'm more interested in that technical debt number - {{deb
 Dana (QA Engineer): "{{incident_count}} production incidents - {{#if incident_count == 0}}clean epic!{{else}}we should talk about those{{/if}}."
 
 {{#if next_epic_exists}}
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?**NEXT EPIC PREVIEW:** Epic {{next_epic_num}}: {{next_epic_title}}
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?
+═══════════════════════════════════════════════════════════
+**NEXT EPIC PREVIEW:** Epic {{next_epic_num}}: {{next_epic_title}}
+═══════════════════════════════════════════════════════════
+
 Dependencies on Epic {{epic_number}}:
 {{list_dependencies}}
 
@@ -502,7 +506,8 @@ Elena (Junior Dev): "Wow, that's a lot of dependencies on our work."
 Charlie (Senior Dev): "Which means we better make sure Epic {{epic_number}} is actually solid before moving on."
 {{/if}}
 
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?
+═══════════════════════════════════════════════════════════
+
 Bob (Scrum Master): "Team assembled for this retrospective:"
 
 {{list_participating_agents}}
@@ -825,8 +830,10 @@ Bob (Scrum Master): "I want specific, achievable actions with clear owners. Not 
 <output>
 Bob (Scrum Master): "Based on our discussion, here are the action items I'm proposing..."
 
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?馃摑 EPIC {{epic_number}} ACTION ITEMS:
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?
+═══════════════════════════════════════════════════════════
+📝 EPIC {{epic_number}} ACTION ITEMS:
+═══════════════════════════════════════════════════════════
+
 **Process Improvements:**
 
 1. {{action_item_1}}
@@ -888,8 +895,10 @@ Bob (Scrum Master): "These agreements are how we're committing to work different
 
 Elena (Junior Dev): "I like agreement 2 - that would've saved me on Story {{difficult_story_num}}."
 
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?馃殌 EPIC {{next_epic_num}} PREPARATION TASKS:
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?
+═══════════════════════════════════════════════════════════
+🚀 EPIC {{next_epic_num}} PREPARATION TASKS:
+═══════════════════════════════════════════════════════════
+
 **Technical Setup:**
 [ ] {{setup_task_1}}
 Owner: {{owner_1}}
@@ -911,8 +920,10 @@ Estimated: {{est_4}}
 
 **Total Estimated Effort:** {{total_hours}} hours ({{total_days}} days)
 
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?鈿狅笍 CRITICAL PATH:
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?
+═══════════════════════════════════════════════════════════
+⚠️ CRITICAL PATH:
+═══════════════════════════════════════════════════════════
+
 **Blockers to Resolve Before Epic {{next_epic_num}}:**
 
 1. {{critical_item_1}}
@@ -942,8 +953,10 @@ Estimated: {{est_4}}
 <check if="significant discoveries detected">
   <output>
 
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?馃毃 SIGNIFICANT DISCOVERY ALERT 馃毃
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?
+═══════════════════════════════════════════════════════════
+🚨 SIGNIFICANT DISCOVERY ALERT 🚨
+═══════════════════════════════════════════════════════════
+
 Bob (Scrum Master): "{user_name}, we need to flag something important."
 
 Bob (Scrum Master): "During Epic {{epic_number}}, the team uncovered findings that may require updating the plan for Epic {{next_epic_num}}."
@@ -1183,19 +1196,19 @@ Bob (Scrum Master): "Okay {user_name}, let me synthesize what we just uncovered.
 **EPIC {{epic_number}} READINESS ASSESSMENT:**
 
 Testing & Quality: {{quality_status}}
-{{#if quality_concerns}}鈿狅笍 Action needed: {{quality_action_needed}}{{/if}}
+{{#if quality_concerns}}⚠️ Action needed: {{quality_action_needed}}{{/if}}
 
 Deployment: {{deployment_status}}
-{{#if deployment_pending}}鈿狅笍 Scheduled for: {{deployment_date}}{{/if}}
+{{#if deployment_pending}}⚠️ Scheduled for: {{deployment_date}}{{/if}}
 
 Stakeholder Acceptance: {{acceptance_status}}
-{{#if acceptance_incomplete}}鈿狅笍 Action needed: {{acceptance_action_needed}}{{/if}}
+{{#if acceptance_incomplete}}⚠️ Action needed: {{acceptance_action_needed}}{{/if}}
 
 Technical Health: {{stability_status}}
-{{#if stability_concerns}}鈿狅笍 Action needed: {{stability_action_needed}}{{/if}}
+{{#if stability_concerns}}⚠️ Action needed: {{stability_action_needed}}{{/if}}
 
 Unresolved Blockers: {{blocker_status}}
-{{#if blockers_exist}}鈿狅笍 Must resolve: {{blocker_list}}{{/if}}
+{{#if blockers_exist}}⚠️ Must resolve: {{blocker_list}}{{/if}}
 
 Bob (Scrum Master): "{user_name}, does this assessment match your understanding?"
 </output>
@@ -1217,8 +1230,10 @@ Charlie (Senior Dev): "Better to catch this now than three stories into the next
 <output>
 Bob (Scrum Master): "We've covered a lot of ground today. Let me bring this retrospective to a close."
 
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?鉁?RETROSPECTIVE COMPLETE
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?
+═══════════════════════════════════════════════════════════
+✅ RETROSPECTIVE COMPLETE
+═══════════════════════════════════════════════════════════
+
 Bob (Scrum Master): "Epic {{epic_number}}: {{epic_title}} - REVIEWED"
 
 **Key Takeaways:**
@@ -1242,8 +1257,10 @@ Dana (QA Engineer): "That's a lot of commitments. We need to actually follow thr
 
 Bob (Scrum Master): "Agreed. Which is why we'll review these action items in our next standup."
 
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?馃幆 NEXT STEPS:
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?
+═══════════════════════════════════════════════════════════
+🎯 NEXT STEPS:
+═══════════════════════════════════════════════════════════
+
 1. Execute Preparation Sprint (Est: {{prep_days}} days)
 2. Complete Critical Path items before Epic {{next_epic_num}}
 3. Review action items in next standup
@@ -1253,7 +1270,8 @@ Elena (Junior Dev): "{{prep_days}} days of prep work is significant, but necessa
 
 Alice (Product Owner): "I'll communicate the timeline to stakeholders. They'll understand if we frame it as 'ensuring Epic {{next_epic_num}} success.'"
 
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?
+═══════════════════════════════════════════════════════════
+
 Bob (Scrum Master): "Before we wrap, I want to take a moment to acknowledge the team."
 
 Bob (Scrum Master): "Epic {{epic_number}} delivered {{completed_stories}} stories with {{velocity_description}} velocity. We overcame {{blocker_count}} blockers. We learned a lot. That's real work by real people."
@@ -1276,7 +1294,8 @@ Bob (Scrum Master): "Alright team - great work today. We learned a lot from Epic
 
 Bob (Scrum Master): "See you all when prep work is done. Meeting adjourned!"
 
-鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺?</output>
+═══════════════════════════════════════════════════════════
+</output>
 
 <action>Prepare to save retrospective summary document</action>
 
@@ -1308,7 +1327,7 @@ Bob (Scrum Master): "See you all when prep work is done. Meeting adjourned!"
 <action>Save retrospective document</action>
 
 <output>
-鉁?Retrospective document saved: {implementation_artifacts}/epic-{{epic_number}}-retro-{date}.md
+✅ Retrospective document saved: {implementation_artifacts}/epic-{{epic_number}}-retro-{date}.md
 </output>
 
 <action>Update {sprint_status_file} to mark retrospective as completed</action>
@@ -1321,16 +1340,16 @@ Bob (Scrum Master): "See you all when prep work is done. Meeting adjourned!"
 
 <check if="update successful">
   <output>
-鉁?Retrospective marked as completed in {sprint_status_file}
+✅ Retrospective marked as completed in {sprint_status_file}
 
 Retrospective key: epic-{{epic_number}}-retrospective
-Status: {{previous_status}} 鈫?done
+Status: {{previous_status}} → done
 </output>
 </check>
 
 <check if="retrospective key not found">
   <output>
-鈿狅笍 Could not update retrospective status: epic-{{epic_number}}-retrospective not found in {sprint_status_file}
+⚠️ Could not update retrospective status: epic-{{epic_number}}-retrospective not found in {sprint_status_file}
 
 Retrospective document was saved successfully, but {sprint_status_file} may need manual update.
 </output>
@@ -1341,7 +1360,7 @@ Retrospective document was saved successfully, but {sprint_status_file} may need
 <step n="12" goal="Final Summary and Handoff">
 
 <output>
-**鉁?Retrospective Complete, {user_name}!**
+**✅ Retrospective Complete, {user_name}!**
 
 **Epic Review:**
 
@@ -1387,7 +1406,7 @@ Retrospective document was saved successfully, but {sprint_status_file} may need
 Epic {{epic_number}} delivered {{completed_stories}} stories with {{velocity_summary}}. The retrospective surfaced {{insight_count}} key insights and {{significant_discovery_count}} significant discoveries. The team is well-positioned for Epic {{next_epic_num}} success.
 
 {{#if significant_discovery_count > 0}}
-鈿狅笍 **REMINDER**: Epic update required before starting Epic {{next_epic_num}}
+⚠️ **REMINDER**: Epic update required before starting Epic {{next_epic_num}}
 {{/if}}
 
 ---
@@ -1423,5 +1442,3 @@ Charlie (Senior Dev): "Time to knock out that prep work."
 <guideline>Document everything - retrospective insights are valuable for future reference</guideline>
 <guideline>Two-part structure ensures both reflection AND preparation</guideline>
 </facilitation-guidelines>
-
-

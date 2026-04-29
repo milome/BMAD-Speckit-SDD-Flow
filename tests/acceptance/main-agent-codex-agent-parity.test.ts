@@ -1,4 +1,4 @@
-﻿import { execSync } from 'node:child_process';
+import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -42,6 +42,10 @@ describe('Codex agent parity with Claude branch', () => {
       const content = fs.readFileSync(path.join(codexRoot, agent), 'utf8');
       expect(content).toContain('developer_instructions = """');
       expect(content).toContain('Source behavior contract:');
+      expect(content).toContain('BMAD runtime metadata:');
+      expect(content).not.toMatch(/^source_behavior_contract\s*=/mu);
+      expect(content).not.toMatch(/^host_role\s*=/mu);
+      expect(content).not.toMatch(/^alias_for_dispatch_role\s*=/mu);
       expect(content).not.toContain('Source Claude agent:');
       expect(content).not.toContain('.claude/');
     }
@@ -70,7 +74,11 @@ describe('Codex agent parity with Claude branch', () => {
       const nestedAgent = path.join(target, '.codex', 'agents', 'layers', 'bmad-layer4-speckit-implement.toml');
       expect(fs.existsSync(runtimeAgent)).toBe(true);
       expect(fs.existsSync(nestedAgent)).toBe(true);
-      expect(fs.readFileSync(runtimeAgent, 'utf8')).toContain('name = "implementation-worker"');
+      const runtimeAgentContent = fs.readFileSync(runtimeAgent, 'utf8');
+      expect(runtimeAgentContent).toContain('name = "implementation-worker"');
+      expect(runtimeAgentContent).not.toMatch(/^source_behavior_contract\s*=/mu);
+      expect(runtimeAgentContent).not.toMatch(/^host_role\s*=/mu);
+      expect(runtimeAgentContent).not.toMatch(/^alias_for_dispatch_role\s*=/mu);
 
       const readme = fs.readFileSync(path.join(target, '.codex', 'README.md'), 'utf8');
       expect(readme).toContain('Custom Codex agents');

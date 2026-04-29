@@ -6,4 +6,4 @@ disable-model-invocation: true
 
 IT IS CRITICAL THAT YOU FOLLOW THIS COMMAND: LOAD the FULL @{project-root}/_bmad/bmm/workflows/3-solutioning/create-epics-and-stories/workflow.md, READ its entire contents and follow its directions exactly!
 
-**Output path rule (MANDATORY):** Output is ALWAYS `_bmad-output/planning-artifacts/{branch}/epics.md`. Never create `epics.{suffix}.md` (e.g. epics.eval-ux-last-mile.md) even if input PRD is prd.{suffix}.md 鈥?downstream tools read only epics.md.
+**Output path rule (MANDATORY):** Output is ALWAYS `_bmad-output/planning-artifacts/{branch}/epics.md`. Never create `epics.{suffix}.md` (e.g. epics.eval-ux-last-mile.md) even if input PRD is prd.{suffix}.md — downstream tools read only epics.md.

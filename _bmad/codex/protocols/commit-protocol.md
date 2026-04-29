@@ -1,32 +1,33 @@
-﻿# Commit Protocol
+# Commit Protocol
 
-鎻愪氦璇锋眰涓庨棬鎺у崗璁€?
+This protocol defines how BMAD-Speckit-SDD-Flow agents request a commit after governed work. Worker agents must not commit directly unless the user explicitly asks for it in the current session.
+
 ## Rules
 
-1. **鎵ц Agent 绂佹鐩存帴 `git commit`**
-2. 鍙兘鍙?`commit_request` 鍒?bmad-master
-3. 鍙湁 bmad-master 鍙牴鎹?audit_status 鏀捐鎻愪氦
+1. Worker agents produce a TaskReport and evidence bundle.
+2. The main agent or human maintainer reviews audit status and gate results.
+3. A commit is allowed only when required audits and gates are pass or explicitly marked as not applicable with evidence.
+4. Failed, blocked, or missing audit evidence denies the commit.
 
 ## Commit Request Format
 
 ```yaml
 request_type: commit_request
 stage: implement
-audit_status: pending | pass | fail
+audit_status: pending | pass | fail | blocked
 artifact_paths:
-  - src/...
-  - tests/...
+  - src/example.ts
+  - tests/example.test.ts
+gate_reports:
+  - _bmad-output/runtime/gates/example.json
 ```
 
 ## Gate Logic
 
-- `audit_status=fail` 鈫?**DENY**
-- `audit_status=pass` + `bmad-master` 纭 鈫?**ALLOW**
-- 鏈粡瀹¤鐩存帴 commit 鈫?**BLOCKED**
+- `audit_status=fail` or `blocked`: deny.
+- Missing TaskReport or missing required gate report: deny.
+- `audit_status=pass` plus required gate pass: allow maintainer-controlled commit.
 
-## Only bmad-master can approve commit
+## Authority
 
-bmad-master 鏍规嵁浠ヤ笅鐘舵€佸喅瀹氾細
-- `.codex/state/bmad-progress.yaml` 涓殑 `audit_status`
-- 鏈€杩戜竴娆″璁℃姤鍛婄殑缁撹
-- 褰撳墠 stage 鏄惁鍏佽鎻愪氦
+The main agent coordinates commit readiness, but the user retains final authority over local git operations unless they explicitly delegate commit execution.

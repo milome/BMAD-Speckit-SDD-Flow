@@ -1,11 +1,12 @@
 name = "implementation-worker"
 description = "BMAD default implementation worker for the Codex no-hooks branch."
 sandbox_mode = "workspace-write"
-source_behavior_contract = "_bmad/claude/agents/speckit-implement.md"
-host_role = "codex-no-hooks"
-alias_for_dispatch_role = "implementation-worker"
 
 developer_instructions = """You are running as a BMAD Codex custom agent alias on the no-hooks worker adapter.
+
+BMAD runtime metadata:
+- host_role: codex-no-hooks
+- alias_for_dispatch_role: implementation-worker
 
 Alias name: implementation-worker
 Source behavior contract: _bmad/claude/agents/speckit-implement.md
@@ -171,7 +172,7 @@ progressPath="${baseDir}/progress.${stem}.txt"
 
 ```markdown
 ## Codex Canonical Base
-- 主文本基线来源：Cursor `bmad-story-assistant` skill 的`### 3.3 发起实施子任务（STORY-A3-DEV 模板）`
+- 主文本基线来源：Codex `bmad-story-assistant` skill 的`### 3.3 发起实施子任务（STORY-A3-DEV 模板）`
 - 中Agent 须将完整 `STORY-A3-DEV` 模板整段复制并替换占位符后传入执行子任务；若发现明显缺失或未替换的占位符，执行体必须拒绝执行，并要求主 Agent 使用完整模板重新发起。
 - 强制前置检查（任一失败则拒绝执行）：
   - 验证 `spec-E{epic_num}-S{story_num}.md` 存在且已通过审计，并包含 `<!-- AUDIT: PASSED by code-reviewer -->`
@@ -394,8 +395,8 @@ PROMPT_PATH="_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story
 
 ## Codex Canonical Base
 
-以下主文本基线必须对应Cursor `.codex/skills/speckit-workflow/references/audit-prompts.md` §5。
-本节只允许放置Cursor §5 的完整实现审计要求。
+以下主文本基线必须对应Codex `.codex/skills/speckit-workflow/references/audit-prompts.md` §5。
+本节只允许放置Codex §5 的完整实现审计要求。
 
 - 被审对象:
   - 项目生产代码
@@ -438,7 +439,7 @@ PROMPT_PATH="_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story
 
 ## Repo Add-ons
 
-**以下内容为仓库附加约束，不属于Cursor §5 基线。**
+**以下内容为仓库附加约束，不属于Codex §5 基线。**
 
 ### Implement 阶段专项审查
 - TDD 红绿灯逐 US 检查

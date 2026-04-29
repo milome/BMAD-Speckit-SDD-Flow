@@ -1,9 +1,8 @@
-# BMAD Layer 鈫?闃舵锛堣〃 A锛夈€侀樁娈?鈫?璇勫垎鐜妭锛堣〃 B锛夈€佽Е鍙戞ā寮忚〃
-# Architecture 搂3銆伮?銆伮?0.3锛汼tory 3.1 浜у嚭
+# BMAD layer to stage mapping, scoring phase mapping, and trigger modes.
+# Keep this file ASCII-safe: do not write it through PowerShell text pipelines.
 
 version: "1.0"
 
-# 琛?A锛欱MAD Layer 鈫?闃舵
 layer_to_stages:
   layer_1:
     name: Product Definition Layer
@@ -15,14 +14,13 @@ layer_to_stages:
     name: Epic/Story Planning Layer
     stages: [epics, story]
   layer_4:
-    name: 鎶€鏈疄鐜板眰
+    name: Technical Implementation Layer
     stages: [specify, plan, gaps, tasks, implement]
   layer_5:
     name: Closeout Layer
     stages: [post_impl, pr_review, release_gate, delivery_truth_gate]
     closeout_stages: [post_audit, pr_review, release_gate, delivery_truth_gate]
 
-# 琛?B锛氶樁娈?鈫?璇勫垎鐜妭锛?鈥?锛?stage_to_phase:
 stage_to_phase:
   prd: [1]
   arch: [1, 2]
@@ -41,21 +39,22 @@ stage_to_phase:
 trigger_modes:
   - event: stage_audit_complete
     trigger: auto
-    scope: 璇?stage 瀵瑰簲鐜妭
+    scope: matching stage scoring phases
   - event: story_status_change
     trigger: auto
     configurable: true
-    scope: 鐜妭 1鈥?
+    scope: phases 1-6
   - event: mr_created
     trigger: auto
     configurable: true
-    scope: 鐜妭 2鈥?
+    scope: phases 2-6
   - event: epic_pending_acceptance
     trigger: manual_or_auto
-    scope: 鐜妭 6銆丒pic 缁煎悎
+    scope: phase 6 and epic synthesis
   - event: user_explicit_request
     trigger: manual
-    scope: 鍏ㄧ幆鑺?
+    scope: all phases
+
 runtime_flow_stage_to_trigger_stage:
   story:
     specify: speckit_1_2

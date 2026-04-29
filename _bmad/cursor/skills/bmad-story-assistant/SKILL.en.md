@@ -1,9 +1,9 @@
-﻿<!-- BLOCK_LABEL_POLICY=B -->
+<!-- BLOCK_LABEL_POLICY=B -->
 
 ---
 name: bmad-story-assistant
 description: |
-  BMAD Story Assistant: Execute the complete Create Story 鈫?Audit 鈫?Dev Story 鈫?Post-Implementation Audit workflow by Epic/Story number.
+  BMAD Story Assistant: Execute the complete Create Story → Audit → Dev Story → Post-Implementation Audit workflow by Epic/Story number.
   Phase zero: Automatically detect and patch party-mode display name optimization in new projects/worktree (if _bmad exists and is not optimized).
   Use subagent to perform tasks; the audit step prioritizes scheduling code-reviewer (.claude/agents/ or .cursor/agents/) through Cursor Task, and falls back to mcp_task generalPurpose if it fails.
   Follow ralph-method, TDD traffic lights, speckit-workflow constraints. The main agent is prohibited from directly modifying the production code.
@@ -13,7 +13,6 @@ description: |
 
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
 > Closeout terminology: in this document, a stage is considered complete only when `runAuditorHost` returns `closeout approved`. An audit report `PASS` only means the host close-out may start; `PASS` alone must not be treated as completion, admission, or release.
-> **不中断执行 contract**：If the audit conclusion is **failed**, keep the implementation subagent running until the post-audit boundary; do not stop at a single task, milestone, or progress checkpoint.
 
 # BMAD Story Assistant
 
@@ -38,22 +37,22 @@ npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan
 ### Cursor Party-Mode Main-Agent Flow
 
 - Before entering Cursor party-mode, the main Agent must show the `20 / 50 / 100` options and infer the default tier from the request type.
-- Recommend `decision_root_cause_50` for ordinary RCA / option analysis and `final_solution_task_list_100` for high-confidence final outputs such as Story finalization. Recommendation is not authorization: before the user explicitly replies, the main Agent must not turn a recommended tier into 鈥渟elected鈥?
+- Recommend `decision_root_cause_50` for ordinary RCA / option analysis and `final_solution_task_list_100` for high-confidence final outputs such as Story finalization. Recommendation is not authorization: before the user explicitly replies, the main Agent must not turn a recommended tier into “selected”.
 - `quick_probe_20` is probe-only; if the chosen tier cannot satisfy a high-confidence final-output request, the main Agent must reject it and require an upgrade to `final_solution_task_list_100`.
-- After the user chooses the tier, the main Agent must complete the pre-launch self-check checklist and print a `銆愯嚜妫€瀹屾垚銆?..鍙互鍙戣捣銆俙 result block.
+- After the user chooses the tier, the main Agent must complete the pre-launch self-check checklist and print a `【自检完成】...可以发起。` result block.
 - Session Bootstrap JSON is injected by the host on `SubagentStart`; the main Agent must not skip that execution path.
 - The Cursor branch does not pause mid-run and does not hand control back to the main Agent at `20 / 40 / ...`. Once launched, the sub-agent must keep running in the same session until the user-selected total rounds are completed.
-- If the party-mode sub-agent stops early at rounds such as `22/50` or `10/50`, the main Agent must **not** continue the discussion itself and must **not** restart from Round 1. Cursor now supports the `subagentStop` hook, and the host will automatically trigger party-mode closeout / summary refresh on `subagentStop`; however, after the sub-agent returns, it must still **first read** `_bmad-output/party-mode/runtime/current-session.json` and use that file as the only validation entrypoint. **Do not** guess the latest `pm-*` session by file timestamp. The check order is fixed: 鈶?`validation_status`, `status`, `session_key`, and `target_rounds_total`; 鈶?**read `visible_output_summary` and `visible_fragment_record_present` first**, and inspect `observed_visible_round_count`, `first_visible_round`, `last_visible_round`, `progress_current_round`, `progress_target_round`, `final_gate_present`, `final_gate_profile`, `final_gate_total_rounds`, and `excerpt`; 鈶?**only when deeper investigation is needed** read `session_log_path`, `snapshot_path`, `audit_verdict_path`, and `visible_output_capture_path`. **Do not** open the session log or `tool-result.md` before checking `visible_output_summary`. If `validation_status != PASS` or the selected total rounds were not reached, re-issue the facilitator immediately with the same total rounds and gate profile.
+- If the party-mode sub-agent stops early at rounds such as `22/50` or `10/50`, the main Agent must **not** continue the discussion itself and must **not** restart from Round 1. Cursor now supports the `subagentStop` hook, and the host will automatically trigger party-mode closeout / summary refresh on `subagentStop`; however, after the sub-agent returns, it must still **first read** `_bmad-output/party-mode/runtime/current-session.json` and use that file as the only validation entrypoint. **Do not** guess the latest `pm-*` session by file timestamp. The check order is fixed: ① `validation_status`, `status`, `session_key`, and `target_rounds_total`; ② **read `visible_output_summary` and `visible_fragment_record_present` first**, and inspect `observed_visible_round_count`, `first_visible_round`, `last_visible_round`, `progress_current_round`, `progress_target_round`, `final_gate_present`, `final_gate_profile`, `final_gate_total_rounds`, and `excerpt`; ③ **only when deeper investigation is needed** read `session_log_path`, `snapshot_path`, `audit_verdict_path`, and `visible_output_capture_path`. **Do not** open the session log or `tool-result.md` before checking `visible_output_summary`. If `validation_status != PASS` or the selected total rounds were not reached, re-issue the facilitator immediately with the same total rounds and gate profile.
 
 ## Quick Decision Guide
 
 ### Five-layer architecture overview
 ```
-Layer 1: 浜у搧瀹氫箟灞?(Product Brief 鈫?澶嶆潅搴﹁瘎浼?鈫?PRD 鈫?Architecture)
-Layer 2: Epic/Story瑙勫垝灞?(create-epics-and-stories)
-Layer 3: Story寮€鍙戝眰 (Create Story 鈫?Party-Mode 鈫?Story鏂囨。)
-Layer 4: 鎶€鏈疄鐜板眰 (宓屽speckit-workflow: specify鈫抪lan鈫扜APS鈫抰asks鈫扵DD)
-Layer 5: 鏀跺熬灞?(鎵归噺Push + PR鑷姩鐢熸垚 + 寮哄埗浜哄伐瀹℃牳 + 鍙戝竷)
+Layer 1: 产品定义层 (Product Brief → 复杂度评估 → PRD → Architecture)
+Layer 2: Epic/Story规划层 (create-epics-and-stories)
+Layer 3: Story开发层 (Create Story → Party-Mode → Story文档)
+Layer 4: 技术实现层 (嵌套speckit-workflow: specify→plan→GAPS→tasks→TDD)
+Layer 5: 收尾层 (批量Push + PR自动生成 + 强制人工审核 + 发布)
 ```
 ### When to use this skill
 - The complete product development process needs to start from Product Brief
@@ -82,13 +81,13 @@ This distributed English variant must keep the same Deferred Gaps guardrails as 
 
 ---
 
-This skill defines the complete workflow of **Create Story 鈫?Audit 鈫?Dev Story 鈫?Post-Implementation Audit**. The Epic number and Story number are provided by the user or context as input parameters to the skill.
+This skill defines the complete workflow of **Create Story → Audit → Dev Story → Post-Implementation Audit**. The Epic number and Story number are provided by the user or context as input parameters to the skill.
 
 ## Mandatory constraints
 
 - **The main Agent is prohibited from directly generating Story documents**: The Story document produced by Create Story in Phase 1 must be produced by the mcp_task sub-agent; the main Agent is not allowed to skip the sub-agent and write the Story document on its own on the grounds of "existing requirements document" or "Epic has been clarified".
 - **Master Agent is prohibited from directly modifying production code**: Implementation must be performed through the mcp_task subagent.
-- **It is forbidden to skip party-mode** because Epic/Story already exists: Only when the user **clearly** states that "Story has passed party-mode and passed the audit, skip Create Story" or meets the exception scenario, stages 1 and 2 can be skipped; otherwise, even if the Epic/Story document already exists (maybe generated by a simple bmad command without in-depth discussion of party-mode), Create Story must be executed. Any Story involving code implementation must enter party-mode for at least 100 rounds of debate (for exceptions, see Phase 1 搂1.0).
+- **It is forbidden to skip party-mode** because Epic/Story already exists: Only when the user **clearly** states that "Story has passed party-mode and passed the audit, skip Create Story" or meets the exception scenario, stages 1 and 2 can be skipped; otherwise, even if the Epic/Story document already exists (maybe generated by a simple bmad command without in-depth discussion of party-mode), Create Story must be executed. Any Story involving code implementation must enter party-mode for at least 100 rounds of debate (for exceptions, see Phase 1 §1.0).
 
 ---
 
@@ -99,11 +98,11 @@ This skill defines the complete workflow of **Create Story 鈫?Audit 鈫?Dev Sto
 | `epic_num` | Epic number | 4 |
 | `story_num` | Story sub-number (e.g. 1 means Story 4.1) | 1 |
 
-The complete identification of Story is `{epic_num}-{story_num}`, for example, Epic 4, Story 4.1 鈫?`4-1`. Users can give it directly (such as "4, 1"), or parse it from documents such as sprint-status.
+The complete identification of Story is `{epic_num}-{story_num}`, for example, Epic 4, Story 4.1 → `4-1`. Users can give it directly (such as "4, 1"), or parse it from documents such as sprint-status.
 
 ---
 
-## 搂 Prohibited word list (Story document)
+## § Prohibited word list (Story document)
 
 The following words must not appear in the output of Story documents. This table must be referenced in Phase 1 output and Phase 2 audits; if any word exists in the Story document during the audit, the conclusion is that it failed.
 
@@ -123,7 +122,7 @@ The following words must not appear in the output of Story documents. This table
 
 **Error Example**:
 > This Story will first implement the use_adaptive_threshold=0 path, or expand it later. (Prohibited words: first implementation, or subsequent expansion)
-> This Story implements 0 paths; Story 5.6 takes care of the rest. (鈥淭he rest鈥?is too vague for auditors to verify)
+> This Story implements 0 paths; Story 5.6 takes care of the rest. (“The rest” is too vague for auditors to verify)
 
 **Instructions for use**: The output requirements of Stage 1 Create Story must quote this table or post a simplified version of the above table; the Stage 2 Story document audit must write "If any word in this table exists in the Story document, the conclusion is that it has failed." The post-implementation audit of Stage 4 must write "If the acceptance/audit conclusion appears with the forbidden words "failure exclusion" in the table above and there is no corresponding formal exclusion record, the conclusion is failure."
 
@@ -140,9 +139,9 @@ The following words must not appear in the output of Story documents. This table
 
 ---
 
-## 搂 When can party-mode and code-review compensation rules be skipped?
+## § When can party-mode and code-review compensation rules be skipped?
 
-**Note**: This section describes the compensation mechanism after skipping party-mode. The judgment of whether it can be skipped shall be based on "Phase 1 搂1.0 Party-Mode Decision Check".
+**Note**: This section describes the compensation mechanism after skipping party-mode. The judgment of whether it can be skipped shall be based on "Phase 1 §1.0 Party-Mode Decision Check".
 
 ### When to skip party-mode (Create Story)
 
@@ -178,7 +177,7 @@ Main Agent execution sequence:
 1. Initiate the Create Story subtask (epic_num=4, story_num=1)
 2. After outputting `_bmad-output/implementation-artifacts/epic-4-*/story-1-<slug>/4-1-<slug>.md`, initiate Story document audit
 3. After passing the audit, initiate the Dev Story implementation subtask and pass in the TASKS or BUGFIX document path
-4. After the implementation is completed, you **must** initiate a post-implementation audit (audit-prompts.md 搂5) (this step is required, not optional)
+4. After the implementation is completed, you **must** initiate a post-implementation audit (audit-prompts.md §5) (this step is required, not optional)
 5. The process ends when the audit is passed
 
 ### Example 2: Create Story + Audit only (Epic 3, Story 2)
@@ -233,7 +232,7 @@ Path: `{project-root}/_bmad/core/skills/bmad-party-mode/workflow.md`
 ```yaml
 old_string: "[Load agent roster and display 2-3 most diverse agents as examples]"
 new_string: |
-  [Load agent roster and display 2-3 most diverse agents as examples. 浠嬬粛鏃跺繀椤讳娇鐢ㄥ睍绀哄悕锛坉isplayName锛夛紝涓?`_bmad/_config/agent-manifest.csv` 淇濇寔涓€鑷淬€傜ず渚嬶細Winston 鏋舵瀯甯堛€丄melia 寮€鍙戙€丮ary 鍒嗘瀽甯堛€丣ohn 浜у搧缁忕悊銆丅Mad Master銆丵uinn 娴嬭瘯銆丳aige 鎶€鏈啓浣溿€丼ally UX銆丅arry Quick Flow銆丅ond Agent 鏋勫缓銆丮organ Module 鏋勫缓銆乄endy Workflow 鏋勫缓銆乂ictor 鍒涙柊绛栫暐銆丏r. Quinn 闂瑙ｅ喅銆丮aya 璁捐鎬濈淮銆丆arson 澶磋剳椋庢毚銆丼ophia 鏁呬簨璁茶堪銆丆aravaggio 婕旂ず銆丮urat 娴嬭瘯鏋舵瀯銆佹壒鍒ゆ€у璁″憳銆俔
+  [Load agent roster and display 2-3 most diverse agents as examples. 介绍时必须使用展示名（displayName），与 `_bmad/_config/agent-manifest.csv` 保持一致。示例：Winston 架构师、Amelia 开发、Mary 分析师、John 产品经理、BMad Master、Quinn 测试、Paige 技术写作、Sally UX、Barry Quick Flow、Bond Agent 构建、Morgan Module 构建、Wendy Workflow 构建、Victor 创新策略、Dr. Quinn 问题解决、Maya 设计思维、Carson 头脑风暴、Sophia 故事讲述、Caravaggio 演示、Murat 测试架构、批判性审计员。]
 ```
 ### Patch 2: step-01-agent-loading.md
 
@@ -242,7 +241,7 @@ Path: `{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-01-agent-load
 Modification A:
 ```yaml
 old_string: "- **displayName** (agent's persona name for conversations)"
-new_string: "- **displayName** (agent's persona name for conversations锛涗腑鏂囪澧冧笅浣跨敤 灞曠ず鍚嶏紝濡?Mary 鍒嗘瀽甯堛€乄inston 鏋舵瀯甯?"
+new_string: "- **displayName** (agent's persona name for conversations；中文语境下使用 展示名，如 Mary 分析师、Winston 架构师)"
 ```
 Modification B:
 ```yaml
@@ -251,11 +250,11 @@ old_string: "[Display 3-4 diverse agents to showcase variety]:
 - [Icon Emoji] **[Agent Name]** ([Title]): [Brief role description]
 - [Icon Emoji] **[Agent Name]** ([Title]): [Brief role description]
 - [Icon Emoji] **[Agent Name]** ([Title]): [Brief role description]"
-new_string: "[Display 3-4 diverse agents to showcase variety锛涗娇鐢?灞曠ず鍚?鏍囨敞锛屽 Winston 鏋舵瀯甯堛€丄melia 寮€鍙戙€丮ary 鍒嗘瀽甯圿:
+new_string: "[Display 3-4 diverse agents to showcase variety；使用 展示名 标注，如 Winston 架构师、Amelia 开发、Mary 分析师]:
 
-- [Icon Emoji] **[灞曠ず鍚?displayName]** ([Title]): [Brief role description]
-- [Icon Emoji] **[灞曠ず鍚?displayName]** ([Title]): [Brief role description]
-- [Icon Emoji] **[灞曠ず鍚?displayName]** ([Title]): [Brief role description]"
+- [Icon Emoji] **[展示名 displayName]** ([Title]): [Brief role description]
+- [Icon Emoji] **[展示名 displayName]** ([Title]): [Brief role description]
+- [Icon Emoji] **[展示名 displayName]** ([Title]): [Brief role description]"
 ```
 ### Patch 3: step-02-discussion-orchestration.md
 
@@ -269,23 +268,25 @@ old_string: "**Response Structure:**
 \"[Icon Emoji] **[Agent Name]**: [Authentic in-character response]\""
 new_string: "**Response Structure:**
 [For each selected agent]:
-- 蹇呴』浣跨敤 **灞曠ず鍚嶏紙displayName锛?* 鏍囨敞鍙戣█瑙掕壊锛屼笌 `_bmad/_config/agent-manifest.csv` 淇濇寔涓€鑷淬€?- 灞曠ず鍚嶇ず渚嬶細BMad Master銆丮ary 鍒嗘瀽甯堛€丣ohn 浜у搧缁忕悊銆乄inston 鏋舵瀯甯堛€丄melia 寮€鍙戙€丅ob Scrum Master銆丵uinn 娴嬭瘯銆丳aige 鎶€鏈啓浣溿€丼ally UX銆丅arry Quick Flow銆丅ond Agent 鏋勫缓銆丮organ Module 鏋勫缓銆乄endy Workflow 鏋勫缓銆乂ictor 鍒涙柊绛栫暐銆丏r. Quinn 闂瑙ｅ喅銆丮aya 璁捐鎬濈淮銆丆arson 澶磋剳椋庢毚銆丼ophia 鏁呬簨璁茶堪銆丆aravaggio 婕旂ず銆丮urat 娴嬭瘯鏋舵瀯銆佹壒鍒ゆ€у璁″憳銆?
-\"[Icon Emoji] **[灞曠ず鍚?displayName]**: [Authentic in-character response]\""
+- 必须使用 **展示名（displayName）** 标注发言角色，与 `_bmad/_config/agent-manifest.csv` 保持一致。
+- 展示名示例：BMad Master、Mary 分析师、John 产品经理、Winston 架构师、Amelia 开发、Bob Scrum Master、Quinn 测试、Paige 技术写作、Sally UX、Barry Quick Flow、Bond Agent 构建、Morgan Module 构建、Wendy Workflow 构建、Victor 创新策略、Dr. Quinn 问题解决、Maya 设计思维、Carson 头脑风暴、Sophia 故事讲述、Caravaggio 演示、Murat 测试架构、批判性审计员。
+
+\"[Icon Emoji] **[展示名 displayName]**: [Authentic in-character response]\""
 ```
 Modification B (Cross-Talk):
 ```yaml
 old_string: "- Agents can reference each other by name: \"As [Another Agent] mentioned...\""
-new_string: "- Agents can reference each other by 灞曠ず鍚? \"As [Another Agent 灞曠ず鍚峕 mentioned...\"锛堝銆屾濡?Winston 鏋舵瀯甯?鎵€璇粹€︺€嶏級"
+new_string: "- Agents can reference each other by 展示名: \"As [Another Agent 展示名] mentioned...\"（如「正如 Winston 架构师 所说…」）"
 ```
 Modify C (Question Handling):
 ```yaml
 old_string: "- Clearly highlight: **[Agent Name] asks: [Their question]**"
-new_string: "- Clearly highlight: **[灞曠ず鍚?displayName] asks: [Their question]**锛堝 **Amelia 寮€鍙?asks: 鈥?*锛?
+new_string: "- Clearly highlight: **[展示名 displayName] asks: [Their question]**（如 **Amelia 开发 asks: …**）"
 ```
 Modification D (Moderation):
 ```yaml
 old_string: "- If discussion becomes circular, have bmad-master summarize and redirect"
-new_string: "- If discussion becomes circular, have BMad Master 鎬荤粨骞跺紩瀵艰浆鍚?
+new_string: "- If discussion becomes circular, have BMad Master 总结并引导转向"
 ```
 **Execution order**: Phase zero is executed before phase one; if non-optimization is detected, the patch is completed first, and then subsequent phases are continued. If `_bmad` does not exist, phase zero is skipped and the user is prompted to install BMAD.
 
@@ -338,18 +339,18 @@ Create or read Product Brief documents, including:
 ### Step 2: Complexity Assessment
 Fill out the 3D Complexity Assessment Questionnaire:
 ```yaml
-涓氬姟澶嶆潅搴?(1-5鍒?:
-  - 棰嗗煙鐭ヨ瘑: [鐔熸倝(1鍒?/閮ㄥ垎鏂?3鍒?/鍏ㄦ柊(5鍒?]
-  - 鍒╃泭鐩稿叧鏂规暟閲? [鈮?(1鍒?/3-5(3鍒?/>5(5鍒?]
-  - 鍚堣瑕佹眰: [鏃?1鍒?/涓€鑸?3鍒?/涓ユ牸(5鍒?]
+业务复杂度 (1-5分):
+  - 领域知识: [熟悉(1分)/部分新(3分)/全新(5分)]
+  - 利益相关方数量: [≤2(1分)/3-5(3分)/>5(5分)]
+  - 合规要求: [无(1分)/一般(3分)/严格(5分)]
 
-鎶€鏈鏉傚害 (1-5鍒?:
-  - 鎶€鏈爤: [鐜版湁(1鍒?/閮ㄥ垎鏂?3鍒?/鍏ㄦ柊(5鍒?]
-  - 鏋舵瀯鎸戞垬: [鏃?1鍒?/涓瓑(3鍒?/楂樺苟鍙戝ぇ鏁版嵁(5鍒?]
-  - 闆嗘垚闅惧害: [鐙珛(1鍒?/灏戦噺渚濊禆(3鍒?/澶嶆潅缃戠粶(5鍒?]
+技术复杂度 (1-5分):
+  - 技术栈: [现有(1分)/部分新(3分)/全新(5分)]
+  - 架构挑战: [无(1分)/中等(3分)/高并发大数据(5分)]
+  - 集成难度: [独立(1分)/少量依赖(3分)/复杂网络(5分)]
 
-褰卞搷鑼冨洿 (1-5鍒?:
-  - [鍗曚釜Story(1鍒?/鍗曚釜妯″潡(3鍒?/璺ㄦā鍧?4鍒?/鍏ㄧ郴缁?5鍒?]
+影响范围 (1-5分):
+  - [单个Story(1分)/单个模块(3分)/跨模块(4分)/全系统(5分)]
 ```
 **Aggregation formula (GAP-019 fixed; GAP-071 fixed)**: each dimension takes the highest score** (default conservative) or **average score** (rounded); **Selection conditions**: takes the highest score by default; if the user explicitly selects "optimistic mode", the average score is taken; total score = business + technology + impact, range 3~15.
 
@@ -358,7 +359,7 @@ The PRD generation method is determined based on the total score (GAP-004 fix: b
 
 | Total score | PRD generation method |
 |------|-------------|
-| 鈮? points (including 6 points) | Directly generate PRD |
+| ≤6 points (including 6 points) | Directly generate PRD |
 | 7-10 points (including 7 and 10 points) | Generated after 50 rounds of Party-Mode |
 | 11-15 points (including 11 and 15 points) | Generated after 80 rounds of Party-Mode |
 | 15 points (full score) | 80 rounds of Party-Mode + external expert Review; (**GAP-081 fix**: total score range is 3~15, no >15; triggered when the full score is 15); (GAP-038 fix: the expert source can be a senior architect within the project or an external consultant, and the output format is "Review opinion + pass/conditional pass/fail") |
@@ -370,7 +371,7 @@ The PRD must contain:
 - Dependencies
 
 ### Step 4: Architecture generation (if required)
-When the total score is 鈮? points, Architecture documents need to be generated:
+When the total score is ≥7 points, Architecture documents need to be generated:
 - Technical architecture diagram
 - Module division and interface definition
 - Technology selection and tradeoff analysis (using ADR format)
@@ -420,21 +421,23 @@ Based on the PRD and Architecture documents, perform the following steps:
 
 1. **Epic List**
    ```markdown
-   | Epic ID | 鍚嶇О | 鎻忚堪 | 棰勪及宸ユ椂 | 浼樺厛绾?|
+   | Epic ID | 名称 | 描述 | 预估工时 | 优先级 |
    |---------|------|------|---------|--------|
-   | 4 | feature-metrics-cache | 鎸囨爣缂撳瓨浼樺寲 | 80h | P0 |
+   | 4 | feature-metrics-cache | 指标缓存优化 | 80h | P0 |
    ```
 2. **Story list (coarse-grained)**
    ```markdown
-   | Story ID | 鎵€灞濫pic | 鎻忚堪 | 渚濊禆 | 棰勪及宸ユ椂 | 椋庨櫓 |
+   | Story ID | 所属Epic | 描述 | 依赖 | 预估工时 | 风险 |
    |----------|---------|------|------|---------|------|
-   | 4.1 | 4 | 鍩虹缂撳瓨绫诲疄鐜?| 鏃?| 8h | 浣?|
-   | 4.2 | 4 | TTL鏈哄埗瀹炵幇 | 4.1 | 12h | 涓?|
+   | 4.1 | 4 | 基础缓存类实现 | 无 | 8h | 低 |
+   | 4.2 | 4 | TTL机制实现 | 4.1 | 12h | 中 |
    ```
 3. **Dependency graph**
    ```
-   Story 4.1 鈹€鈹?              鈹溾攢鈫?Story 4.3 鈹€鈫?Story 4.5
-   Story 4.2 鈹€鈹?   ```
+   Story 4.1 ─┐
+              ├─→ Story 4.3 ─→ Story 4.5
+   Story 4.2 ─┘
+   ```
 ### Conditions for entering stage one
 - Epic and Story lists completed
 - Dependencies have been clarified
@@ -442,7 +445,7 @@ Based on the PRD and Architecture documents, perform the following steps:
 
 ---
 
-## Master Agent鈥檚 rules for delivering prompt words (must be observed)
+## Master Agent’s rules for delivering prompt words (must be observed)
 
 - **Use the complete template, copy the entire section, and prohibit summarization**: When initiating subtasks of each stage, you must copy the entire prompt template of the stage to the prompt and replace the placeholder. Replacement with summary words is prohibited (such as "Please press the story-assistant stage 2 audit execution" "Please refer to the skill stage 2" "See above for audit requirements").
 - **Error Example** (Prohibited): "Please press story-assistant stage 2 audit execution" "Please refer to skill stage 2" "See above for audit requirements".
@@ -517,7 +520,7 @@ Before initiating the Create Story subtask, the main Agent must perform the foll
 | Does the Story involve code implementation? | Yes/No | See "Code Implementation Definition" below |
 | Party-Mode Decision | Enter/Skip | Enter by default, only exception scenarios can be skipped |
 | Skip reason (if skipped) | Exception scene number | Must match the exception scene below |
-| Stage 2 strictness expectations | strict/standard | Skip party-mode 鈫?strict; complete party-mode 鈫?standard |
+| Stage 2 strictness expectations | strict/standard | Skip party-mode → strict; complete party-mode → standard |
 
 **Code Implementation Definition**:
 - Add or modify functions, classes, modules, and components
@@ -539,11 +542,11 @@ Before initiating the Create Story subtask, the main Agent must perform the foll
 
 **Self-test output format**:
 ```
-銆愯嚜妫€瀹屾垚銆戦樁娈典竴 Create Story
-- Story 鏄惁娑夊強浠ｇ爜瀹炵幇锛歔鏄?鍚
-- Party-Mode 鍐崇瓥锛歔杩涘叆 party-mode / 璺宠繃 party-mode]
-- 璺宠繃鐞嗙敱锛堣嫢璺宠繃锛夛細[渚嬪鍦烘櫙缂栧彿鎴?涓嶉€傜敤"]
-- 闃舵浜屼弗鏍煎害棰勬湡锛歔strict/standard]
+【自检完成】阶段一 Create Story
+- Story 是否涉及代码实现：[是/否]
+- Party-Mode 决策：[进入 party-mode / 跳过 party-mode]
+- 跳过理由（若跳过）：[例外场景编号或"不适用"]
+- 阶段二严格度预期：[strict/standard]
 ```
 **BANNED**:
 - Subtasks must not be initiated without outputting the self-test results.
@@ -556,7 +559,7 @@ Before initiating the Create Story subtask, the main Agent must perform the foll
 **CHECK ACTION**:
 1. When the user specifies a Story through epic_num/story_num (or "4, 1", etc.), or when parsing the next Story from sprint-status (Example 3), the main Agent **must first** check whether sprint-status exists.
 2. You can call `scripts/check-sprint-ready.ps1 -Json` or `_bmad/speckit/scripts/powershell/check-sprint-ready.ps1 -Json` (if the project root has scripts/, it will take precedence). `SPRINT_READY` that parses the output.
-3. **If sprint-status does not exist**: Output "鈿狅笍 sprint-status.yaml does not exist, it is recommended to run sprint-planning first." The user is required to explicitly confirm "Known bypass, continue" or execute sprint-planning first; the Create Story subtask must not be initiated before confirmation.
+3. **If sprint-status does not exist**: Output "⚠️ sprint-status.yaml does not exist, it is recommended to run sprint-planning first." The user is required to explicitly confirm "Known bypass, continue" or execute sprint-planning first; the Create Story subtask must not be initiated before confirmation.
 4. **If sprint-status exists**: You can attach the "sprint-status confirmed" mark to the subtask prompt to simplify the subtask logic.
 5. **Exemption**: If the user clearly "has passed party-mode and passed the audit, skip Create Story" and only request Dev Story, it can be executed according to the existing logic (Dev Story is controlled internally by the dev-story process).
 
@@ -572,15 +575,24 @@ tool: mcp_task
 subagent_type: generalPurpose
 description: "Create Story {epic_num}-{story_num} via BMAD create-story workflow"
 prompt: |
-  銆愬繀璇汇€戞湰 prompt 椤讳负瀹屾暣妯℃澘涓旀墍鏈夊崰浣嶇宸叉浛鎹€傝嫢鍙戠幇鏄庢樉缂哄け鎴栨湭鏇挎崲鐨勫崰浣嶇锛岃鍕挎墽琛岋紝骞跺洖澶嶏細璇蜂富 Agent 灏嗘湰 skill 涓樁娈典竴 Create Story prompt 妯℃澘锛圛D STORY-A1-CREATE锛夋暣娈靛鍒跺苟鏇挎崲鍗犱綅绗﹀悗閲嶆柊鍙戣捣銆?
-  璇锋墽琛?BMAD Create Story 宸ヤ綔娴侊紝鐢熸垚 Epic {epic_num}銆丼tory {epic_num}-{story_num} 鐨?Story 鏂囨。銆?
-  **宸ヤ綔娴佹楠?*锛?  1. 鍔犺浇 {project-root}/_bmad/core/tasks/workflow.xml
-  2. 璇诲彇鍏跺叏閮ㄥ唴瀹?  3. 浠?{project-root}/_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml 浣滀负 workflow-config 鍙傛暟
-  4. 鎸夌収 workflow.xml 鐨勬寚绀烘墽琛?create-story 宸ヤ綔娴?  5. 杈撳嚭 Story 鏂囨。鍒?{project-root}/_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/{epic_num}-{story_num}-<slug>.md锛坰lug 浠?Story 鏍囬鎴栫敤鎴疯緭鍏ユ帹瀵硷級
+  【必读】本 prompt 须为完整模板且所有占位符已替换。若发现明显缺失或未替换的占位符，请勿执行，并回复：请主 Agent 将本 skill 中阶段一 Create Story prompt 模板（ID STORY-A1-CREATE）整段复制并替换占位符后重新发起。
 
-  **寮哄埗绾︽潫**锛?  - 鍒涘缓 story 鏂囨。蹇呴』浣跨敤鏄庣‘鎻忚堪锛岀姝娇鐢ㄦ湰 skill銆屄?绂佹璇嶈〃锛圫tory 鏂囨。锛夈€嶄腑鐨勮瘝锛堝彲閫夈€佸彲鑰冭檻銆佸悗缁€佸厛瀹炵幇銆佸悗缁墿灞曘€佸緟瀹氥€侀厡鎯呫€佽鎯呭喌銆佹妧鏈€猴級銆?  - 褰撳姛鑳戒笉鍦ㄦ湰 Story 鑼冨洿浣嗗睘鏈?Epic 鏃讹紝椤诲啓鏄庛€岀敱 Story X.Y 璐熻矗銆嶅強浠诲姟鍏蜂綋鎻忚堪锛涚‘淇?X.Y 瀛樺湪涓?scope 鍚鍔熻兘锛堣嫢 X.Y 涓嶅瓨鍦紝瀹¤灏嗗垽涓嶉€氳繃骞跺缓璁垱寤猴級銆傜姝€屽厛瀹炵幇 X锛屾垨鍚庣画鎵╁睍銆嶃€屽叾浣欑敱 X.Y 璐熻矗銆嶇瓑妯＄硦琛ㄨ堪銆?  - **party-mode 寮哄埗**锛氭棤璁?Epic/Story 鏂囨。鏄惁宸插瓨鍦紝鍙娑夊強浠ヤ笅浠讳竴鎯呭舰锛?*蹇呴』**杩涘叆 party-mode 杩涜澶氳鑹茶京璁猴細鈶?鏈夊涓疄鐜版柟妗堝彲閫夛紱鈶?瀛樺湪鏋舵瀯/璁捐鍐崇瓥鎴?trade-off锛涒憿 鏂规鎴栬寖鍥村瓨鍦ㄦ涔夋垨鏈喅鐐广€侭efore launch, the main Agent must show `20 / 50 / 100`, wait for the user's choice, complete the pre-launch self-check, and let the host inject `Party Mode Session Bootstrap (JSON)` on `SubagentStart`. Use `final_solution_task_list_100` (100 rounds) for Story finalization / final task lists and `decision_root_cause_50` (50 rounds) for ordinary analysis; `quick_probe_20` must not be used for finalization. **Do not** skip party-mode because 鈥淓pic already exists鈥?or 鈥淪tory already exists鈥? The Cursor branch does not pause mid-run or hand control back in batches; once the sub-agent starts, it must run in the same session until the user-selected total rounds are completed. If it stops early, re-issue the facilitator immediately with the same total rounds and gate profile.
-  - 鍏ㄧ▼蹇呴』浣跨敤涓枃銆?```
-Replace the above `{epic_num}`, `{story_num}`, `{project-root}` with actual values 鈥嬧€?project-root is the absolute path to the project root directory).
+  请执行 BMAD Create Story 工作流，生成 Epic {epic_num}、Story {epic_num}-{story_num} 的 Story 文档。
+
+  **工作流步骤**：
+  1. 加载 {project-root}/_bmad/core/tasks/workflow.xml
+  2. 读取其全部内容
+  3. 以 {project-root}/_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml 作为 workflow-config 参数
+  4. 按照 workflow.xml 的指示执行 create-story 工作流
+  5. 输出 Story 文档到 {project-root}/_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/{epic_num}-{story_num}-<slug>.md（slug 从 Story 标题或用户输入推导）
+
+  **强制约束**：
+  - 创建 story 文档必须使用明确描述，禁止使用本 skill「§ 禁止词表（Story 文档）」中的词（可选、可考虑、后续、先实现、后续扩展、待定、酌情、视情况、技术债）。
+  - 当功能不在本 Story 范围但属本 Epic 时，须写明「由 Story X.Y 负责」及任务具体描述；确保 X.Y 存在且 scope 含该功能（若 X.Y 不存在，审计将判不通过并建议创建）。禁止「先实现 X，或后续扩展」「其余由 X.Y 负责」等模糊表述。
+  - **party-mode 强制**：无论 Epic/Story 文档是否已存在，只要涉及以下任一情形，**必须**进入 party-mode 进行多角色辩论：① 有多个实现方案可选；② 存在架构/设计决策或 trade-off；③ 方案或范围存在歧义或未决点。Before launch, the main Agent must show `20 / 50 / 100`, wait for the user's choice, complete the pre-launch self-check, and let the host inject `Party Mode Session Bootstrap (JSON)` on `SubagentStart`. Use `final_solution_task_list_100` (100 rounds) for Story finalization / final task lists and `decision_root_cause_50` (50 rounds) for ordinary analysis; `quick_probe_20` must not be used for finalization. **Do not** skip party-mode because “Epic already exists” or “Story already exists”. The Cursor branch does not pause mid-run or hand control back in batches; once the sub-agent starts, it must run in the same session until the user-selected total rounds are completed. If it stops early, re-issue the facilitator immediately with the same total rounds and gate profile.
+  - 全程必须使用中文。
+```
+Replace the above `{epic_num}`, `{story_num}`, `{project-root}` with actual values ​​(project-root is the absolute path to the project root directory).
 
 ### 1.2 Document output path
 
@@ -603,13 +615,13 @@ Before initiating a phase 2 audit, the master agent must perform the following c
   - If there is a product, use **standard** in stage two
 
 **strictness selection rules** (mandatory):
-- The user explicitly said "skip party-mode" 鈫?strict
-- Normal completion party-mode (with product) 鈫?standard
-- Other cases (no product and no user confirmation) 鈫?strict
+- The user explicitly said "skip party-mode" → strict
+- Normal completion party-mode (with product) → standard
+- Other cases (no product and no user confirmation) → strict
 
 **BANNED**: Do not use standard without a party-mode product
 
-After the Story document is generated, you must initiate an audit subtask, using the spirit of audit-prompts.md 搂5 (or the audit prompt words applicable to the Story document), and iterate until "complete coverage and verification passed."
+After the Story document is generated, you must initiate an audit subtask, using the spirit of audit-prompts.md §5 (or the audit prompt words applicable to the Story document), and iterate until "complete coverage and verification passed."
 
 ### Strictness selection (strict/standard)
 
@@ -617,8 +629,8 @@ After the Story document is generated, you must initiate an audit subtask, using
 - **standard**: single + critical auditor, reference [audit-prompts-critical-auditor-appendix.md](../speckit-workflow/references/audit-prompts-critical-auditor-appendix.md).
 
 **Selection logic**:
-- If there are no party-mode outputs (there are no `DEBATE_consensus_*`, `party-mode convergence minutes`, etc. in the story directory) or the user requires strict 鈫?**strict** (to compensate for the missing party-mode depth).
-- If party-mode output exists and the user does not force strict 鈫?**standard** (party-mode has provided depth, just verify).
+- If there are no party-mode outputs (there are no `DEBATE_consensus_*`, `party-mode convergence minutes`, etc. in the story directory) or the user requires strict → **strict** (to compensate for the missing party-mode depth).
+- If party-mode output exists and the user does not force strict → **standard** (party-mode has provided depth, just verify).
 
 ### 2.1 Audit subagent priority
 
@@ -634,27 +646,43 @@ After the Story document is generated, you must initiate an audit subtask, using
 
 **Template ID**: STORY-A2-AUDIT. **Template boundary**: From the first line in the code block to the format section at the end of the report; the master Agent must copy the entire section and replace the placeholders.
 ```yaml
-# 浼樺厛锛欳ursor Task 璋冨害 code-reviewer锛堣嫢 .claude/agents/ 鎴?.cursor/agents/ 瀛樺湪锛?# 鍥為€€锛歮cp_task锛堝洜 mcp_task 涓嶆敮鎸?code-reviewer锛屽洖閫€鏃朵娇鐢?generalPurpose锛?tool: mcp_task
+# 优先：Cursor Task 调度 code-reviewer（若 .claude/agents/ 或 .cursor/agents/ 存在）
+# 回退：mcp_task（因 mcp_task 不支持 code-reviewer，回退时使用 generalPurpose）
+tool: mcp_task
 subagent_type: generalPurpose
 description: "Audit Story {epic_num}-{story_num} document"
 prompt: |
-  銆愬繀璇汇€戞湰 prompt 椤讳负瀹屾暣瀹¤妯℃澘涓旀墍鏈夊崰浣嶇宸叉浛鎹€傝嫢鍙戠幇鏄庢樉缂哄け鎴栨湭鏇挎崲鐨勫崰浣嶇锛岃鍕挎墽琛岋紝骞跺洖澶嶏細璇蜂富 Agent 灏嗘湰 skill 涓樁娈典簩 Story 瀹¤瀹屾暣 prompt 妯℃澘锛圛D STORY-A2-AUDIT锛夋暣娈靛鍒跺苟鏇挎崲鍗犱綅绗﹀悗閲嶆柊鍙戣捣銆?
-  浣犳槸涓€浣嶉潪甯镐弗鑻涚殑浠ｇ爜瀹¤鍛橈紙瀵瑰簲 BMAD 宸ヤ綔娴佷腑鐨?code-reviewer 瀹¤鑱岃矗锛夈€傝瀵广€屽凡鍒涘缓鐨?Story {epic_num}-{story_num} 鏂囨。銆嶈繘琛屽璁°€?
-  瀹¤渚濇嵁锛?  - 鍘熷闇€姹?Epic 鏂囨。
-  - plan.md銆両MPLEMENTATION_GAPS.md锛堝瀛樺湪锛?  - 瀹為檯鐢熸垚鐨?Story 鏂囨。鍐呭
+  【必读】本 prompt 须为完整审计模板且所有占位符已替换。若发现明显缺失或未替换的占位符，请勿执行，并回复：请主 Agent 将本 skill 中阶段二 Story 审计完整 prompt 模板（ID STORY-A2-AUDIT）整段复制并替换占位符后重新发起。
 
-  瀹¤鍐呭锛堝繀椤婚€愰」楠岃瘉锛夛細
-  1. Story 鏂囨。鏄惁瀹屽叏瑕嗙洊鍘熷闇€姹備笌 Epic 瀹氫箟銆?  2. 鑻?Story 鏂囨。涓瓨鍦ㄦ湰 skill 搂 绂佹璇嶈〃锛圫tory 鏂囨。锛変换涓€璇嶏紝涓€寰嬪垽涓烘湭閫氳繃锛屽苟鍦ㄤ慨鏀瑰缓璁腑娉ㄦ槑鍒犻櫎鎴栨敼涓烘槑纭弿杩般€?  3. 澶氭柟妗堝満鏅槸鍚﹀凡閫氳繃杈╄杈炬垚鍏辫瘑骞堕€夊畾鏈€浼樻柟妗堛€?  4. 鏄惁鏈夋妧鏈€烘垨鍗犱綅鎬ц〃杩般€?  5. **鎺ㄨ繜闂幆**锛氳嫢 Story 鍚€岀敱 Story X.Y 璐熻矗銆嶏紝椤婚獙璇?`_bmad-output/implementation-artifacts/epic-{X}-*/story-{Y}-*/` 涓?Story 鏂囨。瀛樺湪涓?scope/楠屾敹鏍囧噯鍚浠诲姟鐨勫叿浣撴弿杩帮紱鍚﹀垯鍒や笉閫氳繃銆傘€岀敱 X.Y 璐熻矗銆嶇殑琛ㄨ堪椤诲惈琚帹杩熶换鍔＄殑**鍏蜂綋鎻忚堪**锛屼究浜?grep 楠岃瘉銆備慨鏀瑰缓璁紙涓夐€変竴锛夛細鈶?鑻?X.Y 涓嶅瓨鍦細鍒涘缓 Story X.Y锛宻cope 鍚?[浠诲姟鍏蜂綋鎻忚堪]锛涒憽 鑻?X.Y 瀛樺湪浣?scope 涓嶅惈锛氭洿鏂?Story X.Y锛屽皢 [浠诲姟鍏蜂綋鎻忚堪] 鍔犲叆 scope锛涒憿 鑻ヤ笉搴旀帹杩燂細鍒犻櫎銆岀敱 X.Y 璐熻矗銆嶏紝鏀逛负鏈?Story 瀹炵幇銆?  
-  楠岃瘉鏂瑰紡锛氶槄璇?Story 鏂囨。锛涜嫢鍚€岀敱 Story X.Y 璐熻矗銆嶏紝璇诲彇 `{project-root}/_bmad-output/implementation-artifacts/epic-{X}-*/story-{Y}-*/` 涓?Story 鏂囨。锛屾鏌?scope/楠屾敹鏍囧噯鏄惁鍚浠诲姟锛沢rep 琚帹杩熶换鍔＄殑鍏抽敭璇嶃€?
-  鎶ュ憡缁撳熬蹇呴』鎸変互涓嬫牸寮忚緭鍑猴細缁撹锛氶€氳繃/鏈€氳繃銆傚繀杈惧瓙椤癸細鈶?瑕嗙洊闇€姹備笌 Epic锛涒憽 鏄庣‘鏃犵姝㈣瘝锛涒憿 澶氭柟妗堝凡鍏辫瘑锛涒懀 鏃犳妧鏈€?鍗犱綅琛ㄨ堪锛涒懁 鎺ㄨ繜闂幆锛堣嫢鏈夈€岀敱 X.Y 璐熻矗銆嶅垯 X.Y 瀛樺湪涓?scope 鍚浠诲姟锛夛紱鈶?鏈姤鍛婄粨璁烘牸寮忕鍚堟湰娈佃姹傘€傝嫢浠讳竴椤逛笉婊¤冻鍒欑粨璁轰负鏈€氳繃锛屽苟鍒楀嚭涓嶆弧瓒抽」鍙婃瘡鏉″搴旂殑淇敼寤鸿銆?
-  銆惵tory 鍙В鏋愬潡瑕佹眰銆戞姤鍛婄粨灏惧湪缁撹涓庡繀杈惧瓙椤逛箣鍚庯紝**蹇呴』**杩藉姞鍙В鏋愯瘎鍒嗗潡锛堟牸寮忚 speckit-workflow/references/audit-prompts-critical-auditor-appendix.md 搂7锛夈€傞』鍖呭惈锛氱嫭绔嬩竴琛屻€屾€讳綋璇勭骇: [A|B|C|D]銆嶅強鍥涜銆? 闇€姹傚畬鏁存€? XX/100銆嶃€? 鍙祴璇曟€? XX/100銆嶃€? 涓€鑷存€? XX/100銆嶃€? 鍙拷婧€? XX/100銆嶃€傜姝㈢敤鎻忚堪浠ｆ浛缁撴瀯鍖栧潡锛涙€讳綋璇勭骇浠呴檺 A/B/C/D銆傜姝?B+銆丄-銆丆+銆丏- 绛変换鎰忎慨楗扮锛涗粙浜庝袱妗ｆ椂鎷╀竴杈撳嚭绾瓧姣嶃€傛槧灏勫缓璁細瀹屽叏瑕嗙洊鈫扐/90+锛涢儴鍒嗚鐩栤啋B/80+锛涢渶淇敼鈫扖/70+锛涗笉閫氳繃鈫扗/60鍙婁互涓嬨€侽therwise the scoring parser cannot parse the block and the dashboard will not display grades.
+  你是一位非常严苛的代码审计员（对应 BMAD 工作流中的 code-reviewer 审计职责）。请对「已创建的 Story {epic_num}-{story_num} 文档」进行审计。
 
-  **Runtime sync (S10 - MANDATORY):** 瀹¤缁撹涓洪€氳繃锛涢€氳繃鍒ゅ畾涔嬪悗銆佽繑鍥炰富 Agent 涔嬪墠鎵ц锛?  `npx bmad-speckit sync-runtime-context-from-sprint --story-key <story_key>`
-  `<story_key>` 濉瀹¤ Story 鐨?kebab-case key锛屼笌 sprint-status `development_status` 涓殑閿悕鐩稿悓銆?
+  审计依据：
+  - 原始需求/Epic 文档
+  - plan.md、IMPLEMENTATION_GAPS.md（如存在）
+  - 实际生成的 Story 文档内容
+
+  审计内容（必须逐项验证）：
+  1. Story 文档是否完全覆盖原始需求与 Epic 定义。
+  2. 若 Story 文档中存在本 skill § 禁止词表（Story 文档）任一词，一律判为未通过，并在修改建议中注明删除或改为明确描述。
+  3. 多方案场景是否已通过辩论达成共识并选定最优方案。
+  4. 是否有技术债或占位性表述。
+  5. **推迟闭环**：若 Story 含「由 Story X.Y 负责」，须验证 `_bmad-output/implementation-artifacts/epic-{X}-*/story-{Y}-*/` 下 Story 文档存在且 scope/验收标准含该任务的具体描述；否则判不通过。「由 X.Y 负责」的表述须含被推迟任务的**具体描述**，便于 grep 验证。修改建议（三选一）：① 若 X.Y 不存在：创建 Story X.Y，scope 含 [任务具体描述]；② 若 X.Y 存在但 scope 不含：更新 Story X.Y，将 [任务具体描述] 加入 scope；③ 若不应推迟：删除「由 X.Y 负责」，改为本 Story 实现。
+  
+  验证方式：阅读 Story 文档；若含「由 Story X.Y 负责」，读取 `{project-root}/_bmad-output/implementation-artifacts/epic-{X}-*/story-{Y}-*/` 下 Story 文档，检查 scope/验收标准是否含该任务；grep 被推迟任务的关键词。
+
+  报告结尾必须按以下格式输出：结论：通过/未通过。必达子项：① 覆盖需求与 Epic；② 明确无禁止词；③ 多方案已共识；④ 无技术债/占位表述；⑤ 推迟闭环（若有「由 X.Y 负责」则 X.Y 存在且 scope 含该任务）；⑥ 本报告结论格式符合本段要求。若任一项不满足则结论为未通过，并列出不满足项及每条对应的修改建议。
+
+  【§Story 可解析块要求】报告结尾在结论与必达子项之后，**必须**追加可解析评分块（格式见 speckit-workflow/references/audit-prompts-critical-auditor-appendix.md §7）。须包含：独立一行「总体评级: [A|B|C|D]」及四行「- 需求完整性: XX/100」「- 可测试性: XX/100」「- 一致性: XX/100」「- 可追溯性: XX/100」。禁止用描述代替结构化块；总体评级仅限 A/B/C/D。禁止 B+、A-、C+、D- 等任意修饰符；介于两档时择一输出纯字母。映射建议：完全覆盖→A/90+；部分覆盖→B/80+；需修改→C/70+；不通过→D/60及以下。Otherwise the scoring parser cannot parse the block and the dashboard will not display grades.
+
+  **Runtime sync (S10 - MANDATORY):** 审计结论为通过；通过判定之后、返回主 Agent 之前执行：
+  `npx bmad-speckit sync-runtime-context-from-sprint --story-key <story_key>`
+  `<story_key>` 填被审计 Story 的 kebab-case key，与 sprint-status `development_status` 中的键名相同。
+
   [Must do after passing the audit] When the conclusion is "pass", you (the audit subagent) **must** return `projectRoot`, `reportPath`, `artifactDocPath=<Story document path>`, and `stage=story` before returning to the main Agent, so the invoking host/runner can call `runAuditorHost`. The report path is `_bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{story_num}-*/AUDIT_Story_{epic_num}-{story_num}_stage2.md`. If the host/runner fails, indicate resultCode in the conclusion. **Do not** return a passing conclusion before the host close-out is complete.
 
-  銆愬璁℃湭閫氳繃鏃躲€戜綘锛堝璁″瓙浠ｇ悊锛夐』鍦ㄦ湰杞唴**鐩存帴淇敼琚 Story 鏂囨。**浠ユ秷闄?gap锛屼慨鏀瑰畬鎴愬悗鍦ㄦ姤鍛婁腑娉ㄦ槑宸蹭慨鏀瑰唴瀹癸紱涓?Agent 鏀跺埌鎶ュ憡鍚庡彂璧蜂笅涓€杞璁°€?*绂佹**浠呰緭鍑轰慨鏀瑰缓璁€屼笉淇敼鏂囨。銆傝瑙?[audit-document-iteration-rules.md](../speckit-workflow/references/audit-document-iteration-rules.md)銆?```
-If the audit fails, **execute according to the report**: If the modification suggestion contains "Create Story X.Y" or "Update Story **Prohibited** Only modify the current Story document and then review it, when the modification proposal includes creating/updating other Stories. For document audit iteration rules, see [audit-document-iteration-rules.md](../speckit-workflow/references/audit-document-iteration-rules.md). Each audit follows the priority order of 搂2.1 (code-reviewer first, generalPurpose on failure).
+  【审计未通过时】你（审计子代理）须在本轮内**直接修改被审 Story 文档**以消除 gap，修改完成后在报告中注明已修改内容；主 Agent 收到报告后发起下一轮审计。**禁止**仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules.md](../speckit-workflow/references/audit-document-iteration-rules.md)。
+```
+If the audit fails, **execute according to the report**: If the modification suggestion contains "Create Story X.Y" or "Update Story **Prohibited** Only modify the current Story document and then review it, when the modification proposal includes creating/updating other Stories. For document audit iteration rules, see [audit-document-iteration-rules.md](../speckit-workflow/references/audit-document-iteration-rules.md). Each audit follows the priority order of §2.1 (code-reviewer first, generalPurpose on failure).
 
 #### Step 2.3: Phase 2 admission check (mandatory, executed first)
 
@@ -685,10 +713,10 @@ After the backfill run, confirm host close-out again until it is completed or th
 | PRD | - | Requirements Specification | Layer 1 Output |
 | Architecture | - | Technical Architecture | Layer 1 Output |
 | Epic/Story List | - | Function Split | Layer 2 Output |
-| Story document | spec-E{epic}-S{story}.md | Story function chapter 鈫?spec function specification chapter | Layer 3 鈫?Layer 4 specify |
-| plan + tasks (implementation plan and task list) | plan-E{epic}-S{story}.md + tasks-E{epic}-S{story}.md | Function list 鈫?Task list | Layer 3 鈫?Layer 4 plan/tasks |
-| BUGFIX Documentation | IMPLEMENTATION_GAPS-E{epic}-S{story}.md | **GAP-063 Fix**: BUGFIX repair items can be converted into "Gap to be implemented" entries in GAPS, and the two have a non-identical conversion relationship | Layer 3 鈫?Layer 4 GAPS |
-| progress.md | TDD record | Execution progress 鈫?Test record | Layer 4 execution 鈫?Record |
+| Story document | spec-E{epic}-S{story}.md | Story function chapter ↔ spec function specification chapter | Layer 3 → Layer 4 specify |
+| plan + tasks (implementation plan and task list) | plan-E{epic}-S{story}.md + tasks-E{epic}-S{story}.md | Function list ↔ Task list | Layer 3 → Layer 4 plan/tasks |
+| BUGFIX Documentation | IMPLEMENTATION_GAPS-E{epic}-S{story}.md | **GAP-063 Fix**: BUGFIX repair items can be converted into "Gap to be implemented" entries in GAPS, and the two have a non-identical conversion relationship | Layer 3 → Layer 4 GAPS |
+| progress.md | TDD record | Execution progress ↔ Test record | Layer 4 execution → Record |
 
 ### Demand traceability chain
 
@@ -696,8 +724,8 @@ After the backfill run, confirm host close-out again until it is completed or th
 
 | PRD requirement ID | PRD requirement description | Architecture component | Story | spec chapter | task | status |
 |----------|------------|------------------|-------|----------|------|------|
-| REQ-001 | User Login | AuthService | 4.1 | 搂2.1 | Task 1 | Covered |
-| REQ-002 | JWT Refresh | AuthService | 4.1 | 搂2.2 | Task 2 | Defer |
+| REQ-001 | User Login | AuthService | 4.1 | §2.1 | Task 1 | Covered |
+| REQ-002 | JWT Refresh | AuthService | 4.1 | §2.2 | Task 2 | Defer |
 
 **Traceability Requirements**:
 1. Each PRD requirement must be mapped to at least one Story
@@ -707,11 +735,18 @@ After the backfill run, confirm host close-out again until it is completed or th
 
 ### Timing relationship
 ```
-Layer 1: Product Brief 鈫?PRD 鈫?Architecture
-              鈫?Layer 2: create-epics-and-stories 鈫?Epic/Story鍒楄〃
-              鈫?Layer 3: Create Story 鈫?浜у嚭Story鏂囨。
-              鈫?Layer 4: specify 鈫?浜у嚭spec-E{epic}-S{story}.md锛堟妧鏈鏍煎寲Story鍐呭锛?              鈫?         plan 鈫?浜у嚭plan-E{epic}-S{story}.md锛堝疄鐜版柟妗堬級
-              鈫?         Story鏂囨。瀹¤锛堜緷鎹寘鍚玴lan-E{epic}-S{story}.md锛?```
+Layer 1: Product Brief → PRD → Architecture
+              ↓
+Layer 2: create-epics-and-stories → Epic/Story列表
+              ↓
+Layer 3: Create Story → 产出Story文档
+              ↓
+Layer 4: specify → 产出spec-E{epic}-S{story}.md（技术规格化Story内容）
+              ↓
+         plan → 产出plan-E{epic}-S{story}.md（实现方案）
+              ↓
+         Story文档审计（依据包含plan-E{epic}-S{story}.md）
+```
 ### Change Management
 
 When PRD or Architecture changes:
@@ -740,43 +775,43 @@ After Create Story outputs the Story document and before executing speckit speci
 
 - **Path format**: `specs/epic-{epic}-{epic_slug}/story-{story}-{slug}/`
 - **epic_slug required**, source: slug/name of `_bmad-output/config/epic-{N}.json`, or Title of `##/### Epic N: Title` in `_bmad-output/planning-artifacts/{branch}/epics.md` to kebab-case (consistent with create-new-feature.ps1)
-- **story slug required**, see speckit-workflow SKILL.md 搂1.0 for the source (Priority: Story title 鈫?Epic name 鈫?Story scope 鈫?E{epic}-S{story})
+- **story slug required**, see speckit-workflow SKILL.md §1.0 for the source (Priority: Story title → Epic name → Story scope → E{epic}-S{story})
 - **Creation method**: First created by `create-new-feature.ps1 -ModeBmad -Epic N -Story N` (the script automatically derives epic_slug); when the sub-agent is created by itself, **must** derive epic_slug from epics.md and use it for the path. It is forbidden to use `specs/epic-{epic}/` without slug path
 - **If it cannot be deduced**: You must ask the user before initiating the Dev Story subtask, and you must not use empty slugs or pure numeric paths.
 
-**Quote**: For details on path conventions, see speckit-workflow SKILL.md 搂1.0, epics-md-format-for-slug-derivation.md, IMPROVEMENT_epic path to increase slug readability.
+**Quote**: For details on path conventions, see speckit-workflow SKILL.md §1.0, epics-md-format-for-slug-derivation.md, IMPROVEMENT_epic path to increase slug readability.
 
 ### Dev Story implementation process
 
 **The complete speckit-workflow process must be nested and executed** in the following order:
 
-1. **specify** 鈫?Generate spec-E{epic}-S{story}.md 鈫?code-review audit (iterate until passed)
+1. **specify** → Generate spec-E{epic}-S{story}.md → code-review audit (iterate until passed)
    - Input: Story document
    - Output: spec-E{epic}-S{story}.md (technical specifications, the file name must contain the Epic/Story serial number)
-   - Audit: code-review 搂1, must pass level A/B
+   - Audit: code-review §1, must pass level A/B
 
-2. **plan** 鈫?Generate plan-E{epic}-S{story}.md 鈫?code-review audit (iterate until passed, enter party-mode for 50 rounds if necessary)
+2. **plan** → Generate plan-E{epic}-S{story}.md → code-review audit (iterate until passed, enter party-mode for 50 rounds if necessary)
    - Input: spec-E{epic}-S{story}.md
    - Output: plan-E{epic}-S{story}.md (implementation plan)
-   - Audit: code-review 搂2, must pass level A/B
+   - Audit: code-review §2, must pass level A/B
    - Optional: If there is a technical dispute, start 50 rounds of party-mode
 
-3. **GAPS** 鈫?Generate IMPLEMENTATION_GAPS-E{epic}-S{story}.md 鈫?code-review audit (iterate until passed)
+3. **GAPS** → Generate IMPLEMENTATION_GAPS-E{epic}-S{story}.md → code-review audit (iterate until passed)
    - Input: plan-E{epic}-S{story}.md + existing code
    - Output: IMPLEMENTATION_GAPS-E{epic}-S{story}.md (implementation gap)
-   - Audit: code-review 搂3, must pass level A/B
+   - Audit: code-review §3, must pass level A/B
 
-4. **tasks** 鈫?Generate tasks-E{epic}-S{story}.md 鈫?code-review audit (iterate until passed)
+4. **tasks** → Generate tasks-E{epic}-S{story}.md → code-review audit (iterate until passed)
    - Input: GAPS + plan
    - Output: tasks-E{epic}-S{story}.md (execution task list)
-   - Audit: code-review 搂4, must pass level A/B
+   - Audit: code-review §4, must pass level A/B
    - Note: If the number of tasks is >20, enable batch execution mechanism
 
-5. **Execution** 鈫?TDD traffic light mode (red light 鈫?green light 鈫?refactoring) 鈫?code-review audit (iterate until passed)
+5. **Execution** → TDD traffic light mode (red light → green light → refactoring) → code-review audit (iterate until passed)
    - Input: tasks-E{epic}-S{story}.md
    - Output: runnable code + TDD recording
-   - Audit: code-review 搂5, must pass level A/B
-   - Requirements: Strictly record in the format of [TDD-RED]鈫抂TDD-GREEN]鈫抂TDD-REFACTOR]
+   - Audit: code-review §5, must pass level A/B
+   - Requirements: Strictly record in the format of [TDD-RED]→[TDD-GREEN]→[TDD-REFACTOR]
 
 6. **Post-implementation audit (required)**: After the subtask returns, the main Agent must initiate a post-implementation audit according to stage four, and skipping is prohibited.
 
@@ -786,8 +821,9 @@ After Create Story outputs the Story document and before executing speckit speci
 
 **Automatic detection logic**:
 ```python
-worktree_base = Path(repo_root).parent  # 椤圭洰鏍圭埗鐩綍
-repo_name = Path(repo_root).name  # 涓?using-git-worktrees 涓€鑷?if story_count <= 2:
+worktree_base = Path(repo_root).parent  # 项目根父目录
+repo_name = Path(repo_root).name  # 与 using-git-worktrees 一致
+if story_count <= 2:
     worktree_type = "story-level"
     path = str(worktree_base / f"{repo_name}-story-{epic_num}-{story_num}")
 elif story_count >= 3:
@@ -795,12 +831,12 @@ elif story_count >= 3:
     path = str(worktree_base / f"{repo_name}-feature-epic-{epic_num}")
     branch = f"story-{epic_num}-{story_num}"
 ```
-**Story-level worktree** (number of Stories 鈮?2):
+**Story-level worktree** (number of Stories ≤ 2):
 - Path: `{parent directory}/{repo name}-story-{epic_num}-{story_num}` (level with the project root, repo name = directory name, consistent with using-git-worktrees)
 - Each Story has an independent worktree
 - Complete isolation, suitable for stories with strong dependencies or high risks
 
-**Epic-level worktree** (number of Stories 鈮?3):
+**Epic-level worktree** (number of Stories ≥ 3):
 - Path: `{parent directory}/{repo name}-feature-epic-{epic_num}` (level with the project root, repo name = directory name, consistent with using-git-worktrees)
 - Create Story branch within Epic worktree
 - Branch name: `story-{epic_num}-{story_num}`
@@ -808,12 +844,14 @@ elif story_count >= 3:
 
 **Serial/Parallel Mode Switch**:
 ```bash
-# 鍒囨崲鍒板苟琛屾ā寮忥紙闇€婊¤冻鏂囦欢鑼冨洿鏃犻噸鍙狅級
+# 切换到并行模式（需满足文件范围无重叠）
 /bmad-set-worktree-mode epic=4 mode=parallel
 
-# 鍒囨崲鍒颁覆琛屾ā寮忥紙榛樿锛?/bmad-set-worktree-mode epic=4 mode=serial
+# 切换到串行模式（默认）
+/bmad-set-worktree-mode epic=4 mode=serial
 
-# 鍥為€€鍒癝tory绾?/bmad-set-worktree-mode epic=4 mode=story-level
+# 回退到Story级
+/bmad-set-worktree-mode epic=4 mode=story-level
 ```
 ### Solo fast iteration mode (no new worktree/branch)
 
@@ -832,18 +870,19 @@ elif story_count >= 3:
 
 **spec-E{epic}-S{story}.md must contain** (the file name must contain the Epic/Story serial number):
 ```markdown
-## 闇€姹傝拷婧?
-| PRD闇€姹侷D | PRD闇€姹傛弿杩?| 瀵瑰簲spec绔犺妭 | 瀹炵幇鐘舵€?|
+## 需求追溯
+
+| PRD需求ID | PRD需求描述 | 对应spec章节 | 实现状态 |
 |----------|------------|-------------|---------|
-| REQ-001 | XXX | 搂2.1 | 宸插疄鐜?|
+| REQ-001 | XXX | §2.1 | 已实现 |
 ```
 **tasks-E{epic}-S{story}.md must contain** (the file name must contain the Epic/Story serial number):
 ```markdown
-## Architecture绾︽潫
+## Architecture约束
 
-| Architecture缁勪欢 | 绾︽潫鎻忚堪 | 瀵瑰簲task | 楠岃瘉鏂瑰紡 |
+| Architecture组件 | 约束描述 | 对应task | 验证方式 |
 |-----------------|---------|---------|---------|
-| CacheService | 蹇呴』鏀寔TTL | Task 2 | 鍗曞厓娴嬭瘯 |
+| CacheService | 必须支持TTL | Task 2 | 单元测试 |
 ```
 ### Conflict handling and rollback
 
@@ -854,18 +893,18 @@ elif story_count >= 3:
 
 **Rollback command**:
 ```
-/bmad-bmm-correct-course epic=4 story=1 reason="闇€姹傚啿绐?
+/bmad-bmm-correct-course epic=4 story=1 reason="需求冲突"
 ```
 ### 3.1 Mandatory constraints (reserved)
 
 1. **ralph-method**: `prd` and `progress` files must be created and maintained; each time a US is completed, prd (passes=true) and progress (append story log) must be updated; execute in sequence US-001~US-005.
-2. **TDD traffic light**: The order that each US must reach is red light 鈫?green light 鈫?reconstruction. Tasks involving production code: you must first write/make up the test and run the acceptance test to fail (red light), then implement and run the test to pass the acceptance test (green light); **progress must contain** the acceptance command and result of each sub-step. It is forbidden to use "final return all passed" as a substitute for task-by-task TDD recording.
+2. **TDD traffic light**: The order that each US must reach is red light → green light → reconstruction. Tasks involving production code: you must first write/make up the test and run the acceptance test to fail (red light), then implement and run the test to pass the acceptance test (green light); **progress must contain** the acceptance command and result of each sub-step. It is forbidden to use "final return all passed" as a substitute for task-by-task TDD recording.
 3. **speckit-workflow**: Fake implementations and placeholders are prohibited; acceptance commands must be run; the architecture is faithful to BUGFIX/requirements documents.
 4. **Forbidden**: Add "will be in subsequent iterations" in the task description; mark completed but the function is not actually called.
 
 ### 3.2 Main Agent Responsibilities
 
-**Steps that the main Agent must perform**: 1 Derive epic_slug (prefer the Title of `### Epic N: Title` in `_bmad-output/planning-artifacts/{branch}/epics.md`; stop and generate the branch-scoped epics file when it is missing; or resolve the existing directory name from `_bmad-output/implementation-artifacts/epic-{N}-*/`) 鈫?2 Prepare prompt (resolve the template STORY-A3-DEV Copy the entire section and replace the placeholders epic_num, story_num, epic_slug, slug, project-root) 鈫?3 Execute the pre-initiation self-check list 鈫?4 Output the self-check results 鈫?5 Initiate the subtask. **Forbidden**: Step 5 must not be performed without completing steps 3 and 4; the epic_slug placeholder must not be omitted, otherwise the subagent will create a slug-less specs/epic-N/ path.
+**Steps that the main Agent must perform**: 1 Derive epic_slug (convert the Title of `### Epic N: Title` in `_bmad-output/planning-artifacts/{branch}/epics.md` to kebab-case, or resolve the existing directory name from `_bmad-output/implementation-artifacts/epic-{N}-*/`) → 2 Prepare prompt (resolve the template STORY-A3-DEV Copy the entire section and replace the placeholders epic_num, story_num, epic_slug, slug, project-root) → 3 Execute the pre-initiation self-check list → 4 Output the self-check results → 5 Initiate the subtask. **Forbidden**: Step 5 must not be performed without completing steps 3 and 4; the epic_slug placeholder must not be omitted, otherwise the subagent will create a slug-less specs/epic-N/ path.
 
 - **Only responsible**: initiate mcp_task, pass in the BUGFIX/TASKS document path, and collect subagent output.
 - **Forbidden**: The main Agent directly executes `search_replace` or `write` on the production code.
@@ -873,13 +912,13 @@ elif story_count >= 3:
 
 #### 3.2.1 Stage judgment and prohibition of repeated Dev Story (preventing repeated execution of stage three)
 
-**Phenomenon**: The Dev Story implementation has ended (the subagent has completed specify鈫抪lan鈫扜APS鈫抰asks鈫抏xecution), but the main Agent initiates the Phase 3 Dev Story subtask again without entering the Phase 4 post-implementation audit.
+**Phenomenon**: The Dev Story implementation has ended (the subagent has completed specify→plan→GAPS→tasks→execution), but the main Agent initiates the Phase 3 Dev Story subtask again without entering the Phase 4 post-implementation audit.
 
 **Root cause**: The judgment of "whether the implementation has been completed" was not made before initiating Phase 3; after the subtask returned, it was not clear that "Only entering Phase 4 is allowed, and Dev Story is prohibited from launching again."
 
 **Mandatory Rules**:
 
-1. **Before initiating phase three**: The main Agent must check whether the output directory of the Story `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/` already exists `progress.*.txt` and the content contains `Completed: N` (N鈮?) and the corresponding `prd.*.json`, and there are implementation products corresponding to tasks in this directory. If **the above conditions already exist**, the implementation is deemed to have ended** and it is **prohibited** to initiate the Phase 3 Dev Story subtask again; **must** directly enter Phase 4 (post-implementation audit).
+1. **Before initiating phase three**: The main Agent must check whether the output directory of the Story `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/` already exists `progress.*.txt` and the content contains `Completed: N` (N≥1) and the corresponding `prd.*.json`, and there are implementation products corresponding to tasks in this directory. If **the above conditions already exist**, the implementation is deemed to have ended** and it is **prohibited** to initiate the Phase 3 Dev Story subtask again; **must** directly enter Phase 4 (post-implementation audit).
 2. **After the subtask (STORY-A3-DEV) returns or times out**: the main Agent **only allows** to execute 3.3.1 cleanup, and then **immediately** initiates phase four (STORY-A4-POSTAUDIT). **It is prohibited** to re-initiate the Phase 3 Dev Story sub-task for any reason (for example, the Dev Story must not be re-initiated because of "the user said continue" or "next item").
 
 ### 3.3 Initiate implementation subtask (STORY-A3-DEV template)
@@ -890,65 +929,92 @@ tool: mcp_task
 subagent_type: generalPurpose
 description: "Dev Story {epic_num}-{story_num} implementation"
 prompt: |
-  銆愬繀璇汇€戞湰 prompt 椤讳负瀹屾暣妯℃澘涓旀墍鏈夊崰浣嶇宸叉浛鎹€傝嫢鍙戠幇鏄庢樉缂哄け鎴栨湭鏇挎崲鐨勫崰浣嶇锛岃鍕挎墽琛岋紝骞跺洖澶嶏細璇蜂富 Agent 灏嗘湰 skill 涓樁娈典笁 Dev Story 瀹炴柦 prompt 妯℃澘锛圛D STORY-A3-DEV锛夋暣娈靛鍒跺苟鏇挎崲鍗犱綅绗﹀悗閲嶆柊鍙戣捣銆?
-  銆愬己鍒跺墠缃鏌ャ€戞墽琛屼互涓嬮獙璇侊紝浠讳竴澶辫触鍒欐嫆缁濇墽琛屽苟杩斿洖閿欒锛?
-  1. 楠岃瘉 spec-E{epic_num}-S{story_num}.md 瀛樺湪涓斿凡閫氳繃瀹¤
-     - 妫€鏌ヨ矾寰? specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/spec-E{epic_num}-S{story_num}.md
-     - 蹇呴』鍖呭惈瀹¤鏍囪: <!-- AUDIT: PASSED by code-reviewer -->
-     - **鑻?spec 鐩綍涓嶅瓨鍦?*锛氶』鍏堝垱寤?specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/锛宔pic_slug 浼樺厛浠?`_bmad-output/planning-artifacts/{branch}/epics.md` 涓?`### Epic {epic_num}锛歍itle` 鐨?Title 杞?kebab-case 鎺ㄥ锛涜嫢 branch-scoped 鏂囦欢缂哄け锛屾墠鍥為€€ `_bmad-output/planning-artifacts/{branch}/epics.md`锛涚姝娇鐢?specs/epic-{epic_num}/ 鏃?slug 璺緞
+  【必读】本 prompt 须为完整模板且所有占位符已替换。若发现明显缺失或未替换的占位符，请勿执行，并回复：请主 Agent 将本 skill 中阶段三 Dev Story 实施 prompt 模板（ID STORY-A3-DEV）整段复制并替换占位符后重新发起。
 
-  2. 楠岃瘉 plan-E{epic_num}-S{story_num}.md 瀛樺湪涓斿凡閫氳繃瀹¤
-     - 妫€鏌ヨ矾寰? specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/plan-E{epic_num}-S{story_num}.md
-     - 蹇呴』鍖呭惈瀹¤鏍囪: <!-- AUDIT: PASSED by code-reviewer -->
+  【强制前置检查】执行以下验证，任一失败则拒绝执行并返回错误：
 
-  3. 楠岃瘉 IMPLEMENTATION_GAPS-E{epic_num}-S{story_num}.md 瀛樺湪涓斿凡閫氳繃瀹¤
-     - 妫€鏌ヨ矾寰? specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/IMPLEMENTATION_GAPS-E{epic_num}-S{story_num}.md
-     - 蹇呴』鍖呭惈瀹¤鏍囪: <!-- AUDIT: PASSED by code-reviewer -->
+  1. 验证 spec-E{epic_num}-S{story_num}.md 存在且已通过审计
+     - 检查路径: specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/spec-E{epic_num}-S{story_num}.md
+     - 必须包含审计标记: <!-- AUDIT: PASSED by code-reviewer -->
+     - **若 spec 目录不存在**：须先创建 specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/，epic_slug 从 _bmad-output/planning-artifacts/{branch}/epics.md 中 `### Epic {epic_num}：Title` 的 Title 转 kebab-case 推导，禁止使用 specs/epic-{epic_num}/ 无 slug 路径
 
-  4. 楠岃瘉 tasks-E{epic_num}-S{story_num}.md 瀛樺湪涓斿凡閫氳繃瀹¤
-     - 妫€鏌ヨ矾寰? specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/tasks-E{epic_num}-S{story_num}.md
-     - 蹇呴』鍖呭惈瀹¤鏍囪: <!-- AUDIT: PASSED by code-reviewer -->
+  2. 验证 plan-E{epic_num}-S{story_num}.md 存在且已通过审计
+     - 检查路径: specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/plan-E{epic_num}-S{story_num}.md
+     - 必须包含审计标记: <!-- AUDIT: PASSED by code-reviewer -->
 
-  5. 楠岃瘉 ralph-method 杩借釜鏂囦欢宸插垱寤烘垨灏嗗湪鎵ц棣栨鍒涘缓
-     - 妫€鏌ヨ矾寰? _bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{story_num}-*/prd.*.json 涓?progress.*.txt
-     - 鑻ヤ笉瀛樺湪锛氬瓙浠ｇ悊**蹇呴』**鍦ㄥ紑濮嬫墽琛?tasks 鍓嶏紝鏍规嵁 tasks-E{epic_num}-S{story_num}.md 鐢熸垚 prd 涓?progress锛堢鍚?ralph-method schema锛夛紝鍚﹀垯涓嶅緱寮€濮嬬紪鐮併€?     - **progress 棰勫～ TDD 妲戒綅**锛氱敓鎴?progress 鏃讹紝瀵规瘡涓?US 棰勫～ [TDD-RED]銆乕TDD-GREEN]銆乕TDD-REFACTOR] 鎴?[DONE] 鍗犱綅琛岋紙`_pending_`锛夛紝娑夊強鐢熶骇浠ｇ爜鐨?US 鍚笁鑰咃紝浠呮枃妗?閰嶇疆鐨勫惈 [DONE]銆?
-  濡傛湁浠讳綍涓€椤逛笉婊¤冻锛岀珛鍗宠繑鍥為敊璇細
-  "鍓嶇疆妫€鏌ュけ璐? [鍏蜂綋鍘熷洜]銆傝鍏堝畬鎴?speckit-workflow 鐨勫畬鏁存祦绋嬶紙specify鈫抪lan鈫扜APS鈫抰asks锛夈€?
+  3. 验证 IMPLEMENTATION_GAPS-E{epic_num}-S{story_num}.md 存在且已通过审计
+     - 检查路径: specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/IMPLEMENTATION_GAPS-E{epic_num}-S{story_num}.md
+     - 必须包含审计标记: <!-- AUDIT: PASSED by code-reviewer -->
+
+  4. 验证 tasks-E{epic_num}-S{story_num}.md 存在且已通过审计
+     - 检查路径: specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/tasks-E{epic_num}-S{story_num}.md
+     - 必须包含审计标记: <!-- AUDIT: PASSED by code-reviewer -->
+
+  5. 验证 ralph-method 追踪文件已创建或将在执行首步创建
+     - 检查路径: _bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{story_num}-*/prd.*.json 与 progress.*.txt
+     - 若不存在：子代理**必须**在开始执行 tasks 前，根据 tasks-E{epic_num}-S{story_num}.md 生成 prd 与 progress（符合 ralph-method schema），否则不得开始编码。
+     - **progress 预填 TDD 槽位**：生成 progress 时，对每个 US 预填 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 或 [DONE] 占位行（`_pending_`），涉及生产代码的 US 含三者，仅文档/配置的含 [DONE]。
+
+  如有任何一项不满足，立即返回错误：
+  "前置检查失败: [具体原因]。请先完成 speckit-workflow 的完整流程（specify→plan→GAPS→tasks）。"
 
   ---
 
-  浣犳槸涓€浣嶉潪甯歌祫娣辩殑寮€鍙戜笓瀹?Amelia 寮€鍙戯紙瀵瑰簲 BMAD 寮€鍙戣亴璐ｏ級锛岃礋璐ｆ寜 Story/TASKS 鎵ц瀹炴柦銆傝鎸変互涓嬭鑼冩墽琛屻€?
-  **銆怲DD 鎵ц椤哄簭锛堜笉鍙烦杩囷級銆?*
-  瀵?prd 涓瘡涓?involvesProductionCode=true 鐨?US锛屽繀椤荤嫭绔嬫墽琛屼竴娆″畬鏁村惊鐜紱绂佹浠呭棣栦釜 US 鎵ц TDD 鍚庡鍚庣画 US 璺宠繃绾㈢伅鐩存帴瀹炵幇銆傛瘡涓秹鍙婄敓浜т唬鐮佺殑浠诲姟锛屽繀椤讳弗鏍兼寜浠ヤ笅椤哄簭鎵ц锛?  1. 绾㈢伅锛氬厛鍐欐垨琛ュ厖瑕嗙洊璇ヤ换鍔￠獙鏀舵爣鍑嗙殑娴嬭瘯锛岃繍琛岄獙鏀跺懡浠わ紝纭澶辫触銆?  2. 缁跨伅锛氬啀鍐欐渶灏戦噺鐨勭敓浜т唬鐮佷娇娴嬭瘯閫氳繃銆?  3. 閲嶆瀯锛氬湪娴嬭瘯淇濇姢涓嬩紭鍖栦唬鐮侊紝骞跺湪 progress 涓褰?[TDD-REFACTOR]銆?  绂佹锛氬厛鍐欑敓浜т唬鐮佸啀琛ユ祴璇曪紱绂佹鍦ㄦ湭鐪嬪埌绾㈢伅锛堟祴璇曞け璐ワ級鍓嶈繘鍏ョ豢鐏樁娈点€?
-  **銆怲DD 绾㈢豢鐏樆濉炵害鏉熴€?* prd 涓瘡涓?involvesProductionCode=true 鐨?US 蹇呴』**鐙珛**鎵ц涓€娆″畬鏁?RED鈫扜REEN鈫扲EFACTOR 寰幆銆傛墽琛岄『搴忎负锛?  1. 鍏堝啓/琛ユ祴璇曞苟杩愯楠屾敹 鈫?蹇呴』寰楀埌澶辫触缁撴灉锛堢孩鐏級
-  2. 绔嬪嵆鍦?progress 杩藉姞 [TDD-RED] <浠诲姟ID> <楠屾敹鍛戒护> => N failed
-  3. 鍐嶅疄鐜板苟閫氳繃楠屾敹 鈫?寰楀埌閫氳繃缁撴灉锛堢豢鐏級
-  4. 绔嬪嵆鍦?progress 杩藉姞 [TDD-GREEN] <浠诲姟ID> <楠屾敹鍛戒护> => N passed
-  5. **鏃犺鏄惁鏈夐噸鏋?*锛屽湪 progress 杩藉姞 [TDD-REFACTOR] <浠诲姟ID> <鍐呭>锛堟棤鍏蜂綋閲嶆瀯鏃跺啓銆屾棤闇€閲嶆瀯 鉁撱€嶏級
-  绂佹鍦ㄦ湭瀹屾垚姝ラ 1鈥? 涔嬪墠鎵ц姝ラ 3銆?*绂佹浠呭棣栦釜 US 鎵ц TDD锛屽悗缁?US 璺宠繃绾㈢伅鐩存帴瀹炵幇**锛涚姝㈡墍鏈変换鍔″畬鎴愬悗闆嗕腑琛ュ啓 TDD 璁板綍銆?
-  **銆怲DD 绾㈢豢鐏褰曚笌楠屾敹銆?*
-  姣忓畬鎴愪竴涓秹鍙婄敓浜т唬鐮佺殑浠诲姟鐨勭豢鐏悗锛岀珛鍗冲湪 progress 杩藉姞涓夎锛?  `[TDD-RED] <浠诲姟ID> <楠屾敹鍛戒护> => N failed`
-  `[TDD-GREEN] <浠诲姟ID> <楠屾敹鍛戒护> => N passed`
-  `[TDD-REFACTOR] <浠诲姟ID> <鍐呭> | 鏃犻渶閲嶆瀯 鉁揱
-  闆嗘垚浠诲姟 REFACTOR 鍙啓銆屾棤鏂板鐢熶骇浠ｇ爜锛屽悇妯″潡鐙珛鎬у凡楠岃瘉锛屾棤璺ㄦā鍧楅噸鏋?鉁撱€嶃€?  浜や粯鍓嶈嚜妫€锛氬姣忎釜娑夊強鐢熶骇浠ｇ爜鐨勪换鍔★紝progress 椤诲惈 [TDD-RED]銆乕TDD-GREEN]銆乕TDD-REFACTOR]锛堟垨銆孴xx 鏃犻渶閲嶆瀯 鉁撱€嶏級鍚勮嚦灏戜竴琛岋紱涓?[TDD-RED] 琛岄』鍦?[TDD-GREEN] 琛屼箣鍓嶃€傜己浠讳竴椤瑰垯琛ュ厖鍚庡啀浜や粯銆傜姝㈡墍鏈?US 瀹屾垚鍚庢墠闆嗕腑琛ュ啓銆?
-  璇峰 Story {epic_num}-{story_num} 鎵ц Dev Story 瀹炴柦銆?
+  你是一位非常资深的开发专家 Amelia 开发（对应 BMAD 开发职责），负责按 Story/TASKS 执行实施。请按以下规范执行。
+
+  **【TDD 执行顺序（不可跳过）】**
+  对 prd 中每个 involvesProductionCode=true 的 US，必须独立执行一次完整循环；禁止仅对首个 US 执行 TDD 后对后续 US 跳过红灯直接实现。每个涉及生产代码的任务，必须严格按以下顺序执行：
+  1. 红灯：先写或补充覆盖该任务验收标准的测试，运行验收命令，确认失败。
+  2. 绿灯：再写最少量的生产代码使测试通过。
+  3. 重构：在测试保护下优化代码，并在 progress 中记录 [TDD-REFACTOR]。
+  禁止：先写生产代码再补测试；禁止在未看到红灯（测试失败）前进入绿灯阶段。
+
+  **【TDD 红绿灯阻塞约束】** prd 中每个 involvesProductionCode=true 的 US 必须**独立**执行一次完整 RED→GREEN→REFACTOR 循环。执行顺序为：
+  1. 先写/补测试并运行验收 → 必须得到失败结果（红灯）
+  2. 立即在 progress 追加 [TDD-RED] <任务ID> <验收命令> => N failed
+  3. 再实现并通过验收 → 得到通过结果（绿灯）
+  4. 立即在 progress 追加 [TDD-GREEN] <任务ID> <验收命令> => N passed
+  5. **无论是否有重构**，在 progress 追加 [TDD-REFACTOR] <任务ID> <内容>（无具体重构时写「无需重构 ✓」）
+  禁止在未完成步骤 1–2 之前执行步骤 3。**禁止仅对首个 US 执行 TDD，后续 US 跳过红灯直接实现**；禁止所有任务完成后集中补写 TDD 记录。
+
+  **【TDD 红绿灯记录与验收】**
+  每完成一个涉及生产代码的任务的绿灯后，立即在 progress 追加三行：
+  `[TDD-RED] <任务ID> <验收命令> => N failed`
+  `[TDD-GREEN] <任务ID> <验收命令> => N passed`
+  `[TDD-REFACTOR] <任务ID> <内容> | 无需重构 ✓`
+  集成任务 REFACTOR 可写「无新增生产代码，各模块独立性已验证，无跨模块重构 ✓」。
+  交付前自检：对每个涉及生产代码的任务，progress 须含 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR]（或「Txx 无需重构 ✓」）各至少一行；且 [TDD-RED] 行须在 [TDD-GREEN] 行之前。缺任一项则补充后再交付。禁止所有 US 完成后才集中补写。
+
+  请对 Story {epic_num}-{story_num} 执行 Dev Story 实施。
+
   **Post-audit persistence and unified host close-out for each stage (mandatory)**:
 
-  锛?锛夊悇 stage 瀹¤閫氳繃鏃讹紝灏嗘姤鍛婁繚瀛樿嚦 speckit-workflow 搂x.2 绾﹀畾璺緞锛泂pec/plan/GAPS/tasks 闃舵璺緞鍒嗗埆涓?specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/ 涓嬬殑 AUDIT_spec-銆丄UDIT_plan-銆丄UDIT_GAPS-銆丄UDIT_tasks-E{epic_num}-S{story_num}.md锛涚粨璁轰腑娉ㄦ槑淇濆瓨璺緞鍙?iteration_count銆?
-  锛?锛塮ail 杞姤鍛婁繚瀛樿嚦 AUDIT_{stage}-E{epic}-S{story}_round{N}.md銆?*楠岃瘉杞?*锛堣繛缁?3 杞棤 gap 鐨勭‘璁よ疆锛夋姤鍛?*涓嶅垪鍏?iterationReportPaths**锛屼粎 fail 杞強鏈€缁?pass 杞弬涓庢敹闆嗐€俻ass 鏃朵富 Agent 鏀堕泦鏈?stage 鎵€鏈?fail 杞姤鍛婅矾寰勶紝浼犲叆 `--iterationReportPaths path1,path2,...`锛堥€楀彿鍒嗛殧锛夛紱**涓€娆￠€氳繃鎴栨棤 fail 杞椂涓嶄紶**銆?
-  锛?锛塗he invoking host/runner must call `runAuditorHost` for spec/plan/GAPS/tasks stage close-out; the main Agent no longer hand-runs `bmad-speckit score`. **iteration_count passing (mandatory)**: pass the cumulative number of failed rounds for the stage; use 0 for first-pass success; verification rounds in a 3-round no-gap check do not increment `iteration_count`; omission is prohibited.
+  （1）各 stage 审计通过时，将报告保存至 speckit-workflow §x.2 约定路径；spec/plan/GAPS/tasks 阶段路径分别为 specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/ 下的 AUDIT_spec-、AUDIT_plan-、AUDIT_GAPS-、AUDIT_tasks-E{epic_num}-S{story_num}.md；结论中注明保存路径及 iteration_count。
 
-  锛?锛塱mplement 闃舵 artifactDocPath 鍙负 story 瀛愮洰褰曞疄鐜颁富鏂囨。璺緞鎴栫暀绌恒€?
-  锛?锛夎皟鐢ㄥけ璐ユ椂璁板綍 resultCode 杩涘璁¤瘉鎹紝涓嶉樆鏂祦绋嬨€?
-  **蹇呴』宓屽鎵ц speckit-workflow 瀹屾暣娴佺▼**锛歴pecify 鈫?plan 鈫?GAPS 鈫?tasks 鈫?鎵ц銆?
-  **涓婁笅鏂囦笌璺緞**锛?  - Story 鏂囨。锛歿project-root}/_bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{story_num}-*/*.md
-  - 浜у嚭璺緞锛歋tory 鏂囨。鍏?story 瀛愮洰褰?`epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/{epic_num}-{story_num}-{slug}.md`
-  - BUGFIX/TASKS 鏂囨。锛氾紙鐢变富 Agent 浼犲叆瀹為檯璺緞锛?  - 椤圭洰鏍圭洰褰曪細{project-root}
+  （2）fail 轮报告保存至 AUDIT_{stage}-E{epic}-S{story}_round{N}.md。**验证轮**（连续 3 轮无 gap 的确认轮）报告**不列入 iterationReportPaths**，仅 fail 轮及最终 pass 轮参与收集。pass 时主 Agent 收集本 stage 所有 fail 轮报告路径，传入 `--iterationReportPaths path1,path2,...`（逗号分隔）；**一次通过或无 fail 轮时不传**。
 
-  **蹇呴』閬靛畧**锛歳alph-method锛堟墽琛屽墠**蹇呴』**鍦?`_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/` 鍒涘缓 prd.{stem}.json 涓?progress.{stem}.txt锛坰tem 涓?tasks 鏂囨。 stem锛夛紱姣忓畬鎴愪竴涓?US 蹇呴』鏇存柊 prd锛坧asses=true锛夈€乸rogress锛堣拷鍔?story log锛夛紱鎸?US 椤哄簭鎵ц銆?*绂佹**鍦ㄦ湭鍒涘缓涓婅堪鏂囦欢鍓嶅紑濮嬬紪鐮侊級銆乀DD 绾㈢豢鐏€乻peckit-workflow銆佺姝吉瀹炵幇銆佸け璐ョ敤渚嬮』淇垨璁般€乸ytest 鍦ㄩ」鐩牴鐩綍杩愯銆?
-**implement 鎵ц绾︽潫**锛氭墽琛?implement锛堟垨绛変环鎵ц tasks锛夋椂锛屽瓙 Agent 蹇呴』鍔犺浇 speckit-workflow 涓?ralph-method 鎶€鑳斤紝鎴栬嚦灏戦伒瀹?commands/speckit.implement.md 涓祵鍏ョ殑 ralph 姝ラ锛堟楠?3.5銆?銆?锛夛紱涓嶅緱浠呭嚟銆屾墽琛?tasks銆嶇殑娉涘寲鐞嗚В鑰岃烦杩?prd/progress 鍒涘缓涓?per-US 鏇存柊銆?
-  璇疯鍙?ralph-method 鎶€鑳戒笌 speckit-workflow 鎶€鑳斤紝涓ユ牸鎸夌収鍏惰鍒欐墽琛屻€?
-  瀛愪换鍔¤繑鍥炲悗锛屼富 Agent 蹇呴』鍙戣捣闃舵鍥涘疄鏂藉悗瀹¤锛圫TORY-A4-POSTAUDIT锛夛紝绂佹璺宠繃銆傚疄鏂藉悗瀹¤涓哄繀椤绘楠わ紝闈炲彲閫夈€?```
+  （3）The invoking host/runner must call `runAuditorHost` for spec/plan/GAPS/tasks stage close-out; the main Agent no longer hand-runs `bmad-speckit score`. **iteration_count passing (mandatory)**: pass the cumulative number of failed rounds for the stage; use 0 for first-pass success; verification rounds in a 3-round no-gap check do not increment `iteration_count`; omission is prohibited.
+
+  （4）implement 阶段 artifactDocPath 可为 story 子目录实现主文档路径或留空。
+
+  （5）调用失败时记录 resultCode 进审计证据，不阻断流程。
+
+  **必须嵌套执行 speckit-workflow 完整流程**：specify → plan → GAPS → tasks → 执行。
+
+  **上下文与路径**：
+  - Story 文档：{project-root}/_bmad-output/implementation-artifacts/epic-{epic_num}-*/story-{story_num}-*/*.md
+  - 产出路径：Story 文档入 story 子目录 `epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/{epic_num}-{story_num}-{slug}.md`
+  - BUGFIX/TASKS 文档：（由主 Agent 传入实际路径）
+  - 项目根目录：{project-root}
+
+  **必须遵守**：ralph-method（执行前**必须**在 `_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/` 创建 prd.{stem}.json 与 progress.{stem}.txt（stem 为 tasks 文档 stem）；每完成一个 US 必须更新 prd（passes=true）、progress（追加 story log）；按 US 顺序执行。**禁止**在未创建上述文件前开始编码）、TDD 红绿灯、speckit-workflow、禁止伪实现、失败用例须修或记、pytest 在项目根目录运行。
+
+**implement 执行约束**：执行 implement（或等价执行 tasks）时，子 Agent 必须加载 speckit-workflow 与 ralph-method 技能，或至少遵守 commands/speckit.implement.md 中嵌入的 ralph 步骤（步骤 3.5、6、8）；不得仅凭「执行 tasks」的泛化理解而跳过 prd/progress 创建与 per-US 更新。
+
+  请读取 ralph-method 技能与 speckit-workflow 技能，严格按照其规则执行。
+
+  子任务返回后，主 Agent 必须发起阶段四实施后审计（STORY-A4-POSTAUDIT），禁止跳过。实施后审计为必须步骤，非可选。
+```
 #### 3.3.1 Cleanup after the subtask returns (mandatory step for the main Agent)
 
 After the subtask (STORY-A3-DEV) returns or times out, the main Agent **must** execute in order and is **not allowed** to skip:
@@ -979,11 +1045,11 @@ This stage is a **required** step and is not optional. The main Agent must initi
 ### Pre-check
 
 Before conducting a post-implementation audit, it must be confirmed that:
-- [ ] speckit specify stage code-review audit passed (搂1)
-- [ ] The speckit plan stage code-review audit has passed (搂2)
-- [ ] speckit GAPS stage code-review audit has passed (搂3)
-- [ ] The speckit tasks phase code-review audit has passed (搂4)
-- [ ] The speckit execution phase code-review audit has passed (搂5)
+- [ ] speckit specify stage code-review audit passed (§1)
+- [ ] The speckit plan stage code-review audit has passed (§2)
+- [ ] speckit GAPS stage code-review audit has passed (§3)
+- [ ] The speckit tasks phase code-review audit has passed (§4)
+- [ ] The speckit execution phase code-review audit has passed (§5)
 - [ ] TDD records are complete (including three stages of RED/GREEN/REFACTOR)
 - [ ] ralph-method progress file updated
 
@@ -991,9 +1057,9 @@ If any item fails, the audit must be completed first.
 
 ### Comprehensive audit
 
-Use `audit-prompts.md 搂5` for comprehensive validation. **Report parsable blocks must comply with 搂5.1** (four dimensions: functionality, code quality, test coverage, security), consistent with _bmad/_config/code-reviewer-config.yaml modes.code.dimensions, otherwise the code-mode scoring parser cannot parse them and the dashboard displays "No data" in the four dimensions.
+Use `audit-prompts.md §5` for comprehensive validation. **Report parsable blocks must comply with §5.1** (four dimensions: functionality, code quality, test coverage, security), consistent with _bmad/_config/code-reviewer-config.yaml modes.code.dimensions, otherwise the code-mode scoring parser cannot parse them and the dashboard displays "No data" in the four dimensions.
 
-**[搂5 Parsable block requirements (implement-only)]** The parsable scoring block at the end of the report **must** use the modes.code four dimension lines exactly as mandated in `audit-prompts.md` 搂5.1 / `code-reviewer-config.yaml` (Chinese labels for functionality, code quality, test coverage, security 鈥?copy verbatim from the STORY-A4-POSTAUDIT prompt fence). **Do not** use the story-stage four lines (requirements completeness, testability, consistency, traceability). The overall-rating line must use the bare `A|B|C|D` pattern with no `+`/`-` suffixes. Otherwise the code-mode scoring parser cannot parse the block and the dashboard shows empty dimension data.
+**[§5 Parsable block requirements (implement-only)]** The parsable scoring block at the end of the report **must** use the modes.code four dimension lines exactly as mandated in `audit-prompts.md` §5.1 / `code-reviewer-config.yaml` (Chinese labels for functionality, code quality, test coverage, security — copy verbatim from the STORY-A4-POSTAUDIT prompt fence). **Do not** use the story-stage four lines (requirements completeness, testability, consistency, traceability). The overall-rating line must use the bare `A|B|C|D` pattern with no `+`/`-` suffixes. Otherwise the code-mode scoring parser cannot parse the block and the dashboard shows empty dimension data.
 
 **Audit Dimensions**:
 1. Requirements coverage: Whether all requirements in the Story document are implemented
@@ -1001,15 +1067,15 @@ Use `audit-prompts.md 搂5` for comprehensive validation. **Report parsable bloc
 3. Code quality: Does it comply with the project coding specifications?
 3.1. Lint: The project must configure and execute Lint according to the technology stack (see lint-requirement-matrix); if a mainstream language is used but Lint is not configured, it must be regarded as a failed item; if it has been configured, it must be executed without errors or warnings. "Irrelevant to this mission" exemptions are prohibited.
 4. Document consistency: Whether the Story document, spec, plan, and code are consistent
-5. Traceability: Is the link from PRD requirements 鈫?Story 鈫?spec 鈫?task 鈫?code complete?
+5. Traceability: Is the link from PRD requirements → Story → spec → task → code complete?
 
 **Mandatory audit items (consistent with bmad-bug-assistant BUG-A4-POSTAUDIT)**:
 - **TDD sequence verification**: For the progress record of each task, [TDD-RED] must appear before [TDD-GREEN]; if [TDD-GREEN] appears before [TDD-RED] or lacks [TDD-RED], it will be judged as "post-incident" and the conclusion will not pass.
-- **Regression determination (mandatory)**: Any test case that existed before this Story鈥檚 implementation and fails after implementation counts as a regression; fix it or, with user approval, add it to the formal exclusion list. Do not excuse failures with 鈥渞elated to Story X鈥? 鈥渦nrelated to this Story鈥? 鈥渇rom a prior Story鈥? etc. Mandatory steps: run full regression and classify each failure; if someone claims 鈥渦nrelated to this Story鈥?without a formal exclusion record, the audit conclusion is fail.
+- **Regression determination (mandatory)**: Any test case that existed before this Story’s implementation and fails after implementation counts as a regression; fix it or, with user approval, add it to the formal exclusion list. Do not excuse failures with “related to Story X”, “unrelated to this Story”, “from a prior Story”, etc. Mandatory steps: run full regression and classify each failure; if someone claims “unrelated to this Story” without a formal exclusion record, the audit conclusion is fail.
 
 **Audit method**:
 - Priority: Cursor Task scheduling code-reviewer
-- Fallback: mcp_task generalPurpose + audit-prompts.md 搂5 content
+- Fallback: mcp_task generalPurpose + audit-prompts.md §5 content
 
 ### Audit conclusion processing
 
@@ -1094,10 +1160,10 @@ When all stories are completed, the following options are available:
 
 **pr-template-generator call**:
 ```bash
-# 鍒嗘瀽褰撳墠鍒嗘敮鐨刢ommits
+# 分析当前分支的commits
 analyze_commits(story_branch)
 
-# 鐢熸垚PR妯℃澘
+# 生成PR模板
 pr_template = generate_pr_template(
     story_id="4.1",
     story_title="metrics cache fix",
@@ -1106,9 +1172,12 @@ pr_template = generate_pr_template(
     tests_added=test_files
 )
 
-# PR妯℃澘鍐呭鍖呮嫭锛?# - Story鑳屾櫙鍜岀洰鐨?# - 涓昏鏀瑰姩鐐癸紙鍩轰簬commit message锛?# - 娴嬭瘯瑕嗙洊鎯呭喌
-# - 褰卞搷鑼冨洿
-# - 鍥炴粴鏂规
+# PR模板内容包括：
+# - Story背景和目的
+# - 主要改动点（基于commit message）
+# - 测试覆盖情况
+# - 影响范围
+# - 回滚方案
 ```
 #### Option [3] Batch Push all Story branches
 - Push all completed Story branches under Epic to the remote
@@ -1133,18 +1202,21 @@ Display batch review summary:
 **Precondition check**:
 ```python
 def batch_push_precheck(epic_id):
-    # 1. 妫€鏌ユ墍鏈塖tory鏄惁宸插畬鎴?    incomplete_stories = get_incomplete_stories(epic_id)
+    # 1. 检查所有Story是否已完成
+    incomplete_stories = get_incomplete_stories(epic_id)
     if incomplete_stories:
-        warn(f"浠ヤ笅Story鏈畬鎴? {incomplete_stories}")
-        if not user_confirm("鏄惁鍙帹閫佸凡瀹屾垚鐨凷tory锛?):
+        warn(f"以下Story未完成: {incomplete_stories}")
+        if not user_confirm("是否只推送已完成的Story？"):
             return False
 
-    # 2. 妫€鏌ヨ繙绋嬩粨搴撹繛鎺?    if not test_remote_connection():
-        error("鏃犳硶杩炴帴鍒拌繙绋嬩粨搴?)
+    # 2. 检查远程仓库连接
+    if not test_remote_connection():
+        error("无法连接到远程仓库")
         return False
 
-    # 3. 妫€鏌ユ潈闄?    if not has_push_permission():
-        error("娌℃湁鎺ㄩ€佹潈闄?)
+    # 3. 检查权限
+    if not has_push_permission():
+        error("没有推送权限")
         return False
 
     return True
@@ -1156,17 +1228,19 @@ def batch_push_stories(epic_id):
 
     for story in get_completed_stories(epic_id):
         try:
-            # 1. 鍒囨崲鍒癝tory鍒嗘敮
+            # 1. 切换到Story分支
             checkout_branch(f"story-{epic_id}-{story.num}")
 
-            # 2. 鎷夊彇鏈€鏂颁唬鐮侊紙閬垮厤鍐茬獊锛?            pull_latest()  # GAP-082 淇锛歱ull 澶辫触锛堝鍐茬獊锛夋椂榛樿 skip 璇?Story 缁х画涓嬩竴 Story 骞惰褰曪紱鍙€夈€屾彁绀虹敤鎴疯В鍐炽€嶆ā寮?
-            # 3. 鎺ㄩ€佸埌杩滅▼
+            # 2. 拉取最新代码（避免冲突）
+            pull_latest()  # GAP-082 修复：pull 失败（如冲突）时默认 skip 该 Story 继续下一 Story 并记录；可选「提示用户解决」模式
+
+            # 3. 推送到远程
             push_to_remote(f"story-{epic_id}-{story.num}")
 
-            # 4. 鐢熸垚PR妯℃澘
+            # 4. 生成PR模板
             pr_template = generate_pr_template(story)
 
-            # 5. 鍒涘缓PR
+            # 5. 创建PR
             pr_url = create_pull_request(
                 title=f"Story {epic_id}.{story.num}: {story.title}",
                 body=pr_template,
@@ -1196,16 +1270,16 @@ def batch_push_stories(epic_id):
 
 **Progress display**:
 ```
-鎵归噺鎺ㄩ€佷腑...
-[1/7] Story 4.1: 鎺ㄩ€佷腑... 鉁?瀹屾垚锛孭R #123
-[2/7] Story 4.2: 鎺ㄩ€佷腑... 鉁?瀹屾垚锛孭R #124
-[3/7] Story 4.3: 鎺ㄩ€佷腑... 鉂?澶辫触锛堢綉缁滈敊璇級
-[4/7] Story 4.4: 鎺ㄩ€佷腑... 鉁?瀹屾垚锛孭R #125
+批量推送中...
+[1/7] Story 4.1: 推送中... ✅ 完成，PR #123
+[2/7] Story 4.2: 推送中... ✅ 完成，PR #124
+[3/7] Story 4.3: 推送中... ❌ 失败（网络错误）
+[4/7] Story 4.4: 推送中... ✅ 完成，PR #125
 ...
 
-鎺ㄩ€佸畬鎴愶細6/7 鎴愬姛
-澶辫触锛歋tory 4.3
-鏄惁閲嶈瘯澶辫触鐨凷tory锛焄Y/n]
+推送完成：6/7 成功
+失败：Story 4.3
+是否重试失败的Story？[Y/n]
 ```
 #### Option [4] Keep branch for later processing
 - Keep current branch status
@@ -1218,15 +1292,43 @@ No matter which option is selected, the PR Merge link **must not automatically m
 
 **Single PR review interface**:
 ```
-鈺斺晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晽
-鈺?                   馃敀 PR瀹℃牳璇锋眰                            鈺?鈺犫晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨暎
-鈺? Epic: feature-epic-4 (鐢ㄦ埛绠＄悊绯荤粺閲嶆瀯)                    鈺?鈺? PR: #123 Story 4.1: metrics cache fix                     鈺?鈺熲攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈺?鈺? 馃搳 CI鐘舵€?        鉁?鍏ㄩ儴閫氳繃                              鈺?鈺? 馃搱 瑕嗙洊鐜囧彉鍖?    +2.3%                                   鈺?鈺? 馃攳 浠ｇ爜瀹℃煡:      鉁?宸查€氳繃 code-reviewer锛?*GAP-059 淇**锛氳皟鐢ㄦ椂浼犲叆 mode=pr锛屼粠 code-reviewer-config 璇诲彇 pr 妯″紡鎻愮ず璇嶏級                 鈺?鈺? 馃搧 褰卞搷鏂囦欢:      12涓?                                   鈺?鈺? 馃摑 PR鎻忚堪:        [鐢眕r-template-generator鐢熸垚]           鈺?鈺?                                                           鈺?鈺? 鉂?璇烽€夋嫨鎿嶄綔锛?                                           鈺?鈺? [1] 鉁?鎵瑰噯骞禡erge                                        鈺?鈺? [2] 鉂?鎷掔粷锛岃繑鍥炰慨鏀?                                     鈺?鈺? [3] 馃憖 鏌ョ湅璇︾粏diff                                       鈺?鈺? [4] 鈴笍  璺宠繃姝R                                          鈺?鈺氣晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨暆
+╔════════════════════════════════════════════════════════════╗
+║                    🔒 PR审核请求                            ║
+╠════════════════════════════════════════════════════════════╣
+║  Epic: feature-epic-4 (用户管理系统重构)                    ║
+║  PR: #123 Story 4.1: metrics cache fix                     ║
+╟────────────────────────────────────────────────────────────╢
+║  📊 CI状态:        ✅ 全部通过                              ║
+║  📈 覆盖率变化:    +2.3%                                   ║
+║  🔍 代码审查:      ✅ 已通过 code-reviewer（**GAP-059 修复**：调用时传入 mode=pr，从 code-reviewer-config 读取 pr 模式提示词）                 ║
+║  📁 影响文件:      12个                                    ║
+║  📝 PR描述:        [由pr-template-generator生成]           ║
+║                                                            ║
+║  ❓ 请选择操作：                                            ║
+║  [1] ✅ 批准并Merge                                        ║
+║  [2] ❌ 拒绝，返回修改                                      ║
+║  [3] 👀 查看详细diff                                       ║
+║  [4] ⏭️  跳过此PR                                          ║
+╚════════════════════════════════════════════════════════════╝
 ```
 **Batch review interface**:
 ```
-鈺斺晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晽
-鈺?                馃敀 鎵归噺PR瀹℃牳璇锋眰                           鈺?鈺犫晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨暎
-鈺? Epic: feature-epic-4                                       鈺?鈺? 寰呭鏍窹R: 3涓?                                             鈺?鈺熲攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈺?鈺? [#123] Story 4.1 - 鉁?CI閫氳繃 - 鉁?瀹¤A绾?                 鈺?鈺? [#124] Story 4.2 - 鉁?CI閫氳繃 - 鉁?瀹¤B绾?                 鈺?鈺? [#125] Story 4.3 - 鉁?CI閫氳繃 - 鈿狅笍  瀹¤C绾э紙闇€鍏虫敞锛?      鈺?鈺熲攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈺?鈺? 鉂?璇烽€夋嫨鎿嶄綔锛?                                           鈺?鈺? [1] 鉁?鎵瑰噯鍏ㄩ儴骞堕€愪釜Merge                                鈺?鈺? [2] 鉁?鎵瑰噯閮ㄥ垎锛堥€夋嫨锛?                                  鈺?鈺? [3] 鉂?鎷掔粷鍏ㄩ儴锛岃繑鍥炰慨鏀?                                鈺?鈺? [4] 馃憖 閫愪釜鏌ョ湅璇︽儏                                       鈺?鈺氣晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨暆
+╔════════════════════════════════════════════════════════════╗
+║                 🔒 批量PR审核请求                           ║
+╠════════════════════════════════════════════════════════════╣
+║  Epic: feature-epic-4                                       ║
+║  待审核PR: 3个                                              ║
+╟────────────────────────────────────────────────────────────╢
+║  [#123] Story 4.1 - ✅ CI通过 - ✅ 审计A级                  ║
+║  [#124] Story 4.2 - ✅ CI通过 - ✅ 审计B级                  ║
+║  [#125] Story 4.3 - ✅ CI通过 - ⚠️  审计C级（需关注）       ║
+╟────────────────────────────────────────────────────────────╢
+║  ❓ 请选择操作：                                            ║
+║  [1] ✅ 批准全部并逐个Merge                                ║
+║  [2] ✅ 批准部分（选择）                                   ║
+║  [3] ❌ 拒绝全部，返回修改                                 ║
+║  [4] 👀 逐个查看详情                                       ║
+╚════════════════════════════════════════════════════════════╝
 ```
 **Important Constraints**:
 - Must wait for the user to explicitly select [1] and confirm before merging
@@ -1240,41 +1342,58 @@ No matter which option is selected, the PR Merge link **must not automatically m
 **Single PR review interface**:
 ```python
 def show_pr_review_interface(pr_info):
-    # 鑾峰彇PR璇︾粏淇℃伅
+    # 获取PR详细信息
     ci_status = get_ci_status(pr_info.id)
     coverage_change = get_coverage_change(pr_info.id)
     code_review_result = get_code_review_result(pr_info.id)
     affected_files = get_affected_files(pr_info.id)
 
-    # 鏄剧ず瀹℃牳鐣岄潰
+    # 显示审核界面
     display(f"""
-鈺斺晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晽
-鈺?                   馃敀 PR瀹℃牳璇锋眰                            鈺?鈺犫晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨暎
-鈺? Epic: {pr_info.epic_name}                                  鈺?鈺? PR: #{pr_info.id} {pr_info.title}                         鈺?鈺熲攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈺?鈺? 馃搳 CI鐘舵€?        {ci_status.emoji} {ci_status.text}       鈺?鈺? 馃搱 瑕嗙洊鐜囧彉鍖?    {coverage_change}                        鈺?鈺? 馃攳 浠ｇ爜瀹℃煡:      {code_review_result.emoji} {code_review_result.grade}绾?鈺?鈺? 馃搧 褰卞搷鏂囦欢:      {len(affected_files)}涓?                 鈺?鈺? 馃摑 PR鎻忚堪:        [鐢眕r-template-generator鐢熸垚]           鈺?鈺?                                                           鈺?鈺? 鉂?璇烽€夋嫨鎿嶄綔锛?                                           鈺?鈺? [1] 鉁?鎵瑰噯骞禡erge                                        鈺?鈺? [2] 鉂?鎷掔粷锛岃繑鍥炰慨鏀?                                     鈺?鈺? [3] 馃憖 鏌ョ湅璇︾粏diff                                       鈺?鈺? [4] 鈴笍  璺宠繃姝R                                          鈺?鈺氣晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨暆
+╔════════════════════════════════════════════════════════════╗
+║                    🔒 PR审核请求                            ║
+╠════════════════════════════════════════════════════════════╣
+║  Epic: {pr_info.epic_name}                                  ║
+║  PR: #{pr_info.id} {pr_info.title}                         ║
+╟────────────────────────────────────────────────────────────╢
+║  📊 CI状态:        {ci_status.emoji} {ci_status.text}       ║
+║  📈 覆盖率变化:    {coverage_change}                        ║
+║  🔍 代码审查:      {code_review_result.emoji} {code_review_result.grade}级 ║
+║  📁 影响文件:      {len(affected_files)}个                  ║
+║  📝 PR描述:        [由pr-template-generator生成]           ║
+║                                                            ║
+║  ❓ 请选择操作：                                            ║
+║  [1] ✅ 批准并Merge                                        ║
+║  [2] ❌ 拒绝，返回修改                                      ║
+║  [3] 👀 查看详细diff                                       ║
+║  [4] ⏭️  跳过此PR                                          ║
+╚════════════════════════════════════════════════════════════╝
     """)
 
-    # 绛夊緟鐢ㄦ埛杈撳叆锛堣疆璇㈡ā寮忥紝24h瓒呮椂锛?    # GAP-010 淇锛欳ursor/Claude 鏃犵幇鎴?wait_for_user_input_with_polling API锛岄渶鑷瀹炵幇
-    # 瀹炵幇寤鸿锛氳緭鍑?prompt 鍚庣粨鏉熸湰杞紱鐢ㄦ埛鍦ㄤ笅鏉℃秷鎭洖澶?1/2/3/4
-    # 瓒呮椂/鎻愰啋锛氫粎鍦ㄤ細璇濅腑鎵撳嵃鎻愮ず淇℃伅锛屾殏涓嶉泦鎴愰偖浠?Slack 绛夊鎺?    choice = wait_for_user_input_with_polling(
+    # 等待用户输入（轮询模式，24h超时）
+    # GAP-010 修复：Cursor/Claude 无现成 wait_for_user_input_with_polling API，需自行实现
+    # 实现建议：输出 prompt 后结束本轮；用户在下条消息回复 1/2/3/4
+    # 超时/提醒：仅在会话中打印提示信息，暂不集成邮件/Slack 等外接
+    choice = wait_for_user_input_with_polling(
         timeout_hours=24,
         poll_interval_minutes=30,
-        on_timeout=lambda: print(f"[瓒呮椂鎻愰啋] PR #{pr_info.id} 寰呭鏍稿凡瓒呰繃24灏忔椂銆傝灏藉揩瀹屾垚瀹℃牳锛屾垨閫夋嫨璺宠繃/鎷掔粷銆?)
+        on_timeout=lambda: print(f"[超时提醒] PR #{pr_info.id} 待审核已超过24小时。请尽快完成审核，或选择跳过/拒绝。")
     )
 
     if choice == "1":
-        confirm = ask("纭畾瑕佹壒鍑嗗苟Merge姝R锛?[yes/no]: ")
+        confirm = ask("确定要批准并Merge此PR？ [yes/no]: ")
         if confirm.lower() == "yes":
             merge_pull_request(pr_info.id)
             return "merged"
         else:
             return "cancelled"
     elif choice == "2":
-        reason = ask("鎷掔粷鍘熷洜: ")
+        reason = ask("拒绝原因: ")
         reject_pull_request(pr_info.id, reason)
         return "rejected"
     elif choice == "3":
         show_diff(pr_info.id)
-        return show_pr_review_interface(pr_info)  # 閫掑綊鏄剧ず
+        return show_pr_review_interface(pr_info)  # 递归显示
     elif choice == "4":
         return "skipped"
 ```
@@ -1284,47 +1403,58 @@ def show_batch_review_interface(epic_id, pr_list):
     pr_statuses = [get_pr_status(pr) for pr in pr_list]
 
     display(f"""
-鈺斺晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晽
-鈺?                馃敀 鎵归噺PR瀹℃牳璇锋眰                           鈺?鈺犫晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨暎
-鈺? Epic: {epic_id}                                            鈺?鈺? 寰呭鏍窹R: {len(pr_list)}涓?                                鈺?鈺熲攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈺?""")
+╔════════════════════════════════════════════════════════════╗
+║                 🔒 批量PR审核请求                           ║
+╠════════════════════════════════════════════════════════════╣
+║  Epic: {epic_id}                                            ║
+║  待审核PR: {len(pr_list)}个                                 ║
+╟────────────────────────────────────────────────────────────╢
+""")
 
     for i, (pr, status) in enumerate(zip(pr_list, pr_statuses), 1):
-        display(f"鈺? [#{pr.id}] Story {pr.story_id} - {status.ci_emoji} CI{status.ci_status} - {status.review_emoji} 瀹¤{status.grade}绾?)
+        display(f"║  [#{pr.id}] Story {pr.story_id} - {status.ci_emoji} CI{status.ci_status} - {status.review_emoji} 审计{status.grade}级")
 
     display("""
-鈺熲攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈺?鈺? 鉂?璇烽€夋嫨鎿嶄綔锛?                                           鈺?鈺? [1] 鉁?鎵瑰噯鍏ㄩ儴骞堕€愪釜Merge                                鈺?鈺? [2] 鉁?鎵瑰噯閮ㄥ垎锛堥€夋嫨锛?                                  鈺?鈺? [3] 鉂?鎷掔粷鍏ㄩ儴锛岃繑鍥炰慨鏀?                                鈺?鈺? [4] 馃憖 閫愪釜鏌ョ湅璇︽儏                                       鈺?鈺氣晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨暆
+╟────────────────────────────────────────────────────────────╢
+║  ❓ 请选择操作：                                            ║
+║  [1] ✅ 批准全部并逐个Merge                                ║
+║  [2] ✅ 批准部分（选择）                                   ║
+║  [3] ❌ 拒绝全部，返回修改                                 ║
+║  [4] 👀 逐个查看详情                                       ║
+╚════════════════════════════════════════════════════════════╝
     """)
 
     choice = wait_for_user_input_with_polling(timeout_hours=24, poll_interval_minutes=30)
 
     if choice == "1":
-        confirm = ask(f"纭畾瑕佹壒鍑嗗叏閮▄len(pr_list)}涓狿R骞堕€愪釜Merge锛?[yes/no]: ")
+        confirm = ask(f"确定要批准全部{len(pr_list)}个PR并逐个Merge？ [yes/no]: ")
         if confirm.lower() == "yes":
             for pr in pr_list:
                 merge_pull_request(pr.id)
             return "all_merged"
     elif choice == "2":
-        # GAP-046/GAP-088 淇锛歴elect_prs_to_merge UI 浜や簰
+        # GAP-046/GAP-088 修复：select_prs_to_merge UI 交互
         selected = select_prs_to_merge(pr_list)
         for pr in selected:
             merge_pull_request(pr.id)
         return f"{len(selected)}_merged"
-    # ... 鍏朵粬閫夐」
+    # ... 其他选项
 ```
 **select_prs_to_merge UI interaction (GAP-046/GAP-088)**:
 ```python
 def select_prs_to_merge(pr_list):
-    """鎵瑰噯閮ㄥ垎PR鏃剁殑閫夋嫨閫昏緫"""
+    """批准部分PR时的选择逻辑"""
     display(pr_list with indices 1..n)
-    raw = input("杈撳叆搴忓彿锛岄€楀彿鎴栬寖鍥达紝濡?1,3,5 鎴?1-3: ")
+    raw = input("输入序号，逗号或范围，如 1,3,5 或 1-3: ")
     indices = parse_indices(raw, max_n=len(pr_list))
-    # 绌鸿緭鍏モ啋[]锛涢潪娉曟牸寮忊啋鎻愮ず閲嶈緭锛涜秺鐣屸啋蹇界暐
+    # 空输入→[]；非法格式→提示重输；越界→忽略
     return [pr_list[i-1] for i in indices if 1 <= i <= len(pr_list)]
 ```
 **Audit reminder mechanism** (only printed in session, not integrated with email/Slack yet):
 ```python
-# GAP-056 淇锛氬凡鐭ラ檺鍒垛€斺€旂敤鎴峰叧闂細璇濆悗 reopen 鏃舵彁閱掓棤娉曢€佽揪锛涘彲琛ュ厖銆屼細璇濇仮澶嶆椂妫€鏌ュ緟瀹℃牳 PR 骞舵彁绀恒€?if time_since_last_activity() > timedelta(hours=24):
-    print(f"[鎻愰啋] Epic {epic_id} 鏈夊緟瀹℃牳PR锛屽叡 {pending_pr_count} 涓凡瓒呰繃24灏忔椂锛岃灏藉揩澶勭悊銆?)
+# GAP-056 修复：已知限制——用户关闭会话后 reopen 时提醒无法送达；可补充「会话恢复时检查待审核 PR 并提示」
+if time_since_last_activity() > timedelta(hours=24):
+    print(f"[提醒] Epic {epic_id} 有待审核PR，共 {pending_pr_count} 个已超过24小时，请尽快处理。")
 ```
 **Review SLA Agreement** (recommended):
 - P0 PR: response within 4 hours
@@ -1339,25 +1469,36 @@ Execute after the subtask returns:
 
 ### 4.1 Audit sub-agent and prompt words
 
-Same as Phase 2: **Priority** Cursor Task schedules code-reviewer; **Fallback** mcp_task generalPurpose. The main Agent must copy the entire prompt template of **STORY-A4-POSTAUDIT** and replace the placeholders before passing it in. **The prompt passed into the audit subtask must contain [搂5 parsable block requirements (implement-specific)]** (see the previous section on comprehensive auditing), and be accompanied by audit-prompts 搂5.1 or audit-prompts-code.md parsable block examples (functionality, code quality, test coverage, security). **[Must do after passing the audit]**: when the conclusion is "complete coverage, verification passed", you (audit subagent) **must** return `projectRoot`, `reportPath`, `artifactDocPath=<story document path>`, and `stage=implement` so the invoking host/runner can call `runAuditorHost`; the report path is `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_Story_{epic}-{story}_stage4.md`; if host execution fails, indicate the resultCode in the conclusion; **it is forbidden** to return a passing conclusion before the host close-out is complete. For detailed templates, see the historical version of this skill or speckit-workflow references.
+Same as Phase 2: **Priority** Cursor Task schedules code-reviewer; **Fallback** mcp_task generalPurpose. The main Agent must copy the entire prompt template of **STORY-A4-POSTAUDIT** and replace the placeholders before passing it in. **The prompt passed into the audit subtask must contain [§5 parsable block requirements (implement-specific)]** (see the previous section on comprehensive auditing), and be accompanied by audit-prompts §5.1 or audit-prompts-code.md parsable block examples (functionality, code quality, test coverage, security). **[Must do after passing the audit]**: when the conclusion is "complete coverage, verification passed", you (audit subagent) **must** return `projectRoot`, `reportPath`, `artifactDocPath=<story document path>`, and `stage=implement` so the invoking host/runner can call `runAuditorHost`; the report path is `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_Story_{epic}-{story}_stage4.md`; if host execution fails, indicate the resultCode in the conclusion; **it is forbidden** to return a passing conclusion before the host close-out is complete. For detailed templates, see the historical version of this skill or speckit-workflow references.
 
 If the audit conclusion is **failed**, **must** be modified according to the audit report and be initiated again until "complete coverage and verification passed".
 
-**涓嶄腑鏂墽琛?contract**: The implementation subagent must continuously complete all remaining scoped User Stories/tasks. It must not pause after a milestone and wait for main-Agent approval. Control may return to the main Agent only when: 鈶?all work in the current scope is finished and the flow can enter post-audit; 鈶?a real blocker requires reroute / remediation; 鈶?an explicit audit or checkpoint boundary defined by this skill has been reached. 鎹㈣█涔嬶紝瀛愪唬鐞嗗繀椤昏繛缁畬鎴愬綋鍓嶄綔鐢ㄥ煙鍐呯殑鍏ㄩ儴鍓╀綑 User Story/浠诲姟銆?
+**不中断执行 contract**: The implementation subagent must continuously complete all remaining scoped User Stories/tasks. It must not pause after a milestone and wait for main-Agent approval. Control may return to the main Agent only when: ① all work in the current scope is finished and the flow can enter post-audit; ② a real blocker requires reroute / remediation; ③ an explicit audit or checkpoint boundary defined by this skill has been reached. 换言之，子代理必须连续完成当前作用域内的全部剩余 User Story/任务。
+
 ---
 
 ## Phase 5: Skill self-audit (when skill is created)
 
-When this skill is newly created or significantly modified, an audit subtask should be initiated for the skill file. Follow 搂2.1 / 搂4.1 order of precedence (code-reviewer first, generalPurpose on failure).
+When this skill is newly created or significantly modified, an audit subtask should be initiated for the skill file. Follow §2.1 / §4.1 order of precedence (code-reviewer first, generalPurpose on failure).
 ```yaml
-# 鍥為€€鏂规绀轰緥
+# 回退方案示例
 tool: mcp_task
 subagent_type: generalPurpose
 description: "Audit bmad-story-assistant skill"
 prompt: |
-  浣犳槸涓€浣嶉潪甯镐弗鑻涚殑浠ｇ爜瀹¤鍛樸€傝瀵广€宐mad-story-assistant SKILL.md銆嶈繘琛屽璁°€?
-  瀹¤鍐呭锛?  1. 鏄惁瀹屾暣瑕嗙洊鐢ㄦ埛瑕佹眰鐨?Create Story銆佸璁°€丏ev Story銆佸疄鏂藉悗瀹¤銆丼kill 鑷璁?鍏ㄦ祦绋嬨€?  2. Epic/Story 缂栧彿浣滀负杈撳叆鐨勮鏄庢槸鍚︽竻鏅帮紝鍗犱綅绗?{epic_num}銆亄story_num}銆亄project-root} 鏄惁涓€鑷淬€?  3. 寮曠敤鐨勫懡浠ゃ€佹妧鑳芥槸鍚﹀噯纭細/bmad-bmm-create-story銆?bmad-bmm-dev-story銆乵cp_task銆乺alph-method銆乻peckit-workflow銆乤udit-prompts.md 搂5銆?  4. 涓?Agent 绂佹鐩存帴淇敼鐢熶骇浠ｇ爜銆佸繀椤婚€氳繃 mcp_task 濮旀墭绛夌害鏉熸槸鍚︽槑纭€?  5. 涓枃琛ㄨ堪鏄惁娓呮櫚鏃犳涔夈€?  6. 瀹¤姝ラ鏄惁鏄庣‘锛歮cp_task 涓嶆敮鎸?code-reviewer锛涗紭鍏?Cursor Task 璋冨害 code-reviewer銆佸け璐ュ垯鍥為€€ mcp_task generalPurpose锛涙槸鍚﹂伩鍏嶅己鍒躲€屽繀椤荤敤 mcp_task銆嶏紱闃舵浜屼娇鐢?Story 涓撶敤鎻愮ず璇嶃€侀樁娈靛洓浣跨敤瀹屾暣 audit-prompts 搂5銆?  7. **鎺ㄨ繜闂幆**锛氱姝㈣瘝琛ㄦ槸鍚﹀惈銆屽厛瀹炵幇銆佸悗缁墿灞曘€佹垨鍚庣画鎵╁睍銆嶏紱鏄惁鍚€孲tory 鑼冨洿琛ㄨ堪绀轰緥銆嶏紱闃舵浜屽璁℃槸鍚﹀惈銆岀敱 Story X.Y 璐熻矗銆嶇殑楠岃瘉椤癸紱瀹¤鏈€氳繃鏃朵富 Agent 鏄惁椤诲厛鎵ц銆屽垱寤?鏇存柊 Story X.Y銆嶅啀鍐嶆瀹¤锛汣reate Story 鏄惁鍚闈㈡寚寮曪紙鍔熻兘涓嶅湪鏈?Story 浣嗗睘 Epic 鏃堕』鍐欐槑褰掑睘锛夈€?
-  鎶ュ憡缁撳熬蹇呴』鏄庣‘缁欏嚭缁撹锛氭槸鍚︺€屽畬鍏ㄨ鐩栥€侀獙璇侀€氳繃銆嶏紱鑻ユ湭閫氳繃锛岃鍒楀嚭鏈€氳繃椤瑰強淇敼寤鸿銆?```
+  你是一位非常严苛的代码审计员。请对「bmad-story-assistant SKILL.md」进行审计。
+
+  审计内容：
+  1. 是否完整覆盖用户要求的 Create Story、审计、Dev Story、实施后审计、Skill 自审计 全流程。
+  2. Epic/Story 编号作为输入的说明是否清晰，占位符 {epic_num}、{story_num}、{project-root} 是否一致。
+  3. 引用的命令、技能是否准确：/bmad-bmm-create-story、/bmad-bmm-dev-story、mcp_task、ralph-method、speckit-workflow、audit-prompts.md §5。
+  4. 主 Agent 禁止直接修改生产代码、必须通过 mcp_task 委托等约束是否明确。
+  5. 中文表述是否清晰无歧义。
+  6. 审计步骤是否明确：mcp_task 不支持 code-reviewer；优先 Cursor Task 调度 code-reviewer、失败则回退 mcp_task generalPurpose；是否避免强制「必须用 mcp_task」；阶段二使用 Story 专用提示词、阶段四使用完整 audit-prompts §5。
+  7. **推迟闭环**：禁止词表是否含「先实现、后续扩展、或后续扩展」；是否含「Story 范围表述示例」；阶段二审计是否含「由 Story X.Y 负责」的验证项；审计未通过时主 Agent 是否须先执行「创建/更新 Story X.Y」再再次审计；Create Story 是否含正面指引（功能不在本 Story 但属 Epic 时须写明归属）。
+
+  报告结尾必须明确给出结论：是否「完全覆盖、验证通过」；若未通过，请列出未通过项及修改建议。
+```
 Iteratively modify SKILL.md and audit again until the report conclusion is "fully covered and verified."
 
 ---
@@ -1392,7 +1533,7 @@ In scenarios such as mcp_task subtask invocation, Party Mode multi-round dialogu
 
 **Instructions for use**:
 - **mcp_task subtask context**: Use the display name when referencing the BMAD workflow or recommending next steps in the prompt (such as "can be handed over to Winston architect for architecture review").
-- **Party Mode multiple rounds of dialogue**: When Facilitator introduces and speaks, the role must be marked with a display name (such as "馃彈锔?**Winston Architect**:..." "馃捇 **Amelia Developer**:..."), which is consistent with the `displayName` of `_bmad/_config/agent-manifest.csv` and the above table.
+- **Party Mode multiple rounds of dialogue**: When Facilitator introduces and speaks, the role must be marked with a display name (such as "🏗️ **Winston Architect**:..." "💻 **Amelia Developer**:..."), which is consistent with the `displayName` of `_bmad/_config/agent-manifest.csv` and the above table.
 
 ---
 
@@ -1455,7 +1596,7 @@ In all Party-Mode discussions, the Critical Auditor must speak first each round.
 | Dev Story command | `/bmad-bmm-dev-story` (or command file `bmad-bmm-dev-story.md`) |
 | ralph-method skill | `ralph-method` SKILL.md |
 | speckit-workflow skills | `speckit-workflow` SKILL.md |
-| audit-prompts.md 搂5 | Preferred: global skills `speckit-workflow/references/audit-prompts.md` Section 5 (as under `~/.cursor/skills/`); alternative: within the project `{project-root}/docs/speckit/skills/speckit-workflow/references/audit-prompts.md` |
+| audit-prompts.md §5 | Preferred: global skills `speckit-workflow/references/audit-prompts.md` Section 5 (as under `~/.cursor/skills/`); alternative: within the project `{project-root}/docs/speckit/skills/speckit-workflow/references/audit-prompts.md` |
 | workflow.xml | `{project-root}/_bmad/core/tasks/workflow.xml` |
 | create-story workflow | `{project-root}/_bmad/bmm/workflows/4-implementation/create-story/workflow.yaml` |
 | dev-story workflow | `{project-root}/_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml` |
@@ -1470,7 +1611,7 @@ In all Party-Mode discussions, the Critical Auditor must speak first each round.
 When this skill is executed to "Phase 3: Dev Story Implementation", the following constraints must be followed:
 
 1. **Process Constraints**
-   - Must be executed in order: specify 鈫?plan 鈫?GAPS 鈫?tasks 鈫?execute
+   - Must be executed in order: specify → plan → GAPS → tasks → execute
    - Each stage must pass the code-review audit before entering the next stage.
    - Skipping any stage or audit is strictly prohibited
 
@@ -1491,8 +1632,8 @@ When this skill is executed to "Phase 3: Dev Story Implementation", the followin
    - All audits must reach Level A/B before they can continue
 
 5. **Worktree Constraints**
-   - The number of stories 鈮?2 uses story-level worktree
-   - The number of stories 鈮?3 uses Epic-level worktree
+   - The number of stories ≤ 2 uses story-level worktree
+   - The number of stories ≥ 3 uses Epic-level worktree
    - When switching the Story branch, you must commit/stash uncommitted changes
 
 **Violation handling**:
@@ -1544,6 +1685,6 @@ The following data is retained when rolling back:
 
 - **Rollback** (correct-course): Return to the Create Story/speckit and other stages, calculated by **Story**; the same Story can be rolled back up to 3 times, and BMad Master is required to intervene if more than 3 times is rolled back.
 - **Rollback** (rollback-worktree): The worktree returns from the Epic level to the Story level, calculated in **Epic**; the same Epic can be rolled back up to 2 times (see Task 3.6)
-- **BMad Master intervention (GAP-037 fix)**: When rolling back > 3 times or rolling back > 2 times, the user or project leader needs to confirm; Approval steps: Record the reason 鈫?User confirms "continue" or "terminate" 鈫?reset the count if continuing
+- **BMad Master intervention (GAP-037 fix)**: When rolling back > 3 times or rolling back > 2 times, the user or project leader needs to confirm; Approval steps: Record the reason → User confirms "continue" or "terminate" → reset the count if continuing
 - Falling back to Layer 1 will reset the entire Epic plan
 - Rollback/rollback operations must record the reasons and decision-making process

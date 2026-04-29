@@ -44,6 +44,7 @@ import {
   resolveMainAgentOrchestrationSurface,
   type MainAgentOrchestrationSurface,
 } from './main-agent-orchestration';
+import { validateLayer1PrdCompletionMarker } from './bmad-help-five-layer-progress-marker';
 
 const READINESS_REPORT_PATTERN = /^implementation-readiness-report-\d{4}-\d{2}-\d{2}\.md$/i;
 const IMPLEMENTATION_GATE_NAME = 'implementation-readiness' as const;
@@ -181,7 +182,6 @@ function stageEvidenceNames(stage: StageName): Set<string> {
   const normalized = String(stage).toLowerCase();
   const dashed = normalized.replace(/_/g, '-');
   const names = new Set([`${normalized}.json`, `${normalized}.md`, `${dashed}.json`, `${dashed}.md`]);
-  if (stage === 'prd') names.add('project.json');
   if (stage === 'arch') {
     for (const item of ['architecture.md', 'architecture.json', 'arch.md', 'arch.json']) names.add(item);
   }
@@ -238,6 +238,12 @@ function hasFiveLayerEvidence(projectRoot: string, layerId: FiveLayerId, stage: 
     );
   }
   const explicitPath = path.join(root, `${layerId}-${stage}.complete.json`);
+  if (layerId === 'layer_1' && stage === 'prd') {
+    return validateLayer1PrdCompletionMarker({
+      projectRoot,
+      markerPath: explicitPath,
+    });
+  }
   if (fs.existsSync(explicitPath)) return true;
   const names = stageEvidenceNames(stage);
   return fs
@@ -876,15 +882,15 @@ function buildImplementationEntryBlockers(input: {
     switch (input.flow) {
       case 'story':
         blockerCodes.push('story_audit_not_closed');
-        blockerSummary.push('Story Audit authoritative closeout 灏氭湭瀹屾垚鎴栨湭閫氳繃');
+        blockerSummary.push('Story Audit authoritative closeout is missing or has not passed');
         break;
       case 'bugfix':
         blockerCodes.push('bugfix_document_audit_not_closed');
-        blockerSummary.push('BUGFIX 鏂囨。 authoritative closeout 灏氭湭瀹屾垚鎴栨湭閫氳繃');
+        blockerSummary.push('BUGFIX document authoritative closeout is missing or has not passed');
         break;
       case 'standalone_tasks':
         blockerCodes.push('standalone_tasks_document_audit_not_closed');
-        blockerSummary.push('TASKS/BUGFIX 鏂囨。鍓嶇疆瀹¤ authoritative closeout 灏氭湭瀹屾垚鎴栨湭閫氳繃');
+        blockerSummary.push('TASKS/BUGFIX prerequisite audit authoritative closeout is missing or has not passed');
         break;
       default:
         break;

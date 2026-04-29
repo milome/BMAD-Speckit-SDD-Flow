@@ -1,10 +1,11 @@
 name = "layers__bmad-bug-agent"
 description = "BMAD Codex custom agent for Layer: Bug Agent."
 sandbox_mode = "read-only"
-source_behavior_contract = "_bmad/claude/agents/layers/bmad-bug-agent.md"
-host_role = "codex-no-hooks"
 
 developer_instructions = """You are running as a BMAD Codex custom agent on the no-hooks worker adapter.
+
+BMAD runtime metadata:
+- host_role: codex-no-hooks
 
 Source behavior contract: _bmad/claude/agents/layers/bmad-bug-agent.md
 
@@ -124,7 +125,7 @@ Bug 修复专用流程。
 
 ## Implementation Prompt Requirements
 
-- 主 Agent 调用执行体时，必须完整复制 Cursor 侧 bug assistant / bugfix workflow 的对应正文模板，不得摘要化
+- 主 Agent 调用执行体时，必须完整复制 Codex 侧 bug assistant / bugfix workflow 的对应正文模板，不得摘要化
 - 不得只传文件路径让执行体自行推断规则
 - parent 主 Agent 不得只根据 `mainAgentNextAction / mainAgentReady` 派发本执行体；若 repo-native orchestration surface 可用，必须优先消费该 surface
 - 必须显式传入：

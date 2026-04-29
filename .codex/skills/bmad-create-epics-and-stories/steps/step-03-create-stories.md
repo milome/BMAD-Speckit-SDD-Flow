@@ -1,6 +1,4 @@
-﻿# Step 3: Generate Epics and Stories
-
-> Legacy compatibility step only. Canonical epics output path is `{planning_artifacts}/{branch}/epics.md`.
+# Step 3: Generate Epics and Stories
 
 ## STEP GOAL:
 
@@ -10,47 +8,47 @@ To generate all epics with their stories based on the approved epics_list, follo
 
 ### Universal Rules:
 
-- 馃洃 NEVER generate content without user input
-- 馃摉 CRITICAL: Read the complete step file before taking any action
-- 馃攧 CRITICAL: Process epics sequentially
-- 馃搵 YOU ARE A FACILITATOR, not a content generator
-- 鉁?YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
+- 🛑 NEVER generate content without user input
+- 📖 CRITICAL: Read the complete step file before taking any action
+- 🔄 CRITICAL: Process epics sequentially
+- 📋 YOU ARE A FACILITATOR, not a content generator
+- ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
 
 ### Role Reinforcement:
 
-- 鉁?You are a product strategist and technical specifications writer
-- 鉁?If you already have been given communication or persona patterns, continue to use those while playing this new role
-- 鉁?We engage in collaborative dialogue, not command-response
-- 鉁?You bring story creation and acceptance criteria expertise
-- 鉁?User brings their implementation priorities and constraints
+- ✅ You are a product strategist and technical specifications writer
+- ✅ If you already have been given communication or persona patterns, continue to use those while playing this new role
+- ✅ We engage in collaborative dialogue, not command-response
+- ✅ You bring story creation and acceptance criteria expertise
+- ✅ User brings their implementation priorities and constraints
 
 ### Step-Specific Rules:
 
-- 馃幆 Generate stories for each epic following the template exactly
-- 馃毇 FORBIDDEN to deviate from template structure
-- 馃挰 Each story must have clear acceptance criteria
-- 馃毆 ENSURE each story is completable by a single dev agent
-- 馃敆 **CRITICAL: Stories MUST NOT depend on future stories within the same epic**
+- 🎯 Generate stories for each epic following the template exactly
+- 🚫 FORBIDDEN to deviate from template structure
+- 💬 Each story must have clear acceptance criteria
+- 🚪 ENSURE each story is completable by a single dev agent
+- 🔗 **CRITICAL: Stories MUST NOT depend on future stories within the same epic**
 
 ## EXECUTION PROTOCOLS:
 
-- 馃幆 Generate stories collaboratively with user input
-- 馃捑 Append epics and stories to {planning_artifacts}/{branch}/epics.md following template
-- 馃摉 Process epics one at a time in sequence
-- 馃毇 FORBIDDEN to skip any epic or rush through stories
+- 🎯 Generate stories collaboratively with user input
+- 💾 Append epics and stories to {planning_artifacts}/epics.md following template
+- 📖 Process epics one at a time in sequence
+- 🚫 FORBIDDEN to skip any epic or rush through stories
 
 ## STORY GENERATION PROCESS:
 
 ### 1. Load Approved Epic Structure
 
-Load {planning_artifacts}/{branch}/epics.md and review:
+Load {planning_artifacts}/epics.md and review:
 
 - Approved epics_list from Step 2
 - FR coverage map
 - All requirements (FRs, NFRs, additional, **UX Design requirements if present**)
 - Template structure at the end of the document
 
-**UX Design Integration**: If UX Design Requirements (UX-DRs) were extracted in Step 1, ensure they are visible during story creation. UX-DRs must be covered by stories 鈥?either within existing epics (e.g., accessibility fixes for a feature epic) or in a dedicated "Design System / UX Polish" epic.
+**UX Design Integration**: If UX Design Requirements (UX-DRs) were extracted in Step 1, ensure they are visible during story creation. UX-DRs must be covered by stories — either within existing epics (e.g., accessibility fixes for a feature epic) or in a dedicated "Design System / UX Polish" epic.
 
 ### 2. Explain Story Creation Approach
 
@@ -64,19 +62,19 @@ For each epic, create stories that:
 - Include specific acceptance criteria
 - Reference requirements being fulfilled
 
-**馃毃 DATABASE/ENTITY CREATION PRINCIPLE:**
+**🚨 DATABASE/ENTITY CREATION PRINCIPLE:**
 Create tables/entities ONLY when needed by the story:
 
-- 鉂?WRONG: Epic 1 Story 1 creates all 50 database tables
-- 鉁?RIGHT: Each story creates/alters ONLY the tables it needs
+- ❌ WRONG: Epic 1 Story 1 creates all 50 database tables
+- ✅ RIGHT: Each story creates/alters ONLY the tables it needs
 
-**馃敆 STORY DEPENDENCY PRINCIPLE:**
+**🔗 STORY DEPENDENCY PRINCIPLE:**
 Stories must be independently completable in sequence:
 
-- 鉂?WRONG: Story 1.2 requires Story 1.3 to be completed first
-- 鉁?RIGHT: Each story can be completed based only on previous stories
-- 鉂?WRONG: "Wait for Story 1.4 to be implemented before this works"
-- 鉁?RIGHT: "This story works independently and enables future stories"
+- ❌ WRONG: Story 1.2 requires Story 1.3 to be completed first
+- ✅ RIGHT: Each story can be completed based only on previous stories
+- ❌ WRONG: "Wait for Story 1.4 to be implemented before this works"
+- ✅ RIGHT: "This story works independently and enables future stories"
 
 **STORY FORMAT (from template):**
 
@@ -95,7 +93,7 @@ So that {value_benefit}.
 **And** {additional_criteria}
 ```
 
-**鉁?GOOD STORY EXAMPLES:**
+**✅ GOOD STORY EXAMPLES:**
 
 _Epic 1: User Authentication_
 
@@ -109,7 +107,7 @@ _Epic 2: Content Creation_
 - Story 2.2: Edit Existing Blog Post
 - Story 2.3: Publish Blog Post
 
-**鉂?BAD STORY EXAMPLES:**
+**❌ BAD STORY EXAMPLES:**
 
 - Story: "Set up database" (no user value)
 - Story: "Create all models" (too large, no user value)
@@ -167,7 +165,7 @@ After writing each story:
 
 When story is approved:
 
-- Append it to {planning_artifacts}/{branch}/epics.md following template structure
+- Append it to {planning_artifacts}/epics.md following template structure
 - Use correct numbering (Epic N, Story M)
 - Maintain proper markdown formatting
 
@@ -196,7 +194,7 @@ After all epics and stories are generated:
 
 ## TEMPLATE STRUCTURE COMPLIANCE:
 
-The final {planning_artifacts}/{branch}/epics.md must follow this structure exactly:
+The final {planning_artifacts}/epics.md must follow this structure exactly:
 
 1. **Overview** section with project name
 2. **Requirements Inventory** with all three subsections populated
@@ -218,7 +216,7 @@ Display: "**Select an Option:** [A] Advanced Elicitation [P] Party Mode [C] Cont
 
 - IF A: Invoke the `bmad-advanced-elicitation` skill
 - IF P: Invoke the `bmad-party-mode` skill
-- IF C: Save content to {planning_artifacts}/{branch}/epics.md, update frontmatter, then read fully and follow: ./step-04-final-validation.md
+- IF C: Save content to {planning_artifacts}/epics.md, update frontmatter, then read fully and follow: ./step-04-final-validation.md
 - IF Any other comments or queries: help user respond then [Redisplay Menu Options](#7-present-final-menu-options)
 
 #### EXECUTION RULES:
@@ -234,9 +232,9 @@ ONLY WHEN [C continue option] is selected and [all epics and stories saved to do
 
 ---
 
-## 馃毃 SYSTEM SUCCESS/FAILURE METRICS
+## 🚨 SYSTEM SUCCESS/FAILURE METRICS
 
-### 鉁?SUCCESS:
+### ✅ SUCCESS:
 
 - All epics processed in sequence
 - Stories created for each epic
@@ -246,7 +244,7 @@ ONLY WHEN [C continue option] is selected and [all epics and stories saved to do
 - Acceptance criteria are specific and testable
 - Document is complete and ready for development
 
-### 鉂?SYSTEM FAILURE:
+### ❌ SYSTEM FAILURE:
 
 - Deviating from template structure
 - Missing epics or stories
@@ -255,4 +253,3 @@ ONLY WHEN [C continue option] is selected and [all epics and stories saved to do
 - Not following proper formatting
 
 **Master Rule:** Skipping steps, optimizing sequences, or not following exact instructions is FORBIDDEN and constitutes SYSTEM FAILURE.
-

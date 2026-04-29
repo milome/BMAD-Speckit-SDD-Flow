@@ -1,4 +1,5 @@
-﻿import { execSync } from 'node:child_process';
+import { execSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -22,6 +23,59 @@ function writeJson(filePath: string, value: unknown): void {
 function writeText(filePath: string, value: string): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, value, 'utf8');
+}
+
+function sha256File(filePath: string): string {
+  return createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
+}
+
+function writeLayer1PrdCompletionEvidence(root: string): void {
+  const prdRelativePath = '_bmad-output/planning-artifacts/dev/prd.md';
+  const productBriefRelativePath = '_bmad-output/planning-artifacts/product-brief-consumer.md';
+  const runtimeContextRelativePath = '_bmad-output/runtime/context/project.json';
+  const prdPath = path.join(root, prdRelativePath);
+  const productBriefPath = path.join(root, productBriefRelativePath);
+  const runtimeContextPath = path.join(root, runtimeContextRelativePath);
+  writeText(prdPath, '# PRD\n\nConsumer layer 1 PRD evidence.\n');
+  writeText(productBriefPath, '# Product Brief\n\nConsumer layer 1 product brief evidence.\n');
+  if (!fs.existsSync(runtimeContextPath)) {
+    writeJson(runtimeContextPath, { flow: 'story', stage: 'prd' });
+  }
+  writeJson(path.join(root, '_bmad-output', 'runtime', 'context', 'layer_1-prd.complete.json'), {
+    markerType: 'bmad_help_five_layer_stage_complete',
+    schemaVersion: 'layer_1_prd_completion/v1',
+    layer: 'layer_1',
+    stage: 'prd',
+    generatedAt: '2026-04-29T00:00:00.000Z',
+    inputs: {
+      productBriefs: [productBriefRelativePath],
+      prds: [prdRelativePath],
+      runtimeContext: runtimeContextRelativePath,
+    },
+    sources: {
+      planningArtifactsRoot: '_bmad-output/planning-artifacts',
+      branch: 'dev',
+      bmmConfigPath: '_bmad/bmm/config.yaml',
+      productBriefWorkflowPath:
+        '_bmad/bmm/workflows/1-analysis/create-product-brief/steps/step-01-init.md',
+      prdWorkflowPath: '_bmad/bmm/workflows/2-plan-workflows/create-prd/steps-c/step-01-init.md',
+    },
+    hashes: {
+      [prdRelativePath]: sha256File(prdPath),
+      [productBriefRelativePath]: sha256File(productBriefPath),
+    },
+    acceptance: {
+      prdPresent: true,
+      contextPresent: true,
+      productBriefPresent: true,
+      layer1Complete: true,
+    },
+    handoff: {
+      nextLayer: 'layer_2',
+      nextStage: 'arch',
+      summary: 'Layer 1 PRD/context evidence is complete and ready for architecture handoff.',
+    },
+  });
 }
 
 function writeFakeCodexBinary(root: string): string {
@@ -116,6 +170,7 @@ describe('Codex consumer five-layer main-agent e2e', () => {
       );
       expect(JSON.parse(deliveryOutput).orchestrationState.host).toBe('codex');
 
+      writeLayer1PrdCompletionEvidence(target);
       writeJson(path.join(target, 'docs', 'architecture', 'architecture.json'), { architecture: true });
       writeJson(path.join(target, 'docs', 'stories', 'epics.json'), { epics: [] });
       writeJson(path.join(target, 'docs', 'stories', 'story-create.json'), { stories: [] });

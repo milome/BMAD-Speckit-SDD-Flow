@@ -1,20 +1,17 @@
 #!/usr/bin/env node
 /**
- * bmad-speckit CLI 涓诲叆鍙?(ARCH 搂3.1)
+ * bmad-speckit CLI main entry (ARCH section 3.1)
  *
  * @description
- * BMAD-Speckit CLI锛氭彁渚?init銆乧heck銆乿ersion銆乽pgrade銆乧onfig銆乫eedback 绛夊瓙鍛戒护锛? * 鐢ㄤ簬鍒濆鍖栭」鐩€佹牎楠岄厤缃€佺鐞嗘ā鏉跨増鏈瓑銆? *
- * 杩愯鏂瑰紡锛? * - 椤圭洰鏍? npx bmad-speckit <cmd> 鎴?npm run speckit -- <cmd>
- * - 鍖呯洰褰? node bin/bmad-speckit.js <cmd>
- * - 鍏ㄥ眬: bmad-speckit <cmd> (npm link 鍚?
+ * BMAD-Speckit CLI provides init, check, version, upgrade, config, feedback,
+ * and main-agent governance commands for consumer projects.
  *
- * 閫€鍑虹爜绾﹀畾锛堣 constants/exit-codes.js锛夛細
- * - 0: SUCCESS
- * - 1: GENERAL_ERROR
- * - 2: AI_INVALID
- * - 3: NETWORK_TEMPLATE_FAILED
- * - 4: TARGET_PATH_UNAVAILABLE
- * - 5: OFFLINE_CACHE_MISSING
+ * Usage:
+ * - Project root: npx bmad-speckit <cmd> or npm run speckit -- <cmd>
+ * - Package dir: node bin/bmad-speckit.js <cmd>
+ * - Global: bmad-speckit <cmd> after npm link
+ *
+ * Exit codes are defined in constants/exit-codes.js.
  */
 const { program } = require('commander');
 const { spawnSync } = require('child_process');
@@ -533,6 +530,27 @@ program
   });
 
 program
+  .command('bmads')
+  .description('Render the BMAD-Speckit main-agent runtime console')
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .action(() => runRepoScript('bmads-renderer.ts', process.argv.slice(3)));
+
+program
+  .command('bmads-auto')
+  .description('Run the BMADS Auto governed orchestration CLI surface')
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .action(() => runRepoScript('bmads-auto-cli.ts', process.argv.slice(3)));
+
+program
+  .command('bmad-speckit')
+  .description('Alias for bmads: render the BMAD-Speckit main-agent runtime console')
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .action(() => runRepoScript('bmads-renderer.ts', process.argv.slice(3)));
+
+program
   .command('main-agent-orchestration')
   .description('Run the BMAD main-agent orchestration CLI surface')
   .allowUnknownOption(true)
@@ -541,7 +559,7 @@ program
 
 program
   .command('main-agent:bmad-help-five-layer-matrix')
-  .description('Run the BMAD help five-layer routing matrix CLI surface')
+  .description('Run the diagnostic BMAD help five-layer matrix; use bmad-help for the stable user help renderer')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action(() => runRepoScript('main-agent-bmad-help-five-layer-matrix.ts', process.argv.slice(3)));

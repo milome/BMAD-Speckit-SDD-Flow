@@ -4,7 +4,7 @@ description: 'Execute a story by implementing tasks/subtasks, writing tests, val
 disable-model-invocation: true
 ---
 
-> **Speckit-SDD-Flow:** Prefer the **`bmad-story-assistant`** skill for the full Story lifecycle (Create Story 鈫?audit 鈫?Dev Story 鈫?post-audit). It integrates **speckit-workflow** and audit-loop iteration. Invoking this command **alone** is **not recommended**鈥攗se the skill entry point instead.
+> **Speckit-SDD-Flow:** Prefer the **`bmad-story-assistant`** skill for the full Story lifecycle (Create Story → audit → Dev Story → post-audit). It integrates **speckit-workflow** and audit-loop iteration. Invoking this command **alone** is **not recommended**—use the skill entry point instead.
 
 **Required skills**: bmad-story-assistant, speckit-workflow
 **Install**: `pwsh scripts/setup.ps1 -Target <project-root>` or copy manually to `{SKILLS_ROOT}`

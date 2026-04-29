@@ -1,4 +1,4 @@
-﻿# Pull Request audit prompts (English)
+# Pull Request audit prompts (English)
 
 ## Scope
 Pull Request (merge readiness)
@@ -22,8 +22,8 @@ Verify CI health, code review quality, tests, and impact assessment.
 **Checks**
 - [ ] Follows project style
 - [ ] Naming and comments adequate
-- [ ] No obvious security issues (SQLi, XSS, 鈥?
-- [ ] No major performance issues (N+1, leaks, 鈥?
+- [ ] No obvious security issues (SQLi, XSS, …)
+- [ ] No major performance issues (N+1, leaks, …)
 - [ ] Complexity reasonable
 
 ### 3. Test coverage (20%)

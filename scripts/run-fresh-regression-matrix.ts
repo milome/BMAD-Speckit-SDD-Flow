@@ -1,13 +1,13 @@
-﻿/**
+/**
  * Fresh consumer worktree regression matrix (Story E14-S1).
- * SSOT: docs/plans/FRESH_INSTALL_REGRESSION_STORY_E14_S1.md 搂3,
- * docs/plans/PRODUCTION_INTEGRATION_SDDA_T1_T10_2026-03-20.md 搂0 rows 2鈥?.
+ * SSOT: docs/plans/FRESH_INSTALL_REGRESSION_STORY_E14_S1.md section 3,
+ * docs/plans/PRODUCTION_INTEGRATION_SDDA_T1_T10_2026-03-20.md section 0 rows 2-3.
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-/** Vitest files aligned with FRESH 搂3 row 7 and PRODUCTION 搂0 row 3 */
+/** Vitest files aligned with FRESH section 3 row 7 and PRODUCTION section 0 row 3 */
 export const GOVERNANCE_VITEST_FILES = [
   'tests/acceptance/bmad-config.test.ts',
   'tests/acceptance/runtime-governance-matrix.test.ts',
@@ -160,9 +160,30 @@ function appendSummary(repoRoot: string, lines: string[]): void {
 
 export function resolveHostMatrixGateMode(
   scripts: Record<string, string>
-): 'host_matrix_script' | 'legacy_split' | 'invalid' {
+): 'host_matrix_script' | 'claude_cursor_script' | 'dual_script' | 'legacy_split' | 'invalid' {
   if (scripts['test:ci:host-matrix']) {
     return 'host_matrix_script';
+  }
+  if (scripts['test:ci:claude-cursor']) {
+    return 'claude_cursor_script';
+  }
+  if (scripts['test:ci:dual']) {
+    return 'dual_script';
+  }
+  if (scripts['test:ci']) {
+    return 'legacy_split';
+  }
+  return 'invalid';
+}
+
+export function resolveDualHostGateMode(
+  scripts: Record<string, string>
+): 'claude_cursor_script' | 'dual_script' | 'legacy_split' | 'invalid' {
+  if (scripts['test:ci:claude-cursor']) {
+    return 'claude_cursor_script';
+  }
+  if (scripts['test:ci:dual']) {
+    return 'dual_script';
   }
   if (scripts['test:ci']) {
     return 'legacy_split';
@@ -175,6 +196,14 @@ function runHostMatrixGate(cwd: string, scripts: Record<string, string>, log: st
 
   if (mode === 'host_matrix_script') {
     return runNpmScript(cwd, 'test:ci:host-matrix', log);
+  }
+
+  if (mode === 'claude_cursor_script') {
+    return runNpmScript(cwd, 'test:ci:claude-cursor', log);
+  }
+
+  if (mode === 'dual_script') {
+    return runNpmScript(cwd, 'test:ci:dual', log);
   }
 
   if (mode === 'invalid') {

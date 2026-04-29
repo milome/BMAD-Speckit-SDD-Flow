@@ -1,10 +1,10 @@
-﻿---
+---
 name: 'step-02-prd-analysis'
 description: 'Read and analyze PRD to extract journey contracts, evidence contracts, and supporting FR/NFR requirements for readiness validation'
 
 nextStepFile: './step-03-epic-coverage-validation.md'
 outputFile: '{planning_artifacts}/{branch}/implementation-readiness-report-{{date}}.md'
-epicsFile: '{planning_artifacts}/{branch}/epics.md' # Will be resolved to actual file
+epicsFile: '{planning_artifacts}/{branch}/epics.md'
 ---
 
 # Step 2: PRD Analysis
@@ -17,32 +17,32 @@ To fully read and analyze the PRD document (whole or sharded) and extract the pr
 
 ### Universal Rules:
 
-- 馃洃 NEVER generate content without user input
-- 馃摉 CRITICAL: Read the complete step file before taking any action
-- 馃攧 CRITICAL: When loading next step with 'C', ensure entire file is read
-- 馃搵 YOU ARE A FACILITATOR, not a content generator
-- 鉁?YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
+- 🛑 NEVER generate content without user input
+- 📖 CRITICAL: Read the complete step file before taking any action
+- 🔄 CRITICAL: When loading next step with 'C', ensure entire file is read
+- 📋 YOU ARE A FACILITATOR, not a content generator
+- ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
 
 ### Role Reinforcement:
 
-- 鉁?You are an expert Product Manager and Scrum Master
-- 鉁?Your expertise is in requirements analysis and readiness traceability
-- 鉁?You think critically about runnable paths, not just requirement lists
-- 鉁?Success is measured in extracting every contract needed for downstream implementation
+- ✅ You are an expert Product Manager and Scrum Master
+- ✅ Your expertise is in requirements analysis and readiness traceability
+- ✅ You think critically about runnable paths, not just requirement lists
+- ✅ Success is measured in extracting every contract needed for downstream implementation
 
 ### Step-Specific Rules:
 
-- 馃幆 Focus ONLY on reading and extracting from the PRD
-- 馃毇 Don't validate epics yet
-- 馃挰 Read PRD completely - whole or all sharded files
-- 馃毆 Extract journey contracts in addition to FRs and NFRs
+- 🎯 Focus ONLY on reading and extracting from the PRD
+- 🚫 Don't validate epics yet
+- 💬 Read PRD completely - whole or all sharded files
+- 🚪 Extract journey contracts in addition to FRs and NFRs
 
 ## EXECUTION PROTOCOLS:
 
-- 馃幆 Load and completely read the PRD
-- 馃捑 Extract all journey and evidence contracts systematically
-- 馃摉 Document findings in the report
-- 馃毇 FORBIDDEN to skip failure paths, deferred ambiguities, or actor/state links
+- 🎯 Load and completely read the PRD
+- 💾 Extract all journey and evidence contracts systematically
+- 📖 Document findings in the report
+- 🚫 FORBIDDEN to skip failure paths, deferred ambiguities, or actor/state links
 
 ## PRD ANALYSIS PROCESS:
 
@@ -200,9 +200,9 @@ PRD analysis complete. Loading next step to validate journey coverage in epics a
 
 ---
 
-## 馃毃 SYSTEM SUCCESS/FAILURE METRICS
+## 🚨 SYSTEM SUCCESS/FAILURE METRICS
 
-### 鉁?SUCCESS:
+### ✅ SUCCESS:
 
 - PRD loaded and read completely
 - All P0 journeys extracted with actor, state, and completion information
@@ -211,7 +211,7 @@ PRD analysis complete. Loading next step to validate journey coverage in epics a
 - Supporting FRs and NFRs extracted
 - Findings added to assessment report
 
-### 鉂?SYSTEM FAILURE:
+### ❌ SYSTEM FAILURE:
 
 - Not reading complete PRD
 - Missing P0 journeys or evidence contracts
@@ -219,4 +219,3 @@ PRD analysis complete. Loading next step to validate journey coverage in epics a
 - Extracting only FR/NFR lists without runnable journey contracts
 
 **Master Rule:** Readiness review begins with explicit product contracts, not generic requirement summaries.
-

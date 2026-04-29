@@ -34,18 +34,34 @@ function targetRelativePath(host: ReviewerRuntimeHostId): string {
   return CLAUDE_REVIEWER_RUNTIME_TARGET_PATH;
 }
 
+function generatedHeader(
+  host: ReviewerRuntimeHostId,
+  metadata: {
+    sourceRelativePath: string;
+  }
+): string {
+  const body =
+    `RUNTIME-MATERIALIZED reviewer source=${metadata.sourceRelativePath}` +
+    ` shared_metadata=${REVIEWER_SHARED_CORE_METADATA_PATH}` +
+    ` shared_profiles=${REVIEWER_SHARED_CORE_PROFILE_PACK_PATH}` +
+    ` shared_prompt=${REVIEWER_SHARED_CORE_BASE_PROMPT_PATH}`;
+
+  return host === 'codex' ? `# ${body}` : `<!-- ${body} -->`;
+}
+
 function injectGeneratedHeader(
+  host: ReviewerRuntimeHostId,
   content: string,
   metadata: {
     sourceRelativePath: string;
   }
 ): string {
   const separator = content.includes('\r\n') ? '\r\n' : '\n';
-  const header =
-    `<!-- RUNTIME-MATERIALIZED reviewer source=${metadata.sourceRelativePath}` +
-    ` shared_metadata=${REVIEWER_SHARED_CORE_METADATA_PATH}` +
-    ` shared_profiles=${REVIEWER_SHARED_CORE_PROFILE_PACK_PATH}` +
-    ` shared_prompt=${REVIEWER_SHARED_CORE_BASE_PROMPT_PATH} -->`;
+  const header = generatedHeader(host, metadata);
+
+  if (host === 'codex') {
+    return `${header}${separator}${content}`;
+  }
 
   if (content.startsWith(`---${separator}`)) {
     const closingMarker = `${separator}---${separator}`;
@@ -60,7 +76,9 @@ function injectGeneratedHeader(
 }
 
 function stripGeneratedHeader(content: string): string {
-  return content.replace(/<!-- RUNTIME-MATERIALIZED reviewer[\s\S]*? -->\r?\n?/u, '');
+  return content
+    .replace(/<!-- RUNTIME-MATERIALIZED reviewer[\s\S]*? -->\r?\n?/u, '')
+    .replace(/^# RUNTIME-MATERIALIZED reviewer[^\r\n]*(?:\r?\n)?/u, '');
 }
 
 export function materializeReviewerDefinition(
@@ -81,7 +99,7 @@ export function materializeReviewerDefinition(
   }
 
   const source = fs.readFileSync(sourcePath, 'utf8');
-  const materialized = injectGeneratedHeader(stripGeneratedHeader(source), {
+  const materialized = injectGeneratedHeader(host, stripGeneratedHeader(source), {
     sourceRelativePath: sourceRelative,
   });
 

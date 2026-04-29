@@ -1,11 +1,12 @@
 name = "document-worker"
 description = "BMAD default document worker for the Codex no-hooks branch."
 sandbox_mode = "read-only"
-source_behavior_contract = "_bmad/claude/agents/auditors/auditor-document.md"
-host_role = "codex-no-hooks"
-alias_for_dispatch_role = "document-worker"
 
 developer_instructions = """You are running as a BMAD Codex custom agent alias on the no-hooks worker adapter.
+
+BMAD runtime metadata:
+- host_role: codex-no-hooks
+- alias_for_dispatch_role: document-worker
 
 Alias name: document-worker
 Source behavior contract: _bmad/claude/agents/auditors/auditor-document.md

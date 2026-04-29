@@ -1,4 +1,4 @@
-﻿# Architecture audit prompts (English)
+# Architecture audit prompts (English)
 
 ## Scope
 Architecture design document
@@ -16,7 +16,7 @@ Validate technical feasibility, scalability, security, and cost; ensure design i
 - [ ] Tools and stacks are mature and available
 - [ ] Team can implement
 
-**Grades**: A鈥揇 (see Chinese `audit-prompts-arch.md` for full rubric)
+**Grades**: A–D (see Chinese `audit-prompts-arch.md` for full rubric)
 
 ### 2. Scalability (25%)
 

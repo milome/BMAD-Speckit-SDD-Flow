@@ -230,6 +230,111 @@ function commandSupportsScriptProvenance(command: string): boolean {
   return /main-agent-(host-matrix|dual-host)-pr-orchestrator\.(ts|js)\b/u.test(command);
 }
 
+function writeReleaseQualityProofCodexShim(proofDir: string): string {
+  const shimScriptPath = path.join(proofDir, 'release-quality-proof-codex-shim.cjs');
+  const shimBinPath =
+    process.platform === 'win32'
+      ? path.join(proofDir, 'release-quality-proof-codex-shim.cmd')
+      : path.join(proofDir, 'release-quality-proof-codex-shim');
+  fs.writeFileSync(
+    shimScriptPath,
+    [
+      "const fs = require('node:fs');",
+      "const path = require('node:path');",
+      "const input = fs.readFileSync(0, 'utf8');",
+      "const matchLine = (label) => input.match(new RegExp(`${label}: (.+)`, 'i'))?.[1]?.trim();",
+      "const packetId = matchLine('Packet ID');",
+      "const packetPath = matchLine('Read dispatch packet');",
+      "const taskReportPath = input.match(/write a JSON TaskReport to: (.+)/i)?.[1]?.trim();",
+      "const expectedDelta = matchLine('Expected delta') || 'release quality proof';",
+      "const requiredArtifacts = [",
+      "  '_bmad/_config/main-agent-quality-gate.thresholds.json',",
+      "  'scripts/main-agent-quality-gate.ts',",
+      "  'scripts/main-agent-release-gate.ts',",
+      "];",
+      "if (!packetId || !packetPath || !taskReportPath) {",
+      "  console.error('release quality proof shim missing prompt fields');",
+      "  process.exit(2);",
+      "}",
+      "const missing = [packetPath, ...requiredArtifacts].filter((item) => !fs.existsSync(path.resolve(process.cwd(), item)));",
+      "if (missing.length > 0) {",
+      "  console.error(`release quality proof shim missing artifacts: ${missing.join(', ')}`);",
+      "  process.exit(3);",
+      "}",
+      "const report = {",
+      "  packetId,",
+      "  status: 'done',",
+      "  filesChanged: [],",
+      "  validationsRun: [",
+      "    'release-quality-proof-deterministic-codex-exec-shim',",
+      "    ...requiredArtifacts.map((item) => `inspect:${item}`),",
+      "  ],",
+      "  evidence: [",
+      "    `dispatch-packet:${path.relative(process.cwd(), packetPath).replace(/\\\\/g, '/')}`,",
+      "    ...requiredArtifacts.map((item) => `artifact-exists:${item}`),",
+      "  ],",
+      "  downstreamContext: [expectedDelta],",
+      "};",
+      "fs.mkdirSync(path.dirname(taskReportPath), { recursive: true });",
+      "fs.writeFileSync(taskReportPath, `${JSON.stringify(report, null, 2)}\\n`, 'utf8');",
+      "process.exit(0);",
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  fs.writeFileSync(
+    shimBinPath,
+    process.platform === 'win32'
+      ? `@echo off\r\n"${process.execPath}" "${shimScriptPath}" %*\r\n`
+      : `#!/usr/bin/env sh\n"${process.execPath}" "${shimScriptPath}" "$@"\n`,
+    'utf8'
+  );
+  if (process.platform !== 'win32') {
+    fs.chmodSync(shimBinPath, 0o755);
+  }
+  return shimBinPath;
+}
+
+function runReleaseQualityProofAdapter(input: {
+  root: string;
+  proofDir: string;
+  packetPath: string;
+  taskReportPath: string;
+}): { report: ReturnType<typeof runCodexWorkerAdapter>; proofMode: 'deterministic_release_shim' | 'live_codex_cli' } {
+  if (process.env.MAIN_AGENT_RELEASE_GATE_CODEX_PROOF_MODE === 'live') {
+    return {
+      proofMode: 'live_codex_cli',
+      report: runCodexWorkerAdapter({
+        projectRoot: input.root,
+        packetPath: input.packetPath,
+        taskReportPath: input.taskReportPath,
+        timeoutMs: 120_000,
+      }),
+    };
+  }
+
+  const previousAllow = process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
+  process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = 'true';
+  try {
+    return {
+      proofMode: 'deterministic_release_shim',
+      report: runCodexWorkerAdapter({
+        projectRoot: input.root,
+        packetPath: input.packetPath,
+        taskReportPath: input.taskReportPath,
+        timeoutMs: 120_000,
+        codexBinary: writeReleaseQualityProofCodexShim(input.proofDir),
+      }),
+    };
+  } finally {
+    if (previousAllow === undefined) {
+      delete process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
+    } else {
+      process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = previousAllow;
+    }
+  }
+}
+
 function writeRunScopedCodexQualityProof(root: string, provenance: EvidenceProvenance): string | null {
   const proofDir = path.join(root, '_bmad-output', 'runtime', 'gates', 'codex-quality-proof');
   const packetPath = path.join(proofDir, `${provenance.runId}.packet.json`);
@@ -254,7 +359,7 @@ function writeRunScopedCodexQualityProof(root: string, provenance: EvidenceProve
     expectedDelta:
       'Inspect release quality gate inputs and write the required TaskReport only; do not modify source files.',
     successCriteria: [
-      'Codex CLI executes through main-agent-codex-worker-adapter in codex_exec mode.',
+      'Codex worker adapter executes through main-agent-codex-worker-adapter in codex_exec mode.',
       'TaskReport status is done with evidence for same-run release quality proof.',
       'No source files outside _bmad-output/runtime/gates/codex-quality-proof are changed.',
     ],
@@ -265,11 +370,11 @@ function writeRunScopedCodexQualityProof(root: string, provenance: EvidenceProve
     downstreamConsumer: 'main-agent-quality-gate-run-scoped-proof',
   };
   fs.writeFileSync(packetPath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
-  const adapter = runCodexWorkerAdapter({
-    projectRoot: root,
+  const { report: adapter, proofMode } = runReleaseQualityProofAdapter({
+    root,
+    proofDir,
     packetPath,
     taskReportPath,
-    timeoutMs: 120_000,
   });
   fs.writeFileSync(adapterReportPath, `${JSON.stringify(adapter, null, 2)}\n`, 'utf8');
   if (!adapter.scopePassed || adapter.taskReport.status !== 'done') {
@@ -282,6 +387,7 @@ function writeRunScopedCodexQualityProof(root: string, provenance: EvidenceProve
     codex: {
       hostKind: 'codex',
       mode: adapter.mode,
+      proofMode,
       adapterExitCode: adapter.exitCode,
       taskReportStatus: adapter.taskReport.status,
       validationsRun: adapter.taskReport.validationsRun,

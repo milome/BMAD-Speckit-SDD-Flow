@@ -1,54 +1,71 @@
-﻿<!--
+<!--
 audit-prompts-code.md
-瀵瑰簲鍏崇郴锛?- 鏈枃浠剁瓑鏁堜簬 audit-prompts.md 搂5锛堟墽琛?tasks.md 鍚?implement 闃舵瀹¤鎻愮ず璇嶏級
-- 涓?_bmad/_config/code-reviewer-config.yaml modes.code 瀵瑰簲锛歝ode-reviewer 鍦?code 妯″紡涓嬩娇鐢ㄦ湰鏂囦欢浣滀负 prompt_template
-- 鍙В鏋愬潡閮ㄥ垎鏄庣‘涓?搂5.1 鍥涚淮鏍煎紡锛屼笌 modes.code.dimensions 涓€鑷达紙鍔熻兘鎬с€佷唬鐮佽川閲忋€佹祴璇曡鐩栥€佸畨鍏ㄦ€э級
+对应关系：
+- 本文件等效于 audit-prompts.md §5（执行 tasks.md 后 implement 阶段审计提示词）
+- 与 _bmad/_config/code-reviewer-config.yaml modes.code 对应：code-reviewer 在 code 模式下使用本文件作为 prompt_template
+- 可解析块部分明确为 §5.1 四维格式，与 modes.code.dimensions 一致（功能性、代码质量、测试覆盖、安全性）
 -->
 
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
-> Closeout 鏈鏀剁揣锛氭湰鏂囦欢涓€滃畬鎴?/ 閫氳繃 / 鍙繘鍏ヤ笅涓€闃舵鈥濅竴寰嬫寚 `runAuditorHost` 杩斿洖 `closeout approved`銆傚璁℃姤鍛?`PASS` 浠呰〃绀哄彲浠ヨ繘鍏?host close-out锛屽崟鐙殑 `PASS` 涓嶅緱瑙嗕负瀹屾垚銆佸噯鍏ユ垨鏀捐銆?# Implement 闃舵浠ｇ爜瀹¤鎻愮ず璇嶏紙code 妯″紡锛?
-鏈枃浠朵负 `_bmad/_config/code-reviewer-config.yaml` 涓?modes.code 鐨?prompt_template锛岀瓑鏁堜簬 `audit-prompts.md` 搂5銆傜敤浜?speckit-workflow 搂5.2 鎵ц闃舵瀹¤鍙?bmad-story-assistant 闃舵鍥涘疄鏂藉悗瀹¤銆?
+> Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
+# Implement 阶段代码审计提示词（code 模式）
+
+本文件为 `_bmad/_config/code-reviewer-config.yaml` 中 modes.code 的 prompt_template，等效于 `audit-prompts.md` §5。用于 speckit-workflow §5.2 执行阶段审计及 bmad-story-assistant 阶段四实施后审计。
+
 ---
 
-## 瀹¤鎻愮ず璇嶆鏂?
-**鎵ц闃舵蹇呴』閬靛畧**锛氬湪寮€濮嬫墽琛?tasks 鍓嶅垱寤?prd/progress锛涙瘡瀹屾垚涓€涓?US 绔嬪嵆鏇存柊銆傝瑙?speckit-workflow 搂5.1銆乧ommands/speckit.implement.md 姝ラ 3.5 涓?6銆?
+## 审计提示词正文
+
+**执行阶段必须遵守**：在开始执行 tasks 前创建 prd/progress；每完成一个 US 立即更新。详见 speckit-workflow §5.1、commands/speckit.implement.md 步骤 3.5 与 6。
+
 ```
-浣犳槸涓€浣嶉潪甯镐弗鑻涚殑浠ｇ爜瀹¤鍛樹互鍙婅祫娣辩殑杞欢寮€鍙戜笓瀹讹紝璇峰府鎴戜粩缁嗗闃呯洰鍓嶅熀浜巘asks.md鐨勬墽琛屾墍鍋氱殑浠ｇ爜瀹炵幇 鏄惁瀹屽叏瑕嗙洊浜嗗師濮嬬殑闇€姹傝璁℃枃妗ｃ€乸lan.md 浠ュ強 IMPLEMENTATION_GAPS.md 鎵€鏈夌珷鑺傦紝鏄惁涓ユ牸鎸夌収鎶€鏈灦鏋勫拰鎶€鏈€夊瀷鍐崇瓥锛屾槸鍚︿弗鏍兼寜鐓ч渶姹傚拰鍔熻兘鑼冨洿瀹炵幇锛屾槸鍚︿弗鏍奸伒寰蒋浠跺紑鍙戞渶浣冲疄璺点€傛澶栵紝蹇呴』涓撻」瀹℃煡锛氾紙1锛夋槸鍚﹀凡鎵ц闆嗘垚娴嬭瘯涓庣鍒扮鍔熻兘娴嬭瘯锛堜笉浠呬粎鏄崟鍏冩祴璇曪級锛岄獙璇佹ā鍧楅棿鍗忎綔涓庣敤鎴峰彲瑙佸姛鑳芥祦绋嬪湪鐢熶骇浠ｇ爜鍏抽敭璺緞涓婂伐浣滄甯革紱锛?锛夋瘡涓柊澧炴垨淇敼鐨勬ā鍧楁槸鍚︾‘瀹炶鐢熶骇浠ｇ爜鍏抽敭璺緞瀵煎叆銆佸疄渚嬪寲骞惰皟鐢紙渚嬪妫€鏌?UI 鍏ュ彛鏄惁鎸傝浇銆丒ngine/涓绘祦绋嬫槸鍚﹀疄闄呰皟鐢級锛涳紙3锛夋槸鍚﹀瓨鍦ㄣ€屾ā鍧楀唴閮ㄥ疄鐜板畬鏁翠笖鍙€氳繃鍗曞厓娴嬭瘯锛屼絾浠庢湭鍦ㄧ敓浜т唬鐮佸叧閿矾寰勪腑琚鍏ャ€佸疄渚嬪寲鎴栬皟鐢ㄣ€嶇殑瀛ゅ矝妯″潡鈥斺€旇嫢瀛樺湪锛屽繀椤讳綔涓烘湭閫氳繃椤瑰垪鍑猴紱锛?锛夋槸鍚﹀凡鍒涘缓骞剁淮鎶?ralph-method 杩借釜鏂囦欢锛坧rd.json 鎴?prd.{stem}.json銆乸rogress.txt 鎴?progress.{stem}.txt锛夛紝涓旀瘡瀹屾垚涓€涓?US 鏈夊搴旀洿鏂帮紙prd 涓?passes=true銆乸rogress 涓甫鏃堕棿鎴崇殑 story log锛屼笖娑夊強鐢熶骇浠ｇ爜鐨?*姣忎釜 US** 椤诲湪鍏跺搴旀钀藉唴鍚勫惈 [TDD-RED]銆乕TDD-GREEN]銆乕TDD-REFACTOR] 鑷冲皯涓€琛岋紙瀹¤椤婚€?US 妫€鏌ワ紝涓嶅緱浠ユ枃浠跺叏灞€鍚勬湁涓€琛屽嵆鍒ら€氳繃锛沎TDD-REFACTOR] 鍏佽鍐?鏃犻渶閲嶆瀯 鉁?锛屼絾绂佹鐪佺暐锛夛紱鑻ユ湭鍒涘缓鎴栨湭鎸?US 鏇存柊锛屽繀椤讳綔涓烘湭閫氳繃椤瑰垪鍑猴紱**瀹¤涓嶅緱璞佸厤**锛氫笉寰椾互銆宼asks 瑙勮寖銆嶃€屽彲閫夈€嶃€屽彲鍚庣画琛ュ厖銆嶃€岄潪 搂5 闃绘柇銆嶄负鐢辫眮鍏?TDD 涓夐」妫€鏌ワ紱娑夊強鐢熶骇浠ｇ爜鐨?US 缂轰换涓€椤瑰嵆鍒ゆ湭閫氳繃锛涳紙5锛?*蹇呴』**妫€鏌ワ細瀹¤閫氳繃鍚庤瘎鍒嗗啓鍏ョ殑 branch_id 鏄惁鍦?_bmad/_config/scoring-trigger-modes.yaml 鐨?call_mapping 涓厤缃笖 scoring_write_control.enabled=true锛涳紙6锛?*蹇呴』**妫€鏌ワ細parseAndWriteScore 璋冪敤鐨勫弬鏁拌瘉鎹槸鍚﹂綈鍏紙reportPath銆乻tage銆乺unId銆乻cenario銆亀riteMode锛夛紱锛?锛?*蹇呴』**妫€鏌ワ細scenario=eval_question 鏃?question_version 鏄惁蹇呭～锛岀己鍒欒 SCORE_WRITE_INPUT_INVALID 涓斾笉璋冪敤锛涳紙8锛?*蹇呴』**妫€鏌ワ細璇勫垎鍐欏叆澶辫触鏄惁 non_blocking 涓旇褰?resultCode 杩涘璁¤瘉鎹€傚繀椤婚€愭潯杩涜妫€鏌ュ拰楠岃瘉锛岀敓鎴愪竴涓€愭潯鎻忚堪璇︾粏妫€鏌ュ唴瀹广€侀獙璇佹柟寮忓拰楠岃瘉缁撴灉鐨勫璁℃姤鍛娿€傛姤鍛婄粨灏惧繀椤绘槑纭粰鍑虹粨璁猴細鏄惁銆屽畬鍏ㄨ鐩栥€侀獙璇侀€氳繃銆嶏紱鑻ユ湭閫氳繃锛岃鍒楀嚭閬楁紡绔犺妭鎴栨湭瑕嗙洊瑕佺偣銆傛姤鍛婄粨灏惧繀椤诲寘鍚互涓嬪彲瑙ｆ瀽璇勫垎鍧楋紙鍥涚淮锛氬姛鑳芥€с€佷唬鐮佽川閲忋€佹祴璇曡鐩栥€佸畨鍏ㄦ€э級锛屽惁鍒?parseAndWriteScore(mode=code) 鏃犳硶瑙ｆ瀽銆佷华琛ㄧ洏鍥涚淮鏄剧ず銆屾棤鏁版嵁銆嶃€傜姝㈢敤鎻忚堪浠ｆ浛缁撴瀯鍖栧潡锛氫笉寰楀湪鎬荤粨鎴栨鏂囦腑鐢ㄣ€屽彲瑙ｆ瀽璇勫垎鍧楋紙鎬讳綋璇勭骇 X锛岀淮搴﹀垎 Y鈥揨锛夈€嶇瓑鏂囧瓧姒傛嫭锛涘繀椤诲湪鎶ュ憡涓緭鍑哄畬鏁寸殑缁撴瀯鍖栧潡锛屽寘鎷嫭绔嬩竴琛?鎬讳綋璇勭骇: X 鍜屽洓琛?- 缁村害鍚? XX/100銆傜淮搴﹀悕椤讳笌 _bmad/_config/code-reviewer-config.yaml modes.code.dimensions 瀹屽叏涓€鑷淬€傛€讳綋璇勭骇鍙兘鏄?A/B/C/D锛堢姝?A-銆丆+ 绛夛級銆傜淮搴﹀垎蹇呴』閫愯鍐欐槑锛屼笉寰楃敤鍖洪棿鎴栨鎷唬鏇裤€傘€惵? 鍙В鏋愬潡瑕佹眰銆戝璁℃椂椤诲悓鏃舵墽琛屾壒鍒ゅ璁″憳妫€鏌ワ紝杈撳嚭鏍煎紡瑙?[audit-prompts-critical-auditor-appendix.md](audit-prompts-critical-auditor-appendix.md)銆?```
+你是一位非常严苛的代码审计员以及资深的软件开发专家，请帮我仔细审阅目前基于tasks.md的执行所做的代码实现 是否完全覆盖了原始的需求设计文档、plan.md 以及 IMPLEMENTATION_GAPS.md 所有章节，是否严格按照技术架构和技术选型决策，是否严格按照需求和功能范围实现，是否严格遵循软件开发最佳实践。此外，必须专项审查：（1）是否已执行集成测试与端到端功能测试（不仅仅是单元测试），验证模块间协作与用户可见功能流程在生产代码关键路径上工作正常；（2）每个新增或修改的模块是否确实被生产代码关键路径导入、实例化并调用（例如检查 UI 入口是否挂载、Engine/主流程是否实际调用）；（3）是否存在「模块内部实现完整且可通过单元测试，但从未在生产代码关键路径中被导入、实例化或调用」的孤岛模块——若存在，必须作为未通过项列出；（4）是否已创建并维护 ralph-method 追踪文件（prd.json 或 prd.{stem}.json、progress.txt 或 progress.{stem}.txt），且每完成一个 US 有对应更新（prd 中 passes=true、progress 中带时间戳的 story log，且涉及生产代码的**每个 US** 须在其对应段落内各含 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 至少一行（审计须逐 US 检查，不得以文件全局各有一行即判通过；[TDD-REFACTOR] 允许写"无需重构 ✓"，但禁止省略）；若未创建或未按 US 更新，必须作为未通过项列出；**审计不得豁免**：不得以「tasks 规范」「可选」「可后续补充」「非 §5 阻断」为由豁免 TDD 三项检查；涉及生产代码的 US 缺任一项即判未通过；（5）**必须**检查：审计通过后评分写入的 branch_id 是否在 _bmad/_config/scoring-trigger-modes.yaml 的 call_mapping 中配置且 scoring_write_control.enabled=true；（6）**必须**检查：parseAndWriteScore 调用的参数证据是否齐全（reportPath、stage、runId、scenario、writeMode）；（7）**必须**检查：scenario=eval_question 时 question_version 是否必填，缺则记 SCORE_WRITE_INPUT_INVALID 且不调用；（8）**必须**检查：评分写入失败是否 non_blocking 且记录 resultCode 进审计证据。必须逐条进行检查和验证，生成一个逐条描述详细检查内容、验证方式和验证结果的审计报告。报告结尾必须明确给出结论：是否「完全覆盖、验证通过」；若未通过，请列出遗漏章节或未覆盖要点。报告结尾必须包含以下可解析评分块（四维：功能性、代码质量、测试覆盖、安全性），否则 parseAndWriteScore(mode=code) 无法解析、仪表盘四维显示「无数据」。禁止用描述代替结构化块：不得在总结或正文中用「可解析评分块（总体评级 X，维度分 Y–Z）」等文字概括；必须在报告中输出完整的结构化块，包括独立一行 总体评级: X 和四行 - 维度名: XX/100。维度名须与 _bmad/_config/code-reviewer-config.yaml modes.code.dimensions 完全一致。总体评级只能是 A/B/C/D（禁止 A-、C+ 等）。维度分必须逐行写明，不得用区间或概括代替。【§5 可解析块要求】审计时须同时执行批判审计员检查，输出格式见 [audit-prompts-critical-auditor-appendix.md](audit-prompts-critical-auditor-appendix.md)。
+```
 
 ---
 
-## 鍙В鏋愯瘎鍒嗗潡锛堝己鍒讹紝绛夋晥 audit-prompts 搂5.1锛?
-implement 闃舵瀹¤鎶ュ憡蹇呴』鍦ㄧ粨灏惧寘鍚互涓嬪彲瑙ｆ瀽鍧楋紝涓?`_bmad/_config/code-reviewer-config.yaml` 鐨?`modes.code.dimensions` 涓€鑷淬€傜姝㈢敤鎻忚堪浠ｆ浛銆傛€讳綋璇勭骇浠呴檺 A/B/C/D銆?
+## 可解析评分块（强制，等效 audit-prompts §5.1）
+
+implement 阶段审计报告必须在结尾包含以下可解析块，与 `_bmad/_config/code-reviewer-config.yaml` 的 `modes.code.dimensions` 一致。禁止用描述代替。总体评级仅限 A/B/C/D。
+
 ```markdown
-## 鍙В鏋愯瘎鍒嗗潡锛堜緵 parseAndWriteScore锛?
-鎬讳綋璇勭骇: [A|B|C|D]
+## 可解析评分块（供 parseAndWriteScore）
 
-缁村害璇勫垎:
-- 鍔熻兘鎬? XX/100
-- 浠ｇ爜璐ㄩ噺: XX/100
-- 娴嬭瘯瑕嗙洊: XX/100
-- 瀹夊叏鎬? XX/100
+总体评级: [A|B|C|D]
+
+维度评分:
+- 功能性: XX/100
+- 代码质量: XX/100
+- 测试覆盖: XX/100
+- 安全性: XX/100
 ```
 
-## Structured Drift Signal Block锛堝己鍒讹級
+## Structured Drift Signal Block（强制）
 
-implement / post_audit 闃舵瀹¤鎶ュ憡杩樺繀椤诲寘鍚互涓嬬粨鏋勫寲 block銆傜己灏戣 block 涓嶅緱瑙嗕负鈥滄棤 drift鈥濄€?
+implement / post_audit 阶段审计报告还必须包含以下结构化 block。缺少该 block 不得视为“无 drift”。
+
 ```markdown
 ## Structured Drift Signal Block
 
 | signal | status | evidence |
 | --- | --- | --- |
-| smoke_task_chain | pass/fail | 绠€瑕佽瘉鎹?|
-| closure_task_id | pass/fail | 绠€瑕佽瘉鎹?|
-| journey_unlock | pass/fail | 绠€瑕佽瘉鎹?|
-| gap_split_contract | pass/fail | 绠€瑕佽瘉鎹?|
-| shared_path_reference | pass/fail | 绠€瑕佽瘉鎹?|
+| smoke_task_chain | pass/fail | 简要证据 |
+| closure_task_id | pass/fail | 简要证据 |
+| journey_unlock | pass/fail | 简要证据 |
+| gap_split_contract | pass/fail | 简要证据 |
+| shared_path_reference | pass/fail | 简要证据 |
 ```
 
-**绂佹鐢ㄦ弿杩颁唬鏇跨粨鏋勫寲鍧?*锛氫笉寰楀湪鎬荤粨鎴栨鏂囦腑鐢ㄣ€屽彲瑙ｆ瀽璇勫垎鍧楋紙鎬讳綋璇勭骇 X锛岀淮搴﹀垎 Y鈥揨锛夈€嶇瓑鏂囧瓧姒傛嫭锛涘繀椤诲湪鎶ュ憡涓緭鍑?*瀹屾暣鐨勭粨鏋勫寲鍧?*锛屽寘鍚嫭绔嬩竴琛?`鎬讳綋璇勭骇: X` 浠ュ強鍥涜 `- 缁村害鍚? XX/100`銆傜淮搴﹀悕椤讳笌 config 涓?`modes.code.dimensions` 鐨?`name` 瀹屽叏涓€鑷达紙鍔熻兘鎬с€佷唬鐮佽川閲忋€佹祴璇曡鐩栥€佸畨鍏ㄦ€э級銆傛€讳綋璇勭骇鍙兘鏄?**A/B/C/D**锛堜笉寰椾娇鐢?A-銆丆+ 绛夛級銆傜淮搴﹀垎椤婚€愯鍐欏嚭锛屼笉寰楃敤鍖洪棿鎴栨鎷紙濡傘€?2鈥?5銆嶃€屽悇缁村害 90+銆嶏級浠ｆ浛銆?
-**鍙嶄緥锛堟棤鏁堣緭鍑猴級**锛?- `鍙В鏋愯瘎鍒嗗潡锛堟€讳綋璇勭骇 A锛岀淮搴﹀垎 92鈥?5锛塦 鈥?鎻忚堪鍙ワ紝闈炵粨鏋勫寲鍧楋紝parseDimensionScores(mode=code) 鏃犳硶瑙ｆ瀽
-- `鎬讳綋璇勭骇: A-`銆乣C+` 鈥?闈?A/B/C/D锛宔xtractOverallGrade 姝ｅ垯涓嶅尮閰?- `缁村害鍒?92鈥?5`銆乣鍚勭淮搴?90+` 鈥?鍖洪棿/姒傛嫭锛岀己 `- 缁村害鍚? XX/100` 琛岀骇鏍煎紡锛岃В鏋愪笉鍒?
+**禁止用描述代替结构化块**：不得在总结或正文中用「可解析评分块（总体评级 X，维度分 Y–Z）」等文字概括；必须在报告中输出**完整的结构化块**，包含独立一行 `总体评级: X` 以及四行 `- 维度名: XX/100`。维度名须与 config 中 `modes.code.dimensions` 的 `name` 完全一致（功能性、代码质量、测试覆盖、安全性）。总体评级只能是 **A/B/C/D**（不得使用 A-、C+ 等）。维度分须逐行写出，不得用区间或概括（如「92–95」「各维度 90+」）代替。
+
+**反例（无效输出）**：
+- `可解析评分块（总体评级 A，维度分 92–95）` — 描述句，非结构化块，parseDimensionScores(mode=code) 无法解析
+- `总体评级: A-`、`C+` — 非 A/B/C/D，extractOverallGrade 正则不匹配
+- `维度分 92–95`、`各维度 90+` — 区间/概括，缺 `- 维度名: XX/100` 行级格式，解析不到
+
 ---
 
-## 瀹¤鍚庡姩浣?
-瀹¤閫氳繃鏃讹紝璇峰皢瀹屾暣鎶ュ憡淇濆瓨鑷宠皟鐢ㄦ柟鍦ㄦ湰 prompt 涓寚瀹氱殑 reportPath銆俰mplement 闃舵鐨?reportPath 閫氬父涓?`_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_implement-E{epic}-S{story}.md` 鎴?`AUDIT_Story_{epic}-{story}_stage4.md`銆傚苟鍦ㄧ粨璁轰腑娉ㄦ槑淇濆瓨璺緞鍙?iteration_count锛屼互渚夸富 Agent / 瀹夸富璋冪敤 runAuditorHost銆?
+## 审计后动作
+
+审计通过时，请将完整报告保存至调用方在本 prompt 中指定的 reportPath。implement 阶段的 reportPath 通常为 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_implement-E{epic}-S{story}.md` 或 `AUDIT_Story_{epic}-{story}_stage4.md`。并在结论中注明保存路径及 iteration_count，以便主 Agent / 宿主调用 runAuditorHost。
+

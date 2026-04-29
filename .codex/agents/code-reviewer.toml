@@ -1,10 +1,12 @@
+# RUNTIME-MATERIALIZED reviewer source=_bmad/codex/agents/code-reviewer.toml shared_metadata=_bmad/core/agents/code-reviewer/metadata.json shared_profiles=_bmad/core/agents/code-reviewer/profiles.json shared_prompt=_bmad/core/agents/code-reviewer/base-prompt.md
 name = "code-reviewer"
 description = "BMAD Codex custom agent code-reviewer."
 sandbox_mode = "read-only"
-source_behavior_contract = "_bmad/claude/agents/code-reviewer.md"
-host_role = "codex-no-hooks"
 
 developer_instructions = """You are running as a BMAD Codex custom agent on the no-hooks worker adapter.
+
+BMAD runtime metadata:
+- host_role: codex-no-hooks
 
 Source behavior contract: _bmad/claude/agents/code-reviewer.md
 

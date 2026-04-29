@@ -1,6 +1,6 @@
-﻿# Step 2: Design Epic List
+> Legacy compatibility surface only. The canonical epics planning path is `{planning_artifacts}/{branch}/epics.md`; branch-scoped epics are required.
 
-> Legacy compatibility step only. Canonical epics output path is `{planning_artifacts}/{branch}/epics.md`.
+# Step 2: Design Epic List
 
 ## STEP GOAL:
 
@@ -10,34 +10,34 @@ To design and get approval for the epics_list that will organize all requirement
 
 ### Universal Rules:
 
-- 馃洃 NEVER generate content without user input
-- 馃摉 CRITICAL: Read the complete step file before taking any action
-- 馃攧 CRITICAL: When loading next step with 'C', ensure entire file is read
-- 馃搵 YOU ARE A FACILITATOR, not a content generator
-- 鉁?YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
+- 🛑 NEVER generate content without user input
+- 📖 CRITICAL: Read the complete step file before taking any action
+- 🔄 CRITICAL: When loading next step with 'C', ensure entire file is read
+- 📋 YOU ARE A FACILITATOR, not a content generator
+- ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
 
 ### Role Reinforcement:
 
-- 鉁?You are a product strategist and technical specifications writer
-- 鉁?If you already have been given communication or persona patterns, continue to use those while playing this new role
-- 鉁?We engage in collaborative dialogue, not command-response
-- 鉁?You bring product strategy and epic design expertise
-- 鉁?User brings their product vision and priorities
+- ✅ You are a product strategist and technical specifications writer
+- ✅ If you already have been given communication or persona patterns, continue to use those while playing this new role
+- ✅ We engage in collaborative dialogue, not command-response
+- ✅ You bring product strategy and epic design expertise
+- ✅ User brings their product vision and priorities
 
 ### Step-Specific Rules:
 
-- 馃幆 Focus ONLY on creating the epics_list
-- 馃毇 FORBIDDEN to create individual stories in this step
-- 馃挰 Organize epics around user value, not technical layers
-- 馃毆 GET explicit approval for the epics_list
-- 馃敆 **CRITICAL: Each epic must be standalone and enable future epics without requiring future epics to function**
+- 🎯 Focus ONLY on creating the epics_list
+- 🚫 FORBIDDEN to create individual stories in this step
+- 💬 Organize epics around user value, not technical layers
+- 🚪 GET explicit approval for the epics_list
+- 🔗 **CRITICAL: Each epic must be standalone and enable future epics without requiring future epics to function**
 
 ## EXECUTION PROTOCOLS:
 
-- 馃幆 Design epics collaboratively based on extracted requirements
-- 馃捑 Update {{epics_list}} in {planning_artifacts}/{branch}/epics.md
-- 馃摉 Document the FR coverage mapping
-- 馃毇 FORBIDDEN to load next step until user approves epics_list
+- 🎯 Design epics collaboratively based on extracted requirements
+- 💾 Update {{epics_list}} in {planning_artifacts}/{branch}/epics.md
+- 📖 Document the FR coverage mapping
+- 🚫 FORBIDDEN to load next step until user approves epics_list
 
 ## EPIC DESIGN PROCESS:
 
@@ -57,26 +57,26 @@ Load {planning_artifacts}/{branch}/epics.md and review:
 2. **Requirements Grouping**: Group related FRs that deliver cohesive user outcomes
 3. **Incremental Delivery**: Each epic should deliver value independently
 4. **Logical Flow**: Natural progression from user's perspective
-5. **馃敆 Dependency-Free Within Epic**: Stories within an epic must NOT depend on future stories
+5. **🔗 Dependency-Free Within Epic**: Stories within an epic must NOT depend on future stories
 
-**鈿狅笍 CRITICAL PRINCIPLE:**
+**⚠️ CRITICAL PRINCIPLE:**
 Organize by USER VALUE, not technical layers:
 
-**鉁?CORRECT Epic Examples (Standalone & Enable Future Epics):**
+**✅ CORRECT Epic Examples (Standalone & Enable Future Epics):**
 
 - Epic 1: User Authentication & Profiles (users can register, login, manage profiles) - **Standalone: Complete auth system**
 - Epic 2: Content Creation (users can create, edit, publish content) - **Standalone: Uses auth, creates content**
 - Epic 3: Social Interaction (users can follow, comment, like content) - **Standalone: Uses auth + content**
 - Epic 4: Search & Discovery (users can find content and other users) - **Standalone: Uses all previous**
 
-**鉂?WRONG Epic Examples (Technical Layers or Dependencies):**
+**❌ WRONG Epic Examples (Technical Layers or Dependencies):**
 
 - Epic 1: Database Setup (creates all tables upfront) - **No user value**
 - Epic 2: API Development (builds all endpoints) - **No user value**
 - Epic 3: Frontend Components (creates reusable components) - **No user value**
 - Epic 4: Deployment Pipeline (CI/CD setup) - **No user value**
 
-**馃敆 DEPENDENCY RULES:**
+**🔗 DEPENDENCY RULES:**
 
 - Each epic must deliver COMPLETE functionality for its domain
 - Epic 2 must not require Epic 3 to function
@@ -193,9 +193,9 @@ ONLY WHEN C is selected and the approved epics_list is saved to document, will y
 
 ---
 
-## 馃毃 SYSTEM SUCCESS/FAILURE METRICS
+## 🚨 SYSTEM SUCCESS/FAILURE METRICS
 
-### 鉁?SUCCESS:
+### ✅ SUCCESS:
 
 - Epics designed around user value
 - All FRs mapped to specific epics
@@ -204,7 +204,7 @@ ONLY WHEN C is selected and the approved epics_list is saved to document, will y
 - User gives explicit approval for epic structure
 - Document updated with approved epics
 
-### 鉂?SYSTEM FAILURE:
+### ❌ SYSTEM FAILURE:
 
 - Epics organized by technical layers
 - Missing FRs in coverage map
@@ -212,4 +212,3 @@ ONLY WHEN C is selected and the approved epics_list is saved to document, will y
 - epics_list not saved to document
 
 **Master Rule:** Skipping steps, optimizing sequences, or not following exact instructions is FORBIDDEN and constitutes SYSTEM FAILURE.
-

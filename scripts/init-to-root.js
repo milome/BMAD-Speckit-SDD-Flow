@@ -900,20 +900,20 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
   const emitSrc = resolveRuntimeEmitCjs(pkgRoot);
   if (!emitSrc || !fs.existsSync(emitSrc)) {
     console.warn(
-      '@bmad-speckit/runtime-emit not found; run: npm install && npm run build:runtime-emit 鈥?policy hooks may fail in target.'
+      '@bmad-speckit/runtime-emit not found; run: npm install && npm run build:runtime-emit -policy hooks may fail in target.'
     );
     return;
   }
   const resolveSessionSrc = resolveRuntimeResolveSessionCjs(pkgRoot);
   if (!resolveSessionSrc || !fs.existsSync(resolveSessionSrc)) {
     console.warn(
-      'resolve-for-session.cjs not found; run: npm run build:runtime-emit 鈥?runtime-policy-inject i18n merge may fail in target.'
+      'resolve-for-session.cjs not found; run: npm run build:runtime-emit -runtime-policy-inject i18n merge may fail in target.'
     );
   }
   const renderAuditSrc = resolveRuntimeRenderAuditBlockCjs(pkgRoot);
   if (!renderAuditSrc || !fs.existsSync(renderAuditSrc)) {
     console.warn(
-      'render-audit-block.cjs not found; run: npm run build:runtime-emit 鈥?pre-agent-summary audit inject may be empty in target.'
+      'render-audit-block.cjs not found; run: npm run build:runtime-emit -pre-agent-summary audit inject may be empty in target.'
     );
   }
   const wrcSrc = path.join(path.dirname(emitSrc), '..', 'write-runtime-context.cjs');

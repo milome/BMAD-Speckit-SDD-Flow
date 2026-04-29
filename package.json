@@ -29,6 +29,7 @@
     "main-agent:dual-host-pr-orchestrate": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-dual-host-pr-orchestrator.ts",
     "main-agent:delivery-truth-gate": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-delivery-truth-gate.ts",
     "main-agent:delivery-evidence-run": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-delivery-evidence-run.ts",
+    "bmads": "npx ts-node --project tsconfig.node.json --transpile-only scripts/bmads-renderer.ts",
     "main-agent:bmad-help-five-layer-matrix": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-bmad-help-five-layer-matrix.ts",
     "main-agent:codex-worker": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-codex-worker-adapter.ts",
     "main-agent:development-journey-matrix": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-development-journey-matrix.ts",
@@ -43,7 +44,7 @@
     "smoke:speckit-workflow": "npx ts-node --project tsconfig.node.json --transpile-only scripts/live-smoke-speckit-workflow.ts",
     "emit-runtime-policy": "npx ts-node --project tsconfig.node.json --transpile-only scripts/emit-runtime-policy.ts",
     "audit-prompt:resolve": "npx ts-node --project tsconfig.node.json --transpile-only scripts/i18n/print-resolved-audit-prompt.ts",
-    "prepack": "node scripts/normalize-pack-manifests.js prepare",
+    "prepack": "npm run check:encoding && node scripts/normalize-pack-manifests.js prepare",
     "postpack": "node scripts/normalize-pack-manifests.js restore",
     "test:runtime-policy-inject": "vitest run tests/acceptance/runtime-policy-emit-stable.test.ts tests/acceptance/runtime-policy-inject.test.ts tests/acceptance/runtime-policy-emit-schema-ajv.test.ts",
     "test:cursor-party-mode-hooks": "npm run test:cursor-party-mode-hooks:min",
@@ -59,7 +60,8 @@
     "test:governance-audit:full": "npm run test:governance-audit:round1 && npm run test:governance-audit:round2 && npm run test:governance-audit:static",
     "test:ci": "npm run init:claude && npm run test:speckit-mirror-sync && vitest run && npm run test:bmad-speckit && npm run test:runtime-policy-inject && npm run main-agent:release-gate && npm run main-agent:quality-gate && npm run test:main-agent-chaos",
     "test:ci:cursor": "npm run init:cursor && npm run test:speckit-mirror-sync && vitest run && npm run test:bmad-speckit && npm run test:runtime-policy-inject && npm run main-agent:release-gate && npm run main-agent:quality-gate && npm run test:main-agent-chaos",
-    "test:ci:dual": "npm run init:claude && npm run init:cursor && npm run test:speckit-mirror-sync && vitest run && npm run test:bmad-speckit && npm run test:runtime-policy-inject && npm run main-agent:release-gate && npm run main-agent:quality-gate && npm run test:main-agent-chaos",
+    "test:ci:claude-cursor": "npm run init:claude && npm run init:cursor && npm run test:speckit-mirror-sync && vitest run && npm run test:bmad-speckit && npm run test:runtime-policy-inject && npm run main-agent:release-gate && npm run main-agent:quality-gate && npm run test:main-agent-chaos",
+    "test:ci:dual": "npm run test:ci:claude-cursor",
     "test:scoring": "vitest run packages/scoring",
     "test:speckit-mirror-sync": "node scripts/verify-speckit-mirror-sync.js",
     "test:bmad-speckit": "npm run test --prefix packages/bmad-speckit",
@@ -85,7 +87,7 @@
     "build:runtime-context": "npm run build -w @bmad-speckit/runtime-context",
     "build:runtime-emit": "npm run build -w @bmad-speckit/runtime-emit",
     "verify:hooks": "node scripts/verify-hooks-no-ts-node.js",
-    "prepublishOnly": "npm run verify:hooks && npm run build:scoring && npm run build:runtime-context && npm run build:runtime-emit && npm run build:ralph-method && node scripts/prepublish-check.js",
+    "prepublishOnly": "npm run check:encoding && npm run verify:hooks && npm run build:scoring && npm run build:runtime-context && npm run build:runtime-emit && npm run build:ralph-method && node scripts/prepublish-check.js",
     "speckit": "npx bmad-speckit",
     "speckit:init": "npx bmad-speckit init",
     "check": "npx bmad-speckit check",
@@ -94,9 +96,11 @@
     "test:main-agent-rerun-gate-e2e-loop": "npx vitest run tests/acceptance/governance-rerun-gate-closure.test.ts",
     "main-agent:inspect": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts --cwd . --action inspect",
     "main-agent:dispatch-plan": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts --cwd . --action dispatch-plan",
-    "test:ci:codex": "npm run init:codex && npx vitest run tests/acceptance/main-agent-codex-agent-parity.test.ts tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts tests/acceptance/main-agent-run-loop-e2e.test.ts tests/acceptance/main-agent-unified-ingress-e2e.test.ts tests/acceptance/orchestration-dispatch-contract.test.ts tests/acceptance/e2e-host-matrix-real-codex-smoke.test.ts tests/acceptance/main-agent-release-gate-contract.test.ts tests/acceptance/main-agent-delivery-truth-gate.test.ts tests/acceptance/main-agent-quality-gate-thresholds.test.ts tests/acceptance/main-agent-bmad-help-five-layer-matrix-e2e.test.ts tests/acceptance/main-agent-codex-consumer-five-layer-e2e.test.ts tests/acceptance/main-agent-codex-asset-host-leakage.test.ts tests/acceptance/reviewer-projection-parity.test.ts tests/acceptance/accept-install-consumer-cli.test.ts"
+    "test:ci:codex": "npm run init:codex && npx vitest run tests/acceptance/main-agent-codex-agent-parity.test.ts tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts tests/acceptance/main-agent-run-loop-e2e.test.ts tests/acceptance/main-agent-unified-ingress-e2e.test.ts tests/acceptance/orchestration-dispatch-contract.test.ts tests/acceptance/e2e-host-matrix-real-codex-smoke.test.ts tests/acceptance/main-agent-release-gate-contract.test.ts tests/acceptance/main-agent-delivery-truth-gate.test.ts tests/acceptance/main-agent-quality-gate-thresholds.test.ts tests/acceptance/main-agent-bmad-help-five-layer-matrix-e2e.test.ts tests/acceptance/main-agent-codex-consumer-five-layer-e2e.test.ts tests/acceptance/main-agent-codex-asset-host-leakage.test.ts tests/acceptance/reviewer-projection-parity.test.ts tests/acceptance/accept-install-consumer-cli.test.ts",
+    "check:encoding": "node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js"
   },
   "bin": {
+    "bmad-speckit": "bin/bmad-speckit.js",
     "bmad-speckit-init": "scripts/init-to-root.js",
     "bmad-speckit-setup": "scripts/setup.ps1",
     "bmad-speckit-setup-sh": "scripts/setup.sh"

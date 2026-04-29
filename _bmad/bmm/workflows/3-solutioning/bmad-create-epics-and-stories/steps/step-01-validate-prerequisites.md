@@ -1,6 +1,6 @@
-﻿# Step 1: Validate Prerequisites and Extract Requirements
+> Legacy compatibility surface only. The canonical epics planning path is `{planning_artifacts}/{branch}/epics.md`; branch-scoped epics are required.
 
-> Legacy compatibility step only. Canonical epics output path is `{planning_artifacts}/{branch}/epics.md`.
+# Step 1: Validate Prerequisites and Extract Requirements
 
 ## STEP GOAL:
 
@@ -10,33 +10,33 @@ To validate that all required input documents exist and extract all requirements
 
 ### Universal Rules:
 
-- 馃洃 NEVER generate content without user input
-- 馃摉 CRITICAL: Read the complete step file before taking any action
-- 馃攧 CRITICAL: When loading next step with 'C', ensure entire file is read
-- 馃搵 YOU ARE A FACILITATOR, not a content generator
-- 鉁?YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
+- 🛑 NEVER generate content without user input
+- 📖 CRITICAL: Read the complete step file before taking any action
+- 🔄 CRITICAL: When loading next step with 'C', ensure entire file is read
+- 📋 YOU ARE A FACILITATOR, not a content generator
+- ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
 
 ### Role Reinforcement:
 
-- 鉁?You are a product strategist and technical specifications writer
-- 鉁?If you already have been given communication or persona patterns, continue to use those while playing this new role
-- 鉁?We engage in collaborative dialogue, not command-response
-- 鉁?You bring requirements extraction expertise
-- 鉁?User brings their product vision and context
+- ✅ You are a product strategist and technical specifications writer
+- ✅ If you already have been given communication or persona patterns, continue to use those while playing this new role
+- ✅ We engage in collaborative dialogue, not command-response
+- ✅ You bring requirements extraction expertise
+- ✅ User brings their product vision and context
 
 ### Step-Specific Rules:
 
-- 馃幆 Focus ONLY on extracting and organizing requirements
-- 馃毇 FORBIDDEN to start creating epics or stories in this step
-- 馃挰 Extract requirements from ALL available documents
-- 馃毆 POPULATE the template sections exactly as needed
+- 🎯 Focus ONLY on extracting and organizing requirements
+- 🚫 FORBIDDEN to start creating epics or stories in this step
+- 💬 Extract requirements from ALL available documents
+- 🚪 POPULATE the template sections exactly as needed
 
 ## EXECUTION PROTOCOLS:
 
-- 馃幆 Extract requirements systematically from all documents
-- 馃捑 Populate {planning_artifacts}/{branch}/epics.md with extracted requirements
-- 馃摉 Update frontmatter with extraction progress
-- 馃毇 FORBIDDEN to load next step until user selects 'C' and requirements are extracted
+- 🎯 Extract requirements systematically from all documents
+- 💾 Populate {planning_artifacts}/{branch}/epics.md with extracted requirements
+- 📖 Update frontmatter with extraction progress
+- 🚫 FORBIDDEN to load next step until user selects 'C' and requirements are extracted
 
 ## REQUIREMENTS EXTRACTION PROCESS:
 
@@ -158,7 +158,7 @@ UX-DR2: [Actionable UX design requirement with clear implementation scope]
 ...
 ```
 
-**馃毃 CRITICAL**: Do NOT reduce UX requirements to vague summaries. Each UX-DR must be specific enough to generate a story with testable acceptance criteria. If the UX spec identifies 6 reusable components, list all 6 鈥?not "create reusable components."
+**🚨 CRITICAL**: Do NOT reduce UX requirements to vague summaries. Each UX-DR must be specific enough to generate a story with testable acceptance criteria. If the UX spec identifies 6 reusable components, list all 6 — not "create reusable components."
 
 ### 7. Load and Initialize Template
 
@@ -167,10 +167,10 @@ Load ../templates/epics-template.md and initialize {planning_artifacts}/{branch}
 1. Copy the entire template to {planning_artifacts}/{branch}/epics.md
 2. Replace {{project_name}} with the actual project name
 3. Replace placeholder sections with extracted requirements:
-   - {{fr_list}} 鈫?extracted FRs
-   - {{nfr_list}} 鈫?extracted NFRs
-   - {{additional_requirements}} 鈫?extracted additional requirements (from Architecture)
-   - {{ux_design_requirements}} 鈫?extracted UX Design Requirements (if UX document exists)
+   - {{fr_list}} → extracted FRs
+   - {{nfr_list}} → extracted NFRs
+   - {{additional_requirements}} → extracted additional requirements (from Architecture)
+   - {{ux_design_requirements}} → extracted UX Design Requirements (if UX document exists)
 4. Leave {{requirements_coverage_map}} and {{epics_list}} as placeholders for now
 
 ### 8. Present Extracted Requirements
@@ -236,9 +236,9 @@ ONLY WHEN C is selected and all requirements are saved to document and frontmatt
 
 ---
 
-## 馃毃 SYSTEM SUCCESS/FAILURE METRICS
+## 🚨 SYSTEM SUCCESS/FAILURE METRICS
 
-### 鉁?SUCCESS:
+### ✅ SUCCESS:
 
 - All required documents found and validated
 - All FRs extracted and formatted correctly
@@ -247,7 +247,7 @@ ONLY WHEN C is selected and all requirements are saved to document and frontmatt
 - Template initialized with requirements
 - User confirms requirements are complete and accurate
 
-### 鉂?SYSTEM FAILURE:
+### ❌ SYSTEM FAILURE:
 
 - Missing required documents
 - Incomplete requirements extraction
@@ -255,4 +255,3 @@ ONLY WHEN C is selected and all requirements are saved to document and frontmatt
 - Not saving requirements to output file
 
 **Master Rule:** Skipping steps, optimizing sequences, or not following exact instructions is FORBIDDEN and constitutes SYSTEM FAILURE.
-

@@ -1,13 +1,17 @@
-﻿# 瀹炴柦鍚庡璁℃彁绀鸿瘝锛埪?锛?
-褰撶敤鎴疯姹傚**瀹炴柦瀹屾垚鍚庣殑缁撴灉**锛堜唬鐮併€乸rd銆乸rogress锛夊璁℃椂浣跨敤銆傝瀹″璞′负瀹炵幇浜х墿锛岄潪鏂囨。銆?
-## 涓庢枃妗ｅ璁＄殑鍖哄埆
+# 实施后审计提示词（§5）
 
-| 缁村害 | 鏂囨。瀹¤ (搂4/TASKS 閫傞厤) | 瀹炴柦鍚庡璁?(搂5) |
+当用户要求对**实施完成后的结果**（代码、prd、progress）审计时使用。被审对象为实现产物，非文档。
+
+## 与文档审计的区别
+
+| 维度 | 文档审计 (§4/TASKS 适配) | 实施后审计 (§5) |
 |------|--------------------------|-----------------|
-| 琚瀵硅薄 | TASKS_*.md銆乼asks-E*.md | 浠ｇ爜銆乸rd銆乸rogress |
-| 鍙戠幇 gap 鏃?| 瀹¤瀛愪唬鐞嗙洿鎺ヤ慨鏀规枃妗?| 瀹炴柦瀛愪唬鐞嗕慨鏀逛唬鐮?|
-| 鏀舵暃瑙勫垯 | audit-document-iteration-rules | audit-post-impl-rules |
+| 被审对象 | TASKS_*.md、tasks-E*.md | 代码、prd、progress |
+| 发现 gap 时 | 审计子代理直接修改文档 | 实施子代理修改代码 |
+| 收敛规则 | audit-document-iteration-rules | audit-post-impl-rules |
 
-## 鎻愮ず璇嶆潵婧?
-瀹屾暣 搂5 鎻愮ず璇嶈锛歚.codex/skills/speckit-workflow/references/audit-prompts.md` 绗?5 鑺傘€?
-鏍稿績瀹¤椤癸細浠诲姟鐪熸瀹炵幇銆佺敓浜т唬鐮佸湪鍏抽敭璺緞銆佸疄鐜颁笌娴嬭瘯瑕嗙洊銆侀獙鏀跺凡鎵ц銆乺alph-method 閬靛畧銆佹棤寤惰繜琛ㄨ堪銆?
+## 提示词来源
+
+完整 §5 提示词见：`.codex/skills/speckit-workflow/references/audit-prompts.md` 第 5 节。
+
+核心审计项：任务真正实现、生产代码在关键路径、实现与测试覆盖、验收已执行、ralph-method 遵守、无延迟表述。

@@ -1,5 +1,27 @@
 # AGENTS.md
 
+## Encoding Integrity Guardian
+
+Mandatory skill: `.codex/skills/encoding-integrity-guardian/SKILL.md`.
+
+Load and follow `encoding-integrity-guardian` before and after any of these operations:
+
+- batch editing markdown, CSV, YAML, TOML, skill, command, README, or AGENTS files
+- generating or regenerating Codex, Cursor, Claude, or `_bmad/codex` surfaces
+- npm pack, release, prepublish, or install-surface validation
+- Windows PowerShell file read/write operations that touch project text files
+- detecting mojibake marker patterns, private-use glyphs, replacement characters, or corrupted UTF-8 text
+
+On Windows, Codex must use PowerShell 7 via `pwsh.exe` for shell commands. Never use `powershell.exe` for project text file read/write operations. For batch text rewrites, use Node `fs` with explicit `utf8` and run the encoding integrity gate before and after.
+
+Required gate for those operations:
+
+```powershell
+node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js
+```
+
+If the gate reports findings, stop normal implementation. Classify affected files, identify whether they are source or generated surfaces, trace the first polluted commit or generator, and choose `restore`, `regenerate`, or `manual semantic rewrite`. Do not claim that encoding conversion fixed mojibake unless semantic content was restored from a clean source.
+
 ## Karpathy-Inspired Guidelines
 
 - Think Before Coding: Wrong assumptions, hidden confusion, missing tradeoffs
@@ -17,75 +39,98 @@
 
 ## User Rules
 
-- Multiple Roles: 澶氳鑹茶瑙掑垎鏋愬拰璇勫
-- Output Style: 绠€娲併€佺洿鎺ャ€佸彲鎵ц
-- Language Rules: 鍐呴儴寮€鍙戣繃绋嬩腑鐨勮瑷€浠ヤ腑鏂囦紭鍏?
-## 鎰忓浘婢勬竻
+- Multiple Roles: 多角色视角分析和评审
+- Output Style: 简洁、直接、可执行
+- Language Rules: 内部开发过程中的语言以中文优先
 
-閫傜敤鏉′欢锛氫笉纭畾鎬у彲閫氳繃蹇€熸壂鎻?+ 涓€杞彁闂秷闄ゃ€?
-1. 寮€鍦哄榻愶紙鎵ц鍓嶅繀鍋氾級锛氬厛鍚戠敤鎴峰洖鏄锯€滄垜鐞嗚В鐨勭洰鏍?鑼冨洿/涓嶅仛/鍏抽敭鍋囪鈥?2. 璇锋眰瑙勮寖鍖栵紙Prompt Refinement锛夛細灏嗙敤鎴峰師濮嬭姹傛敹鏁涗负鍙墽琛屾憳瑕侊紙鐩爣/鑼冨洿/涓嶅仛/楠屾敹锛?3. 蹇€熸壂鎻忥細Glob/Grep 璇嗗埆鐩稿叧鏂囦欢
-4. 鍏抽敭鎻愰棶锛氭湁鐤戦棶鏃舵彁闂苟绛夊緟鍥炵瓟
-5. 鐢熸垚鏂规锛氬熀浜庡洖绛旇緭鍑虹洰鏍囥€佽寖鍥淬€乄HEN/THEN 琛屼负瑙勬牸銆侀獙鏀舵爣鍑嗐€佷笉鍋氶」
-6. 鎵ц锛氶渶姹傛槑纭笖瀹炵幇璺緞鍞竴鏃剁洿鎺ュ紑濮嬶紱娑夊強涓氬姟鍐崇瓥/鍏抽敭杈撳叆缂哄け/閲嶅ぇ姝т箟鏃剁瓑寰呯敤鎴风‘璁ゅ悗寮€濮?
-鎻愰棶瑙勫垯锛?- `Lite` 涓旈渶姹傛槑纭€佸疄鐜拌矾寰勫敮涓€锛氫笉鎻愰棶锛岀洿鎺ユ墽琛?- `Standard/Full` 涓旈渶姹傛槑纭€佸疄鐜拌矾寰勫敮涓€锛氬紑鍦哄榻愬悗鐩存帴鎵ц
-- 娑夊強涓氬姟鍐崇瓥銆佺己灏戝叧閿緭鍏ャ€佹垨瀛樺湪澶氭柟妗堟潈琛★細涓€娆℃€ф彁鍑哄叏閮ㄥ叧閿棶棰樺苟绛夊緟纭
-- 宸茶繘鍏?`superpowers:brainstorming` 鏃讹紝鎸夊叾瑙勫垯鏀逛负鈥滀竴娆′竴闂€?- `AskUserQuestion` 涓嶅彲鐢ㄦ椂锛屾敼涓烘櫘閫氭枃鏈彁闂苟鏆傚仠鎵ц绛夊緟鐢ㄦ埛鍥炲
+## 意图澄清
 
-闇€姹傛ā绯娿€佽法妯″潡浜や簰鎴栧瓨鍦ㄥ涓璁″垎姝ф椂锛岃皟鐢?`superpowers:brainstorming` 鏀舵暃杈圭晫銆?
-## 閫氱敤閫€鍑烘爣鍑?
-鎵€鏈変换鍔′氦浠樺墠閫愰」妫€鏌ワ紙鎶€鑳戒笓灞為€€鍑烘爣鍑嗕粎杩藉姞锛屼笉鏇夸唬锛夛細
+适用条件：不确定性可通过快速扫描 + 一轮提问消除。
 
-| # | 鏍囧噯 | 妫€鏌ユ柟寮?|
+1. 开场对齐（执行前必做）：先向用户回显“我理解的目标/范围/不做/关键假设”
+2. 请求规范化（Prompt Refinement）：将用户原始请求收敛为可执行摘要（目标/范围/不做/验收）
+3. 快速扫描：Glob/Grep 识别相关文件
+4. 关键提问：有疑问时提问并等待回答
+5. 生成方案：基于回答输出目标、范围、WHEN/THEN 行为规格、验收标准、不做项
+6. 执行：需求明确且实现路径唯一时直接开始；涉及业务决策/关键输入缺失/重大歧义时等待用户确认后开始
+
+提问规则：
+- `Lite` 且需求明确、实现路径唯一：不提问，直接执行
+- `Standard/Full` 且需求明确、实现路径唯一：开场对齐后直接执行
+- 涉及业务决策、缺少关键输入、或存在多方案权衡：一次性提出全部关键问题并等待确认
+- 已进入 `superpowers:brainstorming` 时，按其规则改为“一次一问”
+- `AskUserQuestion` 不可用时，改为普通文本提问并暂停执行等待用户回复
+
+需求模糊、跨模块交互或存在多个设计分歧时，调用 `superpowers:brainstorming` 收敛边界。
+
+## 通用退出标准
+
+所有任务交付前逐项检查（技能专属退出标准仅追加，不替代）：
+
+| # | 标准 | 检查方式 |
 |---|------|---------|
-| 1 | 璇锋眰鍥炵湅 | 閫愭潯瀵圭収鍘熷璇锋眰锛屾爣璁?Done/Partial/Skipped |
-| 2 | 浜у嚭鐗╁洖璇?| 瀹￠槄鎵€鏈夌敓鎴愬唴瀹癸紝妫€鏌ラ仐婕?閿欒 |
-| 3 | 楠岃瘉璇佹嵁 | 鎻愪緵鍛戒护 + 杈撳嚭鎽樿锛屾垨璇存槑鏃犳硶楠岃瘉鍘熷洜 |
-| 4 | 璐ㄩ噺闂ㄧ | 鎸?`rules/code-quality.md` 妫€鏌ワ細姝ｇ‘鎬р啋瀹夊叏鈫掓€ц兘鈫掑彲缁存姢鎬э紙鎸夐€傜敤鎬ч獙璇侊級 |
+| 1 | 请求回看 | 逐条对照原始请求，标记 Done/Partial/Skipped |
+| 2 | 产出物回读 | 审阅所有生成内容，检查遗漏/错误 |
+| 3 | 验证证据 | 提供命令 + 输出摘要，或说明无法验证原因 |
+| 4 | 质量门禁 | 按 `rules/code-quality.md` 检查：正确性→安全→性能→可维护性（按适用性验证） |
 
-鏈€氳繃鍒欒嚜鍔ㄤ慨澶嶏紝鏈€澶?3 杞紱浠嶅け璐ュ繀椤绘槑纭畫浣欓闄╋紝绂佹闅愯棌銆?
-## 浠诲姟杩借釜
+未通过则自动修复，最多 3 轮；仍失败必须明确残余风险，禁止隐藏。
 
-榛樿鐢?`skills/superagents/SKILL.md` 鐨勭紪鎺掍笌杩借釜瑙勫垯鎵ц銆?
-- 蹇€熻矾寰勪换鍔★細鎸?`rules/fast-path.md` 鎵ц锛屽彲璺宠繃浠诲姟杩借釜
-- 澶嶆潅浠诲姟锛堚墺3 姝ユ垨璺ㄥ鏂囦欢锛夛細浣跨敤 TaskCreate/TaskUpdate/TaskList
-- 鎵€鏈夋。浣嶈矾寰勶紙Lite/Standard/Full锛夐兘蹇呴』婊¤冻鏈€灏忚拷韪細姝ラ鐘舵€佸彲瑙併€侀樆濉炲叧绯诲彲瑙併€佸畬鎴愯瘉鎹彲杩芥函
+## 任务追踪
 
-## 鐢ㄦ埛浜や簰鍐崇瓥
+默认由 `skills/superagents/SKILL.md` 的编排与追踪规则执行。
 
-浠ヤ笅涓?`rules/output-style.md` 纭瑙勫垯鐨勮ˉ鍏咃紙鍓嶈€呯鈥滄槸鍚︾‘璁も€濓紝姝ゅ绠♀€滄槸鍚﹁闂柟鍚戔€濓級锛?
-| 鍦烘櫙 | 琛屼负 |
+- 快速路径任务：按 `rules/fast-path.md` 执行，可跳过任务追踪
+- 复杂任务（≥3 步或跨多文件）：使用 TaskCreate/TaskUpdate/TaskList
+- 所有档位路径（Lite/Standard/Full）都必须满足最小追踪：步骤状态可见、阻塞关系可见、完成证据可追溯
+
+## 用户交互决策
+
+以下为 `rules/output-style.md` 确认规则的补充（前者管“是否确认”，此处管“是否询问方向”）：
+
+| 场景 | 行为 |
 |------|------|
-| 鎶€鏈柟妗堝敮涓€ | 鐩存帴鎵ц |
-| 2-3 涓瓑浠锋柟妗?| 鎺ㄨ崘棣栭€?+ 绠€鐭姣旓紝AskUserQuestion |
-| 娑夊強涓氬姟鍐崇瓥 | 蹇呴』 AskUserQuestion |
-| 缂哄皯鍏抽敭杈撳叆 | 蹇呴』 AskUserQuestion |
-| 鐢ㄦ埛璇粹€滃府鎴戝喅瀹氣€?| 鍒嗘瀽鍚庣粰鎺ㄨ崘锛屼笉鍙嶉棶 |
+| 技术方案唯一 | 直接执行 |
+| 2-3 个等价方案 | 推荐首选 + 简短对比，AskUserQuestion |
+| 涉及业务决策 | 必须 AskUserQuestion |
+| 缺少关键输入 | 必须 AskUserQuestion |
+| 用户说“帮我决定” | 分析后给推荐，不反问 |
 
-琛ュ厖锛歚AskUserQuestion` 涓嶅彲鐢ㄦ椂锛屼娇鐢ㄦ櫘閫氭枃鏈竴娆℃€ф彁闂紙鏈€澶?3 涓叧閿棶棰橈級骞剁瓑寰呯敤鎴风‘璁ゃ€?
-## Superpowers 浣跨敤鍑嗗垯
+补充：`AskUserQuestion` 不可用时，使用普通文本一次性提问（最多 3 个关键问题）并等待用户确认。
 
-- 姣忔鍝嶅簲鍓嶅繀椤诲厛璋冪敤 `superpowers:using-superpowers`锛堣 `CLAUDE.md`锛?- 鍥哄畾椤哄簭锛歚using-superpowers` 鈫?閫夋嫨鏈€灏?Skill 闆嗗悎 鈫?鎵ц瀵瑰簲 Skill 鈫?楠岃瘉涓庝氦浠?- 鎵€鏈夎姹傚己鍒惰繘鍏?`superagents`锛堣嚜鍔ㄨЕ鍙戯紝鏃犻渶鏄惧紡 `$superagents`锛?- `superagents` 鍐呴儴鎸夊鏉傚害璧?`Lite/Standard/Full` 涓夋。娴佺▼
-- `answer/git/github/handoff/fix-bug/develop-feature/refactor/review-code/architecture-review` 浠呬綔涓?`superagents` 鍐呴儴 lane
-- 瑙勫垯鍐茬獊浼樺厛绾э細瀹夊叏 > 姝ｇ‘鎬?> 鐢ㄦ埛鏄庣‘瑕佹眰 > `CLAUDE.md` 寮哄埗椤?> 鍏朵綑瑙勫垯/鎶€鑳借鏄?
-鍏蜂綋鍦烘櫙鏄犲皠涓庣紪鎺掔粏鑺備互 `skills/superagents/SKILL.md` 涓哄噯銆?
-## Agent 鍗忎綔
+## Superpowers 使用准则
 
-鑱岃矗杈圭晫淇濇寔涓ゅ眰锛?
-- Skill锛氳礋璐ｈ矾鐢变笌娴佺▼缂栨帓
-- Agent锛氳礋璐ｅ崟涓€鑱岃矗鎵ц锛坮esearch/plan/implement/review/verify/report锛?
-### 瀛愪唬鐞嗘ā鍨嬬瓥鐣?
-- 瀛愪唬鐞嗘ā鍨嬪厑璁镐娇鐢?`gpt-5.5`銆乣gpt-5.4` 涓?`gpt-5.3-codex`銆?- 榛樿浼樺厛浣跨敤 `gpt-5.5`锛涘鏋滃綋鍓嶈繍琛屾椂宸ュ叿灞傛湭鏆撮湶 `gpt-5.5`锛屽垯浣跨敤鏈€楂樺彲鐢ㄦā鍨?`gpt-5.4`銆?- 浠呭綋浠诲姟浠ヤ唬鐮佸疄鐜般€佹祴璇曚慨澶嶃€佸眬閮ㄩ噸鏋勩€佸崟妯″潡闃呰涓庡垎鏋愪负涓伙紝涓斾笉闇€瑕佸鏉傝法妯″潡鎺ㄧ悊鏃讹紝鎵嶅彲浣跨敤 `gpt-5.3-codex`銆?- `reasoning_effort` 浠呭厑璁镐娇鐢?`high` 鎴?`xhigh`锛涘鏉傚害鏈夋涔夋椂锛屼竴寰嬩笂璋冧负 `xhigh`銆?
-濮旀淳鍘熷垯锛堝叏灞€鏈€灏忕害鏉燂級锛?
-- 涓?agent 鍙繚鐣欙細缂栨帓鍐崇瓥銆佺敤鎴蜂氦浜掋€佷换鍔″崗璋冦€佹渶缁堟眹鎬?- 鍙娲惧伐浣滈粯璁ゅ娲撅紝閬垮厤涓讳笂涓嬫枃鑶ㄨ儉
-- 澶?Agent 骞跺彂銆佽鑹插垎宸ャ€佸啿绐佸鐞嗕互 `skills/superagents/SKILL.md` 涓哄噯
+- 每次响应前必须先调用 `superpowers:using-superpowers`（见 `CLAUDE.md`）
+- 固定顺序：`using-superpowers` → 选择最小 Skill 集合 → 执行对应 Skill → 验证与交付
+- 所有请求强制进入 `superagents`（自动触发，无需显式 `$superagents`）
+- `superagents` 内部按复杂度走 `Lite/Standard/Full` 三档流程
+- `answer/git/github/handoff/fix-bug/develop-feature/refactor/review-code/architecture-review` 仅作为 `superagents` 内部 lane
+- 规则冲突优先级：安全 > 正确性 > 用户明确要求 > `CLAUDE.md` 强制项 > 其余规则/技能说明
 
-## 鏂囦欢寮曠敤瑙勮寖
+具体场景映射与编排细节以 `skills/superagents/SKILL.md` 为准。
 
-寮曠敤椤圭洰鍐呮枃浠舵椂浣跨敤鐩稿璺緞锛?- Rules: `rules/code-quality.md`銆乣rules/fast-path.md`
+## Agent 协作
+
+职责边界保持两层：
+
+- Skill：负责路由与流程编排
+- Agent：负责单一职责执行（research/plan/implement/review/verify/report）
+
+委派原则（全局最小约束）：
+
+- 主 agent 只保留：编排决策、用户交互、任务协调、最终汇总
+- 可委派工作默认委派，避免主上下文膨胀
+- 多 Agent 并发、角色分工、冲突处理以 `skills/superagents/SKILL.md` 为准
+
+## 文件引用规范
+
+引用项目内文件时使用相对路径：
+- Rules: `rules/code-quality.md`、`rules/fast-path.md`
 - Skills: `skills/develop-feature/SKILL.md`
 - Agents: `agents/reviewer.md`
 
-閬垮厤浠呭啓鏂囦欢鍚嶏紙濡?`code-quality.md`锛夛紝纭繚鍙拷婧€?
-## 涓柇鎭㈠
+避免仅写文件名（如 `code-quality.md`），确保可追溯。
 
-鎶€鑳芥墽琛屼腑鏂椂璋冪敤 `handoff`锛堣瑙佸叾 SKILL.md锛夈€?
+## 中断恢复
+
+技能执行中断时调用 `handoff`（详见其 SKILL.md）。

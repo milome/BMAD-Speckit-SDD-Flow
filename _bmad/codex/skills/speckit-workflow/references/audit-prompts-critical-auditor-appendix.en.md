@@ -1,12 +1,12 @@
-﻿# Critical Auditor conclusion format (all stages)
+# Critical Auditor conclusion format (all stages)
 
-This appendix defines the required **Critical Auditor** section for audit prompts 搂1鈥撀? and PRD/Arch/PR audits. For **standard** or **strict** strictness, the report **must** include this section; **simple** may omit it.
+This appendix defines the required **Critical Auditor** section for audit prompts §1–§5 and PRD/Arch/PR audits. For **standard** or **strict** strictness, the report **must** include this section; **simple** may omit it.
 
 ---
 
 ## 1. Required structure
 
-The Critical Auditor section must include all of the following; missing any item 鈬?**invalid report format**, regenerate:
+The Critical Auditor section must include all of the following; missing any item ⇒ **invalid report format**, regenerate:
 
 | # | Item | Description |
 |---|------|-------------|
@@ -24,7 +24,7 @@ Use a dedicated section with heading:
 ## Critical Auditor Conclusion
 ```
 
-**Length**: This section should be at least as long as the rest of the report (鈮?0% share) so the model allocates enough depth to the adversarial role.
+**Length**: This section should be at least as long as the rest of the report (≥50% share) so the model allocates enough depth to the adversarial role.
 
 ---
 
@@ -43,7 +43,7 @@ Use a dedicated section with heading:
 
 ## 4. Parseable scoring linkage
 
-Reports must still end with the **parseable scoring block** required by the stage (`Overall Grade` / `鎬讳綋璇勭骇`, dimension lines) so `parseAndWriteScore` and dashboards work.
+Reports must still end with the **parseable scoring block** required by the stage (`Overall Grade` / `总体评级`, dimension lines) so `parseAndWriteScore` and dashboards work.
 
 ---
 
@@ -51,10 +51,10 @@ Reports must still end with the **parseable scoring block** required by the stag
 
 Use either:
 
-- `**Round conclusion**: no new gaps`
-- `**Round conclusion**: gaps remain. Items: 1) 鈥? 2) 鈥
+- `**Round conclusion**: no new gaps`  
+- `**Round conclusion**: gaps remain. Items: 1) …; 2) …`
 
-Chinese equivalents remain valid for zh locale (`鏈疆缁撹`, `鍏蜂綋椤筦).
+Chinese equivalents remain valid for zh locale (`本轮结论`, `具体项`).
 
 ---
 

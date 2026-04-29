@@ -1,99 +1,135 @@
-﻿<!-- CLOSEOUT-APPROVED-CANONICAL -->
-> Closeout 鏈鏀剁揣锛氭湰鏂囦欢涓€滃畬鎴?/ 閫氳繃 / 鍙繘鍏ヤ笅涓€闃舵鈥濅竴寰嬫寚 `runAuditorHost` 杩斿洖 `closeout approved`銆傚璁℃姤鍛?`PASS` 浠呰〃绀哄彲浠ヨ繘鍏?host close-out锛屽崟鐙殑 `PASS` 涓嶅緱瑙嗕负瀹屾垚銆佸噯鍏ユ垨鏀捐銆?# 瀹¤鎻愮ず璇嶏紙鍥哄畾妯℃澘锛屽彲澶嶅埗锛?
-**鎶ュ憡淇濆瓨闃叉寰幆**锛氬綋 prompt 鍖呭惈銆屾姤鍛婁繚瀛樸€嶆垨銆屽皢瀹屾暣鎶ュ憡淇濆瓨鑷炽€嶆椂锛?*蹇呴』**鍚屾椂鍖呭惈绂佹閲嶅杈撳嚭銆屾鍦ㄥ啓鍏ュ畬鏁村璁℃姤鍛娿€嶇瓑鐘舵€佷俊鎭殑绾︽潫銆傝瑙?[audit-report-save-rules.md](audit-report-save-rules.md)銆?
-鐢熸垚鎴栨洿鏂板悇闃舵鏂囨。鍚庯紝蹇呴』璋冪敤 **code-review** 鑳藉姏锛屼娇鐢ㄤ笅鏂瑰搴旀彁绀鸿瘝杩涜瀹¤銆?*浠呭湪瀹¤鎶ュ憡缁撹涓恒€屽畬鍏ㄨ鐩栥€侀獙璇侀€氳繃銆嶆椂** 鍙粨鏉熻姝ラ锛涘惁鍒欐牴鎹姤鍛婅凯浠ｄ慨鏀规枃妗ｅ苟鍐嶆瀹¤銆傛枃妗ｇ被瀹¤榛樿蹇呴』鏄惧紡妫€鏌?`journey-first`銆乣smoke E2E`銆乣鎴愬姛/澶辫触璇佹嵁`銆乣fixture / environment readiness`銆乣traceability`锛岀姝㈠彧鍋氭硾鍖栫殑鈥滃畬鏁存€?涓€鑷存€р€濋檲杩般€?
-**Deferred Gap / Journey-first 琛ュ厖瑕佹眰锛堟墍鏈夌浉鍏抽樁娈甸粯璁ょ敓鏁堬級**锛?- 鑻ュ瓨鍦?inherited deferred gaps锛屽璁″繀椤绘鏌?`deferred-gap-register.yaml`
-- tasks / implement 闃舵蹇呴』妫€鏌?`journey-ledger`銆乣trace-map`銆乣closure-notes`
-- implement 闃舵蹇呴』妫€鏌?`Production Path`銆乣Smoke Proof`銆乣Full E2E`/defer reason銆乣Acceptance Evidence`
-- 鑻ュ嚭鐜?`module complete but journey not runnable`锛屽繀椤绘槑纭垽鏈€氳繃
+<!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
+# 审计提示词（固定模板，可复制）
 
-**鏂囨。瀹¤杩唬瑙勫垯锛埪?鈥撀? 閫傜敤锛?*锛歴pec/plan/GAPS/tasks 绛?*鏂囨。**瀹¤椤婚伒寰?[audit-document-iteration-rules.md](audit-document-iteration-rules.md)銆?*瀹¤瀛愪唬鐞嗗湪鍙戠幇 gap 鏃堕』鐩存帴淇敼琚鏂囨。**锛岀姝粎杈撳嚭淇敼寤鸿锛涗富 Agent 鏀跺埌鎶ュ憡鍚庡彂璧蜂笅涓€杞璁°€?*銆岃繛缁?3 杞棤 gap銆嶉拡瀵硅瀹℃枃妗?*锛屽嵆琚鏂囨。杩炵画 3 杞璁″潎鏃?gap 鍙戠幇鎵嶆敹鏁涖€?
+**报告保存防死循环**：当 prompt 包含「报告保存」或「将完整报告保存至」时，**必须**同时包含禁止重复输出「正在写入完整审计报告」等状态信息的约束。详见 [audit-report-save-rules.md](audit-report-save-rules.md)。
+
+生成或更新各阶段文档后，必须调用 **code-review** 能力，使用下方对应提示词进行审计。**仅在审计报告结论为「完全覆盖、验证通过」时** 可结束该步骤；否则根据报告迭代修改文档并再次审计。文档类审计默认必须显式检查 `journey-first`、`smoke E2E`、`成功/失败证据`、`fixture / environment readiness`、`traceability`，禁止只做泛化的“完整性/一致性”陈述。
+
+**Deferred Gap / Journey-first 补充要求（所有相关阶段默认生效）**：
+- 若存在 inherited deferred gaps，审计必须检查 `deferred-gap-register.yaml`
+- tasks / implement 阶段必须检查 `journey-ledger`、`trace-map`、`closure-notes`
+- implement 阶段必须检查 `Production Path`、`Smoke Proof`、`Full E2E`/defer reason、`Acceptance Evidence`
+- 若出现 `module complete but journey not runnable`，必须明确判未通过
+
+**文档审计迭代规则（§1–§4 适用）**：spec/plan/GAPS/tasks 等**文档**审计须遵循 [audit-document-iteration-rules.md](audit-document-iteration-rules.md)。**审计子代理在发现 gap 时须直接修改被审文档**，禁止仅输出修改建议；主 Agent 收到报告后发起下一轮审计。**「连续 3 轮无 gap」针对被审文档**，即被审文档连续 3 轮审计均无 gap 发现才收敛。
+
 ---
 
-## 1. spec.md 瀹¤鎻愮ず璇?
-```
-浣犳槸涓€浣嶉潪甯镐弗鑻涚殑浠ｇ爜瀹¤鍛橈紝璇峰府鎴戜粩缁嗗闃呯洰鍓嶇殑 spec.md 鏄惁瀹屽叏瑕嗙洊浜嗗師濮嬬殑闇€姹傝璁℃枃妗ｆ墍鏈夌珷鑺傦紝蹇呴』閫愭潯杩涜妫€鏌ュ拰楠岃瘉銆傛澶栵紝蹇呴』涓撻」瀹℃煡锛歴pec 鏄惁浠?`journey-first` 鏂瑰紡瀹氫箟鏈€鍏抽敭鐨?P0 璺緞锛屾槸鍚︿负鍏抽敭璺緞瀹氫箟浜嗘垚鍔熻瘉鎹笌澶辫触璺緞锛屾槸鍚︽槑纭簡 smoke E2E 瑕侀獙璇佺殑鐢ㄦ埛鍙娴佺▼锛屾槸鍚﹀瓨鍦ㄤ緷璧?fixture / environment 鍗存湭澹版槑鐨勫叧閿矾寰勩€傝嫢鍙戠幇 spec 涓瓨鍦ㄦā绯婅〃杩帮紙濡傞渶姹傛弿杩颁笉鏄庣‘銆佽竟鐣屾潯浠舵湭瀹氫箟銆佹湳璇涔夌瓑锛夛紝椤诲湪鎶ュ憡涓槑纭爣娉ㄣ€宻pec 瀛樺湪妯＄硦琛ㄨ堪銆嶅強鍏蜂綋浣嶇疆锛屼互渚胯Е鍙?clarify 婢勬竻娴佺▼銆傜敓鎴愪竴涓€愭潯鎻忚堪璇︾粏妫€鏌ュ唴瀹广€侀獙璇佹柟寮忓拰楠岃瘉缁撴灉鐨勫璁℃姤鍛娿€傛姤鍛婄粨灏惧繀椤绘槑纭粰鍑虹粨璁猴細鏄惁銆屽畬鍏ㄨ鐩栥€侀獙璇侀€氳繃銆嶏紱鑻ユ湭閫氳繃锛岃鍒楀嚭閬楁紡绔犺妭銆佹湭瑕嗙洊瑕佺偣鎴栨ā绯婅〃杩颁綅缃€傛姤鍛婄粨灏惧繀椤诲寘鍚?搂4.1 瑙勫畾鐨勫彲瑙ｆ瀽璇勫垎鍧楋紙鎬讳綋璇勭骇 + 缁村害璇勫垎锛夛紝涓?tasks 闃舵涓€鑷达紝鍚﹀垯 parseAndWriteScore 鏃犳硶瑙ｆ瀽銆佷华琛ㄧ洏鏃犳硶鏄剧ず璇勭骇銆傜姝㈢敤鎻忚堪浠ｆ浛缁撴瀯鍖栧潡锛氫笉寰楀湪鎬荤粨鎴栨鏂囦腑鐢ㄣ€屽彲瑙ｆ瀽璇勫垎鍧楋紙鎬讳綋璇勭骇 X锛岀淮搴﹀垎 Y鈥揨锛夈€嶇瓑鏂囧瓧姒傛嫭锛涘繀椤诲湪鎶ュ憡涓緭鍑哄畬鏁寸殑缁撴瀯鍖栧潡锛屽寘鎷嫭绔嬩竴琛?鎬讳綋璇勭骇: X 鍜屽洓琛?- 缁村害鍚? XX/100銆傛€讳綋璇勭骇鍙兘鏄?A/B/C/D锛堢姝?A-銆丅+銆丆+銆丏- 绛変换鎰忎慨楗扮锛夈€傜淮搴﹀垎蹇呴』閫愯鍐欐槑锛屼笉寰楃敤鍖洪棿鎴栨鎷唬鏇裤€傘€惵? 鍙В鏋愬潡瑕佹眰銆戝璁℃椂椤诲悓鏃舵墽琛屾壒鍒ゅ璁″憳妫€鏌ワ紝杈撳嚭鏍煎紡瑙?[audit-prompts-critical-auditor-appendix.md](audit-prompts-critical-auditor-appendix.md)銆?```
+## 1. spec.md 审计提示词
 
-銆愬璁″悗鍔ㄤ綔銆戝璁￠€氳繃鏃讹紝**浣狅紙瀹¤瀛愪唬鐞嗭級蹇呴』**锛氣憼 鍦ㄨ瀹℃枃妗ｏ紙artifactDocPath 鎵€鎸?spec-E{epic}-S{story}.md锛夋湯灏捐拷鍔犱竴琛?`<!-- AUDIT: PASSED by code-reviewer -->`锛岃嫢鏂囨。鏈熬宸插惈璇ヨ鎴?`<!-- AUDIT: PASSED` 鍒欒烦杩囷紱鈶?灏嗗畬鏁存姤鍛婁繚瀛樿嚦璋冪敤鏂瑰湪鏈?prompt 涓寚瀹氱殑 reportPath锛堣皟鐢ㄦ柟浼氬湪鏈?prompt 涓彁渚涘叿浣撹矾寰勶級锛屽苟鍦ㄧ粨璁轰腑娉ㄦ槑淇濆瓨璺緞鍙?iteration_count锛堟湰 stage 瀹¤鏈€氳繃杞暟锛? 琛ㄧず涓€娆￠€氳繃锛夈€?*璇勫垎鍐欏叆銆乤uditIndex 鏇存柊涓庡叾瀹?post-audit automation 鐢?invoking host/runner 缁熶竴閫氳繃 `runAuditorHost` 鎵挎帴**锛屼綘鍙渶淇濊瘉 `reportPath`銆乣artifactDocPath`銆乣iteration_count` 瀹屾暣鍙敤銆?*绂佹**锛氫繚瀛樻椂涓嶅緱閲嶅杈撳嚭銆屾鍦ㄥ啓鍏ュ畬鏁村璁℃姤鍛娿€嶃€屾鍦ㄤ繚瀛樸€嶇瓑鐘舵€佷俊鎭紱浣跨敤 write 宸ュ叿涓€娆℃€у啓鍏ュ嵆鍙€?*瀹¤鏈€氳繃鏃?*锛氫綘锛堝璁″瓙浠ｇ悊锛夐』鍦ㄦ湰杞唴**鐩存帴淇敼琚鏂囨。**浠ユ秷闄?gap锛屼慨鏀瑰畬鎴愬悗鍦ㄦ姤鍛婁腑娉ㄦ槑宸蹭慨鏀瑰唴瀹癸紱涓?Agent 鏀跺埌鎶ュ憡鍚庡彂璧蜂笅涓€杞璁°€傜姝粎杈撳嚭淇敼寤鸿鑰屼笉淇敼鏂囨。銆傝瑙?[audit-document-iteration-rules.md](audit-document-iteration-rules.md)銆?
+```
+你是一位非常严苛的代码审计员，请帮我仔细审阅目前的 spec.md 是否完全覆盖了原始的需求设计文档所有章节，必须逐条进行检查和验证。此外，必须专项审查：spec 是否以 `journey-first` 方式定义最关键的 P0 路径，是否为关键路径定义了成功证据与失败路径，是否明确了 smoke E2E 要验证的用户可见流程，是否存在依赖 fixture / environment 却未声明的关键路径。若发现 spec 中存在模糊表述（如需求描述不明确、边界条件未定义、术语歧义等），须在报告中明确标注「spec 存在模糊表述」及具体位置，以便触发 clarify 澄清流程。生成一个逐条描述详细检查内容、验证方式和验证结果的审计报告。报告结尾必须明确给出结论：是否「完全覆盖、验证通过」；若未通过，请列出遗漏章节、未覆盖要点或模糊表述位置。报告结尾必须包含 §4.1 规定的可解析评分块（总体评级 + 维度评分），与 tasks 阶段一致，否则 parseAndWriteScore 无法解析、仪表盘无法显示评级。禁止用描述代替结构化块：不得在总结或正文中用「可解析评分块（总体评级 X，维度分 Y–Z）」等文字概括；必须在报告中输出完整的结构化块，包括独立一行 总体评级: X 和四行 - 维度名: XX/100。总体评级只能是 A/B/C/D（禁止 A-、B+、C+、D- 等任意修饰符）。维度分必须逐行写明，不得用区间或概括代替。【§1 可解析块要求】审计时须同时执行批判审计员检查，输出格式见 [audit-prompts-critical-auditor-appendix.md](audit-prompts-critical-auditor-appendix.md)。
+```
+
+【审计后动作】审计通过时，**你（审计子代理）必须**：① 在被审文档（artifactDocPath 所指 spec-E{epic}-S{story}.md）末尾追加一行 `<!-- AUDIT: PASSED by code-reviewer -->`，若文档末尾已含该行或 `<!-- AUDIT: PASSED` 则跳过；② 将完整报告保存至调用方在本 prompt 中指定的 reportPath（调用方会在本 prompt 中提供具体路径），并在结论中注明保存路径及 iteration_count（本 stage 审计未通过轮数，0 表示一次通过）。**你（审计子代理）在返回主 Agent 前必须返回 projectRoot、reportPath、artifactDocPath、stage，由 invoking host/runner 统一调用 runAuditorHost**。审计通过时，在返回前必须执行：`npx --no-install bmad-speckit run-auditor-host --projectRoot <projectRoot> --stage <stage> --artifactPath <artifactDocPath> --reportPath <reportPath> --iterationCount {累计值}`；reportPath、epic、story、epic-slug、slug、累计值由本 prompt 或调用方提供；失败在结论中注明 resultCode。**禁止**：保存时不得重复输出「正在写入完整审计报告」「正在保存」等状态信息；使用 write 工具一次性写入即可。**审计未通过时**：你（审计子代理）须在本轮内**直接修改被审文档**以消除 gap，修改完成后在报告中注明已修改内容；主 Agent 收到报告后发起下一轮审计。禁止仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules.md](audit-document-iteration-rules.md)。
+
 ---
 
-## 2. plan.md 瀹¤鎻愮ず璇?
-```
-浣犳槸涓€浣嶉潪甯镐弗鑻涚殑浠ｇ爜瀹¤鍛橈紝璇峰府鎴戜粩缁嗗闃呯洰鍓嶇殑 plan.md 鏄惁瀹屽叏瑕嗙洊浜嗗師濮嬬殑闇€姹傝璁℃枃妗ｆ墍鏈夌珷鑺傦紝蹇呴』閫愭潯杩涜妫€鏌ュ拰楠岃瘉銆傛澶栵紝蹇呴』涓撻」瀹℃煡锛歱lan.md 鏄惁鍖呭惈瀹屾暣鐨勯泦鎴愭祴璇曚笌绔埌绔姛鑳芥祴璇曡鍒掞紙瑕嗙洊妯″潡闂村崗浣溿€佺敓浜т唬鐮佸叧閿矾寰勩€佺敤鎴峰彲瑙佸姛鑳芥祦绋嬶級锛屾槸鍚︿负姣忔潯鍏抽敭 P0 journey 瑙勫垝浜嗗彲鎵ц鐨?smoke E2E 璺緞锛屾槸鍚﹀瓨鍦ㄤ粎渚濊禆鍗曞厓娴嬭瘯鑰岀己灏戦泦鎴?绔埌绔祴璇曡鍒掔殑鎯呭喌锛屾槸鍚﹀瓨鍦ㄦā鍧楀彲鑳藉唴閮ㄥ疄鐜板畬鏁翠絾鏈鐢熶骇浠ｇ爜鍏抽敭璺緞瀵煎叆鍜岃皟鐢ㄧ殑椋庨櫓锛屾槸鍚﹀瓨鍦?fixture / environment / seed data 鏈噯澶囪€屽鑷磋鍒掓棤娉曠湡姝ｈ惤鍦扮殑鎯呭喌銆傜敓鎴愪竴涓€愭潯鎻忚堪璇︾粏妫€鏌ュ唴瀹广€侀獙璇佹柟寮忓拰楠岃瘉缁撴灉鐨勫璁℃姤鍛娿€傛姤鍛婄粨灏惧繀椤绘槑纭粰鍑虹粨璁猴細鏄惁銆屽畬鍏ㄨ鐩栥€侀獙璇侀€氳繃銆嶏紱鑻ユ湭閫氳繃锛岃鍒楀嚭閬楁紡绔犺妭鎴栨湭瑕嗙洊瑕佺偣銆傛姤鍛婄粨灏惧繀椤诲寘鍚?搂4.1 瑙勫畾鐨勫彲瑙ｆ瀽璇勫垎鍧楋紙鎬讳綋璇勭骇 + 缁村害璇勫垎锛夛紝涓?tasks 闃舵涓€鑷达紝鍚﹀垯 parseAndWriteScore 鏃犳硶瑙ｆ瀽銆佷华琛ㄧ洏鏃犳硶鏄剧ず璇勭骇銆傜姝㈢敤鎻忚堪浠ｆ浛缁撴瀯鍖栧潡锛氫笉寰楀湪鎬荤粨鎴栨鏂囦腑鐢ㄣ€屽彲瑙ｆ瀽璇勫垎鍧楋紙鎬讳綋璇勭骇 X锛岀淮搴﹀垎 Y鈥揨锛夈€嶇瓑鏂囧瓧姒傛嫭锛涘繀椤诲湪鎶ュ憡涓緭鍑哄畬鏁寸殑缁撴瀯鍖栧潡锛屽寘鎷嫭绔嬩竴琛?鎬讳綋璇勭骇: X 鍜屽洓琛?- 缁村害鍚? XX/100銆傛€讳綋璇勭骇鍙兘鏄?A/B/C/D锛堢姝?A-銆丅+銆丆+銆丏- 绛変换鎰忎慨楗扮锛夈€傜淮搴﹀垎蹇呴』閫愯鍐欐槑锛屼笉寰楃敤鍖洪棿鎴栨鎷唬鏇裤€傘€惵? 鍙В鏋愬潡瑕佹眰銆戝璁℃椂椤诲悓鏃舵墽琛屾壒鍒ゅ璁″憳妫€鏌ワ紝杈撳嚭鏍煎紡瑙?[audit-prompts-critical-auditor-appendix.md](audit-prompts-critical-auditor-appendix.md)銆?```
+## 2. plan.md 审计提示词
 
-銆愬璁″悗鍔ㄤ綔銆戝璁￠€氳繃鏃讹紝**浣狅紙瀹¤瀛愪唬鐞嗭級蹇呴』**锛氣憼 鍦ㄨ瀹℃枃妗ｏ紙artifactDocPath 鎵€鎸?plan-E{epic}-S{story}.md锛夋湯灏捐拷鍔犱竴琛?`<!-- AUDIT: PASSED by code-reviewer -->`锛岃嫢鏂囨。鏈熬宸插惈璇ヨ鎴?`<!-- AUDIT: PASSED` 鍒欒烦杩囷紱鈶?灏嗗畬鏁存姤鍛婁繚瀛樿嚦璋冪敤鏂瑰湪鏈?prompt 涓寚瀹氱殑 reportPath锛堣皟鐢ㄦ柟浼氬湪鏈?prompt 涓彁渚涘叿浣撹矾寰勶級锛屽苟鍦ㄧ粨璁轰腑娉ㄦ槑淇濆瓨璺緞鍙?iteration_count锛堟湰 stage 瀹¤鏈€氳繃杞暟锛? 琛ㄧず涓€娆￠€氳繃锛夈€?*璇勫垎鍐欏叆銆乤uditIndex 鏇存柊涓庡叾瀹?post-audit automation 鐢?invoking host/runner 缁熶竴閫氳繃 `runAuditorHost` 鎵挎帴**锛屼綘鍙渶淇濊瘉 `reportPath`銆乣artifactDocPath`銆乣iteration_count` 瀹屾暣鍙敤銆?*绂佹**锛氫繚瀛樻椂涓嶅緱閲嶅杈撳嚭銆屾鍦ㄥ啓鍏ュ畬鏁村璁℃姤鍛娿€嶃€屾鍦ㄤ繚瀛樸€嶇瓑鐘舵€佷俊鎭紱浣跨敤 write 宸ュ叿涓€娆℃€у啓鍏ュ嵆鍙€?*瀹¤鏈€氳繃鏃?*锛氫綘锛堝璁″瓙浠ｇ悊锛夐』鍦ㄦ湰杞唴**鐩存帴淇敼琚鏂囨。**浠ユ秷闄?gap锛屼慨鏀瑰畬鎴愬悗鍦ㄦ姤鍛婁腑娉ㄦ槑宸蹭慨鏀瑰唴瀹癸紱涓?Agent 鏀跺埌鎶ュ憡鍚庡彂璧蜂笅涓€杞璁°€傜姝粎杈撳嚭淇敼寤鸿鑰屼笉淇敼鏂囨。銆傝瑙?[audit-document-iteration-rules.md](audit-document-iteration-rules.md)銆?
+```
+你是一位非常严苛的代码审计员，请帮我仔细审阅目前的 plan.md 是否完全覆盖了原始的需求设计文档所有章节，必须逐条进行检查和验证。此外，必须专项审查：plan.md 是否包含完整的集成测试与端到端功能测试计划（覆盖模块间协作、生产代码关键路径、用户可见功能流程），是否为每条关键 P0 journey 规划了可执行的 smoke E2E 路径，是否存在仅依赖单元测试而缺少集成/端到端测试计划的情况，是否存在模块可能内部实现完整但未被生产代码关键路径导入和调用的风险，是否存在 fixture / environment / seed data 未准备而导致计划无法真正落地的情况。生成一个逐条描述详细检查内容、验证方式和验证结果的审计报告。报告结尾必须明确给出结论：是否「完全覆盖、验证通过」；若未通过，请列出遗漏章节或未覆盖要点。报告结尾必须包含 §4.1 规定的可解析评分块（总体评级 + 维度评分），与 tasks 阶段一致，否则 parseAndWriteScore 无法解析、仪表盘无法显示评级。禁止用描述代替结构化块：不得在总结或正文中用「可解析评分块（总体评级 X，维度分 Y–Z）」等文字概括；必须在报告中输出完整的结构化块，包括独立一行 总体评级: X 和四行 - 维度名: XX/100。总体评级只能是 A/B/C/D（禁止 A-、B+、C+、D- 等任意修饰符）。维度分必须逐行写明，不得用区间或概括代替。【§2 可解析块要求】审计时须同时执行批判审计员检查，输出格式见 [audit-prompts-critical-auditor-appendix.md](audit-prompts-critical-auditor-appendix.md)。
+```
+
+【审计后动作】审计通过时，**你（审计子代理）必须**：① 在被审文档（artifactDocPath 所指 plan-E{epic}-S{story}.md）末尾追加一行 `<!-- AUDIT: PASSED by code-reviewer -->`，若文档末尾已含该行或 `<!-- AUDIT: PASSED` 则跳过；② 将完整报告保存至调用方在本 prompt 中指定的 reportPath（调用方会在本 prompt 中提供具体路径），并在结论中注明保存路径及 iteration_count（本 stage 审计未通过轮数，0 表示一次通过）。**你（审计子代理）在返回主 Agent 前必须返回 projectRoot、reportPath、artifactDocPath、stage，由 invoking host/runner 统一调用 runAuditorHost**。审计通过时，在返回前必须执行：`npx --no-install bmad-speckit run-auditor-host --projectRoot <projectRoot> --stage <stage> --artifactPath <artifactDocPath> --reportPath <reportPath> --iterationCount {累计值}`；reportPath、epic、story、epic-slug、slug、累计值由本 prompt 或调用方提供；失败在结论中注明 resultCode。**禁止**：保存时不得重复输出「正在写入完整审计报告」「正在保存」等状态信息；使用 write 工具一次性写入即可。**审计未通过时**：你（审计子代理）须在本轮内**直接修改被审文档**以消除 gap，修改完成后在报告中注明已修改内容；主 Agent 收到报告后发起下一轮审计。禁止仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules.md](audit-document-iteration-rules.md)。
+
 ---
 
-## 3. IMPLEMENTATION_GAPS.md 瀹¤鎻愮ず璇?
-```
-浣犳槸涓€浣嶉潪甯镐弗鑻涚殑浠ｇ爜瀹¤鍛橈紝璇峰府鎴戜粩缁嗗闃呯洰鍓嶇殑 IMPLEMENTATION_GAPS.md 鏄惁瀹屽叏瑕嗙洊浜嗗師濮嬬殑闇€姹傝璁℃枃妗ｄ互鍙婄敤鎴风粰瀹氱殑鎵€鏈夊弬鑰冩枃妗ｏ紙濡傛灦鏋勮璁℃枃妗ｃ€佽璁¤鏄庝功绛夛級鐨勬墍鏈夌珷鑺傦紝蹇呴』閫愭潯杩涜妫€鏌ュ拰楠岃瘉銆傛澶栵紝蹇呴』涓撻」瀹℃煡锛氭槸鍚︽槑纭褰曚簡鍏抽敭 P0 journey 鐨勭己鍙ｃ€佹垚鍔熻瘉鎹己鍙ｃ€乫ailure matrix 缂哄彛銆乫ixture / environment readiness 缂哄彛锛屼互鍙婃槸鍚﹀瓨鍦ㄧ湅浼尖€滄ā鍧楀彲瀹炵幇鈥濅絾瀹為檯鏃犳硶褰㈡垚 smoke E2E 璺緞鐨勭己鍙ｃ€傜敓鎴愪竴涓€愭潯鎻忚堪璇︾粏妫€鏌ュ唴瀹广€侀獙璇佹柟寮忓拰楠岃瘉缁撴灉鐨勫璁℃姤鍛娿€傛姤鍛婄粨灏惧繀椤绘槑纭粰鍑虹粨璁猴細鏄惁銆屽畬鍏ㄨ鐩栥€侀獙璇侀€氳繃銆嶏紱鑻ユ湭閫氳繃锛岃鍒楀嚭閬楁紡绔犺妭鎴栨湭瑕嗙洊瑕佺偣銆傛姤鍛婄粨灏惧繀椤诲寘鍚?搂4.1 瑙勫畾鐨勫彲瑙ｆ瀽璇勫垎鍧楋紙鎬讳綋璇勭骇 + 缁村害璇勫垎锛夛紝涓?tasks 闃舵涓€鑷达紝鍚﹀垯 parseAndWriteScore 鏃犳硶瑙ｆ瀽銆佷华琛ㄧ洏鏃犳硶鏄剧ず璇勭骇銆傜姝㈢敤鎻忚堪浠ｆ浛缁撴瀯鍖栧潡锛氫笉寰楀湪鎬荤粨鎴栨鏂囦腑鐢ㄣ€屽彲瑙ｆ瀽璇勫垎鍧楋紙鎬讳綋璇勭骇 X锛岀淮搴﹀垎 Y鈥揨锛夈€嶇瓑鏂囧瓧姒傛嫭锛涘繀椤诲湪鎶ュ憡涓緭鍑哄畬鏁寸殑缁撴瀯鍖栧潡锛屽寘鎷嫭绔嬩竴琛?鎬讳綋璇勭骇: X 鍜屽洓琛?- 缁村害鍚? XX/100銆傛€讳綋璇勭骇鍙兘鏄?A/B/C/D锛堢姝?A-銆丅+銆丆+銆丏- 绛変换鎰忎慨楗扮锛夈€傜淮搴﹀垎蹇呴』閫愯鍐欐槑锛屼笉寰楃敤鍖洪棿鎴栨鎷唬鏇裤€傘€惵? 鍙В鏋愬潡瑕佹眰銆戝璁℃椂椤诲悓鏃舵墽琛屾壒鍒ゅ璁″憳妫€鏌ワ紝杈撳嚭鏍煎紡瑙?[audit-prompts-critical-auditor-appendix.md](audit-prompts-critical-auditor-appendix.md)銆?```
+## 3. IMPLEMENTATION_GAPS.md 审计提示词
 
-銆愬璁″悗鍔ㄤ綔銆戝璁￠€氳繃鏃讹紝**浣狅紙瀹¤瀛愪唬鐞嗭級蹇呴』**锛氣憼 鍦ㄨ瀹℃枃妗ｏ紙artifactDocPath 鎵€鎸?IMPLEMENTATION_GAPS-E{epic}-S{story}.md锛夋湯灏捐拷鍔犱竴琛?`<!-- AUDIT: PASSED by code-reviewer -->`锛岃嫢鏂囨。鏈熬宸插惈璇ヨ鎴?`<!-- AUDIT: PASSED` 鍒欒烦杩囷紱鈶?灏嗗畬鏁存姤鍛婁繚瀛樿嚦璋冪敤鏂瑰湪鏈?prompt 涓寚瀹氱殑 reportPath锛堣皟鐢ㄦ柟浼氬湪鏈?prompt 涓彁渚涘叿浣撹矾寰勶級锛屽苟鍦ㄧ粨璁轰腑娉ㄦ槑淇濆瓨璺緞鍙?iteration_count锛堟湰 stage 瀹¤鏈€氳繃杞暟锛? 琛ㄧず涓€娆￠€氳繃锛夈€?*璇勫垎鍐欏叆銆乤uditIndex 鏇存柊涓庡叾瀹?post-audit automation 鐢?invoking host/runner 缁熶竴閫氳繃 `runAuditorHost` 鎵挎帴**锛屼綘鍙渶淇濊瘉 `reportPath`銆乣artifactDocPath`銆乣iteration_count` 瀹屾暣鍙敤銆?*绂佹**锛氫繚瀛樻椂涓嶅緱閲嶅杈撳嚭銆屾鍦ㄥ啓鍏ュ畬鏁村璁℃姤鍛娿€嶃€屾鍦ㄤ繚瀛樸€嶇瓑鐘舵€佷俊鎭紱浣跨敤 write 宸ュ叿涓€娆℃€у啓鍏ュ嵆鍙€?*瀹¤鏈€氳繃鏃?*锛氫綘锛堝璁″瓙浠ｇ悊锛夐』鍦ㄦ湰杞唴**鐩存帴淇敼琚鏂囨。**浠ユ秷闄?gap锛屼慨鏀瑰畬鎴愬悗鍦ㄦ姤鍛婁腑娉ㄦ槑宸蹭慨鏀瑰唴瀹癸紱涓?Agent 鏀跺埌鎶ュ憡鍚庡彂璧蜂笅涓€杞璁°€傜姝粎杈撳嚭淇敼寤鸿鑰屼笉淇敼鏂囨。銆傝瑙?[audit-document-iteration-rules.md](audit-document-iteration-rules.md)銆?
+```
+你是一位非常严苛的代码审计员，请帮我仔细审阅目前的 IMPLEMENTATION_GAPS.md 是否完全覆盖了原始的需求设计文档以及用户给定的所有参考文档（如架构设计文档、设计说明书等）的所有章节，必须逐条进行检查和验证。此外，必须专项审查：是否明确记录了关键 P0 journey 的缺口、成功证据缺口、failure matrix 缺口、fixture / environment readiness 缺口，以及是否存在看似“模块可实现”但实际无法形成 smoke E2E 路径的缺口。生成一个逐条描述详细检查内容、验证方式和验证结果的审计报告。报告结尾必须明确给出结论：是否「完全覆盖、验证通过」；若未通过，请列出遗漏章节或未覆盖要点。报告结尾必须包含 §4.1 规定的可解析评分块（总体评级 + 维度评分），与 tasks 阶段一致，否则 parseAndWriteScore 无法解析、仪表盘无法显示评级。禁止用描述代替结构化块：不得在总结或正文中用「可解析评分块（总体评级 X，维度分 Y–Z）」等文字概括；必须在报告中输出完整的结构化块，包括独立一行 总体评级: X 和四行 - 维度名: XX/100。总体评级只能是 A/B/C/D（禁止 A-、B+、C+、D- 等任意修饰符）。维度分必须逐行写明，不得用区间或概括代替。【§3 可解析块要求】审计时须同时执行批判审计员检查，输出格式见 [audit-prompts-critical-auditor-appendix.md](audit-prompts-critical-auditor-appendix.md)。
+```
+
+【审计后动作】审计通过时，**你（审计子代理）必须**：① 在被审文档（artifactDocPath 所指 IMPLEMENTATION_GAPS-E{epic}-S{story}.md）末尾追加一行 `<!-- AUDIT: PASSED by code-reviewer -->`，若文档末尾已含该行或 `<!-- AUDIT: PASSED` 则跳过；② 将完整报告保存至调用方在本 prompt 中指定的 reportPath（调用方会在本 prompt 中提供具体路径），并在结论中注明保存路径及 iteration_count（本 stage 审计未通过轮数，0 表示一次通过）。**你（审计子代理）在返回主 Agent 前必须返回 projectRoot、reportPath、artifactDocPath、stage，由 invoking host/runner 统一调用 runAuditorHost**。审计通过时，在返回前必须执行：`npx --no-install bmad-speckit run-auditor-host --projectRoot <projectRoot> --stage <stage> --artifactPath <artifactDocPath> --reportPath <reportPath> --iterationCount {累计值}`；reportPath、epic、story、epic-slug、slug、累计值由本 prompt 或调用方提供；失败在结论中注明 resultCode。**禁止**：保存时不得重复输出「正在写入完整审计报告」「正在保存」等状态信息；使用 write 工具一次性写入即可。**审计未通过时**：你（审计子代理）须在本轮内**直接修改被审文档**以消除 gap，修改完成后在报告中注明已修改内容；主 Agent 收到报告后发起下一轮审计。禁止仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules.md](audit-document-iteration-rules.md)。
+
 ---
 
-## 4. tasks.md 瀹¤鎻愮ず璇?
-**琛ュ厖蹇呭椤?*锛氶櫎涓嬮潰 prompt 澶栵紝tasks 闃舵杩樺繀椤绘牳瀵?`deferred-gap-register` 鐨?task binding 鏄惁涓?`Journey -> Task -> Test -> Closure`銆乣Smoke Task Chain`銆乣Closure Task ID` 涓€鑷淬€?
-**鍙В鏋愯瘎鍒嗗潡锛堝己鍒讹級**锛氭棤璁洪噰鐢ㄦ爣鍑嗘牸寮忔垨閫愭潯瀵圭収鏍煎紡锛宼asks 闃舵鐨勫璁℃姤鍛?*蹇呴』**鍦ㄧ粨灏惧寘鍚緵 `parseAndWriteScore` 瑙ｆ瀽鐨勩€屽彲瑙ｆ瀽璇勫垎鍧椼€嶏紝鍚﹀垯浠〃鐩樻棤娉曟樉绀鸿瘎绾с€傝瑙佹湰鏂囦欢 搂4.1 涓?scoring 瑙ｆ瀽绾﹀畾銆?
+## 4. tasks.md 审计提示词
+
+**补充必审项**：除下面 prompt 外，tasks 阶段还必须核对 `deferred-gap-register` 的 task binding 是否与 `Journey -> Task -> Test -> Closure`、`Smoke Task Chain`、`Closure Task ID` 一致。
+
+**可解析评分块（强制）**：无论采用标准格式或逐条对照格式，tasks 阶段的审计报告**必须**在结尾包含供 `parseAndWriteScore` 解析的「可解析评分块」，否则仪表盘无法显示评级。详见本文件 §4.1 与 scoring 解析约定。
+
 ```
-浣犳槸涓€浣嶉潪甯镐弗鑻涚殑浠ｇ爜瀹¤鍛橈紝璇峰府鎴戜粩缁嗗闃呯洰鍓嶇殑 tasks.md 鏄惁瀹屽叏瑕嗙洊浜嗗師濮嬬殑闇€姹傝璁℃枃妗ｃ€乸lan.md 浠ュ強 IMPLEMENTATION_GAPS.md 鎵€鏈夌珷鑺傦紝蹇呴』閫愭潯杩涜妫€鏌ュ拰楠岃瘉銆傛澶栵紝蹇呴』涓撻」瀹℃煡锛氾紙1锛塼asks 鏄惁浠?`journey-first / runnable slice` 鏂瑰紡缁勭粐锛岃€屼笉鏄互鍓嶅悗绔?妯″潡妗舵浛浠ｇ敤鎴峰彲瑙佽矾寰勶紱锛?锛夋槸鍚﹀凡鐢熸垚 `P0 Journey Ledger`銆乣Invariant Ledger`銆乣Runnable Slice Milestones`銆乣Journey -> Task -> Test -> Closure` 鏄犲皠銆乣Closure Notes`锛屽苟涓旀瘡涓?Journey 鑷冲皯鏈変竴鏉?smoke path 浠诲姟閾惧拰涓€鏉?closure note 浠诲姟锛涙槧灏勪腑蹇呴』鏄惧紡鍐欏嚭 `Smoke Task Chain` 涓?`Closure Task ID`锛涳紙3锛夋瘡涓换鍔℃垨 slice 鏄惁鏄惧紡甯︽湁 `Journey ID`銆乣Invariant ID`锛堟垨 N/A + 鍘熷洜锛夈€乣Evidence Type`銆乣Verification Command`銆乣Closure Note Path`銆乣Trace ID`銆乣Definition Gap Handling`銆乣Implementation Gap Handling`锛泂etup / foundational 浠诲姟鏄惁鏄惧紡澹版槑 `Journey Unlock` 涓?`Smoke Path Unlock`锛涳紙4锛夋槸鍚﹀凡灏?`definition gap` 涓?`implementation gap` 鍒嗗紑鍒楀嚭锛岃€屼笉鏄贩鍐欏湪鍚屼竴鏉″紑鍙戜换鍔￠噷锛沗Definition Gap Handling` 涓?`Implementation Gap Handling` 涓嶅緱浜掔浉鏇夸唬锛涳紙5锛夎嫢 tasks 鍚敤 multi-agent 妯″紡锛屾槸鍚︽樉寮忚褰?`Shared Journey Ledger Path`銆乣Shared Invariant Ledger Path`銆乣Shared Trace Map Path`锛屽苟瑕佹眰鎵€鏈?agent 浣跨敤鍚屼竴浠?`same path reference`锛岃€屼笉鏄悇鑷鏈夋憳瑕侊紱锛?锛夋瘡涓姛鑳芥ā鍧?Phase 鏄惁鍖呭惈闆嗘垚娴嬭瘯涓庣鍒扮鍔熻兘娴嬭瘯浠诲姟鍙婄敤渚嬶紝涓ョ浠呮湁鍗曞厓娴嬭瘯锛涳紙7锛夋瘡涓ā鍧楃殑楠屾敹鏍囧噯鏄惁鍖呭惈銆岃妯″潡鍦ㄧ敓浜т唬鐮佸叧閿矾寰勪腑琚鍏ャ€佸疄渚嬪寲骞惰皟鐢ㄣ€嶇殑闆嗘垚楠岃瘉锛涳紙8锛夋槸鍚﹀瓨鍦ㄣ€屾ā鍧楀唴閮ㄥ疄鐜板畬鏁翠笖鍙€氳繃鍗曞厓娴嬭瘯锛屼絾浠庢湭鍦ㄧ敓浜т唬鐮佸叧閿矾寰勪腑琚鍏ャ€佸疄渚嬪寲鎴栬皟鐢ㄣ€嶇殑瀛ゅ矝妯″潡浠诲姟锛屾垨鈥渕odule complete but journey not runnable鈥濈殑婕傜Щ锛涳紙9锛夋槸鍚﹀瓨鍦ㄥ簲瑙﹀彂 `re-readiness` 鐨勪换鍔＄被鍨嬶紙濡傝Е鍙?P0 completion semantics銆乨ependency semantics銆乸ermission boundaries銆乫ixture / environment assumptions锛夊嵈鏈樉寮忔爣璁帮紱锛?0锛夋瘡涓换鍔℃垨鏁翠綋楠屾敹鏍囧噯鏄惁鍖呭惈銆屾寜鎶€鏈爤鎵ц Lint锛堣 lint-requirement-matrix锛夛紝鑻ヤ娇鐢ㄤ富娴佽瑷€浣嗘湭閰嶇疆 Lint 椤讳綔涓?gap锛涘凡閰嶇疆鐨勯』鎵ц涓旀棤閿欒銆佹棤璀﹀憡銆嶏紱鑻ョ己澶憋紝椤讳綔涓烘湭瑕嗙洊椤瑰垪鍑恒€傜敓鎴愪竴涓€愭潯鎻忚堪璇︾粏妫€鏌ュ唴瀹广€侀獙璇佹柟寮忓拰楠岃瘉缁撴灉鐨勫璁℃姤鍛娿€傛姤鍛婄粨灏惧繀椤绘槑纭粰鍑虹粨璁猴細鏄惁銆屽畬鍏ㄨ鐩栥€侀獙璇侀€氳繃銆嶏紱鑻ユ湭閫氳繃锛岃鍒楀嚭閬楁紡绔犺妭鎴栨湭瑕嗙洊瑕佺偣銆?*鏃犺閲囩敤鏍囧噯鏍煎紡鎴栭€愭潯瀵圭収鏍煎紡锛屾姤鍛婄粨灏惧繀椤诲寘鍚?搂4.1 瑙勫畾鐨勫彲瑙ｆ瀽璇勫垎鍧?*銆傜姝㈢敤鎻忚堪浠ｆ浛缁撴瀯鍖栧潡锛氫笉寰楀湪鎬荤粨鎴栨鏂囦腑鐢ㄣ€屽彲瑙ｆ瀽璇勫垎鍧楋紙鎬讳綋璇勭骇 X锛岀淮搴﹀垎 Y鈥揨锛夈€嶇瓑鏂囧瓧姒傛嫭锛涘繀椤诲湪鎶ュ憡涓緭鍑哄畬鏁寸殑缁撴瀯鍖栧潡锛屽寘鎷嫭绔嬩竴琛?鎬讳綋璇勭骇: X 鍜屽洓琛?- 缁村害鍚? XX/100銆傛€讳綋璇勭骇鍙兘鏄?A/B/C/D锛堢姝?A-銆丅+銆丆+銆丏- 绛変换鎰忎慨楗扮锛夈€傜淮搴﹀垎蹇呴』閫愯鍐欐槑锛屼笉寰楃敤鍖洪棿鎴栨鎷唬鏇裤€傚璁℃椂椤诲悓鏃舵墽琛屾壒鍒ゅ璁″憳妫€鏌ワ紝杈撳嚭鏍煎紡瑙?[audit-prompts-critical-auditor-appendix.md](audit-prompts-critical-auditor-appendix.md)銆?```
+你是一位非常严苛的代码审计员，请帮我仔细审阅目前的 tasks.md 是否完全覆盖了原始的需求设计文档、plan.md 以及 IMPLEMENTATION_GAPS.md 所有章节，必须逐条进行检查和验证。此外，必须专项审查：（1）tasks 是否以 `journey-first / runnable slice` 方式组织，而不是以前后端/模块桶替代用户可见路径；（2）是否已生成 `P0 Journey Ledger`、`Invariant Ledger`、`Runnable Slice Milestones`、`Journey -> Task -> Test -> Closure` 映射、`Closure Notes`，并且每个 Journey 至少有一条 smoke path 任务链和一条 closure note 任务；映射中必须显式写出 `Smoke Task Chain` 与 `Closure Task ID`；（3）每个任务或 slice 是否显式带有 `Journey ID`、`Invariant ID`（或 N/A + 原因）、`Evidence Type`、`Verification Command`、`Closure Note Path`、`Trace ID`、`Definition Gap Handling`、`Implementation Gap Handling`；setup / foundational 任务是否显式声明 `Journey Unlock` 与 `Smoke Path Unlock`；（4）是否已将 `definition gap` 与 `implementation gap` 分开列出，而不是混写在同一条开发任务里；`Definition Gap Handling` 与 `Implementation Gap Handling` 不得互相替代；（5）若 tasks 启用 multi-agent 模式，是否显式记录 `Shared Journey Ledger Path`、`Shared Invariant Ledger Path`、`Shared Trace Map Path`，并要求所有 agent 使用同一份 `same path reference`，而不是各自私有摘要；（6）每个功能模块/Phase 是否包含集成测试与端到端功能测试任务及用例，严禁仅有单元测试；（7）每个模块的验收标准是否包含「该模块在生产代码关键路径中被导入、实例化并调用」的集成验证；（8）是否存在「模块内部实现完整且可通过单元测试，但从未在生产代码关键路径中被导入、实例化或调用」的孤岛模块任务，或“module complete but journey not runnable”的漂移；（9）是否存在应触发 `re-readiness` 的任务类型（如触及 P0 completion semantics、dependency semantics、permission boundaries、fixture / environment assumptions）却未显式标记；（10）每个任务或整体验收标准是否包含「按技术栈执行 Lint（见 lint-requirement-matrix），若使用主流语言但未配置 Lint 须作为 gap；已配置的须执行且无错误、无警告」；若缺失，须作为未覆盖项列出。生成一个逐条描述详细检查内容、验证方式和验证结果的审计报告。报告结尾必须明确给出结论：是否「完全覆盖、验证通过」；若未通过，请列出遗漏章节或未覆盖要点。**无论采用标准格式或逐条对照格式，报告结尾必须包含 §4.1 规定的可解析评分块**。禁止用描述代替结构化块：不得在总结或正文中用「可解析评分块（总体评级 X，维度分 Y–Z）」等文字概括；必须在报告中输出完整的结构化块，包括独立一行 总体评级: X 和四行 - 维度名: XX/100。总体评级只能是 A/B/C/D（禁止 A-、B+、C+、D- 等任意修饰符）。维度分必须逐行写明，不得用区间或概括代替。审计时须同时执行批判审计员检查，输出格式见 [audit-prompts-critical-auditor-appendix.md](audit-prompts-critical-auditor-appendix.md)。
+```
 
-### 搂4.1 tasks 瀹¤鎶ュ憡鍙В鏋愯瘎鍒嗗潡锛堝己鍒讹級
+### §4.1 tasks 审计报告可解析评分块（强制）
 
-鎵€鏈?tasks 闃舵瀹¤鎶ュ憡锛堝惈閫愭潯瀵圭収鏍煎紡锛?*蹇呴』鍦ㄧ粨灏惧寘鍚?*浠ヤ笅鍙В鏋愬潡锛屼緵 `parseAndWriteScore`锛坄scoring/orchestrator/parse-and-write.ts`銆乣scripts/parse-and-write-score.ts`锛夎В鏋愬苟鍐欏叆 scoring 瀛樺偍銆?*绂佹鐢ㄦ弿杩颁唬鏇?*锛氫笉寰楃敤鎻忚堪鍙ユ鎷紝蹇呴』杈撳嚭瀹屾暣缁撴瀯鍖栧潡銆傛€讳綋璇勭骇浠呴檺 A/B/C/D銆傜淮搴﹀垎椤婚€愯鍐欏嚭锛?
+所有 tasks 阶段审计报告（含逐条对照格式）**必须在结尾包含**以下可解析块，供 `parseAndWriteScore`（`scoring/orchestrator/parse-and-write.ts`、`scripts/parse-and-write-score.ts`）解析并写入 scoring 存储。**禁止用描述代替**：不得用描述句概括，必须输出完整结构化块。总体评级仅限 A/B/C/D。维度分须逐行写出：
+
 ```markdown
-## 鍙В鏋愯瘎鍒嗗潡锛堜緵 parseAndWriteScore锛?
-鎬讳綋璇勭骇: [A|B|C|D]
+## 可解析评分块（供 parseAndWriteScore）
 
-缁村害璇勫垎:
-- 闇€姹傚畬鏁存€? XX/100
-- 鍙祴璇曟€? XX/100
-- 涓€鑷存€? XX/100
-- 鍙拷婧€? XX/100
+总体评级: [A|B|C|D]
+
+维度评分:
+- 需求完整性: XX/100
+- 可测试性: XX/100
+- 一致性: XX/100
+- 可追溯性: XX/100
 ```
 
-**绂佹鐢ㄦ弿杩颁唬鏇跨粨鏋勫寲鍧?*锛氫笉寰楀湪鎬荤粨鎴栨鏂囦腑鐢ㄣ€屽彲瑙ｆ瀽璇勫垎鍧楋紙鎬讳綋璇勭骇 X锛岀淮搴﹀垎 Y鈥揨锛夈€嶇瓑鏂囧瓧姒傛嫭锛涘繀椤诲湪鎶ュ憡涓緭鍑?*瀹屾暣鐨勭粨鏋勫寲鍧?*锛屽寘鍚嫭绔嬩竴琛?`鎬讳綋璇勭骇: X` 浠ュ強鍥涜 `- 缁村害鍚? XX/100`銆傛€讳綋璇勭骇鍙兘鏄?**A/B/C/D**锛堜笉寰椾娇鐢?A-銆丆+ 绛夛級銆?*绂佹浣跨敤 B+銆丄-銆丆+銆丏- 绛変换鎰?+/- 淇グ绗?*锛涜嫢缁撹浠嬩簬涓ゆ。涔嬮棿锛堝 B 涓?A 涔嬮棿锛夛紝鎷╀竴杈撳嚭 B 鎴?A锛屼笉寰楄緭鍑?B+銆傜淮搴﹀垎椤婚€愯鍐欏嚭锛屼笉寰楃敤鍖洪棿鎴栨鎷紙濡傘€?2鈥?5銆嶃€屽悇缁村害 90+銆嶏級浠ｆ浛銆?
-**鍙嶄緥锛堟棤鏁堣緭鍑猴級**锛?- `鍙В鏋愯瘎鍒嗗潡锛堟€讳綋璇勭骇 A锛岀淮搴﹀垎 92鈥?5锛塦 鈥?鎻忚堪鍙ワ紝闈炵粨鏋勫寲鍧楋紝parseDimensionScores 鏃犳硶瑙ｆ瀽
-- `鎬讳綋璇勭骇: A-`銆乣C+` 鈥?闈?A/B/C/D锛宔xtractOverallGrade 姝ｅ垯涓嶅尮閰?- `鎬讳綋璇勭骇: B+`銆乣A-`銆乣D-` 鈥?鍚慨楗扮锛岀姝紱浠呴檺绾?A/B/C/D
-- `缁村害鍒?92鈥?5`銆乣鍚勭淮搴?90+` 鈥?鍖洪棿/姒傛嫭锛岀己 `- 缁村害鍚? XX/100` 琛岀骇鏍煎紡锛岃В鏋愪笉鍒?
-**缁村害鍒嗕笌閫愭潯瀵圭収缁撹鐨勬槧灏勫缓璁?*锛堜緵瀹¤鍛樺弬鑰冿級锛?
-| 閫愭潯瀵圭収缁撹       | 寤鸿鎬讳綋璇勭骇 | 寤鸿鍚勭淮搴﹀垎 |
+**禁止用描述代替结构化块**：不得在总结或正文中用「可解析评分块（总体评级 X，维度分 Y–Z）」等文字概括；必须在报告中输出**完整的结构化块**，包含独立一行 `总体评级: X` 以及四行 `- 维度名: XX/100`。总体评级只能是 **A/B/C/D**（不得使用 A-、C+ 等）。**禁止使用 B+、A-、C+、D- 等任意 +/- 修饰符**；若结论介于两档之间（如 B 与 A 之间），择一输出 B 或 A，不得输出 B+。维度分须逐行写出，不得用区间或概括（如「92–95」「各维度 90+」）代替。
+
+**反例（无效输出）**：
+- `可解析评分块（总体评级 A，维度分 92–95）` — 描述句，非结构化块，parseDimensionScores 无法解析
+- `总体评级: A-`、`C+` — 非 A/B/C/D，extractOverallGrade 正则不匹配
+- `总体评级: B+`、`A-`、`D-` — 含修饰符，禁止；仅限纯 A/B/C/D
+- `维度分 92–95`、`各维度 90+` — 区间/概括，缺 `- 维度名: XX/100` 行级格式，解析不到
+
+**维度分与逐条对照结论的映射建议**（供审计员参考）：
+
+| 逐条对照结论       | 建议总体评级 | 建议各维度分 |
 |--------------------|--------------|--------------|
-| 瀹屽叏瑕嗙洊銆侀獙璇侀€氳繃 | A            | 90+          |
-| 閮ㄥ垎瑕嗙洊銆乵inor 闂 | B            | 80+          |
-| 闇€淇敼鍚庨噸鏂板璁?  | C            | 70+          |
-| 涓ラ噸闂銆佷笉閫氳繃   | D            | 60 鍙婁互涓?   |
+| 完全覆盖、验证通过 | A            | 90+          |
+| 部分覆盖、minor 问题 | B            | 80+          |
+| 需修改后重新审计   | C            | 70+          |
+| 严重问题、不通过   | D            | 60 及以下    |
 
-銆愬璁″悗鍔ㄤ綔銆戝璁￠€氳繃鏃讹紝**浣狅紙瀹¤瀛愪唬鐞嗭級蹇呴』**锛氣憼 鍦ㄨ瀹℃枃妗ｏ紙artifactDocPath 鎵€鎸?tasks-E{epic}-S{story}.md锛夋湯灏捐拷鍔犱竴琛?`<!-- AUDIT: PASSED by code-reviewer -->`锛岃嫢鏂囨。鏈熬宸插惈璇ヨ鎴?`<!-- AUDIT: PASSED` 鍒欒烦杩囷紱鈶?灏嗗畬鏁存姤鍛婁繚瀛樿嚦璋冪敤鏂瑰湪鏈?prompt 涓寚瀹氱殑 reportPath锛堣皟鐢ㄦ柟浼氬湪鏈?prompt 涓彁渚涘叿浣撹矾寰勶級锛屽苟鍦ㄧ粨璁轰腑娉ㄦ槑淇濆瓨璺緞鍙?iteration_count锛堟湰 stage 瀹¤鏈€氳繃杞暟锛? 琛ㄧず涓€娆￠€氳繃锛夈€?*璇勫垎鍐欏叆銆乤uditIndex 鏇存柊涓庡叾瀹?post-audit automation 鐢?invoking host/runner 缁熶竴閫氳繃 `runAuditorHost` 鎵挎帴**锛屼綘鍙渶淇濊瘉 `reportPath`銆乣artifactDocPath`銆乣iteration_count` 瀹屾暣鍙敤銆?*绂佹**锛氫繚瀛樻椂涓嶅緱閲嶅杈撳嚭銆屾鍦ㄥ啓鍏ュ畬鏁村璁℃姤鍛娿€嶃€屾鍦ㄤ繚瀛樸€嶇瓑鐘舵€佷俊鎭紱浣跨敤 write 宸ュ叿涓€娆℃€у啓鍏ュ嵆鍙€?*瀹¤鏈€氳繃鏃?*锛氫綘锛堝璁″瓙浠ｇ悊锛夐』鍦ㄦ湰杞唴**鐩存帴淇敼琚鏂囨。**浠ユ秷闄?gap锛屼慨鏀瑰畬鎴愬悗鍦ㄦ姤鍛婁腑娉ㄦ槑宸蹭慨鏀瑰唴瀹癸紱涓?Agent 鏀跺埌鎶ュ憡鍚庡彂璧蜂笅涓€杞璁°€傜姝粎杈撳嚭淇敼寤鸿鑰屼笉淇敼鏂囨。銆傝瑙?[audit-document-iteration-rules.md](audit-document-iteration-rules.md)銆?
+【审计后动作】审计通过时，**你（审计子代理）必须**：① 在被审文档（artifactDocPath 所指 tasks-E{epic}-S{story}.md）末尾追加一行 `<!-- AUDIT: PASSED by code-reviewer -->`，若文档末尾已含该行或 `<!-- AUDIT: PASSED` 则跳过；② 将完整报告保存至调用方在本 prompt 中指定的 reportPath（调用方会在本 prompt 中提供具体路径），并在结论中注明保存路径及 iteration_count（本 stage 审计未通过轮数，0 表示一次通过）。**你（审计子代理）在返回主 Agent 前必须返回 projectRoot、reportPath、artifactDocPath、stage，由 invoking host/runner 统一调用 runAuditorHost**。审计通过时，在返回前必须执行：`npx --no-install bmad-speckit run-auditor-host --projectRoot <projectRoot> --stage <stage> --artifactPath <artifactDocPath> --reportPath <reportPath> --iterationCount {累计值}`；reportPath、epic、story、epic-slug、slug、累计值由本 prompt 或调用方提供；失败在结论中注明 resultCode。**禁止**：保存时不得重复输出「正在写入完整审计报告」「正在保存」等状态信息；使用 write 工具一次性写入即可。**审计未通过时**：你（审计子代理）须在本轮内**直接修改被审文档**以消除 gap，修改完成后在报告中注明已修改内容；主 Agent 收到报告后发起下一轮审计。禁止仅输出修改建议而不修改文档。详见 [audit-document-iteration-rules.md](audit-document-iteration-rules.md)。
+
 ---
 
-## 5. 鎵ц tasks.md 涓殑浠诲姟锛圱DD 绾㈢豢鐏ā寮忥級鍚庡璁℃彁绀鸿瘝
+## 5. 执行 tasks.md 中的任务（TDD 红绿灯模式）后审计提示词
 
-**琛ュ厖蹇呭椤?*锛氶櫎涓嬮潰 prompt 澶栵紝implement 闃舵杩樺繀椤绘牳瀵癸細
-- `deferred-gap-register` 鐨?closure / carry-forward evidence
-- `journey-ledger` 鐨?`Production Path`銆乣Smoke Proof`銆乣Full E2E / defer reason`
-- `closure-notes` 鏄惁鍖呭惈 acceptance evidence 涓庢湭瑙ｅ喅 deferred gaps 鎽樿
+**补充必审项**：除下面 prompt 外，implement 阶段还必须核对：
+- `deferred-gap-register` 的 closure / carry-forward evidence
+- `journey-ledger` 的 `Production Path`、`Smoke Proof`、`Full E2E / defer reason`
+- `closure-notes` 是否包含 acceptance evidence 与未解决 deferred gaps 摘要
 
-**鎵ц闃舵蹇呴』閬靛畧**锛氬湪寮€濮嬫墽琛?tasks 鍓嶅垱寤?prd/progress锛涙瘡瀹屾垚涓€涓?US 绔嬪嵆鏇存柊銆傝瑙?speckit-workflow 搂5.1銆乧ommands/speckit.implement.md 姝ラ 3.5 涓?6銆?
+**执行阶段必须遵守**：在开始执行 tasks 前创建 prd/progress；每完成一个 US 立即更新。详见 speckit-workflow §5.1、commands/speckit.implement.md 步骤 3.5 与 6。
+
 ```
-浣犳槸涓€浣嶉潪甯镐弗鑻涚殑浠ｇ爜瀹¤鍛樹互鍙婅祫娣辩殑杞欢寮€鍙戜笓瀹讹紝璇峰府鎴戜粩缁嗗闃呯洰鍓嶅熀浜巘asks.md鐨勬墽琛屾墍鍋氱殑浠ｇ爜瀹炵幇鏄惁瀹屽叏瑕嗙洊浜嗗師濮嬬殑闇€姹傝璁℃枃妗ｃ€乸lan.md 浠ュ強 IMPLEMENTATION_GAPS.md 鎵€鏈夌珷鑺傦紝鏄惁涓ユ牸鎸夌収鎶€鏈灦鏋勫拰鎶€鏈€夊瀷鍐崇瓥锛屾槸鍚︿弗鏍兼寜鐓ч渶姹傚拰鍔熻兘鑼冨洿瀹炵幇锛屾槸鍚︿弗鏍奸伒寰蒋浠跺紑鍙戞渶浣冲疄璺点€傛澶栵紝蹇呴』涓撻」瀹℃煡锛氾紙1锛夋墽琛屽墠鏄惁宸茶鍙栧苟缁存姢 `journey-ledger`銆乣invariant-ledger`銆乣trace-map`锛堢嫭绔嬫枃浠舵垨 tasks 鍐呭祵 section锛夛紝浠ュ強 `Smoke Task Chain`銆乣Closure Task ID`銆乣Journey Unlock`銆乣Smoke Path Unlock`銆乣Definition Gap Handling`銆乣Implementation Gap Handling`锛涘疄鐜扮粨鏋滄槸鍚︿粛涓庤繖浜?ledger / journey contracts 涓€鑷达紱鑻ヤ负 multi-agent 鎵ц锛屾槸鍚︽樉寮忛攣瀹?`Shared Journey Ledger Path`銆乣Shared Invariant Ledger Path`銆乣Shared Trace Map Path`锛屽苟瑕佹眰鎵€鏈?agent 浣跨敤鍚屼竴浠?`same path reference`锛涳紙2锛夋槸鍚﹀凡鎵ц闆嗘垚娴嬭瘯涓庣鍒扮鍔熻兘娴嬭瘯锛堜笉浠呬粎鏄崟鍏冩祴璇曪級锛岄獙璇佹ā鍧楅棿鍗忎綔涓庣敤鎴峰彲瑙佸姛鑳芥祦绋嬪湪鐢熶骇浠ｇ爜鍏抽敭璺緞涓婂伐浣滄甯革紱锛?锛夋瘡涓?`P0 journey` 鏄惁鏈夌湡瀹?smoke proof锛屼笖瀹屾垚 smoke 鍚庡凡鐢熸垚鎴栨洿鏂板搴?`closure note`锛沗Smoke Task Chain` 鏄惁宸茬湡姝ｉ棴鍚堬紝`Closure Task ID` 鏄惁鐪熷疄钀藉埌 closure note 浠诲姟锛沜losure note 鏄惁鍖呭惈 journey id銆乧overed task ids銆乻moke test ids銆乫ull E2E ids 鎴?deferred reason銆佹湭瑙ｅ喅 deferred gaps锛涳紙4锛夋瘡涓柊澧炴垨淇敼鐨勬ā鍧楁槸鍚︾‘瀹炶鐢熶骇浠ｇ爜鍏抽敭璺緞瀵煎叆銆佸疄渚嬪寲骞惰皟鐢紙渚嬪妫€鏌?UI 鍏ュ彛鏄惁鎸傝浇銆丒ngine/涓绘祦绋嬫槸鍚﹀疄闄呰皟鐢級锛涜嫢 setup / foundational 浠诲姟澹扮О瀹屾垚锛屾槸鍚︾湡瀹炲厬鐜?`Journey Unlock` 涓?`Smoke Path Unlock`锛涳紙5锛夋槸鍚﹀瓨鍦ㄣ€屾ā鍧楀唴閮ㄥ疄鐜板畬鏁翠笖鍙€氳繃鍗曞厓娴嬭瘯锛屼絾浠庢湭鍦ㄧ敓浜т唬鐮佸叧閿矾寰勪腑琚鍏ャ€佸疄渚嬪寲鎴栬皟鐢ㄣ€嶇殑瀛ゅ矝妯″潡锛屾垨鈥渕odule complete but journey not runnable鈥濈殑婕傜Щ鈥斺€旇嫢瀛樺湪锛屽繀椤讳綔涓烘湭閫氳繃椤瑰垪鍑猴紱锛?锛夋槸鍚﹀凡鏄庣‘鍖哄垎骞惰褰?`definition gap` 涓?`implementation gap`锛沗Definition Gap Handling` 涓?`Implementation Gap Handling` 涓嶅緱娣峰啓锛涜嫢浠嶆湁 definition gap锛屽嵈琚綔涓衡€滃姛鑳藉凡瀹炵幇鈥濆澶栧绉帮紝蹇呴』鍒ゆ湭閫氳繃锛涳紙7锛夋槸鍚﹀凡鍒涘缓骞剁淮鎶?ralph-method 杩借釜鏂囦欢锛坧rd.json 鎴?prd.{stem}.json銆乸rogress.txt 鎴?progress.{stem}.txt锛夛紝涓旀瘡瀹屾垚涓€涓?US 鏈夊搴旀洿鏂帮紙prd 涓?passes=true銆乸rogress 涓甫鏃堕棿鎴崇殑 story log锛屼笖娑夊強鐢熶骇浠ｇ爜鐨?*姣忎釜 US** 椤诲湪鍏跺搴旀钀藉唴鍚勫惈 [TDD-RED]銆乕TDD-GREEN]銆乕TDD-REFACTOR] 鑷冲皯涓€琛岋紙瀹¤椤婚€?US 妫€鏌ワ紝涓嶅緱浠ユ枃浠跺叏灞€鍚勬湁涓€琛屽嵆鍒ら€氳繃锛沎TDD-REFACTOR] 鍏佽鍐?鏃犻渶閲嶆瀯 鉁?锛屼絾绂佹鐪佺暐锛夛紱鑻ユ湭鍒涘缓鎴栨湭鎸?US 鏇存柊锛屽繀椤讳綔涓烘湭閫氳繃椤瑰垪鍑猴紱**瀹¤涓嶅緱璞佸厤**锛氫笉寰椾互銆宼asks 瑙勮寖銆嶃€屽彲閫夈€嶃€屽彲鍚庣画琛ュ厖銆嶃€岄潪 搂5 闃绘柇銆嶄负鐢辫眮鍏?TDD 涓夐」妫€鏌ワ紱娑夊強鐢熶骇浠ｇ爜鐨?US 缂轰换涓€椤瑰嵆鍒ゆ湭閫氳繃锛涳紙8锛夎嫢鏈疆鏀瑰姩瑙﹀強 `P0 journey`銆乧ompletion semantics銆乨ependency semantics銆乸ermission boundaries銆乫ixture / environment assumptions锛屾槸鍚﹀凡瑙﹀彂 `re-readiness`锛涜瑙﹀彂鑻ョ己澶憋紝蹇呴』鍒ゆ湭閫氳繃锛涳紙9锛?*蹇呴』**妫€鏌ワ細瀹¤閫氳繃鍚庤瘎鍒嗗啓鍏ョ殑 branch_id 鏄惁鍦?_bmad/_config/scoring-trigger-modes.yaml 鐨?call_mapping 涓厤缃笖 scoring_write_control.enabled=true锛涳紙10锛?*蹇呴』**妫€鏌ワ細parseAndWriteScore 璋冪敤鐨勫弬鏁拌瘉鎹槸鍚﹂綈鍏紙reportPath銆乻tage銆乺unId銆乻cenario銆亀riteMode锛夛紱锛?1锛?*蹇呴』**妫€鏌ワ細scenario=eval_question 鏃?question_version 鏄惁蹇呭～锛岀己鍒欒 SCORE_WRITE_INPUT_INVALID 涓斾笉璋冪敤锛涳紙12锛?*蹇呴』**妫€鏌ワ細璇勫垎鍐欏叆澶辫触鏄惁 non_blocking 涓旇褰?resultCode 杩涘璁¤瘉鎹紱锛?3锛?*蹇呴』**妫€鏌ワ細椤圭洰椤绘寜鎶€鏈爤閰嶇疆骞舵墽琛?Lint锛堣 lint-requirement-matrix锛夛紱鑻ヤ娇鐢ㄤ富娴佽瑷€浣嗘湭閰嶇疆 Lint锛岄』浣滀负鏈€氳繃椤癸紱宸查厤缃殑椤绘墽琛屼笖鏃犻敊璇€佹棤璀﹀憡銆?*绂佹**浠ャ€屼笌鏈浠诲姟涓嶇浉鍏炽€嶈眮鍏嶃€傚繀椤婚€愭潯杩涜妫€鏌ュ拰楠岃瘉锛岀敓鎴愪竴涓€愭潯鎻忚堪璇︾粏妫€鏌ュ唴瀹广€侀獙璇佹柟寮忓拰楠岃瘉缁撴灉鐨勫璁℃姤鍛娿€傛姤鍛婄粨灏惧繀椤绘槑纭粰鍑虹粨璁猴細鏄惁銆屽畬鍏ㄨ鐩栥€侀獙璇侀€氳繃銆嶏紱鑻ユ湭閫氳繃锛岃鍒楀嚭閬楁紡绔犺妭鎴栨湭瑕嗙洊瑕佺偣銆傛姤鍛婄粨灏惧繀椤诲寘鍚?搂5.1 瑙勫畾鐨勫彲瑙ｆ瀽璇勫垎鍧楋紙鎬讳綋璇勭骇 + 鍥涚淮缁村害璇勫垎锛夛紝鍚﹀垯 parseAndWriteScore 鏃犳硶瑙ｆ瀽銆佷华琛ㄧ洏鏃犳硶鏄剧ず璇勭骇銆傜姝㈢敤鎻忚堪浠ｆ浛缁撴瀯鍖栧潡锛氫笉寰楀湪鎬荤粨鎴栨鏂囦腑鐢ㄣ€屽彲瑙ｆ瀽璇勫垎鍧楋紙鎬讳綋璇勭骇 X锛岀淮搴﹀垎 Y鈥揨锛夈€嶇瓑鏂囧瓧姒傛嫭锛涘繀椤诲湪鎶ュ憡涓緭鍑哄畬鏁寸殑缁撴瀯鍖栧潡锛屽寘鎷嫭绔嬩竴琛?鎬讳綋璇勭骇: X 鍜?搂5.1 瑙勫畾鐨勫洓琛?- 缁村害鍚? XX/100銆傛€讳綋璇勭骇鍙兘鏄?A/B/C/D锛堢姝?A-銆丅+銆丆+銆丏- 绛変换鎰忎慨楗扮锛夈€傜淮搴﹀垎蹇呴』閫愯鍐欐槑锛屼笉寰楃敤鍖洪棿鎴栨鎷唬鏇裤€傘€惵? 鍙В鏋愬潡瑕佹眰銆戝璁℃椂椤诲悓鏃舵墽琛屾壒鍒ゅ璁″憳妫€鏌ワ紝杈撳嚭鏍煎紡瑙?[audit-prompts-critical-auditor-appendix.md](audit-prompts-critical-auditor-appendix.md)銆?```
+你是一位非常严苛的代码审计员以及资深的软件开发专家，请帮我仔细审阅目前基于tasks.md的执行所做的代码实现是否完全覆盖了原始的需求设计文档、plan.md 以及 IMPLEMENTATION_GAPS.md 所有章节，是否严格按照技术架构和技术选型决策，是否严格按照需求和功能范围实现，是否严格遵循软件开发最佳实践。此外，必须专项审查：（1）执行前是否已读取并维护 `journey-ledger`、`invariant-ledger`、`trace-map`（独立文件或 tasks 内嵌 section），以及 `Smoke Task Chain`、`Closure Task ID`、`Journey Unlock`、`Smoke Path Unlock`、`Definition Gap Handling`、`Implementation Gap Handling`；实现结果是否仍与这些 ledger / journey contracts 一致；若为 multi-agent 执行，是否显式锁定 `Shared Journey Ledger Path`、`Shared Invariant Ledger Path`、`Shared Trace Map Path`，并要求所有 agent 使用同一份 `same path reference`；（2）是否已执行集成测试与端到端功能测试（不仅仅是单元测试），验证模块间协作与用户可见功能流程在生产代码关键路径上工作正常；（3）每个 `P0 journey` 是否有真实 smoke proof，且完成 smoke 后已生成或更新对应 `closure note`；`Smoke Task Chain` 是否已真正闭合，`Closure Task ID` 是否真实落到 closure note 任务；closure note 是否包含 journey id、covered task ids、smoke test ids、full E2E ids 或 deferred reason、未解决 deferred gaps；（4）每个新增或修改的模块是否确实被生产代码关键路径导入、实例化并调用（例如检查 UI 入口是否挂载、Engine/主流程是否实际调用）；若 setup / foundational 任务声称完成，是否真实兑现 `Journey Unlock` 与 `Smoke Path Unlock`；（5）是否存在「模块内部实现完整且可通过单元测试，但从未在生产代码关键路径中被导入、实例化或调用」的孤岛模块，或“module complete but journey not runnable”的漂移——若存在，必须作为未通过项列出；（6）是否已明确区分并记录 `definition gap` 与 `implementation gap`；`Definition Gap Handling` 与 `Implementation Gap Handling` 不得混写；若仍有 definition gap，却被作为“功能已实现”对外宣称，必须判未通过；（7）是否已创建并维护 ralph-method 追踪文件（prd.json 或 prd.{stem}.json、progress.txt 或 progress.{stem}.txt），且每完成一个 US 有对应更新（prd 中 passes=true、progress 中带时间戳的 story log，且涉及生产代码的**每个 US** 须在其对应段落内各含 [TDD-RED]、[TDD-GREEN]、[TDD-REFACTOR] 至少一行（审计须逐 US 检查，不得以文件全局各有一行即判通过；[TDD-REFACTOR] 允许写"无需重构 ✓"，但禁止省略）；若未创建或未按 US 更新，必须作为未通过项列出；**审计不得豁免**：不得以「tasks 规范」「可选」「可后续补充」「非 §5 阻断」为由豁免 TDD 三项检查；涉及生产代码的 US 缺任一项即判未通过；（8）若本轮改动触及 `P0 journey`、completion semantics、dependency semantics、permission boundaries、fixture / environment assumptions，是否已触发 `re-readiness`；该触发若缺失，必须判未通过；（9）**必须**检查：审计通过后评分写入的 branch_id 是否在 _bmad/_config/scoring-trigger-modes.yaml 的 call_mapping 中配置且 scoring_write_control.enabled=true；（10）**必须**检查：parseAndWriteScore 调用的参数证据是否齐全（reportPath、stage、runId、scenario、writeMode）；（11）**必须**检查：scenario=eval_question 时 question_version 是否必填，缺则记 SCORE_WRITE_INPUT_INVALID 且不调用；（12）**必须**检查：评分写入失败是否 non_blocking 且记录 resultCode 进审计证据；（13）**必须**检查：项目须按技术栈配置并执行 Lint（见 lint-requirement-matrix）；若使用主流语言但未配置 Lint，须作为未通过项；已配置的须执行且无错误、无警告。**禁止**以「与本次任务不相关」豁免。必须逐条进行检查和验证，生成一个逐条描述详细检查内容、验证方式和验证结果的审计报告。报告结尾必须明确给出结论：是否「完全覆盖、验证通过」；若未通过，请列出遗漏章节或未覆盖要点。报告结尾必须包含 §5.1 规定的可解析评分块（总体评级 + 四维维度评分），否则 parseAndWriteScore 无法解析、仪表盘无法显示评级。禁止用描述代替结构化块：不得在总结或正文中用「可解析评分块（总体评级 X，维度分 Y–Z）」等文字概括；必须在报告中输出完整的结构化块，包括独立一行 总体评级: X 和 §5.1 规定的四行 - 维度名: XX/100。总体评级只能是 A/B/C/D（禁止 A-、B+、C+、D- 等任意修饰符）。维度分必须逐行写明，不得用区间或概括代替。【§5 可解析块要求】审计时须同时执行批判审计员检查，输出格式见 [audit-prompts-critical-auditor-appendix.md](audit-prompts-critical-auditor-appendix.md)。
+```
 
-### 搂5.1 Implement 闃舵鍙В鏋愯瘎鍒嗗潡锛堝己鍒讹級
+### §5.1 Implement 阶段可解析评分块（强制）
 
-implement 闃舵瀹¤鎶ュ憡蹇呴』鍦ㄧ粨灏惧寘鍚互涓嬪彲瑙ｆ瀽鍧楋紝涓?`_bmad/_config/code-reviewer-config.yaml` 鐨?`modes.code.dimensions` 涓€鑷淬€傜姝㈢敤鎻忚堪浠ｆ浛銆傛€讳綋璇勭骇浠呴檺 A/B/C/D銆?implement / post_audit 闃舵瀹¤鎶ュ憡杩樺繀椤诲寘鍚?`## Structured Drift Signal Block`锛屽苟浠ュ浐瀹氳〃鏍煎垪杈撳嚭浜旀潯 signal锛歚signal | status | evidence`锛涗簲鏉?signal 鍥哄畾涓?`smoke_task_chain`銆乣closure_task_id`銆乣journey_unlock`銆乣gap_split_contract`銆乣shared_path_reference`銆傜己灏戣 block 涓嶅緱瑙嗕负鈥滄棤 drift鈥濄€?
+implement 阶段审计报告必须在结尾包含以下可解析块，与 `_bmad/_config/code-reviewer-config.yaml` 的 `modes.code.dimensions` 一致。禁止用描述代替。总体评级仅限 A/B/C/D。
+implement / post_audit 阶段审计报告还必须包含 `## Structured Drift Signal Block`，并以固定表格列输出五条 signal：`signal | status | evidence`；五条 signal 固定为 `smoke_task_chain`、`closure_task_id`、`journey_unlock`、`gap_split_contract`、`shared_path_reference`。缺少该 block 不得视为“无 drift”。
+
 ```markdown
-## 鍙В鏋愯瘎鍒嗗潡锛堜緵 parseAndWriteScore锛?
-鎬讳綋璇勭骇: [A|B|C|D]
+## 可解析评分块（供 parseAndWriteScore）
 
-缁村害璇勫垎:
-- 鍔熻兘鎬? XX/100
-- 浠ｇ爜璐ㄩ噺: XX/100
-- 娴嬭瘯瑕嗙洊: XX/100
-- 瀹夊叏鎬? XX/100
+总体评级: [A|B|C|D]
+
+维度评分:
+- 功能性: XX/100
+- 代码质量: XX/100
+- 测试覆盖: XX/100
+- 安全性: XX/100
 ```
 
-**绂佹鐢ㄦ弿杩颁唬鏇跨粨鏋勫寲鍧?*锛氫笉寰楀湪鎬荤粨鎴栨鏂囦腑鐢ㄣ€屽彲瑙ｆ瀽璇勫垎鍧楋紙鎬讳綋璇勭骇 X锛岀淮搴﹀垎 Y鈥揨锛夈€嶇瓑鏂囧瓧姒傛嫭锛涘繀椤诲湪鎶ュ憡涓緭鍑?*瀹屾暣鐨勭粨鏋勫寲鍧?*锛屽寘鍚嫭绔嬩竴琛?`鎬讳綋璇勭骇: X` 浠ュ強鍥涜 `- 缁村害鍚? XX/100`銆傜淮搴﹀悕椤讳笌 config 涓?`modes.code.dimensions` 鐨?`name` 瀹屽叏涓€鑷达紙鍔熻兘鎬с€佷唬鐮佽川閲忋€佹祴璇曡鐩栥€佸畨鍏ㄦ€э級銆傛€讳綋璇勭骇鍙兘鏄?**A/B/C/D**锛堜笉寰椾娇鐢?A-銆丆+ 绛夛級銆?*绂佹浣跨敤 B+銆丄-銆丆+銆丏- 绛変换鎰?+/- 淇グ绗?*锛涜嫢缁撹浠嬩簬涓ゆ。涔嬮棿锛堝 B 涓?A 涔嬮棿锛夛紝鎷╀竴杈撳嚭 B 鎴?A锛屼笉寰楄緭鍑?B+銆傜淮搴﹀垎椤婚€愯鍐欏嚭锛屼笉寰楃敤鍖洪棿鎴栨鎷紙濡傘€?2鈥?5銆嶃€屽悇缁村害 90+銆嶏級浠ｆ浛銆?
-**鍙嶄緥锛堟棤鏁堣緭鍑猴級**锛堝彲鍙傝€?搂4.1锛夛細
-- `鍙В鏋愯瘎鍒嗗潡锛堟€讳綋璇勭骇 A锛岀淮搴﹀垎 92鈥?5锛塦 鈥?鎻忚堪鍙ワ紝闈炵粨鏋勫寲鍧楋紝parseDimensionScores(mode=code) 鏃犳硶瑙ｆ瀽
-- `鎬讳綋璇勭骇: A-`銆乣C+` 鈥?闈?A/B/C/D锛宔xtractOverallGrade 姝ｅ垯涓嶅尮閰?- `鎬讳綋璇勭骇: B+`銆乣A-`銆乣D-` 鈥?鍚慨楗扮锛岀姝紱浠呴檺绾?A/B/C/D
-- `缁村害鍒?92鈥?5`銆乣鍚勭淮搴?90+` 鈥?鍖洪棿/姒傛嫭锛岀己 `- 缁村害鍚? XX/100` 琛岀骇鏍煎紡锛岃В鏋愪笉鍒?
-銆愬璁″悗鍔ㄤ綔銆戝璁￠€氳繃鏃讹紝璇峰皢瀹屾暣鎶ュ憡淇濆瓨鑷宠皟鐢ㄦ柟鍦ㄦ湰 prompt 涓寚瀹氱殑 reportPath銆俰mplement 闃舵鐨?reportPath 閫氬父涓?_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_implement-E{epic}-S{story}.md 鎴?AUDIT_Story_{epic}-{story}_stage4.md銆傚苟鍦ㄧ粨璁轰腑娉ㄦ槑淇濆瓨璺緞鍙?iteration_count銆?*璇勫垎鍐欏叆銆乤uditIndex 鏇存柊涓庡叾瀹?post-audit automation 鐢?invoking host/runner 缁熶竴閫氳繃 `runAuditorHost` 鎵挎帴**锛屼綘鍙渶淇濊瘉 `reportPath`銆乣artifactDocPath`銆乣iteration_count` 瀹屾暣鍙敤銆?*绂佹**锛氫繚瀛樻椂涓嶅緱閲嶅杈撳嚭銆屾鍦ㄥ啓鍏ュ畬鏁村璁℃姤鍛娿€嶃€屾鍦ㄤ繚瀛樸€嶇瓑鐘舵€佷俊鎭紱浣跨敤 write 宸ュ叿涓€娆℃€у啓鍏ュ嵆鍙€?
+**禁止用描述代替结构化块**：不得在总结或正文中用「可解析评分块（总体评级 X，维度分 Y–Z）」等文字概括；必须在报告中输出**完整的结构化块**，包含独立一行 `总体评级: X` 以及四行 `- 维度名: XX/100`。维度名须与 config 中 `modes.code.dimensions` 的 `name` 完全一致（功能性、代码质量、测试覆盖、安全性）。总体评级只能是 **A/B/C/D**（不得使用 A-、C+ 等）。**禁止使用 B+、A-、C+、D- 等任意 +/- 修饰符**；若结论介于两档之间（如 B 与 A 之间），择一输出 B 或 A，不得输出 B+。维度分须逐行写出，不得用区间或概括（如「92–95」「各维度 90+」）代替。
+
+**反例（无效输出）**（可参考 §4.1）：
+- `可解析评分块（总体评级 A，维度分 92–95）` — 描述句，非结构化块，parseDimensionScores(mode=code) 无法解析
+- `总体评级: A-`、`C+` — 非 A/B/C/D，extractOverallGrade 正则不匹配
+- `总体评级: B+`、`A-`、`D-` — 含修饰符，禁止；仅限纯 A/B/C/D
+- `维度分 92–95`、`各维度 90+` — 区间/概括，缺 `- 维度名: XX/100` 行级格式，解析不到
+
+【审计后动作】审计通过时，请将完整报告保存至调用方在本 prompt 中指定的 reportPath。implement 阶段的 reportPath 通常为 _bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/AUDIT_implement-E{epic}-S{story}.md 或 AUDIT_Story_{epic}-{story}_stage4.md。并在结论中注明保存路径及 iteration_count。**你（审计子代理）在返回主 Agent 前必须返回 projectRoot、reportPath、artifactDocPath、stage，由 invoking host/runner 统一调用 runAuditorHost**。审计通过时，在返回前必须执行：`npx --no-install bmad-speckit run-auditor-host --projectRoot <projectRoot> --stage <stage> --artifactPath <artifactDocPath> --reportPath <reportPath> --iterationCount {累计值}`；reportPath、epic、story、累计值由本 prompt 或调用方提供；失败在结论中注明 resultCode。**禁止**：保存时不得重复输出「正在写入完整审计报告」「正在保存」等状态信息；使用 write 工具一次性写入即可。
+

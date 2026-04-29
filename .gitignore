@@ -30,6 +30,15 @@ Thumbs.db
 # BMAD output
 _bmad-output/
 
+# Quarantined bmad-auto runtime code.
+# Main Agent is the only automation orchestration entrypoint; these files are
+# retained locally only for later idea migration or deletion.
+scripts/bmads-auto-*.ts
+_bmad/commands/bmads-auto.md
+_bmad/skills/bmads-auto/
+.codex/commands/bmads-auto.md
+tests/acceptance/bmads-auto-*.quarantined.ts
+
 # Local runtime context (init writes default; consumers may gitignore)
 .bmad/runtime-context.json
 

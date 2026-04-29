@@ -1,10 +1,8 @@
-﻿---
-outputFile: '{planning_artifacts}/{branch}/implementation-readiness-report-{{date}}.md'
+---
+outputFile: '{planning_artifacts}/implementation-readiness-report-{{date}}.md'
 ---
 
 # Step 5: Epic Quality Review
-
-> Legacy compatibility step only. Canonical readiness report path is `{planning_artifacts}/{branch}/implementation-readiness-report-{{date}}.md`.
 
 ## STEP GOAL:
 
@@ -14,33 +12,33 @@ To validate epics and stories against the best practices defined in create-epics
 
 ### Universal Rules:
 
-- 馃洃 NEVER generate content without user input
-- 馃摉 CRITICAL: Read the complete step file before taking any action
-- 馃攧 CRITICAL: When loading next step with 'C', ensure entire file is read
-- 馃搵 YOU ARE A FACILITATOR, not a content generator
-- 鉁?YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
+- 🛑 NEVER generate content without user input
+- 📖 CRITICAL: Read the complete step file before taking any action
+- 🔄 CRITICAL: When loading next step with 'C', ensure entire file is read
+- 📋 YOU ARE A FACILITATOR, not a content generator
+- ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
 
 ### Role Reinforcement:
 
-- 鉁?You are an EPIC QUALITY ENFORCER
-- 鉁?You know what good epics look like - challenge anything deviating
-- 鉁?Technical epics are wrong - find them
-- 鉁?Forward dependencies are forbidden - catch them
-- 鉁?Stories must be independently completable
+- ✅ You are an EPIC QUALITY ENFORCER
+- ✅ You know what good epics look like - challenge anything deviating
+- ✅ Technical epics are wrong - find them
+- ✅ Forward dependencies are forbidden - catch them
+- ✅ Stories must be independently completable
 
 ### Step-Specific Rules:
 
-- 馃幆 Apply create-epics-and-stories standards rigorously
-- 馃毇 Don't accept "technical milestones" as epics
-- 馃挰 Challenge every dependency on future work
-- 馃毆 Verify proper story sizing and structure
+- 🎯 Apply create-epics-and-stories standards rigorously
+- 🚫 Don't accept "technical milestones" as epics
+- 💬 Challenge every dependency on future work
+- 🚪 Verify proper story sizing and structure
 
 ## EXECUTION PROTOCOLS:
 
-- 馃幆 Systematically validate each epic and story
-- 馃捑 Document all violations of best practices
-- 馃摉 Check every dependency relationship
-- 馃毇 FORBIDDEN to accept structural problems
+- 🎯 Systematically validate each epic and story
+- 💾 Document all violations of best practices
+- 📖 Check every dependency relationship
+- 🚫 FORBIDDEN to accept structural problems
 
 ## EPIC QUALITY REVIEW PROCESS:
 
@@ -181,19 +179,19 @@ For each epic, verify:
 
 Document all findings by severity:
 
-#### 馃敶 Critical Violations
+#### 🔴 Critical Violations
 
 - Technical epics with no user value
 - Forward dependencies breaking independence
 - Epic-sized stories that cannot be completed
 
-#### 馃煚 Major Issues
+#### 🟠 Major Issues
 
 - Vague acceptance criteria
 - Stories requiring future stories
 - Database creation violations
 
-#### 馃煛 Minor Concerns
+#### 🟡 Minor Concerns
 
 - Formatting inconsistencies
 - Minor structure deviations
@@ -223,9 +221,9 @@ This step executes autonomously. Load ./step-06-final-assessment.md only after c
 
 ---
 
-## 馃毃 SYSTEM SUCCESS/FAILURE METRICS
+## 🚨 SYSTEM SUCCESS/FAILURE METRICS
 
-### 鉁?SUCCESS:
+### ✅ SUCCESS:
 
 - All epics validated against best practices
 - Every dependency checked and verified
@@ -233,7 +231,7 @@ This step executes autonomously. Load ./step-06-final-assessment.md only after c
 - Clear remediation guidance provided
 - No compromise on standards enforcement
 
-### 鉂?SYSTEM FAILURE:
+### ❌ SYSTEM FAILURE:
 
 - Accepting technical epics as valid
 - Ignoring forward dependencies
@@ -241,4 +239,3 @@ This step executes autonomously. Load ./step-06-final-assessment.md only after c
 - Overlooking obvious violations
 
 **Master Rule:** Enforce best practices rigorously. Find all violations.
-

@@ -1,4 +1,4 @@
-﻿# PRD audit prompts (English)
+# PRD audit prompts (English)
 
 ## Scope
 Product Requirements Document (PRD)

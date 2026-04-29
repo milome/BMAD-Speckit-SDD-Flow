@@ -165,10 +165,19 @@ function validateSelectedAITargets(cwd, selectedAI) {
       shell: process.platform === 'win32',
     });
     const output = `${help.stdout ?? ''}\n${help.stderr ?? ''}`;
-    for (const command of ['main-agent-orchestration', 'write-runtime-context', 'run-auditor-host']) {
+    for (const command of ['bmads', 'bmad-speckit', 'main-agent-orchestration', 'write-runtime-context', 'run-auditor-host']) {
       if (!output.includes(command)) {
         missing.push(`bmad-speckit public CLI missing ${command}`);
       }
+    }
+  };
+  const requireBmadsRuntimeContract = () => {
+    for (const relPath of [
+      '_bmad/_config/bmads-runtime.yaml',
+      '_bmad/_config/orchestration-governance.contract.yaml',
+      '_bmad/_config/stage-mapping.yaml',
+    ]) {
+      if (!hasFile(relPath)) missing.push(relPath);
     }
   };
 
@@ -207,6 +216,7 @@ function validateSelectedAITargets(cwd, selectedAI) {
       if (!hasDir('.codex', 'protocols')) missing.push('.codex/protocols');
       if (!hasDir('.codex', 'i18n')) missing.push('.codex/i18n');
       requireGovernedEntryAliases('.codex');
+      requireBmadsRuntimeContract();
       requireCodexProtocolFiles();
       requireCodexSkills();
       requireCodexPublicCliSurface();
