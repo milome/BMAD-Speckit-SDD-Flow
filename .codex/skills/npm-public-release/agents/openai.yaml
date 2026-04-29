@@ -1,4 +1,0 @@
-interface:
-  display_name: "NPM Public Release"
-  short_description: "Prepare and publish npm releases with validation"
-  default_prompt: "Use $npm-public-release to prepare and validate a public npm release for this repository."

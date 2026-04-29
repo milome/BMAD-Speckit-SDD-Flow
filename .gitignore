@@ -65,6 +65,10 @@ packages/scoring/outputs/
 # Entire .claude/ tree is treated as runtime deployed copy, not canonical source
 .claude/
 
+# Codex runtime (deployed by init-to-root / SyncService from _bmad/codex/ and shared _bmad/skills/)
+# Entire .codex/ tree is treated as runtime deployed copy, not canonical source
+.codex/
+
 # Agent / OMC runtime data
 .agents/
 .omc/

@@ -2,7 +2,7 @@
 
 ## Encoding Integrity Guardian
 
-Mandatory skill: `.codex/skills/encoding-integrity-guardian/SKILL.md`.
+Mandatory skill: `_bmad/skills/encoding-integrity-guardian/SKILL.md`.
 
 Load and follow `encoding-integrity-guardian` before and after any of these operations:
 
@@ -17,7 +17,7 @@ On Windows, Codex must use PowerShell 7 via `pwsh.exe` for shell commands. Never
 Required gate for those operations:
 
 ```powershell
-node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js
+node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js
 ```
 
 If the gate reports findings, stop normal implementation. Classify affected files, identify whether they are source or generated surfaces, trace the first polluted commit or generator, and choose `restore`, `regenerate`, or `manual semantic rewrite`. Do not claim that encoding conversion fixed mojibake unless semantic content was restored from a clean source.

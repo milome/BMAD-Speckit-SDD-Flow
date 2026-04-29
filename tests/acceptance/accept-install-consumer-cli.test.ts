@@ -38,6 +38,9 @@ describe('install to consumer ->CLI acceptance', () => {
       expect(existsSync(join(target, '.cursor', 'commands', 'bmads.md'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'skills', 'bmad-speckit', 'SKILL.md'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'skills', 'bmads', 'SKILL.md'))).toBe(true);
+      expect(
+        existsSync(join(target, '.cursor', 'skills', 'encoding-integrity-guardian', 'SKILL.md'))
+      ).toBe(true);
       expect(existsSync(join(target, '.cursor', 'rules', 'bmad-bug-auto-party-mode-rule.mdc'))).toBe(
         true
       );
@@ -172,6 +175,9 @@ describe('install to consumer ->CLI acceptance', () => {
       expect(existsSync(join(target, '.claude', 'commands', 'bmads.md'))).toBe(true);
       expect(existsSync(join(target, '.claude', 'skills', 'bmad-speckit', 'SKILL.md'))).toBe(true);
       expect(existsSync(join(target, '.claude', 'skills', 'bmads', 'SKILL.md'))).toBe(true);
+      expect(
+        existsSync(join(target, '.claude', 'skills', 'encoding-integrity-guardian', 'SKILL.md'))
+      ).toBe(true);
       expect(existsSync(join(target, '_bmad', 'runtime', 'hooks', 'runtime-dashboard-auto-start.cjs'))).toBe(true);
 
       const aliases = [
@@ -288,6 +294,21 @@ describe('install to consumer ->CLI acceptance', () => {
       expect(existsSync(join(target, '.codex', 'skills', 'bmad-help', 'SKILL.md'))).toBe(true);
       expect(existsSync(join(target, '.codex', 'skills', 'bmad-speckit', 'SKILL.md'))).toBe(true);
       expect(existsSync(join(target, '.codex', 'skills', 'bmads', 'SKILL.md'))).toBe(true);
+      expect(
+        existsSync(join(target, '.codex', 'skills', 'encoding-integrity-guardian', 'SKILL.md'))
+      ).toBe(true);
+      expect(
+        existsSync(
+          join(
+            target,
+            '.codex',
+            'skills',
+            'encoding-integrity-guardian',
+            'scripts',
+            'check-encoding-integrity.js'
+          )
+        )
+      ).toBe(true);
       expect(existsSync(join(target, '.codex', 'skills', 'speckit-workflow', 'SKILL.md'))).toBe(true);
       expect(
         readFileSync(join(target, '.codex', 'skills', 'speckit-workflow', 'SKILL.md'), 'utf8')
