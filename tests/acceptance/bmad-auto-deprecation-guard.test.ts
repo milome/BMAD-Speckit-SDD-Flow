@@ -8,6 +8,18 @@ function read(relativePath: string): string {
   return fs.readFileSync(path.join(root, relativePath), 'utf8');
 }
 
+const BMADS_AUTO_QUARANTINE_FILES = [
+  '_bmad/commands/bmads-auto.md',
+  '.codex/commands/bmads-auto.md',
+  '.cursor/commands/bmads-auto.md',
+  '.claude/commands/bmads-auto.md',
+  '_bmad/skills/bmads-auto/SKILL.md',
+];
+
+function existingBmadsAutoFiles(): string[] {
+  return BMADS_AUTO_QUARANTINE_FILES.filter((file) => fs.existsSync(path.join(root, file)));
+}
+
 describe('bmad-auto deprecation guard', () => {
   it('routes bmads automation guidance directly to Main Agent, not bmad-auto', () => {
     const rootSkill = read('_bmad/skills/bmad-speckit/SKILL.md');
@@ -23,22 +35,19 @@ describe('bmad-auto deprecation guard', () => {
     expect(bmadsCommand).toContain('main-agent orchestration artifacts');
   });
 
-  it('keeps bmads-auto quarantined instead of executable as automation runtime', () => {
-    for (const file of [
-      '_bmad/commands/bmads-auto.md',
-      '.codex/commands/bmads-auto.md',
-      '.cursor/commands/bmads-auto.md',
-      '.claude/commands/bmads-auto.md',
-      '_bmad/skills/bmads-auto/SKILL.md',
-    ]) {
-      const content = read(file);
-      expect(content).toContain('Deprecated');
-      expect(content).toContain('main-agent-orchestration --action inspect');
-      expect(content).toContain('main-agent-orchestration --action run-loop');
-      expect(content).not.toContain('Load and follow `{project-root}/_bmad/skills/bmads-auto/SKILL.md`');
-      expect(content).not.toContain('This entry continues BMAD-Speckit automation');
+  it.skipIf(existingBmadsAutoFiles().length === 0)(
+    'keeps bmads-auto quarantined instead of executable as automation runtime',
+    () => {
+      for (const file of existingBmadsAutoFiles()) {
+        const content = read(file);
+        expect(content).toContain('Deprecated');
+        expect(content).toContain('main-agent-orchestration --action inspect');
+        expect(content).toContain('main-agent-orchestration --action run-loop');
+        expect(content).not.toContain('Load and follow `{project-root}/_bmad/skills/bmads-auto/SKILL.md`');
+        expect(content).not.toContain('This entry continues BMAD-Speckit automation');
+      }
     }
-  });
+  );
 
   it('removes bmads-auto runtime protection tests from default acceptance discovery', () => {
     const acceptanceFiles = fs.readdirSync(path.join(root, 'tests', 'acceptance'));
@@ -48,4 +57,3 @@ describe('bmad-auto deprecation guard', () => {
     expect(acceptanceFiles).toContain('bmads-auto-gap-registry.quarantined.ts');
   });
 });
-

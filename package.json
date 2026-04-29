@@ -101,7 +101,7 @@
     "check:encoding": "node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js"
   },
   "bin": {
-    "bmad-speckit": "bin/bmad-speckit.js",
+    "bmad-speckit": "scripts/bmad-speckit-cli.js",
     "bmad-speckit-init": "scripts/init-to-root.js",
     "bmad-speckit-setup": "scripts/setup.ps1",
     "bmad-speckit-setup-sh": "scripts/setup.sh"
