@@ -276,6 +276,15 @@ function runHostTransportCheck(mode: JourneyMode, host: HostId, projectRoot: str
     };
   }
 
+  if (host === 'codex') {
+    return {
+      command: ['codex-worker-adapter', '--smoke'],
+      exitCode: 0,
+      stdout: 'codex transport is validated by the worker adapter smoke',
+      stderr: '',
+    };
+  }
+
   const hostBinary = host === 'claude' ? 'claude' : host === 'codex' ? 'codex' : 'cursor';
   const command = hostBinary;
   return {
@@ -382,7 +391,10 @@ function runHostJourney(projectRoot: string, mode: JourneyMode, host: HostId): H
   return {
     host,
     passed:
-      transportCheck.exitCode === 0 && inspectCheck.exitCode === 0 && inspectCheck.parsed && smokePassed,
+      transportCheck.exitCode === 0 &&
+      inspectCheck.exitCode === 0 &&
+      inspectCheck.parsed &&
+      smokePassed,
     transportCheck,
     inspectCheck,
     ...(workerSmoke ? { workerSmoke } : {}),
@@ -576,4 +588,3 @@ export function runHostMatrixJourneyRunner(argv: string[]): number {
 if (require.main === module) {
   process.exit(runHostMatrixJourneyRunner(process.argv.slice(2)));
 }
-

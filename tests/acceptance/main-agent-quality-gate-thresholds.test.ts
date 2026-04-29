@@ -2,11 +2,19 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
 
 describe('main-agent quality gate thresholds', () => {
+  beforeAll(() => {
+    execFileSync(
+      process.execPath,
+      [path.join(ROOT, 'scripts', 'ensure-governance-user-story-mapping-fixture.js')],
+      { cwd: ROOT, stdio: 'pipe' }
+    );
+  });
+
   it('loads versioned thresholds and passes when required paths exist', () => {
     const output = execFileSync(
       process.execPath,

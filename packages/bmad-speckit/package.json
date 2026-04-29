@@ -43,21 +43,21 @@
     "nock": "^15.0.0"
   },
   "dependencies": {
-    "@bmad-speckit/schema": "1.0.3",
     "@bmad-speckit/ralph-method": "1.0.3",
-    "@bmad-speckit/runtime-emit": "1.0.3",
     "@bmad-speckit/runtime-context": "1.0.3",
+    "@bmad-speckit/runtime-emit": "1.0.3",
+    "@bmad-speckit/schema": "1.0.3",
     "@bmad-speckit/scoring": "1.0.3",
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",
-    "chalk": "^5.3.0",
     "boxen": "^8.0.0",
-    "js-yaml": "^4.1.1",
-    "ora": "^8.0.1",
+    "chalk": "^5.3.0",
     "commander": "^11.1.0",
     "inquirer": "^9.2.12",
     "inquirer-autocomplete-prompt": "^3.0.1",
+    "js-yaml": "^4.1.1",
+    "ora": "^8.0.1",
     "tar": "^7.0.0",
-    "tsx": "^4.21.0"
+    "tsx": "4.20.6"
   }
 }

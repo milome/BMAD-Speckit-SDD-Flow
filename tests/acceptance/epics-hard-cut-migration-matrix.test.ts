@@ -1,8 +1,10 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
+const LOCAL_REQUIREMENT_PATH =
+  'docs/requirements/2026-04-27-epics-branch-scoped-canonical-path-requirement.md';
 
 function readRepoFile(relativePath: string): string {
   return readFileSync(path.join(ROOT, relativePath), 'utf8');
@@ -45,24 +47,39 @@ const HARD_CUT_MATRIX = [
     mustContain: ['_bmad-output/planning-artifacts/{branch}/implementation-readiness-report-'],
     mustNotContain: ['_bmad-output/planning-artifacts/implementation-readiness-report-'],
   },
+] as const;
+
+const LOCAL_ONLY_HARD_CUT_MATRIX = [
   {
     case: 'canonical requirement records hard-cut semantics',
-    file: 'docs/requirements/2026-04-27-epics-branch-scoped-canonical-path-requirement.md',
+    file: LOCAL_REQUIREMENT_PATH,
     mustContain: ['must not be read as fallback after the 2026-04-27 hard cut'],
     mustNotContain: ['may be read only as fallback during migration'],
   },
 ] as const;
 
+function expectHardCutRow(
+  row: (typeof HARD_CUT_MATRIX | typeof LOCAL_ONLY_HARD_CUT_MATRIX)[number]
+) {
+  const content = readRepoFile(row.file);
+  for (const snippet of row.mustContain) {
+    expect(content, `${row.file} must contain ${snippet}`).toContain(snippet);
+  }
+  for (const snippet of row.mustNotContain) {
+    expect(content, `${row.file} must not contain ${snippet}`).not.toContain(snippet);
+  }
+}
+
 describe('epics hard-cut migration matrix', () => {
   for (const row of HARD_CUT_MATRIX) {
     it(row.case, () => {
-      const content = readRepoFile(row.file);
-      for (const snippet of row.mustContain) {
-        expect(content, `${row.file} must contain ${snippet}`).toContain(snippet);
-      }
-      for (const snippet of row.mustNotContain) {
-        expect(content, `${row.file} must not contain ${snippet}`).not.toContain(snippet);
-      }
+      expectHardCutRow(row);
+    });
+  }
+
+  for (const row of LOCAL_ONLY_HARD_CUT_MATRIX) {
+    it.skipIf(process.env.CI === 'true' || !existsSync(path.join(ROOT, row.file)))(row.case, () => {
+      expectHardCutRow(row);
     });
   }
 });

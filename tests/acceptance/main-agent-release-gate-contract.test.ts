@@ -3,7 +3,9 @@ import crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
+
+const ROOT = process.cwd();
 
 function runReleaseGate(
   env: NodeJS.ProcessEnv,
@@ -45,6 +47,14 @@ function runReleaseGate(
 }
 
 describe('main-agent release gate contract', () => {
+  beforeAll(() => {
+    execFileSync(
+      process.execPath,
+      [path.join(ROOT, 'scripts', 'ensure-governance-user-story-mapping-fixture.js')],
+      { cwd: ROOT, stdio: 'pipe' }
+    );
+  });
+
   it('fails closed with explicit sprint-status block reason when E2E gate fails', () => {
     const reportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'release-gate-report-fail-'));
     try {
@@ -57,7 +67,7 @@ describe('main-agent release gate contract', () => {
         false,
         [
           '--hostMatrixPath',
-        path.join(reportDir, 'missing-host-matrix.json'),
+          path.join(reportDir, 'missing-host-matrix.json'),
           '--prTopologyPath',
           path.join(reportDir, 'missing-pr-topology.json'),
           '--qualityGatePath',
@@ -87,7 +97,12 @@ describe('main-agent release gate contract', () => {
 
   function writeReleaseGateEvidence(
     dir: string,
-    provenance?: { runId: string; storyKey: string; evidenceBundleId: string; gateReportHash?: string }
+    provenance?: {
+      runId: string;
+      storyKey: string;
+      evidenceBundleId: string;
+      gateReportHash?: string;
+    }
   ) {
     const evidence_provenance = provenance
       ? {
@@ -310,7 +325,9 @@ describe('main-agent release gate contract', () => {
         checks: Array<{ id: string; passed: boolean }>;
         blocking_reasons: string[];
       };
-      expect(report.checks.find((item) => item.id === 'execution-audit-ledger')?.passed).toBe(false);
+      expect(report.checks.find((item) => item.id === 'execution-audit-ledger')?.passed).toBe(
+        false
+      );
       expect(report.blocking_reasons.join('\n')).toContain('execution audit ledger missing');
     } finally {
       fs.rmSync(reportDir, { recursive: true, force: true });
@@ -399,9 +416,7 @@ describe('main-agent release gate contract', () => {
         token: string;
         singleUse: boolean;
       };
-      expect(
-        report.checks.find((item) => item.id === 'execution-audit-ledger')?.passed
-      ).toBe(true);
+      expect(report.checks.find((item) => item.id === 'execution-audit-ledger')?.passed).toBe(true);
       expect(report.completion_intent?.storyKey).toBe('S-release');
       expect(report.completion_intent?.singleUse).toBe(true);
       expect(report.completion_intent?.contractHash).toBe(
@@ -569,7 +584,9 @@ describe('main-agent release gate contract', () => {
         checks: Array<{ id: string; passed: boolean; stderr: string }>;
         blocking_reasons: string[];
       };
-      expect(report.checks.find((item) => item.id === 'multi-host-real-artifact')?.passed).toBe(false);
+      expect(report.checks.find((item) => item.id === 'multi-host-real-artifact')?.passed).toBe(
+        false
+      );
       expect(report.blocking_reasons.join('\n')).toContain('provenance mismatch');
     } finally {
       fs.rmSync(reportDir, { recursive: true, force: true });
@@ -663,7 +680,14 @@ describe('main-agent release gate contract', () => {
           MAIN_AGENT_RELEASE_GATE_REPORT_PATH: reportPath,
         },
         true,
-        [...strongArgs(evidence), '--ledgerPath', ledgerPath, ...sameRunArgs(), '--skipSprintStatusUpdate', 'true']
+        [
+          ...strongArgs(evidence),
+          '--ledgerPath',
+          ledgerPath,
+          ...sameRunArgs(),
+          '--skipSprintStatusUpdate',
+          'true',
+        ]
       );
       expect(run.exitCode).toBe(0);
       const report = JSON.parse(fs.readFileSync(reportPath, 'utf8')) as {
@@ -733,5 +757,3 @@ describe('main-agent release gate contract', () => {
     }
   });
 });
-
-

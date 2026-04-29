@@ -15,6 +15,19 @@ function run(command: string, cwd: string): string {
   });
 }
 
+function hasCodexCli(): boolean {
+  try {
+    execSync('codex --version', {
+      cwd: ROOT,
+      stdio: 'ignore',
+      env: { ...process.env },
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function writeJson(filePath: string, value: unknown): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2) + '\n', 'utf8');
@@ -85,17 +98,19 @@ function writeFakeCodexBinary(root: string): string {
     [
       "const fs = require('fs');",
       "const input = fs.readFileSync(0, 'utf8');",
-      "const reportPath = input.match(/write a JSON TaskReport to: (.+)/i)?.[1]?.trim();",
-      "const packetId = input.match(/Packet ID: (.+)/i)?.[1]?.trim();",
-      "if (!reportPath || !packetId) process.exit(2);",
+      'const reportPath = input.match(/write a JSON TaskReport to: (.+)/i)?.[1]?.trim();',
+      'const packetId = input.match(/Packet ID: (.+)/i)?.[1]?.trim();',
+      'if (!reportPath || !packetId) process.exit(2);',
       "fs.mkdirSync(require('path').dirname(reportPath), { recursive: true });",
       "fs.writeFileSync(reportPath, JSON.stringify({ packetId, status: 'done', filesChanged: [], validationsRun: ['fake-codex-consumer-exec'], evidence: ['fake-codex-consumer-exec'], downstreamContext: ['consumer codex exec completed'] }, null, 2) + '\\n', 'utf8');",
-      "process.exit(0);",
+      'process.exit(0);',
       '',
     ].join('\n')
   );
   const fakeCodexBin =
-    process.platform === 'win32' ? path.join(root, 'fake-codex.cmd') : path.join(root, 'fake-codex');
+    process.platform === 'win32'
+      ? path.join(root, 'fake-codex.cmd')
+      : path.join(root, 'fake-codex');
   writeText(
     fakeCodexBin,
     process.platform === 'win32'
@@ -122,11 +137,21 @@ describe('Codex consumer five-layer main-agent e2e', () => {
       expect(run('npx bmad-speckit check', target)).toMatch(/Check OK|OK/i);
       expect(
         fs.existsSync(
-          path.join(target, 'node_modules', 'bmad-speckit-sdd-flow', 'docs', 'how-to', 'codex-setup.md')
+          path.join(
+            target,
+            'node_modules',
+            'bmad-speckit-sdd-flow',
+            'docs',
+            'how-to',
+            'codex-setup.md'
+          )
         )
       ).toBe(true);
 
-      run('npx bmad-speckit ensure-run-runtime-context --story-key 16-1-codex-consumer --lifecycle dev_story', target);
+      run(
+        'npx bmad-speckit ensure-run-runtime-context --story-key 16-1-codex-consumer --lifecycle dev_story',
+        target
+      );
       const registryPath = path.join(target, '_bmad-output', 'runtime', 'registry.json');
       expect(fs.existsSync(registryPath)).toBe(true);
       const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8')) as {
@@ -146,7 +171,11 @@ describe('Codex consumer five-layer main-agent e2e', () => {
         {
           cwd: target,
           encoding: 'utf8',
-          env: { ...process.env, CODEX_WORKER_ADAPTER_BIN: fakeCodexBin, MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE: 'true' },
+          env: {
+            ...process.env,
+            CODEX_WORKER_ADAPTER_BIN: fakeCodexBin,
+            MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE: 'true',
+          },
         }
       );
       const result = JSON.parse(output) as {
@@ -171,7 +200,9 @@ describe('Codex consumer five-layer main-agent e2e', () => {
       expect(JSON.parse(deliveryOutput).orchestrationState.host).toBe('codex');
 
       writeLayer1PrdCompletionEvidence(target);
-      writeJson(path.join(target, 'docs', 'architecture', 'architecture.json'), { architecture: true });
+      writeJson(path.join(target, 'docs', 'architecture', 'architecture.json'), {
+        architecture: true,
+      });
       writeJson(path.join(target, 'docs', 'stories', 'epics.json'), { epics: [] });
       writeJson(path.join(target, 'docs', 'stories', 'story-create.json'), { stories: [] });
       const matrixOutput = run('npx bmad-speckit main-agent:bmad-help-five-layer-matrix', target);
@@ -209,7 +240,13 @@ describe('Codex consumer five-layer main-agent e2e', () => {
       run(`npm install --save-dev "file:${ROOT.replace(/\\/g, '/')}"`, target);
       run('npx bmad-speckit-init --agent codex', target);
 
-      const reportPath = path.join(target, '_bmad-output', 'runtime', 'gates', 'delivery-truth.json');
+      const reportPath = path.join(
+        target,
+        '_bmad-output',
+        'runtime',
+        'gates',
+        'delivery-truth.json'
+      );
       expect(() =>
         run(
           `npx --no-install bmad-speckit main-agent:delivery-truth-gate --cwd . --reportPath "${reportPath}"`,
@@ -229,71 +266,73 @@ describe('Codex consumer five-layer main-agent e2e', () => {
     }
   }, 180_000);
 
-  it('fails closed instead of claiming success when real Codex CLI produces no TaskReport', () => {
-    const target = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-consumer-real-cli-'));
-    try {
-      run('codex --version', ROOT);
-      fs.writeFileSync(
-        path.join(target, 'package.json'),
-        JSON.stringify({ name: 'codex-consumer-real-cli', version: '1.0.0', private: true }),
-        'utf8'
-      );
-      run(`npm install --save-dev "file:${ROOT.replace(/\\/g, '/')}"`, target);
-      run('npx --no-install bmad-speckit-init --agent codex', target);
-      run(
-        'npx --no-install bmad-speckit ensure-run-runtime-context --story-key 16-3-codex-real-cli --lifecycle dev_story',
-        target
-      );
-      let output = '';
-      expect(() => {
-        output = run(
-          'npx --no-install bmad-speckit main-agent-orchestration --action run-loop --flow story --stage implement --host codex',
+  it.skipIf(!hasCodexCli())(
+    'fails closed instead of claiming success when real Codex CLI produces no TaskReport',
+    () => {
+      const target = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-consumer-real-cli-'));
+      try {
+        run('codex --version', ROOT);
+        fs.writeFileSync(
+          path.join(target, 'package.json'),
+          JSON.stringify({ name: 'codex-consumer-real-cli', version: '1.0.0', private: true }),
+          'utf8'
+        );
+        run(`npm install --save-dev "file:${ROOT.replace(/\\/g, '/')}"`, target);
+        run('npx --no-install bmad-speckit-init --agent codex', target);
+        run(
+          'npx --no-install bmad-speckit ensure-run-runtime-context --story-key 16-3-codex-real-cli --lifecycle dev_story',
           target
         );
-      }).toThrow();
-      const reportPath = path.join(
-        target,
-        '_bmad-output',
-        'runtime',
-        'codex',
-        'task-reports'
-      );
-      const taskReports = fs.existsSync(reportPath) ? fs.readdirSync(reportPath) : [];
-      expect(taskReports.length).toBeGreaterThan(0);
-      const blockedReport = JSON.parse(
-        fs.readFileSync(path.join(reportPath, taskReports[0]), 'utf8')
-      ) as {
-        status: string;
-        evidence?: string[];
-      };
-      expect(blockedReport.status).toBe('blocked');
-      expect(blockedReport.evidence).toContain('codex did not produce task report');
-      expect(output).toBe('');
-      const stateFilesRoot = path.join(target, '_bmad-output', 'runtime', 'governance', 'orchestration-state');
-      const stateFile = fs.readdirSync(stateFilesRoot).find((name) => name.endsWith('.json'));
-      expect(stateFile).toEqual(expect.any(String));
-      const state = JSON.parse(fs.readFileSync(path.join(stateFilesRoot, stateFile as string), 'utf8')) as {
-        status: string;
-        host?: string;
-        lastTaskReport?: { status?: string };
-      };
-      expect(state.host).toBe('codex');
-      expect(state.lastTaskReport?.status).toBe('blocked');
-    } finally {
-      fs.rmSync(target, { recursive: true, force: true });
-    }
-  }, 240_000);
+        let output = '';
+        expect(() => {
+          output = run(
+            'npx --no-install bmad-speckit main-agent-orchestration --action run-loop --flow story --stage implement --host codex',
+            target
+          );
+        }).toThrow();
+        const reportPath = path.join(target, '_bmad-output', 'runtime', 'codex', 'task-reports');
+        const taskReports = fs.existsSync(reportPath) ? fs.readdirSync(reportPath) : [];
+        expect(taskReports.length).toBeGreaterThan(0);
+        const blockedReport = JSON.parse(
+          fs.readFileSync(path.join(reportPath, taskReports[0]), 'utf8')
+        ) as {
+          status: string;
+          evidence?: string[];
+        };
+        expect(blockedReport.status).toBe('blocked');
+        expect(blockedReport.evidence).toContain('codex did not produce task report');
+        expect(output).toBe('');
+        const stateFilesRoot = path.join(
+          target,
+          '_bmad-output',
+          'runtime',
+          'governance',
+          'orchestration-state'
+        );
+        const stateFile = fs.readdirSync(stateFilesRoot).find((name) => name.endsWith('.json'));
+        expect(stateFile).toEqual(expect.any(String));
+        const state = JSON.parse(
+          fs.readFileSync(path.join(stateFilesRoot, stateFile as string), 'utf8')
+        ) as {
+          status: string;
+          host?: string;
+          lastTaskReport?: { status?: string };
+        };
+        expect(state.host).toBe('codex');
+        expect(state.lastTaskReport?.status).toBe('blocked');
+      } finally {
+        fs.rmSync(target, { recursive: true, force: true });
+      }
+    },
+    240_000
+  );
 
   it('installs from packed tgz and exposes Codex public closeout CLI without transient tool install', () => {
     const packRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-pack-root-'));
     const target = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-packed-consumer-'));
     try {
       const packOutput = run(`npm pack --pack-destination "${packRoot}"`, ROOT);
-      const tgzName = packOutput
-        .trim()
-        .split(/\r?\n/)
-        .filter(Boolean)
-        .at(-1);
+      const tgzName = packOutput.trim().split(/\r?\n/).filter(Boolean).at(-1);
       if (!tgzName) {
         throw new Error(`npm pack did not return a tarball name: ${packOutput}`);
       }
@@ -308,7 +347,14 @@ describe('Codex consumer five-layer main-agent e2e', () => {
       expect(run('npx --no-install bmad-speckit check', target)).toMatch(/Check OK|OK/i);
       expect(
         fs.existsSync(
-          path.join(target, 'node_modules', 'bmad-speckit-sdd-flow', 'docs', 'how-to', 'codex-setup.md')
+          path.join(
+            target,
+            'node_modules',
+            'bmad-speckit-sdd-flow',
+            'docs',
+            'how-to',
+            'codex-setup.md'
+          )
         )
       ).toBe(true);
 
@@ -335,7 +381,11 @@ describe('Codex consumer five-layer main-agent e2e', () => {
           {
             cwd: target,
             encoding: 'utf8',
-            env: { ...process.env, CODEX_WORKER_ADAPTER_BIN: fakeCodexBin, MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE: 'true' },
+            env: {
+              ...process.env,
+              CODEX_WORKER_ADAPTER_BIN: fakeCodexBin,
+              MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE: 'true',
+            },
           }
         )
       ) as {
@@ -349,7 +399,9 @@ describe('Codex consumer five-layer main-agent e2e', () => {
       expect(runLoop.taskReport?.status).toBe('done');
       expect(runLoop.taskReport?.validationsRun).toContain('fake-codex-consumer-exec');
       expect(runLoop.finalSurface?.pendingPacketStatus).toBe('completed');
-      const matrix = JSON.parse(run('npx --no-install bmad-speckit main-agent:bmad-help-five-layer-matrix', target)) as {
+      const matrix = JSON.parse(
+        run('npx --no-install bmad-speckit main-agent:bmad-help-five-layer-matrix', target)
+      ) as {
         allPassed: boolean;
         bmadHelpEntry?: { docsExposeCodex?: boolean };
       };
@@ -380,14 +432,35 @@ describe('Codex consumer five-layer main-agent e2e', () => {
         ].join(' '),
         target
       );
-      const quality = JSON.parse(qualityOutput) as { critical_failures: number; evidence_provenance?: unknown };
+      const quality = JSON.parse(qualityOutput) as {
+        critical_failures: number;
+        evidence_provenance?: unknown;
+      };
       expect(quality.critical_failures).toBe(0);
       expect(quality.evidence_provenance).toMatchObject({ runId, storyKey, evidenceBundleId });
 
-      const hostMatrixPath = path.join(target, '_bmad-output', 'runtime', 'e2e', 'multi-host-pr-orchestration-report.json');
+      const hostMatrixPath = path.join(
+        target,
+        '_bmad-output',
+        'runtime',
+        'e2e',
+        'multi-host-pr-orchestration-report.json'
+      );
       const prTopologyPath = path.join(target, '_bmad-output', 'runtime', 'pr', 'pr_topology.json');
-      const ledgerPath = path.join(target, '_bmad-output', 'runtime', 'governance', 'execution-audit-ledger.json');
-      const ledgerEvidencePath = path.join(target, '_bmad-output', 'runtime', 'governance', 'ledger-evidence.json');
+      const ledgerPath = path.join(
+        target,
+        '_bmad-output',
+        'runtime',
+        'governance',
+        'execution-audit-ledger.json'
+      );
+      const ledgerEvidencePath = path.join(
+        target,
+        '_bmad-output',
+        'runtime',
+        'governance',
+        'ledger-evidence.json'
+      );
       writeJson(hostMatrixPath, {
         journeyMode: 'real',
         journeyE2EPassed: true,
@@ -400,14 +473,29 @@ describe('Codex consumer five-layer main-agent e2e', () => {
           legacyDualHostPassed: true,
         },
         githubPrApi: { passed: true, prUrl: 'https://example.invalid/pull/1' },
-        evidence_provenance: { runId, storyKey, evidenceBundleId, gateReportHash: 'host-matrix-hash' },
+        evidence_provenance: {
+          runId,
+          storyKey,
+          evidenceBundleId,
+          gateReportHash: 'host-matrix-hash',
+        },
       });
       writeJson(prTopologyPath, {
         version: 1,
         batch_id: 'codex-packed',
-        evidence_provenance: { runId, storyKey, evidenceBundleId, gateReportHash: 'pr-topology-hash' },
+        evidence_provenance: {
+          runId,
+          storyKey,
+          evidenceBundleId,
+          gateReportHash: 'pr-topology-hash',
+        },
         required_nodes: [
-          { node_id: 'codex-node', target_pr: 'https://example.invalid/pull/1', depends_on: [], state: 'merged' },
+          {
+            node_id: 'codex-node',
+            target_pr: 'https://example.invalid/pull/1',
+            depends_on: [],
+            state: 'merged',
+          },
         ],
         all_affected_stories_passed: true,
       });
@@ -460,7 +548,13 @@ describe('Codex consumer five-layer main-agent e2e', () => {
       expect(release.critical_failures).toBe(0);
       expect(release.completion_intent?.gateReportHash).toEqual(expect.any(String));
 
-      const soakPath = path.join(target, '_bmad-output', 'runtime', 'soak', 'main-agent-soak-report.json');
+      const soakPath = path.join(
+        target,
+        '_bmad-output',
+        'runtime',
+        'soak',
+        'main-agent-soak-report.json'
+      );
       writeJson(soakPath, {
         mode: 'wall_clock',
         run_kind: 'development_run_loop',
@@ -514,13 +608,21 @@ describe('Codex consumer five-layer main-agent e2e', () => {
           ],
         },
       });
-      const sprintAuditPath = path.join(target, '_bmad-output', 'runtime', 'governance', 'sprint-status-update-audit.json');
+      const sprintAuditPath = path.join(
+        target,
+        '_bmad-output',
+        'runtime',
+        'governance',
+        'sprint-status-update-audit.json'
+      );
       const sprintAudit = JSON.parse(fs.readFileSync(sprintAuditPath, 'utf8')) as {
         authorized: boolean;
         evidence_provenance?: { gateReportHash?: string };
       };
       expect(sprintAudit.authorized).toBe(true);
-      expect(sprintAudit.evidence_provenance?.gateReportHash).toBe(release.completion_intent?.gateReportHash);
+      expect(sprintAudit.evidence_provenance?.gateReportHash).toBe(
+        release.completion_intent?.gateReportHash
+      );
       const deliveryOutput = run(
         [
           'npx --no-install bmad-speckit main-agent:delivery-truth-gate',

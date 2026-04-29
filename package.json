@@ -16,11 +16,11 @@
     "setup:sh": "bash scripts/setup.sh",
     "setup:full": "pwsh scripts/setup.ps1 -Full",
     "setup:full:sh": "bash scripts/setup.sh -Full",
-    "test": "npm run test:speckit-mirror-sync && vitest run && npm run test:bmad-speckit",
+    "test": "npm run test:speckit-mirror-sync && npm run test:governance-fixtures && vitest run && npm run test:bmad-speckit",
     "main-agent-orchestration": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts",
     "main-agent:run-loop": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts --action run-loop",
-    "main-agent:release-gate": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-release-gate.ts",
-    "main-agent:quality-gate": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-quality-gate.ts",
+    "main-agent:release-gate": "npm run test:governance-fixtures && npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-release-gate.ts",
+    "main-agent:quality-gate": "npm run test:governance-fixtures && npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-quality-gate.ts",
     "main-agent:architecture-drift-check": "npx ts-node --project tsconfig.node.json --transpile-only scripts/architecture-drift-check.ts",
     "main-agent:soak-contract": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-soak-runner.ts --contract-8h",
     "main-agent:long-run-soak": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-soak-runner.ts",
@@ -58,11 +58,12 @@
     "test:governance-audit:static": "pwsh -NoProfile -Command \"rg -n 'dashboard-\\*\\.png|^outputs/$|^test-results/$|^tests/typecheck/$|packages/scoring/outputs/' .gitignore; Test-Path docs/plans/runtime-dashboard-cherry-pick-checklist.md; Test-Path docs/plans/runtime-dashboard-cherry-pick-decision-summary.md; Test-Path docs/plans/runtime-dashboard-cherry-pick-execution-playbook.md; rg -n 'runtime-dashboard-cherry-pick-(checklist|decision-summary|execution-playbook)' docs/plans/runtime-dashboard-cherry-pick-checklist.md docs/plans/runtime-dashboard-cherry-pick-decision-summary.md docs/plans/runtime-dashboard-cherry-pick-execution-playbook.md\"",
     "test:governance-audit:extended": "npx vitest run tests/acceptance/governance-post-tool-use-hook.test.ts tests/acceptance/governance-remediation-runner.test.ts tests/acceptance/fallback-autonomous-dispatch-mode.test.ts tests/acceptance/main-agent-fallback-plane-hard-cut.test.ts tests/acceptance/fallback-plane-cross-stage-hard-cut.test.ts tests/acceptance/fallback-plane-execution-record-hard-cut.test.ts tests/acceptance/fallback-plane-scoring-event-hard-cut.test.ts tests/acceptance/pre-continue-state-machine-binding.test.ts tests/acceptance/prompt-routing-governance.test.ts tests/acceptance/prompt-routing-hints.test.ts tests/acceptance/model-governance-policy-filter.test.ts tests/acceptance/governance-provider-adapter.test.ts tests/acceptance/readiness-remediation-artifact-generation.test.ts tests/acceptance/readiness-remediation-artifact-wiring.test.ts tests/acceptance/governance-runner-summary-format.test.ts tests/acceptance/governance-runner-summary-presenter.test.ts tests/acceptance/skill-inventory-provider.test.ts tests/acceptance/governance-remediation-cross-stage-runner.test.ts tests/acceptance/governance-remediation-wave2a-tail.test.ts tests/acceptance/governance-runner-summary-e2e.test.ts tests/acceptance/governance-hook-jsdoc-types.test.ts tests/acceptance/brief-gate-loop-wave1b.test.ts tests/acceptance/brief-prd-arch-gate-loop-e2e.test.ts tests/acceptance/audit-contract-propagation-wave1b.test.ts tests/acceptance/implement-workflow-contract-propagation-wave1b.test.ts tests/acceptance/scoring-journey-contract-propagation-wave1b.test.ts tests/acceptance/tasks-journey-trace-contract-wave1b.test.ts tests/acceptance/legacy-detached-runner-surface.test.ts packages/scoring/__tests__/integration/dashboard-governance-routing.test.ts packages/scoring/analytics/__tests__/governance-history-metrics.test.ts packages/scoring/analytics/__tests__/governance-routing-summary.test.ts packages/scoring/analytics/__tests__/journey-contract-signals.test.ts packages/scoring/dashboard/__tests__/compute.test.ts packages/scoring/dashboard/__tests__/format.test.ts packages/scoring/gate/__tests__/remediation-hints.test.ts packages/scoring/orchestrator/__tests__/parse-and-write.test.ts",
     "test:governance-audit:full": "npm run test:governance-audit:round1 && npm run test:governance-audit:round2 && npm run test:governance-audit:static",
-    "test:ci": "npm run init:claude && npm run test:speckit-mirror-sync && vitest run && npm run test:bmad-speckit && npm run test:runtime-policy-inject && npm run main-agent:release-gate && npm run main-agent:quality-gate && npm run test:main-agent-chaos",
-    "test:ci:cursor": "npm run init:cursor && npm run test:speckit-mirror-sync && vitest run && npm run test:bmad-speckit && npm run test:runtime-policy-inject && npm run main-agent:release-gate && npm run main-agent:quality-gate && npm run test:main-agent-chaos",
-    "test:ci:claude-cursor": "npm run init:claude && npm run init:cursor && npm run test:speckit-mirror-sync && vitest run && npm run test:bmad-speckit && npm run test:runtime-policy-inject && npm run main-agent:release-gate && npm run main-agent:quality-gate && npm run test:main-agent-chaos",
+    "test:ci": "npm run init:claude && npm run test:governance-fixtures && npm run test:speckit-mirror-sync && vitest run && npm run test:bmad-speckit && npm run test:runtime-policy-inject && npm run main-agent:release-gate && npm run main-agent:quality-gate && npm run test:main-agent-chaos",
+    "test:ci:cursor": "npm run init:cursor && npm run test:governance-fixtures && npm run test:speckit-mirror-sync && vitest run && npm run test:bmad-speckit && npm run test:runtime-policy-inject && npm run main-agent:release-gate && npm run main-agent:quality-gate && npm run test:main-agent-chaos",
+    "test:ci:claude-cursor": "npm run init:claude && npm run init:cursor && npm run test:governance-fixtures && npm run test:speckit-mirror-sync && vitest run && npm run test:bmad-speckit && npm run test:runtime-policy-inject && npm run main-agent:release-gate && npm run main-agent:quality-gate && npm run test:main-agent-chaos",
     "test:ci:dual": "npm run test:ci:claude-cursor",
     "test:scoring": "vitest run packages/scoring",
+    "test:governance-fixtures": "node scripts/ensure-governance-user-story-mapping-fixture.js",
     "test:speckit-mirror-sync": "node scripts/verify-speckit-mirror-sync.js",
     "test:bmad-speckit": "npm run test --prefix packages/bmad-speckit",
     "accept:e1-s1": "npx ts-node --project tsconfig.node.json tests/epic-acceptance/accept-e1-s1.ts",
@@ -96,7 +97,7 @@
     "test:main-agent-rerun-gate-e2e-loop": "npx vitest run tests/acceptance/governance-rerun-gate-closure.test.ts",
     "main-agent:inspect": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts --cwd . --action inspect",
     "main-agent:dispatch-plan": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts --cwd . --action dispatch-plan",
-    "test:ci:codex": "npm run init:codex && npx vitest run tests/acceptance/main-agent-codex-agent-parity.test.ts tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts tests/acceptance/main-agent-run-loop-e2e.test.ts tests/acceptance/main-agent-unified-ingress-e2e.test.ts tests/acceptance/orchestration-dispatch-contract.test.ts tests/acceptance/e2e-host-matrix-real-codex-smoke.test.ts tests/acceptance/main-agent-release-gate-contract.test.ts tests/acceptance/main-agent-delivery-truth-gate.test.ts tests/acceptance/main-agent-quality-gate-thresholds.test.ts tests/acceptance/main-agent-bmad-help-five-layer-matrix-e2e.test.ts tests/acceptance/main-agent-codex-consumer-five-layer-e2e.test.ts tests/acceptance/main-agent-codex-asset-host-leakage.test.ts tests/acceptance/reviewer-projection-parity.test.ts tests/acceptance/accept-install-consumer-cli.test.ts",
+    "test:ci:codex": "npm run init:codex && npm run test:governance-fixtures && npx vitest run tests/acceptance/main-agent-codex-agent-parity.test.ts tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts tests/acceptance/main-agent-run-loop-e2e.test.ts tests/acceptance/main-agent-unified-ingress-e2e.test.ts tests/acceptance/orchestration-dispatch-contract.test.ts tests/acceptance/e2e-host-matrix-real-codex-smoke.test.ts tests/acceptance/main-agent-release-gate-contract.test.ts tests/acceptance/main-agent-delivery-truth-gate.test.ts tests/acceptance/main-agent-quality-gate-thresholds.test.ts tests/acceptance/main-agent-bmad-help-five-layer-matrix-e2e.test.ts tests/acceptance/main-agent-codex-consumer-five-layer-e2e.test.ts tests/acceptance/main-agent-codex-asset-host-leakage.test.ts tests/acceptance/reviewer-projection-parity.test.ts tests/acceptance/accept-install-consumer-cli.test.ts",
     "check:encoding": "node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js"
   },
   "bin": {
@@ -172,6 +173,6 @@
     "ajv-formats": "^3.0.1",
     "bmad-speckit": "1.0.4",
     "js-yaml": "^4.1.1",
-    "tsx": "^4.21.0"
+    "tsx": "4.20.6"
   }
 }
