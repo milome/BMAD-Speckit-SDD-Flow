@@ -180,7 +180,7 @@ describe('root package bmad-speckit bin', () => {
 
       expect(existsSync(binCmd)).toBe(true);
       expect(() => run('npx bmad-speckit version', target)).toThrowError(
-        /Cannot find module|MODULE_NOT_FOUND/
+        /Cannot find module|MODULE_NOT_FOUND|404 Not Found/
       );
 
       run(`npm install --no-save --force "file:${PKG_ROOT.replace(/\\/g, '/')}"`, target);

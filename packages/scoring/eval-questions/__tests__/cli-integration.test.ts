@@ -4,15 +4,17 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as os from 'os';
 import { execSync } from 'child_process';
 import { loadManifest } from '../manifest-loader';
 
-const EVAL_ROOT = path.resolve(process.cwd(), 'packages', 'scoring', 'eval-questions');
-const FIXTURES = path.join(EVAL_ROOT, '__tests__', 'fixtures');
-const CLI_SCRIPT = path.resolve(process.cwd(), 'scripts', 'eval-questions-cli.ts');
+const PROJECT_ROOT = process.cwd();
+const CLI_SCRIPT = path.resolve(PROJECT_ROOT, 'scripts', 'eval-questions-cli.ts');
+const TS_NODE_BIN = path.resolve(PROJECT_ROOT, 'node_modules', 'ts-node', 'dist', 'bin.js');
+const TSCONFIG = path.resolve(PROJECT_ROOT, 'tsconfig.node.json');
 
 function runCli(args: string[], cwd = process.cwd()): string {
-  const cmd = `node --require ts-node/register "${CLI_SCRIPT}" ${args.join(' ')}`;
+  const cmd = `node "${TS_NODE_BIN}" --project "${TSCONFIG}" --transpile-only "${CLI_SCRIPT}" ${args.join(' ')}`;
   return execSync(cmd, { cwd, encoding: 'utf-8', maxBuffer: 1024 * 1024 });
 }
 
@@ -26,8 +28,7 @@ describe(
 
   beforeEach(() => {
     origCwd = process.cwd();
-    tmpRoot = path.join(FIXTURES, `tmp-cli-${Date.now()}`);
-    fs.mkdirSync(tmpRoot, { recursive: true });
+    tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'eval-questions-cli-'));
     fs.mkdirSync(path.join(tmpRoot, 'packages', 'scoring', 'eval-questions', 'v1'), { recursive: true });
     fs.mkdirSync(path.join(tmpRoot, 'packages', 'scoring', 'eval-questions', 'v2'), { recursive: true });
     fs.writeFileSync(

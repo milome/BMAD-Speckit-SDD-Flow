@@ -808,9 +808,19 @@ function writeConsumerBmadSpeckitBinWrappers(targetDir, pkgRoot) {
     '',
   ].join('\n');
 
-  fs.writeFileSync(path.join(binDir, 'bmad-speckit.cmd'), cmdBody, 'utf8');
-  fs.writeFileSync(path.join(binDir, 'bmad-speckit'), shBody, 'utf8');
-  fs.writeFileSync(path.join(binDir, 'bmad-speckit.ps1'), ps1Body, 'utf8');
+  function writeWrapper(name, body) {
+    const wrapperPath = path.join(binDir, name);
+    try {
+      fs.rmSync(wrapperPath, { force: true });
+    } catch {
+      // Best effort: the write below will surface any real filesystem failure.
+    }
+    fs.writeFileSync(wrapperPath, body, 'utf8');
+  }
+
+  writeWrapper('bmad-speckit.cmd', cmdBody);
+  writeWrapper('bmad-speckit', shBody);
+  writeWrapper('bmad-speckit.ps1', ps1Body);
   try {
     fs.chmodSync(path.join(binDir, 'bmad-speckit'), 0o755);
   } catch {
