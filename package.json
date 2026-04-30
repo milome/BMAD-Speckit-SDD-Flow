@@ -1,6 +1,6 @@
 {
   "name": "bmad-speckit-sdd-flow",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "description": "BMAD + Speckit workflow and scoring skeleton; deploy _bmad to project root",
   "scripts": {
     "lint": "eslint . --ext .ts,.js",
@@ -171,7 +171,7 @@
     "@bmad-speckit/scoring": "1.0.3",
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",
-    "bmad-speckit": "1.0.4",
+    "bmad-speckit": "1.1.0",
     "js-yaml": "^4.1.1",
     "tsx": "4.20.6"
   }
