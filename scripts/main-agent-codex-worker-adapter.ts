@@ -105,19 +105,33 @@ function packetRole(packet: Packet): string {
 }
 
 function safeAgentName(role: string): string {
-  return role.replace(/\\/g, '/').replace(/\.toml$/u, '').replace(/^\/+/u, '');
+  return role
+    .replace(/\\/g, '/')
+    .replace(/\.toml$/u, '')
+    .replace(/^\/+/u, '');
 }
 
-function resolveCodexAgentSpec(projectRoot: string, role: string): { path: string; content: string } | null {
+function resolveCodexAgentSpec(
+  projectRoot: string,
+  role: string
+): { path: string; content: string } | null {
   const normalized = safeAgentName(role);
   const candidates = [
     path.join(projectRoot, '.codex', 'agents', `${normalized}.toml`),
     path.join(projectRoot, '.codex', 'agents', `${normalized.replace(/\//g, '__')}.toml`),
+    path.join(projectRoot, '_bmad', 'codex', 'agents', `${normalized}.toml`),
+    path.join(projectRoot, '_bmad', 'codex', 'agents', `${normalized.replace(/\//g, '__')}.toml`),
   ];
   for (const candidate of candidates) {
     const resolved = path.resolve(candidate);
-    const root = path.resolve(projectRoot, '.codex', 'agents');
-    if ((resolved === root || resolved.startsWith(`${root}${path.sep}`)) && fs.existsSync(resolved)) {
+    const roots = [
+      path.resolve(projectRoot, '.codex', 'agents'),
+      path.resolve(projectRoot, '_bmad', 'codex', 'agents'),
+    ];
+    if (
+      roots.some((root) => resolved === root || resolved.startsWith(`${root}${path.sep}`)) &&
+      fs.existsSync(resolved)
+    ) {
       return { path: resolved, content: fs.readFileSync(resolved, 'utf8') };
     }
   }
@@ -189,7 +203,9 @@ function buildPrompt(input: {
       ? `Loaded Codex agent spec: ${input.agentSpec.path}`
       : 'No Codex agent spec loaded.',
     input.agentSpec
-      ? ['--- Codex Agent TOML ---', input.agentSpec.content, '--- End Codex Agent TOML ---'].join('\n')
+      ? ['--- Codex Agent TOML ---', input.agentSpec.content, '--- End Codex Agent TOML ---'].join(
+          '\n'
+        )
       : '',
     `Read dispatch packet: ${input.packetPath}`,
     `Packet ID: ${input.packet.packetId}`,
@@ -233,7 +249,9 @@ function writeSmokeProof(projectRoot: string, relativePath: string, packet: Pack
 }
 
 function readTaskReport(taskReportPath: string): TaskReport {
-  const parsed = JSON.parse(readStrictUtf8JsonText(taskReportPath, { allowUtf8Bom: false })) as TaskReport;
+  const parsed = JSON.parse(
+    readStrictUtf8JsonText(taskReportPath, { allowUtf8Bom: false })
+  ) as TaskReport;
   return normalizeTaskReport(parsed);
 }
 
@@ -258,12 +276,7 @@ function normalizeTaskReport(report: TaskReport): TaskReport {
   const status = String(report.status);
   return {
     ...report,
-    status:
-      status === 'completed'
-        ? 'done'
-        : status === 'failed'
-          ? 'blocked'
-          : report.status,
+    status: status === 'completed' ? 'done' : status === 'failed' ? 'blocked' : report.status,
     filesChanged: Array.isArray(report.filesChanged) ? report.filesChanged : [],
     validationsRun: Array.isArray(report.validationsRun) ? report.validationsRun : [],
     evidence: Array.isArray(report.evidence) ? report.evidence : [],
@@ -291,11 +304,15 @@ function validateTaskReport(report: TaskReport, packet: Packet, scopes: string[]
 }
 
 function listGitVisibleFiles(projectRoot: string): string[] {
-  const result = spawnSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], {
-    cwd: projectRoot,
-    encoding: 'buffer',
-    shell: process.platform === 'win32',
-  });
+  const result = spawnSync(
+    'git',
+    ['ls-files', '--cached', '--others', '--exclude-standard', '-z'],
+    {
+      cwd: projectRoot,
+      encoding: 'buffer',
+      shell: process.platform === 'win32',
+    }
+  );
   if ((result.status ?? 1) !== 0) {
     return [];
   }
@@ -351,7 +368,11 @@ function diffFileSnapshots(before: Map<string, string>, after: Map<string, strin
   return [...changed].sort();
 }
 
-function isAdapterOwnedPath(projectRoot: string, candidate: string, ownedPaths: Array<string | null>): boolean {
+function isAdapterOwnedPath(
+  projectRoot: string,
+  candidate: string,
+  ownedPaths: Array<string | null>
+): boolean {
   const normalized = normalizePath(candidate);
   return ownedPaths.some((owned) => {
     if (!owned) return false;
@@ -454,7 +475,10 @@ export function runCodexWorkerAdapter(input: {
     };
   }
   const runtimeGovernance = resolveRuntimeGovernanceBlock(projectRoot);
-  if (runtimeGovernance.status === 'blocked' && !(input.smoke && input.allowPolicyFailureForSmoke)) {
+  if (
+    runtimeGovernance.status === 'blocked' &&
+    !(input.smoke && input.allowPolicyFailureForSmoke)
+  ) {
     const blockedReport: TaskReport = {
       packetId: packet.packetId,
       status: 'blocked',
@@ -502,7 +526,11 @@ export function runCodexWorkerAdapter(input: {
   let stdoutPath: string | null = null;
   let stderrPath: string | null = null;
   const allowCodexBinaryOverride = process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE === 'true';
-  if (!input.smoke && (input.codexBinary || process.env.CODEX_WORKER_ADAPTER_BIN) && !allowCodexBinaryOverride) {
+  if (
+    !input.smoke &&
+    (input.codexBinary || process.env.CODEX_WORKER_ADAPTER_BIN) &&
+    !allowCodexBinaryOverride
+  ) {
     const blockedReport: TaskReport = {
       packetId: packet.packetId,
       status: 'blocked',
@@ -606,8 +634,11 @@ export function runCodexWorkerAdapter(input: {
         evidence: ['codex did not produce task report'],
         downstreamContext: [packetExpectedDelta(packet)],
       };
-  const actualFilesChanged = diffFileSnapshots(beforeFileSnapshot, snapshotGitVisibleFiles(projectRoot))
-    .filter((file) =>
+  const actualFilesChanged = diffFileSnapshots(
+    beforeFileSnapshot,
+    snapshotGitVisibleFiles(projectRoot)
+  ).filter(
+    (file) =>
       !isAdapterOwnedPath(projectRoot, file, [
         taskReportPath,
         codexWritableTaskReportPath,
@@ -615,14 +646,16 @@ export function runCodexWorkerAdapter(input: {
         stdoutPath,
         stderrPath,
       ])
-    );
+  );
   if (!fs.existsSync(taskReportPath)) {
     writeTaskReport(taskReportPath, taskReport);
   } else {
     writeTaskReport(taskReportPath, taskReport);
   }
   const validationErrors = [
-    ...(taskReportStrictJsonError ? [`TaskReport strict JSON validation failed: ${taskReportStrictJsonError}`] : []),
+    ...(taskReportStrictJsonError
+      ? [`TaskReport strict JSON validation failed: ${taskReportStrictJsonError}`]
+      : []),
     ...validateTaskReport(taskReport, packet, scopes),
     ...actualFilesChanged
       .filter((changed) => !pathMatchesScope(changed, scopes))
@@ -678,14 +711,18 @@ export function main(argv: string[]): number {
   });
   const reportPath = path.resolve(
     args.reportPath ??
-      path.join(report.projectRoot, '_bmad-output', 'runtime', 'codex', 'worker-adapter-report.json')
+      path.join(
+        report.projectRoot,
+        '_bmad-output',
+        'runtime',
+        'codex',
+        'worker-adapter-report.json'
+      )
   );
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\n', 'utf8');
   console.log(JSON.stringify({ reportPath, ...report }, null, 2));
-  return report.exitCode === 0 && report.scopePassed && report.taskReport.status === 'done'
-    ? 0
-    : 1;
+  return report.exitCode === 0 && report.scopePassed && report.taskReport.status === 'done' ? 0 : 1;
 }
 
 function isDirectMainAgentCodexWorkerAdapterCli(entry: string | undefined): boolean {

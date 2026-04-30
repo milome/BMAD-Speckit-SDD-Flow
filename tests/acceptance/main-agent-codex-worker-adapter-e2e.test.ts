@@ -13,6 +13,24 @@ import {
   writeRuntimeContextRegistry,
 } from '../../scripts/runtime-context-registry';
 
+function writeTestCodexAgentSpec(
+  root: string,
+  agentsRoot: '.codex/agents' | '_bmad/codex/agents'
+): void {
+  fs.mkdirSync(path.join(root, agentsRoot), { recursive: true });
+  fs.writeFileSync(
+    path.join(root, agentsRoot, 'implementation-worker.toml'),
+    [
+      'name = "implementation-worker"',
+      'description = "Test implementation worker"',
+      'sandbox_mode = "workspace-write"',
+      'developer_instructions = """Follow BMAD implementation worker test instructions."""',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+}
+
 function prepareCodexRoot(): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-codex-worker-'));
   writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
@@ -27,18 +45,7 @@ function prepareCodexRoot(): string {
       runId: 'codex-worker-run',
     })
   );
-  fs.mkdirSync(path.join(root, '.codex', 'agents'), { recursive: true });
-  fs.writeFileSync(
-    path.join(root, '.codex', 'agents', 'implementation-worker.toml'),
-    [
-      'name = "implementation-worker"',
-      'description = "Test implementation worker"',
-      'sandbox_mode = "workspace-write"',
-      'developer_instructions = """Follow BMAD implementation worker test instructions."""',
-      '',
-    ].join('\n'),
-    'utf8'
-  );
+  writeTestCodexAgentSpec(root, '.codex/agents');
   return root;
 }
 
@@ -130,7 +137,9 @@ describe('main-agent codex worker adapter e2e', () => {
       expect(adapter.runtimeGovernanceStatus).toBe('blocked');
       expect(adapter.runtimeGovernanceError).toBeTruthy();
       expect(adapter.taskReport.status).toBe('blocked');
-      expect(adapter.taskReport.validationsRun).toContain('codex-worker-adapter-runtime-governance');
+      expect(adapter.taskReport.validationsRun).toContain(
+        'codex-worker-adapter-runtime-governance'
+      );
       expect(fs.existsSync(path.join(root, `src/codex/${instruction!.packetId}.md`))).toBe(false);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
@@ -148,18 +157,20 @@ describe('main-agent codex worker adapter e2e', () => {
         [
           "const fs = require('fs');",
           "const input = fs.readFileSync(0, 'utf8');",
-          "const reportPath = input.match(/write a JSON TaskReport to: (.+)/i)?.[1]?.trim();",
-          "const packetId = input.match(/Packet ID: (.+)/i)?.[1]?.trim();",
-          "if (!reportPath || !packetId) process.exit(2);",
+          'const reportPath = input.match(/write a JSON TaskReport to: (.+)/i)?.[1]?.trim();',
+          'const packetId = input.match(/Packet ID: (.+)/i)?.[1]?.trim();',
+          'if (!reportPath || !packetId) process.exit(2);',
           "fs.mkdirSync(require('path').dirname(reportPath), { recursive: true });",
           "fs.writeFileSync(reportPath, JSON.stringify({ packetId, status: 'done', filesChanged: [], validationsRun: ['fake-codex-exec'], evidence: ['fake-codex-task-report'], downstreamContext: ['fake codex exec completed'] }, null, 2) + '\\n', 'utf8');",
-          "process.exit(0);",
+          'process.exit(0);',
           '',
         ].join('\n'),
         'utf8'
       );
       const fakeCodexBin =
-        process.platform === 'win32' ? path.join(root, 'fake-codex.cmd') : path.join(root, 'fake-codex');
+        process.platform === 'win32'
+          ? path.join(root, 'fake-codex.cmd')
+          : path.join(root, 'fake-codex');
       fs.writeFileSync(
         fakeCodexBin,
         process.platform === 'win32'
@@ -266,6 +277,49 @@ describe('main-agent codex worker adapter e2e', () => {
       expect(adapter.taskReport.evidence).toContain(
         'missing codex agent spec for role=implementation-worker'
       );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('resolves canonical Codex agent specs when runtime .codex agents are not installed', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-codex-canonical-'));
+    try {
+      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+      writeRuntimeContext(
+        root,
+        defaultRuntimeContextFile({
+          flow: 'story',
+          stage: 'implement',
+          sourceMode: 'full_bmad',
+          contextScope: 'story',
+          storyId: 'S-codex-worker',
+          runId: 'codex-worker-run',
+        })
+      );
+      writeTestCodexAgentSpec(root, '_bmad/codex/agents');
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'story',
+        stage: 'implement',
+        host: 'claude',
+        hydratePacket: true,
+      });
+      const taskReportPath = path.join(root, 'canonical-agent-task-report.json');
+
+      const adapter = runCodexWorkerAdapter({
+        projectRoot: root,
+        packetPath: instruction!.packetPath,
+        taskReportPath,
+        smoke: true,
+      });
+
+      expect(adapter.exitCode).toBe(0);
+      expect(adapter.scopePassed).toBe(true);
+      expect(adapter.agentSpecPath).toContain(
+        path.join('_bmad', 'codex', 'agents', 'implementation-worker.toml')
+      );
+      expect(adapter.taskReport.status).toBe('done');
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
@@ -396,7 +450,10 @@ describe('main-agent codex worker adapter e2e', () => {
         null,
         2
       );
-      fs.writeFileSync(taskReportPath, Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(report, 'utf16le')]));
+      fs.writeFileSync(
+        taskReportPath,
+        Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(report, 'utf16le')])
+      );
 
       const adapter = runCodexWorkerAdapter({
         projectRoot: root,
@@ -429,20 +486,22 @@ describe('main-agent codex worker adapter e2e', () => {
           "const fs = require('fs');",
           "const path = require('path');",
           "const input = fs.readFileSync(0, 'utf8');",
-          "const reportPath = input.match(/write a JSON TaskReport to: (.+)/i)?.[1]?.trim();",
-          "const packetId = input.match(/Packet ID: (.+)/i)?.[1]?.trim();",
-          "if (!reportPath || !packetId) process.exit(2);",
-          "fs.mkdirSync(path.dirname(reportPath), { recursive: true });",
+          'const reportPath = input.match(/write a JSON TaskReport to: (.+)/i)?.[1]?.trim();',
+          'const packetId = input.match(/Packet ID: (.+)/i)?.[1]?.trim();',
+          'if (!reportPath || !packetId) process.exit(2);',
+          'fs.mkdirSync(path.dirname(reportPath), { recursive: true });',
           "fs.mkdirSync('outside', { recursive: true });",
           "fs.writeFileSync('outside/hidden.md', 'hidden out-of-scope write\\n', 'utf8');",
           "fs.writeFileSync(reportPath, JSON.stringify({ packetId, status: 'done', filesChanged: [], validationsRun: ['fake-codex-hidden-write'], evidence: ['reported clean'], downstreamContext: [] }, null, 2) + '\\n', 'utf8');",
-          "process.exit(0);",
+          'process.exit(0);',
           '',
         ].join('\n'),
         'utf8'
       );
       const fakeCodexBin =
-        process.platform === 'win32' ? path.join(root, 'fake-codex-hidden-write.cmd') : path.join(root, 'fake-codex-hidden-write');
+        process.platform === 'win32'
+          ? path.join(root, 'fake-codex-hidden-write.cmd')
+          : path.join(root, 'fake-codex-hidden-write');
       fs.writeFileSync(
         fakeCodexBin,
         process.platform === 'win32'
