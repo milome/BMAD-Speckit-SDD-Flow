@@ -30,6 +30,8 @@ jobs:
       NPM_REGISTRY: https://registry.npmjs.org
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Resolve release metadata
         id: meta
