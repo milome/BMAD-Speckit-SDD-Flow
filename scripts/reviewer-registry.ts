@@ -2,6 +2,8 @@ import {
   FACILITATOR_PRODUCT_IDENTITY,
   CLAUDE_REVIEWER_CANONICAL_SOURCE_PATH,
   CLAUDE_REVIEWER_RUNTIME_TARGET_PATH,
+  CODEX_REVIEWER_CANONICAL_SOURCE_PATH,
+  CODEX_REVIEWER_RUNTIME_TARGET_PATH,
   CURSOR_REVIEWER_CANONICAL_SOURCE_PATH,
   CURSOR_REVIEWER_RUNTIME_TARGET_PATH,
   REVIEWER_CLOSEOUT_ENVELOPE_FIELDS,
@@ -39,8 +41,8 @@ export { REVIEWER_ROLLOUT_GATE_VERSION } from './reviewer-rollout-gate';
 export const REVIEWER_REGISTRY_VERSION = 'reviewer_registry_v1' as const;
 export const REVIEWER_CONTRACT_PROJECTION_VERSION = 'reviewer_contract_projection_v1' as const;
 
-export type ReviewerHostId = 'cursor' | 'claude';
-export type ReviewerRouteTool = 'cursor-task' | 'mcp_task' | 'Agent';
+export type ReviewerHostId = 'cursor' | 'claude' | 'codex';
+export type ReviewerRouteTool = 'cursor-task' | 'mcp_task' | 'Agent' | 'codex';
 
 export interface ReviewerRoute {
   tool: ReviewerRouteTool;
@@ -218,6 +220,22 @@ function createRegistration(
         },
         governance,
       },
+      codex: {
+        preferredRoute: {
+          tool: 'codex',
+          subtypeOrExecutor: 'worker:audit',
+        },
+        fallbackRoute: {
+          tool: 'codex',
+          subtypeOrExecutor: 'worker:audit',
+        },
+        closeout: {
+          contractVersion: REVIEW_HOST_CLOSEOUT_V1_VERSION,
+          runner: REVIEW_HOST_CLOSEOUT_RUNNER,
+          stage,
+        },
+        governance,
+      },
     },
   };
 }
@@ -341,6 +359,14 @@ const REVIEWER_HOST_ROUTE_SUMMARY: Record<ReviewerHostId, ReviewerHostRouteSumma
     fallbackReason:
       'Use Agent/general-purpose only when Agent/code-reviewer is unavailable, while preserving the shared reviewer contract and runAuditorHost closeout.',
   },
+  codex: {
+    carrierSourcePath: CODEX_REVIEWER_CANONICAL_SOURCE_PATH,
+    runtimeTargetPath: CODEX_REVIEWER_RUNTIME_TARGET_PATH,
+    preferredRoute: REVIEWER_REGISTRY.story_audit.hosts.codex.preferredRoute,
+    fallbackRoute: REVIEWER_REGISTRY.story_audit.hosts.codex.fallbackRoute,
+    fallbackReason:
+      'Codex uses the no-hooks worker adapter for audit packets; flat or no-op reviewer fallback is disabled.',
+  },
 };
 
 export function listReviewerRegistrations(): ReviewerRegistration[] {
@@ -384,9 +410,9 @@ export function buildReviewerRouteExplainability(input?: {
     fallbackStatus: 'fallback_ready',
     isomorphismMaturity: 'projection_wired',
     complexitySource:
-      'Dual-host carrier parity is in place, but legacy skill narrative cleanup and proof expansion still remain before rollout.',
+      'Tri-host carrier parity is in place; Codex closeout and scoring proofs are required before rollout.',
     remainingBlocker:
-      'Complete parity proof, rollback proof, Codex no-op proof, and rollout gate before declaring full isomorphism.',
+      'Complete parity proof, rollback proof, Codex parity, Codex closeout, Codex scoring, and rollout gate before declaring full isomorphism.',
     supportedProfiles: REVIEWER_PROFILES,
     requiredRolloutProofs: REVIEWER_REQUIRED_ROLLOUT_PROOFS,
     compatibilityGuards: REVIEWER_COMPATIBILITY_GUARDS,

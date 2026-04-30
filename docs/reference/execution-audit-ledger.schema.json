@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/execution-audit-ledger.schema.json",
+  "title": "Execution Audit Ledger",
+  "description": "Optional auxiliary ledger for execution-time task audit consistency checks. This schema is generic and must not be tied to TASKS_v1 or any specific task set name.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "ledgerType",
+    "runId",
+    "generatedAt",
+    "items"
+  ],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "ledgerType": {
+      "type": "string",
+      "const": "execution_audit"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "taskSetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/item"
+      }
+    }
+  },
+  "$defs": {
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "taskId",
+        "status",
+        "updatedAt",
+        "evidenceRefs"
+      ],
+      "properties": {
+        "taskId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "todo",
+            "in_progress",
+            "pass",
+            "partial",
+            "fail",
+            "blocked"
+          ]
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "dependsOn": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

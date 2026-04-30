@@ -25,15 +25,15 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 - `project_key` = `NOKEY`
 - `story_location` = `{implementation_artifacts}`
 - `story_location_absolute` = `{implementation_artifacts}`
-- `epics_location` = `{planning_artifacts}`
-- `epics_pattern` = `*epic*.md`
+- `epics_location` = `{planning_artifacts}/{branch}`
+- `epics_pattern` = `epics.md`
 - `status_file` = `{implementation_artifacts}/sprint-status.yaml`
 
 ### Input Files
 
 | Input | Path | Load Strategy |
 |-------|------|---------------|
-| Epics | `{planning_artifacts}/*epic*.md` (whole) or `{planning_artifacts}/*epic*/*.md` (sharded) | FULL_LOAD |
+| Epics | `{planning_artifacts}/{branch}/epics.md` (branch-scoped whole document) | FULL_LOAD |
 
 ### Context
 
@@ -49,8 +49,8 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 
 **Epic Discovery Process:**
 
-1. **Search for whole document first** - Look for `epics.md`, `bmm-epics.md`, or any `*epic*.md` file
-2. **Check for sharded version** - If whole document not found, look for `epics/index.md`
+1. **Search for branch-scoped whole document first** - Look for `{planning_artifacts}/{branch}/epics.md`
+2. **Check for branch-scoped sharded version** - If whole document not found, look for `{planning_artifacts}/{branch}/epics/index.md`
 3. **If sharded version found**:
    - Read `index.md` to understand the document structure
    - Read ALL epic section files listed in the index (e.g., `epic-1.md`, `epic-2.md`, etc.)

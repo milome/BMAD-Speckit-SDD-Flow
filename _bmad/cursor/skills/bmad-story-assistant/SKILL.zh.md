@@ -935,7 +935,7 @@ elif story_count >= 3:
 
 ### 3.2 主 Agent 职责
 
-**主 Agent 必须执行的步骤**：1 推导 epic_slug（从 `_bmad-output/planning-artifacts/epics.md` 中 `### Epic N：Title` 的 Title 转 kebab-case，或从 `_bmad-output/implementation-artifacts/epic-{N}-*/` 已有目录名解析）→ 2 准备 prompt（将模板 STORY-A3-DEV 整段复制并替换占位符 epic_num、story_num、epic_slug、slug、project-root）→ 3 执行发起前自检清单 → 4 输出自检结果 → 5 发起子任务。**禁止**：不得在未完成步骤 3、4 的情况下执行步骤 5；不得省略 epic_slug 占位符，否则子代理会创建无 slug 的 specs/epic-N/ 路径。
+**主 Agent 必须执行的步骤**：1 推导 epic_slug（从 `_bmad-output/planning-artifacts/{branch}/epics.md` 中 `### Epic N：Title` 的 Title 转 kebab-case，或从 `_bmad-output/implementation-artifacts/epic-{N}-*/` 已有目录名解析）→ 2 准备 prompt（将模板 STORY-A3-DEV 整段复制并替换占位符 epic_num、story_num、epic_slug、slug、project-root）→ 3 执行发起前自检清单 → 4 输出自检结果 → 5 发起子任务。**禁止**：不得在未完成步骤 3、4 的情况下执行步骤 5；不得省略 epic_slug 占位符，否则子代理会创建无 slug 的 specs/epic-N/ 路径。
 
 - **仅负责**：发起 mcp_task、传入 BUGFIX/TASKS 文档路径、收集 subagent 输出。
 - **禁止**：主 Agent 直接对生产代码执行 `search_replace` 或 `write`。
@@ -968,7 +968,7 @@ prompt: |
   1. 验证 spec-E{epic_num}-S{story_num}.md 存在且已通过审计
      - 检查路径: specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/spec-E{epic_num}-S{story_num}.md
      - 必须包含审计标记: <!-- AUDIT: PASSED by code-reviewer -->
-     - **若 spec 目录不存在**：须先创建 specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/，epic_slug 从 _bmad-output/planning-artifacts/epics.md 中 `### Epic {epic_num}：Title` 的 Title 转 kebab-case 推导，禁止使用 specs/epic-{epic_num}/ 无 slug 路径
+     - **若 spec 目录不存在**：须先创建 specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/，epic_slug 从 _bmad-output/planning-artifacts/{branch}/epics.md 中 `### Epic {epic_num}：Title` 的 Title 转 kebab-case 推导，禁止使用 specs/epic-{epic_num}/ 无 slug 路径
 
   2. 验证 plan-E{epic_num}-S{story_num}.md 存在且已通过审计
      - 检查路径: specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/plan-E{epic_num}-S{story_num}.md

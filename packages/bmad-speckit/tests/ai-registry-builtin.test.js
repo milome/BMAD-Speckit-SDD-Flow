@@ -63,11 +63,14 @@ describe('ai-registry-builtin (Story 12.1 T2)', () => {
     assert.strictEqual(e.configTemplate.commandsDir, '.shai/commands');
   });
 
-  it('codex uses .codex/commands and .codex/config.toml', () => {
+  it('codex uses .codex commands, agents, skills, and protocols without config.toml', () => {
     const e = builtin.find((x) => x.id === 'codex');
     assert.ok(e, 'codex not found');
     assert.strictEqual(e.configTemplate.commandsDir, '.codex/commands');
-    assert.strictEqual(e.configTemplate.configDir, '.codex/config.toml');
+    assert.strictEqual(e.configTemplate.agentsDir, '.codex/agents');
+    assert.strictEqual(e.configTemplate.skillsDir, '.codex/skills');
+    assert.strictEqual(e.configTemplate.protocolsDir, '.codex/protocols');
+    assert.strictEqual(e.configTemplate.configDir, undefined);
   });
 
   it('commandsDir or rulesDir at least one (condition) - except cody/tabnine per spec §4.3', () => {

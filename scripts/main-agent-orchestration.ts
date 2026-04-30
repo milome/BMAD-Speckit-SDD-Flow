@@ -12,6 +12,7 @@ import {
   createResumePacket,
   packetArtifactPath,
   resolveDispatchRoute,
+  type OrchestrationHost,
 } from './orchestration-dispatch-contract';
 import {
   claimPendingPacket,
@@ -27,15 +28,23 @@ import {
   type OrchestrationState,
 } from './orchestration-state';
 import { readRuntimeContext, type RuntimeContextFile } from './runtime-context';
+import { loadPolicyContextFromRegistry } from './emit-runtime-policy';
 import {
   readRegistryOrDefault,
   type ReviewerLatestCloseoutRecord,
 } from './runtime-context-registry';
+import { runAdaptiveIntakeGovernanceGate } from './adaptive-intake-governance-gate';
+import { runCodexWorkerAdapter } from './main-agent-codex-worker-adapter';
+import { applyLongRunPolicyToState } from './long-run-runtime-policy';
 import type {
   ImplementationEntryDecision,
   ImplementationEntryGate,
   RuntimeFlowId,
 } from './runtime-governance';
+import {
+  readUserStoryMappingIndexOrDefault,
+  selectBestMappingForRuntimeContext,
+} from './user-story-mapping';
 import { canMainAgentContinue } from './continue-state-contract';
 import { buildReadinessDriftProjection } from '../packages/scoring/governance/readiness-drift';
 import { loadAndDedupeRecords } from '../packages/scoring/query/loader';
@@ -72,11 +81,7 @@ export interface MainAgentOrchestrationSurface {
   orchestrationStatePath: string | null;
   orchestrationState: OrchestrationState | null;
   pendingPacketStatus: MainAgentPendingPacketStatus;
-  pendingPacket:
-    | RecommendationPacket
-    | ExecutionPacket
-    | ResumePacket
-    | null;
+  pendingPacket: RecommendationPacket | ExecutionPacket | ResumePacket | null;
   fourSignal: OrchestrationState['fourSignal'] | null;
   latestGate:
     | OrchestrationState['latestGate']
@@ -98,7 +103,7 @@ export interface MainAgentOrchestrationSurface {
 export interface MainAgentDispatchInstruction {
   flow: RuntimeFlowId;
   stage: string;
-  host: 'cursor' | 'claude';
+  host: OrchestrationHost;
   nextAction: string;
   taskType: 'implement' | 'audit' | 'remediate' | 'document';
   route: DispatchRoute;
@@ -110,7 +115,33 @@ export interface MainAgentDispatchInstruction {
   expectedDelta: string;
 }
 
-function deriveNextActionFromTaskType(taskType: 'implement' | 'audit' | 'remediate' | 'document', stage: string): OrchestrationNextAction {
+export interface MainAgentRunLoopResult {
+  runId: string;
+  status: 'completed' | 'blocked';
+  steps: Array<{
+    step: string;
+    status: 'pass' | 'skip' | 'fail';
+    summary: string;
+  }>;
+  dispatchInstruction: MainAgentDispatchInstruction | null;
+  taskReport: TaskReport | null;
+  finalSurface: MainAgentOrchestrationSurface;
+}
+
+export interface MainAgentRunLoopExecutorContext {
+  projectRoot: string;
+  instruction: MainAgentDispatchInstruction;
+  args: Record<string, string | undefined>;
+}
+
+export type MainAgentRunLoopExecutor = (
+  context: MainAgentRunLoopExecutorContext
+) => TaskReport | null;
+
+function deriveNextActionFromTaskType(
+  taskType: 'implement' | 'audit' | 'remediate' | 'document',
+  stage: string
+): OrchestrationNextAction {
   switch (taskType) {
     case 'implement':
       return 'dispatch_review';
@@ -177,7 +208,10 @@ function loadRuntimeContextForMainAgent(
     return null;
   }
   try {
-    return readRuntimeContext(input.projectRoot, input.runtimeContextPath);
+    if (input.runtimeContextPath) {
+      return readRuntimeContext(input.projectRoot, input.runtimeContextPath);
+    }
+    return loadPolicyContextFromRegistry(input.projectRoot).runtimeContext;
   } catch {
     return null;
   }
@@ -197,7 +231,38 @@ function listScopedOrchestrationStatePaths(projectRoot?: string): string[] {
     .map((file) => path.join(dir, file));
 }
 
-function resolveScopedOrchestrationState(projectRoot: string | undefined, runtimeContext: Partial<RuntimeContextFile> | null): {
+function mergeAllowedWriteScope(base: string[], extras: string[]): string[] {
+  return Array.from(new Set([...base, ...extras]));
+}
+
+function resolveMappedAllowedWriteScope(
+  projectRoot: string,
+  runtimeContext: Partial<RuntimeContextFile> | null,
+  flow: RuntimeFlowId,
+  taskType: 'implement' | 'audit' | 'remediate' | 'document'
+): string[] | null {
+  const mapping = selectBestMappingForRuntimeContext(
+    readUserStoryMappingIndexOrDefault(projectRoot),
+    runtimeContext,
+    flow
+  );
+  if (!mapping) {
+    return null;
+  }
+  if (taskType === 'audit') {
+    return mergeAllowedWriteScope(mapping.allowedWriteScope, [
+      'docs/**',
+      '_bmad-output/**',
+      'specs/**',
+    ]);
+  }
+  return mapping.allowedWriteScope;
+}
+
+function resolveScopedOrchestrationState(
+  projectRoot: string | undefined,
+  runtimeContext: Partial<RuntimeContextFile> | null
+): {
   sessionId: string | null;
   statePath: string | null;
   state: OrchestrationState | null;
@@ -306,7 +371,11 @@ function normalizePendingPacketStatus(
   if (!state?.pendingPacket) {
     return 'none';
   }
-  if (!packetPayload && state.pendingPacket.packetPath && !fs.existsSync(state.pendingPacket.packetPath)) {
+  if (
+    !packetPayload &&
+    state.pendingPacket.packetPath &&
+    !fs.existsSync(state.pendingPacket.packetPath)
+  ) {
     return 'missing_packet_file';
   }
   return state.pendingPacket.status;
@@ -345,11 +414,27 @@ function defaultPacketRole(taskType: 'implement' | 'audit' | 'remediate' | 'docu
   }
 }
 
+function resolveMainAgentHost(
+  projectRoot: string | undefined,
+  explicitHost: OrchestrationHost | undefined,
+  surface?: MainAgentOrchestrationSurface | null
+): OrchestrationHost {
+  if (explicitHost) {
+    return explicitHost;
+  }
+  if (surface?.orchestrationState?.host) {
+    return surface.orchestrationState.host;
+  }
+  const root = projectRoot ?? process.cwd();
+  return readGovernanceRemediationConfig(root).primaryHost === 'claude' ? 'claude' : 'cursor';
+}
+
 function taskTypeFromNextAction(
   nextAction: string | null
 ): 'implement' | 'audit' | 'remediate' | 'document' | null {
   switch (nextAction) {
     case 'dispatch_review':
+    case 'rerun_gate':
       return 'audit';
     case 'dispatch_remediation':
       return 'remediate';
@@ -445,10 +530,7 @@ function resolveImplementationEntryGateFromRegistry(
   runtimeContext: Partial<RuntimeContextFile> | null,
   flow: RuntimeFlowId
 ): ImplementationEntryGate | null {
-  if (
-    !projectRoot ||
-    (flow !== 'story' && flow !== 'bugfix' && flow !== 'standalone_tasks')
-  ) {
+  if (!projectRoot || (flow !== 'story' && flow !== 'bugfix' && flow !== 'standalone_tasks')) {
     return null;
   }
 
@@ -568,8 +650,7 @@ function deriveNextActionFromSurface(input: {
   ) {
     return {
       nextAction: input.state.nextAction,
-      ready:
-        input.state.nextAction !== 'await_user' && input.state.nextAction !== 'blocked',
+      ready: input.state.nextAction !== 'await_user' && input.state.nextAction !== 'blocked',
       source: 'orchestration_state',
     };
   }
@@ -605,15 +686,11 @@ function deriveNextActionFromSurface(input: {
   return { nextAction: 'dispatch_implement', ready: true, source: 'implementation_entry_gate' };
 }
 
-function inferLatestGateFromState(
-  state: OrchestrationState | null
-):
-  | {
-      gateId: string;
-      decision: 'pass' | 'auto_repairable_block' | 'true_blocker' | 'reroute';
-      reason: string;
-    }
-  | null {
+function inferLatestGateFromState(state: OrchestrationState | null): {
+  gateId: string;
+  decision: 'pass' | 'auto_repairable_block' | 'true_blocker' | 'reroute';
+  reason: string;
+} | null {
   if (!state) {
     return null;
   }
@@ -631,7 +708,11 @@ function inferLatestGateFromState(
       reason: 'orchestration state currently blocks continuation',
     };
   }
-  if (state.nextAction === 'dispatch_implement' || state.nextAction === 'dispatch_review' || state.nextAction === 'run_closeout') {
+  if (
+    state.nextAction === 'dispatch_implement' ||
+    state.nextAction === 'dispatch_review' ||
+    state.nextAction === 'run_closeout'
+  ) {
     return {
       gateId: 'implementation-readiness',
       decision: 'pass',
@@ -706,19 +787,35 @@ export function resolveMainAgentOrchestrationSurface(
   };
 }
 
-export function claimMainAgentPendingPacket(projectRoot: string, sessionId: string, owner = 'main-agent'): OrchestrationState {
+export function claimMainAgentPendingPacket(
+  projectRoot: string,
+  sessionId: string,
+  owner = 'main-agent'
+): OrchestrationState {
   return claimPendingPacket(projectRoot, sessionId, owner);
 }
 
-export function markMainAgentPacketDispatched(projectRoot: string, sessionId: string, packetId: string): OrchestrationState {
+export function markMainAgentPacketDispatched(
+  projectRoot: string,
+  sessionId: string,
+  packetId: string
+): OrchestrationState {
   return markPendingPacketDispatched(projectRoot, sessionId, packetId);
 }
 
-export function completeMainAgentPendingPacket(projectRoot: string, sessionId: string, packetId: string): OrchestrationState {
+export function completeMainAgentPendingPacket(
+  projectRoot: string,
+  sessionId: string,
+  packetId: string
+): OrchestrationState {
   return completePendingPacket(projectRoot, sessionId, packetId);
 }
 
-export function invalidateMainAgentPendingPacket(projectRoot: string, sessionId: string, packetId: string): OrchestrationState {
+export function invalidateMainAgentPendingPacket(
+  projectRoot: string,
+  sessionId: string,
+  packetId: string
+): OrchestrationState {
   return invalidatePendingPacket(projectRoot, sessionId, packetId);
 }
 
@@ -782,11 +879,17 @@ export function ingestMainAgentTaskReport(
 }
 
 export function ensureMainAgentDispatchPacket(
-  input: ResolveMainAgentOrchestrationInput
+  input: ResolveMainAgentOrchestrationInput & { host?: OrchestrationHost }
 ): MainAgentOrchestrationSurface {
   const runtimeContext = loadRuntimeContextForMainAgent(input);
-  const currentSurface = resolveMainAgentOrchestrationSurface(input);
-  if (currentSurface.pendingPacketStatus !== 'none' && currentSurface.pendingPacketStatus !== 'missing_packet_file') {
+  const resolvedInput = runtimeContext ? { ...input, runtimeContext } : input;
+  const currentSurface = resolveMainAgentOrchestrationSurface(resolvedInput);
+  if (
+    currentSurface.pendingPacketStatus !== 'none' &&
+    currentSurface.pendingPacketStatus !== 'missing_packet_file' &&
+    currentSurface.pendingPacketStatus !== 'completed' &&
+    currentSurface.pendingPacketStatus !== 'invalidated'
+  ) {
     return currentSurface;
   }
   if (!input.projectRoot) {
@@ -800,6 +903,7 @@ export function ensureMainAgentDispatchPacket(
 
   const sessionId =
     currentSurface.sessionId ?? deriveSessionIdFromRuntimeContext(input.flow, runtimeContext);
+  const host = resolveMainAgentHost(input.projectRoot, input.host, currentSurface);
   const packetId = `${taskType}-${Date.now()}`;
   const role = defaultPacketRole(taskType);
   const inputArtifacts = [
@@ -809,9 +913,10 @@ export function ensureMainAgentDispatchPacket(
     normalizeText(currentSurface.closeout?.reportPath),
   ].filter(Boolean);
   const allowedWriteScope =
-    taskType === 'audit'
+    resolveMappedAllowedWriteScope(input.projectRoot, runtimeContext, input.flow, taskType) ??
+    (taskType === 'audit'
       ? ['docs/**', '_bmad-output/**', 'specs/**']
-      : ['src/**', 'tests/**', 'docs/**', '_bmad-output/**'];
+      : ['src/**', 'tests/**', 'docs/**', '_bmad-output/**']);
 
   const packet =
     currentSurface.orchestrationState?.originalExecutionPacketId != null
@@ -843,14 +948,14 @@ export function ensureMainAgentDispatchPacket(
           stopConditions: ['true blocker detected', 'scope must widen'],
         });
 
-  const packetKind: PacketKind =
-    'originalExecutionPacketId' in packet ? 'resume' : 'execution';
+  const packetKind: PacketKind = 'originalExecutionPacketId' in packet ? 'resume' : 'execution';
   const packetPath = writePacketFile(input.projectRoot, sessionId, packetId, packet);
 
   let writtenState: OrchestrationState;
   if (currentSurface.orchestrationState) {
     updateOrchestrationState(input.projectRoot, sessionId, (current) => ({
       ...current,
+      host,
       pendingPacket: {
         packetId,
         packetPath,
@@ -877,13 +982,12 @@ export function ensureMainAgentDispatchPacket(
     writtenState = {
       version: 1,
       sessionId,
-      host: currentSurface.closeout?.runner === 'runAuditorHost'
-        ? (readGovernanceRemediationConfig(input.projectRoot).primaryHost === 'claude' ? 'claude' : 'cursor')
-        : (readGovernanceRemediationConfig(input.projectRoot).primaryHost === 'claude' ? 'claude' : 'cursor'),
+      host,
       flow: input.flow as 'story' | 'bugfix' | 'standalone_tasks',
       currentPhase: input.stage as OrchestrationState['currentPhase'],
       nextAction:
-        (currentSurface.mainAgentNextAction as OrchestrationState['nextAction']) ?? 'dispatch_implement',
+        (currentSurface.mainAgentNextAction as OrchestrationState['nextAction']) ??
+        'dispatch_implement',
       pendingPacket: {
         packetId,
         packetPath,
@@ -915,7 +1019,7 @@ export function ensureMainAgentDispatchPacket(
     fs.writeFileSync(file, JSON.stringify(writtenState, null, 2) + '\n', 'utf8');
   }
 
-  const refreshed = resolveMainAgentOrchestrationSurface(input);
+  const refreshed = resolveMainAgentOrchestrationSurface(resolvedInput);
   if (refreshed.pendingPacketStatus !== 'none') {
     return refreshed;
   }
@@ -923,7 +1027,10 @@ export function ensureMainAgentDispatchPacket(
   return {
     source: 'orchestration_state',
     sessionId,
-    orchestrationStatePath: path.join(orchestrationStateDir(input.projectRoot), `${sessionId}.json`),
+    orchestrationStatePath: path.join(
+      orchestrationStateDir(input.projectRoot),
+      `${sessionId}.json`
+    ),
     orchestrationState: writtenState,
     pendingPacketStatus: 'ready_for_main_agent',
     pendingPacket: packet,
@@ -941,11 +1048,13 @@ export function ensureMainAgentDispatchPacket(
 
 export function buildMainAgentDispatchInstruction(
   input: ResolveMainAgentOrchestrationInput & {
-    host?: 'cursor' | 'claude';
+    host?: OrchestrationHost;
     hydratePacket?: boolean;
   }
 ): MainAgentDispatchInstruction | null {
-  const surface = input.hydratePacket ? ensureMainAgentDispatchPacket(input) : resolveMainAgentOrchestrationSurface(input);
+  const surface = input.hydratePacket
+    ? ensureMainAgentDispatchPacket(input)
+    : resolveMainAgentOrchestrationSurface(input);
   const nextAction = surface.mainAgentNextAction;
   const taskType = taskTypeFromNextAction(nextAction);
   if (!nextAction || !taskType || !surface.mainAgentReady) {
@@ -955,12 +1064,7 @@ export function buildMainAgentDispatchInstruction(
     return null;
   }
 
-  const host =
-    input.host ??
-    surface.orchestrationState?.host ??
-    (readGovernanceRemediationConfig(input.projectRoot ?? process.cwd()).primaryHost === 'claude'
-      ? 'claude'
-      : 'cursor');
+  const host = resolveMainAgentHost(input.projectRoot, input.host, surface);
   const route = resolveDispatchRoute(host, taskType);
   return {
     flow: input.flow,
@@ -977,13 +1081,15 @@ export function buildMainAgentDispatchInstruction(
       (surface.pendingPacket as ExecutionPacket | RecommendationPacket | ResumePacket).role ??
       (surface.pendingPacket as RecommendationPacket).recommendedRole ??
       defaultPacketRole(taskType),
-    expectedDelta: (surface.pendingPacket as ExecutionPacket | ResumePacket).expectedDelta ??
+    expectedDelta:
+      (surface.pendingPacket as ExecutionPacket | ResumePacket).expectedDelta ??
       (surface.pendingPacket as RecommendationPacket).expectedDelta,
   };
 }
 
 function parseArgs(argv: string[]): Record<string, string | undefined> {
   const out: Record<string, string | undefined> = {};
+  const positional: string[] = [];
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
     if (token === '--cwd' && argv[index + 1]) {
@@ -994,14 +1100,41 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.stage = argv[++index];
     } else if (token === '--action' && argv[index + 1]) {
       out.action = argv[++index];
+    } else if ((token === '--host' || token === '--hostKind') && argv[index + 1]) {
+      out.host = argv[++index];
     } else if (token === '--sessionId' && argv[index + 1]) {
       out.sessionId = argv[++index];
     } else if (token === '--packetId' && argv[index + 1]) {
       out.packetId = argv[++index];
     } else if (token === '--owner' && argv[index + 1]) {
       out.owner = argv[++index];
+    } else if (token === '--reportStatus' && argv[index + 1]) {
+      out.reportStatus = argv[++index];
+    } else if (token === '--reportEvidence' && argv[index + 1]) {
+      out.reportEvidence = argv[++index];
+    } else if (token === '--taskReportPath' && argv[index + 1]) {
+      out.taskReportPath = argv[++index];
+    } else if (token === '--codexSmoke') {
+      out.codexSmoke = 'true';
+    } else if (token === '--codexSmokeTargetPath' && argv[index + 1]) {
+      out.codexSmokeTargetPath = argv[++index];
+    } else if (token === '--codexTimeoutMs' && argv[index + 1]) {
+      out.codexTimeoutMs = argv[++index];
+    } else if (token === '--filesChanged' && argv[index + 1]) {
+      out.filesChanged = argv[++index];
+    } else if (token === '--validationsRun' && argv[index + 1]) {
+      out.validationsRun = argv[++index];
+    } else if (token === '--input' && argv[index + 1]) {
+      out.input = argv[++index];
+    } else if (token === '--payload' && argv[index + 1]) {
+      out.payload = argv[++index];
+    } else if (token === '--apply') {
+      out.apply = 'true';
+    } else if (!token.startsWith('--')) {
+      positional.push(token);
     }
   }
+  if (!out.cwd && positional[0]) out.cwd = positional[0];
   return out;
 }
 
@@ -1014,7 +1147,7 @@ function resolveFlowAndStage(
   root: string,
   args: Record<string, string | undefined>
 ): { flow: RuntimeFlowId; stage: string } {
-  const runtimeContext = readRuntimeContext(root);
+  const runtimeContext = loadPolicyContextFromRegistry(root).runtimeContext;
   const flow = normalizeText(args.flow) || runtimeContext.flow;
   const stage = normalizeText(args.stage) || runtimeContext.stage;
   return {
@@ -1023,29 +1156,345 @@ function resolveFlowAndStage(
   };
 }
 
+function parseOrchestrationHost(value: string | undefined): OrchestrationHost | undefined {
+  const normalized = normalizeText(value);
+  if (normalized === 'cursor' || normalized === 'claude' || normalized === 'codex') {
+    return normalized;
+  }
+  return undefined;
+}
+
 function resolveSessionAndPacketFromSurface(
   surface: MainAgentOrchestrationSurface,
   args: Record<string, string | undefined>
 ): { sessionId: string; packetId: string } {
   const sessionId = normalizeText(args.sessionId) || normalizeText(surface.sessionId);
   const packetId =
-    normalizeText(args.packetId) || normalizeText(surface.orchestrationState?.pendingPacket?.packetId);
+    normalizeText(args.packetId) ||
+    normalizeText(surface.orchestrationState?.pendingPacket?.packetId);
   if (!sessionId || !packetId) {
     throw new Error('sessionId and packetId are required for packet lifecycle actions');
   }
   return { sessionId, packetId };
 }
 
+function parseTaskReportStatus(value: string | undefined): TaskReport['status'] {
+  const normalized = normalizeText(value);
+  if (normalized === 'blocked' || normalized === 'partial') {
+    return normalized;
+  }
+  return 'done';
+}
+
+function validateTaskReportShape(value: unknown): value is TaskReport {
+  const report = value as Partial<TaskReport>;
+  return (
+    typeof report?.packetId === 'string' &&
+    (report.status === 'done' || report.status === 'blocked' || report.status === 'partial') &&
+    Array.isArray(report.filesChanged) &&
+    Array.isArray(report.validationsRun) &&
+    Array.isArray(report.evidence) &&
+    Array.isArray(report.downstreamContext)
+  );
+}
+
+function readTaskReportFromFile(reportPath: string, packetId: string): TaskReport {
+  const resolved = path.resolve(reportPath);
+  const parsed = JSON.parse(fs.readFileSync(resolved, 'utf8')) as unknown;
+  if (!validateTaskReportShape(parsed)) {
+    throw new Error(`Invalid task report shape: ${resolved}`);
+  }
+  if (parsed.packetId !== packetId) {
+    throw new Error(`Task report packetId mismatch: expected ${packetId}, got ${parsed.packetId}`);
+  }
+  return parsed;
+}
+
+export function writeMainAgentRunLoopTaskReport(
+  projectRoot: string,
+  instruction: MainAgentDispatchInstruction,
+  args: Record<string, string | undefined> = {}
+): string {
+  const evidence = normalizeText(args.reportEvidence)
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const report: TaskReport = {
+    packetId: instruction.packetId,
+    status: parseTaskReportStatus(args.reportStatus),
+    filesChanged: normalizeText(args.filesChanged)
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean),
+    validationsRun: normalizeText(args.validationsRun)
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean),
+    evidence: evidence.length > 0 ? evidence : [instruction.packetPath],
+    downstreamContext: [instruction.expectedDelta],
+  };
+  if (report.validationsRun.length === 0) {
+    report.validationsRun.push('main-agent:run-loop-task-report');
+  }
+  const reportPath = path.resolve(
+    args.taskReportPath ??
+      path.join(
+        projectRoot,
+        '_bmad-output',
+        'runtime',
+        'governance',
+        'task-reports',
+        instruction.sessionId,
+        `${instruction.packetId}.json`
+      )
+  );
+  fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+  fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\n', 'utf8');
+  return reportPath;
+}
+
+export function runMainAgentAutomaticLoop(input: {
+  projectRoot: string;
+  flow: RuntimeFlowId;
+  stage: string;
+  host?: OrchestrationHost;
+  args?: Record<string, string | undefined>;
+  executor?: MainAgentRunLoopExecutor;
+}): MainAgentRunLoopResult {
+  const args = input.args ?? {};
+  const steps: MainAgentRunLoopResult['steps'] = [];
+  const runtimeContext = loadRuntimeContextForMainAgent({
+    projectRoot: input.projectRoot,
+    flow: input.flow,
+    stage: input.stage,
+  });
+  const surfaceInput = {
+    projectRoot: input.projectRoot,
+    flow: input.flow,
+    stage: input.stage,
+    ...(runtimeContext ? { runtimeContext } : {}),
+  };
+  const initialSurface = resolveMainAgentOrchestrationSurface({
+    ...surfaceInput,
+  });
+  steps.push({
+    step: 'inspect.initial',
+    status: 'pass',
+    summary: `nextAction=${initialSurface.mainAgentNextAction ?? 'none'}, pending=${initialSurface.pendingPacketStatus}`,
+  });
+
+  const instruction = buildMainAgentDispatchInstruction({
+    ...surfaceInput,
+    host: input.host,
+    hydratePacket: true,
+  });
+  if (!instruction) {
+    const finalSurface = resolveMainAgentOrchestrationSurface({
+      ...surfaceInput,
+    });
+    return {
+      runId: `main-agent-run-loop-${Date.now()}`,
+      status: 'blocked',
+      steps: [
+        ...steps,
+        {
+          step: 'dispatch-plan',
+          status: 'fail',
+          summary: 'no dispatch instruction available',
+        },
+      ],
+      dispatchInstruction: null,
+      taskReport: null,
+      finalSurface,
+    };
+  }
+  steps.push({
+    step: 'dispatch-plan',
+    status: 'pass',
+    summary: `packet=${instruction.packetId}, taskType=${instruction.taskType}`,
+  });
+
+  claimMainAgentPendingPacket(input.projectRoot, instruction.sessionId, 'main-agent-run-loop');
+  updateOrchestrationState(input.projectRoot, instruction.sessionId, (current) =>
+    applyLongRunPolicyToState(current, {
+      nowIso: new Date().toISOString(),
+      activeHostMode: instruction.host,
+    })
+  );
+  steps.push({
+    step: 'claim',
+    status: 'pass',
+    summary: `owner=main-agent-run-loop`,
+  });
+  steps.push({
+    step: 'long-run-policy.attach',
+    status: 'pass',
+    summary: `host=${instruction.host}`,
+  });
+
+  markMainAgentPacketDispatched(input.projectRoot, instruction.sessionId, instruction.packetId);
+  steps.push({
+    step: 'dispatch',
+    status: 'pass',
+    summary: `route=${instruction.route.tool}:${instruction.route.subtype}`,
+  });
+
+  let taskReport: TaskReport | null = null;
+  try {
+    taskReport = input.executor?.({
+      projectRoot: input.projectRoot,
+      instruction,
+      args,
+    }) ?? null;
+    const taskReportPath = normalizeText(args.taskReportPath);
+    if (!taskReport && taskReportPath) {
+      if (process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT === 'true') {
+        taskReport = readTaskReportFromFile(taskReportPath, instruction.packetId);
+      } else {
+        taskReport = {
+          packetId: instruction.packetId,
+          status: 'blocked',
+          filesChanged: [],
+          validationsRun: ['main-agent-external-task-report-denied'],
+          evidence: [
+            'External TaskReport ingestion requires MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT=true',
+          ],
+          downstreamContext: [instruction.expectedDelta],
+          driftFlags: ['external-task-report-denied'],
+        };
+      }
+    }
+    if (!taskReport && instruction.host === 'codex') {
+      const adapterReport = runCodexWorkerAdapter({
+        projectRoot: input.projectRoot,
+        packetPath: instruction.packetPath,
+        taskReportPath: taskReportPath || undefined,
+        smoke: args.codexSmoke === 'true',
+        smokeTargetPath: normalizeText(args.codexSmokeTargetPath) || undefined,
+        timeoutMs: Number(args.codexTimeoutMs) > 0 ? Number(args.codexTimeoutMs) : undefined,
+      });
+      steps.push({
+        step: 'codex-worker-adapter',
+        status:
+          adapterReport.exitCode === 0 &&
+          adapterReport.scopePassed &&
+          adapterReport.taskReport.status === 'done'
+            ? 'pass'
+            : 'fail',
+        summary: `mode=${adapterReport.mode}, report=${path.relative(
+          input.projectRoot,
+          adapterReport.taskReportPath
+        )}`,
+      });
+      taskReport = adapterReport.taskReport;
+    }
+  } catch (error) {
+    const finalSurface = resolveMainAgentOrchestrationSurface({
+      projectRoot: input.projectRoot,
+      flow: input.flow,
+      stage: input.stage,
+    });
+    return {
+      runId: `main-agent-run-loop-${Date.now()}`,
+      status: 'blocked',
+      steps: [
+        ...steps,
+        {
+          step: 'task-report.load',
+          status: 'fail',
+          summary: error instanceof Error ? error.message : String(error),
+        },
+      ],
+      dispatchInstruction: instruction,
+      taskReport: null,
+      finalSurface,
+    };
+  }
+  if (!taskReport) {
+    const finalSurface = resolveMainAgentOrchestrationSurface({
+      projectRoot: input.projectRoot,
+      flow: input.flow,
+      stage: input.stage,
+    });
+    return {
+      runId: `main-agent-run-loop-${Date.now()}`,
+      status: 'blocked',
+      steps: [
+        ...steps,
+        {
+          step: 'task-report.load',
+          status: 'fail',
+          summary:
+            'missing real task report artifact; pass --taskReportPath or provide an executor',
+        },
+      ],
+      dispatchInstruction: instruction,
+      taskReport: null,
+      finalSurface,
+    };
+  }
+  const completedState = ingestMainAgentTaskReport(
+    input.projectRoot,
+    instruction.sessionId,
+    taskReport,
+    { currentStage: input.stage }
+  );
+  steps.push({
+    step: 'task-report.ingest',
+    status: taskReport.status === 'done' ? 'pass' : 'fail',
+    summary: `report=${taskReport.status}, nextAction=${completedState.nextAction}`,
+  });
+
+  const finalSurface = resolveMainAgentOrchestrationSurface({
+    ...surfaceInput,
+  });
+  steps.push({
+    step: 'inspect.final',
+    status: 'pass',
+    summary: `nextAction=${finalSurface.mainAgentNextAction ?? 'none'}, pending=${finalSurface.pendingPacketStatus}`,
+  });
+
+  return {
+    runId: `main-agent-run-loop-${Date.now()}`,
+    status: taskReport.status === 'done' ? 'completed' : 'blocked',
+    steps,
+    dispatchInstruction: instruction,
+    taskReport,
+    finalSurface,
+  };
+}
+
 export function mainMainAgentOrchestration(argv: string[]): number {
   const args = parseArgs(argv);
   const root = pickRoot(args);
+  const action = normalizeText(args.action) || 'inspect';
+
+  if (action === 'route-intake' || action === 'adaptive-intake') {
+    const inputPath = normalizeText(args.input);
+    const payload = normalizeText(args.payload);
+    if (!inputPath && !payload) {
+      console.error(
+        'main-agent-orchestration: route-intake requires --input <json-file> or --payload <json>'
+      );
+      return 1;
+    }
+    const candidate = JSON.parse(
+      payload || fs.readFileSync(path.resolve(root, inputPath), 'utf8')
+    ) as Parameters<typeof runAdaptiveIntakeGovernanceGate>[1];
+    const result = runAdaptiveIntakeGovernanceGate(root, candidate, {
+      apply: args.apply === 'true',
+    });
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    return result.decision.verdict === 'block' ? 1 : 0;
+  }
+
   const { flow, stage } = resolveFlowAndStage(root, args);
+  const host = parseOrchestrationHost(args.host);
   const surface = resolveMainAgentOrchestrationSurface({
     projectRoot: root,
     flow,
     stage,
   });
-  const action = normalizeText(args.action) || 'inspect';
 
   switch (action) {
     case 'inspect': {
@@ -1058,14 +1507,46 @@ export function mainMainAgentOrchestration(argv: string[]): number {
         projectRoot: root,
         flow,
         stage,
+        host,
         hydratePacket: true,
       });
       process.stdout.write(`${JSON.stringify(instruction, null, 2)}\n`);
       return instruction ? 0 : 1;
     }
+    case 'run-loop': {
+      const result = runMainAgentAutomaticLoop({
+        projectRoot: root,
+        flow,
+        stage,
+        host,
+        args,
+        executor:
+          args.taskReportPath
+            ? ({ instruction, args: runArgs }) =>
+                process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT === 'true'
+                  ? readTaskReportFromFile(path.resolve(runArgs.taskReportPath!), instruction.packetId)
+                  : null
+            : args.reportEvidence && host !== 'codex'
+            ? ({ projectRoot, instruction, args: runArgs }) => {
+                const reportPath = writeMainAgentRunLoopTaskReport(
+                  projectRoot,
+                  instruction,
+                  runArgs
+                );
+                return readTaskReportFromFile(reportPath, instruction.packetId);
+              }
+            : undefined,
+      });
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return result.status === 'completed' ? 0 : 1;
+    }
     case 'claim': {
       const { sessionId } = resolveSessionAndPacketFromSurface(surface, args);
-      const state = claimMainAgentPendingPacket(root, sessionId, normalizeText(args.owner) || 'main-agent');
+      const state = claimMainAgentPendingPacket(
+        root,
+        sessionId,
+        normalizeText(args.owner) || 'main-agent'
+      );
       process.stdout.write(`${JSON.stringify(state, null, 2)}\n`);
       return 0;
     }

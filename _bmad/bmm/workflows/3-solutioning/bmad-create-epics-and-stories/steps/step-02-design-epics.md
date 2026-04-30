@@ -1,3 +1,5 @@
+> Legacy compatibility surface only. The canonical epics planning path is `{planning_artifacts}/{branch}/epics.md`; branch-scoped epics are required.
+
 # Step 2: Design Epic List
 
 ## STEP GOAL:
@@ -33,7 +35,7 @@ To design and get approval for the epics_list that will organize all requirement
 ## EXECUTION PROTOCOLS:
 
 - 🎯 Design epics collaboratively based on extracted requirements
-- 💾 Update {{epics_list}} in {planning_artifacts}/epics.md
+- 💾 Update {{epics_list}} in {planning_artifacts}/{branch}/epics.md
 - 📖 Document the FR coverage mapping
 - 🚫 FORBIDDEN to load next step until user approves epics_list
 
@@ -41,7 +43,7 @@ To design and get approval for the epics_list that will organize all requirement
 
 ### 1. Review Extracted Requirements
 
-Load {planning_artifacts}/epics.md and review:
+Load {planning_artifacts}/{branch}/epics.md and review:
 
 - **Functional Requirements:** Count and review FRs from Step 1
 - **Non-Functional Requirements:** Review NFRs that need to be addressed
@@ -161,7 +163,7 @@ If user wants changes:
 
 ## CONTENT TO UPDATE IN DOCUMENT:
 
-After approval, update {planning_artifacts}/epics.md:
+After approval, update {planning_artifacts}/{branch}/epics.md:
 
 1. Replace {{epics_list}} placeholder with the approved epic list
 2. Replace {{requirements_coverage_map}} with the coverage map
@@ -175,7 +177,7 @@ Display: "**Select an Option:** [A] Advanced Elicitation [P] Party Mode [C] Cont
 
 - IF A: Invoke the `bmad-advanced-elicitation` skill
 - IF P: Invoke the `bmad-party-mode` skill
-- IF C: Save approved epics_list to {planning_artifacts}/epics.md, update frontmatter, then read fully and follow: ./step-03-create-stories.md
+- IF C: Save approved epics_list to {planning_artifacts}/{branch}/epics.md, update frontmatter, then read fully and follow: ./step-03-create-stories.md
 - IF Any other comments or queries: help user respond then [Redisplay Menu Options](#8-present-menu-options)
 
 #### EXECUTION RULES:

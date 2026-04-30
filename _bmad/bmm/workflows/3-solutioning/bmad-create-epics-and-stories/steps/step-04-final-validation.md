@@ -1,3 +1,5 @@
+> Legacy compatibility surface only. The canonical epics planning path is `{planning_artifacts}/{branch}/epics.md`; branch-scoped epics are required.
+
 # Step 4: Final Validation
 
 ## STEP GOAL:

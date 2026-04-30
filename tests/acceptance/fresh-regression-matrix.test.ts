@@ -9,6 +9,7 @@ import {
   runFreshRegressionMatrixMain,
   GOVERNANCE_VITEST_FILES,
   runOptionalNpmScript,
+  resolveHostMatrixGateMode,
   resolveDualHostGateMode,
 } from '../../scripts/run-fresh-regression-matrix';
 
@@ -137,7 +138,37 @@ describe('fresh-regression-matrix helpers', () => {
     );
     expect(
       resolveDualHostGateMode({
+        'test:ci:claude-cursor': 'npm run init:claude && npm run init:cursor && vitest run',
+        'test:ci:dual': 'npm run test:ci:claude-cursor',
+      })
+    ).toBe('claude_cursor_script');
+    expect(
+      resolveDualHostGateMode({
         'test:ci:dual': 'npm run init:claude && npm run init:cursor && vitest run',
+      })
+    ).toBe('dual_script');
+  });
+
+  it('resolveHostMatrixGateMode prefers explicit host matrix and Claude+Cursor scripts before legacy aliases', () => {
+    expect(
+      resolveHostMatrixGateMode({
+        'test:ci:host-matrix': 'npm run test:ci:claude-cursor && npm run test:ci:codex',
+        'test:ci:claude-cursor': 'npm run init:claude && npm run init:cursor && vitest run',
+        'test:ci:dual': 'npm run test:ci:claude-cursor',
+        'test:ci': 'npm run init:claude && vitest run',
+      })
+    ).toBe('host_matrix_script');
+    expect(
+      resolveHostMatrixGateMode({
+        'test:ci:claude-cursor': 'npm run init:claude && npm run init:cursor && vitest run',
+        'test:ci:dual': 'npm run test:ci:claude-cursor',
+        'test:ci': 'npm run init:claude && vitest run',
+      })
+    ).toBe('claude_cursor_script');
+    expect(
+      resolveHostMatrixGateMode({
+        'test:ci:dual': 'npm run init:claude && npm run init:cursor && vitest run',
+        'test:ci': 'npm run init:claude && vitest run',
       })
     ).toBe('dual_script');
   });

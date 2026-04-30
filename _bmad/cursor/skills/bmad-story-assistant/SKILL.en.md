@@ -904,7 +904,7 @@ elif story_count >= 3:
 
 ### 3.2 Main Agent Responsibilities
 
-**Steps that the main Agent must perform**: 1 Derive epic_slug (convert the Title of `### Epic N: Title` in `_bmad-output/planning-artifacts/epics.md` to kebab-case, or resolve the existing directory name from `_bmad-output/implementation-artifacts/epic-{N}-*/`) → 2 Prepare prompt (resolve the template STORY-A3-DEV Copy the entire section and replace the placeholders epic_num, story_num, epic_slug, slug, project-root) → 3 Execute the pre-initiation self-check list → 4 Output the self-check results → 5 Initiate the subtask. **Forbidden**: Step 5 must not be performed without completing steps 3 and 4; the epic_slug placeholder must not be omitted, otherwise the subagent will create a slug-less specs/epic-N/ path.
+**Steps that the main Agent must perform**: 1 Derive epic_slug (convert the Title of `### Epic N: Title` in `_bmad-output/planning-artifacts/{branch}/epics.md` to kebab-case, or resolve the existing directory name from `_bmad-output/implementation-artifacts/epic-{N}-*/`) → 2 Prepare prompt (resolve the template STORY-A3-DEV Copy the entire section and replace the placeholders epic_num, story_num, epic_slug, slug, project-root) → 3 Execute the pre-initiation self-check list → 4 Output the self-check results → 5 Initiate the subtask. **Forbidden**: Step 5 must not be performed without completing steps 3 and 4; the epic_slug placeholder must not be omitted, otherwise the subagent will create a slug-less specs/epic-N/ path.
 
 - **Only responsible**: initiate mcp_task, pass in the BUGFIX/TASKS document path, and collect subagent output.
 - **Forbidden**: The main Agent directly executes `search_replace` or `write` on the production code.
@@ -936,7 +936,7 @@ prompt: |
   1. 验证 spec-E{epic_num}-S{story_num}.md 存在且已通过审计
      - 检查路径: specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/spec-E{epic_num}-S{story_num}.md
      - 必须包含审计标记: <!-- AUDIT: PASSED by code-reviewer -->
-     - **若 spec 目录不存在**：须先创建 specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/，epic_slug 从 _bmad-output/planning-artifacts/epics.md 中 `### Epic {epic_num}：Title` 的 Title 转 kebab-case 推导，禁止使用 specs/epic-{epic_num}/ 无 slug 路径
+     - **若 spec 目录不存在**：须先创建 specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/，epic_slug 从 _bmad-output/planning-artifacts/{branch}/epics.md 中 `### Epic {epic_num}：Title` 的 Title 转 kebab-case 推导，禁止使用 specs/epic-{epic_num}/ 无 slug 路径
 
   2. 验证 plan-E{epic_num}-S{story_num}.md 存在且已通过审计
      - 检查路径: specs/epic-{epic_num}-{epic_slug}/story-{story_num}-{slug}/plan-E{epic_num}-S{story_num}.md

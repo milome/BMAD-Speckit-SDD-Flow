@@ -51,7 +51,7 @@ export interface RuntimeContextFile {
   runId?: string;
   artifactRoot?: string;
   artifactPath?: string;
-  contextScope?: 'project' | 'story';
+  contextScope?: 'project' | 'epic' | 'story' | 'run';
   /** Session-scoped language resolution (Story 15.2 i18n); optional. */
   languagePolicy?: { resolvedMode: 'zh' | 'en' | 'bilingual' };
   latestReviewerCloseout?: ReviewerLatestCloseoutRecord;
@@ -203,7 +203,13 @@ export function readRuntimeContext(root: string, explicitPath?: string): Runtime
       throw new Error(`runtime-context.${key} must be string when set: ${file}`);
     }
   }
-  if (o.contextScope !== undefined && o.contextScope !== 'project' && o.contextScope !== 'story') {
+  if (
+    o.contextScope !== undefined &&
+    o.contextScope !== 'project' &&
+    o.contextScope !== 'epic' &&
+    o.contextScope !== 'story' &&
+    o.contextScope !== 'run'
+  ) {
     throw new Error(`runtime-context.contextScope invalid: ${file}`);
   }
   if (o.languagePolicy !== undefined) {
@@ -252,7 +258,14 @@ export function readRuntimeContext(root: string, explicitPath?: string): Runtime
   if (typeof o.artifactPath === 'string' && o.artifactPath !== '') out.artifactPath = o.artifactPath;
   if (typeof o.workflow === 'string' && o.workflow !== '') out.workflow = o.workflow;
   if (typeof o.step === 'string' && o.step !== '') out.step = o.step;
-  if (o.contextScope === 'project' || o.contextScope === 'story') out.contextScope = o.contextScope;
+  if (
+    o.contextScope === 'project' ||
+    o.contextScope === 'epic' ||
+    o.contextScope === 'story' ||
+    o.contextScope === 'run'
+  ) {
+    out.contextScope = o.contextScope;
+  }
   if (o.languagePolicy && typeof o.languagePolicy === 'object') {
     const lp = o.languagePolicy as Record<string, unknown>;
     if (

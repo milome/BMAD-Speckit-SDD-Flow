@@ -210,13 +210,17 @@
          CANONICAL PATH: epic-{epic}-{epic_slug}/story-{story}-{story_slug}/{epic}-{story}-{story_slug}.md
          Story subdir uses story number ONLY (story-{story}-{slug}), NOT story-{epic}-{story}-{slug}.
          Must match bmad-story-assistant, bmad-story-create, bmad-story-audit. -->
+    <action>Resolve branch_ref_sanitized before reading planning artifacts: run `git rev-parse --abbrev-ref HEAD`; if result is `HEAD`, use `detached-{short-sha}`; replace `/` with `-`</action>
+    <action>Set canonical_epics_file = `{planning_artifacts}/{branch_ref_sanitized}/epics.md`</action>
+    <action>If `canonical_epics_file` exists, set `resolved_epics_file = canonical_epics_file`; otherwise HALT and instruct the user to generate the branch-scoped epics file at `{planning_artifacts}/{branch_ref_sanitized}/epics.md`</action>
     <action>Set story_slug = part of story_key after "{{epic_num}}-{{story_num}}-" (e.g. "2-1-runtime-governance-complete" → "runtime-governance-complete")</action>
-    <action>Load {{epics_file}}, find "## Epic {{epic_num}}:" or "### Epic {{epic_num}}:", extract title, set epic_slug = kebab-case of title (lowercase, replace non-alphanumeric with "-")</action>
+    <action>Load {{resolved_epics_file}}, find "## Epic {{epic_num}}:" or "### Epic {{epic_num}}:", extract title, set epic_slug = kebab-case of title (lowercase, replace non-alphanumeric with "-")</action>
     <action>If epic_slug cannot be derived, use story_slug as fallback for epic_slug</action>
 
     <!-- Load all available content through discovery protocol -->
     <invoke-protocol
       name="discover_inputs" />
+    <action>After discovery, reload {{resolved_epics_file}} completely and treat it as authoritative `{epics_content}`; do not read any flat epics artifact when the canonical file is unavailable</action>
     <note>Available content: {epics_content}, {prd_content}, {architecture_content}, {ux_content},
     {project_context}</note>
 

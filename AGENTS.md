@@ -1,11 +1,41 @@
 # AGENTS.md
 
+## Encoding Integrity Guardian
+
+Mandatory skill: `_bmad/skills/encoding-integrity-guardian/SKILL.md`.
+
+Load and follow `encoding-integrity-guardian` before and after any of these operations:
+
+- batch editing markdown, CSV, YAML, TOML, skill, command, README, or AGENTS files
+- generating or regenerating Codex, Cursor, Claude, or `_bmad/codex` surfaces
+- npm pack, release, prepublish, or install-surface validation
+- Windows PowerShell file read/write operations that touch project text files
+- detecting mojibake marker patterns, private-use glyphs, replacement characters, or corrupted UTF-8 text
+
+On Windows, Codex must use PowerShell 7 via `pwsh.exe` for shell commands. Never use `powershell.exe` for project text file read/write operations. For batch text rewrites, use Node `fs` with explicit `utf8` and run the encoding integrity gate before and after.
+
+Required gate for those operations:
+
+```powershell
+node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js
+```
+
+If the gate reports findings, stop normal implementation. Classify affected files, identify whether they are source or generated surfaces, trace the first polluted commit or generator, and choose `restore`, `regenerate`, or `manual semantic rewrite`. Do not claim that encoding conversion fixed mojibake unless semantic content was restored from a clean source.
+
 ## Karpathy-Inspired Guidelines
 
 - Think Before Coding: Wrong assumptions, hidden confusion, missing tradeoffs
 - Simplicity First: Overcomplication, bloated abstractions
 - Surgical Changes: Orthogonal edits, touching code you shouldn't
 - Goal-Driven Execution: Leverage through tests-first, verifiable success criteria
+
+## Hard Delivery Gate: Real 8h Development Evidence
+
+- For this project delivery, "8h evidence" means a real 8-hour main-agent development run-loop executing this repository's actual requirement-development workflow.
+- A wall-clock heartbeat soak, empty timer, mock journey, contract fixture, deterministic replay, or background idle process is not acceptable completion evidence.
+- Valid evidence must show real task/pending-packet consumption, orchestration state transitions, gate execution, runtime heartbeat/lease/recovery records, and final delivery-truth-gate evaluation from the same 8h run.
+- Do not claim final completion, release readiness, or non-half-finished delivery until the real 8h development run evidence exists and `main-agent:delivery-truth-gate` allows completion.
+- If only heartbeat soak evidence exists, report it as partial runtime evidence and explicitly state that the real 8h development evidence is still missing.
 
 ## User Rules
 

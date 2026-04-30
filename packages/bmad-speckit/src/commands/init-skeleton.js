@@ -6,6 +6,25 @@ const path = require('path');
 
 /** Shared _bmad dirs always copied (core workflows, config, commands, skills, platform dirs) */
 const SHARED_BMAD_DIRS = new Set(['core', '_config', 'commands', 'skills', 'cursor', 'claude', 'utility']);
+const DEFAULT_COPY_EXCLUDE_DIRS = new Set([
+  '.git',
+  'node_modules',
+  'dist',
+  'coverage',
+  '.turbo',
+  '.next',
+  '.vite',
+  '.vitest',
+  'tmp',
+  'temp',
+]);
+const DEFAULT_OUTPUT_INCLUDE_DIRS = new Set(['config']);
+const DEFAULT_COPY_EXCLUDE_FILES = [/\.tgz$/iu, /\.log$/iu];
+
+function shouldSkipTemplateEntry(entryName) {
+  if (DEFAULT_COPY_EXCLUDE_DIRS.has(entryName)) return true;
+  return DEFAULT_COPY_EXCLUDE_FILES.some((pattern) => pattern.test(entryName));
+}
 
 /**
  * T020: Generate _bmad, _bmad-output from template (PRD §5.10).
@@ -32,6 +51,7 @@ async function generateSkeleton(targetPath, templateDir, modules, force) {
     if (!fs.existsSync(src)) return;
     const entries = fs.readdirSync(src, { withFileTypes: true });
     for (const e of entries) {
+      if (shouldSkipTemplateEntry(e.name)) continue;
       const s = path.join(src, e.name);
       const d = path.join(dest, e.name);
       if (e.isDirectory()) {
@@ -51,6 +71,7 @@ async function generateSkeleton(targetPath, templateDir, modules, force) {
     if (!fs.existsSync(destBmad)) fs.mkdirSync(destBmad, { recursive: true });
     const entries = fs.readdirSync(srcBmad, { withFileTypes: true });
     for (const e of entries) {
+      if (shouldSkipTemplateEntry(e.name)) continue;
       const s = path.join(srcBmad, e.name);
       const d = path.join(destBmad, e.name);
       if (e.isDirectory()) {
@@ -84,7 +105,16 @@ async function generateSkeleton(targetPath, templateDir, modules, force) {
   fs.mkdirSync(destOutput, { recursive: true });
   fs.mkdirSync(path.join(destOutput, 'config'), { recursive: true });
   if (fs.existsSync(templateOutput)) {
-    copyDir(templateOutput, destOutput, {});
+    for (const entry of fs.readdirSync(templateOutput, { withFileTypes: true })) {
+      if (!DEFAULT_OUTPUT_INCLUDE_DIRS.has(entry.name)) continue;
+      const src = path.join(templateOutput, entry.name);
+      const dest = path.join(destOutput, entry.name);
+      if (entry.isDirectory()) {
+        copyDir(src, dest, {});
+      } else if (force || !fs.existsSync(dest)) {
+        fs.copyFileSync(src, dest);
+      }
+    }
   }
 }
 

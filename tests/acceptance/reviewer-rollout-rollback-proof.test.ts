@@ -11,7 +11,9 @@ describe('reviewer rollout rollback proof', () => {
       'parity_proof',
       'consumer_install_proof',
       'rollback_proof',
-      'codex_noop_proof',
+      'codex_parity_proof',
+      'codex_closeout_proof',
+      'codex_scoring_proof',
     ]);
   });
 
@@ -21,7 +23,9 @@ describe('reviewer rollout rollback proof', () => {
         'parity_proof',
         'consumer_install_proof',
         'rollback_proof',
-        'codex_noop_proof',
+        'codex_parity_proof',
+        'codex_closeout_proof',
+        'codex_scoring_proof',
       ],
     });
     expect(gate.status).toBe('ready');

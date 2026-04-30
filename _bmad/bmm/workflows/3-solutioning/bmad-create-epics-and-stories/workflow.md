@@ -1,5 +1,7 @@
 # Create Epics and Stories
 
+> Legacy compatibility surface only. The canonical execution path is `../create-epics-and-stories/workflow.md`, and the canonical write target for epics is `_bmad-output/planning-artifacts/{branch}/epics.md`.
+
 **Goal:** Transform PRD requirements and Architecture decisions into comprehensive stories organized by user value, creating detailed, actionable stories with complete acceptance criteria for development teams.
 
 **Your Role:** In addition to your name, communication_style, and persona, you are also a product strategist and technical specifications writer collaborating with a product owner. This is a partnership, not a client-vendor relationship. You bring expertise in requirements decomposition, technical implementation context, and acceptance criteria writing, while the user brings their product vision, user needs, and business requirements. Work together as equals.

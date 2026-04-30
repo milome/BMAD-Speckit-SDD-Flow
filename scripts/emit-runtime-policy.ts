@@ -25,6 +25,10 @@ import {
 } from './runtime-context-registry';
 import { stableStringifyPolicy } from './stable-runtime-policy-json';
 
+function isDirectEmitRuntimePolicyCli(entry: string | undefined): boolean {
+  return /(^|[\\/])emit-runtime-policy(\.[cm]?js|\.ts)?$/iu.test(entry ?? '');
+}
+
 function parseArgs(argv: string[]): Record<string, string | undefined> {
   const out: Record<string, string | undefined> = {};
   for (let i = 0; i < argv.length; i++) {
@@ -326,7 +330,7 @@ export function mainEmitRuntimePolicy(argv: string[]): number {
   }
 }
 
-if (require.main === module) {
+if (require.main === module && isDirectEmitRuntimePolicyCli(process.argv[1])) {
   const code = mainEmitRuntimePolicy(process.argv.slice(2));
   process.exit(code);
 }

@@ -423,6 +423,58 @@ describe('uninstall command', () => {
     }
   });
 
+  it('removes managed Codex entries without deleting the .codex root', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'uninstall-codex-'));
+    try {
+      const managedCommand = path.join(root, '.codex', 'commands', 'bmad-help.md');
+      const unmanagedMarker = path.join(root, '.codex', 'user-note.md');
+      fs.mkdirSync(path.dirname(managedCommand), { recursive: true });
+      fs.writeFileSync(managedCommand, 'managed\n', 'utf8');
+      fs.writeFileSync(unmanagedMarker, 'keep\n', 'utf8');
+
+      writeInstallManifest(
+        root,
+        createBaseManifest(root, {
+          installed_tools: ['codex'],
+          managed_surface: [
+            {
+              path: '.codex/commands/bmad-help.md',
+              kind: 'host_file',
+              owner_agents: ['codex'],
+              delete_policy: 'delete_entry_only',
+              preinstall_state: {
+                classification: 'created',
+                path_existed: false,
+                path_kind_before: 'missing',
+                content_hash_before: '',
+                snapshot_ref: '',
+                backup_ref: '',
+                captured_at: new Date().toISOString(),
+              },
+              restore: { strategy: 'delete_created', source_ref: '', skip_reason: '' },
+              installed_state: {
+                path_exists_after_install: true,
+                path_kind_after_install: 'file',
+                content_hash_after_install: require('../src/services/install-surface-manifest').hashPath(managedCommand),
+                captured_at: new Date().toISOString(),
+              },
+            },
+          ],
+        })
+      );
+
+      uninstallCommand({ target: root, agent: 'codex' });
+
+      assert.strictEqual(fs.existsSync(path.join(root, '.codex')), true);
+      assert.strictEqual(fs.existsSync(managedCommand), false);
+      assert.strictEqual(fs.existsSync(unmanagedMarker), true);
+      const report = JSON.parse(fs.readFileSync(getUninstallReportPath(root), 'utf8'));
+      assert.strictEqual(report.deleted_entries.length, 1);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('fails closed when manifest is missing', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'uninstall-missing-'));
     try {

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
  * Bundles repo-root CLIs into dist/*.cjs:
- * - scripts/emit-runtime-policy.ts → emit-runtime-policy.cjs
- * - scripts/i18n/resolve-for-session-cli.ts → resolve-for-session.cjs
- * - scripts/i18n/render-audit-block-cli.ts → render-audit-block.cjs
+ * - scripts/emit-runtime-policy.ts ->emit-runtime-policy.cjs
+ * - scripts/i18n/resolve-for-session-cli.ts ->resolve-for-session.cjs
+ * - scripts/i18n/render-audit-block-cli.ts ->render-audit-block.cjs
  * Invoked by prepare/prepublishOnly and `npm run build` from this package.
  */
 'use strict';
@@ -125,6 +125,7 @@ const bundles = [
   },
 ];
 
+fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
 
 async function main() {
@@ -144,6 +145,11 @@ async function main() {
     });
     console.log('runtime-emit: wrote', path.relative(repoRoot, outfile));
   }
+  const manifest = {
+    generatedAt: new Date().toISOString(),
+    files: bundles.map((bundle) => path.basename(bundle.outfile)).sort((a, b) => a.localeCompare(b)),
+  };
+  fs.writeFileSync(path.join(outDir, 'build-manifest.json'), JSON.stringify(manifest, null, 2) + '\n', 'utf8');
 }
 
 main().catch((error) => {

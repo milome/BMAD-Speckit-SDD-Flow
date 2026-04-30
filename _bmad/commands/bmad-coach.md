@@ -9,7 +9,7 @@ description: AI Coach 诊断：基于最近一轮评分数据输出 phase_scores
 
 ## 触发方式
 
-- Cursor Command：`/bmad-coach`
+- Codex command：`/bmad-coach`
 - CLI：`npx bmad-speckit coach` 或 `npm run coach:diagnose`
 
 ## 调用流程（无参数）

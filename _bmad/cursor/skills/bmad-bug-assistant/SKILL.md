@@ -4,6 +4,7 @@ description: |
   BMAD Bug 助手：按「根因分析 → BUGFIX 文档 → 审计 → 任务列表补充 → 实施 → 实施后审计」执行 BUG 修复全流程。主 Agent 发起任一子任务时**必须**将本 skill 内该阶段的「完整 prompt 模板」整段复制并填入占位符后传入，禁止省略、概括或自行改写提示词；主 Agent 禁止直接修改生产代码，实施须通过 mcp_task 子代理。进入 Cursor party-mode 前必须先展示 `20 / 50 / 100` 强度选项，等待用户选择后完成发起前自检，并由宿主在 `SubagentStart` 注入 `Party Mode Session Bootstrap (JSON)`。普通 RCA / 方案分析默认 `decision_root_cause_50`，BUGFIX 最终方案与 §7 默认 `final_solution_task_list_100`。`quick_probe_20` 仅用于 probe-only；若当前档位不足以产出高置信最终产物，主 Agent 必须拒绝当前档位并要求升级到 `final_solution_task_list_100`。Cursor 分支中不做中途暂停或分批回传；子代理一旦启动，必须在同一会话内连续运行至用户选择的总轮次。审计优先 code-reviewer，回退 mcp_task。遵循 ralph-method、TDD 红绿灯、speckit-workflow。适用场景：用户报告 BUG、要求根因分析、生成/更新 BUGFIX 文档、补充 §7 任务列表、实施 BUGFIX。全程中文。
 ---
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Party-mode final-output contract：`quick_probe_20`、`decision_root_cause_50`、`final_solution_task_list_100` 均可展示；若低档位被要求产出最终方案，必须拒绝当前档位并升级到 `final_solution_task_list_100`。
 > Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
 > **Orphan bugfix closeout contract**：当 BUGFIX 文档位于 `_bmad-output/implementation-artifacts/_orphan/` 时，结构化审计报告必须显式提供 `stage=bugfix`、`artifactDocPath`、`reportPath`，且三者必须与真实 BUGFIX 文档路径 / 报告路径一致；缺失任一字段或仍停留在 prose-only PASS 时，主 Agent 不得宣称通过，host closeout 必须 fail-closed。
 > **统一 closeout 硬门禁（适用于本技能全部审计闭环）**：

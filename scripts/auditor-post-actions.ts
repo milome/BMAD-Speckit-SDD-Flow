@@ -42,6 +42,10 @@ export function mainAuditorPostActions(argv: string[]): number {
   }
 }
 
-if (require.main === module) {
+function isDirectAuditorPostActionsCli(entry: string | undefined): boolean {
+  return /(^|[\\/])auditor-post-actions(\.[cm]?js|\.ts)?$/iu.test(entry ?? '');
+}
+
+if (require.main === module && isDirectAuditorPostActionsCli(process.argv[1])) {
   process.exit(mainAuditorPostActions(process.argv.slice(2)));
 }

@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 
-export type OrchestrationHost = 'cursor' | 'claude';
+export type OrchestrationHost = 'cursor' | 'claude' | 'codex';
 export type OrchestrationFlow = 'story' | 'bugfix' | 'standalone_tasks';
 export type OrchestrationTaskType = 'implement' | 'audit' | 'remediate' | 'document';
 export type PacketKind = 'recommendation' | 'execution' | 'resume';
@@ -96,6 +96,14 @@ export function resolveDispatchRoute(
   host: OrchestrationHost,
   taskType: OrchestrationTaskType
 ): DispatchRoute {
+  if (host === 'codex') {
+    return {
+      tool: 'codex',
+      subtype: `worker:${taskType}`,
+      fallback: 'disabled',
+    };
+  }
+
   if (host === 'cursor') {
     if (taskType === 'audit') {
       return {

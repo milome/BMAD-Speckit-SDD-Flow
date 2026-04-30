@@ -7,7 +7,7 @@ English | [简体中文](README.zh-CN.md)
 </p>
 
 <h3 align="center">
-  Governed Spec-Driven AI Delivery for Cursor and Claude Code
+  Governed Spec-Driven AI Delivery for Cursor, Claude Code, and Codex
 </h3>
 
 <p align="center">
@@ -79,6 +79,7 @@ This is the verified off-repo path for the published package contract.
 npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit version
 npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent claude-code --full --no-package-json
 npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent cursor --full --no-package-json
+npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent codex --full --no-package-json
 npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit check
 npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit dashboard-status
 ```

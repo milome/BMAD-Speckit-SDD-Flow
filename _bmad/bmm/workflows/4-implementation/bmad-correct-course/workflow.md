@@ -33,7 +33,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 | Input | Path | Load Strategy |
 |-------|------|---------------|
 | PRD | `{planning_artifacts}/*prd*.md` (whole) or `{planning_artifacts}/*prd*/*.md` (sharded) | FULL_LOAD |
-| Epics | `{planning_artifacts}/*epic*.md` (whole) or `{planning_artifacts}/*epic*/*.md` (sharded) | FULL_LOAD |
+| Epics | `{planning_artifacts}/{branch}/epics.md` (branch-scoped whole document) | FULL_LOAD |
 | Architecture | `{planning_artifacts}/*architecture*.md` (whole) or `{planning_artifacts}/*architecture*/*.md` (sharded) | FULL_LOAD |
 | UX Design | `{planning_artifacts}/*ux*.md` (whole) or `{planning_artifacts}/*ux*/*.md` (sharded) | FULL_LOAD |
 | Tech Spec | `{planning_artifacts}/*tech-spec*.md` (whole) | FULL_LOAD |

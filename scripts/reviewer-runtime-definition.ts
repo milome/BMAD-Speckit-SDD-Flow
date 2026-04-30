@@ -3,6 +3,8 @@ import * as path from 'node:path';
 import {
   CLAUDE_REVIEWER_CANONICAL_SOURCE_PATH,
   CLAUDE_REVIEWER_RUNTIME_TARGET_PATH,
+  CODEX_REVIEWER_CANONICAL_SOURCE_PATH,
+  CODEX_REVIEWER_RUNTIME_TARGET_PATH,
   CURSOR_REVIEWER_CANONICAL_SOURCE_PATH,
   CURSOR_REVIEWER_RUNTIME_TARGET_PATH,
   REVIEWER_SHARED_CORE_BASE_PROMPT_PATH,
@@ -10,7 +12,7 @@ import {
   REVIEWER_SHARED_CORE_PROFILE_PACK_PATH,
 } from './reviewer-contract';
 
-export type ReviewerRuntimeHostId = 'cursor' | 'claude';
+export type ReviewerRuntimeHostId = 'cursor' | 'claude' | 'codex';
 
 export interface ReviewerRuntimeDefinitionReceipt {
   host: ReviewerRuntimeHostId;
@@ -21,29 +23,45 @@ export interface ReviewerRuntimeDefinitionReceipt {
 }
 
 function sourceRelativePath(host: ReviewerRuntimeHostId): string {
-  return host === 'cursor'
-    ? CURSOR_REVIEWER_CANONICAL_SOURCE_PATH
-    : CLAUDE_REVIEWER_CANONICAL_SOURCE_PATH;
+  if (host === 'cursor') return CURSOR_REVIEWER_CANONICAL_SOURCE_PATH;
+  if (host === 'codex') return CODEX_REVIEWER_CANONICAL_SOURCE_PATH;
+  return CLAUDE_REVIEWER_CANONICAL_SOURCE_PATH;
 }
 
 function targetRelativePath(host: ReviewerRuntimeHostId): string {
-  return host === 'cursor'
-    ? CURSOR_REVIEWER_RUNTIME_TARGET_PATH
-    : CLAUDE_REVIEWER_RUNTIME_TARGET_PATH;
+  if (host === 'cursor') return CURSOR_REVIEWER_RUNTIME_TARGET_PATH;
+  if (host === 'codex') return CODEX_REVIEWER_RUNTIME_TARGET_PATH;
+  return CLAUDE_REVIEWER_RUNTIME_TARGET_PATH;
+}
+
+function generatedHeader(
+  host: ReviewerRuntimeHostId,
+  metadata: {
+    sourceRelativePath: string;
+  }
+): string {
+  const body =
+    `RUNTIME-MATERIALIZED reviewer source=${metadata.sourceRelativePath}` +
+    ` shared_metadata=${REVIEWER_SHARED_CORE_METADATA_PATH}` +
+    ` shared_profiles=${REVIEWER_SHARED_CORE_PROFILE_PACK_PATH}` +
+    ` shared_prompt=${REVIEWER_SHARED_CORE_BASE_PROMPT_PATH}`;
+
+  return host === 'codex' ? `# ${body}` : `<!-- ${body} -->`;
 }
 
 function injectGeneratedHeader(
+  host: ReviewerRuntimeHostId,
   content: string,
   metadata: {
     sourceRelativePath: string;
   }
 ): string {
   const separator = content.includes('\r\n') ? '\r\n' : '\n';
-  const header =
-    `<!-- RUNTIME-MATERIALIZED reviewer source=${metadata.sourceRelativePath}` +
-    ` shared_metadata=${REVIEWER_SHARED_CORE_METADATA_PATH}` +
-    ` shared_profiles=${REVIEWER_SHARED_CORE_PROFILE_PACK_PATH}` +
-    ` shared_prompt=${REVIEWER_SHARED_CORE_BASE_PROMPT_PATH} -->`;
+  const header = generatedHeader(host, metadata);
+
+  if (host === 'codex') {
+    return `${header}${separator}${content}`;
+  }
 
   if (content.startsWith(`---${separator}`)) {
     const closingMarker = `${separator}---${separator}`;
@@ -58,7 +76,9 @@ function injectGeneratedHeader(
 }
 
 function stripGeneratedHeader(content: string): string {
-  return content.replace(/<!-- RUNTIME-MATERIALIZED reviewer[\s\S]*? -->\r?\n?/u, '');
+  return content
+    .replace(/<!-- RUNTIME-MATERIALIZED reviewer[\s\S]*? -->\r?\n?/u, '')
+    .replace(/^# RUNTIME-MATERIALIZED reviewer[^\r\n]*(?:\r?\n)?/u, '');
 }
 
 export function materializeReviewerDefinition(
@@ -79,7 +99,7 @@ export function materializeReviewerDefinition(
   }
 
   const source = fs.readFileSync(sourcePath, 'utf8');
-  const materialized = injectGeneratedHeader(stripGeneratedHeader(source), {
+  const materialized = injectGeneratedHeader(host, stripGeneratedHeader(source), {
     sourceRelativePath: sourceRelative,
   });
 
@@ -107,11 +127,13 @@ export function ensureReviewerRuntimeDefinition(
   projectRoot: string,
   options?: { hosts?: ReviewerRuntimeHostId[] }
 ): ReviewerRuntimeDefinitionReceipt[] {
-  const hosts = options?.hosts ?? (['cursor', 'claude'] as ReviewerRuntimeHostId[]);
+  const hosts = options?.hosts ?? (['cursor', 'claude', 'codex'] as ReviewerRuntimeHostId[]);
   return hosts.map((host) => {
     const runtimeDir =
       host === 'cursor'
         ? path.join(projectRoot, '.cursor', 'agents')
+        : host === 'codex'
+          ? path.join(projectRoot, '.codex', 'agents')
         : path.join(projectRoot, '.claude', 'agents');
     if (!fs.existsSync(runtimeDir)) {
       return {

@@ -1,3 +1,5 @@
+> Legacy compatibility surface only. The canonical epics planning path is `{planning_artifacts}/{branch}/epics.md`; branch-scoped epics are required.
+
 # Step 1: Validate Prerequisites and Extract Requirements
 
 ## STEP GOAL:
@@ -32,7 +34,7 @@ To validate that all required input documents exist and extract all requirements
 ## EXECUTION PROTOCOLS:
 
 - 🎯 Extract requirements systematically from all documents
-- 💾 Populate {planning_artifacts}/epics.md with extracted requirements
+- 💾 Populate {planning_artifacts}/{branch}/epics.md with extracted requirements
 - 📖 Update frontmatter with extraction progress
 - 🚫 FORBIDDEN to load next step until user selects 'C' and requirements are extracted
 
@@ -69,7 +71,7 @@ Search for required documents using these patterns (sharded means a large docume
 1. `{planning_artifacts}/*ux*.md` (whole document)
 2. `{planning_artifacts}/*ux*/index.md` (sharded version)
 
-Before proceeding, Ask the user if there are any other documents to include for analysis, and if anything found should be excluded. Wait for user confirmation. Once confirmed, create the {planning_artifacts}/epics.md from the ../templates/epics-template.md and in the front matter list the files in the array of `inputDocuments: []`.
+Before proceeding, Ask the user if there are any other documents to include for analysis, and if anything found should be excluded. Wait for user confirmation. Once confirmed, create the {planning_artifacts}/{branch}/epics.md from the ../templates/epics-template.md and in the front matter list the files in the array of `inputDocuments: []`.
 
 ### 3. Extract Functional Requirements (FRs)
 
@@ -160,9 +162,9 @@ UX-DR2: [Actionable UX design requirement with clear implementation scope]
 
 ### 7. Load and Initialize Template
 
-Load ../templates/epics-template.md and initialize {planning_artifacts}/epics.md:
+Load ../templates/epics-template.md and initialize {planning_artifacts}/{branch}/epics.md:
 
-1. Copy the entire template to {planning_artifacts}/epics.md
+1. Copy the entire template to {planning_artifacts}/{branch}/epics.md
 2. Replace {{project_name}} with the actual project name
 3. Replace placeholder sections with extracted requirements:
    - {{fr_list}} → extracted FRs
@@ -206,7 +208,7 @@ Update the requirements based on user feedback until confirmation is received.
 
 ## CONTENT TO SAVE TO DOCUMENT:
 
-After extraction and confirmation, update {planning_artifacts}/epics.md with:
+After extraction and confirmation, update {planning_artifacts}/{branch}/epics.md with:
 
 - Complete FR list in {{fr_list}} section
 - Complete NFR list in {{nfr_list}} section
@@ -225,7 +227,7 @@ Display: `**Confirm the Requirements are complete and correct to [C] continue:**
 
 #### Menu Handling Logic:
 
-- IF C: Save all to {planning_artifacts}/epics.md, update frontmatter, then read fully and follow: ./step-02-design-epics.md
+- IF C: Save all to {planning_artifacts}/{branch}/epics.md, update frontmatter, then read fully and follow: ./step-02-design-epics.md
 - IF Any other comments or queries: help user respond then [Redisplay Menu Options](#10-present-menu-options)
 
 ## CRITICAL STEP COMPLETION NOTE

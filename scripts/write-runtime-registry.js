@@ -7,6 +7,62 @@ function runtimeContextRegistryPath(root) {
   return path.join(root, '_bmad-output', 'runtime', 'registry.json');
 }
 
+function sanitizeBranchRef(value) {
+  const normalized = String(value || '')
+    .replace(/[^a-zA-Z0-9._-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return normalized || 'dev';
+}
+
+function resolveGitHeadPath(root) {
+  const gitEntry = path.join(root, '.git');
+  if (!fs.existsSync(gitEntry)) {
+    return null;
+  }
+  try {
+    const stat = fs.lstatSync(gitEntry);
+    if (stat.isDirectory()) {
+      return path.join(gitEntry, 'HEAD');
+    }
+    if (stat.isFile()) {
+      const raw = fs.readFileSync(gitEntry, 'utf8').trim();
+      const match = /^gitdir:\s*(.+)$/iu.exec(raw);
+      if (!match) {
+        return null;
+      }
+      const gitDir = path.isAbsolute(match[1]) ? match[1] : path.resolve(root, match[1]);
+      return path.join(gitDir, 'HEAD');
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function resolvePlanningArtifactsBranch(root) {
+  const headPath = resolveGitHeadPath(root);
+  if (!headPath || !fs.existsSync(headPath)) {
+    return 'dev';
+  }
+  try {
+    const raw = fs.readFileSync(headPath, 'utf8').trim();
+    const branchMatch = /^ref:\s+refs\/heads\/(.+)$/iu.exec(raw);
+    if (branchMatch) {
+      return sanitizeBranchRef(branchMatch[1]);
+    }
+    if (/^[0-9a-f]{7,40}$/iu.test(raw)) {
+      return `detached-${raw.slice(0, 7)}`;
+    }
+  } catch {
+    return 'dev';
+  }
+  return 'dev';
+}
+
+function defaultEpicsPath(root) {
+  return `_bmad-output/planning-artifacts/${resolvePlanningArtifactsBranch(root)}/epics.md`;
+}
+
 function defaultRuntimeContextRegistry(root) {
   return {
     version: 1,
@@ -15,7 +71,7 @@ function defaultRuntimeContextRegistry(root) {
     updatedAt: new Date().toISOString(),
     sources: {
       sprintStatusPath: '_bmad-output/implementation-artifacts/sprint-status.yaml',
-      epicsPath: 'epics.md',
+      epicsPath: defaultEpicsPath(root),
       storyArtifactsRoot: '_bmad-output/implementation-artifacts',
       specsRoot: 'specs',
     },

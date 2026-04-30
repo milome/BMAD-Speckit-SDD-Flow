@@ -11,6 +11,7 @@ const { syncCommandsRulesConfig } = require('../src/services/sync-service');
 const AGENT_TO_AI = {
   cursor: 'cursor-agent',
   'claude-code': 'claude',
+  codex: 'codex',
 };
 
 function parseArgs(argv) {
@@ -54,7 +55,7 @@ function parseArgs(argv) {
 
   const selectedAI = AGENT_TO_AI[requestedAgent];
   if (!selectedAI) {
-    throw new Error(`Unsupported --agent value: ${requestedAgent}. Valid: cursor, claude-code`);
+    throw new Error(`Unsupported --agent value: ${requestedAgent}. Valid: cursor, claude-code, codex`);
   }
 
   const target = targetArg

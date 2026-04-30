@@ -159,7 +159,8 @@ function runReadinessRemediationRunnerCli(
   const command = [
     'npx',
     'ts-node',
-    '--project', 'tsconfig.node.json',
+    '--project',
+    'tsconfig.node.json',
     '--transpile-only',
     'scripts/governance-remediation-runner.ts',
     '--projectRoot',
@@ -213,7 +214,12 @@ describe('readiness remediation artifact generation', () => {
       const branch = 'feature-readiness-artifact';
       const planningArtifactsRoot = path.join(tmpRoot, '_bmad-output', 'planning-artifacts');
       const stepContract = loadStepContract(CANONICAL_STEP_06);
-      const reportPath = resolvePathTemplate(stepContract.outputFile, planningArtifactsRoot, branch, FIXED_DATE);
+      const reportPath = resolvePathTemplate(
+        stepContract.outputFile,
+        planningArtifactsRoot,
+        branch,
+        FIXED_DATE
+      );
       const remediationPath = resolvePathTemplate(
         stepContract.remediationArtifactFile,
         planningArtifactsRoot,
@@ -269,13 +275,18 @@ describe('readiness remediation artifact generation', () => {
     }
   });
 
-  it('mirror step-06 contract can generate remediation artifact beside the readiness report without branch expansion', () => {
+  it('mirror step-06 contract can generate remediation artifact beside the readiness report under branch-scoped planning artifacts', () => {
     const tmpRoot = mkdtempSync(path.join(os.tmpdir(), 'readiness-artifact-mirror-'));
     try {
       const branch = 'ignored-branch-value';
       const planningArtifactsRoot = path.join(tmpRoot, '_bmad-output', 'planning-artifacts');
       const stepContract = loadStepContract(MIRROR_STEP_06);
-      const reportPath = resolvePathTemplate(stepContract.outputFile, planningArtifactsRoot, branch, FIXED_DATE);
+      const reportPath = resolvePathTemplate(
+        stepContract.outputFile,
+        planningArtifactsRoot,
+        branch,
+        FIXED_DATE
+      );
       const remediationPath = resolvePathTemplate(
         stepContract.remediationArtifactFile,
         planningArtifactsRoot,
@@ -291,10 +302,14 @@ describe('readiness remediation artifact generation', () => {
       expect(existsSync(toPacketPath(remediationPath, 'cursor'))).toBe(true);
       expect(existsSync(toPacketPath(remediationPath, 'claude'))).toBe(true);
       expect(reportPath).toBe(
-        path.join(planningArtifactsRoot, `implementation-readiness-report-${FIXED_DATE}.md`)
+        path.join(planningArtifactsRoot, branch, `implementation-readiness-report-${FIXED_DATE}.md`)
       );
       expect(remediationPath).toBe(
-        path.join(planningArtifactsRoot, `implementation-readiness-remediation-${FIXED_DATE}.md`)
+        path.join(
+          planningArtifactsRoot,
+          branch,
+          `implementation-readiness-remediation-${FIXED_DATE}.md`
+        )
       );
 
       const remediation = readFileSync(remediationPath, 'utf8');

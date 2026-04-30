@@ -26,9 +26,9 @@ required_inputs:
 input_file_patterns:
   epics:
     description: "The completed epic for retrospective"
-    whole: "{planning_artifacts}/*epic*.md"
-    sharded_index: "{planning_artifacts}/*epic*/index.md"
-    sharded_single: "{planning_artifacts}/*epic*/epic-{{epic_num}}.md"
+    whole: "{planning_artifacts}/{branch}/epics.md"
+    sharded_index: ""
+    sharded_single: ""
     load_strategy: "SELECTIVE_LOAD"
   previous_retrospective:
     description: "Previous epic's retrospective (optional)"
@@ -51,3 +51,4 @@ input_file_patterns:
 
 # Required files
 sprint_status_file: "{implementation_artifacts}/sprint-status.yaml"
+

@@ -9,7 +9,7 @@ description: 评分汇总：全部摘要、按 Epic 或 Story 筛选，输出 Ma
 
 ## 触发方式
 
-- Cursor Command：`/bmad-scores`
+- Codex command：`/bmad-scores`
 - CLI：`npx bmad-speckit scores`
 
 ## 调用模式

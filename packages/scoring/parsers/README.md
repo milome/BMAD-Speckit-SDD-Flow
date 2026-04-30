@@ -1,4 +1,4 @@
-﻿# scoring/parsers
+# scoring/parsers
 
 ## Story 2.1: 规则解析
 

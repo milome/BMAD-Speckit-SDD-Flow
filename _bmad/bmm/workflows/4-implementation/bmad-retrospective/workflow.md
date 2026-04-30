@@ -43,7 +43,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 
 | Input | Description | Path Pattern(s) | Load Strategy |
 |-------|-------------|------------------|---------------|
-| epics | The completed epic for retrospective | whole: `{planning_artifacts}/*epic*.md`, sharded_index: `{planning_artifacts}/*epic*/index.md`, sharded_single: `{planning_artifacts}/*epic*/epic-{{epic_num}}.md` | SELECTIVE_LOAD |
+| epics | The completed epic for retrospective | whole: `{planning_artifacts}/{branch}/epics.md`, sharded_index: `{planning_artifacts}/{branch}/epics/index.md`, sharded_single: `{planning_artifacts}/{branch}/epics/epic-{{epic_num}}.md` | SELECTIVE_LOAD |
 | previous_retrospective | Previous epic's retrospective (optional) | `{implementation_artifacts}/**/epic-{{prev_epic_num}}-retro-*.md` | SELECTIVE_LOAD |
 | architecture | System architecture for context | whole: `{planning_artifacts}/*architecture*.md`, sharded: `{planning_artifacts}/*architecture*/*.md` | FULL_LOAD |
 | prd | Product requirements for context | whole: `{planning_artifacts}/*prd*.md`, sharded: `{planning_artifacts}/*prd*/*.md` | FULL_LOAD |
@@ -400,16 +400,16 @@ Alice (Product Owner): "Good thinking - helps us connect what we learned to what
 <action>Attempt to load next epic using selective loading strategy:</action>
 
 **Try sharded first (more specific):**
-<action>Check if file exists: {planning_artifacts}/epic*/epic-{{next_epic_num}}.md</action>
+<action>Check if file exists: {planning_artifacts}/{branch}/epics/epic-{{next_epic_num}}.md</action>
 
 <check if="sharded epic file found">
-  <action>Load {planning_artifacts}/*epic*/epic-{{next_epic_num}}.md</action>
+  <action>Load {planning_artifacts}/{branch}/epics/epic-{{next_epic_num}}.md</action>
   <action>Set {{next_epic_source}} = "sharded"</action>
 </check>
 
 **Fallback to whole document:**
 <check if="sharded epic not found">
-<action>Check if file exists: {planning_artifacts}/epic*.md</action>
+<action>Check if file exists: {planning_artifacts}/{branch}/epics.md</action>
 
   <check if="whole epic file found">
     <action>Load entire epics document</action>

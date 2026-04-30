@@ -1,0 +1,210 @@
+version: 1
+contract_id: orchestration-governance
+owner: main-agent-orchestration
+status: draft
+updated_at: "2026-04-26T13:23:00+08:00"
+
+description: >
+  Single strategy source for main-agent orchestration governance.
+  Main loop must read this contract for signal policy and stage gate requirements.
+
+sources_of_truth:
+  strategy_contract: "_bmad/_config/orchestration-governance.contract.yaml"
+  runtime_index: "_bmad-output/runtime/governance/user_story_mapping.json"
+  runtime_index_schema: "_bmad-output/runtime/governance/user_story_mapping.schema.json"
+
+consumption_rules:
+  main_loop_must_read:
+    - strategy_contract
+    - runtime_index
+  forbidden_strategy_sources:
+    - ad_hoc_markdown_rules
+    - inline_hardcoded_signal_thresholds
+    - duplicated_yaml_contracts
+
+signals:
+  - id: p0_journey_coverage
+    category: delivery_readiness
+    severity_default: block
+    description: P0 journeys must be covered and mapped to executable task chains.
+    required_evidence:
+      - journey_coverage_matrix
+      - mapped_journey_task_chain
+  - id: smoke_e2e_readiness
+    category: test_readiness
+    severity_default: block
+    description: Critical journeys must have runnable smoke/E2E proof.
+    required_evidence:
+      - smoke_test_entry
+      - smoke_execution_output
+  - id: evidence_proof_chain
+    category: evidence_integrity
+    severity_default: block
+    description: Claims must be backed by command output and persistent artifacts.
+    required_evidence:
+      - command_output_summary
+      - artifact_paths
+  - id: cross_document_traceability
+    category: traceability
+    severity_default: warn
+    description: Requirement/plan/tasks/test references must be mutually traceable.
+    required_evidence:
+      - requirement_to_story_link
+      - story_to_test_link
+  - id: orchestration_governance_completeness
+    category: control_plane_integrity
+    severity_default: warn
+    description: Main loop must execute full control steps without bypass.
+    required_evidence:
+      - inspect_dispatch_ingest_sequence
+      - gates_loop_state_transition
+      - closeout_gate_chain
+
+stage_requirements:
+  prd:
+    required_signals:
+      - p0_journey_coverage
+      - cross_document_traceability
+  arch:
+    required_signals:
+      - p0_journey_coverage
+      - cross_document_traceability
+  epics:
+    required_signals:
+      - p0_journey_coverage
+      - cross_document_traceability
+  story_create:
+    required_signals:
+      - p0_journey_coverage
+      - cross_document_traceability
+  story_audit:
+    required_signals:
+      - evidence_proof_chain
+      - cross_document_traceability
+  specify:
+    required_signals:
+      - p0_journey_coverage
+      - cross_document_traceability
+  plan:
+    required_signals:
+      - p0_journey_coverage
+      - smoke_e2e_readiness
+      - cross_document_traceability
+  gaps:
+    required_signals:
+      - p0_journey_coverage
+      - smoke_e2e_readiness
+      - evidence_proof_chain
+  tasks:
+    required_signals:
+      - p0_journey_coverage
+      - smoke_e2e_readiness
+      - cross_document_traceability
+  implement:
+    required_signals:
+      - p0_journey_coverage
+      - smoke_e2e_readiness
+      - evidence_proof_chain
+      - orchestration_governance_completeness
+    signal_overrides:
+      orchestration_governance_completeness: warn
+  post_audit:
+    required_signals:
+      - evidence_proof_chain
+      - cross_document_traceability
+      - orchestration_governance_completeness
+    signal_overrides:
+      orchestration_governance_completeness: block
+  epic_create:
+    required_signals:
+      - p0_journey_coverage
+      - cross_document_traceability
+  epic_complete:
+    required_signals:
+      - smoke_e2e_readiness
+      - evidence_proof_chain
+      - orchestration_governance_completeness
+    signal_overrides:
+      orchestration_governance_completeness: block
+
+mapping_contract:
+  required_fields:
+    - requirementId
+    - sourceType
+    - epicId
+    - storyId
+    - flow
+    - sprintId
+    - allowedWriteScope
+    - status
+  consistency_rules:
+    - requirement_to_flow_must_exist
+    - requirement_to_story_must_be_unique_per_active_status
+    - changed_files_must_fit_allowed_write_scope
+    - flow_phase_must_match_orchestration_state
+    - sprint_id_must_be_present
+    - reroute_must_deactivate_previous_active_mapping
+    - closeout_must_write_back_mapping_status
+
+gate_policy:
+  missing_required_signal: block
+  missing_required_mapping_field: block
+  mapping_consistency_violation: block
+  warn_threshold:
+    max_warn_signals_before_block: 2
+
+adaptive_intake_governance_gate:
+  gate_name: adaptive_intake_governance_gate
+  applies_to_flows:
+    - story
+    - bugfix
+    - standalone_tasks
+  trigger_points:
+    - on_new_requirement_intake
+    - on_reroute
+    - before_closeout
+  match_scoring:
+    domain_fit: 0.30
+    dependency_fit: 0.25
+    sprint_fit: 0.20
+    risk_fit: 0.15
+    readiness_fit: 0.10
+  decision_thresholds:
+    min_confidence_for_auto_match: 0.70
+    min_confidence_for_warn: 0.55
+  consistency_dimensions:
+    mapping_consistency:
+      required:
+        - requirement_to_story_unique_active
+        - flow_to_story_type_consistent
+        - allowed_write_scope_consistent
+    lifecycle_consistency:
+      required:
+        - orchestration_state_aligned_with_mapping_status
+        - reroute_history_consistent
+        - closeout_result_written_back
+    sprint_consistency:
+      required:
+        - sprint_id_valid
+        - backlog_sync_record_present
+        - capacity_overflow_requires_replan
+  verdict_policy:
+    any_required_check_fail: block
+    warn_if_confidence_below_auto_match: true
+    pass_requires:
+      - mapping_consistency
+      - lifecycle_consistency
+      - sprint_consistency
+
+observability_targets:
+  match_precision_at_1:
+    target: 0.80
+  reroute_recovery_rate:
+    target: 0.90
+  sprint_sync_latency_minutes:
+    target_max: 30
+  mapping_conflict_rate:
+    target_max: 0.05
+  governance_bypass_count:
+    target: 0
+

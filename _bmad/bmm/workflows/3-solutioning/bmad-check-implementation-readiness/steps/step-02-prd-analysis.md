@@ -1,6 +1,6 @@
 ---
-outputFile: '{planning_artifacts}/implementation-readiness-report-{{date}}.md'
-epicsFile: '{planning_artifacts}/*epic*.md' # Will be resolved to actual file
+outputFile: '{planning_artifacts}/{branch}/implementation-readiness-report-{{date}}.md'
+epicsFile: '{planning_artifacts}/{branch}/epics.md' # Canonical whole-file path; fall back to legacy flat or sharded discovery only when missing
 ---
 
 # Step 2: PRD Analysis

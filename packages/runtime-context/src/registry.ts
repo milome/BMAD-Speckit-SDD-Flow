@@ -92,6 +92,62 @@ export function runtimeContextRegistryPath(root: string): string {
   return path.join(root, '_bmad-output', 'runtime', 'registry.json');
 }
 
+function sanitizeBranchRef(value: string): string {
+  const normalized = String(value ?? '')
+    .replace(/[^a-zA-Z0-9._-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return normalized || 'dev';
+}
+
+function resolveGitHeadPath(root: string): string | null {
+  const gitEntry = path.join(root, '.git');
+  if (!fs.existsSync(gitEntry)) {
+    return null;
+  }
+  try {
+    const stat = fs.lstatSync(gitEntry);
+    if (stat.isDirectory()) {
+      return path.join(gitEntry, 'HEAD');
+    }
+    if (stat.isFile()) {
+      const raw = fs.readFileSync(gitEntry, 'utf8').trim();
+      const match = /^gitdir:\s*(.+)$/iu.exec(raw);
+      if (!match) {
+        return null;
+      }
+      const gitDir = path.isAbsolute(match[1]) ? match[1] : path.resolve(root, match[1]);
+      return path.join(gitDir, 'HEAD');
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function resolvePlanningArtifactsBranch(root: string): string {
+  const headPath = resolveGitHeadPath(root);
+  if (!headPath || !fs.existsSync(headPath)) {
+    return 'dev';
+  }
+  try {
+    const raw = fs.readFileSync(headPath, 'utf8').trim();
+    const branchMatch = /^ref:\s+refs\/heads\/(.+)$/iu.exec(raw);
+    if (branchMatch) {
+      return sanitizeBranchRef(branchMatch[1]);
+    }
+    if (/^[0-9a-f]{7,40}$/iu.test(raw)) {
+      return `detached-${raw.slice(0, 7)}`;
+    }
+  } catch {
+    return 'dev';
+  }
+  return 'dev';
+}
+
+function defaultEpicsPath(root: string): string {
+  return `_bmad-output/planning-artifacts/${resolvePlanningArtifactsBranch(root)}/epics.md`;
+}
+
 export function defaultRuntimeContextRegistry(root: string): RuntimeContextRegistry {
   const now = new Date().toISOString();
   return {
@@ -101,7 +157,7 @@ export function defaultRuntimeContextRegistry(root: string): RuntimeContextRegis
     updatedAt: now,
     sources: {
       sprintStatusPath: '_bmad-output/implementation-artifacts/sprint-status.yaml',
-      epicsPath: 'epics.md',
+      epicsPath: defaultEpicsPath(root),
       storyArtifactsRoot: '_bmad-output/implementation-artifacts',
       specsRoot: 'specs',
     },
@@ -156,6 +212,15 @@ export function readRuntimeContextRegistry(root: string): RuntimeContextRegistry
   const file = runtimeContextRegistryPath(root);
   const raw = fs.readFileSync(file, 'utf8');
   const parsed = JSON.parse(raw) as RuntimeContextRegistry;
+  parsed.sources = parsed.sources ?? {
+    sprintStatusPath: '_bmad-output/implementation-artifacts/sprint-status.yaml',
+    epicsPath: defaultEpicsPath(root),
+    storyArtifactsRoot: '_bmad-output/implementation-artifacts',
+    specsRoot: 'specs',
+  };
+  if (!parsed.sources.epicsPath || parsed.sources.epicsPath === 'epics.md') {
+    parsed.sources.epicsPath = defaultEpicsPath(root);
+  }
   if (!parsed.auditIndex) {
     parsed.auditIndex = {
       bugfix: {},

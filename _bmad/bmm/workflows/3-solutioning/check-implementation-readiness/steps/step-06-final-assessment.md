@@ -105,7 +105,7 @@ Check the {outputFile} for sections added by previous steps:
 Read these files:
 - `{planning_artifacts}/prd.md` - Section "User Journeys"
 - `{planning_artifacts}/architecture.md` - Sections "P0 Key Path Sequences", "Testability And Smoke E2E Preconditions"
-- `{planning_artifacts}/epics.md` - Section "Stories" or "Epic Design"
+- `{planning_artifacts}/{branch}/epics.md` - Section "Stories" or "Epic Design"; branch-scoped epics are required
 
 Build traceability relationships:
 - PRD User Journey → Architecture P0 Key Path → Epic Story

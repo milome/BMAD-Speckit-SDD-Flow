@@ -39,6 +39,8 @@ references:
 
 # Claude Adapter: bmad-standalone-tasks
 
+> Party-mode final-output contract：`quick_probe_20`、`decision_root_cause_50`、`final_solution_task_list_100` 均可展示；若低档位被要求产出最终方案，必须拒绝当前档位并升级到 `final_solution_task_list_100`。
+
 ## Purpose
 
 本 skill 是 Cursor `bmad-standalone-tasks` 在 Claude Code CLI / OMC 环境下的统一适配入口。

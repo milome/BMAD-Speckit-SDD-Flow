@@ -1,5 +1,5 @@
 ---
-outputFile: '{planning_artifacts}/implementation-readiness-report-{{date}}.md'
+outputFile: '{planning_artifacts}/{branch}/implementation-readiness-report-{{date}}.md'
 ---
 
 # Step 1: Document Discovery
@@ -68,8 +68,8 @@ Search for each document type using these patterns:
 
 #### C. Epics & Stories Documents
 
-- Whole: `{planning_artifacts}/*epic*.md`
-- Sharded: `{planning_artifacts}/*epic*/index.md` and related files
+- Whole: `{planning_artifacts}/{branch}/epics.md`
+- Sharded: `{planning_artifacts}/{branch}/epics/index.md` and related files
 
 #### D. UX Design Documents
 

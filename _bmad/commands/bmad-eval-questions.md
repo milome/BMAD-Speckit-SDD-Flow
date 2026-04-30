@@ -9,8 +9,8 @@ description: 题库 list/add 命令：查看题目清单、新增题目模板
 
 ## 触发方式
 
-- Cursor Command：`/bmad-eval-questions`
-- CLI：`npx ts-node scripts/eval-questions-cli.ts <subcommand> [options]`
+- Codex command：`/bmad-eval-questions`
+- CLI：`npx bmad-speckit eval-questions <subcommand> [options]`
 
 ## 子命令
 
@@ -28,21 +28,21 @@ description: 题库 list/add 命令：查看题目清单、新增题目模板
 
 ```bash
 # list（缺省 v1）
-npx ts-node scripts/eval-questions-cli.ts list
-npx ts-node scripts/eval-questions-cli.ts list --version v2
+npx bmad-speckit eval-questions list
+npx bmad-speckit eval-questions list --version v2
 
 # add
-npx ts-node scripts/eval-questions-cli.ts add --title "refactor-scoring"
-npx ts-node scripts/eval-questions-cli.ts add --title "refactor-scoring" --version v2
+npx bmad-speckit eval-questions add --title "refactor-scoring"
+npx bmad-speckit eval-questions add --title "refactor-scoring" --version v2
 ```
 
 ## 验收命令
 
 ```bash
-npx ts-node scripts/eval-questions-cli.ts list
-npx ts-node scripts/eval-questions-cli.ts list --version v2
-npx ts-node scripts/eval-questions-cli.ts add --title "refactor-scoring"
-npx ts-node scripts/eval-questions-cli.ts add --title "refactor-scoring" --version v2
+npx bmad-speckit eval-questions list
+npx bmad-speckit eval-questions list --version v2
+npx bmad-speckit eval-questions add --title "refactor-scoring"
+npx bmad-speckit eval-questions add --title "refactor-scoring" --version v2
 ```
 
-Cursor Command 内部等价调用上述脚本。
+Codex command 内部等价调用上述脚本。

@@ -177,7 +177,8 @@
         "continueDecision",
         "mainAgentNextAction",
         "mainAgentReady",
-        "mainAgentOrchestration"
+        "mainAgentOrchestration",
+        "fiveLayerProgress"
       ],
       "properties": {
         "sourceMode": {
@@ -269,8 +270,47 @@
         },
         "mainAgentNextAction": { "type": ["string", "null"] },
         "mainAgentReady": { "type": ["boolean", "null"] },
-        "mainAgentOrchestration": { "$ref": "#/$defs/mainAgentOrchestration" }
+        "mainAgentOrchestration": { "$ref": "#/$defs/mainAgentOrchestration" },
+        "fiveLayerProgress": { "$ref": "#/$defs/fiveLayerProgress" }
       }
+    },
+    "fiveLayerProgress": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": [
+        "currentLayer",
+        "currentStage",
+        "nextRequiredLayer",
+        "completedLayers",
+        "stageStatuses"
+      ],
+      "properties": {
+        "currentLayer": { "$ref": "#/$defs/fiveLayerId" },
+        "currentStage": { "type": "string" },
+        "nextRequiredLayer": { "$ref": "#/$defs/fiveLayerId" },
+        "completedLayers": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/fiveLayerId" }
+        },
+        "stageStatuses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["layer", "stage", "completed", "evidencePath"],
+            "properties": {
+              "layer": { "$ref": "#/$defs/fiveLayerId" },
+              "stage": { "type": "string" },
+              "completed": { "type": "boolean" },
+              "evidencePath": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "fiveLayerId": {
+      "type": "string",
+      "enum": ["layer_1", "layer_2", "layer_3", "layer_4", "layer_5"]
     },
     "mainAgentOrchestration": {
       "type": "object",
@@ -426,8 +466,8 @@
             "additionalProperties": false,
             "required": ["codexNoopRequired", "codexBehaviorChangeAllowed"],
             "properties": {
-              "codexNoopRequired": { "const": true },
-              "codexBehaviorChangeAllowed": { "const": false }
+              "codexNoopRequired": { "const": false },
+              "codexBehaviorChangeAllowed": { "const": true }
             }
           },
           "requiredRolloutProofs": {
@@ -535,7 +575,8 @@
         "reviewerContract",
         "identity",
         "control",
-        "language"
+        "language",
+        "fiveLayerProgress"
       ],
       "properties": {
         "flow": {
@@ -599,6 +640,7 @@
         "mainAgentNextAction": { "type": ["string", "null"] },
         "mainAgentReady": { "type": ["boolean", "null"] },
         "mainAgentOrchestration": { "$ref": "#/$defs/mainAgentOrchestration" },
+        "fiveLayerProgress": { "$ref": "#/$defs/fiveLayerProgress" },
         "reviewerContract": { "$ref": "#/$defs/reviewerContractProjection" },
         "identity": {
           "type": "object",

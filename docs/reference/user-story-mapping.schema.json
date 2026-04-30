@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/user-story-mapping.schema.json",
+  "title": "User Story Mapping Index",
+  "description": "Runtime fact index for requirement-to-epic/story/sprint orchestration mapping.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "updatedAt",
+    "source",
+    "items"
+  ],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source": {
+      "type": "string",
+      "const": "_bmad-output/runtime/governance/user_story_mapping.json"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/mappingItem"
+      }
+    }
+  },
+  "$defs": {
+    "mappingItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requirementId",
+        "sourceType",
+        "epicId",
+        "storyId",
+        "flow",
+        "sprintId",
+        "allowedWriteScope",
+        "status"
+      ],
+      "properties": {
+        "requirementId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceType": {
+          "type": "string",
+          "enum": [
+            "brief",
+            "prd",
+            "bugfix",
+            "standalone",
+            "churn_in"
+          ]
+        },
+        "epicId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "storyId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "flow": {
+          "type": "string",
+          "enum": [
+            "story",
+            "bugfix",
+            "standalone_tasks"
+          ]
+        },
+        "sprintId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "allowedWriteScope": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "planned",
+            "in_progress",
+            "blocked",
+            "done"
+          ]
+        },
+        "acceptanceRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "lastPacketId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}
+

@@ -4,7 +4,7 @@ description: 'Read and analyze PRD to extract journey contracts, evidence contra
 
 nextStepFile: './step-03-epic-coverage-validation.md'
 outputFile: '{planning_artifacts}/{branch}/implementation-readiness-report-{{date}}.md'
-epicsFile: '{planning_artifacts}/*epic*.md' # Will be resolved to actual file
+epicsFile: '{planning_artifacts}/{branch}/epics.md'
 ---
 
 # Step 2: PRD Analysis

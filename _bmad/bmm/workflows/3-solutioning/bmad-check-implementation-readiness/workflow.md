@@ -1,5 +1,7 @@
 # Implementation Readiness
 
+> Legacy compatibility surface only. The canonical execution path is `../check-implementation-readiness/workflow.md`. The canonical readiness outputs are branch-scoped under `{planning_artifacts}/{branch}/`.
+
 **Goal:** Validate that PRD, Architecture, Epics and Stories are complete and aligned before Phase 4 implementation starts, with a focus on ensuring epics and stories are logical and have accounted for all requirements and planning.
 The final assessment produces both the readiness report and a governance remediation artifact for blocker-driven follow-up.
 

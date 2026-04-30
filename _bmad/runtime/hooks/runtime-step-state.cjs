@@ -51,11 +51,40 @@ function writeJsonAtomic(file, value) {
 }
 
 function branchName(projectRoot) {
-  const headPath = path.join(projectRoot, '.git', 'HEAD');
-  if (!fs.existsSync(headPath)) return 'dev';
+  const gitEntry = path.join(projectRoot, '.git');
+  if (!fs.existsSync(gitEntry)) return 'dev';
+  let headPath = null;
+  try {
+    const stat = fs.lstatSync(gitEntry);
+    if (stat.isDirectory()) {
+      headPath = path.join(gitEntry, 'HEAD');
+    } else if (stat.isFile()) {
+      const raw = fs.readFileSync(gitEntry, 'utf8').trim();
+      const gitDirMatch = /^gitdir:\s*(.+)$/iu.exec(raw);
+      if (gitDirMatch) {
+        const gitDir = path.isAbsolute(gitDirMatch[1])
+          ? gitDirMatch[1]
+          : path.resolve(projectRoot, gitDirMatch[1]);
+        headPath = path.join(gitDir, 'HEAD');
+      }
+    }
+  } catch {
+    return 'dev';
+  }
+  if (!headPath || !fs.existsSync(headPath)) return 'dev';
   const raw = fs.readFileSync(headPath, 'utf8').trim();
-  const match = /^ref: refs\/heads\/(.+)$/.exec(raw);
-  return match ? match[1] : 'dev';
+  const match = /^ref:\s+refs\/heads\/(.+)$/iu.exec(raw);
+  if (match) {
+    return String(match[1]).replace(/[^a-zA-Z0-9._-]+/g, '-');
+  }
+  if (/^[0-9a-f]{7,40}$/iu.test(raw)) {
+    return `detached-${raw.slice(0, 7)}`;
+  }
+  return 'dev';
+}
+
+function defaultEpicsPath(projectRoot) {
+  return `_bmad-output/planning-artifacts/${branchName(projectRoot)}/epics.md`;
 }
 
 function projectContextPath(projectRoot) {
@@ -75,7 +104,7 @@ function defaultRegistry(projectRoot) {
     updatedAt: now,
     sources: {
       sprintStatusPath: '_bmad-output/implementation-artifacts/sprint-status.yaml',
-      epicsPath: 'epics.md',
+      epicsPath: defaultEpicsPath(projectRoot),
       storyArtifactsRoot: '_bmad-output/implementation-artifacts',
       specsRoot: 'specs',
     },
@@ -100,7 +129,17 @@ function readRegistryOrDefault(projectRoot) {
   if (!fs.existsSync(file)) {
     return defaultRegistry(projectRoot);
   }
-  return readJson(file);
+  const registry = readJson(file);
+  registry.sources = registry.sources || {
+    sprintStatusPath: '_bmad-output/implementation-artifacts/sprint-status.yaml',
+    epicsPath: defaultEpicsPath(projectRoot),
+    storyArtifactsRoot: '_bmad-output/implementation-artifacts',
+    specsRoot: 'specs',
+  };
+  if (!registry.sources.epicsPath || registry.sources.epicsPath === 'epics.md') {
+    registry.sources.epicsPath = defaultEpicsPath(projectRoot);
+  }
+  return registry;
 }
 
 function resolveProjectPath(projectRoot, candidate) {
@@ -304,13 +343,11 @@ function resolveArtifactCandidates(projectRoot, route, currentContext, branch) {
   if (workflow.includes('implementation-readiness')) {
     return [
       replacePatternTokens('{planning_artifacts}/{branch}/implementation-readiness-report-*.md', tokens),
-      replacePatternTokens('{planning_artifacts}/implementation-readiness-report-*.md', tokens),
     ];
   }
   if (workflow.includes('create-epics-and-stories')) {
     return [
       replacePatternTokens('{planning_artifacts}/{branch}/epics.md', tokens),
-      replacePatternTokens('{planning_artifacts}/epics.md', tokens),
     ];
   }
   if (currentContext?.artifactRoot && currentContext?.storyId) {

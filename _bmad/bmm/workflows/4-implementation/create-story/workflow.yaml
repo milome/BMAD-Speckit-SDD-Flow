@@ -20,7 +20,7 @@ validation: "{installed_path}/checklist.md"
 
 # Variables and inputs
 sprint_status: "{implementation_artifacts}/sprint-status.yaml" # Primary source for story tracking
-epics_file: "{planning_artifacts}/epics.md" # Enhanced epics+stories with BDD and source hints
+epics_file: "{planning_artifacts}/{branch}/epics.md"
 prd_file: "{planning_artifacts}/prd.md" # Fallback for requirements (if not in epics file)
 architecture_file: "{planning_artifacts}/architecture.md" # Fallback for constraints (if not in epics file)
 ux_file: "{planning_artifacts}/*ux*.md" # Fallback for UX requirements (if not in epics file)
@@ -47,7 +47,8 @@ input_file_patterns:
     sharded: "{planning_artifacts}/*ux*/*.md"
     load_strategy: "SELECTIVE_LOAD" # Only load if needed
   epics:
-    description: "Enhanced epics+stories file with BDD and source hints"
-    whole: "{planning_artifacts}/*epic*.md"
-    sharded: "{planning_artifacts}/*epic*/*.md"
+    description: "Enhanced epics+stories file with BDD and source hints (branch-scoped epics.md is required)"
+    whole: "{planning_artifacts}/{branch}/epics.md"
+    sharded: ""
     load_strategy: "SELECTIVE_LOAD" # Only load needed epic
+

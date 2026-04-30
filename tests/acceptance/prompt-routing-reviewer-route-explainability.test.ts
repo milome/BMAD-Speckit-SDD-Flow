@@ -56,8 +56,13 @@ describe('prompt-routing reviewer route explainability', () => {
         routeReasonSummary: expect.stringContaining('Registry-backed reviewer routing'),
         fallbackStatus: 'fallback_ready',
         isomorphismMaturity: 'projection_wired',
-        complexitySource: expect.stringContaining('legacy skill narrative cleanup'),
+        complexitySource: expect.stringContaining('Tri-host carrier parity'),
         remainingBlocker: expect.stringContaining('rollout gate'),
+        requiredRolloutProofs: expect.arrayContaining([
+          'codex_parity_proof',
+          'codex_closeout_proof',
+          'codex_scoring_proof',
+        ]),
         supportedProfiles: expect.arrayContaining(['implement_audit', 'bugfix_doc_audit']),
         hosts: expect.objectContaining({
           cursor: expect.objectContaining({
@@ -74,6 +79,14 @@ describe('prompt-routing reviewer route explainability', () => {
             preferredRoute: expect.objectContaining({
               tool: 'Agent',
               subtypeOrExecutor: 'code-reviewer',
+            }),
+          }),
+          codex: expect.objectContaining({
+            carrierSourcePath: '_bmad/codex/agents/code-reviewer.toml',
+            runtimeTargetPath: '.codex/agents/code-reviewer.toml',
+            preferredRoute: expect.objectContaining({
+              tool: 'codex',
+              subtypeOrExecutor: 'worker:audit',
             }),
           }),
         }),

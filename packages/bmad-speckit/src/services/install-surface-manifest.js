@@ -3,7 +3,7 @@ const path = require('path');
 const crypto = require('crypto');
 const AIRegistry = require('./ai-registry');
 
-const KNOWN_AGENT_IDS = ['cursor', 'claude-code'];
+const KNOWN_AGENT_IDS = ['cursor', 'claude-code', 'codex'];
 const AGENT_ID_ALIASES = {
   'cursor-agent': 'cursor',
   claude: 'claude-code',
@@ -11,6 +11,7 @@ const AGENT_ID_ALIASES = {
 const TOOL_TO_REGISTRY_ID = {
   cursor: 'cursor-agent',
   'claude-code': 'claude',
+  codex: 'codex',
 };
 
 const MANIFEST_REL_PATH = path.join('_bmad-output', 'config', 'bmad-speckit-install-manifest.json');
@@ -471,6 +472,30 @@ function collectManagedSurfaceSpecs(projectRoot, bmadRoot, installedTools) {
       for (const skillName of getPublishedSkillNames(bmadRoot, claudePlatformSkillsDir)) {
         add({
           logicalPath: toPortablePath(path.join('.claude', 'skills', skillName)),
+          kind: 'host_skill_dir',
+          ownerAgents,
+          deletePolicy: 'delete_entry_only',
+        });
+      }
+    }
+
+    if (agentId === 'codex') {
+      const ownerAgents = ['codex'];
+      for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'commands'), '.codex/commands', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
+      for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'speckit', 'commands'), '.codex/commands', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
+      for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'i18n'), '.codex/i18n', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
+      for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'codex', 'agents'), '.codex/agents', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
+      for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'codex', 'protocols'), '.codex/protocols', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
+      for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'codex', 'skills'), '.codex/skills', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
+      add({
+        logicalPath: '.codex/README.md',
+        kind: 'host_generated_file',
+        ownerAgents,
+        deletePolicy: 'match_generated_only',
+      });
+      for (const skillName of getPublishedSkillNames(bmadRoot, null)) {
+        add({
+          logicalPath: toPortablePath(path.join('.codex', 'skills', skillName)),
           kind: 'host_skill_dir',
           ownerAgents,
           deletePolicy: 'delete_entry_only',

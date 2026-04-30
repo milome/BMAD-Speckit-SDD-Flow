@@ -1,0 +1,193 @@
+schemaVersion: bmads-runtime/v1
+
+contracts:
+  governance: _bmad/_config/orchestration-governance.contract.yaml
+  dispatch: scripts/orchestration-dispatch-contract.ts
+  stageMapping: _bmad/_config/stage-mapping.yaml
+
+entry:
+  canonicalCommand: bmads
+  aliases:
+    - bmad-speckit
+    - $bmads
+    - /bmads
+    - $bmad-speckit
+    - /bmad-speckit
+  advisory:
+    bmadHelpCommand: bmad-help
+    message: Run bmad-help for full BMAD Method workflow guidance.
+
+layers:
+  - id: layer_1
+    name: Product Definition
+    stages:
+      - id: prd
+        governanceStage: prd
+        requiredGovernanceSignalsFrom: orchestration-governance.contract.yaml
+        recommendedWorkflows:
+          - bmad-bmm-create-product-brief
+          - bmad-bmm-create-prd
+          - bmad-bmm-validate-prd
+        evidence:
+          completionMarker: _bmad-output/runtime/context/layer_1-prd.complete.json
+          primaryArtifacts:
+            - _bmad-output/planning-artifacts/{branch}/prd.md
+            - _bmad-output/planning-artifacts/prd.md
+            - _bmad-output/planning-artifacts/product-brief-*.md
+        next:
+          layer: layer_2
+          stage: arch
+
+  - id: layer_2
+    name: Architecture
+    stages:
+      - id: arch
+        governanceStage: arch
+        requiredGovernanceSignalsFrom: orchestration-governance.contract.yaml
+        recommendedWorkflows:
+          - bmad-bmm-create-architecture
+          - bmad-bmm-validate-architecture
+        evidence:
+          primaryArtifacts:
+            - _bmad-output/planning-artifacts/{branch}/architecture.md
+            - _bmad-output/planning-artifacts/architecture.md
+            - docs/architecture/**
+        next:
+          layer: layer_3
+          stage: epics
+
+  - id: layer_3
+    name: Epic And Story Planning
+    stages:
+      - id: epics
+        governanceStage: epics
+        requiredGovernanceSignalsFrom: orchestration-governance.contract.yaml
+        recommendedWorkflows:
+          - bmad-bmm-create-epics-and-stories
+          - bmad-bmm-sprint-planning
+        evidence:
+          primaryArtifacts:
+            - _bmad-output/planning-artifacts/{branch}/epics.md
+            - _bmad-output/planning-artifacts/epics.md
+        next:
+          layer: layer_3
+          stage: story_create
+      - id: story_create
+        governanceStage: story_create
+        requiredGovernanceSignalsFrom: orchestration-governance.contract.yaml
+        recommendedWorkflows:
+          - bmad-bmm-create-epics-and-stories
+          - bmad-bmm-check-implementation-readiness
+          - bmad-bmm-sprint-planning
+          - bmad-bmm-create-story
+        evidence:
+          primaryArtifacts:
+            - _bmad-output/sprint-status.yaml
+            - docs/stories/**
+        next:
+          layer: layer_4
+          stage: specify
+
+  - id: layer_4
+    name: Speckit Implementation
+    stages:
+      - id: specify
+        governanceStage: specify
+        requiredGovernanceSignalsFrom: orchestration-governance.contract.yaml
+        recommendedWorkflows:
+          - speckit-workflow
+        dispatch:
+          taskType: document
+          hosts: [cursor, claude, codex]
+        next:
+          layer: layer_4
+          stage: plan
+      - id: plan
+        governanceStage: plan
+        requiredGovernanceSignalsFrom: orchestration-governance.contract.yaml
+        recommendedWorkflows:
+          - speckit-workflow
+        dispatch:
+          taskType: document
+          hosts: [cursor, claude, codex]
+        next:
+          layer: layer_4
+          stage: gaps
+      - id: gaps
+        governanceStage: gaps
+        requiredGovernanceSignalsFrom: orchestration-governance.contract.yaml
+        recommendedWorkflows:
+          - speckit-workflow
+        dispatch:
+          taskType: audit
+          hosts: [cursor, claude, codex]
+        next:
+          layer: layer_4
+          stage: tasks
+      - id: tasks
+        governanceStage: tasks
+        requiredGovernanceSignalsFrom: orchestration-governance.contract.yaml
+        recommendedWorkflows:
+          - speckit-workflow
+        dispatch:
+          taskType: document
+          hosts: [cursor, claude, codex]
+        next:
+          layer: layer_4
+          stage: implement
+      - id: implement
+        governanceStage: implement
+        requiredGovernanceSignalsFrom: orchestration-governance.contract.yaml
+        recommendedWorkflows:
+          - speckit-workflow
+        dispatch:
+          taskType: implement
+          hosts:
+            - cursor
+            - claude
+            - codex
+        next:
+          layer: layer_5
+          stage: post_audit
+
+  - id: layer_5
+    name: Closeout
+    stages:
+      - id: post_audit
+        governanceStage: post_audit
+        requiredGovernanceSignalsFrom: orchestration-governance.contract.yaml
+        recommendedWorkflows:
+          - bmad-code-reviewer-lifecycle
+        dispatch:
+          taskType: audit
+          hosts: [cursor, claude, codex]
+        next:
+          layer: layer_5
+          stage: pr_review
+      - id: pr_review
+        governanceStage: post_audit
+        requiredGovernanceSignalsFrom: orchestration-governance.contract.yaml
+        gates:
+          required:
+            - pr_topology_closed
+        next:
+          layer: layer_5
+          stage: release_gate
+      - id: release_gate
+        governanceStage: post_audit
+        requiredGovernanceSignalsFrom: orchestration-governance.contract.yaml
+        gates:
+          required:
+            - release_gate
+            - quality_gate
+            - sprint_audit
+        next:
+          layer: layer_5
+          stage: delivery_truth_gate
+      - id: delivery_truth_gate
+        governanceStage: post_audit
+        requiredGovernanceSignalsFrom: orchestration-governance.contract.yaml
+        gates:
+          required:
+            - delivery_truth_gate
+            - long_run_development_evidence

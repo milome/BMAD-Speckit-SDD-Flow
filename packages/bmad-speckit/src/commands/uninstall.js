@@ -293,6 +293,7 @@ function uninstallCommand(options = {}) {
   const stopRoots = new Set([
     path.resolve(projectRoot, '.cursor'),
     path.resolve(projectRoot, '.claude'),
+    path.resolve(projectRoot, '.codex'),
   ]);
 
   const deletedEntries = [];

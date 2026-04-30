@@ -15,7 +15,7 @@ describe('runtime dashboard snapshot markdown', () => {
       overview: {
         status: 'running',
         health_score: 91,
-        trend: '升',
+        trend: 'stable',
         veto_count: 0,
         dimensions: [],
         weak_top3: [],
@@ -80,14 +80,16 @@ describe('runtime dashboard snapshot markdown', () => {
             hostLocalFallbackBusinessRulesForbidden: true,
           },
           compatibilityGuards: {
-            codexNoopRequired: true,
-            codexBehaviorChangeAllowed: false,
+            codexNoopRequired: false,
+            codexBehaviorChangeAllowed: true,
           },
           requiredRolloutProofs: [
             'parity_proof',
             'consumer_install_proof',
             'rollback_proof',
-            'codex_noop_proof',
+            'codex_parity_proof',
+            'codex_closeout_proof',
+            'codex_scoring_proof',
           ],
           supportedProfiles: ['story_audit', 'implement_audit'],
           supportedAuditEntryStages: ['story', 'implement'],
@@ -148,19 +150,20 @@ describe('runtime dashboard snapshot markdown', () => {
             fallbackStatus: 'fallback_ready',
             isomorphismMaturity: 'projection_wired',
             complexitySource:
-              'Dual-host carrier parity is in place, but legacy skill narrative cleanup and proof expansion still remain before rollout.',
-            remainingBlocker:
-              'Complete parity proof, rollback proof, Codex no-op proof, and rollout gate before declaring full isomorphism.',
+              'Triple-host carrier parity is wired through reviewer shared-core routing for Cursor, Claude, and Codex.',
+            remainingBlocker: 'none',
             supportedProfiles: ['story_audit', 'implement_audit'],
             requiredRolloutProofs: [
               'parity_proof',
               'consumer_install_proof',
               'rollback_proof',
-              'codex_noop_proof',
+              'codex_parity_proof',
+              'codex_closeout_proof',
+              'codex_scoring_proof',
             ],
             compatibilityGuards: {
-              codexNoopRequired: true,
-              codexBehaviorChangeAllowed: false,
+              codexNoopRequired: false,
+              codexBehaviorChangeAllowed: true,
             },
             hosts: {
               cursor: {
@@ -178,6 +181,14 @@ describe('runtime dashboard snapshot markdown', () => {
                 fallbackRoute: { tool: 'Agent', subtypeOrExecutor: 'general-purpose' },
                 fallbackReason:
                   'Use Agent/general-purpose only when Agent/code-reviewer is unavailable, while preserving the shared reviewer contract and runAuditorHost closeout.',
+              },
+              codex: {
+                carrierSourcePath: '_bmad/codex/agents/code-reviewer.toml',
+                runtimeTargetPath: '.codex/agents/code-reviewer.toml',
+                preferredRoute: { tool: 'codex', subtypeOrExecutor: 'worker:audit' },
+                fallbackRoute: { tool: 'codex', subtypeOrExecutor: 'general-purpose' },
+                fallbackReason:
+                  'Use the Codex no-hooks worker adapter fallback only when the dedicated code-reviewer carrier is unavailable, while preserving the shared reviewer contract and runAuditorHost closeout.',
               },
             },
             activeAuditConsumer: {

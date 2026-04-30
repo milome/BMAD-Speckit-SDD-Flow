@@ -6,6 +6,8 @@ description: |
 
 # BMAD Standalone Tasks
 
+> Party-mode final-output contract：`quick_probe_20`、`decision_root_cause_50`、`final_solution_task_list_100` 均可展示；若低档位被要求产出最终方案，必须拒绝当前档位并升级到 `final_solution_task_list_100`。
+
 ## Main Agent Orchestration Surface
 
 在 interactive main-agent 模式下，主 Agent 在发起、继续或收口 `standalone_tasks` 链路前，必须优先读取：

@@ -11,6 +11,10 @@ import { ensureFacilitatorRuntimeDefinition } from '../facilitator-runtime-defin
 import { mergeLanguagePolicyIntoProjectContext } from '../runtime-context';
 import { resolveLanguagePolicyForSession } from './resolve-for-session';
 
+function isDirectResolveForSessionCli(entry: string | undefined): boolean {
+  return /(^|[\\/])resolve-for-session(\.[cm]?js|\.ts)?$/iu.test(entry ?? '');
+}
+
 function readStdin(): Promise<string> {
   return new Promise((resolve, reject) => {
     let data = '';
@@ -88,7 +92,9 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((e) => {
-  process.stderr.write(`${e && (e as Error).message ? (e as Error).message : e}\n`);
-  process.exit(1);
-});
+if (require.main === module && isDirectResolveForSessionCli(process.argv[1])) {
+  main().catch((e) => {
+    process.stderr.write(`${e && (e as Error).message ? (e as Error).message : e}\n`);
+    process.exit(1);
+  });
+}

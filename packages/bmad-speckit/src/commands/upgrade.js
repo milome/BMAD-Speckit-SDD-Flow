@@ -15,6 +15,16 @@ const { readJsonSafe } = require('../utils/json');
 const templateFetcher = require('../services/template-fetcher');
 const { generateSkeleton } = require('./init-skeleton');
 
+function preserveConfigFields(cwd, fields) {
+  const configPath = getProjectConfigPath(cwd);
+  const current = readJsonSafe(configPath) || {};
+  const next = { ...current };
+  for (const [key, value] of Object.entries(fields)) {
+    if (value !== undefined) next[key] = value;
+  }
+  fs.writeFileSync(configPath, `${JSON.stringify(next, null, 2)}\n`, 'utf8');
+}
+
 /**
  * Extract version from template dir package.json or _bmad/package.json.
  * @param {string} templateDir - Path to template directory.
@@ -96,6 +106,13 @@ async function upgradeCommandAsync(cwd, options = {}) {
       const modules = Array.isArray(config.modules) ? config.modules : null;
       await generateSkeleton(resolvedCwd, templateDir, modules, true);
       set('templateVersion', resolvedVersion, { scope: 'project', cwd: resolvedCwd });
+      preserveConfigFields(resolvedCwd, {
+        selectedAI: config.selectedAI,
+        selectedAIs: config.selectedAIs,
+        bmadPath: config.bmadPath,
+        noAiSkills: config.noAiSkills,
+        modules: config.modules,
+      });
     }
 
     const selectedAIs = Array.isArray(config.selectedAIs)
