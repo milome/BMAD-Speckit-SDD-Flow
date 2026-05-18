@@ -57,7 +57,9 @@ $OPTIONAL_SKILLS = @(
     'pr-template-generator',
     'auto-commit-utf8',
     'git-push-monitor',
-    'bmad-eval-analytics'
+    'bmad-eval-analytics',
+    'requirements-contract-authoring',
+    'req-trace-matrix-prompt-generator'
 )
 $V6_CORE_SKILLS = @(
     'bmad-party-mode',

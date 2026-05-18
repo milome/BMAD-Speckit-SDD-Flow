@@ -15,7 +15,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PKG_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 REQUIRED_SKILLS=(speckit-workflow bmad-story-assistant bmad-bug-assistant bmad-code-reviewer-lifecycle code-review)
-OPTIONAL_SKILLS=(bmad-standalone-tasks bmad-customization-backup bmad-orchestrator npm-public-release using-git-worktrees pr-template-generator auto-commit-utf8 git-push-monitor)
+OPTIONAL_SKILLS=(bmad-standalone-tasks bmad-customization-backup bmad-orchestrator npm-public-release using-git-worktrees pr-template-generator auto-commit-utf8 git-push-monitor requirements-contract-authoring req-trace-matrix-prompt-generator)
 
 show_help() {
     echo "BMAD-Speckit-SDD-Flow setup script (shell)"

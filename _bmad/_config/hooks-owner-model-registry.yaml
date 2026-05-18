@@ -1,0 +1,722 @@
+version: 1
+registry_id: hooks-owner-model-registry
+owner: main-agent-orchestration
+status: frozen
+updated_at: "2026-05-16T20:34:15+08:00"
+freeze_scope:
+  - final_paths
+  - retained_hooks
+  - no_hook_equivalents
+  - owner_models
+  - input_artifacts
+  - output_artifacts
+  - record_event_types
+description: >
+  Canonical registry mapping retained Claude/Cursor/shared runtime hooks and no-hook equivalents to
+  six-model ownership. Hooks are event capture and routing surfaces only; they never close
+  requirements directly.
+shared_required_fields:
+  - hookId
+  - host
+  - path
+  - ownerModel
+  - trigger
+  - producer
+  - inputArtifacts
+  - outputArtifacts
+  - recordEventTypes
+  - writesRequirementEvidence
+  - parityGroup
+  - completionAuthority
+completion_authority_values:
+  none: May not claim completion.
+  evidence_only: May produce process evidence only.
+hook_rules:
+  hooks_must_not_close_requirements: true
+  hooks_must_emit_or_index_requirement_artifacts: true
+  host_parity_oracle: Compare emitted envelopes after ingest, not raw hook text.
+  requirement_related_outputs_must_enter_artifactIndex: true
+  helper_hooks_without_requirement_events_are_allowed: true
+hooks:
+  - hookId: claude_emit_runtime_policy_cli
+    host: claude
+    path: _bmad/claude/hooks/emit-runtime-policy-cli.cjs
+    ownerModel: implementation_readiness
+    secondaryModels:
+      - architecture_confirmation
+    trigger: runtime_policy_cli
+    producer: runtime_policy_hook
+    inputArtifacts:
+      - runtime_context
+      - runtime_policy_config
+    outputArtifacts:
+      - runtime_policy_payload
+    recordEventTypes:
+      - readiness_check_recorded
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: runtime_policy_emit
+
+  - hookId: cursor_emit_runtime_policy_cli
+    host: cursor
+    path: _bmad/cursor/hooks/emit-runtime-policy-cli.cjs
+    ownerModel: implementation_readiness
+    secondaryModels:
+      - architecture_confirmation
+    trigger: runtime_policy_cli
+    producer: runtime_policy_hook
+    inputArtifacts:
+      - runtime_context
+      - runtime_policy_config
+    outputArtifacts:
+      - runtime_policy_payload
+    recordEventTypes:
+      - readiness_check_recorded
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: runtime_policy_emit
+
+  - hookId: shared_run_emit_runtime_policy
+    host: shared
+    path: _bmad/runtime/hooks/run-emit-runtime-policy.cjs
+    ownerModel: implementation_readiness
+    secondaryModels:
+      - architecture_confirmation
+    trigger: runtime_policy_emit_core
+    producer: runtime_policy_hook
+    inputArtifacts:
+      - runtime_context
+      - runtime_policy_config
+    outputArtifacts:
+      - runtime_policy_payload
+    recordEventTypes:
+      - readiness_check_recorded
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: runtime_policy_emit
+
+  - hookId: claude_runtime_policy_inject
+    host: claude
+    path: _bmad/claude/hooks/runtime-policy-inject.cjs
+    ownerModel: implementation_readiness
+    secondaryModels:
+      - architecture_confirmation
+    trigger: pre_tool_or_session_policy
+    producer: runtime_policy_hook
+    inputArtifacts:
+      - runtime_context
+      - runtime_policy_config
+    outputArtifacts:
+      - runtime_policy_payload
+    recordEventTypes:
+      - readiness_check_recorded
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: runtime_policy_inject
+  - hookId: cursor_runtime_policy_inject
+    host: cursor
+    path: _bmad/cursor/hooks/runtime-policy-inject.cjs
+    ownerModel: implementation_readiness
+    secondaryModels:
+      - architecture_confirmation
+    trigger: pre_tool_or_session_policy
+    producer: runtime_policy_hook
+    inputArtifacts:
+      - runtime_context
+      - runtime_policy_config
+    outputArtifacts:
+      - runtime_policy_payload
+    recordEventTypes:
+      - readiness_check_recorded
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: runtime_policy_inject
+  - hookId: shared_runtime_policy_inject_core
+    host: shared
+    path: _bmad/runtime/hooks/runtime-policy-inject-core.cjs
+    ownerModel: implementation_readiness
+    secondaryModels:
+      - architecture_confirmation
+    trigger: runtime_policy_core
+    producer: runtime_policy_hook
+    inputArtifacts:
+      - runtime_context
+      - runtime_policy_config
+    outputArtifacts:
+      - runtime_policy_payload
+    recordEventTypes:
+      - readiness_check_recorded
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: runtime_policy_inject
+  - hookId: claude_post_tool_use
+    host: claude
+    path: _bmad/claude/hooks/post-tool-use.cjs
+    ownerModel: execution_closure
+    secondaryModels:
+      - audit_review
+    trigger: post_tool_use
+    producer: tool_trace_hook
+    inputArtifacts:
+      - tool_call_event
+    outputArtifacts:
+      - _bmad-output/runtime/artifacts/tool-traces/<runId>/**
+      - post_tool_trace_event
+    recordEventTypes:
+      - execution_iteration_recorded
+      - audit_iteration_recorded
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: tool_trace_capture
+  - hookId: cursor_post_tool_use
+    host: cursor
+    path: _bmad/cursor/hooks/post-tool-use.cjs
+    ownerModel: execution_closure
+    secondaryModels:
+      - audit_review
+    trigger: post_tool_use
+    producer: tool_trace_hook
+    inputArtifacts:
+      - tool_call_event
+    outputArtifacts:
+      - _bmad-output/runtime/artifacts/tool-traces/<runId>/**
+      - post_tool_trace_event
+    recordEventTypes:
+      - execution_iteration_recorded
+      - audit_iteration_recorded
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: tool_trace_capture
+  - hookId: shared_post_tool_use_core
+    host: shared
+    path: _bmad/runtime/hooks/post-tool-use-core.cjs
+    ownerModel: execution_closure
+    secondaryModels:
+      - audit_review
+    trigger: post_tool_use_core
+    producer: tool_trace_hook
+    inputArtifacts:
+      - tool_call_event
+    outputArtifacts:
+      - post_tool_trace_event
+    recordEventTypes:
+      - execution_iteration_recorded
+      - audit_iteration_recorded
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: tool_trace_capture
+  - hookId: shared_pre_continue_check
+    host: shared
+    path: _bmad/runtime/hooks/pre-continue-check.cjs
+    ownerModel: implementation_readiness
+    secondaryModels:
+      - audit_review
+    trigger: before_continue
+    producer: runtime_gate_hook
+    inputArtifacts:
+      - runtime_context
+      - requirement_record
+      - deferred_gap_state
+    outputArtifacts:
+      - pre_continue_check_result
+      - queue_item
+    recordEventTypes:
+      - readiness_check_recorded
+      - readiness_blocked
+      - requirement_gap_blocked
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: host_specific
+
+  - hookId: claude_hook_load_messages
+    host: claude
+    path: _bmad/claude/hooks/hook-load-messages.cjs
+    ownerModel: execution_closure
+    secondaryModels: []
+    trigger: hook_message_load
+    producer: host_hook
+    inputArtifacts:
+      - hook_message_catalog
+    outputArtifacts:
+      - loaded_hook_messages
+    recordEventTypes: []
+    completionAuthority: none
+    writesRequirementEvidence: false
+    parityGroup: hook_message_loading
+
+  - hookId: shared_hook_load_messages
+    host: shared
+    path: _bmad/runtime/hooks/hook-load-messages.cjs
+    ownerModel: execution_closure
+    secondaryModels: []
+    trigger: hook_message_load_core
+    producer: host_hook
+    inputArtifacts:
+      - hook_message_catalog
+    outputArtifacts:
+      - loaded_hook_messages
+    recordEventTypes: []
+    completionAuthority: none
+    writesRequirementEvidence: false
+    parityGroup: hook_message_loading
+
+  - hookId: shared_build_runtime_error_message
+    host: shared
+    path: _bmad/runtime/hooks/build-runtime-error-message.cjs
+    ownerModel: audit_review
+    secondaryModels: []
+    trigger: runtime_error_format
+    producer: governance_hook
+    inputArtifacts:
+      - runtime_error
+    outputArtifacts:
+      - runtime_error_message
+    recordEventTypes: []
+    completionAuthority: none
+    writesRequirementEvidence: false
+    parityGroup: runtime_error_format
+
+  - hookId: shared_governance_runner_summary_format
+    host: shared
+    path: _bmad/runtime/hooks/governance-runner-summary-format.cjs
+    ownerModel: audit_review
+    secondaryModels: []
+    trigger: runner_summary_format
+    producer: governance_hook
+    inputArtifacts:
+      - runner_summary
+    outputArtifacts:
+      - formatted_runner_summary
+    recordEventTypes:
+      - audit_iteration_recorded
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: governance_runner_summary
+
+  - hookId: shared_governance_runner_summary_presenter
+    host: shared
+    path: _bmad/runtime/hooks/governance-runner-summary-presenter.cjs
+    ownerModel: audit_review
+    secondaryModels: []
+    trigger: runner_summary_present
+    producer: governance_hook
+    inputArtifacts:
+      - formatted_runner_summary
+    outputArtifacts:
+      - presented_runner_summary
+    recordEventTypes:
+      - audit_iteration_recorded
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: governance_runner_summary
+
+  - hookId: shared_party_mode_current_session
+    host: shared
+    path: _bmad/runtime/hooks/party-mode-current-session.cjs
+    ownerModel: audit_review
+    secondaryModels:
+      - requirement_confirmation
+    trigger: party_mode_session_read
+    producer: party_mode_hook
+    inputArtifacts:
+      - _bmad-output/party-mode/runtime/current-session.json
+    outputArtifacts:
+      - party_mode_current_session
+    recordEventTypes:
+      - audit_iteration_recorded
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: party_mode_session
+
+  - hookId: shared_party_mode_read_current_session
+    host: shared
+    path: _bmad/runtime/hooks/party-mode-read-current-session.cjs
+    ownerModel: audit_review
+    secondaryModels:
+      - requirement_confirmation
+    trigger: party_mode_session_read
+    producer: party_mode_hook
+    inputArtifacts:
+      - _bmad-output/party-mode/runtime/current-session.json
+    outputArtifacts:
+      - party_mode_current_session
+    recordEventTypes:
+      - audit_iteration_recorded
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: party_mode_session
+
+  - hookId: shared_party_mode_session_event
+    host: shared
+    path: _bmad/runtime/hooks/party-mode-session-event.cjs
+    ownerModel: audit_review
+    secondaryModels:
+      - requirement_confirmation
+      - architecture_confirmation
+    trigger: party_mode_session_event
+    producer: party_mode_hook
+    inputArtifacts:
+      - party_mode_session
+    outputArtifacts:
+      - party_mode_session_event
+    recordEventTypes:
+      - audit_iteration_recorded
+      - contract_summary_recorded
+      - architecture_confirmation_recorded
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: party_mode_session
+
+  - hookId: shared_runtime_step_state
+    host: shared
+    path: _bmad/runtime/hooks/runtime-step-state.cjs
+    ownerModel: implementation_readiness
+    secondaryModels:
+      - execution_closure
+    trigger: runtime_step_state_resolution
+    producer: runtime_gate_hook
+    inputArtifacts:
+      - runtime_context
+      - governed_artifact_candidates
+    outputArtifacts:
+      - runtime_step_state
+    recordEventTypes:
+      - readiness_check_recorded
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: runtime_step_state
+
+  - hookId: shared_should_skip_runtime_policy
+    host: shared
+    path: _bmad/runtime/hooks/should-skip-runtime-policy.cjs
+    ownerModel: implementation_readiness
+    secondaryModels: []
+    trigger: runtime_policy_skip_decision
+    producer: runtime_policy_hook
+    inputArtifacts:
+      - hook_event
+      - runtime_policy_config
+    outputArtifacts:
+      - runtime_policy_skip_decision
+    recordEventTypes: []
+    completionAuthority: none
+    writesRequirementEvidence: false
+    parityGroup: runtime_policy_inject
+  - hookId: shared_governance_rerun_queue
+    host: shared
+    path: _bmad/runtime/hooks/governance-rerun-queue.cjs
+    ownerModel: audit_review
+    secondaryModels:
+      - execution_closure
+    trigger: gate_or_audit_failure
+    producer: governance_hook
+    inputArtifacts:
+      - gate_failure
+      - audit_finding
+    outputArtifacts:
+      - _bmad-output/runtime/governance/queue/**
+    recordEventTypes:
+      - rerun_required
+      - rca_created
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: host_specific
+  - hookId: shared_governance_stage_event_emitter
+    host: shared
+    path: _bmad/runtime/hooks/governance-stage-event-emitter.cjs
+    ownerModel: audit_review
+    secondaryModels:
+      - execution_closure
+    trigger: stage_result
+    producer: governance_hook
+    inputArtifacts:
+      - stage_result
+    outputArtifacts:
+      - _bmad-output/runtime/governance/queue/pending-events/**
+    recordEventTypes:
+      - audit_iteration_recorded
+      - rerun_required
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: host_specific
+  - hookId: shared_governance_packet_hard_closeout
+    host: shared
+    path: _bmad/runtime/hooks/governance-packet-hard-closeout.cjs
+    ownerModel: delivery_confirmation
+    secondaryModels:
+      - audit_review
+    trigger: stop_or_packet_closeout
+    producer: governance_hook
+    inputArtifacts:
+      - governance_packet
+      - task_report
+      - audit_closeout
+    outputArtifacts:
+      - packet_hard_closeout_result
+    recordEventTypes:
+      - closeout_check_recorded
+      - audit_iteration_recorded
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: host_specific
+  - hookId: claude_stop
+    host: claude
+    path: _bmad/claude/hooks/stop.cjs
+    ownerModel: delivery_confirmation
+    secondaryModels:
+      - audit_review
+    trigger: stop
+    producer: host_hook
+    inputArtifacts:
+      - session_state
+      - packet_state
+    outputArtifacts:
+      - stop_event
+      - packet_hard_closeout_result
+    recordEventTypes:
+      - closeout_check_recorded
+      - audit_iteration_recorded
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: host_specific
+  - hookId: claude_session_start
+    host: claude
+    path: _bmad/claude/hooks/session-start.cjs
+    ownerModel: execution_closure
+    secondaryModels: []
+    trigger: session_start
+    producer: host_hook
+    inputArtifacts:
+      - workspace_context
+    outputArtifacts:
+      - session_runtime_context
+    recordEventTypes:
+      - recovery_context_updated
+    completionAuthority: evidence_only
+    writesRequirementEvidence: false
+    parityGroup: session_start_context
+  - hookId: cursor_runtime_dashboard_session_start
+    host: cursor
+    path: _bmad/cursor/hooks/runtime-dashboard-session-start.cjs
+    ownerModel: delivery_confirmation
+    secondaryModels:
+      - execution_closure
+    trigger: session_start
+    producer: dashboard_hook
+    inputArtifacts:
+      - runtime_context
+      - dashboard_state
+    outputArtifacts:
+      - _bmad-output/dashboard/runtime-dashboard.json
+    recordEventTypes:
+      - closeout_check_recorded
+    completionAuthority: none
+    writesRequirementEvidence: true
+    parityGroup: session_start_context
+  - hookId: shared_runtime_dashboard_auto_start
+    host: shared
+    path: _bmad/runtime/hooks/runtime-dashboard-auto-start.cjs
+    ownerModel: delivery_confirmation
+    secondaryModels:
+      - execution_closure
+    trigger: session_start_or_dashboard_request
+    producer: dashboard_hook
+    inputArtifacts:
+      - runtime_context
+      - dashboard_state
+    outputArtifacts:
+      - _bmad-output/dashboard/runtime-dashboard.json
+    recordEventTypes:
+      - closeout_check_recorded
+    completionAuthority: none
+    writesRequirementEvidence: true
+    parityGroup: dashboard_projection
+  - hookId: claude_subagent_result_summary
+    host: claude
+    path: _bmad/claude/hooks/subagent-result-summary.cjs
+    ownerModel: execution_closure
+    secondaryModels:
+      - audit_review
+    trigger: subagent_result
+    producer: host_hook
+    inputArtifacts:
+      - subagent_result
+    outputArtifacts:
+      - subagent_summary
+    recordEventTypes:
+      - execution_iteration_recorded
+      - audit_iteration_recorded
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: subagent_summary
+  - hookId: cursor_subagent_result_summary
+    host: cursor
+    path: _bmad/cursor/hooks/subagent-result-summary.cjs
+    ownerModel: execution_closure
+    secondaryModels:
+      - audit_review
+    trigger: subagent_result
+    producer: host_hook
+    inputArtifacts:
+      - subagent_result
+    outputArtifacts:
+      - subagent_summary
+    recordEventTypes:
+      - execution_iteration_recorded
+      - audit_iteration_recorded
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: subagent_summary
+  - hookId: claude_pre_agent_summary
+    host: claude
+    path: _bmad/claude/hooks/pre-agent-summary.cjs
+    ownerModel: execution_closure
+    secondaryModels:
+      - audit_review
+    trigger: before_subagent_summary
+    producer: host_hook
+    inputArtifacts:
+      - subagent_context
+    outputArtifacts:
+      - pre_agent_summary
+    recordEventTypes:
+      - execution_iteration_recorded
+      - audit_iteration_recorded
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: host_specific
+  - hookId: shared_deferred_gap_governance
+    host: shared
+    path: _bmad/runtime/hooks/deferred-gap-governance.cjs
+    ownerModel: audit_review
+    secondaryModels:
+      - requirement_confirmation
+    trigger: deferred_gap_check
+    producer: governance_hook
+    inputArtifacts:
+      - deferred_gap_state
+      - requirement_record
+    outputArtifacts:
+      - _bmad-output/deferred-gap-audit.md
+    recordEventTypes:
+      - audit_iteration_recorded
+      - requirement_gap_blocked
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: deferred_gap_governance
+  - hookId: shared_party_mode_session_runtime
+    host: shared
+    path: _bmad/runtime/hooks/party-mode-session-runtime.cjs
+    ownerModel: audit_review
+    secondaryModels:
+      - requirement_confirmation
+      - architecture_confirmation
+    trigger: party_mode_session_event
+    producer: party_mode_hook
+    inputArtifacts:
+      - party_mode_session
+    outputArtifacts:
+      - _bmad-output/party-mode/runtime/current-session.json
+      - _bmad-output/party-mode/sessions/**
+    recordEventTypes:
+      - audit_iteration_recorded
+      - contract_summary_recorded
+      - architecture_confirmation_recorded
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: host_specific
+  - hookId: shared_party_mode_turn_lock
+    host: shared
+    path: _bmad/runtime/hooks/party-mode-turn-lock.cjs
+    ownerModel: audit_review
+    secondaryModels: []
+    trigger: party_mode_turn
+    producer: party_mode_hook
+    inputArtifacts:
+      - party_mode_session
+    outputArtifacts:
+      - party_mode_turn_lock
+    recordEventTypes:
+      - audit_iteration_recorded
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: host_specific
+no_hook_equivalents:
+  - equivalentId: codex_no_hooks_ingress
+    host: codex
+    ownerModel: execution_closure
+    trigger: codex_cli_or_main_agent_ingress
+    paths:
+      - scripts/main-agent-unified-ingress.ts
+      - scripts/main-agent-orchestration.ts
+    inputArtifacts:
+      - cli_invocation
+      - workspace_context
+      - runtime_context
+    outputArtifacts:
+      - _bmad-output/runtime/requirements/<requirement-set-id>/artifacts/unified-ingress-<run-id>.json
+      - _bmad-output/runtime/governance/orchestration-state/*.json
+    replacesHooks:
+      - claude_session_start
+      - cursor_runtime_dashboard_session_start
+    recordEventTypes:
+      - execution_iteration_recorded
+      - recovery_context_updated
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: session_start_context
+  - equivalentId: codex_no_hooks_worker
+    host: codex
+    ownerModel: execution_closure
+    trigger: codex_worker_dispatch
+    paths:
+      - scripts/main-agent-codex-worker-adapter.ts
+      - _bmad/codex/agents/codex-no-hooks-worker.toml
+    inputArtifacts:
+      - governance_packet
+      - runtime_context
+    outputArtifacts:
+      - _bmad-output/runtime/codex/logs/<packetId>.stdin.prompt.txt
+      - _bmad-output/runtime/codex/logs/<packetId>.stdout.log
+      - _bmad-output/runtime/codex/logs/<packetId>.stderr.log
+      - task_report
+    replacesHooks:
+      - claude_post_tool_use
+      - cursor_post_tool_use
+      - shared_post_tool_use_core
+    recordEventTypes:
+      - task_report_ingested
+      - execution_iteration_recorded
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: tool_trace_capture
+  - equivalentId: codex_no_hooks_result_ingest
+    host: codex
+    ownerModel: audit_review
+    trigger: codex_execution_result_ingest
+    paths:
+      - scripts/governance-execution-result-ingestor.ts
+      - scripts/governance-packet-reconciler.ts
+    inputArtifacts:
+      - execution_result
+      - rerun_gate_result
+      - governance_packet
+      - task_report
+    outputArtifacts:
+      - execution_result_projection
+      - rerun_gate_projection
+      - reconciliation_report
+    replacesHooks:
+      - shared_governance_stage_event_emitter
+      - shared_governance_packet_hard_closeout
+    recordEventTypes:
+      - audit_iteration_recorded
+      - rerun_required
+      - closeout_check_recorded
+    completionAuthority: evidence_only
+    writesRequirementEvidence: true
+    parityGroup: execution_result_ingest
+registry_rules:
+  unregistered_hook_policy: may_emit_host_event_but_not_count_for_requirement_pass
+  completion_rule: Hooks never set requirement-record status to closed.
+  parity_rule: hooks-enabled and no-hook paths must converge after requirement-record ingest.
