@@ -367,6 +367,38 @@ function validateRuntimePolicySnapshotRef(packet: JsonObject): string[] {
   return mismatches;
 }
 
+function validateFailureRecords(packet: JsonObject): string[] {
+  const mismatches: string[] = [];
+  for (const failure of arrayOfObjects(packet.failureRecords)) {
+    if (text(failure.eventType) && text(failure.eventType) !== 'failure_recorded') {
+      mismatches.push('failure_record_event_type_invalid');
+    }
+    if (!text(failure.failureId)) mismatches.push('failure_record_id_missing');
+    if (!text(failure.type)) mismatches.push('failure_record_type_missing');
+    if (!['open', 'in_progress', 'resolved', 'blocked', 'superseded'].includes(text(failure.status))) {
+      mismatches.push('failure_record_status_invalid');
+    }
+    if (arrayOfObjects(failure.sourceRefs).length === 0) mismatches.push('failure_record_source_refs_missing');
+    if (Object.prototype.hasOwnProperty.call(failure, 'result')) mismatches.push('failure_record_result_forbidden');
+    if (Object.prototype.hasOwnProperty.call(failure, 'decision')) mismatches.push('failure_record_decision_forbidden');
+  }
+  return mismatches;
+}
+
+function validateRerunLoops(packet: JsonObject): string[] {
+  const mismatches: string[] = [];
+  for (const loop of arrayOfObjects(packet.rerunLoops)) {
+    if (!text(loop.rerunLoopId)) mismatches.push('rerun_loop_id_missing');
+    if (!['open', 'in_progress', 'no_progress', 'resolved', 'blocked', 'abandoned_by_user_confirmation'].includes(text(loop.status))) {
+      mismatches.push('rerun_loop_status_invalid');
+    }
+    if (arrayOfObjects(loop.sourceRefs).length === 0) mismatches.push('rerun_loop_source_refs_missing');
+    if (Object.prototype.hasOwnProperty.call(loop, 'result')) mismatches.push('rerun_loop_result_forbidden');
+    if (Object.prototype.hasOwnProperty.call(loop, 'decision')) mismatches.push('rerun_loop_decision_forbidden');
+  }
+  return mismatches;
+}
+
 function validatePacket(packet: JsonObject, record: JsonObject): string[] {
   const entryFlowState =
     packet.entryFlowState && typeof packet.entryFlowState === 'object' && !Array.isArray(packet.entryFlowState)
@@ -393,6 +425,8 @@ function validatePacket(packet: JsonObject, record: JsonObject): string[] {
     ...validateGlobalContractTraceabilityPolicy(effectiveTraceabilityPolicy, 'effective'),
     ...validateTraceStatusPolicy(effectiveTraceStatusPolicy, 'effective'),
     ...validateRuntimePolicySnapshotRef(packet),
+    ...validateFailureRecords(packet),
+    ...validateRerunLoops(packet),
   ];
   if (containsForbiddenField(packet, 'result')) mismatches.push('forbidden_result_field');
   if (containsForbiddenField(packet, 'fullDiff')) mismatches.push('forbidden_inline_full_diff');
@@ -556,6 +590,18 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
     recordedAt,
     recordedBy,
   }));
+  const failureEvents = arrayOfObjects(packet.failureRecords).map((failure) => ({
+    ...failure,
+    eventType: 'failure_recorded',
+    recordedAt: text(failure.recordedAt) || recordedAt,
+    recordedBy: text(failure.recordedBy) || recordedBy,
+  }));
+  const rerunLoopEvents = arrayOfObjects(packet.rerunLoops).map((loop) => ({
+    ...loop,
+    sourceRefs: arrayOfObjects(loop.sourceRefs),
+    blockerRefs: arrayOfObjects(loop.blockerRefs),
+    recheckRefs: arrayOfObjects(loop.recheckRefs),
+  }));
   const existingDeliveryEvidence =
     record.deliveryEvidence && typeof record.deliveryEvidence === 'object' && !Array.isArray(record.deliveryEvidence)
       ? (record.deliveryEvidence as JsonObject)
@@ -614,6 +660,8 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
     executionIterations: [...arrayOfObjects(record.executionIterations), executionEvent],
     requirementClosures: [...arrayOfObjects(record.requirementClosures), ...closureEvents],
     gateChecks: [...arrayOfObjects(record.gateChecks), ...gateEvents],
+    failureRecords: [...arrayOfObjects(record.failureRecords), ...failureEvents],
+    rerunLoops: [...arrayOfObjects(record.rerunLoops), ...rerunLoopEvents],
     artifactIndex: [
       ...arrayOfObjects(record.artifactIndex).map((artifact) =>
         normalizeHistoricalArtifactRef(artifact, recordId, requirementSetId)
@@ -674,6 +722,21 @@ export function mainIngestImplementationEvidence(argv: string[]): number {
       requirementId: text(item.requirementId),
       status: text(item.status),
       sourceRefs: sourceRefs(packet),
+      recordedAt,
+      recordedBy,
+    });
+  }
+  for (const item of arrayOfObjects(nextRecord.failureRecords).slice(-arrayOfObjects(packet.failureRecords).length)) {
+    appendJsonl(eventLog, item);
+  }
+  for (const item of arrayOfObjects(packet.rerunLoops)) {
+    appendJsonl(eventLog, {
+      eventType: 'rerun_loop_recorded',
+      recordId: text(packet.recordId) || text(record.recordId),
+      requirementSetId: text(packet.requirementSetId) || text(record.requirementSetId),
+      rerunLoopId: text(item.rerunLoopId),
+      status: text(item.status),
+      sourceRefs: arrayOfObjects(item.sourceRefs),
       recordedAt,
       recordedBy,
     });

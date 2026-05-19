@@ -125,6 +125,24 @@ function hasImplementationReadinessPass(record: JsonObject): boolean {
   );
 }
 
+function hasBlockingScoringState(record: JsonObject): boolean {
+  const gates = objects(record.gateChecks);
+  const latestMaterialization = gates.filter((check) => text(check.gate) === 'score_materialization').at(-1);
+  const latestEvaluation = gates.filter((check) => text(check.gate) === 'score_evaluation').at(-1);
+  const materializationDecision = text(latestMaterialization?.decision);
+  const evaluationDecision = text(latestEvaluation?.decision);
+  const openScoreFailures = objects(record.failureRecords).filter(
+    (failure) =>
+      ['score_write_failed', 'score_threshold_or_dimension_failed'].includes(text(failure.type)) &&
+      ['open', 'in_progress', 'blocked'].includes(text(failure.status))
+  );
+  return (
+    ['fail', 'blocked'].includes(materializationDecision) ||
+    ['fail', 'blocked'].includes(evaluationDecision) ||
+    openScoreFailures.length > 0
+  );
+}
+
 function evaluate(record: JsonObject, attemptId: string): { decision: CloseoutDecision; blockingReasons: string[]; checks: JsonObject[] } {
   const checks: JsonObject[] = [];
   const blockingReasons: string[] = [];
@@ -145,6 +163,10 @@ function evaluate(record: JsonObject, attemptId: string): { decision: CloseoutDe
   const requiredCommands = objects(deliveryEvidence(record).requiredCommands);
   checks.push({ id: 'delivery-required-commands-present', passed: requiredCommands.length > 0, count: requiredCommands.length });
   if (requiredCommands.length === 0) blockingReasons.push('deliveryEvidence.requiredCommands_missing');
+
+  const scoringBlocked = hasBlockingScoringState(record);
+  checks.push({ id: 'score-gates-not-blocking-closeout', passed: !scoringBlocked });
+  if (scoringBlocked) blockingReasons.push('score_gate_failure_unresolved');
 
   const attemptRuns = commandRunsForAttempt(record, attemptId);
   for (const command of requiredCommands) {
