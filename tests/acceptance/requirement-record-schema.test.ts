@@ -7,6 +7,23 @@ import { describe, expect, it } from 'vitest';
 const repoRoot = process.cwd();
 const schemaPath = path.join(repoRoot, '_bmad', '_schemas', 'requirement-record.schema.json');
 
+const globalContractTraceabilityPolicy = {
+  schemaVersion: 'global-contract-traceability-policy/v1',
+  appliesToEntryFlows: ['bugfix', 'standalone_tasks', 'story'],
+  contractAuthoringRequired: true,
+  taskBindingRequired: true,
+  taskBindingDimensions: ['MUST', 'NEG', 'OUT', 'EVD', 'TRACE'],
+  missingBindingBehavior: 'fail_closed',
+  sourceDocumentHashRequired: true,
+  implementationConfirmationHashRequired: true,
+  reconfirmOnTraceSemanticChange: true,
+  allowUnboundImplementationTask: false,
+  taskRegistryField: 'implementationTasks',
+  traceTaskRefsMustResolveTo: 'implementationTasks[].id',
+  readinessFailureWhenUnresolved: true,
+  closeoutFailureWhenUnresolved: true,
+};
+
 function loadValidator() {
   const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8')) as object;
   const ajv = new Ajv2020({ allErrors: true, strict: false });
@@ -24,6 +41,7 @@ function validRecord() {
     entryFlowClass: 'full_story_entry',
     workflowAdapter: 'bmad',
     contractAuthoringRequired: true,
+    globalContractTraceabilityPolicy,
     sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
     implementationConfirmationHash:
       'sha256:2222222222222222222222222222222222222222222222222222222222222222',
@@ -49,6 +67,11 @@ function validRecord() {
           '确认以上范围进入下一阶段 sourceDocumentHash=sha256:1111111111111111111111111111111111111111111111111111111111111111 implementationConfirmationHash=sha256:2222222222222222222222222222222222222222222222222222222222222222 confirmationPageHash=sha256:3333333333333333333333333333333333333333333333333333333333333333',
         renderReportPath: '_bmad-output/runtime/requirement-records/REQ-SCHEMA-001/confirmation/confirmation-render-report.json',
         htmlPath: '_bmad-output/runtime/requirement-records/REQ-SCHEMA-001/confirmation/confirmation.html',
+        entryFlow: 'story',
+        entryFlowClass: 'full_story_entry',
+        workflowAdapter: 'bmad',
+        contractAuthoringRequired: true,
+        globalContractTraceabilityPolicy,
       },
     ],
     architectureConfirmationState: {
@@ -199,6 +222,18 @@ describe('requirement-record.schema.json', () => {
     expect(validate(record)).toBe(false);
     expect(JSON.stringify(validate.errors)).toContain('entryFlow');
     expect(JSON.stringify(validate.errors)).toContain('contractAuthoringRequired');
+  });
+
+  it('rejects traceability policies that allow unbound implementation tasks', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+    record.globalContractTraceabilityPolicy = {
+      ...globalContractTraceabilityPolicy,
+      allowUnboundImplementationTask: true,
+    } as never;
+
+    expect(validate(record)).toBe(false);
+    expect(JSON.stringify(validate.errors)).toContain('allowUnboundImplementationTask');
   });
 
   it('rejects artifact refs that cannot be used for pass-grade evidence', () => {

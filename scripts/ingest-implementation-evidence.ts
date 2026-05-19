@@ -33,6 +33,7 @@ const GATE_DECISIONS = new Set(['pass', 'fail', 'blocked', 'not_applicable', 'sk
 const ENTRY_FLOWS = new Set(['story', 'bugfix', 'standalone_tasks']);
 const ENTRY_FLOW_CLASSES = new Set(['full_story_entry', 'corrective_entry', 'task_packet_entry']);
 const WORKFLOW_ADAPTERS = new Set(['bmad', 'speckit', 'direct', 'legacy']);
+const TRACEABILITY_DIMENSIONS = new Set(['MUST', 'NEG', 'OUT', 'EVD', 'TRACE']);
 const LEGACY_WRITE_PATH_PREFIXES = [
   '_bmad-output/runtime/gates/',
   '_bmad-output/runtime/bmad-help-five-layer/',
@@ -250,13 +251,62 @@ function validateEntryFlowState(packet: JsonObject): string[] {
   return mismatches;
 }
 
+function validateGlobalContractTraceabilityPolicy(policy: JsonObject | undefined, prefix: string): string[] {
+  const mismatches: string[] = [];
+  if (!policy || typeof policy !== 'object' || Array.isArray(policy)) {
+    return [`${prefix}_global_contract_traceability_policy_missing`];
+  }
+  if (text(policy.schemaVersion) !== 'global-contract-traceability-policy/v1') {
+    mismatches.push(`${prefix}_traceability_policy_schema_version_invalid`);
+  }
+  const flows = new Set(arrayOfStrings(policy.appliesToEntryFlows));
+  for (const flow of ENTRY_FLOWS) {
+    if (!flows.has(flow)) mismatches.push(`${prefix}_traceability_policy_missing_entry_flow:${flow}`);
+  }
+  if (policy.contractAuthoringRequired !== true) {
+    mismatches.push(`${prefix}_traceability_policy_contract_authoring_not_required`);
+  }
+  if (policy.taskBindingRequired !== true) mismatches.push(`${prefix}_traceability_policy_task_binding_not_required`);
+  const dimensions = new Set(arrayOfStrings(policy.taskBindingDimensions));
+  for (const dimension of TRACEABILITY_DIMENSIONS) {
+    if (!dimensions.has(dimension)) mismatches.push(`${prefix}_traceability_policy_missing_dimension:${dimension}`);
+  }
+  if (text(policy.missingBindingBehavior) !== 'fail_closed') {
+    mismatches.push(`${prefix}_traceability_policy_missing_binding_not_fail_closed`);
+  }
+  if (policy.sourceDocumentHashRequired !== true) {
+    mismatches.push(`${prefix}_traceability_policy_source_hash_not_required`);
+  }
+  if (policy.implementationConfirmationHashRequired !== true) {
+    mismatches.push(`${prefix}_traceability_policy_implementation_hash_not_required`);
+  }
+  if (policy.reconfirmOnTraceSemanticChange !== true) {
+    mismatches.push(`${prefix}_traceability_policy_reconfirm_on_trace_change_not_required`);
+  }
+  if (policy.allowUnboundImplementationTask !== false) {
+    mismatches.push(`${prefix}_traceability_policy_allows_unbound_task`);
+  }
+  return mismatches;
+}
+
 function validatePacket(packet: JsonObject, record: JsonObject): string[] {
+  const entryFlowState =
+    packet.entryFlowState && typeof packet.entryFlowState === 'object' && !Array.isArray(packet.entryFlowState)
+      ? (packet.entryFlowState as JsonObject)
+      : undefined;
+  const effectiveTraceabilityPolicy =
+    entryFlowState?.globalContractTraceabilityPolicy &&
+    typeof entryFlowState.globalContractTraceabilityPolicy === 'object' &&
+    !Array.isArray(entryFlowState.globalContractTraceabilityPolicy)
+      ? (entryFlowState.globalContractTraceabilityPolicy as JsonObject)
+      : (record.globalContractTraceabilityPolicy as JsonObject | undefined);
   const mismatches = [
     ...requireHashMatch(packet, record),
     ...validateCommands(packet),
     ...validateArtifacts(packet),
     ...validateImplementationDelta(packet),
     ...validateEntryFlowState(packet),
+    ...validateGlobalContractTraceabilityPolicy(effectiveTraceabilityPolicy, 'effective'),
   ];
   if (containsForbiddenField(packet, 'result')) mismatches.push('forbidden_result_field');
   if (containsForbiddenField(packet, 'fullDiff')) mismatches.push('forbidden_inline_full_diff');
@@ -443,6 +493,14 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
           entryFlowClass: text((packet.entryFlowState as JsonObject).entryFlowClass),
           workflowAdapter: text((packet.entryFlowState as JsonObject).workflowAdapter),
           contractAuthoringRequired: (packet.entryFlowState as JsonObject).contractAuthoringRequired === true,
+          ...((packet.entryFlowState as JsonObject).globalContractTraceabilityPolicy &&
+          typeof (packet.entryFlowState as JsonObject).globalContractTraceabilityPolicy === 'object' &&
+          !Array.isArray((packet.entryFlowState as JsonObject).globalContractTraceabilityPolicy)
+            ? {
+                globalContractTraceabilityPolicy: (packet.entryFlowState as JsonObject)
+                  .globalContractTraceabilityPolicy,
+              }
+            : {}),
         }
       : {}),
     executionIterations: [...arrayOfObjects(record.executionIterations), executionEvent],

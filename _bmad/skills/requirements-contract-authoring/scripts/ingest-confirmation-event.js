@@ -162,12 +162,36 @@ function buildRequirementRecord(existing, event) {
     entryFlowClass: event.entryFlowClass,
     workflowAdapter: event.workflowAdapter,
     contractAuthoringRequired: event.contractAuthoringRequired,
+    globalContractTraceabilityPolicy: event.globalContractTraceabilityPolicy,
     sourceDocumentHash: event.sourceDocumentHash,
     implementationConfirmationHash: event.implementationConfirmationHash,
     confirmationPageHash: event.confirmationPageHash,
     confirmationHistory,
     lastEventType: 'confirmation_recorded',
     updatedAt: event.confirmedAt,
+  };
+}
+
+function buildGlobalContractTraceabilityPolicy(confirmation) {
+  const taskRegistryPolicy =
+    confirmation.taskRegistryPolicy && typeof confirmation.taskRegistryPolicy === 'object'
+      ? confirmation.taskRegistryPolicy
+      : {};
+  return {
+    schemaVersion: 'global-contract-traceability-policy/v1',
+    appliesToEntryFlows: ['bugfix', 'standalone_tasks', 'story'],
+    contractAuthoringRequired: true,
+    taskBindingRequired: true,
+    taskBindingDimensions: ['MUST', 'NEG', 'OUT', 'EVD', 'TRACE'],
+    missingBindingBehavior: 'fail_closed',
+    sourceDocumentHashRequired: true,
+    implementationConfirmationHashRequired: true,
+    reconfirmOnTraceSemanticChange: true,
+    allowUnboundImplementationTask: false,
+    taskRegistryField: String(taskRegistryPolicy.canonicalTaskRegistryField ?? 'implementationTasks'),
+    traceTaskRefsMustResolveTo: String(taskRegistryPolicy.traceTaskRefsMustResolveTo ?? 'implementationTasks[].id'),
+    readinessFailureWhenUnresolved: taskRegistryPolicy.readinessFailureWhenUnresolved !== false,
+    closeoutFailureWhenUnresolved: taskRegistryPolicy.closeoutFailureWhenUnresolved !== false,
   };
 }
 
@@ -235,6 +259,7 @@ function main(argv) {
     entryFlowClass: extracted.confirmation.entryFlowClass,
     workflowAdapter: extracted.confirmation.workflowAdapter,
     contractAuthoringRequired: extracted.confirmation.contractAuthoringRequired === true,
+    globalContractTraceabilityPolicy: buildGlobalContractTraceabilityPolicy(extracted.confirmation),
   };
 
   if (args.updateSource !== 'false') {

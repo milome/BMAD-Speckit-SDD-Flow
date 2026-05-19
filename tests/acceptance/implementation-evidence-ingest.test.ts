@@ -25,6 +25,23 @@ function artifactRef(artifactPath: string, contentHash: string, overrides: Recor
   };
 }
 
+const globalContractTraceabilityPolicy = {
+  schemaVersion: 'global-contract-traceability-policy/v1',
+  appliesToEntryFlows: ['bugfix', 'standalone_tasks', 'story'],
+  contractAuthoringRequired: true,
+  taskBindingRequired: true,
+  taskBindingDimensions: ['MUST', 'NEG', 'OUT', 'EVD', 'TRACE'],
+  missingBindingBehavior: 'fail_closed',
+  sourceDocumentHashRequired: true,
+  implementationConfirmationHashRequired: true,
+  reconfirmOnTraceSemanticChange: true,
+  allowUnboundImplementationTask: false,
+  taskRegistryField: 'implementationTasks',
+  traceTaskRefsMustResolveTo: 'implementationTasks[].id',
+  readinessFailureWhenUnresolved: true,
+  closeoutFailureWhenUnresolved: true,
+};
+
 function writeFixture(root: string): { recordPath: string; evidencePath: string; artifactPath: string } {
   const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-EVIDENCE-INGEST');
   const evidenceDir = path.join(base, 'execution');
@@ -48,6 +65,7 @@ function writeFixture(root: string): { recordPath: string; evidencePath: string;
           currentArchitectureConfirmationHash:
             'sha256:3333333333333333333333333333333333333333333333333333333333333333',
         },
+        globalContractTraceabilityPolicy,
       },
       null,
       2
@@ -104,6 +122,7 @@ function writeFixture(root: string): { recordPath: string; evidencePath: string;
           entryFlowClass: 'task_packet_entry',
           workflowAdapter: 'direct',
           contractAuthoringRequired: true,
+          globalContractTraceabilityPolicy,
         },
         deliveryEvidence: {
           requiredCommands: [
@@ -164,6 +183,10 @@ describe('implementation evidence ingest', () => {
         entryFlowClass: 'task_packet_entry',
         workflowAdapter: 'direct',
         contractAuthoringRequired: true,
+        globalContractTraceabilityPolicy: {
+          schemaVersion: 'global-contract-traceability-policy/v1',
+          allowUnboundImplementationTask: false,
+        },
       });
       expect(record.executionIterations).toHaveLength(1);
       expect(record.executionIterations[0]).toMatchObject({
@@ -354,6 +377,32 @@ describe('implementation evidence ingest', () => {
         '--requirement-record',
         fixture.recordPath,
       ]);
+      expect(code).toBe(3);
+      expect(readFileSync(fixture.recordPath, 'utf8')).toBe(before);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects missing or unsafe global contract traceability policy before mutating the requirement record', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-evidence-traceability-policy-'));
+    try {
+      const fixture = writeFixture(root);
+      const record = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
+      delete record.globalContractTraceabilityPolicy;
+      writeFileSync(fixture.recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+      const before = readFileSync(fixture.recordPath, 'utf8');
+      const packet = JSON.parse(readFileSync(fixture.evidencePath, 'utf8'));
+      delete packet.entryFlowState.globalContractTraceabilityPolicy;
+      writeFileSync(fixture.evidencePath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
+
+      const code = mainIngestImplementationEvidence([
+        '--evidence',
+        fixture.evidencePath,
+        '--requirement-record',
+        fixture.recordPath,
+      ]);
+
       expect(code).toBe(3);
       expect(readFileSync(fixture.recordPath, 'utf8')).toBe(before);
     } finally {
