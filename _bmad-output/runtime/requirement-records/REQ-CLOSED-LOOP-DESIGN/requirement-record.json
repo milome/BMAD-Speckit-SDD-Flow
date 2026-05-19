@@ -57,7 +57,7 @@
     }
   ],
   "lastEventType": "execution_iteration_recorded",
-  "updatedAt": "2026-05-19T15:19:50.000Z",
+  "updatedAt": "2026-05-19T15:44:47.4715086Z",
   "architectureConfirmations": [
     {
       "eventType": "architecture_confirmation_recorded",
@@ -8772,6 +8772,473 @@
       "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
       "architectureConfirmationHash": "sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
       "recordedAt": "2026-05-19T15:19:50.000Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "execution_iteration_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "executionIterationId": "exec-trace-020-scoring-gates-001",
+      "runId": "run-trace-020-scoring-gates-001",
+      "status": "done",
+      "traceRows": [
+        "TRACE-020"
+      ],
+      "taskRefs": [
+        "TASK-SCORING-POLICY-GATES"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027"
+      ],
+      "filesChanged": [
+        "scripts/main-agent-scoring-gates-check.ts",
+        "scripts/ingest-implementation-evidence.ts",
+        "scripts/main-agent-delivery-closeout-gate.ts",
+        "tests/acceptance/main-agent-scoring-gates-check.test.ts"
+      ],
+      "implementationDelta": {
+        "filesChanged": [
+          "scripts/main-agent-scoring-gates-check.ts",
+          "scripts/ingest-implementation-evidence.ts",
+          "scripts/main-agent-delivery-closeout-gate.ts",
+          "tests/acceptance/main-agent-scoring-gates-check.test.ts"
+        ],
+        "diffSummaryRef": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/implementation-delta-summary.md",
+        "behaviorAffecting": true,
+        "negativeAssertionArtifactRefs": [
+          {
+            "artifactType": "negative_assertion_report",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/negative-assertions.json",
+            "contentHash": "sha256:75667cd5d0751157a722fde049ca0a7c0d66873da1537c771892e4aae6d43f29",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+            "purpose": "TRACE-020 negative assertions for score control isolation and gate requirements.",
+            "relatedRequirementIds": [
+              "MUST-027",
+              "NEG-015",
+              "OUT-013",
+              "EVD-004",
+              "EVD-005",
+              "EVD-009",
+              "EVD-027",
+              "TRACE-020"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "negative_assertion_report/v1",
+            "traceRows": [
+              "TRACE-020"
+            ],
+            "evidenceRefs": [
+              "EVD-027"
+            ]
+          }
+        ]
+      },
+      "diffSummary": "Add controlled scoring materialization/evaluation gates and closeout blocking for unresolved score gate failures.",
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-SCORING-GATES-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-scoring-gates-check.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/requirement-record-schema.test.ts",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T15:35:31.000Z",
+          "completedAt": "2026-05-19T15:35:33.000Z",
+          "outputSummary": "4 test files passed; 34 tests passed."
+        },
+        {
+          "commandId": "CMD-SCORING-GATES-BEFORE",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-before.json --json",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 1,
+          "startedAt": "2026-05-19T15:36:00.000Z",
+          "completedAt": "2026-05-19T15:36:03.000Z",
+          "outputSummary": "Initial fail-closed check: score_materialization_gate_missing, score_evaluation_gate_missing."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "score_record",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/scoring/score-record-trace-020.json",
+          "contentHash": "sha256:7c3196b06950859cfacdfb33d2a848770962b6f383dd661961af5fbb7d9527b4",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Pass-grade score artifact used as evidence input for score materialization and score evaluation gates; not a control source.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "score_record/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "implementation_delta_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/implementation-delta-summary.md",
+          "contentHash": "sha256:bb3174e008b524e8b7e1076396e037231cc15fafcb44f5f1bb6c65f3c1776814",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "TRACE-020 implementation delta summary.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "implementation_delta_summary/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/negative-assertions.json",
+          "contentHash": "sha256:75667cd5d0751157a722fde049ca0a7c0d66873da1537c771892e4aae6d43f29",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "TRACE-020 negative assertions for score control isolation and gate requirements.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "negative_assertion_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "scoring_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-before.json",
+          "contentHash": "sha256:eef36cffea6543fe08d3540c393bb70afb91018ab5533fa3954b210ea42d138d",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Initial scoring gate report proving missing gates fail closed before controlled ingest.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "scoring_gate_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-020"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-027"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-BEFORE"
+        }
+      ],
+      "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+      "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
+      "architectureConfirmationHash": "sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "recordedAt": "2026-05-19T15:39:22.3324851Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "execution_iteration_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "executionIterationId": "exec-trace-020-scoring-gates-002",
+      "runId": "run-trace-020-scoring-gates-001",
+      "status": "done",
+      "traceRows": [
+        "TRACE-020"
+      ],
+      "taskRefs": [
+        "TASK-SCORING-POLICY-GATES"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027"
+      ],
+      "filesChanged": [
+        "scripts/main-agent-scoring-gates-check.ts",
+        "scripts/ingest-implementation-evidence.ts",
+        "scripts/main-agent-delivery-closeout-gate.ts",
+        "tests/acceptance/main-agent-scoring-gates-check.test.ts"
+      ],
+      "implementationDelta": {
+        "filesChanged": [
+          "scripts/main-agent-scoring-gates-check.ts",
+          "scripts/ingest-implementation-evidence.ts",
+          "scripts/main-agent-delivery-closeout-gate.ts",
+          "tests/acceptance/main-agent-scoring-gates-check.test.ts"
+        ],
+        "diffSummaryRef": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/implementation-delta-summary.md",
+        "behaviorAffecting": true,
+        "negativeAssertionArtifactRefs": [
+          {
+            "artifactType": "negative_assertion_report",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/negative-assertions.json",
+            "contentHash": "sha256:75667cd5d0751157a722fde049ca0a7c0d66873da1537c771892e4aae6d43f29",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+            "purpose": "TRACE-020 negative assertions for score control isolation and gate requirements.",
+            "relatedRequirementIds": [
+              "MUST-027",
+              "NEG-015",
+              "OUT-013",
+              "EVD-004",
+              "EVD-005",
+              "EVD-009",
+              "EVD-027",
+              "TRACE-020"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "negative_assertion_report/v1",
+            "traceRows": [
+              "TRACE-020"
+            ],
+            "evidenceRefs": [
+              "EVD-027"
+            ]
+          }
+        ]
+      },
+      "diffSummary": "Record post-ingest scoring gate pass verification for TRACE-020.",
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-SCORING-GATES-PASS",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-verified.json --json",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T15:40:31.1929035Z",
+          "completedAt": "2026-05-19T15:40:32.0566520Z",
+          "outputSummary": "Scoring gates check passed after controlled ingest."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "scoring_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-verified.json",
+          "contentHash": "sha256:67487aa39e08dec9d67dd99417b2ad4ab33c1f07908119e09620a7c5b0661c3f",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Post-ingest scoring gate report proving controlled score materialization/evaluation gates pass.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "scoring_gate_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-command-receipt.json",
+          "contentHash": "sha256:2a93a7ae637d4b2bb6afe58394047af81d7c5500c03f76d1de8116ce9673038d",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Command receipt for post-ingest scoring gate pass verification.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "command_receipt/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/negative-assertions.json",
+          "contentHash": "sha256:75667cd5d0751157a722fde049ca0a7c0d66873da1537c771892e4aae6d43f29",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "TRACE-020 negative assertions for score control isolation and gate requirements.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "negative_assertion_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-020"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-027"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-PASS"
+        }
+      ],
+      "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+      "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
+      "architectureConfirmationHash": "sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "recordedAt": "2026-05-19T15:44:47.4715086Z",
       "recordedBy": "codex"
     }
   ],
@@ -53721,6 +54188,2533 @@
       ],
       "recordedAt": "2026-05-19T15:19:50.000Z",
       "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "MUST-027",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-020"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-SCORING-GATES-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-scoring-gates-check.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/requirement-record-schema.test.ts",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T15:35:31.000Z",
+          "completedAt": "2026-05-19T15:35:33.000Z",
+          "outputSummary": "4 test files passed; 34 tests passed."
+        },
+        {
+          "commandId": "CMD-SCORING-GATES-BEFORE",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-before.json --json",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 1,
+          "startedAt": "2026-05-19T15:36:00.000Z",
+          "completedAt": "2026-05-19T15:36:03.000Z",
+          "outputSummary": "Initial fail-closed check: score_materialization_gate_missing, score_evaluation_gate_missing."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "score_record",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/scoring/score-record-trace-020.json",
+          "contentHash": "sha256:7c3196b06950859cfacdfb33d2a848770962b6f383dd661961af5fbb7d9527b4",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Pass-grade score artifact used as evidence input for score materialization and score evaluation gates; not a control source.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "score_record/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "implementation_delta_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/implementation-delta-summary.md",
+          "contentHash": "sha256:bb3174e008b524e8b7e1076396e037231cc15fafcb44f5f1bb6c65f3c1776814",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "TRACE-020 implementation delta summary.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "implementation_delta_summary/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/negative-assertions.json",
+          "contentHash": "sha256:75667cd5d0751157a722fde049ca0a7c0d66873da1537c771892e4aae6d43f29",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "TRACE-020 negative assertions for score control isolation and gate requirements.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "negative_assertion_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "scoring_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-before.json",
+          "contentHash": "sha256:eef36cffea6543fe08d3540c393bb70afb91018ab5533fa3954b210ea42d138d",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Initial scoring gate report proving missing gates fail closed before controlled ingest.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "scoring_gate_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-020"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-027"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-BEFORE"
+        }
+      ],
+      "recordedAt": "2026-05-19T15:39:22.3324851Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "NEG-015",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-020"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-SCORING-GATES-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-scoring-gates-check.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/requirement-record-schema.test.ts",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T15:35:31.000Z",
+          "completedAt": "2026-05-19T15:35:33.000Z",
+          "outputSummary": "4 test files passed; 34 tests passed."
+        },
+        {
+          "commandId": "CMD-SCORING-GATES-BEFORE",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-before.json --json",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 1,
+          "startedAt": "2026-05-19T15:36:00.000Z",
+          "completedAt": "2026-05-19T15:36:03.000Z",
+          "outputSummary": "Initial fail-closed check: score_materialization_gate_missing, score_evaluation_gate_missing."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "score_record",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/scoring/score-record-trace-020.json",
+          "contentHash": "sha256:7c3196b06950859cfacdfb33d2a848770962b6f383dd661961af5fbb7d9527b4",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Pass-grade score artifact used as evidence input for score materialization and score evaluation gates; not a control source.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "score_record/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "implementation_delta_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/implementation-delta-summary.md",
+          "contentHash": "sha256:bb3174e008b524e8b7e1076396e037231cc15fafcb44f5f1bb6c65f3c1776814",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "TRACE-020 implementation delta summary.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "implementation_delta_summary/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/negative-assertions.json",
+          "contentHash": "sha256:75667cd5d0751157a722fde049ca0a7c0d66873da1537c771892e4aae6d43f29",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "TRACE-020 negative assertions for score control isolation and gate requirements.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "negative_assertion_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "scoring_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-before.json",
+          "contentHash": "sha256:eef36cffea6543fe08d3540c393bb70afb91018ab5533fa3954b210ea42d138d",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Initial scoring gate report proving missing gates fail closed before controlled ingest.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "scoring_gate_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-020"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-027"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-BEFORE"
+        }
+      ],
+      "recordedAt": "2026-05-19T15:39:22.3324851Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "OUT-013",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-020"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-SCORING-GATES-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-scoring-gates-check.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/requirement-record-schema.test.ts",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T15:35:31.000Z",
+          "completedAt": "2026-05-19T15:35:33.000Z",
+          "outputSummary": "4 test files passed; 34 tests passed."
+        },
+        {
+          "commandId": "CMD-SCORING-GATES-BEFORE",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-before.json --json",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 1,
+          "startedAt": "2026-05-19T15:36:00.000Z",
+          "completedAt": "2026-05-19T15:36:03.000Z",
+          "outputSummary": "Initial fail-closed check: score_materialization_gate_missing, score_evaluation_gate_missing."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "score_record",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/scoring/score-record-trace-020.json",
+          "contentHash": "sha256:7c3196b06950859cfacdfb33d2a848770962b6f383dd661961af5fbb7d9527b4",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Pass-grade score artifact used as evidence input for score materialization and score evaluation gates; not a control source.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "score_record/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "implementation_delta_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/implementation-delta-summary.md",
+          "contentHash": "sha256:bb3174e008b524e8b7e1076396e037231cc15fafcb44f5f1bb6c65f3c1776814",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "TRACE-020 implementation delta summary.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "implementation_delta_summary/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/negative-assertions.json",
+          "contentHash": "sha256:75667cd5d0751157a722fde049ca0a7c0d66873da1537c771892e4aae6d43f29",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "TRACE-020 negative assertions for score control isolation and gate requirements.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "negative_assertion_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "scoring_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-before.json",
+          "contentHash": "sha256:eef36cffea6543fe08d3540c393bb70afb91018ab5533fa3954b210ea42d138d",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Initial scoring gate report proving missing gates fail closed before controlled ingest.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "scoring_gate_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-020"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-027"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-BEFORE"
+        }
+      ],
+      "recordedAt": "2026-05-19T15:39:22.3324851Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "EVD-004",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-020"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-SCORING-GATES-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-scoring-gates-check.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/requirement-record-schema.test.ts",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T15:35:31.000Z",
+          "completedAt": "2026-05-19T15:35:33.000Z",
+          "outputSummary": "4 test files passed; 34 tests passed."
+        },
+        {
+          "commandId": "CMD-SCORING-GATES-BEFORE",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-before.json --json",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 1,
+          "startedAt": "2026-05-19T15:36:00.000Z",
+          "completedAt": "2026-05-19T15:36:03.000Z",
+          "outputSummary": "Initial fail-closed check: score_materialization_gate_missing, score_evaluation_gate_missing."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "score_record",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/scoring/score-record-trace-020.json",
+          "contentHash": "sha256:7c3196b06950859cfacdfb33d2a848770962b6f383dd661961af5fbb7d9527b4",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Pass-grade score artifact used as evidence input for score materialization and score evaluation gates; not a control source.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "score_record/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "implementation_delta_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/implementation-delta-summary.md",
+          "contentHash": "sha256:bb3174e008b524e8b7e1076396e037231cc15fafcb44f5f1bb6c65f3c1776814",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "TRACE-020 implementation delta summary.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "implementation_delta_summary/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/negative-assertions.json",
+          "contentHash": "sha256:75667cd5d0751157a722fde049ca0a7c0d66873da1537c771892e4aae6d43f29",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "TRACE-020 negative assertions for score control isolation and gate requirements.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "negative_assertion_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "scoring_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-before.json",
+          "contentHash": "sha256:eef36cffea6543fe08d3540c393bb70afb91018ab5533fa3954b210ea42d138d",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Initial scoring gate report proving missing gates fail closed before controlled ingest.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "scoring_gate_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-020"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-027"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-BEFORE"
+        }
+      ],
+      "recordedAt": "2026-05-19T15:39:22.3324851Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "EVD-005",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-020"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-SCORING-GATES-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-scoring-gates-check.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/requirement-record-schema.test.ts",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T15:35:31.000Z",
+          "completedAt": "2026-05-19T15:35:33.000Z",
+          "outputSummary": "4 test files passed; 34 tests passed."
+        },
+        {
+          "commandId": "CMD-SCORING-GATES-BEFORE",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-before.json --json",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 1,
+          "startedAt": "2026-05-19T15:36:00.000Z",
+          "completedAt": "2026-05-19T15:36:03.000Z",
+          "outputSummary": "Initial fail-closed check: score_materialization_gate_missing, score_evaluation_gate_missing."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "score_record",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/scoring/score-record-trace-020.json",
+          "contentHash": "sha256:7c3196b06950859cfacdfb33d2a848770962b6f383dd661961af5fbb7d9527b4",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Pass-grade score artifact used as evidence input for score materialization and score evaluation gates; not a control source.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "score_record/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "implementation_delta_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/implementation-delta-summary.md",
+          "contentHash": "sha256:bb3174e008b524e8b7e1076396e037231cc15fafcb44f5f1bb6c65f3c1776814",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "TRACE-020 implementation delta summary.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "implementation_delta_summary/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/negative-assertions.json",
+          "contentHash": "sha256:75667cd5d0751157a722fde049ca0a7c0d66873da1537c771892e4aae6d43f29",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "TRACE-020 negative assertions for score control isolation and gate requirements.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "negative_assertion_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "scoring_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-before.json",
+          "contentHash": "sha256:eef36cffea6543fe08d3540c393bb70afb91018ab5533fa3954b210ea42d138d",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Initial scoring gate report proving missing gates fail closed before controlled ingest.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "scoring_gate_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-020"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-027"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-BEFORE"
+        }
+      ],
+      "recordedAt": "2026-05-19T15:39:22.3324851Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "EVD-009",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-020"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-SCORING-GATES-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-scoring-gates-check.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/requirement-record-schema.test.ts",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T15:35:31.000Z",
+          "completedAt": "2026-05-19T15:35:33.000Z",
+          "outputSummary": "4 test files passed; 34 tests passed."
+        },
+        {
+          "commandId": "CMD-SCORING-GATES-BEFORE",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-before.json --json",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 1,
+          "startedAt": "2026-05-19T15:36:00.000Z",
+          "completedAt": "2026-05-19T15:36:03.000Z",
+          "outputSummary": "Initial fail-closed check: score_materialization_gate_missing, score_evaluation_gate_missing."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "score_record",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/scoring/score-record-trace-020.json",
+          "contentHash": "sha256:7c3196b06950859cfacdfb33d2a848770962b6f383dd661961af5fbb7d9527b4",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Pass-grade score artifact used as evidence input for score materialization and score evaluation gates; not a control source.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "score_record/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "implementation_delta_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/implementation-delta-summary.md",
+          "contentHash": "sha256:bb3174e008b524e8b7e1076396e037231cc15fafcb44f5f1bb6c65f3c1776814",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "TRACE-020 implementation delta summary.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "implementation_delta_summary/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/negative-assertions.json",
+          "contentHash": "sha256:75667cd5d0751157a722fde049ca0a7c0d66873da1537c771892e4aae6d43f29",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "TRACE-020 negative assertions for score control isolation and gate requirements.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "negative_assertion_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "scoring_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-before.json",
+          "contentHash": "sha256:eef36cffea6543fe08d3540c393bb70afb91018ab5533fa3954b210ea42d138d",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Initial scoring gate report proving missing gates fail closed before controlled ingest.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "scoring_gate_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-020"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-027"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-BEFORE"
+        }
+      ],
+      "recordedAt": "2026-05-19T15:39:22.3324851Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "EVD-027",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-020"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-SCORING-GATES-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-scoring-gates-check.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/requirement-record-schema.test.ts",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T15:35:31.000Z",
+          "completedAt": "2026-05-19T15:35:33.000Z",
+          "outputSummary": "4 test files passed; 34 tests passed."
+        },
+        {
+          "commandId": "CMD-SCORING-GATES-BEFORE",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-before.json --json",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 1,
+          "startedAt": "2026-05-19T15:36:00.000Z",
+          "completedAt": "2026-05-19T15:36:03.000Z",
+          "outputSummary": "Initial fail-closed check: score_materialization_gate_missing, score_evaluation_gate_missing."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "score_record",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/scoring/score-record-trace-020.json",
+          "contentHash": "sha256:7c3196b06950859cfacdfb33d2a848770962b6f383dd661961af5fbb7d9527b4",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Pass-grade score artifact used as evidence input for score materialization and score evaluation gates; not a control source.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "score_record/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "implementation_delta_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/implementation-delta-summary.md",
+          "contentHash": "sha256:bb3174e008b524e8b7e1076396e037231cc15fafcb44f5f1bb6c65f3c1776814",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "TRACE-020 implementation delta summary.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "implementation_delta_summary/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/negative-assertions.json",
+          "contentHash": "sha256:75667cd5d0751157a722fde049ca0a7c0d66873da1537c771892e4aae6d43f29",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "TRACE-020 negative assertions for score control isolation and gate requirements.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "negative_assertion_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "scoring_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-before.json",
+          "contentHash": "sha256:eef36cffea6543fe08d3540c393bb70afb91018ab5533fa3954b210ea42d138d",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Initial scoring gate report proving missing gates fail closed before controlled ingest.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "scoring_gate_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-020"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-027"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-BEFORE"
+        }
+      ],
+      "recordedAt": "2026-05-19T15:39:22.3324851Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "MUST-027",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-020"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-SCORING-GATES-PASS",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-verified.json --json",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T15:40:31.1929035Z",
+          "completedAt": "2026-05-19T15:40:32.0566520Z",
+          "outputSummary": "Scoring gates check passed after controlled ingest."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "scoring_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-verified.json",
+          "contentHash": "sha256:67487aa39e08dec9d67dd99417b2ad4ab33c1f07908119e09620a7c5b0661c3f",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Post-ingest scoring gate report proving controlled score materialization/evaluation gates pass.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "scoring_gate_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-command-receipt.json",
+          "contentHash": "sha256:2a93a7ae637d4b2bb6afe58394047af81d7c5500c03f76d1de8116ce9673038d",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Command receipt for post-ingest scoring gate pass verification.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "command_receipt/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/negative-assertions.json",
+          "contentHash": "sha256:75667cd5d0751157a722fde049ca0a7c0d66873da1537c771892e4aae6d43f29",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "TRACE-020 negative assertions for score control isolation and gate requirements.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "negative_assertion_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-020"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-027"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-PASS"
+        }
+      ],
+      "recordedAt": "2026-05-19T15:44:47.4715086Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "NEG-015",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-020"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-SCORING-GATES-PASS",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-verified.json --json",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T15:40:31.1929035Z",
+          "completedAt": "2026-05-19T15:40:32.0566520Z",
+          "outputSummary": "Scoring gates check passed after controlled ingest."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "scoring_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-verified.json",
+          "contentHash": "sha256:67487aa39e08dec9d67dd99417b2ad4ab33c1f07908119e09620a7c5b0661c3f",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Post-ingest scoring gate report proving controlled score materialization/evaluation gates pass.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "scoring_gate_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-command-receipt.json",
+          "contentHash": "sha256:2a93a7ae637d4b2bb6afe58394047af81d7c5500c03f76d1de8116ce9673038d",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Command receipt for post-ingest scoring gate pass verification.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "command_receipt/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/negative-assertions.json",
+          "contentHash": "sha256:75667cd5d0751157a722fde049ca0a7c0d66873da1537c771892e4aae6d43f29",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "TRACE-020 negative assertions for score control isolation and gate requirements.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "negative_assertion_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-020"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-027"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-PASS"
+        }
+      ],
+      "recordedAt": "2026-05-19T15:44:47.4715086Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "OUT-013",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-020"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-SCORING-GATES-PASS",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-verified.json --json",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T15:40:31.1929035Z",
+          "completedAt": "2026-05-19T15:40:32.0566520Z",
+          "outputSummary": "Scoring gates check passed after controlled ingest."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "scoring_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-verified.json",
+          "contentHash": "sha256:67487aa39e08dec9d67dd99417b2ad4ab33c1f07908119e09620a7c5b0661c3f",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Post-ingest scoring gate report proving controlled score materialization/evaluation gates pass.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "scoring_gate_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-command-receipt.json",
+          "contentHash": "sha256:2a93a7ae637d4b2bb6afe58394047af81d7c5500c03f76d1de8116ce9673038d",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Command receipt for post-ingest scoring gate pass verification.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "command_receipt/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/negative-assertions.json",
+          "contentHash": "sha256:75667cd5d0751157a722fde049ca0a7c0d66873da1537c771892e4aae6d43f29",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "TRACE-020 negative assertions for score control isolation and gate requirements.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "negative_assertion_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-020"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-027"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-PASS"
+        }
+      ],
+      "recordedAt": "2026-05-19T15:44:47.4715086Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "EVD-004",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-020"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-SCORING-GATES-PASS",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-verified.json --json",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T15:40:31.1929035Z",
+          "completedAt": "2026-05-19T15:40:32.0566520Z",
+          "outputSummary": "Scoring gates check passed after controlled ingest."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "scoring_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-verified.json",
+          "contentHash": "sha256:67487aa39e08dec9d67dd99417b2ad4ab33c1f07908119e09620a7c5b0661c3f",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Post-ingest scoring gate report proving controlled score materialization/evaluation gates pass.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "scoring_gate_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-command-receipt.json",
+          "contentHash": "sha256:2a93a7ae637d4b2bb6afe58394047af81d7c5500c03f76d1de8116ce9673038d",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Command receipt for post-ingest scoring gate pass verification.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "command_receipt/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/negative-assertions.json",
+          "contentHash": "sha256:75667cd5d0751157a722fde049ca0a7c0d66873da1537c771892e4aae6d43f29",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "TRACE-020 negative assertions for score control isolation and gate requirements.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "negative_assertion_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-020"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-027"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-PASS"
+        }
+      ],
+      "recordedAt": "2026-05-19T15:44:47.4715086Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "EVD-005",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-020"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-SCORING-GATES-PASS",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-verified.json --json",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T15:40:31.1929035Z",
+          "completedAt": "2026-05-19T15:40:32.0566520Z",
+          "outputSummary": "Scoring gates check passed after controlled ingest."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "scoring_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-verified.json",
+          "contentHash": "sha256:67487aa39e08dec9d67dd99417b2ad4ab33c1f07908119e09620a7c5b0661c3f",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Post-ingest scoring gate report proving controlled score materialization/evaluation gates pass.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "scoring_gate_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-command-receipt.json",
+          "contentHash": "sha256:2a93a7ae637d4b2bb6afe58394047af81d7c5500c03f76d1de8116ce9673038d",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Command receipt for post-ingest scoring gate pass verification.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "command_receipt/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/negative-assertions.json",
+          "contentHash": "sha256:75667cd5d0751157a722fde049ca0a7c0d66873da1537c771892e4aae6d43f29",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "TRACE-020 negative assertions for score control isolation and gate requirements.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "negative_assertion_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-020"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-027"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-PASS"
+        }
+      ],
+      "recordedAt": "2026-05-19T15:44:47.4715086Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "EVD-009",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-020"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-SCORING-GATES-PASS",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-verified.json --json",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T15:40:31.1929035Z",
+          "completedAt": "2026-05-19T15:40:32.0566520Z",
+          "outputSummary": "Scoring gates check passed after controlled ingest."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "scoring_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-verified.json",
+          "contentHash": "sha256:67487aa39e08dec9d67dd99417b2ad4ab33c1f07908119e09620a7c5b0661c3f",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Post-ingest scoring gate report proving controlled score materialization/evaluation gates pass.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "scoring_gate_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-command-receipt.json",
+          "contentHash": "sha256:2a93a7ae637d4b2bb6afe58394047af81d7c5500c03f76d1de8116ce9673038d",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Command receipt for post-ingest scoring gate pass verification.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "command_receipt/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/negative-assertions.json",
+          "contentHash": "sha256:75667cd5d0751157a722fde049ca0a7c0d66873da1537c771892e4aae6d43f29",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "TRACE-020 negative assertions for score control isolation and gate requirements.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "negative_assertion_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-020"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-027"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-PASS"
+        }
+      ],
+      "recordedAt": "2026-05-19T15:44:47.4715086Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "EVD-027",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-020"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-SCORING-GATES-PASS",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-verified.json --json",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T15:40:31.1929035Z",
+          "completedAt": "2026-05-19T15:40:32.0566520Z",
+          "outputSummary": "Scoring gates check passed after controlled ingest."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "scoring_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-verified.json",
+          "contentHash": "sha256:67487aa39e08dec9d67dd99417b2ad4ab33c1f07908119e09620a7c5b0661c3f",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Post-ingest scoring gate report proving controlled score materialization/evaluation gates pass.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "scoring_gate_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-command-receipt.json",
+          "contentHash": "sha256:2a93a7ae637d4b2bb6afe58394047af81d7c5500c03f76d1de8116ce9673038d",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "Command receipt for post-ingest scoring gate pass verification.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "command_receipt/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/negative-assertions.json",
+          "contentHash": "sha256:75667cd5d0751157a722fde049ca0a7c0d66873da1537c771892e4aae6d43f29",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+          "purpose": "TRACE-020 negative assertions for score control isolation and gate requirements.",
+          "relatedRequirementIds": [
+            "MUST-027",
+            "NEG-015",
+            "OUT-013",
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027",
+            "TRACE-020"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "negative_assertion_report/v1",
+          "traceRows": [
+            "TRACE-020"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-009",
+            "EVD-027"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-020"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-027"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-PASS"
+        }
+      ],
+      "recordedAt": "2026-05-19T15:44:47.4715086Z",
+      "recordedBy": "codex"
     }
   ],
   "gateChecks": [
@@ -58284,6 +61278,226 @@
         }
       ],
       "recordedAt": "2026-05-19T15:19:50.000Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "gate_check_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "checkId": "score-materialization:trace-020",
+      "gate": "score_materialization",
+      "decision": "pass",
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-020"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-027"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-BEFORE"
+        }
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-SCORING-GATES-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-scoring-gates-check.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/requirement-record-schema.test.ts",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T15:35:31.000Z",
+          "completedAt": "2026-05-19T15:35:33.000Z",
+          "outputSummary": "4 test files passed; 34 tests passed."
+        },
+        {
+          "commandId": "CMD-SCORING-GATES-BEFORE",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-before.json --json",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 1,
+          "startedAt": "2026-05-19T15:36:00.000Z",
+          "completedAt": "2026-05-19T15:36:03.000Z",
+          "outputSummary": "Initial fail-closed check: score_materialization_gate_missing, score_evaluation_gate_missing."
+        }
+      ],
+      "recordedAt": "2026-05-19T15:39:22.3324851Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "gate_check_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "checkId": "score-evaluation:trace-020",
+      "gate": "score_evaluation",
+      "decision": "pass",
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-020"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-027"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-BEFORE"
+        }
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-SCORING-GATES-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-scoring-gates-check.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/requirement-record-schema.test.ts",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T15:35:31.000Z",
+          "completedAt": "2026-05-19T15:35:33.000Z",
+          "outputSummary": "4 test files passed; 34 tests passed."
+        },
+        {
+          "commandId": "CMD-SCORING-GATES-BEFORE",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-before.json --json",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 1,
+          "startedAt": "2026-05-19T15:36:00.000Z",
+          "completedAt": "2026-05-19T15:36:03.000Z",
+          "outputSummary": "Initial fail-closed check: score_materialization_gate_missing, score_evaluation_gate_missing."
+        }
+      ],
+      "recordedAt": "2026-05-19T15:39:22.3324851Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "gate_check_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "checkId": "score-materialization:trace-020:verified",
+      "gate": "score_materialization",
+      "decision": "pass",
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-020"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-027"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-PASS"
+        }
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-SCORING-GATES-PASS",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-verified.json --json",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T15:40:31.1929035Z",
+          "completedAt": "2026-05-19T15:40:32.0566520Z",
+          "outputSummary": "Scoring gates check passed after controlled ingest."
+        }
+      ],
+      "recordedAt": "2026-05-19T15:44:47.4715086Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "gate_check_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "checkId": "score-evaluation:trace-020:verified",
+      "gate": "score_evaluation",
+      "decision": "pass",
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-020"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-027"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-SCORING-GATES-PASS"
+        }
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-SCORING-GATES-PASS",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-verified.json --json",
+          "runId": "run-trace-020-scoring-gates-001",
+          "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T15:40:31.1929035Z",
+          "completedAt": "2026-05-19T15:40:32.0566520Z",
+          "outputSummary": "Scoring gates check passed after controlled ingest."
+        }
+      ],
+      "recordedAt": "2026-05-19T15:44:47.4715086Z",
       "recordedBy": "codex"
     }
   ],
@@ -63683,6 +66897,237 @@
         "EVD-022",
         "EVD-026"
       ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "score_record",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/scoring/score-record-trace-020.json",
+      "contentHash": "sha256:7c3196b06950859cfacdfb33d2a848770962b6f383dd661961af5fbb7d9527b4",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+      "purpose": "Pass-grade score artifact used as evidence input for score materialization and score evaluation gates; not a control source.",
+      "relatedRequirementIds": [
+        "MUST-027",
+        "NEG-015",
+        "OUT-013",
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027",
+        "TRACE-020"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "score_record/v1",
+      "traceRows": [
+        "TRACE-020"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "implementation_delta_summary",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/implementation-delta-summary.md",
+      "contentHash": "sha256:bb3174e008b524e8b7e1076396e037231cc15fafcb44f5f1bb6c65f3c1776814",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+      "purpose": "TRACE-020 implementation delta summary.",
+      "relatedRequirementIds": [
+        "MUST-027",
+        "NEG-015",
+        "OUT-013",
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027",
+        "TRACE-020"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "implementation_delta_summary/v1",
+      "traceRows": [
+        "TRACE-020"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "negative_assertion_report",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/negative-assertions.json",
+      "contentHash": "sha256:75667cd5d0751157a722fde049ca0a7c0d66873da1537c771892e4aae6d43f29",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+      "purpose": "TRACE-020 negative assertions for score control isolation and gate requirements.",
+      "relatedRequirementIds": [
+        "MUST-027",
+        "NEG-015",
+        "OUT-013",
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027",
+        "TRACE-020"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "negative_assertion_report/v1",
+      "traceRows": [
+        "TRACE-020"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "scoring_gate_report",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-before.json",
+      "contentHash": "sha256:eef36cffea6543fe08d3540c393bb70afb91018ab5533fa3954b210ea42d138d",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+      "purpose": "Initial scoring gate report proving missing gates fail closed before controlled ingest.",
+      "relatedRequirementIds": [
+        "MUST-027",
+        "NEG-015",
+        "OUT-013",
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027",
+        "TRACE-020"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "scoring_gate_report/v1",
+      "traceRows": [
+        "TRACE-020"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "scoring_gate_report",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-verified.json",
+      "contentHash": "sha256:67487aa39e08dec9d67dd99417b2ad4ab33c1f07908119e09620a7c5b0661c3f",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+      "purpose": "Post-ingest scoring gate report proving controlled score materialization/evaluation gates pass.",
+      "relatedRequirementIds": [
+        "MUST-027",
+        "NEG-015",
+        "OUT-013",
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027",
+        "TRACE-020"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "scoring_gate_report/v1",
+      "traceRows": [
+        "TRACE-020"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "command_receipt",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-command-receipt.json",
+      "contentHash": "sha256:2a93a7ae637d4b2bb6afe58394047af81d7c5500c03f76d1de8116ce9673038d",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+      "purpose": "Command receipt for post-ingest scoring gate pass verification.",
+      "relatedRequirementIds": [
+        "MUST-027",
+        "NEG-015",
+        "OUT-013",
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027",
+        "TRACE-020"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "command_receipt/v1",
+      "traceRows": [
+        "TRACE-020"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "negative_assertion_report",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/negative-assertions.json",
+      "contentHash": "sha256:75667cd5d0751157a722fde049ca0a7c0d66873da1537c771892e4aae6d43f29",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+      "purpose": "TRACE-020 negative assertions for score control isolation and gate requirements.",
+      "relatedRequirementIds": [
+        "MUST-027",
+        "NEG-015",
+        "OUT-013",
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027",
+        "TRACE-020"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "negative_assertion_report/v1",
+      "traceRows": [
+        "TRACE-020"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-009",
+        "EVD-027"
+      ]
     }
   ],
   "closeout": {
@@ -66153,7 +69598,12 @@
             ],
             "status": "active",
             "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
-            "outputVersion": "runtime_policy_snapshot_check_report/v1"
+            "outputVersion": "runtime_policy_snapshot_check_report/v1",
+            "eventType": "artifact_indexed",
+            "recordId": "REQ-CLOSED-LOOP-DESIGN",
+            "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+            "traceRows": [],
+            "evidenceRefs": []
           }
         ]
       },
@@ -66189,7 +69639,153 @@
             ],
             "status": "active",
             "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
-            "outputVersion": "runtime_policy_snapshot_check_report/v1"
+            "outputVersion": "runtime_policy_snapshot_check_report/v1",
+            "eventType": "artifact_indexed",
+            "recordId": "REQ-CLOSED-LOOP-DESIGN",
+            "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+            "traceRows": [],
+            "evidenceRefs": []
+          }
+        ]
+      },
+      {
+        "commandId": "CMD-SCORING-GATES-ACCEPTANCE",
+        "command": "npx vitest run tests/acceptance/main-agent-scoring-gates-check.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/requirement-record-schema.test.ts",
+        "commandType": "contract_validation",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": [
+          "TRACE-020"
+        ],
+        "evidenceRefs": [
+          "EVD-027"
+        ],
+        "artifactRefs": [
+          {
+            "artifactType": "negative_assertion_report",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/negative-assertions.json",
+            "contentHash": "sha256:75667cd5d0751157a722fde049ca0a7c0d66873da1537c771892e4aae6d43f29",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+            "purpose": "TRACE-020 negative assertions for score control isolation and gate requirements.",
+            "relatedRequirementIds": [
+              "MUST-027",
+              "NEG-015",
+              "OUT-013",
+              "EVD-004",
+              "EVD-005",
+              "EVD-009",
+              "EVD-027",
+              "TRACE-020"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "negative_assertion_report/v1",
+            "traceRows": [
+              "TRACE-020"
+            ],
+            "evidenceRefs": [
+              "EVD-027"
+            ],
+            "eventType": "artifact_indexed",
+            "recordId": "REQ-CLOSED-LOOP-DESIGN",
+            "requirementSetId": "REQ-CLOSED-LOOP-DESIGN"
+          }
+        ]
+      },
+      {
+        "commandId": "CMD-SCORING-GATES-PASS",
+        "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-verified.json --json",
+        "commandType": "contract_validation",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": [
+          "TRACE-020"
+        ],
+        "evidenceRefs": [
+          "EVD-027"
+        ],
+        "artifactRefs": [
+          {
+            "artifactType": "scoring_gate_report",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+            "relatedRequirementIds": [
+              "MUST-027",
+              "NEG-015",
+              "OUT-013",
+              "EVD-004",
+              "EVD-005",
+              "EVD-009",
+              "EVD-027",
+              "TRACE-020"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "traceRows": [
+              "TRACE-020"
+            ],
+            "evidenceRefs": [
+              "EVD-027"
+            ],
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-verified.json",
+            "contentHash": "sha256:67487aa39e08dec9d67dd99417b2ad4ab33c1f07908119e09620a7c5b0661c3f",
+            "purpose": "Post-ingest scoring gate report proving controlled score materialization/evaluation gates pass.",
+            "outputVersion": "scoring_gate_report/v1"
+          },
+          {
+            "artifactType": "command_receipt",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+            "relatedRequirementIds": [
+              "MUST-027",
+              "NEG-015",
+              "OUT-013",
+              "EVD-004",
+              "EVD-005",
+              "EVD-009",
+              "EVD-027",
+              "TRACE-020"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "traceRows": [
+              "TRACE-020"
+            ],
+            "evidenceRefs": [
+              "EVD-027"
+            ],
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-command-receipt.json",
+            "contentHash": "sha256:2a93a7ae637d4b2bb6afe58394047af81d7c5500c03f76d1de8116ce9673038d",
+            "purpose": "Command receipt for post-ingest scoring gate pass verification.",
+            "outputVersion": "command_receipt/v1"
+          },
+          {
+            "artifactType": "negative_assertion_report",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/negative-assertions.json",
+            "contentHash": "sha256:75667cd5d0751157a722fde049ca0a7c0d66873da1537c771892e4aae6d43f29",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-020 implementation",
+            "purpose": "TRACE-020 negative assertions for score control isolation and gate requirements.",
+            "relatedRequirementIds": [
+              "MUST-027",
+              "NEG-015",
+              "OUT-013",
+              "EVD-004",
+              "EVD-005",
+              "EVD-009",
+              "EVD-027",
+              "TRACE-020"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "negative_assertion_report/v1",
+            "traceRows": [
+              "TRACE-020"
+            ],
+            "evidenceRefs": [
+              "EVD-027"
+            ]
           }
         ]
       }
@@ -66630,5 +70226,7 @@
     "evidenceRefs": [
       "EVD-026"
     ]
-  }
+  },
+  "failureRecords": [],
+  "rerunLoops": []
 }

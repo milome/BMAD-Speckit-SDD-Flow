@@ -1,0 +1,27 @@
+{
+  "eventType": "score_written",
+  "scoreWriteResult": "ok",
+  "scoringPolicyHash": "sha256:f2463943b1bbafc51a2aec8987e5f899018692c0e186b0fd3464e37a34ce5095",
+  "scoringRequired": true,
+  "stage": "implement",
+  "display": {
+    "visible": true,
+    "label": "TRACE-020 controlled scoring gate proof"
+  },
+  "score": {
+    "overall": 100,
+    "dimensions": {
+      "materialization": 100,
+      "evaluation": 100,
+      "visibility": 100,
+      "traceability": 100
+    }
+  },
+  "evaluation": {
+    "decision": "pass",
+    "thresholdPassed": true,
+    "dimensionVetoes": [],
+    "iterationPenaltyApplied": 0
+  },
+  "controlNotice": "score_written is not a control event; only score_materialization and score_evaluation gateChecks can affect rerun or closeout."
+}

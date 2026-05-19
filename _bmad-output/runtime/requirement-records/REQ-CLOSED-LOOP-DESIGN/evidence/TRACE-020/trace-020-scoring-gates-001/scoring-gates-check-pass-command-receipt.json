@@ -1,0 +1,10 @@
+{
+  "commandId": "CMD-SCORING-GATES-PASS",
+  "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-020/trace-020-scoring-gates-001/scoring-gates-check-pass-verified.json --json",
+  "runId": "run-trace-020-scoring-gates-001",
+  "closeoutAttemptId": "closeout-trace-020-scoring-gates-001",
+  "exitCode": 0,
+  "startedAt": "2026-05-19T15:40:31.1929035Z",
+  "completedAt": "2026-05-19T15:40:32.0566520Z",
+  "outputSummary": "Scoring gates check passed after controlled ingest."
+}

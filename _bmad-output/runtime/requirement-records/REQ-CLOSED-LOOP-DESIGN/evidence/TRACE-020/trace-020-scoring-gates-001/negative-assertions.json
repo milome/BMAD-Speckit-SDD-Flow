@@ -1,0 +1,24 @@
+{
+  "assertions": [
+    {
+      "id": "OUT-013-score-file-not-control",
+      "status": "covered",
+      "statement": "score files and score_written events cannot trigger rerun, requirement closure, or closeout without score gateChecks."
+    },
+    {
+      "id": "NEG-015-materialization-required",
+      "status": "covered",
+      "statement": "scoring.required=true without score_materialization gate blocks scoring closeout readiness."
+    },
+    {
+      "id": "NEG-015-evaluation-required",
+      "status": "covered",
+      "statement": "scoring.required=true without score_evaluation gate blocks scoring closeout readiness."
+    },
+    {
+      "id": "NEG-015-failure-record-required",
+      "status": "covered",
+      "statement": "score write or evaluation failure must be represented through failureRecords and rerunLoops, not score file state."
+    }
+  ]
+}

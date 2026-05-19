@@ -1,0 +1,31 @@
+{
+  "reportType": "scoring_gates_report",
+  "generatedAt": "2026-05-19T15:40:32.019Z",
+  "evaluatedBy": "agent",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "decision": "pass",
+  "blockingReasons": [],
+  "checks": [
+    {
+      "id": "runtime-policy-scoring-required-resolved",
+      "passed": true,
+      "scoringRequired": true
+    },
+    {
+      "id": "score-materialization-gate-pass",
+      "passed": true,
+      "decision": "pass"
+    },
+    {
+      "id": "score-evaluation-gate-pass",
+      "passed": true,
+      "decision": "pass"
+    },
+    {
+      "id": "score-failures-resolved-before-closeout",
+      "passed": true,
+      "openCount": 0
+    }
+  ]
+}
