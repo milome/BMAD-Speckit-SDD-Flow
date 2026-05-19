@@ -1,0 +1,57 @@
+[
+  {
+    "commandId": "CMD-TRACE-015-FUNCTIONAL-RESUME-REGISTRY-CHECK",
+    "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-functional-resume-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-015/trace-015-functional-resume-registry-001/resume --checkpoint-id checkpoint-trace-015-001 --expected-source-document-hash sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294 --expected-implementation-confirmation-hash sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec --expected-architecture-confirmation-hash sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1 --generated-at 2026-05-19T22:05:00.000+08:00 --generated-by codex --json",
+    "runId": "trace-015-functional-resume-registry-001",
+    "closeoutAttemptId": "trace-015-functional-resume-registry-001",
+    "exitCode": 0,
+    "startedAt": "2026-05-19T13:58:09.632Z",
+    "completedAt": "2026-05-19T13:58:10.450Z",
+    "outputSummary": "$ npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-functional-resume-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-015/trace-015-functional-resume-registry-001/resume --checkpoint-id checkpoint-trace-015-001 --expected-source-document-hash sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294 --expected-implementation-confirmation-hash sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec --expected-architecture-confirmation-hash sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1 --generated-at 2026-05-19T22:05:00.000+08:00 --generated-by codex --json startedAt=2026-05-19T13:58:09.632Z completedAt=2026-05-19T13:58:10.450Z exitCode=0 --- stdout --- { \"ok\": true, \"decision\": \"pass\", \"resumeAllowed\":",
+    "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-015/trace-015-functional-resume-registry-001/CMD-TRACE-015-FUNCTIONAL-RESUME-REGISTRY-CHECK.log"
+  },
+  {
+    "commandId": "CMD-TRACE-015-FUNCTIONAL-RESUME-REGISTRY-TEST",
+    "command": "npx vitest run tests/acceptance/main-agent-functional-resume-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+    "runId": "trace-015-functional-resume-registry-001",
+    "closeoutAttemptId": "trace-015-functional-resume-registry-001",
+    "exitCode": 0,
+    "startedAt": "2026-05-19T13:58:10.451Z",
+    "completedAt": "2026-05-19T13:58:12.821Z",
+    "outputSummary": "$ npx vitest run tests/acceptance/main-agent-functional-resume-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts startedAt=2026-05-19T13:58:10.451Z completedAt=2026-05-19T13:58:12.821Z exitCode=0 --- stdout --- \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m { \"ok\": true, \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/delivery-closeout-missing-8POOHS/_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/delivery-closeout-report.json\", \"decision\": \"blocked\", \"blockingReasons\": [ \"deliveryEvidence.requiredCommands_missing\", \"negative_or_regression_command_missing\" ] } { \"ok\": true, \"decision\": \"pass\", \"resumeAllowed\": true, \"checkpointPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-srzO1t/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/trace-checkpoints.jsonl\", \"resumePacketPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-srzO1t/_bmad-output/runtime",
+    "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-015/trace-015-functional-resume-registry-001/CMD-TRACE-015-FUNCTIONAL-RESUME-REGISTRY-TEST.log"
+  },
+  {
+    "commandId": "CMD-RENDER-CONFIRMATION",
+    "command": "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json",
+    "runId": "trace-015-functional-resume-registry-001",
+    "closeoutAttemptId": "trace-015-functional-resume-registry-001",
+    "exitCode": 0,
+    "startedAt": "2026-05-19T13:58:12.821Z",
+    "completedAt": "2026-05-19T13:58:13.070Z",
+    "outputSummary": "$ node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json startedAt=2026-05-19T13:58:12.821Z completedAt=2026-05-19T13:58:13.070Z exitCode=0 --- stdout --- { \"recordId\": \"REQ-CLOSED-LOOP-DESIGN\", \"sourcePath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/docs/design/需求实现完整性门禁与重跑闭环设计.md\", \"sourceDocumentHash\": \"sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294\", \"implementationConfirmationHash\": \"sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec\", \"confirmationPageHash\": \"sha256:4195bc39582229f5a6dea6d15aec2e869d1cb635195a1e0c732b54004d7b141a\", \"language\": \"",
+    "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-015/trace-015-functional-resume-registry-001/CMD-RENDER-CONFIRMATION.log"
+  },
+  {
+    "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+    "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+    "runId": "trace-015-functional-resume-registry-001",
+    "closeoutAttemptId": "trace-015-functional-resume-registry-001",
+    "exitCode": 0,
+    "startedAt": "2026-05-19T13:58:13.071Z",
+    "completedAt": "2026-05-19T13:58:20.956Z",
+    "outputSummary": "$ npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts startedAt=2026-05-19T13:58:13.071Z completedAt=2026-05-19T13:58:20.956Z exitCode=0 --- stdout --- \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m31 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 5434\u001b[2mms\u001b[22m\u001b[39m \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m \u001b[2m Tests \u001b[22m \u001b[1m\u001b[32m31 passed\u001b[39m\u001b[22m\u001b[90m (31)\u001b[39m \u001b[2m Start at \u001b[22m 21:58:15 \u001b[2m Duration \u001b[22m 5.75s\u001b[2m (transform 81ms, setup 0ms, import 115ms, tests 5.43s, environment 0ms)\u001b[22m --- stderr ---",
+    "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-015/trace-015-functional-resume-registry-001/CMD-TRACE-BINDING-ACCEPTANCE.log"
+  },
+  {
+    "commandId": "CMD-ENCODING-GATE",
+    "command": "node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+    "runId": "trace-015-functional-resume-registry-001",
+    "closeoutAttemptId": "trace-015-functional-resume-registry-001",
+    "exitCode": 0,
+    "startedAt": "2026-05-19T13:58:20.957Z",
+    "completedAt": "2026-05-19T13:58:21.671Z",
+    "outputSummary": "$ node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js startedAt=2026-05-19T13:58:20.957Z completedAt=2026-05-19T13:58:21.671Z exitCode=0 --- stdout --- checkedFiles=2742 findings=0 --- stderr ---",
+    "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-015/trace-015-functional-resume-registry-001/CMD-ENCODING-GATE.log"
+  }
+]

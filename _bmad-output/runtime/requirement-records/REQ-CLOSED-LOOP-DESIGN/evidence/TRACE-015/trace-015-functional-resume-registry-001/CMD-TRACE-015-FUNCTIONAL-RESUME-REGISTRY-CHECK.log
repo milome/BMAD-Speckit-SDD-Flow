@@ -1,0 +1,62 @@
+$ npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-functional-resume-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-015/trace-015-functional-resume-registry-001/resume --checkpoint-id checkpoint-trace-015-001 --expected-source-document-hash sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294 --expected-implementation-confirmation-hash sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec --expected-architecture-confirmation-hash sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1 --generated-at 2026-05-19T22:05:00.000+08:00 --generated-by codex --json
+startedAt=2026-05-19T13:58:09.632Z
+completedAt=2026-05-19T13:58:10.450Z
+exitCode=0
+
+--- stdout ---
+{
+  "ok": true,
+  "decision": "pass",
+  "resumeAllowed": true,
+  "checkpointPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-015/trace-015-functional-resume-registry-001/resume/trace-checkpoints.jsonl",
+  "resumePacketPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-015/trace-015-functional-resume-registry-001/resume/resume-packets.jsonl",
+  "proofPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-015/trace-015-functional-resume-registry-001/resume/functional-resume-proof.json",
+  "blockingIssues": [],
+  "resumeFailureCaseRegistryCoverage": {
+    "rawPresent": true,
+    "status": "frozen_for_six_mental_model_full_link",
+    "groups": 6,
+    "failureCases": 27,
+    "recoveryActions": 17,
+    "globalEventTypes": 27,
+    "controlledRecordEventTypes": 24,
+    "fullLinkRequiredFixtureCases": [
+      "resume_happy_path",
+      "sourceDocumentHash_changed"
+    ],
+    "exercisedFixtureCases": [
+      "sourceDocumentHash_changed"
+    ],
+    "unexercisedCases": [
+      "artifactIndexHash_mismatch",
+      "codexHookCapabilityProbe_missing_or_failed",
+      "codexHookConfigHash_mismatch",
+      "codexHookPostToolUse_missing_without_no_hook_replay",
+      "codexHookPreToolUse_missing_for_high_risk_action",
+      "codexHookReceipt_sequence_gap",
+      "codexHookRuntimePolicyHash_mismatch",
+      "codexHookTrustReceipt_missing_or_invalid",
+      "downstreamLink_missing_for_LINKED_DOWNSTREAM",
+      "downstreamScope_does_not_cover_work",
+      "hostMode_parity_mismatch",
+      "implementationConfirmationHash_changed",
+      "openBlocker_exists",
+      "openRcaAction_exists",
+      "orphanArtifact_exists",
+      "pendingPacket_recordId_mismatch",
+      "pendingPacket_traceRows_mismatch",
+      "pendingRerun_exists",
+      "requiredArtifact_missing",
+      "resumePacket_missing_or_invalid",
+      "runtimePolicySnapshot_missing_or_mismatch",
+      "staleLease_or_expiredHeartbeat",
+      "traceRows_changed_without_reconfirmation",
+      "trace_checkpoint_missing",
+      "userApprovedDeferred_missing_followup",
+      "userApprovedOutOfScope_missing_confirmation_delta"
+    ],
+    "issues": []
+  }
+}
+
+--- stderr ---

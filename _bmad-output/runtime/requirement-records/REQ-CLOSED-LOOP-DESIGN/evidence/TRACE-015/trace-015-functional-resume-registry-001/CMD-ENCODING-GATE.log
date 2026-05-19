@@ -1,0 +1,9 @@
+$ node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js
+startedAt=2026-05-19T13:58:20.957Z
+completedAt=2026-05-19T13:58:21.671Z
+exitCode=0
+
+--- stdout ---
+checkedFiles=2742 findings=0
+
+--- stderr ---
