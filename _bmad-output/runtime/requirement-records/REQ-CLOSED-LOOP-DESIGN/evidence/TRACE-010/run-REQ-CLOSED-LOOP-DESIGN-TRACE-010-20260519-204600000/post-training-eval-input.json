@@ -1,0 +1,40 @@
+{
+  "evalReportId": "eval-REQ-CLOSED-LOOP-DESIGN-TRACE-010-001",
+  "runId": "run-REQ-CLOSED-LOOP-DESIGN-TRACE-010-20260519-204600000",
+  "trainingRunId": "train-REQ-CLOSED-LOOP-DESIGN-TRACE-010-001",
+  "datasetId": "req-closed-loop-design-governed-sft",
+  "datasetVersion": "v1",
+  "decision": "pass",
+  "trainingLossOnly": false,
+  "holdoutRegistryHash": "sha256:2bfc855a17c27775d6e32a78171738605d4a33d0c1061eca8dd8070b372f9ca6",
+  "baselineManifestHash": "sha256:4450db450fd03d36749454ee1f190f5a21032390af5636766684cd3ff5f8eaf6",
+  "metrics": {
+    "requirement_adherence": {
+      "baseline": 0.9,
+      "current": 0.97,
+      "decision": "pass"
+    },
+    "evidence_completeness": {
+      "baseline": 0.9,
+      "current": 0.98,
+      "decision": "pass"
+    },
+    "rerun_rate": {
+      "baseline": 0.2,
+      "current": 0.08,
+      "decision": "pass"
+    },
+    "defect_escape_rate": {
+      "baseline": 0.1,
+      "current": 0.03,
+      "decision": "pass"
+    },
+    "similar_error_recurrence_rate": {
+      "baseline": 0.1,
+      "current": 0.02,
+      "decision": "pass"
+    }
+  },
+  "startedAt": "2026-05-19T20:46:00.000Z",
+  "completedAt": "2026-05-19T20:46:00.000Z"
+}

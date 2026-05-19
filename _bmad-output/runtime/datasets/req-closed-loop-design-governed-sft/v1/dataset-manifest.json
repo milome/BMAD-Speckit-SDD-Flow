@@ -1,0 +1,90 @@
+{
+  "manifestType": "dataset_release_manifest",
+  "datasetId": "req-closed-loop-design-governed-sft",
+  "datasetVersion": "v1",
+  "releaseDecision": "pass",
+  "generatedAt": "2026-05-19T20:46:00.000Z",
+  "generatedBy": "codex",
+  "source": {
+    "recordId": "REQ-CLOSED-LOOP-DESIGN",
+    "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+    "sourceRequirementRecordHash": "sha256:c62c6d7e5c8214750f801b542e9adece07e8c35f1a2f02cd03bbd68aa001ff7c",
+    "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+    "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
+    "architectureConfirmationHash": "sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+    "sourceDatasetManifestHash": "sha256:eebc929a5ef196680b1e52f502627545632ff0fa7b16d8b73706c6e7a27ac6a3",
+    "sourceExportHash": "sha256:ccf7cd9c58e52300bf8909c320f46ade736cf365f01345d1cf7a4cd33bafec78"
+  },
+  "exports": {
+    "train": {
+      "artifactType": "dataset_export",
+      "path": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/exports/train.jsonl",
+      "hash": "sha256:bb3835a5a95c15e1a789bdf57c39b9936cc8c617f73a90da094d90b6f7469f4d"
+    },
+    "validation": {
+      "artifactType": "dataset_export",
+      "path": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/exports/validation.jsonl",
+      "hash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "test": {
+      "artifactType": "dataset_export",
+      "path": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/exports/test.jsonl",
+      "hash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "reports": {
+    "datasetCard": {
+      "artifactType": "dataset_card",
+      "path": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-card.md",
+      "hash": "sha256:8573be063ae9cacda5dae51a592a001f48d83e60f4b62fcacd5b9d52f5af46a5"
+    },
+    "qualityReport": {
+      "artifactType": "dataset_quality_report",
+      "path": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/quality-report.json",
+      "hash": "sha256:f2e89d56e6e9cc928ef7bf5ed04a579b2b811db85f84385fd70e8d2860c6107c"
+    },
+    "redactionReport": {
+      "artifactType": "dataset_redaction_report",
+      "path": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/redaction-report.json",
+      "hash": "sha256:b5659737bd5245a91990822e386ba98a04b76924128b9b50f44b794192c1c607"
+    },
+    "contaminationReport": {
+      "artifactType": "dataset_contamination_report",
+      "path": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/contamination-report.json",
+      "hash": "sha256:cef5a4ccf4caf645d69ef7606bc293a7e9204a414dfac04604623f4c7695ca86"
+    },
+    "revokedSamples": {
+      "artifactType": "revoked_sample_list",
+      "path": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/revoked-samples.json",
+      "hash": "sha256:d78be1f3370427caf13ec973f37ab188106c377aac777e719e69f7f57f9bc157"
+    },
+    "lineageReport": {
+      "artifactType": "dataset_lineage_report",
+      "path": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/lineage-report.json",
+      "hash": "sha256:9fcb6997eb21a5b8c4d9b01678fa99d7b9e27741eddf88965e1522a543990f04"
+    },
+    "postTrainingEvalReport": {
+      "artifactType": "post_training_eval_report",
+      "path": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/post-training-eval-report.json",
+      "hash": "sha256:b372f7c3baa649a7281e8caf7b93399eb2cfa0d38fdb8d6f9a1124f66f89a9a9"
+    }
+  },
+  "training": {
+    "trainingRun": {
+      "artifactType": "training_run_metadata",
+      "path": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/training-run.json",
+      "hash": "sha256:5418c14fb3879c0d43065408014ee5a7fe0b074424a61e25ebe517b34e5446ef"
+    },
+    "evalReport": {
+      "artifactType": "post_training_eval_report",
+      "path": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/post-training-eval-report.json",
+      "hash": "sha256:b372f7c3baa649a7281e8caf7b93399eb2cfa0d38fdb8d6f9a1124f66f89a9a9"
+    }
+  },
+  "counts": {
+    "canonicalSamples": 7,
+    "sampleRoutes": 11,
+    "blockedIssues": 0,
+    "subsystems": 16
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "trainingRunId": "train-REQ-CLOSED-LOOP-DESIGN-TRACE-010-001",
+  "runId": "run-REQ-CLOSED-LOOP-DESIGN-TRACE-010-20260519-204600000",
+  "datasetId": "req-closed-loop-design-governed-sft",
+  "datasetVersion": "v1",
+  "status": "completed",
+  "mode": "governed_trace_validation_training_metadata",
+  "sourceDatasetManifestHash": "sha256:eebc929a5ef196680b1e52f502627545632ff0fa7b16d8b73706c6e7a27ac6a3",
+  "exportArtifactHash": "sha256:bb3835a5a95c15e1a789bdf57c39b9936cc8c617f73a90da094d90b6f7469f4d",
+  "sampleCount": 7,
+  "startedAt": "2026-05-19T20:46:00.000Z",
+  "completedAt": "2026-05-19T20:46:00.000Z",
+  "notes": "Current-run governed dataset release lineage metadata for TRACE-010; does not use raw chat logs or legacy runtime outputs."
+}

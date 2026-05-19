@@ -1,0 +1,22 @@
+{
+  "reportType": "trace_010_negative_assertions",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "runId": "run-REQ-CLOSED-LOOP-DESIGN-TRACE-010-20260519-204600000",
+  "assertions": [
+    {
+      "id": "NEG-006-DATASET-RELEASE-BLOCKS-WITHOUT-TRAINING-RUN",
+      "status": "pass",
+      "evidence": "Acceptance test blocks dataset release when training run metadata is missing."
+    },
+    {
+      "id": "NEG-006-DATASET-RELEASE-BLOCKS-INCOMPLETE-SUBSYSTEMS",
+      "status": "pass",
+      "evidence": "Acceptance test blocks dataset release when one of sixteen subsystem readiness contracts is missing."
+    },
+    {
+      "id": "NEG-006-TRAINING-LOSS-ONLY-FORBIDDEN",
+      "status": "pass",
+      "evidence": "Release gate requires post-training eval report with five regression metrics and rejects trainingLossOnly=true."
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "reportType": "dataset_redaction_report",
+  "generatedAt": "2026-05-19T20:46:00.000Z",
+  "decision": "pass",
+  "summary": {
+    "clean": 7,
+    "redacted": 0,
+    "blocked": 0
+  },
+  "sampleFindings": [
+    {
+      "sampleId": "sample-req-closed-loop-design-1",
+      "redactionStatus": "clean",
+      "findingCount": 0
+    },
+    {
+      "sampleId": "sample-req-closed-loop-design-2",
+      "redactionStatus": "clean",
+      "findingCount": 0
+    },
+    {
+      "sampleId": "sample-req-closed-loop-design-3",
+      "redactionStatus": "clean",
+      "findingCount": 0
+    },
+    {
+      "sampleId": "sample-req-closed-loop-design-4",
+      "redactionStatus": "clean",
+      "findingCount": 0
+    },
+    {
+      "sampleId": "sample-req-closed-loop-design-5",
+      "redactionStatus": "clean",
+      "findingCount": 0
+    },
+    {
+      "sampleId": "sample-req-closed-loop-design-6",
+      "redactionStatus": "clean",
+      "findingCount": 0
+    },
+    {
+      "sampleId": "sample-req-closed-loop-design-7",
+      "redactionStatus": "clean",
+      "findingCount": 0
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "ok": true,
+  "outDir": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1",
+  "reportPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-release-gate-report.json",
+  "manifestPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-manifest.json",
+  "decision": "pass",
+  "blockingIssues": []
+}

@@ -1,0 +1,40 @@
+{
+  "registryType": "holdout_registry",
+  "generatedAt": "2026-05-19T20:34:00.000Z",
+  "frozen": true,
+  "freezeReason": "eval_first_before_sft_export",
+  "items": [
+    {
+      "sampleRouteId": "route:mentor:REQ-CLOSED-LOOP-DESIGN:execution:exec-implementation-evidence-ingest-001",
+      "mentorEventId": "mentor:REQ-CLOSED-LOOP-DESIGN:execution:exec-implementation-evidence-ingest-001",
+      "destination": "eval",
+      "reasons": [
+        "non_positive_status:partial"
+      ]
+    },
+    {
+      "sampleRouteId": "route:mentor:REQ-CLOSED-LOOP-DESIGN:execution:exec-closeout-gate-001",
+      "mentorEventId": "mentor:REQ-CLOSED-LOOP-DESIGN:execution:exec-closeout-gate-001",
+      "destination": "eval",
+      "reasons": [
+        "non_positive_status:partial"
+      ]
+    },
+    {
+      "sampleRouteId": "route:mentor:REQ-CLOSED-LOOP-DESIGN:execution:exec-closeout-gate-attempt-binding-001",
+      "mentorEventId": "mentor:REQ-CLOSED-LOOP-DESIGN:execution:exec-closeout-gate-attempt-binding-001",
+      "destination": "eval",
+      "reasons": [
+        "non_positive_status:partial"
+      ]
+    },
+    {
+      "sampleRouteId": "route:mentor:REQ-CLOSED-LOOP-DESIGN:execution:exec-closeout-attempt-004-required-commands",
+      "mentorEventId": "mentor:REQ-CLOSED-LOOP-DESIGN:execution:exec-closeout-attempt-004-required-commands",
+      "destination": "eval",
+      "reasons": [
+        "non_positive_status:partial"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mD:/Dev/BMAD-Speckit-SDD-Flow[39m
+
+{
+  "ok": true,
+  "recordId": "REQ-GOVERNED-DATA",
+  "requirementSetId": "REQ-GOVERNED-DATA",
+  "outDir": "C:/Users/milom/AppData/Local/Temp/governed-data-products-3SQ23N/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data",
+  "paths": {
+    "mentorEvents": "C:/Users/milom/AppData/Local/Temp/governed-data-products-3SQ23N/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data/mentor-events.jsonl",
+    "sampleRoutes": "C:/Users/milom/AppData/Local/Temp/governed-data-products-3SQ23N/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data/sample-routes.jsonl",
+    "canonicalSamples": "C:/Users/milom/AppData/Local/Temp/governed-data-products-3SQ23N/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data/canonical-samples.jsonl",
+    "validation": "C:/Users/milom/AppData/Local/Temp/governed-data-products-3SQ23N/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data/validation.jsonl",
+    "test": "C:/Users/milom/AppData/Local/Temp/governed-data-products-3SQ23N/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data/test.jsonl",
+    "manifest": "C:/Users/milom/AppData/Local/Temp/governed-data-products-3SQ23N/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data/dataset-manifest.json",
+    "report": "C:/Users/milom/AppData/Local/Temp/governed-data-products-3SQ23N/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data/data-governance-report.json"
+  },
+  "hashes": {
+    "mentorEvents": "sha256:381908287473c1a7fa39ee3cd96a01e975266253e96a2b607733c8f53de19584",
+    "sampleRoutes": "sha256:ef025c2202db5130a322096df609c3a809903acef48db01d9df9a96c6dc8ec73",
+    "canonicalSamples": "sha256:903e203b7723fb7a3ae86f8a0f402187b116dc4503b4618a98074ae007776650",
+    "validation": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "test": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "manifest": "sha256:9b9e5acc99976d3c1b0b040ecfeffaff4013f028938024fb373bbded32272b7f",
+    "report": "sha256:cf5b847fd1896a2101d56e33d61d5ba8ca701dceeb8d5a1360246ffb00a99d90"
+  },
+  "counts": {
+    "mentorEvents": 8,
+    "sampleRoutes": 6,
+    "canonicalSamples": 1,
+    "rejectedRoutes": 5
+  }
+}
+{
+  "ok": true,
+  "outDir": "C:/Users/milom/AppData/Local/Temp/dataset-release-pass-YNSHmk/_bmad-output/runtime/datasets/req-dataset-release-governed-sft/v1",
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/dataset-release-pass-YNSHmk/_bmad-output/runtime/datasets/req-dataset-release-governed-sft/v1/dataset-release-gate-report.json",
+  "manifestPath": "C:/Users/milom/AppData/Local/Temp/dataset-release-pass-YNSHmk/_bmad-output/runtime/datasets/req-dataset-release-governed-sft/v1/dataset-manifest.json",
+  "decision": "pass",
+  "blockingIssues": []
+}
+governed_data_products=C:/Users/milom/AppData/Local/Temp/governed-data-routes-TxpTyB/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data
+governed_data_products=C:/Users/milom/AppData/Local/Temp/governed-data-manifest-9SDMWn/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data
+governed_data_products=C:/Users/milom/AppData/Local/Temp/governed-data-preserve-qQ4U5I/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data
+dataset_release_gate=blocked
+ [32m✓[39m tests/acceptance/main-agent-governed-data-products.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 61[2mms[22m[39m
+dataset_release_gate=blocked
+ [32m✓[39m tests/acceptance/main-agent-dataset-release-gate.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 94[2mms[22m[39m
+{
+  "ok": true,
+  "outDir": "C:/Users/milom/AppData/Local/Temp/data-governance-pass-4Y0hqI/_bmad-output/runtime/requirement-records/REQ-DATA-GOVERNANCE/data/governance",
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/data-governance-pass-4Y0hqI/_bmad-output/runtime/requirement-records/REQ-DATA-GOVERNANCE/data/governance/data-governance-gate-report.json",
+  "reportHash": "sha256:810fab7129dd2c501fd09c6fdbcfed047b7563acd49a84f45b53a477c2220347",
+  "decision": "pass"
+}
+data_governance_gate=blocked
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/production-loop-ready-UB3OUD/_bmad-output/runtime/requirement-records/REQ-PRODUCTION-LOOP/production-loop-ready-report.json",
+  "decision": "pass",
+  "blockingReasons": []
+}
+data_governance_gate=blocked
+ [32m✓[39m tests/acceptance/main-agent-data-governance-gate.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 44[2mms[22m[39m
+production_loop_ready=blocked
+production_loop_ready=blocked
+ [32m✓[39m tests/acceptance/main-agent-production-loop-ready-check.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 32[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[32m13 passed[39m[22m[90m (13)[39m
+[2m   Start at [22m 20:47:08
+[2m   Duration [22m 659ms[2m (transform 147ms, setup 0ms, import 367ms, tests 230ms, environment 0ms)[22m
+

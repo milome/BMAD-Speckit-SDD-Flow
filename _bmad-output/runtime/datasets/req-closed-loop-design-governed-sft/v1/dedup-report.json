@@ -1,0 +1,13 @@
+{
+  "reportType": "dedup_report",
+  "generatedAt": "2026-05-19T20:34:00.000Z",
+  "policy": {
+    "exactDedupe": true,
+    "nearDedupe": true,
+    "duplicateAction": "quarantine",
+    "hashAlgorithm": "sha256"
+  },
+  "duplicateClusterCount": 0,
+  "duplicates": [],
+  "decision": "pass"
+}
