@@ -346,15 +346,18 @@ describe('bmad-config', () => {
       expect(isAutoContinueEnabled(config)).toBe(true);
     });
 
-    it('should auto continue when config and authoritative main-agent handoff are both ready', () => {
+    it('should auto continue only when requirement-record runtimeResumeProjection is ready', () => {
       const config = getDefaultConfig();
       config.auto_continue.enabled = true;
 
       expect(
         shouldAutoContinue(
           {
-            mainAgentNextAction: 'dispatch_review',
-            mainAgentReady: true,
+            runtimeResumeProjection: {
+              source: 'requirement_record',
+              runtimeNextAction: 'dispatch_review',
+              ready: true,
+            },
           },
           config as ReturnType<typeof loadConfig>
         )
@@ -363,8 +366,11 @@ describe('bmad-config', () => {
       expect(
         shouldAutoContinue(
           {
-            mainAgentNextAction: 'dispatch_review',
-            mainAgentReady: false,
+            runtimeResumeProjection: {
+              source: 'requirement_record',
+              runtimeNextAction: 'dispatch_review',
+              ready: false,
+            },
           },
           config as ReturnType<typeof loadConfig>
         )
@@ -373,14 +379,17 @@ describe('bmad-config', () => {
       expect(
         shouldAutoContinue(
           {
-            mainAgentReady: true,
+            runtimeResumeProjection: {
+              source: 'requirement_record',
+              ready: true,
+            },
           },
           config as ReturnType<typeof loadConfig>
         )
       ).toBe(false);
     });
 
-    it('should fall back to legacy handoff fields when main-agent fields are absent', () => {
+    it('should not fall back to legacy handoff fields or compatibility main-agent summaries', () => {
       const config = getDefaultConfig();
       config.auto_continue.enabled = true;
 
@@ -392,20 +401,15 @@ describe('bmad-config', () => {
           },
           config as ReturnType<typeof loadConfig>
         )
-      ).toBe(true);
-    });
-
-    it('should prefer main-agent readiness over legacy handoff fields when both are present', () => {
-      const config = getDefaultConfig();
-      config.auto_continue.enabled = true;
+      ).toBe(false);
 
       expect(
         shouldAutoContinue(
           {
             next_action: 'story_audit',
             ready: true,
-            mainAgentNextAction: 'await_user',
-            mainAgentReady: false,
+            mainAgentNextAction: 'dispatch_review',
+            mainAgentReady: true,
           },
           config as ReturnType<typeof loadConfig>
         )

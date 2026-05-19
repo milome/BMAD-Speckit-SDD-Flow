@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "command-evidence/v1",
+  "traceRows": [
+    "TRACE-029"
+  ],
+  "relatedRequirementIds": [
+    "MUST-038",
+    "NEG-026",
+    "NEG-027",
+    "OUT-021",
+    "OUT-022",
+    "EVD-021",
+    "EVD-038"
+  ],
+  "commandRuns": [
+    {
+      "commandId": "CMD-TRACE-029-MAIN-AGENT-CONTROL-HARDCUT-ACCEPTANCE",
+      "command": "npx vitest run tests/acceptance/main-agent-orchestration-consumer.test.ts tests/acceptance/bmad-config.test.ts tests/acceptance/accept-bmad-master-auto-continue.test.ts tests/acceptance/orchestration-dispatch-contract.test.ts tests/acceptance/orchestration-state-contract.test.ts tests/acceptance/main-agent-churn-routing-score.test.ts tests/acceptance/adaptive-intake-governance-gate.test.ts tests/acceptance/governance-single-source-of-truth.test.ts tests/acceptance/main-agent-quality-gate-thresholds.test.ts tests/acceptance/runtime-longrun-policy-contract.test.ts",
+      "runId": "run-trace-029-main-agent-control-hardcut-001",
+      "closeoutAttemptId": "closeout-trace-029-main-agent-control-hardcut-001",
+      "exitCode": 0,
+      "outputSummary": "10 acceptance files passed; 94 tests passed. Expected quality-gate negative assertion logged a blocked run-scoped proof mismatch and the suite still passed."
+    },
+    {
+      "commandId": "CMD-TRACE-029-ENCODING-GATE",
+      "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+      "runId": "run-trace-029-main-agent-control-hardcut-001",
+      "closeoutAttemptId": "closeout-trace-029-main-agent-control-hardcut-001",
+      "exitCode": 0,
+      "outputSummary": "checkedFiles=2764 findings=0"
+    }
+  ]
+}

@@ -1,0 +1,321 @@
+{
+  "eventType": "execution_iteration_recorded",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "executionIterationId": "TRACE-029-main-agent-control-hardcut-001",
+  "runId": "run-trace-029-main-agent-control-hardcut-001",
+  "status": "done",
+  "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+  "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
+  "architectureConfirmationHash": "sha256:a1372528e0fdf4dd0f87b5f37e5be30b3ec8f334e258f85d3c13c604d72facd8",
+  "traceRows": [
+    "TRACE-029"
+  ],
+  "taskRefs": [
+    "TASK-MAIN-AGENT-CONTROL-HARDCUT"
+  ],
+  "evidenceRefs": [
+    "EVD-021",
+    "EVD-038"
+  ],
+  "filesChanged": [
+    "_bmad/_config/main-agent-quality-gate.thresholds.json",
+    "_bmad/_config/orchestration-governance.contract.yaml",
+    "scripts/adaptive-intake-proof-gate.ts",
+    "scripts/bmad-config.ts",
+    "scripts/bmad-help-routing-state.ts",
+    "scripts/ensure-governance-user-story-mapping-fixture.js",
+    "scripts/main-agent-orchestration.ts",
+    "scripts/orchestration-dispatch-contract.ts",
+    "scripts/orchestration-state.ts",
+    "scripts/user-story-mapping.ts",
+    "scripts/validate-single-source-whitelist.ts",
+    "tests/acceptance/accept-bmad-master-auto-continue.test.ts",
+    "tests/acceptance/adaptive-intake-governance-gate.test.ts",
+    "tests/acceptance/bmad-config.test.ts",
+    "tests/acceptance/governance-single-source-of-truth.test.ts",
+    "tests/acceptance/main-agent-churn-routing-score.test.ts",
+    "tests/acceptance/main-agent-orchestration-consumer.test.ts",
+    "tests/acceptance/orchestration-dispatch-contract.test.ts",
+    "tests/acceptance/orchestration-state-contract.test.ts",
+    "tests/acceptance/runtime-longrun-policy-contract.test.ts",
+    "tests/helpers/runtime-registry-fixture.ts"
+  ],
+  "implementationDelta": {
+    "filesChanged": [
+      "_bmad/_config/main-agent-quality-gate.thresholds.json",
+      "_bmad/_config/orchestration-governance.contract.yaml",
+      "scripts/adaptive-intake-proof-gate.ts",
+      "scripts/bmad-config.ts",
+      "scripts/bmad-help-routing-state.ts",
+      "scripts/ensure-governance-user-story-mapping-fixture.js",
+      "scripts/main-agent-orchestration.ts",
+      "scripts/orchestration-dispatch-contract.ts",
+      "scripts/orchestration-state.ts",
+      "scripts/user-story-mapping.ts",
+      "scripts/validate-single-source-whitelist.ts",
+      "tests/acceptance/accept-bmad-master-auto-continue.test.ts",
+      "tests/acceptance/adaptive-intake-governance-gate.test.ts",
+      "tests/acceptance/bmad-config.test.ts",
+      "tests/acceptance/governance-single-source-of-truth.test.ts",
+      "tests/acceptance/main-agent-churn-routing-score.test.ts",
+      "tests/acceptance/main-agent-orchestration-consumer.test.ts",
+      "tests/acceptance/orchestration-dispatch-contract.test.ts",
+      "tests/acceptance/orchestration-state-contract.test.ts",
+      "tests/acceptance/runtime-longrun-policy-contract.test.ts",
+      "tests/helpers/runtime-registry-fixture.ts"
+    ],
+    "diffSummaryRef": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-029/trace-029-main-agent-control-hardcut-001/diff-summary.md",
+    "behaviorAffecting": true,
+    "negativeAssertionArtifactRefs": [
+      {
+        "artifactType": "negative_assertion_evidence",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-029/trace-029-main-agent-control-hardcut-001/negative-assertions.json",
+        "hash": "sha256:1b3290b5515e5b10ce2c89e28066418eefa287b97d95b35fad482351d6c87256",
+        "producer": "codex",
+        "purpose": "prove legacy main-agent control fields and old runtime/governance roots cannot authorize dispatch or auto-continue",
+        "relatedRequirementIds": [
+          "MUST-038",
+          "NEG-026",
+          "NEG-027",
+          "OUT-021",
+          "OUT-022",
+          "EVD-021",
+          "EVD-038"
+        ],
+        "status": "active",
+        "inputVersion": "TRACE-029",
+        "outputVersion": "main-agent-control-hardcut-evidence-v1"
+      }
+    ]
+  },
+  "diffSummary": "Hard-cut main-agent dispatch and auto-continue authority to RequirementRecord-backed runtimeResumeProjection while keeping legacy orchestration-state, bmad-help, user-story mapping, packet roots, score/dashboard/report outputs as observable projections or evidence only.",
+  "commandRuns": [
+    {
+      "commandId": "CMD-TRACE-029-MAIN-AGENT-CONTROL-HARDCUT-ACCEPTANCE",
+      "command": "npx vitest run tests/acceptance/main-agent-orchestration-consumer.test.ts tests/acceptance/bmad-config.test.ts tests/acceptance/accept-bmad-master-auto-continue.test.ts tests/acceptance/orchestration-dispatch-contract.test.ts tests/acceptance/orchestration-state-contract.test.ts tests/acceptance/main-agent-churn-routing-score.test.ts tests/acceptance/adaptive-intake-governance-gate.test.ts tests/acceptance/governance-single-source-of-truth.test.ts tests/acceptance/main-agent-quality-gate-thresholds.test.ts tests/acceptance/runtime-longrun-policy-contract.test.ts",
+      "runId": "run-trace-029-main-agent-control-hardcut-001",
+      "closeoutAttemptId": "closeout-trace-029-main-agent-control-hardcut-001",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T18:05:14.000Z",
+      "completedAt": "2026-05-19T18:05:22.000Z",
+      "outputSummary": "10 acceptance files passed; 94 tests passed. Expected quality-gate negative assertion logged a blocked run-scoped proof mismatch and the suite still passed."
+    },
+    {
+      "commandId": "CMD-TRACE-029-ENCODING-GATE",
+      "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+      "runId": "run-trace-029-main-agent-control-hardcut-001",
+      "closeoutAttemptId": "closeout-trace-029-main-agent-control-hardcut-001",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T18:05:23.000Z",
+      "completedAt": "2026-05-19T18:05:26.000Z",
+      "outputSummary": "checkedFiles=2764 findings=0"
+    }
+  ],
+  "artifactRefs": [
+    {
+      "artifactType": "diff_summary",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-029/trace-029-main-agent-control-hardcut-001/diff-summary.md",
+      "hash": "sha256:71d0aac361fe41bd3db1f6445f9167a6a0d9535d934aab18734859f4416eaac0",
+      "producer": "codex",
+      "purpose": "summarize TRACE-029 main-agent control hardcut implementation delta",
+      "relatedRequirementIds": [
+        "MUST-038",
+        "NEG-026",
+        "NEG-027",
+        "OUT-021",
+        "OUT-022",
+        "EVD-021",
+        "EVD-038"
+      ],
+      "status": "active",
+      "inputVersion": "TRACE-029",
+      "outputVersion": "main-agent-control-hardcut-evidence-v1"
+    },
+    {
+      "artifactType": "negative_assertion_evidence",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-029/trace-029-main-agent-control-hardcut-001/negative-assertions.json",
+      "hash": "sha256:1b3290b5515e5b10ce2c89e28066418eefa287b97d95b35fad482351d6c87256",
+      "producer": "codex",
+      "purpose": "prove legacy main-agent control fields and old runtime/governance roots cannot authorize dispatch or auto-continue",
+      "relatedRequirementIds": [
+        "MUST-038",
+        "NEG-026",
+        "NEG-027",
+        "OUT-021",
+        "OUT-022",
+        "EVD-021",
+        "EVD-038"
+      ],
+      "status": "active",
+      "inputVersion": "TRACE-029",
+      "outputVersion": "main-agent-control-hardcut-evidence-v1"
+    },
+    {
+      "artifactType": "command_evidence",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-029/trace-029-main-agent-control-hardcut-001/command-evidence.json",
+      "hash": "sha256:f07bd4b8c6b92c6b37d77f4cdb1efbaf2221d7163b68e35a7c30cfa196ac7490",
+      "producer": "codex",
+      "purpose": "record TRACE-029 acceptance and encoding command identity and result summary",
+      "relatedRequirementIds": [
+        "MUST-038",
+        "NEG-026",
+        "NEG-027",
+        "OUT-021",
+        "OUT-022",
+        "EVD-021",
+        "EVD-038"
+      ],
+      "status": "active",
+      "inputVersion": "TRACE-029",
+      "outputVersion": "main-agent-control-hardcut-evidence-v1"
+    }
+  ],
+  "deliveryEvidence": {
+    "requiredCommands": [
+      {
+        "commandId": "CMD-TRACE-029-MAIN-AGENT-CONTROL-HARDCUT-ACCEPTANCE",
+        "command": "npx vitest run tests/acceptance/main-agent-orchestration-consumer.test.ts tests/acceptance/bmad-config.test.ts tests/acceptance/accept-bmad-master-auto-continue.test.ts tests/acceptance/orchestration-dispatch-contract.test.ts tests/acceptance/orchestration-state-contract.test.ts tests/acceptance/main-agent-churn-routing-score.test.ts tests/acceptance/adaptive-intake-governance-gate.test.ts tests/acceptance/governance-single-source-of-truth.test.ts tests/acceptance/main-agent-quality-gate-thresholds.test.ts tests/acceptance/runtime-longrun-policy-contract.test.ts",
+        "commandType": "delivery_evidence",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": [
+          "TRACE-029"
+        ],
+        "evidenceRefs": [
+          "EVD-021",
+          "EVD-038"
+        ],
+        "artifactRefs": [
+          {
+            "artifactType": "command_evidence",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-029/trace-029-main-agent-control-hardcut-001/command-evidence.json",
+            "hash": "sha256:f07bd4b8c6b92c6b37d77f4cdb1efbaf2221d7163b68e35a7c30cfa196ac7490",
+            "producer": "codex",
+            "purpose": "record TRACE-029 acceptance and encoding command identity and result summary",
+            "relatedRequirementIds": [
+              "MUST-038",
+              "NEG-026",
+              "NEG-027",
+              "OUT-021",
+              "OUT-022",
+              "EVD-021",
+              "EVD-038"
+            ],
+            "status": "active",
+            "inputVersion": "TRACE-029",
+            "outputVersion": "main-agent-control-hardcut-evidence-v1"
+          }
+        ]
+      },
+      {
+        "commandId": "CMD-TRACE-029-ENCODING-GATE",
+        "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+        "commandType": "delivery_evidence",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": [
+          "TRACE-029"
+        ],
+        "evidenceRefs": [
+          "EVD-021",
+          "EVD-038"
+        ],
+        "artifactRefs": [
+          {
+            "artifactType": "command_evidence",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-029/trace-029-main-agent-control-hardcut-001/command-evidence.json",
+            "hash": "sha256:f07bd4b8c6b92c6b37d77f4cdb1efbaf2221d7163b68e35a7c30cfa196ac7490",
+            "producer": "codex",
+            "purpose": "record TRACE-029 acceptance and encoding command identity and result summary",
+            "relatedRequirementIds": [
+              "MUST-038",
+              "NEG-026",
+              "NEG-027",
+              "OUT-021",
+              "OUT-022",
+              "EVD-021",
+              "EVD-038"
+            ],
+            "status": "active",
+            "inputVersion": "TRACE-029",
+            "outputVersion": "main-agent-control-hardcut-evidence-v1"
+          }
+        ]
+      }
+    ],
+    "historicalRunRefs": [
+      {
+        "commandId": "CMD-TRACE-029-MAIN-AGENT-CONTROL-HARDCUT-ACCEPTANCE",
+        "runId": "run-trace-029-main-agent-control-hardcut-001",
+        "closeoutAttemptId": "closeout-trace-029-main-agent-control-hardcut-001"
+      },
+      {
+        "commandId": "CMD-TRACE-029-ENCODING-GATE",
+        "runId": "run-trace-029-main-agent-control-hardcut-001",
+        "closeoutAttemptId": "closeout-trace-029-main-agent-control-hardcut-001"
+      }
+    ]
+  },
+  "requirementClosures": [
+    {
+      "requirementId": "MUST-038",
+      "status": "pass"
+    },
+    {
+      "requirementId": "NEG-026",
+      "status": "pass"
+    },
+    {
+      "requirementId": "NEG-027",
+      "status": "pass"
+    },
+    {
+      "requirementId": "OUT-021",
+      "status": "pass"
+    },
+    {
+      "requirementId": "OUT-022",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-021",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-038",
+      "status": "pass"
+    }
+  ],
+  "gateChecks": [
+    {
+      "gate": "main_agent_control_authority_gate",
+      "decision": "pass"
+    },
+    {
+      "gate": "legacy_control_hardcut_gate",
+      "decision": "pass"
+    }
+  ],
+  "contractChecks": [
+    {
+      "contract": "requirement_record_dispatch_authority_contract",
+      "decision": "pass"
+    },
+    {
+      "contract": "runtime_resume_projection_contract",
+      "decision": "pass"
+    },
+    {
+      "contract": "legacy_runtime_governance_artifacts_projection_only_contract",
+      "decision": "pass"
+    }
+  ],
+  "closeoutAttemptId": "closeout-trace-029-main-agent-control-hardcut-001"
+}

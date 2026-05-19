@@ -10,13 +10,14 @@ description: >
 
 sources_of_truth:
   strategy_contract: "_bmad/_config/orchestration-governance.contract.yaml"
-  runtime_index: "_bmad-output/runtime/governance/user_story_mapping.json"
-  runtime_index_schema: "_bmad-output/runtime/governance/user_story_mapping.schema.json"
+  runtime_index: "_bmad-output/runtime/requirement-records/index.json"
+  runtime_index_schema: "_bmad/_schemas/requirement-record.schema.json"
 
 consumption_rules:
   main_loop_must_read:
     - strategy_contract
     - runtime_index
+    - requirement_record
   forbidden_strategy_sources:
     - ad_hoc_markdown_rules
     - inline_hardcoded_signal_thresholds
@@ -207,4 +208,3 @@ observability_targets:
     target_max: 0.05
   governance_bypass_count:
     target: 0
-

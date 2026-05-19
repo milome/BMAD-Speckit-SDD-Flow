@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "negative-assertions/v1",
+  "traceRows": [
+    "TRACE-029"
+  ],
+  "relatedRequirementIds": [
+    "MUST-038",
+    "NEG-026",
+    "NEG-027",
+    "OUT-021",
+    "OUT-022",
+    "EVD-021",
+    "EVD-038"
+  ],
+  "assertions": [
+    {
+      "id": "NEG-TRACE-029-001",
+      "statement": "Legacy orchestration-state nextAction can be displayed as observedLegacyState but cannot derive mainAgentNextAction when a RequirementRecord is active.",
+      "validatedBy": [
+        "tests/acceptance/main-agent-orchestration-consumer.test.ts"
+      ],
+      "status": "pass"
+    },
+    {
+      "id": "NEG-TRACE-029-002",
+      "statement": "Legacy handoff fields mainAgentNextAction/mainAgentReady and next_action/ready cannot authorize auto-continue without runtimeResumeProjection.source=requirement_record.",
+      "validatedBy": [
+        "tests/acceptance/accept-bmad-master-auto-continue.test.ts",
+        "tests/acceptance/bmad-config.test.ts"
+      ],
+      "status": "pass"
+    },
+    {
+      "id": "NEG-TRACE-029-003",
+      "statement": "Old runtime/governance user_story_mapping and packet roots are no longer the canonical dispatch authority in requirement-backed mode.",
+      "validatedBy": [
+        "tests/acceptance/governance-single-source-of-truth.test.ts",
+        "tests/acceptance/orchestration-dispatch-contract.test.ts",
+        "tests/acceptance/orchestration-state-contract.test.ts"
+      ],
+      "status": "pass"
+    },
+    {
+      "id": "NEG-TRACE-029-004",
+      "statement": "bmad-help projections cannot override the RequirementRecord implementationEntryGate with a recomputed legacy readiness decision.",
+      "validatedBy": [
+        "tests/acceptance/main-agent-orchestration-consumer.test.ts"
+      ],
+      "status": "pass"
+    }
+  ]
+}

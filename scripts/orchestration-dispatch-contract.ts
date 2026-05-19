@@ -1,3 +1,4 @@
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 export type OrchestrationHost = 'cursor' | 'claude' | 'codex';
@@ -74,6 +75,26 @@ export interface FallbackDecisionInput {
 }
 
 export function packetArtifactDir(projectRoot: string, sessionId: string): string {
+  try {
+    const recordsRoot = path.join(projectRoot, '_bmad-output', 'runtime', 'requirement-records');
+    if (fs.existsSync(recordsRoot)) {
+      const directRecord = path.join(recordsRoot, sessionId, 'requirement-record.json');
+      if (fs.existsSync(directRecord)) {
+        return path.join(recordsRoot, sessionId, 'prompts', 'prompt-packets');
+      }
+      for (const dirent of fs.readdirSync(recordsRoot, { withFileTypes: true })) {
+        if (!dirent.isDirectory()) continue;
+        const recordPath = path.join(recordsRoot, dirent.name, 'requirement-record.json');
+        if (!fs.existsSync(recordPath)) continue;
+        const record = JSON.parse(fs.readFileSync(recordPath, 'utf8')) as Record<string, unknown>;
+        if (record.runId === sessionId || record.recordId === sessionId || record.requirementSetId === sessionId) {
+          return path.join(recordsRoot, dirent.name, 'prompts', 'prompt-packets');
+        }
+      }
+    }
+  } catch {
+    // Keep the legacy dev fallback below when the fs probe is unavailable.
+  }
   return path.join(
     projectRoot,
     '_bmad-output',

@@ -8,9 +8,10 @@ describe('bmad-master auto-continue gate', () => {
     expect(masterAgent).toContain('auto_continue.enabled === true');
     expect(masterAgent).toContain('BMAD_AUTO_CONTINUE=true');
     expect(masterAgent).toContain('CLI `--continue`');
-    expect(masterAgent).toContain('orchestration_surface.mainAgentNextAction 存在');
-    expect(masterAgent).toContain('orchestration_surface.mainAgentReady === true');
-    expect(masterAgent).toContain('当 repo-native surface 可用时，不得直接从 handoff 或 story state 派发下一执行体');
+    expect(masterAgent).toContain('orchestration_surface.runtimeResumeProjection.runtimeNextAction 存在');
+    expect(masterAgent).toContain('orchestration_surface.runtimeResumeProjection.ready === true');
+    expect(masterAgent).toContain('runtimeResumeProjection.source === "requirement_record"');
+    expect(masterAgent).toContain('不得直接从 handoff、story state 或旧 orchestrationState.nextAction 派发下一执行体');
   });
 
   it('documents manual fallback when handoff is ready but continue is not enabled', () => {
@@ -26,7 +27,7 @@ describe('bmad-master auto-continue gate', () => {
     const masterAgent = readFileSync('.claude/agents/bmad-master.md', 'utf8');
 
     expect(masterAgent).toContain(
-      'reason: "auto_continue enabled 且 orchestration_surface.mainAgentNextAction={action} 且 mainAgentReady=true"'
+      'reason: "auto_continue enabled 且 runtimeResumeProjection.runtimeNextAction={action} 且 runtimeResumeProjection.ready=true"'
     );
   });
 });
