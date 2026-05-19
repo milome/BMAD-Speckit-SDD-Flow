@@ -32,6 +32,9 @@ const DECISION_EVENT_TYPES = new Set([
   'architecture_confirmation_recorded',
   'architecture_confirmation_state_checked',
   'audit_iteration_recorded',
+  'hook_capability_probe_recorded',
+  'hook_trust_degraded',
+  'hook_trust_receipt_recorded',
   'score_materialization_recorded',
   'score_evaluation_recorded',
   'closeout_attempt_recorded',
@@ -50,6 +53,8 @@ const ARTIFACT_EVENT_TYPES = new Set([
   'confirmation_summary_rendered',
   'confirmation_render_reported',
 ]);
+
+const SHA256_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 
 const DECISION_VALUES = new Set([
   'pass',
@@ -109,6 +114,62 @@ function expectedPayloadKind(eventType: string): GovernanceTransportPayloadKind 
   return null;
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return isObject(value) ? value : null;
+}
+
+function hasArtifactRef(value: unknown): boolean {
+  const ref = asRecord(value);
+  if (!ref) return false;
+  return Boolean(text(ref.path) && SHA256_PATTERN.test(text(ref.contentHash ?? ref.hash)));
+}
+
+function codexVersionSupportsHooks(version: string): boolean {
+  const match = version.match(/(\d+)\.(\d+)\.(\d+)/u);
+  if (!match) return false;
+  const [, majorRaw, minorRaw, patchRaw] = match;
+  const major = Number(majorRaw);
+  const minor = Number(minorRaw);
+  const patch = Number(patchRaw);
+  if (major > 0) return true;
+  if (major < 0) return false;
+  if (minor > 130) return true;
+  if (minor < 130) return false;
+  return patch >= 0;
+}
+
+function validateCodexHookTrust(envelope: Record<string, unknown>): string[] {
+  if (text(envelope.hostKind) !== 'codex' || text(envelope.hostMode) !== 'hooks_enabled') {
+    return [];
+  }
+  const mismatches: string[] = [];
+  const payload = asRecord(envelope.payload);
+  if (!payload) return ['codex_hook_trust_payload_missing'];
+  if (!codexVersionSupportsHooks(text(payload.codexVersion))) {
+    mismatches.push(`codex_version_hooks_unsupported:${text(payload.codexVersion) || '<missing>'}`);
+  }
+  if (payload.hooksFeatureStable !== true) mismatches.push('codex_hooks_feature_stable_not_true');
+  if (text(payload.hookTrust) !== 'trusted') {
+    mismatches.push(`codex_hook_trust_not_trusted:${text(payload.hookTrust) || '<missing>'}`);
+  }
+  if (!hasArtifactRef(payload.capabilityProbeReceiptRef)) {
+    mismatches.push('codex_capability_probe_receipt_ref_missing');
+  }
+  if (!hasArtifactRef(payload.sessionStartSmokeReceiptRef)) {
+    mismatches.push('codex_session_start_smoke_receipt_ref_missing');
+  }
+  if (!hasArtifactRef(payload.hookTrustReceiptRef)) {
+    mismatches.push('codex_hook_trust_receipt_ref_missing');
+  }
+  if (!SHA256_PATTERN.test(text(payload.managedHookConfigHash))) {
+    mismatches.push('codex_managed_hook_config_hash_missing');
+  }
+  if (!SHA256_PATTERN.test(text(payload.runtimePolicySnapshotHash))) {
+    mismatches.push('codex_runtime_policy_snapshot_hash_missing');
+  }
+  return mismatches;
+}
+
 export function validateGovernanceTransportEnvelope(input: unknown): GovernanceTransportValidation {
   const mismatches: string[] = [];
   if (!isObject(input)) return { ok: false, mismatches: ['envelope_object_required'] };
@@ -163,6 +224,7 @@ export function validateGovernanceTransportEnvelope(input: unknown): GovernanceT
   if (eventType === 'rerun_loop_recorded' && (!Array.isArray(envelope.sourceRefs) || envelope.sourceRefs.length === 0)) {
     mismatches.push('envelope_rerun_source_refs_missing');
   }
+  mismatches.push(...validateCodexHookTrust(envelope));
   return { ok: mismatches.length === 0, mismatches: [...new Set(mismatches)] };
 }
 

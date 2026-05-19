@@ -149,4 +149,60 @@ describe('governance execution result ingestor', () => {
     expect(validation.mismatches).toContain('envelope_payload_kind_mismatch:gate_check_recorded:status');
     expect(validation.mismatches).toContain('envelope_decision_forbidden_for_status');
   });
+
+  it('blocks codex hooks-enabled trust assignment without independent probe receipts and hashes', () => {
+    const validation = validateGovernanceTransportEnvelope({
+      hostKind: 'codex',
+      hostMode: 'hooks_enabled',
+      entry: 'codex-session-start-hook',
+      runId: 'run-hooks-1',
+      recordId: 'REQ-HOOKS',
+      requirementSetId: 'REQ-HOOKS',
+      stage: 'implement',
+      packetId: 'packet-hooks-1',
+      eventType: 'hook_trust_receipt_recorded',
+      payloadKind: 'decision',
+      decision: 'pass',
+      payload: {
+        hookTrust: 'trusted',
+        codexVersion: '0.130.0',
+        hooksFeatureStable: true,
+        capabilityProbeReceiptRef: { path: 'capability-probe.json' },
+        sessionStartSmokeReceiptRef: { path: 'session-start-smoke.json' },
+        managedHookConfigHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      },
+    });
+
+    expect(validation.ok).toBe(false);
+    expect(validation.mismatches).toContain('codex_hook_trust_receipt_ref_missing');
+    expect(validation.mismatches).toContain('codex_runtime_policy_snapshot_hash_missing');
+  });
+
+  it('accepts codex hooks-enabled only when capability, receipts, config hash, and runtime policy hash are bound', () => {
+    const validation = validateGovernanceTransportEnvelope({
+      hostKind: 'codex',
+      hostMode: 'hooks_enabled',
+      entry: 'codex-session-start-hook',
+      runId: 'run-hooks-1',
+      recordId: 'REQ-HOOKS',
+      requirementSetId: 'REQ-HOOKS',
+      stage: 'implement',
+      packetId: 'packet-hooks-1',
+      eventType: 'hook_trust_receipt_recorded',
+      payloadKind: 'decision',
+      decision: 'pass',
+      payload: {
+        hookTrust: 'trusted',
+        codexVersion: '0.130.0',
+        hooksFeatureStable: true,
+        capabilityProbeReceiptRef: { path: 'capability-probe.json', contentHash: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' },
+        sessionStartSmokeReceiptRef: { path: 'session-start-smoke.json', contentHash: 'sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc' },
+        hookTrustReceiptRef: { path: 'hook-trust-receipt.json', contentHash: 'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd' },
+        managedHookConfigHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        runtimePolicySnapshotHash: 'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+      },
+    });
+
+    expect(validation.ok).toBe(true);
+  });
 });
