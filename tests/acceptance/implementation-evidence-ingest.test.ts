@@ -251,6 +251,15 @@ describe('implementation evidence ingest', () => {
         requirementId: 'MUST-005',
         status: 'pass',
       });
+      expect(record.requirementClosures).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            eventType: 'requirement_closure_recorded',
+            requirementId: 'TRACE-003',
+            status: 'pass',
+          }),
+        ])
+      );
       expect(record.gateChecks[0]).toMatchObject({
         eventType: 'gate_check_recorded',
         gate: 'Execution Closure Check',
@@ -501,6 +510,53 @@ describe('implementation evidence ingest', () => {
       expect(record.rerunLoops.at(-1)).not.toHaveProperty('trigger');
       expect(record.rerunLoops.at(-1)).not.toHaveProperty('result');
       expect(record.rerunLoops.at(-1)).not.toHaveProperty('decision');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('records RCA status updates through controlled ingest', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-evidence-rca-status-'));
+    try {
+      const { recordPath, evidencePath } = writeFixture(root);
+      const packet = JSON.parse(readFileSync(evidencePath, 'utf8'));
+      packet.failureRecords = [
+        {
+          eventType: 'failure_recorded',
+          failureId: 'failure-closeout-001',
+          type: 'delivery_closeout_blocked',
+          status: 'resolved',
+          sourceRefs: [{ sourceType: 'closeout_attempt', id: 'closeout-001' }],
+        },
+      ];
+      packet.rcaRecords = [
+        {
+          eventType: 'rca_created',
+          rcaId: 'rca-closeout-001',
+          type: 'closeout_blocker',
+          status: 'resolved',
+          sourceRefs: [{ sourceType: 'failure_record', id: 'failure-closeout-001' }],
+        },
+      ];
+      writeFileSync(evidencePath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
+      const prev = process.cwd();
+      process.chdir(root);
+      try {
+        expect(mainIngestImplementationEvidence(['--evidence', evidencePath, '--requirement-record', recordPath])).toBe(0);
+      } finally {
+        process.chdir(prev);
+      }
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.failureRecords.at(-1)).toMatchObject({
+        eventType: 'failure_recorded',
+        failureId: 'failure-closeout-001',
+        status: 'resolved',
+      });
+      expect(record.rcaRecords.at(-1)).toMatchObject({
+        eventType: 'rca_created',
+        rcaId: 'rca-closeout-001',
+        status: 'resolved',
+      });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

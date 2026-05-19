@@ -807,6 +807,17 @@
               "commandType": { "$ref": "#/$defs/nonEmptyString" },
               "blockingIfMissing": { "const": true },
               "negativeOrRegression": { "type": "boolean" },
+              "closeoutAttemptId": { "$ref": "#/$defs/nonEmptyString" },
+              "lastRunRef": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["commandId", "runId", "closeoutAttemptId"],
+                "properties": {
+                  "commandId": { "$ref": "#/$defs/nonEmptyString" },
+                  "runId": { "$ref": "#/$defs/nonEmptyString" },
+                  "closeoutAttemptId": { "$ref": "#/$defs/nonEmptyString" }
+                }
+              },
               "traceRows": {
                 "type": "array",
                 "items": { "$ref": "#/$defs/nonEmptyString" }

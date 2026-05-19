@@ -162,6 +162,21 @@ function normalizeContractChecks(packet: JsonObject): JsonObject[] {
   });
 }
 
+function closureInputs(packet: JsonObject): JsonObject[] {
+  const explicitClosures = arrayOfObjects(packet.requirementClosures);
+  if (text(packet.status) !== 'done') return explicitClosures;
+
+  const explicitRequirementIds = new Set(explicitClosures.map((closure) => text(closure.requirementId)).filter(Boolean));
+  const traceClosures = arrayOfStrings(packet.traceRows)
+    .filter((traceRow) => !explicitRequirementIds.has(traceRow))
+    .map((traceRow) => ({
+      requirementId: traceRow,
+      status: 'pass',
+      closureSource: 'execution_trace_row_done',
+    }));
+  return [...explicitClosures, ...traceClosures];
+}
+
 function requireHashMatch(packet: JsonObject, record: JsonObject): string[] {
   const mismatches: string[] = [];
   for (const field of ['sourceDocumentHash', 'implementationConfirmationHash']) {
@@ -498,6 +513,24 @@ function validateFailureRecords(packet: JsonObject): string[] {
   return mismatches;
 }
 
+function validateRcaRecords(packet: JsonObject): string[] {
+  const mismatches: string[] = [];
+  for (const rca of arrayOfObjects(packet.rcaRecords)) {
+    if (text(rca.eventType) && text(rca.eventType) !== 'rca_created') {
+      mismatches.push('rca_record_event_type_invalid');
+    }
+    if (!text(rca.rcaId)) mismatches.push('rca_record_id_missing');
+    if (!text(rca.type)) mismatches.push('rca_record_type_missing');
+    if (!['open', 'in_progress', 'resolved', 'blocked'].includes(text(rca.status))) {
+      mismatches.push('rca_record_status_invalid');
+    }
+    if (arrayOfObjects(rca.sourceRefs).length === 0) mismatches.push('rca_record_source_refs_missing');
+    if (Object.prototype.hasOwnProperty.call(rca, 'result')) mismatches.push('rca_record_result_forbidden');
+    if (Object.prototype.hasOwnProperty.call(rca, 'decision')) mismatches.push('rca_record_decision_forbidden');
+  }
+  return mismatches;
+}
+
 function validateRerunLoops(packet: JsonObject): string[] {
   const mismatches: string[] = [];
   for (const loop of arrayOfObjects(packet.rerunLoops)) {
@@ -550,6 +583,7 @@ function validatePacket(packet: JsonObject, record: JsonObject): string[] {
     ...validateRuntimePolicySnapshotRef(packet),
     ...validateHookReconciliation(packet),
     ...validateFailureRecords(packet),
+    ...validateRcaRecords(packet),
     ...validateRerunLoops(packet),
   ];
   const packetWithoutLegacyGateResults = {
@@ -697,7 +731,7 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
     recordedAt,
     recordedBy,
   };
-  const closureEvents = arrayOfObjects(packet.requirementClosures).map((closure) => ({
+  const closureEvents = closureInputs(packet).map((closure) => ({
     eventType: 'requirement_closure_recorded',
     recordId,
     requirementSetId,
@@ -739,6 +773,12 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
     eventType: 'failure_recorded',
     recordedAt: text(failure.recordedAt) || recordedAt,
     recordedBy: text(failure.recordedBy) || recordedBy,
+  }));
+  const rcaEvents = arrayOfObjects(packet.rcaRecords).map((rca) => ({
+    ...rca,
+    eventType: 'rca_created',
+    recordedAt: text(rca.recordedAt) || recordedAt,
+    recordedBy: text(rca.recordedBy) || recordedBy,
   }));
   const rerunLoopEvents = arrayOfObjects(packet.rerunLoops).map((loop) => ({
     rerunLoopId: text(loop.rerunLoopId),
@@ -823,6 +863,7 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
     gateChecks: [...arrayOfObjects(record.gateChecks), ...gateEvents],
     contractChecks: [...arrayOfObjects(record.contractChecks), ...contractCheckEvents],
     failureRecords: [...arrayOfObjects(record.failureRecords), ...failureEvents],
+    rcaRecords: [...arrayOfObjects(record.rcaRecords), ...rcaEvents],
     rerunLoops: [...arrayOfObjects(record.rerunLoops), ...rerunLoopEvents],
     artifactIndex: [
       ...arrayOfObjects(record.artifactIndex).map((artifact) =>
@@ -877,7 +918,7 @@ export function mainIngestImplementationEvidence(argv: string[]): number {
     args.globalArtifactIndex ?? path.join(path.dirname(baseDir), 'artifact-index.jsonl')
   );
   appendJsonl(eventLog, arrayOfObjects(nextRecord.executionIterations).at(-1) as JsonObject);
-  for (const item of arrayOfObjects(packet.requirementClosures)) {
+  for (const item of closureInputs(packet)) {
     appendJsonl(eventLog, {
       eventType: 'requirement_closure_recorded',
       recordId: text(packet.recordId) || text(record.recordId),

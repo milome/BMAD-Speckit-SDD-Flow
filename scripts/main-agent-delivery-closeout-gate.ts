@@ -91,6 +91,46 @@ function commandRunsForAttempt(record: JsonObject, attemptId: string): JsonObjec
   );
 }
 
+function commandSelectedForAttempt(command: JsonObject, attemptId: string): boolean {
+  if (text(command.closeoutAttemptId) === attemptId) return true;
+  const lastRunRef = command.lastRunRef;
+  if (lastRunRef && typeof lastRunRef === 'object' && !Array.isArray(lastRunRef)) {
+    return text((lastRunRef as JsonObject).closeoutAttemptId) === attemptId;
+  }
+  return false;
+}
+
+function requiredCommandsForAttempt(record: JsonObject, attemptId: string): JsonObject[] {
+  return objects(deliveryEvidence(record).requiredCommands).filter((command) => commandSelectedForAttempt(command, attemptId));
+}
+
+function latestRequirementClosures(record: JsonObject): JsonObject[] {
+  const latestByRequirementId = new Map<string, JsonObject>();
+  for (const closure of objects(record.requirementClosures)) {
+    const requirementId = text(closure.requirementId);
+    if (requirementId) latestByRequirementId.set(requirementId, closure);
+  }
+  return [...latestByRequirementId.values()];
+}
+
+function latestFailureRecords(record: JsonObject): JsonObject[] {
+  const latestByFailureId = new Map<string, JsonObject>();
+  for (const failure of objects(record.failureRecords)) {
+    const failureId = text(failure.failureId);
+    if (failureId) latestByFailureId.set(failureId, failure);
+  }
+  return [...latestByFailureId.values()];
+}
+
+function latestRcaRecords(record: JsonObject): JsonObject[] {
+  const latestByRcaId = new Map<string, JsonObject>();
+  for (const rca of objects(record.rcaRecords)) {
+    const rcaId = text(rca.rcaId);
+    if (rcaId) latestByRcaId.set(rcaId, rca);
+  }
+  return [...latestByRcaId.values()];
+}
+
 function artifactCompletenessIssues(artifactRef: unknown): string[] {
   if (!artifactRef || typeof artifactRef !== 'object' || Array.isArray(artifactRef)) return ['artifact_ref_missing'];
   const ref = artifactRef as JsonObject;
@@ -288,9 +328,18 @@ function evaluate(record: JsonObject, attemptId: string): { decision: CloseoutDe
   });
   blockingReasons.push(...architectureIssues);
 
-  const requiredCommands = objects(deliveryEvidence(record).requiredCommands);
-  checks.push({ id: 'delivery-required-commands-present', passed: requiredCommands.length > 0, count: requiredCommands.length });
-  if (requiredCommands.length === 0) blockingReasons.push('deliveryEvidence.requiredCommands_missing');
+  const allRequiredCommands = objects(deliveryEvidence(record).requiredCommands);
+  const requiredCommands = requiredCommandsForAttempt(record, attemptId);
+  checks.push({
+    id: 'delivery-required-commands-present',
+    passed: allRequiredCommands.length > 0,
+    count: allRequiredCommands.length,
+    currentAttemptCount: requiredCommands.length,
+  });
+  if (allRequiredCommands.length === 0) blockingReasons.push('deliveryEvidence.requiredCommands_missing');
+  if (allRequiredCommands.length > 0 && requiredCommands.length === 0) {
+    blockingReasons.push('deliveryEvidence.requiredCommands_current_attempt_missing');
+  }
 
   const scoringBlocked = hasBlockingScoringState(record);
   checks.push({ id: 'score-gates-not-blocking-closeout', passed: !scoringBlocked });
@@ -334,7 +383,7 @@ function evaluate(record: JsonObject, attemptId: string): { decision: CloseoutDe
   checks.push({ id: 'negative-or-regression-required', passed: hasNegative });
   if (!hasNegative) blockingReasons.push('negative_or_regression_command_missing');
 
-  const openClosures = objects(record.requirementClosures).filter((closure) =>
+  const openClosures = latestRequirementClosures(record).filter((closure) =>
     ['open', 'fail', 'blocked'].includes(text(closure.status))
   );
   checks.push({ id: 'requirement-closures-terminal', passed: openClosures.length === 0, openCount: openClosures.length });
@@ -354,7 +403,13 @@ function evaluate(record: JsonObject, attemptId: string): { decision: CloseoutDe
   });
   blockingReasons.push(...rerunSourceIssues);
 
-  const openRcaRecords = objects(record.rcaRecords).filter((record) =>
+  const openFailureRecords = latestFailureRecords(record).filter((record) =>
+    ['open', 'in_progress', 'blocked'].includes(text(record.status))
+  );
+  checks.push({ id: 'failure-records-closed', passed: openFailureRecords.length === 0, openCount: openFailureRecords.length });
+  if (openFailureRecords.length > 0) blockingReasons.push('open_failure_record_exists');
+
+  const openRcaRecords = latestRcaRecords(record).filter((record) =>
     ['open', 'in_progress', 'blocked'].includes(text(record.status))
   );
   checks.push({ id: 'rca-actions-closed', passed: openRcaRecords.length === 0, openCount: openRcaRecords.length });
