@@ -2,12 +2,15 @@
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import yaml from 'js-yaml';
 
 type JsonObject = Record<string, unknown>;
 type Decision = 'pass' | 'blocked';
 
 interface ParsedArgs {
   requirementRecord?: string;
+  source?: string;
+  registry?: string;
   outDir?: string;
   checkpointId?: string;
   expectedSourceDocumentHash?: string;
@@ -26,11 +29,53 @@ interface Check {
   details?: JsonObject;
 }
 
+interface RegistryValidationResult {
+  rawPresent: boolean;
+  status: string;
+  groups: number;
+  failureCases: number;
+  recoveryActions: number;
+  globalEventTypes: number;
+  controlledRecordEventTypes: number;
+  fullLinkRequiredFixtureCases: string[];
+  exercisedFixtureCases: string[];
+  unexercisedCases: string[];
+  issues: string[];
+}
+
 const OPEN_RERUN_STATUSES = new Set(['open', 'in_progress', 'no_progress', 'blocked']);
 const OPEN_RCA_STATUSES = new Set(['open', 'in_progress', 'blocked']);
 const OPEN_FAILURE_STATUSES = new Set(['open', 'in_progress', 'blocked']);
 const NON_TERMINAL_CLOSURE_STATUSES = new Set(['open', 'fail', 'blocked']);
 const TERMINAL_TRACE_STATUSES = new Set(['PASS', 'PENDING', 'MISSING_EVIDENCE', 'BLOCKED']);
+const VALID_EVENT_PAYLOAD_KINDS = new Set(['decision', 'status', 'artifactRefs']);
+const VALID_CONTROL_WRITE_MODES = new Set(['control', 'artifact_only', 'context_update']);
+const DECISION_CONTROL_FIELDS = new Set([
+  'recordLifecycle',
+  'confirmationHistory',
+  'architectureChecks',
+  'architectureConfirmations',
+  'architectureConfirmationState',
+  'workflowAcknowledgements',
+  'traceRows',
+  'gateChecks',
+  'contractChecks',
+  'executionIterations',
+  'auditIterations',
+  'failureRecords',
+  'rerunLoops',
+  'rcaRecords',
+  'closeout',
+  'requirementClosures',
+  'recoveryContext',
+  'runtimePolicySnapshotRef',
+]);
+const ARTIFACT_CONTEXT_FIELDS = new Set([
+  'artifactIndex',
+  'contractSummary',
+  'recoveryContext',
+  'runtimePolicySnapshotRef',
+]);
 
 function parseArgs(argv: string[]): ParsedArgs {
   const out: ParsedArgs = {};
@@ -65,6 +110,10 @@ function strings(value: unknown): string[] {
   return Array.isArray(value) ? value.map(text).filter(Boolean) : [];
 }
 
+function asObject(value: unknown): JsonObject | undefined {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : undefined;
+}
+
 function normalizePathForRecord(value: string): string {
   return value.replace(/\\/gu, '/');
 }
@@ -85,6 +134,10 @@ function sha256File(file: string): string {
   return `sha256:${crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')}`;
 }
 
+function readText(file: string): string {
+  return fs.readFileSync(file, 'utf8');
+}
+
 function writeJson(file: string, value: unknown): void {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
@@ -95,9 +148,43 @@ function appendJsonl(file: string, value: unknown): void {
   fs.appendFileSync(file, `${JSON.stringify(value)}\n`, 'utf8');
 }
 
+function blockingIssue(code: string, message: string, refs: string[] = []): string {
+  return refs.length ? `${code}:${message}:${refs.join(',')}` : `${code}:${message}`;
+}
+
 function architectureHash(record: JsonObject): string {
   const state = record.architectureConfirmationState as JsonObject | undefined;
   return text(state?.currentArchitectureConfirmationHash);
+}
+
+function extractImplementationConfirmation(sourceText: string): JsonObject | undefined {
+  const blocks = [...sourceText.matchAll(/```yaml\s*\n([\s\S]*?)```/giu)];
+  let latest: JsonObject | undefined;
+  for (const match of blocks) {
+    try {
+      const parsed = yaml.load(match[1]) as unknown;
+      const root = asObject(parsed);
+      const confirmation = asObject(root?.implementationConfirmation);
+      if (confirmation) latest = confirmation;
+    } catch {
+      continue;
+    }
+  }
+  return latest;
+}
+
+function readRegistryFromArgs(args: ParsedArgs): { confirmation?: JsonObject; registry?: JsonObject; sourcePath?: string } {
+  if (args.registry) {
+    const parsed = yaml.load(readText(path.resolve(args.registry))) as unknown;
+    const object = asObject(parsed);
+    if (!object) throw new Error(`registry object expected: ${args.registry}`);
+    return { registry: object, sourcePath: normalizePathForRecord(path.resolve(args.registry)) };
+  }
+  if (!args.source) return {};
+  const sourcePath = path.resolve(args.source);
+  const confirmation = extractImplementationConfirmation(readText(sourcePath));
+  const registry = asObject(confirmation?.functionalResumeFailureCaseRegistry);
+  return { confirmation, registry, sourcePath: normalizePathForRecord(sourcePath) };
 }
 
 function latestBy<T extends JsonObject>(items: T[], key: string): Map<string, T> {
@@ -117,6 +204,171 @@ function artifactHashMap(record: JsonObject): Record<string, string> {
     if (artifactPath && hash) out[artifactPath] = hash;
   }
   return out;
+}
+
+function expectedPayloadContract(payloadKind: string): {
+  requiredFields: string[];
+  forbiddenFields: string[];
+  allowedControlWriteMode: string;
+} {
+  if (payloadKind === 'decision') {
+    return {
+      requiredFields: ['eventType', 'decision'],
+      forbiddenFields: ['result', 'status'],
+      allowedControlWriteMode: 'control',
+    };
+  }
+  if (payloadKind === 'status') {
+    return {
+      requiredFields: ['eventType', 'status'],
+      forbiddenFields: ['result', 'decision'],
+      allowedControlWriteMode: 'control',
+    };
+  }
+  return {
+    requiredFields: ['eventType', 'artifactRefs'],
+    forbiddenFields: ['result', 'decision', 'status'],
+    allowedControlWriteMode: 'artifact_only',
+  };
+}
+
+function validatePayloadContract(
+  eventType: string,
+  eventRow: JsonObject,
+  issues: string[]
+): {
+  requiredFields: string[];
+  forbiddenFields: string[];
+  requiredSourceRefs: boolean;
+  allowedControlWriteMode: string;
+} {
+  const payloadKind = text(eventRow.payloadKind);
+  const contract = asObject(eventRow.payloadContract);
+  if (!contract) {
+    issues.push(blockingIssue('governance_event_type_missing_payload_contract', `${eventType} missing payloadContract`, [eventType]));
+    return {
+      requiredFields: [],
+      forbiddenFields: [],
+      requiredSourceRefs: false,
+      allowedControlWriteMode: '',
+    };
+  }
+  const requiredFields = strings(contract.requiredFields);
+  const forbiddenFields = strings(contract.forbiddenFields);
+  const requiredSourceRefs = contract.requiredSourceRefs === true;
+  const allowedControlWriteMode = text(contract.allowedControlWriteMode);
+  const expected = expectedPayloadContract(payloadKind);
+  const payloadField = payloadKind === 'decision' ? 'decision' : payloadKind === 'status' ? 'status' : 'artifactRefs';
+
+  if (!VALID_EVENT_PAYLOAD_KINDS.has(payloadKind)) {
+    issues.push(blockingIssue('governance_event_type_invalid_payload_kind', `${eventType} has invalid payloadKind ${payloadKind}`, [eventType]));
+  }
+  for (const field of ['eventType', payloadField]) {
+    if (!requiredFields.includes(field)) {
+      issues.push(
+        blockingIssue('governance_event_type_payload_contract_missing_required_field', `${eventType} payloadContract.requiredFields missing ${field}`, [
+          eventType,
+          field,
+        ])
+      );
+    }
+  }
+  for (const field of expected.forbiddenFields) {
+    if (!forbiddenFields.includes(field)) {
+      issues.push(
+        blockingIssue('governance_event_type_payload_contract_missing_forbidden_field', `${eventType} payloadContract.forbiddenFields missing ${field}`, [
+          eventType,
+          field,
+        ])
+      );
+    }
+  }
+  for (const invalid of ['decision', 'status', 'artifactRefs']) {
+    if (invalid !== payloadField && requiredFields.includes(invalid)) {
+      issues.push(
+        blockingIssue('governance_event_type_payload_contract_conflicting_required_field', `${eventType} payloadContract requires ${invalid}`, [
+          eventType,
+          invalid,
+        ])
+      );
+    }
+  }
+  if (forbiddenFields.includes(payloadField)) {
+    issues.push(blockingIssue('governance_event_type_payload_contract_forbids_payload_field', `${eventType} payloadContract forbids ${payloadField}`, [eventType, payloadField]));
+  }
+  if (!VALID_CONTROL_WRITE_MODES.has(allowedControlWriteMode)) {
+    issues.push(blockingIssue('governance_event_type_invalid_control_write_mode', `${eventType} invalid allowedControlWriteMode ${allowedControlWriteMode}`, [eventType]));
+  }
+  if (payloadKind !== 'artifactRefs' && allowedControlWriteMode !== 'control') {
+    issues.push(blockingIssue('governance_event_type_payload_contract_wrong_write_mode', `${eventType} must use control mode`, [eventType]));
+  }
+  if (payloadKind === 'artifactRefs' && allowedControlWriteMode === 'control') {
+    issues.push(blockingIssue('governance_event_type_payload_contract_artifact_refs_control_mode', `${eventType} artifactRefs cannot use control mode`, [eventType]));
+  }
+  if (eventType === 'rerun_loop_recorded' && requiredSourceRefs !== true) {
+    issues.push(blockingIssue('governance_event_type_payload_contract_missing_source_refs', 'rerun_loop_recorded must require sourceRefs', [eventType]));
+  }
+  return { requiredFields, forbiddenFields, requiredSourceRefs, allowedControlWriteMode };
+}
+
+function normalizeGovernanceEventTypeRegistry(confirmation: JsonObject | undefined, issues: string[]): Map<string, JsonObject> {
+  const eventTypes = new Map<string, JsonObject>();
+  for (const [index, row] of objects(confirmation?.governanceEventTypeRegistry).entries()) {
+    const eventType = text(row.eventType);
+    if (!eventType) {
+      issues.push(blockingIssue('governance_event_type_missing_id', `governanceEventTypeRegistry[${index}] missing eventType`));
+      continue;
+    }
+    if (eventTypes.has(eventType)) {
+      issues.push(blockingIssue('governance_event_type_duplicate_id', `${eventType} is duplicated`, [eventType]));
+    }
+    for (const field of ['ownerModel', 'payloadKind', 'canAffectControlFlow', 'payloadContract']) {
+      if (row[field] === undefined || row[field] === null || row[field] === '') {
+        issues.push(blockingIssue('governance_event_type_missing_required_field', `${eventType} missing ${field}`, [eventType, field]));
+      }
+    }
+    const writesControlFields = strings(row.writesControlFields);
+    const payloadContract = validatePayloadContract(eventType, row, issues);
+    validateEventControlWriteMode(eventType, text(row.payloadKind), writesControlFields, payloadContract.allowedControlWriteMode, issues);
+    eventTypes.set(eventType, {
+      eventType,
+      payloadKind: text(row.payloadKind),
+      writesControlFields,
+      payloadContract,
+      canAffectControlFlow: row.canAffectControlFlow === true,
+    });
+  }
+  return eventTypes;
+}
+
+function validateEventControlWriteMode(
+  eventType: string,
+  payloadKind: string,
+  writesControlFields: string[],
+  mode: string,
+  issues: string[]
+): void {
+  if (payloadKind === 'artifactRefs' && mode === 'artifact_only') {
+    for (const field of writesControlFields) {
+      if (field !== 'artifactIndex') {
+        issues.push(blockingIssue('governance_event_type_artifact_only_writes_control_field', `${eventType} artifact_only writes ${field}`, [eventType, field]));
+      }
+    }
+  }
+  if (payloadKind === 'artifactRefs' && mode === 'context_update') {
+    for (const field of writesControlFields) {
+      if (!ARTIFACT_CONTEXT_FIELDS.has(field)) {
+        issues.push(blockingIssue('governance_event_type_context_update_writes_control_field', `${eventType} context_update writes ${field}`, [eventType, field]));
+      }
+    }
+  }
+  if (payloadKind !== 'artifactRefs' && mode === 'control') {
+    for (const field of writesControlFields) {
+      if (!DECISION_CONTROL_FIELDS.has(field)) {
+        issues.push(blockingIssue('governance_event_type_control_mode_unknown_field', `${eventType} control mode writes unsupported ${field}`, [eventType, field]));
+      }
+    }
+  }
 }
 
 function checkHashes(record: JsonObject, args: ParsedArgs): Check {
@@ -227,6 +479,212 @@ function checkRequiredArtifacts(record: JsonObject): Check {
   };
 }
 
+function validateFunctionalResumeFailureCaseRegistry(input: {
+  confirmation?: JsonObject;
+  registry?: JsonObject;
+  sourcePath?: string;
+}): RegistryValidationResult {
+  const issues: string[] = [];
+  const registry = input.registry;
+  if (!registry) {
+    issues.push('functional_resume_failure_case_registry_missing:functionalResumeFailureCaseRegistry is required');
+    return {
+      rawPresent: false,
+      status: '',
+      groups: 0,
+      failureCases: 0,
+      recoveryActions: 0,
+      globalEventTypes: 0,
+      controlledRecordEventTypes: 0,
+      fullLinkRequiredFixtureCases: [],
+      exercisedFixtureCases: [],
+      unexercisedCases: [],
+      issues,
+    };
+  }
+
+  const globalEventTypes = normalizeGovernanceEventTypeRegistry(input.confirmation, issues);
+  const controlledEventTypes = new Map<string, JsonObject>();
+  for (const [index, row] of objects(registry.controlledRecordEventTypes).entries()) {
+    const eventType = text(row.eventType);
+    if (!eventType) {
+      issues.push(blockingIssue('resume_failure_controlled_event_type_missing_id', `controlledRecordEventTypes[${index}] missing eventType`));
+      continue;
+    }
+    if (controlledEventTypes.has(eventType)) {
+      issues.push(blockingIssue('resume_failure_controlled_event_type_duplicate_id', `${eventType} is duplicated`, [eventType]));
+    }
+    if (!globalEventTypes.has(eventType)) {
+      issues.push(
+        blockingIssue(
+          'resume_failure_controlled_event_type_missing_global_payload_contract',
+          `${eventType} must be defined in implementationConfirmation.governanceEventTypeRegistry[] with payloadContract`,
+          [eventType]
+        )
+      );
+    }
+    controlledEventTypes.set(eventType, { eventType, writesControlFields: strings(row.writesControlFields) });
+  }
+
+  const eventTypes = new Map<string, JsonObject>([...globalEventTypes.entries(), ...controlledEventTypes.entries()]);
+  const groups = objects(registry.groups);
+  const failureCases = objects(registry.failureCases);
+  const actions = objects(registry.recoveryActionDefinitions);
+  const groupDefs = new Map<string, JsonObject>();
+  const groupByCase = new Map<string, string>();
+  const actionDefs = new Map<string, JsonObject>();
+
+  if (!groups.length && failureCases.length) {
+    issues.push('resume_failure_groups_missing:functionalResumeFailureCaseRegistry.groups[] is required');
+  }
+  for (const [index, group] of groups.entries()) {
+    const groupId = text(group.groupId);
+    if (!groupId) {
+      issues.push(blockingIssue('resume_failure_group_missing_id', `groups[${index}] missing groupId`));
+      continue;
+    }
+    if (groupDefs.has(groupId)) issues.push(blockingIssue('resume_failure_group_duplicate_id', `${groupId} is duplicated`, [groupId]));
+    if (!text(group.label ?? group.title)) issues.push(blockingIssue('resume_failure_group_missing_label', `${groupId} missing label`, [groupId]));
+    const caseRefs = strings(group.caseRefs);
+    if (!caseRefs.length) issues.push(blockingIssue('resume_failure_group_missing_case_refs', `${groupId} missing caseRefs[]`, [groupId]));
+    groupDefs.set(groupId, { groupId, caseRefs });
+    for (const caseId of caseRefs) {
+      if (groupByCase.has(caseId) && groupByCase.get(caseId) !== groupId) {
+        issues.push(blockingIssue('resume_failure_case_group_conflict', `${caseId} assigned to multiple groups`, [caseId, groupByCase.get(caseId) ?? '', groupId]));
+      }
+      groupByCase.set(caseId, groupId);
+    }
+  }
+
+  if (!actions.length && failureCases.length) {
+    issues.push('resume_failure_recovery_action_definitions_missing:functionalResumeFailureCaseRegistry.recoveryActionDefinitions[] is required');
+  }
+  for (const [index, action] of actions.entries()) {
+    const actionId = text(action.actionId);
+    if (!actionId) {
+      issues.push(blockingIssue('resume_failure_recovery_action_missing_id', `recoveryActionDefinitions[${index}] missing actionId`));
+      continue;
+    }
+    if (actionDefs.has(actionId)) {
+      issues.push(blockingIssue('resume_failure_recovery_action_duplicate_id', `${actionId} is duplicated`, [actionId]));
+    }
+    if (!text(action.label ?? action.description)) {
+      issues.push(blockingIssue('resume_failure_recovery_action_missing_required_field', `${actionId} missing label or description`, [actionId]));
+    }
+    const writesControlFields = strings(action.writesControlFields);
+    const recordEventTypes = strings(action.recordEventTypes);
+    if (writesControlFields.length && !recordEventTypes.length) {
+      issues.push(blockingIssue('resume_failure_recovery_action_missing_record_event_types', `${actionId} writes control fields but missing recordEventTypes[]`, [actionId]));
+    }
+    const coveredControlFields = new Set<string>();
+    for (const eventType of recordEventTypes) {
+      const eventDef = eventTypes.get(eventType);
+      if (!eventDef) {
+        issues.push(blockingIssue('resume_failure_recovery_action_unknown_event_type', `${actionId} references unknown eventType ${eventType}`, [actionId, eventType]));
+        continue;
+      }
+      strings(eventDef.writesControlFields).forEach((field) => coveredControlFields.add(field));
+      const globalDef = globalEventTypes.get(eventType);
+      if (!globalDef || !asObject(globalDef.payloadContract)) {
+        issues.push(
+          blockingIssue(
+            'resume_failure_recovery_action_event_missing_payload_contract',
+            `${eventType} must be defined in global governanceEventTypeRegistry[] with payloadContract`,
+            [actionId, eventType]
+          )
+        );
+      }
+    }
+    for (const field of writesControlFields) {
+      if (!coveredControlFields.has(field)) {
+        issues.push(blockingIssue('resume_failure_recovery_action_uncovered_control_field', `${actionId} writes ${field} but eventTypes do not cover it`, [actionId, field]));
+      }
+    }
+    actionDefs.set(actionId, { actionId, writesControlFields, recordEventTypes });
+  }
+
+  const seenCases = new Set<string>();
+  for (const [index, failureCase] of failureCases.entries()) {
+    const caseId = text(failureCase.id);
+    if (!caseId) {
+      issues.push(blockingIssue('resume_failure_case_missing_id', `failureCases[${index}] missing id`));
+      continue;
+    }
+    if (seenCases.has(caseId)) issues.push(blockingIssue('resume_failure_case_duplicate_id', `${caseId} is duplicated`, [caseId]));
+    seenCases.add(caseId);
+    const explicitGroupId = text(failureCase.groupId);
+    const mappedGroupId = groupByCase.get(caseId) ?? '';
+    const groupId = explicitGroupId || mappedGroupId;
+    if (!groupId) {
+      issues.push(blockingIssue('resume_failure_case_missing_group_ref', `${caseId} missing groupId and groups[].caseRefs`, [caseId]));
+    } else if (!groupDefs.has(groupId)) {
+      issues.push(blockingIssue('resume_failure_case_unknown_group', `${caseId} references unknown group ${groupId}`, [caseId, groupId]));
+    }
+    if (explicitGroupId && mappedGroupId && explicitGroupId !== mappedGroupId) {
+      issues.push(blockingIssue('resume_failure_case_group_conflict', `${caseId} groupId conflicts with groups[].caseRefs`, [caseId, explicitGroupId, mappedGroupId]));
+    }
+    const expectedRecoveryActions = strings(failureCase.expectedRecoveryActions);
+    if (!expectedRecoveryActions.length) {
+      issues.push(blockingIssue('resume_failure_case_missing_recovery_actions', `${caseId} missing expectedRecoveryActions[]`, [caseId]));
+    }
+    for (const actionId of expectedRecoveryActions) {
+      if (!actionDefs.has(actionId)) {
+        issues.push(blockingIssue('resume_failure_case_unknown_recovery_action', `${caseId} references unknown recovery action ${actionId}`, [caseId, actionId]));
+      }
+    }
+  }
+  for (const [caseId, groupId] of groupByCase.entries()) {
+    if (!seenCases.has(caseId)) {
+      issues.push(blockingIssue('resume_failure_group_case_ref_unknown', `${groupId} references missing failure case ${caseId}`, [groupId, caseId]));
+    }
+  }
+
+  const fullLinkRequiredFixtureCases = strings(registry.fullLinkRequiredFixtureCases ?? registry.p0RequiredFixtureCases);
+  for (const required of ['resume_happy_path', 'sourceDocumentHash_changed']) {
+    if (!fullLinkRequiredFixtureCases.includes(required)) {
+      issues.push(blockingIssue('resume_failure_full_link_fixture_missing', `fullLinkRequiredFixtureCases[] missing ${required}`, [required]));
+    }
+  }
+  const exercisedFixtureCases = failureCases
+    .filter((item) => item.fullLinkRequired === true || fullLinkRequiredFixtureCases.includes(text(item.id)))
+    .map((item) => text(item.id))
+    .filter(Boolean)
+    .sort();
+  const unexercisedCases = failureCases
+    .map((item) => text(item.id))
+    .filter(Boolean)
+    .filter((caseId) => !exercisedFixtureCases.includes(caseId))
+    .sort();
+
+  return {
+    rawPresent: true,
+    status: text(registry.status),
+    groups: groups.length,
+    failureCases: failureCases.length,
+    recoveryActions: actions.length,
+    globalEventTypes: globalEventTypes.size,
+    controlledRecordEventTypes: controlledEventTypes.size,
+    fullLinkRequiredFixtureCases,
+    exercisedFixtureCases,
+    unexercisedCases,
+    issues,
+  };
+}
+
+function checkResumeFailureCaseRegistry(registryCoverage: RegistryValidationResult): Check {
+  return {
+    id: 'resume-failure-case-registry-valid',
+    decision: registryCoverage.issues.length === 0 ? 'pass' : 'blocked',
+    summary:
+      registryCoverage.issues.length === 0
+        ? 'Functional resume failure case registry is explicit and machine-checkable'
+        : 'Functional resume failure case registry has blocking schema or coverage issues',
+    details: {
+      ...registryCoverage,
+    },
+  };
+}
+
 function traceCheckpoint(record: JsonObject, checkpointId: string, generatedAt: string): JsonObject {
   const executions = objects(record.executionIterations);
   const closures = latestBy(objects(record.requirementClosures), 'requirementId');
@@ -269,6 +727,7 @@ function traceCheckpoint(record: JsonObject, checkpointId: string, generatedAt: 
 function resumePacket(input: {
   checkpoint: JsonObject;
   checks: Check[];
+  registryCoverage: RegistryValidationResult;
   generatedAt: string;
   generatedBy: string;
 }): JsonObject {
@@ -301,6 +760,7 @@ function resumePacket(input: {
       'audit_review',
       'delivery_closeout',
     ],
+    resumeFailureCaseRegistryCoverage: input.registryCoverage,
     blockingIssues,
     checks: input.checks,
   };
@@ -332,6 +792,7 @@ function buildProof(input: {
       hash: sha256File(input.packetPath),
     },
     coveredMentalModels: input.packet.modelChecks,
+    resumeFailureCaseRegistryCoverage: input.packet.resumeFailureCaseRegistryCoverage,
     sourceDocumentHash: text(input.record.sourceDocumentHash),
     implementationConfirmationHash: text(input.record.implementationConfirmationHash),
     architectureConfirmationHash: architectureHash(input.record),
@@ -341,12 +802,14 @@ function buildProof(input: {
 export function mainFunctionalResumeCheck(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: main-agent-functional-resume-check --requirement-record <json> [--out-dir <dir>] [--json]');
+    console.log('Usage: main-agent-functional-resume-check --requirement-record <json> [--source <contract.md>|--registry <registry.yaml|json>] [--out-dir <dir>] [--json]');
     return 0;
   }
   if (!args.requirementRecord) throw new Error('missing required args: requirementRecord');
   const recordPath = path.resolve(args.requirementRecord);
   const record = readJson(recordPath);
+  const registryInput = readRegistryFromArgs(args);
+  const registryCoverage = validateFunctionalResumeFailureCaseRegistry(registryInput);
   const generatedAt = args.generatedAt ?? new Date().toISOString();
   const generatedBy = args.generatedBy ?? 'agent';
   const checkpointId = args.checkpointId ?? `checkpoint-${Date.now()}`;
@@ -359,9 +822,10 @@ export function mainFunctionalResumeCheck(argv: string[]): number {
     checkControlledSources(record),
     checkBlockers(record),
     checkRequiredArtifacts(record),
+    checkResumeFailureCaseRegistry(registryCoverage),
   ];
   const checkpoint = traceCheckpoint(record, checkpointId, generatedAt);
-  const packet = resumePacket({ checkpoint, checks, generatedAt, generatedBy });
+  const packet = resumePacket({ checkpoint, checks, registryCoverage, generatedAt, generatedBy });
   const checkpointPath = path.join(outDir, 'trace-checkpoints.jsonl');
   const packetPath = path.join(outDir, 'resume-packets.jsonl');
   appendJsonl(checkpointPath, checkpoint);
@@ -385,6 +849,7 @@ export function mainFunctionalResumeCheck(argv: string[]): number {
     resumePacketPath: normalizePathForRecord(packetPath),
     proofPath: normalizePathForRecord(proofPath),
     blockingIssues: packet.blockingIssues,
+    resumeFailureCaseRegistryCoverage: registryCoverage,
   };
   process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `functional_resume=${packet.decision}\n`);
   return packet.decision === 'pass' ? 0 : 1;
