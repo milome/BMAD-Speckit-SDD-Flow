@@ -383,6 +383,33 @@ describe('implementation evidence ingest', () => {
     }
   });
 
+  it('maps legacy gateChecks result to decision at ingest boundary without persisting result', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-evidence-gate-result-'));
+    try {
+      const { recordPath, evidencePath } = writeFixture(root);
+      const packet = JSON.parse(readFileSync(evidencePath, 'utf8'));
+      packet.gateChecks = [
+        {
+          gate: 'legacy_gate',
+          result: 'passed',
+        },
+      ];
+      writeFileSync(evidencePath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
+      const prev = process.cwd();
+      process.chdir(root);
+      try {
+        expect(mainIngestImplementationEvidence(['--evidence', evidencePath, '--requirement-record', recordPath])).toBe(0);
+      } finally {
+        process.chdir(prev);
+      }
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.gateChecks.at(-1)).toMatchObject({ gate: 'legacy_gate', decision: 'pass' });
+      expect(record.gateChecks.at(-1)).not.toHaveProperty('result');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('rejects delivery required commands that cannot prove current blocking evidence', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-evidence-required-command-'));
     try {
