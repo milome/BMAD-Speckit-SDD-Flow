@@ -30,6 +30,17 @@ function writeRequirementRecord(overrides: Record<string, unknown> = {}): {
   const base = path.join(requirementRecordsRoot(root), requirementSetId);
   fs.mkdirSync(path.join(base, 'recovery'), { recursive: true });
   const recordPath = path.join(base, 'requirement-record.json');
+  const shouldWriteSnapshot = overrides.writeRuntimePolicySnapshot !== false;
+  const runtimePolicySnapshot = {
+    kind: 'runtime-policy-snapshot',
+    schemaVersion: 'runtime-policy-snapshot/v1',
+    flow: overrides.flow ?? 'story',
+    stage: overrides.stage ?? 'implement',
+    policy: {
+      flow: overrides.flow ?? 'story',
+      stage: overrides.stage ?? 'implement',
+    },
+  };
   const record = {
     recordId: 'REQ-ACTIVE-001',
     requirementSetId,
@@ -79,11 +90,13 @@ function writeRequirementRecord(overrides: Record<string, unknown> = {}): {
     ...overrides,
   };
   fs.writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
-  fs.writeFileSync(
-    path.join(base, 'recovery', 'runtime-policy-snapshot.json'),
-    '{"kind":"runtime-policy-snapshot"}\n',
-    'utf8'
-  );
+  if (shouldWriteSnapshot) {
+    fs.writeFileSync(
+      path.join(base, 'recovery', 'runtime-policy-snapshot.json'),
+      `${JSON.stringify(runtimePolicySnapshot, null, 2)}\n`,
+      'utf8'
+    );
+  }
   fs.writeFileSync(
     path.join(base, 'recovery', 'recovery-context.json'),
     '{"kind":"recovery-context"}\n',
@@ -193,6 +206,49 @@ describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
     expect(policy.stage).toBe('implement');
     expect(policy.identity.storyId).toBe('1.1');
     expect(policy.identity.runId).toBe('run-active-001');
+  });
+
+  it('resolves stage from requirement-scoped runtimePolicySnapshot when record omits legacy stage fields', () => {
+    writeRequirementRecord({ stage: undefined });
+    const resolved = resolveActiveRequirement({ root });
+
+    expect(resolved).toMatchObject({
+      flow: 'story',
+      stage: 'implement',
+      runtimePolicySnapshotExists: true,
+    });
+  });
+
+  it('bootstraps standalone task implement stage from confirmed record without legacy context or snapshot', () => {
+    writeRequirementRecord({
+      flow: undefined,
+      stage: undefined,
+      entryFlow: 'standalone_tasks',
+      entryFlowClass: 'task_packet_entry',
+      workflowAdapter: 'direct',
+      sourceMode: undefined,
+      epicId: undefined,
+      storyId: undefined,
+      artifactRoot: undefined,
+      artifactPath: 'docs/design/example.md',
+      runtimePolicySnapshotRef: undefined,
+      writeRuntimePolicySnapshot: false,
+      implementationEntryGate: undefined,
+      architectureConfirmationState: {
+        status: 'active',
+        currentArchitectureConfirmationHash:
+          'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+      },
+    });
+
+    const resolved = resolveActiveRequirement({ root });
+
+    expect(resolved).toMatchObject({
+      flow: 'standalone_tasks',
+      stage: 'implement',
+      runtimePolicySnapshotExists: false,
+    });
+    expect(fs.existsSync(path.join(root, '_bmad-output', 'runtime', 'context', 'project.json'))).toBe(false);
   });
 
   it('main-agent inspect uses requirement record implementation gate and orchestration hints', () => {

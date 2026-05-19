@@ -187,6 +187,11 @@ function refPath(record: JsonObject, defaultPathValue: string, ...keys: string[]
   return defaultPathValue;
 }
 
+function readJsonIfExists(file: string): JsonObject | null {
+  if (!fs.existsSync(file)) return null;
+  return readJson(file);
+}
+
 function resolveRecordPath(root: string, selected: JsonObject | null, requirementSetId: string): string {
   const configured = firstText(selected?.recordPath, selected?.path, selected?.controlRecordPath);
   return configured ? abs(root, configured) : defaultRecordPath(root, requirementSetId);
@@ -200,6 +205,26 @@ function requireFlow(value: string): RuntimeFlowId {
 function requireStage(value: string): string {
   if (value) return value;
   throw new Error('requirement record stage invalid or missing');
+}
+
+function stageFromConfirmedImplementationEntry(record: JsonObject, flow: RuntimeFlowId): string {
+  const status = firstText(record.status);
+  const entryFlow = firstText(record.entryFlow, nested(record, 'implementationConfirmation')?.entryFlow);
+  const entryFlowClass = firstText(record.entryFlowClass, nested(record, 'implementationConfirmation')?.entryFlowClass);
+  const workflowAdapter = firstText(record.workflowAdapter, nested(record, 'implementationConfirmation')?.workflowAdapter);
+  const architectureState = nested(record, 'architectureConfirmationState');
+  const architectureStatus = firstText(architectureState?.status);
+  if (
+    flow === 'standalone_tasks' &&
+    entryFlow === 'standalone_tasks' &&
+    entryFlowClass === 'task_packet_entry' &&
+    ['direct', 'legacy'].includes(workflowAdapter) &&
+    ['user_confirmed', 'in_progress'].includes(status) &&
+    architectureStatus === 'active'
+  ) {
+    return 'implement';
+  }
+  return '';
 }
 
 function maybeImplementationEntryGate(value: unknown): ImplementationEntryGate | undefined {
@@ -248,12 +273,31 @@ export function resolveActiveRequirement(input: ResolveActiveRequirementInput = 
   const recordId = firstText(record.recordId, selected?.recordId, input.recordId);
   if (!recordId) throw new Error(`requirement record recordId missing: ${recordPath}`);
   const finalRequirementSetId = firstText(record.requirementSetId, requirementSetId);
-  const flow = requireFlow(firstText(record.flow, record.entryFlow, nested(record, 'implementationConfirmation')?.entryFlow));
-  const stage = requireStage(firstText(record.stage, record.currentStage, nested(record, 'runtime')?.stage));
   const base = path.dirname(recordPath);
   const runtimePolicySnapshotPath = abs(
     root,
     refPath(record, path.join(base, 'recovery', 'runtime-policy-snapshot.json'), 'runtimePolicySnapshotRef', 'runtimePolicySnapshotPath')
+  );
+  const runtimePolicySnapshot = readJsonIfExists(runtimePolicySnapshotPath);
+  const runtimePolicySnapshotPolicy = runtimePolicySnapshot ? nested(runtimePolicySnapshot, 'policy') : null;
+  const flow = requireFlow(
+    firstText(
+      record.flow,
+      record.entryFlow,
+      nested(record, 'implementationConfirmation')?.entryFlow,
+      runtimePolicySnapshot?.flow,
+      runtimePolicySnapshotPolicy?.flow
+    )
+  );
+  const stage = requireStage(
+    firstText(
+      record.stage,
+      record.currentStage,
+      nested(record, 'runtime')?.stage,
+      runtimePolicySnapshot?.stage,
+      runtimePolicySnapshotPolicy?.stage,
+      stageFromConfirmedImplementationEntry(record, flow)
+    )
   );
   const recoveryContextPath = abs(
     root,

@@ -25,6 +25,7 @@
     "contractAuthoringRequired": { "const": true },
     "globalContractTraceabilityPolicy": { "$ref": "#/$defs/globalContractTraceabilityPolicy" },
     "traceStatusPolicy": { "$ref": "#/$defs/traceStatusPolicy" },
+    "runtimePolicySnapshotRef": { "$ref": "#/$defs/artifactRef" },
     "sourceDocumentHash": { "$ref": "#/$defs/sha256" },
     "implementationConfirmationHash": { "$ref": "#/$defs/sha256" },
     "confirmationPageHash": { "$ref": "#/$defs/sha256" },
