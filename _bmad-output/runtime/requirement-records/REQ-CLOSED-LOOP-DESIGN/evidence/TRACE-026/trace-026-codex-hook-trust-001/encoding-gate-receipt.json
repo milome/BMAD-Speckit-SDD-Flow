@@ -1,0 +1,8 @@
+{
+  "commandId": "CMD-ENCODING-GATE",
+  "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+  "runId": "run-trace-026-codex-hook-trust-001",
+  "closeoutAttemptId": "closeout-trace-026-codex-hook-trust-001",
+  "exitCode": 0,
+  "outputSummary": "checkedFiles=2760 findings=0"
+}

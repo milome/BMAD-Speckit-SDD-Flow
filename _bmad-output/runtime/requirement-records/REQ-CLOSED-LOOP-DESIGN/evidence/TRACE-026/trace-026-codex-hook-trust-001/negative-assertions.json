@@ -1,0 +1,19 @@
+{
+  "assertions": [
+    {
+      "id": "NEG-021-A",
+      "text": "A Codex hooks_enabled session without hook trust receipt and runtimePolicySnapshot hash is rejected.",
+      "validatedBy": "tests/acceptance/governance-execution-result-ingestor.test.ts"
+    },
+    {
+      "id": "OUT-019-A",
+      "text": "Codex hook success is not treated as an enforcement boundary; unified ingress requires a validated trust envelope before hooks_enabled.",
+      "validatedBy": "tests/acceptance/main-agent-unified-ingress-e2e.test.ts"
+    },
+    {
+      "id": "MUST-033-A",
+      "text": "Codex can enter hooks_enabled only after capability, SessionStart, config hash, runtime policy hash, and trust receipt validation.",
+      "validatedBy": "tests/acceptance/main-agent-unified-ingress-e2e.test.ts"
+    }
+  ]
+}

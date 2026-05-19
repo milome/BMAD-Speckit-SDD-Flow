@@ -129,6 +129,42 @@ function writeFakeCodexBinary(root: string): string {
   return fakeCodexBin;
 }
 
+function codexHookTrustEnvelope(overrides: Record<string, unknown> = {}) {
+  return {
+    hostKind: 'codex',
+    hostMode: 'hooks_enabled',
+    entry: 'codex-session-start-hook',
+    runId: 'ingress-codex',
+    recordId: 'REQ-INGRESS-CODEX',
+    requirementSetId: 'REQ-INGRESS-CODEX',
+    stage: 'implement',
+    packetId: 'codex-hook-session',
+    eventType: 'hook_trust_receipt_recorded',
+    payloadKind: 'decision',
+    decision: 'pass',
+    payload: {
+      hookTrust: 'trusted',
+      codexVersion: '0.130.0',
+      hooksFeatureStable: true,
+      capabilityProbeReceiptRef: {
+        path: 'capability-probe.json',
+        contentHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      },
+      sessionStartSmokeReceiptRef: {
+        path: 'session-start-smoke.json',
+        contentHash: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      },
+      hookTrustReceiptRef: {
+        path: 'hook-trust-receipt.json',
+        contentHash: 'sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+      },
+      managedHookConfigHash: 'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+      runtimePolicySnapshotHash: 'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+    },
+    ...overrides,
+  };
+}
+
 describe('main-agent unified ingress e2e', () => {
   it('routes hooks-enabled cursor through hook_ingress and the shared control plane', () => {
     const root = prepareRoot('cursor', true);
@@ -342,6 +378,85 @@ describe('main-agent unified ingress e2e', () => {
       expect(receipt.runLoop.resolvedHost).toBe('codex');
       expect(receipt.runLoop.pendingPacketStatus).toBe('completed');
       expect(receipt.sameControlPlane).toBe(true);
+    } finally {
+      if (previous === undefined) {
+        delete process.env.CODEX_WORKER_ADAPTER_BIN;
+      } else {
+        process.env.CODEX_WORKER_ADAPTER_BIN = previous;
+      }
+      if (previousAllow === undefined) {
+        delete process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
+      } else {
+        process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = previousAllow;
+      }
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('allows codex hooks_enabled only with a validated hook trust envelope', () => {
+    const root = prepareRoot('codex', false);
+    const previous = process.env.CODEX_WORKER_ADAPTER_BIN;
+    const previousAllow = process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
+    try {
+      process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = 'true';
+      process.env.CODEX_WORKER_ADAPTER_BIN = writeFakeCodexBinary(root);
+      const receipt = runUnifiedIngress({
+        ...ingressInput(root, 'codex'),
+        codexHookTrustEnvelope: codexHookTrustEnvelope(),
+      });
+
+      expect(receipt.hostMode).toBe('hooks_enabled');
+      expect(receipt.orchestrationEntry).toBe('hook_ingress');
+      expect(receipt.hookTrust).toBe('trusted');
+      expect(receipt.hookTrustEnvelopeValidation?.ok).toBe(true);
+      expect(receipt.degradationReason).toBeNull();
+      expect(receipt.controlPlane).toBe('main-agent-orchestration');
+      expect(receipt.runLoop.status).toBe('completed');
+    } finally {
+      if (previous === undefined) {
+        delete process.env.CODEX_WORKER_ADAPTER_BIN;
+      } else {
+        process.env.CODEX_WORKER_ADAPTER_BIN = previous;
+      }
+      if (previousAllow === undefined) {
+        delete process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
+      } else {
+        process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = previousAllow;
+      }
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('degrades codex hook claims to no_hooks when trust proof is incomplete', () => {
+    const root = prepareRoot('codex', false);
+    const previous = process.env.CODEX_WORKER_ADAPTER_BIN;
+    const previousAllow = process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
+    try {
+      process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = 'true';
+      process.env.CODEX_WORKER_ADAPTER_BIN = writeFakeCodexBinary(root);
+      const invalid = codexHookTrustEnvelope({
+        payload: {
+          hookTrust: 'trusted',
+          codexVersion: '0.130.0',
+          hooksFeatureStable: true,
+        },
+      });
+      const receipt = runUnifiedIngress({
+        ...ingressInput(root, 'codex'),
+        codexHookTrustEnvelope: invalid,
+      });
+
+      expect(receipt.hostMode).toBe('no_hooks');
+      expect(receipt.orchestrationEntry).toBe('cli_ingress');
+      expect(receipt.hookTrust).toBe('untrusted');
+      expect(receipt.degradationLevel).toBe('host_partial');
+      expect(receipt.degradationReason?.code).toBe('codex_hook_trust_unverified');
+      expect(receipt.hookTrustEnvelopeValidation?.mismatches).toContain(
+        'codex_capability_probe_receipt_ref_missing'
+      );
+      expect(receipt.hookTrustEnvelopeValidation?.mismatches).toContain(
+        'codex_runtime_policy_snapshot_hash_missing'
+      );
     } finally {
       if (previous === undefined) {
         delete process.env.CODEX_WORKER_ADAPTER_BIN;

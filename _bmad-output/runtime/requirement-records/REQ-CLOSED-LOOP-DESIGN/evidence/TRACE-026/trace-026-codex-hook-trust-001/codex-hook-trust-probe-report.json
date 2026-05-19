@@ -1,0 +1,16 @@
+{
+  "reportType": "codex_hook_trust_probe_report",
+  "codexMinimumVersion": "0.130.0",
+  "requiredChecks": [
+    "codexVersion >= 0.130.0",
+    "hooksFeatureStable === true",
+    "capabilityProbeReceiptRef.path + sha256 hash",
+    "sessionStartSmokeReceiptRef.path + sha256 hash",
+    "hookTrustReceiptRef.path + sha256 hash",
+    "managedHookConfigHash sha256",
+    "runtimePolicySnapshotHash sha256"
+  ],
+  "acceptedHostMode": "hooks_enabled",
+  "fallbackHostMode": "no_hooks",
+  "fallbackReason": "invalid or missing Codex hook trust envelope"
+}

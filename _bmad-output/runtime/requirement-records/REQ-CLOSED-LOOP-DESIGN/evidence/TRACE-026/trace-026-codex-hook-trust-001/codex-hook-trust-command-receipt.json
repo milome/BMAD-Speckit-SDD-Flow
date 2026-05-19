@@ -1,0 +1,8 @@
+{
+  "commandId": "CMD-CODEX-HOOK-TRUST-ACCEPTANCE",
+  "command": "npx vitest run tests/acceptance/governance-execution-result-ingestor.test.ts tests/acceptance/main-agent-unified-ingress-e2e.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts",
+  "runId": "run-trace-026-codex-hook-trust-001",
+  "closeoutAttemptId": "closeout-trace-026-codex-hook-trust-001",
+  "exitCode": 0,
+  "outputSummary": "4 test files passed; 45 tests passed."
+}
