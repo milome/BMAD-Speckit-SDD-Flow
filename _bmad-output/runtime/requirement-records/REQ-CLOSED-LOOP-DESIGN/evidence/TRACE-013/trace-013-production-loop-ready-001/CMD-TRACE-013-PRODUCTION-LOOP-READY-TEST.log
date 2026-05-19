@@ -1,0 +1,25 @@
+$ npx vitest run tests/acceptance/main-agent-production-loop-ready-check.test.ts
+startedAt=2026-05-19T13:33:35.4633550Z
+completedAt=2026-05-19T13:33:40.3869888Z
+exitCode=0
+--- stdout/stderr ---
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mD:/Dev/BMAD-Speckit-SDD-Flow[39m
+
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/production-loop-ready-hufTia/_bmad-output/runtime/requirement-records/REQ-PRODUCTION-LOOP/production-loop-ready-report.json",
+  "decision": "pass",
+  "controlWrite": "forbidden_use_controlled_ingest",
+  "blockingReasons": []
+}
+production_loop_ready=blocked
+production_loop_ready=blocked
+production_loop_ready=blocked
+ [32m✓[39m tests/acceptance/main-agent-production-loop-ready-check.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 65[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m   Start at [22m 21:33:39
+[2m   Duration [22m 388ms[2m (transform 72ms, setup 0ms, import 127ms, tests 65ms, environment 0ms)[22m
+

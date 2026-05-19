@@ -1,0 +1,12 @@
+$ npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-production-loop-ready-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-013/trace-013-production-loop-ready-001/production-loop-ready-report.json --evaluated-at 2026-05-19T21:30:00.000+08:00 --evaluated-by codex --json
+startedAt=2026-05-19T13:33:33.8244269Z
+completedAt=2026-05-19T13:33:35.4027245Z
+exitCode=0
+--- stdout/stderr ---
+{
+  "ok": true,
+  "reportPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-013/trace-013-production-loop-ready-001/production-loop-ready-report.json",
+  "decision": "pass",
+  "controlWrite": "forbidden_use_controlled_ingest",
+  "blockingReasons": []
+}
