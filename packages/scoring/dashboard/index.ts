@@ -39,6 +39,11 @@ export type {
 export { formatDashboardMarkdown } from './format';
 export type { DashboardData, DashboardFormatOptions } from './format';
 export { buildRuntimeDashboardModel, queryRuntimeDashboard } from './runtime-query';
+export {
+  buildSixMentalModelProjection,
+  FORBIDDEN_COMPLETION_SOURCES,
+  SIX_MENTAL_MODEL_ORDER,
+} from './six-model-projection';
 export type {
   RuntimeDashboardQueryOptions,
   RuntimeDashboardSnapshot,
@@ -51,6 +56,12 @@ export type {
   DashboardScoreDetailPayload,
   DashboardSftSummary,
 } from './runtime-query';
+export type {
+  SixMentalModelProjection,
+  SixMentalModelSection,
+  SixMentalModelId,
+  SixMentalModelEntryFlowSlices,
+} from './six-model-projection';
 export { renderDashboardSnapshotMarkdown, writeDashboardSnapshotFiles } from './snapshot';
 export type { WriteDashboardSnapshotOptions } from './snapshot';
 export { startLiveDashboardServer } from './live-server';

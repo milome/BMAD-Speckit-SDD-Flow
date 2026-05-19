@@ -26,6 +26,8 @@ import {
 } from '../../scripts/runtime-context-registry';
 import { resolveBmadHelpRuntimePolicy } from '../../scripts/bmad-config';
 import { runAuditorHost } from '../../scripts/run-auditor-host';
+import { writeMinimalRequirementRecordContext } from '../helpers/runtime-registry-fixture';
+import type { ImplementationEntryGate } from '../../scripts/runtime-governance';
 
 function writePacket(root: string, sessionId: string, packet: RecommendationPacket): string {
   const packetPath = path.join(
@@ -61,6 +63,12 @@ describe('main-agent orchestration consumer', () => {
         stopConditions: ['true blocker detected'],
       };
       const packetPath = writePacket(root, sessionId, packet);
+      writeMinimalRequirementRecordContext(root, {
+        flow: 'story',
+        stage: 'implement',
+        storyId: '14.5',
+        runId: 'run-14-5',
+      });
       writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
       writeRuntimeContext(
         root,
@@ -230,19 +238,13 @@ describe('main-agent orchestration consumer', () => {
         stopConditions: ['true blocker detected'],
       };
       const packetPath = writePacket(root, sessionId, packet);
-      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
-      writeRuntimeContext(
-        root,
-        defaultRuntimeContextFile({
-          flow: 'story',
-          stage: 'implement',
-          sourceMode: 'full_bmad',
-          contextScope: 'story',
-          storyId: '14.5',
-          runId: 'run-14-5',
-          updatedAt: new Date().toISOString(),
-        })
-      );
+      writeMinimalRequirementRecordContext(root, {
+        flow: 'story',
+        stage: 'implement',
+        sourceMode: 'full_bmad',
+        storyId: '14.5',
+        runId: 'run-14-5',
+      });
       writeOrchestrationState(
         root,
         createDefaultOrchestrationState({
@@ -283,11 +285,10 @@ describe('main-agent orchestration consumer', () => {
     }
   });
 
-  it('reads implementation-entry gate from registry when no explicit gate is passed in', () => {
+  it('reads implementation-entry gate from requirement record when no explicit gate is passed in', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-registry-gate-'));
     try {
-      const registry = defaultRuntimeContextRegistry(root);
-      registry.implementationEntryIndex.story['run-14-3'] = {
+      const implementationEntryGate: ImplementationEntryGate = {
         gateName: 'implementation-readiness',
         requestedFlow: 'story',
         recommendedFlow: 'story',
@@ -306,20 +307,14 @@ describe('main-agent orchestration consumer', () => {
         semanticFingerprint: 'run-14-3',
         evaluatedAt: new Date().toISOString(),
       };
-      writeRuntimeContextRegistry(root, registry);
-      writeRuntimeContext(
-        root,
-        defaultRuntimeContextFile({
-          flow: 'story',
-          stage: 'implement',
-          sourceMode: 'full_bmad',
-          contextScope: 'story',
-          storyId: '14.3',
-          runId: 'run-14-3',
-          artifactRoot: '_bmad-output/implementation-artifacts/epic-14/story-14.3',
-          updatedAt: new Date().toISOString(),
-        })
-      );
+      writeMinimalRequirementRecordContext(root, {
+        flow: 'story',
+        stage: 'implement',
+        storyId: '14.3',
+        runId: 'run-14-3',
+        artifactRoot: '_bmad-output/implementation-artifacts/epic-14/story-14.3',
+        implementationEntryGate,
+      });
 
       const surface = resolveMainAgentOrchestrationSurface({
         projectRoot: root,
@@ -412,8 +407,50 @@ describe('main-agent orchestration consumer', () => {
   });
 
   it('surfaces raw drift fields from latestReviewerCloseout to the main-agent surface', async () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-drift-surface-'));
+      const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-drift-surface-'));
     try {
+      const reviewerCloseout = {
+        updatedAt: new Date().toISOString(),
+        runner: 'runAuditorHost' as const,
+        profile: 'bmad-code-reviewer',
+        stage: 'implement',
+        artifactPath: 'specs/demo/implement.md',
+        reportPath: 'specs/demo/implement.audit.md',
+        auditStatus: 'PASS' as const,
+        closeoutApproved: false,
+        governanceClosure: {
+          implementationReadinessStatusRequired: true,
+          implementationReadinessGateName: 'implementation-readiness',
+          gatesLoopRequired: true,
+          rerunGatesRequired: true,
+          packetExecutionClosureRequired: true,
+        },
+        closeoutEnvelope: {
+          resultCode: 'blocked',
+          requiredFixes: [],
+          requiredFixesDetail: [],
+          rerunDecision: 'rerun',
+          scoringFailureMode: 'none',
+          packetExecutionClosureStatus: 'closed',
+        },
+        canMainAgentContinue: false,
+        scoreWriteResult: 'ok' as const,
+        handoffPersisted: true,
+        driftSeverity: 'critical' as const,
+        effectiveVerdict: 'blocked',
+        driftSignals: ['smoke_task_chain'],
+        driftedDimensions: ['Smoke E2E Readiness', 'P0 Journey Coverage'],
+        reReadinessRequired: true,
+        readinessBaselineRunId: 'readiness-14-2',
+      };
+      writeMinimalRequirementRecordContext(root, {
+        flow: 'story',
+        stage: 'post_audit',
+        storyId: '14.2',
+        runId: 'run-14-2',
+        artifactRoot: '_bmad-output/implementation-artifacts/epic-14/story-14.2',
+        latestReviewerCloseout: reviewerCloseout,
+      });
       writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
       writeRuntimeContext(
         root,

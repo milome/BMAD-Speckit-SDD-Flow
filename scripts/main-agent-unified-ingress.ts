@@ -76,6 +76,8 @@ export interface UnifiedIngressReceipt {
   reportType: 'main_agent_unified_ingress';
   generatedAt: string;
   projectRoot: string;
+  recordId: string;
+  requirementSetId: string;
   hostKind: MainAgentHostKind;
   hostMode: MainAgentHostMode;
   orchestrationEntry: MainAgentOrchestrationEntry;
@@ -114,6 +116,27 @@ function hookPathFor(root: string, hostKind: MainAgentHostKind): string | null {
   if (hostKind === 'claude')
     return path.join(root, '_bmad', 'claude', 'hooks', 'runtime-policy-inject.cjs');
   return null;
+}
+
+function normalizeRecordId(value: string | undefined, fieldName: string): string {
+  const trimmed = value?.trim();
+  if (!trimmed) throw new Error(`${fieldName} is required for requirement-scoped unified ingress output`);
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/u.test(trimmed)) {
+    throw new Error(`${fieldName} contains unsupported path characters`);
+  }
+  return trimmed;
+}
+
+function requirementScopedIngressDir(root: string, recordId: string): string {
+  return path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    recordId,
+    'artifacts',
+    'ingress'
+  );
 }
 
 function resolveEntry(input: {
@@ -225,6 +248,8 @@ function resolveEntry(input: {
 
 function probeHostRecovery(input: {
   projectRoot: string;
+  recordId: string;
+  requirementSetId: string;
   hostKind: MainAgentHostKind;
   flow: RuntimeFlowId;
   stage: string;
@@ -314,6 +339,8 @@ function probeHostRecovery(input: {
   const afterRunLoop = recovered
     ? runMainAgentAutomaticLoop({
         projectRoot: input.projectRoot,
+        recordId: input.recordId,
+        requirementSetId: input.requirementSetId,
         flow: input.flow,
         stage: input.stage,
         host: input.hostKind,
@@ -362,10 +389,7 @@ function probeHostRecovery(input: {
     recovery_log_path: null,
   };
   const logPath = path.join(
-    input.projectRoot,
-    '_bmad-output',
-    'runtime',
-    'ingress',
+    requirementScopedIngressDir(input.projectRoot, input.recordId),
     'recovery',
     `${input.hostKind}-${input.entry.degradationLevel}-${Date.now()}.json`
   );
@@ -397,6 +421,8 @@ function probeHostRecovery(input: {
 
 export function runUnifiedIngress(input: {
   projectRoot: string;
+  recordId: string;
+  requirementSetId?: string;
   hostKind: MainAgentHostKind;
   flow: RuntimeFlowId;
   stage: string;
@@ -407,6 +433,8 @@ export function runUnifiedIngress(input: {
   recoveryInspectHostOverride?: MainAgentHostKind;
 }): UnifiedIngressReceipt {
   const projectRoot = path.resolve(input.projectRoot);
+  const recordId = normalizeRecordId(input.recordId, 'recordId');
+  const requirementSetId = normalizeRecordId(input.requirementSetId ?? input.recordId, 'requirementSetId');
   const entry = resolveEntry({
     projectRoot,
     hostKind: input.hostKind,
@@ -416,6 +444,8 @@ export function runUnifiedIngress(input: {
   });
   const runLoop = runMainAgentAutomaticLoop({
     projectRoot,
+    recordId,
+    requirementSetId,
     flow: input.flow,
     stage: input.stage,
     host: input.hostKind,
@@ -432,6 +462,8 @@ export function runUnifiedIngress(input: {
   });
   const hostRecovery = probeHostRecovery({
     projectRoot,
+    recordId,
+    requirementSetId,
     hostKind: input.hostKind,
     flow: input.flow,
     stage: input.stage,
@@ -476,6 +508,8 @@ export function runUnifiedIngress(input: {
     reportType: 'main_agent_unified_ingress',
     generatedAt: new Date().toISOString(),
     projectRoot,
+    recordId,
+    requirementSetId,
     hostKind: input.hostKind,
     ...entry,
     hostRecovery,
@@ -499,8 +533,13 @@ export function main(argv: string[]): number {
   const args = parseArgs(argv);
   const hostKind: MainAgentHostKind =
     args.hostKind === 'claude' || args.hostKind === 'codex' ? args.hostKind : 'cursor';
+  const projectRoot = path.resolve(args.cwd ?? process.cwd());
+  const recordId = normalizeRecordId(args.recordId, 'recordId');
+  const requirementSetId = normalizeRecordId(args.requirementSetId ?? args.recordId, 'requirementSetId');
   const receipt = runUnifiedIngress({
-    projectRoot: path.resolve(args.cwd ?? process.cwd()),
+    projectRoot,
+    recordId,
+    requirementSetId,
     hostKind,
     flow: (args.flow as RuntimeFlowId | undefined) ?? 'story',
     stage: args.stage ?? 'implement',
@@ -512,10 +551,7 @@ export function main(argv: string[]): number {
   const reportPath = path.resolve(
     args.reportPath ??
       path.join(
-        receipt.projectRoot,
-        '_bmad-output',
-        'runtime',
-        'ingress',
+        requirementScopedIngressDir(receipt.projectRoot, receipt.recordId),
         `${hostKind}-${receipt.orchestrationEntry}.json`
       )
   );

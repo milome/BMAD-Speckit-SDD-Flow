@@ -22,7 +22,61 @@ export function renderDashboardSnapshotMarkdown(
     return markdown.endsWith('\n') ? markdown : `${markdown}\n`;
   }
 
-  const lines: string[] = [markdown.trimEnd(), '', '## Runtime Context', ''];
+  const lines: string[] = [markdown.trimEnd(), '', '## Six Mental Models', ''];
+  lines.push(
+    `- Control Authority: ${snapshot.six_model_projection.controlAuthority.allowedControlSource}`
+  );
+  lines.push(
+    `- Dashboard Can Close Requirement: ${
+      snapshot.six_model_projection.controlAuthority.dashboardCanCloseRequirement ? 'yes' : 'no'
+    }`
+  );
+  lines.push(
+    `- Can Affect Control Flow: ${snapshot.six_model_projection.canAffectControlFlow ? 'yes' : 'no'}`
+  );
+  lines.push(
+    `- Forbidden Completion Sources: ${snapshot.six_model_projection.controlAuthority.forbiddenCompletionSources.join(', ')}`
+  );
+  lines.push('');
+  lines.push('| Model | Status | Core Question | Evidence Signals | Drill-down Slices |');
+  lines.push('|------|--------|---------------|------------------|-------------------|');
+  for (const model of snapshot.six_model_projection.models) {
+    lines.push(
+      `| ${model.displayName} (${model.id}) | ${model.status} | ${model.coreQuestion} | ${model.evidenceSignals.join('<br>')} | ${
+        model.drillDownSliceRefs.length > 0 ? model.drillDownSliceRefs.join('<br>') : 'N/A'
+      } |`
+    );
+  }
+  lines.push('');
+  lines.push('## EntryFlow Drill-down Slices');
+  lines.push('');
+  lines.push('EntryFlow slices are navigation/read-model drill-downs only; they are not top-level control models.');
+  lines.push('');
+  lines.push('| Slice Type | Count | Slice IDs |');
+  lines.push('|------------|-------|-----------|');
+  lines.push(
+    `| stories | ${snapshot.six_model_projection.entryFlowSlices.stories.length} | ${
+      snapshot.six_model_projection.entryFlowSlices.stories.map((item) => item.sliceId).join('<br>') || 'N/A'
+    } |`
+  );
+  lines.push(
+    `| bugfixes | ${snapshot.six_model_projection.entryFlowSlices.bugfixes.length} | ${
+      snapshot.six_model_projection.entryFlowSlices.bugfixes.map((item) => item.sliceId).join('<br>') || 'N/A'
+    } |`
+  );
+  lines.push(
+    `| standaloneTasks | ${snapshot.six_model_projection.entryFlowSlices.standaloneTasks.length} | ${
+      snapshot.six_model_projection.entryFlowSlices.standaloneTasks.map((item) => item.sliceId).join('<br>') || 'N/A'
+    } |`
+  );
+  lines.push(
+    `| epics | ${snapshot.six_model_projection.entryFlowSlices.epics.length} | ${
+      snapshot.six_model_projection.entryFlowSlices.epics.map((item) => item.sliceId).join('<br>') || 'N/A'
+    } |`
+  );
+  lines.push('');
+  lines.push('## Runtime Context');
+  lines.push('');
   lines.push(`- Run ID: ${snapshot.runtime_context.run_id ?? 'N/A'}`);
   lines.push(`- Status: ${snapshot.runtime_context.status}`);
   lines.push(`- Current Stage: ${snapshot.runtime_context.current_stage ?? 'N/A'}`);

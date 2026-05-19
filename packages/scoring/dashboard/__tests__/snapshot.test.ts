@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { renderDashboardSnapshotMarkdown } from '../snapshot';
 import type { RuntimeDashboardSnapshot } from '../runtime-query';
+import { buildSixMentalModelProjection } from '../six-model-projection';
 
 describe('runtime dashboard snapshot markdown', () => {
   it('includes reviewer projection details when runtime context is requested', () => {
-    const snapshot = {
+    const snapshotBase = {
       generated_at: '2026-03-28T00:00:00.000Z',
       selection: {
         run_id: 'run-001',
@@ -278,10 +279,26 @@ describe('runtime dashboard snapshot markdown', () => {
         board_groups: [],
         work_items: [],
       },
+    };
+    const snapshot = {
+      ...snapshotBase,
+      six_model_projection: buildSixMentalModelProjection({
+        runtimeContext: snapshotBase.runtime_context,
+        executionState: snapshotBase.execution_state,
+        stageTimeline: snapshotBase.stage_timeline,
+        scoreDetail: snapshotBase.score_detail,
+        workboard: snapshotBase.workboard,
+      }),
     } satisfies RuntimeDashboardSnapshot;
 
     const markdown = renderDashboardSnapshotMarkdown('# Dashboard', snapshot, true);
 
+    expect(markdown.indexOf('## Six Mental Models')).toBeLessThan(
+      markdown.indexOf('## Runtime Context')
+    );
+    expect(markdown).toContain('Dashboard Can Close Requirement: no');
+    expect(markdown).toContain('Forbidden Completion Sources: dashboard_health_score');
+    expect(markdown).toContain('## EntryFlow Drill-down Slices');
     expect(markdown).toContain('## Reviewer Projection');
     expect(markdown).toContain('- Reviewer Identity: bmad_code_reviewer');
     expect(markdown).toContain('- Reviewer Registry: reviewer_registry_v1');

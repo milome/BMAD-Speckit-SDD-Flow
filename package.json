@@ -17,6 +17,7 @@
     "setup:full": "pwsh scripts/setup.ps1 -Full",
     "setup:full:sh": "bash scripts/setup.sh -Full",
     "test": "npm run test:speckit-mirror-sync && npm run test:governance-fixtures && vitest run && npm run test:bmad-speckit",
+    "resolve-active-requirement": "npx ts-node --project tsconfig.node.json --transpile-only scripts/resolve-active-requirement.ts",
     "main-agent-orchestration": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts",
     "main-agent:run-loop": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts --action run-loop",
     "main-agent:release-gate": "npm run test:governance-fixtures && npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-release-gate.ts",

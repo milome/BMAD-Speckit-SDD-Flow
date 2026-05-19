@@ -4,7 +4,7 @@ import * as os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { resolveBmadHelpRuntimePolicy } from '../../scripts/bmad-config';
-import { readRuntimeContext } from '../../scripts/runtime-context';
+import { loadPolicyContextFromRegistry } from '../../scripts/emit-runtime-policy';
 import { stableStringifyPolicy } from '../../scripts/stable-runtime-policy-json';
 import { mainEmitRuntimePolicy } from '../../scripts/emit-runtime-policy';
 import {
@@ -29,7 +29,7 @@ describe('emit-runtime-policy vs bmad-help runtime policy facade (stable JSON)',
     runtimeEmitBuilt = true;
   }
 
-  it('stdout matches stableStringify(resolveBmadHelpRuntimePolicy) for registry-backed flow/stage', () => {
+  it('stdout matches stableStringify(resolveBmadHelpRuntimePolicy) for ResolvedRuntimeContext-backed flow/stage', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-emit-stable-'));
     fs.cpSync(path.join(repoRoot, '_bmad'), path.join(root, '_bmad'), { recursive: true });
     writeMinimalRegistryAndProjectContext(root, { flow: 'story', stage: 'specify' });
@@ -43,14 +43,24 @@ describe('emit-runtime-policy vs bmad-help runtime policy facade (stable JSON)',
     const prev = process.cwd();
     try {
       process.chdir(root);
-      const expected = stableStringifyPolicy(
-        resolveBmadHelpRuntimePolicy({
-          projectRoot: root,
-          flow: 'story',
-          stage: 'specify',
-          runtimeContext: readRuntimeContext(root),
-        })
-      );
+      const loaded = loadPolicyContextFromRegistry(root);
+      const resolvedPolicy = resolveBmadHelpRuntimePolicy({
+        projectRoot: root,
+        flow: loaded.flow as 'story',
+        stage: loaded.stage as 'specify',
+        runtimeContext: loaded.runtimeContext,
+        runtimeContextPath: loaded.resolvedContextPath,
+        contextSource: 'ResolvedRuntimeContext',
+        ...(loaded.runId ? { runId: loaded.runId } : {}),
+        ...(loaded.storyId ? { storyId: loaded.storyId } : {}),
+        ...(loaded.epicId ? { epicId: loaded.epicId } : {}),
+        ...(loaded.artifactRoot ? { artifactRoot: loaded.artifactRoot } : {}),
+      });
+      const expected = stableStringifyPolicy({
+        flow: loaded.runtimeContext.flow,
+        stage: loaded.runtimeContext.stage,
+        ...resolvedPolicy,
+      });
       const code = mainEmitRuntimePolicy(['--cwd', root]);
       expect(code).toBe(0);
       const out = chunks.join('');
@@ -73,7 +83,7 @@ describe('emit-runtime-policy vs bmad-help runtime policy facade (stable JSON)',
     }
   });
 
-  it('emit-runtime-policy-cli.js resolves identity from registry-backed context only', async () => {
+  it('emit-runtime-policy-cli.js resolves identity from ResolvedRuntimeContext only', async () => {
     ensureRuntimeEmitBuilt();
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-emit-cli-id-'));
     fs.cpSync(path.join(repoRoot, '_bmad'), path.join(root, '_bmad'), { recursive: true });
@@ -102,8 +112,11 @@ describe('emit-runtime-policy vs bmad-help runtime policy facade (stable JSON)',
     const policy = JSON.parse((r.stdout || '').trim());
     expect(policy.flow).toBe('story');
     expect(policy.stage).toBe('implement');
-    expect(policy.identity.storyId).toBe('14.1');
-    expect(policy.identity.runId).toBe('run-emit-stable');
+    expect(policy.identity).toMatchObject({
+      contextSource: 'ResolvedRuntimeContext',
+      storyId: '14.1',
+      runId: 'run-emit-stable',
+    });
     expect(policy.helpRouting.recommendedFlow).toBe('story');
     expect(policy.helpRouting.recommendationLabel).toBe('blocked');
     expect(policy.reviewerContract).toMatchObject({
@@ -114,7 +127,7 @@ describe('emit-runtime-policy vs bmad-help runtime policy facade (stable JSON)',
     fs.rmSync(root, { recursive: true, force: true });
   }, 60000);
 
-  it('emit fails loud when registry-backed context is absent', () => {
+  it('emit fails loud when requirement-record context is absent', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-rp-no-reg-'));
     fs.cpSync(path.join(repoRoot, '_bmad'), path.join(root, '_bmad'), { recursive: true });
     const chunks: string[] = [];
@@ -140,11 +153,13 @@ describe('emit-runtime-policy vs bmad-help runtime policy facade (stable JSON)',
     expect(errors.join('\n')).toMatch(/emit-runtime-policy:/);
   }, 20_000);
 
-  it('emit fails loud when flow/stage are invalid in project context (readRuntimeContext)', () => {
+  it('emit fails loud when flow/stage are invalid in requirement record', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-rp-sp-'));
     fs.cpSync(path.join(repoRoot, '_bmad'), path.join(root, '_bmad'), { recursive: true });
     writeMinimalRegistryAndProjectContext(root, { flow: 'story', stage: 'specify' });
-    const ctxPath = path.join(root, '_bmad-output', 'runtime', 'context', 'project.json');
+    const indexPath = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json');
+    const index = JSON.parse(fs.readFileSync(indexPath, 'utf8'));
+    const ctxPath = path.resolve(root, index.records[0].recordPath);
     const raw = JSON.parse(fs.readFileSync(ctxPath, 'utf8'));
     delete raw.flow;
     delete raw.stage;
@@ -173,6 +188,6 @@ describe('emit-runtime-policy vs bmad-help runtime policy facade (stable JSON)',
     expect(chunks.join('')).toBe('');
     const errText = errors.join('\n');
     expect(errText).toContain('emit-runtime-policy:');
-    expect(errText).toMatch(/runtime-context\.(flow|stage) invalid or missing/);
+    expect(errText).toMatch(/requirement record (flow|stage) invalid or missing/);
   }, 20_000);
 });

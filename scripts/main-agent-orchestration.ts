@@ -27,12 +27,9 @@ import {
   updateOrchestrationState,
   type OrchestrationState,
 } from './orchestration-state';
-import { readRuntimeContext, type RuntimeContextFile } from './runtime-context';
+import { type RuntimeContextFile } from './runtime-context';
 import { loadPolicyContextFromRegistry } from './emit-runtime-policy';
-import {
-  readRegistryOrDefault,
-  type ReviewerLatestCloseoutRecord,
-} from './runtime-context-registry';
+import type { ReviewerLatestCloseoutRecord } from './runtime-context-registry';
 import { runAdaptiveIntakeGovernanceGate } from './adaptive-intake-governance-gate';
 import { runCodexWorkerAdapter } from './main-agent-codex-worker-adapter';
 import { applyLongRunPolicyToState } from './long-run-runtime-policy';
@@ -159,6 +156,9 @@ export interface ResolveMainAgentOrchestrationInput {
   projectRoot?: string;
   runtimeContext?: Partial<RuntimeContextFile> | null;
   runtimeContextPath?: string;
+  recordId?: string;
+  requirementSetId?: string;
+  runId?: string;
   flow: RuntimeFlowId;
   stage: string;
   implementationEntryGate?: ImplementationEntryGate | null;
@@ -208,10 +208,11 @@ function loadRuntimeContextForMainAgent(
     return null;
   }
   try {
-    if (input.runtimeContextPath) {
-      return readRuntimeContext(input.projectRoot, input.runtimeContextPath);
-    }
-    return loadPolicyContextFromRegistry(input.projectRoot).runtimeContext;
+    return loadPolicyContextFromRegistry(input.projectRoot, {
+      recordId: input.recordId,
+      requirementSetId: input.requirementSetId,
+      runId: input.runId,
+    }).runtimeContext;
   } catch {
     return null;
   }
@@ -533,43 +534,9 @@ function resolveImplementationEntryGateFromRegistry(
   if (!projectRoot || (flow !== 'story' && flow !== 'bugfix' && flow !== 'standalone_tasks')) {
     return null;
   }
-
-  const registry = readRegistryOrDefault(projectRoot);
-  const gates = registry.implementationEntryIndex[flow];
-  const entries = Object.entries(gates);
-  if (entries.length === 0) {
-    return null;
-  }
-
-  const hints = [
-    runtimeContext?.runId,
-    runtimeContext?.storyId,
-    runtimeContext?.epicId,
-    runtimeContext?.artifactRoot,
-    runtimeContext?.artifactPath,
-  ]
-    .map((value) => normalizeText(value))
-    .filter(Boolean);
-
-  const scored = entries
-    .map(([key, gate]) => {
-      let score = 0;
-      const keyLower = key.toLowerCase();
-      for (const hint of hints) {
-        const hintLower = hint.toLowerCase();
-        if (keyLower.includes(hintLower)) {
-          score += 100;
-        }
-        score += sharedPathScore(key, hint) * 10;
-      }
-      return {
-        gate,
-        score,
-      };
-    })
-    .sort((left, right) => right.score - left.score);
-
-  return scored[0]?.gate ?? null;
+  const resolvedGate = (runtimeContext as { implementationEntryGate?: ImplementationEntryGate } | null)
+    ?.implementationEntryGate;
+  return resolvedGate ?? null;
 }
 
 function deriveContinueDecisionFromSurface(input: {
@@ -726,9 +693,7 @@ export function resolveMainAgentOrchestrationSurface(
   input: ResolveMainAgentOrchestrationInput
 ): MainAgentOrchestrationSurface {
   const runtimeContext = loadRuntimeContextForMainAgent(input);
-  const registry = input.projectRoot ? readRegistryOrDefault(input.projectRoot) : null;
-  const closeout =
-    runtimeContext?.latestReviewerCloseout ?? registry?.latestReviewerCloseout ?? null;
+  const closeout = runtimeContext?.latestReviewerCloseout ?? null;
   const implementationEntryGate =
     input.implementationEntryGate ??
     resolveImplementationEntryGateFromRegistry(input.projectRoot, runtimeContext, input.flow);
@@ -1098,6 +1063,12 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.flow = argv[++index];
     } else if (token === '--stage' && argv[index + 1]) {
       out.stage = argv[++index];
+    } else if (token === '--record-id' && argv[index + 1]) {
+      out.recordId = argv[++index];
+    } else if (token === '--requirement-set-id' && argv[index + 1]) {
+      out.requirementSetId = argv[++index];
+    } else if (token === '--run-id' && argv[index + 1]) {
+      out.runId = argv[++index];
     } else if (token === '--action' && argv[index + 1]) {
       out.action = argv[++index];
     } else if ((token === '--host' || token === '--hostKind') && argv[index + 1]) {
@@ -1147,7 +1118,11 @@ function resolveFlowAndStage(
   root: string,
   args: Record<string, string | undefined>
 ): { flow: RuntimeFlowId; stage: string } {
-  const runtimeContext = loadPolicyContextFromRegistry(root).runtimeContext;
+  const runtimeContext = loadPolicyContextFromRegistry(root, {
+    recordId: args.recordId,
+    requirementSetId: args.requirementSetId,
+    runId: args.runId,
+  }).runtimeContext;
   const flow = normalizeText(args.flow) || runtimeContext.flow;
   const stage = normalizeText(args.stage) || runtimeContext.stage;
   return {
@@ -1255,6 +1230,9 @@ export function writeMainAgentRunLoopTaskReport(
 
 export function runMainAgentAutomaticLoop(input: {
   projectRoot: string;
+  recordId?: string;
+  requirementSetId?: string;
+  runId?: string;
   flow: RuntimeFlowId;
   stage: string;
   host?: OrchestrationHost;
@@ -1265,11 +1243,17 @@ export function runMainAgentAutomaticLoop(input: {
   const steps: MainAgentRunLoopResult['steps'] = [];
   const runtimeContext = loadRuntimeContextForMainAgent({
     projectRoot: input.projectRoot,
+    recordId: input.recordId,
+    requirementSetId: input.requirementSetId,
+    runId: input.runId,
     flow: input.flow,
     stage: input.stage,
   });
   const surfaceInput = {
     projectRoot: input.projectRoot,
+    recordId: input.recordId,
+    requirementSetId: input.requirementSetId,
+    runId: input.runId,
     flow: input.flow,
     stage: input.stage,
     ...(runtimeContext ? { runtimeContext } : {}),
@@ -1367,6 +1351,9 @@ export function runMainAgentAutomaticLoop(input: {
     if (!taskReport && instruction.host === 'codex') {
       const adapterReport = runCodexWorkerAdapter({
         projectRoot: input.projectRoot,
+        recordId: input.recordId,
+        requirementSetId: input.requirementSetId,
+        runId: input.runId,
         packetPath: instruction.packetPath,
         taskReportPath: taskReportPath || undefined,
         smoke: args.codexSmoke === 'true',
@@ -1492,6 +1479,9 @@ export function mainMainAgentOrchestration(argv: string[]): number {
   const host = parseOrchestrationHost(args.host);
   const surface = resolveMainAgentOrchestrationSurface({
     projectRoot: root,
+    recordId: args.recordId,
+    requirementSetId: args.requirementSetId,
+    runId: args.runId,
     flow,
     stage,
   });
@@ -1505,6 +1495,9 @@ export function mainMainAgentOrchestration(argv: string[]): number {
     case 'dispatch-plan': {
       const instruction = buildMainAgentDispatchInstruction({
         projectRoot: root,
+        recordId: args.recordId,
+        requirementSetId: args.requirementSetId,
+        runId: args.runId,
         flow,
         stage,
         host,
@@ -1516,6 +1509,9 @@ export function mainMainAgentOrchestration(argv: string[]): number {
     case 'run-loop': {
       const result = runMainAgentAutomaticLoop({
         projectRoot: root,
+        recordId: args.recordId,
+        requirementSetId: args.requirementSetId,
+        runId: args.runId,
         flow,
         stage,
         host,

@@ -75,6 +75,7 @@ import {
 } from '../../scripts/runtime-context-registry';
 import type { RuntimeFlowId } from '../../scripts/runtime-governance';
 import type { StageName } from '../../scripts/bmad-config';
+import type { ImplementationEntryGate } from '../../scripts/runtime-governance';
 
 export interface MinimalRegistryOpts {
   flow?: RuntimeFlowId;
@@ -85,7 +86,123 @@ export interface MinimalRegistryOpts {
   storySlug?: string;
   runId?: string;
   artifactRoot?: string;
+  artifactPath?: string;
+  sourceMode?: 'full_bmad' | 'seeded_solutioning' | 'standalone_story';
+  implementationEntryGate?: ImplementationEntryGate;
   latestReviewerCloseout?: ReviewerLatestCloseoutRecord;
+}
+
+export function writeMinimalRequirementRecordContext(
+  root: string,
+  opts: MinimalRegistryOpts = {}
+): string {
+  const flow = opts.flow ?? 'story';
+  const stage = opts.stage ?? 'specify';
+  const runId = opts.runId ?? `run-${flow}-${stage}`;
+  const requirementSetId = `REQSET-${runId}`.replace(/[^a-zA-Z0-9._-]+/g, '-');
+  const recordId = `REQ-${runId}`.replace(/[^a-zA-Z0-9._-]+/g, '-');
+  const recordRoot = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    requirementSetId
+  );
+  const recordPath = path.join(recordRoot, 'requirement-record.json');
+  const recoveryRoot = path.join(recordRoot, 'recovery');
+  fs.mkdirSync(recoveryRoot, { recursive: true });
+  fs.writeFileSync(
+    path.join(recoveryRoot, 'runtime-policy-snapshot.json'),
+    '{"kind":"runtime-policy-snapshot"}\n',
+    'utf8'
+  );
+  fs.writeFileSync(
+    path.join(recoveryRoot, 'recovery-context.json'),
+    '{"kind":"recovery-context"}\n',
+    'utf8'
+  );
+
+  const record = {
+    recordId,
+    requirementSetId,
+    status: 'user_confirmed',
+    flow,
+    stage,
+    updatedAt: '2026-05-19T00:00:00.000Z',
+    entryFlow: flow,
+    sourceMode: opts.sourceMode ?? 'full_bmad',
+    templateId: opts.templateId,
+    epicId: opts.epicId,
+    storyId: opts.storyId,
+    storySlug: opts.storySlug,
+    runId,
+    artifactRoot: opts.artifactRoot,
+    artifactPath: opts.artifactPath ?? opts.artifactRoot,
+    sourcePath: opts.artifactPath ?? opts.artifactRoot ?? 'docs/requirements.md',
+    sourceDocumentHash:
+      'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+    implementationConfirmationHash:
+      'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+    confirmationPageHash:
+      'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+    implementationEntryGate: opts.implementationEntryGate ?? {
+      gateName: 'implementation-readiness',
+      requestedFlow: flow === 'bugfix' || flow === 'standalone_tasks' ? flow : 'story',
+      recommendedFlow: flow === 'bugfix' || flow === 'standalone_tasks' ? flow : 'story',
+      decision: 'block',
+      readinessStatus: 'missing',
+      blockerCodes: ['missing_readiness_evidence'],
+      blockerSummary: ['缺少 implementation-readiness 所需证据'],
+      rerouteRequired: false,
+      rerouteReason: null,
+      evidenceSources: {
+        readinessReportPath: null,
+        remediationArtifactPath: null,
+        executionRecordPath: null,
+        authoritativeAuditReportPath: null,
+      },
+      semanticFingerprint: opts.artifactPath ?? opts.artifactRoot ?? 'docs/requirements.md',
+      evaluatedAt: '2026-05-19T00:00:00.000Z',
+    },
+    runtimePolicySnapshotRef: {
+      path: path
+        .relative(root, path.join(recoveryRoot, 'runtime-policy-snapshot.json'))
+        .replace(/\\/g, '/'),
+    },
+    recoveryContextRef: {
+      path: path.relative(root, path.join(recoveryRoot, 'recovery-context.json')).replace(/\\/g, '/'),
+    },
+    ...(opts.latestReviewerCloseout ? { latestReviewerCloseout: opts.latestReviewerCloseout } : {}),
+  };
+  fs.writeFileSync(recordPath, JSON.stringify(record, null, 2) + '\n', 'utf8');
+
+  const indexPath = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json');
+  fs.mkdirSync(path.dirname(indexPath), { recursive: true });
+  fs.writeFileSync(
+    indexPath,
+    JSON.stringify(
+      {
+        version: 1,
+        active: {
+          recordId,
+          requirementSetId,
+          runId,
+        },
+        records: [
+          {
+            recordId,
+            requirementSetId,
+            runId,
+            recordPath: path.relative(root, recordPath).replace(/\\/g, '/'),
+          },
+        ],
+      },
+      null,
+      2
+    ) + '\n',
+    'utf8'
+  );
+  return recordPath;
 }
 
 /** Write `_bmad-output/runtime/registry.json` + `context/project.json` under root. */
@@ -119,4 +236,5 @@ export function writeMinimalRegistryAndProjectContext(
   };
   registry.latestReviewerCloseout = opts.latestReviewerCloseout ?? null;
   writeRuntimeContextRegistry(root, registry);
+  writeMinimalRequirementRecordContext(root, opts);
 }

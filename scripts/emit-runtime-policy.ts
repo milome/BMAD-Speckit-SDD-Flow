@@ -1,12 +1,9 @@
 /**
  * CLI: stdout = stable JSON policy from the governance base policy plus the bmad-help routing facade.
  *
- * **唯一真相源**：`_bmad-output/runtime/registry.json` + activeScope 解析出的 scoped context JSON
- * （如 `project.json`）。不通过环境变量注入 flow/stage 或覆盖 registry 解析结果；不提供 CLI 参数覆盖 flow/stage（仅 `--cwd`）。
- *
- * Args: 仅 `--cwd <dir>` 用于指定项目根（定位 registry）；缺省为 `process.cwd()`。
- *
- * 若 registry 或 context 缺失/非法：exit 1，stderr 说明；stdout 为空。
+ * Target-state control source: Active Requirement Resolver -> ResolvedRuntimeContext.
+ * The resolver locates `_bmad-output/runtime/requirement-records/index.json` and reloads
+ * the requirement-scoped `requirement-record.json`; it does not read legacy runtime context.
  */
 /* eslint-disable no-console */
 
@@ -15,14 +12,15 @@ import * as path from 'node:path';
 import type { ResolveRuntimePolicyInput, RuntimeFlowId } from './runtime-governance';
 import { resolveBmadHelpRuntimePolicy } from './bmad-config';
 import type { StageName } from './bmad-config';
-import { readRuntimeContext } from './runtime-context';
 import {
   buildImplementationEntryIndexKey,
   recordImplementationEntryGate,
-  readRuntimeContextRegistry,
-  resolveActiveScope,
-  resolveContextPathFromActiveScope,
 } from './runtime-context-registry';
+import {
+  resolveActiveRequirement,
+  resolvedRuntimeContextToRuntimeContext,
+  type ResolvedRuntimeContext,
+} from './resolve-active-requirement';
 import { stableStringifyPolicy } from './stable-runtime-policy-json';
 
 function isDirectEmitRuntimePolicyCli(entry: string | undefined): boolean {
@@ -35,17 +33,24 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
     const a = argv[i];
     if (a === '--cwd' && argv[i + 1]) {
       out.cwd = argv[++i];
+    } else if (a === '--record-id' && argv[i + 1]) {
+      out.recordId = argv[++i];
+    } else if (a === '--requirement-set-id' && argv[i + 1]) {
+      out.requirementSetId = argv[++i];
+    } else if (a === '--run-id' && argv[i + 1]) {
+      out.runId = argv[++i];
     }
   }
   return out;
 }
 
 /**
- * Load flow/stage/identity **only** from registry-backed runtime context.
+ * Load flow/stage/identity **only** from ResolvedRuntimeContext.
  * @param {string} root - Project root
  * @returns {{
  *   resolvedContextPath: string;
  *   runtimeContext: import('./runtime-context').RuntimeContextFile;
+ *   resolvedRuntimeContext: import('./resolve-active-requirement').ResolvedRuntimeContext;
  *   flow: string;
  *   stage: string;
  *   templateId?: string;
@@ -54,11 +59,16 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
  *   storySlug?: string;
  *   runId?: string;
  *   artifactRoot?: string;
- * }} Registry-backed runtime policy context
+ * }} Requirement-record-backed runtime policy context
  */
-export function loadPolicyContextFromRegistry(root: string): {
+export function loadPolicyContextFromRegistry(root: string, options?: {
+  recordId?: string;
+  requirementSetId?: string;
+  runId?: string;
+}): {
   resolvedContextPath: string;
-  runtimeContext: ReturnType<typeof readRuntimeContext>;
+  runtimeContext: ReturnType<typeof resolvedRuntimeContextToRuntimeContext>;
+  resolvedRuntimeContext: ResolvedRuntimeContext;
   flow: string;
   stage: string;
   templateId?: string;
@@ -68,13 +78,17 @@ export function loadPolicyContextFromRegistry(root: string): {
   runId?: string;
   artifactRoot?: string;
 } {
-  const registry = readRuntimeContextRegistry(root);
-  const scope = resolveActiveScope(registry, registry.activeScope);
-  const resolvedContextPath = resolveContextPathFromActiveScope(registry, scope);
-  const runtimeContext = readRuntimeContext(root, resolvedContextPath);
+  const resolvedRuntimeContext = resolveActiveRequirement({
+    root,
+    recordId: options?.recordId,
+    requirementSetId: options?.requirementSetId,
+    runId: options?.runId,
+  });
+  const runtimeContext = resolvedRuntimeContextToRuntimeContext(resolvedRuntimeContext);
   return {
-    resolvedContextPath,
+    resolvedContextPath: resolvedRuntimeContext.recordPath,
     runtimeContext,
+    resolvedRuntimeContext,
     flow: runtimeContext.flow,
     stage: runtimeContext.stage,
     templateId: runtimeContext.templateId,
@@ -222,7 +236,11 @@ export function mainEmitRuntimePolicy(argv: string[]): number {
   try {
     let loaded: ReturnType<typeof loadPolicyContextFromRegistry>;
     try {
-      loaded = loadPolicyContextFromRegistry(root);
+      loaded = loadPolicyContextFromRegistry(root, {
+        recordId: args.recordId,
+        requirementSetId: args.requirementSetId,
+        runId: args.runId,
+      });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error(`emit-runtime-policy: ${msg}`);
@@ -239,14 +257,14 @@ export function mainEmitRuntimePolicy(argv: string[]): number {
 
     if (flow === 'story' && stage === 'implement' && !contextProvided) {
       console.error(
-        'emit-runtime-policy: story/implement requires storyId or runId in runtime context (registry-backed).'
+        'emit-runtime-policy: story/implement requires storyId or runId in ResolvedRuntimeContext.'
       );
       return 1;
     }
 
     if (!flow || !stage) {
       console.error(
-        'emit-runtime-policy: missing flow/stage in registry-backed runtime context (see _bmad-output/runtime/).'
+        'emit-runtime-policy: missing flow/stage in ResolvedRuntimeContext (see _bmad-output/runtime/requirement-records/).'
       );
       return 1;
     }
@@ -269,6 +287,7 @@ export function mainEmitRuntimePolicy(argv: string[]): number {
       projectRoot: root,
       runtimeContext: loaded.runtimeContext,
       runtimeContextPath: loaded.resolvedContextPath,
+      contextSource: 'ResolvedRuntimeContext',
     });
 
     for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -285,6 +304,7 @@ export function mainEmitRuntimePolicy(argv: string[]): number {
         projectRoot: root,
         runtimeContext: loaded.runtimeContext,
         runtimeContextPath: loaded.resolvedContextPath,
+        contextSource: 'ResolvedRuntimeContext',
       });
     }
 

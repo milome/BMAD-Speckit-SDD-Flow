@@ -7,6 +7,7 @@ import type { CanonicalSftSample } from '../../analytics/types';
 import type { RuntimeEvent } from '../../runtime/types';
 import type { RunScoreRecord } from '../../writer/types';
 import { buildRuntimeDashboardModel } from '../runtime-query';
+import { SIX_MENTAL_MODEL_ORDER } from '../six-model-projection';
 import {
   createGovernancePacketExecutionRecord,
   updateGovernancePacketExecutionRecord,
@@ -1356,5 +1357,59 @@ describe('runtime-aware dashboard query', () => {
     expect(snapshot.workboard.board_group_swimlanes?.todo).toHaveLength(1);
     expect(snapshot.workboard.board_group_swimlanes?.in_progress).toHaveLength(1);
     expect(snapshot.workboard.board_group_swimlanes?.done).toHaveLength(0);
+  });
+
+  it('exposes six mental models as the top-level dashboard read model with entryFlow drill-down only', () => {
+    const snapshot = buildRuntimeDashboardModel({
+      events: [
+        makeEvent({
+          run_id: 'run-e15-s1-story',
+          event_id: 'evt-six-model-story',
+          timestamp: '2026-03-28T00:00:00.000Z',
+          payload: { status: 'pending' },
+          scope: {
+            story_key: '15-1-runtime-dashboard-sft',
+            epic_id: 'epic-15',
+            story_id: '15-1-runtime-dashboard-sft',
+            flow: 'story',
+          },
+        }),
+      ],
+      scoreRecords: [
+        makeScoreRecord({
+          run_id: 'run-e15-s1-story',
+          source_path: 'specs/epic-15/story-1-runtime-dashboard-sft/spec.md',
+        }),
+        makeScoreRecord({
+          run_id: 'run-bugfix-queue-001',
+          source_path: '_bmad-output/implementation-artifacts/_orphan/bugfix/fix-runtime-dashboard.md',
+          timestamp: '2026-03-28T00:30:00.000Z',
+        }),
+        makeScoreRecord({
+          run_id: 'run-standalone-ops-001',
+          source_path: '_bmad-output/implementation-artifacts/_orphan/standalone_tasks/improve-dashboard.md',
+          timestamp: '2026-03-28T00:40:00.000Z',
+        }),
+      ],
+    });
+
+    expect(snapshot.six_model_projection.models.map((model) => model.id)).toEqual(
+      SIX_MENTAL_MODEL_ORDER
+    );
+    expect(snapshot.six_model_projection.canAffectControlFlow).toBe(false);
+    expect(snapshot.six_model_projection.controlAuthority).toMatchObject({
+      allowedControlSource: 'requirement-record.json',
+      dashboardCanCloseRequirement: false,
+    });
+    expect(snapshot.six_model_projection.controlAuthority.forbiddenCompletionSources).toEqual(
+      expect.arrayContaining(['dashboard_health_score', 'score_record', 'legacy_gate_report'])
+    );
+    expect(snapshot.six_model_projection.models.map((model) => model.id)).not.toEqual(
+      expect.arrayContaining(['story', 'bugfix', 'standalone_tasks', 'epic'])
+    );
+    expect(snapshot.six_model_projection.entryFlowSlices.stories).toHaveLength(1);
+    expect(snapshot.six_model_projection.entryFlowSlices.bugfixes).toHaveLength(1);
+    expect(snapshot.six_model_projection.entryFlowSlices.standaloneTasks).toHaveLength(1);
+    expect(snapshot.six_model_projection.entryFlowSlices.epics).toHaveLength(1);
   });
 });

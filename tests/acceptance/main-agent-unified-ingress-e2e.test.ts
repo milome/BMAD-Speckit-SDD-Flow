@@ -15,6 +15,7 @@ import { readOrchestrationState } from '../../scripts/orchestration-state';
 
 function prepareRoot(hostKind: MainAgentHostKind, hookAvailable: boolean): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), `main-agent-ingress-${hostKind}-`));
+  const recordId = `REQ-INGRESS-${hostKind.toUpperCase()}`;
   writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
   writeRuntimeContext(
     root,
@@ -26,6 +27,36 @@ function prepareRoot(hostKind: MainAgentHostKind, hookAvailable: boolean): strin
       storyId: `S-${hostKind}`,
       runId: `ingress-${hostKind}`,
     })
+  );
+  const requirementRecordDir = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    recordId
+  );
+  fs.mkdirSync(requirementRecordDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(requirementRecordDir, 'requirement-record.json'),
+    JSON.stringify(
+      {
+        recordId,
+        requirementSetId: recordId,
+        status: 'user_confirmed',
+        flow: 'story',
+        stage: 'implement',
+        entryFlow: 'story',
+        entryFlowClass: 'full_story_entry',
+        workflowAdapter: 'bmad',
+        sourceMode: 'full_bmad',
+        sourcePath: `specs/${recordId}/story.md`,
+        runId: `ingress-${hostKind}`,
+        storyId: `S-${hostKind}`,
+      },
+      null,
+      2
+    ) + '\n',
+    'utf8'
   );
   if (hookAvailable && hostKind === 'cursor') {
     fs.mkdirSync(path.join(root, '.cursor'), { recursive: true });
@@ -54,6 +85,16 @@ function prepareRoot(hostKind: MainAgentHostKind, hookAvailable: boolean): strin
     );
   }
   return root;
+}
+
+function ingressInput(root: string, hostKind: MainAgentHostKind) {
+  return {
+    projectRoot: root,
+    recordId: `REQ-INGRESS-${hostKind.toUpperCase()}`,
+    hostKind,
+    flow: 'story' as const,
+    stage: 'implement',
+  };
 }
 
 function writeFakeCodexBinary(root: string): string {
@@ -92,13 +133,9 @@ describe('main-agent unified ingress e2e', () => {
   it('routes hooks-enabled cursor through hook_ingress and the shared control plane', () => {
     const root = prepareRoot('cursor', true);
     try {
-      const receipt = runUnifiedIngress({
-        projectRoot: root,
-        hostKind: 'cursor',
-        flow: 'story',
-        stage: 'implement',
-      });
+      const receipt = runUnifiedIngress(ingressInput(root, 'cursor'));
 
+      expect(receipt.recordId).toBe('REQ-INGRESS-CURSOR');
       expect(receipt.hostMode).toBe('hooks_enabled');
       expect(receipt.orchestrationEntry).toBe('hook_ingress');
       expect(receipt.degradationLevel).toBe('none');
@@ -119,12 +156,7 @@ describe('main-agent unified ingress e2e', () => {
   it('degrades missing hooks to cli_ingress without changing the control plane', () => {
     const root = prepareRoot('claude', false);
     try {
-      const receipt = runUnifiedIngress({
-        projectRoot: root,
-        hostKind: 'claude',
-        flow: 'story',
-        stage: 'implement',
-      });
+      const receipt = runUnifiedIngress(ingressInput(root, 'claude'));
 
       expect(receipt.hostMode).toBe('no_hooks');
       expect(receipt.orchestrationEntry).toBe('cli_ingress');
@@ -146,6 +178,9 @@ describe('main-agent unified ingress e2e', () => {
       expect(receipt.hostRecovery.after_parity_snapshot.inspect).toBeNull();
       expect(receipt.hostRecovery.recovery_log_path).toEqual(expect.any(String));
       expect(fs.existsSync(receipt.hostRecovery.recovery_log_path as string)).toBe(true);
+      expect((receipt.hostRecovery.recovery_log_path as string).replace(/\\/g, '/')).toContain(
+        '_bmad-output/runtime/requirement-records/REQ-INGRESS-CLAUDE/artifacts/ingress/recovery'
+      );
       expect(receipt.controlPlane).toBe('main-agent-orchestration');
       expect(receipt.runLoop.status).toBe('completed');
     } finally {
@@ -157,10 +192,7 @@ describe('main-agent unified ingress e2e', () => {
     const root = prepareRoot('cursor', true);
     try {
       const receipt = runUnifiedIngress({
-        projectRoot: root,
-        hostKind: 'cursor',
-        flow: 'story',
-        stage: 'implement',
+        ...ingressInput(root, 'cursor'),
         forceNoHooks: true,
       });
 
@@ -206,10 +238,7 @@ describe('main-agent unified ingress e2e', () => {
     try {
       fs.writeFileSync(path.join(root, '.cursor', 'hooks.json'), '{not-json}\n', 'utf8');
       const receipt = runUnifiedIngress({
-        projectRoot: root,
-        hostKind: 'cursor',
-        flow: 'story',
-        stage: 'implement',
+        ...ingressInput(root, 'cursor'),
         forceNoHooks: true,
       });
 
@@ -235,10 +264,7 @@ describe('main-agent unified ingress e2e', () => {
     const transportRoot = prepareRoot('cursor', true);
     try {
       const hostPartial = runUnifiedIngress({
-        projectRoot: hostPartialRoot,
-        hostKind: 'codex',
-        flow: 'story',
-        stage: 'implement',
+        ...ingressInput(hostPartialRoot, 'codex'),
         forceHostPartial: true,
       });
       expect(hostPartial.degradationLevel).toBe('host_partial');
@@ -246,10 +272,7 @@ describe('main-agent unified ingress e2e', () => {
       expect(hostPartial.hostRecovery.parity_diff.degradationCleared).toBe(false);
 
       const transport = runUnifiedIngress({
-        projectRoot: transportRoot,
-        hostKind: 'cursor',
-        flow: 'story',
-        stage: 'implement',
+        ...ingressInput(transportRoot, 'cursor'),
         forceTransportDegraded: true,
       });
       expect(transport.degradationLevel).toBe('transport_degraded');
@@ -266,10 +289,7 @@ describe('main-agent unified ingress e2e', () => {
     try {
       expect(() =>
         runUnifiedIngress({
-          projectRoot: root,
-          hostKind: 'cursor',
-          flow: 'story',
-          stage: 'implement',
+          ...ingressInput(root, 'cursor'),
           forceNoHooks: true,
           forceStateWriteFailure: true,
         })
@@ -283,10 +303,7 @@ describe('main-agent unified ingress e2e', () => {
     const root = prepareRoot('cursor', true);
     try {
       const receipt = runUnifiedIngress({
-        projectRoot: root,
-        hostKind: 'cursor',
-        flow: 'story',
-        stage: 'implement',
+        ...ingressInput(root, 'cursor'),
         forceNoHooks: true,
         recoveryInspectHostOverride: 'codex',
       });
@@ -314,12 +331,7 @@ describe('main-agent unified ingress e2e', () => {
     try {
       process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = 'true';
       process.env.CODEX_WORKER_ADAPTER_BIN = writeFakeCodexBinary(root);
-      const receipt = runUnifiedIngress({
-        projectRoot: root,
-        hostKind: 'codex',
-        flow: 'story',
-        stage: 'implement',
-      });
+      const receipt = runUnifiedIngress(ingressInput(root, 'codex'));
 
       expect(receipt.hostMode).toBe('no_hooks');
       expect(receipt.orchestrationEntry).toBe('cli_ingress');
@@ -341,6 +353,24 @@ describe('main-agent unified ingress e2e', () => {
       } else {
         process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = previousAllow;
       }
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('requires a requirement record id instead of writing legacy global ingress outputs', () => {
+    const root = prepareRoot('cursor', true);
+    try {
+      expect(() =>
+        runUnifiedIngress({
+          projectRoot: root,
+          recordId: '',
+          hostKind: 'cursor',
+          flow: 'story',
+          stage: 'implement',
+        })
+      ).toThrow(/recordId is required/u);
+      expect(fs.existsSync(path.join(root, '_bmad-output', 'runtime', 'ingress'))).toBe(false);
+    } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
   });

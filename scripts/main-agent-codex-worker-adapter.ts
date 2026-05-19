@@ -138,9 +138,12 @@ function resolveCodexAgentSpec(
   return null;
 }
 
-function resolveRuntimeGovernanceBlock(projectRoot: string): RuntimeGovernanceResolution {
+function resolveRuntimeGovernanceBlock(
+  projectRoot: string,
+  options?: { recordId?: string; requirementSetId?: string; runId?: string }
+): RuntimeGovernanceResolution {
   try {
-    const loaded = loadPolicyContextFromRegistry(projectRoot);
+    const loaded = loadPolicyContextFromRegistry(projectRoot, options);
     const policy = resolveBmadHelpRuntimePolicy({
       flow: loaded.flow as RuntimeFlowId,
       stage: loaded.stage as StageName,
@@ -412,6 +415,9 @@ function copyTaskReportIfNeeded(sourcePath: string, targetPath: string): void {
 
 export function runCodexWorkerAdapter(input: {
   projectRoot: string;
+  recordId?: string;
+  requirementSetId?: string;
+  runId?: string;
   packetPath: string;
   taskReportPath?: string;
   smoke?: boolean;
@@ -474,7 +480,11 @@ export function runCodexWorkerAdapter(input: {
       actualFilesChanged: [],
     };
   }
-  const runtimeGovernance = resolveRuntimeGovernanceBlock(projectRoot);
+  const runtimeGovernance = resolveRuntimeGovernanceBlock(projectRoot, {
+    recordId: input.recordId,
+    requirementSetId: input.requirementSetId,
+    runId: input.runId,
+  });
   if (
     runtimeGovernance.status === 'blocked' &&
     !(input.smoke && input.allowPolicyFailureForSmoke)
