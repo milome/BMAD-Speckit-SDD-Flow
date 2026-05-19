@@ -1,0 +1,17 @@
+$ npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-functional-resume-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume --checkpoint-id checkpoint-trace-012-001 --expected-source-document-hash sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294 --expected-implementation-confirmation-hash sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec --expected-architecture-confirmation-hash sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1 --generated-at 2026-05-19T21:15:00.000+08:00 --generated-by codex --json
+startedAt=2026-05-19T13:14:48.252Z
+completedAt=2026-05-19T13:14:48.994Z
+exitCode=0
+
+--- stdout ---
+{
+  "ok": true,
+  "decision": "pass",
+  "resumeAllowed": true,
+  "checkpointPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume/trace-checkpoints.jsonl",
+  "resumePacketPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume/resume-packets.jsonl",
+  "proofPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume/functional-resume-proof.json",
+  "blockingIssues": []
+}
+
+--- stderr ---

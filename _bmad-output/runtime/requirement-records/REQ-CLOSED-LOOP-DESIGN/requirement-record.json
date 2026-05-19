@@ -57,7 +57,7 @@
     }
   ],
   "lastEventType": "execution_iteration_recorded",
-  "updatedAt": "2026-05-19T21:06:00.000+08:00",
+  "updatedAt": "2026-05-19T21:16:00.000+08:00",
   "architectureConfirmations": [
     {
       "eventType": "architecture_confirmation_recorded",
@@ -4726,6 +4726,457 @@
       "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
       "architectureConfirmationHash": "sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
       "recordedAt": "2026-05-19T21:06:00.000+08:00",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "execution_iteration_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "executionIterationId": "exec-trace-012-functional-resume-001",
+      "runId": "trace-012-functional-resume-001",
+      "status": "done",
+      "traceRows": [
+        "TRACE-012"
+      ],
+      "taskRefs": [
+        "TASK-GATES-CLOSEOUT-RERUN",
+        "TASK-FUNCTIONAL-RESUME"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-009"
+      ],
+      "filesChanged": [
+        "scripts/main-agent-functional-resume-check.ts",
+        "tests/acceptance/main-agent-functional-resume-check.test.ts"
+      ],
+      "implementationDelta": {
+        "behaviorAffecting": true,
+        "filesChanged": [
+          "scripts/main-agent-functional-resume-check.ts",
+          "tests/acceptance/main-agent-functional-resume-check.test.ts"
+        ],
+        "diffSummaryRef": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/implementation-delta-summary.md",
+        "negativeAssertionArtifactRefs": [
+          {
+            "artifactType": "negative_assertion_report",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/negative-assertions.md",
+            "hash": "sha256:90a7506e5e130f5ca9533e0087e4b80fa44aae7e710368b1c7a6a4c1ef72c7ea",
+            "producer": "TRACE-012",
+            "purpose": "Documents negative assertions covered by TRACE-012 functional resume tests.",
+            "relatedRequirementIds": [
+              "MUST-020",
+              "NEG-005",
+              "EVD-001",
+              "EVD-004",
+              "EVD-009",
+              "TRACE-012"
+            ],
+            "status": "active",
+            "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+            "outputVersion": "trace-012-functional-resume-001"
+          }
+        ]
+      },
+      "diffSummary": "Added functional resume checker that derives checkpoint, resume packet, and proof from controlled RequirementRecord fields; added fail-closed tests for hash drift, open blockers, pending rerun, open RCA, and artifact hash mismatch.",
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-functional-resume-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume --checkpoint-id checkpoint-trace-012-001 --expected-source-document-hash sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294 --expected-implementation-confirmation-hash sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec --expected-architecture-confirmation-hash sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1 --generated-at 2026-05-19T21:15:00.000+08:00 --generated-by codex --json",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:48.252Z",
+          "completedAt": "2026-05-19T13:14:48.994Z",
+          "outputSummary": "$ npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-functional-resume-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume --checkpoint-id checkpoint-trace-012-001 --expected-source-document-hash sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294 --expected-implementation-confirmation-hash sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec --expected-architecture-confirmation-hash sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1 --generated-at 2026-05-19T21:15:00.000+08:00 --generated-by codex --json startedAt=2026-05-19T13:14:48.252Z completedAt=2026-05-19T13:14:48.994Z exitCode=0 --- stdout --- { \"ok\": true, \"decision\": \"pass\", \"resumeAllowed\": true, \"checkpointPath\": \"D:/Dev/BMAD-Speckit-SD"
+        },
+        {
+          "commandId": "CMD-TRACE-012-FUNCTIONAL-RESUME-TEST",
+          "command": "npx vitest run tests/acceptance/main-agent-functional-resume-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:48.995Z",
+          "completedAt": "2026-05-19T13:14:51.508Z",
+          "outputSummary": "$ npx vitest run tests/acceptance/main-agent-functional-resume-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts startedAt=2026-05-19T13:14:48.995Z completedAt=2026-05-19T13:14:51.508Z exitCode=0 --- stdout --- \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m { \"ok\": true, \"decision\": \"pass\", \"resumeAllowed\": true, \"checkpointPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-G3fbrv/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/trace-checkpoints.jsonl\", \"resumePacketPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-G3fbrv/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/resume-packets.jsonl\", \"proofPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-G3fbrv/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/functional-resume-proof.json\", \"blockingIssues\": [] } { \"ok\": true, \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/delivery-c"
+        },
+        {
+          "commandId": "CMD-RENDER-CONFIRMATION",
+          "command": "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:51.509Z",
+          "completedAt": "2026-05-19T13:14:51.835Z",
+          "outputSummary": "$ node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json startedAt=2026-05-19T13:14:51.509Z completedAt=2026-05-19T13:14:51.835Z exitCode=0 --- stdout --- { \"recordId\": \"REQ-CLOSED-LOOP-DESIGN\", \"sourcePath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/docs/design/需求实现完整性门禁与重跑闭环设计.md\", \"sourceDocumentHash\": \"sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294\", \"implementationConfirmationHash\": \"sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec\", \"confirmationPageHash\": \"sha256:4195bc39582229f5a6dea6d15aec2e869d1cb635195a1e0c732b54004d7b141a\", \"language\": \""
+        },
+        {
+          "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:51.837Z",
+          "completedAt": "2026-05-19T13:14:59.245Z",
+          "outputSummary": "$ npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts startedAt=2026-05-19T13:14:51.837Z completedAt=2026-05-19T13:14:59.245Z exitCode=0 --- stdout --- \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m31 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 5046\u001b[2mms\u001b[22m\u001b[39m \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m \u001b[2m Tests \u001b[22m \u001b[1m\u001b[32m31 passed\u001b[39m\u001b[22m\u001b[90m (31)\u001b[39m \u001b[2m Start at \u001b[22m 21:14:53 \u001b[2m Duration \u001b[22m 5.32s\u001b[2m (transform 74ms, setup 0ms, import 108ms, tests 5.05s, environment 0ms)\u001b[22m --- stderr ---"
+        },
+        {
+          "commandId": "CMD-ENCODING-GATE",
+          "command": "node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:59.246Z",
+          "completedAt": "2026-05-19T13:14:59.687Z",
+          "outputSummary": "$ node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js startedAt=2026-05-19T13:14:59.246Z completedAt=2026-05-19T13:14:59.687Z exitCode=0 --- stdout --- checkedFiles=2738 findings=0 --- stderr ---"
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "functional_resume_proof",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume/functional-resume-proof.json",
+          "contentHash": "sha256:392e18e52f1d30a065d8bff2540430426a89e3e342b3cd83a262e89f5014a4e7",
+          "producer": "TRACE-012",
+          "purpose": "Proves functional resume is derived from controlled RequirementRecord sources.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "trace_checkpoint_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume/trace-checkpoints.jsonl",
+          "contentHash": "sha256:aeee93fefe77434ac41090ee31985871d14a275116fbf8b048364209a3711e5f",
+          "producer": "TRACE-012",
+          "purpose": "Append-only traceRows checkpoint evidence for resume.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "resume_packet_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume/resume-packets.jsonl",
+          "contentHash": "sha256:d8c43d3c302d4d61fbfef67a3d425ab18c29649a10ade870203b7a35bf91e07b",
+          "producer": "TRACE-012",
+          "purpose": "Append-only resume packet evidence for fail-closed resume decisions.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_manifest",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/command-runs.json",
+          "contentHash": "sha256:09069316e720faad94acae7b58008ed9d774d1171c4ddadb89f72f25bc0055a0",
+          "producer": "TRACE-012",
+          "purpose": "Captures TRACE-012 validation command runs with exit codes and timestamps.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "implementation_delta_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/implementation-delta-summary.md",
+          "contentHash": "sha256:caf0ecb21cee8db8d90ca3e9f0fd1cf7e299e50722f774b91d0c1c672386ecba",
+          "producer": "TRACE-012",
+          "purpose": "Summarizes TRACE-012 implementation delta and changed paths.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK.log",
+          "contentHash": "sha256:0819263dd4878d14d67f3938476b0460a9b1a88e6c0537eb8c7e3bbdabbf72ed",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-TRACE-012-FUNCTIONAL-RESUME-TEST.log",
+          "contentHash": "sha256:1934afee86079ec459aa4d08b460090b828ec3a8816eb84ca10890019e6bc6c7",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-TRACE-012-FUNCTIONAL-RESUME-TEST",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-RENDER-CONFIRMATION.log",
+          "contentHash": "sha256:65a7a256f0012b4d60fce1cae71002ed5438912b2d4345fba04215feaf4f775e",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-RENDER-CONFIRMATION",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-TRACE-BINDING-ACCEPTANCE.log",
+          "contentHash": "sha256:97fb296c30d4b69072b46c8027db62dafa791874114ded0cb04fe6e7ed4f35f0",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-TRACE-BINDING-ACCEPTANCE",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-ENCODING-GATE.log",
+          "contentHash": "sha256:69ccbd9016f3c7176c722f282dafbb50cff936099e4e7a695a35c40e11e785e2",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-ENCODING-GATE",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-012"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-001"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-012-FUNCTIONAL-RESUME-TEST"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-RENDER-CONFIRMATION"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-BINDING-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-ENCODING-GATE"
+        }
+      ],
+      "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+      "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
+      "architectureConfirmationHash": "sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "recordedAt": "2026-05-19T21:16:00.000+08:00",
       "recordedBy": "codex"
     }
   ],
@@ -31026,6 +31477,2051 @@
       ],
       "recordedAt": "2026-05-19T21:06:00.000+08:00",
       "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "MUST-020",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-012"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-009"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-functional-resume-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume --checkpoint-id checkpoint-trace-012-001 --expected-source-document-hash sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294 --expected-implementation-confirmation-hash sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec --expected-architecture-confirmation-hash sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1 --generated-at 2026-05-19T21:15:00.000+08:00 --generated-by codex --json",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:48.252Z",
+          "completedAt": "2026-05-19T13:14:48.994Z",
+          "outputSummary": "$ npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-functional-resume-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume --checkpoint-id checkpoint-trace-012-001 --expected-source-document-hash sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294 --expected-implementation-confirmation-hash sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec --expected-architecture-confirmation-hash sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1 --generated-at 2026-05-19T21:15:00.000+08:00 --generated-by codex --json startedAt=2026-05-19T13:14:48.252Z completedAt=2026-05-19T13:14:48.994Z exitCode=0 --- stdout --- { \"ok\": true, \"decision\": \"pass\", \"resumeAllowed\": true, \"checkpointPath\": \"D:/Dev/BMAD-Speckit-SD"
+        },
+        {
+          "commandId": "CMD-TRACE-012-FUNCTIONAL-RESUME-TEST",
+          "command": "npx vitest run tests/acceptance/main-agent-functional-resume-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:48.995Z",
+          "completedAt": "2026-05-19T13:14:51.508Z",
+          "outputSummary": "$ npx vitest run tests/acceptance/main-agent-functional-resume-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts startedAt=2026-05-19T13:14:48.995Z completedAt=2026-05-19T13:14:51.508Z exitCode=0 --- stdout --- \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m { \"ok\": true, \"decision\": \"pass\", \"resumeAllowed\": true, \"checkpointPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-G3fbrv/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/trace-checkpoints.jsonl\", \"resumePacketPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-G3fbrv/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/resume-packets.jsonl\", \"proofPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-G3fbrv/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/functional-resume-proof.json\", \"blockingIssues\": [] } { \"ok\": true, \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/delivery-c"
+        },
+        {
+          "commandId": "CMD-RENDER-CONFIRMATION",
+          "command": "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:51.509Z",
+          "completedAt": "2026-05-19T13:14:51.835Z",
+          "outputSummary": "$ node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json startedAt=2026-05-19T13:14:51.509Z completedAt=2026-05-19T13:14:51.835Z exitCode=0 --- stdout --- { \"recordId\": \"REQ-CLOSED-LOOP-DESIGN\", \"sourcePath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/docs/design/需求实现完整性门禁与重跑闭环设计.md\", \"sourceDocumentHash\": \"sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294\", \"implementationConfirmationHash\": \"sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec\", \"confirmationPageHash\": \"sha256:4195bc39582229f5a6dea6d15aec2e869d1cb635195a1e0c732b54004d7b141a\", \"language\": \""
+        },
+        {
+          "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:51.837Z",
+          "completedAt": "2026-05-19T13:14:59.245Z",
+          "outputSummary": "$ npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts startedAt=2026-05-19T13:14:51.837Z completedAt=2026-05-19T13:14:59.245Z exitCode=0 --- stdout --- \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m31 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 5046\u001b[2mms\u001b[22m\u001b[39m \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m \u001b[2m Tests \u001b[22m \u001b[1m\u001b[32m31 passed\u001b[39m\u001b[22m\u001b[90m (31)\u001b[39m \u001b[2m Start at \u001b[22m 21:14:53 \u001b[2m Duration \u001b[22m 5.32s\u001b[2m (transform 74ms, setup 0ms, import 108ms, tests 5.05s, environment 0ms)\u001b[22m --- stderr ---"
+        },
+        {
+          "commandId": "CMD-ENCODING-GATE",
+          "command": "node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:59.246Z",
+          "completedAt": "2026-05-19T13:14:59.687Z",
+          "outputSummary": "$ node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js startedAt=2026-05-19T13:14:59.246Z completedAt=2026-05-19T13:14:59.687Z exitCode=0 --- stdout --- checkedFiles=2738 findings=0 --- stderr ---"
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "functional_resume_proof",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume/functional-resume-proof.json",
+          "contentHash": "sha256:392e18e52f1d30a065d8bff2540430426a89e3e342b3cd83a262e89f5014a4e7",
+          "producer": "TRACE-012",
+          "purpose": "Proves functional resume is derived from controlled RequirementRecord sources.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "trace_checkpoint_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume/trace-checkpoints.jsonl",
+          "contentHash": "sha256:aeee93fefe77434ac41090ee31985871d14a275116fbf8b048364209a3711e5f",
+          "producer": "TRACE-012",
+          "purpose": "Append-only traceRows checkpoint evidence for resume.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "resume_packet_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume/resume-packets.jsonl",
+          "contentHash": "sha256:d8c43d3c302d4d61fbfef67a3d425ab18c29649a10ade870203b7a35bf91e07b",
+          "producer": "TRACE-012",
+          "purpose": "Append-only resume packet evidence for fail-closed resume decisions.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_manifest",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/command-runs.json",
+          "contentHash": "sha256:09069316e720faad94acae7b58008ed9d774d1171c4ddadb89f72f25bc0055a0",
+          "producer": "TRACE-012",
+          "purpose": "Captures TRACE-012 validation command runs with exit codes and timestamps.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "implementation_delta_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/implementation-delta-summary.md",
+          "contentHash": "sha256:caf0ecb21cee8db8d90ca3e9f0fd1cf7e299e50722f774b91d0c1c672386ecba",
+          "producer": "TRACE-012",
+          "purpose": "Summarizes TRACE-012 implementation delta and changed paths.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK.log",
+          "contentHash": "sha256:0819263dd4878d14d67f3938476b0460a9b1a88e6c0537eb8c7e3bbdabbf72ed",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-TRACE-012-FUNCTIONAL-RESUME-TEST.log",
+          "contentHash": "sha256:1934afee86079ec459aa4d08b460090b828ec3a8816eb84ca10890019e6bc6c7",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-TRACE-012-FUNCTIONAL-RESUME-TEST",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-RENDER-CONFIRMATION.log",
+          "contentHash": "sha256:65a7a256f0012b4d60fce1cae71002ed5438912b2d4345fba04215feaf4f775e",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-RENDER-CONFIRMATION",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-TRACE-BINDING-ACCEPTANCE.log",
+          "contentHash": "sha256:97fb296c30d4b69072b46c8027db62dafa791874114ded0cb04fe6e7ed4f35f0",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-TRACE-BINDING-ACCEPTANCE",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-ENCODING-GATE.log",
+          "contentHash": "sha256:69ccbd9016f3c7176c722f282dafbb50cff936099e4e7a695a35c40e11e785e2",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-ENCODING-GATE",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-012"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-001"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-012-FUNCTIONAL-RESUME-TEST"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-RENDER-CONFIRMATION"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-BINDING-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-ENCODING-GATE"
+        }
+      ],
+      "recordedAt": "2026-05-19T21:16:00.000+08:00",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "NEG-005",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-012"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-009"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-functional-resume-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume --checkpoint-id checkpoint-trace-012-001 --expected-source-document-hash sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294 --expected-implementation-confirmation-hash sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec --expected-architecture-confirmation-hash sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1 --generated-at 2026-05-19T21:15:00.000+08:00 --generated-by codex --json",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:48.252Z",
+          "completedAt": "2026-05-19T13:14:48.994Z",
+          "outputSummary": "$ npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-functional-resume-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume --checkpoint-id checkpoint-trace-012-001 --expected-source-document-hash sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294 --expected-implementation-confirmation-hash sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec --expected-architecture-confirmation-hash sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1 --generated-at 2026-05-19T21:15:00.000+08:00 --generated-by codex --json startedAt=2026-05-19T13:14:48.252Z completedAt=2026-05-19T13:14:48.994Z exitCode=0 --- stdout --- { \"ok\": true, \"decision\": \"pass\", \"resumeAllowed\": true, \"checkpointPath\": \"D:/Dev/BMAD-Speckit-SD"
+        },
+        {
+          "commandId": "CMD-TRACE-012-FUNCTIONAL-RESUME-TEST",
+          "command": "npx vitest run tests/acceptance/main-agent-functional-resume-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:48.995Z",
+          "completedAt": "2026-05-19T13:14:51.508Z",
+          "outputSummary": "$ npx vitest run tests/acceptance/main-agent-functional-resume-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts startedAt=2026-05-19T13:14:48.995Z completedAt=2026-05-19T13:14:51.508Z exitCode=0 --- stdout --- \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m { \"ok\": true, \"decision\": \"pass\", \"resumeAllowed\": true, \"checkpointPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-G3fbrv/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/trace-checkpoints.jsonl\", \"resumePacketPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-G3fbrv/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/resume-packets.jsonl\", \"proofPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-G3fbrv/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/functional-resume-proof.json\", \"blockingIssues\": [] } { \"ok\": true, \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/delivery-c"
+        },
+        {
+          "commandId": "CMD-RENDER-CONFIRMATION",
+          "command": "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:51.509Z",
+          "completedAt": "2026-05-19T13:14:51.835Z",
+          "outputSummary": "$ node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json startedAt=2026-05-19T13:14:51.509Z completedAt=2026-05-19T13:14:51.835Z exitCode=0 --- stdout --- { \"recordId\": \"REQ-CLOSED-LOOP-DESIGN\", \"sourcePath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/docs/design/需求实现完整性门禁与重跑闭环设计.md\", \"sourceDocumentHash\": \"sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294\", \"implementationConfirmationHash\": \"sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec\", \"confirmationPageHash\": \"sha256:4195bc39582229f5a6dea6d15aec2e869d1cb635195a1e0c732b54004d7b141a\", \"language\": \""
+        },
+        {
+          "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:51.837Z",
+          "completedAt": "2026-05-19T13:14:59.245Z",
+          "outputSummary": "$ npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts startedAt=2026-05-19T13:14:51.837Z completedAt=2026-05-19T13:14:59.245Z exitCode=0 --- stdout --- \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m31 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 5046\u001b[2mms\u001b[22m\u001b[39m \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m \u001b[2m Tests \u001b[22m \u001b[1m\u001b[32m31 passed\u001b[39m\u001b[22m\u001b[90m (31)\u001b[39m \u001b[2m Start at \u001b[22m 21:14:53 \u001b[2m Duration \u001b[22m 5.32s\u001b[2m (transform 74ms, setup 0ms, import 108ms, tests 5.05s, environment 0ms)\u001b[22m --- stderr ---"
+        },
+        {
+          "commandId": "CMD-ENCODING-GATE",
+          "command": "node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:59.246Z",
+          "completedAt": "2026-05-19T13:14:59.687Z",
+          "outputSummary": "$ node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js startedAt=2026-05-19T13:14:59.246Z completedAt=2026-05-19T13:14:59.687Z exitCode=0 --- stdout --- checkedFiles=2738 findings=0 --- stderr ---"
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "functional_resume_proof",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume/functional-resume-proof.json",
+          "contentHash": "sha256:392e18e52f1d30a065d8bff2540430426a89e3e342b3cd83a262e89f5014a4e7",
+          "producer": "TRACE-012",
+          "purpose": "Proves functional resume is derived from controlled RequirementRecord sources.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "trace_checkpoint_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume/trace-checkpoints.jsonl",
+          "contentHash": "sha256:aeee93fefe77434ac41090ee31985871d14a275116fbf8b048364209a3711e5f",
+          "producer": "TRACE-012",
+          "purpose": "Append-only traceRows checkpoint evidence for resume.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "resume_packet_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume/resume-packets.jsonl",
+          "contentHash": "sha256:d8c43d3c302d4d61fbfef67a3d425ab18c29649a10ade870203b7a35bf91e07b",
+          "producer": "TRACE-012",
+          "purpose": "Append-only resume packet evidence for fail-closed resume decisions.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_manifest",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/command-runs.json",
+          "contentHash": "sha256:09069316e720faad94acae7b58008ed9d774d1171c4ddadb89f72f25bc0055a0",
+          "producer": "TRACE-012",
+          "purpose": "Captures TRACE-012 validation command runs with exit codes and timestamps.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "implementation_delta_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/implementation-delta-summary.md",
+          "contentHash": "sha256:caf0ecb21cee8db8d90ca3e9f0fd1cf7e299e50722f774b91d0c1c672386ecba",
+          "producer": "TRACE-012",
+          "purpose": "Summarizes TRACE-012 implementation delta and changed paths.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK.log",
+          "contentHash": "sha256:0819263dd4878d14d67f3938476b0460a9b1a88e6c0537eb8c7e3bbdabbf72ed",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-TRACE-012-FUNCTIONAL-RESUME-TEST.log",
+          "contentHash": "sha256:1934afee86079ec459aa4d08b460090b828ec3a8816eb84ca10890019e6bc6c7",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-TRACE-012-FUNCTIONAL-RESUME-TEST",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-RENDER-CONFIRMATION.log",
+          "contentHash": "sha256:65a7a256f0012b4d60fce1cae71002ed5438912b2d4345fba04215feaf4f775e",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-RENDER-CONFIRMATION",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-TRACE-BINDING-ACCEPTANCE.log",
+          "contentHash": "sha256:97fb296c30d4b69072b46c8027db62dafa791874114ded0cb04fe6e7ed4f35f0",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-TRACE-BINDING-ACCEPTANCE",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-ENCODING-GATE.log",
+          "contentHash": "sha256:69ccbd9016f3c7176c722f282dafbb50cff936099e4e7a695a35c40e11e785e2",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-ENCODING-GATE",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-012"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-001"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-012-FUNCTIONAL-RESUME-TEST"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-RENDER-CONFIRMATION"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-BINDING-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-ENCODING-GATE"
+        }
+      ],
+      "recordedAt": "2026-05-19T21:16:00.000+08:00",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "EVD-001",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-012"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-009"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-functional-resume-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume --checkpoint-id checkpoint-trace-012-001 --expected-source-document-hash sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294 --expected-implementation-confirmation-hash sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec --expected-architecture-confirmation-hash sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1 --generated-at 2026-05-19T21:15:00.000+08:00 --generated-by codex --json",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:48.252Z",
+          "completedAt": "2026-05-19T13:14:48.994Z",
+          "outputSummary": "$ npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-functional-resume-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume --checkpoint-id checkpoint-trace-012-001 --expected-source-document-hash sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294 --expected-implementation-confirmation-hash sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec --expected-architecture-confirmation-hash sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1 --generated-at 2026-05-19T21:15:00.000+08:00 --generated-by codex --json startedAt=2026-05-19T13:14:48.252Z completedAt=2026-05-19T13:14:48.994Z exitCode=0 --- stdout --- { \"ok\": true, \"decision\": \"pass\", \"resumeAllowed\": true, \"checkpointPath\": \"D:/Dev/BMAD-Speckit-SD"
+        },
+        {
+          "commandId": "CMD-TRACE-012-FUNCTIONAL-RESUME-TEST",
+          "command": "npx vitest run tests/acceptance/main-agent-functional-resume-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:48.995Z",
+          "completedAt": "2026-05-19T13:14:51.508Z",
+          "outputSummary": "$ npx vitest run tests/acceptance/main-agent-functional-resume-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts startedAt=2026-05-19T13:14:48.995Z completedAt=2026-05-19T13:14:51.508Z exitCode=0 --- stdout --- \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m { \"ok\": true, \"decision\": \"pass\", \"resumeAllowed\": true, \"checkpointPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-G3fbrv/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/trace-checkpoints.jsonl\", \"resumePacketPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-G3fbrv/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/resume-packets.jsonl\", \"proofPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-G3fbrv/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/functional-resume-proof.json\", \"blockingIssues\": [] } { \"ok\": true, \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/delivery-c"
+        },
+        {
+          "commandId": "CMD-RENDER-CONFIRMATION",
+          "command": "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:51.509Z",
+          "completedAt": "2026-05-19T13:14:51.835Z",
+          "outputSummary": "$ node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json startedAt=2026-05-19T13:14:51.509Z completedAt=2026-05-19T13:14:51.835Z exitCode=0 --- stdout --- { \"recordId\": \"REQ-CLOSED-LOOP-DESIGN\", \"sourcePath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/docs/design/需求实现完整性门禁与重跑闭环设计.md\", \"sourceDocumentHash\": \"sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294\", \"implementationConfirmationHash\": \"sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec\", \"confirmationPageHash\": \"sha256:4195bc39582229f5a6dea6d15aec2e869d1cb635195a1e0c732b54004d7b141a\", \"language\": \""
+        },
+        {
+          "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:51.837Z",
+          "completedAt": "2026-05-19T13:14:59.245Z",
+          "outputSummary": "$ npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts startedAt=2026-05-19T13:14:51.837Z completedAt=2026-05-19T13:14:59.245Z exitCode=0 --- stdout --- \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m31 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 5046\u001b[2mms\u001b[22m\u001b[39m \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m \u001b[2m Tests \u001b[22m \u001b[1m\u001b[32m31 passed\u001b[39m\u001b[22m\u001b[90m (31)\u001b[39m \u001b[2m Start at \u001b[22m 21:14:53 \u001b[2m Duration \u001b[22m 5.32s\u001b[2m (transform 74ms, setup 0ms, import 108ms, tests 5.05s, environment 0ms)\u001b[22m --- stderr ---"
+        },
+        {
+          "commandId": "CMD-ENCODING-GATE",
+          "command": "node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:59.246Z",
+          "completedAt": "2026-05-19T13:14:59.687Z",
+          "outputSummary": "$ node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js startedAt=2026-05-19T13:14:59.246Z completedAt=2026-05-19T13:14:59.687Z exitCode=0 --- stdout --- checkedFiles=2738 findings=0 --- stderr ---"
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "functional_resume_proof",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume/functional-resume-proof.json",
+          "contentHash": "sha256:392e18e52f1d30a065d8bff2540430426a89e3e342b3cd83a262e89f5014a4e7",
+          "producer": "TRACE-012",
+          "purpose": "Proves functional resume is derived from controlled RequirementRecord sources.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "trace_checkpoint_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume/trace-checkpoints.jsonl",
+          "contentHash": "sha256:aeee93fefe77434ac41090ee31985871d14a275116fbf8b048364209a3711e5f",
+          "producer": "TRACE-012",
+          "purpose": "Append-only traceRows checkpoint evidence for resume.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "resume_packet_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume/resume-packets.jsonl",
+          "contentHash": "sha256:d8c43d3c302d4d61fbfef67a3d425ab18c29649a10ade870203b7a35bf91e07b",
+          "producer": "TRACE-012",
+          "purpose": "Append-only resume packet evidence for fail-closed resume decisions.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_manifest",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/command-runs.json",
+          "contentHash": "sha256:09069316e720faad94acae7b58008ed9d774d1171c4ddadb89f72f25bc0055a0",
+          "producer": "TRACE-012",
+          "purpose": "Captures TRACE-012 validation command runs with exit codes and timestamps.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "implementation_delta_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/implementation-delta-summary.md",
+          "contentHash": "sha256:caf0ecb21cee8db8d90ca3e9f0fd1cf7e299e50722f774b91d0c1c672386ecba",
+          "producer": "TRACE-012",
+          "purpose": "Summarizes TRACE-012 implementation delta and changed paths.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK.log",
+          "contentHash": "sha256:0819263dd4878d14d67f3938476b0460a9b1a88e6c0537eb8c7e3bbdabbf72ed",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-TRACE-012-FUNCTIONAL-RESUME-TEST.log",
+          "contentHash": "sha256:1934afee86079ec459aa4d08b460090b828ec3a8816eb84ca10890019e6bc6c7",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-TRACE-012-FUNCTIONAL-RESUME-TEST",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-RENDER-CONFIRMATION.log",
+          "contentHash": "sha256:65a7a256f0012b4d60fce1cae71002ed5438912b2d4345fba04215feaf4f775e",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-RENDER-CONFIRMATION",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-TRACE-BINDING-ACCEPTANCE.log",
+          "contentHash": "sha256:97fb296c30d4b69072b46c8027db62dafa791874114ded0cb04fe6e7ed4f35f0",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-TRACE-BINDING-ACCEPTANCE",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-ENCODING-GATE.log",
+          "contentHash": "sha256:69ccbd9016f3c7176c722f282dafbb50cff936099e4e7a695a35c40e11e785e2",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-ENCODING-GATE",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-012"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-001"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-012-FUNCTIONAL-RESUME-TEST"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-RENDER-CONFIRMATION"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-BINDING-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-ENCODING-GATE"
+        }
+      ],
+      "recordedAt": "2026-05-19T21:16:00.000+08:00",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "EVD-004",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-012"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-009"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-functional-resume-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume --checkpoint-id checkpoint-trace-012-001 --expected-source-document-hash sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294 --expected-implementation-confirmation-hash sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec --expected-architecture-confirmation-hash sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1 --generated-at 2026-05-19T21:15:00.000+08:00 --generated-by codex --json",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:48.252Z",
+          "completedAt": "2026-05-19T13:14:48.994Z",
+          "outputSummary": "$ npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-functional-resume-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume --checkpoint-id checkpoint-trace-012-001 --expected-source-document-hash sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294 --expected-implementation-confirmation-hash sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec --expected-architecture-confirmation-hash sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1 --generated-at 2026-05-19T21:15:00.000+08:00 --generated-by codex --json startedAt=2026-05-19T13:14:48.252Z completedAt=2026-05-19T13:14:48.994Z exitCode=0 --- stdout --- { \"ok\": true, \"decision\": \"pass\", \"resumeAllowed\": true, \"checkpointPath\": \"D:/Dev/BMAD-Speckit-SD"
+        },
+        {
+          "commandId": "CMD-TRACE-012-FUNCTIONAL-RESUME-TEST",
+          "command": "npx vitest run tests/acceptance/main-agent-functional-resume-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:48.995Z",
+          "completedAt": "2026-05-19T13:14:51.508Z",
+          "outputSummary": "$ npx vitest run tests/acceptance/main-agent-functional-resume-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts startedAt=2026-05-19T13:14:48.995Z completedAt=2026-05-19T13:14:51.508Z exitCode=0 --- stdout --- \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m { \"ok\": true, \"decision\": \"pass\", \"resumeAllowed\": true, \"checkpointPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-G3fbrv/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/trace-checkpoints.jsonl\", \"resumePacketPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-G3fbrv/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/resume-packets.jsonl\", \"proofPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-G3fbrv/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/functional-resume-proof.json\", \"blockingIssues\": [] } { \"ok\": true, \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/delivery-c"
+        },
+        {
+          "commandId": "CMD-RENDER-CONFIRMATION",
+          "command": "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:51.509Z",
+          "completedAt": "2026-05-19T13:14:51.835Z",
+          "outputSummary": "$ node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json startedAt=2026-05-19T13:14:51.509Z completedAt=2026-05-19T13:14:51.835Z exitCode=0 --- stdout --- { \"recordId\": \"REQ-CLOSED-LOOP-DESIGN\", \"sourcePath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/docs/design/需求实现完整性门禁与重跑闭环设计.md\", \"sourceDocumentHash\": \"sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294\", \"implementationConfirmationHash\": \"sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec\", \"confirmationPageHash\": \"sha256:4195bc39582229f5a6dea6d15aec2e869d1cb635195a1e0c732b54004d7b141a\", \"language\": \""
+        },
+        {
+          "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:51.837Z",
+          "completedAt": "2026-05-19T13:14:59.245Z",
+          "outputSummary": "$ npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts startedAt=2026-05-19T13:14:51.837Z completedAt=2026-05-19T13:14:59.245Z exitCode=0 --- stdout --- \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m31 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 5046\u001b[2mms\u001b[22m\u001b[39m \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m \u001b[2m Tests \u001b[22m \u001b[1m\u001b[32m31 passed\u001b[39m\u001b[22m\u001b[90m (31)\u001b[39m \u001b[2m Start at \u001b[22m 21:14:53 \u001b[2m Duration \u001b[22m 5.32s\u001b[2m (transform 74ms, setup 0ms, import 108ms, tests 5.05s, environment 0ms)\u001b[22m --- stderr ---"
+        },
+        {
+          "commandId": "CMD-ENCODING-GATE",
+          "command": "node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:59.246Z",
+          "completedAt": "2026-05-19T13:14:59.687Z",
+          "outputSummary": "$ node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js startedAt=2026-05-19T13:14:59.246Z completedAt=2026-05-19T13:14:59.687Z exitCode=0 --- stdout --- checkedFiles=2738 findings=0 --- stderr ---"
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "functional_resume_proof",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume/functional-resume-proof.json",
+          "contentHash": "sha256:392e18e52f1d30a065d8bff2540430426a89e3e342b3cd83a262e89f5014a4e7",
+          "producer": "TRACE-012",
+          "purpose": "Proves functional resume is derived from controlled RequirementRecord sources.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "trace_checkpoint_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume/trace-checkpoints.jsonl",
+          "contentHash": "sha256:aeee93fefe77434ac41090ee31985871d14a275116fbf8b048364209a3711e5f",
+          "producer": "TRACE-012",
+          "purpose": "Append-only traceRows checkpoint evidence for resume.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "resume_packet_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume/resume-packets.jsonl",
+          "contentHash": "sha256:d8c43d3c302d4d61fbfef67a3d425ab18c29649a10ade870203b7a35bf91e07b",
+          "producer": "TRACE-012",
+          "purpose": "Append-only resume packet evidence for fail-closed resume decisions.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_manifest",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/command-runs.json",
+          "contentHash": "sha256:09069316e720faad94acae7b58008ed9d774d1171c4ddadb89f72f25bc0055a0",
+          "producer": "TRACE-012",
+          "purpose": "Captures TRACE-012 validation command runs with exit codes and timestamps.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "implementation_delta_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/implementation-delta-summary.md",
+          "contentHash": "sha256:caf0ecb21cee8db8d90ca3e9f0fd1cf7e299e50722f774b91d0c1c672386ecba",
+          "producer": "TRACE-012",
+          "purpose": "Summarizes TRACE-012 implementation delta and changed paths.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK.log",
+          "contentHash": "sha256:0819263dd4878d14d67f3938476b0460a9b1a88e6c0537eb8c7e3bbdabbf72ed",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-TRACE-012-FUNCTIONAL-RESUME-TEST.log",
+          "contentHash": "sha256:1934afee86079ec459aa4d08b460090b828ec3a8816eb84ca10890019e6bc6c7",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-TRACE-012-FUNCTIONAL-RESUME-TEST",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-RENDER-CONFIRMATION.log",
+          "contentHash": "sha256:65a7a256f0012b4d60fce1cae71002ed5438912b2d4345fba04215feaf4f775e",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-RENDER-CONFIRMATION",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-TRACE-BINDING-ACCEPTANCE.log",
+          "contentHash": "sha256:97fb296c30d4b69072b46c8027db62dafa791874114ded0cb04fe6e7ed4f35f0",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-TRACE-BINDING-ACCEPTANCE",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-ENCODING-GATE.log",
+          "contentHash": "sha256:69ccbd9016f3c7176c722f282dafbb50cff936099e4e7a695a35c40e11e785e2",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-ENCODING-GATE",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-012"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-001"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-012-FUNCTIONAL-RESUME-TEST"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-RENDER-CONFIRMATION"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-BINDING-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-ENCODING-GATE"
+        }
+      ],
+      "recordedAt": "2026-05-19T21:16:00.000+08:00",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "EVD-009",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-012"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-009"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-functional-resume-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume --checkpoint-id checkpoint-trace-012-001 --expected-source-document-hash sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294 --expected-implementation-confirmation-hash sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec --expected-architecture-confirmation-hash sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1 --generated-at 2026-05-19T21:15:00.000+08:00 --generated-by codex --json",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:48.252Z",
+          "completedAt": "2026-05-19T13:14:48.994Z",
+          "outputSummary": "$ npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-functional-resume-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume --checkpoint-id checkpoint-trace-012-001 --expected-source-document-hash sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294 --expected-implementation-confirmation-hash sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec --expected-architecture-confirmation-hash sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1 --generated-at 2026-05-19T21:15:00.000+08:00 --generated-by codex --json startedAt=2026-05-19T13:14:48.252Z completedAt=2026-05-19T13:14:48.994Z exitCode=0 --- stdout --- { \"ok\": true, \"decision\": \"pass\", \"resumeAllowed\": true, \"checkpointPath\": \"D:/Dev/BMAD-Speckit-SD"
+        },
+        {
+          "commandId": "CMD-TRACE-012-FUNCTIONAL-RESUME-TEST",
+          "command": "npx vitest run tests/acceptance/main-agent-functional-resume-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:48.995Z",
+          "completedAt": "2026-05-19T13:14:51.508Z",
+          "outputSummary": "$ npx vitest run tests/acceptance/main-agent-functional-resume-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts startedAt=2026-05-19T13:14:48.995Z completedAt=2026-05-19T13:14:51.508Z exitCode=0 --- stdout --- \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m { \"ok\": true, \"decision\": \"pass\", \"resumeAllowed\": true, \"checkpointPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-G3fbrv/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/trace-checkpoints.jsonl\", \"resumePacketPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-G3fbrv/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/resume-packets.jsonl\", \"proofPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-G3fbrv/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/functional-resume-proof.json\", \"blockingIssues\": [] } { \"ok\": true, \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/delivery-c"
+        },
+        {
+          "commandId": "CMD-RENDER-CONFIRMATION",
+          "command": "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:51.509Z",
+          "completedAt": "2026-05-19T13:14:51.835Z",
+          "outputSummary": "$ node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json startedAt=2026-05-19T13:14:51.509Z completedAt=2026-05-19T13:14:51.835Z exitCode=0 --- stdout --- { \"recordId\": \"REQ-CLOSED-LOOP-DESIGN\", \"sourcePath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/docs/design/需求实现完整性门禁与重跑闭环设计.md\", \"sourceDocumentHash\": \"sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294\", \"implementationConfirmationHash\": \"sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec\", \"confirmationPageHash\": \"sha256:4195bc39582229f5a6dea6d15aec2e869d1cb635195a1e0c732b54004d7b141a\", \"language\": \""
+        },
+        {
+          "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:51.837Z",
+          "completedAt": "2026-05-19T13:14:59.245Z",
+          "outputSummary": "$ npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts startedAt=2026-05-19T13:14:51.837Z completedAt=2026-05-19T13:14:59.245Z exitCode=0 --- stdout --- \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m31 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 5046\u001b[2mms\u001b[22m\u001b[39m \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m \u001b[2m Tests \u001b[22m \u001b[1m\u001b[32m31 passed\u001b[39m\u001b[22m\u001b[90m (31)\u001b[39m \u001b[2m Start at \u001b[22m 21:14:53 \u001b[2m Duration \u001b[22m 5.32s\u001b[2m (transform 74ms, setup 0ms, import 108ms, tests 5.05s, environment 0ms)\u001b[22m --- stderr ---"
+        },
+        {
+          "commandId": "CMD-ENCODING-GATE",
+          "command": "node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:59.246Z",
+          "completedAt": "2026-05-19T13:14:59.687Z",
+          "outputSummary": "$ node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js startedAt=2026-05-19T13:14:59.246Z completedAt=2026-05-19T13:14:59.687Z exitCode=0 --- stdout --- checkedFiles=2738 findings=0 --- stderr ---"
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "functional_resume_proof",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume/functional-resume-proof.json",
+          "contentHash": "sha256:392e18e52f1d30a065d8bff2540430426a89e3e342b3cd83a262e89f5014a4e7",
+          "producer": "TRACE-012",
+          "purpose": "Proves functional resume is derived from controlled RequirementRecord sources.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "trace_checkpoint_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume/trace-checkpoints.jsonl",
+          "contentHash": "sha256:aeee93fefe77434ac41090ee31985871d14a275116fbf8b048364209a3711e5f",
+          "producer": "TRACE-012",
+          "purpose": "Append-only traceRows checkpoint evidence for resume.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "resume_packet_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume/resume-packets.jsonl",
+          "contentHash": "sha256:d8c43d3c302d4d61fbfef67a3d425ab18c29649a10ade870203b7a35bf91e07b",
+          "producer": "TRACE-012",
+          "purpose": "Append-only resume packet evidence for fail-closed resume decisions.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_manifest",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/command-runs.json",
+          "contentHash": "sha256:09069316e720faad94acae7b58008ed9d774d1171c4ddadb89f72f25bc0055a0",
+          "producer": "TRACE-012",
+          "purpose": "Captures TRACE-012 validation command runs with exit codes and timestamps.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "implementation_delta_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/implementation-delta-summary.md",
+          "contentHash": "sha256:caf0ecb21cee8db8d90ca3e9f0fd1cf7e299e50722f774b91d0c1c672386ecba",
+          "producer": "TRACE-012",
+          "purpose": "Summarizes TRACE-012 implementation delta and changed paths.",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK.log",
+          "contentHash": "sha256:0819263dd4878d14d67f3938476b0460a9b1a88e6c0537eb8c7e3bbdabbf72ed",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-TRACE-012-FUNCTIONAL-RESUME-TEST.log",
+          "contentHash": "sha256:1934afee86079ec459aa4d08b460090b828ec3a8816eb84ca10890019e6bc6c7",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-TRACE-012-FUNCTIONAL-RESUME-TEST",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-RENDER-CONFIRMATION.log",
+          "contentHash": "sha256:65a7a256f0012b4d60fce1cae71002ed5438912b2d4345fba04215feaf4f775e",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-RENDER-CONFIRMATION",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-TRACE-BINDING-ACCEPTANCE.log",
+          "contentHash": "sha256:97fb296c30d4b69072b46c8027db62dafa791874114ded0cb04fe6e7ed4f35f0",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-TRACE-BINDING-ACCEPTANCE",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_log",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-ENCODING-GATE.log",
+          "contentHash": "sha256:69ccbd9016f3c7176c722f282dafbb50cff936099e4e7a695a35c40e11e785e2",
+          "producer": "TRACE-012",
+          "purpose": "Command evidence for CMD-ENCODING-GATE",
+          "relatedRequirementIds": [
+            "MUST-020",
+            "NEG-005",
+            "EVD-001",
+            "EVD-004",
+            "EVD-009",
+            "TRACE-012"
+          ],
+          "status": "active",
+          "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "outputVersion": "trace-012-functional-resume-001",
+          "traceRows": [
+            "TRACE-012"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-009"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-012"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-001"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-012-FUNCTIONAL-RESUME-TEST"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-RENDER-CONFIRMATION"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-BINDING-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-ENCODING-GATE"
+        }
+      ],
+      "recordedAt": "2026-05-19T21:16:00.000+08:00",
+      "recordedBy": "codex"
     }
   ],
   "gateChecks": [
@@ -33359,6 +35855,206 @@
         }
       ],
       "recordedAt": "2026-05-19T21:06:00.000+08:00",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "gate_check_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "checkId": "trace-012-functional-resume-check",
+      "gate": "Functional Resume Check",
+      "decision": "pass",
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-012"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-001"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-012-FUNCTIONAL-RESUME-TEST"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-RENDER-CONFIRMATION"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-BINDING-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-ENCODING-GATE"
+        }
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-functional-resume-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume --checkpoint-id checkpoint-trace-012-001 --expected-source-document-hash sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294 --expected-implementation-confirmation-hash sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec --expected-architecture-confirmation-hash sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1 --generated-at 2026-05-19T21:15:00.000+08:00 --generated-by codex --json",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:48.252Z",
+          "completedAt": "2026-05-19T13:14:48.994Z",
+          "outputSummary": "$ npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-functional-resume-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume --checkpoint-id checkpoint-trace-012-001 --expected-source-document-hash sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294 --expected-implementation-confirmation-hash sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec --expected-architecture-confirmation-hash sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1 --generated-at 2026-05-19T21:15:00.000+08:00 --generated-by codex --json startedAt=2026-05-19T13:14:48.252Z completedAt=2026-05-19T13:14:48.994Z exitCode=0 --- stdout --- { \"ok\": true, \"decision\": \"pass\", \"resumeAllowed\": true, \"checkpointPath\": \"D:/Dev/BMAD-Speckit-SD"
+        },
+        {
+          "commandId": "CMD-TRACE-012-FUNCTIONAL-RESUME-TEST",
+          "command": "npx vitest run tests/acceptance/main-agent-functional-resume-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:48.995Z",
+          "completedAt": "2026-05-19T13:14:51.508Z",
+          "outputSummary": "$ npx vitest run tests/acceptance/main-agent-functional-resume-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts startedAt=2026-05-19T13:14:48.995Z completedAt=2026-05-19T13:14:51.508Z exitCode=0 --- stdout --- \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m { \"ok\": true, \"decision\": \"pass\", \"resumeAllowed\": true, \"checkpointPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-G3fbrv/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/trace-checkpoints.jsonl\", \"resumePacketPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-G3fbrv/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/resume-packets.jsonl\", \"proofPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-G3fbrv/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/functional-resume-proof.json\", \"blockingIssues\": [] } { \"ok\": true, \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/delivery-c"
+        },
+        {
+          "commandId": "CMD-RENDER-CONFIRMATION",
+          "command": "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:51.509Z",
+          "completedAt": "2026-05-19T13:14:51.835Z",
+          "outputSummary": "$ node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json startedAt=2026-05-19T13:14:51.509Z completedAt=2026-05-19T13:14:51.835Z exitCode=0 --- stdout --- { \"recordId\": \"REQ-CLOSED-LOOP-DESIGN\", \"sourcePath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/docs/design/需求实现完整性门禁与重跑闭环设计.md\", \"sourceDocumentHash\": \"sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294\", \"implementationConfirmationHash\": \"sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec\", \"confirmationPageHash\": \"sha256:4195bc39582229f5a6dea6d15aec2e869d1cb635195a1e0c732b54004d7b141a\", \"language\": \""
+        },
+        {
+          "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:51.837Z",
+          "completedAt": "2026-05-19T13:14:59.245Z",
+          "outputSummary": "$ npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts startedAt=2026-05-19T13:14:51.837Z completedAt=2026-05-19T13:14:59.245Z exitCode=0 --- stdout --- \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m31 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 5046\u001b[2mms\u001b[22m\u001b[39m \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m \u001b[2m Tests \u001b[22m \u001b[1m\u001b[32m31 passed\u001b[39m\u001b[22m\u001b[90m (31)\u001b[39m \u001b[2m Start at \u001b[22m 21:14:53 \u001b[2m Duration \u001b[22m 5.32s\u001b[2m (transform 74ms, setup 0ms, import 108ms, tests 5.05s, environment 0ms)\u001b[22m --- stderr ---"
+        },
+        {
+          "commandId": "CMD-ENCODING-GATE",
+          "command": "node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:59.246Z",
+          "completedAt": "2026-05-19T13:14:59.687Z",
+          "outputSummary": "$ node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js startedAt=2026-05-19T13:14:59.246Z completedAt=2026-05-19T13:14:59.687Z exitCode=0 --- stdout --- checkedFiles=2738 findings=0 --- stderr ---"
+        }
+      ],
+      "recordedAt": "2026-05-19T21:16:00.000+08:00",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "gate_check_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "checkId": "trace-012-closeout-blocker-boundary-check",
+      "gate": "Closeout Blocker Boundary Check",
+      "decision": "pass",
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-012"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-001"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-009"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-012-FUNCTIONAL-RESUME-TEST"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-RENDER-CONFIRMATION"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-BINDING-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-ENCODING-GATE"
+        }
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-functional-resume-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume --checkpoint-id checkpoint-trace-012-001 --expected-source-document-hash sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294 --expected-implementation-confirmation-hash sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec --expected-architecture-confirmation-hash sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1 --generated-at 2026-05-19T21:15:00.000+08:00 --generated-by codex --json",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:48.252Z",
+          "completedAt": "2026-05-19T13:14:48.994Z",
+          "outputSummary": "$ npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-functional-resume-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume --checkpoint-id checkpoint-trace-012-001 --expected-source-document-hash sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294 --expected-implementation-confirmation-hash sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec --expected-architecture-confirmation-hash sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1 --generated-at 2026-05-19T21:15:00.000+08:00 --generated-by codex --json startedAt=2026-05-19T13:14:48.252Z completedAt=2026-05-19T13:14:48.994Z exitCode=0 --- stdout --- { \"ok\": true, \"decision\": \"pass\", \"resumeAllowed\": true, \"checkpointPath\": \"D:/Dev/BMAD-Speckit-SD"
+        },
+        {
+          "commandId": "CMD-TRACE-012-FUNCTIONAL-RESUME-TEST",
+          "command": "npx vitest run tests/acceptance/main-agent-functional-resume-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:48.995Z",
+          "completedAt": "2026-05-19T13:14:51.508Z",
+          "outputSummary": "$ npx vitest run tests/acceptance/main-agent-functional-resume-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts startedAt=2026-05-19T13:14:48.995Z completedAt=2026-05-19T13:14:51.508Z exitCode=0 --- stdout --- \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m { \"ok\": true, \"decision\": \"pass\", \"resumeAllowed\": true, \"checkpointPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-G3fbrv/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/trace-checkpoints.jsonl\", \"resumePacketPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-G3fbrv/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/resume-packets.jsonl\", \"proofPath\": \"C:/Users/milom/AppData/Local/Temp/functional-resume-pass-G3fbrv/_bmad-output/runtime/requirement-records/REQ-RESUME/resume/functional-resume-proof.json\", \"blockingIssues\": [] } { \"ok\": true, \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/delivery-c"
+        },
+        {
+          "commandId": "CMD-RENDER-CONFIRMATION",
+          "command": "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:51.509Z",
+          "completedAt": "2026-05-19T13:14:51.835Z",
+          "outputSummary": "$ node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json startedAt=2026-05-19T13:14:51.509Z completedAt=2026-05-19T13:14:51.835Z exitCode=0 --- stdout --- { \"recordId\": \"REQ-CLOSED-LOOP-DESIGN\", \"sourcePath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/docs/design/需求实现完整性门禁与重跑闭环设计.md\", \"sourceDocumentHash\": \"sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294\", \"implementationConfirmationHash\": \"sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec\", \"confirmationPageHash\": \"sha256:4195bc39582229f5a6dea6d15aec2e869d1cb635195a1e0c732b54004d7b141a\", \"language\": \""
+        },
+        {
+          "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:51.837Z",
+          "completedAt": "2026-05-19T13:14:59.245Z",
+          "outputSummary": "$ npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts startedAt=2026-05-19T13:14:51.837Z completedAt=2026-05-19T13:14:59.245Z exitCode=0 --- stdout --- \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m31 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 5046\u001b[2mms\u001b[22m\u001b[39m \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m \u001b[2m Tests \u001b[22m \u001b[1m\u001b[32m31 passed\u001b[39m\u001b[22m\u001b[90m (31)\u001b[39m \u001b[2m Start at \u001b[22m 21:14:53 \u001b[2m Duration \u001b[22m 5.32s\u001b[2m (transform 74ms, setup 0ms, import 108ms, tests 5.05s, environment 0ms)\u001b[22m --- stderr ---"
+        },
+        {
+          "commandId": "CMD-ENCODING-GATE",
+          "command": "node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+          "runId": "trace-012-functional-resume-001",
+          "closeoutAttemptId": "trace-012-functional-resume-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T13:14:59.246Z",
+          "completedAt": "2026-05-19T13:14:59.687Z",
+          "outputSummary": "$ node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js startedAt=2026-05-19T13:14:59.246Z completedAt=2026-05-19T13:14:59.687Z exitCode=0 --- stdout --- checkedFiles=2738 findings=0 --- stderr ---"
+        }
+      ],
+      "recordedAt": "2026-05-19T21:16:00.000+08:00",
       "recordedBy": "codex"
     }
   ],
@@ -36328,6 +39024,306 @@
         "EVD-005",
         "EVD-020"
       ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "functional_resume_proof",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume/functional-resume-proof.json",
+      "contentHash": "sha256:392e18e52f1d30a065d8bff2540430426a89e3e342b3cd83a262e89f5014a4e7",
+      "producer": "TRACE-012",
+      "purpose": "Proves functional resume is derived from controlled RequirementRecord sources.",
+      "relatedRequirementIds": [
+        "MUST-020",
+        "NEG-005",
+        "EVD-001",
+        "EVD-004",
+        "EVD-009",
+        "TRACE-012"
+      ],
+      "status": "active",
+      "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+      "outputVersion": "trace-012-functional-resume-001",
+      "traceRows": [
+        "TRACE-012"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-009"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "trace_checkpoint_log",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume/trace-checkpoints.jsonl",
+      "contentHash": "sha256:aeee93fefe77434ac41090ee31985871d14a275116fbf8b048364209a3711e5f",
+      "producer": "TRACE-012",
+      "purpose": "Append-only traceRows checkpoint evidence for resume.",
+      "relatedRequirementIds": [
+        "MUST-020",
+        "NEG-005",
+        "EVD-001",
+        "EVD-004",
+        "EVD-009",
+        "TRACE-012"
+      ],
+      "status": "active",
+      "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+      "outputVersion": "trace-012-functional-resume-001",
+      "traceRows": [
+        "TRACE-012"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-009"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "resume_packet_log",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume/resume-packets.jsonl",
+      "contentHash": "sha256:d8c43d3c302d4d61fbfef67a3d425ab18c29649a10ade870203b7a35bf91e07b",
+      "producer": "TRACE-012",
+      "purpose": "Append-only resume packet evidence for fail-closed resume decisions.",
+      "relatedRequirementIds": [
+        "MUST-020",
+        "NEG-005",
+        "EVD-001",
+        "EVD-004",
+        "EVD-009",
+        "TRACE-012"
+      ],
+      "status": "active",
+      "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+      "outputVersion": "trace-012-functional-resume-001",
+      "traceRows": [
+        "TRACE-012"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-009"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "command_run_manifest",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/command-runs.json",
+      "contentHash": "sha256:09069316e720faad94acae7b58008ed9d774d1171c4ddadb89f72f25bc0055a0",
+      "producer": "TRACE-012",
+      "purpose": "Captures TRACE-012 validation command runs with exit codes and timestamps.",
+      "relatedRequirementIds": [
+        "MUST-020",
+        "NEG-005",
+        "EVD-001",
+        "EVD-004",
+        "EVD-009",
+        "TRACE-012"
+      ],
+      "status": "active",
+      "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+      "outputVersion": "trace-012-functional-resume-001",
+      "traceRows": [
+        "TRACE-012"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-009"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "implementation_delta_summary",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/implementation-delta-summary.md",
+      "contentHash": "sha256:caf0ecb21cee8db8d90ca3e9f0fd1cf7e299e50722f774b91d0c1c672386ecba",
+      "producer": "TRACE-012",
+      "purpose": "Summarizes TRACE-012 implementation delta and changed paths.",
+      "relatedRequirementIds": [
+        "MUST-020",
+        "NEG-005",
+        "EVD-001",
+        "EVD-004",
+        "EVD-009",
+        "TRACE-012"
+      ],
+      "status": "active",
+      "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+      "outputVersion": "trace-012-functional-resume-001",
+      "traceRows": [
+        "TRACE-012"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-009"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "command_log",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK.log",
+      "contentHash": "sha256:0819263dd4878d14d67f3938476b0460a9b1a88e6c0537eb8c7e3bbdabbf72ed",
+      "producer": "TRACE-012",
+      "purpose": "Command evidence for CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK",
+      "relatedRequirementIds": [
+        "MUST-020",
+        "NEG-005",
+        "EVD-001",
+        "EVD-004",
+        "EVD-009",
+        "TRACE-012"
+      ],
+      "status": "active",
+      "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+      "outputVersion": "trace-012-functional-resume-001",
+      "traceRows": [
+        "TRACE-012"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-009"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "command_log",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-TRACE-012-FUNCTIONAL-RESUME-TEST.log",
+      "contentHash": "sha256:1934afee86079ec459aa4d08b460090b828ec3a8816eb84ca10890019e6bc6c7",
+      "producer": "TRACE-012",
+      "purpose": "Command evidence for CMD-TRACE-012-FUNCTIONAL-RESUME-TEST",
+      "relatedRequirementIds": [
+        "MUST-020",
+        "NEG-005",
+        "EVD-001",
+        "EVD-004",
+        "EVD-009",
+        "TRACE-012"
+      ],
+      "status": "active",
+      "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+      "outputVersion": "trace-012-functional-resume-001",
+      "traceRows": [
+        "TRACE-012"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-009"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "command_log",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-RENDER-CONFIRMATION.log",
+      "contentHash": "sha256:65a7a256f0012b4d60fce1cae71002ed5438912b2d4345fba04215feaf4f775e",
+      "producer": "TRACE-012",
+      "purpose": "Command evidence for CMD-RENDER-CONFIRMATION",
+      "relatedRequirementIds": [
+        "MUST-020",
+        "NEG-005",
+        "EVD-001",
+        "EVD-004",
+        "EVD-009",
+        "TRACE-012"
+      ],
+      "status": "active",
+      "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+      "outputVersion": "trace-012-functional-resume-001",
+      "traceRows": [
+        "TRACE-012"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-009"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "command_log",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-TRACE-BINDING-ACCEPTANCE.log",
+      "contentHash": "sha256:97fb296c30d4b69072b46c8027db62dafa791874114ded0cb04fe6e7ed4f35f0",
+      "producer": "TRACE-012",
+      "purpose": "Command evidence for CMD-TRACE-BINDING-ACCEPTANCE",
+      "relatedRequirementIds": [
+        "MUST-020",
+        "NEG-005",
+        "EVD-001",
+        "EVD-004",
+        "EVD-009",
+        "TRACE-012"
+      ],
+      "status": "active",
+      "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+      "outputVersion": "trace-012-functional-resume-001",
+      "traceRows": [
+        "TRACE-012"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-009"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "command_log",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-ENCODING-GATE.log",
+      "contentHash": "sha256:69ccbd9016f3c7176c722f282dafbb50cff936099e4e7a695a35c40e11e785e2",
+      "producer": "TRACE-012",
+      "purpose": "Command evidence for CMD-ENCODING-GATE",
+      "relatedRequirementIds": [
+        "MUST-020",
+        "NEG-005",
+        "EVD-001",
+        "EVD-004",
+        "EVD-009",
+        "TRACE-012"
+      ],
+      "status": "active",
+      "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+      "outputVersion": "trace-012-functional-resume-001",
+      "traceRows": [
+        "TRACE-012"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-009"
+      ]
     }
   ],
   "closeout": {
@@ -36880,26 +39876,27 @@
         "commandId": "CMD-RENDER-CONFIRMATION",
         "command": "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json",
         "blockingIfMissing": true,
+        "negativeOrRegression": false,
         "lastRunRef": "CMD-RENDER-CONFIRMATION",
         "artifactRefs": [
           {
             "artifactType": "command_log",
             "sourceOfTruthRole": "evidence",
-            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-011/trace-011-bmad-artifact-hardcut-001/CMD-RENDER-CONFIRMATION.log",
-            "hash": "sha256:629765ec3c32d9d6b401ee0e153bd22415403ec2d55e4abf83e2529acda57df4",
-            "producer": "TRACE-011",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-RENDER-CONFIRMATION.log",
+            "hash": "sha256:65a7a256f0012b4d60fce1cae71002ed5438912b2d4345fba04215feaf4f775e",
+            "producer": "TRACE-012",
             "purpose": "Required command log for CMD-RENDER-CONFIRMATION",
             "relatedRequirementIds": [
-              "MUST-018",
-              "MUST-019",
+              "MUST-020",
+              "NEG-005",
               "EVD-001",
-              "EVD-005",
-              "EVD-020",
-              "TRACE-011"
+              "EVD-004",
+              "EVD-009",
+              "TRACE-012"
             ],
             "status": "active",
             "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
-            "outputVersion": "trace-011-bmad-artifact-hardcut-001"
+            "outputVersion": "trace-012-functional-resume-001"
           }
         ]
       },
@@ -36907,26 +39904,27 @@
         "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
         "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
         "blockingIfMissing": true,
+        "negativeOrRegression": false,
         "lastRunRef": "CMD-TRACE-BINDING-ACCEPTANCE",
         "artifactRefs": [
           {
             "artifactType": "command_log",
             "sourceOfTruthRole": "evidence",
-            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-011/trace-011-bmad-artifact-hardcut-001/CMD-TRACE-BINDING-ACCEPTANCE.log",
-            "hash": "sha256:819c7759ca52ea5936d49d54190e70de96076fa5b4fefa3f3de7337ed4345673",
-            "producer": "TRACE-011",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-TRACE-BINDING-ACCEPTANCE.log",
+            "hash": "sha256:97fb296c30d4b69072b46c8027db62dafa791874114ded0cb04fe6e7ed4f35f0",
+            "producer": "TRACE-012",
             "purpose": "Required command log for CMD-TRACE-BINDING-ACCEPTANCE",
             "relatedRequirementIds": [
-              "MUST-018",
-              "MUST-019",
+              "MUST-020",
+              "NEG-005",
               "EVD-001",
-              "EVD-005",
-              "EVD-020",
-              "TRACE-011"
+              "EVD-004",
+              "EVD-009",
+              "TRACE-012"
             ],
             "status": "active",
             "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
-            "outputVersion": "trace-011-bmad-artifact-hardcut-001"
+            "outputVersion": "trace-012-functional-resume-001"
           }
         ]
       },
@@ -36934,26 +39932,27 @@
         "commandId": "CMD-ENCODING-GATE",
         "command": "node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
         "blockingIfMissing": true,
+        "negativeOrRegression": false,
         "lastRunRef": "CMD-ENCODING-GATE",
         "artifactRefs": [
           {
             "artifactType": "command_log",
             "sourceOfTruthRole": "evidence",
-            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-011/trace-011-bmad-artifact-hardcut-001/CMD-ENCODING-GATE.log",
-            "hash": "sha256:17cf25272dbc8eac5bf51a6fb3e0a4727d4c37a37e2388007db7b73edd6946ea",
-            "producer": "TRACE-011",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-ENCODING-GATE.log",
+            "hash": "sha256:69ccbd9016f3c7176c722f282dafbb50cff936099e4e7a695a35c40e11e785e2",
+            "producer": "TRACE-012",
             "purpose": "Required command log for CMD-ENCODING-GATE",
             "relatedRequirementIds": [
-              "MUST-018",
-              "MUST-019",
+              "MUST-020",
+              "NEG-005",
               "EVD-001",
-              "EVD-005",
-              "EVD-020",
-              "TRACE-011"
+              "EVD-004",
+              "EVD-009",
+              "TRACE-012"
             ],
             "status": "active",
             "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
-            "outputVersion": "trace-011-bmad-artifact-hardcut-001"
+            "outputVersion": "trace-012-functional-resume-001"
           }
         ]
       },
@@ -38070,7 +41069,13 @@
             ],
             "status": "active",
             "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
-            "outputVersion": "trace-011-bmad-artifact-hardcut-001"
+            "outputVersion": "trace-011-bmad-artifact-hardcut-001",
+            "eventType": "artifact_indexed",
+            "recordId": "REQ-CLOSED-LOOP-DESIGN",
+            "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+            "contentHash": "sha256:fd1cc790232d3c77c0c02d7dd19858e8a10235c17881822fbc4c74a4fd688405",
+            "traceRows": [],
+            "evidenceRefs": []
           }
         ]
       },
@@ -38097,7 +41102,69 @@
             ],
             "status": "active",
             "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
-            "outputVersion": "trace-011-bmad-artifact-hardcut-001"
+            "outputVersion": "trace-011-bmad-artifact-hardcut-001",
+            "eventType": "artifact_indexed",
+            "recordId": "REQ-CLOSED-LOOP-DESIGN",
+            "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+            "contentHash": "sha256:c57a7a254e777e34598feef733e8eeb3a2251babe587845f3b5c53b52476a980",
+            "traceRows": [],
+            "evidenceRefs": []
+          }
+        ]
+      },
+      {
+        "commandId": "CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK",
+        "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-functional-resume-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/resume --checkpoint-id checkpoint-trace-012-001 --expected-source-document-hash sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294 --expected-implementation-confirmation-hash sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec --expected-architecture-confirmation-hash sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1 --generated-at 2026-05-19T21:15:00.000+08:00 --generated-by codex --json",
+        "blockingIfMissing": true,
+        "negativeOrRegression": false,
+        "lastRunRef": "CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK",
+        "artifactRefs": [
+          {
+            "artifactType": "command_log",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK.log",
+            "hash": "sha256:0819263dd4878d14d67f3938476b0460a9b1a88e6c0537eb8c7e3bbdabbf72ed",
+            "producer": "TRACE-012",
+            "purpose": "Required command log for CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK",
+            "relatedRequirementIds": [
+              "MUST-020",
+              "NEG-005",
+              "EVD-001",
+              "EVD-004",
+              "EVD-009",
+              "TRACE-012"
+            ],
+            "status": "active",
+            "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+            "outputVersion": "trace-012-functional-resume-001"
+          }
+        ]
+      },
+      {
+        "commandId": "CMD-TRACE-012-FUNCTIONAL-RESUME-TEST",
+        "command": "npx vitest run tests/acceptance/main-agent-functional-resume-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "lastRunRef": "CMD-TRACE-012-FUNCTIONAL-RESUME-TEST",
+        "artifactRefs": [
+          {
+            "artifactType": "command_log",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-012/trace-012-functional-resume-001/CMD-TRACE-012-FUNCTIONAL-RESUME-TEST.log",
+            "hash": "sha256:1934afee86079ec459aa4d08b460090b828ec3a8816eb84ca10890019e6bc6c7",
+            "producer": "TRACE-012",
+            "purpose": "Required command log for CMD-TRACE-012-FUNCTIONAL-RESUME-TEST",
+            "relatedRequirementIds": [
+              "MUST-020",
+              "NEG-005",
+              "EVD-001",
+              "EVD-004",
+              "EVD-009",
+              "TRACE-012"
+            ],
+            "status": "active",
+            "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+            "outputVersion": "trace-012-functional-resume-001"
           }
         ]
       }

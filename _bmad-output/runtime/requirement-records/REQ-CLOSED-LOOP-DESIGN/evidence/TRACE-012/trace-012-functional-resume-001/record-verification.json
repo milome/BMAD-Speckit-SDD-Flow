@@ -1,0 +1,23 @@
+{
+  "ok": true,
+  "executionIterationId": "exec-trace-012-functional-resume-001",
+  "closed": {
+    "MUST-020": "pass",
+    "NEG-005": "pass",
+    "EVD-001": "pass",
+    "EVD-004": "pass",
+    "EVD-009": "pass"
+  },
+  "gates": [
+    {
+      "checkId": "trace-012-functional-resume-check",
+      "gate": "Functional Resume Check",
+      "decision": "pass"
+    },
+    {
+      "checkId": "trace-012-closeout-blocker-boundary-check",
+      "gate": "Closeout Blocker Boundary Check",
+      "decision": "pass"
+    }
+  ]
+}
