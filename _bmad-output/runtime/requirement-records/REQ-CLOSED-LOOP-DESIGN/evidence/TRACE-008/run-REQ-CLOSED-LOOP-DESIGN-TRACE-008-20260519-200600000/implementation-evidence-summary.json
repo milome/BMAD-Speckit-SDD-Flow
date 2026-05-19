@@ -1,0 +1,83 @@
+{
+  "traceId": "TRACE-008",
+  "runId": "run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000",
+  "summary": "TRACE-008 adds requirement-scoped governed data products derived from the controlled requirement record and routes invalid or unsafe candidates away from SFT.",
+  "filesChanged": [
+    "scripts/main-agent-governed-data-products.ts",
+    "tests/acceptance/main-agent-governed-data-products.test.ts"
+  ],
+  "dataArtifacts": [
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/mentor-events.jsonl",
+      "hash": "sha256:2c425e4fc533348984a051fc0dd25660a5b2c27ef0ba6a42bad20abb05b18616"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/sample-routes.jsonl",
+      "hash": "sha256:9c7f059cd4ee71bfb6a5fb2eb8815ab35bd13b0d8977f5505dfea4d138eb9f84"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/canonical-samples.jsonl",
+      "hash": "sha256:bb3835a5a95c15e1a789bdf57c39b9936cc8c617f73a90da094d90b6f7469f4d"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/dataset-manifest.json",
+      "hash": "sha256:eebc929a5ef196680b1e52f502627545632ff0fa7b16d8b73706c6e7a27ac6a3"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/data-governance-report.json",
+      "hash": "sha256:5087532bfba64edf6430ceade0a4156a4fe3a7d0509f8507a9cc0d8e65525040"
+    }
+  ],
+  "commandRunRefs": [
+    {
+      "commandId": "CMD-TRACE-008-GOVERNED-DATA-PRODUCTS",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T12:27:14.889Z",
+      "completedAt": "2026-05-19T12:27:15.879Z",
+      "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-008/run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000/CMD-TRACE-008-GOVERNED-DATA-PRODUCTS.log",
+      "logHash": "sha256:255ad7cf79c46e058bd65655401821056986dddc3b05fa47dd30eb1d1fe4e77b"
+    },
+    {
+      "commandId": "CMD-TRACE-008-GOVERNED-DATA-TEST",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T12:27:15.879Z",
+      "completedAt": "2026-05-19T12:27:19.637Z",
+      "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-008/run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000/CMD-TRACE-008-GOVERNED-DATA-TEST.log",
+      "logHash": "sha256:d835af2c96e5f15280df30f021d16fe1a7cf6542962738e4b8fd77055e39049a"
+    },
+    {
+      "commandId": "CMD-RENDER-CONFIRMATION",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T12:27:19.637Z",
+      "completedAt": "2026-05-19T12:27:19.904Z",
+      "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-008/run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000/CMD-RENDER-CONFIRMATION.log",
+      "logHash": "sha256:0616111f432bf03b8cf2219b7bfc57cf2733293d4be22f0cf0a70afa9baf6069"
+    },
+    {
+      "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T12:27:19.904Z",
+      "completedAt": "2026-05-19T12:27:27.942Z",
+      "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-008/run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000/CMD-TRACE-BINDING-ACCEPTANCE.log",
+      "logHash": "sha256:28f615876b3264a3ea949a0648cd5842abbe352753c63df9964a08dfc59b9fc7"
+    },
+    {
+      "commandId": "CMD-ENCODING-GATE",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T12:27:27.943Z",
+      "completedAt": "2026-05-19T12:27:28.771Z",
+      "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-008/run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000/CMD-ENCODING-GATE.log",
+      "logHash": "sha256:c963cc7c4cc64ebb035ff87452b8771a043023b47125dcb8c056fa0da88a5dad"
+    }
+  ],
+  "relatedRequirementIds": [
+    "TRACE-008",
+    "MUST-012",
+    "MUST-014",
+    "NEG-003",
+    "OUT-001",
+    "EVD-011",
+    "EVD-012",
+    "EVD-014"
+  ]
+}

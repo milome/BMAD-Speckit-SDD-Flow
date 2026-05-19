@@ -1,0 +1,22 @@
+{
+  "traceRows": [
+    "TRACE-008"
+  ],
+  "assertions": [
+    {
+      "id": "NEG-TRACE-008-01",
+      "statement": "Forbidden direct sources such as chat logs, worker logs, terminal output, final code, and human summaries must route to discard and never become SFT samples.",
+      "verifiedBy": "main-agent-governed-data-products.test.ts"
+    },
+    {
+      "id": "NEG-TRACE-008-02",
+      "statement": "Failed, blocked, low-quality, unclosed, contaminated, redaction-blocked, or withdrawn samples must route away from sft_positive.",
+      "verifiedBy": "main-agent-governed-data-products.test.ts"
+    },
+    {
+      "id": "NEG-TRACE-008-03",
+      "statement": "Existing controlled mentor-events.jsonl rows must not be overwritten by governed data projection generation.",
+      "verifiedBy": "main-agent-governed-data-products.test.ts"
+    }
+  ]
+}

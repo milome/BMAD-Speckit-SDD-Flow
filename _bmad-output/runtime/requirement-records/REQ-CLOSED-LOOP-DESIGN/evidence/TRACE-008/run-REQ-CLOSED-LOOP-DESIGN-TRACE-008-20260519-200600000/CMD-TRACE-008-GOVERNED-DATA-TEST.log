@@ -1,0 +1,105 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mD:/Dev/BMAD-Speckit-SDD-Flow[39m
+
+{
+  "ok": true,
+  "requirementRecordPath": "C:/Users/milom/AppData/Local/Temp/implementation-evidence-ingest-fybOYp/_bmad-output/runtime/requirement-records/REQ-EVIDENCE-INGEST/requirement-record.json",
+  "eventLogPath": "C:/Users/milom/AppData/Local/Temp/implementation-evidence-ingest-fybOYp/_bmad-output/runtime/requirement-records/REQ-EVIDENCE-INGEST/data/mentor-events.jsonl",
+  "artifactIndexPath": "C:/Users/milom/AppData/Local/Temp/implementation-evidence-ingest-fybOYp/_bmad-output/runtime/requirement-records/REQ-EVIDENCE-INGEST/artifact-index.jsonl",
+  "globalArtifactIndexPath": "C:/Users/milom/AppData/Local/Temp/implementation-evidence-ingest-fybOYp/_bmad-output/runtime/requirement-records/artifact-index.jsonl"
+}
+{
+  "ok": true,
+  "recordId": "REQ-GOVERNED-DATA",
+  "requirementSetId": "REQ-GOVERNED-DATA",
+  "outDir": "C:/Users/milom/AppData/Local/Temp/governed-data-products-MWZTfo/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data",
+  "paths": {
+    "mentorEvents": "C:/Users/milom/AppData/Local/Temp/governed-data-products-MWZTfo/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data/mentor-events.jsonl",
+    "sampleRoutes": "C:/Users/milom/AppData/Local/Temp/governed-data-products-MWZTfo/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data/sample-routes.jsonl",
+    "canonicalSamples": "C:/Users/milom/AppData/Local/Temp/governed-data-products-MWZTfo/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data/canonical-samples.jsonl",
+    "validation": "C:/Users/milom/AppData/Local/Temp/governed-data-products-MWZTfo/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data/validation.jsonl",
+    "test": "C:/Users/milom/AppData/Local/Temp/governed-data-products-MWZTfo/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data/test.jsonl",
+    "manifest": "C:/Users/milom/AppData/Local/Temp/governed-data-products-MWZTfo/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data/dataset-manifest.json",
+    "report": "C:/Users/milom/AppData/Local/Temp/governed-data-products-MWZTfo/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data/data-governance-report.json"
+  },
+  "hashes": {
+    "mentorEvents": "sha256:381908287473c1a7fa39ee3cd96a01e975266253e96a2b607733c8f53de19584",
+    "sampleRoutes": "sha256:ef025c2202db5130a322096df609c3a809903acef48db01d9df9a96c6dc8ec73",
+    "canonicalSamples": "sha256:191d1e44b77b05d5bbfd68e36590a9ad0ae53b18c3646a28d6ecdc8cd7a5a2e6",
+    "validation": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "test": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "manifest": "sha256:0e9690a5f9dddb4f4f72469e055c8807cebfe53c78975aadae173668a6027236",
+    "report": "sha256:cf5b847fd1896a2101d56e33d61d5ba8ca701dceeb8d5a1360246ffb00a99d90"
+  },
+  "counts": {
+    "mentorEvents": 8,
+    "sampleRoutes": 6,
+    "canonicalSamples": 1,
+    "rejectedRoutes": 5
+  }
+}
+execution_iteration_recorded=exec-001
+governed_data_products=C:/Users/milom/AppData/Local/Temp/governed-data-routes-sMEIUV/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data
+governed_data_products=C:/Users/milom/AppData/Local/Temp/governed-data-manifest-hnONO4/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data
+governed_data_products=C:/Users/milom/AppData/Local/Temp/governed-data-preserve-bGoSQe/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data
+ [32m✓[39m tests/acceptance/main-agent-governed-data-products.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 77[2mms[22m[39m
+execution_iteration_recorded=exec-001
+ [32m✓[39m tests/acceptance/implementation-evidence-ingest.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 97[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m13 passed[39m[22m[90m (13)[39m
+[2m   Start at [22m 20:27:19
+[2m   Duration [22m 391ms[2m (transform 150ms, setup 0ms, import 246ms, tests 174ms, environment 0ms)[22m
+
+[90mstderr[2m | tests/acceptance/implementation-evidence-ingest.test.ts[2m > [22m[2mimplementation evidence ingest[2m > [22m[2mrejects stale hashes without mutating the requirement record
+[22m[39m{
+  "ok": false,
+  "mismatches": [
+    "architecture_confirmation_hash_mismatch"
+  ]
+}
+
+[90mstderr[2m | tests/acceptance/implementation-evidence-ingest.test.ts[2m > [22m[2mimplementation evidence ingest[2m > [22m[2mrejects legacy result fields and historical command runs
+[22m[39m{
+  "ok": false,
+  "mismatches": [
+    "command_run_id_mismatch",
+    "forbidden_result_field"
+  ]
+}
+
+[90mstderr[2m | tests/acceptance/implementation-evidence-ingest.test.ts[2m > [22m[2mimplementation evidence ingest[2m > [22m[2mrejects delivery required commands that cannot prove current blocking evidence
+[22m[39m{
+  "ok": false,
+  "mismatches": [
+    "required_command_not_blocking",
+    "required_command_artifact_refs_missing"
+  ]
+}
+
+[90mstderr[2m | tests/acceptance/implementation-evidence-ingest.test.ts[2m > [22m[2mimplementation evidence ingest[2m > [22m[2mrejects evidence packets without behavior-affecting implementation delta proof
+[22m[39m{
+  "ok": false,
+  "mismatches": [
+    "implementation_delta_missing"
+  ]
+}
+
+[90mstderr[2m | tests/acceptance/implementation-evidence-ingest.test.ts[2m > [22m[2mimplementation evidence ingest[2m > [22m[2mrejects artifact refs without pass-grade metadata
+[22m[39m{
+  "ok": false,
+  "mismatches": [
+    "artifact_ref_artifact_purpose_missing",
+    "artifact_ref_artifact_related_requirement_ids_missing"
+  ]
+}
+
+[90mstderr[2m | tests/acceptance/implementation-evidence-ingest.test.ts[2m > [22m[2mimplementation evidence ingest[2m > [22m[2mrejects inline full diffs and legacy write targets
+[22m[39m{
+  "ok": false,
+  "mismatches": [
+    "artifact_legacy_write_path_forbidden:_bmad-output/runtime/gates/legacy-report.json",
+    "forbidden_inline_full_diff"
+  ]
+}
+

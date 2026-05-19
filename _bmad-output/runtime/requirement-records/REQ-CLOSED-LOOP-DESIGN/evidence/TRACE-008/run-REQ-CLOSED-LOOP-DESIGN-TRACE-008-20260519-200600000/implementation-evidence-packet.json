@@ -1,0 +1,663 @@
+{
+  "eventType": "execution_iteration_recorded",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "executionIterationId": "exec-trace-008-governed-data-products-001",
+  "runId": "run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000",
+  "status": "done",
+  "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+  "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
+  "architectureConfirmationHash": "sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+  "traceRows": [
+    "TRACE-008"
+  ],
+  "taskRefs": [
+    "TASK-DATA-SFT-GOVERNANCE"
+  ],
+  "evidenceRefs": [
+    "EVD-011",
+    "EVD-012",
+    "EVD-014"
+  ],
+  "filesChanged": [
+    "scripts/main-agent-governed-data-products.ts",
+    "tests/acceptance/main-agent-governed-data-products.test.ts"
+  ],
+  "implementationDelta": {
+    "filesChanged": [
+      "scripts/main-agent-governed-data-products.ts",
+      "tests/acceptance/main-agent-governed-data-products.test.ts"
+    ],
+    "diffSummaryRef": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-008/run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000/implementation-evidence-summary.json",
+    "behaviorAffecting": true,
+    "negativeAssertionArtifactRefs": [
+      {
+        "artifactId": "ART-TRACE-008-NEGATIVE-ASSERTIONS",
+        "artifactType": "negative_assertion_report",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-008/run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000/negative-assertions.json",
+        "hash": "sha256:bf4ef0db945098b1bff5f47e182fc08b5b22704c62f25c6157d15a89401bba14",
+        "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-008 evidence runner",
+        "purpose": "Negative assertions for governed SFT source routing and data projection safety.",
+        "relatedRequirementIds": [
+          "TRACE-008",
+          "MUST-012",
+          "MUST-014",
+          "NEG-003",
+          "OUT-001",
+          "EVD-011",
+          "EVD-012",
+          "EVD-014"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+        "outputVersion": "trace-008-governed-data-products-v1"
+      }
+    ]
+  },
+  "diffSummary": "Added governed data product generation from RequirementRecord and ArtifactRef inputs, with sample routing that prevents raw logs, failed work, low quality traces, unclosed requirements, and contaminated samples from entering SFT.",
+  "commandRuns": [
+    {
+      "commandId": "CMD-TRACE-008-GOVERNED-DATA-PRODUCTS",
+      "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-governed-data-products.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data --generated-at 2026-05-19T20:06:00.000Z --generated-by codex --json",
+      "runId": "run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000",
+      "closeoutAttemptId": "trace-008-evidence-attempt-001",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T12:27:14.889Z",
+      "completedAt": "2026-05-19T12:27:15.879Z",
+      "outputSummary": "    \"validation\": \"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\",\n    \"test\": \"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\",\n    \"manifest\": \"sha256:eebc929a5ef196680b1e52f502627545632ff0fa7b16d8b73706c6e7a27ac6a3\",\n    \"report\": \"sha256:5087532bfba64edf6430ceade0a4156a4fe3a7d0509f8507a9cc0d8e65525040\"\n  },\n  \"counts\": {\n    \"mentorEvents\": 15,\n    \"sampleRoutes\": 11,\n    \"canonicalSamples\": 7,\n    \"rejectedRoutes\": 4\n  }\n}",
+      "logPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-008/run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000/CMD-TRACE-008-GOVERNED-DATA-PRODUCTS.log"
+    },
+    {
+      "commandId": "CMD-TRACE-008-GOVERNED-DATA-TEST",
+      "command": "npx vitest run tests/acceptance/main-agent-governed-data-products.test.ts tests/acceptance/implementation-evidence-ingest.test.ts",
+      "runId": "run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000",
+      "closeoutAttemptId": "trace-008-evidence-attempt-001",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T12:27:15.879Z",
+      "completedAt": "2026-05-19T12:27:19.637Z",
+      "outputSummary": "    \"artifact_ref_artifact_purpose_missing\",\n    \"artifact_ref_artifact_related_requirement_ids_missing\"\n  ]\n}\n\u001b[90mstderr\u001b[2m | tests/acceptance/implementation-evidence-ingest.test.ts\u001b[2m > \u001b[22m\u001b[2mimplementation evidence ingest\u001b[2m > \u001b[22m\u001b[2mrejects inline full diffs and legacy write targets\n\u001b[22m\u001b[39m{\n  \"ok\": false,\n  \"mismatches\": [\n    \"artifact_legacy_write_path_forbidden:_bmad-output/runtime/gates/legacy-report.json\",\n    \"forbidden_inline_full_diff\"\n  ]\n}",
+      "logPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-008/run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000/CMD-TRACE-008-GOVERNED-DATA-TEST.log"
+    },
+    {
+      "commandId": "CMD-RENDER-CONFIRMATION",
+      "command": "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json",
+      "runId": "run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000",
+      "closeoutAttemptId": "trace-008-evidence-attempt-001",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T12:27:19.637Z",
+      "completedAt": "2026-05-19T12:27:19.904Z",
+      "outputSummary": "    \"must\": 38,\n    \"notDone\": 27,\n    \"mustNot\": 22,\n    \"evidence\": 38,\n    \"failurePaths\": 5,\n    \"edgeCases\": 6,\n    \"traceRows\": 29,\n    \"sequenceViews\": 6,\n    \"resumeFailureCases\": 27,\n    \"artifactPlanItems\": 3\n  }\n}",
+      "logPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-008/run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000/CMD-RENDER-CONFIRMATION.log"
+    },
+    {
+      "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+      "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+      "runId": "run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000",
+      "closeoutAttemptId": "trace-008-evidence-attempt-001",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T12:27:19.904Z",
+      "completedAt": "2026-05-19T12:27:27.942Z",
+      "outputSummary": "\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m31 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 5669\u001b[2mms\u001b[22m\u001b[39m\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m31 passed\u001b[39m\u001b[22m\u001b[90m (31)\u001b[39m\n\u001b[2m   Start at \u001b[22m 20:27:21\n\u001b[2m   Duration \u001b[22m 5.95s\u001b[2m (transform 71ms, setup 0ms, import 105ms, tests 5.67s, environment 0ms)\u001b[22m",
+      "logPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-008/run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000/CMD-TRACE-BINDING-ACCEPTANCE.log"
+    },
+    {
+      "commandId": "CMD-ENCODING-GATE",
+      "command": "node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+      "runId": "run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000",
+      "closeoutAttemptId": "trace-008-evidence-attempt-001",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T12:27:27.943Z",
+      "completedAt": "2026-05-19T12:27:28.771Z",
+      "outputSummary": "checkedFiles=2730 findings=0",
+      "logPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-008/run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000/CMD-ENCODING-GATE.log"
+    }
+  ],
+  "artifactRefs": [
+    {
+      "artifactId": "ART-TRACE-008-COMMAND-RUNS",
+      "artifactType": "command_run_report",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-008/run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000/command-runs.json",
+      "hash": "sha256:f1ef838c3709545bb75b938e8b8790932a15e28e4d232758d507b7a10841768d",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-008 evidence runner",
+      "purpose": "Fresh current-run command evidence for TRACE-008.",
+      "relatedRequirementIds": [
+        "TRACE-008",
+        "MUST-012",
+        "MUST-014",
+        "NEG-003",
+        "OUT-001",
+        "EVD-011",
+        "EVD-012",
+        "EVD-014"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "trace-008-governed-data-products-v1"
+    },
+    {
+      "artifactId": "ART-TRACE-008-NEGATIVE-ASSERTIONS",
+      "artifactType": "negative_assertion_report",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-008/run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000/negative-assertions.json",
+      "hash": "sha256:bf4ef0db945098b1bff5f47e182fc08b5b22704c62f25c6157d15a89401bba14",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-008 evidence runner",
+      "purpose": "Negative assertions for governed SFT source routing and data projection safety.",
+      "relatedRequirementIds": [
+        "TRACE-008",
+        "MUST-012",
+        "MUST-014",
+        "NEG-003",
+        "OUT-001",
+        "EVD-011",
+        "EVD-012",
+        "EVD-014"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "trace-008-governed-data-products-v1"
+    },
+    {
+      "artifactId": "ART-TRACE-008-IMPLEMENTATION-SUMMARY",
+      "artifactType": "implementation_evidence",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-008/run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000/implementation-evidence-summary.json",
+      "hash": "sha256:1c95259fd350460b33d94a7360cdd34bd047c1ba3cba187c81545b36c792709f",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-008 evidence runner",
+      "purpose": "TRACE-008 implementation evidence summary.",
+      "relatedRequirementIds": [
+        "TRACE-008",
+        "MUST-012",
+        "MUST-014",
+        "NEG-003",
+        "OUT-001",
+        "EVD-011",
+        "EVD-012",
+        "EVD-014"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "trace-008-governed-data-products-v1"
+    },
+    {
+      "artifactId": "ART-TRACE-008-MENTOR-EVENTS",
+      "artifactType": "mentor_event_log",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/mentor-events.jsonl",
+      "hash": "sha256:2c425e4fc533348984a051fc0dd25660a5b2c27ef0ba6a42bad20abb05b18616",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-008 evidence runner",
+      "purpose": "Requirement-scoped mentor events derived from controlled record events while preserving existing event log rows.",
+      "relatedRequirementIds": [
+        "TRACE-008",
+        "MUST-012",
+        "MUST-014",
+        "NEG-003",
+        "OUT-001",
+        "EVD-011",
+        "EVD-012",
+        "EVD-014"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "trace-008-governed-data-products-v1"
+    },
+    {
+      "artifactId": "ART-TRACE-008-SAMPLE-ROUTES",
+      "artifactType": "sample_route_log",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/sample-routes.jsonl",
+      "hash": "sha256:9c7f059cd4ee71bfb6a5fb2eb8815ab35bd13b0d8977f5505dfea4d138eb9f84",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-008 evidence runner",
+      "purpose": "Requirement-scoped sample route decisions before SFT export.",
+      "relatedRequirementIds": [
+        "TRACE-008",
+        "MUST-012",
+        "MUST-014",
+        "NEG-003",
+        "OUT-001",
+        "EVD-011",
+        "EVD-012",
+        "EVD-014"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "trace-008-governed-data-products-v1"
+    },
+    {
+      "artifactId": "ART-TRACE-008-CANONICAL-SAMPLES",
+      "artifactType": "canonical_sample_log",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/canonical-samples.jsonl",
+      "hash": "sha256:bb3835a5a95c15e1a789bdf57c39b9936cc8c617f73a90da094d90b6f7469f4d",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-008 evidence runner",
+      "purpose": "Canonical positive samples only from pass-grade controlled evidence.",
+      "relatedRequirementIds": [
+        "TRACE-008",
+        "MUST-012",
+        "MUST-014",
+        "NEG-003",
+        "OUT-001",
+        "EVD-011",
+        "EVD-012",
+        "EVD-014"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "trace-008-governed-data-products-v1"
+    },
+    {
+      "artifactId": "ART-TRACE-008-DATASET-MANIFEST",
+      "artifactType": "dataset_manifest",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/dataset-manifest.json",
+      "hash": "sha256:eebc929a5ef196680b1e52f502627545632ff0fa7b16d8b73706c6e7a27ac6a3",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-008 evidence runner",
+      "purpose": "Dataset manifest with eval-first, holdout, redaction, contamination, withdrawal, and lineage policy.",
+      "relatedRequirementIds": [
+        "TRACE-008",
+        "MUST-012",
+        "MUST-014",
+        "NEG-003",
+        "OUT-001",
+        "EVD-011",
+        "EVD-012",
+        "EVD-014"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "trace-008-governed-data-products-v1"
+    },
+    {
+      "artifactId": "ART-TRACE-008-DATA-GOVERNANCE-REPORT",
+      "artifactType": "data_governance_report",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/data-governance-report.json",
+      "hash": "sha256:5087532bfba64edf6430ceade0a4156a4fe3a7d0509f8507a9cc0d8e65525040",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-008 evidence runner",
+      "purpose": "Governance report for SFT routing and forbidden direct source policy.",
+      "relatedRequirementIds": [
+        "TRACE-008",
+        "MUST-012",
+        "MUST-014",
+        "NEG-003",
+        "OUT-001",
+        "EVD-011",
+        "EVD-012",
+        "EVD-014"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "trace-008-governed-data-products-v1"
+    },
+    {
+      "artifactId": "ART-CMD-TRACE-008-GOVERNED-DATA-PRODUCTS",
+      "artifactType": "command_output",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-008/run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000/CMD-TRACE-008-GOVERNED-DATA-PRODUCTS.log",
+      "hash": "sha256:255ad7cf79c46e058bd65655401821056986dddc3b05fa47dd30eb1d1fe4e77b",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-008 evidence runner",
+      "purpose": "Current command output for CMD-TRACE-008-GOVERNED-DATA-PRODUCTS.",
+      "relatedRequirementIds": [
+        "TRACE-008",
+        "MUST-012",
+        "MUST-014",
+        "NEG-003",
+        "OUT-001",
+        "EVD-011",
+        "EVD-012",
+        "EVD-014"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "trace-008-governed-data-products-v1"
+    },
+    {
+      "artifactId": "ART-CMD-TRACE-008-GOVERNED-DATA-TEST",
+      "artifactType": "command_output",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-008/run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000/CMD-TRACE-008-GOVERNED-DATA-TEST.log",
+      "hash": "sha256:d835af2c96e5f15280df30f021d16fe1a7cf6542962738e4b8fd77055e39049a",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-008 evidence runner",
+      "purpose": "Current command output for CMD-TRACE-008-GOVERNED-DATA-TEST.",
+      "relatedRequirementIds": [
+        "TRACE-008",
+        "MUST-012",
+        "MUST-014",
+        "NEG-003",
+        "OUT-001",
+        "EVD-011",
+        "EVD-012",
+        "EVD-014"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "trace-008-governed-data-products-v1"
+    },
+    {
+      "artifactId": "ART-CMD-RENDER-CONFIRMATION",
+      "artifactType": "command_output",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-008/run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000/CMD-RENDER-CONFIRMATION.log",
+      "hash": "sha256:0616111f432bf03b8cf2219b7bfc57cf2733293d4be22f0cf0a70afa9baf6069",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-008 evidence runner",
+      "purpose": "Current command output for CMD-RENDER-CONFIRMATION.",
+      "relatedRequirementIds": [
+        "TRACE-008",
+        "MUST-012",
+        "MUST-014",
+        "NEG-003",
+        "OUT-001",
+        "EVD-011",
+        "EVD-012",
+        "EVD-014"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "trace-008-governed-data-products-v1"
+    },
+    {
+      "artifactId": "ART-CMD-TRACE-BINDING-ACCEPTANCE",
+      "artifactType": "command_output",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-008/run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000/CMD-TRACE-BINDING-ACCEPTANCE.log",
+      "hash": "sha256:28f615876b3264a3ea949a0648cd5842abbe352753c63df9964a08dfc59b9fc7",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-008 evidence runner",
+      "purpose": "Current command output for CMD-TRACE-BINDING-ACCEPTANCE.",
+      "relatedRequirementIds": [
+        "TRACE-008",
+        "MUST-012",
+        "MUST-014",
+        "NEG-003",
+        "OUT-001",
+        "EVD-011",
+        "EVD-012",
+        "EVD-014"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "trace-008-governed-data-products-v1"
+    },
+    {
+      "artifactId": "ART-CMD-ENCODING-GATE",
+      "artifactType": "command_output",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-008/run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000/CMD-ENCODING-GATE.log",
+      "hash": "sha256:c963cc7c4cc64ebb035ff87452b8771a043023b47125dcb8c056fa0da88a5dad",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-008 evidence runner",
+      "purpose": "Current command output for CMD-ENCODING-GATE.",
+      "relatedRequirementIds": [
+        "TRACE-008",
+        "MUST-012",
+        "MUST-014",
+        "NEG-003",
+        "OUT-001",
+        "EVD-011",
+        "EVD-012",
+        "EVD-014"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "trace-008-governed-data-products-v1"
+    }
+  ],
+  "deliveryEvidence": {
+    "requiredCommands": [
+      {
+        "commandId": "CMD-TRACE-008-GOVERNED-DATA-PRODUCTS",
+        "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-governed-data-products.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data --generated-at 2026-05-19T20:06:00.000Z --generated-by codex --json",
+        "commandType": "delivery_evidence",
+        "blockingIfMissing": true,
+        "traceRows": [
+          "TRACE-008"
+        ],
+        "evidenceRefs": [
+          "EVD-011",
+          "EVD-012",
+          "EVD-014"
+        ],
+        "artifactRefs": [
+          {
+            "artifactId": "ART-TRACE-008-MENTOR-EVENTS",
+            "artifactType": "mentor_event_log",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/mentor-events.jsonl",
+            "hash": "sha256:2c425e4fc533348984a051fc0dd25660a5b2c27ef0ba6a42bad20abb05b18616",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-008 evidence runner",
+            "purpose": "Requirement-scoped mentor events derived from controlled record events while preserving existing event log rows.",
+            "relatedRequirementIds": [
+              "TRACE-008",
+              "MUST-012",
+              "MUST-014",
+              "NEG-003",
+              "OUT-001",
+              "EVD-011",
+              "EVD-012",
+              "EVD-014"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "trace-008-governed-data-products-v1"
+          },
+          {
+            "artifactId": "ART-TRACE-008-SAMPLE-ROUTES",
+            "artifactType": "sample_route_log",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/sample-routes.jsonl",
+            "hash": "sha256:9c7f059cd4ee71bfb6a5fb2eb8815ab35bd13b0d8977f5505dfea4d138eb9f84",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-008 evidence runner",
+            "purpose": "Requirement-scoped sample route decisions before SFT export.",
+            "relatedRequirementIds": [
+              "TRACE-008",
+              "MUST-012",
+              "MUST-014",
+              "NEG-003",
+              "OUT-001",
+              "EVD-011",
+              "EVD-012",
+              "EVD-014"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "trace-008-governed-data-products-v1"
+          },
+          {
+            "artifactId": "ART-TRACE-008-CANONICAL-SAMPLES",
+            "artifactType": "canonical_sample_log",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/canonical-samples.jsonl",
+            "hash": "sha256:bb3835a5a95c15e1a789bdf57c39b9936cc8c617f73a90da094d90b6f7469f4d",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-008 evidence runner",
+            "purpose": "Canonical positive samples only from pass-grade controlled evidence.",
+            "relatedRequirementIds": [
+              "TRACE-008",
+              "MUST-012",
+              "MUST-014",
+              "NEG-003",
+              "OUT-001",
+              "EVD-011",
+              "EVD-012",
+              "EVD-014"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "trace-008-governed-data-products-v1"
+          },
+          {
+            "artifactId": "ART-TRACE-008-DATASET-MANIFEST",
+            "artifactType": "dataset_manifest",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/dataset-manifest.json",
+            "hash": "sha256:eebc929a5ef196680b1e52f502627545632ff0fa7b16d8b73706c6e7a27ac6a3",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-008 evidence runner",
+            "purpose": "Dataset manifest with eval-first, holdout, redaction, contamination, withdrawal, and lineage policy.",
+            "relatedRequirementIds": [
+              "TRACE-008",
+              "MUST-012",
+              "MUST-014",
+              "NEG-003",
+              "OUT-001",
+              "EVD-011",
+              "EVD-012",
+              "EVD-014"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "trace-008-governed-data-products-v1"
+          },
+          {
+            "artifactId": "ART-TRACE-008-DATA-GOVERNANCE-REPORT",
+            "artifactType": "data_governance_report",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/data-governance-report.json",
+            "hash": "sha256:5087532bfba64edf6430ceade0a4156a4fe3a7d0509f8507a9cc0d8e65525040",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-008 evidence runner",
+            "purpose": "Governance report for SFT routing and forbidden direct source policy.",
+            "relatedRequirementIds": [
+              "TRACE-008",
+              "MUST-012",
+              "MUST-014",
+              "NEG-003",
+              "OUT-001",
+              "EVD-011",
+              "EVD-012",
+              "EVD-014"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "trace-008-governed-data-products-v1"
+          }
+        ]
+      },
+      {
+        "commandId": "CMD-TRACE-008-GOVERNED-DATA-TEST",
+        "command": "npx vitest run tests/acceptance/main-agent-governed-data-products.test.ts tests/acceptance/implementation-evidence-ingest.test.ts",
+        "commandType": "delivery_evidence",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": [
+          "TRACE-008"
+        ],
+        "evidenceRefs": [
+          "EVD-011",
+          "EVD-012",
+          "EVD-014"
+        ],
+        "artifactRefs": [
+          {
+            "artifactId": "ART-TRACE-008-NEGATIVE-ASSERTIONS",
+            "artifactType": "negative_assertion_report",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-008/run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000/negative-assertions.json",
+            "hash": "sha256:bf4ef0db945098b1bff5f47e182fc08b5b22704c62f25c6157d15a89401bba14",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-008 evidence runner",
+            "purpose": "Negative assertions for governed SFT source routing and data projection safety.",
+            "relatedRequirementIds": [
+              "TRACE-008",
+              "MUST-012",
+              "MUST-014",
+              "NEG-003",
+              "OUT-001",
+              "EVD-011",
+              "EVD-012",
+              "EVD-014"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "trace-008-governed-data-products-v1"
+          },
+          {
+            "artifactId": "ART-CMD-TRACE-008-GOVERNED-DATA-TEST",
+            "artifactType": "command_output",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-008/run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000/CMD-TRACE-008-GOVERNED-DATA-TEST.log",
+            "hash": "sha256:d835af2c96e5f15280df30f021d16fe1a7cf6542962738e4b8fd77055e39049a",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-008 evidence runner",
+            "purpose": "Current command output for CMD-TRACE-008-GOVERNED-DATA-TEST.",
+            "relatedRequirementIds": [
+              "TRACE-008",
+              "MUST-012",
+              "MUST-014",
+              "NEG-003",
+              "OUT-001",
+              "EVD-011",
+              "EVD-012",
+              "EVD-014"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "trace-008-governed-data-products-v1"
+          }
+        ]
+      }
+    ],
+    "historicalRunRefs": [
+      {
+        "commandId": "CMD-TRACE-008-GOVERNED-DATA-PRODUCTS",
+        "runId": "run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000",
+        "closeoutAttemptId": "trace-008-evidence-attempt-001"
+      },
+      {
+        "commandId": "CMD-TRACE-008-GOVERNED-DATA-TEST",
+        "runId": "run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000",
+        "closeoutAttemptId": "trace-008-evidence-attempt-001"
+      },
+      {
+        "commandId": "CMD-RENDER-CONFIRMATION",
+        "runId": "run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000",
+        "closeoutAttemptId": "trace-008-evidence-attempt-001"
+      },
+      {
+        "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+        "runId": "run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000",
+        "closeoutAttemptId": "trace-008-evidence-attempt-001"
+      },
+      {
+        "commandId": "CMD-ENCODING-GATE",
+        "runId": "run-REQ-CLOSED-LOOP-DESIGN-TRACE-008-20260519-200600000",
+        "closeoutAttemptId": "trace-008-evidence-attempt-001"
+      }
+    ]
+  },
+  "requirementClosures": [
+    {
+      "requirementId": "MUST-012",
+      "status": "pass"
+    },
+    {
+      "requirementId": "MUST-014",
+      "status": "pass"
+    },
+    {
+      "requirementId": "NEG-003",
+      "status": "pass"
+    },
+    {
+      "requirementId": "OUT-001",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-011",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-012",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-014",
+      "status": "pass"
+    }
+  ],
+  "gateChecks": [
+    {
+      "gate": "Data Governance Gate",
+      "decision": "pass"
+    },
+    {
+      "gate": "SFT Positive Sample Routing Gate",
+      "decision": "pass"
+    }
+  ],
+  "closeoutAttemptId": "trace-008-evidence-attempt-001"
+}

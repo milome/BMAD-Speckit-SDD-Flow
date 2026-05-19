@@ -1,0 +1,30 @@
+{
+  "ok": true,
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "outDir": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data",
+  "paths": {
+    "mentorEvents": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/mentor-events.jsonl",
+    "sampleRoutes": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/sample-routes.jsonl",
+    "canonicalSamples": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/canonical-samples.jsonl",
+    "validation": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/validation.jsonl",
+    "test": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/test.jsonl",
+    "manifest": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/dataset-manifest.json",
+    "report": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/data-governance-report.json"
+  },
+  "hashes": {
+    "mentorEvents": "sha256:2c425e4fc533348984a051fc0dd25660a5b2c27ef0ba6a42bad20abb05b18616",
+    "sampleRoutes": "sha256:9c7f059cd4ee71bfb6a5fb2eb8815ab35bd13b0d8977f5505dfea4d138eb9f84",
+    "canonicalSamples": "sha256:bb3835a5a95c15e1a789bdf57c39b9936cc8c617f73a90da094d90b6f7469f4d",
+    "validation": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "test": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "manifest": "sha256:eebc929a5ef196680b1e52f502627545632ff0fa7b16d8b73706c6e7a27ac6a3",
+    "report": "sha256:5087532bfba64edf6430ceade0a4156a4fe3a7d0509f8507a9cc0d8e65525040"
+  },
+  "counts": {
+    "mentorEvents": 15,
+    "sampleRoutes": 11,
+    "canonicalSamples": 7,
+    "rejectedRoutes": 4
+  }
+}
