@@ -1,0 +1,42 @@
+{
+  "reportType": "main_agent_runtime_policy_snapshot_check",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "evaluatedAt": "2026-05-19T15:19:50.214Z",
+  "evaluatedBy": "agent",
+  "decision": "blocked",
+  "blockingReasons": [
+    "runtimePolicySnapshotRef_missing",
+    "runtimePolicySnapshotRef_path_missing",
+    "runtimePolicySnapshot_missing:<missing>",
+    "runtimePolicySnapshot_kind_invalid",
+    "runtimePolicySnapshot_schemaVersion_invalid",
+    "runtimePolicySnapshot_recordId_mismatch",
+    "runtimePolicySnapshot_requirementSetId_mismatch",
+    "runtimePolicySnapshot_sourceDocumentHash_missing",
+    "runtimePolicySnapshot_implementationConfirmationHash_missing",
+    "runtimePolicySnapshot_architectureConfirmationHash_missing",
+    "runtimePolicySnapshot_policyHash_invalid_or_missing",
+    "runtimePolicySnapshot_locale_invalid_or_missing:<missing>",
+    "runtimePolicySnapshot_host_missing",
+    "runtimePolicySnapshot_stage_missing",
+    "runtimePolicySnapshot_strictness_invalid_or_missing:<missing>",
+    "runtimePolicySnapshot_mandatoryGates_missing",
+    "runtimePolicySnapshot_localeIsolation_missing"
+  ],
+  "runtimePolicySnapshotRef": null,
+  "runtimePolicySnapshotPath": null,
+  "runtimePolicySnapshotHash": null,
+  "snapshotSummary": {
+    "kind": "",
+    "schemaVersion": "",
+    "policyHash": "",
+    "locale": "",
+    "host": "",
+    "stage": "",
+    "strictness": "",
+    "mandatoryGates": null,
+    "localeIsolation": null
+  },
+  "recordPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json"
+}

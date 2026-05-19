@@ -1,0 +1,65 @@
+{
+  "kind": "recovery-context",
+  "schemaVersion": "recovery-context/v1",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "generatedAt": "2026-05-19T15:19:38.995Z",
+  "resolvedRuntimeContext": {
+    "version": 1,
+    "kind": "ResolvedRuntimeContext",
+    "recordId": "REQ-CLOSED-LOOP-DESIGN",
+    "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+    "status": "user_confirmed",
+    "flow": "standalone_tasks",
+    "stage": "implement",
+    "entryFlow": "standalone_tasks",
+    "entryFlowClass": "task_packet_entry",
+    "workflowAdapter": "direct",
+    "updatedAt": "2026-05-19T22:45:00.000+08:00",
+    "sourcePath": "D:/Dev/BMAD-Speckit-SDD-Flow/docs/design/需求实现完整性门禁与重跑闭环设计.md",
+    "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+    "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
+    "confirmationPageHash": "sha256:2c43f446c3ab815a731457620521a3738481f3ef85fb7ad06ce798ef8fe0f334",
+    "artifactPath": "D:/Dev/BMAD-Speckit-SDD-Flow/docs/design/需求实现完整性门禁与重跑闭环设计.md",
+    "indexPath": null,
+    "recordPath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\runtime\\requirement-records\\REQ-CLOSED-LOOP-DESIGN\\requirement-record.json",
+    "runtimePolicySnapshotPath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\runtime\\requirement-records\\REQ-CLOSED-LOOP-DESIGN\\recovery\\runtime-policy-snapshot.json",
+    "runtimePolicySnapshotExists": false,
+    "recoveryContextPath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\runtime\\requirement-records\\REQ-CLOSED-LOOP-DESIGN\\recovery\\recovery-context.json",
+    "recoveryContextExists": false,
+    "artifactIndexPath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\runtime\\requirement-records\\artifact-index.jsonl",
+    "orchestrationStateDir": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\runtime\\requirement-records\\REQ-CLOSED-LOOP-DESIGN\\orchestration\\orchestration-state",
+    "promptPacketsDir": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\runtime\\requirement-records\\REQ-CLOSED-LOOP-DESIGN\\prompts\\prompt-packets",
+    "resolutionSource": "explicit_args_without_index",
+    "resolvedAt": "2026-05-19T15:19:33.717Z"
+  },
+  "runtimePolicySnapshotRef": {
+    "eventType": "artifact_indexed",
+    "artifactType": "runtime_policy_snapshot",
+    "sourceOfTruthRole": "projection",
+    "recordId": "REQ-CLOSED-LOOP-DESIGN",
+    "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+    "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/recovery/runtime-policy-snapshot.json",
+    "contentHash": "sha256:f4550e9cf27c2649d158656ea5c0c2e03936962b349dbcfff2f9e84ba5d687aa",
+    "producer": "write-runtime-policy-snapshot-and-recovery-context",
+    "purpose": "Requirement-scoped runtime policy snapshot for recovery, audit, hook trust, and closeout context; not a direct control decision source.",
+    "relatedRequirementIds": [
+      "MUST-026",
+      "NEG-014",
+      "OUT-012",
+      "EVD-026",
+      "TRACE-019"
+    ],
+    "status": "active",
+    "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+    "outputVersion": "runtime-policy-snapshot/v1",
+    "traceRows": [
+      "TRACE-019"
+    ],
+    "evidenceRefs": [
+      "EVD-026"
+    ]
+  },
+  "controlSource": "requirement-record.json",
+  "legacyRuntimeContextAllowed": false
+}

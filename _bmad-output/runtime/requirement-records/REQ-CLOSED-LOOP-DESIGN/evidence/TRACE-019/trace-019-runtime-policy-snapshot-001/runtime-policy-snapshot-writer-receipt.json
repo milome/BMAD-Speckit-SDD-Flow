@@ -1,0 +1,10 @@
+{
+  "commandId": "CMD-RUNTIME-POLICY-SNAPSHOT-WRITER",
+  "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/write-runtime-policy-snapshot-and-recovery-context.ts --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --locale zh-CN --host codex --json",
+  "exitCode": 0,
+  "outputSummary": "Generated requirement-scoped runtime-policy-snapshot.json and recovery-context.json from requirement-records resolver.",
+  "runtimePolicySnapshotPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/recovery/runtime-policy-snapshot.json",
+  "runtimePolicySnapshotHash": "sha256:f4550e9cf27c2649d158656ea5c0c2e03936962b349dbcfff2f9e84ba5d687aa",
+  "recoveryContextPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/recovery/recovery-context.json",
+  "recoveryContextHash": "sha256:3388c47fdc1f5581041f2ce07ed29b1ee04520f68cf97b7d53705deb1a2a7fcf"
+}

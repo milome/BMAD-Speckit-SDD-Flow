@@ -1,0 +1,57 @@
+{
+  "reportType": "main_agent_runtime_policy_snapshot_check",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "evaluatedAt": "2026-05-19T15:23:48.100Z",
+  "evaluatedBy": "agent",
+  "decision": "pass",
+  "blockingReasons": [],
+  "runtimePolicySnapshotRef": {
+    "eventType": "artifact_indexed",
+    "artifactType": "runtime_policy_snapshot",
+    "sourceOfTruthRole": "projection",
+    "recordId": "REQ-CLOSED-LOOP-DESIGN",
+    "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+    "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/recovery/runtime-policy-snapshot.json",
+    "contentHash": "sha256:f4550e9cf27c2649d158656ea5c0c2e03936962b349dbcfff2f9e84ba5d687aa",
+    "producer": "write-runtime-policy-snapshot-and-recovery-context",
+    "purpose": "Requirement-scoped runtime policy snapshot for recovery, audit, hook trust, and closeout context; not a direct control decision source.",
+    "relatedRequirementIds": [
+      "MUST-026",
+      "NEG-014",
+      "OUT-012",
+      "EVD-005",
+      "EVD-022",
+      "EVD-026",
+      "TRACE-019"
+    ],
+    "status": "active",
+    "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+    "outputVersion": "runtime-policy-snapshot/v1",
+    "traceRows": [
+      "TRACE-019"
+    ],
+    "evidenceRefs": [
+      "EVD-026"
+    ]
+  },
+  "runtimePolicySnapshotPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/recovery/runtime-policy-snapshot.json",
+  "runtimePolicySnapshotHash": "sha256:f4550e9cf27c2649d158656ea5c0c2e03936962b349dbcfff2f9e84ba5d687aa",
+  "snapshotSummary": {
+    "kind": "runtime-policy-snapshot",
+    "schemaVersion": "runtime-policy-snapshot/v1",
+    "policyHash": "sha256:f2463943b1bbafc51a2aec8987e5f899018692c0e186b0fd3464e37a34ce5095",
+    "locale": "zh-CN",
+    "host": "codex",
+    "stage": "implement",
+    "strictness": "strict",
+    "mandatoryGates": [],
+    "localeIsolation": {
+      "localeAffectsConfirmationLanguage": false,
+      "localeAffectsRequirementSemantics": false,
+      "localeAffectsPassEvidence": false,
+      "localeAffectsCloseout": false
+    }
+  },
+  "recordPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json"
+}

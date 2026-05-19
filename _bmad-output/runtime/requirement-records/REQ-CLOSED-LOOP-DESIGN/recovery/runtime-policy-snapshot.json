@@ -1,0 +1,560 @@
+{
+  "kind": "runtime-policy-snapshot",
+  "schemaVersion": "runtime-policy-snapshot/v1",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "generatedAt": "2026-05-19T15:19:38.995Z",
+  "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+  "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
+  "architectureConfirmationHash": "sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+  "policyHash": "sha256:f2463943b1bbafc51a2aec8987e5f899018692c0e186b0fd3464e37a34ce5095",
+  "policy": {
+    "auditRequired": true,
+    "compatibilitySource": "governance",
+    "complexity": "low",
+    "contextMaturity": "seeded",
+    "continueDecision": "blocked",
+    "continueStateSource": "runtimeContext",
+    "control": {
+      "auditRequired": true,
+      "convergence": {
+        "applicable_stages": [
+          "implement",
+          "post_audit",
+          "epic_complete"
+        ],
+        "critical_auditor_ratio": 0.5,
+        "description": "严格模式",
+        "no_gap_required": true,
+        "rounds": 3
+      },
+      "generateDoc": true,
+      "granularityGoverned": true,
+      "mandatoryGate": false,
+      "reason": "legacy:auditRequired=true,validationLevel=null,strictness=strict,generateDoc=true; convergence:strict; mandatory:none; D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\_config\\runtime-granularity-stages.yaml:granularityGoverned=true; trigger:standalone_tasks/implement→implement; scoringEnabled=true(matched); identity:contextSource=ResolvedRuntimeContext",
+      "scoringEnabled": true,
+      "skipAllowed": false,
+      "strictness": "strict",
+      "triggerStage": "implement",
+      "validationLevel": null
+    },
+    "convergence": {
+      "applicable_stages": [
+        "implement",
+        "post_audit",
+        "epic_complete"
+      ],
+      "critical_auditor_ratio": 0.5,
+      "description": "严格模式",
+      "no_gap_required": true,
+      "rounds": 3
+    },
+    "fiveLayerProgress": {
+      "completedLayers": [],
+      "currentLayer": "layer_1",
+      "currentStage": "prd",
+      "nextRequiredLayer": "layer_1"
+    },
+    "flow": "standalone_tasks",
+    "generateDoc": true,
+    "granularityGoverned": true,
+    "helpRouting": {
+      "canonicalImplementationGate": "implementation-readiness",
+      "complexity": "low",
+      "complexityForcedReasons": [],
+      "complexityScore": 3,
+      "contextMaturity": "seeded",
+      "continueDecision": "blocked",
+      "continueStateSource": "runtimeContext",
+      "evidence": {
+        "complexityFactors": {
+          "forcedReasons": [],
+          "impactSurface": 1,
+          "rollbackDifficulty": 1,
+          "sharedContract": 0,
+          "uncertainty": 1,
+          "verificationCost": 0
+        },
+        "contextMaturity": {
+          "artifactComplete": true,
+          "executionSpecific": false,
+          "fourSignalsComplete": false,
+          "governanceHealthy": false,
+          "runtimeScopeComplete": true
+        },
+        "implementationReadiness": {
+          "blockerCount": 0,
+          "documentAuditPassed": false,
+          "readinessReportPresent": true,
+          "remediationState": "none",
+          "rerunGateStatus": "unknown"
+        }
+      },
+      "evidenceSources": {
+        "authoritativeAuditReportPath": null,
+        "executionRecordPath": null,
+        "readinessReportPath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\planning-artifacts\\dev\\implementation-readiness-report-2026-04-29.md",
+        "remediationArtifactPath": null
+      },
+      "executionRecordId": null,
+      "fiveLayerProgress": {
+        "completedLayers": [],
+        "currentLayer": "layer_1",
+        "currentStage": "prd",
+        "nextRequiredLayer": "layer_1"
+      },
+      "implementationEntryDecision": "block",
+      "implementationEntryGate": {
+        "blockerCodes": [
+          "standalone_tasks_document_audit_not_closed"
+        ],
+        "blockerSummary": [
+          "TASKS/BUGFIX prerequisite audit authoritative closeout is missing or has not passed"
+        ],
+        "decision": "block",
+        "evaluatedAt": "2026-05-19T22:45:00.000+08:00",
+        "evidenceSources": {
+          "authoritativeAuditReportPath": null,
+          "executionRecordPath": null,
+          "readinessReportPath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\planning-artifacts\\dev\\implementation-readiness-report-2026-04-29.md",
+          "remediationArtifactPath": null
+        },
+        "gateName": "implementation-readiness",
+        "readinessStatus": "blocked",
+        "recommendedFlow": "standalone_tasks",
+        "requestedFlow": "standalone_tasks",
+        "rerouteReason": null,
+        "rerouteRequired": false,
+        "semanticFingerprint": "D:/Dev/BMAD-Speckit-SDD-Flow/docs/design/需求实现完整性门禁与重跑闭环设计.md"
+      },
+      "implementationEntryRecommended": false,
+      "implementationReadinessStatus": "blocked",
+      "mainAgentCanContinue": false,
+      "mainAgentNextAction": "await_user",
+      "mainAgentOrchestration": {
+        "closeout": null,
+        "continueDecision": "blocked",
+        "drift": {
+          "blockingReason": "Missing implementation readiness baseline for implementation verdict.",
+          "driftSeverity": "major",
+          "driftSignals": [],
+          "driftedDimensions": [],
+          "effectiveVerdict": "blocked_pending_rereadiness",
+          "reReadinessRequired": true,
+          "readinessBaselineRunId": null
+        },
+        "fourSignal": null,
+        "gatesLoop": {
+          "activePacketId": "audit-1777324118569",
+          "circuitOpen": false,
+          "lastResult": "task-report:done",
+          "maxRetries": 3,
+          "noProgressCount": 0,
+          "rerunGate": null,
+          "retryCount": 0
+        },
+        "latestGate": {
+          "decision": "true_blocker",
+          "gateId": "implementation-readiness",
+          "reason": "orchestration state currently blocks continuation"
+        },
+        "mainAgentCanContinue": false,
+        "mainAgentNextAction": "await_user",
+        "mainAgentReady": false,
+        "orchestrationState": {
+          "closeout": {
+            "approved": false,
+            "handoffPersisted": false,
+            "invoked": false,
+            "resultCode": null,
+            "scoreWriteResult": null
+          },
+          "currentPhase": "story_create",
+          "flow": "story",
+          "gatesLoop": {
+            "activePacketId": "audit-1777324118569",
+            "circuitOpen": false,
+            "lastResult": "task-report:done",
+            "maxRetries": 3,
+            "noProgressCount": 0,
+            "rerunGate": null,
+            "retryCount": 0
+          },
+          "host": "cursor",
+          "lastTaskReport": {
+            "evidence": [
+              "soak-tick-NaN"
+            ],
+            "filesChanged": [],
+            "packetId": "audit-1777324118569",
+            "status": "done",
+            "validationsRun": [
+              "main-agent-soak:cursor"
+            ]
+          },
+          "longRun": {
+            "active_host_mode": "cursor",
+            "degradation_level": "none",
+            "last_progress_ts": "2026-04-27T09:48:11.518Z",
+            "last_tick_ts": "2026-04-27T21:08:38.576Z",
+            "loop_seq": 2,
+            "policyHash": "597a468a3d4b04e824ff85e84e1914db0f675a259484e46abab5092b11afaff0",
+            "policyVersion": "long-run-runtime-policy/v1",
+            "resume_count": 0,
+            "resumed_from_checkpoint": false,
+            "running_for_ms": 40827058
+          },
+          "nextAction": "await_user",
+          "originalExecutionPacketId": null,
+          "pendingPacket": {
+            "claimOwner": "main-agent-run-loop",
+            "createdAt": "2026-04-27T21:08:38.570Z",
+            "heartbeat_seq": 1,
+            "last_heartbeat_ts": "2026-04-27T21:08:38.576Z",
+            "lease_expires_ts": "2026-04-27T21:11:38.576Z",
+            "lease_owner": "cursor",
+            "packetId": "audit-1777324118569",
+            "packetKind": "execution",
+            "packetPath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\runtime\\governance\\packets\\story-story-1-eval-system-scoring-core\\audit-1777324118569.json",
+            "retry_count": 0,
+            "stale_recovered_count": 0,
+            "status": "completed"
+          },
+          "sessionId": "story-story-1-eval-system-scoring-core",
+          "version": 1
+        },
+        "orchestrationStatePath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\runtime\\governance\\orchestration-state\\story-story-1-eval-system-scoring-core.json",
+        "pendingPacket": {
+          "allowedWriteScope": [
+            "scripts/**",
+            "tests/acceptance/**",
+            "docs/**",
+            "_bmad-output/**",
+            "specs/**"
+          ],
+          "downstreamConsumer": null,
+          "expectedDelta": "execute audit through the main-agent runtime loop",
+          "flow": "story",
+          "inputArtifacts": [],
+          "packetId": "audit-1777324118569",
+          "parentSessionId": "story-story-1-eval-system-scoring-core",
+          "phase": "implement",
+          "role": "code-reviewer",
+          "sourceRecommendationPacketId": null,
+          "stopConditions": [
+            "true blocker detected",
+            "scope must widen"
+          ],
+          "successCriteria": [
+            "bounded task report returned",
+            "state updated"
+          ],
+          "taskType": "audit"
+        },
+        "pendingPacketStatus": "completed",
+        "sessionId": "story-story-1-eval-system-scoring-core",
+        "source": "orchestration_state"
+      },
+      "mainAgentReady": false,
+      "recommendationLabel": "blocked",
+      "recommendedFlow": "standalone_tasks",
+      "rerouteReason": null,
+      "rerouteRequired": false,
+      "shouldUpgradeStandaloneTasks": false,
+      "sourceMode": null
+    },
+    "identity": {
+      "contextSource": "ResolvedRuntimeContext",
+      "flow": "standalone_tasks",
+      "stage": "implement"
+    },
+    "implementationEntryDecision": "block",
+    "implementationEntryGate": {
+      "blockerCodes": [
+        "standalone_tasks_document_audit_not_closed"
+      ],
+      "blockerSummary": [
+        "TASKS/BUGFIX prerequisite audit authoritative closeout is missing or has not passed"
+      ],
+      "decision": "block",
+      "evaluatedAt": "2026-05-19T22:45:00.000+08:00",
+      "evidenceSources": {
+        "authoritativeAuditReportPath": null,
+        "executionRecordPath": null,
+        "readinessReportPath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\planning-artifacts\\dev\\implementation-readiness-report-2026-04-29.md",
+        "remediationArtifactPath": null
+      },
+      "gateName": "implementation-readiness",
+      "readinessStatus": "blocked",
+      "recommendedFlow": "standalone_tasks",
+      "requestedFlow": "standalone_tasks",
+      "rerouteReason": null,
+      "rerouteRequired": false,
+      "semanticFingerprint": "D:/Dev/BMAD-Speckit-SDD-Flow/docs/design/需求实现完整性门禁与重跑闭环设计.md"
+    },
+    "implementationEntryRecommended": false,
+    "implementationReadinessStatus": "blocked",
+    "language": {
+      "preserveMachineKeys": true,
+      "preserveParserAnchors": true,
+      "preserveTriggerStage": true
+    },
+    "mainAgentCanContinue": false,
+    "mainAgentNextAction": "await_user",
+    "mainAgentOrchestration": {
+      "closeout": null,
+      "continueDecision": "blocked",
+      "drift": {
+        "blockingReason": "Missing implementation readiness baseline for implementation verdict.",
+        "driftSeverity": "major",
+        "driftSignals": [],
+        "driftedDimensions": [],
+        "effectiveVerdict": "blocked_pending_rereadiness",
+        "reReadinessRequired": true,
+        "readinessBaselineRunId": null
+      },
+      "fourSignal": null,
+      "gatesLoop": {
+        "activePacketId": "audit-1777324118569",
+        "circuitOpen": false,
+        "lastResult": "task-report:done",
+        "maxRetries": 3,
+        "noProgressCount": 0,
+        "rerunGate": null,
+        "retryCount": 0
+      },
+      "latestGate": {
+        "decision": "true_blocker",
+        "gateId": "implementation-readiness",
+        "reason": "orchestration state currently blocks continuation"
+      },
+      "mainAgentCanContinue": false,
+      "mainAgentNextAction": "await_user",
+      "mainAgentReady": false,
+      "orchestrationState": {
+        "closeout": {
+          "approved": false,
+          "handoffPersisted": false,
+          "invoked": false,
+          "resultCode": null,
+          "scoreWriteResult": null
+        },
+        "currentPhase": "story_create",
+        "flow": "story",
+        "gatesLoop": {
+          "activePacketId": "audit-1777324118569",
+          "circuitOpen": false,
+          "lastResult": "task-report:done",
+          "maxRetries": 3,
+          "noProgressCount": 0,
+          "rerunGate": null,
+          "retryCount": 0
+        },
+        "host": "cursor",
+        "lastTaskReport": {
+          "evidence": [
+            "soak-tick-NaN"
+          ],
+          "filesChanged": [],
+          "packetId": "audit-1777324118569",
+          "status": "done",
+          "validationsRun": [
+            "main-agent-soak:cursor"
+          ]
+        },
+        "longRun": {
+          "active_host_mode": "cursor",
+          "degradation_level": "none",
+          "last_progress_ts": "2026-04-27T09:48:11.518Z",
+          "last_tick_ts": "2026-04-27T21:08:38.576Z",
+          "loop_seq": 2,
+          "policyHash": "597a468a3d4b04e824ff85e84e1914db0f675a259484e46abab5092b11afaff0",
+          "policyVersion": "long-run-runtime-policy/v1",
+          "resume_count": 0,
+          "resumed_from_checkpoint": false,
+          "running_for_ms": 40827058
+        },
+        "nextAction": "await_user",
+        "originalExecutionPacketId": null,
+        "pendingPacket": {
+          "claimOwner": "main-agent-run-loop",
+          "createdAt": "2026-04-27T21:08:38.570Z",
+          "heartbeat_seq": 1,
+          "last_heartbeat_ts": "2026-04-27T21:08:38.576Z",
+          "lease_expires_ts": "2026-04-27T21:11:38.576Z",
+          "lease_owner": "cursor",
+          "packetId": "audit-1777324118569",
+          "packetKind": "execution",
+          "packetPath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\runtime\\governance\\packets\\story-story-1-eval-system-scoring-core\\audit-1777324118569.json",
+          "retry_count": 0,
+          "stale_recovered_count": 0,
+          "status": "completed"
+        },
+        "sessionId": "story-story-1-eval-system-scoring-core",
+        "version": 1
+      },
+      "orchestrationStatePath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\runtime\\governance\\orchestration-state\\story-story-1-eval-system-scoring-core.json",
+      "pendingPacket": {
+        "allowedWriteScope": [
+          "scripts/**",
+          "tests/acceptance/**",
+          "docs/**",
+          "_bmad-output/**",
+          "specs/**"
+        ],
+        "downstreamConsumer": null,
+        "expectedDelta": "execute audit through the main-agent runtime loop",
+        "flow": "story",
+        "inputArtifacts": [],
+        "packetId": "audit-1777324118569",
+        "parentSessionId": "story-story-1-eval-system-scoring-core",
+        "phase": "implement",
+        "role": "code-reviewer",
+        "sourceRecommendationPacketId": null,
+        "stopConditions": [
+          "true blocker detected",
+          "scope must widen"
+        ],
+        "successCriteria": [
+          "bounded task report returned",
+          "state updated"
+        ],
+        "taskType": "audit"
+      },
+      "pendingPacketStatus": "completed",
+      "sessionId": "story-story-1-eval-system-scoring-core",
+      "source": "orchestration_state"
+    },
+    "mainAgentReady": false,
+    "mandatoryGate": false,
+    "reason": "legacy:auditRequired=true,validationLevel=null,strictness=strict,generateDoc=true; convergence:strict; mandatory:none; D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\_config\\runtime-granularity-stages.yaml:granularityGoverned=true; trigger:standalone_tasks/implement→implement; scoringEnabled=true(matched); identity:contextSource=ResolvedRuntimeContext",
+    "reviewerContract": {
+      "activeAuditConsumer": {
+        "auditorScript": "auditor-tasks-doc",
+        "closeoutStage": "standalone_tasks",
+        "entryStage": "standalone_tasks",
+        "profile": "tasks_doc_audit",
+        "scoreStage": "tasks",
+        "triggerStage": "speckit_4_2"
+      },
+      "closeoutRunner": "runAuditorHost",
+      "compatibilityGuards": {
+        "codexBehaviorChangeAllowed": true,
+        "codexNoopRequired": false
+      },
+      "facilitatorIdentity": "party_mode_facilitator",
+      "governance": {
+        "closeoutEnvelopeFields": [
+          "resultCode",
+          "requiredFixes",
+          "requiredFixesDetail",
+          "rerunDecision",
+          "scoringFailureMode",
+          "packetExecutionClosureStatus"
+        ],
+        "gatesLoopRequired": true,
+        "implementationReadinessGateName": "implementation-readiness",
+        "implementationReadinessStatusRequired": true,
+        "packetExecutionClosureRequired": true,
+        "packetExecutionClosureStatuses": [
+          "awaiting_rerun_gate",
+          "retry_pending",
+          "gate_passed",
+          "escalated"
+        ],
+        "rerunGatesRequired": true
+      },
+      "hostAdapterBoundary": {
+        "hostLocalFallbackBusinessRulesForbidden": true,
+        "hostLocalRoutePrecedenceForbidden": true,
+        "hostLocalStageSemanticsForbidden": true,
+        "projectionOnly": true
+      },
+      "registryVersion": "reviewer_registry_v1",
+      "requiredRolloutProofs": [
+        "parity_proof",
+        "consumer_install_proof",
+        "rollback_proof",
+        "codex_parity_proof",
+        "codex_closeout_proof",
+        "codex_scoring_proof"
+      ],
+      "reviewerDisplayName": "code-reviewer",
+      "reviewerIdentity": "bmad_code_reviewer",
+      "rolloutGate": {
+        "blockingProofs": [
+          "parity_proof",
+          "consumer_install_proof",
+          "rollback_proof",
+          "codex_parity_proof",
+          "codex_closeout_proof",
+          "codex_scoring_proof"
+        ],
+        "canClaimFullIsomorphism": false,
+        "cleanupAllowed": false,
+        "completeProofs": [],
+        "requiredProofs": [
+          "parity_proof",
+          "consumer_install_proof",
+          "rollback_proof",
+          "codex_parity_proof",
+          "codex_closeout_proof",
+          "codex_scoring_proof"
+        ],
+        "status": "blocked",
+        "summary": "Blocked until proofs are complete: parity_proof, consumer_install_proof, rollback_proof, codex_parity_proof, codex_closeout_proof, codex_scoring_proof",
+        "version": "reviewer_rollout_gate_v1"
+      },
+      "schemaVersions": {
+        "closeout": "review_host_closeout_v1",
+        "handoff": "review_handoff_v1",
+        "input": "review_input_v1",
+        "output": "review_output_v1"
+      },
+      "sharedCore": {
+        "basePromptPath": "_bmad/core/agents/code-reviewer/base-prompt.md",
+        "profilePackPath": "_bmad/core/agents/code-reviewer/profiles.json",
+        "rootPath": "_bmad/core/agents/code-reviewer",
+        "version": "reviewer_shared_core_v1"
+      },
+      "supportedAuditEntryStages": [
+        "story",
+        "spec",
+        "plan",
+        "gaps",
+        "tasks",
+        "implement",
+        "bugfix",
+        "document",
+        "standalone_tasks"
+      ],
+      "supportedProfiles": [
+        "story_audit",
+        "spec_audit",
+        "plan_audit",
+        "tasks_audit",
+        "implement_audit",
+        "bugfix_doc_audit",
+        "tasks_doc_audit"
+      ],
+      "version": "reviewer_contract_projection_v1"
+    },
+    "scoringEnabled": true,
+    "skipAllowed": false,
+    "stage": "implement",
+    "strictness": "strict",
+    "triggerStage": "implement",
+    "validationLevel": null
+  },
+  "locale": "zh-CN",
+  "host": "codex",
+  "stage": "implement",
+  "strictness": "strict",
+  "mandatoryGates": [],
+  "localeIsolation": {
+    "localeAffectsConfirmationLanguage": false,
+    "localeAffectsRequirementSemantics": false,
+    "localeAffectsPassEvidence": false,
+    "localeAffectsCloseout": false
+  }
+}

@@ -332,6 +332,41 @@ function validateTraceStatusPolicy(policy: JsonObject | undefined, prefix: strin
   return mismatches;
 }
 
+function validateRuntimePolicySnapshotRef(packet: JsonObject): string[] {
+  const ref = packet.runtimePolicySnapshotRef;
+  if (ref === undefined || ref === null) return [];
+  const mismatches: string[] = [];
+  if (!ref || typeof ref !== 'object' || Array.isArray(ref)) {
+    return ['runtime_policy_snapshot_ref_invalid'];
+  }
+  const runtimePolicySnapshotRef = ref as JsonObject;
+  const artifactPath = text(runtimePolicySnapshotRef.path);
+  const hash = text(runtimePolicySnapshotRef.hash ?? runtimePolicySnapshotRef.contentHash);
+  const role = text(runtimePolicySnapshotRef.sourceOfTruthRole);
+  if (text(runtimePolicySnapshotRef.artifactType) !== 'runtime_policy_snapshot') {
+    mismatches.push('runtime_policy_snapshot_ref_artifact_type_invalid');
+  }
+  if (!artifactPath) mismatches.push('runtime_policy_snapshot_ref_path_missing');
+  if (!hash) mismatches.push('runtime_policy_snapshot_ref_hash_missing');
+  if (role === 'control') mismatches.push('runtime_policy_snapshot_ref_must_not_be_control');
+  if (!['evidence', 'projection', 'read_model'].includes(role)) {
+    mismatches.push('runtime_policy_snapshot_ref_source_of_truth_role_invalid');
+  }
+  if (!text(runtimePolicySnapshotRef.producer)) mismatches.push('runtime_policy_snapshot_ref_producer_missing');
+  if (!text(runtimePolicySnapshotRef.purpose)) mismatches.push('runtime_policy_snapshot_ref_purpose_missing');
+  if (arrayOfStrings(runtimePolicySnapshotRef.relatedRequirementIds).length === 0) {
+    mismatches.push('runtime_policy_snapshot_ref_related_requirement_ids_missing');
+  }
+  if (!text(runtimePolicySnapshotRef.status)) mismatches.push('runtime_policy_snapshot_ref_status_missing');
+  if (!text(runtimePolicySnapshotRef.inputVersion)) mismatches.push('runtime_policy_snapshot_ref_input_version_missing');
+  if (!text(runtimePolicySnapshotRef.outputVersion)) mismatches.push('runtime_policy_snapshot_ref_output_version_missing');
+  const absolute = path.isAbsolute(artifactPath) ? artifactPath : path.resolve(process.cwd(), artifactPath);
+  if (artifactPath && fs.existsSync(absolute) && hash && sha256File(absolute) !== hash) {
+    mismatches.push(`runtime_policy_snapshot_ref_hash_mismatch:${artifactPath}`);
+  }
+  return mismatches;
+}
+
 function validatePacket(packet: JsonObject, record: JsonObject): string[] {
   const entryFlowState =
     packet.entryFlowState && typeof packet.entryFlowState === 'object' && !Array.isArray(packet.entryFlowState)
@@ -357,6 +392,7 @@ function validatePacket(packet: JsonObject, record: JsonObject): string[] {
     ...validateEntryFlowState(packet),
     ...validateGlobalContractTraceabilityPolicy(effectiveTraceabilityPolicy, 'effective'),
     ...validateTraceStatusPolicy(effectiveTraceStatusPolicy, 'effective'),
+    ...validateRuntimePolicySnapshotRef(packet),
   ];
   if (containsForbiddenField(packet, 'result')) mismatches.push('forbidden_result_field');
   if (containsForbiddenField(packet, 'fullDiff')) mismatches.push('forbidden_inline_full_diff');
@@ -532,6 +568,12 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
     normalizeHistoricalCommand(command, recordId, requirementSetId)
   );
   const packetRequiredCommands = arrayOfObjects(packetDeliveryEvidence.requiredCommands);
+  const packetRuntimePolicySnapshotRef =
+    packet.runtimePolicySnapshotRef &&
+    typeof packet.runtimePolicySnapshotRef === 'object' &&
+    !Array.isArray(packet.runtimePolicySnapshotRef)
+      ? (packet.runtimePolicySnapshotRef as JsonObject)
+      : undefined;
   const requiredCommandsById = new Map<string, JsonObject>();
   for (const command of existingRequiredCommands) requiredCommandsById.set(text(command.commandId), command);
   for (const command of packetRequiredCommands) requiredCommandsById.set(text(command.commandId), command);
@@ -558,6 +600,15 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
                 traceStatusPolicy: (packet.entryFlowState as JsonObject).traceStatusPolicy,
               }
             : {}),
+        }
+      : {}),
+    ...(packetRuntimePolicySnapshotRef
+      ? {
+          runtimePolicySnapshotRef: {
+            ...packetRuntimePolicySnapshotRef,
+            path: normalizePathForRecord(text(packetRuntimePolicySnapshotRef.path)),
+            contentHash: text(packetRuntimePolicySnapshotRef.contentHash ?? packetRuntimePolicySnapshotRef.hash),
+          },
         }
       : {}),
     executionIterations: [...arrayOfObjects(record.executionIterations), executionEvent],

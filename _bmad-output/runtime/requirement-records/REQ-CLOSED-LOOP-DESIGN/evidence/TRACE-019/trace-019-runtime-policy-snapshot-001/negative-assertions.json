@@ -1,0 +1,24 @@
+{
+  "assertions": [
+    {
+      "id": "NEG-014-ref-required",
+      "status": "covered",
+      "statement": "runtime policy payload without runtimePolicySnapshotRef remains blocked by main-agent-runtime-policy-snapshot-check."
+    },
+    {
+      "id": "NEG-014-hash-required",
+      "status": "covered",
+      "statement": "runtimePolicySnapshotRef hash drift is blocked and cannot be used for recovery, audit, or closeout."
+    },
+    {
+      "id": "MUST-026-locale-isolation",
+      "status": "covered",
+      "statement": "localeIsolation flags must all be false, so locale cannot alter confirmation language, requirement semantics, PASS evidence, or closeout."
+    },
+    {
+      "id": "OUT-012-no-legacy-context",
+      "status": "covered",
+      "statement": "ResolvedRuntimeContext bootstrap does not read _bmad-output/runtime/context/project.json."
+    }
+  ]
+}
