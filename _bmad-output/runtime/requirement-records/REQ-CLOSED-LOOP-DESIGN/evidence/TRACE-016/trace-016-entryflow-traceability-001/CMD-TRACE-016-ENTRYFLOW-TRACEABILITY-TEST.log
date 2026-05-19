@@ -1,0 +1,108 @@
+$ npx vitest run tests/acceptance/main-agent-entryflow-traceability-check.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts tests/acceptance/requirements-confirmation-ingest.test.ts tests/acceptance/resolve-active-requirement.test.ts
+startedAt=2026-05-19T14:10:20.174Z
+completedAt=2026-05-19T14:10:30.598Z
+exitCode=0
+
+--- stdout ---
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mD:/Dev/BMAD-Speckit-SDD-Flow[39m
+
+ [32m✓[39m tests/acceptance/requirements-confirmation-ingest.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 1185[2mms[22m[39m
+     [33m[2m✓[22m[39m blocks req-trace prompt before ingest and allows it after controlled confirmation ingest [33m 535[2mms[22m[39m
+     [33m[2m✓[22m[39m writes confirmation history, source bookkeeping, event log, and artifact index after exact chat confirmation [33m 341[2mms[22m[39m
+     [33m[2m✓[22m[39m rejects mismatched confirmation text and does not write confirmation state [33m 307[2mms[22m[39m
+ [32m✓[39m tests/acceptance/requirement-record-schema.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 301[2mms[22m[39m
+{
+  "ok": true,
+  "requirementRecordPath": "C:/Users/milom/AppData/Local/Temp/implementation-evidence-ingest-kvUh1y/_bmad-output/runtime/requirement-records/REQ-EVIDENCE-INGEST/requirement-record.json",
+  "eventLogPath": "C:/Users/milom/AppData/Local/Temp/implementation-evidence-ingest-kvUh1y/_bmad-output/runtime/requirement-records/REQ-EVIDENCE-INGEST/data/mentor-events.jsonl",
+  "artifactIndexPath": "C:/Users/milom/AppData/Local/Temp/implementation-evidence-ingest-kvUh1y/_bmad-output/runtime/requirement-records/REQ-EVIDENCE-INGEST/artifact-index.jsonl",
+  "globalArtifactIndexPath": "C:/Users/milom/AppData/Local/Temp/implementation-evidence-ingest-kvUh1y/_bmad-output/runtime/requirement-records/artifact-index.jsonl"
+}
+execution_iteration_recorded=exec-001
+execution_iteration_recorded=exec-001
+ [32m✓[39m tests/acceptance/implementation-evidence-ingest.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 83[2mms[22m[39m
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/entryflow-pass-qKp29l/entry-flow-adaptation-matrix.json",
+  "decision": "pass",
+  "blockingReasons": []
+}
+entryflow_traceability=blocked
+entryflow_traceability=blocked
+ [32m✓[39m tests/acceptance/main-agent-entryflow-traceability-check.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m tests/acceptance/resolve-active-requirement.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 6993[2mms[22m[39m
+     [33m[2m✓[22m[39m resolves active requirement from requirement-records index without legacy project context [33m 1686[2mms[22m[39m
+     [33m[2m✓[22m[39m CLI fails closed on explicit record mismatch [33m 1801[2mms[22m[39m
+     [33m[2m✓[22m[39m emit-runtime-policy reads flow/stage from ResolvedRuntimeContext, not legacy context [33m 2033[2mms[22m[39m
+     [33m[2m✓[22m[39m main-agent inspect uses requirement record implementation gate and orchestration hints [33m 1471[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m      Tests [22m [1m[32m28 passed[39m[22m[90m (28)[39m
+[2m   Start at [22m 22:10:22
+[2m   Duration [22m 8.33s[2m (transform 470ms, setup 0ms, import 1.44s, tests 8.58s, environment 1ms)[22m
+
+
+--- stderr ---
+[90mstderr[2m | tests/acceptance/implementation-evidence-ingest.test.ts[2m > [22m[2mimplementation evidence ingest[2m > [22m[2mrejects stale hashes without mutating the requirement record
+[22m[39m{
+  "ok": false,
+  "mismatches": [
+    "architecture_confirmation_hash_mismatch"
+  ]
+}
+
+[90mstderr[2m | tests/acceptance/implementation-evidence-ingest.test.ts[2m > [22m[2mimplementation evidence ingest[2m > [22m[2mrejects legacy result fields and historical command runs
+[22m[39m{
+  "ok": false,
+  "mismatches": [
+    "command_run_id_mismatch",
+    "forbidden_result_field"
+  ]
+}
+
+[90mstderr[2m | tests/acceptance/implementation-evidence-ingest.test.ts[2m > [22m[2mimplementation evidence ingest[2m > [22m[2mrejects delivery required commands that cannot prove current blocking evidence
+[22m[39m{
+  "ok": false,
+  "mismatches": [
+    "required_command_not_blocking",
+    "required_command_artifact_refs_missing"
+  ]
+}
+
+[90mstderr[2m | tests/acceptance/implementation-evidence-ingest.test.ts[2m > [22m[2mimplementation evidence ingest[2m > [22m[2mrejects invalid entryFlowState updates before mutating the requirement record
+[22m[39m{
+  "ok": false,
+  "mismatches": [
+    "entry_flow_state_entry_flow_invalid",
+    "entry_flow_state_contract_authoring_required_not_true",
+    "entry_flow_state_forbidden_top_level_entry_flow"
+  ]
+}
+
+[90mstderr[2m | tests/acceptance/implementation-evidence-ingest.test.ts[2m > [22m[2mimplementation evidence ingest[2m > [22m[2mrejects evidence packets without behavior-affecting implementation delta proof
+[22m[39m{
+  "ok": false,
+  "mismatches": [
+    "implementation_delta_missing"
+  ]
+}
+
+[90mstderr[2m | tests/acceptance/implementation-evidence-ingest.test.ts[2m > [22m[2mimplementation evidence ingest[2m > [22m[2mrejects artifact refs without pass-grade metadata
+[22m[39m{
+  "ok": false,
+  "mismatches": [
+    "artifact_ref_artifact_purpose_missing",
+    "artifact_ref_artifact_related_requirement_ids_missing"
+  ]
+}
+
+[90mstderr[2m | tests/acceptance/implementation-evidence-ingest.test.ts[2m > [22m[2mimplementation evidence ingest[2m > [22m[2mrejects inline full diffs and legacy write targets
+[22m[39m{
+  "ok": false,
+  "mismatches": [
+    "artifact_legacy_write_path_forbidden:_bmad-output/runtime/gates/legacy-report.json",
+    "forbidden_inline_full_diff"
+  ]
+}
+

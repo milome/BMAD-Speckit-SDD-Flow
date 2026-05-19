@@ -1,0 +1,72 @@
+{
+  "reportType": "main_agent_entryflow_traceability_check",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "evaluatedAt": "2026-05-19T22:14:00.000+08:00",
+  "evaluatedBy": "codex",
+  "decision": "pass",
+  "blockingReasons": [],
+  "entryFlowAdaptationMatrix": {
+    "allowedTopLevelEntryFlows": [
+      "story",
+      "bugfix",
+      "standalone_tasks"
+    ],
+    "forbiddenTopLevelEntryFlows": [
+      "bmad-story-assistant",
+      "speckit_story",
+      "speckit_tasks",
+      "speckit_implement"
+    ],
+    "record": {
+      "entryFlow": "standalone_tasks",
+      "entryFlowClass": "task_packet_entry",
+      "workflowAdapter": "direct",
+      "contractAuthoringRequired": true
+    },
+    "source": {
+      "entryFlow": "standalone_tasks",
+      "entryFlowClass": "task_packet_entry",
+      "workflowAdapter": "direct",
+      "contractAuthoringRequired": true
+    }
+  },
+  "traceBinding": {
+    "traceRowsSeen": [
+      "TRACE-001",
+      "TRACE-002",
+      "TRACE-003",
+      "TRACE-004",
+      "TRACE-005",
+      "TRACE-006",
+      "TRACE-007",
+      "TRACE-008",
+      "TRACE-009",
+      "TRACE-010",
+      "TRACE-011",
+      "TRACE-012",
+      "TRACE-013",
+      "TRACE-014",
+      "TRACE-015",
+      "TRACE-016"
+    ],
+    "requiredIds": [
+      "MUST-023",
+      "NEG-011",
+      "OUT-009",
+      "EVD-001",
+      "EVD-004",
+      "EVD-023"
+    ],
+    "closureIds": [
+      "EVD-001",
+      "EVD-004"
+    ],
+    "note": "Execution and closure rows are written by controlled ingest; this checker does not require its own closure as a precondition."
+  },
+  "standaloneRuntimeFactArtifactCheck": {
+    "forbiddenArtifacts": []
+  },
+  "recordPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json",
+  "sourcePath": "D:/Dev/BMAD-Speckit-SDD-Flow/docs/design/需求实现完整性门禁与重跑闭环设计.md"
+}

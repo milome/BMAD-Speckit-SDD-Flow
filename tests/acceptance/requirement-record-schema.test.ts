@@ -20,6 +20,10 @@ function validRecord() {
     requirementSetId: 'REQ-SCHEMA-001',
     sourcePath: 'docs/design/example.md',
     status: 'user_confirmed',
+    entryFlow: 'story',
+    entryFlowClass: 'full_story_entry',
+    workflowAdapter: 'bmad',
+    contractAuthoringRequired: true,
     sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
     implementationConfirmationHash:
       'sha256:2222222222222222222222222222222222222222222222222222222222222222',
@@ -92,6 +96,23 @@ function validRecord() {
         status: 'active',
         inputVersion: 'source-v1',
         outputVersion: 'confirmation-v1',
+      },
+    ],
+    extensionRefs: [
+      {
+        eventType: 'artifact_indexed',
+        artifactType: 'observability_extension',
+        sourceOfTruthRole: 'evidence',
+        recordId: 'REQ-SCHEMA-001',
+        requirementSetId: 'REQ-SCHEMA-001',
+        path: '_bmad-output/runtime/requirement-records/REQ-SCHEMA-001/extensions/observability-extension.json',
+        contentHash: 'sha256:6666666666666666666666666666666666666666666666666666666666666666',
+        producer: 'main-agent-production-loop-ready-check',
+        purpose: 'capture production observability plan and subsystem readiness proof',
+        relatedRequirementIds: ['MUST-011', 'MUST-017', 'EVD-010'],
+        status: 'active',
+        inputVersion: 'trace-007',
+        outputVersion: 'observability-extension-v1',
       },
     ],
     failureRecords: [
@@ -167,6 +188,19 @@ describe('requirement-record.schema.json', () => {
     expect(JSON.stringify(validate.errors)).toContain('minItems');
   });
 
+  it('rejects forbidden top-level entry flows and missing contract authoring requirement', () => {
+    const validate = loadValidator();
+    const record = {
+      ...validRecord(),
+      entryFlow: 'speckit_tasks',
+      contractAuthoringRequired: false,
+    };
+
+    expect(validate(record)).toBe(false);
+    expect(JSON.stringify(validate.errors)).toContain('entryFlow');
+    expect(JSON.stringify(validate.errors)).toContain('contractAuthoringRequired');
+  });
+
   it('rejects artifact refs that cannot be used for pass-grade evidence', () => {
     const validate = loadValidator();
     const record = validRecord();
@@ -175,6 +209,17 @@ describe('requirement-record.schema.json', () => {
 
     expect(validate(record)).toBe(false);
     expect(JSON.stringify(validate.errors)).toContain('relatedRequirementIds');
+  });
+
+  it('accepts extension refs as pass-grade evidence artifact pointers', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+
+    expect(validate(record), JSON.stringify(validate.errors, null, 2)).toBe(true);
+    expect(record.extensionRefs[0]).toMatchObject({
+      artifactType: 'observability_extension',
+      sourceOfTruthRole: 'evidence',
+    });
   });
 
   it('rejects result and decision on failure, RCA, and rerun lifecycle records', () => {

@@ -19,6 +19,10 @@
     "status": {
       "enum": ["draft", "user_confirmed", "reconfirm_required", "in_progress", "blocked", "closed"]
     },
+    "entryFlow": { "enum": ["story", "bugfix", "standalone_tasks"] },
+    "entryFlowClass": { "enum": ["full_story_entry", "corrective_entry", "task_packet_entry"] },
+    "workflowAdapter": { "enum": ["bmad", "speckit", "direct", "legacy"] },
+    "contractAuthoringRequired": { "const": true },
     "sourceDocumentHash": { "$ref": "#/$defs/sha256" },
     "implementationConfirmationHash": { "$ref": "#/$defs/sha256" },
     "confirmationPageHash": { "$ref": "#/$defs/sha256" },
@@ -58,6 +62,10 @@
     },
     "closeout": { "$ref": "#/$defs/closeout" },
     "artifactIndex": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/artifactRef" }
+    },
+    "extensionRefs": {
       "type": "array",
       "items": { "$ref": "#/$defs/artifactRef" }
     },

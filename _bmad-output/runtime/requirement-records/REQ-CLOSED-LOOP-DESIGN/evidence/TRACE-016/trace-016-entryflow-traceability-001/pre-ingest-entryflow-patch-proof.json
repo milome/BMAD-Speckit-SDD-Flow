@@ -1,0 +1,24 @@
+{
+  "proofType": "entryflow_state_controlled_patch_proof",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "createdAt": "2026-05-19T22:13:00.000+08:00",
+  "producer": "TRACE-016",
+  "entryFlowState": {
+    "entryFlow": "standalone_tasks",
+    "entryFlowClass": "task_packet_entry",
+    "workflowAdapter": "direct",
+    "contractAuthoringRequired": true
+  },
+  "reason": "Current confirmed source contract contains canonical entryFlow fields, while the existing controlled RequirementRecord predated canonical entryFlow persistence. This evidence packet applies the same controlled implementation evidence ingest path used for trace execution, rather than hand-editing the record.",
+  "sourceRefs": [
+    {
+      "sourceType": "requirement",
+      "id": "MUST-023"
+    },
+    {
+      "sourceType": "trace_row",
+      "id": "TRACE-016"
+    }
+  ]
+}

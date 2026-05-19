@@ -1,0 +1,14 @@
+$ npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-entryflow-traceability-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --source docs/design/需求实现完整性门禁与重跑闭环设计.md --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-016/trace-016-entryflow-traceability-001/entry-flow-adaptation-matrix.json --evaluated-at 2026-05-19T22:14:00.000+08:00 --evaluated-by codex --json
+startedAt=2026-05-19T14:10:19.350Z
+completedAt=2026-05-19T14:10:20.172Z
+exitCode=0
+
+--- stdout ---
+{
+  "ok": true,
+  "reportPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-016/trace-016-entryflow-traceability-001/entry-flow-adaptation-matrix.json",
+  "decision": "pass",
+  "blockingReasons": []
+}
+
+--- stderr ---

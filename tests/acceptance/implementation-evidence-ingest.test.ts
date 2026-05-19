@@ -99,6 +99,12 @@ function writeFixture(root: string): { recordPath: string; evidencePath: string;
         artifactRefs: [
           artifactRef(artifactPath, sha256(`${artifactContent}\n`)),
         ],
+        entryFlowState: {
+          entryFlow: 'standalone_tasks',
+          entryFlowClass: 'task_packet_entry',
+          workflowAdapter: 'direct',
+          contractAuthoringRequired: true,
+        },
         deliveryEvidence: {
           requiredCommands: [
             {
@@ -153,6 +159,12 @@ describe('implementation evidence ingest', () => {
       expect(code).toBe(0);
       const record = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
       expect(record.lastEventType).toBe('execution_iteration_recorded');
+      expect(record).toMatchObject({
+        entryFlow: 'standalone_tasks',
+        entryFlowClass: 'task_packet_entry',
+        workflowAdapter: 'direct',
+        contractAuthoringRequired: true,
+      });
       expect(record.executionIterations).toHaveLength(1);
       expect(record.executionIterations[0]).toMatchObject({
         executionIterationId: 'exec-001',
@@ -198,6 +210,60 @@ describe('implementation evidence ingest', () => {
         existsSync(path.join(path.dirname(path.dirname(fixture.recordPath)), 'artifact-index.jsonl'))
       ).toBe(true);
       expect(existsSync(fixture.artifactPath)).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('records observability extension refs through controlled ingest', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-evidence-extension-'));
+    try {
+      const fixture = writeFixture(root);
+      const extensionPath = path.join(path.dirname(fixture.artifactPath), 'observability-extension.json');
+      const extensionContent = JSON.stringify({ observability: 'extension' }, null, 2);
+      writeFileSync(extensionPath, `${extensionContent}\n`, 'utf8');
+      const packet = JSON.parse(readFileSync(fixture.evidencePath, 'utf8'));
+      packet.traceRows = ['TRACE-007'];
+      packet.taskRefs = ['TASK-DATA-SFT-GOVERNANCE'];
+      packet.evidenceRefs = ['EVD-010', 'EVD-009'];
+      packet.extensionRefs = [
+        artifactRef(extensionPath, sha256(`${extensionContent}\n`), {
+          artifactType: 'observability_extension',
+          relatedRequirementIds: ['MUST-011', 'MUST-017', 'EVD-010'],
+          purpose: 'prove production observability extension registration',
+          inputVersion: 'trace-007',
+          outputVersion: 'observability-extension-v1',
+        }),
+      ];
+      packet.requirementClosures = [
+        { requirementId: 'MUST-011', status: 'pass' },
+        { requirementId: 'MUST-017', status: 'pass' },
+      ];
+      writeFileSync(fixture.evidencePath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
+
+      const code = mainIngestImplementationEvidence([
+        '--evidence',
+        fixture.evidencePath,
+        '--requirement-record',
+        fixture.recordPath,
+        '--confirmed-at',
+        '2026-05-19T00:00:06.000Z',
+        '--recorded-by',
+        'test-agent',
+      ]);
+
+      expect(code).toBe(0);
+      const record = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
+      expect(record.extensionRefs.at(-1)).toMatchObject({
+        artifactType: 'observability_extension',
+        sourceOfTruthRole: 'evidence',
+        relatedRequirementIds: ['MUST-011', 'MUST-017', 'EVD-010'],
+        status: 'active',
+      });
+      expect(record.artifactIndex.at(-1)).toMatchObject({
+        artifactType: 'observability_extension',
+        relatedRequirementIds: ['MUST-011', 'MUST-017', 'EVD-010'],
+      });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -255,6 +321,32 @@ describe('implementation evidence ingest', () => {
       const packet = JSON.parse(readFileSync(fixture.evidencePath, 'utf8'));
       packet.deliveryEvidence.requiredCommands[0].blockingIfMissing = false;
       packet.deliveryEvidence.requiredCommands[0].artifactRefs = [];
+      writeFileSync(fixture.evidencePath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
+      const code = mainIngestImplementationEvidence([
+        '--evidence',
+        fixture.evidencePath,
+        '--requirement-record',
+        fixture.recordPath,
+      ]);
+      expect(code).toBe(3);
+      expect(readFileSync(fixture.recordPath, 'utf8')).toBe(before);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects invalid entryFlowState updates before mutating the requirement record', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-evidence-entry-flow-'));
+    try {
+      const fixture = writeFixture(root);
+      const before = readFileSync(fixture.recordPath, 'utf8');
+      const packet = JSON.parse(readFileSync(fixture.evidencePath, 'utf8'));
+      packet.entryFlowState = {
+        entryFlow: 'speckit_tasks',
+        entryFlowClass: 'task_packet_entry',
+        workflowAdapter: 'direct',
+        contractAuthoringRequired: false,
+      };
       writeFileSync(fixture.evidencePath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
       const code = mainIngestImplementationEvidence([
         '--evidence',
