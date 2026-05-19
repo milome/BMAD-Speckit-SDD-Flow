@@ -181,6 +181,22 @@ function validRecord() {
         outputVersion: 'observability-extension-v1',
       },
     ],
+    hookReconciliation: {
+      schemaVersion: 'hook-reconciliation/v1',
+      hostKind: 'codex',
+      hostMode: 'hooks_enabled',
+      hookTrust: 'degraded',
+      fallbackMode: 'bounded_replay',
+      closeoutReconciled: true,
+      sequenceLedger: {
+        status: 'reconciled',
+        expectedNextSequence: 4,
+        observedSequences: [1, 2, 3],
+      },
+      missingReceipts: [],
+      hashMismatches: [],
+      noHookFallbackRefs: [{ sourceType: 'execution_iteration', id: 'exec-fallback-001' }],
+    },
     failureRecords: [
       {
         eventType: 'failure_recorded',
@@ -352,5 +368,29 @@ describe('requirement-record.schema.json', () => {
 
     expect(validate(record)).toBe(false);
     expect(JSON.stringify(validate.errors)).toContain('sourceType');
+  });
+
+  it('rejects hook reconciliation that claims closeout without fallback evidence', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+    record.hookReconciliation = {
+      ...record.hookReconciliation,
+      noHookFallbackRefs: [],
+    } as never;
+
+    expect(validate(record)).toBe(false);
+    expect(JSON.stringify(validate.errors)).toContain('noHookFallbackRefs');
+  });
+
+  it('rejects hook reconciliation result as a legacy control field', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+    record.hookReconciliation = {
+      ...record.hookReconciliation,
+      result: 'ok',
+    } as never;
+
+    expect(validate(record)).toBe(false);
+    expect(JSON.stringify(validate.errors)).toContain('result');
   });
 });

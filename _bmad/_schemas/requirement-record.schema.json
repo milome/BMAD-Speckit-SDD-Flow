@@ -73,6 +73,7 @@
       "items": { "$ref": "#/$defs/artifactRef" }
     },
     "deliveryEvidence": { "$ref": "#/$defs/deliveryEvidence" },
+    "hookReconciliation": { "$ref": "#/$defs/hookReconciliation" },
     "lastEventType": { "$ref": "#/$defs/nonEmptyString" },
     "updatedAt": { "type": "string", "format": "date-time" }
   },
@@ -603,6 +604,93 @@
             }
           }
         }
+      }
+    },
+    "hookReconciliation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "hostKind",
+        "hostMode",
+        "hookTrust",
+        "fallbackMode",
+        "closeoutReconciled",
+        "sequenceLedger",
+        "missingReceipts",
+        "hashMismatches",
+        "noHookFallbackRefs"
+      ],
+      "properties": {
+        "schemaVersion": { "const": "hook-reconciliation/v1" },
+        "hostKind": { "enum": ["codex", "cursor", "claude", "unknown"] },
+        "hostMode": { "enum": ["hooks_enabled", "no_hooks", "unknown"] },
+        "hookTrust": { "enum": ["trusted", "degraded", "untrusted", "unknown"] },
+        "fallbackMode": { "enum": ["none", "no_hooks", "bounded_replay", "blocked"] },
+        "closeoutReconciled": { "type": "boolean" },
+        "sequenceLedger": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status"],
+          "properties": {
+            "status": { "enum": ["clean", "reconciled", "gap", "missing", "stale", "unknown"] },
+            "expectedNextSequence": { "type": "integer", "minimum": 0 },
+            "observedSequences": {
+              "type": "array",
+              "items": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "missingReceipts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["receiptType", "expectedEventId"],
+            "properties": {
+              "receiptType": { "$ref": "#/$defs/nonEmptyString" },
+              "expectedEventId": { "$ref": "#/$defs/nonEmptyString" },
+              "severity": { "$ref": "#/$defs/nonEmptyString" }
+            }
+          }
+        },
+        "hashMismatches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["field", "expected", "actual"],
+            "properties": {
+              "field": { "$ref": "#/$defs/nonEmptyString" },
+              "expected": { "$ref": "#/$defs/nonEmptyString" },
+              "actual": { "$ref": "#/$defs/nonEmptyString" }
+            }
+          }
+        },
+        "noHookFallbackRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/sourceRef" }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "hookTrust": { "enum": ["degraded", "untrusted"] },
+              "closeoutReconciled": { "const": true },
+              "fallbackMode": { "enum": ["no_hooks", "bounded_replay"] }
+            },
+            "required": ["hookTrust", "closeoutReconciled", "fallbackMode"]
+          },
+          "then": {
+            "properties": {
+              "noHookFallbackRefs": { "minItems": 1 }
+            }
+          }
+        }
+      ],
+      "not": {
+        "required": ["result"]
       }
     },
     "deliveryEvidence": {

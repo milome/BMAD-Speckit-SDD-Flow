@@ -170,6 +170,65 @@ function rerunLoopSourceIssues(loop: JsonObject): string[] {
   return issues;
 }
 
+function hookReconciliationIssues(record: JsonObject): string[] {
+  const reconciliation =
+    record.hookReconciliation &&
+    typeof record.hookReconciliation === 'object' &&
+    !Array.isArray(record.hookReconciliation)
+      ? (record.hookReconciliation as JsonObject)
+      : null;
+  if (!reconciliation) return [];
+  const issues: string[] = [];
+  const hookTrust = text(reconciliation.hookTrust);
+  const fallbackMode = text(reconciliation.fallbackMode);
+  const missingReceipts = objects(reconciliation.missingReceipts);
+  const hashMismatches = objects(reconciliation.hashMismatches);
+  const noHookFallbackRefs = objects(reconciliation.noHookFallbackRefs);
+  const sequenceLedger =
+    reconciliation.sequenceLedger &&
+    typeof reconciliation.sequenceLedger === 'object' &&
+    !Array.isArray(reconciliation.sequenceLedger)
+      ? (reconciliation.sequenceLedger as JsonObject)
+      : null;
+  const sequenceStatus = text(sequenceLedger?.status);
+  const fallbackModeAllowed = ['no_hooks', 'bounded_replay', 'blocked'].includes(fallbackMode);
+  const fallbackEvidenceRequired = ['no_hooks', 'bounded_replay'].includes(fallbackMode);
+  const hookTrustReconciled =
+    fallbackModeAllowed &&
+    (!fallbackEvidenceRequired || noHookFallbackRefs.length > 0) &&
+    (sequenceStatus === '' || sequenceStatus === 'clean' || sequenceStatus === 'reconciled') &&
+    missingReceipts.length === 0 &&
+    hashMismatches.length === 0 &&
+    reconciliation.closeoutReconciled === true;
+
+  if (['degraded', 'untrusted'].includes(hookTrust)) {
+    if (!hookTrustReconciled) {
+      issues.push(`hook_trust_not_trusted:${hookTrust}`);
+    }
+    if (!fallbackModeAllowed) {
+      issues.push('hook_fallback_mode_missing_for_untrusted:no_hooks_or_bounded_replay_required');
+    }
+    if (fallbackEvidenceRequired && noHookFallbackRefs.length === 0) {
+      issues.push('hook_no_hook_fallback_refs_missing');
+    }
+  }
+  if (sequenceStatus && sequenceStatus !== 'clean' && sequenceStatus !== 'reconciled') {
+    issues.push(`hook_sequence_ledger_${sequenceStatus}`);
+  }
+  for (const receipt of missingReceipts) {
+    issues.push(
+      `hook_missing_receipt:${text(receipt.receiptType) || '<missing>'}:${text(receipt.expectedEventId) || '<missing>'}`
+    );
+  }
+  for (const mismatch of hashMismatches) {
+    issues.push(`hook_hash_mismatch:${text(mismatch.field) || '<missing>'}`);
+  }
+  if (reconciliation.closeoutReconciled !== true) {
+    issues.push('hook_closeout_not_reconciled');
+  }
+  return [...new Set(issues)];
+}
+
 function evaluate(record: JsonObject, attemptId: string): { decision: CloseoutDecision; blockingReasons: string[]; checks: JsonObject[] } {
   const checks: JsonObject[] = [];
   const blockingReasons: string[] = [];
@@ -194,6 +253,14 @@ function evaluate(record: JsonObject, attemptId: string): { decision: CloseoutDe
   const scoringBlocked = hasBlockingScoringState(record);
   checks.push({ id: 'score-gates-not-blocking-closeout', passed: !scoringBlocked });
   if (scoringBlocked) blockingReasons.push('score_gate_failure_unresolved');
+
+  const hookIssues = hookReconciliationIssues(record);
+  checks.push({
+    id: 'hook-reconciliation-valid',
+    passed: hookIssues.length === 0,
+    issueCount: hookIssues.length,
+  });
+  blockingReasons.push(...hookIssues);
 
   const attemptRuns = commandRunsForAttempt(record, attemptId);
   for (const command of requiredCommands) {
