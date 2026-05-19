@@ -163,6 +163,7 @@ function buildRequirementRecord(existing, event) {
     workflowAdapter: event.workflowAdapter,
     contractAuthoringRequired: event.contractAuthoringRequired,
     globalContractTraceabilityPolicy: event.globalContractTraceabilityPolicy,
+    traceStatusPolicy: event.traceStatusPolicy,
     sourceDocumentHash: event.sourceDocumentHash,
     implementationConfirmationHash: event.implementationConfirmationHash,
     confirmationPageHash: event.confirmationPageHash,
@@ -192,6 +193,49 @@ function buildGlobalContractTraceabilityPolicy(confirmation) {
     traceTaskRefsMustResolveTo: String(taskRegistryPolicy.traceTaskRefsMustResolveTo ?? 'implementationTasks[].id'),
     readinessFailureWhenUnresolved: taskRegistryPolicy.readinessFailureWhenUnresolved !== false,
     closeoutFailureWhenUnresolved: taskRegistryPolicy.closeoutFailureWhenUnresolved !== false,
+  };
+}
+
+function buildTraceStatusPolicy() {
+  return {
+    schemaVersion: 'trace-status-policy/v1',
+    allowedStatuses: [
+      'PENDING',
+      'PASS',
+      'FAIL',
+      'BLOCKED',
+      'LINKED_DOWNSTREAM',
+      'USER_APPROVED_DEFERRED',
+      'USER_APPROVED_OUT_OF_SCOPE',
+    ],
+    terminalFullCloseoutStatuses: ['PASS', 'FAIL', 'BLOCKED'],
+    linkedDownstreamRequiredFields: [
+      'downstreamRecordId',
+      'downstreamStoryRef',
+      'downstreamSourceDocumentPath',
+      'downstreamSourceDocumentHash',
+      'downstreamScopeSummary',
+      'downstreamRequirementIds',
+      'downstreamAuditEvidenceRefs',
+    ],
+    userApprovedDeferredRequiredFields: [
+      'userApprovalRef',
+      'approvedAt',
+      'approvedBy',
+      'impactSummary',
+      'followUpRecordId',
+      'followUpDueCondition',
+    ],
+    userApprovedOutOfScopeRequiredFields: [
+      'userApprovalRef',
+      'approvedAt',
+      'approvedBy',
+      'impactSummary',
+      'confirmationDeltaRef',
+    ],
+    bareDeferredForbidden: true,
+    bareOutOfScopeForbidden: true,
+    fullCloseoutForUserScopedStatusesForbidden: true,
   };
 }
 
@@ -260,6 +304,7 @@ function main(argv) {
     workflowAdapter: extracted.confirmation.workflowAdapter,
     contractAuthoringRequired: extracted.confirmation.contractAuthoringRequired === true,
     globalContractTraceabilityPolicy: buildGlobalContractTraceabilityPolicy(extracted.confirmation),
+    traceStatusPolicy: buildTraceStatusPolicy(),
   };
 
   if (args.updateSource !== 'false') {

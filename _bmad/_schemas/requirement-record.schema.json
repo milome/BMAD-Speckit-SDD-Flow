@@ -24,6 +24,7 @@
     "workflowAdapter": { "enum": ["bmad", "speckit", "direct", "legacy"] },
     "contractAuthoringRequired": { "const": true },
     "globalContractTraceabilityPolicy": { "$ref": "#/$defs/globalContractTraceabilityPolicy" },
+    "traceStatusPolicy": { "$ref": "#/$defs/traceStatusPolicy" },
     "sourceDocumentHash": { "$ref": "#/$defs/sha256" },
     "implementationConfirmationHash": { "$ref": "#/$defs/sha256" },
     "confirmationPageHash": { "$ref": "#/$defs/sha256" },
@@ -142,6 +143,74 @@
         { "properties": { "taskBindingDimensions": { "contains": { "const": "TRACE" } } } }
       ]
     },
+    "traceStatusPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "allowedStatuses",
+        "terminalFullCloseoutStatuses",
+        "linkedDownstreamRequiredFields",
+        "userApprovedDeferredRequiredFields",
+        "userApprovedOutOfScopeRequiredFields",
+        "bareDeferredForbidden",
+        "bareOutOfScopeForbidden",
+        "fullCloseoutForUserScopedStatusesForbidden"
+      ],
+      "properties": {
+        "schemaVersion": { "const": "trace-status-policy/v1" },
+        "allowedStatuses": {
+          "type": "array",
+          "minItems": 6,
+          "items": {
+            "enum": [
+              "PENDING",
+              "PASS",
+              "FAIL",
+              "BLOCKED",
+              "LINKED_DOWNSTREAM",
+              "USER_APPROVED_DEFERRED",
+              "USER_APPROVED_OUT_OF_SCOPE"
+            ]
+          }
+        },
+        "terminalFullCloseoutStatuses": {
+          "type": "array",
+          "minItems": 3,
+          "items": { "enum": ["PASS", "FAIL", "BLOCKED"] }
+        },
+        "linkedDownstreamRequiredFields": {
+          "type": "array",
+          "minItems": 7,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "userApprovedDeferredRequiredFields": {
+          "type": "array",
+          "minItems": 5,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "userApprovedOutOfScopeRequiredFields": {
+          "type": "array",
+          "minItems": 4,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "bareDeferredForbidden": { "const": true },
+        "bareOutOfScopeForbidden": { "const": true },
+        "fullCloseoutForUserScopedStatusesForbidden": { "const": true }
+      },
+      "allOf": [
+        { "properties": { "allowedStatuses": { "contains": { "const": "PENDING" } } } },
+        { "properties": { "allowedStatuses": { "contains": { "const": "PASS" } } } },
+        { "properties": { "allowedStatuses": { "contains": { "const": "FAIL" } } } },
+        { "properties": { "allowedStatuses": { "contains": { "const": "BLOCKED" } } } },
+        { "properties": { "allowedStatuses": { "contains": { "const": "LINKED_DOWNSTREAM" } } } },
+        { "properties": { "allowedStatuses": { "contains": { "const": "USER_APPROVED_DEFERRED" } } } },
+        { "properties": { "allowedStatuses": { "contains": { "const": "USER_APPROVED_OUT_OF_SCOPE" } } } },
+        { "properties": { "terminalFullCloseoutStatuses": { "contains": { "const": "PASS" } } } },
+        { "properties": { "terminalFullCloseoutStatuses": { "contains": { "const": "FAIL" } } } },
+        { "properties": { "terminalFullCloseoutStatuses": { "contains": { "const": "BLOCKED" } } } }
+      ]
+    },
     "sourceRef": {
       "type": "object",
       "additionalProperties": false,
@@ -251,7 +320,8 @@
         "entryFlowClass": { "enum": ["full_story_entry", "corrective_entry", "task_packet_entry"] },
         "workflowAdapter": { "enum": ["bmad", "speckit", "direct", "legacy"] },
         "contractAuthoringRequired": { "const": true },
-        "globalContractTraceabilityPolicy": { "$ref": "#/$defs/globalContractTraceabilityPolicy" }
+        "globalContractTraceabilityPolicy": { "$ref": "#/$defs/globalContractTraceabilityPolicy" },
+        "traceStatusPolicy": { "$ref": "#/$defs/traceStatusPolicy" }
       }
     },
     "architectureConfirmationState": {
