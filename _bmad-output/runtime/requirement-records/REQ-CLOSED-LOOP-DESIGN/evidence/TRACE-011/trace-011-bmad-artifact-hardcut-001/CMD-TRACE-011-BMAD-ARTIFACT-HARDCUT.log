@@ -1,0 +1,15 @@
+$ npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-bmad-artifact-hardcut.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-011/trace-011-bmad-artifact-hardcut-001/bmad-artifact-hardcut-report.json --generated-at 2026-05-19T21:03:00.000+08:00 --generated-by codex --json
+startedAt=2026-05-19T13:04:56.188Z
+completedAt=2026-05-19T13:04:56.947Z
+exitCode=0
+
+--- stdout ---
+{
+  "ok": true,
+  "decision": "pass",
+  "reportPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-011/trace-011-bmad-artifact-hardcut-001/bmad-artifact-hardcut-report.json",
+  "reportHash": "sha256:594a4996b32cce100a1032f994c72eb1fc6084c5b84991a1973d36d86d2557b3",
+  "blockingIssues": []
+}
+
+--- stderr ---

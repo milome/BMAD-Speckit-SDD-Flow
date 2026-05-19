@@ -1,0 +1,179 @@
+{
+  "reportType": "bmad_artifact_hardcut_report",
+  "generatedAt": "2026-05-19T21:03:00.000+08:00",
+  "generatedBy": "codex",
+  "decision": "pass",
+  "blockingIssues": [],
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+  "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
+  "architectureConfirmationHash": "sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+  "inputs": {
+    "projectRoot": "D:/Dev/BMAD-Speckit-SDD-Flow",
+    "requirementRecordPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json"
+  },
+  "hardcutMatrix": [
+    {
+      "pathPattern": "_bmad-output/planning-artifacts/**",
+      "targetRole": "bmad_native_authoring_artifact",
+      "targetState": "preserved",
+      "canAffectControlFlow": false,
+      "rationale": "BMAD Product Brief, PRD, Architecture, and Epics authoring outputs remain native BMAD workflow artifacts."
+    },
+    {
+      "pathPattern": "_bmad-output/implementation-artifacts/**",
+      "targetRole": "bmad_native_implementation_artifact",
+      "targetState": "preserved",
+      "canAffectControlFlow": false,
+      "rationale": "BMAD story/task/audit documents remain native workflow artifacts and are indexed as evidence when used by requirement records."
+    },
+    {
+      "pathPattern": "_bmad-output/runtime/requirement-records/<requirement-set-id>/**",
+      "targetRole": "requirement_scoped_runtime_artifact",
+      "targetState": "required_for_new_control_projection_and_evidence",
+      "canAffectControlFlow": true,
+      "rationale": "New controlled runtime state, projections, recovery, and evidence must be requirement-scoped."
+    },
+    {
+      "pathPattern": "docs/reference/**",
+      "targetRole": "schema_or_contract_definition_only",
+      "targetState": "not_completion_evidence",
+      "canAffectControlFlow": false,
+      "rationale": "Reference schemas define or validate contracts; they do not prove runtime completion."
+    },
+    {
+      "pathPattern": "_bmad-output/runtime/bmad-help-five-layer/**",
+      "targetRole": "legacy_diagnostic_only",
+      "targetState": "forbidden_for_new_outputs",
+      "canAffectControlFlow": false,
+      "rationale": "Useful producer capability must write directly to requirement-scoped paths; old runtime roots cannot be new control or pass evidence outputs."
+    },
+    {
+      "pathPattern": "_bmad-output/runtime/context/**",
+      "targetRole": "legacy_diagnostic_only",
+      "targetState": "forbidden_for_new_outputs",
+      "canAffectControlFlow": false,
+      "rationale": "Useful producer capability must write directly to requirement-scoped paths; old runtime roots cannot be new control or pass evidence outputs."
+    },
+    {
+      "pathPattern": "_bmad-output/runtime/gates/**",
+      "targetRole": "legacy_diagnostic_only",
+      "targetState": "forbidden_for_new_outputs",
+      "canAffectControlFlow": false,
+      "rationale": "Useful producer capability must write directly to requirement-scoped paths; old runtime roots cannot be new control or pass evidence outputs."
+    },
+    {
+      "pathPattern": "_bmad-output/runtime/governance/**",
+      "targetRole": "legacy_diagnostic_only",
+      "targetState": "forbidden_for_new_outputs",
+      "canAffectControlFlow": false,
+      "rationale": "Useful producer capability must write directly to requirement-scoped paths; old runtime roots cannot be new control or pass evidence outputs."
+    }
+  ],
+  "checks": [
+    {
+      "id": "bmad-catalog-loaded",
+      "decision": "pass",
+      "summary": "BMAD catalog preserves native authoring outputs",
+      "details": {
+        "path": "_bmad/_config/bmad-help.csv",
+        "rowCount": 67,
+        "requiredAuthoring": {
+          "prd": [
+            "prd"
+          ],
+          "architecture": [
+            "architecture",
+            "arch"
+          ],
+          "epics": [
+            "epics",
+            "epic"
+          ],
+          "story": [
+            "story"
+          ]
+        },
+        "foundOutputs": [
+          "architecture",
+          "prd",
+          "epics",
+          "story"
+        ],
+        "missingOutputs": []
+      }
+    },
+    {
+      "id": "bmad-native-workflow-preserved",
+      "decision": "pass",
+      "summary": "BMAD native routing workflow is preserved",
+      "details": {
+        "path": "_bmad/core/skills/bmad-help/workflow.md",
+        "requiredTokens": [
+          "ROUTING RULES",
+          "Artifacts reveal completion",
+          "OFFICIAL EXECUTION PATHS",
+          "_bmad/_config/bmad-help.csv"
+        ],
+        "missingTokens": []
+      }
+    },
+    {
+      "id": "bmad-authoring-paths-preserved",
+      "decision": "pass",
+      "summary": "BMAD planning and implementation artifact roots are preserved",
+      "details": {
+        "path": "_bmad/bmm/config.yaml",
+        "planning_artifacts": "{project-root}/_bmad-output/planning-artifacts",
+        "implementation_artifacts": "{project-root}/_bmad-output/implementation-artifacts",
+        "missing": []
+      }
+    },
+    {
+      "id": "bmad-five-layer-mapping-defined",
+      "decision": "pass",
+      "summary": "BMAD five-layer mapping remains available",
+      "details": {
+        "path": "_bmad/_config/stage-mapping.yaml",
+        "requiredLayers": [
+          "layer_1",
+          "layer_2",
+          "layer_3",
+          "layer_4",
+          "layer_5"
+        ],
+        "missingLayers": []
+      }
+    },
+    {
+      "id": "artifact-boundary-hardcut",
+      "decision": "pass",
+      "summary": "No active control/evidence artifact uses legacy runtime or docs/reference completion paths",
+      "details": {
+        "blockingIssues": [],
+        "legacyRuntimePrefixes": [
+          "_bmad-output/runtime/bmad-help-five-layer/",
+          "_bmad-output/runtime/context/",
+          "_bmad-output/runtime/gates/",
+          "_bmad-output/runtime/governance/"
+        ],
+        "requirementRuntimePrefix": "_bmad-output/runtime/requirement-records/",
+        "authoringOutputPrefixes": [
+          "_bmad-output/planning-artifacts/",
+          "_bmad-output/implementation-artifacts/"
+        ],
+        "docsReferenceAllowedRoles": [
+          "schema",
+          "contract_definition",
+          "reference",
+          "validation_input"
+        ],
+        "requirementScopedArtifactCount": 111,
+        "authoringArtifactCount": 0,
+        "legacyViolations": [],
+        "docsReferenceViolations": []
+      }
+    }
+  ]
+}
