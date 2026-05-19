@@ -36,6 +36,16 @@ function sha256Text(value: string): string {
   return `sha256:${crypto.createHash('sha256').update(value, 'utf8').digest('hex')}`;
 }
 
+function writeJson(filePath: string, value: unknown): void {
+  mkdirSync(path.dirname(filePath), { recursive: true });
+  writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+function writeText(filePath: string, value: string): void {
+  mkdirSync(path.dirname(filePath), { recursive: true });
+  writeFileSync(filePath, value, 'utf8');
+}
+
 function subsystem(subsystemId: string) {
   return {
     subsystemId,
@@ -75,8 +85,97 @@ function extension(recordId: string, requirementSetId: string) {
   };
 }
 
-function writeFixture(root: string, options: { completeExtension?: boolean } = {}) {
+function artifact(filePath: string, artifactType: string) {
+  return {
+    artifactType,
+    path: filePath.replace(/\\/gu, '/'),
+    hash: sha256File(filePath),
+  };
+}
+
+function writeDatasetFixture(root: string, recordId: string, options: { onlySftFile?: boolean } = {}) {
+  const datasetId = `${recordId}-governed-sft`.toLowerCase();
+  const datasetRoot = path.join(root, '_bmad-output', 'runtime', 'datasets', datasetId, 'v1');
+  const trainPath = path.join(datasetRoot, 'exports', 'train.jsonl');
+  writeText(trainPath, '{"sample_id":"sample-001","messages":[]}\n');
+  if (options.onlySftFile) return;
+
+  const validationPath = path.join(datasetRoot, 'exports', 'validation.jsonl');
+  const testPath = path.join(datasetRoot, 'exports', 'test.jsonl');
+  const qualityReportPath = path.join(datasetRoot, 'quality-report.json');
+  const redactionReportPath = path.join(datasetRoot, 'redaction-report.json');
+  const contaminationReportPath = path.join(datasetRoot, 'contamination-report.json');
+  const revokedSamplesPath = path.join(datasetRoot, 'revoked-samples.json');
+  const lineageReportPath = path.join(datasetRoot, 'lineage-report.json');
+  const postTrainingEvalPath = path.join(datasetRoot, 'post-training-eval-report.json');
+  const trainingRunPath = path.join(datasetRoot, 'training-run.json');
+  const manifestPath = path.join(datasetRoot, 'dataset-manifest.json');
+  const releaseReportPath = path.join(datasetRoot, 'dataset-release-gate-report.json');
+
+  writeText(validationPath, '');
+  writeText(testPath, '');
+  writeJson(qualityReportPath, { decision: 'pass' });
+  writeJson(redactionReportPath, { decision: 'pass' });
+  writeJson(contaminationReportPath, { decision: 'pass' });
+  writeJson(revokedSamplesPath, { decision: 'pass' });
+  writeJson(lineageReportPath, { decision: 'pass' });
+  writeJson(postTrainingEvalPath, { decision: 'pass' });
+  writeJson(trainingRunPath, { status: 'completed' });
+  writeJson(manifestPath, {
+    manifestType: 'dataset_release_manifest',
+    datasetId,
+    datasetVersion: 'v1',
+    releaseDecision: 'pass',
+    source: {
+      recordId,
+      requirementSetId: recordId,
+      sourceDocumentHash: SOURCE_HASH,
+      implementationConfirmationHash: IMPLEMENTATION_HASH,
+      architectureConfirmationHash: ARCHITECTURE_HASH,
+    },
+    exports: {
+      train: artifact(trainPath, 'dataset_export'),
+      validation: artifact(validationPath, 'dataset_export'),
+      test: artifact(testPath, 'dataset_export'),
+    },
+    reports: {
+      qualityReport: artifact(qualityReportPath, 'dataset_quality_report'),
+      redactionReport: artifact(redactionReportPath, 'dataset_redaction_report'),
+      contaminationReport: artifact(contaminationReportPath, 'dataset_contamination_report'),
+      revokedSamples: artifact(revokedSamplesPath, 'revoked_sample_list'),
+      lineageReport: artifact(lineageReportPath, 'dataset_lineage_report'),
+      postTrainingEvalReport: artifact(postTrainingEvalPath, 'post_training_eval_report'),
+    },
+    training: {
+      trainingRun: artifact(trainingRunPath, 'training_run_metadata'),
+      evalReport: artifact(postTrainingEvalPath, 'post_training_eval_report'),
+    },
+    counts: {
+      canonicalSamples: 1,
+      sampleRoutes: 1,
+      blockedIssues: 0,
+      subsystems: 16,
+    },
+  });
+  writeJson(releaseReportPath, {
+    reportType: 'dataset_release_gate_report',
+    recordId,
+    requirementSetId: recordId,
+    decision: 'pass',
+    blockingIssues: [],
+    checks: [
+      { id: 'source-manifest-current', passed: true },
+      { id: 'training-run-bound', passed: true },
+      { id: 'post-training-eval-bound', passed: true },
+      { id: 'sixteen-subsystems-machine-readable', passed: true },
+    ],
+    manifestHash: sha256File(manifestPath),
+  });
+}
+
+function writeFixture(root: string, options: { completeExtension?: boolean; onlySftFile?: boolean } = {}) {
   const recordId = 'REQ-PRODUCTION-LOOP';
+  writeDatasetFixture(root, recordId, { onlySftFile: options.onlySftFile });
   const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', recordId);
   const extensionDir = path.join(base, 'extensions');
   mkdirSync(extensionDir, { recursive: true });
@@ -86,14 +185,13 @@ function writeFixture(root: string, options: { completeExtension?: boolean } = {
     delete (extensionValue as Record<string, unknown>).rollbackConditions;
     extensionValue.subsystemReadiness = extensionValue.subsystemReadiness.slice(0, 11);
   }
-  writeFileSync(extensionPath, `${JSON.stringify(extensionValue, null, 2)}\n`, 'utf8');
+  writeJson(extensionPath, extensionValue);
   const recordPath = path.join(base, 'requirement-record.json');
   const relativeExtensionPath = path
     .relative(root, extensionPath)
     .replace(/\\/gu, '/');
-  writeFileSync(
+  writeJson(
     recordPath,
-    `${JSON.stringify(
       {
         recordId,
         requirementSetId: recordId,
@@ -138,11 +236,7 @@ function writeFixture(root: string, options: { completeExtension?: boolean } = {
             outputVersion: 'observability-extension-v1',
           },
         ],
-      },
-      null,
-      2
-    )}\n`,
-    'utf8'
+      }
   );
   return { recordPath };
 }
@@ -154,9 +248,12 @@ describe('main-agent production loop ready check', () => {
     try {
       process.chdir(root);
       const { recordPath } = writeFixture(root);
+      const reportPath = path.join(path.dirname(recordPath), 'production-loop-ready-report.json');
       const code = mainProductionLoopReadyCheck([
         '--requirement-record',
         recordPath,
+        '--report-path',
+        reportPath,
         '--evaluated-at',
         '2026-05-19T00:00:01.000Z',
         '--evaluated-by',
@@ -166,11 +263,12 @@ describe('main-agent production loop ready check', () => {
 
       expect(code).toBe(0);
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
-      expect(record.lastEventType).toBe('production_loop_ready_check_recorded');
-      expect(record.gateChecks.at(-1)).toMatchObject({
-        gate: 'Production Loop Ready Check',
+      const report = JSON.parse(readFileSync(reportPath, 'utf8'));
+      expect(record.lastEventType).toBeUndefined();
+      expect(record.gateChecks).toBeUndefined();
+      expect(report).toMatchObject({
+        reportType: 'production_loop_ready_report',
         decision: 'pass',
-        recordedBy: 'test-agent',
       });
     } finally {
       process.chdir(cwd);
@@ -184,6 +282,7 @@ describe('main-agent production loop ready check', () => {
     try {
       process.chdir(root);
       const { recordPath } = writeFixture(root);
+      const reportPath = path.join(path.dirname(recordPath), 'production-loop-ready-report.json');
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
       record.extensionRefs = [];
       writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
@@ -191,17 +290,18 @@ describe('main-agent production loop ready check', () => {
       const code = mainProductionLoopReadyCheck([
         '--requirement-record',
         recordPath,
+        '--report-path',
+        reportPath,
         '--evaluated-at',
         '2026-05-19T00:00:01.000Z',
       ]);
 
       expect(code).toBe(1);
       const updated = JSON.parse(readFileSync(recordPath, 'utf8'));
-      expect(updated.gateChecks.at(-1)).toMatchObject({
-        gate: 'Production Loop Ready Check',
-        decision: 'blocked',
-      });
-      expect(updated.gateChecks.at(-1).blockingReasons).toContain('observability_extension_ref_missing');
+      const report = JSON.parse(readFileSync(reportPath, 'utf8'));
+      expect(updated.gateChecks).toBeUndefined();
+      expect(report.decision).toBe('blocked');
+      expect(report.blockingReasons).toContain('observability_extension_ref_missing');
     } finally {
       process.chdir(cwd);
       rmSync(root, { recursive: true, force: true });
@@ -214,20 +314,55 @@ describe('main-agent production loop ready check', () => {
     try {
       process.chdir(root);
       const { recordPath } = writeFixture(root, { completeExtension: false });
+      const reportPath = path.join(path.dirname(recordPath), 'production-loop-ready-report.json');
 
       const code = mainProductionLoopReadyCheck([
         '--requirement-record',
         recordPath,
+        '--report-path',
+        reportPath,
         '--evaluated-at',
         '2026-05-19T00:00:01.000Z',
       ]);
 
       expect(code).toBe(1);
       const updated = JSON.parse(readFileSync(recordPath, 'utf8'));
-      const latestGate = updated.gateChecks.at(-1);
-      expect(latestGate.decision).toBe('blocked');
-      expect(latestGate.blockingReasons).toContain('observability_rollbackConditions_missing');
-    expect(latestGate.blockingReasons).toContain('subsystem_missing:prompt_packet_generation');
+      const report = JSON.parse(readFileSync(reportPath, 'utf8'));
+      expect(updated.gateChecks).toBeUndefined();
+      expect(report.decision).toBe('blocked');
+      expect(report.blockingReasons).toContain('observability_rollbackConditions_missing');
+      expect(report.blockingReasons).toContain('subsystem_missing:prompt_packet_generation');
+    } finally {
+      process.chdir(cwd);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks when only SFT JSONL exists without governed dataset release artifacts', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'production-loop-sft-only-'));
+    const cwd = process.cwd();
+    try {
+      process.chdir(root);
+      const { recordPath } = writeFixture(root, { onlySftFile: true });
+      const reportPath = path.join(path.dirname(recordPath), 'production-loop-ready-report.json');
+
+      const code = mainProductionLoopReadyCheck([
+        '--requirement-record',
+        recordPath,
+        '--report-path',
+        reportPath,
+        '--evaluated-at',
+        '2026-05-19T00:00:01.000Z',
+      ]);
+
+      expect(code).toBe(1);
+      const updated = JSON.parse(readFileSync(recordPath, 'utf8'));
+      const report = JSON.parse(readFileSync(reportPath, 'utf8'));
+      expect(updated.gateChecks).toBeUndefined();
+      expect(report.decision).toBe('blocked');
+      expect(report.blockingReasons).toEqual(
+        expect.arrayContaining(['dataset_release_report_missing', 'dataset_manifest_missing'])
+      );
     } finally {
       process.chdir(cwd);
       rmSync(root, { recursive: true, force: true });

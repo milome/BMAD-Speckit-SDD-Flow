@@ -8,6 +8,8 @@ type ProductionLoopDecision = 'pass' | 'blocked';
 
 interface ParsedArgs {
   requirementRecord?: string;
+  datasetReleaseReport?: string;
+  datasetManifest?: string;
   reportPath?: string;
   evaluatedBy?: string;
   evaluatedAt?: string;
@@ -50,6 +52,10 @@ function parseArgs(argv: string[]): ParsedArgs {
     const arg = argv[index];
     if (arg === '--help' || arg === '-h') out.help = true;
     else if (arg === '--json') out.json = true;
+    else if (arg === '--dry-run') {
+      // Accepted for older operator muscle memory; this checker is always read-only.
+      continue;
+    }
     else if (arg.startsWith('--')) {
       const key = arg.slice(2).replace(/-([a-z])/gu, (_, letter: string) => letter.toUpperCase());
       const value = argv[index + 1];
@@ -89,11 +95,6 @@ function normalizePathForRecord(value: string): string {
   return value.replace(/\\/gu, '/');
 }
 
-function appendJsonl(file: string, value: JsonObject): void {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.appendFileSync(file, `${JSON.stringify(value)}\n`, 'utf8');
-}
-
 function sha256File(file: string): string {
   return `sha256:${crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')}`;
 }
@@ -111,6 +112,34 @@ function extensionRefs(record: JsonObject): JsonObject[] {
     (ref) =>
       text(ref.artifactType) === 'observability_extension' ||
       strings(ref.relatedRequirementIds).some((id) => ['MUST-011', 'MUST-017', 'EVD-010'].includes(id))
+  );
+}
+
+function runtimeRootFromRecordPath(recordPath: string): string {
+  return path.dirname(path.dirname(path.dirname(recordPath)));
+}
+
+function defaultDatasetId(record: JsonObject): string {
+  return `${text(record.recordId)}-governed-sft`.toLowerCase();
+}
+
+function resolveDefaultDatasetReleaseReport(record: JsonObject, recordPath: string): string {
+  return path.join(
+    runtimeRootFromRecordPath(recordPath),
+    'datasets',
+    defaultDatasetId(record),
+    'v1',
+    'dataset-release-gate-report.json'
+  );
+}
+
+function resolveDefaultDatasetManifest(record: JsonObject, recordPath: string): string {
+  return path.join(
+    runtimeRootFromRecordPath(recordPath),
+    'datasets',
+    defaultDatasetId(record),
+    'v1',
+    'dataset-manifest.json'
   );
 }
 
@@ -208,7 +237,114 @@ function subsystemIssues(extension: JsonObject): string[] {
   return issues;
 }
 
-function evaluate(record: JsonObject, recordPath: string): {
+function confirmationAuthorityIssues(record: JsonObject): string[] {
+  const confirmations = objects(record.confirmationHistory);
+  const latest = confirmations.at(-1);
+  const issues: string[] = [];
+  if (!latest) {
+    issues.push('confirmation_history_missing');
+    return issues;
+  }
+  if (text(latest.sourceDocumentHash) !== text(record.sourceDocumentHash)) {
+    issues.push('confirmation_source_document_hash_mismatch');
+  }
+  if (text(latest.implementationConfirmationHash) !== text(record.implementationConfirmationHash)) {
+    issues.push('confirmation_implementation_hash_mismatch');
+  }
+  return issues;
+}
+
+function artifactExistsAndMatches(ref: JsonObject): boolean {
+  const artifactPath = text(ref.path);
+  const hash = text(ref.hash ?? ref.contentHash);
+  return Boolean(artifactPath && isSha256(hash) && fs.existsSync(artifactPath) && sha256File(artifactPath) === hash);
+}
+
+function datasetManifestIssues(record: JsonObject, manifestPath: string): string[] {
+  const issues: string[] = [];
+  if (!fs.existsSync(manifestPath)) return ['dataset_manifest_missing'];
+  const manifest = readJson(manifestPath);
+  if (text(manifest.manifestType) !== 'dataset_release_manifest') issues.push('dataset_manifest_type_invalid');
+  if (text(manifest.releaseDecision) !== 'pass') issues.push('dataset_manifest_release_decision_not_pass');
+  const source = nested(manifest, 'source');
+  const architectureState = nested(record, 'architectureConfirmationState');
+  if (text(source.recordId) !== text(record.recordId)) issues.push('dataset_manifest_record_id_mismatch');
+  if (text(source.requirementSetId) !== text(record.requirementSetId)) {
+    issues.push('dataset_manifest_requirement_set_id_mismatch');
+  }
+  if (text(source.sourceDocumentHash) !== text(record.sourceDocumentHash)) {
+    issues.push('dataset_manifest_source_document_hash_mismatch');
+  }
+  if (text(source.implementationConfirmationHash) !== text(record.implementationConfirmationHash)) {
+    issues.push('dataset_manifest_implementation_hash_mismatch');
+  }
+  if (text(source.architectureConfirmationHash) !== text(architectureState.currentArchitectureConfirmationHash)) {
+    issues.push('dataset_manifest_architecture_hash_mismatch');
+  }
+  const counts = nested(manifest, 'counts');
+  if (Number(counts.canonicalSamples ?? 0) <= 0) issues.push('dataset_manifest_canonical_samples_missing');
+  if (Number(counts.sampleRoutes ?? 0) <= 0) issues.push('dataset_manifest_sample_routes_missing');
+  if (Number(counts.blockedIssues ?? 1) !== 0) issues.push('dataset_manifest_blocked_issues_present');
+  if (Number(counts.subsystems ?? 0) !== REQUIRED_SUBSYSTEM_IDS.length) {
+    issues.push('dataset_manifest_subsystem_count_mismatch');
+  }
+
+  const refs = [
+    nested(nested(manifest, 'exports'), 'train'),
+    nested(nested(manifest, 'exports'), 'validation'),
+    nested(nested(manifest, 'exports'), 'test'),
+    nested(nested(manifest, 'reports'), 'qualityReport'),
+    nested(nested(manifest, 'reports'), 'redactionReport'),
+    nested(nested(manifest, 'reports'), 'contaminationReport'),
+    nested(nested(manifest, 'reports'), 'revokedSamples'),
+    nested(nested(manifest, 'reports'), 'lineageReport'),
+    nested(nested(manifest, 'reports'), 'postTrainingEvalReport'),
+    nested(nested(manifest, 'training'), 'trainingRun'),
+    nested(nested(manifest, 'training'), 'evalReport'),
+  ];
+  refs.forEach((ref, index) => {
+    if (!artifactExistsAndMatches(ref)) issues.push(`dataset_manifest_artifact_hash_mismatch:${index}`);
+  });
+  return issues;
+}
+
+function datasetReleaseIssues(record: JsonObject, recordPath: string, args: ParsedArgs): string[] {
+  const issues: string[] = [];
+  const reportPath = path.resolve(args.datasetReleaseReport ?? resolveDefaultDatasetReleaseReport(record, recordPath));
+  const manifestPath = path.resolve(args.datasetManifest ?? resolveDefaultDatasetManifest(record, recordPath));
+  if (!fs.existsSync(reportPath)) {
+    issues.push('dataset_release_report_missing');
+  } else {
+    const report = readJson(reportPath);
+    if (text(report.reportType) !== 'dataset_release_gate_report') issues.push('dataset_release_report_type_invalid');
+    if (text(report.decision) !== 'pass') issues.push('dataset_release_gate_not_pass');
+    if (text(report.recordId) !== text(record.recordId)) issues.push('dataset_release_record_id_mismatch');
+    if (text(report.requirementSetId) !== text(record.requirementSetId)) {
+      issues.push('dataset_release_requirement_set_id_mismatch');
+    }
+    if (objects(report.blockingIssues).length > 0 || strings(report.blockingIssues).length > 0) {
+      issues.push('dataset_release_blocking_issues_present');
+    }
+    const checks = objects(report.checks);
+    for (const requiredId of [
+      'source-manifest-current',
+      'training-run-bound',
+      'post-training-eval-bound',
+      'sixteen-subsystems-machine-readable',
+    ]) {
+      if (!checks.some((check) => text(check.id) === requiredId && check.passed === true)) {
+        issues.push(`dataset_release_check_not_passed:${requiredId}`);
+      }
+    }
+    if (text(report.manifestHash) && fs.existsSync(manifestPath) && sha256File(manifestPath) !== text(report.manifestHash)) {
+      issues.push('dataset_release_manifest_hash_mismatch');
+    }
+  }
+  issues.push(...datasetManifestIssues(record, manifestPath));
+  return issues;
+}
+
+function evaluate(record: JsonObject, recordPath: string, args: ParsedArgs = {}): {
   decision: ProductionLoopDecision;
   blockingReasons: string[];
   checks: JsonObject[];
@@ -217,6 +353,19 @@ function evaluate(record: JsonObject, recordPath: string): {
 } {
   const checks: JsonObject[] = [];
   const blockingReasons: string[] = [];
+  const confirmationIssues = confirmationAuthorityIssues(record);
+  const datasetIssues = datasetReleaseIssues(record, recordPath, args);
+  checks.push({
+    id: 'requirement-confirmation-current',
+    passed: confirmationIssues.length === 0,
+    issues: confirmationIssues,
+  });
+  checks.push({
+    id: 'governed-dataset-release-complete',
+    passed: datasetIssues.length === 0,
+    issues: datasetIssues,
+  });
+  blockingReasons.push(...confirmationIssues, ...datasetIssues);
   const extensionRef = latestActiveExtension(record);
   const extensionRefComplete = hasCompleteArtifactRef(extensionRef);
   checks.push({ id: 'observability-extension-ref-present', passed: Boolean(extensionRef) });
@@ -265,43 +414,6 @@ function evaluate(record: JsonObject, recordPath: string): {
   };
 }
 
-function updateRecord(
-  record: JsonObject,
-  input: {
-    decision: ProductionLoopDecision;
-    blockingReasons: string[];
-    checks: JsonObject[];
-    reportPath: string;
-    evaluatedAt: string;
-    evaluatedBy: string;
-  }
-): JsonObject {
-  const checkId = `production-loop-ready:${input.evaluatedAt}`;
-  const gateCheck = {
-    eventType: 'gate_check_recorded',
-    checkId,
-    gate: 'Production Loop Ready Check',
-    decision: input.decision,
-    blockingReasons: input.blockingReasons,
-    checks: input.checks,
-    reportPath: normalizePathForRecord(input.reportPath),
-    sourceRefs: [
-      { sourceType: 'requirement_record', id: text(record.recordId) },
-      { sourceType: 'evidence', id: 'EVD-010' },
-      { sourceType: 'requirement', id: 'MUST-011' },
-      { sourceType: 'requirement', id: 'MUST-017' },
-    ],
-    recordedAt: input.evaluatedAt,
-    recordedBy: input.evaluatedBy,
-  };
-  return {
-    ...record,
-    gateChecks: [...objects(record.gateChecks), gateCheck],
-    lastEventType: 'production_loop_ready_check_recorded',
-    updatedAt: input.evaluatedAt,
-  };
-}
-
 export function mainProductionLoopReadyCheck(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
@@ -314,7 +426,7 @@ export function mainProductionLoopReadyCheck(argv: string[]): number {
   const evaluatedAt = args.evaluatedAt ?? new Date().toISOString();
   const evaluatedBy = args.evaluatedBy ?? 'agent';
   const reportPath = path.resolve(args.reportPath ?? path.join(path.dirname(recordPath), 'production-loop-ready-report.json'));
-  const evaluation = evaluate(record, recordPath);
+  const evaluation = evaluate(record, recordPath, args);
   const report = {
     reportType: 'production_loop_ready_report',
     generatedAt: evaluatedAt,
@@ -327,20 +439,11 @@ export function mainProductionLoopReadyCheck(argv: string[]): number {
   };
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-  const nextRecord = updateRecord(record, {
-    decision: evaluation.decision,
-    blockingReasons: evaluation.blockingReasons,
-    checks: evaluation.checks,
-    reportPath,
-    evaluatedAt,
-    evaluatedBy,
-  });
-  fs.writeFileSync(recordPath, `${JSON.stringify(nextRecord, null, 2)}\n`, 'utf8');
-  appendJsonl(path.join(path.dirname(recordPath), 'data', 'mentor-events.jsonl'), nextRecord.gateChecks.at(-1) as JsonObject);
   const output = {
     ok: true,
     reportPath: normalizePathForRecord(reportPath),
     decision: evaluation.decision,
+    controlWrite: 'forbidden_use_controlled_ingest',
     blockingReasons: evaluation.blockingReasons,
   };
   process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `production_loop_ready=${evaluation.decision}\n`);
