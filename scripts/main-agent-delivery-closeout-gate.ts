@@ -91,9 +91,21 @@ function artifactIndexed(record: JsonObject, artifactRef: unknown): boolean {
   );
 }
 
+function hasImplementationReadinessPass(record: JsonObject): boolean {
+  return objects(record.gateChecks).some(
+    (check) =>
+      text(check.gate) === 'Implementation Readiness Gate' &&
+      text(check.decision) === 'pass'
+  );
+}
+
 function evaluate(record: JsonObject, attemptId: string): { decision: CloseoutDecision; blockingReasons: string[]; checks: JsonObject[] } {
   const checks: JsonObject[] = [];
   const blockingReasons: string[] = [];
+  const readinessPassed = hasImplementationReadinessPass(record);
+  checks.push({ id: 'implementation-readiness-gate-passed', passed: readinessPassed });
+  if (!readinessPassed) blockingReasons.push('implementation_readiness_gate_not_passed');
+
   const architectureState = record.architectureConfirmationState as JsonObject | undefined;
   const architectureActive =
     architectureState &&

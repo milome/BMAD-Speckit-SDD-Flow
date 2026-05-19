@@ -1,0 +1,214 @@
+/* eslint-disable no-console */
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+
+type JsonObject = Record<string, unknown>;
+type ReadinessDecision = 'pass' | 'blocked';
+
+interface ParsedArgs {
+  requirementRecord?: string;
+  reportPath?: string;
+  evaluatedBy?: string;
+  evaluatedAt?: string;
+  json?: boolean;
+  help?: boolean;
+}
+
+function parseArgs(argv: string[]): ParsedArgs {
+  const out: ParsedArgs = {};
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === '--help' || arg === '-h') out.help = true;
+    else if (arg === '--json') out.json = true;
+    else if (arg.startsWith('--')) {
+      const key = arg.slice(2).replace(/-([a-z])/gu, (_, letter: string) => letter.toUpperCase());
+      const value = argv[index + 1];
+      if (!value || value.startsWith('--')) throw new Error(`Missing value for ${arg}`);
+      (out as Record<string, string | boolean | undefined>)[key] = value;
+      index += 1;
+    } else {
+      throw new Error(`Unexpected positional argument: ${arg}`);
+    }
+  }
+  return out;
+}
+
+function text(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function objects(value: unknown): JsonObject[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+    : [];
+}
+
+function readJson(file: string): JsonObject {
+  const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as unknown;
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error(`JSON object expected: ${file}`);
+  }
+  return parsed as JsonObject;
+}
+
+function normalizePathForRecord(value: string): string {
+  return value.replace(/\\/gu, '/');
+}
+
+function appendJsonl(file: string, value: JsonObject): void {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.appendFileSync(file, `${JSON.stringify(value)}\n`, 'utf8');
+}
+
+function latestConfirmation(record: JsonObject): JsonObject | null {
+  const history = objects(record.confirmationHistory);
+  return history.length > 0 ? history[history.length - 1] : null;
+}
+
+function hasBlockingOpenQuestion(record: JsonObject): boolean {
+  const summary = record.contractSummary;
+  if (!summary || typeof summary !== 'object' || Array.isArray(summary)) return false;
+  return objects((summary as JsonObject).openQuestions).some(
+    (question) => question.blocksImplementation === true
+  );
+}
+
+function evaluate(record: JsonObject): {
+  decision: ReadinessDecision;
+  blockingReasons: string[];
+  checks: JsonObject[];
+} {
+  const checks: JsonObject[] = [];
+  const blockingReasons: string[] = [];
+  const confirmation = latestConfirmation(record);
+  const confirmed = text(record.status) === 'user_confirmed';
+  checks.push({ id: 'record-status-user-confirmed', passed: confirmed });
+  if (!confirmed) blockingReasons.push('record_not_user_confirmed');
+
+  const confirmationPresent = Boolean(confirmation);
+  checks.push({ id: 'latest-confirmation-history-present', passed: confirmationPresent });
+  if (!confirmationPresent) blockingReasons.push('confirmation_history_missing');
+
+  const sourceHashMatches =
+    confirmationPresent && text(confirmation?.sourceDocumentHash) === text(record.sourceDocumentHash);
+  checks.push({ id: 'source-document-hash-current', passed: sourceHashMatches });
+  if (!sourceHashMatches) blockingReasons.push('source_document_hash_not_current');
+
+  const implementationHashMatches =
+    confirmationPresent &&
+    text(confirmation?.implementationConfirmationHash) === text(record.implementationConfirmationHash);
+  checks.push({ id: 'implementation-confirmation-hash-current', passed: implementationHashMatches });
+  if (!implementationHashMatches) blockingReasons.push('implementation_confirmation_hash_not_current');
+
+  const confirmationPageHashPresent = confirmationPresent && Boolean(text(confirmation?.confirmationPageHash));
+  checks.push({ id: 'confirmation-page-hash-present', passed: confirmationPageHashPresent });
+  if (!confirmationPageHashPresent) blockingReasons.push('confirmation_page_hash_missing');
+
+  const architectureState = record.architectureConfirmationState as JsonObject | undefined;
+  const architectureActive =
+    architectureState &&
+    typeof architectureState === 'object' &&
+    !Array.isArray(architectureState) &&
+    text(architectureState.status) === 'active' &&
+    Boolean(text(architectureState.currentArchitectureConfirmationHash));
+  checks.push({ id: 'architecture-confirmation-current', passed: Boolean(architectureActive) });
+  if (!architectureActive) blockingReasons.push('architecture_confirmation_not_active');
+
+  const blockingQuestion = hasBlockingOpenQuestion(record);
+  checks.push({ id: 'no-blocking-open-questions', passed: !blockingQuestion });
+  if (blockingQuestion) blockingReasons.push('blocking_open_question_exists');
+
+  return {
+    decision: blockingReasons.length === 0 ? 'pass' : 'blocked',
+    blockingReasons,
+    checks,
+  };
+}
+
+function updateRecord(
+  record: JsonObject,
+  input: {
+    decision: ReadinessDecision;
+    blockingReasons: string[];
+    checks: JsonObject[];
+    reportPath: string;
+    evaluatedAt: string;
+    evaluatedBy: string;
+  }
+): JsonObject {
+  const checkId = `implementation-readiness:${input.evaluatedAt}`;
+  const gateCheck = {
+    eventType: 'gate_check_recorded',
+    checkId,
+    gate: 'Implementation Readiness Gate',
+    decision: input.decision,
+    blockingReasons: input.blockingReasons,
+    checks: input.checks,
+    reportPath: normalizePathForRecord(input.reportPath),
+    sourceRefs: [
+      { sourceType: 'requirement_record', id: text(record.recordId) },
+      { sourceType: 'confirmation_history', id: text(latestConfirmation(record)?.confirmedAt) },
+    ].filter((item) => text(item.id)),
+    recordedAt: input.evaluatedAt,
+    recordedBy: input.evaluatedBy,
+  };
+  return {
+    ...record,
+    gateChecks: [...objects(record.gateChecks), gateCheck],
+    lastEventType: 'implementation_readiness_check_recorded',
+    updatedAt: input.evaluatedAt,
+  };
+}
+
+export function mainImplementationReadinessGate(argv: string[]): number {
+  const args = parseArgs(argv);
+  if (args.help) {
+    console.log('Usage: main-agent-implementation-readiness-gate --requirement-record <json> [--json]');
+    return 0;
+  }
+  if (!args.requirementRecord) throw new Error('missing required args: requirementRecord');
+  const recordPath = path.resolve(args.requirementRecord);
+  const record = readJson(recordPath);
+  const evaluatedAt = args.evaluatedAt ?? new Date().toISOString();
+  const evaluatedBy = args.evaluatedBy ?? 'agent';
+  const reportPath = path.resolve(
+    args.reportPath ?? path.join(path.dirname(recordPath), 'implementation-readiness-report.json')
+  );
+  const evaluation = evaluate(record);
+  const report = {
+    reportType: 'implementation_readiness_report',
+    generatedAt: evaluatedAt,
+    recordId: text(record.recordId),
+    requirementSetId: text(record.requirementSetId),
+    decision: evaluation.decision,
+    blockingReasons: evaluation.blockingReasons,
+    checks: evaluation.checks,
+  };
+  fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+  fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+  const nextRecord = updateRecord(record, {
+    ...evaluation,
+    reportPath,
+    evaluatedAt,
+    evaluatedBy,
+  });
+  fs.writeFileSync(recordPath, `${JSON.stringify(nextRecord, null, 2)}\n`, 'utf8');
+  appendJsonl(path.join(path.dirname(recordPath), 'data', 'mentor-events.jsonl'), nextRecord.gateChecks.at(-1) as JsonObject);
+  const output = {
+    ok: true,
+    reportPath: normalizePathForRecord(reportPath),
+    decision: evaluation.decision,
+    blockingReasons: evaluation.blockingReasons,
+  };
+  process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `implementation_readiness=${evaluation.decision}\n`);
+  return evaluation.decision === 'pass' ? 0 : 1;
+}
+
+if (require.main === module) {
+  try {
+    process.exitCode = mainImplementationReadinessGate(process.argv.slice(2));
+  } catch (error) {
+    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    process.exitCode = 2;
+  }
+}

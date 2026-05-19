@@ -18,6 +18,7 @@ function baseRecord(): Record<string, unknown> {
   return {
     recordId: 'REQ-CLOSEOUT',
     requirementSetId: 'REQ-CLOSEOUT',
+    status: 'user_confirmed',
     sourceDocumentHash: HASH,
     implementationConfirmationHash: HASH,
     architectureConfirmationState: {
@@ -28,6 +29,13 @@ function baseRecord(): Record<string, unknown> {
       {
         path: '_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/execution/evidence.json',
         contentHash: HASH,
+      },
+    ],
+    gateChecks: [
+      {
+        eventType: 'gate_check_recorded',
+        gate: 'Implementation Readiness Gate',
+        decision: 'pass',
       },
     ],
   };
@@ -114,6 +122,71 @@ describe('requirement-scoped delivery closeout gate', () => {
         closeoutAttemptId: 'closeout-pass',
         decision: 'pass',
       });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks closeout when implementation readiness has not passed even if delivery evidence is green', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-no-readiness-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        gateChecks: [
+          {
+            eventType: 'gate_check_recorded',
+            gate: 'Quality Gate',
+            decision: 'pass',
+          },
+          {
+            eventType: 'gate_check_recorded',
+            gate: 'Release Gate',
+            decision: 'pass',
+          },
+        ],
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              artifactRefs: [
+                {
+                  path: '_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/execution/evidence.json',
+                  hash: HASH,
+                },
+              ],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-no-readiness',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-no-readiness',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(1);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.closeout.decision).toBe('blocked');
+      expect(record.closeout.attempts[0].blockingReasons).toContain(
+        'implementation_readiness_gate_not_passed'
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
