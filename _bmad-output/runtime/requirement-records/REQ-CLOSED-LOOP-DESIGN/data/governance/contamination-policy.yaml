@@ -1,0 +1,4 @@
+policy: contamination-policy
+scanBeforeRelease: true
+contaminationAction: quarantine_or_block
+holdoutLeakageBlocksRelease: true

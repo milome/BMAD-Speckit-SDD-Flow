@@ -1,0 +1,5 @@
+policy: dedup-policy
+exactDedupe: true
+nearDedupe: true
+duplicateAction: quarantine
+hashAlgorithm: sha256

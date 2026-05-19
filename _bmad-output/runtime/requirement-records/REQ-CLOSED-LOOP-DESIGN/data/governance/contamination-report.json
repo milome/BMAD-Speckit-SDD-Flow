@@ -1,0 +1,12 @@
+{
+  "reportType": "contamination_report",
+  "generatedAt": "2026-05-19T20:34:00.000Z",
+  "policy": {
+    "scanBeforeRelease": true,
+    "contaminationAction": "quarantine_or_block",
+    "holdoutLeakageBlocksRelease": true
+  },
+  "hitCount": 0,
+  "hits": [],
+  "decision": "pass"
+}

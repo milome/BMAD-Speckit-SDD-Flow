@@ -1,0 +1,9 @@
+policy: regression-eval-spec
+trainingLossOnlyRejected: true
+requiredMetrics:
+  - requirement_adherence
+  - evidence_completeness
+  - rerun_rate
+  - defect_escape_rate
+  - similar_error_recurrence_rate
+releaseDecisionWithoutTrainingRun: blocked_until_training_run_bound

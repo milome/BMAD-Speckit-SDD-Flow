@@ -1,0 +1,57 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mD:/Dev/BMAD-Speckit-SDD-Flow[39m
+
+{
+  "ok": true,
+  "recordId": "REQ-GOVERNED-DATA",
+  "requirementSetId": "REQ-GOVERNED-DATA",
+  "outDir": "C:/Users/milom/AppData/Local/Temp/governed-data-products-tsLfNz/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data",
+  "paths": {
+    "mentorEvents": "C:/Users/milom/AppData/Local/Temp/governed-data-products-tsLfNz/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data/mentor-events.jsonl",
+    "sampleRoutes": "C:/Users/milom/AppData/Local/Temp/governed-data-products-tsLfNz/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data/sample-routes.jsonl",
+    "canonicalSamples": "C:/Users/milom/AppData/Local/Temp/governed-data-products-tsLfNz/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data/canonical-samples.jsonl",
+    "validation": "C:/Users/milom/AppData/Local/Temp/governed-data-products-tsLfNz/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data/validation.jsonl",
+    "test": "C:/Users/milom/AppData/Local/Temp/governed-data-products-tsLfNz/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data/test.jsonl",
+    "manifest": "C:/Users/milom/AppData/Local/Temp/governed-data-products-tsLfNz/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data/dataset-manifest.json",
+    "report": "C:/Users/milom/AppData/Local/Temp/governed-data-products-tsLfNz/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data/data-governance-report.json"
+  },
+  "hashes": {
+    "mentorEvents": "sha256:381908287473c1a7fa39ee3cd96a01e975266253e96a2b607733c8f53de19584",
+    "sampleRoutes": "sha256:ef025c2202db5130a322096df609c3a809903acef48db01d9df9a96c6dc8ec73",
+    "canonicalSamples": "sha256:157930c7c36e9b96b6acc5228254e4bb9f04f4da9ffc795d9d3ec6339ba3390e",
+    "validation": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "test": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "manifest": "sha256:9a7e87047650777f5acfb0c8770518ee613576bb80887402fd9656dcbe5c8e0f",
+    "report": "sha256:cf5b847fd1896a2101d56e33d61d5ba8ca701dceeb8d5a1360246ffb00a99d90"
+  },
+  "counts": {
+    "mentorEvents": 8,
+    "sampleRoutes": 6,
+    "canonicalSamples": 1,
+    "rejectedRoutes": 5
+  }
+}
+{
+  "ok": true,
+  "outDir": "C:/Users/milom/AppData/Local/Temp/data-governance-pass-ekDOeD/_bmad-output/runtime/requirement-records/REQ-DATA-GOVERNANCE/data/governance",
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/data-governance-pass-ekDOeD/_bmad-output/runtime/requirement-records/REQ-DATA-GOVERNANCE/data/governance/data-governance-gate-report.json",
+  "reportHash": "sha256:810fab7129dd2c501fd09c6fdbcfed047b7563acd49a84f45b53a477c2220347",
+  "decision": "pass"
+}
+governed_data_products=C:/Users/milom/AppData/Local/Temp/governed-data-routes-1XmRAo/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data
+data_governance_gate=blocked
+governed_data_products=C:/Users/milom/AppData/Local/Temp/governed-data-manifest-UIh5sv/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data
+data_governance_gate=blocked
+ [32m✓[39m tests/acceptance/main-agent-data-governance-gate.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 43[2mms[22m[39m
+governed_data_products=C:/Users/milom/AppData/Local/Temp/governed-data-preserve-ePL22p/_bmad-output/runtime/requirement-records/REQ-GOVERNED-DATA/data
+ [32m✓[39m tests/acceptance/main-agent-governed-data-products.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 56[2mms[22m[39m
+ [32m✓[39m packages/scoring/analytics/__tests__/redaction.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m packages/scoring/analytics/__tests__/dataset-analytics.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m packages/scoring/analytics/__tests__/quality-gates.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m packages/scoring/analytics/__tests__/split.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 3[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m6 passed[39m[22m[90m (6)[39m
+[2m      Tests [22m [1m[32m19 passed[39m[22m[90m (19)[39m
+[2m   Start at [22m 20:34:56
+[2m   Duration [22m 795ms[2m (transform 194ms, setup 0ms, import 430ms, tests 125ms, environment 1ms)[22m
+

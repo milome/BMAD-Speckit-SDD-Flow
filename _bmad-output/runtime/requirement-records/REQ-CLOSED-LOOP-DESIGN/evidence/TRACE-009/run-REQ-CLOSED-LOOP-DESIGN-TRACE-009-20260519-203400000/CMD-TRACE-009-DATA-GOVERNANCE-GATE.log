@@ -1,0 +1,7 @@
+{
+  "ok": true,
+  "outDir": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/governance",
+  "reportPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/governance/data-governance-gate-report.json",
+  "reportHash": "sha256:46bb4f3da9356ab4f026ef9516f94b5863816100181fddd5984311b9554b7683",
+  "decision": "pass"
+}

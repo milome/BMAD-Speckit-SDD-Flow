@@ -1,0 +1,13 @@
+policy: split-policy
+evalFirst: true
+holdoutFrozenBeforeSftExport: true
+splitStrategy: requirement_record_group_hash_v1
+groupDimensions:
+  - repo
+  - issue
+  - story
+  - pr
+  - bug_family
+  - api
+  - file_cluster
+  - lineage

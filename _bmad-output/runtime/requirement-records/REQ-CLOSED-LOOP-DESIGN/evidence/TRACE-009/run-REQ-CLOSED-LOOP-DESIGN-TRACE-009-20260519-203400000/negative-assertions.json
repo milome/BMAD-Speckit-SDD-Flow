@@ -1,0 +1,22 @@
+{
+  "traceRows": [
+    "TRACE-009"
+  ],
+  "assertions": [
+    {
+      "id": "NEG-TRACE-009-01",
+      "statement": "The same group key must not leak across train, validation, test, or holdout splits.",
+      "verifiedBy": "main-agent-data-governance-gate.test.ts"
+    },
+    {
+      "id": "NEG-TRACE-009-02",
+      "statement": "Contaminated canonical samples must block the Data Governance Gate instead of silently entering SFT.",
+      "verifiedBy": "main-agent-data-governance-gate.test.ts"
+    },
+    {
+      "id": "NEG-TRACE-009-03",
+      "statement": "Post-training release cannot be justified by training loss only and remains blocked until a training run is bound.",
+      "verifiedBy": "main-agent-data-governance-gate.test.ts"
+    }
+  ]
+}

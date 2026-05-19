@@ -1,0 +1,102 @@
+{
+  "traceId": "TRACE-009",
+  "runId": "run-REQ-CLOSED-LOOP-DESIGN-TRACE-009-20260519-203400000",
+  "summary": "TRACE-009 adds a requirement-scoped Data Governance Gate for eval-first split isolation, deduplication, contamination quarantine, holdout registry, and post-training regression release blocking.",
+  "filesChanged": [
+    "scripts/main-agent-data-governance-gate.ts",
+    "tests/acceptance/main-agent-data-governance-gate.test.ts"
+  ],
+  "governanceArtifacts": [
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/governance/split-policy.yaml",
+      "hash": "sha256:60ff69b1b11f2ac3ece10813e3c4f6bc7e7eb508c0b0ad017c8a4e7b811e1fc8"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/governance/dedup-policy.yaml",
+      "hash": "sha256:5cbd6719607600db7274ece8f2dc86bb7bf0219f92845a760c2938fe9c55f032"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/governance/contamination-policy.yaml",
+      "hash": "sha256:f82dcc613c22c8393ea4d785aa311ccaaa31efb9b9eed1798ee02b150542b81e"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/governance/regression-eval-spec.yaml",
+      "hash": "sha256:46fe8c00fbc2c207ac34c83023f80484f106391764250843e263e7be460d6958"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/governance/holdout-registry.json",
+      "hash": "sha256:2bfc855a17c27775d6e32a78171738605d4a33d0c1061eca8dd8070b372f9ca6"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/governance/split-report.json",
+      "hash": "sha256:325cffd0dd1aca19378cc056a1036219617ed3a57734c8387bb95113db8211f6"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/governance/dedup-report.json",
+      "hash": "sha256:8b9be4a9646486b1ed12837fc066c343c00a114b33ac30a9234071f455196055"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/governance/contamination-report.json",
+      "hash": "sha256:cef5a4ccf4caf645d69ef7606bc293a7e9204a414dfac04604623f4c7695ca86"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/governance/post-training-eval-report.json",
+      "hash": "sha256:f0af1eca3abf599dc033629b5888b7666d3efbae5e5ced1ec9bdbaf459deb840"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/governance/data-governance-gate-report.json",
+      "hash": "sha256:46bb4f3da9356ab4f026ef9516f94b5863816100181fddd5984311b9554b7683"
+    }
+  ],
+  "commandRunRefs": [
+    {
+      "commandId": "CMD-TRACE-009-DATA-GOVERNANCE-GATE",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T12:34:53.036Z",
+      "completedAt": "2026-05-19T12:34:53.877Z",
+      "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-009/run-REQ-CLOSED-LOOP-DESIGN-TRACE-009-20260519-203400000/CMD-TRACE-009-DATA-GOVERNANCE-GATE.log",
+      "logHash": "sha256:c75119d9d086853a12ee200dcd121d66ba7a18be32852b65ce58aa4b3faf6e9c"
+    },
+    {
+      "commandId": "CMD-TRACE-009-DATA-GOVERNANCE-TEST",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T12:34:53.879Z",
+      "completedAt": "2026-05-19T12:34:57.108Z",
+      "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-009/run-REQ-CLOSED-LOOP-DESIGN-TRACE-009-20260519-203400000/CMD-TRACE-009-DATA-GOVERNANCE-TEST.log",
+      "logHash": "sha256:182220d89384c9c9b73d64277de0e4a7d1fb84f88478963259d228ddb9d9fd59"
+    },
+    {
+      "commandId": "CMD-RENDER-CONFIRMATION",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T12:34:57.108Z",
+      "completedAt": "2026-05-19T12:34:57.380Z",
+      "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-009/run-REQ-CLOSED-LOOP-DESIGN-TRACE-009-20260519-203400000/CMD-RENDER-CONFIRMATION.log",
+      "logHash": "sha256:48b6dac77c3ac4bc5c7be1a262d1d42632d505e92d1fe62dd1b1a9fbbe56ee8a"
+    },
+    {
+      "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T12:34:57.381Z",
+      "completedAt": "2026-05-19T12:35:05.150Z",
+      "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-009/run-REQ-CLOSED-LOOP-DESIGN-TRACE-009-20260519-203400000/CMD-TRACE-BINDING-ACCEPTANCE.log",
+      "logHash": "sha256:bae4176ef72384a893d2f74207680a236e2e688016979e82e80bd01594483b1a"
+    },
+    {
+      "commandId": "CMD-ENCODING-GATE",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T12:35:05.152Z",
+      "completedAt": "2026-05-19T12:35:05.627Z",
+      "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-009/run-REQ-CLOSED-LOOP-DESIGN-TRACE-009-20260519-203400000/CMD-ENCODING-GATE.log",
+      "logHash": "sha256:6335bf883ecf052543b9e6ddacdb492b0af8062fb6bea456a5d01af7ec31eee9"
+    }
+  ],
+  "relatedRequirementIds": [
+    "TRACE-009",
+    "MUST-013",
+    "MUST-015",
+    "NEG-003",
+    "NEG-006",
+    "EVD-013",
+    "EVD-015"
+  ]
+}

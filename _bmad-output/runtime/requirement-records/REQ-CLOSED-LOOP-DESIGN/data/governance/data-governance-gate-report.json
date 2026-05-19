@@ -1,0 +1,119 @@
+{
+  "reportType": "data_governance_gate_report",
+  "generatedAt": "2026-05-19T20:34:00.000Z",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+  "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
+  "architectureConfirmationHash": "sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+  "checks": {
+    "split": {
+      "reportType": "split_report",
+      "generatedAt": "2026-05-19T20:34:00.000Z",
+      "policy": {
+        "evalFirst": true,
+        "holdoutFrozenBeforeSftExport": true,
+        "splitStrategy": "requirement_record_group_hash_v1",
+        "groupDimensions": [
+          "repo",
+          "issue",
+          "story",
+          "pr",
+          "bug_family",
+          "api",
+          "file_cluster",
+          "lineage"
+        ]
+      },
+      "groupCount": 1,
+      "leakingGroups": [],
+      "holdoutRegistrySize": 4,
+      "decision": "pass"
+    },
+    "dedup": {
+      "reportType": "dedup_report",
+      "generatedAt": "2026-05-19T20:34:00.000Z",
+      "policy": {
+        "exactDedupe": true,
+        "nearDedupe": true,
+        "duplicateAction": "quarantine",
+        "hashAlgorithm": "sha256"
+      },
+      "duplicateClusterCount": 0,
+      "duplicates": [],
+      "decision": "pass"
+    },
+    "contamination": {
+      "reportType": "contamination_report",
+      "generatedAt": "2026-05-19T20:34:00.000Z",
+      "policy": {
+        "scanBeforeRelease": true,
+        "contaminationAction": "quarantine_or_block",
+        "holdoutLeakageBlocksRelease": true
+      },
+      "hitCount": 0,
+      "hits": [],
+      "decision": "pass"
+    },
+    "holdout": {
+      "registryType": "holdout_registry",
+      "generatedAt": "2026-05-19T20:34:00.000Z",
+      "frozen": true,
+      "freezeReason": "eval_first_before_sft_export",
+      "items": [
+        {
+          "sampleRouteId": "route:mentor:REQ-CLOSED-LOOP-DESIGN:execution:exec-implementation-evidence-ingest-001",
+          "mentorEventId": "mentor:REQ-CLOSED-LOOP-DESIGN:execution:exec-implementation-evidence-ingest-001",
+          "destination": "eval",
+          "reasons": [
+            "non_positive_status:partial"
+          ]
+        },
+        {
+          "sampleRouteId": "route:mentor:REQ-CLOSED-LOOP-DESIGN:execution:exec-closeout-gate-001",
+          "mentorEventId": "mentor:REQ-CLOSED-LOOP-DESIGN:execution:exec-closeout-gate-001",
+          "destination": "eval",
+          "reasons": [
+            "non_positive_status:partial"
+          ]
+        },
+        {
+          "sampleRouteId": "route:mentor:REQ-CLOSED-LOOP-DESIGN:execution:exec-closeout-gate-attempt-binding-001",
+          "mentorEventId": "mentor:REQ-CLOSED-LOOP-DESIGN:execution:exec-closeout-gate-attempt-binding-001",
+          "destination": "eval",
+          "reasons": [
+            "non_positive_status:partial"
+          ]
+        },
+        {
+          "sampleRouteId": "route:mentor:REQ-CLOSED-LOOP-DESIGN:execution:exec-closeout-attempt-004-required-commands",
+          "mentorEventId": "mentor:REQ-CLOSED-LOOP-DESIGN:execution:exec-closeout-attempt-004-required-commands",
+          "destination": "eval",
+          "reasons": [
+            "non_positive_status:partial"
+          ]
+        }
+      ]
+    },
+    "postTrainingRegression": {
+      "reportType": "post_training_regression_report",
+      "generatedAt": "2026-05-19T20:34:00.000Z",
+      "trainingRunId": null,
+      "comparisonState": "baseline_frozen_training_run_required_before_dataset_release",
+      "releaseDecision": "blocked_until_training_run_bound",
+      "baseline": {
+        "sampleCount": 7,
+        "sampleHash": "sha256:8cd1c59c35b1d4fd03005ecddc47217c5634d6db9b801c62187de2d0deebcaf6",
+        "requiredMetrics": [
+          "requirement_adherence",
+          "evidence_completeness",
+          "rerun_rate",
+          "defect_escape_rate",
+          "similar_error_recurrence_rate"
+        ]
+      },
+      "trainingLossOnlyRejected": true
+    }
+  },
+  "decision": "pass"
+}
