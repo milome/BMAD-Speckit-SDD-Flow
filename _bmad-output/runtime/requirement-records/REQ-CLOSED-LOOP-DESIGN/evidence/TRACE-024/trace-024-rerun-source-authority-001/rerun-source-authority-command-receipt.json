@@ -1,0 +1,8 @@
+{
+  "commandId": "CMD-RERUN-SOURCE-AUTHORITY-ACCEPTANCE",
+  "command": "npx vitest run tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/main-agent-decision-field-check.test.ts tests/acceptance/main-agent-scoring-gates-check.test.ts",
+  "runId": "run-trace-024-rerun-source-authority-001",
+  "closeoutAttemptId": "closeout-trace-024-rerun-source-authority-001",
+  "exitCode": 0,
+  "outputSummary": "5 test files passed; 48 tests passed."
+}

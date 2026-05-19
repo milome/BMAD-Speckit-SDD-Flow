@@ -1,0 +1,19 @@
+{
+  "assertions": [
+    {
+      "id": "NEG-019-A",
+      "text": "Canonical rerunLoops[].result and rerunLoops[].decision remain forbidden control fields.",
+      "validatedBy": "tests/acceptance/requirement-record-schema.test.ts"
+    },
+    {
+      "id": "NEG-019-B",
+      "text": "rerunLoops[].sourceRefs must point to controlled source records, not artifact refs or trigger-only labels.",
+      "validatedBy": "tests/acceptance/implementation-evidence-ingest.test.ts"
+    },
+    {
+      "id": "OUT-017-A",
+      "text": "Delivery closeout reads rerun lifecycle status and source authority only; trigger labels cannot drive closeout.",
+      "validatedBy": "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts"
+    }
+  ]
+}

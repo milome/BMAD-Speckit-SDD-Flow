@@ -431,4 +431,59 @@ describe('requirement-scoped delivery closeout gate', () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it('blocks closeout when rerun loops use trigger-only or non-authoritative source refs', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-invalid-rerun-source-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        rerunLoops: [
+          {
+            rerunLoopId: 'rerun-invalid-001',
+            status: 'resolved',
+            trigger: 'score_evaluation_failed',
+            sourceRefs: [{ sourceType: 'artifact_ref', id: 'score.json' }],
+          },
+        ],
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-invalid-rerun-source',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-invalid-rerun-source',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(1);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.closeout.attempts[0].blockingReasons).toContain(
+        'rerun_loop_source_ref_type_invalid:rerun-invalid-001:artifact_ref'
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

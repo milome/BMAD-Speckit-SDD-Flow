@@ -441,6 +441,71 @@ describe('implementation evidence ingest', () => {
     }
   });
 
+  it('rejects rerun loops without controlled source authority before mutating the requirement record', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-evidence-rerun-source-'));
+    try {
+      const fixture = writeFixture(root);
+      const before = readFileSync(fixture.recordPath, 'utf8');
+      const packet = JSON.parse(readFileSync(fixture.evidencePath, 'utf8'));
+      packet.rerunLoops = [
+        {
+          rerunLoopId: 'rerun-trigger-only',
+          status: 'open',
+          trigger: 'score_evaluation_failed',
+          sourceRefs: [{ sourceType: 'artifact_ref', id: 'score.json' }],
+          result: 'failed',
+        },
+      ];
+      writeFileSync(fixture.evidencePath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
+      const code = mainIngestImplementationEvidence([
+        '--evidence',
+        fixture.evidencePath,
+        '--requirement-record',
+        fixture.recordPath,
+      ]);
+      expect(code).toBe(3);
+      expect(readFileSync(fixture.recordPath, 'utf8')).toBe(before);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('records rerun loops with source authority while dropping non-control trigger labels', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-evidence-rerun-authority-'));
+    try {
+      const { recordPath, evidencePath } = writeFixture(root);
+      const packet = JSON.parse(readFileSync(evidencePath, 'utf8'));
+      packet.rerunLoops = [
+        {
+          rerunLoopId: 'rerun-001',
+          status: 'open',
+          trigger: 'score_evaluation_failed',
+          sourceRefs: [{ sourceType: 'gate_check', id: 'score-evaluation:001' }],
+          blockerRefs: [{ sourceType: 'failure_record', id: 'score-failure-001' }],
+        },
+      ];
+      writeFileSync(evidencePath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
+      const prev = process.cwd();
+      process.chdir(root);
+      try {
+        expect(mainIngestImplementationEvidence(['--evidence', evidencePath, '--requirement-record', recordPath])).toBe(0);
+      } finally {
+        process.chdir(prev);
+      }
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.rerunLoops.at(-1)).toMatchObject({
+        rerunLoopId: 'rerun-001',
+        status: 'open',
+        sourceRefs: [{ sourceType: 'gate_check', id: 'score-evaluation:001' }],
+      });
+      expect(record.rerunLoops.at(-1)).not.toHaveProperty('trigger');
+      expect(record.rerunLoops.at(-1)).not.toHaveProperty('result');
+      expect(record.rerunLoops.at(-1)).not.toHaveProperty('decision');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('rejects delivery required commands that cannot prove current blocking evidence', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-evidence-required-command-'));
     try {

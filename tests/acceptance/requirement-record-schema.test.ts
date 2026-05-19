@@ -341,4 +341,16 @@ describe('requirement-record.schema.json', () => {
     expect(JSON.stringify(validate.errors)).toContain('result');
     expect(JSON.stringify(validate.errors)).toContain('decision');
   });
+
+  it('rejects rerun loops whose sourceRefs are not controlled authority records', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+    record.rerunLoops[0] = {
+      ...record.rerunLoops[0],
+      sourceRefs: [{ sourceType: 'artifact_ref', id: 'score.json' }],
+    } as never;
+
+    expect(validate(record)).toBe(false);
+    expect(JSON.stringify(validate.errors)).toContain('sourceType');
+  });
 });

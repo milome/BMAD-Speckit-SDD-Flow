@@ -1,0 +1,377 @@
+{
+  "eventType": "execution_iteration_recorded",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "executionIterationId": "exec-trace-024-rerun-source-authority-001",
+  "runId": "run-trace-024-rerun-source-authority-001",
+  "status": "done",
+  "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+  "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
+  "architectureConfirmationHash": "sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+  "traceRows": [
+    "TRACE-024"
+  ],
+  "taskRefs": [
+    "TASK-GATES-CLOSEOUT-RERUN",
+    "TASK-RERUN-SOURCE-AUTHORITY"
+  ],
+  "evidenceRefs": [
+    "EVD-001",
+    "EVD-004",
+    "EVD-009",
+    "EVD-031"
+  ],
+  "filesChanged": [
+    "_bmad/_schemas/requirement-record.schema.json",
+    "scripts/ingest-implementation-evidence.ts",
+    "scripts/main-agent-delivery-closeout-gate.ts",
+    "tests/acceptance/implementation-evidence-ingest.test.ts",
+    "tests/acceptance/requirement-record-schema.test.ts",
+    "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts"
+  ],
+  "implementationDelta": {
+    "filesChanged": [
+      "_bmad/_schemas/requirement-record.schema.json",
+      "scripts/ingest-implementation-evidence.ts",
+      "scripts/main-agent-delivery-closeout-gate.ts",
+      "tests/acceptance/implementation-evidence-ingest.test.ts",
+      "tests/acceptance/requirement-record-schema.test.ts",
+      "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts"
+    ],
+    "diffSummaryRef": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-024/trace-024-rerun-source-authority-001/implementation-delta-summary.md",
+    "behaviorAffecting": true,
+    "negativeAssertionArtifactRefs": [
+      {
+        "artifactType": "negative_assertion_report",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-024/trace-024-rerun-source-authority-001/negative-assertions.json",
+        "contentHash": "sha256:81d9a18c72b248f4800b3c1914224d95c81fb0d3250e4f87fd8dc5440273c8aa",
+        "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-024 implementation",
+        "purpose": "TRACE-024 negative assertions for rerun result/decision/trigger-only hard-cut.",
+        "relatedRequirementIds": [
+          "MUST-031",
+          "NEG-019",
+          "OUT-017",
+          "EVD-001",
+          "EVD-004",
+          "EVD-009",
+          "EVD-031",
+          "TRACE-024"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+        "outputVersion": "negative_assertion_report/v1",
+        "traceRows": [
+          "TRACE-024"
+        ],
+        "evidenceRefs": [
+          "EVD-001",
+          "EVD-004",
+          "EVD-009",
+          "EVD-031"
+        ]
+      }
+    ]
+  },
+  "diffSummary": "Constrain rerunLoops to lifecycle plus controlled source authority and block trigger-only rerun control.",
+  "commandRuns": [
+    {
+      "commandId": "CMD-RERUN-SOURCE-AUTHORITY-ACCEPTANCE",
+      "command": "npx vitest run tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/main-agent-decision-field-check.test.ts tests/acceptance/main-agent-scoring-gates-check.test.ts",
+      "runId": "run-trace-024-rerun-source-authority-001",
+      "closeoutAttemptId": "closeout-trace-024-rerun-source-authority-001",
+      "exitCode": 0,
+      "startedAt": "2026-05-18T16:26:36.000Z",
+      "completedAt": "2026-05-18T16:26:41.000Z",
+      "outputSummary": "5 test files passed; 48 tests passed."
+    },
+    {
+      "commandId": "CMD-ENCODING-GATE",
+      "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+      "runId": "run-trace-024-rerun-source-authority-001",
+      "closeoutAttemptId": "closeout-trace-024-rerun-source-authority-001",
+      "exitCode": 0,
+      "startedAt": "2026-05-18T16:26:45.000Z",
+      "completedAt": "2026-05-18T16:26:47.000Z",
+      "outputSummary": "checkedFiles=2759 findings=0"
+    }
+  ],
+  "artifactRefs": [
+    {
+      "artifactType": "requirement_record_schema",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad/_schemas/requirement-record.schema.json",
+      "contentHash": "sha256:c4555bc037e38b2705ac7769e49809116c8459cb57290e7d2b102d0f305713fa",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-024 implementation",
+      "purpose": "Canonical schema now constrains rerunLoops sourceRefs to controlled authority records.",
+      "relatedRequirementIds": [
+        "MUST-031",
+        "NEG-019",
+        "OUT-017",
+        "EVD-001",
+        "EVD-004",
+        "EVD-009",
+        "EVD-031",
+        "TRACE-024"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "requirement_record_schema/v1",
+      "traceRows": [
+        "TRACE-024"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-009",
+        "EVD-031"
+      ]
+    },
+    {
+      "artifactType": "command_receipt",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-024/trace-024-rerun-source-authority-001/rerun-source-authority-command-receipt.json",
+      "contentHash": "sha256:4b0258731a45c42ef8ea169ff46ab7875cf76013396503e2ae8e328b493a6371",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-024 implementation",
+      "purpose": "Command receipt for rerun source authority acceptance tests.",
+      "relatedRequirementIds": [
+        "MUST-031",
+        "NEG-019",
+        "OUT-017",
+        "EVD-001",
+        "EVD-004",
+        "EVD-009",
+        "EVD-031",
+        "TRACE-024"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "command_receipt/v1",
+      "traceRows": [
+        "TRACE-024"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-009",
+        "EVD-031"
+      ]
+    },
+    {
+      "artifactType": "negative_assertion_report",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-024/trace-024-rerun-source-authority-001/negative-assertions.json",
+      "contentHash": "sha256:81d9a18c72b248f4800b3c1914224d95c81fb0d3250e4f87fd8dc5440273c8aa",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-024 implementation",
+      "purpose": "TRACE-024 negative assertions for rerun result/decision/trigger-only hard-cut.",
+      "relatedRequirementIds": [
+        "MUST-031",
+        "NEG-019",
+        "OUT-017",
+        "EVD-001",
+        "EVD-004",
+        "EVD-009",
+        "EVD-031",
+        "TRACE-024"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "negative_assertion_report/v1",
+      "traceRows": [
+        "TRACE-024"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-009",
+        "EVD-031"
+      ]
+    },
+    {
+      "artifactType": "implementation_delta_summary",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-024/trace-024-rerun-source-authority-001/implementation-delta-summary.md",
+      "contentHash": "sha256:037b4a0cfc29bedc6664ed0386b3bc344cd5f78efe538bc2a15f99904cbcb2d8",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-024 implementation",
+      "purpose": "TRACE-024 implementation delta summary.",
+      "relatedRequirementIds": [
+        "MUST-031",
+        "NEG-019",
+        "OUT-017",
+        "EVD-001",
+        "EVD-004",
+        "EVD-009",
+        "EVD-031",
+        "TRACE-024"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "implementation_delta_summary/v1",
+      "traceRows": [
+        "TRACE-024"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-009",
+        "EVD-031"
+      ]
+    }
+  ],
+  "deliveryEvidence": {
+    "requiredCommands": [
+      {
+        "commandId": "CMD-RERUN-SOURCE-AUTHORITY-ACCEPTANCE",
+        "command": "npx vitest run tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/main-agent-decision-field-check.test.ts tests/acceptance/main-agent-scoring-gates-check.test.ts",
+        "commandType": "contract_validation",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": [
+          "TRACE-024"
+        ],
+        "evidenceRefs": [
+          "EVD-001",
+          "EVD-004",
+          "EVD-009",
+          "EVD-031"
+        ],
+        "artifactRefs": [
+          {
+            "artifactType": "requirement_record_schema",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad/_schemas/requirement-record.schema.json",
+            "contentHash": "sha256:c4555bc037e38b2705ac7769e49809116c8459cb57290e7d2b102d0f305713fa",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-024 implementation",
+            "purpose": "Canonical schema now constrains rerunLoops sourceRefs to controlled authority records.",
+            "relatedRequirementIds": [
+              "MUST-031",
+              "NEG-019",
+              "OUT-017",
+              "EVD-001",
+              "EVD-004",
+              "EVD-009",
+              "EVD-031",
+              "TRACE-024"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "requirement_record_schema/v1",
+            "traceRows": [
+              "TRACE-024"
+            ],
+            "evidenceRefs": [
+              "EVD-001",
+              "EVD-004",
+              "EVD-009",
+              "EVD-031"
+            ]
+          },
+          {
+            "artifactType": "negative_assertion_report",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-024/trace-024-rerun-source-authority-001/negative-assertions.json",
+            "contentHash": "sha256:81d9a18c72b248f4800b3c1914224d95c81fb0d3250e4f87fd8dc5440273c8aa",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-024 implementation",
+            "purpose": "TRACE-024 negative assertions for rerun result/decision/trigger-only hard-cut.",
+            "relatedRequirementIds": [
+              "MUST-031",
+              "NEG-019",
+              "OUT-017",
+              "EVD-001",
+              "EVD-004",
+              "EVD-009",
+              "EVD-031",
+              "TRACE-024"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "negative_assertion_report/v1",
+            "traceRows": [
+              "TRACE-024"
+            ],
+            "evidenceRefs": [
+              "EVD-001",
+              "EVD-004",
+              "EVD-009",
+              "EVD-031"
+            ]
+          },
+          {
+            "artifactType": "command_receipt",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-024/trace-024-rerun-source-authority-001/rerun-source-authority-command-receipt.json",
+            "contentHash": "sha256:4b0258731a45c42ef8ea169ff46ab7875cf76013396503e2ae8e328b493a6371",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-024 implementation",
+            "purpose": "Command receipt for rerun source authority acceptance tests.",
+            "relatedRequirementIds": [
+              "MUST-031",
+              "NEG-019",
+              "OUT-017",
+              "EVD-001",
+              "EVD-004",
+              "EVD-009",
+              "EVD-031",
+              "TRACE-024"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "command_receipt/v1",
+            "traceRows": [
+              "TRACE-024"
+            ],
+            "evidenceRefs": [
+              "EVD-001",
+              "EVD-004",
+              "EVD-009",
+              "EVD-031"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "gateChecks": [
+    {
+      "gate": "rerun_source_authority",
+      "decision": "pass",
+      "checkId": "rerun-source-authority:trace-024",
+      "sourceRefs": [
+        {
+          "sourceType": "artifact_ref",
+          "id": "_bmad/_schemas/requirement-record.schema.json"
+        }
+      ]
+    }
+  ],
+  "requirementClosures": [
+    {
+      "requirementId": "MUST-031",
+      "status": "pass"
+    },
+    {
+      "requirementId": "NEG-019",
+      "status": "pass"
+    },
+    {
+      "requirementId": "OUT-017",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-001",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-004",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-009",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-031",
+      "status": "pass"
+    }
+  ],
+  "closeoutAttemptId": "closeout-trace-024-rerun-source-authority-001"
+}

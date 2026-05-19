@@ -221,6 +221,23 @@
         "id": { "$ref": "#/$defs/nonEmptyString" }
       }
     },
+    "rerunAuthoritySourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceType", "id"],
+      "properties": {
+        "sourceType": {
+          "enum": [
+            "gate_check",
+            "contract_check",
+            "audit_iteration",
+            "execution_iteration",
+            "requirement_closure"
+          ]
+        },
+        "id": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
     "commandRunRef": {
       "type": "object",
       "additionalProperties": false,
@@ -535,7 +552,8 @@
         "status": { "enum": ["open", "in_progress", "no_progress", "resolved", "blocked", "abandoned_by_user_confirmation"] },
         "sourceRefs": {
           "type": "array",
-          "items": { "$ref": "#/$defs/sourceRef" }
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/rerunAuthoritySourceRef" }
         },
         "blockerRefs": {
           "type": "array",
