@@ -905,7 +905,9 @@ describe('render-requirements-confirmation-html', () => {
     expect(report.confirmability).toBe('confirmable');
     expect(report.mermaidRuntime.available).toBe(true);
     expect(report.mermaidRuntime.path).toBe(mermaidBundle.replace(/\\/g, '/'));
-    expect(report.confirmationPageHashScope).toBe('html_normalized_with_self_hash_placeholder');
+    expect(report.confirmationPageHashScope).toBe(
+      'html_normalized_with_self_hash_placeholder_and_generated_at_excluded'
+    );
     expect(report.actualHtmlFileHash).toMatch(/^sha256:/);
     expect(report.reconfirmationRequest.required).toBe(false);
     expect(report.confirmInstruction).toContain('确认以上范围进入下一阶段');
@@ -939,7 +941,7 @@ describe('render-requirements-confirmation-html', () => {
       caseCount: 3,
       groupCount: 2,
       schemaIssueCount: 0,
-      p0ExecutableSubsetRequired: true,
+      fullLinkExecutableSubsetRequired: true,
     });
     expect(report.resumeFailureCaseCoverage.schemaIssues).toEqual([]);
     expect(report.governanceEventTypeRegistry.gate_check_recorded).toMatchObject({
@@ -965,7 +967,9 @@ describe('render-requirements-confirmation-html', () => {
       requiresUserConfirmation: true,
       recordEventTypes: ['confirmation_recorded', 'contract_check_recorded'],
     });
-    expect(report.resumeFailureCaseCoverage.p0RequiredFixtureCases).toContain('sourceDocumentHash_changed');
+    expect(report.resumeFailureCaseCoverage.fullLinkRequiredFixtureCases).toContain(
+      'sourceDocumentHash_changed'
+    );
     expect(report.resumeFailureCaseCoverage.phase4_5Coverage).toEqual(
       expect.arrayContaining(['trace_checkpoint_missing', 'codexHookTrustReceipt_missing_or_invalid'])
     );
