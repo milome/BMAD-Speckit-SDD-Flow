@@ -94,6 +94,35 @@ function validRecord() {
         outputVersion: 'confirmation-v1',
       },
     ],
+    failureRecords: [
+      {
+        eventType: 'failure_recorded',
+        failureId: 'failure-001',
+        type: 'delivery_closeout_blocked',
+        status: 'open',
+        closeoutAttemptId: 'closeout-001',
+        blockingReasons: ['pending_rerun_exists'],
+        sourceRefs: [{ sourceType: 'closeout_attempt', id: 'closeout-001' }],
+        recordedAt: '2026-05-19T00:00:00.000Z',
+        recordedBy: 'codex',
+      },
+    ],
+    rcaRecords: [
+      {
+        eventType: 'rca_created',
+        rcaId: 'rca-001',
+        type: 'closeout_blocker',
+        status: 'open',
+        sourceRefs: [{ sourceType: 'failure_record', id: 'failure-001' }],
+      },
+    ],
+    rerunLoops: [
+      {
+        rerunLoopId: 'rerun-001',
+        status: 'open',
+        sourceRefs: [{ sourceType: 'gate_check', id: 'gate-001' }],
+      },
+    ],
     updatedAt: '2026-05-19T00:00:00.000Z',
   };
 }
@@ -146,5 +175,17 @@ describe('requirement-record.schema.json', () => {
 
     expect(validate(record)).toBe(false);
     expect(JSON.stringify(validate.errors)).toContain('relatedRequirementIds');
+  });
+
+  it('rejects result and decision on failure, RCA, and rerun lifecycle records', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+    record.failureRecords[0] = { ...record.failureRecords[0], result: 'fail' } as never;
+    record.rcaRecords[0] = { ...record.rcaRecords[0], decision: 'blocked' } as never;
+    record.rerunLoops[0] = { ...record.rerunLoops[0], result: 'failed' } as never;
+
+    expect(validate(record)).toBe(false);
+    expect(JSON.stringify(validate.errors)).toContain('result');
+    expect(JSON.stringify(validate.errors)).toContain('decision');
   });
 });

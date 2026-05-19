@@ -48,6 +48,10 @@
       "type": "array",
       "items": { "$ref": "#/$defs/failureRecord" }
     },
+    "rcaRecords": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/rcaRecord" }
+    },
     "rerunLoops": {
       "type": "array",
       "items": { "$ref": "#/$defs/rerunLoop" }
@@ -335,12 +339,56 @@
     },
     "failureRecord": {
       "type": "object",
-      "additionalProperties": true,
-      "required": ["type"],
+      "additionalProperties": false,
+      "required": ["eventType", "failureId", "type", "status", "sourceRefs", "recordedAt", "recordedBy"],
       "properties": {
-        "type": { "$ref": "#/$defs/nonEmptyString" }
+        "eventType": { "const": "failure_recorded" },
+        "failureId": { "$ref": "#/$defs/nonEmptyString" },
+        "type": { "$ref": "#/$defs/nonEmptyString" },
+        "status": { "enum": ["open", "in_progress", "resolved", "blocked", "superseded"] },
+        "closeoutAttemptId": { "$ref": "#/$defs/nonEmptyString" },
+        "blockingReasons": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "sourceRefs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/sourceRef" }
+        },
+        "recordedAt": { "type": "string", "format": "date-time" },
+        "recordedBy": { "$ref": "#/$defs/nonEmptyString" }
       },
-      "not": { "required": ["result"] }
+      "not": {
+        "anyOf": [
+          { "required": ["result"] },
+          { "required": ["decision"] }
+        ]
+      }
+    },
+    "rcaRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eventType", "rcaId", "type", "status", "sourceRefs"],
+      "properties": {
+        "eventType": { "const": "rca_created" },
+        "rcaId": { "$ref": "#/$defs/nonEmptyString" },
+        "type": { "$ref": "#/$defs/nonEmptyString" },
+        "status": { "enum": ["open", "in_progress", "resolved", "blocked"] },
+        "sourceRefs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/sourceRef" }
+        },
+        "recordedAt": { "type": "string", "format": "date-time" },
+        "recordedBy": { "$ref": "#/$defs/nonEmptyString" }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["result"] },
+          { "required": ["decision"] }
+        ]
+      }
     },
     "rerunLoop": {
       "type": "object",
@@ -361,6 +409,12 @@
           "type": "array",
           "items": { "$ref": "#/$defs/sourceRef" }
         }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["result"] },
+          { "required": ["decision"] }
+        ]
       }
     },
     "closeout": {

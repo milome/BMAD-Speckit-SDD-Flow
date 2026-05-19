@@ -79,6 +79,30 @@ describe('requirement-scoped delivery closeout gate', () => {
         gate: 'Delivery Closeout Gate',
         decision: 'blocked',
       });
+      expect(record.failureRecords.at(-1)).toMatchObject({
+        eventType: 'failure_recorded',
+        type: 'delivery_closeout_blocked',
+        status: 'open',
+        closeoutAttemptId: 'closeout-001',
+      });
+      expect(record.failureRecords.at(-1).sourceRefs).toEqual(
+        expect.arrayContaining([
+          { sourceType: 'closeout_attempt', id: 'closeout-001' },
+          { sourceType: 'gate_check', id: 'delivery-closeout:closeout-001' },
+        ])
+      );
+      expect(record.rcaRecords.at(-1)).toMatchObject({
+        eventType: 'rca_created',
+        rcaId: 'rca:closeout-001',
+        type: 'closeout_blocker',
+        status: 'open',
+      });
+      expect(record.rcaRecords.at(-1).sourceRefs).toEqual(
+        expect.arrayContaining([
+          { sourceType: 'failure_record', id: 'failure:closeout-001' },
+          { sourceType: 'closeout_attempt', id: 'closeout-001' },
+        ])
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -280,6 +304,127 @@ describe('requirement-scoped delivery closeout gate', () => {
         expect.arrayContaining([
           expect.stringContaining('required_command_artifact_incomplete'),
           expect.stringContaining('required_command_not_satisfied:CMD-DELIVERY'),
+        ])
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks closeout when an RCA action is still open', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-open-rca-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        rcaRecords: [
+          {
+            eventType: 'rca_created',
+            rcaId: 'rca-open-001',
+            type: 'closeout_blocker',
+            status: 'open',
+            sourceRefs: [{ sourceType: 'failure_record', id: 'failure-open-001' }],
+          },
+        ],
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-open-rca',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-open-rca',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(1);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.closeout.decision).toBe('blocked');
+      expect(record.closeout.attempts[0].blockingReasons).toContain('open_rca_action_exists');
+      expect(record.failureRecords.at(-1)).toMatchObject({
+        type: 'delivery_closeout_blocked',
+        status: 'open',
+      });
+      expect(record.rcaRecords).toHaveLength(1);
+      expect(record.rcaRecords[0].rcaId).toBe('rca-open-001');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks closeout when rerun loops remain open and keeps source refs as authority', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-pending-rerun-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        rerunLoops: [
+          {
+            rerunLoopId: 'rerun-001',
+            status: 'in_progress',
+            sourceRefs: [{ sourceType: 'gate_check', id: 'gate-failed-001' }],
+            blockerRefs: [{ sourceType: 'failure_record', id: 'failure-001' }],
+          },
+        ],
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-pending-rerun',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-pending-rerun',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(1);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.closeout.attempts[0].blockingReasons).toContain('pending_rerun_exists');
+      expect(record.rerunLoops[0]).not.toHaveProperty('decision');
+      expect(record.rerunLoops[0]).not.toHaveProperty('result');
+      expect(record.failureRecords.at(-1).sourceRefs).toEqual(
+        expect.arrayContaining([
+          { sourceType: 'rerun_loop', id: 'rerun-001' },
         ])
       );
     } finally {

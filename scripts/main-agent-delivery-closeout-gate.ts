@@ -48,6 +48,10 @@ function strings(value: unknown): string[] {
   return Array.isArray(value) ? value.map(text).filter(Boolean) : [];
 }
 
+function uniqueStrings(values: string[]): string[] {
+  return [...new Set(values.filter(Boolean))];
+}
+
 function readJson(file: string): JsonObject {
   const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as unknown;
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
@@ -184,8 +188,96 @@ function evaluate(record: JsonObject, attemptId: string): { decision: CloseoutDe
   checks.push({ id: 'rerun-loops-closed', passed: openReruns.length === 0, openCount: openReruns.length });
   if (openReruns.length > 0) blockingReasons.push('pending_rerun_exists');
 
+  const openRcaRecords = objects(record.rcaRecords).filter((record) =>
+    ['open', 'in_progress', 'blocked'].includes(text(record.status))
+  );
+  checks.push({ id: 'rca-actions-closed', passed: openRcaRecords.length === 0, openCount: openRcaRecords.length });
+  if (openRcaRecords.length > 0) blockingReasons.push('open_rca_action_exists');
+
   const decision: CloseoutDecision = blockingReasons.length === 0 ? 'pass' : 'blocked';
   return { decision, blockingReasons, checks };
+}
+
+function closeoutFailureSourceRefs(record: JsonObject, attemptId: string, gateCheckId: string): JsonObject[] {
+  const refs: JsonObject[] = [
+    { sourceType: 'closeout_attempt', id: attemptId },
+    { sourceType: 'gate_check', id: gateCheckId },
+  ];
+  for (const loop of objects(record.rerunLoops)) {
+    if (['open', 'in_progress', 'no_progress', 'blocked'].includes(text(loop.status))) {
+      refs.push({ sourceType: 'rerun_loop', id: text(loop.rerunLoopId) });
+    }
+  }
+  for (const rca of objects(record.rcaRecords)) {
+    if (['open', 'in_progress', 'blocked'].includes(text(rca.status))) {
+      refs.push({ sourceType: 'rca_record', id: text(rca.rcaId) });
+    }
+  }
+  return refs.filter((ref) => text(ref.id));
+}
+
+function failureRecordsForCloseout(
+  record: JsonObject,
+  input: {
+    attemptId: string;
+    gateCheckId: string;
+    decision: CloseoutDecision;
+    blockingReasons: string[];
+    evaluatedAt: string;
+    evaluatedBy: string;
+  }
+): JsonObject[] {
+  if (input.decision === 'pass') return objects(record.failureRecords);
+  const existing = objects(record.failureRecords);
+  const failureId = `failure:${input.attemptId}`;
+  if (existing.some((failure) => text(failure.failureId) === failureId)) return existing;
+  const sourceRefs = closeoutFailureSourceRefs(record, input.attemptId, input.gateCheckId);
+  return [
+    ...existing,
+    {
+      eventType: 'failure_recorded',
+      failureId,
+      type: 'delivery_closeout_blocked',
+      status: 'open',
+      closeoutAttemptId: input.attemptId,
+      blockingReasons: uniqueStrings(input.blockingReasons),
+      sourceRefs,
+      recordedAt: input.evaluatedAt,
+      recordedBy: input.evaluatedBy,
+    },
+  ];
+}
+
+function rcaRecordsForCloseout(
+  record: JsonObject,
+  input: {
+    attemptId: string;
+    decision: CloseoutDecision;
+    evaluatedAt: string;
+    evaluatedBy: string;
+  }
+): JsonObject[] {
+  if (input.decision === 'pass') return objects(record.rcaRecords);
+  const existing = objects(record.rcaRecords);
+  const openExisting = existing.some((rca) => ['open', 'in_progress', 'blocked'].includes(text(rca.status)));
+  if (openExisting) return existing;
+  const rcaId = `rca:${input.attemptId}`;
+  if (existing.some((rca) => text(rca.rcaId) === rcaId)) return existing;
+  return [
+    ...existing,
+    {
+      eventType: 'rca_created',
+      rcaId,
+      type: 'closeout_blocker',
+      status: 'open',
+      sourceRefs: [
+        { sourceType: 'failure_record', id: `failure:${input.attemptId}` },
+        { sourceType: 'closeout_attempt', id: input.attemptId },
+      ],
+      recordedAt: input.evaluatedAt,
+      recordedBy: input.evaluatedBy,
+    },
+  ];
 }
 
 function updateRecord(record: JsonObject, input: { attemptId: string; decision: CloseoutDecision; blockingReasons: string[]; checks: JsonObject[]; reportPath: string; evaluatedAt: string; evaluatedBy: string }): JsonObject {
@@ -206,15 +298,21 @@ function updateRecord(record: JsonObject, input: { attemptId: string; decision: 
     evaluatedAt: input.evaluatedAt,
     evaluatedBy: input.evaluatedBy,
   };
+  const gateCheckId = `delivery-closeout:${input.attemptId}`;
   const gateCheck = {
     eventType: 'gate_check_recorded',
-    checkId: `delivery-closeout:${input.attemptId}`,
+    checkId: gateCheckId,
     gate: 'Delivery Closeout Gate',
     decision: input.decision,
     sourceRefs: [{ sourceType: 'closeout_attempt', id: input.attemptId }],
     recordedAt: input.evaluatedAt,
     recordedBy: input.evaluatedBy,
   };
+  const failureRecords = failureRecordsForCloseout(record, {
+    ...input,
+    gateCheckId,
+  });
+  const rcaRecords = rcaRecordsForCloseout(record, input);
   return {
     ...record,
     closeout: {
@@ -225,6 +323,8 @@ function updateRecord(record: JsonObject, input: { attemptId: string; decision: 
       updatedAt: input.evaluatedAt,
     },
     gateChecks: [...objects(record.gateChecks), gateCheck],
+    failureRecords,
+    rcaRecords,
     lastEventType: 'closeout_check_recorded',
     updatedAt: input.evaluatedAt,
   };
