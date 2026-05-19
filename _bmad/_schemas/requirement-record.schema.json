@@ -23,6 +23,7 @@
     "entryFlowClass": { "enum": ["full_story_entry", "corrective_entry", "task_packet_entry"] },
     "workflowAdapter": { "enum": ["bmad", "speckit", "direct", "legacy"] },
     "contractAuthoringRequired": { "const": true },
+    "globalContractTraceabilityPolicy": { "$ref": "#/$defs/globalContractTraceabilityPolicy" },
     "sourceDocumentHash": { "$ref": "#/$defs/sha256" },
     "implementationConfirmationHash": { "$ref": "#/$defs/sha256" },
     "confirmationPageHash": { "$ref": "#/$defs/sha256" },
@@ -89,6 +90,57 @@
     "sha256": {
       "type": "string",
       "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "globalContractTraceabilityPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "appliesToEntryFlows",
+        "contractAuthoringRequired",
+        "taskBindingRequired",
+        "taskBindingDimensions",
+        "missingBindingBehavior",
+        "sourceDocumentHashRequired",
+        "implementationConfirmationHashRequired",
+        "reconfirmOnTraceSemanticChange",
+        "allowUnboundImplementationTask"
+      ],
+      "properties": {
+        "schemaVersion": { "const": "global-contract-traceability-policy/v1" },
+        "appliesToEntryFlows": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": { "enum": ["story", "bugfix", "standalone_tasks"] }
+        },
+        "contractAuthoringRequired": { "const": true },
+        "taskBindingRequired": { "const": true },
+        "taskBindingDimensions": {
+          "type": "array",
+          "minItems": 5,
+          "items": { "enum": ["MUST", "NEG", "OUT", "EVD", "TRACE"] },
+          "contains": { "const": "MUST" }
+        },
+        "missingBindingBehavior": { "const": "fail_closed" },
+        "sourceDocumentHashRequired": { "const": true },
+        "implementationConfirmationHashRequired": { "const": true },
+        "reconfirmOnTraceSemanticChange": { "const": true },
+        "allowUnboundImplementationTask": { "const": false },
+        "taskRegistryField": { "$ref": "#/$defs/nonEmptyString" },
+        "traceTaskRefsMustResolveTo": { "$ref": "#/$defs/nonEmptyString" },
+        "readinessFailureWhenUnresolved": { "const": true },
+        "closeoutFailureWhenUnresolved": { "const": true }
+      },
+      "allOf": [
+        { "properties": { "appliesToEntryFlows": { "contains": { "const": "story" } } } },
+        { "properties": { "appliesToEntryFlows": { "contains": { "const": "bugfix" } } } },
+        { "properties": { "appliesToEntryFlows": { "contains": { "const": "standalone_tasks" } } } },
+        { "properties": { "taskBindingDimensions": { "contains": { "const": "NEG" } } } },
+        { "properties": { "taskBindingDimensions": { "contains": { "const": "OUT" } } } },
+        { "properties": { "taskBindingDimensions": { "contains": { "const": "EVD" } } } },
+        { "properties": { "taskBindingDimensions": { "contains": { "const": "TRACE" } } } }
+      ]
     },
     "sourceRef": {
       "type": "object",
@@ -194,7 +246,12 @@
         "confirmationPageHash": { "$ref": "#/$defs/sha256" },
         "confirmationText": { "$ref": "#/$defs/nonEmptyString" },
         "renderReportPath": { "$ref": "#/$defs/nonEmptyString" },
-        "htmlPath": { "$ref": "#/$defs/nonEmptyString" }
+        "htmlPath": { "$ref": "#/$defs/nonEmptyString" },
+        "entryFlow": { "enum": ["story", "bugfix", "standalone_tasks"] },
+        "entryFlowClass": { "enum": ["full_story_entry", "corrective_entry", "task_packet_entry"] },
+        "workflowAdapter": { "enum": ["bmad", "speckit", "direct", "legacy"] },
+        "contractAuthoringRequired": { "const": true },
+        "globalContractTraceabilityPolicy": { "$ref": "#/$defs/globalContractTraceabilityPolicy" }
       }
     },
     "architectureConfirmationState": {

@@ -1,0 +1,36 @@
+{
+  "policy": {
+    "schemaVersion": "global-contract-traceability-policy/v1",
+    "appliesToEntryFlows": [
+      "bugfix",
+      "standalone_tasks",
+      "story"
+    ],
+    "contractAuthoringRequired": true,
+    "taskBindingRequired": true,
+    "taskBindingDimensions": [
+      "MUST",
+      "NEG",
+      "OUT",
+      "EVD",
+      "TRACE"
+    ],
+    "missingBindingBehavior": "fail_closed",
+    "sourceDocumentHashRequired": true,
+    "implementationConfirmationHashRequired": true,
+    "reconfirmOnTraceSemanticChange": true,
+    "allowUnboundImplementationTask": false,
+    "taskRegistryField": "implementationTasks",
+    "traceTaskRefsMustResolveTo": "implementationTasks[].id",
+    "readinessFailureWhenUnresolved": true,
+    "closeoutFailureWhenUnresolved": true
+  },
+  "relatedRequirementIds": [
+    "MUST-024",
+    "NEG-012",
+    "OUT-010",
+    "EVD-024",
+    "TRACE-017"
+  ],
+  "assertion": "globalContractTraceabilityPolicy is materialized through controlled ingest only"
+}

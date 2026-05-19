@@ -1,0 +1,763 @@
+{
+  "reportType": "main_agent_entryflow_traceability_check",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "evaluatedAt": "2026-05-19T22:30:00.000+08:00",
+  "evaluatedBy": "codex",
+  "decision": "pass",
+  "blockingReasons": [],
+  "entryFlowAdaptationMatrix": {
+    "allowedTopLevelEntryFlows": [
+      "story",
+      "bugfix",
+      "standalone_tasks"
+    ],
+    "forbiddenTopLevelEntryFlows": [
+      "bmad-story-assistant",
+      "speckit_story",
+      "speckit_tasks",
+      "speckit_implement"
+    ],
+    "record": {
+      "entryFlow": "standalone_tasks",
+      "entryFlowClass": "task_packet_entry",
+      "workflowAdapter": "direct",
+      "contractAuthoringRequired": true
+    },
+    "source": {
+      "entryFlow": "standalone_tasks",
+      "entryFlowClass": "task_packet_entry",
+      "workflowAdapter": "direct",
+      "contractAuthoringRequired": true
+    }
+  },
+  "globalContractTraceabilityPolicy": {
+    "schemaVersion": "global-contract-traceability-policy/v1",
+    "appliesToEntryFlows": [
+      "bugfix",
+      "standalone_tasks",
+      "story"
+    ],
+    "contractAuthoringRequired": true,
+    "taskBindingRequired": true,
+    "taskBindingDimensions": [
+      "MUST",
+      "NEG",
+      "OUT",
+      "EVD",
+      "TRACE"
+    ],
+    "missingBindingBehavior": "fail_closed",
+    "sourceDocumentHashRequired": true,
+    "implementationConfirmationHashRequired": true,
+    "reconfirmOnTraceSemanticChange": true,
+    "allowUnboundImplementationTask": false,
+    "taskRegistryField": "implementationTasks",
+    "traceTaskRefsMustResolveTo": "implementationTasks[].id",
+    "readinessFailureWhenUnresolved": true,
+    "closeoutFailureWhenUnresolved": true
+  },
+  "taskBindingProof": {
+    "taskCount": 14,
+    "traceRowCount": 17,
+    "checkedTraceScope": "record_execution_traces",
+    "activeTraceIds": [
+      "TRACE-001",
+      "TRACE-002",
+      "TRACE-003",
+      "TRACE-004",
+      "TRACE-005",
+      "TRACE-006",
+      "TRACE-007",
+      "TRACE-008",
+      "TRACE-009",
+      "TRACE-010",
+      "TRACE-011",
+      "TRACE-012",
+      "TRACE-013",
+      "TRACE-014",
+      "TRACE-015",
+      "TRACE-016",
+      "TRACE-017"
+    ],
+    "taskBindingRows": [
+      {
+        "id": "TASK-CONTRACT-RECORD-CONFIRMATION",
+        "binds": [
+          "MUST-001",
+          "MUST-002",
+          "MUST-003",
+          "NEG-007",
+          "OUT-004",
+          "EVD-001",
+          "EVD-002",
+          "EVD-007",
+          "EVD-017",
+          "TRACE-001"
+        ],
+        "missingDimensions": [],
+        "traceRefs": [
+          "TRACE-001"
+        ]
+      },
+      {
+        "id": "TASK-GATES-CLOSEOUT-RERUN",
+        "binds": [
+          "MUST-004",
+          "MUST-005",
+          "MUST-006",
+          "MUST-009",
+          "MUST-020",
+          "MUST-029",
+          "MUST-030",
+          "MUST-031",
+          "MUST-035",
+          "MUST-036",
+          "MUST-037",
+          "NEG-001",
+          "NEG-002",
+          "NEG-005",
+          "NEG-017",
+          "NEG-018",
+          "NEG-019",
+          "NEG-023",
+          "NEG-025",
+          "OUT-002",
+          "OUT-003",
+          "OUT-008",
+          "OUT-015",
+          "OUT-016",
+          "OUT-017",
+          "EVD-003",
+          "EVD-006",
+          "EVD-009",
+          "EVD-019",
+          "EVD-022",
+          "EVD-029",
+          "EVD-030",
+          "EVD-031",
+          "EVD-036",
+          "EVD-037",
+          "TRACE-002",
+          "TRACE-003",
+          "TRACE-006",
+          "TRACE-012",
+          "TRACE-022",
+          "TRACE-023",
+          "TRACE-024",
+          "TRACE-028"
+        ],
+        "missingDimensions": [],
+        "traceRefs": [
+          "TRACE-002",
+          "TRACE-003",
+          "TRACE-006",
+          "TRACE-012",
+          "TRACE-022",
+          "TRACE-023",
+          "TRACE-024",
+          "TRACE-028"
+        ]
+      },
+      {
+        "id": "TASK-DELIVERY-CORE-EVIDENCE",
+        "binds": [
+          "MUST-005",
+          "MUST-006",
+          "MUST-017",
+          "NEG-001",
+          "NEG-002",
+          "NEG-006",
+          "EVD-006",
+          "EVD-014",
+          "EVD-015",
+          "EVD-019",
+          "TRACE-003",
+          "TRACE-013"
+        ],
+        "missingDimensions": [],
+        "traceRefs": [
+          "TRACE-003",
+          "TRACE-013"
+        ]
+      },
+      {
+        "id": "TASK-ARTIFACT-CONTROL-INGEST",
+        "binds": [
+          "MUST-007",
+          "MUST-008",
+          "MUST-010",
+          "MUST-021",
+          "NEG-004",
+          "NEG-005",
+          "NEG-008",
+          "NEG-009",
+          "OUT-005",
+          "OUT-006",
+          "OUT-007",
+          "EVD-002",
+          "EVD-004",
+          "EVD-005",
+          "EVD-016",
+          "EVD-020",
+          "EVD-021",
+          "TRACE-004",
+          "TRACE-005",
+          "TRACE-014"
+        ],
+        "missingDimensions": [],
+        "traceRefs": [
+          "TRACE-004",
+          "TRACE-005",
+          "TRACE-014"
+        ]
+      },
+      {
+        "id": "TASK-BMAD-ARTIFACT-HARDCUT",
+        "binds": [
+          "MUST-018",
+          "MUST-019",
+          "EVD-001",
+          "EVD-005",
+          "EVD-020",
+          "TRACE-011"
+        ],
+        "missingDimensions": [],
+        "traceRefs": [
+          "TRACE-011"
+        ]
+      },
+      {
+        "id": "TASK-DATA-SFT-GOVERNANCE",
+        "binds": [
+          "MUST-011",
+          "MUST-012",
+          "MUST-013",
+          "MUST-014",
+          "MUST-015",
+          "MUST-016",
+          "MUST-017",
+          "NEG-003",
+          "NEG-006",
+          "OUT-001",
+          "EVD-010",
+          "EVD-011",
+          "EVD-012",
+          "EVD-013",
+          "EVD-014",
+          "EVD-015",
+          "TRACE-007",
+          "TRACE-008",
+          "TRACE-009",
+          "TRACE-010",
+          "TRACE-013"
+        ],
+        "missingDimensions": [],
+        "traceRefs": [
+          "TRACE-007",
+          "TRACE-008",
+          "TRACE-009",
+          "TRACE-010",
+          "TRACE-013"
+        ]
+      },
+      {
+        "id": "TASK-FUNCTIONAL-RESUME",
+        "binds": [
+          "MUST-020",
+          "MUST-022",
+          "MUST-025",
+          "MUST-026",
+          "NEG-005",
+          "NEG-010",
+          "NEG-013",
+          "NEG-014",
+          "OUT-008",
+          "OUT-011",
+          "OUT-012",
+          "EVD-001",
+          "EVD-004",
+          "EVD-009",
+          "EVD-022",
+          "EVD-025",
+          "EVD-026",
+          "TRACE-012",
+          "TRACE-015",
+          "TRACE-018",
+          "TRACE-019"
+        ],
+        "missingDimensions": [],
+        "traceRefs": [
+          "TRACE-012",
+          "TRACE-015",
+          "TRACE-018",
+          "TRACE-019"
+        ]
+      },
+      {
+        "id": "TASK-ENTRYFLOW-TRACEABILITY",
+        "binds": [
+          "MUST-023",
+          "MUST-024",
+          "MUST-025",
+          "NEG-011",
+          "NEG-012",
+          "OUT-009",
+          "OUT-010",
+          "OUT-011",
+          "EVD-023",
+          "EVD-024",
+          "EVD-025",
+          "TRACE-016",
+          "TRACE-017",
+          "TRACE-018"
+        ],
+        "missingDimensions": [],
+        "traceRefs": [
+          "TRACE-016",
+          "TRACE-017",
+          "TRACE-018"
+        ]
+      },
+      {
+        "id": "TASK-SCORING-POLICY-GATES",
+        "binds": [
+          "MUST-027",
+          "MUST-028",
+          "NEG-015",
+          "NEG-016",
+          "OUT-013",
+          "OUT-014",
+          "EVD-027",
+          "EVD-028",
+          "TRACE-020",
+          "TRACE-021"
+        ],
+        "missingDimensions": [],
+        "traceRefs": [
+          "TRACE-020",
+          "TRACE-021"
+        ]
+      },
+      {
+        "id": "TASK-DECISION-FIELD-CANONICALIZATION",
+        "binds": [
+          "MUST-029",
+          "MUST-030",
+          "NEG-017",
+          "NEG-018",
+          "OUT-015",
+          "OUT-016",
+          "EVD-029",
+          "EVD-030",
+          "TRACE-022",
+          "TRACE-023"
+        ],
+        "missingDimensions": [],
+        "traceRefs": [
+          "TRACE-022",
+          "TRACE-023"
+        ]
+      },
+      {
+        "id": "TASK-RERUN-SOURCE-AUTHORITY",
+        "binds": [
+          "MUST-031",
+          "NEG-019",
+          "OUT-017",
+          "EVD-031",
+          "TRACE-024"
+        ],
+        "missingDimensions": [],
+        "traceRefs": [
+          "TRACE-024"
+        ]
+      },
+      {
+        "id": "TASK-GOVERNANCE-TRANSPORT-HOOKS",
+        "binds": [
+          "MUST-032",
+          "MUST-033",
+          "MUST-034",
+          "NEG-020",
+          "NEG-021",
+          "NEG-022",
+          "OUT-018",
+          "OUT-019",
+          "OUT-020",
+          "EVD-032",
+          "EVD-033",
+          "EVD-034",
+          "TRACE-025",
+          "TRACE-026",
+          "TRACE-027"
+        ],
+        "missingDimensions": [],
+        "traceRefs": [
+          "TRACE-025",
+          "TRACE-026",
+          "TRACE-027"
+        ]
+      },
+      {
+        "id": "TASK-ARCHITECTURE-CONFIRMATION-GOVERNANCE",
+        "binds": [
+          "MUST-035",
+          "MUST-036",
+          "MUST-037",
+          "NEG-023",
+          "NEG-025",
+          "EVD-036",
+          "EVD-037",
+          "TRACE-028"
+        ],
+        "missingDimensions": [],
+        "traceRefs": [
+          "TRACE-028"
+        ]
+      },
+      {
+        "id": "TASK-MAIN-AGENT-CONTROL-HARDCUT",
+        "binds": [
+          "MUST-021",
+          "MUST-038",
+          "NEG-026",
+          "NEG-027",
+          "OUT-021",
+          "OUT-022",
+          "EVD-021",
+          "EVD-038",
+          "TRACE-029"
+        ],
+        "missingDimensions": [],
+        "traceRefs": [
+          "TRACE-029"
+        ]
+      }
+    ],
+    "traceBindingRows": [
+      {
+        "id": "TRACE-001",
+        "covers": [
+          "MUST-001",
+          "MUST-002",
+          "MUST-003",
+          "NEG-007",
+          "OUT-004"
+        ],
+        "taskRefs": [
+          "TASK-CONTRACT-RECORD-CONFIRMATION"
+        ],
+        "evidenceRefs": [
+          "EVD-001",
+          "EVD-002",
+          "EVD-007",
+          "EVD-017"
+        ]
+      },
+      {
+        "id": "TRACE-002",
+        "covers": [
+          "MUST-004",
+          "NEG-001",
+          "OUT-002",
+          "OUT-003"
+        ],
+        "taskRefs": [
+          "TASK-GATES-CLOSEOUT-RERUN"
+        ],
+        "evidenceRefs": [
+          "EVD-003",
+          "EVD-007",
+          "EVD-008"
+        ]
+      },
+      {
+        "id": "TRACE-003",
+        "covers": [
+          "MUST-005",
+          "MUST-006",
+          "NEG-001",
+          "NEG-002"
+        ],
+        "taskRefs": [
+          "TASK-GATES-CLOSEOUT-RERUN",
+          "TASK-DELIVERY-CORE-EVIDENCE"
+        ],
+        "evidenceRefs": [
+          "EVD-001",
+          "EVD-003",
+          "EVD-006",
+          "EVD-019"
+        ]
+      },
+      {
+        "id": "TRACE-004",
+        "covers": [
+          "MUST-007",
+          "NEG-004",
+          "NEG-005",
+          "NEG-008",
+          "OUT-005",
+          "OUT-006"
+        ],
+        "taskRefs": [
+          "TASK-ARTIFACT-CONTROL-INGEST"
+        ],
+        "evidenceRefs": [
+          "EVD-002",
+          "EVD-005",
+          "EVD-020"
+        ]
+      },
+      {
+        "id": "TRACE-005",
+        "covers": [
+          "MUST-008",
+          "MUST-010",
+          "NEG-004",
+          "OUT-002"
+        ],
+        "taskRefs": [
+          "TASK-ARTIFACT-CONTROL-INGEST"
+        ],
+        "evidenceRefs": [
+          "EVD-004",
+          "EVD-008",
+          "EVD-016",
+          "EVD-020"
+        ]
+      },
+      {
+        "id": "TRACE-006",
+        "covers": [
+          "MUST-009",
+          "NEG-005"
+        ],
+        "taskRefs": [
+          "TASK-GATES-CLOSEOUT-RERUN"
+        ],
+        "evidenceRefs": [
+          "EVD-009",
+          "EVD-013",
+          "EVD-014"
+        ]
+      },
+      {
+        "id": "TRACE-007",
+        "covers": [
+          "MUST-011",
+          "MUST-017"
+        ],
+        "taskRefs": [
+          "TASK-DATA-SFT-GOVERNANCE"
+        ],
+        "evidenceRefs": [
+          "EVD-010",
+          "EVD-009"
+        ]
+      },
+      {
+        "id": "TRACE-008",
+        "covers": [
+          "MUST-012",
+          "MUST-014",
+          "NEG-003",
+          "OUT-001"
+        ],
+        "taskRefs": [
+          "TASK-DATA-SFT-GOVERNANCE"
+        ],
+        "evidenceRefs": [
+          "EVD-011",
+          "EVD-012",
+          "EVD-014"
+        ]
+      },
+      {
+        "id": "TRACE-009",
+        "covers": [
+          "MUST-013",
+          "MUST-015",
+          "NEG-003",
+          "NEG-006"
+        ],
+        "taskRefs": [
+          "TASK-DATA-SFT-GOVERNANCE"
+        ],
+        "evidenceRefs": [
+          "EVD-013",
+          "EVD-015"
+        ]
+      },
+      {
+        "id": "TRACE-010",
+        "covers": [
+          "MUST-016",
+          "MUST-017",
+          "NEG-006"
+        ],
+        "taskRefs": [
+          "TASK-DATA-SFT-GOVERNANCE"
+        ],
+        "evidenceRefs": [
+          "EVD-014",
+          "EVD-015"
+        ]
+      },
+      {
+        "id": "TRACE-011",
+        "covers": [
+          "MUST-018",
+          "MUST-019"
+        ],
+        "taskRefs": [
+          "TASK-BMAD-ARTIFACT-HARDCUT"
+        ],
+        "evidenceRefs": [
+          "EVD-001",
+          "EVD-005",
+          "EVD-020"
+        ]
+      },
+      {
+        "id": "TRACE-012",
+        "covers": [
+          "MUST-020",
+          "NEG-005"
+        ],
+        "taskRefs": [
+          "TASK-GATES-CLOSEOUT-RERUN",
+          "TASK-FUNCTIONAL-RESUME"
+        ],
+        "evidenceRefs": [
+          "EVD-001",
+          "EVD-004",
+          "EVD-009"
+        ]
+      },
+      {
+        "id": "TRACE-013",
+        "covers": [
+          "MUST-001",
+          "MUST-017",
+          "NEG-002",
+          "NEG-006"
+        ],
+        "taskRefs": [
+          "TASK-DELIVERY-CORE-EVIDENCE",
+          "TASK-DATA-SFT-GOVERNANCE"
+        ],
+        "evidenceRefs": [
+          "EVD-003",
+          "EVD-010",
+          "EVD-014",
+          "EVD-015"
+        ]
+      },
+      {
+        "id": "TRACE-014",
+        "covers": [
+          "MUST-021",
+          "NEG-009",
+          "OUT-007"
+        ],
+        "taskRefs": [
+          "TASK-ARTIFACT-CONTROL-INGEST"
+        ],
+        "evidenceRefs": [
+          "EVD-004",
+          "EVD-005",
+          "EVD-021"
+        ]
+      },
+      {
+        "id": "TRACE-015",
+        "covers": [
+          "MUST-022",
+          "NEG-010",
+          "OUT-008"
+        ],
+        "taskRefs": [
+          "TASK-FUNCTIONAL-RESUME"
+        ],
+        "evidenceRefs": [
+          "EVD-001",
+          "EVD-004",
+          "EVD-022"
+        ]
+      },
+      {
+        "id": "TRACE-016",
+        "covers": [
+          "MUST-023",
+          "NEG-011",
+          "OUT-009"
+        ],
+        "taskRefs": [
+          "TASK-ENTRYFLOW-TRACEABILITY"
+        ],
+        "evidenceRefs": [
+          "EVD-001",
+          "EVD-004",
+          "EVD-023"
+        ]
+      },
+      {
+        "id": "TRACE-017",
+        "covers": [
+          "MUST-024",
+          "NEG-012",
+          "OUT-010"
+        ],
+        "taskRefs": [
+          "TASK-ENTRYFLOW-TRACEABILITY"
+        ],
+        "evidenceRefs": [
+          "EVD-006",
+          "EVD-007",
+          "EVD-024"
+        ]
+      }
+    ]
+  },
+  "traceBinding": {
+    "traceRowsSeen": [
+      "TRACE-001",
+      "TRACE-002",
+      "TRACE-003",
+      "TRACE-004",
+      "TRACE-005",
+      "TRACE-006",
+      "TRACE-007",
+      "TRACE-008",
+      "TRACE-009",
+      "TRACE-010",
+      "TRACE-011",
+      "TRACE-012",
+      "TRACE-013",
+      "TRACE-014",
+      "TRACE-015",
+      "TRACE-016",
+      "TRACE-017"
+    ],
+    "requiredIds": [
+      "MUST-024",
+      "NEG-012",
+      "OUT-010",
+      "EVD-006",
+      "EVD-007",
+      "EVD-024"
+    ],
+    "closureIds": [
+      "EVD-006",
+      "EVD-007"
+    ],
+    "note": "Execution and closure rows are written by controlled ingest; this checker does not require its own closure as a precondition."
+  },
+  "standaloneRuntimeFactArtifactCheck": {
+    "forbiddenArtifacts": []
+  },
+  "recordPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json",
+  "sourcePath": "D:/Dev/BMAD-Speckit-SDD-Flow/docs/design/需求实现完整性门禁与重跑闭环设计.md"
+}

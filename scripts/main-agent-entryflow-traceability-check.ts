@@ -12,6 +12,7 @@ interface ParsedArgs {
   reportPath?: string;
   evaluatedAt?: string;
   evaluatedBy?: string;
+  checkAllSourceTraces?: boolean;
   json?: boolean;
   help?: boolean;
 }
@@ -30,6 +31,8 @@ const EXPECTED_CLASS_BY_FLOW: Record<string, string> = {
   bugfix: 'corrective_entry',
   standalone_tasks: 'task_packet_entry',
 };
+const REQUIRED_TRACEABILITY_DIMENSIONS = new Set(['MUST', 'NEG', 'OUT', 'EVD', 'TRACE']);
+const REQUIRED_TRACEABILITY_FLOWS = new Set(['story', 'bugfix', 'standalone_tasks']);
 
 function parseArgs(argv: string[]): ParsedArgs {
   const out: ParsedArgs = {};
@@ -37,6 +40,7 @@ function parseArgs(argv: string[]): ParsedArgs {
     const arg = argv[index];
     if (arg === '--help' || arg === '-h') out.help = true;
     else if (arg === '--json') out.json = true;
+    else if (arg === '--check-all-source-traces') out.checkAllSourceTraces = true;
     else if (arg.startsWith('--')) {
       const key = arg.slice(2).replace(/-([a-z])/gu, (_, letter: string) => letter.toUpperCase());
       const value = argv[index + 1];
@@ -164,12 +168,120 @@ function checkEntryFlowState(record: JsonObject, sourceConfirmation?: JsonObject
   };
 }
 
+function checkGlobalContractTraceabilityPolicy(record: JsonObject): { issues: string[]; policy: JsonObject | null } {
+  const issues: string[] = [];
+  const policy = asObject(record.globalContractTraceabilityPolicy);
+  if (!policy) return { issues: ['globalContractTraceabilityPolicy_missing'], policy: null };
+  if (text(policy.schemaVersion) !== 'global-contract-traceability-policy/v1') {
+    issues.push('globalContractTraceabilityPolicy_schemaVersion_invalid');
+  }
+  const flows = new Set(strings(policy.appliesToEntryFlows));
+  for (const flow of REQUIRED_TRACEABILITY_FLOWS) {
+    if (!flows.has(flow)) issues.push(`globalContractTraceabilityPolicy_missing_entryFlow:${flow}`);
+  }
+  if (policy.contractAuthoringRequired !== true) issues.push('globalContractTraceabilityPolicy_contractAuthoringRequired_must_be_true');
+  if (policy.taskBindingRequired !== true) issues.push('globalContractTraceabilityPolicy_taskBindingRequired_must_be_true');
+  const dimensions = new Set(strings(policy.taskBindingDimensions));
+  for (const dimension of REQUIRED_TRACEABILITY_DIMENSIONS) {
+    if (!dimensions.has(dimension)) issues.push(`globalContractTraceabilityPolicy_missing_dimension:${dimension}`);
+  }
+  if (text(policy.missingBindingBehavior) !== 'fail_closed') {
+    issues.push('globalContractTraceabilityPolicy_missingBindingBehavior_must_be_fail_closed');
+  }
+  if (policy.sourceDocumentHashRequired !== true) issues.push('globalContractTraceabilityPolicy_sourceDocumentHashRequired_must_be_true');
+  if (policy.implementationConfirmationHashRequired !== true) {
+    issues.push('globalContractTraceabilityPolicy_implementationConfirmationHashRequired_must_be_true');
+  }
+  if (policy.reconfirmOnTraceSemanticChange !== true) {
+    issues.push('globalContractTraceabilityPolicy_reconfirmOnTraceSemanticChange_must_be_true');
+  }
+  if (policy.allowUnboundImplementationTask !== false) {
+    issues.push('globalContractTraceabilityPolicy_allowUnboundImplementationTask_must_be_false');
+  }
+  return { issues, policy };
+}
+
+function idPrefix(id: string): string {
+  const match = id.match(/^([A-Z]+)-/u);
+  return match?.[1] ?? '';
+}
+
+function checkSourceTaskBinding(
+  sourceConfirmation: JsonObject | undefined,
+  activeTraceIds: Set<string>,
+  checkAllSourceTraces: boolean
+): { issues: string[]; summary: JsonObject } {
+  if (!sourceConfirmation) {
+    return { issues: ['source_implementationConfirmation_missing_for_task_binding_check'], summary: {} };
+  }
+  const tasks = objects(sourceConfirmation.implementationTasks);
+  const sourceTraceRows = objects(sourceConfirmation.traceRows);
+  const traceRows = checkAllSourceTraces
+    ? sourceTraceRows
+    : sourceTraceRows.filter((row) => activeTraceIds.has(text(row.id)));
+  const taskIds = new Set(tasks.map((task) => text(task.id)).filter(Boolean));
+  const traceIds = new Set(sourceTraceRows.map((row) => text(row.id)).filter(Boolean));
+  const taskBindingIssues: string[] = [];
+  const taskBindingRows = tasks.map((task) => {
+    const id = text(task.id);
+    const binds = strings(task.binds);
+    const prefixes = new Set(binds.map(idPrefix).filter(Boolean));
+    const traceRefs = binds.filter((item) => item.startsWith('TRACE-'));
+    const missingDimensions = [
+      ...(!prefixes.has('MUST') && !prefixes.has('NEG') ? ['MUST_OR_NEG'] : []),
+      ...(!prefixes.has('EVD') ? ['EVD'] : []),
+      ...(!prefixes.has('TRACE') ? ['TRACE'] : []),
+    ];
+    if (!id) taskBindingIssues.push('implementationTask_id_missing');
+    for (const dimension of missingDimensions) {
+      taskBindingIssues.push(`implementationTask_missing_${dimension}_binding:${id || '<missing>'}`);
+    }
+    for (const traceRef of traceRefs) {
+      if (!traceIds.has(traceRef)) taskBindingIssues.push(`implementationTask_traceRef_unresolved:${id}:${traceRef}`);
+    }
+    return { id, binds, missingDimensions, traceRefs };
+  });
+  const traceBindingRows = traceRows.map((row) => {
+    const id = text(row.id);
+    const covers = strings(row.covers);
+    const taskRefs = strings(row.taskRefs);
+    const evidenceRefs = strings(row.evidenceRefs);
+    const coveredOutIds = covers.filter((item) => item.startsWith('OUT-'));
+    if (!id) taskBindingIssues.push('traceRow_id_missing');
+    if (taskRefs.length === 0) taskBindingIssues.push(`traceRow_taskRefs_missing:${id || '<missing>'}`);
+    if (evidenceRefs.length === 0) taskBindingIssues.push(`traceRow_evidenceRefs_missing:${id || '<missing>'}`);
+    if (!covers.some((item) => item.startsWith('MUST-') || item.startsWith('NEG-'))) {
+      taskBindingIssues.push(`traceRow_must_or_neg_cover_missing:${id || '<missing>'}`);
+    }
+    for (const taskRef of taskRefs) {
+      if (!taskIds.has(taskRef)) taskBindingIssues.push(`traceRow_taskRef_unresolved:${id}:${taskRef}`);
+      const task = tasks.find((item) => text(item.id) === taskRef);
+      const taskHasOutBinding = strings(task?.binds).some((item) => item.startsWith('OUT-'));
+      if (coveredOutIds.length > 0 && !taskHasOutBinding) {
+        taskBindingIssues.push(`traceRow_out_dimension_not_bound_by_task:${id}:${taskRef}`);
+      }
+    }
+    return { id, covers, taskRefs, evidenceRefs };
+  });
+  return {
+    issues: taskBindingIssues,
+    summary: {
+      taskCount: tasks.length,
+      traceRowCount: traceRows.length,
+      checkedTraceScope: checkAllSourceTraces ? 'all_source_traces' : 'record_execution_traces',
+      activeTraceIds: [...activeTraceIds].sort(),
+      taskBindingRows,
+      traceBindingRows,
+    },
+  };
+}
+
 function checkTraceBinding(record: JsonObject): { issues: string[]; summary: JsonObject } {
   const closures = objects(record.requirementClosures);
   const executionIterations = objects(record.executionIterations);
   const executionTraceRows = new Set(executionIterations.flatMap((item) => strings(item.traceRows)));
   const closureIds = new Set(closures.map((item) => text(item.requirementId)).filter(Boolean));
-  const requiredIds = ['MUST-023', 'NEG-011', 'OUT-009', 'EVD-001', 'EVD-004', 'EVD-023'];
+  const requiredIds = ['MUST-024', 'NEG-012', 'OUT-010', 'EVD-006', 'EVD-007', 'EVD-024'];
   return {
     issues: [],
     summary: {
@@ -207,9 +319,18 @@ function buildReport(args: ParsedArgs): JsonObject {
   const sourcePath = args.source ? path.resolve(args.source) : '';
   const sourceConfirmation = sourcePath ? extractImplementationConfirmation(fs.readFileSync(sourcePath, 'utf8')) : undefined;
   const entryFlow = checkEntryFlowState(record, sourceConfirmation);
+  const traceabilityPolicy = checkGlobalContractTraceabilityPolicy(record);
+  const activeTraceIds = new Set(objects(record.executionIterations).flatMap((item) => strings(item.traceRows)));
+  const sourceTaskBinding = checkSourceTaskBinding(sourceConfirmation, activeTraceIds, args.checkAllSourceTraces === true);
   const trace = checkTraceBinding(record);
   const standaloneArtifacts = checkNoStandaloneRuntimeFactArtifacts(record);
-  const blockingReasons = [...entryFlow.issues, ...trace.issues, ...standaloneArtifacts.issues];
+  const blockingReasons = [
+    ...entryFlow.issues,
+    ...traceabilityPolicy.issues,
+    ...sourceTaskBinding.issues,
+    ...trace.issues,
+    ...standaloneArtifacts.issues,
+  ];
   const decision: Decision = blockingReasons.length ? 'blocked' : 'pass';
   return {
     reportType: 'main_agent_entryflow_traceability_check',
@@ -220,6 +341,8 @@ function buildReport(args: ParsedArgs): JsonObject {
     decision,
     blockingReasons,
     entryFlowAdaptationMatrix: entryFlow.matrix,
+    globalContractTraceabilityPolicy: traceabilityPolicy.policy,
+    taskBindingProof: sourceTaskBinding.summary,
     traceBinding: trace.summary,
     standaloneRuntimeFactArtifactCheck: {
       forbiddenArtifacts: standaloneArtifacts.artifacts.map((artifact) => ({
