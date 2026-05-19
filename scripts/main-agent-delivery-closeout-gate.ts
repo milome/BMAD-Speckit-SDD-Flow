@@ -4,6 +4,13 @@ import * as path from 'node:path';
 
 type JsonObject = Record<string, unknown>;
 type CloseoutDecision = 'pass' | 'fail' | 'blocked';
+const RERUN_AUTHORITY_SOURCE_TYPES = new Set([
+  'gate_check',
+  'contract_check',
+  'audit_iteration',
+  'execution_iteration',
+  'requirement_closure',
+]);
 
 interface ParsedArgs {
   requirementRecord?: string;
@@ -143,6 +150,26 @@ function hasBlockingScoringState(record: JsonObject): boolean {
   );
 }
 
+function rerunLoopSourceIssues(loop: JsonObject): string[] {
+  const issues: string[] = [];
+  const loopId = text(loop.rerunLoopId) || '<missing>';
+  const sourceRefs = objects(loop.sourceRefs);
+  if (sourceRefs.length === 0) issues.push(`rerun_loop_source_refs_missing:${loopId}`);
+  for (const sourceRef of sourceRefs) {
+    const sourceType = text(sourceRef.sourceType);
+    if (!RERUN_AUTHORITY_SOURCE_TYPES.has(sourceType)) {
+      issues.push(`rerun_loop_source_ref_type_invalid:${loopId}:${sourceType || '<missing>'}`);
+    }
+    if (!text(sourceRef.id)) issues.push(`rerun_loop_source_ref_id_missing:${loopId}`);
+  }
+  if (Object.prototype.hasOwnProperty.call(loop, 'result')) issues.push(`rerun_loop_result_forbidden:${loopId}`);
+  if (Object.prototype.hasOwnProperty.call(loop, 'decision')) issues.push(`rerun_loop_decision_forbidden:${loopId}`);
+  if (Object.prototype.hasOwnProperty.call(loop, 'trigger') && sourceRefs.length === 0) {
+    issues.push(`rerun_loop_trigger_without_source_refs:${loopId}`);
+  }
+  return issues;
+}
+
 function evaluate(record: JsonObject, attemptId: string): { decision: CloseoutDecision; blockingReasons: string[]; checks: JsonObject[] } {
   const checks: JsonObject[] = [];
   const blockingReasons: string[] = [];
@@ -209,6 +236,14 @@ function evaluate(record: JsonObject, attemptId: string): { decision: CloseoutDe
   );
   checks.push({ id: 'rerun-loops-closed', passed: openReruns.length === 0, openCount: openReruns.length });
   if (openReruns.length > 0) blockingReasons.push('pending_rerun_exists');
+
+  const rerunSourceIssues = objects(record.rerunLoops).flatMap(rerunLoopSourceIssues);
+  checks.push({
+    id: 'rerun-loops-source-authority-valid',
+    passed: rerunSourceIssues.length === 0,
+    invalidCount: rerunSourceIssues.length,
+  });
+  blockingReasons.push(...rerunSourceIssues);
 
   const openRcaRecords = objects(record.rcaRecords).filter((record) =>
     ['open', 'in_progress', 'blocked'].includes(text(record.status))

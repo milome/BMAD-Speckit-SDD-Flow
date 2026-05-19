@@ -50,6 +50,13 @@ const LEGACY_WRITE_PATH_PREFIXES = [
   '_bmad-output/runtime/context/',
   '_bmad-output/runtime/governance/',
 ];
+const RERUN_AUTHORITY_SOURCE_TYPES = new Set([
+  'gate_check',
+  'contract_check',
+  'audit_iteration',
+  'execution_iteration',
+  'requirement_closure',
+]);
 
 function isDirectImplementationEvidenceIngestCli(entry: string | undefined): boolean {
   return /(^|[\\/])ingest-implementation-evidence(\.[cm]?js|\.ts)?$/iu.test(entry ?? '');
@@ -427,9 +434,19 @@ function validateRerunLoops(packet: JsonObject): string[] {
     if (!['open', 'in_progress', 'no_progress', 'resolved', 'blocked', 'abandoned_by_user_confirmation'].includes(text(loop.status))) {
       mismatches.push('rerun_loop_status_invalid');
     }
-    if (arrayOfObjects(loop.sourceRefs).length === 0) mismatches.push('rerun_loop_source_refs_missing');
+    const rerunSourceRefs = arrayOfObjects(loop.sourceRefs);
+    if (rerunSourceRefs.length === 0) mismatches.push('rerun_loop_source_refs_missing');
+    for (const sourceRef of rerunSourceRefs) {
+      if (!RERUN_AUTHORITY_SOURCE_TYPES.has(text(sourceRef.sourceType))) {
+        mismatches.push(`rerun_loop_source_ref_type_invalid:${text(sourceRef.sourceType) || '<missing>'}`);
+      }
+      if (!text(sourceRef.id)) mismatches.push('rerun_loop_source_ref_id_missing');
+    }
     if (Object.prototype.hasOwnProperty.call(loop, 'result')) mismatches.push('rerun_loop_result_forbidden');
     if (Object.prototype.hasOwnProperty.call(loop, 'decision')) mismatches.push('rerun_loop_decision_forbidden');
+    if (Object.prototype.hasOwnProperty.call(loop, 'trigger') && rerunSourceRefs.length === 0) {
+      mismatches.push('rerun_loop_trigger_without_source_refs');
+    }
   }
   return mismatches;
 }
@@ -652,7 +669,8 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
     recordedBy: text(failure.recordedBy) || recordedBy,
   }));
   const rerunLoopEvents = arrayOfObjects(packet.rerunLoops).map((loop) => ({
-    ...loop,
+    rerunLoopId: text(loop.rerunLoopId),
+    status: text(loop.status),
     sourceRefs: arrayOfObjects(loop.sourceRefs),
     blockerRefs: arrayOfObjects(loop.blockerRefs),
     recheckRefs: arrayOfObjects(loop.recheckRefs),
