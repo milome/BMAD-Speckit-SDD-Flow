@@ -30,6 +30,9 @@ const EXECUTION_STATUSES = new Set([
 ]);
 const CLOSURE_STATUSES = new Set(['open', 'pass', 'fail', 'blocked']);
 const GATE_DECISIONS = new Set(['pass', 'fail', 'blocked', 'not_applicable', 'skipped_by_policy']);
+const ENTRY_FLOWS = new Set(['story', 'bugfix', 'standalone_tasks']);
+const ENTRY_FLOW_CLASSES = new Set(['full_story_entry', 'corrective_entry', 'task_packet_entry']);
+const WORKFLOW_ADAPTERS = new Set(['bmad', 'speckit', 'direct', 'legacy']);
 const LEGACY_WRITE_PATH_PREFIXES = [
   '_bmad-output/runtime/gates/',
   '_bmad-output/runtime/bmad-help-five-layer/',
@@ -183,6 +186,9 @@ function validateArtifacts(packet: JsonObject): string[] {
   for (const artifact of arrayOfObjects(packet.artifactRefs)) {
     validateArtifact(artifact, 'artifact_ref', false);
   }
+  for (const artifact of arrayOfObjects(packet.extensionRefs)) {
+    validateArtifact(artifact, 'extension_ref', false);
+  }
   const delta = packet.implementationDelta as JsonObject | undefined;
   for (const artifact of arrayOfObjects(delta?.negativeAssertionArtifactRefs)) {
     validateArtifact(artifact, 'negative_assertion', true);
@@ -212,12 +218,45 @@ function validateImplementationDelta(packet: JsonObject): string[] {
   return mismatches;
 }
 
+function validateEntryFlowState(packet: JsonObject): string[] {
+  const mismatches: string[] = [];
+  const state = packet.entryFlowState;
+  if (state === undefined || state === null) return mismatches;
+  if (!state || typeof state !== 'object' || Array.isArray(state)) {
+    return ['entry_flow_state_invalid'];
+  }
+  const entryFlowState = state as JsonObject;
+  const entryFlow = text(entryFlowState.entryFlow);
+  const entryFlowClass = text(entryFlowState.entryFlowClass);
+  const workflowAdapter = text(entryFlowState.workflowAdapter);
+  if (!ENTRY_FLOWS.has(entryFlow)) mismatches.push('entry_flow_state_entry_flow_invalid');
+  if (!ENTRY_FLOW_CLASSES.has(entryFlowClass)) mismatches.push('entry_flow_state_entry_flow_class_invalid');
+  if (!WORKFLOW_ADAPTERS.has(workflowAdapter)) mismatches.push('entry_flow_state_workflow_adapter_invalid');
+  if (entryFlowState.contractAuthoringRequired !== true) {
+    mismatches.push('entry_flow_state_contract_authoring_required_not_true');
+  }
+  if (['bmad-story-assistant', 'speckit_story', 'speckit_tasks', 'speckit_implement'].includes(entryFlow)) {
+    mismatches.push('entry_flow_state_forbidden_top_level_entry_flow');
+  }
+  if (entryFlow === 'story' && entryFlowClass !== 'full_story_entry') {
+    mismatches.push('entry_flow_state_story_class_mismatch');
+  }
+  if (entryFlow === 'bugfix' && entryFlowClass !== 'corrective_entry') {
+    mismatches.push('entry_flow_state_bugfix_class_mismatch');
+  }
+  if (entryFlow === 'standalone_tasks' && entryFlowClass !== 'task_packet_entry') {
+    mismatches.push('entry_flow_state_standalone_class_mismatch');
+  }
+  return mismatches;
+}
+
 function validatePacket(packet: JsonObject, record: JsonObject): string[] {
   const mismatches = [
     ...requireHashMatch(packet, record),
     ...validateCommands(packet),
     ...validateArtifacts(packet),
     ...validateImplementationDelta(packet),
+    ...validateEntryFlowState(packet),
   ];
   if (containsForbiddenField(packet, 'result')) mismatches.push('forbidden_result_field');
   if (containsForbiddenField(packet, 'fullDiff')) mismatches.push('forbidden_inline_full_diff');
@@ -261,7 +300,7 @@ function commandRunRefs(packet: JsonObject): JsonObject[] {
 }
 
 function artifactEvents(packet: JsonObject, recordId: string, requirementSetId: string): JsonObject[] {
-  return arrayOfObjects(packet.artifactRefs).map((artifact) => ({
+  return [...arrayOfObjects(packet.artifactRefs), ...arrayOfObjects(packet.extensionRefs)].map((artifact) => ({
     eventType: 'artifact_indexed',
     artifactType: text(artifact.artifactType) || 'implementation_evidence',
     sourceOfTruthRole: text(artifact.sourceOfTruthRole) || 'evidence',
@@ -328,6 +367,11 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
   const refs = sourceRefs(packet);
   const commandRefs = commandRunRefs(packet);
   const artifactRefs = artifactEvents(packet, recordId, requirementSetId);
+  const extensionRefs = artifactEvents(
+    { ...packet, artifactRefs: arrayOfObjects(packet.extensionRefs), extensionRefs: [] },
+    recordId,
+    requirementSetId
+  );
   const executionEvent = {
     eventType: 'execution_iteration_recorded',
     recordId,
@@ -393,6 +437,14 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
   for (const command of packetRequiredCommands) requiredCommandsById.set(text(command.commandId), command);
   return {
     ...record,
+    ...(packet.entryFlowState && typeof packet.entryFlowState === 'object' && !Array.isArray(packet.entryFlowState)
+      ? {
+          entryFlow: text((packet.entryFlowState as JsonObject).entryFlow),
+          entryFlowClass: text((packet.entryFlowState as JsonObject).entryFlowClass),
+          workflowAdapter: text((packet.entryFlowState as JsonObject).workflowAdapter),
+          contractAuthoringRequired: (packet.entryFlowState as JsonObject).contractAuthoringRequired === true,
+        }
+      : {}),
     executionIterations: [...arrayOfObjects(record.executionIterations), executionEvent],
     requirementClosures: [...arrayOfObjects(record.requirementClosures), ...closureEvents],
     gateChecks: [...arrayOfObjects(record.gateChecks), ...gateEvents],
@@ -401,6 +453,12 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
         normalizeHistoricalArtifactRef(artifact, recordId, requirementSetId)
       ),
       ...artifactRefs,
+    ],
+    extensionRefs: [
+      ...arrayOfObjects(record.extensionRefs).map((artifact) =>
+        normalizeHistoricalArtifactRef(artifact, recordId, requirementSetId)
+      ),
+      ...extensionRefs,
     ],
     deliveryEvidence: {
       ...existingDeliveryEvidence,

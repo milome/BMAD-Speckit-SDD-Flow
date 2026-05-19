@@ -158,6 +158,10 @@ function buildRequirementRecord(existing, event) {
     requirementSetId: record.requirementSetId ?? event.requirementSetId,
     sourcePath: record.sourcePath ?? event.sourcePath,
     status: 'user_confirmed',
+    entryFlow: event.entryFlow,
+    entryFlowClass: event.entryFlowClass,
+    workflowAdapter: event.workflowAdapter,
+    contractAuthoringRequired: event.contractAuthoringRequired,
     sourceDocumentHash: event.sourceDocumentHash,
     implementationConfirmationHash: event.implementationConfirmationHash,
     confirmationPageHash: event.confirmationPageHash,
@@ -227,6 +231,10 @@ function main(argv) {
     confirmationText: args.confirmationText,
     renderReportPath: normalizePathForReport(reportPath),
     htmlPath: normalizePathForReport(htmlPath),
+    entryFlow: extracted.confirmation.entryFlow,
+    entryFlowClass: extracted.confirmation.entryFlowClass,
+    workflowAdapter: extracted.confirmation.workflowAdapter,
+    contractAuthoringRequired: extracted.confirmation.contractAuthoringRequired === true,
   };
 
   if (args.updateSource !== 'false') {
