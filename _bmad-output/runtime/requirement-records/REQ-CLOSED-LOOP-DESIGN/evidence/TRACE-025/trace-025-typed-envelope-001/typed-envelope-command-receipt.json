@@ -1,0 +1,8 @@
+{
+  "commandId": "CMD-GOVERNANCE-TRANSPORT-ENVELOPE-ACCEPTANCE",
+  "command": "npx vitest run tests/acceptance/governance-execution-result-ingestor.test.ts tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts",
+  "runId": "run-trace-025-typed-envelope-001",
+  "closeoutAttemptId": "closeout-trace-025-typed-envelope-001",
+  "exitCode": 0,
+  "outputSummary": "4 test files passed; 44 tests passed."
+}

@@ -1,0 +1,8 @@
+{
+  "commandId": "CMD-ENCODING-GATE",
+  "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+  "runId": "run-trace-025-typed-envelope-001",
+  "closeoutAttemptId": "closeout-trace-025-typed-envelope-001",
+  "exitCode": 0,
+  "outputSummary": "checkedFiles=2759 findings=0"
+}

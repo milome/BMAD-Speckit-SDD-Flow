@@ -1,0 +1,19 @@
+{
+  "assertions": [
+    {
+      "id": "NEG-020-A",
+      "text": "GovernanceTransportEnvelope rejects any generic result field, including nested result.",
+      "validatedBy": "tests/acceptance/governance-execution-result-ingestor.test.ts"
+    },
+    {
+      "id": "OUT-018-A",
+      "text": "eventType determines whether producer must send decision, status, or artifactRefs; mismatched payloadKind is rejected.",
+      "validatedBy": "tests/acceptance/governance-execution-result-ingestor.test.ts"
+    },
+    {
+      "id": "MUST-032-A",
+      "text": "Codex no-hook worker adapter produces a validated execution_iteration_recorded envelope with status and no result.",
+      "validatedBy": "tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts"
+    }
+  ]
+}

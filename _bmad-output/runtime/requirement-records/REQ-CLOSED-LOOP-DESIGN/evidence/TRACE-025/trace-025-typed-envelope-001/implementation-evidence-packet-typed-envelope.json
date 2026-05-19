@@ -1,0 +1,425 @@
+{
+  "eventType": "execution_iteration_recorded",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "executionIterationId": "exec-trace-025-typed-envelope-001",
+  "runId": "run-trace-025-typed-envelope-001",
+  "status": "done",
+  "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+  "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
+  "architectureConfirmationHash": "sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+  "traceRows": [
+    "TRACE-025"
+  ],
+  "taskRefs": [
+    "TASK-GOVERNANCE-TRANSPORT-HOOKS"
+  ],
+  "evidenceRefs": [
+    "EVD-004",
+    "EVD-005",
+    "EVD-032"
+  ],
+  "filesChanged": [
+    "scripts/governance-transport-envelope.ts",
+    "scripts/governance-execution-result-ingestor.ts",
+    "scripts/main-agent-codex-worker-adapter.ts",
+    "tests/acceptance/governance-execution-result-ingestor.test.ts",
+    "tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts"
+  ],
+  "implementationDelta": {
+    "filesChanged": [
+      "scripts/governance-transport-envelope.ts",
+      "scripts/governance-execution-result-ingestor.ts",
+      "scripts/main-agent-codex-worker-adapter.ts",
+      "tests/acceptance/governance-execution-result-ingestor.test.ts",
+      "tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts"
+    ],
+    "diffSummaryRef": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-025/trace-025-typed-envelope-001/implementation-delta-summary.md",
+    "behaviorAffecting": true,
+    "negativeAssertionArtifactRefs": [
+      {
+        "artifactType": "negative_assertion_report",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-025/trace-025-typed-envelope-001/negative-assertions.json",
+        "contentHash": "sha256:8f0458dd3d0986c5dd6b1863a7a7aabdcbd94226b263affb959502c773b36fbb",
+        "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-025 implementation",
+        "purpose": "TRACE-025 negative assertions for transport envelope result hard-cut.",
+        "relatedRequirementIds": [
+          "MUST-032",
+          "NEG-020",
+          "OUT-018",
+          "EVD-004",
+          "EVD-005",
+          "EVD-032",
+          "TRACE-025"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+        "outputVersion": "negative_assertion_report/v1",
+        "traceRows": [
+          "TRACE-025"
+        ],
+        "evidenceRefs": [
+          "EVD-004",
+          "EVD-005",
+          "EVD-032"
+        ]
+      }
+    ]
+  },
+  "diffSummary": "Add typed GovernanceTransportEnvelope validation and no-hook producer/ingest parity.",
+  "commandRuns": [
+    {
+      "commandId": "CMD-GOVERNANCE-TRANSPORT-ENVELOPE-ACCEPTANCE",
+      "command": "npx vitest run tests/acceptance/governance-execution-result-ingestor.test.ts tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts",
+      "runId": "run-trace-025-typed-envelope-001",
+      "closeoutAttemptId": "closeout-trace-025-typed-envelope-001",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T16:42:40.224Z",
+      "completedAt": "2026-05-19T16:42:45.225Z",
+      "outputSummary": "4 test files passed; 44 tests passed."
+    },
+    {
+      "commandId": "CMD-ENCODING-GATE",
+      "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+      "runId": "run-trace-025-typed-envelope-001",
+      "closeoutAttemptId": "closeout-trace-025-typed-envelope-001",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T16:42:46.225Z",
+      "completedAt": "2026-05-19T16:42:48.225Z",
+      "outputSummary": "checkedFiles=2759 findings=0"
+    }
+  ],
+  "artifactRefs": [
+    {
+      "artifactType": "governance_transport_envelope_validator",
+      "sourceOfTruthRole": "evidence",
+      "path": "scripts/governance-transport-envelope.ts",
+      "contentHash": "sha256:b49a96eb6b4bebc7e315047cb19789bc63d2c0b198087e5d44a40dbe83e7a49f",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-025 implementation",
+      "purpose": "Typed GovernanceTransportEnvelope validator that forbids result and enforces eventType payload contracts.",
+      "relatedRequirementIds": [
+        "MUST-032",
+        "NEG-020",
+        "OUT-018",
+        "EVD-004",
+        "EVD-005",
+        "EVD-032",
+        "TRACE-025"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "governance_transport_envelope_validator/v1",
+      "traceRows": [
+        "TRACE-025"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-032"
+      ]
+    },
+    {
+      "artifactType": "command_receipt",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-025/trace-025-typed-envelope-001/typed-envelope-command-receipt.json",
+      "contentHash": "sha256:20106420c8420a96e2be4b8c9ca90b3e0cb22fee8d1488bd5221b07337eee6f7",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-025 implementation",
+      "purpose": "Command receipt for typed envelope acceptance tests.",
+      "relatedRequirementIds": [
+        "MUST-032",
+        "NEG-020",
+        "OUT-018",
+        "EVD-004",
+        "EVD-005",
+        "EVD-032",
+        "TRACE-025"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "command_receipt/v1",
+      "traceRows": [
+        "TRACE-025"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-032"
+      ]
+    },
+    {
+      "artifactType": "encoding_gate_receipt",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-025/trace-025-typed-envelope-001/encoding-gate-receipt.json",
+      "contentHash": "sha256:5226f1026a66bac0844291f81db73a253c2e5c5362d03d5337c9f1619788212a",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-025 implementation",
+      "purpose": "Encoding integrity receipt for TRACE-025.",
+      "relatedRequirementIds": [
+        "MUST-032",
+        "NEG-020",
+        "OUT-018",
+        "EVD-004",
+        "EVD-005",
+        "EVD-032",
+        "TRACE-025"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "encoding_gate_receipt/v1",
+      "traceRows": [
+        "TRACE-025"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-032"
+      ]
+    },
+    {
+      "artifactType": "negative_assertion_report",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-025/trace-025-typed-envelope-001/negative-assertions.json",
+      "contentHash": "sha256:8f0458dd3d0986c5dd6b1863a7a7aabdcbd94226b263affb959502c773b36fbb",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-025 implementation",
+      "purpose": "TRACE-025 negative assertions for transport envelope result hard-cut.",
+      "relatedRequirementIds": [
+        "MUST-032",
+        "NEG-020",
+        "OUT-018",
+        "EVD-004",
+        "EVD-005",
+        "EVD-032",
+        "TRACE-025"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "negative_assertion_report/v1",
+      "traceRows": [
+        "TRACE-025"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-032"
+      ]
+    },
+    {
+      "artifactType": "implementation_delta_summary",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-025/trace-025-typed-envelope-001/implementation-delta-summary.md",
+      "contentHash": "sha256:74f6056d60774ac0170242a3b706d7c060b99c96688f6d91ac5ab3d6e9233af5",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-025 implementation",
+      "purpose": "TRACE-025 implementation delta summary.",
+      "relatedRequirementIds": [
+        "MUST-032",
+        "NEG-020",
+        "OUT-018",
+        "EVD-004",
+        "EVD-005",
+        "EVD-032",
+        "TRACE-025"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "implementation_delta_summary/v1",
+      "traceRows": [
+        "TRACE-025"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-032"
+      ]
+    }
+  ],
+  "deliveryEvidence": {
+    "requiredCommands": [
+      {
+        "commandId": "CMD-GOVERNANCE-TRANSPORT-ENVELOPE-ACCEPTANCE",
+        "command": "npx vitest run tests/acceptance/governance-execution-result-ingestor.test.ts tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts",
+        "commandType": "contract_validation",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": [
+          "TRACE-025"
+        ],
+        "evidenceRefs": [
+          "EVD-004",
+          "EVD-005",
+          "EVD-032"
+        ],
+        "artifactRefs": [
+          {
+            "artifactType": "governance_transport_envelope_validator",
+            "sourceOfTruthRole": "evidence",
+            "path": "scripts/governance-transport-envelope.ts",
+            "contentHash": "sha256:b49a96eb6b4bebc7e315047cb19789bc63d2c0b198087e5d44a40dbe83e7a49f",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-025 implementation",
+            "purpose": "Typed GovernanceTransportEnvelope validator that forbids result and enforces eventType payload contracts.",
+            "relatedRequirementIds": [
+              "MUST-032",
+              "NEG-020",
+              "OUT-018",
+              "EVD-004",
+              "EVD-005",
+              "EVD-032",
+              "TRACE-025"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "governance_transport_envelope_validator/v1",
+            "traceRows": [
+              "TRACE-025"
+            ],
+            "evidenceRefs": [
+              "EVD-004",
+              "EVD-005",
+              "EVD-032"
+            ]
+          },
+          {
+            "artifactType": "command_receipt",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-025/trace-025-typed-envelope-001/typed-envelope-command-receipt.json",
+            "contentHash": "sha256:20106420c8420a96e2be4b8c9ca90b3e0cb22fee8d1488bd5221b07337eee6f7",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-025 implementation",
+            "purpose": "Command receipt for typed envelope acceptance tests.",
+            "relatedRequirementIds": [
+              "MUST-032",
+              "NEG-020",
+              "OUT-018",
+              "EVD-004",
+              "EVD-005",
+              "EVD-032",
+              "TRACE-025"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "command_receipt/v1",
+            "traceRows": [
+              "TRACE-025"
+            ],
+            "evidenceRefs": [
+              "EVD-004",
+              "EVD-005",
+              "EVD-032"
+            ]
+          },
+          {
+            "artifactType": "negative_assertion_report",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-025/trace-025-typed-envelope-001/negative-assertions.json",
+            "contentHash": "sha256:8f0458dd3d0986c5dd6b1863a7a7aabdcbd94226b263affb959502c773b36fbb",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-025 implementation",
+            "purpose": "TRACE-025 negative assertions for transport envelope result hard-cut.",
+            "relatedRequirementIds": [
+              "MUST-032",
+              "NEG-020",
+              "OUT-018",
+              "EVD-004",
+              "EVD-005",
+              "EVD-032",
+              "TRACE-025"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "negative_assertion_report/v1",
+            "traceRows": [
+              "TRACE-025"
+            ],
+            "evidenceRefs": [
+              "EVD-004",
+              "EVD-005",
+              "EVD-032"
+            ]
+          }
+        ]
+      },
+      {
+        "commandId": "CMD-ENCODING-GATE",
+        "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+        "commandType": "encoding_gate",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": [
+          "TRACE-025"
+        ],
+        "evidenceRefs": [
+          "EVD-004",
+          "EVD-005",
+          "EVD-032"
+        ],
+        "artifactRefs": [
+          {
+            "artifactType": "encoding_gate_receipt",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-025/trace-025-typed-envelope-001/encoding-gate-receipt.json",
+            "contentHash": "sha256:5226f1026a66bac0844291f81db73a253c2e5c5362d03d5337c9f1619788212a",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-025 implementation",
+            "purpose": "Encoding integrity receipt for TRACE-025.",
+            "relatedRequirementIds": [
+              "MUST-032",
+              "NEG-020",
+              "OUT-018",
+              "EVD-004",
+              "EVD-005",
+              "EVD-032",
+              "TRACE-025"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "encoding_gate_receipt/v1",
+            "traceRows": [
+              "TRACE-025"
+            ],
+            "evidenceRefs": [
+              "EVD-004",
+              "EVD-005",
+              "EVD-032"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "gateChecks": [
+    {
+      "gate": "governance_transport_envelope",
+      "decision": "pass",
+      "checkId": "governance-transport-envelope:trace-025",
+      "sourceRefs": [
+        {
+          "sourceType": "artifact_ref",
+          "id": "scripts/governance-transport-envelope.ts"
+        }
+      ]
+    }
+  ],
+  "requirementClosures": [
+    {
+      "requirementId": "MUST-032",
+      "status": "pass"
+    },
+    {
+      "requirementId": "NEG-020",
+      "status": "pass"
+    },
+    {
+      "requirementId": "OUT-018",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-004",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-005",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-032",
+      "status": "pass"
+    }
+  ],
+  "closeoutAttemptId": "closeout-trace-025-typed-envelope-001"
+}
