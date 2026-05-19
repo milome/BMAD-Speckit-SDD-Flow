@@ -42,6 +42,47 @@ const globalContractTraceabilityPolicy = {
   closeoutFailureWhenUnresolved: true,
 };
 
+const traceStatusPolicy = {
+  schemaVersion: 'trace-status-policy/v1',
+  allowedStatuses: [
+    'PENDING',
+    'PASS',
+    'FAIL',
+    'BLOCKED',
+    'LINKED_DOWNSTREAM',
+    'USER_APPROVED_DEFERRED',
+    'USER_APPROVED_OUT_OF_SCOPE',
+  ],
+  terminalFullCloseoutStatuses: ['PASS', 'FAIL', 'BLOCKED'],
+  linkedDownstreamRequiredFields: [
+    'downstreamRecordId',
+    'downstreamStoryRef',
+    'downstreamSourceDocumentPath',
+    'downstreamSourceDocumentHash',
+    'downstreamScopeSummary',
+    'downstreamRequirementIds',
+    'downstreamAuditEvidenceRefs',
+  ],
+  userApprovedDeferredRequiredFields: [
+    'userApprovalRef',
+    'approvedAt',
+    'approvedBy',
+    'impactSummary',
+    'followUpRecordId',
+    'followUpDueCondition',
+  ],
+  userApprovedOutOfScopeRequiredFields: [
+    'userApprovalRef',
+    'approvedAt',
+    'approvedBy',
+    'impactSummary',
+    'confirmationDeltaRef',
+  ],
+  bareDeferredForbidden: true,
+  bareOutOfScopeForbidden: true,
+  fullCloseoutForUserScopedStatusesForbidden: true,
+};
+
 function writeFixture(root: string): { recordPath: string; evidencePath: string; artifactPath: string } {
   const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-EVIDENCE-INGEST');
   const evidenceDir = path.join(base, 'execution');
@@ -66,6 +107,7 @@ function writeFixture(root: string): { recordPath: string; evidencePath: string;
             'sha256:3333333333333333333333333333333333333333333333333333333333333333',
         },
         globalContractTraceabilityPolicy,
+        traceStatusPolicy,
       },
       null,
       2
@@ -123,6 +165,7 @@ function writeFixture(root: string): { recordPath: string; evidencePath: string;
           workflowAdapter: 'direct',
           contractAuthoringRequired: true,
           globalContractTraceabilityPolicy,
+          traceStatusPolicy,
         },
         deliveryEvidence: {
           requiredCommands: [
@@ -186,6 +229,10 @@ describe('implementation evidence ingest', () => {
         globalContractTraceabilityPolicy: {
           schemaVersion: 'global-contract-traceability-policy/v1',
           allowUnboundImplementationTask: false,
+        },
+        traceStatusPolicy: {
+          schemaVersion: 'trace-status-policy/v1',
+          fullCloseoutForUserScopedStatusesForbidden: true,
         },
       });
       expect(record.executionIterations).toHaveLength(1);

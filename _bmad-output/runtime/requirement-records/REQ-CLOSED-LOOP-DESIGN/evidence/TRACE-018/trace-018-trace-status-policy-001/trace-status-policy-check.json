@@ -1,0 +1,376 @@
+{
+  "reportType": "main_agent_trace_status_policy_check",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "evaluatedAt": "2026-05-19T22:44:00.000+08:00",
+  "evaluatedBy": "codex",
+  "decision": "pass",
+  "blockingReasons": [],
+  "traceStatusPolicy": {
+    "schemaVersion": "trace-status-policy/v1",
+    "allowedStatuses": [
+      "PENDING",
+      "PASS",
+      "FAIL",
+      "BLOCKED",
+      "LINKED_DOWNSTREAM",
+      "USER_APPROVED_DEFERRED",
+      "USER_APPROVED_OUT_OF_SCOPE"
+    ],
+    "terminalFullCloseoutStatuses": [
+      "PASS",
+      "FAIL",
+      "BLOCKED"
+    ],
+    "linkedDownstreamRequiredFields": [
+      "downstreamRecordId",
+      "downstreamStoryRef",
+      "downstreamSourceDocumentPath",
+      "downstreamSourceDocumentHash",
+      "downstreamScopeSummary",
+      "downstreamRequirementIds",
+      "downstreamAuditEvidenceRefs"
+    ],
+    "userApprovedDeferredRequiredFields": [
+      "userApprovalRef",
+      "approvedAt",
+      "approvedBy",
+      "impactSummary",
+      "followUpRecordId",
+      "followUpDueCondition"
+    ],
+    "userApprovedOutOfScopeRequiredFields": [
+      "userApprovalRef",
+      "approvedAt",
+      "approvedBy",
+      "impactSummary",
+      "confirmationDeltaRef"
+    ],
+    "bareDeferredForbidden": true,
+    "bareOutOfScopeForbidden": true,
+    "fullCloseoutForUserScopedStatusesForbidden": true
+  },
+  "checkedTraceRows": [
+    {
+      "id": "TRACE-001",
+      "status": "PENDING",
+      "covers": [
+        "MUST-001",
+        "MUST-002",
+        "MUST-003",
+        "NEG-007",
+        "OUT-004"
+      ],
+      "taskRefs": [
+        "TASK-CONTRACT-RECORD-CONFIRMATION"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-002",
+        "EVD-007",
+        "EVD-017"
+      ]
+    },
+    {
+      "id": "TRACE-002",
+      "status": "PENDING",
+      "covers": [
+        "MUST-004",
+        "NEG-001",
+        "OUT-002",
+        "OUT-003"
+      ],
+      "taskRefs": [
+        "TASK-GATES-CLOSEOUT-RERUN"
+      ],
+      "evidenceRefs": [
+        "EVD-003",
+        "EVD-007",
+        "EVD-008"
+      ]
+    },
+    {
+      "id": "TRACE-003",
+      "status": "PENDING",
+      "covers": [
+        "MUST-005",
+        "MUST-006",
+        "NEG-001",
+        "NEG-002"
+      ],
+      "taskRefs": [
+        "TASK-GATES-CLOSEOUT-RERUN",
+        "TASK-DELIVERY-CORE-EVIDENCE"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-003",
+        "EVD-006",
+        "EVD-019"
+      ]
+    },
+    {
+      "id": "TRACE-004",
+      "status": "PENDING",
+      "covers": [
+        "MUST-007",
+        "NEG-004",
+        "NEG-005",
+        "NEG-008",
+        "OUT-005",
+        "OUT-006"
+      ],
+      "taskRefs": [
+        "TASK-ARTIFACT-CONTROL-INGEST"
+      ],
+      "evidenceRefs": [
+        "EVD-002",
+        "EVD-005",
+        "EVD-020"
+      ]
+    },
+    {
+      "id": "TRACE-005",
+      "status": "PENDING",
+      "covers": [
+        "MUST-008",
+        "MUST-010",
+        "NEG-004",
+        "OUT-002"
+      ],
+      "taskRefs": [
+        "TASK-ARTIFACT-CONTROL-INGEST"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-008",
+        "EVD-016",
+        "EVD-020"
+      ]
+    },
+    {
+      "id": "TRACE-006",
+      "status": "PENDING",
+      "covers": [
+        "MUST-009",
+        "NEG-005"
+      ],
+      "taskRefs": [
+        "TASK-GATES-CLOSEOUT-RERUN"
+      ],
+      "evidenceRefs": [
+        "EVD-009",
+        "EVD-013",
+        "EVD-014"
+      ]
+    },
+    {
+      "id": "TRACE-007",
+      "status": "PENDING",
+      "covers": [
+        "MUST-011",
+        "MUST-017"
+      ],
+      "taskRefs": [
+        "TASK-DATA-SFT-GOVERNANCE"
+      ],
+      "evidenceRefs": [
+        "EVD-010",
+        "EVD-009"
+      ]
+    },
+    {
+      "id": "TRACE-008",
+      "status": "PENDING",
+      "covers": [
+        "MUST-012",
+        "MUST-014",
+        "NEG-003",
+        "OUT-001"
+      ],
+      "taskRefs": [
+        "TASK-DATA-SFT-GOVERNANCE"
+      ],
+      "evidenceRefs": [
+        "EVD-011",
+        "EVD-012",
+        "EVD-014"
+      ]
+    },
+    {
+      "id": "TRACE-009",
+      "status": "PENDING",
+      "covers": [
+        "MUST-013",
+        "MUST-015",
+        "NEG-003",
+        "NEG-006"
+      ],
+      "taskRefs": [
+        "TASK-DATA-SFT-GOVERNANCE"
+      ],
+      "evidenceRefs": [
+        "EVD-013",
+        "EVD-015"
+      ]
+    },
+    {
+      "id": "TRACE-010",
+      "status": "PENDING",
+      "covers": [
+        "MUST-016",
+        "MUST-017",
+        "NEG-006"
+      ],
+      "taskRefs": [
+        "TASK-DATA-SFT-GOVERNANCE"
+      ],
+      "evidenceRefs": [
+        "EVD-014",
+        "EVD-015"
+      ]
+    },
+    {
+      "id": "TRACE-011",
+      "status": "PENDING",
+      "covers": [
+        "MUST-018",
+        "MUST-019"
+      ],
+      "taskRefs": [
+        "TASK-BMAD-ARTIFACT-HARDCUT"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-005",
+        "EVD-020"
+      ]
+    },
+    {
+      "id": "TRACE-012",
+      "status": "PENDING",
+      "covers": [
+        "MUST-020",
+        "NEG-005"
+      ],
+      "taskRefs": [
+        "TASK-GATES-CLOSEOUT-RERUN",
+        "TASK-FUNCTIONAL-RESUME"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-009"
+      ]
+    },
+    {
+      "id": "TRACE-013",
+      "status": "PENDING",
+      "covers": [
+        "MUST-001",
+        "MUST-017",
+        "NEG-002",
+        "NEG-006"
+      ],
+      "taskRefs": [
+        "TASK-DELIVERY-CORE-EVIDENCE",
+        "TASK-DATA-SFT-GOVERNANCE"
+      ],
+      "evidenceRefs": [
+        "EVD-003",
+        "EVD-010",
+        "EVD-014",
+        "EVD-015"
+      ]
+    },
+    {
+      "id": "TRACE-014",
+      "status": "PENDING",
+      "covers": [
+        "MUST-021",
+        "NEG-009",
+        "OUT-007"
+      ],
+      "taskRefs": [
+        "TASK-ARTIFACT-CONTROL-INGEST"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-021"
+      ]
+    },
+    {
+      "id": "TRACE-015",
+      "status": "PENDING",
+      "covers": [
+        "MUST-022",
+        "NEG-010",
+        "OUT-008"
+      ],
+      "taskRefs": [
+        "TASK-FUNCTIONAL-RESUME"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-022"
+      ]
+    },
+    {
+      "id": "TRACE-016",
+      "status": "PENDING",
+      "covers": [
+        "MUST-023",
+        "NEG-011",
+        "OUT-009"
+      ],
+      "taskRefs": [
+        "TASK-ENTRYFLOW-TRACEABILITY"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-023"
+      ]
+    },
+    {
+      "id": "TRACE-017",
+      "status": "PENDING",
+      "covers": [
+        "MUST-024",
+        "NEG-012",
+        "OUT-010"
+      ],
+      "taskRefs": [
+        "TASK-ENTRYFLOW-TRACEABILITY"
+      ],
+      "evidenceRefs": [
+        "EVD-006",
+        "EVD-007",
+        "EVD-024"
+      ]
+    },
+    {
+      "id": "TRACE-018",
+      "status": "PENDING",
+      "covers": [
+        "MUST-025",
+        "NEG-013",
+        "OUT-011"
+      ],
+      "taskRefs": [
+        "TASK-ENTRYFLOW-TRACEABILITY",
+        "TASK-FUNCTIONAL-RESUME"
+      ],
+      "evidenceRefs": [
+        "EVD-006",
+        "EVD-009",
+        "EVD-025"
+      ]
+    }
+  ],
+  "fullCloseoutMode": false,
+  "recordPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json",
+  "sourcePath": "D:/Dev/BMAD-Speckit-SDD-Flow/docs/design/需求实现完整性门禁与重跑闭环设计.md"
+}

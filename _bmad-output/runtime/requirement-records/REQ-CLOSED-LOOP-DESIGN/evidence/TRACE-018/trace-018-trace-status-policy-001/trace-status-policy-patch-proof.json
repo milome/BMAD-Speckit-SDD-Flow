@@ -1,0 +1,54 @@
+{
+  "traceStatusPolicy": {
+    "schemaVersion": "trace-status-policy/v1",
+    "allowedStatuses": [
+      "PENDING",
+      "PASS",
+      "FAIL",
+      "BLOCKED",
+      "LINKED_DOWNSTREAM",
+      "USER_APPROVED_DEFERRED",
+      "USER_APPROVED_OUT_OF_SCOPE"
+    ],
+    "terminalFullCloseoutStatuses": [
+      "PASS",
+      "FAIL",
+      "BLOCKED"
+    ],
+    "linkedDownstreamRequiredFields": [
+      "downstreamRecordId",
+      "downstreamStoryRef",
+      "downstreamSourceDocumentPath",
+      "downstreamSourceDocumentHash",
+      "downstreamScopeSummary",
+      "downstreamRequirementIds",
+      "downstreamAuditEvidenceRefs"
+    ],
+    "userApprovedDeferredRequiredFields": [
+      "userApprovalRef",
+      "approvedAt",
+      "approvedBy",
+      "impactSummary",
+      "followUpRecordId",
+      "followUpDueCondition"
+    ],
+    "userApprovedOutOfScopeRequiredFields": [
+      "userApprovalRef",
+      "approvedAt",
+      "approvedBy",
+      "impactSummary",
+      "confirmationDeltaRef"
+    ],
+    "bareDeferredForbidden": true,
+    "bareOutOfScopeForbidden": true,
+    "fullCloseoutForUserScopedStatusesForbidden": true
+  },
+  "relatedRequirementIds": [
+    "MUST-025",
+    "NEG-013",
+    "OUT-011",
+    "EVD-025",
+    "TRACE-018"
+  ],
+  "assertion": "traceStatusPolicy is materialized through controlled ingest only"
+}

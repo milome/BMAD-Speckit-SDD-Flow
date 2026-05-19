@@ -1,0 +1,218 @@
+{
+  "eventType": "execution_iteration_recorded",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "executionIterationId": "exec-trace-018-trace-status-policy-patch-001",
+  "runId": "trace-018-trace-status-policy-patch-001",
+  "closeoutAttemptId": "trace-018-trace-status-policy-patch-001",
+  "status": "done",
+  "traceRows": [
+    "TRACE-018"
+  ],
+  "taskRefs": [
+    "TASK-ENTRYFLOW-TRACEABILITY",
+    "TASK-FUNCTIONAL-RESUME"
+  ],
+  "evidenceRefs": [
+    "EVD-025"
+  ],
+  "filesChanged": [
+    "_bmad/_schemas/requirement-record.schema.json",
+    "_bmad/skills/requirements-contract-authoring/scripts/ingest-confirmation-event.js",
+    "scripts/ingest-implementation-evidence.ts",
+    "scripts/main-agent-trace-status-policy-check.ts",
+    "tests/acceptance/main-agent-trace-status-policy-check.test.ts",
+    "tests/acceptance/implementation-evidence-ingest.test.ts",
+    "tests/acceptance/requirement-record-schema.test.ts"
+  ],
+  "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+  "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
+  "architectureConfirmationHash": "sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+  "diffSummary": "Apply controlled traceStatusPolicy patch before TRACE-018 gate evaluation.",
+  "commandRuns": [
+    {
+      "commandId": "CMD-TRACE-018-TRACE-STATUS-POLICY-CONTROLLED-PATCH",
+      "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/ingest-implementation-evidence.ts --evidence <trace-status-policy-patch-packet.json> --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json",
+      "runId": "trace-018-trace-status-policy-patch-001",
+      "closeoutAttemptId": "trace-018-trace-status-policy-patch-001",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T22:43:00.000+08:00",
+      "completedAt": "2026-05-19T22:43:01.000+08:00",
+      "outputSummary": "controlled traceStatusPolicy patch packet generated and accepted by ingest validator"
+    }
+  ],
+  "artifactRefs": [
+    {
+      "artifactType": "trace_status_policy_patch_proof",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-018/trace-018-trace-status-policy-001/trace-status-policy-patch-proof.json",
+      "hash": "sha256:8d8d106285243da3ff0efad3b1baec33603c5db3e3154d22f15c4282cd275510",
+      "producer": "TRACE-018",
+      "purpose": "Proves controlled materialization of traceStatusPolicy for existing RequirementRecord.",
+      "relatedRequirementIds": [
+        "MUST-025",
+        "NEG-013",
+        "OUT-011",
+        "EVD-025",
+        "TRACE-018"
+      ],
+      "status": "active",
+      "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+      "outputVersion": "trace-018-trace-status-policy-patch-001"
+    }
+  ],
+  "entryFlowState": {
+    "entryFlow": "standalone_tasks",
+    "entryFlowClass": "task_packet_entry",
+    "workflowAdapter": "direct",
+    "contractAuthoringRequired": true,
+    "globalContractTraceabilityPolicy": {
+      "schemaVersion": "global-contract-traceability-policy/v1",
+      "appliesToEntryFlows": [
+        "bugfix",
+        "standalone_tasks",
+        "story"
+      ],
+      "contractAuthoringRequired": true,
+      "taskBindingRequired": true,
+      "taskBindingDimensions": [
+        "MUST",
+        "NEG",
+        "OUT",
+        "EVD",
+        "TRACE"
+      ],
+      "missingBindingBehavior": "fail_closed",
+      "sourceDocumentHashRequired": true,
+      "implementationConfirmationHashRequired": true,
+      "reconfirmOnTraceSemanticChange": true,
+      "allowUnboundImplementationTask": false,
+      "taskRegistryField": "implementationTasks",
+      "traceTaskRefsMustResolveTo": "implementationTasks[].id",
+      "readinessFailureWhenUnresolved": true,
+      "closeoutFailureWhenUnresolved": true
+    },
+    "traceStatusPolicy": {
+      "schemaVersion": "trace-status-policy/v1",
+      "allowedStatuses": [
+        "PENDING",
+        "PASS",
+        "FAIL",
+        "BLOCKED",
+        "LINKED_DOWNSTREAM",
+        "USER_APPROVED_DEFERRED",
+        "USER_APPROVED_OUT_OF_SCOPE"
+      ],
+      "terminalFullCloseoutStatuses": [
+        "PASS",
+        "FAIL",
+        "BLOCKED"
+      ],
+      "linkedDownstreamRequiredFields": [
+        "downstreamRecordId",
+        "downstreamStoryRef",
+        "downstreamSourceDocumentPath",
+        "downstreamSourceDocumentHash",
+        "downstreamScopeSummary",
+        "downstreamRequirementIds",
+        "downstreamAuditEvidenceRefs"
+      ],
+      "userApprovedDeferredRequiredFields": [
+        "userApprovalRef",
+        "approvedAt",
+        "approvedBy",
+        "impactSummary",
+        "followUpRecordId",
+        "followUpDueCondition"
+      ],
+      "userApprovedOutOfScopeRequiredFields": [
+        "userApprovalRef",
+        "approvedAt",
+        "approvedBy",
+        "impactSummary",
+        "confirmationDeltaRef"
+      ],
+      "bareDeferredForbidden": true,
+      "bareOutOfScopeForbidden": true,
+      "fullCloseoutForUserScopedStatusesForbidden": true
+    }
+  },
+  "implementationDelta": {
+    "behaviorAffecting": true,
+    "filesChanged": [
+      "_bmad/_schemas/requirement-record.schema.json",
+      "_bmad/skills/requirements-contract-authoring/scripts/ingest-confirmation-event.js",
+      "scripts/ingest-implementation-evidence.ts",
+      "scripts/main-agent-trace-status-policy-check.ts",
+      "tests/acceptance/main-agent-trace-status-policy-check.test.ts",
+      "tests/acceptance/implementation-evidence-ingest.test.ts",
+      "tests/acceptance/requirement-record-schema.test.ts"
+    ],
+    "diffSummaryRef": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-018/trace-018-trace-status-policy-001/trace-status-policy-patch-proof.json",
+    "negativeAssertionArtifactRefs": [
+      {
+        "artifactType": "trace_status_policy_patch_proof",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-018/trace-018-trace-status-policy-001/trace-status-policy-patch-proof.json",
+        "hash": "sha256:8d8d106285243da3ff0efad3b1baec33603c5db3e3154d22f15c4282cd275510",
+        "producer": "TRACE-018",
+        "purpose": "Proves controlled materialization of traceStatusPolicy for existing RequirementRecord.",
+        "relatedRequirementIds": [
+          "MUST-025",
+          "NEG-013",
+          "OUT-011",
+          "EVD-025",
+          "TRACE-018"
+        ],
+        "status": "active",
+        "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+        "outputVersion": "trace-018-trace-status-policy-patch-001"
+      }
+    ]
+  },
+  "requirementClosures": [],
+  "gateChecks": [
+    {
+      "checkId": "trace-018-trace-status-policy-controlled-patch",
+      "gate": "Trace Status Policy Controlled Patch",
+      "decision": "pass"
+    }
+  ],
+  "deliveryEvidence": {
+    "requiredCommands": [
+      {
+        "commandId": "CMD-TRACE-018-TRACE-STATUS-POLICY-CONTROLLED-PATCH",
+        "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/ingest-implementation-evidence.ts --evidence <trace-status-policy-patch-packet.json> --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json",
+        "blockingIfMissing": true,
+        "negativeOrRegression": false,
+        "artifactRefs": [
+          {
+            "artifactType": "trace_status_policy_patch_proof",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-018/trace-018-trace-status-policy-001/trace-status-policy-patch-proof.json",
+            "hash": "sha256:8d8d106285243da3ff0efad3b1baec33603c5db3e3154d22f15c4282cd275510",
+            "producer": "TRACE-018",
+            "purpose": "Proves controlled materialization of traceStatusPolicy for existing RequirementRecord.",
+            "relatedRequirementIds": [
+              "MUST-025",
+              "NEG-013",
+              "OUT-011",
+              "EVD-025",
+              "TRACE-018"
+            ],
+            "status": "active",
+            "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+            "outputVersion": "trace-018-trace-status-policy-patch-001"
+          }
+        ]
+      }
+    ],
+    "historicalRunRefs": [
+      {
+        "commandId": "CMD-TRACE-018-TRACE-STATUS-POLICY-CONTROLLED-PATCH",
+        "runId": "trace-018-trace-status-policy-patch-001",
+        "closeoutAttemptId": "trace-018-trace-status-policy-patch-001"
+      }
+    ]
+  }
+}

@@ -34,6 +34,15 @@ const ENTRY_FLOWS = new Set(['story', 'bugfix', 'standalone_tasks']);
 const ENTRY_FLOW_CLASSES = new Set(['full_story_entry', 'corrective_entry', 'task_packet_entry']);
 const WORKFLOW_ADAPTERS = new Set(['bmad', 'speckit', 'direct', 'legacy']);
 const TRACEABILITY_DIMENSIONS = new Set(['MUST', 'NEG', 'OUT', 'EVD', 'TRACE']);
+const TRACE_ALLOWED_STATUSES = new Set([
+  'PENDING',
+  'PASS',
+  'FAIL',
+  'BLOCKED',
+  'LINKED_DOWNSTREAM',
+  'USER_APPROVED_DEFERRED',
+  'USER_APPROVED_OUT_OF_SCOPE',
+]);
 const LEGACY_WRITE_PATH_PREFIXES = [
   '_bmad-output/runtime/gates/',
   '_bmad-output/runtime/bmad-help-five-layer/',
@@ -289,6 +298,40 @@ function validateGlobalContractTraceabilityPolicy(policy: JsonObject | undefined
   return mismatches;
 }
 
+function validateTraceStatusPolicy(policy: JsonObject | undefined, prefix: string): string[] {
+  const mismatches: string[] = [];
+  if (!policy || typeof policy !== 'object' || Array.isArray(policy)) {
+    return [`${prefix}_trace_status_policy_missing`];
+  }
+  if (text(policy.schemaVersion) !== 'trace-status-policy/v1') mismatches.push(`${prefix}_trace_status_policy_schema_version_invalid`);
+  const allowed = new Set(arrayOfStrings(policy.allowedStatuses));
+  for (const status of TRACE_ALLOWED_STATUSES) {
+    if (!allowed.has(status)) mismatches.push(`${prefix}_trace_status_policy_missing_allowed_status:${status}`);
+  }
+  const terminal = new Set(arrayOfStrings(policy.terminalFullCloseoutStatuses));
+  for (const status of ['PASS', 'FAIL', 'BLOCKED']) {
+    if (!terminal.has(status)) mismatches.push(`${prefix}_trace_status_policy_missing_terminal_status:${status}`);
+  }
+  for (const status of ['LINKED_DOWNSTREAM', 'USER_APPROVED_DEFERRED', 'USER_APPROVED_OUT_OF_SCOPE']) {
+    if (terminal.has(status)) mismatches.push(`${prefix}_trace_status_policy_user_scoped_status_can_full_closeout:${status}`);
+  }
+  if (arrayOfStrings(policy.linkedDownstreamRequiredFields).length < 7) {
+    mismatches.push(`${prefix}_trace_status_policy_linked_downstream_fields_incomplete`);
+  }
+  if (arrayOfStrings(policy.userApprovedDeferredRequiredFields).length < 5) {
+    mismatches.push(`${prefix}_trace_status_policy_user_deferred_fields_incomplete`);
+  }
+  if (arrayOfStrings(policy.userApprovedOutOfScopeRequiredFields).length < 4) {
+    mismatches.push(`${prefix}_trace_status_policy_user_out_of_scope_fields_incomplete`);
+  }
+  if (policy.bareDeferredForbidden !== true) mismatches.push(`${prefix}_trace_status_policy_bare_deferred_not_forbidden`);
+  if (policy.bareOutOfScopeForbidden !== true) mismatches.push(`${prefix}_trace_status_policy_bare_out_of_scope_not_forbidden`);
+  if (policy.fullCloseoutForUserScopedStatusesForbidden !== true) {
+    mismatches.push(`${prefix}_trace_status_policy_user_scoped_full_closeout_not_forbidden`);
+  }
+  return mismatches;
+}
+
 function validatePacket(packet: JsonObject, record: JsonObject): string[] {
   const entryFlowState =
     packet.entryFlowState && typeof packet.entryFlowState === 'object' && !Array.isArray(packet.entryFlowState)
@@ -300,6 +343,12 @@ function validatePacket(packet: JsonObject, record: JsonObject): string[] {
     !Array.isArray(entryFlowState.globalContractTraceabilityPolicy)
       ? (entryFlowState.globalContractTraceabilityPolicy as JsonObject)
       : (record.globalContractTraceabilityPolicy as JsonObject | undefined);
+  const effectiveTraceStatusPolicy =
+    entryFlowState?.traceStatusPolicy &&
+    typeof entryFlowState.traceStatusPolicy === 'object' &&
+    !Array.isArray(entryFlowState.traceStatusPolicy)
+      ? (entryFlowState.traceStatusPolicy as JsonObject)
+      : (record.traceStatusPolicy as JsonObject | undefined);
   const mismatches = [
     ...requireHashMatch(packet, record),
     ...validateCommands(packet),
@@ -307,6 +356,7 @@ function validatePacket(packet: JsonObject, record: JsonObject): string[] {
     ...validateImplementationDelta(packet),
     ...validateEntryFlowState(packet),
     ...validateGlobalContractTraceabilityPolicy(effectiveTraceabilityPolicy, 'effective'),
+    ...validateTraceStatusPolicy(effectiveTraceStatusPolicy, 'effective'),
   ];
   if (containsForbiddenField(packet, 'result')) mismatches.push('forbidden_result_field');
   if (containsForbiddenField(packet, 'fullDiff')) mismatches.push('forbidden_inline_full_diff');
@@ -499,6 +549,13 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
             ? {
                 globalContractTraceabilityPolicy: (packet.entryFlowState as JsonObject)
                   .globalContractTraceabilityPolicy,
+              }
+            : {}),
+          ...((packet.entryFlowState as JsonObject).traceStatusPolicy &&
+          typeof (packet.entryFlowState as JsonObject).traceStatusPolicy === 'object' &&
+          !Array.isArray((packet.entryFlowState as JsonObject).traceStatusPolicy)
+            ? {
+                traceStatusPolicy: (packet.entryFlowState as JsonObject).traceStatusPolicy,
               }
             : {}),
         }

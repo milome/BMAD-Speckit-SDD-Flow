@@ -24,6 +24,47 @@ const globalContractTraceabilityPolicy = {
   closeoutFailureWhenUnresolved: true,
 };
 
+const traceStatusPolicy = {
+  schemaVersion: 'trace-status-policy/v1',
+  allowedStatuses: [
+    'PENDING',
+    'PASS',
+    'FAIL',
+    'BLOCKED',
+    'LINKED_DOWNSTREAM',
+    'USER_APPROVED_DEFERRED',
+    'USER_APPROVED_OUT_OF_SCOPE',
+  ],
+  terminalFullCloseoutStatuses: ['PASS', 'FAIL', 'BLOCKED'],
+  linkedDownstreamRequiredFields: [
+    'downstreamRecordId',
+    'downstreamStoryRef',
+    'downstreamSourceDocumentPath',
+    'downstreamSourceDocumentHash',
+    'downstreamScopeSummary',
+    'downstreamRequirementIds',
+    'downstreamAuditEvidenceRefs',
+  ],
+  userApprovedDeferredRequiredFields: [
+    'userApprovalRef',
+    'approvedAt',
+    'approvedBy',
+    'impactSummary',
+    'followUpRecordId',
+    'followUpDueCondition',
+  ],
+  userApprovedOutOfScopeRequiredFields: [
+    'userApprovalRef',
+    'approvedAt',
+    'approvedBy',
+    'impactSummary',
+    'confirmationDeltaRef',
+  ],
+  bareDeferredForbidden: true,
+  bareOutOfScopeForbidden: true,
+  fullCloseoutForUserScopedStatusesForbidden: true,
+};
+
 function loadValidator() {
   const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8')) as object;
   const ajv = new Ajv2020({ allErrors: true, strict: false });
@@ -42,6 +83,7 @@ function validRecord() {
     workflowAdapter: 'bmad',
     contractAuthoringRequired: true,
     globalContractTraceabilityPolicy,
+    traceStatusPolicy,
     sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
     implementationConfirmationHash:
       'sha256:2222222222222222222222222222222222222222222222222222222222222222',
@@ -72,6 +114,7 @@ function validRecord() {
         workflowAdapter: 'bmad',
         contractAuthoringRequired: true,
         globalContractTraceabilityPolicy,
+        traceStatusPolicy,
       },
     ],
     architectureConfirmationState: {
@@ -234,6 +277,18 @@ describe('requirement-record.schema.json', () => {
 
     expect(validate(record)).toBe(false);
     expect(JSON.stringify(validate.errors)).toContain('allowUnboundImplementationTask');
+  });
+
+  it('rejects trace status policies that allow user-scoped statuses to prove full closeout', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+    record.traceStatusPolicy = {
+      ...traceStatusPolicy,
+      terminalFullCloseoutStatuses: ['PASS', 'FAIL', 'BLOCKED', 'USER_APPROVED_DEFERRED'],
+    } as never;
+
+    expect(validate(record)).toBe(false);
+    expect(JSON.stringify(validate.errors)).toContain('terminalFullCloseoutStatuses');
   });
 
   it('rejects artifact refs that cannot be used for pass-grade evidence', () => {
