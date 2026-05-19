@@ -177,6 +177,13 @@ function validatePacket(packet: JsonObject, record: JsonObject): string[] {
     if (!text(gate.gate)) mismatches.push('gate_missing');
     if (!GATE_DECISIONS.has(text(gate.decision))) mismatches.push('gate_decision_invalid');
   }
+  const deliveryEvidence = packet.deliveryEvidence as JsonObject | undefined;
+  for (const command of arrayOfObjects(deliveryEvidence?.requiredCommands)) {
+    if (!text(command.commandId)) mismatches.push('required_command_id_missing');
+    if (!text(command.command)) mismatches.push('required_command_missing');
+    if (command.blockingIfMissing !== true) mismatches.push('required_command_not_blocking');
+    if (arrayOfObjects(command.artifactRefs).length === 0) mismatches.push('required_command_artifact_refs_missing');
+  }
   return [...new Set(mismatches)];
 }
 
@@ -259,12 +266,34 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
     recordedAt,
     recordedBy,
   }));
+  const existingDeliveryEvidence =
+    record.deliveryEvidence && typeof record.deliveryEvidence === 'object' && !Array.isArray(record.deliveryEvidence)
+      ? (record.deliveryEvidence as JsonObject)
+      : {};
+  const packetDeliveryEvidence =
+    packet.deliveryEvidence && typeof packet.deliveryEvidence === 'object' && !Array.isArray(packet.deliveryEvidence)
+      ? (packet.deliveryEvidence as JsonObject)
+      : {};
+  const existingRequiredCommands = arrayOfObjects(existingDeliveryEvidence.requiredCommands);
+  const packetRequiredCommands = arrayOfObjects(packetDeliveryEvidence.requiredCommands);
+  const requiredCommandsById = new Map<string, JsonObject>();
+  for (const command of existingRequiredCommands) requiredCommandsById.set(text(command.commandId), command);
+  for (const command of packetRequiredCommands) requiredCommandsById.set(text(command.commandId), command);
   return {
     ...record,
     executionIterations: [...arrayOfObjects(record.executionIterations), executionEvent],
     requirementClosures: [...arrayOfObjects(record.requirementClosures), ...closureEvents],
     gateChecks: [...arrayOfObjects(record.gateChecks), ...gateEvents],
     artifactIndex: [...arrayOfObjects(record.artifactIndex), ...artifactRefs],
+    deliveryEvidence: {
+      ...existingDeliveryEvidence,
+      ...packetDeliveryEvidence,
+      requiredCommands: [...requiredCommandsById.values()].filter((command) => text(command.commandId)),
+      historicalRunRefs: [
+        ...arrayOfObjects(existingDeliveryEvidence.historicalRunRefs),
+        ...arrayOfObjects(packetDeliveryEvidence.historicalRunRefs),
+      ],
+    },
     lastEventType: 'execution_iteration_recorded',
     updatedAt: recordedAt,
   };

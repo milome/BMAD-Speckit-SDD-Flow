@@ -81,6 +81,34 @@ function writeFixture(root: string): { recordPath: string; evidencePath: string;
             producer: 'implementation-evidence-ingest.test',
           },
         ],
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-IMPLEMENTATION-EVIDENCE-INGEST-TEST',
+              command:
+                'npx vitest run tests/acceptance/implementation-evidence-ingest.test.ts',
+              commandType: 'delivery_evidence',
+              blockingIfMissing: true,
+              traceRows: ['TRACE-003'],
+              evidenceRefs: ['EVD-006'],
+              artifactRefs: [
+                {
+                  artifactType: 'implementation_evidence',
+                  sourceOfTruthRole: 'evidence',
+                  path: artifactPath,
+                  hash: sha256(`${artifactContent}\n`),
+                },
+              ],
+            },
+          ],
+          historicalRunRefs: [
+            {
+              commandId: 'CMD-IMPLEMENTATION-EVIDENCE-INGEST-TEST',
+              runId: 'run-001',
+              closeoutAttemptId: 'closeout-001',
+            },
+          ],
+        },
         requirementClosures: [{ requirementId: 'MUST-005', status: 'pass' }],
         gateChecks: [{ gate: 'Execution Closure Check', decision: 'pass' }],
         closeoutAttemptId: 'closeout-001',
@@ -128,6 +156,16 @@ describe('implementation evidence ingest', () => {
         gate: 'Execution Closure Check',
         decision: 'pass',
       });
+      expect(record.deliveryEvidence.requiredCommands[0]).toMatchObject({
+        commandId: 'CMD-IMPLEMENTATION-EVIDENCE-INGEST-TEST',
+        blockingIfMissing: true,
+      });
+      expect(record.deliveryEvidence.requiredCommands[0].artifactRefs).toHaveLength(1);
+      expect(record.deliveryEvidence.historicalRunRefs[0]).toMatchObject({
+        commandId: 'CMD-IMPLEMENTATION-EVIDENCE-INGEST-TEST',
+        runId: 'run-001',
+        closeoutAttemptId: 'closeout-001',
+      });
       expect(existsSync(path.join(path.dirname(fixture.recordPath), 'artifact-index.jsonl'))).toBe(
         true
       );
@@ -167,6 +205,28 @@ describe('implementation evidence ingest', () => {
       const packet = JSON.parse(readFileSync(fixture.evidencePath, 'utf8'));
       packet.result = 'pass';
       packet.commandRuns[0].runId = 'old-run';
+      writeFileSync(fixture.evidencePath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
+      const code = mainIngestImplementationEvidence([
+        '--evidence',
+        fixture.evidencePath,
+        '--requirement-record',
+        fixture.recordPath,
+      ]);
+      expect(code).toBe(3);
+      expect(readFileSync(fixture.recordPath, 'utf8')).toBe(before);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects delivery required commands that cannot prove current blocking evidence', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-evidence-required-command-'));
+    try {
+      const fixture = writeFixture(root);
+      const before = readFileSync(fixture.recordPath, 'utf8');
+      const packet = JSON.parse(readFileSync(fixture.evidencePath, 'utf8'));
+      packet.deliveryEvidence.requiredCommands[0].blockingIfMissing = false;
+      packet.deliveryEvidence.requiredCommands[0].artifactRefs = [];
       writeFileSync(fixture.evidencePath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
       const code = mainIngestImplementationEvidence([
         '--evidence',
