@@ -14,6 +14,21 @@ function writeRecord(root: string, record: Record<string, unknown>): string {
   return recordPath;
 }
 
+function evidenceArtifactRef(pathValue = '_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/execution/evidence.json') {
+  return {
+    artifactType: 'implementation_evidence',
+    sourceOfTruthRole: 'evidence',
+    path: pathValue,
+    hash: HASH,
+    producer: 'main-agent-delivery-closeout-gate-record.test',
+    purpose: 'prove current closeout attempt delivery evidence',
+    relatedRequirementIds: ['MUST-007', 'NEG-008'],
+    status: 'active',
+    inputVersion: 'source-v1',
+    outputVersion: 'artifact-v1',
+  };
+}
+
 function baseRecord(): Record<string, unknown> {
   return {
     recordId: 'REQ-CLOSEOUT',
@@ -26,10 +41,7 @@ function baseRecord(): Record<string, unknown> {
       currentArchitectureConfirmationHash: HASH,
     },
     artifactIndex: [
-      {
-        path: '_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/execution/evidence.json',
-        contentHash: HASH,
-      },
+      evidenceArtifactRef(),
     ],
     gateChecks: [
       {
@@ -84,10 +96,9 @@ describe('requirement-scoped delivery closeout gate', () => {
               blockingIfMissing: true,
               negativeOrRegression: true,
               artifactRefs: [
-                {
-                  path: '_bmad-output\\runtime\\requirement-records\\REQ-CLOSEOUT\\execution\\evidence.json',
-                  hash: HASH,
-                },
+                evidenceArtifactRef(
+                  '_bmad-output\\runtime\\requirement-records\\REQ-CLOSEOUT\\execution\\evidence.json'
+                ),
               ],
             },
           ],
@@ -151,10 +162,7 @@ describe('requirement-scoped delivery closeout gate', () => {
               blockingIfMissing: true,
               negativeOrRegression: true,
               artifactRefs: [
-                {
-                  path: '_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/execution/evidence.json',
-                  hash: HASH,
-                },
+                evidenceArtifactRef(),
               ],
             },
           ],
@@ -212,6 +220,68 @@ describe('requirement-scoped delivery closeout gate', () => {
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
       expect(record.closeout.attempts).toHaveLength(1);
       expect(record.closeout.attempts[0].decision).toBe('blocked');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks closeout when evidence artifacts are projections or missing pass-grade metadata', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-artifact-metadata-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        artifactIndex: [
+          {
+            ...evidenceArtifactRef(),
+            sourceOfTruthRole: 'projection',
+          },
+        ],
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              artifactRefs: [
+                {
+                  path: '_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/execution/evidence.json',
+                  hash: HASH,
+                },
+              ],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-bad-artifact',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-bad-artifact',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(1);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.closeout.decision).toBe('blocked');
+      expect(record.closeout.attempts[0].blockingReasons).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining('required_command_artifact_incomplete'),
+          expect.stringContaining('required_command_not_satisfied:CMD-DELIVERY'),
+        ])
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

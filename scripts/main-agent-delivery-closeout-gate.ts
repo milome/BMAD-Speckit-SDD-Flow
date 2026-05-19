@@ -79,15 +79,37 @@ function commandRunsForAttempt(record: JsonObject, attemptId: string): JsonObjec
   );
 }
 
+function artifactCompletenessIssues(artifactRef: unknown): string[] {
+  if (!artifactRef || typeof artifactRef !== 'object' || Array.isArray(artifactRef)) return ['artifact_ref_missing'];
+  const ref = artifactRef as JsonObject;
+  const issues: string[] = [];
+  if (!text(ref.path)) issues.push('path_missing');
+  if (!text(ref.hash ?? ref.contentHash)) issues.push('hash_missing');
+  if (!text(ref.producer)) issues.push('producer_missing');
+  if (!text(ref.purpose)) issues.push('purpose_missing');
+  if (strings(ref.relatedRequirementIds).length === 0) issues.push('related_requirement_ids_missing');
+  if (!text(ref.status)) issues.push('status_missing');
+  if (!text(ref.inputVersion)) issues.push('input_version_missing');
+  if (!text(ref.outputVersion)) issues.push('output_version_missing');
+  if (text(ref.sourceOfTruthRole) !== 'evidence') issues.push('source_of_truth_role_not_evidence');
+  return issues;
+}
+
 function artifactIndexed(record: JsonObject, artifactRef: unknown): boolean {
   if (!artifactRef || typeof artifactRef !== 'object' || Array.isArray(artifactRef)) return false;
   const ref = artifactRef as JsonObject;
+  if (artifactCompletenessIssues(ref).length > 0) return false;
   const refPath = normalizePathForRecord(text(ref.path));
   const refHash = text(ref.hash ?? ref.contentHash);
   return objects(record.artifactIndex).some(
-    (item) =>
-      (!refPath || normalizePathForRecord(text(item.path)) === refPath) &&
-      (!refHash || text(item.contentHash ?? item.hash) === refHash)
+    (item) => {
+      if (artifactCompletenessIssues(item).length > 0) return false;
+      return (
+        normalizePathForRecord(text(item.path)) === refPath &&
+        text(item.contentHash ?? item.hash) === refHash &&
+        text(item.sourceOfTruthRole) === 'evidence'
+      );
+    }
   );
 }
 
@@ -125,7 +147,13 @@ function evaluate(record: JsonObject, attemptId: string): { decision: CloseoutDe
     const commandId = text(command.commandId);
     const run = attemptRuns.find((candidate) => text(candidate.commandId) === commandId);
     const artifactRefs = objects(command.artifactRefs);
-    const artifactsPresent = artifactRefs.length > 0 && artifactRefs.every((ref) => artifactIndexed(record, ref));
+    const artifactIssues = artifactRefs.flatMap((ref) =>
+      artifactCompletenessIssues(ref).map((issue) => `required_command_artifact_incomplete:${commandId}:${issue}`)
+    );
+    const artifactsPresent =
+      artifactRefs.length > 0 &&
+      artifactIssues.length === 0 &&
+      artifactRefs.every((ref) => artifactIndexed(record, ref));
     const passed = Boolean(run) && run?.exitCode === 0 && artifactsPresent && command.blockingIfMissing === true;
     checks.push({
       id: `required-command:${commandId || '<missing>'}`,
@@ -133,8 +161,10 @@ function evaluate(record: JsonObject, attemptId: string): { decision: CloseoutDe
       runPresent: Boolean(run),
       exitCode: run?.exitCode ?? null,
       artifactsPresent,
+      artifactIssues,
       negativeOrRegression: command.negativeOrRegression === true,
     });
+    blockingReasons.push(...artifactIssues);
     if (!passed) blockingReasons.push(`required_command_not_satisfied:${commandId || '<missing>'}`);
   }
 

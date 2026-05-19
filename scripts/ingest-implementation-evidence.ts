@@ -10,6 +10,7 @@ interface ParsedArgs {
   requirementRecord?: string;
   eventLog?: string;
   artifactIndex?: string;
+  globalArtifactIndex?: string;
   confirmedAt?: string;
   recordedBy?: string;
   json?: boolean;
@@ -29,6 +30,12 @@ const EXECUTION_STATUSES = new Set([
 ]);
 const CLOSURE_STATUSES = new Set(['open', 'pass', 'fail', 'blocked']);
 const GATE_DECISIONS = new Set(['pass', 'fail', 'blocked', 'not_applicable', 'skipped_by_policy']);
+const LEGACY_WRITE_PATH_PREFIXES = [
+  '_bmad-output/runtime/gates/',
+  '_bmad-output/runtime/bmad-help-five-layer/',
+  '_bmad-output/runtime/context/',
+  '_bmad-output/runtime/governance/',
+];
 
 function isDirectImplementationEvidenceIngestCli(entry: string | undefined): boolean {
   return /(^|[\\/])ingest-implementation-evidence(\.[cm]?js|\.ts)?$/iu.test(entry ?? '');
@@ -147,14 +154,43 @@ function validateCommands(packet: JsonObject): string[] {
 
 function validateArtifacts(packet: JsonObject): string[] {
   const mismatches: string[] = [];
-  for (const artifact of arrayOfObjects(packet.artifactRefs)) {
+  const validateArtifact = (artifact: JsonObject, prefix: string, passGradeOnly: boolean): void => {
     const artifactPath = text(artifact.path);
     const hash = text(artifact.hash ?? artifact.contentHash);
-    if (!artifactPath) mismatches.push('artifact_path_missing');
-    if (!hash) mismatches.push('artifact_hash_missing');
+    const normalizedPath = normalizePathForRecord(artifactPath);
+    const role = text(artifact.sourceOfTruthRole);
+    if (!artifactPath) mismatches.push(`${prefix}_artifact_path_missing`);
+    if (!hash) mismatches.push(`${prefix}_artifact_hash_missing`);
+    if (!text(artifact.artifactType)) mismatches.push(`${prefix}_artifact_type_missing`);
+    if (!role) mismatches.push(`${prefix}_artifact_source_of_truth_role_missing`);
+    if (passGradeOnly && role !== 'evidence') mismatches.push(`${prefix}_artifact_source_of_truth_role_not_evidence`);
+    if (!text(artifact.producer)) mismatches.push(`${prefix}_artifact_producer_missing`);
+    if (!text(artifact.purpose)) mismatches.push(`${prefix}_artifact_purpose_missing`);
+    if (arrayOfStrings(artifact.relatedRequirementIds).length === 0) {
+      mismatches.push(`${prefix}_artifact_related_requirement_ids_missing`);
+    }
+    if (!text(artifact.status)) mismatches.push(`${prefix}_artifact_status_missing`);
+    if (!text(artifact.inputVersion)) mismatches.push(`${prefix}_artifact_input_version_missing`);
+    if (!text(artifact.outputVersion)) mismatches.push(`${prefix}_artifact_output_version_missing`);
+    if (LEGACY_WRITE_PATH_PREFIXES.some((prefix) => normalizedPath.startsWith(prefix))) {
+      mismatches.push(`artifact_legacy_write_path_forbidden:${normalizedPath}`);
+    }
     const absolute = path.isAbsolute(artifactPath) ? artifactPath : path.resolve(process.cwd(), artifactPath);
     if (artifactPath && fs.existsSync(absolute) && hash && sha256File(absolute) !== hash) {
       mismatches.push(`artifact_hash_mismatch:${artifactPath}`);
+    }
+  };
+  for (const artifact of arrayOfObjects(packet.artifactRefs)) {
+    validateArtifact(artifact, 'artifact_ref', false);
+  }
+  const delta = packet.implementationDelta as JsonObject | undefined;
+  for (const artifact of arrayOfObjects(delta?.negativeAssertionArtifactRefs)) {
+    validateArtifact(artifact, 'negative_assertion', true);
+  }
+  const deliveryEvidence = packet.deliveryEvidence as JsonObject | undefined;
+  for (const command of arrayOfObjects(deliveryEvidence?.requiredCommands)) {
+    for (const artifact of arrayOfObjects(command.artifactRefs)) {
+      validateArtifact(artifact, 'required_command', true);
     }
   }
   return mismatches;
@@ -184,6 +220,9 @@ function validatePacket(packet: JsonObject, record: JsonObject): string[] {
     ...validateImplementationDelta(packet),
   ];
   if (containsForbiddenField(packet, 'result')) mismatches.push('forbidden_result_field');
+  if (containsForbiddenField(packet, 'fullDiff')) mismatches.push('forbidden_inline_full_diff');
+  if (containsForbiddenField(packet, 'diffPatch')) mismatches.push('forbidden_inline_diff_patch');
+  if (containsForbiddenField(packet, 'inlineDiff')) mismatches.push('forbidden_inline_diff');
   if (text(packet.eventType) && text(packet.eventType) !== 'execution_iteration_recorded') {
     mismatches.push('unsupported_event_type');
   }
@@ -231,9 +270,56 @@ function artifactEvents(packet: JsonObject, recordId: string, requirementSetId: 
     path: normalizePathForRecord(text(artifact.path)),
     contentHash: text(artifact.hash ?? artifact.contentHash),
     producer: text(artifact.producer) || 'ingest-implementation-evidence',
+    purpose: text(artifact.purpose),
+    relatedRequirementIds: arrayOfStrings(artifact.relatedRequirementIds),
+    status: text(artifact.status),
+    inputVersion: text(artifact.inputVersion),
+    outputVersion: text(artifact.outputVersion),
     traceRows: arrayOfStrings(packet.traceRows),
     evidenceRefs: arrayOfStrings(packet.evidenceRefs),
   }));
+}
+
+function normalizeHistoricalArtifactRef(
+  artifact: JsonObject,
+  recordId: string,
+  requirementSetId: string,
+  fallbackRelatedRequirementIds: string[] = []
+): JsonObject {
+  const pathValue = normalizePathForRecord(text(artifact.path));
+  const relatedRequirementIds = arrayOfStrings(artifact.relatedRequirementIds).length
+    ? arrayOfStrings(artifact.relatedRequirementIds)
+    : [...arrayOfStrings(artifact.evidenceRefs), ...arrayOfStrings(artifact.traceRows), ...fallbackRelatedRequirementIds].filter(
+        Boolean
+      );
+  return {
+    ...artifact,
+    eventType: text(artifact.eventType) || 'artifact_indexed',
+    artifactType: text(artifact.artifactType) || 'historical_artifact',
+    sourceOfTruthRole: text(artifact.sourceOfTruthRole) || 'evidence',
+    recordId: text(artifact.recordId) || recordId,
+    requirementSetId: text(artifact.requirementSetId) || requirementSetId,
+    path: pathValue || '<missing-path>',
+    contentHash: text(artifact.contentHash ?? artifact.hash) || undefined,
+    producer: text(artifact.producer) || 'historical-controlled-ingest-normalization',
+    purpose: text(artifact.purpose) || 'retained historical artifact; not valid as current pass evidence until rerun with pass-grade metadata',
+    relatedRequirementIds,
+    status: text(artifact.status) || 'archived',
+    inputVersion: text(artifact.inputVersion) || 'pre-artifact-metadata-enforcement',
+    outputVersion: text(artifact.outputVersion) || 'archived-historical-artifact',
+    traceRows: arrayOfStrings(artifact.traceRows),
+    evidenceRefs: arrayOfStrings(artifact.evidenceRefs),
+  };
+}
+
+function normalizeHistoricalCommand(command: JsonObject, recordId: string, requirementSetId: string): JsonObject {
+  const fallbackRelatedRequirementIds = [...arrayOfStrings(command.evidenceRefs), ...arrayOfStrings(command.traceRows)];
+  return {
+    ...command,
+    artifactRefs: arrayOfObjects(command.artifactRefs).map((artifact) =>
+      normalizeHistoricalArtifactRef(artifact, recordId, requirementSetId, fallbackRelatedRequirementIds)
+    ),
+  };
 }
 
 function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string, recordedBy: string): JsonObject {
@@ -298,7 +384,9 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
     packet.deliveryEvidence && typeof packet.deliveryEvidence === 'object' && !Array.isArray(packet.deliveryEvidence)
       ? (packet.deliveryEvidence as JsonObject)
       : {};
-  const existingRequiredCommands = arrayOfObjects(existingDeliveryEvidence.requiredCommands);
+  const existingRequiredCommands = arrayOfObjects(existingDeliveryEvidence.requiredCommands).map((command) =>
+    normalizeHistoricalCommand(command, recordId, requirementSetId)
+  );
   const packetRequiredCommands = arrayOfObjects(packetDeliveryEvidence.requiredCommands);
   const requiredCommandsById = new Map<string, JsonObject>();
   for (const command of existingRequiredCommands) requiredCommandsById.set(text(command.commandId), command);
@@ -308,7 +396,12 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
     executionIterations: [...arrayOfObjects(record.executionIterations), executionEvent],
     requirementClosures: [...arrayOfObjects(record.requirementClosures), ...closureEvents],
     gateChecks: [...arrayOfObjects(record.gateChecks), ...gateEvents],
-    artifactIndex: [...arrayOfObjects(record.artifactIndex), ...artifactRefs],
+    artifactIndex: [
+      ...arrayOfObjects(record.artifactIndex).map((artifact) =>
+        normalizeHistoricalArtifactRef(artifact, recordId, requirementSetId)
+      ),
+      ...artifactRefs,
+    ],
     deliveryEvidence: {
       ...existingDeliveryEvidence,
       ...packetDeliveryEvidence,
@@ -346,7 +439,10 @@ export function mainIngestImplementationEvidence(argv: string[]): number {
   const baseDir = path.dirname(recordPath);
   const eventLog = path.resolve(args.eventLog ?? path.join(baseDir, 'data', 'mentor-events.jsonl'));
   const artifactIndex = path.resolve(args.artifactIndex ?? path.join(baseDir, 'artifact-index.jsonl'));
-  appendJsonl(eventLog, nextRecord.executionIterations.at(-1) as JsonObject);
+  const globalArtifactIndex = path.resolve(
+    args.globalArtifactIndex ?? path.join(path.dirname(baseDir), 'artifact-index.jsonl')
+  );
+  appendJsonl(eventLog, arrayOfObjects(nextRecord.executionIterations).at(-1) as JsonObject);
   for (const item of arrayOfObjects(packet.requirementClosures)) {
     appendJsonl(eventLog, {
       eventType: 'requirement_closure_recorded',
@@ -360,8 +456,15 @@ export function mainIngestImplementationEvidence(argv: string[]): number {
   }
   for (const artifact of artifactEvents(packet, text(packet.recordId) || text(record.recordId), text(packet.requirementSetId) || text(record.requirementSetId))) {
     appendJsonl(artifactIndex, artifact);
+    appendJsonl(globalArtifactIndex, artifact);
   }
-  const result = { ok: true, requirementRecordPath: normalizePathForRecord(recordPath), eventLogPath: normalizePathForRecord(eventLog), artifactIndexPath: normalizePathForRecord(artifactIndex) };
+  const result = {
+    ok: true,
+    requirementRecordPath: normalizePathForRecord(recordPath),
+    eventLogPath: normalizePathForRecord(eventLog),
+    artifactIndexPath: normalizePathForRecord(artifactIndex),
+    globalArtifactIndexPath: normalizePathForRecord(globalArtifactIndex),
+  };
   process.stdout.write(args.json ? `${JSON.stringify(result, null, 2)}\n` : `execution_iteration_recorded=${text(packet.executionIterationId)}\n`);
   return 0;
 }

@@ -6,6 +6,21 @@ import { mainTraceClosureMatrix } from '../../scripts/trace-closure-matrix';
 
 const HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
 
+function artifactRef() {
+  return {
+    artifactType: 'implementation_evidence',
+    sourceOfTruthRole: 'evidence',
+    path: '_bmad-output/runtime/requirement-records/REQ-MATRIX/execution/evidence.json',
+    contentHash: HASH,
+    producer: 'trace-closure-matrix.test',
+    purpose: 'prove trace closure projection uses indexed delivery evidence',
+    relatedRequirementIds: ['MUST-001'],
+    status: 'active',
+    inputVersion: 'source-v1',
+    outputVersion: 'artifact-v1',
+  };
+}
+
 describe('trace closure matrix projection', () => {
   it('projects closure state from requirement record evidence only', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'trace-closure-matrix-'));
@@ -31,12 +46,7 @@ describe('trace closure matrix projection', () => {
                 traceRows: ['TRACE-001'],
                 evidenceRefs: ['EVD-001'],
                 evidenceArtifactRefs: [
-                  {
-                    artifactType: 'implementation_evidence',
-                    sourceOfTruthRole: 'evidence',
-                    path: '_bmad-output/runtime/requirement-records/REQ-MATRIX/execution/evidence.json',
-                    contentHash: HASH,
-                  },
+                  artifactRef(),
                 ],
               },
             ],
@@ -47,12 +57,7 @@ describe('trace closure matrix projection', () => {
                   traceRows: ['TRACE-001'],
                   evidenceRefs: ['EVD-001'],
                   artifactRefs: [
-                    {
-                      artifactType: 'implementation_evidence',
-                      sourceOfTruthRole: 'evidence',
-                      path: '_bmad-output/runtime/requirement-records/REQ-MATRIX/execution/evidence.json',
-                      hash: HASH,
-                    },
+                    { ...artifactRef(), hash: HASH },
                   ],
                 },
               ],

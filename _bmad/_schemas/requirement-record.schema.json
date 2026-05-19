@@ -105,7 +105,17 @@
     "artifactRef": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["artifactType", "sourceOfTruthRole", "path"],
+      "required": [
+        "artifactType",
+        "sourceOfTruthRole",
+        "path",
+        "producer",
+        "purpose",
+        "relatedRequirementIds",
+        "status",
+        "inputVersion",
+        "outputVersion"
+      ],
       "properties": {
         "eventType": { "$ref": "#/$defs/nonEmptyString" },
         "artifactType": { "$ref": "#/$defs/nonEmptyString" },
@@ -118,6 +128,15 @@
         "hash": { "$ref": "#/$defs/sha256" },
         "contentHash": { "$ref": "#/$defs/sha256" },
         "producer": { "$ref": "#/$defs/nonEmptyString" },
+        "purpose": { "$ref": "#/$defs/nonEmptyString" },
+        "relatedRequirementIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "status": { "enum": ["active", "superseded", "archived", "deleted", "blocked"] },
+        "inputVersion": { "$ref": "#/$defs/nonEmptyString" },
+        "outputVersion": { "$ref": "#/$defs/nonEmptyString" },
         "traceRows": {
           "type": "array",
           "items": { "$ref": "#/$defs/nonEmptyString" }

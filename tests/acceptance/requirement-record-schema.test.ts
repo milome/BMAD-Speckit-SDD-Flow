@@ -87,6 +87,11 @@ function validRecord() {
         path: '_bmad-output/runtime/requirement-records/REQ-SCHEMA-001/confirmation/confirmation.html',
         contentHash: 'sha256:5555555555555555555555555555555555555555555555555555555555555555',
         producer: 'render-requirements-confirmation-html',
+        purpose: 'render confirmed requirement scope for human review',
+        relatedRequirementIds: ['MUST-001'],
+        status: 'active',
+        inputVersion: 'source-v1',
+        outputVersion: 'confirmation-v1',
       },
     ],
     updatedAt: '2026-05-19T00:00:00.000Z',
@@ -131,5 +136,15 @@ describe('requirement-record.schema.json', () => {
 
     expect(validate(record)).toBe(false);
     expect(JSON.stringify(validate.errors)).toContain('minItems');
+  });
+
+  it('rejects artifact refs that cannot be used for pass-grade evidence', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+    delete (record.artifactIndex[0] as Record<string, unknown>).purpose;
+    (record.artifactIndex[0] as Record<string, unknown>).relatedRequirementIds = [];
+
+    expect(validate(record)).toBe(false);
+    expect(JSON.stringify(validate.errors)).toContain('relatedRequirementIds');
   });
 });

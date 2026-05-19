@@ -9,6 +9,22 @@ function sha256(content: string): string {
   return `sha256:${crypto.createHash('sha256').update(content, 'utf8').digest('hex')}`;
 }
 
+function artifactRef(artifactPath: string, contentHash: string, overrides: Record<string, unknown> = {}) {
+  return {
+    artifactType: 'implementation_evidence',
+    sourceOfTruthRole: 'evidence',
+    path: artifactPath,
+    hash: contentHash,
+    producer: 'implementation-evidence-ingest.test',
+    purpose: 'prove controlled implementation evidence ingest behavior',
+    relatedRequirementIds: ['MUST-007', 'NEG-008'],
+    status: 'active',
+    inputVersion: 'source-v1',
+    outputVersion: 'artifact-v1',
+    ...overrides,
+  };
+}
+
 function writeFixture(root: string): { recordPath: string; evidencePath: string; artifactPath: string } {
   const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-EVIDENCE-INGEST');
   const evidenceDir = path.join(base, 'execution');
@@ -63,12 +79,7 @@ function writeFixture(root: string): { recordPath: string; evidencePath: string;
           diffSummaryRef: 'diff-summary.md',
           behaviorAffecting: true,
           negativeAssertionArtifactRefs: [
-            {
-              artifactType: 'implementation_evidence',
-              sourceOfTruthRole: 'evidence',
-              path: artifactPath,
-              hash: sha256(`${artifactContent}\n`),
-            },
+            artifactRef(artifactPath, sha256(`${artifactContent}\n`)),
           ],
         },
         diffSummary: 'Add controlled implementation evidence ingest.',
@@ -86,13 +97,7 @@ function writeFixture(root: string): { recordPath: string; evidencePath: string;
           },
         ],
         artifactRefs: [
-          {
-            artifactType: 'implementation_evidence',
-            sourceOfTruthRole: 'evidence',
-            path: artifactPath,
-            hash: sha256(`${artifactContent}\n`),
-            producer: 'implementation-evidence-ingest.test',
-          },
+          artifactRef(artifactPath, sha256(`${artifactContent}\n`)),
         ],
         deliveryEvidence: {
           requiredCommands: [
@@ -105,12 +110,7 @@ function writeFixture(root: string): { recordPath: string; evidencePath: string;
               traceRows: ['TRACE-003'],
               evidenceRefs: ['EVD-006'],
               artifactRefs: [
-                {
-                  artifactType: 'implementation_evidence',
-                  sourceOfTruthRole: 'evidence',
-                  path: artifactPath,
-                  hash: sha256(`${artifactContent}\n`),
-                },
+                artifactRef(artifactPath, sha256(`${artifactContent}\n`)),
               ],
             },
           ],
@@ -179,6 +179,13 @@ describe('implementation evidence ingest', () => {
         blockingIfMissing: true,
       });
       expect(record.deliveryEvidence.requiredCommands[0].artifactRefs).toHaveLength(1);
+      expect(record.artifactIndex[0]).toMatchObject({
+        purpose: 'prove controlled implementation evidence ingest behavior',
+        relatedRequirementIds: ['MUST-007', 'NEG-008'],
+        status: 'active',
+        inputVersion: 'source-v1',
+        outputVersion: 'artifact-v1',
+      });
       expect(record.deliveryEvidence.historicalRunRefs[0]).toMatchObject({
         commandId: 'CMD-IMPLEMENTATION-EVIDENCE-INGEST-TEST',
         runId: 'run-001',
@@ -187,6 +194,9 @@ describe('implementation evidence ingest', () => {
       expect(existsSync(path.join(path.dirname(fixture.recordPath), 'artifact-index.jsonl'))).toBe(
         true
       );
+      expect(
+        existsSync(path.join(path.dirname(path.dirname(fixture.recordPath)), 'artifact-index.jsonl'))
+      ).toBe(true);
       expect(existsSync(fixture.artifactPath)).toBe(true);
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -275,6 +285,89 @@ describe('implementation evidence ingest', () => {
       ]);
       expect(code).toBe(3);
       expect(readFileSync(fixture.recordPath, 'utf8')).toBe(before);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects artifact refs without pass-grade metadata', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-evidence-artifact-metadata-'));
+    try {
+      const fixture = writeFixture(root);
+      const before = readFileSync(fixture.recordPath, 'utf8');
+      const packet = JSON.parse(readFileSync(fixture.evidencePath, 'utf8'));
+      delete packet.artifactRefs[0].purpose;
+      packet.artifactRefs[0].relatedRequirementIds = [];
+      writeFileSync(fixture.evidencePath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
+      const code = mainIngestImplementationEvidence([
+        '--evidence',
+        fixture.evidencePath,
+        '--requirement-record',
+        fixture.recordPath,
+      ]);
+      expect(code).toBe(3);
+      expect(readFileSync(fixture.recordPath, 'utf8')).toBe(before);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects inline full diffs and legacy write targets', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-evidence-inline-diff-'));
+    try {
+      const fixture = writeFixture(root);
+      const before = readFileSync(fixture.recordPath, 'utf8');
+      const packet = JSON.parse(readFileSync(fixture.evidencePath, 'utf8'));
+      packet.fullDiff = 'diff --git a/file b/file';
+      packet.artifactRefs[0].path = '_bmad-output/runtime/gates/legacy-report.json';
+      writeFileSync(fixture.evidencePath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
+      const code = mainIngestImplementationEvidence([
+        '--evidence',
+        fixture.evidencePath,
+        '--requirement-record',
+        fixture.recordPath,
+      ]);
+      expect(code).toBe(3);
+      expect(readFileSync(fixture.recordPath, 'utf8')).toBe(before);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('normalizes historical artifact refs without making them current pass evidence', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-evidence-historical-artifact-'));
+    try {
+      const fixture = writeFixture(root);
+      const record = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
+      record.artifactIndex = [
+        {
+          artifactType: 'legacy_report',
+          sourceOfTruthRole: 'evidence',
+          path: '_bmad-output/runtime/requirement-records/REQ-EVIDENCE-INGEST/execution/old-report.json',
+          contentHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          producer: 'legacy-runner',
+          traceRows: ['TRACE-OLD'],
+          evidenceRefs: ['EVD-OLD'],
+        },
+      ];
+      writeFileSync(fixture.recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+      const code = mainIngestImplementationEvidence([
+        '--evidence',
+        fixture.evidencePath,
+        '--requirement-record',
+        fixture.recordPath,
+      ]);
+      expect(code).toBe(0);
+      const updated = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
+      expect(updated.artifactIndex[0]).toMatchObject({
+        status: 'archived',
+        inputVersion: 'pre-artifact-metadata-enforcement',
+        outputVersion: 'archived-historical-artifact',
+      });
+      expect(updated.artifactIndex.at(-1)).toMatchObject({
+        status: 'active',
+        relatedRequirementIds: ['MUST-007', 'NEG-008'],
+      });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

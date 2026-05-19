@@ -244,7 +244,7 @@ function main(argv) {
         process.cwd(),
         '_bmad-output',
         'runtime',
-        'requirements',
+        'requirement-records',
         String(recordId ?? 'unrecorded'),
         'requirement-record.json'
       )
@@ -256,13 +256,13 @@ function main(argv) {
 
   const eventLogPath = path.resolve(
     args.eventLog ??
-      path.join(process.cwd(), '_bmad-output', 'runtime', 'requirements', 'mentor-events.jsonl')
+      path.join(process.cwd(), '_bmad-output', 'runtime', 'requirement-records', 'mentor-events.jsonl')
   );
   appendJsonl(eventLogPath, event);
 
   const artifactIndexPath = path.resolve(
     args.artifactIndex ??
-      path.join(process.cwd(), '_bmad-output', 'runtime', 'requirements', 'artifact-index.jsonl')
+      path.join(process.cwd(), '_bmad-output', 'runtime', 'requirement-records', 'artifact-index.jsonl')
   );
   appendJsonl(artifactIndexPath, {
     artifactType: 'requirement_record',

@@ -157,7 +157,7 @@ implementationConfirmation:
       covers: ["OUT-001"]
   artifactAutomationPlan:
     - id: ART-001
-      path: "_bmad-output/runtime/requirements/REQ-CONFIRM-INGEST/requirement-record.json"
+      path: "_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json"
       artifactType: requirement_record
       kind: requirement_record
       producer: ingest-confirmation-event.js
@@ -176,7 +176,7 @@ implementationConfirmation:
       trainingDataEligible: false
       linkedIds: ["MUST-001", "EVD-001"]
     - id: ART-002
-      path: "_bmad-output/runtime/requirements/mentor-events.jsonl"
+      path: "_bmad-output/runtime/requirement-records/mentor-events.jsonl"
       artifactType: event_log
       kind: event_log
       producer: ingest-confirmation-event.js
@@ -314,7 +314,7 @@ describe('controlled confirmation ingest', () => {
     expect(blockedPrompt.stdout).toContain('BLOCK: CONFIRMATION_REQUIRED');
 
     const { reportPath, report } = render(source);
-    const recordPath = path.join(tempDir, '_bmad-output/runtime/requirements/REQ-CONFIRM-INGEST/requirement-record.json');
+    const recordPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json');
     const ingest = runNode(INGEST, [
       '--source',
       source,
@@ -361,9 +361,9 @@ describe('controlled confirmation ingest', () => {
   it('writes confirmation history, source bookkeeping, event log, and artifact index after exact chat confirmation', () => {
     const source = writeSource();
     const { reportPath, report } = render(source);
-    const recordPath = path.join(tempDir, '_bmad-output/runtime/requirements/REQ-CONFIRM-INGEST/requirement-record.json');
-    const eventLogPath = path.join(tempDir, '_bmad-output/runtime/requirements/mentor-events.jsonl');
-    const artifactIndexPath = path.join(tempDir, '_bmad-output/runtime/requirements/artifact-index.jsonl');
+    const recordPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json');
+    const eventLogPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/mentor-events.jsonl');
+    const artifactIndexPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/artifact-index.jsonl');
     const result = runNode(INGEST, [
       '--source',
       source,
@@ -417,7 +417,7 @@ describe('controlled confirmation ingest', () => {
     const source = writeSource();
     const before = fs.readFileSync(source, 'utf8');
     const { reportPath, report } = render(source);
-    const recordPath = path.join(tempDir, '_bmad-output/runtime/requirements/REQ-CONFIRM-INGEST/requirement-record.json');
+    const recordPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json');
     const badText = report.confirmInstruction.replace(/sourceDocumentHash=sha256:[a-f0-9]{64}/, 'sourceDocumentHash=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
     const result = runNode(INGEST, [
       '--source',
