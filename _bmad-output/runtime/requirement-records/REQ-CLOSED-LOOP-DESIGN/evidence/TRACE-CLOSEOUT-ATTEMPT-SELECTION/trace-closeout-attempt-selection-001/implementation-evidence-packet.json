@@ -1,0 +1,489 @@
+{
+  "eventType": "execution_iteration_recorded",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "executionIterationId": "TRACE-CLOSEOUT-ATTEMPT-SELECTION-001",
+  "runId": "run-trace-closeout-attempt-selection-001",
+  "status": "done",
+  "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+  "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
+  "architectureConfirmationHash": "sha256:a1372528e0fdf4dd0f87b5f37e5be30b3ec8f334e258f85d3c13c604d72facd8",
+  "traceRows": [
+    "TRACE-002",
+    "TRACE-003",
+    "TRACE-006",
+    "TRACE-024",
+    "TRACE-CLOSURE-RECONCILIATION"
+  ],
+  "taskRefs": [
+    "TASK-GATES-CLOSEOUT-RERUN",
+    "TASK-DELIVERY-CORE-EVIDENCE"
+  ],
+  "evidenceRefs": [
+    "EVD-003",
+    "EVD-006",
+    "EVD-009",
+    "EVD-019",
+    "EVD-031"
+  ],
+  "filesChanged": [
+    "_bmad/_schemas/requirement-record.schema.json",
+    "scripts/ingest-implementation-evidence.ts",
+    "scripts/main-agent-delivery-closeout-gate.ts",
+    "tests/acceptance/implementation-evidence-ingest.test.ts",
+    "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+    "tests/acceptance/requirement-record-schema.test.ts"
+  ],
+  "implementationDelta": {
+    "filesChanged": [
+      "_bmad/_schemas/requirement-record.schema.json",
+      "scripts/ingest-implementation-evidence.ts",
+      "scripts/main-agent-delivery-closeout-gate.ts",
+      "tests/acceptance/implementation-evidence-ingest.test.ts",
+      "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+      "tests/acceptance/requirement-record-schema.test.ts"
+    ],
+    "diffSummaryRef": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-CLOSEOUT-ATTEMPT-SELECTION/trace-closeout-attempt-selection-001/diff-summary.md",
+    "behaviorAffecting": true,
+    "negativeAssertionArtifactRefs": [
+      {
+        "artifactType": "negative_assertion_evidence",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-CLOSEOUT-ATTEMPT-SELECTION/trace-closeout-attempt-selection-001/negative-assertions.json",
+        "hash": "sha256:8e60f46afe3caf4b79b415eed088b500d69da474f84bb4c2c8a197e26db1e23e",
+        "producer": "codex",
+        "purpose": "prove closeout attempt selection negative assertions",
+        "relatedRequirementIds": [
+          "TRACE-002",
+          "TRACE-003",
+          "TRACE-006",
+          "TRACE-024",
+          "TRACE-CLOSURE-RECONCILIATION",
+          "MUST-004",
+          "MUST-005",
+          "MUST-006",
+          "EVD-003",
+          "EVD-006",
+          "EVD-009",
+          "EVD-019",
+          "EVD-031"
+        ],
+        "status": "active",
+        "inputVersion": "TRACE-CLOSEOUT-ATTEMPT-SELECTION",
+        "outputVersion": "closeout-attempt-selection-evidence-v1"
+      }
+    ]
+  },
+  "diffSummary": "Constrain Delivery Closeout Gate to current attempt selected requiredCommands and allow controlled failure/RCA resolution events for immutable blocked attempts.",
+  "commandRuns": [
+    {
+      "commandId": "CMD-CLOSEOUT-ATTEMPT-SELECTION-ACCEPTANCE",
+      "command": "npx vitest run tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/requirement-record-schema.test.ts",
+      "runId": "run-trace-closeout-attempt-selection-001",
+      "closeoutAttemptId": "closeout-REQ-CLOSED-LOOP-DESIGN-20260519-006",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T18:44:29.490Z",
+      "completedAt": "2026-05-19T18:44:34.109Z",
+      "outputSummary": "\u001b[22m\u001b[39m{\n  \"ok\": false,\n  \"mismatches\": [\n    \"artifact_ref_artifact_purpose_missing\",\n    \"artifact_ref_artifact_related_requirement_ids_missing\"\n  ]\n}\n\u001b[90mstderr\u001b[2m | tests/acceptance/implementation-evidence-ingest.test.ts\u001b[2m > \u001b[22m\u001b[2mimplementation evidence ingest\u001b[2m > \u001b[22m\u001b[2mrejects inline full diffs and legacy write targets\n\u001b[22m\u001b[39m{\n  \"ok\": false,\n  \"mismatches\": [\n    \"artifact_legacy_write_path_forbidden:_bmad-output/runtime/gates/legacy-report.json\",\n    \"forbidden_inline_full_diff\"\n  ]\n}\n\u001b[90mstderr\u001b[2m | tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts\u001b[2m > \u001b[22m\u001b[2mrequirement-scoped delivery closeout gate\u001b[2m > \u001b[22m\u001b[2mrejects attempts that would overwrite an existing closeout attempt\n\u001b[22m\u001b[39m{\n  \"ok\": false,\n  \"error\": \"closeout attempt already exists: closeout-001\"\n}"
+    },
+    {
+      "commandId": "CMD-CLOSEOUT-ATTEMPT-SELECTION-ENCODING",
+      "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+      "runId": "run-trace-closeout-attempt-selection-001",
+      "closeoutAttemptId": "closeout-REQ-CLOSED-LOOP-DESIGN-20260519-006",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T18:44:34.110Z",
+      "completedAt": "2026-05-19T18:44:35.257Z",
+      "outputSummary": "checkedFiles=2764 findings=0"
+    }
+  ],
+  "artifactRefs": [
+    {
+      "artifactType": "diff_summary",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-CLOSEOUT-ATTEMPT-SELECTION/trace-closeout-attempt-selection-001/diff-summary.md",
+      "hash": "sha256:713dfdf59e93d774876ed96050e5c6e8ac1e9cefc75ac1a01cda8d6e97f4358c",
+      "producer": "codex",
+      "purpose": "summarize closeout attempt selection implementation delta",
+      "relatedRequirementIds": [
+        "TRACE-002",
+        "TRACE-003",
+        "TRACE-006",
+        "TRACE-024",
+        "TRACE-CLOSURE-RECONCILIATION",
+        "MUST-004",
+        "MUST-005",
+        "MUST-006",
+        "EVD-003",
+        "EVD-006",
+        "EVD-009",
+        "EVD-019",
+        "EVD-031"
+      ],
+      "status": "active",
+      "inputVersion": "TRACE-CLOSEOUT-ATTEMPT-SELECTION",
+      "outputVersion": "closeout-attempt-selection-evidence-v1"
+    },
+    {
+      "artifactType": "negative_assertion_evidence",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-CLOSEOUT-ATTEMPT-SELECTION/trace-closeout-attempt-selection-001/negative-assertions.json",
+      "hash": "sha256:8e60f46afe3caf4b79b415eed088b500d69da474f84bb4c2c8a197e26db1e23e",
+      "producer": "codex",
+      "purpose": "prove closeout attempt selection negative assertions",
+      "relatedRequirementIds": [
+        "TRACE-002",
+        "TRACE-003",
+        "TRACE-006",
+        "TRACE-024",
+        "TRACE-CLOSURE-RECONCILIATION",
+        "MUST-004",
+        "MUST-005",
+        "MUST-006",
+        "EVD-003",
+        "EVD-006",
+        "EVD-009",
+        "EVD-019",
+        "EVD-031"
+      ],
+      "status": "active",
+      "inputVersion": "TRACE-CLOSEOUT-ATTEMPT-SELECTION",
+      "outputVersion": "closeout-attempt-selection-evidence-v1"
+    },
+    {
+      "artifactType": "command_evidence",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-CLOSEOUT-ATTEMPT-SELECTION/trace-closeout-attempt-selection-001/command-run-results.json",
+      "hash": "sha256:b1e193452669da3e1cd4d141486d5d6f963fd42c148eaea84cd0221511a9375a",
+      "producer": "codex",
+      "purpose": "record closeout attempt selection acceptance and encoding command results",
+      "relatedRequirementIds": [
+        "TRACE-002",
+        "TRACE-003",
+        "TRACE-006",
+        "TRACE-024",
+        "TRACE-CLOSURE-RECONCILIATION",
+        "MUST-004",
+        "MUST-005",
+        "MUST-006",
+        "EVD-003",
+        "EVD-006",
+        "EVD-009",
+        "EVD-019",
+        "EVD-031"
+      ],
+      "status": "active",
+      "inputVersion": "TRACE-CLOSEOUT-ATTEMPT-SELECTION",
+      "outputVersion": "closeout-attempt-selection-evidence-v1"
+    },
+    {
+      "artifactType": "command_log",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-CLOSEOUT-ATTEMPT-SELECTION/trace-closeout-attempt-selection-001/CMD-CLOSEOUT-ATTEMPT-SELECTION-ACCEPTANCE.log",
+      "hash": "sha256:15ccf1535c12d84a975ab0a21756f7992daa39a3dade71405d3f02ec95a5061a",
+      "producer": "codex",
+      "purpose": "capture CMD-CLOSEOUT-ATTEMPT-SELECTION-ACCEPTANCE output for closeout attempt selection",
+      "relatedRequirementIds": [
+        "TRACE-002",
+        "TRACE-003",
+        "TRACE-006",
+        "TRACE-024",
+        "TRACE-CLOSURE-RECONCILIATION",
+        "MUST-004",
+        "MUST-005",
+        "MUST-006",
+        "EVD-003",
+        "EVD-006",
+        "EVD-009",
+        "EVD-019",
+        "EVD-031"
+      ],
+      "status": "active",
+      "inputVersion": "TRACE-CLOSEOUT-ATTEMPT-SELECTION",
+      "outputVersion": "closeout-attempt-selection-evidence-v1"
+    },
+    {
+      "artifactType": "command_log",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-CLOSEOUT-ATTEMPT-SELECTION/trace-closeout-attempt-selection-001/CMD-CLOSEOUT-ATTEMPT-SELECTION-ENCODING.log",
+      "hash": "sha256:7b4678dcfbdde86ee44cc144278a84454db0c18c79191a9d464d01f27d437304",
+      "producer": "codex",
+      "purpose": "capture CMD-CLOSEOUT-ATTEMPT-SELECTION-ENCODING output for closeout attempt selection",
+      "relatedRequirementIds": [
+        "TRACE-002",
+        "TRACE-003",
+        "TRACE-006",
+        "TRACE-024",
+        "TRACE-CLOSURE-RECONCILIATION",
+        "MUST-004",
+        "MUST-005",
+        "MUST-006",
+        "EVD-003",
+        "EVD-006",
+        "EVD-009",
+        "EVD-019",
+        "EVD-031"
+      ],
+      "status": "active",
+      "inputVersion": "TRACE-CLOSEOUT-ATTEMPT-SELECTION",
+      "outputVersion": "closeout-attempt-selection-evidence-v1"
+    }
+  ],
+  "deliveryEvidence": {
+    "requiredCommands": [
+      {
+        "commandId": "CMD-CLOSEOUT-ATTEMPT-SELECTION-ACCEPTANCE",
+        "command": "npx vitest run tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/requirement-record-schema.test.ts",
+        "commandType": "delivery_evidence",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "closeoutAttemptId": "closeout-REQ-CLOSED-LOOP-DESIGN-20260519-006",
+        "lastRunRef": {
+          "commandId": "CMD-CLOSEOUT-ATTEMPT-SELECTION-ACCEPTANCE",
+          "runId": "run-trace-closeout-attempt-selection-001",
+          "closeoutAttemptId": "closeout-REQ-CLOSED-LOOP-DESIGN-20260519-006"
+        },
+        "traceRows": [
+          "TRACE-002",
+          "TRACE-003",
+          "TRACE-006",
+          "TRACE-024",
+          "TRACE-CLOSURE-RECONCILIATION"
+        ],
+        "evidenceRefs": [
+          "EVD-003",
+          "EVD-006",
+          "EVD-009",
+          "EVD-019",
+          "EVD-031"
+        ],
+        "artifactRefs": [
+          {
+            "artifactType": "command_evidence",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-CLOSEOUT-ATTEMPT-SELECTION/trace-closeout-attempt-selection-001/command-run-results.json",
+            "hash": "sha256:b1e193452669da3e1cd4d141486d5d6f963fd42c148eaea84cd0221511a9375a",
+            "producer": "codex",
+            "purpose": "record closeout attempt selection acceptance and encoding command results",
+            "relatedRequirementIds": [
+              "TRACE-002",
+              "TRACE-003",
+              "TRACE-006",
+              "TRACE-024",
+              "TRACE-CLOSURE-RECONCILIATION",
+              "MUST-004",
+              "MUST-005",
+              "MUST-006",
+              "EVD-003",
+              "EVD-006",
+              "EVD-009",
+              "EVD-019",
+              "EVD-031"
+            ],
+            "status": "active",
+            "inputVersion": "TRACE-CLOSEOUT-ATTEMPT-SELECTION",
+            "outputVersion": "closeout-attempt-selection-evidence-v1"
+          },
+          {
+            "artifactType": "command_log",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-CLOSEOUT-ATTEMPT-SELECTION/trace-closeout-attempt-selection-001/CMD-CLOSEOUT-ATTEMPT-SELECTION-ACCEPTANCE.log",
+            "hash": "sha256:15ccf1535c12d84a975ab0a21756f7992daa39a3dade71405d3f02ec95a5061a",
+            "producer": "codex",
+            "purpose": "capture CMD-CLOSEOUT-ATTEMPT-SELECTION-ACCEPTANCE output for closeout attempt selection",
+            "relatedRequirementIds": [
+              "TRACE-002",
+              "TRACE-003",
+              "TRACE-006",
+              "TRACE-024",
+              "TRACE-CLOSURE-RECONCILIATION",
+              "MUST-004",
+              "MUST-005",
+              "MUST-006",
+              "EVD-003",
+              "EVD-006",
+              "EVD-009",
+              "EVD-019",
+              "EVD-031"
+            ],
+            "status": "active",
+            "inputVersion": "TRACE-CLOSEOUT-ATTEMPT-SELECTION",
+            "outputVersion": "closeout-attempt-selection-evidence-v1"
+          }
+        ]
+      },
+      {
+        "commandId": "CMD-CLOSEOUT-ATTEMPT-SELECTION-ENCODING",
+        "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+        "commandType": "delivery_evidence",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "closeoutAttemptId": "closeout-REQ-CLOSED-LOOP-DESIGN-20260519-006",
+        "lastRunRef": {
+          "commandId": "CMD-CLOSEOUT-ATTEMPT-SELECTION-ENCODING",
+          "runId": "run-trace-closeout-attempt-selection-001",
+          "closeoutAttemptId": "closeout-REQ-CLOSED-LOOP-DESIGN-20260519-006"
+        },
+        "traceRows": [
+          "TRACE-002",
+          "TRACE-003",
+          "TRACE-006",
+          "TRACE-024",
+          "TRACE-CLOSURE-RECONCILIATION"
+        ],
+        "evidenceRefs": [
+          "EVD-003",
+          "EVD-006",
+          "EVD-009",
+          "EVD-019",
+          "EVD-031"
+        ],
+        "artifactRefs": [
+          {
+            "artifactType": "command_evidence",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-CLOSEOUT-ATTEMPT-SELECTION/trace-closeout-attempt-selection-001/command-run-results.json",
+            "hash": "sha256:b1e193452669da3e1cd4d141486d5d6f963fd42c148eaea84cd0221511a9375a",
+            "producer": "codex",
+            "purpose": "record closeout attempt selection acceptance and encoding command results",
+            "relatedRequirementIds": [
+              "TRACE-002",
+              "TRACE-003",
+              "TRACE-006",
+              "TRACE-024",
+              "TRACE-CLOSURE-RECONCILIATION",
+              "MUST-004",
+              "MUST-005",
+              "MUST-006",
+              "EVD-003",
+              "EVD-006",
+              "EVD-009",
+              "EVD-019",
+              "EVD-031"
+            ],
+            "status": "active",
+            "inputVersion": "TRACE-CLOSEOUT-ATTEMPT-SELECTION",
+            "outputVersion": "closeout-attempt-selection-evidence-v1"
+          },
+          {
+            "artifactType": "command_log",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-CLOSEOUT-ATTEMPT-SELECTION/trace-closeout-attempt-selection-001/CMD-CLOSEOUT-ATTEMPT-SELECTION-ENCODING.log",
+            "hash": "sha256:7b4678dcfbdde86ee44cc144278a84454db0c18c79191a9d464d01f27d437304",
+            "producer": "codex",
+            "purpose": "capture CMD-CLOSEOUT-ATTEMPT-SELECTION-ENCODING output for closeout attempt selection",
+            "relatedRequirementIds": [
+              "TRACE-002",
+              "TRACE-003",
+              "TRACE-006",
+              "TRACE-024",
+              "TRACE-CLOSURE-RECONCILIATION",
+              "MUST-004",
+              "MUST-005",
+              "MUST-006",
+              "EVD-003",
+              "EVD-006",
+              "EVD-009",
+              "EVD-019",
+              "EVD-031"
+            ],
+            "status": "active",
+            "inputVersion": "TRACE-CLOSEOUT-ATTEMPT-SELECTION",
+            "outputVersion": "closeout-attempt-selection-evidence-v1"
+          }
+        ]
+      }
+    ],
+    "historicalRunRefs": [
+      {
+        "commandId": "CMD-CLOSEOUT-ATTEMPT-SELECTION-ACCEPTANCE",
+        "runId": "run-trace-closeout-attempt-selection-001",
+        "closeoutAttemptId": "closeout-REQ-CLOSED-LOOP-DESIGN-20260519-006"
+      },
+      {
+        "commandId": "CMD-CLOSEOUT-ATTEMPT-SELECTION-ENCODING",
+        "runId": "run-trace-closeout-attempt-selection-001",
+        "closeoutAttemptId": "closeout-REQ-CLOSED-LOOP-DESIGN-20260519-006"
+      }
+    ]
+  },
+  "failureRecords": [
+    {
+      "eventType": "failure_recorded",
+      "failureId": "failure:closeout-REQ-CLOSED-LOOP-DESIGN-20260519-005",
+      "type": "delivery_closeout_blocked",
+      "status": "resolved",
+      "closeoutAttemptId": "closeout-REQ-CLOSED-LOOP-DESIGN-20260519-005",
+      "blockingReasons": [
+        "superseded_by_current_attempt_required_command_selection"
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "closeout_attempt",
+          "id": "closeout-REQ-CLOSED-LOOP-DESIGN-20260519-005"
+        }
+      ]
+    }
+  ],
+  "rcaRecords": [
+    {
+      "eventType": "rca_created",
+      "rcaId": "rca:closeout-REQ-CLOSED-LOOP-DESIGN-20260519-005",
+      "type": "closeout_blocker",
+      "status": "resolved",
+      "sourceRefs": [
+        {
+          "sourceType": "failure_record",
+          "id": "failure:closeout-REQ-CLOSED-LOOP-DESIGN-20260519-005"
+        }
+      ]
+    }
+  ],
+  "requirementClosures": [
+    {
+      "requirementId": "MUST-004",
+      "status": "pass"
+    },
+    {
+      "requirementId": "MUST-005",
+      "status": "pass"
+    },
+    {
+      "requirementId": "MUST-006",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-003",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-006",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-009",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-019",
+      "status": "pass"
+    }
+  ],
+  "gateChecks": [
+    {
+      "gate": "delivery_closeout_attempt_selection",
+      "decision": "pass"
+    }
+  ],
+  "contractChecks": [
+    {
+      "contract": "current_attempt_required_command_selection",
+      "decision": "pass"
+    },
+    {
+      "contract": "blocked_closeout_attempt_immutable_remediation",
+      "decision": "pass"
+    }
+  ],
+  "closeoutAttemptId": "closeout-REQ-CLOSED-LOOP-DESIGN-20260519-006"
+}

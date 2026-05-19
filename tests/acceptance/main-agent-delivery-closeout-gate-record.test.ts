@@ -160,6 +160,7 @@ describe('requirement-scoped delivery closeout gate', () => {
               commandId: 'CMD-DELIVERY',
               blockingIfMissing: true,
               negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-pass',
               artifactRefs: [
                 evidenceArtifactRef(
                   '_bmad-output\\runtime\\requirement-records\\REQ-CLOSEOUT\\execution\\evidence.json'
@@ -198,6 +199,161 @@ describe('requirement-scoped delivery closeout gate', () => {
         closeoutAttemptId: 'closeout-pass',
         decision: 'pass',
       });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('uses latest requirement closure state instead of blocking on historical open events', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-latest-closure-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-latest-closure',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-latest-closure',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [
+          { requirementId: 'MUST-001', status: 'open' },
+          { requirementId: 'MUST-001', status: 'pass' },
+          { requirementId: 'TRACE-001', status: 'open' },
+          { requirementId: 'TRACE-001', status: 'pass' },
+        ],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-latest-closure',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(0);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.closeout.attempts[0].checks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'requirement-closures-terminal',
+            passed: true,
+            openCount: 0,
+          }),
+        ])
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('requires explicit current-attempt required command selection', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-attempt-selection-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-other-attempt',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-attempt-selection',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-attempt-selection',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(1);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.closeout.attempts[0].blockingReasons).toContain(
+        'deliveryEvidence.requiredCommands_current_attempt_missing'
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('accepts required command selection through lastRunRef closeoutAttemptId', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-last-run-ref-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              lastRunRef: {
+                commandId: 'CMD-DELIVERY',
+                runId: 'run-001',
+                closeoutAttemptId: 'closeout-last-run-ref',
+              },
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-last-run-ref',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-last-run-ref',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(0);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -274,6 +430,7 @@ describe('requirement-scoped delivery closeout gate', () => {
               commandId: 'CMD-DELIVERY',
               blockingIfMissing: true,
               negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-no-readiness',
               artifactRefs: [
                 evidenceArtifactRef(),
               ],
@@ -355,6 +512,7 @@ describe('requirement-scoped delivery closeout gate', () => {
               commandId: 'CMD-DELIVERY',
               blockingIfMissing: true,
               negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-bad-artifact',
               artifactRefs: [
                 {
                   path: '_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/execution/evidence.json',
@@ -420,6 +578,7 @@ describe('requirement-scoped delivery closeout gate', () => {
               commandId: 'CMD-DELIVERY',
               blockingIfMissing: true,
               negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-open-rca',
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -461,6 +620,86 @@ describe('requirement-scoped delivery closeout gate', () => {
     }
   });
 
+  it('uses latest failure and RCA status instead of blocking on resolved historical entries', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-latest-failure-rca-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        failureRecords: [
+          {
+            eventType: 'failure_recorded',
+            failureId: 'failure-closeout-001',
+            type: 'delivery_closeout_blocked',
+            status: 'open',
+            sourceRefs: [{ sourceType: 'closeout_attempt', id: 'closeout-old' }],
+            recordedAt: '2026-05-19T00:00:00.000Z',
+            recordedBy: 'test-agent',
+          },
+          {
+            eventType: 'failure_recorded',
+            failureId: 'failure-closeout-001',
+            type: 'delivery_closeout_blocked',
+            status: 'resolved',
+            sourceRefs: [{ sourceType: 'closeout_attempt', id: 'closeout-old' }],
+            recordedAt: '2026-05-19T00:01:00.000Z',
+            recordedBy: 'test-agent',
+          },
+        ],
+        rcaRecords: [
+          {
+            eventType: 'rca_created',
+            rcaId: 'rca-closeout-001',
+            type: 'closeout_blocker',
+            status: 'open',
+            sourceRefs: [{ sourceType: 'failure_record', id: 'failure-closeout-001' }],
+          },
+          {
+            eventType: 'rca_created',
+            rcaId: 'rca-closeout-001',
+            type: 'closeout_blocker',
+            status: 'resolved',
+            sourceRefs: [{ sourceType: 'failure_record', id: 'failure-closeout-001' }],
+          },
+        ],
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-latest-failure-rca',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-latest-failure-rca',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-latest-failure-rca',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(0);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('blocks closeout when rerun loops remain open and keeps source refs as authority', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-pending-rerun-'));
     try {
@@ -480,6 +719,7 @@ describe('requirement-scoped delivery closeout gate', () => {
               commandId: 'CMD-DELIVERY',
               blockingIfMissing: true,
               negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-pending-rerun',
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -540,6 +780,7 @@ describe('requirement-scoped delivery closeout gate', () => {
               commandId: 'CMD-DELIVERY',
               blockingIfMissing: true,
               negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-invalid-rerun-source',
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -616,6 +857,7 @@ describe('requirement-scoped delivery closeout gate', () => {
               command: 'node verify.js',
               blockingIfMissing: true,
               negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-hook-gap',
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -688,6 +930,7 @@ describe('requirement-scoped delivery closeout gate', () => {
               command: 'node verify.js',
               blockingIfMissing: true,
               negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-hook-fallback',
               artifactRefs: [evidenceArtifactRef()],
             },
           ],

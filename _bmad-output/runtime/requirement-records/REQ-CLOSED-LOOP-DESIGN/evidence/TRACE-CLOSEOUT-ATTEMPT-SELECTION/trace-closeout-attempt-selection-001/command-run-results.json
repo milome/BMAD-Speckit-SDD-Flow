@@ -1,0 +1,22 @@
+[
+  {
+    "commandId": "CMD-CLOSEOUT-ATTEMPT-SELECTION-ACCEPTANCE",
+    "command": "npx vitest run tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/requirement-record-schema.test.ts",
+    "runId": "run-trace-closeout-attempt-selection-001",
+    "closeoutAttemptId": "closeout-REQ-CLOSED-LOOP-DESIGN-20260519-006",
+    "exitCode": 0,
+    "startedAt": "2026-05-19T18:44:29.490Z",
+    "completedAt": "2026-05-19T18:44:34.109Z",
+    "outputSummary": "\u001b[22m\u001b[39m{\n  \"ok\": false,\n  \"mismatches\": [\n    \"artifact_ref_artifact_purpose_missing\",\n    \"artifact_ref_artifact_related_requirement_ids_missing\"\n  ]\n}\n\u001b[90mstderr\u001b[2m | tests/acceptance/implementation-evidence-ingest.test.ts\u001b[2m > \u001b[22m\u001b[2mimplementation evidence ingest\u001b[2m > \u001b[22m\u001b[2mrejects inline full diffs and legacy write targets\n\u001b[22m\u001b[39m{\n  \"ok\": false,\n  \"mismatches\": [\n    \"artifact_legacy_write_path_forbidden:_bmad-output/runtime/gates/legacy-report.json\",\n    \"forbidden_inline_full_diff\"\n  ]\n}\n\u001b[90mstderr\u001b[2m | tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts\u001b[2m > \u001b[22m\u001b[2mrequirement-scoped delivery closeout gate\u001b[2m > \u001b[22m\u001b[2mrejects attempts that would overwrite an existing closeout attempt\n\u001b[22m\u001b[39m{\n  \"ok\": false,\n  \"error\": \"closeout attempt already exists: closeout-001\"\n}"
+  },
+  {
+    "commandId": "CMD-CLOSEOUT-ATTEMPT-SELECTION-ENCODING",
+    "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+    "runId": "run-trace-closeout-attempt-selection-001",
+    "closeoutAttemptId": "closeout-REQ-CLOSED-LOOP-DESIGN-20260519-006",
+    "exitCode": 0,
+    "startedAt": "2026-05-19T18:44:34.110Z",
+    "completedAt": "2026-05-19T18:44:35.257Z",
+    "outputSummary": "checkedFiles=2764 findings=0"
+  }
+]

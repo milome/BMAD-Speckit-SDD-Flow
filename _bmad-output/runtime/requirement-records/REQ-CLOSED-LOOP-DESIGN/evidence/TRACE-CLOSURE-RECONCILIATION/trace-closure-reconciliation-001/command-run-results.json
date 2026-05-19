@@ -1,0 +1,22 @@
+[
+  {
+    "commandId": "CMD-TRACE-CLOSURE-RECONCILIATION-ACCEPTANCE",
+    "command": "npx vitest run tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/trace-closure-matrix.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+    "runId": "run-trace-closure-reconciliation-001",
+    "closeoutAttemptId": "closeout-trace-closure-reconciliation-001",
+    "exitCode": 0,
+    "startedAt": "2026-05-19T18:34:55.313Z",
+    "completedAt": "2026-05-19T18:34:59.421Z",
+    "outputSummary": "  \"mismatches\": [\n    \"implementation_delta_missing\"\n  ]\n}\n\u001b[90mstderr\u001b[2m | tests/acceptance/implementation-evidence-ingest.test.ts\u001b[2m > \u001b[22m\u001b[2mimplementation evidence ingest\u001b[2m > \u001b[22m\u001b[2mrejects artifact refs without pass-grade metadata\n\u001b[22m\u001b[39m{\n  \"ok\": false,\n  \"mismatches\": [\n    \"artifact_ref_artifact_purpose_missing\",\n    \"artifact_ref_artifact_related_requirement_ids_missing\"\n  ]\n}\n\u001b[90mstderr\u001b[2m | tests/acceptance/implementation-evidence-ingest.test.ts\u001b[2m > \u001b[22m\u001b[2mimplementation evidence ingest\u001b[2m > \u001b[22m\u001b[2mrejects inline full diffs and legacy write targets\n\u001b[22m\u001b[39m{\n  \"ok\": false,\n  \"mismatches\": [\n    \"artifact_legacy_write_path_forbidden:_bmad-output/runtime/gates/legacy-report.json\",\n    \"forbidden_inline_full_diff\"\n  ]\n}"
+  },
+  {
+    "commandId": "CMD-TRACE-CLOSURE-RECONCILIATION-ENCODING",
+    "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+    "runId": "run-trace-closure-reconciliation-001",
+    "closeoutAttemptId": "closeout-trace-closure-reconciliation-001",
+    "exitCode": 0,
+    "startedAt": "2026-05-19T18:34:59.424Z",
+    "completedAt": "2026-05-19T18:35:00.566Z",
+    "outputSummary": "checkedFiles=2764 findings=0"
+  }
+]

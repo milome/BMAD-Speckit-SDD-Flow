@@ -1,0 +1,19 @@
+{
+  "assertions": [
+    {
+      "id": "NEG-TRACE-CLOSURE-HISTORY-OPEN-NOT-CURRENT",
+      "statement": "Historical open requirement closure events cannot block closeout after a later pass closure exists for the same requirementId.",
+      "protectedBy": [
+        "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts"
+      ]
+    },
+    {
+      "id": "NEG-TRACE-ROWS-NOT-IMPLICITLY-CLOSED-WITHOUT-DONE",
+      "statement": "Trace rows are closed only by controlled ingest on done execution packets or explicit pass closures, not by prose or task completion.",
+      "protectedBy": [
+        "tests/acceptance/implementation-evidence-ingest.test.ts",
+        "tests/acceptance/trace-closure-matrix.test.ts"
+      ]
+    }
+  ]
+}

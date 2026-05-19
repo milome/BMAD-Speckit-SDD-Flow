@@ -1,0 +1,622 @@
+{
+  "reportType": "delivery_closeout_report",
+  "generatedAt": "2026-05-19T18:35:00.000Z",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "currentAttemptId": "closeout-REQ-CLOSED-LOOP-DESIGN-20260519-005",
+  "decision": "blocked",
+  "blockingReasons": [
+    "required_command_not_satisfied:CMD-CLOSEOUT-GATE-REGRESSION",
+    "required_command_not_satisfied:CMD-CLOSEOUT-ATTEMPT-BINDING-REGRESSION",
+    "required_command_not_satisfied:CMD-TRACE-001-CONFIRMATION-SCHEMA-REGRESSION",
+    "required_command_not_satisfied:CMD-TRACE-002-DUAL-GATE-REGRESSION",
+    "required_command_artifact_incomplete:CMD-TRACE-003-DELIVERY-CORE-REGRESSION:source_of_truth_role_not_evidence",
+    "required_command_not_satisfied:CMD-TRACE-003-DELIVERY-CORE-REGRESSION",
+    "required_command_not_satisfied:CMD-TRACE-004-ARTIFACT-CONTROL-REGRESSION",
+    "required_command_not_satisfied:CMD-TRACE-005-DASHBOARD-INGRESS-VITEST",
+    "required_command_not_satisfied:CMD-RENDER-CONFIRMATION",
+    "required_command_not_satisfied:CMD-TRACE-BINDING-ACCEPTANCE",
+    "required_command_not_satisfied:CMD-ENCODING-GATE",
+    "required_command_not_satisfied:CMD-TRACE-006-CLOSEOUT-RERUN-REGRESSION",
+    "required_command_not_satisfied:CMD-TRACE-007-PRODUCTION-LOOP-READY-TEST",
+    "required_command_not_satisfied:CMD-TRACE-008-GOVERNED-DATA-PRODUCTS",
+    "required_command_not_satisfied:CMD-TRACE-008-GOVERNED-DATA-TEST",
+    "required_command_not_satisfied:CMD-TRACE-009-DATA-GOVERNANCE-GATE",
+    "required_command_not_satisfied:CMD-TRACE-009-DATA-GOVERNANCE-TEST",
+    "required_command_not_satisfied:CMD-TRACE-010-DATASET-RELEASE-GATE",
+    "required_command_not_satisfied:CMD-TRACE-010-DATASET-RELEASE-TEST",
+    "required_command_not_satisfied:CMD-TRACE-011-BMAD-ARTIFACT-HARDCUT",
+    "required_command_not_satisfied:CMD-TRACE-011-BMAD-ARTIFACT-HARDCUT-TEST",
+    "required_command_not_satisfied:CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK",
+    "required_command_not_satisfied:CMD-TRACE-012-FUNCTIONAL-RESUME-TEST",
+    "required_command_not_satisfied:CMD-TRACE-013-PRODUCTION-LOOP-READY-CHECK",
+    "required_command_not_satisfied:CMD-TRACE-013-PRODUCTION-LOOP-READY-TEST",
+    "required_command_not_satisfied:CMD-TRACE-014-CONTROL-PLANE-ISOLATION-CHECK",
+    "required_command_not_satisfied:CMD-TRACE-014-CONTROL-PLANE-ISOLATION-TEST",
+    "required_command_not_satisfied:CMD-TRACE-015-FUNCTIONAL-RESUME-REGISTRY-CHECK",
+    "required_command_not_satisfied:CMD-TRACE-015-FUNCTIONAL-RESUME-REGISTRY-TEST",
+    "required_command_not_satisfied:CMD-TRACE-016-ENTRYFLOW-STATE-CONTROLLED-PATCH",
+    "required_command_not_satisfied:CMD-TRACE-016-ENTRYFLOW-TRACEABILITY-CHECK",
+    "required_command_not_satisfied:CMD-TRACE-016-ENTRYFLOW-TRACEABILITY-TEST",
+    "required_command_not_satisfied:CMD-TRACE-017-TRACEABILITY-POLICY-CONTROLLED-PATCH",
+    "required_command_not_satisfied:CMD-TRACE-017-ENTRYFLOW-TRACEABILITY-CHECK",
+    "required_command_not_satisfied:CMD-TRACE-017-ENTRYFLOW-TRACEABILITY-TEST",
+    "required_command_not_satisfied:CMD-TRACE-018-TRACE-STATUS-POLICY-CONTROLLED-PATCH",
+    "required_command_not_satisfied:CMD-TRACE-018-ENTRYFLOW-TRACEABILITY-CHECK",
+    "required_command_not_satisfied:CMD-TRACE-018-ENTRYFLOW-TRACEABILITY-TEST",
+    "required_command_not_satisfied:CMD-RUNTIME-POLICY-SNAPSHOT-WRITER",
+    "required_command_not_satisfied:CMD-RUNTIME-POLICY-SNAPSHOT-CHECK-PASS",
+    "required_command_not_satisfied:CMD-RUNTIME-POLICY-SNAPSHOT-ACCEPTANCE",
+    "required_command_not_satisfied:CMD-SCORING-GATES-ACCEPTANCE",
+    "required_command_not_satisfied:CMD-SCORING-GATES-PASS",
+    "required_command_not_satisfied:CMD-SCORING-POLICY-ACCEPTANCE",
+    "required_command_not_satisfied:CMD-SCORING-POLICY-PASS",
+    "required_command_not_satisfied:CMD-GATECHECK-DECISION-ACCEPTANCE",
+    "required_command_not_satisfied:CMD-CONTRACTCHECK-DECISION-ACCEPTANCE",
+    "required_command_not_satisfied:CMD-CONTRACTCHECK-DECISION-FIELD",
+    "required_command_not_satisfied:CMD-RERUN-SOURCE-AUTHORITY-ACCEPTANCE",
+    "required_command_not_satisfied:CMD-GOVERNANCE-TRANSPORT-ENVELOPE-ACCEPTANCE",
+    "required_command_not_satisfied:CMD-CODEX-HOOK-TRUST-ACCEPTANCE",
+    "required_command_not_satisfied:CMD-TRACE-027-HOOK-RECONCILIATION-ACCEPTANCE",
+    "required_command_not_satisfied:CMD-TRACE-028-ARCHITECTURE-GOVERNANCE-ACCEPTANCE",
+    "required_command_not_satisfied:CMD-TRACE-029-MAIN-AGENT-CONTROL-HARDCUT-ACCEPTANCE",
+    "required_command_not_satisfied:CMD-TRACE-029-ENCODING-GATE",
+    "required_command_not_satisfied:CMD-TRACE-CLOSURE-RECONCILIATION-ACCEPTANCE",
+    "required_command_not_satisfied:CMD-TRACE-CLOSURE-RECONCILIATION-ENCODING"
+  ],
+  "checks": [
+    {
+      "id": "implementation-readiness-gate-passed",
+      "passed": true
+    },
+    {
+      "id": "architecture-confirmation-current",
+      "passed": true,
+      "issueCount": 0
+    },
+    {
+      "id": "delivery-required-commands-present",
+      "passed": true,
+      "count": 56
+    },
+    {
+      "id": "score-gates-not-blocking-closeout",
+      "passed": true
+    },
+    {
+      "id": "hook-reconciliation-valid",
+      "passed": true,
+      "issueCount": 0
+    },
+    {
+      "id": "required-command:CMD-CLOSEOUT-GATE-REGRESSION",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-CLOSEOUT-ATTEMPT-BINDING-REGRESSION",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-TRACE-001-CONFIRMATION-SCHEMA-REGRESSION",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-TRACE-002-DUAL-GATE-REGRESSION",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-TRACE-003-DELIVERY-CORE-REGRESSION",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": false,
+      "artifactIssues": [
+        "required_command_artifact_incomplete:CMD-TRACE-003-DELIVERY-CORE-REGRESSION:source_of_truth_role_not_evidence"
+      ],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-TRACE-004-ARTIFACT-CONTROL-REGRESSION",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-TRACE-005-DASHBOARD-INGRESS-VITEST",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": false
+    },
+    {
+      "id": "required-command:CMD-RENDER-CONFIRMATION",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": false
+    },
+    {
+      "id": "required-command:CMD-TRACE-BINDING-ACCEPTANCE",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": false
+    },
+    {
+      "id": "required-command:CMD-ENCODING-GATE",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-TRACE-006-CLOSEOUT-RERUN-REGRESSION",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-TRACE-007-PRODUCTION-LOOP-READY-TEST",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": false
+    },
+    {
+      "id": "required-command:CMD-TRACE-008-GOVERNED-DATA-PRODUCTS",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": false
+    },
+    {
+      "id": "required-command:CMD-TRACE-008-GOVERNED-DATA-TEST",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-TRACE-009-DATA-GOVERNANCE-GATE",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": false
+    },
+    {
+      "id": "required-command:CMD-TRACE-009-DATA-GOVERNANCE-TEST",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-TRACE-010-DATASET-RELEASE-GATE",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": false
+    },
+    {
+      "id": "required-command:CMD-TRACE-010-DATASET-RELEASE-TEST",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-TRACE-011-BMAD-ARTIFACT-HARDCUT",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": false
+    },
+    {
+      "id": "required-command:CMD-TRACE-011-BMAD-ARTIFACT-HARDCUT-TEST",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": false
+    },
+    {
+      "id": "required-command:CMD-TRACE-012-FUNCTIONAL-RESUME-CHECK",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": false
+    },
+    {
+      "id": "required-command:CMD-TRACE-012-FUNCTIONAL-RESUME-TEST",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-TRACE-013-PRODUCTION-LOOP-READY-CHECK",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": false
+    },
+    {
+      "id": "required-command:CMD-TRACE-013-PRODUCTION-LOOP-READY-TEST",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-TRACE-014-CONTROL-PLANE-ISOLATION-CHECK",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": false
+    },
+    {
+      "id": "required-command:CMD-TRACE-014-CONTROL-PLANE-ISOLATION-TEST",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-TRACE-015-FUNCTIONAL-RESUME-REGISTRY-CHECK",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": false
+    },
+    {
+      "id": "required-command:CMD-TRACE-015-FUNCTIONAL-RESUME-REGISTRY-TEST",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-TRACE-016-ENTRYFLOW-STATE-CONTROLLED-PATCH",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": false
+    },
+    {
+      "id": "required-command:CMD-TRACE-016-ENTRYFLOW-TRACEABILITY-CHECK",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": false
+    },
+    {
+      "id": "required-command:CMD-TRACE-016-ENTRYFLOW-TRACEABILITY-TEST",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-TRACE-017-TRACEABILITY-POLICY-CONTROLLED-PATCH",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": false
+    },
+    {
+      "id": "required-command:CMD-TRACE-017-ENTRYFLOW-TRACEABILITY-CHECK",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": false
+    },
+    {
+      "id": "required-command:CMD-TRACE-017-ENTRYFLOW-TRACEABILITY-TEST",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": false
+    },
+    {
+      "id": "required-command:CMD-TRACE-018-TRACE-STATUS-POLICY-CONTROLLED-PATCH",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": false
+    },
+    {
+      "id": "required-command:CMD-TRACE-018-ENTRYFLOW-TRACEABILITY-CHECK",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": false
+    },
+    {
+      "id": "required-command:CMD-TRACE-018-ENTRYFLOW-TRACEABILITY-TEST",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": false
+    },
+    {
+      "id": "required-command:CMD-RUNTIME-POLICY-SNAPSHOT-WRITER",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": false
+    },
+    {
+      "id": "required-command:CMD-RUNTIME-POLICY-SNAPSHOT-CHECK-PASS",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": false
+    },
+    {
+      "id": "required-command:CMD-RUNTIME-POLICY-SNAPSHOT-ACCEPTANCE",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": false
+    },
+    {
+      "id": "required-command:CMD-SCORING-GATES-ACCEPTANCE",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-SCORING-GATES-PASS",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-SCORING-POLICY-ACCEPTANCE",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-SCORING-POLICY-PASS",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-GATECHECK-DECISION-ACCEPTANCE",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-CONTRACTCHECK-DECISION-ACCEPTANCE",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-CONTRACTCHECK-DECISION-FIELD",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-RERUN-SOURCE-AUTHORITY-ACCEPTANCE",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-GOVERNANCE-TRANSPORT-ENVELOPE-ACCEPTANCE",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-CODEX-HOOK-TRUST-ACCEPTANCE",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-TRACE-027-HOOK-RECONCILIATION-ACCEPTANCE",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-TRACE-028-ARCHITECTURE-GOVERNANCE-ACCEPTANCE",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-TRACE-029-MAIN-AGENT-CONTROL-HARDCUT-ACCEPTANCE",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-TRACE-029-ENCODING-GATE",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-TRACE-CLOSURE-RECONCILIATION-ACCEPTANCE",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-TRACE-CLOSURE-RECONCILIATION-ENCODING",
+      "passed": false,
+      "runPresent": false,
+      "exitCode": null,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "negative-or-regression-required",
+      "passed": true
+    },
+    {
+      "id": "requirement-closures-terminal",
+      "passed": true,
+      "openCount": 0
+    },
+    {
+      "id": "rerun-loops-closed",
+      "passed": true,
+      "openCount": 0
+    },
+    {
+      "id": "rerun-loops-source-authority-valid",
+      "passed": true,
+      "invalidCount": 0
+    },
+    {
+      "id": "rca-actions-closed",
+      "passed": true,
+      "openCount": 0
+    }
+  ]
+}

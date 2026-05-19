@@ -38,6 +38,7 @@ describe('trace closure matrix projection', () => {
             requirementClosures: [
               { requirementId: 'MUST-001', status: 'open', recordedAt: '2026-05-19T00:00:00.000Z' },
               { requirementId: 'MUST-001', status: 'pass', recordedAt: '2026-05-19T00:01:00.000Z' },
+              { requirementId: 'TRACE-001', status: 'pass', recordedAt: '2026-05-19T00:02:00.000Z' },
               { requirementId: 'NEG-001', status: 'open', recordedAt: '2026-05-19T00:01:00.000Z' },
             ],
             executionIterations: [
@@ -91,6 +92,8 @@ describe('trace closure matrix projection', () => {
         blockingReason: 'missing_execution_iteration',
       });
       expect(matrix.rows.find((row: { id: string }) => row.id === 'TRACE-001')).toMatchObject({
+        status: 'pass',
+        closed: true,
         commandIds: ['CMD-DELIVERY'],
       });
     } finally {

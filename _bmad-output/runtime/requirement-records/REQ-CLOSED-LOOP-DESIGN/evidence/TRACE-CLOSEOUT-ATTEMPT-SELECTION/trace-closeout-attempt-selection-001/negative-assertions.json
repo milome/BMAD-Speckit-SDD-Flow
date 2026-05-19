@@ -1,0 +1,18 @@
+{
+  "assertions": [
+    {
+      "id": "NEG-CLOSEOUT-ATTEMPT-SELECTS-CURRENT-COMMANDS",
+      "statement": "Delivery Closeout Gate must not require every historical deliveryEvidence.requiredCommands entry to rerun in one final attempt; it evaluates the current attempt selected commands only.",
+      "protectedBy": [
+        "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts"
+      ]
+    },
+    {
+      "id": "NEG-CLOSEOUT-FAILED-ATTEMPT-IS-IMMUTABLE",
+      "statement": "A blocked closeout attempt remains immutable; remediation records resolved failure/RCA events and creates a new closeoutAttemptId.",
+      "protectedBy": [
+        "tests/acceptance/implementation-evidence-ingest.test.ts"
+      ]
+    }
+  ]
+}
