@@ -13,6 +13,99 @@ import {
   writeRuntimeContextRegistry,
 } from '../../scripts/runtime-context-registry';
 
+function writeTestRequirementRecord(root: string): void {
+  const requirementSetId = 'REQ-CODEX-WORKER';
+  const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', requirementSetId);
+  fs.mkdirSync(path.join(base, 'recovery'), { recursive: true });
+  const record = {
+    recordId: requirementSetId,
+    requirementSetId,
+    status: 'user_confirmed',
+    flow: 'story',
+    stage: 'implement',
+    entryFlow: 'story',
+    entryFlowClass: 'full_story_entry',
+    workflowAdapter: 'bmad',
+    sourceMode: 'full_bmad',
+    sourcePath: 'docs/prd.md',
+    sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+    implementationConfirmationHash:
+      'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+    confirmationHistory: [
+      {
+        eventType: 'confirmation_recorded',
+        decision: 'pass',
+        sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        implementationConfirmationHash:
+          'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+        confirmationPageHash: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+        confirmedAt: '2026-05-19T00:00:00.000Z',
+        confirmedBy: 'test',
+      },
+    ],
+    runId: 'codex-worker-run',
+    epicId: 'epic-01',
+    storyId: 'S-codex-worker',
+    runtimePolicySnapshotRef: {
+      path: `_bmad-output/runtime/requirement-records/${requirementSetId}/recovery/runtime-policy-snapshot.json`,
+    },
+    recoveryContextRef: {
+      path: `_bmad-output/runtime/requirement-records/${requirementSetId}/recovery/recovery-context.json`,
+    },
+    implementationEntryGate: {
+      gateName: 'implementation-readiness',
+      requestedFlow: 'story',
+      recommendedFlow: 'story',
+      decision: 'pass',
+      readinessStatus: 'ready_clean',
+      blockerCodes: [],
+      blockerSummary: [],
+      rerouteRequired: false,
+      rerouteReason: null,
+      evidenceSources: {
+        readinessReportPath: null,
+        remediationArtifactPath: null,
+        executionRecordPath: null,
+        authoritativeAuditReportPath: null,
+      },
+      semanticFingerprint: 'story.md',
+      evaluatedAt: '2026-05-19T00:00:00.000Z',
+    },
+  };
+  fs.writeFileSync(path.join(base, 'requirement-record.json'), `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+  fs.writeFileSync(
+    path.join(base, 'recovery', 'runtime-policy-snapshot.json'),
+    `${JSON.stringify({ kind: 'runtime-policy-snapshot', flow: 'story', stage: 'implement', policy: { flow: 'story', stage: 'implement' } }, null, 2)}\n`,
+    'utf8'
+  );
+  fs.writeFileSync(path.join(base, 'recovery', 'recovery-context.json'), '{"kind":"recovery-context"}\n', 'utf8');
+  const indexPath = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json');
+  fs.writeFileSync(
+    indexPath,
+    `${JSON.stringify(
+      {
+        version: 1,
+        active: {
+          recordId: requirementSetId,
+          requirementSetId,
+          runId: 'codex-worker-run',
+        },
+        records: [
+          {
+            recordId: requirementSetId,
+            requirementSetId,
+            runId: 'codex-worker-run',
+            recordPath: `_bmad-output/runtime/requirement-records/${requirementSetId}/requirement-record.json`,
+          },
+        ],
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
+}
+
 function writeTestCodexAgentSpec(
   root: string,
   agentsRoot: '.codex/agents' | '_bmad/codex/agents'
@@ -45,6 +138,7 @@ function prepareCodexRoot(): string {
       runId: 'codex-worker-run',
     })
   );
+  writeTestRequirementRecord(root);
   writeTestCodexAgentSpec(root, '.codex/agents');
   return root;
 }
@@ -74,6 +168,9 @@ describe('main-agent codex worker adapter e2e', () => {
 
       const adapter = runCodexWorkerAdapter({
         projectRoot: root,
+        recordId: 'REQ-CODEX-WORKER',
+        requirementSetId: 'REQ-CODEX-WORKER',
+        runId: 'run-codex-worker',
         packetPath: instruction!.packetPath,
         taskReportPath,
         smoke: true,
@@ -86,6 +183,19 @@ describe('main-agent codex worker adapter e2e', () => {
       expect(adapter.agentRole).toBe('implementation-worker');
       expect(adapter.agentSpecPath).toContain('implementation-worker.toml');
       expect(adapter.taskReport.status).toBe('done');
+      expect(adapter.transportEnvelopeValidation.ok).toBe(true);
+      expect(adapter.transportEnvelope).toMatchObject({
+        hostKind: 'codex',
+        hostMode: 'no_hook',
+        entry: 'main-agent-codex-worker-adapter',
+        runId: 'run-codex-worker',
+        recordId: 'REQ-CODEX-WORKER',
+        requirementSetId: 'REQ-CODEX-WORKER',
+        eventType: 'execution_iteration_recorded',
+        payloadKind: 'status',
+        status: 'done',
+      });
+      expect(JSON.stringify(adapter.transportEnvelope)).not.toContain('"result"');
       expect(fs.existsSync(path.join(root, `src/codex/${instruction!.packetId}.md`))).toBe(true);
       expect(adapter.codexCommand).toEqual(['codex', 'worker-adapter-smoke']);
 
@@ -115,7 +225,7 @@ describe('main-agent codex worker adapter e2e', () => {
   it('fails closed when runtime governance cannot resolve even in smoke mode', () => {
     const root = prepareCodexRoot();
     try {
-      fs.rmSync(path.join(root, '_bmad-output', 'runtime', 'registry.json'), { force: true });
+      fs.rmSync(path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json'), { force: true });
       const instruction = buildMainAgentDispatchInstruction({
         projectRoot: root,
         flow: 'story',
@@ -297,6 +407,7 @@ describe('main-agent codex worker adapter e2e', () => {
           runId: 'codex-worker-run',
         })
       );
+      writeTestRequirementRecord(root);
       writeTestCodexAgentSpec(root, '_bmad/codex/agents');
       const instruction = buildMainAgentDispatchInstruction({
         projectRoot: root,

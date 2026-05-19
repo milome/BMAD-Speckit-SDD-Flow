@@ -6,6 +6,10 @@ import {
   updateGovernancePacketExecutionRecord,
 } from './governance-packet-execution-store';
 import type { GovernanceRerunGateResult } from './governance-remediation-runner';
+import {
+  assertGovernanceTransportEnvelope,
+  type GovernanceTransportEnvelope,
+} from './governance-transport-envelope';
 
 export interface GovernanceExecutionResultIngestInput {
   loopStateId: string;
@@ -25,6 +29,26 @@ type GovernanceExecutionResultIngestPayload = GovernanceExecutionResultIngestInp
 
 type GovernanceRerunGateResultIngestPayload = GovernanceRerunGateResultIngestInput & {
   projectRoot: string;
+};
+
+export type GovernanceExecutionResultEnvelope = GovernanceTransportEnvelope & {
+  eventType: 'execution_iteration_recorded';
+    payloadKind: 'status';
+    payload: {
+      loopStateId: string;
+      attemptNumber: number;
+      execution: GovernanceExecutionResultProjection;
+    };
+  };
+
+export type GovernanceRerunGateResultEnvelope = GovernanceTransportEnvelope & {
+  eventType: 'gate_check_recorded';
+  payloadKind: 'decision';
+  payload: {
+    loopStateId: string;
+    attemptNumber?: number;
+    rerunGate: GovernanceRerunGateResult;
+  };
 };
 
 function nowIso(): string {
@@ -114,6 +138,29 @@ export function ingestGovernanceExecutionResult(
       };
     }
   );
+}
+
+export function ingestGovernanceTransportEnvelope(
+  projectRoot: string,
+  envelope: GovernanceExecutionResultEnvelope | GovernanceRerunGateResultEnvelope
+): GovernancePacketExecutionRecord | null {
+  assertGovernanceTransportEnvelope(envelope);
+  if (envelope.eventType === 'execution_iteration_recorded') {
+    const payload = envelope.payload;
+    return ingestGovernanceExecutionResult({
+      projectRoot,
+      loopStateId: payload.loopStateId,
+      attemptNumber: payload.attemptNumber,
+      result: payload.execution,
+    });
+  }
+  const payload = envelope.payload;
+  return ingestGovernanceRerunGateResult({
+    projectRoot,
+    loopStateId: payload.loopStateId,
+    attemptNumber: payload.attemptNumber,
+    rerunGateResult: payload.rerunGate,
+  });
 }
 
 export function ingestGovernanceRerunGateResult(
@@ -209,12 +256,15 @@ function main(): void {
 
   const payload = JSON.parse(payloadArg) as
     | ({ kind: 'execution'; projectRoot: string } & GovernanceExecutionResultIngestInput)
-    | ({ kind: 'rerunGate'; projectRoot: string } & GovernanceRerunGateResultIngestInput);
+    | ({ kind: 'rerunGate'; projectRoot: string } & GovernanceRerunGateResultIngestInput)
+    | ({ kind: 'envelope'; projectRoot: string; envelope: GovernanceExecutionResultEnvelope | GovernanceRerunGateResultEnvelope });
 
   const result =
-    payload.kind === 'execution'
-      ? ingestGovernanceExecutionResult(payload.projectRoot, payload)
-      : ingestGovernanceRerunGateResult(payload.projectRoot, payload);
+    payload.kind === 'envelope'
+      ? ingestGovernanceTransportEnvelope(payload.projectRoot, payload.envelope)
+      : payload.kind === 'execution'
+        ? ingestGovernanceExecutionResult(payload.projectRoot, payload)
+        : ingestGovernanceRerunGateResult(payload.projectRoot, payload);
   process.stdout.write(JSON.stringify(result, null, 2));
 }
 

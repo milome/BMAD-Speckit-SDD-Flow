@@ -14,6 +14,10 @@ import type { StageName } from './bmad-config';
 import { loadPolicyContextFromRegistry } from './emit-runtime-policy';
 import type { RuntimeFlowId } from './runtime-governance';
 import { stableStringifyPolicy } from './stable-runtime-policy-json';
+import {
+  validateGovernanceTransportEnvelope,
+  type GovernanceTransportEnvelope,
+} from './governance-transport-envelope';
 
 type Packet = ExecutionPacket | RecommendationPacket | ResumePacket;
 
@@ -36,6 +40,11 @@ export interface CodexWorkerAdapterReport {
   runtimeGovernanceStatus: 'resolved' | 'blocked';
   runtimeGovernanceError: string | null;
   actualFilesChanged: string[];
+  transportEnvelope: GovernanceTransportEnvelope | null;
+  transportEnvelopeValidation: {
+    ok: boolean;
+    mismatches: string[];
+  };
 }
 
 interface RuntimeGovernanceResolution {
@@ -306,6 +315,48 @@ function validateTaskReport(report: TaskReport, packet: Packet, scopes: string[]
   return errors;
 }
 
+function taskReportStatusToEnvelopeStatus(status: TaskReport['status']): string {
+  if (status === 'done') return 'done';
+  if (status === 'partial') return 'partial';
+  return 'blocked';
+}
+
+function buildNoHookTransportEnvelope(input: {
+  recordId?: string;
+  requirementSetId?: string;
+  runId?: string;
+  packet: Packet;
+  taskReport: TaskReport;
+}): GovernanceTransportEnvelope {
+  return {
+    hostKind: 'codex',
+    hostMode: 'no_hook',
+    entry: 'main-agent-codex-worker-adapter',
+    runId: input.runId ?? input.packet.parentSessionId,
+    recordId: input.recordId ?? input.packet.parentSessionId,
+    requirementSetId: input.requirementSetId ?? input.recordId ?? input.packet.parentSessionId,
+    stage: input.packet.phase,
+    packetId: input.packet.packetId,
+    eventType: 'execution_iteration_recorded',
+    payloadKind: 'status',
+    status: taskReportStatusToEnvelopeStatus(input.taskReport.status),
+    sourceRefs: [{ sourceType: 'execution_packet', id: input.packet.packetId }],
+    artifactRefs: input.taskReport.evidence.map((item) => ({
+      artifactType: 'task_report_evidence',
+      sourceOfTruthRole: 'evidence',
+      path: item,
+    })),
+    payload: {
+      packetId: input.packet.packetId,
+      filesChanged: input.taskReport.filesChanged,
+      validationsRun: input.taskReport.validationsRun,
+      evidence: input.taskReport.evidence,
+      downstreamContext: input.taskReport.downstreamContext,
+      driftFlags: input.taskReport.driftFlags ?? [],
+    },
+  };
+}
+
 function listGitVisibleFiles(projectRoot: string): string[] {
   const result = spawnSync(
     'git',
@@ -478,6 +529,8 @@ export function runCodexWorkerAdapter(input: {
       runtimeGovernanceStatus: 'blocked',
       runtimeGovernanceError: 'codex agent spec missing',
       actualFilesChanged: [],
+      transportEnvelope: null,
+      transportEnvelopeValidation: { ok: false, mismatches: ['codex_agent_spec_missing'] },
     };
   }
   const runtimeGovernance = resolveRuntimeGovernanceBlock(projectRoot, {
@@ -518,6 +571,8 @@ export function runCodexWorkerAdapter(input: {
       runtimeGovernanceStatus: runtimeGovernance.status,
       runtimeGovernanceError: runtimeGovernance.error,
       actualFilesChanged: [],
+      transportEnvelope: null,
+      transportEnvelopeValidation: { ok: false, mismatches: ['runtime_governance_blocked'] },
     };
   }
   const prompt = buildPrompt({
@@ -570,6 +625,8 @@ export function runCodexWorkerAdapter(input: {
       runtimeGovernanceStatus: runtimeGovernance.status,
       runtimeGovernanceError: runtimeGovernance.error,
       actualFilesChanged: [],
+      transportEnvelope: null,
+      transportEnvelopeValidation: { ok: false, mismatches: ['codex_binary_override_denied'] },
     };
   }
   const codexCommand = input.smoke
@@ -681,6 +738,14 @@ export function runCodexWorkerAdapter(input: {
     taskReport.evidence = [...taskReport.evidence, ...validationErrors];
     writeTaskReport(taskReportPath, taskReport);
   }
+  const transportEnvelope = buildNoHookTransportEnvelope({
+    recordId: input.recordId,
+    requirementSetId: input.requirementSetId,
+    runId: input.runId,
+    packet,
+    taskReport,
+  });
+  const transportEnvelopeValidation = validateGovernanceTransportEnvelope(transportEnvelope);
 
   return {
     reportType: 'main_agent_codex_worker_adapter',
@@ -701,6 +766,8 @@ export function runCodexWorkerAdapter(input: {
     runtimeGovernanceStatus: runtimeGovernance.status,
     runtimeGovernanceError: runtimeGovernance.error,
     actualFilesChanged,
+    transportEnvelope,
+    transportEnvelopeValidation,
   };
 }
 
@@ -712,6 +779,9 @@ export function main(argv: string[]): number {
   }
   const report = runCodexWorkerAdapter({
     projectRoot: path.resolve(args.cwd ?? process.cwd()),
+    recordId: args.recordId,
+    requirementSetId: args.requirementSetId,
+    runId: args.runId,
     packetPath: path.resolve(args.packetPath),
     taskReportPath: args.taskReportPath ? path.resolve(args.taskReportPath) : undefined,
     smoke: args.smoke === 'true',
