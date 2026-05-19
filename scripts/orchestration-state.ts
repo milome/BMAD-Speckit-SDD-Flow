@@ -132,7 +132,56 @@ export interface CreateOrchestrationStateInput {
   pendingPacket?: PendingPacketPointer | null;
 }
 
+function text(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function object(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function normalizePathForRuntime(value: string): string {
+  return value.replace(/\\/g, '/');
+}
+
+function resolveActiveRequirementRecordPath(projectRoot: string): string | null {
+  const indexPath = path.join(projectRoot, '_bmad-output', 'runtime', 'requirement-records', 'index.json');
+  if (!fs.existsSync(indexPath)) return null;
+  try {
+    const index = JSON.parse(fs.readFileSync(indexPath, 'utf8')) as Record<string, unknown>;
+    const active = object(index.active) ?? object(index.currentRequirementRef) ?? object(index.currentRequirement);
+    const records = Array.isArray(index.records)
+      ? index.records.filter((item): item is Record<string, unknown> => Boolean(object(item)))
+      : [];
+    const activeRequirementSetId = text(active?.requirementSetId ?? active?.recordId);
+    const activeRecordId = text(active?.recordId);
+    const directPath = text(active?.recordPath ?? active?.path ?? active?.controlRecordPath);
+    const matched = records.find((record) => {
+      const requirementSetId = text(record.requirementSetId ?? record.recordId);
+      const recordId = text(record.recordId);
+      return (
+        (activeRequirementSetId && requirementSetId === activeRequirementSetId) ||
+        (activeRecordId && recordId === activeRecordId)
+      );
+    });
+    const recordPath = directPath || text(matched?.recordPath ?? matched?.path ?? matched?.controlRecordPath);
+    if (recordPath) return path.resolve(projectRoot, normalizePathForRuntime(recordPath));
+    if (activeRequirementSetId) {
+      return path.join(projectRoot, '_bmad-output', 'runtime', 'requirement-records', activeRequirementSetId, 'requirement-record.json');
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export function orchestrationStateDir(projectRoot: string): string {
+  const recordPath = resolveActiveRequirementRecordPath(projectRoot);
+  if (recordPath) {
+    return path.join(path.dirname(recordPath), 'orchestration', 'orchestration-state');
+  }
   return path.join(projectRoot, '_bmad-output', 'runtime', 'governance', 'orchestration-state');
 }
 

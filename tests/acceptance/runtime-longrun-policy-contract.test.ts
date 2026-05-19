@@ -21,7 +21,8 @@ describe('runtime long-run policy contract', () => {
       nextAction: 'dispatch_implement',
       pendingPacket: {
         packetId: 'packet-1',
-        packetPath: '_bmad-output/runtime/governance/packets/packet-1.json',
+        packetPath:
+          '_bmad-output/runtime/requirement-records/REQ-LONG-RUN/prompts/prompt-packets/packet-1.json',
         packetKind: 'execution',
         status: 'ready_for_main_agent',
         createdAt: '2026-04-27T00:00:00.000Z',

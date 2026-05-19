@@ -45,7 +45,7 @@ function writePacket(root: string, sessionId: string, packet: RecommendationPack
 }
 
 describe('main-agent orchestration consumer', () => {
-  it('prefers orchestration-state and recommendation packet over verdict-only routing', () => {
+  it('observes legacy orchestration-state but derives dispatch authority from requirement record', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-orch-state-'));
     try {
       const sessionId = 'story-14.1';
@@ -68,6 +68,25 @@ describe('main-agent orchestration consumer', () => {
         stage: 'implement',
         storyId: '14.5',
         runId: 'run-14-5',
+        implementationEntryGate: {
+          gateName: 'implementation-readiness',
+          requestedFlow: 'story',
+          recommendedFlow: 'story',
+          decision: 'pass',
+          readinessStatus: 'ready',
+          blockerCodes: [],
+          blockerSummary: [],
+          rerouteRequired: false,
+          rerouteReason: null,
+          evidenceSources: {
+            readinessReportPath: null,
+            remediationArtifactPath: null,
+            executionRecordPath: null,
+            authoritativeAuditReportPath: null,
+          },
+          semanticFingerprint: 'run-14-5',
+          evaluatedAt: '2026-05-19T00:00:00.000Z',
+        },
       });
       writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
       writeRuntimeContext(
@@ -107,15 +126,22 @@ describe('main-agent orchestration consumer', () => {
         stage: 'implement',
       });
 
-      expect(state.source).toBe('orchestration_state');
+      expect(state.source).toBe('requirement_record');
       expect(state.sessionId).toBe(sessionId);
       expect(state.pendingPacketStatus).toBe('ready_for_main_agent');
       expect(state.pendingPacket).toMatchObject({
         packetId: packet.packetId,
         recommendedTaskType: 'remediate',
       });
+      expect(state.runtimeResumeProjection).toMatchObject({
+        source: 'requirement_record',
+        observedLegacyState: {
+          nextAction: 'dispatch_remediation',
+          pendingPacketStatus: 'ready_for_main_agent',
+        },
+      });
       expect(state.latestGate?.decision).toBe('auto_repairable_block');
-      expect(state.mainAgentNextAction).toBe('dispatch_remediation');
+      expect(state.mainAgentNextAction).toBe('dispatch_implement');
       expect(state.mainAgentReady).toBe(true);
 
       const policy = resolveBmadHelpRuntimePolicy({
@@ -124,12 +150,12 @@ describe('main-agent orchestration consumer', () => {
         stage: 'implement',
       });
 
-      expect(policy.mainAgentOrchestration.source).toBe('orchestration_state');
+      expect(policy.mainAgentOrchestration.source).toBe('requirement_record');
       expect(policy.mainAgentOrchestration.pendingPacketStatus).toBe('ready_for_main_agent');
       expect(policy.helpRouting.mainAgentOrchestration.pendingPacketStatus).toBe(
         'ready_for_main_agent'
       );
-      expect(policy.mainAgentNextAction).toBe('dispatch_remediation');
+      expect(policy.mainAgentNextAction).toBe('dispatch_implement');
       expect(policy.mainAgentReady).toBe(true);
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -172,6 +198,13 @@ describe('main-agent orchestration consumer', () => {
         })
       );
 
+      expect(
+        resolveMainAgentOrchestrationSurface({
+          projectRoot: root,
+          flow: 'bugfix',
+          stage: 'implement',
+        }).source
+      ).toBe('orchestration_state');
       expect(
         resolveMainAgentOrchestrationSurface({
           projectRoot: root,
@@ -322,7 +355,7 @@ describe('main-agent orchestration consumer', () => {
         stage: 'implement',
       });
 
-      expect(surface.source).toBe('implementation_entry_gate');
+      expect(surface.source).toBe('requirement_record');
       expect(surface.mainAgentNextAction).toBe('await_user');
       expect(surface.mainAgentReady).toBe(false);
       expect(surface.latestGate?.decision).toBe('reroute');
@@ -401,6 +434,81 @@ describe('main-agent orchestration consumer', () => {
       expect(surface.continueDecision).toBe('blocked');
       expect(surface.mainAgentNextAction).toBe('await_user');
       expect(surface.mainAgentReady).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('does not allow legacy orchestration nextAction to become requirement-record backed projection', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-legacy-next-action-'));
+    try {
+      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+      writeRuntimeContext(
+        root,
+        defaultRuntimeContextFile({
+          flow: 'story',
+          stage: 'implement',
+          sourceMode: 'full_bmad',
+          contextScope: 'story',
+          storyId: '14.9',
+          runId: 'run-14-9',
+          artifactRoot: '_bmad-output/implementation-artifacts/epic-14/story-14.9',
+          updatedAt: new Date().toISOString(),
+        })
+      );
+      writeOrchestrationState(
+        root,
+        createDefaultOrchestrationState({
+          sessionId: 'run-14-9',
+          host: 'cursor',
+          flow: 'story',
+          currentPhase: 'implement',
+          nextAction: 'dispatch_implement',
+        })
+      );
+
+      const surface = resolveMainAgentOrchestrationSurface({
+        projectRoot: root,
+        flow: 'story',
+        stage: 'implement',
+        implementationEntryGate: {
+          gateName: 'implementation-readiness',
+          requestedFlow: 'story',
+          recommendedFlow: 'story',
+          decision: 'block',
+          readinessStatus: 'missing',
+          blockerCodes: ['missing_requirement_record'],
+          blockerSummary: ['Requirement record is missing; legacy nextAction cannot dispatch.'],
+          rerouteRequired: false,
+          rerouteReason: null,
+          evidenceSources: {
+            readinessReportPath: null,
+            remediationArtifactPath: null,
+            executionRecordPath: null,
+            authoritativeAuditReportPath: null,
+          },
+          semanticFingerprint: 'run-14-9',
+          evaluatedAt: '2026-05-19T00:00:00.000Z',
+        },
+      });
+
+      expect(surface.source).toBe('implementation_entry_gate');
+      expect(surface.mainAgentNextAction).toBe('dispatch_remediation');
+      expect(surface.mainAgentReady).toBe(true);
+      const instruction = resolveMainAgentOrchestrationSurface({
+        projectRoot: root,
+        flow: 'story',
+        stage: 'implement',
+        implementationEntryGate: null,
+      });
+      expect(instruction.pendingPacketStatus).toBe('none');
+      const after = resolveMainAgentOrchestrationSurface({
+        projectRoot: root,
+        flow: 'story',
+        stage: 'implement',
+        implementationEntryGate: null,
+      });
+      expect(after.pendingPacketStatus).toBe('none');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

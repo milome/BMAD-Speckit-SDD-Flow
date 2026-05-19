@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
-const MAPPING_RELATIVE_PATH = '_bmad-output/runtime/governance/user_story_mapping.json';
+const MAPPING_RELATIVE_PATH = '_bmad-output/runtime/requirement-records/index.json';
 const MAPPING_PATH = path.join(ROOT, ...MAPPING_RELATIVE_PATH.split('/'));
 const FIXTURE_TIMESTAMP = '2026-04-30T00:00:00.000Z';
 

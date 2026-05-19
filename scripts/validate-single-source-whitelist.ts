@@ -7,7 +7,7 @@ type JsonObject = Record<string, unknown>;
 const ROOT = process.cwd();
 
 const CONTRACT_PATH = '_bmad/_config/orchestration-governance.contract.yaml';
-const MAPPING_PATH = '_bmad-output/runtime/governance/user_story_mapping.json';
+const MAPPING_PATH = '_bmad-output/runtime/requirement-records/index.json';
 
 const CONTRACT_FIELDS = new Set([
   'version',

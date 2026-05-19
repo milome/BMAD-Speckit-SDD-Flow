@@ -185,7 +185,7 @@ function createContractFixtureRoot(): string {
   writeUserStoryMappingIndex(root, {
     version: 1,
     updatedAt: '2026-04-27T00:00:00.000Z',
-    source: '_bmad-output/runtime/governance/user_story_mapping.json',
+    source: '_bmad-output/runtime/requirement-records/index.json',
     items,
   });
   for (const item of items) {

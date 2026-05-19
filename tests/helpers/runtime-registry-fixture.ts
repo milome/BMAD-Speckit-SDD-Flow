@@ -136,6 +136,19 @@ export function writeMinimalRequirementRecordContext(
     storyId: opts.storyId,
     storySlug: opts.storySlug,
     runId,
+    architectureConfirmationState: {
+      status: 'active',
+      currentArchitectureConfirmationRunId: `arch-${runId}`,
+      currentArchitectureConfirmationHash:
+        'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+      currentArchitectureConfirmationPath: path
+        .relative(recordRoot, path.join(recordRoot, 'architecture', `architecture-confirmation-${runId}.json`))
+        .replace(/\\/g, '/'),
+      resolvedRecipeHash:
+        'sha256:5555555555555555555555555555555555555555555555555555555555555555',
+      lastEventType: 'architecture_confirmation_recorded',
+      updatedAt: '2026-05-19T00:00:00.000Z',
+    },
     artifactRoot: opts.artifactRoot,
     artifactPath: opts.artifactPath ?? opts.artifactRoot,
     sourcePath: opts.artifactPath ?? opts.artifactRoot ?? 'docs/requirements.md',

@@ -5,7 +5,7 @@ import yaml from 'js-yaml';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
-const MAPPING_RELATIVE_PATH = '_bmad-output/runtime/governance/user_story_mapping.json';
+const MAPPING_RELATIVE_PATH = '_bmad-output/runtime/requirement-records/index.json';
 const MAPPING_PATH = path.join(ROOT, MAPPING_RELATIVE_PATH);
 
 function ensureMappingFixture(): void {

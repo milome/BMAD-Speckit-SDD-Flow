@@ -49,7 +49,7 @@ describe('adaptive intake governance gate', () => {
       bootstrapProject(root, {
         version: 1,
         updatedAt: new Date().toISOString(),
-        source: '_bmad-output/runtime/governance/user_story_mapping.json',
+        source: '_bmad-output/runtime/requirement-records/index.json',
         items: [
           {
             requirementId: 'REQ-PAYMENTS-01',
@@ -96,7 +96,7 @@ describe('adaptive intake governance gate', () => {
       bootstrapProject(root, {
         version: 1,
         updatedAt: new Date().toISOString(),
-        source: '_bmad-output/runtime/governance/user_story_mapping.json',
+        source: '_bmad-output/runtime/requirement-records/index.json',
         items: [
           {
             requirementId: 'REQ-DOCS-01',
@@ -134,7 +134,7 @@ describe('adaptive intake governance gate', () => {
       bootstrapProject(root, {
         version: 1,
         updatedAt: new Date().toISOString(),
-        source: '_bmad-output/runtime/governance/user_story_mapping.json',
+        source: '_bmad-output/runtime/requirement-records/index.json',
         items: [
           {
             requirementId: 'REQ-LEDGER-01',
@@ -186,7 +186,7 @@ describe('adaptive intake governance gate', () => {
       bootstrapProject(root, {
         version: 1,
         updatedAt: new Date().toISOString(),
-        source: '_bmad-output/runtime/governance/user_story_mapping.json',
+        source: '_bmad-output/runtime/requirement-records/index.json',
         items: [
           {
             requirementId: 'REQ-REROUTE-01',
@@ -251,7 +251,7 @@ describe('adaptive intake governance gate', () => {
       bootstrapProject(root, {
         version: 1,
         updatedAt: new Date().toISOString(),
-        source: '_bmad-output/runtime/governance/user_story_mapping.json',
+        source: '_bmad-output/runtime/requirement-records/index.json',
         items: [],
       });
 

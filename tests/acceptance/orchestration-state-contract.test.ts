@@ -44,6 +44,62 @@ describe('orchestration state contract', () => {
     }
   });
 
+  it('uses requirement-scoped orchestration state when an active requirement index exists', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'orch-state-req-scoped-'));
+    try {
+      const recordDir = path.join(
+        root,
+        '_bmad-output',
+        'runtime',
+        'requirement-records',
+        'REQSET-ORCH'
+      );
+      const recordPath = path.join(recordDir, 'requirement-record.json');
+      require('node:fs').mkdirSync(recordDir, { recursive: true });
+      require('node:fs').writeFileSync(
+        recordPath,
+        JSON.stringify({ recordId: 'REQ-ORCH', requirementSetId: 'REQSET-ORCH' }) + '\n',
+        'utf8'
+      );
+      require('node:fs').writeFileSync(
+        path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json'),
+        JSON.stringify({
+          version: 1,
+          active: { recordId: 'REQ-ORCH', requirementSetId: 'REQSET-ORCH' },
+          records: [{ recordId: 'REQ-ORCH', requirementSetId: 'REQSET-ORCH', recordPath: path.relative(root, recordPath).replace(/\\/g, '/') }],
+        }) + '\n',
+        'utf8'
+      );
+
+      writeOrchestrationState(
+        root,
+        createDefaultOrchestrationState({
+          sessionId: 'session-req',
+          host: 'cursor',
+          flow: 'story',
+          currentPhase: 'implement',
+          nextAction: 'dispatch_implement',
+        })
+      );
+
+      expect(orchestrationStatePath(root, 'session-req')).toContain(
+        path.join(
+          '_bmad-output',
+          'runtime',
+          'requirement-records',
+          'REQSET-ORCH',
+          'orchestration',
+          'orchestration-state'
+        )
+      );
+      expect(orchestrationStatePath(root, 'session-req')).not.toContain(
+        path.join('_bmad-output', 'runtime', 'governance', 'orchestration-state')
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('claims, completes, and invalidates pending packets through state transitions', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'orch-state-packet-'));
     try {
