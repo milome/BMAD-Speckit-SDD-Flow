@@ -1,0 +1,124 @@
+schemaVersion: architecture-confirmation-hash-recipe.contract/v1
+recipeVersion: architecture-confirmation-hash/v1
+description: >
+  Canonical hash recipe for requirement-scoped architecture confirmations.
+  Producers, controlled ingest, Implementation Readiness Gate, and Delivery
+  Closeout Gate must resolve this file instead of embedding private hash logic.
+
+canonicalization:
+  encoding: utf8
+  bom: forbidden
+  newline: LF
+  jsonCanonicalization:
+    objectKeyOrder: lexicographic
+    preserveNumberFormat: false
+    preserveInsignificantWhitespace: false
+    nullPolicy: include_explicit_nulls
+  arrayOrdering:
+    targetPaths: lexicographic
+    forbiddenChanges: lexicographic
+    consumerImpactScan: fixed_category_order
+    governanceImpactScan: fixed_category_order
+    fullArchitectureTriggerMatrix: fixed_category_order
+    evidenceRefs: lexicographic
+
+pathNormalization:
+  rootRelative: true
+  separator: /
+  lowercaseWindowsDriveLetter: true
+  trimTrailingSlash: true
+  removeDotSegments: true
+  deduplicate: true
+  sort: lexicographic
+
+fixedCategoryOrder:
+  consumerImpactScan:
+    - product_capability
+    - data_model
+    - api_or_integration
+    - frontend_ux
+    - security_compliance
+    - operations_deployment
+    - reliability_performance
+    - testing_strategy
+    - compatibility_migration
+    - cross_module_impact
+    - user_commitment
+    - ai_automation
+  governanceImpactScan:
+    - shared_schema_type_contract_event_registry
+    - orchestration_hook_gate_ingest_rerun_closeout
+    - scoring_sft_dashboard_data_routes
+    - runtime_policy_registry_host_mode_fallback
+    - consumer_install_skill_hook_template_surface
+
+volatileFieldsExcludedFromArtifactHash:
+  - generatedAt
+  - renderedAt
+  - checkedAt
+  - confirmedAt
+  - htmlPath
+  - htmlHash
+  - renderMetadata
+  - temporaryLogPath
+  - localAbsolutePath
+
+hashInputs:
+  targetPathsHash:
+    includes:
+      - implementationTasks[].targetPaths[]
+      - implementationTasks[].forbiddenChanges[]
+      - consumerInstallSurfacePaths[]
+      - sharedSchemaTypeContractPaths[]
+    normalization: pathNormalization
+  consumerImpactScanHash:
+    includes:
+      - consumerImpactScan[]
+    ordering: fixedCategoryOrder.consumerImpactScan
+  governanceImpactScanHash:
+    includes:
+      - governanceImpactScan[]
+    ordering: fixedCategoryOrder.governanceImpactScan
+  currentArtifactHash:
+    includes:
+      - architecture confirmation JSON body
+    excludes: volatileFieldsExcludedFromArtifactHash
+
+stateTransitionHashCoverage:
+  requiredHashFields:
+    - sourceDocumentHash
+    - implementationConfirmationHash
+    - targetPathsHash
+    - consumerImpactScanHash
+    - governanceImpactScanHash
+    - currentArtifactHash
+    - resolvedRecipeHash
+  eachHashMustDeclareRecipeVersion: true
+  allowedToStatusValues:
+    - active
+    - stale
+    - blocked
+    - missing
+    - superseded
+  allowedReasonCodes:
+    - hash_match
+    - source_hash_mismatch
+    - implementation_confirmation_hash_mismatch
+    - target_paths_hash_mismatch
+    - consumer_impact_scan_hash_mismatch
+    - governance_impact_scan_hash_mismatch
+    - artifact_hash_mismatch
+    - current_confirmation_missing
+    - current_artifact_missing
+    - cannot_validate_current_confirmation
+
+controlledIngestRules:
+  missingRecipeDecision: blocked
+  invalidRecipeDecision: blocked
+  resolverBypassDecision: blocked
+  privateHashLogicDecision: blocked
+  recipeVersionMismatchDecision: blocked
+  hashMismatchDecision: fail
+  hashMatchDecision: pass
+  staleMustBePersisted: true
+  memoryOnlyStaleCheckForbidden: true

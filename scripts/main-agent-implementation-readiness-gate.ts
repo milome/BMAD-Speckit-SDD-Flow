@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { resolveArchitectureConfirmationHashRecipe } from './architecture-confirmation-hash-recipe';
 
 type JsonObject = Record<string, unknown>;
 type ReadinessDecision = 'pass' | 'blocked';
@@ -73,6 +74,11 @@ function hasBlockingOpenQuestion(record: JsonObject): boolean {
   );
 }
 
+function latestArchitectureStateCheck(record: JsonObject): JsonObject | null {
+  const checks = objects(record.architectureConfirmationStateChecks);
+  return checks.length > 0 ? checks[checks.length - 1] : null;
+}
+
 function evaluate(record: JsonObject): {
   decision: ReadinessDecision;
   blockingReasons: string[];
@@ -113,6 +119,26 @@ function evaluate(record: JsonObject): {
     Boolean(text(architectureState.currentArchitectureConfirmationHash));
   checks.push({ id: 'architecture-confirmation-current', passed: Boolean(architectureActive) });
   if (!architectureActive) blockingReasons.push('architecture_confirmation_not_active');
+
+  let resolvedRecipeHash = '';
+  try {
+    resolvedRecipeHash = resolveArchitectureConfirmationHashRecipe().resolvedRecipeHash;
+  } catch {
+    blockingReasons.push('architecture_hash_recipe_unresolved');
+  }
+  const architectureRecipeCurrent =
+    Boolean(resolvedRecipeHash) && text(architectureState?.resolvedRecipeHash) === resolvedRecipeHash;
+  checks.push({ id: 'architecture-confirmation-recipe-current', passed: architectureRecipeCurrent });
+  if (!architectureRecipeCurrent) blockingReasons.push('architecture_confirmation_resolved_recipe_hash_not_current');
+
+  const stateCheck = latestArchitectureStateCheck(record);
+  const stateCheckPassed =
+    Boolean(stateCheck) &&
+    text(stateCheck?.decision) === 'pass' &&
+    text((stateCheck?.stateTransition as JsonObject | undefined)?.toStatus) === 'active' &&
+    text(stateCheck?.resolvedRecipeHash) === resolvedRecipeHash;
+  checks.push({ id: 'architecture-confirmation-state-check-current', passed: stateCheckPassed });
+  if (!stateCheckPassed) blockingReasons.push('architecture_confirmation_state_check_not_current');
 
   const blockingQuestion = hasBlockingOpenQuestion(record);
   checks.push({ id: 'no-blocking-open-questions', passed: !blockingQuestion });

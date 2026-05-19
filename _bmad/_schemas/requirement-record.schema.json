@@ -35,6 +35,14 @@
       "items": { "$ref": "#/$defs/confirmationEvent" }
     },
     "architectureConfirmationState": { "$ref": "#/$defs/architectureConfirmationState" },
+    "architectureConfirmations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/architectureConfirmationEvent" }
+    },
+    "architectureConfirmationStateChecks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/architectureConfirmationStateCheck" }
+    },
     "executionIterations": {
       "type": "array",
       "items": { "$ref": "#/$defs/executionIteration" }
@@ -352,8 +360,98 @@
         "currentArchitectureConfirmationRunId": { "$ref": "#/$defs/nonEmptyString" },
         "currentArchitectureConfirmationHash": { "$ref": "#/$defs/sha256" },
         "currentArchitectureConfirmationPath": { "$ref": "#/$defs/nonEmptyString" },
+        "resolvedRecipeHash": { "$ref": "#/$defs/sha256" },
+        "staleInputs": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/nonEmptyString" }
+        },
         "lastEventType": { "$ref": "#/$defs/nonEmptyString" },
         "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "architectureConfirmationEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eventType",
+        "recordId",
+        "requirementSetId",
+        "runId",
+        "decision",
+        "sourceDocumentHash",
+        "implementationConfirmationHash",
+        "resolvedRecipeHash",
+        "architectureConfirmationArtifactHash",
+        "architectureConfirmationPath",
+        "confirmedAt",
+        "confirmedBy"
+      ],
+      "properties": {
+        "eventType": { "const": "architecture_confirmation_recorded" },
+        "recordId": { "$ref": "#/$defs/nonEmptyString" },
+        "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
+        "runId": { "$ref": "#/$defs/nonEmptyString" },
+        "decision": { "enum": ["full_architecture_confirmed", "lightweight_architecture_confirmed", "architecture_reaudit_blocked"] },
+        "sourceDocumentHash": { "$ref": "#/$defs/sha256" },
+        "implementationConfirmationHash": { "$ref": "#/$defs/sha256" },
+        "resolvedRecipeHash": { "$ref": "#/$defs/sha256" },
+        "architectureConfirmationHashRecipe": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "architectureConfirmationArtifactHash": { "$ref": "#/$defs/sha256" },
+        "targetPathsHash": { "$ref": "#/$defs/sha256" },
+        "consumerImpactScanHash": { "$ref": "#/$defs/sha256" },
+        "governanceImpactScanHash": { "$ref": "#/$defs/sha256" },
+        "staleInputs": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "artifactRef": { "$ref": "#/$defs/artifactRef" },
+        "architectureConfirmationPath": { "$ref": "#/$defs/nonEmptyString" },
+        "renderReportPath": { "$ref": "#/$defs/nonEmptyString" },
+        "htmlPath": { "$ref": "#/$defs/nonEmptyString" },
+        "confirmationText": { "$ref": "#/$defs/nonEmptyString" },
+        "confirmedAt": { "type": "string", "format": "date-time" },
+        "confirmedBy": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "architectureConfirmationStateCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eventType", "checkId", "decision", "resolvedRecipeHash", "stateTransition", "checkedAt", "checkedBy"],
+      "properties": {
+        "eventType": { "const": "architecture_confirmation_state_checked" },
+        "recordId": { "$ref": "#/$defs/nonEmptyString" },
+        "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
+        "checkId": { "$ref": "#/$defs/nonEmptyString" },
+        "decision": { "enum": ["pass", "fail", "blocked"] },
+        "resolvedRecipeHash": { "$ref": "#/$defs/sha256" },
+        "stateTransition": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["fromStatus", "toStatus", "reasonCode", "previousHashes", "currentHashes", "mismatchFields", "recipeVersion"],
+          "properties": {
+            "fromStatus": { "enum": ["active", "stale", "blocked", "missing", "superseded"] },
+            "toStatus": { "enum": ["active", "stale", "blocked", "missing", "superseded"] },
+            "reasonCode": { "$ref": "#/$defs/nonEmptyString" },
+            "previousHashes": {
+              "type": "object",
+              "additionalProperties": { "$ref": "#/$defs/nonEmptyString" }
+            },
+            "currentHashes": {
+              "type": "object",
+              "additionalProperties": { "$ref": "#/$defs/nonEmptyString" }
+            },
+            "mismatchFields": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/nonEmptyString" }
+            },
+            "recipeVersion": { "const": "architecture-confirmation-hash/v1" }
+          }
+        },
+        "checkedAt": { "type": "string", "format": "date-time" },
+        "checkedBy": { "$ref": "#/$defs/nonEmptyString" }
       }
     },
     "executionIteration": {

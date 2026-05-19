@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
 import { describe, expect, it } from 'vitest';
+import { resolveArchitectureConfirmationHashRecipe } from '../../scripts/architecture-confirmation-hash-recipe';
 
 const repoRoot = process.cwd();
 const schemaPath = path.join(repoRoot, '_bmad', '_schemas', 'requirement-record.schema.json');
@@ -73,6 +74,7 @@ function loadValidator() {
 }
 
 function validRecord() {
+  const recipe = resolveArchitectureConfirmationHashRecipe();
   return {
     recordId: 'REQ-SCHEMA-001',
     requirementSetId: 'REQ-SCHEMA-001',
@@ -124,9 +126,78 @@ function validRecord() {
         'sha256:4444444444444444444444444444444444444444444444444444444444444444',
       currentArchitectureConfirmationPath:
         '_bmad-output/runtime/requirement-records/REQ-SCHEMA-001/architecture/architecture-confirmation-arch-001.json',
+      resolvedRecipeHash: recipe.resolvedRecipeHash,
+      staleInputs: {
+        sourceDocumentHash:
+          'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        implementationConfirmationHash:
+          'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+        currentArtifactHash:
+          'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+        resolvedRecipeHash: recipe.resolvedRecipeHash,
+      },
       lastEventType: 'architecture_confirmation_recorded',
       updatedAt: '2026-05-19T00:00:00.000Z',
     },
+    architectureConfirmations: [
+      {
+        eventType: 'architecture_confirmation_recorded',
+        recordId: 'REQ-SCHEMA-001',
+        requirementSetId: 'REQ-SCHEMA-001',
+        runId: 'arch-001',
+        decision: 'full_architecture_confirmed',
+        sourceDocumentHash:
+          'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        implementationConfirmationHash:
+          'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+        resolvedRecipeHash: recipe.resolvedRecipeHash,
+        architectureConfirmationHashRecipe: recipe,
+        architectureConfirmationArtifactHash:
+          'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+        architectureConfirmationPath:
+          '_bmad-output/runtime/requirement-records/REQ-SCHEMA-001/architecture/architecture-confirmation-arch-001.json',
+        confirmationText: 'confirmed architecture hashes',
+        confirmedAt: '2026-05-19T00:00:00.000Z',
+        confirmedBy: 'user',
+      },
+    ],
+    architectureConfirmationStateChecks: [
+      {
+        eventType: 'architecture_confirmation_state_checked',
+        recordId: 'REQ-SCHEMA-001',
+        requirementSetId: 'REQ-SCHEMA-001',
+        checkId: 'architecture-state:2026-05-19T00:00:00.500Z',
+        decision: 'pass',
+        resolvedRecipeHash: recipe.resolvedRecipeHash,
+        stateTransition: {
+          fromStatus: 'active',
+          toStatus: 'active',
+          reasonCode: 'hash_match',
+          previousHashes: {
+            sourceDocumentHash:
+              'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+            implementationConfirmationHash:
+              'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+            currentArtifactHash:
+              'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+            resolvedRecipeHash: recipe.resolvedRecipeHash,
+          },
+          currentHashes: {
+            sourceDocumentHash:
+              'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+            implementationConfirmationHash:
+              'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+            currentArtifactHash:
+              'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+            resolvedRecipeHash: recipe.resolvedRecipeHash,
+          },
+          mismatchFields: [],
+          recipeVersion: recipe.recipeVersion,
+        },
+        checkedAt: '2026-05-19T00:00:00.500Z',
+        checkedBy: 'codex',
+      },
+    ],
     gateChecks: [
       {
         eventType: 'gate_check_recorded',
