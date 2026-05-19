@@ -120,6 +120,32 @@ function containsForbiddenField(value: unknown, field: string): boolean {
   return Object.prototype.hasOwnProperty.call(obj, field) || Object.values(obj).some((item) => containsForbiddenField(item, field));
 }
 
+function legacyResultToDecision(value: unknown): string {
+  const result = text(value).toLowerCase();
+  const map: Record<string, string> = {
+    ok: 'pass',
+    passed: 'pass',
+    pass: 'pass',
+    success: 'pass',
+    failed: 'fail',
+    fail: 'fail',
+    failure: 'fail',
+    blocked: 'blocked',
+    block: 'blocked',
+    not_applicable: 'not_applicable',
+    skipped_by_policy: 'skipped_by_policy',
+  };
+  return map[result] ?? result;
+}
+
+function normalizeGateChecks(packet: JsonObject): JsonObject[] {
+  return arrayOfObjects(packet.gateChecks).map((gate) => {
+    const decision = text(gate.decision) || legacyResultToDecision(gate.result);
+    const { result: _legacyResult, ...rest } = gate;
+    return { ...rest, decision };
+  });
+}
+
 function requireHashMatch(packet: JsonObject, record: JsonObject): string[] {
   const mismatches: string[] = [];
   for (const field of ['sourceDocumentHash', 'implementationConfirmationHash']) {
@@ -428,7 +454,11 @@ function validatePacket(packet: JsonObject, record: JsonObject): string[] {
     ...validateFailureRecords(packet),
     ...validateRerunLoops(packet),
   ];
-  if (containsForbiddenField(packet, 'result')) mismatches.push('forbidden_result_field');
+  const packetWithoutLegacyGateResults = {
+    ...packet,
+    gateChecks: normalizeGateChecks(packet),
+  };
+  if (containsForbiddenField(packetWithoutLegacyGateResults, 'result')) mismatches.push('forbidden_result_field');
   if (containsForbiddenField(packet, 'fullDiff')) mismatches.push('forbidden_inline_full_diff');
   if (containsForbiddenField(packet, 'diffPatch')) mismatches.push('forbidden_inline_diff_patch');
   if (containsForbiddenField(packet, 'inlineDiff')) mismatches.push('forbidden_inline_diff');
@@ -442,7 +472,7 @@ function validatePacket(packet: JsonObject, record: JsonObject): string[] {
     if (!text(closure.requirementId)) mismatches.push('closure_requirement_id_missing');
     if (!CLOSURE_STATUSES.has(text(closure.status))) mismatches.push('closure_status_invalid');
   }
-  for (const gate of arrayOfObjects(packet.gateChecks)) {
+  for (const gate of normalizeGateChecks(packet)) {
     if (!text(gate.gate)) mismatches.push('gate_missing');
     if (!GATE_DECISIONS.has(text(gate.decision))) mismatches.push('gate_decision_invalid');
   }
@@ -578,7 +608,7 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
     recordedAt,
     recordedBy,
   }));
-  const gateEvents = arrayOfObjects(packet.gateChecks).map((gate) => ({
+  const gateEvents = normalizeGateChecks(packet).map((gate) => ({
     eventType: 'gate_check_recorded',
     recordId,
     requirementSetId,

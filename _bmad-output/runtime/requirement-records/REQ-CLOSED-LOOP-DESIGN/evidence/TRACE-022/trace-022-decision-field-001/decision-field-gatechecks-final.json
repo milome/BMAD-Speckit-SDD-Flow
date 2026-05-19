@@ -1,0 +1,20 @@
+{
+  "reportType": "decision_field_check",
+  "target": "gateChecks",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "decision": "pass",
+  "blockingReasons": [],
+  "checks": [
+    {
+      "id": "gate-checks-present",
+      "passed": true,
+      "count": 67
+    },
+    {
+      "id": "gate-checks-decision-only",
+      "passed": true,
+      "invalidCount": 0
+    }
+  ]
+}

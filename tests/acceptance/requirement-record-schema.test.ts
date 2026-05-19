@@ -232,6 +232,15 @@ describe('requirement-record.schema.json', () => {
     expect(JSON.stringify(validate.errors)).toContain('result');
   });
 
+  it('rejects gateChecks result even when decision is present', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+    record.gateChecks[0] = { ...record.gateChecks[0], decision: 'pass', result: 'pass' } as never;
+
+    expect(validate(record)).toBe(false);
+    expect(JSON.stringify(validate.errors)).toContain('result');
+  });
+
   it('rejects dashboard, score, and report fields as requirement-record control sources', () => {
     const validate = loadValidator();
     const record = {

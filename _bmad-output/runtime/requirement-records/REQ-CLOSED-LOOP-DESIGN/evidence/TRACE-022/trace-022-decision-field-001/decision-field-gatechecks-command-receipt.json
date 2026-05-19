@@ -1,0 +1,10 @@
+{
+  "commandId": "CMD-GATECHECK-DECISION-FIELD",
+  "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-decision-field-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --target gateChecks --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-022/trace-022-decision-field-001/decision-field-gatechecks-pass.json --json",
+  "runId": "run-trace-022-decision-field-001",
+  "closeoutAttemptId": "closeout-trace-022-decision-field-001",
+  "exitCode": 0,
+  "startedAt": "2026-05-19T16:09:20.0298504Z",
+  "completedAt": "2026-05-19T16:09:20.8308065Z",
+  "outputSummary": "GateChecks decision-only field check passed."
+}

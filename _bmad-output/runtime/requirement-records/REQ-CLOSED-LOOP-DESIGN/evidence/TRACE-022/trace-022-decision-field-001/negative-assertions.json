@@ -1,0 +1,19 @@
+{
+  "assertions": [
+    {
+      "id": "NEG-017-A",
+      "text": "Canonical gateChecks[].result is rejected by requirement-record schema.",
+      "validatedBy": "tests/acceptance/requirement-record-schema.test.ts"
+    },
+    {
+      "id": "NEG-017-B",
+      "text": "Legacy gateChecks[].result is mapped to decision only at ingest boundary and is not persisted.",
+      "validatedBy": "tests/acceptance/implementation-evidence-ingest.test.ts"
+    },
+    {
+      "id": "OUT-015-A",
+      "text": "New gate/control checks read gateChecks[].decision, not gateChecks[].result.",
+      "validatedBy": "tests/acceptance/main-agent-decision-field-check.test.ts"
+    }
+  ]
+}

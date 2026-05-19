@@ -1,0 +1,308 @@
+{
+  "eventType": "execution_iteration_recorded",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "executionIterationId": "exec-trace-022-decision-field-001",
+  "runId": "run-trace-022-decision-field-001",
+  "status": "done",
+  "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+  "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
+  "architectureConfirmationHash": "sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+  "traceRows": [
+    "TRACE-022"
+  ],
+  "taskRefs": [
+    "TASK-DECISION-FIELD-CANONICALIZATION"
+  ],
+  "evidenceRefs": [
+    "EVD-001",
+    "EVD-004",
+    "EVD-029"
+  ],
+  "filesChanged": [
+    "scripts/ingest-implementation-evidence.ts",
+    "scripts/main-agent-decision-field-check.ts",
+    "tests/acceptance/implementation-evidence-ingest.test.ts",
+    "tests/acceptance/requirement-record-schema.test.ts",
+    "tests/acceptance/main-agent-decision-field-check.test.ts"
+  ],
+  "implementationDelta": {
+    "filesChanged": [
+      "scripts/ingest-implementation-evidence.ts",
+      "scripts/main-agent-decision-field-check.ts",
+      "tests/acceptance/implementation-evidence-ingest.test.ts",
+      "tests/acceptance/requirement-record-schema.test.ts",
+      "tests/acceptance/main-agent-decision-field-check.test.ts"
+    ],
+    "diffSummaryRef": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-022/trace-022-decision-field-001/implementation-delta-summary.md",
+    "behaviorAffecting": true,
+    "negativeAssertionArtifactRefs": [
+      {
+        "artifactType": "negative_assertion_report",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-022/trace-022-decision-field-001/negative-assertions.json",
+        "contentHash": "sha256:9958f922575c35b170dbcfd6050402ee6823e9e12cc2e9ff473f6828d47dec8d",
+        "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-022 implementation",
+        "purpose": "TRACE-022 negative assertions for gateChecks result hard-cut.",
+        "relatedRequirementIds": [
+          "MUST-029",
+          "NEG-017",
+          "OUT-015",
+          "EVD-001",
+          "EVD-004",
+          "EVD-029",
+          "TRACE-022"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+        "outputVersion": "negative_assertion_report/v1",
+        "traceRows": [
+          "TRACE-022"
+        ],
+        "evidenceRefs": [
+          "EVD-029"
+        ]
+      }
+    ]
+  },
+  "diffSummary": "Canonicalize gateChecks control field to decision and map legacy result only at ingest boundary.",
+  "commandRuns": [
+    {
+      "commandId": "CMD-GATECHECK-DECISION-ACCEPTANCE",
+      "command": "npx vitest run tests/acceptance/main-agent-decision-field-check.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/main-agent-scoring-gates-check.test.ts",
+      "runId": "run-trace-022-decision-field-001",
+      "closeoutAttemptId": "closeout-trace-022-decision-field-001",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T16:09:01.000Z",
+      "completedAt": "2026-05-19T16:09:03.000Z",
+      "outputSummary": "5 test files passed; 40 tests passed."
+    },
+    {
+      "commandId": "CMD-GATECHECK-DECISION-FIELD",
+      "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-decision-field-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --target gateChecks --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-022/trace-022-decision-field-001/decision-field-gatechecks-pass.json --json",
+      "runId": "run-trace-022-decision-field-001",
+      "closeoutAttemptId": "closeout-trace-022-decision-field-001",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T16:09:20.0298504Z",
+      "completedAt": "2026-05-19T16:09:20.8308065Z",
+      "outputSummary": "GateChecks decision-only field check passed."
+    }
+  ],
+  "artifactRefs": [
+    {
+      "artifactType": "decision_field_gate_report",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-022/trace-022-decision-field-001/decision-field-gatechecks-pass.json",
+      "contentHash": "sha256:15239bb0f8cbfac3f72f1595714cff833517f05aa0b56a077933796f7bc0fa0d",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-022 implementation",
+      "purpose": "Real gateChecks decision-only report for REQ-CLOSED-LOOP-DESIGN.",
+      "relatedRequirementIds": [
+        "MUST-029",
+        "NEG-017",
+        "OUT-015",
+        "EVD-001",
+        "EVD-004",
+        "EVD-029",
+        "TRACE-022"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "decision_field_gate_report/v1",
+      "traceRows": [
+        "TRACE-022"
+      ],
+      "evidenceRefs": [
+        "EVD-029"
+      ]
+    },
+    {
+      "artifactType": "command_receipt",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-022/trace-022-decision-field-001/decision-field-gatechecks-command-receipt.json",
+      "contentHash": "sha256:12a9a7ea8bd025e0aeca7f0808fe225ab9c583c79cc71bf09bc0e2ca56a1ee43",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-022 implementation",
+      "purpose": "Command receipt for gateChecks decision-only verification.",
+      "relatedRequirementIds": [
+        "MUST-029",
+        "NEG-017",
+        "OUT-015",
+        "EVD-001",
+        "EVD-004",
+        "EVD-029",
+        "TRACE-022"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "command_receipt/v1",
+      "traceRows": [
+        "TRACE-022"
+      ],
+      "evidenceRefs": [
+        "EVD-029"
+      ]
+    },
+    {
+      "artifactType": "negative_assertion_report",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-022/trace-022-decision-field-001/negative-assertions.json",
+      "contentHash": "sha256:9958f922575c35b170dbcfd6050402ee6823e9e12cc2e9ff473f6828d47dec8d",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-022 implementation",
+      "purpose": "TRACE-022 negative assertions for gateChecks result hard-cut.",
+      "relatedRequirementIds": [
+        "MUST-029",
+        "NEG-017",
+        "OUT-015",
+        "EVD-001",
+        "EVD-004",
+        "EVD-029",
+        "TRACE-022"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "negative_assertion_report/v1",
+      "traceRows": [
+        "TRACE-022"
+      ],
+      "evidenceRefs": [
+        "EVD-029"
+      ]
+    },
+    {
+      "artifactType": "implementation_delta_summary",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-022/trace-022-decision-field-001/implementation-delta-summary.md",
+      "contentHash": "sha256:1eed25ef57ff46e471c33fc89c0f24b0618988a5992547b432db6c379a1e4aba",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-022 implementation",
+      "purpose": "TRACE-022 implementation delta summary.",
+      "relatedRequirementIds": [
+        "MUST-029",
+        "NEG-017",
+        "OUT-015",
+        "EVD-001",
+        "EVD-004",
+        "EVD-029",
+        "TRACE-022"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "implementation_delta_summary/v1",
+      "traceRows": [
+        "TRACE-022"
+      ],
+      "evidenceRefs": [
+        "EVD-029"
+      ]
+    }
+  ],
+  "deliveryEvidence": {
+    "requiredCommands": [
+      {
+        "commandId": "CMD-GATECHECK-DECISION-ACCEPTANCE",
+        "command": "npx vitest run tests/acceptance/main-agent-decision-field-check.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/main-agent-scoring-gates-check.test.ts",
+        "commandType": "contract_validation",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": [
+          "TRACE-022"
+        ],
+        "evidenceRefs": [
+          "EVD-029"
+        ],
+        "artifactRefs": [
+          {
+            "artifactType": "decision_field_gate_report",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-022/trace-022-decision-field-001/decision-field-gatechecks-pass.json",
+            "contentHash": "sha256:15239bb0f8cbfac3f72f1595714cff833517f05aa0b56a077933796f7bc0fa0d",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-022 implementation",
+            "purpose": "Real gateChecks decision-only report for REQ-CLOSED-LOOP-DESIGN.",
+            "relatedRequirementIds": [
+              "MUST-029",
+              "NEG-017",
+              "OUT-015",
+              "EVD-001",
+              "EVD-004",
+              "EVD-029",
+              "TRACE-022"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "decision_field_gate_report/v1",
+            "traceRows": [
+              "TRACE-022"
+            ],
+            "evidenceRefs": [
+              "EVD-029"
+            ]
+          },
+          {
+            "artifactType": "negative_assertion_report",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-022/trace-022-decision-field-001/negative-assertions.json",
+            "contentHash": "sha256:9958f922575c35b170dbcfd6050402ee6823e9e12cc2e9ff473f6828d47dec8d",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-022 implementation",
+            "purpose": "TRACE-022 negative assertions for gateChecks result hard-cut.",
+            "relatedRequirementIds": [
+              "MUST-029",
+              "NEG-017",
+              "OUT-015",
+              "EVD-001",
+              "EVD-004",
+              "EVD-029",
+              "TRACE-022"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "negative_assertion_report/v1",
+            "traceRows": [
+              "TRACE-022"
+            ],
+            "evidenceRefs": [
+              "EVD-029"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "gateChecks": [
+    {
+      "gate": "gatecheck_decision_field",
+      "decision": "pass",
+      "checkId": "gatecheck-decision-field:trace-022",
+      "sourceRefs": [
+        {
+          "sourceType": "artifact_ref",
+          "id": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-022/trace-022-decision-field-001/decision-field-gatechecks-pass.json"
+        }
+      ]
+    }
+  ],
+  "requirementClosures": [
+    {
+      "requirementId": "MUST-029",
+      "status": "pass"
+    },
+    {
+      "requirementId": "NEG-017",
+      "status": "pass"
+    },
+    {
+      "requirementId": "OUT-015",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-001",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-004",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-029",
+      "status": "pass"
+    }
+  ],
+  "closeoutAttemptId": "closeout-trace-022-decision-field-001"
+}
