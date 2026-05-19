@@ -506,6 +506,86 @@ describe('implementation evidence ingest', () => {
     }
   });
 
+  it('records hook reconciliation state through controlled ingest', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-evidence-hook-reconciliation-'));
+    try {
+      const { recordPath, evidencePath } = writeFixture(root);
+      const packet = JSON.parse(readFileSync(evidencePath, 'utf8'));
+      packet.traceRows = ['TRACE-027'];
+      packet.taskRefs = ['TASK-GOVERNANCE-TRANSPORT-HOOKS'];
+      packet.evidenceRefs = ['EVD-004', 'EVD-005', 'EVD-034'];
+      packet.hookReconciliation = {
+        schemaVersion: 'hook-reconciliation/v1',
+        hostKind: 'codex',
+        hostMode: 'hooks_enabled',
+        hookTrust: 'degraded',
+        fallbackMode: 'bounded_replay',
+        closeoutReconciled: true,
+        sequenceLedger: {
+          status: 'reconciled',
+          expectedNextSequence: 4,
+          observedSequences: [1, 2, 3],
+        },
+        missingReceipts: [],
+        hashMismatches: [],
+        noHookFallbackRefs: [{ sourceType: 'execution_iteration', id: 'exec-fallback-001' }],
+      };
+      writeFileSync(evidencePath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
+      const prev = process.cwd();
+      process.chdir(root);
+      try {
+        expect(mainIngestImplementationEvidence(['--evidence', evidencePath, '--requirement-record', recordPath])).toBe(0);
+      } finally {
+        process.chdir(prev);
+      }
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.hookReconciliation).toMatchObject({
+        schemaVersion: 'hook-reconciliation/v1',
+        hookTrust: 'degraded',
+        fallbackMode: 'bounded_replay',
+        closeoutReconciled: true,
+        noHookFallbackRefs: [{ sourceType: 'execution_iteration', id: 'exec-fallback-001' }],
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects hook reconciliation that claims closeout without fallback evidence', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-evidence-hook-reconciliation-invalid-'));
+    try {
+      const fixture = writeFixture(root);
+      const before = readFileSync(fixture.recordPath, 'utf8');
+      const packet = JSON.parse(readFileSync(fixture.evidencePath, 'utf8'));
+      packet.hookReconciliation = {
+        schemaVersion: 'hook-reconciliation/v1',
+        hostKind: 'codex',
+        hostMode: 'hooks_enabled',
+        hookTrust: 'degraded',
+        fallbackMode: 'bounded_replay',
+        closeoutReconciled: true,
+        sequenceLedger: {
+          status: 'reconciled',
+          observedSequences: [1, 2, 3],
+        },
+        missingReceipts: [],
+        hashMismatches: [],
+        noHookFallbackRefs: [],
+      };
+      writeFileSync(fixture.evidencePath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
+      const code = mainIngestImplementationEvidence([
+        '--evidence',
+        fixture.evidencePath,
+        '--requirement-record',
+        fixture.recordPath,
+      ]);
+      expect(code).toBe(3);
+      expect(readFileSync(fixture.recordPath, 'utf8')).toBe(before);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('rejects delivery required commands that cannot prove current blocking evidence', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-evidence-required-command-'));
     try {

@@ -409,6 +409,77 @@ function validateRuntimePolicySnapshotRef(packet: JsonObject): string[] {
   return mismatches;
 }
 
+function validateHookReconciliation(packet: JsonObject): string[] {
+  const value = packet.hookReconciliation;
+  if (value === undefined || value === null) return [];
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return ['hook_reconciliation_invalid'];
+  }
+  const hookReconciliation = value as JsonObject;
+  const mismatches: string[] = [];
+  const schemaVersion = text(hookReconciliation.schemaVersion);
+  const hostKind = text(hookReconciliation.hostKind);
+  const hostMode = text(hookReconciliation.hostMode);
+  const hookTrust = text(hookReconciliation.hookTrust);
+  const fallbackMode = text(hookReconciliation.fallbackMode);
+  const sequenceLedger =
+    hookReconciliation.sequenceLedger &&
+    typeof hookReconciliation.sequenceLedger === 'object' &&
+    !Array.isArray(hookReconciliation.sequenceLedger)
+      ? (hookReconciliation.sequenceLedger as JsonObject)
+      : undefined;
+  const sequenceStatus = text(sequenceLedger?.status);
+  const missingReceipts = arrayOfObjects(hookReconciliation.missingReceipts);
+  const hashMismatches = arrayOfObjects(hookReconciliation.hashMismatches);
+  const noHookFallbackRefs = arrayOfObjects(hookReconciliation.noHookFallbackRefs);
+
+  if (schemaVersion !== 'hook-reconciliation/v1') mismatches.push('hook_reconciliation_schema_version_invalid');
+  if (!['codex', 'cursor', 'claude', 'unknown'].includes(hostKind)) mismatches.push('hook_reconciliation_host_kind_invalid');
+  if (!['hooks_enabled', 'no_hooks', 'unknown'].includes(hostMode)) mismatches.push('hook_reconciliation_host_mode_invalid');
+  if (!['trusted', 'degraded', 'untrusted', 'unknown'].includes(hookTrust)) mismatches.push('hook_reconciliation_hook_trust_invalid');
+  if (!['none', 'no_hooks', 'bounded_replay', 'blocked'].includes(fallbackMode)) {
+    mismatches.push('hook_reconciliation_fallback_mode_invalid');
+  }
+  if (!sequenceLedger) {
+    mismatches.push('hook_reconciliation_sequence_ledger_missing');
+  } else if (!['clean', 'reconciled', 'gap', 'missing', 'stale', 'unknown'].includes(sequenceStatus)) {
+    mismatches.push('hook_reconciliation_sequence_status_invalid');
+  }
+  for (const receipt of missingReceipts) {
+    if (!text(receipt.receiptType)) mismatches.push('hook_reconciliation_missing_receipt_type_missing');
+    if (!text(receipt.expectedEventId)) mismatches.push('hook_reconciliation_missing_receipt_expected_event_id_missing');
+  }
+  for (const mismatch of hashMismatches) {
+    if (!text(mismatch.field)) mismatches.push('hook_reconciliation_hash_mismatch_field_missing');
+    if (!text(mismatch.expected)) mismatches.push('hook_reconciliation_hash_mismatch_expected_missing');
+    if (!text(mismatch.actual)) mismatches.push('hook_reconciliation_hash_mismatch_actual_missing');
+  }
+  for (const ref of noHookFallbackRefs) {
+    if (!text(ref.sourceType)) mismatches.push('hook_reconciliation_fallback_ref_source_type_missing');
+    if (!text(ref.id)) mismatches.push('hook_reconciliation_fallback_ref_id_missing');
+  }
+  if (
+    ['degraded', 'untrusted'].includes(hookTrust) &&
+    hookReconciliation.closeoutReconciled === true &&
+    ['no_hooks', 'bounded_replay'].includes(fallbackMode) &&
+    noHookFallbackRefs.length === 0
+  ) {
+    mismatches.push('hook_reconciliation_reconciled_fallback_refs_missing');
+  }
+  if (
+    hookReconciliation.closeoutReconciled === true &&
+    (missingReceipts.length > 0 ||
+      hashMismatches.length > 0 ||
+      !['clean', 'reconciled'].includes(sequenceStatus))
+  ) {
+    mismatches.push('hook_reconciliation_closeout_reconciled_with_open_gaps');
+  }
+  if (Object.prototype.hasOwnProperty.call(hookReconciliation, 'result')) {
+    mismatches.push('hook_reconciliation_result_forbidden');
+  }
+  return mismatches;
+}
+
 function validateFailureRecords(packet: JsonObject): string[] {
   const mismatches: string[] = [];
   for (const failure of arrayOfObjects(packet.failureRecords)) {
@@ -477,6 +548,7 @@ function validatePacket(packet: JsonObject, record: JsonObject): string[] {
     ...validateGlobalContractTraceabilityPolicy(effectiveTraceabilityPolicy, 'effective'),
     ...validateTraceStatusPolicy(effectiveTraceStatusPolicy, 'effective'),
     ...validateRuntimePolicySnapshotRef(packet),
+    ...validateHookReconciliation(packet),
     ...validateFailureRecords(packet),
     ...validateRerunLoops(packet),
   ];
@@ -693,6 +765,12 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
     !Array.isArray(packet.runtimePolicySnapshotRef)
       ? (packet.runtimePolicySnapshotRef as JsonObject)
       : undefined;
+  const packetHookReconciliation =
+    packet.hookReconciliation &&
+    typeof packet.hookReconciliation === 'object' &&
+    !Array.isArray(packet.hookReconciliation)
+      ? (packet.hookReconciliation as JsonObject)
+      : undefined;
   const requiredCommandsById = new Map<string, JsonObject>();
   for (const command of existingRequiredCommands) requiredCommandsById.set(text(command.commandId), command);
   for (const command of packetRequiredCommands) requiredCommandsById.set(text(command.commandId), command);
@@ -727,6 +805,16 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
             ...packetRuntimePolicySnapshotRef,
             path: normalizePathForRecord(text(packetRuntimePolicySnapshotRef.path)),
             contentHash: text(packetRuntimePolicySnapshotRef.contentHash ?? packetRuntimePolicySnapshotRef.hash),
+          },
+        }
+      : {}),
+    ...(packetHookReconciliation
+      ? {
+          hookReconciliation: {
+            ...packetHookReconciliation,
+            missingReceipts: arrayOfObjects(packetHookReconciliation.missingReceipts),
+            hashMismatches: arrayOfObjects(packetHookReconciliation.hashMismatches),
+            noHookFallbackRefs: arrayOfObjects(packetHookReconciliation.noHookFallbackRefs),
           },
         }
       : {}),

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "command-evidence/v1",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "traceRows": ["TRACE-027"],
+  "commands": [
+    {
+      "commandId": "CMD-TRACE-027-HOOK-RECONCILIATION-ACCEPTANCE",
+      "command": "npx vitest run tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts",
+      "exitCode": 0,
+      "outputSummary": "3 acceptance files passed; 42 tests passed. Covered closeout hook reconciliation blocking, controlled ingest persistence, and requirement-record schema validation."
+    }
+  ],
+  "residualRisk": "This evidence is trace-scoped. Final delivery closeout still requires a fresh closeout attempt with current-attempt commands."
+}

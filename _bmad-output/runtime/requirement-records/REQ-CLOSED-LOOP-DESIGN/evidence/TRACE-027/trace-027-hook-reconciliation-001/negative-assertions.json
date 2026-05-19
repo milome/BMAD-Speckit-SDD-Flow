@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "trace-negative-assertions/v1",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "traceRows": ["TRACE-027"],
+  "assertions": [
+    {
+      "id": "NEG-022-HOOK-GREEN-NOT-CLOSEOUT",
+      "covers": ["NEG-022", "OUT-020", "EVD-034"],
+      "assertion": "Hook green output, trusted-looking receipts, or host hook mode alone cannot complete delivery closeout.",
+      "proof": "Delivery Closeout Gate now evaluates requirement-record.hookReconciliation and blocks degraded/untrusted hooks unless no-hook or bounded replay fallback evidence is present and reconciled."
+    },
+    {
+      "id": "NEG-022-RECEIPT-GAPS-BLOCK",
+      "covers": ["NEG-022", "EVD-004", "EVD-005"],
+      "assertion": "Missing hook receipts, hook sequence gaps, and hook hash mismatches must block closeout.",
+      "proof": "Acceptance test blocks closeout for missing PostToolUse receipt, sequence gap, runtime policy hash mismatch, missing fallback refs, and closeoutReconciled=false."
+    },
+    {
+      "id": "OUT-020-NO-LEGACY-RESULT",
+      "covers": ["OUT-020", "EVD-034"],
+      "assertion": "Hook reconciliation cannot use legacy result as a control field.",
+      "proof": "Requirement-record schema and controlled ingest reject hookReconciliation.result."
+    }
+  ]
+}

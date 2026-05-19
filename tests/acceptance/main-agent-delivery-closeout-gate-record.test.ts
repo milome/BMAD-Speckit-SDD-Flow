@@ -486,4 +486,155 @@ describe('requirement-scoped delivery closeout gate', () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it('blocks closeout when trusted hooks have unreconciled receipt gaps without no-hook fallback', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-hook-reconciliation-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        hookReconciliation: {
+          schemaVersion: 'hook-reconciliation/v1',
+          hostKind: 'codex',
+          hostMode: 'hooks_enabled',
+          hookTrust: 'degraded',
+          fallbackMode: 'none',
+          closeoutReconciled: false,
+          sequenceLedger: {
+            status: 'gap',
+            expectedNextSequence: 3,
+            observedSequences: [1, 3],
+          },
+          missingReceipts: [
+            {
+              receiptType: 'PostToolUse',
+              severity: 'high',
+              expectedEventId: 'tool-write-001',
+            },
+          ],
+          hashMismatches: [
+            {
+              field: 'runtimePolicySnapshotHash',
+              expected: HASH,
+              actual: 'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+            },
+          ],
+          noHookFallbackRefs: [],
+        },
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              command: 'node verify.js',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-hook-gap',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-hook-gap',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(1);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.closeout.decision).toBe('blocked');
+      expect(record.closeout.attempts[0].blockingReasons).toEqual(
+        expect.arrayContaining([
+          'hook_trust_not_trusted:degraded',
+          'hook_fallback_mode_missing_for_untrusted:no_hooks_or_bounded_replay_required',
+          'hook_sequence_ledger_gap',
+          'hook_missing_receipt:PostToolUse:tool-write-001',
+          'hook_hash_mismatch:runtimePolicySnapshotHash',
+          'hook_closeout_not_reconciled',
+        ])
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('allows closeout when degraded hooks are reconciled by no-hook fallback evidence', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-hook-fallback-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        hookReconciliation: {
+          schemaVersion: 'hook-reconciliation/v1',
+          hostKind: 'codex',
+          hostMode: 'hooks_enabled',
+          hookTrust: 'degraded',
+          fallbackMode: 'bounded_replay',
+          closeoutReconciled: true,
+          sequenceLedger: {
+            status: 'reconciled',
+            expectedNextSequence: 4,
+            observedSequences: [1, 2, 3],
+          },
+          missingReceipts: [],
+          hashMismatches: [],
+          noHookFallbackRefs: [{ sourceType: 'execution_iteration', id: 'exec-fallback-001' }],
+        },
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              command: 'node verify.js',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-hook-fallback',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-hook-fallback',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(0);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.closeout.decision).toBe('pass');
+      expect(record.closeout.attempts[0].checks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: 'hook-reconciliation-valid', passed: true }),
+        ])
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

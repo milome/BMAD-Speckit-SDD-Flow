@@ -57,7 +57,7 @@
     }
   ],
   "lastEventType": "execution_iteration_recorded",
-  "updatedAt": "2026-05-19T16:56:52.1951151Z",
+  "updatedAt": "2026-05-19T01:06:00.000Z",
   "architectureConfirmations": [
     {
       "eventType": "architecture_confirmation_recorded",
@@ -11159,6 +11159,198 @@
       "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
       "architectureConfirmationHash": "sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
       "recordedAt": "2026-05-19T16:56:52.1951151Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "execution_iteration_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "executionIterationId": "TRACE-027-hook-reconciliation-001",
+      "runId": "run-trace-027-hook-reconciliation-001",
+      "status": "done",
+      "traceRows": [
+        "TRACE-027"
+      ],
+      "taskRefs": [
+        "TASK-GOVERNANCE-TRANSPORT-HOOKS"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-034"
+      ],
+      "filesChanged": [
+        "_bmad/_schemas/requirement-record.schema.json",
+        "scripts/ingest-implementation-evidence.ts",
+        "scripts/main-agent-delivery-closeout-gate.ts",
+        "tests/acceptance/implementation-evidence-ingest.test.ts",
+        "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+        "tests/acceptance/requirement-record-schema.test.ts"
+      ],
+      "implementationDelta": {
+        "filesChanged": [
+          "_bmad/_schemas/requirement-record.schema.json",
+          "scripts/ingest-implementation-evidence.ts",
+          "scripts/main-agent-delivery-closeout-gate.ts",
+          "tests/acceptance/implementation-evidence-ingest.test.ts",
+          "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+          "tests/acceptance/requirement-record-schema.test.ts"
+        ],
+        "diffSummaryRef": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/diff-summary.md",
+        "behaviorAffecting": true,
+        "negativeAssertionArtifactRefs": [
+          {
+            "artifactType": "negative_assertion_evidence",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/negative-assertions.json",
+            "hash": "sha256:c44f136199e70a2f5792698c67a1cdbfe6df14adcd46233f2eaf2bb548675067",
+            "producer": "codex",
+            "purpose": "prove hook green output, receipt gaps, hash mismatches, and missing fallback evidence cannot complete closeout",
+            "relatedRequirementIds": [
+              "MUST-034",
+              "NEG-022",
+              "OUT-020",
+              "EVD-004",
+              "EVD-005",
+              "EVD-034"
+            ],
+            "status": "active",
+            "inputVersion": "TRACE-027",
+            "outputVersion": "hook-reconciliation-evidence-v1"
+          }
+        ]
+      },
+      "diffSummary": "Add hook reconciliation schema, controlled ingest persistence, and Delivery Closeout Gate checks that block unreconciled hook/no-hook receipt gaps while accepting reconciled bounded replay fallback evidence.",
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-TRACE-027-HOOK-RECONCILIATION-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts",
+          "runId": "run-trace-027-hook-reconciliation-001",
+          "closeoutAttemptId": "closeout-trace-027-hook-reconciliation-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T01:05:37.000Z",
+          "completedAt": "2026-05-19T01:05:38.000Z",
+          "outputSummary": "3 acceptance files passed; 42 tests passed."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/diff-summary.md",
+          "contentHash": "sha256:aadec4b12129e79dfe48c4d2e5b5678f4552e38aa3cb205e510fc1443d8dab63",
+          "producer": "codex",
+          "purpose": "summarize TRACE-027 hook reconciliation implementation delta",
+          "relatedRequirementIds": [
+            "MUST-034",
+            "NEG-022",
+            "OUT-020",
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ],
+          "status": "active",
+          "inputVersion": "TRACE-027",
+          "outputVersion": "hook-reconciliation-evidence-v1",
+          "traceRows": [
+            "TRACE-027"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_evidence",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/negative-assertions.json",
+          "contentHash": "sha256:c44f136199e70a2f5792698c67a1cdbfe6df14adcd46233f2eaf2bb548675067",
+          "producer": "codex",
+          "purpose": "prove hook/no-hook reconciliation negative and out-of-scope assertions",
+          "relatedRequirementIds": [
+            "MUST-034",
+            "NEG-022",
+            "OUT-020",
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ],
+          "status": "active",
+          "inputVersion": "TRACE-027",
+          "outputVersion": "hook-reconciliation-evidence-v1",
+          "traceRows": [
+            "TRACE-027"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_evidence",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/command-evidence.json",
+          "contentHash": "sha256:d6d1fadaf9b3f46d37e74d927d559626f0e200382dc24d13df8787a4c61292eb",
+          "producer": "codex",
+          "purpose": "record TRACE-027 acceptance command identity and result summary",
+          "relatedRequirementIds": [
+            "MUST-034",
+            "NEG-022",
+            "OUT-020",
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ],
+          "status": "active",
+          "inputVersion": "TRACE-027",
+          "outputVersion": "hook-reconciliation-evidence-v1",
+          "traceRows": [
+            "TRACE-027"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-027"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-034"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-027-HOOK-RECONCILIATION-ACCEPTANCE"
+        }
+      ],
+      "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+      "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
+      "architectureConfirmationHash": "sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "recordedAt": "2026-05-19T01:06:00.000Z",
       "recordedBy": "codex"
     }
   ],
@@ -67977,6 +68169,864 @@
       ],
       "recordedAt": "2026-05-19T16:56:52.1951151Z",
       "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "MUST-034",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-027"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-034"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-TRACE-027-HOOK-RECONCILIATION-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts",
+          "runId": "run-trace-027-hook-reconciliation-001",
+          "closeoutAttemptId": "closeout-trace-027-hook-reconciliation-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T01:05:37.000Z",
+          "completedAt": "2026-05-19T01:05:38.000Z",
+          "outputSummary": "3 acceptance files passed; 42 tests passed."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/diff-summary.md",
+          "contentHash": "sha256:aadec4b12129e79dfe48c4d2e5b5678f4552e38aa3cb205e510fc1443d8dab63",
+          "producer": "codex",
+          "purpose": "summarize TRACE-027 hook reconciliation implementation delta",
+          "relatedRequirementIds": [
+            "MUST-034",
+            "NEG-022",
+            "OUT-020",
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ],
+          "status": "active",
+          "inputVersion": "TRACE-027",
+          "outputVersion": "hook-reconciliation-evidence-v1",
+          "traceRows": [
+            "TRACE-027"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_evidence",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/negative-assertions.json",
+          "contentHash": "sha256:c44f136199e70a2f5792698c67a1cdbfe6df14adcd46233f2eaf2bb548675067",
+          "producer": "codex",
+          "purpose": "prove hook/no-hook reconciliation negative and out-of-scope assertions",
+          "relatedRequirementIds": [
+            "MUST-034",
+            "NEG-022",
+            "OUT-020",
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ],
+          "status": "active",
+          "inputVersion": "TRACE-027",
+          "outputVersion": "hook-reconciliation-evidence-v1",
+          "traceRows": [
+            "TRACE-027"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_evidence",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/command-evidence.json",
+          "contentHash": "sha256:d6d1fadaf9b3f46d37e74d927d559626f0e200382dc24d13df8787a4c61292eb",
+          "producer": "codex",
+          "purpose": "record TRACE-027 acceptance command identity and result summary",
+          "relatedRequirementIds": [
+            "MUST-034",
+            "NEG-022",
+            "OUT-020",
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ],
+          "status": "active",
+          "inputVersion": "TRACE-027",
+          "outputVersion": "hook-reconciliation-evidence-v1",
+          "traceRows": [
+            "TRACE-027"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-027"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-034"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-027-HOOK-RECONCILIATION-ACCEPTANCE"
+        }
+      ],
+      "recordedAt": "2026-05-19T01:06:00.000Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "NEG-022",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-027"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-034"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-TRACE-027-HOOK-RECONCILIATION-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts",
+          "runId": "run-trace-027-hook-reconciliation-001",
+          "closeoutAttemptId": "closeout-trace-027-hook-reconciliation-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T01:05:37.000Z",
+          "completedAt": "2026-05-19T01:05:38.000Z",
+          "outputSummary": "3 acceptance files passed; 42 tests passed."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/diff-summary.md",
+          "contentHash": "sha256:aadec4b12129e79dfe48c4d2e5b5678f4552e38aa3cb205e510fc1443d8dab63",
+          "producer": "codex",
+          "purpose": "summarize TRACE-027 hook reconciliation implementation delta",
+          "relatedRequirementIds": [
+            "MUST-034",
+            "NEG-022",
+            "OUT-020",
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ],
+          "status": "active",
+          "inputVersion": "TRACE-027",
+          "outputVersion": "hook-reconciliation-evidence-v1",
+          "traceRows": [
+            "TRACE-027"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_evidence",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/negative-assertions.json",
+          "contentHash": "sha256:c44f136199e70a2f5792698c67a1cdbfe6df14adcd46233f2eaf2bb548675067",
+          "producer": "codex",
+          "purpose": "prove hook/no-hook reconciliation negative and out-of-scope assertions",
+          "relatedRequirementIds": [
+            "MUST-034",
+            "NEG-022",
+            "OUT-020",
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ],
+          "status": "active",
+          "inputVersion": "TRACE-027",
+          "outputVersion": "hook-reconciliation-evidence-v1",
+          "traceRows": [
+            "TRACE-027"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_evidence",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/command-evidence.json",
+          "contentHash": "sha256:d6d1fadaf9b3f46d37e74d927d559626f0e200382dc24d13df8787a4c61292eb",
+          "producer": "codex",
+          "purpose": "record TRACE-027 acceptance command identity and result summary",
+          "relatedRequirementIds": [
+            "MUST-034",
+            "NEG-022",
+            "OUT-020",
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ],
+          "status": "active",
+          "inputVersion": "TRACE-027",
+          "outputVersion": "hook-reconciliation-evidence-v1",
+          "traceRows": [
+            "TRACE-027"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-027"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-034"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-027-HOOK-RECONCILIATION-ACCEPTANCE"
+        }
+      ],
+      "recordedAt": "2026-05-19T01:06:00.000Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "OUT-020",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-027"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-034"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-TRACE-027-HOOK-RECONCILIATION-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts",
+          "runId": "run-trace-027-hook-reconciliation-001",
+          "closeoutAttemptId": "closeout-trace-027-hook-reconciliation-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T01:05:37.000Z",
+          "completedAt": "2026-05-19T01:05:38.000Z",
+          "outputSummary": "3 acceptance files passed; 42 tests passed."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/diff-summary.md",
+          "contentHash": "sha256:aadec4b12129e79dfe48c4d2e5b5678f4552e38aa3cb205e510fc1443d8dab63",
+          "producer": "codex",
+          "purpose": "summarize TRACE-027 hook reconciliation implementation delta",
+          "relatedRequirementIds": [
+            "MUST-034",
+            "NEG-022",
+            "OUT-020",
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ],
+          "status": "active",
+          "inputVersion": "TRACE-027",
+          "outputVersion": "hook-reconciliation-evidence-v1",
+          "traceRows": [
+            "TRACE-027"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_evidence",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/negative-assertions.json",
+          "contentHash": "sha256:c44f136199e70a2f5792698c67a1cdbfe6df14adcd46233f2eaf2bb548675067",
+          "producer": "codex",
+          "purpose": "prove hook/no-hook reconciliation negative and out-of-scope assertions",
+          "relatedRequirementIds": [
+            "MUST-034",
+            "NEG-022",
+            "OUT-020",
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ],
+          "status": "active",
+          "inputVersion": "TRACE-027",
+          "outputVersion": "hook-reconciliation-evidence-v1",
+          "traceRows": [
+            "TRACE-027"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_evidence",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/command-evidence.json",
+          "contentHash": "sha256:d6d1fadaf9b3f46d37e74d927d559626f0e200382dc24d13df8787a4c61292eb",
+          "producer": "codex",
+          "purpose": "record TRACE-027 acceptance command identity and result summary",
+          "relatedRequirementIds": [
+            "MUST-034",
+            "NEG-022",
+            "OUT-020",
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ],
+          "status": "active",
+          "inputVersion": "TRACE-027",
+          "outputVersion": "hook-reconciliation-evidence-v1",
+          "traceRows": [
+            "TRACE-027"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-027"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-034"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-027-HOOK-RECONCILIATION-ACCEPTANCE"
+        }
+      ],
+      "recordedAt": "2026-05-19T01:06:00.000Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "EVD-004",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-027"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-034"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-TRACE-027-HOOK-RECONCILIATION-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts",
+          "runId": "run-trace-027-hook-reconciliation-001",
+          "closeoutAttemptId": "closeout-trace-027-hook-reconciliation-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T01:05:37.000Z",
+          "completedAt": "2026-05-19T01:05:38.000Z",
+          "outputSummary": "3 acceptance files passed; 42 tests passed."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/diff-summary.md",
+          "contentHash": "sha256:aadec4b12129e79dfe48c4d2e5b5678f4552e38aa3cb205e510fc1443d8dab63",
+          "producer": "codex",
+          "purpose": "summarize TRACE-027 hook reconciliation implementation delta",
+          "relatedRequirementIds": [
+            "MUST-034",
+            "NEG-022",
+            "OUT-020",
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ],
+          "status": "active",
+          "inputVersion": "TRACE-027",
+          "outputVersion": "hook-reconciliation-evidence-v1",
+          "traceRows": [
+            "TRACE-027"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_evidence",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/negative-assertions.json",
+          "contentHash": "sha256:c44f136199e70a2f5792698c67a1cdbfe6df14adcd46233f2eaf2bb548675067",
+          "producer": "codex",
+          "purpose": "prove hook/no-hook reconciliation negative and out-of-scope assertions",
+          "relatedRequirementIds": [
+            "MUST-034",
+            "NEG-022",
+            "OUT-020",
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ],
+          "status": "active",
+          "inputVersion": "TRACE-027",
+          "outputVersion": "hook-reconciliation-evidence-v1",
+          "traceRows": [
+            "TRACE-027"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_evidence",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/command-evidence.json",
+          "contentHash": "sha256:d6d1fadaf9b3f46d37e74d927d559626f0e200382dc24d13df8787a4c61292eb",
+          "producer": "codex",
+          "purpose": "record TRACE-027 acceptance command identity and result summary",
+          "relatedRequirementIds": [
+            "MUST-034",
+            "NEG-022",
+            "OUT-020",
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ],
+          "status": "active",
+          "inputVersion": "TRACE-027",
+          "outputVersion": "hook-reconciliation-evidence-v1",
+          "traceRows": [
+            "TRACE-027"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-027"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-034"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-027-HOOK-RECONCILIATION-ACCEPTANCE"
+        }
+      ],
+      "recordedAt": "2026-05-19T01:06:00.000Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "EVD-005",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-027"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-034"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-TRACE-027-HOOK-RECONCILIATION-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts",
+          "runId": "run-trace-027-hook-reconciliation-001",
+          "closeoutAttemptId": "closeout-trace-027-hook-reconciliation-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T01:05:37.000Z",
+          "completedAt": "2026-05-19T01:05:38.000Z",
+          "outputSummary": "3 acceptance files passed; 42 tests passed."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/diff-summary.md",
+          "contentHash": "sha256:aadec4b12129e79dfe48c4d2e5b5678f4552e38aa3cb205e510fc1443d8dab63",
+          "producer": "codex",
+          "purpose": "summarize TRACE-027 hook reconciliation implementation delta",
+          "relatedRequirementIds": [
+            "MUST-034",
+            "NEG-022",
+            "OUT-020",
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ],
+          "status": "active",
+          "inputVersion": "TRACE-027",
+          "outputVersion": "hook-reconciliation-evidence-v1",
+          "traceRows": [
+            "TRACE-027"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_evidence",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/negative-assertions.json",
+          "contentHash": "sha256:c44f136199e70a2f5792698c67a1cdbfe6df14adcd46233f2eaf2bb548675067",
+          "producer": "codex",
+          "purpose": "prove hook/no-hook reconciliation negative and out-of-scope assertions",
+          "relatedRequirementIds": [
+            "MUST-034",
+            "NEG-022",
+            "OUT-020",
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ],
+          "status": "active",
+          "inputVersion": "TRACE-027",
+          "outputVersion": "hook-reconciliation-evidence-v1",
+          "traceRows": [
+            "TRACE-027"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_evidence",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/command-evidence.json",
+          "contentHash": "sha256:d6d1fadaf9b3f46d37e74d927d559626f0e200382dc24d13df8787a4c61292eb",
+          "producer": "codex",
+          "purpose": "record TRACE-027 acceptance command identity and result summary",
+          "relatedRequirementIds": [
+            "MUST-034",
+            "NEG-022",
+            "OUT-020",
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ],
+          "status": "active",
+          "inputVersion": "TRACE-027",
+          "outputVersion": "hook-reconciliation-evidence-v1",
+          "traceRows": [
+            "TRACE-027"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-027"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-034"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-027-HOOK-RECONCILIATION-ACCEPTANCE"
+        }
+      ],
+      "recordedAt": "2026-05-19T01:06:00.000Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "EVD-034",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-027"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-034"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-TRACE-027-HOOK-RECONCILIATION-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts",
+          "runId": "run-trace-027-hook-reconciliation-001",
+          "closeoutAttemptId": "closeout-trace-027-hook-reconciliation-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T01:05:37.000Z",
+          "completedAt": "2026-05-19T01:05:38.000Z",
+          "outputSummary": "3 acceptance files passed; 42 tests passed."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/diff-summary.md",
+          "contentHash": "sha256:aadec4b12129e79dfe48c4d2e5b5678f4552e38aa3cb205e510fc1443d8dab63",
+          "producer": "codex",
+          "purpose": "summarize TRACE-027 hook reconciliation implementation delta",
+          "relatedRequirementIds": [
+            "MUST-034",
+            "NEG-022",
+            "OUT-020",
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ],
+          "status": "active",
+          "inputVersion": "TRACE-027",
+          "outputVersion": "hook-reconciliation-evidence-v1",
+          "traceRows": [
+            "TRACE-027"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_evidence",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/negative-assertions.json",
+          "contentHash": "sha256:c44f136199e70a2f5792698c67a1cdbfe6df14adcd46233f2eaf2bb548675067",
+          "producer": "codex",
+          "purpose": "prove hook/no-hook reconciliation negative and out-of-scope assertions",
+          "relatedRequirementIds": [
+            "MUST-034",
+            "NEG-022",
+            "OUT-020",
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ],
+          "status": "active",
+          "inputVersion": "TRACE-027",
+          "outputVersion": "hook-reconciliation-evidence-v1",
+          "traceRows": [
+            "TRACE-027"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_evidence",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/command-evidence.json",
+          "contentHash": "sha256:d6d1fadaf9b3f46d37e74d927d559626f0e200382dc24d13df8787a4c61292eb",
+          "producer": "codex",
+          "purpose": "record TRACE-027 acceptance command identity and result summary",
+          "relatedRequirementIds": [
+            "MUST-034",
+            "NEG-022",
+            "OUT-020",
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ],
+          "status": "active",
+          "inputVersion": "TRACE-027",
+          "outputVersion": "hook-reconciliation-evidence-v1",
+          "traceRows": [
+            "TRACE-027"
+          ],
+          "evidenceRefs": [
+            "EVD-004",
+            "EVD-005",
+            "EVD-034"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-027"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-034"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-027-HOOK-RECONCILIATION-ACCEPTANCE"
+        }
+      ],
+      "recordedAt": "2026-05-19T01:06:00.000Z",
+      "recordedBy": "codex"
     }
   ],
   "gateChecks": [
@@ -73302,6 +74352,50 @@
         }
       ],
       "recordedAt": "2026-05-19T16:56:52.1951151Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "gate_check_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "checkId": "TRACE-027-hook-reconciliation-001:hook_reconciliation_closeout_gate",
+      "gate": "hook_reconciliation_closeout_gate",
+      "decision": "pass",
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-027"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-034"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-027-HOOK-RECONCILIATION-ACCEPTANCE"
+        }
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-TRACE-027-HOOK-RECONCILIATION-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts",
+          "runId": "run-trace-027-hook-reconciliation-001",
+          "closeoutAttemptId": "closeout-trace-027-hook-reconciliation-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-19T01:05:37.000Z",
+          "completedAt": "2026-05-19T01:05:38.000Z",
+          "outputSummary": "3 acceptance files passed; 42 tests passed."
+        }
+      ],
+      "recordedAt": "2026-05-19T01:06:00.000Z",
       "recordedBy": "codex"
     }
   ],
@@ -79995,6 +81089,96 @@
         "EVD-026",
         "EVD-033"
       ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "diff_summary",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/diff-summary.md",
+      "contentHash": "sha256:aadec4b12129e79dfe48c4d2e5b5678f4552e38aa3cb205e510fc1443d8dab63",
+      "producer": "codex",
+      "purpose": "summarize TRACE-027 hook reconciliation implementation delta",
+      "relatedRequirementIds": [
+        "MUST-034",
+        "NEG-022",
+        "OUT-020",
+        "EVD-004",
+        "EVD-005",
+        "EVD-034"
+      ],
+      "status": "active",
+      "inputVersion": "TRACE-027",
+      "outputVersion": "hook-reconciliation-evidence-v1",
+      "traceRows": [
+        "TRACE-027"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-034"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "negative_assertion_evidence",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/negative-assertions.json",
+      "contentHash": "sha256:c44f136199e70a2f5792698c67a1cdbfe6df14adcd46233f2eaf2bb548675067",
+      "producer": "codex",
+      "purpose": "prove hook/no-hook reconciliation negative and out-of-scope assertions",
+      "relatedRequirementIds": [
+        "MUST-034",
+        "NEG-022",
+        "OUT-020",
+        "EVD-004",
+        "EVD-005",
+        "EVD-034"
+      ],
+      "status": "active",
+      "inputVersion": "TRACE-027",
+      "outputVersion": "hook-reconciliation-evidence-v1",
+      "traceRows": [
+        "TRACE-027"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-034"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "command_evidence",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/command-evidence.json",
+      "contentHash": "sha256:d6d1fadaf9b3f46d37e74d927d559626f0e200382dc24d13df8787a4c61292eb",
+      "producer": "codex",
+      "purpose": "record TRACE-027 acceptance command identity and result summary",
+      "relatedRequirementIds": [
+        "MUST-034",
+        "NEG-022",
+        "OUT-020",
+        "EVD-004",
+        "EVD-005",
+        "EVD-034"
+      ],
+      "status": "active",
+      "inputVersion": "TRACE-027",
+      "outputVersion": "hook-reconciliation-evidence-v1",
+      "traceRows": [
+        "TRACE-027"
+      ],
+      "evidenceRefs": [
+        "EVD-004",
+        "EVD-005",
+        "EVD-034"
+      ]
     }
   ],
   "closeout": {
@@ -80654,7 +81838,10 @@
               "EVD-004",
               "EVD-026",
               "EVD-033"
-            ]
+            ],
+            "eventType": "artifact_indexed",
+            "recordId": "REQ-CLOSED-LOOP-DESIGN",
+            "requirementSetId": "REQ-CLOSED-LOOP-DESIGN"
           }
         ]
       },
@@ -83378,7 +84565,10 @@
               "EVD-004",
               "EVD-026",
               "EVD-033"
-            ]
+            ],
+            "eventType": "artifact_indexed",
+            "recordId": "REQ-CLOSED-LOOP-DESIGN",
+            "requirementSetId": "REQ-CLOSED-LOOP-DESIGN"
           },
           {
             "artifactType": "main_agent_unified_ingress",
@@ -83406,7 +84596,10 @@
               "EVD-004",
               "EVD-026",
               "EVD-033"
-            ]
+            ],
+            "eventType": "artifact_indexed",
+            "recordId": "REQ-CLOSED-LOOP-DESIGN",
+            "requirementSetId": "REQ-CLOSED-LOOP-DESIGN"
           },
           {
             "artifactType": "codex_hook_trust_probe_report",
@@ -83434,7 +84627,10 @@
               "EVD-004",
               "EVD-026",
               "EVD-033"
-            ]
+            ],
+            "eventType": "artifact_indexed",
+            "recordId": "REQ-CLOSED-LOOP-DESIGN",
+            "requirementSetId": "REQ-CLOSED-LOOP-DESIGN"
           },
           {
             "artifactType": "command_receipt",
@@ -83462,7 +84658,10 @@
               "EVD-004",
               "EVD-026",
               "EVD-033"
-            ]
+            ],
+            "eventType": "artifact_indexed",
+            "recordId": "REQ-CLOSED-LOOP-DESIGN",
+            "requirementSetId": "REQ-CLOSED-LOOP-DESIGN"
           },
           {
             "artifactType": "negative_assertion_report",
@@ -83490,7 +84689,46 @@
               "EVD-004",
               "EVD-026",
               "EVD-033"
-            ]
+            ],
+            "eventType": "artifact_indexed",
+            "recordId": "REQ-CLOSED-LOOP-DESIGN",
+            "requirementSetId": "REQ-CLOSED-LOOP-DESIGN"
+          }
+        ]
+      },
+      {
+        "commandId": "CMD-TRACE-027-HOOK-RECONCILIATION-ACCEPTANCE",
+        "command": "npx vitest run tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts",
+        "commandType": "delivery_evidence",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": [
+          "TRACE-027"
+        ],
+        "evidenceRefs": [
+          "EVD-004",
+          "EVD-005",
+          "EVD-034"
+        ],
+        "artifactRefs": [
+          {
+            "artifactType": "command_evidence",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-027/trace-027-hook-reconciliation-001/command-evidence.json",
+            "hash": "sha256:d6d1fadaf9b3f46d37e74d927d559626f0e200382dc24d13df8787a4c61292eb",
+            "producer": "codex",
+            "purpose": "record TRACE-027 acceptance command identity and result summary",
+            "relatedRequirementIds": [
+              "MUST-034",
+              "NEG-022",
+              "OUT-020",
+              "EVD-004",
+              "EVD-005",
+              "EVD-034"
+            ],
+            "status": "active",
+            "inputVersion": "TRACE-027",
+            "outputVersion": "hook-reconciliation-evidence-v1"
           }
         ]
       }
@@ -83796,6 +85034,11 @@
         "commandId": "CMD-ENCODING-GATE",
         "runId": "trace-018-trace-status-policy-001",
         "closeoutAttemptId": "trace-018-trace-status-policy-001"
+      },
+      {
+        "commandId": "CMD-TRACE-027-HOOK-RECONCILIATION-ACCEPTANCE",
+        "runId": "run-trace-027-hook-reconciliation-001",
+        "closeoutAttemptId": "closeout-trace-027-hook-reconciliation-001"
       }
     ]
   },
@@ -83970,6 +85213,95 @@
       ],
       "recordedAt": "2026-05-18T16:18:30.000Z",
       "recordedBy": "codex"
+    },
+    {
+      "eventType": "contract_check_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "checkId": "TRACE-027-hook-reconciliation-001:requirement_record_hook_reconciliation_schema",
+      "contract": "requirement_record_hook_reconciliation_schema",
+      "decision": "pass",
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-027"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-034"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-027-HOOK-RECONCILIATION-ACCEPTANCE"
+        }
+      ],
+      "recordedAt": "2026-05-19T01:06:00.000Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "contract_check_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "checkId": "TRACE-027-hook-reconciliation-001:controlled_ingest_hook_reconciliation",
+      "contract": "controlled_ingest_hook_reconciliation",
+      "decision": "pass",
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-027"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-005"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-034"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TRACE-027-HOOK-RECONCILIATION-ACCEPTANCE"
+        }
+      ],
+      "recordedAt": "2026-05-19T01:06:00.000Z",
+      "recordedBy": "codex"
     }
-  ]
+  ],
+  "hookReconciliation": {
+    "schemaVersion": "hook-reconciliation/v1",
+    "hostKind": "codex",
+    "hostMode": "hooks_enabled",
+    "hookTrust": "degraded",
+    "fallbackMode": "bounded_replay",
+    "closeoutReconciled": true,
+    "sequenceLedger": {
+      "status": "reconciled",
+      "expectedNextSequence": 4,
+      "observedSequences": [
+        1,
+        2,
+        3
+      ]
+    },
+    "missingReceipts": [],
+    "hashMismatches": [],
+    "noHookFallbackRefs": [
+      {
+        "sourceType": "execution_iteration",
+        "id": "TRACE-027-hook-reconciliation-001"
+      }
+    ]
+  }
 }
