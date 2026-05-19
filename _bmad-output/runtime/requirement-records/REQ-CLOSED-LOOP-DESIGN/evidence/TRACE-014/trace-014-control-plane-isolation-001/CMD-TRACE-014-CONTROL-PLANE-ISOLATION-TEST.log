@@ -1,0 +1,83 @@
+$ npx vitest run tests/acceptance/main-agent-control-plane-isolation-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts
+startedAt=2026-05-19T13:41:52.6593320Z
+completedAt=2026-05-19T13:41:55.3641701Z
+exitCode=0
+--- stdout/stderr ---
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mD:/Dev/BMAD-Speckit-SDD-Flow[39m
+
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/control-plane-isolation-1qAu5Q/_bmad-output/runtime/requirement-records/REQ-ISOLATION/control-plane-isolation-report.json",
+  "decision": "pass",
+  "blockingReasons": [],
+  "controlWrite": "forbidden_use_controlled_ingest"
+}
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/delivery-closeout-missing-0Nd1AV/_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/delivery-closeout-report.json",
+  "decision": "blocked",
+  "blockingReasons": [
+    "deliveryEvidence.requiredCommands_missing",
+    "negative_or_regression_command_missing"
+  ]
+}
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/control-plane-isolation-BAiWQ9/_bmad-output/runtime/requirement-records/REQ-ISOLATION/control-plane-isolation-report.json",
+  "decision": "blocked",
+  "blockingReasons": [
+    "root_control_field_forbidden:dashboard",
+    "root_control_field_forbidden:score",
+    "root_control_field_forbidden:report"
+  ],
+  "controlWrite": "forbidden_use_controlled_ingest"
+}
+delivery_closeout=pass
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/control-plane-isolation-oKLQKK/_bmad-output/runtime/requirement-records/REQ-ISOLATION/control-plane-isolation-report.json",
+  "decision": "blocked",
+  "blockingReasons": [
+    "gate_check:non_control_source_ref:artifact_ref"
+  ],
+  "controlWrite": "forbidden_use_controlled_ingest"
+}
+delivery_closeout=blocked
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/control-plane-isolation-cuL9zf/_bmad-output/runtime/requirement-records/REQ-ISOLATION/control-plane-isolation-report.json",
+  "decision": "blocked",
+  "blockingReasons": [
+    "orphan_artifact_closeout_pass_forbidden",
+    "orphan_artifact_missing_closeout_blocking_reason"
+  ],
+  "controlWrite": "forbidden_use_controlled_ingest"
+}
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/control-plane-isolation-GoAYQD/_bmad-output/runtime/requirement-records/REQ-ISOLATION/control-plane-isolation-report.json",
+  "decision": "blocked",
+  "blockingReasons": [
+    "rerun_result_forbidden",
+    "rerun_decision_forbidden"
+  ],
+  "controlWrite": "forbidden_use_controlled_ingest"
+}
+[90mstderr[2m | tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts[2m > [22m[2mrequirement-scoped delivery closeout gate[2m > [22m[2mrejects attempts that would overwrite an existing closeout attempt
+[22m[39m{
+  "ok": false,
+  "error": "closeout attempt already exists: closeout-001"
+}
+
+ [32m✓[39m tests/acceptance/main-agent-control-plane-isolation-check.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 36[2mms[22m[39m
+delivery_closeout=blocked
+delivery_closeout=blocked
+delivery_closeout=blocked
+ [32m✓[39m tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 74[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m12 passed[39m[22m[90m (12)[39m
+[2m   Start at [22m 21:41:54
+[2m   Duration [22m 357ms[2m (transform 125ms, setup 0ms, import 209ms, tests 110ms, environment 0ms)[22m
+

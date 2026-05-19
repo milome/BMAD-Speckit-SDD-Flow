@@ -1,0 +1,12 @@
+$ npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-control-plane-isolation-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/control-plane-isolation-report.json --evaluated-at 2026-05-19T21:42:00.000+08:00 --evaluated-by codex --json
+startedAt=2026-05-19T13:41:51.5440385Z
+completedAt=2026-05-19T13:41:52.6312641Z
+exitCode=0
+--- stdout/stderr ---
+{
+  "ok": true,
+  "reportPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/control-plane-isolation-report.json",
+  "decision": "pass",
+  "blockingReasons": [],
+  "controlWrite": "forbidden_use_controlled_ingest"
+}

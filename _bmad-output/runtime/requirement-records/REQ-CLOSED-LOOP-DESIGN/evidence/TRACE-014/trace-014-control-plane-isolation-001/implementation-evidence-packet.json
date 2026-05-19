@@ -1,0 +1,496 @@
+{
+  "eventType": "execution_iteration_recorded",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "executionIterationId": "exec-trace-014-control-plane-isolation-001",
+  "runId": "trace-014-control-plane-isolation-001",
+  "closeoutAttemptId": "trace-014-control-plane-isolation-001",
+  "status": "done",
+  "traceRows": [
+    "TRACE-014"
+  ],
+  "taskRefs": [
+    "TASK-ARTIFACT-CONTROL-INGEST"
+  ],
+  "evidenceRefs": [
+    "EVD-004",
+    "EVD-005",
+    "EVD-021"
+  ],
+  "filesChanged": [
+    "scripts/main-agent-control-plane-isolation-check.ts",
+    "tests/acceptance/main-agent-control-plane-isolation-check.test.ts"
+  ],
+  "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+  "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
+  "architectureConfirmationHash": "sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+  "diffSummary": "Added read-only control-plane isolation checker proving old reports, dashboard, SFT, score, projections, and artifact refs cannot mutate or drive main-agent control state; orphan artifacts only block at closeout boundary.",
+  "commandRuns": [
+    {
+      "commandId": "CMD-TRACE-014-CONTROL-PLANE-ISOLATION-CHECK",
+      "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-control-plane-isolation-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/control-plane-isolation-report.json --evaluated-at 2026-05-19T21:42:00.000+08:00 --evaluated-by codex --json",
+      "runId": "trace-014-control-plane-isolation-001",
+      "closeoutAttemptId": "trace-014-control-plane-isolation-001",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T13:41:51.5440385Z",
+      "completedAt": "2026-05-19T13:41:52.6312641Z",
+      "outputSummary": "$ npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-control-plane-isolation-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/control-plane-isolation-report.json --evaluated-at 2026-05-19T21:42:00.000+08:00 --evaluated-by codex --json startedAt=2026-05-19T13:41:51.5440385Z completedAt=2026-05-19T13:41:52.6312641Z exitCode=0 --- stdout/stderr --- { \"ok\": true, \"reportPath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/control-plane-isolation-report.json\", \"decision\": \"pass\", \"blockingReasons\": [], \"controlWrite\": \"forbidden_use_controlled_ingest\" }",
+      "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/CMD-TRACE-014-CONTROL-PLANE-ISOLATION-CHECK.log"
+    },
+    {
+      "commandId": "CMD-TRACE-014-CONTROL-PLANE-ISOLATION-TEST",
+      "command": "npx vitest run tests/acceptance/main-agent-control-plane-isolation-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+      "runId": "trace-014-control-plane-isolation-001",
+      "closeoutAttemptId": "trace-014-control-plane-isolation-001",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T13:41:52.659332Z",
+      "completedAt": "2026-05-19T13:41:55.3641701Z",
+      "outputSummary": "$ npx vitest run tests/acceptance/main-agent-control-plane-isolation-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts startedAt=2026-05-19T13:41:52.6593320Z completedAt=2026-05-19T13:41:55.3641701Z exitCode=0 --- stdout/stderr --- \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m { \"ok\": true, \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/control-plane-isolation-1qAu5Q/_bmad-output/runtime/requirement-records/REQ-ISOLATION/control-plane-isolation-report.json\", \"decision\": \"pass\", \"blockingReasons\": [], \"controlWrite\": \"forbidden_use_controlled_ingest\" } { \"ok\": true, \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/delivery-closeout-missing-0Nd1AV/_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/delivery-closeout-report.json\", \"decision\": \"blocked\", \"blockingReasons\": [ \"deliveryEvidence.requiredCommands_missing\", \"negative_or_regression_command_missing\" ] } { \"ok\": true, \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/control-plane-isolation-BAiWQ9/_bmad-output/runtime/requirement-records/REQ-ISOLATION/control-plane-isolation-report.json\", \"decision\": \"blocked\", \"blockingReasons\": [ \"root_control_field_forbidd",
+      "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/CMD-TRACE-014-CONTROL-PLANE-ISOLATION-TEST.log"
+    },
+    {
+      "commandId": "CMD-RENDER-CONFIRMATION",
+      "command": "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json",
+      "runId": "trace-014-control-plane-isolation-001",
+      "closeoutAttemptId": "trace-014-control-plane-isolation-001",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T13:41:55.3752367Z",
+      "completedAt": "2026-05-19T13:41:56.1222319Z",
+      "outputSummary": "$ node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json startedAt=2026-05-19T13:41:55.3752367Z completedAt=2026-05-19T13:41:56.1222319Z exitCode=0 --- stdout/stderr --- { \"recordId\": \"REQ-CLOSED-LOOP-DESIGN\", \"sourcePath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/docs/design/需求实现完整性门禁与重跑闭环设计.md\", \"sourceDocumentHash\": \"sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294\", \"implementationConfirmationHash\": \"sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec\", \"confirmationPageHash\": \"sha256:4195bc39582229f5a6dea6d15aec2e869d1cb635195a1e0c732b54004d7b141a\", \"language\": \"zh-CN\", \"generatedAt\": \"2026-05-19T13:41:55.922Z\", \"blockingIssues\": [], \"warnings\": [ { \"severity\": \"warning\", \"code\": \"long_item_text\", \"message\": \"17 long confirmation items\", \"refs\": [] }, { \"se",
+      "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/CMD-RENDER-CONFIRMATION.log"
+    },
+    {
+      "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+      "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+      "runId": "trace-014-control-plane-isolation-001",
+      "closeoutAttemptId": "trace-014-control-plane-isolation-001",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T13:41:56.1289719Z",
+      "completedAt": "2026-05-19T13:42:04.2633782Z",
+      "outputSummary": "$ npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts startedAt=2026-05-19T13:41:56.1289719Z completedAt=2026-05-19T13:42:04.2633782Z exitCode=0 --- stdout/stderr --- \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m31 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 5062\u001b[2mms\u001b[22m\u001b[39m \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m \u001b[2m Tests \u001b[22m \u001b[1m\u001b[32m31 passed\u001b[39m\u001b[22m\u001b[90m (31)\u001b[39m \u001b[2m Start at \u001b[22m 21:41:58 \u001b[2m Duration \u001b[22m 5.33s\u001b[2m (transform 74ms, setup 0ms, import 104ms, tests 5.06s, environment 0ms)\u001b[22m ",
+      "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/CMD-TRACE-BINDING-ACCEPTANCE.log"
+    },
+    {
+      "commandId": "CMD-ENCODING-GATE",
+      "command": "node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+      "runId": "trace-014-control-plane-isolation-001",
+      "closeoutAttemptId": "trace-014-control-plane-isolation-001",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T13:42:04.2650535Z",
+      "completedAt": "2026-05-19T13:42:05.0589663Z",
+      "outputSummary": "$ node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js startedAt=2026-05-19T13:42:04.2650535Z completedAt=2026-05-19T13:42:05.0589663Z exitCode=0 --- stdout/stderr --- checkedFiles=2740 findings=0",
+      "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/CMD-ENCODING-GATE.log"
+    }
+  ],
+  "artifactRefs": [
+    {
+      "artifactType": "control_plane_isolation_report",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/control-plane-isolation-report.json",
+      "hash": "sha256:a6d9779299e36ea23d584fef47c466f5a0be79cfdd2843d0b920501af3cb1ace",
+      "producer": "TRACE-014",
+      "purpose": "Proves evidence/read model/projection artifacts cannot drive control flow and orphan artifacts only block at closeout boundary.",
+      "relatedRequirementIds": [
+        "MUST-021",
+        "NEG-009",
+        "OUT-007",
+        "EVD-004",
+        "EVD-005",
+        "EVD-021",
+        "TRACE-014"
+      ],
+      "status": "active",
+      "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+      "outputVersion": "trace-014-control-plane-isolation-001"
+    },
+    {
+      "artifactType": "command_run_manifest",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/command-runs.json",
+      "hash": "sha256:136b1b36ae537b2ede5ca83b2b561b064ed484ca2e1ec4930e0224c5753dd5d2",
+      "producer": "TRACE-014",
+      "purpose": "Captures TRACE-014 validation command runs with exit codes and timestamps.",
+      "relatedRequirementIds": [
+        "MUST-021",
+        "NEG-009",
+        "OUT-007",
+        "EVD-004",
+        "EVD-005",
+        "EVD-021",
+        "TRACE-014"
+      ],
+      "status": "active",
+      "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+      "outputVersion": "trace-014-control-plane-isolation-001"
+    },
+    {
+      "artifactType": "implementation_delta_summary",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/implementation-delta-summary.md",
+      "hash": "sha256:bfc4f5e5829748e393d8ef125d982a4170d916ee9a2343e45535a3d3b2cd50a2",
+      "producer": "TRACE-014",
+      "purpose": "Summarizes TRACE-014 implementation delta and changed paths.",
+      "relatedRequirementIds": [
+        "MUST-021",
+        "NEG-009",
+        "OUT-007",
+        "EVD-004",
+        "EVD-005",
+        "EVD-021",
+        "TRACE-014"
+      ],
+      "status": "active",
+      "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+      "outputVersion": "trace-014-control-plane-isolation-001"
+    },
+    {
+      "artifactType": "command_log",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/CMD-TRACE-014-CONTROL-PLANE-ISOLATION-CHECK.log",
+      "hash": "sha256:d088e1f6b234c98f874a10d40c6b54da1c19fb06517f9780349f082851ecafaf",
+      "producer": "TRACE-014",
+      "purpose": "Command evidence for CMD-TRACE-014-CONTROL-PLANE-ISOLATION-CHECK",
+      "relatedRequirementIds": [
+        "MUST-021",
+        "NEG-009",
+        "OUT-007",
+        "EVD-004",
+        "EVD-005",
+        "EVD-021",
+        "TRACE-014"
+      ],
+      "status": "active",
+      "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+      "outputVersion": "trace-014-control-plane-isolation-001"
+    },
+    {
+      "artifactType": "command_log",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/CMD-TRACE-014-CONTROL-PLANE-ISOLATION-TEST.log",
+      "hash": "sha256:1f91ec56d7031707b28cdd2ccd0f351ee4889d9db78555b35cbb7ca30f4092ee",
+      "producer": "TRACE-014",
+      "purpose": "Command evidence for CMD-TRACE-014-CONTROL-PLANE-ISOLATION-TEST",
+      "relatedRequirementIds": [
+        "MUST-021",
+        "NEG-009",
+        "OUT-007",
+        "EVD-004",
+        "EVD-005",
+        "EVD-021",
+        "TRACE-014"
+      ],
+      "status": "active",
+      "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+      "outputVersion": "trace-014-control-plane-isolation-001"
+    },
+    {
+      "artifactType": "command_log",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/CMD-RENDER-CONFIRMATION.log",
+      "hash": "sha256:6209a20f745222ace113e3bea62d2bbf3dfb6dc4b3535bf24cacd8b4ac0d34b0",
+      "producer": "TRACE-014",
+      "purpose": "Command evidence for CMD-RENDER-CONFIRMATION",
+      "relatedRequirementIds": [
+        "MUST-021",
+        "NEG-009",
+        "OUT-007",
+        "EVD-004",
+        "EVD-005",
+        "EVD-021",
+        "TRACE-014"
+      ],
+      "status": "active",
+      "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+      "outputVersion": "trace-014-control-plane-isolation-001"
+    },
+    {
+      "artifactType": "command_log",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/CMD-TRACE-BINDING-ACCEPTANCE.log",
+      "hash": "sha256:81de339499f1e9009a2b5ab250ccd65e43fade9944a59b1da8be4e14489a8ee1",
+      "producer": "TRACE-014",
+      "purpose": "Command evidence for CMD-TRACE-BINDING-ACCEPTANCE",
+      "relatedRequirementIds": [
+        "MUST-021",
+        "NEG-009",
+        "OUT-007",
+        "EVD-004",
+        "EVD-005",
+        "EVD-021",
+        "TRACE-014"
+      ],
+      "status": "active",
+      "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+      "outputVersion": "trace-014-control-plane-isolation-001"
+    },
+    {
+      "artifactType": "command_log",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/CMD-ENCODING-GATE.log",
+      "hash": "sha256:104442a22b3c78b86fa19bd711cd308c33b143fd13579bc9aff7d263802ae651",
+      "producer": "TRACE-014",
+      "purpose": "Command evidence for CMD-ENCODING-GATE",
+      "relatedRequirementIds": [
+        "MUST-021",
+        "NEG-009",
+        "OUT-007",
+        "EVD-004",
+        "EVD-005",
+        "EVD-021",
+        "TRACE-014"
+      ],
+      "status": "active",
+      "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+      "outputVersion": "trace-014-control-plane-isolation-001"
+    }
+  ],
+  "implementationDelta": {
+    "behaviorAffecting": true,
+    "filesChanged": [
+      "scripts/main-agent-control-plane-isolation-check.ts",
+      "tests/acceptance/main-agent-control-plane-isolation-check.test.ts"
+    ],
+    "diffSummaryRef": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/implementation-delta-summary.md",
+    "negativeAssertionArtifactRefs": [
+      {
+        "artifactType": "negative_assertion_report",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/negative-assertions.md",
+        "hash": "sha256:fef8bbac4495144e1c92b036177742441a53a0a63f1f3d3d308c8fb1e80e7004",
+        "producer": "TRACE-014",
+        "purpose": "Documents TRACE-014 negative assertions for control/read-model/orphan boundaries.",
+        "relatedRequirementIds": [
+          "MUST-021",
+          "NEG-009",
+          "OUT-007",
+          "EVD-004",
+          "EVD-005",
+          "EVD-021",
+          "TRACE-014"
+        ],
+        "status": "active",
+        "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+        "outputVersion": "trace-014-control-plane-isolation-001"
+      }
+    ]
+  },
+  "requirementClosures": [
+    {
+      "requirementId": "MUST-021",
+      "status": "pass"
+    },
+    {
+      "requirementId": "NEG-009",
+      "status": "pass"
+    },
+    {
+      "requirementId": "OUT-007",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-004",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-005",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-021",
+      "status": "pass"
+    }
+  ],
+  "gateChecks": [
+    {
+      "checkId": "trace-014-control-plane-isolation-check",
+      "gate": "Control Plane Isolation Check",
+      "decision": "pass"
+    },
+    {
+      "checkId": "trace-014-read-model-reverse-drive-check",
+      "gate": "Read Model Reverse Drive Guard",
+      "decision": "pass"
+    },
+    {
+      "checkId": "trace-014-orphan-boundary-check",
+      "gate": "Orphan Boundary Check",
+      "decision": "pass"
+    }
+  ],
+  "deliveryEvidence": {
+    "requiredCommands": [
+      {
+        "commandId": "CMD-TRACE-014-CONTROL-PLANE-ISOLATION-CHECK",
+        "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-control-plane-isolation-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/control-plane-isolation-report.json --evaluated-at 2026-05-19T21:42:00.000+08:00 --evaluated-by codex --json",
+        "blockingIfMissing": true,
+        "negativeOrRegression": false,
+        "lastRunRef": "CMD-TRACE-014-CONTROL-PLANE-ISOLATION-CHECK",
+        "artifactRefs": [
+          {
+            "artifactType": "command_log",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/CMD-TRACE-014-CONTROL-PLANE-ISOLATION-CHECK.log",
+            "hash": "sha256:d088e1f6b234c98f874a10d40c6b54da1c19fb06517f9780349f082851ecafaf",
+            "producer": "TRACE-014",
+            "purpose": "Required command log for CMD-TRACE-014-CONTROL-PLANE-ISOLATION-CHECK",
+            "relatedRequirementIds": [
+              "MUST-021",
+              "NEG-009",
+              "OUT-007",
+              "EVD-004",
+              "EVD-005",
+              "EVD-021",
+              "TRACE-014"
+            ],
+            "status": "active",
+            "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+            "outputVersion": "trace-014-control-plane-isolation-001"
+          }
+        ]
+      },
+      {
+        "commandId": "CMD-TRACE-014-CONTROL-PLANE-ISOLATION-TEST",
+        "command": "npx vitest run tests/acceptance/main-agent-control-plane-isolation-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "lastRunRef": "CMD-TRACE-014-CONTROL-PLANE-ISOLATION-TEST",
+        "artifactRefs": [
+          {
+            "artifactType": "command_log",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/CMD-TRACE-014-CONTROL-PLANE-ISOLATION-TEST.log",
+            "hash": "sha256:1f91ec56d7031707b28cdd2ccd0f351ee4889d9db78555b35cbb7ca30f4092ee",
+            "producer": "TRACE-014",
+            "purpose": "Required command log for CMD-TRACE-014-CONTROL-PLANE-ISOLATION-TEST",
+            "relatedRequirementIds": [
+              "MUST-021",
+              "NEG-009",
+              "OUT-007",
+              "EVD-004",
+              "EVD-005",
+              "EVD-021",
+              "TRACE-014"
+            ],
+            "status": "active",
+            "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+            "outputVersion": "trace-014-control-plane-isolation-001"
+          }
+        ]
+      },
+      {
+        "commandId": "CMD-RENDER-CONFIRMATION",
+        "command": "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json",
+        "blockingIfMissing": true,
+        "negativeOrRegression": false,
+        "lastRunRef": "CMD-RENDER-CONFIRMATION",
+        "artifactRefs": [
+          {
+            "artifactType": "command_log",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/CMD-RENDER-CONFIRMATION.log",
+            "hash": "sha256:6209a20f745222ace113e3bea62d2bbf3dfb6dc4b3535bf24cacd8b4ac0d34b0",
+            "producer": "TRACE-014",
+            "purpose": "Required command log for CMD-RENDER-CONFIRMATION",
+            "relatedRequirementIds": [
+              "MUST-021",
+              "NEG-009",
+              "OUT-007",
+              "EVD-004",
+              "EVD-005",
+              "EVD-021",
+              "TRACE-014"
+            ],
+            "status": "active",
+            "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+            "outputVersion": "trace-014-control-plane-isolation-001"
+          }
+        ]
+      },
+      {
+        "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+        "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+        "blockingIfMissing": true,
+        "negativeOrRegression": false,
+        "lastRunRef": "CMD-TRACE-BINDING-ACCEPTANCE",
+        "artifactRefs": [
+          {
+            "artifactType": "command_log",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/CMD-TRACE-BINDING-ACCEPTANCE.log",
+            "hash": "sha256:81de339499f1e9009a2b5ab250ccd65e43fade9944a59b1da8be4e14489a8ee1",
+            "producer": "TRACE-014",
+            "purpose": "Required command log for CMD-TRACE-BINDING-ACCEPTANCE",
+            "relatedRequirementIds": [
+              "MUST-021",
+              "NEG-009",
+              "OUT-007",
+              "EVD-004",
+              "EVD-005",
+              "EVD-021",
+              "TRACE-014"
+            ],
+            "status": "active",
+            "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+            "outputVersion": "trace-014-control-plane-isolation-001"
+          }
+        ]
+      },
+      {
+        "commandId": "CMD-ENCODING-GATE",
+        "command": "node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+        "blockingIfMissing": true,
+        "negativeOrRegression": false,
+        "lastRunRef": "CMD-ENCODING-GATE",
+        "artifactRefs": [
+          {
+            "artifactType": "command_log",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/CMD-ENCODING-GATE.log",
+            "hash": "sha256:104442a22b3c78b86fa19bd711cd308c33b143fd13579bc9aff7d263802ae651",
+            "producer": "TRACE-014",
+            "purpose": "Required command log for CMD-ENCODING-GATE",
+            "relatedRequirementIds": [
+              "MUST-021",
+              "NEG-009",
+              "OUT-007",
+              "EVD-004",
+              "EVD-005",
+              "EVD-021",
+              "TRACE-014"
+            ],
+            "status": "active",
+            "inputVersion": "REQ-CLOSED-LOOP-DESIGN@sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+            "outputVersion": "trace-014-control-plane-isolation-001"
+          }
+        ]
+      }
+    ],
+    "historicalRunRefs": [
+      {
+        "commandId": "CMD-TRACE-014-CONTROL-PLANE-ISOLATION-CHECK",
+        "runId": "trace-014-control-plane-isolation-001",
+        "closeoutAttemptId": "trace-014-control-plane-isolation-001"
+      },
+      {
+        "commandId": "CMD-TRACE-014-CONTROL-PLANE-ISOLATION-TEST",
+        "runId": "trace-014-control-plane-isolation-001",
+        "closeoutAttemptId": "trace-014-control-plane-isolation-001"
+      },
+      {
+        "commandId": "CMD-RENDER-CONFIRMATION",
+        "runId": "trace-014-control-plane-isolation-001",
+        "closeoutAttemptId": "trace-014-control-plane-isolation-001"
+      },
+      {
+        "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+        "runId": "trace-014-control-plane-isolation-001",
+        "closeoutAttemptId": "trace-014-control-plane-isolation-001"
+      },
+      {
+        "commandId": "CMD-ENCODING-GATE",
+        "runId": "trace-014-control-plane-isolation-001",
+        "closeoutAttemptId": "trace-014-control-plane-isolation-001"
+      }
+    ]
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "reportType": "control_plane_isolation_report",
+  "generatedAt": "2026-05-19T21:42:00.000+08:00",
+  "evaluatedBy": "codex",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "decision": "pass",
+  "blockingReasons": [],
+  "checks": [
+    {
+      "id": "root-control-fields-absent",
+      "passed": true,
+      "issues": []
+    },
+    {
+      "id": "artifact-roles-non-control",
+      "passed": true,
+      "issues": []
+    },
+    {
+      "id": "gate-contract-decision-authority",
+      "passed": true,
+      "issues": []
+    },
+    {
+      "id": "failure-rca-rerun-lifecycle-only",
+      "passed": true,
+      "issues": []
+    },
+    {
+      "id": "orphan-only-blocks-at-closeout-boundary",
+      "passed": true,
+      "issues": []
+    }
+  ]
+}

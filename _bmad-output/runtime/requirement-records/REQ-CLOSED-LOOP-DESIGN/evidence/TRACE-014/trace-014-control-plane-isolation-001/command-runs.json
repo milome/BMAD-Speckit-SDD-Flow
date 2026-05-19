@@ -1,0 +1,57 @@
+[
+  {
+    "commandId": "CMD-TRACE-014-CONTROL-PLANE-ISOLATION-CHECK",
+    "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-control-plane-isolation-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/control-plane-isolation-report.json --evaluated-at 2026-05-19T21:42:00.000+08:00 --evaluated-by codex --json",
+    "runId": "trace-014-control-plane-isolation-001",
+    "closeoutAttemptId": "trace-014-control-plane-isolation-001",
+    "exitCode": 0,
+    "startedAt": "2026-05-19T13:41:51.5440385Z",
+    "completedAt": "2026-05-19T13:41:52.6312641Z",
+    "outputSummary": "$ npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-control-plane-isolation-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/control-plane-isolation-report.json --evaluated-at 2026-05-19T21:42:00.000+08:00 --evaluated-by codex --json startedAt=2026-05-19T13:41:51.5440385Z completedAt=2026-05-19T13:41:52.6312641Z exitCode=0 --- stdout/stderr --- { \"ok\": true, \"reportPath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/control-plane-isolation-report.json\", \"decision\": \"pass\", \"blockingReasons\": [], \"controlWrite\": \"forbidden_use_controlled_ingest\" }",
+    "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/CMD-TRACE-014-CONTROL-PLANE-ISOLATION-CHECK.log"
+  },
+  {
+    "commandId": "CMD-TRACE-014-CONTROL-PLANE-ISOLATION-TEST",
+    "command": "npx vitest run tests/acceptance/main-agent-control-plane-isolation-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+    "runId": "trace-014-control-plane-isolation-001",
+    "closeoutAttemptId": "trace-014-control-plane-isolation-001",
+    "exitCode": 0,
+    "startedAt": "2026-05-19T13:41:52.6593320Z",
+    "completedAt": "2026-05-19T13:41:55.3641701Z",
+    "outputSummary": "$ npx vitest run tests/acceptance/main-agent-control-plane-isolation-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts startedAt=2026-05-19T13:41:52.6593320Z completedAt=2026-05-19T13:41:55.3641701Z exitCode=0 --- stdout/stderr --- \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m { \"ok\": true, \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/control-plane-isolation-1qAu5Q/_bmad-output/runtime/requirement-records/REQ-ISOLATION/control-plane-isolation-report.json\", \"decision\": \"pass\", \"blockingReasons\": [], \"controlWrite\": \"forbidden_use_controlled_ingest\" } { \"ok\": true, \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/delivery-closeout-missing-0Nd1AV/_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/delivery-closeout-report.json\", \"decision\": \"blocked\", \"blockingReasons\": [ \"deliveryEvidence.requiredCommands_missing\", \"negative_or_regression_command_missing\" ] } { \"ok\": true, \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/control-plane-isolation-BAiWQ9/_bmad-output/runtime/requirement-records/REQ-ISOLATION/control-plane-isolation-report.json\", \"decision\": \"blocked\", \"blockingReasons\": [ \"root_control_field_forbidd",
+    "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/CMD-TRACE-014-CONTROL-PLANE-ISOLATION-TEST.log"
+  },
+  {
+    "commandId": "CMD-RENDER-CONFIRMATION",
+    "command": "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json",
+    "runId": "trace-014-control-plane-isolation-001",
+    "closeoutAttemptId": "trace-014-control-plane-isolation-001",
+    "exitCode": 0,
+    "startedAt": "2026-05-19T13:41:55.3752367Z",
+    "completedAt": "2026-05-19T13:41:56.1222319Z",
+    "outputSummary": "$ node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json startedAt=2026-05-19T13:41:55.3752367Z completedAt=2026-05-19T13:41:56.1222319Z exitCode=0 --- stdout/stderr --- { \"recordId\": \"REQ-CLOSED-LOOP-DESIGN\", \"sourcePath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/docs/design/需求实现完整性门禁与重跑闭环设计.md\", \"sourceDocumentHash\": \"sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294\", \"implementationConfirmationHash\": \"sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec\", \"confirmationPageHash\": \"sha256:4195bc39582229f5a6dea6d15aec2e869d1cb635195a1e0c732b54004d7b141a\", \"language\": \"zh-CN\", \"generatedAt\": \"2026-05-19T13:41:55.922Z\", \"blockingIssues\": [], \"warnings\": [ { \"severity\": \"warning\", \"code\": \"long_item_text\", \"message\": \"17 long confirmation items\", \"refs\": [] }, { \"se",
+    "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/CMD-RENDER-CONFIRMATION.log"
+  },
+  {
+    "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+    "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+    "runId": "trace-014-control-plane-isolation-001",
+    "closeoutAttemptId": "trace-014-control-plane-isolation-001",
+    "exitCode": 0,
+    "startedAt": "2026-05-19T13:41:56.1289719Z",
+    "completedAt": "2026-05-19T13:42:04.2633782Z",
+    "outputSummary": "$ npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts startedAt=2026-05-19T13:41:56.1289719Z completedAt=2026-05-19T13:42:04.2633782Z exitCode=0 --- stdout/stderr --- \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m31 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 5062\u001b[2mms\u001b[22m\u001b[39m \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m \u001b[2m Tests \u001b[22m \u001b[1m\u001b[32m31 passed\u001b[39m\u001b[22m\u001b[90m (31)\u001b[39m \u001b[2m Start at \u001b[22m 21:41:58 \u001b[2m Duration \u001b[22m 5.33s\u001b[2m (transform 74ms, setup 0ms, import 104ms, tests 5.06s, environment 0ms)\u001b[22m ",
+    "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/CMD-TRACE-BINDING-ACCEPTANCE.log"
+  },
+  {
+    "commandId": "CMD-ENCODING-GATE",
+    "command": "node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+    "runId": "trace-014-control-plane-isolation-001",
+    "closeoutAttemptId": "trace-014-control-plane-isolation-001",
+    "exitCode": 0,
+    "startedAt": "2026-05-19T13:42:04.2650535Z",
+    "completedAt": "2026-05-19T13:42:05.0589663Z",
+    "outputSummary": "$ node .codex/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js startedAt=2026-05-19T13:42:04.2650535Z completedAt=2026-05-19T13:42:05.0589663Z exitCode=0 --- stdout/stderr --- checkedFiles=2740 findings=0",
+    "logPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-014/trace-014-control-plane-isolation-001/CMD-ENCODING-GATE.log"
+  }
+]

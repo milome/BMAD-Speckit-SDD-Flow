@@ -1,0 +1,48 @@
+$ node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json
+startedAt=2026-05-19T13:41:55.3752367Z
+completedAt=2026-05-19T13:41:56.1222319Z
+exitCode=0
+--- stdout/stderr ---
+{
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "sourcePath": "D:/Dev/BMAD-Speckit-SDD-Flow/docs/design/需求实现完整性门禁与重跑闭环设计.md",
+  "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+  "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
+  "confirmationPageHash": "sha256:4195bc39582229f5a6dea6d15aec2e869d1cb635195a1e0c732b54004d7b141a",
+  "language": "zh-CN",
+  "generatedAt": "2026-05-19T13:41:55.922Z",
+  "blockingIssues": [],
+  "warnings": [
+    {
+      "severity": "warning",
+      "code": "long_item_text",
+      "message": "17 long confirmation items",
+      "refs": []
+    },
+    {
+      "severity": "warning",
+      "code": "source_already_user_confirmed",
+      "message": "renderer does not confirm or change status",
+      "refs": []
+    }
+  ],
+  "mermaidRuntime": {
+    "available": true,
+    "path": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad/skills/requirements-contract-authoring/assets/mermaid/mermaid.min.js",
+    "hash": "sha256:d0830a6c05546e9edb8fe20a8f545f3e0dc7c4c3134d584bad9c13a99d7a71e0",
+    "format": "classic-global",
+    "issues": []
+  },
+  "counts": {
+    "must": 38,
+    "notDone": 27,
+    "mustNot": 22,
+    "evidence": 38,
+    "failurePaths": 5,
+    "edgeCases": 6,
+    "traceRows": 29,
+    "sequenceViews": 6,
+    "resumeFailureCases": 27,
+    "artifactPlanItems": 3
+  }
+}
