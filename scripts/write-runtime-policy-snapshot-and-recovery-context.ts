@@ -2,6 +2,7 @@
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { resolveScoringPolicy } from '../packages/scoring/policy';
 import { loadPolicyContextFromRegistry, mainEmitRuntimePolicy } from './emit-runtime-policy';
 
 type JsonObject = Record<string, unknown>;
@@ -146,6 +147,7 @@ function runtimePolicySnapshotRef(input: {
 function buildSnapshot(input: {
   record: JsonObject;
   policy: JsonObject;
+  resolvedScoringPolicy: JsonObject;
   locale: string;
   host: string;
   generatedAt: string;
@@ -161,6 +163,7 @@ function buildSnapshot(input: {
     architectureConfirmationHash: architectureHash(input.record),
     policyHash: stablePolicyHash(input.policy),
     policy: input.policy,
+    resolvedScoringPolicy: input.resolvedScoringPolicy,
     locale: input.locale,
     host: input.host,
     stage: text(input.policy.stage),
@@ -208,6 +211,7 @@ export function mainWriteRuntimePolicySnapshotAndRecoveryContext(argv: string[])
   });
   const record = readJson(loaded.resolvedContextPath);
   const policy = captureRuntimePolicy(args, root);
+  const resolvedScoringPolicy = resolveScoringPolicy({ root }) as unknown as JsonObject;
   const generatedAt = args.generatedAt ?? new Date().toISOString();
   const outDir = path.resolve(
     args.outDir ?? path.dirname(loaded.resolvedRuntimeContext.runtimePolicySnapshotPath)
@@ -217,6 +221,7 @@ export function mainWriteRuntimePolicySnapshotAndRecoveryContext(argv: string[])
   const snapshot = buildSnapshot({
     record,
     policy,
+    resolvedScoringPolicy,
     locale: args.locale ?? 'zh-CN',
     host: args.host ?? 'codex',
     generatedAt,

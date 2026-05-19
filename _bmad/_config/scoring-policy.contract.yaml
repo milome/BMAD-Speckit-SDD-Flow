@@ -1,0 +1,67 @@
+schemaVersion: scoring-policy.contract/v1
+policyId: default-six-model-scoring-policy
+scoreMaterializationPolicy:
+  requiredByDefault: true
+  requireScoreWriteResultOk: true
+  requireArtifactIndexRef: true
+  requireDisplayableScore: true
+scoreEvaluationPolicy:
+  requiredByDefault: true
+  requireThresholdEvaluation: true
+  requireDimensionVetoEvaluation: true
+  requireIterationPenaltyEvaluation: true
+passThresholds:
+  default: 80
+  byStage:
+    implement: 80
+    audit_closeout: 80
+levelRanges:
+  - level: L5
+    min: 90
+    max: 100
+  - level: L4
+    min: 80
+    max: 89
+  - level: L3
+    min: 60
+    max: 79
+  - level: L2
+    min: 40
+    max: 59
+  - level: L1
+    min: 0
+    max: 39
+dimensionVetoPolicy:
+  enabled: true
+  failOnAnyTriggeredVeto: true
+iterationPenaltyPolicy:
+  enabled: true
+  source: packages/scoring/rules/iteration-tier.yaml
+severityOverridePolicy:
+  enabled: true
+  source: packages/scoring/rules/iteration-tier.yaml
+stageRuleRefs:
+  - stage: implement
+    kind: phase
+    path: packages/scoring/rules/default/implement-scoring.yaml
+  - stage: test
+    kind: phase
+    path: packages/scoring/rules/default/test-scoring.yaml
+  - stage: bugfix
+    kind: phase
+    path: packages/scoring/rules/default/bugfix-scoring.yaml
+  - stage: spec
+    kind: stage
+    path: packages/scoring/rules/spec-scoring.yaml
+  - stage: plan
+    kind: stage
+    path: packages/scoring/rules/plan-scoring.yaml
+  - stage: tasks
+    kind: stage
+    path: packages/scoring/rules/tasks-scoring.yaml
+  - stage: gaps
+    kind: gaps
+    path: packages/scoring/rules/gaps-scoring.yaml
+requiredScoreArtifactKinds:
+  - score_record
+  - scoring_gate_report

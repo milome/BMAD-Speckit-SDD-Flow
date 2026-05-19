@@ -1,0 +1,37 @@
+{
+  "reportType": "scoring_gates_report",
+  "generatedAt": "2026-05-19T16:02:16.305Z",
+  "evaluatedBy": "agent",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "decision": "pass",
+  "blockingReasons": [],
+  "checks": [
+    {
+      "id": "runtime-policy-scoring-required-resolved",
+      "passed": true,
+      "scoringRequired": true
+    },
+    {
+      "id": "resolved-scoring-policy-present",
+      "passed": true,
+      "scoringPolicyHash": "sha256:77d300631de7385c682087de6b9ca729f84f5548a0928f02821bd193ed4efecf",
+      "snapshotScoringPolicyHash": "sha256:77d300631de7385c682087de6b9ca729f84f5548a0928f02821bd193ed4efecf"
+    },
+    {
+      "id": "score-materialization-gate-pass",
+      "passed": true,
+      "decision": "pass"
+    },
+    {
+      "id": "score-evaluation-gate-pass",
+      "passed": true,
+      "decision": "pass"
+    },
+    {
+      "id": "score-failures-resolved-before-closeout",
+      "passed": true,
+      "openCount": 0
+    }
+  ]
+}

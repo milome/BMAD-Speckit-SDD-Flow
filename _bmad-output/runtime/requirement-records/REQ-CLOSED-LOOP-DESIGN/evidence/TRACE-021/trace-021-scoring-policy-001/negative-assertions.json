@@ -1,0 +1,19 @@
+{
+  "assertions": [
+    {
+      "id": "NEG-016-A",
+      "text": "Scoring gate blocks when runtime snapshot lacks ResolvedScoringPolicy.",
+      "validatedBy": "tests/acceptance/main-agent-scoring-gates-check.test.ts"
+    },
+    {
+      "id": "NEG-016-B",
+      "text": "Scoring gate blocks when score artifact policy hash does not match resolveScoringPolicy().",
+      "validatedBy": "tests/acceptance/main-agent-scoring-gates-check.test.ts"
+    },
+    {
+      "id": "OUT-014-A",
+      "text": "Legacy scoring trigger/rules/weights/veto inputs are only source fragments expanded and hashed by resolveScoringPolicy().",
+      "validatedBy": "tests/acceptance/scoring-policy-resolution.test.ts"
+    }
+  ]
+}

@@ -2,6 +2,7 @@
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { resolveScoringPolicy } from '../packages/scoring/policy';
 
 type JsonObject = Record<string, unknown>;
 type ScoringGateDecision = 'pass' | 'blocked';
@@ -95,6 +96,14 @@ function scoringRequiredFromSnapshot(snapshot: JsonObject | null): boolean | nul
   return null;
 }
 
+function resolvedScoringPolicyFromSnapshot(snapshot: JsonObject | null): JsonObject | null {
+  const resolved = nested(snapshot, 'resolvedScoringPolicy');
+  if (!resolved) return null;
+  if (text(resolved.schemaVersion) !== 'resolved-scoring-policy/v1') return null;
+  if (!/^sha256:[a-f0-9]{64}$/u.test(text(resolved.scoringPolicyHash))) return null;
+  return resolved;
+}
+
 function latestGate(record: JsonObject, gate: string): JsonObject | null {
   return objects(record.gateChecks).filter((check) => text(check.gate) === gate).at(-1) ?? null;
 }
@@ -130,16 +139,29 @@ function readScoreArtifact(root: string, artifact: JsonObject): JsonObject | nul
   }
 }
 
-function scoreArtifactIssues(root: string, record: JsonObject): string[] {
+function scoreArtifactIssues(root: string, record: JsonObject, resolvedPolicy: JsonObject): string[] {
   const issues: string[] = [];
+  const requiredKinds = Array.isArray(resolvedPolicy.requiredScoreArtifactKinds)
+    ? resolvedPolicy.requiredScoreArtifactKinds.map(text).filter(Boolean)
+    : [];
   const artifacts = scoreArtifacts(record);
   if (artifacts.length === 0) {
     issues.push('score_artifact_ref_missing');
     return issues;
   }
+  if (requiredKinds.length > 0) {
+    for (const kind of requiredKinds) {
+      if (!artifacts.some((artifact) => text(artifact.artifactType) === kind)) {
+        issues.push(`required_score_artifact_kind_missing:${kind}`);
+      }
+    }
+  }
   const controlArtifact = artifacts.find((artifact) => text(artifact.sourceOfTruthRole) === 'control');
   if (controlArtifact) issues.push('score_artifact_must_not_be_control');
-  const evidenceArtifact = artifacts.find((artifact) => ['evidence', 'read_model'].includes(text(artifact.sourceOfTruthRole)));
+  const evidenceArtifact = artifacts
+    .filter((artifact) => ['evidence', 'read_model'].includes(text(artifact.sourceOfTruthRole)))
+    .reverse()
+    .find((artifact) => ['score', 'score_record', 'score_report'].includes(text(artifact.artifactType)));
   if (!evidenceArtifact) issues.push('score_artifact_evidence_or_read_model_missing');
   const scoreRecord = evidenceArtifact ? readScoreArtifact(root, evidenceArtifact) : null;
   if (!scoreRecord) {
@@ -149,6 +171,9 @@ function scoreArtifactIssues(root: string, record: JsonObject): string[] {
   if (text(scoreRecord.scoreWriteResult) !== 'ok') issues.push('score_write_result_not_ok');
   const scoringPolicyHash = text(scoreRecord.scoringPolicyHash ?? scoreRecord.policyHash);
   if (!/^sha256:[a-f0-9]{64}$/u.test(scoringPolicyHash)) issues.push('score_policy_hash_missing');
+  if (scoringPolicyHash && scoringPolicyHash !== text(resolvedPolicy.scoringPolicyHash)) {
+    issues.push('score_policy_hash_mismatch');
+  }
   const display = nested(scoreRecord, 'display');
   if (display && display.visible !== true) issues.push('score_display_not_visible');
   const evaluation = nested(scoreRecord, 'evaluation');
@@ -195,6 +220,23 @@ function evaluateScoringGates(root: string, record: JsonObject): { decision: Sco
   const scoringRequired = scoringRequiredFromSnapshot(snapshot);
   checks.push({ id: 'runtime-policy-scoring-required-resolved', passed: scoringRequired !== null, scoringRequired });
   if (scoringRequired === null) blockingReasons.push('runtime_policy_scoring_required_unresolved');
+  let resolvedPolicy: JsonObject | null = null;
+  try {
+    resolvedPolicy = resolveScoringPolicy({ root }) as unknown as JsonObject;
+  } catch (error) {
+    blockingReasons.push(`resolved_scoring_policy_unavailable:${error instanceof Error ? error.message : String(error)}`);
+  }
+  const snapshotResolvedPolicy = resolvedScoringPolicyFromSnapshot(snapshot);
+  checks.push({
+    id: 'resolved-scoring-policy-present',
+    passed: Boolean(resolvedPolicy && snapshotResolvedPolicy),
+    scoringPolicyHash: text(resolvedPolicy?.scoringPolicyHash),
+    snapshotScoringPolicyHash: text(snapshotResolvedPolicy?.scoringPolicyHash),
+  });
+  if (!snapshotResolvedPolicy) blockingReasons.push('runtime_snapshot_resolved_scoring_policy_missing');
+  if (resolvedPolicy && snapshotResolvedPolicy && text(resolvedPolicy.scoringPolicyHash) !== text(snapshotResolvedPolicy.scoringPolicyHash)) {
+    blockingReasons.push('runtime_snapshot_resolved_scoring_policy_hash_mismatch');
+  }
 
   const materialization = latestGate(record, 'score_materialization');
   const evaluation = latestGate(record, 'score_evaluation');
@@ -222,7 +264,9 @@ function evaluateScoringGates(root: string, record: JsonObject): { decision: Sco
   }
 
   if (materializationPass) {
-    blockingReasons.push(...scoreArtifactIssues(root, record));
+    if (resolvedPolicy) {
+      blockingReasons.push(...scoreArtifactIssues(root, record, resolvedPolicy));
+    }
   }
 
   const evaluationPass = evaluationDecision === 'pass';

@@ -3,11 +3,11 @@
   "schemaVersion": "runtime-policy-snapshot/v1",
   "recordId": "REQ-CLOSED-LOOP-DESIGN",
   "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
-  "generatedAt": "2026-05-19T15:19:38.995Z",
+  "generatedAt": "2026-05-19T15:57:23.695Z",
   "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
   "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
   "architectureConfirmationHash": "sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
-  "policyHash": "sha256:f2463943b1bbafc51a2aec8987e5f899018692c0e186b0fd3464e37a34ce5095",
+  "policyHash": "sha256:1790b813134a24c5d3d9e3a4eacfee15ee2023a7e7ce4cd86cc22af3483bc269",
   "policy": {
     "auditRequired": true,
     "compatibilitySource": "governance",
@@ -31,7 +31,7 @@
       "generateDoc": true,
       "granularityGoverned": true,
       "mandatoryGate": false,
-      "reason": "legacy:auditRequired=true,validationLevel=null,strictness=strict,generateDoc=true; convergence:strict; mandatory:none; D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\_config\\runtime-granularity-stages.yaml:granularityGoverned=true; trigger:standalone_tasks/implement→implement; scoringEnabled=true(matched); identity:contextSource=ResolvedRuntimeContext",
+      "reason": "legacy:auditRequired=true,validationLevel=null,strictness=strict,generateDoc=true; convergence:strict; mandatory:none; D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\_config\\runtime-granularity-stages.yaml:granularityGoverned=true; trigger:standalone_tasks/implement→implement; scoringEnabled=true(matched); identity:runId=run-trace-021-scoring-policy-001,contextSource=ResolvedRuntimeContext",
       "scoringEnabled": true,
       "skipAllowed": false,
       "strictness": "strict",
@@ -62,14 +62,14 @@
       "canonicalImplementationGate": "implementation-readiness",
       "complexity": "low",
       "complexityForcedReasons": [],
-      "complexityScore": 3,
+      "complexityScore": 2,
       "contextMaturity": "seeded",
       "continueDecision": "blocked",
       "continueStateSource": "runtimeContext",
       "evidence": {
         "complexityFactors": {
           "forcedReasons": [],
-          "impactSurface": 1,
+          "impactSurface": 0,
           "rollbackDifficulty": 1,
           "sharedContract": 0,
           "uncertainty": 1,
@@ -77,7 +77,7 @@
         },
         "contextMaturity": {
           "artifactComplete": true,
-          "executionSpecific": false,
+          "executionSpecific": true,
           "fourSignalsComplete": false,
           "governanceHealthy": false,
           "runtimeScopeComplete": true
@@ -112,7 +112,7 @@
           "TASKS/BUGFIX prerequisite audit authoritative closeout is missing or has not passed"
         ],
         "decision": "block",
-        "evaluatedAt": "2026-05-19T22:45:00.000+08:00",
+        "evaluatedAt": "2026-05-19T15:44:47.4715086Z",
         "evidenceSources": {
           "authoritativeAuditReportPath": null,
           "executionRecordPath": null,
@@ -266,6 +266,7 @@
     "identity": {
       "contextSource": "ResolvedRuntimeContext",
       "flow": "standalone_tasks",
+      "runId": "run-trace-021-scoring-policy-001",
       "stage": "implement"
     },
     "implementationEntryDecision": "block",
@@ -277,7 +278,7 @@
         "TASKS/BUGFIX prerequisite audit authoritative closeout is missing or has not passed"
       ],
       "decision": "block",
-      "evaluatedAt": "2026-05-19T22:45:00.000+08:00",
+      "evaluatedAt": "2026-05-19T15:44:47.4715086Z",
       "evidenceSources": {
         "authoritativeAuditReportPath": null,
         "executionRecordPath": null,
@@ -427,7 +428,7 @@
     },
     "mainAgentReady": false,
     "mandatoryGate": false,
-    "reason": "legacy:auditRequired=true,validationLevel=null,strictness=strict,generateDoc=true; convergence:strict; mandatory:none; D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\_config\\runtime-granularity-stages.yaml:granularityGoverned=true; trigger:standalone_tasks/implement→implement; scoringEnabled=true(matched); identity:contextSource=ResolvedRuntimeContext",
+    "reason": "legacy:auditRequired=true,validationLevel=null,strictness=strict,generateDoc=true; convergence:strict; mandatory:none; D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\_config\\runtime-granularity-stages.yaml:granularityGoverned=true; trigger:standalone_tasks/implement→implement; scoringEnabled=true(matched); identity:runId=run-trace-021-scoring-policy-001,contextSource=ResolvedRuntimeContext",
     "reviewerContract": {
       "activeAuditConsumer": {
         "auditorScript": "auditor-tasks-doc",
@@ -545,6 +546,119 @@
     "strictness": "strict",
     "triggerStage": "implement",
     "validationLevel": null
+  },
+  "resolvedScoringPolicy": {
+    "schemaVersion": "resolved-scoring-policy/v1",
+    "policyId": "default-six-model-scoring-policy",
+    "contractPath": "_bmad/_config/scoring-policy.contract.yaml",
+    "contractHash": "sha256:533d2d644e3298b5daba3cdebc390454f3d44bedc9b1c1b1ccb4278294d16a20",
+    "scoreMaterializationPolicy": {
+      "requiredByDefault": true,
+      "requireScoreWriteResultOk": true,
+      "requireArtifactIndexRef": true,
+      "requireDisplayableScore": true
+    },
+    "scoreEvaluationPolicy": {
+      "requiredByDefault": true,
+      "requireThresholdEvaluation": true,
+      "requireDimensionVetoEvaluation": true,
+      "requireIterationPenaltyEvaluation": true
+    },
+    "passThresholds": {
+      "default": 80,
+      "byStage": {
+        "implement": 80,
+        "audit_closeout": 80
+      }
+    },
+    "levelRanges": [
+      {
+        "level": "L5",
+        "min": 90,
+        "max": 100
+      },
+      {
+        "level": "L4",
+        "min": 80,
+        "max": 89
+      },
+      {
+        "level": "L3",
+        "min": 60,
+        "max": 79
+      },
+      {
+        "level": "L2",
+        "min": 40,
+        "max": 59
+      },
+      {
+        "level": "L1",
+        "min": 0,
+        "max": 39
+      }
+    ],
+    "dimensionVetoPolicy": {
+      "enabled": true,
+      "failOnAnyTriggeredVeto": true
+    },
+    "iterationPenaltyPolicy": {
+      "enabled": true,
+      "source": "packages/scoring/rules/iteration-tier.yaml"
+    },
+    "severityOverridePolicy": {
+      "enabled": true,
+      "source": "packages/scoring/rules/iteration-tier.yaml"
+    },
+    "stageRuleRefs": [
+      {
+        "stage": "implement",
+        "kind": "phase",
+        "path": "packages/scoring/rules/default/implement-scoring.yaml",
+        "hash": "sha256:617cad33277124a97a17a2844984e87b0f59ed99a55ce7d724534695c1aa6eec"
+      },
+      {
+        "stage": "test",
+        "kind": "phase",
+        "path": "packages/scoring/rules/default/test-scoring.yaml",
+        "hash": "sha256:3f3fb1359c7a2481c1f76450e26a9f58059cdced0d8756185afd0cd9113dbfb3"
+      },
+      {
+        "stage": "bugfix",
+        "kind": "phase",
+        "path": "packages/scoring/rules/default/bugfix-scoring.yaml",
+        "hash": "sha256:72a91c9033ce429823e05f0fd23b1b05bca9a424c56bf7f9bf5d9f20093a2872"
+      },
+      {
+        "stage": "spec",
+        "kind": "stage",
+        "path": "packages/scoring/rules/spec-scoring.yaml",
+        "hash": "sha256:9944beb07ebb824835a16e7b895c3e54192f610efdd65c97c356f02814d32d30"
+      },
+      {
+        "stage": "plan",
+        "kind": "stage",
+        "path": "packages/scoring/rules/plan-scoring.yaml",
+        "hash": "sha256:e1f723881d5efd441ef87de548247dc6f68dfe382b520bc012292b2d39750878"
+      },
+      {
+        "stage": "tasks",
+        "kind": "stage",
+        "path": "packages/scoring/rules/tasks-scoring.yaml",
+        "hash": "sha256:0790f4d3cc4ea0b3c1c9078183d649c2d3df00a38cae719264327c54244728f3"
+      },
+      {
+        "stage": "gaps",
+        "kind": "gaps",
+        "path": "packages/scoring/rules/gaps-scoring.yaml",
+        "hash": "sha256:f65dacdd2fa47cad31dbc2db74479d8e76058197ac94f95d7d01b8fa686342a4"
+      }
+    ],
+    "requiredScoreArtifactKinds": [
+      "score_record",
+      "scoring_gate_report"
+    ],
+    "scoringPolicyHash": "sha256:77d300631de7385c682087de6b9ca729f84f5548a0928f02821bd193ed4efecf"
   },
   "locale": "zh-CN",
   "host": "codex",

@@ -1,0 +1,113 @@
+{
+  "schemaVersion": "resolved-scoring-policy/v1",
+  "policyId": "default-six-model-scoring-policy",
+  "contractPath": "_bmad/_config/scoring-policy.contract.yaml",
+  "contractHash": "sha256:533d2d644e3298b5daba3cdebc390454f3d44bedc9b1c1b1ccb4278294d16a20",
+  "scoreMaterializationPolicy": {
+    "requiredByDefault": true,
+    "requireScoreWriteResultOk": true,
+    "requireArtifactIndexRef": true,
+    "requireDisplayableScore": true
+  },
+  "scoreEvaluationPolicy": {
+    "requiredByDefault": true,
+    "requireThresholdEvaluation": true,
+    "requireDimensionVetoEvaluation": true,
+    "requireIterationPenaltyEvaluation": true
+  },
+  "passThresholds": {
+    "default": 80,
+    "byStage": {
+      "implement": 80,
+      "audit_closeout": 80
+    }
+  },
+  "levelRanges": [
+    {
+      "level": "L5",
+      "min": 90,
+      "max": 100
+    },
+    {
+      "level": "L4",
+      "min": 80,
+      "max": 89
+    },
+    {
+      "level": "L3",
+      "min": 60,
+      "max": 79
+    },
+    {
+      "level": "L2",
+      "min": 40,
+      "max": 59
+    },
+    {
+      "level": "L1",
+      "min": 0,
+      "max": 39
+    }
+  ],
+  "dimensionVetoPolicy": {
+    "enabled": true,
+    "failOnAnyTriggeredVeto": true
+  },
+  "iterationPenaltyPolicy": {
+    "enabled": true,
+    "source": "packages/scoring/rules/iteration-tier.yaml"
+  },
+  "severityOverridePolicy": {
+    "enabled": true,
+    "source": "packages/scoring/rules/iteration-tier.yaml"
+  },
+  "stageRuleRefs": [
+    {
+      "stage": "implement",
+      "kind": "phase",
+      "path": "packages/scoring/rules/default/implement-scoring.yaml",
+      "hash": "sha256:617cad33277124a97a17a2844984e87b0f59ed99a55ce7d724534695c1aa6eec"
+    },
+    {
+      "stage": "test",
+      "kind": "phase",
+      "path": "packages/scoring/rules/default/test-scoring.yaml",
+      "hash": "sha256:3f3fb1359c7a2481c1f76450e26a9f58059cdced0d8756185afd0cd9113dbfb3"
+    },
+    {
+      "stage": "bugfix",
+      "kind": "phase",
+      "path": "packages/scoring/rules/default/bugfix-scoring.yaml",
+      "hash": "sha256:72a91c9033ce429823e05f0fd23b1b05bca9a424c56bf7f9bf5d9f20093a2872"
+    },
+    {
+      "stage": "spec",
+      "kind": "stage",
+      "path": "packages/scoring/rules/spec-scoring.yaml",
+      "hash": "sha256:9944beb07ebb824835a16e7b895c3e54192f610efdd65c97c356f02814d32d30"
+    },
+    {
+      "stage": "plan",
+      "kind": "stage",
+      "path": "packages/scoring/rules/plan-scoring.yaml",
+      "hash": "sha256:e1f723881d5efd441ef87de548247dc6f68dfe382b520bc012292b2d39750878"
+    },
+    {
+      "stage": "tasks",
+      "kind": "stage",
+      "path": "packages/scoring/rules/tasks-scoring.yaml",
+      "hash": "sha256:0790f4d3cc4ea0b3c1c9078183d649c2d3df00a38cae719264327c54244728f3"
+    },
+    {
+      "stage": "gaps",
+      "kind": "gaps",
+      "path": "packages/scoring/rules/gaps-scoring.yaml",
+      "hash": "sha256:f65dacdd2fa47cad31dbc2db74479d8e76058197ac94f95d7d01b8fa686342a4"
+    }
+  ],
+  "requiredScoreArtifactKinds": [
+    "score_record",
+    "scoring_gate_report"
+  ],
+  "scoringPolicyHash": "sha256:77d300631de7385c682087de6b9ca729f84f5548a0928f02821bd193ed4efecf"
+}

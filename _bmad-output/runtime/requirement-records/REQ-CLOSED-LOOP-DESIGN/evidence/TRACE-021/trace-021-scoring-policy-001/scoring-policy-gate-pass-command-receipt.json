@@ -1,0 +1,10 @@
+{
+  "commandId": "CMD-SCORING-POLICY-PASS",
+  "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-021/trace-021-scoring-policy-001/scoring-policy-gate-pass.json --json",
+  "runId": "run-trace-021-scoring-policy-001",
+  "closeoutAttemptId": "closeout-trace-021-scoring-policy-001",
+  "exitCode": 0,
+  "startedAt": "2026-05-19T16:02:15.3333693Z",
+  "completedAt": "2026-05-19T16:02:16.3534758Z",
+  "outputSummary": "Scoring policy resolution gate and scoring gates passed after controlled ingest."
+}

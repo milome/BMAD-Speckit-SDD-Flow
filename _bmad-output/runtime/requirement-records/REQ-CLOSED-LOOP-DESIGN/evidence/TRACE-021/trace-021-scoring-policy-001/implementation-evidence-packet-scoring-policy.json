@@ -1,0 +1,471 @@
+{
+  "eventType": "execution_iteration_recorded",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "executionIterationId": "exec-trace-021-scoring-policy-001",
+  "runId": "run-trace-021-scoring-policy-001",
+  "status": "done",
+  "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+  "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
+  "architectureConfirmationHash": "sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+  "traceRows": [
+    "TRACE-021"
+  ],
+  "taskRefs": [
+    "TASK-SCORING-POLICY-GATES"
+  ],
+  "evidenceRefs": [
+    "EVD-005",
+    "EVD-027",
+    "EVD-028"
+  ],
+  "filesChanged": [
+    "_bmad/_config/scoring-policy.contract.yaml",
+    "packages/scoring/policy/scoring-policy.ts",
+    "packages/scoring/policy/index.ts",
+    "scripts/write-runtime-policy-snapshot-and-recovery-context.ts",
+    "scripts/main-agent-scoring-gates-check.ts",
+    "tests/acceptance/scoring-policy-resolution.test.ts",
+    "tests/acceptance/main-agent-scoring-gates-check.test.ts"
+  ],
+  "implementationDelta": {
+    "filesChanged": [
+      "_bmad/_config/scoring-policy.contract.yaml",
+      "packages/scoring/policy/scoring-policy.ts",
+      "packages/scoring/policy/index.ts",
+      "scripts/write-runtime-policy-snapshot-and-recovery-context.ts",
+      "scripts/main-agent-scoring-gates-check.ts",
+      "tests/acceptance/scoring-policy-resolution.test.ts",
+      "tests/acceptance/main-agent-scoring-gates-check.test.ts"
+    ],
+    "diffSummaryRef": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-021/trace-021-scoring-policy-001/implementation-delta-summary.md",
+    "behaviorAffecting": true,
+    "negativeAssertionArtifactRefs": [
+      {
+        "artifactType": "negative_assertion_report",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-021/trace-021-scoring-policy-001/negative-assertions.json",
+        "contentHash": "sha256:22207f7b6278f63dfa8037c1fbe335425e826aa72fe03d5c9710447254987628",
+        "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-021 implementation",
+        "purpose": "TRACE-021 negative assertions for scoring policy resolver bypass fail-closed behavior.",
+        "relatedRequirementIds": [
+          "MUST-028",
+          "NEG-016",
+          "OUT-014",
+          "EVD-005",
+          "EVD-027",
+          "EVD-028",
+          "TRACE-021"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+        "outputVersion": "negative_assertion_report/v1",
+        "traceRows": [
+          "TRACE-021"
+        ],
+        "evidenceRefs": [
+          "EVD-028"
+        ]
+      }
+    ]
+  },
+  "diffSummary": "Add single-entry scoring policy resolver and enforce resolved policy hash in scoring gate checks.",
+  "commandRuns": [
+    {
+      "commandId": "CMD-SCORING-POLICY-ACCEPTANCE",
+      "command": "npx vitest run tests/acceptance/scoring-policy-resolution.test.ts tests/acceptance/main-agent-scoring-gates-check.test.ts tests/acceptance/runtime-policy-emit-stable.test.ts",
+      "runId": "run-trace-021-scoring-policy-001",
+      "closeoutAttemptId": "closeout-trace-021-scoring-policy-001",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T15:56:52.000Z",
+      "completedAt": "2026-05-19T15:57:05.000Z",
+      "outputSummary": "3 test files passed; 14 tests passed."
+    },
+    {
+      "commandId": "CMD-SCORING-POLICY-BEFORE",
+      "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-021/trace-021-scoring-policy-001/scoring-policy-gate-before.json --json",
+      "runId": "run-trace-021-scoring-policy-001",
+      "closeoutAttemptId": "closeout-trace-021-scoring-policy-001",
+      "exitCode": 1,
+      "startedAt": "2026-05-19T15:58:00.000Z",
+      "completedAt": "2026-05-19T15:58:03.000Z",
+      "outputSummary": "Initial fail-closed check: runtime_policy_scoring_required_unresolved, runtime_snapshot_resolved_scoring_policy_missing, score_policy_hash_mismatch."
+    }
+  ],
+  "artifactRefs": [
+    {
+      "artifactType": "runtime_policy_snapshot",
+      "sourceOfTruthRole": "projection",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/recovery/runtime-policy-snapshot.json",
+      "contentHash": "sha256:a4d23a96a710ec19521a3ec0e59f70bfb007613d5f621032ec8dd1c4bc328681",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-021 implementation",
+      "purpose": "Requirement-scoped runtime policy snapshot carrying ResolvedScoringPolicy for TRACE-021.",
+      "relatedRequirementIds": [
+        "MUST-026",
+        "MUST-028",
+        "NEG-016",
+        "OUT-014",
+        "EVD-026",
+        "EVD-028",
+        "TRACE-019",
+        "TRACE-021"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "runtime-policy-snapshot/v1",
+      "traceRows": [
+        "TRACE-019",
+        "TRACE-021"
+      ],
+      "evidenceRefs": [
+        "EVD-026",
+        "EVD-028"
+      ]
+    },
+    {
+      "artifactType": "score_record",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/scoring/score-record-trace-021.json",
+      "contentHash": "sha256:2d3ba683b32753bece9e2b832a709e6f37cb20831d98013ef5156f0b218f3c6b",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-021 implementation",
+      "purpose": "Score record proving score artifact policy hash matches resolveScoringPolicy output.",
+      "relatedRequirementIds": [
+        "MUST-028",
+        "NEG-016",
+        "OUT-014",
+        "EVD-005",
+        "EVD-027",
+        "EVD-028",
+        "TRACE-021"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "score_record/v1",
+      "traceRows": [
+        "TRACE-021"
+      ],
+      "evidenceRefs": [
+        "EVD-027",
+        "EVD-028"
+      ]
+    },
+    {
+      "artifactType": "scoring_policy_contract",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad/_config/scoring-policy.contract.yaml",
+      "contentHash": "sha256:533d2d644e3298b5daba3cdebc390454f3d44bedc9b1c1b1ccb4278294d16a20",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-021 implementation",
+      "purpose": "Single authoritative user-configurable scoring policy contract.",
+      "relatedRequirementIds": [
+        "MUST-028",
+        "NEG-016",
+        "OUT-014",
+        "EVD-005",
+        "EVD-027",
+        "EVD-028",
+        "TRACE-021"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "scoring-policy.contract/v1",
+      "traceRows": [
+        "TRACE-021"
+      ],
+      "evidenceRefs": [
+        "EVD-028"
+      ]
+    },
+    {
+      "artifactType": "resolved_scoring_policy",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-021/trace-021-scoring-policy-001/resolved-scoring-policy.json",
+      "contentHash": "sha256:a4d4b519a9f09831d3572b15d05f1970fef60bd65a662a4b853928359d7b72bf",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-021 implementation",
+      "purpose": "ResolvedScoringPolicy snapshot with contract hash, rule hashes, and scoringPolicyHash.",
+      "relatedRequirementIds": [
+        "MUST-028",
+        "NEG-016",
+        "OUT-014",
+        "EVD-005",
+        "EVD-027",
+        "EVD-028",
+        "TRACE-021"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "resolved-scoring-policy/v1",
+      "traceRows": [
+        "TRACE-021"
+      ],
+      "evidenceRefs": [
+        "EVD-028"
+      ]
+    },
+    {
+      "artifactType": "negative_assertion_report",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-021/trace-021-scoring-policy-001/negative-assertions.json",
+      "contentHash": "sha256:22207f7b6278f63dfa8037c1fbe335425e826aa72fe03d5c9710447254987628",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-021 implementation",
+      "purpose": "TRACE-021 negative assertions for scoring policy resolver bypass fail-closed behavior.",
+      "relatedRequirementIds": [
+        "MUST-028",
+        "NEG-016",
+        "OUT-014",
+        "EVD-005",
+        "EVD-027",
+        "EVD-028",
+        "TRACE-021"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "negative_assertion_report/v1",
+      "traceRows": [
+        "TRACE-021"
+      ],
+      "evidenceRefs": [
+        "EVD-028"
+      ]
+    },
+    {
+      "artifactType": "scoring_gate_report",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-021/trace-021-scoring-policy-001/scoring-policy-gate-before.json",
+      "contentHash": "sha256:8c061b27702d5b1909d66303efcdc9a2c5b7d180b9ae95062cdb47d89a78f89e",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-021 implementation",
+      "purpose": "Pre-ingest fail-closed report showing stale/missing resolved policy state blocks scoring gate.",
+      "relatedRequirementIds": [
+        "MUST-028",
+        "NEG-016",
+        "OUT-014",
+        "EVD-005",
+        "EVD-027",
+        "EVD-028",
+        "TRACE-021"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "scoring_gate_report/v1",
+      "traceRows": [
+        "TRACE-021"
+      ],
+      "evidenceRefs": [
+        "EVD-028"
+      ]
+    },
+    {
+      "artifactType": "implementation_delta_summary",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-021/trace-021-scoring-policy-001/implementation-delta-summary.md",
+      "contentHash": "sha256:5a5f10921ba073e6fa2a25853c88a30b7b411adad3070e148a9df1ed121d79bf",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-021 implementation",
+      "purpose": "TRACE-021 implementation delta summary.",
+      "relatedRequirementIds": [
+        "MUST-028",
+        "NEG-016",
+        "OUT-014",
+        "EVD-005",
+        "EVD-027",
+        "EVD-028",
+        "TRACE-021"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "implementation_delta_summary/v1",
+      "traceRows": [
+        "TRACE-021"
+      ],
+      "evidenceRefs": [
+        "EVD-028"
+      ]
+    }
+  ],
+  "runtimePolicySnapshotRef": {
+    "artifactType": "runtime_policy_snapshot",
+    "sourceOfTruthRole": "projection",
+    "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/recovery/runtime-policy-snapshot.json",
+    "contentHash": "sha256:a4d23a96a710ec19521a3ec0e59f70bfb007613d5f621032ec8dd1c4bc328681",
+    "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-021 implementation",
+    "purpose": "Requirement-scoped runtime policy snapshot carrying ResolvedScoringPolicy for TRACE-021.",
+    "relatedRequirementIds": [
+      "MUST-026",
+      "MUST-028",
+      "NEG-016",
+      "OUT-014",
+      "EVD-026",
+      "EVD-028",
+      "TRACE-019",
+      "TRACE-021"
+    ],
+    "status": "active",
+    "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+    "outputVersion": "runtime-policy-snapshot/v1",
+    "traceRows": [
+      "TRACE-019",
+      "TRACE-021"
+    ],
+    "evidenceRefs": [
+      "EVD-026",
+      "EVD-028"
+    ]
+  },
+  "deliveryEvidence": {
+    "requiredCommands": [
+      {
+        "commandId": "CMD-SCORING-POLICY-ACCEPTANCE",
+        "command": "npx vitest run tests/acceptance/scoring-policy-resolution.test.ts tests/acceptance/main-agent-scoring-gates-check.test.ts tests/acceptance/runtime-policy-emit-stable.test.ts",
+        "commandType": "contract_validation",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": [
+          "TRACE-021"
+        ],
+        "evidenceRefs": [
+          "EVD-028"
+        ],
+        "artifactRefs": [
+          {
+            "artifactType": "scoring_policy_contract",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad/_config/scoring-policy.contract.yaml",
+            "contentHash": "sha256:533d2d644e3298b5daba3cdebc390454f3d44bedc9b1c1b1ccb4278294d16a20",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-021 implementation",
+            "purpose": "Single authoritative user-configurable scoring policy contract.",
+            "relatedRequirementIds": [
+              "MUST-028",
+              "NEG-016",
+              "OUT-014",
+              "EVD-005",
+              "EVD-027",
+              "EVD-028",
+              "TRACE-021"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "scoring-policy.contract/v1",
+            "traceRows": [
+              "TRACE-021"
+            ],
+            "evidenceRefs": [
+              "EVD-028"
+            ]
+          },
+          {
+            "artifactType": "resolved_scoring_policy",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-021/trace-021-scoring-policy-001/resolved-scoring-policy.json",
+            "contentHash": "sha256:a4d4b519a9f09831d3572b15d05f1970fef60bd65a662a4b853928359d7b72bf",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-021 implementation",
+            "purpose": "ResolvedScoringPolicy snapshot with contract hash, rule hashes, and scoringPolicyHash.",
+            "relatedRequirementIds": [
+              "MUST-028",
+              "NEG-016",
+              "OUT-014",
+              "EVD-005",
+              "EVD-027",
+              "EVD-028",
+              "TRACE-021"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "resolved-scoring-policy/v1",
+            "traceRows": [
+              "TRACE-021"
+            ],
+            "evidenceRefs": [
+              "EVD-028"
+            ]
+          },
+          {
+            "artifactType": "negative_assertion_report",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-021/trace-021-scoring-policy-001/negative-assertions.json",
+            "contentHash": "sha256:22207f7b6278f63dfa8037c1fbe335425e826aa72fe03d5c9710447254987628",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-021 implementation",
+            "purpose": "TRACE-021 negative assertions for scoring policy resolver bypass fail-closed behavior.",
+            "relatedRequirementIds": [
+              "MUST-028",
+              "NEG-016",
+              "OUT-014",
+              "EVD-005",
+              "EVD-027",
+              "EVD-028",
+              "TRACE-021"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "negative_assertion_report/v1",
+            "traceRows": [
+              "TRACE-021"
+            ],
+            "evidenceRefs": [
+              "EVD-028"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "gateChecks": [
+    {
+      "gate": "scoring_policy_resolution",
+      "decision": "pass",
+      "checkId": "scoring-policy-resolution:trace-021",
+      "sourceRefs": [
+        {
+          "sourceType": "artifact_ref",
+          "id": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-021/trace-021-scoring-policy-001/resolved-scoring-policy.json"
+        }
+      ]
+    },
+    {
+      "gate": "score_materialization",
+      "decision": "pass",
+      "checkId": "score-materialization:trace-021",
+      "sourceRefs": [
+        {
+          "sourceType": "artifact_ref",
+          "id": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/scoring/score-record-trace-021.json"
+        }
+      ]
+    },
+    {
+      "gate": "score_evaluation",
+      "decision": "pass",
+      "checkId": "score-evaluation:trace-021",
+      "sourceRefs": [
+        {
+          "sourceType": "gate_check",
+          "id": "score-materialization:trace-021"
+        }
+      ]
+    }
+  ],
+  "requirementClosures": [
+    {
+      "requirementId": "MUST-028",
+      "status": "pass"
+    },
+    {
+      "requirementId": "NEG-016",
+      "status": "pass"
+    },
+    {
+      "requirementId": "OUT-014",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-005",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-027",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-028",
+      "status": "pass"
+    }
+  ],
+  "closeoutAttemptId": "closeout-trace-021-scoring-policy-001"
+}

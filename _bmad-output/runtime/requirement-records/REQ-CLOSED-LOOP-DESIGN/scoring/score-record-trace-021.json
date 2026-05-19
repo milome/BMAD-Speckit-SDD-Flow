@@ -1,0 +1,19 @@
+{
+  "eventType": "score_written",
+  "scoreWriteResult": "ok",
+  "scoringPolicyHash": "sha256:77d300631de7385c682087de6b9ca729f84f5548a0928f02821bd193ed4efecf",
+  "display": {
+    "visible": true,
+    "summary": "TRACE-021 resolved scoring policy gate pass evidence"
+  },
+  "evaluation": {
+    "decision": "pass",
+    "thresholdPassed": true,
+    "dimensionVetoes": [],
+    "iterationPenaltyApplied": false
+  },
+  "resolvedPolicyRef": {
+    "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-021/trace-021-scoring-policy-001/resolved-scoring-policy.json",
+    "contentHash": "sha256:a4d4b519a9f09831d3572b15d05f1970fef60bd65a662a4b853928359d7b72bf"
+  }
+}

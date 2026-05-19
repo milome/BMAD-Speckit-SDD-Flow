@@ -1,8 +1,10 @@
 import * as crypto from 'node:crypto';
+import * as fs from 'node:fs';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { resolveScoringPolicy } from '../../packages/scoring/policy';
 import { mainDeliveryCloseoutGate } from '../../scripts/main-agent-delivery-closeout-gate';
 import { mainIngestImplementationEvidence } from '../../scripts/ingest-implementation-evidence';
 import { mainScoringGatesCheck } from '../../scripts/main-agent-scoring-gates-check';
@@ -86,6 +88,16 @@ function artifactRef(root: string, file: string, artifactType: string, role = 'e
 }
 
 function writeFixture(root: string, overrides: Record<string, unknown> = {}) {
+  fs.mkdirSync(path.join(root, '_bmad', '_config'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'packages', 'scoring', 'rules'), { recursive: true });
+  fs.cpSync(
+    path.join(process.cwd(), '_bmad', '_config', 'scoring-policy.contract.yaml'),
+    path.join(root, '_bmad', '_config', 'scoring-policy.contract.yaml')
+  );
+  fs.cpSync(path.join(process.cwd(), 'packages', 'scoring', 'rules'), path.join(root, 'packages', 'scoring', 'rules'), {
+    recursive: true,
+  });
+  const resolvedScoringPolicy = resolveScoringPolicy({ root });
   const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-SCORING-GATES');
   const recoveryDir = path.join(base, 'recovery');
   const scoringDir = path.join(base, 'scoring');
@@ -107,6 +119,7 @@ function writeFixture(root: string, overrides: Record<string, unknown> = {}) {
       strictness: 'strict',
       scoringEnabled: true,
     },
+    resolvedScoringPolicy,
     locale: 'zh-CN',
     host: 'codex',
     stage: 'implement',
@@ -120,14 +133,24 @@ function writeFixture(root: string, overrides: Record<string, unknown> = {}) {
     },
   });
   const scoreRecordPath = path.join(scoringDir, 'score-record.json');
+  const scoringGateReportPath = path.join(scoringDir, 'scoring-gate-report.json');
   writeJson(scoreRecordPath, {
     eventType: 'score_written',
     scoreWriteResult: 'ok',
-    scoringPolicyHash: SOURCE_HASH,
+    scoringPolicyHash: resolvedScoringPolicy.scoringPolicyHash,
     display: { visible: true },
     evaluation: { decision: 'pass', thresholdPassed: true, dimensionVetoes: [] },
   });
+  writeJson(scoringGateReportPath, {
+    reportType: 'scoring_gates_report',
+    decision: 'pass',
+    checks: [
+      { id: 'score-materialization-gate-pass', passed: true },
+      { id: 'score-evaluation-gate-pass', passed: true },
+    ],
+  });
   const scoreRef = artifactRef(root, scoreRecordPath, 'score_record', 'evidence');
+  const scoringGateReportRef = artifactRef(root, scoringGateReportPath, 'scoring_gate_report', 'evidence');
   const runtimeRef = artifactRef(root, runtimePolicySnapshotPath, 'runtime_policy_snapshot', 'projection');
   const recordPath = path.join(base, 'requirement-record.json');
   const record = {
@@ -164,7 +187,7 @@ function writeFixture(root: string, overrides: Record<string, unknown> = {}) {
     runtimePolicySnapshotRef: runtimeRef,
     globalContractTraceabilityPolicy,
     traceStatusPolicy,
-    artifactIndex: [runtimeRef, scoreRef],
+    artifactIndex: [runtimeRef, scoreRef, scoringGateReportRef],
     gateChecks: [
       { eventType: 'gate_check_recorded', checkId: 'score-materialization:001', gate: 'score_materialization', decision: 'pass' },
       { eventType: 'gate_check_recorded', checkId: 'score-evaluation:001', gate: 'score_evaluation', decision: 'pass' },
@@ -259,6 +282,57 @@ describe('main-agent scoring gates check', () => {
       const report = JSON.parse(readFileSync(path.join(path.dirname(recordPath), 'scoring-gates-report.json'), 'utf8'));
       expect(report.blockingReasons).toContain('score_materialization_gate_missing');
       expect(report.blockingReasons).toContain('score_evaluation_gate_missing');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks when runtime snapshot does not carry ResolvedScoringPolicy', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'scoring-gates-no-policy-'));
+    try {
+      const { recordPath } = writeFixture(root);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      const snapshotPath = path.resolve(root, record.runtimePolicySnapshotRef.path);
+      const snapshot = JSON.parse(readFileSync(snapshotPath, 'utf8'));
+      delete snapshot.resolvedScoringPolicy;
+      writeJson(snapshotPath, snapshot);
+      record.runtimePolicySnapshotRef.contentHash = sha256File(snapshotPath);
+      record.artifactIndex[0].contentHash = record.runtimePolicySnapshotRef.contentHash;
+      writeJson(recordPath, record);
+      const prev = process.cwd();
+      process.chdir(root);
+      try {
+        expect(mainScoringGatesCheck(['--requirement-record', recordPath, '--json'])).toBe(1);
+      } finally {
+        process.chdir(prev);
+      }
+      const report = JSON.parse(readFileSync(path.join(path.dirname(recordPath), 'scoring-gates-report.json'), 'utf8'));
+      expect(report.blockingReasons).toContain('runtime_snapshot_resolved_scoring_policy_missing');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks score records produced with a policy hash that bypasses resolveScoringPolicy', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'scoring-gates-policy-mismatch-'));
+    try {
+      const { recordPath, scoreRecordPath } = writeFixture(root);
+      const score = JSON.parse(readFileSync(scoreRecordPath, 'utf8'));
+      score.scoringPolicyHash = SOURCE_HASH;
+      writeJson(scoreRecordPath, score);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      const scoreRef = record.artifactIndex.find((artifact: { artifactType: string }) => artifact.artifactType === 'score_record');
+      scoreRef.contentHash = sha256File(scoreRecordPath);
+      writeJson(recordPath, record);
+      const prev = process.cwd();
+      process.chdir(root);
+      try {
+        expect(mainScoringGatesCheck(['--requirement-record', recordPath, '--json'])).toBe(1);
+      } finally {
+        process.chdir(prev);
+      }
+      const report = JSON.parse(readFileSync(path.join(path.dirname(recordPath), 'scoring-gates-report.json'), 'utf8'));
+      expect(report.blockingReasons).toContain('score_policy_hash_mismatch');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
