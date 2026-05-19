@@ -58,6 +58,19 @@ function writeFixture(root: string): { recordPath: string; evidencePath: string;
         taskRefs: ['TASK-DELIVERY-CORE-EVIDENCE'],
         evidenceRefs: ['EVD-006'],
         filesChanged: ['scripts/ingest-implementation-evidence.ts'],
+        implementationDelta: {
+          filesChanged: ['scripts/ingest-implementation-evidence.ts'],
+          diffSummaryRef: 'diff-summary.md',
+          behaviorAffecting: true,
+          negativeAssertionArtifactRefs: [
+            {
+              artifactType: 'implementation_evidence',
+              sourceOfTruthRole: 'evidence',
+              path: artifactPath,
+              hash: sha256(`${artifactContent}\n`),
+            },
+          ],
+        },
         diffSummary: 'Add controlled implementation evidence ingest.',
         commandRuns: [
           {
@@ -232,6 +245,27 @@ describe('implementation evidence ingest', () => {
       const packet = JSON.parse(readFileSync(fixture.evidencePath, 'utf8'));
       packet.deliveryEvidence.requiredCommands[0].blockingIfMissing = false;
       packet.deliveryEvidence.requiredCommands[0].artifactRefs = [];
+      writeFileSync(fixture.evidencePath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
+      const code = mainIngestImplementationEvidence([
+        '--evidence',
+        fixture.evidencePath,
+        '--requirement-record',
+        fixture.recordPath,
+      ]);
+      expect(code).toBe(3);
+      expect(readFileSync(fixture.recordPath, 'utf8')).toBe(before);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects evidence packets without behavior-affecting implementation delta proof', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-evidence-delta-'));
+    try {
+      const fixture = writeFixture(root);
+      const before = readFileSync(fixture.recordPath, 'utf8');
+      const packet = JSON.parse(readFileSync(fixture.evidencePath, 'utf8'));
+      delete packet.implementationDelta;
       writeFileSync(fixture.evidencePath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
       const code = mainIngestImplementationEvidence([
         '--evidence',

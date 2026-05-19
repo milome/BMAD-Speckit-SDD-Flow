@@ -160,8 +160,29 @@ function validateArtifacts(packet: JsonObject): string[] {
   return mismatches;
 }
 
+function validateImplementationDelta(packet: JsonObject): string[] {
+  const mismatches: string[] = [];
+  const delta = packet.implementationDelta as JsonObject | undefined;
+  if (!delta || typeof delta !== 'object' || Array.isArray(delta)) {
+    mismatches.push('implementation_delta_missing');
+    return mismatches;
+  }
+  if (arrayOfStrings(delta.filesChanged).length === 0) mismatches.push('implementation_delta_files_changed_missing');
+  if (!text(delta.diffSummaryRef)) mismatches.push('implementation_delta_diff_summary_ref_missing');
+  if (arrayOfObjects(delta.negativeAssertionArtifactRefs).length === 0) {
+    mismatches.push('implementation_delta_negative_assertion_artifact_refs_missing');
+  }
+  if (delta.behaviorAffecting !== true) mismatches.push('implementation_delta_not_behavior_affecting');
+  return mismatches;
+}
+
 function validatePacket(packet: JsonObject, record: JsonObject): string[] {
-  const mismatches = [...requireHashMatch(packet, record), ...validateCommands(packet), ...validateArtifacts(packet)];
+  const mismatches = [
+    ...requireHashMatch(packet, record),
+    ...validateCommands(packet),
+    ...validateArtifacts(packet),
+    ...validateImplementationDelta(packet),
+  ];
   if (containsForbiddenField(packet, 'result')) mismatches.push('forbidden_result_field');
   if (text(packet.eventType) && text(packet.eventType) !== 'execution_iteration_recorded') {
     mismatches.push('unsupported_event_type');
@@ -232,6 +253,7 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
     taskRefs: arrayOfStrings(packet.taskRefs),
     evidenceRefs: arrayOfStrings(packet.evidenceRefs),
     filesChanged: arrayOfStrings(packet.filesChanged),
+    implementationDelta: packet.implementationDelta,
     diffSummary: text(packet.diffSummary),
     commandRunRefs: commandRefs,
     evidenceArtifactRefs: artifactRefs,
