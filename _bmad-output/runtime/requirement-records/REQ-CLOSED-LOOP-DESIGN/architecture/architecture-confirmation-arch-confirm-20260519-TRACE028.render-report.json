@@ -1,0 +1,15 @@
+{
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "runId": "arch-confirm-20260519-TRACE028",
+  "confirmability": "confirmable",
+  "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+  "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
+  "resolvedRecipeHash": "sha256:da10b7ad044a705fb04be14c32a0062e9dc5e91012e5d267a435b83c3ba86b75",
+  "architectureConfirmationArtifactHash": "sha256:a1372528e0fdf4dd0f87b5f37e5be30b3ec8f334e258f85d3c13c604d72facd8",
+  "htmlRef": {
+    "artifactType": "architecture_confirmation_view",
+    "sourceOfTruthRole": "projection",
+    "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/architecture/architecture-confirmation-arch-confirm-20260519-TRACE028.html",
+    "hash": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+  }
+}

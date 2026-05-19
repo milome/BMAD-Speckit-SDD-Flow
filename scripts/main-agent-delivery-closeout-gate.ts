@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { resolveArchitectureConfirmationHashRecipe } from './architecture-confirmation-hash-recipe';
 
 type JsonObject = Record<string, unknown>;
 type CloseoutDecision = 'pass' | 'fail' | 'blocked';
@@ -132,6 +133,49 @@ function hasImplementationReadinessPass(record: JsonObject): boolean {
   );
 }
 
+function latestArchitectureStateCheck(record: JsonObject): JsonObject | null {
+  const checks = objects(record.architectureConfirmationStateChecks);
+  return checks.length > 0 ? checks[checks.length - 1] : null;
+}
+
+function architectureConfirmationIssues(record: JsonObject): string[] {
+  const state =
+    record.architectureConfirmationState &&
+    typeof record.architectureConfirmationState === 'object' &&
+    !Array.isArray(record.architectureConfirmationState)
+      ? (record.architectureConfirmationState as JsonObject)
+      : {};
+  const issues: string[] = [];
+  let resolvedRecipeHash = '';
+  try {
+    resolvedRecipeHash = resolveArchitectureConfirmationHashRecipe().resolvedRecipeHash;
+  } catch {
+    issues.push('architecture_hash_recipe_unresolved');
+  }
+  if (text(state.status) !== 'active' || !text(state.currentArchitectureConfirmationHash)) {
+    issues.push('architecture_confirmation_not_active');
+  }
+  if (!resolvedRecipeHash || text(state.resolvedRecipeHash) !== resolvedRecipeHash) {
+    issues.push('architecture_confirmation_resolved_recipe_hash_not_current');
+  }
+  const stateCheck = latestArchitectureStateCheck(record);
+  const transition =
+    stateCheck?.stateTransition &&
+    typeof stateCheck.stateTransition === 'object' &&
+    !Array.isArray(stateCheck.stateTransition)
+      ? (stateCheck.stateTransition as JsonObject)
+      : {};
+  if (
+    !stateCheck ||
+    text(stateCheck.decision) !== 'pass' ||
+    text(transition.toStatus) !== 'active' ||
+    text(stateCheck.resolvedRecipeHash) !== resolvedRecipeHash
+  ) {
+    issues.push('architecture_confirmation_state_check_not_current');
+  }
+  return [...new Set(issues)];
+}
+
 function hasBlockingScoringState(record: JsonObject): boolean {
   const gates = objects(record.gateChecks);
   const latestMaterialization = gates.filter((check) => text(check.gate) === 'score_materialization').at(-1);
@@ -236,15 +280,13 @@ function evaluate(record: JsonObject, attemptId: string): { decision: CloseoutDe
   checks.push({ id: 'implementation-readiness-gate-passed', passed: readinessPassed });
   if (!readinessPassed) blockingReasons.push('implementation_readiness_gate_not_passed');
 
-  const architectureState = record.architectureConfirmationState as JsonObject | undefined;
-  const architectureActive =
-    architectureState &&
-    typeof architectureState === 'object' &&
-    !Array.isArray(architectureState) &&
-    text(architectureState.status) === 'active' &&
-    text(architectureState.currentArchitectureConfirmationHash);
-  checks.push({ id: 'architecture-confirmation-current', passed: Boolean(architectureActive) });
-  if (!architectureActive) blockingReasons.push('architecture_confirmation_not_active');
+  const architectureIssues = architectureConfirmationIssues(record);
+  checks.push({
+    id: 'architecture-confirmation-current',
+    passed: architectureIssues.length === 0,
+    issueCount: architectureIssues.length,
+  });
+  blockingReasons.push(...architectureIssues);
 
   const requiredCommands = objects(deliveryEvidence(record).requiredCommands);
   checks.push({ id: 'delivery-required-commands-present', passed: requiredCommands.length > 0, count: requiredCommands.length });

@@ -3,6 +3,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { mainImplementationReadinessGate } from '../../scripts/main-agent-implementation-readiness-gate';
+import { resolveArchitectureConfirmationHashRecipe } from '../../scripts/architecture-confirmation-hash-recipe';
 
 const SOURCE_HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
 const IMPLEMENTATION_HASH = 'sha256:2222222222222222222222222222222222222222222222222222222222222222';
@@ -18,6 +19,7 @@ function writeRecord(root: string, record: Record<string, unknown>): string {
 }
 
 function baseRecord(): Record<string, unknown> {
+  const recipe = resolveArchitectureConfirmationHashRecipe();
   return {
     recordId: 'REQ-READINESS',
     requirementSetId: 'REQ-READINESS',
@@ -43,8 +45,47 @@ function baseRecord(): Record<string, unknown> {
     ],
     architectureConfirmationState: {
       status: 'active',
+      currentArchitectureConfirmationRunId: 'arch-run-001',
       currentArchitectureConfirmationHash: ARCH_HASH,
+      resolvedRecipeHash: recipe.resolvedRecipeHash,
+      staleInputs: {
+        sourceDocumentHash: SOURCE_HASH,
+        implementationConfirmationHash: IMPLEMENTATION_HASH,
+        currentArtifactHash: ARCH_HASH,
+        resolvedRecipeHash: recipe.resolvedRecipeHash,
+      },
     },
+    architectureConfirmationStateChecks: [
+      {
+        eventType: 'architecture_confirmation_state_checked',
+        recordId: 'REQ-READINESS',
+        requirementSetId: 'REQ-READINESS',
+        checkId: 'architecture-state:2026-05-19T00:00:00.500Z',
+        decision: 'pass',
+        resolvedRecipeHash: recipe.resolvedRecipeHash,
+        stateTransition: {
+          fromStatus: 'active',
+          toStatus: 'active',
+          reasonCode: 'hash_match',
+          previousHashes: {
+            sourceDocumentHash: SOURCE_HASH,
+            implementationConfirmationHash: IMPLEMENTATION_HASH,
+            currentArtifactHash: ARCH_HASH,
+            resolvedRecipeHash: recipe.resolvedRecipeHash,
+          },
+          currentHashes: {
+            sourceDocumentHash: SOURCE_HASH,
+            implementationConfirmationHash: IMPLEMENTATION_HASH,
+            currentArtifactHash: ARCH_HASH,
+            resolvedRecipeHash: recipe.resolvedRecipeHash,
+          },
+          mismatchFields: [],
+          recipeVersion: recipe.recipeVersion,
+        },
+        checkedAt: '2026-05-19T00:00:00.500Z',
+        checkedBy: 'test-agent',
+      },
+    ],
     contractSummary: {
       openQuestions: [],
     },
@@ -118,6 +159,29 @@ describe('requirement-scoped implementation readiness gate', () => {
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
       expect(record.gateChecks.at(-1).blockingReasons).toContain(
         'source_document_hash_not_current'
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks when architecture state check is missing or stale', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-readiness-arch-state-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        architectureConfirmationStateChecks: [],
+      });
+      const code = mainImplementationReadinessGate([
+        '--requirement-record',
+        recordPath,
+        '--evaluated-at',
+        '2026-05-19T00:00:01.000Z',
+      ]);
+      expect(code).toBe(1);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.gateChecks.at(-1).blockingReasons).toContain(
+        'architecture_confirmation_state_check_not_current'
       );
     } finally {
       rmSync(root, { recursive: true, force: true });

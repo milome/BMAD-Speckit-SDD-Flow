@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "trace-negative-assertions/v1",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "traceRows": ["TRACE-028"],
+  "assertions": [
+    {
+      "id": "NEG-023-ARCHITECTURE-NOT-SKIPPABLE",
+      "covers": ["NEG-023", "MUST-035", "EVD-036"],
+      "assertion": "No entryFlow can skip architecture confirmation because it is simple, local, bugfix, standalone, or missing architecture.md.",
+      "proof": "Readiness and closeout gates now require active architectureConfirmationState and a pass architecture_confirmation_state_checked event."
+    },
+    {
+      "id": "NEG-024-NO-MIDDLE-LAYER-SUBSTITUTE",
+      "covers": ["NEG-024", "MUST-035", "MUST-036"],
+      "assertion": "Delivery Core Ready, P0, five-layer, or internal control markers cannot substitute for the architecture confirmation mental model.",
+      "proof": "Gates read architectureConfirmationState plus state check only; they do not scan old reports, five-layer outputs, artifactIndex, or array order to choose a confirmation."
+    },
+    {
+      "id": "NEG-025-RECIPE-BYPASS-BLOCKS",
+      "covers": ["NEG-025", "MUST-037", "EVD-037"],
+      "assertion": "Missing recipe config, resolver bypass, private hash logic, or resolvedRecipeHash mismatch must block readiness and closeout.",
+      "proof": "Architecture confirmation ingest, readiness gate, and closeout gate all call resolveArchitectureConfirmationHashRecipe()."
+    }
+  ]
+}

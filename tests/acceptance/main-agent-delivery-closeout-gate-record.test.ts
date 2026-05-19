@@ -3,6 +3,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { mainDeliveryCloseoutGate } from '../../scripts/main-agent-delivery-closeout-gate';
+import { resolveArchitectureConfirmationHashRecipe } from '../../scripts/architecture-confirmation-hash-recipe';
 
 const HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
 
@@ -30,6 +31,7 @@ function evidenceArtifactRef(pathValue = '_bmad-output/runtime/requirement-recor
 }
 
 function baseRecord(): Record<string, unknown> {
+  const recipe = resolveArchitectureConfirmationHashRecipe();
   return {
     recordId: 'REQ-CLOSEOUT',
     requirementSetId: 'REQ-CLOSEOUT',
@@ -38,8 +40,47 @@ function baseRecord(): Record<string, unknown> {
     implementationConfirmationHash: HASH,
     architectureConfirmationState: {
       status: 'active',
+      currentArchitectureConfirmationRunId: 'arch-run-001',
       currentArchitectureConfirmationHash: HASH,
+      resolvedRecipeHash: recipe.resolvedRecipeHash,
+      staleInputs: {
+        sourceDocumentHash: HASH,
+        implementationConfirmationHash: HASH,
+        currentArtifactHash: HASH,
+        resolvedRecipeHash: recipe.resolvedRecipeHash,
+      },
     },
+    architectureConfirmationStateChecks: [
+      {
+        eventType: 'architecture_confirmation_state_checked',
+        recordId: 'REQ-CLOSEOUT',
+        requirementSetId: 'REQ-CLOSEOUT',
+        checkId: 'architecture-state:2026-05-19T00:00:00.000Z',
+        decision: 'pass',
+        resolvedRecipeHash: recipe.resolvedRecipeHash,
+        stateTransition: {
+          fromStatus: 'active',
+          toStatus: 'active',
+          reasonCode: 'hash_match',
+          previousHashes: {
+            sourceDocumentHash: HASH,
+            implementationConfirmationHash: HASH,
+            currentArtifactHash: HASH,
+            resolvedRecipeHash: recipe.resolvedRecipeHash,
+          },
+          currentHashes: {
+            sourceDocumentHash: HASH,
+            implementationConfirmationHash: HASH,
+            currentArtifactHash: HASH,
+            resolvedRecipeHash: recipe.resolvedRecipeHash,
+          },
+          mismatchFields: [],
+          recipeVersion: recipe.recipeVersion,
+        },
+        checkedAt: '2026-05-19T00:00:00.000Z',
+        checkedBy: 'test-agent',
+      },
+    ],
     artifactIndex: [
       evidenceArtifactRef(),
     ],
@@ -157,6 +198,54 @@ describe('requirement-scoped delivery closeout gate', () => {
         closeoutAttemptId: 'closeout-pass',
         decision: 'pass',
       });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks closeout when architecture state check is missing', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-arch-state-missing-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        architectureConfirmationStateChecks: [],
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-arch-missing',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-arch-missing',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(1);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.closeout.attempts[0].blockingReasons).toContain(
+        'architecture_confirmation_state_check_not_current'
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

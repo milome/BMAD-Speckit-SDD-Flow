@@ -1,0 +1,185 @@
+{
+  "eventType": "execution_iteration_recorded",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "executionIterationId": "TRACE-028-architecture-governance-001",
+  "runId": "run-trace-028-architecture-governance-001",
+  "status": "done",
+  "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+  "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
+  "architectureConfirmationHash": "sha256:a1372528e0fdf4dd0f87b5f37e5be30b3ec8f334e258f85d3c13c604d72facd8",
+  "traceRows": ["TRACE-028"],
+  "taskRefs": ["TASK-ARCHITECTURE-CONFIRMATION-GOVERNANCE"],
+  "evidenceRefs": ["EVD-036", "EVD-037"],
+  "filesChanged": [
+    "_bmad/_config/architecture-confirmation-hash-recipe.contract.yaml",
+    "_bmad/_schemas/requirement-record.schema.json",
+    "scripts/architecture-confirmation-hash-recipe.ts",
+    "scripts/ingest-architecture-confirmation.ts",
+    "scripts/main-agent-implementation-readiness-gate.ts",
+    "scripts/main-agent-delivery-closeout-gate.ts",
+    "tests/acceptance/architecture-confirmation-ingest.test.ts",
+    "tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts",
+    "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+    "tests/acceptance/requirement-record-schema.test.ts"
+  ],
+  "implementationDelta": {
+    "filesChanged": [
+      "_bmad/_config/architecture-confirmation-hash-recipe.contract.yaml",
+      "_bmad/_schemas/requirement-record.schema.json",
+      "scripts/architecture-confirmation-hash-recipe.ts",
+      "scripts/ingest-architecture-confirmation.ts",
+      "scripts/main-agent-implementation-readiness-gate.ts",
+      "scripts/main-agent-delivery-closeout-gate.ts",
+      "tests/acceptance/architecture-confirmation-ingest.test.ts",
+      "tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts",
+      "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+      "tests/acceptance/requirement-record-schema.test.ts"
+    ],
+    "diffSummaryRef": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-028/trace-028-architecture-governance-001/diff-summary.md",
+    "behaviorAffecting": true,
+    "negativeAssertionArtifactRefs": [
+      {
+        "artifactType": "negative_assertion_evidence",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-028/trace-028-architecture-governance-001/negative-assertions.json",
+        "hash": "sha256:503cec54a900571168a62c254fdeafea5aee5b4e22c1f1c9c39cceb2ffce3656",
+        "producer": "codex",
+        "purpose": "prove architecture confirmation cannot be skipped, substituted, or validated with private hash logic",
+        "relatedRequirementIds": ["MUST-035", "MUST-036", "MUST-037", "NEG-023", "NEG-024", "NEG-025", "OUT-004", "EVD-036", "EVD-037"],
+        "status": "active",
+        "inputVersion": "TRACE-028",
+        "outputVersion": "architecture-governance-evidence-v1"
+      }
+    ]
+  },
+  "diffSummary": "Add architecture confirmation hash recipe resolver, state check event, schema support, and readiness/closeout gate enforcement for active non-stale architecture confirmation.",
+  "commandRuns": [
+    {
+      "commandId": "CMD-TRACE-028-ARCHITECTURE-GOVERNANCE-ACCEPTANCE",
+      "command": "npx vitest run tests/acceptance/architecture-confirmation-ingest.test.ts tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/requirement-record-schema.test.ts",
+      "runId": "run-trace-028-architecture-governance-001",
+      "closeoutAttemptId": "closeout-trace-028-architecture-governance-001",
+      "exitCode": 0,
+      "startedAt": "2026-05-19T01:18:47.000Z",
+      "completedAt": "2026-05-19T01:18:48.000Z",
+      "outputSummary": "4 acceptance files passed; 33 tests passed."
+    }
+  ],
+  "artifactRefs": [
+    {
+      "artifactType": "diff_summary",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-028/trace-028-architecture-governance-001/diff-summary.md",
+      "hash": "sha256:6223dc7f8322056c334f8ca1ec6489cf862d360df579ad1fa45b5a66cdc3ff7e",
+      "producer": "codex",
+      "purpose": "summarize TRACE-028 architecture governance implementation delta",
+      "relatedRequirementIds": ["MUST-035", "MUST-036", "MUST-037", "NEG-023", "NEG-024", "NEG-025", "EVD-036", "EVD-037"],
+      "status": "active",
+      "inputVersion": "TRACE-028",
+      "outputVersion": "architecture-governance-evidence-v1"
+    },
+    {
+      "artifactType": "negative_assertion_evidence",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-028/trace-028-architecture-governance-001/negative-assertions.json",
+      "hash": "sha256:503cec54a900571168a62c254fdeafea5aee5b4e22c1f1c9c39cceb2ffce3656",
+      "producer": "codex",
+      "purpose": "prove TRACE-028 negative architecture governance assertions",
+      "relatedRequirementIds": ["MUST-035", "MUST-036", "MUST-037", "NEG-023", "NEG-024", "NEG-025", "EVD-036", "EVD-037"],
+      "status": "active",
+      "inputVersion": "TRACE-028",
+      "outputVersion": "architecture-governance-evidence-v1"
+    },
+    {
+      "artifactType": "command_evidence",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-028/trace-028-architecture-governance-001/command-evidence.json",
+      "hash": "sha256:b216db42d346041ef314ab472f03cf1586a1769af0523fe0c88b3e37e8578849",
+      "producer": "codex",
+      "purpose": "record TRACE-028 acceptance command identity and result summary",
+      "relatedRequirementIds": ["MUST-035", "MUST-036", "MUST-037", "NEG-023", "NEG-024", "NEG-025", "EVD-036", "EVD-037"],
+      "status": "active",
+      "inputVersion": "TRACE-028",
+      "outputVersion": "architecture-governance-evidence-v1"
+    },
+    {
+      "artifactType": "architecture_confirmation",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/architecture/architecture-confirmation-arch-confirm-20260519-TRACE028.json",
+      "hash": "sha256:32b31c929434ee17e5381f3a56a33eff4f3e02bfd247b822fb9740653fc85343",
+      "producer": "codex",
+      "purpose": "record new requirement-scoped architecture confirmation after stale state check invalidated the older confirmation",
+      "relatedRequirementIds": ["MUST-035", "MUST-036", "MUST-037", "NEG-023", "NEG-024", "NEG-025", "EVD-036", "EVD-037"],
+      "status": "active",
+      "inputVersion": "REQ-CLOSED-LOOP-DESIGN:TRACE-028",
+      "outputVersion": "architecture-confirmation-v1"
+    }
+  ],
+  "deliveryEvidence": {
+    "requiredCommands": [
+      {
+        "commandId": "CMD-TRACE-028-ARCHITECTURE-GOVERNANCE-ACCEPTANCE",
+        "command": "npx vitest run tests/acceptance/architecture-confirmation-ingest.test.ts tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/requirement-record-schema.test.ts",
+        "commandType": "delivery_evidence",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": ["TRACE-028"],
+        "evidenceRefs": ["EVD-036", "EVD-037"],
+        "artifactRefs": [
+          {
+            "artifactType": "command_evidence",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-028/trace-028-architecture-governance-001/command-evidence.json",
+            "hash": "sha256:b216db42d346041ef314ab472f03cf1586a1769af0523fe0c88b3e37e8578849",
+            "producer": "codex",
+            "purpose": "record TRACE-028 acceptance command identity and result summary",
+            "relatedRequirementIds": ["MUST-035", "MUST-036", "MUST-037", "NEG-023", "NEG-024", "NEG-025", "EVD-036", "EVD-037"],
+            "status": "active",
+            "inputVersion": "TRACE-028",
+            "outputVersion": "architecture-governance-evidence-v1"
+          }
+        ]
+      }
+    ],
+    "historicalRunRefs": [
+      {
+        "commandId": "CMD-TRACE-028-ARCHITECTURE-GOVERNANCE-ACCEPTANCE",
+        "runId": "run-trace-028-architecture-governance-001",
+        "closeoutAttemptId": "closeout-trace-028-architecture-governance-001"
+      }
+    ]
+  },
+  "requirementClosures": [
+    { "requirementId": "MUST-035", "status": "pass" },
+    { "requirementId": "MUST-036", "status": "pass" },
+    { "requirementId": "MUST-037", "status": "pass" },
+    { "requirementId": "NEG-023", "status": "pass" },
+    { "requirementId": "NEG-024", "status": "pass" },
+    { "requirementId": "NEG-025", "status": "pass" },
+    { "requirementId": "OUT-004", "status": "pass" },
+    { "requirementId": "EVD-036", "status": "pass" },
+    { "requirementId": "EVD-037", "status": "pass" }
+  ],
+  "gateChecks": [
+    {
+      "gate": "architecture_confirmation_depth_gate",
+      "decision": "pass"
+    },
+    {
+      "gate": "architecture_hash_recipe_authority_gate",
+      "decision": "pass"
+    }
+  ],
+  "contractChecks": [
+    {
+      "contract": "architecture_confirmation_hash_recipe_contract",
+      "decision": "pass"
+    },
+    {
+      "contract": "architecture_confirmation_state_check_contract",
+      "decision": "pass"
+    }
+  ],
+  "closeoutAttemptId": "closeout-trace-028-architecture-governance-001"
+}

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "command-evidence/v1",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "traceRows": ["TRACE-028"],
+  "commands": [
+    {
+      "commandId": "CMD-TRACE-028-ARCHITECTURE-GOVERNANCE-ACCEPTANCE",
+      "command": "npx vitest run tests/acceptance/architecture-confirmation-ingest.test.ts tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/requirement-record-schema.test.ts",
+      "exitCode": 0,
+      "outputSummary": "4 acceptance files passed; 33 tests passed. Covered architecture recipe resolver, state checks, readiness blocking, closeout blocking, and requirement-record schema."
+    },
+    {
+      "commandId": "CMD-TRACE-028-ARCHITECTURE-STATE-CHECK",
+      "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/ingest-architecture-confirmation.ts --action check-state --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --confirmed-by codex --confirmed-at 2026-05-19T01:20:30.000Z --json",
+      "exitCode": 0,
+      "outputSummary": "Controlled state check returned decision=pass and stateTransition.toStatus=active after new architecture confirmation was ingested."
+    },
+    {
+      "commandId": "CMD-TSC-NO-EMIT-TRACE-028",
+      "command": "npx tsc --noEmit --project tsconfig.node.json",
+      "exitCode": 1,
+      "outputSummary": "Whole-repo typecheck still has pre-existing unrelated type debt across scoring/dashboard/runtime/test fixtures. TRACE-028 targeted acceptance passed."
+    }
+  ],
+  "residualRisk": "Whole-repo typecheck remains red due to existing unrelated type debt; final closeout must use current-attempt required commands."
+}
