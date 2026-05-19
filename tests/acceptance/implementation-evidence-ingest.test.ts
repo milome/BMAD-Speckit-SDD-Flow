@@ -146,6 +146,11 @@ describe('implementation evidence ingest', () => {
         status: 'done',
         recordedBy: 'test-agent',
       });
+      expect(record.executionIterations[0].commandRunRefs[0]).toMatchObject({
+        commandId: 'CMD-IMPLEMENTATION-EVIDENCE-INGEST-TEST',
+        runId: 'run-001',
+        closeoutAttemptId: 'closeout-001',
+      });
       expect(record.requirementClosures[0]).toMatchObject({
         eventType: 'requirement_closure_recorded',
         requirementId: 'MUST-005',

@@ -77,7 +77,7 @@ describe('requirement-scoped delivery closeout gate', () => {
               negativeOrRegression: true,
               artifactRefs: [
                 {
-                  path: '_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/execution/evidence.json',
+                  path: '_bmad-output\\runtime\\requirement-records\\REQ-CLOSEOUT\\execution\\evidence.json',
                   hash: HASH,
                 },
               ],

@@ -82,11 +82,11 @@ function commandRunsForAttempt(record: JsonObject, attemptId: string): JsonObjec
 function artifactIndexed(record: JsonObject, artifactRef: unknown): boolean {
   if (!artifactRef || typeof artifactRef !== 'object' || Array.isArray(artifactRef)) return false;
   const ref = artifactRef as JsonObject;
-  const refPath = text(ref.path);
+  const refPath = normalizePathForRecord(text(ref.path));
   const refHash = text(ref.hash ?? ref.contentHash);
   return objects(record.artifactIndex).some(
     (item) =>
-      (!refPath || text(item.path) === refPath) &&
+      (!refPath || normalizePathForRecord(text(item.path)) === refPath) &&
       (!refHash || text(item.contentHash ?? item.hash) === refHash)
   );
 }

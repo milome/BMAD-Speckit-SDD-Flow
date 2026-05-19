@@ -191,6 +191,8 @@ function commandRunRefs(packet: JsonObject): JsonObject[] {
   return arrayOfObjects(packet.commandRuns).map((run) => ({
     commandId: text(run.commandId),
     command: text(run.command),
+    runId: text(run.runId),
+    closeoutAttemptId: text(run.closeoutAttemptId),
     exitCode: run.exitCode,
     startedAt: text(run.startedAt),
     completedAt: text(run.completedAt),
