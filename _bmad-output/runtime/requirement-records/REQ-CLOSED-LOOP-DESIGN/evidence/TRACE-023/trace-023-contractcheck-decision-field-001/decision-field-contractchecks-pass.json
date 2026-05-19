@@ -1,0 +1,20 @@
+{
+  "reportType": "decision_field_check",
+  "target": "contractChecks",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "decision": "pass",
+  "blockingReasons": [],
+  "checks": [
+    {
+      "id": "contract-checks-present",
+      "passed": false,
+      "count": 0
+    },
+    {
+      "id": "contract-checks-decision-only",
+      "passed": true,
+      "invalidCount": 0
+    }
+  ]
+}

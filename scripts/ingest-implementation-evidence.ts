@@ -30,6 +30,7 @@ const EXECUTION_STATUSES = new Set([
 ]);
 const CLOSURE_STATUSES = new Set(['open', 'pass', 'fail', 'blocked']);
 const GATE_DECISIONS = new Set(['pass', 'fail', 'blocked', 'not_applicable', 'skipped_by_policy']);
+const CONTRACT_DECISIONS = new Set(['pass', 'fail', 'blocked', 'not_applicable', 'skipped_by_policy']);
 const ENTRY_FLOWS = new Set(['story', 'bugfix', 'standalone_tasks']);
 const ENTRY_FLOW_CLASSES = new Set(['full_story_entry', 'corrective_entry', 'task_packet_entry']);
 const WORKFLOW_ADAPTERS = new Set(['bmad', 'speckit', 'direct', 'legacy']);
@@ -142,6 +143,14 @@ function normalizeGateChecks(packet: JsonObject): JsonObject[] {
   return arrayOfObjects(packet.gateChecks).map((gate) => {
     const decision = text(gate.decision) || legacyResultToDecision(gate.result);
     const { result: _legacyResult, ...rest } = gate;
+    return { ...rest, decision };
+  });
+}
+
+function normalizeContractChecks(packet: JsonObject): JsonObject[] {
+  return arrayOfObjects(packet.contractChecks).map((contractCheck) => {
+    const decision = text(contractCheck.decision) || legacyResultToDecision(contractCheck.result);
+    const { result: _legacyResult, ...rest } = contractCheck;
     return { ...rest, decision };
   });
 }
@@ -457,6 +466,7 @@ function validatePacket(packet: JsonObject, record: JsonObject): string[] {
   const packetWithoutLegacyGateResults = {
     ...packet,
     gateChecks: normalizeGateChecks(packet),
+    contractChecks: normalizeContractChecks(packet),
   };
   if (containsForbiddenField(packetWithoutLegacyGateResults, 'result')) mismatches.push('forbidden_result_field');
   if (containsForbiddenField(packet, 'fullDiff')) mismatches.push('forbidden_inline_full_diff');
@@ -475,6 +485,10 @@ function validatePacket(packet: JsonObject, record: JsonObject): string[] {
   for (const gate of normalizeGateChecks(packet)) {
     if (!text(gate.gate)) mismatches.push('gate_missing');
     if (!GATE_DECISIONS.has(text(gate.decision))) mismatches.push('gate_decision_invalid');
+  }
+  for (const contractCheck of normalizeContractChecks(packet)) {
+    if (!text(contractCheck.contract)) mismatches.push('contract_check_contract_missing');
+    if (!CONTRACT_DECISIONS.has(text(contractCheck.decision))) mismatches.push('contract_check_decision_invalid');
   }
   const deliveryEvidence = packet.deliveryEvidence as JsonObject | undefined;
   for (const command of arrayOfObjects(deliveryEvidence?.requiredCommands)) {
@@ -620,6 +634,17 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
     recordedAt,
     recordedBy,
   }));
+  const contractCheckEvents = normalizeContractChecks(packet).map((contractCheck) => ({
+    eventType: 'contract_check_recorded',
+    recordId,
+    requirementSetId,
+    checkId: text(contractCheck.checkId) || `${text(packet.executionIterationId)}:${text(contractCheck.contract)}`,
+    contract: text(contractCheck.contract),
+    decision: text(contractCheck.decision),
+    sourceRefs: refs,
+    recordedAt,
+    recordedBy,
+  }));
   const failureEvents = arrayOfObjects(packet.failureRecords).map((failure) => ({
     ...failure,
     eventType: 'failure_recorded',
@@ -690,6 +715,7 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
     executionIterations: [...arrayOfObjects(record.executionIterations), executionEvent],
     requirementClosures: [...arrayOfObjects(record.requirementClosures), ...closureEvents],
     gateChecks: [...arrayOfObjects(record.gateChecks), ...gateEvents],
+    contractChecks: [...arrayOfObjects(record.contractChecks), ...contractCheckEvents],
     failureRecords: [...arrayOfObjects(record.failureRecords), ...failureEvents],
     rerunLoops: [...arrayOfObjects(record.rerunLoops), ...rerunLoopEvents],
     artifactIndex: [
@@ -770,6 +796,9 @@ export function mainIngestImplementationEvidence(argv: string[]): number {
       recordedAt,
       recordedBy,
     });
+  }
+  for (const item of arrayOfObjects(nextRecord.contractChecks).slice(-normalizeContractChecks(packet).length)) {
+    appendJsonl(eventLog, item);
   }
   for (const artifact of artifactEvents(packet, text(packet.recordId) || text(record.recordId), text(packet.requirementSetId) || text(record.requirementSetId))) {
     appendJsonl(artifactIndex, artifact);

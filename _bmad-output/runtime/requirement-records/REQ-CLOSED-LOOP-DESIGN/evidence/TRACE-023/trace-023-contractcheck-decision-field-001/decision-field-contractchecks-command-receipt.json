@@ -1,0 +1,9 @@
+{
+  "commandId": "CMD-CONTRACTCHECK-DECISION-FIELD",
+  "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-decision-field-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --target contractChecks --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-pass.json --json",
+  "runId": "run-trace-023-contractcheck-decision-field-001",
+  "closeoutAttemptId": "closeout-trace-023-contractcheck-decision-field-001",
+  "exitCode": 0,
+  "outputSummary": "ContractChecks decision-only field check passed for the live REQ-CLOSED-LOOP-DESIGN record.",
+  "reportPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-pass.json"
+}

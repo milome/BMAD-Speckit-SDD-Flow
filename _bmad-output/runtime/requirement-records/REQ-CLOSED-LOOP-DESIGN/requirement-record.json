@@ -57,7 +57,7 @@
     }
   ],
   "lastEventType": "execution_iteration_recorded",
-  "updatedAt": "2026-05-19T16:10:30.3764400Z",
+  "updatedAt": "2026-05-18T16:18:30.000Z",
   "architectureConfirmations": [
     {
       "eventType": "architecture_confirmation_recorded",
@@ -10031,6 +10031,253 @@
       "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
       "architectureConfirmationHash": "sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
       "recordedAt": "2026-05-19T16:10:30.3764400Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "execution_iteration_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "executionIterationId": "exec-trace-023-contractcheck-decision-field-001",
+      "runId": "run-trace-023-contractcheck-decision-field-001",
+      "status": "done",
+      "traceRows": [
+        "TRACE-023"
+      ],
+      "taskRefs": [
+        "TASK-DECISION-FIELD-CANONICALIZATION"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-030"
+      ],
+      "filesChanged": [
+        "scripts/ingest-implementation-evidence.ts",
+        "scripts/main-agent-decision-field-check.ts",
+        "tests/acceptance/implementation-evidence-ingest.test.ts",
+        "tests/acceptance/requirement-record-schema.test.ts",
+        "tests/acceptance/main-agent-decision-field-check.test.ts"
+      ],
+      "implementationDelta": {
+        "filesChanged": [
+          "scripts/ingest-implementation-evidence.ts",
+          "scripts/main-agent-decision-field-check.ts",
+          "tests/acceptance/implementation-evidence-ingest.test.ts",
+          "tests/acceptance/requirement-record-schema.test.ts",
+          "tests/acceptance/main-agent-decision-field-check.test.ts"
+        ],
+        "diffSummaryRef": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/implementation-delta-summary.md",
+        "behaviorAffecting": true,
+        "negativeAssertionArtifactRefs": [
+          {
+            "artifactType": "negative_assertion_report",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/negative-assertions.json",
+            "contentHash": "sha256:5a6a5b0344c74de17e8cce79b2ac837d3f4f0b3608a8a4cc9410316aabbc3b8a",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+            "purpose": "TRACE-023 negative assertions for contractChecks result hard-cut.",
+            "relatedRequirementIds": [
+              "MUST-030",
+              "NEG-018",
+              "OUT-016",
+              "EVD-001",
+              "EVD-004",
+              "EVD-030",
+              "TRACE-023"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "negative_assertion_report/v1",
+            "traceRows": [
+              "TRACE-023"
+            ],
+            "evidenceRefs": [
+              "EVD-001",
+              "EVD-004",
+              "EVD-030"
+            ]
+          }
+        ]
+      },
+      "diffSummary": "Canonicalize contractChecks control field to decision and map legacy result only at ingest boundary.",
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-CONTRACTCHECK-DECISION-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-decision-field-check.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/main-agent-scoring-gates-check.test.ts",
+          "runId": "run-trace-023-contractcheck-decision-field-001",
+          "closeoutAttemptId": "closeout-trace-023-contractcheck-decision-field-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-18T16:17:14.000Z",
+          "completedAt": "2026-05-18T16:17:21.000Z",
+          "outputSummary": "5 test files passed; 44 tests passed."
+        },
+        {
+          "commandId": "CMD-CONTRACTCHECK-DECISION-FIELD",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-decision-field-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --target contractChecks --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-pass.json --json",
+          "runId": "run-trace-023-contractcheck-decision-field-001",
+          "closeoutAttemptId": "closeout-trace-023-contractcheck-decision-field-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-18T16:18:00.000Z",
+          "completedAt": "2026-05-18T16:18:03.000Z",
+          "outputSummary": "ContractChecks decision-only field check passed."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "decision_field_contract_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-pass.json",
+          "contentHash": "sha256:f1d279ec021dc6ba0314b7c7d7819d316b332dc9c998dfabe16e758baa6b458e",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "Real contractChecks decision-only report for REQ-CLOSED-LOOP-DESIGN.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "decision_field_contract_report/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-command-receipt.json",
+          "contentHash": "sha256:e9b7aa335630857201899afb602ea531fdc0af917343ae69205ddd6e88b16a53",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "Command receipt for contractChecks decision-only verification.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "command_receipt/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/negative-assertions.json",
+          "contentHash": "sha256:5a6a5b0344c74de17e8cce79b2ac837d3f4f0b3608a8a4cc9410316aabbc3b8a",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "TRACE-023 negative assertions for contractChecks result hard-cut.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "negative_assertion_report/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "implementation_delta_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/implementation-delta-summary.md",
+          "contentHash": "sha256:fa7d59049e26baf54cf6dbb149e81469ea1c254a4f96a74fb989d54b43d86d08",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "TRACE-023 implementation delta summary.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "implementation_delta_summary/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-023"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-001"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-030"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-CONTRACTCHECK-DECISION-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-CONTRACTCHECK-DECISION-FIELD"
+        }
+      ],
+      "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+      "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
+      "architectureConfirmationHash": "sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "recordedAt": "2026-05-18T16:18:30.000Z",
       "recordedBy": "codex"
     }
   ],
@@ -61239,6 +61486,1152 @@
       ],
       "recordedAt": "2026-05-19T16:10:30.3764400Z",
       "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "MUST-030",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-023"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-030"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-CONTRACTCHECK-DECISION-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-decision-field-check.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/main-agent-scoring-gates-check.test.ts",
+          "runId": "run-trace-023-contractcheck-decision-field-001",
+          "closeoutAttemptId": "closeout-trace-023-contractcheck-decision-field-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-18T16:17:14.000Z",
+          "completedAt": "2026-05-18T16:17:21.000Z",
+          "outputSummary": "5 test files passed; 44 tests passed."
+        },
+        {
+          "commandId": "CMD-CONTRACTCHECK-DECISION-FIELD",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-decision-field-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --target contractChecks --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-pass.json --json",
+          "runId": "run-trace-023-contractcheck-decision-field-001",
+          "closeoutAttemptId": "closeout-trace-023-contractcheck-decision-field-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-18T16:18:00.000Z",
+          "completedAt": "2026-05-18T16:18:03.000Z",
+          "outputSummary": "ContractChecks decision-only field check passed."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "decision_field_contract_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-pass.json",
+          "contentHash": "sha256:f1d279ec021dc6ba0314b7c7d7819d316b332dc9c998dfabe16e758baa6b458e",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "Real contractChecks decision-only report for REQ-CLOSED-LOOP-DESIGN.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "decision_field_contract_report/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-command-receipt.json",
+          "contentHash": "sha256:e9b7aa335630857201899afb602ea531fdc0af917343ae69205ddd6e88b16a53",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "Command receipt for contractChecks decision-only verification.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "command_receipt/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/negative-assertions.json",
+          "contentHash": "sha256:5a6a5b0344c74de17e8cce79b2ac837d3f4f0b3608a8a4cc9410316aabbc3b8a",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "TRACE-023 negative assertions for contractChecks result hard-cut.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "negative_assertion_report/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "implementation_delta_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/implementation-delta-summary.md",
+          "contentHash": "sha256:fa7d59049e26baf54cf6dbb149e81469ea1c254a4f96a74fb989d54b43d86d08",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "TRACE-023 implementation delta summary.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "implementation_delta_summary/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-023"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-001"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-030"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-CONTRACTCHECK-DECISION-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-CONTRACTCHECK-DECISION-FIELD"
+        }
+      ],
+      "recordedAt": "2026-05-18T16:18:30.000Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "NEG-018",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-023"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-030"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-CONTRACTCHECK-DECISION-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-decision-field-check.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/main-agent-scoring-gates-check.test.ts",
+          "runId": "run-trace-023-contractcheck-decision-field-001",
+          "closeoutAttemptId": "closeout-trace-023-contractcheck-decision-field-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-18T16:17:14.000Z",
+          "completedAt": "2026-05-18T16:17:21.000Z",
+          "outputSummary": "5 test files passed; 44 tests passed."
+        },
+        {
+          "commandId": "CMD-CONTRACTCHECK-DECISION-FIELD",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-decision-field-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --target contractChecks --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-pass.json --json",
+          "runId": "run-trace-023-contractcheck-decision-field-001",
+          "closeoutAttemptId": "closeout-trace-023-contractcheck-decision-field-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-18T16:18:00.000Z",
+          "completedAt": "2026-05-18T16:18:03.000Z",
+          "outputSummary": "ContractChecks decision-only field check passed."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "decision_field_contract_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-pass.json",
+          "contentHash": "sha256:f1d279ec021dc6ba0314b7c7d7819d316b332dc9c998dfabe16e758baa6b458e",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "Real contractChecks decision-only report for REQ-CLOSED-LOOP-DESIGN.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "decision_field_contract_report/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-command-receipt.json",
+          "contentHash": "sha256:e9b7aa335630857201899afb602ea531fdc0af917343ae69205ddd6e88b16a53",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "Command receipt for contractChecks decision-only verification.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "command_receipt/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/negative-assertions.json",
+          "contentHash": "sha256:5a6a5b0344c74de17e8cce79b2ac837d3f4f0b3608a8a4cc9410316aabbc3b8a",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "TRACE-023 negative assertions for contractChecks result hard-cut.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "negative_assertion_report/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "implementation_delta_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/implementation-delta-summary.md",
+          "contentHash": "sha256:fa7d59049e26baf54cf6dbb149e81469ea1c254a4f96a74fb989d54b43d86d08",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "TRACE-023 implementation delta summary.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "implementation_delta_summary/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-023"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-001"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-030"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-CONTRACTCHECK-DECISION-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-CONTRACTCHECK-DECISION-FIELD"
+        }
+      ],
+      "recordedAt": "2026-05-18T16:18:30.000Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "OUT-016",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-023"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-030"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-CONTRACTCHECK-DECISION-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-decision-field-check.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/main-agent-scoring-gates-check.test.ts",
+          "runId": "run-trace-023-contractcheck-decision-field-001",
+          "closeoutAttemptId": "closeout-trace-023-contractcheck-decision-field-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-18T16:17:14.000Z",
+          "completedAt": "2026-05-18T16:17:21.000Z",
+          "outputSummary": "5 test files passed; 44 tests passed."
+        },
+        {
+          "commandId": "CMD-CONTRACTCHECK-DECISION-FIELD",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-decision-field-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --target contractChecks --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-pass.json --json",
+          "runId": "run-trace-023-contractcheck-decision-field-001",
+          "closeoutAttemptId": "closeout-trace-023-contractcheck-decision-field-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-18T16:18:00.000Z",
+          "completedAt": "2026-05-18T16:18:03.000Z",
+          "outputSummary": "ContractChecks decision-only field check passed."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "decision_field_contract_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-pass.json",
+          "contentHash": "sha256:f1d279ec021dc6ba0314b7c7d7819d316b332dc9c998dfabe16e758baa6b458e",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "Real contractChecks decision-only report for REQ-CLOSED-LOOP-DESIGN.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "decision_field_contract_report/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-command-receipt.json",
+          "contentHash": "sha256:e9b7aa335630857201899afb602ea531fdc0af917343ae69205ddd6e88b16a53",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "Command receipt for contractChecks decision-only verification.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "command_receipt/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/negative-assertions.json",
+          "contentHash": "sha256:5a6a5b0344c74de17e8cce79b2ac837d3f4f0b3608a8a4cc9410316aabbc3b8a",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "TRACE-023 negative assertions for contractChecks result hard-cut.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "negative_assertion_report/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "implementation_delta_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/implementation-delta-summary.md",
+          "contentHash": "sha256:fa7d59049e26baf54cf6dbb149e81469ea1c254a4f96a74fb989d54b43d86d08",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "TRACE-023 implementation delta summary.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "implementation_delta_summary/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-023"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-001"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-030"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-CONTRACTCHECK-DECISION-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-CONTRACTCHECK-DECISION-FIELD"
+        }
+      ],
+      "recordedAt": "2026-05-18T16:18:30.000Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "EVD-001",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-023"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-030"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-CONTRACTCHECK-DECISION-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-decision-field-check.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/main-agent-scoring-gates-check.test.ts",
+          "runId": "run-trace-023-contractcheck-decision-field-001",
+          "closeoutAttemptId": "closeout-trace-023-contractcheck-decision-field-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-18T16:17:14.000Z",
+          "completedAt": "2026-05-18T16:17:21.000Z",
+          "outputSummary": "5 test files passed; 44 tests passed."
+        },
+        {
+          "commandId": "CMD-CONTRACTCHECK-DECISION-FIELD",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-decision-field-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --target contractChecks --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-pass.json --json",
+          "runId": "run-trace-023-contractcheck-decision-field-001",
+          "closeoutAttemptId": "closeout-trace-023-contractcheck-decision-field-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-18T16:18:00.000Z",
+          "completedAt": "2026-05-18T16:18:03.000Z",
+          "outputSummary": "ContractChecks decision-only field check passed."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "decision_field_contract_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-pass.json",
+          "contentHash": "sha256:f1d279ec021dc6ba0314b7c7d7819d316b332dc9c998dfabe16e758baa6b458e",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "Real contractChecks decision-only report for REQ-CLOSED-LOOP-DESIGN.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "decision_field_contract_report/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-command-receipt.json",
+          "contentHash": "sha256:e9b7aa335630857201899afb602ea531fdc0af917343ae69205ddd6e88b16a53",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "Command receipt for contractChecks decision-only verification.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "command_receipt/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/negative-assertions.json",
+          "contentHash": "sha256:5a6a5b0344c74de17e8cce79b2ac837d3f4f0b3608a8a4cc9410316aabbc3b8a",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "TRACE-023 negative assertions for contractChecks result hard-cut.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "negative_assertion_report/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "implementation_delta_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/implementation-delta-summary.md",
+          "contentHash": "sha256:fa7d59049e26baf54cf6dbb149e81469ea1c254a4f96a74fb989d54b43d86d08",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "TRACE-023 implementation delta summary.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "implementation_delta_summary/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-023"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-001"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-030"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-CONTRACTCHECK-DECISION-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-CONTRACTCHECK-DECISION-FIELD"
+        }
+      ],
+      "recordedAt": "2026-05-18T16:18:30.000Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "EVD-004",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-023"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-030"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-CONTRACTCHECK-DECISION-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-decision-field-check.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/main-agent-scoring-gates-check.test.ts",
+          "runId": "run-trace-023-contractcheck-decision-field-001",
+          "closeoutAttemptId": "closeout-trace-023-contractcheck-decision-field-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-18T16:17:14.000Z",
+          "completedAt": "2026-05-18T16:17:21.000Z",
+          "outputSummary": "5 test files passed; 44 tests passed."
+        },
+        {
+          "commandId": "CMD-CONTRACTCHECK-DECISION-FIELD",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-decision-field-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --target contractChecks --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-pass.json --json",
+          "runId": "run-trace-023-contractcheck-decision-field-001",
+          "closeoutAttemptId": "closeout-trace-023-contractcheck-decision-field-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-18T16:18:00.000Z",
+          "completedAt": "2026-05-18T16:18:03.000Z",
+          "outputSummary": "ContractChecks decision-only field check passed."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "decision_field_contract_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-pass.json",
+          "contentHash": "sha256:f1d279ec021dc6ba0314b7c7d7819d316b332dc9c998dfabe16e758baa6b458e",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "Real contractChecks decision-only report for REQ-CLOSED-LOOP-DESIGN.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "decision_field_contract_report/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-command-receipt.json",
+          "contentHash": "sha256:e9b7aa335630857201899afb602ea531fdc0af917343ae69205ddd6e88b16a53",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "Command receipt for contractChecks decision-only verification.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "command_receipt/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/negative-assertions.json",
+          "contentHash": "sha256:5a6a5b0344c74de17e8cce79b2ac837d3f4f0b3608a8a4cc9410316aabbc3b8a",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "TRACE-023 negative assertions for contractChecks result hard-cut.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "negative_assertion_report/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "implementation_delta_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/implementation-delta-summary.md",
+          "contentHash": "sha256:fa7d59049e26baf54cf6dbb149e81469ea1c254a4f96a74fb989d54b43d86d08",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "TRACE-023 implementation delta summary.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "implementation_delta_summary/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-023"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-001"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-030"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-CONTRACTCHECK-DECISION-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-CONTRACTCHECK-DECISION-FIELD"
+        }
+      ],
+      "recordedAt": "2026-05-18T16:18:30.000Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementId": "EVD-030",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-023"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-030"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-CONTRACTCHECK-DECISION-ACCEPTANCE",
+          "command": "npx vitest run tests/acceptance/main-agent-decision-field-check.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/main-agent-scoring-gates-check.test.ts",
+          "runId": "run-trace-023-contractcheck-decision-field-001",
+          "closeoutAttemptId": "closeout-trace-023-contractcheck-decision-field-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-18T16:17:14.000Z",
+          "completedAt": "2026-05-18T16:17:21.000Z",
+          "outputSummary": "5 test files passed; 44 tests passed."
+        },
+        {
+          "commandId": "CMD-CONTRACTCHECK-DECISION-FIELD",
+          "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-decision-field-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --target contractChecks --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-pass.json --json",
+          "runId": "run-trace-023-contractcheck-decision-field-001",
+          "closeoutAttemptId": "closeout-trace-023-contractcheck-decision-field-001",
+          "exitCode": 0,
+          "startedAt": "2026-05-18T16:18:00.000Z",
+          "completedAt": "2026-05-18T16:18:03.000Z",
+          "outputSummary": "ContractChecks decision-only field check passed."
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "decision_field_contract_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-pass.json",
+          "contentHash": "sha256:f1d279ec021dc6ba0314b7c7d7819d316b332dc9c998dfabe16e758baa6b458e",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "Real contractChecks decision-only report for REQ-CLOSED-LOOP-DESIGN.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "decision_field_contract_report/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-command-receipt.json",
+          "contentHash": "sha256:e9b7aa335630857201899afb602ea531fdc0af917343ae69205ddd6e88b16a53",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "Command receipt for contractChecks decision-only verification.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "command_receipt/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "negative_assertion_report",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/negative-assertions.json",
+          "contentHash": "sha256:5a6a5b0344c74de17e8cce79b2ac837d3f4f0b3608a8a4cc9410316aabbc3b8a",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "TRACE-023 negative assertions for contractChecks result hard-cut.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "negative_assertion_report/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "implementation_delta_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CLOSED-LOOP-DESIGN",
+          "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/implementation-delta-summary.md",
+          "contentHash": "sha256:fa7d59049e26baf54cf6dbb149e81469ea1c254a4f96a74fb989d54b43d86d08",
+          "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+          "purpose": "TRACE-023 implementation delta summary.",
+          "relatedRequirementIds": [
+            "MUST-030",
+            "NEG-018",
+            "OUT-016",
+            "EVD-001",
+            "EVD-004",
+            "EVD-030",
+            "TRACE-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+          "outputVersion": "implementation_delta_summary/v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-001",
+            "EVD-004",
+            "EVD-030"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-023"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-001"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-030"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-CONTRACTCHECK-DECISION-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-CONTRACTCHECK-DECISION-FIELD"
+        }
+      ],
+      "recordedAt": "2026-05-18T16:18:30.000Z",
+      "recordedBy": "codex"
     }
   ],
   "gateChecks": [
@@ -72451,6 +73844,130 @@
         "EVD-004",
         "EVD-029"
       ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "decision_field_contract_report",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-pass.json",
+      "contentHash": "sha256:f1d279ec021dc6ba0314b7c7d7819d316b332dc9c998dfabe16e758baa6b458e",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+      "purpose": "Real contractChecks decision-only report for REQ-CLOSED-LOOP-DESIGN.",
+      "relatedRequirementIds": [
+        "MUST-030",
+        "NEG-018",
+        "OUT-016",
+        "EVD-001",
+        "EVD-004",
+        "EVD-030",
+        "TRACE-023"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "decision_field_contract_report/v1",
+      "traceRows": [
+        "TRACE-023"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-030"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "command_receipt",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-command-receipt.json",
+      "contentHash": "sha256:e9b7aa335630857201899afb602ea531fdc0af917343ae69205ddd6e88b16a53",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+      "purpose": "Command receipt for contractChecks decision-only verification.",
+      "relatedRequirementIds": [
+        "MUST-030",
+        "NEG-018",
+        "OUT-016",
+        "EVD-001",
+        "EVD-004",
+        "EVD-030",
+        "TRACE-023"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "command_receipt/v1",
+      "traceRows": [
+        "TRACE-023"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-030"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "negative_assertion_report",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/negative-assertions.json",
+      "contentHash": "sha256:5a6a5b0344c74de17e8cce79b2ac837d3f4f0b3608a8a4cc9410316aabbc3b8a",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+      "purpose": "TRACE-023 negative assertions for contractChecks result hard-cut.",
+      "relatedRequirementIds": [
+        "MUST-030",
+        "NEG-018",
+        "OUT-016",
+        "EVD-001",
+        "EVD-004",
+        "EVD-030",
+        "TRACE-023"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "negative_assertion_report/v1",
+      "traceRows": [
+        "TRACE-023"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-030"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "implementation_delta_summary",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/implementation-delta-summary.md",
+      "contentHash": "sha256:fa7d59049e26baf54cf6dbb149e81469ea1c254a4f96a74fb989d54b43d86d08",
+      "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+      "purpose": "TRACE-023 implementation delta summary.",
+      "relatedRequirementIds": [
+        "MUST-030",
+        "NEG-018",
+        "OUT-016",
+        "EVD-001",
+        "EVD-004",
+        "EVD-030",
+        "TRACE-023"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+      "outputVersion": "implementation_delta_summary/v1",
+      "traceRows": [
+        "TRACE-023"
+      ],
+      "evidenceRefs": [
+        "EVD-001",
+        "EVD-004",
+        "EVD-030"
+      ]
     }
   ],
   "closeout": {
@@ -75362,7 +76879,10 @@
             ],
             "evidenceRefs": [
               "EVD-029"
-            ]
+            ],
+            "eventType": "artifact_indexed",
+            "recordId": "REQ-CLOSED-LOOP-DESIGN",
+            "requirementSetId": "REQ-CLOSED-LOOP-DESIGN"
           },
           {
             "artifactType": "negative_assertion_report",
@@ -75388,6 +76908,155 @@
             ],
             "evidenceRefs": [
               "EVD-029"
+            ],
+            "eventType": "artifact_indexed",
+            "recordId": "REQ-CLOSED-LOOP-DESIGN",
+            "requirementSetId": "REQ-CLOSED-LOOP-DESIGN"
+          }
+        ]
+      },
+      {
+        "commandId": "CMD-CONTRACTCHECK-DECISION-ACCEPTANCE",
+        "command": "npx vitest run tests/acceptance/main-agent-decision-field-check.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/main-agent-scoring-gates-check.test.ts",
+        "commandType": "contract_validation",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": [
+          "TRACE-023"
+        ],
+        "evidenceRefs": [
+          "EVD-001",
+          "EVD-004",
+          "EVD-030"
+        ],
+        "artifactRefs": [
+          {
+            "artifactType": "decision_field_contract_report",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-pass.json",
+            "contentHash": "sha256:f1d279ec021dc6ba0314b7c7d7819d316b332dc9c998dfabe16e758baa6b458e",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+            "purpose": "Real contractChecks decision-only report for REQ-CLOSED-LOOP-DESIGN.",
+            "relatedRequirementIds": [
+              "MUST-030",
+              "NEG-018",
+              "OUT-016",
+              "EVD-001",
+              "EVD-004",
+              "EVD-030",
+              "TRACE-023"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "decision_field_contract_report/v1",
+            "traceRows": [
+              "TRACE-023"
+            ],
+            "evidenceRefs": [
+              "EVD-001",
+              "EVD-004",
+              "EVD-030"
+            ]
+          },
+          {
+            "artifactType": "negative_assertion_report",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/negative-assertions.json",
+            "contentHash": "sha256:5a6a5b0344c74de17e8cce79b2ac837d3f4f0b3608a8a4cc9410316aabbc3b8a",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+            "purpose": "TRACE-023 negative assertions for contractChecks result hard-cut.",
+            "relatedRequirementIds": [
+              "MUST-030",
+              "NEG-018",
+              "OUT-016",
+              "EVD-001",
+              "EVD-004",
+              "EVD-030",
+              "TRACE-023"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "negative_assertion_report/v1",
+            "traceRows": [
+              "TRACE-023"
+            ],
+            "evidenceRefs": [
+              "EVD-001",
+              "EVD-004",
+              "EVD-030"
+            ]
+          }
+        ]
+      },
+      {
+        "commandId": "CMD-CONTRACTCHECK-DECISION-FIELD",
+        "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-decision-field-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --target contractChecks --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-pass.json --json",
+        "commandType": "contract_validation",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": [
+          "TRACE-023"
+        ],
+        "evidenceRefs": [
+          "EVD-001",
+          "EVD-004",
+          "EVD-030"
+        ],
+        "artifactRefs": [
+          {
+            "artifactType": "decision_field_contract_report",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-pass.json",
+            "contentHash": "sha256:f1d279ec021dc6ba0314b7c7d7819d316b332dc9c998dfabe16e758baa6b458e",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+            "purpose": "Real contractChecks decision-only report for REQ-CLOSED-LOOP-DESIGN.",
+            "relatedRequirementIds": [
+              "MUST-030",
+              "NEG-018",
+              "OUT-016",
+              "EVD-001",
+              "EVD-004",
+              "EVD-030",
+              "TRACE-023"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "decision_field_contract_report/v1",
+            "traceRows": [
+              "TRACE-023"
+            ],
+            "evidenceRefs": [
+              "EVD-001",
+              "EVD-004",
+              "EVD-030"
+            ]
+          },
+          {
+            "artifactType": "command_receipt",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-023/trace-023-contractcheck-decision-field-001/decision-field-contractchecks-command-receipt.json",
+            "contentHash": "sha256:e9b7aa335630857201899afb602ea531fdc0af917343ae69205ddd6e88b16a53",
+            "producer": "REQ-CLOSED-LOOP-DESIGN TRACE-023 implementation",
+            "purpose": "Command receipt for contractChecks decision-only verification.",
+            "relatedRequirementIds": [
+              "MUST-030",
+              "NEG-018",
+              "OUT-016",
+              "EVD-001",
+              "EVD-004",
+              "EVD-030",
+              "TRACE-023"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294;implementation=sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec;architecture=sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+            "outputVersion": "command_receipt/v1",
+            "traceRows": [
+              "TRACE-023"
+            ],
+            "evidenceRefs": [
+              "EVD-001",
+              "EVD-004",
+              "EVD-030"
             ]
           }
         ]
@@ -75831,5 +77500,43 @@
     ]
   },
   "failureRecords": [],
-  "rerunLoops": []
+  "rerunLoops": [],
+  "contractChecks": [
+    {
+      "eventType": "contract_check_recorded",
+      "recordId": "REQ-CLOSED-LOOP-DESIGN",
+      "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+      "checkId": "contractcheck-decision-field:trace-023",
+      "contract": "contractcheck_decision_field",
+      "decision": "pass",
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-023"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-001"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-004"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-030"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-CONTRACTCHECK-DECISION-ACCEPTANCE"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-CONTRACTCHECK-DECISION-FIELD"
+        }
+      ],
+      "recordedAt": "2026-05-18T16:18:30.000Z",
+      "recordedBy": "codex"
+    }
+  ]
 }

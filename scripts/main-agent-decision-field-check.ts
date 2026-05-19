@@ -12,7 +12,7 @@ interface ParsedArgs {
   help?: boolean;
 }
 
-const VALID_GATE_DECISIONS = new Set(['pass', 'fail', 'blocked', 'not_applicable', 'skipped_by_policy']);
+const VALID_DECISIONS = new Set(['pass', 'fail', 'blocked', 'not_applicable', 'skipped_by_policy']);
 
 function parseArgs(argv: string[]): ParsedArgs {
   const out: ParsedArgs = {};
@@ -55,22 +55,28 @@ function normalizePathForRecord(value: string): string {
   return value.replace(/\\/gu, '/');
 }
 
-function evaluateGateChecks(record: JsonObject): { blockingReasons: string[]; checks: JsonObject[] } {
+function evaluateDecisionChecks(
+  record: JsonObject,
+  target: 'gateChecks' | 'contractChecks'
+): { blockingReasons: string[]; checks: JsonObject[] } {
   const blockingReasons: string[] = [];
   const checks: JsonObject[] = [];
-  const gateChecks = objects(record.gateChecks);
-  checks.push({ id: 'gate-checks-present', passed: gateChecks.length > 0, count: gateChecks.length });
-  for (const [index, gate] of gateChecks.entries()) {
-    const gateId = text(gate.checkId) || `${text(gate.gate) || '<missing>'}:${index}`;
-    if (Object.prototype.hasOwnProperty.call(gate, 'result')) {
-      blockingReasons.push(`gate_check_result_forbidden:${gateId}`);
+  const checkItems = objects(record[target]);
+  const label = target === 'gateChecks' ? 'gate-checks' : 'contract-checks';
+  const reasonPrefix = target === 'gateChecks' ? 'gate_check' : 'contract_check';
+  const identityField = target === 'gateChecks' ? 'gate' : 'contract';
+  checks.push({ id: `${label}-present`, passed: checkItems.length > 0, count: checkItems.length });
+  for (const [index, item] of checkItems.entries()) {
+    const itemId = text(item.checkId) || `${text(item[identityField]) || '<missing>'}:${index}`;
+    if (Object.prototype.hasOwnProperty.call(item, 'result')) {
+      blockingReasons.push(`${reasonPrefix}_result_forbidden:${itemId}`);
     }
-    if (!VALID_GATE_DECISIONS.has(text(gate.decision))) {
-      blockingReasons.push(`gate_check_decision_invalid:${gateId}`);
+    if (!VALID_DECISIONS.has(text(item.decision))) {
+      blockingReasons.push(`${reasonPrefix}_decision_invalid:${itemId}`);
     }
   }
   checks.push({
-    id: 'gate-checks-decision-only',
+    id: `${label}-decision-only`,
     passed: blockingReasons.length === 0,
     invalidCount: blockingReasons.length,
   });
@@ -80,15 +86,15 @@ function evaluateGateChecks(record: JsonObject): { blockingReasons: string[]; ch
 export function mainDecisionFieldCheck(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: main-agent-decision-field-check --requirement-record <json> [--target gateChecks] [--json]');
+    console.log('Usage: main-agent-decision-field-check --requirement-record <json> [--target gateChecks|contractChecks] [--json]');
     return 0;
   }
   if (!args.requirementRecord) throw new Error('missing required args: requirementRecord');
   const target = args.target ?? 'gateChecks';
-  if (target !== 'gateChecks') throw new Error(`unsupported target: ${target}`);
+  if (target !== 'gateChecks' && target !== 'contractChecks') throw new Error(`unsupported target: ${target}`);
   const recordPath = path.resolve(args.requirementRecord);
   const record = readJson(recordPath);
-  const evaluated = evaluateGateChecks(record);
+  const evaluated = evaluateDecisionChecks(record, target);
   const decision = evaluated.blockingReasons.length === 0 ? 'pass' : 'blocked';
   const reportPath = path.resolve(args.reportPath ?? path.join(path.dirname(recordPath), 'decision-field-check.json'));
   const report = {

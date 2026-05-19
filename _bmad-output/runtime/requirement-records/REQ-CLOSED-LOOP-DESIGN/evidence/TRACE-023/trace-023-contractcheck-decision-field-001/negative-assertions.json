@@ -1,0 +1,19 @@
+{
+  "assertions": [
+    {
+      "id": "NEG-018-A",
+      "text": "Canonical contractChecks[].result is rejected by requirement-record schema even when decision is present.",
+      "validatedBy": "tests/acceptance/requirement-record-schema.test.ts"
+    },
+    {
+      "id": "NEG-018-B",
+      "text": "Legacy contractChecks[].result is mapped to decision only at ingest boundary and is not persisted.",
+      "validatedBy": "tests/acceptance/implementation-evidence-ingest.test.ts"
+    },
+    {
+      "id": "OUT-016-A",
+      "text": "New contract checks read contractChecks[].decision, not contractChecks[].result.",
+      "validatedBy": "tests/acceptance/main-agent-decision-field-check.test.ts"
+    }
+  ]
+}
