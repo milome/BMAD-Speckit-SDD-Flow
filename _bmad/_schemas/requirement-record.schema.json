@@ -1,0 +1,429 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirement-record.schema.json",
+  "title": "Requirement Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "recordId",
+    "requirementSetId",
+    "status",
+    "sourceDocumentHash",
+    "implementationConfirmationHash",
+    "confirmationHistory"
+  ],
+  "properties": {
+    "recordId": { "$ref": "#/$defs/nonEmptyString" },
+    "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
+    "sourcePath": { "$ref": "#/$defs/nonEmptyString" },
+    "status": {
+      "enum": ["draft", "user_confirmed", "reconfirm_required", "in_progress", "blocked", "closed"]
+    },
+    "sourceDocumentHash": { "$ref": "#/$defs/sha256" },
+    "implementationConfirmationHash": { "$ref": "#/$defs/sha256" },
+    "confirmationPageHash": { "$ref": "#/$defs/sha256" },
+    "confirmationHistory": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/confirmationEvent" }
+    },
+    "architectureConfirmationState": { "$ref": "#/$defs/architectureConfirmationState" },
+    "executionIterations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/executionIteration" }
+    },
+    "requirementClosures": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/requirementClosure" }
+    },
+    "gateChecks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/gateCheck" }
+    },
+    "contractChecks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/contractCheck" }
+    },
+    "failureRecords": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/failureRecord" }
+    },
+    "rerunLoops": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/rerunLoop" }
+    },
+    "closeout": { "$ref": "#/$defs/closeout" },
+    "artifactIndex": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/artifactRef" }
+    },
+    "deliveryEvidence": { "$ref": "#/$defs/deliveryEvidence" },
+    "lastEventType": { "$ref": "#/$defs/nonEmptyString" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  },
+  "not": {
+    "anyOf": [
+      { "required": ["dashboard"] },
+      { "required": ["score"] },
+      { "required": ["report"] },
+      { "required": ["result"] }
+    ]
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "sourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceType", "id"],
+      "properties": {
+        "sourceType": { "$ref": "#/$defs/nonEmptyString" },
+        "id": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "commandRunRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commandId", "command", "runId", "exitCode", "startedAt", "completedAt"],
+      "properties": {
+        "commandId": { "$ref": "#/$defs/nonEmptyString" },
+        "command": { "$ref": "#/$defs/nonEmptyString" },
+        "runId": { "$ref": "#/$defs/nonEmptyString" },
+        "closeoutAttemptId": { "$ref": "#/$defs/nonEmptyString" },
+        "exitCode": { "type": "integer" },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "completedAt": { "type": "string", "format": "date-time" },
+        "outputSummary": { "type": "string" }
+      }
+    },
+    "artifactRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifactType", "sourceOfTruthRole", "path"],
+      "properties": {
+        "eventType": { "$ref": "#/$defs/nonEmptyString" },
+        "artifactType": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceOfTruthRole": {
+          "enum": ["control", "evidence", "projection", "read_model"]
+        },
+        "recordId": { "$ref": "#/$defs/nonEmptyString" },
+        "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
+        "path": { "$ref": "#/$defs/nonEmptyString" },
+        "hash": { "$ref": "#/$defs/sha256" },
+        "contentHash": { "$ref": "#/$defs/sha256" },
+        "producer": { "$ref": "#/$defs/nonEmptyString" },
+        "traceRows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        }
+      },
+      "anyOf": [
+        { "required": ["hash"] },
+        { "required": ["contentHash"] }
+      ]
+    },
+    "confirmationEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eventType",
+        "recordId",
+        "requirementSetId",
+        "confirmedAt",
+        "confirmedBy",
+        "sourcePath",
+        "sourceDocumentHash",
+        "implementationConfirmationHash",
+        "confirmationPageHash",
+        "confirmationText",
+        "renderReportPath",
+        "htmlPath"
+      ],
+      "properties": {
+        "eventType": { "const": "confirmation_recorded" },
+        "recordId": { "$ref": "#/$defs/nonEmptyString" },
+        "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
+        "confirmedAt": { "type": "string", "format": "date-time" },
+        "confirmedBy": { "$ref": "#/$defs/nonEmptyString" },
+        "sourcePath": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceDocumentHash": { "$ref": "#/$defs/sha256" },
+        "sourceDocumentHashScope": { "$ref": "#/$defs/nonEmptyString" },
+        "implementationConfirmationHash": { "$ref": "#/$defs/sha256" },
+        "implementationConfirmationHashScope": { "$ref": "#/$defs/nonEmptyString" },
+        "confirmationPageHash": { "$ref": "#/$defs/sha256" },
+        "confirmationText": { "$ref": "#/$defs/nonEmptyString" },
+        "renderReportPath": { "$ref": "#/$defs/nonEmptyString" },
+        "htmlPath": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "architectureConfirmationState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "currentArchitectureConfirmationHash"],
+      "properties": {
+        "status": { "enum": ["active", "stale", "missing", "blocked"] },
+        "currentArchitectureConfirmationRunId": { "$ref": "#/$defs/nonEmptyString" },
+        "currentArchitectureConfirmationHash": { "$ref": "#/$defs/sha256" },
+        "currentArchitectureConfirmationPath": { "$ref": "#/$defs/nonEmptyString" },
+        "lastEventType": { "$ref": "#/$defs/nonEmptyString" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "executionIteration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eventType",
+        "recordId",
+        "requirementSetId",
+        "executionIterationId",
+        "runId",
+        "status",
+        "traceRows",
+        "evidenceRefs",
+        "sourceDocumentHash",
+        "implementationConfirmationHash",
+        "architectureConfirmationHash",
+        "recordedAt",
+        "recordedBy"
+      ],
+      "properties": {
+        "eventType": { "const": "execution_iteration_recorded" },
+        "recordId": { "$ref": "#/$defs/nonEmptyString" },
+        "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
+        "executionIterationId": { "$ref": "#/$defs/nonEmptyString" },
+        "runId": { "$ref": "#/$defs/nonEmptyString" },
+        "status": {
+          "enum": ["pending", "running", "done", "partial", "blocked", "failed", "timeout", "cancelled", "rerun_required"]
+        },
+        "traceRows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "taskRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "filesChanged": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "diffSummary": { "type": "string" },
+        "commandRunRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/commandRunRef" }
+        },
+        "evidenceArtifactRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/artifactRef" }
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/sourceRef" }
+        },
+        "sourceDocumentHash": { "$ref": "#/$defs/sha256" },
+        "implementationConfirmationHash": { "$ref": "#/$defs/sha256" },
+        "architectureConfirmationHash": { "$ref": "#/$defs/sha256" },
+        "recordedAt": { "type": "string", "format": "date-time" },
+        "recordedBy": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "requirementClosure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eventType", "recordId", "requirementSetId", "requirementId", "status", "recordedAt", "recordedBy"],
+      "properties": {
+        "eventType": { "const": "requirement_closure_recorded" },
+        "recordId": { "$ref": "#/$defs/nonEmptyString" },
+        "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
+        "requirementId": { "$ref": "#/$defs/nonEmptyString" },
+        "status": { "enum": ["open", "pass", "fail", "blocked"] },
+        "traceRows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "commandRunRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/commandRunRef" }
+        },
+        "evidenceArtifactRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/artifactRef" }
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/sourceRef" }
+        },
+        "recordedAt": { "type": "string", "format": "date-time" },
+        "recordedBy": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "gateCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eventType", "gate", "decision"],
+      "properties": {
+        "eventType": { "const": "gate_check_recorded" },
+        "checkId": { "$ref": "#/$defs/nonEmptyString" },
+        "gate": { "$ref": "#/$defs/nonEmptyString" },
+        "decision": { "enum": ["pass", "fail", "blocked", "not_applicable", "skipped_by_policy"] },
+        "sourceRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/sourceRef" }
+        },
+        "commandRunRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/commandRunRef" }
+        },
+        "recordedAt": { "type": "string", "format": "date-time" },
+        "recordedBy": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "contractCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eventType", "contract", "decision"],
+      "properties": {
+        "eventType": { "const": "contract_check_recorded" },
+        "checkId": { "$ref": "#/$defs/nonEmptyString" },
+        "contract": { "$ref": "#/$defs/nonEmptyString" },
+        "decision": { "enum": ["pass", "fail", "blocked", "not_applicable", "skipped_by_policy"] },
+        "sourceRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/sourceRef" }
+        },
+        "recordedAt": { "type": "string", "format": "date-time" },
+        "recordedBy": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "failureRecord": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["type"],
+      "properties": {
+        "type": { "$ref": "#/$defs/nonEmptyString" }
+      },
+      "not": { "required": ["result"] }
+    },
+    "rerunLoop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rerunLoopId", "status", "sourceRefs"],
+      "properties": {
+        "rerunLoopId": { "$ref": "#/$defs/nonEmptyString" },
+        "status": { "enum": ["open", "in_progress", "no_progress", "resolved", "blocked", "abandoned_by_user_confirmation"] },
+        "sourceRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/sourceRef" }
+        },
+        "blockerRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/sourceRef" }
+        },
+        "recheckRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/sourceRef" }
+        }
+      }
+    },
+    "closeout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["currentAttemptId", "attempts"],
+      "properties": {
+        "currentAttemptId": { "$ref": "#/$defs/nonEmptyString" },
+        "decision": { "enum": ["pass", "fail", "blocked"] },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "attempts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["eventType", "closeoutAttemptId", "decision"],
+            "properties": {
+              "eventType": { "const": "closeout_check_recorded" },
+              "closeoutAttemptId": { "$ref": "#/$defs/nonEmptyString" },
+              "decision": { "enum": ["pass", "fail", "blocked"] },
+              "blockingReasons": {
+                "type": "array",
+                "items": { "$ref": "#/$defs/nonEmptyString" }
+              },
+              "checks": {
+                "type": "array",
+                "items": { "type": "object" }
+              },
+              "reportPath": { "$ref": "#/$defs/nonEmptyString" },
+              "evaluatedAt": { "type": "string", "format": "date-time" },
+              "evaluatedBy": { "$ref": "#/$defs/nonEmptyString" }
+            }
+          }
+        }
+      }
+    },
+    "deliveryEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "requiredCommands": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["commandId", "command", "blockingIfMissing", "artifactRefs"],
+            "properties": {
+              "commandId": { "$ref": "#/$defs/nonEmptyString" },
+              "command": { "$ref": "#/$defs/nonEmptyString" },
+              "commandType": { "$ref": "#/$defs/nonEmptyString" },
+              "blockingIfMissing": { "const": true },
+              "negativeOrRegression": { "type": "boolean" },
+              "traceRows": {
+                "type": "array",
+                "items": { "$ref": "#/$defs/nonEmptyString" }
+              },
+              "evidenceRefs": {
+                "type": "array",
+                "items": { "$ref": "#/$defs/nonEmptyString" }
+              },
+              "artifactRefs": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "$ref": "#/$defs/artifactRef" }
+              }
+            }
+          }
+        },
+        "historicalRunRefs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["commandId", "runId"],
+            "properties": {
+              "commandId": { "$ref": "#/$defs/nonEmptyString" },
+              "runId": { "$ref": "#/$defs/nonEmptyString" },
+              "closeoutAttemptId": { "$ref": "#/$defs/nonEmptyString" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
