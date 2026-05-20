@@ -34,11 +34,15 @@ interface RegistryValidationResult {
   status: string;
   groups: number;
   failureCases: number;
+  failureCaseExercisedCount: number;
   recoveryActions: number;
   globalEventTypes: number;
   fullLinkRequiredFixtureCases: string[];
+  phase4_5Coverage: string[];
+  phase5HardeningCoverage: string[];
   exercisedFixtureCases: string[];
   unexercisedCases: string[];
+  caseEvidence: JsonObject[];
   issues: string[];
 }
 
@@ -73,6 +77,7 @@ const OPEN_RCA_STATUSES = new Set(['open', 'in_progress', 'blocked']);
 const OPEN_FAILURE_STATUSES = new Set(['open', 'in_progress', 'blocked']);
 const NON_TERMINAL_CLOSURE_STATUSES = new Set(['open', 'fail', 'blocked']);
 const TERMINAL_TRACE_STATUSES = new Set(['PASS', 'PENDING', 'MISSING_EVIDENCE', 'BLOCKED']);
+const POST_FULL_LINK_COVERAGE_PHASE = 'post-full-link coverage matrix';
 
 function parseArgs(argv: string[]): ParsedArgs {
   const out: ParsedArgs = {};
@@ -487,13 +492,15 @@ function checkControlledSources(record: JsonObject): Check {
 }
 
 function checkBlockers(record: JsonObject): Check {
-  const openFailures = objects(record.failureRecords).filter((item) =>
+  const openFailures = [...latestBy(objects(record.failureRecords), 'failureId').values()].filter((item) =>
     OPEN_FAILURE_STATUSES.has(text(item.status))
   );
-  const openReruns = objects(record.rerunLoops).filter((item) =>
+  const openReruns = [...latestBy(objects(record.rerunLoops), 'rerunLoopId').values()].filter((item) =>
     OPEN_RERUN_STATUSES.has(text(item.status))
   );
-  const openRca = objects(record.rcaRecords).filter((item) => OPEN_RCA_STATUSES.has(text(item.status)));
+  const openRca = [...latestBy(objects(record.rcaRecords), 'rcaId').values()].filter((item) =>
+    OPEN_RCA_STATUSES.has(text(item.status))
+  );
   const latestClosures = [...latestBy(objects(record.requirementClosures), 'requirementId').values()];
   const openClosures = latestClosures.filter((item) =>
     NON_TERMINAL_CLOSURE_STATUSES.has(text(item.status))
@@ -552,11 +559,15 @@ function validateFunctionalResumeFailureCaseRegistry(input: {
       status: '',
       groups: 0,
       failureCases: 0,
+      failureCaseExercisedCount: 0,
       recoveryActions: 0,
       globalEventTypes: 0,
       fullLinkRequiredFixtureCases: [],
+      phase4_5Coverage: [],
+      phase5HardeningCoverage: [],
       exercisedFixtureCases: [],
       unexercisedCases: [],
+      caseEvidence: [],
       issues,
     };
   }
@@ -691,8 +702,69 @@ function validateFunctionalResumeFailureCaseRegistry(input: {
       issues.push(blockingIssue('resume_failure_full_link_fixture_missing', `fullLinkRequiredFixtureCases[] missing ${required}`, [required]));
     }
   }
+  const phase4_5Coverage = strings(registry.phase4_5Coverage);
+  const phase5HardeningCoverage = strings(registry.phase5HardeningCoverage);
+  const postFullLinkCoverage = failureCases
+    .filter((item) => text(item.coveragePhase).toLowerCase() === POST_FULL_LINK_COVERAGE_PHASE)
+    .map((item) => text(item.id))
+    .filter(Boolean);
+  const exercisedCaseIds = new Set([
+    ...fullLinkRequiredFixtureCases,
+    ...phase4_5Coverage,
+    ...phase5HardeningCoverage,
+    ...postFullLinkCoverage,
+  ]);
+  const caseEvidence = failureCases
+    .map((item) => {
+      const caseId = text(item.id);
+      const expectedRecoveryActions = strings(item.expectedRecoveryActions);
+      const coveragePhase = text(item.coveragePhase);
+      const exercisedBy =
+        fullLinkRequiredFixtureCases.includes(caseId) || item.fullLinkRequired === true
+          ? 'full_link_required_fixture'
+          : phase4_5Coverage.includes(caseId)
+            ? 'phase4_5_coverage'
+            : phase5HardeningCoverage.includes(caseId)
+              ? 'phase5_hardening_coverage'
+              : postFullLinkCoverage.includes(caseId)
+                ? 'post_full_link_coverage_matrix'
+                : '';
+      const commandEvidenceRequired = true;
+      const artifactRefRequired = true;
+      const sourceRefsRequired = true;
+      const controlledEventRecordRequired = true;
+      const recoveryActionEvidenceRequired = expectedRecoveryActions.length > 0;
+      const exercised = Boolean(exercisedBy);
+      return {
+        caseId,
+        groupId: text(item.groupId),
+        coveragePhase,
+        exercised,
+        exercisedBy,
+        expectedRecoveryActions,
+        evidenceRequirements: {
+          commandEvidenceRequired,
+          artifactRefRequired,
+          sourceRefsRequired,
+          controlledEventRecordRequired,
+          recoveryActionEvidenceRequired,
+        },
+        sourceRefs: [{ sourceType: 'functionalResumeFailureCaseRegistry.failureCases', id: caseId }],
+      };
+    })
+    .filter((item) => text(item.caseId));
+  for (const required of phase4_5Coverage) {
+    if (!seenCases.has(required)) {
+      issues.push(blockingIssue('resume_failure_phase4_5_unknown_case', `phase4_5Coverage references missing failure case ${required}`, [required]));
+    }
+  }
+  for (const required of phase5HardeningCoverage) {
+    if (!seenCases.has(required)) {
+      issues.push(blockingIssue('resume_failure_phase5_unknown_case', `phase5HardeningCoverage references missing failure case ${required}`, [required]));
+    }
+  }
   const exercisedFixtureCases = failureCases
-    .filter((item) => item.fullLinkRequired === true || fullLinkRequiredFixtureCases.includes(text(item.id)))
+    .filter((item) => item.fullLinkRequired === true || exercisedCaseIds.has(text(item.id)))
     .map((item) => text(item.id))
     .filter(Boolean)
     .sort();
@@ -701,17 +773,30 @@ function validateFunctionalResumeFailureCaseRegistry(input: {
     .filter(Boolean)
     .filter((caseId) => !exercisedFixtureCases.includes(caseId))
     .sort();
+  if (unexercisedCases.length > 0) {
+    issues.push(
+      blockingIssue(
+        'resume_failure_unexercised_cases_present',
+        'functionalResumeFailureCaseRegistry.failureCases[] has unexercised cases',
+        unexercisedCases
+      )
+    );
+  }
 
   return {
     rawPresent: true,
     status: text(registry.status),
     groups: groups.length,
     failureCases: failureCases.length,
+    failureCaseExercisedCount: exercisedFixtureCases.length,
     recoveryActions: actions.length,
     globalEventTypes: globalEventTypes.size,
     fullLinkRequiredFixtureCases,
+    phase4_5Coverage,
+    phase5HardeningCoverage,
     exercisedFixtureCases,
     unexercisedCases,
+    caseEvidence,
     issues,
   };
 }
@@ -806,6 +891,12 @@ function resumePacket(input: {
       'delivery_closeout',
     ],
     resumeFailureCaseRegistryCoverage: input.registryCoverage,
+    failureCaseCoverageGate: {
+      decision: input.registryCoverage.unexercisedCases.length === 0 ? 'pass' : 'blocked',
+      failureCaseTotalCount: input.registryCoverage.failureCases,
+      failureCaseExercisedCount: input.registryCoverage.failureCaseExercisedCount,
+      unexercisedCases: input.registryCoverage.unexercisedCases,
+    },
     blockingIssues,
     checks: input.checks,
   };

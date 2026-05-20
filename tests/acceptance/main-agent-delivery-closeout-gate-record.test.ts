@@ -10,8 +10,46 @@ const HASH = 'sha256:11111111111111111111111111111111111111111111111111111111111
 function writeRecord(root: string, record: Record<string, unknown>): string {
   const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-CLOSEOUT');
   mkdirSync(base, { recursive: true });
+  const coveragePath = path.join(base, 'evidence', 'failure-case-coverage.json');
+  mkdirSync(path.dirname(coveragePath), { recursive: true });
+  writeFileSync(
+    coveragePath,
+    `${JSON.stringify(
+      {
+        reportType: 'failure_case_coverage',
+        resumeFailureCaseRegistryCoverage: {
+          failureCases: 2,
+          failureCaseExercisedCount: 2,
+          unexercisedCases: [],
+          issues: [],
+        },
+        blockingIssues: [],
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
+  const recordWithCoverage = {
+    ...record,
+    artifactIndex: [
+      ...(((record.artifactIndex as unknown[]) ?? []) as Record<string, unknown>[]),
+      {
+        artifactType: 'failure_case_coverage',
+        sourceOfTruthRole: 'evidence',
+        path: coveragePath,
+        hash: HASH,
+        producer: 'main-agent-delivery-closeout-gate-record.test',
+        purpose: 'prove complete failure-case coverage for closeout fixture',
+        relatedRequirementIds: ['MUST-041', 'NEG-029', 'EVD-041'],
+        status: 'active',
+        inputVersion: 'source-v1',
+        outputVersion: 'failure-case-coverage-v1',
+      },
+    ],
+  };
   const recordPath = path.join(base, 'requirement-record.json');
-  writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+  writeFileSync(recordPath, `${JSON.stringify(recordWithCoverage, null, 2)}\n`, 'utf8');
   return recordPath;
 }
 
@@ -464,6 +502,137 @@ describe('requirement-scoped delivery closeout gate', () => {
       expect(record.closeout.decision).toBe('blocked');
       expect(record.closeout.attempts[0].blockingReasons).toContain(
         'implementation_readiness_gate_not_passed'
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks closeout when failure-case coverage artifact is missing', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-failure-case-missing-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        artifactIndex: [],
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              command: 'node verify.js',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-failure-case-missing',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-failure-case-missing',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      record.artifactIndex = record.artifactIndex.filter(
+        (artifact: Record<string, unknown>) => artifact.artifactType !== 'failure_case_coverage'
+      );
+      writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-failure-case-missing',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(1);
+      const nextRecord = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(nextRecord.closeout.attempts[0].blockingReasons).toContain(
+        'failure_case_coverage_artifact_missing'
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks closeout when failure-case coverage has unexercised cases', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-failure-case-incomplete-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              command: 'node verify.js',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-failure-case-incomplete',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-failure-case-incomplete',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      const coverage = record.artifactIndex.find(
+        (artifact: Record<string, unknown>) => artifact.artifactType === 'failure_case_coverage'
+      );
+      writeFileSync(
+        coverage.path,
+        `${JSON.stringify(
+          {
+            reportType: 'failure_case_coverage',
+            resumeFailureCaseRegistryCoverage: {
+              failureCases: 2,
+              failureCaseExercisedCount: 1,
+              unexercisedCases: ['sourceDocumentHash_changed'],
+              issues: [],
+            },
+            blockingIssues: [],
+          },
+          null,
+          2
+        )}\n`,
+        'utf8'
+      );
+
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-failure-case-incomplete',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(1);
+      const nextRecord = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(nextRecord.closeout.attempts[0].blockingReasons).toEqual(
+        expect.arrayContaining([
+          'failure_case_coverage_incomplete:1/2',
+          'failure_case_unexercised:sourceDocumentHash_changed',
+        ])
       );
     } finally {
       rmSync(root, { recursive: true, force: true });

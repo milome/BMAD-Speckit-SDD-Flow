@@ -165,6 +165,39 @@ function artifactIndexed(record: JsonObject, artifactRef: unknown): boolean {
   );
 }
 
+function latestFailureCaseCoverageArtifact(record: JsonObject): JsonObject | null {
+  const artifacts = objects(record.artifactIndex).filter(
+    (artifact) =>
+      text(artifact.artifactType) === 'failure_case_coverage' &&
+      text(artifact.sourceOfTruthRole) === 'evidence' &&
+      text(artifact.status) === 'active'
+  );
+  return artifacts.at(-1) ?? null;
+}
+
+function failureCaseCoverageIssues(record: JsonObject): string[] {
+  const artifact = latestFailureCaseCoverageArtifact(record);
+  if (!artifact) return ['failure_case_coverage_artifact_missing'];
+  if (artifactCompletenessIssues(artifact).length > 0) return ['failure_case_coverage_artifact_incomplete'];
+  const artifactPath = text(artifact.path);
+  const absolute = path.isAbsolute(artifactPath) ? artifactPath : path.resolve(process.cwd(), artifactPath);
+  if (!fs.existsSync(absolute)) return [`failure_case_coverage_artifact_not_found:${normalizePathForRecord(artifactPath)}`];
+  const report = readJson(absolute);
+  const coverage = report.resumeFailureCaseRegistryCoverage as JsonObject | undefined;
+  const total = Number(coverage?.failureCases ?? report.failureCaseTotalCount ?? 0);
+  const exercised = Number(coverage?.failureCaseExercisedCount ?? report.failureCaseExercisedCount ?? 0);
+  const unexercised = strings(coverage?.unexercisedCases ?? report.unexercisedCases);
+  const issues = strings(coverage?.issues ?? report.issues);
+  const blockingIssues = strings(report.blockingIssues);
+  const out: string[] = [];
+  if (!total) out.push('failure_case_coverage_total_missing');
+  if (total !== exercised) out.push(`failure_case_coverage_incomplete:${exercised}/${total}`);
+  for (const caseId of unexercised) out.push(`failure_case_unexercised:${caseId}`);
+  if (issues.length > 0) out.push('failure_case_coverage_registry_issues');
+  if (blockingIssues.length > 0) out.push('failure_case_coverage_blocking_issues');
+  return [...new Set(out)];
+}
+
 function hasImplementationReadinessPass(record: JsonObject): boolean {
   return objects(record.gateChecks).some(
     (check) =>
@@ -352,6 +385,14 @@ function evaluate(record: JsonObject, attemptId: string): { decision: CloseoutDe
     issueCount: hookIssues.length,
   });
   blockingReasons.push(...hookIssues);
+
+  const failureCaseIssues = failureCaseCoverageIssues(record);
+  checks.push({
+    id: 'failure-case-coverage-complete',
+    passed: failureCaseIssues.length === 0,
+    issueCount: failureCaseIssues.length,
+  });
+  blockingReasons.push(...failureCaseIssues);
 
   const attemptRuns = commandRunsForAttempt(record, attemptId);
   for (const command of requiredCommands) {
