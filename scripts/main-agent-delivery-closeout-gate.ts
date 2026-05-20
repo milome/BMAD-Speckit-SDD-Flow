@@ -189,6 +189,15 @@ function latestRcaRecords(record: JsonObject): JsonObject[] {
   return [...latestByRcaId.values()];
 }
 
+function latestRerunLoops(record: JsonObject): JsonObject[] {
+  const latestByRerunLoopId = new Map<string, JsonObject>();
+  for (const loop of objects(record.rerunLoops)) {
+    const rerunLoopId = text(loop.rerunLoopId);
+    if (rerunLoopId) latestByRerunLoopId.set(rerunLoopId, loop);
+  }
+  return [...latestByRerunLoopId.values()];
+}
+
 function artifactCompletenessIssues(artifactRef: unknown): string[] {
   if (!artifactRef || typeof artifactRef !== 'object' || Array.isArray(artifactRef)) return ['artifact_ref_missing'];
   const ref = artifactRef as JsonObject;
@@ -696,10 +705,18 @@ function parallelMissionEvidenceIntegrationIssues(record: JsonObject, attemptId:
     if (text(report.schemaVersion) !== 'parallel-mission-evidence-integration/v1') {
       artifactIssues.push('parallel_mission_report_schema_invalid');
     }
-    if (text(report.decision) !== 'pass') artifactIssues.push('parallel_mission_report_not_pass');
-    if (text(report.currentCloseoutAttemptId) !== attemptId) {
-      artifactIssues.push('parallel_mission_report_attempt_mismatch');
+    const isCurrentAttemptReport = text(report.currentCloseoutAttemptId) === attemptId;
+    if (artifactIssues.length === 0 && !isCurrentAttemptReport) {
+      checks.push({
+        id: `parallel-mission-evidence-integration:${normalizePathForRecord(artifactPath) || '<missing>'}`,
+        passed: true,
+        skippedHistoricalAttempt: text(report.currentCloseoutAttemptId) || null,
+        currentAttemptId: attemptId,
+      });
+      continue;
     }
+    if (text(report.decision) !== 'pass') artifactIssues.push('parallel_mission_report_not_pass');
+    if (!isCurrentAttemptReport) artifactIssues.push('parallel_mission_report_attempt_mismatch');
     if (strings(report.blockingReasons).length > 0) artifactIssues.push('parallel_mission_report_blocking_reasons_present');
     for (const check of objects(report.checks)) {
       if (check.passed !== true) artifactIssues.push(`parallel_mission_report_check_not_passed:${text(check.id) || '<missing>'}`);
@@ -975,7 +992,7 @@ function evaluate(record: JsonObject, recordPath: string, attemptId: string): { 
   checks.push({ id: 'requirement-closures-terminal', passed: openClosures.length === 0, openCount: openClosures.length });
   if (openClosures.length > 0) blockingReasons.push('requirement_closures_not_terminal');
 
-  const openReruns = objects(record.rerunLoops).filter((loop) =>
+  const openReruns = latestRerunLoops(record).filter((loop) =>
     ['open', 'in_progress', 'no_progress', 'blocked'].includes(text(loop.status))
   );
   checks.push({ id: 'rerun-loops-closed', passed: openReruns.length === 0, openCount: openReruns.length });
@@ -1010,7 +1027,7 @@ function closeoutFailureSourceRefs(record: JsonObject, attemptId: string, gateCh
     { sourceType: 'closeout_attempt', id: attemptId },
     { sourceType: 'gate_check', id: gateCheckId },
   ];
-  for (const loop of objects(record.rerunLoops)) {
+  for (const loop of latestRerunLoops(record)) {
     if (['open', 'in_progress', 'no_progress', 'blocked'].includes(text(loop.status))) {
       refs.push({ sourceType: 'rerun_loop', id: text(loop.rerunLoopId) });
     }

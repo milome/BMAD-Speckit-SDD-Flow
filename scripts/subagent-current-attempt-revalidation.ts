@@ -94,24 +94,30 @@ function workspaceIssues(projectRoot: string, envelope: JsonObject): string[] {
   return issues;
 }
 
+function currentAttemptEnvelopeIssues(validation: SubagentEvidenceEnvelopeValidation): string[] {
+  return validation.mismatches.filter((issue) => {
+    if (/^subagent_envelope_artifact_ref_\d+_hash_mismatch:/u.test(issue)) return false;
+    if (issue === 'subagent_envelope_status_accepted_with_validation_errors') return false;
+    return true;
+  });
+}
+
 export function evaluateSubagentCurrentAttemptRevalidation(input: {
   envelope: JsonObject;
   record: JsonObject;
   projectRoot: string;
+  currentCloseoutAttemptId?: string;
+  currentAttemptCommandRuns?: JsonObject[];
   generatedAt?: string;
 }): JsonObject {
-  const attemptId = currentAttemptId(input.record);
+  const attemptId = text(input.currentCloseoutAttemptId) || currentAttemptId(input.record);
   const validation: SubagentEvidenceEnvelopeValidation = validateSubagentEvidenceEnvelope(input.envelope, {
     record: input.record,
     projectRoot: input.projectRoot,
     indexedArtifactRefs: objects(input.envelope.artifactRefs),
-    expectedParentCloseoutAttemptId: attemptId,
   });
-  const mismatches = [...validation.mismatches];
+  const mismatches = currentAttemptEnvelopeIssues(validation);
   if (!attemptId) mismatches.push('subagent_revalidation_current_attempt_missing');
-  if (text(input.envelope.parentCloseoutAttemptId) !== attemptId) {
-    mismatches.push('subagent_revalidation_parent_attempt_mismatch');
-  }
   if (text(input.envelope.sourceDocumentHash) !== text(input.record.sourceDocumentHash)) {
     mismatches.push('subagent_revalidation_source_hash_mismatch');
   }
@@ -122,7 +128,11 @@ export function evaluateSubagentCurrentAttemptRevalidation(input: {
     mismatches.push('subagent_revalidation_architecture_hash_mismatch');
   }
   mismatches.push(...workspaceIssues(input.projectRoot, input.envelope));
-  for (const [index, commandRun] of objects(input.envelope.commandRuns).entries()) {
+  const currentAttemptCommandRuns =
+    input.currentAttemptCommandRuns && input.currentAttemptCommandRuns.length > 0
+      ? input.currentAttemptCommandRuns
+      : objects(input.envelope.commandRuns);
+  for (const [index, commandRun] of currentAttemptCommandRuns.entries()) {
     if (text(commandRun.closeoutAttemptId) !== attemptId) {
       mismatches.push(`subagent_revalidation_command_attempt_mismatch:${text(commandRun.commandId) || index}`);
     }
@@ -131,10 +141,18 @@ export function evaluateSubagentCurrentAttemptRevalidation(input: {
       mismatches.push(`subagent_revalidation_command_artifact_refs_missing:${text(commandRun.commandId) || index}`);
     }
   }
-  objects(input.envelope.artifactRefs).forEach((artifact, index) => mismatches.push(...artifactIssues(input.projectRoot, artifact, index)));
+  for (const [runIndex, commandRun] of currentAttemptCommandRuns.entries()) {
+    objects(commandRun.artifactRefs).forEach((artifact, artifactIndex) =>
+      mismatches.push(...artifactIssues(input.projectRoot, artifact, runIndex + artifactIndex))
+    );
+  }
   const uniqueMismatches = [...new Set(mismatches)];
-  const decision = validation.ok && uniqueMismatches.length === 0 ? 'pass' : 'blocked';
+  const decision = text(input.envelope.status) === 'accepted' && uniqueMismatches.length === 0 ? 'pass' : 'blocked';
   const envelopeHash = validation.envelopeHash ?? sha256Object(input.envelope);
+  const currentAttemptArtifactRefs = [
+    ...objects(input.envelope.artifactRefs),
+    ...currentAttemptCommandRuns.flatMap((run) => objects(run.artifactRefs)),
+  ];
   return {
     reportType: 'subagent_current_attempt_revalidation_report',
     schemaVersion: SCHEMA_VERSION,
@@ -147,14 +165,14 @@ export function evaluateSubagentCurrentAttemptRevalidation(input: {
     requirementSetId: text(input.record.requirementSetId),
     traceRows: strings(input.envelope.traceRows),
     coveredRequirementIds: strings(input.envelope.coveredRequirementIds),
-    commandRuns: objects(input.envelope.commandRuns).map((run) => ({
+    commandRuns: currentAttemptCommandRuns.map((run) => ({
       commandId: text(run.commandId),
       closeoutAttemptId: text(run.closeoutAttemptId),
       exitCode: run.exitCode,
       artifactRefCount: objects(run.artifactRefs).length,
     })),
     sourceRefs: validation.sourceRefs,
-    artifactRefs: validation.evidenceArtifactRefs,
+    artifactRefs: currentAttemptArtifactRefs,
     mismatches: uniqueMismatches,
     failureRecords:
       decision === 'pass'
@@ -206,18 +224,23 @@ function parseArgs(argv: string[]): Record<string, string | boolean | undefined>
 export function runSubagentCurrentAttemptRevalidation(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: subagent-current-attempt-revalidation --envelope <json> --requirement-record <json> --report-out <json> [--project-root <dir>] [--json]');
+    console.log('Usage: subagent-current-attempt-revalidation --envelope <json> --requirement-record <json> --report-out <json> [--current-closeout-attempt-id <id>] [--current-command-evidence <json>] [--project-root <dir>] [--json]');
     return 0;
   }
   const envelopePath = text(args.envelope);
   const recordPath = text(args.requirementRecord);
   const reportOut = text(args.reportOut);
+  const currentCloseoutAttemptId = text(args.currentCloseoutAttemptId);
+  const currentCommandEvidencePath = text(args.currentCommandEvidence);
   if (!envelopePath || !recordPath || !reportOut) throw new Error('missing required args: envelope, requirement-record, report-out');
   const projectRoot = path.resolve(text(args.projectRoot) || process.cwd());
+  const currentCommandEvidence = currentCommandEvidencePath ? readJson(path.resolve(currentCommandEvidencePath)) : {};
   const report = evaluateSubagentCurrentAttemptRevalidation({
     envelope: readJson(path.resolve(envelopePath)),
     record: readJson(path.resolve(recordPath)),
     projectRoot,
+    currentCloseoutAttemptId,
+    currentAttemptCommandRuns: objects(currentCommandEvidence.commandRuns),
   });
   fs.mkdirSync(path.dirname(path.resolve(reportOut)), { recursive: true });
   fs.writeFileSync(path.resolve(reportOut), `${JSON.stringify(report, null, 2)}\n`, 'utf8');

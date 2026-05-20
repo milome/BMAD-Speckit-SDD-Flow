@@ -1532,6 +1532,67 @@ describe('requirement-scoped delivery closeout gate', () => {
     }
   });
 
+  it('allows closeout when the latest event for the same rerun loop is resolved', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-resolved-rerun-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        rerunLoops: [
+          {
+            rerunLoopId: 'rerun-001',
+            status: 'in_progress',
+            sourceRefs: [{ sourceType: 'gate_check', id: 'gate-failed-001' }],
+            blockerRefs: [{ sourceType: 'failure_record', id: 'failure-001' }],
+          },
+          {
+            rerunLoopId: 'rerun-001',
+            status: 'resolved',
+            sourceRefs: [{ sourceType: 'failure_record', id: 'failure-001' }],
+            blockerRefs: [{ sourceType: 'failure_record', id: 'failure-001' }],
+          },
+        ],
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-resolved-rerun',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-resolved-rerun',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-resolved-rerun',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(0);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.closeout.decision).toBe('pass');
+      expect(record.closeout.attempts[0].blockingReasons).not.toContain('pending_rerun_exists');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('blocks closeout when rerun loops use trigger-only or non-authoritative source refs', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-invalid-rerun-source-'));
     try {

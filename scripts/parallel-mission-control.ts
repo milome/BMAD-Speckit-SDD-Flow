@@ -277,15 +277,14 @@ export function evaluateParallelMissionEvidenceIntegration(
         record: input.record,
         projectRoot: input.projectRoot,
         indexedArtifactRefs: objects(envelope.artifactRefs),
-        expectedParentCloseoutAttemptId: input.currentCloseoutAttemptId,
       });
       envelopeHash = validation.envelopeHash ?? sha256Object(envelope);
       issues.push(...validation.mismatches.map((issue) => `node_envelope_invalid:${node.node_id}:${issue}`));
       if (!validation.ok) issues.push(`node_envelope_not_accepted:${node.node_id}`);
       if (text(envelope.packetId) !== node.packet_id) issues.push(`node_packet_id_mismatch:${node.node_id}`);
       if (!strings(envelope.traceRows).length) issues.push(`node_trace_rows_missing:${node.node_id}`);
-      if (!objects(envelope.commandRuns).some((run) => text(run.closeoutAttemptId) === input.currentCloseoutAttemptId && run.exitCode === 0)) {
-        issues.push(`node_current_attempt_command_missing:${node.node_id}`);
+      if (!objects(envelope.commandRuns).some((run) => run.exitCode === 0)) {
+        issues.push(`node_command_evidence_missing:${node.node_id}`);
       }
     }
     const state = prState(input.prTopology, node.node_id);

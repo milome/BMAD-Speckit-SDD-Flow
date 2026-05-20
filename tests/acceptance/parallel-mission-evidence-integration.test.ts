@@ -217,6 +217,58 @@ describe('parallel mission evidence integration', () => {
     }
   });
 
+  it('allows current-attempt integrated verification to consume historical node envelopes', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'parallel-mission-historical-node-envelope-'));
+    try {
+      writeJson(path.join(root, 'node-a.json'), { node: 'a' });
+      writeJson(path.join(root, 'node-b.json'), { node: 'b' });
+      writeJson(path.join(root, 'integrated.json'), { integrated: true });
+      const nodeArtifactA = artifact(root, 'node-a.json');
+      const nodeArtifactB = artifact(root, 'node-b.json');
+      const integratedArtifact = artifact(root, 'integrated.json');
+      const historicalEnvelopeA = envelope(root, 'node-a', 'packet-a', [nodeArtifactA]);
+      const historicalEnvelopeB = envelope(root, 'node-b', 'packet-b', [nodeArtifactB]);
+      historicalEnvelopeA.parentCloseoutAttemptId = 'previous-attempt';
+      historicalEnvelopeB.parentCloseoutAttemptId = 'previous-attempt';
+      for (const run of historicalEnvelopeA.commandRuns) run.closeoutAttemptId = 'previous-attempt';
+      for (const run of historicalEnvelopeB.commandRuns) run.closeoutAttemptId = 'previous-attempt';
+      const missionPlan = plan();
+      const topology = buildPrTopology({
+        plan: missionPlan,
+        states: { 'node-a': 'merged', 'node-b': 'closed_not_needed' },
+        evidence_provenance: { runId: 'run-1', storyKey: 'S1', evidenceBundleId: 'bundle-1' },
+      });
+      const report = evaluateParallelMissionEvidenceIntegration({
+        plan: missionPlan,
+        prTopology: topology,
+        currentCloseoutAttemptId: 'closeout-current',
+        projectRoot: root,
+        record: record(root),
+        nodeEvidence: [
+          { node_id: 'node-a', envelope: historicalEnvelopeA },
+          { node_id: 'node-b', envelope: historicalEnvelopeB },
+        ],
+        integratedVerification: {
+          closeoutAttemptId: 'closeout-current',
+          workspaceRef: { kind: 'main_workspace', path: root },
+          commandRuns: [
+            {
+              commandId: 'CMD-INTEGRATED',
+              closeoutAttemptId: 'closeout-current',
+              exitCode: 0,
+              artifactRefs: [integratedArtifact],
+            },
+          ],
+          artifactRefs: [integratedArtifact],
+        },
+      });
+      expect(report.decision).toBe('pass');
+      expect(report.blockingReasons).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('blocks missing node envelope, merge order gaps, PR green without closed nodes, and missing integrated verification', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'parallel-mission-block-'));
     try {
@@ -370,6 +422,60 @@ describe('parallel mission evidence integration', () => {
       const updated = JSON.parse(readFileSync(recordPath, 'utf8'));
       expect(updated.closeout.attempts[0].blockingReasons).not.toContain('parallel_mission_evidence_integration_report_missing');
       expect(updated.closeout.attempts[0].blockingReasons).not.toContain('parallel_mission_evidence_integration_current_report_missing');
+      expect(code).toBe(1);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('ignores historical active integration reports once a current attempt report passes', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'parallel-mission-closeout-historical-skip-'));
+    try {
+      const previousReportPath = path.join(root, 'parallel-report-previous.json');
+      const currentReportPath = path.join(root, 'parallel-report-current.json');
+      const baseReport = {
+        reportType: 'parallel_mission_evidence_integration_report',
+        schemaVersion: 'parallel-mission-evidence-integration/v1',
+        decision: 'pass',
+        blockingReasons: [],
+        checks: [
+          { id: 'node-envelopes-accepted', passed: true, issues: [] },
+          { id: 'write-scope-proof', passed: true, issues: [] },
+          { id: 'merge-order-proof', passed: true, issues: [] },
+          { id: 'pr-topology-reconciliation', passed: true, issues: [] },
+          { id: 'main-workspace-integrated-verification', passed: true, issues: [] },
+        ],
+        nodeResults: [{ node_id: 'node-a', passed: true, envelopeHash: 'sha256:'.concat('a'.repeat(64)) }],
+        integratedVerification: { passed: true, commandCount: 1, artifactCount: 1 },
+      };
+      writeJson(previousReportPath, { ...baseReport, currentCloseoutAttemptId: 'previous-attempt' });
+      writeJson(currentReportPath, { ...baseReport, currentCloseoutAttemptId: 'closeout-current' });
+      const reportArtifact = (filePath: string) => ({
+        artifactType: 'parallel_mission_evidence_integration_report',
+        sourceOfTruthRole: 'evidence',
+        path: filePath,
+        contentHash: sha256File(filePath),
+        producer: 'parallel-mission-evidence-integration.test',
+        purpose: 'parallel mission evidence integration report',
+        relatedRequirementIds: ['MUST-048', 'NEG-037', 'EVD-047'],
+        status: 'active',
+        inputVersion: 'trace-037',
+        outputVersion: 'parallel-mission-evidence-integration-v1',
+      });
+      const recordPath = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-CLOSEOUT', 'requirement-record.json');
+      writeJson(recordPath, record(root, [reportArtifact(previousReportPath), reportArtifact(currentReportPath)]));
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-current',
+        '--evaluated-at',
+        '2026-05-21T00:00:00.000Z',
+      ]);
+      const updated = JSON.parse(readFileSync(recordPath, 'utf8'));
+      const reasons = updated.closeout.attempts[0].blockingReasons;
+      expect(reasons).not.toContain('parallel_mission_report_attempt_mismatch');
+      expect(reasons).not.toContain('parallel_mission_evidence_integration_current_report_missing');
       expect(code).toBe(1);
     } finally {
       rmSync(root, { recursive: true, force: true });
