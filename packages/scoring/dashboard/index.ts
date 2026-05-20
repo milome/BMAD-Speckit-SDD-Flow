@@ -55,12 +55,19 @@ export type {
   DashboardScoreDetailRecord,
   DashboardScoreDetailPayload,
   DashboardSftSummary,
+  DashboardWorkboardPayload,
+  DashboardWorkItem,
+  DashboardBoardGroup,
 } from './runtime-query';
 export type {
   SixMentalModelProjection,
   SixMentalModelSection,
   SixMentalModelId,
   SixMentalModelEntryFlowSlices,
+  SixMentalModelBusinessObjectItem,
+  SixMentalModelBusinessObjectView,
+  SixMentalModelBusinessObjectViews,
+  SixMentalModelForbiddenDisplayCheck,
 } from './six-model-projection';
 export { renderDashboardSnapshotMarkdown, writeDashboardSnapshotFiles } from './snapshot';
 export type { WriteDashboardSnapshotOptions } from './snapshot';
