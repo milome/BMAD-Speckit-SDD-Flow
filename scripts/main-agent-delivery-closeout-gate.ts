@@ -645,6 +645,92 @@ function subagentCurrentAttemptRevalidationIssues(record: JsonObject, attemptId:
   return { issues: [...new Set(issues)], checks };
 }
 
+function parallelMissionEvidenceRequired(record: JsonObject): boolean {
+  const hasParallelCommand = objects(deliveryEvidence(record).requiredCommands).some(
+    (command) => text(command.commandId) === 'CMD-PARALLEL-MISSION-EVIDENCE-INTEGRATION'
+  );
+  const hasTrace037Execution = objects(record.executionIterations).some((iteration) =>
+    strings(iteration.traceRows).includes('TRACE-037')
+  );
+  const hasTrace037Closure = objects(record.requirementClosures).some(
+    (closure) => text(closure.requirementId) === 'TRACE-037' || strings(closure.traceRows).includes('TRACE-037')
+  );
+  const hasParallelArtifact = objects(record.artifactIndex).some(
+    (artifact) => text(artifact.artifactType) === 'parallel_mission_evidence_integration_report'
+  );
+  return hasParallelCommand || hasTrace037Execution || hasTrace037Closure || hasParallelArtifact;
+}
+
+function parallelMissionEvidenceIntegrationIssues(record: JsonObject, attemptId: string): { issues: string[]; checks: JsonObject[] } {
+  if (!parallelMissionEvidenceRequired(record)) {
+    return {
+      issues: [],
+      checks: [{ id: 'parallel-mission-evidence-integration-current', passed: true, required: false }],
+    };
+  }
+  const artifacts = objects(record.artifactIndex).filter(
+    (artifact) =>
+      text(artifact.sourceOfTruthRole) === 'evidence' &&
+      text(artifact.status) === 'active' &&
+      text(artifact.artifactType) === 'parallel_mission_evidence_integration_report'
+  );
+  if (artifacts.length === 0) {
+    return {
+      issues: ['parallel_mission_evidence_integration_report_missing'],
+      checks: [{ id: 'parallel-mission-evidence-integration-current', passed: false, issueCount: 1 }],
+    };
+  }
+  const issues: string[] = [];
+  const checks: JsonObject[] = [];
+  let hasPassingCurrentReport = false;
+  for (const artifact of artifacts) {
+    const artifactPath = text(artifact.path);
+    const absolute = artifactPath ? (path.isAbsolute(artifactPath) ? artifactPath : path.resolve(process.cwd(), artifactPath)) : '';
+    const artifactIssues: string[] = [];
+    if (!artifactPath) artifactIssues.push('parallel_mission_report_path_missing');
+    if (absolute && !fs.existsSync(absolute)) artifactIssues.push(`parallel_mission_report_file_missing:${normalizePathForRecord(artifactPath)}`);
+    if (absolute && fs.existsSync(absolute) && sha256File(absolute) !== text(artifact.hash ?? artifact.contentHash)) {
+      artifactIssues.push('parallel_mission_report_hash_mismatch');
+    }
+    const report = artifactIssues.length === 0 ? readJson(absolute) : {};
+    if (text(report.schemaVersion) !== 'parallel-mission-evidence-integration/v1') {
+      artifactIssues.push('parallel_mission_report_schema_invalid');
+    }
+    if (text(report.decision) !== 'pass') artifactIssues.push('parallel_mission_report_not_pass');
+    if (text(report.currentCloseoutAttemptId) !== attemptId) {
+      artifactIssues.push('parallel_mission_report_attempt_mismatch');
+    }
+    if (strings(report.blockingReasons).length > 0) artifactIssues.push('parallel_mission_report_blocking_reasons_present');
+    for (const check of objects(report.checks)) {
+      if (check.passed !== true) artifactIssues.push(`parallel_mission_report_check_not_passed:${text(check.id) || '<missing>'}`);
+    }
+    const nodeResults = objects(report.nodeResults);
+    if (nodeResults.length === 0) artifactIssues.push('parallel_mission_report_node_results_missing');
+    for (const node of nodeResults) {
+      if (node.passed !== true) artifactIssues.push(`parallel_mission_node_not_passed:${text(node.node_id) || '<missing>'}`);
+      if (!text(node.envelopeHash)) artifactIssues.push(`parallel_mission_node_envelope_hash_missing:${text(node.node_id) || '<missing>'}`);
+    }
+    const integratedVerification =
+      report.integratedVerification && typeof report.integratedVerification === 'object' && !Array.isArray(report.integratedVerification)
+        ? (report.integratedVerification as JsonObject)
+        : {};
+    if (integratedVerification.passed !== true) artifactIssues.push('parallel_mission_integrated_verification_not_passed');
+    if (Number(integratedVerification.commandCount ?? 0) <= 0) artifactIssues.push('parallel_mission_integrated_verification_command_missing');
+    if (Number(integratedVerification.artifactCount ?? 0) <= 0) artifactIssues.push('parallel_mission_integrated_verification_artifact_missing');
+    const passed = artifactIssues.length === 0;
+    if (passed) hasPassingCurrentReport = true;
+    checks.push({
+      id: `parallel-mission-evidence-integration:${normalizePathForRecord(artifactPath) || '<missing>'}`,
+      passed,
+      issueCount: artifactIssues.length,
+      currentAttemptId: attemptId,
+    });
+    issues.push(...artifactIssues);
+  }
+  if (!hasPassingCurrentReport) issues.push('parallel_mission_evidence_integration_current_report_missing');
+  return { issues: [...new Set(issues)], checks };
+}
+
 function hasImplementationReadinessPass(record: JsonObject): boolean {
   return objects(record.gateChecks).some(
     (check) =>
@@ -848,6 +934,10 @@ function evaluate(record: JsonObject, recordPath: string, attemptId: string): { 
   const subagentRevalidation = subagentCurrentAttemptRevalidationIssues(record, attemptId);
   checks.push(...subagentRevalidation.checks);
   blockingReasons.push(...subagentRevalidation.issues);
+
+  const parallelMissionIntegration = parallelMissionEvidenceIntegrationIssues(record, attemptId);
+  checks.push(...parallelMissionIntegration.checks);
+  blockingReasons.push(...parallelMissionIntegration.issues);
 
   const attemptRuns = commandRunsForAttempt(record, attemptId);
   for (const command of requiredCommands) {
