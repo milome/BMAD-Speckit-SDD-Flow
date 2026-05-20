@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "negative-assertion-evidence/v1",
+  "traceRow": "TRACE-037",
+  "assertions": [
+    {
+      "id": "NEG-037-node-envelope-required",
+      "requirementId": "NEG-037",
+      "assertion": "Parallel mission closeout blocks when any required node lacks an accepted envelope.",
+      "proof": "parallel-mission-evidence-integration.test.ts covers node_missing_envelope."
+    },
+    {
+      "id": "NEG-037-write-scope-and-merge-order-required",
+      "requirementId": "NEG-037",
+      "assertion": "Unresolved write-scope conflicts and missing dependency merge order block closeout.",
+      "proof": "acceptance tests cover overlapping_write_scope_without_serialization and dependency_order_missing."
+    },
+    {
+      "id": "NEG-037-pr-green-not-authoritative",
+      "requirementId": "NEG-037",
+      "assertion": "all_affected_stories_passed or assigned agent green cannot replace node closure and current-attempt integrated verification.",
+      "proof": "acceptance tests cover PR topology green with open nodes and missing integrated verification."
+    }
+  ],
+  "generatedAt": "2026-05-20T20:20:04.184Z"
+}

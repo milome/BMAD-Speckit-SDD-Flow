@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "command-evidence/v1",
+  "traceRow": "TRACE-037",
+  "runId": "run-TRACE037-current-20260521T042000Z",
+  "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+  "commandRuns": [
+    {
+      "commandId": "CMD-PARALLEL-MISSION-EVIDENCE-INTEGRATION",
+      "command": "npx vitest run tests/acceptance/parallel-mission-evidence-integration.test.ts",
+      "startedAt": "2026-05-20T20:17:37.846Z",
+      "completedAt": "2026-05-20T20:17:40.374Z",
+      "exitCode": 0,
+      "outputPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-037/run-TRACE037-current-20260521T042000Z/CMD-PARALLEL-MISSION-EVIDENCE-INTEGRATION.output.txt",
+      "runId": "run-TRACE037-current-20260521T042000Z",
+      "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+      "outputSummary": "COMMAND: npx vitest run tests/acceptance/parallel-mission-evidence-integration.test.ts | STARTED_AT: 2026-05-20T20:17:37.846Z | COMPLETED_AT: 2026-05-20T20:17:40.374Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m | delivery_closeout=blocked | delivery_closeout=blocked | \u001b[32m✓\u001b[39m tests/acceptance/parallel-mission-evidence-integration.test.ts \u001b[2m(\u001b[22m\u001b[2m5 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 37\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m5 passed\u001b[39m\u001b[22m\u001b[90m (5)\u001b[39m | \u001b[2m   Start at \u001b[22m 04:17:39 | \u001b[2m   Duration \u001b[22m 448ms\u001b[2m (transform 112ms, setup 0ms, import 216ms, tests 37ms, environment 0ms)\u001b[22m | STDERR:"
+    },
+    {
+      "commandId": "CMD-RENDER-CONFIRMATION",
+      "command": "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source \"docs/design/需求实现完整性门禁与重跑闭环设计.md\" --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json",
+      "startedAt": "2026-05-20T20:17:40.377Z",
+      "completedAt": "2026-05-20T20:17:40.802Z",
+      "exitCode": 0,
+      "outputPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-037/run-TRACE037-current-20260521T042000Z/CMD-RENDER-CONFIRMATION.output.txt",
+      "runId": "run-TRACE037-current-20260521T042000Z",
+      "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+      "outputSummary": "\"refs\": [] | } | ], | \"mermaidRuntime\": { | \"available\": true, | \"path\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad/skills/requirements-contract-authoring/assets/mermaid/mermaid.min.js\", | \"hash\": \"sha256:d0830a6c05546e9edb8fe20a8f545f3e0dc7c4c3134d584bad9c13a99d7a71e0\", | \"format\": \"classic-global\", | \"issues\": [] | }, | \"counts\": { | \"must\": 56, | \"notDone\": 40, | \"mustNot\": 29, | \"evidence\": 62, | \"failurePaths\": 7, | \"edgeCases\": 10, | \"traceRows\": 39, | \"sequenceViews\": 10, | \"resumeFailureCases\": 27, | \"artifactPlanItems\": 8 | } | } | STDERR:"
+    },
+    {
+      "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+      "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+      "startedAt": "2026-05-20T20:17:40.804Z",
+      "completedAt": "2026-05-20T20:17:49.875Z",
+      "exitCode": 0,
+      "outputPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-037/run-TRACE037-current-20260521T042000Z/CMD-TRACE-BINDING-ACCEPTANCE.output.txt",
+      "runId": "run-TRACE037-current-20260521T042000Z",
+      "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+      "outputSummary": "COMMAND: npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts | STARTED_AT: 2026-05-20T20:17:40.804Z | COMPLETED_AT: 2026-05-20T20:17:49.875Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m | \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m38 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 6638\u001b[2mms\u001b[22m\u001b[39m | \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders current controlled execution state only when hashes and current attempt match \u001b[33m 348\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m38 passed\u001b[39m\u001b[22m\u001b[90m (38)\u001b[39m | \u001b[2m   Start at \u001b[22m 04:17:42 | \u001b[2m   Duration \u001b[22m 6.93s\u001b[2m (transform 77ms, setup 0ms, import 109ms, tests 6.64s, environment 0ms)\u001b[22m | STDERR:"
+    },
+    {
+      "commandId": "CMD-ENCODING-GATE",
+      "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+      "startedAt": "2026-05-20T20:17:49.877Z",
+      "completedAt": "2026-05-20T20:17:50.743Z",
+      "exitCode": 0,
+      "outputPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-037/run-TRACE037-current-20260521T042000Z/CMD-ENCODING-GATE.output.txt",
+      "runId": "run-TRACE037-current-20260521T042000Z",
+      "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+      "outputSummary": "COMMAND: node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js | STARTED_AT: 2026-05-20T20:17:49.877Z | COMPLETED_AT: 2026-05-20T20:17:50.743Z | EXIT_CODE: 0 | STDOUT: | checkedFiles=2779 findings=0 | STDERR:"
+    }
+  ],
+  "report": {
+    "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/subagents/parallel-mission-evidence-integration-report.json",
+    "hash": "sha256:6d6fa7e90f57bcab1d75312c168c3c5a24a46aa1a0b7b41a6d514fbbff42572b",
+    "decision": "pass",
+    "nodeCount": 2
+  }
+}
