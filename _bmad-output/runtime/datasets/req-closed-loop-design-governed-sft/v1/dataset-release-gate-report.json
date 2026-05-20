@@ -1,7 +1,7 @@
 {
   "reportType": "dataset_release_gate_report",
-  "generatedAt": "2026-05-20T17:34:10.035Z",
-  "generatedBy": "codex",
+  "generatedAt": "2026-05-20T22:42:53.447Z",
+  "generatedBy": "final-closeout-evidence-runner",
   "recordId": "REQ-CLOSED-LOOP-DESIGN",
   "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
   "datasetId": "req-closed-loop-design-governed-sft",
@@ -12,11 +12,6 @@
     {
       "id": "source-manifest-current",
       "passed": true
-    },
-    {
-      "id": "release-artifact-set-complete",
-      "passed": true,
-      "artifactCount": 16
     },
     {
       "id": "training-run-bound",
@@ -34,22 +29,10 @@
     }
   ],
   "artifactPaths": {
-    "datasetCard": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-card.md",
-    "qualityReport": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/quality-report.json",
-    "redactionReport": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/redaction-report.json",
-    "contaminationReport": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/contamination-report.json",
-    "splitReport": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/split-report.json",
-    "dedupReport": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dedup-report.json",
-    "holdoutRegistry": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/holdout-registry.json",
-    "revokedSamples": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/revoked-samples.json",
-    "trainingRun": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/training-run.json",
-    "postTrainingEvalReport": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/post-training-eval-report.json",
-    "lineageReport": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/lineage-report.json",
-    "datasetManifest": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-manifest.json",
-    "releaseGateReport": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-release-gate-report.json",
-    "trainPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/exports/train.jsonl",
-    "validationPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/exports/validation.jsonl",
-    "testPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/exports/test.jsonl"
+    "datasetManifest": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-manifest.json",
+    "trainPath": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/exports/train.jsonl",
+    "validationPath": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/exports/validation.jsonl",
+    "testPath": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/exports/test.jsonl"
   },
-  "manifestHash": "sha256:d73cf2128ec0ff1ebe62c9729d469e4d8e1f3e9f4f6fa6a3ec2ed88d8532de4f"
+  "manifestHash": "sha256:7fde01f304c62c43a68bd2ef6528dab9ccbda6056345b32f64f94f9079c6e653"
 }

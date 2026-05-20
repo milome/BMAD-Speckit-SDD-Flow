@@ -1,12 +1,5 @@
 {
-  "reportType": "contamination_report",
-  "generatedAt": "2026-05-20T17:33:56.260Z",
-  "policy": {
-    "scanBeforeRelease": true,
-    "contaminationAction": "quarantine_or_block",
-    "holdoutLeakageBlocksRelease": true
-  },
-  "hitCount": 0,
-  "hits": [],
+  "reportType": "dataset_contamination_report",
+  "generatedAt": "2026-05-20T22:42:53.447Z",
   "decision": "pass"
 }

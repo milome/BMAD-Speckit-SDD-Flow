@@ -2,7 +2,7 @@
   "reportType": "main_agent_trace_status_policy_check",
   "recordId": "REQ-CLOSED-LOOP-DESIGN",
   "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
-  "evaluatedAt": "2026-05-19T18:45:36.862Z",
+  "evaluatedAt": "2026-05-19T18:49:26.418Z",
   "evaluatedBy": "agent",
   "decision": "pass",
   "blockingReasons": [],

@@ -213,6 +213,37 @@ describe('subagent current-attempt revalidation', () => {
     }
   });
 
+  it('treats stale historical envelope hashes as provenance when fresh current-attempt evidence binds the trace row', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'subagent-current-attempt-stale-envelope-hash-'));
+    try {
+      const evidencePath = path.join(root, 'evidence.json');
+      writeJson(evidencePath, { ok: true });
+      const artifact = artifactRef(root, 'evidence.json', ['TRACE-036', 'MUST-047', 'NEG-036', 'EVD-046']);
+      const historicalEnvelope = envelope(root, [artifact]);
+      historicalEnvelope.parentCloseoutAttemptId = 'previous-attempt';
+      historicalEnvelope.sourceDocumentHash = 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      historicalEnvelope.implementationConfirmationHash = 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+      historicalEnvelope.architectureConfirmationHash = 'sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+      for (const run of historicalEnvelope.commandRuns) run.closeoutAttemptId = 'previous-attempt';
+      const report = evaluateSubagentCurrentAttemptRevalidation({
+        envelope: historicalEnvelope,
+        record: record(root, [artifact]),
+        projectRoot: root,
+        currentCloseoutAttemptId: 'new-attempt',
+        currentAttemptCommandRuns: currentAttemptCommandRuns([artifact], 'new-attempt'),
+        generatedAt: '2026-05-21T00:00:06.000Z',
+      });
+      expect(report).toMatchObject({
+        decision: 'pass',
+        currentCloseoutAttemptId: 'new-attempt',
+        parentCloseoutAttemptId: 'previous-attempt',
+        mismatches: [],
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('does not let mutable historical envelope artifact hashes block fresh current-attempt revalidation', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'subagent-current-attempt-mutable-history-'));
     try {

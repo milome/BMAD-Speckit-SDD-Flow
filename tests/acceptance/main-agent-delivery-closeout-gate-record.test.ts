@@ -545,7 +545,9 @@ describe('requirement-scoped delivery closeout gate', () => {
       expect(code).toBe(0);
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
       expect(record.closeout.currentAttemptId).toBe('closeout-pass');
+      expect(record.closeout.eventType).toBe('record_closed');
       expect(record.closeout.decision).toBe('pass');
+      expect(record.lastEventType).toBe('record_closed');
       expect(record.closeout.attempts[0]).toMatchObject({
         closeoutAttemptId: 'closeout-pass',
         decision: 'pass',

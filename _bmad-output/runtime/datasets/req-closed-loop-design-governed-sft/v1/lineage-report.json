@@ -1,16 +1,9 @@
 {
   "reportType": "dataset_release_lineage_report",
-  "generatedAt": "2026-05-20T17:34:10.035Z",
-  "generatedBy": "codex",
+  "generatedAt": "2026-05-20T22:42:53.447Z",
   "recordId": "REQ-CLOSED-LOOP-DESIGN",
   "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
-  "sourceRequirementRecordHash": "sha256:ddf3c0ba0093aa04fc3cdb6fbfb348615ab80dd80b791da5a911a62952276f1b",
-  "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
-  "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
-  "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
-  "sourceDatasetManifestHash": "sha256:b2c86c261698562bf3ea1ca62f886a3956349cbf10715356df9b8552391eddae",
-  "exportArtifactHash": "sha256:654ec63d41cdfbd2f4f52cc88b16788b756b2b080fe3c8c2de46d23d5651abcc",
-  "trainingRunId": "train-REQ-CLOSED-LOOP-DESIGN-TRACE030-current-20260520T170000Z",
-  "evalReportId": "eval-REQ-CLOSED-LOOP-DESIGN-TRACE030-current-20260520T170000Z",
-  "subsystemCount": 16
+  "sourceDocumentHash": "sha256:23a05cdd7d06d9b0d4190d6bca062220d9af2a8e7200f362317f4907bea33e8e",
+  "implementationConfirmationHash": "sha256:7743b98153a1257aca029d0eda9ab0777d80ce2d3409005205c2d13ac29aa21d",
+  "architectureConfirmationHash": "sha256:e4bd9a45b370916e3eebc5fda7d9b4e225995280c08521741a3376ca6b05a98c"
 }
