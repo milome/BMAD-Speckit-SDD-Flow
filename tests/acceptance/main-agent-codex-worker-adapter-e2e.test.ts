@@ -294,6 +294,16 @@ describe('main-agent codex worker adapter e2e', () => {
         status: 'done',
       });
       expect(JSON.stringify(adapter.transportEnvelope)).not.toContain('"result"');
+      expect(adapter.subagentEvidenceEnvelopeValidation.ok).toBe(false);
+      expect(adapter.subagentEvidenceEnvelopeValidation.mismatches).toContain(
+        'subagent_envelope_traceRows_empty'
+      );
+      expect(adapter.subagentEvidenceEnvelopeValidation.mismatches).toContain(
+        'subagent_envelope_coveredRequirementIds_empty'
+      );
+      expect(adapter.subagentEvidenceEnvelopeValidation.mismatches).toContain(
+        'subagent_envelope_taskRefs_empty'
+      );
       expect(fs.existsSync(path.join(root, codexSmokeArtifactPath(instruction!.packetId)))).toBe(true);
       expect(adapter.codexCommand).toEqual(['codex', 'worker-adapter-smoke']);
 
@@ -316,6 +326,55 @@ describe('main-agent codex worker adapter e2e', () => {
       } else {
         process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT = previousAllow;
       }
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('emits accepted subagentEvidenceEnvelope when hash and trace bindings are provided', () => {
+    const root = prepareCodexRoot();
+    try {
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'story',
+        stage: 'implement',
+        host: 'claude',
+        hydratePacket: true,
+      });
+      expect(instruction).not.toBeNull();
+      const adapter = runBoundCodexWorkerAdapter({
+        projectRoot: root,
+        recordId: 'REQ-CODEX-WORKER',
+        requirementSetId: 'REQ-CODEX-WORKER',
+        runId: 'run-codex-worker',
+        parentCloseoutAttemptId: 'closeout-codex-worker',
+        sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        implementationConfirmationHash:
+          'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+        architectureConfirmationHash:
+          'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        traceRows: ['TRACE-035'],
+        coveredRequirementIds: ['MUST-044', 'MUST-046', 'NEG-034', 'NEG-035', 'OUT-027'],
+        taskRefs: ['TASK-SUBAGENT-EVIDENCE-ENVELOPE-GOVERNANCE'],
+        packetPath: instruction!.packetPath,
+        smoke: true,
+        smokeTargetPath: codexSmokeArtifactPath(instruction!.packetId),
+      });
+
+      expect(adapter.exitCode).toBe(0);
+      expect(adapter.subagentEvidenceEnvelopeValidation.ok).toBe(true);
+      expect(adapter.subagentEvidenceEnvelope).toMatchObject({
+        envelopeVersion: 'subagent-evidence-envelope/v1',
+        recordId: 'REQ-CODEX-WORKER',
+        requirementSetId: 'REQ-CODEX-WORKER',
+        decisionAuthority: 'none',
+        traceRows: ['TRACE-035'],
+        coveredRequirementIds: ['MUST-044', 'MUST-046', 'NEG-034', 'NEG-035', 'OUT-027'],
+        parentCloseoutAttemptId: 'closeout-codex-worker',
+        status: 'accepted',
+      });
+      expect(JSON.stringify(adapter.subagentEvidenceEnvelope)).not.toContain('"decision"');
+      expect(JSON.stringify(adapter.subagentEvidenceEnvelope)).not.toContain('"result"');
+    } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
   });

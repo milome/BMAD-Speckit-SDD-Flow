@@ -2,6 +2,10 @@
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {
+  validateSubagentEvidenceEnvelope,
+  type SubagentEvidenceEnvelopeValidation,
+} from './subagent-evidence-envelope';
 
 type JsonObject = Record<string, unknown>;
 
@@ -555,6 +559,18 @@ function validateRerunLoops(packet: JsonObject): string[] {
   return mismatches;
 }
 
+function validateSubagentEvidenceEnvelopePacket(packet: JsonObject, record: JsonObject): string[] {
+  const envelope = packet.subagentEvidenceEnvelope;
+  if (envelope === undefined || envelope === null) return [];
+  const validation = validateSubagentEvidenceEnvelope(envelope, {
+    record,
+    projectRoot: process.cwd(),
+    indexedArtifactRefs: [...arrayOfObjects(packet.artifactRefs), ...arrayOfObjects(packet.extensionRefs)],
+    expectedParentCloseoutAttemptId: text(packet.closeoutAttemptId),
+  });
+  return validation.ok ? [] : validation.mismatches;
+}
+
 function validatePacket(packet: JsonObject, record: JsonObject): string[] {
   const entryFlowState =
     packet.entryFlowState && typeof packet.entryFlowState === 'object' && !Array.isArray(packet.entryFlowState)
@@ -585,6 +601,7 @@ function validatePacket(packet: JsonObject, record: JsonObject): string[] {
     ...validateFailureRecords(packet),
     ...validateRcaRecords(packet),
     ...validateRerunLoops(packet),
+    ...validateSubagentEvidenceEnvelopePacket(packet, record),
   ];
   const packetWithoutLegacyGateResults = {
     ...packet,
@@ -731,6 +748,42 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
     recordedAt,
     recordedBy,
   };
+  const subagentEnvelope =
+    packet.subagentEvidenceEnvelope && typeof packet.subagentEvidenceEnvelope === 'object' && !Array.isArray(packet.subagentEvidenceEnvelope)
+      ? (packet.subagentEvidenceEnvelope as JsonObject)
+      : undefined;
+  const subagentEnvelopeValidation: SubagentEvidenceEnvelopeValidation | undefined = subagentEnvelope
+    ? validateSubagentEvidenceEnvelope(subagentEnvelope, {
+        record,
+        projectRoot: process.cwd(),
+        indexedArtifactRefs: [...arrayOfObjects(packet.artifactRefs), ...arrayOfObjects(packet.extensionRefs)],
+        expectedParentCloseoutAttemptId: text(packet.closeoutAttemptId),
+      })
+    : undefined;
+  const subagentEnvelopeEvent = subagentEnvelope
+    ? {
+        eventType: 'subagent_evidence_envelope_recorded',
+        recordId,
+        requirementSetId,
+        executionIterationId: `${text(packet.executionIterationId)}:subagent-evidence-envelope`,
+        runId: text(packet.runId),
+        status: subagentEnvelopeValidation?.status ?? text(subagentEnvelope.status),
+        subagentEvidenceEnvelope: subagentEnvelope,
+        subagentEvidenceEnvelopeHash: subagentEnvelopeValidation?.envelopeHash,
+        traceRows: arrayOfStrings(subagentEnvelope.traceRows),
+        taskRefs: arrayOfStrings(subagentEnvelope.taskRefs),
+        evidenceRefs: arrayOfStrings(packet.evidenceRefs),
+        coveredRequirementIds: arrayOfStrings(subagentEnvelope.coveredRequirementIds),
+        commandRunRefs: commandRefs,
+        evidenceArtifactRefs: arrayOfObjects(packet.artifactRefs),
+        sourceRefs: subagentEnvelopeValidation?.sourceRefs ?? refs,
+        sourceDocumentHash: text(subagentEnvelope.sourceDocumentHash),
+        implementationConfirmationHash: text(subagentEnvelope.implementationConfirmationHash),
+        architectureConfirmationHash: text(subagentEnvelope.architectureConfirmationHash),
+        recordedAt,
+        recordedBy,
+      }
+    : undefined;
   const closureEvents = closureInputs(packet).map((closure) => ({
     eventType: 'requirement_closure_recorded',
     recordId,
@@ -858,7 +911,11 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
           },
         }
       : {}),
-    executionIterations: [...arrayOfObjects(record.executionIterations), executionEvent],
+    executionIterations: [
+      ...arrayOfObjects(record.executionIterations),
+      executionEvent,
+      ...(subagentEnvelopeEvent ? [subagentEnvelopeEvent] : []),
+    ],
     requirementClosures: [...arrayOfObjects(record.requirementClosures), ...closureEvents],
     gateChecks: [...arrayOfObjects(record.gateChecks), ...gateEvents],
     contractChecks: [...arrayOfObjects(record.contractChecks), ...contractCheckEvents],
@@ -886,7 +943,7 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
         ...arrayOfObjects(packetDeliveryEvidence.historicalRunRefs),
       ],
     },
-    lastEventType: 'execution_iteration_recorded',
+    lastEventType: subagentEnvelopeEvent ? 'subagent_evidence_envelope_recorded' : 'execution_iteration_recorded',
     updatedAt: recordedAt,
   };
 }
@@ -917,7 +974,10 @@ export function mainIngestImplementationEvidence(argv: string[]): number {
   const globalArtifactIndex = path.resolve(
     args.globalArtifactIndex ?? path.join(path.dirname(baseDir), 'artifact-index.jsonl')
   );
-  appendJsonl(eventLog, arrayOfObjects(nextRecord.executionIterations).at(-1) as JsonObject);
+  const executionEventsToAppend = arrayOfObjects(nextRecord.executionIterations).slice(
+    -1 * (packet.subagentEvidenceEnvelope ? 2 : 1)
+  );
+  for (const item of executionEventsToAppend) appendJsonl(eventLog, item);
   for (const item of closureInputs(packet)) {
     appendJsonl(eventLog, {
       eventType: 'requirement_closure_recorded',
