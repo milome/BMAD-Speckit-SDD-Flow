@@ -13,6 +13,7 @@ interface ParsedArgs {
   renderReport?: string;
   requirementRecord?: string;
   confirmationText?: string;
+  confirmationTextFile?: string;
   confirmedBy?: string;
   confirmedAt?: string;
   eventLog?: string;
@@ -57,12 +58,17 @@ function requireArgs(args: ParsedArgs): void {
     'architectureConfirmation',
     'renderReport',
     'requirementRecord',
-    'confirmationText',
     'confirmedBy',
   ];
   const missing = required.filter((key) => !args[key]);
   if (missing.length > 0) {
     throw new Error(`missing required args: ${missing.join(', ')}`);
+  }
+  if (!args.confirmationText && !args.confirmationTextFile) {
+    throw new Error('missing required args: confirmationText or confirmationTextFile');
+  }
+  if (args.confirmationText && args.confirmationTextFile) {
+    throw new Error('provide only one of confirmationText or confirmationTextFile');
   }
 }
 
@@ -120,6 +126,13 @@ function parseConfirmationText(text: string): JsonObject {
     values[key] = match[1];
   }
   return values;
+}
+
+function confirmationTextFromArgs(args: ParsedArgs): string {
+  if (args.confirmationTextFile) {
+    return fs.readFileSync(path.resolve(args.confirmationTextFile), 'utf8');
+  }
+  return String(args.confirmationText ?? '');
 }
 
 function ensureString(value: unknown, field: string): string {
@@ -441,11 +454,12 @@ export function mainIngestArchitectureConfirmation(argv: string[]): number {
   const report = readRenderEvidence(reportPath);
   const record = fs.existsSync(recordPath) ? readJson(recordPath) : {};
   const confirmedAt = args.confirmedAt ?? new Date().toISOString();
+  const confirmationText = confirmationTextFromArgs(args);
   const { event, mismatches } = validate({
     architectureConfirmation: confirmation,
     renderReport: report,
     requirementRecord: record,
-    confirmationText: args.confirmationText!,
+    confirmationText,
     architecturePath,
     reportPath,
   });

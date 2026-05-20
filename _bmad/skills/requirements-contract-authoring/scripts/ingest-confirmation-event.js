@@ -109,9 +109,22 @@ function parseConfirmationText(text) {
 }
 
 function validateArgs(args) {
-  const required = ['source', 'renderReport', 'confirmationText', 'confirmedBy'];
+  const required = ['source', 'renderReport', 'confirmedBy'];
   const missing = required.filter((key) => !args[key]);
   if (missing.length) throw new Error(`missing required args: ${missing.join(', ')}`);
+  if (!args.confirmationText && !args.confirmationTextFile) {
+    throw new Error('missing required args: confirmationText or confirmationTextFile');
+  }
+  if (args.confirmationText && args.confirmationTextFile) {
+    throw new Error('provide only one of confirmationText or confirmationTextFile');
+  }
+}
+
+function confirmationTextFromArgs(args) {
+  if (args.confirmationTextFile) {
+    return fs.readFileSync(path.resolve(args.confirmationTextFile), 'utf8');
+  }
+  return String(args.confirmationText ?? '');
 }
 
 function updateSourceDocument(sourceText, extracted, update) {
@@ -146,12 +159,25 @@ function updateSourceDocument(sourceText, extracted, update) {
   return lines.join('\n');
 }
 
-function buildRequirementRecord(existing, event) {
+function buildRequirementRecord(existing, event, projectionEvent = null) {
   const record = existing && typeof existing === 'object' ? existing : {};
   const confirmationHistory = Array.isArray(record.confirmationHistory)
     ? [...record.confirmationHistory]
     : [];
-  confirmationHistory.push(event);
+  if (event) confirmationHistory.push(event);
+  const confirmationProjectionHistory = Array.isArray(record.confirmationProjectionHistory)
+    ? [...record.confirmationProjectionHistory]
+    : [];
+  if (projectionEvent) confirmationProjectionHistory.push(projectionEvent);
+  if (!event) {
+    return {
+      ...record,
+      latestConfirmationProjectionHash: projectionEvent?.newProjectionHash ?? record.latestConfirmationProjectionHash,
+      confirmationProjectionHistory,
+      lastEventType: projectionEvent ? 'confirmation_projection_refreshed' : record.lastEventType,
+      updatedAt: projectionEvent?.observedAt ?? record.updatedAt,
+    };
+  }
   return {
     ...record,
     recordId: record.recordId ?? event.recordId,
@@ -167,7 +193,9 @@ function buildRequirementRecord(existing, event) {
     sourceDocumentHash: event.sourceDocumentHash,
     implementationConfirmationHash: event.implementationConfirmationHash,
     confirmationPageHash: event.confirmationPageHash,
+    latestConfirmationProjectionHash: projectionEvent?.newProjectionHash ?? event.confirmationPageHash,
     confirmationHistory,
+    confirmationProjectionHistory,
     lastEventType: 'confirmation_recorded',
     updatedAt: event.confirmedAt,
   };
@@ -257,7 +285,8 @@ function main(argv) {
   const sourceText = fs.readFileSync(sourcePath, 'utf8');
   const extracted = extractImplementationConfirmation(sourceText);
   const report = readJson(reportPath);
-  const provided = parseConfirmationText(args.confirmationText);
+  const confirmationText = confirmationTextFromArgs(args);
+  const provided = parseConfirmationText(confirmationText);
   const sourceDocumentHash = sourceDocumentHashFor(sourceText, extracted.blockText, extracted.confirmation);
   const implementationConfirmationHash = implementationConfirmationHashFor(extracted.confirmation);
 
@@ -267,7 +296,20 @@ function main(argv) {
   if (report.implementationConfirmationHash !== implementationConfirmationHash) {
     mismatches.push('render_report_implementation_confirmation_hash_mismatch');
   }
-  if (report.confirmationPageHash !== provided.confirmationPageHash) mismatches.push('confirmation_page_hash_mismatch');
+  const priorConfirmedPageHash =
+    typeof extracted.confirmation?.confirmationRender?.htmlHash === 'string'
+      ? extracted.confirmation.confirmationRender.htmlHash
+      : null;
+  const confirmationPageHashMatchesReport = report.confirmationPageHash === provided.confirmationPageHash;
+  const confirmationPageHashMatchesPriorConfirmedProjection =
+    Boolean(priorConfirmedPageHash) && priorConfirmedPageHash === provided.confirmationPageHash;
+  const projectionHashChanged = !confirmationPageHashMatchesReport;
+  if (
+    projectionHashChanged &&
+    !confirmationPageHashMatchesPriorConfirmedProjection
+  ) {
+    mismatches.push('confirmation_page_hash_mismatch');
+  }
   if (provided.sourceDocumentHash !== sourceDocumentHash) mismatches.push('confirmation_text_source_hash_mismatch');
   if (provided.implementationConfirmationHash !== implementationConfirmationHash) {
     mismatches.push('confirmation_text_implementation_hash_mismatch');
@@ -280,7 +322,7 @@ function main(argv) {
   const confirmedAt = args.confirmedAt ?? new Date().toISOString();
   const recordId = args.recordId ?? report.recordId ?? extracted.confirmation.recordId;
   const requirementSetId = args.requirementSetId ?? report.requirementSetId ?? extracted.confirmation.requirementSetId;
-  const confirmationPageHash = report.confirmationPageHash;
+  const confirmationPageHash = provided.confirmationPageHash;
   const summaryPath = path.join(path.dirname(reportPath), 'confirmation-summary.json');
   const htmlPath = report.artifactRef?.path ?? report.outPath ?? path.join(path.dirname(reportPath), 'confirmation.html');
   const event = {
@@ -296,7 +338,7 @@ function main(argv) {
     implementationConfirmationHashScope:
       report.implementationConfirmationHashScope ?? 'semantic_implementation_confirmation_excluding_bookkeeping',
     confirmationPageHash,
-    confirmationText: args.confirmationText,
+    confirmationText,
     renderReportPath: normalizePathForReport(reportPath),
     htmlPath: normalizePathForReport(htmlPath),
     entryFlow: extracted.confirmation.entryFlow,
@@ -306,8 +348,39 @@ function main(argv) {
     globalContractTraceabilityPolicy: buildGlobalContractTraceabilityPolicy(extracted.confirmation),
     traceStatusPolicy: buildTraceStatusPolicy(),
   };
+  const projectionEvent = projectionHashChanged
+    ? {
+        eventType: 'confirmation_projection_refreshed',
+        recordId,
+        requirementSetId,
+        observedAt: confirmedAt,
+        producer: 'ingest-confirmation-event.js',
+        sourceDocumentHash,
+        implementationConfirmationHash,
+        oldProjectionHash: provided.confirmationPageHash,
+        newProjectionHash: report.confirmationPageHash,
+        renderReportRef: normalizePathForReport(reportPath),
+        htmlPath: normalizePathForReport(htmlPath),
+        artifactRefs: [
+          {
+            artifactType: 'confirmation_view',
+            sourceOfTruthRole: 'projection',
+            path: normalizePathForReport(htmlPath),
+            hash: report.confirmationPageHash,
+          },
+          {
+            artifactType: 'confirmation_render_report',
+            sourceOfTruthRole: 'projection',
+            path: normalizePathForReport(reportPath),
+            hash: report.actualReportHash ?? null,
+          },
+        ],
+        reason: 'confirmation_page_hash_only_changed',
+      }
+    : null;
 
-  if (args.updateSource !== 'false') {
+  const isProjectionOnlyRefresh = Boolean(projectionEvent);
+  if (!isProjectionOnlyRefresh && args.updateSource !== 'false') {
     const nextSource = updateSourceDocument(sourceText, extracted, {
       ...event,
       reportPath: normalizePathForReport(reportPath),
@@ -328,7 +401,34 @@ function main(argv) {
       )
   );
   const existingRecord = fs.existsSync(recordPath) ? readJson(recordPath) : {};
-  const nextRecord = buildRequirementRecord(existingRecord, event);
+  if (isProjectionOnlyRefresh) {
+    const existingConfirmations = Array.isArray(existingRecord.confirmationHistory)
+      ? existingRecord.confirmationHistory
+      : [];
+    const latestConfirmation = existingConfirmations
+      .filter((item) => item && typeof item === 'object' && item.eventType === 'confirmation_recorded')
+      .at(-1);
+    const projectionRefreshAllowed =
+      latestConfirmation &&
+      latestConfirmation.sourceDocumentHash === sourceDocumentHash &&
+      latestConfirmation.implementationConfirmationHash === implementationConfirmationHash &&
+      latestConfirmation.confirmationPageHash === provided.confirmationPageHash;
+    if (!projectionRefreshAllowed) {
+      console.error(
+        JSON.stringify(
+          { ok: false, mismatches: ['projection_refresh_without_current_semantic_confirmation'] },
+          null,
+          2
+        )
+      );
+      return 3;
+    }
+  }
+  const nextRecord = buildRequirementRecord(
+    existingRecord,
+    isProjectionOnlyRefresh ? null : event,
+    projectionEvent
+  );
   fs.mkdirSync(path.dirname(recordPath), { recursive: true });
   fs.writeFileSync(recordPath, `${JSON.stringify(nextRecord, null, 2)}\n`, 'utf8');
 
@@ -336,31 +436,50 @@ function main(argv) {
     args.eventLog ??
       path.join(process.cwd(), '_bmad-output', 'runtime', 'requirement-records', 'mentor-events.jsonl')
   );
-  appendJsonl(eventLogPath, event);
+  if (!isProjectionOnlyRefresh) appendJsonl(eventLogPath, event);
+  if (projectionEvent) appendJsonl(eventLogPath, projectionEvent);
 
   const artifactIndexPath = path.resolve(
     args.artifactIndex ??
       path.join(process.cwd(), '_bmad-output', 'runtime', 'requirement-records', 'artifact-index.jsonl')
   );
-  appendJsonl(artifactIndexPath, {
-    artifactType: 'requirement_record',
-    sourceOfTruthRole: 'control',
-    recordId,
-    requirementSetId,
-    path: normalizePathForReport(recordPath),
-    eventType: 'confirmation_recorded',
-    contentHash: sha256(JSON.stringify(nextRecord)),
-  });
+  if (!isProjectionOnlyRefresh) {
+    appendJsonl(artifactIndexPath, {
+      artifactType: 'requirement_record',
+      sourceOfTruthRole: 'control',
+      recordId,
+      requirementSetId,
+      path: normalizePathForReport(recordPath),
+      eventType: 'confirmation_recorded',
+      contentHash: sha256(JSON.stringify(nextRecord)),
+    });
+  }
+  if (projectionEvent) {
+    appendJsonl(artifactIndexPath, {
+      artifactType: 'confirmation_view',
+      sourceOfTruthRole: 'projection',
+      recordId,
+      requirementSetId,
+      path: normalizePathForReport(htmlPath),
+      eventType: 'confirmation_projection_refreshed',
+      contentHash: report.confirmationPageHash,
+    });
+  }
 
   const result = {
     ok: true,
-    event,
+    event: isProjectionOnlyRefresh ? null : event,
+    projectionEvent,
     requirementRecordPath: normalizePathForReport(recordPath),
     eventLogPath: normalizePathForReport(eventLogPath),
     artifactIndexPath: normalizePathForReport(artifactIndexPath),
-    sourceUpdated: args.updateSource !== 'false',
+    sourceUpdated: !isProjectionOnlyRefresh && args.updateSource !== 'false',
   };
   if (args.json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  else if (isProjectionOnlyRefresh) {
+    console.log(`confirmation_projection_refreshed=${recordId}`);
+    console.log(`requirement-record.json=${normalizePathForReport(recordPath)}`);
+  }
   else {
     console.log(`confirmation_recorded=${recordId}`);
     console.log(`requirement-record.json=${normalizePathForReport(recordPath)}`);

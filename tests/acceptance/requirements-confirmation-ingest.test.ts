@@ -449,6 +449,88 @@ describe('controlled confirmation ingest', () => {
     });
   });
 
+  it('accepts semantic confirmation when only confirmation projection hash refreshed', () => {
+    const source = writeSource();
+    const { reportPath, report } = render(source);
+    const recordPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json');
+    const eventLogPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/mentor-events.jsonl');
+    const firstIngest = runNode(INGEST, [
+      '--source',
+      source,
+      '--render-report',
+      reportPath,
+      '--confirmation-text',
+      report.confirmInstruction,
+      '--confirmed-by',
+      'test-user',
+      '--record-id',
+      'REQ-CONFIRM-INGEST',
+      '--requirement-record',
+      recordPath,
+      '--event-log',
+      eventLogPath,
+      '--confirmed-at',
+      '2026-05-18T06:00:00.000Z',
+      '--json',
+    ]);
+    expect(firstIngest.status, `${firstIngest.stdout}\n${firstIngest.stderr}`).toBe(0);
+    const sourceAfterConfirmation = fs.readFileSync(source, 'utf8');
+    const recordAfterConfirmation = JSON.parse(fs.readFileSync(recordPath, 'utf8'));
+    const changedReportPath = path.join(path.dirname(reportPath), 'confirmation-render-report-refreshed.json');
+    const changedReport = {
+      ...report,
+      confirmationPageHash: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      artifactRef: {
+        ...report.artifactRef,
+        hash: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      },
+    };
+    fs.writeFileSync(changedReportPath, JSON.stringify(changedReport, null, 2), 'utf8');
+
+    const result = runNode(INGEST, [
+      '--source',
+      source,
+      '--render-report',
+      changedReportPath,
+      '--confirmation-text',
+      report.confirmInstruction,
+      '--confirmed-by',
+      'test-user',
+      '--record-id',
+      'REQ-CONFIRM-INGEST',
+      '--requirement-record',
+      recordPath,
+      '--event-log',
+      eventLogPath,
+      '--confirmed-at',
+      '2026-05-18T06:10:00.000Z',
+      '--json',
+    ]);
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));
+    const events = fs.readFileSync(eventLogPath, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+    expect(fs.readFileSync(source, 'utf8')).toBe(sourceAfterConfirmation);
+    expect(record.confirmationHistory).toEqual(recordAfterConfirmation.confirmationHistory);
+    expect(record.confirmationHistory.at(-1)).toMatchObject({
+      eventType: 'confirmation_recorded',
+      sourceDocumentHash: report.sourceDocumentHash,
+      implementationConfirmationHash: report.implementationConfirmationHash,
+      confirmationPageHash: report.confirmationPageHash,
+    });
+    expect(record.confirmationProjectionHistory.at(-1)).toMatchObject({
+      eventType: 'confirmation_projection_refreshed',
+      oldProjectionHash: report.confirmationPageHash,
+      newProjectionHash: changedReport.confirmationPageHash,
+    });
+    expect(record.status).toBe('user_confirmed');
+    expect(events.map((event) => event.eventType)).toEqual([
+      'confirmation_recorded',
+      'confirmation_projection_refreshed',
+    ]);
+    expect(JSON.parse(result.stdout).event).toBeNull();
+  });
+
   it('rejects mismatched confirmation text and does not write confirmation state', () => {
     const source = writeSource();
     const before = fs.readFileSync(source, 'utf8');
