@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>架构确认 REQ-CLOSED-LOOP-DESIGN</title>
+  <style>
+    :root{--bg:#f4f1ea;--paper:#fffdf8;--ink:#24211b;--muted:#6b655b;--line:#d7cbb8;--red:#a33a2d;--red-soft:#f8ddd7;--green:#28684e;--green-soft:#dff0e7;--blue:#2d5d82;--blue-soft:#dceaf4;--gold:#8b611b;--gold-soft:#f3e3bf;--shadow:0 18px 40px rgba(36,33,27,.12);--mono:"Cascadia Mono",Consolas,monospace;--sans:"Segoe UI","Noto Sans SC","Microsoft YaHei",sans-serif}
+    *{box-sizing:border-box}body{margin:0;color:var(--ink);background:linear-gradient(135deg,#f8f1e4,#eef0e9 55%,#f5e7da);font-family:var(--sans);line-height:1.55}main{max-width:1320px;margin:0 auto;padding:28px 24px 56px}a{color:var(--blue)}
+    .layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:18px}.nav{position:sticky;top:16px;align-self:start;background:rgba(255,253,248,.92);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:14px}.nav a{display:block;padding:7px 8px;border-radius:10px;text-decoration:none;color:var(--ink);font-size:13px}.nav a:hover{background:var(--blue-soft)}
+    .hero,.card{background:var(--paper);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:22px 24px;margin:0 0 18px}.chip{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;margin:0 8px 8px 0;background:var(--blue-soft);color:var(--blue)}.bad{background:var(--red-soft);color:var(--red)}.good{background:var(--green-soft);color:var(--green)}.warn{background:var(--gold-soft);color:var(--gold)}
+    h1,h2,h3{margin:0 0 12px}h1{font-size:28px}h2{font-size:20px}p{margin:0 0 12px}.muted{color:var(--muted)}.hash{font-family:var(--mono);word-break:break-all;font-size:12px}.phrase{background:#111;color:#f6f0e7;padding:16px;border-radius:14px;font-family:var(--mono);white-space:pre-wrap}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.two-col{display:grid;grid-template-columns:1.15fr .85fr;gap:16px}
+    .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px}.table-wrap table{min-width:100%;border-collapse:collapse;background:#fff}.table-wrap th,.table-wrap td{padding:10px 12px;border-bottom:1px solid #eee;vertical-align:top;text-align:left}.table-wrap th{background:#f6efe0;position:sticky;top:0}.pill-list span{display:inline-block;margin:0 8px 8px 0;padding:4px 8px;border-radius:999px;background:#eef4f9;border:1px solid #d6e4ef;font-size:12px}.inline-json{font-size:11px;margin:0;max-width:520px}.empty{color:var(--muted);font-style:italic}@media(max-width:900px){.layout,.grid,.two-col{display:block}.nav{position:relative;margin-bottom:16px}}
+  </style>
+</head>
+<body>
+<main class="layout">
+  <nav class="nav">
+    <strong>架构确认导航</strong>
+    <a href="#summary">确认摘要</a><a href="#impact">影响扫描</a><a href="#triggers">触发矩阵</a><a href="#paths">目标路径</a><a href="#hash">Hash Recipe</a><a href="#risk">风险与回滚</a><a href="#phrase">确认口令</a><a href="#metadata">工件元数据</a>
+  </nav>
+  <div>
+    <section id="summary" class="hero">
+      <span class="chip good">confirmable</span><span class="chip warn">draft</span><span class="chip">REQ-CLOSED-LOOP-DESIGN</span>
+      <h1>REQ-CLOSED-LOOP-DESIGN 架构确认草案</h1>
+      <p class="muted">该页面是 requirement-scoped 架构确认 JSON 的用户可读投影。它不写入 architectureConfirmations[]，确认后必须通过 controlled ingest 写入。</p>
+      <div class="two-col">
+        <div>
+          <p><strong>确认范围：</strong>full_architecture_confirmed</p>
+          <p><strong>当前结论：</strong>命中 2 个完整架构触发项；必须先确认架构再进入实施准备。</p>
+          <p><strong>用户下一步：</strong>回到 chat 粘贴确认口令。HTML 内不能点击确认。</p>
+          <p><strong>阻断项：</strong>none</p>
+        </div>
+        <div>
+          <p class="muted">确认指纹</p>
+          <div class="hash">sourceDocumentHash=sha256:b974e48e879a80e6b3a816ec95b37fcaecbaabdafca382ca9663fab377f44743</div>
+          <div class="hash">implementationConfirmationHash=sha256:b1285359be7710de97985288ceba0cc7736ee15e17f1967610119b307fcde6ba</div>
+          <div class="hash">resolvedRecipeHash=sha256:da10b7ad044a705fb04be14c32a0062e9dc5e91012e5d267a435b83c3ba86b75</div>
+          <div class="hash">architectureConfirmationArtifactHash=sha256:b84eba6b3dc89c534593dab9bb0bf608b798a8ac889bccd360ef3fc6eb860212</div>
+        </div>
+      </div>
+    </section>
+    <section id="impact" class="grid">
+      <div class="card"><h2>消费项目影响扫描</h2><div class="table-wrap"><table><thead><tr><th>category</th><th>status</th><th>summary</th><th>requiredDecision</th></tr></thead><tbody><tr><td>ai_automation</td><td class="bad">triggered</td><td>消费项目通过技能入口生成架构确认页；用户只确认 HTML hash，不手动运行 stale check 或 producer。</td><td>确认架构确认准备入口是用户可见入口。</td></tr><tr><td>testing_strategy</td><td class="bad">triggered</td><td>新增 fixture-driven acceptance tests 覆盖 producer、prepare、fail-closed。</td><td>确认测试策略覆盖消费项目安装后的通用路径。</td></tr></tbody></table></div></div>
+      <div class="card"><h2>治理系统影响扫描</h2><div class="table-wrap"><table><thead><tr><th>category</th><th>status</th><th>summary</th><th>requiredDecision</th></tr></thead><tbody><tr><td>orchestration_hook_gate_ingest_rerun_closeout</td><td class="bad">triggered</td><td>prepare 入口自动执行 controlled architecture_confirmation_state_checked，再生成 JSON 和 HTML。</td><td>确认 state check 是内部自动前置步骤，不作为用户手动下一步。</td></tr><tr><td>consumer_install_skill_hook_template_surface</td><td class="bad">triggered</td><td>requirements-contract-authoring skill 发布面新增 prepare 入口说明和 tests。</td><td>确认技能发布面不暴露根 wrapper 或临时脚本。</td></tr></tbody></table></div></div>
+    </section>
+    <section id="triggers" class="card"><h2>完整架构触发矩阵</h2><div class="table-wrap"><table><thead><tr><th>trigger</th><th>decision</th><th>reason</th><th>requiredDecision</th></tr></thead><tbody><tr><td>改主控编排、hook、gate、ingest、closeout</td><td class="bad">triggered</td><td>prepare 入口调用 controlled architecture state check 并影响 architecture readiness 前置流程。</td><td>完整架构确认。</td></tr><tr><td>修改对消费项目发布面有影响</td><td class="bad">triggered</td><td>技能发布面新增用户可见架构确认准备入口。</td><td>完整架构确认。</td></tr></tbody></table></div></section>
+    <section id="paths" class="card"><h2>目标路径</h2><p class="muted">6 个 targetPaths</p><div class="table-wrap"><table><thead><tr><th>path</th></tr></thead><tbody><tr><td><code>_bmad/skills/requirements-contract-authoring/scripts/prepare-architecture-confirmation-page.ts</code></td></tr><tr><td><code>_bmad/skills/requirements-contract-authoring/scripts/generate-architecture-confirmation-artifact.ts</code></td></tr><tr><td><code>tests/acceptance/prepare-architecture-confirmation-page.test.ts</code></td></tr><tr><td><code>tests/acceptance/generate-architecture-confirmation-artifact.test.ts</code></td></tr><tr><td><code>_bmad/skills/requirements-contract-authoring/SKILL.md</code></td></tr><tr><td><code>_bmad/skills/requirements-contract-authoring/references/html-confirmation-renderer-spec.md</code></td></tr></tbody></table></div></section>
+    <section id="hash" class="card"><h2>Hash Recipe 与 stale 输入</h2><div class="grid"><div><h3>Recipe</h3><div class="table-wrap"><table><thead><tr><th>schemaVersion</th><th>recipeVersion</th><th>configPath</th><th>resolvedRecipeHash</th><th>canonicalization</th><th>pathNormalization</th><th>fixedCategoryOrder</th><th>volatileFieldsExcludedFromArtifactHash</th><th>stateTransitionHashCoverage</th><th>controlledIngestRules</th></tr></thead><tbody><tr><td>architecture-confirmation-hash-recipe.contract/v1</td><td>architecture-confirmation-hash/v1</td><td>_bmad/_config/architecture-confirmation-hash-recipe.contract.yaml</td><td>sha256:da10b7ad044a705fb04be14c32a0062e9dc5e91012e5d267a435b83c3ba86b75</td><td><pre class="inline-json">{
+  &quot;encoding&quot;: &quot;utf8&quot;,
+  &quot;bom&quot;: &quot;forbidden&quot;,
+  &quot;newline&quot;: &quot;LF&quot;,
+  &quot;jsonCanonicalization&quot;: {
+    &quot;objectKeyOrder&quot;: &quot;lexicographic&quot;,
+    &quot;preserveNumberFormat&quot;: false,
+    &quot;preserveInsignificantWhitespace&quot;: false,
+    &quot;nullPolicy&quot;: &quot;include_explicit_nulls&quot;
+  },
+  &quot;arrayOrdering&quot;: {
+    &quot;targetPaths&quot;: &quot;lexicographic&quot;,
+    &quot;forbiddenChanges&quot;: &quot;lexicographic&quot;,
+    &quot;consumerImpactScan&quot;: &quot;fixed_category_order&quot;,
+    &quot;governanceImpactScan&quot;: &quot;fixed_category_order&quot;,
+    &quot;fullArchitectureTriggerMatrix&quot;: &quot;fixed_category_order&quot;,
+    &quot;evidenceRefs&quot;: &quot;lexicographic&quot;
+  }
+}</pre></td><td><pre class="inline-json">{
+  &quot;rootRelative&quot;: true,
+  &quot;separator&quot;: &quot;/&quot;,
+  &quot;lowercaseWindowsDriveLetter&quot;: true,
+  &quot;trimTrailingSlash&quot;: true,
+  &quot;removeDotSegments&quot;: true,
+  &quot;deduplicate&quot;: true,
+  &quot;sort&quot;: &quot;lexicographic&quot;
+}</pre></td><td><pre class="inline-json">{
+  &quot;consumerImpactScan&quot;: [
+    &quot;product_capability&quot;,
+    &quot;data_model&quot;,
+    &quot;api_or_integration&quot;,
+    &quot;frontend_ux&quot;,
+    &quot;security_compliance&quot;,
+    &quot;operations_deployment&quot;,
+    &quot;reliability_performance&quot;,
+    &quot;testing_strategy&quot;,
+    &quot;compatibility_migration&quot;,
+    &quot;cross_module_impact&quot;,
+    &quot;user_commitment&quot;,
+    &quot;ai_automation&quot;
+  ],
+  &quot;governanceImpactScan&quot;: [
+    &quot;shared_schema_type_contract_event_registry&quot;,
+    &quot;orchestration_hook_gate_ingest_rerun_closeout&quot;,
+    &quot;scoring_sft_dashboard_data_routes&quot;,
+    &quot;runtime_policy_registry_host_mode_fallback&quot;,
+    &quot;consumer_install_skill_hook_template_surface&quot;
+  ]
+}</pre></td><td>generatedAt
+renderedAt
+checkedAt
+confirmedAt
+htmlPath
+htmlHash
+renderMetadata
+temporaryLogPath
+localAbsolutePath</td><td><pre class="inline-json">{
+  &quot;requiredHashFields&quot;: [
+    &quot;sourceDocumentHash&quot;,
+    &quot;implementationConfirmationHash&quot;,
+    &quot;targetPathsHash&quot;,
+    &quot;consumerImpactScanHash&quot;,
+    &quot;governanceImpactScanHash&quot;,
+    &quot;currentArtifactHash&quot;,
+    &quot;resolvedRecipeHash&quot;
+  ],
+  &quot;eachHashMustDeclareRecipeVersion&quot;: true,
+  &quot;allowedToStatusValues&quot;: [
+    &quot;active&quot;,
+    &quot;stale&quot;,
+    &quot;blocked&quot;,
+    &quot;missing&quot;,
+    &quot;superseded&quot;
+  ],
+  &quot;allowedReasonCodes&quot;: [
+    &quot;hash_match&quot;,
+    &quot;source_hash_mismatch&quot;,
+    &quot;implementation_confirmation_hash_mismatch&quot;,
+    &quot;target_paths_hash_mismatch&quot;,
+    &quot;consumer_impact_scan_hash_mismatch&quot;,
+    &quot;governance_impact_scan_hash_mismatch&quot;,
+    &quot;artifact_hash_mismatch&quot;,
+    &quot;current_confirmation_missing&quot;,
+    &quot;current_artifact_missing&quot;,
+    &quot;cannot_validate_current_confirmation&quot;
+  ]
+}</pre></td><td><pre class="inline-json">{
+  &quot;missingRecipeDecision&quot;: &quot;blocked&quot;,
+  &quot;invalidRecipeDecision&quot;: &quot;blocked&quot;,
+  &quot;resolverBypassDecision&quot;: &quot;blocked&quot;,
+  &quot;privateHashLogicDecision&quot;: &quot;blocked&quot;,
+  &quot;recipeVersionMismatchDecision&quot;: &quot;blocked&quot;,
+  &quot;hashMismatchDecision&quot;: &quot;fail&quot;,
+  &quot;hashMatchDecision&quot;: &quot;pass&quot;,
+  &quot;staleMustBePersisted&quot;: true,
+  &quot;memoryOnlyStaleCheckForbidden&quot;: true
+}</pre></td></tr></tbody></table></div></div><div><h3>Stale Inputs</h3><div class="table-wrap"><table><thead><tr><th>sourceDocumentHash</th><th>implementationConfirmationHash</th><th>targetPathsHash</th><th>consumerImpactScanHash</th><th>governanceImpactScanHash</th><th>resolvedRecipeHash</th></tr></thead><tbody><tr><td>sha256:b974e48e879a80e6b3a816ec95b37fcaecbaabdafca382ca9663fab377f44743</td><td>sha256:b1285359be7710de97985288ceba0cc7736ee15e17f1967610119b307fcde6ba</td><td>sha256:23d63fe422eaab075c09f1be7dc36cc669d982a2d09c970768306c6ad1dc319e</td><td>sha256:10b5645bd5862d2901605d08af50202f8340837b40240b7646aeeb2da3b568c9</td><td>sha256:4bd960bd2b24b8e9ba53173d9cb04a7f1dc9e6a91286ed1c2e08d43b2db65c24</td><td>sha256:da10b7ad044a705fb04be14c32a0062e9dc5e91012e5d267a435b83c3ba86b75</td></tr></tbody></table></div></div></div></section>
+    <section id="risk" class="card"><h2>风险与回滚</h2><p><strong>Risk:</strong> 技能发布面和架构确认准备入口改变用户执行路径，必须确认受控 state check 与只读 renderer 边界。</p><p><strong>Rollback:</strong> 拒绝该架构确认并回滚 TRACE-038 相关脚本、测试和技能说明。</p><p><strong>Evidence:</strong></p><div class="pill-list"><span>EVD-036</span><span>EVD-037</span><span>EVD-048</span></div></section>
+    <section id="phrase" class="card"><h2>确认口令</h2><div class="phrase">确认架构确认进入实施准备
+sourceDocumentHash=sha256:b974e48e879a80e6b3a816ec95b37fcaecbaabdafca382ca9663fab377f44743
+implementationConfirmationHash=sha256:b1285359be7710de97985288ceba0cc7736ee15e17f1967610119b307fcde6ba
+resolvedRecipeHash=sha256:da10b7ad044a705fb04be14c32a0062e9dc5e91012e5d267a435b83c3ba86b75
+architectureConfirmationArtifactHash=sha256:b84eba6b3dc89c534593dab9bb0bf608b798a8ac889bccd360ef3fc6eb860212</div></section>
+    <section id="metadata" class="card"><h2>工件元数据</h2><div class="table-wrap"><table><thead><tr><th>jsonPath</th><th>htmlPath</th><th>runId</th><th>artifactHash</th><th>computedArtifactHash</th></tr></thead><tbody><tr><td>D:\Dev\BMAD-Speckit-SDD-Flow\_bmad-output\runtime\requirement-records\REQ-CLOSED-LOOP-DESIGN\architecture\architecture-confirmation-arch-confirm-20260520-003.json</td><td>D:\Dev\BMAD-Speckit-SDD-Flow\_bmad-output\runtime\requirement-records\REQ-CLOSED-LOOP-DESIGN\architecture\architecture-confirmation-arch-confirm-20260520-003.html</td><td>arch-confirm-20260520-003</td><td>sha256:b84eba6b3dc89c534593dab9bb0bf608b798a8ac889bccd360ef3fc6eb860212</td><td>sha256:b84eba6b3dc89c534593dab9bb0bf608b798a8ac889bccd360ef3fc6eb860212</td></tr></tbody></table></div></section>
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,60 @@
+{
+  "ok": true,
+  "userFacingNextStep": "open_architecture_confirmation_html_and_confirm_hashes",
+  "internalSteps": [
+    {
+      "label": "architecture_confirmation_state_checked",
+      "status": 1,
+      "ok": true,
+      "eventType": "architecture_confirmation_state_checked",
+      "decision": "fail",
+      "stateTransition": {
+        "fromStatus": "stale",
+        "toStatus": "stale",
+        "reasonCode": "hash_mismatch",
+        "previousHashes": {
+          "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
+          "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
+          "targetPathsHash": "sha256:02102399ab0eead05e06c13eaa6761d3d093eab6aaa4d17a2893014ec30d4dd5",
+          "consumerImpactScanHash": "sha256:5e5767df8b85fdfb139dfa50129166c500e0fc94a48f2911d1000302fbfb2c16",
+          "governanceImpactScanHash": "sha256:74fdcb3f43e3d4aa29a857d92c76c0a335f29be5a73aeb2b3091e9c7739de365",
+          "currentArtifactHash": "sha256:a1372528e0fdf4dd0f87b5f37e5be30b3ec8f334e258f85d3c13c604d72facd8",
+          "resolvedRecipeHash": "sha256:da10b7ad044a705fb04be14c32a0062e9dc5e91012e5d267a435b83c3ba86b75"
+        },
+        "currentHashes": {
+          "sourceDocumentHash": "sha256:b974e48e879a80e6b3a816ec95b37fcaecbaabdafca382ca9663fab377f44743",
+          "implementationConfirmationHash": "sha256:b1285359be7710de97985288ceba0cc7736ee15e17f1967610119b307fcde6ba",
+          "targetPathsHash": "sha256:02102399ab0eead05e06c13eaa6761d3d093eab6aaa4d17a2893014ec30d4dd5",
+          "consumerImpactScanHash": "sha256:5e5767df8b85fdfb139dfa50129166c500e0fc94a48f2911d1000302fbfb2c16",
+          "governanceImpactScanHash": "sha256:74fdcb3f43e3d4aa29a857d92c76c0a335f29be5a73aeb2b3091e9c7739de365",
+          "currentArtifactHash": "sha256:a1372528e0fdf4dd0f87b5f37e5be30b3ec8f334e258f85d3c13c604d72facd8",
+          "resolvedRecipeHash": "sha256:da10b7ad044a705fb04be14c32a0062e9dc5e91012e5d267a435b83c3ba86b75"
+        },
+        "mismatchFields": [
+          "sourceDocumentHash",
+          "implementationConfirmationHash"
+        ],
+        "recipeVersion": "architecture-confirmation-hash/v1"
+      }
+    },
+    {
+      "label": "generate_architecture_confirmation_artifact",
+      "status": 0,
+      "ok": true
+    },
+    {
+      "label": "render_architecture_confirmation_html",
+      "status": 0,
+      "ok": true
+    }
+  ],
+  "architectureConfirmationPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/architecture/architecture-confirmation-arch-confirm-20260520-003.json",
+  "htmlPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/architecture/architecture-confirmation-arch-confirm-20260520-003.html",
+  "renderReportPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/architecture/architecture-confirmation-arch-confirm-20260520-003.render-report.json",
+  "summaryPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/architecture/architecture-confirmation-arch-confirm-20260520-003.summary.json",
+  "confirmInstruction": "确认架构确认进入实施准备\nsourceDocumentHash=sha256:b974e48e879a80e6b3a816ec95b37fcaecbaabdafca382ca9663fab377f44743\nimplementationConfirmationHash=sha256:b1285359be7710de97985288ceba0cc7736ee15e17f1967610119b307fcde6ba\nresolvedRecipeHash=sha256:da10b7ad044a705fb04be14c32a0062e9dc5e91012e5d267a435b83c3ba86b75\narchitectureConfirmationArtifactHash=sha256:b84eba6b3dc89c534593dab9bb0bf608b798a8ac889bccd360ef3fc6eb860212",
+  "architectureConfirmationArtifactHash": "sha256:b84eba6b3dc89c534593dab9bb0bf608b798a8ac889bccd360ef3fc6eb860212",
+  "sourceDocumentHash": "sha256:b974e48e879a80e6b3a816ec95b37fcaecbaabdafca382ca9663fab377f44743",
+  "implementationConfirmationHash": "sha256:b1285359be7710de97985288ceba0cc7736ee15e17f1967610119b307fcde6ba",
+  "resolvedRecipeHash": "sha256:da10b7ad044a705fb04be14c32a0062e9dc5e91012e5d267a435b83c3ba86b75"
+}

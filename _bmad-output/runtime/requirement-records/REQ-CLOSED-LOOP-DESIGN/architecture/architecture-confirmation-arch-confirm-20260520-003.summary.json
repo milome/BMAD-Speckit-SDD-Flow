@@ -1,0 +1,21 @@
+{
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "runId": "arch-confirm-20260520-003",
+  "sourceDocumentHash": "sha256:b974e48e879a80e6b3a816ec95b37fcaecbaabdafca382ca9663fab377f44743",
+  "implementationConfirmationHash": "sha256:b1285359be7710de97985288ceba0cc7736ee15e17f1967610119b307fcde6ba",
+  "resolvedRecipeHash": "sha256:da10b7ad044a705fb04be14c32a0062e9dc5e91012e5d267a435b83c3ba86b75",
+  "architectureConfirmationArtifactHash": "sha256:b84eba6b3dc89c534593dab9bb0bf608b798a8ac889bccd360ef3fc6eb860212",
+  "computedArchitectureConfirmationArtifactHash": "sha256:b84eba6b3dc89c534593dab9bb0bf608b798a8ac889bccd360ef3fc6eb860212",
+  "htmlHash": "sha256:168bd055ceffd8dd234521bbbd649487f5ef39153b0a79f3a17d82a4a92840e3",
+  "confirmability": "confirmable",
+  "blockingIssues": [],
+  "warnings": [],
+  "counts": {
+    "targetPaths": 6,
+    "consumerImpactScan": 2,
+    "governanceImpactScan": 2,
+    "fullArchitectureTriggerMatrix": 2,
+    "evidenceRefs": 3
+  }
+}

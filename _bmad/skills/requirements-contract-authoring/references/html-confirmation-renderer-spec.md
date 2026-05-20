@@ -4,12 +4,32 @@ Use this reference when implementing or invoking `_bmad/skills/requirements-cont
 
 The renderer is a generic read-only confirmation view generator. It reads an implementation source document and its inline `implementationConfirmation`; it renders HTML plus machine-readable summaries. It must not create, infer, rewrite, merge, shrink, confirm, or mutate requirements.
 
+Architecture confirmation has a skill-local prepare entry that is the normal user-facing workflow:
+
+```bash
+node _bmad/skills/requirements-contract-authoring/scripts/prepare-architecture-confirmation-page.ts \
+  --source <source-document.md> \
+  --requirement-record _bmad-output/runtime/requirement-records/<recordId>/requirement-record.json \
+  --run-id <runId> \
+  --target-paths <json-array-or-file> \
+  --consumer-impact-scan <json-array-or-file> \
+  --governance-impact-scan <json-array-or-file> \
+  --full-architecture-trigger-matrix <json-array-or-file> \
+  --out _bmad-output/runtime/requirement-records/<recordId>/architecture/architecture-confirmation-<runId>.html \
+  --language zh-CN \
+  --json
+```
+
+The prepare entry must automatically run the controlled `architecture_confirmation_state_checked` precheck, generate requirement-scoped `architecture-confirmation-<runId>.json`, and call the read-only renderer. The user-facing next step must only be to open the architecture confirmation HTML and confirm the hashes in chat. Do not expose stale check or JSON producer commands as manual user steps.
+
+The renderer remains read-only. It renders an existing requirement-scoped `architecture-confirmation-<runId>.json`; it must not generate architecture decisions, infer target paths, write `requirement-record.json`, append `architectureConfirmations[]`, change `architectureConfirmationState`, or confirm architecture on behalf of the user. Do not replace the prepare entry, producer, or renderer with temporary scripts, hand-written HTML, or root-level wrappers.
+
 ## CLI Contract
 
 ```bash
 node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts \
   --source docs/path/source.md \
-  --out _bmad-output/runtime/requirements/<recordId>/confirmation/confirmation.html \
+  --out _bmad-output/runtime/requirement-records/<recordId>/confirmation/confirmation.html \
   --language zh-CN \
   --record-id <recordId> \
   --entry-flow story \
@@ -82,7 +102,7 @@ Write all runtime outputs under the same confirmation directory:
   "artifactRef": {
     "artifactType": "confirmation_view",
     "sourceOfTruthRole": "projection",
-    "path": "_bmad-output/runtime/requirements/<recordId>/confirmation/confirmation.html",
+    "path": "_bmad-output/runtime/requirement-records/<recordId>/confirmation/confirmation.html",
     "hash": "sha256:..."
   }
 }
@@ -128,6 +148,7 @@ Strict mode must block if any core field is missing:
 - `applicability.scoringDashboardSft`
 - `applicability.currentTargetMap`
 - `applicability.scriptsAndHooks`
+- `activeRequirementResolution`
 
 Every `applicability.*` domain must include:
 
@@ -140,7 +161,18 @@ When `applies: false`, `reasonCode` is still mandatory. A silent omission is not
 
 ### Governance Events
 
-When `applicability.governanceEvents.applies=true`, or any source field references `recordEventTypes[]`, strict mode must require `governanceEventTypeRegistry[]`.
+When `applicability.governanceEvents.applies=true`, or any source field references `recordEventTypes[]`, strict mode must require both `governanceEventTypeRegistryPolicy` and `governanceEventTypeRegistry[]`.
+
+`governanceEventTypeRegistryPolicy` must include:
+
+- `controlFieldVocabulary[]`
+- `payloadKindContracts[]`
+- `controlWriteModePolicies[]`
+- `eventSpecificRequirements[]`
+
+`controlFieldVocabulary[]` defines the closed set of field names that carry control-shaped state. `payloadKindContracts[]` define required fields, forbidden fields, and allowed control write modes for each payload kind. `controlWriteModePolicies[]` define which control fields each write mode may write. `eventSpecificRequirements[]` define event-specific requirements such as required source refs, required fields, forbidden fields, payload kind, or write mode.
+
+Transport validators and controlled ingest callers must receive both the policy and registry. They must bind and report both `registryPolicyHash` and `registryHash`; validating only `governanceEventTypeRegistry[]` is insufficient.
 
 Each `governanceEventTypeRegistry[]` entry must include:
 
@@ -160,13 +192,47 @@ Each `governanceEventTypeRegistry[]` entry must include:
 
 Payload rules:
 
-- `payloadKind=decision` requires `decision` and forbids `result` and `status`.
-- `payloadKind=status` requires `status` and forbids `result` and `decision`.
-- `payloadKind=artifactRefs` requires `artifactRefs` and forbids `result`, `decision`, and `status`.
+- payload-kind required fields, forbidden fields, and allowed write modes must come from `governanceEventTypeRegistryPolicy.payloadKindContracts[]`.
+- event-specific sourceRef / field / payload-kind / write-mode requirements must come from `governanceEventTypeRegistryPolicy.eventSpecificRequirements[]`.
 - Control writes must be allowed by `allowedControlWriteMode`.
+- If a top-level envelope field or `payload` field matches `controlFieldVocabulary[]`, the current event type must list it in `writesControlFields[]`; otherwise validation fails closed.
+- Transport validation must fail closed when a self-consistent event registry violates `governanceEventTypeRegistryPolicy`.
 - `result` is legacy raw input only and must not be a new schema control field.
 
 ### Runtime Recovery
+
+### Controlled Ingest Writers
+
+When `applicability.governanceEvents.applies=true`, controlled ingest is in scope, or a source field references `recordEventTypes[]`, strict mode must require `controlledIngestWriterRegistry[]`.
+
+Each `controlledIngestWriterRegistry[]` entry must include:
+
+- `writerId`
+- `scriptPath`
+- `scriptContentHash`
+- `ownerModel`
+- `allowedWriteApis[]`
+- `allowedPaths[]`
+- `allowedEventTypes[]`
+- `payloadContractRefs[]`
+- `writesControlFields[]`
+- `receiptPath`
+- `beforeAfterHashRequired`
+- `canModifyWriterRegistry`
+- `registryHash`
+- `architectureConfirmationHash`
+
+Validation rules:
+
+- `beforeAfterHashRequired` must be `true`.
+- `canModifyWriterRegistry` must be `false`.
+- `allowedPaths[]` must not grant broad cross-record authority such as `_bmad-output/runtime/requirement-records/**`.
+- every `allowedEventTypes[]` value must exist in `governanceEventTypeRegistry[]`.
+- `payloadContractRefs[]` must include every allowed event type.
+- `writesControlFields[]` must be covered by the union of the allowed event types' `writesControlFields[]`.
+- every governance event type that writes control fields must have at least one writer.
+
+The confirmation HTML must render this registry in a dedicated user-visible section. The render report must include the normalized registry, `eventTypeToWriters`, `controlFieldToWriters`, `uncoveredEventTypes`, and schema issues.
 
 `failurePaths[]` and `edgeCases[]` are ordinary functional/business fields and are always required.
 
@@ -182,6 +248,18 @@ When required, it must include:
 - event types that exist in `governanceEventTypeRegistry[]`
 
 The renderer must not use regex or filename conventions as authoritative grouping. `functionalResumeFailureCaseRegistry.groupingAuthority` and source-defined groups are the authority.
+
+### Active Requirement Resolution
+
+When `activeRequirementResolution` is present, strict mode must show:
+
+- explicit locator priority
+- `index.json` as locator projection only
+- `requirement-record.json` as the control source
+- `runtimePolicySnapshot` and `recoveryContext` as requirement-scoped runtime inputs
+- a hard prohibition on `_bmad-output/runtime/context/**` as control, fallback, or locator input
+
+If the source document is about runtime governance, hooks, no-hook fallback, bmad-help routing, scoring, dashboard, SFT, recovery, or closeout, the confirmation view must surface this resolver section even if other optional packs are omitted.
 
 ### Trace Command Split
 
@@ -389,10 +467,22 @@ Set `confirmability: blocked` if any of these is true:
 - `edgeCases[]` missing.
 - required `applicability.*` domain missing.
 - `applicability.*.applies=false` lacks `reasonCode`.
-- `governanceEvents.applies=true` but `governanceEventTypeRegistry[]` is missing.
+- `governanceEvents.applies=true` but `governanceEventTypeRegistryPolicy` or `governanceEventTypeRegistry[]` is missing.
+- `governanceEventTypeRegistryPolicy.controlFieldVocabulary[]`, `payloadKindContracts[]`, or `controlWriteModePolicies[]` is missing.
+- a transport validator, ingest caller, hook, or worker validates only `governanceEventTypeRegistry[]` without `governanceEventTypeRegistryPolicy`.
 - a governance event type lacks `payloadContract`.
 - a governance event `payloadContract` conflicts with `payloadKind`.
+- `controlledIngestWriterRegistry[]` is missing when governance events or controlled ingest apply.
+- a controlled ingest writer has a broad `allowedPaths[]` glob.
+- a controlled ingest writer references unknown `allowedEventTypes[]`.
+- a controlled ingest writer omits matching `payloadContractRefs[]`.
+- a controlled ingest writer declares `writesControlFields[]` not covered by its allowed event types.
+- a controlled ingest writer sets `beforeAfterHashRequired` to anything other than `true`.
+- a controlled ingest writer sets `canModifyWriterRegistry` to anything other than `false`.
+- a control-writing governance event type has no registered writer.
 - `runtimeRecovery.applies=true` or `requiresFunctionalResumeFailureCaseRegistry=true` but `functionalResumeFailureCaseRegistry` is missing.
+- active requirement resolution is required but missing.
+- `_bmad-output/runtime/context/**` appears as a control, fallback, or locator input in a source that touches runtime governance.
 - recovery registry groups, action definitions, expected actions, or record event type references are invalid.
 - traceRows missing.
 - traceRows use only legacy `commandRefs[]`.

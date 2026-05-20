@@ -1,0 +1,10 @@
+{
+  "commandId": "CMD-GENERATE-ARCHITECTURE-CONFIRMATION-ARTIFACT",
+  "command": "npx vitest run tests/acceptance/generate-architecture-confirmation-artifact.test.ts",
+  "runId": "run-trace-038-architecture-confirmation-page-prepare-001",
+  "closeoutAttemptId": "closeout-trace-038-architecture-confirmation-page-prepare-001",
+  "exitCode": 0,
+  "startedAt": "2026-05-20T14:18:46.5254764Z",
+  "completedAt": "2026-05-20T14:18:49.5970326Z",
+  "output": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/generate-architecture-confirmation-artifact.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 699\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m generates a requirement-scoped architecture confirmation JSON without mutating the requirement record \u001b[33m 433\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 22:18:48\n\u001b[2m   Duration \u001b[22m 998ms\u001b[2m (transform 56ms, setup 0ms, import 118ms, tests 699ms, environment 0ms)\u001b[22m\n"
+}

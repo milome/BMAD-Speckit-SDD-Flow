@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "trace-negative-assertions/v1",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "traceRows": [
+    "TRACE-038"
+  ],
+  "assertions": [
+    {
+      "id": "NEG-038-NO-MANUAL-STALE-CHECK-STEP",
+      "covers": [
+        "NEG-038",
+        "MUST-049",
+        "EVD-048"
+      ],
+      "assertion": "The normal user-facing architecture confirmation workflow must not expose architecture_confirmation_state_checked as a manual user step.",
+      "proof": "prepare-architecture-confirmation-page.ts runs the stale state check before rendering and records the internal step result in the prepare report."
+    },
+    {
+      "id": "NEG-038-NO-TEMPORARY-JSON-PRODUCER",
+      "covers": [
+        "NEG-038",
+        "OUT-029",
+        "EVD-048"
+      ],
+      "assertion": "Architecture confirmation JSON generation must be owned by requirements-contract-authoring, not a temporary one-off script or hand-written JSON.",
+      "proof": "generate-architecture-confirmation-artifact.ts is skill-local, tested with fixture-driven inputs, and shares ArchitectureConfirmationHashRecipe canonicalization."
+    },
+    {
+      "id": "OUT-029-NO-ROOT-WRAPPER-OR-HARDCODED-REQ",
+      "covers": [
+        "OUT-029",
+        "EVD-048"
+      ],
+      "assertion": "The implementation must not publish a root wrapper or hardcode REQ-CLOSED-LOOP-DESIGN, target paths, or impact scans into the producer or renderer.",
+      "proof": "Acceptance tests invoke the skill-local scripts with temporary fixture source documents, target path files, consumer impact scans, governance impact scans, and trigger matrices."
+    },
+    {
+      "id": "EVD-048-FAIL-CLOSED-MISSING-ARCHITECTURE-INPUTS",
+      "covers": [
+        "NEG-038",
+        "EVD-048"
+      ],
+      "assertion": "Missing target paths, impact scans, trigger matrix, stale hash inputs, or recipe mismatch must block rendering instead of producing a fallback page.",
+      "proof": "prepare-architecture-confirmation-page.test.ts covers missing required architecture inputs and expects a fail-closed result."
+    }
+  ]
+}

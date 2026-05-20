@@ -1,0 +1,10 @@
+{
+  "commandId": "CMD-PREPARE-ARCHITECTURE-CONFIRMATION-PAGE",
+  "command": "npx vitest run tests/acceptance/prepare-architecture-confirmation-page.test.ts",
+  "runId": "run-trace-038-architecture-confirmation-page-prepare-001",
+  "closeoutAttemptId": "closeout-trace-038-architecture-confirmation-page-prepare-001",
+  "exitCode": 0,
+  "startedAt": "2026-05-20T14:18:29.9984573Z",
+  "completedAt": "2026-05-20T14:18:34.1846463Z",
+  "output": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/prepare-architecture-confirmation-page.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 1855\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m automatically checks stale state, generates the architecture artifact, and renders user-facing HTML \u001b[33m 1021\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails closed instead of rendering when required architecture inputs are missing \u001b[33m 834\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 22:18:32\n\u001b[2m   Duration \u001b[22m 2.11s\u001b[2m (transform 33ms, setup 0ms, import 64ms, tests 1.86s, environment 0ms)\u001b[22m\n"
+}
