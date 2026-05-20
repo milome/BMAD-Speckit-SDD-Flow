@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "negative-assertion-evidence/v1",
+  "traceRow": "TRACE-036",
+  "assertions": [
+    {
+      "id": "NEG-036-current-attempt-required",
+      "requirementId": "NEG-036",
+      "assertion": "Accepted subagent evidence cannot close out unless revalidated in the main workspace for the current closeout attempt.",
+      "proof": "tests/acceptance/subagent-current-attempt-revalidation.test.ts blocks stale attempt, non-main workspace, and failed command evidence."
+    },
+    {
+      "id": "NEG-036-closeout-blocks-missing-report",
+      "requirementId": "NEG-036",
+      "assertion": "Delivery Closeout Gate blocks accepted subagent envelope events that do not have a matching pass subagent_current_attempt_revalidation_report artifact.",
+      "proof": "main-agent-delivery-closeout-gate test case expects subagent_current_attempt_revalidation_missing blocker."
+    },
+    {
+      "id": "MUST-047-no-direct-control-write",
+      "requirementId": "MUST-047",
+      "assertion": "The revalidation script emits report, failureRecords, and rerunLoops only as evidence; it marks controlWrite as forbidden_use_controlled_ingest.",
+      "proof": "current report decision=pass; controlWrite=forbidden_use_controlled_ingest"
+    }
+  ],
+  "commandRefs": [
+    "CMD-SUBAGENT-CURRENT-ATTEMPT-REVALIDATION"
+  ],
+  "generatedAt": "2026-05-20T20:06:48.269Z"
+}

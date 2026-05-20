@@ -60,6 +60,7 @@ const RERUN_AUTHORITY_SOURCE_TYPES = new Set([
   'audit_iteration',
   'execution_iteration',
   'requirement_closure',
+  'failure_record',
 ]);
 
 function isDirectImplementationEvidenceIngestCli(entry: string | undefined): boolean {
