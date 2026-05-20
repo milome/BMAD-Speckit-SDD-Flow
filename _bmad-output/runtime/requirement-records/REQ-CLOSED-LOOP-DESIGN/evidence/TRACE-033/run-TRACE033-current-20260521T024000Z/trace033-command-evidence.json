@@ -1,0 +1,50 @@
+{
+  "runId": "run-TRACE033-current-20260521T024000Z",
+  "closeoutAttemptId": "closeout-attempt-TRACE033-current-20260521T024000Z",
+  "commandRuns": [
+    {
+      "commandId": "CMD-CLOSEOUT-STRICT-PRODUCTION-BLOCKERS",
+      "command": "npx.cmd vitest run tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/main-agent-production-loop-ready-check.test.ts tests/acceptance/main-agent-dataset-release-gate.test.ts tests/acceptance/main-agent-functional-resume-check.test.ts",
+      "runId": "run-TRACE033-current-20260521T024000Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE033-current-20260521T024000Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T18:37:24.422Z",
+      "completedAt": "2026-05-20T18:37:28.019Z",
+      "outputSummary": "  \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/production-loop-ready-VGVVFa/_bmad-output/runtime/requirement-records/REQ-PRODUCTION-LOOP/production-loop-ready-report.json\", |   \"decision\": \"pass\", |   \"controlWrite\": \"forbidden_use_controlled_ingest\", |   \"blockingReasons\": [] | } | production_loop_ready=blocked | production_loop_ready=blocked | production_loop_ready=blocked |  \u001b[32m✓\u001b[39m tests/acceptance/main-agent-production-loop-ready-check.test.ts \u001b[2m(\u001b[22m\u001b[2m4 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 73\u001b[2mms\u001b[22m\u001b[39m |  | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m4 passed\u001b[39m\u001b[22m\u001b[90m (4)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m42 passed\u001b[39m\u001b[22m\u001b[90m (42)\u001b[39m | \u001b[2m   Start at \u001b[22m 02:37:26 | \u001b[2m   Duration \u001b[22m 1.12s\u001b[2m (transform 257ms, setup 0ms, import 493ms, tests 759ms, environment 0ms)\u001b[22m |  | \u001b[90mstderr\u001b[2m | tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts\u001b[2m > \u001b[22m\u001b[2mrequirement-scoped delivery closeout gate\u001b[2m > \u001b[22m\u001b[2mrejects attempts that would overwrite an existing closeout attempt | \u001b[22m\u001b[39m{ |   \"ok\": false, |   \"error\": \"closeout attempt already exists: closeout-001\" | }",
+      "outputPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-033/run-TRACE033-current-20260521T024000Z/CMD-CLOSEOUT-STRICT-PRODUCTION-BLOCKERS.output.txt"
+    },
+    {
+      "commandId": "CMD-RENDER-CONFIRMATION",
+      "command": "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json",
+      "runId": "run-TRACE033-current-20260521T024000Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE033-current-20260521T024000Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T18:37:28.021Z",
+      "completedAt": "2026-05-20T18:37:28.757Z",
+      "outputSummary": "  \"mermaidRuntime\": { |     \"available\": true, |     \"path\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad/skills/requirements-contract-authoring/assets/mermaid/mermaid.min.js\", |     \"hash\": \"sha256:d0830a6c05546e9edb8fe20a8f545f3e0dc7c4c3134d584bad9c13a99d7a71e0\", |     \"format\": \"classic-global\", |     \"issues\": [] |   }, |   \"counts\": { |     \"must\": 56, |     \"notDone\": 40, |     \"mustNot\": 29, |     \"evidence\": 62, |     \"failurePaths\": 7, |     \"edgeCases\": 10, |     \"traceRows\": 39, |     \"sequenceViews\": 10, |     \"resumeFailureCases\": 27, |     \"artifactPlanItems\": 8 |   } | }",
+      "outputPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-033/run-TRACE033-current-20260521T024000Z/CMD-RENDER-CONFIRMATION.output.txt"
+    },
+    {
+      "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+      "command": "npx.cmd vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+      "runId": "run-TRACE033-current-20260521T024000Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE033-current-20260521T024000Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T18:37:28.758Z",
+      "completedAt": "2026-05-20T18:37:38.162Z",
+      "outputSummary": "\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  |  \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m38 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 6695\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders current controlled execution state only when hashes and current attempt match \u001b[33m 338\u001b[2mms\u001b[22m\u001b[39m |  | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m38 passed\u001b[39m\u001b[22m\u001b[90m (38)\u001b[39m | \u001b[2m   Start at \u001b[22m 02:37:31 | \u001b[2m   Duration \u001b[22m 6.99s\u001b[2m (transform 83ms, setup 0ms, import 114ms, tests 6.69s, environment 0ms)\u001b[22m",
+      "outputPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-033/run-TRACE033-current-20260521T024000Z/CMD-TRACE-BINDING-ACCEPTANCE.output.txt"
+    },
+    {
+      "commandId": "CMD-ENCODING-GATE",
+      "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+      "runId": "run-TRACE033-current-20260521T024000Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE033-current-20260521T024000Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T18:37:38.164Z",
+      "completedAt": "2026-05-20T18:37:38.967Z",
+      "outputSummary": "checkedFiles=2773 findings=0",
+      "outputPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-033/run-TRACE033-current-20260521T024000Z/CMD-ENCODING-GATE.output.txt"
+    }
+  ]
+}

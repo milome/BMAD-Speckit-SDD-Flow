@@ -1,0 +1,53 @@
+{
+  "assertionSet": "TRACE-033-closeout-strict-production-blockers",
+  "generatedAt": "2026-05-20T18:39:29.706Z",
+  "traceRows": [
+    "TRACE-033"
+  ],
+  "coveredRequirementIds": [
+    "MUST-039",
+    "MUST-040",
+    "MUST-041",
+    "MUST-043",
+    "NEG-028",
+    "NEG-029",
+    "NEG-030",
+    "NEG-031",
+    "EVD-003",
+    "EVD-039",
+    "EVD-040",
+    "EVD-041"
+  ],
+  "assertions": [
+    {
+      "id": "NEG-028-subsystem-count-only-blocks",
+      "text": "A subsystemReadiness length of 16 without productionSubsystemAcceptanceRegistry criteria blocks closeout.",
+      "evidenceCommandId": "CMD-CLOSEOUT-STRICT-PRODUCTION-BLOCKERS",
+      "testFile": "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts"
+    },
+    {
+      "id": "NEG-029-unexercised-failure-cases-block",
+      "text": "Failure-case coverage with unexercisedCases or stale artifact hash blocks closeout.",
+      "evidenceCommandId": "CMD-CLOSEOUT-STRICT-PRODUCTION-BLOCKERS",
+      "testFile": "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts"
+    },
+    {
+      "id": "NEG-030-stale-production-artifacts-block",
+      "text": "Stale production-loop extension, dataset manifest, dataset release report, or failure-case coverage hash blocks closeout.",
+      "evidenceCommandId": "CMD-CLOSEOUT-STRICT-PRODUCTION-BLOCKERS",
+      "testFile": "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts"
+    },
+    {
+      "id": "NEG-031-functional-parity-regression-blocks",
+      "text": "Global or per-subsystem userVisibleBehaviorPreserved=false blocks closeout.",
+      "evidenceCommandId": "CMD-CLOSEOUT-STRICT-PRODUCTION-BLOCKERS",
+      "testFile": "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts"
+    },
+    {
+      "id": "EVD-003-immutable-failed-attempt-preserved",
+      "text": "Duplicate closeout attempt IDs are rejected and old failed/blocked attempts are not overwritten.",
+      "evidenceCommandId": "CMD-CLOSEOUT-STRICT-PRODUCTION-BLOCKERS",
+      "testFile": "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts"
+    }
+  ]
+}
