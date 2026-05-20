@@ -2,12 +2,12 @@
   "reportType": "trace_closure_matrix",
   "recordId": "REQ-CLOSED-LOOP-DESIGN",
   "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
-  "generatedAt": "2026-05-20T16:45:46.891Z",
+  "generatedAt": "2026-05-20T17:14:56.155Z",
   "sourceOfTruth": "requirement-record.json",
   "readModelBoundary": "TaskReport done, agent said done, smoke passed, quality gate passed, release gate passed, delivery truth passed, and tests passed are evidence inputs only; they cannot close a requirement without requirementClosures plus deliveryEvidence.requiredCommands.",
   "counts": {
-    "rows": 167,
-    "closed": 167,
+    "rows": 179,
+    "closed": 179,
     "open": 0
   },
   "rows": [
@@ -1668,13 +1668,15 @@
       "id": "EVD-014",
       "status": "pass",
       "closed": true,
-      "latestClosureRecordedAt": "2026-05-19T21:34:00.000+08:00",
+      "latestClosureRecordedAt": "2026-05-20T17:14:43.016Z",
       "executionIterationIds": [
         "exec-trace-006-closeout-rerun-001",
         "exec-trace-008-governed-data-products-001",
         "exec-trace-010-dataset-release-gate-001",
         "exec-trace-013-production-loop-ready-001",
-        "TRACE-CLOSURE-RECONCILIATION-001"
+        "TRACE-CLOSURE-RECONCILIATION-001",
+        "exec-TRACE030-extension-refresh-20260520T170000Z",
+        "exec-TRACE030-current-20260520T171500Z"
       ],
       "commandIds": [
         "CMD-TRACE-006-CLOSEOUT-RERUN-REGRESSION",
@@ -1683,38 +1685,81 @@
         "CMD-TRACE-010-DATASET-RELEASE-GATE",
         "CMD-TRACE-010-DATASET-RELEASE-TEST",
         "CMD-TRACE-CLOSURE-RECONCILIATION-ACCEPTANCE",
-        "CMD-TRACE-CLOSURE-RECONCILIATION-ENCODING"
+        "CMD-TRACE-CLOSURE-RECONCILIATION-ENCODING",
+        "CMD-DATASET-RELEASE-GATE"
       ],
       "artifactRefs": [
         {
           "artifactType": "diff_summary",
           "sourceOfTruthRole": "evidence",
-          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-CLOSURE-RECONCILIATION/trace-closure-reconciliation-001/diff-summary.md",
-          "hash": "sha256:773ab73143265b5facac435567fa3e8fb0a2d3bdaf16153ed24788c56116de10"
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/diff-summary.md",
+          "hash": "sha256:5731c495f936ecc11b410acdaa9a569bb1d7faa48dbdf696fc499157ce829b90"
         },
         {
           "artifactType": "negative_assertion_evidence",
           "sourceOfTruthRole": "evidence",
-          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-CLOSURE-RECONCILIATION/trace-closure-reconciliation-001/negative-assertions.json",
-          "hash": "sha256:a4a3be929fd5dc23a5b765d890c1d3afe78fcbd599c038f4c5100f63b46d6a7f"
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/negative-assertions.json",
+          "hash": "sha256:9ee691124f59f1e3dcc15388824e8c443ae9863e977a835fc53110b70991b908"
         },
         {
           "artifactType": "command_evidence",
           "sourceOfTruthRole": "evidence",
-          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-CLOSURE-RECONCILIATION/trace-closure-reconciliation-001/command-run-results.json",
-          "hash": "sha256:35c5932cfad0e83e88f63c7a0223a8d0609a50f511339b2cca59ab3ee7c0cfb5"
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/command-evidence-final.json",
+          "hash": "sha256:6682ac137b3b4047a3862faad408f834edbd9dd4959d8832f6eed156caf7fd3b"
         },
         {
-          "artifactType": "command_log",
+          "artifactType": "training_run_metadata",
           "sourceOfTruthRole": "evidence",
-          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-CLOSURE-RECONCILIATION/trace-closure-reconciliation-001/CMD-TRACE-CLOSURE-RECONCILIATION-ACCEPTANCE.log",
-          "hash": "sha256:66dc0498b948cea608ff2858c24f81f0c3afa3300d917cee2bc4823e367e2fd3"
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/training-run.json",
+          "hash": "sha256:6c3c57708d0e3d6239f91c47a9df89209cb0ba75aadd1c6b6189e96895e025d6"
         },
         {
-          "artifactType": "command_log",
+          "artifactType": "post_training_eval_report",
           "sourceOfTruthRole": "evidence",
-          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-CLOSURE-RECONCILIATION/trace-closure-reconciliation-001/CMD-TRACE-CLOSURE-RECONCILIATION-ENCODING.log",
-          "hash": "sha256:7b4678dcfbdde86ee44cc144278a84454db0c18c79191a9d464d01f27d437304"
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/eval-report.json",
+          "hash": "sha256:6df8389c3f6464ffa0941add26ecea348fbadf845f003ca0ce40495a369956c4"
+        },
+        {
+          "artifactType": "production_subsystem_acceptance_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/production-loop-ready-report.json",
+          "hash": "sha256:4392378b0cf637f19e5107d748f48462f5bb1636083604dad2dc56ec5b878121"
+        },
+        {
+          "artifactType": "dataset_release_manifest",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-manifest.json",
+          "hash": "sha256:48ccda443c83b170d6d8218f8d09dfa965cf0fe3608c1c06d89a1c402e13d569"
+        },
+        {
+          "artifactType": "dataset_release_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-release-gate-report.json",
+          "hash": "sha256:cfd8689ddeac874f50eaa7045174c38652b6359528d834be2e551ea86ae0a39c"
+        },
+        {
+          "artifactType": "governed_data_products_manifest",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/dataset-manifest.json",
+          "hash": "sha256:773f64ac0b366565114179cb3a5ca05ebe1af722f0414b54a5583547feaf4383"
+        },
+        {
+          "artifactType": "data_governance_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/governance/data-governance-gate-report.json",
+          "hash": "sha256:7afd079117bd635c0dc6049a8e95f93d7e276ddaba898618e4a992ce1b2ed872"
+        },
+        {
+          "artifactType": "confirmation_projection",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html",
+          "hash": "sha256:b8586e35f79f98bfd302242cfa1dd8e4741fe790f48b277768cda2ec975285f1"
+        },
+        {
+          "artifactType": "observability_extension",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/production-loop-16-subsystems-extension.json",
+          "hash": "sha256:1213c66d23c4cd52725e36124a628eda45cc15079fff87850fea374d1b8ae5bc"
         },
         {
           "artifactType": "command_run_report",
@@ -1865,6 +1910,36 @@
           "sourceOfTruthRole": "evidence",
           "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-CLOSURE-RECONCILIATION/trace-closure-reconciliation-001/CMD-TRACE-CLOSURE-RECONCILIATION-ENCODING.log",
           "hash": "sha256:7b4678dcfbdde86ee44cc144278a84454db0c18c79191a9d464d01f27d437304"
+        },
+        {
+          "artifactType": "command_evidence",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/command-evidence-final.json",
+          "hash": "sha256:6682ac137b3b4047a3862faad408f834edbd9dd4959d8832f6eed156caf7fd3b"
+        },
+        {
+          "artifactType": "dataset_release_manifest",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-manifest.json",
+          "hash": "sha256:48ccda443c83b170d6d8218f8d09dfa965cf0fe3608c1c06d89a1c402e13d569"
+        },
+        {
+          "artifactType": "dataset_release_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-release-gate-report.json",
+          "hash": "sha256:cfd8689ddeac874f50eaa7045174c38652b6359528d834be2e551ea86ae0a39c"
+        },
+        {
+          "artifactType": "training_run_metadata",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/training-run.json",
+          "hash": "sha256:6c3c57708d0e3d6239f91c47a9df89209cb0ba75aadd1c6b6189e96895e025d6"
+        },
+        {
+          "artifactType": "post_training_eval_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/eval-report.json",
+          "hash": "sha256:6df8389c3f6464ffa0941add26ecea348fbadf845f003ca0ce40495a369956c4"
         }
       ],
       "blockingReason": null
@@ -4102,6 +4177,438 @@
       "blockingReason": null
     },
     {
+      "id": "EVD-039",
+      "status": "pass",
+      "closed": true,
+      "latestClosureRecordedAt": "2026-05-20T17:14:43.016Z",
+      "executionIterationIds": [
+        "exec-TRACE030-extension-refresh-20260520T170000Z",
+        "exec-TRACE030-current-20260520T171500Z"
+      ],
+      "commandIds": [
+        "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE-STALE-HASH-PREFLIGHT",
+        "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+        "CMD-DATASET-RELEASE-GATE"
+      ],
+      "artifactRefs": [
+        {
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/diff-summary.md",
+          "hash": "sha256:5731c495f936ecc11b410acdaa9a569bb1d7faa48dbdf696fc499157ce829b90"
+        },
+        {
+          "artifactType": "negative_assertion_evidence",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/negative-assertions.json",
+          "hash": "sha256:9ee691124f59f1e3dcc15388824e8c443ae9863e977a835fc53110b70991b908"
+        },
+        {
+          "artifactType": "command_evidence",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/command-evidence-final.json",
+          "hash": "sha256:6682ac137b3b4047a3862faad408f834edbd9dd4959d8832f6eed156caf7fd3b"
+        },
+        {
+          "artifactType": "training_run_metadata",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/training-run.json",
+          "hash": "sha256:6c3c57708d0e3d6239f91c47a9df89209cb0ba75aadd1c6b6189e96895e025d6"
+        },
+        {
+          "artifactType": "post_training_eval_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/eval-report.json",
+          "hash": "sha256:6df8389c3f6464ffa0941add26ecea348fbadf845f003ca0ce40495a369956c4"
+        },
+        {
+          "artifactType": "production_subsystem_acceptance_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/production-loop-ready-report.json",
+          "hash": "sha256:4392378b0cf637f19e5107d748f48462f5bb1636083604dad2dc56ec5b878121"
+        },
+        {
+          "artifactType": "dataset_release_manifest",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-manifest.json",
+          "hash": "sha256:48ccda443c83b170d6d8218f8d09dfa965cf0fe3608c1c06d89a1c402e13d569"
+        },
+        {
+          "artifactType": "dataset_release_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-release-gate-report.json",
+          "hash": "sha256:cfd8689ddeac874f50eaa7045174c38652b6359528d834be2e551ea86ae0a39c"
+        },
+        {
+          "artifactType": "governed_data_products_manifest",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/dataset-manifest.json",
+          "hash": "sha256:773f64ac0b366565114179cb3a5ca05ebe1af722f0414b54a5583547feaf4383"
+        },
+        {
+          "artifactType": "data_governance_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/governance/data-governance-gate-report.json",
+          "hash": "sha256:7afd079117bd635c0dc6049a8e95f93d7e276ddaba898618e4a992ce1b2ed872"
+        },
+        {
+          "artifactType": "confirmation_projection",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html",
+          "hash": "sha256:b8586e35f79f98bfd302242cfa1dd8e4741fe790f48b277768cda2ec975285f1"
+        },
+        {
+          "artifactType": "observability_extension",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/production-loop-16-subsystems-extension.json",
+          "hash": "sha256:1213c66d23c4cd52725e36124a628eda45cc15079fff87850fea374d1b8ae5bc"
+        },
+        {
+          "artifactType": "command_evidence",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/command-evidence.json",
+          "hash": "sha256:5fdb280a2c0c9cf61a963dfd02b847e5ea92748ce8b9da9d844c6fbea89ffb3e"
+        },
+        {
+          "artifactType": "command_evidence",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/command-evidence-final.json",
+          "hash": "sha256:6682ac137b3b4047a3862faad408f834edbd9dd4959d8832f6eed156caf7fd3b"
+        },
+        {
+          "artifactType": "production_subsystem_acceptance_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/production-loop-ready-report.json",
+          "hash": "sha256:4392378b0cf637f19e5107d748f48462f5bb1636083604dad2dc56ec5b878121"
+        },
+        {
+          "artifactType": "observability_extension",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/production-loop-16-subsystems-extension.json",
+          "hash": "sha256:1213c66d23c4cd52725e36124a628eda45cc15079fff87850fea374d1b8ae5bc"
+        },
+        {
+          "artifactType": "command_evidence",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/command-evidence-final.json",
+          "hash": "sha256:6682ac137b3b4047a3862faad408f834edbd9dd4959d8832f6eed156caf7fd3b"
+        },
+        {
+          "artifactType": "dataset_release_manifest",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-manifest.json",
+          "hash": "sha256:48ccda443c83b170d6d8218f8d09dfa965cf0fe3608c1c06d89a1c402e13d569"
+        },
+        {
+          "artifactType": "dataset_release_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-release-gate-report.json",
+          "hash": "sha256:cfd8689ddeac874f50eaa7045174c38652b6359528d834be2e551ea86ae0a39c"
+        },
+        {
+          "artifactType": "training_run_metadata",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/training-run.json",
+          "hash": "sha256:6c3c57708d0e3d6239f91c47a9df89209cb0ba75aadd1c6b6189e96895e025d6"
+        },
+        {
+          "artifactType": "post_training_eval_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/eval-report.json",
+          "hash": "sha256:6df8389c3f6464ffa0941add26ecea348fbadf845f003ca0ce40495a369956c4"
+        }
+      ],
+      "blockingReason": null
+    },
+    {
+      "id": "EVD-040",
+      "status": "pass",
+      "closed": true,
+      "latestClosureRecordedAt": "2026-05-20T17:14:43.016Z",
+      "executionIterationIds": [
+        "exec-TRACE030-extension-refresh-20260520T170000Z",
+        "exec-TRACE030-current-20260520T171500Z"
+      ],
+      "commandIds": [
+        "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE-STALE-HASH-PREFLIGHT",
+        "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+        "CMD-DATASET-RELEASE-GATE"
+      ],
+      "artifactRefs": [
+        {
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/diff-summary.md",
+          "hash": "sha256:5731c495f936ecc11b410acdaa9a569bb1d7faa48dbdf696fc499157ce829b90"
+        },
+        {
+          "artifactType": "negative_assertion_evidence",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/negative-assertions.json",
+          "hash": "sha256:9ee691124f59f1e3dcc15388824e8c443ae9863e977a835fc53110b70991b908"
+        },
+        {
+          "artifactType": "command_evidence",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/command-evidence-final.json",
+          "hash": "sha256:6682ac137b3b4047a3862faad408f834edbd9dd4959d8832f6eed156caf7fd3b"
+        },
+        {
+          "artifactType": "training_run_metadata",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/training-run.json",
+          "hash": "sha256:6c3c57708d0e3d6239f91c47a9df89209cb0ba75aadd1c6b6189e96895e025d6"
+        },
+        {
+          "artifactType": "post_training_eval_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/eval-report.json",
+          "hash": "sha256:6df8389c3f6464ffa0941add26ecea348fbadf845f003ca0ce40495a369956c4"
+        },
+        {
+          "artifactType": "production_subsystem_acceptance_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/production-loop-ready-report.json",
+          "hash": "sha256:4392378b0cf637f19e5107d748f48462f5bb1636083604dad2dc56ec5b878121"
+        },
+        {
+          "artifactType": "dataset_release_manifest",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-manifest.json",
+          "hash": "sha256:48ccda443c83b170d6d8218f8d09dfa965cf0fe3608c1c06d89a1c402e13d569"
+        },
+        {
+          "artifactType": "dataset_release_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-release-gate-report.json",
+          "hash": "sha256:cfd8689ddeac874f50eaa7045174c38652b6359528d834be2e551ea86ae0a39c"
+        },
+        {
+          "artifactType": "governed_data_products_manifest",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/dataset-manifest.json",
+          "hash": "sha256:773f64ac0b366565114179cb3a5ca05ebe1af722f0414b54a5583547feaf4383"
+        },
+        {
+          "artifactType": "data_governance_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/governance/data-governance-gate-report.json",
+          "hash": "sha256:7afd079117bd635c0dc6049a8e95f93d7e276ddaba898618e4a992ce1b2ed872"
+        },
+        {
+          "artifactType": "confirmation_projection",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html",
+          "hash": "sha256:b8586e35f79f98bfd302242cfa1dd8e4741fe790f48b277768cda2ec975285f1"
+        },
+        {
+          "artifactType": "observability_extension",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/production-loop-16-subsystems-extension.json",
+          "hash": "sha256:1213c66d23c4cd52725e36124a628eda45cc15079fff87850fea374d1b8ae5bc"
+        },
+        {
+          "artifactType": "command_evidence",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/command-evidence.json",
+          "hash": "sha256:5fdb280a2c0c9cf61a963dfd02b847e5ea92748ce8b9da9d844c6fbea89ffb3e"
+        },
+        {
+          "artifactType": "command_evidence",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/command-evidence-final.json",
+          "hash": "sha256:6682ac137b3b4047a3862faad408f834edbd9dd4959d8832f6eed156caf7fd3b"
+        },
+        {
+          "artifactType": "production_subsystem_acceptance_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/production-loop-ready-report.json",
+          "hash": "sha256:4392378b0cf637f19e5107d748f48462f5bb1636083604dad2dc56ec5b878121"
+        },
+        {
+          "artifactType": "observability_extension",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/production-loop-16-subsystems-extension.json",
+          "hash": "sha256:1213c66d23c4cd52725e36124a628eda45cc15079fff87850fea374d1b8ae5bc"
+        },
+        {
+          "artifactType": "command_evidence",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/command-evidence-final.json",
+          "hash": "sha256:6682ac137b3b4047a3862faad408f834edbd9dd4959d8832f6eed156caf7fd3b"
+        },
+        {
+          "artifactType": "dataset_release_manifest",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-manifest.json",
+          "hash": "sha256:48ccda443c83b170d6d8218f8d09dfa965cf0fe3608c1c06d89a1c402e13d569"
+        },
+        {
+          "artifactType": "dataset_release_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-release-gate-report.json",
+          "hash": "sha256:cfd8689ddeac874f50eaa7045174c38652b6359528d834be2e551ea86ae0a39c"
+        },
+        {
+          "artifactType": "training_run_metadata",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/training-run.json",
+          "hash": "sha256:6c3c57708d0e3d6239f91c47a9df89209cb0ba75aadd1c6b6189e96895e025d6"
+        },
+        {
+          "artifactType": "post_training_eval_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/eval-report.json",
+          "hash": "sha256:6df8389c3f6464ffa0941add26ecea348fbadf845f003ca0ce40495a369956c4"
+        }
+      ],
+      "blockingReason": null
+    },
+    {
+      "id": "EVD-043",
+      "status": "pass",
+      "closed": true,
+      "latestClosureRecordedAt": "2026-05-20T17:14:43.016Z",
+      "executionIterationIds": [
+        "exec-TRACE030-extension-refresh-20260520T170000Z",
+        "exec-TRACE030-current-20260520T171500Z"
+      ],
+      "commandIds": [
+        "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE-STALE-HASH-PREFLIGHT",
+        "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+        "CMD-DATASET-RELEASE-GATE"
+      ],
+      "artifactRefs": [
+        {
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/diff-summary.md",
+          "hash": "sha256:5731c495f936ecc11b410acdaa9a569bb1d7faa48dbdf696fc499157ce829b90"
+        },
+        {
+          "artifactType": "negative_assertion_evidence",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/negative-assertions.json",
+          "hash": "sha256:9ee691124f59f1e3dcc15388824e8c443ae9863e977a835fc53110b70991b908"
+        },
+        {
+          "artifactType": "command_evidence",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/command-evidence-final.json",
+          "hash": "sha256:6682ac137b3b4047a3862faad408f834edbd9dd4959d8832f6eed156caf7fd3b"
+        },
+        {
+          "artifactType": "training_run_metadata",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/training-run.json",
+          "hash": "sha256:6c3c57708d0e3d6239f91c47a9df89209cb0ba75aadd1c6b6189e96895e025d6"
+        },
+        {
+          "artifactType": "post_training_eval_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/eval-report.json",
+          "hash": "sha256:6df8389c3f6464ffa0941add26ecea348fbadf845f003ca0ce40495a369956c4"
+        },
+        {
+          "artifactType": "production_subsystem_acceptance_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/production-loop-ready-report.json",
+          "hash": "sha256:4392378b0cf637f19e5107d748f48462f5bb1636083604dad2dc56ec5b878121"
+        },
+        {
+          "artifactType": "dataset_release_manifest",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-manifest.json",
+          "hash": "sha256:48ccda443c83b170d6d8218f8d09dfa965cf0fe3608c1c06d89a1c402e13d569"
+        },
+        {
+          "artifactType": "dataset_release_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-release-gate-report.json",
+          "hash": "sha256:cfd8689ddeac874f50eaa7045174c38652b6359528d834be2e551ea86ae0a39c"
+        },
+        {
+          "artifactType": "governed_data_products_manifest",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/dataset-manifest.json",
+          "hash": "sha256:773f64ac0b366565114179cb3a5ca05ebe1af722f0414b54a5583547feaf4383"
+        },
+        {
+          "artifactType": "data_governance_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/governance/data-governance-gate-report.json",
+          "hash": "sha256:7afd079117bd635c0dc6049a8e95f93d7e276ddaba898618e4a992ce1b2ed872"
+        },
+        {
+          "artifactType": "confirmation_projection",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html",
+          "hash": "sha256:b8586e35f79f98bfd302242cfa1dd8e4741fe790f48b277768cda2ec975285f1"
+        },
+        {
+          "artifactType": "observability_extension",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/production-loop-16-subsystems-extension.json",
+          "hash": "sha256:1213c66d23c4cd52725e36124a628eda45cc15079fff87850fea374d1b8ae5bc"
+        },
+        {
+          "artifactType": "command_evidence",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/command-evidence.json",
+          "hash": "sha256:5fdb280a2c0c9cf61a963dfd02b847e5ea92748ce8b9da9d844c6fbea89ffb3e"
+        },
+        {
+          "artifactType": "command_evidence",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/command-evidence-final.json",
+          "hash": "sha256:6682ac137b3b4047a3862faad408f834edbd9dd4959d8832f6eed156caf7fd3b"
+        },
+        {
+          "artifactType": "production_subsystem_acceptance_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/production-loop-ready-report.json",
+          "hash": "sha256:4392378b0cf637f19e5107d748f48462f5bb1636083604dad2dc56ec5b878121"
+        },
+        {
+          "artifactType": "observability_extension",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/production-loop-16-subsystems-extension.json",
+          "hash": "sha256:1213c66d23c4cd52725e36124a628eda45cc15079fff87850fea374d1b8ae5bc"
+        },
+        {
+          "artifactType": "command_evidence",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/command-evidence-final.json",
+          "hash": "sha256:6682ac137b3b4047a3862faad408f834edbd9dd4959d8832f6eed156caf7fd3b"
+        },
+        {
+          "artifactType": "dataset_release_manifest",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-manifest.json",
+          "hash": "sha256:48ccda443c83b170d6d8218f8d09dfa965cf0fe3608c1c06d89a1c402e13d569"
+        },
+        {
+          "artifactType": "dataset_release_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-release-gate-report.json",
+          "hash": "sha256:cfd8689ddeac874f50eaa7045174c38652b6359528d834be2e551ea86ae0a39c"
+        },
+        {
+          "artifactType": "training_run_metadata",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/training-run.json",
+          "hash": "sha256:6c3c57708d0e3d6239f91c47a9df89209cb0ba75aadd1c6b6189e96895e025d6"
+        },
+        {
+          "artifactType": "post_training_eval_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/eval-report.json",
+          "hash": "sha256:6df8389c3f6464ffa0941add26ecea348fbadf845f003ca0ce40495a369956c4"
+        }
+      ],
+      "blockingReason": null
+    },
+    {
       "id": "EVD-048",
       "status": "pass",
       "closed": true,
@@ -4471,7 +4978,7 @@
       "id": "MUST-017",
       "status": "pass",
       "closed": true,
-      "latestClosureRecordedAt": "2026-05-19T21:34:00.000+08:00",
+      "latestClosureRecordedAt": "2026-05-20T17:14:43.016Z",
       "executionIterationIds": [],
       "commandIds": [],
       "artifactRefs": [],
@@ -4682,6 +5189,36 @@
       "status": "pass",
       "closed": true,
       "latestClosureRecordedAt": "2026-05-19T18:08:32.703Z",
+      "executionIterationIds": [],
+      "commandIds": [],
+      "artifactRefs": [],
+      "blockingReason": null
+    },
+    {
+      "id": "MUST-039",
+      "status": "pass",
+      "closed": true,
+      "latestClosureRecordedAt": "2026-05-20T17:14:43.016Z",
+      "executionIterationIds": [],
+      "commandIds": [],
+      "artifactRefs": [],
+      "blockingReason": null
+    },
+    {
+      "id": "MUST-040",
+      "status": "pass",
+      "closed": true,
+      "latestClosureRecordedAt": "2026-05-20T17:14:43.016Z",
+      "executionIterationIds": [],
+      "commandIds": [],
+      "artifactRefs": [],
+      "blockingReason": null
+    },
+    {
+      "id": "MUST-043",
+      "status": "pass",
+      "closed": true,
+      "latestClosureRecordedAt": "2026-05-20T17:14:43.016Z",
       "executionIterationIds": [],
       "commandIds": [],
       "artifactRefs": [],
@@ -4998,6 +5535,36 @@
       "blockingReason": null
     },
     {
+      "id": "NEG-028",
+      "status": "pass",
+      "closed": true,
+      "latestClosureRecordedAt": "2026-05-20T17:14:43.016Z",
+      "executionIterationIds": [],
+      "commandIds": [],
+      "artifactRefs": [],
+      "blockingReason": null
+    },
+    {
+      "id": "NEG-030",
+      "status": "pass",
+      "closed": true,
+      "latestClosureRecordedAt": "2026-05-20T17:14:43.016Z",
+      "executionIterationIds": [],
+      "commandIds": [],
+      "artifactRefs": [],
+      "blockingReason": null
+    },
+    {
+      "id": "NEG-031",
+      "status": "pass",
+      "closed": true,
+      "latestClosureRecordedAt": "2026-05-20T17:14:43.016Z",
+      "executionIterationIds": [],
+      "commandIds": [],
+      "artifactRefs": [],
+      "blockingReason": null
+    },
+    {
       "id": "NEG-038",
       "status": "pass",
       "closed": true,
@@ -5242,6 +5809,26 @@
       "status": "pass",
       "closed": true,
       "latestClosureRecordedAt": "2026-05-19T18:08:32.703Z",
+      "executionIterationIds": [],
+      "commandIds": [],
+      "artifactRefs": [],
+      "blockingReason": null
+    },
+    {
+      "id": "OUT-023",
+      "status": "pass",
+      "closed": true,
+      "latestClosureRecordedAt": "2026-05-20T17:14:43.016Z",
+      "executionIterationIds": [],
+      "commandIds": [],
+      "artifactRefs": [],
+      "blockingReason": null
+    },
+    {
+      "id": "OUT-025",
+      "status": "pass",
+      "closed": true,
+      "latestClosureRecordedAt": "2026-05-20T17:14:43.016Z",
       "executionIterationIds": [],
       "commandIds": [],
       "artifactRefs": [],
@@ -7946,6 +8533,150 @@
           "sourceOfTruthRole": "evidence",
           "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-CLOSURE-RECONCILIATION/trace-closure-reconciliation-001/CMD-TRACE-CLOSURE-RECONCILIATION-ENCODING.log",
           "hash": "sha256:7b4678dcfbdde86ee44cc144278a84454db0c18c79191a9d464d01f27d437304"
+        }
+      ],
+      "blockingReason": null
+    },
+    {
+      "id": "TRACE-030",
+      "status": "pass",
+      "closed": true,
+      "latestClosureRecordedAt": "2026-05-20T17:14:43.016Z",
+      "executionIterationIds": [
+        "exec-TRACE030-extension-refresh-20260520T170000Z",
+        "exec-TRACE030-current-20260520T171500Z"
+      ],
+      "commandIds": [
+        "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE-STALE-HASH-PREFLIGHT",
+        "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+        "CMD-DATASET-RELEASE-GATE"
+      ],
+      "artifactRefs": [
+        {
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/diff-summary.md",
+          "hash": "sha256:5731c495f936ecc11b410acdaa9a569bb1d7faa48dbdf696fc499157ce829b90"
+        },
+        {
+          "artifactType": "negative_assertion_evidence",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/negative-assertions.json",
+          "hash": "sha256:9ee691124f59f1e3dcc15388824e8c443ae9863e977a835fc53110b70991b908"
+        },
+        {
+          "artifactType": "command_evidence",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/command-evidence-final.json",
+          "hash": "sha256:6682ac137b3b4047a3862faad408f834edbd9dd4959d8832f6eed156caf7fd3b"
+        },
+        {
+          "artifactType": "training_run_metadata",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/training-run.json",
+          "hash": "sha256:6c3c57708d0e3d6239f91c47a9df89209cb0ba75aadd1c6b6189e96895e025d6"
+        },
+        {
+          "artifactType": "post_training_eval_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/eval-report.json",
+          "hash": "sha256:6df8389c3f6464ffa0941add26ecea348fbadf845f003ca0ce40495a369956c4"
+        },
+        {
+          "artifactType": "production_subsystem_acceptance_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/production-loop-ready-report.json",
+          "hash": "sha256:4392378b0cf637f19e5107d748f48462f5bb1636083604dad2dc56ec5b878121"
+        },
+        {
+          "artifactType": "dataset_release_manifest",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-manifest.json",
+          "hash": "sha256:48ccda443c83b170d6d8218f8d09dfa965cf0fe3608c1c06d89a1c402e13d569"
+        },
+        {
+          "artifactType": "dataset_release_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-release-gate-report.json",
+          "hash": "sha256:cfd8689ddeac874f50eaa7045174c38652b6359528d834be2e551ea86ae0a39c"
+        },
+        {
+          "artifactType": "governed_data_products_manifest",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/dataset-manifest.json",
+          "hash": "sha256:773f64ac0b366565114179cb3a5ca05ebe1af722f0414b54a5583547feaf4383"
+        },
+        {
+          "artifactType": "data_governance_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/governance/data-governance-gate-report.json",
+          "hash": "sha256:7afd079117bd635c0dc6049a8e95f93d7e276ddaba898618e4a992ce1b2ed872"
+        },
+        {
+          "artifactType": "confirmation_projection",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html",
+          "hash": "sha256:b8586e35f79f98bfd302242cfa1dd8e4741fe790f48b277768cda2ec975285f1"
+        },
+        {
+          "artifactType": "observability_extension",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/production-loop-16-subsystems-extension.json",
+          "hash": "sha256:1213c66d23c4cd52725e36124a628eda45cc15079fff87850fea374d1b8ae5bc"
+        },
+        {
+          "artifactType": "command_evidence",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/command-evidence.json",
+          "hash": "sha256:5fdb280a2c0c9cf61a963dfd02b847e5ea92748ce8b9da9d844c6fbea89ffb3e"
+        },
+        {
+          "artifactType": "command_evidence",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/command-evidence-final.json",
+          "hash": "sha256:6682ac137b3b4047a3862faad408f834edbd9dd4959d8832f6eed156caf7fd3b"
+        },
+        {
+          "artifactType": "production_subsystem_acceptance_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/production-loop-ready-report.json",
+          "hash": "sha256:4392378b0cf637f19e5107d748f48462f5bb1636083604dad2dc56ec5b878121"
+        },
+        {
+          "artifactType": "observability_extension",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/production-loop-16-subsystems-extension.json",
+          "hash": "sha256:1213c66d23c4cd52725e36124a628eda45cc15079fff87850fea374d1b8ae5bc"
+        },
+        {
+          "artifactType": "command_evidence",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/command-evidence-final.json",
+          "hash": "sha256:6682ac137b3b4047a3862faad408f834edbd9dd4959d8832f6eed156caf7fd3b"
+        },
+        {
+          "artifactType": "dataset_release_manifest",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-manifest.json",
+          "hash": "sha256:48ccda443c83b170d6d8218f8d09dfa965cf0fe3608c1c06d89a1c402e13d569"
+        },
+        {
+          "artifactType": "dataset_release_gate_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-release-gate-report.json",
+          "hash": "sha256:cfd8689ddeac874f50eaa7045174c38652b6359528d834be2e551ea86ae0a39c"
+        },
+        {
+          "artifactType": "training_run_metadata",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/training-run.json",
+          "hash": "sha256:6c3c57708d0e3d6239f91c47a9df89209cb0ba75aadd1c6b6189e96895e025d6"
+        },
+        {
+          "artifactType": "post_training_eval_report",
+          "sourceOfTruthRole": "evidence",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/eval-report.json",
+          "hash": "sha256:6df8389c3f6464ffa0941add26ecea348fbadf845f003ca0ce40495a369956c4"
         }
       ],
       "blockingReason": null

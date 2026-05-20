@@ -1,0 +1,983 @@
+{
+  "eventType": "execution_iteration_recorded",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "executionIterationId": "exec-TRACE030-current-20260520T171500Z",
+  "runId": "run-TRACE030-current-20260520T170000Z",
+  "status": "done",
+  "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+  "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+  "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+  "traceRows": [
+    "TRACE-030"
+  ],
+  "taskRefs": [
+    "TASK-PRODUCTION-SUBSYSTEM-ACCEPTANCE"
+  ],
+  "evidenceRefs": [
+    "EVD-014",
+    "EVD-039",
+    "EVD-040",
+    "EVD-043"
+  ],
+  "filesChanged": [
+    "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/production-loop-16-subsystems-extension.json",
+    "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/training-run.json",
+    "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/eval-report.json",
+    "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/command-evidence-final.json",
+    "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/production-loop-ready-report.json",
+    "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-manifest.json",
+    "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-release-gate-report.json",
+    "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/dataset-manifest.json",
+    "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/governance/data-governance-gate-report.json"
+  ],
+  "implementationDelta": {
+    "filesChanged": [
+      "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/production-loop-16-subsystems-extension.json",
+      "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/training-run.json",
+      "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/eval-report.json",
+      "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/command-evidence-final.json",
+      "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/production-loop-ready-report.json",
+      "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-manifest.json",
+      "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-release-gate-report.json",
+      "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/dataset-manifest.json",
+      "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/governance/data-governance-gate-report.json"
+    ],
+    "diffSummaryRef": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/diff-summary.md",
+    "behaviorAffecting": true,
+    "negativeAssertionArtifactRefs": [
+      {
+        "artifactType": "negative_assertion_evidence",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/negative-assertions.json",
+        "hash": "sha256:9ee691124f59f1e3dcc15388824e8c443ae9863e977a835fc53110b70991b908",
+        "producer": "TRACE-030 current implementation run",
+        "purpose": "record TRACE-030 stale hash and regression negative assertions",
+        "relatedRequirementIds": [
+          "MUST-017",
+          "MUST-039",
+          "MUST-040",
+          "MUST-043",
+          "NEG-028",
+          "NEG-030",
+          "NEG-031",
+          "OUT-023",
+          "OUT-025",
+          "EVD-014",
+          "EVD-039",
+          "EVD-040",
+          "EVD-043",
+          "TRACE-030"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+        "outputVersion": "negative_assertion_evidence-trace-030-current-v1"
+      },
+      {
+        "artifactType": "command_evidence",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/command-evidence-final.json",
+        "hash": "sha256:6682ac137b3b4047a3862faad408f834edbd9dd4959d8832f6eed156caf7fd3b",
+        "producer": "TRACE-030 current implementation run",
+        "purpose": "record TRACE-030 current command evidence and output summaries",
+        "relatedRequirementIds": [
+          "MUST-017",
+          "MUST-039",
+          "MUST-040",
+          "MUST-043",
+          "NEG-028",
+          "NEG-030",
+          "NEG-031",
+          "OUT-023",
+          "OUT-025",
+          "EVD-014",
+          "EVD-039",
+          "EVD-040",
+          "EVD-043",
+          "TRACE-030"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+        "outputVersion": "command_evidence-trace-030-current-v1"
+      }
+    ]
+  },
+  "diffSummary": "Close TRACE-030 with current-hash 16-subsystem production acceptance, dataset release, functional parity, stale-hash negative evidence, and recurring contract validation.",
+  "commandRuns": [
+    {
+      "commandId": "CMD-DATA-PRODUCTS-REFRESH",
+      "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-governed-data-products.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data --generated-by codex --json",
+      "runId": "run-TRACE030-current-20260520T170000Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE030-current-20260520T170000Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T17:08:00.000Z",
+      "completedAt": "2026-05-20T17:08:03.000Z",
+      "outputSummary": "governed data products regenerated from current requirement-record; canonicalSamples=39; sampleRoutes=45"
+    },
+    {
+      "commandId": "CMD-DATA-GOVERNANCE-GATE",
+      "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-data-governance-gate.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --data-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/governance --generated-by codex --json",
+      "runId": "run-TRACE030-current-20260520T170000Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE030-current-20260520T170000Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T17:08:04.000Z",
+      "completedAt": "2026-05-20T17:08:07.000Z",
+      "outputSummary": "decision=pass"
+    },
+    {
+      "commandId": "CMD-DATASET-RELEASE-GATE",
+      "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-dataset-release-gate.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --data-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data --governance-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/governance --out-dir _bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1 --dataset-id req-closed-loop-design-governed-sft --dataset-version v1 --training-run _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/training-run.json --eval-report _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/eval-report.json --generated-by codex --json",
+      "runId": "run-TRACE030-current-20260520T170000Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE030-current-20260520T170000Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T17:08:08.000Z",
+      "completedAt": "2026-05-20T17:08:11.000Z",
+      "outputSummary": "decision=pass; blockingIssues=[]"
+    },
+    {
+      "commandId": "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+      "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-production-loop-ready-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/production-loop-ready-report.json --evaluated-by codex --json",
+      "runId": "run-TRACE030-current-20260520T170000Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE030-current-20260520T170000Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T17:08:12.000Z",
+      "completedAt": "2026-05-20T17:08:15.000Z",
+      "outputSummary": "decision=pass; blockingReasons=[]"
+    },
+    {
+      "commandId": "CMD-RENDER-CONFIRMATION",
+      "command": "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json",
+      "runId": "run-TRACE030-current-20260520T170000Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE030-current-20260520T170000Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T17:12:39.000Z",
+      "completedAt": "2026-05-20T17:12:40.000Z",
+      "outputSummary": "blockingIssues=[]; counts.traceRows=39"
+    },
+    {
+      "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+      "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+      "runId": "run-TRACE030-current-20260520T170000Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE030-current-20260520T170000Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T17:12:50.000Z",
+      "completedAt": "2026-05-20T17:12:57.000Z",
+      "outputSummary": "38 tests passed"
+    },
+    {
+      "commandId": "CMD-ENCODING-GATE",
+      "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+      "runId": "run-TRACE030-current-20260520T170000Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE030-current-20260520T170000Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T17:13:00.000Z",
+      "completedAt": "2026-05-20T17:13:03.000Z",
+      "outputSummary": "checkedFiles=2772 findings=0"
+    }
+  ],
+  "artifactRefs": [
+    {
+      "artifactType": "diff_summary",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/diff-summary.md",
+      "hash": "sha256:5731c495f936ecc11b410acdaa9a569bb1d7faa48dbdf696fc499157ce829b90",
+      "producer": "TRACE-030 current implementation run",
+      "purpose": "summarize TRACE-030 current hash extension refresh",
+      "relatedRequirementIds": [
+        "MUST-017",
+        "MUST-039",
+        "MUST-040",
+        "MUST-043",
+        "NEG-028",
+        "NEG-030",
+        "NEG-031",
+        "OUT-023",
+        "OUT-025",
+        "EVD-014",
+        "EVD-039",
+        "EVD-040",
+        "EVD-043",
+        "TRACE-030"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "diff_summary-trace-030-current-v1"
+    },
+    {
+      "artifactType": "negative_assertion_evidence",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/negative-assertions.json",
+      "hash": "sha256:9ee691124f59f1e3dcc15388824e8c443ae9863e977a835fc53110b70991b908",
+      "producer": "TRACE-030 current implementation run",
+      "purpose": "record TRACE-030 stale hash and regression negative assertions",
+      "relatedRequirementIds": [
+        "MUST-017",
+        "MUST-039",
+        "MUST-040",
+        "MUST-043",
+        "NEG-028",
+        "NEG-030",
+        "NEG-031",
+        "OUT-023",
+        "OUT-025",
+        "EVD-014",
+        "EVD-039",
+        "EVD-040",
+        "EVD-043",
+        "TRACE-030"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "negative_assertion_evidence-trace-030-current-v1"
+    },
+    {
+      "artifactType": "command_evidence",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/command-evidence-final.json",
+      "hash": "sha256:6682ac137b3b4047a3862faad408f834edbd9dd4959d8832f6eed156caf7fd3b",
+      "producer": "TRACE-030 current implementation run",
+      "purpose": "record TRACE-030 current command evidence and output summaries",
+      "relatedRequirementIds": [
+        "MUST-017",
+        "MUST-039",
+        "MUST-040",
+        "MUST-043",
+        "NEG-028",
+        "NEG-030",
+        "NEG-031",
+        "OUT-023",
+        "OUT-025",
+        "EVD-014",
+        "EVD-039",
+        "EVD-040",
+        "EVD-043",
+        "TRACE-030"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "command_evidence-trace-030-current-v1"
+    },
+    {
+      "artifactType": "training_run_metadata",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/training-run.json",
+      "hash": "sha256:6c3c57708d0e3d6239f91c47a9df89209cb0ba75aadd1c6b6189e96895e025d6",
+      "producer": "TRACE-030 current implementation run",
+      "purpose": "bind TRACE-030 dataset release to current training run metadata",
+      "relatedRequirementIds": [
+        "MUST-017",
+        "MUST-039",
+        "MUST-040",
+        "MUST-043",
+        "NEG-028",
+        "NEG-030",
+        "NEG-031",
+        "OUT-023",
+        "OUT-025",
+        "EVD-014",
+        "EVD-039",
+        "EVD-040",
+        "EVD-043",
+        "TRACE-030"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "training_run_metadata-trace-030-current-v1"
+    },
+    {
+      "artifactType": "post_training_eval_report",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/eval-report.json",
+      "hash": "sha256:6df8389c3f6464ffa0941add26ecea348fbadf845f003ca0ce40495a369956c4",
+      "producer": "TRACE-030 current implementation run",
+      "purpose": "bind TRACE-030 dataset release to current post-training eval metadata",
+      "relatedRequirementIds": [
+        "MUST-017",
+        "MUST-039",
+        "MUST-040",
+        "MUST-043",
+        "NEG-028",
+        "NEG-030",
+        "NEG-031",
+        "OUT-023",
+        "OUT-025",
+        "EVD-014",
+        "EVD-039",
+        "EVD-040",
+        "EVD-043",
+        "TRACE-030"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "post_training_eval_report-trace-030-current-v1"
+    },
+    {
+      "artifactType": "production_subsystem_acceptance_report",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/production-loop-ready-report.json",
+      "hash": "sha256:4392378b0cf637f19e5107d748f48462f5bb1636083604dad2dc56ec5b878121",
+      "producer": "TRACE-030 current implementation run",
+      "purpose": "prove Production Loop Ready passes current 16-subsystem acceptance gate",
+      "relatedRequirementIds": [
+        "MUST-017",
+        "MUST-039",
+        "MUST-040",
+        "MUST-043",
+        "NEG-028",
+        "NEG-030",
+        "NEG-031",
+        "OUT-023",
+        "OUT-025",
+        "EVD-014",
+        "EVD-039",
+        "EVD-040",
+        "EVD-043",
+        "TRACE-030"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "production_subsystem_acceptance_report-trace-030-current-v1"
+    },
+    {
+      "artifactType": "dataset_release_manifest",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-manifest.json",
+      "hash": "sha256:48ccda443c83b170d6d8218f8d09dfa965cf0fe3608c1c06d89a1c402e13d569",
+      "producer": "TRACE-030 current implementation run",
+      "purpose": "prove dataset release manifest is bound to current hashes and 16 subsystem evidence",
+      "relatedRequirementIds": [
+        "MUST-017",
+        "MUST-039",
+        "MUST-040",
+        "MUST-043",
+        "NEG-028",
+        "NEG-030",
+        "NEG-031",
+        "OUT-023",
+        "OUT-025",
+        "EVD-014",
+        "EVD-039",
+        "EVD-040",
+        "EVD-043",
+        "TRACE-030"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "dataset_release_manifest-trace-030-current-v1"
+    },
+    {
+      "artifactType": "dataset_release_gate_report",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-release-gate-report.json",
+      "hash": "sha256:cfd8689ddeac874f50eaa7045174c38652b6359528d834be2e551ea86ae0a39c",
+      "producer": "TRACE-030 current implementation run",
+      "purpose": "prove dataset release gate passes with current training and eval binding",
+      "relatedRequirementIds": [
+        "MUST-017",
+        "MUST-039",
+        "MUST-040",
+        "MUST-043",
+        "NEG-028",
+        "NEG-030",
+        "NEG-031",
+        "OUT-023",
+        "OUT-025",
+        "EVD-014",
+        "EVD-039",
+        "EVD-040",
+        "EVD-043",
+        "TRACE-030"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "dataset_release_gate_report-trace-030-current-v1"
+    },
+    {
+      "artifactType": "governed_data_products_manifest",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/dataset-manifest.json",
+      "hash": "sha256:773f64ac0b366565114179cb3a5ca05ebe1af722f0414b54a5583547feaf4383",
+      "producer": "TRACE-030 current implementation run",
+      "purpose": "record current governed data products source manifest",
+      "relatedRequirementIds": [
+        "MUST-017",
+        "MUST-039",
+        "MUST-040",
+        "MUST-043",
+        "NEG-028",
+        "NEG-030",
+        "NEG-031",
+        "OUT-023",
+        "OUT-025",
+        "EVD-014",
+        "EVD-039",
+        "EVD-040",
+        "EVD-043",
+        "TRACE-030"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "governed_data_products_manifest-trace-030-current-v1"
+    },
+    {
+      "artifactType": "data_governance_gate_report",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/governance/data-governance-gate-report.json",
+      "hash": "sha256:7afd079117bd635c0dc6049a8e95f93d7e276ddaba898618e4a992ce1b2ed872",
+      "producer": "TRACE-030 current implementation run",
+      "purpose": "record current data governance gate pass report",
+      "relatedRequirementIds": [
+        "MUST-017",
+        "MUST-039",
+        "MUST-040",
+        "MUST-043",
+        "NEG-028",
+        "NEG-030",
+        "NEG-031",
+        "OUT-023",
+        "OUT-025",
+        "EVD-014",
+        "EVD-039",
+        "EVD-040",
+        "EVD-043",
+        "TRACE-030"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "data_governance_gate_report-trace-030-current-v1"
+    },
+    {
+      "artifactType": "confirmation_projection",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html",
+      "hash": "sha256:b8586e35f79f98bfd302242cfa1dd8e4741fe790f48b277768cda2ec975285f1",
+      "producer": "TRACE-030 current implementation run",
+      "purpose": "record current confirmation page render for TRACE-030 contract validation",
+      "relatedRequirementIds": [
+        "MUST-017",
+        "MUST-039",
+        "MUST-040",
+        "MUST-043",
+        "NEG-028",
+        "NEG-030",
+        "NEG-031",
+        "OUT-023",
+        "OUT-025",
+        "EVD-014",
+        "EVD-039",
+        "EVD-040",
+        "EVD-043",
+        "TRACE-030"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "confirmation_projection-trace-030-current-v1"
+    }
+  ],
+  "extensionRefs": [
+    {
+      "artifactType": "observability_extension",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/production-loop-16-subsystems-extension.json",
+      "hash": "sha256:1213c66d23c4cd52725e36124a628eda45cc15079fff87850fea374d1b8ae5bc",
+      "producer": "TRACE-030 current implementation run",
+      "purpose": "current-hash 16-subsystem production loop readiness extension",
+      "relatedRequirementIds": [
+        "MUST-017",
+        "MUST-039",
+        "MUST-040",
+        "MUST-043",
+        "EVD-039",
+        "EVD-040",
+        "EVD-043",
+        "TRACE-030"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "production-loop-16-subsystems-extension-current-v1"
+    }
+  ],
+  "entryFlowState": {
+    "entryFlow": "standalone_tasks",
+    "entryFlowClass": "task_packet_entry",
+    "workflowAdapter": "direct",
+    "contractAuthoringRequired": true,
+    "globalContractTraceabilityPolicy": {
+      "schemaVersion": "global-contract-traceability-policy/v1",
+      "appliesToEntryFlows": [
+        "bugfix",
+        "standalone_tasks",
+        "story"
+      ],
+      "contractAuthoringRequired": true,
+      "taskBindingRequired": true,
+      "taskBindingDimensions": [
+        "MUST",
+        "NEG",
+        "OUT",
+        "EVD",
+        "TRACE"
+      ],
+      "missingBindingBehavior": "fail_closed",
+      "sourceDocumentHashRequired": true,
+      "implementationConfirmationHashRequired": true,
+      "reconfirmOnTraceSemanticChange": true,
+      "allowUnboundImplementationTask": false,
+      "taskRegistryField": "implementationTasks",
+      "traceTaskRefsMustResolveTo": "implementationTasks[].id",
+      "readinessFailureWhenUnresolved": true,
+      "closeoutFailureWhenUnresolved": true
+    },
+    "traceStatusPolicy": {
+      "schemaVersion": "trace-status-policy/v1",
+      "allowedStatuses": [
+        "PENDING",
+        "PASS",
+        "FAIL",
+        "BLOCKED",
+        "LINKED_DOWNSTREAM",
+        "USER_APPROVED_DEFERRED",
+        "USER_APPROVED_OUT_OF_SCOPE"
+      ],
+      "terminalFullCloseoutStatuses": [
+        "PASS",
+        "FAIL",
+        "BLOCKED"
+      ],
+      "linkedDownstreamRequiredFields": [
+        "downstreamRecordId",
+        "downstreamStoryRef",
+        "downstreamSourceDocumentPath",
+        "downstreamSourceDocumentHash",
+        "downstreamScopeSummary",
+        "downstreamRequirementIds",
+        "downstreamAuditEvidenceRefs"
+      ],
+      "userApprovedDeferredRequiredFields": [
+        "userApprovalRef",
+        "approvedAt",
+        "approvedBy",
+        "impactSummary",
+        "followUpRecordId",
+        "followUpDueCondition"
+      ],
+      "userApprovedOutOfScopeRequiredFields": [
+        "userApprovalRef",
+        "approvedAt",
+        "approvedBy",
+        "impactSummary",
+        "confirmationDeltaRef"
+      ],
+      "bareDeferredForbidden": true,
+      "bareOutOfScopeForbidden": true,
+      "fullCloseoutForUserScopedStatusesForbidden": true
+    }
+  },
+  "deliveryEvidence": {
+    "requiredCommands": [
+      {
+        "commandId": "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+        "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-production-loop-ready-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --report-path _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/production-loop-ready-report.json --evaluated-by codex --json",
+        "commandType": "delivery_evidence",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": [
+          "TRACE-030"
+        ],
+        "evidenceRefs": [
+          "EVD-039",
+          "EVD-040",
+          "EVD-043"
+        ],
+        "closeoutAttemptId": "closeout-attempt-TRACE030-current-20260520T170000Z",
+        "lastRunRef": {
+          "commandId": "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+          "runId": "run-TRACE030-current-20260520T170000Z",
+          "closeoutAttemptId": "closeout-attempt-TRACE030-current-20260520T170000Z",
+          "exitCode": 0,
+          "completedAt": "2026-05-20T17:08:15.000Z"
+        },
+        "artifactRefs": [
+          {
+            "artifactType": "command_evidence",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/command-evidence-final.json",
+            "hash": "sha256:6682ac137b3b4047a3862faad408f834edbd9dd4959d8832f6eed156caf7fd3b",
+            "producer": "TRACE-030 current implementation run",
+            "purpose": "record TRACE-030 current command evidence and output summaries",
+            "relatedRequirementIds": [
+              "MUST-017",
+              "MUST-039",
+              "MUST-040",
+              "MUST-043",
+              "NEG-028",
+              "NEG-030",
+              "NEG-031",
+              "OUT-023",
+              "OUT-025",
+              "EVD-014",
+              "EVD-039",
+              "EVD-040",
+              "EVD-043",
+              "TRACE-030"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "command_evidence-trace-030-current-v1"
+          },
+          {
+            "artifactType": "production_subsystem_acceptance_report",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/production-loop-ready-report.json",
+            "hash": "sha256:4392378b0cf637f19e5107d748f48462f5bb1636083604dad2dc56ec5b878121",
+            "producer": "TRACE-030 current implementation run",
+            "purpose": "prove Production Loop Ready passes current 16-subsystem acceptance gate",
+            "relatedRequirementIds": [
+              "MUST-017",
+              "MUST-039",
+              "MUST-040",
+              "MUST-043",
+              "NEG-028",
+              "NEG-030",
+              "NEG-031",
+              "OUT-023",
+              "OUT-025",
+              "EVD-014",
+              "EVD-039",
+              "EVD-040",
+              "EVD-043",
+              "TRACE-030"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "production_subsystem_acceptance_report-trace-030-current-v1"
+          },
+          {
+            "artifactType": "observability_extension",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/production-loop-16-subsystems-extension.json",
+            "hash": "sha256:1213c66d23c4cd52725e36124a628eda45cc15079fff87850fea374d1b8ae5bc",
+            "producer": "TRACE-030 current implementation run",
+            "purpose": "current-hash 16-subsystem production loop readiness extension",
+            "relatedRequirementIds": [
+              "MUST-017",
+              "MUST-039",
+              "MUST-040",
+              "MUST-043",
+              "EVD-039",
+              "EVD-040",
+              "EVD-043",
+              "TRACE-030"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "production-loop-16-subsystems-extension-current-v1"
+          }
+        ]
+      },
+      {
+        "commandId": "CMD-DATASET-RELEASE-GATE",
+        "command": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-dataset-release-gate.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --data-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data --governance-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/governance --out-dir _bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1 --dataset-id req-closed-loop-design-governed-sft --dataset-version v1 --training-run _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/training-run.json --eval-report _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/eval-report.json --generated-by codex --json",
+        "commandType": "delivery_evidence",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": [
+          "TRACE-030"
+        ],
+        "evidenceRefs": [
+          "EVD-014",
+          "EVD-039",
+          "EVD-040",
+          "EVD-043"
+        ],
+        "closeoutAttemptId": "closeout-attempt-TRACE030-current-20260520T170000Z",
+        "lastRunRef": {
+          "commandId": "CMD-DATASET-RELEASE-GATE",
+          "runId": "run-TRACE030-current-20260520T170000Z",
+          "closeoutAttemptId": "closeout-attempt-TRACE030-current-20260520T170000Z",
+          "exitCode": 0,
+          "completedAt": "2026-05-20T17:08:11.000Z"
+        },
+        "artifactRefs": [
+          {
+            "artifactType": "command_evidence",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/command-evidence-final.json",
+            "hash": "sha256:6682ac137b3b4047a3862faad408f834edbd9dd4959d8832f6eed156caf7fd3b",
+            "producer": "TRACE-030 current implementation run",
+            "purpose": "record TRACE-030 current command evidence and output summaries",
+            "relatedRequirementIds": [
+              "MUST-017",
+              "MUST-039",
+              "MUST-040",
+              "MUST-043",
+              "NEG-028",
+              "NEG-030",
+              "NEG-031",
+              "OUT-023",
+              "OUT-025",
+              "EVD-014",
+              "EVD-039",
+              "EVD-040",
+              "EVD-043",
+              "TRACE-030"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "command_evidence-trace-030-current-v1"
+          },
+          {
+            "artifactType": "dataset_release_manifest",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-manifest.json",
+            "hash": "sha256:48ccda443c83b170d6d8218f8d09dfa965cf0fe3608c1c06d89a1c402e13d569",
+            "producer": "TRACE-030 current implementation run",
+            "purpose": "prove dataset release manifest is bound to current hashes and 16 subsystem evidence",
+            "relatedRequirementIds": [
+              "MUST-017",
+              "MUST-039",
+              "MUST-040",
+              "MUST-043",
+              "NEG-028",
+              "NEG-030",
+              "NEG-031",
+              "OUT-023",
+              "OUT-025",
+              "EVD-014",
+              "EVD-039",
+              "EVD-040",
+              "EVD-043",
+              "TRACE-030"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "dataset_release_manifest-trace-030-current-v1"
+          },
+          {
+            "artifactType": "dataset_release_gate_report",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-release-gate-report.json",
+            "hash": "sha256:cfd8689ddeac874f50eaa7045174c38652b6359528d834be2e551ea86ae0a39c",
+            "producer": "TRACE-030 current implementation run",
+            "purpose": "prove dataset release gate passes with current training and eval binding",
+            "relatedRequirementIds": [
+              "MUST-017",
+              "MUST-039",
+              "MUST-040",
+              "MUST-043",
+              "NEG-028",
+              "NEG-030",
+              "NEG-031",
+              "OUT-023",
+              "OUT-025",
+              "EVD-014",
+              "EVD-039",
+              "EVD-040",
+              "EVD-043",
+              "TRACE-030"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "dataset_release_gate_report-trace-030-current-v1"
+          },
+          {
+            "artifactType": "training_run_metadata",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/training-run.json",
+            "hash": "sha256:6c3c57708d0e3d6239f91c47a9df89209cb0ba75aadd1c6b6189e96895e025d6",
+            "producer": "TRACE-030 current implementation run",
+            "purpose": "bind TRACE-030 dataset release to current training run metadata",
+            "relatedRequirementIds": [
+              "MUST-017",
+              "MUST-039",
+              "MUST-040",
+              "MUST-043",
+              "NEG-028",
+              "NEG-030",
+              "NEG-031",
+              "OUT-023",
+              "OUT-025",
+              "EVD-014",
+              "EVD-039",
+              "EVD-040",
+              "EVD-043",
+              "TRACE-030"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "training_run_metadata-trace-030-current-v1"
+          },
+          {
+            "artifactType": "post_training_eval_report",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/eval-report.json",
+            "hash": "sha256:6df8389c3f6464ffa0941add26ecea348fbadf845f003ca0ce40495a369956c4",
+            "producer": "TRACE-030 current implementation run",
+            "purpose": "bind TRACE-030 dataset release to current post-training eval metadata",
+            "relatedRequirementIds": [
+              "MUST-017",
+              "MUST-039",
+              "MUST-040",
+              "MUST-043",
+              "NEG-028",
+              "NEG-030",
+              "NEG-031",
+              "OUT-023",
+              "OUT-025",
+              "EVD-014",
+              "EVD-039",
+              "EVD-040",
+              "EVD-043",
+              "TRACE-030"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "post_training_eval_report-trace-030-current-v1"
+          }
+        ]
+      }
+    ],
+    "historicalRunRefs": [
+      {
+        "commandId": "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+        "runId": "run-TRACE030-current-20260520T170000Z",
+        "closeoutAttemptId": "closeout-attempt-TRACE030-current-20260520T170000Z"
+      },
+      {
+        "commandId": "CMD-DATASET-RELEASE-GATE",
+        "runId": "run-TRACE030-current-20260520T170000Z",
+        "closeoutAttemptId": "closeout-attempt-TRACE030-current-20260520T170000Z"
+      }
+    ]
+  },
+  "requirementClosures": [
+    {
+      "requirementId": "MUST-017",
+      "status": "pass",
+      "closureSource": "TRACE-030-current-controlled-evidence"
+    },
+    {
+      "requirementId": "MUST-039",
+      "status": "pass",
+      "closureSource": "TRACE-030-current-controlled-evidence"
+    },
+    {
+      "requirementId": "MUST-040",
+      "status": "pass",
+      "closureSource": "TRACE-030-current-controlled-evidence"
+    },
+    {
+      "requirementId": "MUST-043",
+      "status": "pass",
+      "closureSource": "TRACE-030-current-controlled-evidence"
+    },
+    {
+      "requirementId": "NEG-028",
+      "status": "pass",
+      "closureSource": "TRACE-030-current-controlled-evidence"
+    },
+    {
+      "requirementId": "NEG-030",
+      "status": "pass",
+      "closureSource": "TRACE-030-current-controlled-evidence"
+    },
+    {
+      "requirementId": "NEG-031",
+      "status": "pass",
+      "closureSource": "TRACE-030-current-controlled-evidence"
+    },
+    {
+      "requirementId": "OUT-023",
+      "status": "pass",
+      "closureSource": "TRACE-030-current-controlled-evidence"
+    },
+    {
+      "requirementId": "OUT-025",
+      "status": "pass",
+      "closureSource": "TRACE-030-current-controlled-evidence"
+    },
+    {
+      "requirementId": "EVD-014",
+      "status": "pass",
+      "closureSource": "TRACE-030-current-controlled-evidence"
+    },
+    {
+      "requirementId": "EVD-039",
+      "status": "pass",
+      "closureSource": "TRACE-030-current-controlled-evidence"
+    },
+    {
+      "requirementId": "EVD-040",
+      "status": "pass",
+      "closureSource": "TRACE-030-current-controlled-evidence"
+    },
+    {
+      "requirementId": "EVD-043",
+      "status": "pass",
+      "closureSource": "TRACE-030-current-controlled-evidence"
+    },
+    {
+      "requirementId": "TRACE-030",
+      "status": "pass",
+      "closureSource": "TRACE-030-current-controlled-evidence"
+    }
+  ],
+  "gateChecks": [
+    {
+      "gate": "Production Subsystem Acceptance Gate",
+      "decision": "pass",
+      "checkId": "TRACE-030-production-subsystem-acceptance-current"
+    },
+    {
+      "gate": "Dataset Release Gate",
+      "decision": "pass",
+      "checkId": "TRACE-030-dataset-release-current"
+    }
+  ],
+  "contractChecks": [
+    {
+      "contract": "CMD-RENDER-CONFIRMATION",
+      "decision": "pass",
+      "checkId": "TRACE-030-render-confirmation-current"
+    },
+    {
+      "contract": "CMD-TRACE-BINDING-ACCEPTANCE",
+      "decision": "pass",
+      "checkId": "TRACE-030-trace-binding-current"
+    },
+    {
+      "contract": "CMD-ENCODING-GATE",
+      "decision": "pass",
+      "checkId": "TRACE-030-encoding-current"
+    }
+  ],
+  "rerunLoops": [
+    {
+      "rerunLoopId": "rerun-TRACE030-stale-hash-refresh-20260520T170000Z",
+      "status": "resolved",
+      "sourceRefs": [
+        {
+          "sourceType": "gate_check",
+          "id": "TRACE-030-stale-hash-preflight"
+        }
+      ],
+      "blockerRefs": [
+        {
+          "blockerId": "stale_extension_dataset_hashes",
+          "status": "resolved"
+        }
+      ],
+      "recheckRefs": [
+        {
+          "sourceType": "gate_check",
+          "id": "TRACE-030-production-subsystem-acceptance-current"
+        },
+        {
+          "sourceType": "gate_check",
+          "id": "TRACE-030-dataset-release-current"
+        }
+      ]
+    }
+  ],
+  "closeoutAttemptId": "closeout-attempt-TRACE030-current-20260520T170000Z"
+}

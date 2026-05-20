@@ -1,0 +1,15 @@
+{
+  "trainingRunId": "train-REQ-CLOSED-LOOP-DESIGN-TRACE030-current-20260520T170000Z",
+  "datasetId": "req-closed-loop-design-governed-sft",
+  "datasetVersion": "v1",
+  "status": "completed",
+  "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+  "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+  "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+  "sourceDatasetManifestPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/dataset-manifest.json",
+  "sourceDatasetManifestHash": "sha256:773f64ac0b366565114179cb3a5ca05ebe1af722f0414b54a5583547feaf4383",
+  "sampleCount": 39,
+  "generatedAt": "2026-05-20T17:12:04.766Z",
+  "generatedBy": "codex",
+  "evidenceBoundary": "metadata evidence for dataset release gate; not a control source"
+}

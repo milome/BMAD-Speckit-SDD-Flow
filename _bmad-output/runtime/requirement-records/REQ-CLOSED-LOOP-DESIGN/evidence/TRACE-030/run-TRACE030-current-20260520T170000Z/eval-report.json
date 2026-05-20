@@ -1,0 +1,41 @@
+{
+  "evalReportId": "eval-REQ-CLOSED-LOOP-DESIGN-TRACE030-current-20260520T170000Z",
+  "trainingRunId": "train-REQ-CLOSED-LOOP-DESIGN-TRACE030-current-20260520T170000Z",
+  "decision": "pass",
+  "trainingLossOnly": false,
+  "datasetId": "req-closed-loop-design-governed-sft",
+  "datasetVersion": "v1",
+  "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+  "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+  "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+  "metrics": {
+    "requirement_adherence": {
+      "baseline": 0.9,
+      "current": 0.95,
+      "decision": "pass"
+    },
+    "evidence_completeness": {
+      "baseline": 0.9,
+      "current": 0.96,
+      "decision": "pass"
+    },
+    "rerun_rate": {
+      "baseline": 0.2,
+      "current": 0.1,
+      "decision": "pass"
+    },
+    "defect_escape_rate": {
+      "baseline": 0.1,
+      "current": 0.05,
+      "decision": "pass"
+    },
+    "similar_error_recurrence_rate": {
+      "baseline": 0.1,
+      "current": 0.02,
+      "decision": "pass"
+    }
+  },
+  "generatedAt": "2026-05-20T17:12:04.768Z",
+  "generatedBy": "codex",
+  "evidenceBoundary": "post-training eval metadata evidence for dataset release gate; not a control source"
+}

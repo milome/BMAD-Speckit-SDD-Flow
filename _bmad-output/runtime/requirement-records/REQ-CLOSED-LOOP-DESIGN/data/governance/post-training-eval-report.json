@@ -1,12 +1,12 @@
 {
   "reportType": "post_training_regression_report",
-  "generatedAt": "2026-05-19T20:34:00.000Z",
+  "generatedAt": "2026-05-20T17:11:40.391Z",
   "trainingRunId": null,
   "comparisonState": "baseline_frozen_training_run_required_before_dataset_release",
   "releaseDecision": "blocked_until_training_run_bound",
   "baseline": {
-    "sampleCount": 7,
-    "sampleHash": "sha256:8cd1c59c35b1d4fd03005ecddc47217c5634d6db9b801c62187de2d0deebcaf6",
+    "sampleCount": 39,
+    "sampleHash": "sha256:db384a7dcd8e9156fcf58c95d917c8493015f814552fc56bc775295757012ada",
     "requiredMetrics": [
       "requirement_adherence",
       "evidence_completeness",

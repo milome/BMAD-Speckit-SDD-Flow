@@ -1,6 +1,6 @@
 {
   "reportType": "split_report",
-  "generatedAt": "2026-05-19T20:34:00.000Z",
+  "generatedAt": "2026-05-20T17:11:40.391Z",
   "policy": {
     "evalFirst": true,
     "holdoutFrozenBeforeSftExport": true,
@@ -18,6 +18,6 @@
   },
   "groupCount": 1,
   "leakingGroups": [],
-  "holdoutRegistrySize": 4,
+  "holdoutRegistrySize": 6,
   "decision": "pass"
 }

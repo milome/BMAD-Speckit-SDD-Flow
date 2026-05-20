@@ -1,0 +1,21 @@
+{
+  "traceRow": "TRACE-030",
+  "phase": "partial_extension_registration",
+  "staleGateResult": {
+    "commandId": "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+    "decision": "blocked",
+    "blockingReasons": [
+      "dataset_manifest_source_document_hash_mismatch",
+      "dataset_manifest_implementation_hash_mismatch",
+      "dataset_manifest_architecture_hash_mismatch",
+      "extension_source_document_hash_mismatch",
+      "extension_implementation_confirmation_hash_mismatch",
+      "extension_architecture_confirmation_hash_mismatch"
+    ]
+  },
+  "generatedArtifacts": [
+    "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/production-loop-16-subsystems-extension.json",
+    "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/diff-summary.md",
+    "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/negative-assertions.json"
+  ]
+}

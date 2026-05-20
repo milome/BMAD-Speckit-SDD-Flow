@@ -3,24 +3,24 @@
   "bundle_version": "v1",
   "bundle_kind": "training",
   "export_target": "openai_chat",
-  "created_at": "2026-05-19T20:06:00.000Z",
+  "created_at": "2026-05-20T17:11:30.494Z",
   "canonical_schema_version": "v1",
   "exporter_version": "main-agent-governed-data-products.v1",
   "generator_version": "main-agent-governed-data-products.v1",
   "source_snapshot": {
     "recordId": "REQ-CLOSED-LOOP-DESIGN",
     "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
-    "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
-    "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
-    "architectureConfirmationHash": "sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
-    "artifactIndexCount": 38
+    "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+    "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+    "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+    "artifactIndexCount": 256
   },
   "source_scope": {
     "scope_type": "work_item",
     "work_item_id": "REQ-CLOSED-LOOP-DESIGN",
     "board_group_id": "requirement:REQ-CLOSED-LOOP-DESIGN"
   },
-  "export_hash": "sha256:ccf7cd9c58e52300bf8909c320f46ade736cf365f01345d1cf7a4cd33bafec78",
+  "export_hash": "sha256:a493d3d23c38249222127a36b0a0e4e4d2a36190f8f46e92f4333969ecd69b07",
   "filter_settings": {
     "min_score": 90,
     "drop_no_code_pair": true,
@@ -31,17 +31,17 @@
     "strategy": "requirement_record_hash_v1"
   },
   "counts": {
-    "total_candidates": 11,
-    "accepted": 7,
-    "rejected": 4,
+    "total_candidates": 45,
+    "accepted": 39,
+    "rejected": 6,
     "downgraded": 0,
-    "blocked": 4,
-    "train": 7,
+    "blocked": 6,
+    "train": 39,
     "validation": 0,
     "test": 0
   },
   "redaction_summary": {
-    "clean": 7,
+    "clean": 39,
     "redacted": 0,
     "blocked": 0
   },

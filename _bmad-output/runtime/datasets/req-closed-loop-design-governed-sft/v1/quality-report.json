@@ -1,9 +1,9 @@
 {
   "reportType": "dataset_quality_report",
-  "generatedAt": "2026-05-19T20:46:00.000Z",
+  "generatedAt": "2026-05-20T17:12:17.969Z",
   "decision": "pass",
-  "sampleCount": 7,
-  "rejectedRouteCount": 4,
+  "sampleCount": 39,
+  "rejectedRouteCount": 6,
   "checks": {
     "controlledSourceOnly": true,
     "acceptedCountMatchesExports": true,

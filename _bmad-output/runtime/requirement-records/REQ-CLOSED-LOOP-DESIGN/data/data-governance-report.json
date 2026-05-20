@@ -1,13 +1,13 @@
 {
   "reportType": "governed_data_products_report",
   "decision": "pass",
-  "generatedAt": "2026-05-19T20:06:00.000Z",
+  "generatedAt": "2026-05-20T17:11:30.494Z",
   "generatedBy": "codex",
   "recordId": "REQ-CLOSED-LOOP-DESIGN",
   "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
-  "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
-  "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
-  "architectureConfirmationHash": "sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+  "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+  "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+  "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
   "assertions": [
     "training data is derived from requirement-record controlled events and artifact references",
     "sampleRoutes exist before canonical samples",
@@ -24,12 +24,12 @@
     "data-governance-report.json"
   ],
   "counts": {
-    "mentorEvents": 15,
-    "sampleRoutes": 11,
-    "canonicalSamples": 7,
+    "mentorEvents": 58,
+    "sampleRoutes": 45,
+    "canonicalSamples": 39,
     "destinations": {
-      "eval": 4,
-      "sft_positive": 7
+      "eval": 6,
+      "sft_positive": 39
     }
   },
   "forbiddenDirectSourceTypes": [

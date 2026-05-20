@@ -1,0 +1,1587 @@
+{
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+  "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+  "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+  "canaryPlan": [
+    {
+      "stage": "internal",
+      "rolloutPercent": 10,
+      "rollbackOn": "production_loop_ready_blocked"
+    }
+  ],
+  "sloTargets": [
+    {
+      "name": "delivery_closeout_gate_latency",
+      "target": "<= 5000ms"
+    },
+    {
+      "name": "controlled_ingest_rejection_visibility",
+      "target": "100%"
+    }
+  ],
+  "errorRateMetrics": [
+    {
+      "name": "gate_failure_rate",
+      "threshold": "<= 1%"
+    },
+    {
+      "name": "orphan_artifact_rate",
+      "threshold": "0"
+    }
+  ],
+  "performanceMetrics": [
+    {
+      "name": "production_loop_ready_eval_duration_ms",
+      "threshold": "<= 5000"
+    }
+  ],
+  "businessMetrics": [
+    {
+      "name": "requirement_reopen_rate",
+      "threshold": "<= 5%"
+    },
+    {
+      "name": "unconfirmed_work_start_rate",
+      "threshold": "0"
+    }
+  ],
+  "alerts": [
+    {
+      "name": "production_loop_blocked",
+      "owner": "main-agent"
+    },
+    {
+      "name": "hash_drift_detected",
+      "owner": "main-agent"
+    }
+  ],
+  "rollbackConditions": [
+    {
+      "condition": "hash_mismatch_or_missing_subsystem_readiness",
+      "action": "block_closeout_and_open_rca"
+    }
+  ],
+  "feedbackRouting": {
+    "failureRecordEventTypes": [
+      "failure_recorded",
+      "gate_check_recorded"
+    ],
+    "rcaRecordEventTypes": [
+      "rca_created",
+      "rca_action_recorded"
+    ],
+    "sampleRouteOutputs": [
+      "sample-routes.jsonl",
+      "mentor-events.jsonl",
+      "canonical-samples.jsonl"
+    ]
+  },
+  "subsystemReadiness": [
+    {
+      "subsystemId": "requirement_confirmation",
+      "inputRefs": [
+        "requirement-record:REQ-CLOSED-LOOP-DESIGN",
+        "trace:TRACE-007",
+        "source:sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570"
+      ],
+      "outputRefs": [
+        "extension:requirement_confirmation:ready",
+        "evidence:EVD-010"
+      ],
+      "status": "ready",
+      "evidenceRefs": [
+        "EVD-010",
+        "EVD-009"
+      ],
+      "hash": "sha256:dab0cdda9d0e48c41b4d99f9ab1fc0ba80075e0cfd8a82b8dc7837bb178c50ec",
+      "failureHandling": {
+        "failureModes": [
+          "requirement_confirmation_unavailable",
+          "requirement_confirmation_stale_hash",
+          "requirement_confirmation_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ]
+      },
+      "currentHashBinding": {
+        "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+        "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+        "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da"
+      },
+      "functionalParity": {
+        "userVisibleBehaviorPreserved": true,
+        "regressionEvidenceRefs": [
+          "EVD-040"
+        ]
+      }
+    },
+    {
+      "subsystemId": "architecture_confirmation",
+      "inputRefs": [
+        "requirement-record:REQ-CLOSED-LOOP-DESIGN",
+        "trace:TRACE-007",
+        "source:sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570"
+      ],
+      "outputRefs": [
+        "extension:architecture_confirmation:ready",
+        "evidence:EVD-010"
+      ],
+      "status": "ready",
+      "evidenceRefs": [
+        "EVD-010",
+        "EVD-009"
+      ],
+      "hash": "sha256:a913e2323fe44b02f0886ffa8ee66946a62c36bc75db580c6d3b5afe7dee9f7b",
+      "failureHandling": {
+        "failureModes": [
+          "architecture_confirmation_unavailable",
+          "architecture_confirmation_stale_hash",
+          "architecture_confirmation_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ]
+      },
+      "currentHashBinding": {
+        "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+        "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+        "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da"
+      },
+      "functionalParity": {
+        "userVisibleBehaviorPreserved": true,
+        "regressionEvidenceRefs": [
+          "EVD-040"
+        ]
+      }
+    },
+    {
+      "subsystemId": "implementation_readiness",
+      "inputRefs": [
+        "requirement-record:REQ-CLOSED-LOOP-DESIGN",
+        "trace:TRACE-007",
+        "source:sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570"
+      ],
+      "outputRefs": [
+        "extension:implementation_readiness:ready",
+        "evidence:EVD-010"
+      ],
+      "status": "ready",
+      "evidenceRefs": [
+        "EVD-010",
+        "EVD-009"
+      ],
+      "hash": "sha256:aa4fb92396ab83c152bc038501e4fe350e246c77787c38651ac37cd87cf8bade",
+      "failureHandling": {
+        "failureModes": [
+          "implementation_readiness_unavailable",
+          "implementation_readiness_stale_hash",
+          "implementation_readiness_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ]
+      },
+      "currentHashBinding": {
+        "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+        "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+        "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da"
+      },
+      "functionalParity": {
+        "userVisibleBehaviorPreserved": true,
+        "regressionEvidenceRefs": [
+          "EVD-040"
+        ]
+      }
+    },
+    {
+      "subsystemId": "main_agent_orchestration",
+      "inputRefs": [
+        "requirement-record:REQ-CLOSED-LOOP-DESIGN",
+        "trace:TRACE-007",
+        "source:sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570"
+      ],
+      "outputRefs": [
+        "extension:main_agent_orchestration:ready",
+        "evidence:EVD-010"
+      ],
+      "status": "ready",
+      "evidenceRefs": [
+        "EVD-010",
+        "EVD-009"
+      ],
+      "hash": "sha256:22c96a6708f3ae8c0ead1fd244d0f0aed91957b51fe89bf3289df4c29bda5e90",
+      "failureHandling": {
+        "failureModes": [
+          "main_agent_orchestration_unavailable",
+          "main_agent_orchestration_stale_hash",
+          "main_agent_orchestration_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ]
+      },
+      "currentHashBinding": {
+        "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+        "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+        "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da"
+      },
+      "functionalParity": {
+        "userVisibleBehaviorPreserved": true,
+        "regressionEvidenceRefs": [
+          "EVD-040"
+        ]
+      }
+    },
+    {
+      "subsystemId": "execution_tracking",
+      "inputRefs": [
+        "requirement-record:REQ-CLOSED-LOOP-DESIGN",
+        "trace:TRACE-007",
+        "source:sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570"
+      ],
+      "outputRefs": [
+        "extension:execution_tracking:ready",
+        "evidence:EVD-010"
+      ],
+      "status": "ready",
+      "evidenceRefs": [
+        "EVD-010",
+        "EVD-009"
+      ],
+      "hash": "sha256:708fca5a96d1308654077cee55f3028590b9d4d8d511dac7c994f44851aa3f04",
+      "failureHandling": {
+        "failureModes": [
+          "execution_tracking_unavailable",
+          "execution_tracking_stale_hash",
+          "execution_tracking_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ]
+      },
+      "currentHashBinding": {
+        "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+        "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+        "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da"
+      },
+      "functionalParity": {
+        "userVisibleBehaviorPreserved": true,
+        "regressionEvidenceRefs": [
+          "EVD-040"
+        ]
+      }
+    },
+    {
+      "subsystemId": "audit_review",
+      "inputRefs": [
+        "requirement-record:REQ-CLOSED-LOOP-DESIGN",
+        "trace:TRACE-007",
+        "source:sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570"
+      ],
+      "outputRefs": [
+        "extension:audit_review:ready",
+        "evidence:EVD-010"
+      ],
+      "status": "ready",
+      "evidenceRefs": [
+        "EVD-010",
+        "EVD-009"
+      ],
+      "hash": "sha256:bc1e892520ea6186cd882cefc6e9c8e8a1d5bda9fdae0f01177a6450737af8fa",
+      "failureHandling": {
+        "failureModes": [
+          "audit_review_unavailable",
+          "audit_review_stale_hash",
+          "audit_review_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ]
+      },
+      "currentHashBinding": {
+        "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+        "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+        "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da"
+      },
+      "functionalParity": {
+        "userVisibleBehaviorPreserved": true,
+        "regressionEvidenceRefs": [
+          "EVD-040"
+        ]
+      }
+    },
+    {
+      "subsystemId": "delivery_closeout",
+      "inputRefs": [
+        "requirement-record:REQ-CLOSED-LOOP-DESIGN",
+        "trace:TRACE-007",
+        "source:sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570"
+      ],
+      "outputRefs": [
+        "extension:delivery_closeout:ready",
+        "evidence:EVD-010"
+      ],
+      "status": "ready",
+      "evidenceRefs": [
+        "EVD-010",
+        "EVD-009"
+      ],
+      "hash": "sha256:9e1ff08f601fc83da3623bc079028f0cde4e29896c5fa0244c4cc5bf045e7c7b",
+      "failureHandling": {
+        "failureModes": [
+          "delivery_closeout_unavailable",
+          "delivery_closeout_stale_hash",
+          "delivery_closeout_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ]
+      },
+      "currentHashBinding": {
+        "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+        "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+        "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da"
+      },
+      "functionalParity": {
+        "userVisibleBehaviorPreserved": true,
+        "regressionEvidenceRefs": [
+          "EVD-040"
+        ]
+      }
+    },
+    {
+      "subsystemId": "observability",
+      "inputRefs": [
+        "requirement-record:REQ-CLOSED-LOOP-DESIGN",
+        "trace:TRACE-007",
+        "source:sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570"
+      ],
+      "outputRefs": [
+        "extension:observability:ready",
+        "evidence:EVD-010"
+      ],
+      "status": "ready",
+      "evidenceRefs": [
+        "EVD-010",
+        "EVD-009"
+      ],
+      "hash": "sha256:c1f3b71d93efa67dd28c9913f1e8f5757995735127e8e710e02218162a7fc3ad",
+      "failureHandling": {
+        "failureModes": [
+          "observability_unavailable",
+          "observability_stale_hash",
+          "observability_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ]
+      },
+      "currentHashBinding": {
+        "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+        "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+        "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da"
+      },
+      "functionalParity": {
+        "userVisibleBehaviorPreserved": true,
+        "regressionEvidenceRefs": [
+          "EVD-040"
+        ]
+      }
+    },
+    {
+      "subsystemId": "rca_improvement",
+      "inputRefs": [
+        "requirement-record:REQ-CLOSED-LOOP-DESIGN",
+        "trace:TRACE-007",
+        "source:sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570"
+      ],
+      "outputRefs": [
+        "extension:rca_improvement:ready",
+        "evidence:EVD-010"
+      ],
+      "status": "ready",
+      "evidenceRefs": [
+        "EVD-010",
+        "EVD-009"
+      ],
+      "hash": "sha256:94f7b981de8532ab0ed5be8f5f10219099328000b03797315249f5bdfbd1c498",
+      "failureHandling": {
+        "failureModes": [
+          "rca_improvement_unavailable",
+          "rca_improvement_stale_hash",
+          "rca_improvement_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ]
+      },
+      "currentHashBinding": {
+        "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+        "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+        "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da"
+      },
+      "functionalParity": {
+        "userVisibleBehaviorPreserved": true,
+        "regressionEvidenceRefs": [
+          "EVD-040"
+        ]
+      }
+    },
+    {
+      "subsystemId": "data_production",
+      "inputRefs": [
+        "requirement-record:REQ-CLOSED-LOOP-DESIGN",
+        "trace:TRACE-007",
+        "source:sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570"
+      ],
+      "outputRefs": [
+        "extension:data_production:ready",
+        "evidence:EVD-010"
+      ],
+      "status": "ready",
+      "evidenceRefs": [
+        "EVD-010",
+        "EVD-009"
+      ],
+      "hash": "sha256:1531828a6977d4fb2d56ebfec2763521964f7c4ffd1f2966b2cb396da9c81a7a",
+      "failureHandling": {
+        "failureModes": [
+          "data_production_unavailable",
+          "data_production_stale_hash",
+          "data_production_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ]
+      },
+      "currentHashBinding": {
+        "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+        "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+        "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da"
+      },
+      "functionalParity": {
+        "userVisibleBehaviorPreserved": true,
+        "regressionEvidenceRefs": [
+          "EVD-040"
+        ]
+      }
+    },
+    {
+      "subsystemId": "eval_sft",
+      "inputRefs": [
+        "requirement-record:REQ-CLOSED-LOOP-DESIGN",
+        "trace:TRACE-007",
+        "source:sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570"
+      ],
+      "outputRefs": [
+        "extension:eval_sft:ready",
+        "evidence:EVD-010"
+      ],
+      "status": "ready",
+      "evidenceRefs": [
+        "EVD-010",
+        "EVD-009"
+      ],
+      "hash": "sha256:653fee195d20ade8b832f682ac5f97e96853b93b023f22760d7fa09d2425bf52",
+      "failureHandling": {
+        "failureModes": [
+          "eval_sft_unavailable",
+          "eval_sft_stale_hash",
+          "eval_sft_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ]
+      },
+      "currentHashBinding": {
+        "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+        "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+        "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da"
+      },
+      "functionalParity": {
+        "userVisibleBehaviorPreserved": true,
+        "regressionEvidenceRefs": [
+          "EVD-040"
+        ]
+      }
+    },
+    {
+      "subsystemId": "governance",
+      "inputRefs": [
+        "requirement-record:REQ-CLOSED-LOOP-DESIGN",
+        "trace:TRACE-007",
+        "source:sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570"
+      ],
+      "outputRefs": [
+        "extension:governance:ready",
+        "evidence:EVD-010"
+      ],
+      "status": "ready",
+      "evidenceRefs": [
+        "EVD-010",
+        "EVD-009"
+      ],
+      "hash": "sha256:e96e81d5dfb75ef1e99e67556c6b38b08124b422189b15798860c326f9c1eace",
+      "failureHandling": {
+        "failureModes": [
+          "governance_unavailable",
+          "governance_stale_hash",
+          "governance_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ]
+      },
+      "currentHashBinding": {
+        "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+        "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+        "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da"
+      },
+      "functionalParity": {
+        "userVisibleBehaviorPreserved": true,
+        "regressionEvidenceRefs": [
+          "EVD-040"
+        ]
+      }
+    },
+    {
+      "subsystemId": "coach",
+      "inputRefs": [
+        "requirement-record:REQ-CLOSED-LOOP-DESIGN",
+        "trace:TRACE-007",
+        "source:sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570"
+      ],
+      "outputRefs": [
+        "extension:coach:ready",
+        "evidence:EVD-010"
+      ],
+      "status": "ready",
+      "evidenceRefs": [
+        "EVD-010",
+        "EVD-009"
+      ],
+      "hash": "sha256:afb1d7dd583821948f3082fb5916654a5baa29b64c3f9fcf219cec296b5d0f1c",
+      "failureHandling": {
+        "failureModes": [
+          "coach_unavailable",
+          "coach_stale_hash",
+          "coach_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ]
+      },
+      "currentHashBinding": {
+        "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+        "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+        "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da"
+      },
+      "functionalParity": {
+        "userVisibleBehaviorPreserved": true,
+        "regressionEvidenceRefs": [
+          "EVD-040"
+        ]
+      }
+    },
+    {
+      "subsystemId": "dashboard_read_model",
+      "inputRefs": [
+        "requirement-record:REQ-CLOSED-LOOP-DESIGN",
+        "trace:TRACE-007",
+        "source:sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570"
+      ],
+      "outputRefs": [
+        "extension:dashboard_read_model:ready",
+        "evidence:EVD-010"
+      ],
+      "status": "ready",
+      "evidenceRefs": [
+        "EVD-010",
+        "EVD-009"
+      ],
+      "hash": "sha256:e7087ed37d956a60b9e0966e72bf3843950fbf25d552da41f92ebc2258417ff4",
+      "failureHandling": {
+        "failureModes": [
+          "dashboard_read_model_unavailable",
+          "dashboard_read_model_stale_hash",
+          "dashboard_read_model_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ]
+      },
+      "currentHashBinding": {
+        "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+        "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+        "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da"
+      },
+      "functionalParity": {
+        "userVisibleBehaviorPreserved": true,
+        "regressionEvidenceRefs": [
+          "EVD-040"
+        ]
+      }
+    },
+    {
+      "subsystemId": "scoring",
+      "inputRefs": [
+        "requirement-record:REQ-CLOSED-LOOP-DESIGN",
+        "trace:TRACE-007",
+        "source:sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570"
+      ],
+      "outputRefs": [
+        "extension:scoring:ready",
+        "evidence:EVD-010"
+      ],
+      "status": "ready",
+      "evidenceRefs": [
+        "EVD-010",
+        "EVD-009"
+      ],
+      "hash": "sha256:75f4c0952771dad28b6abaa2374c413065631463089e9b009b1ff96aeb81eb00",
+      "failureHandling": {
+        "failureModes": [
+          "scoring_unavailable",
+          "scoring_stale_hash",
+          "scoring_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ]
+      },
+      "currentHashBinding": {
+        "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+        "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+        "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da"
+      },
+      "functionalParity": {
+        "userVisibleBehaviorPreserved": true,
+        "regressionEvidenceRefs": [
+          "EVD-040"
+        ]
+      }
+    },
+    {
+      "subsystemId": "prompt_packet_generation",
+      "inputRefs": [
+        "requirement-record:REQ-CLOSED-LOOP-DESIGN",
+        "trace:TRACE-007",
+        "source:sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570"
+      ],
+      "outputRefs": [
+        "extension:prompt_packet_generation:ready",
+        "evidence:EVD-010"
+      ],
+      "status": "ready",
+      "evidenceRefs": [
+        "EVD-010",
+        "EVD-009"
+      ],
+      "hash": "sha256:1f6d1e7318794fcef9f010ec5a13cc0da3dc59f3cdc0e64aaac413daa454b0c3",
+      "failureHandling": {
+        "failureModes": [
+          "prompt_packet_generation_unavailable",
+          "prompt_packet_generation_stale_hash",
+          "prompt_packet_generation_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ]
+      },
+      "currentHashBinding": {
+        "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+        "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+        "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da"
+      },
+      "functionalParity": {
+        "userVisibleBehaviorPreserved": true,
+        "regressionEvidenceRefs": [
+          "EVD-040"
+        ]
+      }
+    }
+  ],
+  "updatedAt": "2026-05-20T17:00:00.000Z",
+  "updatedBy": "codex",
+  "currentHashBinding": {
+    "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+    "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+    "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da"
+  },
+  "productionSubsystemAcceptanceRegistry": {
+    "registryVersion": "production-subsystem-acceptance/v1",
+    "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+    "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+    "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+    "subsystemAcceptance": [
+      {
+        "subsystemId": "requirement_confirmation",
+        "passCriteria": [
+          "machine_readable_inputs_outputs_status_evidence_hash",
+          "failure_handling_declared",
+          "no_user_visible_regression"
+        ],
+        "requiredEvidenceRefs": [
+          "EVD-010",
+          "EVD-009"
+        ],
+        "requiredCommands": [
+          "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+          "CMD-DATASET-RELEASE-GATE"
+        ],
+        "requiredFailureCases": [
+          "requirement_confirmation_unavailable",
+          "requirement_confirmation_stale_hash",
+          "requirement_confirmation_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ],
+        "functionalParity": {
+          "userVisibleBehaviorPreserved": true,
+          "replacementScripts": [
+            "scripts/main-agent-production-loop-ready-check.ts",
+            "scripts/main-agent-dataset-release-gate.ts"
+          ],
+          "replacementArtifacts": [
+            "production-loop-16-subsystems-extension.json",
+            "dataset-manifest.json",
+            "dataset-release-gate-report.json"
+          ]
+        }
+      },
+      {
+        "subsystemId": "architecture_confirmation",
+        "passCriteria": [
+          "machine_readable_inputs_outputs_status_evidence_hash",
+          "failure_handling_declared",
+          "no_user_visible_regression"
+        ],
+        "requiredEvidenceRefs": [
+          "EVD-010",
+          "EVD-009"
+        ],
+        "requiredCommands": [
+          "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+          "CMD-DATASET-RELEASE-GATE"
+        ],
+        "requiredFailureCases": [
+          "architecture_confirmation_unavailable",
+          "architecture_confirmation_stale_hash",
+          "architecture_confirmation_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ],
+        "functionalParity": {
+          "userVisibleBehaviorPreserved": true,
+          "replacementScripts": [
+            "scripts/main-agent-production-loop-ready-check.ts",
+            "scripts/main-agent-dataset-release-gate.ts"
+          ],
+          "replacementArtifacts": [
+            "production-loop-16-subsystems-extension.json",
+            "dataset-manifest.json",
+            "dataset-release-gate-report.json"
+          ]
+        }
+      },
+      {
+        "subsystemId": "implementation_readiness",
+        "passCriteria": [
+          "machine_readable_inputs_outputs_status_evidence_hash",
+          "failure_handling_declared",
+          "no_user_visible_regression"
+        ],
+        "requiredEvidenceRefs": [
+          "EVD-010",
+          "EVD-009"
+        ],
+        "requiredCommands": [
+          "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+          "CMD-DATASET-RELEASE-GATE"
+        ],
+        "requiredFailureCases": [
+          "implementation_readiness_unavailable",
+          "implementation_readiness_stale_hash",
+          "implementation_readiness_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ],
+        "functionalParity": {
+          "userVisibleBehaviorPreserved": true,
+          "replacementScripts": [
+            "scripts/main-agent-production-loop-ready-check.ts",
+            "scripts/main-agent-dataset-release-gate.ts"
+          ],
+          "replacementArtifacts": [
+            "production-loop-16-subsystems-extension.json",
+            "dataset-manifest.json",
+            "dataset-release-gate-report.json"
+          ]
+        }
+      },
+      {
+        "subsystemId": "main_agent_orchestration",
+        "passCriteria": [
+          "machine_readable_inputs_outputs_status_evidence_hash",
+          "failure_handling_declared",
+          "no_user_visible_regression"
+        ],
+        "requiredEvidenceRefs": [
+          "EVD-010",
+          "EVD-009"
+        ],
+        "requiredCommands": [
+          "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+          "CMD-DATASET-RELEASE-GATE"
+        ],
+        "requiredFailureCases": [
+          "main_agent_orchestration_unavailable",
+          "main_agent_orchestration_stale_hash",
+          "main_agent_orchestration_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ],
+        "functionalParity": {
+          "userVisibleBehaviorPreserved": true,
+          "replacementScripts": [
+            "scripts/main-agent-production-loop-ready-check.ts",
+            "scripts/main-agent-dataset-release-gate.ts"
+          ],
+          "replacementArtifacts": [
+            "production-loop-16-subsystems-extension.json",
+            "dataset-manifest.json",
+            "dataset-release-gate-report.json"
+          ]
+        }
+      },
+      {
+        "subsystemId": "execution_tracking",
+        "passCriteria": [
+          "machine_readable_inputs_outputs_status_evidence_hash",
+          "failure_handling_declared",
+          "no_user_visible_regression"
+        ],
+        "requiredEvidenceRefs": [
+          "EVD-010",
+          "EVD-009"
+        ],
+        "requiredCommands": [
+          "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+          "CMD-DATASET-RELEASE-GATE"
+        ],
+        "requiredFailureCases": [
+          "execution_tracking_unavailable",
+          "execution_tracking_stale_hash",
+          "execution_tracking_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ],
+        "functionalParity": {
+          "userVisibleBehaviorPreserved": true,
+          "replacementScripts": [
+            "scripts/main-agent-production-loop-ready-check.ts",
+            "scripts/main-agent-dataset-release-gate.ts"
+          ],
+          "replacementArtifacts": [
+            "production-loop-16-subsystems-extension.json",
+            "dataset-manifest.json",
+            "dataset-release-gate-report.json"
+          ]
+        }
+      },
+      {
+        "subsystemId": "audit_review",
+        "passCriteria": [
+          "machine_readable_inputs_outputs_status_evidence_hash",
+          "failure_handling_declared",
+          "no_user_visible_regression"
+        ],
+        "requiredEvidenceRefs": [
+          "EVD-010",
+          "EVD-009"
+        ],
+        "requiredCommands": [
+          "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+          "CMD-DATASET-RELEASE-GATE"
+        ],
+        "requiredFailureCases": [
+          "audit_review_unavailable",
+          "audit_review_stale_hash",
+          "audit_review_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ],
+        "functionalParity": {
+          "userVisibleBehaviorPreserved": true,
+          "replacementScripts": [
+            "scripts/main-agent-production-loop-ready-check.ts",
+            "scripts/main-agent-dataset-release-gate.ts"
+          ],
+          "replacementArtifacts": [
+            "production-loop-16-subsystems-extension.json",
+            "dataset-manifest.json",
+            "dataset-release-gate-report.json"
+          ]
+        }
+      },
+      {
+        "subsystemId": "delivery_closeout",
+        "passCriteria": [
+          "machine_readable_inputs_outputs_status_evidence_hash",
+          "failure_handling_declared",
+          "no_user_visible_regression"
+        ],
+        "requiredEvidenceRefs": [
+          "EVD-010",
+          "EVD-009"
+        ],
+        "requiredCommands": [
+          "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+          "CMD-DATASET-RELEASE-GATE"
+        ],
+        "requiredFailureCases": [
+          "delivery_closeout_unavailable",
+          "delivery_closeout_stale_hash",
+          "delivery_closeout_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ],
+        "functionalParity": {
+          "userVisibleBehaviorPreserved": true,
+          "replacementScripts": [
+            "scripts/main-agent-production-loop-ready-check.ts",
+            "scripts/main-agent-dataset-release-gate.ts"
+          ],
+          "replacementArtifacts": [
+            "production-loop-16-subsystems-extension.json",
+            "dataset-manifest.json",
+            "dataset-release-gate-report.json"
+          ]
+        }
+      },
+      {
+        "subsystemId": "observability",
+        "passCriteria": [
+          "machine_readable_inputs_outputs_status_evidence_hash",
+          "failure_handling_declared",
+          "no_user_visible_regression"
+        ],
+        "requiredEvidenceRefs": [
+          "EVD-010",
+          "EVD-009"
+        ],
+        "requiredCommands": [
+          "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+          "CMD-DATASET-RELEASE-GATE"
+        ],
+        "requiredFailureCases": [
+          "observability_unavailable",
+          "observability_stale_hash",
+          "observability_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ],
+        "functionalParity": {
+          "userVisibleBehaviorPreserved": true,
+          "replacementScripts": [
+            "scripts/main-agent-production-loop-ready-check.ts",
+            "scripts/main-agent-dataset-release-gate.ts"
+          ],
+          "replacementArtifacts": [
+            "production-loop-16-subsystems-extension.json",
+            "dataset-manifest.json",
+            "dataset-release-gate-report.json"
+          ]
+        }
+      },
+      {
+        "subsystemId": "rca_improvement",
+        "passCriteria": [
+          "machine_readable_inputs_outputs_status_evidence_hash",
+          "failure_handling_declared",
+          "no_user_visible_regression"
+        ],
+        "requiredEvidenceRefs": [
+          "EVD-010",
+          "EVD-009"
+        ],
+        "requiredCommands": [
+          "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+          "CMD-DATASET-RELEASE-GATE"
+        ],
+        "requiredFailureCases": [
+          "rca_improvement_unavailable",
+          "rca_improvement_stale_hash",
+          "rca_improvement_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ],
+        "functionalParity": {
+          "userVisibleBehaviorPreserved": true,
+          "replacementScripts": [
+            "scripts/main-agent-production-loop-ready-check.ts",
+            "scripts/main-agent-dataset-release-gate.ts"
+          ],
+          "replacementArtifacts": [
+            "production-loop-16-subsystems-extension.json",
+            "dataset-manifest.json",
+            "dataset-release-gate-report.json"
+          ]
+        }
+      },
+      {
+        "subsystemId": "data_production",
+        "passCriteria": [
+          "machine_readable_inputs_outputs_status_evidence_hash",
+          "failure_handling_declared",
+          "no_user_visible_regression"
+        ],
+        "requiredEvidenceRefs": [
+          "EVD-010",
+          "EVD-009"
+        ],
+        "requiredCommands": [
+          "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+          "CMD-DATASET-RELEASE-GATE"
+        ],
+        "requiredFailureCases": [
+          "data_production_unavailable",
+          "data_production_stale_hash",
+          "data_production_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ],
+        "functionalParity": {
+          "userVisibleBehaviorPreserved": true,
+          "replacementScripts": [
+            "scripts/main-agent-production-loop-ready-check.ts",
+            "scripts/main-agent-dataset-release-gate.ts"
+          ],
+          "replacementArtifacts": [
+            "production-loop-16-subsystems-extension.json",
+            "dataset-manifest.json",
+            "dataset-release-gate-report.json"
+          ]
+        }
+      },
+      {
+        "subsystemId": "eval_sft",
+        "passCriteria": [
+          "machine_readable_inputs_outputs_status_evidence_hash",
+          "failure_handling_declared",
+          "no_user_visible_regression"
+        ],
+        "requiredEvidenceRefs": [
+          "EVD-010",
+          "EVD-009"
+        ],
+        "requiredCommands": [
+          "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+          "CMD-DATASET-RELEASE-GATE"
+        ],
+        "requiredFailureCases": [
+          "eval_sft_unavailable",
+          "eval_sft_stale_hash",
+          "eval_sft_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ],
+        "functionalParity": {
+          "userVisibleBehaviorPreserved": true,
+          "replacementScripts": [
+            "scripts/main-agent-production-loop-ready-check.ts",
+            "scripts/main-agent-dataset-release-gate.ts"
+          ],
+          "replacementArtifacts": [
+            "production-loop-16-subsystems-extension.json",
+            "dataset-manifest.json",
+            "dataset-release-gate-report.json"
+          ]
+        }
+      },
+      {
+        "subsystemId": "governance",
+        "passCriteria": [
+          "machine_readable_inputs_outputs_status_evidence_hash",
+          "failure_handling_declared",
+          "no_user_visible_regression"
+        ],
+        "requiredEvidenceRefs": [
+          "EVD-010",
+          "EVD-009"
+        ],
+        "requiredCommands": [
+          "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+          "CMD-DATASET-RELEASE-GATE"
+        ],
+        "requiredFailureCases": [
+          "governance_unavailable",
+          "governance_stale_hash",
+          "governance_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ],
+        "functionalParity": {
+          "userVisibleBehaviorPreserved": true,
+          "replacementScripts": [
+            "scripts/main-agent-production-loop-ready-check.ts",
+            "scripts/main-agent-dataset-release-gate.ts"
+          ],
+          "replacementArtifacts": [
+            "production-loop-16-subsystems-extension.json",
+            "dataset-manifest.json",
+            "dataset-release-gate-report.json"
+          ]
+        }
+      },
+      {
+        "subsystemId": "coach",
+        "passCriteria": [
+          "machine_readable_inputs_outputs_status_evidence_hash",
+          "failure_handling_declared",
+          "no_user_visible_regression"
+        ],
+        "requiredEvidenceRefs": [
+          "EVD-010",
+          "EVD-009"
+        ],
+        "requiredCommands": [
+          "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+          "CMD-DATASET-RELEASE-GATE"
+        ],
+        "requiredFailureCases": [
+          "coach_unavailable",
+          "coach_stale_hash",
+          "coach_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ],
+        "functionalParity": {
+          "userVisibleBehaviorPreserved": true,
+          "replacementScripts": [
+            "scripts/main-agent-production-loop-ready-check.ts",
+            "scripts/main-agent-dataset-release-gate.ts"
+          ],
+          "replacementArtifacts": [
+            "production-loop-16-subsystems-extension.json",
+            "dataset-manifest.json",
+            "dataset-release-gate-report.json"
+          ]
+        }
+      },
+      {
+        "subsystemId": "dashboard_read_model",
+        "passCriteria": [
+          "machine_readable_inputs_outputs_status_evidence_hash",
+          "failure_handling_declared",
+          "no_user_visible_regression"
+        ],
+        "requiredEvidenceRefs": [
+          "EVD-010",
+          "EVD-009"
+        ],
+        "requiredCommands": [
+          "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+          "CMD-DATASET-RELEASE-GATE"
+        ],
+        "requiredFailureCases": [
+          "dashboard_read_model_unavailable",
+          "dashboard_read_model_stale_hash",
+          "dashboard_read_model_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ],
+        "functionalParity": {
+          "userVisibleBehaviorPreserved": true,
+          "replacementScripts": [
+            "scripts/main-agent-production-loop-ready-check.ts",
+            "scripts/main-agent-dataset-release-gate.ts"
+          ],
+          "replacementArtifacts": [
+            "production-loop-16-subsystems-extension.json",
+            "dataset-manifest.json",
+            "dataset-release-gate-report.json"
+          ]
+        }
+      },
+      {
+        "subsystemId": "scoring",
+        "passCriteria": [
+          "machine_readable_inputs_outputs_status_evidence_hash",
+          "failure_handling_declared",
+          "no_user_visible_regression"
+        ],
+        "requiredEvidenceRefs": [
+          "EVD-010",
+          "EVD-009"
+        ],
+        "requiredCommands": [
+          "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+          "CMD-DATASET-RELEASE-GATE"
+        ],
+        "requiredFailureCases": [
+          "scoring_unavailable",
+          "scoring_stale_hash",
+          "scoring_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ],
+        "functionalParity": {
+          "userVisibleBehaviorPreserved": true,
+          "replacementScripts": [
+            "scripts/main-agent-production-loop-ready-check.ts",
+            "scripts/main-agent-dataset-release-gate.ts"
+          ],
+          "replacementArtifacts": [
+            "production-loop-16-subsystems-extension.json",
+            "dataset-manifest.json",
+            "dataset-release-gate-report.json"
+          ]
+        }
+      },
+      {
+        "subsystemId": "prompt_packet_generation",
+        "passCriteria": [
+          "machine_readable_inputs_outputs_status_evidence_hash",
+          "failure_handling_declared",
+          "no_user_visible_regression"
+        ],
+        "requiredEvidenceRefs": [
+          "EVD-010",
+          "EVD-009"
+        ],
+        "requiredCommands": [
+          "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+          "CMD-DATASET-RELEASE-GATE"
+        ],
+        "requiredFailureCases": [
+          "prompt_packet_generation_unavailable",
+          "prompt_packet_generation_stale_hash",
+          "prompt_packet_generation_missing_evidence"
+        ],
+        "recordEventTypes": [
+          "failure_recorded",
+          "gate_check_recorded",
+          "rca_created"
+        ],
+        "recoveryActions": [
+          "record_failure",
+          "open_rca",
+          "rerun_current_trace",
+          "block_closeout"
+        ],
+        "functionalParity": {
+          "userVisibleBehaviorPreserved": true,
+          "replacementScripts": [
+            "scripts/main-agent-production-loop-ready-check.ts",
+            "scripts/main-agent-dataset-release-gate.ts"
+          ],
+          "replacementArtifacts": [
+            "production-loop-16-subsystems-extension.json",
+            "dataset-manifest.json",
+            "dataset-release-gate-report.json"
+          ]
+        }
+      }
+    ]
+  },
+  "productionSubsystemAcceptanceRegistryHash": "sha256:fa2d3b03bbcd6c12ac37c4abcd65bca96b2db283df9c8d20cafcf9aebf108cee",
+  "functionalParity": {
+    "userVisibleBehaviorPreserved": true,
+    "noRegressionScope": [
+      "coach",
+      "dashboard_read_model",
+      "scoring",
+      "eval_sft",
+      "data_production",
+      "prompt_packet_generation",
+      "governance",
+      "main_agent_orchestration",
+      "delivery_closeout"
+    ],
+    "replacementScripts": [
+      "scripts/main-agent-production-loop-ready-check.ts",
+      "scripts/main-agent-dataset-release-gate.ts"
+    ],
+    "replacementArtifacts": [
+      "production-loop-16-subsystems-extension.json",
+      "dataset-manifest.json",
+      "dataset-release-gate-report.json"
+    ],
+    "regressionTests": [
+      "tests/acceptance/main-agent-production-loop-ready-check.test.ts",
+      "tests/acceptance/main-agent-dataset-release-gate.test.ts"
+    ],
+    "evidenceRefs": [
+      "EVD-039",
+      "EVD-040",
+      "EVD-043"
+    ]
+  }
+}

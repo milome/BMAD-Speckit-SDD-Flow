@@ -1,0 +1,49 @@
+{
+  "traceRow": "TRACE-030",
+  "closeoutAttemptId": "closeout-attempt-TRACE030-current-20260520T170000Z",
+  "commandRuns": [
+    {
+      "commandId": "CMD-DATA-PRODUCTS-REFRESH",
+      "exitCode": 0,
+      "outputSummary": "governed data products regenerated from current requirement-record; canonicalSamples=39; sampleRoutes=45"
+    },
+    {
+      "commandId": "CMD-DATA-GOVERNANCE-GATE",
+      "exitCode": 0,
+      "outputSummary": "decision=pass"
+    },
+    {
+      "commandId": "CMD-DATASET-RELEASE-GATE",
+      "exitCode": 0,
+      "outputSummary": "decision=pass; blockingIssues=[]"
+    },
+    {
+      "commandId": "CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE",
+      "exitCode": 0,
+      "outputSummary": "decision=pass; blockingReasons=[]"
+    },
+    {
+      "commandId": "CMD-RENDER-CONFIRMATION",
+      "exitCode": 0,
+      "outputSummary": "blockingIssues=[]; traceRows=39"
+    },
+    {
+      "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+      "exitCode": 0,
+      "outputSummary": "38 tests passed"
+    },
+    {
+      "commandId": "CMD-ENCODING-GATE",
+      "exitCode": 0,
+      "outputSummary": "checkedFiles=2772 findings=0"
+    }
+  ],
+  "artifacts": {
+    "extensionPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/production-loop-16-subsystems-extension.json",
+    "productionReportPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/production-loop-ready-report.json",
+    "datasetManifestPath": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-manifest.json",
+    "datasetReleaseReportPath": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/dataset-release-gate-report.json",
+    "trainingRunPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/training-run.json",
+    "evalReportPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/eval-report.json"
+  }
+}

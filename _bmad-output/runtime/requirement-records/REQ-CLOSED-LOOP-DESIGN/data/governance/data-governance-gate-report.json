@@ -1,15 +1,15 @@
 {
   "reportType": "data_governance_gate_report",
-  "generatedAt": "2026-05-19T20:34:00.000Z",
+  "generatedAt": "2026-05-20T17:11:40.391Z",
   "recordId": "REQ-CLOSED-LOOP-DESIGN",
   "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
-  "sourceDocumentHash": "sha256:426b56bec964e275600935e5dee293985c61483e34f523b66f3b705247ad2294",
-  "implementationConfirmationHash": "sha256:e5e8b680fa4e1d273c29bea5a613ef595486868e8e57dae0fa48ac47016909ec",
-  "architectureConfirmationHash": "sha256:fe98c301cf8479be934a8258ad584575e146e2d5cc2e846bf6ccec1a1e6909f1",
+  "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+  "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+  "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
   "checks": {
     "split": {
       "reportType": "split_report",
-      "generatedAt": "2026-05-19T20:34:00.000Z",
+      "generatedAt": "2026-05-20T17:11:40.391Z",
       "policy": {
         "evalFirst": true,
         "holdoutFrozenBeforeSftExport": true,
@@ -27,12 +27,12 @@
       },
       "groupCount": 1,
       "leakingGroups": [],
-      "holdoutRegistrySize": 4,
+      "holdoutRegistrySize": 6,
       "decision": "pass"
     },
     "dedup": {
       "reportType": "dedup_report",
-      "generatedAt": "2026-05-19T20:34:00.000Z",
+      "generatedAt": "2026-05-20T17:11:40.391Z",
       "policy": {
         "exactDedupe": true,
         "nearDedupe": true,
@@ -45,7 +45,7 @@
     },
     "contamination": {
       "reportType": "contamination_report",
-      "generatedAt": "2026-05-19T20:34:00.000Z",
+      "generatedAt": "2026-05-20T17:11:40.391Z",
       "policy": {
         "scanBeforeRelease": true,
         "contaminationAction": "quarantine_or_block",
@@ -57,7 +57,7 @@
     },
     "holdout": {
       "registryType": "holdout_registry",
-      "generatedAt": "2026-05-19T20:34:00.000Z",
+      "generatedAt": "2026-05-20T17:11:40.391Z",
       "frozen": true,
       "freezeReason": "eval_first_before_sft_export",
       "items": [
@@ -92,18 +92,34 @@
           "reasons": [
             "non_positive_status:partial"
           ]
+        },
+        {
+          "sampleRouteId": "route:mentor:REQ-CLOSED-LOOP-DESIGN:execution:exec-trace-019-runtime-policy-snapshot-ref-001",
+          "mentorEventId": "mentor:REQ-CLOSED-LOOP-DESIGN:execution:exec-trace-019-runtime-policy-snapshot-ref-001",
+          "destination": "eval",
+          "reasons": [
+            "non_positive_status:partial"
+          ]
+        },
+        {
+          "sampleRouteId": "route:mentor:REQ-CLOSED-LOOP-DESIGN:execution:exec-TRACE030-extension-refresh-20260520T170000Z",
+          "mentorEventId": "mentor:REQ-CLOSED-LOOP-DESIGN:execution:exec-TRACE030-extension-refresh-20260520T170000Z",
+          "destination": "eval",
+          "reasons": [
+            "non_positive_status:partial"
+          ]
         }
       ]
     },
     "postTrainingRegression": {
       "reportType": "post_training_regression_report",
-      "generatedAt": "2026-05-19T20:34:00.000Z",
+      "generatedAt": "2026-05-20T17:11:40.391Z",
       "trainingRunId": null,
       "comparisonState": "baseline_frozen_training_run_required_before_dataset_release",
       "releaseDecision": "blocked_until_training_run_bound",
       "baseline": {
-        "sampleCount": 7,
-        "sampleHash": "sha256:8cd1c59c35b1d4fd03005ecddc47217c5634d6db9b801c62187de2d0deebcaf6",
+        "sampleCount": 39,
+        "sampleHash": "sha256:db384a7dcd8e9156fcf58c95d917c8493015f814552fc56bc775295757012ada",
         "requiredMetrics": [
           "requirement_adherence",
           "evidence_completeness",

@@ -1,0 +1,25 @@
+{
+  "traceRow": "TRACE-030",
+  "assertions": [
+    {
+      "id": "stale-extension-blocked-before-refresh",
+      "status": "observed",
+      "evidence": "main-agent-production-loop-ready-check returned blocked for stale extension/dataset hashes before refresh"
+    },
+    {
+      "id": "sixteen-subsystems-not-count-only",
+      "status": "covered_by_test",
+      "command": "tests/acceptance/main-agent-production-loop-ready-check.test.ts"
+    },
+    {
+      "id": "dataset-release-requires-training-and-eval-binding",
+      "status": "covered_by_test",
+      "command": "tests/acceptance/main-agent-dataset-release-gate.test.ts"
+    },
+    {
+      "id": "functional-parity-required",
+      "status": "declared",
+      "artifact": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-030/run-TRACE030-current-20260520T170000Z/production-loop-16-subsystems-extension.json"
+    }
+  ]
+}
