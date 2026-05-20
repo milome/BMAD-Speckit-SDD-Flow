@@ -1,0 +1,151 @@
+{
+  "runId": "run-TRACE032-current-20260520T181046Z",
+  "closeoutAttemptId": "closeout-attempt-TRACE032-current-20260520T181046Z",
+  "traceRows": [
+    "TRACE-032"
+  ],
+  "evidenceRefs": [
+    "EVD-016",
+    "EVD-042"
+  ],
+  "commandRuns": [
+    {
+      "commandId": "CMD-DASHBOARD-PROJECTION-MAPPING",
+      "command": "npx.cmd ts-node --project tsconfig.node.json --transpile-only scripts/dashboard-projection-mapping.ts --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-032/run-TRACE032-current-20260520T181046Z/dashboard --generated-by codex --json",
+      "runId": "run-TRACE032-current-20260520T181046Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE032-current-20260520T181046Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T18:10:46.502Z",
+      "completedAt": "2026-05-20T18:10:47.688Z",
+      "outputSummary": "{ | \"ok\": true, | \"decision\": \"pass\", | \"reportPath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-032/run-TRACE032-current-20260520T181046Z/dashboard/dashboard-projection-mapping-report.json\", | \"projectionPath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-032/run-TRACE032-current-20260520T181046Z/dashboard/dashboard-read-model-projection.json\", | \"projectionHash\": \"sha256:61b285e886cae4f25aac4f1d0e8934fd2c022465361b2b33dc7bc12b02ff5d12\", | \"issues\": [] | }"
+    },
+    {
+      "commandId": "CMD-DASHBOARD-PROJECTION-MAPPING-ACCEPTANCE",
+      "command": "npx.cmd vitest run packages/scoring/dashboard/__tests__/runtime-query.test.ts packages/scoring/dashboard/__tests__/snapshot.test.ts",
+      "runId": "run-TRACE032-current-20260520T181046Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE032-current-20260520T181046Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T18:10:47.688Z",
+      "completedAt": "2026-05-20T18:10:51.091Z",
+      "outputSummary": "Dashboard projection regression passed: runtime-query and snapshot tests validate six mental model top-level projection, read-only business object drill-down, forbidden dashboard displays, and dashboard-green-without-current-attempt blocked behavior."
+    },
+    {
+      "commandId": "CMD-RENDER-CONFIRMATION",
+      "command": "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json",
+      "runId": "run-TRACE032-current-20260520T181046Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE032-current-20260520T181046Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T18:10:51.091Z",
+      "completedAt": "2026-05-20T18:10:51.437Z",
+      "outputSummary": "\"message\": \"renderer does not confirm or change status\", | \"refs\": [] | } | ], | \"mermaidRuntime\": { | \"available\": true, | \"path\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad/skills/requirements-contract-authoring/assets/mermaid/mermaid.min.js\", | \"hash\": \"sha256:d0830a6c05546e9edb8fe20a8f545f3e0dc7c4c3134d584bad9c13a99d7a71e0\", | \"format\": \"classic-global\", | \"issues\": [] | }, | \"counts\": { | \"must\": 56, | \"notDone\": 40, | \"mustNot\": 29, | \"evidence\": 62, | \"failurePaths\": 7, | \"edgeCases\": 10, | \"traceRows\": 39, | \"sequenceViews\": 10, | \"resumeFailureCases\": 27, | \"artifactPlanItems\": 8 | } | }"
+    },
+    {
+      "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+      "command": "npx.cmd vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+      "runId": "run-TRACE032-current-20260520T181046Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE032-current-20260520T181046Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T18:10:51.438Z",
+      "completedAt": "2026-05-20T18:11:00.579Z",
+      "outputSummary": "Trace binding acceptance passed: render-requirements-confirmation-html.test.ts 38 tests passed."
+    },
+    {
+      "commandId": "CMD-ENCODING-GATE",
+      "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+      "runId": "run-TRACE032-current-20260520T181046Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE032-current-20260520T181046Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T18:11:00.579Z",
+      "completedAt": "2026-05-20T18:11:01.057Z",
+      "outputSummary": "Encoding integrity passed: checkedFiles=2772 findings=0."
+    }
+  ],
+  "projectionGate": "pass",
+  "projectionHash": "sha256:61b285e886cae4f25aac4f1d0e8934fd2c022465361b2b33dc7bc12b02ff5d12",
+  "artifacts": [
+    {
+      "artifactType": "dashboard_read_model_projection",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-032/run-TRACE032-current-20260520T181046Z/dashboard/dashboard-read-model-projection.json",
+      "hash": "sha256:61b285e886cae4f25aac4f1d0e8934fd2c022465361b2b33dc7bc12b02ff5d12",
+      "producer": "TRACE-032 final run",
+      "purpose": "current dashboard projection proving six mental model top-level view and read-only business object drill-down",
+      "relatedRequirementIds": [
+        "MUST-010",
+        "MUST-042",
+        "NEG-032",
+        "NEG-033",
+        "OUT-026",
+        "EVD-016",
+        "EVD-042",
+        "TRACE-032"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "dashboard_read_model_projection-trace-032-current-v1"
+    },
+    {
+      "artifactType": "dashboard_projection_mapping_report",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-032/run-TRACE032-current-20260520T181046Z/dashboard/dashboard-projection-mapping-report.json",
+      "hash": "sha256:7215beaf01626958d8228411d8a88bccd95ae01a7abe0d9ad61e59bc4839da4a",
+      "producer": "TRACE-032 final run",
+      "purpose": "current CMD-DASHBOARD-PROJECTION-MAPPING report with projection gate decision and issues",
+      "relatedRequirementIds": [
+        "MUST-010",
+        "MUST-042",
+        "NEG-032",
+        "NEG-033",
+        "OUT-026",
+        "EVD-016",
+        "EVD-042",
+        "TRACE-032"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "dashboard_projection_mapping_report-trace-032-current-v1"
+    },
+    {
+      "artifactType": "negative_assertion_evidence",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-032/run-TRACE032-current-20260520T181046Z/negative-assertions.json",
+      "hash": "sha256:cc3c62c86ef6726c6d57fb41f223c00c3646a4a3d17ccb65102dd802926fab43",
+      "producer": "TRACE-032 final run",
+      "purpose": "negative and regression assertions for dashboard read-model and closeout shortcut blocking",
+      "relatedRequirementIds": [
+        "MUST-010",
+        "MUST-042",
+        "NEG-032",
+        "NEG-033",
+        "OUT-026",
+        "EVD-016",
+        "EVD-042",
+        "TRACE-032"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "negative_assertion_evidence-trace-032-current-v1"
+    },
+    {
+      "artifactType": "diff_summary",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-032/run-TRACE032-current-20260520T181046Z/diff-summary.md",
+      "hash": "sha256:4751a2d9f8ed9bff0f7d0040efe87751390dd8c4feabbfe26c31d9c78f65a70d",
+      "producer": "TRACE-032 final run",
+      "purpose": "implementation delta summary for TRACE-032 dashboard read model projection",
+      "relatedRequirementIds": [
+        "MUST-010",
+        "MUST-042",
+        "NEG-032",
+        "NEG-033",
+        "OUT-026",
+        "EVD-016",
+        "EVD-042",
+        "TRACE-032"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "diff_summary-trace-032-current-v1"
+    }
+  ]
+}

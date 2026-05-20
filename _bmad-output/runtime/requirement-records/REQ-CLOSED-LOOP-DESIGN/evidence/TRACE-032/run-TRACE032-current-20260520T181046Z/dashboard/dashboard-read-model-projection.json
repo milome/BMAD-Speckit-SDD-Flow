@@ -1,0 +1,460 @@
+{
+  "projection_type": "six_mental_models_dashboard_read_model",
+  "sourceOfTruthRole": "read_model",
+  "canAffectControlFlow": false,
+  "controlAuthority": {
+    "allowedControlSource": "requirement-record.json",
+    "dashboardCanCloseRequirement": false,
+    "forbiddenCompletionSources": [
+      "dashboard_health_score",
+      "dashboard_green",
+      "score_record",
+      "score_green",
+      "legacy_gate_report",
+      "report_exists",
+      "sft_dataset_generated",
+      "epic_done",
+      "story_done",
+      "task_done",
+      "bugfix_fixed",
+      "party_mode_summary",
+      "install_config",
+      "schema_file"
+    ]
+  },
+  "models": [
+    {
+      "id": "requirement_confirmation",
+      "displayName": "需求确认",
+      "coreQuestion": "用户确认了什么，哪些 ID 被允许进入实施？",
+      "status": "running",
+      "evidenceSignals": [
+        "run=run-dashboard-trace-032",
+        "flow=story",
+        "work_item=none"
+      ],
+      "drillDownSliceRefs": [
+        "story:15-1-runtime-dashboard-read-model",
+        "bugfix:orphan:dashboard-green",
+        "standalone_task:orphan:dashboard-projection"
+      ]
+    },
+    {
+      "id": "architecture_confirmation",
+      "displayName": "架构确认",
+      "coreQuestion": "实施是否仍在当前架构确认覆盖范围内？",
+      "status": "not_projected",
+      "evidenceSignals": [
+        "reviewer_registry=none",
+        "active_consumer=none"
+      ],
+      "drillDownSliceRefs": [
+        "story:15-1-runtime-dashboard-read-model",
+        "bugfix:orphan:dashboard-green",
+        "standalone_task:orphan:dashboard-projection"
+      ]
+    },
+    {
+      "id": "implementation_readiness",
+      "displayName": "实施准备",
+      "coreQuestion": "受控记录是否允许开始或继续实施？",
+      "status": "running",
+      "evidenceSignals": [
+        "execution_status=running",
+        "fallback_used=no",
+        "last_rerun_gate=pass"
+      ],
+      "drillDownSliceRefs": [
+        "story:15-1-runtime-dashboard-read-model",
+        "bugfix:orphan:dashboard-green",
+        "standalone_task:orphan:dashboard-projection"
+      ]
+    },
+    {
+      "id": "execution_closure",
+      "displayName": "执行闭合",
+      "coreQuestion": "每个 trace 是否有当前运行证据、命令和 closure？",
+      "status": "running",
+      "evidenceSignals": [
+        "stage_count=1",
+        "score_records=1",
+        "finding_count=0"
+      ],
+      "drillDownSliceRefs": [
+        "story:15-1-runtime-dashboard-read-model",
+        "bugfix:orphan:dashboard-green",
+        "standalone_task:orphan:dashboard-projection"
+      ]
+    },
+    {
+      "id": "audit_review",
+      "displayName": "审计复核",
+      "coreQuestion": "失败、评分、审计和 rerun 是否进入同一受控闭环？",
+      "status": "blocked",
+      "evidenceSignals": [
+        "audit_status=PASS",
+        "rerun_decision=rerun_required",
+        "score_failure_mode=succeeded"
+      ],
+      "drillDownSliceRefs": [
+        "story:15-1-runtime-dashboard-read-model",
+        "bugfix:orphan:dashboard-green",
+        "standalone_task:orphan:dashboard-projection"
+      ]
+    },
+    {
+      "id": "delivery_confirmation",
+      "displayName": "交付确认",
+      "coreQuestion": "最终 decision 是否只来自当前 closeout attempt？",
+      "status": "not_approved",
+      "evidenceSignals": [
+        "closeout_approved=no",
+        "packet_execution_closure_status=retry_pending"
+      ],
+      "drillDownSliceRefs": [
+        "story:15-1-runtime-dashboard-read-model",
+        "bugfix:orphan:dashboard-green",
+        "standalone_task:orphan:dashboard-projection"
+      ]
+    }
+  ],
+  "entryFlowSlices": {
+    "stories": [
+      {
+        "sliceId": "story:15-1-runtime-dashboard-read-model",
+        "workItemType": "story",
+        "flow": "story",
+        "title": "15-1-runtime-dashboard-read-model",
+        "boardStatus": "done",
+        "runtimeStatus": "passed",
+        "currentStage": "implement",
+        "boardGroupId": "epic:epic-15",
+        "boardGroupLabel": "Epic 15"
+      }
+    ],
+    "bugfixes": [
+      {
+        "sliceId": "bugfix:orphan:dashboard-green",
+        "workItemType": "bugfix",
+        "flow": "bugfix",
+        "title": "Dashboard Green Bugfix",
+        "boardStatus": "in_progress",
+        "runtimeStatus": "failed",
+        "currentStage": "implement",
+        "boardGroupId": "queue:bugfix",
+        "boardGroupLabel": "Bugfix Queue"
+      }
+    ],
+    "standaloneTasks": [
+      {
+        "sliceId": "standalone_task:orphan:dashboard-projection",
+        "workItemType": "standalone_task",
+        "flow": "standalone_tasks",
+        "title": "Dashboard Projection",
+        "boardStatus": "in_progress",
+        "runtimeStatus": "running",
+        "currentStage": "implement",
+        "boardGroupId": "queue:standalone-ops",
+        "boardGroupLabel": "Standalone / Ops"
+      }
+    ],
+    "epics": [
+      {
+        "sliceId": "epic:epic-15",
+        "label": "Epic 15",
+        "status": "done",
+        "counts": {
+          "todo": 0,
+          "in_progress": 0,
+          "done": 1
+        }
+      }
+    ]
+  },
+  "businessObjectViews": {
+    "epicStoryView": {
+      "viewName": "epicStoryView",
+      "role": "user_navigation_projection",
+      "sourceOfTruthRole": "projection",
+      "canAffectControlFlow": false,
+      "statusDerivation": "six_mental_models_requirement_record_projection",
+      "currentCloseoutAttemptId": "reviewer-closeout:2026-05-20T18:00:00.000Z",
+      "items": [
+        {
+          "objectId": "epic:epic-15",
+          "objectType": "epic",
+          "title": "Epic 15",
+          "projectedStatus": "closeout_pass_projected",
+          "linkedRequirementIds": [
+            "dashboard:epic:epic:epic-15"
+          ],
+          "traceRows": [
+            "trace:epic:epic-15"
+          ],
+          "artifactRefs": [
+            "epic:epic-15"
+          ],
+          "blockingReasons": [],
+          "currentCloseoutAttemptId": "reviewer-closeout:2026-05-20T18:00:00.000Z",
+          "nextControlledSource": "requirement-record.json",
+          "canAffectControlFlow": false,
+          "sourceSlices": [
+            "epic:epic-15"
+          ]
+        },
+        {
+          "objectId": "story:15-1-runtime-dashboard-read-model",
+          "objectType": "story",
+          "title": "15-1-runtime-dashboard-read-model",
+          "projectedStatus": "closeout_pass_projected",
+          "linkedRequirementIds": [
+            "dashboard:story:story:15-1-runtime-dashboard-read-model"
+          ],
+          "traceRows": [
+            "trace:story:15-1-runtime-dashboard-read-model"
+          ],
+          "artifactRefs": [
+            "story:15-1-runtime-dashboard-read-model"
+          ],
+          "blockingReasons": [],
+          "currentCloseoutAttemptId": "reviewer-closeout:2026-05-20T18:00:00.000Z",
+          "nextControlledSource": "requirement-record.json",
+          "canAffectControlFlow": false,
+          "sourceSlices": [
+            "story:15-1-runtime-dashboard-read-model"
+          ]
+        }
+      ]
+    },
+    "taskView": {
+      "viewName": "taskView",
+      "role": "user_navigation_projection",
+      "sourceOfTruthRole": "projection",
+      "canAffectControlFlow": false,
+      "statusDerivation": "six_mental_models_requirement_record_projection",
+      "currentCloseoutAttemptId": "reviewer-closeout:2026-05-20T18:00:00.000Z",
+      "items": [
+        {
+          "objectId": "standalone_task:orphan:dashboard-projection",
+          "objectType": "task",
+          "title": "Dashboard Projection",
+          "projectedStatus": "executing_or_missing_evidence",
+          "linkedRequirementIds": [
+            "dashboard:standalone_tasks:standalone_task:orphan:dashboard-projection"
+          ],
+          "traceRows": [
+            "trace:standalone_task:orphan:dashboard-projection"
+          ],
+          "artifactRefs": [
+            "standalone_task:orphan:dashboard-projection"
+          ],
+          "blockingReasons": [
+            "business_object_not_terminal"
+          ],
+          "currentCloseoutAttemptId": "reviewer-closeout:2026-05-20T18:00:00.000Z",
+          "nextControlledSource": "requirement-record.json",
+          "canAffectControlFlow": false,
+          "sourceSlices": [
+            "standalone_task:orphan:dashboard-projection"
+          ]
+        }
+      ]
+    },
+    "bugfixView": {
+      "viewName": "bugfixView",
+      "role": "user_navigation_projection",
+      "sourceOfTruthRole": "projection",
+      "canAffectControlFlow": false,
+      "statusDerivation": "six_mental_models_requirement_record_projection",
+      "currentCloseoutAttemptId": "reviewer-closeout:2026-05-20T18:00:00.000Z",
+      "items": [
+        {
+          "objectId": "bugfix:orphan:dashboard-green",
+          "objectType": "bugfix",
+          "title": "Dashboard Green Bugfix",
+          "projectedStatus": "blocked_in_audit_review",
+          "linkedRequirementIds": [
+            "dashboard:bugfix:bugfix:orphan:dashboard-green"
+          ],
+          "traceRows": [
+            "trace:bugfix:orphan:dashboard-green"
+          ],
+          "artifactRefs": [
+            "bugfix:orphan:dashboard-green"
+          ],
+          "blockingReasons": [
+            "runtime_status:failed",
+            "business_object_not_terminal"
+          ],
+          "currentCloseoutAttemptId": "reviewer-closeout:2026-05-20T18:00:00.000Z",
+          "nextControlledSource": "requirement-record.json",
+          "canAffectControlFlow": false,
+          "sourceSlices": [
+            "bugfix:orphan:dashboard-green"
+          ]
+        }
+      ]
+    },
+    "scoreView": {
+      "viewName": "scoreView",
+      "role": "read_model_projection",
+      "sourceOfTruthRole": "read_model",
+      "canAffectControlFlow": false,
+      "statusDerivation": "six_mental_models_requirement_record_projection",
+      "currentCloseoutAttemptId": "reviewer-closeout:2026-05-20T18:00:00.000Z",
+      "items": [
+        {
+          "objectId": "score:run-dashboard-trace-032:implement",
+          "objectType": "score",
+          "title": "implement score 96",
+          "projectedStatus": "audit_score_projected",
+          "linkedRequirementIds": [
+            "dashboard:score:run-dashboard-trace-032"
+          ],
+          "traceRows": [
+            "trace:score:run-dashboard-trace-032:implement"
+          ],
+          "artifactRefs": [
+            "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/dashboard/report.md"
+          ],
+          "blockingReasons": [],
+          "currentCloseoutAttemptId": "reviewer-closeout:2026-05-20T18:00:00.000Z",
+          "nextControlledSource": "requirement-record.json",
+          "canAffectControlFlow": false,
+          "sourceSlices": [
+            "run-dashboard-trace-032"
+          ]
+        }
+      ]
+    },
+    "reportView": {
+      "viewName": "reportView",
+      "role": "evidence_navigation_projection",
+      "sourceOfTruthRole": "read_model",
+      "canAffectControlFlow": false,
+      "statusDerivation": "six_mental_models_requirement_record_projection",
+      "currentCloseoutAttemptId": "reviewer-closeout:2026-05-20T18:00:00.000Z",
+      "items": [
+        {
+          "objectId": "report:_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/dashboard/report.md",
+          "objectType": "report",
+          "title": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/dashboard/report.md",
+          "projectedStatus": "audit_report_projected",
+          "linkedRequirementIds": [
+            "dashboard:report:_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/dashboard/report.md"
+          ],
+          "traceRows": [
+            "trace:report:_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/dashboard/report.md"
+          ],
+          "artifactRefs": [
+            "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/dashboard/report.md"
+          ],
+          "blockingReasons": [
+            "reviewer_closeout_blocked_projected"
+          ],
+          "currentCloseoutAttemptId": "reviewer-closeout:2026-05-20T18:00:00.000Z",
+          "nextControlledSource": "requirement-record.json",
+          "canAffectControlFlow": false,
+          "sourceSlices": [
+            "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/dashboard/report.md"
+          ]
+        },
+        {
+          "objectId": "report:_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/dashboard/report.md",
+          "objectType": "report",
+          "title": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/dashboard/report.md",
+          "projectedStatus": "score_report_projected",
+          "linkedRequirementIds": [
+            "dashboard:report:run-dashboard-trace-032"
+          ],
+          "traceRows": [
+            "trace:report:run-dashboard-trace-032:implement"
+          ],
+          "artifactRefs": [
+            "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/dashboard/report.md"
+          ],
+          "blockingReasons": [],
+          "currentCloseoutAttemptId": "reviewer-closeout:2026-05-20T18:00:00.000Z",
+          "nextControlledSource": "requirement-record.json",
+          "canAffectControlFlow": false,
+          "sourceSlices": [
+            "run-dashboard-trace-032"
+          ]
+        }
+      ]
+    },
+    "sftDatasetView": {
+      "viewName": "sftDatasetView",
+      "role": "data_product_projection",
+      "sourceOfTruthRole": "read_model",
+      "canAffectControlFlow": false,
+      "statusDerivation": "six_mental_models_requirement_record_projection",
+      "currentCloseoutAttemptId": "reviewer-closeout:2026-05-20T18:00:00.000Z",
+      "items": [
+        {
+          "objectId": "sft:story:15-1-runtime-dashboard-read-model",
+          "objectType": "sft_dataset",
+          "title": "15-1-runtime-dashboard-read-model SFT ready",
+          "projectedStatus": "sft_ready_projected",
+          "linkedRequirementIds": [
+            "dashboard:sft:story:15-1-runtime-dashboard-read-model"
+          ],
+          "traceRows": [
+            "trace:sft:story:15-1-runtime-dashboard-read-model"
+          ],
+          "artifactRefs": [
+            "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/dashboard/story.md"
+          ],
+          "blockingReasons": [],
+          "currentCloseoutAttemptId": "reviewer-closeout:2026-05-20T18:00:00.000Z",
+          "nextControlledSource": "requirement-record.json",
+          "canAffectControlFlow": false,
+          "sourceSlices": [
+            "story:15-1-runtime-dashboard-read-model"
+          ]
+        }
+      ]
+    }
+  },
+  "forbiddenDashboardDisplays": [
+    {
+      "id": "epicsDoneAsCloseoutPass",
+      "decision": "pass",
+      "reason": "display remains read-only and cannot write requirement, closeout, or production-ready state"
+    },
+    {
+      "id": "storiesDoneAsRequirementPass",
+      "decision": "pass",
+      "reason": "display remains read-only and cannot write requirement, closeout, or production-ready state"
+    },
+    {
+      "id": "tasksDoneAsDeliveryPass",
+      "decision": "pass",
+      "reason": "display remains read-only and cannot write requirement, closeout, or production-ready state"
+    },
+    {
+      "id": "scoreGreenAsCloseoutPass",
+      "decision": "pass",
+      "reason": "display remains read-only and cannot write requirement, closeout, or production-ready state"
+    },
+    {
+      "id": "reportExistsAsAuditPass",
+      "decision": "pass",
+      "reason": "display remains read-only and cannot write requirement, closeout, or production-ready state"
+    },
+    {
+      "id": "sftDatasetGeneratedAsProductionReady",
+      "decision": "pass",
+      "reason": "display remains read-only and cannot write requirement, closeout, or production-ready state"
+    },
+    {
+      "id": "dashboardGreenWithoutCurrentAttempt",
+      "decision": "pass",
+      "reason": "display remains read-only and cannot write requirement, closeout, or production-ready state"
+    }
+  ],
+  "projectionGate": {
+    "decision": "pass",
+    "issues": []
+  }
+}

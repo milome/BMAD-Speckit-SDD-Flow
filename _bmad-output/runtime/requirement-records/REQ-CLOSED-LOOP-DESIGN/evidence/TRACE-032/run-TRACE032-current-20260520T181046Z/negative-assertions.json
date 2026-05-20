@@ -1,0 +1,70 @@
+{
+  "traceRow": "TRACE-032",
+  "generatedAt": "2026-05-20T18:11:01.059Z",
+  "assertions": [
+    {
+      "id": "NEG-032-dashboard-completion-shortcut-blocked",
+      "status": "pass",
+      "evidence": "forbiddenDashboardDisplays includes epic/story/task/bugfix/score/report/SFT/dashboard green shortcut checks; dashboardGreenWithoutCurrentAttempt is blocked when current closeout attempt is missing."
+    },
+    {
+      "id": "NEG-033-business-object-control-source-blocked",
+      "status": "pass",
+      "evidence": "All businessObjectViews/items expose canAffectControlFlow=false, nextControlledSource=requirement-record.json, linkedRequirementIds, traceRows, artifactRefs, blockingReasons, and currentCloseoutAttemptId fields."
+    },
+    {
+      "id": "MUST-042-six-model-top-level-preserved",
+      "status": "pass",
+      "evidence": "sixMentalModelView remains the dashboard top-level model list; epic/story/task/bugfix/score/report/SFT are nested read-only projections only."
+    }
+  ],
+  "projectionGate": {
+    "decision": "pass",
+    "issues": []
+  },
+  "forbiddenDashboardDisplays": [
+    {
+      "id": "epicsDoneAsCloseoutPass",
+      "decision": "pass",
+      "reason": "display remains read-only and cannot write requirement, closeout, or production-ready state"
+    },
+    {
+      "id": "storiesDoneAsRequirementPass",
+      "decision": "pass",
+      "reason": "display remains read-only and cannot write requirement, closeout, or production-ready state"
+    },
+    {
+      "id": "tasksDoneAsDeliveryPass",
+      "decision": "pass",
+      "reason": "display remains read-only and cannot write requirement, closeout, or production-ready state"
+    },
+    {
+      "id": "scoreGreenAsCloseoutPass",
+      "decision": "pass",
+      "reason": "display remains read-only and cannot write requirement, closeout, or production-ready state"
+    },
+    {
+      "id": "reportExistsAsAuditPass",
+      "decision": "pass",
+      "reason": "display remains read-only and cannot write requirement, closeout, or production-ready state"
+    },
+    {
+      "id": "sftDatasetGeneratedAsProductionReady",
+      "decision": "pass",
+      "reason": "display remains read-only and cannot write requirement, closeout, or production-ready state"
+    },
+    {
+      "id": "dashboardGreenWithoutCurrentAttempt",
+      "decision": "pass",
+      "reason": "display remains read-only and cannot write requirement, closeout, or production-ready state"
+    }
+  ],
+  "businessObjectViewNames": [
+    "epicStoryView",
+    "taskView",
+    "bugfixView",
+    "scoreView",
+    "reportView",
+    "sftDatasetView"
+  ]
+}

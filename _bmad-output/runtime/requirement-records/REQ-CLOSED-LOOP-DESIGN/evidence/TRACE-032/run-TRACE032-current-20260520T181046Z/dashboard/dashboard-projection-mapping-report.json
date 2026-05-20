@@ -1,0 +1,86 @@
+{
+  "reportType": "dashboard_projection_mapping",
+  "generatedAt": "2026-05-20T18:10:47.644Z",
+  "generatedBy": "codex",
+  "decision": "pass",
+  "projectionPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-032/run-TRACE032-current-20260520T181046Z/dashboard/dashboard-read-model-projection.json",
+  "projectionHash": "sha256:61b285e886cae4f25aac4f1d0e8934fd2c022465361b2b33dc7bc12b02ff5d12",
+  "sixMentalModelView": [
+    "requirement_confirmation",
+    "architecture_confirmation",
+    "implementation_readiness",
+    "execution_closure",
+    "audit_review",
+    "delivery_confirmation"
+  ],
+  "businessObjectViews": {
+    "epicStoryView": {
+      "itemCount": 2,
+      "canAffectControlFlow": false,
+      "currentCloseoutAttemptId": "reviewer-closeout:2026-05-20T18:00:00.000Z"
+    },
+    "taskView": {
+      "itemCount": 1,
+      "canAffectControlFlow": false,
+      "currentCloseoutAttemptId": "reviewer-closeout:2026-05-20T18:00:00.000Z"
+    },
+    "bugfixView": {
+      "itemCount": 1,
+      "canAffectControlFlow": false,
+      "currentCloseoutAttemptId": "reviewer-closeout:2026-05-20T18:00:00.000Z"
+    },
+    "scoreView": {
+      "itemCount": 1,
+      "canAffectControlFlow": false,
+      "currentCloseoutAttemptId": "reviewer-closeout:2026-05-20T18:00:00.000Z"
+    },
+    "reportView": {
+      "itemCount": 2,
+      "canAffectControlFlow": false,
+      "currentCloseoutAttemptId": "reviewer-closeout:2026-05-20T18:00:00.000Z"
+    },
+    "sftDatasetView": {
+      "itemCount": 1,
+      "canAffectControlFlow": false,
+      "currentCloseoutAttemptId": "reviewer-closeout:2026-05-20T18:00:00.000Z"
+    }
+  },
+  "forbiddenDashboardDisplays": [
+    {
+      "id": "epicsDoneAsCloseoutPass",
+      "decision": "pass",
+      "reason": "display remains read-only and cannot write requirement, closeout, or production-ready state"
+    },
+    {
+      "id": "storiesDoneAsRequirementPass",
+      "decision": "pass",
+      "reason": "display remains read-only and cannot write requirement, closeout, or production-ready state"
+    },
+    {
+      "id": "tasksDoneAsDeliveryPass",
+      "decision": "pass",
+      "reason": "display remains read-only and cannot write requirement, closeout, or production-ready state"
+    },
+    {
+      "id": "scoreGreenAsCloseoutPass",
+      "decision": "pass",
+      "reason": "display remains read-only and cannot write requirement, closeout, or production-ready state"
+    },
+    {
+      "id": "reportExistsAsAuditPass",
+      "decision": "pass",
+      "reason": "display remains read-only and cannot write requirement, closeout, or production-ready state"
+    },
+    {
+      "id": "sftDatasetGeneratedAsProductionReady",
+      "decision": "pass",
+      "reason": "display remains read-only and cannot write requirement, closeout, or production-ready state"
+    },
+    {
+      "id": "dashboardGreenWithoutCurrentAttempt",
+      "decision": "pass",
+      "reason": "display remains read-only and cannot write requirement, closeout, or production-ready state"
+    }
+  ],
+  "issues": []
+}
