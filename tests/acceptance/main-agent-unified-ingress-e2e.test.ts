@@ -6,6 +6,10 @@ import {
   runUnifiedIngress,
   type MainAgentHostKind,
 } from '../../scripts/main-agent-unified-ingress';
+import {
+  governanceEventTypeRegistryPolicyHash,
+  governanceEventTypeRegistryHash,
+} from '../../scripts/governance-transport-envelope';
 import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
@@ -52,6 +56,11 @@ function prepareRoot(hostKind: MainAgentHostKind, hookAvailable: boolean): strin
         sourcePath: `specs/${recordId}/story.md`,
         runId: `ingress-${hostKind}`,
         storyId: `S-${hostKind}`,
+        architectureConfirmationState: {
+          status: 'active',
+          currentArchitectureConfirmationHash:
+            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        },
       },
       null,
       2
@@ -96,6 +105,47 @@ function ingressInput(root: string, hostKind: MainAgentHostKind) {
     stage: 'implement',
   };
 }
+
+const GOVERNANCE_EVENT_TYPE_REGISTRY = [
+  {
+    eventType: 'hook_trust_receipt_recorded',
+    payloadKind: 'decision',
+    writesControlFields: ['hookTrustReceipts'],
+    allowedDecisionValues: ['pass', 'fail', 'blocked'],
+    payloadContract: {
+      requiredFields: ['eventType', 'decision'],
+      forbiddenFields: ['result', 'status'],
+      requiredSourceRefs: false,
+      allowedControlWriteMode: 'control',
+    },
+  },
+];
+const GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY = {
+  controlFieldVocabulary: ['hookTrustReceipts'],
+  payloadKindContracts: [
+    {
+      payloadKind: 'decision',
+      requiredFields: ['eventType', 'decision'],
+      forbiddenFields: ['result', 'status'],
+      allowedControlWriteModes: ['control'],
+    },
+  ],
+  controlWriteModePolicies: [
+    {
+      allowedControlWriteMode: 'control',
+      allowedWritesControlFields: ['hookTrustReceipts'],
+    },
+  ],
+  eventSpecificRequirements: [],
+};
+
+const REGISTRY_BINDING = {
+  governanceEventTypeRegistryPolicy: GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY,
+  governanceEventTypeRegistryPolicyHash: governanceEventTypeRegistryPolicyHash(GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY),
+  governanceEventTypeRegistry: GOVERNANCE_EVENT_TYPE_REGISTRY,
+  governanceEventTypeRegistryHash: governanceEventTypeRegistryHash(GOVERNANCE_EVENT_TYPE_REGISTRY),
+  architectureConfirmationHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+};
 
 function writeFakeCodexBinary(root: string): string {
   const fakeCodexPath = path.join(root, 'fake-codex.cjs');
@@ -403,6 +453,7 @@ describe('main-agent unified ingress e2e', () => {
       const receipt = runUnifiedIngress({
         ...ingressInput(root, 'codex'),
         codexHookTrustEnvelope: codexHookTrustEnvelope(),
+        ...REGISTRY_BINDING,
       });
 
       expect(receipt.hostMode).toBe('hooks_enabled');
@@ -444,6 +495,7 @@ describe('main-agent unified ingress e2e', () => {
       const receipt = runUnifiedIngress({
         ...ingressInput(root, 'codex'),
         codexHookTrustEnvelope: invalid,
+        ...REGISTRY_BINDING,
       });
 
       expect(receipt.hostMode).toBe('no_hooks');

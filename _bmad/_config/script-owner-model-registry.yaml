@@ -46,12 +46,15 @@ scripts:
     stage: runtime_orchestration
     producer: main_agent
     inputArtifacts:
-      - _bmad-output/runtime/context/project.json
-      - _bmad-output/runtime/governance/orchestration-state/*.json
-      - _bmad-output/runtime/governance/packets/**
+      - ResolvedRuntimeContext
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/runtime-policy-snapshot.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/recovery-context.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/orchestration/orchestration-state/*.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/prompts/prompt-packets/**
     outputArtifacts:
-      - _bmad-output/runtime/governance/orchestration-state/*.json
-      - _bmad-output/runtime/governance/packets/**
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/orchestration/orchestration-state/*.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/prompts/prompt-packets/**
     recordEventTypes:
       - execution_iteration_recorded
       - recovery_context_updated
@@ -70,7 +73,7 @@ scripts:
       - cli_invocation
     outputArtifacts:
       - >-
-        _bmad-output/runtime/requirements/<requirement-set-id>/artifacts/unified-ingress-<run-id>.json
+        _bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/unified-ingress-<run-id>.json
     recordEventTypes:
       - execution_iteration_recorded
       - recovery_context_updated
@@ -85,9 +88,9 @@ scripts:
     stage: runtime_state
     producer: main_agent
     inputArtifacts:
-      - _bmad-output/runtime/governance/orchestration-state/*.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/orchestration/orchestration-state/*.json
     outputArtifacts:
-      - _bmad-output/runtime/governance/orchestration-state/*.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/orchestration/orchestration-state/*.json
     recordEventTypes:
       - recovery_context_updated
     completionAuthority: evidence_only
@@ -104,7 +107,7 @@ scripts:
       - requirement_record
       - runtime_policy
     outputArtifacts:
-      - _bmad-output/runtime/governance/packets/<sessionId>/**
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/prompts/prompt-packets/<packet-id>.md
     recordEventTypes:
       - execution_iteration_recorded
     completionAuthority: evidence_only
@@ -118,12 +121,13 @@ scripts:
     stage: worker_execution
     producer: codex_worker_adapter
     inputArtifacts:
-      - _bmad-output/runtime/governance/packets/<sessionId>/**
-      - _bmad-output/runtime/context/project.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/prompts/prompt-packets/<packet-id>.md
+      - ResolvedRuntimeContext
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/runtime-policy-snapshot.json
     outputArtifacts:
-      - _bmad-output/runtime/codex/logs/<packetId>.stdin.prompt.txt
-      - _bmad-output/runtime/codex/logs/<packetId>.stdout.log
-      - _bmad-output/runtime/codex/logs/<packetId>.stderr.log
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/prompts/worker-io/<packet-id>.stdin.prompt.txt
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/executions/worker-logs/<packet-id>.stdout.log
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/executions/worker-logs/<packet-id>.stderr.log
       - task_report
     recordEventTypes:
       - task_report_ingested
@@ -185,33 +189,37 @@ scripts:
     writesRuntimeState: false
     writesRequirementEvidence: false
     hookParityRequired: false
-  - scriptId: runtime_context
-    path: scripts/runtime-context.ts
+  - scriptId: resolve_active_requirement
+    path: scripts/resolve-active-requirement.ts
     ownerModel: execution_closure
     secondaryModels: []
-    stage: runtime_context
-    producer: runtime_context
+    stage: active_requirement_resolution
+    producer: active_requirement_resolver
     inputArtifacts:
-      - _bmad-output/runtime/context/**/*.json
+      - _bmad-output/runtime/requirement-records/index.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/runtime-policy-snapshot.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/recovery-context.json
     outputArtifacts:
-      - runtime_context_read
+      - ResolvedRuntimeContext
     recordEventTypes:
       - recovery_context_updated
     completionAuthority: evidence_only
     writesRuntimeState: false
     writesRequirementEvidence: false
     hookParityRequired: false
-  - scriptId: runtime_context_registry
-    path: scripts/runtime-context-registry.ts
+  - scriptId: active_requirement_locator
+    path: scripts/active-requirement-locator.ts
     ownerModel: execution_closure
     secondaryModels:
       - audit_review
-    stage: runtime_registry
-    producer: runtime_context
+    stage: active_requirement_location
+    producer: active_requirement_resolver
     inputArtifacts:
-      - _bmad-output/runtime/registry.json
+      - _bmad-output/runtime/requirement-records/index.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json
     outputArtifacts:
-      - _bmad-output/runtime/registry.json
+      - ResolvedRuntimeContext
     recordEventTypes:
       - recovery_context_updated
       - audit_iteration_recorded
@@ -219,32 +227,18 @@ scripts:
     writesRuntimeState: true
     writesRequirementEvidence: true
     hookParityRequired: false
-  - scriptId: write_runtime_context
-    path: scripts/write-runtime-context.cjs
+  - scriptId: write_runtime_policy_snapshot_and_recovery_context
+    path: scripts/write-runtime-policy-snapshot-and-recovery-context.cjs
     ownerModel: execution_closure
     secondaryModels: []
-    stage: runtime_context
-    producer: runtime_context
+    stage: runtime_policy_snapshot_and_recovery_context
+    producer: active_requirement_resolver
     inputArtifacts:
-      - runtime_context_payload
+      - runtime_policy_snapshot_payload
+      - recovery_context_payload
     outputArtifacts:
-      - _bmad-output/runtime/context/project.json
-    recordEventTypes:
-      - recovery_context_updated
-    completionAuthority: evidence_only
-    writesRuntimeState: true
-    writesRequirementEvidence: false
-    hookParityRequired: false
-  - scriptId: write_runtime_registry
-    path: scripts/write-runtime-registry.js
-    ownerModel: execution_closure
-    secondaryModels: []
-    stage: runtime_registry
-    producer: runtime_context
-    inputArtifacts:
-      - runtime_registry_payload
-    outputArtifacts:
-      - _bmad-output/runtime/registry.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/runtime-policy-snapshot.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/recovery-context.json
     recordEventTypes:
       - recovery_context_updated
     completionAuthority: evidence_only
@@ -276,7 +270,7 @@ scripts:
     stage: implementation_entry_assertion
     producer: runtime_governance
     inputArtifacts:
-      - _bmad-output/runtime/registry.json
+      - _bmad-output/runtime/requirement-records/context/runtime-registry.json
       - runtime_policy_payload
       - implementation_entry_gate
     outputArtifacts:
@@ -300,7 +294,7 @@ scripts:
       - requirement_contract
       - story_document
     outputArtifacts:
-      - _bmad-output/runtime/governance/user_story_mapping.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/task-bindings.jsonl
     recordEventTypes:
       - contract_summary_recorded
       - requirement_closure_updated
@@ -335,10 +329,10 @@ scripts:
     producer: adaptive_intake
     inputArtifacts:
       - requirement_contract
-      - _bmad-output/runtime/governance/user_story_mapping.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/task-bindings.jsonl
     outputArtifacts:
-      - _bmad-output/runtime/governance/adaptive-intake-queue-sync/**
-      - _bmad-output/runtime/governance/adaptive-intake-drafts/**
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/intake/queue-sync/**
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/intake/drafts/**
     recordEventTypes:
       - contract_summary_recorded
       - readiness_check_recorded
@@ -355,8 +349,8 @@ scripts:
     stage: adaptive_intake_audit
     producer: adaptive_intake
     inputArtifacts:
-      - _bmad-output/runtime/governance/user_story_mapping.json
-      - _bmad-output/runtime/governance/adaptive-intake-queue-sync/**
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/task-bindings.jsonl
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/intake/queue-sync/**
     outputArtifacts:
       - adaptive_intake_proof_report
     recordEventTypes:
@@ -376,7 +370,7 @@ scripts:
     inputArtifacts:
       - queue_item
     outputArtifacts:
-      - _bmad-output/runtime/governance/queue/**
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/events/ingest-events.jsonl
     recordEventTypes:
       - execution_iteration_recorded
       - rerun_required
@@ -394,7 +388,7 @@ scripts:
     inputArtifacts:
       - stage_result
     outputArtifacts:
-      - _bmad-output/runtime/governance/queue/pending-events/**
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/events/pending-events.jsonl
     recordEventTypes:
       - audit_iteration_recorded
       - rerun_required
@@ -411,7 +405,8 @@ scripts:
     producer: governance_remediation
     inputArtifacts:
       - gate_failure
-      - runtime_context
+      - ResolvedRuntimeContext
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/runtime-policy-snapshot.json
       - provider_hints
     outputArtifacts:
       - remediation_artifact
@@ -465,9 +460,9 @@ scripts:
     stage: execution_store
     producer: governance_execution
     inputArtifacts:
-      - _bmad-output/runtime/governance/executions/**
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/executions/**
     outputArtifacts:
-      - _bmad-output/runtime/governance/executions/**
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/executions/**
     recordEventTypes:
       - execution_iteration_recorded
       - recovery_context_updated
@@ -482,7 +477,7 @@ scripts:
     stage: packet_dispatch
     producer: governance_execution
     inputArtifacts:
-      - _bmad-output/runtime/governance/executions/**
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/executions/**
     outputArtifacts:
       - execution_record_launch_info
     recordEventTypes:
@@ -537,8 +532,8 @@ scripts:
     stage: reconciliation
     producer: governance_execution
     inputArtifacts:
-      - _bmad-output/runtime/governance/executions/**
-      - _bmad-output/runtime/governance/packets/**
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/executions/**
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/prompts/prompt-packets/**
     outputArtifacts:
       - reconciliation_report
     recordEventTypes:
@@ -666,7 +661,7 @@ scripts:
     outputArtifacts:
       - audit_closeout
       - reviewer_closeout_envelope
-      - runtime_context_registry_update
+      - recovery_context_update_request
     recordEventTypes:
       - audit_iteration_recorded
       - audit_finding_recorded
@@ -723,7 +718,7 @@ scripts:
       - _bmad/_config/main-agent-quality-gate.thresholds.json
       - runtime_evidence
     outputArtifacts:
-      - _bmad-output/runtime/gates/main-agent-quality-gate-report.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/gates/quality-gate-report.json
     recordEventTypes:
       - closeout_check_recorded
     completionAuthority: evidence_only
@@ -741,7 +736,7 @@ scripts:
       - pr_topology
       - sprint_status_token
     outputArtifacts:
-      - _bmad-output/runtime/gates/main-agent-release-gate-report.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/gates/release-gate-report.json
     recordEventTypes:
       - closeout_check_recorded
     completionAuthority: evidence_only
@@ -761,7 +756,7 @@ scripts:
       - sprint_status_audit
       - completion_intent
     outputArtifacts:
-      - _bmad-output/runtime/gates/main-agent-delivery-truth-gate-report.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/gates/delivery-truth-gate-report.json
     recordEventTypes:
       - closeout_check_recorded
     completionAuthority: evidence_only
@@ -793,7 +788,7 @@ scripts:
     inputArtifacts:
       - runtime_orchestration
     outputArtifacts:
-      - _bmad-output/runtime/soak/main-agent-soak-report.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/soak/main-agent-soak-report.json
     recordEventTypes:
       - closeout_check_recorded
     completionAuthority: evidence_only
@@ -809,7 +804,7 @@ scripts:
     inputArtifacts:
       - pr_topology
     outputArtifacts:
-      - _bmad-output/runtime/e2e/multi-host-pr-orchestration-report.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/e2e/multi-host-pr-orchestration-report.json
     recordEventTypes:
       - closeout_check_recorded
     completionAuthority: evidence_only
@@ -820,12 +815,12 @@ scripts:
     path: scripts/main-agent-dual-host-pr-orchestrator.ts
     ownerModel: delivery_confirmation
     secondaryModels: []
-    stage: host_matrix_compatibility
+    stage: host_matrix_validation
     producer: delivery_gate
     inputArtifacts:
       - pr_topology
     outputArtifacts:
-      - dual_host_report
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/e2e/dual-host-pr-orchestration-report.json
     recordEventTypes:
       - closeout_check_recorded
     completionAuthority: evidence_only
@@ -890,12 +885,12 @@ scripts:
     stage: dashboard_projection
     producer: dashboard
     inputArtifacts:
-      - _bmad-output/runtime/requirements/index.json
-      - _bmad-output/runtime/requirements/artifact-index.json
-      - _bmad-output/runtime/registry.json
+      - _bmad-output/runtime/requirement-records/index.json
+      - _bmad-output/runtime/requirement-records/artifact-index.json
+      - _bmad-output/runtime/requirement-records/context/runtime-registry.json
     outputArtifacts:
-      - _bmad-output/dashboard.md
-      - _bmad-output/dashboard/runtime-dashboard.json
+      - _bmad-output/runtime/requirement-records/dashboard/<dashboard-id>/dashboard.md
+      - _bmad-output/runtime/requirement-records/dashboard/<dashboard-id>/runtime-dashboard.json
     recordEventTypes:
       - closeout_check_recorded
     completionAuthority: none
@@ -910,13 +905,13 @@ scripts:
     stage: governed_sample_candidate_build
     producer: scoring_analytics
     inputArtifacts:
-      - _bmad-output/runtime/requirements/index.json
-      - _bmad-output/runtime/requirements/artifact-index.json
+      - _bmad-output/runtime/requirement-records/index.json
+      - _bmad-output/runtime/requirement-records/artifact-index.json
       - mentor_event
       - sample_route
       - governed_source_artifacts
     outputArtifacts:
-      - _bmad-output/runtime/requirements/<requirement-set-id>/sft/canonical-samples.jsonl
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/sft/canonical-samples.jsonl
       - candidate_build_summary
     recordEventTypes:
       - audit_iteration_recorded
@@ -955,7 +950,7 @@ scripts:
       - dedup_report
       - contamination_report
     outputArtifacts:
-      - _bmad-output/runtime/requirements/<requirement-set-id>/sft/dataset-manifest.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/sft/dataset-manifest.json
       - _bmad-output/datasets/<dataset-id>/dataset-manifest.json
       - dataset_card
       - validation_report
@@ -966,59 +961,159 @@ scripts:
     writesRuntimeState: false
     writesRequirementEvidence: true
     hookParityRequired: false
-  - scriptId: sft_extract_legacy
+  - scriptId: sft_extract
     path: scripts/sft-extract.ts
     ownerModel: audit_review
-    secondaryModels: []
-    stage: legacy_dataset_projection
+    secondaryModels:
+      - delivery_confirmation
+    stage: governed_sft_export
     producer: scoring_analytics
     inputArtifacts:
-      - run_score_records
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/sft/sample-routes.jsonl
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/sft/canonical-samples.jsonl
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/sft/redaction-report.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/sft/contamination-report.json
     outputArtifacts:
-      - legacy_sft_jsonl
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/sft/export-manifest.json
+      - _bmad-output/runtime/datasets/<dataset-id>/<dataset-version>/exports/openai-chat.jsonl
+      - _bmad-output/runtime/datasets/<dataset-id>/<dataset-version>/exports/hf-instruction.jsonl
     recordEventTypes:
       - audit_iteration_recorded
+      - artifact_indexed
     completionAuthority: none
-    migrationNote: >-
-      Legacy projection only; target data pipeline must use requirement records, sampleRoutes,
-      canonical samples, and dataset manifests.
     writesRuntimeState: false
     writesRequirementEvidence: true
     hookParityRequired: false
-  - scriptId: analytics_sft_extract_legacy
+    migrationRequired:
+      removeOldInputs:
+        - run_score_records
+      removeOldOutputs:
+        - scoring_data_sft_dataset_jsonl
+      keepCapability: true
+      replacementBehavior: Export only governed canonical samples that passed sample routing, redaction, contamination, and split checks.
+  - scriptId: analytics_sft_extract
     path: scripts/analytics-sft-extract.ts
     ownerModel: audit_review
     secondaryModels: []
-    stage: legacy_dataset_projection
+    stage: governed_sft_analytics_export
     producer: scoring_analytics
     inputArtifacts:
-      - run_score_records
+      - _bmad-output/runtime/requirement-records/index.json
+      - _bmad-output/runtime/requirement-records/artifact-index.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/sft/sample-routes.jsonl
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/sft/canonical-samples.jsonl
     outputArtifacts:
-      - legacy_sft_jsonl
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/sft/quality-report.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/sft/export-manifest.json
     recordEventTypes:
       - audit_iteration_recorded
+      - artifact_indexed
     completionAuthority: none
-    migrationNote: Legacy projection only; not a Production Loop Ready data source.
     writesRuntimeState: false
     writesRequirementEvidence: true
     hookParityRequired: false
-  - scriptId: parse_and_write_score_legacy
+    migrationRequired:
+      removeOldInputs:
+        - run_score_records
+      removeOldOutputs:
+        - scoring_data_sft_dataset_jsonl
+      keepCapability: true
+      replacementBehavior: Build analytics reports from requirement records and governed canonical samples, not raw score records.
+  - scriptId: parse_and_write_score
     path: scripts/parse-and-write-score.ts
     ownerModel: audit_review
-    secondaryModels: []
-    stage: legacy_scoring
+    secondaryModels:
+      - delivery_confirmation
+    stage: score_materialization
     producer: scoring
     inputArtifacts:
-      - score_report
+      - audit_report
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/scoring/resolved-scoring-policy.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/scoring/score-input-manifest.json
     outputArtifacts:
-      - run_score_records
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/scoring/score-record.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/gates/score-materialization-report.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/gates/score-evaluation-report.json
     recordEventTypes:
-      - audit_iteration_recorded
-    completionAuthority: none
+      - score_materialization_recorded
+      - score_evaluation_recorded
+      - artifact_indexed
+    completionAuthority: evidence_only
     writesRuntimeState: false
     writesRequirementEvidence: true
     hookParityRequired: false
+    migrationRequired:
+      removeOldInputs:
+        - scattered_score_report_only
+        - direct_trigger_rules
+      removeOldOutputs:
+        - run_score_records_as_control_source
+      keepCapability: true
+      replacementBehavior: Materialize scores through ResolvedScoringPolicy and write controlled score gates into requirement records.
 target_new_scripts:
+  - scriptId: resolve_active_requirement
+    path: scripts/resolve-active-requirement.ts
+    ownerModel: implementation_readiness
+    secondaryModels:
+      - execution_closure
+      - delivery_confirmation
+    stage: active_requirement_resolution
+    producer: main_agent
+    inputArtifacts:
+      - cli_invocation
+      - GovernanceTransportEnvelope
+      - _bmad-output/runtime/requirement-records/index.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/runtime-policy-snapshot.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/recovery-context.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/bmad-workflow-routing-<run-id>.json
+    outputArtifacts:
+      - ResolvedRuntimeContext
+    recordEventTypes: []
+    completionAuthority: none
+    writesRuntimeState: false
+    writesRequirementEvidence: false
+    hookParityRequired: true
+  - scriptId: update_requirement_index
+    path: scripts/update-requirement-index.ts
+    ownerModel: execution_closure
+    stage: requirement_index_projection
+    producer: controlled_ingest
+    inputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json
+      - requirement_record_event
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/index.json
+      - _bmad-output/runtime/requirement-records/index.jsonl
+    recordEventTypes:
+      - requirement_index_updated
+    completionAuthority: none
+    writesRuntimeState: false
+    writesRequirementEvidence: false
+    hookParityRequired: true
+  - scriptId: validate_resolved_context
+    path: scripts/validate-resolved-context.ts
+    ownerModel: implementation_readiness
+    secondaryModels:
+      - delivery_confirmation
+    stage: resolved_context_validation
+    producer: runtime_governance
+    inputArtifacts:
+      - ResolvedRuntimeContext
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/runtime-policy-snapshot.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/recovery-context.json
+    outputArtifacts:
+      - ResolvedRuntimeContextValidationReport
+    recordEventTypes:
+      - readiness_check_recorded
+      - gate_check_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: true
   - scriptId: requirement_record_ingest
     path: scripts/requirement-record-ingest.ts
     ownerModel: execution_closure
@@ -1028,9 +1123,9 @@ target_new_scripts:
       - GovernanceTransportEnvelope
       - source_artifact
     outputArtifacts:
-      - _bmad-output/runtime/requirements/<requirement-set-id>/requirement-record.json
-      - _bmad-output/runtime/requirements/index.jsonl
-      - _bmad-output/runtime/requirements/artifact-index.jsonl
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json
+      - _bmad-output/runtime/requirement-records/index.jsonl
+      - _bmad-output/runtime/requirement-records/artifact-index.jsonl
     recordEventTypes:
       - record_created
       - contract_summary_recorded
@@ -1051,16 +1146,16 @@ target_new_scripts:
     stage: delivery_closeout
     producer: delivery_gate
     inputArtifacts:
-      - _bmad-output/runtime/requirements/<requirement-set-id>/requirement-record.json
-      - _bmad-output/runtime/requirements/artifact-index.json
-      - _bmad-output/runtime/requirements/index.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json
+      - _bmad-output/runtime/requirement-records/artifact-index.json
+      - _bmad-output/runtime/requirement-records/index.json
       - completion_evidence_packet
       - audit_closeout
       - quality_gate_report
       - release_gate_report
       - delivery_truth_report
     outputArtifacts:
-      - _bmad-output/runtime/requirements/<requirement-set-id>/delivery-closeout-report.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/delivery-closeout-report.json
     recordEventTypes:
       - closeout_requested
       - closeout_check_recorded
@@ -1076,4 +1171,16 @@ registry_rules:
   unregistered_script_policy: may_run_but_not_count_for_requirement_pass
   multi_model_rule: secondaryModels may receive projections; primary ownerModel controls recordEventTypes.
   completion_rule: No script except target main_agent_delivery_closeout_gate may close delivery.
-  legacy_scoring_rule: RunScoreRecord scripts remain projections until migrated behind requirement records.
+  migration_rule: Useful scripts are retained as capability owners; old inputs, old outputs, and direct-control semantics are removed.
+  active_requirement_resolution_rule: scripts must use explicit record args or resolve_active_requirement; no script may read _bmad-output/runtime/context/** as a control, fallback, or locator input.
+  requirement_index_rule: _bmad-output/runtime/requirement-records/index.json is locator projection only; control state must be reloaded and verified from requirement-record.json.
+script_behaviors_to_remove:
+  - behaviorId: run_score_record_driven_sft_positive_samples
+    affectedScripts:
+      - scripts/sft-extract.ts
+      - scripts/analytics-sft-extract.ts
+    replacement: requirement-record sample routing plus canonical samples.
+  - behaviorId: run_score_record_as_score_control_source
+    affectedScripts:
+      - scripts/parse-and-write-score.ts
+    replacement: score materialization and score evaluation gateChecks under ResolvedScoringPolicy.

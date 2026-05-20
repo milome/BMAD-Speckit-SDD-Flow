@@ -262,7 +262,7 @@
         "mainAgentCanContinue": { "type": ["boolean", "null"] },
         "continueStateSource": {
           "type": "string",
-          "enum": ["runtimeContext", "registry", "none"]
+          "enum": ["resolvedRuntimeContext", "requirementRecord", "none"]
         },
         "continueDecision": {
           "type": ["string", "null"],
@@ -631,7 +631,7 @@
         "mainAgentCanContinue": { "type": ["boolean", "null"] },
         "continueStateSource": {
           "type": "string",
-          "enum": ["runtimeContext", "registry", "none"]
+          "enum": ["resolvedRuntimeContext", "requirementRecord", "none"]
         },
         "continueDecision": {
           "type": ["string", "null"],

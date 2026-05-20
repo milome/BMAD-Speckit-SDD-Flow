@@ -13,23 +13,26 @@ freeze_scope:
 
 description: >
   Canonical artifact manifest for the six user-facing mental models.
-  Runtime evidence may keep legacy paths, but every requirement-related
-  artifact must be indexed into requirement-record artifactIndex and the
-  global artifact index before it can support closeout.
+  Useful runtime producers must write requirement-scoped target paths directly.
+  Old scattered runtime roots are forbidden as new output targets and must be
+  removed after producer migration.
 
 global_paths:
-  requirement_record_root: "_bmad-output/runtime/requirements/<requirement-set-id>/"
-  requirement_record: "_bmad-output/runtime/requirements/<requirement-set-id>/requirement-record.json"
-  requirement_artifacts: "_bmad-output/runtime/requirements/<requirement-set-id>/artifacts/"
-  requirement_rca: "_bmad-output/runtime/requirements/<requirement-set-id>/rca/"
-  requirement_iterations: "_bmad-output/runtime/requirements/<requirement-set-id>/iterations/"
-  requirement_audits: "_bmad-output/runtime/requirements/<requirement-set-id>/audits/"
-  requirement_sft: "_bmad-output/runtime/requirements/<requirement-set-id>/sft/"
-  requirement_recovery: "_bmad-output/runtime/requirements/<requirement-set-id>/recovery/"
-  requirements_index: "_bmad-output/runtime/requirements/index.json"
-  requirements_events: "_bmad-output/runtime/requirements/index.jsonl"
-  artifact_index: "_bmad-output/runtime/requirements/artifact-index.json"
-  artifact_events: "_bmad-output/runtime/requirements/artifact-index.jsonl"
+  requirement_record_root: "_bmad-output/runtime/requirement-records/<requirement-set-id>/"
+  requirement_record: "_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json"
+  requirement_artifacts: "_bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/"
+  requirement_rca: "_bmad-output/runtime/requirement-records/<requirement-set-id>/rca/"
+  requirement_iterations: "_bmad-output/runtime/requirement-records/<requirement-set-id>/iterations/"
+  requirement_audits: "_bmad-output/runtime/requirement-records/<requirement-set-id>/audits/"
+  requirement_sft: "_bmad-output/runtime/requirement-records/<requirement-set-id>/sft/"
+  requirement_recovery: "_bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/"
+  requirements_index: "_bmad-output/runtime/requirement-records/index.json"
+  requirements_events: "_bmad-output/runtime/requirement-records/index.jsonl"
+  artifact_index: "_bmad-output/runtime/requirement-records/artifact-index.json"
+  artifact_events: "_bmad-output/runtime/requirement-records/artifact-index.jsonl"
+  runtime_policy_snapshot: "_bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/runtime-policy-snapshot.json"
+  recovery_context: "_bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/recovery-context.json"
+  bmad_workflow_projection: "_bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/bmad-workflow-routing-<run-id>.json"
 
 allowed_owner_models:
   - requirement_confirmation
@@ -44,6 +47,14 @@ requirement_record_required_fields:
   - recordId
   - requirementSetId
   - entryFlow
+  - entryFlowClass
+  - workflowAdapter
+  - currentRunId
+  - currentMentalModel
+  - currentTraceCheckpointId
+  - runtimePolicySnapshotRef
+  - recoveryContextRef
+  - bmadWorkflowProjectionRef
   - status
   - createdAt
   - updatedAt
@@ -64,6 +75,53 @@ requirement_record_required_fields:
   - closeout
   - extensionRefs
   - globalIndexProjection
+
+active_requirement_index_required_fields:
+  - schemaVersion
+  - generatedAt
+  - indexHash
+  - activeRequirementSetId
+  - activeRecordId
+  - activeRunId
+  - activeCloseoutAttemptId
+  - records
+
+active_requirement_index_record_required_fields:
+  - recordId
+  - requirementSetId
+  - recordPath
+  - recordHash
+  - status
+  - entryFlow
+  - currentMentalModel
+  - currentStage
+  - lastEventId
+  - lastEventType
+  - updatedAt
+
+active_requirement_resolver_rules:
+  explicit_args_precedence:
+    - --record-id
+    - --requirement-set-id
+    - --run-id
+  implicit_locator: "_bmad-output/runtime/requirement-records/index.json"
+  forbidden_inputs:
+    - "_bmad-output/runtime/context/**"
+  no_directory_guessing: true
+  no_legacy_fallback: true
+  index_is_projection_only: true
+  resolver_output: ResolvedRuntimeContext
+  resolver_output_may_write_control_state: false
+  fail_closed_when:
+    - missing_explicit_args_and_missing_index
+    - invalid_index_schema
+    - multiple_active_records
+    - active_record_missing
+    - active_record_hash_mismatch
+    - runtime_policy_snapshot_missing_or_mismatch
+    - recovery_context_missing_or_mismatch
+    - trace_checkpoint_missing
+    - current_run_references_retired_context_surface
 
 record_event_required_fields:
   - eventId
@@ -106,7 +164,6 @@ shared_source_of_truth_roles:
   - contract_source
   - evidence
   - projection
-  - compatibility
   - context
   - schema
   - derived
@@ -166,9 +223,9 @@ dual_gates:
       - assert_implementation_entry
     reportPaths:
       - "_bmad-output/planning-artifacts/<branch>/implementation-readiness-report-YYYY-MM-DD.md"
-      - "_bmad-output/runtime/requirements/<requirement-set-id>/artifacts/implementation-readiness-report.json"
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/implementation-readiness-report.json"
     inputArtifacts:
-      - "_bmad-output/runtime/requirements/<requirement-set-id>/requirement-record.json"
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json"
       - contract_document
       - confirmation_snapshot
       - task_binding
@@ -176,7 +233,7 @@ dual_gates:
       - runtime_policy
     outputArtifacts:
       - implementation_readiness_report
-      - "_bmad-output/runtime/requirements/<requirement-set-id>/artifacts/implementation-readiness-report.json"
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/implementation-readiness-report.json"
       - gateChecks
       - failureRecords
       - rcaRecords
@@ -209,19 +266,19 @@ dual_gates:
     scriptRegistryIds:
       - main_agent_delivery_closeout_gate
     reportPaths:
-      - "_bmad-output/runtime/requirements/<requirement-set-id>/delivery-closeout-report.json"
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/delivery-closeout-report.json"
     inputArtifacts:
-      - "_bmad-output/runtime/requirements/<requirement-set-id>/requirement-record.json"
-      - "_bmad-output/runtime/requirements/artifact-index.json"
-      - "_bmad-output/runtime/requirements/index.json"
-      - "_bmad-output/runtime/requirements/<requirement-set-id>/completion-evidence-packet.json"
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json"
+      - "_bmad-output/runtime/requirement-records/artifact-index.json"
+      - "_bmad-output/runtime/requirement-records/index.json"
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/completion-evidence-packet.json"
       - audit_closeout
-      - "_bmad-output/runtime/gates/main-agent-quality-gate-report.json"
-      - "_bmad-output/runtime/gates/main-agent-release-gate-report.json"
-      - "_bmad-output/runtime/gates/main-agent-delivery-truth-gate-report.json"
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/gates/quality-gate-report.json"
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/gates/release-gate-report.json"
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/gates/delivery-truth-gate-report.json"
       - orphan_artifact_report
     outputArtifacts:
-      - "_bmad-output/runtime/requirements/<requirement-set-id>/delivery-closeout-report.json"
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/delivery-closeout-report.json"
       - closeout
       - requirementClosures
       - gateChecks
@@ -292,7 +349,7 @@ models:
       - id: confirmation_snapshot
         artifactType: confirmation_snapshot
         paths:
-          - "_bmad-output/runtime/requirements/<requirement-set-id>/artifacts/confirmation-<confirmation-id>.json"
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/confirmation-<confirmation-id>.json"
         sourceOfTruthRole: evidence
         requiredFields:
           - confirmationId
@@ -341,7 +398,7 @@ models:
       - id: architecture_check
         artifactType: architecture_check
         paths:
-          - "_bmad-output/runtime/requirements/<requirement-set-id>/artifacts/architecture-check-<check-id>.json"
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/architecture-check-<check-id>.json"
           - "_bmad-output/planning-artifacts/<branch>/architecture-check-*.json"
         sourceOfTruthRole: evidence
         requiredFields:
@@ -374,7 +431,7 @@ models:
         artifactType: implementation_readiness_report
         paths:
           - "_bmad-output/planning-artifacts/<branch>/implementation-readiness-report-YYYY-MM-DD.md"
-          - "_bmad-output/runtime/requirements/<requirement-set-id>/artifacts/implementation-readiness-report.json"
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/implementation-readiness-report.json"
         sourceOfTruthRole: evidence
         requiredFields:
           - checkId
@@ -422,7 +479,7 @@ models:
       - id: governance_packet
         artifactType: governance_packet
         paths:
-          - "_bmad-output/runtime/governance/packets/<sessionId>/**"
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/prompts/prompt-packets/<packet-id>.md"
         sourceOfTruthRole: evidence
         requiredFields:
           - packetId
@@ -434,8 +491,8 @@ models:
       - id: task_report
         artifactType: task_report
         paths:
-          - "_bmad-output/runtime/governance/executions/<loopStateId>/<attempt>.json"
-          - "_bmad-output/runtime/codex/logs/<packetId>.stdout.log"
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/executions/<execution-id>.json"
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/executions/worker-logs/<packet-id>.stdout.log"
         sourceOfTruthRole: evidence
         requiredFields:
           - iterationId
@@ -455,7 +512,7 @@ models:
       - id: tool_trace
         artifactType: tool_trace
         paths:
-          - "_bmad-output/runtime/artifacts/tool-traces/<runId>/**"
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/executions/tool-traces/<run-id>/**"
         sourceOfTruthRole: evidence
         requiredFields:
           - traceId
@@ -501,7 +558,7 @@ models:
       - id: rca_record
         artifactType: rca_record
         paths:
-          - "_bmad-output/runtime/requirements/<requirement-set-id>/rca/<rca-id>.json"
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/rca/<rca-id>.json"
         sourceOfTruthRole: evidence
         requiredFields:
           - rcaId
@@ -533,7 +590,7 @@ models:
       - id: delivery_closeout_report
         artifactType: delivery_closeout_report
         paths:
-          - "_bmad-output/runtime/requirements/<requirement-set-id>/delivery-closeout-report.json"
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/delivery-closeout-report.json"
         sourceOfTruthRole: evidence
         requiredFields:
           - reportType
@@ -554,33 +611,34 @@ models:
       - id: quality_gate_report
         artifactType: quality_gate_report
         paths:
-          - "_bmad-output/runtime/gates/main-agent-quality-gate-report.json"
-        sourceOfTruthRole: compatibility
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/gates/quality-gate-report.json"
+        sourceOfTruthRole: evidence
         requiredFields:
           - checkId
-          - result
+          - decision
           - critical_failures
           - evidence_provenance
       - id: release_gate_report
         artifactType: release_gate_report
         paths:
-          - "_bmad-output/runtime/gates/main-agent-release-gate-report.json"
-        sourceOfTruthRole: compatibility
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/gates/release-gate-report.json"
+        sourceOfTruthRole: evidence
         requiredFields:
           - checkId
-          - result
+          - decision
           - critical_failures
           - completion_intent
           - evidence_provenance
       - id: delivery_truth_report
         artifactType: delivery_truth_report
         paths:
-          - "_bmad-output/runtime/gates/main-agent-delivery-truth-gate-report.json"
-        sourceOfTruthRole: compatibility
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/gates/delivery-truth-gate-report.json"
+        sourceOfTruthRole: evidence
         requiredFields:
           - reportType
           - completionAllowed
           - deliveryStatus
+          - decision
           - missingEvidence
           - failedEvidence
           - evidencePaths
@@ -588,7 +646,7 @@ models:
       - id: completion_evidence_packet
         artifactType: completion_evidence_packet
         paths:
-          - "_bmad-output/runtime/requirements/<requirement-set-id>/completion-evidence-packet.json"
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/completion-evidence-packet.json"
         sourceOfTruthRole: evidence
         requiredFields:
           - packetId
@@ -611,7 +669,7 @@ data_product_artifacts:
     ownerModel: audit_review
     artifactType: mentor_event
     paths:
-      - "_bmad-output/runtime/requirements/<requirement-set-id>/sft/mentor-events.jsonl"
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/sft/mentor-events.jsonl"
     sourceOfTruthRole: derived
     requiredFields:
       - eventId
@@ -632,7 +690,7 @@ data_product_artifacts:
     ownerModel: audit_review
     artifactType: sample_route
     paths:
-      - "_bmad-output/runtime/requirements/<requirement-set-id>/sft/sample-routes.jsonl"
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/sft/sample-routes.jsonl"
     sourceOfTruthRole: derived
     requiredFields:
       - routeId
@@ -651,7 +709,7 @@ data_product_artifacts:
     ownerModel: audit_review
     artifactType: canonical_sft_sample
     paths:
-      - "_bmad-output/runtime/requirements/<requirement-set-id>/sft/canonical-samples.jsonl"
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/sft/canonical-samples.jsonl"
     sourceOfTruthRole: derived
     requiredFields:
       - sampleId
@@ -681,7 +739,7 @@ data_product_artifacts:
     ownerModel: audit_review
     artifactType: dataset_manifest
     paths:
-      - "_bmad-output/runtime/requirements/<requirement-set-id>/sft/dataset-manifest.json"
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/sft/dataset-manifest.json"
       - "_bmad-output/datasets/<dataset-id>/dataset-manifest.json"
     sourceOfTruthRole: derived
     requiredFields:
@@ -707,12 +765,12 @@ data_product_artifacts:
 dashboard_projection:
   ownerModel: delivery_confirmation
   paths:
-    - "_bmad-output/dashboard.md"
-    - "_bmad-output/dashboard/runtime-dashboard.json"
+    - "_bmad-output/runtime/requirement-records/dashboard/<dashboard-id>/dashboard.md"
+    - "_bmad-output/runtime/requirement-records/dashboard/<dashboard-id>/runtime-dashboard.json"
   inputArtifacts:
-    - "_bmad-output/runtime/requirements/index.json"
-    - "_bmad-output/runtime/requirements/artifact-index.json"
-    - "_bmad-output/runtime/registry.json"
+    - "_bmad-output/runtime/requirement-records/index.json"
+    - "_bmad-output/runtime/requirement-records/artifact-index.json"
+    - "_bmad-output/runtime/requirement-records/context/runtime-registry.json"
   outputArtifacts:
     - six_model_status_projection
   requiredFields:

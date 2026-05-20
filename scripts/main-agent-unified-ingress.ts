@@ -8,6 +8,8 @@ import {
 import { updateOrchestrationState } from './orchestration-state';
 import type { RuntimeFlowId } from './runtime-governance';
 import {
+  governanceEventTypeRegistryPolicyHash,
+  governanceEventTypeRegistryHash,
   validateGovernanceTransportEnvelope,
   type GovernanceTransportEnvelope,
   type GovernanceTransportValidation,
@@ -151,6 +153,11 @@ function resolveEntry(input: {
   projectRoot: string;
   hostKind: MainAgentHostKind;
   codexHookTrustEnvelope?: GovernanceTransportEnvelope | null;
+  governanceEventTypeRegistryPolicy?: unknown;
+  governanceEventTypeRegistryPolicyHash?: string;
+  governanceEventTypeRegistry?: unknown;
+  governanceEventTypeRegistryHash?: string;
+  architectureConfirmationHash?: string;
   forceNoHooks?: boolean;
   forceHostPartial?: boolean;
   forceTransportDegraded?: boolean;
@@ -165,9 +172,23 @@ function resolveEntry(input: {
   | 'hookTrustEnvelopeValidation'
 > {
   const hookPath = hookPathFor(input.projectRoot, input.hostKind);
+  const registryHash =
+    input.governanceEventTypeRegistryHash ??
+    (input.governanceEventTypeRegistry ? governanceEventTypeRegistryHash(input.governanceEventTypeRegistry) : undefined);
+  const registryPolicyHash =
+    input.governanceEventTypeRegistryPolicyHash ??
+    (input.governanceEventTypeRegistryPolicy
+      ? governanceEventTypeRegistryPolicyHash(input.governanceEventTypeRegistryPolicy)
+      : undefined);
   const codexHookTrustValidation =
     input.hostKind === 'codex' && input.codexHookTrustEnvelope
-      ? validateGovernanceTransportEnvelope(input.codexHookTrustEnvelope)
+      ? validateGovernanceTransportEnvelope(input.codexHookTrustEnvelope, {
+          governanceEventTypeRegistryPolicy: input.governanceEventTypeRegistryPolicy,
+          registryPolicyHash,
+          governanceEventTypeRegistry: input.governanceEventTypeRegistry,
+          registryHash,
+          architectureConfirmationHash: input.architectureConfirmationHash,
+        })
       : null;
   const codexHookTrustAccepted =
     input.hostKind === 'codex' &&
@@ -485,6 +506,11 @@ export function runUnifiedIngress(input: {
   flow: RuntimeFlowId;
   stage: string;
   codexHookTrustEnvelope?: GovernanceTransportEnvelope | null;
+  governanceEventTypeRegistryPolicy?: unknown;
+  governanceEventTypeRegistryPolicyHash?: string;
+  governanceEventTypeRegistry?: unknown;
+  governanceEventTypeRegistryHash?: string;
+  architectureConfirmationHash?: string;
   forceNoHooks?: boolean;
   forceHostPartial?: boolean;
   forceTransportDegraded?: boolean;
@@ -498,6 +524,11 @@ export function runUnifiedIngress(input: {
     projectRoot,
     hostKind: input.hostKind,
     codexHookTrustEnvelope: input.codexHookTrustEnvelope,
+    governanceEventTypeRegistryPolicy: input.governanceEventTypeRegistryPolicy,
+    governanceEventTypeRegistryPolicyHash: input.governanceEventTypeRegistryPolicyHash,
+    governanceEventTypeRegistry: input.governanceEventTypeRegistry,
+    governanceEventTypeRegistryHash: input.governanceEventTypeRegistryHash,
+    architectureConfirmationHash: input.architectureConfirmationHash,
     forceNoHooks: input.forceNoHooks,
     forceHostPartial: input.forceHostPartial,
     forceTransportDegraded: input.forceTransportDegraded,
@@ -606,6 +637,15 @@ export function main(argv: string[]): number {
     codexHookTrustEnvelope: args.codexHookTrustEnvelopePath
       ? (JSON.parse(fs.readFileSync(path.resolve(projectRoot, args.codexHookTrustEnvelopePath), 'utf8')) as GovernanceTransportEnvelope)
       : null,
+    governanceEventTypeRegistry: args.governanceEventTypeRegistryPath
+      ? JSON.parse(fs.readFileSync(path.resolve(projectRoot, args.governanceEventTypeRegistryPath), 'utf8'))
+      : undefined,
+    governanceEventTypeRegistryPolicy: args.governanceEventTypeRegistryPolicyPath
+      ? JSON.parse(fs.readFileSync(path.resolve(projectRoot, args.governanceEventTypeRegistryPolicyPath), 'utf8'))
+      : undefined,
+    governanceEventTypeRegistryPolicyHash: args.governanceEventTypeRegistryPolicyHash,
+    governanceEventTypeRegistryHash: args.governanceEventTypeRegistryHash,
+    architectureConfirmationHash: args.architectureConfirmationHash,
     forceNoHooks: args.forceNoHooks === 'true',
     forceHostPartial: args.forceHostPartial === 'true',
     forceTransportDegraded: args.forceTransportDegraded === 'true',

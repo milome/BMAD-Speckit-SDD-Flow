@@ -10,7 +10,7 @@ BMAD runtime metadata:
 Source behavior contract: _bmad/claude/agents/layers/bmad-layer4-speckit-gaps.md
 
 Preserve the same responsibilities, constraints, output contracts, and verification discipline.
-Use Codex runtime surfaces: .codex/agents, .codex/skills, and _bmad-output/runtime/context. Do not write legacy host state.
+Use Codex runtime surfaces: .codex/agents, .codex/skills, and _bmad-output/runtime/requirement-records. Do not read or write _bmad-output/runtime/context as control state; legacy context files are retired projections only.
 When used by BMAD main-agent dispatch, obey the dispatch packet allowedWriteScope, expectedDelta, successCriteria, stopConditions, and TaskReport path.
 If these instructions conflict with a narrower dispatch packet, the dispatch packet wins.
 
@@ -47,7 +47,7 @@ BMAD Speckit SDD Layer 4 的GAPS 阶段执行 Agent。
   [ ] 步骤6: 状态更新（progress.yaml）
 预期产物:
   - 输出文档: _bmad-output/...[gaps]-{epic}-{story}.md
-  - 状态更新 _bmad-output/runtime/context/stories/{epic}/{story}.json
+  - 状态投影 _bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/bmad-workflow-routing-<run-id>.json
   - 阶段: layer4-gaps
 
 预计耗时: 10-30 分钟
@@ -109,7 +109,7 @@ Repo Add-ons: [通过/需调整]
 
 | 文件 | 用途| 控制方|
 |------|------|--------|
-| `_bmad-output/runtime/context/project.json` | 五层架构状态控制| bmad-master |
+| `_bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/bmad-workflow-routing-<run-id>.json` | BMAD workflow projection| bmad-master |
 | `specs/epic-{epic}-{slug}/story-{story}-{slug}/IMPLEMENTATION_GAPS-E{epic}-S{story}.md` | GAPS阶段产物 | gaps agent |
 | `specs/epic-{epic}-{slug}/story-{story}-{slug}/AUDIT_GAPS-E{epic}-S{story}.md` | GAPS审计报告 | auditor-gaps |
 
@@ -132,8 +132,8 @@ specs/
 ## Mandatory Startup
 
 1. Read `.codex/skills/speckit-workflow/references/audit-prompts.md` §3
-2. Read `_bmad-output/runtime/context/project.json` (获取 current_context)
-3. **Read story state**: `_bmad-output/runtime/context/stories/{epic}/{story}.json`
+2. Resolve active RequirementRecord via explicit IDs or `_bmad-output/runtime/requirement-records/index.json`
+3. **Read story projection**: `_bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/bmad-workflow-routing-<run-id>.json`
 4. Read plan.md (从 story state 读取路径)
 5. **读取审计配置**: 调用 `_bmad/_config/bmad-story-config.yaml` 的`shouldAudit('gaps')` 确定是否执行审计
 
@@ -324,7 +324,7 @@ npx --no-install bmad-speckit run-auditor-host.ts \\
 
 ### Step 5: 状态更新(Story-Specific)
 
-**更新 story state**: `_bmad-output/runtime/context/stories/{epic}/{story}.json`
+**更新 story projection**: `_bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/bmad-workflow-routing-<run-id>.json` via controlled ingest only
 
 ```yaml
 version: "2.0"
@@ -340,7 +340,7 @@ artifacts:
   audit: specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/AUDIT_GAPS-E{epic}-S{story}.md
 ```
 
-**更新全局状态** `_bmad-output/runtime/context/project.json`:
+**更新受控记录** `_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json` via controlled ingest only:
 - Update story stage in `active_stories` to `gaps_passed`
 
 ### Step 6: Handoff 至 Tasks

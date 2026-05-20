@@ -88,6 +88,23 @@ implementationConfirmation:
     scriptsAndHooks:
       applies: true
       reasonCode: "ingest script is part of automation plan"
+  governanceEventTypeRegistryPolicy:
+    controlFieldVocabulary: ["artifactIndex", "confirmationHistory"]
+    payloadKindContracts:
+      - payloadKind: status
+        requiredFields: ["eventType", "status"]
+        forbiddenFields: ["result", "decision"]
+        allowedControlWriteModes: ["control"]
+      - payloadKind: artifactRefs
+        requiredFields: ["eventType", "artifactRefs"]
+        forbiddenFields: ["result", "decision", "status"]
+        allowedControlWriteModes: ["artifact_only"]
+    controlWriteModePolicies:
+      - allowedControlWriteMode: control
+        allowedWritesControlFields: ["confirmationHistory"]
+      - allowedControlWriteMode: artifact_only
+        allowedWritesControlFields: ["artifactIndex"]
+    eventSpecificRequirements: []
   must:
     - id: MUST-001
       text: "Confirmed source can be ingested into requirement record."
@@ -214,6 +231,25 @@ implementationConfirmation:
         allowedControlWriteMode: artifact_only
       writesControlFields: ["artifactIndex"]
       canAffectControlFlow: false
+  controlledIngestWriterRegistry:
+    - writerId: requirements-confirmation-ingest
+      scriptPath: "_bmad/skills/requirements-contract-authoring/scripts/ingest-confirmation-event.js"
+      scriptContentHash: "sha256:fixture-confirmation-ingest"
+      ownerModel: requirements_contract
+      allowedWriteApis: ["appendControlEvent", "atomicWriteRequirementRecord", "appendArtifactIndex"]
+      allowedPaths:
+        - "_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json"
+        - "_bmad-output/runtime/requirement-records/<requirement-set-id>/events/control-events.jsonl"
+        - "_bmad-output/runtime/requirement-records/<requirement-set-id>/artifact-index.jsonl"
+        - "_bmad-output/runtime/requirement-records/artifact-index.jsonl"
+      allowedEventTypes: ["confirmation_recorded", "artifact_index_recorded"]
+      payloadContractRefs: ["confirmation_recorded", "artifact_index_recorded"]
+      writesControlFields: ["confirmationHistory", "artifactIndex"]
+      receiptPath: "_bmad-output/runtime/requirement-records/<requirement-set-id>/receipts/requirements-confirmation-ingest/<receipt-id>.json"
+      beforeAfterHashRequired: true
+      canModifyWriterRegistry: false
+      registryHash: "sha256:fixture-writer-registry"
+      architectureConfirmationHash: "sha256:fixture-architecture"
   functionalResumeFailureCaseRegistry:
     status: frozen_in_P0
     p0ExecutableSubsetRequired: true
@@ -301,7 +337,7 @@ function render(source: string) {
     writeMockMermaidBundle(),
     '--json',
   ]);
-  expect(result.status).toBe(0);
+  expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
   const reportPath = path.join(path.dirname(out), 'confirmation-render-report.json');
   return { out, reportPath, report: JSON.parse(fs.readFileSync(reportPath, 'utf8')) };
 }

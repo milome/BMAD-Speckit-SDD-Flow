@@ -15,19 +15,24 @@ Use **Party-Mode** to run deep root-cause analysis and solution design from the 
 - You need multi-role debate to surface an optimal plan and an executable task list.
 - The deliverable must pass strict audit (Critical Auditor >70%, three consecutive rounds with no new gap).
 
-## Main-Agent Orchestration Surface (Mandatory)
+## Main Agent Orchestration Surface
 
-In interactive mode, this skill must treat repo-native `main-agent-orchestration` as the only orchestration authority. `runAuditorHost` is only the post-audit close-out entry; it must not replace the main Agent's next-branch decision.
+Consumer users activate governance through `$bmad-speckit`, `/bmad-speckit`, or `bmad-speckit` in the active AI host session. Do not present `npm run main-agent-orchestration` or `npx bmad-speckit main-agent-orchestration ...` as the default consumer-user step; those commands are install validation, CI, debug, or no-skill fallback only.
 
-Before launching any audit subtask, implementation subtask, or other bounded execution, the main Agent must:
+In interactive main-agent mode, before starting, continuing, or closing this flow, the main Agent must internally run or equivalently consume the Main Agent control plane:
 
-1. Run `npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action inspect`
-2. Read `orchestrationState`, `pendingPacketStatus`, `pendingPacket`, `continueDecision`, `mainAgentNextAction`, and `mainAgentReady`
-3. If the next branch is dispatchable but no usable packet exists yet, run `npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action dispatch-plan`
-4. Dispatch only from the returned packet / instruction instead of continuing from party-mode prose, RCA prose, or handoff summary alone
-5. Re-run `inspect` after each child result and after each `runAuditorHost` close-out before choosing the next global branch
+```text
+main-agent-orchestration --action inspect --host <codex|cursor|claude>
+main-agent-orchestration --action dispatch-plan --host <codex|cursor|claude>
+```
 
-`mainAgentNextAction / mainAgentReady` remain compatibility summary fields only; authoritative runtime truth is `orchestrationState + pendingPacket + continueDecision`.
+Global branching can only be derived from `requirement-record.json`, `currentMentalModel`, and the six mental model chain: requirement confirmation, architecture confirmation, implementation readiness, execution closure, audit review, and delivery confirmation. `bmad-help`, dashboard, score, SFT, legacy reports, `orchestrationState`, `pendingPacket`, `continueDecision`, `mainAgentNextAction`, and `mainAgentReady` are projections, compatibility hints, or evidence only; after any subagent result, host closeout, rerun, or blocking event, re-run inspect before choosing the next global branch.
+
+Hard prohibitions:
+- Do not ask normal consumer users to activate governance through npm or npx.
+- Do not continue dispatch from `PASS`, reviewer prose, host summary, `runAuditorHost closeout approved`, handoff summary, or old runtime files alone.
+- Do not hand-write packet files or default to worker-consumable queue items in interactive mode.
+- Do not let subagents choose the next global branch; subagents execute bounded packets only, and the main Agent chooses the next step after re-reading controlled records.
 
 > Party-mode source of truth (Codex): `{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
 > Rounds, `designated_challenger_id`, `challenger_ratio > 0.60`, session/meta/snapshot/evidence, recovery, and exit-gate semantics must come from core step-02. This skill must not define a second party-mode gate contract.

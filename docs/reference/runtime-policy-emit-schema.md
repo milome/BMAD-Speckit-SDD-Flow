@@ -32,9 +32,10 @@
 ## 环境变量与真相源
 
 - **不读取**任何用于覆盖运行时策略或关闭注入的专用环境变量；**无** env 覆盖、**无** CLI 覆盖 flow/stage（CLI 仅 `--cwd` 用于定位项目根）。
-- **唯一真相源**：`_bmad-output/runtime/registry.json` 的 `activeScope` + 解析得到的 scoped context JSON（如 `context/project.json`）。
+- **唯一定位入口**：Active Requirement Resolver。目标态只允许通过显式 `recordId` / `requirementSetId` / `runId` 或 `_bmad-output/runtime/requirement-records/index.json` 定位 active Requirement，再读取 `requirement-record.json`、`runtime-policy-snapshot.json`、`recovery-context.json` 并输出只读 `ResolvedRuntimeContext`。
+- **退场输入**：`_bmad-output/runtime/registry.json`、`_bmad-output/runtime/context/**` 和 `.bmad/runtime-context.json` 只属于 retired context surface，不得作为目标态控制、恢复、fallback 或 closeout 输入。
 - **`compatibilitySource` 的 `shadow`**：仅由单元/验收测试调用 `setRuntimePolicyShadowModeForTests(true)`（见 `scripts/runtime-governance.ts`），**不**通过环境变量。
 
 ## 互链
 
-- 上下文文件：[`runtime-context.schema.json`](./runtime-context.schema.json)、[`../how-to/runtime-governance-auto-inject-cursor-claude.md`](../how-to/runtime-governance-auto-inject-cursor-claude.md)
+- 历史 context surface 说明：[`runtime-context.md`](./runtime-context.md)、[`runtime-context.schema.json`](./runtime-context.schema.json)

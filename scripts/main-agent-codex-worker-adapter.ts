@@ -15,8 +15,11 @@ import { loadPolicyContextFromRegistry } from './emit-runtime-policy';
 import type { RuntimeFlowId } from './runtime-governance';
 import { stableStringifyPolicy } from './stable-runtime-policy-json';
 import {
+  governanceEventTypeRegistryPolicyHash,
+  governanceEventTypeRegistryHash,
   validateGovernanceTransportEnvelope,
   type GovernanceTransportEnvelope,
+  type GovernanceTransportValidationOptions,
 } from './governance-transport-envelope';
 
 type Packet = ExecutionPacket | RecommendationPacket | ResumePacket;
@@ -44,6 +47,8 @@ export interface CodexWorkerAdapterReport {
   transportEnvelopeValidation: {
     ok: boolean;
     mismatches: string[];
+    registryHash?: string | null;
+    registryPolicyHash?: string | null;
   };
 }
 
@@ -103,6 +108,22 @@ function packetExpectedDelta(packet: Packet): string {
 
 function packetAllowedWriteScope(packet: Packet): string[] {
   return Array.isArray(packet.allowedWriteScope) ? packet.allowedWriteScope : [];
+}
+
+function safePathSegment(value: string): string {
+  return value.replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'unscoped';
+}
+
+function defaultSmokeTargetPath(input: {
+  recordId?: string;
+  requirementSetId?: string;
+  packet: Packet;
+}): string {
+  const requirementId = safePathSegment(
+    input.recordId ?? input.requirementSetId ?? input.packet.parentSessionId
+  );
+  const packetId = safePathSegment(input.packet.packetId);
+  return `_bmad-output/runtime/requirement-records/${requirementId}/artifacts/codex/${packetId}.md`;
 }
 
 function packetRole(packet: Packet): string {
@@ -476,6 +497,11 @@ export function runCodexWorkerAdapter(input: {
   timeoutMs?: number;
   allowPolicyFailureForSmoke?: boolean;
   codexBinary?: string;
+  governanceEventTypeRegistryPolicy?: unknown;
+  governanceEventTypeRegistryPolicyHash?: string;
+  governanceEventTypeRegistry?: unknown;
+  governanceEventTypeRegistryHash?: string;
+  architectureConfirmationHash?: string;
 }): CodexWorkerAdapterReport {
   const projectRoot = path.resolve(input.projectRoot);
   const packetPath = path.resolve(input.packetPath);
@@ -498,7 +524,7 @@ export function runCodexWorkerAdapter(input: {
     projectRoot,
     taskReportPath
   );
-  const smokeTargetPath = input.smokeTargetPath ?? `src/codex/${packet.packetId}.md`;
+  const smokeTargetPath = input.smokeTargetPath ?? defaultSmokeTargetPath({ ...input, packet });
   if (!agentSpec) {
     const blockedReport: TaskReport = {
       packetId: packet.packetId,
@@ -745,7 +771,19 @@ export function runCodexWorkerAdapter(input: {
     packet,
     taskReport,
   });
-  const transportEnvelopeValidation = validateGovernanceTransportEnvelope(transportEnvelope);
+  const transportEnvelopeValidation = validateGovernanceTransportEnvelope(transportEnvelope, {
+    governanceEventTypeRegistryPolicy: input.governanceEventTypeRegistryPolicy,
+    registryPolicyHash:
+      input.governanceEventTypeRegistryPolicyHash ??
+      (input.governanceEventTypeRegistryPolicy
+        ? governanceEventTypeRegistryPolicyHash(input.governanceEventTypeRegistryPolicy)
+        : undefined),
+    governanceEventTypeRegistry: input.governanceEventTypeRegistry,
+    registryHash:
+      input.governanceEventTypeRegistryHash ??
+      (input.governanceEventTypeRegistry ? governanceEventTypeRegistryHash(input.governanceEventTypeRegistry) : undefined),
+    architectureConfirmationHash: input.architectureConfirmationHash,
+  });
 
   return {
     reportType: 'main_agent_codex_worker_adapter',
@@ -788,6 +826,15 @@ export function main(argv: string[]): number {
     smokeTargetPath: args.smokeTargetPath,
     timeoutMs: Number(args.timeoutMs) > 0 ? Number(args.timeoutMs) : undefined,
     codexBinary: args.codexBinary,
+    governanceEventTypeRegistry: args.governanceEventTypeRegistryPath
+      ? JSON.parse(fs.readFileSync(path.resolve(args.governanceEventTypeRegistryPath), 'utf8'))
+      : undefined,
+    governanceEventTypeRegistryPolicy: args.governanceEventTypeRegistryPolicyPath
+      ? JSON.parse(fs.readFileSync(path.resolve(args.governanceEventTypeRegistryPolicyPath), 'utf8'))
+      : undefined,
+    governanceEventTypeRegistryPolicyHash: args.governanceEventTypeRegistryPolicyHash,
+    governanceEventTypeRegistryHash: args.governanceEventTypeRegistryHash,
+    architectureConfirmationHash: args.architectureConfirmationHash,
   });
   const reportPath = path.resolve(
     args.reportPath ??

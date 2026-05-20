@@ -181,6 +181,29 @@ ${overrides.includes('MISSING_APPLICABILITY') ? '' : `    governanceEvents:
       applies: true
       reasonCode: "fixture_artifact_plan_contains_scripts_and_hooks"
 `}
+  governanceEventTypeRegistryPolicy:
+    controlFieldVocabulary: ["artifactIndex", "closeout", "confirmationHistory", "contractChecks", "executionIterations", "failureRecords", "gateChecks", "recoveryContext", "runtimePolicySnapshotRef"]
+    payloadKindContracts:
+      - payloadKind: decision
+        requiredFields: ["eventType", "decision"]
+        forbiddenFields: ["result", "status"]
+        allowedControlWriteModes: ["control"]
+      - payloadKind: status
+        requiredFields: ["eventType", "status"]
+        forbiddenFields: ["result", "decision"]
+        allowedControlWriteModes: ["control"]
+      - payloadKind: artifactRefs
+        requiredFields: ["eventType", "artifactRefs"]
+        forbiddenFields: ["result", "decision", "status"]
+        allowedControlWriteModes: ["artifact_only", "context_update"]
+    controlWriteModePolicies:
+      - allowedControlWriteMode: control
+        allowedWritesControlFields: ["confirmationHistory", "contractChecks", "gateChecks", "failureRecords", "closeout", "runtimePolicySnapshotRef", "recoveryContext", "executionIterations"]
+      - allowedControlWriteMode: artifact_only
+        allowedWritesControlFields: ["artifactIndex"]
+      - allowedControlWriteMode: context_update
+        allowedWritesControlFields: ["recoveryContext", "runtimePolicySnapshotRef"]
+    eventSpecificRequirements: []
   must:
     - id: MUST-001
       text: "User uploads a valid file and sees it in the persisted file list."
@@ -373,6 +396,26 @@ ${currentTargetMapBlock}
         requiredSourceRefs: false
         allowedControlWriteMode: artifact_only
       canAffectControlFlow: false
+    - eventType: confirmation_summary_rendered
+      ownerModel: requirements
+      payloadKind: artifactRefs
+      writesControlFields: ["artifactIndex"]
+      payloadContract:
+        requiredFields: ["eventType", "artifactRefs"]
+        forbiddenFields: ["result", "decision", "status"]
+        requiredSourceRefs: false
+        allowedControlWriteMode: artifact_only
+      canAffectControlFlow: false
+    - eventType: confirmation_render_reported
+      ownerModel: requirements
+      payloadKind: artifactRefs
+      writesControlFields: ["artifactIndex"]
+      payloadContract:
+        requiredFields: ["eventType", "artifactRefs"]
+        forbiddenFields: ["result", "decision", "status"]
+        requiredSourceRefs: false
+        allowedControlWriteMode: artifact_only
+      canAffectControlFlow: false
     - eventType: implementation_delta
       ownerModel: implementation
       payloadKind: artifactRefs
@@ -393,6 +436,87 @@ ${currentTargetMapBlock}
         requiredSourceRefs: false
         allowedControlWriteMode: artifact_only
       canAffectControlFlow: false
+  controlledIngestWriterRegistry:
+    - writerId: requirements-confirmation-ingest
+      scriptPath: "_bmad/skills/requirements-contract-authoring/scripts/ingest-confirmation-event.js"
+      scriptContentHash: "sha256:fixture-confirmation-writer"
+      ownerModel: requirement_confirmation
+      allowedWriteApis: ["appendControlEvent", "atomicWriteRequirementRecord", "appendArtifactIndex"]
+      allowedPaths:
+        - "_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json"
+        - "_bmad-output/runtime/requirement-records/<requirement-set-id>/events/control-events.jsonl"
+        - "_bmad-output/runtime/requirement-records/<requirement-set-id>/artifact-index.jsonl"
+        - "_bmad-output/runtime/requirement-records/artifact-index.jsonl"
+      allowedEventTypes:
+        - confirmation_recorded
+        - contract_check_recorded
+        - confirmation_view_rendered
+        - confirmation_summary_rendered
+        - confirmation_render_reported
+      payloadContractRefs:
+        - confirmation_recorded
+        - contract_check_recorded
+        - confirmation_view_rendered
+        - confirmation_summary_rendered
+        - confirmation_render_reported
+      writesControlFields: ["confirmationHistory", "contractChecks", "artifactIndex"]
+      receiptPath: "_bmad-output/runtime/requirement-records/<requirement-set-id>/receipts/requirements-confirmation-ingest/<receipt-id>.json"
+      beforeAfterHashRequired: true
+      canModifyWriterRegistry: false
+      registryHash: "sha256:fixture-writer-registry"
+      architectureConfirmationHash: "sha256:fixture-architecture"
+    - writerId: implementation-evidence-ingest
+      scriptPath: "scripts/ingest-implementation-evidence.ts"
+      scriptContentHash: "sha256:fixture-implementation-writer"
+      ownerModel: execution_closure
+      allowedWriteApis: ["appendControlEvent", "atomicWriteRequirementRecord", "appendArtifactIndex"]
+      allowedPaths:
+        - "_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json"
+        - "_bmad-output/runtime/requirement-records/<requirement-set-id>/events/control-events.jsonl"
+        - "_bmad-output/runtime/requirement-records/<requirement-set-id>/artifact-index.jsonl"
+        - "_bmad-output/runtime/requirement-records/artifact-index.jsonl"
+      allowedEventTypes:
+        - execution_iteration_recorded
+        - gate_check_recorded
+        - recovery_context_updated
+        - fallback_mode_recorded
+        - failure_recorded
+        - implementation_delta
+        - hook_receipt
+      payloadContractRefs:
+        - execution_iteration_recorded
+        - gate_check_recorded
+        - recovery_context_updated
+        - fallback_mode_recorded
+        - failure_recorded
+        - implementation_delta
+        - hook_receipt
+      writesControlFields: ["executionIterations", "gateChecks", "recoveryContext", "runtimePolicySnapshotRef", "failureRecords", "artifactIndex"]
+      receiptPath: "_bmad-output/runtime/requirement-records/<requirement-set-id>/receipts/implementation-evidence-ingest/<receipt-id>.json"
+      beforeAfterHashRequired: true
+      canModifyWriterRegistry: false
+      registryHash: "sha256:fixture-writer-registry"
+      architectureConfirmationHash: "sha256:fixture-architecture"
+    - writerId: delivery-closeout-gate
+      scriptPath: "scripts/main-agent-delivery-closeout-gate.ts"
+      scriptContentHash: "sha256:fixture-closeout-writer"
+      ownerModel: delivery_confirmation
+      allowedWriteApis: ["appendControlEvent", "atomicWriteRequirementRecord", "appendArtifactIndex"]
+      allowedPaths:
+        - "_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json"
+        - "_bmad-output/runtime/requirement-records/<requirement-set-id>/events/control-events.jsonl"
+        - "_bmad-output/runtime/requirement-records/<requirement-set-id>/artifact-index.jsonl"
+        - "_bmad-output/runtime/requirement-records/artifact-index.jsonl"
+      allowedEventTypes:
+        - closeout_recorded
+      payloadContractRefs:
+        - closeout_recorded
+      writesControlFields: ["closeout"]
+      receiptPath: "_bmad-output/runtime/requirement-records/<requirement-set-id>/receipts/delivery-closeout-gate/<receipt-id>.json"
+      beforeAfterHashRequired: true
+      canModifyWriterRegistry: false
+      registryHash: "sha256:fixture-writer-registry"
+      architectureConfirmationHash: "sha256:fixture-architecture"
   artifactAutomationPlan:
     - artifactId: ART-CONFIRM-001
       path: "_bmad-output/runtime/requirements/REQ-UPLOAD-001/confirmation/confirmation.html"
@@ -653,6 +777,188 @@ function writeEsmMermaidBundle(): string {
 }
 
 describe('render-requirements-confirmation-html', () => {
+  it('renders current controlled execution state only when hashes and current attempt match', () => {
+    const source = writeSource();
+    const mermaidBundle = writeMockMermaidBundle();
+    const recordPath = path.join(tempDir, 'requirement-record.json');
+    const firstOut = path.join(tempDir, 'confirmation-first.html');
+    const firstResult = runRenderer([
+      '--source',
+      source,
+      '--out',
+      firstOut,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--architecture-confirmation-hash',
+      'sha256:current-architecture',
+      '--requirement-record',
+      recordPath,
+      '--json',
+    ]);
+    expect(firstResult.status).toBe(0);
+    const firstReport = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(firstOut), 'confirmation-render-report.json'), 'utf8')
+    );
+
+    fs.writeFileSync(
+      recordPath,
+      JSON.stringify(
+        {
+          recordId: 'REQ-UPLOAD-001',
+          requirementSetId: 'REQSET-UPLOAD',
+          sourceDocumentHash: firstReport.sourceDocumentHash,
+          implementationConfirmationHash: firstReport.implementationConfirmationHash,
+          architectureConfirmationHash: 'sha256:current-architecture',
+          closeout: {
+            currentAttemptId: 'attempt-current-001',
+            attempts: [{ closeoutAttemptId: 'attempt-current-001', decision: 'pass' }],
+          },
+          requirementClosures: [
+            {
+              eventType: 'requirement_closure_recorded',
+              requirementId: 'MUST-001',
+              status: 'pass',
+              traceRows: ['TRACE-001'],
+              evidenceRefs: ['EVD-001', 'EVD-002'],
+              sourceDocumentHash: firstReport.sourceDocumentHash,
+              implementationConfirmationHash: firstReport.implementationConfirmationHash,
+              architectureConfirmationHash: 'sha256:current-architecture',
+              commandRunRefs: [
+                {
+                  commandId: 'CMD-001',
+                  runId: 'run-current-001',
+                  closeoutAttemptId: 'attempt-current-001',
+                  exitCode: 0,
+                },
+              ],
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+
+    const out = path.join(tempDir, 'confirmation-current.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--architecture-confirmation-hash',
+      'sha256:current-architecture',
+      '--requirement-record',
+      recordPath,
+      '--json',
+    ]);
+
+    expect(result.status).toBe(0);
+    const html = fs.readFileSync(out, 'utf8');
+    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    expect(html).toContain('Controlled Execution Status');
+    expect(html).toContain('Current Validity');
+    expect(html).toContain('current_pass');
+    expect(html).toContain('attempt-current-001');
+    expect(report.traceExecutionState.rows['TRACE-001']).toMatchObject({
+      status: 'current_pass',
+      validity: 'current',
+      currentAttemptId: 'attempt-current-001',
+    });
+  });
+
+  it('renders historical PASS as stale when hashes or current attempt do not match', () => {
+    const source = writeSource();
+    const mermaidBundle = writeMockMermaidBundle();
+    const recordPath = path.join(tempDir, 'requirement-record-stale.json');
+    const out = path.join(tempDir, 'confirmation-stale.html');
+    fs.writeFileSync(
+      recordPath,
+      JSON.stringify(
+        {
+          recordId: 'REQ-UPLOAD-001',
+          requirementSetId: 'REQSET-UPLOAD',
+          sourceDocumentHash: 'sha256:old-source',
+          implementationConfirmationHash: 'sha256:old-implementation',
+          architectureConfirmationHash: 'sha256:old-architecture',
+          closeout: {
+            currentAttemptId: 'attempt-current-002',
+            attempts: [{ closeoutAttemptId: 'attempt-current-002', decision: 'blocked' }],
+          },
+          requirementClosures: [
+            {
+              eventType: 'requirement_closure_recorded',
+              requirementId: 'MUST-001',
+              status: 'pass',
+              traceRows: ['TRACE-001'],
+              evidenceRefs: ['EVD-001', 'EVD-002'],
+              sourceDocumentHash: 'sha256:old-source',
+              implementationConfirmationHash: 'sha256:old-implementation',
+              architectureConfirmationHash: 'sha256:old-architecture',
+              commandRunRefs: [
+                {
+                  commandId: 'CMD-001',
+                  runId: 'run-old-001',
+                  closeoutAttemptId: 'attempt-old-001',
+                  exitCode: 0,
+                },
+              ],
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--architecture-confirmation-hash',
+      'sha256:current-architecture',
+      '--requirement-record',
+      recordPath,
+      '--json',
+    ]);
+
+    expect(result.status).toBe(0);
+    const html = fs.readFileSync(out, 'utf8');
+    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    expect(html).toContain('historical_stale_hash_mismatch');
+    expect(html).toContain('stale');
+    expect(report.traceExecutionState.rows['TRACE-001'].status).not.toBe('current_pass');
+    expect(report.traceExecutionState.rows['TRACE-001']).toMatchObject({
+      status: 'historical_stale_hash_mismatch',
+      validity: 'stale',
+      currentAttemptId: 'attempt-current-002',
+    });
+  });
+
   it('allows hash drift when a managed reconfirmation request is ready for user confirmation', () => {
     const source = writeSource();
     const original = fs.readFileSync(source, 'utf8');
@@ -808,6 +1114,11 @@ describe('render-requirements-confirmation-html', () => {
     expect(html).toContain('Delivery Evidence Commands');
     expect(html).toContain('现状 vs 目标态对比区');
     expect(html).toContain('工件与自动化计划视图');
+    expect(html).toContain('Controlled Ingest Writer Registry');
+    expect(html).toContain('controlledIngestWriterRegistry[]');
+    expect(html).toContain('requirements-confirmation-ingest');
+    expect(html).toContain('implementation-evidence-ingest');
+    expect(html).toContain('delivery-closeout-gate');
     expect(html).toContain('架构影响视图');
     expect(html).toContain('EntryFlow 视图');
     expect(html).toContain('评分 / Dashboard / SFT 视图');
@@ -953,6 +1264,22 @@ describe('render-requirements-confirmation-html', () => {
         allowedControlWriteMode: 'control',
       },
     });
+    expect(report.controlledIngestWriterRegistry).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          writerId: 'requirements-confirmation-ingest',
+          allowedEventTypes: expect.arrayContaining(['confirmation_recorded', 'contract_check_recorded']),
+          writesControlFields: expect.arrayContaining(['confirmationHistory', 'contractChecks']),
+          beforeAfterHashRequired: true,
+          canModifyWriterRegistry: false,
+        }),
+      ])
+    );
+    expect(report.controlledIngestWriterCoverage.eventTypeToWriters.confirmation_recorded).toContain(
+      'requirements-confirmation-ingest'
+    );
+    expect(report.controlledIngestWriterCoverage.uncoveredEventTypes).toEqual([]);
+    expect(report.controlledIngestWriterSchemaIssues).toEqual([]);
     expect(report.resumeFailureCaseCoverage.governanceEventTypeRefs.gate_check_recorded).toMatchObject({
       ownerModel: 'runtime_governance',
       writesControlFields: ['gateChecks'],
@@ -1251,7 +1578,155 @@ functionalResumeFailureCaseRegistry:
     const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
     const codes = report.blockingIssues.map((issue: any) => issue.code);
     expect(codes).toContain('governance_event_type_payload_contract_missing_required_field');
-    expect(codes).toContain('governance_event_type_payload_contract_conflicting_required_field');
+    expect(codes).toContain('governance_event_type_payload_contract_forbids_payload_field');
+  });
+
+  it('fails closed when controlledIngestWriterRegistry is missing while governance events apply', () => {
+    const source = writeSource();
+    const original = fs.readFileSync(source, 'utf8');
+    const mutated = original.replace(/\n  controlledIngestWriterRegistry:\n[\s\S]*?(?=\n  artifactAutomationPlan:\n)/u, '\n');
+    fs.writeFileSync(source, mutated, 'utf8');
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'confirmation-missing-controlled-ingest-writers.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    expect(result.status).toBe(3);
+    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain('controlled_ingest_writer_registry_missing');
+  });
+
+  it('fails closed when a controlled ingest writer declares a broad allowedPath', () => {
+    const source = writeSource();
+    const original = fs.readFileSync(source, 'utf8');
+    const mutated = original.replace(
+      '"_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json"',
+      '"_bmad-output/runtime/requirement-records/**"'
+    );
+    fs.writeFileSync(source, mutated, 'utf8');
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'confirmation-broad-writer-path.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    expect(result.status).toBe(3);
+    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain('controlled_ingest_writer_allowed_path_too_broad');
+  });
+
+  it('fails closed when a controlled ingest writer references an unknown event type', () => {
+    const source = writeSource();
+    const original = fs.readFileSync(source, 'utf8');
+    const mutated = original.replace(
+      '        - closeout_recorded\n      payloadContractRefs:',
+      '        - closeout_recorded\n        - unknown_event_recorded\n      payloadContractRefs:'
+    );
+    fs.writeFileSync(source, mutated, 'utf8');
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'confirmation-unknown-writer-event.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    expect(result.status).toBe(3);
+    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain('controlled_ingest_writer_unknown_event_type');
+  });
+
+  it('fails closed when a writer declares control fields not covered by allowed event types', () => {
+    const source = writeSource();
+    const original = fs.readFileSync(source, 'utf8');
+    const mutated = original.replace(
+      'writesControlFields: ["closeout"]\n      receiptPath: "_bmad-output/runtime/requirement-records/<requirement-set-id>/receipts/delivery-closeout-gate/<receipt-id>.json"',
+      'writesControlFields: ["closeout", "confirmationHistory"]\n      receiptPath: "_bmad-output/runtime/requirement-records/<requirement-set-id>/receipts/delivery-closeout-gate/<receipt-id>.json"'
+    );
+    fs.writeFileSync(source, mutated, 'utf8');
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'confirmation-writer-uncovered-control-field.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    expect(result.status).toBe(3);
+    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain(
+      'controlled_ingest_writer_control_field_not_covered'
+    );
+  });
+
+  it('fails closed when a writer can modify the writer registry', () => {
+    const source = writeSource();
+    const original = fs.readFileSync(source, 'utf8');
+    const mutated = original.replace('canModifyWriterRegistry: false', 'canModifyWriterRegistry: true');
+    fs.writeFileSync(source, mutated, 'utf8');
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'confirmation-writer-self-authorizing.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    expect(result.status).toBe(3);
+    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain(
+      'controlled_ingest_writer_can_modify_registry_not_false'
+    );
   });
 
   it('uses the selected language for page labels and confirmation phrase', () => {

@@ -15,16 +15,6 @@ function registryFixture(overrides: Record<string, unknown> = {}): Record<string
     status: 'frozen_for_six_mental_model_full_link',
     fullLinkExecutableSubsetRequired: true,
     fullLinkRequiredFixtureCases: ['resume_happy_path', 'sourceDocumentHash_changed'],
-    controlledRecordEventTypes: [
-      {
-        eventType: 'gate_check_recorded',
-        writesControlFields: ['gateChecks'],
-      },
-      {
-        eventType: 'recovery_context_updated',
-        writesControlFields: ['recoveryContext'],
-      },
-    ],
     recoveryActionDefinitions: [
       {
         actionId: 'allow_resume',
@@ -67,6 +57,47 @@ function registryFixture(overrides: Record<string, unknown> = {}): Record<string
 function implementationConfirmationSource(root: string, overrides: Record<string, unknown> = {}): string {
   const sourcePath = path.join(root, 'source.md');
   const registry = registryFixture(overrides.registry as Record<string, unknown> | undefined);
+  const governanceEventTypeRegistryPolicy =
+    overrides.governanceEventTypeRegistryPolicy === null
+      ? null
+      : (overrides.governanceEventTypeRegistryPolicy as Record<string, unknown> | undefined) ?? {
+          controlFieldVocabulary: ['artifactIndex', 'gateChecks', 'recoveryContext', 'runtimePolicySnapshotRef'],
+          payloadKindContracts: [
+            {
+              payloadKind: 'decision',
+              requiredFields: ['eventType', 'decision'],
+              forbiddenFields: ['result', 'status'],
+              allowedControlWriteModes: ['control'],
+            },
+            {
+              payloadKind: 'status',
+              requiredFields: ['eventType', 'status'],
+              forbiddenFields: ['result', 'decision'],
+              allowedControlWriteModes: ['control'],
+            },
+            {
+              payloadKind: 'artifactRefs',
+              requiredFields: ['eventType', 'artifactRefs'],
+              forbiddenFields: ['result', 'decision', 'status'],
+              allowedControlWriteModes: ['artifact_only', 'context_update'],
+            },
+          ],
+          controlWriteModePolicies: [
+            {
+              allowedControlWriteMode: 'control',
+              allowedWritesControlFields: ['gateChecks', 'recoveryContext'],
+            },
+            {
+              allowedControlWriteMode: 'artifact_only',
+              allowedWritesControlFields: ['artifactIndex'],
+            },
+            {
+              allowedControlWriteMode: 'context_update',
+              allowedWritesControlFields: ['artifactIndex', 'recoveryContext', 'runtimePolicySnapshotRef'],
+            },
+          ],
+          eventSpecificRequirements: [],
+        };
   const governanceEventTypeRegistry =
     (overrides.governanceEventTypeRegistry as unknown[]) ??
     [
@@ -104,6 +135,14 @@ function implementationConfirmationSource(root: string, overrides: Record<string
       '',
       '```yaml',
       'implementationConfirmation:',
+      ...(governanceEventTypeRegistryPolicy
+        ? [
+            '  governanceEventTypeRegistryPolicy:',
+            ...JSON.stringify(governanceEventTypeRegistryPolicy, null, 2)
+              .split('\n')
+              .map((line) => `    ${line}`),
+          ]
+        : []),
       '  governanceEventTypeRegistry:',
       ...governanceEventTypeRegistry.flatMap((event) =>
         JSON.stringify(event, null, 2)
@@ -455,6 +494,42 @@ describe('main-agent functional resume check', () => {
     }
   });
 
+  it('fails closed when functional resume defines a second event registry', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'functional-resume-second-registry-'));
+    try {
+      const recordPath = writeRecord(root);
+      const sourcePath = implementationConfirmationSource(root, {
+        registry: {
+          controlledRecordEventTypes: [
+            {
+              eventType: 'gate_check_recorded',
+              writesControlFields: ['gateChecks'],
+            },
+          ],
+        },
+      });
+      const outDir = path.join(root, 'resume');
+      const code = mainFunctionalResumeCheck([
+        '--requirement-record',
+        recordPath,
+        '--source',
+        sourcePath,
+        '--out-dir',
+        outDir,
+      ]);
+
+      expect(code).toBe(1);
+      const packet = JSON.parse(readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim());
+      expect(packet.blockingIssues).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining('resume_failure_second_event_registry_present'),
+        ])
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('fails closed when a recovery action writes control fields without recordEventTypes', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'functional-resume-missing-event-type-'));
     try {
@@ -529,6 +604,35 @@ describe('main-agent functional resume check', () => {
       expect(packet.blockingIssues).toEqual(
         expect.arrayContaining([
           expect.stringContaining('governance_event_type_missing_payload_contract'),
+        ])
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed when governance event type registry policy is missing', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'functional-resume-missing-event-policy-'));
+    try {
+      const recordPath = writeRecord(root);
+      const sourcePath = implementationConfirmationSource(root, {
+        governanceEventTypeRegistryPolicy: null,
+      });
+      const outDir = path.join(root, 'resume');
+      const code = mainFunctionalResumeCheck([
+        '--requirement-record',
+        recordPath,
+        '--source',
+        sourcePath,
+        '--out-dir',
+        outDir,
+      ]);
+
+      expect(code).toBe(1);
+      const packet = JSON.parse(readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim());
+      expect(packet.blockingIssues).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining('governance_event_type_registry_policy_missing'),
         ])
       );
     } finally {

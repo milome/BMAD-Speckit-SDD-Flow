@@ -1,5 +1,7 @@
 # Runtime Dashboard 使用说明
 
+> Legacy note: 本页仍保留旧 dashboard / runtime snapshot 访问方式的历史说明。目标态控制输入不再使用 `runtime_context` 字段或 `/api/runtime-context`；当前语义应读取 `resolvedRuntimeContext` / `/api/resolved-runtime-context`，并通过 Active Requirement Resolver 从 RequirementRecord、requirement index、runtime policy snapshot 和 recovery context 派生。
+
 这套 runtime dashboard 现在有三条并行但解耦的访问路径：
 
 - Agent 接入：`MCP-first`
@@ -107,18 +109,18 @@ npx bmad-speckit runtime-mcp --dashboard-port 43124 --host 127.0.0.1
 npx bmad-speckit dashboard --json --include-runtime --output-json _bmad-output/dashboard/runtime-dashboard.json
 ```
 
-这会写出一份完整 snapshot，顶层字段固定为：
+目标态会写出一份完整 snapshot，顶层字段固定为：
 
 - `selection`
 - `overview`
-- `runtime_context`
+- `resolvedRuntimeContext`
 - `stage_timeline`
 - `score_detail`
 - `sft_summary`
 
 其中：
 
-- `runtime_context` 给出当前 run、flow、current stage、scope
+- `resolvedRuntimeContext` 给出当前 run、flow、current stage、scope；历史 `runtime_context` 字段只允许作为 legacy projection，不得作为控制输入
 - `stage_timeline` 给出阶段时间线、phase score、迭代次数、veto
 - `score_detail` 给出当前 run 的细粒度 score records
 - `sft_summary` 给出 accepted / rejected / downgraded、target availability、rejection reasons、last bundle
@@ -148,7 +150,7 @@ npx bmad-speckit dashboard --show-deferred-gaps
 GET /health
 GET /api/snapshot
 GET /api/overview
-GET /api/runtime-context
+GET /api/resolved-runtime-context
 GET /api/stage-timeline
 GET /api/score-detail
 GET /api/sft-summary
@@ -157,7 +159,7 @@ GET /api/sft-summary
 最常用的是：
 
 - `/api/snapshot`：完整 runtime snapshot
-- `/api/runtime-context`：当前 run / stage / scope
+- `/api/resolved-runtime-context`：当前 run / stage / scope 的只读解析结果
 - `/api/sft-summary`：SFT tab 的数据源
 
 ## Agent 能看到什么
@@ -181,7 +183,7 @@ GET /api/sft-summary
 1. `npx bmad-speckit dashboard-live --help`
 2. `npx bmad-speckit runtime-mcp --help`
 3. 启动 live dashboard 后访问 `/health`
-4. 用 `bmad-speckit dashboard --json` 检查 `runtime_context`、`stage_timeline`、`score_detail`、`sft_summary` 都有输出
+4. 用 `bmad-speckit dashboard --json` 检查 `resolvedRuntimeContext`、`stage_timeline`、`score_detail`、`sft_summary` 都有输出；历史 `runtime_context` 字段不得作为通过条件
 5. 如果 MCP 未启动，确认 live dashboard 仍然可用，不允许整条链路直接 fail closed
 
 这也是 fresh regression matrix 现在必须覆盖的 smoke 套件。

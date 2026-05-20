@@ -177,7 +177,7 @@ if (Test-Path "$TARGET\.specify") {
 
 ### 7.2 `.speckit/` 状态文件
 
-`.speckit-state.yaml` 已完全移除，不再作为 runtime context。迁移时不应创建、分发或复制该文件作为运行时治理依赖。
+`.speckit-state.yaml` 已完全移除，不再作为运行时治理上下文、active Requirement 定位依据或 `ResolvedRuntimeContext` 来源。迁移时不应创建、分发或复制该文件作为运行时治理依赖。
 
 ### 7.3 `.cursor/rules/` 中的路径引用
 

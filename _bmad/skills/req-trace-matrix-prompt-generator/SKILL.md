@@ -39,7 +39,7 @@ Prefer the bundled script for local source documents:
 ```bash
 python <skill-dir>/scripts/generate_prompt.py \
   --source-document docs/prd.md \
-  --requirement-record _bmad-output/runtime/requirements/<recordId>/requirement-record.json
+  --requirement-record _bmad-output/runtime/requirement-records/<recordId>/requirement-record.json
 ```
 
 Compatibility aliases:

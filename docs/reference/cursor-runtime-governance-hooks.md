@@ -1,6 +1,6 @@
 # Cursor Runtime Governance Hooks Reference
 
-> **Current path**: `shared hook core + Cursor adapter + registry/activeScope`；post-audit automation 由 `runAuditorHost` 承接
+> **Current path**: `shared hook core + Cursor adapter + Active Requirement Resolver / ResolvedRuntimeContext`；post-audit automation 由 controlled ingest 承接
 > **Legacy path**: Cursor 侧各自猜状态，或把 post-audit 收口混进宿主 hooks 逻辑
 
 ## 1. 目的
@@ -18,7 +18,7 @@
 本文档是 Cursor Runtime Governance 自动注入方案的 **reference 文档**，与以下文档配套：
 
 - [runtime-policy-emit-schema.md](./runtime-policy-emit-schema.md)
-- [runtime-context.md](./runtime-context.md)
+- [runtime-context.md](./runtime-context.md)（历史 retired context surface 说明；目标态不作为控制输入）
 - [../how-to/runtime-governance-auto-inject-cursor-claude.md](../how-to/runtime-governance-auto-inject-cursor-claude.md)
 - [../plans/TASKS_RUNTIME_GOVERNANCE_AUTO_INJECT.md](../plans/TASKS_RUNTIME_GOVERNANCE_AUTO_INJECT.md)
 - [../plans/2026-03-21-runtime-governance-story-scoped-dual-host-implementation-plan.md](../plans/2026-03-21-runtime-governance-story-scoped-dual-host-implementation-plan.md)
@@ -78,7 +78,7 @@ third-party hooks 与手工 UI 注册都不是主推荐方案。
 - `.cursor/hooks/emit-runtime-policy-cli.js`
 - `.cursor/hooks/runtime-policy-inject.js`
 - `.cursor/hooks/emit-runtime-policy.cjs`
-- `.cursor/hooks/write-runtime-context.js`
+- `.cursor/hooks/resolve-active-requirement.js`
 
 ### 3.2 这些文件的职责
 
@@ -88,7 +88,7 @@ third-party hooks 与手工 UI 注册都不是主推荐方案。
 | `.cursor/hooks/emit-runtime-policy-cli.js` | 轻量 CLI 包装器；调用 `emit-runtime-policy` 并输出稳定 JSON                           |
 | `.cursor/hooks/runtime-policy-inject.js`   | Cursor hook command 主入口；读取 hook stdin，调用 emit，并输出 Cursor-native envelope |
 | `.cursor/hooks/emit-runtime-policy.cjs`    | hooks 可直接调用的运行时构建产物                                                      |
-| `.cursor/hooks/write-runtime-context.js`   | 写 runtime context 文件；供 init / 编排 / 调试使用                                    |
+| `.cursor/hooks/resolve-active-requirement.js` | 解析 active Requirement 并输出只读 `ResolvedRuntimeContext`；不得写控制状态 |
 
 ### 3.3 缺失判定
 
@@ -109,7 +109,7 @@ Cursor 与 Claude 必须共用同一个治理内核：
 - 同一个 `resolveRuntimePolicy`
 - 同一个 `emit-runtime-policy`
 - 同一个 RuntimePolicy schema
-- 同一个 runtime context 输入模型
+- 同一个 `ResolvedRuntimeContext` 输入模型
 
 ### 4.3 hooks 三层结构（当前实现）
 
@@ -332,15 +332,15 @@ CLI 参数只用于声明宿主模式和事件模式，例如：
 输入必须被分为三层：
 
 1. **宿主事件输入**：来自 Cursor hook stdin JSON
-2. **运行时上下文输入**：来自 registry `activeScope` 指向的 scoped context file，或来自 CLI/env 直接提供的 `flow`/`stage`
+2. **运行时上下文输入**：来自 Active Requirement Resolver 输出的只读 `ResolvedRuntimeContext`
 3. **治理求值输入**：传给 `resolveRuntimePolicy()` 的标准字段
 
-### 7.3 运行时上下文补全规则
+### 7.3 ResolvedRuntimeContext 补全规则
 
-Runtime Governance 在 Cursor 宿主下依旧遵循统一 context 规则：
+Runtime Governance 在 Cursor 宿主下依旧遵循统一解析规则：
 
-- 只使用 registry + activeScope + scoped context file
-- 缺失显式运行时上下文时，不再回退到 `.bmad/runtime-context.json`
+- 只使用显式 `recordId` / `requirementSetId` / `runId` 或 `_bmad-output/runtime/requirement-records/index.json`
+- 缺失 `ResolvedRuntimeContext` 时，不再回退到 `.bmad/runtime-context.json`
 - 不再读取任何已移除的 speckit fallback 输入
 - 并发 / story-scoped 模式下缺少显式上下文必须直接失败
 
@@ -500,7 +500,7 @@ Runtime Governance 默认策略应为：
 
 - policy 求值源
 - emit 输出 schema
-- runtime context 语义
+- `ResolvedRuntimeContext` 语义
 - story-scoped 隔离规则
 
 ---
@@ -511,7 +511,7 @@ Cursor hooks 只是宿主挂载层。
 
 并发安全不由 hooks.json 本身保证，而由以下机制共同保证：
 
-- story-scoped runtime context
+- requirement-scoped `ResolvedRuntimeContext`
 - runId / storyId 幂等键
 - emit 在并发模式下禁用共享 context 旧路径依赖
 - score/state 顺序与去重规则
@@ -544,7 +544,7 @@ Cursor Runtime Governance hooks 方案至少需要以下测试：
 | 文档                                                                          | 作用                                  |
 | ----------------------------------------------------------------------------- | ------------------------------------- |
 | `runtime-policy-emit-schema.md`                                               | 定义 emit 本体输出契约                |
-| `runtime-context.md`                                                          | 定义 runtime context 输入契约         |
+| `runtime-context.md`                                                          | 说明历史 retired context surface；目标态输入契约是 `ResolvedRuntimeContext` |
 | `runtime-governance-auto-inject-cursor-claude.md`                             | 给使用者的 how-to                     |
 | `TASKS_RUNTIME_GOVERNANCE_AUTO_INJECT.md`                                     | 自动注入专项任务书                    |
 | `2026-03-21-runtime-governance-story-scoped-dual-host-implementation-plan.md` | 总实施任务书                          |

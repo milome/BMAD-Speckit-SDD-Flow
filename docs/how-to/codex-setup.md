@@ -16,7 +16,7 @@ The install is valid only when `.codex/commands`, `.codex/agents`, `.codex/skill
 
 Start from `bmads`, then follow the main-agent five-layer flow. Use `bmad-help` separately for upstream BMAD Method workflow guidance:
 
-1. `layer_1_intake`: intake and runtime context.
+1. `layer_1_intake`: intake, active Requirement resolution, and read-only `ResolvedRuntimeContext`.
 2. `layer_2_architecture`: architecture constraints.
 3. `layer_3_story`: epics, stories, and readiness.
 4. `layer_4_speckit`: `specify -> plan -> gaps -> tasks -> implement`.

@@ -4,7 +4,7 @@
 # - host carrier source: _bmad/cursor/agents/code-reviewer.md / _bmad/claude/agents/code-reviewer.md
 # - route precedence / fallback business rules: scripts/reviewer-registry.ts
 # This file now only owns mode/dimensions/prompt_template configuration and must not become the reviewer carrier truth source again.
-# audit-prompts 多语言：locale 来自 _bmad-output/runtime/context/project.json → languagePolicy.resolvedMode（非 env）。解析见
+# audit-prompts 多语言：locale 来自当前 active Requirement 的 runtimePolicySnapshot.locale（非 env，禁止 fallback 到 project.json）。解析见
 # scripts/i18n/resolve-audit-prompt-path.ts；文件约定见 _bmad/_config/AUDIT_PROMPTS_STRATEGY.md（.md / .zh.md / .en.md）。
 # GAP-009 修复：prompt_template 路径规则
 # GAP-076 修复：prompt_template 路径解析优先级：(1) 相对于 config 文件所在目录；(2) 若不存在则 {SKILLS_ROOT}/speckit-workflow/references/
