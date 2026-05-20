@@ -1,0 +1,432 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/subagent-evidence-envelope.schema.json",
+  "title": "Subagent Evidence Envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "envelopeVersion",
+    "recordId",
+    "requirementSetId",
+    "parentRunId",
+    "parentCloseoutAttemptId",
+    "subtaskId",
+    "packetId",
+    "packetKind",
+    "executorKind",
+    "executorRole",
+    "decisionAuthority",
+    "sourceDocumentHash",
+    "implementationConfirmationHash",
+    "architectureConfirmationHash",
+    "traceRows",
+    "coveredRequirementIds",
+    "taskRefs",
+    "allowedWriteScope",
+    "actualFilesChanged",
+    "diffHash",
+    "workspaceRef",
+    "commandRuns",
+    "artifactRefs",
+    "hookReceipts",
+    "transportRefs",
+    "status",
+    "failureRecords"
+  ],
+  "properties": {
+    "envelopeVersion": {
+      "const": "subagent-evidence-envelope/v1"
+    },
+    "recordId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requirementSetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "parentRunId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "parentCloseoutAttemptId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "subtaskId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "packetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "packetKind": {
+      "enum": [
+        "execution",
+        "resume",
+        "recommendation",
+        "remediation",
+        "audit",
+        "parallel_node",
+        "authoring",
+        "research",
+        "hook_summary"
+      ]
+    },
+    "executorKind": {
+      "enum": [
+        "cursor_mcp_task",
+        "cursor_task",
+        "claude_agent_tool",
+        "codex_worker_adapter",
+        "codex_spawn_agent",
+        "generic_prompt_packet",
+        "auditor_host",
+        "hook_summary",
+        "parallel_mission_node",
+        "party_mode_facilitator",
+        "research_subagent",
+        "authoring_subagent",
+        "reviewer_subagent",
+        "external_host_dispatch"
+      ]
+    },
+    "executorRole": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decisionAuthority": {
+      "const": "none"
+    },
+    "sourceDocumentHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "implementationConfirmationHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "architectureConfirmationHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "traceRows": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "coveredRequirementIds": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "taskRefs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "allowedWriteScope": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "actualFilesChanged": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "diffHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "workspaceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "path",
+        "commitBefore",
+        "commitAfter"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "main_workspace",
+            "worktree",
+            "external_host"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commitBefore": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commitAfter": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "commandRuns": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "commandId",
+          "command",
+          "exitCode",
+          "startedAt",
+          "completedAt",
+          "outputSummary",
+          "artifactRefs",
+          "closeoutAttemptId"
+        ],
+        "properties": {
+          "commandId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "command": {
+            "type": "string",
+            "minLength": 1
+          },
+          "exitCode": {
+            "type": "integer"
+          },
+          "startedAt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "completedAt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "outputSummary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "artifactRefs": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/artifactRef"
+            }
+          },
+          "closeoutAttemptId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "artifactRefs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/artifactRef"
+      }
+    },
+    "hookReceipts": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "transportRefs": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "status": {
+      "enum": [
+        "accepted",
+        "rejected",
+        "partial",
+        "blocked"
+      ]
+    },
+    "failureRecords": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "not": {
+    "anyOf": [
+      {
+        "required": [
+          "result"
+        ]
+      },
+      {
+        "required": [
+          "decision"
+        ]
+      },
+      {
+        "required": [
+          "closeoutDecision"
+        ]
+      },
+      {
+        "required": [
+          "requirementDecision"
+        ]
+      },
+      {
+        "required": [
+          "confirmationHistory"
+        ]
+      },
+      {
+        "required": [
+          "architectureConfirmationState"
+        ]
+      },
+      {
+        "required": [
+          "gateChecks"
+        ]
+      },
+      {
+        "required": [
+          "contractChecks"
+        ]
+      },
+      {
+        "required": [
+          "requirementClosures"
+        ]
+      },
+      {
+        "required": [
+          "auditIterations"
+        ]
+      },
+      {
+        "required": [
+          "rerunLoops"
+        ]
+      },
+      {
+        "required": [
+          "closeout"
+        ]
+      },
+      {
+        "required": [
+          "record_closed"
+        ]
+      },
+      {
+        "required": [
+          "recordClosed"
+        ]
+      }
+    ]
+  },
+  "$defs": {
+    "artifactRef": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "artifactType",
+        "sourceOfTruthRole",
+        "path",
+        "producer",
+        "purpose",
+        "relatedRequirementIds",
+        "status",
+        "inputVersion",
+        "outputVersion"
+      ],
+      "properties": {
+        "artifactType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceOfTruthRole": {
+          "enum": [
+            "evidence",
+            "projection",
+            "read_model",
+            "control"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "contentHash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "producer": {
+          "type": "string",
+          "minLength": 1
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "relatedRequirementIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1
+        },
+        "inputVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "outputVersion": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "hash"
+          ]
+        },
+        {
+          "required": [
+            "contentHash"
+          ]
+        }
+      ]
+    }
+  }
+}

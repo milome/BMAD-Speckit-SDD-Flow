@@ -1,0 +1,303 @@
+COMMAND: npx.cmd vitest run tests/acceptance/subagent-evidence-envelope.test.ts tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts
+STARTED_AT: 2026-05-20T19:42:10.405Z
+COMPLETED_AT: 2026-05-20T19:42:19.114Z
+EXIT_CODE: 0
+
+STDOUT:
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mD:/Dev/BMAD-Speckit-SDD-Flow[39m
+
+ [32m✓[39m tests/acceptance/requirement-record-schema.test.ts [2m([22m[2m15 tests[22m[2m)[22m[33m 802[2mms[22m[39m
+{
+  "ok": true,
+  "requirementRecordPath": "C:/Users/milom/AppData/Local/Temp/implementation-evidence-ingest-mUfss8/_bmad-output/runtime/requirement-records/REQ-EVIDENCE-INGEST/requirement-record.json",
+  "eventLogPath": "C:/Users/milom/AppData/Local/Temp/implementation-evidence-ingest-mUfss8/_bmad-output/runtime/requirement-records/REQ-EVIDENCE-INGEST/data/mentor-events.jsonl",
+  "artifactIndexPath": "C:/Users/milom/AppData/Local/Temp/implementation-evidence-ingest-mUfss8/_bmad-output/runtime/requirement-records/REQ-EVIDENCE-INGEST/artifact-index.jsonl",
+  "globalArtifactIndexPath": "C:/Users/milom/AppData/Local/Temp/implementation-evidence-ingest-mUfss8/_bmad-output/runtime/requirement-records/artifact-index.jsonl"
+}
+execution_iteration_recorded=exec-001
+execution_iteration_recorded=exec-001
+execution_iteration_recorded=exec-001
+execution_iteration_recorded=exec-001
+execution_iteration_recorded=exec-001
+execution_iteration_recorded=exec-001
+execution_iteration_recorded=exec-001
+ [32m✓[39m tests/acceptance/implementation-evidence-ingest.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 171[2mms[22m[39m
+{
+  "ok": true,
+  "requirementRecordPath": "C:/Users/milom/AppData/Local/Temp/subagent-envelope-ingest-Hcu45r/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json",
+  "eventLogPath": "C:/Users/milom/AppData/Local/Temp/subagent-envelope-ingest-Hcu45r/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/mentor-events.jsonl",
+  "artifactIndexPath": "C:/Users/milom/AppData/Local/Temp/subagent-envelope-ingest-Hcu45r/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/artifact-index.jsonl",
+  "globalArtifactIndexPath": "C:/Users/milom/AppData/Local/Temp/subagent-envelope-ingest-Hcu45r/_bmad-output/runtime/requirement-records/artifact-index.jsonl"
+}
+{
+  "reportType": "subagent_evidence_envelope_acceptance",
+  "schemaVersion": "subagent-evidence-envelope-acceptance/v1",
+  "generatedAt": "2026-05-20T19:42:14.634Z",
+  "decision": "pass",
+  "status": "accepted",
+  "envelopeHash": "sha256:db9ecb5f4b2a4666f032886f1df888aca64f92e811e9f811ee01776b8dc4e664",
+  "schemaPath": "C:/Users/milom/AppData/Local/Temp/subagent-envelope-report-Sx8yg9/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/fixture/subagent-evidence-envelope.schema.json",
+  "sourceRefs": [
+    {
+      "sourceType": "subagent_evidence_envelope",
+      "id": "packet-trace-035"
+    },
+    {
+      "sourceType": "trace_row",
+      "id": "TRACE-035"
+    },
+    {
+      "sourceType": "covered_requirement",
+      "id": "MUST-044"
+    },
+    {
+      "sourceType": "covered_requirement",
+      "id": "MUST-046"
+    },
+    {
+      "sourceType": "covered_requirement",
+      "id": "NEG-034"
+    },
+    {
+      "sourceType": "covered_requirement",
+      "id": "NEG-035"
+    },
+    {
+      "sourceType": "covered_requirement",
+      "id": "OUT-027"
+    }
+  ],
+  "evidenceArtifactRefs": [
+    {
+      "artifactType": "subagent_evidence",
+      "sourceOfTruthRole": "evidence",
+      "path": "C:\\Users\\milom\\AppData\\Local\\Temp\\subagent-envelope-report-Sx8yg9\\_bmad-output\\runtime\\requirement-records\\REQ-CLOSED-LOOP-DESIGN\\evidence\\TRACE-035\\fixture\\subagent-proof.json",
+      "contentHash": "sha256:53651e291199058981fe33b76ed9c966c93230a440163260b65109eb99f2de34",
+      "producer": "subagent-evidence-envelope.test",
+      "purpose": "prove subagent evidence envelope acceptance",
+      "relatedRequirementIds": [
+        "MUST-044",
+        "MUST-046",
+        "NEG-034",
+        "NEG-035",
+        "OUT-027",
+        "EVD-045"
+      ],
+      "status": "active",
+      "inputVersion": "trace-035",
+      "outputVersion": "subagent-envelope-v1"
+    }
+  ],
+  "mismatches": [],
+  "controlWrite": "forbidden_use_controlled_ingest"
+}
+ [32m✓[39m tests/acceptance/subagent-evidence-envelope.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 62[2mms[22m[39m
+[90mstdout[2m | tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts[2m > [22m[2mmain-agent codex worker adapter e2e[2m > [22m[2maccepts --smoke as a boolean CLI flag while still reading --packetPath correctly
+[22m[39m{
+  "reportPath": "C:\\Users\\milom\\AppData\\Local\\Temp\\main-agent-codex-worker-SzxxIm\\adapter-report.json",
+  "reportType": "main_agent_codex_worker_adapter",
+  "generatedAt": "2026-05-20T19:42:19.002Z",
+  "projectRoot": "C:\\Users\\milom\\AppData\\Local\\Temp\\main-agent-codex-worker-SzxxIm",
+  "packetPath": "C:\\Users\\milom\\AppData\\Local\\Temp\\main-agent-codex-worker-SzxxIm\\_bmad-output\\runtime\\requirement-records\\REQ-CODEX-WORKER\\prompts\\prompt-packets\\implement-1779306138701.json",
+  "taskReportPath": "C:\\Users\\milom\\AppData\\Local\\Temp\\main-agent-codex-worker-SzxxIm\\task-report.json",
+  "mode": "smoke",
+  "codexCommand": [
+    "codex",
+    "worker-adapter-smoke"
+  ],
+  "exitCode": 0,
+  "scopePassed": true,
+  "taskReport": {
+    "packetId": "implement-1779306138701",
+    "status": "done",
+    "filesChanged": [
+      "_bmad-output/runtime/requirement-records/REQ-CODEX-WORKER/artifacts/codex/implement-1779306138701.md"
+    ],
+    "validationsRun": [
+      "codex-worker-adapter-smoke"
+    ],
+    "evidence": [
+      "codex-smoke:_bmad-output/runtime/requirement-records/REQ-CODEX-WORKER/artifacts/codex/implement-1779306138701.md"
+    ],
+    "downstreamContext": [
+      "execute implement through the main-agent runtime loop"
+    ]
+  },
+  "stdinPath": null,
+  "stdoutPath": null,
+  "stderrPath": null,
+  "agentRole": "implementation-worker",
+  "agentSpecPath": "C:\\Users\\milom\\AppData\\Local\\Temp\\main-agent-codex-worker-SzxxIm\\.codex\\agents\\implementation-worker.toml",
+  "runtimeGovernanceStatus": "resolved",
+  "runtimeGovernanceError": null,
+  "actualFilesChanged": [
+    "_bmad-output/runtime/requirement-records/REQ-CODEX-WORKER/artifacts/codex/implement-1779306138701.md"
+  ],
+  "transportEnvelope": {
+    "hostKind": "codex",
+    "hostMode": "no_hook",
+    "entry": "main-agent-codex-worker-adapter",
+    "runId": "REQ-CODEX-WORKER",
+    "recordId": "REQ-CODEX-WORKER",
+    "requirementSetId": "REQ-CODEX-WORKER",
+    "stage": "implement",
+    "packetId": "implement-1779306138701",
+    "eventType": "execution_iteration_recorded",
+    "payloadKind": "status",
+    "status": "done",
+    "sourceRefs": [
+      {
+        "sourceType": "execution_packet",
+        "id": "implement-1779306138701"
+      }
+    ],
+    "artifactRefs": [
+      {
+        "artifactType": "task_report_evidence",
+        "sourceOfTruthRole": "evidence",
+        "path": "codex-smoke:_bmad-output/runtime/requirement-records/REQ-CODEX-WORKER/artifacts/codex/implement-1779306138701.md"
+      }
+    ],
+    "payload": {
+      "packetId": "implement-1779306138701",
+      "filesChanged": [
+        "_bmad-output/runtime/requirement-records/REQ-CODEX-WORKER/artifacts/codex/implement-1779306138701.md"
+      ],
+      "validationsRun": [
+        "codex-worker-adapter-smoke"
+      ],
+      "evidence": [
+        "codex-smoke:_bmad-output/runtime/requirement-records/REQ-CODEX-WORKER/artifacts/codex/implement-1779306138701.md"
+      ],
+      "downstreamContext": [
+        "execute implement through the main-agent runtime loop"
+      ],
+      "driftFlags": []
+    }
+  },
+  "transportEnvelopeValidation": {
+    "ok": true,
+    "mismatches": [],
+    "registryHash": "sha256:f11d88244c5926bafc7a60ebb5d8c33979a489ee5d9b88f047738e11f8120fcf",
+    "registryPolicyHash": "sha256:15f09ff2ee41fddf969478ccb92e992353e540a9c2292258b471288ec0716fa8"
+  },
+  "subagentEvidenceEnvelope": null,
+  "subagentEvidenceEnvelopeValidation": {
+    "ok": false,
+    "status": "blocked",
+    "mismatches": [
+      "subagent_evidence_envelope_hash_context_missing"
+    ],
+    "sourceRefs": [],
+    "evidenceArtifactRefs": []
+  }
+}
+
+ [32m✓[39m tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts [2m([22m[2m13 tests[22m[2m)[22m[33m 4402[2mms[22m[39m
+     [33m[2m✓[22m[39m runs codex no-hooks smoke, writes scoped changes, emits TaskReport, and lets run-loop ingest it [33m 556[2mms[22m[39m
+     [33m[2m✓[22m[39m emits accepted subagentEvidenceEnvelope when hash and trace bindings are provided [33m 409[2mms[22m[39m
+     [33m[2m✓[22m[39m runs non-smoke codex exec through a controlled Codex binary and ingests TaskReport [33m 529[2mms[22m[39m
+     [33m[2m✓[22m[39m resolves canonical Codex agent specs when runtime .codex agents are not installed [33m 331[2mms[22m[39m
+     [33m[2m✓[22m[39m injects Runtime Governance JSON into real codex exec prompts [33m 332[2mms[22m[39m
+     [33m[2m✓[22m[39m accepts UTF-8 BOM dispatch packets written by Windows tooling [33m 328[2mms[22m[39m
+     [33m[2m✓[22m[39m fails closed when Codex reports a file outside allowedWriteScope [33m 350[2mms[22m[39m
+     [33m[2m✓[22m[39m fails closed when TaskReport is not strict UTF-8 no-BOM JSON [33m 375[2mms[22m[39m
+     [33m[2m✓[22m[39m fails closed when Codex modifies an actual file outside allowedWriteScope without reporting it [33m 498[2mms[22m[39m
+     [33m[2m✓[22m[39m accepts --smoke as a boolean CLI flag while still reading --packetPath correctly [33m 329[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[32m51 passed[39m[22m[90m (51)[39m
+[2m   Start at [22m 03:42:12
+[2m   Duration [22m 6.34s[2m (transform 834ms, setup 0ms, import 2.12s, tests 5.44s, environment 0ms)[22m
+
+
+
+STDERR:
+[90mstderr[2m | tests/acceptance/implementation-evidence-ingest.test.ts[2m > [22m[2mimplementation evidence ingest[2m > [22m[2mrejects stale hashes without mutating the requirement record
+[22m[39m{
+  "ok": false,
+  "mismatches": [
+    "architecture_confirmation_hash_mismatch"
+  ]
+}
+
+[90mstderr[2m | tests/acceptance/implementation-evidence-ingest.test.ts[2m > [22m[2mimplementation evidence ingest[2m > [22m[2mrejects legacy result fields and historical command runs
+[22m[39m{
+  "ok": false,
+  "mismatches": [
+    "command_run_id_mismatch",
+    "forbidden_result_field"
+  ]
+}
+
+[90mstderr[2m | tests/acceptance/implementation-evidence-ingest.test.ts[2m > [22m[2mimplementation evidence ingest[2m > [22m[2mrejects rerun loops without controlled source authority before mutating the requirement record
+[22m[39m{
+  "ok": false,
+  "mismatches": [
+    "rerun_loop_source_ref_type_invalid:artifact_ref",
+    "rerun_loop_result_forbidden",
+    "forbidden_result_field"
+  ]
+}
+
+[90mstderr[2m | tests/acceptance/implementation-evidence-ingest.test.ts[2m > [22m[2mimplementation evidence ingest[2m > [22m[2mrejects hook reconciliation that claims closeout without fallback evidence
+[22m[39m{
+  "ok": false,
+  "mismatches": [
+    "hook_reconciliation_reconciled_fallback_refs_missing"
+  ]
+}
+
+[90mstderr[2m | tests/acceptance/implementation-evidence-ingest.test.ts[2m > [22m[2mimplementation evidence ingest[2m > [22m[2mrejects delivery required commands that cannot prove current blocking evidence
+[22m[39m{
+  "ok": false,
+  "mismatches": [
+    "required_command_not_blocking",
+    "required_command_artifact_refs_missing"
+  ]
+}
+
+[90mstderr[2m | tests/acceptance/implementation-evidence-ingest.test.ts[2m > [22m[2mimplementation evidence ingest[2m > [22m[2mrejects invalid entryFlowState updates before mutating the requirement record
+[22m[39m{
+  "ok": false,
+  "mismatches": [
+    "entry_flow_state_entry_flow_invalid",
+    "entry_flow_state_contract_authoring_required_not_true",
+    "entry_flow_state_forbidden_top_level_entry_flow"
+  ]
+}
+
+[90mstderr[2m | tests/acceptance/implementation-evidence-ingest.test.ts[2m > [22m[2mimplementation evidence ingest[2m > [22m[2mrejects missing or unsafe global contract traceability policy before mutating the requirement record
+[22m[39m{
+  "ok": false,
+  "mismatches": [
+    "effective_global_contract_traceability_policy_missing"
+  ]
+}
+
+[90mstderr[2m | tests/acceptance/implementation-evidence-ingest.test.ts[2m > [22m[2mimplementation evidence ingest[2m > [22m[2mrejects evidence packets without behavior-affecting implementation delta proof
+[22m[39m{
+  "ok": false,
+  "mismatches": [
+    "implementation_delta_missing"
+  ]
+}
+
+[90mstderr[2m | tests/acceptance/implementation-evidence-ingest.test.ts[2m > [22m[2mimplementation evidence ingest[2m > [22m[2mrejects artifact refs without pass-grade metadata
+[22m[39m{
+  "ok": false,
+  "mismatches": [
+    "artifact_ref_artifact_purpose_missing",
+    "artifact_ref_artifact_related_requirement_ids_missing"
+  ]
+}
+
+[90mstderr[2m | tests/acceptance/implementation-evidence-ingest.test.ts[2m > [22m[2mimplementation evidence ingest[2m > [22m[2mrejects inline full diffs and legacy write targets
+[22m[39m{
+  "ok": false,
+  "mismatches": [
+    "artifact_legacy_write_path_forbidden:_bmad-output/runtime/gates/legacy-report.json",
+    "forbidden_inline_full_diff"
+  ]
+}

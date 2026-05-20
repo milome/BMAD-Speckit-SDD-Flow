@@ -1,0 +1,40 @@
+{
+  "artifactType": "subagent_evidence_envelope_negative_assertions",
+  "traceRows": [
+    "TRACE-035"
+  ],
+  "coveredRequirementIds": [
+    "MUST-044",
+    "MUST-046",
+    "NEG-034",
+    "NEG-035",
+    "OUT-027",
+    "EVD-004",
+    "EVD-044",
+    "EVD-045",
+    "TRACE-035"
+  ],
+  "negativeAssertions": [
+    {
+      "id": "task-report-alone-blocked",
+      "assertion": "TaskReport done without envelope is rejected.",
+      "verifiedBy": "subagent-evidence-envelope.test.ts"
+    },
+    {
+      "id": "forbidden-result-decision",
+      "assertion": "result/decision fields in envelope are rejected.",
+      "verifiedBy": "subagent-evidence-envelope.test.ts"
+    },
+    {
+      "id": "direct-control-fields-blocked",
+      "assertion": "requirementClosures/gateChecks/contractChecks/closeout fields in envelope are rejected.",
+      "verifiedBy": "subagent-evidence-envelope.test.ts"
+    },
+    {
+      "id": "adapter-missing-bindings-blocked",
+      "assertion": "adapter fails closed without traceRows, coveredRequirementIds, or taskRefs.",
+      "verifiedBy": "main-agent-codex-worker-adapter-e2e.test.ts"
+    }
+  ],
+  "controlWrite": "forbidden_use_controlled_ingest"
+}

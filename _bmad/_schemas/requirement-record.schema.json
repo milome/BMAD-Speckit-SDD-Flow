@@ -45,7 +45,12 @@
     },
     "executionIterations": {
       "type": "array",
-      "items": { "$ref": "#/$defs/executionIteration" }
+      "items": {
+        "oneOf": [
+          { "$ref": "#/$defs/executionIteration" },
+          { "$ref": "#/$defs/subagentEvidenceEnvelopeEvent" }
+        ]
+      }
     },
     "requirementClosures": {
       "type": "array",
@@ -515,6 +520,125 @@
         "architectureConfirmationHash": { "$ref": "#/$defs/sha256" },
         "recordedAt": { "type": "string", "format": "date-time" },
         "recordedBy": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "subagentEvidenceEnvelopeEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eventType",
+        "recordId",
+        "requirementSetId",
+        "executionIterationId",
+        "runId",
+        "status",
+        "subagentEvidenceEnvelope",
+        "sourceRefs",
+        "evidenceArtifactRefs",
+        "sourceDocumentHash",
+        "implementationConfirmationHash",
+        "architectureConfirmationHash",
+        "recordedAt",
+        "recordedBy"
+      ],
+      "properties": {
+        "eventType": { "const": "subagent_evidence_envelope_recorded" },
+        "recordId": { "$ref": "#/$defs/nonEmptyString" },
+        "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
+        "executionIterationId": { "$ref": "#/$defs/nonEmptyString" },
+        "runId": { "$ref": "#/$defs/nonEmptyString" },
+        "status": { "enum": ["accepted", "rejected", "partial", "blocked"] },
+        "subagentEvidenceEnvelope": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "envelopeVersion",
+            "recordId",
+            "requirementSetId",
+            "parentRunId",
+            "parentCloseoutAttemptId",
+            "subtaskId",
+            "packetId",
+            "packetKind",
+            "executorKind",
+            "executorRole",
+            "decisionAuthority",
+            "sourceDocumentHash",
+            "implementationConfirmationHash",
+            "architectureConfirmationHash",
+            "traceRows",
+            "coveredRequirementIds",
+            "taskRefs",
+            "allowedWriteScope",
+            "actualFilesChanged",
+            "diffHash",
+            "workspaceRef",
+            "commandRuns",
+            "artifactRefs",
+            "hookReceipts",
+            "transportRefs",
+            "status",
+            "failureRecords"
+          ],
+          "properties": {
+            "decisionAuthority": { "const": "none" },
+            "status": { "enum": ["accepted", "rejected", "partial", "blocked"] }
+          },
+          "not": {
+            "anyOf": [
+              { "required": ["result"] },
+              { "required": ["decision"] },
+              { "required": ["closeoutDecision"] },
+              { "required": ["requirementDecision"] },
+              { "required": ["requirementClosures"] },
+              { "required": ["gateChecks"] },
+              { "required": ["contractChecks"] },
+              { "required": ["closeout"] },
+              { "required": ["record_closed"] }
+            ]
+          }
+        },
+        "subagentEvidenceEnvelopeHash": { "$ref": "#/$defs/sha256" },
+        "traceRows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "taskRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "coveredRequirementIds": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "commandRunRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/commandRunRef" }
+        },
+        "evidenceArtifactRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/artifactRef" }
+        },
+        "sourceRefs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/sourceRef" }
+        },
+        "sourceDocumentHash": { "$ref": "#/$defs/sha256" },
+        "implementationConfirmationHash": { "$ref": "#/$defs/sha256" },
+        "architectureConfirmationHash": { "$ref": "#/$defs/sha256" },
+        "recordedAt": { "type": "string", "format": "date-time" },
+        "recordedBy": { "$ref": "#/$defs/nonEmptyString" }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["result"] },
+          { "required": ["decision"] }
+        ]
       }
     },
     "requirementClosure": {

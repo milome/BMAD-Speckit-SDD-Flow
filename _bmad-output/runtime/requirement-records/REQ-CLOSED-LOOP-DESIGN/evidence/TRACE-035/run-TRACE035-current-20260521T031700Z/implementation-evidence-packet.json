@@ -1,0 +1,1025 @@
+{
+  "eventType": "execution_iteration_recorded",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "executionIterationId": "execution-iteration-TRACE035-current-20260521T031700Z",
+  "runId": "run-TRACE035-current-20260521T031700Z",
+  "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+  "status": "done",
+  "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+  "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+  "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+  "traceRows": [
+    "TRACE-035"
+  ],
+  "taskRefs": [
+    "TASK-SUBAGENT-EVIDENCE-ENVELOPE-GOVERNANCE"
+  ],
+  "evidenceRefs": [
+    "EVD-004",
+    "EVD-044",
+    "EVD-045"
+  ],
+  "filesChanged": [
+    "_bmad/_schemas/requirement-record.schema.json",
+    "scripts/ingest-implementation-evidence.ts",
+    "scripts/main-agent-codex-worker-adapter.ts",
+    "scripts/subagent-evidence-envelope.ts",
+    "tests/acceptance/subagent-evidence-envelope.test.ts",
+    "tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts"
+  ],
+  "implementationDelta": {
+    "behaviorAffecting": true,
+    "filesChanged": [
+      "_bmad/_schemas/requirement-record.schema.json",
+      "scripts/ingest-implementation-evidence.ts",
+      "scripts/main-agent-codex-worker-adapter.ts",
+      "scripts/subagent-evidence-envelope.ts",
+      "tests/acceptance/subagent-evidence-envelope.test.ts",
+      "tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts"
+    ],
+    "diffSummaryRef": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/diff-summary.md",
+    "negativeAssertionArtifactRefs": [
+      {
+        "artifactType": "negative_assertion_evidence",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/negative-assertions.json",
+        "hash": "sha256:005990f6616fcbc8d4fb19d7f79a43041013b342cd74797da0191fbd4e93d08b",
+        "producer": "TRACE-035 current implementation run",
+        "purpose": "negative and regression assertions for subagent evidence envelope governance",
+        "relatedRequirementIds": [
+          "MUST-044",
+          "MUST-046",
+          "NEG-034",
+          "NEG-035",
+          "OUT-027",
+          "EVD-004",
+          "EVD-044",
+          "EVD-045",
+          "TRACE-035"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+        "outputVersion": "negative_assertion_evidence-trace-035-v1"
+      }
+    ]
+  },
+  "diffSummary": "TRACE-035 adds subagent evidence envelope schema, validation, controlled ingest recording, and Codex worker adapter envelope binding with fail-closed tests.",
+  "commandRuns": [
+    {
+      "commandId": "CMD-SUBAGENT-EVIDENCE-ENVELOPE-ACCEPTANCE",
+      "command": "npx.cmd vitest run tests/acceptance/subagent-evidence-envelope.test.ts tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts",
+      "runId": "run-TRACE035-current-20260521T031700Z",
+      "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T19:42:10.405Z",
+      "completedAt": "2026-05-20T19:42:19.114Z",
+      "outputSummary": "\"ok\": false, | \"mismatches\": [ | \"effective_global_contract_traceability_policy_missing\" | ] | } | \u001b[90mstderr\u001b[2m | tests/acceptance/implementation-evidence-ingest.test.ts\u001b[2m > \u001b[22m\u001b[2mimplementation evidence ingest\u001b[2m > \u001b[22m\u001b[2mrejects evidence packets without behavior-affecting implementation delta proof | \u001b[22m\u001b[39m{ | \"ok\": false, | \"mismatches\": [ | \"implementation_delta_missing\" | ] | } | \u001b[90mstderr\u001b[2m | tests/acceptance/implementation-evidence-ingest.test.ts\u001b[2m > \u001b[22m\u001b[2mimplementation evidence ingest\u001b[2m > \u001b[22m\u001b[2mrejects artifact refs without pass-grade metadata | \u001b[22m\u001b[39m{ | \"ok\": false, | \"mismatches\": [ | \"artifact_ref_artifact_purpose_missing\", | \"artifact_ref_artifact_related_requirement_ids_missing\" | ] | } | \u001b[90mstderr\u001b[2m | tests/acceptance/implementation-evidence-ingest.test.ts\u001b[2m > \u001b[22m\u001b[2mimplementation evidence ingest\u001b[2m > \u001b[22m\u001b[2mrejects inline full diffs and legacy write targets | \u001b[22m\u001b[39m{ | \"ok\": false, | \"mismatches\": [ | \"artifact_legacy_write_path_forbidden:_bmad-output/runtime/gates/legacy-report.json\", | \"forbidden_inline_full_diff\" | ] | }",
+      "outputPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/CMD-SUBAGENT-EVIDENCE-ENVELOPE-ACCEPTANCE.output.txt"
+    },
+    {
+      "commandId": "CMD-RENDER-CONFIRMATION",
+      "command": "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json",
+      "runId": "run-TRACE035-current-20260521T031700Z",
+      "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T19:42:39.657Z",
+      "completedAt": "2026-05-20T19:42:40.065Z",
+      "outputSummary": "{ | \"severity\": \"warning\", | \"code\": \"source_already_user_confirmed\", | \"message\": \"renderer does not confirm or change status\", | \"refs\": [] | } | ], | \"mermaidRuntime\": { | \"available\": true, | \"path\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad/skills/requirements-contract-authoring/assets/mermaid/mermaid.min.js\", | \"hash\": \"sha256:d0830a6c05546e9edb8fe20a8f545f3e0dc7c4c3134d584bad9c13a99d7a71e0\", | \"format\": \"classic-global\", | \"issues\": [] | }, | \"counts\": { | \"must\": 56, | \"notDone\": 40, | \"mustNot\": 29, | \"evidence\": 62, | \"failurePaths\": 7, | \"edgeCases\": 10, | \"traceRows\": 39, | \"sequenceViews\": 10, | \"resumeFailureCases\": 27, | \"artifactPlanItems\": 8 | } | } | STDERR:",
+      "outputPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/CMD-RENDER-CONFIRMATION.output.txt"
+    },
+    {
+      "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+      "command": "npx.cmd vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+      "runId": "run-TRACE035-current-20260521T031700Z",
+      "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T19:43:00.836Z",
+      "completedAt": "2026-05-20T19:43:10.992Z",
+      "outputSummary": "STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m | \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m38 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 7443\u001b[2mms\u001b[22m\u001b[39m | \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders current controlled execution state only when hashes and current attempt match \u001b[33m 397\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m38 passed\u001b[39m\u001b[22m\u001b[90m (38)\u001b[39m | \u001b[2m   Start at \u001b[22m 03:43:03 | \u001b[2m   Duration \u001b[22m 7.76s\u001b[2m (transform 90ms, setup 0ms, import 132ms, tests 7.44s, environment 0ms)\u001b[22m | STDERR:",
+      "outputPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/CMD-TRACE-BINDING-ACCEPTANCE.output.txt"
+    },
+    {
+      "commandId": "CMD-ENCODING-GATE",
+      "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+      "runId": "run-TRACE035-current-20260521T031700Z",
+      "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T19:43:29.687Z",
+      "completedAt": "2026-05-20T19:43:30.226Z",
+      "outputSummary": "STDOUT: | checkedFiles=2775 findings=0 | STDERR:",
+      "outputPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/CMD-ENCODING-GATE.output.txt"
+    }
+  ],
+  "artifactRefs": [
+    {
+      "artifactType": "subagent_task_report_boundary_proof",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/subagent-task-report-proof.json",
+      "hash": "sha256:f0ec925c73ae89c0e8efe782ce9e02c0bc90f995a73134df8ace3d1200d59fd7",
+      "producer": "TRACE-035 current implementation run",
+      "purpose": "evidence that TaskReport and final messages are evidence input only",
+      "relatedRequirementIds": [
+        "MUST-044",
+        "MUST-046",
+        "NEG-034",
+        "NEG-035",
+        "OUT-027",
+        "EVD-004",
+        "EVD-044",
+        "EVD-045",
+        "TRACE-035"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "subagent_task_report_boundary_proof-trace-035-v1"
+    },
+    {
+      "artifactType": "negative_assertion_evidence",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/negative-assertions.json",
+      "hash": "sha256:005990f6616fcbc8d4fb19d7f79a43041013b342cd74797da0191fbd4e93d08b",
+      "producer": "TRACE-035 current implementation run",
+      "purpose": "negative and regression assertions for subagent evidence envelope governance",
+      "relatedRequirementIds": [
+        "MUST-044",
+        "MUST-046",
+        "NEG-034",
+        "NEG-035",
+        "OUT-027",
+        "EVD-004",
+        "EVD-044",
+        "EVD-045",
+        "TRACE-035"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "negative_assertion_evidence-trace-035-v1"
+    },
+    {
+      "artifactType": "diff_summary",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/diff-summary.md",
+      "hash": "sha256:6e62e612bffe60ae093629a014352c1a158077d657b20df9114236c0857fbfa6",
+      "producer": "TRACE-035 current implementation run",
+      "purpose": "implementation delta summary for TRACE-035 subagent evidence envelope governance",
+      "relatedRequirementIds": [
+        "MUST-044",
+        "MUST-046",
+        "NEG-034",
+        "NEG-035",
+        "OUT-027",
+        "EVD-004",
+        "EVD-044",
+        "EVD-045",
+        "TRACE-035"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "diff_summary-trace-035-v1"
+    },
+    {
+      "artifactType": "command_evidence",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/trace035-command-evidence.json",
+      "hash": "sha256:23144ee0e31aa2d3fe855b6a183cf00da298387dd62c2ef004496ad689eae7d5",
+      "producer": "TRACE-035 current implementation run",
+      "purpose": "current command evidence for TRACE-035 delivery and recurring contract validation",
+      "relatedRequirementIds": [
+        "MUST-044",
+        "MUST-046",
+        "NEG-034",
+        "NEG-035",
+        "OUT-027",
+        "EVD-004",
+        "EVD-044",
+        "EVD-045",
+        "TRACE-035"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "command_evidence-trace-035-v1"
+    },
+    {
+      "artifactType": "command_output",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/CMD-SUBAGENT-EVIDENCE-ENVELOPE-ACCEPTANCE.output.txt",
+      "hash": "sha256:c774db9693809cf0a3087aa7c470c44dce0d4905ef7f0a1b52d64f28932cc222",
+      "producer": "TRACE-035 current implementation run",
+      "purpose": "command output for CMD-SUBAGENT-EVIDENCE-ENVELOPE-ACCEPTANCE",
+      "relatedRequirementIds": [
+        "MUST-044",
+        "MUST-046",
+        "NEG-034",
+        "NEG-035",
+        "OUT-027",
+        "EVD-004",
+        "EVD-044",
+        "EVD-045",
+        "TRACE-035"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "command_output-trace-035-current-v1"
+    },
+    {
+      "artifactType": "command_output",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/CMD-RENDER-CONFIRMATION.output.txt",
+      "hash": "sha256:5b6c3e667b1d0369ce6a7e89d1197578e67c0e3918612ca36e4b49bec42e8075",
+      "producer": "TRACE-035 current implementation run",
+      "purpose": "command output for CMD-RENDER-CONFIRMATION",
+      "relatedRequirementIds": [
+        "MUST-044",
+        "MUST-046",
+        "NEG-034",
+        "NEG-035",
+        "OUT-027",
+        "EVD-004",
+        "EVD-044",
+        "EVD-045",
+        "TRACE-035"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "command_output-trace-035-current-v1"
+    },
+    {
+      "artifactType": "command_output",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/CMD-TRACE-BINDING-ACCEPTANCE.output.txt",
+      "hash": "sha256:474eeae16351887e8b8af3b4890414826eb2f0b1ca30d09fa597eb81356f4bae",
+      "producer": "TRACE-035 current implementation run",
+      "purpose": "command output for CMD-TRACE-BINDING-ACCEPTANCE",
+      "relatedRequirementIds": [
+        "MUST-044",
+        "MUST-046",
+        "NEG-034",
+        "NEG-035",
+        "OUT-027",
+        "EVD-004",
+        "EVD-044",
+        "EVD-045",
+        "TRACE-035"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "command_output-trace-035-current-v1"
+    },
+    {
+      "artifactType": "command_output",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/CMD-ENCODING-GATE.output.txt",
+      "hash": "sha256:9a7a31f8395e819e35932e110bdfb82fd1e8474ee567b375cd9d8d07dff90ac9",
+      "producer": "TRACE-035 current implementation run",
+      "purpose": "command output for CMD-ENCODING-GATE",
+      "relatedRequirementIds": [
+        "MUST-044",
+        "MUST-046",
+        "NEG-034",
+        "NEG-035",
+        "OUT-027",
+        "EVD-004",
+        "EVD-044",
+        "EVD-045",
+        "TRACE-035"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "command_output-trace-035-current-v1"
+    },
+    {
+      "artifactType": "subagent_evidence_envelope_schema",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/subagents/subagent-evidence-envelope.schema.json",
+      "hash": "sha256:05d0c95a25c16a5a6501d32abaa7035e3147b82d9c837a178cd0f763bc7e26e2",
+      "producer": "TRACE-035 current implementation run",
+      "purpose": "schema artifact for subagentEvidenceEnvelope required fields and forbidden control fields",
+      "relatedRequirementIds": [
+        "MUST-044",
+        "MUST-046",
+        "NEG-034",
+        "NEG-035",
+        "OUT-027",
+        "EVD-004",
+        "EVD-044",
+        "EVD-045",
+        "TRACE-035"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "subagent_evidence_envelope_schema-trace-035-v1"
+    },
+    {
+      "artifactType": "subagent_evidence_envelope_acceptance_report",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/subagents/subagent-envelope-acceptance-report.json",
+      "hash": "sha256:0bb292a59a27163b4006d9c32da6941445780aa2c39a5a58e11eca49c4df319a",
+      "producer": "TRACE-035 current implementation run",
+      "purpose": "acceptance report proving current subagentEvidenceEnvelope validates before controlled ingest",
+      "relatedRequirementIds": [
+        "MUST-044",
+        "MUST-046",
+        "NEG-034",
+        "NEG-035",
+        "OUT-027",
+        "EVD-004",
+        "EVD-044",
+        "EVD-045",
+        "TRACE-035"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "subagent_evidence_envelope_acceptance_report-trace-035-v1"
+    }
+  ],
+  "subagentEvidenceEnvelope": {
+    "envelopeVersion": "subagent-evidence-envelope/v1",
+    "recordId": "REQ-CLOSED-LOOP-DESIGN",
+    "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+    "parentRunId": "run-TRACE035-current-20260521T031700Z",
+    "parentCloseoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+    "subtaskId": "TRACE-035-subagent-evidence-envelope-governance",
+    "packetId": "packet-TRACE-035-current",
+    "packetKind": "execution",
+    "executorKind": "codex_worker_adapter",
+    "executorRole": "implementation-worker",
+    "decisionAuthority": "none",
+    "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+    "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+    "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+    "traceRows": [
+      "TRACE-035"
+    ],
+    "coveredRequirementIds": [
+      "MUST-044",
+      "MUST-046",
+      "NEG-034",
+      "NEG-035",
+      "OUT-027"
+    ],
+    "taskRefs": [
+      "TASK-SUBAGENT-EVIDENCE-ENVELOPE-GOVERNANCE"
+    ],
+    "allowedWriteScope": [
+      "_bmad/_schemas/**",
+      "scripts/**",
+      "tests/acceptance/**",
+      "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/**"
+    ],
+    "actualFilesChanged": [
+      "_bmad/_schemas/requirement-record.schema.json",
+      "scripts/ingest-implementation-evidence.ts",
+      "scripts/main-agent-codex-worker-adapter.ts",
+      "scripts/subagent-evidence-envelope.ts",
+      "tests/acceptance/subagent-evidence-envelope.test.ts",
+      "tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts"
+    ],
+    "diffHash": "sha256:3b15f461b5f7d1fccee92669d588d476ec02405414386c676a8c0907db7807de",
+    "workspaceRef": {
+      "kind": "main_workspace",
+      "path": "D:/Dev/BMAD-Speckit-SDD-Flow",
+      "commitBefore": "ae2ca285",
+      "commitAfter": "working-tree-trace-035-before-commit"
+    },
+    "commandRuns": [
+      {
+        "commandId": "CMD-SUBAGENT-EVIDENCE-ENVELOPE-ACCEPTANCE",
+        "command": "npx.cmd vitest run tests/acceptance/subagent-evidence-envelope.test.ts tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts",
+        "exitCode": 0,
+        "startedAt": "2026-05-20T19:42:10.405Z",
+        "completedAt": "2026-05-20T19:42:19.114Z",
+        "outputSummary": "\"ok\": false, | \"mismatches\": [ | \"effective_global_contract_traceability_policy_missing\" | ] | } | \u001b[90mstderr\u001b[2m | tests/acceptance/implementation-evidence-ingest.test.ts\u001b[2m > \u001b[22m\u001b[2mimplementation evidence ingest\u001b[2m > \u001b[22m\u001b[2mrejects evidence packets without behavior-affecting implementation delta proof | \u001b[22m\u001b[39m{ | \"ok\": false, | \"mismatches\": [ | \"implementation_delta_missing\" | ] | } | \u001b[90mstderr\u001b[2m | tests/acceptance/implementation-evidence-ingest.test.ts\u001b[2m > \u001b[22m\u001b[2mimplementation evidence ingest\u001b[2m > \u001b[22m\u001b[2mrejects artifact refs without pass-grade metadata | \u001b[22m\u001b[39m{ | \"ok\": false, | \"mismatches\": [ | \"artifact_ref_artifact_purpose_missing\", | \"artifact_ref_artifact_related_requirement_ids_missing\" | ] | } | \u001b[90mstderr\u001b[2m | tests/acceptance/implementation-evidence-ingest.test.ts\u001b[2m > \u001b[22m\u001b[2mimplementation evidence ingest\u001b[2m > \u001b[22m\u001b[2mrejects inline full diffs and legacy write targets | \u001b[22m\u001b[39m{ | \"ok\": false, | \"mismatches\": [ | \"artifact_legacy_write_path_forbidden:_bmad-output/runtime/gates/legacy-report.json\", | \"forbidden_inline_full_diff\" | ] | }",
+        "artifactRefs": [
+          {
+            "artifactType": "command_output",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/CMD-SUBAGENT-EVIDENCE-ENVELOPE-ACCEPTANCE.output.txt",
+            "hash": "sha256:c774db9693809cf0a3087aa7c470c44dce0d4905ef7f0a1b52d64f28932cc222",
+            "producer": "TRACE-035 current implementation run",
+            "purpose": "command output for CMD-SUBAGENT-EVIDENCE-ENVELOPE-ACCEPTANCE",
+            "relatedRequirementIds": [
+              "MUST-044",
+              "MUST-046",
+              "NEG-034",
+              "NEG-035",
+              "OUT-027",
+              "EVD-004",
+              "EVD-044",
+              "EVD-045",
+              "TRACE-035"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "command_output-trace-035-current-v1"
+          }
+        ],
+        "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z"
+      },
+      {
+        "commandId": "CMD-RENDER-CONFIRMATION",
+        "command": "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json",
+        "exitCode": 0,
+        "startedAt": "2026-05-20T19:42:39.657Z",
+        "completedAt": "2026-05-20T19:42:40.065Z",
+        "outputSummary": "{ | \"severity\": \"warning\", | \"code\": \"source_already_user_confirmed\", | \"message\": \"renderer does not confirm or change status\", | \"refs\": [] | } | ], | \"mermaidRuntime\": { | \"available\": true, | \"path\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad/skills/requirements-contract-authoring/assets/mermaid/mermaid.min.js\", | \"hash\": \"sha256:d0830a6c05546e9edb8fe20a8f545f3e0dc7c4c3134d584bad9c13a99d7a71e0\", | \"format\": \"classic-global\", | \"issues\": [] | }, | \"counts\": { | \"must\": 56, | \"notDone\": 40, | \"mustNot\": 29, | \"evidence\": 62, | \"failurePaths\": 7, | \"edgeCases\": 10, | \"traceRows\": 39, | \"sequenceViews\": 10, | \"resumeFailureCases\": 27, | \"artifactPlanItems\": 8 | } | } | STDERR:",
+        "artifactRefs": [
+          {
+            "artifactType": "command_output",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/CMD-RENDER-CONFIRMATION.output.txt",
+            "hash": "sha256:5b6c3e667b1d0369ce6a7e89d1197578e67c0e3918612ca36e4b49bec42e8075",
+            "producer": "TRACE-035 current implementation run",
+            "purpose": "command output for CMD-RENDER-CONFIRMATION",
+            "relatedRequirementIds": [
+              "MUST-044",
+              "MUST-046",
+              "NEG-034",
+              "NEG-035",
+              "OUT-027",
+              "EVD-004",
+              "EVD-044",
+              "EVD-045",
+              "TRACE-035"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "command_output-trace-035-current-v1"
+          }
+        ],
+        "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z"
+      },
+      {
+        "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+        "command": "npx.cmd vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+        "exitCode": 0,
+        "startedAt": "2026-05-20T19:43:00.836Z",
+        "completedAt": "2026-05-20T19:43:10.992Z",
+        "outputSummary": "STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m | \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m38 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 7443\u001b[2mms\u001b[22m\u001b[39m | \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders current controlled execution state only when hashes and current attempt match \u001b[33m 397\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m38 passed\u001b[39m\u001b[22m\u001b[90m (38)\u001b[39m | \u001b[2m   Start at \u001b[22m 03:43:03 | \u001b[2m   Duration \u001b[22m 7.76s\u001b[2m (transform 90ms, setup 0ms, import 132ms, tests 7.44s, environment 0ms)\u001b[22m | STDERR:",
+        "artifactRefs": [
+          {
+            "artifactType": "command_output",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/CMD-TRACE-BINDING-ACCEPTANCE.output.txt",
+            "hash": "sha256:474eeae16351887e8b8af3b4890414826eb2f0b1ca30d09fa597eb81356f4bae",
+            "producer": "TRACE-035 current implementation run",
+            "purpose": "command output for CMD-TRACE-BINDING-ACCEPTANCE",
+            "relatedRequirementIds": [
+              "MUST-044",
+              "MUST-046",
+              "NEG-034",
+              "NEG-035",
+              "OUT-027",
+              "EVD-004",
+              "EVD-044",
+              "EVD-045",
+              "TRACE-035"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "command_output-trace-035-current-v1"
+          }
+        ],
+        "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z"
+      },
+      {
+        "commandId": "CMD-ENCODING-GATE",
+        "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+        "exitCode": 0,
+        "startedAt": "2026-05-20T19:43:29.687Z",
+        "completedAt": "2026-05-20T19:43:30.226Z",
+        "outputSummary": "STDOUT: | checkedFiles=2775 findings=0 | STDERR:",
+        "artifactRefs": [
+          {
+            "artifactType": "command_output",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/CMD-ENCODING-GATE.output.txt",
+            "hash": "sha256:9a7a31f8395e819e35932e110bdfb82fd1e8474ee567b375cd9d8d07dff90ac9",
+            "producer": "TRACE-035 current implementation run",
+            "purpose": "command output for CMD-ENCODING-GATE",
+            "relatedRequirementIds": [
+              "MUST-044",
+              "MUST-046",
+              "NEG-034",
+              "NEG-035",
+              "OUT-027",
+              "EVD-004",
+              "EVD-044",
+              "EVD-045",
+              "TRACE-035"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "command_output-trace-035-current-v1"
+          }
+        ],
+        "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z"
+      }
+    ],
+    "artifactRefs": [
+      {
+        "artifactType": "subagent_task_report_boundary_proof",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/subagent-task-report-proof.json",
+        "hash": "sha256:f0ec925c73ae89c0e8efe782ce9e02c0bc90f995a73134df8ace3d1200d59fd7",
+        "producer": "TRACE-035 current implementation run",
+        "purpose": "evidence that TaskReport and final messages are evidence input only",
+        "relatedRequirementIds": [
+          "MUST-044",
+          "MUST-046",
+          "NEG-034",
+          "NEG-035",
+          "OUT-027",
+          "EVD-004",
+          "EVD-044",
+          "EVD-045",
+          "TRACE-035"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+        "outputVersion": "subagent_task_report_boundary_proof-trace-035-v1"
+      },
+      {
+        "artifactType": "negative_assertion_evidence",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/negative-assertions.json",
+        "hash": "sha256:005990f6616fcbc8d4fb19d7f79a43041013b342cd74797da0191fbd4e93d08b",
+        "producer": "TRACE-035 current implementation run",
+        "purpose": "negative and regression assertions for subagent evidence envelope governance",
+        "relatedRequirementIds": [
+          "MUST-044",
+          "MUST-046",
+          "NEG-034",
+          "NEG-035",
+          "OUT-027",
+          "EVD-004",
+          "EVD-044",
+          "EVD-045",
+          "TRACE-035"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+        "outputVersion": "negative_assertion_evidence-trace-035-v1"
+      },
+      {
+        "artifactType": "diff_summary",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/diff-summary.md",
+        "hash": "sha256:6e62e612bffe60ae093629a014352c1a158077d657b20df9114236c0857fbfa6",
+        "producer": "TRACE-035 current implementation run",
+        "purpose": "implementation delta summary for TRACE-035 subagent evidence envelope governance",
+        "relatedRequirementIds": [
+          "MUST-044",
+          "MUST-046",
+          "NEG-034",
+          "NEG-035",
+          "OUT-027",
+          "EVD-004",
+          "EVD-044",
+          "EVD-045",
+          "TRACE-035"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+        "outputVersion": "diff_summary-trace-035-v1"
+      },
+      {
+        "artifactType": "command_evidence",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/trace035-command-evidence.json",
+        "hash": "sha256:23144ee0e31aa2d3fe855b6a183cf00da298387dd62c2ef004496ad689eae7d5",
+        "producer": "TRACE-035 current implementation run",
+        "purpose": "current command evidence for TRACE-035 delivery and recurring contract validation",
+        "relatedRequirementIds": [
+          "MUST-044",
+          "MUST-046",
+          "NEG-034",
+          "NEG-035",
+          "OUT-027",
+          "EVD-004",
+          "EVD-044",
+          "EVD-045",
+          "TRACE-035"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+        "outputVersion": "command_evidence-trace-035-v1"
+      },
+      {
+        "artifactType": "command_output",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/CMD-SUBAGENT-EVIDENCE-ENVELOPE-ACCEPTANCE.output.txt",
+        "hash": "sha256:c774db9693809cf0a3087aa7c470c44dce0d4905ef7f0a1b52d64f28932cc222",
+        "producer": "TRACE-035 current implementation run",
+        "purpose": "command output for CMD-SUBAGENT-EVIDENCE-ENVELOPE-ACCEPTANCE",
+        "relatedRequirementIds": [
+          "MUST-044",
+          "MUST-046",
+          "NEG-034",
+          "NEG-035",
+          "OUT-027",
+          "EVD-004",
+          "EVD-044",
+          "EVD-045",
+          "TRACE-035"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+        "outputVersion": "command_output-trace-035-current-v1"
+      },
+      {
+        "artifactType": "command_output",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/CMD-RENDER-CONFIRMATION.output.txt",
+        "hash": "sha256:5b6c3e667b1d0369ce6a7e89d1197578e67c0e3918612ca36e4b49bec42e8075",
+        "producer": "TRACE-035 current implementation run",
+        "purpose": "command output for CMD-RENDER-CONFIRMATION",
+        "relatedRequirementIds": [
+          "MUST-044",
+          "MUST-046",
+          "NEG-034",
+          "NEG-035",
+          "OUT-027",
+          "EVD-004",
+          "EVD-044",
+          "EVD-045",
+          "TRACE-035"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+        "outputVersion": "command_output-trace-035-current-v1"
+      },
+      {
+        "artifactType": "command_output",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/CMD-TRACE-BINDING-ACCEPTANCE.output.txt",
+        "hash": "sha256:474eeae16351887e8b8af3b4890414826eb2f0b1ca30d09fa597eb81356f4bae",
+        "producer": "TRACE-035 current implementation run",
+        "purpose": "command output for CMD-TRACE-BINDING-ACCEPTANCE",
+        "relatedRequirementIds": [
+          "MUST-044",
+          "MUST-046",
+          "NEG-034",
+          "NEG-035",
+          "OUT-027",
+          "EVD-004",
+          "EVD-044",
+          "EVD-045",
+          "TRACE-035"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+        "outputVersion": "command_output-trace-035-current-v1"
+      },
+      {
+        "artifactType": "command_output",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/CMD-ENCODING-GATE.output.txt",
+        "hash": "sha256:9a7a31f8395e819e35932e110bdfb82fd1e8474ee567b375cd9d8d07dff90ac9",
+        "producer": "TRACE-035 current implementation run",
+        "purpose": "command output for CMD-ENCODING-GATE",
+        "relatedRequirementIds": [
+          "MUST-044",
+          "MUST-046",
+          "NEG-034",
+          "NEG-035",
+          "OUT-027",
+          "EVD-004",
+          "EVD-044",
+          "EVD-045",
+          "TRACE-035"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+        "outputVersion": "command_output-trace-035-current-v1"
+      }
+    ],
+    "hookReceipts": [],
+    "transportRefs": [],
+    "status": "accepted",
+    "failureRecords": []
+  },
+  "deliveryEvidence": {
+    "requiredCommands": [
+      {
+        "commandId": "CMD-SUBAGENT-EVIDENCE-ENVELOPE-ACCEPTANCE",
+        "command": "npx.cmd vitest run tests/acceptance/subagent-evidence-envelope.test.ts tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts tests/acceptance/implementation-evidence-ingest.test.ts tests/acceptance/requirement-record-schema.test.ts",
+        "commandType": "delivery_evidence",
+        "blockingIfMissing": true,
+        "traceRows": [
+          "TRACE-035"
+        ],
+        "evidenceRefs": [
+          "EVD-004",
+          "EVD-044",
+          "EVD-045"
+        ],
+        "artifactRefs": [
+          {
+            "artifactType": "subagent_task_report_boundary_proof",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/subagent-task-report-proof.json",
+            "hash": "sha256:f0ec925c73ae89c0e8efe782ce9e02c0bc90f995a73134df8ace3d1200d59fd7",
+            "producer": "TRACE-035 current implementation run",
+            "purpose": "evidence that TaskReport and final messages are evidence input only",
+            "relatedRequirementIds": [
+              "MUST-044",
+              "MUST-046",
+              "NEG-034",
+              "NEG-035",
+              "OUT-027",
+              "EVD-004",
+              "EVD-044",
+              "EVD-045",
+              "TRACE-035"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "subagent_task_report_boundary_proof-trace-035-v1"
+          },
+          {
+            "artifactType": "negative_assertion_evidence",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/negative-assertions.json",
+            "hash": "sha256:005990f6616fcbc8d4fb19d7f79a43041013b342cd74797da0191fbd4e93d08b",
+            "producer": "TRACE-035 current implementation run",
+            "purpose": "negative and regression assertions for subagent evidence envelope governance",
+            "relatedRequirementIds": [
+              "MUST-044",
+              "MUST-046",
+              "NEG-034",
+              "NEG-035",
+              "OUT-027",
+              "EVD-004",
+              "EVD-044",
+              "EVD-045",
+              "TRACE-035"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "negative_assertion_evidence-trace-035-v1"
+          },
+          {
+            "artifactType": "diff_summary",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/diff-summary.md",
+            "hash": "sha256:6e62e612bffe60ae093629a014352c1a158077d657b20df9114236c0857fbfa6",
+            "producer": "TRACE-035 current implementation run",
+            "purpose": "implementation delta summary for TRACE-035 subagent evidence envelope governance",
+            "relatedRequirementIds": [
+              "MUST-044",
+              "MUST-046",
+              "NEG-034",
+              "NEG-035",
+              "OUT-027",
+              "EVD-004",
+              "EVD-044",
+              "EVD-045",
+              "TRACE-035"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "diff_summary-trace-035-v1"
+          },
+          {
+            "artifactType": "command_evidence",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/trace035-command-evidence.json",
+            "hash": "sha256:23144ee0e31aa2d3fe855b6a183cf00da298387dd62c2ef004496ad689eae7d5",
+            "producer": "TRACE-035 current implementation run",
+            "purpose": "current command evidence for TRACE-035 delivery and recurring contract validation",
+            "relatedRequirementIds": [
+              "MUST-044",
+              "MUST-046",
+              "NEG-034",
+              "NEG-035",
+              "OUT-027",
+              "EVD-004",
+              "EVD-044",
+              "EVD-045",
+              "TRACE-035"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "command_evidence-trace-035-v1"
+          },
+          {
+            "artifactType": "command_output",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/CMD-SUBAGENT-EVIDENCE-ENVELOPE-ACCEPTANCE.output.txt",
+            "hash": "sha256:c774db9693809cf0a3087aa7c470c44dce0d4905ef7f0a1b52d64f28932cc222",
+            "producer": "TRACE-035 current implementation run",
+            "purpose": "command output for CMD-SUBAGENT-EVIDENCE-ENVELOPE-ACCEPTANCE",
+            "relatedRequirementIds": [
+              "MUST-044",
+              "MUST-046",
+              "NEG-034",
+              "NEG-035",
+              "OUT-027",
+              "EVD-004",
+              "EVD-044",
+              "EVD-045",
+              "TRACE-035"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "command_output-trace-035-current-v1"
+          },
+          {
+            "artifactType": "command_output",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/CMD-RENDER-CONFIRMATION.output.txt",
+            "hash": "sha256:5b6c3e667b1d0369ce6a7e89d1197578e67c0e3918612ca36e4b49bec42e8075",
+            "producer": "TRACE-035 current implementation run",
+            "purpose": "command output for CMD-RENDER-CONFIRMATION",
+            "relatedRequirementIds": [
+              "MUST-044",
+              "MUST-046",
+              "NEG-034",
+              "NEG-035",
+              "OUT-027",
+              "EVD-004",
+              "EVD-044",
+              "EVD-045",
+              "TRACE-035"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "command_output-trace-035-current-v1"
+          },
+          {
+            "artifactType": "command_output",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/CMD-TRACE-BINDING-ACCEPTANCE.output.txt",
+            "hash": "sha256:474eeae16351887e8b8af3b4890414826eb2f0b1ca30d09fa597eb81356f4bae",
+            "producer": "TRACE-035 current implementation run",
+            "purpose": "command output for CMD-TRACE-BINDING-ACCEPTANCE",
+            "relatedRequirementIds": [
+              "MUST-044",
+              "MUST-046",
+              "NEG-034",
+              "NEG-035",
+              "OUT-027",
+              "EVD-004",
+              "EVD-044",
+              "EVD-045",
+              "TRACE-035"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "command_output-trace-035-current-v1"
+          },
+          {
+            "artifactType": "command_output",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-035/run-TRACE035-current-20260521T031700Z/CMD-ENCODING-GATE.output.txt",
+            "hash": "sha256:9a7a31f8395e819e35932e110bdfb82fd1e8474ee567b375cd9d8d07dff90ac9",
+            "producer": "TRACE-035 current implementation run",
+            "purpose": "command output for CMD-ENCODING-GATE",
+            "relatedRequirementIds": [
+              "MUST-044",
+              "MUST-046",
+              "NEG-034",
+              "NEG-035",
+              "OUT-027",
+              "EVD-004",
+              "EVD-044",
+              "EVD-045",
+              "TRACE-035"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "command_output-trace-035-current-v1"
+          },
+          {
+            "artifactType": "subagent_evidence_envelope_schema",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/subagents/subagent-evidence-envelope.schema.json",
+            "hash": "sha256:05d0c95a25c16a5a6501d32abaa7035e3147b82d9c837a178cd0f763bc7e26e2",
+            "producer": "TRACE-035 current implementation run",
+            "purpose": "schema artifact for subagentEvidenceEnvelope required fields and forbidden control fields",
+            "relatedRequirementIds": [
+              "MUST-044",
+              "MUST-046",
+              "NEG-034",
+              "NEG-035",
+              "OUT-027",
+              "EVD-004",
+              "EVD-044",
+              "EVD-045",
+              "TRACE-035"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "subagent_evidence_envelope_schema-trace-035-v1"
+          },
+          {
+            "artifactType": "subagent_evidence_envelope_acceptance_report",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/subagents/subagent-envelope-acceptance-report.json",
+            "hash": "sha256:0bb292a59a27163b4006d9c32da6941445780aa2c39a5a58e11eca49c4df319a",
+            "producer": "TRACE-035 current implementation run",
+            "purpose": "acceptance report proving current subagentEvidenceEnvelope validates before controlled ingest",
+            "relatedRequirementIds": [
+              "MUST-044",
+              "MUST-046",
+              "NEG-034",
+              "NEG-035",
+              "OUT-027",
+              "EVD-004",
+              "EVD-044",
+              "EVD-045",
+              "TRACE-035"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "subagent_evidence_envelope_acceptance_report-trace-035-v1"
+          }
+        ]
+      }
+    ],
+    "historicalRunRefs": [
+      {
+        "commandId": "CMD-SUBAGENT-EVIDENCE-ENVELOPE-ACCEPTANCE",
+        "runId": "run-TRACE035-current-20260521T031700Z",
+        "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z"
+      },
+      {
+        "commandId": "CMD-RENDER-CONFIRMATION",
+        "runId": "run-TRACE035-current-20260521T031700Z",
+        "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z"
+      },
+      {
+        "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+        "runId": "run-TRACE035-current-20260521T031700Z",
+        "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z"
+      },
+      {
+        "commandId": "CMD-ENCODING-GATE",
+        "runId": "run-TRACE035-current-20260521T031700Z",
+        "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z"
+      }
+    ]
+  },
+  "requirementClosures": [
+    {
+      "requirementId": "MUST-044",
+      "status": "pass"
+    },
+    {
+      "requirementId": "MUST-046",
+      "status": "pass"
+    },
+    {
+      "requirementId": "NEG-034",
+      "status": "pass"
+    },
+    {
+      "requirementId": "NEG-035",
+      "status": "pass"
+    },
+    {
+      "requirementId": "OUT-027",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-004",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-044",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-045",
+      "status": "pass"
+    }
+  ],
+  "contractChecks": [
+    {
+      "checkId": "RCC-SUBAGENT-EVIDENCE-ENVELOPE:TRACE-035:current",
+      "contract": "RCC-SUBAGENT-EVIDENCE-ENVELOPE",
+      "decision": "pass"
+    },
+    {
+      "checkId": "CMD-SUBAGENT-EVIDENCE-ENVELOPE-ACCEPTANCE:TRACE-035:current",
+      "contract": "CMD-SUBAGENT-EVIDENCE-ENVELOPE-ACCEPTANCE",
+      "decision": "pass"
+    },
+    {
+      "checkId": "CMD-RENDER-CONFIRMATION:TRACE-035:current",
+      "contract": "CMD-RENDER-CONFIRMATION",
+      "decision": "pass"
+    },
+    {
+      "checkId": "CMD-TRACE-BINDING-ACCEPTANCE:TRACE-035:current",
+      "contract": "CMD-TRACE-BINDING-ACCEPTANCE",
+      "decision": "pass"
+    },
+    {
+      "checkId": "CMD-ENCODING-GATE:TRACE-035:current",
+      "contract": "CMD-ENCODING-GATE",
+      "decision": "pass"
+    }
+  ]
+}

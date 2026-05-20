@@ -1,0 +1,17 @@
+{
+  "artifactType": "subagent_task_report_boundary_proof",
+  "traceRows": [
+    "TRACE-035"
+  ],
+  "assertions": [
+    "TaskReport.status and agent final message are evidence input only.",
+    "subagentEvidenceEnvelope must bind current hashes, trace rows, covered requirement ids, task refs, command runs, and artifact refs.",
+    "subagentEvidenceEnvelope uses decisionAuthority=none and cannot write direct control fields.",
+    "controlled ingest records accepted envelope as subagent_evidence_envelope_recorded before requirement closure."
+  ],
+  "authorityHashes": {
+    "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+    "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+    "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da"
+  }
+}
