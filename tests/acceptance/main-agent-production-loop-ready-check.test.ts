@@ -46,6 +46,53 @@ function writeText(filePath: string, value: string): void {
   writeFileSync(filePath, value, 'utf8');
 }
 
+function concreteArtifactRef(id: string): Record<string, unknown> {
+  return {
+    artifactType: 'acceptance_evidence',
+    sourceOfTruthRole: 'evidence',
+    path: `_bmad-output/runtime/requirement-records/REQ-PRODUCTION-LOOP/evidence/${id}.json`,
+    hash: sha256Text(`artifact:${id}`),
+    producer: 'main-agent-production-loop-ready-check.test',
+    purpose: `prove concrete subsystem evidence for ${id}`,
+    relatedRequirementIds: ['MUST-039', 'MUST-040', 'EVD-039', 'EVD-040'],
+    status: 'active',
+    inputVersion: 'source-v1',
+    outputVersion: 'concrete-evidence-v1',
+  };
+}
+
+function concreteEvidence(id: string): Record<string, unknown> {
+  return {
+    commandRuns: [
+      {
+        commandId: `CMD-${id.toUpperCase().replace(/[^A-Z0-9]+/gu, '-')}`,
+        command: `verify ${id}`,
+        runId: `run-${id}`,
+        closeoutAttemptId: 'closeout-current',
+        exitCode: 0,
+        startedAt: '2026-05-19T00:00:00.000Z',
+        completedAt: '2026-05-19T00:00:01.000Z',
+        outputSummary: `${id} verified`,
+      },
+    ],
+    artifactRefs: [concreteArtifactRef(id)],
+    controlledEventRefs: [
+      {
+        eventId: `event-${id}`,
+        eventType: 'implementation_evidence_ingested',
+        eventHash: sha256Text(`event:${id}`),
+      },
+    ],
+    recoveryActionEvidence: [
+      {
+        action: 'block_closeout',
+        status: 'verified',
+        evidenceRef: `recovery-${id}`,
+      },
+    ],
+  };
+}
+
 function subsystem(subsystemId: string) {
   return {
     subsystemId,
@@ -59,6 +106,7 @@ function subsystem(subsystemId: string) {
       recordEventTypes: ['failure_recorded', 'rca_created'],
       recoveryActions: ['record_failure', 'open_rca', 'route_sample'],
     },
+    ...concreteEvidence(`subsystem-${subsystemId}`),
   };
 }
 
@@ -332,6 +380,53 @@ describe('main-agent production loop ready check', () => {
       expect(report.decision).toBe('blocked');
       expect(report.blockingReasons).toContain('observability_rollbackConditions_missing');
       expect(report.blockingReasons).toContain('subsystem_missing:prompt_packet_generation');
+    } finally {
+      process.chdir(cwd);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks when subsystem readiness only declares status without concrete evidence', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'production-loop-declaration-only-'));
+    const cwd = process.cwd();
+    try {
+      process.chdir(root);
+      const { recordPath } = writeFixture(root);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      const extensionPath = path.resolve(root, (record.extensionRefs[0].path as string).replace(/\//gu, path.sep));
+      const extensionValue = JSON.parse(readFileSync(extensionPath, 'utf8'));
+      extensionValue.subsystemReadiness = extensionValue.subsystemReadiness.map((item: Record<string, unknown>) => {
+        const { commandRuns, artifactRefs, controlledEventRefs, recoveryActionEvidence, ...rest } = item;
+        void commandRuns;
+        void artifactRefs;
+        void controlledEventRefs;
+        void recoveryActionEvidence;
+        return rest;
+      });
+      writeJson(extensionPath, extensionValue);
+      record.extensionRefs[0].contentHash = sha256File(extensionPath);
+      writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+      const reportPath = path.join(path.dirname(recordPath), 'production-loop-ready-report.json');
+
+      const code = mainProductionLoopReadyCheck([
+        '--requirement-record',
+        recordPath,
+        '--report-path',
+        reportPath,
+        '--evaluated-at',
+        '2026-05-19T00:00:01.000Z',
+      ]);
+
+      expect(code).toBe(1);
+      const report = JSON.parse(readFileSync(reportPath, 'utf8'));
+      expect(report.blockingReasons).toEqual(
+        expect.arrayContaining([
+          'subsystem_command_evidence_missing:requirement_confirmation',
+          'subsystem_artifact_evidence_missing:requirement_confirmation',
+          'subsystem_controlled_event_evidence_missing:requirement_confirmation',
+          'subsystem_recovery_evidence_missing:requirement_confirmation',
+        ])
+      );
     } finally {
       process.chdir(cwd);
       rmSync(root, { recursive: true, force: true });

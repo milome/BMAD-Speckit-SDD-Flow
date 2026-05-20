@@ -1,6 +1,6 @@
 {
   "reportType": "dataset_release_gate_report",
-  "generatedAt": "2026-05-20T22:42:53.447Z",
+  "generatedAt": "2026-05-20T23:44:54.802Z",
   "generatedBy": "final-closeout-evidence-runner",
   "recordId": "REQ-CLOSED-LOOP-DESIGN",
   "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
@@ -34,5 +34,5 @@
     "validationPath": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/exports/validation.jsonl",
     "testPath": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/exports/test.jsonl"
   },
-  "manifestHash": "sha256:7fde01f304c62c43a68bd2ef6528dab9ccbda6056345b32f64f94f9079c6e653"
+  "manifestHash": "sha256:2f0f92813cb655ab24024602af02df25378d4e85da02a452479b7bc7cb34f606"
 }

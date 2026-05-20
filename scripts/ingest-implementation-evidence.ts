@@ -6,6 +6,10 @@ import {
   validateSubagentEvidenceEnvelope,
   type SubagentEvidenceEnvelopeValidation,
 } from './subagent-evidence-envelope';
+import {
+  appendControlEventAndReplay,
+  eventLogPathForRecord,
+} from './requirement-record-control-store';
 
 type JsonObject = Record<string, unknown>;
 
@@ -115,6 +119,13 @@ function arrayOfStrings(value: unknown): string[] {
 
 function normalizePathForRecord(value: string): string {
   return value.replace(/\\/gu, '/');
+}
+
+function normalizeSourceOfTruthRole(value: unknown): string {
+  const role = text(value);
+  if (['control', 'evidence', 'projection', 'read_model'].includes(role)) return role;
+  if (role === 'derived') return 'evidence';
+  return 'evidence';
 }
 
 function sha256File(file: string): string {
@@ -658,7 +669,7 @@ function artifactEvents(packet: JsonObject, recordId: string, requirementSetId: 
   return [...arrayOfObjects(packet.artifactRefs), ...arrayOfObjects(packet.extensionRefs)].map((artifact) => ({
     eventType: 'artifact_indexed',
     artifactType: text(artifact.artifactType) || 'implementation_evidence',
-    sourceOfTruthRole: text(artifact.sourceOfTruthRole) || 'evidence',
+    sourceOfTruthRole: normalizeSourceOfTruthRole(artifact.sourceOfTruthRole),
     recordId,
     requirementSetId,
     path: normalizePathForRecord(text(artifact.path)),
@@ -690,7 +701,7 @@ function normalizeHistoricalArtifactRef(
     ...artifact,
     eventType: text(artifact.eventType) || 'artifact_indexed',
     artifactType: text(artifact.artifactType) || 'historical_artifact',
-    sourceOfTruthRole: text(artifact.sourceOfTruthRole) || 'evidence',
+    sourceOfTruthRole: normalizeSourceOfTruthRole(artifact.sourceOfTruthRole),
     recordId: text(artifact.recordId) || recordId,
     requirementSetId: text(artifact.requirementSetId) || requirementSetId,
     path: pathValue || '<missing-path>',
@@ -738,7 +749,6 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
     taskRefs: arrayOfStrings(packet.taskRefs),
     evidenceRefs: arrayOfStrings(packet.evidenceRefs),
     filesChanged: arrayOfStrings(packet.filesChanged),
-    implementationDelta: packet.implementationDelta,
     diffSummary: text(packet.diffSummary),
     commandRunRefs: commandRefs,
     evidenceArtifactRefs: artifactRefs,
@@ -967,47 +977,25 @@ export function mainIngestImplementationEvidence(argv: string[]): number {
   }
   const recordedAt = args.confirmedAt ?? new Date().toISOString();
   const recordedBy = args.recordedBy ?? 'agent';
-  const nextRecord = updateRecord(record, packet, recordedAt, recordedBy);
-  fs.writeFileSync(recordPath, `${JSON.stringify(nextRecord, null, 2)}\n`, 'utf8');
   const baseDir = path.dirname(recordPath);
-  const eventLog = path.resolve(args.eventLog ?? path.join(baseDir, 'data', 'mentor-events.jsonl'));
+  const eventLog = path.resolve(args.eventLog ?? eventLogPathForRecord(recordPath));
   const artifactIndex = path.resolve(args.artifactIndex ?? path.join(baseDir, 'artifact-index.jsonl'));
   const globalArtifactIndex = path.resolve(
     args.globalArtifactIndex ?? path.join(path.dirname(baseDir), 'artifact-index.jsonl')
   );
-  const executionEventsToAppend = arrayOfObjects(nextRecord.executionIterations).slice(
-    -1 * (packet.subagentEvidenceEnvelope ? 2 : 1)
-  );
-  for (const item of executionEventsToAppend) appendJsonl(eventLog, item);
-  for (const item of closureInputs(packet)) {
-    appendJsonl(eventLog, {
-      eventType: 'requirement_closure_recorded',
-      recordId: text(packet.recordId) || text(record.recordId),
-      requirementId: text(item.requirementId),
-      status: text(item.status),
-      sourceRefs: sourceRefs(packet),
+  const commit = appendControlEventAndReplay({
+    recordPath,
+    writerId: 'ingest-implementation-evidence',
+    eventType: 'implementation_evidence_ingested',
+    recordedAt,
+    payload: {
+      packet,
       recordedAt,
       recordedBy,
-    });
-  }
-  for (const item of arrayOfObjects(nextRecord.failureRecords).slice(-arrayOfObjects(packet.failureRecords).length)) {
-    appendJsonl(eventLog, item);
-  }
-  for (const item of arrayOfObjects(packet.rerunLoops)) {
-    appendJsonl(eventLog, {
-      eventType: 'rerun_loop_recorded',
-      recordId: text(packet.recordId) || text(record.recordId),
-      requirementSetId: text(packet.requirementSetId) || text(record.requirementSetId),
-      rerunLoopId: text(item.rerunLoopId),
-      status: text(item.status),
-      sourceRefs: arrayOfObjects(item.sourceRefs),
-      recordedAt,
-      recordedBy,
-    });
-  }
-  for (const item of arrayOfObjects(nextRecord.contractChecks).slice(-normalizeContractChecks(packet).length)) {
-    appendJsonl(eventLog, item);
-  }
+      evidencePath: normalizePathForRecord(evidencePath),
+    },
+    reduce: (currentRecord) => updateRecord(currentRecord, packet, recordedAt, recordedBy),
+  });
   for (const artifact of artifactEvents(packet, text(packet.recordId) || text(record.recordId), text(packet.requirementSetId) || text(record.requirementSetId))) {
     appendJsonl(artifactIndex, artifact);
     appendJsonl(globalArtifactIndex, artifact);
@@ -1016,6 +1004,9 @@ export function mainIngestImplementationEvidence(argv: string[]): number {
     ok: true,
     requirementRecordPath: normalizePathForRecord(recordPath),
     eventLogPath: normalizePathForRecord(eventLog),
+    controlEventId: commit.event.eventId,
+    controlEventHash: commit.event.eventHash,
+    receiptPath: normalizePathForRecord(commit.receiptPath),
     artifactIndexPath: normalizePathForRecord(artifactIndex),
     globalArtifactIndexPath: normalizePathForRecord(globalArtifactIndex),
   };

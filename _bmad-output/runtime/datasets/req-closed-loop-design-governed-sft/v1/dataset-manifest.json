@@ -3,12 +3,12 @@
   "datasetId": "req-closed-loop-design-governed-sft",
   "datasetVersion": "v1",
   "releaseDecision": "pass",
-  "generatedAt": "2026-05-20T22:42:53.447Z",
+  "generatedAt": "2026-05-20T23:44:54.802Z",
   "generatedBy": "final-closeout-evidence-runner",
   "source": {
     "recordId": "REQ-CLOSED-LOOP-DESIGN",
     "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
-    "sourceRequirementRecordHash": "sha256:b1a9d74bd88cce9ebf91bd6ee478266cc8be7c3e5f13500f4c5fef86fa650047",
+    "sourceRequirementRecordHash": "sha256:22332ae1ad183bebe643e573476acc2709407052d92725462deca993bb4df840",
     "sourceDocumentHash": "sha256:23a05cdd7d06d9b0d4190d6bca062220d9af2a8e7200f362317f4907bea33e8e",
     "implementationConfirmationHash": "sha256:7743b98153a1257aca029d0eda9ab0777d80ce2d3409005205c2d13ac29aa21d",
     "architectureConfirmationHash": "sha256:e4bd9a45b370916e3eebc5fda7d9b4e225995280c08521741a3376ca6b05a98c"
@@ -34,27 +34,27 @@
     "qualityReport": {
       "artifactType": "dataset_quality_report",
       "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/quality-report.json",
-      "hash": "sha256:6b2c9b2815be7861169a1f8f016cfe1a51c460d86c882f3a7f94b1b30204f3f5"
+      "hash": "sha256:9614a13ca1ed50b1aaff3777aae231a7cac57db71c93bb404c337584e758d484"
     },
     "redactionReport": {
       "artifactType": "dataset_redaction_report",
       "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/redaction-report.json",
-      "hash": "sha256:8d2e27d0341a844a45aa84ff43caaec22da2917ea306872b2cb05a9d7ca5882b"
+      "hash": "sha256:83873168b0cb8a7278cd475f1aab54b94fdd8ef8ea463acc75aa62a295fa12ef"
     },
     "contaminationReport": {
       "artifactType": "dataset_contamination_report",
       "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/contamination-report.json",
-      "hash": "sha256:b0a0bf6c501f98b9a5b68e29cf9b21c03a71c4eed8266aaab88cdbb0fa83cf78"
+      "hash": "sha256:4dc104eb5c12ded2731aeb8fa19960426483132ccb3cca15ddf926f59ea90146"
     },
     "revokedSamples": {
       "artifactType": "revoked_sample_list",
       "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/revoked-samples.json",
-      "hash": "sha256:c2e44e75804d3c30388e7892f6919499814ec4eb127cd39b946850c2b7f093b2"
+      "hash": "sha256:395cd0e27b712fcbda9ca211aebff518e6152be366c3a4d7f5b1d00dbc193f95"
     },
     "lineageReport": {
       "artifactType": "dataset_lineage_report",
       "path": "_bmad-output/runtime/datasets/req-closed-loop-design-governed-sft/v1/lineage-report.json",
-      "hash": "sha256:46a9a596a4b78f106f9099f750ace247d293b76f68854f93d7fe8cd7807cbcfd"
+      "hash": "sha256:06a2a808b14058edcbb304d85708a53b1fdc073b1c18321edd722be82167e725"
     },
     "postTrainingEvalReport": {
       "artifactType": "post_training_eval_report",

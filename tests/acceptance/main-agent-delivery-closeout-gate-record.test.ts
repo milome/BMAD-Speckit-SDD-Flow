@@ -61,6 +61,53 @@ function artifact(filePath: string, artifactType: string): Record<string, unknow
   };
 }
 
+function concreteArtifactRef(id: string): Record<string, unknown> {
+  return {
+    artifactType: 'acceptance_evidence',
+    sourceOfTruthRole: 'evidence',
+    path: `_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/evidence/${id}.json`,
+    hash: HASH,
+    producer: 'main-agent-delivery-closeout-gate-record.test',
+    purpose: `prove concrete evidence for ${id}`,
+    relatedRequirementIds: ['MUST-039', 'MUST-040', 'MUST-041', 'EVD-039', 'EVD-040', 'EVD-041'],
+    status: 'active',
+    inputVersion: 'source-v1',
+    outputVersion: 'concrete-evidence-v1',
+  };
+}
+
+function concreteEvidence(id: string): Record<string, unknown> {
+  return {
+    commandRuns: [
+      {
+        commandId: `CMD-${id.toUpperCase().replace(/[^A-Z0-9]+/gu, '-')}`,
+        command: `verify ${id}`,
+        runId: `run-${id}`,
+        closeoutAttemptId: 'current-attempt-evidence',
+        exitCode: 0,
+        startedAt: '2026-05-19T00:00:00.000Z',
+        completedAt: '2026-05-19T00:00:01.000Z',
+        outputSummary: `${id} verified`,
+      },
+    ],
+    artifactRefs: [concreteArtifactRef(id)],
+    controlledEventRefs: [
+      {
+        eventId: `event-${id}`,
+        eventType: 'implementation_evidence_ingested',
+        eventHash: HASH,
+      },
+    ],
+    recoveryActionEvidence: [
+      {
+        action: 'block_closeout',
+        status: 'verified',
+        evidenceRef: `recovery-${id}`,
+      },
+    ],
+  };
+}
+
 function subsystem(record: Record<string, unknown>, subsystemId: string): Record<string, unknown> {
   return {
     subsystemId,
@@ -87,6 +134,7 @@ function subsystem(record: Record<string, unknown>, subsystemId: string): Record
       userVisibleBehaviorPreserved: true,
       regressionEvidenceRefs: ['EVD-040'],
     },
+    ...concreteEvidence(`subsystem-${subsystemId}`),
   };
 }
 
@@ -329,6 +377,16 @@ function writeRecord(root: string, record: Record<string, unknown>): string {
           failureCaseExercisedCount: 2,
           unexercisedCases: [],
           issues: [],
+          caseEvidence: [
+            {
+              caseId: 'sourceDocumentHash_changed',
+              ...concreteEvidence('failure-case-sourceDocumentHash_changed'),
+            },
+            {
+              caseId: 'missing_required_artifact',
+              ...concreteEvidence('failure-case-missing_required_artifact'),
+            },
+          ],
         },
         blockingIssues: [],
       },
@@ -545,9 +603,11 @@ describe('requirement-scoped delivery closeout gate', () => {
       expect(code).toBe(0);
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
       expect(record.closeout.currentAttemptId).toBe('closeout-pass');
-      expect(record.closeout.eventType).toBe('record_closed');
+      expect(record.closeout).not.toHaveProperty('eventType');
       expect(record.closeout.decision).toBe('pass');
       expect(record.lastEventType).toBe('record_closed');
+      expect(record.controlStore.eventLogPath).toContain('events/control-events.jsonl');
+      expect(record.lastAppliedEventId).toContain('record_closed');
       expect(record.closeout.attempts[0]).toMatchObject({
         closeoutAttemptId: 'closeout-pass',
         decision: 'pass',

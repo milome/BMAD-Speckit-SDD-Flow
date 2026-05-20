@@ -176,6 +176,65 @@ function latestActiveSubsystemExtension(record: JsonObject, recordPath: string):
   return readJson(resolved);
 }
 
+function isSha256(value: string): boolean {
+  return /^sha256:[a-f0-9]{64}$/u.test(value);
+}
+
+function artifactHash(ref: JsonObject): string {
+  return text(ref.hash ?? ref.contentHash);
+}
+
+function artifactCompletenessIssues(ref: JsonObject): string[] {
+  const issues: string[] = [];
+  if (!text(ref.path)) issues.push('path_missing');
+  if (!isSha256(artifactHash(ref))) issues.push('hash_missing');
+  if (!text(ref.producer)) issues.push('producer_missing');
+  if (!text(ref.purpose)) issues.push('purpose_missing');
+  if (text(ref.sourceOfTruthRole) !== 'evidence') issues.push('source_of_truth_role_not_evidence');
+  if (strings(ref.relatedRequirementIds).length === 0) issues.push('related_requirement_ids_missing');
+  if (!text(ref.inputVersion)) issues.push('input_version_missing');
+  if (!text(ref.outputVersion)) issues.push('output_version_missing');
+  if (text(ref.status) !== 'active') issues.push('status_not_active');
+  return issues;
+}
+
+function concreteEvidenceIssues(item: JsonObject, prefix: string, itemId: string): string[] {
+  const issues: string[] = [];
+  const commandEvidence = [...objects(item.commandRuns), ...objects(item.commandRunRefs)];
+  if (commandEvidence.length === 0) issues.push(`${prefix}_command_evidence_missing:${itemId}`);
+  for (const command of commandEvidence) {
+    if (!text(command.commandId) && !text(command.command)) issues.push(`${prefix}_command_identity_missing:${itemId}`);
+    if (Number.isInteger(command.exitCode) && command.exitCode !== 0) {
+      issues.push(`${prefix}_command_failed:${itemId}:${text(command.commandId) || '<missing>'}`);
+    }
+  }
+
+  const artifactEvidence = [...objects(item.artifactRefs), ...objects(item.evidenceArtifactRefs)];
+  if (artifactEvidence.length === 0) issues.push(`${prefix}_artifact_evidence_missing:${itemId}`);
+  for (const artifact of artifactEvidence) {
+    for (const issue of artifactCompletenessIssues(artifact)) {
+      issues.push(`${prefix}_artifact_evidence_incomplete:${itemId}:${issue}`);
+    }
+  }
+
+  const controlledEventRefs = [...objects(item.controlledEventRefs), ...objects(item.controlEventRefs)];
+  if (controlledEventRefs.length === 0) issues.push(`${prefix}_controlled_event_evidence_missing:${itemId}`);
+  for (const eventRef of controlledEventRefs) {
+    if (!text(eventRef.eventId) && !text(eventRef.eventType)) {
+      issues.push(`${prefix}_controlled_event_identity_missing:${itemId}`);
+    }
+  }
+
+  const recoveryEvidence = [...objects(item.recoveryActionEvidence), ...objects(item.recoveryActionRefs)];
+  if (recoveryEvidence.length === 0) issues.push(`${prefix}_recovery_evidence_missing:${itemId}`);
+  for (const recovery of recoveryEvidence) {
+    if (!text(recovery.action) && !text(recovery.recoveryAction)) {
+      issues.push(`${prefix}_recovery_action_missing:${itemId}`);
+    }
+  }
+  return issues;
+}
+
 function subsystemCoverageIssues(extension: JsonObject | null): string[] {
   if (!extension) return ['subsystem_extension_missing'];
   const byId = new Map(objects(extension.subsystemReadiness).map((item) => [text(item.subsystemId), item]));
@@ -190,7 +249,8 @@ function subsystemCoverageIssues(extension: JsonObject | null): string[] {
     if (strings(item.outputRefs).length === 0) issues.push(`subsystem_output_refs_missing:${id}`);
     if (!text(item.status)) issues.push(`subsystem_status_missing:${id}`);
     if (strings(item.evidenceRefs).length === 0) issues.push(`subsystem_evidence_refs_missing:${id}`);
-    if (!/^sha256:[a-f0-9]{64}$/u.test(text(item.hash))) issues.push(`subsystem_hash_missing:${id}`);
+    if (!isSha256(text(item.hash))) issues.push(`subsystem_hash_missing:${id}`);
+    issues.push(...concreteEvidenceIssues(item, 'subsystem', id));
     const failureHandling = nested(item.failureHandling);
     if (strings(failureHandling.failureModes).length === 0) issues.push(`subsystem_failure_modes_missing:${id}`);
     if (strings(failureHandling.recordEventTypes).length === 0) issues.push(`subsystem_failure_event_types_missing:${id}`);
