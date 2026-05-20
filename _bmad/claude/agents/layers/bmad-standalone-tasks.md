@@ -54,7 +54,7 @@
 - 提交门控：仅允许向 `bmad-master` 返回 `commit_request`，禁止自行 commit
 - 返回必须包含：`execution_summary`、`artifacts`、`handoff`、`next_action`、`ready`、`mainAgentNextAction`、`mainAgentReady`
 - 实施过程必须维护 standalone 模式下的 prd/progress 产物
-- parent 主 Agent 在发起或回收本执行体前，必须优先读取 `npm run main-agent-orchestration -- --cwd {project-root} --action inspect|dispatch-plan`
+- parent 主 Agent 在发起或回收本执行体前，必须由用户会话内 `$bmad-speckit` / `/bmad-speckit` / `bmad-speckit` 激活的主控内部执行 inspect / dispatch-plan；不得要求普通消费用户运行 npm / npx CLI。
 
 ## Repo Add-ons
 
@@ -113,7 +113,7 @@
 
 - 主 Agent 调用实施子代理时，必须完整复制 Cursor 侧对应正文模板，不得摘要化
 - 不得只传文件路径让子代理自行推断规则
-- parent 主 Agent 不得只根据 `mainAgentNextAction / mainAgentReady` 派发本执行体；若 repo-native orchestration surface 可用，必须优先消费该 surface
+- parent 主 Agent 不得只根据 `mainAgentNextAction / mainAgentReady` 派发本执行体；必须从 `requirement-record.json`、`currentMentalModel` 和六个心智模型链路读取权威状态。
 - 必须显式传入：
   - 文档路径
   - 未完成任务清单
@@ -140,7 +140,7 @@ handoff:
   mainAgentReady: true|false
 ```
 
-说明：这里的 `next_agent`、`mainAgentNextAction`、`mainAgentReady` 只作为 compatibility hint。standalone 执行体返回后，主 Agent 必须重新读取 `main-agent-orchestration` surface，再决定下一条全局分支。
+说明：这里的 `next_agent`、`mainAgentNextAction`、`mainAgentReady` 只作为 compatibility hint。子执行体返回后，主 Agent 必须重新读取受控 RequirementRecord 和六心智模型状态，再决定下一条全局分支。
 
 ## State Updates
 

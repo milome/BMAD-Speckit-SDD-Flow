@@ -36,11 +36,36 @@ interface RegistryValidationResult {
   failureCases: number;
   recoveryActions: number;
   globalEventTypes: number;
-  controlledRecordEventTypes: number;
   fullLinkRequiredFixtureCases: string[];
   exercisedFixtureCases: string[];
   unexercisedCases: string[];
   issues: string[];
+}
+
+interface RegistryPayloadKindContractPolicy {
+  requiredFields: string[];
+  forbiddenFields: string[];
+  allowedControlWriteModes: string[];
+}
+
+interface RegistryControlWriteModePolicy {
+  allowedWritesControlFields: string[];
+}
+
+interface RegistryEventSpecificRequirementPolicy {
+  eventType: string;
+  payloadKind?: string;
+  requiredSourceRefs?: boolean;
+  requiredFields: string[];
+  forbiddenFields: string[];
+  allowedControlWriteMode?: string;
+}
+
+interface GovernanceEventTypeRegistryPolicy {
+  controlFieldVocabulary: Set<string>;
+  payloadKindContracts: Map<string, RegistryPayloadKindContractPolicy>;
+  controlWriteModePolicies: Map<string, RegistryControlWriteModePolicy>;
+  eventSpecificRequirements: Map<string, RegistryEventSpecificRequirementPolicy>;
 }
 
 const OPEN_RERUN_STATUSES = new Set(['open', 'in_progress', 'no_progress', 'blocked']);
@@ -48,34 +73,6 @@ const OPEN_RCA_STATUSES = new Set(['open', 'in_progress', 'blocked']);
 const OPEN_FAILURE_STATUSES = new Set(['open', 'in_progress', 'blocked']);
 const NON_TERMINAL_CLOSURE_STATUSES = new Set(['open', 'fail', 'blocked']);
 const TERMINAL_TRACE_STATUSES = new Set(['PASS', 'PENDING', 'MISSING_EVIDENCE', 'BLOCKED']);
-const VALID_EVENT_PAYLOAD_KINDS = new Set(['decision', 'status', 'artifactRefs']);
-const VALID_CONTROL_WRITE_MODES = new Set(['control', 'artifact_only', 'context_update']);
-const DECISION_CONTROL_FIELDS = new Set([
-  'recordLifecycle',
-  'confirmationHistory',
-  'architectureChecks',
-  'architectureConfirmations',
-  'architectureConfirmationState',
-  'workflowAcknowledgements',
-  'traceRows',
-  'gateChecks',
-  'contractChecks',
-  'executionIterations',
-  'auditIterations',
-  'failureRecords',
-  'rerunLoops',
-  'rcaRecords',
-  'closeout',
-  'requirementClosures',
-  'recoveryContext',
-  'runtimePolicySnapshotRef',
-]);
-const ARTIFACT_CONTEXT_FIELDS = new Set([
-  'artifactIndex',
-  'contractSummary',
-  'recoveryContext',
-  'runtimePolicySnapshotRef',
-]);
 
 function parseArgs(argv: string[]): ParsedArgs {
   const out: ParsedArgs = {};
@@ -112,6 +109,10 @@ function strings(value: unknown): string[] {
 
 function asObject(value: unknown): JsonObject | undefined {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : undefined;
+}
+
+function hasOwn(value: unknown, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(value ?? {}, key);
 }
 
 function normalizePathForRecord(value: string): string {
@@ -206,35 +207,10 @@ function artifactHashMap(record: JsonObject): Record<string, string> {
   return out;
 }
 
-function expectedPayloadContract(payloadKind: string): {
-  requiredFields: string[];
-  forbiddenFields: string[];
-  allowedControlWriteMode: string;
-} {
-  if (payloadKind === 'decision') {
-    return {
-      requiredFields: ['eventType', 'decision'],
-      forbiddenFields: ['result', 'status'],
-      allowedControlWriteMode: 'control',
-    };
-  }
-  if (payloadKind === 'status') {
-    return {
-      requiredFields: ['eventType', 'status'],
-      forbiddenFields: ['result', 'decision'],
-      allowedControlWriteMode: 'control',
-    };
-  }
-  return {
-    requiredFields: ['eventType', 'artifactRefs'],
-    forbiddenFields: ['result', 'decision', 'status'],
-    allowedControlWriteMode: 'artifact_only',
-  };
-}
-
 function validatePayloadContract(
   eventType: string,
   eventRow: JsonObject,
+  policy: GovernanceEventTypeRegistryPolicy | undefined,
   issues: string[]
 ): {
   requiredFields: string[];
@@ -257,61 +233,152 @@ function validatePayloadContract(
   const forbiddenFields = strings(contract.forbiddenFields);
   const requiredSourceRefs = contract.requiredSourceRefs === true;
   const allowedControlWriteMode = text(contract.allowedControlWriteMode);
-  const expected = expectedPayloadContract(payloadKind);
-  const payloadField = payloadKind === 'decision' ? 'decision' : payloadKind === 'status' ? 'status' : 'artifactRefs';
+  const payloadKindPolicy = policy?.payloadKindContracts.get(payloadKind);
+  const eventPolicy = policy?.eventSpecificRequirements.get(eventType);
 
-  if (!VALID_EVENT_PAYLOAD_KINDS.has(payloadKind)) {
+  if (!payloadKindPolicy) {
     issues.push(blockingIssue('governance_event_type_invalid_payload_kind', `${eventType} has invalid payloadKind ${payloadKind}`, [eventType]));
-  }
-  for (const field of ['eventType', payloadField]) {
-    if (!requiredFields.includes(field)) {
-      issues.push(
-        blockingIssue('governance_event_type_payload_contract_missing_required_field', `${eventType} payloadContract.requiredFields missing ${field}`, [
-          eventType,
-          field,
-        ])
-      );
+  } else {
+    for (const field of payloadKindPolicy.requiredFields) {
+      if (!requiredFields.includes(field)) {
+        issues.push(
+          blockingIssue('governance_event_type_payload_contract_missing_required_field', `${eventType} payloadContract.requiredFields missing ${field}`, [
+            eventType,
+            field,
+          ])
+        );
+      }
+    }
+    for (const field of payloadKindPolicy.forbiddenFields) {
+      if (!forbiddenFields.includes(field)) {
+        issues.push(
+          blockingIssue('governance_event_type_payload_contract_missing_forbidden_field', `${eventType} payloadContract.forbiddenFields missing ${field}`, [
+            eventType,
+            field,
+          ])
+        );
+      }
+    }
+    for (const field of payloadKindPolicy.requiredFields) {
+      if (forbiddenFields.includes(field)) {
+        issues.push(blockingIssue('governance_event_type_payload_contract_forbids_payload_field', `${eventType} payloadContract forbids ${field}`, [eventType, field]));
+      }
+    }
+    if (!payloadKindPolicy.allowedControlWriteModes.includes(allowedControlWriteMode)) {
+      issues.push(blockingIssue('governance_event_type_invalid_control_write_mode', `${eventType} invalid allowedControlWriteMode ${allowedControlWriteMode}`, [eventType]));
     }
   }
-  for (const field of expected.forbiddenFields) {
-    if (!forbiddenFields.includes(field)) {
-      issues.push(
-        blockingIssue('governance_event_type_payload_contract_missing_forbidden_field', `${eventType} payloadContract.forbiddenFields missing ${field}`, [
-          eventType,
-          field,
-        ])
-      );
+  if (eventPolicy) {
+    if (eventPolicy.payloadKind && eventPolicy.payloadKind !== payloadKind) {
+      issues.push(blockingIssue('governance_event_type_policy_payload_kind_mismatch', `${eventType} must use payloadKind ${eventPolicy.payloadKind}`, [eventType]));
     }
-  }
-  for (const invalid of ['decision', 'status', 'artifactRefs']) {
-    if (invalid !== payloadField && requiredFields.includes(invalid)) {
-      issues.push(
-        blockingIssue('governance_event_type_payload_contract_conflicting_required_field', `${eventType} payloadContract requires ${invalid}`, [
-          eventType,
-          invalid,
-        ])
-      );
+    for (const field of eventPolicy.requiredFields) {
+      if (!requiredFields.includes(field)) {
+        issues.push(blockingIssue('governance_event_type_policy_missing_required_field', `${eventType} policy requires ${field}`, [eventType, field]));
+      }
     }
-  }
-  if (forbiddenFields.includes(payloadField)) {
-    issues.push(blockingIssue('governance_event_type_payload_contract_forbids_payload_field', `${eventType} payloadContract forbids ${payloadField}`, [eventType, payloadField]));
-  }
-  if (!VALID_CONTROL_WRITE_MODES.has(allowedControlWriteMode)) {
-    issues.push(blockingIssue('governance_event_type_invalid_control_write_mode', `${eventType} invalid allowedControlWriteMode ${allowedControlWriteMode}`, [eventType]));
-  }
-  if (payloadKind !== 'artifactRefs' && allowedControlWriteMode !== 'control') {
-    issues.push(blockingIssue('governance_event_type_payload_contract_wrong_write_mode', `${eventType} must use control mode`, [eventType]));
-  }
-  if (payloadKind === 'artifactRefs' && allowedControlWriteMode === 'control') {
-    issues.push(blockingIssue('governance_event_type_payload_contract_artifact_refs_control_mode', `${eventType} artifactRefs cannot use control mode`, [eventType]));
-  }
-  if (eventType === 'rerun_loop_recorded' && requiredSourceRefs !== true) {
-    issues.push(blockingIssue('governance_event_type_payload_contract_missing_source_refs', 'rerun_loop_recorded must require sourceRefs', [eventType]));
+    for (const field of eventPolicy.forbiddenFields) {
+      if (!forbiddenFields.includes(field)) {
+        issues.push(blockingIssue('governance_event_type_policy_missing_forbidden_field', `${eventType} policy forbids ${field}`, [eventType, field]));
+      }
+    }
+    if (eventPolicy.requiredSourceRefs === true && requiredSourceRefs !== true) {
+      issues.push(blockingIssue('governance_event_type_payload_contract_missing_source_refs', `${eventType} must require sourceRefs`, [eventType]));
+    }
+    if (eventPolicy.allowedControlWriteMode && eventPolicy.allowedControlWriteMode !== allowedControlWriteMode) {
+      issues.push(blockingIssue('governance_event_type_policy_wrong_write_mode', `${eventType} must use ${eventPolicy.allowedControlWriteMode}`, [eventType]));
+    }
   }
   return { requiredFields, forbiddenFields, requiredSourceRefs, allowedControlWriteMode };
 }
 
+function normalizeStringListPolicy(value: unknown): string[] {
+  return strings(value);
+}
+
+function normalizeGovernanceEventTypeRegistryPolicy(
+  confirmation: JsonObject | undefined,
+  issues: string[]
+): GovernanceEventTypeRegistryPolicy | undefined {
+  const raw = asObject(confirmation?.governanceEventTypeRegistryPolicy);
+  if (!raw) {
+    issues.push(blockingIssue('governance_event_type_registry_policy_missing', 'governanceEventTypeRegistryPolicy is required'));
+    return undefined;
+  }
+  const controlFieldVocabulary = new Set<string>();
+  for (const field of strings(raw.controlFieldVocabulary)) {
+    if (controlFieldVocabulary.has(field)) {
+      issues.push(blockingIssue('governance_event_type_policy_control_field_vocabulary_duplicate', `${field} duplicated`, [field]));
+    }
+    controlFieldVocabulary.add(field);
+  }
+  const payloadKindContracts = new Map<string, RegistryPayloadKindContractPolicy>();
+  for (const [index, row] of objects(raw.payloadKindContracts).entries()) {
+    const payloadKind = text(row.payloadKind);
+    if (!payloadKind) {
+      issues.push(blockingIssue('governance_event_type_policy_payload_kind_missing', `payloadKindContracts[${index}] missing payloadKind`));
+      continue;
+    }
+    if (payloadKindContracts.has(payloadKind)) {
+      issues.push(blockingIssue('governance_event_type_policy_payload_kind_duplicate', `${payloadKind} duplicated`, [payloadKind]));
+    }
+    payloadKindContracts.set(payloadKind, {
+      requiredFields: normalizeStringListPolicy(row.requiredFields),
+      forbiddenFields: normalizeStringListPolicy(row.forbiddenFields),
+      allowedControlWriteModes: normalizeStringListPolicy(row.allowedControlWriteModes),
+    });
+  }
+  const controlWriteModePolicies = new Map<string, RegistryControlWriteModePolicy>();
+  for (const [index, row] of objects(raw.controlWriteModePolicies).entries()) {
+    const mode = text(row.allowedControlWriteMode ?? row.mode);
+    if (!mode) {
+      issues.push(blockingIssue('governance_event_type_policy_write_mode_missing', `controlWriteModePolicies[${index}] missing allowedControlWriteMode`));
+      continue;
+    }
+    if (controlWriteModePolicies.has(mode)) {
+      issues.push(blockingIssue('governance_event_type_policy_write_mode_duplicate', `${mode} duplicated`, [mode]));
+    }
+    const allowedWritesControlFields = normalizeStringListPolicy(row.allowedWritesControlFields);
+    for (const field of allowedWritesControlFields) {
+      if (!controlFieldVocabulary.has(field)) {
+        issues.push(blockingIssue('governance_event_type_policy_control_field_vocabulary_unknown', `${mode} references unknown ${field}`, [mode, field]));
+      }
+    }
+    controlWriteModePolicies.set(mode, { allowedWritesControlFields });
+  }
+  const eventSpecificRequirements = new Map<string, RegistryEventSpecificRequirementPolicy>();
+  for (const [index, row] of objects(raw.eventSpecificRequirements).entries()) {
+    const eventType = text(row.eventType);
+    if (!eventType) {
+      issues.push(blockingIssue('governance_event_type_policy_event_requirement_missing', `eventSpecificRequirements[${index}] missing eventType`));
+      continue;
+    }
+    if (eventSpecificRequirements.has(eventType)) {
+      issues.push(blockingIssue('governance_event_type_policy_event_requirement_duplicate', `${eventType} duplicated`, [eventType]));
+    }
+    eventSpecificRequirements.set(eventType, {
+      eventType,
+      payloadKind: text(row.payloadKind) || undefined,
+      requiredSourceRefs: row.requiredSourceRefs === true,
+      requiredFields: normalizeStringListPolicy(row.requiredFields),
+      forbiddenFields: normalizeStringListPolicy(row.forbiddenFields),
+      allowedControlWriteMode: text(row.allowedControlWriteMode) || undefined,
+    });
+  }
+  if (!payloadKindContracts.size) {
+    issues.push(blockingIssue('governance_event_type_policy_payload_kind_contracts_missing', 'payloadKindContracts[] is required'));
+  }
+  if (!controlWriteModePolicies.size) {
+    issues.push(blockingIssue('governance_event_type_policy_control_write_modes_missing', 'controlWriteModePolicies[] is required'));
+  }
+  if (!controlFieldVocabulary.size) {
+    issues.push(blockingIssue('governance_event_type_policy_control_field_vocabulary_missing', 'controlFieldVocabulary[] is required'));
+  }
+  return { controlFieldVocabulary, payloadKindContracts, controlWriteModePolicies, eventSpecificRequirements };
+}
+
 function normalizeGovernanceEventTypeRegistry(confirmation: JsonObject | undefined, issues: string[]): Map<string, JsonObject> {
+  const policy = normalizeGovernanceEventTypeRegistryPolicy(confirmation, issues);
   const eventTypes = new Map<string, JsonObject>();
   for (const [index, row] of objects(confirmation?.governanceEventTypeRegistry).entries()) {
     const eventType = text(row.eventType);
@@ -328,8 +395,8 @@ function normalizeGovernanceEventTypeRegistry(confirmation: JsonObject | undefin
       }
     }
     const writesControlFields = strings(row.writesControlFields);
-    const payloadContract = validatePayloadContract(eventType, row, issues);
-    validateEventControlWriteMode(eventType, text(row.payloadKind), writesControlFields, payloadContract.allowedControlWriteMode, issues);
+    const payloadContract = validatePayloadContract(eventType, row, policy, issues);
+    validateEventControlWriteMode(eventType, writesControlFields, payloadContract.allowedControlWriteMode, policy, issues);
     eventTypes.set(eventType, {
       eventType,
       payloadKind: text(row.payloadKind),
@@ -343,30 +410,22 @@ function normalizeGovernanceEventTypeRegistry(confirmation: JsonObject | undefin
 
 function validateEventControlWriteMode(
   eventType: string,
-  payloadKind: string,
   writesControlFields: string[],
   mode: string,
+  policy: GovernanceEventTypeRegistryPolicy | undefined,
   issues: string[]
 ): void {
-  if (payloadKind === 'artifactRefs' && mode === 'artifact_only') {
-    for (const field of writesControlFields) {
-      if (field !== 'artifactIndex') {
-        issues.push(blockingIssue('governance_event_type_artifact_only_writes_control_field', `${eventType} artifact_only writes ${field}`, [eventType, field]));
-      }
-    }
+  const modePolicy = policy?.controlWriteModePolicies.get(mode);
+  if (!modePolicy) {
+    issues.push(blockingIssue('governance_event_type_unknown_control_write_mode_policy', `${eventType} missing policy for write mode ${mode}`, [eventType, mode]));
+    return;
   }
-  if (payloadKind === 'artifactRefs' && mode === 'context_update') {
-    for (const field of writesControlFields) {
-      if (!ARTIFACT_CONTEXT_FIELDS.has(field)) {
-        issues.push(blockingIssue('governance_event_type_context_update_writes_control_field', `${eventType} context_update writes ${field}`, [eventType, field]));
-      }
+  for (const field of writesControlFields) {
+    if (!policy?.controlFieldVocabulary.has(field)) {
+      issues.push(blockingIssue('governance_event_type_control_field_not_in_vocabulary', `${eventType} writes unknown control field ${field}`, [eventType, field]));
     }
-  }
-  if (payloadKind !== 'artifactRefs' && mode === 'control') {
-    for (const field of writesControlFields) {
-      if (!DECISION_CONTROL_FIELDS.has(field)) {
-        issues.push(blockingIssue('governance_event_type_control_mode_unknown_field', `${eventType} control mode writes unsupported ${field}`, [eventType, field]));
-      }
+    if (!modePolicy.allowedWritesControlFields.includes(field)) {
+      issues.push(blockingIssue('governance_event_type_control_mode_unknown_field', `${eventType} ${mode} writes unsupported ${field}`, [eventType, field]));
     }
   }
 }
@@ -495,7 +554,6 @@ function validateFunctionalResumeFailureCaseRegistry(input: {
       failureCases: 0,
       recoveryActions: 0,
       globalEventTypes: 0,
-      controlledRecordEventTypes: 0,
       fullLinkRequiredFixtureCases: [],
       exercisedFixtureCases: [],
       unexercisedCases: [],
@@ -504,29 +562,17 @@ function validateFunctionalResumeFailureCaseRegistry(input: {
   }
 
   const globalEventTypes = normalizeGovernanceEventTypeRegistry(input.confirmation, issues);
-  const controlledEventTypes = new Map<string, JsonObject>();
-  for (const [index, row] of objects(registry.controlledRecordEventTypes).entries()) {
-    const eventType = text(row.eventType);
-    if (!eventType) {
-      issues.push(blockingIssue('resume_failure_controlled_event_type_missing_id', `controlledRecordEventTypes[${index}] missing eventType`));
-      continue;
-    }
-    if (controlledEventTypes.has(eventType)) {
-      issues.push(blockingIssue('resume_failure_controlled_event_type_duplicate_id', `${eventType} is duplicated`, [eventType]));
-    }
-    if (!globalEventTypes.has(eventType)) {
-      issues.push(
-        blockingIssue(
-          'resume_failure_controlled_event_type_missing_global_payload_contract',
-          `${eventType} must be defined in implementationConfirmation.governanceEventTypeRegistry[] with payloadContract`,
-          [eventType]
-        )
-      );
-    }
-    controlledEventTypes.set(eventType, { eventType, writesControlFields: strings(row.writesControlFields) });
+  if (hasOwn(registry, 'controlledRecordEventTypes')) {
+    issues.push(
+      blockingIssue(
+        'resume_failure_second_event_registry_present',
+        'functionalResumeFailureCaseRegistry.controlledRecordEventTypes is forbidden; use implementationConfirmation.governanceEventTypeRegistry[] only',
+        ['functionalResumeFailureCaseRegistry.controlledRecordEventTypes']
+      )
+    );
   }
 
-  const eventTypes = new Map<string, JsonObject>([...globalEventTypes.entries(), ...controlledEventTypes.entries()]);
+  const eventTypes = globalEventTypes;
   const groups = objects(registry.groups);
   const failureCases = objects(registry.failureCases);
   const actions = objects(registry.recoveryActionDefinitions);
@@ -663,7 +709,6 @@ function validateFunctionalResumeFailureCaseRegistry(input: {
     failureCases: failureCases.length,
     recoveryActions: actions.length,
     globalEventTypes: globalEventTypes.size,
-    controlledRecordEventTypes: controlledEventTypes.size,
     fullLinkRequiredFixtureCases,
     exercisedFixtureCases,
     unexercisedCases,

@@ -7,6 +7,10 @@ import {
   runMainAgentAutomaticLoop,
 } from '../../scripts/main-agent-orchestration';
 import { main, runCodexWorkerAdapter } from '../../scripts/main-agent-codex-worker-adapter';
+import {
+  governanceEventTypeRegistryPolicyHash,
+  governanceEventTypeRegistryHash,
+} from '../../scripts/governance-transport-envelope';
 import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
@@ -31,6 +35,11 @@ function writeTestRequirementRecord(root: string): void {
     sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
     implementationConfirmationHash:
       'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+    architectureConfirmationState: {
+      status: 'active',
+      currentArchitectureConfirmationHash:
+        'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    },
     confirmationHistory: [
       {
         eventType: 'confirmation_recorded',
@@ -71,6 +80,21 @@ function writeTestRequirementRecord(root: string): void {
       semanticFingerprint: 'story.md',
       evaluatedAt: '2026-05-19T00:00:00.000Z',
     },
+    taskBindings: [
+      {
+        taskRef: 'TASK-CODEX-WORKER-SMOKE',
+        status: 'planned',
+        epicId: 'epic-01',
+        storyId: 'S-codex-worker',
+        sprintId: 'sprint-01',
+        allowedWriteScope: [
+          'src/**',
+          'tests/**',
+          `_bmad-output/runtime/requirement-records/${requirementSetId}/artifacts/**`,
+        ],
+        acceptanceRefs: ['EVD-CODEX-WORKER-SMOKE'],
+      },
+    ],
   };
   fs.writeFileSync(path.join(base, 'requirement-record.json'), `${JSON.stringify(record, null, 2)}\n`, 'utf8');
   fs.writeFileSync(
@@ -124,6 +148,76 @@ function writeTestCodexAgentSpec(
   );
 }
 
+const GOVERNANCE_EVENT_TYPE_REGISTRY = [
+  {
+    eventType: 'execution_iteration_recorded',
+    payloadKind: 'status',
+    writesControlFields: ['executionIterations'],
+    allowedStatusValues: ['done', 'partial', 'blocked'],
+    payloadContract: {
+      requiredFields: ['eventType', 'status'],
+      forbiddenFields: ['result', 'decision'],
+      requiredSourceRefs: true,
+      allowedControlWriteMode: 'control',
+    },
+  },
+];
+const GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY = {
+  controlFieldVocabulary: ['executionIterations'],
+  payloadKindContracts: [
+    {
+      payloadKind: 'status',
+      requiredFields: ['eventType', 'status'],
+      forbiddenFields: ['result', 'decision'],
+      allowedControlWriteModes: ['control'],
+    },
+  ],
+  controlWriteModePolicies: [
+    {
+      allowedControlWriteMode: 'control',
+      allowedWritesControlFields: ['executionIterations'],
+    },
+  ],
+  eventSpecificRequirements: [
+    {
+      eventType: 'execution_iteration_recorded',
+      payloadKind: 'status',
+      requiredSourceRefs: true,
+      requiredFields: ['eventType', 'status'],
+      forbiddenFields: ['result', 'decision'],
+      allowedControlWriteMode: 'control',
+    },
+  ],
+};
+const REGISTRY_BINDING = {
+  governanceEventTypeRegistryPolicy: GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY,
+  governanceEventTypeRegistryPolicyHash: governanceEventTypeRegistryPolicyHash(GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY),
+  governanceEventTypeRegistry: GOVERNANCE_EVENT_TYPE_REGISTRY,
+  governanceEventTypeRegistryHash: governanceEventTypeRegistryHash(GOVERNANCE_EVENT_TYPE_REGISTRY),
+  architectureConfirmationHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+};
+
+type CodexWorkerAdapterInput = Parameters<typeof runCodexWorkerAdapter>[0];
+
+function runBoundCodexWorkerAdapter(input: CodexWorkerAdapterInput) {
+  return runCodexWorkerAdapter({
+    ...REGISTRY_BINDING,
+    ...input,
+  });
+}
+
+function writeRegistryBindingFile(root: string): string {
+  const registryPath = path.join(root, 'governance-event-type-registry.json');
+  fs.writeFileSync(registryPath, `${JSON.stringify(GOVERNANCE_EVENT_TYPE_REGISTRY, null, 2)}\n`, 'utf8');
+  return registryPath;
+}
+
+function writeRegistryPolicyBindingFile(root: string): string {
+  const policyPath = path.join(root, 'governance-event-type-registry-policy.json');
+  fs.writeFileSync(policyPath, `${JSON.stringify(GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY, null, 2)}\n`, 'utf8');
+  return policyPath;
+}
+
 function prepareCodexRoot(): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-codex-worker-'));
   writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
@@ -141,6 +235,10 @@ function prepareCodexRoot(): string {
   writeTestRequirementRecord(root);
   writeTestCodexAgentSpec(root, '.codex/agents');
   return root;
+}
+
+function codexSmokeArtifactPath(packetId: string): string {
+  return `_bmad-output/runtime/requirement-records/REQ-CODEX-WORKER/artifacts/codex/${packetId}.md`;
 }
 
 describe('main-agent codex worker adapter e2e', () => {
@@ -166,7 +264,7 @@ describe('main-agent codex worker adapter e2e', () => {
         `${instruction!.packetId}.json`
       );
 
-      const adapter = runCodexWorkerAdapter({
+      const adapter = runBoundCodexWorkerAdapter({
         projectRoot: root,
         recordId: 'REQ-CODEX-WORKER',
         requirementSetId: 'REQ-CODEX-WORKER',
@@ -174,7 +272,7 @@ describe('main-agent codex worker adapter e2e', () => {
         packetPath: instruction!.packetPath,
         taskReportPath,
         smoke: true,
-        smokeTargetPath: `src/codex/${instruction!.packetId}.md`,
+        smokeTargetPath: codexSmokeArtifactPath(instruction!.packetId),
       });
 
       expect(adapter.exitCode).toBe(0);
@@ -196,7 +294,7 @@ describe('main-agent codex worker adapter e2e', () => {
         status: 'done',
       });
       expect(JSON.stringify(adapter.transportEnvelope)).not.toContain('"result"');
-      expect(fs.existsSync(path.join(root, `src/codex/${instruction!.packetId}.md`))).toBe(true);
+      expect(fs.existsSync(path.join(root, codexSmokeArtifactPath(instruction!.packetId)))).toBe(true);
       expect(adapter.codexCommand).toEqual(['codex', 'worker-adapter-smoke']);
 
       const result = runMainAgentAutomaticLoop({
@@ -210,7 +308,7 @@ describe('main-agent codex worker adapter e2e', () => {
       expect(result.taskReport?.packetId).toBe(instruction!.packetId);
       expect(result.finalSurface.pendingPacketStatus).toBe('completed');
       expect(result.finalSurface.orchestrationState?.lastTaskReport?.evidence).toContain(
-        `codex-smoke:src/codex/${instruction!.packetId}.md`
+        `codex-smoke:${codexSmokeArtifactPath(instruction!.packetId)}`
       );
     } finally {
       if (previousAllow === undefined) {
@@ -235,7 +333,7 @@ describe('main-agent codex worker adapter e2e', () => {
       });
       const taskReportPath = path.join(root, 'policy-blocked-task-report.json');
 
-      const adapter = runCodexWorkerAdapter({
+      const adapter = runBoundCodexWorkerAdapter({
         projectRoot: root,
         packetPath: instruction!.packetPath,
         taskReportPath,
@@ -250,7 +348,7 @@ describe('main-agent codex worker adapter e2e', () => {
       expect(adapter.taskReport.validationsRun).toContain(
         'codex-worker-adapter-runtime-governance'
       );
-      expect(fs.existsSync(path.join(root, `src/codex/${instruction!.packetId}.md`))).toBe(false);
+      expect(fs.existsSync(path.join(root, codexSmokeArtifactPath(instruction!.packetId)))).toBe(false);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
@@ -299,7 +397,7 @@ describe('main-agent codex worker adapter e2e', () => {
         hydratePacket: true,
       });
       const taskReportPath = path.join(root, 'fake-codex-task-report.json');
-      const adapter = runCodexWorkerAdapter({
+      const adapter = runBoundCodexWorkerAdapter({
         projectRoot: root,
         packetPath: instruction!.packetPath,
         taskReportPath,
@@ -338,7 +436,7 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'codex',
         hydratePacket: true,
       });
-      const adapter = runCodexWorkerAdapter({
+      const adapter = runBoundCodexWorkerAdapter({
         projectRoot: root,
         packetPath: instruction!.packetPath,
         taskReportPath: path.join(root, 'override-denied-task-report.json'),
@@ -373,7 +471,7 @@ describe('main-agent codex worker adapter e2e', () => {
       });
       const taskReportPath = path.join(root, 'missing-agent-task-report.json');
 
-      const adapter = runCodexWorkerAdapter({
+      const adapter = runBoundCodexWorkerAdapter({
         projectRoot: root,
         packetPath: instruction!.packetPath,
         taskReportPath,
@@ -418,7 +516,7 @@ describe('main-agent codex worker adapter e2e', () => {
       });
       const taskReportPath = path.join(root, 'canonical-agent-task-report.json');
 
-      const adapter = runCodexWorkerAdapter({
+      const adapter = runBoundCodexWorkerAdapter({
         projectRoot: root,
         packetPath: instruction!.packetPath,
         taskReportPath,
@@ -447,7 +545,7 @@ describe('main-agent codex worker adapter e2e', () => {
         hydratePacket: true,
       });
 
-      const adapter = runCodexWorkerAdapter({
+      const adapter = runBoundCodexWorkerAdapter({
         projectRoot: root,
         packetPath: instruction!.packetPath,
         taskReportPath: path.join(root, 'policy-injected-task-report.json'),
@@ -479,7 +577,7 @@ describe('main-agent codex worker adapter e2e', () => {
       const raw = fs.readFileSync(instruction!.packetPath, 'utf8');
       fs.writeFileSync(instruction!.packetPath, `\uFEFF${raw}`, 'utf8');
 
-      const adapter = runCodexWorkerAdapter({
+      const adapter = runBoundCodexWorkerAdapter({
         projectRoot: root,
         packetPath: instruction!.packetPath,
         taskReportPath: path.join(root, 'bom-packet-task-report.json'),
@@ -522,7 +620,7 @@ describe('main-agent codex worker adapter e2e', () => {
         'utf8'
       );
 
-      const adapter = runCodexWorkerAdapter({
+      const adapter = runBoundCodexWorkerAdapter({
         projectRoot: root,
         packetPath: instruction!.packetPath,
         taskReportPath,
@@ -566,7 +664,7 @@ describe('main-agent codex worker adapter e2e', () => {
         Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(report, 'utf16le')])
       );
 
-      const adapter = runCodexWorkerAdapter({
+      const adapter = runBoundCodexWorkerAdapter({
         projectRoot: root,
         packetPath: instruction!.packetPath,
         taskReportPath,
@@ -633,7 +731,7 @@ describe('main-agent codex worker adapter e2e', () => {
       });
       const taskReportPath = path.join(root, 'hidden-write-task-report.json');
 
-      const adapter = runCodexWorkerAdapter({
+      const adapter = runBoundCodexWorkerAdapter({
         projectRoot: root,
         packetPath: instruction!.packetPath,
         taskReportPath,
@@ -670,6 +768,8 @@ describe('main-agent codex worker adapter e2e', () => {
       });
       const reportPath = path.join(root, 'adapter-report.json');
       const taskReportPath = path.join(root, 'task-report.json');
+      const registryPath = writeRegistryBindingFile(root);
+      const policyPath = writeRegistryPolicyBindingFile(root);
       const exitCode = main([
         '--cwd',
         root,
@@ -680,6 +780,16 @@ describe('main-agent codex worker adapter e2e', () => {
         taskReportPath,
         '--reportPath',
         reportPath,
+        '--governanceEventTypeRegistryPolicyPath',
+        policyPath,
+        '--governanceEventTypeRegistryPolicyHash',
+        REGISTRY_BINDING.governanceEventTypeRegistryPolicyHash,
+        '--governanceEventTypeRegistryPath',
+        registryPath,
+        '--governanceEventTypeRegistryHash',
+        REGISTRY_BINDING.governanceEventTypeRegistryHash,
+        '--architectureConfirmationHash',
+        REGISTRY_BINDING.architectureConfirmationHash,
       ]);
 
       expect(exitCode).toBe(0);

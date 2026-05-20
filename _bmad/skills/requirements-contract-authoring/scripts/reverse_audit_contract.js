@@ -87,7 +87,9 @@ const hasManualHashEditInstruction = /(?:manually|手工|手动).{0,40}(?:source
 const hasSequenceViews = /^ {2}sequenceViews:\s*$/m.test(text);
 const hasFlowViews = /^ {2}flowViews:\s*$/m.test(text);
 const hasArtifactAutomationPlan = /^ {2}artifactAutomationPlan:\s*$/m.test(text);
-const hasArtifactPlanRows = /^ {4}- id:\s*ART-\d+/m.test(text) || /Artifact And Automation Plan View/i.test(text);
+const hasArtifactPlanRows =
+  /^ {4}- (?:id|artifactId):\s*ART-[A-Z0-9-]+/m.test(text) ||
+  /Artifact And Automation Plan View/i.test(text);
 const hasBlockingQuestion = /^ {6}blocksImplementation:\s*true\s*$/m.test(text);
 const confirmationIds = new Set([...text.matchAll(confirmationIdPattern)].map((match) => match[0]));
 const traceRows = [...text.matchAll(/^ {4}- id:\s*(TRACE-\d+)\s*$/gm)].map((match) => match[1]);

@@ -115,7 +115,7 @@ npx --yes --package bmad-speckit-sdd-flow bmad-speckit init . --ai cursor-agent 
   - `.claude/hooks/pre-continue-check.cjs`
   - `.cursor/hooks/runtime-policy-inject.cjs`
   - `.cursor/hooks/pre-continue-check.cjs`
-  - repo-native `npm run main-agent-orchestration -- --action inspect|dispatch-plan`
+  - `$bmad-speckit` / `/bmad-speckit` / `bmad-speckit` host-session activation with internal `inspect|dispatch-plan`
   - 最新消费项目零-`scripts/` 治理链修复
     则**不要只停留在 `npx init`**，必须改用方式二、三或四。
 
@@ -389,16 +389,16 @@ foreach ($path in $checks) {
 }
 ```
 
-然后再验证 repo-native 编排入口：
+然后再验证宿主主控资产已安装。普通消费用户的默认激活方式是在当前 AI 宿主会话中输入 `$bmad-speckit`、`/bmad-speckit` 或 `bmad-speckit`；下面的 CLI 只用于安装验证、CI、debug 或 no-skill fallback：
 
 ```powershell
-npm run main-agent-orchestration -- --cwd . --action inspect
+npx bmad-speckit main-agent-orchestration --cwd . --action inspect
 ```
 
 必要时：
 
 ```powershell
-npm run main-agent-orchestration -- --cwd . --action dispatch-plan
+npx bmad-speckit main-agent-orchestration --cwd . --action dispatch-plan
 ```
 
 其中：
@@ -406,15 +406,15 @@ npm run main-agent-orchestration -- --cwd . --action dispatch-plan
 - `_bmad/runtime/hooks/*` 代表项目内共享运行时资产
 - `.claude/hooks/*` / `.cursor/hooks/*` 代表宿主真正执行的 hook 副本
 - `.claude/settings.json` / `.cursor/hooks.json` 代表宿主事件绑定是否存在
-- `main-agent-orchestration` 是 interactive 模式下的正式主控消费面
+- `$bmad-speckit` / `/bmad-speckit` / `bmad-speckit` 是 interactive 模式下的正式用户激活入口；`main-agent-orchestration` 是内部 control-plane action
 
 accepted runtime path 需要这样理解：
 
-1. 主 Agent 先执行 `main-agent-orchestration inspect`
-2. 只有 surface 明确要求 materialize packet 时，才执行 `dispatch-plan`
+1. 主 Agent 先读取受控 RequirementRecord、`currentMentalModel` 和六个心智模型状态
+2. 只有受控记录明确要求 materialize packet 时，才内部执行或等价消费 `dispatch-plan`
 3. 子代理只执行 `bounded packet`，不替主 Agent 决定下一条全局分支
 4. `runAuditorHost` 只在审计通过后做 post-audit close-out
-5. close-out 完成后，主 Agent 再次回到 `inspect`
+5. close-out 完成后，主 Agent 再次回读受控 RequirementRecord、当前 hash、当前 attempt 和六个心智模型状态
 
 ### 4.3 npx 路径的明确说明
 
@@ -428,7 +428,7 @@ accepted runtime path 需要这样理解：
    - 这是**本仓库定制能力**的推荐 npx 用法
    - 能把当前包内最新 `_bmad/runtime/hooks` 同步到消费项目宿主目录
 
-如果你的目标是“消费项目里真的验证主 Agent 主链能工作”，请采用第 2 种，并验证 `.claude/.cursor` 的 `runtime-policy-inject.cjs`、`pre-continue-check.cjs` 以及 repo-native `main-agent-orchestration` 入口，而不是再追求 background worker 自动吃队列。
+如果你的目标是“消费项目里真的验证主 Agent 主链能工作”，请采用第 2 种，并验证 `.claude/.cursor` 的 `runtime-policy-inject.cjs`、`pre-continue-check.cjs` 以及 `$bmad-speckit` / `/bmad-speckit` / `bmad-speckit` 宿主入口，而不是再追求 background worker 自动吃队列。
 
 ### 4.4 Hook 提示开关
 
@@ -528,7 +528,7 @@ npx bmad-speckit sft-extract
 npx bmad-speckit scores
 ```
 
-> Legacy / maintenance 说明：这里保留 `runAuditorHost` 命令，是为了仓库内 close-out 调试、host-runner 验证和历史证据追溯；当前 accepted runtime path 仍然是主 Agent 先读 `main-agent-orchestration inspect`，必要时才 `dispatch-plan`，而不是把 `runAuditorHost` 当作主入口。
+> Legacy / maintenance 说明：这里保留 `runAuditorHost` 命令，是为了仓库内 close-out 调试、host-runner 验证和历史证据追溯；当前 accepted runtime path 仍然是用户通过 `$bmad-speckit` / `/bmad-speckit` / `bmad-speckit` 激活主控，主 Agent 回读受控 RequirementRecord 和六个心智模型状态，而不是把 `runAuditorHost` 当作主入口。
 
 **更多资源**：
 

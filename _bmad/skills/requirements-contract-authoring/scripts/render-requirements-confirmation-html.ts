@@ -16,27 +16,9 @@ const VALID_ENTRY_FLOW_CLASSES = new Set([
 ]);
 const VALID_WORKFLOW_ADAPTERS = new Set(['direct', 'legacy', 'bmad', 'speckit']);
 const VALID_THEMES = new Set(['readable', 'compact', 'audit']);
-const VALID_EVENT_PAYLOAD_KINDS = new Set(['decision', 'status', 'artifactRefs']);
-const VALID_CONTROL_WRITE_MODES = new Set(['control', 'artifact_only', 'context_update']);
-const DECISION_CONTROL_FIELDS = new Set([
-  'recordLifecycle',
-  'confirmationHistory',
-  'traceRows',
-  'gateChecks',
-  'contractChecks',
-  'executionIterations',
-  'auditIterations',
-  'failureRecords',
-  'rerunLoops',
-  'rcaRecords',
-  'closeout',
-  'requirementClosures',
-  'recoveryContext',
-  'runtimePolicySnapshotRef',
-]);
-const ARTIFACT_CONTEXT_FIELDS = new Set(['artifactIndex', 'contractSummary', 'recoveryContext', 'runtimePolicySnapshotRef']);
 const ID_PATTERN = /\b(MUST|NEG|OUT|EVD|TRACE|Q)-\d+\b/g;
 const SELF_PAGE_HASH_PLACEHOLDER = 'sha256:SELF_CONFIRMATION_PAGE_HASH';
+const GENERATED_AT_HASH_PLACEHOLDER = 'CONFIRMATION_GENERATED_AT_HASH_PLACEHOLDER';
 const CURRENT_TARGET_SCHEMA_VERSION = 'current-target-map/v1';
 const CURRENT_TARGET_DISPLAY_PROFILE = 'closed_loop_current_target_map';
 const DEFAULT_CONFIRMATION_PROFILE = 'implementation_confirmation';
@@ -390,6 +372,10 @@ function implementationConfirmationHashFor(confirmation) {
   return hashObject(semanticConfirmationForHash(confirmation));
 }
 
+function confirmationPageHashFor(htmlWithSelfHashPlaceholder, generatedAt) {
+  return sha256(htmlWithSelfHashPlaceholder.replaceAll(generatedAt, GENERATED_AT_HASH_PLACEHOLDER));
+}
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -475,6 +461,51 @@ function readDataFile(filePath) {
   return JSON.parse(raw);
 }
 
+function defaultRequirementRecordPath(recordId) {
+  return path.resolve('_bmad-output', 'runtime', 'requirement-records', recordId, 'requirement-record.json');
+}
+
+function readRequirementRecord(args, recordId) {
+  const requestedPath = args.requirementRecord
+    ? path.resolve(args.requirementRecord)
+    : defaultRequirementRecordPath(recordId);
+  if (!recordId || recordId === 'unrecorded') {
+    return {
+      path: requestedPath,
+      found: false,
+      record: null,
+      loadError: null,
+      source: args.requirementRecord ? 'explicit' : 'default',
+    };
+  }
+  if (!fs.existsSync(requestedPath)) {
+    return {
+      path: requestedPath,
+      found: false,
+      record: null,
+      loadError: null,
+      source: args.requirementRecord ? 'explicit' : 'default',
+    };
+  }
+  try {
+    return {
+      path: requestedPath,
+      found: true,
+      record: readDataFile(requestedPath),
+      loadError: null,
+      source: args.requirementRecord ? 'explicit' : 'default',
+    };
+  } catch (error) {
+    return {
+      path: requestedPath,
+      found: false,
+      record: null,
+      loadError: error instanceof Error ? error.message : String(error),
+      source: args.requirementRecord ? 'explicit' : 'default',
+    };
+  }
+}
+
 function normalizePathForReport(filePath) {
   return filePath.replace(/\\/g, '/');
 }
@@ -533,29 +564,85 @@ function extractFunctionalResumeFailureCaseRegistry(sourceText) {
   return registries.at(-1) ?? null;
 }
 
-function expectedPayloadContract(payloadKind) {
-  if (payloadKind === 'decision') {
-    return {
-      requiredFields: ['eventType', 'decision'],
-      forbiddenFields: ['result', 'status'],
-      allowedControlWriteMode: 'control',
-    };
+function normalizeGovernanceEventTypeRegistryPolicy(confirmation, schemaIssues) {
+  const raw = confirmation?.governanceEventTypeRegistryPolicy;
+  if (!raw || typeof raw !== 'object') {
+    schemaIssues.push(blocking('governance_event_type_registry_policy_missing', 'governanceEventTypeRegistryPolicy is required'));
+    return null;
   }
-  if (payloadKind === 'status') {
-    return {
-      requiredFields: ['eventType', 'status'],
-      forbiddenFields: ['result', 'decision'],
-      allowedControlWriteMode: 'control',
-    };
+  const controlFieldVocabulary = new Set();
+  stringList(raw.controlFieldVocabulary).forEach((field) => {
+    if (controlFieldVocabulary.has(field)) {
+      schemaIssues.push(blocking('governance_event_type_policy_control_field_vocabulary_duplicate', `${field} duplicated`, [field]));
+    }
+    controlFieldVocabulary.add(field);
+  });
+  const payloadKindContracts = new Map();
+  asArray(raw.payloadKindContracts).forEach((row, index) => {
+    const payloadKind = String(row?.payloadKind ?? '').trim();
+    if (!payloadKind) {
+      schemaIssues.push(blocking('governance_event_type_policy_payload_kind_missing', `payloadKindContracts[${index}] missing payloadKind`));
+      return;
+    }
+    if (payloadKindContracts.has(payloadKind)) {
+      schemaIssues.push(blocking('governance_event_type_policy_payload_kind_duplicate', `${payloadKind} duplicated`, [payloadKind]));
+    }
+    payloadKindContracts.set(payloadKind, {
+      requiredFields: stringList(row?.requiredFields),
+      forbiddenFields: stringList(row?.forbiddenFields),
+      allowedControlWriteModes: stringList(row?.allowedControlWriteModes),
+    });
+  });
+  const controlWriteModePolicies = new Map();
+  asArray(raw.controlWriteModePolicies).forEach((row, index) => {
+    const mode = String(row?.allowedControlWriteMode ?? row?.mode ?? '').trim();
+    if (!mode) {
+      schemaIssues.push(blocking('governance_event_type_policy_write_mode_missing', `controlWriteModePolicies[${index}] missing allowedControlWriteMode`));
+      return;
+    }
+    if (controlWriteModePolicies.has(mode)) {
+      schemaIssues.push(blocking('governance_event_type_policy_write_mode_duplicate', `${mode} duplicated`, [mode]));
+    }
+    const allowedWritesControlFields = stringList(row?.allowedWritesControlFields);
+    for (const field of allowedWritesControlFields) {
+      if (!controlFieldVocabulary.has(field)) {
+        schemaIssues.push(blocking('governance_event_type_policy_control_field_vocabulary_unknown', `${mode} references unknown ${field}`, [mode, field]));
+      }
+    }
+    controlWriteModePolicies.set(mode, { allowedWritesControlFields });
+  });
+  const eventSpecificRequirements = new Map();
+  asArray(raw.eventSpecificRequirements).forEach((row, index) => {
+    const eventType = String(row?.eventType ?? '').trim();
+    if (!eventType) {
+      schemaIssues.push(blocking('governance_event_type_policy_event_requirement_missing', `eventSpecificRequirements[${index}] missing eventType`));
+      return;
+    }
+    if (eventSpecificRequirements.has(eventType)) {
+      schemaIssues.push(blocking('governance_event_type_policy_event_requirement_duplicate', `${eventType} duplicated`, [eventType]));
+    }
+    eventSpecificRequirements.set(eventType, {
+      eventType,
+      payloadKind: String(row?.payloadKind ?? '').trim(),
+      requiredSourceRefs: row?.requiredSourceRefs === true,
+      requiredFields: stringList(row?.requiredFields),
+      forbiddenFields: stringList(row?.forbiddenFields),
+      allowedControlWriteMode: String(row?.allowedControlWriteMode ?? '').trim(),
+    });
+  });
+  if (!payloadKindContracts.size) {
+    schemaIssues.push(blocking('governance_event_type_policy_payload_kind_contracts_missing', 'payloadKindContracts[] is required'));
   }
-  return {
-    requiredFields: ['eventType', 'artifactRefs'],
-    forbiddenFields: ['result', 'decision', 'status'],
-    allowedControlWriteMode: 'artifact_only',
-  };
+  if (!controlWriteModePolicies.size) {
+    schemaIssues.push(blocking('governance_event_type_policy_control_write_modes_missing', 'controlWriteModePolicies[] is required'));
+  }
+  if (!controlFieldVocabulary.size) {
+    schemaIssues.push(blocking('governance_event_type_policy_control_field_vocabulary_missing', 'controlFieldVocabulary[] is required'));
+  }
+  return { controlFieldVocabulary, payloadKindContracts, controlWriteModePolicies, eventSpecificRequirements };
 }
 
-function validatePayloadContract(eventType, row, schemaIssues) {
+function validatePayloadContract(eventType, row, policy, schemaIssues) {
   const payloadKind = String(row?.payloadKind ?? '').trim();
   const contract = row?.payloadContract && typeof row.payloadContract === 'object' ? row.payloadContract : null;
   if (!contract) {
@@ -572,41 +659,51 @@ function validatePayloadContract(eventType, row, schemaIssues) {
   const forbiddenFields = stringList(contract.forbiddenFields);
   const requiredSourceRefs = contract.requiredSourceRefs === true;
   const allowedControlWriteMode = String(contract.allowedControlWriteMode ?? '').trim();
-  const expected = expectedPayloadContract(payloadKind);
-  const payloadField = payloadKind === 'decision' ? 'decision' : payloadKind === 'status' ? 'status' : 'artifactRefs';
+  const payloadKindPolicy = policy?.payloadKindContracts.get(payloadKind);
+  const eventPolicy = policy?.eventSpecificRequirements.get(eventType);
 
-  if (!VALID_EVENT_PAYLOAD_KINDS.has(payloadKind)) {
+  if (!payloadKindPolicy) {
     schemaIssues.push(blocking('governance_event_type_invalid_payload_kind', `${eventType} has invalid payloadKind ${payloadKind}`, [eventType]));
-  }
-  for (const field of ['eventType', payloadField]) {
-    if (!requiredFields.includes(field)) {
-      schemaIssues.push(blocking('governance_event_type_payload_contract_missing_required_field', `${eventType} payloadContract.requiredFields missing ${field}`, [eventType, field]));
+  } else {
+    for (const field of payloadKindPolicy.requiredFields) {
+      if (!requiredFields.includes(field)) {
+        schemaIssues.push(blocking('governance_event_type_payload_contract_missing_required_field', `${eventType} payloadContract.requiredFields missing ${field}`, [eventType, field]));
+      }
+    }
+    for (const field of payloadKindPolicy.forbiddenFields) {
+      if (!forbiddenFields.includes(field)) {
+        schemaIssues.push(blocking('governance_event_type_payload_contract_missing_forbidden_field', `${eventType} payloadContract.forbiddenFields missing ${field}`, [eventType, field]));
+      }
+    }
+    for (const field of payloadKindPolicy.requiredFields) {
+      if (forbiddenFields.includes(field)) {
+        schemaIssues.push(blocking('governance_event_type_payload_contract_forbids_payload_field', `${eventType} payloadContract forbids ${field}`, [eventType, field]));
+      }
+    }
+    if (!payloadKindPolicy.allowedControlWriteModes.includes(allowedControlWriteMode)) {
+      schemaIssues.push(blocking('governance_event_type_invalid_control_write_mode', `${eventType} has invalid allowedControlWriteMode ${allowedControlWriteMode}`, [eventType]));
     }
   }
-  for (const field of expected.forbiddenFields) {
-    if (!forbiddenFields.includes(field)) {
-      schemaIssues.push(blocking('governance_event_type_payload_contract_missing_forbidden_field', `${eventType} payloadContract.forbiddenFields missing ${field}`, [eventType, field]));
+  if (eventPolicy) {
+    if (eventPolicy.payloadKind && eventPolicy.payloadKind !== payloadKind) {
+      schemaIssues.push(blocking('governance_event_type_policy_payload_kind_mismatch', `${eventType} must use payloadKind ${eventPolicy.payloadKind}`, [eventType]));
     }
-  }
-  for (const invalid of ['decision', 'status', 'artifactRefs']) {
-    if (invalid !== payloadField && requiredFields.includes(invalid)) {
-      schemaIssues.push(blocking('governance_event_type_payload_contract_conflicting_required_field', `${eventType} payloadContract requires ${invalid} for payloadKind ${payloadKind}`, [eventType, invalid]));
+    for (const field of eventPolicy.requiredFields) {
+      if (!requiredFields.includes(field)) {
+        schemaIssues.push(blocking('governance_event_type_policy_missing_required_field', `${eventType} policy requires ${field}`, [eventType, field]));
+      }
     }
-  }
-  if (forbiddenFields.includes(payloadField)) {
-    schemaIssues.push(blocking('governance_event_type_payload_contract_forbids_payload_field', `${eventType} payloadContract forbids ${payloadField}`, [eventType, payloadField]));
-  }
-  if (!VALID_CONTROL_WRITE_MODES.has(allowedControlWriteMode)) {
-    schemaIssues.push(blocking('governance_event_type_invalid_control_write_mode', `${eventType} has invalid allowedControlWriteMode ${allowedControlWriteMode}`, [eventType]));
-  }
-  if (payloadKind !== 'artifactRefs' && allowedControlWriteMode !== 'control') {
-    schemaIssues.push(blocking('governance_event_type_payload_contract_wrong_write_mode', `${eventType} ${payloadKind} events must use allowedControlWriteMode=control`, [eventType]));
-  }
-  if (payloadKind === 'artifactRefs' && allowedControlWriteMode === 'control') {
-    schemaIssues.push(blocking('governance_event_type_payload_contract_artifact_refs_control_mode', `${eventType} artifactRefs events cannot use allowedControlWriteMode=control`, [eventType]));
-  }
-  if (eventType === 'rerun_loop_recorded' && requiredSourceRefs !== true) {
-    schemaIssues.push(blocking('governance_event_type_payload_contract_missing_source_refs', 'rerun_loop_recorded must require sourceRefs', [eventType]));
+    for (const field of eventPolicy.forbiddenFields) {
+      if (!forbiddenFields.includes(field)) {
+        schemaIssues.push(blocking('governance_event_type_policy_missing_forbidden_field', `${eventType} policy forbids ${field}`, [eventType, field]));
+      }
+    }
+    if (eventPolicy.requiredSourceRefs === true && requiredSourceRefs !== true) {
+      schemaIssues.push(blocking('governance_event_type_payload_contract_missing_source_refs', `${eventType} must require sourceRefs`, [eventType]));
+    }
+    if (eventPolicy.allowedControlWriteMode && eventPolicy.allowedControlWriteMode !== allowedControlWriteMode) {
+      schemaIssues.push(blocking('governance_event_type_policy_wrong_write_mode', `${eventType} must use ${eventPolicy.allowedControlWriteMode}`, [eventType]));
+    }
   }
 
   return {
@@ -617,27 +714,19 @@ function validatePayloadContract(eventType, row, schemaIssues) {
   };
 }
 
-function validateControlWriteMode(eventType, payloadKind, writesControlFields, payloadContract, schemaIssues) {
+function validateControlWriteMode(eventType, writesControlFields, payloadContract, policy, schemaIssues) {
   const mode = payloadContract.allowedControlWriteMode;
-  if (payloadKind === 'artifactRefs' && mode === 'artifact_only') {
-    for (const field of writesControlFields) {
-      if (field !== 'artifactIndex') {
-        schemaIssues.push(blocking('governance_event_type_artifact_only_writes_control_field', `${eventType} artifact_only event writes ${field}`, [eventType, field]));
-      }
-    }
+  const modePolicy = policy?.controlWriteModePolicies.get(mode);
+  if (!modePolicy) {
+    schemaIssues.push(blocking('governance_event_type_unknown_control_write_mode_policy', `${eventType} missing policy for write mode ${mode}`, [eventType, mode]));
+    return;
   }
-  if (payloadKind === 'artifactRefs' && mode === 'context_update') {
-    for (const field of writesControlFields) {
-      if (!ARTIFACT_CONTEXT_FIELDS.has(field)) {
-        schemaIssues.push(blocking('governance_event_type_context_update_writes_control_field', `${eventType} context_update event writes ${field}`, [eventType, field]));
-      }
+  for (const field of writesControlFields) {
+    if (!policy?.controlFieldVocabulary.has(field)) {
+      schemaIssues.push(blocking('governance_event_type_control_field_not_in_vocabulary', `${eventType} writes unknown control field ${field}`, [eventType, field]));
     }
-  }
-  if (payloadKind !== 'artifactRefs' && mode === 'control') {
-    for (const field of writesControlFields) {
-      if (!DECISION_CONTROL_FIELDS.has(field)) {
-        schemaIssues.push(blocking('governance_event_type_control_mode_unknown_field', `${eventType} control event writes unsupported field ${field}`, [eventType, field]));
-      }
+    if (!modePolicy.allowedWritesControlFields.includes(field)) {
+      schemaIssues.push(blocking('governance_event_type_control_mode_unknown_field', `${eventType} ${mode} event writes unsupported field ${field}`, [eventType, field]));
     }
   }
 }
@@ -646,6 +735,7 @@ function normalizeGovernanceEventTypeRegistry(confirmation) {
   const schemaIssues = [];
   const eventTypes = new Map();
   const rows = asArray(confirmation?.governanceEventTypeRegistry);
+  const policy = normalizeGovernanceEventTypeRegistryPolicy(confirmation, schemaIssues);
   rows.forEach((row, index) => {
     const eventType = String(row?.eventType ?? '').trim();
     if (!eventType) {
@@ -662,8 +752,8 @@ function normalizeGovernanceEventTypeRegistry(confirmation) {
       }
     }
     const writesControlFields = stringList(row?.writesControlFields);
-    const payloadContract = validatePayloadContract(eventType, row, schemaIssues);
-    validateControlWriteMode(eventType, String(row?.payloadKind ?? '').trim(), writesControlFields, payloadContract, schemaIssues);
+    const payloadContract = validatePayloadContract(eventType, row, policy, schemaIssues);
+    validateControlWriteMode(eventType, writesControlFields, payloadContract, policy, schemaIssues);
     eventTypes.set(eventType, {
       eventType,
       ownerModel: row?.ownerModel ?? '',
@@ -719,10 +809,10 @@ function compactIdsForMermaid(ids) {
 }
 
 function renderResumeCoveragePhase(item) {
-  if (item.p0Required) return 'P0 deterministic fixture';
+  if (item.fullLinkRequired) return 'six mental models full-link deterministic fixture';
   if (item.phase4_5Required) return 'Phase 4.5 coverage';
   if (item.phase5Required) return 'Phase 5 hardening coverage';
-  return 'post-P0 coverage matrix';
+  return 'post-full-link coverage matrix';
 }
 
 function normalizeResumeFailureGroupDefinitions(registry, schemaIssues) {
@@ -903,7 +993,7 @@ function normalizeResumeFailureCaseItem(item, index, groupByCase, groupDefs, act
     caseId,
     groupId,
     groupLabel: groupDef.label ?? groupId,
-    p0Required: objectRow && item.p0Required !== undefined ? item.p0Required === true : p0Required.has(caseId),
+    fullLinkRequired: objectRow && item.fullLinkRequired !== undefined ? item.fullLinkRequired === true : p0Required.has(caseId),
     phase4_5Required: objectRow && item.coveragePhase === 'Phase 4.5 coverage' ? true : phase45.has(caseId),
     phase5Required: objectRow && item.coveragePhase === 'Phase 5 hardening coverage' ? true : phase5.has(caseId),
     blockingBehavior: item?.blockingBehavior || groupDef.blockingBehavior || 'fail_closed_until_recovered',
@@ -942,8 +1032,17 @@ function normalizeResumeFailureCaseItem(item, index, groupByCase, groupDefs, act
 
 function normalizeFunctionalResumeFailureCaseRegistry(registry, governanceEventTypes = new Map()) {
   const schemaIssues = [];
+  if (hasOwn(registry, 'controlledRecordEventTypes')) {
+    schemaIssues.push(
+      blocking(
+        'resume_failure_second_event_registry_present',
+        'functionalResumeFailureCaseRegistry.controlledRecordEventTypes is forbidden; use implementationConfirmation.governanceEventTypeRegistry[] only',
+        ['functionalResumeFailureCaseRegistry.controlledRecordEventTypes']
+      )
+    );
+  }
   const rawFailureCases = asArray(registry?.failureCases);
-  const p0Required = new Set(stringList(registry?.p0RequiredFixtureCases));
+  const p0Required = new Set(stringList(registry?.fullLinkRequiredFixtureCases ?? registry?.p0RequiredFixtureCases));
   const phase45 = new Set(stringList(registry?.phase4_5Coverage));
   const phase5 = new Set(stringList(registry?.phase5HardeningCoverage));
   const { groupDefs, groupByCase } = normalizeResumeFailureGroupDefinitions(registry, schemaIssues);
@@ -979,8 +1078,8 @@ function normalizeFunctionalResumeFailureCaseRegistry(registry, governanceEventT
   return {
     rawPresent: !!registry,
     status: registry?.status ?? '',
-    p0ExecutableSubsetRequired: registry?.p0ExecutableSubsetRequired === true,
-    p0RequiredFixtureCases: stringList(registry?.p0RequiredFixtureCases),
+    fullLinkExecutableSubsetRequired: registry?.fullLinkExecutableSubsetRequired === true || registry?.p0ExecutableSubsetRequired === true,
+    fullLinkRequiredFixtureCases: stringList(registry?.fullLinkRequiredFixtureCases ?? registry?.p0RequiredFixtureCases),
     phase4_5Coverage: stringList(registry?.phase4_5Coverage),
     phase5HardeningCoverage: stringList(registry?.phase5HardeningCoverage),
     governanceEventTypeRefs: Object.fromEntries(eventTypeDefs.entries()),
@@ -1023,7 +1122,7 @@ function renderResumeFailureCoverage(registry, mermaidRuntime, args, ui) {
     item.order,
     item.caseId,
     `${item.groupLabel} (${item.groupId})`,
-    item.p0Required ? trueText : falseText,
+    item.fullLinkRequired ? trueText : falseText,
     item.coveragePhase,
     item.blockingBehavior,
     item.triggerSignal,
@@ -1047,7 +1146,7 @@ function renderResumeFailureCoverage(registry, mermaidRuntime, args, ui) {
             [
               'caseId',
               'coveragePhase',
-              'P0 required',
+              'full-link required',
               'triggerSignal',
               'detectionPoint',
               'failClosedGate',
@@ -1057,7 +1156,7 @@ function renderResumeFailureCoverage(registry, mermaidRuntime, args, ui) {
             cases.map((item) => [
               item.caseId,
               item.coveragePhase,
-              item.p0Required ? trueText : falseText,
+              item.fullLinkRequired ? trueText : falseText,
               item.triggerSignal,
               item.detectionPoint,
               item.failClosedGate,
@@ -1074,16 +1173,16 @@ function renderResumeFailureCoverage(registry, mermaidRuntime, args, ui) {
     <p class="section-lead">本区只读取源文档 <code>functionalResumeFailureCaseRegistry.failureCases[]</code>；它不是从 renderer hardcode 生成的 case 列表。</p>
     <div class="metric-grid">
       <div class="metric"><strong>${registry.cases.length}</strong><span>failure cases</span></div>
-      <div class="metric"><strong>${registry.p0RequiredFixtureCases.length}</strong><span>P0 fixture cases</span></div>
+      <div class="metric"><strong>${registry.fullLinkRequiredFixtureCases.length}</strong><span>full-link fixture cases</span></div>
       <div class="metric"><strong>${Object.keys(registry.groups).length}</strong><span>groups</span></div>
-      <div class="metric"><strong>${registry.p0ExecutableSubsetRequired ? trueText : falseText}</strong><span>P0 executable subset</span></div>
+      <div class="metric"><strong>${registry.fullLinkExecutableSubsetRequired ? trueText : falseText}</strong><span>six mental model executable subset</span></div>
     </div>
     ${renderTable(
       [
         '#',
         'caseId',
         'group',
-        'P0 required',
+        'full-link required',
         'coveragePhase',
         'blockingBehavior',
         'triggerSignal',
@@ -1445,6 +1544,189 @@ function validateArtifactPlanEventTypes(artifactPlan, governanceEventTypes) {
   return issues;
 }
 
+function controlledIngestWriterRegistryRequired(confirmation, governanceEventTypes) {
+  if (applicabilityDomainApplies(confirmation, 'governanceEvents')) return true;
+  if (governanceEventTypes?.definitions?.size || governanceEventTypes?.size) return true;
+  if (asArray(confirmation?.artifactAutomationPlan).some((item) => stringList(item?.recordEventTypes).length)) return true;
+  if (
+    asArray(confirmation?.functionalResumeFailureCaseRegistry?.recoveryActionDefinitions).some((item) =>
+      stringList(item?.recordEventTypes).length
+    )
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function buildControlledIngestWriterCoverage(rows, eventTypeDefs) {
+  const eventTypeToWriters = {};
+  const controlFieldToWriters = {};
+  for (const row of rows) {
+    for (const eventType of row.allowedEventTypes) {
+      eventTypeToWriters[eventType] = eventTypeToWriters[eventType] ?? [];
+      eventTypeToWriters[eventType].push(row.writerId);
+    }
+    for (const field of row.writesControlFields) {
+      controlFieldToWriters[field] = controlFieldToWriters[field] ?? [];
+      controlFieldToWriters[field].push(row.writerId);
+    }
+  }
+  const uncoveredEventTypes = [...eventTypeDefs.entries()]
+    .filter(([, eventDef]) => stringList(eventDef?.writesControlFields).length)
+    .map(([eventType]) => eventType)
+    .filter((eventType) => !eventTypeToWriters[eventType]?.length);
+  return {
+    eventTypeToWriters,
+    controlFieldToWriters,
+    uncoveredEventTypes,
+  };
+}
+
+function normalizeControlledIngestWriterRegistry(confirmation, governanceEventTypes) {
+  const issues = [];
+  const rows = asArray(confirmation?.controlledIngestWriterRegistry);
+  const eventTypeDefs = governanceEventTypes?.definitions ?? governanceEventTypes ?? new Map();
+  const writerIds = new Set();
+  if (!rows.length) {
+    if (!controlledIngestWriterRegistryRequired(confirmation, governanceEventTypes)) {
+      return {
+        rows: [],
+        coverage: buildControlledIngestWriterCoverage([], eventTypeDefs),
+        schemaIssues: [],
+      };
+    }
+    return {
+      rows: [],
+      coverage: buildControlledIngestWriterCoverage([], eventTypeDefs),
+      schemaIssues: [
+        blocking(
+          'controlled_ingest_writer_registry_missing',
+          'implementationConfirmation.controlledIngestWriterRegistry[] is required when governance events apply',
+          ['controlledIngestWriterRegistry']
+        ),
+      ],
+    };
+  }
+  const requiredFields = [
+    'writerId',
+    'scriptPath',
+    'scriptContentHash',
+    'ownerModel',
+    'receiptPath',
+    'registryHash',
+    'architectureConfirmationHash',
+  ];
+  const requiredListFields = [
+    'allowedWriteApis',
+    'allowedPaths',
+    'allowedEventTypes',
+    'payloadContractRefs',
+    'writesControlFields',
+  ];
+  const normalized = rows.map((row, index) => {
+    const writerId = String(row?.writerId ?? '').trim();
+    const ref = writerId || `controlledIngestWriterRegistry[${index}]`;
+    if (!writerId) {
+      issues.push(blocking('controlled_ingest_writer_missing_id', `${ref} missing writerId`, [ref]));
+    } else if (writerIds.has(writerId)) {
+      issues.push(blocking('controlled_ingest_writer_duplicate_id', `${writerId} is duplicated`, [writerId]));
+    }
+    if (writerId) writerIds.add(writerId);
+    for (const field of requiredFields) {
+      if (row?.[field] === undefined || row?.[field] === null || String(row[field]).trim() === '') {
+        issues.push(blocking('controlled_ingest_writer_missing_required_field', `${ref} missing ${field}`, [ref, field]));
+      }
+    }
+    const listValues = {};
+    for (const field of requiredListFields) {
+      listValues[field] = stringList(row?.[field]);
+      if (!listValues[field].length) {
+        issues.push(blocking('controlled_ingest_writer_missing_required_list', `${ref} missing ${field}[]`, [ref, field]));
+      }
+    }
+    if (row?.beforeAfterHashRequired !== true) {
+      issues.push(
+        blocking('controlled_ingest_writer_before_after_hash_not_required', `${ref} must set beforeAfterHashRequired=true`, [
+          ref,
+          'beforeAfterHashRequired',
+        ])
+      );
+    }
+    if (row?.canModifyWriterRegistry !== false) {
+      issues.push(
+        blocking('controlled_ingest_writer_can_modify_registry_not_false', `${ref} must set canModifyWriterRegistry=false`, [
+          ref,
+          'canModifyWriterRegistry',
+        ])
+      );
+    }
+    for (const allowedPath of listValues.allowedPaths) {
+      if (
+        allowedPath === '_bmad-output/runtime/requirement-records/**' ||
+        allowedPath === '_bmad-output/runtime/requirement-records/<requirement-set-id>/**' ||
+        /runtime\/requirement-records\/\*\*/u.test(allowedPath)
+      ) {
+        issues.push(blocking('controlled_ingest_writer_allowed_path_too_broad', `${ref} uses broad allowedPath ${allowedPath}`, [ref, allowedPath]));
+      }
+    }
+    const allowedControlFields = new Set();
+    for (const eventType of listValues.allowedEventTypes) {
+      const eventDef = eventTypeDefs.get(eventType);
+      if (!eventDef) {
+        issues.push(blocking('controlled_ingest_writer_unknown_event_type', `${ref} references unknown eventType ${eventType}`, [ref, eventType]));
+        continue;
+      }
+      stringList(eventDef.writesControlFields).forEach((field) => allowedControlFields.add(field));
+      if (!listValues.payloadContractRefs.includes(eventType)) {
+        issues.push(
+          blocking('controlled_ingest_writer_missing_payload_contract_ref', `${ref} missing payloadContractRefs entry for ${eventType}`, [
+            ref,
+            eventType,
+          ])
+        );
+      }
+    }
+    for (const controlField of listValues.writesControlFields) {
+      if (!allowedControlFields.has(controlField)) {
+        issues.push(
+          blocking(
+            'controlled_ingest_writer_control_field_not_covered',
+            `${ref} writes ${controlField} but allowedEventTypes[] do not cover it`,
+            [ref, controlField]
+          )
+        );
+      }
+    }
+    return {
+      writerId,
+      scriptPath: String(row?.scriptPath ?? '').trim(),
+      scriptContentHash: String(row?.scriptContentHash ?? '').trim(),
+      ownerModel: String(row?.ownerModel ?? '').trim(),
+      allowedWriteApis: listValues.allowedWriteApis,
+      allowedPaths: listValues.allowedPaths,
+      allowedEventTypes: listValues.allowedEventTypes,
+      payloadContractRefs: listValues.payloadContractRefs,
+      writesControlFields: listValues.writesControlFields,
+      receiptPath: String(row?.receiptPath ?? '').trim(),
+      beforeAfterHashRequired: row?.beforeAfterHashRequired === true,
+      canModifyWriterRegistry: row?.canModifyWriterRegistry === true,
+      registryHash: String(row?.registryHash ?? '').trim(),
+      architectureConfirmationHash: String(row?.architectureConfirmationHash ?? '').trim(),
+    };
+  });
+  const coverage = buildControlledIngestWriterCoverage(normalized, eventTypeDefs);
+  for (const eventType of coverage.uncoveredEventTypes) {
+    issues.push(
+      blocking(
+        'controlled_ingest_writer_uncovered_event_type',
+        `governance event type ${eventType} writes control fields but no controlledIngestWriterRegistry[] writer allows it`,
+        [eventType]
+      )
+    );
+  }
+  return { rows: normalized, coverage, schemaIssues: issues };
+}
+
 function validateApplicabilityDomains(confirmation) {
   const issues = [];
   const applicability = confirmation?.applicability;
@@ -1480,6 +1762,52 @@ function applicabilityDomainApplies(confirmation, domain) {
 function runtimeRecoveryRequiresRegistry(confirmation) {
   const runtimeRecovery = confirmation?.applicability?.runtimeRecovery;
   return runtimeRecovery?.applies === true || runtimeRecovery?.requiresFunctionalResumeFailureCaseRegistry === true;
+}
+
+function validateOwnerModelPolicy(confirmation, artifactPlan) {
+  const issues = [];
+  const policy = confirmation?.ownerModelPolicy;
+  const allowedModels = new Set(stringList(policy?.allowedDisplayModels));
+  if (!allowedModels.size) return issues;
+
+  const displayField = String(policy?.displayModelField ?? 'ownerModel').trim() || 'ownerModel';
+  const checkRows = (rows, label, idField = 'id') => {
+    asArray(rows).forEach((row, index) => {
+      const ownerModel = String(row?.[displayField] ?? '').trim();
+      if (!ownerModel || allowedModels.has(ownerModel)) return;
+      const rowId =
+        row?.[idField] ??
+        row?.artifactId ??
+        row?.eventType ??
+        row?.actionId ??
+        row?.groupId ??
+        row?.category ??
+        row?.title ??
+        `${label}[${index}]`;
+      issues.push(
+        blocking(
+          'owner_model_not_six_mental_model',
+          `${label}.${rowId} uses internal ownerModel ${ownerModel}; move it to ownerSubsystem/producerSubsystem`,
+          [label, String(rowId), ownerModel]
+        )
+      );
+    });
+  };
+
+  checkRows(confirmation?.implementationTasks, 'implementationTasks');
+  checkRows(artifactPlan, 'artifactAutomationPlan', 'artifactId');
+  checkRows(confirmation?.governanceEventTypeRegistry, 'governanceEventTypeRegistry', 'eventType');
+  checkRows(confirmation?.controlledIngestWriterRegistry, 'controlledIngestWriterRegistry', 'writerId');
+  checkRows(confirmation?.functionalResumeFailureCaseRegistry?.groups, 'functionalResumeFailureCaseRegistry.groups', 'groupId');
+  checkRows(
+    confirmation?.functionalResumeFailureCaseRegistry?.recoveryActionDefinitions,
+    'functionalResumeFailureCaseRegistry.recoveryActionDefinitions',
+    'actionId'
+  );
+  checkRows(confirmation?.functionalResumeFailureCaseRegistry?.failureCases, 'functionalResumeFailureCaseRegistry.failureCases');
+  checkRows(confirmation?.architectureImpacts, 'architectureImpacts');
+
+  return issues;
 }
 
 function validateConditionalApplicabilityModules(confirmation, resumeFailureRegistry) {
@@ -2490,6 +2818,7 @@ function renderedSectionsForProfile(profile) {
     'trace-matrix',
     ...(viewPackEnabled(profile, 'currentTargetMap') ? ['current-target'] : []),
     'artifact-plan',
+    'controlled-ingest-writers',
     'architecture-impact',
     'entry-flow',
     'scoring-dashboard-sft',
@@ -3120,7 +3449,247 @@ function renderRequirementSections(input) {
   </section>`;
 }
 
-function renderTraceMatrix(traceRows) {
+function collectIdsFromSourceRefs(entry, sourceType) {
+  return asArray(entry?.sourceRefs)
+    .filter((ref) => !sourceType || ref?.sourceType === sourceType)
+    .map((ref) => String(ref?.id ?? '').trim())
+    .filter(Boolean);
+}
+
+function collectTraceRefs(entry) {
+  return unique([
+    ...stringList(entry?.traceRows),
+    ...stringList(entry?.traceRowIds),
+    ...stringList(entry?.traceRefs),
+    ...stringList(entry?.coveredTraceRows),
+    ...collectIdsFromSourceRefs(entry, 'trace_row'),
+    ...extractIds(entry?.requirementId).filter((id) => id.startsWith('TRACE-')),
+  ]);
+}
+
+function collectEvidenceRefs(entry) {
+  return unique([
+    ...stringList(entry?.evidenceRefs),
+    ...stringList(entry?.evidenceIds),
+    ...collectIdsFromSourceRefs(entry, 'evidence'),
+  ]);
+}
+
+function collectCommandRefs(entry) {
+  return unique([
+    ...stringList(entry?.requiredCommandRefs),
+    ...stringList(entry?.commandRefs),
+    ...asArray(entry?.commandRunRefs).map((ref) => ref?.commandId ?? ref?.id ?? '').filter(Boolean),
+    ...collectIdsFromSourceRefs(entry, 'command_run'),
+  ]);
+}
+
+function collectArtifactRefs(entry) {
+  return unique([
+    ...stringList(entry?.artifactRefs),
+    ...stringList(entry?.evidenceArtifactRefs),
+    ...asArray(entry?.evidenceArtifactRefs).map((ref) => ref?.artifactId ?? ref?.path ?? ref?.contentHash ?? '').filter(Boolean),
+    ...asArray(entry?.artifactRefs)
+      .map((ref) => (typeof ref === 'object' ? ref.artifactId ?? ref.path ?? ref.hash : ref))
+      .filter(Boolean),
+  ].map((item) => String(item)));
+}
+
+function firstString(...values) {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return '';
+}
+
+function entrySourceHash(entry) {
+  return firstString(entry?.sourceDocumentHash, entry?.hashes?.sourceDocumentHash, entry?.sourceRefsHash?.sourceDocumentHash);
+}
+
+function entryImplementationHash(entry) {
+  return firstString(
+    entry?.implementationConfirmationHash,
+    entry?.hashes?.implementationConfirmationHash,
+    entry?.sourceRefsHash?.implementationConfirmationHash
+  );
+}
+
+function entryArchitectureHash(entry) {
+  return firstString(
+    entry?.architectureConfirmationHash,
+    entry?.architectureConfirmationArtifactHash,
+    entry?.hashes?.architectureConfirmationHash,
+    entry?.hashes?.architectureConfirmationArtifactHash
+  );
+}
+
+function entryAttemptId(entry) {
+  return firstString(
+    entry?.closeoutAttemptId,
+    entry?.currentAttemptId,
+    entry?.attemptId,
+    ...asArray(entry?.commandRunRefs).map((ref) => ref?.closeoutAttemptId)
+  );
+}
+
+function hashMatchStatus(actual, expected, label) {
+  if (!expected) return { ok: false, reason: `${label}_current_hash_missing` };
+  if (!actual) return { ok: false, reason: `${label}_hash_missing` };
+  if (actual !== expected) return { ok: false, reason: `${label}_hash_mismatch` };
+  return { ok: true, reason: `${label}_hash_match` };
+}
+
+function entryMatchesCurrentHashes(entry, currentHashes) {
+  const checks = [
+    hashMatchStatus(entrySourceHash(entry), currentHashes.sourceDocumentHash, 'sourceDocument'),
+    hashMatchStatus(entryImplementationHash(entry), currentHashes.implementationConfirmationHash, 'implementationConfirmation'),
+    hashMatchStatus(entryArchitectureHash(entry), currentHashes.architectureConfirmationHash, 'architectureConfirmation'),
+  ];
+  return {
+    ok: checks.every((check) => check.ok),
+    reasons: checks.filter((check) => !check.ok).map((check) => check.reason),
+  };
+}
+
+function entryMatchesCurrentAttempt(entry, currentAttemptId) {
+  if (!currentAttemptId) return { ok: false, reason: 'current_attempt_missing' };
+  const actualAttemptId = entryAttemptId(entry);
+  if (!actualAttemptId) return { ok: false, reason: 'entry_attempt_missing' };
+  if (actualAttemptId !== currentAttemptId) return { ok: false, reason: 'attempt_mismatch' };
+  return { ok: true, reason: 'attempt_match' };
+}
+
+function latestArchitectureConfirmationHash(record) {
+  return firstString(
+    record?.architectureConfirmationHash,
+    record?.architectureConfirmationState?.currentArchitectureConfirmationHash,
+    record?.architectureConfirmationState?.staleInputs?.currentArtifactHash,
+    ...asArray(record?.architectureConfirmations).map((item) => item?.architectureConfirmationArtifactHash).reverse()
+  );
+}
+
+function buildTraceExecutionState(input) {
+  const {
+    traceRows,
+    requirementRecordState,
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    architectureConfirmationHash,
+  } = input;
+  const record = requirementRecordState?.record;
+  const currentAttemptId = firstString(record?.closeout?.currentAttemptId);
+  const currentHashes = {
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    architectureConfirmationHash: firstString(architectureConfirmationHash, latestArchitectureConfirmationHash(record)),
+  };
+  const entries = [
+    ...asArray(record?.requirementClosures).map((entry) => ({ kind: 'requirementClosure', entry })),
+    ...asArray(record?.executionIterations).map((entry) => ({ kind: 'executionIteration', entry })),
+    ...asArray(record?.gateChecks).map((entry) => ({ kind: 'gateCheck', entry })),
+    ...asArray(record?.contractChecks).map((entry) => ({ kind: 'contractCheck', entry })),
+    ...asArray(record?.deliveryEvidence).map((entry) => ({ kind: 'deliveryEvidence', entry })),
+  ];
+  const rowStates = {};
+  for (const row of traceRows) {
+    const traceId = row.id;
+    const matchingEntries = entries.filter(({ entry }) => collectTraceRefs(entry).includes(traceId));
+    const currentEntries = matchingEntries.filter(({ entry }) => {
+      const hashStatus = entryMatchesCurrentHashes(entry, currentHashes);
+      const attemptStatus = entryMatchesCurrentAttempt(entry, currentAttemptId);
+      return hashStatus.ok && attemptStatus.ok;
+    });
+    const currentPassEntries = currentEntries.filter(({ entry }) => {
+      const status = String(entry?.status ?? entry?.decision ?? '').toLowerCase();
+      return ['pass', 'passed', 'closed', 'done', 'completed'].includes(status);
+    });
+    const currentEvidenceEntries = currentEntries.filter(({ entry }) => {
+      const evidenceRefs = collectEvidenceRefs(entry);
+      const commandRefs = collectCommandRefs(entry);
+      const artifactRefs = collectArtifactRefs(entry);
+      return evidenceRefs.length || commandRefs.length || artifactRefs.length;
+    });
+    const staleReasons = unique(
+      matchingEntries.flatMap(({ entry }) => {
+        const hashStatus = entryMatchesCurrentHashes(entry, currentHashes);
+        const attemptStatus = entryMatchesCurrentAttempt(entry, currentAttemptId);
+        return [
+          ...hashStatus.reasons,
+          attemptStatus.ok ? '' : attemptStatus.reason,
+        ];
+      })
+    );
+    const bestEntry = currentPassEntries[0]?.entry ?? currentEvidenceEntries[0]?.entry ?? matchingEntries.at(-1)?.entry ?? null;
+    const status =
+      !requirementRecordState?.found
+        ? 'no_controlled_record'
+        : !matchingEntries.length
+          ? 'no_controlled_execution'
+          : currentPassEntries.length
+            ? 'current_pass'
+            : currentEvidenceEntries.length
+              ? 'current_evidence_recorded'
+              : staleReasons.some((reason) => /hash_/u.test(reason))
+                ? 'historical_stale_hash_mismatch'
+                : staleReasons.some((reason) => /attempt/u.test(reason))
+                  ? 'historical_stale_attempt_mismatch'
+                  : 'historical_stale';
+    const validity =
+      status === 'current_pass' || status === 'current_evidence_recorded'
+        ? 'current'
+        : status === 'no_controlled_record' || status === 'no_controlled_execution'
+          ? 'unavailable'
+          : 'stale';
+    rowStates[traceId] = {
+      traceId,
+      status,
+      validity,
+      currentAttemptId,
+      matchedEntryCount: matchingEntries.length,
+      currentEntryCount: currentEntries.length,
+      staleReasons,
+      evidenceRefs: collectEvidenceRefs(bestEntry),
+      commandRefs: collectCommandRefs(bestEntry),
+      artifactRefs: collectArtifactRefs(bestEntry).slice(0, 6),
+      runId: firstString(bestEntry?.runId, ...asArray(bestEntry?.commandRunRefs).map((ref) => ref?.runId)),
+      closeoutAttemptId: entryAttemptId(bestEntry),
+      reason: requirementRecordState?.loadError
+        ? `record_load_error:${requirementRecordState.loadError}`
+        : !requirementRecordState?.found
+          ? 'requirement-record.json not found'
+          : staleReasons.join(', '),
+    };
+  }
+  return {
+    recordPath: requirementRecordState?.path ? normalizePathForReport(requirementRecordState.path) : '',
+    recordFound: requirementRecordState?.found === true,
+    recordLoadError: requirementRecordState?.loadError ?? null,
+    currentAttemptId,
+    currentHashes,
+    rows: rowStates,
+    counts: {
+      currentPass: Object.values(rowStates).filter((row) => row.status === 'current_pass').length,
+      currentEvidenceRecorded: Object.values(rowStates).filter((row) => row.status === 'current_evidence_recorded').length,
+      stale: Object.values(rowStates).filter((row) => row.validity === 'stale').length,
+      unavailable: Object.values(rowStates).filter((row) => row.validity === 'unavailable').length,
+    },
+  };
+}
+
+function renderTraceExecutionEvidence(state) {
+  if (!state) return '<span class="muted">无</span>';
+  const parts = [
+    state.runId ? `run=${state.runId}` : '',
+    state.closeoutAttemptId ? `attempt=${state.closeoutAttemptId}` : '',
+    state.evidenceRefs?.length ? `evidence=${state.evidenceRefs.join(',')}` : '',
+    state.commandRefs?.length ? `commands=${state.commandRefs.join(',')}` : '',
+    state.artifactRefs?.length ? `artifacts=${state.artifactRefs.join(',')}` : '',
+    state.reason ? `reason=${state.reason}` : '',
+  ].filter(Boolean);
+  return inlineCode(parts.join(' | ') || '无');
+}
+
+function renderTraceMatrix(traceRows, traceExecutionState = null) {
   const rows = traceRows.map((row) => [
     row.id,
     renderIdBadges(row.covers),
@@ -3130,12 +3699,29 @@ function renderTraceMatrix(traceRows) {
     renderIdBadges(traceDeliveryEvidenceCommandRefs(row)),
     renderIdBadges(row.sequenceViewRefs ?? row.diagramRefs),
     renderIdBadges(row.artifactRefs),
-    row.status ?? '',
+    row.status ?? 'PENDING',
+    traceExecutionState?.rows?.[row.id]?.status ?? 'no_controlled_record',
+    traceExecutionState?.rows?.[row.id]?.validity ?? 'unavailable',
+    renderTraceExecutionEvidence(traceExecutionState?.rows?.[row.id]),
     row.blockingReason ?? '',
   ]);
   return `<section class="card" id="trace-matrix">
     <h2>Trace Matrix</h2>
-    ${renderTable(['Trace', 'Covers', 'Tasks', 'Evidence', 'Contract Validation Commands', 'Delivery Evidence Commands', 'Diagrams', 'Artifacts', 'Status', 'Blocking Reason'], rows)}
+    <p class="section-lead">契约状态来自源文档 traceRows[]；受控执行状态只读来自 requirement-record.json。历史 PASS 只有同时匹配当前 sourceDocumentHash、implementationConfirmationHash、architectureConfirmationHash 和 currentAttemptId 时，才显示为 current_pass。</p>
+    ${traceExecutionState ? renderTable(
+      ['字段', '值'],
+      [
+        ['requirementRecordPath', traceExecutionState.recordPath],
+        ['recordFound', String(traceExecutionState.recordFound)],
+        ['currentAttemptId', traceExecutionState.currentAttemptId || ''],
+        ['currentPass', String(traceExecutionState.counts.currentPass)],
+        ['currentEvidenceRecorded', String(traceExecutionState.counts.currentEvidenceRecorded)],
+        ['stale', String(traceExecutionState.counts.stale)],
+        ['unavailable', String(traceExecutionState.counts.unavailable)],
+      ],
+      { className: 'compact-map-table' }
+    ) : ''}
+    ${renderTable(['Trace', 'Covers', 'Tasks', 'Evidence', 'Contract Validation Commands', 'Delivery Evidence Commands', 'Diagrams', 'Artifacts', 'Contract Status', 'Controlled Execution Status', 'Current Validity', 'Execution Evidence / Reason', 'Blocking Reason'], rows)}
   </section>`;
 }
 
@@ -3413,6 +3999,56 @@ function renderArtifactPlan(artifactPlan) {
         }
       )
       .join('')}
+  </section>`;
+}
+
+function renderControlledIngestWriterRegistry(registry) {
+  const rows = asArray(registry?.rows);
+  const coverage = registry?.coverage ?? {};
+  const headers = [
+    'writerId',
+    'scriptPath',
+    'scriptContentHash',
+    'ownerModel',
+    'allowedWriteApis',
+    'allowedPaths',
+    'allowedEventTypes',
+    'payloadContractRefs',
+    'writesControlFields',
+    'receiptPath',
+    'beforeAfterHashRequired',
+    'canModifyWriterRegistry',
+    'registryHash',
+    'architectureConfirmationHash',
+  ];
+  const bodyRows = rows.map((item) => [
+    item.writerId,
+    item.scriptPath,
+    item.scriptContentHash,
+    item.ownerModel,
+    renderIdBadges(item.allowedWriteApis),
+    item.allowedPaths.map((allowedPath) => `<code>${escapeHtml(allowedPath)}</code>`).join('<br/>'),
+    renderIdBadges(item.allowedEventTypes),
+    renderIdBadges(item.payloadContractRefs),
+    renderIdBadges(item.writesControlFields),
+    item.receiptPath,
+    String(item.beforeAfterHashRequired),
+    String(item.canModifyWriterRegistry),
+    item.registryHash,
+    item.architectureConfirmationHash,
+  ]);
+  return `<section class="card" id="controlled-ingest-writers">
+    <h2>Controlled Ingest Writer Registry</h2>
+    <p class="section-lead">本区只读取源文档 <code>implementationConfirmation.controlledIngestWriterRegistry[]</code>。它是 controlled ingest 写入权限的唯一机器可读权威；脚本路径、旧约定、fixture 或 renderer hardcode 不能授权控制写入。</p>
+    <div class="metric-grid">
+      <div class="metric"><strong>${rows.length}</strong><span>registered writers</span></div>
+      <div class="metric ${asArray(coverage.uncoveredEventTypes).length ? 'danger' : ''}"><strong>${asArray(coverage.uncoveredEventTypes).length}</strong><span>uncovered event types</span></div>
+    </div>
+    ${
+      rows.length
+        ? renderTable(headers, bodyRows, { className: 'controlled-ingest-writer-table' })
+        : '<p class="empty-state">源文档未提供 controlledIngestWriterRegistry[]。</p>'
+    }
   </section>`;
 }
 
@@ -3862,8 +4498,10 @@ function buildHtml(input) {
     artifactPlan,
     currentTargetMap,
     confirmationProfile,
+    traceExecutionState,
     reconfirmationState,
     resumeFailureRegistry,
+    controlledIngestWriters,
     mermaidRuntime,
   } = input;
   const ui = getUiText(args.language);
@@ -3939,11 +4577,12 @@ function buildHtml(input) {
       views.edgeCaseViews.map((view) => [view.id, view.title ?? '', renderIdBadges(view.covers), stringList(view.cases).join(', ')])
     )}</section>`],
     ['resume-failure-cases', renderResumeFailureCoverage(resumeFailureRegistry, mermaidRuntime, args, ui)],
-    ['trace-matrix', renderTraceMatrix(traceRows)],
+    ['trace-matrix', renderTraceMatrix(traceRows, traceExecutionState)],
     viewPackEnabled(confirmationProfile, 'currentTargetMap')
       ? ['current-target', renderCurrentTarget(currentTargetMap, artifactPlan, confirmationProfile)]
       : null,
     ['artifact-plan', renderArtifactPlan(artifactPlan)],
+    ['controlled-ingest-writers', renderControlledIngestWriterRegistry(controlledIngestWriters)],
     ['architecture-impact', renderArchitectureImpact(confirmation)],
     ['entry-flow', renderEntryFlowView(entryFlow, confirmation, normalizePathForReport(sourcePath))],
     ['scoring-dashboard-sft', renderScoringDashboardSft(confirmation)],
@@ -3966,6 +4605,7 @@ function buildHtml(input) {
     'trace-matrix': ui.traceMatrix,
     'current-target': ui.currentTarget,
     'artifact-plan': ui.artifactPlan,
+    'controlled-ingest-writers': 'Controlled Ingest Writers',
     'architecture-impact': ui.architectureImpact,
     'entry-flow': ui.entryFlow,
     'scoring-dashboard-sft': ui.scoringDashboardSft,
@@ -4038,7 +4678,7 @@ function buildReport(input) {
     implementationConfirmationHash: input.implementationConfirmationHash,
     implementationConfirmationHashScope: 'semantic_implementation_confirmation_excluding_bookkeeping',
     confirmationPageHash: input.confirmationPageHash,
-    confirmationPageHashScope: 'html_normalized_with_self_hash_placeholder',
+    confirmationPageHashScope: 'html_normalized_with_self_hash_placeholder_and_generated_at_excluded',
     actualHtmlFileHash: input.actualHtmlFileHash,
     generatedAt: input.generatedAt,
     language: input.args.language,
@@ -4053,6 +4693,7 @@ function buildReport(input) {
     warnings: input.warnings,
     diagramCoverage: input.coverage.diagramCoverage,
     traceCoverage: input.coverage.traceCoverage,
+    traceExecutionState: input.traceExecutionState ?? null,
     artifactAutomationCoverage: input.coverage.artifactAutomationCoverage,
     currentTargetCoverage: currentTargetEnabled ? input.currentTargetCoverage : emptyCurrentTargetCoverage(),
     currentTargetSchemaVersion: currentTargetEnabled ? input.currentTargetSchemaVersion : '',
@@ -4061,6 +4702,13 @@ function buildReport(input) {
     currentTargetSchemaIssues: currentTargetEnabled ? input.currentTargetSchemaIssues : [],
     governanceEventTypeRegistry: input.governanceEventTypeRegistry ?? {},
     governanceEventTypeSchemaIssues: input.governanceEventTypeSchemaIssues ?? [],
+    controlledIngestWriterRegistry: input.controlledIngestWriterRegistry ?? [],
+    controlledIngestWriterCoverage: input.controlledIngestWriterCoverage ?? {
+      eventTypeToWriters: {},
+      controlFieldToWriters: {},
+      uncoveredEventTypes: [],
+    },
+    controlledIngestWriterSchemaIssues: input.controlledIngestWriterSchemaIssues ?? [],
     reconfirmationRequest: input.reconfirmationState ?? null,
     resumeFailureCaseCoverage: {
       status: input.resumeFailureRegistry?.status ?? null,
@@ -4068,8 +4716,9 @@ function buildReport(input) {
       groupCount: Object.keys(input.resumeFailureRegistry?.groups ?? {}).length,
       schemaIssueCount: input.resumeFailureRegistry?.schemaIssues?.length ?? 0,
       schemaIssues: input.resumeFailureRegistry?.schemaIssues ?? [],
-      p0ExecutableSubsetRequired: input.resumeFailureRegistry?.p0ExecutableSubsetRequired ?? false,
-      p0RequiredFixtureCases: input.resumeFailureRegistry?.p0RequiredFixtureCases ?? [],
+      fullLinkExecutableSubsetRequired:
+        input.resumeFailureRegistry?.fullLinkExecutableSubsetRequired ?? input.resumeFailureRegistry?.p0ExecutableSubsetRequired ?? false,
+      fullLinkRequiredFixtureCases: input.resumeFailureRegistry?.fullLinkRequiredFixtureCases ?? input.resumeFailureRegistry?.p0RequiredFixtureCases ?? [],
       phase4_5Coverage: input.resumeFailureRegistry?.phase4_5Coverage ?? [],
       phase5HardeningCoverage: input.resumeFailureRegistry?.phase5HardeningCoverage ?? [],
       governanceEventTypeRefs: input.resumeFailureRegistry?.governanceEventTypeRefs ?? {},
@@ -4079,7 +4728,7 @@ function buildReport(input) {
         caseId: item.caseId,
         groupId: item.groupId,
         coveragePhase: item.coveragePhase,
-        p0Required: item.p0Required,
+        fullLinkRequired: item.fullLinkRequired,
         triggerSignal: item.triggerSignal,
         detectionPoint: item.detectionPoint,
         failClosedGate: item.failClosedGate,
@@ -4190,6 +4839,7 @@ function main(argv) {
   });
   const confirmationProfile = resolveConfirmationProfile(confirmation);
   const governanceEventTypes = normalizeGovernanceEventTypeRegistry(confirmation);
+  const controlledIngestWriters = normalizeControlledIngestWriterRegistry(confirmation, governanceEventTypes);
   const resumeFailureRegistry = normalizeFunctionalResumeFailureCaseRegistry(
     confirmation.functionalResumeFailureCaseRegistry ?? extractFunctionalResumeFailureCaseRegistry(sourceText),
     governanceEventTypes.definitions
@@ -4202,6 +4852,14 @@ function main(argv) {
     ...extractMermaidBlocks(sourceText),
   ]);
   const traceRows = asArray(confirmation.traceRows);
+  const requirementRecordState = readRequirementRecord(args, recordId);
+  const traceExecutionState = buildTraceExecutionState({
+    traceRows,
+    requirementRecordState,
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    architectureConfirmationHash: args.architectureConfirmationHash ?? confirmation.architectureConfirmationHash ?? '',
+  });
   const externalCurrentTargetMap = args.currentTargetMap ? readDataFile(path.resolve(args.currentTargetMap)) : null;
   const currentTargetMap = mergeCurrentTargetMaps(confirmation.currentTargetMap, externalCurrentTargetMap, {
     enabled: viewPackEnabled(confirmationProfile, 'currentTargetMap'),
@@ -4218,10 +4876,12 @@ function main(argv) {
     reconfirmationState,
   });
   coverage.blockingIssues.push(...validateConfirmationProfile(confirmationProfile, currentTargetMap));
+  coverage.blockingIssues.push(...validateOwnerModelPolicy(confirmation, artifactPlan));
   if (viewPackEnabled(confirmationProfile, 'currentTargetMap')) {
     coverage.blockingIssues.push(...currentTargetMap.schemaIssues);
   }
   coverage.blockingIssues.push(...governanceEventTypes.schemaIssues);
+  coverage.blockingIssues.push(...controlledIngestWriters.schemaIssues);
   coverage.blockingIssues.push(...validateConditionalApplicabilityModules(confirmation, resumeFailureRegistry));
   coverage.blockingIssues.push(...validateArtifactPlanEventTypes(artifactPlan, governanceEventTypes.definitions));
   coverage.blockingIssues.push(...resumeFailureRegistry.schemaIssues);
@@ -4277,11 +4937,13 @@ function main(argv) {
     artifactPlan,
     currentTargetMap,
     confirmationProfile,
+    traceExecutionState,
     reconfirmationState,
     resumeFailureRegistry,
+    controlledIngestWriters,
     mermaidRuntime,
   });
-  const confirmationPageHash = sha256(htmlWithSelfHashPlaceholder);
+  const confirmationPageHash = confirmationPageHashFor(htmlWithSelfHashPlaceholder, generatedAt);
   const finalConfirmInstruction = confirmInstruction.replaceAll(
     SELF_PAGE_HASH_PLACEHOLDER,
     confirmationPageHash
@@ -4324,8 +4986,12 @@ function main(argv) {
     currentTargetDisplayProfile: currentTargetMap.displayProfile,
     currentTargetTableCoverage: currentTargetMap.tableCoverage,
     currentTargetSchemaIssues: currentTargetMap.schemaIssues,
+    traceExecutionState,
     governanceEventTypeRegistry: Object.fromEntries(governanceEventTypes.definitions.entries()),
     governanceEventTypeSchemaIssues: governanceEventTypes.schemaIssues,
+    controlledIngestWriterRegistry: controlledIngestWriters.rows,
+    controlledIngestWriterCoverage: controlledIngestWriters.coverage,
+    controlledIngestWriterSchemaIssues: controlledIngestWriters.schemaIssues,
     reconfirmationState,
     resumeFailureRegistry,
     mermaidRuntime,

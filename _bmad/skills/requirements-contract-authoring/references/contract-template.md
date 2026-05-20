@@ -49,6 +49,8 @@ implementationConfirmation:
       applies: false
       reasonCode: no_resume_rerun_closeout_hook_ingest_or_trace_checkpoint_changes
       requiresFunctionalResumeFailureCaseRegistry: false
+      activeRequirementResolutionRequired: false
+      retiredContextSurfaceForbidden: true
     scoringDashboardSft:
       applies: false
       reasonCode: no_scoring_dashboard_sft_dataset_or_read_model_changes
@@ -177,7 +179,7 @@ implementationConfirmation:
 
   requiredCommands:
     - id: CMD-CONTRACT-001
-      command: "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source <source-document.md> --out _bmad-output/runtime/requirements/<recordId>/confirmation/confirmation.html --language zh-CN --record-id <recordId> --entry-flow <entryFlow> --mode confirmation --json"
+      command: "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source <source-document.md> --out _bmad-output/runtime/requirement-records/<recordId>/confirmation/confirmation.html --language zh-CN --record-id <recordId> --entry-flow <entryFlow> --mode confirmation --json"
       purpose: "Validate source contract and render confirmation HTML."
     - id: CMD-DELIVERY-001
       command: "npm run test:e2e -- upload"
@@ -210,19 +212,59 @@ Only explicit chat confirmation with matching hashes may change `status` to `use
 
 | Domain | Required Keys | When `applies=true` |
 |---|---|---|
-| `governanceEvents` | `applies`, `reasonCode` | Add or reference `governanceEventTypeRegistry[]`; each event type must include `payloadContract`. |
-| `runtimeRecovery` | `applies`, `reasonCode`, `requiresFunctionalResumeFailureCaseRegistry` | Add `functionalResumeFailureCaseRegistry` when resume, rerun, closeout, hook trust, ingest, runtime policy, or trace checkpoint recovery is involved. |
+| `governanceEvents` | `applies`, `reasonCode` | Add or reference `governanceEventTypeRegistryPolicy`, `governanceEventTypeRegistry[]`, and `controlledIngestWriterRegistry[]`; each event type must include `payloadContract` that passes the policy, and each control-writing event type must be covered by a registered writer. |
+| `runtimeRecovery` | `applies`, `reasonCode`, `requiresFunctionalResumeFailureCaseRegistry`, `activeRequirementResolutionRequired`, `retiredContextSurfaceForbidden` | Add `activeRequirementResolution` and `functionalResumeFailureCaseRegistry` when resume, rerun, closeout, hook trust, ingest, runtime policy, active requirement resolution, or trace checkpoint recovery is involved. |
 | `scoringDashboardSft` | `applies`, `reasonCode` | Add read-model boundary details for scoring, dashboard, SFT, dataset manifests, eval/holdout, redaction, contamination, and withdrawal. |
 | `currentTargetMap` | `applies`, `reasonCode` | Add `currentTargetMap` rows; renderer must parse this data instead of hardcoding project rows. |
 | `scriptsAndHooks` | `applies`, `reasonCode` | Add artifact/script/hook visibility, ownerModel, input/output artifacts, fallback, and event type references. |
 
 ## Conditional Expansion Modules
 
-### Governance Event Type Registry
+### Governance Event Type Registry Policy
 
 Use this only when `applicability.governanceEvents.applies: true` or any artifact/recovery action references `recordEventTypes[]`.
 
+`governanceEventTypeRegistryPolicy` is the authority for lint rules: control field vocabulary, payload kinds, control write modes, and event-specific requirements. `governanceEventTypeRegistry[]` is the authority for concrete event definitions. Renderer, ingest, gates, hooks, workers, and tests must not maintain a second hardcoded event or payload rule list.
+
+Any transport validator, hook, worker, no-hook adapter, or controlled ingest caller must pass the same policy and registry together and bind both `registryPolicyHash` and `registryHash`. A registry that is internally self-consistent but violates `governanceEventTypeRegistryPolicy` must fail closed. Any envelope field at top level or under `payload` that matches `controlFieldVocabulary[]` must be listed in the current event type `writesControlFields[]`, otherwise transport validation must reject it as unauthorized control-field smuggling.
+
 ```yaml
+  governanceEventTypeRegistryPolicy:
+    controlFieldVocabulary:
+      - artifactIndex
+      - closeout
+      - contractChecks
+      - executionIterations
+      - failureRecords
+      - gateChecks
+      - requirementClosures
+      - rerunLoops
+    payloadKindContracts:
+      - payloadKind: decision
+        requiredFields: ["eventType", "decision"]
+        forbiddenFields: ["result", "status"]
+        allowedControlWriteModes: ["control"]
+      - payloadKind: status
+        requiredFields: ["eventType", "status"]
+        forbiddenFields: ["result", "decision"]
+        allowedControlWriteModes: ["control"]
+      - payloadKind: artifactRefs
+        requiredFields: ["eventType", "artifactRefs"]
+        forbiddenFields: ["result", "decision", "status"]
+        allowedControlWriteModes: ["artifact_only"]
+    controlWriteModePolicies:
+      - allowedControlWriteMode: control
+        allowedWritesControlFields: ["contractChecks", "gateChecks", "executionIterations", "requirementClosures", "failureRecords", "rerunLoops", "closeout"]
+      - allowedControlWriteMode: artifact_only
+        allowedWritesControlFields: ["artifactIndex"]
+    eventSpecificRequirements:
+      - eventType: contract_check_recorded
+        payloadKind: decision
+        requiredFields: ["eventType", "decision"]
+        forbiddenFields: ["result", "status"]
+        requiredSourceRefs: true
+        allowedControlWriteMode: control
+
   governanceEventTypeRegistry:
     - eventType: contract_check_recorded
       ownerModel: contract_gate
@@ -248,7 +290,92 @@ Use this only when `applicability.governanceEvents.applies: true` or any artifac
         allowedControlWriteMode: artifact_only
 ```
 
-`result` is not a control field. New controlled records use `decision` for gates/checks and `status` for lifecycle state where explicitly allowed by `payloadContract`.
+`result` is not a control field. New controlled records use `decision` for gates/checks and `status` for lifecycle state where explicitly allowed by `payloadContract` and `governanceEventTypeRegistryPolicy`.
+
+### Controlled Ingest Writer Registry
+
+Use this when `applicability.governanceEvents.applies: true`, controlled ingest is used, or any script/gate/hook/worker may write a requirement record, control event log, requirement index, artifact index, or requirement-scoped event file.
+
+`controlledIngestWriterRegistry[]` is the only machine-readable authority for writer permissions. `governanceEventTypeRegistry[]` defines valid event types, but it does not authorize any script to consume or write those event types. A writer that receives a registered event type outside its `allowedEventTypes[]` must fail closed.
+
+```yaml
+  controlledIngestWriterRegistry:
+    - writerId: requirements-confirmation-ingest
+      scriptPath: "_bmad/skills/requirements-contract-authoring/scripts/ingest-confirmation-event.js"
+      scriptContentHash: "sha256:<script-content>"
+      ownerModel: requirement_confirmation
+      allowedWriteApis:
+        - appendControlEvent
+        - atomicWriteRequirementRecord
+        - appendArtifactIndex
+      allowedPaths:
+        - "_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json"
+        - "_bmad-output/runtime/requirement-records/<requirement-set-id>/events/control-events.jsonl"
+        - "_bmad-output/runtime/requirement-records/<requirement-set-id>/artifact-index.jsonl"
+        - "_bmad-output/runtime/requirement-records/artifact-index.jsonl"
+      allowedEventTypes:
+        - confirmation_recorded
+        - contract_check_recorded
+        - artifact_indexed
+      payloadContractRefs:
+        - confirmation_recorded
+        - contract_check_recorded
+        - artifact_indexed
+      writesControlFields:
+        - confirmationHistory
+        - contractChecks
+        - artifactIndex
+      receiptPath: "_bmad-output/runtime/requirement-records/<requirement-set-id>/receipts/requirements-confirmation-ingest/<receipt-id>.json"
+      beforeAfterHashRequired: true
+      canModifyWriterRegistry: false
+      registryHash: "sha256:<controlled-ingest-writer-registry>"
+      architectureConfirmationHash: "sha256:<current-architecture-confirmation>"
+```
+
+Hard rules:
+
+- `allowedPaths[]` must not use `_bmad-output/runtime/requirement-records/**` or another broad glob that grants cross-record writes.
+- Every `allowedEventTypes[]` value must exist in `governanceEventTypeRegistry[]`.
+- `payloadContractRefs[]` must include every event type the writer may consume.
+- `writesControlFields[]` must be covered by the union of `writesControlFields[]` from the writer's `allowedEventTypes[]`.
+- Every governance event type that writes control fields must be covered by at least one writer.
+- `beforeAfterHashRequired` must be `true`.
+- `canModifyWriterRegistry` must be `false`.
+- Changing this registry is a shared control-contract change and requires architecture confirmation.
+
+### Active Requirement Resolution
+
+Use this when `applicability.runtimeRecovery.applies: true`, `activeRequirementResolutionRequired: true`, or the requirement touches runtime governance, hooks, no-hook fallback, bmad-help routing, scoring, dashboard, SFT, recovery, closeout, or controlled ingest.
+
+```yaml
+  activeRequirementResolution:
+    resolver: scripts/resolve-active-requirement.ts
+    explicitArgs:
+      - --record-id
+      - --requirement-set-id
+      - --run-id
+    locatorPath: "_bmad-output/runtime/requirement-records/index.json"
+    controlRecordPath: "_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json"
+    runtimePolicySnapshotPath: "_bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/runtime-policy-snapshot.json"
+    recoveryContextPath: "_bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/recovery-context.json"
+    bmadWorkflowProjectionPath: "_bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/bmad-workflow-routing-<run-id>.json"
+    forbiddenInputs:
+      - "_bmad-output/runtime/context/**"
+    noDirectoryGuessing: true
+    noLegacyFallback: true
+    failClosedWhen:
+      - missing_explicit_args_and_missing_index
+      - invalid_index_schema
+      - multiple_active_records
+      - active_record_missing
+      - active_record_hash_mismatch
+      - runtime_policy_snapshot_missing_or_mismatch
+      - recovery_context_missing_or_mismatch
+      - trace_checkpoint_missing
+      - current_run_references_retired_context_surface
+```
+
+The resolver output is a read-only `ResolvedRuntimeContext`. It may be consumed by scripts, hooks, dashboards, and projections, but it must not mutate requirements or replace `requirement-record.json` as the control source.
 
 ### Functional Resume Failure Case Registry
 
@@ -308,7 +435,7 @@ Use this only when `applicability.currentTargetMap.applies: true`.
         action: "split"
     pathRegistry:
       - category: "Requirement record"
-        fixedPath: "_bmad-output/runtime/requirements/<recordId>/requirement-record.json"
+        fixedPath: "_bmad-output/runtime/requirement-records/<recordId>/requirement-record.json"
         sourceOfTruthRole: control
         description: "Main controlled requirement record."
 ```
@@ -351,9 +478,9 @@ sequenceDiagram
 Render mandatory HTML to:
 
 ```text
-_bmad-output/runtime/requirements/<recordId>/confirmation/confirmation.html
-_bmad-output/runtime/requirements/<recordId>/confirmation/confirmation-summary.json
-_bmad-output/runtime/requirements/<recordId>/confirmation/confirmation-render-report.json
+_bmad-output/runtime/requirement-records/<recordId>/confirmation/confirmation.html
+_bmad-output/runtime/requirement-records/<recordId>/confirmation/confirmation-summary.json
+_bmad-output/runtime/requirement-records/<recordId>/confirmation/confirmation-render-report.json
 ```
 
 The renderer is read-only. HTML render failure is blocked; there is no Markdown/chat fallback. The user confirms in chat only with the exact phrase and hashes from `confirmation-render-report.json`.
@@ -387,6 +514,7 @@ Audit command: `node <skill-dir>/scripts/reverse_audit_contract.js <source-docum
 - Conditional heavy registries are present only when their applicability domain applies.
 - `traceRows[]` uses `contractValidationCommandRefs[]` and `deliveryEvidenceCommandRefs[]`; legacy `commandRefs[]` is not the sole command authority.
 - Governance event types include `payloadContract` when used.
+- Controlled ingest writer permissions are declared in `controlledIngestWriterRegistry[]` when governance events or controlled ingest apply.
 - Runtime recovery groups, actions, and failure cases are source-defined when applicable.
 - No open question with `blocksImplementation: true` remains.
 - Every ID reference resolves to an existing ID.

@@ -161,12 +161,12 @@ auto_continue:
   require_next_action: true
 ```
 
-`require_next_action` / `require_ready_flag` 保留的是 legacy 配置名。运行时判断自动续跑时，应优先读取 repo-native `main-agent-orchestration` surface；仅在该 surface 不可用时，才回退到归一化后的 `mainAgentNextAction / mainAgentReady`，最后才回退到 `next_action / ready`。
+`require_next_action` / `require_ready_flag` 保留的是 legacy 配置名。运行时判断自动续跑时，只能从 `requirement-record.json`、`currentMentalModel`、六个心智模型链路和 controlled ingest 记录推导；`mainAgentNextAction / mainAgentReady / next_action / ready` 只能作为 compatibility hint，不存在从这些字段回退取得控制权的路径。
 
-正式入口：
+安装验证、CI、debug 或 no-skill fallback 才允许直接运行：
 
 ```bash
-npm run main-agent-orchestration -- --cwd <project-root> --action inspect
+npx bmad-speckit main-agent-orchestration --cwd <project-root> --action inspect
 ```
 
 ### 两类阶段的区别

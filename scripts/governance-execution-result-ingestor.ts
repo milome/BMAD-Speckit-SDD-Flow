@@ -9,6 +9,7 @@ import type { GovernanceRerunGateResult } from './governance-remediation-runner'
 import {
   assertGovernanceTransportEnvelope,
   type GovernanceTransportEnvelope,
+  type GovernanceTransportValidationOptions,
 } from './governance-transport-envelope';
 
 export interface GovernanceExecutionResultIngestInput {
@@ -50,6 +51,11 @@ export type GovernanceRerunGateResultEnvelope = GovernanceTransportEnvelope & {
     rerunGate: GovernanceRerunGateResult;
   };
 };
+
+const SUPPORTED_INGEST_ENVELOPE_EVENT_TYPES = new Set([
+  'execution_iteration_recorded',
+  'gate_check_recorded',
+]);
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -142,9 +148,13 @@ export function ingestGovernanceExecutionResult(
 
 export function ingestGovernanceTransportEnvelope(
   projectRoot: string,
-  envelope: GovernanceExecutionResultEnvelope | GovernanceRerunGateResultEnvelope
+  envelope: GovernanceExecutionResultEnvelope | GovernanceRerunGateResultEnvelope,
+  validationOptions: GovernanceTransportValidationOptions = {}
 ): GovernancePacketExecutionRecord | null {
-  assertGovernanceTransportEnvelope(envelope);
+  assertGovernanceTransportEnvelope(envelope, validationOptions);
+  if (!SUPPORTED_INGEST_ENVELOPE_EVENT_TYPES.has(envelope.eventType)) {
+    throw new Error(`unsupported governance-execution-result-ingestor eventType: ${envelope.eventType}`);
+  }
   if (envelope.eventType === 'execution_iteration_recorded') {
     const payload = envelope.payload;
     return ingestGovernanceExecutionResult({

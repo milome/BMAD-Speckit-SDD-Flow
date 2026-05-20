@@ -29,26 +29,24 @@ This skill defines **constitution → spec.md → plan.md → IMPLEMENTATION_GAP
 
 Before executing any stage task of this skill in each round, there must be a governance JSON block injected into the context by **hook + `emit-runtime-policy`** (`scripts/emit-runtime-policy.ts` / `.claude|cursor/hooks/emit-runtime-policy-cli.js`); see `docs/reference/runtime-policy-emit-schema.md` for the contract. **Prohibited** Hand-written sample policies that are inconsistent with `resolveRuntimePolicy` are prohibited; if there is no such block in the context, `.bmad/runtime-context.json` and hook must be repaired first, and fields must not be made up.
 
-## Main-Agent Orchestration Surface (Mandatory)
+## Main Agent Orchestration Surface
 
-In interactive mode, this skill must use the repo-native `main-agent-orchestration` surface as the **only** orchestration authority. `runAuditorHost` is only the post-audit host close-out entry; it must not replace main-agent branching authority.
+Consumer users activate governance through `$bmad-speckit`, `/bmad-speckit`, or `bmad-speckit` in the active AI host session. Do not present `npm run main-agent-orchestration` or `npx bmad-speckit main-agent-orchestration ...` as the default consumer-user step; those commands are install validation, CI, debug, or no-skill fallback only.
 
-Before dispatching any implement / audit / remediate / document execution body, the main Agent **must**:
+In interactive main-agent mode, before starting, continuing, or closing this flow, the main Agent must internally run or equivalently consume the Main Agent control plane:
 
-1. Run `npm run main-agent-orchestration -- --cwd {project-root} --action inspect`
-2. Read `orchestrationState`, `pendingPacketStatus`, `pendingPacket`, `continueDecision`, `mainAgentNextAction`, and `mainAgentReady`
-3. If the next branch is dispatchable but `pendingPacketStatus` is `none` or `missing_packet_file`, run `npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan`
-4. Dispatch strictly from the returned packet / instruction instead of hand-building prompts from audit prose alone
-5. Drive packet lifecycle through `claim` → bounded child execution → `dispatch` → child result ingest / `complete` / `invalidate`
-6. Re-run `npm run main-agent-orchestration -- --cwd {project-root} --action inspect` after every child result and after every `runAuditorHost` close-out before choosing the next global branch
+```text
+main-agent-orchestration --action inspect --host <codex|cursor|claude>
+main-agent-orchestration --action dispatch-plan --host <codex|cursor|claude>
+```
 
-Compatibility rule:
-- `mainAgentNextAction` and `mainAgentReady` are compatibility summary fields only; authoritative runtime truth remains `orchestrationState + pendingPacket + continueDecision`.
+Global branching can only be derived from `requirement-record.json`, `currentMentalModel`, and the six mental model chain: requirement confirmation, architecture confirmation, implementation readiness, execution closure, audit review, and delivery confirmation. `bmad-help`, dashboard, score, SFT, legacy reports, `orchestrationState`, `pendingPacket`, `continueDecision`, `mainAgentNextAction`, and `mainAgentReady` are projections, compatibility hints, or evidence only; after any subagent result, host closeout, rerun, or blocking event, re-run inspect before choosing the next global branch.
 
 Hard prohibitions:
-- Do not dispatch directly from `PASS`, reviewer prose, or host summary without re-reading `main-agent-orchestration`.
-- Do not hand-write packet files or queue items in interactive mode.
-- Do not let a child agent decide the next global branch; the child only executes the bounded packet, and the main Agent must re-read state and decide the next step.
+- Do not ask normal consumer users to activate governance through npm or npx.
+- Do not continue dispatch from `PASS`, reviewer prose, host summary, `runAuditorHost closeout approved`, handoff summary, or old runtime files alone.
+- Do not hand-write packet files or default to worker-consumable queue items in interactive mode.
+- Do not let subagents choose the next global branch; subagents execute bounded packets only, and the main Agent chooses the next step after re-reading controlled records.
 
 ## Quick Decision Guide
 
@@ -392,10 +390,12 @@ When a user requests execution of an unfinished task in tasks.md (or tasks-v*.md
 ### 5.1 Execution process
 
 Before starting task execution or launching any execution body in this stage, the main Agent must:
-- Run `npm run main-agent-orchestration -- --cwd {project-root} --action inspect` and consume the current `orchestrationState` + `pendingPacket`
-- Run `npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan` when `mainAgentNextAction` is dispatchable but no usable packet is materialized yet
-- Claim and dispatch the packet through `main-agent-orchestration` lifecycle actions instead of bypassing state
-- Re-run `inspect` after each bounded child result and after each `runAuditorHost` call before continuing the next scoped batch or audit branch
+- Confirm the user has activated governance with `$bmad-speckit`, `/bmad-speckit`, or `bmad-speckit`, or that the current host is already in equivalent main-agent mode.
+- Internally run or equivalently consume `main-agent-orchestration --action inspect --host <codex|cursor|claude>`, then read authority from `requirement-record.json`, `currentMentalModel`, and the six mental model chain.
+- When a bounded dispatch plan is needed, internally run or equivalently consume `main-agent-orchestration --action dispatch-plan --host <codex|cursor|claude>`.
+- Claim and dispatch packets only through controlled packet lifecycle records; do not bypass controlled state for direct dispatch.
+- Re-run inspect after each bounded child result and after each `runAuditorHost` call before continuing the next scoped batch or audit branch.
+
 
 1. **Read tasks.md** (or tasks-v*.md) and identify all outstanding tasks (`[ ]` checkbox).
 2. **【ralph-method forced prefix】Create prd and progress tracking files**:

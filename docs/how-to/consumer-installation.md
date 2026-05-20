@@ -78,16 +78,17 @@ npx --yes --package bmad-speckit-sdd-flow bmad-speckit init . --ai cursor-agent 
 
 当前正式运行路径已经收敛为：
 
-1. 宿主 hook 写入 `orchestration_state` 与 `pending_packet`
-2. 主 Agent 执行 `npm run main-agent-orchestration -- --cwd <project-root> --action inspect`
-3. 必要时主 Agent 执行 `npm run main-agent-orchestration -- --cwd <project-root> --action dispatch-plan`
-4. 主 Agent claim / dispatch bounded packet
-5. 子代理只执行 bounded work
-6. 主 Agent 回读 state / packet / child result，决定下一步
-7. `runAuditorHost` 只负责 post-audit close-out
+1. 用户在 Cursor / Claude Code / Codex 等宿主会话中输入 `$bmad-speckit`、`/bmad-speckit` 或 `bmad-speckit`
+2. 主 Agent 内部执行或等价消费 Main Agent control plane 的 `inspect`
+3. 必要时主 Agent 内部执行或等价消费 `dispatch-plan`
+4. 主 Agent 只从 `requirement-record.json`、`currentMentalModel`、六个心智模型链路和 controlled ingest 记录推导下一步
+5. 子代理只执行 bounded work，不决定全局分支
+6. 主 Agent 回读受控记录、当前 hash、当前 attempt 和 child result，决定下一步
+7. `runAuditorHost` 只负责 post-audit close-out 证据收口，不能替代交付确认
 
 以下内容不再是当前 accepted runtime path 的成功标准：
 
+- 要求普通消费用户手动执行 `npm run main-agent-orchestration` 或 `npx bmad-speckit main-agent-orchestration ...`
 - `background worker` 自动吃队列
 - queue 自动从 `pending` 推进到 `done`
 - autonomous fallback execution
@@ -207,12 +208,11 @@ npx bmad-speckit check
 npx bmad-speckit-init --agent claude-code
 npx bmad-speckit-init --agent cursor
 
-# 4. accepted main-agent path
+# 4. installed host assets and internal control plane availability
 Test-Path .claude\hooks\runtime-policy-inject.cjs
 Test-Path .claude\hooks\pre-continue-check.cjs
 Test-Path .cursor\hooks\runtime-policy-inject.cjs
 Test-Path .cursor\hooks\pre-continue-check.cjs
-npm run main-agent-orchestration -- --cwd . --action inspect
 ```
 
 判定规则：
@@ -220,12 +220,18 @@ npm run main-agent-orchestration -- --cwd . --action inspect
 - 第 1、2 步必须成功
 - 第 3 步必须无报错
 - 第 4 步四个 `Test-Path` 都应返回 `True`
-- `inspect` 必须可执行并返回 authoritative surface
+- 普通消费用户应在宿主会话中使用 `$bmad-speckit`、`/bmad-speckit` 或 `bmad-speckit` 激活主控
 
-必要时再执行：
+安装验证、CI、debug 或 no-skill fallback 场景才允许直接执行：
 
 ```powershell
-npm run main-agent-orchestration -- --cwd . --action dispatch-plan
+npx bmad-speckit main-agent-orchestration --cwd . --action inspect
+```
+
+必要时验证：
+
+```powershell
+npx bmad-speckit main-agent-orchestration --cwd . --action dispatch-plan
 ```
 
 ---

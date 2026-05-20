@@ -19,7 +19,7 @@
 
 **`bmad-story-assistant`** 是用户视角的 Story 工作流入口；**`bmad-master`** 是运行时视角的状态机、门控器和路由器。
 
-> **Current path**：主 Agent 先读 `main-agent-orchestration inspect`，必要时才执行 `dispatch-plan`，子代理只执行 `bounded packet`，`runAuditorHost` 仅负责 post-audit close-out。
+> **Current path**：消费用户通过 `$bmad-speckit`、`/bmad-speckit`、`bmad-speckit` 或宿主等价 skill 入口激活主控；主 Agent 内部执行 `inspect / dispatch-plan`，并从 `requirement-record.json`、`currentMentalModel` 和六个心智模型链路决定下一步。子代理只执行 `bounded packet`，`runAuditorHost` 仅负责 post-audit close-out 证据收口。
 > **Legacy path**：把 `mainAgentNextAction / mainAgentReady`、手工 close-out 或后台 worker 当成 interactive 主控真相源。
 
 ---
@@ -37,10 +37,10 @@
 ### 当前 accepted runtime path
 
 1. 用户通过 `bmad-story-assistant` 或宿主等价入口发起 Story 流程
-2. 主 Agent 先执行 `npm run main-agent-orchestration -- --cwd <project-root> --action inspect`
-3. 若 surface 显示需要 materialize packet，再执行 `dispatch-plan`
+2. 主 Agent 内部执行或等价消费 Main Agent control plane 的 `inspect`
+3. 若受控记录显示需要 materialize packet，再内部执行或等价消费 `dispatch-plan`
 4. 子代理只执行 `bounded packet`，返回 packet result，不决定下一条全局分支
-5. 审计通过后由 `runAuditorHost` 做 post-audit close-out，随后主 Agent 回到 `inspect`
+5. 审计通过后由 `runAuditorHost` 做 post-audit close-out 证据收口，随后主 Agent 回读受控 RequirementRecord、当前 hash、当前 attempt 和六个心智模型状态
 
 ---
 
@@ -92,7 +92,7 @@ Slug: email-validator
 需求：实现邮箱格式验证函数
 ```
 
-无论通过哪种入口触发，interactive 主链都必须先读取 `main-agent-orchestration inspect`。
+无论通过哪种入口触发，interactive 主链都必须先回读受控 RequirementRecord、`currentMentalModel` 和六个心智模型状态；`inspect` 是主控内部动作，不是普通用户手动步骤。
 
 ### 4.2 继续已有 Story
 
@@ -112,28 +112,16 @@ Slug: email-validator
 请使用 bmad-story-assistant 继续 E001-S001 --continue
 ```
 
-`--continue` 在 runtime consumer 归一化后的 handoff 满足 `mainAgentNextAction + mainAgentReady=true` 时允许系统自动推进下一阶段。`next_action / ready` 仍可保留为阶段语义，但 interactive 模式是否继续只看主 Agent 字段。默认不启用自动续跑。
+`--continue` 只有在受控 RequirementRecord、当前 hash、当前 attempt、`currentMentalModel` 和六个心智模型状态都允许时，才允许系统自动推进下一阶段。`next_action / ready / mainAgentNextAction / mainAgentReady` 仍可保留为 compatibility hint，但 interactive 模式是否继续不能只看这些字段。默认不启用自动续跑。
 
 当前更准确的口径是：
 
-- 若 repo-native `main-agent-orchestration` surface 可用，主 Agent **必须先读 surface**
+- 主 Agent 必须先读受控 RequirementRecord、`currentMentalModel` 和六个心智模型状态
 - `mainAgentNextAction / mainAgentReady` 只作为 compatibility summary
-- 仅当 surface 不可用时，才回退到 handoff 中的 `mainAgentNextAction / mainAgentReady`
+- 不存在从 handoff 字段回退取得控制权的路径；不一致时阻断并重新 inspect 受控记录
 - 子代理只消费 `bounded packet`，不得替主 Agent 选择下一条全局执行链
 
-当前正式做法已经升级为先读取 repo-native orchestration surface：
-
-```bash
-npm run main-agent-orchestration -- --cwd <project-root> --action inspect
-```
-
-如需生成正式派发计划，则读取：
-
-```bash
-npm run main-agent-orchestration -- --cwd <project-root> --action dispatch-plan
-```
-
-`dispatch-plan` 不是每次都要跑；只有 `inspect` 明确要求 materialize packet 时才执行。
+`inspect / dispatch-plan` 是主控内部动作；npm / npx CLI 只允许用于安装验证、CI、debug 或 no-skill fallback，不作为普通消费用户默认步骤。
 
 ### 4.4 只执行 Story 审计
 
@@ -231,18 +219,18 @@ auto_continue:
 - `layer`、`stage`：当前位置
 - `artifacts`：产出文件列表
 - `next_action`、`ready`：子阶段推荐结果，可保留为 legacy 阶段语义
-- `mainAgentNextAction`、`mainAgentReady`：主 Agent 的 compatibility summary；若 repo-native orchestration surface 不可用，才回退读取这组字段
+- `mainAgentNextAction`、`mainAgentReady`：compatibility summary；不得作为控制权回退来源
 - `iteration_count`：审计迭代计数
 
 ### 基本原则
 
 - 未通过审计 = 阶段未完成
 - 通过审计后才允许推进 state
-- `next_action` 只是阶段推荐；若 repo-native orchestration surface 不可用，是否自动继续才回退取决于 `mainAgentNextAction` / `mainAgentReady`
+- `next_action` 只是阶段推荐；是否自动继续只能由受控 RequirementRecord、`currentMentalModel`、六个心智模型状态、当前 hash 和当前 attempt 决定
 - 默认不隐式连跑
 - interactive 模式下的下一步执行始终由 **主 Agent** 决定；hook / queue / worker 只能提供 gate 与 state，不得直接替主 Agent 推进阶段
-- `auto_continue.require_next_action` / `require_ready_flag` 仍保留 legacy 配置名，但应绑定到归一化后的主 Agent handoff 字段
-- 若 `main-agent-orchestration` surface 可用，主 Agent 必须优先消费该 surface；`handoff` 只能作为兼容兜底，不是主控真相源
+- `auto_continue.require_next_action` / `require_ready_flag` 仍保留 legacy 配置名，但目标态必须绑定到受控 RequirementRecord 和六个心智模型状态
+- `handoff` 只能作为兼容提示，不存在从 handoff 字段回退取得控制权的路径
 
 ---
 
@@ -250,8 +238,9 @@ auto_continue:
 
 | 操作             | 命令                                                                              |
 | ---------------- | --------------------------------------------------------------------------------- |
-| 查看主控 surface | `npm run main-agent-orchestration -- --cwd <project-root> --action inspect`       |
-| 生成派发计划     | `npm run main-agent-orchestration -- --cwd <project-root> --action dispatch-plan` |
+| 激活主控         | 在当前 AI 宿主会话输入 `$bmad-speckit` / `/bmad-speckit` / `bmad-speckit`         |
+| 内部检查         | 主 Agent 内部执行或等价消费 `inspect`；CLI 只用于安装验证 / CI / debug / fallback |
+| 内部派发计划     | 主 Agent 内部执行或等价消费 `dispatch-plan`；普通用户无需手动运行                |
 | 手动继续         | `请使用 bmad-story-assistant 继续 E001-S001`                                      |
 | 自动续跑         | `... 继续 E001-S001 --continue`                                                   |
 | 查看 Story 列表  | `@bmad-master list stories`（Claude Code）                                        |
@@ -262,11 +251,11 @@ auto_continue:
 ## 9. 使用建议
 
 1. 把 `bmad-story-assistant` 当作统一入口，不要手动跳过 stage
-2. 默认不要打开 auto-continue，除非明确想让流程根据主 Agent surface 串跑
-3. 每次中断恢复时优先看 state 和 handoff，不要靠记忆判断当前阶段
+2. 默认不要打开 auto-continue，除非明确想让流程根据受控 RequirementRecord 和六个心智模型状态串跑
+3. 每次中断恢复时优先看受控记录和当前模型状态，不要靠记忆判断当前阶段
 4. 把审计看成门控，不是可选装饰
-5. 如果命中 implementation-entry / readiness blocker，应由主 Agent 读取 orchestration state 与 packet，再决定派哪个子代理继续，而不是依赖后台自动推进
-6. 当主 Agent 需要 claim / dispatch / complete / invalidate 时，优先使用 `npm run main-agent-orchestration -- --action <...>`；`runAuditorHost` 只用于 post-audit close-out
+5. 如果命中 implementation-entry / readiness blocker，应由主 Agent 读取 RequirementRecord、当前 hash、当前 attempt 和六个心智模型状态，再决定派哪个子代理继续，而不是依赖后台自动推进
+6. 当主 Agent 需要 claim / dispatch / complete / invalidate 时，应通过内部 control-plane action 执行；`runAuditorHost` 只用于 post-audit close-out 证据收口
 
 ---
 
