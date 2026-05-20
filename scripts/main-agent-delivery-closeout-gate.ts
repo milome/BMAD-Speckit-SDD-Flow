@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { resolveArchitectureConfirmationHashRecipe } from './architecture-confirmation-hash-recipe';
@@ -12,6 +13,41 @@ const RERUN_AUTHORITY_SOURCE_TYPES = new Set([
   'execution_iteration',
   'requirement_closure',
 ]);
+
+const REQUIRED_SUBSYSTEM_IDS = [
+  'requirement_confirmation',
+  'architecture_confirmation',
+  'implementation_readiness',
+  'main_agent_orchestration',
+  'execution_tracking',
+  'audit_review',
+  'delivery_closeout',
+  'observability',
+  'rca_improvement',
+  'data_production',
+  'eval_sft',
+  'governance',
+  'coach',
+  'dashboard_read_model',
+  'scoring',
+  'prompt_packet_generation',
+];
+
+const REQUIRED_EXTENSION_ARRAYS = [
+  'canaryPlan',
+  'sloTargets',
+  'errorRateMetrics',
+  'performanceMetrics',
+  'businessMetrics',
+  'alerts',
+  'rollbackConditions',
+];
+
+const REQUIRED_PRODUCTION_PASS_CRITERIA = [
+  'machine_readable_inputs_outputs_status_evidence_hash',
+  'failure_handling_declared',
+  'no_user_visible_regression',
+];
 
 interface ParsedArgs {
   requirementRecord?: string;
@@ -68,8 +104,29 @@ function readJson(file: string): JsonObject {
   return parsed as JsonObject;
 }
 
+function sha256File(file: string): string {
+  return `sha256:${crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')}`;
+}
+
+function sha256Text(value: string): string {
+  return `sha256:${crypto.createHash('sha256').update(value, 'utf8').digest('hex')}`;
+}
+
+function isSha256(value: string): boolean {
+  return /^sha256:[a-f0-9]{64}$/u.test(value);
+}
+
+function nested(value: unknown): JsonObject {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : {};
+}
+
 function normalizePathForRecord(value: string): string {
   return value.replace(/\\/gu, '/');
+}
+
+function resolveArtifactPath(recordPath: string, artifactPath: string): string {
+  if (path.isAbsolute(artifactPath)) return artifactPath;
+  return path.resolve(path.dirname(recordPath), '..', '..', '..', '..', artifactPath);
 }
 
 function appendJsonl(file: string, value: JsonObject): void {
@@ -165,14 +222,15 @@ function artifactIndexed(record: JsonObject, artifactRef: unknown): boolean {
   );
 }
 
-function latestFailureCaseCoverageArtifact(record: JsonObject): JsonObject | null {
+function latestActiveArtifact(record: JsonObject, predicate: (artifact: JsonObject) => boolean): JsonObject | null {
   const artifacts = objects(record.artifactIndex).filter(
-    (artifact) =>
-      text(artifact.artifactType) === 'failure_case_coverage' &&
-      text(artifact.sourceOfTruthRole) === 'evidence' &&
-      text(artifact.status) === 'active'
+    (artifact) => text(artifact.sourceOfTruthRole) === 'evidence' && text(artifact.status) === 'active' && predicate(artifact)
   );
   return artifacts.at(-1) ?? null;
+}
+
+function latestFailureCaseCoverageArtifact(record: JsonObject): JsonObject | null {
+  return latestActiveArtifact(record, (artifact) => text(artifact.artifactType) === 'failure_case_coverage');
 }
 
 function failureCaseCoverageIssues(record: JsonObject): string[] {
@@ -182,6 +240,9 @@ function failureCaseCoverageIssues(record: JsonObject): string[] {
   const artifactPath = text(artifact.path);
   const absolute = path.isAbsolute(artifactPath) ? artifactPath : path.resolve(process.cwd(), artifactPath);
   if (!fs.existsSync(absolute)) return [`failure_case_coverage_artifact_not_found:${normalizePathForRecord(artifactPath)}`];
+  if (sha256File(absolute) !== text(artifact.hash ?? artifact.contentHash)) {
+    return ['failure_case_coverage_artifact_hash_mismatch'];
+  }
   const report = readJson(absolute);
   const coverage = report.resumeFailureCaseRegistryCoverage as JsonObject | undefined;
   const total = Number(coverage?.failureCases ?? report.failureCaseTotalCount ?? 0);
@@ -190,12 +251,355 @@ function failureCaseCoverageIssues(record: JsonObject): string[] {
   const issues = strings(coverage?.issues ?? report.issues);
   const blockingIssues = strings(report.blockingIssues);
   const out: string[] = [];
+  const architectureState = nested(record.architectureConfirmationState);
+  if (text(report.sourceDocumentHash) && text(report.sourceDocumentHash) !== text(record.sourceDocumentHash)) {
+    out.push('failure_case_coverage_source_document_hash_mismatch');
+  }
+  if (
+    text(report.implementationConfirmationHash) &&
+    text(report.implementationConfirmationHash) !== text(record.implementationConfirmationHash)
+  ) {
+    out.push('failure_case_coverage_implementation_hash_mismatch');
+  }
+  if (
+    text(report.architectureConfirmationHash) &&
+    text(report.architectureConfirmationHash) !== text(architectureState.currentArchitectureConfirmationHash)
+  ) {
+    out.push('failure_case_coverage_architecture_hash_mismatch');
+  }
   if (!total) out.push('failure_case_coverage_total_missing');
   if (total !== exercised) out.push(`failure_case_coverage_incomplete:${exercised}/${total}`);
   for (const caseId of unexercised) out.push(`failure_case_unexercised:${caseId}`);
   if (issues.length > 0) out.push('failure_case_coverage_registry_issues');
   if (blockingIssues.length > 0) out.push('failure_case_coverage_blocking_issues');
   return [...new Set(out)];
+}
+
+function runtimeRootFromRecordPath(recordPath: string): string {
+  return path.dirname(path.dirname(path.dirname(recordPath)));
+}
+
+function defaultDatasetId(record: JsonObject): string {
+  return `${text(record.recordId)}-governed-sft`.toLowerCase();
+}
+
+function resolveDefaultDatasetReleaseReport(record: JsonObject, recordPath: string): string {
+  return path.join(
+    runtimeRootFromRecordPath(recordPath),
+    'datasets',
+    defaultDatasetId(record),
+    'v1',
+    'dataset-release-gate-report.json'
+  );
+}
+
+function resolveDefaultDatasetManifest(record: JsonObject, recordPath: string): string {
+  return path.join(runtimeRootFromRecordPath(recordPath), 'datasets', defaultDatasetId(record), 'v1', 'dataset-manifest.json');
+}
+
+function artifactHash(ref: JsonObject): string {
+  return text(ref.hash ?? ref.contentHash);
+}
+
+function currentArchitectureHash(record: JsonObject): string {
+  return text(nested(record.architectureConfirmationState).currentArchitectureConfirmationHash);
+}
+
+function latestActiveExtensionRef(record: JsonObject): JsonObject | null {
+  const refs = objects(record.extensionRefs).filter((ref) => {
+    const relatedIds = strings(ref.relatedRequirementIds);
+    return (
+      text(ref.status) === 'active' &&
+      text(ref.sourceOfTruthRole) === 'evidence' &&
+      (text(ref.artifactType) === 'observability_extension' ||
+        relatedIds.some((id) => ['MUST-017', 'MUST-039', 'MUST-040', 'MUST-043', 'EVD-039'].includes(id)))
+    );
+  });
+  return refs.at(-1) ?? null;
+}
+
+function artifactRefIssues(ref: JsonObject | null, prefix: string): string[] {
+  if (!ref) return [`${prefix}_missing`];
+  const issues: string[] = [];
+  if (!text(ref.path)) issues.push(`${prefix}_path_missing`);
+  if (!isSha256(artifactHash(ref))) issues.push(`${prefix}_hash_missing`);
+  if (!text(ref.producer)) issues.push(`${prefix}_producer_missing`);
+  if (!text(ref.purpose)) issues.push(`${prefix}_purpose_missing`);
+  if (strings(ref.relatedRequirementIds).length === 0) issues.push(`${prefix}_related_requirement_ids_missing`);
+  if (!text(ref.inputVersion)) issues.push(`${prefix}_input_version_missing`);
+  if (!text(ref.outputVersion)) issues.push(`${prefix}_output_version_missing`);
+  if (text(ref.sourceOfTruthRole) !== 'evidence') issues.push(`${prefix}_source_of_truth_role_not_evidence`);
+  if (text(ref.status) !== 'active') issues.push(`${prefix}_not_active`);
+  return issues;
+}
+
+function hashBindingIssues(record: JsonObject, binding: JsonObject, prefix: string): string[] {
+  const issues: string[] = [];
+  if (text(binding.sourceDocumentHash) !== text(record.sourceDocumentHash)) {
+    issues.push(`${prefix}_source_document_hash_mismatch`);
+  }
+  if (text(binding.implementationConfirmationHash) !== text(record.implementationConfirmationHash)) {
+    issues.push(`${prefix}_implementation_hash_mismatch`);
+  }
+  if (text(binding.architectureConfirmationHash) !== currentArchitectureHash(record)) {
+    issues.push(`${prefix}_architecture_hash_mismatch`);
+  }
+  return issues;
+}
+
+function subsystemAcceptanceIssues(record: JsonObject, extension: JsonObject): string[] {
+  const issues: string[] = [];
+  const readinessById = new Map(objects(extension.subsystemReadiness).map((item) => [text(item.subsystemId), item]));
+  const registry = nested(extension.productionSubsystemAcceptanceRegistry);
+  const registryItems = objects(registry.subsystemAcceptance);
+  const registryById = new Map(registryItems.map((item) => [text(item.subsystemId), item]));
+
+  if (!registryItems.length) issues.push('production_subsystem_acceptance_registry_missing');
+  issues.push(...hashBindingIssues(record, registry, 'production_subsystem_acceptance_registry'));
+
+  const registryHash = text(extension.productionSubsystemAcceptanceRegistryHash);
+  if (!isSha256(registryHash)) {
+    issues.push('production_subsystem_acceptance_registry_hash_missing');
+  } else if (sha256Text(JSON.stringify(registry)) !== registryHash) {
+    issues.push('production_subsystem_acceptance_registry_hash_mismatch');
+  }
+
+  for (const subsystemId of REQUIRED_SUBSYSTEM_IDS) {
+    const subsystem = readinessById.get(subsystemId);
+    const acceptance = registryById.get(subsystemId);
+    if (!subsystem) {
+      issues.push(`subsystem_missing:${subsystemId}`);
+      continue;
+    }
+    if (strings(subsystem.inputRefs).length === 0) issues.push(`subsystem_input_refs_missing:${subsystemId}`);
+    if (strings(subsystem.outputRefs).length === 0) issues.push(`subsystem_output_refs_missing:${subsystemId}`);
+    if (text(subsystem.status) !== 'ready') issues.push(`subsystem_status_not_ready:${subsystemId}`);
+    if (strings(subsystem.evidenceRefs).length === 0) issues.push(`subsystem_evidence_refs_missing:${subsystemId}`);
+    if (!isSha256(text(subsystem.hash))) issues.push(`subsystem_hash_missing:${subsystemId}`);
+    issues.push(...hashBindingIssues(record, nested(subsystem.currentHashBinding), `subsystem_hash_binding:${subsystemId}`));
+
+    const failureHandling = nested(subsystem.failureHandling);
+    const failureModes = strings(failureHandling.failureModes);
+    const recordEventTypes = strings(failureHandling.recordEventTypes);
+    const recoveryActions = strings(failureHandling.recoveryActions);
+    if (failureModes.length === 0) issues.push(`subsystem_failure_modes_missing:${subsystemId}`);
+    if (recordEventTypes.length === 0) issues.push(`subsystem_failure_event_types_missing:${subsystemId}`);
+    if (recoveryActions.length === 0) issues.push(`subsystem_recovery_actions_missing:${subsystemId}`);
+
+    const parity = nested(subsystem.functionalParity);
+    if (parity.userVisibleBehaviorPreserved !== true) {
+      issues.push(`subsystem_functional_parity_not_preserved:${subsystemId}`);
+    }
+    if (strings(parity.regressionEvidenceRefs).length === 0) {
+      issues.push(`subsystem_functional_parity_regression_evidence_missing:${subsystemId}`);
+    }
+
+    if (!acceptance) {
+      issues.push(`subsystem_acceptance_missing:${subsystemId}`);
+      continue;
+    }
+    const passCriteria = strings(acceptance.passCriteria);
+    for (const criterion of REQUIRED_PRODUCTION_PASS_CRITERIA) {
+      if (!passCriteria.includes(criterion)) issues.push(`subsystem_acceptance_pass_criterion_missing:${subsystemId}:${criterion}`);
+    }
+    const requiredEvidenceRefs = strings(acceptance.requiredEvidenceRefs);
+    if (requiredEvidenceRefs.length === 0) issues.push(`subsystem_acceptance_required_evidence_missing:${subsystemId}`);
+    for (const evidenceRef of requiredEvidenceRefs) {
+      if (!strings(subsystem.evidenceRefs).includes(evidenceRef)) {
+        issues.push(`subsystem_acceptance_evidence_not_satisfied:${subsystemId}:${evidenceRef}`);
+      }
+    }
+    if (strings(acceptance.requiredCommands).length === 0) {
+      issues.push(`subsystem_acceptance_required_commands_missing:${subsystemId}`);
+    }
+    for (const failureCase of strings(acceptance.requiredFailureCases)) {
+      if (!failureModes.includes(failureCase)) issues.push(`subsystem_acceptance_failure_case_not_satisfied:${subsystemId}:${failureCase}`);
+    }
+    for (const eventType of strings(acceptance.recordEventTypes)) {
+      if (!recordEventTypes.includes(eventType)) issues.push(`subsystem_acceptance_event_type_not_satisfied:${subsystemId}:${eventType}`);
+    }
+    for (const action of strings(acceptance.recoveryActions)) {
+      if (!recoveryActions.includes(action)) issues.push(`subsystem_acceptance_recovery_action_not_satisfied:${subsystemId}:${action}`);
+    }
+    const acceptanceParity = nested(acceptance.functionalParity);
+    if (acceptanceParity.userVisibleBehaviorPreserved !== true) {
+      issues.push(`subsystem_acceptance_functional_parity_not_preserved:${subsystemId}`);
+    }
+    if (strings(acceptanceParity.replacementScripts).length === 0) {
+      issues.push(`subsystem_acceptance_replacement_scripts_missing:${subsystemId}`);
+    }
+    if (strings(acceptanceParity.replacementArtifacts).length === 0) {
+      issues.push(`subsystem_acceptance_replacement_artifacts_missing:${subsystemId}`);
+    }
+  }
+
+  return issues;
+}
+
+function extensionProductionIssues(record: JsonObject, recordPath: string): { issues: string[]; extensionRef: JsonObject | null } {
+  const issues: string[] = [];
+  const extensionRef = latestActiveExtensionRef(record);
+  const refIssues = artifactRefIssues(extensionRef, 'production_subsystem_extension_ref');
+  issues.push(...refIssues);
+  if (!extensionRef || refIssues.length > 0) return { issues: [...new Set(issues)], extensionRef };
+
+  const extensionPath = resolveArtifactPath(recordPath, text(extensionRef.path));
+  if (!fs.existsSync(extensionPath)) {
+    issues.push('production_subsystem_extension_file_missing');
+    return { issues: [...new Set(issues)], extensionRef };
+  }
+  if (sha256File(extensionPath) !== artifactHash(extensionRef)) {
+    issues.push('production_subsystem_extension_hash_mismatch');
+    return { issues: [...new Set(issues)], extensionRef };
+  }
+
+  const extension = readJson(extensionPath);
+  if (text(extension.recordId) !== text(record.recordId)) issues.push('production_subsystem_extension_record_id_mismatch');
+  if (text(extension.requirementSetId) !== text(record.requirementSetId)) {
+    issues.push('production_subsystem_extension_requirement_set_id_mismatch');
+  }
+  issues.push(...hashBindingIssues(record, extension, 'production_subsystem_extension'));
+  issues.push(...hashBindingIssues(record, nested(extension.currentHashBinding), 'production_subsystem_extension_current_binding'));
+
+  for (const key of REQUIRED_EXTENSION_ARRAYS) {
+    if (objects(extension[key]).length === 0) issues.push(`production_subsystem_observability_${key}_missing`);
+  }
+  const feedbackRouting = nested(extension.feedbackRouting);
+  if (strings(feedbackRouting.failureRecordEventTypes).length === 0) {
+    issues.push('production_subsystem_feedback_failure_record_event_types_missing');
+  }
+  if (strings(feedbackRouting.rcaRecordEventTypes).length === 0) {
+    issues.push('production_subsystem_feedback_rca_record_event_types_missing');
+  }
+  if (strings(feedbackRouting.sampleRouteOutputs).length === 0) {
+    issues.push('production_subsystem_feedback_sample_route_outputs_missing');
+  }
+
+  const parity = nested(extension.functionalParity);
+  if (parity.userVisibleBehaviorPreserved !== true) issues.push('production_subsystem_functional_parity_not_preserved');
+  if (strings(parity.replacementScripts).length === 0) issues.push('production_subsystem_replacement_scripts_missing');
+  if (strings(parity.replacementArtifacts).length === 0) issues.push('production_subsystem_replacement_artifacts_missing');
+  if (strings(parity.regressionTests).length === 0) issues.push('production_subsystem_regression_tests_missing');
+  if (strings(parity.evidenceRefs).length === 0) issues.push('production_subsystem_functional_parity_evidence_missing');
+
+  issues.push(...subsystemAcceptanceIssues(record, extension));
+  return { issues: [...new Set(issues)], extensionRef };
+}
+
+function productionLoopReadyReportIssues(record: JsonObject, recordPath: string): string[] {
+  const artifact = latestActiveArtifact(record, (item) =>
+    ['production_subsystem_acceptance_report', 'production_loop_ready_report'].includes(text(item.artifactType))
+  );
+  if (!artifact) return ['production_loop_ready_report_artifact_missing'];
+  const issues = artifactRefIssues(artifact, 'production_loop_ready_report_artifact');
+  if (issues.length > 0) return issues;
+  const reportPath = resolveArtifactPath(recordPath, text(artifact.path));
+  if (!fs.existsSync(reportPath)) return ['production_loop_ready_report_missing'];
+  if (sha256File(reportPath) !== artifactHash(artifact)) return ['production_loop_ready_report_hash_mismatch'];
+  const report = readJson(reportPath);
+  if (text(report.reportType) !== 'production_loop_ready_report') issues.push('production_loop_ready_report_type_invalid');
+  if (text(report.decision) !== 'pass') issues.push('production_loop_ready_report_not_pass');
+  if (text(report.recordId) !== text(record.recordId)) issues.push('production_loop_ready_report_record_id_mismatch');
+  if (text(report.requirementSetId) !== text(record.requirementSetId)) {
+    issues.push('production_loop_ready_report_requirement_set_id_mismatch');
+  }
+  if (strings(report.blockingReasons).length > 0 || objects(report.blockingReasons).length > 0) {
+    issues.push('production_loop_ready_report_blocking_reasons_present');
+  }
+  const checks = objects(report.checks);
+  for (const requiredId of ['governed-dataset-release-complete', 'sixteen-subsystems-machine-readable']) {
+    if (!checks.some((check) => text(check.id) === requiredId && check.passed === true)) {
+      issues.push(`production_loop_ready_report_check_not_passed:${requiredId}`);
+    }
+  }
+  return [...new Set(issues)];
+}
+
+function datasetReleaseIssues(record: JsonObject, recordPath: string): string[] {
+  const issues: string[] = [];
+  const manifestPath = resolveDefaultDatasetManifest(record, recordPath);
+  const reportPath = resolveDefaultDatasetReleaseReport(record, recordPath);
+  if (!fs.existsSync(manifestPath)) {
+    issues.push('dataset_manifest_missing');
+  }
+  if (!fs.existsSync(reportPath)) {
+    issues.push('dataset_release_report_missing');
+  }
+  if (issues.length > 0) return issues;
+
+  const manifest = readJson(manifestPath);
+  const report = readJson(reportPath);
+  const manifestHash = sha256File(manifestPath);
+  const reportHash = sha256File(reportPath);
+
+  const manifestArtifact = latestActiveArtifact(record, (item) =>
+    ['dataset_release_manifest', 'dataset_manifest'].includes(text(item.artifactType)) &&
+    normalizePathForRecord(text(item.path)) === normalizePathForRecord(path.relative(process.cwd(), manifestPath))
+  );
+  const reportArtifact = latestActiveArtifact(record, (item) =>
+    text(item.artifactType) === 'dataset_release_gate_report' &&
+    normalizePathForRecord(text(item.path)) === normalizePathForRecord(path.relative(process.cwd(), reportPath))
+  );
+  if (manifestArtifact && artifactHash(manifestArtifact) !== manifestHash) issues.push('dataset_manifest_artifact_hash_mismatch');
+  if (reportArtifact && artifactHash(reportArtifact) !== reportHash) issues.push('dataset_release_report_artifact_hash_mismatch');
+
+  if (text(manifest.manifestType) !== 'dataset_release_manifest') issues.push('dataset_manifest_type_invalid');
+  if (text(manifest.releaseDecision) !== 'pass') issues.push('dataset_manifest_release_decision_not_pass');
+  issues.push(...hashBindingIssues(record, nested(manifest.source), 'dataset_manifest'));
+  if (Number(nested(manifest.counts).subsystems ?? 0) !== REQUIRED_SUBSYSTEM_IDS.length) {
+    issues.push('dataset_manifest_subsystem_count_mismatch');
+  }
+  if (Number(nested(manifest.counts).blockedIssues ?? 1) !== 0) issues.push('dataset_manifest_blocked_issues_present');
+
+  if (text(report.reportType) !== 'dataset_release_gate_report') issues.push('dataset_release_report_type_invalid');
+  if (text(report.decision) !== 'pass') issues.push('dataset_release_gate_not_pass');
+  if (text(report.recordId) !== text(record.recordId)) issues.push('dataset_release_record_id_mismatch');
+  if (text(report.requirementSetId) !== text(record.requirementSetId)) {
+    issues.push('dataset_release_requirement_set_id_mismatch');
+  }
+  if (strings(report.blockingIssues).length > 0 || objects(report.blockingIssues).length > 0) {
+    issues.push('dataset_release_blocking_issues_present');
+  }
+  if (text(report.manifestHash) && text(report.manifestHash) !== manifestHash) {
+    issues.push('dataset_release_manifest_hash_mismatch');
+  }
+  const checks = objects(report.checks);
+  for (const requiredId of [
+    'source-manifest-current',
+    'training-run-bound',
+    'post-training-eval-bound',
+    'sixteen-subsystems-machine-readable',
+  ]) {
+    if (!checks.some((check) => text(check.id) === requiredId && check.passed === true)) {
+      issues.push(`dataset_release_check_not_passed:${requiredId}`);
+    }
+  }
+  return [...new Set(issues)];
+}
+
+function productionBlockerIssues(record: JsonObject, recordPath: string): { issues: string[]; checks: JsonObject[] } {
+  const extension = extensionProductionIssues(record, recordPath);
+  const readyReportIssues = productionLoopReadyReportIssues(record, recordPath);
+  const datasetIssues = datasetReleaseIssues(record, recordPath);
+  const checks = [
+    {
+      id: 'production-subsystem-extension-current',
+      passed: extension.issues.length === 0,
+      issueCount: extension.issues.length,
+      extensionRefPath: text(extension.extensionRef?.path) || null,
+    },
+    {
+      id: 'production-loop-ready-report-current',
+      passed: readyReportIssues.length === 0,
+      issueCount: readyReportIssues.length,
+    },
+    {
+      id: 'dataset-release-artifacts-current',
+      passed: datasetIssues.length === 0,
+      issueCount: datasetIssues.length,
+    },
+  ];
+  return { issues: [...new Set([...extension.issues, ...readyReportIssues, ...datasetIssues])], checks };
 }
 
 function hasImplementationReadinessPass(record: JsonObject): boolean {
@@ -346,7 +750,7 @@ function hookReconciliationIssues(record: JsonObject): string[] {
   return [...new Set(issues)];
 }
 
-function evaluate(record: JsonObject, attemptId: string): { decision: CloseoutDecision; blockingReasons: string[]; checks: JsonObject[] } {
+function evaluate(record: JsonObject, recordPath: string, attemptId: string): { decision: CloseoutDecision; blockingReasons: string[]; checks: JsonObject[] } {
   const checks: JsonObject[] = [];
   const blockingReasons: string[] = [];
   const readinessPassed = hasImplementationReadinessPass(record);
@@ -393,6 +797,10 @@ function evaluate(record: JsonObject, attemptId: string): { decision: CloseoutDe
     issueCount: failureCaseIssues.length,
   });
   blockingReasons.push(...failureCaseIssues);
+
+  const productionIssues = productionBlockerIssues(record, recordPath);
+  checks.push(...productionIssues.checks);
+  blockingReasons.push(...productionIssues.issues);
 
   const attemptRuns = commandRunsForAttempt(record, attemptId);
   for (const command of requiredCommands) {
@@ -613,7 +1021,7 @@ export function mainDeliveryCloseoutGate(argv: string[]): number {
     return 2;
   }
   const reportPath = path.resolve(args.reportPath ?? path.join(path.dirname(recordPath), 'delivery-closeout-report.json'));
-  const evaluation = evaluate(record, attemptId);
+  const evaluation = evaluate(record, recordPath, attemptId);
   const report = {
     reportType: 'delivery_closeout_report',
     generatedAt: evaluatedAt,

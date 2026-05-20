@@ -1,4 +1,5 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import * as crypto from 'node:crypto';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -6,6 +7,312 @@ import { mainDeliveryCloseoutGate } from '../../scripts/main-agent-delivery-clos
 import { resolveArchitectureConfirmationHashRecipe } from '../../scripts/architecture-confirmation-hash-recipe';
 
 const HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
+const SUBSYSTEM_IDS = [
+  'requirement_confirmation',
+  'architecture_confirmation',
+  'implementation_readiness',
+  'main_agent_orchestration',
+  'execution_tracking',
+  'audit_review',
+  'delivery_closeout',
+  'observability',
+  'rca_improvement',
+  'data_production',
+  'eval_sft',
+  'governance',
+  'coach',
+  'dashboard_read_model',
+  'scoring',
+  'prompt_packet_generation',
+];
+
+function sha256Text(value: string): string {
+  return `sha256:${crypto.createHash('sha256').update(value, 'utf8').digest('hex')}`;
+}
+
+function sha256File(filePath: string): string {
+  return `sha256:${crypto.createHash('sha256').update(readFileSync(filePath)).digest('hex')}`;
+}
+
+function writeJson(filePath: string, value: unknown): void {
+  mkdirSync(path.dirname(filePath), { recursive: true });
+  writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+function writeText(filePath: string, value: string): void {
+  mkdirSync(path.dirname(filePath), { recursive: true });
+  writeFileSync(filePath, value, 'utf8');
+}
+
+function recordText(record: Record<string, unknown>, key: string): string {
+  return typeof record[key] === 'string' ? (record[key] as string) : '';
+}
+
+function currentArchitectureHash(record: Record<string, unknown>): string {
+  const state = record.architectureConfirmationState as Record<string, unknown> | undefined;
+  return typeof state?.currentArchitectureConfirmationHash === 'string' ? state.currentArchitectureConfirmationHash : HASH;
+}
+
+function artifact(filePath: string, artifactType: string): Record<string, unknown> {
+  return {
+    artifactType,
+    path: filePath.replace(/\\/gu, '/'),
+    hash: sha256File(filePath),
+  };
+}
+
+function subsystem(record: Record<string, unknown>, subsystemId: string): Record<string, unknown> {
+  return {
+    subsystemId,
+    inputRefs: [`input:${subsystemId}`],
+    outputRefs: [`output:${subsystemId}`],
+    status: 'ready',
+    evidenceRefs: ['EVD-010', 'EVD-009'],
+    hash: sha256Text(subsystemId),
+    failureHandling: {
+      failureModes: [
+        `${subsystemId}_unavailable`,
+        `${subsystemId}_stale_hash`,
+        `${subsystemId}_missing_evidence`,
+      ],
+      recordEventTypes: ['failure_recorded', 'gate_check_recorded', 'rca_created'],
+      recoveryActions: ['record_failure', 'open_rca', 'rerun_current_trace', 'block_closeout'],
+    },
+    currentHashBinding: {
+      sourceDocumentHash: recordText(record, 'sourceDocumentHash'),
+      implementationConfirmationHash: recordText(record, 'implementationConfirmationHash'),
+      architectureConfirmationHash: currentArchitectureHash(record),
+    },
+    functionalParity: {
+      userVisibleBehaviorPreserved: true,
+      regressionEvidenceRefs: ['EVD-040'],
+    },
+  };
+}
+
+function subsystemAcceptance(subsystemId: string): Record<string, unknown> {
+  return {
+    subsystemId,
+    passCriteria: [
+      'machine_readable_inputs_outputs_status_evidence_hash',
+      'failure_handling_declared',
+      'no_user_visible_regression',
+    ],
+    requiredEvidenceRefs: ['EVD-010', 'EVD-009'],
+    requiredCommands: ['CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE', 'CMD-DATASET-RELEASE-GATE'],
+    requiredFailureCases: [
+      `${subsystemId}_unavailable`,
+      `${subsystemId}_stale_hash`,
+      `${subsystemId}_missing_evidence`,
+    ],
+    recordEventTypes: ['failure_recorded', 'gate_check_recorded', 'rca_created'],
+    recoveryActions: ['record_failure', 'open_rca', 'rerun_current_trace', 'block_closeout'],
+    functionalParity: {
+      userVisibleBehaviorPreserved: true,
+      replacementScripts: [
+        'scripts/main-agent-production-loop-ready-check.ts',
+        'scripts/main-agent-dataset-release-gate.ts',
+      ],
+      replacementArtifacts: [
+        'production-loop-16-subsystems-extension.json',
+        'dataset-manifest.json',
+        'dataset-release-gate-report.json',
+      ],
+    },
+  };
+}
+
+function writeProductionArtifacts(
+  root: string,
+  base: string,
+  record: Record<string, unknown>
+): {
+  extensionRef: Record<string, unknown>;
+  productionReportArtifact: Record<string, unknown>;
+} {
+  const recordId = recordText(record, 'recordId');
+  const requirementSetId = recordText(record, 'requirementSetId') || recordId;
+  const sourceDocumentHash = recordText(record, 'sourceDocumentHash');
+  const implementationConfirmationHash = recordText(record, 'implementationConfirmationHash');
+  const architectureConfirmationHash = currentArchitectureHash(record);
+  const extensionPath = path.join(base, 'extensions', 'production-loop-16-subsystems-extension.json');
+  const productionSubsystemAcceptanceRegistry = {
+    registryVersion: 'production-subsystem-acceptance/v1',
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    architectureConfirmationHash,
+    subsystemAcceptance: SUBSYSTEM_IDS.map(subsystemAcceptance),
+  };
+  const extension = {
+    recordId,
+    requirementSetId,
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    architectureConfirmationHash,
+    canaryPlan: [{ stage: 'internal', rolloutPercent: 10, rollbackOn: 'production_loop_ready_blocked' }],
+    sloTargets: [{ name: 'delivery_closeout_gate_latency', target: '<= 5000ms' }],
+    errorRateMetrics: [{ name: 'gate_failure_rate', threshold: '<= 1%' }],
+    performanceMetrics: [{ name: 'production_loop_ready_eval_duration_ms', threshold: '<= 5000' }],
+    businessMetrics: [{ name: 'requirement_reopen_rate', threshold: '<= 5%' }],
+    alerts: [{ name: 'production_loop_blocked', owner: 'main-agent' }],
+    rollbackConditions: [{ condition: 'hash_mismatch_or_missing_subsystem_readiness', action: 'block_closeout_and_open_rca' }],
+    feedbackRouting: {
+      failureRecordEventTypes: ['failure_recorded', 'gate_check_recorded'],
+      rcaRecordEventTypes: ['rca_created', 'rca_action_recorded'],
+      sampleRouteOutputs: ['sample-routes.jsonl', 'mentor-events.jsonl', 'canonical-samples.jsonl'],
+    },
+    subsystemReadiness: SUBSYSTEM_IDS.map((id) => subsystem(record, id)),
+    currentHashBinding: {
+      sourceDocumentHash,
+      implementationConfirmationHash,
+      architectureConfirmationHash,
+    },
+    productionSubsystemAcceptanceRegistry,
+    productionSubsystemAcceptanceRegistryHash: sha256Text(JSON.stringify(productionSubsystemAcceptanceRegistry)),
+    functionalParity: {
+      userVisibleBehaviorPreserved: true,
+      replacementScripts: [
+        'scripts/main-agent-production-loop-ready-check.ts',
+        'scripts/main-agent-dataset-release-gate.ts',
+      ],
+      replacementArtifacts: [
+        'production-loop-16-subsystems-extension.json',
+        'dataset-manifest.json',
+        'dataset-release-gate-report.json',
+      ],
+      regressionTests: [
+        'tests/acceptance/main-agent-production-loop-ready-check.test.ts',
+        'tests/acceptance/main-agent-dataset-release-gate.test.ts',
+      ],
+      evidenceRefs: ['EVD-039', 'EVD-040', 'EVD-043'],
+    },
+  };
+  writeJson(extensionPath, extension);
+
+  const datasetId = `${recordId}-governed-sft`.toLowerCase();
+  const datasetRoot = path.join(root, '_bmad-output', 'runtime', 'datasets', datasetId, 'v1');
+  const trainPath = path.join(datasetRoot, 'exports', 'train.jsonl');
+  const validationPath = path.join(datasetRoot, 'exports', 'validation.jsonl');
+  const testPath = path.join(datasetRoot, 'exports', 'test.jsonl');
+  const qualityReportPath = path.join(datasetRoot, 'quality-report.json');
+  const redactionReportPath = path.join(datasetRoot, 'redaction-report.json');
+  const contaminationReportPath = path.join(datasetRoot, 'contamination-report.json');
+  const revokedSamplesPath = path.join(datasetRoot, 'revoked-samples.json');
+  const lineageReportPath = path.join(datasetRoot, 'lineage-report.json');
+  const postTrainingEvalPath = path.join(datasetRoot, 'post-training-eval-report.json');
+  const trainingRunPath = path.join(datasetRoot, 'training-run.json');
+  const manifestPath = path.join(datasetRoot, 'dataset-manifest.json');
+  const releaseReportPath = path.join(datasetRoot, 'dataset-release-gate-report.json');
+  writeText(trainPath, '{"sample_id":"sample-001","messages":[]}\n');
+  writeText(validationPath, '');
+  writeText(testPath, '');
+  writeJson(qualityReportPath, { decision: 'pass' });
+  writeJson(redactionReportPath, { decision: 'pass' });
+  writeJson(contaminationReportPath, { decision: 'pass' });
+  writeJson(revokedSamplesPath, { decision: 'pass' });
+  writeJson(lineageReportPath, { decision: 'pass' });
+  writeJson(postTrainingEvalPath, { decision: 'pass' });
+  writeJson(trainingRunPath, { status: 'completed' });
+  writeJson(manifestPath, {
+    manifestType: 'dataset_release_manifest',
+    datasetId,
+    datasetVersion: 'v1',
+    releaseDecision: 'pass',
+    source: {
+      recordId,
+      requirementSetId,
+      sourceDocumentHash,
+      implementationConfirmationHash,
+      architectureConfirmationHash,
+    },
+    exports: {
+      train: artifact(trainPath, 'dataset_export'),
+      validation: artifact(validationPath, 'dataset_export'),
+      test: artifact(testPath, 'dataset_export'),
+    },
+    reports: {
+      qualityReport: artifact(qualityReportPath, 'dataset_quality_report'),
+      redactionReport: artifact(redactionReportPath, 'dataset_redaction_report'),
+      contaminationReport: artifact(contaminationReportPath, 'dataset_contamination_report'),
+      revokedSamples: artifact(revokedSamplesPath, 'revoked_sample_list'),
+      lineageReport: artifact(lineageReportPath, 'dataset_lineage_report'),
+      postTrainingEvalReport: artifact(postTrainingEvalPath, 'post_training_eval_report'),
+    },
+    training: {
+      trainingRun: artifact(trainingRunPath, 'training_run_metadata'),
+      evalReport: artifact(postTrainingEvalPath, 'post_training_eval_report'),
+    },
+    counts: {
+      canonicalSamples: 1,
+      sampleRoutes: 1,
+      blockedIssues: 0,
+      subsystems: SUBSYSTEM_IDS.length,
+    },
+  });
+  writeJson(releaseReportPath, {
+    reportType: 'dataset_release_gate_report',
+    recordId,
+    requirementSetId,
+    decision: 'pass',
+    blockingIssues: [],
+    checks: [
+      { id: 'source-manifest-current', passed: true },
+      { id: 'training-run-bound', passed: true },
+      { id: 'post-training-eval-bound', passed: true },
+      { id: 'sixteen-subsystems-machine-readable', passed: true, expectedCount: 16, actualCount: 16 },
+    ],
+    manifestHash: sha256File(manifestPath),
+  });
+
+  const extensionRef = {
+    eventType: 'artifact_indexed',
+    artifactType: 'observability_extension',
+    sourceOfTruthRole: 'evidence',
+    recordId,
+    requirementSetId,
+    path: extensionPath.replace(/\\/gu, '/'),
+    contentHash: sha256File(extensionPath),
+    producer: 'main-agent-delivery-closeout-gate-record.test',
+    purpose: 'prove current 16-subsystem production loop readiness extension',
+    relatedRequirementIds: ['MUST-017', 'MUST-039', 'MUST-040', 'MUST-043', 'EVD-039', 'EVD-040', 'EVD-043'],
+    status: 'active',
+    inputVersion: 'source-v1',
+    outputVersion: 'production-loop-16-subsystems-extension-v1',
+  };
+  const productionReadyReportPath = path.join(base, 'production-loop-ready-report.json');
+  writeJson(productionReadyReportPath, {
+    reportType: 'production_loop_ready_report',
+    generatedAt: '2026-05-19T00:00:00.000Z',
+    recordId,
+    requirementSetId,
+    decision: 'pass',
+    blockingReasons: [],
+    checks: [
+      { id: 'governed-dataset-release-complete', passed: true },
+      { id: 'sixteen-subsystems-machine-readable', passed: true, expectedCount: 16, actualCount: 16 },
+    ],
+    extensionRef,
+  });
+
+  return {
+    extensionRef,
+    productionReportArtifact: {
+      eventType: 'artifact_indexed',
+      artifactType: 'production_subsystem_acceptance_report',
+      sourceOfTruthRole: 'evidence',
+      recordId,
+      requirementSetId,
+      path: productionReadyReportPath.replace(/\\/gu, '/'),
+      contentHash: sha256File(productionReadyReportPath),
+      producer: 'main-agent-delivery-closeout-gate-record.test',
+      purpose: 'prove Production Loop Ready passes current 16-subsystem acceptance gate',
+      relatedRequirementIds: ['MUST-039', 'MUST-040', 'MUST-043', 'NEG-028', 'NEG-030', 'NEG-031', 'EVD-039', 'EVD-040'],
+      status: 'active',
+      inputVersion: 'source-v1',
+      outputVersion: 'production-subsystem-acceptance-report-v1',
+    },
+  };
+}
 
 function writeRecord(root: string, record: Record<string, unknown>): string {
   const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-CLOSEOUT');
@@ -28,17 +335,22 @@ function writeRecord(root: string, record: Record<string, unknown>): string {
       null,
       2
     )}\n`,
-    'utf8'
+      'utf8'
   );
+  const production = writeProductionArtifacts(root, base, record);
   const recordWithCoverage = {
     ...record,
+    extensionRefs: [
+      ...(((record.extensionRefs as unknown[]) ?? []) as Record<string, unknown>[]),
+      production.extensionRef,
+    ],
     artifactIndex: [
       ...(((record.artifactIndex as unknown[]) ?? []) as Record<string, unknown>[]),
       {
         artifactType: 'failure_case_coverage',
         sourceOfTruthRole: 'evidence',
         path: coveragePath,
-        hash: HASH,
+        hash: sha256File(coveragePath),
         producer: 'main-agent-delivery-closeout-gate-record.test',
         purpose: 'prove complete failure-case coverage for closeout fixture',
         relatedRequirementIds: ['MUST-041', 'NEG-029', 'EVD-041'],
@@ -46,6 +358,7 @@ function writeRecord(root: string, record: Record<string, unknown>): string {
         inputVersion: 'source-v1',
         outputVersion: 'failure-case-coverage-v1',
       },
+      production.productionReportArtifact,
     ],
   };
   const recordPath = path.join(base, 'requirement-record.json');
@@ -617,6 +930,8 @@ describe('requirement-scoped delivery closeout gate', () => {
         )}\n`,
         'utf8'
       );
+      coverage.hash = sha256File(coverage.path);
+      writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
 
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
@@ -633,6 +948,293 @@ describe('requirement-scoped delivery closeout gate', () => {
           'failure_case_coverage_incomplete:1/2',
           'failure_case_unexercised:sourceDocumentHash_changed',
         ])
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks closeout when subsystem count is 16 but registry acceptance criteria are missing', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-subsystem-count-only-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-subsystem-count-only',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-subsystem-count-only',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      const extensionRef = record.extensionRefs.at(-1);
+      const extension = JSON.parse(readFileSync(extensionRef.path, 'utf8'));
+      extension.productionSubsystemAcceptanceRegistry.subsystemAcceptance = [];
+      extension.productionSubsystemAcceptanceRegistryHash = sha256Text(JSON.stringify(extension.productionSubsystemAcceptanceRegistry));
+      writeJson(extensionRef.path, extension);
+      extensionRef.contentHash = sha256File(extensionRef.path);
+      writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-subsystem-count-only',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(1);
+      const nextRecord = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(nextRecord.closeout.attempts[0].blockingReasons).toEqual(
+        expect.arrayContaining([
+          'production_subsystem_acceptance_registry_missing',
+          'subsystem_acceptance_missing:requirement_confirmation',
+        ])
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks closeout when production subsystem extension hash is stale', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-stale-extension-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-stale-extension',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-stale-extension',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      const extensionRef = record.extensionRefs.at(-1);
+      const extension = JSON.parse(readFileSync(extensionRef.path, 'utf8'));
+      extension.sourceDocumentHash = 'sha256:2222222222222222222222222222222222222222222222222222222222222222';
+      writeJson(extensionRef.path, extension);
+
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-stale-extension',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(1);
+      const nextRecord = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(nextRecord.closeout.attempts[0].blockingReasons).toContain(
+        'production_subsystem_extension_hash_mismatch'
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks closeout when dataset release manifest hash is stale', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-stale-dataset-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-stale-dataset',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-stale-dataset',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const manifestPath = path.join(
+        root,
+        '_bmad-output',
+        'runtime',
+        'datasets',
+        'req-closeout-governed-sft',
+        'v1',
+        'dataset-manifest.json'
+      );
+      const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+      manifest.source.sourceDocumentHash = 'sha256:2222222222222222222222222222222222222222222222222222222222222222';
+      writeJson(manifestPath, manifest);
+
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-stale-dataset',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(1);
+      const nextRecord = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(nextRecord.closeout.attempts[0].blockingReasons).toEqual(
+        expect.arrayContaining(['dataset_manifest_source_document_hash_mismatch', 'dataset_release_manifest_hash_mismatch'])
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks closeout when global functional parity regresses', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-functional-parity-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-functional-parity',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-functional-parity',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      const extensionRef = record.extensionRefs.at(-1);
+      const extension = JSON.parse(readFileSync(extensionRef.path, 'utf8'));
+      extension.functionalParity.userVisibleBehaviorPreserved = false;
+      writeJson(extensionRef.path, extension);
+      extensionRef.contentHash = sha256File(extensionRef.path);
+      writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-functional-parity',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(1);
+      const nextRecord = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(nextRecord.closeout.attempts[0].blockingReasons).toContain(
+        'production_subsystem_functional_parity_not_preserved'
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks closeout when a per-subsystem functional parity regression is present', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-subsystem-parity-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-subsystem-parity',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-subsystem-parity',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      const extensionRef = record.extensionRefs.at(-1);
+      const extension = JSON.parse(readFileSync(extensionRef.path, 'utf8'));
+      extension.subsystemReadiness[0].functionalParity.userVisibleBehaviorPreserved = false;
+      writeJson(extensionRef.path, extension);
+      extensionRef.contentHash = sha256File(extensionRef.path);
+      writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-subsystem-parity',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(1);
+      const nextRecord = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(nextRecord.closeout.attempts[0].blockingReasons).toContain(
+        'subsystem_functional_parity_not_preserved:requirement_confirmation'
       );
     } finally {
       rmSync(root, { recursive: true, force: true });
