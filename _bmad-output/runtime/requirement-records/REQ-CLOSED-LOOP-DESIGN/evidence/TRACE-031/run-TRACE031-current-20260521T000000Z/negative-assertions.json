@@ -1,0 +1,38 @@
+{
+  "reportType": "trace031_negative_assertions",
+  "runId": "run-TRACE031-current-20260521T000000Z",
+  "generatedAt": "2026-05-20T17:49:45.000Z",
+  "assertions": [
+    {
+      "id": "functional_resume_blocks_unexercised_failure_cases",
+      "status": "pass",
+      "evidenceCommandId": "CMD-CLOSEOUT-GATE-FAILURE-CASE-BLOCK"
+    },
+    {
+      "id": "post_full_link_coverage_matrix_counts_as_exercised",
+      "status": "pass",
+      "evidenceCommandId": "CMD-CLOSEOUT-GATE-FAILURE-CASE-BLOCK"
+    },
+    {
+      "id": "latest_resolved_failure_rca_rerun_records_do_not_block_resume",
+      "status": "pass",
+      "evidenceCommandId": "CMD-CLOSEOUT-GATE-FAILURE-CASE-BLOCK"
+    },
+    {
+      "id": "closeout_blocks_missing_failure_case_coverage_artifact",
+      "status": "pass",
+      "evidenceCommandId": "CMD-CLOSEOUT-GATE-FAILURE-CASE-BLOCK"
+    },
+    {
+      "id": "closeout_blocks_unexercised_failure_case_coverage",
+      "status": "pass",
+      "evidenceCommandId": "CMD-CLOSEOUT-GATE-FAILURE-CASE-BLOCK"
+    }
+  ],
+  "regressionScope": [
+    "scripts/main-agent-functional-resume-check.ts",
+    "scripts/main-agent-delivery-closeout-gate.ts",
+    "tests/acceptance/main-agent-functional-resume-check.test.ts",
+    "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts"
+  ]
+}

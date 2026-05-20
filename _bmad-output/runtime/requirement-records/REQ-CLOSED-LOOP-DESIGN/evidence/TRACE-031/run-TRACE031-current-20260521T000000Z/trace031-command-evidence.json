@@ -1,0 +1,67 @@
+{
+  "reportType": "trace031_command_evidence",
+  "runId": "run-TRACE031-current-20260521T000000Z",
+  "closeoutAttemptId": "closeout-attempt-TRACE031-current-20260521T000000Z",
+  "generatedAt": "2026-05-20T17:49:45.000Z",
+  "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+  "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+  "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+  "commandRuns": [
+    {
+      "commandId": "CMD-FULL-FAILURE-CASE-COVERAGE",
+      "command": "npx.cmd ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-functional-resume-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/functional-resume --generated-by codex --json",
+      "runId": "run-TRACE031-current-20260521T000000Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE031-current-20260521T000000Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T17:48:22.1530214Z",
+      "completedAt": "2026-05-20T17:48:23.0308640Z",
+      "outputSummary": "decision=pass; failureCases=27; failureCaseExercisedCount=27; unexercisedCases=0; blockingIssues=[]"
+    },
+    {
+      "commandId": "CMD-CLOSEOUT-GATE-FAILURE-CASE-BLOCK",
+      "command": "npx.cmd vitest run tests/acceptance/main-agent-functional-resume-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+      "runId": "run-TRACE031-current-20260521T000000Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE031-current-20260521T000000Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T17:48:42.3644257Z",
+      "completedAt": "2026-05-20T17:48:46.6777982Z",
+      "outputSummary": "2 test files passed; 30 tests passed; error cases block missing or incomplete failure-case coverage"
+    },
+    {
+      "commandId": "CMD-RENDER-CONFIRMATION",
+      "command": "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json",
+      "runId": "run-TRACE031-current-20260521T000000Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE031-current-20260521T000000Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T17:49:07.5955444Z",
+      "completedAt": "2026-05-20T17:49:07.9292020Z",
+      "outputSummary": "blockingIssues=[]; must=56; notDone=40; mustNot=29; evidence=62; traceRows=39; projection hash refreshed only"
+    },
+    {
+      "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+      "command": "npx.cmd vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+      "runId": "run-TRACE031-current-20260521T000000Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE031-current-20260521T000000Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T17:49:17.5726543Z",
+      "completedAt": "2026-05-20T17:49:26.6864696Z",
+      "outputSummary": "1 test file passed; 38 tests passed"
+    },
+    {
+      "commandId": "CMD-ENCODING-GATE",
+      "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+      "runId": "run-TRACE031-current-20260521T000000Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE031-current-20260521T000000Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T17:49:36.5973389Z",
+      "completedAt": "2026-05-20T17:49:39.4439654Z",
+      "outputSummary": "checkedFiles=2772 findings=0"
+    }
+  ],
+  "deliverySummary": {
+    "failureCases": 27,
+    "failureCaseExercisedCount": 27,
+    "unexercisedCases": [],
+    "blockingIssues": []
+  }
+}

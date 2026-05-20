@@ -1,6 +1,6 @@
 {
   "reportType": "data_governance_gate_report",
-  "generatedAt": "2026-05-20T17:11:40.391Z",
+  "generatedAt": "2026-05-20T17:33:56.260Z",
   "recordId": "REQ-CLOSED-LOOP-DESIGN",
   "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
   "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
@@ -9,7 +9,7 @@
   "checks": {
     "split": {
       "reportType": "split_report",
-      "generatedAt": "2026-05-20T17:11:40.391Z",
+      "generatedAt": "2026-05-20T17:33:56.260Z",
       "policy": {
         "evalFirst": true,
         "holdoutFrozenBeforeSftExport": true,
@@ -32,7 +32,7 @@
     },
     "dedup": {
       "reportType": "dedup_report",
-      "generatedAt": "2026-05-20T17:11:40.391Z",
+      "generatedAt": "2026-05-20T17:33:56.260Z",
       "policy": {
         "exactDedupe": true,
         "nearDedupe": true,
@@ -45,7 +45,7 @@
     },
     "contamination": {
       "reportType": "contamination_report",
-      "generatedAt": "2026-05-20T17:11:40.391Z",
+      "generatedAt": "2026-05-20T17:33:56.260Z",
       "policy": {
         "scanBeforeRelease": true,
         "contaminationAction": "quarantine_or_block",
@@ -57,7 +57,7 @@
     },
     "holdout": {
       "registryType": "holdout_registry",
-      "generatedAt": "2026-05-20T17:11:40.391Z",
+      "generatedAt": "2026-05-20T17:33:56.260Z",
       "frozen": true,
       "freezeReason": "eval_first_before_sft_export",
       "items": [
@@ -113,13 +113,13 @@
     },
     "postTrainingRegression": {
       "reportType": "post_training_regression_report",
-      "generatedAt": "2026-05-20T17:11:40.391Z",
+      "generatedAt": "2026-05-20T17:33:56.260Z",
       "trainingRunId": null,
       "comparisonState": "baseline_frozen_training_run_required_before_dataset_release",
       "releaseDecision": "blocked_until_training_run_bound",
       "baseline": {
-        "sampleCount": 39,
-        "sampleHash": "sha256:db384a7dcd8e9156fcf58c95d917c8493015f814552fc56bc775295757012ada",
+        "sampleCount": 40,
+        "sampleHash": "sha256:f0ad3454225f60b4b99c1725c34c0131a598254b6d907923ae2419bcc03f3526",
         "requiredMetrics": [
           "requirement_adherence",
           "evidence_completeness",

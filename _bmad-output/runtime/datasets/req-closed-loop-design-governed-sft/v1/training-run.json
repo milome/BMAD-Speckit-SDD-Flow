@@ -7,10 +7,10 @@
   "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
   "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
   "sourceDatasetManifestPath": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/data/dataset-manifest.json",
-  "sourceDatasetManifestHash": "sha256:773f64ac0b366565114179cb3a5ca05ebe1af722f0414b54a5583547feaf4383",
+  "sourceDatasetManifestHash": "sha256:b2c86c261698562bf3ea1ca62f886a3956349cbf10715356df9b8552391eddae",
   "sampleCount": 39,
   "generatedAt": "2026-05-20T17:12:04.766Z",
   "generatedBy": "codex",
   "evidenceBoundary": "metadata evidence for dataset release gate; not a control source",
-  "exportArtifactHash": "sha256:163e41323d68e453914be9f90e4325be9cb801456cfa6d3a5f8b58f3d185ec93"
+  "exportArtifactHash": "sha256:654ec63d41cdfbd2f4f52cc88b16788b756b2b080fe3c8c2de46d23d5651abcc"
 }

@@ -1,7 +1,7 @@
 {
   "reportType": "governed_data_products_report",
   "decision": "pass",
-  "generatedAt": "2026-05-20T17:11:30.494Z",
+  "generatedAt": "2026-05-20T17:33:39.215Z",
   "generatedBy": "codex",
   "recordId": "REQ-CLOSED-LOOP-DESIGN",
   "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
@@ -24,12 +24,12 @@
     "data-governance-report.json"
   ],
   "counts": {
-    "mentorEvents": 58,
-    "sampleRoutes": 45,
-    "canonicalSamples": 39,
+    "mentorEvents": 59,
+    "sampleRoutes": 46,
+    "canonicalSamples": 40,
     "destinations": {
       "eval": 6,
-      "sft_positive": 39
+      "sft_positive": 40
     }
   },
   "forbiddenDirectSourceTypes": [

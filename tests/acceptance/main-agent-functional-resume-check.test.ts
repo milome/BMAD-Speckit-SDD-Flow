@@ -40,12 +40,14 @@ function registryFixture(overrides: Record<string, unknown> = {}): Record<string
       {
         id: 'resume_happy_path',
         groupId: 'hash_and_trace_checkpoint',
+        coveragePhase: 'six mental models full-link deterministic fixture',
         fullLinkRequired: true,
         expectedRecoveryActions: ['allow_resume'],
       },
       {
         id: 'sourceDocumentHash_changed',
         groupId: 'hash_and_trace_checkpoint',
+        coveragePhase: 'six mental models full-link deterministic fixture',
         fullLinkRequired: true,
         expectedRecoveryActions: ['rebuild_trace_checkpoint'],
       },
@@ -308,8 +310,10 @@ describe('main-agent functional resume check', () => {
         rawPresent: true,
         groups: 1,
         failureCases: 2,
+        failureCaseExercisedCount: 2,
         recoveryActions: 2,
         fullLinkRequiredFixtureCases: ['resume_happy_path', 'sourceDocumentHash_changed'],
+        unexercisedCases: [],
         issues: [],
       });
       const proof = JSON.parse(readFileSync(proofPath, 'utf8'));
@@ -393,6 +397,71 @@ describe('main-agent functional resume check', () => {
     }
   });
 
+  it('uses latest blocker status instead of blocking on resolved historical entries', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'functional-resume-latest-blockers-'));
+    try {
+      const recordPath = writeRecord(root, {
+        failureRecords: [
+          {
+            failureId: 'failure-001',
+            status: 'open',
+          },
+          {
+            failureId: 'failure-001',
+            status: 'resolved',
+          },
+        ],
+        rerunLoops: [
+          {
+            rerunLoopId: 'rerun-001',
+            status: 'in_progress',
+            sourceRefs: [{ sourceType: 'gate_check', id: 'gate-001' }],
+          },
+          {
+            rerunLoopId: 'rerun-001',
+            status: 'resolved',
+            sourceRefs: [{ sourceType: 'gate_check', id: 'gate-001' }],
+          },
+        ],
+        rcaRecords: [
+          {
+            rcaId: 'rca-001',
+            status: 'open',
+            sourceRefs: [{ sourceType: 'failure_record', id: 'failure-001' }],
+          },
+          {
+            rcaId: 'rca-001',
+            status: 'resolved',
+            sourceRefs: [{ sourceType: 'failure_record', id: 'failure-001' }],
+          },
+        ],
+      });
+      const sourcePath = implementationConfirmationSource(root);
+      const outDir = path.join(root, 'resume');
+      const code = mainFunctionalResumeCheck([
+        '--requirement-record',
+        recordPath,
+        '--source',
+        sourcePath,
+        '--out-dir',
+        outDir,
+      ]);
+
+      expect(code).toBe(0);
+      const packet = JSON.parse(readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim());
+      expect(packet.checks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'resume-open-blockers-clear',
+            decision: 'pass',
+          }),
+        ])
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('fails closed when required artifact hash is not indexed', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'functional-resume-artifact-missing-'));
     try {
@@ -443,6 +512,139 @@ describe('main-agent functional resume check', () => {
       expect(packet.blockingIssues).toEqual(
         expect.arrayContaining([
           expect.stringContaining('resume-failure-case-registry-valid:functional_resume_failure_case_registry_missing'),
+        ])
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed when any registered failure case lacks explicit coverage evidence', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'functional-resume-unexercised-case-'));
+    try {
+      const recordPath = writeRecord(root);
+      const sourcePath = implementationConfirmationSource(root, {
+        registry: {
+          groups: [
+            {
+              groupId: 'hash_and_trace_checkpoint',
+              label: 'Hash and trace checkpoint',
+              caseRefs: ['resume_happy_path', 'sourceDocumentHash_changed', 'trace_checkpoint_missing'],
+            },
+          ],
+          failureCases: [
+            {
+              id: 'resume_happy_path',
+              groupId: 'hash_and_trace_checkpoint',
+              coveragePhase: 'six mental models full-link deterministic fixture',
+              fullLinkRequired: true,
+              expectedRecoveryActions: ['allow_resume'],
+            },
+            {
+              id: 'sourceDocumentHash_changed',
+              groupId: 'hash_and_trace_checkpoint',
+              coveragePhase: 'six mental models full-link deterministic fixture',
+              fullLinkRequired: true,
+              expectedRecoveryActions: ['rebuild_trace_checkpoint'],
+            },
+            {
+              id: 'trace_checkpoint_missing',
+              groupId: 'hash_and_trace_checkpoint',
+              coveragePhase: 'unplanned',
+              fullLinkRequired: false,
+              expectedRecoveryActions: ['rebuild_trace_checkpoint'],
+            },
+          ],
+        },
+      });
+      const outDir = path.join(root, 'resume');
+      const code = mainFunctionalResumeCheck([
+        '--requirement-record',
+        recordPath,
+        '--source',
+        sourcePath,
+        '--out-dir',
+        outDir,
+      ]);
+
+      expect(code).toBe(1);
+      const packet = JSON.parse(readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim());
+      expect(packet.resumeFailureCaseRegistryCoverage).toMatchObject({
+        failureCases: 3,
+        failureCaseExercisedCount: 2,
+        unexercisedCases: ['trace_checkpoint_missing'],
+      });
+      expect(packet.blockingIssues).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining('resume_failure_unexercised_cases_present'),
+        ])
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('counts post-full-link coverage matrix cases as exercised when the registry marks that phase', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'functional-resume-post-full-link-'));
+    try {
+      const recordPath = writeRecord(root);
+      const sourcePath = implementationConfirmationSource(root, {
+        registry: {
+          groups: [
+            {
+              groupId: 'hash_and_trace_checkpoint',
+              label: 'Hash and trace checkpoint',
+              caseRefs: ['resume_happy_path', 'sourceDocumentHash_changed', 'trace_checkpoint_missing'],
+            },
+          ],
+          failureCases: [
+            {
+              id: 'resume_happy_path',
+              groupId: 'hash_and_trace_checkpoint',
+              coveragePhase: 'six mental models full-link deterministic fixture',
+              fullLinkRequired: true,
+              expectedRecoveryActions: ['allow_resume'],
+            },
+            {
+              id: 'sourceDocumentHash_changed',
+              groupId: 'hash_and_trace_checkpoint',
+              coveragePhase: 'six mental models full-link deterministic fixture',
+              fullLinkRequired: true,
+              expectedRecoveryActions: ['rebuild_trace_checkpoint'],
+            },
+            {
+              id: 'trace_checkpoint_missing',
+              groupId: 'hash_and_trace_checkpoint',
+              coveragePhase: 'post-full-link coverage matrix',
+              fullLinkRequired: false,
+              expectedRecoveryActions: ['rebuild_trace_checkpoint'],
+            },
+          ],
+        },
+      });
+      const outDir = path.join(root, 'resume');
+      const code = mainFunctionalResumeCheck([
+        '--requirement-record',
+        recordPath,
+        '--source',
+        sourcePath,
+        '--out-dir',
+        outDir,
+      ]);
+
+      expect(code).toBe(0);
+      const packet = JSON.parse(readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim());
+      expect(packet.resumeFailureCaseRegistryCoverage).toMatchObject({
+        failureCases: 3,
+        failureCaseExercisedCount: 3,
+        unexercisedCases: [],
+      });
+      expect(packet.resumeFailureCaseRegistryCoverage.caseEvidence).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            caseId: 'trace_checkpoint_missing',
+            exercisedBy: 'post_full_link_coverage_matrix',
+          }),
         ])
       );
     } finally {

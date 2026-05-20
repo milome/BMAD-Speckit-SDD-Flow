@@ -1,9 +1,9 @@
 {
   "reportType": "dataset_redaction_report",
-  "generatedAt": "2026-05-20T17:12:17.969Z",
+  "generatedAt": "2026-05-20T17:34:10.035Z",
   "decision": "pass",
   "summary": {
-    "clean": 39,
+    "clean": 40,
     "redacted": 0,
     "blocked": 0
   },
@@ -200,6 +200,11 @@
     },
     {
       "sampleId": "sample-req-closed-loop-design-39",
+      "redactionStatus": "clean",
+      "findingCount": 0
+    },
+    {
+      "sampleId": "sample-req-closed-loop-design-40",
       "redactionStatus": "clean",
       "findingCount": 0
     }

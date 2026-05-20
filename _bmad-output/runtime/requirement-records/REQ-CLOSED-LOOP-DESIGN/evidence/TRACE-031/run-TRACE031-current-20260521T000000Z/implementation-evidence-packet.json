@@ -1,0 +1,555 @@
+{
+  "eventType": "execution_iteration_recorded",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "executionIterationId": "exec-TRACE031-current-20260521T000000Z",
+  "runId": "run-TRACE031-current-20260521T000000Z",
+  "status": "done",
+  "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+  "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+  "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+  "traceRows": [
+    "TRACE-031"
+  ],
+  "taskRefs": [
+    "TASK-FULL-FAILURE-CASE-COVERAGE"
+  ],
+  "evidenceRefs": [
+    "EVD-022",
+    "EVD-041"
+  ],
+  "filesChanged": [
+    "scripts/main-agent-functional-resume-check.ts",
+    "scripts/main-agent-delivery-closeout-gate.ts",
+    "tests/acceptance/main-agent-functional-resume-check.test.ts",
+    "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+    "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/functional-resume/functional-resume-proof.json",
+    "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/functional-resume/resume-packets.jsonl",
+    "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/functional-resume/trace-checkpoints.jsonl",
+    "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/trace031-command-evidence.json",
+    "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/negative-assertions.json",
+    "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/diff-summary.md"
+  ],
+  "implementationDelta": {
+    "filesChanged": [
+      "scripts/main-agent-functional-resume-check.ts",
+      "scripts/main-agent-delivery-closeout-gate.ts",
+      "tests/acceptance/main-agent-functional-resume-check.test.ts",
+      "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts"
+    ],
+    "diffSummaryRef": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/diff-summary.md",
+    "behaviorAffecting": true,
+    "negativeAssertionArtifactRefs": [
+      {
+        "artifactType": "negative_assertion_evidence",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/negative-assertions.json",
+        "hash": "sha256:fbebec6dd99caa60276aee97ad7d3fcfe9ed0b878e09e59f87557ed8abd6b5b1",
+        "producer": "TRACE-031 final run",
+        "purpose": "negative and regression assertions for TRACE-031 failure-case enforcement",
+        "relatedRequirementIds": [
+          "MUST-022",
+          "MUST-041",
+          "NEG-029",
+          "OUT-024",
+          "EVD-022",
+          "EVD-041",
+          "TRACE-031"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+        "outputVersion": "negative_assertion_evidence-trace-031-current-v1"
+      },
+      {
+        "artifactType": "command_evidence",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/trace031-command-evidence.json",
+        "hash": "sha256:05d821a1feb0411ec9bea234bb38492f9d5ebefeceb873af1213b9682e234d5e",
+        "producer": "TRACE-031 final run",
+        "purpose": "current command evidence for TRACE-031 delivery and contract validation",
+        "relatedRequirementIds": [
+          "MUST-022",
+          "MUST-041",
+          "NEG-029",
+          "OUT-024",
+          "EVD-022",
+          "EVD-041",
+          "TRACE-031"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+        "outputVersion": "command_evidence-trace-031-current-v1"
+      }
+    ]
+  },
+  "diffSummary": "TRACE-031 enforces full failure-case coverage for functional resume and delivery closeout error cases.",
+  "commandRuns": [
+    {
+      "commandId": "CMD-FULL-FAILURE-CASE-COVERAGE",
+      "command": "npx.cmd ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-functional-resume-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/functional-resume --generated-by codex --json",
+      "runId": "run-TRACE031-current-20260521T000000Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE031-current-20260521T000000Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T17:48:22.1530214Z",
+      "completedAt": "2026-05-20T17:48:23.0308640Z",
+      "outputSummary": "decision=pass; failureCases=27; failureCaseExercisedCount=27; unexercisedCases=0; blockingIssues=[]"
+    },
+    {
+      "commandId": "CMD-CLOSEOUT-GATE-FAILURE-CASE-BLOCK",
+      "command": "npx.cmd vitest run tests/acceptance/main-agent-functional-resume-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+      "runId": "run-TRACE031-current-20260521T000000Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE031-current-20260521T000000Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T17:48:42.3644257Z",
+      "completedAt": "2026-05-20T17:48:46.6777982Z",
+      "outputSummary": "2 test files passed; 30 tests passed; error cases block missing or incomplete failure-case coverage"
+    },
+    {
+      "commandId": "CMD-RENDER-CONFIRMATION",
+      "command": "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json",
+      "runId": "run-TRACE031-current-20260521T000000Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE031-current-20260521T000000Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T17:49:07.5955444Z",
+      "completedAt": "2026-05-20T17:49:07.9292020Z",
+      "outputSummary": "blockingIssues=[]; must=56; notDone=40; mustNot=29; evidence=62; traceRows=39; projection hash refreshed only"
+    },
+    {
+      "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+      "command": "npx.cmd vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+      "runId": "run-TRACE031-current-20260521T000000Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE031-current-20260521T000000Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T17:49:17.5726543Z",
+      "completedAt": "2026-05-20T17:49:26.6864696Z",
+      "outputSummary": "1 test file passed; 38 tests passed"
+    },
+    {
+      "commandId": "CMD-ENCODING-GATE",
+      "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+      "runId": "run-TRACE031-current-20260521T000000Z",
+      "closeoutAttemptId": "closeout-attempt-TRACE031-current-20260521T000000Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T17:49:36.5973389Z",
+      "completedAt": "2026-05-20T17:49:39.4439654Z",
+      "outputSummary": "checkedFiles=2772 findings=0"
+    }
+  ],
+  "artifactRefs": [
+    {
+      "artifactType": "failure_case_coverage",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/functional-resume/functional-resume-proof.json",
+      "hash": "sha256:7ec732e2b8c935206b68dbbe0077dfd3c8a137386d1fcb284a511e10b9b3a719",
+      "producer": "TRACE-031 final run",
+      "purpose": "prove all functional resume failure cases are exercised and closeout-blocking failure coverage is complete",
+      "relatedRequirementIds": [
+        "MUST-022",
+        "MUST-041",
+        "NEG-029",
+        "OUT-024",
+        "EVD-022",
+        "EVD-041",
+        "TRACE-031"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "failure_case_coverage-trace-031-current-v1"
+    },
+    {
+      "artifactType": "functional_resume_proof",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/functional-resume/functional-resume-proof.json",
+      "hash": "sha256:7ec732e2b8c935206b68dbbe0077dfd3c8a137386d1fcb284a511e10b9b3a719",
+      "producer": "TRACE-031 final run",
+      "purpose": "current six mental model functional resume proof for TRACE-031",
+      "relatedRequirementIds": [
+        "MUST-022",
+        "MUST-041",
+        "NEG-029",
+        "OUT-024",
+        "EVD-022",
+        "EVD-041",
+        "TRACE-031"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "functional_resume_proof-trace-031-current-v1"
+    },
+    {
+      "artifactType": "functional_resume_packet",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/functional-resume/resume-packets.jsonl",
+      "hash": "sha256:f927290b6abe825e8794ff5368a5e3ea4f2fca817606cd9dfa1836ed6905ec90",
+      "producer": "TRACE-031 final run",
+      "purpose": "current resume packet proving no blocking issues for TRACE-031",
+      "relatedRequirementIds": [
+        "MUST-022",
+        "MUST-041",
+        "NEG-029",
+        "OUT-024",
+        "EVD-022",
+        "EVD-041",
+        "TRACE-031"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "functional_resume_packet-trace-031-current-v1"
+    },
+    {
+      "artifactType": "trace_checkpoint",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/functional-resume/trace-checkpoints.jsonl",
+      "hash": "sha256:f3d604034251d4ac916273d67daceefeb77577c7d2c6e9b222c1982d226f961b",
+      "producer": "TRACE-031 final run",
+      "purpose": "current trace checkpoint used by TRACE-031 functional resume proof",
+      "relatedRequirementIds": [
+        "MUST-022",
+        "MUST-041",
+        "NEG-029",
+        "OUT-024",
+        "EVD-022",
+        "EVD-041",
+        "TRACE-031"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "trace_checkpoint-trace-031-current-v1"
+    },
+    {
+      "artifactType": "command_evidence",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/trace031-command-evidence.json",
+      "hash": "sha256:05d821a1feb0411ec9bea234bb38492f9d5ebefeceb873af1213b9682e234d5e",
+      "producer": "TRACE-031 final run",
+      "purpose": "current command evidence for TRACE-031 delivery and contract validation",
+      "relatedRequirementIds": [
+        "MUST-022",
+        "MUST-041",
+        "NEG-029",
+        "OUT-024",
+        "EVD-022",
+        "EVD-041",
+        "TRACE-031"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "command_evidence-trace-031-current-v1"
+    },
+    {
+      "artifactType": "negative_assertion_evidence",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/negative-assertions.json",
+      "hash": "sha256:fbebec6dd99caa60276aee97ad7d3fcfe9ed0b878e09e59f87557ed8abd6b5b1",
+      "producer": "TRACE-031 final run",
+      "purpose": "negative and regression assertions for TRACE-031 failure-case enforcement",
+      "relatedRequirementIds": [
+        "MUST-022",
+        "MUST-041",
+        "NEG-029",
+        "OUT-024",
+        "EVD-022",
+        "EVD-041",
+        "TRACE-031"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "negative_assertion_evidence-trace-031-current-v1"
+    },
+    {
+      "artifactType": "diff_summary",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/diff-summary.md",
+      "hash": "sha256:892742bf1e75bf75c390954432d9e5bc4aa047fd221234e54d64cd2943a7ee9f",
+      "producer": "TRACE-031 final run",
+      "purpose": "summarize TRACE-031 implementation delta and regression coverage",
+      "relatedRequirementIds": [
+        "MUST-022",
+        "MUST-041",
+        "NEG-029",
+        "OUT-024",
+        "EVD-022",
+        "EVD-041",
+        "TRACE-031"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "diff_summary-trace-031-current-v1"
+    }
+  ],
+  "requirementClosures": [
+    {
+      "requirementId": "MUST-022",
+      "status": "pass",
+      "closureSource": "trace031_current_delivery_evidence"
+    },
+    {
+      "requirementId": "MUST-041",
+      "status": "pass",
+      "closureSource": "trace031_current_delivery_evidence"
+    },
+    {
+      "requirementId": "NEG-029",
+      "status": "pass",
+      "closureSource": "trace031_current_delivery_evidence"
+    },
+    {
+      "requirementId": "OUT-024",
+      "status": "pass",
+      "closureSource": "trace031_current_delivery_evidence"
+    },
+    {
+      "requirementId": "EVD-022",
+      "status": "pass",
+      "closureSource": "trace031_current_delivery_evidence"
+    },
+    {
+      "requirementId": "EVD-041",
+      "status": "pass",
+      "closureSource": "trace031_current_delivery_evidence"
+    },
+    {
+      "requirementId": "TRACE-031",
+      "status": "pass",
+      "closureSource": "trace031_current_delivery_evidence"
+    }
+  ],
+  "gateChecks": [
+    {
+      "gate": "Full Failure Case Coverage Gate",
+      "decision": "pass",
+      "checkId": "TRACE-031-full-failure-case-coverage-current"
+    },
+    {
+      "gate": "Closeout Failure Case Block Gate",
+      "decision": "pass",
+      "checkId": "TRACE-031-closeout-failure-case-block-current"
+    }
+  ],
+  "contractChecks": [
+    {
+      "contract": "Requirements Confirmation Render",
+      "decision": "pass",
+      "checkId": "TRACE-031-render-confirmation-current"
+    },
+    {
+      "contract": "Trace Binding Acceptance",
+      "decision": "pass",
+      "checkId": "TRACE-031-trace-binding-current"
+    },
+    {
+      "contract": "Encoding Integrity Gate",
+      "decision": "pass",
+      "checkId": "TRACE-031-encoding-gate-current"
+    }
+  ],
+  "deliveryEvidence": {
+    "requiredCommands": [
+      {
+        "commandId": "CMD-FULL-FAILURE-CASE-COVERAGE",
+        "command": "npx.cmd ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-functional-resume-check.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out-dir _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/functional-resume --generated-by codex --json",
+        "commandType": "delivery_evidence",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": [
+          "TRACE-031"
+        ],
+        "evidenceRefs": [
+          "EVD-022",
+          "EVD-041"
+        ],
+        "closeoutAttemptId": "closeout-attempt-TRACE031-current-20260521T000000Z",
+        "lastRunRef": {
+          "commandId": "CMD-FULL-FAILURE-CASE-COVERAGE",
+          "runId": "run-TRACE031-current-20260521T000000Z",
+          "closeoutAttemptId": "closeout-attempt-TRACE031-current-20260521T000000Z",
+          "exitCode": 0,
+          "completedAt": "2026-05-20T17:48:23.0308640Z"
+        },
+        "artifactRefs": [
+          {
+            "artifactType": "failure_case_coverage",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/functional-resume/functional-resume-proof.json",
+            "hash": "sha256:7ec732e2b8c935206b68dbbe0077dfd3c8a137386d1fcb284a511e10b9b3a719",
+            "producer": "TRACE-031 final run",
+            "purpose": "prove all functional resume failure cases are exercised and closeout-blocking failure coverage is complete",
+            "relatedRequirementIds": [
+              "MUST-022",
+              "MUST-041",
+              "NEG-029",
+              "OUT-024",
+              "EVD-022",
+              "EVD-041",
+              "TRACE-031"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "failure_case_coverage-trace-031-current-v1"
+          },
+          {
+            "artifactType": "functional_resume_proof",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/functional-resume/functional-resume-proof.json",
+            "hash": "sha256:7ec732e2b8c935206b68dbbe0077dfd3c8a137386d1fcb284a511e10b9b3a719",
+            "producer": "TRACE-031 final run",
+            "purpose": "current six mental model functional resume proof for TRACE-031",
+            "relatedRequirementIds": [
+              "MUST-022",
+              "MUST-041",
+              "NEG-029",
+              "OUT-024",
+              "EVD-022",
+              "EVD-041",
+              "TRACE-031"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "functional_resume_proof-trace-031-current-v1"
+          },
+          {
+            "artifactType": "functional_resume_packet",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/functional-resume/resume-packets.jsonl",
+            "hash": "sha256:f927290b6abe825e8794ff5368a5e3ea4f2fca817606cd9dfa1836ed6905ec90",
+            "producer": "TRACE-031 final run",
+            "purpose": "current resume packet proving no blocking issues for TRACE-031",
+            "relatedRequirementIds": [
+              "MUST-022",
+              "MUST-041",
+              "NEG-029",
+              "OUT-024",
+              "EVD-022",
+              "EVD-041",
+              "TRACE-031"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "functional_resume_packet-trace-031-current-v1"
+          },
+          {
+            "artifactType": "trace_checkpoint",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/functional-resume/trace-checkpoints.jsonl",
+            "hash": "sha256:f3d604034251d4ac916273d67daceefeb77577c7d2c6e9b222c1982d226f961b",
+            "producer": "TRACE-031 final run",
+            "purpose": "current trace checkpoint used by TRACE-031 functional resume proof",
+            "relatedRequirementIds": [
+              "MUST-022",
+              "MUST-041",
+              "NEG-029",
+              "OUT-024",
+              "EVD-022",
+              "EVD-041",
+              "TRACE-031"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "trace_checkpoint-trace-031-current-v1"
+          },
+          {
+            "artifactType": "command_evidence",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/trace031-command-evidence.json",
+            "hash": "sha256:05d821a1feb0411ec9bea234bb38492f9d5ebefeceb873af1213b9682e234d5e",
+            "producer": "TRACE-031 final run",
+            "purpose": "current command evidence for TRACE-031 delivery and contract validation",
+            "relatedRequirementIds": [
+              "MUST-022",
+              "MUST-041",
+              "NEG-029",
+              "OUT-024",
+              "EVD-022",
+              "EVD-041",
+              "TRACE-031"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "command_evidence-trace-031-current-v1"
+          }
+        ]
+      },
+      {
+        "commandId": "CMD-CLOSEOUT-GATE-FAILURE-CASE-BLOCK",
+        "command": "npx.cmd vitest run tests/acceptance/main-agent-functional-resume-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+        "commandType": "delivery_evidence",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": [
+          "TRACE-031"
+        ],
+        "evidenceRefs": [
+          "EVD-022",
+          "EVD-041"
+        ],
+        "closeoutAttemptId": "closeout-attempt-TRACE031-current-20260521T000000Z",
+        "lastRunRef": {
+          "commandId": "CMD-CLOSEOUT-GATE-FAILURE-CASE-BLOCK",
+          "runId": "run-TRACE031-current-20260521T000000Z",
+          "closeoutAttemptId": "closeout-attempt-TRACE031-current-20260521T000000Z",
+          "exitCode": 0,
+          "completedAt": "2026-05-20T17:48:46.6777982Z"
+        },
+        "artifactRefs": [
+          {
+            "artifactType": "command_evidence",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/trace031-command-evidence.json",
+            "hash": "sha256:05d821a1feb0411ec9bea234bb38492f9d5ebefeceb873af1213b9682e234d5e",
+            "producer": "TRACE-031 final run",
+            "purpose": "current command evidence for TRACE-031 delivery and contract validation",
+            "relatedRequirementIds": [
+              "MUST-022",
+              "MUST-041",
+              "NEG-029",
+              "OUT-024",
+              "EVD-022",
+              "EVD-041",
+              "TRACE-031"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "command_evidence-trace-031-current-v1"
+          },
+          {
+            "artifactType": "negative_assertion_evidence",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-031/run-TRACE031-current-20260521T000000Z/negative-assertions.json",
+            "hash": "sha256:fbebec6dd99caa60276aee97ad7d3fcfe9ed0b878e09e59f87557ed8abd6b5b1",
+            "producer": "TRACE-031 final run",
+            "purpose": "negative and regression assertions for TRACE-031 failure-case enforcement",
+            "relatedRequirementIds": [
+              "MUST-022",
+              "MUST-041",
+              "NEG-029",
+              "OUT-024",
+              "EVD-022",
+              "EVD-041",
+              "TRACE-031"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "negative_assertion_evidence-trace-031-current-v1"
+          }
+        ]
+      }
+    ],
+    "historicalRunRefs": [
+      {
+        "commandId": "CMD-FULL-FAILURE-CASE-COVERAGE",
+        "runId": "run-TRACE031-current-20260521T000000Z",
+        "closeoutAttemptId": "closeout-attempt-TRACE031-current-20260521T000000Z",
+        "exitCode": 0,
+        "completedAt": "2026-05-20T17:48:23.0308640Z"
+      },
+      {
+        "commandId": "CMD-CLOSEOUT-GATE-FAILURE-CASE-BLOCK",
+        "runId": "run-TRACE031-current-20260521T000000Z",
+        "closeoutAttemptId": "closeout-attempt-TRACE031-current-20260521T000000Z",
+        "exitCode": 0,
+        "completedAt": "2026-05-20T17:48:46.6777982Z"
+      }
+    ]
+  },
+  "closeoutAttemptId": "closeout-attempt-TRACE031-current-20260521T000000Z"
+}

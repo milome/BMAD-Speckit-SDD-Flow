@@ -1,6 +1,6 @@
 {
   "registryType": "holdout_registry",
-  "generatedAt": "2026-05-20T17:11:40.391Z",
+  "generatedAt": "2026-05-20T17:33:56.260Z",
   "frozen": true,
   "freezeReason": "eval_first_before_sft_export",
   "items": [
