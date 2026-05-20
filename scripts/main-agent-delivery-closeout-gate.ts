@@ -1137,10 +1137,12 @@ function updateRecord(record: JsonObject, input: { attemptId: string; decision: 
     gateCheckId,
   });
   const rcaRecords = rcaRecordsForCloseout(record, input);
+  const closeoutEventType = input.decision === 'pass' ? 'record_closed' : 'closeout_recorded';
   return {
     ...record,
     closeout: {
       ...closeout,
+      eventType: closeoutEventType,
       currentAttemptId: input.attemptId,
       attempts: [...attempts, attempt],
       decision: input.decision,
@@ -1149,7 +1151,7 @@ function updateRecord(record: JsonObject, input: { attemptId: string; decision: 
     gateChecks: [...objects(record.gateChecks), gateCheck],
     failureRecords,
     rcaRecords,
-    lastEventType: 'closeout_check_recorded',
+    lastEventType: closeoutEventType,
     updatedAt: input.evaluatedAt,
   };
 }

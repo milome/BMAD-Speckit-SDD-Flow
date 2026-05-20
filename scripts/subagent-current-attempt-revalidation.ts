@@ -97,9 +97,46 @@ function workspaceIssues(projectRoot: string, envelope: JsonObject): string[] {
 function currentAttemptEnvelopeIssues(validation: SubagentEvidenceEnvelopeValidation): string[] {
   return validation.mismatches.filter((issue) => {
     if (/^subagent_envelope_artifact_ref_\d+_hash_mismatch:/u.test(issue)) return false;
+    if (issue === 'subagent_envelope_source_document_hash_mismatch') return false;
+    if (issue === 'subagent_envelope_implementation_confirmation_hash_mismatch') return false;
+    if (issue === 'subagent_envelope_architecture_confirmation_hash_mismatch') return false;
     if (issue === 'subagent_envelope_status_accepted_with_validation_errors') return false;
     return true;
   });
+}
+
+function hasFreshMainWorkspaceCommandEvidence(
+  record: JsonObject,
+  envelope: JsonObject,
+  projectRoot: string,
+  attemptId: string,
+  commandRuns: JsonObject[]
+): boolean {
+  if (!attemptId || commandRuns.length === 0) return false;
+  const traceRows = strings(envelope.traceRows);
+  const coveredRequirementIds = strings(envelope.coveredRequirementIds);
+  const commandArtifacts = commandRuns.flatMap((run) => objects(run.artifactRefs));
+  const commandRequirements = new Set(commandArtifacts.flatMap((artifact) => strings(artifact.relatedRequirementIds)));
+  const commandsOk =
+    commandRuns.length > 0 &&
+    commandRuns.every(
+      (run) =>
+        text(run.closeoutAttemptId) === attemptId &&
+        run.exitCode === 0 &&
+        objects(run.artifactRefs).length > 0
+    );
+  const artifactsOk =
+    commandArtifacts.length > 0 &&
+    commandArtifacts.every((artifact, index) => artifactIssues(projectRoot, artifact, index).length === 0);
+  const traceBound = traceRows.length > 0 && traceRows.some((id) => commandRequirements.has(id));
+  return (
+    commandsOk &&
+    artifactsOk &&
+    traceBound &&
+    coveredRequirementIds.length > 0 &&
+    text(record.sourceDocumentHash) !== '' &&
+    currentArchitectureHash(record) !== ''
+  );
 }
 
 export function evaluateSubagentCurrentAttemptRevalidation(input: {
@@ -118,20 +155,29 @@ export function evaluateSubagentCurrentAttemptRevalidation(input: {
   });
   const mismatches = currentAttemptEnvelopeIssues(validation);
   if (!attemptId) mismatches.push('subagent_revalidation_current_attempt_missing');
-  if (text(input.envelope.sourceDocumentHash) !== text(input.record.sourceDocumentHash)) {
-    mismatches.push('subagent_revalidation_source_hash_mismatch');
-  }
-  if (text(input.envelope.implementationConfirmationHash) !== text(input.record.implementationConfirmationHash)) {
-    mismatches.push('subagent_revalidation_implementation_hash_mismatch');
-  }
-  if (text(input.envelope.architectureConfirmationHash) !== currentArchitectureHash(input.record)) {
-    mismatches.push('subagent_revalidation_architecture_hash_mismatch');
-  }
   mismatches.push(...workspaceIssues(input.projectRoot, input.envelope));
   const currentAttemptCommandRuns =
     input.currentAttemptCommandRuns && input.currentAttemptCommandRuns.length > 0
       ? input.currentAttemptCommandRuns
       : objects(input.envelope.commandRuns);
+  const freshMainWorkspaceEvidence = hasFreshMainWorkspaceCommandEvidence(
+    input.record,
+    input.envelope,
+    input.projectRoot,
+    attemptId,
+    currentAttemptCommandRuns
+  );
+  if (!freshMainWorkspaceEvidence) {
+    if (text(input.envelope.sourceDocumentHash) !== text(input.record.sourceDocumentHash)) {
+      mismatches.push('subagent_revalidation_source_hash_mismatch');
+    }
+    if (text(input.envelope.implementationConfirmationHash) !== text(input.record.implementationConfirmationHash)) {
+      mismatches.push('subagent_revalidation_implementation_hash_mismatch');
+    }
+    if (text(input.envelope.architectureConfirmationHash) !== currentArchitectureHash(input.record)) {
+      mismatches.push('subagent_revalidation_architecture_hash_mismatch');
+    }
+  }
   for (const [index, commandRun] of currentAttemptCommandRuns.entries()) {
     if (text(commandRun.closeoutAttemptId) !== attemptId) {
       mismatches.push(`subagent_revalidation_command_attempt_mismatch:${text(commandRun.commandId) || index}`);
