@@ -136,6 +136,10 @@ describe('render-architecture-confirmation-html', () => {
     expect(html).toContain('治理系统影响扫描');
     expect(html).toContain('完整架构触发矩阵');
     expect(html).toContain('确认架构确认进入实施准备');
+    expect(html).toContain('data-copy-target="architecture-confirmation-phrase"');
+    expect(html).toContain('id="architecture-confirmation-phrase"');
+    expect(html).toContain('复制确认口令');
+    expect(html).toContain('data-copy-status');
 
     const report = JSON.parse(fs.readFileSync(path.join(tempDir, 'architecture-confirmation.render-report.json'), 'utf8'));
     expect(report.confirmability).toBe('confirmable');

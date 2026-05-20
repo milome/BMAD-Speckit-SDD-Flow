@@ -1,0 +1,750 @@
+{
+  "eventType": "execution_iteration_recorded",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "executionIterationId": "exec-TRACE038-copy-button-20260520T164100Z",
+  "runId": "run-TRACE038-copy-button-20260520T164100Z",
+  "status": "done",
+  "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+  "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+  "architectureConfirmationHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+  "traceRows": [
+    "TRACE-038"
+  ],
+  "taskRefs": [
+    "TASK-ARCHITECTURE-CONFIRMATION-ARTIFACT-PRODUCER"
+  ],
+  "evidenceRefs": [
+    "EVD-036",
+    "EVD-037",
+    "EVD-048"
+  ],
+  "filesChanged": [
+    "_bmad/skills/requirements-contract-authoring/scripts/render-architecture-confirmation-html.ts",
+    "tests/acceptance/render-architecture-confirmation-html.test.ts"
+  ],
+  "implementationDelta": {
+    "filesChanged": [
+      "_bmad/skills/requirements-contract-authoring/scripts/render-architecture-confirmation-html.ts",
+      "tests/acceptance/render-architecture-confirmation-html.test.ts"
+    ],
+    "diffSummaryRef": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-038/trace-038-copy-button-current/diff-summary.md",
+    "behaviorAffecting": true,
+    "negativeAssertionArtifactRefs": [
+      {
+        "artifactType": "negative_assertion_evidence",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-038/trace-038-copy-button-current/negative-assertions.json",
+        "hash": "sha256:7b098295a7007022f370833f4082b69b6959222e5aaa4b520c58ad5681fbdf3f",
+        "producer": "TRACE-038 current implementation run",
+        "purpose": "prove copy button projection-only and hash-bound negative assertions",
+        "relatedRequirementIds": [
+          "MUST-049",
+          "NEG-038",
+          "OUT-029",
+          "EVD-036",
+          "EVD-037",
+          "EVD-048",
+          "TRACE-038"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+        "outputVersion": "trace-038-copy-button-negative-assertions-v1"
+      },
+      {
+        "artifactType": "command_evidence",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-038/trace-038-copy-button-current/command-evidence.json",
+        "hash": "sha256:c0814cc8f6297c0e8ce6a50139c19e41b7b9394b294405d592d92a2be7a46ba3",
+        "producer": "TRACE-038 current implementation run",
+        "purpose": "record TRACE-038 current command identity and output summaries after architecture reconfirmation",
+        "relatedRequirementIds": [
+          "MUST-049",
+          "NEG-038",
+          "OUT-029",
+          "EVD-036",
+          "EVD-037",
+          "EVD-048",
+          "TRACE-038"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+        "outputVersion": "trace-038-copy-button-command-evidence-v1"
+      }
+    ]
+  },
+  "diffSummary": "Add architecture confirmation HTML copy confirmation phrase button and acceptance coverage without changing semantic requirement hashes.",
+  "commandRuns": [
+    {
+      "commandId": "CMD-PREPARE-ARCHITECTURE-CONFIRMATION-PAGE",
+      "command": "npx vitest run tests/acceptance/prepare-architecture-confirmation-page.test.ts",
+      "runId": "run-TRACE038-copy-button-20260520T164100Z",
+      "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T16:44:24.441Z",
+      "completedAt": "2026-05-20T16:44:30.954Z",
+      "outputSummary": "RUN  v4.0.18 D:/Dev/BMAD-Speckit-SDD-Flow\n\n ✓ tests/acceptance/prepare-architecture-confirmation-page.test.ts (2 tests) 1938ms\n     ✓ automatically checks stale state, generates the architecture artifact, and renders user-facing HTML  1043ms\n     ✓ fails closed instead of rendering when required architecture inputs are missing  894ms\n\n Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  00:44:28\n   Duration  2.20s (transform 34ms, setup 0ms, import 66ms, tests 1.94s, environment 0ms)"
+    },
+    {
+      "commandId": "CMD-GENERATE-ARCHITECTURE-CONFIRMATION-ARTIFACT",
+      "command": "npx vitest run tests/acceptance/generate-architecture-confirmation-artifact.test.ts",
+      "runId": "run-TRACE038-copy-button-20260520T164100Z",
+      "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T16:44:30.954Z",
+      "completedAt": "2026-05-20T16:44:34.433Z",
+      "outputSummary": "RUN  v4.0.18 D:/Dev/BMAD-Speckit-SDD-Flow\n\n ✓ tests/acceptance/generate-architecture-confirmation-artifact.test.ts (2 tests) 702ms\n     ✓ generates a requirement-scoped architecture confirmation JSON without mutating the requirement record  424ms\n\n Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  00:44:33\n   Duration  980ms (transform 59ms, setup 0ms, import 104ms, tests 702ms, environment 0ms)"
+    },
+    {
+      "commandId": "CMD-TRACE-038-ARCHITECTURE-COPY-BUTTON-ACCEPTANCE",
+      "command": "npx vitest run tests/acceptance/render-architecture-confirmation-html.test.ts",
+      "runId": "run-TRACE038-copy-button-20260520T164100Z",
+      "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T16:44:34.434Z",
+      "completedAt": "2026-05-20T16:44:37.530Z",
+      "outputSummary": "RUN  v4.0.18 D:/Dev/BMAD-Speckit-SDD-Flow\n\n ✓ tests/acceptance/render-architecture-confirmation-html.test.ts (2 tests) 287ms\n\n Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  00:44:36\n   Duration  558ms (transform 44ms, setup 0ms, import 103ms, tests 287ms, environment 0ms)"
+    },
+    {
+      "commandId": "CMD-TRACE-038-ARCHITECTURE-PREPARE-ACCEPTANCE",
+      "command": "npx vitest run tests/acceptance/prepare-architecture-confirmation-page.test.ts tests/acceptance/generate-architecture-confirmation-artifact.test.ts tests/acceptance/render-architecture-confirmation-html.test.ts tests/acceptance/architecture-confirmation-ingest.test.ts tests/acceptance/requirements-contract-authoring-skill-contract.test.ts tests/acceptance/render-requirements-confirmation-html.test.ts",
+      "runId": "run-TRACE038-copy-button-20260520T164100Z",
+      "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T16:44:37.531Z",
+      "completedAt": "2026-05-20T16:44:47.388Z",
+      "outputSummary": "RUN  v4.0.18 D:/Dev/BMAD-Speckit-SDD-Flow\n\n ✓ tests/acceptance/prepare-architecture-confirmation-page.test.ts (2 tests) 2041ms\n     ✓ automatically checks stale state, generates the architecture artifact, and renders user-facing HTML  1119ms\n     ✓ fails closed instead of rendering when required architecture inputs are missing  920ms\n ✓ tests/acceptance/generate-architecture-confirmation-artifact.test.ts (2 tests) 799ms\n     ✓ generates a requirement-scoped architecture confirmation JSON without mutating the requirement record  447ms\n     ✓ fails closed when impact scans or target paths are missing  351ms\n ✓ tests/acceptance/render-architecture-confirmation-html.test.ts (2 tests) 283ms\n{\n  \"ok\": true,\n  \"event\": {\n    \"eventType\": \"architecture_confirmation_recorded\",\n    \"recordId\": \"REQ-\n...<truncated>...\nt/runtime/requirement-records/REQ-ARCH-INGEST/requirement-record.json\n\n ✓ tests/acceptance/architecture-confirmation-ingest.test.ts (3 tests) 51ms\n ✓ tests/acceptance/requirements-contract-authoring-skill-contract.test.ts (3 tests) 4ms\n ✓ tests/acceptance/render-requirements-confirmation-html.test.ts (38 tests) 6966ms\n     ✓ renders current controlled execution state only when hashes and current attempt match  407ms\n\n Test Files  6 passed (6)\n      Tests  50 passed (50)\n   Start at  00:44:39\n   Duration  7.31s (transform 226ms, setup 0ms, import 457ms, tests 10.14s, environment 1ms)\n\n\n--- stderr ---\nstderr | tests/acceptance/architecture-confirmation-ingest.test.ts > architecture confirmation ingest > rejects stale architecture confirmation hashes without writing record state\n{\n  \"ok\": false,\n  \"mismatches\": [\n    \"confirmation_text_architecture_confirmation_artifact_hash_mismatch\"\n  ]\n}"
+    },
+    {
+      "commandId": "CMD-RENDER-CONFIRMATION",
+      "command": "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json",
+      "runId": "run-TRACE038-copy-button-20260520T164100Z",
+      "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T16:44:47.389Z",
+      "completedAt": "2026-05-20T16:44:48.036Z",
+      "outputSummary": "{\n  \"recordId\": \"REQ-CLOSED-LOOP-DESIGN\",\n  \"sourcePath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/docs/design/需求实现完整性门禁与重跑闭环设计.md\",\n  \"sourceDocumentHash\": \"sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570\",\n  \"implementationConfirmationHash\": \"sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a\",\n  \"confirmationPageHash\": \"sha256:c07d57b0e6da7716c00db4e4b4d73784b39593e3343733bc092b7dbcee4bd55d\",\n  \"language\": \"zh-CN\",\n  \"generatedAt\": \"2026-05-20T16:44:47.767Z\",\n  \"blockingIssues\": [],\n  \"warnings\": [\n    {\n      \"severity\": \"warning\",\n      \"code\": \"control_affecting_artifact_not_control_role\",\n      \"message\": \"ART-SUBAGENT-SURFACE-INVENTORY affects control flow\",\n      \"refs\": [\n        \"ART-SUBAGENT-SURFACE-INVENTORY\"\n      ]\n    },\n    {\n      \"severi\n...<truncated>...\nISSION-EVIDENCE-INTEGRATION\"\n      ]\n    },\n    {\n      \"severity\": \"warning\",\n      \"code\": \"long_item_text\",\n      \"message\": \"31 long confirmation items\",\n      \"refs\": []\n    },\n    {\n      \"severity\": \"warning\",\n      \"code\": \"source_already_user_confirmed\",\n      \"message\": \"renderer does not confirm or change status\",\n      \"refs\": []\n    }\n  ],\n  \"mermaidRuntime\": {\n    \"available\": true,\n    \"path\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad/skills/requirements-contract-authoring/assets/mermaid/mermaid.min.js\",\n    \"hash\": \"sha256:d0830a6c05546e9edb8fe20a8f545f3e0dc7c4c3134d584bad9c13a99d7a71e0\",\n    \"format\": \"classic-global\",\n    \"issues\": []\n  },\n  \"counts\": {\n    \"must\": 56,\n    \"notDone\": 40,\n    \"mustNot\": 29,\n    \"evidence\": 62,\n    \"failurePaths\": 7,\n    \"edgeCases\": 10,\n    \"traceRows\": 39,\n    \"sequenceViews\": 10,\n    \"resumeFailureCases\": 27,\n    \"artifactPlanItems\": 8\n  }\n}"
+    },
+    {
+      "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+      "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+      "runId": "run-TRACE038-copy-button-20260520T164100Z",
+      "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T16:44:48.036Z",
+      "completedAt": "2026-05-20T16:44:57.445Z",
+      "outputSummary": "RUN  v4.0.18 D:/Dev/BMAD-Speckit-SDD-Flow\n\n ✓ tests/acceptance/render-requirements-confirmation-html.test.ts (38 tests) 6526ms\n     ✓ renders current controlled execution state only when hashes and current attempt match  347ms\n\n Test Files  1 passed (1)\n      Tests  38 passed (38)\n   Start at  00:44:50\n   Duration  6.83s (transform 96ms, setup 0ms, import 130ms, tests 6.53s, environment 0ms)"
+    },
+    {
+      "commandId": "CMD-ENCODING-GATE",
+      "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+      "runId": "run-TRACE038-copy-button-20260520T164100Z",
+      "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-20T16:44:57.446Z",
+      "completedAt": "2026-05-20T16:44:58.258Z",
+      "outputSummary": "checkedFiles=2772 findings=0"
+    }
+  ],
+  "artifactRefs": [
+    {
+      "artifactType": "diff_summary",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-038/trace-038-copy-button-current/diff-summary.md",
+      "hash": "sha256:c89f1f9d73eb13d9cc465bb3991123fdb88bf8facfe95c2de39a4a41ff8b280f",
+      "producer": "TRACE-038 current implementation run",
+      "purpose": "summarize TRACE-038 architecture confirmation copy button implementation delta",
+      "relatedRequirementIds": [
+        "MUST-049",
+        "NEG-038",
+        "OUT-029",
+        "EVD-036",
+        "EVD-037",
+        "EVD-048",
+        "TRACE-038"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "trace-038-copy-button-diff-summary-v1"
+    },
+    {
+      "artifactType": "negative_assertion_evidence",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-038/trace-038-copy-button-current/negative-assertions.json",
+      "hash": "sha256:7b098295a7007022f370833f4082b69b6959222e5aaa4b520c58ad5681fbdf3f",
+      "producer": "TRACE-038 current implementation run",
+      "purpose": "prove copy button projection-only and hash-bound negative assertions",
+      "relatedRequirementIds": [
+        "MUST-049",
+        "NEG-038",
+        "OUT-029",
+        "EVD-036",
+        "EVD-037",
+        "EVD-048",
+        "TRACE-038"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "trace-038-copy-button-negative-assertions-v1"
+    },
+    {
+      "artifactType": "command_evidence",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-038/trace-038-copy-button-current/command-evidence.json",
+      "hash": "sha256:c0814cc8f6297c0e8ce6a50139c19e41b7b9394b294405d592d92a2be7a46ba3",
+      "producer": "TRACE-038 current implementation run",
+      "purpose": "record TRACE-038 current command identity and output summaries after architecture reconfirmation",
+      "relatedRequirementIds": [
+        "MUST-049",
+        "NEG-038",
+        "OUT-029",
+        "EVD-036",
+        "EVD-037",
+        "EVD-048",
+        "TRACE-038"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "trace-038-copy-button-command-evidence-v1"
+    },
+    {
+      "artifactType": "architecture_confirmation",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/architecture/architecture-confirmation-arch-confirm-20260520-TRACE038-copy-button.json",
+      "hash": "sha256:a469a17799118cad359e2306f92d14c905eb12c2f51468add24b4ab1de96bc81",
+      "producer": "TRACE-038 current implementation run",
+      "purpose": "confirmed requirement-scoped architecture confirmation artifact covering copy button renderer/test paths",
+      "relatedRequirementIds": [
+        "MUST-049",
+        "NEG-038",
+        "OUT-029",
+        "EVD-036",
+        "EVD-037",
+        "EVD-048",
+        "TRACE-038"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "architecture-confirmation-v1"
+    },
+    {
+      "artifactType": "architecture_confirmation_view",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/architecture/architecture-confirmation-arch-confirm-20260520-TRACE038-copy-button.html",
+      "hash": "sha256:42443bfd834551a683219b9e0e3765f3efd123d5bf18ad69b4be4c62fad78c92",
+      "producer": "TRACE-038 current implementation run",
+      "purpose": "user-facing architecture confirmation HTML projection with copy confirmation phrase control",
+      "relatedRequirementIds": [
+        "MUST-049",
+        "NEG-038",
+        "OUT-029",
+        "EVD-036",
+        "EVD-037",
+        "EVD-048",
+        "TRACE-038"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "architecture-confirmation-html-v1"
+    },
+    {
+      "artifactType": "architecture_confirmation_render_report",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/architecture/architecture-confirmation-arch-confirm-20260520-TRACE038-copy-button.render-report.json",
+      "hash": "sha256:05789add9380759f1dd0f84747b708b3683192a7ffdf973e3ed1975b52b47e7f",
+      "producer": "TRACE-038 current implementation run",
+      "purpose": "machine-readable architecture confirmation render report for confirmed copy button artifact",
+      "relatedRequirementIds": [
+        "MUST-049",
+        "NEG-038",
+        "OUT-029",
+        "EVD-036",
+        "EVD-037",
+        "EVD-048",
+        "TRACE-038"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+      "outputVersion": "architecture-confirmation-render-report-v1"
+    }
+  ],
+  "entryFlowState": {
+    "entryFlow": "standalone_tasks",
+    "entryFlowClass": "task_packet_entry",
+    "workflowAdapter": "direct",
+    "contractAuthoringRequired": true,
+    "globalContractTraceabilityPolicy": {
+      "schemaVersion": "global-contract-traceability-policy/v1",
+      "appliesToEntryFlows": [
+        "bugfix",
+        "standalone_tasks",
+        "story"
+      ],
+      "contractAuthoringRequired": true,
+      "taskBindingRequired": true,
+      "taskBindingDimensions": [
+        "MUST",
+        "NEG",
+        "OUT",
+        "EVD",
+        "TRACE"
+      ],
+      "missingBindingBehavior": "fail_closed",
+      "sourceDocumentHashRequired": true,
+      "implementationConfirmationHashRequired": true,
+      "reconfirmOnTraceSemanticChange": true,
+      "allowUnboundImplementationTask": false,
+      "taskRegistryField": "implementationTasks",
+      "traceTaskRefsMustResolveTo": "implementationTasks[].id",
+      "readinessFailureWhenUnresolved": true,
+      "closeoutFailureWhenUnresolved": true
+    },
+    "traceStatusPolicy": {
+      "schemaVersion": "trace-status-policy/v1",
+      "allowedStatuses": [
+        "PENDING",
+        "PASS",
+        "FAIL",
+        "BLOCKED",
+        "LINKED_DOWNSTREAM",
+        "USER_APPROVED_DEFERRED",
+        "USER_APPROVED_OUT_OF_SCOPE"
+      ],
+      "terminalFullCloseoutStatuses": [
+        "PASS",
+        "FAIL",
+        "BLOCKED"
+      ],
+      "linkedDownstreamRequiredFields": [
+        "downstreamRecordId",
+        "downstreamStoryRef",
+        "downstreamSourceDocumentPath",
+        "downstreamSourceDocumentHash",
+        "downstreamScopeSummary",
+        "downstreamRequirementIds",
+        "downstreamAuditEvidenceRefs"
+      ],
+      "userApprovedDeferredRequiredFields": [
+        "userApprovalRef",
+        "approvedAt",
+        "approvedBy",
+        "impactSummary",
+        "followUpRecordId",
+        "followUpDueCondition"
+      ],
+      "userApprovedOutOfScopeRequiredFields": [
+        "userApprovalRef",
+        "approvedAt",
+        "approvedBy",
+        "impactSummary",
+        "confirmationDeltaRef"
+      ],
+      "bareDeferredForbidden": true,
+      "bareOutOfScopeForbidden": true,
+      "fullCloseoutForUserScopedStatusesForbidden": true
+    }
+  },
+  "deliveryEvidence": {
+    "requiredCommands": [
+      {
+        "commandId": "CMD-PREPARE-ARCHITECTURE-CONFIRMATION-PAGE",
+        "command": "npx vitest run tests/acceptance/prepare-architecture-confirmation-page.test.ts",
+        "commandType": "delivery_evidence",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": [
+          "TRACE-038"
+        ],
+        "evidenceRefs": [
+          "EVD-036",
+          "EVD-037",
+          "EVD-048"
+        ],
+        "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+        "lastRunRef": {
+          "commandId": "CMD-PREPARE-ARCHITECTURE-CONFIRMATION-PAGE",
+          "runId": "run-TRACE038-copy-button-20260520T164100Z",
+          "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+          "exitCode": 0,
+          "completedAt": "2026-05-20T16:44:30.954Z"
+        },
+        "artifactRefs": [
+          {
+            "artifactType": "command_evidence",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-038/trace-038-copy-button-current/command-evidence.json",
+            "hash": "sha256:c0814cc8f6297c0e8ce6a50139c19e41b7b9394b294405d592d92a2be7a46ba3",
+            "producer": "TRACE-038 current implementation run",
+            "purpose": "record TRACE-038 current command identity and output summaries after architecture reconfirmation",
+            "relatedRequirementIds": [
+              "MUST-049",
+              "NEG-038",
+              "OUT-029",
+              "EVD-036",
+              "EVD-037",
+              "EVD-048",
+              "TRACE-038"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "trace-038-copy-button-command-evidence-v1"
+          }
+        ]
+      },
+      {
+        "commandId": "CMD-GENERATE-ARCHITECTURE-CONFIRMATION-ARTIFACT",
+        "command": "npx vitest run tests/acceptance/generate-architecture-confirmation-artifact.test.ts",
+        "commandType": "delivery_evidence",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": [
+          "TRACE-038"
+        ],
+        "evidenceRefs": [
+          "EVD-036",
+          "EVD-037",
+          "EVD-048"
+        ],
+        "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+        "lastRunRef": {
+          "commandId": "CMD-GENERATE-ARCHITECTURE-CONFIRMATION-ARTIFACT",
+          "runId": "run-TRACE038-copy-button-20260520T164100Z",
+          "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+          "exitCode": 0,
+          "completedAt": "2026-05-20T16:44:34.433Z"
+        },
+        "artifactRefs": [
+          {
+            "artifactType": "command_evidence",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-038/trace-038-copy-button-current/command-evidence.json",
+            "hash": "sha256:c0814cc8f6297c0e8ce6a50139c19e41b7b9394b294405d592d92a2be7a46ba3",
+            "producer": "TRACE-038 current implementation run",
+            "purpose": "record TRACE-038 current command identity and output summaries after architecture reconfirmation",
+            "relatedRequirementIds": [
+              "MUST-049",
+              "NEG-038",
+              "OUT-029",
+              "EVD-036",
+              "EVD-037",
+              "EVD-048",
+              "TRACE-038"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "trace-038-copy-button-command-evidence-v1"
+          }
+        ]
+      },
+      {
+        "commandId": "CMD-TRACE-038-ARCHITECTURE-COPY-BUTTON-ACCEPTANCE",
+        "command": "npx vitest run tests/acceptance/render-architecture-confirmation-html.test.ts",
+        "commandType": "delivery_evidence",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": [
+          "TRACE-038"
+        ],
+        "evidenceRefs": [
+          "EVD-036",
+          "EVD-037",
+          "EVD-048"
+        ],
+        "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+        "lastRunRef": {
+          "commandId": "CMD-TRACE-038-ARCHITECTURE-COPY-BUTTON-ACCEPTANCE",
+          "runId": "run-TRACE038-copy-button-20260520T164100Z",
+          "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+          "exitCode": 0,
+          "completedAt": "2026-05-20T16:44:37.530Z"
+        },
+        "artifactRefs": [
+          {
+            "artifactType": "command_evidence",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-038/trace-038-copy-button-current/command-evidence.json",
+            "hash": "sha256:c0814cc8f6297c0e8ce6a50139c19e41b7b9394b294405d592d92a2be7a46ba3",
+            "producer": "TRACE-038 current implementation run",
+            "purpose": "record TRACE-038 current command identity and output summaries after architecture reconfirmation",
+            "relatedRequirementIds": [
+              "MUST-049",
+              "NEG-038",
+              "OUT-029",
+              "EVD-036",
+              "EVD-037",
+              "EVD-048",
+              "TRACE-038"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "trace-038-copy-button-command-evidence-v1"
+          }
+        ]
+      },
+      {
+        "commandId": "CMD-TRACE-038-ARCHITECTURE-PREPARE-ACCEPTANCE",
+        "command": "npx vitest run tests/acceptance/prepare-architecture-confirmation-page.test.ts tests/acceptance/generate-architecture-confirmation-artifact.test.ts tests/acceptance/render-architecture-confirmation-html.test.ts tests/acceptance/architecture-confirmation-ingest.test.ts tests/acceptance/requirements-contract-authoring-skill-contract.test.ts tests/acceptance/render-requirements-confirmation-html.test.ts",
+        "commandType": "delivery_evidence",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": [
+          "TRACE-038"
+        ],
+        "evidenceRefs": [
+          "EVD-036",
+          "EVD-037",
+          "EVD-048"
+        ],
+        "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+        "lastRunRef": {
+          "commandId": "CMD-TRACE-038-ARCHITECTURE-PREPARE-ACCEPTANCE",
+          "runId": "run-TRACE038-copy-button-20260520T164100Z",
+          "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+          "exitCode": 0,
+          "completedAt": "2026-05-20T16:44:47.388Z"
+        },
+        "artifactRefs": [
+          {
+            "artifactType": "command_evidence",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-038/trace-038-copy-button-current/command-evidence.json",
+            "hash": "sha256:c0814cc8f6297c0e8ce6a50139c19e41b7b9394b294405d592d92a2be7a46ba3",
+            "producer": "TRACE-038 current implementation run",
+            "purpose": "record TRACE-038 current command identity and output summaries after architecture reconfirmation",
+            "relatedRequirementIds": [
+              "MUST-049",
+              "NEG-038",
+              "OUT-029",
+              "EVD-036",
+              "EVD-037",
+              "EVD-048",
+              "TRACE-038"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "trace-038-copy-button-command-evidence-v1"
+          }
+        ]
+      },
+      {
+        "commandId": "CMD-RENDER-CONFIRMATION",
+        "command": "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source docs/design/需求实现完整性门禁与重跑闭环设计.md --out _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/confirmation/confirmation.html --language zh-CN --record-id REQ-CLOSED-LOOP-DESIGN --requirement-set-id REQ-CLOSED-LOOP-DESIGN --entry-flow standalone_tasks --entry-flow-class task_packet_entry --workflow-adapter direct --theme audit --json",
+        "commandType": "contract_validation",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": [
+          "TRACE-038"
+        ],
+        "evidenceRefs": [
+          "EVD-036",
+          "EVD-037",
+          "EVD-048"
+        ],
+        "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+        "lastRunRef": {
+          "commandId": "CMD-RENDER-CONFIRMATION",
+          "runId": "run-TRACE038-copy-button-20260520T164100Z",
+          "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+          "exitCode": 0,
+          "completedAt": "2026-05-20T16:44:48.036Z"
+        },
+        "artifactRefs": [
+          {
+            "artifactType": "command_evidence",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-038/trace-038-copy-button-current/command-evidence.json",
+            "hash": "sha256:c0814cc8f6297c0e8ce6a50139c19e41b7b9394b294405d592d92a2be7a46ba3",
+            "producer": "TRACE-038 current implementation run",
+            "purpose": "record TRACE-038 current command identity and output summaries after architecture reconfirmation",
+            "relatedRequirementIds": [
+              "MUST-049",
+              "NEG-038",
+              "OUT-029",
+              "EVD-036",
+              "EVD-037",
+              "EVD-048",
+              "TRACE-038"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "trace-038-copy-button-command-evidence-v1"
+          }
+        ]
+      },
+      {
+        "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+        "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+        "commandType": "contract_validation",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": [
+          "TRACE-038"
+        ],
+        "evidenceRefs": [
+          "EVD-036",
+          "EVD-037",
+          "EVD-048"
+        ],
+        "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+        "lastRunRef": {
+          "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+          "runId": "run-TRACE038-copy-button-20260520T164100Z",
+          "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+          "exitCode": 0,
+          "completedAt": "2026-05-20T16:44:57.445Z"
+        },
+        "artifactRefs": [
+          {
+            "artifactType": "command_evidence",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-038/trace-038-copy-button-current/command-evidence.json",
+            "hash": "sha256:c0814cc8f6297c0e8ce6a50139c19e41b7b9394b294405d592d92a2be7a46ba3",
+            "producer": "TRACE-038 current implementation run",
+            "purpose": "record TRACE-038 current command identity and output summaries after architecture reconfirmation",
+            "relatedRequirementIds": [
+              "MUST-049",
+              "NEG-038",
+              "OUT-029",
+              "EVD-036",
+              "EVD-037",
+              "EVD-048",
+              "TRACE-038"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "trace-038-copy-button-command-evidence-v1"
+          }
+        ]
+      },
+      {
+        "commandId": "CMD-ENCODING-GATE",
+        "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+        "commandType": "contract_validation",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "traceRows": [
+          "TRACE-038"
+        ],
+        "evidenceRefs": [
+          "EVD-036",
+          "EVD-037",
+          "EVD-048"
+        ],
+        "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+        "lastRunRef": {
+          "commandId": "CMD-ENCODING-GATE",
+          "runId": "run-TRACE038-copy-button-20260520T164100Z",
+          "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+          "exitCode": 0,
+          "completedAt": "2026-05-20T16:44:58.258Z"
+        },
+        "artifactRefs": [
+          {
+            "artifactType": "command_evidence",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-038/trace-038-copy-button-current/command-evidence.json",
+            "hash": "sha256:c0814cc8f6297c0e8ce6a50139c19e41b7b9394b294405d592d92a2be7a46ba3",
+            "producer": "TRACE-038 current implementation run",
+            "purpose": "record TRACE-038 current command identity and output summaries after architecture reconfirmation",
+            "relatedRequirementIds": [
+              "MUST-049",
+              "NEG-038",
+              "OUT-029",
+              "EVD-036",
+              "EVD-037",
+              "EVD-048",
+              "TRACE-038"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570;implementation=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a;architecture=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+            "outputVersion": "trace-038-copy-button-command-evidence-v1"
+          }
+        ]
+      }
+    ],
+    "historicalRunRefs": [
+      {
+        "commandId": "CMD-PREPARE-ARCHITECTURE-CONFIRMATION-PAGE",
+        "runId": "run-TRACE038-copy-button-20260520T164100Z",
+        "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z"
+      },
+      {
+        "commandId": "CMD-GENERATE-ARCHITECTURE-CONFIRMATION-ARTIFACT",
+        "runId": "run-TRACE038-copy-button-20260520T164100Z",
+        "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z"
+      },
+      {
+        "commandId": "CMD-TRACE-038-ARCHITECTURE-COPY-BUTTON-ACCEPTANCE",
+        "runId": "run-TRACE038-copy-button-20260520T164100Z",
+        "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z"
+      },
+      {
+        "commandId": "CMD-TRACE-038-ARCHITECTURE-PREPARE-ACCEPTANCE",
+        "runId": "run-TRACE038-copy-button-20260520T164100Z",
+        "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z"
+      },
+      {
+        "commandId": "CMD-RENDER-CONFIRMATION",
+        "runId": "run-TRACE038-copy-button-20260520T164100Z",
+        "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z"
+      },
+      {
+        "commandId": "CMD-TRACE-BINDING-ACCEPTANCE",
+        "runId": "run-TRACE038-copy-button-20260520T164100Z",
+        "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z"
+      },
+      {
+        "commandId": "CMD-ENCODING-GATE",
+        "runId": "run-TRACE038-copy-button-20260520T164100Z",
+        "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z"
+      }
+    ]
+  },
+  "requirementClosures": [
+    {
+      "requirementId": "MUST-049",
+      "status": "pass"
+    },
+    {
+      "requirementId": "NEG-038",
+      "status": "pass"
+    },
+    {
+      "requirementId": "OUT-029",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-036",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-037",
+      "status": "pass"
+    },
+    {
+      "requirementId": "EVD-048",
+      "status": "pass"
+    }
+  ],
+  "gateChecks": [
+    {
+      "gate": "architecture_confirmation_copy_button_projection_gate",
+      "decision": "pass"
+    },
+    {
+      "gate": "architecture_confirmation_current_hash_gate",
+      "decision": "pass"
+    }
+  ],
+  "contractChecks": [
+    {
+      "contract": "TRACE-038 current architecture confirmation contract validation commands",
+      "decision": "pass"
+    },
+    {
+      "contract": "architecture confirmation copy phrase render contract",
+      "decision": "pass"
+    }
+  ],
+  "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z"
+}

@@ -1,0 +1,38 @@
+{
+  "traceRows": [
+    "TRACE-038"
+  ],
+  "relatedRequirementIds": [
+    "MUST-049",
+    "NEG-038",
+    "OUT-029",
+    "EVD-036",
+    "EVD-037",
+    "EVD-048",
+    "TRACE-038"
+  ],
+  "assertions": [
+    {
+      "id": "architecture-copy-button-projection-only",
+      "statement": "Adding the copy confirmation phrase button changes only the rendered architecture confirmation projection and does not alter semantic source or implementation confirmation hashes.",
+      "validatedBy": [
+        "CMD-TRACE-038-ARCHITECTURE-COPY-BUTTON-ACCEPTANCE",
+        "CMD-RENDER-CONFIRMATION"
+      ]
+    },
+    {
+      "id": "architecture-confirmation-ingest-still-hash-bound",
+      "statement": "Architecture confirmation ingest still rejects mismatched confirmation text and records only the confirmed artifact hash through controlled ingest.",
+      "validatedBy": [
+        "CMD-TRACE-038-ARCHITECTURE-PREPARE-ACCEPTANCE"
+      ]
+    },
+    {
+      "id": "encoding-clean-after-generated-surfaces",
+      "statement": "Generated confirmation surfaces and evidence remain UTF-8 clean after the renderer change.",
+      "validatedBy": [
+        "CMD-ENCODING-GATE"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "ok": true,
+  "userFacingNextStep": "open_architecture_confirmation_html_and_confirm_hashes",
+  "internalSteps": [
+    {
+      "label": "architecture_confirmation_state_checked",
+      "status": 0,
+      "ok": true,
+      "eventType": "architecture_confirmation_state_checked",
+      "decision": "pass",
+      "stateTransition": {
+        "fromStatus": "active",
+        "toStatus": "active",
+        "reasonCode": "hash_match",
+        "previousHashes": {
+          "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+          "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+          "targetPathsHash": "sha256:c04cc74aa351329b050a6a07f1c8b5eee113374e203eb5b9b2abbb3963876045",
+          "consumerImpactScanHash": "sha256:21e356142410242be680cd68ddc0af7b590d29411d1d806882ab34f61feac308",
+          "governanceImpactScanHash": "sha256:5b6ec8450bd633c1170eeeffdb39cfe245bb28f8e5891e49999629fed60692cd",
+          "currentArtifactHash": "sha256:ce462bd4717c8dfc1fbc79a99f05deb41b85cf9d95a9dd673386fc5e45cafd92",
+          "resolvedRecipeHash": "sha256:da10b7ad044a705fb04be14c32a0062e9dc5e91012e5d267a435b83c3ba86b75"
+        },
+        "currentHashes": {
+          "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+          "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+          "targetPathsHash": "sha256:c04cc74aa351329b050a6a07f1c8b5eee113374e203eb5b9b2abbb3963876045",
+          "consumerImpactScanHash": "sha256:21e356142410242be680cd68ddc0af7b590d29411d1d806882ab34f61feac308",
+          "governanceImpactScanHash": "sha256:5b6ec8450bd633c1170eeeffdb39cfe245bb28f8e5891e49999629fed60692cd",
+          "currentArtifactHash": "sha256:ce462bd4717c8dfc1fbc79a99f05deb41b85cf9d95a9dd673386fc5e45cafd92",
+          "resolvedRecipeHash": "sha256:da10b7ad044a705fb04be14c32a0062e9dc5e91012e5d267a435b83c3ba86b75"
+        },
+        "mismatchFields": [],
+        "recipeVersion": "architecture-confirmation-hash/v1"
+      }
+    },
+    {
+      "label": "generate_architecture_confirmation_artifact",
+      "status": 0,
+      "ok": true
+    },
+    {
+      "label": "render_architecture_confirmation_html",
+      "status": 0,
+      "ok": true
+    }
+  ],
+  "architectureConfirmationPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/architecture/architecture-confirmation-arch-confirm-20260520-TRACE038-copy-button.json",
+  "htmlPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/architecture/architecture-confirmation-arch-confirm-20260520-TRACE038-copy-button.html",
+  "renderReportPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/architecture/architecture-confirmation-arch-confirm-20260520-TRACE038-copy-button.render-report.json",
+  "summaryPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/architecture/architecture-confirmation-arch-confirm-20260520-TRACE038-copy-button.summary.json",
+  "confirmInstruction": "确认架构确认进入实施准备\nsourceDocumentHash=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570\nimplementationConfirmationHash=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a\nresolvedRecipeHash=sha256:da10b7ad044a705fb04be14c32a0062e9dc5e91012e5d267a435b83c3ba86b75\narchitectureConfirmationArtifactHash=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+  "architectureConfirmationArtifactHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+  "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+  "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+  "resolvedRecipeHash": "sha256:da10b7ad044a705fb04be14c32a0062e9dc5e91012e5d267a435b83c3ba86b75"
+}

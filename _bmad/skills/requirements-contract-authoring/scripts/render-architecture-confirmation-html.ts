@@ -247,6 +247,7 @@ function renderHtml(input) {
     .layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:18px}.nav{position:sticky;top:16px;align-self:start;background:rgba(255,253,248,.92);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:14px}.nav a{display:block;padding:7px 8px;border-radius:10px;text-decoration:none;color:var(--ink);font-size:13px}.nav a:hover{background:var(--blue-soft)}
     .hero,.card{background:var(--paper);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:22px 24px;margin:0 0 18px}.chip{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;margin:0 8px 8px 0;background:var(--blue-soft);color:var(--blue)}.bad{background:var(--red-soft);color:var(--red)}.good{background:var(--green-soft);color:var(--green)}.warn{background:var(--gold-soft);color:var(--gold)}
     h1,h2,h3{margin:0 0 12px}h1{font-size:28px}h2{font-size:20px}p{margin:0 0 12px}.muted{color:var(--muted)}.hash{font-family:var(--mono);word-break:break-all;font-size:12px}.phrase{background:#111;color:#f6f0e7;padding:16px;border-radius:14px;font-family:var(--mono);white-space:pre-wrap}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.two-col{display:grid;grid-template-columns:1.15fr .85fr;gap:16px}
+    .section-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px}.section-title h2{margin:0}.copy-button{border:1px solid var(--blue);background:var(--blue);color:#fff;border-radius:999px;padding:8px 14px;font-weight:700;cursor:pointer}.copy-button:hover{filter:brightness(.95)}.copy-button:focus-visible{outline:3px solid rgba(45,93,130,.28);outline-offset:2px}.copy-status{min-height:20px;margin:10px 0 0;color:var(--green);font-size:13px}
     .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px}.table-wrap table{min-width:100%;border-collapse:collapse;background:#fff}.table-wrap th,.table-wrap td{padding:10px 12px;border-bottom:1px solid #eee;vertical-align:top;text-align:left}.table-wrap th{background:#f6efe0;position:sticky;top:0}.pill-list span{display:inline-block;margin:0 8px 8px 0;padding:4px 8px;border-radius:999px;background:#eef4f9;border:1px solid #d6e4ef;font-size:12px}.inline-json{font-size:11px;margin:0;max-width:520px}.empty{color:var(--muted);font-style:italic}@media(max-width:900px){.layout,.grid,.two-col{display:block}.nav{position:relative;margin-bottom:16px}}
   </style>
 </head>
@@ -285,10 +286,48 @@ function renderHtml(input) {
     <section id="paths" class="card"><h2>目标路径</h2><p class="muted">${array(c.targetPaths).length} 个 targetPaths</p>${renderPathTable(c.targetPaths)}</section>
     <section id="hash" class="card"><h2>Hash Recipe 与 stale 输入</h2><div class="grid"><div><h3>Recipe</h3>${renderObjectTable([c.architectureConfirmationHashRecipe || {}], ['schemaVersion', 'recipeVersion', 'configPath', 'resolvedRecipeHash'])}</div><div><h3>Stale Inputs</h3>${renderObjectTable([c.staleInputs || {}], ['sourceDocumentHash', 'implementationConfirmationHash', 'targetPathsHash', 'consumerImpactScanHash', 'governanceImpactScanHash', 'resolvedRecipeHash'])}</div></div></section>
     <section id="risk" class="card"><h2>风险与回滚</h2><p><strong>Risk:</strong> ${escapeHtml(c.riskStatement || '源工件未提供 riskStatement。')}</p><p><strong>Rollback:</strong> ${escapeHtml(c.rollbackPlan || '源工件未提供 rollbackPlan。')}</p><p><strong>Evidence:</strong></p><div class="pill-list">${renderList(c.evidenceRefs)}</div></section>
-    <section id="phrase" class="card"><h2>确认口令</h2><div class="phrase">${escapeHtml(phrase)}</div></section>
+    <section id="phrase" class="card"><div class="section-title"><h2>确认口令</h2><button class="copy-button" type="button" data-copy-target="architecture-confirmation-phrase">复制确认口令</button></div><pre id="architecture-confirmation-phrase" class="phrase">${escapeHtml(phrase)}</pre><p class="copy-status" data-copy-status aria-live="polite"></p></section>
     <section id="metadata" class="card"><h2>工件元数据</h2>${renderObjectTable([{ jsonPath: input.architecturePath, htmlPath: input.outPath, runId: c.runId, artifactHash, computedArtifactHash: input.validation.computedHash }], ['jsonPath', 'htmlPath', 'runId', 'artifactHash', 'computedArtifactHash'])}</section>
   </div>
 </main>
+<script>
+(() => {
+  const button = document.querySelector('[data-copy-target]');
+  if (!button) return;
+  const targetId = button.getAttribute('data-copy-target');
+  const target = targetId ? document.getElementById(targetId) : null;
+  const status = document.querySelector('[data-copy-status]');
+  const setStatus = (message) => {
+    if (status) status.textContent = message;
+  };
+  const fallbackCopy = (text) => {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', 'readonly');
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    if (!ok) throw new Error('copy command failed');
+  };
+  button.addEventListener('click', async () => {
+    const text = target?.textContent?.trim() || '';
+    if (!text) {
+      setStatus('未找到确认口令。');
+      return;
+    }
+    try {
+      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
+      else fallbackCopy(text);
+      setStatus('确认口令已复制。');
+    } catch {
+      setStatus('复制失败，请手动选择口令。');
+    }
+  });
+})();
+</script>
 </body>
 </html>`;
 }

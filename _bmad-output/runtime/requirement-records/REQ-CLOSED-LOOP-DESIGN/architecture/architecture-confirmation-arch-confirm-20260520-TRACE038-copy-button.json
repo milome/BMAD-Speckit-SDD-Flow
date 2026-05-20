@@ -1,0 +1,236 @@
+{
+  "schemaVersion": "architecture-confirmation/v1",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "runId": "arch-confirm-20260520-TRACE038-copy-button",
+  "status": "draft",
+  "entryFlow": "standalone_tasks",
+  "entryFlowClass": "task_packet_entry",
+  "workflowAdapter": "direct",
+  "decision": "full_architecture_confirmed",
+  "outcome": "full_architecture_confirmed",
+  "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+  "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+  "architectureConfirmationHashRecipe": {
+    "schemaVersion": "architecture-confirmation-hash-recipe.contract/v1",
+    "recipeVersion": "architecture-confirmation-hash/v1",
+    "configPath": "_bmad/_config/architecture-confirmation-hash-recipe.contract.yaml",
+    "canonicalization": {
+      "encoding": "utf8",
+      "bom": "forbidden",
+      "newline": "LF",
+      "jsonCanonicalization": {
+        "objectKeyOrder": "lexicographic",
+        "preserveNumberFormat": false,
+        "preserveInsignificantWhitespace": false,
+        "nullPolicy": "include_explicit_nulls"
+      },
+      "arrayOrdering": {
+        "targetPaths": "lexicographic",
+        "forbiddenChanges": "lexicographic",
+        "consumerImpactScan": "fixed_category_order",
+        "governanceImpactScan": "fixed_category_order",
+        "fullArchitectureTriggerMatrix": "fixed_category_order",
+        "evidenceRefs": "lexicographic"
+      }
+    },
+    "pathNormalization": {
+      "rootRelative": true,
+      "separator": "/",
+      "lowercaseWindowsDriveLetter": true,
+      "trimTrailingSlash": true,
+      "removeDotSegments": true,
+      "deduplicate": true,
+      "sort": "lexicographic"
+    },
+    "fixedCategoryOrder": {
+      "consumerImpactScan": [
+        "product_capability",
+        "data_model",
+        "api_or_integration",
+        "frontend_ux",
+        "security_compliance",
+        "operations_deployment",
+        "reliability_performance",
+        "testing_strategy",
+        "compatibility_migration",
+        "cross_module_impact",
+        "user_commitment",
+        "ai_automation"
+      ],
+      "governanceImpactScan": [
+        "shared_schema_type_contract_event_registry",
+        "orchestration_hook_gate_ingest_rerun_closeout",
+        "scoring_sft_dashboard_data_routes",
+        "runtime_policy_registry_host_mode_fallback",
+        "consumer_install_skill_hook_template_surface"
+      ]
+    },
+    "volatileFieldsExcludedFromArtifactHash": [
+      "generatedAt",
+      "renderedAt",
+      "checkedAt",
+      "confirmedAt",
+      "htmlPath",
+      "htmlHash",
+      "renderMetadata",
+      "temporaryLogPath",
+      "localAbsolutePath"
+    ],
+    "stateTransitionHashCoverage": {
+      "requiredHashFields": [
+        "sourceDocumentHash",
+        "implementationConfirmationHash",
+        "targetPathsHash",
+        "consumerImpactScanHash",
+        "governanceImpactScanHash",
+        "currentArtifactHash",
+        "resolvedRecipeHash"
+      ],
+      "eachHashMustDeclareRecipeVersion": true,
+      "allowedToStatusValues": [
+        "active",
+        "stale",
+        "blocked",
+        "missing",
+        "superseded"
+      ],
+      "allowedReasonCodes": [
+        "hash_match",
+        "source_hash_mismatch",
+        "implementation_confirmation_hash_mismatch",
+        "target_paths_hash_mismatch",
+        "consumer_impact_scan_hash_mismatch",
+        "governance_impact_scan_hash_mismatch",
+        "artifact_hash_mismatch",
+        "current_confirmation_missing",
+        "current_artifact_missing",
+        "cannot_validate_current_confirmation"
+      ]
+    },
+    "controlledIngestRules": {
+      "missingRecipeDecision": "blocked",
+      "invalidRecipeDecision": "blocked",
+      "resolverBypassDecision": "blocked",
+      "privateHashLogicDecision": "blocked",
+      "recipeVersionMismatchDecision": "blocked",
+      "hashMismatchDecision": "fail",
+      "hashMatchDecision": "pass",
+      "staleMustBePersisted": true,
+      "memoryOnlyStaleCheckForbidden": true
+    },
+    "resolvedRecipeHash": "sha256:da10b7ad044a705fb04be14c32a0062e9dc5e91012e5d267a435b83c3ba86b75"
+  },
+  "resolvedRecipeHash": "sha256:da10b7ad044a705fb04be14c32a0062e9dc5e91012e5d267a435b83c3ba86b75",
+  "targetPaths": [
+    "_bmad/skills/requirements-contract-authoring/scripts/prepare-architecture-confirmation-page.ts",
+    "_bmad/skills/requirements-contract-authoring/scripts/generate-architecture-confirmation-artifact.ts",
+    "_bmad/skills/requirements-contract-authoring/scripts/render-architecture-confirmation-html.ts",
+    "_bmad/skills/requirements-contract-authoring/SKILL.md",
+    "_bmad/skills/requirements-contract-authoring/references/html-confirmation-renderer-spec.md",
+    "tests/acceptance/prepare-architecture-confirmation-page.test.ts",
+    "tests/acceptance/generate-architecture-confirmation-artifact.test.ts",
+    "tests/acceptance/render-architecture-confirmation-html.test.ts"
+  ],
+  "targetPathsHash": "sha256:bf34e70b5d67ff299c25ddcf5471994028ee3a8fce61e470542f20bc2bf46be8",
+  "consumerImpactScan": [
+    {
+      "category": "frontend_ux",
+      "status": "triggered",
+      "summary": "架构确认 HTML 增加确认口令复制按钮，改善用户确认流程，但不得改变架构确认 JSON 或控制状态。",
+      "requiredDecision": "确认 renderer 只输出用户可读投影和复制交互，不生成或修改架构确认语义。"
+    },
+    {
+      "category": "testing_strategy",
+      "status": "triggered",
+      "summary": "新增 renderer acceptance 断言 copy target、确认口令 pre 和复制状态元素存在。",
+      "requiredDecision": "确认测试覆盖复制按钮渲染，且不依赖项目专属硬编码。"
+    },
+    {
+      "category": "ai_automation",
+      "status": "triggered",
+      "summary": "消费项目通过 requirements-contract-authoring 技能生成架构确认页时应获得同等复制确认口令体验。",
+      "requiredDecision": "确认该能力作为技能内 renderer 行为发布，而不是根目录临时脚本或会话拼凑。"
+    }
+  ],
+  "consumerImpactScanHash": "sha256:48767e6ca91110c7991fdb19b746eedf1e3028e0f22ed330c378e25ff1e90bbe",
+  "governanceImpactScan": [
+    {
+      "category": "consumer_install_skill_hook_template_surface",
+      "status": "triggered",
+      "summary": "requirements-contract-authoring 技能发布面包含架构确认 HTML renderer，复制按钮会进入消费项目安装面。",
+      "requiredDecision": "确认发布面允许该 renderer UI 增强，并且根目录不新增 wrapper。"
+    },
+    {
+      "category": "orchestration_hook_gate_ingest_rerun_closeout",
+      "status": "not_triggered",
+      "summary": "复制按钮不写 requirement-record、不写 architectureConfirmationState、不推进 readiness 或 closeout。",
+      "requiredDecision": "确认该变更只影响 projection/view，不改变控制链路。"
+    },
+    {
+      "category": "shared_schema_type_contract_event_registry",
+      "status": "not_triggered",
+      "summary": "复制按钮不新增 eventType、payloadContract、schema 或 hash recipe。",
+      "requiredDecision": "确认无需需求语义重确认，只需架构确认覆盖 renderer 路径。"
+    }
+  ],
+  "governanceImpactScanHash": "sha256:872c8ca08ee2171f21a79015affc501c6a84b10c4e0978af50998dc37effafc5",
+  "fullArchitectureTriggerMatrix": [
+    {
+      "trigger": "修改对消费项目发布面有影响",
+      "decision": "triggered",
+      "reason": "架构确认 HTML renderer 位于 requirements-contract-authoring 技能内，会随消费项目安装发布。",
+      "requiredDecision": "完整架构确认。"
+    },
+    {
+      "trigger": "改主控编排、hook、gate、ingest、closeout",
+      "decision": "not_triggered",
+      "reason": "复制按钮只在 HTML 页面内复制确认口令，不写控制记录、不改变 ingest 或 gate。",
+      "requiredDecision": "无需控制链路变更。"
+    },
+    {
+      "trigger": "改 shared schema / shared type / contract",
+      "decision": "not_triggered",
+      "reason": "不修改 schema、event registry、payload contract 或 ArchitectureConfirmationHashRecipe。",
+      "requiredDecision": "无需需求契约语义变更。"
+    }
+  ],
+  "riskStatement": "架构确认 HTML renderer 改动会随 requirements-contract-authoring 技能发布到消费项目，必须确认其只影响用户可读投影和复制交互，不写控制状态。",
+  "rollbackPlan": "如复制按钮影响确认页可用性，回滚 render-architecture-confirmation-html.ts 和对应 acceptance 测试，重新生成架构确认页面。",
+  "evidenceRefs": [
+    "EVD-048",
+    "EVD-036",
+    "EVD-037"
+  ],
+  "staleInputs": {
+    "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+    "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+    "targetPathsHash": "sha256:bf34e70b5d67ff299c25ddcf5471994028ee3a8fce61e470542f20bc2bf46be8",
+    "consumerImpactScanHash": "sha256:48767e6ca91110c7991fdb19b746eedf1e3028e0f22ed330c378e25ff1e90bbe",
+    "governanceImpactScanHash": "sha256:872c8ca08ee2171f21a79015affc501c6a84b10c4e0978af50998dc37effafc5",
+    "resolvedRecipeHash": "sha256:da10b7ad044a705fb04be14c32a0062e9dc5e91012e5d267a435b83c3ba86b75"
+  },
+  "architectureConfirmationArtifactRef": {
+    "artifactType": "architecture_confirmation",
+    "sourceOfTruthRole": "evidence",
+    "path": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/architecture/architecture-confirmation-arch-confirm-20260520-TRACE038-copy-button.json",
+    "producer": "requirements-contract-authoring/generate-architecture-confirmation-artifact",
+    "purpose": "requirement-scoped architecture confirmation artifact",
+    "relatedRequirementIds": [
+      "MUST-049",
+      "NEG-038",
+      "OUT-029",
+      "EVD-048",
+      "EVD-036",
+      "EVD-037",
+      "TRACE-038"
+    ],
+    "status": "draft",
+    "inputVersion": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+    "outputVersion": "architecture-confirmation-v1",
+    "hash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da"
+  },
+  "artifactHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+  "architectureConfirmationArtifactHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+  "confirmationPhrase": "确认架构确认进入实施准备\nsourceDocumentHash=sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570\nimplementationConfirmationHash=sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a\nresolvedRecipeHash=sha256:da10b7ad044a705fb04be14c32a0062e9dc5e91012e5d267a435b83c3ba86b75\narchitectureConfirmationArtifactHash=sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da"
+}

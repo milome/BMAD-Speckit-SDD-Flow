@@ -1,0 +1,21 @@
+{
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "runId": "arch-confirm-20260520-TRACE038-copy-button",
+  "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+  "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+  "resolvedRecipeHash": "sha256:da10b7ad044a705fb04be14c32a0062e9dc5e91012e5d267a435b83c3ba86b75",
+  "architectureConfirmationArtifactHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+  "computedArchitectureConfirmationArtifactHash": "sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da",
+  "htmlHash": "sha256:42443bfd834551a683219b9e0e3765f3efd123d5bf18ad69b4be4c62fad78c92",
+  "confirmability": "confirmable",
+  "blockingIssues": [],
+  "warnings": [],
+  "counts": {
+    "targetPaths": 8,
+    "consumerImpactScan": 3,
+    "governanceImpactScan": 3,
+    "fullArchitectureTriggerMatrix": 3,
+    "evidenceRefs": 3
+  }
+}

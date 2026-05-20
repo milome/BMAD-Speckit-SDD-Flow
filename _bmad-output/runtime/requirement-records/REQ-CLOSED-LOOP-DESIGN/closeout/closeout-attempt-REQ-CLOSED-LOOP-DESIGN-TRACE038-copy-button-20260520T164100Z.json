@@ -1,0 +1,127 @@
+{
+  "reportType": "delivery_closeout_report",
+  "generatedAt": "2026-05-20T16:46:02.850Z",
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "requirementSetId": "REQ-CLOSED-LOOP-DESIGN",
+  "currentAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-TRACE038-copy-button-20260520T164100Z",
+  "decision": "pass",
+  "blockingReasons": [],
+  "checks": [
+    {
+      "id": "implementation-readiness-gate-passed",
+      "passed": true
+    },
+    {
+      "id": "architecture-confirmation-current",
+      "passed": true,
+      "issueCount": 0
+    },
+    {
+      "id": "delivery-required-commands-present",
+      "passed": true,
+      "count": 64,
+      "currentAttemptCount": 7
+    },
+    {
+      "id": "score-gates-not-blocking-closeout",
+      "passed": true
+    },
+    {
+      "id": "hook-reconciliation-valid",
+      "passed": true,
+      "issueCount": 0
+    },
+    {
+      "id": "required-command:CMD-RENDER-CONFIRMATION",
+      "passed": true,
+      "runPresent": true,
+      "exitCode": 0,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-TRACE-BINDING-ACCEPTANCE",
+      "passed": true,
+      "runPresent": true,
+      "exitCode": 0,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-ENCODING-GATE",
+      "passed": true,
+      "runPresent": true,
+      "exitCode": 0,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-PREPARE-ARCHITECTURE-CONFIRMATION-PAGE",
+      "passed": true,
+      "runPresent": true,
+      "exitCode": 0,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-GENERATE-ARCHITECTURE-CONFIRMATION-ARTIFACT",
+      "passed": true,
+      "runPresent": true,
+      "exitCode": 0,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-TRACE-038-ARCHITECTURE-PREPARE-ACCEPTANCE",
+      "passed": true,
+      "runPresent": true,
+      "exitCode": 0,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "required-command:CMD-TRACE-038-ARCHITECTURE-COPY-BUTTON-ACCEPTANCE",
+      "passed": true,
+      "runPresent": true,
+      "exitCode": 0,
+      "artifactsPresent": true,
+      "artifactIssues": [],
+      "negativeOrRegression": true
+    },
+    {
+      "id": "negative-or-regression-required",
+      "passed": true
+    },
+    {
+      "id": "requirement-closures-terminal",
+      "passed": true,
+      "openCount": 0
+    },
+    {
+      "id": "rerun-loops-closed",
+      "passed": true,
+      "openCount": 0
+    },
+    {
+      "id": "rerun-loops-source-authority-valid",
+      "passed": true,
+      "invalidCount": 0
+    },
+    {
+      "id": "failure-records-closed",
+      "passed": true,
+      "openCount": 0
+    },
+    {
+      "id": "rca-actions-closed",
+      "passed": true,
+      "openCount": 0
+    }
+  ]
+}
