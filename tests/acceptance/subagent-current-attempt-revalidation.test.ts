@@ -141,6 +141,21 @@ function envelope(root: string, artifactRefs: Record<string, unknown>[]) {
   };
 }
 
+function currentAttemptCommandRuns(artifactRefs: Record<string, unknown>[], attemptId = 'closeout-current') {
+  return [
+    {
+      commandId: 'CMD-SUBAGENT-CURRENT-ATTEMPT-REVALIDATION',
+      command: 'npx vitest run tests/acceptance/subagent-current-attempt-revalidation.test.ts',
+      exitCode: 0,
+      startedAt: '2026-05-21T00:00:00.000Z',
+      completedAt: '2026-05-21T00:00:05.000Z',
+      outputSummary: 'fresh main workspace revalidation passed',
+      artifactRefs,
+      closeoutAttemptId: attemptId,
+    },
+  ];
+}
+
 describe('subagent current-attempt revalidation', () => {
   it('passes only when accepted envelope commandRuns and artifacts bind to the current closeout attempt in main workspace', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'subagent-current-attempt-pass-'));
@@ -168,7 +183,61 @@ describe('subagent current-attempt revalidation', () => {
     }
   });
 
-  it('blocks and emits failure/rerun evidence when attempt, workspace, or command evidence is stale', () => {
+  it('allows a new closeout attempt to revalidate a previously accepted envelope with fresh main-workspace evidence', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'subagent-current-attempt-new-attempt-'));
+    try {
+      const evidencePath = path.join(root, 'evidence.json');
+      writeJson(evidencePath, { ok: true });
+      const artifact = artifactRef(root, 'evidence.json');
+      const previousEnvelope = envelope(root, [artifact]);
+      previousEnvelope.parentCloseoutAttemptId = 'previous-attempt';
+      for (const run of previousEnvelope.commandRuns) run.closeoutAttemptId = 'previous-attempt';
+      const currentRecord = record(root, [artifact]);
+      currentRecord.closeout.currentAttemptId = 'closeout-current';
+      const report = evaluateSubagentCurrentAttemptRevalidation({
+        envelope: previousEnvelope,
+        record: currentRecord,
+        projectRoot: root,
+        currentCloseoutAttemptId: 'new-attempt',
+        currentAttemptCommandRuns: currentAttemptCommandRuns([artifact], 'new-attempt'),
+        generatedAt: '2026-05-21T00:00:06.000Z',
+      });
+      expect(report).toMatchObject({
+        decision: 'pass',
+        currentCloseoutAttemptId: 'new-attempt',
+        parentCloseoutAttemptId: 'previous-attempt',
+        mismatches: [],
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('does not let mutable historical envelope artifact hashes block fresh current-attempt revalidation', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'subagent-current-attempt-mutable-history-'));
+    try {
+      const evidencePath = path.join(root, 'evidence.json');
+      writeJson(evidencePath, { ok: true });
+      const historicalArtifact = artifactRef(root, 'evidence.json');
+      const previousEnvelope = envelope(root, [historicalArtifact]);
+      writeJson(evidencePath, { ok: true, mutated: true });
+      const currentArtifact = artifactRef(root, 'evidence.json');
+      const report = evaluateSubagentCurrentAttemptRevalidation({
+        envelope: previousEnvelope,
+        record: record(root, [currentArtifact]),
+        projectRoot: root,
+        currentCloseoutAttemptId: 'closeout-current',
+        currentAttemptCommandRuns: currentAttemptCommandRuns([currentArtifact], 'closeout-current'),
+        generatedAt: '2026-05-21T00:00:06.000Z',
+      });
+      expect(report.decision).toBe('pass');
+      expect(report.mismatches).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks and emits failure/rerun evidence when workspace or command evidence is stale', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'subagent-current-attempt-block-'));
     try {
       const evidencePath = path.join(root, 'evidence.json');
@@ -187,8 +256,6 @@ describe('subagent current-attempt revalidation', () => {
       expect(report.decision).toBe('blocked');
       expect(report.mismatches).toEqual(
         expect.arrayContaining([
-          'subagent_envelope_parent_closeout_attempt_id_mismatch',
-          'subagent_revalidation_parent_attempt_mismatch',
           'subagent_revalidation_workspace_not_main:worktree',
           'subagent_revalidation_workspace_path_mismatch',
           'subagent_revalidation_command_attempt_mismatch:CMD-SUBAGENT-CURRENT-ATTEMPT-REVALIDATION',
@@ -202,7 +269,7 @@ describe('subagent current-attempt revalidation', () => {
     }
   });
 
-  it('writes a report artifact and returns non-zero for blocked revalidation', () => {
+  it('writes a report artifact and allows revalidation when only the original envelope attempt is historical', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'subagent-current-attempt-cli-'));
     try {
       const evidencePath = path.join(root, 'evidence.json');
@@ -210,11 +277,16 @@ describe('subagent current-attempt revalidation', () => {
       const artifact = artifactRef(root, 'evidence.json');
       const recordPath = path.join(root, 'requirement-record.json');
       const envelopePath = path.join(root, 'envelope.json');
+      const commandEvidencePath = path.join(root, 'current-command-evidence.json');
       const reportPath = path.join(root, 'subagent-current-attempt-revalidation-report.json');
-      const badRecord = record(root, [artifact]);
-      badRecord.closeout = { currentAttemptId: 'new-attempt', attempts: [] };
-      writeJson(recordPath, badRecord);
-      writeJson(envelopePath, envelope(root, [artifact]));
+      const currentRecord = record(root, [artifact]);
+      currentRecord.closeout = { currentAttemptId: 'new-attempt', attempts: [] };
+      const previousEnvelope = envelope(root, [artifact]);
+      previousEnvelope.parentCloseoutAttemptId = 'previous-attempt';
+      for (const run of previousEnvelope.commandRuns) run.closeoutAttemptId = 'previous-attempt';
+      writeJson(recordPath, currentRecord);
+      writeJson(envelopePath, previousEnvelope);
+      writeJson(commandEvidencePath, { commandRuns: currentAttemptCommandRuns([artifact], 'new-attempt') });
       const code = runSubagentCurrentAttemptRevalidation([
         '--envelope',
         envelopePath,
@@ -222,14 +294,23 @@ describe('subagent current-attempt revalidation', () => {
         recordPath,
         '--report-out',
         reportPath,
+        '--current-closeout-attempt-id',
+        'new-attempt',
+        '--current-command-evidence',
+        commandEvidencePath,
         '--project-root',
         root,
         '--json',
       ]);
-      expect(code).toBe(3);
+      expect(code).toBe(0);
       expect(existsSync(reportPath)).toBe(true);
       const report = JSON.parse(readFileSync(reportPath, 'utf8'));
-      expect(report.mismatches).toContain('subagent_revalidation_parent_attempt_mismatch');
+      expect(report).toMatchObject({
+        decision: 'pass',
+        currentCloseoutAttemptId: 'new-attempt',
+        parentCloseoutAttemptId: 'previous-attempt',
+        mismatches: [],
+      });
       expect(report.controlWrite).toBe('forbidden_use_controlled_ingest');
     } finally {
       rmSync(root, { recursive: true, force: true });

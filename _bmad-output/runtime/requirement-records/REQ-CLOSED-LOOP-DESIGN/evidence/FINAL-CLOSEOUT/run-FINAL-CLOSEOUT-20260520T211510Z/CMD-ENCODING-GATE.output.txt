@@ -1,0 +1,8 @@
+COMMAND: node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js
+STARTED_AT: 2026-05-20T21:15:24.053Z
+COMPLETED_AT: 2026-05-20T21:15:25.026Z
+EXIT_CODE: 0
+STDOUT:
+checkedFiles=2780 findings=0
+
+STDERR:

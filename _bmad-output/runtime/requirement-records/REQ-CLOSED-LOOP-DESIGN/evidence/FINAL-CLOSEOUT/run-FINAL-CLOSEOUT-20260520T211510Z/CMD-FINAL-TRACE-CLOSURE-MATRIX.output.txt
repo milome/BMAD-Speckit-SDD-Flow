@@ -1,0 +1,16 @@
+COMMAND: npx.cmd ts-node --project tsconfig.node.json --transpile-only scripts/trace-closure-matrix.ts --requirement-record _bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json --out _bmad-output\runtime\requirement-records\REQ-CLOSED-LOOP-DESIGN\evidence\FINAL-CLOSEOUT\run-FINAL-CLOSEOUT-20260520T211510Z\trace-closure-matrix.final.json --json
+STARTED_AT: 2026-05-20T21:15:10.286Z
+COMPLETED_AT: 2026-05-20T21:15:11.134Z
+EXIT_CODE: 0
+STDOUT:
+{
+  "ok": true,
+  "outPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/FINAL-CLOSEOUT/run-FINAL-CLOSEOUT-20260520T211510Z/trace-closure-matrix.final.json",
+  "counts": {
+    "rows": 210,
+    "closed": 210,
+    "open": 0
+  }
+}
+
+STDERR:

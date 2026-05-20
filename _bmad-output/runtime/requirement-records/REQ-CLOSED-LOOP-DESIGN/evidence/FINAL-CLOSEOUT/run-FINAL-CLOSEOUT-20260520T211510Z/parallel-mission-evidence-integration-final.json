@@ -1,0 +1,67 @@
+{
+  "reportType": "parallel_mission_evidence_integration_report",
+  "schemaVersion": "parallel-mission-evidence-integration/v1",
+  "generatedAt": "2026-05-20T21:15:26.923Z",
+  "decision": "pass",
+  "currentCloseoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-final-20260520T211510Z",
+  "batchId": "trace-037-parallel-mission",
+  "allAffectedStoriesPassed": true,
+  "nodeResults": [
+    {
+      "node_id": "node-a",
+      "packet_id": "packet-node-a",
+      "prState": "merged",
+      "envelopeHash": "sha256:3f903582ba35fc85b60f212648f0fe11d0d76b7cf9d88d9755b9a59499ab4407",
+      "passed": true,
+      "issues": []
+    },
+    {
+      "node_id": "node-b",
+      "packet_id": "packet-node-b",
+      "prState": "closed_not_needed",
+      "envelopeHash": "sha256:5f6781675f0816f4cfbb8dd299c05155ce40ffd1877abbe401b619f2fb62fb13",
+      "passed": true,
+      "issues": []
+    }
+  ],
+  "mergeOrder": [
+    "node-a",
+    "node-b"
+  ],
+  "conflictProof": [],
+  "integratedVerification": {
+    "passed": true,
+    "issues": [],
+    "commandCount": 5,
+    "artifactCount": 10
+  },
+  "checks": [
+    {
+      "id": "node-envelopes-accepted",
+      "passed": true,
+      "issues": []
+    },
+    {
+      "id": "write-scope-proof",
+      "passed": true,
+      "issues": []
+    },
+    {
+      "id": "merge-order-proof",
+      "passed": true,
+      "issues": []
+    },
+    {
+      "id": "pr-topology-reconciliation",
+      "passed": true,
+      "issues": []
+    },
+    {
+      "id": "main-workspace-integrated-verification",
+      "passed": true,
+      "issues": []
+    }
+  ],
+  "blockingReasons": [],
+  "controlWrite": "forbidden_use_controlled_ingest"
+}

@@ -1,0 +1,7 @@
+{
+  "runId": "run-FINAL-CLOSEOUT-20260520T211510Z",
+  "closeoutAttemptId": "closeout-attempt-REQ-CLOSED-LOOP-DESIGN-final-20260520T211510Z",
+  "evidenceDir": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/FINAL-CLOSEOUT/run-FINAL-CLOSEOUT-20260520T211510Z",
+  "implementationEvidencePacket": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/FINAL-CLOSEOUT/run-FINAL-CLOSEOUT-20260520T211510Z/implementation-evidence-packet.json",
+  "commandEvidence": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/FINAL-CLOSEOUT/run-FINAL-CLOSEOUT-20260520T211510Z/final-closeout-command-evidence.json"
+}
