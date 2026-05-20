@@ -13,6 +13,7 @@
     "confirmationHistory"
   ],
   "properties": {
+    "schemaVersion": { "const": "requirement-record/v1" },
     "recordId": { "$ref": "#/$defs/nonEmptyString" },
     "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
     "sourcePath": { "$ref": "#/$defs/nonEmptyString" },
@@ -29,6 +30,14 @@
     "sourceDocumentHash": { "$ref": "#/$defs/sha256" },
     "implementationConfirmationHash": { "$ref": "#/$defs/sha256" },
     "confirmationPageHash": { "$ref": "#/$defs/sha256" },
+    "latestConfirmationProjectionHash": { "$ref": "#/$defs/sha256" },
+    "confirmationProjectionHistory": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
     "confirmationHistory": {
       "type": "array",
       "minItems": 1,
@@ -88,6 +97,12 @@
     "deliveryEvidence": { "$ref": "#/$defs/deliveryEvidence" },
     "hookReconciliation": { "$ref": "#/$defs/hookReconciliation" },
     "lastEventType": { "$ref": "#/$defs/nonEmptyString" },
+    "recordHash": { "$ref": "#/$defs/sha256" },
+    "lastAppliedEventId": { "$ref": "#/$defs/nonEmptyString" },
+    "lastAppliedEventHash": { "$ref": "#/$defs/sha256" },
+    "eventChainHead": { "$ref": "#/$defs/sha256" },
+    "eventCount": { "type": "integer", "minimum": 0 },
+    "controlStore": { "$ref": "#/$defs/controlStore" },
     "updatedAt": { "type": "string", "format": "date-time" }
   },
   "not": {
@@ -106,6 +121,22 @@
     "sha256": {
       "type": "string",
       "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "controlStore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "eventLogPath", "lastEventId", "lastEventHash", "reducer", "atomicCommitter"],
+      "properties": {
+        "schemaVersion": { "const": "control-store/v1" },
+        "eventLogPath": {
+          "type": "string",
+          "pattern": "events/control-events\\.jsonl$"
+        },
+        "lastEventId": { "$ref": "#/$defs/nonEmptyString" },
+        "lastEventHash": { "$ref": "#/$defs/sha256" },
+        "reducer": { "const": "canonical-requirement-record-reducer/v1" },
+        "atomicCommitter": { "const": "requirement-record-control-store/v1" }
+      }
     },
     "globalContractTraceabilityPolicy": {
       "type": "object",
@@ -246,7 +277,8 @@
             "contract_check",
             "audit_iteration",
             "execution_iteration",
-            "requirement_closure"
+            "requirement_closure",
+            "failure_record"
           ]
         },
         "id": { "$ref": "#/$defs/nonEmptyString" }
@@ -684,6 +716,15 @@
         "checkId": { "$ref": "#/$defs/nonEmptyString" },
         "gate": { "$ref": "#/$defs/nonEmptyString" },
         "decision": { "enum": ["pass", "fail", "blocked", "not_applicable", "skipped_by_policy"] },
+        "blockingReasons": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "checks": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "reportPath": { "$ref": "#/$defs/nonEmptyString" },
         "sourceRefs": {
           "type": "array",
           "items": { "$ref": "#/$defs/sourceRef" }

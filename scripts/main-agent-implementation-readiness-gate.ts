@@ -2,6 +2,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { resolveArchitectureConfirmationHashRecipe } from './architecture-confirmation-hash-recipe';
+import { appendControlEventAndReplay } from './requirement-record-control-store';
 
 type JsonObject = Record<string, unknown>;
 type ReadinessDecision = 'pass' | 'blocked';
@@ -54,11 +55,6 @@ function readJson(file: string): JsonObject {
 
 function normalizePathForRecord(value: string): string {
   return value.replace(/\\/gu, '/');
-}
-
-function appendJsonl(file: string, value: JsonObject): void {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.appendFileSync(file, `${JSON.stringify(value)}\n`, 'utf8');
 }
 
 function latestConfirmation(record: JsonObject): JsonObject | null {
@@ -212,19 +208,29 @@ export function mainImplementationReadinessGate(argv: string[]): number {
   };
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-  const nextRecord = updateRecord(record, {
+  const readinessPayload = {
     ...evaluation,
     reportPath,
     evaluatedAt,
     evaluatedBy,
+  };
+  const commit = appendControlEventAndReplay({
+    recordPath,
+    writerId: 'main-agent-implementation-readiness-gate',
+    eventType: 'implementation_readiness_check_recorded',
+    recordedAt: evaluatedAt,
+    payload: readinessPayload,
+    reduce: (currentRecord) => updateRecord(currentRecord, readinessPayload),
   });
-  fs.writeFileSync(recordPath, `${JSON.stringify(nextRecord, null, 2)}\n`, 'utf8');
-  appendJsonl(path.join(path.dirname(recordPath), 'data', 'mentor-events.jsonl'), nextRecord.gateChecks.at(-1) as JsonObject);
   const output = {
     ok: true,
     reportPath: normalizePathForRecord(reportPath),
     decision: evaluation.decision,
     blockingReasons: evaluation.blockingReasons,
+    controlEventId: commit.event.eventId,
+    controlEventHash: commit.event.eventHash,
+    eventLogPath: normalizePathForRecord(commit.eventLogPath),
+    receiptPath: normalizePathForRecord(commit.receiptPath),
   };
   process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `implementation_readiness=${evaluation.decision}\n`);
   return evaluation.decision === 'pass' ? 0 : 1;

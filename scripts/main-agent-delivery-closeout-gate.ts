@@ -3,6 +3,7 @@ import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { resolveArchitectureConfirmationHashRecipe } from './architecture-confirmation-hash-recipe';
+import { appendControlEventAndReplay } from './requirement-record-control-store';
 
 type JsonObject = Record<string, unknown>;
 type CloseoutDecision = 'pass' | 'fail' | 'blocked';
@@ -232,6 +233,53 @@ function artifactIndexed(record: JsonObject, artifactRef: unknown): boolean {
   );
 }
 
+function concreteEvidenceIssues(item: JsonObject, prefix: string, itemId: string): string[] {
+  const issues: string[] = [];
+  const commandEvidence = [...objects(item.commandRuns), ...objects(item.commandRunRefs)];
+  if (commandEvidence.length === 0) {
+    issues.push(`${prefix}_command_evidence_missing:${itemId}`);
+  }
+  for (const command of commandEvidence) {
+    if (!text(command.commandId) && !text(command.command)) {
+      issues.push(`${prefix}_command_identity_missing:${itemId}`);
+    }
+    if (Number.isInteger(command.exitCode) && command.exitCode !== 0) {
+      issues.push(`${prefix}_command_failed:${itemId}:${text(command.commandId) || '<missing>'}`);
+    }
+  }
+
+  const artifactEvidence = [...objects(item.artifactRefs), ...objects(item.evidenceArtifactRefs)];
+  if (artifactEvidence.length === 0) {
+    issues.push(`${prefix}_artifact_evidence_missing:${itemId}`);
+  }
+  for (const artifact of artifactEvidence) {
+    for (const issue of artifactCompletenessIssues(artifact)) {
+      issues.push(`${prefix}_artifact_evidence_incomplete:${itemId}:${issue}`);
+    }
+  }
+
+  const controlledEventRefs = [...objects(item.controlledEventRefs), ...objects(item.controlEventRefs)];
+  if (controlledEventRefs.length === 0) {
+    issues.push(`${prefix}_controlled_event_evidence_missing:${itemId}`);
+  }
+  for (const eventRef of controlledEventRefs) {
+    if (!text(eventRef.eventId) && !text(eventRef.eventType)) {
+      issues.push(`${prefix}_controlled_event_identity_missing:${itemId}`);
+    }
+  }
+
+  const recoveryEvidence = [...objects(item.recoveryActionEvidence), ...objects(item.recoveryActionRefs)];
+  if (recoveryEvidence.length === 0) {
+    issues.push(`${prefix}_recovery_evidence_missing:${itemId}`);
+  }
+  for (const recovery of recoveryEvidence) {
+    if (!text(recovery.action) && !text(recovery.recoveryAction)) {
+      issues.push(`${prefix}_recovery_action_missing:${itemId}`);
+    }
+  }
+  return issues;
+}
+
 function latestActiveArtifact(record: JsonObject, predicate: (artifact: JsonObject) => boolean): JsonObject | null {
   const artifacts = objects(record.artifactIndex).filter(
     (artifact) => text(artifact.sourceOfTruthRole) === 'evidence' && text(artifact.status) === 'active' && predicate(artifact)
@@ -282,6 +330,13 @@ function failureCaseCoverageIssues(record: JsonObject): string[] {
   for (const caseId of unexercised) out.push(`failure_case_unexercised:${caseId}`);
   if (issues.length > 0) out.push('failure_case_coverage_registry_issues');
   if (blockingIssues.length > 0) out.push('failure_case_coverage_blocking_issues');
+  const caseEvidence = objects(coverage?.caseEvidence).length > 0 ? objects(coverage?.caseEvidence) : objects(report.caseEvidence);
+  if (total > 0 && caseEvidence.length !== total) {
+    out.push(`failure_case_evidence_count_mismatch:${caseEvidence.length}/${total}`);
+  }
+  for (const item of caseEvidence) {
+    out.push(...concreteEvidenceIssues(item, 'failure_case', text(item.caseId) || text(item.id) || '<missing>'));
+  }
   return [...new Set(out)];
 }
 
@@ -387,6 +442,7 @@ function subsystemAcceptanceIssues(record: JsonObject, extension: JsonObject): s
     if (strings(subsystem.evidenceRefs).length === 0) issues.push(`subsystem_evidence_refs_missing:${subsystemId}`);
     if (!isSha256(text(subsystem.hash))) issues.push(`subsystem_hash_missing:${subsystemId}`);
     issues.push(...hashBindingIssues(record, nested(subsystem.currentHashBinding), `subsystem_hash_binding:${subsystemId}`));
+    issues.push(...concreteEvidenceIssues(subsystem, 'subsystem', subsystemId));
 
     const failureHandling = nested(subsystem.failureHandling);
     const failureModes = strings(failureHandling.failureModes);
@@ -1142,7 +1198,6 @@ function updateRecord(record: JsonObject, input: { attemptId: string; decision: 
     ...record,
     closeout: {
       ...closeout,
-      eventType: closeoutEventType,
       currentAttemptId: input.attemptId,
       attempts: [...attempts, attempt],
       decision: input.decision,
@@ -1190,7 +1245,7 @@ export function mainDeliveryCloseoutGate(argv: string[]): number {
   };
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-  const nextRecord = updateRecord(record, {
+  const closeoutPayload = {
     attemptId,
     decision: evaluation.decision,
     blockingReasons: evaluation.blockingReasons,
@@ -1198,10 +1253,25 @@ export function mainDeliveryCloseoutGate(argv: string[]): number {
     reportPath,
     evaluatedAt,
     evaluatedBy,
+  };
+  const commit = appendControlEventAndReplay({
+    recordPath,
+    writerId: 'main-agent-delivery-closeout-gate',
+    eventType: evaluation.decision === 'pass' ? 'record_closed' : 'closeout_recorded',
+    recordedAt: evaluatedAt,
+    payload: closeoutPayload,
+    reduce: (currentRecord) => updateRecord(currentRecord, closeoutPayload),
   });
-  fs.writeFileSync(recordPath, `${JSON.stringify(nextRecord, null, 2)}\n`, 'utf8');
-  appendJsonl(path.join(path.dirname(recordPath), 'data', 'mentor-events.jsonl'), nextRecord.closeout as JsonObject);
-  const output = { ok: true, reportPath: normalizePathForRecord(reportPath), decision: evaluation.decision, blockingReasons: evaluation.blockingReasons };
+  const output = {
+    ok: true,
+    reportPath: normalizePathForRecord(reportPath),
+    decision: evaluation.decision,
+    blockingReasons: evaluation.blockingReasons,
+    controlEventId: commit.event.eventId,
+    controlEventHash: commit.event.eventHash,
+    eventLogPath: normalizePathForRecord(commit.eventLogPath),
+    receiptPath: normalizePathForRecord(commit.receiptPath),
+  };
   process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `delivery_closeout=${evaluation.decision}\n`);
   return evaluation.decision === 'pass' ? 0 : 1;
 }

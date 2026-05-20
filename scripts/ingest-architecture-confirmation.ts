@@ -5,6 +5,7 @@ import {
   architectureConfirmationHashFor,
   resolveArchitectureConfirmationHashRecipe,
 } from './architecture-confirmation-hash-recipe';
+import { appendControlEventAndReplay } from './requirement-record-control-store';
 
 type JsonObject = Record<string, unknown>;
 
@@ -428,19 +429,32 @@ export function mainIngestArchitectureConfirmation(argv: string[]): number {
   if (args.action === 'check-state') {
     if (!args.requirementRecord) throw new Error('missing required args: requirementRecord');
     const recordPath = path.resolve(args.requirementRecord);
-    const record = fs.existsSync(recordPath) ? readJson(recordPath) : {};
+    if (!fs.existsSync(recordPath)) throw new Error(`requirement record missing: ${recordPath}`);
+    const record = readJson(recordPath);
     const checkedAt = args.confirmedAt ?? new Date().toISOString();
     const checkedBy = args.confirmedBy ?? 'agent';
     const result = architectureStateCheck(record, checkedAt, checkedBy);
-    fs.writeFileSync(recordPath, `${JSON.stringify(result.nextRecord, null, 2)}\n`, 'utf8');
-    const eventLog = path.resolve(args.eventLog ?? path.join(path.dirname(recordPath), 'data', 'mentor-events.jsonl'));
-    appendJsonl(eventLog, result.event);
+    const commit = appendControlEventAndReplay({
+      recordPath,
+      writerId: 'ingest-architecture-confirmation',
+      eventType: 'architecture_confirmation_state_checked',
+      recordedAt: checkedAt,
+      payload: {
+        event: result.event,
+        checkedAt,
+        checkedBy,
+      },
+      reduce: (currentRecord) => architectureStateCheck(currentRecord, checkedAt, checkedBy).nextRecord,
+    });
     const output = {
       ok: result.decision === 'pass',
       event: result.event,
       mismatches: result.mismatches,
       requirementRecordPath: normalizePathForRecord(recordPath),
-      eventLogPath: normalizePathForRecord(eventLog),
+      eventLogPath: normalizePathForRecord(commit.eventLogPath),
+      controlEventId: commit.event.eventId,
+      controlEventHash: commit.event.eventHash,
+      receiptPath: normalizePathForRecord(commit.receiptPath),
     };
     process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `architecture_confirmation_state=${result.decision}\n`);
     return result.decision === 'pass' ? 0 : 1;
@@ -450,9 +464,10 @@ export function mainIngestArchitectureConfirmation(argv: string[]): number {
   const architecturePath = path.resolve(args.architectureConfirmation!);
   const reportPath = path.resolve(args.renderReport!);
   const recordPath = path.resolve(args.requirementRecord!);
+  if (!fs.existsSync(recordPath)) throw new Error(`requirement record missing: ${recordPath}`);
   const confirmation = readJson(architecturePath);
   const report = readRenderEvidence(reportPath);
-  const record = fs.existsSync(recordPath) ? readJson(recordPath) : {};
+  const record = readJson(recordPath);
   const confirmedAt = args.confirmedAt ?? new Date().toISOString();
   const confirmationText = confirmationTextFromArgs(args);
   const { event, mismatches } = validate({
@@ -474,13 +489,19 @@ export function mainIngestArchitectureConfirmation(argv: string[]): number {
     confirmedAt,
     confirmedBy: args.confirmedBy,
   };
-  const nextRecord = updateRecord(record, event, confirmedAt, args.confirmedBy!);
-  fs.mkdirSync(path.dirname(recordPath), { recursive: true });
-  fs.writeFileSync(recordPath, `${JSON.stringify(nextRecord, null, 2)}\n`, 'utf8');
-
   const baseDir = path.dirname(recordPath);
-  const eventLog = path.resolve(args.eventLog ?? path.join(baseDir, 'data', 'mentor-events.jsonl'));
-  appendJsonl(eventLog, eventWithActor);
+  const commit = appendControlEventAndReplay({
+    recordPath,
+    writerId: 'ingest-architecture-confirmation',
+    eventType: 'architecture_confirmation_recorded',
+    recordedAt: confirmedAt,
+    payload: {
+      event: eventWithActor,
+      architecturePath: normalizePathForRecord(architecturePath),
+      renderReportPath: normalizePathForRecord(reportPath),
+    },
+    reduce: (currentRecord) => updateRecord(currentRecord, event, confirmedAt, args.confirmedBy!),
+  });
   const artifactIndex = path.resolve(args.artifactIndex ?? path.join(baseDir, 'artifact-index.jsonl'));
   appendJsonl(artifactIndex, {
     artifactType: 'architecture_confirmation',
@@ -496,7 +517,10 @@ export function mainIngestArchitectureConfirmation(argv: string[]): number {
     ok: true,
     event: eventWithActor,
     requirementRecordPath: normalizePathForRecord(recordPath),
-    eventLogPath: normalizePathForRecord(eventLog),
+    eventLogPath: normalizePathForRecord(commit.eventLogPath),
+    controlEventId: commit.event.eventId,
+    controlEventHash: commit.event.eventHash,
+    receiptPath: normalizePathForRecord(commit.receiptPath),
     artifactIndexPath: normalizePathForRecord(artifactIndex),
   };
   if (args.json) {
