@@ -12,6 +12,7 @@ const RERUN_AUTHORITY_SOURCE_TYPES = new Set([
   'audit_iteration',
   'execution_iteration',
   'requirement_closure',
+  'failure_record',
 ]);
 
 const REQUIRED_SUBSYSTEM_IDS = [
@@ -602,6 +603,48 @@ function productionBlockerIssues(record: JsonObject, recordPath: string): { issu
   return { issues: [...new Set([...extension.issues, ...readyReportIssues, ...datasetIssues])], checks };
 }
 
+function subagentCurrentAttemptRevalidationIssues(record: JsonObject, attemptId: string): { issues: string[]; checks: JsonObject[] } {
+  const subagentEnvelopeEvents = objects(record.executionIterations).filter(
+    (iteration) => text(iteration.eventType) === 'subagent_evidence_envelope_recorded' && text(iteration.status) === 'accepted'
+  );
+  if (subagentEnvelopeEvents.length === 0) {
+    return { issues: [], checks: [{ id: 'subagent-current-attempt-revalidation', passed: true, required: false }] };
+  }
+  const reports = objects(record.artifactIndex).filter(
+    (artifact) =>
+      text(artifact.sourceOfTruthRole) === 'evidence' &&
+      text(artifact.status) === 'active' &&
+      text(artifact.artifactType) === 'subagent_current_attempt_revalidation_report'
+  );
+  const issues: string[] = [];
+  const checks: JsonObject[] = [];
+  for (const event of subagentEnvelopeEvents) {
+    const envelopeHash = text(event.subagentEvidenceEnvelopeHash);
+    const matching = reports.find((artifact) => {
+      const artifactPath = text(artifact.path);
+      const absolute = artifactPath ? (path.isAbsolute(artifactPath) ? artifactPath : path.resolve(process.cwd(), artifactPath)) : '';
+      if (!artifactPath || !fs.existsSync(absolute)) return false;
+      if (sha256File(absolute) !== text(artifact.hash ?? artifact.contentHash)) return false;
+      const report = readJson(absolute);
+      return (
+        text(report.schemaVersion) === 'subagent-current-attempt-revalidation/v1' &&
+        text(report.decision) === 'pass' &&
+        text(report.currentCloseoutAttemptId) === attemptId &&
+        text(report.envelopeHash) === envelopeHash
+      );
+    });
+    const passed = Boolean(matching);
+    checks.push({
+      id: `subagent-current-attempt-revalidation:${text(event.executionIterationId) || envelopeHash || '<missing>'}`,
+      passed,
+      envelopeHash: envelopeHash || null,
+      currentAttemptId: attemptId,
+    });
+    if (!passed) issues.push(`subagent_current_attempt_revalidation_missing:${envelopeHash || text(event.executionIterationId) || '<missing>'}`);
+  }
+  return { issues: [...new Set(issues)], checks };
+}
+
 function hasImplementationReadinessPass(record: JsonObject): boolean {
   return objects(record.gateChecks).some(
     (check) =>
@@ -801,6 +844,10 @@ function evaluate(record: JsonObject, recordPath: string, attemptId: string): { 
   const productionIssues = productionBlockerIssues(record, recordPath);
   checks.push(...productionIssues.checks);
   blockingReasons.push(...productionIssues.issues);
+
+  const subagentRevalidation = subagentCurrentAttemptRevalidationIssues(record, attemptId);
+  checks.push(...subagentRevalidation.checks);
+  blockingReasons.push(...subagentRevalidation.issues);
 
   const attemptRuns = commandRunsForAttempt(record, attemptId);
   for (const command of requiredCommands) {
