@@ -1,0 +1,45 @@
+{
+  "assertionSet": "TRACE-034-subagent-surface-inventory",
+  "generatedAt": "2026-05-20T19:09:31.772Z",
+  "traceRows": [
+    "TRACE-034"
+  ],
+  "coveredRequirementIds": [
+    "MUST-045",
+    "OUT-028",
+    "EVD-044",
+    "TRACE-034"
+  ],
+  "assertions": [
+    {
+      "id": "unregistered-surface-blocks",
+      "text": "Unregistered subagent execution surfaces produce blocked inventory rows.",
+      "evidenceCommandId": "CMD-SUBAGENT-SURFACE-INVENTORY",
+      "testFile": "tests/acceptance/subagent-surface-inventory.test.ts"
+    },
+    {
+      "id": "bmm-workflow-unmapped-blocks",
+      "text": "BMM workflow subagent markdown without registry mapping blocks inventory acceptance.",
+      "evidenceCommandId": "CMD-SUBAGENT-SURFACE-INVENTORY",
+      "testFile": "tests/acceptance/subagent-surface-inventory.test.ts"
+    },
+    {
+      "id": "control-flow-without-envelope-blocks",
+      "text": "canAffectControlFlow=true with requiredEnvelope=false blocks readiness evidence.",
+      "evidenceCommandId": "CMD-SUBAGENT-SURFACE-INVENTORY",
+      "testFile": "tests/acceptance/subagent-surface-inventory.test.ts"
+    },
+    {
+      "id": "invalid-exclusion-and-stale-scanner-block",
+      "text": "Excluded rows need an allowed reason code and current scannerConfigHash.",
+      "evidenceCommandId": "CMD-SUBAGENT-SURFACE-INVENTORY",
+      "testFile": "tests/acceptance/subagent-surface-inventory.test.ts"
+    },
+    {
+      "id": "inventory-not-control-source",
+      "text": "Inventory output declares controlDecisionAuthority=controlled_ingest_contractChecks_only and directArtifactJsonControlForbidden=true.",
+      "evidenceCommandId": "CMD-SUBAGENT-SURFACE-INVENTORY",
+      "artifactRef": "_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/subagents/subagent-surface-inventory.json"
+    }
+  ]
+}

@@ -1,0 +1,166 @@
+STDOUT:
+{
+  "recordId": "REQ-CLOSED-LOOP-DESIGN",
+  "sourcePath": "D:/Dev/BMAD-Speckit-SDD-Flow/docs/design/需求实现完整性门禁与重跑闭环设计.md",
+  "sourceDocumentHash": "sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570",
+  "implementationConfirmationHash": "sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a",
+  "confirmationPageHash": "sha256:0233e7759914e62f77a0db0fc2c8617d4f84ea1d68c41eb4c920f4f83e90943b",
+  "language": "zh-CN",
+  "generatedAt": "2026-05-20T19:02:30.683Z",
+  "blockingIssues": [],
+  "warnings": [
+    {
+      "severity": "warning",
+      "code": "control_affecting_artifact_not_control_role",
+      "message": "ART-SUBAGENT-SURFACE-INVENTORY affects control flow",
+      "refs": [
+        "ART-SUBAGENT-SURFACE-INVENTORY"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "control_artifact_highlighted",
+      "message": "ART-SUBAGENT-SURFACE-INVENTORY is control-sensitive",
+      "refs": [
+        "ART-SUBAGENT-SURFACE-INVENTORY"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "long_lived_artifact",
+      "message": "ART-SUBAGENT-SURFACE-INVENTORY",
+      "refs": [
+        "ART-SUBAGENT-SURFACE-INVENTORY"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "control_affecting_artifact_not_control_role",
+      "message": "ART-SUBAGENT-ENVELOPE-SCHEMA affects control flow",
+      "refs": [
+        "ART-SUBAGENT-ENVELOPE-SCHEMA"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "control_artifact_highlighted",
+      "message": "ART-SUBAGENT-ENVELOPE-SCHEMA is control-sensitive",
+      "refs": [
+        "ART-SUBAGENT-ENVELOPE-SCHEMA"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "long_lived_artifact",
+      "message": "ART-SUBAGENT-ENVELOPE-SCHEMA",
+      "refs": [
+        "ART-SUBAGENT-ENVELOPE-SCHEMA"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "control_affecting_artifact_not_control_role",
+      "message": "ART-SUBAGENT-ENVELOPE-ACCEPTANCE affects control flow",
+      "refs": [
+        "ART-SUBAGENT-ENVELOPE-ACCEPTANCE"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "control_artifact_highlighted",
+      "message": "ART-SUBAGENT-ENVELOPE-ACCEPTANCE is control-sensitive",
+      "refs": [
+        "ART-SUBAGENT-ENVELOPE-ACCEPTANCE"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "long_lived_artifact",
+      "message": "ART-SUBAGENT-ENVELOPE-ACCEPTANCE",
+      "refs": [
+        "ART-SUBAGENT-ENVELOPE-ACCEPTANCE"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "control_affecting_artifact_not_control_role",
+      "message": "ART-SUBAGENT-CURRENT-ATTEMPT-REVALIDATION affects control flow",
+      "refs": [
+        "ART-SUBAGENT-CURRENT-ATTEMPT-REVALIDATION"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "control_artifact_highlighted",
+      "message": "ART-SUBAGENT-CURRENT-ATTEMPT-REVALIDATION is control-sensitive",
+      "refs": [
+        "ART-SUBAGENT-CURRENT-ATTEMPT-REVALIDATION"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "long_lived_artifact",
+      "message": "ART-SUBAGENT-CURRENT-ATTEMPT-REVALIDATION",
+      "refs": [
+        "ART-SUBAGENT-CURRENT-ATTEMPT-REVALIDATION"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "control_affecting_artifact_not_control_role",
+      "message": "ART-PARALLEL-MISSION-EVIDENCE-INTEGRATION affects control flow",
+      "refs": [
+        "ART-PARALLEL-MISSION-EVIDENCE-INTEGRATION"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "control_artifact_highlighted",
+      "message": "ART-PARALLEL-MISSION-EVIDENCE-INTEGRATION is control-sensitive",
+      "refs": [
+        "ART-PARALLEL-MISSION-EVIDENCE-INTEGRATION"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "long_lived_artifact",
+      "message": "ART-PARALLEL-MISSION-EVIDENCE-INTEGRATION",
+      "refs": [
+        "ART-PARALLEL-MISSION-EVIDENCE-INTEGRATION"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "long_item_text",
+      "message": "31 long confirmation items",
+      "refs": []
+    },
+    {
+      "severity": "warning",
+      "code": "source_already_user_confirmed",
+      "message": "renderer does not confirm or change status",
+      "refs": []
+    }
+  ],
+  "mermaidRuntime": {
+    "available": true,
+    "path": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad/skills/requirements-contract-authoring/assets/mermaid/mermaid.min.js",
+    "hash": "sha256:d0830a6c05546e9edb8fe20a8f545f3e0dc7c4c3134d584bad9c13a99d7a71e0",
+    "format": "classic-global",
+    "issues": []
+  },
+  "counts": {
+    "must": 56,
+    "notDone": 40,
+    "mustNot": 29,
+    "evidence": 62,
+    "failurePaths": 7,
+    "edgeCases": 10,
+    "traceRows": 39,
+    "sequenceViews": 10,
+    "resumeFailureCases": 27,
+    "artifactPlanItems": 8
+  }
+}
+
+STDERR:

@@ -1,0 +1,49 @@
+STDOUT:
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mD:/Dev/BMAD-Speckit-SDD-Flow[39m
+
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/subagent-surface-pass-QUyeaV/_bmad-output/runtime/requirement-records/REQ-SUBAGENT/subagents/subagent-surface-inventory.json",
+  "reportHash": "sha256:cec71e9bed167008dc3998505ebdc49500b00f1af8e3d0fa4a25cb6d0cc674f6",
+  "decision": "pass",
+  "registrySurfaces": 3,
+  "rows": 6,
+  "blockingIssues": [],
+  "controlWrite": "forbidden_use_controlled_ingest"
+}
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/subagent-surface-bmm-block-M7Qc8h/_bmad-output/runtime/requirement-records/REQ-SUBAGENT/subagents/subagent-surface-inventory.json",
+  "reportHash": "sha256:65d71ca0bb214f75d75969c16cea81d9589e3334d0e491a2cd966ec94da468c5",
+  "decision": "blocked",
+  "registrySurfaces": 2,
+  "rows": 6,
+  "blockingIssues": [
+    "inventory_row_blocked:_bmad/bmm/workflows/1-analysis/bmad-product-brief-preview/agents/web-researcher.md",
+    "linked_evidence_ids_missing:_bmad/bmm/workflows/1-analysis/bmad-product-brief-preview/agents/web-researcher.md"
+  ],
+  "controlWrite": "forbidden_use_controlled_ingest"
+}
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/subagent-surface-envelope-block-n4EwJq/_bmad-output/runtime/requirement-records/REQ-SUBAGENT/subagents/subagent-surface-inventory.json",
+  "reportHash": "sha256:570574b052874e0426a6874d9445ef78c1abe7b89e07ef25304a44bc981ba2b2",
+  "decision": "blocked",
+  "registrySurfaces": 3,
+  "rows": 6,
+  "blockingIssues": [
+    "registry_control_flow_without_envelope:main_agent_codex_worker_adapter",
+    "control_flow_without_required_envelope:scripts/main-agent-codex-worker-adapter.ts"
+  ],
+  "controlWrite": "forbidden_use_controlled_ingest"
+}
+ [32m✓[39m tests/acceptance/subagent-surface-inventory.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 62[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m   Start at [22m 03:02:29
+[2m   Duration [22m 365ms[2m (transform 63ms, setup 0ms, import 114ms, tests 62ms, environment 0ms)[22m
+
+
+STDERR:

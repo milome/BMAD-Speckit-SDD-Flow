@@ -1,0 +1,4 @@
+STDOUT:
+checkedFiles=2773 findings=0
+
+STDERR:

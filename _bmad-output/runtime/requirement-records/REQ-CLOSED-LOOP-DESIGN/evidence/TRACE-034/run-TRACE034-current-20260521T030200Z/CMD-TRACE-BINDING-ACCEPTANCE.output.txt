@@ -1,0 +1,14 @@
+STDOUT:
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mD:/Dev/BMAD-Speckit-SDD-Flow[39m
+
+ [32m✓[39m tests/acceptance/render-requirements-confirmation-html.test.ts [2m([22m[2m38 tests[22m[2m)[22m[33m 6623[2mms[22m[39m
+     [33m[2m✓[22m[39m renders current controlled execution state only when hashes and current attempt match [33m 360[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m38 passed[39m[22m[90m (38)[39m
+[2m   Start at [22m 03:02:33
+[2m   Duration [22m 6.95s[2m (transform 86ms, setup 0ms, import 122ms, tests 6.62s, environment 0ms)[22m
+
+
+STDERR:
