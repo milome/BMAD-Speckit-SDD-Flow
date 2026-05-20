@@ -36,8 +36,14 @@ If older project material says "requirements contract", treat it as a legacy ali
 - Treat `failurePaths[]` and `edgeCases[]` as core mandatory fields for every source document; they are not optional advanced runtime sections.
 - Keep ordinary business/functional failure paths separate from the conditional `functionalResumeFailureCaseRegistry`.
 - Use `contractValidationCommandRefs[]` and `deliveryEvidenceCommandRefs[]` in `traceRows[]`; do not use legacy `commandRefs[]` as the sole command authority.
-- When governance events apply, require `governanceEventTypeRegistry[]` and a `payloadContract` for every event type.
+- When governance events apply, require `governanceEventTypeRegistryPolicy` plus `governanceEventTypeRegistry[]`; every event type needs a `payloadContract` that passes the policy.
+- `governanceEventTypeRegistryPolicy` must define `controlFieldVocabulary[]`, `payloadKindContracts[]`, `controlWriteModePolicies[]`, and `eventSpecificRequirements[]`; renderer, ingest, gates, hooks, workers, and tests must not keep a second hardcoded event or payload rule list.
+- `controlFieldVocabulary[]` is the only policy-level vocabulary for control-shaped fields. A transport envelope that carries any vocabulary field at top level or under `payload` must be rejected unless the current event type lists that field in `writesControlFields[]`.
+- When governance events or controlled ingest apply, require `controlledIngestWriterRegistry[]` as the only machine-readable authority for which writer may write control records. Event existence in `governanceEventTypeRegistry[]` is not enough to authorize any script.
+- `controlledIngestWriterRegistry[]` entries must bind `writerId`, `scriptPath`, `scriptContentHash`, `allowedWriteApis[]`, `allowedPaths[]`, `allowedEventTypes[]`, `payloadContractRefs[]`, `writesControlFields[]`, `receiptPath`, `beforeAfterHashRequired: true`, `canModifyWriterRegistry: false`, `registryHash`, and `architectureConfirmationHash`.
+- A writer that receives a registered but unowned event type must fail closed; it must not fall through to a default branch or reinterpret the event as gate, rerun, artifact, or closeout evidence.
 - When runtime recovery applies or requires functional resume coverage, require source-defined `functionalResumeFailureCaseRegistry` groups, actions, failure cases, expected recovery actions, and record event types.
+- When runtime governance or recovery applies, require active requirement/run resolution through `requirement-records/index.json` or explicit `recordId` / `requirementSetId` / `runId`; never rely on `_bmad-output/runtime/context/project.json`.
 - Score, dashboard, SFT, report, summary, and hook receipt outputs are read models or evidence only; they do not close requirements unless a controlled gate writes `decision`.
 
 ## Authoritative Block
@@ -75,6 +81,8 @@ implementationConfirmation:
       applies: false
       reasonCode: no_resume_rerun_closeout_hook_ingest_or_trace_checkpoint_changes
       requiresFunctionalResumeFailureCaseRegistry: false
+      activeRequirementResolutionRequired: false
+      retiredContextSurfaceForbidden: true
     scoringDashboardSft:
       applies: false
       reasonCode: no_scoring_dashboard_sft_dataset_or_read_model_changes
@@ -195,8 +203,9 @@ Never omit an applicability domain to imply it is irrelevant. Use `applies: fals
 
 Conditional expansion rules:
 
-- `governanceEvents.applies=true`: define or reference `governanceEventTypeRegistry[]`; every event type needs `payloadContract`.
+- `governanceEvents.applies=true`: define or reference `governanceEventTypeRegistryPolicy`, `governanceEventTypeRegistry[]`, and `controlledIngestWriterRegistry[]`; every event type needs `payloadContract` and every control field vocabulary / payload kind / control write mode / event-specific rule must be declared in the policy. Every event type that writes control fields must be covered by at least one registered writer.
 - `runtimeRecovery.applies=true` or `requiresFunctionalResumeFailureCaseRegistry=true`: define `functionalResumeFailureCaseRegistry` with source-defined groups, failure cases, recovery actions, expected recovery actions, and record event types.
+- `runtimeRecovery.applies=true`: define `activeRequirementResolution` or reference the project-standard Active Requirement Resolver; startup must locate the current requirement through explicit IDs or `_bmad-output/runtime/requirement-records/index.json`, then verify `requirement-record.json`, `runtimePolicySnapshotRef`, `recoveryContextRef`, trace checkpoint, and bmad workflow projection hashes.
 - `scoringDashboardSft.applies=true`: define score/dashboard/SFT read-model boundaries and state why they cannot reverse-drive closeout.
 - `currentTargetMap.applies=true`: define source-driven current/target rows; do not rely on renderer hardcoded rows.
 - `scriptsAndHooks.applies=true`: define visible script/hook/artifact outputs, ownerModel, input/output artifacts, event types, fallback, and control/evidence role.
@@ -248,6 +257,15 @@ Diagrams are views only. They must not introduce requirement semantics that are 
 
 The Artifact and Automation Plan View must make planned outputs visible before implementation. Include each planned artifact, script, hook, report, dashboard, score, SFT output, producer, consumer, path, `ownerModel`, `sourceOfTruthRole`, `inputArtifacts`, `outputArtifacts`, `recordEventTypes`, whether it may affect control flow, retention/cleanup rule, and orphan risk. Old script outputs may be evidence/context/projection/compatibility/schema/derived artifacts only; they must not directly control main-agent state.
 
+When planned work touches runtime governance, hooks, no-hook execution, recovery, bmad-help routing, dashboard, scoring, or SFT, the artifact plan must also show:
+
+- `scripts/resolve-active-requirement.ts` or the equivalent skill/project resolver as the startup locator.
+- `_bmad-output/runtime/requirement-records/index.json` as locator projection only.
+- `_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json` as the reloaded control record.
+- `_bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/runtime-policy-snapshot.json`.
+- `_bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/recovery-context.json`.
+- A hard rule that `_bmad-output/runtime/context/**` is not read, written, migrated, or used as fallback.
+
 ### 4. Build `traceRows`
 
 `traceRows` are execution mapping rows, not another requirements expression.
@@ -291,7 +309,7 @@ Before readiness or prompt generation, render a low-burden HTML confirmation pag
 ```bash
 node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts \
   --source <source-document.md> \
-  --out _bmad-output/runtime/requirements/<recordId>/confirmation/confirmation.html \
+  --out _bmad-output/runtime/requirement-records/<recordId>/confirmation/confirmation.html \
   --language zh-CN \
   --record-id <recordId> \
   --entry-flow <story|bugfix|standalone_tasks> \
@@ -302,7 +320,7 @@ The renderer is part of this skill. Do not create or call a root-level `scripts/
 
 If the consuming project does not yet contain the skill-local renderer, do not fall back to chat confirmation. Instead, mark readiness as blocked by `confirmation_html_renderer_missing` and ask to install, sync, or provide the skill renderer.
 
-If the renderer reports missing core fields, missing `applicability`, missing `failurePaths[]`, missing `edgeCases[]`, invalid `payloadContract`, missing conditional runtime recovery registry, invalid trace command split, missing Mermaid runtime, or any blocking issue, stop before readiness. Do not proceed to implementation prompt generation.
+If the renderer reports missing core fields, missing `applicability`, missing `failurePaths[]`, missing `edgeCases[]`, missing or invalid `governanceEventTypeRegistryPolicy`, missing or invalid `controlledIngestWriterRegistry[]`, invalid `payloadContract`, missing conditional runtime recovery registry, invalid trace command split, missing Mermaid runtime, or any blocking issue, stop before readiness. Do not proceed to implementation prompt generation.
 
 Required outputs:
 
@@ -322,6 +340,51 @@ The HTML must answer:
 - Which artifacts affect control flow and which are evidence/read-model only?
 - What is the gap between current and target state?
 - After confirmation, what may the agent do and what is forbidden?
+
+### 6a. Prepare Architecture Confirmation Page When Architecture Confirmation Applies
+
+When the current requirement needs full architecture confirmation or an existing `architectureConfirmationState` is stale, use the skill-local prepare entry. Do not ask the user to run `architecture_confirmation_state_checked`, manually generate architecture JSON, or call the renderer directly as the normal workflow.
+
+```bash
+node _bmad/skills/requirements-contract-authoring/scripts/prepare-architecture-confirmation-page.ts \
+  --source <source-document.md> \
+  --requirement-record _bmad-output/runtime/requirement-records/<recordId>/requirement-record.json \
+  --run-id <runId> \
+  --target-paths <json-array-or-file> \
+  --consumer-impact-scan <json-array-or-file> \
+  --governance-impact-scan <json-array-or-file> \
+  --full-architecture-trigger-matrix <json-array-or-file> \
+  --out _bmad-output/runtime/requirement-records/<recordId>/architecture/architecture-confirmation-<runId>.html \
+  --language zh-CN \
+  --json
+```
+
+The prepare entry is part of this skill. It must automatically:
+
+- record `architecture_confirmation_state_checked` through controlled ingest before rendering,
+- generate requirement-scoped `architecture-confirmation-<runId>.json`,
+- render the user-facing architecture confirmation HTML,
+- write a prepare report with the internal step results and the user-facing confirmation instruction.
+
+The user-facing next step is only to open the architecture confirmation HTML and confirm the hashes in chat. Do not expose stale check or JSON producer commands as manual user steps.
+
+The architecture JSON producer and renderer are also part of this skill. Do not create temporary scripts, hand-written HTML, or root-level wrappers to generate or render architecture confirmation pages.
+
+Required outputs:
+
+- `architecture-confirmation-<runId>.json`
+- `architecture-confirmation-<runId>.html`
+- `architecture-confirmation-<runId>.summary.json`
+- `architecture-confirmation-<runId>.render-report.json`
+- `architecture-confirmation-<runId>.prepare-report.json`
+
+The architecture JSON producer must only generate the evidence artifact. It must not write `architectureConfirmationState`, append `architectureConfirmations[]`, write `confirmationHistory[]`, or mark architecture confirmation active.
+
+The architecture renderer is a read-only projection over `architecture-confirmation-<runId>.json`. It must not write `requirement-record.json`, change `architectureConfirmationState`, append `architectureConfirmations[]`, write `confirmationHistory[]`, or mark architecture confirmation active.
+
+The page must show the requirement-scoped decision, consumer impact scan, governance impact scan, full architecture trigger matrix, target paths, hash recipe, stale input hashes, risk statement, rollback plan, evidence refs, exact confirmation phrase, and artifact metadata.
+
+If the prepare entry, producer, or architecture renderer reports missing core fields, hash mismatch, recipe mismatch, missing impact scans, missing trigger matrix, or missing target paths, stop before Implementation Readiness. Do not use an older architecture HTML projection or a manually assembled fallback page.
 
 ### 7. Confirm In Chat With Hashes
 
