@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import type {
   DispatchRoute,
   ExecutionPacket,
+  PacketKind,
   RecommendationPacket,
   ResumePacket,
   TaskReport,
@@ -20,7 +21,9 @@ import {
   invalidatePendingPacket,
   markPendingPacketDispatched,
   orchestrationStateDir,
+  orchestrationStateDirForRecordPath,
   readOrchestrationState,
+  readOrchestrationStateAtPath,
   resetGatesLoopProgress,
   recordGatesLoopNoProgress,
   type OrchestrationNextAction,
@@ -238,11 +241,17 @@ function resolvedContext(runtimeContext: Partial<RuntimeContextFile> | null): Re
   return candidate?.kind === 'ResolvedRuntimeContext' ? candidate : null;
 }
 
-function listScopedOrchestrationStatePaths(projectRoot?: string): string[] {
+function listScopedOrchestrationStatePaths(
+  projectRoot?: string,
+  runtimeContext: Partial<RuntimeContextFile> | null = null
+): string[] {
   if (!projectRoot) {
     return [];
   }
-  const dir = orchestrationStateDir(projectRoot);
+  const dir = orchestrationStateDirForRecordPath(
+    projectRoot,
+    resolvedContext(runtimeContext)?.recordPath
+  );
   if (!fs.existsSync(dir)) {
     return [];
   }
@@ -303,7 +312,7 @@ function resolveScopedOrchestrationState(
   statePath: string | null;
   state: OrchestrationState | null;
 } {
-  const candidates = listScopedOrchestrationStatePaths(projectRoot);
+  const candidates = listScopedOrchestrationStatePaths(projectRoot, runtimeContext);
   if (candidates.length === 0) {
     return {
       sessionId: null,
@@ -325,7 +334,7 @@ function resolveScopedOrchestrationState(
   const scored = candidates
     .map((candidate) => {
       const sessionId = path.basename(candidate, '.json');
-      const state = readOrchestrationState(projectRoot!, sessionId);
+      const state = readOrchestrationStateAtPath(candidate);
       if (!state) {
         return null;
       }
@@ -481,6 +490,37 @@ function taskTypeFromNextAction(
   }
 }
 
+function packetTaskType(
+  packet: RecommendationPacket | ExecutionPacket | ResumePacket | null
+): 'implement' | 'audit' | 'remediate' | 'document' | null {
+  if (!packet) {
+    return null;
+  }
+  const taskType = normalizeText((packet as { taskType?: unknown }).taskType);
+  if (
+    taskType === 'implement' ||
+    taskType === 'audit' ||
+    taskType === 'remediate' ||
+    taskType === 'document'
+  ) {
+    return taskType;
+  }
+  return null;
+}
+
+function pendingPacketMatchesNextAction(surface: MainAgentOrchestrationSurface): boolean {
+  const expectedTaskType = taskTypeFromNextAction(surface.mainAgentNextAction);
+  if (!expectedTaskType) {
+    return false;
+  }
+  const actualTaskType = packetTaskType(surface.pendingPacket);
+  if (actualTaskType) {
+    return actualTaskType === expectedTaskType;
+  }
+  const packetKind = surface.orchestrationState?.pendingPacket?.packetKind;
+  return packetKind === 'resume' || packetKind === 'recommendation';
+}
+
 function writePacketFile(
   projectRoot: string,
   sessionId: string,
@@ -621,6 +661,66 @@ function deriveContinueDecisionFromSurface(input: {
   return { canContinue: null, continueDecision: null };
 }
 
+function latestRecordsById(records: unknown, idField: string): Record<string, unknown>[] {
+  const latest = new Map<string, Record<string, unknown>>();
+  if (!Array.isArray(records)) {
+    return [];
+  }
+  for (const item of records) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      continue;
+    }
+    const record = item as Record<string, unknown>;
+    const id = normalizeText(record[idField]);
+    if (id) {
+      latest.set(id, record);
+    }
+  }
+  return [...latest.values()];
+}
+
+function gateIdentity(gate: Record<string, unknown>, index: number): string {
+  return (
+    [
+      normalizeText(gate.gate),
+      normalizeText(gate.traceId),
+      normalizeText(gate.requirementId),
+    ]
+      .filter(Boolean)
+      .join(':') ||
+    normalizeText(gate.checkId) ||
+    normalizeText(gate.gateCheckId) ||
+    normalizeText(gate.id) ||
+    `gate-${index}`
+  );
+}
+
+function latestGateChecks(records: unknown): Record<string, unknown>[] {
+  const latest = new Map<string, Record<string, unknown>>();
+  if (!Array.isArray(records)) {
+    return [];
+  }
+  records.forEach((item, index) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      return;
+    }
+    const gate = item as Record<string, unknown>;
+    latest.set(gateIdentity(gate, index), gate);
+  });
+  return [...latest.values()];
+}
+
+function isRequirementRecordClosed(record: Record<string, unknown> | null): boolean {
+  if (!record) {
+    return false;
+  }
+  const closeout =
+    record.closeout && typeof record.closeout === 'object' && !Array.isArray(record.closeout)
+      ? (record.closeout as Record<string, unknown>)
+      : null;
+  return normalizeText(closeout?.decision) === 'pass';
+}
+
 function deriveNextActionFromRequirementRecord(input: {
   stage: string;
   record: Record<string, unknown> | null;
@@ -634,22 +734,21 @@ function deriveNextActionFromRequirementRecord(input: {
     !Array.isArray(input.record.architectureConfirmationState)
       ? (input.record.architectureConfirmationState as Record<string, unknown>)
       : null;
-  const openRerun = Array.isArray(input.record?.rerunLoops)
-    ? (input.record.rerunLoops as Array<Record<string, unknown>>).some((loop) =>
+  const openRerun = latestRecordsById(input.record?.rerunLoops, 'rerunLoopId').some((loop) =>
         ['open', 'in_progress', 'no_progress', 'blocked'].includes(normalizeText(loop.status))
-      )
-    : false;
-  const hasBlockingGate = Array.isArray(input.record?.gateChecks)
-    ? (input.record.gateChecks as Array<Record<string, unknown>>).some((gate) =>
+      );
+  const hasBlockingGate = latestGateChecks(input.record?.gateChecks).some((gate) =>
         ['fail', 'blocked'].includes(normalizeText(gate.decision))
-      )
-    : false;
+      );
   const blockingReasonRefs: Array<{ sourceType: string; id: string }> = [];
   if (!input.record || normalizeText(input.record.status) !== 'user_confirmed') {
     blockingReasonRefs.push({ sourceType: 'requirement_record', id: recordId });
   }
   if (normalizeText(architectureState?.status) !== 'active') {
     blockingReasonRefs.push({ sourceType: 'architecture_confirmation', id: normalizeText(architectureState?.currentArchitectureConfirmationHash) || recordId });
+  }
+  if (isRequirementRecordClosed(input.record)) {
+    return { nextAction: null, ready: false, blockingReasonRefs };
   }
   if (input.implementationEntryDecision === 'reroute') {
     blockingReasonRefs.push({ sourceType: 'gate_check', id: 'implementation-readiness' });
@@ -974,7 +1073,8 @@ export function ensureMainAgentDispatchPacket(
     currentSurface.pendingPacketStatus !== 'none' &&
     currentSurface.pendingPacketStatus !== 'missing_packet_file' &&
     currentSurface.pendingPacketStatus !== 'completed' &&
-    currentSurface.pendingPacketStatus !== 'invalidated'
+    currentSurface.pendingPacketStatus !== 'invalidated' &&
+    pendingPacketMatchesNextAction(currentSurface)
   ) {
     return currentSurface;
   }
@@ -1108,7 +1208,13 @@ export function ensureMainAgentDispatchPacket(
         resultCode: null,
       },
     };
-    const file = path.join(orchestrationStateDir(input.projectRoot), `${sessionId}.json`);
+    const file = path.join(
+      orchestrationStateDirForRecordPath(
+        input.projectRoot,
+        resolvedContext(runtimeContext)?.recordPath
+      ),
+      `${sessionId}.json`
+    );
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, JSON.stringify(writtenState, null, 2) + '\n', 'utf8');
   }
@@ -1122,7 +1228,10 @@ export function ensureMainAgentDispatchPacket(
     source: 'orchestration_state',
     sessionId,
     orchestrationStatePath: path.join(
-      orchestrationStateDir(input.projectRoot),
+      orchestrationStateDirForRecordPath(
+        input.projectRoot,
+        resolvedContext(runtimeContext)?.recordPath
+      ),
       `${sessionId}.json`
     ),
     orchestrationState: writtenState,

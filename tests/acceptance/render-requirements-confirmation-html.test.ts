@@ -980,6 +980,8 @@ describe('render-requirements-confirmation-html', () => {
         summary: "MUST-001 evidence command was clarified."
     impactedIds: ["MUST-001", "EVD-001", "TRACE-001"]
     impactedTraceRows: ["TRACE-001"]
+    affectedRequirementIds: ["MUST-001", "EVD-001"]
+    affectedTraceRows: ["TRACE-001"]
     impactedArtifacts: ["ART-CONFIRM-001"]
     impactedGatesOrCommands: ["CMD-CONTRACT-001"]
     allowedUserActions:
@@ -1014,6 +1016,14 @@ describe('render-requirements-confirmation-html', () => {
       fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
     );
     expect(html).toContain('重新确认请求');
+    expect(html).toContain('id="progress-delta"');
+    expect(html).toContain('class="review-flow"');
+    expect(html).toContain('class="review-step"');
+    expect(html).toContain('历史进度与本次差异');
+    expect(html).toContain('本次确认变化');
+    expect(html).toContain('重点验收焦点');
+    expect(html).toContain('新增 / 变更');
+    expect(html).toContain('userStatus');
     expect(html).toContain('检测到确认边界漂移');
     expect(html).toContain('sourceDocumentHash_changed');
     expect(html).toContain('confirm_current_version');
@@ -1022,6 +1032,13 @@ describe('render-requirements-confirmation-html', () => {
     expect(html).toContain('regenerate_confirmation_view');
     expect(html).toContain('用户只需要确认业务意图');
     expect(html).not.toContain('手工修改 hash、status 或 confirmationHistory。</p><p');
+    const progressDeltaSection = html.slice(
+      html.indexOf('id="progress-delta"'),
+      html.indexOf('id="trace-matrix"')
+    );
+    expect(progressDeltaSection).toContain('class="review-flow"');
+    expect(progressDeltaSection.match(/class="review-step"/g)?.length).toBeGreaterThanOrEqual(3);
+    expect(progressDeltaSection).not.toContain('class="split"');
     expect(report.confirmability).toBe('confirmable');
     expect(report.blockingIssues.map((issue: { code: string }) => issue.code)).not.toEqual(
       expect.arrayContaining([
@@ -1043,6 +1060,15 @@ describe('render-requirements-confirmation-html', () => {
     });
     expect(report.reconfirmationRequest.currentSourceDocumentHash).toMatch(/^sha256:/);
     expect(report.reconfirmationRequest.currentImplementationConfirmationHash).toMatch(/^sha256:/);
+    expect(report.progressDelta).toMatchObject({
+      affectedTraceRows: expect.arrayContaining(['TRACE-001']),
+      newIds: expect.arrayContaining(['MUST-001', 'EVD-001']),
+      reviewFocusIds: expect.arrayContaining(['TRACE-001', 'MUST-001', 'EVD-001']),
+      counts: {
+        newOrChangedIds: 2,
+        totalTraceRows: 1,
+      },
+    });
   });
 
   it('renders the full instance confirmation HTML, summary, render report, hashes, and required views', () => {
@@ -1142,7 +1168,28 @@ describe('render-requirements-confirmation-html', () => {
     expect(html).toContain('data-nav-toggle');
     expect(html).toContain('data-nav-collapsed="false"');
     expect(html).toContain('收起侧栏');
+    expect(html).toContain('grid-template-columns:280px minmax(0,1fr)');
+    expect(html).toContain('--shadow:none');
+    expect(html).toContain('main{padding:44px min(6vw,88px) 86px;min-width:0;max-width:100%;background:linear-gradient');
+    expect(html).toContain('counter-reset:doc-section');
+    expect(html).toContain('.card{background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;padding:36px 0 42px;box-shadow:none;margin:0;min-width:0;max-width:100%}');
+    expect(html).toContain('.card>h2::before{counter-increment:doc-section;content:counter(doc-section,decimal-leading-zero)');
+    expect(html).toContain('.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0;margin:22px 0;min-width:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}');
+    expect(html).toContain('.table-wrap{overflow-x:auto;overflow-y:auto;border:1px solid var(--line);border-radius:0;min-width:0;max-width:100%;scrollbar-gutter:stable;background:#fff}');
+    expect(html).toContain('.table-wrap table{width:max-content;min-width:100%;border-collapse:collapse;background:#fff;table-layout:auto}');
+    expect(html).toContain('.table-wrap th,.table-wrap td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left;min-width:140px;max-width:560px;overflow-wrap:break-word}');
+    expect(html).toContain('.compact-map-table{min-width:1100px}');
     expect(html).toContain('核心设计摘要');
+    expect(html).toContain('历史进度与本次差异');
+    expect(html).toContain('建议继续起点');
+    expect(html).toContain('userStatus');
+    const progressDeltaSection = html.slice(
+      html.indexOf('id="progress-delta"'),
+      html.indexOf('id="trace-matrix"')
+    );
+    expect(progressDeltaSection).toContain('class="review-flow"');
+    expect(progressDeltaSection.match(/class="review-step"/g)?.length).toBeGreaterThanOrEqual(3);
+    expect(progressDeltaSection).not.toContain('class="split"');
     expect(html).not.toContain('<section class="card current-target-map" id="current-target">');
     expect(html).not.toContain('current-target-split');
     expect(html).not.toContain('六个心智模型');
@@ -1212,8 +1259,10 @@ describe('render-requirements-confirmation-html', () => {
     expect(summary.blockingIssues).toEqual([]);
     expect(summary.mermaidRuntime.available).toBe(true);
     expect(summary.mermaidRuntime.hash).toMatch(/^sha256:/);
+    expect(summary.progressDelta.counts.totalTraceRows).toBe(1);
 
     expect(report.confirmability).toBe('confirmable');
+    expect(report.renderedSections).toContain('progress-delta');
     expect(report.mermaidRuntime.available).toBe(true);
     expect(report.mermaidRuntime.path).toBe(mermaidBundle.replace(/\\/g, '/'));
     expect(report.confirmationPageHashScope).toBe(
@@ -1753,6 +1802,13 @@ functionalResumeFailureCaseRegistry:
     const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
     expect(html).toContain('Instance Requirements Confirmation');
     expect(html).toContain('Core Design Summary');
+    expect(html).toContain('Progress And Delta');
+    expect(html).toContain('Current Confirmation Changes');
+    expect(html).toContain('Review Focus');
+    expect(html).toContain('Suggested Continue Start');
+    expect(html).toContain('No Controlled Record');
+    expect(html).not.toContain('历史进度与本次差异');
+    expect(html).not.toContain('本次确认变化');
     expect(html).toContain('Rendered Diagram');
     expect(html).toContain('Mermaid source and diagramHash');
     expect(html).toContain('Confirm the above scope and enter the next stage');

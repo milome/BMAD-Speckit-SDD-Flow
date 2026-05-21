@@ -44,6 +44,10 @@ function writeText(filePath: string, value: string): void {
   writeFileSync(filePath, value, 'utf8');
 }
 
+function cleanupTempRoot(root: string): void {
+  rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+}
+
 function recordText(record: Record<string, unknown>, key: string): string {
   return typeof record[key] === 'string' ? (record[key] as string) : '';
 }
@@ -554,7 +558,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         ])
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -613,7 +617,72 @@ describe('requirement-scoped delivery closeout gate', () => {
         decision: 'pass',
       });
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
+    }
+  });
+
+  it('blocks strict closeout contract when the current attempt lacks strict proof command evidence', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-strict-missing-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-strict-missing',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            traceRows: ['TRACE-040'],
+            evidenceRefs: ['EVD-052'],
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-strict-missing',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [
+          { requirementId: 'MUST-054', status: 'pass', evidenceRefs: ['EVD-052'] },
+          { requirementId: 'NEG-042', status: 'pass', evidenceRefs: ['EVD-054'] },
+        ],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-strict-missing',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(1);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.closeout.decision).toBe('blocked');
+      expect(record.closeout.attempts[0].checks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'strict-closeout-proof-gate-current-attempt',
+            passed: false,
+          }),
+        ])
+      );
+      expect(record.closeout.attempts[0].blockingReasons).toEqual(
+        expect.arrayContaining([
+          'strict_closeout_proof_current_attempt_command_missing',
+          'strict_closeout_proof_gate_not_passed',
+        ])
+      );
+    } finally {
+      cleanupTempRoot(root);
     }
   });
 
@@ -672,7 +741,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         ])
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -720,7 +789,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         'deliveryEvidence.requiredCommands_current_attempt_missing'
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -768,7 +837,7 @@ describe('requirement-scoped delivery closeout gate', () => {
       ]);
       expect(code).toBe(0);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -816,7 +885,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         'architecture_confirmation_state_check_not_current'
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -879,7 +948,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         'implementation_readiness_gate_not_passed'
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -935,7 +1004,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         'failure_case_coverage_artifact_missing'
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -1012,7 +1081,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         ])
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -1072,7 +1141,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         ])
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -1126,7 +1195,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         'production_subsystem_extension_hash_mismatch'
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -1187,7 +1256,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         expect.arrayContaining(['dataset_manifest_source_document_hash_mismatch', 'dataset_release_manifest_hash_mismatch'])
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -1243,7 +1312,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         'production_subsystem_functional_parity_not_preserved'
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -1299,7 +1368,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         'subsystem_functional_parity_not_preserved:requirement_confirmation'
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -1324,7 +1393,7 @@ describe('requirement-scoped delivery closeout gate', () => {
       expect(record.closeout.attempts).toHaveLength(1);
       expect(record.closeout.attempts[0].decision).toBe('blocked');
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -1387,7 +1456,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         ])
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -1449,7 +1518,7 @@ describe('requirement-scoped delivery closeout gate', () => {
       expect(record.rcaRecords).toHaveLength(1);
       expect(record.rcaRecords[0].rcaId).toBe('rca-open-001');
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -1529,7 +1598,7 @@ describe('requirement-scoped delivery closeout gate', () => {
       ]);
       expect(code).toBe(0);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -1590,7 +1659,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         ])
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -1651,7 +1720,7 @@ describe('requirement-scoped delivery closeout gate', () => {
       expect(record.closeout.decision).toBe('pass');
       expect(record.closeout.attempts[0].blockingReasons).not.toContain('pending_rerun_exists');
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -1707,7 +1776,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         'rerun_loop_source_ref_type_invalid:rerun-invalid-001:artifact_ref'
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -1792,7 +1861,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         ])
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -1860,7 +1929,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         ])
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 });

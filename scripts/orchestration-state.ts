@@ -185,8 +185,62 @@ export function orchestrationStateDir(projectRoot: string): string {
   return path.join(projectRoot, '_bmad-output', 'runtime', 'governance', 'orchestration-state');
 }
 
+export function orchestrationStateDirForRecordPath(
+  projectRoot: string,
+  recordPath?: string | null
+): string {
+  const normalized = text(recordPath);
+  if (!normalized) {
+    return orchestrationStateDir(projectRoot);
+  }
+  const resolved = path.isAbsolute(normalized)
+    ? normalized
+    : path.resolve(projectRoot, normalizePathForRuntime(normalized));
+  return path.join(path.dirname(resolved), 'orchestration', 'orchestration-state');
+}
+
 export function orchestrationStatePath(projectRoot: string, sessionId: string): string {
   return path.join(orchestrationStateDir(projectRoot), `${sessionId}.json`);
+}
+
+function requirementScopedStateCandidates(projectRoot: string, sessionId: string): string[] {
+  const recordsRoot = path.join(projectRoot, '_bmad-output', 'runtime', 'requirement-records');
+  if (!fs.existsSync(recordsRoot)) {
+    return [];
+  }
+  return fs
+    .readdirSync(recordsRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) =>
+      path.join(recordsRoot, entry.name, 'orchestration', 'orchestration-state', `${sessionId}.json`)
+    );
+}
+
+function existingOrchestrationStatePath(projectRoot: string, sessionId: string): string | null {
+  const candidates = [
+    orchestrationStatePath(projectRoot, sessionId),
+    ...requirementScopedStateCandidates(projectRoot, sessionId),
+    path.join(
+      projectRoot,
+      '_bmad-output',
+      'runtime',
+      'governance',
+      'orchestration-state',
+      `${sessionId}.json`
+    ),
+  ];
+  const seen = new Set<string>();
+  for (const candidate of candidates) {
+    const normalized = path.resolve(candidate);
+    if (seen.has(normalized)) {
+      continue;
+    }
+    seen.add(normalized);
+    if (fs.existsSync(normalized)) {
+      return normalized;
+    }
+  }
+  return null;
 }
 
 export function createDefaultOrchestrationState(
@@ -225,8 +279,15 @@ export function readOrchestrationState(
   projectRoot: string,
   sessionId: string
 ): OrchestrationState | null {
-  const file = orchestrationStatePath(projectRoot, sessionId);
-  if (!fs.existsSync(file)) {
+  const file = existingOrchestrationStatePath(projectRoot, sessionId);
+  if (!file || !fs.existsSync(file)) {
+    return null;
+  }
+  return readOrchestrationStateAtPath(file);
+}
+
+export function readOrchestrationStateAtPath(file: string): OrchestrationState | null {
+  if (!file || !fs.existsSync(file)) {
     return null;
   }
   try {
@@ -237,7 +298,12 @@ export function readOrchestrationState(
 }
 
 export function writeOrchestrationState(projectRoot: string, state: OrchestrationState): void {
-  const file = orchestrationStatePath(projectRoot, state.sessionId);
+  const file = existingOrchestrationStatePath(projectRoot, state.sessionId) ??
+    orchestrationStatePath(projectRoot, state.sessionId);
+  writeOrchestrationStateAtPath(file, state);
+}
+
+export function writeOrchestrationStateAtPath(file: string, state: OrchestrationState): void {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const tempFile = `${file}.tmp`;
   fs.writeFileSync(tempFile, JSON.stringify(state, null, 2) + '\n', 'utf8');

@@ -548,66 +548,6 @@ describe('Codex consumer five-layer main-agent e2e', () => {
       expect(release.critical_failures).toBe(0);
       expect(release.completion_intent?.gateReportHash).toEqual(expect.any(String));
 
-      const soakPath = path.join(
-        target,
-        '_bmad-output',
-        'runtime',
-        'soak',
-        'main-agent-soak-report.json'
-      );
-      writeJson(soakPath, {
-        mode: 'wall_clock',
-        run_kind: 'development_run_loop',
-        target_duration_ms: 28_800_000,
-        observed_duration_ms: 28_800_001,
-        manual_restarts: 0,
-        silent_hangs: 0,
-        false_completions: 0,
-        recovery_success_rate: 1,
-        tick_count: 2,
-        evidence_provenance: { runId, storyKey, evidenceBundleId, gateReportHash: 'soak-hash' },
-        developmentRun: {
-          tick_count: 2,
-          completed_ticks: 2,
-          blocked_ticks: 0,
-          runLoopInvocations: [
-            {
-              tick: 1,
-              runId,
-              status: 'completed',
-              packetId: 'packet-1',
-              taskReportStatus: 'done',
-              evidence: ['real patch evidence'],
-              finalNextAction: 'final_inspect',
-              tickCommand: {
-                command: 'codex worker adapter',
-                exitCode: 0,
-                stdoutPath: 'stdout.log',
-                stderrPath: 'stderr.log',
-                diffHashBefore: 'before',
-                diffHashAfter: 'after',
-              },
-            },
-            {
-              tick: 2,
-              runId,
-              status: 'completed',
-              packetId: 'packet-2',
-              taskReportStatus: 'done',
-              evidence: ['gate rerun evidence'],
-              finalNextAction: 'done',
-              tickCommand: {
-                command: 'gate rerun',
-                exitCode: 0,
-                stdoutPath: 'stdout.log',
-                stderrPath: 'stderr.log',
-                diffHashBefore: 'after',
-                diffHashAfter: 'after',
-              },
-            },
-          ],
-        },
-      });
       const sprintAuditPath = path.join(
         target,
         '_bmad-output',
@@ -632,8 +572,6 @@ describe('Codex consumer five-layer main-agent e2e', () => {
           `"${releaseReportPath}"`,
           '--hostMatrixPath',
           `"${hostMatrixPath}"`,
-          '--soakPath',
-          `"${soakPath}"`,
           '--prTopologyPath',
           `"${prTopologyPath}"`,
           '--sprintAuditPath',

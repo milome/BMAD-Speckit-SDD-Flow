@@ -132,6 +132,12 @@ describe('render-architecture-confirmation-html', () => {
     expect(fs.existsSync(out)).toBe(true);
     const html = fs.readFileSync(out, 'utf8');
     expect(html).toContain('REQ-ARCH-HTML 架构确认草案');
+    expect(html).toContain('id="architecture-delta"');
+    expect(html).toContain('class="review-flow"');
+    expect(html).toContain('class="review-step"');
+    expect(html).toContain('本次架构确认重点');
+    expect(html).toContain('重点影响行');
+    expect(html).toContain('有效路径样例');
     expect(html).toContain('消费项目影响扫描');
     expect(html).toContain('治理系统影响扫描');
     expect(html).toContain('完整架构触发矩阵');
@@ -140,6 +146,23 @@ describe('render-architecture-confirmation-html', () => {
     expect(html).toContain('id="architecture-confirmation-phrase"');
     expect(html).toContain('复制确认口令');
     expect(html).toContain('data-copy-status');
+    expect(html).toContain('--shadow:none');
+    expect(html).toContain('main.layout{display:grid;grid-template-columns:280px minmax(0,1fr)');
+    expect(html).toContain('.hero,.card{background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none');
+    expect(html).toContain('counter-reset:arch-section');
+    expect(html).toContain('.card>h2::before,.section-title h2::before{counter-increment:arch-section');
+    expect(html).toContain('.table-wrap{overflow-x:auto;overflow-y:auto;border:1px solid var(--line);border-radius:0;min-width:0;max-width:100%;scrollbar-gutter:stable;background:#fff}');
+    expect(html).toContain('.table-wrap table{width:max-content;min-width:100%;border-collapse:collapse;background:#fff;table-layout:auto}');
+    const architectureDeltaSection = html.slice(
+      html.indexOf('id="architecture-delta"'),
+      html.indexOf('id="impact"')
+    );
+    expect(architectureDeltaSection).toContain('class="review-flow"');
+    expect(architectureDeltaSection.match(/class="review-step"/g)?.length).toBeGreaterThanOrEqual(3);
+    expect(architectureDeltaSection).not.toContain('class="grid"');
+    const impactSection = html.slice(html.indexOf('id="impact"'), html.indexOf('id="triggers"'));
+    expect(impactSection).toContain('class="review-flow"');
+    expect(impactSection).not.toContain('class="grid"');
 
     const report = JSON.parse(fs.readFileSync(path.join(tempDir, 'architecture-confirmation.render-report.json'), 'utf8'));
     expect(report.confirmability).toBe('confirmable');
@@ -157,6 +180,13 @@ describe('render-architecture-confirmation-html', () => {
       governanceImpactScan: 1,
       fullArchitectureTriggerMatrix: 2,
     });
+    expect(summary.architectureDelta.counts).toMatchObject({
+      targetPaths: 2,
+      triggeredConsumerImpacts: 1,
+      triggeredGovernanceImpacts: 1,
+      triggeredArchitectureRules: 1,
+    });
+    expect(summary.architectureDelta.reviewFocus.length).toBeGreaterThanOrEqual(3);
   });
 
   it('blocks when the architecture confirmation artifact hash is stale', () => {
@@ -181,5 +211,32 @@ describe('render-architecture-confirmation-html', () => {
     const report = JSON.parse(fs.readFileSync(path.join(tempDir, 'architecture-confirmation.render-report.json'), 'utf8'));
     expect(report.confirmability).toBe('blocked');
     expect(report.blockingIssues).toContain('architecture_confirmation_artifact_hash_mismatch');
+  });
+
+  it('uses the selected language for architecture confirmation labels', () => {
+    const source = writeArchitectureConfirmation();
+    const out = path.join(tempDir, 'architecture-confirmation-en.html');
+    const result = runRenderer([
+      '--architecture-confirmation',
+      source,
+      '--out',
+      out,
+      '--language',
+      'en-US',
+      '--json',
+    ]);
+
+    expect(result.status).toBe(0);
+    const html = fs.readFileSync(out, 'utf8');
+    expect(html).toContain('Architecture Confirmation Draft');
+    expect(html).toContain('Architecture Review Focus');
+    expect(html).toContain('Focus Rows');
+    expect(html).toContain('Target Path Samples');
+    expect(html).toContain('Consumer Impact Scan');
+    expect(html).toContain('Governance Impact Scan');
+    expect(html).toContain('Copy Confirmation Phrase');
+    expect(html).not.toContain('本次架构确认重点');
+    expect(html).not.toContain('重点影响行');
+    expect(html).not.toContain('复制确认口令');
   });
 });

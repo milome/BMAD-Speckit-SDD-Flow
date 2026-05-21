@@ -216,7 +216,7 @@ export function mainImplementationReadinessGate(argv: string[]): number {
   };
   const commit = appendControlEventAndReplay({
     recordPath,
-    writerId: 'main-agent-implementation-readiness-gate',
+    writerId: 'implementation-readiness-gate-writer',
     eventType: 'implementation_readiness_check_recorded',
     recordedAt: evaluatedAt,
     payload: readinessPayload,
