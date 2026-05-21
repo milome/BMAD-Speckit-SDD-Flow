@@ -44,6 +44,35 @@ function writeText(filePath: string, value: string): void {
   writeFileSync(filePath, value, 'utf8');
 }
 
+function writeDeliveryTruthReport(root: string, overrides: Record<string, unknown> = {}): string {
+  const reportPath = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'gates',
+    'main-agent-delivery-truth-gate-report.json'
+  );
+  writeJson(reportPath, {
+    reportType: 'main_agent_delivery_truth_gate',
+    generatedAt: '2026-05-19T00:00:00.000Z',
+    completionAllowed: true,
+    deliveryStatus: 'complete',
+    completionLanguage: 'complete_allowed',
+    missingEvidence: [],
+    failedEvidence: [],
+    evidencePaths: {},
+    checks: [
+      {
+        id: 'release-gate',
+        passed: true,
+        summary: 'critical_failures=0, blocked_sprint_status_update=false, completion_intent=present',
+      },
+    ],
+    ...overrides,
+  });
+  return reportPath;
+}
+
 function cleanupTempRoot(root: string): void {
   rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 }
@@ -369,6 +398,7 @@ function writeProductionArtifacts(
 function writeRecord(root: string, record: Record<string, unknown>): string {
   const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-CLOSEOUT');
   mkdirSync(base, { recursive: true });
+  writeDeliveryTruthReport(root);
   const coveragePath = path.join(base, 'evidence', 'failure-case-coverage.json');
   mkdirSync(path.dirname(coveragePath), { recursive: true });
   writeFileSync(
@@ -1397,6 +1427,79 @@ describe('requirement-scoped delivery closeout gate', () => {
     }
   });
 
+  it('blocks closeout when the current delivery truth gate report does not allow completion', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-truth-gate-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-truth-gate-blocked',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-truth-gate-blocked',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      writeDeliveryTruthReport(root, {
+        completionAllowed: false,
+        deliveryStatus: 'partial',
+        completionLanguage: 'partial_only',
+        failedEvidence: ['release-gate: completion_intent=expired'],
+      });
+
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-truth-gate-blocked',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+
+      expect(code).toBe(1);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.closeout.decision).toBe('blocked');
+      expect(record.closeout.attempts[0].checks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'delivery-truth-gate-current',
+            passed: false,
+            completionAllowed: false,
+            deliveryStatus: 'partial',
+            failedEvidenceCount: 1,
+          }),
+        ])
+      );
+      expect(record.closeout.attempts[0].blockingReasons).toEqual(
+        expect.arrayContaining([
+          'delivery_truth_gate_not_passed',
+          'delivery_truth_gate_completion_not_allowed',
+          'delivery_truth_gate_status_not_complete:partial',
+          'delivery_truth_gate_failed_evidence:release-gate: completion_intent=expired',
+        ])
+      );
+    } finally {
+      cleanupTempRoot(root);
+    }
+  });
+
   it('blocks closeout when evidence artifacts are projections or missing pass-grade metadata', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-artifact-metadata-'));
     try {
@@ -1597,6 +1700,125 @@ describe('requirement-scoped delivery closeout gate', () => {
         '2026-05-19T00:00:00.000Z',
       ]);
       expect(code).toBe(0);
+    } finally {
+      cleanupTempRoot(root);
+    }
+  });
+
+  it('does not self-lock a repaired current closeout attempt on its previous blocked failure', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-current-attempt-repaired-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        failureRecords: [
+          {
+            eventType: 'failure_recorded',
+            failureId: 'failure:closeout-current-repaired',
+            type: 'delivery_closeout_blocked',
+            status: 'open',
+            closeoutAttemptId: 'closeout-current-repaired',
+            blockingReasons: ['strict_closeout_proof_gate_not_passed'],
+            sourceRefs: [
+              { sourceType: 'closeout_attempt', id: 'closeout-current-repaired' },
+              { sourceType: 'gate_check', id: 'delivery-closeout:closeout-current-repaired' },
+            ],
+            recordedAt: '2026-05-19T00:00:00.000Z',
+            recordedBy: 'test-agent',
+          },
+        ],
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-current-repaired',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-current-repaired',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-current-repaired',
+        '--evaluated-at',
+        '2026-05-19T00:01:00.000Z',
+      ]);
+      expect(code).toBe(0);
+    } finally {
+      cleanupTempRoot(root);
+    }
+  });
+
+  it('still blocks when the current attempt has a non-closeout open failure', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-current-attempt-other-failure-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        failureRecords: [
+          {
+            eventType: 'failure_recorded',
+            failureId: 'failure-other-current',
+            type: 'release_gate_failed',
+            status: 'open',
+            closeoutAttemptId: 'closeout-current-other-failure',
+            blockingReasons: ['release_gate_failed'],
+            sourceRefs: [{ sourceType: 'gate_check', id: 'release-gate' }],
+            recordedAt: '2026-05-19T00:00:00.000Z',
+            recordedBy: 'test-agent',
+          },
+        ],
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-current-other-failure',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-current-other-failure',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-current-other-failure',
+        '--evaluated-at',
+        '2026-05-19T00:01:00.000Z',
+      ]);
+      expect(code).toBe(1);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.closeout.attempts[0].blockingReasons).toContain('open_failure_record_exists');
     } finally {
       cleanupTempRoot(root);
     }

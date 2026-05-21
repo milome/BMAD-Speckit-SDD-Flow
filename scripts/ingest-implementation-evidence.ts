@@ -190,7 +190,14 @@ function closureInputs(packet: JsonObject): JsonObject[] {
       status: 'pass',
       closureSource: 'execution_trace_row_done',
     }));
-  return [...explicitClosures, ...traceClosures];
+  const evidenceClosures = arrayOfStrings(packet.evidenceRefs)
+    .filter((evidenceRef) => !explicitRequirementIds.has(evidenceRef))
+    .map((evidenceRef) => ({
+      requirementId: evidenceRef,
+      status: 'pass',
+      closureSource: 'execution_evidence_ref_done',
+    }));
+  return [...explicitClosures, ...traceClosures, ...evidenceClosures];
 }
 
 function requireHashMatch(packet: JsonObject, record: JsonObject): string[] {

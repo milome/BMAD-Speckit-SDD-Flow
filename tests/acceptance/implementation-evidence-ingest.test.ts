@@ -258,6 +258,11 @@ describe('implementation evidence ingest', () => {
             requirementId: 'TRACE-003',
             status: 'pass',
           }),
+          expect.objectContaining({
+            eventType: 'requirement_closure_recorded',
+            requirementId: 'EVD-006',
+            status: 'pass',
+          }),
         ])
       );
       expect(record.gateChecks[0]).toMatchObject({

@@ -137,6 +137,16 @@ export function buildTraceClosureMatrix(record: JsonObject): JsonObject {
     requirementSetId: text(record.requirementSetId),
     generatedAt: new Date().toISOString(),
     sourceOfTruth: 'requirement-record.json',
+    projectionClosurePolicy: {
+      sourceDocumentTraceStatusRole: 'confirmed_contract_projection',
+      runtimeClosureAuthority: 'requirement-record.requirementClosures',
+      pendingSourceStatusMeaning:
+        'PENDING in the confirmed source document preserves the user-confirmed implementationConfirmation projection and does not represent runtime delivery closure.',
+      passCriteria:
+        'Runtime PASS requires latest requirementClosures status=pass plus current deliveryEvidence.requiredCommands and supporting evidence artifacts.',
+      semanticMutationPolicy:
+        'Changing source traceRows status from PENDING to PASS would mutate the confirmed contract and requires reconfirmation; closeout records projection evidence instead.',
+    },
     readModelBoundary:
       'TaskReport done, agent said done, smoke passed, quality gate passed, release gate passed, delivery truth passed, and tests passed are evidence inputs only; they cannot close a requirement without requirementClosures plus deliveryEvidence.requiredCommands.',
     counts: {

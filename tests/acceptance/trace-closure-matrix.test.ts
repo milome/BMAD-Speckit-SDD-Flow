@@ -81,6 +81,12 @@ describe('trace closure matrix projection', () => {
       expect(code).toBe(0);
       const matrix = JSON.parse(readFileSync(outPath, 'utf8'));
       expect(matrix.sourceOfTruth).toBe('requirement-record.json');
+      expect(matrix.projectionClosurePolicy).toMatchObject({
+        sourceDocumentTraceStatusRole: 'confirmed_contract_projection',
+        runtimeClosureAuthority: 'requirement-record.requirementClosures',
+      });
+      expect(matrix.projectionClosurePolicy.pendingSourceStatusMeaning).toContain('does not represent runtime delivery closure');
+      expect(matrix.projectionClosurePolicy.semanticMutationPolicy).toContain('requires reconfirmation');
       expect(matrix.readModelBoundary).toContain('tests passed are evidence inputs only');
       expect(matrix.rows.find((row: { id: string }) => row.id === 'MUST-001')).toMatchObject({
         status: 'pass',

@@ -772,31 +772,196 @@ function normalizeGovernanceEventTypeRegistry(confirmation) {
   };
 }
 
-function extractMermaidBlocks(sourceText) {
-  return [...sourceText.matchAll(/```mermaid\s*\n([\s\S]*?)```/giu)].map((match, index) => {
-    const source = match[1].trim();
-    return {
-      id: `MERMAID-${String(index + 1).padStart(3, '0')}`,
-      source,
-      diagramHash: sha256(source),
-      ids: extractIds(source),
-      unboundLines: findUnboundDiagramSemantics(source),
-      viewKind: 'source',
-      generatedFrom: 'source_mermaid_block',
-    };
-  });
+function classifyMermaidSectionGroup(title, fallback = 'business') {
+  const text = String(title ?? '').toLowerCase();
+  if (
+    /治理|边界|门禁|准出|launch\s*gate|failure\s*path|control|governance|closeout|recovery|resume|current[-\s]?target|double\s*gate|turnstile|rate\s*limit|origin|budget|kill\s*switch/iu.test(
+      text
+    )
+  ) {
+    return 'governance';
+  }
+  if (
+    /业务|business|ingest|chat|retrieval|hybrid|rerank|incremental|用户|产品|domain|ingest lifecycle|chat security|chat retrieval|incremental ingest/iu.test(
+      text
+    )
+  ) {
+    return 'business';
+  }
+  return fallback;
 }
 
-function makeMermaidBlock(id, source, viewKind, generatedFrom) {
+function inferViewScope(view, businessIds, governanceIds) {
+  const explicitScope = String(view?.scope ?? view?.boundaryScope ?? '').toLowerCase();
+  if (['business', 'governance', 'mixed'].includes(explicitScope)) return explicitScope;
+  const title = `${view?.id ?? ''} ${view?.title ?? ''} ${view?.description ?? ''}`;
+  if (
+    /治理|边界|门禁|准出|launch\s*gate|control|governance|closeout|recovery|resume|current[-\s]?target|double\s*gate|turnstile|rate\s*limit|origin|budget|kill\s*switch/iu.test(
+      title
+    )
+  ) {
+    return 'governance';
+  }
+  const ids = stringList(view?.covers);
+  const hasBusiness = ids.some((id) => businessIds.has(id));
+  const hasGovernance = ids.some((id) => governanceIds.has(id));
+  if (hasBusiness && hasGovernance) return 'mixed';
+  if (hasGovernance) return 'governance';
+  return 'business';
+}
+
+function inferMermaidBlockScope(block, businessIds, governanceIds) {
+  const ids = stringList(block?.ids);
+  const hasBusiness = ids.some((id) => businessIds.has(id));
+  const hasGovernance = ids.some((id) => governanceIds.has(id));
+  if (hasBusiness && hasGovernance) return 'mixed';
+  if (hasGovernance) return 'governance';
+  if (hasBusiness) return 'business';
+  const explicitScope = String(block?.sectionGroup ?? '').toLowerCase();
+  if (['business', 'governance', 'mixed'].includes(explicitScope)) return explicitScope;
+  if (block?.viewKind === 'boundary') return 'governance';
+  if (['happy', 'failure', 'stateFlow', 'edge'].includes(block?.viewKind)) return 'business';
+  const title = `${block?.title ?? ''} ${block?.sourceHeading ?? ''}`;
+  if (
+    /治理|边界|门禁|准出|control|governance|closeout|recovery|resume|current[-\s]?target|double\s*gate|turnstile|rate\s*limit|origin|budget|kill\s*switch/iu.test(
+      title
+    )
+  ) {
+    return 'governance';
+  }
+  if (
+    /业务|business|ingest|chat|retrieval|hybrid|rerank|incremental|用户|产品|domain|ingest lifecycle|chat security|chat retrieval|incremental ingest/iu.test(
+      title
+    )
+  ) {
+    return 'business';
+  }
+  return 'business';
+}
+
+function extractMermaidBlocks(sourceText) {
+  const lines = sourceText.split(/\r?\n/u);
+  const blocks = [];
+  let currentHeading = '';
+  for (let index = 0; index < lines.length; index += 1) {
+    const heading = lines[index].match(/^\s{0,3}#{2,6}\s+(.+?)\s*$/u);
+    if (heading) {
+      currentHeading = heading[1].trim();
+      continue;
+    }
+    if (!/^\s*```mermaid\b/iu.test(lines[index])) continue;
+    const body = [];
+    index += 1;
+    while (index < lines.length && !/^\s*```\s*$/u.test(lines[index])) {
+      body.push(lines[index]);
+      index += 1;
+    }
+    const source = body.join('\n').trim();
+    const id = `MERMAID-${String(blocks.length + 1).padStart(3, '0')}`;
+    blocks.push(
+      makeMermaidBlock(id, source, 'source', 'source_mermaid_block', {
+        title: currentHeading || id,
+        sourceHeading: currentHeading,
+        sectionGroup: classifyMermaidSectionGroup(currentHeading, 'business'),
+      })
+    );
+  }
+  return blocks;
+}
+
+function makeMermaidBlock(id, source, viewKind, generatedFrom, meta = {}) {
+  const renderSource = mermaidRenderSource(source);
   return {
     id,
+    title: meta.title ?? id,
     source,
+    renderSource,
     diagramHash: sha256(source),
     ids: extractIds(source),
     unboundLines: findUnboundDiagramSemantics(source),
     viewKind,
     generatedFrom,
+    sectionGroup: meta.sectionGroup ?? 'business',
+    sourceHeading: meta.sourceHeading ?? '',
   };
+}
+
+function quoteMermaidLabel(label) {
+  return `"${String(label ?? '')
+    .replace(/"/gu, "'")
+    .replace(/\r?\n/gu, ' ')
+    .replace(/\s+/gu, ' ')
+    .trim()}"`;
+}
+
+function safeMermaidNodeLabel(label) {
+  const unquoted = String(label ?? '')
+    .trim()
+    .replace(/^["'](.+)["']$/u, '$1');
+  return quoteMermaidLabel(
+    unquoted
+      .replace(/\[([A-Z]+-\d+[A-Z]*)\]/gu, ' $1 ')
+      .replace(/[{}]/gu, ' ')
+      .replace(/\s+/gu, ' ')
+      .trim()
+  );
+}
+
+function sanitizeMermaidNodeLabels(line) {
+  return String(line ?? '')
+    .replace(/(\b[A-Za-z][\w-]*)\[((?:[^\[\]\r\n]|\[[A-Z]+-\d+[A-Z]*\])*)\]/gu, (_match, node, label) => {
+      return `${node}[${safeMermaidNodeLabel(label)}]`;
+    })
+    .replace(/(\b[A-Za-z][\w-]*)\(((?:[^\(\)\r\n]|\([A-Z]+-\d+[A-Z]*\))*)\)/gu, (_match, node, label) => {
+      return `${node}(${safeMermaidNodeLabel(label)})`;
+    })
+    .replace(/(\b[A-Za-z][\w-]*)\{((?:[^\{\}\r\n]|\{[A-Z]+-\d+[A-Z]*\})*)\}/gu, (_match, node, label) => {
+      return `${node}{${safeMermaidNodeLabel(label)}}`;
+    });
+}
+
+function sanitizeMermaidTransitionLabel(label) {
+  return String(label ?? '')
+    .replace(/\[([A-Z]+-\d+[A-Z]*)\]/gu, '$1')
+    .replace(/[<>{}]/gu, ' ')
+    .replace(/\s+/gu, ' ')
+    .trim();
+}
+
+function sanitizeMermaidStateLine(line) {
+  return String(line ?? '').replace(/(:\s*)(.+)$/u, (_match, prefix, label) => {
+    return `${prefix}${sanitizeMermaidTransitionLabel(label)}`;
+  });
+}
+
+function sanitizeMermaidSequenceNoteLine(line) {
+  return String(line ?? '').replace(/^(\s*Note\s+(?:over|right of|left of)\s+[^:]+:\s*)(.+)$/iu, (_match, prefix, label) => {
+    const safeLabel = sanitizeMermaidTransitionLabel(label).replace(/;/gu, ' and').trim();
+    return `${prefix}${safeLabel}`;
+  });
+}
+
+function mermaidRenderSource(source) {
+  const text = String(source ?? '');
+  if (/^\s*sequenceDiagram\b/imu.test(text)) {
+    return text
+      .split(/\r?\n/u)
+      .map((line) => (/^\s*Note\s+/iu.test(line) ? sanitizeMermaidSequenceNoteLine(line) : line))
+      .join('\n');
+  }
+  if (!/^\s*(flowchart|graph|stateDiagram|stateDiagram-v2)\b/imu.test(text)) return text;
+  return text
+    .split(/\r?\n/u)
+    .map((line) => {
+      if (/^\s*(stateDiagram|stateDiagram-v2)\b/iu.test(line)) return line;
+      if (/^\s*(flowchart|graph)\b/iu.test(line)) return line;
+      if (/^\s*(note|classDef|class|style|linkStyle|click|subgraph|end)\b/iu.test(line)) return line;
+      const nodeSafe = sanitizeMermaidNodeLabels(line);
+      return /^\s*(?:\[\*\]|\w[\w-]*)\s*(?:-->|->|--)/u.test(nodeSafe)
+        ? sanitizeMermaidStateLine(nodeSafe)
+        : nodeSafe;
+    })
+    .join('\n');
 }
 
 function idsFromViews(views) {
@@ -1107,7 +1272,11 @@ function buildResumeFailureMermaidBlocks(registry) {
         `  C --> D["${groupDef.blockingBehavior ?? 'fail closed'} ${refSuffix}"]`,
       ].join('\n'),
       'resumeFailure',
-      'functionalResumeFailureCaseRegistry'
+      'functionalResumeFailureCaseRegistry',
+      {
+        title: groupDef.label ?? group,
+        sectionGroup: 'governance',
+      }
     );
   });
 }
@@ -1301,7 +1470,8 @@ function buildDerivedMermaidBlocks(confirmation, views) {
           `  Gate-->>User: ${labels.happyAllow} ${ids}`,
         ].join('\n'),
         'happy',
-        'sequenceViews'
+        'sequenceViews',
+        { sectionGroup: 'business' }
       )
     );
   }
@@ -1325,7 +1495,8 @@ function buildDerivedMermaidBlocks(confirmation, views) {
           `  FollowUp-->>User: ${labels.failureReport} ${ids}`,
         ].join('\n'),
         'failure',
-        'notDone,sequenceViews'
+        'notDone,sequenceViews',
+        { sectionGroup: 'governance' }
       )
     );
   }
@@ -1347,7 +1518,8 @@ function buildDerivedMermaidBlocks(confirmation, views) {
           `  Agent-->>Confirm: ${labels.boundaryConfirm} ${ids}`,
         ].join('\n'),
         'failure',
-        'boundaryViews'
+        'boundaryViews',
+        { sectionGroup: 'governance' }
       )
     );
   }
@@ -1369,7 +1541,8 @@ function buildDerivedMermaidBlocks(confirmation, views) {
           `  FinalCheck-->>Runtime: ${labels.recoveryBlock} ${ids}`,
         ].join('\n'),
         'failure',
-        'edgeCaseViews'
+        'edgeCaseViews',
+        { sectionGroup: 'governance' }
       )
     );
   }
@@ -1390,7 +1563,8 @@ function buildDerivedMermaidBlocks(confirmation, views) {
           `  closeout_attempt --> complete: current attempt decision pass ${ids}`,
         ].join('\n'),
         'stateFlow',
-        'flowViews'
+        'flowViews',
+        { sectionGroup: 'business' }
       )
     );
   }
@@ -1407,7 +1581,8 @@ function buildDerivedMermaidBlocks(confirmation, views) {
           `  C --> D["Block closeout until trace checkpoint is safe ${ids}"]`,
         ].join('\n'),
         'edge',
-        'edgeCaseViews'
+        'edgeCaseViews',
+        { sectionGroup: 'business' }
       )
     );
   }
@@ -1422,6 +1597,7 @@ function findUnboundDiagramSemantics(source) {
     const trimmed = line.trim();
     if (!trimmed) return;
     if (/^(sequenceDiagram|stateDiagram|stateDiagram-v2|flowchart|graph|classDiagram|erDiagram|journey|gantt|pie|mindmap|timeline|participant|actor|autonumber|alt\b|else\b|opt\b|loop\b|par\b|and\b|rect\b|end\b|note\b)/iu.test(trimmed)) {
+      ID_PATTERN.lastIndex = 0;
       if (/^(alt|else|opt|loop|par|and|note)\b/iu.test(trimmed) && !ID_PATTERN.test(trimmed)) {
         out.push({ line: index + 1, text: trimmed, reason: 'diagram control branch lacks ID' });
       }
@@ -2239,6 +2415,47 @@ function buildCoverage(input) {
   if (!flowViews.length) blockingIssues.push(blocking('missing_flow_views', 'flowViews[] is required'));
   if (!edgeCaseViews.length) blockingIssues.push(blocking('missing_edge_case_views', 'edgeCaseViews[] is required'));
   if (!boundaryViews.length) blockingIssues.push(blocking('missing_boundary_views', 'boundaryViews[] is required'));
+  const requirementBoundary = inferRequirementBoundary(
+    confirmation,
+    { sequenceViews, flowViews, edgeCaseViews, boundaryViews },
+    mermaidBlocks
+  );
+  if (requirementBoundary.business.requirementIds.length && !requirementBoundary.business.viewRefs.length) {
+    blockingIssues.push(
+      blocking(
+        'business_boundary_missing_views',
+        'Business requirements exist but no business-scoped view is available in requirementBoundary or view metadata.',
+        requirementBoundary.business.requirementIds
+      )
+    );
+  }
+  if (requirementBoundary.business.requirementIds.length && !requirementBoundary.business.diagramRefs.length) {
+    blockingIssues.push(
+      blocking(
+        'business_boundary_missing_diagrams',
+        'Business requirements exist but no business Mermaid diagram is available; governance diagrams cannot substitute for consumer project behavior.',
+        requirementBoundary.business.requirementIds
+      )
+    );
+  }
+  if (requirementBoundary.governance.requirementIds.length && !requirementBoundary.governance.viewRefs.length) {
+    blockingIssues.push(
+      blocking(
+        'governance_boundary_missing_views',
+        'Governance requirements exist but no governance-scoped boundary view is available.',
+        requirementBoundary.governance.requirementIds
+      )
+    );
+  }
+  if (requirementBoundary.governance.requirementIds.length && !requirementBoundary.governance.diagramRefs.length) {
+    blockingIssues.push(
+      blocking(
+        'governance_boundary_missing_diagrams',
+        'Governance requirements exist but no governance Mermaid diagram is available; business diagrams cannot substitute for control boundaries.',
+        requirementBoundary.governance.requirementIds
+      )
+    );
+  }
   if (!artifactPlan.length) {
     blockingIssues.push(blocking('missing_artifact_automation_plan', 'artifactAutomationPlan[] is required'));
   }
@@ -2816,7 +3033,9 @@ function renderedSectionsForProfile(profile) {
     'decision-summary',
     'confirm-instruction',
     'requirements',
+    'requirement-boundary',
     'business-visuals',
+    'governance-visuals',
     'resume-failure-cases',
     'trace-matrix',
     ...(viewPackEnabled(profile, 'currentTargetMap') ? ['current-target'] : []),
@@ -2838,7 +3057,7 @@ function renderTable(headers, rows, options = {}) {
     const trimmed = cell.trim();
     if (!trimmed.includes('<')) return false;
     return (
-      /^<span class="(?:id-badge|muted)">[\s\S]*<\/span>(?:\s*<span class="(?:id-badge|muted)">[\s\S]*<\/span>)*$/u.test(
+      /^<span class="(?:id-badge(?: mini)?|muted)">[\s\S]*<\/span>(?:\s*<span class="(?:id-badge(?: mini)?|muted)">[\s\S]*<\/span>)*$/u.test(
         trimmed
       ) || /^<span class="tag (?:red|green|blue|gold)">[\s\S]*<\/span>$/u.test(
         trimmed
@@ -2940,7 +3159,21 @@ function getUiText(language) {
     decisionSummary: '用户决策摘要',
     confirmInstruction: '确认口令区',
     requirements: '需求内容区',
-    businessVisuals: '业务逻辑可视化区',
+    requirementBoundary: '需求边界区',
+    requirementBoundaryLead: '本区把消费项目的业务需求与治理/控制需求分开，用户应能清楚看到不同需求的边界、视图和图表来源。',
+    consumerBusinessRequirements: '消费项目 / 业务需求',
+    governanceControlRequirements: '治理 / 控制需求',
+    viewBoundaryMap: '视图边界地图',
+    businessVisuals: '业务需求可视化区',
+    businessVisualsLead: '本区只展示消费项目自身的产品行为、数据流、上线行为、用户可见行为和验收路径；治理图不能替代业务图。',
+    governanceVisuals: '治理 / 控制可视化区',
+    governanceVisualsLead: '本区展示确认、证据、受控写入、门禁、准出、脚本、hooks、恢复和 closeout 等控制层机制。',
+    businessDiagramSet: '业务图集合',
+    governanceDiagramSet: '治理图集合',
+    governanceBoundaryViews: '治理边界视图',
+    businessMermaidVisual: '业务 Mermaid 图',
+    mixedMermaidVisual: '业务 / 治理边界 Mermaid 图',
+    governanceMermaidVisual: '治理 Mermaid 图',
     traceMatrix: 'Trace Matrix',
     currentTarget: '现状 vs 目标态',
     artifactPlan: 'Artifact Plan',
@@ -3074,7 +3307,21 @@ function getUiText(language) {
     decisionSummary: 'User Decision Summary',
     confirmInstruction: 'Confirmation Phrase',
     requirements: 'Requirement Content',
-    businessVisuals: 'Business Logic Visuals',
+    requirementBoundary: 'Requirement Boundary',
+    requirementBoundaryLead: 'This section separates consumer/business requirements from governance/control requirements so the consuming project can see both boundaries clearly.',
+    consumerBusinessRequirements: 'Consumer / Business Requirements',
+    governanceControlRequirements: 'Governance / Control Requirements',
+    viewBoundaryMap: 'View Scope Map',
+    businessVisuals: 'Business Requirements Visuals',
+    businessVisualsLead: 'These diagrams show the consuming project product behavior, data flow, launch behavior, user-visible behavior, and acceptance paths; governance diagrams cannot substitute for them.',
+    governanceVisuals: 'Governance / Control Visuals',
+    governanceVisualsLead: 'These diagrams show confirmation, evidence, controlled ingest, gates, closeout, scripts, hooks, recovery, and other control-plane mechanics.',
+    businessDiagramSet: 'Business Diagram Set',
+    governanceDiagramSet: 'Governance Diagram Set',
+    governanceBoundaryViews: 'Governance Boundary Views',
+    businessMermaidVisual: 'Business Mermaid Diagram',
+    mixedMermaidVisual: 'Business / Governance Boundary Mermaid Diagram',
+    governanceMermaidVisual: 'Governance Mermaid Diagram',
     traceMatrix: 'Trace Matrix',
     currentTarget: 'Current vs Target',
     artifactPlan: 'Artifact Plan',
@@ -3299,7 +3546,9 @@ function renderMermaidSvg(block) {
 }
 
 function renderMermaidNativeBlock(block) {
-  return `<pre class="mermaid-source-native" data-mermaid-source>${escapeHtml(block.source)}</pre>
+  const renderSource = block.renderSource ?? block.source;
+  const normalized = renderSource === block.source ? 'false' : 'true';
+  return `<pre class="mermaid-source-native" data-mermaid-source data-mermaid-normalized="${attr(normalized)}">${escapeHtml(renderSource)}</pre>
     <div class="mermaid-native-render" data-mermaid-render data-diagram-id="${attr(block.id)}"></div>
     <p class="mermaid-runtime-error blocked" data-mermaid-error hidden></p>`;
 }
@@ -3343,7 +3592,7 @@ function renderMermaidBlocks(blocks, ui, mermaidRuntime, args) {
     .map(
       (block, index) =>
         `<button type="button" class="diagram-tab ${index === 0 ? 'active' : ''}" data-diagram-index="${index}" aria-pressed="${index === 0 ? 'true' : 'false'}">${escapeHtml(
-          block.id
+          block.title ?? block.id
         )}</button>`
     )
     .join('');
@@ -3367,10 +3616,16 @@ function renderMermaidBlocks(blocks, ui, mermaidRuntime, args) {
     .map(
       (block, index) => `<article class="diagram-card ${index === 0 ? 'active' : ''}" data-diagram-card data-diagram-index="${index}">
         <div class="diagram-head">
-          <div class="diagram-title"><strong>${escapeHtml(block.id)}</strong><span>${escapeHtml(shortHash(block.diagramHash))}</span></div>
+          <div class="diagram-title"><strong>${escapeHtml(block.title ?? block.id)}</strong><span>${escapeHtml(shortHash(block.diagramHash))}</span></div>
           <div class="diagram-meta">${renderCompactIdBadges(block.ids, 10)}</div>
         </div>
-        <div class="diagram-rendered" tabindex="0"><h4>${escapeHtml(ui.mermaidVisual)}</h4>${renderMermaidNativeBlock(block)}<details class="fallback-diagram"${fallbackOpen}><summary>${escapeHtml(
+        <div class="diagram-rendered" tabindex="0"><h4>${escapeHtml(
+          block.sectionGroup === 'governance'
+            ? ui.governanceMermaidVisual
+            : block.sectionGroup === 'mixed'
+              ? ui.mixedMermaidVisual
+              : ui.businessMermaidVisual
+        )}</h4>${renderMermaidNativeBlock(block)}<details class="fallback-diagram"${fallbackOpen}><summary>${escapeHtml(
           ui.fallbackDiagram
         )}</summary>${renderMermaidSvg(block) ?? `<p class="blocked">${escapeHtml(
           ui.noMermaid
@@ -3401,51 +3656,78 @@ function uniqueBlocks(blocks) {
 }
 
 function selectDiagramBlocks(mermaidBlocks, views) {
+  const sequenceViews = asArray(views.sequenceViews);
+  const flowViews = asArray(views.flowViews);
+  const edgeCaseViews = asArray(views.edgeCaseViews);
+  const boundaryViews = asArray(views.boundaryViews);
+  const allViews = [...sequenceViews, ...flowViews, ...edgeCaseViews, ...boundaryViews];
+  const businessIds = new Set(
+    allViews
+      .filter((view) => inferViewScope(view, new Set(), new Set()) !== 'governance')
+      .flatMap((view) => stringList(view.covers))
+  );
+  const governanceIds = new Set(
+    allViews
+      .filter((view) => inferViewScope(view, businessIds, new Set()) !== 'business')
+      .flatMap((view) => stringList(view.covers))
+  );
+  const blockScope = (block) => inferMermaidBlockScope(block, businessIds, governanceIds);
   const happyIds = new Set(
-    views.sequenceViews
+    sequenceViews
       .filter((view) => !stringList(view.covers).some((id) => id.startsWith('NEG-') || id.startsWith('OUT-')))
       .flatMap((view) => stringList(view.covers))
   );
   const failureIds = new Set(
-    views.sequenceViews
+    sequenceViews
       .filter((view) => stringList(view.covers).some((id) => id.startsWith('NEG-') || id.startsWith('OUT-')))
       .flatMap((view) => stringList(view.covers))
   );
-  const flowIds = new Set(views.flowViews.flatMap((view) => stringList(view.covers)));
-  const edgeIds = new Set(views.edgeCaseViews.flatMap((view) => stringList(view.covers)));
+  const flowIds = new Set(flowViews.flatMap((view) => stringList(view.covers)));
+  const edgeIds = new Set(edgeCaseViews.flatMap((view) => stringList(view.covers)));
+  const businessBlock = (block) =>
+    blockScope(block) === 'business' ||
+    blockScope(block) === 'mixed' ||
+    (block.sectionGroup !== 'governance' &&
+      (block.viewKind === 'happy' || block.viewKind === 'failure' || block.viewKind === 'stateFlow' || block.viewKind === 'edge'));
+  const governanceBlock = (block) =>
+    blockScope(block) === 'governance' ||
+    (block.sectionGroup === 'governance' && blockScope(block) !== 'business' && block.viewKind === 'boundary');
+  const businessViewBlocks = mermaidBlocks.filter((block) => businessBlock(block));
+  const governanceViewBlocks = mermaidBlocks.filter((block) => governanceBlock(block));
   return {
-    all: mermaidBlocks,
+    all: mermaidBlocks.map((block) => ({ ...block, sectionGroup: blockScope(block) })),
     happy: uniqueBlocks(
-      mermaidBlocks.filter(
+      businessViewBlocks.filter(
         (block) =>
-          block.viewKind === 'happy' ||
-          blockIntersectsIds(block, happyIds) ||
-          (block.viewKind === 'source' &&
-            blockHasAnyPrefix(block, ['MUST-', 'EVD-']) &&
-            !blockHasAnyPrefix(block, ['NEG-', 'OUT-']))
+          (block.viewKind === 'happy' ||
+            blockIntersectsIds(block, happyIds) ||
+            (block.viewKind === 'source' &&
+              blockHasAnyPrefix(block, ['MUST-', 'EVD-']) &&
+              !blockHasAnyPrefix(block, ['NEG-', 'OUT-'])))
       )
     ),
     failure: uniqueBlocks(
-      mermaidBlocks.filter(
+      businessViewBlocks.filter(
         (block) =>
-          block.viewKind === 'failure' ||
-          blockIntersectsIds(block, failureIds) ||
-          blockHasAnyPrefix(block, ['NEG-', 'OUT-'])
+          (block.viewKind === 'failure' || blockIntersectsIds(block, failureIds) || blockHasAnyPrefix(block, ['NEG-', 'OUT-']))
       )
     ),
     stateFlow: uniqueBlocks(
-      mermaidBlocks.filter(
+      businessViewBlocks.filter(
         (block) =>
-          block.viewKind === 'stateFlow' ||
-          blockIntersectsIds(block, flowIds) ||
-          (block.viewKind === 'source' && /^\s*(stateDiagram|stateDiagram-v2|flowchart|graph)\b/iu.test(block.source))
+          (block.viewKind === 'stateFlow' ||
+            blockIntersectsIds(block, flowIds) ||
+            (block.viewKind === 'source' && /^\s*(stateDiagram|stateDiagram-v2|flowchart|graph)\b/iu.test(block.source)))
       )
     ),
     edge: uniqueBlocks(
-      mermaidBlocks.filter(
-        (block) => block.viewKind === 'edge' || blockIntersectsIds(block, edgeIds) || blockHasAnyPrefix(block, ['NEG-', 'OUT-'])
+      businessViewBlocks.filter(
+        (block) =>
+          (block.viewKind === 'edge' || blockIntersectsIds(block, edgeIds) || blockHasAnyPrefix(block, ['NEG-', 'OUT-']))
       )
     ),
+    business: uniqueBlocks(businessViewBlocks).map((block) => ({ ...block, sectionGroup: blockScope(block) })),
+    governance: uniqueBlocks(governanceViewBlocks).map((block) => ({ ...block, sectionGroup: blockScope(block) })),
   };
 }
 
@@ -3548,6 +3830,165 @@ function renderRequirementSections(input) {
       questionRows
     )}
   </section>`;
+}
+
+function inferRequirementBoundary(confirmation, views, mermaidBlocks) {
+  const explicit = confirmation.requirementBoundary ?? {};
+  const allIds = unique([
+    ...asArray(confirmation.must).map((item) => item.id),
+    ...asArray(confirmation.notDone).map((item) => item.id),
+    ...asArray(confirmation.mustNot).map((item) => item.id),
+    ...asArray(confirmation.evidence).map((item) => item.id),
+  ]);
+  const explicitBusiness = stringList(explicit.business?.requirementIds);
+  const explicitGovernance = stringList(explicit.governance?.requirementIds);
+  const governanceKeywords =
+    /governance|control|gate|closeout|confirmation|record|writer|event|hook|dashboard|sft|score|evidence|artifact|current[-_ ]?target|recovery|resume|trace|policy|registry|治理|控制|门禁|准出|确认|证据|工件|恢复|注册表/iu;
+  const governanceIds = new Set(explicitGovernance);
+  for (const item of [
+    ...asArray(confirmation.must),
+    ...asArray(confirmation.notDone),
+    ...asArray(confirmation.mustNot),
+    ...asArray(confirmation.evidence),
+  ]) {
+    const text = `${item.id} ${item.text ?? ''} ${item.gate ?? ''} ${item.oracle ?? ''} ${item.scopeBoundary ?? ''}`;
+    if (governanceKeywords.test(text)) governanceIds.add(item.id);
+  }
+  const businessIds = new Set(explicitBusiness.length ? explicitBusiness : allIds.filter((id) => !governanceIds.has(id)));
+  for (const id of explicitBusiness) governanceIds.delete(id);
+  const allViews = [
+    ...views.sequenceViews.map((view) => ({ ...view, type: 'sequenceViews' })),
+    ...views.flowViews.map((view) => ({ ...view, type: 'flowViews' })),
+    ...views.edgeCaseViews.map((view) => ({ ...view, type: 'edgeCaseViews' })),
+    ...views.boundaryViews.map((view) => ({ ...view, type: 'boundaryViews' })),
+  ];
+  const viewRows = allViews.map((view) => ({ ...view, inferredScope: inferViewScope(view, businessIds, governanceIds) }));
+  const businessViewRefs = unique([
+    ...stringList(explicit.business?.viewRefs),
+    ...viewRows.filter((view) => view.inferredScope === 'business' || view.inferredScope === 'mixed').map((view) => view.id),
+  ]);
+  const governanceViewRefs = unique([
+    ...stringList(explicit.governance?.viewRefs),
+    ...viewRows.filter((view) => view.inferredScope === 'governance' || view.inferredScope === 'mixed').map((view) => view.id),
+  ]);
+  const businessDiagramRefs = unique([
+    ...stringList(explicit.business?.diagramRefs),
+    ...mermaidBlocks.filter((block) => inferMermaidBlockScope(block, businessIds, governanceIds) !== 'governance').map((block) => block.id),
+  ]);
+  const governanceDiagramRefs = unique([
+    ...stringList(explicit.governance?.diagramRefs),
+    ...mermaidBlocks.filter((block) => inferMermaidBlockScope(block, businessIds, governanceIds) !== 'business').map((block) => block.id),
+  ]);
+  return {
+    business: {
+      description: explicit.business?.description ?? 'Consumer-facing product, data, safety, launch, and domain behavior.',
+      requirementIds: [...businessIds],
+      viewRefs: businessViewRefs,
+      diagramRefs: businessDiagramRefs,
+    },
+    governance: {
+      description: explicit.governance?.description ?? 'Confirmation, evidence, controlled ingest, automation, gate, and closeout mechanics.',
+      requirementIds: [...governanceIds],
+      viewRefs: governanceViewRefs,
+      diagramRefs: governanceDiagramRefs,
+    },
+    viewRows,
+  };
+}
+
+function renderRequirementBoundary(boundary, ui) {
+  const summaryRows = [
+    [
+      ui.consumerBusinessRequirements,
+      boundary.business.description,
+      renderCompactIdBadges(boundary.business.requirementIds, 18),
+      renderCompactIdBadges(boundary.business.viewRefs, 12),
+      renderCompactIdBadges(boundary.business.diagramRefs, 12),
+    ],
+    [
+      ui.governanceControlRequirements,
+      boundary.governance.description,
+      renderCompactIdBadges(boundary.governance.requirementIds, 18),
+      renderCompactIdBadges(boundary.governance.viewRefs, 12),
+      renderCompactIdBadges(boundary.governance.diagramRefs, 12),
+    ],
+  ];
+  const viewRows = boundary.viewRows.map((view) => [
+    view.id,
+    view.type,
+    view.title ?? '',
+    view.inferredScope,
+    renderCompactIdBadges(view.covers, 12),
+  ]);
+  return `<section class="card" id="requirement-boundary">
+    <h2>${escapeHtml(ui.requirementBoundary)}</h2>
+    <p class="section-lead">${escapeHtml(ui.requirementBoundaryLead)}</p>
+    ${renderTable(['scope', 'description', 'requirementIds', 'viewRefs', 'diagramRefs'], summaryRows)}
+    <h3>${escapeHtml(ui.viewBoundaryMap)}</h3>
+    ${renderTable(['viewId', 'viewType', 'title', 'scope', 'covers'], viewRows)}
+  </section>`;
+}
+
+function renderBusinessVisuals(diagramGroups, boundary, ui, mermaidRuntime, args) {
+  const businessViews = boundary.viewRows.filter((view) => view.inferredScope === 'business' || view.inferredScope === 'mixed');
+  return `<section class="card" id="business-visuals"><h2>${escapeHtml(ui.businessVisuals)}</h2><p class="section-lead">${escapeHtml(
+    ui.businessVisualsLead
+  )}</p><h3>${escapeHtml(ui.businessDiagramSet)}</h3>${renderMermaidBlocks(
+    diagramGroups.business,
+    ui,
+    mermaidRuntime,
+    args
+  )}<h3>${escapeHtml(ui.happyPath)}</h3>${renderMermaidBlocks(
+    diagramGroups.happy,
+    ui,
+    mermaidRuntime,
+    args
+  )}${renderTable(
+    ['viewId', 'title', 'scope', 'covers', 'diagramHash'],
+    businessViews.map((view) => [
+      view.id,
+      view.title ?? '',
+      view.inferredScope,
+      renderIdBadges(view.covers),
+      view.diagramHash ?? 'computed from Mermaid blocks below',
+    ])
+  )}<h3>${escapeHtml(ui.failurePath)}</h3>${renderMermaidBlocks(
+    diagramGroups.failure,
+    ui,
+    mermaidRuntime,
+    args
+  )}<h3>${escapeHtml(ui.stateFlow)}</h3>${renderMermaidBlocks(
+    diagramGroups.stateFlow,
+    ui,
+    mermaidRuntime,
+    args
+  )}${renderTable(
+    ['viewId', 'title', 'scope', 'covers', 'diagramHash'],
+    businessViews.filter((view) => view.type === 'flowViews').map((view) => [view.id, view.title ?? '', view.inferredScope, renderIdBadges(view.covers), view.diagramHash ?? 'computed from Mermaid blocks below'])
+  )}<h3>${escapeHtml(ui.edgeCase)}</h3>${renderMermaidBlocks(
+    diagramGroups.edge,
+    ui,
+    mermaidRuntime,
+    args
+  )}${renderTable(
+    ['viewId', 'title', 'scope', 'covers', 'cases'],
+    businessViews.filter((view) => view.type === 'edgeCaseViews').map((view) => [view.id, view.title ?? '', view.inferredScope, renderIdBadges(view.covers), stringList(view.cases).join(', ')])
+  )}</section>`;
+}
+
+function renderGovernanceVisuals(diagramGroups, boundary, ui, mermaidRuntime, args) {
+  const governanceViews = boundary.viewRows.filter((view) => view.inferredScope === 'governance' || view.inferredScope === 'mixed');
+  return `<section class="card" id="governance-visuals"><h2>${escapeHtml(ui.governanceVisuals)}</h2><p class="section-lead">${escapeHtml(
+    ui.governanceVisualsLead
+  )}</p><h3>${escapeHtml(ui.governanceDiagramSet)}</h3>${renderMermaidBlocks(
+    diagramGroups.governance,
+    ui,
+    mermaidRuntime,
+    args
+  )}<h3>${escapeHtml(ui.governanceBoundaryViews)}</h3>${renderTable(
+    ['viewId', 'title', 'scope', 'covers'],
+    governanceViews.map((view) => [view.id, view.title ?? '', view.inferredScope, renderIdBadges(view.covers)])
+  )}</section>`;
 }
 
 function collectIdsFromSourceRefs(entry, sourceType) {
@@ -3767,6 +4208,12 @@ function buildTraceExecutionState(input) {
     recordLoadError: requirementRecordState?.loadError ?? null,
     currentAttemptId,
     currentHashes,
+    statusProjectionPolicy: {
+      sourceTraceRowsStatusRole: 'confirmed_contract_projection',
+      runtimeClosureStatusRole: 'controlled_execution_projection',
+      sourcePendingDoesNotOverrideRuntimeClosure: true,
+      runtimeClosureDoesNotRewriteConfirmedSourceTraceRows: true,
+    },
     rows: rowStates,
     counts: {
       currentPass: Object.values(rowStates).filter((row) => row.status === 'current_pass').length,
@@ -4107,12 +4554,15 @@ function renderTraceMatrix(traceRows, traceExecutionState = null) {
   return `<section class="card" id="trace-matrix">
     <h2>Trace Matrix</h2>
     <p class="section-lead">契约状态来自源文档 traceRows[]；受控执行状态只读来自 requirement-record.json。历史 PASS 只有同时匹配当前 sourceDocumentHash、implementationConfirmationHash、architectureConfirmationHash 和 currentAttemptId 时，才显示为 current_pass。</p>
+    <p class="section-lead">Projection policy: source traceRows[].status is the confirmed contract projection; runtime closure is the controlled execution projection. Source PENDING does not override a current runtime closure, and runtime closure does not rewrite confirmed source traceRows.</p>
     ${traceExecutionState ? renderTable(
       ['字段', '值'],
       [
         ['requirementRecordPath', traceExecutionState.recordPath],
         ['recordFound', String(traceExecutionState.recordFound)],
         ['currentAttemptId', traceExecutionState.currentAttemptId || ''],
+        ['sourceTraceRowsStatusRole', traceExecutionState.statusProjectionPolicy?.sourceTraceRowsStatusRole || ''],
+        ['runtimeClosureStatusRole', traceExecutionState.statusProjectionPolicy?.runtimeClosureStatusRole || ''],
         ['currentPass', String(traceExecutionState.counts.currentPass)],
         ['currentEvidenceRecorded', String(traceExecutionState.counts.currentEvidenceRecorded)],
         ['stale', String(traceExecutionState.counts.stale)],
@@ -4602,8 +5052,8 @@ function renderCoreDesignSummary(input) {
     </div>
     <div class="metric-grid">
       ${metrics.map(([value, label]) => `<div class="metric"><strong>${escapeHtml(value)}</strong><span>${escapeHtml(label)}</span></div>`).join('')}
-      <div class="metric"><strong>${escapeHtml(confirmability)}</strong><span>${escapeHtml(ui.confirmability)}</span></div>
-      <div class="metric ${deliveryReadiness.ready ? 'green' : 'danger'}"><strong>${escapeHtml(deliveryReadiness.label)}</strong><span>${escapeHtml(ui.deliveryReadiness)}</span></div>
+      <div class="metric status-metric"><strong class="status-${confirmability}">${escapeHtml(confirmability)}</strong><span>${escapeHtml(ui.confirmability)}</span></div>
+      <div class="metric status-metric ${deliveryReadiness.ready ? 'green' : 'danger'}"><strong class="status-${deliveryReadiness.ready ? 'confirmable' : 'blocked'}">${escapeHtml(deliveryReadiness.label)}</strong><span>${escapeHtml(ui.deliveryReadiness)}</span></div>
       <div class="metric"><strong>${traceRows.length}</strong><span>traceRows</span></div>
       <div class="metric"><strong>${artifactPlan.length}</strong><span>工件计划项</span></div>
       <div class="metric"><strong>${controlArtifacts}</strong><span>影响控制流的工件</span></div>
@@ -4624,7 +5074,7 @@ function renderDeliveryReadiness(deliveryReadiness, ui) {
     <h2>${escapeHtml(ui.deliveryReadiness)}</h2>
     <p class="section-lead">${escapeHtml(ui.deliveryReadinessLead)}</p>
     <div class="metric-grid">
-      <div class="metric ${deliveryReadiness.ready ? 'green' : 'danger'}"><strong>${escapeHtml(deliveryReadiness.label)}</strong><span>${escapeHtml(ui.deliveryReadiness)}</span></div>
+      <div class="metric status-metric ${deliveryReadiness.ready ? 'green' : 'danger'}"><strong class="status-${deliveryReadiness.ready ? 'confirmable' : 'blocked'}">${escapeHtml(deliveryReadiness.label)}</strong><span>${escapeHtml(ui.deliveryReadiness)}</span></div>
       <div class="metric"><strong>${escapeHtml(deliveryReadiness.currentPassTraceRows)}</strong><span>current_pass traceRows</span></div>
       <div class="metric"><strong>${escapeHtml(deliveryReadiness.totalTraceRows)}</strong><span>traceRows total</span></div>
       <div class="metric danger"><strong>${escapeHtml(deliveryReadiness.missingEvidenceCount)}</strong><span>${escapeHtml(ui.missingCurrentEvidence)}</span></div>
@@ -4888,7 +5338,7 @@ function renderCss(theme) {
 *{box-sizing:border-box}body{margin:0;color:var(--ink);background:linear-gradient(90deg,#ebe1cf 0,#f7f3eb 42%,#fffdf8 100%);font-family:var(--sans);line-height:1.62}a{color:var(--blue)}
 .layout{display:grid;grid-template-columns:280px minmax(0,1fr);min-height:100vh;transition:grid-template-columns .18s ease;max-width:100%}.nav{position:sticky;top:0;height:100vh;overflow:auto;padding:24px 22px;background:#1f211c;color:#fff;border-right:1px solid rgba(255,255,255,.08)}.nav a{display:block;color:#fff;text-decoration:none;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.1)}.nav button{width:100%;margin:4px 0;padding:8px;border:1px solid rgba(255,255,255,.22);background:#f8f1df;color:#24211b;border-radius:4px;cursor:pointer}.nav-toggle{font-weight:800}.nav-filters button[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold);color:#2b2110}.filter-status{margin:8px 0 0;color:#f2e3c2;font-family:var(--mono);font-size:11px}body[data-nav-collapsed="true"] .layout{grid-template-columns:58px minmax(0,1fr)}body[data-nav-collapsed="true"] .nav{padding:12px 8px;overflow:hidden}body[data-nav-collapsed="true"] .nav h2,body[data-nav-collapsed="true"] .nav-links,body[data-nav-collapsed="true"] .nav-filters,body[data-nav-collapsed="true"] .nav hr{display:none}body[data-nav-collapsed="true"] .nav-toggle{writing-mode:vertical-rl;min-height:96px;padding:10px 4px;border-color:rgba(255,255,255,.25)}
 main{padding:${compact ? '22px' : '44px'} min(6vw,88px) 86px;min-width:0;max-width:100%;background:linear-gradient(180deg,rgba(255,253,248,.96),rgba(255,253,248,.9));counter-reset:doc-section}h1{font-size:clamp(34px,4.8vw,58px);line-height:1.02;margin:0 0 26px;font-family:Georgia,"Noto Serif SC",serif;font-weight:650;letter-spacing:-.035em}h2{font-size:clamp(24px,2.5vw,34px);line-height:1.15;margin:0 0 16px;font-family:Georgia,"Noto Serif SC",serif;font-weight:620;letter-spacing:-.018em}h3{margin:26px 0 10px}
-.card{background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;padding:${compact ? '24px 0 28px' : '36px 0 42px'};box-shadow:none;margin:0;min-width:0;max-width:100%}.card:first-of-type{border-top:0;padding-top:0}.card>h2{display:flex;align-items:baseline;gap:10px;padding-bottom:11px;border-bottom:1px solid var(--line)}.card>h2::before{counter-increment:doc-section;content:counter(doc-section,decimal-leading-zero);font:700 12px/1 var(--mono);letter-spacing:.12em;color:var(--gold);min-width:28px}.section-lead{color:var(--muted);max-width:980px}.hero{background:linear-gradient(90deg,rgba(243,227,191,.28),rgba(220,234,244,.18));border-top:1px solid var(--rule);border-bottom:1px solid var(--line);padding-left:0;padding-right:0}.hero-copy{max-width:980px}.eyebrow{display:inline-block;text-transform:uppercase;letter-spacing:.16em;font-size:12px;color:var(--gold);font-weight:800}.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0;margin:22px 0;min-width:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.metric{background:transparent;border:0;border-right:1px solid var(--line);border-radius:0;padding:12px 14px;min-width:0}.metric:last-child{border-right:0}.metric strong{display:block;font-size:28px;line-height:1;color:var(--blue)}.metric span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.metric.danger strong{color:var(--red)}.metric.warn strong{color:var(--gold)}.principle-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;min-width:0}.principle{background:rgba(255,255,255,.42);border:0;border-left:3px solid var(--line);border-radius:0;padding:10px 12px;min-width:0}.principle p{margin:6px 0 0;color:var(--muted)}.fingerprint{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;min-width:0}.kv{border:0;border-left:3px solid var(--line);border-radius:0;padding:9px 12px;background:rgba(255,255,255,.42);min-width:0}.kv span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}.hash{font-family:var(--mono);word-break:break-all}
+.card{background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;padding:${compact ? '24px 0 28px' : '36px 0 42px'};box-shadow:none;margin:0;min-width:0;max-width:100%}.card:first-of-type{border-top:0;padding-top:0}.card>h2{display:flex;align-items:baseline;gap:10px;padding-bottom:11px;border-bottom:1px solid var(--line)}.card>h2::before{counter-increment:doc-section;content:counter(doc-section,decimal-leading-zero);font:700 12px/1 var(--mono);letter-spacing:.12em;color:var(--gold);min-width:28px}.section-lead{color:var(--muted);max-width:980px}.hero{background:linear-gradient(90deg,rgba(243,227,191,.28),rgba(220,234,244,.18));border-top:1px solid var(--rule);border-bottom:1px solid var(--line);padding-left:0;padding-right:0}.hero-copy{max-width:980px}.eyebrow{display:inline-block;text-transform:uppercase;letter-spacing:.16em;font-size:12px;color:var(--gold);font-weight:800}.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0;margin:22px 0;min-width:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.metric{background:transparent;border:0;border-right:1px solid var(--line);border-radius:0;padding:12px 14px;min-width:0}.metric:last-child{border-right:0}.metric strong{display:block;font-size:28px;line-height:1;color:var(--blue)}.metric.status-metric strong{display:inline-block;max-width:100%;box-sizing:border-box;font-size:13px;line-height:1.2;overflow-wrap:anywhere;word-break:break-word;white-space:normal}.metric.status-metric strong.status-confirmable{color:var(--green)}.metric.status-metric strong.status-blocked{color:var(--red)}.metric.status-metric span{display:block;margin-top:8px}.metric span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.metric.danger strong{color:var(--red)}.metric.warn strong{color:var(--gold)}.principle-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;min-width:0}.principle{background:rgba(255,255,255,.42);border:0;border-left:3px solid var(--line);border-radius:0;padding:10px 12px;min-width:0}.principle p{margin:6px 0 0;color:var(--muted)}.fingerprint{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;min-width:0}.kv{border:0;border-left:3px solid var(--line);border-radius:0;padding:9px 12px;background:rgba(255,255,255,.42);min-width:0}.kv span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}.hash{font-family:var(--mono);word-break:break-all}
 .status-confirmable{background:var(--green-soft);color:var(--green);padding:5px 9px;border-radius:3px;font-weight:700}.status-blocked{background:var(--red-soft);color:var(--red);padding:5px 9px;border-radius:3px;font-weight:700}
 .confirm-box{background:#191815;color:#fff;border-radius:0;border-left:4px solid var(--gold);padding:18px 20px}.confirm-box pre{white-space:pre-wrap;font-family:var(--mono)}button.copy{padding:8px 12px;border-radius:3px;border:1px solid var(--gold);background:#f8efd7;color:#2b2110;cursor:pointer}
 .table-wrap{overflow-x:auto;overflow-y:auto;border:1px solid var(--line);border-radius:0;min-width:0;max-width:100%;scrollbar-gutter:stable;background:#fff}.table-wrap table{width:max-content;min-width:100%;border-collapse:collapse;background:#fff;table-layout:auto}.table-wrap th,.table-wrap td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left;min-width:140px;max-width:560px;overflow-wrap:break-word}.table-wrap th{position:sticky;top:0;background:#efe7d8;cursor:pointer;text-align:left;font-size:12px;letter-spacing:.02em}.table-wrap tr:nth-child(even) td{background:#fbf8f1}.table-wrap code,.table-wrap .id-badge{white-space:nowrap}.compact-map-table{min-width:1100px}.id-badge{display:inline-block;font-family:var(--mono);font-size:11px;margin:2px;padding:2px 6px;border-radius:3px;background:var(--blue-soft);color:var(--blue)}
@@ -4932,6 +5382,7 @@ function buildHtml(input) {
     resumeFailureRegistry,
     controlledIngestWriters,
     mermaidRuntime,
+    requirementBoundary,
   } = input;
   const ui = getUiText(args.language);
   const diagramGroups = selectDiagramBlocks(mermaidBlocks, views);
@@ -4974,51 +5425,9 @@ function buildHtml(input) {
       confirmInstruction
     )}</pre><button class="copy" data-copy-target="confirm-text">${escapeHtml(ui.copy)}</button></div></section>`],
     ['requirements', renderRequirementSections({ confirmation, traceRows, views, artifactPlan, progressDelta })],
-    ['business-visuals', `<section class="card" id="business-visuals"><h2>${escapeHtml(ui.businessVisuals)}</h2><p class="section-lead">${escapeHtml(
-      ui.renderNote
-    )}</p><h3>${escapeHtml(ui.mermaidVisual)}</h3>${renderMermaidBlocks(
-      diagramGroups.all,
-      ui,
-      mermaidRuntime,
-      args
-    )}<h3>${escapeHtml(ui.happyPath)}</h3>${renderMermaidBlocks(
-      diagramGroups.happy,
-      ui,
-      mermaidRuntime,
-      args
-    )}${renderTable(
-      ['viewId', 'title', 'covers', 'diagramHash'],
-      views.sequenceViews.map((view) => [view.id, view.title ?? '', renderIdBadges(view.covers), view.diagramHash ?? 'computed from Mermaid blocks below'])
-    )}<h3>${escapeHtml(ui.failurePath)}</h3>${renderMermaidBlocks(
-      diagramGroups.failure,
-      ui,
-      mermaidRuntime,
-      args
-    )}${renderTable(
-      ['viewId', 'title', 'covers', 'diagramHash'],
-      views.sequenceViews.filter((view) => stringList(view.covers).some((id) => id.startsWith('NEG-') || id.startsWith('OUT-'))).map((view) => [
-        view.id,
-        view.title ?? '',
-        renderIdBadges(view.covers),
-        view.diagramHash ?? 'computed from Mermaid blocks below',
-      ])
-    )}<h3>${escapeHtml(ui.stateFlow)}</h3>${renderMermaidBlocks(
-      diagramGroups.stateFlow,
-      ui,
-      mermaidRuntime,
-      args
-    )}${renderTable(
-      ['viewId', 'title', 'covers', 'diagramHash'],
-      views.flowViews.map((view) => [view.id, view.title ?? '', renderIdBadges(view.covers), view.diagramHash ?? 'computed from Mermaid blocks below'])
-    )}<h3>${escapeHtml(ui.edgeCase)}</h3>${renderMermaidBlocks(
-      diagramGroups.edge,
-      ui,
-      mermaidRuntime,
-      args
-    )}${renderTable(
-      ['viewId', 'title', 'covers', 'cases'],
-      views.edgeCaseViews.map((view) => [view.id, view.title ?? '', renderIdBadges(view.covers), stringList(view.cases).join(', ')])
-    )}</section>`],
+    ['requirement-boundary', renderRequirementBoundary(requirementBoundary, ui)],
+    ['business-visuals', renderBusinessVisuals(diagramGroups, requirementBoundary, ui, mermaidRuntime, args)],
+    ['governance-visuals', renderGovernanceVisuals(diagramGroups, requirementBoundary, ui, mermaidRuntime, args)],
     ['resume-failure-cases', renderResumeFailureCoverage(resumeFailureRegistry, mermaidRuntime, args, ui)],
     ['trace-matrix', renderTraceMatrix(traceRows, traceExecutionState)],
     viewPackEnabled(confirmationProfile, 'currentTargetMap')
@@ -5045,7 +5454,9 @@ function buildHtml(input) {
     'decision-summary': ui.decisionSummary,
     'confirm-instruction': ui.confirmInstruction,
     requirements: ui.requirements,
+    'requirement-boundary': ui.requirementBoundary,
     'business-visuals': ui.businessVisuals,
+    'governance-visuals': ui.governanceVisuals,
     'resume-failure-cases': '恢复失败路径矩阵',
     'trace-matrix': ui.traceMatrix,
     'current-target': ui.currentTarget,
@@ -5143,6 +5554,7 @@ function buildReport(input) {
     traceCoverage: input.coverage.traceCoverage,
     traceExecutionState: input.traceExecutionState ?? null,
     progressDelta: input.progressDelta ?? null,
+    requirementBoundary: input.requirementBoundary ?? null,
     artifactAutomationCoverage: input.coverage.artifactAutomationCoverage,
     currentTargetCoverage: currentTargetEnabled ? input.currentTargetCoverage : emptyCurrentTargetCoverage(),
     currentTargetSchemaVersion: currentTargetEnabled ? input.currentTargetSchemaVersion : '',
@@ -5224,10 +5636,13 @@ function buildSummary(report, confirmation, views, artifactPlan) {
     confirmationPageHash: report.confirmationPageHash,
     language: report.language,
     generatedAt: report.generatedAt,
+    confirmability: report.confirmability,
+    scopeConfirmability: report.scopeConfirmability,
     blockingIssues: report.blockingIssues,
     deliveryReadiness: report.deliveryReadiness,
     warnings: report.warnings,
     mermaidRuntime: report.mermaidRuntime,
+    requirementBoundary: report.requirementBoundary,
     progressDelta: report.progressDelta ?? null,
     counts: {
       must: asArray(confirmation.must).length,
@@ -5302,6 +5717,7 @@ function main(argv) {
     ...buildDerivedMermaidBlocks(confirmation, views),
     ...extractMermaidBlocks(sourceText),
   ]);
+  const requirementBoundary = inferRequirementBoundary(confirmation, views, mermaidBlocks);
   const traceRows = asArray(confirmation.traceRows);
   const requirementRecordState = readRequirementRecord(args, recordId);
   const traceExecutionState = buildTraceExecutionState({
@@ -5398,10 +5814,12 @@ function main(argv) {
     confirmationProfile,
     traceExecutionState,
     progressDelta,
+    deliveryReadiness,
     reconfirmationState,
     resumeFailureRegistry,
     controlledIngestWriters,
     mermaidRuntime,
+    requirementBoundary,
   });
   const confirmationPageHash = confirmationPageHashFor(htmlWithSelfHashPlaceholder, generatedAt);
   const finalConfirmInstruction = confirmInstruction.replaceAll(
@@ -5458,6 +5876,7 @@ function main(argv) {
     reconfirmationState,
     resumeFailureRegistry,
     mermaidRuntime,
+    requirementBoundary,
   };
   const report = buildReport(common);
   const summary = buildSummary(report, confirmation, views, artifactPlan);

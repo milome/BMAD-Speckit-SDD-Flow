@@ -34,6 +34,8 @@ If older project material says "requirements contract", treat it as a legacy ali
 - Keep renderer output read-only for confirmation: it may show scope and hashes, but it must not mutate requirements or mark confirmation.
 - Separate scope confirmation from delivery readiness. `confirmable` / `blockingIssues: []` means only that the requirements scope can be confirmed; it must never be presented or interpreted as implementation complete, launch ready, merge ready, or closeout ready.
 - The confirmation page and render report must expose a distinct `deliveryReadiness` state. If there is no controlled requirement record, any missing current evidence, any stale evidence, any trace row that is not `current_pass`, or any required command/evidence is unavailable, delivery readiness must be `delivery_ready=false` with blocking reasons visible near the top of the HTML.
+- Separate consumer/business requirements from governance/control requirements in the source document and in the confirmation HTML. A consuming project user must be able to see which IDs describe product behavior, user-facing flows, data/domain behavior, launch behavior, safety/abuse behavior, and which IDs describe confirmation governance, controlled ingest, evidence, gates, scripts, hooks, recovery, dashboards, or closeout mechanics.
+- Do not let governance diagrams substitute for consumer/business diagrams. If the source document only renders inherited governance workflow, current/target governance maps, closeout gates, or confirmation machinery, it is not enough for a consumer project.
 - Author the schema in this order: core fields first, `applicability.*` declarations second, then expand only the conditional domains marked `applies: true`.
 - Treat `failurePaths[]` and `edgeCases[]` as core mandatory fields for every source document; they are not optional advanced runtime sections.
 - Keep ordinary business/functional failure paths separate from the conditional `functionalResumeFailureCaseRegistry`.
@@ -151,6 +153,17 @@ implementationConfirmation:
       sequenceViewRefs: []
       artifactRefs: []
       status: PENDING
+  requirementBoundary:
+    business:
+      description: "..."
+      requirementIds: []
+      viewRefs: []
+      diagramRefs: []
+    governance:
+      description: "..."
+      requirementIds: []
+      viewRefs: []
+      diagramRefs: []
   sequenceViews: []
   flowViews: []
   edgeCaseViews: []
@@ -236,6 +249,9 @@ Human-readable views are mandatory confirmation surfaces. They must include:
 - Edge case view.
 - Evidence overview.
 - E2E acceptance overview.
+- Requirement boundary overview that separates consumer/business scope from governance/control scope.
+- Business requirement views for the consuming project's actual product behavior, not just inherited governance workflow.
+- Governance requirement views for confirmation, controlled ingest, evidence, gates, scripts, hooks, recovery, dashboard, scoring, SFT, and closeout behavior.
 - Artifact and automation plan view.
 - Current-vs-target comparison when the source concerns workflow, governance, scripts, hooks, reports, dashboard, scoring, or SFT behavior.
 
@@ -256,6 +272,24 @@ sequenceDiagram
 If a diagram or prose introduces behavior without a confirmation ID, either add it to `implementationConfirmation` as `draft` and ask for confirmation, or mark it as a blocking question. Do not silently implement it.
 
 Diagrams are views only. They must not introduce requirement semantics that are absent from `implementationConfirmation`. Every diagram node, edge, branch, business transition, artifact write, script call, hook observation, and failure path must map to `MUST`, `NEG`, `OUT`, or `EVD` IDs.
+
+Business/governance separation rules:
+
+- `requirementBoundary.business.requirementIds[]` must list the IDs a consuming project user should read to understand product behavior and acceptance boundaries.
+- `requirementBoundary.governance.requirementIds[]` must list IDs that exist to control the implementation process, confirmation, gates, evidence, automation, or runtime governance.
+- `sequenceViews[]`, `flowViews[]`, `edgeCaseViews[]`, and `boundaryViews[]` should set `scope: business | governance | mixed` when the boundary is not obvious.
+- A view with product behavior, user-visible behavior, corpus/domain behavior, ingest/chat domain flow, security/abuse behavior, or launch behavior belongs in the business group even if CI or Worker participants appear in the diagram.
+- A view about confirmation state, requirement record control, controlled ingest writers, governance event payloads, current/target governance migration, closeout evidence, score/dashboard/SFT read models, or hook/recovery mechanics belongs in the governance group.
+- `scope: mixed` is allowed only when the view deliberately shows the interface between business behavior and governance controls; the title or description must state that boundary.
+- The confirmation HTML must render a dedicated boundary section plus separate business and governance diagram sections. A single combined "business visuals" bucket is not sufficient.
+- Business diagrams must be present and independently visible; governance diagrams cannot substitute for product-behavior coverage.
+- Business-scoped failure paths and edge cases stay in the business bucket even if they mention `gate`, `failure`, `budget`, `rate limit`, `origin`, or `recovery`; do not promote a consumer behavior diagram into governance just because it uses `NEG` / `OUT` IDs.
+- If business IDs exist, the business visual section must contain at least one product-behavior Mermaid view, and business failure / edge diagrams must remain visible there even when the source also contains governance diagrams.
+- Explicit `scope` or view metadata wins over title keywords. Keyword heuristics are fallback-only and must never collapse business visuals into governance visuals.
+- If a source document only renders inherited governance workflow, current/target governance maps, closeout gates, or confirmation machinery, it does not satisfy consumer-project confirmation.
+- If business IDs exist but no business-scoped diagram or view exists, the confirmation page must show a blocking issue before confirmation.
+- If governance IDs exist but no governance boundary view exists, the confirmation page must show a blocking issue before implementation readiness.
+- If the source document contains both business and governance views, the renderer must preserve both buckets instead of collapsing them into inferred-governance-only output.
 
 The Artifact and Automation Plan View must make planned outputs visible before implementation. Include each planned artifact, script, hook, report, dashboard, score, SFT output, producer, consumer, path, `ownerModel`, `sourceOfTruthRole`, `inputArtifacts`, `outputArtifacts`, `recordEventTypes`, whether it may affect control flow, retention/cleanup rule, and orphan risk. Old script outputs may be evidence/context/projection/compatibility/schema/derived artifacts only; they must not directly control main-agent state.
 
@@ -336,6 +370,8 @@ The HTML must answer:
 
 - What am I confirming?
 - What is explicitly not done or cannot count as done?
+- Which requirements are consumer/business requirements, and which are governance/control requirements?
+- Which diagrams describe the consuming project's business behavior, and which diagrams describe governance machinery?
 - Is business logic complete, including failure paths?
 - How will each requirement be verified?
 - What files, scripts, hooks, reports, dashboards, score outputs, and SFT outputs will AI generate or touch?

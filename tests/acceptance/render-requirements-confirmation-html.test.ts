@@ -872,6 +872,8 @@ describe('render-requirements-confirmation-html', () => {
     const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
     expect(html).toContain('Controlled Execution Status');
     expect(html).toContain('Current Validity');
+    expect(html).toContain('confirmed contract projection');
+    expect(html).toContain('controlled execution projection');
     expect(html).toContain('current_pass');
     expect(html).toContain('attempt-current-001');
     expect(report.traceExecutionState.rows['TRACE-001']).toMatchObject({
@@ -879,6 +881,33 @@ describe('render-requirements-confirmation-html', () => {
       validity: 'current',
       currentAttemptId: 'attempt-current-001',
     });
+  });
+
+  it('preserves id-badge mini as trusted HTML inside requirement boundary tables', () => {
+    const source = writeSource();
+    const out = path.join(tempDir, 'confirmation-id-badge-mini.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--mode',
+      'confirmation',
+      '--json',
+    ]);
+
+    expect(result.status).toBe(0);
+    const html = fs.readFileSync(out, 'utf8');
+    expect(html).toContain('<span class="id-badge mini">OUT-001</span>');
+    expect(html).toContain('<span class="id-badge mini">BOUNDARY-001</span>');
+    expect(html).not.toContain('&lt;span class="id-badge mini"&gt;OUT-001&lt;/span&gt;');
+    expect(html).not.toContain('&lt;span class="id-badge mini"&gt;BOUNDARY-001&lt;/span&gt;');
   });
 
   it('renders historical PASS as stale when hashes or current attempt do not match', () => {
@@ -1119,7 +1148,8 @@ describe('render-requirements-confirmation-html', () => {
     expect(html).toContain('Must Do');
     expect(html).toContain('Not Done / Cannot Count As Complete');
     expect(html).toContain('Must Not Do / Out Of Scope');
-    expect(html).toContain('业务逻辑可视化区');
+    expect(html).toContain('业务需求可视化区');
+    expect(html).toContain('治理 / 控制可视化区');
     expect(html).toContain('恢复失败路径矩阵');
     expect(html).toContain('可展开恢复失败路径分组图');
     expect(html).toContain('sourceDocumentHash_changed');
@@ -1809,7 +1839,8 @@ functionalResumeFailureCaseRegistry:
     expect(html).toContain('No Controlled Record');
     expect(html).not.toContain('历史进度与本次差异');
     expect(html).not.toContain('本次确认变化');
-    expect(html).toContain('Rendered Diagram');
+    expect(html).toContain('Business Mermaid Diagram');
+    expect(html).toContain('Governance Mermaid Diagram');
     expect(html).toContain('Mermaid source and diagramHash');
     expect(html).toContain('Confirm the above scope and enter the next stage');
     expect(report.confirmInstruction).toContain('Confirm the above scope and enter the next stage');
@@ -1848,6 +1879,46 @@ functionalResumeFailureCaseRegistry:
     expect(html).toContain('sequenceDiagram');
     expect(html).toContain('stateDiagram-v2');
     expect(html).toContain('flowchart TD');
+  });
+
+  it('normalizes native Mermaid render source without changing displayed source hashes', () => {
+    const source = writeSource('MERMAID_SAFE_RENDER_SOURCE');
+    fs.appendFileSync(
+      source,
+      `
+
+\`\`\`mermaid
+flowchart TD
+  A[Start ingest [MUST-001][EVD-001]] --> B{Launch gate [NEG-001]}
+  B --> C(Write manifest/stats/evidence [TRACE-001])
+\`\`\`
+`,
+      'utf8'
+    );
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'safe-render-source.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    expect(result.status).toBe(0);
+    const html = fs.readFileSync(out, 'utf8');
+    expect(html).toContain('data-mermaid-normalized="true"');
+    expect(html).toContain('A[&quot;Start ingest MUST-001 EVD-001&quot;]');
+    expect(html).toContain('B{&quot;Launch gate NEG-001&quot;}');
+    expect(html).toContain('C(&quot;Write manifest/stats/evidence TRACE-001&quot;)');
+    expect(html).toContain('A[Start ingest [MUST-001][EVD-001]]');
   });
 
   it('fails strict mode when required views and bindings are missing, but still writes blocked artifacts', () => {

@@ -121,6 +121,11 @@ function readJson(file: string): JsonObject {
   return parsed as JsonObject;
 }
 
+function readJsonIfExists(file: string): JsonObject | null {
+  if (!fs.existsSync(file)) return null;
+  return readJson(file);
+}
+
 function sha256File(file: string): string {
   return `sha256:${crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')}`;
 }
@@ -279,6 +284,14 @@ function isSupersededCloseoutFailure(failure: JsonObject, currentAttemptId: stri
     text(failure.type) === 'delivery_closeout_blocked' &&
     text(failure.closeoutAttemptId) !== '' &&
     text(failure.closeoutAttemptId) !== currentAttemptId
+  );
+}
+
+function isCurrentAttemptCloseoutFailure(failure: JsonObject, currentAttemptId: string): boolean {
+  return (
+    text(failure.type) === 'delivery_closeout_blocked' &&
+    text(failure.closeoutAttemptId) === currentAttemptId &&
+    text(failure.failureId) === `failure:${currentAttemptId}`
   );
 }
 
@@ -443,6 +456,71 @@ function failureCaseCoverageIssues(record: JsonObject): string[] {
 
 function runtimeRootFromRecordPath(recordPath: string): string {
   return path.dirname(path.dirname(path.dirname(recordPath)));
+}
+
+function deliveryTruthGateReportCandidates(recordPath: string): string[] {
+  const recordDir = path.dirname(recordPath);
+  return [
+    path.join(recordDir, 'closeout', 'gates', 'delivery-truth-gate-report.json'),
+    path.join(recordDir, 'gates', 'delivery-truth-gate-report.json'),
+    path.join(runtimeRootFromRecordPath(recordPath), 'gates', 'main-agent-delivery-truth-gate-report.json'),
+  ];
+}
+
+function deliveryTruthGateIssues(recordPath: string): {
+  reportPath: string | null;
+  issues: string[];
+  summary: JsonObject;
+} {
+  const candidates = deliveryTruthGateReportCandidates(recordPath);
+  const reportPath = candidates.find((candidate) => fs.existsSync(candidate)) ?? null;
+  if (!reportPath) {
+    return {
+      reportPath: null,
+      issues: ['delivery_truth_gate_report_missing'],
+      summary: { completionAllowed: null, deliveryStatus: '', failedEvidenceCount: 0, missingEvidenceCount: 0 },
+    };
+  }
+
+  const report = readJsonIfExists(reportPath);
+  if (!report) {
+    return {
+      reportPath,
+      issues: ['delivery_truth_gate_report_unreadable'],
+      summary: { completionAllowed: null, deliveryStatus: '', failedEvidenceCount: 0, missingEvidenceCount: 0 },
+    };
+  }
+
+  const failedEvidence = strings(report.failedEvidence);
+  const missingEvidence = strings(report.missingEvidence);
+  const issues: string[] = [];
+  if (text(report.reportType) !== 'main_agent_delivery_truth_gate') {
+    issues.push('delivery_truth_gate_report_type_invalid');
+  }
+  if (report.completionAllowed !== true) {
+    issues.push('delivery_truth_gate_completion_not_allowed');
+  }
+  if (text(report.deliveryStatus) !== 'complete') {
+    issues.push(`delivery_truth_gate_status_not_complete:${text(report.deliveryStatus) || '<missing>'}`);
+  }
+  if (failedEvidence.length > 0) {
+    issues.push(`delivery_truth_gate_failed_evidence:${failedEvidence.join('|')}`);
+  }
+  if (missingEvidence.length > 0) {
+    issues.push(`delivery_truth_gate_missing_evidence:${missingEvidence.join('|')}`);
+  }
+
+  return {
+    reportPath,
+    issues,
+    summary: {
+      completionAllowed: report.completionAllowed === true,
+      deliveryStatus: text(report.deliveryStatus),
+      failedEvidenceCount: failedEvidence.length,
+      missingEvidenceCount: missingEvidence.length,
+      generatedAt: text(report.generatedAt),
+    },
+  };
 }
 
 function defaultDatasetId(record: JsonObject): string {
@@ -1093,6 +1171,18 @@ function evaluate(record: JsonObject, recordPath: string, attemptId: string): { 
   });
   blockingReasons.push(...hookIssues);
 
+  const truthGate = deliveryTruthGateIssues(recordPath);
+  checks.push({
+    id: 'delivery-truth-gate-current',
+    passed: truthGate.issues.length === 0,
+    reportPath: truthGate.reportPath ? normalizePathForRecord(truthGate.reportPath) : null,
+    ...truthGate.summary,
+    issueCount: truthGate.issues.length,
+  });
+  if (truthGate.issues.length > 0) {
+    blockingReasons.push('delivery_truth_gate_not_passed', ...truthGate.issues);
+  }
+
   const failureCaseIssues = failureCaseCoverageIssues(record);
   checks.push({
     id: 'failure-case-coverage-complete',
@@ -1188,8 +1278,12 @@ function evaluate(record: JsonObject, recordPath: string, attemptId: string): { 
   });
   blockingReasons.push(...rerunSourceIssues);
 
+  const canRetireCurrentAttemptCloseoutFailure = blockingReasons.length === 0;
   const openFailureRecords = latestFailureRecords(record).filter(
-    (record) => isOpenLifecycleStatus(record.status) && !isSupersededCloseoutFailure(record, attemptId)
+    (record) =>
+      isOpenLifecycleStatus(record.status) &&
+      !isSupersededCloseoutFailure(record, attemptId) &&
+      !(canRetireCurrentAttemptCloseoutFailure && isCurrentAttemptCloseoutFailure(record, attemptId))
   );
   checks.push({ id: 'failure-records-closed', passed: openFailureRecords.length === 0, openCount: openFailureRecords.length });
   if (openFailureRecords.length > 0) blockingReasons.push('open_failure_record_exists');
