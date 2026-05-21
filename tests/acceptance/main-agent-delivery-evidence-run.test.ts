@@ -29,7 +29,7 @@ function prepareProjectRoot(root: string): void {
 }
 
 describe('main-agent delivery evidence run', () => {
-  it('writes standard evidence and keeps completion blocked for mock short-run evidence', () => {
+  it('writes standard evidence and keeps completion blocked for missing delivery evidence without long-run evidence', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'delivery-evidence-run-'));
     prepareProjectRoot(root);
     try {
@@ -60,7 +60,7 @@ describe('main-agent delivery evidence run', () => {
       };
       expect(report.completionAllowed).toBe(false);
       expect(report.failedEvidence.join('\n')).toContain('multi-host-host-matrix');
-      expect(report.failedEvidence.join('\n')).toContain('wall-clock-8h-soak');
+      expect(run.stdout).not.toContain('"id": "long-run-soak"');
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

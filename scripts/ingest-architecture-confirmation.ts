@@ -436,7 +436,7 @@ export function mainIngestArchitectureConfirmation(argv: string[]): number {
     const result = architectureStateCheck(record, checkedAt, checkedBy);
     const commit = appendControlEventAndReplay({
       recordPath,
-      writerId: 'ingest-architecture-confirmation',
+      writerId: 'architecture-confirmation-ingest',
       eventType: 'architecture_confirmation_state_checked',
       recordedAt: checkedAt,
       payload: {
@@ -492,7 +492,7 @@ export function mainIngestArchitectureConfirmation(argv: string[]): number {
   const baseDir = path.dirname(recordPath);
   const commit = appendControlEventAndReplay({
     recordPath,
-    writerId: 'ingest-architecture-confirmation',
+    writerId: 'architecture-confirmation-ingest',
     eventType: 'architecture_confirmation_recorded',
     recordedAt: confirmedAt,
     payload: {

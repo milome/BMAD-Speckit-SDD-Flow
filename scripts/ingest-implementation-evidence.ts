@@ -985,7 +985,7 @@ export function mainIngestImplementationEvidence(argv: string[]): number {
   );
   const commit = appendControlEventAndReplay({
     recordPath,
-    writerId: 'ingest-implementation-evidence',
+    writerId: 'implementation-evidence-ingest',
     eventType: 'implementation_evidence_ingested',
     recordedAt,
     payload: {

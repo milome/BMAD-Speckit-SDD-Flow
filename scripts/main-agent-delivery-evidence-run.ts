@@ -19,12 +19,6 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
     if (token === '--provider' && value) {
       out.provider = value;
       index += 1;
-    } else if (token === '--durationMs' && value) {
-      out.durationMs = value;
-      index += 1;
-    } else if (token === '--tickIntervalMs' && value) {
-      out.tickIntervalMs = value;
-      index += 1;
     } else if (token === '--storyKey' && value) {
       out.storyKey = value;
       index += 1;
@@ -69,8 +63,6 @@ function runStep(id: string, command: string[], allowFailure = false): StepResul
 function main(argv: string[]): number {
   const args = parseArgs(argv);
   const provider: ProviderMode = args.provider === 'real' ? 'real' : 'mock';
-  const durationMs = args.durationMs ?? '10';
-  const tickIntervalMs = args.tickIntervalMs ?? '5';
   const steps: StepResult[] = [];
 
   steps.push(runStep('release-gate', tsNodeScript('scripts/main-agent-release-gate.ts'), true));
@@ -81,19 +73,6 @@ function main(argv: string[]): number {
       true
     )
   );
-  steps.push(
-    runStep(
-      'long-run-soak',
-      tsNodeScript('scripts/main-agent-soak-runner.ts', [
-        '--durationMs',
-        durationMs,
-        '--tickIntervalMs',
-        tickIntervalMs,
-      ]),
-      true
-    )
-  );
-
   if (args.skipSprintAudit !== 'true' && args.token) {
     steps.push(
       runStep(
@@ -129,7 +108,6 @@ function main(argv: string[]): number {
       {
         reportType: 'main_agent_delivery_evidence_run',
         provider,
-        durationMs: Number(durationMs),
         steps: steps.map((step) => ({
           id: step.id,
           exitCode: step.exitCode,

@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
@@ -359,6 +359,124 @@ describe('main-agent orchestration consumer', () => {
       expect(surface.mainAgentNextAction).toBe('await_user');
       expect(surface.mainAgentReady).toBe(false);
       expect(surface.latestGate?.decision).toBe('reroute');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('does not dispatch new implementation packets after a requirement record is closed', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-record-closed-'));
+    try {
+      const recordPath = writeMinimalRequirementRecordContext(root, {
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        runId: 'run-closed-loop',
+        implementationEntryGate: {
+          gateName: 'implementation-readiness',
+          requestedFlow: 'standalone_tasks',
+          recommendedFlow: 'standalone_tasks',
+          decision: 'pass',
+          readinessStatus: 'ready_clean',
+          blockerCodes: [],
+          blockerSummary: [],
+          rerouteRequired: false,
+          rerouteReason: null,
+          evidenceSources: {
+            readinessReportPath: null,
+            remediationArtifactPath: null,
+            executionRecordPath: null,
+            authoritativeAuditReportPath: null,
+          },
+          semanticFingerprint: 'run-closed-loop',
+          evaluatedAt: '2026-05-21T00:00:00.000Z',
+        },
+      });
+      const record = JSON.parse(readFileSync(recordPath, 'utf8')) as Record<string, unknown>;
+      writeFileSync(
+        recordPath,
+        `${JSON.stringify(
+          {
+            ...record,
+            lastEventType: 'record_closed',
+            closeout: {
+              currentAttemptId: 'closeout-attempt-current',
+              decision: 'pass',
+              blockingReasons: [],
+              attempts: [
+                {
+                  closeoutAttemptId: 'closeout-attempt-current',
+                  decision: 'pass',
+                  blockingReasons: [],
+                },
+              ],
+            },
+          },
+          null,
+          2
+        )}\n`,
+        'utf8'
+      );
+
+      const packet: RecommendationPacket = {
+        packetId: 'pkt-stale-implement',
+        parentSessionId: 'REQSET-run-closed-loop',
+        flow: 'standalone_tasks',
+        phase: 'implement',
+        recommendedRole: 'implementation-worker',
+        recommendedTaskType: 'implement',
+        inputArtifacts: [recordPath],
+        allowedWriteScope: ['scripts/**'],
+        expectedDelta: 'stale implement packet',
+        successCriteria: ['should not run'],
+        stopConditions: ['record already closed'],
+      };
+      const packetPath = writePacket(root, 'REQSET-run-closed-loop', packet);
+      writeOrchestrationState(
+        root,
+        createDefaultOrchestrationState({
+          sessionId: 'REQSET-run-closed-loop',
+          host: 'cursor',
+          flow: 'standalone_tasks',
+          currentPhase: 'implement',
+          nextAction: 'dispatch_implement',
+          pendingPacket: {
+            packetId: packet.packetId,
+            packetPath,
+            packetKind: 'recommendation',
+            status: 'ready_for_main_agent',
+            createdAt: '2026-05-21T00:00:00.000Z',
+          },
+        })
+      );
+
+      const surface = resolveMainAgentOrchestrationSurface({
+        projectRoot: root,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        recordId: String(record.recordId),
+        requirementSetId: String(record.requirementSetId),
+      });
+
+      expect(surface.source).toBe('requirement_record');
+      expect(surface.pendingPacketStatus).toBe('ready_for_main_agent');
+      expect(surface.mainAgentNextAction).toBeNull();
+      expect(surface.mainAgentReady).toBe(false);
+      expect(surface.runtimeResumeProjection).toMatchObject({
+        runtimeNextAction: null,
+        ready: false,
+      });
+
+      const dispatchExit = mainMainAgentOrchestration([
+        '--cwd',
+        root,
+        '--action',
+        'dispatch-plan',
+        '--record-id',
+        String(record.recordId),
+        '--requirement-set-id',
+        String(record.requirementSetId),
+      ]);
+      expect(dispatchExit).toBe(1);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

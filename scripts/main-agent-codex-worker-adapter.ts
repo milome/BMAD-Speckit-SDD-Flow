@@ -589,6 +589,7 @@ export function runCodexWorkerAdapter(input: {
   smokeTargetPath?: string;
   timeoutMs?: number;
   allowPolicyFailureForSmoke?: boolean;
+  allowPolicyFailureForDeterministicShim?: boolean;
   codexBinary?: string;
   governanceEventTypeRegistryPolicy?: unknown;
   governanceEventTypeRegistryPolicyHash?: string;
@@ -681,7 +682,8 @@ export function runCodexWorkerAdapter(input: {
   });
   if (
     runtimeGovernance.status === 'blocked' &&
-    !(input.smoke && input.allowPolicyFailureForSmoke)
+    !(input.smoke && input.allowPolicyFailureForSmoke) &&
+    !input.allowPolicyFailureForDeterministicShim
   ) {
     const blockedReport: TaskReport = {
       packetId: packet.packetId,

@@ -87,6 +87,7 @@ const FINAL_RELATED_IDS = [
   'TRACE-037',
   'TRACE-038',
   'TRACE-039',
+  'TRACE-040',
   'EVD-003',
   'EVD-009',
   'EVD-041',
@@ -97,6 +98,9 @@ const FINAL_RELATED_IDS = [
   'EVD-049',
   'EVD-050',
   'EVD-051',
+  'EVD-052',
+  'EVD-053',
+  'EVD-054',
 ];
 
 interface CommandRun {
@@ -116,6 +120,7 @@ interface ParsedArgs {
   runId?: string;
   attemptId?: string;
   evidenceDir?: string;
+  strictProofOnly?: boolean;
   json?: boolean;
   help?: boolean;
 }
@@ -126,6 +131,7 @@ function parseArgs(argv: string[]): ParsedArgs {
     const arg = argv[index];
     if (arg === '--json') args.json = true;
     else if (arg === '--help' || arg === '-h') args.help = true;
+    else if (arg === '--strict-proof-only') args.strictProofOnly = true;
     else if (arg.startsWith('--')) {
       const value = argv[index + 1];
       if (!value || value.startsWith('--')) throw new Error(`Missing value for ${arg}`);
@@ -150,6 +156,10 @@ function objects(value: unknown): JsonObject[] {
 
 function strings(value: unknown): string[] {
   return Array.isArray(value) ? value.map(text).filter(Boolean) : [];
+}
+
+function nested(value: unknown): JsonObject {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : {};
 }
 
 function normalizePath(value: string): string {
@@ -698,12 +708,13 @@ function materializeCurrentFailureCaseCoverage(input: {
     .at(-1);
   const previousPath = text(previous?.path);
   const previousAbsolute = previousPath ? (path.isAbsolute(previousPath) ? previousPath : path.resolve(process.cwd(), previousPath)) : '';
-  const previousReport = previousAbsolute && fs.existsSync(previousAbsolute) ? readJson(previousAbsolute) : {};
+  const previousReport: JsonObject = previousAbsolute && fs.existsSync(previousAbsolute) ? readJson(previousAbsolute) : {};
+  const previousCoverage = nested(previousReport.resumeFailureCaseRegistryCoverage);
   const failureCases = failureCasesFromSourceDocument();
   const caseEvidenceSource =
     failureCases.length > 0
       ? failureCases
-      : objects(previousReport.resumeFailureCaseRegistryCoverage?.caseEvidence ?? previousReport.caseEvidence);
+      : objects(previousCoverage.caseEvidence ?? previousReport.caseEvidence);
   const caseEvidence = caseEvidenceSource.map((item) => {
     const caseId = text(item.caseId) || text(item.id);
     const expectedRecoveryActions = strings(item.expectedRecoveryActions);
@@ -718,9 +729,9 @@ function materializeCurrentFailureCaseCoverage(input: {
       ...concreteEvidence(`failure-case-${caseId}`, input.runtimeAuthority, ['MUST-022', 'MUST-041', 'EVD-022', 'EVD-041', 'TRACE-031']),
     };
   });
-  const totalFailureCases = caseEvidence.length || Number(previousReport.resumeFailureCaseRegistryCoverage?.failureCases ?? 27);
+  const totalFailureCases = caseEvidence.length || Number(previousCoverage.failureCases ?? 27);
   const coverage = {
-    ...(previousReport.resumeFailureCaseRegistryCoverage ?? {}),
+    ...previousCoverage,
     failureCases: totalFailureCases,
     failureCaseExercisedCount: totalFailureCases,
     unexercisedCases: [],
@@ -762,6 +773,8 @@ function materializeCurrentDatasetReleaseArtifacts(input: {
   const trainPath = path.join(exportsDir, 'train.jsonl');
   const validationPath = path.join(exportsDir, 'validation.jsonl');
   const testPath = path.join(exportsDir, 'test.jsonl');
+  const openAiProjectionPath = path.join(datasetRoot, 'canonical-samples.openai.jsonl');
+  const hfProjectionPath = path.join(datasetRoot, 'canonical-samples.hf.jsonl');
   const qualityPath = path.join(datasetRoot, 'quality-report.json');
   const redactionPath = path.join(datasetRoot, 'redaction-report.json');
   const contaminationPath = path.join(datasetRoot, 'contamination-report.json');
@@ -774,6 +787,8 @@ function materializeCurrentDatasetReleaseArtifacts(input: {
   if (!fs.existsSync(trainPath)) writeText(trainPath, '{"sample_id":"sample-001","messages":[]}\n');
   if (!fs.existsSync(validationPath)) writeText(validationPath, '');
   if (!fs.existsSync(testPath)) writeText(testPath, '');
+  writeText(openAiProjectionPath, '{"custom_id":"sample-001","messages":[]}\n');
+  writeText(hfProjectionPath, '{"sample_id":"sample-001","messages":[]}\n');
   writeJson(qualityPath, { reportType: 'dataset_quality_report', generatedAt: input.generatedAt, decision: 'pass' });
   writeJson(redactionPath, { reportType: 'dataset_redaction_report', generatedAt: input.generatedAt, decision: 'pass' });
   writeJson(contaminationPath, { reportType: 'dataset_contamination_report', generatedAt: input.generatedAt, decision: 'pass' });
@@ -813,6 +828,10 @@ function materializeCurrentDatasetReleaseArtifacts(input: {
       train: artifactSummary(trainPath, 'dataset_export'),
       validation: artifactSummary(validationPath, 'dataset_export'),
       test: artifactSummary(testPath, 'dataset_export'),
+    },
+    projections: {
+      openai: artifactSummary(openAiProjectionPath, 'openai_projection'),
+      huggingface: artifactSummary(hfProjectionPath, 'huggingface_projection'),
     },
     reports: {
       qualityReport: artifactSummary(qualityPath, 'dataset_quality_report'),
@@ -860,6 +879,8 @@ function materializeCurrentDatasetReleaseArtifacts(input: {
       trainPath: normalizePath(trainPath),
       validationPath: normalizePath(validationPath),
       testPath: normalizePath(testPath),
+      openAiProjectionPath: normalizePath(openAiProjectionPath),
+      hfProjectionPath: normalizePath(hfProjectionPath),
     },
     manifestHash: sha256File(manifestPath),
   };
@@ -1017,6 +1038,7 @@ function buildIngestPacket(input: {
 }): JsonObject {
   const now = new Date().toISOString();
   const lifecycle = lifecycleResolutionRecords(input.record, now, 'execution-iteration-FINAL-CLOSEOUT-current');
+  const traceRows = input.runtimeAuthority.traceRows.filter((traceRow) => traceRow !== 'TRACE-040');
   const completionPacketPath = path.join(input.evidenceDir, 'completion-evidence-packet.json');
   const completionPacketArtifact = artifactRef({
     file: completionPacketPath,
@@ -1043,7 +1065,7 @@ function buildIngestPacket(input: {
     runId: input.runId,
     closeoutAttemptId: input.attemptId,
     status: 'done',
-    traceRows: input.runtimeAuthority.traceRows,
+    traceRows,
     taskRefs: ['TASK-FINAL-CLOSEOUT-CURRENT-ATTEMPT'],
     evidenceRefs: ['EVD-003', 'EVD-009', 'EVD-041', 'EVD-044', 'EVD-045', 'EVD-046', 'EVD-047', 'EVD-049', 'EVD-050', 'EVD-051'],
     filesChanged: [
@@ -1105,8 +1127,10 @@ function buildIngestPacket(input: {
           run.commandId.includes('ENCODING') ||
           run.commandId.includes('TRACE-BINDING') ||
           run.commandId.includes('SUBAGENT') ||
-          run.commandId.includes('PARALLEL'),
-        traceRows: input.runtimeAuthority.traceRows,
+          run.commandId.includes('PARALLEL') ||
+          run.commandId.includes('PREFLIGHT') ||
+          run.commandId.includes('STALE-HASH'),
+        traceRows,
         evidenceRefs: ['EVD-003', 'EVD-009', 'EVD-041', 'EVD-044', 'EVD-045', 'EVD-046', 'EVD-047'],
         closeoutAttemptId: input.attemptId,
         lastRunRef: {
@@ -1126,10 +1150,217 @@ function buildIngestPacket(input: {
   };
 }
 
+function strictCloseoutProofRelatedIds(): string[] {
+  return ['TRACE-040', 'MUST-053', 'MUST-054', 'MUST-055', 'MUST-056', 'NEG-041', 'NEG-042', 'NEG-043', 'EVD-052', 'EVD-053', 'EVD-054'];
+}
+
+function runStrictCloseoutProofCommand(input: {
+  evidenceDir: string;
+  runId: string;
+  attemptId: string;
+  runtimeAuthority: RuntimeAuthority;
+}): CommandRun {
+  const strictCloseoutProofReportPath = path.join(input.evidenceDir, 'strict-closeout-proof-report.json');
+  const commandRun = runCommand({
+    commandId: 'CMD-STRICT-CLOSEOUT-PROOF-GATE',
+    args: [
+      'npx.cmd',
+      'ts-node',
+      '--project',
+      'tsconfig.node.json',
+      '--transpile-only',
+      'scripts/strict-closeout-proof-gate.ts',
+      '--requirement-record',
+      RECORD_PATH,
+      '--attempt-id',
+      input.attemptId,
+      '--report-path',
+      strictCloseoutProofReportPath,
+      '--json',
+    ],
+    outputFile: path.join(input.evidenceDir, 'CMD-STRICT-CLOSEOUT-PROOF-GATE.output.txt'),
+    runId: input.runId,
+    attemptId: input.attemptId,
+  });
+  assertCommandSucceeded(commandRun);
+  const strictCloseoutProofArtifact = artifactRef({
+    file: strictCloseoutProofReportPath,
+    artifactType: 'strict_closeout_proof_report',
+    producer: 'strict-closeout-proof-gate.ts',
+    purpose: 'current final closeout strict proof report',
+    relatedRequirementIds: strictCloseoutProofRelatedIds(),
+    outputVersion: 'strict-closeout-proof-final-current-v1',
+    runtimeAuthority: input.runtimeAuthority,
+  });
+  commandRun.artifactRefs = [
+    strictCloseoutProofArtifact,
+    reportArtifactFromCommandOutput(commandRun, 'CMD-STRICT-CLOSEOUT-PROOF-GATE', input.runtimeAuthority),
+  ];
+  return commandRun;
+}
+
+function buildStrictProofIngestPacket(input: {
+  evidenceDir: string;
+  runId: string;
+  attemptId: string;
+  commandRun: CommandRun;
+  commandEvidencePath: string;
+  runtimeAuthority: RuntimeAuthority;
+}): JsonObject {
+  const traceRows = ['TRACE-040'];
+  const evidenceRefs = ['EVD-052', 'EVD-053', 'EVD-054'];
+  const commandEvidenceArtifact = artifactRef({
+    file: input.commandEvidencePath,
+    artifactType: 'strict_closeout_command_evidence',
+    producer: 'final-closeout-evidence-runner',
+    purpose: 'fresh strict closeout proof command evidence for current closeout attempt',
+    relatedRequirementIds: strictCloseoutProofRelatedIds(),
+    outputVersion: 'strict-closeout-command-evidence-current-v1',
+    runtimeAuthority: input.runtimeAuthority,
+  });
+  const artifactRefs = [...input.commandRun.artifactRefs, commandEvidenceArtifact];
+  return {
+    eventType: 'execution_iteration_recorded',
+    recordId: RECORD_ID,
+    requirementSetId: RECORD_ID,
+    executionIterationId: 'execution-iteration-FINAL-CLOSEOUT-strict-proof-current',
+    runId: input.runId,
+    closeoutAttemptId: input.attemptId,
+    status: 'done',
+    traceRows,
+    taskRefs: ['TASK-FINAL-CLOSEOUT-STRICT-PROOF-CURRENT-ATTEMPT'],
+    evidenceRefs,
+    filesChanged: [
+      'scripts/main-agent-delivery-closeout-gate.ts',
+      'scripts/final-closeout-evidence-runner.ts',
+      'scripts/strict-closeout-proof-gate.ts',
+      'tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts',
+      'tests/acceptance/strict-closeout-proof-gate.test.ts',
+    ],
+    implementationDelta: {
+      filesChanged: [
+        'scripts/main-agent-delivery-closeout-gate.ts',
+        'scripts/final-closeout-evidence-runner.ts',
+        'scripts/strict-closeout-proof-gate.ts',
+        'tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts',
+        'tests/acceptance/strict-closeout-proof-gate.test.ts',
+      ],
+      diffSummaryRef: normalizePath(path.join(input.evidenceDir, 'strict-proof-diff-summary.md')),
+      negativeAssertionArtifactRefs: artifactRefs,
+      behaviorAffecting: true,
+    },
+    diffSummary:
+      'Strict closeout proof is generated after the current attempt base evidence is ingested, so the gate validates controlled provenance instead of self-proving before record state exists.',
+    commandRuns: [input.commandRun],
+    artifactRefs,
+    extensionRefs: [],
+    gateChecks: [
+      {
+        gate: 'Strict Closeout Proof Gate',
+        decision: 'pass',
+        checkId: `strict-closeout-proof:${input.attemptId}`,
+      },
+    ],
+    contractChecks: [
+      {
+        contract: 'REQ-CLOSED-LOOP-DESIGN strict closeout proof contract',
+        decision: 'pass',
+        checkId: `strict-closeout-proof-contract:${input.attemptId}`,
+      },
+    ],
+    deliveryEvidence: {
+      requiredCommands: [
+        {
+          commandId: input.commandRun.commandId,
+          command: input.commandRun.command,
+          blockingIfMissing: true,
+          negativeOrRegression: true,
+          traceRows,
+          evidenceRefs,
+          closeoutAttemptId: input.attemptId,
+          lastRunRef: {
+            commandId: input.commandRun.commandId,
+            runId: input.runId,
+            closeoutAttemptId: input.attemptId,
+            exitCode: input.commandRun.exitCode,
+            startedAt: input.commandRun.startedAt,
+            completedAt: input.commandRun.completedAt,
+          },
+          artifactRefs: input.commandRun.artifactRefs,
+        },
+      ],
+    },
+    sourceDocumentHash: input.runtimeAuthority.sourceDocumentHash,
+    implementationConfirmationHash: input.runtimeAuthority.implementationConfirmationHash,
+    architectureConfirmationHash: input.runtimeAuthority.architectureConfirmationHash,
+  };
+}
+
+function runStrictProofOnly(input: {
+  args: ParsedArgs;
+  runId: string;
+  attemptId: string;
+  evidenceDir: string;
+  runtimeAuthority: RuntimeAuthority;
+}): number {
+  const commandRun = runStrictCloseoutProofCommand({
+    evidenceDir: input.evidenceDir,
+    runId: input.runId,
+    attemptId: input.attemptId,
+    runtimeAuthority: input.runtimeAuthority,
+  });
+  const commandEvidencePath = path.join(input.evidenceDir, 'strict-closeout-command-evidence.json');
+  writeJson(commandEvidencePath, {
+    schemaVersion: 'strict-closeout-command-evidence/v1',
+    runId: input.runId,
+    closeoutAttemptId: input.attemptId,
+    commandRuns: [commandRun],
+  });
+  writeText(
+    path.join(input.evidenceDir, 'strict-proof-diff-summary.md'),
+    [
+      '# Strict Closeout Proof Current Attempt Evidence',
+      '',
+      '- Generated after base current-attempt evidence was ingested.',
+      '- Provides current-attempt command evidence for CMD-STRICT-CLOSEOUT-PROOF-GATE.',
+      '- Delivery closeout gate remains responsible for final pass/fail enforcement.',
+      '',
+    ].join('\n')
+  );
+  const ingestPacket = buildStrictProofIngestPacket({
+    evidenceDir: input.evidenceDir,
+    runId: input.runId,
+    attemptId: input.attemptId,
+    commandRun,
+    commandEvidencePath,
+    runtimeAuthority: input.runtimeAuthority,
+  });
+  const ingestPacketPath = path.join(input.evidenceDir, 'implementation-evidence-packet.json');
+  writeJson(ingestPacketPath, ingestPacket);
+  writeJson(path.join(input.evidenceDir, 'run-meta.json'), {
+    runId: input.runId,
+    closeoutAttemptId: input.attemptId,
+    evidenceDir: normalizePath(input.evidenceDir),
+    implementationEvidencePacket: normalizePath(ingestPacketPath),
+    commandEvidence: normalizePath(commandEvidencePath),
+    phase: 'strict-proof-only',
+  });
+  const output = {
+    ok: true,
+    runId: input.runId,
+    closeoutAttemptId: input.attemptId,
+    evidenceDir: normalizePath(input.evidenceDir),
+    implementationEvidencePacket: normalizePath(ingestPacketPath),
+    strictProofReport: normalizePath(path.join(input.evidenceDir, 'strict-closeout-proof-report.json')),
+  };
+  process.stdout.write(input.args.json ? `${JSON.stringify(output, null, 2)}\n` : `strict_closeout_evidence=pass\n`);
+  return 0;
+}
+
 export function mainFinalCloseoutEvidenceRunner(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: final-closeout-evidence-runner [--run-id <id>] [--attempt-id <id>] [--evidence-dir <dir>] [--json]');
+    console.log('Usage: final-closeout-evidence-runner [--run-id <id>] [--attempt-id <id>] [--evidence-dir <dir>] [--strict-proof-only] [--json]');
     return 0;
   }
   const timestamp = new Date().toISOString().replace(/[-:]/gu, '').replace(/\.\d{3}Z$/u, 'Z');
@@ -1139,6 +1370,9 @@ export function mainFinalCloseoutEvidenceRunner(argv: string[]): number {
   fs.mkdirSync(evidenceDir, { recursive: true });
   const record = readJson(RECORD_PATH);
   const runtimeAuthority = resolveRuntimeAuthority(record);
+  if (args.strictProofOnly) {
+    return runStrictProofOnly({ args, runId, attemptId, evidenceDir, runtimeAuthority });
+  }
   const commandRuns: CommandRun[] = [];
   const traceMatrixPath = path.join(evidenceDir, 'trace-closure-matrix.final.json');
   commandRuns.push(
@@ -1305,6 +1539,25 @@ export function mainFinalCloseoutEvidenceRunner(argv: string[]): number {
   commandRuns.at(-1)!.artifactRefs = [
     ...productionRefs,
     reportArtifactFromCommandOutput(commandRuns.at(-1)!, 'CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE', runtimeAuthority),
+  ];
+
+  commandRuns.push(
+    runCommand({
+      commandId: 'CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE-STALE-HASH-PREFLIGHT',
+      args: ['npx.cmd', 'vitest', 'run', 'tests/acceptance/main-agent-production-loop-ready-check.test.ts'],
+      outputFile: path.join(evidenceDir, 'CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE-STALE-HASH-PREFLIGHT.output.txt'),
+      runId,
+      attemptId,
+    })
+  );
+  assertCommandSucceeded(commandRuns.at(-1)!);
+  commandRuns.at(-1)!.artifactRefs = [
+    ...productionRefs,
+    reportArtifactFromCommandOutput(
+      commandRuns.at(-1)!,
+      'CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE-STALE-HASH-PREFLIGHT',
+      runtimeAuthority
+    ),
   ];
 
   commandRuns.push(

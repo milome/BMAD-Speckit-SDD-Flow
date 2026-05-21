@@ -4,6 +4,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { resolveArchitectureConfirmationHashRecipe } from './architecture-confirmation-hash-recipe';
 import { appendControlEventAndReplay } from './requirement-record-control-store';
+import { evaluateStrictCloseoutProof } from './strict-closeout-proof-gate';
 
 type JsonObject = Record<string, unknown>;
 type CloseoutDecision = 'pass' | 'fail' | 'blocked';
@@ -50,6 +51,20 @@ const REQUIRED_PRODUCTION_PASS_CRITERIA = [
   'failure_handling_declared',
   'no_user_visible_regression',
 ];
+const STRICT_CLOSEOUT_PROOF_COMMAND_ID = 'CMD-STRICT-CLOSEOUT-PROOF-GATE';
+const STRICT_CLOSEOUT_PROOF_CONTRACT_IDS = new Set([
+  'MUST-053',
+  'MUST-054',
+  'MUST-055',
+  'MUST-056',
+  'NEG-041',
+  'NEG-042',
+  'NEG-043',
+  'EVD-052',
+  'EVD-053',
+  'EVD-054',
+  'TRACE-040',
+]);
 
 interface ParsedArgs {
   requirementRecord?: string;
@@ -163,6 +178,80 @@ function requiredCommandsForAttempt(record: JsonObject, attemptId: string): Json
   return objects(deliveryEvidence(record).requiredCommands).filter((command) => commandSelectedForAttempt(command, attemptId));
 }
 
+function strictCloseoutProofContractApplies(record: JsonObject): boolean {
+  const referencedIds = [
+    ...objects(record.requirementClosures).map((closure) => text(closure.requirementId)),
+    ...objects(record.executionIterations).flatMap((iteration) => [
+      ...strings(iteration.traceRows),
+      ...strings(iteration.evidenceRefs),
+      ...strings(iteration.coveredRequirementIds),
+    ]),
+    ...objects(deliveryEvidence(record).requiredCommands).flatMap((command) => [
+      text(command.commandId),
+      ...strings(command.traceRows),
+      ...strings(command.evidenceRefs),
+    ]),
+  ];
+  return referencedIds.some((id) => STRICT_CLOSEOUT_PROOF_CONTRACT_IDS.has(id));
+}
+
+function commandAttemptId(command: JsonObject): string {
+  const direct = text(command.closeoutAttemptId);
+  if (direct) return direct;
+  const lastRunRef = command.lastRunRef;
+  return lastRunRef && typeof lastRunRef === 'object' && !Array.isArray(lastRunRef) ? text((lastRunRef as JsonObject).closeoutAttemptId) : '';
+}
+
+function attemptedCloseoutIds(record: JsonObject): Set<string> {
+  return new Set(objects(nested(record.closeout).attempts).map((attempt) => text(attempt.closeoutAttemptId)).filter(Boolean));
+}
+
+function commandAttemptCompletedAt(command: JsonObject): string {
+  const lastRunRef = command.lastRunRef;
+  if (lastRunRef && typeof lastRunRef === 'object' && !Array.isArray(lastRunRef)) {
+    const completedAt = text((lastRunRef as JsonObject).completedAt);
+    if (completedAt) return completedAt;
+  }
+  return text(command.completedAt);
+}
+
+function selectDefaultCloseoutAttemptId(record: JsonObject, fallbackAttemptId: string): string {
+  const alreadyAttempted = attemptedCloseoutIds(record);
+  const candidates = new Map<string, string>();
+  for (const command of objects(deliveryEvidence(record).requiredCommands)) {
+    const candidate = commandAttemptId(command);
+    if (!candidate) continue;
+    const completedAt = commandAttemptCompletedAt(command);
+    if (!candidates.has(candidate) || completedAt > (candidates.get(candidate) ?? '')) candidates.set(candidate, completedAt);
+  }
+  const orderedCandidates = [...candidates.entries()]
+    .sort((left, right) => right[1].localeCompare(left[1]))
+    .map(([candidate]) => candidate);
+  for (const candidate of orderedCandidates) {
+    if (alreadyAttempted.has(candidate)) continue;
+    if (requiredCommandsForAttempt(record, candidate).length === 0) continue;
+    if (commandRunsForAttempt(record, candidate).length === 0) continue;
+    return candidate;
+  }
+  for (const attempt of objects(nested(record.closeout).attempts).reverse()) {
+    const candidate = text(attempt.closeoutAttemptId);
+    if (!candidate || text(attempt.decision) !== 'pass') continue;
+    if (requiredCommandsForAttempt(record, candidate).length === 0) continue;
+    if (commandRunsForAttempt(record, candidate).length === 0) continue;
+    return candidate;
+  }
+  return fallbackAttemptId;
+}
+
+function strictCloseoutProofRequired(record: JsonObject, attemptId: string): boolean {
+  return (
+    strictCloseoutProofContractApplies(record) ||
+    requiredCommandsForAttempt(record, attemptId).some(
+      (command) => text(command.commandId) === STRICT_CLOSEOUT_PROOF_COMMAND_ID
+    )
+  );
+}
+
 function latestRequirementClosures(record: JsonObject): JsonObject[] {
   const latestByRequirementId = new Map<string, JsonObject>();
   for (const closure of objects(record.requirementClosures)) {
@@ -179,6 +268,18 @@ function latestFailureRecords(record: JsonObject): JsonObject[] {
     if (failureId) latestByFailureId.set(failureId, failure);
   }
   return [...latestByFailureId.values()];
+}
+
+function isOpenLifecycleStatus(value: unknown): boolean {
+  return ['open', 'in_progress', 'blocked'].includes(text(value));
+}
+
+function isSupersededCloseoutFailure(failure: JsonObject, currentAttemptId: string): boolean {
+  return (
+    text(failure.type) === 'delivery_closeout_blocked' &&
+    text(failure.closeoutAttemptId) !== '' &&
+    text(failure.closeoutAttemptId) !== currentAttemptId
+  );
 }
 
 function latestRcaRecords(record: JsonObject): JsonObject[] {
@@ -1013,6 +1114,31 @@ function evaluate(record: JsonObject, recordPath: string, attemptId: string): { 
   blockingReasons.push(...parallelMissionIntegration.issues);
 
   const attemptRuns = commandRunsForAttempt(record, attemptId);
+  if (strictCloseoutProofRequired(record, attemptId)) {
+    const strictProofCommand = requiredCommands.find((command) => text(command.commandId) === STRICT_CLOSEOUT_PROOF_COMMAND_ID);
+    const strictProofRun = attemptRuns.find((run) => text(run.commandId) === STRICT_CLOSEOUT_PROOF_COMMAND_ID);
+    const strictProof = evaluateStrictCloseoutProof({
+      record,
+      recordPath,
+      attemptId,
+      evaluatedAt: new Date().toISOString(),
+      evaluatedBy: 'main-agent-delivery-closeout-gate',
+    });
+    checks.push({
+      id: 'strict-closeout-proof-gate-current-attempt',
+      passed: Boolean(strictProofCommand) && Boolean(strictProofRun) && text(strictProof.decision) === 'pass',
+      runPresent: Boolean(strictProofRun),
+      commandSelected: Boolean(strictProofCommand),
+      exitCode: strictProofRun?.exitCode ?? null,
+      blockingReasons: strings(strictProof.blockingReasons),
+    });
+    if (!strictProofCommand) blockingReasons.push('strict_closeout_proof_required_command_missing');
+    if (!strictProofRun) blockingReasons.push('strict_closeout_proof_current_attempt_command_missing');
+    if (text(strictProof.decision) !== 'pass') {
+      blockingReasons.push(...strings(strictProof.blockingReasons), 'strict_closeout_proof_gate_not_passed');
+    }
+  }
+
   for (const command of requiredCommands) {
     const commandId = text(command.commandId);
     const run = attemptRuns.find((candidate) => text(candidate.commandId) === commandId);
@@ -1062,15 +1188,13 @@ function evaluate(record: JsonObject, recordPath: string, attemptId: string): { 
   });
   blockingReasons.push(...rerunSourceIssues);
 
-  const openFailureRecords = latestFailureRecords(record).filter((record) =>
-    ['open', 'in_progress', 'blocked'].includes(text(record.status))
+  const openFailureRecords = latestFailureRecords(record).filter(
+    (record) => isOpenLifecycleStatus(record.status) && !isSupersededCloseoutFailure(record, attemptId)
   );
   checks.push({ id: 'failure-records-closed', passed: openFailureRecords.length === 0, openCount: openFailureRecords.length });
   if (openFailureRecords.length > 0) blockingReasons.push('open_failure_record_exists');
 
-  const openRcaRecords = latestRcaRecords(record).filter((record) =>
-    ['open', 'in_progress', 'blocked'].includes(text(record.status))
-  );
+  const openRcaRecords = latestRcaRecords(record).filter((record) => isOpenLifecycleStatus(record.status));
   checks.push({ id: 'rca-actions-closed', passed: openRcaRecords.length === 0, openCount: openRcaRecords.length });
   if (openRcaRecords.length > 0) blockingReasons.push('open_rca_action_exists');
 
@@ -1160,12 +1284,25 @@ function rcaRecordsForCloseout(
   ];
 }
 
-function updateRecord(record: JsonObject, input: { attemptId: string; decision: CloseoutDecision; blockingReasons: string[]; checks: JsonObject[]; reportPath: string; evaluatedAt: string; evaluatedBy: string }): JsonObject {
+function updateRecord(
+  record: JsonObject,
+  input: {
+    attemptId: string;
+    decision: CloseoutDecision;
+    blockingReasons: string[];
+    checks: JsonObject[];
+    reportPath: string;
+    evaluatedAt: string;
+    evaluatedBy: string;
+    allowExistingAttempt?: boolean;
+  }
+): JsonObject {
   const closeout = record.closeout && typeof record.closeout === 'object' && !Array.isArray(record.closeout)
     ? { ...(record.closeout as JsonObject) }
     : {};
   const attempts = objects(closeout.attempts);
-  if (attempts.some((attempt) => text(attempt.closeoutAttemptId) === input.attemptId)) {
+  const attemptExists = attempts.some((attempt) => text(attempt.closeoutAttemptId) === input.attemptId);
+  if (attemptExists && input.allowExistingAttempt !== true) {
     throw new Error(`closeout attempt already exists: ${input.attemptId}`);
   }
   const attempt = {
@@ -1199,7 +1336,7 @@ function updateRecord(record: JsonObject, input: { attemptId: string; decision: 
     closeout: {
       ...closeout,
       currentAttemptId: input.attemptId,
-      attempts: [...attempts, attempt],
+      attempts: attemptExists ? attempts : [...attempts, attempt],
       decision: input.decision,
       updatedAt: input.evaluatedAt,
     },
@@ -1222,12 +1359,14 @@ export function mainDeliveryCloseoutGate(argv: string[]): number {
   const record = readJson(recordPath);
   const evaluatedAt = args.evaluatedAt ?? new Date().toISOString();
   const evaluatedBy = args.evaluatedBy ?? 'agent';
-  const attemptId = args.attemptId ?? `closeout-${Date.now()}`;
+  const explicitAttemptId = Boolean(args.attemptId);
+  const attemptId = args.attemptId ?? selectDefaultCloseoutAttemptId(record, `closeout-${Date.now()}`);
   const existingCloseout =
     record.closeout && typeof record.closeout === 'object' && !Array.isArray(record.closeout)
       ? (record.closeout as JsonObject)
       : {};
-  if (objects(existingCloseout.attempts).some((attempt) => text(attempt.closeoutAttemptId) === attemptId)) {
+  const attemptExists = objects(existingCloseout.attempts).some((attempt) => text(attempt.closeoutAttemptId) === attemptId);
+  if (attemptExists && explicitAttemptId) {
     console.error(JSON.stringify({ ok: false, error: `closeout attempt already exists: ${attemptId}` }, null, 2));
     return 2;
   }
@@ -1256,11 +1395,15 @@ export function mainDeliveryCloseoutGate(argv: string[]): number {
   };
   const commit = appendControlEventAndReplay({
     recordPath,
-    writerId: 'main-agent-delivery-closeout-gate',
+    writerId: 'delivery-closeout-gate-writer',
     eventType: evaluation.decision === 'pass' ? 'record_closed' : 'closeout_recorded',
     recordedAt: evaluatedAt,
     payload: closeoutPayload,
-    reduce: (currentRecord) => updateRecord(currentRecord, closeoutPayload),
+    reduce: (currentRecord) =>
+      updateRecord(currentRecord, {
+        ...closeoutPayload,
+        allowExistingAttempt: attemptExists && !explicitAttemptId,
+      }),
   });
   const output = {
     ok: true,

@@ -2031,8 +2031,10 @@ function buildReconfirmationState(confirmation, currentHashes) {
     previousImplementationConfirmationHash,
     currentImplementationConfirmationHash,
     diffSummary: asArray(request.diffSummary),
-    impactedIds: stringList(request.impactedIds),
-    impactedTraceRows: stringList(request.impactedTraceRows),
+    affectedRequirementIds: stringList(request.affectedRequirementIds),
+    affectedTraceRows: stringList(request.affectedTraceRows),
+    impactedIds: unique([...stringList(request.impactedIds), ...stringList(request.affectedRequirementIds)]),
+    impactedTraceRows: unique([...stringList(request.impactedTraceRows), ...stringList(request.affectedTraceRows)]),
     impactedArtifacts: stringList(request.impactedArtifacts),
     impactedGatesOrCommands: stringList(request.impactedGatesOrCommands),
     allowedUserActions,
@@ -2810,6 +2812,7 @@ function renderedSectionsForProfile(profile) {
   return [
     'fingerprint',
     'core-design',
+    'progress-delta',
     'decision-summary',
     'confirm-instruction',
     'requirements',
@@ -2868,6 +2871,10 @@ function renderIdBadges(values) {
   return ids.map((id) => `<span class="id-badge">${escapeHtml(id)}</span>`).join(' ');
 }
 
+function renderStatusBadge(label, tone = 'blue') {
+  return `<span class="tag ${tone}">${escapeHtml(label)}</span>`;
+}
+
 function renderCompactIdBadges(values, limit = 8) {
   const ids = stringList(values);
   if (!ids.length) return '<span class="muted">无</span>';
@@ -2896,6 +2903,40 @@ function getUiText(language) {
     navTitle: '确认页',
     fingerprint: '顶部确认指纹',
     coreDesign: '核心设计摘要',
+    progressDelta: '历史进度与本次差异',
+    progressLead: '本区优先回答重入确认时最关键的问题：哪些已经有历史证据，哪些是本次新增或变更，哪些证据因为 hash/current attempt 失效，下一步应从哪里继续。完整 MUST / Trace Matrix 保留在下方作为明细。',
+    totalRequirementIds: '需求 / 证据 ID 总数',
+    traceRowsLabel: 'Trace rows',
+    newOrChangedIds: '本次新增 / 变更 ID',
+    currentAttemptProofValid: '当前 attempt 有效证明',
+    staleProofNeedsRecheck: '历史通过但需复验',
+    missingCurrentEvidence: '缺当前证据',
+    currentConfirmationChanges: '本次确认变化',
+    currentEvidenceStatus: '当前证据状态',
+    suggestedContinueStart: '建议继续起点',
+    noPendingTrace: '无待执行 trace',
+    affectedTrace: '受影响 Trace',
+    affectedIds: '受影响 ID',
+    noDiffSummary: '源文档未提供 diffSummary[]；本区按 affectedRequirementIds / affectedTraceRows 推导。',
+    reviewFocus: '重点验收焦点',
+    reviewFocusNote: '新增 / 变更只表示本次确认范围变化；PASS 仍必须由当前 hash 和当前 closeout attempt 的受控证据证明。',
+    noReviewFocus: '当前没有额外重点验收 ID。',
+    historicalEvidenceSummary: '历史证据摘要',
+    staleTraceSummary: '历史通过但 hash/current attempt 已失效的 trace',
+    affectedTraceCoveredIds: '受影响 trace 覆盖的历史 ID',
+    overflowPrefix: '另有',
+    overflowSuffix: '项',
+    progressStatus: {
+      noControlledRecord: '无受控记录',
+      missingEvidence: '缺证据',
+      currentProofValid: '当前证明有效',
+      currentEvidenceRecorded: '当前证据已记录',
+      staleProof: '历史证明已过期',
+      newOrChanged: '新增 / 变更',
+      affectedTrace: '受影响 Trace',
+      reviewFocus: '重点验收',
+      notEvaluated: '未评估',
+    },
     decisionSummary: '用户决策摘要',
     confirmInstruction: '确认口令区',
     requirements: '需求内容区',
@@ -2985,6 +3026,40 @@ function getUiText(language) {
     navTitle: 'Confirmation',
     fingerprint: 'Confirmation Fingerprints',
     coreDesign: 'Core Design Summary',
+    progressDelta: 'Progress And Delta',
+    progressLead: 'This section answers the key re-entry questions first: what has historical evidence, what is newly added or changed, which evidence is stale because hashes/current attempt do not match, and where execution should continue. Full MUST and Trace Matrix details remain below.',
+    totalRequirementIds: 'Requirement / evidence IDs',
+    traceRowsLabel: 'Trace rows',
+    newOrChangedIds: 'New / changed IDs',
+    currentAttemptProofValid: 'Current-attempt proof valid',
+    staleProofNeedsRecheck: 'Historical pass needs recheck',
+    missingCurrentEvidence: 'Missing current evidence',
+    currentConfirmationChanges: 'Current Confirmation Changes',
+    currentEvidenceStatus: 'Current Evidence Status',
+    suggestedContinueStart: 'Suggested Continue Start',
+    noPendingTrace: 'No pending trace',
+    affectedTrace: 'Affected Trace',
+    affectedIds: 'Affected IDs',
+    noDiffSummary: 'The source did not provide diffSummary[]; this section is derived from affectedRequirementIds / affectedTraceRows.',
+    reviewFocus: 'Review Focus',
+    reviewFocusNote: 'New / changed only means the confirmation scope changed. PASS still requires controlled evidence for the current hashes and current closeout attempt.',
+    noReviewFocus: 'No extra review-focus IDs.',
+    historicalEvidenceSummary: 'Historical Evidence Summary',
+    staleTraceSummary: 'Trace rows with historical pass but stale hash/current attempt',
+    affectedTraceCoveredIds: 'Historical IDs covered by affected trace rows',
+    overflowPrefix: '+',
+    overflowSuffix: 'more',
+    progressStatus: {
+      noControlledRecord: 'No Controlled Record',
+      missingEvidence: 'Missing Evidence',
+      currentProofValid: 'Current Proof Valid',
+      currentEvidenceRecorded: 'Current Evidence Recorded',
+      staleProof: 'Stale Proof',
+      newOrChanged: 'New / Changed',
+      affectedTrace: 'Affected Trace',
+      reviewFocus: 'Review Focus',
+      notEvaluated: 'Not Evaluated',
+    },
     decisionSummary: 'User Decision Summary',
     confirmInstruction: 'Confirmation Phrase',
     requirements: 'Requirement Content',
@@ -3353,9 +3428,10 @@ function selectDiagramBlocks(mermaidBlocks, views) {
 }
 
 function renderRequirementSections(input) {
-  const { confirmation, traceRows, views, artifactPlan } = input;
+  const { confirmation, traceRows, views, artifactPlan, progressDelta } = input;
   const mustRows = asArray(confirmation.must).map((item) => [
     item.id,
+    renderStatusBadge(statusForRequirementId(item.id, progressDelta).label, statusForRequirementId(item.id, progressDelta).tone),
     item.text,
     renderIdBadges(item.evidenceRefs),
     renderIdBadges(findRowsCovering(traceRows, item.id)),
@@ -3365,6 +3441,7 @@ function renderRequirementSections(input) {
   ]);
   const negRows = asArray(confirmation.notDone).map((item) => [
     item.id,
+    renderStatusBadge(statusForRequirementId(item.id, progressDelta).label, statusForRequirementId(item.id, progressDelta).tone),
     item.text,
     renderIdBadges(item.evidenceRefs),
     item.whyItBlocksCompletion ?? 'completion is blocked until proven',
@@ -3373,6 +3450,7 @@ function renderRequirementSections(input) {
   ]);
   const outRows = asArray(confirmation.mustNot).map((item) => [
     item.id,
+    renderStatusBadge(statusForRequirementId(item.id, progressDelta).label, statusForRequirementId(item.id, progressDelta).tone),
     item.text,
     item.scopeBoundary ?? 'scope boundary must be preserved',
     String(item.userApprovalRequiredIfChanged ?? true),
@@ -3380,6 +3458,7 @@ function renderRequirementSections(input) {
   ]);
   const evidenceRows = asArray(confirmation.evidence).map((item) => [
     item.id,
+    renderStatusBadge(statusForRequirementId(item.id, progressDelta).label, statusForRequirementId(item.id, progressDelta).tone),
     item.text,
     item.gate ?? '',
     item.oracle ?? '',
@@ -3419,19 +3498,19 @@ function renderRequirementSections(input) {
   return `<section class="card" id="requirements">
     <h2>需求内容区</h2>
     <h3>Must Do</h3>${renderTable(
-      ['id', 'text', 'evidenceRefs', 'coveredByTraceRows', 'coveredBySequenceViews', 'upstreamRequirementIds', 'riskLevel'],
+      ['id', 'userStatus', 'text', 'evidenceRefs', 'coveredByTraceRows', 'coveredBySequenceViews', 'upstreamRequirementIds', 'riskLevel'],
       mustRows
     )}
     <h3>Not Done / Cannot Count As Complete</h3>${renderTable(
-      ['id', 'text', 'evidenceRefs', 'whyItBlocksCompletion', 'negativeAssertionRequired', 'coveredByFailurePath'],
+      ['id', 'userStatus', 'text', 'evidenceRefs', 'whyItBlocksCompletion', 'negativeAssertionRequired', 'coveredByFailurePath'],
       negRows
     )}
     <h3>Must Not Do / Out Of Scope</h3>${renderTable(
-      ['id', 'text', 'scopeBoundary', 'userApprovalRequiredIfChanged', 'coveredByBoundaryView'],
+      ['id', 'userStatus', 'text', 'scopeBoundary', 'userApprovalRequiredIfChanged', 'coveredByBoundaryView'],
       outRows
     )}
     <h3>Evidence</h3>${renderTable(
-      ['id', 'text', 'gate', 'oracle', 'requiredCommandRefs', 'artifactRefs', 'acceptanceType'],
+      ['id', 'userStatus', 'text', 'gate', 'oracle', 'requiredCommandRefs', 'artifactRefs', 'acceptanceType'],
       evidenceRows
     )}
     <h3>Failure Paths</h3>${renderTable(
@@ -3687,6 +3766,272 @@ function renderTraceExecutionEvidence(state) {
     state.reason ? `reason=${state.reason}` : '',
   ].filter(Boolean);
   return inlineCode(parts.join(' | ') || '无');
+}
+
+function requirementIdsForTraceRows(traceRows, traceIds) {
+  const wanted = new Set(stringList(traceIds));
+  return unique(
+    asArray(traceRows)
+      .filter((row) => wanted.has(row.id))
+      .flatMap((row) => [...stringList(row.covers), ...stringList(row.evidenceRefs)])
+  );
+}
+
+function allConfirmationIdsByGroup(confirmation) {
+  return {
+    must: asArray(confirmation.must).map((item) => item.id),
+    notDone: asArray(confirmation.notDone).map((item) => item.id),
+    mustNot: asArray(confirmation.mustNot).map((item) => item.id),
+    evidence: asArray(confirmation.evidence).map((item) => item.id),
+    traceRows: asArray(confirmation.traceRows).map((item) => item.id),
+  };
+}
+
+function buildIdToTraceRows(traceRows) {
+  const out = {};
+  for (const row of asArray(traceRows)) {
+    for (const id of unique([...stringList(row.covers), ...stringList(row.evidenceRefs)])) {
+      out[id] = unique([...(out[id] ?? []), row.id]);
+    }
+  }
+  return out;
+}
+
+function traceStatusForIds(ids, idToTraceRows, traceExecutionState, ui) {
+  const traceIds = unique(stringList(ids).flatMap((id) => idToTraceRows[id] ?? []));
+  const states = traceIds.map((traceId) => traceExecutionState?.rows?.[traceId]).filter(Boolean);
+  if (!traceExecutionState?.recordFound) {
+    return {
+      traceIds,
+      label: ui.progressStatus.noControlledRecord,
+      tone: 'gold',
+      proofState: 'no_controlled_record',
+    };
+  }
+  if (!traceIds.length || !states.length) {
+    return {
+      traceIds,
+      label: ui.progressStatus.missingEvidence,
+      tone: 'red',
+      proofState: 'missing_evidence',
+    };
+  }
+  if (states.some((state) => state.validity === 'current' && state.status === 'current_pass')) {
+    return {
+      traceIds,
+      label: ui.progressStatus.currentProofValid,
+      tone: 'green',
+      proofState: 'current_proof_valid',
+    };
+  }
+  if (states.some((state) => state.validity === 'current')) {
+    return {
+      traceIds,
+      label: ui.progressStatus.currentEvidenceRecorded,
+      tone: 'blue',
+      proofState: 'current_evidence_recorded',
+    };
+  }
+  if (states.some((state) => state.validity === 'stale')) {
+    return {
+      traceIds,
+      label: ui.progressStatus.staleProof,
+      tone: 'gold',
+      proofState: 'stale_proof',
+    };
+  }
+  return {
+    traceIds,
+    label: ui.progressStatus.missingEvidence,
+    tone: 'red',
+    proofState: 'missing_evidence',
+  };
+}
+
+function statusForRequirementId(id, progressDelta) {
+  if (!progressDelta) return { label: 'not_evaluated', tone: 'gold', proofState: 'not_evaluated' };
+  if (progressDelta.newIds.includes(id)) {
+    return { label: progressDelta.statusLabels.newOrChanged, tone: 'blue', proofState: 'new_or_changed' };
+  }
+  return progressDelta.idStatuses[id] ?? {
+    label: progressDelta.statusLabels.missingEvidence,
+    tone: 'red',
+    proofState: 'missing_evidence',
+  };
+}
+
+function buildProgressDelta(input) {
+  const { confirmation, traceRows, traceExecutionState, reconfirmationState, ui } = input;
+  const byGroup = allConfirmationIdsByGroup(confirmation);
+  const idToTraceRows = buildIdToTraceRows(traceRows);
+  const affectedTraceRows = unique([
+    ...stringList(reconfirmationState?.affectedTraceRows),
+    ...stringList(reconfirmationState?.impactedTraceRows),
+    ...stringList(reconfirmationState?.impactedIds).filter((id) => id.startsWith('TRACE-')),
+  ]);
+  const traceCoveredReviewIds = requirementIdsForTraceRows(traceRows, affectedTraceRows);
+  const affectedRequirementIds = unique([
+    ...stringList(reconfirmationState?.affectedRequirementIds),
+    ...stringList(reconfirmationState?.impactedIds).filter((id) => !id.startsWith('TRACE-')),
+  ]);
+  const newIds = unique(
+    affectedRequirementIds.filter(
+      (id) =>
+        byGroup.must.includes(id) ||
+        byGroup.notDone.includes(id) ||
+        byGroup.mustNot.includes(id) ||
+        byGroup.evidence.includes(id) ||
+        byGroup.traceRows.includes(id)
+    )
+  );
+  const changedIds = unique([
+    ...asArray(reconfirmationState?.diffSummary).flatMap((item) => extractIds(stableStringify(item))),
+    ...newIds,
+  ]);
+  const idStatuses = {};
+  for (const groupIds of [byGroup.must, byGroup.notDone, byGroup.mustNot, byGroup.evidence]) {
+    for (const id of groupIds) {
+      idStatuses[id] = traceStatusForIds([id], idToTraceRows, traceExecutionState, ui);
+    }
+  }
+  const traceRowsWithState = asArray(traceRows).map((row) => ({
+    id: row.id,
+    status: traceExecutionState?.rows?.[row.id]?.status ?? 'no_controlled_record',
+    validity: traceExecutionState?.rows?.[row.id]?.validity ?? 'unavailable',
+  }));
+  const currentAttemptProofValidIds = Object.entries(idStatuses)
+    .filter(([, status]) => status.proofState === 'current_proof_valid')
+    .map(([id]) => id);
+  const currentEvidenceRecordedIds = Object.entries(idStatuses)
+    .filter(([, status]) => status.proofState === 'current_evidence_recorded')
+    .map(([id]) => id);
+  const staleProofIds = Object.entries(idStatuses)
+    .filter(([, status]) => status.proofState === 'stale_proof')
+    .map(([id]) => id);
+  const missingEvidenceIds = Object.entries(idStatuses)
+    .filter(([, status]) => ['missing_evidence', 'no_controlled_record'].includes(status.proofState))
+    .map(([id]) => id);
+  const historicalPassedTraceRows = traceRowsWithState
+    .filter((row) => row.validity === 'stale')
+    .map((row) => row.id);
+  const currentPassTraceRows = traceRowsWithState
+    .filter((row) => row.status === 'current_pass')
+    .map((row) => row.id);
+  const reviewFocusIds = unique([
+    ...newIds,
+    ...affectedTraceRows,
+    ...missingEvidenceIds,
+  ]);
+  const affectedTraceCoveredIds = traceCoveredReviewIds;
+  const nextExecutionStart = affectedTraceRows[0] ?? traceRowsWithState.find((row) => row.status !== 'current_pass')?.id ?? '';
+  const currentAttemptStatus =
+    !traceExecutionState?.recordFound
+      ? 'missing_controlled_record'
+      : traceExecutionState.counts.unavailable > 0
+        ? 'missing_current_attempt_evidence'
+        : traceExecutionState.counts.stale > 0
+          ? 'has_stale_historical_evidence'
+          : 'current_attempt_evidence_available';
+  return {
+    affectedTraceRows,
+    affectedRequirementIds,
+    newIds,
+    changedIds,
+    reviewFocusIds,
+    affectedTraceCoveredIds,
+    historicalPassedIds: staleProofIds,
+    historicalPassedTraceRows,
+    currentAttemptProofValidIds,
+    currentEvidenceRecordedIds,
+    currentPassTraceRows,
+    staleProofIds,
+    missingEvidenceIds,
+    idStatuses,
+    traceRows: traceRowsWithState,
+    currentAttemptStatus,
+    nextExecutionStart,
+    statusLabels: {
+      affectedTrace: ui.progressStatus.affectedTrace,
+      reviewFocus: ui.progressStatus.reviewFocus,
+      missingEvidence: ui.progressStatus.missingEvidence,
+      newOrChanged: ui.progressStatus.newOrChanged,
+    },
+    counts: {
+      totalRequirementIds:
+        byGroup.must.length + byGroup.notDone.length + byGroup.mustNot.length + byGroup.evidence.length,
+      totalTraceRows: byGroup.traceRows.length,
+      newOrChangedIds: newIds.length,
+      reviewFocusIds: reviewFocusIds.length,
+      currentAttemptProofValidIds: currentAttemptProofValidIds.length,
+      currentEvidenceRecordedIds: currentEvidenceRecordedIds.length,
+      staleProofIds: staleProofIds.length,
+      missingEvidenceIds: missingEvidenceIds.length,
+      currentPassTraceRows: currentPassTraceRows.length,
+      historicalPassedTraceRows: historicalPassedTraceRows.length,
+    },
+  };
+}
+
+function overflowText(ui, count) {
+  if (count <= 0) return '';
+  return ui.overflowPrefix === '+'
+    ? `${ui.overflowPrefix}${count} ${ui.overflowSuffix}`
+    : `${ui.overflowPrefix} ${count} ${ui.overflowSuffix}`;
+}
+
+function renderProgressDelta(progressDelta, reconfirmationState, ui) {
+  const focusRows = progressDelta.reviewFocusIds.slice(0, 30).map((id) => {
+    const status = progressDelta.idStatuses[id] ?? (
+      progressDelta.affectedTraceRows.includes(id)
+        ? { label: ui.progressStatus.affectedTrace, tone: 'blue', proofState: 'affected_trace' }
+        : { label: ui.progressStatus.reviewFocus, tone: 'gold', proofState: 'review_focus' }
+    );
+    return [
+      id,
+      renderStatusBadge(status.label, status.tone),
+      renderIdBadges(status.traceIds ?? (progressDelta.affectedTraceRows.includes(id) ? [id] : [])),
+      status.proofState,
+    ];
+  });
+  const diffRows = asArray(reconfirmationState?.diffSummary).map((item, index) => [
+    item.id ?? `DIFF-${String(index + 1).padStart(3, '0')}`,
+    item.summary ?? item.text ?? item.reason ?? JSON.stringify(item),
+  ]);
+  const historyRows = [
+    [ui.staleTraceSummary, renderIdBadges(progressDelta.historicalPassedTraceRows.slice(0, 20)), overflowText(ui, progressDelta.historicalPassedTraceRows.length - 20)],
+    [ui.affectedTraceCoveredIds, renderIdBadges(progressDelta.affectedTraceCoveredIds.slice(0, 20)), overflowText(ui, progressDelta.affectedTraceCoveredIds.length - 20)],
+  ];
+  return `<section class="card progress-delta" id="progress-delta">
+    <h2>${escapeHtml(ui.progressDelta)}</h2>
+    <p class="section-lead">${escapeHtml(ui.progressLead)}</p>
+    <div class="metric-grid">
+      <div class="metric"><strong>${escapeHtml(progressDelta.counts.totalRequirementIds)}</strong><span>${escapeHtml(ui.totalRequirementIds)}</span></div>
+      <div class="metric"><strong>${escapeHtml(progressDelta.counts.totalTraceRows)}</strong><span>${escapeHtml(ui.traceRowsLabel)}</span></div>
+      <div class="metric warn"><strong>${escapeHtml(progressDelta.counts.newOrChangedIds)}</strong><span>${escapeHtml(ui.newOrChangedIds)}</span></div>
+      <div class="metric"><strong>${escapeHtml(progressDelta.counts.currentAttemptProofValidIds)}</strong><span>${escapeHtml(ui.currentAttemptProofValid)}</span></div>
+      <div class="metric warn"><strong>${escapeHtml(progressDelta.counts.staleProofIds)}</strong><span>${escapeHtml(ui.staleProofNeedsRecheck)}</span></div>
+      <div class="metric danger"><strong>${escapeHtml(progressDelta.counts.missingEvidenceIds)}</strong><span>${escapeHtml(ui.missingCurrentEvidence)}</span></div>
+    </div>
+    <div class="review-flow">
+      <section class="review-step">
+        <h3>${escapeHtml(ui.currentConfirmationChanges)}</h3>
+        <p><strong>${escapeHtml(ui.currentEvidenceStatus)}：</strong>${escapeHtml(progressDelta.currentAttemptStatus)}</p>
+        <p><strong>${escapeHtml(ui.suggestedContinueStart)}：</strong>${inlineCode(progressDelta.nextExecutionStart || ui.noPendingTrace)}</p>
+        <p><strong>${escapeHtml(ui.affectedTrace)}：</strong>${renderIdBadges(progressDelta.affectedTraceRows)}</p>
+        <p><strong>${escapeHtml(ui.affectedIds)}：</strong>${renderIdBadges(progressDelta.newIds)}</p>
+        ${diffRows.length ? renderTable(['diffId', 'summary'], diffRows, { className: 'compact-map-table' }) : `<p class="empty-state">${escapeHtml(ui.noDiffSummary)}</p>`}
+      </section>
+      <section class="review-step">
+        <h3>${escapeHtml(ui.reviewFocus)}</h3>
+        <p class="muted">${escapeHtml(ui.reviewFocusNote)}</p>
+        ${focusRows.length ? renderTable(['id', 'userStatus', 'traceRows', 'proofState'], focusRows, { className: 'compact-map-table' }) : `<p class="empty-state">${escapeHtml(ui.noReviewFocus)}</p>`}
+      </section>
+      <section class="review-step">
+        <h3>${escapeHtml(ui.historicalEvidenceSummary)}</h3>
+        ${renderTable(['summary', 'sample', 'overflow'], historyRows, { className: 'compact-map-table' })}
+      </section>
+    </div>
+  </section>`;
 }
 
 function renderTraceMatrix(traceRows, traceExecutionState = null) {
@@ -4457,17 +4802,17 @@ function renderUsabilityScript(ui, mermaidRuntime) {
 function renderCss(theme) {
   const compact = theme === 'compact';
   return `<style>
-:root{--bg:#f4f1ea;--paper:#fffdf8;--ink:#24211b;--muted:#6b655b;--line:#d7cbb8;--red:#a33a2d;--red-soft:#f8ddd7;--green:#28684e;--green-soft:#dff0e7;--blue:#2d5d82;--blue-soft:#dceaf4;--gold:#8b611b;--gold-soft:#f3e3bf;--purple:#5b4c8a;--purple-soft:#ece7fb;--shadow:0 18px 40px rgba(36,33,27,.12);--mono:"Cascadia Mono",Consolas,monospace;--sans:"Segoe UI","Noto Sans SC","Microsoft YaHei",sans-serif}
-*{box-sizing:border-box}body{margin:0;color:var(--ink);background:linear-gradient(135deg,#f8f1e4,#eef0e9 55%,#f5e7da);font-family:var(--sans);line-height:1.55}a{color:var(--blue)}
-.layout{display:grid;grid-template-columns:300px 1fr;min-height:100vh;transition:grid-template-columns .18s ease}.nav{position:sticky;top:0;height:100vh;overflow:auto;padding:24px;background:#24211b;color:#fff}.nav a{display:block;color:#fff;text-decoration:none;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.12)}.nav button{width:100%;margin:4px 0;padding:8px;border:1px solid #806;background:#fff;color:#24211b;border-radius:10px;cursor:pointer}.nav-toggle{font-weight:800}.nav-filters button[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold);color:#2b2110}.filter-status{margin:8px 0 0;color:#f2e3c2;font-family:var(--mono);font-size:11px}body[data-nav-collapsed="true"] .layout{grid-template-columns:58px 1fr}body[data-nav-collapsed="true"] .nav{padding:12px 8px;overflow:hidden}body[data-nav-collapsed="true"] .nav h2,body[data-nav-collapsed="true"] .nav-links,body[data-nav-collapsed="true"] .nav-filters,body[data-nav-collapsed="true"] .nav hr{display:none}body[data-nav-collapsed="true"] .nav-toggle{writing-mode:vertical-rl;min-height:96px;padding:10px 4px;border-color:rgba(255,255,255,.25)}
-main{padding:${compact ? '18px' : '34px'} min(5vw,64px)}h1{font-size:clamp(32px,5vw,64px);line-height:.98;margin:0 0 18px;font-family:Georgia,serif}h2{font-size:clamp(24px,3vw,38px);margin:0 0 14px;font-family:Georgia,serif}h3{margin:24px 0 10px}
-.card{background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:${compact ? '16px' : '24px'};box-shadow:var(--shadow);margin:0 0 22px}.section-lead{color:var(--muted);max-width:980px}.hero{background:radial-gradient(circle at top left,#fff9e9,#f7efe3 42%,#e7eef0);border:1px solid #c8b995}.hero-copy{max-width:900px}.eyebrow{display:inline-block;text-transform:uppercase;letter-spacing:.16em;font-size:12px;color:var(--gold);font-weight:800}.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0}.metric{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px}.metric strong{display:block;font-size:30px;line-height:1;color:var(--blue)}.metric span{font-size:12px;color:var(--muted);text-transform:uppercase}.metric.danger strong{color:var(--red)}.metric.warn strong{color:var(--gold)}.principle-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}.principle{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}.principle p{margin:6px 0 0;color:var(--muted)}.fingerprint{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}.kv{border:1px solid var(--line);border-radius:14px;padding:10px;background:#fff}.kv span{display:block;color:var(--muted);font-size:12px;text-transform:uppercase}.hash{font-family:var(--mono);word-break:break-all}
-.status-confirmable{background:var(--green-soft);color:var(--green);padding:6px 10px;border-radius:999px;font-weight:700}.status-blocked{background:var(--red-soft);color:var(--red);padding:6px 10px;border-radius:999px;font-weight:700}
-.confirm-box{background:#15130f;color:#fff;border-radius:18px;padding:18px}.confirm-box pre{white-space:pre-wrap;font-family:var(--mono)}button.copy{padding:8px 12px;border-radius:10px;border:0;background:var(--gold-soft);color:#2b2110;cursor:pointer}
-.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px}table{width:100%;border-collapse:collapse;background:#fff;table-layout:auto}th,td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}th{position:sticky;top:0;background:#efe7d8;cursor:pointer;text-align:left}.id-badge{display:inline-block;font-family:var(--mono);font-size:12px;margin:2px;padding:2px 7px;border-radius:999px;background:var(--blue-soft);color:var(--blue)}
-.issue-list{padding-left:18px}.blocking{background:var(--red-soft);border-left:5px solid var(--red);padding:8px;margin:8px 0}.warning{background:var(--gold-soft);border-left:5px solid var(--gold);padding:8px;margin:8px 0}.ok{background:var(--green-soft);color:var(--green);padding:10px;border-radius:12px}.blocked{background:var(--red-soft);color:var(--red);padding:10px;border-radius:12px}.muted{color:var(--muted)}
-.split{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.panel-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.tag{display:inline-flex;align-items:center;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:800;background:var(--blue-soft);color:var(--blue);border:1px solid rgba(49,95,134,.16);white-space:nowrap}.tag.red{background:var(--red-soft);color:var(--red)}.tag.green{background:var(--green-soft);color:var(--green)}.tag.blue{background:var(--blue-soft);color:var(--blue)}.tag.gold{background:var(--gold-soft);color:var(--gold)}.list{display:grid;gap:12px;margin:0;padding:0;list-style:none}.list li{display:grid;gap:5px;border-left:4px solid var(--line);padding:10px 12px;background:rgba(255,255,255,.45);border-radius:0 14px 14px 0}.list strong{font-size:14px}.list span{color:var(--muted);font-size:13px}.current li{border-left-color:var(--red)}.target li{border-left-color:var(--green)}.current-target-map h3{margin:18px 0 8px}.current-target-map .table-wrap{margin:0 0 14px;border-radius:12px}.current-target-map .compact-map-table{font-size:12px;line-height:1.34;min-width:860px}.current-target-map .compact-map-table th,.current-target-map .compact-map-table td{padding:6px 8px}.current-target-map .compact-map-table th{font-size:11px;text-transform:uppercase;letter-spacing:.02em}.current-target-map .compact-map-table code,.current-target-map code{font-family:var(--mono);font-size:11px;background:#f7efe3;border:1px solid rgba(120,104,78,.2);border-radius:6px;padding:1px 4px}.metric-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0 18px}.metric.compact{padding:10px 12px;border-radius:14px}.metric.compact strong{font-size:24px}.metric.compact span{text-transform:none}.footnote{font-family:var(--mono);font-size:12px;color:var(--blue)!important}.diff-deck{display:grid;gap:10px;margin:14px 0 18px}.compact-diff-deck{grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:stretch}.diff-card{border:1px solid rgba(120,104,78,.22);border-radius:16px;background:rgba(255,255,255,.58);overflow:hidden}.diff-card-title{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:9px 11px;border-bottom:1px solid rgba(120,104,78,.18);background:rgba(154,106,29,.08)}.diff-card-title strong{font-family:Georgia,serif;font-size:16px}.diff-card-title span{font-family:var(--mono);font-size:10.5px;color:var(--blue);text-align:right}.diff-compare{display:grid;grid-template-columns:1fr 1fr}.diff-side{padding:10px 11px;min-height:74px}.diff-side b{display:block;font-family:var(--mono);font-size:11px;margin-bottom:5px}.diff-side p{margin:0;color:var(--muted);font-size:12px;line-height:1.38}.diff-minus{background:linear-gradient(180deg,rgba(248,221,215,.88),rgba(255,253,248,.68));border-right:1px solid rgba(120,104,78,.18)}.diff-minus b{color:var(--red)}.diff-plus{background:linear-gradient(180deg,rgba(223,240,231,.9),rgba(255,253,248,.7))}.diff-plus b{color:var(--green)}.target-flow{display:grid;grid-template-columns:repeat(5,minmax(160px,1fr));gap:10px;align-items:stretch;margin:18px 0}.flow-step{border-radius:16px;border:1px solid rgba(47,111,84,.22);background:var(--green-soft);padding:12px;position:relative}.flow-step span{display:block;color:var(--muted);font-size:12px;margin-top:6px}.flow-step::after{content:"->";position:absolute;right:-13px;top:50%;color:var(--green);font-weight:900}.flow-step:last-child::after{content:""}.callout{border-radius:16px;border:1px solid rgba(166,61,47,.18);background:linear-gradient(135deg,rgba(247,223,216,.8),rgba(255,253,248,.86));padding:12px 14px;margin:10px 0}
-.diagram-viewer{border:1px solid rgba(120,104,78,.26);border-radius:20px;background:linear-gradient(180deg,#f8efe0,#fffdf8);padding:12px;margin:14px 0 24px}.diagram-toolbar{display:flex;gap:12px;justify-content:space-between;align-items:center;margin-bottom:12px}.diagram-tabs{display:flex;gap:6px;flex-wrap:wrap}.diagram-actions{display:flex;gap:8px;flex-wrap:wrap}.diagram-tab,.diagram-actions button{border:1px solid rgba(120,104,78,.34);background:#fffdf8;color:var(--ink);border-radius:999px;padding:7px 10px;font-size:12px;font-weight:800;cursor:pointer}.diagram-tab.active,.diagram-actions button:hover{background:#24211b;color:#fff;border-color:#24211b}.mermaid-runtime-status{margin:0 0 12px}.diagram-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:12px}.diagram-viewer[data-diagram-mode="single"] .diagram-grid{display:block}.diagram-viewer[data-diagram-mode="single"] .diagram-card{display:none}.diagram-viewer[data-diagram-mode="single"] .diagram-card.active{display:block}.diagram-viewer[data-diagram-mode="all"] .diagram-card{display:block}.diagram-card{border:1px solid rgba(120,104,78,.24);border-radius:18px;padding:10px;background:linear-gradient(180deg,#fffdf8,#f7f0e4);box-shadow:0 10px 22px rgba(36,33,27,.08);overflow:hidden}.diagram-viewer[data-diagram-mode="single"] .diagram-card{max-width:none;margin:0}.diagram-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;border-bottom:1px solid rgba(120,104,78,.2);padding-bottom:7px}.diagram-title strong{display:block;font-family:Georgia,serif;font-size:17px;line-height:1}.diagram-title span{display:block;margin-top:4px;color:var(--muted);font-family:var(--mono);font-size:10px}.diagram-meta{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:58%}.diagram-rendered{background:#fbf8f1;border:1px solid var(--line);border-radius:16px;padding:16px 18px 22px;margin-top:9px;overflow:auto;max-height:520px;min-height:300px;text-align:left;resize:vertical;scrollbar-gutter:stable both-edges}.diagram-viewer[data-diagram-mode="all"] .diagram-rendered{max-height:360px;min-height:260px}.diagram-rendered h4{margin:0 0 12px;font-size:11px;color:var(--gold);letter-spacing:.08em;text-transform:uppercase}.mermaid-source-native{display:none}.mermaid-native-render{display:block;min-width:max-content;min-height:210px;text-align:left;transform-origin:top left}.mermaid-native-render svg{display:block;margin:0 !important;max-width:none !important;overflow:visible}.mermaid-native-render .actor,.mermaid-native-render .messageText,.mermaid-native-render .noteText,.mermaid-native-render text{font-size:12px !important}.mermaid-runtime-error{margin:12px 0}.fallback-diagram{margin-top:14px;border-top:1px dashed rgba(120,104,78,.35);padding-top:10px}.fallback-diagram summary{cursor:pointer;color:var(--muted);font-weight:800}.fallback-diagram:not([open]){opacity:.72}.rendered-mermaid{background:transparent;border-radius:16px}.diagram-legend{display:flex;gap:10px;align-items:center;flex-wrap:wrap;color:var(--muted);font-size:10.5px;margin:0 0 7px}.legend-dot{width:8px;height:8px;border-radius:99px;background:var(--blue);display:inline-block}.legend-dot.pass{background:var(--green)}.legend-dot.warn{background:var(--red)}.compact-lanes{min-width:max(600px,100%);display:grid;grid-template-columns:repeat(var(--lane-count),minmax(118px,1fr));gap:7px}.diagram-viewer[data-diagram-mode="single"] .compact-lanes{min-width:max(820px,100%)}.compact-lane{border:1px solid rgba(120,104,78,.22);border-radius:14px;background:rgba(255,255,255,.68);padding:7px;position:relative;min-height:158px}.compact-lane::before{content:"";position:absolute;top:42px;bottom:9px;left:50%;border-left:2px dashed rgba(36,33,27,.13)}.compact-lane h4{position:relative;z-index:2;margin:0 0 7px;background:var(--paper);border:1px solid rgba(120,104,78,.18);border-radius:11px;padding:6px;text-align:center;font-size:11px;line-height:1.2}.compact-event{position:relative;z-index:2;margin:7px 0;padding:7px;border-radius:12px;border:1px solid rgba(36,33,27,.11);background:var(--paper);box-shadow:0 6px 13px rgba(36,33,27,.07);font-size:11px}.compact-event strong{display:block;font-size:11px;line-height:1.25;margin-bottom:4px}.compact-event small{color:var(--muted);font-family:var(--mono);font-size:9.5px;line-height:1.2}.compact-event.warn,.flow-step-card.warn{border-color:rgba(166,61,47,.28);background:#fff6f3}.compact-event.pass,.flow-step-card.pass{border-color:rgba(47,111,84,.28);background:#f3fbf6}.event-ids{margin-top:5px}.id-badge.mini{font-size:10px;padding:1px 5px;margin:1px}.id-more{display:inline-block;font-family:var(--mono);font-size:10px;margin:1px;padding:1px 5px;border-radius:999px;background:var(--gold-soft);color:var(--gold)}.compact-flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:7px}.diagram-viewer[data-diagram-mode="single"] .compact-flow{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}.flow-step-card{border-radius:13px;border:1px solid rgba(47,111,84,.22);background:var(--green-soft);padding:8px;position:relative;min-height:78px}.flow-step-card::after{content:"->";position:absolute;right:-10px;top:42%;color:var(--green);font-weight:900}.flow-step-card:last-child::after{content:""}.flow-step-card.muted-card{background:#f8f3e9;border-style:dashed}.step-index{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:999px;background:#fff;color:var(--green);font-weight:800;margin-bottom:5px;font-size:10px}.flow-step-card strong{display:block;font-size:11.5px;line-height:1.25}.mermaid,pre{background:#181713;color:#fff;border-radius:14px;padding:14px;overflow:auto}.answers{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}.answer{border:1px solid var(--line);background:#fff;padding:12px;border-radius:14px}
+:root{--bg:#f4f0e7;--paper:#fffdf8;--ink:#24211b;--muted:#6b655b;--line:#d9cbb5;--rule:#a88f63;--red:#a33a2d;--red-soft:#f8ddd7;--green:#28684e;--green-soft:#dff0e7;--blue:#2d5d82;--blue-soft:#dceaf4;--gold:#8b611b;--gold-soft:#f3e3bf;--purple:#5b4c8a;--purple-soft:#ece7fb;--shadow:none;--mono:"Cascadia Mono",Consolas,monospace;--sans:"Noto Sans SC","Segoe UI","Microsoft YaHei",sans-serif}
+*{box-sizing:border-box}body{margin:0;color:var(--ink);background:linear-gradient(90deg,#ebe1cf 0,#f7f3eb 42%,#fffdf8 100%);font-family:var(--sans);line-height:1.62}a{color:var(--blue)}
+.layout{display:grid;grid-template-columns:280px minmax(0,1fr);min-height:100vh;transition:grid-template-columns .18s ease;max-width:100%}.nav{position:sticky;top:0;height:100vh;overflow:auto;padding:24px 22px;background:#1f211c;color:#fff;border-right:1px solid rgba(255,255,255,.08)}.nav a{display:block;color:#fff;text-decoration:none;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.1)}.nav button{width:100%;margin:4px 0;padding:8px;border:1px solid rgba(255,255,255,.22);background:#f8f1df;color:#24211b;border-radius:4px;cursor:pointer}.nav-toggle{font-weight:800}.nav-filters button[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold);color:#2b2110}.filter-status{margin:8px 0 0;color:#f2e3c2;font-family:var(--mono);font-size:11px}body[data-nav-collapsed="true"] .layout{grid-template-columns:58px minmax(0,1fr)}body[data-nav-collapsed="true"] .nav{padding:12px 8px;overflow:hidden}body[data-nav-collapsed="true"] .nav h2,body[data-nav-collapsed="true"] .nav-links,body[data-nav-collapsed="true"] .nav-filters,body[data-nav-collapsed="true"] .nav hr{display:none}body[data-nav-collapsed="true"] .nav-toggle{writing-mode:vertical-rl;min-height:96px;padding:10px 4px;border-color:rgba(255,255,255,.25)}
+main{padding:${compact ? '22px' : '44px'} min(6vw,88px) 86px;min-width:0;max-width:100%;background:linear-gradient(180deg,rgba(255,253,248,.96),rgba(255,253,248,.9));counter-reset:doc-section}h1{font-size:clamp(34px,4.8vw,58px);line-height:1.02;margin:0 0 26px;font-family:Georgia,"Noto Serif SC",serif;font-weight:650;letter-spacing:-.035em}h2{font-size:clamp(24px,2.5vw,34px);line-height:1.15;margin:0 0 16px;font-family:Georgia,"Noto Serif SC",serif;font-weight:620;letter-spacing:-.018em}h3{margin:26px 0 10px}
+.card{background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;padding:${compact ? '24px 0 28px' : '36px 0 42px'};box-shadow:none;margin:0;min-width:0;max-width:100%}.card:first-of-type{border-top:0;padding-top:0}.card>h2{display:flex;align-items:baseline;gap:10px;padding-bottom:11px;border-bottom:1px solid var(--line)}.card>h2::before{counter-increment:doc-section;content:counter(doc-section,decimal-leading-zero);font:700 12px/1 var(--mono);letter-spacing:.12em;color:var(--gold);min-width:28px}.section-lead{color:var(--muted);max-width:980px}.hero{background:linear-gradient(90deg,rgba(243,227,191,.28),rgba(220,234,244,.18));border-top:1px solid var(--rule);border-bottom:1px solid var(--line);padding-left:0;padding-right:0}.hero-copy{max-width:980px}.eyebrow{display:inline-block;text-transform:uppercase;letter-spacing:.16em;font-size:12px;color:var(--gold);font-weight:800}.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0;margin:22px 0;min-width:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.metric{background:transparent;border:0;border-right:1px solid var(--line);border-radius:0;padding:12px 14px;min-width:0}.metric:last-child{border-right:0}.metric strong{display:block;font-size:28px;line-height:1;color:var(--blue)}.metric span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.metric.danger strong{color:var(--red)}.metric.warn strong{color:var(--gold)}.principle-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;min-width:0}.principle{background:rgba(255,255,255,.42);border:0;border-left:3px solid var(--line);border-radius:0;padding:10px 12px;min-width:0}.principle p{margin:6px 0 0;color:var(--muted)}.fingerprint{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;min-width:0}.kv{border:0;border-left:3px solid var(--line);border-radius:0;padding:9px 12px;background:rgba(255,255,255,.42);min-width:0}.kv span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}.hash{font-family:var(--mono);word-break:break-all}
+.status-confirmable{background:var(--green-soft);color:var(--green);padding:5px 9px;border-radius:3px;font-weight:700}.status-blocked{background:var(--red-soft);color:var(--red);padding:5px 9px;border-radius:3px;font-weight:700}
+.confirm-box{background:#191815;color:#fff;border-radius:0;border-left:4px solid var(--gold);padding:18px 20px}.confirm-box pre{white-space:pre-wrap;font-family:var(--mono)}button.copy{padding:8px 12px;border-radius:3px;border:1px solid var(--gold);background:#f8efd7;color:#2b2110;cursor:pointer}
+.table-wrap{overflow-x:auto;overflow-y:auto;border:1px solid var(--line);border-radius:0;min-width:0;max-width:100%;scrollbar-gutter:stable;background:#fff}.table-wrap table{width:max-content;min-width:100%;border-collapse:collapse;background:#fff;table-layout:auto}.table-wrap th,.table-wrap td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left;min-width:140px;max-width:560px;overflow-wrap:break-word}.table-wrap th{position:sticky;top:0;background:#efe7d8;cursor:pointer;text-align:left;font-size:12px;letter-spacing:.02em}.table-wrap tr:nth-child(even) td{background:#fbf8f1}.table-wrap code,.table-wrap .id-badge{white-space:nowrap}.compact-map-table{min-width:1100px}.id-badge{display:inline-block;font-family:var(--mono);font-size:11px;margin:2px;padding:2px 6px;border-radius:3px;background:var(--blue-soft);color:var(--blue)}
+.issue-list{padding-left:18px}.blocking{background:var(--red-soft);border-left:4px solid var(--red);padding:8px;margin:8px 0}.warning{background:var(--gold-soft);border-left:4px solid var(--gold);padding:8px;margin:8px 0}.ok{background:var(--green-soft);color:var(--green);padding:10px;border-radius:0}.blocked{background:var(--red-soft);color:var(--red);padding:10px;border-radius:0}.muted{color:var(--muted)}
+.split{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;min-width:0}.review-flow{display:grid;gap:0;margin-top:22px;min-width:0;border-top:1px solid var(--line)}.review-step{border-top:0;border-bottom:1px solid var(--line);padding:18px 0;min-width:0}.review-step:first-child{border-top:0}.review-step h3{margin-top:0}.panel-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.tag{display:inline-flex;align-items:center;border-radius:3px;padding:4px 8px;font-size:11px;font-weight:800;background:var(--blue-soft);color:var(--blue);border:1px solid rgba(49,95,134,.16);white-space:nowrap}.tag.red{background:var(--red-soft);color:var(--red)}.tag.green{background:var(--green-soft);color:var(--green)}.tag.blue{background:var(--blue-soft);color:var(--blue)}.tag.gold{background:var(--gold-soft);color:var(--gold)}.list{display:grid;gap:0;margin:0;padding:0;list-style:none;min-width:0;border-top:1px solid var(--line)}.list li{display:grid;gap:4px;border-left:0;border-bottom:1px solid var(--line);padding:10px 0;background:transparent;border-radius:0;min-width:0}.list strong{font-size:14px}.list span{color:var(--muted);font-size:13px;overflow-wrap:anywhere}.current li{border-left-color:var(--red)}.target li{border-left-color:var(--green)}.current-target-map h3{margin:22px 0 8px}.current-target-map .table-wrap{margin:0 0 14px;border-radius:0}.current-target-map .compact-map-table{font-size:12px;line-height:1.34;min-width:860px}.current-target-map .compact-map-table th,.current-target-map .compact-map-table td{padding:6px 8px}.current-target-map .compact-map-table th{font-size:11px;text-transform:uppercase;letter-spacing:.02em}.current-target-map .compact-map-table code,.current-target-map code{font-family:var(--mono);font-size:11px;background:#f7efe3;border:1px solid rgba(120,104,78,.2);border-radius:3px;padding:1px 4px;overflow-wrap:anywhere}.metric-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);min-width:0}.metric.compact{padding:10px 12px;border-radius:0}.metric.compact strong{font-size:24px}.metric.compact span{text-transform:none}.footnote{font-family:var(--mono);font-size:12px;color:var(--blue)!important}.diff-deck{display:grid;gap:0;margin:18px 0;min-width:0;border-top:1px solid var(--line)}.compact-diff-deck{grid-template-columns:1fr;align-items:stretch}.diff-card{border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;overflow:hidden;min-width:0}.diff-card-title{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(120,104,78,.18);background:transparent}.diff-card-title strong{font-family:Georgia,"Noto Serif SC",serif;font-size:16px}.diff-card-title span{font-family:var(--mono);font-size:10.5px;color:var(--blue);text-align:right;overflow-wrap:anywhere}.diff-compare{display:grid;grid-template-columns:1fr 1fr;min-width:0}.diff-side{padding:10px 12px;min-height:72px;min-width:0}.diff-side b{display:block;font-family:var(--mono);font-size:11px;margin-bottom:5px}.diff-side p{margin:0;color:var(--muted);font-size:12px;line-height:1.38;overflow-wrap:anywhere}.diff-minus{background:rgba(248,221,215,.42);border-right:1px solid rgba(120,104,78,.18)}.diff-minus b{color:var(--red)}.diff-plus{background:rgba(223,240,231,.48)}.diff-plus b{color:var(--green)}.target-flow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;align-items:stretch;margin:20px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);min-width:0}.flow-step{border-radius:0;border:0;border-right:1px solid var(--line);background:transparent;padding:12px;position:relative;min-width:0}.flow-step:last-child{border-right:0}.flow-step span{display:block;color:var(--muted);font-size:12px;margin-top:6px;overflow-wrap:anywhere}.flow-step::after{content:"";position:absolute}.callout{border-radius:0;border:0;border-left:4px solid var(--red);background:rgba(247,223,216,.36);padding:11px 14px;margin:10px 0;overflow-wrap:anywhere}
+.diagram-viewer{border:1px solid var(--line);border-radius:0;background:#fbf8f1;padding:14px;margin:18px 0 28px}.diagram-toolbar{display:flex;gap:12px;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid var(--line);padding-bottom:10px}.diagram-tabs{display:flex;gap:6px;flex-wrap:wrap}.diagram-actions{display:flex;gap:8px;flex-wrap:wrap}.diagram-tab,.diagram-actions button{border:1px solid rgba(120,104,78,.34);background:#fffdf8;color:var(--ink);border-radius:3px;padding:7px 10px;font-size:12px;font-weight:800;cursor:pointer}.diagram-tab.active,.diagram-actions button:hover{background:#24211b;color:#fff;border-color:#24211b}.mermaid-runtime-status{margin:0 0 12px}.diagram-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:12px}.diagram-viewer[data-diagram-mode="single"] .diagram-grid{display:block}.diagram-viewer[data-diagram-mode="single"] .diagram-card{display:none}.diagram-viewer[data-diagram-mode="single"] .diagram-card.active{display:block}.diagram-viewer[data-diagram-mode="all"] .diagram-card{display:block}.diagram-card{border:0;border-top:1px solid var(--line);border-radius:0;padding:12px 0;background:transparent;box-shadow:none;overflow:hidden}.diagram-viewer[data-diagram-mode="single"] .diagram-card{max-width:none;margin:0}.diagram-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;border-bottom:1px solid rgba(120,104,78,.2);padding-bottom:7px}.diagram-title strong{display:block;font-family:Georgia,"Noto Serif SC",serif;font-size:17px;line-height:1}.diagram-title span{display:block;margin-top:4px;color:var(--muted);font-family:var(--mono);font-size:10px}.diagram-meta{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:58%}.diagram-rendered{background:#fffdf8;border:1px solid var(--line);border-radius:0;padding:16px 18px 22px;margin-top:9px;overflow:auto;max-height:520px;min-height:300px;text-align:left;resize:vertical;scrollbar-gutter:stable both-edges}.diagram-viewer[data-diagram-mode="all"] .diagram-rendered{max-height:360px;min-height:260px}.diagram-rendered h4{margin:0 0 12px;font-size:11px;color:var(--gold);letter-spacing:.08em;text-transform:uppercase}.mermaid-source-native{display:none}.mermaid-native-render{display:block;min-width:max-content;min-height:210px;text-align:left;transform-origin:top left}.mermaid-native-render svg{display:block;margin:0 !important;max-width:none !important;overflow:visible}.mermaid-native-render .actor,.mermaid-native-render .messageText,.mermaid-native-render .noteText,.mermaid-native-render text{font-size:12px !important}.mermaid-runtime-error{margin:12px 0}.fallback-diagram{margin-top:14px;border-top:1px dashed rgba(120,104,78,.35);padding-top:10px}.fallback-diagram summary{cursor:pointer;color:var(--muted);font-weight:800}.fallback-diagram:not([open]){opacity:.72}.rendered-mermaid{background:transparent;border-radius:0}.diagram-legend{display:flex;gap:10px;align-items:center;flex-wrap:wrap;color:var(--muted);font-size:10.5px;margin:0 0 7px}.legend-dot{width:8px;height:8px;border-radius:99px;background:var(--blue);display:inline-block}.legend-dot.pass{background:var(--green)}.legend-dot.warn{background:var(--red)}.compact-lanes{min-width:max(600px,100%);display:grid;grid-template-columns:repeat(var(--lane-count),minmax(118px,1fr));gap:7px}.diagram-viewer[data-diagram-mode="single"] .compact-lanes{min-width:max(820px,100%)}.compact-lane{border:1px solid rgba(120,104,78,.22);border-radius:0;background:rgba(255,255,255,.5);padding:7px;position:relative;min-height:158px}.compact-lane::before{content:"";position:absolute;top:42px;bottom:9px;left:50%;border-left:2px dashed rgba(36,33,27,.13)}.compact-lane h4{position:relative;z-index:2;margin:0 0 7px;background:var(--paper);border:1px solid rgba(120,104,78,.18);border-radius:0;padding:6px;text-align:center;font-size:11px;line-height:1.2}.compact-event{position:relative;z-index:2;margin:7px 0;padding:7px;border-radius:0;border:1px solid rgba(36,33,27,.11);background:var(--paper);box-shadow:none;font-size:11px}.compact-event strong{display:block;font-size:11px;line-height:1.25;margin-bottom:4px}.compact-event small{color:var(--muted);font-family:var(--mono);font-size:9.5px;line-height:1.2}.compact-event.warn,.flow-step-card.warn{border-color:rgba(166,61,47,.28);background:#fff6f3}.compact-event.pass,.flow-step-card.pass{border-color:rgba(47,111,84,.28);background:#f3fbf6}.event-ids{margin-top:5px}.id-badge.mini{font-size:10px;padding:1px 5px;margin:1px}.id-more{display:inline-block;font-family:var(--mono);font-size:10px;margin:1px;padding:1px 5px;border-radius:3px;background:var(--gold-soft);color:var(--gold)}.compact-flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:7px}.diagram-viewer[data-diagram-mode="single"] .compact-flow{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}.flow-step-card{border-radius:0;border:1px solid rgba(47,111,84,.22);background:var(--green-soft);padding:8px;position:relative;min-height:78px}.flow-step-card::after{content:"";position:absolute}.flow-step-card.muted-card{background:#f8f3e9;border-style:dashed}.step-index{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:3px;background:#fff;color:var(--green);font-weight:800;margin-bottom:5px;font-size:10px}.flow-step-card strong{display:block;font-size:11.5px;line-height:1.25}.mermaid,pre{background:#181713;color:#fff;border-radius:0;padding:14px;overflow:auto}.answers{display:grid;grid-template-columns:1fr;gap:0;border-top:1px solid var(--line)}.answer{border:0;border-bottom:1px solid var(--line);background:transparent;padding:12px 0;border-radius:0}
 body[data-filter="control"] .card:not(:has(.artifact-plan-table)){opacity:.45}body[data-filter="new"] .artifact-plan-table tbody tr{display:none}body[data-filter="new"] .artifact-plan-table tbody tr:has([data-new-artifact="true"]){display:table-row}body[data-filter="new"] .card:not(#artifact-plan):not(#fingerprint):not(#current-target){display:none}.artifact-plan-table tr[hidden],.card[hidden],.artifact-group-section[hidden]{display:none!important}@media(max-width:900px){.layout,body[data-nav-collapsed="true"] .layout{grid-template-columns:1fr}.nav{position:relative;height:auto}body[data-nav-collapsed="true"] .nav h2,body[data-nav-collapsed="true"] .nav-links,body[data-nav-collapsed="true"] .nav-filters,body[data-nav-collapsed="true"] .nav hr{display:block}body[data-nav-collapsed="true"] .nav-toggle{writing-mode:horizontal-tb;min-height:auto}.diff-compare{grid-template-columns:1fr}.diff-minus{border-right:0;border-bottom:1px solid rgba(120,104,78,.18)}}@media print{.nav,button{display:none}.layout{display:block}.card{box-shadow:none;break-inside:avoid}body{background:#fff}}
 @media(max-width:1100px){.split{grid-template-columns:1fr}.target-flow{grid-template-columns:1fr}.flow-step::after{content:"v";right:18px;top:auto;bottom:-18px}.flow-step:last-child::after{content:""}.diagram-toolbar{align-items:flex-start;flex-direction:column}.diagram-grid{grid-template-columns:1fr}.diagram-meta{max-width:100%;justify-content:flex-start}.compact-lanes,.diagram-viewer[data-diagram-mode="single"] .compact-lanes{min-width:720px}.flow-step-card::after{content:""}}
 </style>`;
@@ -4499,6 +4844,7 @@ function buildHtml(input) {
     currentTargetMap,
     confirmationProfile,
     traceExecutionState,
+    progressDelta,
     reconfirmationState,
     resumeFailureRegistry,
     controlledIngestWriters,
@@ -4512,6 +4858,7 @@ function buildHtml(input) {
       : ui.nextStageBlocked;
   const sectionHtml = [
     ['core-design', renderCoreDesignSummary({ ui, confirmation, traceRows, artifactPlan, blockingIssues, warnings, confirmability })],
+    ['progress-delta', renderProgressDelta(progressDelta, reconfirmationState, ui)],
     reconfirmationState?.required ? ['reconfirmation-request', renderReconfirmationPanel(reconfirmationState)] : null,
     ['decision-summary', `<section class="card" id="decision-summary"><h2>${escapeHtml(ui.decisionSummary)}</h2>${renderTable(
       [ui.decisionQuestion, ui.decisionAnswer],
@@ -4530,7 +4877,7 @@ function buildHtml(input) {
     )}</p><pre id="confirm-text">${escapeHtml(
       confirmInstruction
     )}</pre><button class="copy" data-copy-target="confirm-text">${escapeHtml(ui.copy)}</button></div></section>`],
-    ['requirements', renderRequirementSections({ confirmation, traceRows, views, artifactPlan })],
+    ['requirements', renderRequirementSections({ confirmation, traceRows, views, artifactPlan, progressDelta })],
     ['business-visuals', `<section class="card" id="business-visuals"><h2>${escapeHtml(ui.businessVisuals)}</h2><p class="section-lead">${escapeHtml(
       ui.renderNote
     )}</p><h3>${escapeHtml(ui.mermaidVisual)}</h3>${renderMermaidBlocks(
@@ -4596,6 +4943,7 @@ function buildHtml(input) {
   const navLabels = {
     fingerprint: ui.fingerprint,
     'core-design': ui.coreDesign,
+    'progress-delta': ui.progressDelta,
     'reconfirmation-request': '重新确认请求',
     'decision-summary': ui.decisionSummary,
     'confirm-instruction': ui.confirmInstruction,
@@ -4694,6 +5042,7 @@ function buildReport(input) {
     diagramCoverage: input.coverage.diagramCoverage,
     traceCoverage: input.coverage.traceCoverage,
     traceExecutionState: input.traceExecutionState ?? null,
+    progressDelta: input.progressDelta ?? null,
     artifactAutomationCoverage: input.coverage.artifactAutomationCoverage,
     currentTargetCoverage: currentTargetEnabled ? input.currentTargetCoverage : emptyCurrentTargetCoverage(),
     currentTargetSchemaVersion: currentTargetEnabled ? input.currentTargetSchemaVersion : '',
@@ -4778,6 +5127,7 @@ function buildSummary(report, confirmation, views, artifactPlan) {
     blockingIssues: report.blockingIssues,
     warnings: report.warnings,
     mermaidRuntime: report.mermaidRuntime,
+    progressDelta: report.progressDelta ?? null,
     counts: {
       must: asArray(confirmation.must).length,
       notDone: asArray(confirmation.notDone).length,
@@ -4860,6 +5210,14 @@ function main(argv) {
     implementationConfirmationHash,
     architectureConfirmationHash: args.architectureConfirmationHash ?? confirmation.architectureConfirmationHash ?? '',
   });
+  const ui = getUiText(args.language);
+  const progressDelta = buildProgressDelta({
+    confirmation,
+    traceRows,
+    traceExecutionState,
+    reconfirmationState,
+    ui,
+  });
   const externalCurrentTargetMap = args.currentTargetMap ? readDataFile(path.resolve(args.currentTargetMap)) : null;
   const currentTargetMap = mergeCurrentTargetMaps(confirmation.currentTargetMap, externalCurrentTargetMap, {
     enabled: viewPackEnabled(confirmationProfile, 'currentTargetMap'),
@@ -4906,7 +5264,6 @@ function main(argv) {
   }
 
   const confirmability = coverage.blockingIssues.length ? 'blocked' : 'confirmable';
-  const ui = getUiText(args.language);
   const confirmInstruction = [
     confirmation.confirmPhrase ?? ui.confirmPhrase,
     `sourceDocumentHash=${sourceDocumentHash}`,
@@ -4938,6 +5295,7 @@ function main(argv) {
     currentTargetMap,
     confirmationProfile,
     traceExecutionState,
+    progressDelta,
     reconfirmationState,
     resumeFailureRegistry,
     controlledIngestWriters,
@@ -4987,6 +5345,7 @@ function main(argv) {
     currentTargetTableCoverage: currentTargetMap.tableCoverage,
     currentTargetSchemaIssues: currentTargetMap.schemaIssues,
     traceExecutionState,
+    progressDelta,
     governanceEventTypeRegistry: Object.fromEntries(governanceEventTypes.definitions.entries()),
     governanceEventTypeSchemaIssues: governanceEventTypes.schemaIssues,
     controlledIngestWriterRegistry: controlledIngestWriters.rows,

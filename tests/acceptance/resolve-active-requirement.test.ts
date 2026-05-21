@@ -252,19 +252,311 @@ describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
   });
 
   it('main-agent inspect uses requirement record implementation gate and orchestration hints', () => {
-    writeRequirementRecord();
+    writeRequirementRecord({
+      architectureConfirmationState: {
+        status: 'active',
+        currentArchitectureConfirmationHash:
+          'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+      },
+    });
     const result = captureStdout(() =>
       mainMainAgentOrchestration(['--cwd', root, '--action', 'inspect'])
     );
 
     expect(result.code, result.stderr).toBe(0);
     const surface = JSON.parse(result.stdout);
-    expect(surface.source).toBe('implementation_entry_gate');
+    expect(surface.source).toBe('requirement_record');
     expect(surface.latestGate).toMatchObject({
       gateId: 'implementation-readiness',
       decision: 'pass',
     });
     expect(surface.mainAgentNextAction).toBe('dispatch_implement');
     expect(surface.mainAgentReady).toBe(true);
+  });
+
+  it('main-agent inspect uses latest controlled gate and rerun lifecycle records', () => {
+    writeRequirementRecord({
+      architectureConfirmationState: {
+        status: 'active',
+        currentArchitectureConfirmationHash:
+          'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+      },
+      rerunLoops: [
+        {
+          rerunLoopId: 'rerun-stale-hash',
+          status: 'in_progress',
+          sourceRefs: [{ sourceType: 'gate_check', id: 'delivery-closeout:old' }],
+        },
+        {
+          rerunLoopId: 'rerun-stale-hash',
+          status: 'resolved',
+          sourceRefs: [{ sourceType: 'gate_check', id: 'delivery-closeout:old' }],
+          recheckRefs: [{ sourceType: 'execution_iteration', id: 'iteration-current' }],
+        },
+      ],
+      gateChecks: [
+        {
+          checkId: 'delivery-closeout:old',
+          gate: 'Delivery Closeout Gate',
+          decision: 'blocked',
+          closeoutAttemptId: 'old-attempt',
+        },
+        {
+          checkId: 'delivery-closeout:current',
+          gate: 'Delivery Closeout Gate',
+          decision: 'pass',
+          closeoutAttemptId: 'current-attempt',
+        },
+      ],
+    });
+
+    const result = captureStdout(() =>
+      mainMainAgentOrchestration(['--cwd', root, '--action', 'inspect'])
+    );
+
+    expect(result.code, result.stderr).toBe(0);
+    const surface = JSON.parse(result.stdout);
+    expect(surface.mainAgentNextAction).toBe('dispatch_implement');
+    expect(surface.mainAgentReady).toBe(true);
+    expect(surface.runtimeResumeProjection.blockingReasonRefs).toEqual([]);
+  });
+
+  it('dispatch-plan hydrates requirement-scoped state when explicit record args bypass a stale legacy state', () => {
+    const { recordPath, indexPath } = writeRequirementRecord({
+      requirementSetId: 'REQSET-EXPLICIT-001',
+      architectureConfirmationState: {
+        status: 'active',
+        currentArchitectureConfirmationHash:
+          'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+      },
+    });
+    fs.writeFileSync(
+      indexPath,
+      `${JSON.stringify(
+        {
+          version: 1,
+          updatedAt: '2026-05-21T00:00:00.000Z',
+          items: [
+            {
+              requirementId: 'REQ-OTHER-LEGACY',
+              flow: 'story',
+              status: 'planned',
+              allowedWriteScope: ['scripts/**', 'tests/**', 'docs/**', '_bmad-output/**'],
+            },
+          ],
+        },
+        null,
+        2
+      )}\n`,
+      'utf8'
+    );
+    const legacyStateDir = path.join(root, '_bmad-output', 'runtime', 'governance', 'orchestration-state');
+    fs.mkdirSync(legacyStateDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(legacyStateDir, 'story-old-session.json'),
+      `${JSON.stringify(
+        {
+          version: 1,
+          sessionId: 'story-old-session',
+          host: 'cursor',
+          flow: 'story',
+          currentPhase: 'implement',
+          nextAction: 'await_user',
+          pendingPacket: {
+            packetId: 'old-packet',
+            packetPath: path.join(root, '_bmad-output', 'runtime', 'governance', 'packets', 'old.json'),
+            packetKind: 'execution',
+            status: 'completed',
+            createdAt: '2026-05-20T00:00:00.000Z',
+            claimOwner: null,
+          },
+          originalExecutionPacketId: null,
+          gatesLoop: {
+            retryCount: 0,
+            maxRetries: 3,
+            noProgressCount: 0,
+            circuitOpen: false,
+            rerunGate: null,
+            activePacketId: 'old-packet',
+            lastResult: 'task-report:done',
+          },
+          closeout: {
+            invoked: false,
+            approved: false,
+            scoreWriteResult: null,
+            handoffPersisted: false,
+            resultCode: null,
+          },
+        },
+        null,
+        2
+      )}\n`,
+      'utf8'
+    );
+
+    const result = captureStdout(() =>
+      mainMainAgentOrchestration([
+        '--cwd',
+        root,
+        '--action',
+        'dispatch-plan',
+        '--record-id',
+        'REQ-ACTIVE-001',
+        '--requirement-set-id',
+        'REQSET-EXPLICIT-001',
+      ])
+    );
+
+    expect(result.code, result.stderr).toBe(0);
+    const instruction = JSON.parse(result.stdout);
+    const expectedStatePath = path.join(
+      path.dirname(recordPath),
+      'orchestration',
+      'orchestration-state',
+      'REQSET-EXPLICIT-001.json'
+    );
+    expect(instruction.sessionId).toBe('REQSET-EXPLICIT-001');
+    expect(instruction.packetPath.replace(/\\/g, '/')).toContain(
+      '_bmad-output/runtime/requirement-records/REQSET-EXPLICIT-001/prompts/prompt-packets'
+    );
+    expect(fs.existsSync(expectedStatePath)).toBe(true);
+
+    const inspectResult = captureStdout(() =>
+      mainMainAgentOrchestration([
+        '--cwd',
+        root,
+        '--action',
+        'inspect',
+        '--record-id',
+        'REQ-ACTIVE-001',
+        '--requirement-set-id',
+        'REQSET-EXPLICIT-001',
+      ])
+    );
+    expect(inspectResult.code, inspectResult.stderr).toBe(0);
+    const surface = JSON.parse(inspectResult.stdout);
+    expect(surface.source).toBe('requirement_record');
+    expect(surface.sessionId).toBe('REQSET-EXPLICIT-001');
+    expect(surface.orchestrationStatePath).toBe(expectedStatePath);
+    expect(surface.pendingPacketStatus).toBe('ready_for_main_agent');
+    expect(surface.runtimeResumeProjection.observedLegacyState).toMatchObject({
+      path: expectedStatePath,
+      pendingPacketStatus: 'ready_for_main_agent',
+    });
+  });
+
+  it('dispatch-plan replaces stale pending packet when lifecycle now requires implement', () => {
+    const { recordPath } = writeRequirementRecord({
+      requirementSetId: 'REQSET-STALE-PACKET-001',
+      architectureConfirmationState: {
+        status: 'active',
+        currentArchitectureConfirmationHash:
+          'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+      },
+      rerunLoops: [
+        {
+          rerunLoopId: 'rerun-stale',
+          status: 'resolved',
+          sourceRefs: [{ sourceType: 'gate_check', id: 'delivery-closeout:old' }],
+        },
+      ],
+      gateChecks: [
+        {
+          checkId: 'delivery-closeout:old',
+          gate: 'Delivery Closeout Gate',
+          decision: 'pass',
+          closeoutAttemptId: 'current-attempt',
+        },
+      ],
+    });
+    const stateDir = path.join(path.dirname(recordPath), 'orchestration', 'orchestration-state');
+    const packetDir = path.join(path.dirname(recordPath), 'prompts', 'prompt-packets');
+    fs.mkdirSync(stateDir, { recursive: true });
+    fs.mkdirSync(packetDir, { recursive: true });
+    const stalePacketPath = path.join(packetDir, 'remediate-stale.json');
+    fs.writeFileSync(
+      stalePacketPath,
+      `${JSON.stringify(
+        {
+          packetId: 'remediate-stale',
+          parentSessionId: 'REQSET-STALE-PACKET-001',
+          flow: 'standalone_tasks',
+          phase: 'implement',
+          taskType: 'remediate',
+          role: 'remediation-worker',
+          inputArtifacts: [recordPath],
+          allowedWriteScope: ['scripts/**'],
+          expectedDelta: 'stale remediation',
+          successCriteria: ['stale'],
+          stopConditions: ['stale'],
+        },
+        null,
+        2
+      )}\n`,
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(stateDir, 'REQSET-STALE-PACKET-001.json'),
+      `${JSON.stringify(
+        {
+          version: 1,
+          sessionId: 'REQSET-STALE-PACKET-001',
+          host: 'cursor',
+          flow: 'standalone_tasks',
+          currentPhase: 'implement',
+          nextAction: 'dispatch_remediation',
+          pendingPacket: {
+            packetId: 'remediate-stale',
+            packetPath: stalePacketPath,
+            packetKind: 'execution',
+            status: 'ready_for_main_agent',
+            createdAt: '2026-05-20T00:00:00.000Z',
+            claimOwner: null,
+          },
+          originalExecutionPacketId: null,
+          gatesLoop: {
+            retryCount: 0,
+            maxRetries: 3,
+            noProgressCount: 0,
+            circuitOpen: false,
+            rerunGate: null,
+            activePacketId: 'remediate-stale',
+            lastResult: null,
+          },
+          closeout: {
+            invoked: false,
+            approved: false,
+            scoreWriteResult: null,
+            handoffPersisted: false,
+            resultCode: null,
+          },
+        },
+        null,
+        2
+      )}\n`,
+      'utf8'
+    );
+
+    const result = captureStdout(() =>
+      mainMainAgentOrchestration([
+        '--cwd',
+        root,
+        '--action',
+        'dispatch-plan',
+        '--record-id',
+        'REQ-ACTIVE-001',
+        '--requirement-set-id',
+        'REQSET-STALE-PACKET-001',
+      ])
+    );
+
+    expect(result.code, result.stderr).toBe(0);
+    const instruction = JSON.parse(result.stdout);
+    const packet = JSON.parse(fs.readFileSync(instruction.packetPath, 'utf8'));
+    expect(instruction.nextAction).toBe('dispatch_implement');
+    expect(instruction.taskType).toBe('implement');
+    expect(instruction.packetId).not.toBe('remediate-stale');
+    expect(instruction.role).toBe('implementation-worker');
+    expect(packet.taskType).toBe('implement');
   });
 });

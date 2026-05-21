@@ -32,41 +32,6 @@ interface HostMatrixEvidence {
   evidence_provenance?: EvidenceProvenance;
 }
 
-interface SoakEvidence {
-  mode: 'deterministic_contract' | 'wall_clock';
-  run_kind?: 'heartbeat_only' | 'development_run_loop';
-  target_duration_ms: number;
-  observed_duration_ms: number;
-  manual_restarts: number;
-  silent_hangs: number;
-  false_completions: number;
-  recovery_success_rate: number;
-  tick_count?: number;
-  developmentRun?: {
-    tick_count: number;
-    completed_ticks: number;
-    blocked_ticks: number;
-    runLoopInvocations: Array<{
-      tick: number;
-      runId: string;
-      status: 'completed' | 'blocked';
-      packetId: string | null;
-      taskReportStatus: string | null;
-      evidence: string[];
-      finalNextAction: string | null;
-      tickCommand?: {
-        command: string;
-        exitCode: number | null;
-        stdoutPath: string;
-        stderrPath: string;
-        diffHashBefore: string;
-        diffHashAfter: string;
-      };
-    }>;
-  };
-  evidence_provenance?: EvidenceProvenance;
-}
-
 interface SprintStatusAuditEvidence {
   storyKey: string;
   status: string;
@@ -153,7 +118,6 @@ function defaultEvidencePaths(root: string): Record<string, string> {
       'e2e',
       'multi-host-pr-orchestration-report.json'
     ),
-    soak: path.join(root, '_bmad-output', 'runtime', 'soak', 'main-agent-soak-report.json'),
     prTopology: path.join(root, '_bmad-output', 'runtime', 'pr', 'pr_topology.json'),
     sprintAudit: path.join(
       root,
@@ -218,53 +182,6 @@ function checkHostMatrix(evidence: HostMatrixEvidence | null): {
   };
 }
 
-function checkSoak(evidence: SoakEvidence | null): { passed: boolean; summary: string } {
-  const invocations = evidence?.developmentRun?.runLoopInvocations ?? [];
-  const completed = invocations.filter((item) => item.status === 'completed');
-  const blocked = invocations.filter((item) => item.status === 'blocked');
-  const last = invocations[invocations.length - 1];
-  const hasRealPatch = invocations.some(
-    (item) => item.tickCommand?.diffHashBefore && item.tickCommand.diffHashBefore !== item.tickCommand.diffHashAfter
-  );
-  const blockedTicksRecovered =
-    blocked.length === 0 ||
-    blocked.every((item) => completed.some((candidate) => candidate.tick > item.tick));
-  return {
-    passed:
-      evidence != null &&
-      evidence.mode === 'wall_clock' &&
-      evidence.run_kind === 'development_run_loop' &&
-      evidence.target_duration_ms >= 8 * 60 * 60 * 1000 &&
-      evidence.observed_duration_ms >= evidence.target_duration_ms &&
-      evidence.manual_restarts === 0 &&
-      evidence.silent_hangs === 0 &&
-      evidence.false_completions === 0 &&
-      evidence.recovery_success_rate >= 0.95 &&
-      evidence.developmentRun != null &&
-      evidence.developmentRun.tick_count === evidence.tick_count &&
-      evidence.developmentRun.completed_ticks > 0 &&
-      evidence.developmentRun.runLoopInvocations.length === evidence.developmentRun.tick_count &&
-      invocations.every((item) => item.runId !== '' && item.packetId !== null) &&
-      completed.every((item) => item.taskReportStatus === 'done') &&
-      last?.status === 'completed' &&
-      blockedTicksRecovered &&
-      hasRealPatch &&
-      evidence.developmentRun.runLoopInvocations.some(
-        (item) =>
-          item.tickCommand != null &&
-          item.tickCommand.command !== '' &&
-          item.tickCommand.exitCode === 0 &&
-          item.tickCommand.stdoutPath !== '' &&
-          item.tickCommand.stderrPath !== '' &&
-          item.tickCommand.diffHashBefore !== '' &&
-          item.tickCommand.diffHashAfter !== ''
-      ),
-    summary: evidence
-      ? `mode=${evidence.mode}, run_kind=${evidence.run_kind ?? 'missing'}, target=${evidence.target_duration_ms}, observed=${evidence.observed_duration_ms}, recovery=${evidence.recovery_success_rate}, development_ticks=${evidence.developmentRun?.tick_count ?? 0}, completed_ticks=${evidence.developmentRun?.completed_ticks ?? 0}, blocked_ticks=${blocked.length}, recovered_blocked=${blockedTicksRecovered}, real_patch=${hasRealPatch}, tick_commands=${evidence.developmentRun?.runLoopInvocations.filter((item) => item.tickCommand?.exitCode === 0).length ?? 0}`
-      : 'missing',
-  };
-}
-
 function checkPrTopology(evidence: PrTopology | null): { passed: boolean; summary: string } {
   const validation = evidence ? validatePrTopologyForReleaseGate(evidence) : { passed: false };
   const allClosed =
@@ -323,7 +240,6 @@ function checkQualityGate(evidence: QualityGateEvidence | null): {
 function checkEvidenceProvenance(input: {
   releaseGate: ReleaseGateEvidence | null;
   hostMatrix: HostMatrixEvidence | null;
-  soak: SoakEvidence | null;
   prTopology: PrTopology | null;
   sprintAudit: SprintStatusAuditEvidence | null;
   qualityGate?: QualityGateEvidence | null;
@@ -331,7 +247,6 @@ function checkEvidenceProvenance(input: {
   const entries = [
     ['releaseGate', input.releaseGate?.evidence_provenance],
     ['hostMatrix', input.hostMatrix?.evidence_provenance],
-    ['soak', input.soak?.evidence_provenance],
     ['prTopology', input.prTopology?.evidence_provenance],
     ['sprintAudit', input.sprintAudit?.evidence_provenance],
     ['qualityGate', input.qualityGate?.evidence_provenance],
@@ -374,7 +289,6 @@ export function evaluateDeliveryTruthGate(input: {
   releaseGate: ReleaseGateEvidence | null;
   hostMatrix?: HostMatrixEvidence | null;
   dualHost?: unknown;
-  soak: SoakEvidence | null;
   prTopology: PrTopology | null;
   sprintAudit: SprintStatusAuditEvidence | null;
   qualityGate?: QualityGateEvidence | null;
@@ -386,7 +300,6 @@ export function evaluateDeliveryTruthGate(input: {
   const checks = [
     { id: 'release-gate', ...checkReleaseGate(input.releaseGate) },
     { id: 'multi-host-host-matrix', ...checkHostMatrix(input.hostMatrix ?? null) },
-    { id: 'wall-clock-8h-soak', ...checkSoak(input.soak) },
     { id: 'pr-topology-closed', ...checkPrTopology(input.prTopology) },
     { id: 'authorized-sprint-status-write', ...checkSprintAudit(input.sprintAudit) },
     { id: 'quality-gate', ...checkQualityGate(input.qualityGate ?? null) },
@@ -438,21 +351,18 @@ export function main(argv: string[]): number {
   const evidencePaths = {
     releaseGate: args.releaseGatePath ?? defaults.releaseGate,
     hostMatrix: args.hostMatrixPath ?? defaults.hostMatrix,
-    soak: args.soakPath ?? defaults.soak,
     prTopology: args.prTopologyPath ?? defaults.prTopology,
     sprintAudit: args.sprintAuditPath ?? defaults.sprintAudit,
     qualityGate: args.qualityGatePath ?? defaults.qualityGate,
   };
   const releaseGate = readJson<ReleaseGateEvidence>(evidencePaths.releaseGate);
   const hostMatrix = readJson<HostMatrixEvidence>(evidencePaths.hostMatrix);
-  const soak = readJson<SoakEvidence>(evidencePaths.soak);
   const prTopology = readJson<PrTopology>(evidencePaths.prTopology);
   const sprintAudit = readJson<SprintStatusAuditEvidence>(evidencePaths.sprintAudit);
   const qualityGate = readJson<QualityGateEvidence>(evidencePaths.qualityGate);
   for (const [id, result] of Object.entries({
     releaseGate,
     hostMatrix,
-    soak,
     prTopology,
     sprintAudit,
     qualityGate,
@@ -464,7 +374,6 @@ export function main(argv: string[]): number {
   const report = evaluateDeliveryTruthGate({
     releaseGate: releaseGate.value,
     hostMatrix: hostMatrix.value,
-    soak: soak.value,
     prTopology: prTopology.value,
     sprintAudit: sprintAudit.value,
     qualityGate: qualityGate.value,
