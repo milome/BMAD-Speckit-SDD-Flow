@@ -347,6 +347,7 @@ function invocationFromTickRecord(input: {
       stderrPath: input.stderrPath,
       diffHashBefore: input.diffHashBefore,
       diffHashAfter: input.diffHashAfter,
+      timeoutMs: 0,
     },
   };
 }
@@ -392,6 +393,7 @@ function invocationFromExistingTickRecord(
       stderrPath: record.adapter?.stderrPath ?? '',
       diffHashBefore: record.beforeDiffHash ?? '',
       diffHashAfter: record.afterDiffHash ?? '',
+      timeoutMs: 0,
     },
   };
 }

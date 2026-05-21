@@ -5,11 +5,34 @@ import * as path from 'node:path';
 import { writeDatasetBundle } from '../bundle-writer';
 import type { CanonicalSftSample } from '../types';
 
+type SampleOverrides = Omit<
+  Partial<CanonicalSftSample>,
+  'source' | 'metadata' | 'quality' | 'provenance' | 'split' | 'redaction' | 'export_compatibility'
+> & {
+  source?: Partial<CanonicalSftSample['source']>;
+  metadata?: Partial<CanonicalSftSample['metadata']>;
+  quality?: Partial<CanonicalSftSample['quality']>;
+  provenance?: Partial<CanonicalSftSample['provenance']>;
+  split?: Partial<CanonicalSftSample['split']>;
+  redaction?: Partial<CanonicalSftSample['redaction']>;
+  export_compatibility?: Partial<CanonicalSftSample['export_compatibility']>;
+};
+
 function makeSample(
   sampleId: string,
   split: 'train' | 'validation' | 'test',
-  overrides: Partial<CanonicalSftSample> = {}
+  overrides: SampleOverrides = {}
 ): CanonicalSftSample {
+  const {
+    source,
+    metadata,
+    quality,
+    provenance,
+    split: splitOverride,
+    redaction,
+    export_compatibility,
+    ...topLevelOverrides
+  } = overrides;
   return {
     sample_id: sampleId,
     sample_version: 'v1',
@@ -24,6 +47,7 @@ function makeSample(
           content_hash: `sha256:artifact-${sampleId}`,
         },
       ],
+      ...source,
     },
     messages: [
       { role: 'system', content: 'You are a coding agent.' },
@@ -33,6 +57,7 @@ function makeSample(
     metadata: {
       schema_targets: ['openai_chat', 'hf_conversational'],
       language: 'zh-CN',
+      ...metadata,
     },
     quality: {
       acceptance_decision: 'accepted',
@@ -46,6 +71,7 @@ function makeSample(
       safety_flags: [],
       rejection_reasons: [],
       warnings: [],
+      ...quality,
     },
     provenance: {
       base_commit_hash: 'ad245b7',
@@ -55,25 +81,29 @@ function makeSample(
       patch_ref: `sha256:patch-${sampleId}`,
       lineage: [`run-${sampleId}`, `evt-${sampleId}`],
       generated_at: '2026-03-28T00:00:00.000Z',
+      ...provenance,
     },
     split: {
       assignment: split,
       seed: 42,
       strategy: 'story_hash_v1',
       group_key: `epic-15/story-${sampleId}`,
+      ...splitOverride,
     },
     redaction: {
       status: 'clean',
       applied_rules: [],
       findings: [],
       redacted_fields: [],
+      ...redaction,
     },
     export_compatibility: {
       openai_chat: { compatible: true, reasons: [], warnings: [] },
       hf_conversational: { compatible: true, reasons: [], warnings: [] },
       hf_tool_calling: { compatible: false, reasons: ['target_incompatible_hf_tool_calling'], warnings: [] },
+      ...export_compatibility,
     },
-    ...overrides,
+    ...topLevelOverrides,
   };
 }
 
@@ -106,7 +136,7 @@ describe('bundle writer', () => {
         dedupe_cluster_id: 'dup-bundle-test',
       },
     });
-    const enrichedValidationSample = {
+    const enrichedValidationSample: CanonicalSftSample = {
       ...validationSample,
       metadata: {
         ...validationSample.metadata,

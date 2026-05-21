@@ -262,7 +262,7 @@ export async function runAuditorHost(
   let scoreRecord: Record<string, unknown> | undefined;
   let scoreError: string | undefined;
   let scoringFailureMode: 'not_run' | 'succeeded' | 'non_blocking_failure' =
-    parsed.scoreTriggerPresent && scoreCommand ? 'succeeded' : 'not_run';
+    parsed.scoreTriggerPresent ? 'succeeded' : 'not_run';
   let storySpecVersionLock: VersionLockResult | undefined;
 
   if (hostStage === 'spec' && isStoryFlowSpecArtifact(effectiveArtifactDocPath)) {
@@ -291,7 +291,7 @@ export async function runAuditorHost(
       blocking_reason: blockingReason,
     };
     scoringFailureMode = 'not_run';
-  } else if (parsed.scoreTriggerPresent && scoreCommand) {
+  } else if (parsed.scoreTriggerPresent) {
     try {
       const scoreResult = await scoreCommand({
         reportPath: resolvedReportPath,

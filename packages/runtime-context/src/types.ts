@@ -40,6 +40,7 @@ export interface ReviewerLatestCloseoutRecord {
     scoringFailureMode: string;
     packetExecutionClosureStatus: string;
   };
+  mainAgentCanContinue?: boolean;
   scoreError?: string;
 }
 

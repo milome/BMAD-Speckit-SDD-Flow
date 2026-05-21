@@ -333,9 +333,9 @@ export function mainEmitRuntimePolicy(argv: string[]): number {
 
     process.stdout.write(
       stableStringifyPolicy({
+        ...policy,
         flow: loaded.runtimeContext.flow,
         stage: loaded.runtimeContext.stage,
-        ...policy,
       })
     );
     return 0;

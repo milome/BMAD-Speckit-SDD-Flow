@@ -198,10 +198,10 @@ function resolveRuntimeGovernanceBlock(
     return {
       status: 'resolved',
       content: stableStringifyPolicy({
+        ...policy,
         flow: loaded.runtimeContext.flow,
         stage: loaded.runtimeContext.stage,
         runtimeContextPath: loaded.resolvedContextPath,
-        ...policy,
       }),
       error: null,
     };

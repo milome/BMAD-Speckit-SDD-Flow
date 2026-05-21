@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { renderDashboardSnapshotMarkdown } from '../snapshot';
 import type { RuntimeDashboardSnapshot } from '../runtime-query';
+import {
+  buildReviewerContractProjection,
+  buildReviewerRouteExplainability,
+} from '../reviewer-projection';
 import { buildSixMentalModelProjection } from '../six-model-projection';
 
 describe('runtime dashboard snapshot markdown', () => {
   it('includes reviewer projection details when runtime context is requested', () => {
-    const snapshotBase = {
+    const snapshotBase: Omit<RuntimeDashboardSnapshot, 'six_model_projection'> = {
       generated_at: '2026-03-28T00:00:00.000Z',
       selection: {
         run_id: 'run-001',
@@ -16,7 +20,7 @@ describe('runtime dashboard snapshot markdown', () => {
       overview: {
         status: 'running',
         health_score: 91,
-        trend: 'stable',
+        trend: '持平',
         veto_count: 0,
         dimensions: [],
         weak_top3: [],
@@ -34,75 +38,7 @@ describe('runtime dashboard snapshot markdown', () => {
           resolved_context_path: '_bmad-output/runtime/context/runs/run-001.json',
         },
         last_event_at: '2026-03-28T00:05:00.000Z',
-        reviewer_contract: {
-          version: 'reviewer_contract_projection_v1',
-          reviewerIdentity: 'bmad_code_reviewer',
-          reviewerDisplayName: 'code-reviewer',
-          facilitatorIdentity: 'party_mode_facilitator',
-          registryVersion: 'reviewer_registry_v1',
-          sharedCore: {
-            version: 'reviewer_shared_core_v1',
-            rootPath: '_bmad/core/agents/code-reviewer',
-            basePromptPath: '_bmad/core/agents/code-reviewer/base-prompt.md',
-            profilePackPath: '_bmad/core/agents/code-reviewer/profiles.json',
-          },
-          schemaVersions: {
-            input: 'review_input_v1',
-            output: 'review_output_v1',
-            handoff: 'review_handoff_v1',
-            closeout: 'review_host_closeout_v1',
-          },
-          closeoutRunner: 'runAuditorHost',
-          governance: {
-            implementationReadinessStatusRequired: true,
-            implementationReadinessGateName: 'implementation-readiness',
-            gatesLoopRequired: true,
-            rerunGatesRequired: true,
-            packetExecutionClosureRequired: true,
-            packetExecutionClosureStatuses: [
-              'awaiting_rerun_gate',
-              'retry_pending',
-              'gate_passed',
-              'escalated',
-            ],
-            closeoutEnvelopeFields: [
-              'resultCode',
-              'requiredFixes',
-              'requiredFixesDetail',
-              'rerunDecision',
-              'scoringFailureMode',
-              'packetExecutionClosureStatus',
-            ],
-          },
-          hostAdapterBoundary: {
-            projectionOnly: true,
-            hostLocalStageSemanticsForbidden: true,
-            hostLocalRoutePrecedenceForbidden: true,
-            hostLocalFallbackBusinessRulesForbidden: true,
-          },
-          compatibilityGuards: {
-            codexNoopRequired: false,
-            codexBehaviorChangeAllowed: true,
-          },
-          requiredRolloutProofs: [
-            'parity_proof',
-            'consumer_install_proof',
-            'rollback_proof',
-            'codex_parity_proof',
-            'codex_closeout_proof',
-            'codex_scoring_proof',
-          ],
-          supportedProfiles: ['story_audit', 'implement_audit'],
-          supportedAuditEntryStages: ['story', 'implement'],
-          activeAuditConsumer: {
-            entryStage: 'implement',
-            profile: 'implement_audit',
-            closeoutStage: 'implement',
-            auditorScript: 'auditor-implement',
-            scoreStage: 'implement',
-            triggerStage: 'speckit_5_2',
-          },
-        },
+        reviewer_contract: buildReviewerContractProjection({ auditEntryStage: 'implement' }),
         latest_reviewer_closeout: {
           updated_at: '2026-03-28T00:06:00.000Z',
           runner: 'runAuditorHost',
@@ -135,71 +71,8 @@ describe('runtime dashboard snapshot markdown', () => {
         last_dispatch_error: null,
         reviewer_route_explainability: [
           {
-            requestedSkillId: 'code-reviewer',
-            reviewerIdentity: 'bmad_code_reviewer',
-            reviewerDisplayName: 'code-reviewer',
-            registryVersion: 'reviewer_registry_v1',
-            sharedCore: {
-              version: 'reviewer_shared_core_v1',
-              rootPath: '_bmad/core/agents/code-reviewer',
-              basePromptPath: '_bmad/core/agents/code-reviewer/base-prompt.md',
-              profilePackPath: '_bmad/core/agents/code-reviewer/profiles.json',
-            },
-            closeoutRunner: 'runAuditorHost',
-            routeReasonSummary:
-              'Registry-backed reviewer routing keeps shared-core semantics while preserving host-specific transport and carrier shape.',
-            fallbackStatus: 'fallback_ready',
-            isomorphismMaturity: 'projection_wired',
-            complexitySource:
-              'Triple-host carrier parity is wired through reviewer shared-core routing for Cursor, Claude, and Codex.',
-            remainingBlocker: 'none',
-            supportedProfiles: ['story_audit', 'implement_audit'],
-            requiredRolloutProofs: [
-              'parity_proof',
-              'consumer_install_proof',
-              'rollback_proof',
-              'codex_parity_proof',
-              'codex_closeout_proof',
-              'codex_scoring_proof',
-            ],
-            compatibilityGuards: {
-              codexNoopRequired: false,
-              codexBehaviorChangeAllowed: true,
-            },
-            hosts: {
-              cursor: {
-                carrierSourcePath: '_bmad/cursor/agents/code-reviewer.md',
-                runtimeTargetPath: '.cursor/agents/code-reviewer.md',
-                preferredRoute: { tool: 'cursor-task', subtypeOrExecutor: 'code-reviewer' },
-                fallbackRoute: { tool: 'mcp_task', subtypeOrExecutor: 'generalPurpose' },
-                fallbackReason:
-                  'Use mcp_task/generalPurpose when cursor-task/code-reviewer is unavailable, while preserving the shared reviewer contract and runAuditorHost closeout.',
-              },
-              claude: {
-                carrierSourcePath: '_bmad/claude/agents/code-reviewer.md',
-                runtimeTargetPath: '.claude/agents/code-reviewer.md',
-                preferredRoute: { tool: 'Agent', subtypeOrExecutor: 'code-reviewer' },
-                fallbackRoute: { tool: 'Agent', subtypeOrExecutor: 'general-purpose' },
-                fallbackReason:
-                  'Use Agent/general-purpose only when Agent/code-reviewer is unavailable, while preserving the shared reviewer contract and runAuditorHost closeout.',
-              },
-              codex: {
-                carrierSourcePath: '_bmad/codex/agents/code-reviewer.toml',
-                runtimeTargetPath: '.codex/agents/code-reviewer.toml',
-                preferredRoute: { tool: 'codex', subtypeOrExecutor: 'worker:audit' },
-                fallbackRoute: { tool: 'codex', subtypeOrExecutor: 'general-purpose' },
-                fallbackReason:
-                  'Use the Codex no-hooks worker adapter fallback only when the dedicated code-reviewer carrier is unavailable, while preserving the shared reviewer contract and runAuditorHost closeout.',
-              },
-            },
-            activeAuditConsumer: {
-              entryStage: 'implement',
-              profile: 'implement_audit',
-              closeoutStage: 'implement',
-              auditorScript: 'auditor-implement',
-              scoreStage: 'implement',
-              triggerStage: 'speckit_5_2',
-            },
+            ...buildReviewerRouteExplainability({ auditEntryStage: 'implement' }),
+            matchedSkillId: 'code-reviewer',
           },
         ],
       },

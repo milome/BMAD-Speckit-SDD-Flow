@@ -659,11 +659,11 @@ function resolveContinueStateSummary(input: {
   runtimeContext: Partial<RuntimeContextFile> | null;
 }): ContinueStateSummary {
   const contextCloseout = input.runtimeContext?.latestReviewerCloseout;
-  if (contextCloseout && typeof contextCloseout.canMainAgentContinue === 'boolean') {
+  if (contextCloseout && typeof contextCloseout.mainAgentCanContinue === 'boolean') {
     return {
-      mainAgentCanContinue: contextCloseout.canMainAgentContinue,
+      mainAgentCanContinue: contextCloseout.mainAgentCanContinue,
       source: 'runtimeContext',
-      continueDecision: contextCloseout.canMainAgentContinue
+      continueDecision: contextCloseout.mainAgentCanContinue
         ? 'continue'
         : contextCloseout.closeoutEnvelope?.rerunDecision &&
             contextCloseout.closeoutEnvelope.rerunDecision !== 'none'
@@ -673,7 +673,7 @@ function resolveContinueStateSummary(input: {
   }
 
   if (!input.projectRoot) {
-    return { mainAgentCanContinue: null, source: 'none' };
+    return { mainAgentCanContinue: null, source: 'none', continueDecision: null };
   }
 
   const registry = readRegistryOrDefault(input.projectRoot);

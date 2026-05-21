@@ -412,7 +412,7 @@ function normalizeDeliveryEvidence(deliveryEvidence: unknown, record: JsonObject
   const recordId = text(record.recordId);
   const requirementSetId = text(record.requirementSetId) || recordId;
   const requiredCommands = objects(delivery.requiredCommands)
-    .map((command) => {
+    .map((command): JsonObject | null => {
       const commandId = text(command.commandId);
       if (!commandId) return null;
       const artifactRefs = objects(command.artifactRefs).map((artifact) =>
@@ -440,7 +440,7 @@ function normalizeDeliveryEvidence(deliveryEvidence: unknown, record: JsonObject
         artifactRefs,
       };
     })
-    .filter((command): command is JsonObject => Boolean(command));
+    .filter((command): command is JsonObject => command !== null);
   const historicalRunRefs = objects(delivery.historicalRunRefs)
     .map((run) => ({
       commandId: text(run.commandId),

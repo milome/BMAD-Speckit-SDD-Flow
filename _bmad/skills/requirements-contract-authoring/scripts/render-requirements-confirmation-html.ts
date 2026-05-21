@@ -2966,6 +2966,17 @@ function getUiText(language) {
     confirmationLanguage: '确认语言',
     currentStatus: '当前状态',
     confirmability: '是否允许确认',
+    scopeConfirmability: '范围确认状态',
+    deliveryReadiness: '交付准出状态',
+    deliveryReady: 'delivery_ready=true',
+    deliveryNotReady: 'delivery_ready=false',
+    deliveryReadinessReason: '交付阻断原因',
+    deliveryReadinessLead:
+      '注意：confirmable 只表示需求范围可确认，不代表实现完成、可合并、可发布或可上线。交付准出必须依赖当前 attempt 的受控证据。',
+    deliveryReadinessMissingRecord: '缺少受控记录',
+    deliveryReadinessMissingCurrentEvidence: '存在缺失当前证据',
+    deliveryReadinessStaleEvidence: '存在过期历史证据',
+    deliveryReadinessTraceNotAllPass: 'traceRows 尚未全部 current_pass',
     coreSubtitle: '本页是针对当前源文档的实例级确认视图，展示已提供的范围、视图、traceRows、工件计划和确认预期。',
     diffCurrent: '当前',
     diffTarget: '目标',
@@ -3089,6 +3100,17 @@ function getUiText(language) {
     confirmationLanguage: 'Confirmation Language',
     currentStatus: 'Current Status',
     confirmability: 'Confirmability',
+    scopeConfirmability: 'Scope Confirmability',
+    deliveryReadiness: 'Delivery Readiness',
+    deliveryReady: 'delivery_ready=true',
+    deliveryNotReady: 'delivery_ready=false',
+    deliveryReadinessReason: 'Delivery Blocker',
+    deliveryReadinessLead:
+      'Important: confirmable only means the requirement scope can be confirmed. It does not mean implementation complete, merge ready, release ready, or launch ready. Delivery readiness requires controlled current-attempt evidence.',
+    deliveryReadinessMissingRecord: 'Missing controlled record',
+    deliveryReadinessMissingCurrentEvidence: 'Missing current evidence',
+    deliveryReadinessStaleEvidence: 'Stale historical evidence exists',
+    deliveryReadinessTraceNotAllPass: 'traceRows are not all current_pass',
     coreSubtitle:
       'This is an instance-level confirmation view for the current source document, showing the provided scope, views, traceRows, artifact plan, and next-stage expectations.',
     diffCurrent: 'Current',
@@ -3972,6 +3994,38 @@ function buildProgressDelta(input) {
   };
 }
 
+function buildDeliveryReadiness(progressDelta, traceExecutionState, ui) {
+  const totalTraceRows = progressDelta?.counts?.totalTraceRows ?? 0;
+  const currentPassTraceRows = progressDelta?.counts?.currentPassTraceRows ?? 0;
+  const missingEvidenceCount = progressDelta?.counts?.missingEvidenceIds ?? 0;
+  const staleProofCount = progressDelta?.counts?.staleProofIds ?? 0;
+  const traceRows = asArray(progressDelta?.traceRows);
+  const nonCurrentPassTraceRows = traceRows
+    .filter((row) => row.status !== 'current_pass')
+    .map((row) => row.id);
+  const reasons = [];
+  if (!traceExecutionState?.recordFound) reasons.push(ui.deliveryReadinessMissingRecord);
+  if (missingEvidenceCount > 0) reasons.push(`${ui.deliveryReadinessMissingCurrentEvidence}: ${missingEvidenceCount}`);
+  if (staleProofCount > 0 || (traceExecutionState?.counts?.stale ?? 0) > 0) {
+    reasons.push(`${ui.deliveryReadinessStaleEvidence}: ${Math.max(staleProofCount, traceExecutionState?.counts?.stale ?? 0)}`);
+  }
+  if (currentPassTraceRows !== totalTraceRows) {
+    reasons.push(`${ui.deliveryReadinessTraceNotAllPass}: ${currentPassTraceRows}/${totalTraceRows}`);
+  }
+  return {
+    ready: reasons.length === 0,
+    status: reasons.length === 0 ? 'delivery_ready' : 'delivery_not_ready',
+    label: reasons.length === 0 ? ui.deliveryReady : ui.deliveryNotReady,
+    reasons: unique(reasons),
+    currentAttemptStatus: progressDelta?.currentAttemptStatus ?? 'unknown',
+    currentPassTraceRows,
+    totalTraceRows,
+    missingEvidenceCount,
+    staleProofCount,
+    nonCurrentPassTraceRows,
+  };
+}
+
 function overflowText(ui, count) {
   if (count <= 0) return '';
   return ui.overflowPrefix === '+'
@@ -4520,7 +4574,16 @@ function renderReconfirmationPanel(reconfirmationState) {
 }
 
 function renderCoreDesignSummary(input) {
-  const { ui, confirmation, traceRows, artifactPlan, blockingIssues, warnings, confirmability } = input;
+  const {
+    ui,
+    confirmation,
+    traceRows,
+    artifactPlan,
+    blockingIssues,
+    warnings,
+    confirmability,
+    deliveryReadiness,
+  } = input;
   const controlArtifacts = artifactPlan.filter(
     (item) => item.canAffectControlFlow || item.sourceOfTruthRole === 'control'
   ).length;
@@ -4540,6 +4603,7 @@ function renderCoreDesignSummary(input) {
     <div class="metric-grid">
       ${metrics.map(([value, label]) => `<div class="metric"><strong>${escapeHtml(value)}</strong><span>${escapeHtml(label)}</span></div>`).join('')}
       <div class="metric"><strong>${escapeHtml(confirmability)}</strong><span>${escapeHtml(ui.confirmability)}</span></div>
+      <div class="metric ${deliveryReadiness.ready ? 'green' : 'danger'}"><strong>${escapeHtml(deliveryReadiness.label)}</strong><span>${escapeHtml(ui.deliveryReadiness)}</span></div>
       <div class="metric"><strong>${traceRows.length}</strong><span>traceRows</span></div>
       <div class="metric"><strong>${artifactPlan.length}</strong><span>工件计划项</span></div>
       <div class="metric"><strong>${controlArtifacts}</strong><span>影响控制流的工件</span></div>
@@ -4549,6 +4613,24 @@ function renderCoreDesignSummary(input) {
     ${principles.length ? `<div class="principle-grid">${principles
       .map(([title, text]) => `<article class="principle"><strong>${escapeHtml(title)}</strong><p>${escapeHtml(text)}</p></article>`)
       .join('')}</div>` : '<p class="empty-state">源文档未提供 coreDesignSummary.principles[]。</p>'}
+  </section>`;
+}
+
+function renderDeliveryReadiness(deliveryReadiness, ui) {
+  const reasonRows = deliveryReadiness.reasons.length
+    ? deliveryReadiness.reasons.map((reason, index) => [`${String(index + 1).padStart(2, '0')}`, reason])
+    : [['--', ui.deliveryReady]];
+  return `<section class="card" id="delivery-readiness">
+    <h2>${escapeHtml(ui.deliveryReadiness)}</h2>
+    <p class="section-lead">${escapeHtml(ui.deliveryReadinessLead)}</p>
+    <div class="metric-grid">
+      <div class="metric ${deliveryReadiness.ready ? 'green' : 'danger'}"><strong>${escapeHtml(deliveryReadiness.label)}</strong><span>${escapeHtml(ui.deliveryReadiness)}</span></div>
+      <div class="metric"><strong>${escapeHtml(deliveryReadiness.currentPassTraceRows)}</strong><span>current_pass traceRows</span></div>
+      <div class="metric"><strong>${escapeHtml(deliveryReadiness.totalTraceRows)}</strong><span>traceRows total</span></div>
+      <div class="metric danger"><strong>${escapeHtml(deliveryReadiness.missingEvidenceCount)}</strong><span>${escapeHtml(ui.missingCurrentEvidence)}</span></div>
+      <div class="metric warn"><strong>${escapeHtml(deliveryReadiness.staleProofCount)}</strong><span>${escapeHtml(ui.staleProofNeedsRecheck)}</span></div>
+    </div>
+    <div class="table-wrap">${renderTable(['reasonId', 'reason'], reasonRows)}</div>
   </section>`;
 }
 
@@ -4845,6 +4927,7 @@ function buildHtml(input) {
     confirmationProfile,
     traceExecutionState,
     progressDelta,
+    deliveryReadiness,
     reconfirmationState,
     resumeFailureRegistry,
     controlledIngestWriters,
@@ -4857,7 +4940,20 @@ function buildHtml(input) {
       ? confirmation.nextStageAfterConfirmation ?? ui.nextStageReadyFallback
       : ui.nextStageBlocked;
   const sectionHtml = [
-    ['core-design', renderCoreDesignSummary({ ui, confirmation, traceRows, artifactPlan, blockingIssues, warnings, confirmability })],
+    [
+      'core-design',
+      renderCoreDesignSummary({
+        ui,
+        confirmation,
+        traceRows,
+        artifactPlan,
+        blockingIssues,
+        warnings,
+        confirmability,
+        deliveryReadiness,
+      }),
+    ],
+    ['delivery-readiness', renderDeliveryReadiness(deliveryReadiness, ui)],
     ['progress-delta', renderProgressDelta(progressDelta, reconfirmationState, ui)],
     reconfirmationState?.required ? ['reconfirmation-request', renderReconfirmationPanel(reconfirmationState)] : null,
     ['decision-summary', `<section class="card" id="decision-summary"><h2>${escapeHtml(ui.decisionSummary)}</h2>${renderTable(
@@ -4943,6 +5039,7 @@ function buildHtml(input) {
   const navLabels = {
     fingerprint: ui.fingerprint,
     'core-design': ui.coreDesign,
+    'delivery-readiness': ui.deliveryReadiness,
     'progress-delta': ui.progressDelta,
     'reconfirmation-request': '重新确认请求',
     'decision-summary': ui.decisionSummary,
@@ -4984,6 +5081,7 @@ function buildHtml(input) {
     ['optionalViewPacks', confirmationProfile.optionalViewPacks.join(', ')],
     [ui.currentStatus, confirmation.status ?? 'unknown'],
     [ui.confirmability, confirmability],
+    [ui.deliveryReadiness, deliveryReadiness.label],
   ];
   return `<!doctype html>
 <html lang="${attr(args.language === 'en-US' ? 'en' : 'zh-CN')}">
@@ -5037,6 +5135,8 @@ function buildReport(input) {
     optionalViewPacksSkipped: input.confirmationProfile?.optionalViewPacksSkipped ?? GOVERNANCE_VIEW_PACKS,
     unknownViewPacks: input.confirmationProfile?.unknownViewPacks ?? [],
     confirmability: input.confirmability,
+    scopeConfirmability: input.confirmability,
+    deliveryReadiness: input.deliveryReadiness,
     blockingIssues: input.blockingIssues,
     warnings: input.warnings,
     diagramCoverage: input.coverage.diagramCoverage,
@@ -5125,6 +5225,7 @@ function buildSummary(report, confirmation, views, artifactPlan) {
     language: report.language,
     generatedAt: report.generatedAt,
     blockingIssues: report.blockingIssues,
+    deliveryReadiness: report.deliveryReadiness,
     warnings: report.warnings,
     mermaidRuntime: report.mermaidRuntime,
     progressDelta: report.progressDelta ?? null,
@@ -5218,6 +5319,7 @@ function main(argv) {
     reconfirmationState,
     ui,
   });
+  const deliveryReadiness = buildDeliveryReadiness(progressDelta, traceExecutionState, ui);
   const externalCurrentTargetMap = args.currentTargetMap ? readDataFile(path.resolve(args.currentTargetMap)) : null;
   const currentTargetMap = mergeCurrentTargetMaps(confirmation.currentTargetMap, externalCurrentTargetMap, {
     enabled: viewPackEnabled(confirmationProfile, 'currentTargetMap'),
@@ -5332,6 +5434,7 @@ function main(argv) {
     generatedAt,
     confirmation,
     confirmability,
+    deliveryReadiness,
     confirmInstruction: finalConfirmInstruction,
     blockingIssues: coverage.blockingIssues,
     warnings: coverage.warnings,
@@ -5346,6 +5449,7 @@ function main(argv) {
     currentTargetSchemaIssues: currentTargetMap.schemaIssues,
     traceExecutionState,
     progressDelta,
+    deliveryReadiness,
     governanceEventTypeRegistry: Object.fromEntries(governanceEventTypes.definitions.entries()),
     governanceEventTypeSchemaIssues: governanceEventTypes.schemaIssues,
     controlledIngestWriterRegistry: controlledIngestWriters.rows,
@@ -5368,7 +5472,8 @@ function main(argv) {
     console.log(`confirmation.html=${normalizePathForReport(outPath)}`);
     console.log(`confirmation-summary.json=${normalizePathForReport(summaryPath)}`);
     console.log(`confirmation-render-report.json=${normalizePathForReport(reportPath)}`);
-    console.log(`confirmability=${confirmability}`);
+    console.log(`scopeConfirmability=${confirmability}`);
+    console.log(`deliveryReadiness=${deliveryReadiness.label}`);
   }
 
   if (args.strict !== false && coverage.blockingIssues.length) {

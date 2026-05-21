@@ -12,6 +12,32 @@ type JsonObject = Record<string, unknown>;
 
 const SCHEMA_VERSION = 'subagent-current-attempt-revalidation/v1';
 
+export interface SubagentCurrentAttemptRevalidationReport extends JsonObject {
+  reportType: 'subagent_current_attempt_revalidation_report';
+  schemaVersion: typeof SCHEMA_VERSION;
+  generatedAt: string;
+  decision: 'pass' | 'blocked';
+  currentCloseoutAttemptId: string;
+  parentCloseoutAttemptId: string;
+  envelopeHash: string;
+  recordId: string;
+  requirementSetId: string;
+  traceRows: string[];
+  coveredRequirementIds: string[];
+  commandRuns: Array<{
+    commandId: string;
+    closeoutAttemptId: string;
+    exitCode: unknown;
+    artifactRefCount: number;
+  }>;
+  sourceRefs: unknown;
+  artifactRefs: JsonObject[];
+  mismatches: string[];
+  failureRecords: Array<Record<string, unknown>>;
+  rerunLoops: Array<Record<string, unknown>>;
+  controlWrite: 'forbidden_use_controlled_ingest';
+}
+
 function text(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
@@ -146,7 +172,7 @@ export function evaluateSubagentCurrentAttemptRevalidation(input: {
   currentCloseoutAttemptId?: string;
   currentAttemptCommandRuns?: JsonObject[];
   generatedAt?: string;
-}): JsonObject {
+}): SubagentCurrentAttemptRevalidationReport {
   const attemptId = text(input.currentCloseoutAttemptId) || currentAttemptId(input.record);
   const validation: SubagentEvidenceEnvelopeValidation = validateSubagentEvidenceEnvelope(input.envelope, {
     record: input.record,

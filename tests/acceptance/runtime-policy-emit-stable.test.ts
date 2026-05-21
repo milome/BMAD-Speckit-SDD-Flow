@@ -57,9 +57,9 @@ describe('emit-runtime-policy vs bmad-help runtime policy facade (stable JSON)',
         ...(loaded.artifactRoot ? { artifactRoot: loaded.artifactRoot } : {}),
       });
       const expected = stableStringifyPolicy({
+        ...resolvedPolicy,
         flow: loaded.runtimeContext.flow,
         stage: loaded.runtimeContext.stage,
-        ...resolvedPolicy,
       });
       const code = mainEmitRuntimePolicy(['--cwd', root]);
       expect(code).toBe(0);
