@@ -75,6 +75,16 @@ function latestArchitectureStateCheck(record: JsonObject): JsonObject | null {
   return checks.length > 0 ? checks[checks.length - 1] : null;
 }
 
+function architectureConfirmationRequired(record: JsonObject): boolean {
+  if (record.architectureConfirmationRequired === true) return true;
+  const state = record.architectureConfirmationState;
+  if (state && typeof state === 'object' && !Array.isArray(state)) return true;
+  return (
+    objects(record.architectureConfirmations).length > 0 ||
+    objects(record.architectureConfirmationStateChecks).length > 0
+  );
+}
+
 function evaluate(record: JsonObject): {
   decision: ReadinessDecision;
   blockingReasons: string[];
@@ -106,13 +116,16 @@ function evaluate(record: JsonObject): {
   checks.push({ id: 'confirmation-page-hash-present', passed: confirmationPageHashPresent });
   if (!confirmationPageHashPresent) blockingReasons.push('confirmation_page_hash_missing');
 
+  const requiresArchitecture = architectureConfirmationRequired(record);
+  checks.push({ id: 'architecture-confirmation-required', passed: true, required: requiresArchitecture });
   const architectureState = record.architectureConfirmationState as JsonObject | undefined;
   const architectureActive =
-    architectureState &&
-    typeof architectureState === 'object' &&
-    !Array.isArray(architectureState) &&
-    text(architectureState.status) === 'active' &&
-    Boolean(text(architectureState.currentArchitectureConfirmationHash));
+    !requiresArchitecture ||
+    (architectureState &&
+      typeof architectureState === 'object' &&
+      !Array.isArray(architectureState) &&
+      text(architectureState.status) === 'active' &&
+      Boolean(text(architectureState.currentArchitectureConfirmationHash)));
   checks.push({ id: 'architecture-confirmation-current', passed: Boolean(architectureActive) });
   if (!architectureActive) blockingReasons.push('architecture_confirmation_not_active');
 
@@ -123,16 +136,18 @@ function evaluate(record: JsonObject): {
     blockingReasons.push('architecture_hash_recipe_unresolved');
   }
   const architectureRecipeCurrent =
-    Boolean(resolvedRecipeHash) && text(architectureState?.resolvedRecipeHash) === resolvedRecipeHash;
+    !requiresArchitecture ||
+    (Boolean(resolvedRecipeHash) && text(architectureState?.resolvedRecipeHash) === resolvedRecipeHash);
   checks.push({ id: 'architecture-confirmation-recipe-current', passed: architectureRecipeCurrent });
   if (!architectureRecipeCurrent) blockingReasons.push('architecture_confirmation_resolved_recipe_hash_not_current');
 
   const stateCheck = latestArchitectureStateCheck(record);
   const stateCheckPassed =
-    Boolean(stateCheck) &&
-    text(stateCheck?.decision) === 'pass' &&
-    text((stateCheck?.stateTransition as JsonObject | undefined)?.toStatus) === 'active' &&
-    text(stateCheck?.resolvedRecipeHash) === resolvedRecipeHash;
+    !requiresArchitecture ||
+    (Boolean(stateCheck) &&
+      text(stateCheck?.decision) === 'pass' &&
+      text((stateCheck?.stateTransition as JsonObject | undefined)?.toStatus) === 'active' &&
+      text(stateCheck?.resolvedRecipeHash) === resolvedRecipeHash);
   checks.push({ id: 'architecture-confirmation-state-check-current', passed: stateCheckPassed });
   if (!stateCheckPassed) blockingReasons.push('architecture_confirmation_state_check_not_current');
 

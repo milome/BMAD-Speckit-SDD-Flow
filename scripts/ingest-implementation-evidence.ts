@@ -206,15 +206,32 @@ function requireHashMatch(packet: JsonObject, record: JsonObject): string[] {
     if (text(packet[field]) !== text(record[field])) mismatches.push(`${field}_mismatch`);
   }
   const state = record.architectureConfirmationState as JsonObject | undefined;
+  const architectureRequired =
+    record.architectureConfirmationRequired === true ||
+    (state && typeof state === 'object' && !Array.isArray(state)) ||
+    arrayOfObjects(record.architectureConfirmations).length > 0 ||
+    arrayOfObjects(record.architectureConfirmationStateChecks).length > 0;
+  if (!architectureRequired) return mismatches;
   if (!state || typeof state !== 'object' || Array.isArray(state)) {
     mismatches.push('architecture_confirmation_state_missing');
-  } else {
-    if (text(state.status) !== 'active') mismatches.push('architecture_confirmation_not_active');
-    if (text(packet.architectureConfirmationHash) !== text(state.currentArchitectureConfirmationHash)) {
-      mismatches.push('architecture_confirmation_hash_mismatch');
-    }
+  } else if (text(state.status) !== 'active') {
+    mismatches.push('architecture_confirmation_not_active');
+  } else if (text(packet.architectureConfirmationHash) !== text(state.currentArchitectureConfirmationHash)) {
+    mismatches.push('architecture_confirmation_hash_mismatch');
   }
   return mismatches;
+}
+
+function resolvedArchitectureConfirmationHash(packet: JsonObject, record: JsonObject): string {
+  const state = record.architectureConfirmationState as JsonObject | undefined;
+  return (
+    text(packet.architectureConfirmationHash) ||
+    text(state?.currentArchitectureConfirmationHash) ||
+    text(packet.implementationConfirmationHash) ||
+    text(record.implementationConfirmationHash) ||
+    text(packet.sourceDocumentHash) ||
+    text(record.sourceDocumentHash)
+  );
 }
 
 function sourceRefs(packet: JsonObject): JsonObject[] {
@@ -762,7 +779,7 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
     sourceRefs: refs,
     sourceDocumentHash: text(packet.sourceDocumentHash),
     implementationConfirmationHash: text(packet.implementationConfirmationHash),
-    architectureConfirmationHash: text(packet.architectureConfirmationHash),
+    architectureConfirmationHash: resolvedArchitectureConfirmationHash(packet, record),
     recordedAt,
     recordedBy,
   };
@@ -797,7 +814,7 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
         sourceRefs: subagentEnvelopeValidation?.sourceRefs ?? refs,
         sourceDocumentHash: text(subagentEnvelope.sourceDocumentHash),
         implementationConfirmationHash: text(subagentEnvelope.implementationConfirmationHash),
-        architectureConfirmationHash: text(subagentEnvelope.architectureConfirmationHash),
+        architectureConfirmationHash: resolvedArchitectureConfirmationHash(subagentEnvelope, record),
         recordedAt,
         recordedBy,
       }

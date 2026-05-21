@@ -1427,6 +1427,57 @@ describe('requirement-scoped delivery closeout gate', () => {
     }
   });
 
+  it('allows explicit re-evaluation of an existing attempt when requested', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-reeval-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        closeout: {
+          currentAttemptId: 'closeout-001',
+          attempts: [{ closeoutAttemptId: 'closeout-001', decision: 'blocked' }],
+        },
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-001',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-001',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-001',
+        '--allow-existing-attempt',
+      ]);
+      expect(code).toBe(0);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.closeout.currentAttemptId).toBe('closeout-001');
+      expect(record.closeout.decision).toBe('pass');
+      expect(record.closeout.attempts).toHaveLength(1);
+    } finally {
+      cleanupTempRoot(root);
+    }
+  });
+
   it('blocks closeout when the current delivery truth gate report does not allow completion', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-truth-gate-'));
     try {

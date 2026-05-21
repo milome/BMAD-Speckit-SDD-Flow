@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import type {
   DispatchRoute,
   ExecutionPacket,
@@ -1323,6 +1324,28 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.requirementSetId = argv[++index];
     } else if (token === '--run-id' && argv[index + 1]) {
       out.runId = argv[++index];
+    } else if (token === '--source' && argv[index + 1]) {
+      out.source = argv[++index];
+    } else if (token === '--render-report' && argv[index + 1]) {
+      out.renderReport = argv[++index];
+    } else if (token === '--confirmation-text' && argv[index + 1]) {
+      out.confirmationText = argv[++index];
+    } else if (token === '--confirmation-text-file' && argv[index + 1]) {
+      out.confirmationTextFile = argv[++index];
+    } else if (token === '--confirmed-by' && argv[index + 1]) {
+      out.confirmedBy = argv[++index];
+    } else if (token === '--confirmed-at' && argv[index + 1]) {
+      out.confirmedAt = argv[++index];
+    } else if (token === '--runtime-root' && argv[index + 1]) {
+      out.runtimeRoot = argv[++index];
+    } else if (token === '--requirement-record' && argv[index + 1]) {
+      out.requirementRecord = argv[++index];
+    } else if (token === '--event-log' && argv[index + 1]) {
+      out.eventLog = argv[++index];
+    } else if (token === '--artifact-index' && argv[index + 1]) {
+      out.artifactIndex = argv[++index];
+    } else if (token === '--update-source' && argv[index + 1]) {
+      out.updateSource = argv[++index];
     } else if (token === '--action' && argv[index + 1]) {
       out.action = argv[++index];
     } else if ((token === '--host' || token === '--hostKind') && argv[index + 1]) {
@@ -1366,6 +1389,91 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
 function pickRoot(args: Record<string, string | undefined>): string {
   const fromArg = stripWrappingQuotes(normalizeText(args.cwd));
   return fromArg ? path.resolve(fromArg) : process.cwd();
+}
+
+function pushOptionalArg(
+  target: string[],
+  flag: string,
+  value: string | undefined,
+  root: string,
+  pathLike = false
+): void {
+  const normalized = normalizeText(value);
+  if (!normalized) {
+    return;
+  }
+  const stripped = stripWrappingQuotes(normalized);
+  target.push(flag, pathLike ? path.resolve(root, stripped) : stripped);
+}
+
+export interface MainAgentConfirmScopeResult {
+  ok: boolean;
+  action: 'confirm-scope';
+  delegatedEntry: string;
+  exitCode: number;
+  stdout?: unknown;
+  stderr?: string;
+}
+
+export function runMainAgentConfirmScope(
+  root: string,
+  args: Record<string, string | undefined>
+): MainAgentConfirmScopeResult {
+  const entry = path.join(
+    root,
+    '_bmad',
+    'skills',
+    'requirements-contract-authoring',
+    'scripts',
+    'confirm-requirements-scope.js'
+  );
+  if (!fs.existsSync(entry)) {
+    throw new Error(`controlled confirmation entry missing: ${entry}`);
+  }
+  const source = normalizeText(args.source);
+  if (!source) {
+    throw new Error('confirm-scope requires --source <source-document.md>');
+  }
+  if (!normalizeText(args.confirmationText) && !normalizeText(args.confirmationTextFile)) {
+    throw new Error(
+      'confirm-scope requires --confirmation-text <exact chat confirmation> or --confirmation-text-file <file>'
+    );
+  }
+
+  const delegatedArgs = ['--source', path.resolve(root, stripWrappingQuotes(source)), '--json'];
+  pushOptionalArg(delegatedArgs, '--render-report', args.renderReport, root, true);
+  pushOptionalArg(delegatedArgs, '--confirmation-text', args.confirmationText, root);
+  pushOptionalArg(delegatedArgs, '--confirmation-text-file', args.confirmationTextFile, root, true);
+  pushOptionalArg(delegatedArgs, '--confirmed-by', args.confirmedBy ?? 'main-agent-orchestration', root);
+  pushOptionalArg(delegatedArgs, '--confirmed-at', args.confirmedAt, root);
+  pushOptionalArg(delegatedArgs, '--record-id', args.recordId, root);
+  pushOptionalArg(delegatedArgs, '--requirement-set-id', args.requirementSetId, root);
+  pushOptionalArg(delegatedArgs, '--runtime-root', args.runtimeRoot, root, true);
+  pushOptionalArg(delegatedArgs, '--requirement-record', args.requirementRecord, root, true);
+  pushOptionalArg(delegatedArgs, '--event-log', args.eventLog, root, true);
+  pushOptionalArg(delegatedArgs, '--artifact-index', args.artifactIndex, root, true);
+  pushOptionalArg(delegatedArgs, '--update-source', args.updateSource, root);
+
+  const step = spawnSync(process.execPath, [entry, ...delegatedArgs], {
+    cwd: root,
+    encoding: 'utf8',
+  });
+  let parsedStdout: unknown = undefined;
+  if (step.stdout.trim()) {
+    try {
+      parsedStdout = JSON.parse(step.stdout);
+    } catch {
+      parsedStdout = step.stdout.trim();
+    }
+  }
+  return {
+    ok: step.status === 0,
+    action: 'confirm-scope',
+    delegatedEntry: path.relative(root, entry).replace(/\\/g, '/'),
+    exitCode: step.status ?? 2,
+    ...(parsedStdout !== undefined ? { stdout: parsedStdout } : {}),
+    ...(step.stderr.trim() ? { stderr: step.stderr.trim() } : {}),
+  };
 }
 
 function resolveFlowAndStage(
@@ -1727,6 +1835,21 @@ export function mainMainAgentOrchestration(argv: string[]): number {
     });
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return result.decision.verdict === 'block' ? 1 : 0;
+  }
+
+  if (action === 'confirm-scope' || action === 'confirmation-ingest') {
+    try {
+      const result = runMainAgentConfirmScope(root, args);
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return result.ok ? 0 : result.exitCode;
+    } catch (error) {
+      console.error(
+        `main-agent-orchestration confirm-scope: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return 1;
+    }
   }
 
   const { flow, stage } = resolveFlowAndStage(root, args);

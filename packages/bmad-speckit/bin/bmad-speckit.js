@@ -572,6 +572,24 @@ program
   .action(() => runRepoScript('main-agent-orchestration.ts', process.argv.slice(3)));
 
 program
+  .command('confirm-scope')
+  .description('Confirm requirement scope through controlled ingest after exact chat hash confirmation')
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .action(() =>
+    runRepoScript('main-agent-orchestration.ts', ['--action', 'confirm-scope', ...process.argv.slice(3)])
+  );
+
+program
+  .command('main-agent:confirm-scope')
+  .description('Run the BMAD confirmation ingest orchestration surface')
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .action(() =>
+    runRepoScript('main-agent-orchestration.ts', ['--action', 'confirm-scope', ...process.argv.slice(3)])
+  );
+
+program
   .command('main-agent:bmad-help-five-layer-matrix')
   .description('Run the diagnostic BMAD help five-layer matrix; use bmad-help for the stable user help renderer')
   .allowUnknownOption(true)

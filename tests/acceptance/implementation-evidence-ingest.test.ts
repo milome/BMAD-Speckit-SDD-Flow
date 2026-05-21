@@ -375,6 +375,43 @@ describe('implementation evidence ingest', () => {
     }
   });
 
+  it('accepts current evidence for records without architecture confirmation when architecture is not required', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-evidence-no-architecture-'));
+    try {
+      const fixture = writeFixture(root);
+      const record = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
+      delete record.architectureConfirmationState;
+      record.architectureConfirmationRequired = false;
+      writeFileSync(fixture.recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+      const packet = JSON.parse(readFileSync(fixture.evidencePath, 'utf8'));
+      delete packet.architectureConfirmationHash;
+      writeFileSync(fixture.evidencePath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
+
+      const code = mainIngestImplementationEvidence([
+        '--evidence',
+        fixture.evidencePath,
+        '--requirement-record',
+        fixture.recordPath,
+        '--json',
+      ]);
+
+      expect(code).toBe(0);
+      const updated = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
+      expect(updated.executionIterations[0]).toMatchObject({
+        executionIterationId: 'exec-001',
+        status: 'done',
+      });
+      expect(updated.requirementClosures).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ requirementId: 'TRACE-003', status: 'pass' }),
+          expect.objectContaining({ requirementId: 'EVD-006', status: 'pass' }),
+        ])
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('rejects legacy result fields and historical command runs', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-evidence-result-'));
     try {

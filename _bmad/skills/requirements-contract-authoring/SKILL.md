@@ -441,7 +441,25 @@ Rules:
 - `confirmability=confirmable` or `blockingIssues: []` confirms only the requirements scope. Before any claim of completion, merge readiness, release readiness, or launch readiness, `deliveryReadiness.ready` must be true in the current render report and the page must show `delivery_ready=true`.
 - If source content, confirmation IDs, traceRows, diagrams, artifact plan, or evidence expectations change, regenerate HTML and require confirmation again.
 - Only after exact chat confirmation may the source document be updated to `status: user_confirmed`.
+- Immediately after exact chat confirmation, the agent must run the high-level confirmation ingest action. Do not ask the user to manually assemble the ingest command, and do not proceed to reverse audit, readiness, prompt generation, implementation, or closeout until it exits 0 and writes `confirmation_recorded` to `requirement-record.json`.
 - When English or bilingual output is selected, the renderer may display an English phrase, but the Chinese phrase above remains accepted if hashes match.
+
+### 7a. Run Controlled Confirmation Ingest
+
+The normal post-confirmation entry is the highest-level `bmad-speckit` CLI command:
+
+```bash
+bmad-speckit confirm-scope \
+  --source <source-document.md> \
+  --render-report _bmad-output/runtime/requirement-records/<recordId>/confirmation/confirmation-render-report.json \
+  --confirmation-text "<exact confirmation text from chat>" \
+  --confirmed-by <user-or-agent-label> \
+  --json
+```
+
+This entry must automatically call `scripts/main-agent-orchestration.ts --action confirm-scope`, which in turn calls the skill-local `confirm-requirements-scope.js`, which in turn calls `ingest-confirmation-event.js`, updates the source bookkeeping, writes the requirement-scoped `requirement-record.json`, appends the confirmation event log and artifact index, and returns the generated paths. `bmad-speckit main-agent:confirm-scope` remains a compatibility alias, but agents should not need to remember the lower-level wrapper during normal confirmation or orchestration. `render-requirements-confirmation-html.ts` remains read-only and must not absorb this responsibility.
+
+If controlled ingest fails, the requirement remains unconfirmed for execution purposes even when the source document contains `status: user_confirmed`. Treat the failure as a blocker and do not generate a trace execution prompt.
 
 ### 8. Handle Gaps
 

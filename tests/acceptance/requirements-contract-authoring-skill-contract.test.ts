@@ -62,4 +62,23 @@ describe('requirements-contract-authoring published contract', () => {
     expect(skill).toContain('The user-facing next step is only to open the architecture confirmation HTML and confirm the hashes in chat');
     expect(rendererSpec).toContain('The user-facing next step must only be to open the architecture confirmation HTML and confirm the hashes in chat');
   });
+
+  it('documents the automated controlled confirmation ingest that must run immediately after chat confirmation', () => {
+    const skill = readSkillFile('SKILL.md');
+    const template = readSkillFile(path.join('references', 'contract-template.md'));
+    const rendererSpec = readSkillFile(path.join('references', 'html-confirmation-renderer-spec.md'));
+
+    expect(skill).toContain('Immediately after exact chat confirmation, the agent must run the high-level confirmation ingest action');
+    expect(skill).toContain('bmad-speckit confirm-scope');
+    expect(skill).toContain('bmad-speckit main-agent:confirm-scope');
+    expect(skill).toContain('main-agent-orchestration.ts');
+    expect(skill).toContain('--action confirm-scope');
+    expect(skill).toContain('confirm-requirements-scope.js');
+    expect(template).toContain('bmad-speckit confirm-scope');
+    expect(template).toContain('automated post-confirmation step that delegates to the skill-local controlled ingest wrapper');
+    expect(template).toContain('Do not require the user or agent to remember lower-level ingest commands manually');
+    expect(rendererSpec).toContain('Post-confirmation control writes are handled by the high-level confirmation ingest action, not by the renderer');
+    expect(rendererSpec).toContain('bmad-speckit confirm-scope');
+    expect(rendererSpec).toContain('bmad-speckit main-agent:confirm-scope');
+  });
 });

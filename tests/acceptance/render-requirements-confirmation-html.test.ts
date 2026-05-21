@@ -883,6 +883,104 @@ describe('render-requirements-confirmation-html', () => {
     });
   });
 
+  it('does not require architecture hash or OUT evidence for non-architecture delivery readiness', () => {
+    const source = writeSource();
+    const mermaidBundle = writeMockMermaidBundle();
+    const recordPath = path.join(tempDir, 'requirement-record-no-architecture.json');
+    const firstOut = path.join(tempDir, 'confirmation-no-architecture-first.html');
+    const firstResult = runRenderer([
+      '--source',
+      source,
+      '--out',
+      firstOut,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--requirement-record',
+      recordPath,
+      '--json',
+    ]);
+    expect(firstResult.status).toBe(0);
+    const firstReport = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(firstOut), 'confirmation-render-report.json'), 'utf8')
+    );
+
+    fs.writeFileSync(
+      recordPath,
+      JSON.stringify(
+        {
+          recordId: 'REQ-UPLOAD-001',
+          requirementSetId: 'REQSET-UPLOAD',
+          sourceDocumentHash: firstReport.sourceDocumentHash,
+          implementationConfirmationHash: firstReport.implementationConfirmationHash,
+          closeout: {
+            currentAttemptId: 'attempt-current-no-architecture',
+            attempts: [{ closeoutAttemptId: 'attempt-current-no-architecture', decision: 'pass' }],
+          },
+          requirementClosures: [
+            {
+              eventType: 'requirement_closure_recorded',
+              requirementId: 'MUST-001',
+              status: 'pass',
+              traceRows: ['TRACE-001'],
+              evidenceRefs: ['EVD-001', 'EVD-002'],
+              sourceDocumentHash: firstReport.sourceDocumentHash,
+              implementationConfirmationHash: firstReport.implementationConfirmationHash,
+              commandRunRefs: [
+                {
+                  commandId: 'CMD-001',
+                  runId: 'run-current-no-architecture',
+                  closeoutAttemptId: 'attempt-current-no-architecture',
+                  exitCode: 0,
+                },
+              ],
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+
+    const out = path.join(tempDir, 'confirmation-no-architecture.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--requirement-record',
+      recordPath,
+      '--json',
+    ]);
+
+    expect(result.status).toBe(0);
+    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    expect(report.traceExecutionState.rows['TRACE-001']).toMatchObject({
+      status: 'current_pass',
+      validity: 'current',
+      currentAttemptId: 'attempt-current-no-architecture',
+    });
+    expect(report.progressDelta.idStatuses['OUT-001']).toMatchObject({
+      proofState: 'scope_boundary_confirmed',
+    });
+    expect(report.deliveryReadiness.ready).toBe(true);
+    expect(report.deliveryReadiness.currentPassTraceRows).toBe(1);
+  });
+
   it('preserves id-badge mini as trusted HTML inside requirement boundary tables', () => {
     const source = writeSource();
     const out = path.join(tempDir, 'confirmation-id-badge-mini.html');

@@ -485,6 +485,14 @@ _bmad-output/runtime/requirement-records/<recordId>/confirmation/confirmation-re
 
 The renderer is read-only. HTML render failure is blocked; there is no Markdown/chat fallback. The user confirms in chat only with the exact phrase and hashes from `confirmation-render-report.json`.
 
+After exact chat confirmation, the agent must immediately run the high-level confirmation ingest action:
+
+```text
+bmad-speckit confirm-scope --source <source-document.md> --render-report _bmad-output/runtime/requirement-records/<recordId>/confirmation/confirmation-render-report.json --confirmation-text "<exact confirmation text from chat>" --confirmed-by <user-or-agent-label> --json
+```
+
+This is the automated post-confirmation step that delegates to the skill-local controlled ingest wrapper, writes `confirmation_recorded`, and creates `_bmad-output/runtime/requirement-records/<recordId>/requirement-record.json`. Do not require the user or agent to remember lower-level ingest commands manually, and do not use a confirmed source document for readiness or prompt generation until this controlled record exists.
+
 ## Reverse Audit Report
 
 ```markdown
@@ -519,4 +527,5 @@ Audit command: `node <skill-dir>/scripts/reverse_audit_contract.js <source-docum
 - No open question with `blocksImplementation: true` remains.
 - Every ID reference resolves to an existing ID.
 - Mandatory HTML confirmation outputs exist and match the current source hash.
+- The controlled post-confirmation ingest has written current `confirmation_recorded` history to `_bmad-output/runtime/requirement-records/<recordId>/requirement-record.json`.
 - Read models, reports, score files, dashboards, SFT outputs, and hook receipts do not directly close requirements.

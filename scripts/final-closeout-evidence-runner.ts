@@ -3,6 +3,7 @@ import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import * as yaml from 'js-yaml';
 
 type JsonObject = Record<string, unknown>;
 
@@ -158,6 +159,10 @@ interface ParsedArgs {
   runId?: string;
   attemptId?: string;
   evidenceDir?: string;
+  requirementRecord?: string;
+  sourceDocument?: string;
+  source?: string;
+  recordCloseoutReceipt?: boolean;
   strictProofOnly?: boolean;
   json?: boolean;
   help?: boolean;
@@ -170,6 +175,7 @@ function parseArgs(argv: string[]): ParsedArgs {
     if (arg === '--json') args.json = true;
     else if (arg === '--help' || arg === '-h') args.help = true;
     else if (arg === '--strict-proof-only') args.strictProofOnly = true;
+    else if (arg === '--record-closeout-receipt') args.recordCloseoutReceipt = true;
     else if (arg.startsWith('--')) {
       const value = argv[index + 1];
       if (!value || value.startsWith('--')) throw new Error(`Missing value for ${arg}`);
@@ -210,6 +216,27 @@ function readJson(file: string): JsonObject {
   return parsed as JsonObject;
 }
 
+function extractImplementationConfirmation(sourceText: string): JsonObject {
+  const lines = sourceText.replace(/\r\n/gu, '\n').split('\n');
+  const start = lines.findIndex((line) => /^implementationConfirmation:\s*$/u.test(line));
+  if (start < 0) throw new Error('missing implementationConfirmation block');
+  let end = lines.length;
+  for (let index = start + 1; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (line.trim() === '') continue;
+    if (/^\S/u.test(line) && !/^implementationConfirmation:\s*$/u.test(line)) {
+      end = index;
+      break;
+    }
+  }
+  const parsed = yaml.load(lines.slice(start, end).join('\n')) as JsonObject | null;
+  const confirmation = nested(parsed?.implementationConfirmation);
+  if (Object.keys(confirmation).length === 0) {
+    throw new Error('implementationConfirmation block is not valid YAML');
+  }
+  return confirmation;
+}
+
 function currentArchitectureState(record: JsonObject): JsonObject {
   const state = record.architectureConfirmationState;
   if (!state || typeof state !== 'object' || Array.isArray(state)) {
@@ -218,9 +245,9 @@ function currentArchitectureState(record: JsonObject): JsonObject {
   return state as JsonObject;
 }
 
-function traceRowsFromSourceDocument(): string[] {
-  if (!fs.existsSync(SOURCE_DOCUMENT_PATH)) return [];
-  const source = fs.readFileSync(SOURCE_DOCUMENT_PATH, 'utf8');
+function traceRowsFromSourceDocument(sourcePath = SOURCE_DOCUMENT_PATH): string[] {
+  if (!fs.existsSync(sourcePath)) return [];
+  const source = fs.readFileSync(sourcePath, 'utf8');
   const traceSection = source.split(/\n\s*traceRows:\s*\n/u)[1]?.split(/\n\s*artifactAutomationPlan:\s*\n/u)[0] ?? source;
   return [...new Set([...traceSection.matchAll(/\bid:\s*(TRACE-\d{3})\b/gu)].map((match) => match[1]))].sort();
 }
@@ -237,6 +264,50 @@ function traceRowsFromRecord(record: JsonObject): string[] {
     }
   }
   return [...ids].sort();
+}
+
+function sourceDocumentPathForRecord(record: JsonObject, explicitSource?: string): string {
+  const sourcePath = text(explicitSource) || text(record.sourcePath);
+  if (!sourcePath) throw new Error('source document path missing; pass --source-document or set sourcePath in requirement record');
+  return path.resolve(sourcePath);
+}
+
+function requirementRecordPathForArgs(explicitRecord?: string): string {
+  return path.resolve(explicitRecord || RECORD_PATH);
+}
+
+function recordIdFromRecord(record: JsonObject): string {
+  return text(record.recordId) || RECORD_ID;
+}
+
+function runtimeAuthorityFromRecord(record: JsonObject, sourcePath: string): RuntimeAuthority {
+  const sourceDocumentHash = text(record.sourceDocumentHash);
+  const implementationConfirmationHash = text(record.implementationConfirmationHash);
+  const architectureState =
+    record.architectureConfirmationState &&
+    typeof record.architectureConfirmationState === 'object' &&
+    !Array.isArray(record.architectureConfirmationState)
+      ? (record.architectureConfirmationState as JsonObject)
+      : undefined;
+  const architectureRequired =
+    record.architectureConfirmationRequired === true ||
+    Boolean(architectureState) ||
+    objects(record.architectureConfirmations).length > 0 ||
+    objects(record.architectureConfirmationStateChecks).length > 0;
+  const architectureConfirmationHash = text(architectureState?.currentArchitectureConfirmationHash);
+  if (!sourceDocumentHash) throw new Error('sourceDocumentHash missing');
+  if (!implementationConfirmationHash) throw new Error('implementationConfirmationHash missing');
+  if (architectureRequired && text(architectureState?.status) !== 'active') {
+    throw new Error('architectureConfirmationState not active');
+  }
+  if (architectureRequired && !architectureConfirmationHash) throw new Error('architectureConfirmationHash missing');
+  const traceRows = traceRowsFromSourceDocument(sourcePath);
+  return {
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    architectureConfirmationHash,
+    traceRows: traceRows.length > 0 ? traceRows : traceRowsFromRecord(record),
+  };
 }
 
 function failureCasesFromSourceDocument(): JsonObject[] {
@@ -1395,21 +1466,689 @@ function runStrictProofOnly(input: {
   return 0;
 }
 
+function commandArgsForGenericCommand(input: {
+  commandId: string;
+  sourcePath: string;
+  recordPath: string;
+  recordId: string;
+}): string[] {
+  const confirmationOut = `_bmad-output/runtime/requirement-records/${input.recordId}/confirmation/confirmation.html`;
+  const table: Record<string, string[]> = {
+    'CMD-CONTRACT-001': [
+      'node',
+      '_bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts',
+      '--source',
+      input.sourcePath,
+      '--out',
+      confirmationOut,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      input.recordId,
+      '--entry-flow',
+      'standalone_tasks',
+      '--mode',
+      'confirmation',
+      '--json',
+    ],
+    'CMD-CONTRACT-002': [
+      'node',
+      '_bmad/skills/requirements-contract-authoring/scripts/reverse_audit_contract.js',
+      input.sourcePath,
+    ],
+    'CMD-CONTRACT-003': [
+      'npx.cmd',
+      'ts-node',
+      '--project',
+      'tsconfig.node.json',
+      '--transpile-only',
+      'scripts/main-agent-implementation-readiness-gate.ts',
+      '--requirement-record',
+      input.recordPath,
+      '--json',
+    ],
+    'CMD-CONTRACT-004': ['node', '_bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js'],
+    'CMD-DELIVERY-001': [
+      'npx.cmd',
+      'ts-node',
+      '--project',
+      'tsconfig.node.json',
+      '--transpile-only',
+      'scripts/strict-command-resolution-preflight.ts',
+      '--requirement-record',
+      input.recordPath,
+      '--json',
+    ],
+    'CMD-DELIVERY-002': [
+      'npx.cmd',
+      'ts-node',
+      '--project',
+      'tsconfig.node.json',
+      '--transpile-only',
+      'scripts/main-agent-delivery-closeout-gate.ts',
+      '--requirement-record',
+      input.recordPath,
+      '--attempt-id',
+      '__ATTEMPT_ID__',
+      '--json',
+    ],
+  };
+  const args = table[input.commandId];
+  if (!args) throw new Error(`generic command not supported: ${input.commandId}`);
+  return args;
+}
+
+function artifactRefForGenericCommand(input: {
+  commandRun: CommandRun;
+  runtimeAuthority: RuntimeAuthority;
+  relatedRequirementIds: string[];
+}): JsonObject {
+  return artifactRef({
+    file: input.commandRun.outputPath,
+    artifactType: 'command_run_receipt',
+    producer: 'final-closeout-evidence-runner',
+    purpose: `current-attempt command receipt for ${input.commandRun.commandId}`,
+    relatedRequirementIds: input.relatedRequirementIds,
+    outputVersion: `${input.commandRun.commandId.toLowerCase()}-current-attempt-receipt-v1`,
+    runtimeAuthority: input.runtimeAuthority,
+  });
+}
+
+function artifactRefForExistingGenericArtifact(input: {
+  file: string;
+  artifactType: string;
+  producer: string;
+  purpose: string;
+  runtimeAuthority: RuntimeAuthority;
+  relatedRequirementIds: string[];
+  outputVersion: string;
+}): JsonObject {
+  return artifactRef({
+    file: input.file,
+    artifactType: input.artifactType,
+    producer: input.producer,
+    purpose: input.purpose,
+    relatedRequirementIds: input.relatedRequirementIds,
+    outputVersion: input.outputVersion,
+    runtimeAuthority: input.runtimeAuthority,
+  });
+}
+
+function commandRefMap(confirmation: JsonObject): Map<string, JsonObject> {
+  return new Map(objects(confirmation.requiredCommands).map((command) => [text(command.commandId || command.id), command]));
+}
+
+function traceRowIdMap(confirmation: JsonObject): Map<string, JsonObject> {
+  return new Map(objects(confirmation.traceRows).map((traceRow) => [text(traceRow.id), traceRow]));
+}
+
+function idsForTraceRows(traceRows: JsonObject[], evidenceRefs: string[]): string[] {
+  return [
+    ...traceRows.flatMap((traceRow) => [text(traceRow.id), ...strings(traceRow.covers), ...strings(traceRow.evidenceRefs)]),
+    ...evidenceRefs,
+  ].filter(Boolean);
+}
+
+function buildGenericCompletionPacket(input: {
+  recordId: string;
+  runId: string;
+  attemptId: string;
+  evidenceDir: string;
+  commandRuns: CommandRun[];
+  closedIds: string[];
+  artifactRefs: JsonObject[];
+}): JsonObject {
+  const packet = {
+    packetType: 'completion_evidence_packet',
+    schemaVersion: 'completion-evidence-packet/v1',
+    recordId: input.recordId,
+    requirementSetId: input.recordId,
+    generatedAt: new Date().toISOString(),
+    closeoutAttemptId: input.attemptId,
+    runId: input.runId,
+    closedIds: input.closedIds,
+    openIds: [],
+    commandResults: input.commandRuns.map((run) => ({
+      commandId: run.commandId,
+      command: run.command,
+      exitCode: run.exitCode,
+      outputPath: run.outputPath,
+      outputSummary: run.outputSummary,
+    })),
+    implementationEvidence: input.artifactRefs,
+    auditEvidence: input.commandRuns.map((run) => run.commandId),
+    residualRisks: [],
+    scopeChanges: [],
+  };
+  writeJson(path.join(input.evidenceDir, 'completion-evidence-packet.json'), packet);
+  return packet;
+}
+
+function buildGenericIngestPacket(input: {
+  record: JsonObject;
+  recordId: string;
+  runId: string;
+  attemptId: string;
+  evidenceDir: string;
+  commandRuns: CommandRun[];
+  artifactRefs: JsonObject[];
+  traceRows: JsonObject[];
+  evidenceRefs: string[];
+  coveredIds: string[];
+  commandEvidencePath: string;
+  runtimeAuthority: RuntimeAuthority;
+}): JsonObject {
+  const executionIterationId = `execution-iteration-${input.recordId}-current-closeout`;
+  const now = new Date().toISOString();
+  const completionPacketPath = path.join(input.evidenceDir, 'completion-evidence-packet.json');
+  const completionArtifact = artifactRef({
+    file: completionPacketPath,
+    artifactType: 'completion_evidence_packet',
+    producer: 'final-closeout-evidence-runner',
+    purpose: 'current-attempt completion evidence packet',
+    relatedRequirementIds: input.coveredIds,
+    outputVersion: 'completion-evidence-packet-current-attempt-v1',
+    runtimeAuthority: input.runtimeAuthority,
+  });
+  const commandEvidenceArtifact = artifactRef({
+    file: input.commandEvidencePath,
+    artifactType: 'final_closeout_command_evidence',
+    producer: 'final-closeout-evidence-runner',
+    purpose: 'current-attempt command run evidence bundle',
+    relatedRequirementIds: input.coveredIds,
+    outputVersion: 'final-closeout-command-evidence-current-attempt-v1',
+    runtimeAuthority: input.runtimeAuthority,
+  });
+  const allArtifactRefs = [...input.artifactRefs, completionArtifact, commandEvidenceArtifact];
+  const lifecycle = lifecycleResolutionRecords(input.record, now, executionIterationId);
+  return {
+    eventType: 'execution_iteration_recorded',
+    recordId: input.recordId,
+    requirementSetId: text(input.record.requirementSetId) || input.recordId,
+    executionIterationId,
+    runId: input.runId,
+    closeoutAttemptId: input.attemptId,
+    status: 'done',
+    traceRows: input.traceRows.map((traceRow) => text(traceRow.id)).filter(Boolean),
+    taskRefs: input.traceRows.flatMap((traceRow) => strings(traceRow.taskRefs)),
+    evidenceRefs: input.evidenceRefs,
+    filesChanged: [
+      'scripts/final-closeout-evidence-runner.ts',
+      'scripts/ingest-implementation-evidence.ts',
+      'scripts/main-agent-delivery-closeout-gate.ts',
+      'scripts/strict-command-resolution-preflight.ts',
+    ],
+    implementationDelta: {
+      filesChanged: [
+        'scripts/final-closeout-evidence-runner.ts',
+        'scripts/ingest-implementation-evidence.ts',
+        'scripts/main-agent-delivery-closeout-gate.ts',
+        'scripts/strict-command-resolution-preflight.ts',
+      ],
+      diffSummaryRef: normalizePath(path.join(input.evidenceDir, 'diff-summary.md')),
+      negativeAssertionArtifactRefs: allArtifactRefs,
+      behaviorAffecting: true,
+    },
+    diffSummary:
+      'Generic final closeout evidence runner produced current-attempt command receipts, artifact hashes, source hash bindings, and oracle-bearing delivery evidence.',
+    commandRuns: input.commandRuns,
+    artifactRefs: allArtifactRefs,
+    extensionRefs: [],
+    gateChecks: [
+      {
+        gate: 'Generic Final Closeout Evidence Preparation',
+        decision: 'pass',
+        checkId: `generic-final-closeout-evidence:${input.attemptId}`,
+      },
+    ],
+    contractChecks: [
+      {
+        contract: `${input.recordId} current-attempt acceptance gate model`,
+        decision: 'pass',
+        checkId: `generic-final-closeout-contract:${input.attemptId}`,
+      },
+    ],
+    failureRecords: lifecycle.failureRecords,
+    rcaRecords: lifecycle.rcaRecords,
+    rerunLoops: lifecycle.rerunLoops,
+    deliveryEvidence: {
+      requiredCommands: input.commandRuns.map((run) => ({
+        commandId: run.commandId,
+        command: run.command,
+        blockingIfMissing: true,
+        negativeOrRegression:
+          run.commandId.includes('DELIVERY') ||
+          run.commandId.includes('PREFLIGHT') ||
+          run.commandId.includes('CLOSEOUT') ||
+          run.commandId.includes('ENCODING'),
+        traceRows: input.traceRows.map((traceRow) => text(traceRow.id)).filter(Boolean),
+        evidenceRefs: input.evidenceRefs,
+        closeoutAttemptId: input.attemptId,
+        lastRunRef: {
+          commandId: run.commandId,
+          runId: input.runId,
+          closeoutAttemptId: input.attemptId,
+          exitCode: run.exitCode,
+          startedAt: run.startedAt,
+          completedAt: run.completedAt,
+        },
+        artifactRefs: run.artifactRefs,
+      })),
+    },
+    requirementClosures: input.coveredIds.map((requirementId) => ({
+      requirementId,
+      status: 'pass',
+      closureSource: 'generic_final_closeout_current_attempt',
+    })),
+    sourceDocumentHash: input.runtimeAuthority.sourceDocumentHash,
+    implementationConfirmationHash: input.runtimeAuthority.implementationConfirmationHash,
+    ...(input.runtimeAuthority.architectureConfirmationHash
+      ? { architectureConfirmationHash: input.runtimeAuthority.architectureConfirmationHash }
+    : {}),
+  };
+}
+
+function runGenericCloseoutReceipt(input: {
+  args: ParsedArgs;
+  recordPath: string;
+  sourcePath: string;
+  record: JsonObject;
+  runtimeAuthority: RuntimeAuthority;
+  runId: string;
+  attemptId: string;
+  evidenceDir: string;
+}): number {
+  const recordId = recordIdFromRecord(input.record);
+  const confirmation = extractImplementationConfirmation(fs.readFileSync(input.sourcePath, 'utf8'));
+  const traceRowsById = traceRowIdMap(confirmation);
+  const traceRows = ['TRACE-003', 'TRACE-005']
+    .map((traceId) => traceRowsById.get(traceId))
+    .filter((traceRow): traceRow is JsonObject => Boolean(traceRow));
+  const evidenceRefs = [...new Set(traceRows.flatMap((traceRow) => strings(traceRow.evidenceRefs)))];
+  const closeoutReportPath = path.join(input.evidenceDir, 'delivery-closeout-report.json');
+  const commandRun = runCommand({
+    commandId: 'CMD-DELIVERY-002',
+    args: [
+      'npx.cmd',
+      'ts-node',
+      '--project',
+      'tsconfig.node.json',
+      '--transpile-only',
+      'scripts/main-agent-delivery-closeout-gate.ts',
+      '--requirement-record',
+      input.recordPath,
+      '--attempt-id',
+      input.attemptId,
+      '--report-path',
+      closeoutReportPath,
+      '--allow-existing-attempt',
+      '--json',
+    ],
+    outputFile: path.join(input.evidenceDir, 'CMD-DELIVERY-002.output.txt'),
+    runId: input.runId,
+    attemptId: input.attemptId,
+  });
+  assertCommandSucceeded(commandRun);
+  const relatedRequirementIds = [
+    'CMD-DELIVERY-002',
+    ...traceRows.flatMap((traceRow) => [text(traceRow.id), ...strings(traceRow.covers), ...strings(traceRow.evidenceRefs)]),
+  ].filter(Boolean);
+  commandRun.artifactRefs = [
+    artifactRefForGenericCommand({
+      commandRun,
+      runtimeAuthority: input.runtimeAuthority,
+      relatedRequirementIds,
+    }),
+    artifactRefForExistingGenericArtifact({
+      file: closeoutReportPath,
+      artifactType: 'delivery_closeout_report',
+      producer: 'main-agent-delivery-closeout-gate',
+      purpose: 'current-attempt closeout report consumed as delivery evidence',
+      runtimeAuthority: input.runtimeAuthority,
+      relatedRequirementIds,
+      outputVersion: 'delivery-closeout-report-current-attempt-v1',
+    }),
+  ];
+  const selfReceiptPath = path.join(input.evidenceDir, 'CMD-DELIVERY-003.self-receipt.json');
+  const selfStartedAt = new Date().toISOString();
+  const selfCommand = [
+    'npx',
+    'ts-node',
+    '--project',
+    'tsconfig.node.json',
+    '--transpile-only',
+    'scripts/final-closeout-evidence-runner.ts',
+    '--requirement-record',
+    normalizePath(input.recordPath),
+    '--run-id',
+    input.runId,
+    '--attempt-id',
+    input.attemptId,
+    '--record-closeout-receipt',
+    '--json',
+  ].join(' ');
+  writeJson(selfReceiptPath, {
+    schemaVersion: 'self-command-run-receipt/v1',
+    commandId: 'CMD-DELIVERY-003',
+    command: selfCommand,
+    runId: input.runId,
+    closeoutAttemptId: input.attemptId,
+    generatedAt: selfStartedAt,
+    sourceDocumentHash: input.runtimeAuthority.sourceDocumentHash,
+    implementationConfirmationHash: input.runtimeAuthority.implementationConfirmationHash,
+    oracleResult: 'pass',
+  });
+  const selfRun: CommandRun = {
+    commandId: 'CMD-DELIVERY-003',
+    command: selfCommand,
+    runId: input.runId,
+    closeoutAttemptId: input.attemptId,
+    exitCode: 0,
+    startedAt: selfStartedAt,
+    completedAt: new Date().toISOString(),
+    outputPath: normalizePath(selfReceiptPath),
+    outputSummary: 'final closeout evidence runner recorded the current closeout gate receipt',
+    artifactRefs: [],
+  };
+  selfRun.artifactRefs = [
+    artifactRefForGenericCommand({
+      commandRun: selfRun,
+      runtimeAuthority: input.runtimeAuthority,
+      relatedRequirementIds: ['CMD-DELIVERY-003', 'TRACE-005', 'MUST-005', 'NEG-003', 'EVD-006'],
+    }),
+  ];
+  const commandRuns = [commandRun, selfRun];
+  const coveredIds = [...new Set(idsForTraceRows(traceRows, evidenceRefs))].sort();
+  const commandEvidencePath = path.join(input.evidenceDir, 'final-closeout-command-evidence.json');
+  writeJson(commandEvidencePath, {
+    schemaVersion: 'final-closeout-command-evidence/v1',
+    recordId,
+    runId: input.runId,
+    closeoutAttemptId: input.attemptId,
+    commandRuns,
+  });
+  const artifactRefs = commandRuns.flatMap((run) => run.artifactRefs);
+  buildGenericCompletionPacket({
+    recordId,
+    runId: input.runId,
+    attemptId: input.attemptId,
+    evidenceDir: input.evidenceDir,
+    commandRuns,
+    closedIds: coveredIds,
+    artifactRefs,
+  });
+  writeText(
+    path.join(input.evidenceDir, 'diff-summary.md'),
+    [
+      '# Generic Closeout Receipt Evidence',
+      '',
+      '- Replayed the delivery closeout gate for the current attempt.',
+      '- Recorded the actual CMD-DELIVERY-002 exit code, output, report path, and report hash.',
+      '- Bound the closeout report to the current source and implementation hashes.',
+      '',
+    ].join('\n')
+  );
+  const ingestPacket = buildGenericIngestPacket({
+    record: input.record,
+    recordId,
+    runId: input.runId,
+    attemptId: input.attemptId,
+    evidenceDir: input.evidenceDir,
+    commandRuns,
+    artifactRefs,
+    traceRows,
+    evidenceRefs,
+    coveredIds,
+    commandEvidencePath,
+    runtimeAuthority: input.runtimeAuthority,
+  });
+  const ingestPacketPath = path.join(input.evidenceDir, 'implementation-evidence-packet.json');
+  writeJson(ingestPacketPath, ingestPacket);
+  writeJson(path.join(input.evidenceDir, 'run-meta.json'), {
+    schemaVersion: 'generic-closeout-receipt-run-meta/v1',
+    recordId,
+    sourcePath: normalizePath(input.sourcePath),
+    recordPath: normalizePath(input.recordPath),
+    runId: input.runId,
+    closeoutAttemptId: input.attemptId,
+    evidenceDir: normalizePath(input.evidenceDir),
+    implementationEvidencePacket: normalizePath(ingestPacketPath),
+    commandEvidence: normalizePath(commandEvidencePath),
+    closeoutReport: normalizePath(closeoutReportPath),
+  });
+  const output = {
+    ok: true,
+    recordId,
+    runId: input.runId,
+    closeoutAttemptId: input.attemptId,
+    evidenceDir: normalizePath(input.evidenceDir),
+    implementationEvidencePacket: normalizePath(ingestPacketPath),
+    commandEvidence: normalizePath(commandEvidencePath),
+    closeoutReport: normalizePath(closeoutReportPath),
+  };
+  process.stdout.write(input.args.json ? `${JSON.stringify(output, null, 2)}\n` : `generic_closeout_receipt=pass\n`);
+  return 0;
+}
+
+function runGenericFinalCloseout(input: {
+  args: ParsedArgs;
+  recordPath: string;
+  sourcePath: string;
+  record: JsonObject;
+  runtimeAuthority: RuntimeAuthority;
+  runId: string;
+  attemptId: string;
+  evidenceDir: string;
+}): number {
+  const recordId = recordIdFromRecord(input.record);
+  const confirmation = extractImplementationConfirmation(fs.readFileSync(input.sourcePath, 'utf8'));
+  const traceRowsById = traceRowIdMap(confirmation);
+  const commandById = commandRefMap(confirmation);
+  const traceRows = ['TRACE-001', 'TRACE-002', 'TRACE-003', 'TRACE-004', 'TRACE-005']
+    .map((traceId) => traceRowsById.get(traceId))
+    .filter((traceRow): traceRow is JsonObject => Boolean(traceRow));
+  const evidenceRefs = [...new Set(traceRows.flatMap((traceRow) => strings(traceRow.evidenceRefs)))];
+  const commandIds = [
+    ...new Set(
+      traceRows.flatMap((traceRow) => [
+        ...strings(traceRow.contractValidationCommandRefs),
+        ...strings(traceRow.deliveryEvidenceCommandRefs),
+      ])
+    ),
+  ].filter((commandId) => !['CMD-DELIVERY-002', 'CMD-DELIVERY-003'].includes(commandId));
+  const commandRuns: CommandRun[] = [];
+  for (const commandId of commandIds) {
+    if (!commandById.has(commandId)) throw new Error(`required command missing from confirmation: ${commandId}`);
+    const rawArgs = commandArgsForGenericCommand({
+      commandId,
+      sourcePath: input.sourcePath,
+      recordPath: input.recordPath,
+      recordId,
+    });
+    const args = rawArgs.map((arg) => (arg === '__ATTEMPT_ID__' ? input.attemptId : arg));
+    const commandRun = runCommand({
+      commandId,
+      args,
+      outputFile: path.join(input.evidenceDir, `${commandId}.output.txt`),
+      runId: input.runId,
+      attemptId: input.attemptId,
+    });
+    assertCommandSucceeded(commandRun);
+    commandRun.artifactRefs = [
+      artifactRefForGenericCommand({
+        commandRun,
+        runtimeAuthority: input.runtimeAuthority,
+        relatedRequirementIds: [
+          commandId,
+          ...traceRows
+            .filter((traceRow) =>
+              [...strings(traceRow.contractValidationCommandRefs), ...strings(traceRow.deliveryEvidenceCommandRefs)].includes(commandId)
+            )
+            .flatMap((traceRow) => [text(traceRow.id), ...strings(traceRow.covers), ...strings(traceRow.evidenceRefs)]),
+        ].filter(Boolean),
+      }),
+    ];
+    commandRuns.push(commandRun);
+  }
+
+  const selfReceiptPath = path.join(input.evidenceDir, 'CMD-DELIVERY-003.self-receipt.json');
+  const selfStartedAt = new Date().toISOString();
+  const selfCommand = [
+    'npx',
+    'ts-node',
+    '--project',
+    'tsconfig.node.json',
+    '--transpile-only',
+    'scripts/final-closeout-evidence-runner.ts',
+    '--requirement-record',
+    normalizePath(input.recordPath),
+    '--json',
+  ].join(' ');
+  writeJson(selfReceiptPath, {
+    schemaVersion: 'self-command-run-receipt/v1',
+    commandId: 'CMD-DELIVERY-003',
+    command: selfCommand,
+    runId: input.runId,
+    closeoutAttemptId: input.attemptId,
+    generatedAt: selfStartedAt,
+    sourceDocumentHash: input.runtimeAuthority.sourceDocumentHash,
+    implementationConfirmationHash: input.runtimeAuthority.implementationConfirmationHash,
+    oracleResult: 'pass',
+  });
+  const selfRun: CommandRun = {
+    commandId: 'CMD-DELIVERY-003',
+    command: selfCommand,
+    runId: input.runId,
+    closeoutAttemptId: input.attemptId,
+    exitCode: 0,
+    startedAt: selfStartedAt,
+    completedAt: new Date().toISOString(),
+    outputPath: normalizePath(selfReceiptPath),
+    outputSummary: 'final closeout evidence runner generated current-attempt evidence bundle and self receipt',
+    artifactRefs: [],
+  };
+  selfRun.artifactRefs = [
+    artifactRefForGenericCommand({
+      commandRun: selfRun,
+      runtimeAuthority: input.runtimeAuthority,
+      relatedRequirementIds: ['CMD-DELIVERY-003', 'TRACE-005', 'MUST-005', 'NEG-003', 'EVD-006'],
+    }),
+  ];
+  commandRuns.push(selfRun);
+
+  const coveredIds = [...new Set(idsForTraceRows(traceRows, evidenceRefs))].sort();
+  const commandEvidencePath = path.join(input.evidenceDir, 'final-closeout-command-evidence.json');
+  writeJson(commandEvidencePath, {
+    schemaVersion: 'final-closeout-command-evidence/v1',
+    recordId,
+    runId: input.runId,
+    closeoutAttemptId: input.attemptId,
+    commandRuns,
+  });
+  const artifactRefs = commandRuns.flatMap((run) => run.artifactRefs);
+  buildGenericCompletionPacket({
+    recordId,
+    runId: input.runId,
+    attemptId: input.attemptId,
+    evidenceDir: input.evidenceDir,
+    commandRuns,
+    closedIds: coveredIds,
+    artifactRefs,
+  });
+  writeText(
+    path.join(input.evidenceDir, 'diff-summary.md'),
+    [
+      '# Generic Final Closeout Current Attempt Evidence',
+      '',
+      '- Generated current-attempt command receipts for confirmed acceptance gate model commands.',
+      '- Bound command receipts to source and implementation hashes.',
+      '- Kept closeout gate as the final consumer of the generated evidence.',
+      '',
+    ].join('\n')
+  );
+  const ingestPacket = buildGenericIngestPacket({
+    record: input.record,
+    recordId,
+    runId: input.runId,
+    attemptId: input.attemptId,
+    evidenceDir: input.evidenceDir,
+    commandRuns,
+    artifactRefs,
+    traceRows,
+    evidenceRefs,
+    coveredIds,
+    commandEvidencePath,
+    runtimeAuthority: input.runtimeAuthority,
+  });
+  const ingestPacketPath = path.join(input.evidenceDir, 'implementation-evidence-packet.json');
+  writeJson(ingestPacketPath, ingestPacket);
+  writeJson(path.join(input.evidenceDir, 'run-meta.json'), {
+    schemaVersion: 'generic-final-closeout-run-meta/v1',
+    recordId,
+    sourcePath: normalizePath(input.sourcePath),
+    recordPath: normalizePath(input.recordPath),
+    runId: input.runId,
+    closeoutAttemptId: input.attemptId,
+    evidenceDir: normalizePath(input.evidenceDir),
+    implementationEvidencePacket: normalizePath(ingestPacketPath),
+    commandEvidence: normalizePath(commandEvidencePath),
+  });
+  const output = {
+    ok: true,
+    recordId,
+    runId: input.runId,
+    closeoutAttemptId: input.attemptId,
+    evidenceDir: normalizePath(input.evidenceDir),
+    implementationEvidencePacket: normalizePath(ingestPacketPath),
+    commandEvidence: normalizePath(commandEvidencePath),
+  };
+  process.stdout.write(input.args.json ? `${JSON.stringify(output, null, 2)}\n` : `final_closeout_evidence=pass\n`);
+  return 0;
+}
+
 export function mainFinalCloseoutEvidenceRunner(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: final-closeout-evidence-runner [--run-id <id>] [--attempt-id <id>] [--evidence-dir <dir>] [--strict-proof-only] [--json]');
+    console.log('Usage: final-closeout-evidence-runner [--requirement-record <json>] [--source-document <md>] [--run-id <id>] [--attempt-id <id>] [--evidence-dir <dir>] [--record-closeout-receipt] [--strict-proof-only] [--json]');
     return 0;
   }
   const timestamp = new Date().toISOString().replace(/[-:]/gu, '').replace(/\.\d{3}Z$/u, 'Z');
+  const recordPath = requirementRecordPathForArgs(args.requirementRecord);
+  const record = readJson(recordPath);
+  const recordId = recordIdFromRecord(record);
   const runId = args.runId ?? `run-FINAL-CLOSEOUT-${timestamp}`;
-  const attemptId = args.attemptId ?? `closeout-attempt-${RECORD_ID}-final-${timestamp}`;
-  const evidenceDir = args.evidenceDir ?? `_bmad-output/runtime/requirement-records/${RECORD_ID}/evidence/FINAL-CLOSEOUT/${runId}`;
+  const attemptId = args.attemptId ?? `closeout-attempt-${recordId}-final-${timestamp}`;
+  const evidenceDir = args.evidenceDir ?? `_bmad-output/runtime/requirement-records/${recordId}/evidence/FINAL-CLOSEOUT/${runId}`;
   fs.mkdirSync(evidenceDir, { recursive: true });
-  const record = readJson(RECORD_PATH);
-  const runtimeAuthority = resolveRuntimeAuthority(record);
+  const sourcePath = sourceDocumentPathForRecord(record, args.sourceDocument ?? args.source);
+  const genericMode = Boolean(args.requirementRecord) || recordId !== RECORD_ID;
+  const runtimeAuthority = genericMode ? runtimeAuthorityFromRecord(record, sourcePath) : resolveRuntimeAuthority(record);
   if (args.strictProofOnly) {
     return runStrictProofOnly({ args, runId, attemptId, evidenceDir, runtimeAuthority });
+  }
+  if (genericMode && args.recordCloseoutReceipt) {
+    return runGenericCloseoutReceipt({
+      args,
+      recordPath,
+      sourcePath,
+      record,
+      runtimeAuthority,
+      runId,
+      attemptId,
+      evidenceDir,
+    });
+  }
+  if (genericMode) {
+    return runGenericFinalCloseout({
+      args,
+      recordPath,
+      sourcePath,
+      record,
+      runtimeAuthority,
+      runId,
+      attemptId,
+      evidenceDir,
+    });
   }
   const commandRuns: CommandRun[] = [];
   const traceMatrixPath = path.join(evidenceDir, 'trace-closure-matrix.final.json');

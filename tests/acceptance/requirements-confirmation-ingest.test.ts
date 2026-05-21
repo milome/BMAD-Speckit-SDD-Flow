@@ -21,6 +21,14 @@ const INGEST = path.join(
   'scripts',
   'ingest-confirmation-event.js'
 );
+const CONFIRM_SCOPE = path.join(
+  ROOT,
+  '_bmad',
+  'skills',
+  'requirements-contract-authoring',
+  'scripts',
+  'confirm-requirements-scope.js'
+);
 const REQ_TRACE_PROMPT = path.join(
   ROOT,
   '_bmad',
@@ -313,6 +321,24 @@ function runNode(script: string, args: string[]) {
   });
 }
 
+function runTsNode(script: string, args: string[]) {
+  return spawnSync(
+    process.execPath,
+    [
+      'node_modules/ts-node/dist/bin.js',
+      '--project',
+      'tsconfig.node.json',
+      '--transpile-only',
+      script,
+      ...args,
+    ],
+    {
+      cwd: ROOT,
+      encoding: 'utf8',
+    }
+  );
+}
+
 function runPython(script: string, args: string[]) {
   return spawnSync('python', [script, ...args], {
     cwd: ROOT,
@@ -343,6 +369,132 @@ function render(source: string) {
 }
 
 describe('controlled confirmation ingest', () => {
+  it('uses the high-level orchestration entry to create requirement-record without manual ingest assembly', () => {
+    const source = writeSource();
+    const { reportPath, report } = render(source);
+    const confirmationTextFile = path.join(tempDir, 'confirmation.txt');
+    fs.writeFileSync(confirmationTextFile, report.confirmInstruction, 'utf8');
+    const result = runNode(
+      path.join(ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js'),
+      [
+        'main-agent:confirm-scope',
+        '--cwd',
+        ROOT,
+        '--source',
+        source,
+        '--render-report',
+        reportPath,
+        '--confirmation-text-file',
+        confirmationTextFile,
+        '--confirmed-by',
+        'test-user',
+        '--runtime-root',
+        path.join(tempDir, '_bmad-output/runtime/requirement-records'),
+        '--confirmed-at',
+        '2026-05-18T06:00:00.000Z',
+      ]
+    );
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const output = JSON.parse(result.stdout);
+    expect(output.action).toBe('confirm-scope');
+    expect(output.ok).toBe(true);
+    expect(output.delegatedEntry).toContain('confirm-requirements-scope.js');
+    const record = JSON.parse(
+      fs.readFileSync(
+        path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json'),
+        'utf8'
+      )
+    );
+    expect(record.status).toBe('user_confirmed');
+    expect(record.confirmationHistory.at(-1)).toMatchObject({
+      eventType: 'confirmation_recorded',
+      sourceDocumentHash: report.sourceDocumentHash,
+      implementationConfirmationHash: report.implementationConfirmationHash,
+      confirmationPageHash: report.confirmationPageHash,
+    });
+  });
+
+  it('uses the highest-level package confirm-scope entry without requiring the main-agent alias', () => {
+    const source = writeSource();
+    const { reportPath, report } = render(source);
+    const confirmationTextFile = path.join(tempDir, 'confirmation.txt');
+    fs.writeFileSync(confirmationTextFile, report.confirmInstruction, 'utf8');
+    const result = runNode(
+      path.join(ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js'),
+      [
+        'confirm-scope',
+        '--cwd',
+        ROOT,
+        '--source',
+        source,
+        '--render-report',
+        reportPath,
+        '--confirmation-text-file',
+        confirmationTextFile,
+        '--confirmed-by',
+        'test-user',
+        '--runtime-root',
+        path.join(tempDir, '_bmad-output/runtime/requirement-records'),
+        '--confirmed-at',
+        '2026-05-18T06:00:00.000Z',
+      ]
+    );
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const output = JSON.parse(result.stdout);
+    expect(output.action).toBe('confirm-scope');
+    expect(output.ok).toBe(true);
+    const record = JSON.parse(
+      fs.readFileSync(
+        path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json'),
+        'utf8'
+      )
+    );
+    expect(record.status).toBe('user_confirmed');
+  });
+
+  it('uses the post-confirmation entry to create requirement-record without manual ingest assembly', () => {
+    const source = writeSource();
+    const { reportPath, report } = render(source);
+    const result = runNode(CONFIRM_SCOPE, [
+      '--source',
+      source,
+      '--render-report',
+      reportPath,
+      '--confirmation-text',
+      report.confirmInstruction,
+      '--confirmed-by',
+      'test-user',
+      '--runtime-root',
+      path.join(tempDir, '_bmad-output/runtime/requirement-records'),
+      '--confirmed-at',
+      '2026-05-18T06:00:00.000Z',
+      '--json',
+    ]);
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const output = JSON.parse(result.stdout);
+    expect(output.userFacingNextStep).toBe(
+      'requirement_record_ingested_then_prompt_generation_allowed'
+    );
+    expect(output.internalSteps).toEqual([
+      {
+        label: 'controlled_confirmation_ingest',
+        status: 0,
+        eventType: 'confirmation_recorded',
+      },
+    ]);
+    const record = JSON.parse(fs.readFileSync(output.requirementRecordPath, 'utf8'));
+    expect(record.status).toBe('user_confirmed');
+    expect(record.confirmationHistory.at(-1)).toMatchObject({
+      eventType: 'confirmation_recorded',
+      sourceDocumentHash: report.sourceDocumentHash,
+      implementationConfirmationHash: report.implementationConfirmationHash,
+      confirmationPageHash: report.confirmationPageHash,
+    });
+  });
+
   it('blocks req-trace prompt before ingest and allows it after controlled confirmation ingest', () => {
     const source = writeSource();
     const blockedPrompt = runPython(REQ_TRACE_PROMPT, ['--source-document', source]);

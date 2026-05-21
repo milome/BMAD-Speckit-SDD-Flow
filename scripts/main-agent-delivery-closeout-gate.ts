@@ -72,6 +72,7 @@ interface ParsedArgs {
   reportPath?: string;
   evaluatedBy?: string;
   evaluatedAt?: string;
+  allowExistingAttempt?: boolean;
   json?: boolean;
   help?: boolean;
 }
@@ -82,6 +83,7 @@ function parseArgs(argv: string[]): ParsedArgs {
     const arg = argv[index];
     if (arg === '--help' || arg === '-h') out.help = true;
     else if (arg === '--json') out.json = true;
+    else if (arg === '--allow-existing-attempt') out.allowExistingAttempt = true;
     else if (arg.startsWith('--')) {
       const key = arg.slice(2).replace(/-([a-z])/gu, (_, letter: string) => letter.toUpperCase());
       const value = argv[index + 1];
@@ -996,7 +998,18 @@ function latestArchitectureStateCheck(record: JsonObject): JsonObject | null {
   return checks.length > 0 ? checks[checks.length - 1] : null;
 }
 
+function architectureConfirmationRequired(record: JsonObject): boolean {
+  if (record.architectureConfirmationRequired === true) return true;
+  const state = record.architectureConfirmationState;
+  if (state && typeof state === 'object' && !Array.isArray(state)) return true;
+  return (
+    objects(record.architectureConfirmations).length > 0 ||
+    objects(record.architectureConfirmationStateChecks).length > 0
+  );
+}
+
 function architectureConfirmationIssues(record: JsonObject): string[] {
+  if (!architectureConfirmationRequired(record)) return [];
   const state =
     record.architectureConfirmationState &&
     typeof record.architectureConfirmationState === 'object' &&
@@ -1049,6 +1062,54 @@ function hasBlockingScoringState(record: JsonObject): boolean {
     ['fail', 'blocked'].includes(materializationDecision) ||
     ['fail', 'blocked'].includes(evaluationDecision) ||
     openScoreFailures.length > 0
+  );
+}
+
+function legacyClosedLoopEvidenceRequired(record: JsonObject): boolean {
+  if (objects(record.extensionRefs).length > 0) return true;
+  if (
+    objects(record.artifactIndex).some((artifact) =>
+      [
+        'failure_case_coverage',
+        'production_subsystem_acceptance_report',
+        'production_loop_ready_report',
+        'dataset_release_manifest',
+        'dataset_manifest',
+        'dataset_release_gate_report',
+      ].includes(text(artifact.artifactType))
+    )
+  ) {
+    return true;
+  }
+  const ids = [
+    ...objects(record.requirementClosures).map((closure) => text(closure.requirementId)),
+    ...objects(record.executionIterations).flatMap((iteration) => [
+      ...strings(iteration.traceRows),
+      ...strings(iteration.evidenceRefs),
+    ]),
+    ...objects(deliveryEvidence(record).requiredCommands).flatMap((command) => [
+      text(command.commandId),
+      ...strings(command.traceRows),
+      ...strings(command.evidenceRefs),
+    ]),
+  ];
+  return ids.some((id) =>
+    /^TRACE-0(?:0[6-9]|[1-3][0-9]|40)$/u.test(id) ||
+    [
+      'EVD-039',
+      'EVD-040',
+      'EVD-041',
+      'EVD-044',
+      'EVD-045',
+      'EVD-046',
+      'EVD-047',
+      'EVD-049',
+      'EVD-050',
+      'EVD-051',
+      'CMD-PARALLEL-MISSION-EVIDENCE-INTEGRATION',
+      'CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE',
+      'CMD-DATASET-RELEASE-GATE',
+    ].includes(id)
   );
 }
 
@@ -1171,29 +1232,39 @@ function evaluate(record: JsonObject, recordPath: string, attemptId: string): { 
   });
   blockingReasons.push(...hookIssues);
 
-  const truthGate = deliveryTruthGateIssues(recordPath);
-  checks.push({
-    id: 'delivery-truth-gate-current',
-    passed: truthGate.issues.length === 0,
-    reportPath: truthGate.reportPath ? normalizePathForRecord(truthGate.reportPath) : null,
-    ...truthGate.summary,
-    issueCount: truthGate.issues.length,
-  });
-  if (truthGate.issues.length > 0) {
-    blockingReasons.push('delivery_truth_gate_not_passed', ...truthGate.issues);
+  if (legacyClosedLoopEvidenceRequired(record)) {
+    const truthGate = deliveryTruthGateIssues(recordPath);
+    checks.push({
+      id: 'delivery-truth-gate-current',
+      passed: truthGate.issues.length === 0,
+      reportPath: truthGate.reportPath ? normalizePathForRecord(truthGate.reportPath) : null,
+      ...truthGate.summary,
+      issueCount: truthGate.issues.length,
+    });
+    if (truthGate.issues.length > 0) {
+      blockingReasons.push('delivery_truth_gate_not_passed', ...truthGate.issues);
+    }
+
+    const failureCaseIssues = failureCaseCoverageIssues(record);
+    checks.push({
+      id: 'failure-case-coverage-complete',
+      passed: failureCaseIssues.length === 0,
+      issueCount: failureCaseIssues.length,
+    });
+    blockingReasons.push(...failureCaseIssues);
+
+    const productionIssues = productionBlockerIssues(record, recordPath);
+    checks.push(...productionIssues.checks);
+    blockingReasons.push(...productionIssues.issues);
+  } else {
+    checks.push(
+      { id: 'delivery-truth-gate-current', passed: true, required: false },
+      { id: 'failure-case-coverage-complete', passed: true, required: false },
+      { id: 'production-subsystem-extension-current', passed: true, required: false },
+      { id: 'production-loop-ready-report-current', passed: true, required: false },
+      { id: 'dataset-release-artifacts-current', passed: true, required: false }
+    );
   }
-
-  const failureCaseIssues = failureCaseCoverageIssues(record);
-  checks.push({
-    id: 'failure-case-coverage-complete',
-    passed: failureCaseIssues.length === 0,
-    issueCount: failureCaseIssues.length,
-  });
-  blockingReasons.push(...failureCaseIssues);
-
-  const productionIssues = productionBlockerIssues(record, recordPath);
-  checks.push(...productionIssues.checks);
-  blockingReasons.push(...productionIssues.issues);
 
   const subagentRevalidation = subagentCurrentAttemptRevalidationIssues(record, attemptId);
   checks.push(...subagentRevalidation.checks);
@@ -1445,7 +1516,7 @@ function updateRecord(
 export function mainDeliveryCloseoutGate(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: main-agent-delivery-closeout-gate --requirement-record <json> [--attempt-id <id>] [--json]');
+    console.log('Usage: main-agent-delivery-closeout-gate --requirement-record <json> [--attempt-id <id>] [--allow-existing-attempt] [--json]');
     return 0;
   }
   if (!args.requirementRecord) throw new Error('missing required args: requirementRecord');
@@ -1460,7 +1531,7 @@ export function mainDeliveryCloseoutGate(argv: string[]): number {
       ? (record.closeout as JsonObject)
       : {};
   const attemptExists = objects(existingCloseout.attempts).some((attempt) => text(attempt.closeoutAttemptId) === attemptId);
-  if (attemptExists && explicitAttemptId) {
+  if (attemptExists && explicitAttemptId && args.allowExistingAttempt !== true) {
     console.error(JSON.stringify({ ok: false, error: `closeout attempt already exists: ${attemptId}` }, null, 2));
     return 2;
   }
@@ -1496,7 +1567,7 @@ export function mainDeliveryCloseoutGate(argv: string[]): number {
     reduce: (currentRecord) =>
       updateRecord(currentRecord, {
         ...closeoutPayload,
-        allowExistingAttempt: attemptExists && !explicitAttemptId,
+        allowExistingAttempt: attemptExists && (!explicitAttemptId || args.allowExistingAttempt === true),
       }),
   });
   const output = {

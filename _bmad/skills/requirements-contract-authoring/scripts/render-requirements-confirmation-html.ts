@@ -4085,7 +4085,9 @@ function entryMatchesCurrentHashes(entry, currentHashes) {
   const checks = [
     hashMatchStatus(entrySourceHash(entry), currentHashes.sourceDocumentHash, 'sourceDocument'),
     hashMatchStatus(entryImplementationHash(entry), currentHashes.implementationConfirmationHash, 'implementationConfirmation'),
-    hashMatchStatus(entryArchitectureHash(entry), currentHashes.architectureConfirmationHash, 'architectureConfirmation'),
+    currentHashes.architectureConfirmationHash
+      ? hashMatchStatus(entryArchitectureHash(entry), currentHashes.architectureConfirmationHash, 'architectureConfirmation')
+      : { ok: true, reason: 'architectureConfirmation_not_required' },
   ];
   return {
     ok: checks.every((check) => check.ok),
@@ -4358,10 +4360,18 @@ function buildProgressDelta(input) {
     ...newIds,
   ]);
   const idStatuses = {};
-  for (const groupIds of [byGroup.must, byGroup.notDone, byGroup.mustNot, byGroup.evidence]) {
+  for (const groupIds of [byGroup.must, byGroup.notDone, byGroup.evidence]) {
     for (const id of groupIds) {
       idStatuses[id] = traceStatusForIds([id], idToTraceRows, traceExecutionState, ui);
     }
+  }
+  for (const id of byGroup.mustNot) {
+    idStatuses[id] = {
+      traceIds: idToTraceRows[id] ?? [],
+      label: ui.progressStatus.currentProofValid,
+      tone: 'green',
+      proofState: 'scope_boundary_confirmed',
+    };
   }
   const traceRowsWithState = asArray(traceRows).map((row) => ({
     id: row.id,

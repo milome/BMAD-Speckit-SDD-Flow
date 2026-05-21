@@ -19,6 +19,7 @@
     "test": "npm run test:speckit-mirror-sync && npm run test:governance-fixtures && vitest run && npm run test:bmad-speckit",
     "resolve-active-requirement": "npx ts-node --project tsconfig.node.json --transpile-only scripts/resolve-active-requirement.ts",
     "main-agent-orchestration": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts",
+    "main-agent:confirm-scope": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts --action confirm-scope",
     "main-agent:run-loop": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts --action run-loop",
     "main-agent:release-gate": "npm run test:governance-fixtures && npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-release-gate.ts",
     "main-agent:release-gate:ci": "node scripts/run-ci-release-gate-fixture.js",

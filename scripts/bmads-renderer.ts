@@ -281,7 +281,10 @@ export function buildBmadsOutput(projectRootInput = process.cwd()): Record<strin
     commandHints: [
       'bmads',
       'bmad-speckit bmads',
+      'bmad-speckit confirm-scope',
+      'bmad-speckit main-agent:confirm-scope',
       'bmad-speckit main-agent-orchestration --action inspect',
+      'bmad-speckit main-agent-orchestration --action confirm-scope',
       'bmad-speckit main-agent-orchestration --action dispatch-plan --host codex',
       'bmad-speckit main-agent:release-gate',
       'bmad-speckit main-agent:delivery-truth-gate',
