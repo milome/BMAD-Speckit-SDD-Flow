@@ -32,6 +32,8 @@ If older project material says "requirements contract", treat it as a legacy ali
 - Treat HTML render failure, missing renderer, missing render report, or hash mismatch as a confirmation gate failure.
 - Require the user to confirm in chat with the exact confirmation phrase plus current hashes from the HTML render report.
 - Keep renderer output read-only for confirmation: it may show scope and hashes, but it must not mutate requirements or mark confirmation.
+- Separate scope confirmation from delivery readiness. `confirmable` / `blockingIssues: []` means only that the requirements scope can be confirmed; it must never be presented or interpreted as implementation complete, launch ready, merge ready, or closeout ready.
+- The confirmation page and render report must expose a distinct `deliveryReadiness` state. If there is no controlled requirement record, any missing current evidence, any stale evidence, any trace row that is not `current_pass`, or any required command/evidence is unavailable, delivery readiness must be `delivery_ready=false` with blocking reasons visible near the top of the HTML.
 - Author the schema in this order: core fields first, `applicability.*` declarations second, then expand only the conditional domains marked `applies: true`.
 - Treat `failurePaths[]` and `edgeCases[]` as core mandatory fields for every source document; they are not optional advanced runtime sections.
 - Keep ordinary business/functional failure paths separate from the conditional `functionalResumeFailureCaseRegistry`.
@@ -400,6 +402,7 @@ Rules:
 
 - The confirmation phrase and hashes must match `confirmation-render-report.json`.
 - The HTML must be generated from the current source document hash.
+- `confirmability=confirmable` or `blockingIssues: []` confirms only the requirements scope. Before any claim of completion, merge readiness, release readiness, or launch readiness, `deliveryReadiness.ready` must be true in the current render report and the page must show `delivery_ready=true`.
 - If source content, confirmation IDs, traceRows, diagrams, artifact plan, or evidence expectations change, regenerate HTML and require confirmation again.
 - Only after exact chat confirmation may the source document be updated to `status: user_confirmed`.
 - When English or bilingual output is selected, the renderer may display an English phrase, but the Chinese phrase above remains accepted if hashes match.
@@ -430,6 +433,7 @@ Before the source document can be used for readiness or implementation prompt ge
 - `confirmationRender` fields point to the current HTML, summary, and report.
 - Sequence, flow, edge-case, and artifact automation plan views exist and are ID-bound.
 - Failure paths, state transitions, invariants, idempotency, recovery, permissions, configuration, and evidence are covered.
+- `deliveryReadiness.ready` is false until every trace row is `current_pass` for the current hashes and current closeout attempt; missing `requirement-record.json`, `no_controlled_record`, `no_controlled_execution`, `current_evidence_recorded` without pass, stale hash evidence, stale attempt evidence, and missing current evidence all block delivery readiness.
 - Smoke tests are not counted as acceptance evidence.
 
 When a local file is produced, run:

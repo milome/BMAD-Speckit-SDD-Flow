@@ -776,6 +776,20 @@ function deriveNextActionFromRequirementRecord(input: {
   };
 }
 
+function normalizeBlockingReasonRefs(value: unknown): Array<{ sourceType: string; id: string }> {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is { sourceType: string; id: string } => {
+      return (
+        item != null &&
+        typeof item === 'object' &&
+        typeof (item as { sourceType?: unknown }).sourceType === 'string' &&
+        typeof (item as { id?: unknown }).id === 'string'
+      );
+    })
+    .map((item) => ({ sourceType: item.sourceType, id: item.id }));
+}
+
 function deriveNextActionFromSurface(input: {
   stage: string;
   state: OrchestrationState | null;
@@ -960,7 +974,9 @@ export function resolveMainAgentOrchestrationSurface(
             source: 'requirement_record' as const,
             runtimeNextAction: action.nextAction,
             ready: action.ready === true,
-            blockingReasonRefs: 'blockingReasonRefs' in action ? action.blockingReasonRefs : [],
+            blockingReasonRefs: normalizeBlockingReasonRefs(
+              'blockingReasonRefs' in action ? action.blockingReasonRefs : []
+            ),
             observedLegacyState: {
               path: scopedState.statePath,
               nextAction: scopedState.state?.nextAction ?? null,
@@ -1281,9 +1297,9 @@ export function buildMainAgentDispatchInstruction(
     packetKind: surface.orchestrationState.pendingPacket!.packetKind,
     packetPath: surface.orchestrationState.pendingPacket!.packetPath,
     role:
-      (surface.pendingPacket as ExecutionPacket | RecommendationPacket | ResumePacket).role ??
-      (surface.pendingPacket as RecommendationPacket).recommendedRole ??
-      defaultPacketRole(taskType),
+      'role' in surface.pendingPacket
+        ? surface.pendingPacket.role
+        : surface.pendingPacket.recommendedRole ?? defaultPacketRole(taskType),
     expectedDelta:
       (surface.pendingPacket as ExecutionPacket | ResumePacket).expectedDelta ??
       (surface.pendingPacket as RecommendationPacket).expectedDelta,

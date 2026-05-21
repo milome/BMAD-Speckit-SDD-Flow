@@ -303,7 +303,10 @@ export function evaluateDeliveryTruthGate(input: {
     { id: 'pr-topology-closed', ...checkPrTopology(input.prTopology) },
     { id: 'authorized-sprint-status-write', ...checkSprintAudit(input.sprintAudit) },
     { id: 'quality-gate', ...checkQualityGate(input.qualityGate ?? null) },
-    { id: 'same-run-evidence-provenance', ...checkEvidenceProvenance(input) },
+    {
+      id: 'same-run-evidence-provenance',
+      ...checkEvidenceProvenance({ ...input, hostMatrix: input.hostMatrix ?? null }),
+    },
     {
       id: 'test-dev-seams-disabled',
       passed:

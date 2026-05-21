@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import * as yaml from 'js-yaml';
 import { resolveBmadHelpFiveLayerProgressState } from './main-agent-bmad-help-five-layer-matrix';
 import { resolveMainAgentOrchestrationSurface } from './main-agent-orchestration';
+import type { RuntimeFlowId } from './runtime-governance';
 
 interface BmadsRuntimeContract {
   schemaVersion: string;
@@ -211,11 +212,19 @@ function filterRecommendedWorkflows(input: {
   return input.workflows.filter((workflow) => workflow !== 'bmad-story-assistant');
 }
 
+function flowForLayer(layer: string): RuntimeFlowId {
+  return layer === 'layer_2' ? 'epic' : 'story';
+}
+
 export function buildBmadsOutput(projectRootInput = process.cwd()): Record<string, unknown> {
   const projectRoot = path.resolve(projectRootInput);
   const runtime = loadRuntimeContract(projectRoot);
   const progress = resolveBmadHelpFiveLayerProgressState({ projectRoot });
-  const orchestration = resolveMainAgentOrchestrationSurface({ projectRoot });
+  const orchestration = resolveMainAgentOrchestrationSurface({
+    projectRoot,
+    flow: flowForLayer(progress.currentLayer),
+    stage: progress.currentStage,
+  });
   const readiness = resolveReadinessStatus(projectRoot);
   const artifacts = collectUpstreamArtifacts(projectRoot);
   const currentRoute = runtime.layers
@@ -263,7 +272,7 @@ export function buildBmadsOutput(projectRootInput = process.cwd()): Record<strin
       : null,
     readiness,
     orchestration: {
-      nextAction: orchestration.nextAction,
+      nextAction: orchestration.mainAgentNextAction,
       ready: orchestration.mainAgentReady,
       pendingPacketStatus: orchestration.pendingPacketStatus,
       sessionId: orchestration.sessionId,

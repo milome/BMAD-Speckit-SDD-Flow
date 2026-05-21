@@ -297,7 +297,7 @@ function runHostTransportCheck(mode: JourneyMode, host: HostId, projectRoot: str
     };
   }
 
-  const hostBinary = host === 'claude' ? 'claude' : host === 'codex' ? 'codex' : 'cursor';
+  const hostBinary = host === 'claude' ? 'claude' : 'cursor';
   const command = hostBinary;
   return {
     command: [command, '--version'],
@@ -427,13 +427,15 @@ function runHostJourney(
       };
       fs.writeFileSync(packetPath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
       instruction = {
+        flow: 'story',
+        stage: 'implement',
+        host: 'codex',
         nextAction: 'dispatch_implement',
         taskType: 'implement',
         route: {
-          host: 'codex',
-          command: 'main-agent-codex-worker-adapter',
-          args: [],
-          reason: 'host-matrix smoke packet',
+          tool: 'codex',
+          subtype: 'worker:implement',
+          fallback: 'disabled',
         },
         sessionId: packet.parentSessionId,
         packetId,

@@ -73,7 +73,7 @@ describe('main-agent orchestration consumer', () => {
           requestedFlow: 'story',
           recommendedFlow: 'story',
           decision: 'pass',
-          readinessStatus: 'ready',
+          readinessStatus: 'ready_clean',
           blockerCodes: [],
           blockerSummary: [],
           rerouteRequired: false,

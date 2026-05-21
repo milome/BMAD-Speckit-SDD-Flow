@@ -1221,7 +1221,8 @@ export function appendTurn(projectRoot: string, turn: SessionTurn): GateResult {
 }
 
 export function appendControlRecord(projectRoot: string, record: SessionControlRecord): void {
-  if (record.record_type === 'agent_turn') {
+  const recordType = String(record.record_type);
+  if (recordType === 'agent_turn') {
     throw new Error('Control records must not use record_type = "agent_turn"');
   }
   if (record.counts_toward_ratio !== false) {
@@ -1478,7 +1479,7 @@ export function evaluateCheckpointWindowInput(
     return {
       accepted: true,
       resolution: 'replan_before_next_batch',
-      normalized_input,
+      normalized_input: normalizedInput,
       closes_window: true,
       cancels_window_timer: false,
       skip_remaining_window_ms: false,

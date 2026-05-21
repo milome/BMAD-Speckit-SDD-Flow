@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020';
+import type { AnySchema } from 'ajv';
 import addFormats from 'ajv-formats';
 import { buildEvidenceProvenance, sameRunSummary } from './evidence-provenance';
 import { validatePrTopologyForReleaseGate, type PrTopology } from './parallel-mission-control';
@@ -491,7 +492,7 @@ function validateExecutionAuditLedger(
 
   const ajv = new Ajv2020({ allErrors: true, strict: false });
   addFormats(ajv);
-  const validate = ajv.compile(schema);
+  const validate = ajv.compile(schema as AnySchema);
   if (!validate(ledger)) {
     const details = (validate.errors ?? [])
       .map((item) => `${item.instancePath || '/'} ${item.message || 'invalid'}`)

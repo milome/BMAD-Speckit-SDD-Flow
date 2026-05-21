@@ -10,6 +10,13 @@ import {
 } from '../../scripts/subagent-current-attempt-revalidation';
 import { sha256Object } from '../../scripts/subagent-evidence-envelope';
 
+type SubagentCurrentAttemptRevalidationReport = ReturnType<
+  typeof evaluateSubagentCurrentAttemptRevalidation
+> & {
+  failureRecords: Array<Record<string, unknown>>;
+  rerunLoops: Array<Record<string, unknown>>;
+};
+
 const SOURCE_HASH = 'sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570';
 const IMPLEMENTATION_HASH = 'sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a';
 const ARCHITECTURE_HASH = 'sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da';
@@ -335,7 +342,9 @@ describe('subagent current-attempt revalidation', () => {
       ]);
       expect(code).toBe(0);
       expect(existsSync(reportPath)).toBe(true);
-      const report = JSON.parse(readFileSync(reportPath, 'utf8'));
+      const report = JSON.parse(
+        readFileSync(reportPath, 'utf8')
+      ) as SubagentCurrentAttemptRevalidationReport;
       expect(report).toMatchObject({
         decision: 'pass',
         currentCloseoutAttemptId: 'new-attempt',

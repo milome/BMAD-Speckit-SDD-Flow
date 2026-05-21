@@ -1,9 +1,56 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as runtimeQuery from '../runtime-query';
 import { invokeRuntimeMcpTool } from '../mcp-server';
+import {
+  buildReviewerContractProjection,
+  buildReviewerRouteExplainability,
+} from '../reviewer-projection';
+import { buildSixMentalModelProjection } from '../six-model-projection';
+import type { RuntimeDashboardSnapshot } from '../runtime-query';
 
 describe('runtime dashboard MCP server', () => {
   it('includes redaction summary in preview_sft and export_sft tool responses', async () => {
+    const runtimeContext: RuntimeDashboardSnapshot['runtime_context'] = {
+      run_id: 'run-e15-s1-001',
+      status: 'running',
+      current_stage: 'implement',
+      flow: 'story',
+      scope: null,
+      last_event_at: '2026-03-28T00:05:00.000Z',
+      reviewer_contract: buildReviewerContractProjection({ auditEntryStage: 'implement' }),
+    };
+    const executionState: RuntimeDashboardSnapshot['execution_state'] = {
+      source: 'execution_record',
+      selection_match: 'work_item',
+      execution_id: 'exec-001',
+      execution_status: 'running',
+      configured_authoritative_host: 'cursor',
+      dispatched_host: 'claude',
+      fallback_used: true,
+      last_rerun_gate_status: 'fail',
+      artifact_path: 'artifacts/attempt.md',
+      packet_paths: {},
+      last_dispatch_error: null,
+      reviewer_route_explainability: [
+        {
+          ...buildReviewerRouteExplainability({ auditEntryStage: 'implement' }),
+          matchedSkillId: 'code-reviewer',
+        },
+      ],
+    };
+    const stageTimeline: RuntimeDashboardSnapshot['stage_timeline'] = [];
+    const scoreDetail: RuntimeDashboardSnapshot['score_detail'] = {
+      run_id: 'run-e15-s1-001',
+      records: [],
+      findings: [],
+    };
+    const workboard: RuntimeDashboardSnapshot['workboard'] = {
+      active_board_group_id: null,
+      active_work_item_id: null,
+      board_groups: [],
+      work_items: [],
+    };
+
     vi.spyOn(runtimeQuery, 'queryRuntimeDashboard').mockReturnValue({
       generated_at: '2026-03-28T00:00:00.000Z',
       selection: {
@@ -23,44 +70,9 @@ describe('runtime dashboard MCP server', () => {
         score_record_count: 1,
         last_updated_at: '2026-03-28T00:05:00.000Z',
       },
-      runtime_context: {
-        run_id: 'run-e15-s1-001',
-        status: 'running',
-        current_stage: 'implement',
-        flow: 'story',
-        scope: null,
-        last_event_at: '2026-03-28T00:05:00.000Z',
-        reviewer_contract: {
-          version: 'reviewer_contract_projection_v1',
-          reviewerIdentity: 'bmad_code_reviewer',
-          reviewerDisplayName: 'code-reviewer',
-          facilitatorIdentity: 'party_mode_facilitator',
-          registryVersion: 'reviewer_registry_v1',
-          schemaVersions: {
-            input: 'review_input_v1',
-            output: 'review_output_v1',
-            handoff: 'review_handoff_v1',
-            closeout: 'review_host_closeout_v1',
-          },
-          closeoutRunner: 'runAuditorHost',
-          supportedProfiles: ['story_audit', 'implement_audit'],
-          supportedAuditEntryStages: ['story', 'implement'],
-          activeAuditConsumer: {
-            entryStage: 'implement',
-            profile: 'implement_audit',
-            closeoutStage: 'implement',
-            auditorScript: 'auditor-implement',
-            scoreStage: 'implement',
-            triggerStage: 'speckit_5_2',
-          },
-        },
-      },
-      stage_timeline: [],
-      score_detail: {
-        run_id: 'run-e15-s1-001',
-        records: [],
-        findings: [],
-      },
+      runtime_context: runtimeContext,
+      stage_timeline: stageTimeline,
+      score_detail: scoreDetail,
       sft_summary: {
         total_candidates: 3,
         accepted: 2,
@@ -133,54 +145,15 @@ describe('runtime dashboard MCP server', () => {
           },
         },
       },
-      execution_state: {
-        source: 'execution_record',
-        selection_match: 'work_item',
-        execution_id: 'exec-001',
-        execution_status: 'running',
-        configured_authoritative_host: 'cursor',
-        dispatched_host: 'claude',
-        fallback_used: true,
-        last_rerun_gate_status: 'fail',
-        artifact_path: 'artifacts/attempt.md',
-        packet_paths: {},
-        last_dispatch_error: null,
-        reviewer_route_explainability: [
-          {
-            requestedSkillId: 'code-reviewer',
-            matchedSkillId: 'code-reviewer',
-            reviewerIdentity: 'bmad_code_reviewer',
-            reviewerDisplayName: 'code-reviewer',
-            registryVersion: 'reviewer_registry_v1',
-            closeoutRunner: 'runAuditorHost',
-            supportedProfiles: ['story_audit', 'implement_audit'],
-            hosts: {
-              cursor: {
-                preferredRoute: { tool: 'cursor-task', subtypeOrExecutor: 'code-reviewer' },
-                fallbackRoute: { tool: 'mcp_task', subtypeOrExecutor: 'generalPurpose' },
-              },
-              claude: {
-                preferredRoute: { tool: 'Agent', subtypeOrExecutor: 'code-reviewer' },
-                fallbackRoute: { tool: 'Agent', subtypeOrExecutor: 'general-purpose' },
-              },
-            },
-            activeAuditConsumer: {
-              entryStage: 'implement',
-              profile: 'implement_audit',
-              closeoutStage: 'implement',
-              auditorScript: 'auditor-implement',
-              scoreStage: 'implement',
-              triggerStage: 'speckit_5_2',
-            },
-          },
-        ],
-      },
-      workboard: {
-        active_board_group_id: null,
-        active_work_item_id: null,
-        board_groups: [],
-        work_items: [],
-      },
+      execution_state: executionState,
+      workboard,
+      six_model_projection: buildSixMentalModelProjection({
+        runtimeContext,
+        executionState,
+        stageTimeline,
+        scoreDetail,
+        workboard,
+      }),
     });
 
     const summary = await invokeRuntimeMcpTool(

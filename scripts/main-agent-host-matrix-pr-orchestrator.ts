@@ -375,7 +375,11 @@ export function runHostMatrixPrOrchestration(input: {
         ])
       : 1;
 
-  const journeyReport = fs.existsSync(journeyReportPath)
+  const journeyReport: {
+    mode: 'mock' | 'real';
+    journeys: Array<{ host: 'cursor' | 'claude' | 'codex'; passed: boolean }>;
+    finalPassed: boolean;
+  } = fs.existsSync(journeyReportPath)
     ? (JSON.parse(fs.readFileSync(journeyReportPath, 'utf8')) as {
         mode: 'mock' | 'real';
         journeys: Array<{ host: 'cursor' | 'claude' | 'codex'; passed: boolean }>;
@@ -453,7 +457,7 @@ export function runHostMatrixPrOrchestration(input: {
     githubPrApi.passed &&
     prGate.passed;
 
-  const report = {
+  const report: HostMatrixPrOrchestrationReport = {
     reportType: 'main_agent_host_matrix_pr_orchestration',
     evidence_provenance,
     provider: input.provider,

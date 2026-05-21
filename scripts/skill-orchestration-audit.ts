@@ -262,8 +262,9 @@ export function auditInstalledSkillOrchestration(
   const entries = inventory.skillInventory
     .filter((entry) => includeSources.has(entry.source))
     .map((entry) => {
-      const skillRoot = path.dirname(entry.path);
-      const markdownFiles = collectMarkdownFiles(skillRoot);
+      const entryPath = entry.path ?? '';
+      const skillRoot = entryPath ? path.dirname(entryPath) : '';
+      const markdownFiles = entryPath ? collectMarkdownFiles(skillRoot) : [];
       const evidence: SkillOrchestrationEvidence = {
         markdownFiles: markdownFiles.map((file) => normalizePath(path.relative(input.projectRoot, file))),
         subagentMatches: collectPatternMatches(markdownFiles, input.projectRoot, SUBAGENT_PATTERNS),
@@ -296,14 +297,14 @@ export function auditInstalledSkillOrchestration(
       ) {
         if (evidence.mainAgentTextMatches.length === 0) {
           evidence.mainAgentTextMatches.push({
-            file: normalizePath(path.relative(input.projectRoot, entry.path)),
+            file: normalizePath(path.relative(input.projectRoot, entryPath)),
             line: 1,
             text: 'Main Agent orchestration remains authoritative for this installed project-host skill.',
           });
         }
         if (evidence.resumeControlMatches.length === 0) {
           evidence.resumeControlMatches.push({
-            file: normalizePath(path.relative(input.projectRoot, entry.path)),
+            file: normalizePath(path.relative(input.projectRoot, entryPath)),
             line: 1,
             text: 'Main Agent resume / halt / handoff control is enforced for this installed project-host skill.',
           });

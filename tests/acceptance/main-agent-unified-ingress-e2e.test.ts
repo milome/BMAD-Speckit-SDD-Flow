@@ -9,6 +9,7 @@ import {
 import {
   governanceEventTypeRegistryPolicyHash,
   governanceEventTypeRegistryHash,
+  type GovernanceTransportEnvelope,
 } from '../../scripts/governance-transport-envelope';
 import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
 import {
@@ -179,7 +180,9 @@ function writeFakeCodexBinary(root: string): string {
   return fakeCodexBin;
 }
 
-function codexHookTrustEnvelope(overrides: Record<string, unknown> = {}) {
+function codexHookTrustEnvelope(
+  overrides: Partial<GovernanceTransportEnvelope> = {}
+): GovernanceTransportEnvelope {
   return {
     hostKind: 'codex',
     hostMode: 'hooks_enabled',

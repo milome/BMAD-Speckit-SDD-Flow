@@ -64,6 +64,7 @@ import {
   type GovernancePreContinuePayload,
   type GovernanceRuntimeQueueItem,
 } from './governance-runtime-queue';
+import type { RuntimeContextFile } from './runtime-context';
 import type {
   GovernanceExecutionResult,
   GovernanceExecutionProjection,
@@ -152,9 +153,10 @@ async function processLegacyQueue(projectRoot: string): Promise<void> {
   }
 }
 
-function deriveRerunDecisionFromPayload(
-  payload: GovernanceRemediationRerunPayload
-): GovernanceRerunDecision {
+function deriveRerunDecisionFromPayload(payload: {
+  rerunDecision?: GovernanceRerunDecision;
+  journeyContractHints?: Array<{ signal?: string }>;
+}): GovernanceRerunDecision {
   if (payload.rerunDecision?.mode) {
     return payload.rerunDecision;
   }
@@ -185,9 +187,9 @@ function deriveRerunDecisionFromPayload(
 }
 
 function activeRerunStageFromLoopState(loopState: {
-  rerunChain?: Array<Record<string, unknown>>;
+  rerunChain?: GovernanceRerunStage[];
   rerunStageIndex?: number;
-}): Record<string, unknown> | null {
+}): GovernanceRerunStage | null {
   const chain = Array.isArray(loopState.rerunChain) ? loopState.rerunChain : [];
   if (chain.length === 0) {
     return null;
@@ -419,7 +421,7 @@ async function processGovernanceRerunEvent(
   const packetPaths: Record<string, string> = {};
   let executionRecord: GovernancePacketExecutionRecord | null = null;
   if (result.artifactPath && result.artifactResult) {
-    const activeStage = activeRerunStageFromLoopState(result.loopState) as GovernanceRerunStage | null;
+    const activeStage = activeRerunStageFromLoopState(result.loopState);
     const packetHosts = [...new Set(config.packetHosts)];
     if (config.execution?.enabled) {
       packetHosts.push(config.execution.authoritativeHost);
@@ -609,13 +611,9 @@ async function processGovernanceEvent(
       });
 
       const rerunDecision = deriveRerunDecisionFromPayload({
-        runnerInput: {
-          rerunGate: payload.rerunGate,
-        },
+        journeyContractHints: [],
       });
-        const activeStage = activeRerunStageFromLoopState(
-          remediationResult.loopState
-        ) as GovernanceRerunStage | null;
+      const activeStage = activeRerunStageFromLoopState(remediationResult.loopState);
 
       const packetPaths: Record<string, string> = {};
       let executionRecord: GovernancePacketExecutionRecord | null = null;
