@@ -67,6 +67,12 @@ def read_json(path: str) -> dict[str, Any]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
+def configure_utf8_stdio() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="strict")
+
+
 def display_path(path: str) -> str:
     return Path(path).as_posix()
 
@@ -388,6 +394,10 @@ def audit_prompt(prompt: str) -> list[str]:
         "Only ",
         "Do not implement prose, diagrams, or conversation content",
         "traceRows",
+        "confirmed source traceRows are contract projection only",
+        "Runtime closure authority is the requirement-record/control store",
+        "must not rewrite confirmed source traceRows.status",
+        "requirementClosures",
         "PASS requires evidence for covered must, notDone, and evidence IDs",
         "MISSING_EVIDENCE",
         "reconfirm_required",
@@ -433,6 +443,11 @@ Source of authority:
 Only {source_authority} is authoritative.
 Do not implement prose, diagrams, or conversation content unless it is referenced by implementationConfirmation IDs.
 
+Trace closure authority:
+confirmed source traceRows are contract projection only.
+Runtime closure authority is the requirement-record/control store: record closure evidence through executionIterations, requirementClosures, gateChecks, contractChecks, deliveryEvidence.requiredCommands, artifactIndex, or project-equivalent governed fields.
+The executor must not rewrite confirmed source traceRows.status or source evidence fields to represent runtime PASS/MISSING_EVIDENCE.
+
 范围与意图锁定：
 1. 只能实施 implementationConfirmation 中的 must/notDone/evidence/traceRows IDs，禁止实现未被确认块引用的 prose、diagram 或会话内容。
 2. 禁止缩减范围、替换范围、改变原始需求、禁止把原始需求解释成更小交付。
@@ -443,16 +458,17 @@ Do not implement prose, diagrams, or conversation content unless it is reference
 2. 每个 TRACE 切片只能关闭其 covers/evidenceRefs 引用的 confirmed IDs。
 3. taskRefs 完成不等于 requirement PASS。
 4. PASS requires evidence for covered must, notDone, and evidence IDs.
-5. 每完成一个 TRACE 切片，必须同步更新源文档中相关 traceRows 状态和证据引用；没有证据时必须保持 PENDING 或改为 MISSING_EVIDENCE。
+5. 每完成一个 TRACE 切片，必须通过受控 runtime/control-store 记录 closure evidence；confirmed source traceRows.status 不得作为运行时 PASS/MISSING_EVIDENCE 回写目标。
 6. {commit_rule}
-7. 严禁虚构验证结果、证据路径或 PASS 状态。
-8. 如果需要改变 must/notDone/mustNot/evidence/traceRows 语义，必须把源文档状态改为 reconfirm_required 并停止。
-9. 遇到测试失败、构建失败、审计失败、E2E 失败或 gate 失败时，自动使用 systematic-debugging 思路定位并修复；不要立刻停止询问。
-10. 仅在真实阻塞时停止：缺少用户决策、需要语义变更、需要改 shared contract/schema/根配置且超出确认块、依赖无法安装或运行、外部约束与确认块冲突、或连续系统化修复后仍无法定位根因。
-11. 每个 TRACE 切片结束必须运行该切片对应 gate。
-12. 最终必须运行并记录结果：
+7. 没有证据时 runtime closure 必须保持 open/PENDING 或记录 MISSING_EVIDENCE。
+8. 严禁虚构验证结果、证据路径或 PASS 状态。
+9. 如果需要改变 must/notDone/mustNot/evidence/traceRows 语义，必须把源文档状态改为 reconfirm_required 并停止。
+10. 遇到测试失败、构建失败、审计失败、E2E 失败或 gate 失败时，自动使用 systematic-debugging 思路定位并修复；不要立刻停止询问。
+11. 仅在真实阻塞时停止：缺少用户决策、需要语义变更、需要改 shared contract/schema/根配置且超出确认块、依赖无法安装或运行、外部约束与确认块冲突、或连续系统化修复后仍无法定位根因。
+12. 每个 TRACE 切片结束必须运行该切片对应 gate。
+13. 最终必须运行并记录结果：
 {render_final_gates(gates)}
-13. 全部完成后输出 Completion Evidence Packet，至少包含关闭 IDs、开放 IDs、命令结果、E2E 证据、审计证据、残留风险和 scope changes。
+14. 全部完成后输出 Completion Evidence Packet，至少包含关闭 IDs、开放 IDs、命令结果、E2E 证据、审计证据、残留风险和 scope changes。
 
 现在开始执行，不要等待中途确认，直到最终验收闭环或触发真实阻塞条件。"""
 
@@ -464,6 +480,7 @@ Do not implement prose, diagrams, or conversation content unless it is reference
 
 
 def main() -> None:
+    configure_utf8_stdio()
     try:
         print(build_prompt(parse_args()))
     except BlockedInput as error:

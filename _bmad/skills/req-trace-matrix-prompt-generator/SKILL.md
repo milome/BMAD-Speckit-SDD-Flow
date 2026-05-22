@@ -15,6 +15,17 @@ implementation source document = human-readable context + machine-readable imple
 
 The source document's inline `implementationConfirmation` block is the only authority. Do not generate implementation prompts from conversation-only requirements, ordinary PRD prose, standalone requirements contracts, diagrams without confirmation IDs, sidecar files, or amendments.
 
+## Trace Closure Authority
+
+`implementationConfirmation.traceRows` is the confirmed contract projection for execution order and source coverage. It is not the runtime PASS write target.
+
+Generated prompts must keep runtime closure in the controlled requirement record or equivalent control store:
+
+- Runtime PASS/MISSING_EVIDENCE/open state must be recorded through `requirement-record` evidence fields such as `executionIterations`, `requirementClosures`, `gateChecks`, `contractChecks`, `deliveryEvidence.requiredCommands`, `artifactIndex`, or project-equivalent governed fields.
+- The executor must not rewrite confirmed source `traceRows[].status`, source evidence references, or source hash material to represent runtime completion.
+- If implementation requires changing `must`, `notDone`, `mustNot`, `evidence`, or `traceRows` semantics, the prompt must require `reconfirm_required` and stop.
+- Source document mutation is allowed only when the source schema explicitly declares a separate non-semantic bookkeeping field. Default behavior is no source traceRows mutation.
+
 ## Required Workflow
 
 1. Identify the implementation source document path.
@@ -29,7 +40,7 @@ The source document's inline `implementationConfirmation` block is the only auth
 10. Validate that every `traceRows[].evidenceRefs` entry references existing `evidence` IDs.
 11. Validate that trace rows do not introduce new requirement semantics.
 12. Preserve `traceRows` order exactly.
-13. Generate implementation prompt using only confirmation IDs, trace IDs, evidence IDs, and task references.
+13. Generate implementation prompt using only confirmation IDs, trace IDs, evidence IDs, task references, and controlled runtime closure instructions.
 14. If validation fails, output a BLOCK response, not an implementation prompt.
 
 ## Script Usage
@@ -115,6 +126,11 @@ Source of authority:
 Only <source document path>#implementationConfirmation is authoritative.
 Do not implement prose, diagrams, or conversation content unless it is referenced by implementationConfirmation IDs.
 
+Trace closure authority:
+confirmed source traceRows are contract projection only.
+Runtime closure must be recorded in the requirement-record/control store through executionIterations, requirementClosures, gateChecks, contractChecks, deliveryEvidence.requiredCommands, artifactIndex, or equivalent governed evidence fields.
+The executor must not rewrite confirmed source traceRows.status or source evidence fields to represent runtime PASS/MISSING_EVIDENCE.
+
 范围与意图锁定:
 1. 只能实施 implementationConfirmation 中的 must/notDone/evidence/traceRows IDs。
 2. 禁止缩减范围、替换范围、改变原始需求、把原始需求解释成更小交付。
@@ -125,11 +141,12 @@ Do not implement prose, diagrams, or conversation content unless it is reference
 2. 每个 TRACE 切片只能关闭其 covers/evidenceRefs 引用的 confirmed IDs。
 3. taskRefs 完成不等于 requirement PASS。
 4. PASS requires evidence for covered must, notDone, and evidence IDs.
-5. 没有证据时必须保持 PENDING 或改为 MISSING_EVIDENCE；严禁虚构验证结果。
-6. 如果需要改变 must/notDone/mustNot/evidence/traceRows 语义，必须把源文档状态改为 reconfirm_required 并停止。
-7. 每个 TRACE 切片结束必须运行对应 gate。
-8. 最终必须运行并记录 final gates。
-9. 全部完成后输出 Completion Evidence Packet，至少包含关闭 IDs、开放 IDs、命令结果、E2E 证据、审计证据、残留风险和 scope changes。
+5. 每完成一个 TRACE 切片，必须通过受控 runtime/control-store 记录 closure evidence；confirmed source traceRows.status 不得作为运行时 PASS/MISSING_EVIDENCE 回写目标。
+6. 没有证据时 runtime closure 必须保持 open/PENDING 或记录 MISSING_EVIDENCE；严禁虚构验证结果。
+7. 如果需要改变 must/notDone/mustNot/evidence/traceRows 语义，必须把源文档状态改为 reconfirm_required 并停止。
+8. 每个 TRACE 切片结束必须运行对应 gate。
+9. 最终必须运行并记录 final gates。
+10. 全部完成后输出 Completion Evidence Packet，至少包含关闭 IDs、开放 IDs、命令结果、E2E 证据、审计证据、残留风险和 scope changes。
 
 现在开始执行，不要等待中途确认，直到最终验收闭环或触发真实阻塞条件。
 ```
@@ -170,7 +187,11 @@ Before returning a prompt, verify all items:
 - Scope, original intent, business semantics, user-visible outcomes, acceptance standards, and non-goal boundaries cannot be reduced or rewritten.
 - The prompt rejects MVP downgrade, stub, mock-only, happy-path-only, representative-only, later-batch, seed-only, and scope reduction.
 - PASS requires evidence for covered `must`, `notDone`, and `evidence` IDs.
-- No-evidence rows remain `PENDING` or `MISSING_EVIDENCE`.
+- The prompt states confirmed source `traceRows` are contract projection only.
+- The prompt states runtime closure authority is `requirement-record`/control store.
+- The prompt requires closure evidence in `executionIterations`, `requirementClosures`, gates/checks, required commands, artifact index, or project-equivalent governed fields.
+- The prompt forbids rewriting confirmed source `traceRows[].status` or source evidence fields as runtime PASS/MISSING_EVIDENCE.
+- No-evidence runtime closure remains open/`PENDING` or records `MISSING_EVIDENCE`.
 - Semantic changes require `reconfirm_required` and stop.
 - Completion Evidence Packet includes closed IDs, open IDs, command results, E2E evidence, audit evidence, residual risks, and scope changes.
 
