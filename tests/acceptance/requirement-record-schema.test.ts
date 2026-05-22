@@ -309,6 +309,36 @@ describe('requirement-record.schema.json', () => {
     expect(validate(record), JSON.stringify(validate.errors, null, 2)).toBe(true);
   });
 
+  it('accepts missing architecture confirmation state before first architecture confirmation is recorded', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+    record.architectureConfirmationState = {
+      status: 'missing',
+      resolvedRecipeHash: resolveArchitectureConfirmationHashRecipe().resolvedRecipeHash,
+      lastEventType: 'architecture_confirmation_state_checked',
+      updatedAt: '2026-05-19T00:00:00.000Z',
+    };
+    record.architectureConfirmationStateChecks[0] = {
+      ...record.architectureConfirmationStateChecks[0],
+      decision: 'blocked',
+      stateTransition: {
+        ...record.architectureConfirmationStateChecks[0].stateTransition,
+        fromStatus: 'missing',
+        toStatus: 'missing',
+        reasonCode: 'current_confirmation_missing',
+        previousHashes: {},
+        currentHashes: {
+          sourceDocumentHash: record.sourceDocumentHash,
+          implementationConfirmationHash: record.implementationConfirmationHash,
+          resolvedRecipeHash: resolveArchitectureConfirmationHashRecipe().resolvedRecipeHash,
+        },
+        mismatchFields: [],
+      },
+    };
+
+    expect(validate(record), JSON.stringify(validate.errors, null, 2)).toBe(true);
+  });
+
   it('rejects result as a canonical control field on gate and contract checks', () => {
     const validate = loadValidator();
     const record = validRecord();

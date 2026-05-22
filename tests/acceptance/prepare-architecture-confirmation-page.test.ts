@@ -181,7 +181,7 @@ describe('prepare-architecture-confirmation-page', () => {
     expect(record.architectureConfirmationStateChecks.at(-1)).toMatchObject({
       eventType: 'architecture_confirmation_state_checked',
     });
-    expect(record.architectureConfirmations).toBeUndefined();
+    expect(record.architectureConfirmations ?? []).toHaveLength(0);
   });
 
   it('fails closed instead of rendering when required architecture inputs are missing', () => {

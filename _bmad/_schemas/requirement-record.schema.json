@@ -391,7 +391,7 @@
     "architectureConfirmationState": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["status", "currentArchitectureConfirmationHash"],
+      "required": ["status"],
       "properties": {
         "status": { "enum": ["active", "stale", "missing", "blocked"] },
         "currentArchitectureConfirmationRunId": { "$ref": "#/$defs/nonEmptyString" },
@@ -404,7 +404,20 @@
         },
         "lastEventType": { "$ref": "#/$defs/nonEmptyString" },
         "updatedAt": { "type": "string", "format": "date-time" }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": { "enum": ["active", "stale", "blocked"] }
+            },
+            "required": ["status"]
+          },
+          "then": {
+            "required": ["currentArchitectureConfirmationHash"]
+          }
+        }
+      ]
     },
     "architectureConfirmationEvent": {
       "type": "object",
