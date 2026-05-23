@@ -47,6 +47,10 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
 /**
  * Load flow/stage/identity **only** from ResolvedRuntimeContext.
  * @param {string} root - Project root
+ * @param {object} [options] - Optional active requirement selectors.
+ * @param {string} [options.recordId] - Requirement record ID to resolve.
+ * @param {string} [options.requirementSetId] - Requirement set ID to resolve.
+ * @param {string} [options.runId] - Runtime run ID to resolve.
  * @returns {{
  *   resolvedContextPath: string;
  *   runtimeContext: import('./runtime-context').RuntimeContextFile;

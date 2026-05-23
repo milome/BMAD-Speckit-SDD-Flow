@@ -76,7 +76,6 @@ const OPEN_RERUN_STATUSES = new Set(['open', 'in_progress', 'no_progress', 'bloc
 const OPEN_RCA_STATUSES = new Set(['open', 'in_progress', 'blocked']);
 const OPEN_FAILURE_STATUSES = new Set(['open', 'in_progress', 'blocked']);
 const NON_TERMINAL_CLOSURE_STATUSES = new Set(['open', 'fail', 'blocked']);
-const TERMINAL_TRACE_STATUSES = new Set(['PASS', 'PENDING', 'MISSING_EVIDENCE', 'BLOCKED']);
 const POST_FULL_LINK_COVERAGE_PHASE = 'post-full-link coverage matrix';
 
 function parseArgs(argv: string[]): ParsedArgs {

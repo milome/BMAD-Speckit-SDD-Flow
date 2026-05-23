@@ -476,7 +476,6 @@ export function mainProductionLoopReadyCheck(argv: string[]): number {
   const recordPath = path.resolve(args.requirementRecord);
   const record = readJson(recordPath);
   const evaluatedAt = args.evaluatedAt ?? new Date().toISOString();
-  const evaluatedBy = args.evaluatedBy ?? 'agent';
   const reportPath = path.resolve(args.reportPath ?? path.join(path.dirname(recordPath), 'production-loop-ready-report.json'));
   const evaluation = evaluate(record, recordPath, args);
   const report = {

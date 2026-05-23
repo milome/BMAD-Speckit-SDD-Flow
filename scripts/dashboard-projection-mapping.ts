@@ -11,8 +11,6 @@ import {
   type DashboardWorkboardPayload,
 } from '../packages/scoring/dashboard';
 
-type JsonObject = Record<string, unknown>;
-
 interface ParsedArgs {
   outDir?: string;
   generatedBy?: string;

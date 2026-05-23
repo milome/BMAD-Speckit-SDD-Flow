@@ -317,7 +317,7 @@ describe('requirement-record.schema.json', () => {
       resolvedRecipeHash: resolveArchitectureConfirmationHashRecipe().resolvedRecipeHash,
       lastEventType: 'architecture_confirmation_state_checked',
       updatedAt: '2026-05-19T00:00:00.000Z',
-    };
+    } as typeof record.architectureConfirmationState;
     record.architectureConfirmationStateChecks[0] = {
       ...record.architectureConfirmationStateChecks[0],
       decision: 'blocked',
@@ -326,12 +326,13 @@ describe('requirement-record.schema.json', () => {
         fromStatus: 'missing',
         toStatus: 'missing',
         reasonCode: 'current_confirmation_missing',
-        previousHashes: {},
+        previousHashes:
+          {} as typeof record.architectureConfirmationStateChecks[0]['stateTransition']['previousHashes'],
         currentHashes: {
           sourceDocumentHash: record.sourceDocumentHash,
           implementationConfirmationHash: record.implementationConfirmationHash,
           resolvedRecipeHash: resolveArchitectureConfirmationHashRecipe().resolvedRecipeHash,
-        },
+        } as typeof record.architectureConfirmationStateChecks[0]['stateTransition']['currentHashes'],
         mismatchFields: [],
       },
     };

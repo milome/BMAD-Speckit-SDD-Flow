@@ -321,24 +321,6 @@ function runNode(script: string, args: string[]) {
   });
 }
 
-function runTsNode(script: string, args: string[]) {
-  return spawnSync(
-    process.execPath,
-    [
-      'node_modules/ts-node/dist/bin.js',
-      '--project',
-      'tsconfig.node.json',
-      '--transpile-only',
-      script,
-      ...args,
-    ],
-    {
-      cwd: ROOT,
-      encoding: 'utf8',
-    }
-  );
-}
-
 function runPython(script: string, args: string[]) {
   return spawnSync('python', [script, ...args], {
     cwd: ROOT,

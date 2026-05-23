@@ -8,9 +8,11 @@ import {
   completeMainAgentPendingPacket,
   invalidateMainAgentPendingPacket,
   mainMainAgentOrchestration,
+  runMainAgentControlledReadinessAudit,
   markMainAgentPacketDispatched,
   resolveMainAgentOrchestrationSurface,
 } from '../../scripts/main-agent-orchestration';
+import { mainImplementationReadinessGate } from '../../scripts/main-agent-implementation-readiness-gate';
 import {
   createDefaultOrchestrationState,
   writeOrchestrationState,
@@ -28,6 +30,7 @@ import { resolveBmadHelpRuntimePolicy } from '../../scripts/bmad-config';
 import { runAuditorHost } from '../../scripts/run-auditor-host';
 import { writeMinimalRequirementRecordContext } from '../helpers/runtime-registry-fixture';
 import type { ImplementationEntryGate } from '../../scripts/runtime-governance';
+import { resolveArchitectureConfirmationHashRecipe } from '../../scripts/architecture-confirmation-hash-recipe';
 
 function writePacket(root: string, sessionId: string, packet: RecommendationPacket): string {
   const packetPath = path.join(
@@ -44,7 +47,233 @@ function writePacket(root: string, sessionId: string, packet: RecommendationPack
   return packetPath;
 }
 
+function writeConfirmedReadinessRecord(root: string): string {
+  const recipe = resolveArchitectureConfirmationHashRecipe();
+  const recordPath = writeMinimalRequirementRecordContext(root, {
+    flow: 'standalone_tasks',
+    stage: 'implement',
+    runId: 'readiness-e2e',
+    artifactPath: 'docs/requirements/readiness.md',
+    implementationEntryGate: {
+      gateName: 'implementation-readiness',
+      requestedFlow: 'standalone_tasks',
+      recommendedFlow: 'standalone_tasks',
+      decision: 'pass',
+      readinessStatus: 'ready_clean',
+      blockerCodes: [],
+      blockerSummary: [],
+      rerouteRequired: false,
+      rerouteReason: null,
+      evidenceSources: {
+        readinessReportPath: null,
+        remediationArtifactPath: null,
+        executionRecordPath: null,
+        authoritativeAuditReportPath: null,
+      },
+      semanticFingerprint: 'docs/requirements/readiness.md',
+      evaluatedAt: '2026-05-20T00:00:00.000Z',
+    },
+  });
+  const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+  record.confirmationHistory = [
+    {
+      eventType: 'confirmation_recorded',
+      recordId: record.recordId,
+      requirementSetId: record.requirementSetId,
+      confirmedAt: '2026-05-20T00:00:00.000Z',
+      confirmedBy: 'user',
+      sourcePath: record.sourcePath,
+      sourceDocumentHash: record.sourceDocumentHash,
+      implementationConfirmationHash: record.implementationConfirmationHash,
+      confirmationPageHash: record.confirmationPageHash,
+      confirmationText: 'confirmed',
+      renderReportPath: '_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/confirmation/report.json',
+      htmlPath: '_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/confirmation/confirmation.html',
+    },
+  ];
+  record.runtimePolicySnapshotRef = {
+    eventType: 'artifact_indexed',
+    artifactType: 'runtime_policy_snapshot',
+    sourceOfTruthRole: 'control',
+    recordId: record.recordId,
+    requirementSetId: record.requirementSetId,
+    path: record.runtimePolicySnapshotRef.path,
+    contentHash:
+      'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    producer: 'test-fixture',
+    purpose: 'runtime policy snapshot fixture',
+    relatedRequirementIds: ['readiness-e2e'],
+    status: 'active',
+    inputVersion: 'test',
+    outputVersion: 'test',
+  };
+  record.architectureConfirmationState.resolvedRecipeHash = recipe.resolvedRecipeHash;
+  record.architectureConfirmationStateChecks = [
+    {
+      eventType: 'architecture_confirmation_state_checked',
+      checkId: 'architecture-state:readiness-e2e',
+      decision: 'pass',
+      resolvedRecipeHash: recipe.resolvedRecipeHash,
+      stateTransition: {
+        fromStatus: 'active',
+        toStatus: 'active',
+        reasonCode: 'hash_match',
+        previousHashes: {},
+        currentHashes: {
+          sourceDocumentHash: record.sourceDocumentHash,
+          implementationConfirmationHash: record.implementationConfirmationHash,
+          architectureConfirmationHash:
+            record.architectureConfirmationState.currentArchitectureConfirmationHash,
+          resolvedRecipeHash: recipe.resolvedRecipeHash,
+        },
+        mismatchFields: [],
+        recipeVersion: 'architecture-confirmation-hash/v1',
+      },
+      checkedAt: '2026-05-20T00:00:00.500Z',
+      checkedBy: 'test',
+    },
+  ];
+  writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+  return recordPath;
+}
+
 describe('main-agent orchestration consumer', () => {
+  it('runs controlled readiness audit through scoring bridge and records current baseline metadata', async () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-readiness-bridge-'));
+    try {
+      const recordPath = writeConfirmedReadinessRecord(root);
+      const dataPath = path.join(root, '_bmad-output', 'scoring');
+      const gateCode = mainImplementationReadinessGate([
+        '--requirement-record',
+        recordPath,
+        '--evaluated-at',
+        '2026-05-20T00:00:01.000Z',
+        '--json',
+      ]);
+      expect(gateCode).toBe(0);
+      let surface = resolveMainAgentOrchestrationSurface({
+        projectRoot: root,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+      });
+      expect(surface.diagnostics.map((item) => item.category)).toContain(
+        'repairable_readiness_audit_required'
+      );
+
+      const result = await runMainAgentControlledReadinessAudit(root, {
+        dataPath,
+      });
+
+      expect(result.scoreRecord.stage).toBe('implementation_readiness');
+      expect(result.scoreRecord.scenario).toBe('real_dev');
+      expect(result.scoreRecord.tool_trace_ref).toMatch(/^sha256:[a-f0-9]{64}$/u);
+      expect(result.scoreRecord.tool_trace_path).toContain('readiness-audit');
+      expect(result.scoreRecord.dimension_scores?.map((item) => item.dimension)).toEqual([
+        'P0 Journey Coverage',
+        'Smoke E2E Readiness',
+        'Evidence Proof Chain',
+        'Cross-Document Traceability',
+      ]);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.readinessBaselineActivation.status).toBe('current');
+      expect(record.readinessBaselineMetadata).toMatchObject({
+        status: 'current',
+        scoringRunId: result.scoringRunId,
+        scoringRecordPath: path.relative(root, result.scoringRecordPath).replace(/\\/g, '/'),
+        auditTraceHash: result.scoreRecord.tool_trace_ref,
+      });
+      expect(record.readinessScoringRecords.at(-1)).toMatchObject({
+        stage: 'implementation_readiness',
+        scenario: 'real_dev',
+        scoringRunId: result.scoringRunId,
+      });
+      surface = resolveMainAgentOrchestrationSurface({
+        projectRoot: root,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+      });
+      expect(surface.drift).toMatchObject({
+        effectiveVerdict: 'approved',
+        readinessBaselineRunId: result.scoringRunId,
+        baselineSource: 'requirement_metadata',
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }, 40000);
+
+  it('maps closeout pass with no pending packet to completed_no_dispatch without legacy baseline blocker', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-completed-no-dispatch-'));
+    try {
+      writeMinimalRequirementRecordContext(root, {
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        runId: 'completed-no-dispatch',
+        implementationEntryGate: {
+          gateName: 'implementation-readiness',
+          requestedFlow: 'standalone_tasks',
+          recommendedFlow: 'standalone_tasks',
+          decision: 'pass',
+          readinessStatus: 'ready_clean',
+          blockerCodes: [],
+          blockerSummary: [],
+          rerouteRequired: false,
+          rerouteReason: null,
+          evidenceSources: {
+            readinessReportPath: null,
+            remediationArtifactPath: null,
+            executionRecordPath: null,
+            authoritativeAuditReportPath: null,
+          },
+          semanticFingerprint: 'completed-no-dispatch',
+          evaluatedAt: '2026-05-20T00:00:00.000Z',
+        },
+      });
+      const index = JSON.parse(
+        readFileSync(
+          path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json'),
+          'utf8'
+        )
+      );
+      const recordPath = path.join(
+        root,
+        '_bmad-output',
+        'runtime',
+        'requirement-records',
+        index.active.requirementSetId,
+        'requirement-record.json'
+      );
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      record.closeout = {
+        currentAttemptId: 'closeout-pass-001',
+        decision: 'pass',
+        updatedAt: '2026-05-20T00:01:00.000Z',
+        attempts: [
+          {
+            eventType: 'closeout_check_recorded',
+            closeoutAttemptId: 'closeout-pass-001',
+            decision: 'pass',
+          },
+        ],
+      };
+      writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+
+      const surface = resolveMainAgentOrchestrationSurface({
+        projectRoot: root,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+      });
+
+      expect(surface.mainAgentNextAction).toBeNull();
+      expect(surface.mainAgentReady).toBe(false);
+      expect(surface.runtimeResumeProjection?.terminalState).toBe('completed_no_dispatch');
+      expect(surface.diagnostics.map((item) => item.category)).toContain('completed_no_dispatch');
+      expect(surface.drift?.effectiveVerdict).not.toBe('blocked_pending_rereadiness');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('observes legacy orchestration-state but derives dispatch authority from requirement record', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-orch-state-'));
     try {

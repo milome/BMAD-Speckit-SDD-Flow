@@ -27,6 +27,7 @@ import {
   loadLatestRecordByStage,
   type VersionLockResult,
 } from '../packages/scoring/gate/version-lock';
+import { appendControlEventAndReplay } from './requirement-record-control-store';
 const { scoreCommand: defaultScoreCommand } =
   require('../packages/bmad-speckit/src/commands/score.js') as {
     scoreCommand: (opts: Record<string, unknown>) => Promise<unknown>;
@@ -54,6 +55,8 @@ interface RunAuditorHostResult {
   scoreError?: string;
 }
 
+type LatestCloseoutPayload = Parameters<typeof recordLatestReviewerCloseout>[1];
+
 function parseArgs(argv: string[]): Record<string, string | undefined> {
   const out: Record<string, string | undefined> = {};
   for (let i = 0; i < argv.length; i++) {
@@ -71,6 +74,45 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
     }
   }
   return out;
+}
+
+function syncLatestReviewerCloseoutToRequirementRecord(
+  projectRoot: string,
+  closeout: LatestCloseoutPayload
+): void {
+  try {
+    const indexPath = path.join(projectRoot, '_bmad-output', 'runtime', 'requirement-records', 'index.json');
+    if (!fs.existsSync(indexPath)) return;
+    const index = JSON.parse(fs.readFileSync(indexPath, 'utf8')) as {
+      active?: { requirementSetId?: string };
+    };
+    const requirementSetId = index.active?.requirementSetId;
+    if (!requirementSetId) return;
+    const recordPath = path.join(
+      projectRoot,
+      '_bmad-output',
+      'runtime',
+      'requirement-records',
+      requirementSetId,
+      'requirement-record.json'
+    );
+    if (!fs.existsSync(recordPath)) return;
+    appendControlEventAndReplay({
+      recordPath,
+      writerId: 'run-auditor-host-closeout-sync',
+      eventType: 'latest_reviewer_closeout_synced',
+      payload: closeout as unknown as Record<string, unknown>,
+      reduce: (record) => ({
+        ...record,
+        latestReviewerCloseout: closeout as unknown as Record<string, unknown>,
+        lastEventType: 'latest_reviewer_closeout_synced',
+        updatedAt: closeout.updatedAt,
+      }),
+      skipSchemaGate: true,
+    });
+  } catch {
+    // Legacy closeout surfaces may not have an active requirement record; keep existing registry behavior.
+  }
 }
 
 function inferScoreStage(stage: string, artifactDocPath?: string): string {
@@ -358,7 +400,7 @@ export async function runAuditorHost(
         : null,
   });
 
-  recordLatestReviewerCloseout(normalizedInput.projectRoot, {
+  const latestCloseout: LatestCloseoutPayload = {
     canMainAgentContinue: canMainAgentContinueFromCloseout({
       closeoutApproved: isReviewCloseoutApproved(closeoutEnvelope),
       scoreWriteResult:
@@ -417,7 +459,9 @@ export async function runAuditorHost(
         ? { effectiveVerdict: scoreRecord.effective_verdict }
         : {}),
       ...(scoreError ? { scoreError } : {}),
-    });
+    };
+  recordLatestReviewerCloseout(normalizedInput.projectRoot, latestCloseout);
+  syncLatestReviewerCloseoutToRequirementRecord(normalizedInput.projectRoot, latestCloseout);
 
   if (isOrphanCloseoutStage(consumer.closeoutStage)) {
     recordAuthoritativeAuditCloseout(normalizedInput.projectRoot, {

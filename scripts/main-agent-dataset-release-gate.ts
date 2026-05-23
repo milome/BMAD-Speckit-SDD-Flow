@@ -120,10 +120,6 @@ function normalizePathForRecord(value: string): string {
   return value.replace(/\\/gu, '/');
 }
 
-function sha256Text(value: string): string {
-  return `sha256:${crypto.createHash('sha256').update(value, 'utf8').digest('hex')}`;
-}
-
 function sha256File(file: string): string {
   return `sha256:${crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')}`;
 }

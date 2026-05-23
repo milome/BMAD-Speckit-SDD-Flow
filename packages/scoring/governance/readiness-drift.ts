@@ -19,6 +19,36 @@ export interface ReadinessDriftProjection extends ReadinessDriftEvaluation {
   readiness_score: number | null;
   readiness_raw_score: number | null;
   readiness_dimensions: Record<string, number> | null;
+  baseline_source?: 'requirement_metadata' | 'requirement_scoped_scoring' | 'legacy_scoring_data' | 'none' | 'stale_requirement_metadata';
+}
+
+export interface RequirementReadinessBaselineMetadata {
+  status?: string;
+  scoringRunId?: string;
+  score?: number;
+  rawScore?: number;
+  dimensions?: Record<string, number>;
+  sourceDocumentHash?: string;
+  implementationConfirmationHash?: string;
+  architectureConfirmationHash?: string;
+}
+
+export interface RequirementScopedScoringBaseline {
+  stage?: string;
+  scoringRunId?: string;
+  score?: number;
+  rawScore?: number;
+  dimensions?: Record<string, number>;
+}
+
+export interface RequirementBaselineContext {
+  current?: RequirementReadinessBaselineMetadata | null;
+  scopedScoring?: RequirementScopedScoringBaseline[] | null;
+  currentHashes?: {
+    sourceDocumentHash?: string;
+    implementationConfirmationHash?: string;
+    architectureConfirmationHash?: string;
+  };
 }
 
 const DRIFT_SIGNAL_DIMENSION_MAP: Record<keyof JourneyContractSignals, string[]> = {
@@ -74,6 +104,60 @@ export function findLatestImplementationReadinessBaseline(
     .filter((record) => record.scenario === 'real_dev' && record.stage === 'implementation_readiness')
     .sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime());
   return readiness[0] ?? null;
+}
+
+function mismatchFields(input: {
+  baseline?: RequirementReadinessBaselineMetadata | null;
+  currentHashes?: RequirementBaselineContext['currentHashes'];
+}): string[] {
+  const baseline = input.baseline;
+  const current = input.currentHashes;
+  if (!baseline || !current) return [];
+  return ([
+    'sourceDocumentHash',
+    'implementationConfirmationHash',
+    'architectureConfirmationHash',
+  ] as const).filter((field) => {
+    const recorded = baseline[field];
+    const expected = current[field];
+    return Boolean(recorded && expected && recorded !== expected);
+  });
+}
+
+function projectionFromRequirementBaseline(
+  baseline: RequirementReadinessBaselineMetadata
+): ReadinessDriftProjection {
+  return {
+    readiness_baseline_run_id: baseline.scoringRunId ?? null,
+    readiness_score: typeof baseline.score === 'number' ? baseline.score : null,
+    readiness_raw_score: typeof baseline.rawScore === 'number' ? baseline.rawScore : baseline.score ?? null,
+    readiness_dimensions: baseline.dimensions ?? null,
+    drift_signals: [],
+    drifted_dimensions: [],
+    drift_severity: 'none',
+    re_readiness_required: false,
+    blocking_reason: null,
+    effective_verdict: 'approved',
+    baseline_source: 'requirement_metadata',
+  };
+}
+
+function projectionFromRequirementScopedScore(
+  baseline: RequirementScopedScoringBaseline
+): ReadinessDriftProjection {
+  return {
+    readiness_baseline_run_id: baseline.scoringRunId ?? null,
+    readiness_score: typeof baseline.score === 'number' ? baseline.score : null,
+    readiness_raw_score: typeof baseline.rawScore === 'number' ? baseline.rawScore : baseline.score ?? null,
+    readiness_dimensions: baseline.dimensions ?? null,
+    drift_signals: [],
+    drifted_dimensions: [],
+    drift_severity: 'none',
+    re_readiness_required: false,
+    blocking_reason: null,
+    effective_verdict: 'approved',
+    baseline_source: 'requirement_scoped_scoring',
+  };
 }
 
 export function evaluateReadinessDrift(input: {
@@ -167,7 +251,42 @@ export function evaluateReadinessDrift(input: {
 export function buildReadinessDriftProjection(input: {
   currentRecord?: RunScoreRecord | null;
   allRecords: RunScoreRecord[];
+  requirementBaseline?: RequirementBaselineContext | null;
 }): ReadinessDriftProjection {
+  const requirementBaseline = input.requirementBaseline;
+  const currentBaseline = requirementBaseline?.current ?? null;
+  if (currentBaseline) {
+    const staleFields = mismatchFields({
+      baseline: currentBaseline,
+      currentHashes: requirementBaseline?.currentHashes,
+    });
+    if (staleFields.length > 0) {
+      return {
+        readiness_baseline_run_id: currentBaseline.scoringRunId ?? null,
+        readiness_score: typeof currentBaseline.score === 'number' ? currentBaseline.score : null,
+        readiness_raw_score:
+          typeof currentBaseline.rawScore === 'number' ? currentBaseline.rawScore : currentBaseline.score ?? null,
+        readiness_dimensions: currentBaseline.dimensions ?? null,
+        drift_signals: staleFields,
+        drifted_dimensions: [],
+        drift_severity: 'major',
+        re_readiness_required: true,
+        blocking_reason: `Stale implementation readiness baseline: ${staleFields.join(', ')}`,
+        effective_verdict: 'blocked_pending_rereadiness',
+        baseline_source: 'stale_requirement_metadata',
+      };
+    }
+    if (currentBaseline.status === 'current') {
+      return projectionFromRequirementBaseline(currentBaseline);
+    }
+  }
+  const scoped = (requirementBaseline?.scopedScoring ?? [])
+    .filter((record) => record.stage === 'implementation_readiness')
+    .at(-1);
+  if (scoped) {
+    return projectionFromRequirementScopedScore(scoped);
+  }
+
   const baseline = findLatestImplementationReadinessBaseline(input.allRecords);
   const currentRecord =
     input.currentRecord ??
@@ -206,6 +325,7 @@ export function buildReadinessDriftProjection(input: {
       re_readiness_required: currentRecord.re_readiness_required ?? false,
       blocking_reason: currentRecord.blocking_reason ?? null,
       effective_verdict: currentRecord.effective_verdict ?? 'unknown',
+      baseline_source: baseline?.run_id ? 'legacy_scoring_data' : 'none',
     };
   }
 
@@ -226,5 +346,6 @@ export function buildReadinessDriftProjection(input: {
       baseline?.dimension_scores && baseline.dimension_scores.length > 0
         ? Object.fromEntries(baseline.dimension_scores.map((entry) => [entry.dimension, entry.score]))
         : null,
+    baseline_source: baseline?.run_id ? 'legacy_scoring_data' : 'none',
   };
 }

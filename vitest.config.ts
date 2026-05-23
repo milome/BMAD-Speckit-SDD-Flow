@@ -1,5 +1,4 @@
 import { configDefaults, defineConfig } from 'vitest/config';
-
 /** Exclude bmad-speckit tests (use node:test); they run via test:bmad-speckit, invoked after vitest in npm test */
 export default defineConfig({
   test: {

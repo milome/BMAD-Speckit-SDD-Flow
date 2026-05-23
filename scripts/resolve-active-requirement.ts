@@ -55,11 +55,40 @@ export interface ResolvedRuntimeContext {
   artifactIndexPath: string;
   orchestrationStateDir: string;
   promptPacketsDir: string;
-  resolutionSource: 'explicit_args' | 'explicit_args_without_index' | 'index_active' | 'index_match';
+  resolutionSource:
+    | 'explicit_args'
+    | 'explicit_args_without_index'
+    | 'index_active'
+    | 'index_match'
+    | 'record_scan_match'
+    | 'record_scan_recovered';
+  repairProjection?: RequirementIndexRepairProjection;
   resolvedAt: string;
 }
 
 type JsonObject = Record<string, unknown>;
+
+export interface RequirementRecordCandidate {
+  recordId: string;
+  requirementSetId: string;
+  recordPath: string;
+  status: string;
+  stage: string;
+  updatedAt: string;
+  closeoutDecision: string;
+  selectionTier: string;
+}
+
+export interface RequirementIndexRepairProjection {
+  eventType: 'requirement_index_repair_projected';
+  requirementSetId: string | null;
+  recordPath: string | null;
+  selectionReason: string;
+  rejectedCandidates: RequirementRecordCandidate[];
+  safeToWrite: boolean;
+  projectedAt: string;
+  projectionPath: string;
+}
 
 function text(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -169,6 +198,9 @@ function selectedFromIndex(index: JsonObject, input: ResolveActiveRequirementInp
   const entries = recordEntries(index);
   const explicit = entries.find((entry) => matches(entry, input));
   if (explicit) return { ...explicit, resolutionSource: 'index_match' };
+  if (input.recordId || input.requirementSetId || input.runId) {
+    return null;
+  }
   const pointer = activePointer(index);
   if (!pointer) return null;
   const pointed = entries.find((entry) => matches(entry, pointerToInput(pointer)));
@@ -207,6 +239,159 @@ function requireStage(value: string): string {
   throw new Error('requirement record stage invalid or missing');
 }
 
+function objects(value: unknown): JsonObject[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+    : [];
+}
+
+function latestByTextDate(...values: unknown[]): string {
+  for (const value of values) {
+    const candidate = text(value);
+    if (candidate) return candidate;
+  }
+  return '1970-01-01T00:00:00.000Z';
+}
+
+function closeoutDecision(record: JsonObject): string {
+  const closeout = nested(record, 'closeout');
+  return firstText(closeout?.decision, objects(closeout?.attempts).at(-1)?.decision);
+}
+
+function hasOpenRepairSignal(record: JsonObject): boolean {
+  const openLoop = objects(record.rerunLoops).some((loop) =>
+    ['open', 'in_progress', 'no_progress', 'blocked'].includes(text(loop.status))
+  );
+  const repairGate = objects(record.gateChecks).some((gate) =>
+    ['fail', 'blocked'].includes(text(gate.decision))
+  );
+  return openLoop || repairGate;
+}
+
+function candidateTier(record: JsonObject): { order: number; label: string } {
+  const status = text(record.status);
+  const closeout = closeoutDecision(record);
+  if (closeout === 'pass') return { order: 40, label: 'closeout_pass' };
+  if (closeout === 'blocked' || closeout === 'fail') return { order: 30, label: 'closeout_blocked' };
+  if (hasOpenRepairSignal(record)) return { order: 20, label: 'repair_or_reroute' };
+  if (['active', 'in_progress', 'user_confirmed'].includes(status)) {
+    return { order: 10, label: 'active_non_closeout' };
+  }
+  return { order: 50, label: 'latest_updated_fallback' };
+}
+
+function scanRequirementRecordCandidates(root: string, input: ResolveActiveRequirementInput): RequirementRecordCandidate[] {
+  const recordsRoot = requirementRecordsRoot(root);
+  if (!fs.existsSync(recordsRoot)) return [];
+  const candidates: RequirementRecordCandidate[] = [];
+  for (const entry of fs.readdirSync(recordsRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const recordPath = path.join(recordsRoot, entry.name, 'requirement-record.json');
+    if (!fs.existsSync(recordPath)) continue;
+    try {
+      const record = readJson(recordPath);
+      const candidate: RequirementRecordCandidate = {
+        recordId: firstText(record.recordId),
+        requirementSetId: firstText(record.requirementSetId, entry.name),
+        recordPath,
+        status: firstText(record.status) || 'unknown',
+        stage: firstText(record.stage, record.currentStage, nested(record, 'runtime')?.stage),
+        updatedAt: latestByTextDate(record.updatedAt, record.lastUpdatedAt, record.confirmedAt),
+        closeoutDecision: closeoutDecision(record),
+        selectionTier: candidateTier(record).label,
+      };
+      if (input.recordId && candidate.recordId !== input.recordId) continue;
+      if (input.requirementSetId && candidate.requirementSetId !== input.requirementSetId) continue;
+      if (input.runId && firstText(record.runId) !== input.runId) continue;
+      candidates.push(candidate);
+    } catch {
+      // Invalid candidate records are intentionally ignored during recovery scan.
+    }
+  }
+  return candidates;
+}
+
+function candidateSortKey(candidate: RequirementRecordCandidate): {
+  tierOrder: number;
+  updatedMs: number;
+} {
+  const tierOrderByLabel: Record<string, number> = {
+    active_non_closeout: 10,
+    repair_or_reroute: 20,
+    closeout_blocked: 30,
+    closeout_pass: 40,
+    latest_updated_fallback: 50,
+  };
+  const updatedMs = Date.parse(candidate.updatedAt);
+  return {
+    tierOrder: tierOrderByLabel[candidate.selectionTier] ?? 50,
+    updatedMs: Number.isFinite(updatedMs) ? updatedMs : 0,
+  };
+}
+
+function selectScannedCandidate(
+  candidates: RequirementRecordCandidate[]
+): { selected: RequirementRecordCandidate | null; rejected: RequirementRecordCandidate[]; reason: string } {
+  if (candidates.length === 0) {
+    return { selected: null, rejected: [], reason: 'blocked_missing_active_requirement' };
+  }
+  const sorted = [...candidates].sort((left, right) => {
+    const leftKey = candidateSortKey(left);
+    const rightKey = candidateSortKey(right);
+    if (leftKey.tierOrder !== rightKey.tierOrder) return leftKey.tierOrder - rightKey.tierOrder;
+    if (leftKey.updatedMs !== rightKey.updatedMs) return rightKey.updatedMs - leftKey.updatedMs;
+    return left.requirementSetId.localeCompare(right.requirementSetId);
+  });
+  const best = sorted[0];
+  const bestKey = candidateSortKey(best);
+  const tied = sorted.filter((candidate) => {
+    const key = candidateSortKey(candidate);
+    return key.tierOrder === bestKey.tierOrder && key.updatedMs === bestKey.updatedMs;
+  });
+  if (tied.length > 1) {
+    return {
+      selected: null,
+      rejected: sorted,
+      reason: 'blocked_ambiguous_active_requirement',
+    };
+  }
+  return {
+    selected: best,
+    rejected: sorted.slice(1),
+    reason: best.selectionTier,
+  };
+}
+
+function projectionFile(root: string): string {
+  return path.join(requirementRecordsRoot(root), 'index-repair-projection.json');
+}
+
+export function emitRepairProjection(
+  root: string,
+  input: Omit<RequirementIndexRepairProjection, 'eventType' | 'projectedAt' | 'projectionPath'>
+): RequirementIndexRepairProjection {
+  const projectedAt = new Date().toISOString();
+  const projectionPath = projectionFile(root);
+  const projection: RequirementIndexRepairProjection = {
+    eventType: 'requirement_index_repair_projected',
+    ...input,
+    projectedAt,
+    projectionPath,
+  };
+  fs.mkdirSync(path.dirname(projectionPath), { recursive: true });
+  fs.writeFileSync(projectionPath, `${JSON.stringify(projection, null, 2)}\n`, 'utf8');
+  return projection;
+}
+
+function failWithProjection(root: string, projection: RequirementIndexRepairProjection): never {
+  const candidateList = projection.rejectedCandidates
+    .map((candidate) => `${candidate.requirementSetId}:${candidate.recordId}:${candidate.selectionTier}`)
+    .join(', ');
+  throw new Error(
+    `${projection.selectionReason}: ${candidateList || 'no controlled requirement-record candidates'}; projection=${projection.projectionPath}`
+  );
+}
+
 function stageFromConfirmedImplementationEntry(record: JsonObject, flow: RuntimeFlowId): string {
   const status = firstText(record.status);
   const entryFlow = firstText(record.entryFlow, nested(record, 'implementationConfirmation')?.entryFlow);
@@ -214,13 +399,14 @@ function stageFromConfirmedImplementationEntry(record: JsonObject, flow: Runtime
   const workflowAdapter = firstText(record.workflowAdapter, nested(record, 'implementationConfirmation')?.workflowAdapter);
   const architectureState = nested(record, 'architectureConfirmationState');
   const architectureStatus = firstText(architectureState?.status);
+  const architectureReady = !architectureState || architectureStatus === 'active';
   if (
     flow === 'standalone_tasks' &&
     entryFlow === 'standalone_tasks' &&
     entryFlowClass === 'task_packet_entry' &&
-    ['direct', 'legacy'].includes(workflowAdapter) &&
+    ['direct', 'legacy', 'speckit'].includes(workflowAdapter) &&
     ['user_confirmed', 'in_progress'].includes(status) &&
-    architectureStatus === 'active'
+    architectureReady
   ) {
     return 'implement';
   }
@@ -251,19 +437,86 @@ export function resolveActiveRequirement(input: ResolveActiveRequirementInput = 
   const root = path.resolve(input.root ?? process.cwd());
   const indexPath = requirementRecordIndexPath(root);
   const hasIndex = fs.existsSync(indexPath);
-  const index = hasIndex ? readJson(indexPath) : null;
-  if (!index && !input.recordId && !input.requirementSetId) {
-    throw new Error(`requirement-record index missing: ${indexPath}`);
+  let index: JsonObject | null = null;
+  let indexReadError = '';
+  if (hasIndex) {
+    try {
+      index = readJson(indexPath);
+    } catch (error) {
+      indexReadError = error instanceof Error ? error.message : String(error);
+    }
+  }
+  let selected = index ? selectedFromIndex(index, input) : null;
+  let repairProjection: RequirementIndexRepairProjection | undefined;
+  if (!selected) {
+    const scanned = scanRequirementRecordCandidates(root, input);
+    const scanResult = selectScannedCandidate(scanned);
+    if (!scanResult.selected) {
+      repairProjection = emitRepairProjection(root, {
+        requirementSetId: null,
+        recordPath: null,
+        selectionReason: scanResult.reason,
+        rejectedCandidates: scanResult.rejected,
+        safeToWrite: false,
+      });
+      failWithProjection(root, repairProjection);
+    }
+    repairProjection = emitRepairProjection(root, {
+      requirementSetId: scanResult.selected.requirementSetId,
+      recordPath: scanResult.selected.recordPath,
+      selectionReason: index
+        ? `index_repair:${scanResult.reason}`
+        : indexReadError
+          ? `index_unreadable:${scanResult.reason}`
+          : `index_missing:${scanResult.reason}`,
+      rejectedCandidates: scanResult.rejected,
+      safeToWrite: true,
+    });
+    selected = {
+      recordId: scanResult.selected.recordId,
+      requirementSetId: scanResult.selected.requirementSetId,
+      recordPath: scanResult.selected.recordPath,
+      resolutionSource:
+        input.recordId || input.requirementSetId || input.runId ? 'record_scan_match' : 'record_scan_recovered',
+    };
   }
 
-  const selected = index ? selectedFromIndex(index, input) : null;
-  const requirementSetId =
+  let requirementSetId =
     input.requirementSetId ??
     firstText(selected?.requirementSetId, selected?.requirement_set_id, selected?.recordId, input.recordId);
   if (!requirementSetId) {
     throw new Error('Unable to resolve requirementSetId from explicit args or requirement index');
   }
-  const recordPath = resolveRecordPath(root, selected, requirementSetId);
+  let recordPath = resolveRecordPath(root, selected, requirementSetId);
+  if (!fs.existsSync(recordPath) && !(input.recordId || input.requirementSetId || input.runId)) {
+    const scanned = scanRequirementRecordCandidates(root, {});
+    const scanResult = selectScannedCandidate(scanned);
+    if (!scanResult.selected) {
+      repairProjection = emitRepairProjection(root, {
+        requirementSetId: null,
+        recordPath: null,
+        selectionReason: scanResult.reason,
+        rejectedCandidates: scanResult.rejected,
+        safeToWrite: false,
+      });
+      failWithProjection(root, repairProjection);
+    }
+    repairProjection = emitRepairProjection(root, {
+      requirementSetId: scanResult.selected.requirementSetId,
+      recordPath: scanResult.selected.recordPath,
+      selectionReason: `index_pointer_missing_record:${scanResult.reason}`,
+      rejectedCandidates: scanResult.rejected,
+      safeToWrite: true,
+    });
+    selected = {
+      recordId: scanResult.selected.recordId,
+      requirementSetId: scanResult.selected.requirementSetId,
+      recordPath: scanResult.selected.recordPath,
+      resolutionSource: 'record_scan_recovered',
+    };
+    requirementSetId = scanResult.selected.requirementSetId;
+    recordPath = scanResult.selected.recordPath;
+  }
   if (!fs.existsSync(recordPath)) {
     throw new Error(`requirement record missing: ${recordPath}`);
   }
@@ -342,6 +595,7 @@ export function resolveActiveRequirement(input: ResolveActiveRequirementInput = 
     orchestrationStateDir: path.join(base, 'orchestration', 'orchestration-state'),
     promptPacketsDir: path.join(base, 'prompts', 'prompt-packets'),
     resolutionSource: (selected?.resolutionSource as ResolvedRuntimeContext['resolutionSource']) ?? 'explicit_args_without_index',
+    ...(repairProjection ? { repairProjection } : {}),
     resolvedAt: new Date().toISOString(),
   };
 }

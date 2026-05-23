@@ -19,7 +19,6 @@ import {
   governanceEventTypeRegistryHash,
   validateGovernanceTransportEnvelope,
   type GovernanceTransportEnvelope,
-  type GovernanceTransportValidationOptions,
 } from './governance-transport-envelope';
 import {
   artifactRefForPath,

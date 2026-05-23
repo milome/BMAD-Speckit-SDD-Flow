@@ -21,7 +21,6 @@ import {
   completePendingPacket,
   invalidatePendingPacket,
   markPendingPacketDispatched,
-  orchestrationStateDir,
   orchestrationStateDirForRecordPath,
   readOrchestrationState,
   readOrchestrationStateAtPath,
@@ -51,6 +50,7 @@ import { buildReadinessDriftProjection } from '../packages/scoring/governance/re
 import { loadAndDedupeRecords } from '../packages/scoring/query/loader';
 import { readGovernanceRemediationConfig } from './governance-remediation-config';
 import type { ResolvedRuntimeContext } from './resolve-active-requirement';
+import { runControlledReadinessAuditBridge } from './controlled-readiness-audit-bridge';
 
 export type MainAgentContinueDecision = 'continue' | 'rerun' | 'blocked' | null;
 export type MainAgentOrchestrationSource =
@@ -76,6 +76,17 @@ export interface MainAgentDriftSurface {
   effectiveVerdict: string | null;
   reReadinessRequired: boolean;
   readinessBaselineRunId: string | null;
+  baselineSource?: string | null;
+}
+
+export interface MainAgentDiagnostic {
+  category: string;
+  authoritativeSource: string;
+  sourceChecked: string[];
+  repairAction: string;
+  automaticRepairAvailable: boolean;
+  nextCommand: string | null;
+  message: string;
 }
 
 export interface MainAgentOrchestrationSurface {
@@ -97,6 +108,7 @@ export interface MainAgentOrchestrationSurface {
   gatesLoop: OrchestrationState['gatesLoop'] | null;
   closeout: ReviewerLatestCloseoutRecord | null;
   drift: MainAgentDriftSurface | null;
+  diagnostics: MainAgentDiagnostic[];
   mainAgentCanContinue: boolean | null;
   continueDecision: MainAgentContinueDecision;
   mainAgentNextAction: string | null;
@@ -107,6 +119,8 @@ export interface MainAgentOrchestrationSurface {
     runtimeNextAction: string | null;
     ready: boolean;
     blockingReasonRefs: Array<{ sourceType: string; id: string }>;
+    terminalState?: 'completed_no_dispatch';
+    diagnostics?: MainAgentDiagnostic[];
     observedLegacyState?: {
       path: string | null;
       nextAction: string | null;
@@ -275,6 +289,10 @@ function readRequirementRecordFromRuntimeContext(
   } catch {
     return null;
   }
+}
+
+function runtimeRecordPath(runtimeContext: Partial<RuntimeContextFile> | null): string | null {
+  return resolvedContext(runtimeContext)?.recordPath ?? null;
 }
 
 function mergeAllowedWriteScope(base: string[], extras: string[]): string[] {
@@ -549,9 +567,166 @@ function mapImplementationEntryDecision(
   return 'auto_repairable_block';
 }
 
+function recordObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function readinessBaselineActivation(record: Record<string, unknown> | null): Record<string, unknown> | null {
+  if (!record) return null;
+  const activation = recordObject(record.readinessBaselineActivation);
+  return normalizeText(activation.activationId) ? activation : null;
+}
+
+function readinessBaselineMetadata(record: Record<string, unknown> | null): Record<string, unknown> | null {
+  if (!record) return null;
+  const metadata = recordObject(record.readinessBaselineMetadata);
+  return normalizeText(metadata.baselineId) ? metadata : null;
+}
+
+function currentArchitectureHashFromRecord(record: Record<string, unknown> | null): string {
+  return normalizeText(recordObject(record?.architectureConfirmationState).currentArchitectureConfirmationHash);
+}
+
+function baselineMismatchFields(
+  record: Record<string, unknown> | null,
+  baseline: Record<string, unknown> | null
+): string[] {
+  if (!record || !baseline) return [];
+  const checks: Array<[string, string, string]> = [
+    ['sourceDocumentHash', normalizeText(record.sourceDocumentHash), normalizeText(baseline.sourceDocumentHash)],
+    [
+      'implementationConfirmationHash',
+      normalizeText(record.implementationConfirmationHash),
+      normalizeText(baseline.implementationConfirmationHash),
+    ],
+    [
+      'architectureConfirmationHash',
+      currentArchitectureHashFromRecord(record),
+      normalizeText(baseline.architectureConfirmationHash),
+    ],
+  ];
+  return checks
+    .filter(([, current, recorded]) => Boolean(recorded) && current !== recorded)
+    .map(([field]) => field);
+}
+
+function buildDiagnostic(input: {
+  category: string;
+  sourceChecked: string[];
+  repairAction: string;
+  automaticRepairAvailable: boolean;
+  nextCommand?: string | null;
+  message: string;
+}): MainAgentDiagnostic {
+  return {
+    category: input.category,
+    authoritativeSource: 'requirement-record/control-store',
+    sourceChecked: input.sourceChecked,
+    repairAction: input.repairAction,
+    automaticRepairAvailable: input.automaticRepairAvailable,
+    nextCommand: input.nextCommand ?? null,
+    message: input.message,
+  };
+}
+
+function readinessDiagnostics(input: {
+  root?: string;
+  recordPath?: string | null;
+  record: Record<string, unknown> | null;
+  drift: MainAgentDriftSurface | null;
+  pendingPacketStatus: MainAgentPendingPacketStatus;
+}): MainAgentDiagnostic[] {
+  const diagnostics: MainAgentDiagnostic[] = [];
+  const activation = readinessBaselineActivation(input.record);
+  const metadata = readinessBaselineMetadata(input.record);
+  const activationStatus = normalizeText(activation?.status);
+  const metadataStatus = normalizeText(metadata?.status);
+  const mismatchFields = baselineMismatchFields(input.record, metadata);
+  if (mismatchFields.length > 0) {
+    diagnostics.push(
+      buildDiagnostic({
+        category: 'blocked_stale_readiness_baseline',
+        sourceChecked: [
+          input.recordPath ?? 'requirement-record',
+          'readinessBaselineMetadata',
+          ...mismatchFields,
+        ],
+        repairAction: 'rerun_controlled_readiness_audit',
+        automaticRepairAvailable: Boolean(input.root && input.recordPath),
+        nextCommand: 'main-agent-orchestration --action controlled-readiness-audit',
+        message: `Readiness baseline is stale: ${mismatchFields.join(', ')}`,
+      })
+    );
+  }
+  if (activationStatus === 'audit_required') {
+    diagnostics.push(
+      buildDiagnostic({
+        category: 'repairable_readiness_audit_required',
+        sourceChecked: [input.recordPath ?? 'requirement-record', 'readinessBaselineActivation'],
+        repairAction: 'trigger_controlled_readiness_audit',
+        automaticRepairAvailable: Boolean(input.root && input.recordPath),
+        nextCommand: 'main-agent-orchestration --action controlled-readiness-audit',
+        message: 'Implementation readiness gate passed; controlled readiness audit must write the scoring baseline.',
+      })
+    );
+  }
+  if (
+    input.drift?.effectiveVerdict === 'blocked_pending_rereadiness' &&
+    metadataStatus !== 'current'
+  ) {
+    diagnostics.push(
+      buildDiagnostic({
+        category: 'missing_readiness_baseline',
+        sourceChecked: [
+          input.recordPath ?? 'requirement-record',
+          'readinessBaselineMetadata',
+          'packages/scoring/data',
+        ],
+        repairAction:
+          activationStatus === 'audit_required'
+            ? 'trigger_controlled_readiness_audit'
+            : 'run_implementation_readiness_gate_then_controlled_audit',
+        automaticRepairAvailable: activationStatus === 'audit_required' && Boolean(input.root && input.recordPath),
+        nextCommand: 'main-agent-orchestration --action controlled-readiness-audit',
+        message:
+          input.drift.blockingReason ??
+          'Missing implementation readiness baseline; controlled audit/scoring bridge is required.',
+      })
+    );
+  }
+  if (input.pendingPacketStatus === 'none' && isRequirementRecordClosed(input.record)) {
+    diagnostics.push(
+      buildDiagnostic({
+        category: 'completed_no_dispatch',
+        sourceChecked: [input.recordPath ?? 'requirement-record', 'closeout', 'orchestration-state'],
+        repairAction: 'none',
+        automaticRepairAvailable: false,
+        nextCommand: null,
+        message: 'Closeout pass is terminal; no pending packet is expected.',
+      })
+    );
+    if (activationStatus === 'audit_required' || metadataStatus !== 'current') {
+      diagnostics.push(
+        buildDiagnostic({
+          category: 'dashboard_bridge_pending',
+          sourceChecked: [input.recordPath ?? 'requirement-record', 'readinessBaselineMetadata'],
+          repairAction: 'trigger_controlled_readiness_audit_for_dashboard_bridge',
+          automaticRepairAvailable: Boolean(input.root && input.recordPath),
+          nextCommand: 'main-agent-orchestration --action controlled-readiness-audit',
+          message: 'Legacy/dashboard readiness score bridge is pending but does not block completed closeout.',
+        })
+      );
+    }
+  }
+  return diagnostics;
+}
+
 function deriveDriftSurface(
   projectRoot: string | undefined,
-  closeout: ReviewerLatestCloseoutRecord | null
+  closeout: ReviewerLatestCloseoutRecord | null,
+  requirementRecord: Record<string, unknown> | null = null
 ): MainAgentDriftSurface | null {
   if (
     closeout &&
@@ -570,6 +745,69 @@ function deriveDriftSurface(
       effectiveVerdict: closeout.effectiveVerdict ?? null,
       reReadinessRequired: closeout.reReadinessRequired ?? false,
       readinessBaselineRunId: closeout.readinessBaselineRunId ?? null,
+      baselineSource: 'reviewer_closeout',
+    };
+  }
+
+  const metadata = readinessBaselineMetadata(requirementRecord);
+  const mismatchFields = baselineMismatchFields(requirementRecord, metadata);
+  if (metadata && normalizeText(metadata.status) === 'current' && mismatchFields.length === 0) {
+    return {
+      driftSignals: [],
+      driftedDimensions: [],
+      driftSeverity: 'none',
+      blockingReason: null,
+      effectiveVerdict: 'approved',
+      reReadinessRequired: false,
+      readinessBaselineRunId: normalizeText(metadata.scoringRunId) || null,
+      baselineSource: 'requirement_metadata',
+    };
+  }
+
+  if (isRequirementRecordClosed(requirementRecord)) {
+    return {
+      driftSignals: [],
+      driftedDimensions: [],
+      driftSeverity: 'none',
+      blockingReason: null,
+      effectiveVerdict: 'approved',
+      reReadinessRequired: false,
+      readinessBaselineRunId: null,
+      baselineSource: 'completed_requirement_no_dispatch',
+    };
+  }
+  if (metadata && mismatchFields.length > 0) {
+    return {
+      driftSignals: mismatchFields,
+      driftedDimensions: [],
+      driftSeverity: 'major',
+      blockingReason: `Stale implementation readiness baseline: ${mismatchFields.join(', ')}`,
+      effectiveVerdict: 'blocked_pending_rereadiness',
+      reReadinessRequired: true,
+      readinessBaselineRunId: normalizeText(metadata.scoringRunId) || null,
+      baselineSource: 'stale_requirement_metadata',
+    };
+  }
+
+  const scopedRecords = Array.isArray(requirementRecord?.readinessScoringRecords)
+    ? (requirementRecord.readinessScoringRecords as unknown[]).filter(
+        (item): item is Record<string, unknown> =>
+          Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+      )
+    : [];
+  const latestScoped = scopedRecords
+    .filter((item) => normalizeText(item.stage) === 'implementation_readiness')
+    .at(-1);
+  if (latestScoped) {
+    return {
+      driftSignals: [],
+      driftedDimensions: [],
+      driftSeverity: 'none',
+      blockingReason: null,
+      effectiveVerdict: 'approved',
+      reReadinessRequired: false,
+      readinessBaselineRunId: normalizeText(latestScoped.scoringRunId) || null,
+      baselineSource: 'requirement_scoped_scoring',
     };
   }
 
@@ -596,6 +834,7 @@ function deriveDriftSurface(
       effectiveVerdict: projection.effective_verdict,
       reReadinessRequired: projection.re_readiness_required,
       readinessBaselineRunId: projection.readiness_baseline_run_id,
+      baselineSource: projection.readiness_baseline_run_id ? 'legacy_scoring_data' : null,
     };
   } catch {
     return null;
@@ -727,7 +966,12 @@ function deriveNextActionFromRequirementRecord(input: {
   record: Record<string, unknown> | null;
   implementationEntryDecision: ImplementationEntryDecision | null | undefined;
   continueDecision: MainAgentContinueDecision;
-}): { nextAction: string | null; ready: boolean; blockingReasonRefs: Array<{ sourceType: string; id: string }> } {
+}): {
+  nextAction: string | null;
+  ready: boolean;
+  blockingReasonRefs: Array<{ sourceType: string; id: string }>;
+  terminalState?: 'completed_no_dispatch';
+} {
   const recordId = normalizeText(input.record?.recordId) || 'requirement-record';
   const architectureState =
     input.record?.architectureConfirmationState &&
@@ -749,7 +993,12 @@ function deriveNextActionFromRequirementRecord(input: {
     blockingReasonRefs.push({ sourceType: 'architecture_confirmation', id: normalizeText(architectureState?.currentArchitectureConfirmationHash) || recordId });
   }
   if (isRequirementRecordClosed(input.record)) {
-    return { nextAction: null, ready: false, blockingReasonRefs };
+    return {
+      nextAction: null,
+      ready: false,
+      blockingReasonRefs,
+      terminalState: 'completed_no_dispatch',
+    };
   }
   if (input.implementationEntryDecision === 'reroute') {
     blockingReasonRefs.push({ sourceType: 'gate_check', id: 'implementation-readiness' });
@@ -899,6 +1148,7 @@ export function resolveMainAgentOrchestrationSurface(
 ): MainAgentOrchestrationSurface {
   const runtimeContext = loadRuntimeContextForMainAgent(input);
   const requirementRecord = readRequirementRecordFromRuntimeContext(runtimeContext);
+  const recordPath = runtimeRecordPath(runtimeContext);
   const closeout = runtimeContext?.latestReviewerCloseout ?? null;
   const implementationEntryGate =
     input.implementationEntryGate ??
@@ -951,6 +1201,18 @@ export function resolveMainAgentOrchestrationSurface(
         continueDecision: continueState.continueDecision,
         implementationEntryDecision: implementationEntryGate?.decision ?? null,
       });
+  const drift = deriveDriftSurface(input.projectRoot, closeout, requirementRecord);
+  const diagnostics = readinessDiagnostics({
+    root: input.projectRoot,
+    recordPath,
+    record: requirementRecord,
+    drift,
+    pendingPacketStatus,
+  });
+  const terminalState =
+    'terminalState' in action && action.terminalState === 'completed_no_dispatch'
+      ? action.terminalState
+      : undefined;
 
   return {
     source: action.source,
@@ -963,7 +1225,8 @@ export function resolveMainAgentOrchestrationSurface(
     latestGate,
     gatesLoop: scopedState.state?.gatesLoop ?? null,
     closeout,
-    drift: deriveDriftSurface(input.projectRoot, closeout),
+    drift,
+    diagnostics,
     mainAgentCanContinue: continueState.canContinue,
     continueDecision: continueState.continueDecision,
     mainAgentNextAction: action.nextAction,
@@ -978,6 +1241,8 @@ export function resolveMainAgentOrchestrationSurface(
             blockingReasonRefs: normalizeBlockingReasonRefs(
               'blockingReasonRefs' in action ? action.blockingReasonRefs : []
             ),
+            ...(terminalState ? { terminalState } : {}),
+            diagnostics,
             observedLegacyState: {
               path: scopedState.statePath,
               nextAction: scopedState.state?.nextAction ?? null,
@@ -1259,6 +1524,7 @@ export function ensureMainAgentDispatchPacket(
     gatesLoop: writtenState.gatesLoop ?? null,
     closeout: currentSurface.closeout,
     drift: currentSurface.drift,
+    diagnostics: currentSurface.diagnostics,
     mainAgentCanContinue: false,
     continueDecision: 'blocked',
     mainAgentNextAction: writtenState.nextAction,
@@ -1324,6 +1590,8 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.requirementSetId = argv[++index];
     } else if (token === '--run-id' && argv[index + 1]) {
       out.runId = argv[++index];
+    } else if (token === '--scoring-run-id' && argv[index + 1]) {
+      out.scoringRunId = argv[++index];
     } else if (token === '--source' && argv[index + 1]) {
       out.source = argv[++index];
     } else if (token === '--render-report' && argv[index + 1]) {
@@ -1376,6 +1644,8 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.input = argv[++index];
     } else if (token === '--payload' && argv[index + 1]) {
       out.payload = argv[++index];
+    } else if ((token === '--data-path' || token === '--dataPath') && argv[index + 1]) {
+      out.dataPath = argv[++index];
     } else if (token === '--apply') {
       out.apply = 'true';
     } else if (!token.startsWith('--')) {
@@ -1474,6 +1744,23 @@ export function runMainAgentConfirmScope(
     ...(parsedStdout !== undefined ? { stdout: parsedStdout } : {}),
     ...(step.stderr.trim() ? { stderr: step.stderr.trim() } : {}),
   };
+}
+
+export async function runMainAgentControlledReadinessAudit(
+  root: string,
+  args: Record<string, string | undefined>
+): Promise<Awaited<ReturnType<typeof runControlledReadinessAuditBridge>>> {
+  const loaded = loadPolicyContextFromRegistry(root, {
+    recordId: args.recordId,
+    requirementSetId: args.requirementSetId,
+    runId: args.runId,
+  });
+  return runControlledReadinessAuditBridge({
+    root,
+    recordPath: loaded.resolvedRuntimeContext.recordPath,
+    dataPath: normalizeText(args.dataPath) || undefined,
+    scoringRunId: normalizeText(args.scoringRunId) || undefined,
+  });
 }
 
 function resolveFlowAndStage(
@@ -1947,11 +2234,34 @@ export function mainMainAgentOrchestration(argv: string[]): number {
   }
 }
 
+export async function mainMainAgentOrchestrationAsync(argv: string[]): Promise<number> {
+  const args = parseArgs(argv);
+  const root = pickRoot(args);
+  const action = normalizeText(args.action) || 'inspect';
+  if (action !== 'controlled-readiness-audit') {
+    return mainMainAgentOrchestration(argv);
+  }
+  try {
+    const result = await runMainAgentControlledReadinessAudit(root, args);
+    process.stdout.write(`${JSON.stringify({ ok: true, ...result }, null, 2)}\n`);
+    return 0;
+  } catch (error) {
+    console.error(
+      `main-agent-orchestration controlled-readiness-audit: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+    return 1;
+  }
+}
+
 function isDirectMainAgentOrchestrationCli(): boolean {
   const entry = normalizeText(process.argv[1]);
   return /(^|[\\/])main-agent-orchestration(\.[cm]?js|\.ts)?$/iu.test(entry);
 }
 
 if (require.main === module && isDirectMainAgentOrchestrationCli()) {
-  process.exit(mainMainAgentOrchestration(process.argv.slice(2)));
+  void mainMainAgentOrchestrationAsync(process.argv.slice(2)).then((code) => {
+    process.exit(code);
+  });
 }

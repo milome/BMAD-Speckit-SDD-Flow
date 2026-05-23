@@ -2,7 +2,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { resolveArchitectureConfirmationHashRecipe } from './architecture-confirmation-hash-recipe';
-import { appendControlEventAndReplay } from './requirement-record-control-store';
+import { appendControlEventAndReplay, sha256Text } from './requirement-record-control-store';
 
 type JsonObject = Record<string, unknown>;
 type ReadinessDecision = 'pass' | 'blocked';
@@ -197,6 +197,57 @@ function updateRecord(
   };
 }
 
+function currentArchitectureHash(record: JsonObject): string {
+  const state = record.architectureConfirmationState;
+  return state && typeof state === 'object' && !Array.isArray(state)
+    ? text((state as JsonObject).currentArchitectureConfirmationHash)
+    : '';
+}
+
+function requestReadinessBaselineActivation(
+  recordPath: string,
+  input: {
+    record: JsonObject;
+    gateCommit: ReturnType<typeof appendControlEventAndReplay>;
+    sourceReportPath: string;
+    evaluatedAt: string;
+    evaluatedBy: string;
+  }
+): ReturnType<typeof appendControlEventAndReplay> {
+  const sourceReportHash = sha256Text(fs.readFileSync(input.sourceReportPath, 'utf8'));
+  const activationId = `readiness-baseline:${text(input.record.requirementSetId) || text(input.record.recordId)}:${input.evaluatedAt}`;
+  const payload = {
+    activationId,
+    requirementSetId: text(input.record.requirementSetId) || text(input.record.recordId),
+    recordId: text(input.record.recordId),
+    status: 'audit_required',
+    sourceGateCheckId: `implementation-readiness:${input.evaluatedAt}`,
+    sourceReportPath: normalizePathForRecord(input.sourceReportPath),
+    sourceReportHash,
+    sourceControlEventId: input.gateCommit.event.eventId,
+    sourceControlEventHash: input.gateCommit.event.eventHash,
+    readinessGateRecipeVersion: 'implementation-readiness-gate/v1',
+    sourceDocumentHash: text(input.record.sourceDocumentHash),
+    implementationConfirmationHash: text(input.record.implementationConfirmationHash),
+    architectureConfirmationHash: currentArchitectureHash(input.record),
+    requestedAt: input.evaluatedAt,
+    requestedBy: input.evaluatedBy,
+  };
+  return appendControlEventAndReplay({
+    recordPath,
+    writerId: 'readiness-baseline-activation-writer',
+    eventType: 'readiness_baseline_activation_requested',
+    recordedAt: input.evaluatedAt,
+    payload,
+    reduce: (currentRecord) => ({
+      ...currentRecord,
+      readinessBaselineActivation: payload,
+      lastEventType: 'readiness_baseline_activation_requested',
+      updatedAt: input.evaluatedAt,
+    }),
+  });
+}
+
 export function mainImplementationReadinessGate(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
@@ -237,6 +288,16 @@ export function mainImplementationReadinessGate(argv: string[]): number {
     payload: readinessPayload,
     reduce: (currentRecord) => updateRecord(currentRecord, readinessPayload),
   });
+  const activationCommit =
+    evaluation.decision === 'pass'
+      ? requestReadinessBaselineActivation(recordPath, {
+          record,
+          gateCommit: commit,
+          sourceReportPath: reportPath,
+          evaluatedAt,
+          evaluatedBy,
+        })
+      : null;
   const output = {
     ok: true,
     reportPath: normalizePathForRecord(reportPath),
@@ -246,6 +307,16 @@ export function mainImplementationReadinessGate(argv: string[]): number {
     controlEventHash: commit.event.eventHash,
     eventLogPath: normalizePathForRecord(commit.eventLogPath),
     receiptPath: normalizePathForRecord(commit.receiptPath),
+    ...(activationCommit
+      ? {
+          readinessBaselineActivation: {
+            status: 'audit_required',
+            controlEventId: activationCommit.event.eventId,
+            controlEventHash: activationCommit.event.eventHash,
+            receiptPath: normalizePathForRecord(activationCommit.receiptPath),
+          },
+        }
+      : {}),
   };
   process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `implementation_readiness=${evaluation.decision}\n`);
   return evaluation.decision === 'pass' ? 0 : 1;

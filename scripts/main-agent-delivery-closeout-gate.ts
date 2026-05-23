@@ -153,11 +153,6 @@ function resolveArtifactPath(recordPath: string, artifactPath: string): string {
   return path.resolve(path.dirname(recordPath), '..', '..', '..', '..', artifactPath);
 }
 
-function appendJsonl(file: string, value: JsonObject): void {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.appendFileSync(file, `${JSON.stringify(value)}\n`, 'utf8');
-}
-
 function deliveryEvidence(record: JsonObject): JsonObject {
   return record.deliveryEvidence && typeof record.deliveryEvidence === 'object' && !Array.isArray(record.deliveryEvidence)
     ? (record.deliveryEvidence as JsonObject)

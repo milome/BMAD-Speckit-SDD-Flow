@@ -1545,7 +1545,7 @@ functionalResumeFailureCaseRegistry:
     const source = writeSource();
     const original = fs.readFileSync(source, 'utf8');
     const mutated = original.replace(
-      /\n      expectedRecoveryActions:\n        - require_user_reconfirmation\n        - rebuild_trace_checkpoint/u,
+      /\n {6}expectedRecoveryActions:\n {8}- require_user_reconfirmation\n {8}- rebuild_trace_checkpoint/u,
       ''
     );
     fs.writeFileSync(source, mutated, 'utf8');
@@ -1606,7 +1606,7 @@ functionalResumeFailureCaseRegistry:
     const source = writeSource();
     const original = fs.readFileSync(source, 'utf8');
     const mutated = original.replace(
-      /\n      recordEventTypes: \["confirmation_recorded", "contract_check_recorded"\]/u,
+      /\n {6}recordEventTypes: \["confirmation_recorded", "contract_check_recorded"\]/u,
       ''
     );
     fs.writeFileSync(source, mutated, 'utf8');
@@ -1700,7 +1700,7 @@ functionalResumeFailureCaseRegistry:
     const source = writeSource();
     const original = fs.readFileSync(source, 'utf8');
     const mutated = original.replace(
-      /\n      payloadContract:\n        requiredFields: \["eventType", "decision"\]\n        forbiddenFields: \["result", "status"\]\n        requiredSourceRefs: false\n        allowedControlWriteMode: control/u,
+      /\n {6}payloadContract:\n {8}requiredFields: \["eventType", "decision"\]\n {8}forbiddenFields: \["result", "status"\]\n {8}requiredSourceRefs: false\n {8}allowedControlWriteMode: control/u,
       ''
     );
     fs.writeFileSync(source, mutated, 'utf8');
@@ -1761,7 +1761,7 @@ functionalResumeFailureCaseRegistry:
   it('fails closed when controlledIngestWriterRegistry is missing while governance events apply', () => {
     const source = writeSource();
     const original = fs.readFileSync(source, 'utf8');
-    const mutated = original.replace(/\n  controlledIngestWriterRegistry:\n[\s\S]*?(?=\n  artifactAutomationPlan:\n)/u, '\n');
+    const mutated = original.replace(/\n {2}controlledIngestWriterRegistry:\n[\s\S]*?(?=\n {2}artifactAutomationPlan:\n)/u, '\n');
     fs.writeFileSync(source, mutated, 'utf8');
     const mermaidBundle = writeMockMermaidBundle();
     const out = path.join(tempDir, 'confirmation-missing-controlled-ingest-writers.html');
@@ -2131,7 +2131,7 @@ flowchart TD
     const source = writeSource();
     const original = fs.readFileSync(source, 'utf8');
     const mutated = original.replace(
-      /\n    currentTargetMap:\n      applies: false\n      reasonCode: "fixture_current_target_pack_not_enabled"/u,
+      /\n {4}currentTargetMap:\n {6}applies: false\n {6}reasonCode: "fixture_current_target_pack_not_enabled"/u,
       '\n    currentTargetMap:\n      applies: false'
     );
     fs.writeFileSync(source, mutated, 'utf8');
@@ -2378,7 +2378,7 @@ flowchart TD
   it('fails closed when governance view packs are enabled but the required content is missing', () => {
     const source = writeSource('GOVERNANCE_VIEW_PACKS');
     const original = fs.readFileSync(source, 'utf8');
-    const mutated = original.replace(/\n  currentTargetMap:\n[\s\S]*?(?=\n  governanceEventTypeRegistry:\n)/u, '\n');
+    const mutated = original.replace(/\n {2}currentTargetMap:\n[\s\S]*?(?=\n {2}governanceEventTypeRegistry:\n)/u, '\n');
     fs.writeFileSync(source, mutated, 'utf8');
     const mermaidBundle = writeMockMermaidBundle();
     const out = path.join(tempDir, 'confirmation-current-target-invalid.html');
