@@ -3,8 +3,8 @@
 Date: 2026-05-24
 Status: Draft
 Source request: 将 Main Agent 六心智模型控制面补齐为可确认、可追踪、可验证的需求契约源文档。
-Checkpoint: 7 - conditional governance/runtime/scoring/current-target/scripts modules
-Checkpoint status: conditional modules drafted; human-readable Mermaid, Reverse Audit Report, Definition of Done, and confirmation render pending
+Checkpoint: 8 - human-readable views, evidence overview, E2E overview, Reverse Audit Report, and Definition of Done
+Checkpoint status: human-readable confirmation views drafted; confirmation language selection, HTML render, and controlled confirmation ingest pending
 
 ## 1. 结论
 
@@ -96,11 +96,13 @@ Checkpoint 6 已继续填充 `artifactAutomationPlan`、`requiredCommands`、`su
 
 Checkpoint 7 已继续填充 `applicability.*.applies=true` 对应的条件模块，尤其是 governance event registry、controlled ingest writer registry、runtime recovery registry、active requirement resolution、scoring/dashboard/SFT boundary、current-target map、scripts/hooks registry。
 
-Checkpoint 8 必须继续补充 human-readable Mermaid views、evidence overview、E2E acceptance overview、artifact automation plan view、Reverse Audit Report 和 Definition of Done，并为后续确认页渲染做准备。
+Checkpoint 8 已继续补充 human-readable Mermaid views、evidence overview、E2E acceptance overview、artifact automation plan view、Reverse Audit Report 和 Definition of Done，并为后续确认页渲染做准备。
+
+Checkpoint 9 必须先让用户显式选择确认页语言；只有用户选择 zh-CN、en-US 或 bilingual 后，才能调用 skill-local confirmation HTML renderer。
 
 ## 3. implementationConfirmation Core Draft
 
-This checkpoint now includes the confirmation block shell, identity, rendering placeholders, applicability declarations, drafted `MUST-*`, `NEG-*`, `OUT-*`, and `EVD-*` rows, `FAIL-*`, `EDGE-*`, and `TRACE-*` mappings, ID-bound sequence, flow, edge-case, and boundary views, artifact automation and command plans, plus conditional governance/runtime/scoring/current-target/scripts modules. It deliberately leaves final human-readable Mermaid diagrams, Reverse Audit Report, Definition of Done, and rendered confirmation HTML for later checkpoints.
+This checkpoint now includes the confirmation block shell, identity, rendering placeholders, applicability declarations, drafted `MUST-*`, `NEG-*`, `OUT-*`, and `EVD-*` rows, `FAIL-*`, `EDGE-*`, and `TRACE-*` mappings, ID-bound sequence, flow, edge-case, and boundary views, artifact automation and command plans, conditional governance/runtime/scoring/current-target/scripts modules, and human-readable confirmation views. It deliberately leaves confirmation language selection, rendered confirmation HTML, exact user confirmation, and controlled confirmation ingest for later checkpoints.
 
 ```yaml
 implementationConfirmation:
@@ -1365,7 +1367,8 @@ implementationConfirmation:
       - traceRows remain PENDING and have no current-pass commandRunRefs.
       - no controlled RequirementRecord exists for this new requirement scope yet.
       - current attempt evidence does not exist because implementation has not started.
-      - Reverse Audit Report and Definition of Done are not yet written.
+      - Reverse Audit Report verdict remains FAIL until user confirmation and HTML render exist.
+      - Definition of Done remains unchecked until controlled confirmation and current implementation evidence exist.
     orphanPolicy: Read-model, score, dashboard, hook, report, old inspect, old closeout, and orphan command artifacts are evidence or projections only; they must not drive control flow unless their hashes are bound into the current RequirementRecord by a registered controlled writer.
     currentAttemptPolicy: Delivery evidence must bind requirementSetId, runId, sourceDocumentHash, implementationConfirmationHash, commandRunRefs, artifact hashes, and current attempt id; previous attempt evidence may be displayed but cannot satisfy current closeout.
     staleEvidencePolicy: Any stale source, implementation, architecture, target path, impact scan, score, audit, readiness, execution, or closeout hash blocks delivery confirmation and routes through blocker intake or reconfirmation.
@@ -1880,7 +1883,170 @@ implementationConfirmation:
   reconfirmationRequest: null
 ```
 
-Checkpoint 8 must populate the human-readable Mermaid views, evidence overview, E2E acceptance overview, artifact automation plan view, Reverse Audit Report, and Definition of Done. Until those sections, confirmation language, rendered HTML, and controlled confirmation ingest exist, this source document is not confirmation-ready and must not be used as implementation-ready scope.
+Checkpoint 9 must ask the user to choose the confirmation page language before rendering HTML. Until confirmation language, rendered HTML, matching render report hashes, exact user confirmation, and controlled confirmation ingest exist, this source document is not implementation-ready scope.
+
+## Checkpoint 8 Human-Readable Confirmation Views
+
+This section is a human-readable view over the `implementationConfirmation` IDs above. It does not introduce additional scope. If any diagram, table, or checklist conflicts with an ID-bound row in `implementationConfirmation`, the ID-bound row remains authoritative.
+
+### Business Inspect View
+
+```mermaid
+sequenceDiagram
+  actor User
+  participant Inspect as MainAgentInspect
+  participant Resolver as ActiveRequirementResolver
+  participant Record as RequirementRecord
+  participant Gate as MentalModelGate
+  participant ReadModel as DashboardScoreReadModels
+
+  User->>Inspect: Request next safe action [MUST-001][MUST-012]
+  Inspect->>Resolver: Resolve active requirement [EVD-002]
+  Resolver->>Record: Load authoritative record [MUST-001]
+  Record-->>Inspect: currentMentalModel, blockers, reconfirmation, verdicts [MUST-001]
+  Inspect->>Gate: Evaluate current model before downstream action [MUST-003]
+  ReadModel-->>Inspect: Explanatory projections only [NEG-001][OUT-001]
+  Inspect-->>User: Show current model, blockers, sources, next action, forbidden shortcuts [MUST-012][EVD-014]
+```
+
+This business view covers the user-visible inspect path. It confirms that read models may explain state but cannot drive progression [NEG-001][OUT-001], and that inspect must show the safe next action rather than infer completion from dashboard, score, stdout, HTTP 200, page render, or mock calls [NEG-002][OUT-007].
+
+### Governance State Chain View
+
+```mermaid
+flowchart TD
+  A["requirement_confirmation [MUST-003]"] -->|pass by controlled verdict| B["architecture_confirmation [MUST-007]"]
+  B -->|pass by controlled verdict| C["implementation_readiness [MUST-008]"]
+  C -->|pass by controlled verdict| D["execution_closure [MUST-009]"]
+  D -->|pass by controlled verdict| E["audit_review [MUST-010]"]
+  E -->|pass by controlled verdict| F["delivery_confirmation [MUST-011]"]
+  F -->|delivery truth and closeout pass| G["record_closed [MUST-011]"]
+
+  X["pending blocker, stale evidence, ambiguity, or drift [NEG-004][NEG-005][NEG-006]"] --> A
+  R["reconfirmationRequests [MUST-006]"] --> A
+```
+
+The state chain is governance scope. Only the current model may advance when its verdict is pass [MUST-003]. Any blocker, stale evidence, ambiguity, unknown failure, provenance gap, or reconfirmation request blocks downstream progression [NEG-004][NEG-005][NEG-006].
+
+### Failure And Reconfirmation View
+
+```mermaid
+flowchart LR
+  Raw["Raw signal: TaskReport, envelope, inspect, resolver, gate, drift, audit, closeout [MUST-004]"]
+  Normalize["controlled-blocker-intake normalizes signal [MUST-004][EVD-006]"]
+  RecordWrite["Authoritative record write [MUST-005]"]
+  Reconfirm["controlled-reconfirmation-router [MUST-006]"]
+  Block["Fail closed until resolved [NEG-004][FAIL-004]"]
+  Downstream["Downstream models blocked [NEG-006]"]
+
+  Raw --> Normalize
+  Normalize --> RecordWrite
+  RecordWrite --> Block
+  Normalize -->|scope/hash/architecture/evidence drift| Reconfirm
+  Reconfirm --> Downstream
+```
+
+This failure view makes the negative path explicit. Candidate signals cannot directly close work [NEG-002], unknown or unproven signals cannot be dropped [NEG-005], and semantic drift cannot be handled as rerun-only [FAIL-006].
+
+### Closeout Boundary View
+
+```mermaid
+flowchart TD
+  Exec["execution_closure verdict [MUST-009][EVD-011]"]
+  Audit["audit_review verdict [MUST-010][EVD-012]"]
+  Closeout["delivery closeout and delivery truth [MUST-011][EVD-013]"]
+  Closed["record_closed control write [MUST-011]"]
+  Shortcut["Forbidden shortcuts: dashboard green, score green, TaskReport done, stdout PASS, HTTP 200, page render, mock calls [NEG-001][NEG-002]"]
+
+  Exec --> Audit
+  Audit --> Closeout
+  Closeout --> Closed
+  Shortcut -. must not close .-> Closed
+```
+
+Execution closure is a pre-closeout summary only; it cannot replace delivery closeout or delivery truth [NEG-008][OUT-003]. The final close requires controlled evidence for the current attempt [EVD-013].
+
+### Evidence Overview
+
+| Evidence ID | Purpose | Required command refs | Artifact refs | Completion meaning |
+|---|---|---|---|---|
+| EVD-001 | Source document remains the single implementation source document. | CMD-CONTRACT-001 | ART-SOURCE-001 | Contract boundary evidence only. |
+| EVD-002 | Inspect resolves active RequirementRecord and authority order. | CMD-DELIVERY-001 | ART-INSPECT-001 | Supports requirement confirmation inspect behavior. |
+| EVD-003 | currentMentalModel writes are controlled and hash-bound. | CMD-DELIVERY-002 | ART-RECORD-001, ART-EVENT-001 | Supports model transition control. |
+| EVD-004 | Six-model gate computes verdicts and blocks non-current pass shortcuts. | CMD-DELIVERY-003 | ART-GATE-001 | Supports six-model state chain. |
+| EVD-005 | Subagent TaskReport and envelope are candidate evidence only. | CMD-DELIVERY-004 | ART-SUBAGENT-001 | Prevents candidate evidence from controlling state. |
+| EVD-006 | controlled-blocker-intake normalizes raw signals. | CMD-DELIVERY-005 | ART-BLOCKER-001 | Supports authoritative blocker writes. |
+| EVD-007 | Pending/blocking intake blocks transitions and closeout. | CMD-DELIVERY-006 | ART-BLOCKER-002, ART-GATE-002 | Supports fail-closed transition behavior. |
+| EVD-008 | Reconfirmation router handles semantic drift. | CMD-DELIVERY-007 | ART-RECONFIRM-001 | Supports requirement or architecture reconfirmation routing. |
+| EVD-009 | Architecture confirmation enters main-agent actions. | CMD-DELIVERY-008 | ART-ARCH-001, ART-EVENT-002 | Supports architecture model control. |
+| EVD-010 | implementation_readiness blocks missing prerequisites. | CMD-DELIVERY-009 | ART-READINESS-001 | Supports dispatch readiness. |
+| EVD-011 | execution_closure summarizes current attempt evidence. | CMD-DELIVERY-010 | ART-EXECUTION-001 | Supports pre-closeout execution closure. |
+| EVD-012 | audit_review preserves read-model boundary. | CMD-DELIVERY-011 | ART-AUDIT-001, ART-SCORE-001 | Supports audit review without score/dashboard reverse control. |
+| EVD-013 | delivery_confirmation and record_closed require current closeout proof. | CMD-DELIVERY-012 | ART-CLOSEOUT-001, ART-RECORD-002 | Supports terminal delivery proof. |
+| EVD-014 | User-visible inspect explains state, blockers, sources, and shortcuts. | CMD-DELIVERY-013 | ART-INSPECT-002 | Supports user-facing explanation. |
+
+No evidence item above permits completion from exit code only, stdout PASS, HTTP 200, page render, mock calls, dashboard green, score green, TaskReport done, or fixture-only replay [NEG-001][NEG-002][OUT-007].
+
+### E2E Acceptance Overview
+
+The E2E acceptance path is intentionally staged. It starts with contract validation [TRACE-001][TRACE-013], then validates controlled record transitions [TRACE-002][TRACE-003], then candidate evidence and blocker intake [TRACE-004][TRACE-005], then reconfirmation and architecture confirmation [TRACE-006][TRACE-007], then readiness, execution, audit, and delivery closeout [TRACE-008][TRACE-009][TRACE-010][TRACE-011], and finally user-visible inspect output [TRACE-012].
+
+The delivery evidence command chain is:
+
+1. Run CMD-CONTRACT-001 before confirmation rendering.
+2. Run CMD-DELIVERY-001 through CMD-DELIVERY-013 after implementation exists and current attempt evidence can be produced.
+3. Treat every required command result as insufficient unless it is bound to current source hash, implementationConfirmation hash, requirementSetId, runId, commandRunRefs, artifact hashes, and current attempt id.
+4. Keep every TRACE row PENDING until its required evidence is current_pass for the current attempt.
+5. Do not use dashboard green, score green, TaskReport done, stdout PASS, HTTP 200, page render, mock calls, or fixture-only replay as E2E acceptance evidence [NEG-001][NEG-002][FAIL-002].
+
+### Artifact Automation Plan View
+
+The artifact plan separates control records from projections and candidate evidence:
+
+| Role | Artifact refs | Control-flow authority |
+|---|---|---|
+| Source and confirmation context | ART-SOURCE-001 | No direct control; actionable only after HTML confirmation and controlled ingest. |
+| Authoritative control record and events | ART-RECORD-001, ART-EVENT-001, ART-RECORD-002 | Control-flow authority only through registered writers and before/after hashes. |
+| Gate and blocker state | ART-GATE-001, ART-BLOCKER-001, ART-BLOCKER-002, ART-GATE-002 | Can block or permit progression only after controlled writes. |
+| Reconfirmation and architecture state | ART-RECONFIRM-001, ART-ARCH-001, ART-EVENT-002 | Can reroute currentMentalModel and block downstream models. |
+| Readiness, execution, audit, and closeout reports | ART-READINESS-001, ART-EXECUTION-001, ART-AUDIT-001, ART-CLOSEOUT-001 | Can affect control only when reduced into RequirementRecord by registered writers. |
+| Subagent, inspect, score, and dashboard projections | ART-SUBAGENT-001, ART-INSPECT-001, ART-INSPECT-002, ART-SCORE-001 | Candidate evidence or read-model only; cannot directly advance or close. |
+
+Any orphan artifact not present in the current artifactIndex with current hashes is diagnostic context only and cannot satisfy delivery readiness [NEG-004][EVD-013].
+
+### Reverse Audit Report
+
+Verdict: FAIL
+
+This checkpoint intentionally keeps the reverse audit verdict as FAIL because the source document is still a draft and has not been rendered or confirmed by the user. Checkpoint 8 resolves the previous missing human-readable surfaces, Reverse Audit Report, and Definition of Done sections, but it must not claim implementation readiness.
+
+Current reverse-audit status expected after Checkpoint 8:
+
+1. `implementationConfirmation` exists.
+2. `contractAuthoringRequired: true` exists.
+3. `sequenceViews`, `flowViews`, `edgeCaseViews`, `boundaryViews`, `artifactAutomationPlan`, `failurePaths`, `edgeCases`, and `traceRows` exist.
+4. Human-readable Mermaid diagrams reference declared IDs.
+5. Smoke-only and read-model-only completion warnings are visible [NEG-001][NEG-002].
+6. Remaining expected blockers are `confirmation_not_user_confirmed` and missing rendered confirmation artifacts until Checkpoint 9+.
+
+The source document must remain draft until exact user confirmation with matching source and HTML hashes is ingested through the controlled confirmation path.
+
+### Definition of Done
+
+Source-document confirmation readiness requires all of the following before implementation can start:
+
+- [x] `implementationConfirmation` exists in this source document.
+- [x] `MUST-*`, `NEG-*`, `OUT-*`, `EVD-*`, `FAIL-*`, `EDGE-*`, `TRACE-*`, `SEQ-*`, `FLOW-*`, `EDGEVIEW-*`, `BOUNDARY-*`, `ART-*`, and `CMD-*` rows are present and ID-bound.
+- [x] Conditional governance/runtime/scoring/current-target/scripts modules are declared for every `applicability.*.applies=true` domain.
+- [x] Business and governance human-readable views exist and reference declared IDs.
+- [x] Evidence overview, E2E acceptance overview, artifact automation plan view, Reverse Audit Report, and Definition of Done are present.
+- [ ] User has explicitly selected confirmation page language.
+- [ ] Skill-local confirmation HTML renderer has produced HTML, summary, and render report from the current source hash.
+- [ ] User has confirmed the exact phrase with current source and HTML hashes.
+- [ ] Controlled confirm-scope ingest has written confirmation evidence to the RequirementRecord.
+- [ ] Reverse audit passes after confirmation render and controlled ingest.
+- [ ] Implementation evidence commands CMD-DELIVERY-001 through CMD-DELIVERY-013 pass against current attempt evidence.
+- [ ] Delivery readiness is true only after all TRACE rows are current_pass and no blockers, stale evidence, unresolved reruns, or open reconfirmation requests remain.
 
 ## 4. 背景与当前遗漏
 
