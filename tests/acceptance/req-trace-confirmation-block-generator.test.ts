@@ -350,7 +350,7 @@ describe('req trace generator confirmation block gate', () => {
       validSource()
         .replace('      contractValidationCommandRefs: ["CMD-CONTRACT-001"]\n', '')
         .replace('      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-001", "CMD-DELIVERY-002"]\n', '')
-        .replace(/  requiredCommands:[\s\S]*  closeoutReadinessPreview:\n    requiredCommands: \["CMD-CONTRACT-001", "CMD-DELIVERY-001", "CMD-DELIVERY-002"\]\n/u, '')
+        .replace(/ {2}requiredCommands:[\s\S]* {2}closeoutReadinessPreview:\n {4}requiredCommands: \["CMD-CONTRACT-001", "CMD-DELIVERY-001", "CMD-DELIVERY-002"\]\n/u, '')
         .replace('      gate: "npm run test:e2e -- upload"', '      gate: "Implementation Readiness Gate"')
         .replace('      gate: "npm run test:e2e -- upload-invalid"', '      gate: "Manual Review Gate"')
     );
