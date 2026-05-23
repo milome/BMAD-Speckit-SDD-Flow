@@ -3,8 +3,8 @@
 Date: 2026-05-24
 Status: Draft
 Source request: 将 Main Agent 六心智模型控制面补齐为可确认、可追踪、可验证的需求契约源文档。
-Checkpoint: 2 - implementationConfirmation core fields and full applicability.* declarations
-Checkpoint status: core confirmation block draft added; requirement ID rows pending Checkpoint 3
+Checkpoint: 3 - must, notDone, mustNot, and evidence arrays
+Checkpoint status: requirement ID rows drafted; failure paths, edge cases, trace rows, views, and commands pending
 
 ## 1. 结论
 
@@ -86,11 +86,13 @@ Checkpoint status: core confirmation block draft added; requirement ID rows pend
 
 Checkpoint 2 已从本边界继续，新增 `implementationConfirmation` core fields 和完整 `applicability.*` 声明，且未重写本 checkpoint 的范围、非目标或冻结决策。
 
-Checkpoint 3 必须继续填充 `must`、`notDone`、`mustNot` 和 `evidence` 数组。Checkpoint 3 不应渲染 HTML，不应设置 `status: user_confirmed`，也不应把空数组占位解释为可确认范围。
+Checkpoint 3 已继续填充 `must`、`notDone`、`mustNot` 和 `evidence` 数组。Checkpoint 3 未渲染 HTML，未设置 `status: user_confirmed`，也未把当前 ID 草稿解释为可确认范围。
+
+Checkpoint 4 必须继续填充 `failurePaths`、`edgeCases` 和 `traceRows` 数组，并把本 checkpoint 中引用的 `TRACE-*`、`FAIL-*` 和 `EDGE-*` 补齐为可审计映射。
 
 ## 3. implementationConfirmation Core Draft
 
-This checkpoint introduces only the confirmation block shell, identity, rendering placeholders, applicability declarations, and empty core arrays for later checkpoints. It deliberately does not define `MUST-*`, `NEG-*`, `OUT-*`, `EVD-*`, `FAIL-*`, `EDGE-*`, `TRACE-*`, or `CMD-*` rows yet.
+This checkpoint now includes the confirmation block shell, identity, rendering placeholders, applicability declarations, and drafted `MUST-*`, `NEG-*`, `OUT-*`, and `EVD-*` rows. It deliberately leaves `FAIL-*`, `EDGE-*`, `TRACE-*`, `CMD-*`, view rows, and artifact automation rows for later checkpoints.
 
 ```yaml
 implementationConfirmation:
@@ -143,10 +145,298 @@ implementationConfirmation:
     scriptsAndHooks:
       applies: true
       reasonCode: main_agent_orchestration_gates_ingest_scripts_dashboard_projection_and_hook_receipts_are_in_scope
-  must: []
-  notDone: []
-  mustNot: []
-  evidence: []
+  must:
+    - id: MUST-001
+      text: >-
+        Main Agent inspect 必须先解析 active RequirementRecord，并以 active record、currentMentalModel、unresolved blockers、
+        reconfirmationRequests、current model verdict 和 sixModelVerdicts 的顺序决定下一步。
+      evidenceRefs: ["EVD-001", "EVD-002"]
+      coveredByTraceRows: ["TRACE-001"]
+      coveredBySequenceViews: ["SEQ-001"]
+      riskLevel: critical
+    - id: MUST-002
+      text: >-
+        currentMentalModel 必须只能通过 controlled writer 或 control-store event 更新；每次迁移必须同时写入
+        mentalModelTransitions，并记录 previousModel、nextModel、reasonCode、sourceRefs、recordHashBefore、
+        recordHashAfter、writtenBy 和 writtenAt。
+      evidenceRefs: ["EVD-003"]
+      coveredByTraceRows: ["TRACE-002"]
+      coveredBySequenceViews: ["SEQ-002"]
+      riskLevel: critical
+    - id: MUST-003
+      text: >-
+        main-agent-mental-model-gate 必须计算 requirement_confirmation、architecture_confirmation、
+        implementation_readiness、execution_closure、audit_review 和 delivery_confirmation 六个模型 verdict，并且只有当前模型
+        status=pass 时才推荐推进到下一个模型。
+      evidenceRefs: ["EVD-004"]
+      coveredByTraceRows: ["TRACE-003"]
+      coveredBySequenceViews: ["SEQ-002"]
+      riskLevel: critical
+    - id: MUST-004
+      text: >-
+        controlled-blocker-intake 必须接收 TaskReport、SubagentEvidenceEnvelope.failureRecords、inspect diagnostics、
+        resolver projection、gate failures、drift results、audit/scoring failures 和 closeout blockers，并归一化为
+        NormalizedBlockerSignal。
+      evidenceRefs: ["EVD-005", "EVD-006"]
+      coveredByTraceRows: ["TRACE-004"]
+      coveredBySequenceViews: ["SEQ-003"]
+      riskLevel: critical
+    - id: MUST-005
+      text: >-
+        模型迁移前和 delivery closeout 前必须运行或确认无 pending controlled-blocker-intake；存在 blocking normalized
+        signal 时不得推进 currentMentalModel。
+      evidenceRefs: ["EVD-006", "EVD-007"]
+      coveredByTraceRows: ["TRACE-005"]
+      coveredBySequenceViews: ["SEQ-003"]
+      riskLevel: critical
+    - id: MUST-006
+      text: >-
+        controlled-reconfirmation-router 必须覆盖任一模型发现的 source hash、implementation hash、architecture hash、scope
+        或 evidence semantic drift，写入 blocking reconfirmationRequests，并将 currentMentalModel 切回
+        requirement_confirmation 或 architecture_confirmation。
+      evidenceRefs: ["EVD-008"]
+      coveredByTraceRows: ["TRACE-006"]
+      coveredBySequenceViews: ["SEQ-004"]
+      riskLevel: critical
+    - id: MUST-007
+      text: >-
+        architecture-confirmation-ingest 和 architecture-state-check 必须作为 main-agent-orchestration 的统一 action
+        暴露，并进入同一 record event 链和 mental model gate 判定。
+      evidenceRefs: ["EVD-009"]
+      coveredByTraceRows: ["TRACE-007"]
+      coveredBySequenceViews: ["SEQ-005"]
+      riskLevel: high
+    - id: MUST-008
+      text: >-
+        implementation_readiness verdict 必须只在需求确认、架构确认、blocking blocker、reconfirmationRequests、stale evidence
+        和 required readiness evidence 均满足当前 record/hash/attempt 时允许进入 dispatch 或 execution。
+      evidenceRefs: ["EVD-010"]
+      coveredByTraceRows: ["TRACE-008"]
+      coveredBySequenceViews: ["SEQ-006"]
+      riskLevel: critical
+    - id: MUST-009
+      text: >-
+        execution_closure verdict 必须汇总 packet、traceRows、commandRunRefs、artifactIndex、SubagentEvidenceEnvelope、
+        TaskReport、rerunLoops、current attempt 和 failureRecords，并在 closeout gate 前给 inspect 可读闭合状态。
+      evidenceRefs: ["EVD-011"]
+      coveredByTraceRows: ["TRACE-009"]
+      coveredBySequenceViews: ["SEQ-007"]
+      riskLevel: critical
+    - id: MUST-010
+      text: >-
+        audit_review verdict 必须读取 readiness audit、RunScoreRecord、score provenance、RCA、data production、eval/SFT、
+        coach output、quality gate output 和 current hashes，并把 unresolved audit findings 同步到 blocker intake。
+      evidenceRefs: ["EVD-012"]
+      coveredByTraceRows: ["TRACE-010"]
+      coveredBySequenceViews: ["SEQ-008"]
+      riskLevel: high
+    - id: MUST-011
+      text: >-
+        delivery_confirmation verdict 必须在 closeout gate、delivery truth gate、execution_closure、audit_review、current
+        attempt evidence、failureRecords、rerunLoops 和 reconfirmationRequests 全部闭合后，才允许迁移到 record_closed。
+      evidenceRefs: ["EVD-013"]
+      coveredByTraceRows: ["TRACE-011"]
+      coveredBySequenceViews: ["SEQ-009"]
+      riskLevel: critical
+    - id: MUST-012
+      text: >-
+        用户可见 inspect 输出必须显示 active requirement、currentMentalModel、current model status、six model summary、
+        blocking category、authoritative source checked、pending blocker intake status、open reconfirmation requests、next safe
+        action 和 forbidden shortcuts。
+      evidenceRefs: ["EVD-014"]
+      coveredByTraceRows: ["TRACE-012"]
+      coveredBySequenceViews: ["SEQ-010"]
+      riskLevel: high
+  notDone:
+    - id: NEG-001
+      text: Dashboard green、score green、SFT/report/summary/hook receipt 或 dashboard six-model projection 不得直接推进模型、写 gate decision、写 closeout 或关闭 record。
+      evidenceRefs: ["EVD-004", "EVD-012", "EVD-013"]
+      whyItBlocksCompletion: Read models reverse-drive control flow would bypass the controlled RequirementRecord authority.
+      negativeAssertionRequired: true
+      coveredByFailurePath: ["FAIL-001"]
+    - id: NEG-002
+      text: TaskReport done、SubagentEvidenceEnvelope success、stdout PASS、HTTP 200、page render、exit code only、mock calls 或 fixture-only replay 不得直接推进 currentMentalModel 或 closeout。
+      evidenceRefs: ["EVD-005", "EVD-011", "EVD-013"]
+      whyItBlocksCompletion: Smoke-only or candidate evidence can report false completion without current controlled proof.
+      negativeAssertionRequired: true
+      coveredByFailurePath: ["FAIL-002"]
+    - id: NEG-003
+      text: 子代理、dashboard、score projection、report、hook 或非注册脚本不得直接写顶层 authoritative blocker、currentMentalModel、sixModelVerdicts、requirementClosures 或 terminal decision。
+      evidenceRefs: ["EVD-003", "EVD-006"]
+      whyItBlocksCompletion: Unauthorized writers would make the control plane non-auditable and non-recoverable.
+      negativeAssertionRequired: true
+      coveredByFailurePath: ["FAIL-003"]
+    - id: NEG-004
+      text: 存在 open blocking failureRecords、pending blockerIntakeRuns、open reconfirmationRequests、stale evidence、ambiguous evidence 或 unresolved rerunLoops 时，不得 dispatch、readiness pass、execution closure pass、audit pass、delivery confirmation pass 或 record close。
+      evidenceRefs: ["EVD-007", "EVD-008", "EVD-013"]
+      whyItBlocksCompletion: Downstream progress with unresolved blockers would violate fail-closed model sequencing.
+      negativeAssertionRequired: true
+      coveredByFailurePath: ["FAIL-004"]
+    - id: NEG-005
+      text: unknown failure、missing provenance、unrecognized raw signal 或 resolver ambiguity 不得被忽略；必须归一化为 blocker_unknown、provenance_missing 或 resolver_ambiguous 并 fail closed。
+      evidenceRefs: ["EVD-006"]
+      whyItBlocksCompletion: Unknown or unproven failures are unsafe to treat as non-blocking.
+      negativeAssertionRequired: true
+      coveredByFailurePath: ["FAIL-005"]
+    - id: NEG-006
+      text: source hash、implementation hash、architecture hash、scope 或 evidence semantic drift 不得作为普通 rerun 静默处理；必须进入 controlled-reconfirmation-router。
+      evidenceRefs: ["EVD-008"]
+      whyItBlocksCompletion: Semantic drift changes confirmed scope or architecture binding and requires reconfirmation.
+      negativeAssertionRequired: true
+      coveredByFailurePath: ["FAIL-006"]
+    - id: NEG-007
+      text: architecture confirmation 不得继续作为 main-agent action switch 不可见的孤立流程；底层脚本不得绕过主控状态检查。
+      evidenceRefs: ["EVD-009"]
+      whyItBlocksCompletion: Architecture state outside the main control plane can become stale without blocking downstream work.
+      negativeAssertionRequired: true
+      coveredByFailurePath: ["FAIL-007"]
+    - id: NEG-008
+      text: execution_closure pass 不得替代 delivery closeout gate 或 delivery truth gate；closeout gate 仍是最终交付判定。
+      evidenceRefs: ["EVD-011", "EVD-013"]
+      whyItBlocksCompletion: Execution closure is a model summary, not terminal delivery proof.
+      negativeAssertionRequired: true
+      coveredByFailurePath: ["FAIL-008"]
+    - id: NEG-009
+      text: 本需求不得创建新的独立权威 requirements contract、sidecar confirmation 文件或 conversation-only implementation prompt。
+      evidenceRefs: ["EVD-001"]
+      whyItBlocksCompletion: Requirement semantics must remain in this source document and later inline implementationConfirmation block.
+      negativeAssertionRequired: true
+      coveredByFailurePath: ["FAIL-009"]
+  mustNot:
+    - id: OUT-001
+      text: 本需求不把 dashboard projection、score、SFT、report、summary 或 hook receipt 改成控制源。
+      scopeBoundary: read models may explain state but must not control state.
+      userApprovalRequiredIfChanged: true
+      coveredByBoundaryView: ["BOUNDARY-001"]
+    - id: OUT-002
+      text: 本需求不重写整个 scoring framework，也不改变 RunScoreRecord 的兼容 read-model 角色。
+      scopeBoundary: scoring changes are limited to provenance and read-model boundary enforcement.
+      userApprovalRequiredIfChanged: true
+      coveredByBoundaryView: ["BOUNDARY-001"]
+    - id: OUT-003
+      text: 本需求不改变 delivery closeout gate 的最终判定地位。
+      scopeBoundary: delivery closeout remains terminal delivery proof.
+      userApprovalRequiredIfChanged: true
+      coveredByBoundaryView: ["BOUNDARY-002"]
+    - id: OUT-004
+      text: 本需求不允许绕过 controlled writer 直接修改 currentMentalModel、sixModelVerdicts、failureRecords、reconfirmationRequests 或 requirementClosures。
+      scopeBoundary: all control writes must pass registered writer and before/after hash evidence.
+      userApprovalRequiredIfChanged: true
+      coveredByBoundaryView: ["BOUNDARY-003"]
+    - id: OUT-005
+      text: 本需求不允许子代理直接写顶层权威 blocker 或 terminal decision。
+      scopeBoundary: subagents produce candidate evidence only.
+      userApprovalRequiredIfChanged: true
+      coveredByBoundaryView: ["BOUNDARY-003"]
+    - id: OUT-006
+      text: 本需求不在当前 checkpoint 渲染 confirmation HTML 或执行 controlled confirmation ingest。
+      scopeBoundary: confirmation rendering and ingest are later checkpoints after views, trace rows, commands, and user language selection.
+      userApprovalRequiredIfChanged: true
+      coveredByBoundaryView: ["BOUNDARY-004"]
+    - id: OUT-007
+      text: 本需求不把 current checkpoint commit 解释为 implementation ready、merge ready、launch ready 或 closeout ready。
+      scopeBoundary: checkpoint commits preserve authoring progress only.
+      userApprovalRequiredIfChanged: true
+      coveredByBoundaryView: ["BOUNDARY-004"]
+  evidence:
+    - id: EVD-001
+      text: Source document remains the single implementation source document and contains no sidecar authoritative contract.
+      gate: source_document_contract_boundary_review
+      oracle: repository scan finds this source document as the only authoritative requirement source for the new scope.
+      requiredCommandRefs: ["CMD-CONTRACT-001"]
+      artifactRefs: ["ART-SOURCE-001"]
+      acceptanceType: contract_static
+    - id: EVD-002
+      text: Main Agent inspect resolves active RequirementRecord and orders decision inputs by controlled authority.
+      gate: inspect_authority_order_acceptance
+      oracle: inspect output and test fixture show active record, currentMentalModel, blockers, reconfirmationRequests, current verdict, and read-model-only projections in the required order.
+      requiredCommandRefs: ["CMD-DELIVERY-001"]
+      artifactRefs: ["ART-INSPECT-001"]
+      acceptanceType: acceptance_integration
+    - id: EVD-003
+      text: currentMentalModel transition writes are controlled and include before/after hashes.
+      gate: mental_model_transition_control_store_acceptance
+      oracle: requirement record contains currentMentalModel and matching mentalModelTransitions with recordHashBefore and recordHashAfter.
+      requiredCommandRefs: ["CMD-DELIVERY-002"]
+      artifactRefs: ["ART-RECORD-001", "ART-EVENT-001"]
+      acceptanceType: acceptance_unit
+    - id: EVD-004
+      text: main-agent-mental-model-gate computes all six model verdicts and refuses next-model progression unless current model is pass.
+      gate: six_model_gate_acceptance
+      oracle: tests cover pass, blocked, stale, skipped, and non-current precheck behavior for all six models.
+      requiredCommandRefs: ["CMD-DELIVERY-003"]
+      artifactRefs: ["ART-GATE-001"]
+      acceptanceType: acceptance_unit
+    - id: EVD-005
+      text: Candidate signals from TaskReport and SubagentEvidenceEnvelope are evidence inputs only until controlled-blocker-intake processes them.
+      gate: candidate_signal_boundary_acceptance
+      oracle: TaskReport done and envelope success do not change currentMentalModel without main-agent intake and gate evaluation.
+      requiredCommandRefs: ["CMD-DELIVERY-004"]
+      artifactRefs: ["ART-SUBAGENT-001"]
+      acceptanceType: adversarial_integration
+    - id: EVD-006
+      text: controlled-blocker-intake normalizes all required raw signal classes and writes authoritative blocker records.
+      gate: controlled_blocker_intake_acceptance
+      oracle: each raw signal class produces a NormalizedBlockerSignal or blocker_unknown with provenance, dedupeKey, mentalModel, and recommendedAction.
+      requiredCommandRefs: ["CMD-DELIVERY-005"]
+      artifactRefs: ["ART-BLOCKER-001"]
+      acceptanceType: acceptance_integration
+    - id: EVD-007
+      text: Pending or blocking intake prevents model transition and delivery closeout.
+      gate: blocker_transition_gate_acceptance
+      oracle: model transition and closeout attempts fail closed while pendingBlockerIntake or unresolved blocking signals exist.
+      requiredCommandRefs: ["CMD-DELIVERY-006"]
+      artifactRefs: ["ART-BLOCKER-002", "ART-GATE-002"]
+      acceptanceType: adversarial_integration
+    - id: EVD-008
+      text: controlled-reconfirmation-router handles hash, scope, architecture, and evidence semantic drift across all models.
+      gate: reconfirmation_router_acceptance
+      oracle: drift cases write blocking reconfirmationRequests and move currentMentalModel to requirement_confirmation or architecture_confirmation.
+      requiredCommandRefs: ["CMD-DELIVERY-007"]
+      artifactRefs: ["ART-RECONFIRM-001"]
+      acceptanceType: adversarial_integration
+    - id: EVD-009
+      text: Architecture confirmation ingest and state check are exposed through main-agent-orchestration actions.
+      gate: architecture_main_agent_action_acceptance
+      oracle: architecture confirmation action updates architectureConfirmationState through controlled event chain and is visible to mental model gate.
+      requiredCommandRefs: ["CMD-DELIVERY-008"]
+      artifactRefs: ["ART-ARCH-001", "ART-EVENT-002"]
+      acceptanceType: acceptance_integration
+    - id: EVD-010
+      text: implementation_readiness verdict blocks when required confirmation, architecture, blocker, reconfirmation, stale evidence, or readiness evidence prerequisites are missing.
+      gate: implementation_readiness_model_acceptance
+      oracle: readiness cases report explicit blocking reasons and do not dispatch when prerequisites are missing or stale.
+      requiredCommandRefs: ["CMD-DELIVERY-009"]
+      artifactRefs: ["ART-READINESS-001"]
+      acceptanceType: adversarial_integration
+    - id: EVD-011
+      text: execution_closure verdict summarizes current attempt execution evidence before closeout.
+      gate: execution_closure_acceptance
+      oracle: packet, traceRows, commandRunRefs, artifactIndex, envelope, rerunLoops, current attempt, and failureRecords determine execution_closure status.
+      requiredCommandRefs: ["CMD-DELIVERY-010"]
+      artifactRefs: ["ART-EXECUTION-001"]
+      acceptanceType: acceptance_integration
+    - id: EVD-012
+      text: audit_review verdict consumes audit, score provenance, RCA, data production, eval/SFT, coach, quality gate, and current hash evidence without allowing read-model reverse control.
+      gate: audit_review_acceptance
+      oracle: dashboard or score green alone cannot create audit_review pass; unresolved audit findings are routed to blocker intake.
+      requiredCommandRefs: ["CMD-DELIVERY-011"]
+      artifactRefs: ["ART-AUDIT-001", "ART-SCORE-001"]
+      acceptanceType: adversarial_integration
+    - id: EVD-013
+      text: delivery_confirmation and record_closed require current closeout, delivery truth, execution closure, audit review, blockers, reruns, reconfirmation, and current attempt evidence to agree.
+      gate: delivery_confirmation_closeout_acceptance
+      oracle: record_closed is written only after delivery_confirmation pass and no open blockers, reruns, or reconfirmation requests remain.
+      requiredCommandRefs: ["CMD-DELIVERY-012"]
+      artifactRefs: ["ART-CLOSEOUT-001", "ART-RECORD-002"]
+      acceptanceType: acceptance_integration
+    - id: EVD-014
+      text: User-visible inspect output explains current model state, blockers, sources, next safe action, and forbidden shortcuts.
+      gate: inspect_user_output_acceptance
+      oracle: inspect output contains active requirement, currentMentalModel, six model summary, blocker category, authoritative source, pending intake, reconfirmation, next action, and forbidden shortcuts.
+      requiredCommandRefs: ["CMD-DELIVERY-013"]
+      artifactRefs: ["ART-INSPECT-002"]
+      acceptanceType: acceptance_e2e
   openQuestions:
     - id: Q-001
       text: 用户尚未为本源文档选择确认页语言；渲染 confirmation HTML 前必须显式选择 zh-CN、en-US 或 bilingual。
