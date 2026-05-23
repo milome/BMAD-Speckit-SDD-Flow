@@ -280,9 +280,10 @@ export function buildReadinessDriftProjection(input: {
       return projectionFromRequirementBaseline(currentBaseline);
     }
   }
-  const scoped = (requirementBaseline?.scopedScoring ?? [])
-    .filter((record) => record.stage === 'implementation_readiness')
-    .at(-1);
+  const scopedCandidates = (requirementBaseline?.scopedScoring ?? []).filter(
+    (record) => record.stage === 'implementation_readiness'
+  );
+  const scoped = scopedCandidates[scopedCandidates.length - 1];
   if (scoped) {
     return projectionFromRequirementScopedScore(scoped);
   }
