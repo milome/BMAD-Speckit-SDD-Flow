@@ -3,8 +3,8 @@
 Date: 2026-05-24
 Status: Draft
 Source request: 将 Main Agent 六心智模型控制面补齐为可确认、可追踪、可验证的需求契约源文档。
-Checkpoint: 6 - artifactAutomationPlan, requiredCommands, suggestedCommands, and closeoutReadinessPreview
-Checkpoint status: artifact plan and command plan drafted; conditional modules and human-readable closeout sections pending
+Checkpoint: 7 - conditional governance/runtime/scoring/current-target/scripts modules
+Checkpoint status: conditional modules drafted; human-readable Mermaid, Reverse Audit Report, Definition of Done, and confirmation render pending
 
 ## 1. 结论
 
@@ -94,11 +94,13 @@ Checkpoint 5 已继续填充 `sequenceViews`、`flowViews`、`edgeCaseViews` 和
 
 Checkpoint 6 已继续填充 `artifactAutomationPlan`、`requiredCommands`、`suggestedCommands` 和 `closeoutReadinessPreview`，并把当前 evidence、traceRows 和 views 中引用的 `ART-*` 与 `CMD-*` 补齐为可执行计划。
 
-Checkpoint 7 必须继续填充 `applicability.*.applies=true` 对应的条件模块，尤其是 governance event registry、controlled ingest writer registry、runtime recovery registry、active requirement resolution、scoring/dashboard/SFT boundary、current-target map、scripts/hooks registry。
+Checkpoint 7 已继续填充 `applicability.*.applies=true` 对应的条件模块，尤其是 governance event registry、controlled ingest writer registry、runtime recovery registry、active requirement resolution、scoring/dashboard/SFT boundary、current-target map、scripts/hooks registry。
+
+Checkpoint 8 必须继续补充 human-readable Mermaid views、evidence overview、E2E acceptance overview、artifact automation plan view、Reverse Audit Report 和 Definition of Done，并为后续确认页渲染做准备。
 
 ## 3. implementationConfirmation Core Draft
 
-This checkpoint now includes the confirmation block shell, identity, rendering placeholders, applicability declarations, drafted `MUST-*`, `NEG-*`, `OUT-*`, and `EVD-*` rows, `FAIL-*`, `EDGE-*`, and `TRACE-*` mappings, ID-bound sequence, flow, edge-case, and boundary views, plus artifact automation and command plans. It deliberately leaves conditional modules, final human-readable Mermaid diagrams, Reverse Audit Report, Definition of Done, and rendered confirmation HTML for later checkpoints.
+This checkpoint now includes the confirmation block shell, identity, rendering placeholders, applicability declarations, drafted `MUST-*`, `NEG-*`, `OUT-*`, and `EVD-*` rows, `FAIL-*`, `EDGE-*`, and `TRACE-*` mappings, ID-bound sequence, flow, edge-case, and boundary views, artifact automation and command plans, plus conditional governance/runtime/scoring/current-target/scripts modules. It deliberately leaves final human-readable Mermaid diagrams, Reverse Audit Report, Definition of Done, and rendered confirmation HTML for later checkpoints.
 
 ```yaml
 implementationConfirmation:
@@ -1388,11 +1390,497 @@ implementationConfirmation:
       - fixture_replay_only
       - checkpoint_commit_only
       - execution_closure_pass_without_delivery_truth
+  governanceEventTypeRegistryPolicy:
+    policyId: GOV-EVENT-POLICY-001
+    appliesTo: ["MUST-002", "MUST-004", "MUST-005", "MUST-006", "MUST-007", "MUST-008", "MUST-009", "MUST-010", "MUST-011", "NEG-003", "NEG-004", "NEG-005", "NEG-006", "NEG-007", "NEG-008"]
+    controlFieldVocabulary:
+      - currentMentalModel
+      - mentalModelTransitions
+      - sixModelVerdicts
+      - failureRecords
+      - rerunLoops
+      - gateChecks
+      - artifactIndex
+      - reconfirmationRequests
+      - architectureConfirmationState
+      - readinessBaselineMetadata
+      - commandRunRefs
+      - requirementClosures
+      - pendingBlockerIntake
+      - blockerIntakeRuns
+    payloadKindContracts:
+      - kind: transition
+        requiredFields: ["previousModel", "nextModel", "reasonCode", "sourceRefs", "recordHashBefore", "recordHashAfter", "writtenBy", "writtenAt"]
+        forbiddenFields: ["dashboardDecision", "scoreDecision", "stdoutDecision"]
+        linkedEvidenceIds: ["EVD-003", "EVD-004"]
+      - kind: blocker
+        requiredFields: ["signalId", "requirementId", "mentalModel", "category", "reasonCode", "severity", "blocking", "sourceRefs", "dedupeKey", "observedAt", "observedBy", "provenanceVerified"]
+        forbiddenFields: ["unverifiedPass", "implicitResolution", "readModelOverride"]
+        linkedEvidenceIds: ["EVD-006", "EVD-007"]
+      - kind: reconfirmation
+        requiredFields: ["requestId", "targetModel", "reasonCode", "blocking", "sourceRefs", "requestedAt", "requestedBy"]
+        forbiddenFields: ["nonBlockingSemanticDrift", "silentRerunOnly"]
+        linkedEvidenceIds: ["EVD-008"]
+      - kind: model_verdict
+        requiredFields: ["model", "status", "blockingReasons", "sourceRefs", "nextRecommendedModel", "nextAction"]
+        forbiddenFields: ["dashboardOnlyPass", "scoreOnlyPass", "smokeOnlyPass"]
+        linkedEvidenceIds: ["EVD-004", "EVD-010", "EVD-011", "EVD-012", "EVD-013"]
+      - kind: terminal_closeout
+        requiredFields: ["deliveryConfirmationVerdict", "deliveryTruthGate", "currentAttemptId", "commandRunRefs", "artifactRefs", "recordHashBefore", "recordHashAfter"]
+        forbiddenFields: ["executionClosureOnlyClose", "staleAttemptClose", "readModelClose"]
+        linkedEvidenceIds: ["EVD-013"]
+    controlWriteModePolicies:
+      - mode: append_only_event_then_reduce
+        allowedFor: ["mentalModelTransitions", "failureRecords", "reconfirmationRequests", "requirementClosures"]
+        beforeAfterHashRequired: true
+        rejectsUnknownFields: true
+      - mode: replace_latest_verdict_with_history
+        allowedFor: ["sixModelVerdicts", "gateChecks", "readinessBaselineMetadata"]
+        beforeAfterHashRequired: true
+        stalePreviousValueMustRemainAuditable: true
+      - mode: enqueue_then_complete
+        allowedFor: ["pendingBlockerIntake", "blockerIntakeRuns", "rerunLoops"]
+        beforeAfterHashRequired: true
+        unresolvedItemsBlockDownstream: true
+    eventSpecificRequirements:
+      - eventType: mental_model_transition_recorded
+        payloadKind: transition
+        writesControlFields: ["currentMentalModel", "mentalModelTransitions"]
+        requiresCurrentModelPass: true
+        failClosedWhen: ["pendingBlockerIntake", "openReconfirmationRequest", "missingSourceRefs", "hashMismatch"]
+      - eventType: controlled_blocker_recorded
+        payloadKind: blocker
+        writesControlFields: ["failureRecords", "rerunLoops", "gateChecks", "pendingBlockerIntake", "blockerIntakeRuns"]
+        requiresCurrentModelPass: false
+        failClosedWhen: ["missingProvenance", "unknownRawSignalWithoutBlockerUnknown", "dedupeKeyMissing"]
+      - eventType: reconfirmation_requested
+        payloadKind: reconfirmation
+        writesControlFields: ["reconfirmationRequests", "currentMentalModel", "mentalModelTransitions"]
+        requiresCurrentModelPass: false
+        failClosedWhen: ["targetModelMissing", "reasonCodeMissing", "blockingFalseForSemanticDrift"]
+      - eventType: architecture_confirmation_recorded
+        payloadKind: model_verdict
+        writesControlFields: ["architectureConfirmationState", "gateChecks", "artifactIndex"]
+        requiresCurrentModelPass: false
+        failClosedWhen: ["staleArchitectureHash", "missingImpactScan", "unregisteredWriter"]
+      - eventType: implementation_readiness_evaluated
+        payloadKind: model_verdict
+        writesControlFields: ["sixModelVerdicts", "gateChecks", "readinessBaselineMetadata"]
+        requiresCurrentModelPass: false
+        failClosedWhen: ["unconfirmedScope", "openBlocker", "openReconfirmation", "staleArchitecture"]
+      - eventType: execution_closure_evaluated
+        payloadKind: model_verdict
+        writesControlFields: ["sixModelVerdicts", "commandRunRefs", "artifactIndex", "failureRecords"]
+        requiresCurrentModelPass: false
+        failClosedWhen: ["missingCurrentAttempt", "staleCommandRun", "traceRowsNotCurrentPass"]
+      - eventType: audit_review_evaluated
+        payloadKind: model_verdict
+        writesControlFields: ["sixModelVerdicts", "gateChecks", "failureRecords"]
+        requiresCurrentModelPass: false
+        failClosedWhen: ["scoreOnlyPass", "dashboardOnlyPass", "unresolvedAuditFinding"]
+      - eventType: delivery_confirmation_evaluated
+        payloadKind: terminal_closeout
+        writesControlFields: ["sixModelVerdicts", "gateChecks", "requirementClosures"]
+        requiresCurrentModelPass: false
+        failClosedWhen: ["missingDeliveryTruth", "openBlocker", "openReconfirmation", "staleAttempt"]
+      - eventType: record_closed
+        payloadKind: terminal_closeout
+        writesControlFields: ["currentMentalModel", "mentalModelTransitions", "requirementClosures"]
+        requiresCurrentModelPass: true
+        failClosedWhen: ["deliveryConfirmationNotPass", "recordHashMismatch", "unregisteredWriter"]
+  governanceEventTypeRegistry:
+    - eventType: mental_model_transition_recorded
+      payloadKind: transition
+      payloadContractRef: payloadKindContracts.transition
+      ownerModel: governance_control_plane
+      writesControlFields: ["currentMentalModel", "mentalModelTransitions"]
+      allowedWriterRefs: ["WRITER-MAIN-AGENT-ORCHESTRATION", "WRITER-REQUIREMENT-RECORD-CONTROL-STORE"]
+      linkedRequirementIds: ["MUST-002", "MUST-003", "NEG-003", "NEG-004"]
+      linkedEvidenceIds: ["EVD-003", "EVD-004"]
+      linkedArtifactIds: ["ART-RECORD-001", "ART-EVENT-001", "ART-GATE-001"]
+    - eventType: controlled_blocker_recorded
+      payloadKind: blocker
+      payloadContractRef: payloadKindContracts.blocker
+      ownerModel: governance_control_plane
+      writesControlFields: ["failureRecords", "rerunLoops", "gateChecks", "pendingBlockerIntake", "blockerIntakeRuns"]
+      allowedWriterRefs: ["WRITER-MAIN-AGENT-ORCHESTRATION", "WRITER-REQUIREMENT-RECORD-CONTROL-STORE"]
+      linkedRequirementIds: ["MUST-004", "MUST-005", "NEG-002", "NEG-003", "NEG-005"]
+      linkedEvidenceIds: ["EVD-005", "EVD-006", "EVD-007"]
+      linkedArtifactIds: ["ART-BLOCKER-001", "ART-BLOCKER-002", "ART-GATE-002"]
+    - eventType: reconfirmation_requested
+      payloadKind: reconfirmation
+      payloadContractRef: payloadKindContracts.reconfirmation
+      ownerModel: requirement_confirmation
+      writesControlFields: ["reconfirmationRequests", "currentMentalModel", "mentalModelTransitions"]
+      allowedWriterRefs: ["WRITER-MAIN-AGENT-ORCHESTRATION", "WRITER-REQUIREMENT-RECORD-CONTROL-STORE"]
+      linkedRequirementIds: ["MUST-006", "NEG-006"]
+      linkedEvidenceIds: ["EVD-008"]
+      linkedArtifactIds: ["ART-RECONFIRM-001"]
+    - eventType: architecture_confirmation_recorded
+      payloadKind: model_verdict
+      payloadContractRef: payloadKindContracts.model_verdict
+      ownerModel: architecture_confirmation
+      writesControlFields: ["architectureConfirmationState", "gateChecks", "artifactIndex"]
+      allowedWriterRefs: ["WRITER-ARCHITECTURE-CONFIRMATION-INGEST", "WRITER-MAIN-AGENT-ORCHESTRATION"]
+      linkedRequirementIds: ["MUST-007", "NEG-007"]
+      linkedEvidenceIds: ["EVD-009"]
+      linkedArtifactIds: ["ART-ARCH-001", "ART-EVENT-002"]
+    - eventType: implementation_readiness_evaluated
+      payloadKind: model_verdict
+      payloadContractRef: payloadKindContracts.model_verdict
+      ownerModel: implementation_readiness
+      writesControlFields: ["sixModelVerdicts", "gateChecks", "readinessBaselineMetadata"]
+      allowedWriterRefs: ["WRITER-MAIN-AGENT-ORCHESTRATION"]
+      linkedRequirementIds: ["MUST-008", "NEG-004"]
+      linkedEvidenceIds: ["EVD-010"]
+      linkedArtifactIds: ["ART-READINESS-001"]
+    - eventType: execution_closure_evaluated
+      payloadKind: model_verdict
+      payloadContractRef: payloadKindContracts.model_verdict
+      ownerModel: execution_closure
+      writesControlFields: ["sixModelVerdicts", "commandRunRefs", "artifactIndex", "failureRecords"]
+      allowedWriterRefs: ["WRITER-MAIN-AGENT-ORCHESTRATION"]
+      linkedRequirementIds: ["MUST-009", "NEG-002", "NEG-008"]
+      linkedEvidenceIds: ["EVD-011"]
+      linkedArtifactIds: ["ART-EXECUTION-001"]
+    - eventType: audit_review_evaluated
+      payloadKind: model_verdict
+      payloadContractRef: payloadKindContracts.model_verdict
+      ownerModel: audit_review
+      writesControlFields: ["sixModelVerdicts", "gateChecks", "failureRecords"]
+      allowedWriterRefs: ["WRITER-MAIN-AGENT-ORCHESTRATION"]
+      linkedRequirementIds: ["MUST-010", "NEG-001"]
+      linkedEvidenceIds: ["EVD-012"]
+      linkedArtifactIds: ["ART-AUDIT-001", "ART-SCORE-001"]
+    - eventType: delivery_confirmation_evaluated
+      payloadKind: terminal_closeout
+      payloadContractRef: payloadKindContracts.terminal_closeout
+      ownerModel: delivery_confirmation
+      writesControlFields: ["sixModelVerdicts", "gateChecks", "requirementClosures"]
+      allowedWriterRefs: ["WRITER-MAIN-AGENT-ORCHESTRATION"]
+      linkedRequirementIds: ["MUST-011", "NEG-004", "NEG-008"]
+      linkedEvidenceIds: ["EVD-013"]
+      linkedArtifactIds: ["ART-CLOSEOUT-001", "ART-RECORD-002"]
+    - eventType: record_closed
+      payloadKind: terminal_closeout
+      payloadContractRef: payloadKindContracts.terminal_closeout
+      ownerModel: delivery_confirmation
+      writesControlFields: ["currentMentalModel", "mentalModelTransitions", "requirementClosures"]
+      allowedWriterRefs: ["WRITER-MAIN-AGENT-ORCHESTRATION", "WRITER-REQUIREMENT-RECORD-CONTROL-STORE"]
+      linkedRequirementIds: ["MUST-011", "NEG-004", "NEG-008"]
+      linkedEvidenceIds: ["EVD-013"]
+      linkedArtifactIds: ["ART-RECORD-002", "ART-EVENT-001"]
+  controlledIngestWriterRegistry:
+    - writerId: WRITER-MAIN-AGENT-ORCHESTRATION
+      scriptPath: scripts/main-agent-orchestration.ts
+      scriptContentHash: 46720C9B74BA6C06E688544FDF9EF916745FB37C57F076B426EC1F1835F5CCA3
+      scriptContentHashStatus: current_repository_hash_before_checkpoint7_target_implementation
+      allowedWriteApis: ["requirement-record-control-store.appendEvent", "requirement-record-control-store.reduceEvent", "requirement-record-control-store.writeControlledPatch"]
+      allowedPaths: ["_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json", "_bmad-output/runtime/requirement-records/<requirement-set-id>/events/*.jsonl", "_bmad-output/runtime/requirement-records/<requirement-set-id>/**"]
+      allowedEventTypes: ["mental_model_transition_recorded", "controlled_blocker_recorded", "reconfirmation_requested", "architecture_confirmation_recorded", "implementation_readiness_evaluated", "execution_closure_evaluated", "audit_review_evaluated", "delivery_confirmation_evaluated", "record_closed"]
+      payloadContractRefs: ["payloadKindContracts.transition", "payloadKindContracts.blocker", "payloadKindContracts.reconfirmation", "payloadKindContracts.model_verdict", "payloadKindContracts.terminal_closeout"]
+      writesControlFields: ["currentMentalModel", "mentalModelTransitions", "sixModelVerdicts", "failureRecords", "rerunLoops", "gateChecks", "artifactIndex", "reconfirmationRequests", "architectureConfirmationState", "readinessBaselineMetadata", "commandRunRefs", "requirementClosures", "pendingBlockerIntake", "blockerIntakeRuns"]
+      receiptPath: _bmad-output/runtime/requirement-records/<requirement-set-id>/receipts/main-agent-orchestration-<run-id>.json
+      beforeAfterHashRequired: true
+      canModifyWriterRegistry: false
+      registryHash: pending_registry_hash_after_checkpoint7_confirmation_render
+      architectureConfirmationHash: pending_architecture_confirmation_hash_until_confirmed
+      failClosedOnUnownedEventType: true
+      linkedArtifactIds: ["ART-RECORD-001", "ART-EVENT-001", "ART-BLOCKER-001", "ART-RECONFIRM-001", "ART-CLOSEOUT-001"]
+    - writerId: WRITER-REQUIREMENT-RECORD-CONTROL-STORE
+      scriptPath: scripts/requirement-record-control-store.ts
+      scriptContentHash: AD9409CF8301428CD19ACA6C393714851E2E688CAAB147C8AAACE46F5FB88559
+      scriptContentHashStatus: current_repository_hash_before_checkpoint7_target_implementation
+      allowedWriteApis: ["appendEvent", "reduceEvent", "writeControlledPatch"]
+      allowedPaths: ["_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json", "_bmad-output/runtime/requirement-records/<requirement-set-id>/events/*.jsonl"]
+      allowedEventTypes: ["mental_model_transition_recorded", "controlled_blocker_recorded", "reconfirmation_requested", "record_closed"]
+      payloadContractRefs: ["payloadKindContracts.transition", "payloadKindContracts.blocker", "payloadKindContracts.reconfirmation", "payloadKindContracts.terminal_closeout"]
+      writesControlFields: ["currentMentalModel", "mentalModelTransitions", "failureRecords", "rerunLoops", "gateChecks", "reconfirmationRequests", "requirementClosures", "pendingBlockerIntake", "blockerIntakeRuns"]
+      receiptPath: _bmad-output/runtime/requirement-records/<requirement-set-id>/receipts/control-store-<run-id>.json
+      beforeAfterHashRequired: true
+      canModifyWriterRegistry: false
+      registryHash: pending_registry_hash_after_checkpoint7_confirmation_render
+      architectureConfirmationHash: pending_architecture_confirmation_hash_until_confirmed
+      failClosedOnUnownedEventType: true
+      linkedArtifactIds: ["ART-RECORD-001", "ART-EVENT-001"]
+    - writerId: WRITER-ARCHITECTURE-CONFIRMATION-INGEST
+      scriptPath: scripts/ingest-architecture-confirmation.ts
+      scriptContentHash: 499859731E04F9F79F4342901DE71C49E1DF977C5E392DF9280524CC435CFEA0
+      scriptContentHashStatus: current_repository_hash_before_checkpoint7_target_implementation
+      allowedWriteApis: ["requirement-record-control-store.appendEvent", "requirement-record-control-store.reduceEvent"]
+      allowedPaths: ["_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json", "_bmad-output/runtime/requirement-records/<requirement-set-id>/events/architecture-confirmation.jsonl", "_bmad-output/runtime/requirement-records/<requirement-set-id>/architecture/**"]
+      allowedEventTypes: ["architecture_confirmation_recorded"]
+      payloadContractRefs: ["payloadKindContracts.model_verdict"]
+      writesControlFields: ["architectureConfirmationState", "gateChecks", "artifactIndex"]
+      receiptPath: _bmad-output/runtime/requirement-records/<requirement-set-id>/receipts/architecture-confirmation-ingest-<run-id>.json
+      beforeAfterHashRequired: true
+      canModifyWriterRegistry: false
+      registryHash: pending_registry_hash_after_checkpoint7_confirmation_render
+      architectureConfirmationHash: pending_architecture_confirmation_hash_until_confirmed
+      failClosedOnUnownedEventType: true
+      linkedArtifactIds: ["ART-ARCH-001", "ART-EVENT-002"]
+  functionalResumeFailureCaseRegistry:
+    - groupId: RESUME-GROUP-001
+      title: Active requirement and record resolution recovery
+      ownerModel: requirement_confirmation
+      linkedEdgeCaseIds: ["EDGE-003", "EDGE-008"]
+      actions: ["inspect", "controlled-blocker-intake", "controlled-reconfirmation-router"]
+      failureCases:
+        - caseId: RESUME-001
+          trigger: Active requirement index is missing, ambiguous, or points to a missing record.
+          expectedRecoveryAction: Stop before reading read models, emit resolver_ambiguous blocker, and require explicit recordId or repaired index.
+          recordEventTypes: ["controlled_blocker_recorded"]
+          linkedEvidenceIds: ["EVD-006", "EVD-014"]
+        - caseId: RESUME-002
+          trigger: RequirementRecord hash differs from the index projection or inspect input.
+          expectedRecoveryAction: Route through reconfirmation or stale blocker and re-read RequirementRecord after repair.
+          recordEventTypes: ["reconfirmation_requested", "controlled_blocker_recorded"]
+          linkedEvidenceIds: ["EVD-008", "EVD-014"]
+    - groupId: RESUME-GROUP-002
+      title: Blocker intake and rerun loop recovery
+      ownerModel: governance_control_plane
+      linkedEdgeCaseIds: ["EDGE-002", "EDGE-003", "EDGE-005"]
+      actions: ["controlled-blocker-intake", "rerun", "remediate", "manual_resolution_required"]
+      failureCases:
+        - caseId: RESUME-003
+          trigger: Raw signal is unknown, missing provenance, duplicated, replayed, or ambiguous.
+          expectedRecoveryAction: Normalize as blocker_unknown, provenance_missing, duplicate_or_replayed_signal, or ambiguous_evidence and block downstream models.
+          recordEventTypes: ["controlled_blocker_recorded"]
+          linkedEvidenceIds: ["EVD-006", "EVD-007"]
+        - caseId: RESUME-004
+          trigger: Rerun completes but current attempt binding or source hash does not match.
+          expectedRecoveryAction: Preserve rerun output as stale evidence and keep transition and closeout blocked.
+          recordEventTypes: ["controlled_blocker_recorded", "execution_closure_evaluated"]
+          linkedEvidenceIds: ["EVD-007", "EVD-011", "EVD-013"]
+    - groupId: RESUME-GROUP-003
+      title: Reconfirmation and semantic drift recovery
+      ownerModel: requirement_confirmation
+      linkedEdgeCaseIds: ["EDGE-001", "EDGE-006"]
+      actions: ["request_requirement_reconfirmation", "request_architecture_reconfirmation", "block_downstream"]
+      failureCases:
+        - caseId: RESUME-005
+          trigger: Source, implementation, architecture, scope, target path, impact scan, or evidence semantic hash drifts.
+          expectedRecoveryAction: Create blocking reconfirmationRequests and roll currentMentalModel back to requirement_confirmation or architecture_confirmation.
+          recordEventTypes: ["reconfirmation_requested", "mental_model_transition_recorded"]
+          linkedEvidenceIds: ["EVD-008"]
+        - caseId: RESUME-006
+          trigger: Later model has pass verdict while an earlier model is blocked, stale, pending, or unconfirmed.
+          expectedRecoveryAction: Keep later verdict as precheck only and block at the current model.
+          recordEventTypes: ["model_transition_blocked", "controlled_blocker_recorded"]
+          linkedEvidenceIds: ["EVD-004", "EVD-013"]
+    - groupId: RESUME-GROUP-004
+      title: Closeout and record close recovery
+      ownerModel: delivery_confirmation
+      linkedEdgeCaseIds: ["EDGE-002", "EDGE-005", "EDGE-007"]
+      actions: ["execution_closure", "audit_review", "delivery_confirmation", "record_close"]
+      failureCases:
+        - caseId: RESUME-007
+          trigger: execution_closure passes but closeout, delivery truth, current attempt evidence, or audit review is missing.
+          expectedRecoveryAction: Keep execution_closure as pre-closeout summary and block delivery_confirmation.
+          recordEventTypes: ["delivery_confirmation_evaluated"]
+          linkedEvidenceIds: ["EVD-011", "EVD-013"]
+        - caseId: RESUME-008
+          trigger: Dashboard, score, report, hook, stdout, HTTP, page render, or mock-only signal conflicts with RequirementRecord.
+          expectedRecoveryAction: Treat as read-model conflict, use RequirementRecord authority, and require current controlled evidence.
+          recordEventTypes: ["audit_review_evaluated", "delivery_confirmation_evaluated"]
+          linkedEvidenceIds: ["EVD-012", "EVD-014"]
+  activeRequirementResolution:
+    resolverId: ACTIVE-REQ-RESOLUTION-001
+    resolverScriptPath: scripts/resolve-active-requirement.ts
+    resolverScriptContentHash: 64598024A491B9235B6A44CC4D04781ABE4A9126A4E71D10B6770ADF24B50504
+    explicitIdsRequiredForAmbiguity: true
+    recordId: REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE
+    requirementSetId: REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE
+    runIdSource: explicit_run_id_or_current_requirement_record_attempt
+    locatorProjectionPath: _bmad-output/runtime/requirement-records/index.json
+    locatorProjectionRole: locator_projection_only
+    controlRecordPath: _bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json
+    requiredReloadChecks:
+      - requirement-record.json exists and matches recordId and requirementSetId.
+      - runtimePolicySnapshotRef exists and its hash matches the current record.
+      - recoveryContextRef exists and its hash matches the current record.
+      - trace checkpoint or commandRunRefs are bound to current attempt id.
+      - bmad workflow projection hash is current or marked stale with blocker.
+    forbiddenFallbacks:
+      - _bmad-output/runtime/context/project.json
+      - _bmad-output/runtime/context/**
+      - latest_file_timestamp
+      - dashboard_selected_record
+      - score_selected_record
+    failClosedWhen: ["indexMissing", "indexAmbiguous", "recordMissing", "recordHashMismatch", "retiredContextSurfaceRead"]
+    linkedRequirementIds: ["MUST-001", "MUST-012", "NEG-004", "NEG-005"]
+    linkedEvidenceIds: ["EVD-002", "EVD-006", "EVD-014"]
+  scoringDashboardSftBoundary:
+    boundaryId: SCORE-DASHBOARD-SFT-001
+    ownerModel: audit_review
+    appliesTo: ["MUST-010", "NEG-001", "OUT-001", "OUT-002"]
+    readModelSurfaces:
+      - surface: RunScoreRecord
+        role: score_provenance_only
+        canAffectControlFlow: false
+        acceptedAsEvidenceOnlyWhen: controlled audit_review consumes it and records sourceRefs.
+      - surface: dashboard_six_model_projection
+        role: display_projection_only
+        canAffectControlFlow: false
+        acceptedAsEvidenceOnlyWhen: values match RequirementRecord hashes and are labeled read-model.
+      - surface: SFT_or_eval_output
+        role: audit_training_or_evaluation_context_only
+        canAffectControlFlow: false
+        acceptedAsEvidenceOnlyWhen: audit_review maps findings to EVD-012 and blocker intake.
+      - surface: report_summary_hook_receipt
+        role: diagnostic_projection_only
+        canAffectControlFlow: false
+        acceptedAsEvidenceOnlyWhen: artifact hash is indexed under current attempt.
+    forbiddenReverseControl:
+      - dashboard_green_advances_currentMentalModel
+      - score_green_marks_audit_review_pass
+      - sft_output_closes_requirement
+      - report_summary_writes_gate_decision
+      - hook_receipt_writes_record_closed
+    requiredLabelsInUserOutput: ["read_model_only", "evidence_only", "cannot_close_requirement"]
+    linkedEvidenceIds: ["EVD-012", "EVD-014"]
+    linkedBoundaryViews: ["BOUNDARY-001"]
+  currentTargetMap:
+    mapId: CURRENT-TARGET-MAP-001
+    ownerModel: governance_control_plane
+    sourceDriven: true
+    rendererHardcodedRowsForbidden: true
+    rows:
+      - rowId: CTM-001
+        topic: inspect authority source
+        currentState: Inspect can infer next action from status, gates, projections, dashboard, closeout, and readiness metadata.
+        targetState: Inspect resolves active RequirementRecord and uses currentMentalModel, blockers, reconfirmation, and current verdict as authority before read models.
+        linkedIds: ["MUST-001", "MUST-012", "NEG-001", "EVD-002", "EVD-014"]
+      - rowId: CTM-002
+        topic: mental model transitions
+        currentState: Six-model state is visible mainly as dashboard/read-model target state or scattered gates.
+        targetState: currentMentalModel and mentalModelTransitions are controlled record fields with before/after hash evidence.
+        linkedIds: ["MUST-002", "MUST-003", "EVD-003", "EVD-004"]
+      - rowId: CTM-003
+        topic: blocker intake
+        currentState: TaskReport, envelope failureRecords, diagnostics, resolver projections, gates, drift, audit, and closeout can remain scattered.
+        targetState: controlled-blocker-intake normalizes all raw signals before authoritative record writes.
+        linkedIds: ["MUST-004", "MUST-005", "NEG-002", "NEG-005", "EVD-006", "EVD-007"]
+      - rowId: CTM-004
+        topic: reconfirmation routing
+        currentState: Requirement and architecture confirmation exist but drift routing is not uniform across every model.
+        targetState: Any model can create blocking reconfirmationRequests and route back to requirement or architecture confirmation.
+        linkedIds: ["MUST-006", "NEG-006", "EVD-008"]
+      - rowId: CTM-005
+        topic: architecture confirmation
+        currentState: Architecture ingest may be executed as an isolated controlled script.
+        targetState: Architecture ingest and state check enter through main-agent orchestration action switch and event chain.
+        linkedIds: ["MUST-007", "NEG-007", "EVD-009"]
+      - rowId: CTM-006
+        topic: execution, audit, and delivery closeout
+        currentState: Execution evidence, audit/scoring, and closeout can be evaluated by separate scripts and projections.
+        targetState: execution_closure, audit_review, and delivery_confirmation are controlled model verdicts, with closeout and delivery truth as terminal proof.
+        linkedIds: ["MUST-009", "MUST-010", "MUST-011", "NEG-008", "EVD-011", "EVD-012", "EVD-013"]
+  scriptsAndHooksRegistry:
+    - id: SCRIPT-001
+      path: scripts/resolve-active-requirement.ts
+      ownerModel: requirement_confirmation
+      role: startup_locator
+      inputArtifacts: ["_bmad-output/runtime/requirement-records/index.json"]
+      outputArtifacts: ["active_requirement_resolution_result"]
+      eventTypes: []
+      fallbackPolicy: retired_context_surface_forbidden
+      controlOrEvidenceRole: resolver_input_only
+      canAffectControlFlow: false
+      linkedEvidenceIds: ["EVD-002", "EVD-014"]
+    - id: SCRIPT-002
+      path: scripts/main-agent-orchestration.ts
+      ownerModel: governance_control_plane
+      role: main_action_switch
+      inputArtifacts: ["ART-RECORD-001", "ART-BLOCKER-001", "ART-RECONFIRM-001", "ART-ARCH-001"]
+      outputArtifacts: ["ART-INSPECT-001", "ART-INSPECT-002", "ART-GATE-001", "ART-CLOSEOUT-001"]
+      eventTypes: ["mental_model_transition_recorded", "controlled_blocker_recorded", "reconfirmation_requested", "architecture_confirmation_recorded", "implementation_readiness_evaluated", "execution_closure_evaluated", "audit_review_evaluated", "delivery_confirmation_evaluated", "record_closed"]
+      fallbackPolicy: fail_closed_on_missing_active_record_or_unowned_event_type
+      controlOrEvidenceRole: registered_control_writer
+      canAffectControlFlow: true
+      linkedEvidenceIds: ["EVD-002", "EVD-004", "EVD-006", "EVD-008", "EVD-013"]
+    - id: SCRIPT-003
+      path: scripts/requirement-record-control-store.ts
+      ownerModel: governance_control_plane
+      role: controlled_record_store
+      inputArtifacts: ["governanceEventTypeRegistryPolicy", "controlledIngestWriterRegistry"]
+      outputArtifacts: ["ART-RECORD-001", "ART-EVENT-001"]
+      eventTypes: ["mental_model_transition_recorded", "controlled_blocker_recorded", "reconfirmation_requested", "record_closed"]
+      fallbackPolicy: reject_unregistered_writer_and_unknown_control_field
+      controlOrEvidenceRole: authoritative_control_write_api
+      canAffectControlFlow: true
+      linkedEvidenceIds: ["EVD-003", "EVD-006"]
+    - id: SCRIPT-004
+      path: scripts/ingest-architecture-confirmation.ts
+      ownerModel: architecture_confirmation
+      role: architecture_confirmation_compat_writer
+      inputArtifacts: ["architecture_confirmation_html_report", "target_paths", "impact_scan"]
+      outputArtifacts: ["ART-ARCH-001", "ART-EVENT-002"]
+      eventTypes: ["architecture_confirmation_recorded"]
+      fallbackPolicy: must_be_called_through_main_agent_orchestration_action_or_registered_writer
+      controlOrEvidenceRole: registered_control_writer
+      canAffectControlFlow: true
+      linkedEvidenceIds: ["EVD-009"]
+    - id: SCRIPT-005
+      path: scripts/main-agent-implementation-readiness-gate.ts
+      ownerModel: implementation_readiness
+      role: readiness_model_gate
+      inputArtifacts: ["ART-RECORD-001", "ART-ARCH-001", "ART-BLOCKER-002", "ART-RECONFIRM-001"]
+      outputArtifacts: ["ART-READINESS-001"]
+      eventTypes: ["implementation_readiness_evaluated"]
+      fallbackPolicy: fail_closed_on_unconfirmed_scope_or_stale_architecture
+      controlOrEvidenceRole: controlled_gate_receipt
+      canAffectControlFlow: true
+      linkedEvidenceIds: ["EVD-010"]
+    - id: SCRIPT-006
+      path: scripts/subagent-evidence-envelope.ts
+      ownerModel: execution_closure
+      role: candidate_evidence_writer
+      inputArtifacts: ["subagent_task_result"]
+      outputArtifacts: ["ART-SUBAGENT-001"]
+      eventTypes: []
+      fallbackPolicy: cannot_write_top_level_control_fields
+      controlOrEvidenceRole: candidate_evidence_only
+      canAffectControlFlow: false
+      linkedEvidenceIds: ["EVD-005"]
+    - id: SCRIPT-007
+      path: scripts/main-agent-delivery-closeout-gate.ts
+      ownerModel: delivery_confirmation
+      role: delivery_closeout_gate
+      inputArtifacts: ["ART-EXECUTION-001", "ART-AUDIT-001", "ART-BLOCKER-002", "ART-RECONFIRM-001"]
+      outputArtifacts: ["ART-CLOSEOUT-001"]
+      eventTypes: ["delivery_confirmation_evaluated"]
+      fallbackPolicy: fail_closed_on_stale_or_missing_current_attempt_evidence
+      controlOrEvidenceRole: terminal_delivery_gate_receipt
+      canAffectControlFlow: true
+      linkedEvidenceIds: ["EVD-013"]
+    - id: SCRIPT-008
+      path: packages/scoring/dashboard/six-model-projection.ts
+      ownerModel: audit_review
+      role: dashboard_read_model_projection
+      inputArtifacts: ["ART-RECORD-001", "ART-SCORE-001"]
+      outputArtifacts: ["dashboard_six_model_projection"]
+      eventTypes: []
+      fallbackPolicy: canAffectControlFlow_false
+      controlOrEvidenceRole: read_model_only
+      canAffectControlFlow: false
+      linkedEvidenceIds: ["EVD-012", "EVD-014"]
+    - id: HOOK-001
+      path: _bmad/**/hooks/*
+      ownerModel: governance_control_plane
+      role: host_hook_or_receipt_surface
+      inputArtifacts: ["host_runtime_event"]
+      outputArtifacts: ["hook_receipt", "diagnostic_summary"]
+      eventTypes: []
+      fallbackPolicy: hooks_may_emit_evidence_or_diagnostics_but_must_not_write_control_fields
+      controlOrEvidenceRole: evidence_or_diagnostic_only
+      canAffectControlFlow: false
+      linkedEvidenceIds: ["EVD-012", "EVD-014"]
   requiredContractChecks: []
   reconfirmationRequest: null
 ```
 
-Checkpoint 7 must populate the conditional modules required by the `applicability.*.applies=true` declarations. Until those modules, the human-readable closeout sections, Reverse Audit Report, Definition of Done, confirmation language, rendered HTML, and controlled confirmation ingest exist, this source document is not confirmation-ready and must not be used as implementation-ready scope.
+Checkpoint 8 must populate the human-readable Mermaid views, evidence overview, E2E acceptance overview, artifact automation plan view, Reverse Audit Report, and Definition of Done. Until those sections, confirmation language, rendered HTML, and controlled confirmation ingest exist, this source document is not confirmation-ready and must not be used as implementation-ready scope.
 
 ## 4. 背景与当前遗漏
 
