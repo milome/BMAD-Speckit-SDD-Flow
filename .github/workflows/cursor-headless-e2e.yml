@@ -7,32 +7,49 @@ on:
 
 jobs:
   cursor-headless-e2e:
-    if: ${{ secrets.CURSOR_API_KEY != '' }}
     runs-on: ubuntu-latest
+    env:
+      CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
     steps:
+      - name: Check Cursor secret availability
+        id: cursor-secret
+        shell: bash
+        run: |
+          if [ -z "$CURSOR_API_KEY" ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "CURSOR_API_KEY is not configured; skipping Cursor headless E2E."
+          else
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.cursor-secret.outputs.available == 'true'
 
       - name: Setup Node.js
+        if: steps.cursor-secret.outputs.available == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
+        if: steps.cursor-secret.outputs.available == 'true'
         run: npm ci
 
       - name: Install Cursor CLI
+        if: steps.cursor-secret.outputs.available == 'true'
         run: |
           curl https://cursor.com/install -fsS | bash
           echo "$HOME/.cursor/bin" >> $GITHUB_PATH
 
       - name: Verify Cursor CLI
+        if: steps.cursor-secret.outputs.available == 'true'
         run: |
           cursor --version
           cursor-agent --version || true
 
       - name: Run Cursor headless governance E2E
+        if: steps.cursor-secret.outputs.available == 'true'
         env:
-          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           BMAD_RUN_CURSOR_HEADLESS_E2E: '1'
         run: npm run test:governance-cursor-headless-e2e
