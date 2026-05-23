@@ -3,8 +3,8 @@
 Date: 2026-05-24
 Status: Draft
 Source request: 将 Main Agent 六心智模型控制面补齐为可确认、可追踪、可验证的需求契约源文档。
-Checkpoint: 3 - must, notDone, mustNot, and evidence arrays
-Checkpoint status: requirement ID rows drafted; failure paths, edge cases, trace rows, views, and commands pending
+Checkpoint: 4 - failurePaths, edgeCases, and traceRows
+Checkpoint status: failure paths, edge cases, and trace rows drafted; views, artifact plan, and commands pending
 
 ## 1. 结论
 
@@ -88,11 +88,13 @@ Checkpoint 2 已从本边界继续，新增 `implementationConfirmation` core fi
 
 Checkpoint 3 已继续填充 `must`、`notDone`、`mustNot` 和 `evidence` 数组。Checkpoint 3 未渲染 HTML，未设置 `status: user_confirmed`，也未把当前 ID 草稿解释为可确认范围。
 
-Checkpoint 4 必须继续填充 `failurePaths`、`edgeCases` 和 `traceRows` 数组，并把本 checkpoint 中引用的 `TRACE-*`、`FAIL-*` 和 `EDGE-*` 补齐为可审计映射。
+Checkpoint 4 已继续填充 `failurePaths`、`edgeCases` 和 `traceRows` 数组，并把 Checkpoint 3 中引用的 `TRACE-*` 与 `FAIL-*` 补齐为可审计映射。
+
+Checkpoint 5 必须继续填充 `sequenceViews`、`flowViews`、`edgeCaseViews` 和 `boundaryViews`，并把本 checkpoint 中引用的 `SEQ-*`、`FLOW-*`、`EDGEVIEW-*` 和 `BOUNDARY-*` 补齐为可渲染视图。
 
 ## 3. implementationConfirmation Core Draft
 
-This checkpoint now includes the confirmation block shell, identity, rendering placeholders, applicability declarations, and drafted `MUST-*`, `NEG-*`, `OUT-*`, and `EVD-*` rows. It deliberately leaves `FAIL-*`, `EDGE-*`, `TRACE-*`, `CMD-*`, view rows, and artifact automation rows for later checkpoints.
+This checkpoint now includes the confirmation block shell, identity, rendering placeholders, applicability declarations, drafted `MUST-*`, `NEG-*`, `OUT-*`, and `EVD-*` rows, plus `FAIL-*`, `EDGE-*`, and `TRACE-*` mappings. It deliberately leaves `CMD-*`, view rows, and artifact automation rows for later checkpoints.
 
 ```yaml
 implementationConfirmation:
@@ -442,9 +444,315 @@ implementationConfirmation:
       text: 用户尚未为本源文档选择确认页语言；渲染 confirmation HTML 前必须显式选择 zh-CN、en-US 或 bilingual。
       blocksImplementation: false
       requiredBefore: render_confirmation
-  failurePaths: []
-  edgeCases: []
-  traceRows: []
+  failurePaths:
+    - id: FAIL-001
+      title: Read model attempts to control workflow
+      trigger: Dashboard, score, SFT/report/summary/hook receipt, or dashboard six-model projection reports green/pass.
+      expectedBehavior: Treat the signal as evidence or read model only; require controlled RequirementRecord decision before progression.
+      forbiddenBehavior: Do not write currentMentalModel, gate decision, closeout, requirementClosures, or record_closed from read models.
+      blocksCompletionWhenViolated: true
+      linkedNegIds: ["NEG-001"]
+      linkedEvidenceIds: ["EVD-004", "EVD-012", "EVD-013"]
+      requiredAssertions:
+        - dashboard and score projections expose canAffectControlFlow=false
+        - delivery confirmation remains blocked without controlled record evidence
+    - id: FAIL-002
+      title: Candidate or smoke-only evidence tries to close work
+      trigger: TaskReport done, envelope success, stdout PASS, HTTP 200, page render, exit code only, mock call, or fixture replay appears.
+      expectedBehavior: Preserve the signal as candidate evidence and require controlled intake, current attempt binding, and semantic assertions.
+      forbiddenBehavior: Do not advance currentMentalModel or closeout directly from smoke-only or candidate evidence.
+      blocksCompletionWhenViolated: true
+      linkedNegIds: ["NEG-002"]
+      linkedEvidenceIds: ["EVD-005", "EVD-011", "EVD-013"]
+      requiredAssertions:
+        - candidate evidence alone leaves currentMentalModel unchanged
+        - current attempt evidence with independent oracle is required for closure
+    - id: FAIL-003
+      title: Unauthorized control writer
+      trigger: Subagent, dashboard, score projection, report, hook, or unregistered script attempts top-level control writes.
+      expectedBehavior: Reject the write, record blocker or gate failure, and keep record hash unchanged except for controlled rejection evidence.
+      forbiddenBehavior: Do not allow unauthorized writes to authoritative blockers, currentMentalModel, sixModelVerdicts, closures, or terminal decisions.
+      blocksCompletionWhenViolated: true
+      linkedNegIds: ["NEG-003"]
+      linkedEvidenceIds: ["EVD-003", "EVD-006"]
+      requiredAssertions:
+        - writer registry or control-store enforcement rejects unregistered writers
+        - before/after hash proves protected fields were not changed
+    - id: FAIL-004
+      title: Downstream progression with unresolved blockers
+      trigger: Open failureRecords, pending blocker intake, open reconfirmation, stale or ambiguous evidence, or unresolved rerun loop exists.
+      expectedBehavior: Fail closed before dispatch, readiness pass, execution closure pass, audit pass, delivery confirmation pass, or record close.
+      forbiddenBehavior: Do not proceed downstream while unresolved blocking state exists.
+      blocksCompletionWhenViolated: true
+      linkedNegIds: ["NEG-004"]
+      linkedEvidenceIds: ["EVD-007", "EVD-008", "EVD-013"]
+      requiredAssertions:
+        - pendingBlockerIntake blocks model transition
+        - open reconfirmationRequests block delivery confirmation
+    - id: FAIL-005
+      title: Unknown or unproven signal ignored
+      trigger: Unknown failure, missing provenance, unrecognized raw signal, or resolver ambiguity is observed.
+      expectedBehavior: Normalize into blocker_unknown, provenance_missing, or resolver_ambiguous and fail closed.
+      forbiddenBehavior: Do not drop, downgrade, or treat unknown signals as non-blocking.
+      blocksCompletionWhenViolated: true
+      linkedNegIds: ["NEG-005"]
+      linkedEvidenceIds: ["EVD-006"]
+      requiredAssertions:
+        - unknown raw signals create blocking NormalizedBlockerSignal
+        - resolver ambiguity produces actionable manual resolution output
+    - id: FAIL-006
+      title: Semantic drift handled as rerun only
+      trigger: Source hash, implementation hash, architecture hash, scope, or evidence semantic drift is detected.
+      expectedBehavior: Route through controlled-reconfirmation-router and set currentMentalModel to requirement_confirmation or architecture_confirmation.
+      forbiddenBehavior: Do not silently rerun, remediate, dispatch, or closeout without reconfirmation.
+      blocksCompletionWhenViolated: true
+      linkedNegIds: ["NEG-006"]
+      linkedEvidenceIds: ["EVD-008"]
+      requiredAssertions:
+        - drift writes blocking reconfirmationRequests
+        - downstream models are blocked until reconfirmation closes
+    - id: FAIL-007
+      title: Architecture confirmation remains outside main-agent switch
+      trigger: Architecture confirmation is ingested or checked by isolated scripts without main-agent action visibility.
+      expectedBehavior: Expose architecture-confirmation-ingest and architecture-state-check through main-agent-orchestration and feed mental model gate.
+      forbiddenBehavior: Do not allow isolated architecture state to bypass current model progression or stale blocking.
+      blocksCompletionWhenViolated: true
+      linkedNegIds: ["NEG-007"]
+      linkedEvidenceIds: ["EVD-009"]
+      requiredAssertions:
+        - main-agent action writes or observes the controlled architecture event chain
+        - stale architecture state blocks readiness, execution, and closeout
+    - id: FAIL-008
+      title: Execution closure replaces delivery closeout
+      trigger: execution_closure verdict is pass while delivery closeout gate or delivery truth gate is missing, stale, or blocked.
+      expectedBehavior: Show execution_closure pass as pre-closeout summary only and keep delivery_confirmation blocked.
+      forbiddenBehavior: Do not mark delivery complete or record_closed from execution_closure alone.
+      blocksCompletionWhenViolated: true
+      linkedNegIds: ["NEG-008"]
+      linkedEvidenceIds: ["EVD-011", "EVD-013"]
+      requiredAssertions:
+        - delivery_confirmation requires closeout and delivery truth gate
+        - record_closed is not written from execution_closure pass alone
+    - id: FAIL-009
+      title: Sidecar contract becomes authoritative
+      trigger: A separate contract, confirmation sidecar, or conversation-only prompt is treated as source of truth.
+      expectedBehavior: Reject sidecar authority and keep semantics in this source document and inline implementationConfirmation block.
+      forbiddenBehavior: Do not implement or confirm scope from a sidecar document that is not this source document.
+      blocksCompletionWhenViolated: true
+      linkedNegIds: ["NEG-009"]
+      linkedEvidenceIds: ["EVD-001"]
+      requiredAssertions:
+        - no separate authoritative contract file is used for implementation readiness
+        - prompts and generated views reference IDs from this source document
+  edgeCases:
+    - id: EDGE-001
+      category: stale_hash
+      condition: Current source, implementation, architecture, target path, impact scan, or evidence hash differs from the recorded current value.
+      expectedBehavior: Route to reconfirmation or stale blocker according to the affected model.
+      forbiddenBehavior: Do not proceed as a normal rerun without reconfirmation.
+      linkedFailurePathIds: ["FAIL-006"]
+      linkedEvidenceIds: ["EVD-008"]
+      blocksImplementation: false
+    - id: EDGE-002
+      category: missing_evidence
+      condition: Required commandRunRefs, trace row proof, artifact hash, audit report, or delivery truth evidence is absent.
+      expectedBehavior: Keep the relevant model verdict blocked and expose missing evidence in inspect.
+      forbiddenBehavior: Do not infer pass from nearby read models or successful commands.
+      linkedFailurePathIds: ["FAIL-002", "FAIL-004", "FAIL-008"]
+      linkedEvidenceIds: ["EVD-011", "EVD-013", "EVD-014"]
+      blocksImplementation: false
+    - id: EDGE-003
+      category: ambiguous_signal
+      condition: Resolver, inspect, gate, or evidence intake reports multiple candidate records, ambiguous attempt, or ambiguous sourceRefs.
+      expectedBehavior: Normalize resolver_ambiguous or ambiguous_evidence and require manual resolution or explicit requirement id.
+      forbiddenBehavior: Do not guess from filesystem order, latest timestamp alone, dashboard output, or task report.
+      linkedFailurePathIds: ["FAIL-005"]
+      linkedEvidenceIds: ["EVD-006", "EVD-014"]
+      blocksImplementation: false
+    - id: EDGE-004
+      category: unauthorized_writer
+      condition: A subagent, dashboard, score process, report renderer, hook, or unregistered script attempts a protected control write.
+      expectedBehavior: Reject the write and keep protected control fields unchanged.
+      forbiddenBehavior: Do not accept the write because the event type name is known.
+      linkedFailurePathIds: ["FAIL-003"]
+      linkedEvidenceIds: ["EVD-003", "EVD-006"]
+      blocksImplementation: false
+    - id: EDGE-005
+      category: duplicate_or_replayed_signal
+      condition: The same raw signal, event, TaskReport, envelope, command result, or artifact is replayed across attempts.
+      expectedBehavior: Deduplicate by stable dedupeKey and require current attempt binding for closure.
+      forbiddenBehavior: Do not reuse stale attempt evidence as current pass evidence.
+      linkedFailurePathIds: ["FAIL-002", "FAIL-004"]
+      linkedEvidenceIds: ["EVD-006", "EVD-011", "EVD-013"]
+      blocksImplementation: false
+    - id: EDGE-006
+      category: partial_model_chain
+      condition: A later model appears pass while an earlier current model is pending, blocked, stale, or unconfirmed.
+      expectedBehavior: Preserve later result as precheck only and block progression at the current model.
+      forbiddenBehavior: Do not skip requirement_confirmation, architecture_confirmation, implementation_readiness, execution_closure, or audit_review.
+      linkedFailurePathIds: ["FAIL-004", "FAIL-008"]
+      linkedEvidenceIds: ["EVD-004", "EVD-013"]
+      blocksImplementation: false
+    - id: EDGE-007
+      category: read_model_conflict
+      condition: Dashboard, score, SFT, report, summary, hook receipt, or projection disagrees with RequirementRecord control state.
+      expectedBehavior: Use RequirementRecord as authority and surface the read-model conflict as diagnostic evidence.
+      forbiddenBehavior: Do not let the read model override controlled record state.
+      linkedFailurePathIds: ["FAIL-001"]
+      linkedEvidenceIds: ["EVD-012", "EVD-014"]
+      blocksImplementation: false
+    - id: EDGE-008
+      category: interrupted_checkpoint_authoring
+      condition: Contract authoring stops after a checkpoint with partial arrays, missing views, or missing command rows.
+      expectedBehavior: Resume from the last checkpoint commit and keep status draft.
+      forbiddenBehavior: Do not treat checkpoint commit as implementation readiness or confirmed scope.
+      linkedFailurePathIds: ["FAIL-009"]
+      linkedEvidenceIds: ["EVD-001"]
+      blocksImplementation: false
+  traceRows:
+    - id: TRACE-001
+      covers: ["MUST-001"]
+      taskRefs: ["TASK-001"]
+      evidenceRefs: ["EVD-001", "EVD-002"]
+      contractValidationCommandRefs: ["CMD-CONTRACT-001"]
+      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-001"]
+      sequenceViewRefs: ["SEQ-001"]
+      boundaryViewRefs: ["BOUNDARY-001"]
+      artifactRefs: ["ART-SOURCE-001", "ART-INSPECT-001"]
+      status: PENDING
+      blockingReason: commands_and_views_pending
+    - id: TRACE-002
+      covers: ["MUST-002", "NEG-003"]
+      taskRefs: ["TASK-002"]
+      evidenceRefs: ["EVD-003", "EVD-006"]
+      contractValidationCommandRefs: ["CMD-CONTRACT-001"]
+      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-002", "CMD-DELIVERY-005"]
+      sequenceViewRefs: ["SEQ-002", "SEQ-003"]
+      boundaryViewRefs: ["BOUNDARY-003"]
+      artifactRefs: ["ART-RECORD-001", "ART-EVENT-001", "ART-BLOCKER-001"]
+      status: PENDING
+      blockingReason: commands_and_writer_registry_pending
+    - id: TRACE-003
+      covers: ["MUST-003", "NEG-001"]
+      taskRefs: ["TASK-003"]
+      evidenceRefs: ["EVD-004", "EVD-012"]
+      contractValidationCommandRefs: ["CMD-CONTRACT-001"]
+      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-003", "CMD-DELIVERY-011"]
+      sequenceViewRefs: ["SEQ-002", "SEQ-008"]
+      boundaryViewRefs: ["BOUNDARY-001"]
+      artifactRefs: ["ART-GATE-001", "ART-AUDIT-001", "ART-SCORE-001"]
+      status: PENDING
+      blockingReason: commands_and_read_model_boundary_pending
+    - id: TRACE-004
+      covers: ["MUST-004", "NEG-002", "NEG-005"]
+      taskRefs: ["TASK-004"]
+      evidenceRefs: ["EVD-005", "EVD-006"]
+      contractValidationCommandRefs: ["CMD-CONTRACT-001"]
+      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-004", "CMD-DELIVERY-005"]
+      sequenceViewRefs: ["SEQ-003"]
+      boundaryViewRefs: ["BOUNDARY-003"]
+      artifactRefs: ["ART-SUBAGENT-001", "ART-BLOCKER-001"]
+      status: PENDING
+      blockingReason: intake_coverage_commands_pending
+    - id: TRACE-005
+      covers: ["MUST-005", "NEG-004", "NEG-005"]
+      taskRefs: ["TASK-005"]
+      evidenceRefs: ["EVD-006", "EVD-007", "EVD-013"]
+      contractValidationCommandRefs: ["CMD-CONTRACT-001"]
+      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-005", "CMD-DELIVERY-006", "CMD-DELIVERY-012"]
+      sequenceViewRefs: ["SEQ-003", "SEQ-009"]
+      boundaryViewRefs: ["BOUNDARY-003"]
+      artifactRefs: ["ART-BLOCKER-001", "ART-BLOCKER-002", "ART-GATE-002"]
+      status: PENDING
+      blockingReason: transition_blocking_tests_pending
+    - id: TRACE-006
+      covers: ["MUST-006", "NEG-006"]
+      taskRefs: ["TASK-006"]
+      evidenceRefs: ["EVD-008"]
+      contractValidationCommandRefs: ["CMD-CONTRACT-001"]
+      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-007"]
+      sequenceViewRefs: ["SEQ-004"]
+      boundaryViewRefs: ["BOUNDARY-004"]
+      artifactRefs: ["ART-RECONFIRM-001"]
+      status: PENDING
+      blockingReason: reconfirmation_router_tests_pending
+    - id: TRACE-007
+      covers: ["MUST-007", "NEG-007"]
+      taskRefs: ["TASK-007"]
+      evidenceRefs: ["EVD-009"]
+      contractValidationCommandRefs: ["CMD-CONTRACT-001"]
+      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-008"]
+      sequenceViewRefs: ["SEQ-005"]
+      boundaryViewRefs: ["BOUNDARY-003"]
+      artifactRefs: ["ART-ARCH-001", "ART-EVENT-002"]
+      status: PENDING
+      blockingReason: architecture_action_tests_pending
+    - id: TRACE-008
+      covers: ["MUST-008", "NEG-004"]
+      taskRefs: ["TASK-008"]
+      evidenceRefs: ["EVD-010", "EVD-007", "EVD-008"]
+      contractValidationCommandRefs: ["CMD-CONTRACT-001"]
+      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-009"]
+      sequenceViewRefs: ["SEQ-006"]
+      boundaryViewRefs: ["BOUNDARY-003"]
+      artifactRefs: ["ART-READINESS-001", "ART-GATE-002"]
+      status: PENDING
+      blockingReason: readiness_model_tests_pending
+    - id: TRACE-009
+      covers: ["MUST-009", "NEG-002", "NEG-008"]
+      taskRefs: ["TASK-009"]
+      evidenceRefs: ["EVD-011", "EVD-013"]
+      contractValidationCommandRefs: ["CMD-CONTRACT-001"]
+      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-010", "CMD-DELIVERY-012"]
+      sequenceViewRefs: ["SEQ-007", "SEQ-009"]
+      boundaryViewRefs: ["BOUNDARY-002"]
+      artifactRefs: ["ART-EXECUTION-001", "ART-CLOSEOUT-001"]
+      status: PENDING
+      blockingReason: execution_closure_tests_pending
+    - id: TRACE-010
+      covers: ["MUST-010", "NEG-001"]
+      taskRefs: ["TASK-010"]
+      evidenceRefs: ["EVD-012"]
+      contractValidationCommandRefs: ["CMD-CONTRACT-001"]
+      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-011"]
+      sequenceViewRefs: ["SEQ-008"]
+      boundaryViewRefs: ["BOUNDARY-001"]
+      artifactRefs: ["ART-AUDIT-001", "ART-SCORE-001"]
+      status: PENDING
+      blockingReason: audit_review_tests_pending
+    - id: TRACE-011
+      covers: ["MUST-011", "NEG-004", "NEG-008"]
+      taskRefs: ["TASK-011"]
+      evidenceRefs: ["EVD-013", "EVD-007", "EVD-011"]
+      contractValidationCommandRefs: ["CMD-CONTRACT-001"]
+      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-012"]
+      sequenceViewRefs: ["SEQ-009"]
+      boundaryViewRefs: ["BOUNDARY-002"]
+      artifactRefs: ["ART-CLOSEOUT-001", "ART-RECORD-002"]
+      status: PENDING
+      blockingReason: delivery_confirmation_tests_pending
+    - id: TRACE-012
+      covers: ["MUST-012"]
+      taskRefs: ["TASK-012"]
+      evidenceRefs: ["EVD-014"]
+      contractValidationCommandRefs: ["CMD-CONTRACT-001"]
+      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-013"]
+      sequenceViewRefs: ["SEQ-010"]
+      boundaryViewRefs: ["BOUNDARY-001", "BOUNDARY-004"]
+      artifactRefs: ["ART-INSPECT-002"]
+      status: PENDING
+      blockingReason: inspect_output_tests_pending
+    - id: TRACE-013
+      covers: ["NEG-009"]
+      taskRefs: ["TASK-013"]
+      evidenceRefs: ["EVD-001"]
+      contractValidationCommandRefs: ["CMD-CONTRACT-001"]
+      deliveryEvidenceCommandRefs: []
+      sequenceViewRefs: []
+      boundaryViewRefs: ["BOUNDARY-004"]
+      artifactRefs: ["ART-SOURCE-001"]
+      status: PENDING
+      blockingReason: source_boundary_review_pending
   requirementBoundary:
     business:
       description: 待 Checkpoint 5 绑定业务范围 ID；当前业务范围见第 2.3 节。
