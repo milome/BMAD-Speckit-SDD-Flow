@@ -37,11 +37,16 @@ Generated prompts must keep runtime closure in the controlled requirement record
 7. Require latest `confirmationHistory[]` hashes and top-level requirement record hashes to match the current source document.
 8. Require no `openQuestions` item with `blocksImplementation: true`.
 9. Validate that every `traceRows[].covers` entry references existing `must` or `notDone` IDs.
-10. Validate that every `traceRows[].evidenceRefs` entry references existing `evidence` IDs.
-11. Validate that trace rows do not introduce new requirement semantics.
-12. Preserve `traceRows` order exactly.
-13. Generate implementation prompt using only confirmation IDs, trace IDs, evidence IDs, task references, and controlled runtime closure instructions.
-14. If validation fails, output a BLOCK response, not an implementation prompt.
+10. Reject every `OUT-*` / `mustNot` ID in `traceRows[].covers`; boundary IDs belong in `boundaryViewRefs[]` or `boundaryRefs[]` that point to `boundaryViews[].covers`.
+11. Allow a boundary-only trace row to render `covers: (none)` when it has `boundaryViewRefs[]` / `boundaryRefs[]`, `evidenceRefs[]`, `taskRefs[]`, and command refs; PASS still requires evidence for the referenced evidence IDs and governed boundary proof.
+12. Validate that every `traceRows[].evidenceRefs` entry references existing `evidence` IDs.
+13. Validate that trace rows do not introduce new requirement semantics.
+14. Preserve `traceRows` order exactly.
+15. Build the required command registry from `requiredCommands[]`.
+16. Require every `traceRows[].contractValidationCommandRefs[]`, `traceRows[].deliveryEvidenceCommandRefs[]`, and `closeoutReadinessPreview.requiredCommands[]` entry to resolve to `requiredCommands[]`.
+17. Treat `suggestedCommands[]` as smoke/diagnostic only; never let suggested commands satisfy trace closure or final acceptance.
+18. Generate implementation prompt using only confirmation IDs, trace IDs, evidence IDs, task references, command IDs, and controlled runtime closure instructions.
+19. If validation fails, output a BLOCK response, not an implementation prompt.
 
 ## Script Usage
 
@@ -106,12 +111,27 @@ implementationConfirmation.openQuestions contains blocksImplementation=true.
 
 ```text
 BLOCK: TRACE_REFERENCE_INVALID
-traceRows reference missing must/notDone/evidence IDs.
+traceRows reference missing must/notDone/evidence IDs, or put mustNot boundary IDs in traceRows[].covers.
 ```
 
 ```text
 BLOCK: TRACE_RESTATES_REQUIREMENTS
 traceRows contain new requirement semantics instead of references only.
+```
+
+```text
+BLOCK: COMMAND_REFERENCE_INVALID
+implementationConfirmation command references are missing from requiredCommands[].
+```
+
+```text
+BLOCK: COMMAND_DEFINITION_INVALID
+implementationConfirmation requiredCommands[] entries must include runnable command text.
+```
+
+```text
+BLOCK: FINAL_GATES_REQUIRED
+Final gate commands must be derived from implementationConfirmation.requiredCommands, closeoutReadinessPreview.requiredCommands, evidence, or --final-gate before PASS.
 ```
 
 ```text
@@ -139,10 +159,31 @@ confirmed source traceRows are contract projection only.
 Runtime closure must be recorded in the requirement-record/control store through executionIterations, requirementClosures, gateChecks, contractChecks, deliveryEvidence.requiredCommands, artifactIndex, or equivalent governed evidence fields.
 The executor must not rewrite confirmed source traceRows.status or source evidence fields to represent runtime PASS/MISSING_EVIDENCE.
 
+Trace order:
+<TRACE-001> -> <TRACE-002>
+
 范围与意图锁定:
 1. 只能实施 implementationConfirmation 中的 must/notDone/evidence/traceRows IDs。
 2. 禁止缩减范围、替换范围、改变原始需求、把原始需求解释成更小交付。
 3. 禁止 MVP downgrade、stub、mock-only、happy-path-only、representative-only coverage、later-batch coverage、seed-only coverage 或局部样例冒充完整交付。
+
+执行切片:
+TRACE-001
+covers: MUST-001, NEG-001
+evidenceRefs: EVD-001, EVD-002
+taskRefs: TASK-001
+contract gates: CMD-CONTRACT-001
+delivery gates: CMD-DELIVERY-001, CMD-DELIVERY-002
+
+Required commands:
+CMD-CONTRACT-001:
+node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source <source-document.md> --out <confirmation.html> --language zh-CN --record-id <recordId> --entry-flow <entryFlow> --mode confirmation
+
+CMD-DELIVERY-001:
+npm run test:e2e -- upload
+
+Suggested smoke only, not acceptance by itself:
+npm run lint
 
 强制执行规则:
 1. 以 traceRows 为唯一主执行切片，按 <TRACE order> 顺序推进。
@@ -153,7 +194,7 @@ The executor must not rewrite confirmed source traceRows.status or source eviden
 6. 没有证据时 runtime closure 必须保持 open/PENDING 或记录 MISSING_EVIDENCE；严禁虚构验证结果。
 7. 如果需要改变 must/notDone/mustNot/evidence/traceRows 语义，必须把源文档状态改为 reconfirm_required 并停止。
 8. 每个 TRACE 切片结束必须运行对应 gate。
-9. 最终必须运行并记录 final gates。
+9. 最终必须运行并记录由 closeoutReadinessPreview.requiredCommands 或 requiredCommands 推导出的 final gates。
 10. 全部完成后输出 Completion Evidence Packet，至少包含关闭 IDs、开放 IDs、命令结果、E2E 证据、审计证据、残留风险和 scope changes。
 
 现在开始执行，不要等待中途确认，直到最终验收闭环或触发真实阻塞条件。
@@ -192,6 +233,7 @@ Before returning a prompt, verify all items:
 - No blocking open questions remain.
 - TRACE order is explicit and comes from `implementationConfirmation.traceRows`.
 - Every trace row references existing confirmation IDs.
+- Every trace row command ref resolves to `requiredCommands[]`; `suggestedCommands[]` cannot close acceptance.
 - Scope, original intent, business semantics, user-visible outcomes, acceptance standards, and non-goal boundaries cannot be reduced or rewritten.
 - The prompt rejects MVP downgrade, stub, mock-only, happy-path-only, representative-only, later-batch, seed-only, and scope reduction.
 - PASS requires evidence for covered `must`, `notDone`, and `evidence` IDs.

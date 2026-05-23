@@ -3,7 +3,7 @@
 const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
-const yaml = require('js-yaml');
+const yaml = require('./load-js-yaml');
 
 const INGEST = path.join(__dirname, 'ingest-confirmation-event.js');
 

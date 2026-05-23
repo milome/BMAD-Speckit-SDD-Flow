@@ -3,7 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const yaml = require('js-yaml');
+const yaml = require('./load-js-yaml');
 
 const BOOKKEEPING_FIELDS = new Set([
   'status',

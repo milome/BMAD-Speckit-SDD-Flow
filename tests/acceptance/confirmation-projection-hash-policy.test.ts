@@ -170,6 +170,15 @@ implementationConfirmation:
       contractValidationCommandRefs: ["CMD-RENDER-CONFIRMATION"]
       deliveryEvidenceCommandRefs: ["CMD-CONFIRMATION-PROJECTION-HASH-POLICY"]
       status: PENDING
+  requiredCommands:
+    - id: CMD-RENDER-CONFIRMATION
+      command: "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source source.md"
+      purpose: "Render and validate the confirmation projection."
+    - id: CMD-CONFIRMATION-PROJECTION-HASH-POLICY
+      command: "npx vitest run tests/acceptance/confirmation-projection-hash-policy.test.ts"
+      purpose: "Validate projection hash policy behavior."
+  closeoutReadinessPreview:
+    requiredCommands: ["CMD-RENDER-CONFIRMATION", "CMD-CONFIRMATION-PROJECTION-HASH-POLICY"]
   boundaryViews:
     - id: BOUNDARY-001
       title: "Projection refresh boundary"

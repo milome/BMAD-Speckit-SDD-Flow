@@ -5,7 +5,7 @@
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
-const yaml = require('js-yaml');
+const yaml = require('./load-js-yaml');
 
 const RECIPE_PATH = '_bmad/_config/architecture-confirmation-hash-recipe.contract.yaml';
 const BOOKKEEPING_FIELDS = new Set([

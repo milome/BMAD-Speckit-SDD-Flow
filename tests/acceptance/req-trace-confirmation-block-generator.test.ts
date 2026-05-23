@@ -210,12 +210,30 @@ implementationConfirmation:
       covers: ["MUST-001", "NEG-001"]
       taskRefs: []
       evidenceRefs: ["EVD-001", "EVD-002"]
+      contractValidationCommandRefs: ["CMD-CONTRACT-001"]
+      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-001", "CMD-DELIVERY-002"]
       boundaryViewRefs: ["BOUNDARY-001"]
       status: PENDING
   boundaryViews:
     - id: BOUNDARY-001
       title: "Upload scope boundary"
       covers: ["OUT-001"]
+  requiredCommands:
+    - id: CMD-CONTRACT-001
+      command: "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source source.md"
+      purpose: "Validate the confirmation source."
+    - id: CMD-DELIVERY-001
+      command: "npm run test:e2e -- upload"
+      purpose: "Produce positive-path delivery evidence."
+    - id: CMD-DELIVERY-002
+      command: "npm run test:e2e -- upload-invalid"
+      purpose: "Produce negative-path delivery evidence."
+  suggestedCommands:
+    - id: CMD-SUGGESTED-001
+      command: "npm run lint"
+      purpose: "Optional quality signal; not acceptance evidence."
+  closeoutReadinessPreview:
+    requiredCommands: ["CMD-CONTRACT-001", "CMD-DELIVERY-001", "CMD-DELIVERY-002"]
 ${overrides}`;
 }
 
@@ -229,7 +247,17 @@ describe('req trace generator confirmation block gate', () => {
     expect(result.stdout).toContain('$executing-plans $verification-before-completion');
     expect(result.stdout).toContain('#implementationConfirmation');
     expect(result.stdout).toContain('TRACE-001');
+    expect(result.stdout).toContain('Trace order:');
+    expect(result.stdout).toContain('执行切片:');
+    expect(result.stdout).toContain('contract gates: CMD-CONTRACT-001');
+    expect(result.stdout).toContain('delivery gates: CMD-DELIVERY-001, CMD-DELIVERY-002');
+    expect(result.stdout).toContain('Required commands:');
+    expect(result.stdout).toContain('CMD-CONTRACT-001:');
+    expect(result.stdout).toContain('node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source source.md');
+    expect(result.stdout).toContain('Suggested smoke only, not acceptance by itself:');
+    expect(result.stdout).toContain('npm run lint');
     expect(result.stdout).toContain('PASS requires evidence for covered must, notDone, and evidence IDs');
+    expect(result.stdout).not.toContain('MISSING_INPUT: final gate commands');
     expect(result.stdout).not.toContain('$requirements-contract-authoring');
   });
 
@@ -263,6 +291,74 @@ describe('req trace generator confirmation block gate', () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('$executing-plans $verification-before-completion');
     expect(result.stdout).toContain('TRACE-001');
+  });
+
+  it('keeps Python shim output byte-equivalent to the Node prompt generator', () => {
+    const source = writeSource(validSource());
+    const record = writeRequirementRecord(source);
+    const args = ['--source-document', source, '--requirement-record', record];
+    const pythonResult = run(args);
+    const nodeResult = runNodePrompt(args);
+
+    expect(pythonResult.status).toBe(0);
+    expect(nodeResult.status).toBe(0);
+    expect(pythonResult.stdout).toBe(nodeResult.stdout);
+  });
+
+  it('blocks trace command refs that are not declared as required commands', () => {
+    const source = writeSource(
+      validSource().replace(
+        '  requiredCommands:',
+        '  requiredCommands:\n    - id: CMD-OTHER\n      command: "npm run other"\n      purpose: "Wrong command."\n  unusedCommands:'
+      )
+    );
+    const record = writeRequirementRecord(source);
+    const result = runNodePrompt(['--source-document', source, '--requirement-record', record]);
+
+    expect(result.status).toBe(3);
+    expect(result.stdout).toContain('BLOCK: COMMAND_REFERENCE_INVALID');
+    expect(result.stdout).toContain('TRACE-001.contractValidationCommandRefs:CMD-CONTRACT-001');
+  });
+
+  it('blocks referenced required commands without runnable command text', () => {
+    const source = writeSource(validSource().replace('      command: "npm run test:e2e -- upload"', '      command: ""'));
+    const record = writeRequirementRecord(source);
+    const result = runNodePrompt(['--source-document', source, '--requirement-record', record]);
+
+    expect(result.status).toBe(3);
+    expect(result.stdout).toContain('BLOCK: COMMAND_DEFINITION_INVALID');
+    expect(result.stdout).toContain('CMD-DELIVERY-001.command');
+  });
+
+  it('blocks duplicate required command IDs before prompt generation', () => {
+    const source = writeSource(
+      validSource().replace(
+        '    - id: CMD-DELIVERY-002\n      command: "npm run test:e2e -- upload-invalid"',
+        '    - id: CMD-DELIVERY-001\n      command: "npm run test:e2e -- upload-invalid"'
+      )
+    );
+    const record = writeRequirementRecord(source);
+    const result = runNodePrompt(['--source-document', source, '--requirement-record', record]);
+
+    expect(result.status).toBe(3);
+    expect(result.stdout).toContain('BLOCK: COMMAND_DEFINITION_INVALID');
+    expect(result.stdout).toContain('IDs must be unique: CMD-DELIVERY-001');
+  });
+
+  it('blocks confirmed source documents without any final gate commands', () => {
+    const source = writeSource(
+      validSource()
+        .replace('      contractValidationCommandRefs: ["CMD-CONTRACT-001"]\n', '')
+        .replace('      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-001", "CMD-DELIVERY-002"]\n', '')
+        .replace(/  requiredCommands:[\s\S]*  closeoutReadinessPreview:\n    requiredCommands: \["CMD-CONTRACT-001", "CMD-DELIVERY-001", "CMD-DELIVERY-002"\]\n/u, '')
+        .replace('      gate: "npm run test:e2e -- upload"', '      gate: "Implementation Readiness Gate"')
+        .replace('      gate: "npm run test:e2e -- upload-invalid"', '      gate: "Manual Review Gate"')
+    );
+    const record = writeRequirementRecord(source);
+    const result = runNodePrompt(['--source-document', source, '--requirement-record', record]);
+
+    expect(result.status).toBe(3);
+    expect(result.stdout).toContain('BLOCK: FINAL_GATES_REQUIRED');
   });
 
   it('blocks confirmed source documents without a requirement record', () => {

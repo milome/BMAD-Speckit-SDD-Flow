@@ -151,6 +151,7 @@ implementationConfirmation:
       contractValidationCommandRefs: ["CMD-CONTRACT-001"]
       deliveryEvidenceCommandRefs: ["CMD-DELIVERY-001"]
       sequenceViewRefs: []
+      boundaryViewRefs: []
       artifactRefs: []
       status: PENDING
   requirementBoundary:
@@ -310,6 +311,9 @@ Rules:
 
 - Preserve the source document's confirmation IDs.
 - Reference `must`, `notDone`, and `evidence` IDs.
+- `traceRows[].covers` must only contain `MUST-*` and `NEG-*` IDs. Do not put `OUT-*` / `mustNot` boundary IDs in `covers`.
+- For `mustNot` boundary verification, keep `traceRows[].covers` empty if the row is boundary-only, put the proof in `evidenceRefs[]`, and bind the boundary through `boundaryViewRefs[]` or `boundaryRefs[]` that point to `boundaryViews[].covers`.
+- A boundary-only trace row is valid when it has `boundaryViewRefs[]` / `boundaryRefs[]`, `evidenceRefs[]`, `taskRefs[]`, and command refs. The renderer must derive `OUT-*` trace coverage from `boundaryViewRefs[] -> boundaryViews[].covers`.
 - Do not restate new requirement semantics in trace rows.
 - Do not invent requirements to make trace rows look complete.
 - Keep rows `PENDING` until implementation evidence exists.

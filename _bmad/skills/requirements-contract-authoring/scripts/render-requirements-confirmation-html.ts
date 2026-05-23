@@ -5,7 +5,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const yaml = require('js-yaml');
+const yaml = require('./load-js-yaml');
 
 const VALID_LANGUAGES = new Set(['zh-CN', 'en-US', 'bilingual']);
 const VALID_ENTRY_FLOWS = new Set(['bugfix', 'standalone_tasks', 'story']);
@@ -1656,7 +1656,36 @@ function allKnownIds(idSet) {
 }
 
 function findRowsCovering(traceRows, id) {
-  return traceRows.filter((row) => stringList(row.covers).includes(id)).map((row) => row.id);
+  return traceRows
+    .filter((row) => {
+      if (stringList(row.covers).includes(id)) return true;
+      const boundaryRefs = new Set(stringList(row.boundaryViewRefs ?? row.boundaryRefs));
+      return boundaryRefs.size > 0 && stringList(row.boundaryCoveredIds ?? row.boundaryIds).includes(id);
+    })
+    .map((row) => row.id);
+}
+
+function enrichTraceRowsWithBoundaryCoverage(traceRows, boundaryViews) {
+  const boundaryViewCoverage = new Map(
+    asArray(boundaryViews).map((view) => [view.id, stringList(view.covers)])
+  );
+  return asArray(traceRows).map((row) => {
+    const boundaryCoveredIds = unique(
+      stringList(row.boundaryViewRefs ?? row.boundaryRefs).flatMap((ref) => boundaryViewCoverage.get(ref) ?? [])
+    );
+    return boundaryCoveredIds.length
+      ? { ...row, boundaryCoveredIds: unique([...stringList(row.boundaryCoveredIds ?? row.boundaryIds), ...boundaryCoveredIds]) }
+      : row;
+  });
+}
+
+function isBoundaryOnlyTrace(row, boundaryViews) {
+  const boundaryRefs = new Set(stringList(row.boundaryViewRefs ?? row.boundaryRefs));
+  if (!boundaryRefs.size) return false;
+  const coveredBoundaryIds = asArray(boundaryViews)
+    .filter((view) => boundaryRefs.has(view.id))
+    .flatMap((view) => stringList(view.covers));
+  return coveredBoundaryIds.length > 0;
 }
 
 function findViewsCovering(views, id) {
@@ -2383,7 +2412,9 @@ function buildCoverage(input) {
     const rowId = row.id ?? 'TRACE-UNKNOWN';
     validateRefs(stringList(row.covers), new Set([...idSet.must, ...idSet.notDone, ...idSet.mustNot]), 'trace_unknown_cover_ref', rowId);
     validateRefs(stringList(row.evidenceRefs), idSet.evidence, 'trace_unknown_evidence_ref', rowId);
-    if (!stringList(row.covers).length) blockingIssues.push(blocking('trace_missing_covers', `${rowId} has no covers`, [rowId]));
+    if (!stringList(row.covers).length && !isBoundaryOnlyTrace(row, boundaryViews)) {
+      blockingIssues.push(blocking('trace_missing_covers', `${rowId} has no covers`, [rowId]));
+    }
     if (!stringList(row.evidenceRefs).length) {
       blockingIssues.push(blocking('trace_missing_evidence', `${rowId} has no evidenceRefs`, [rowId]));
     }
@@ -4262,7 +4293,7 @@ function requirementIdsForTraceRows(traceRows, traceIds) {
   return unique(
     asArray(traceRows)
       .filter((row) => wanted.has(row.id))
-      .flatMap((row) => [...stringList(row.covers), ...stringList(row.evidenceRefs)])
+      .flatMap((row) => [...stringList(row.covers), ...stringList(row.boundaryCoveredIds), ...stringList(row.evidenceRefs)])
   );
 }
 
@@ -4279,7 +4310,7 @@ function allConfirmationIdsByGroup(confirmation) {
 function buildIdToTraceRows(traceRows) {
   const out = {};
   for (const row of asArray(traceRows)) {
-    for (const id of unique([...stringList(row.covers), ...stringList(row.evidenceRefs)])) {
+    for (const id of unique([...stringList(row.covers), ...stringList(row.boundaryCoveredIds), ...stringList(row.evidenceRefs)])) {
       out[id] = unique([...(out[id] ?? []), row.id]);
     }
   }
@@ -5746,7 +5777,7 @@ function main(argv) {
     ...extractMermaidBlocks(sourceText),
   ]);
   const requirementBoundary = inferRequirementBoundary(confirmation, views, mermaidBlocks);
-  const traceRows = asArray(confirmation.traceRows);
+  const traceRows = enrichTraceRowsWithBoundaryCoverage(confirmation.traceRows, views.boundaryViews);
   const requirementRecordState = readRequirementRecord(args, recordId);
   const traceExecutionState = buildTraceExecutionState({
     traceRows,

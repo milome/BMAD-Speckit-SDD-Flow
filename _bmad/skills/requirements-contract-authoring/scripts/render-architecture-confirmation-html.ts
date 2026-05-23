@@ -5,7 +5,7 @@
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
-const yaml = require('js-yaml');
+const yaml = require('./load-js-yaml');
 
 const VALID_LANGUAGES = new Set(['zh-CN', 'en-US', 'bilingual']);
 const VALID_THEMES = new Set(['readable', 'compact', 'audit']);

@@ -3,7 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const yaml = require('js-yaml');
+const yaml = require('./load-js-yaml');
 
 const SKILL_LINE = '$executing-plans $verification-before-completion';
 const COMMAND_PREFIXES = [
@@ -91,6 +91,15 @@ function unique(values) {
 function commandish(value) {
   const normalized = String(value ?? '').trim();
   return COMMAND_PREFIXES.some((prefix) => normalized.startsWith(prefix));
+}
+
+function objects(value) {
+  return Array.isArray(value) ? value.filter((item) => item && typeof item === 'object') : [];
+}
+
+function strings(value) {
+  if (!Array.isArray(value)) return [];
+  return unique(value.map((item) => String(item ?? '').trim()));
 }
 
 function block(code, message) {
@@ -300,8 +309,120 @@ function validateConfirmation(parsed) {
   return confirmation;
 }
 
-function parseCommands(confirmation, extraGates) {
+function renderFinalGates(commands) {
+  return commands.map((command) => `    - ${command}`).join('\n');
+}
+
+function renderExtraRules(rules) {
+  if (!rules.length) return '';
+  return rules.map((rule, index) => `\n${index + 4}. ${rule}`).join('');
+}
+
+function commandId(command) {
+  return String(command?.id ?? command?.commandId ?? '').trim();
+}
+
+function commandText(command) {
+  return String(command?.command ?? command?.gate ?? '').trim();
+}
+
+function validateRequiredCommandDefinitions(confirmation) {
+  const invalid = [];
+  const duplicates = [];
+  const seen = new Set();
+  objects(confirmation.requiredCommands).forEach((command, index) => {
+    const location = `requiredCommands[${index}]`;
+    const id = commandId(command);
+    if (!id) {
+      invalid.push(`${location}.id`);
+      return;
+    }
+    if (seen.has(id)) duplicates.push(id);
+    seen.add(id);
+    if (!commandText(command)) invalid.push(`${id}.command`);
+  });
+  if (invalid.length > 0) {
+    throw new BlockedInput(
+      'BLOCK: COMMAND_DEFINITION_INVALID',
+      `implementationConfirmation requiredCommands[] entries must include id and runnable command text: ${invalid.join(', ')}`
+    );
+  }
+  if (duplicates.length > 0) {
+    throw new BlockedInput(
+      'BLOCK: COMMAND_DEFINITION_INVALID',
+      `implementationConfirmation requiredCommands[] IDs must be unique: ${unique(duplicates).join(', ')}`
+    );
+  }
+}
+
+function commandRegistry(confirmation) {
+  const registry = new Map();
+  for (const command of objects(confirmation.requiredCommands)) {
+    const id = commandId(command);
+    const text = commandText(command);
+    if (id) registry.set(id, { id, command: text, source: 'required' });
+  }
+  for (const command of objects(confirmation.suggestedCommands)) {
+    const id = commandId(command);
+    const text = commandText(command);
+    if (id && !registry.has(id)) registry.set(id, { id, command: text, source: 'suggested' });
+  }
+  return registry;
+}
+
+function validateCommandReferences(confirmation, registry) {
+  const missing = [];
+  const invalid = [];
+  const requiredCommandIds = new Set(objects(confirmation.requiredCommands).map((command) => commandId(command)).filter(Boolean));
+  const requireCommand = (ref, location) => {
+    const command = registry.get(ref);
+    if (!command || !requiredCommandIds.has(ref)) {
+      missing.push(`${location}:${ref}`);
+      return;
+    }
+    if (!command.command) invalid.push(`${location}:${ref}`);
+  };
+  const traceRows = Array.isArray(confirmation.traceRows) ? confirmation.traceRows : [];
+  for (const row of traceRows) {
+    const rowId = String(row?.id ?? 'TRACE-UNKNOWN');
+    for (const ref of strings(row?.contractValidationCommandRefs)) {
+      requireCommand(ref, `${rowId}.contractValidationCommandRefs`);
+    }
+    for (const ref of strings(row?.deliveryEvidenceCommandRefs)) {
+      requireCommand(ref, `${rowId}.deliveryEvidenceCommandRefs`);
+    }
+  }
+  for (const ref of strings(confirmation.closeoutReadinessPreview?.requiredCommands)) {
+    requireCommand(ref, 'closeoutReadinessPreview.requiredCommands');
+  }
+  if (missing.length > 0) {
+    throw new BlockedInput(
+      'BLOCK: COMMAND_REFERENCE_INVALID',
+      `implementationConfirmation command references are missing from requiredCommands[]: ${missing.join(', ')}`
+    );
+  }
+  if (invalid.length > 0) {
+    throw new BlockedInput(
+      'BLOCK: COMMAND_DEFINITION_INVALID',
+      `implementationConfirmation requiredCommands[] entries must include runnable command text: ${invalid.join(', ')}`
+    );
+  }
+}
+
+function parseCommands(confirmation, extraGates, registry) {
   const commands = [];
+  const previewCommandRefs = strings(confirmation.closeoutReadinessPreview?.requiredCommands);
+  if (previewCommandRefs.length > 0) {
+    for (const ref of previewCommandRefs) {
+      const command = registry.get(ref);
+      if (command?.command) commands.push(command.command);
+    }
+  } else {
+    for (const command of objects(confirmation.requiredCommands)) {
+      const text = commandText(command);
+      if (text) commands.push(text);
+    }
+  }
   const evidence = Array.isArray(confirmation.evidence) ? confirmation.evidence : [];
   for (const item of evidence) {
     const gate = String(item?.gate ?? '').trim();
@@ -311,16 +432,46 @@ function parseCommands(confirmation, extraGates) {
   return unique(commands);
 }
 
-function renderFinalGates(commands) {
-  if (commands.length === 0) {
-    return '    - MISSING_INPUT: final gate commands must be derived from implementationConfirmation.evidence before PASS';
-  }
-  return commands.map((command) => `    - ${command}`).join('\n');
+function renderRefs(values) {
+  const refs = strings(values);
+  return refs.length > 0 ? refs.join(', ') : '(none)';
 }
 
-function renderExtraRules(rules) {
-  if (!rules.length) return '';
-  return rules.map((rule, index) => `\n${index + 4}. ${rule}`).join('');
+function renderTraceRows(traceRows) {
+  return traceRows
+    .map((row) => {
+      const rowId = String(row?.id ?? 'TRACE-UNKNOWN');
+      return `${rowId}
+covers: ${renderRefs(row?.covers)}
+evidenceRefs: ${renderRefs(row?.evidenceRefs)}
+taskRefs: ${renderRefs(row?.taskRefs)}
+contract gates: ${renderRefs(row?.contractValidationCommandRefs)}
+delivery gates: ${renderRefs(row?.deliveryEvidenceCommandRefs)}`;
+    })
+    .join('\n\n');
+}
+
+function renderRequiredCommands(confirmation) {
+  const requiredCommands = objects(confirmation.requiredCommands).filter(
+    (command) => commandId(command) || commandText(command)
+  );
+  if (requiredCommands.length === 0) return '(none declared; legacy evidence gates and --final-gate remain the only final gates)';
+  return requiredCommands
+    .map((command) => {
+      const id = commandId(command) || 'CMD-UNKNOWN';
+      const text = commandText(command) || '(missing command text; referenced commands are blocked before prompt generation)';
+      return `${id}:
+${text}`;
+    })
+    .join('\n\n');
+}
+
+function renderSuggestedCommands(confirmation) {
+  const suggested = objects(confirmation.suggestedCommands).filter((command) => commandText(command));
+  if (suggested.length === 0) return '';
+  return `\nSuggested smoke only, not acceptance by itself:\n${suggested
+    .map((command) => commandText(command))
+    .join('\n')}\n`;
 }
 
 function auditPrompt(prompt) {
@@ -338,6 +489,9 @@ function auditPrompt(prompt) {
     'PASS requires evidence for covered must, notDone, and evidence IDs',
     'MISSING_EVIDENCE',
     'reconfirm_required',
+    'Trace order:',
+    '执行切片:',
+    'Required commands:',
     'Completion Evidence Packet',
   ];
   return requiredFragments.filter((fragment) => !prompt.includes(fragment));
@@ -362,7 +516,16 @@ function buildPrompt(args) {
   const traceRows = Array.isArray(confirmation.traceRows) ? confirmation.traceRows : [];
   const traceIds = traceRows.filter((row) => row?.id).map((row) => String(row.id));
   const traceText = traceIds.join(' -> ');
-  const gates = parseCommands(confirmation, args.finalGate);
+  validateRequiredCommandDefinitions(confirmation);
+  const registry = commandRegistry(confirmation);
+  validateCommandReferences(confirmation, registry);
+  const gates = parseCommands(confirmation, args.finalGate, registry);
+  if (gates.length === 0) {
+    throw new BlockedInput(
+      'BLOCK: FINAL_GATES_REQUIRED',
+      'Final gate commands must be derived from implementationConfirmation.requiredCommands, closeoutReadinessPreview.requiredCommands, evidence, or --final-gate before PASS.'
+    );
+  }
   const commitRule = args.noAutoCommit
     ? '不要自动提交；只有用户明确要求提交时才提交，并且禁止 push。'
     : '改为 PASS 后立即本地提交一次，禁止 push。若源文档或用户指定 commit message 格式，严格使用该格式；否则使用仓库提交规范。';
@@ -377,6 +540,9 @@ Source of authority:
 Only ${sourceAuthority} is authoritative.
 Do not implement prose, diagrams, or conversation content unless it is referenced by implementationConfirmation IDs.
 
+Trace order:
+${traceText}
+
 Trace closure authority:
 confirmed source traceRows are contract projection only.
 Runtime closure authority is the requirement-record/control store: record closure evidence through executionIterations, requirementClosures, gateChecks, contractChecks, deliveryEvidence.requiredCommands, artifactIndex, or project-equivalent governed fields.
@@ -387,6 +553,12 @@ The executor must not rewrite confirmed source traceRows.status or source eviden
 2. 禁止缩减范围、替换范围、改变原始需求、禁止把原始需求解释成更小交付。
 3. 禁止 MVP downgrade、stub、mock-only、happy-path-only、representative-only coverage、later-batch coverage、seed-only coverage 或局部样例冒充完整交付。${renderExtraRules(args.extraRule)}
 
+执行切片:
+${renderTraceRows(traceRows)}
+
+Required commands:
+${renderRequiredCommands(confirmation)}
+${renderSuggestedCommands(confirmation)}
 强制执行规则：
 1. 以 traceRows 为唯一主执行切片，按 ${traceText} 顺序推进。
 2. 每个 TRACE 切片只能关闭其 covers/evidenceRefs 引用的 confirmed IDs。
@@ -431,4 +603,3 @@ function main() {
 if (require.main === module) {
   process.exitCode = main();
 }
-

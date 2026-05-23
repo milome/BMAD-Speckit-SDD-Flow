@@ -163,6 +163,15 @@ implementationConfirmation:
       contractValidationCommandRefs: ["CMD-001"]
       deliveryEvidenceCommandRefs: ["CMD-002"]
       status: PENDING
+  requiredCommands:
+    - id: CMD-001
+      command: "node ingest-confirmation-event.js"
+      purpose: "Validate the controlled ingest success path."
+    - id: CMD-002
+      command: "node ingest-confirmation-event.js --stale-hash"
+      purpose: "Validate stale confirmation rejection."
+  closeoutReadinessPreview:
+    requiredCommands: ["CMD-001", "CMD-002"]
   sequenceViews:
     - id: SEQ-001
       title: "Confirmation ingest success and rejection"
