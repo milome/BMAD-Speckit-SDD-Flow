@@ -113,7 +113,7 @@ Bug 修复专用流程。
 ## Execution Flow
 
 1. Read `.codex/protocols/audit-result-schema.md`
-2. Resolve the active RequirementRecord via explicit IDs or `_bmad-output/runtime/requirement-records/index.json`
+2. Resolve active RequirementRecord via explicit IDs or `_bmad-output/runtime/requirement-records/index.json`
 3. 分析 bug 描述并完成 Root Cause Analysis
 4. 生成 BUGFIX 文档
 5. 调用 `auditor-bugfix` 审计 BUGFIX 文档

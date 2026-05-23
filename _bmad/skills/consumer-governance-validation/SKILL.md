@@ -24,6 +24,7 @@ The accepted path is now:
 5. Bounded child work, TaskReport evidence, audit evidence, gate checks, requirement closures, and closeout attempts are written through controlled ingest.
 6. `bmad-help`, dashboard, score, SFT, hooks, and legacy reports are projections or evidence only; none of them is a control source.
 7. CLI access to `main-agent-orchestration` is install validation, CI, debug, or no-skill fallback only.
+8. `fallbackAutonomousMode=false`.
 
 ## When To Read This Skill
 

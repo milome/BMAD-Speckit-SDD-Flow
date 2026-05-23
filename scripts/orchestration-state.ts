@@ -301,6 +301,17 @@ export function writeOrchestrationState(projectRoot: string, state: Orchestratio
   const file = existingOrchestrationStatePath(projectRoot, state.sessionId) ??
     orchestrationStatePath(projectRoot, state.sessionId);
   writeOrchestrationStateAtPath(file, state);
+  const legacyProjectionPath = path.join(
+    projectRoot,
+    '_bmad-output',
+    'runtime',
+    'governance',
+    'orchestration-state',
+    `${state.sessionId}.json`
+  );
+  if (path.resolve(file) !== path.resolve(legacyProjectionPath)) {
+    writeOrchestrationStateAtPath(legacyProjectionPath, state);
+  }
 }
 
 export function writeOrchestrationStateAtPath(file: string, state: OrchestrationState): void {

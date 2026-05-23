@@ -173,7 +173,7 @@ describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
     expect(resolved.recordPath).toBe(recordPath);
   });
 
-  it('CLI fails closed on explicit record mismatch', () => {
+  it('CLI fails closed on explicit record miss with repair projection', () => {
     writeRequirementRecord();
     const result = spawnSync(
       process.execPath,
@@ -193,7 +193,8 @@ describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
     );
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('resolve-active-requirement:');
-    expect(result.stderr).toContain('recordId mismatch');
+    expect(result.stderr).toContain('blocked_missing_active_requirement');
+    expect(result.stderr).toContain('index-repair-projection.json');
   });
 
   it('emit-runtime-policy reads flow/stage from ResolvedRuntimeContext, not legacy context', () => {

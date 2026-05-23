@@ -51,12 +51,6 @@ interface InventoryRow {
   architectureConfirmationHash: string;
 }
 
-const DEFAULT_SOURCE = 'docs/design/需求实现完整性门禁与重跑闭环设计.md';
-const DEFAULT_RECORD =
-  '_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json';
-const DEFAULT_OUTPUT =
-  '_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/subagents/subagent-surface-inventory.json';
-
 const TARGET_PATHS = [
   'scripts/orchestration-dispatch-contract.ts',
   'scripts/main-agent-orchestration.ts',
@@ -218,6 +212,10 @@ function isSha256(value: string): boolean {
 function writeJson(file: string, value: unknown): void {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+function defaultInventoryOutputPath(recordPath: string): string {
+  return path.join(path.dirname(path.resolve(recordPath)), 'subagents', 'subagent-surface-inventory.json');
 }
 
 function readJson(file: string): JsonObject {
@@ -672,12 +670,15 @@ function evaluate(input: {
 export function runSubagentSurfaceInventory(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: subagent-surface-inventory --source <md> --requirement-record <json> --out <json> [--json]');
+    console.log('Usage: subagent-surface-inventory --source <md> --requirement-record <json> [--out <json>] [--json]');
     return 0;
   }
-  const sourcePath = path.resolve(args.source ?? DEFAULT_SOURCE);
-  const recordPath = path.resolve(args.requirementRecord ?? DEFAULT_RECORD);
-  const outputPath = path.resolve(args.out ?? DEFAULT_OUTPUT);
+  if (!args.source || !args.requirementRecord) {
+    throw new Error('subagent-surface-inventory requires --source and --requirement-record');
+  }
+  const sourcePath = path.resolve(args.source);
+  const recordPath = path.resolve(args.requirementRecord);
+  const outputPath = path.resolve(args.out ?? defaultInventoryOutputPath(recordPath));
   const generatedAt = args.generatedAt ?? new Date().toISOString();
   const generatedBy = args.generatedBy ?? 'subagent-surface-inventory';
   const result = evaluate({ sourcePath, recordPath, outputPath, generatedAt, generatedBy });

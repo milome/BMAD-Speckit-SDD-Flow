@@ -1,6 +1,7 @@
 # 工作流完成后如何执行 legacy runtime sync
 
 > Legacy note: 本页记录旧 `sync-runtime-context-from-sprint` / `ensure-run-runtime-context` 接线。目标态不再把这些命令产生的 context / registry 当作控制输入；active Requirement 必须通过 Active Requirement Resolver 定位，运行时上下文以只读 `ResolvedRuntimeContext` 表达。
+> Current path: 审计通过后的 post-audit host runner 收口由 `runAuditorHost` 统一执行；本文下面的 legacy sync 步骤仅用于历史排障和迁移对照。
 
 **S9 前置条件：** 执行 `create-epics-and-stories` 的 Step 4（epics 校验与保存）前，`_bmad-output/implementation-artifacts/sprint-status.yaml` **必须**已存在。该文件由 `sprint-planning` 生成。若缺失，先运行 `sprint-planning`，再从 Step 1 重跑 `create-epics-and-stories`。
 

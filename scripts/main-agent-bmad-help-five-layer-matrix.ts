@@ -484,6 +484,7 @@ function runLayerStage(input: {
     projectRoot: stageRoot,
     flow: input.layer.flow,
     stage: input.stage,
+    implementationEntryGate: helpPolicy.implementationEntryGate,
     args: {
       reportEvidence: `bmad-help-five-layer:${input.layer.id}:${input.stage}`,
       validationsRun: 'bmad-help-five-layer-matrix',

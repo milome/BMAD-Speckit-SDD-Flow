@@ -53,7 +53,81 @@ function readThresholds(): Thresholds {
   return parsed;
 }
 
+function runtimePathExists(relativePath: string): boolean {
+  const requestedId = requirementRecordPathId(relativePath);
+  if (requestedId !== null) {
+    return activeRequirementRecordExists(requestedId);
+  }
+  const absolute = path.join(ROOT, relativePath);
+  if (fs.existsSync(absolute)) return true;
+  return false;
+}
+
+function requirementRecordPathId(relativePath: string): string | undefined | null {
+  const match = relativePath
+    .replace(/\\/g, '/')
+    .match(/(?:^|\/)_bmad-output\/runtime\/requirement-records\/([^/]+)\/requirement-record\.json$/u);
+  if (!match) return null;
+  const recordId = match[1];
+  return recordId?.startsWith('<') ? undefined : recordId;
+}
+
+function activeRequirementRecordExists(requestedRequirementSetId?: string): boolean {
+  const indexPath = path.join(ROOT, '_bmad-output', 'runtime', 'requirement-records', 'index.json');
+  if (!fs.existsSync(indexPath)) return false;
+  try {
+    const index = readJsonFile<{
+      active?: { recordPath?: string; requirementSetId?: string; recordId?: string };
+      records?: Array<{ recordPath?: string; requirementSetId?: string; recordId?: string }>;
+    }>(indexPath);
+    const active = index.active;
+    const activeRequirementSetId = normalizeText(active?.requirementSetId ?? active?.recordId);
+    const activeRecordId = normalizeText(active?.recordId);
+    const requestedId = normalizeText(requestedRequirementSetId);
+    const activeRecordPath = normalizeText(active?.recordPath);
+    const activePathRecordId = normalizeText(requirementRecordPathId(activeRecordPath) ?? undefined);
+    if (
+      requestedId &&
+      [activeRequirementSetId, activeRecordId, activePathRecordId].some(Boolean) &&
+      ![activeRequirementSetId, activeRecordId, activePathRecordId].includes(requestedId)
+    ) {
+      return false;
+    }
+    if (activeRecordPath && fs.existsSync(path.resolve(ROOT, activeRecordPath))) {
+      return true;
+    }
+    const matched = (index.records ?? []).find((record) => {
+      const requirementSetId = normalizeText(record.requirementSetId ?? record.recordId);
+      const recordId = normalizeText(record.recordId);
+      return (
+        (activeRequirementSetId && requirementSetId === activeRequirementSetId) ||
+        (activeRecordId && recordId === activeRecordId)
+      );
+    });
+    const matchedPath = normalizeText(matched?.recordPath);
+    if (matchedPath && fs.existsSync(path.resolve(ROOT, matchedPath))) return true;
+    if (activeRequirementSetId) {
+      return fs.existsSync(
+        path.join(
+          ROOT,
+          '_bmad-output',
+          'runtime',
+          'requirement-records',
+          activeRequirementSetId,
+          'requirement-record.json'
+        )
+      );
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 function exists(relativePath: string): boolean {
+  if (relativePath.startsWith('_bmad-output/')) {
+    return runtimePathExists(relativePath);
+  }
   return fs.existsSync(path.join(SOURCE_ROOT, relativePath));
 }
 

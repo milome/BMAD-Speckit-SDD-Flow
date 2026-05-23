@@ -10,6 +10,7 @@
 - `auditReportPath`: string — 审计报告路径
 - `next_action`: string — 推荐下一步动作
 - `ready`: boolean — 是否准备好自动继续 (可选，默认 false)
+- `pendingPacketStatus`: string — 兼容投影字段，用于描述旧 packet 是否存在；不得作为主控事实源
 - `mainAgentNextAction`: string — 主 Agent 兼容摘要字段，供旧 handoff consumer 读取
 - `mainAgentReady`: boolean — 主 Agent 兼容摘要字段，供旧 handoff consumer 读取
 
@@ -35,6 +36,7 @@ artifactDocPath: specs/epic-1/story-1/spec.md
 auditReportPath: reports/spec-audit.md
 next_action: proceed_to_plan
 ready: true
+pendingPacketStatus: none
 mainAgentNextAction: dispatch_implement
 mainAgentReady: true
 ```

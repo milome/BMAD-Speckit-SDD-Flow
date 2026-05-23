@@ -233,10 +233,9 @@ describe('bundle writer', () => {
         assistant_only_ready: 3,
         completion_only_ready: 3,
         source_scope_counts: expect.objectContaining({
-          story_scoped: 3,
-          orphan_scoped: 1,
+          story_scoped: 4,
         }),
-        dominant_source_scope_share: 0.75,
+        dominant_source_scope_share: 1,
       })
     );
     expect(validationReport.duplicate_summary).toEqual(
@@ -252,8 +251,7 @@ describe('bundle writer', () => {
           cursor: 1,
         }),
         by_source_scope: expect.objectContaining({
-          story_scoped: 3,
-          orphan_scoped: 1,
+          story_scoped: 4,
         }),
       })
     );

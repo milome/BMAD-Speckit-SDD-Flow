@@ -339,6 +339,7 @@ CLI 参数只用于声明宿主模式和事件模式，例如：
 
 Runtime Governance 在 Cursor 宿主下依旧遵循统一解析规则：
 
+- 使用 story-scoped runtime context 作为并发隔离语义，由 Active Requirement Resolver 投影为只读 `ResolvedRuntimeContext` 后进入统一 policy 求值。
 - 只使用显式 `recordId` / `requirementSetId` / `runId` 或 `_bmad-output/runtime/requirement-records/index.json`
 - 缺失 `ResolvedRuntimeContext` 时，不再回退到 `.bmad/runtime-context.json`
 - 不再读取任何已移除的 speckit fallback 输入

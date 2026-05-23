@@ -659,11 +659,23 @@ function resolveContinueStateSummary(input: {
   runtimeContext: Partial<RuntimeContextFile> | null;
 }): ContinueStateSummary {
   const contextCloseout = input.runtimeContext?.latestReviewerCloseout;
-  if (contextCloseout && typeof contextCloseout.mainAgentCanContinue === 'boolean') {
+  const contextCloseoutWithCompat = contextCloseout as
+    | {
+        canMainAgentContinue?: unknown;
+        mainAgentCanContinue?: unknown;
+      }
+    | undefined;
+  const contextCanContinue =
+    typeof contextCloseoutWithCompat?.canMainAgentContinue === 'boolean'
+      ? contextCloseoutWithCompat.canMainAgentContinue
+      : typeof contextCloseoutWithCompat?.mainAgentCanContinue === 'boolean'
+        ? contextCloseoutWithCompat.mainAgentCanContinue
+        : null;
+  if (contextCloseout && contextCanContinue !== null) {
     return {
-      mainAgentCanContinue: contextCloseout.mainAgentCanContinue,
+      mainAgentCanContinue: contextCanContinue,
       source: 'runtimeContext',
-      continueDecision: contextCloseout.mainAgentCanContinue
+      continueDecision: contextCanContinue
         ? 'continue'
         : contextCloseout.closeoutEnvelope?.rerunDecision &&
             contextCloseout.closeoutEnvelope.rerunDecision !== 'none'
@@ -901,7 +913,24 @@ function resolveRequirementRecordImplementationEntryGate(
   const resolvedKind = (
     runtimeContext as { resolvedRuntimeContext?: { kind?: string } } | null
   )?.resolvedRuntimeContext?.kind;
-  return resolvedKind === 'ResolvedRuntimeContext' && candidate ? candidate : null;
+  if (resolvedKind !== 'ResolvedRuntimeContext' || !candidate) {
+    return null;
+  }
+
+  const evidence = candidate.evidenceSources;
+  const hasEvidenceSource = Boolean(
+    evidence?.readinessReportPath ||
+      evidence?.remediationArtifactPath ||
+      evidence?.executionRecordPath ||
+      evidence?.authoritativeAuditReportPath
+  );
+  const emptyMissingGate =
+    candidate.decision === 'block' &&
+    candidate.readinessStatus === 'missing' &&
+    candidate.blockerCodes.length === 1 &&
+    candidate.blockerCodes[0] === 'missing_readiness_evidence' &&
+    !hasEvidenceSource;
+  return emptyMissingGate ? null : candidate;
 }
 
 function buildImplementationEntryBlockers(input: {
@@ -1094,8 +1123,10 @@ export function resolveBmadHelpRoutingState(
         implementationEntryDecision: implementationEntryGate.decision,
       });
   const effectiveContinueState =
-    mainAgentOrchestration.continueDecision != null ||
-    mainAgentOrchestration.mainAgentCanContinue != null
+    continueState.source === 'runtimeContext'
+      ? continueState
+      : mainAgentOrchestration.continueDecision != null ||
+          mainAgentOrchestration.mainAgentCanContinue != null
       ? {
           mainAgentCanContinue: mainAgentOrchestration.mainAgentCanContinue,
           source:

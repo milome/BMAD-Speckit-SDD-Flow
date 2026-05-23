@@ -197,6 +197,11 @@ function buildRecoveryContext(input: {
   };
 }
 
+function resolveScoringPolicyRuleRoot(root: string): string {
+  if (fs.existsSync(path.join(root, 'packages', 'scoring', 'rules'))) return root;
+  return path.resolve(__dirname, '..');
+}
+
 export function mainWriteRuntimePolicySnapshotAndRecoveryContext(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
@@ -211,7 +216,10 @@ export function mainWriteRuntimePolicySnapshotAndRecoveryContext(argv: string[])
   });
   const record = readJson(loaded.resolvedContextPath);
   const policy = captureRuntimePolicy(args, root);
-  const resolvedScoringPolicy = resolveScoringPolicy({ root }) as unknown as JsonObject;
+  const resolvedScoringPolicy = resolveScoringPolicy({
+    root,
+    ruleRoot: resolveScoringPolicyRuleRoot(root),
+  }) as unknown as JsonObject;
   const generatedAt = args.generatedAt ?? new Date().toISOString();
   const outDir = path.resolve(
     args.outDir ?? path.dirname(loaded.resolvedRuntimeContext.runtimePolicySnapshotPath)

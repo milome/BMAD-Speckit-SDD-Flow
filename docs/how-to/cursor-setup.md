@@ -33,7 +33,7 @@ Cursor 侧当前 accepted runtime path 已经收敛为：
 1. `.cursor/hooks/runtime-policy-inject.cjs`
 2. `.cursor/hooks/pre-continue-check.cjs`
 3. 用户在 Cursor 会话中通过 `$bmad-speckit`、`/bmad-speckit`、`bmad-speckit` 或等价 skill 入口激活主控
-4. 主 Agent 内部执行或等价消费 `inspect|dispatch-plan`
+4. 主 Agent 内部执行或等价消费 `main-agent-orchestration inspect|dispatch-plan`
 5. 主 Agent 只从 `requirement-record.json`、`currentMentalModel`、六个心智模型链路和 controlled ingest 记录决定是否 claim / dispatch / complete / invalidate
 
 旧 worker 相关 start/skip 日志只应视为 legacy compatibility 提示，不再是当前成功标准。

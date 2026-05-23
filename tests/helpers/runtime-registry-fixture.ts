@@ -90,6 +90,7 @@ export interface MinimalRegistryOpts {
   sourceMode?: 'full_bmad' | 'seeded_solutioning' | 'standalone_story';
   implementationEntryGate?: ImplementationEntryGate;
   latestReviewerCloseout?: ReviewerLatestCloseoutRecord;
+  preserveMissingRunId?: boolean;
 }
 
 export function writeMinimalRequirementRecordContext(
@@ -98,9 +99,10 @@ export function writeMinimalRequirementRecordContext(
 ): string {
   const flow = opts.flow ?? 'story';
   const stage = opts.stage ?? 'specify';
-  const runId = opts.runId ?? `run-${flow}-${stage}`;
-  const requirementSetId = `REQSET-${runId}`.replace(/[^a-zA-Z0-9._-]+/g, '-');
-  const recordId = `REQ-${runId}`.replace(/[^a-zA-Z0-9._-]+/g, '-');
+  const runId = opts.runId ?? (opts.preserveMissingRunId ? undefined : `run-${flow}-${stage}`);
+  const identitySegment = runId ?? `${flow}-${stage}`;
+  const requirementSetId = `REQSET-${identitySegment}`.replace(/[^a-zA-Z0-9._-]+/g, '-');
+  const recordId = `REQ-${identitySegment}`.replace(/[^a-zA-Z0-9._-]+/g, '-');
   const recordRoot = path.join(
     root,
     '_bmad-output',
@@ -135,7 +137,7 @@ export function writeMinimalRequirementRecordContext(
     epicId: opts.epicId,
     storyId: opts.storyId,
     storySlug: opts.storySlug,
-    runId,
+    ...(runId ? { runId } : {}),
     architectureConfirmationState: {
       status: 'active',
       currentArchitectureConfirmationRunId: `arch-${runId}`,
@@ -199,13 +201,13 @@ export function writeMinimalRequirementRecordContext(
         active: {
           recordId,
           requirementSetId,
-          runId,
+          ...(runId ? { runId } : {}),
         },
         records: [
           {
             recordId,
             requirementSetId,
-            runId,
+            ...(runId ? { runId } : {}),
             recordPath: path.relative(root, recordPath).replace(/\\/g, '/'),
           },
         ],
@@ -249,5 +251,10 @@ export function writeMinimalRegistryAndProjectContext(
   };
   registry.latestReviewerCloseout = opts.latestReviewerCloseout ?? null;
   writeRuntimeContextRegistry(root, registry);
-  writeMinimalRequirementRecordContext(root, opts);
+  writeMinimalRequirementRecordContext(root, {
+    ...opts,
+    preserveMissingRunId:
+      opts.preserveMissingRunId ??
+      (opts.runId === undefined && flow === 'story' && stage === 'implement' && !opts.storyId),
+  });
 }

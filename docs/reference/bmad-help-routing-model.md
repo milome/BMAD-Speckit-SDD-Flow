@@ -114,11 +114,12 @@
 帮助层读取 `implementationReadinessStatus` 时，固定按以下顺序消费证据：
 
 1. `ResolvedRuntimeContext`：先确定当前 flow / scope / artifact hint，禁止跨 scope 猜测
-2. `auditIndex` 中与当前 orphan artifact 对齐的 authoritative document-audit closeout
-3. 最新 readiness report
-4. 最新 remediation artifact
-5. execution record / rerun gate 结果
-6. deferred gaps tracking
+2. runtime context / activeScope：仅作为旧兼容投影读取顺序说明；目标态由 `ResolvedRuntimeContext` 和 RequirementRecord 承接
+3. `auditIndex` 中与当前 orphan artifact 对齐的 authoritative document-audit closeout
+4. 最新 readiness report
+5. 最新 remediation artifact
+6. execution record / rerun gate 结果
+7. deferred gaps tracking
 
 ### 5.3 冲突处理
 

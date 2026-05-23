@@ -327,6 +327,7 @@
         "gatesLoop",
         "closeout",
         "drift",
+        "diagnostics",
         "mainAgentCanContinue",
         "continueDecision",
         "mainAgentNextAction",
@@ -335,7 +336,13 @@
       "properties": {
         "source": {
           "type": "string",
-          "enum": ["orchestration_state", "reviewer_closeout", "implementation_entry_gate", "none"]
+          "enum": [
+            "orchestration_state",
+            "requirement_record",
+            "reviewer_closeout",
+            "implementation_entry_gate",
+            "none"
+          ]
         },
         "sessionId": { "type": ["string", "null"] },
         "orchestrationStatePath": { "type": ["string", "null"] },
@@ -358,13 +365,101 @@
         "gatesLoop": { "type": ["object", "null"] },
         "closeout": { "type": ["object", "null"] },
         "drift": { "type": ["object", "null"] },
+        "diagnostics": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/mainAgentDiagnostic" }
+        },
         "mainAgentCanContinue": { "type": ["boolean", "null"] },
         "continueDecision": {
           "type": ["string", "null"],
           "enum": ["continue", "rerun", "blocked", null]
         },
         "mainAgentNextAction": { "type": ["string", "null"] },
-        "mainAgentReady": { "type": ["boolean", "null"] }
+        "mainAgentReady": { "type": ["boolean", "null"] },
+        "runtimeResumeProjection": { "$ref": "#/$defs/runtimeResumeProjection" }
+      }
+    },
+    "mainAgentDiagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "category",
+        "authoritativeSource",
+        "sourceChecked",
+        "repairAction",
+        "automaticRepairAvailable",
+        "nextCommand",
+        "message"
+      ],
+      "properties": {
+        "category": { "type": "string" },
+        "authoritativeSource": { "type": "string" },
+        "sourceChecked": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "repairAction": { "type": "string" },
+        "automaticRepairAvailable": { "type": "boolean" },
+        "nextCommand": { "type": ["string", "null"] },
+        "message": { "type": "string" }
+      }
+    },
+    "runtimeResumeProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "projectionType",
+        "source",
+        "runtimeNextAction",
+        "ready",
+        "blockingReasonRefs"
+      ],
+      "properties": {
+        "projectionType": { "type": "string", "const": "runtime_resume_projection" },
+        "source": { "type": "string", "const": "requirement_record" },
+        "runtimeNextAction": { "type": ["string", "null"] },
+        "ready": { "type": "boolean" },
+        "blockingReasonRefs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["sourceType", "id"],
+            "properties": {
+              "sourceType": { "type": "string" },
+              "id": { "type": "string" }
+            }
+          }
+        },
+        "terminalState": {
+          "type": "string",
+          "enum": ["completed_no_dispatch"]
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/mainAgentDiagnostic" }
+        },
+        "observedLegacyState": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "nextAction", "pendingPacketStatus"],
+          "properties": {
+            "path": { "type": ["string", "null"] },
+            "nextAction": { "type": ["string", "null"] },
+            "pendingPacketStatus": {
+              "type": "string",
+              "enum": [
+                "none",
+                "ready_for_main_agent",
+                "claimed_by_main_agent",
+                "dispatched",
+                "completed",
+                "invalidated",
+                "missing_packet_file"
+              ]
+            }
+          }
+        }
       }
     },
     "reviewerContractProjection": {

@@ -379,7 +379,7 @@ describe('main-agent codex worker adapter e2e', () => {
     }
   });
 
-  it('fails closed when runtime governance cannot resolve even in smoke mode', () => {
+  it('recovers runtime governance from requirement records when the index is missing', () => {
     const root = prepareCodexRoot();
     try {
       fs.rmSync(path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json'), { force: true });
@@ -390,6 +390,56 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'claude',
         hydratePacket: true,
       });
+      const taskReportPath = path.join(root, 'policy-blocked-task-report.json');
+
+      const adapter = runBoundCodexWorkerAdapter({
+        projectRoot: root,
+        packetPath: instruction!.packetPath,
+        taskReportPath,
+        smoke: true,
+      });
+
+      expect(adapter.exitCode).toBe(0);
+      expect(adapter.scopePassed).toBe(true);
+      expect(adapter.runtimeGovernanceStatus).toBe('resolved');
+      expect(adapter.runtimeGovernanceError).toBeNull();
+      expect(adapter.taskReport.status).toBe('done');
+      expect(fs.existsSync(path.join(root, codexSmokeArtifactPath(instruction!.packetId)))).toBe(true);
+      expect(
+        fs.existsSync(
+          path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index-repair-projection.json')
+        )
+      ).toBe(true);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed when runtime governance cannot resolve any controlled record', () => {
+    const root = prepareCodexRoot();
+    try {
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'story',
+        stage: 'implement',
+        host: 'claude',
+        hydratePacket: true,
+      });
+      fs.rmSync(
+        path.join(
+          root,
+          '_bmad-output',
+          'runtime',
+          'requirement-records',
+          'REQ-CODEX-WORKER',
+          'requirement-record.json'
+        ),
+        { force: true }
+      );
+      fs.rmSync(path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json'), {
+        force: true,
+      });
+      fs.rmSync(path.join(root, '_bmad-output', 'runtime', 'registry.json'), { force: true });
       const taskReportPath = path.join(root, 'policy-blocked-task-report.json');
 
       const adapter = runBoundCodexWorkerAdapter({

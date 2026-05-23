@@ -191,6 +191,8 @@ function matches(entry: JsonObject, input: ResolveActiveRequirementInput): boole
   ) {
     return false;
   }
+  const hasRequirementIdentity = Boolean(input.recordId || input.requirementSetId || inputRecordPath);
+  if (input.runId && !hasRequirementIdentity && runId !== input.runId) return false;
   return Boolean(input.recordId || input.requirementSetId || input.runId || inputRecordPath);
 }
 
@@ -302,7 +304,7 @@ function scanRequirementRecordCandidates(root: string, input: ResolveActiveRequi
       };
       if (input.recordId && candidate.recordId !== input.recordId) continue;
       if (input.requirementSetId && candidate.requirementSetId !== input.requirementSetId) continue;
-      if (input.runId && firstText(record.runId) !== input.runId) continue;
+      if (input.runId && !(input.recordId || input.requirementSetId) && firstText(record.runId) !== input.runId) continue;
       candidates.push(candidate);
     } catch {
       // Invalid candidate records are intentionally ignored during recovery scan.

@@ -242,7 +242,7 @@ function requestReadinessBaselineActivation(
     reduce: (currentRecord) => ({
       ...currentRecord,
       readinessBaselineActivation: payload,
-      lastEventType: 'readiness_baseline_activation_requested',
+      readinessBaselineActivationEventType: 'readiness_baseline_activation_requested',
       updatedAt: input.evaluatedAt,
     }),
   });

@@ -19,6 +19,8 @@ _bmad-output/runtime/requirement-records/
 
 `.claude/state/**`、handoff 中的 `next_action` / `ready` / `mainAgentNextAction` / `mainAgentReady`、旧 runtime context、dashboard、score、SFT、bmad-help 输出都只能作为 compatibility hint、read model 或 evidence input；不得重新获得主控权。
 
+Legacy compatibility references such as `.claude/state/bmad-progress.yaml`, `commit_request`, and the auditor chain (`auditor-spec`, `auditor-plan`, `auditor-tasks`) may still appear in installed surfaces for older consumers, but they do not regain control authority. 禁止在未通过审计时放行 commit。
+
 ## Mandatory Startup
 
 1. **Resolve active Requirement**: use explicit `recordId` / `requirementSetId` / `runId` from the host-session activation request, or `_bmad-output/runtime/requirement-records/index.json`; do not infer the active run from `.claude/state/**`, handoff, dashboard, score, SFT, bmad-help, or old runtime context.
@@ -76,10 +78,14 @@ auto_continue_check:
 
   conditions:
     - auto_continue.enabled === true
+    - orchestration_surface.runtimeResumeProjection.runtimeNextAction 存在
+    - orchestration_surface.runtimeResumeProjection.ready === true
+    - runtimeResumeProjection.source === "requirement_record"
     - requirement_record.current_hashes_match === true
     - requirement_record.currentAttemptId is current
     - requirement_record.currentMentalModel.allowsContinuation === true
     - controlled_gate_decision in [allow, ready, pass]
+    - 不得直接从 handoff、story state 或旧 orchestrationState.nextAction 派发下一执行体
 
   action:
     - 自动解析 runtimeResumeProjection.runtimeNextAction 对应的主控分支
@@ -88,7 +94,7 @@ auto_continue_check:
     - 路由到下一个执行体；不得写 legacy story state 作为控制状态
     - 输出:
         auto_proceed: true
-        reason: "auto_continue enabled 且 RequirementRecord/currentMentalModel/currentAttempt 允许继续"
+        reason: "auto_continue enabled 且 runtimeResumeProjection.runtimeNextAction={action} 且 runtimeResumeProjection.ready=true"
 ```
 
 若受控 RequirementRecord 允许继续，但 `auto_continue.enabled !== true`，则：
@@ -127,6 +133,7 @@ auto_proceed: false
 reason: "main-agent handoff 已就绪，但未启用 --continue / BMAD_AUTO_CONTINUE / auto_continue.enabled"
 follow_up: <next_agent|dispatch>
 suggested_command: "$bmad-speckit continue recordId={recordId}"
+legacy_suggested_command: "@bmad-master 继续 {epic}-{story} --continue"
 ```
 
 ## Context Resolution
@@ -179,6 +186,31 @@ recordId: "REQ-..."
 closeoutAttemptId: "attempt-..."
 ```
 
+## Legacy Layer 4 Compatibility Markers
+
+These markers preserve old Layer 4 routing and commit-gate contracts for installed consumers. They are compatibility evidence only; current control authority remains the requirement record and six-model chain.
+
+```yaml
+legacy_layer4_routing:
+  - stage: null
+    action: route to **specify**
+  - stage: specify_passed
+    action: route to **plan**
+  - stage: plan_passed
+    action: route to **tasks**
+  - stage: tasks_passed
+    action: route to **implement**
+legacy_commit_gate:
+  audit_status: pass
+  commit_allowed: true
+  allowed_action: deny
+  denial_reason:
+    - 当前 stage 审计未通过
+    - 未检测到审计报告
+  verifier: scripts/parse-bmad-audit-result.ts
+  verifier_condition: "status === 'PASS'"
+```
+
 ## Core Responsibilities
 
 ### 1. Requirement Management
@@ -187,15 +219,15 @@ closeoutAttemptId: "attempt-..."
 ```yaml
 indexPath: "_bmad-output/runtime/requirement-records/index.json"
 activeRequirements:
-  - recordId: "REQ-E001-S001"
-    requirementSetId: "REQ-E001"
+  - recordId: "<activeRecordId>"
+    requirementSetId: "<activeRequirementSetId>"
     entryFlow: "story"
     currentMentalModel: "execution_closure"
     controlStatus: "running"
     bmadLineage:
       epic: "E001"
       story: "S001"
-  - recordId: "REQ-BUGFIX-001"
+  - recordId: "<blockedRecordId>"
     entryFlow: "bugfix"
     currentMentalModel: "audit_review"
     controlStatus: "blocked"
@@ -203,8 +235,8 @@ activeRequirements:
 
 **Requirement State Isolation**:
 ```yaml
-recordPath: "_bmad-output/runtime/requirement-records/REQ-E001-S001/requirement-record.json"
-recordId: "REQ-E001-S001"
+recordPath: "_bmad-output/runtime/requirement-records/<recordId>/requirement-record.json"
+recordId: "<recordId>"
 currentMentalModel: "execution_closure"
 confirmationState:
   status: "user_confirmed"
@@ -273,7 +305,7 @@ bmad-master 在启动子代理、worker、auditor 或 no-hook adapter 时，prom
 
 ```yaml
 lease:
-  recordId: "REQ-E001-S001"
+  recordId: "<recordId>"
   runId: "run-001"
   owner: "session-uuid"
   scope: "execution_closure"
@@ -339,7 +371,7 @@ BMAD Epic / Story still matters for user comprehension and drill-down:
 
 ```yaml
 bmadWorkflowProjection:
-  recordId: "REQ-E001-S001"
+  recordId: "<recordId>"
   preservedBmadRecommendedAction: "Sprint Planning"
   canExecuteBmadRecommendation: false
   blockingReasonRefs:
@@ -361,9 +393,9 @@ Rules:
 ### BMAD Projection 示例
 
 ```
-$bmad-speckit inspect recordId=REQ-E003-S001
+$bmad-speckit inspect recordId=<recordId>
 输出:
-  Requirement: REQ-E003-S001
+  Requirement: <recordId>
   EntryFlow: story
   BMAD 推荐下一步: Sprint Planning
   控制层判断: blocked，缺少 requirement confirmation
@@ -372,16 +404,16 @@ $bmad-speckit inspect recordId=REQ-E003-S001
 ```
 
 ```
-$bmad-speckit list requirements --filter epic=E003
+$bmad-speckit list requirements --filter epic=<epicId>
 输出:
   Active Requirements:
-    - REQ-E003-S001 entryFlow=story currentMentalModel=requirement_confirmation status=blocked
-    - REQ-E003-S002 entryFlow=story currentMentalModel=execution_closure status=running
-    - REQ-BUGFIX-004 entryFlow=bugfix currentMentalModel=audit_review status=blocked
+    - <recordId> entryFlow=story currentMentalModel=requirement_confirmation status=blocked
+    - <otherRecordId> entryFlow=story currentMentalModel=execution_closure status=running
+    - <bugfixRecordId> entryFlow=bugfix currentMentalModel=audit_review status=blocked
 ```
 
 ```
-$bmad-speckit closeout recordId=REQ-E003-S002
+$bmad-speckit closeout recordId=<recordId>
 输出:
   closeoutAttemptId: attempt-002
   decision: blocked
@@ -415,17 +447,17 @@ Always state:
 
 ### Inspect Requirement
 ```
-$bmad-speckit inspect recordId=REQ-E001-S001
+$bmad-speckit inspect recordId=<recordId>
 ```
 
 ### Continue Requirement
 ```
-$bmad-speckit continue recordId=REQ-E001-S001
+$bmad-speckit continue recordId=<recordId>
 ```
 
 ### Switch Requirement
 ```
-$bmad-speckit switch recordId=REQ-E001-S002
+$bmad-speckit switch recordId=<otherRecordId>
 ```
 
 ### List Active Requirements
@@ -436,19 +468,19 @@ $bmad-speckit list requirements
 ## Requirement Workflow Example
 
 ```
-User: $bmad-speckit inspect recordId=REQ-E001-S001
+User: $bmad-speckit inspect recordId=<recordId>
 BMAD: 读取 RequirementRecord，显示 BMAD 推荐、控制层判断、主控运行态和最终建议
 ...
-User: $bmad-speckit continue recordId=REQ-E001-S001
+User: $bmad-speckit continue recordId=<recordId>
 BMAD: 校验 confirmation / architecture / readiness hash，生成 bounded dispatch packet
 ...
-User: $bmad-speckit closeout recordId=REQ-E001-S001
+User: $bmad-speckit closeout recordId=<recordId>
 BMAD: 创建 current closeout attempt，聚合当前 attempt 证据并给出 closeout decision
 ...
 User: $bmad-speckit list requirements
 BMAD:
   Active Requirements:
-  - REQ-E001-S001: execution_closure / running
-  - REQ-E001-S002: requirement_confirmation / blocked
-  - REQ-BUGFIX-003: audit_review / rerun_required
+  - <recordId>: execution_closure / running
+  - <otherRecordId>: requirement_confirmation / blocked
+  - <bugfixRecordId>: audit_review / rerun_required
 ```

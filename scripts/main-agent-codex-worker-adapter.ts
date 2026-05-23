@@ -632,6 +632,7 @@ export function runCodexWorkerAdapter(input: {
     taskReportPath
   );
   const smokeTargetPath = input.smokeTargetPath ?? defaultSmokeTargetPath({ ...input, packet });
+  const validationScopes = input.smoke ? Array.from(new Set([...scopes, smokeTargetPath])) : scopes;
   if (!agentSpec) {
     const blockedReport: TaskReport = {
       packetId: packet.packetId,
@@ -881,9 +882,9 @@ export function runCodexWorkerAdapter(input: {
     ...(taskReportStrictJsonError
       ? [`TaskReport strict JSON validation failed: ${taskReportStrictJsonError}`]
       : []),
-    ...validateTaskReport(taskReport, packet, scopes),
+    ...validateTaskReport(taskReport, packet, validationScopes),
     ...actualFilesChanged
-      .filter((changed) => !pathMatchesScope(changed, scopes))
+      .filter((changed) => !pathMatchesScope(changed, validationScopes))
       .map((changed) => `actual file outside allowedWriteScope: ${changed}`),
   ];
   const scopePassed = validationErrors.length === 0;

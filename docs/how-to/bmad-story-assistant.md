@@ -116,9 +116,10 @@ Slug: email-validator
 
 当前更准确的口径是：
 
+- 必须先读 surface，再把 handoff 字段当作 compatibility summary
 - 主 Agent 必须先读受控 RequirementRecord、`currentMentalModel` 和六个心智模型状态
 - `mainAgentNextAction / mainAgentReady` 只作为 compatibility summary
-- 不存在从 handoff 字段回退取得控制权的路径；不一致时阻断并重新 inspect 受控记录
+- 仅当 surface 不可用时，handoff 字段才作为诊断线索；不存在从 handoff 字段回退取得控制权的路径，不一致时阻断并重新 inspect 受控记录
 - 子代理只消费 `bounded packet`，不得替主 Agent 选择下一条全局执行链
 
 `inspect / dispatch-plan` 是主控内部动作；npm / npx CLI 只允许用于安装验证、CI、debug 或 no-skill fallback，不作为普通消费用户默认步骤。
@@ -229,6 +230,7 @@ auto_continue:
 - `next_action` 只是阶段推荐；是否自动继续只能由受控 RequirementRecord、`currentMentalModel`、六个心智模型状态、当前 hash 和当前 attempt 决定
 - 默认不隐式连跑
 - interactive 模式下的下一步执行始终由 **主 Agent** 决定；hook / queue / worker 只能提供 gate 与 state，不得直接替主 Agent 推进阶段
+- 由主 Agent 读取 orchestration state 与 packet，并回读 RequirementRecord / `currentMentalModel` / 当前 attempt 后再决定下一步
 - `auto_continue.require_next_action` / `require_ready_flag` 仍保留 legacy 配置名，但目标态必须绑定到受控 RequirementRecord 和六个心智模型状态
 - `handoff` 只能作为兼容提示，不存在从 handoff 字段回退取得控制权的路径
 

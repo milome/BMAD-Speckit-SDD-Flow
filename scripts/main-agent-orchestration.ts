@@ -263,17 +263,26 @@ function listScopedOrchestrationStatePaths(
   if (!projectRoot) {
     return [];
   }
-  const dir = orchestrationStateDirForRecordPath(
-    projectRoot,
-    resolvedContext(runtimeContext)?.recordPath
-  );
-  if (!fs.existsSync(dir)) {
-    return [];
+  const dirs = [
+    orchestrationStateDirForRecordPath(projectRoot, resolvedContext(runtimeContext)?.recordPath),
+    path.join(projectRoot, '_bmad-output', 'runtime', 'governance', 'orchestration-state'),
+  ];
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const dir of dirs) {
+    const normalizedDir = path.resolve(dir);
+    if (seen.has(normalizedDir) || !fs.existsSync(normalizedDir)) {
+      continue;
+    }
+    seen.add(normalizedDir);
+    out.push(
+      ...fs
+        .readdirSync(normalizedDir)
+        .filter((file) => file.endsWith('.json'))
+        .map((file) => path.join(normalizedDir, file))
+    );
   }
-  return fs
-    .readdirSync(dir)
-    .filter((file) => file.endsWith('.json'))
-    .map((file) => path.join(dir, file));
+  return out;
 }
 
 function readRequirementRecordFromRuntimeContext(
@@ -303,8 +312,15 @@ function resolveMappedAllowedWriteScope(
   projectRoot: string,
   runtimeContext: Partial<RuntimeContextFile> | null,
   flow: RuntimeFlowId,
-  taskType: 'implement' | 'audit' | 'remediate' | 'document'
+  taskType: 'implement' | 'audit' | 'remediate' | 'document',
+  requirementRecord: Record<string, unknown> | null = null
 ): string[] | null {
+  const scopedTaskBinding = resolveTaskBindingAllowedWriteScope(runtimeContext, requirementRecord);
+  if (scopedTaskBinding.length > 0) {
+    return taskType === 'audit'
+      ? mergeAllowedWriteScope(scopedTaskBinding, ['docs/**', '_bmad-output/**', 'specs/**'])
+      : scopedTaskBinding;
+  }
   const mapping = selectBestMappingForRuntimeContext(
     readUserStoryMappingIndexOrDefault(projectRoot),
     runtimeContext,
@@ -321,6 +337,40 @@ function resolveMappedAllowedWriteScope(
     ]);
   }
   return mapping.allowedWriteScope;
+}
+
+function resolveTaskBindingAllowedWriteScope(
+  runtimeContext: Partial<RuntimeContextFile> | null,
+  requirementRecord: Record<string, unknown> | null
+): string[] {
+  const bindings = Array.isArray(requirementRecord?.taskBindings)
+    ? (requirementRecord.taskBindings as unknown[])
+    : [];
+  const flow = normalizeText(runtimeContext?.flow);
+  const epicId = normalizeText(runtimeContext?.epicId);
+  const storyId = normalizeText(runtimeContext?.storyId);
+  const runId = normalizeText(runtimeContext?.runId);
+  const candidates = bindings
+    .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+    .map((binding) => {
+      const scope = Array.isArray(binding.allowedWriteScope)
+        ? binding.allowedWriteScope.filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+        : [];
+      if (scope.length === 0) return null;
+      const bindingFlow = normalizeText(binding.flow);
+      const bindingEpic = normalizeText(binding.epicId);
+      const bindingStory = normalizeText(binding.storyId);
+      const bindingRun = normalizeText(binding.runId);
+      let score = 0;
+      if (bindingFlow && flow && bindingFlow === flow) score += 1;
+      if (bindingEpic && epicId && bindingEpic === epicId) score += 2;
+      if (bindingStory && storyId && bindingStory === storyId) score += 4;
+      if (bindingRun && runId && bindingRun === runId) score += 8;
+      return { scope, score };
+    })
+    .filter((item): item is { scope: string[]; score: number } => item != null)
+    .sort((a, b) => b.score - a.score);
+  return candidates[0]?.scope ?? [];
 }
 
 function resolveScopedOrchestrationState(
@@ -961,9 +1011,24 @@ function isRequirementRecordClosed(record: Record<string, unknown> | null): bool
   return normalizeText(closeout?.decision) === 'pass';
 }
 
+function isRuntimeRegistryBridgeRecord(record: Record<string, unknown> | null): boolean {
+  return Boolean(record?.runtimeRegistryBridge);
+}
+
+function recordHasImplementationEntryGate(record: Record<string, unknown> | null): boolean {
+  return Boolean(
+    record?.implementationEntryGate &&
+      typeof record.implementationEntryGate === 'object' &&
+      !Array.isArray(record.implementationEntryGate)
+  );
+}
+
 function deriveNextActionFromRequirementRecord(input: {
   stage: string;
   record: Record<string, unknown> | null;
+  state: OrchestrationState | null;
+  pendingPacketStatus: MainAgentPendingPacketStatus;
+  pendingPacket: RecommendationPacket | ExecutionPacket | ResumePacket | null;
   implementationEntryDecision: ImplementationEntryDecision | null | undefined;
   continueDecision: MainAgentContinueDecision;
 }): {
@@ -1019,8 +1084,41 @@ function deriveNextActionFromRequirementRecord(input: {
   if (blockingReasonRefs.length > 0) {
     return { nextAction: 'await_user', ready: false, blockingReasonRefs };
   }
+  const requirementNextAction = input.stage === 'post_audit' ? 'run_closeout' : 'dispatch_implement';
+  const requirementTaskType = taskTypeFromNextAction(requirementNextAction);
+  const stateNextAction = input.state?.nextAction ?? null;
+  const stateTaskType = taskTypeFromNextAction(stateNextAction);
+  const canReuseStateTransition =
+    stateNextAction === requirementNextAction || Boolean(input.state?.lastTaskReport);
+  if (
+    input.state &&
+    input.state.pendingPacket?.packetKind !== 'recommendation' &&
+    input.pendingPacketStatus !== 'none' &&
+    input.pendingPacketStatus !== 'completed' &&
+    input.pendingPacketStatus !== 'invalidated' &&
+    canReuseStateTransition &&
+    packetTaskType(input.pendingPacket) ===
+      (stateNextAction === requirementNextAction ? requirementTaskType : stateTaskType)
+  ) {
+    return {
+      nextAction: stateNextAction === requirementNextAction ? requirementNextAction : stateNextAction,
+      ready: input.pendingPacketStatus === 'ready_for_main_agent',
+      blockingReasonRefs,
+    };
+  }
+  if (
+    input.state &&
+    (input.pendingPacketStatus === 'completed' || input.pendingPacketStatus === 'invalidated') &&
+    input.state.lastTaskReport
+  ) {
+    return {
+      nextAction: input.state.nextAction,
+      ready: input.state.nextAction !== 'await_user' && input.state.nextAction !== 'blocked',
+      blockingReasonRefs,
+    };
+  }
   return {
-    nextAction: input.stage === 'post_audit' ? 'run_closeout' : 'dispatch_implement',
+    nextAction: requirementNextAction,
     ready: true,
     blockingReasonRefs,
   };
@@ -1150,9 +1248,14 @@ export function resolveMainAgentOrchestrationSurface(
   const requirementRecord = readRequirementRecordFromRuntimeContext(runtimeContext);
   const recordPath = runtimeRecordPath(runtimeContext);
   const closeout = runtimeContext?.latestReviewerCloseout ?? null;
-  const implementationEntryGate =
-    input.implementationEntryGate ??
+  const explicitImplementationEntryGateProvided = input.implementationEntryGate !== undefined;
+  const runtimeRegistryBridgeRecord = isRuntimeRegistryBridgeRecord(requirementRecord);
+  const runtimeContextImplementationEntryGate =
     resolveImplementationEntryGateFromRegistry(input.projectRoot, runtimeContext, input.flow);
+  const implementationEntryGate =
+    explicitImplementationEntryGateProvided
+      ? input.implementationEntryGate
+      : runtimeContextImplementationEntryGate;
   const scopedState = input.projectRoot
     ? resolveScopedOrchestrationState(input.projectRoot, runtimeContext)
     : { sessionId: null, statePath: null, state: null };
@@ -1165,9 +1268,12 @@ export function resolveMainAgentOrchestrationSurface(
     inferredLatestGate?.decision ??
     mapImplementationEntryDecision(implementationEntryGate) ??
     null;
-  const controlLatestGateDecision = requirementRecord
-    ? mapImplementationEntryDecision(implementationEntryGate)
-    : displayLatestGateDecision;
+  const bridgeRecordWithoutControlledGate =
+    runtimeRegistryBridgeRecord && !implementationEntryGate;
+  const controlLatestGateDecision =
+    requirementRecord && !bridgeRecordWithoutControlledGate
+      ? mapImplementationEntryDecision(implementationEntryGate)
+      : displayLatestGateDecision;
   const latestGate =
     scopedState.state?.latestGate ??
     inferredLatestGate ??
@@ -1184,11 +1290,17 @@ export function resolveMainAgentOrchestrationSurface(
     latestGateDecision: controlLatestGateDecision,
     fourSignalStatus: fourSignal?.latestStatus ?? 'pass',
   });
-  const action = requirementRecord
+  const useRequirementRecordProjection =
+    Boolean(requirementRecord) &&
+    !(explicitImplementationEntryGateProvided && runtimeRegistryBridgeRecord);
+  const action = useRequirementRecordProjection
     ? {
         ...deriveNextActionFromRequirementRecord({
           stage: input.stage,
           record: requirementRecord,
+          state: scopedState.state,
+          pendingPacketStatus,
+          pendingPacket,
           implementationEntryDecision: implementationEntryGate?.decision ?? null,
           continueDecision: continueState.continueDecision,
         }),
@@ -1201,6 +1313,18 @@ export function resolveMainAgentOrchestrationSurface(
         continueDecision: continueState.continueDecision,
         implementationEntryDecision: implementationEntryGate?.decision ?? null,
       });
+  const implementationEntryGateComesFromRecord =
+    !explicitImplementationEntryGateProvided && recordHasImplementationEntryGate(requirementRecord);
+  const implementationEntryGateIsBridgeOnly =
+    runtimeRegistryBridgeRecord && implementationEntryGateComesFromRecord;
+  const explicitImplementationEntryGateIsOnlySource =
+    explicitImplementationEntryGateProvided && !recordHasImplementationEntryGate(requirementRecord);
+  const surfaceSource: MainAgentOrchestrationSource =
+    action.source === 'implementation_entry_gate' ||
+    explicitImplementationEntryGateIsOnlySource ||
+    implementationEntryGateIsBridgeOnly
+      ? 'implementation_entry_gate'
+      : action.source;
   const drift = deriveDriftSurface(input.projectRoot, closeout, requirementRecord);
   const diagnostics = readinessDiagnostics({
     root: input.projectRoot,
@@ -1215,7 +1339,7 @@ export function resolveMainAgentOrchestrationSurface(
       : undefined;
 
   return {
-    source: action.source,
+    source: surfaceSource,
     sessionId: scopedState.sessionId,
     orchestrationStatePath: scopedState.statePath,
     orchestrationState: scopedState.state,
@@ -1231,7 +1355,7 @@ export function resolveMainAgentOrchestrationSurface(
     continueDecision: continueState.continueDecision,
     mainAgentNextAction: action.nextAction,
     mainAgentReady: action.ready,
-    ...(requirementRecord
+    ...(useRequirementRecordProjection
       ? {
           runtimeResumeProjection: {
             projectionType: 'runtime_resume_projection' as const,
@@ -1382,13 +1506,19 @@ export function ensureMainAgentDispatchPacket(
     normalizeText(currentSurface.closeout?.artifactPath),
     normalizeText(currentSurface.closeout?.reportPath),
   ].filter(Boolean);
-  const resolvedScope = resolveMappedAllowedWriteScope(input.projectRoot, runtimeContext, input.flow, taskType);
+  const resolvedScope = resolveMappedAllowedWriteScope(
+    input.projectRoot,
+    runtimeContext,
+    input.flow,
+    taskType,
+    currentSurface.runtimeResumeProjection ? readRequirementRecordFromRuntimeContext(runtimeContext) : null
+  );
   const allowedWriteScope =
     resolvedScope && resolvedScope.length > 0
       ? resolvedScope
       : taskType === 'audit'
-      ? ['docs/**', '_bmad-output/**', 'specs/**']
-      : ['src/**', 'tests/**', 'docs/**', '_bmad-output/**'];
+        ? ['docs/**', '_bmad-output/**', 'specs/**']
+        : ['src/**', 'tests/**', 'docs/**', '_bmad-output/**'];
 
   const packet =
     currentSurface.orchestrationState?.originalExecutionPacketId != null
@@ -1428,7 +1558,9 @@ export function ensureMainAgentDispatchPacket(
   const packetPath = writePacketFile(input.projectRoot, sessionId, packetId, packet);
 
   let writtenState: OrchestrationState;
-  if (currentSurface.orchestrationState) {
+  const canUpdateCurrentState =
+    Boolean(currentSurface.orchestrationState) && currentSurface.sessionId === sessionId;
+  if (canUpdateCurrentState) {
     updateOrchestrationState(input.projectRoot, sessionId, (current) => ({
       ...current,
       host,
@@ -1502,7 +1634,7 @@ export function ensureMainAgentDispatchPacket(
   }
 
   const refreshed = resolveMainAgentOrchestrationSurface(resolvedInput);
-  if (refreshed.pendingPacketStatus !== 'none') {
+  if (refreshed.pendingPacketStatus !== 'none' && pendingPacketMatchesNextAction(refreshed)) {
     return refreshed;
   }
 
@@ -1884,6 +2016,7 @@ export function runMainAgentAutomaticLoop(input: {
   runId?: string;
   flow: RuntimeFlowId;
   stage: string;
+  implementationEntryGate?: ImplementationEntryGate | null;
   host?: OrchestrationHost;
   args?: Record<string, string | undefined>;
   executor?: MainAgentRunLoopExecutor;
@@ -1905,6 +2038,9 @@ export function runMainAgentAutomaticLoop(input: {
     runId: input.runId,
     flow: input.flow,
     stage: input.stage,
+    ...(input.implementationEntryGate !== undefined
+      ? { implementationEntryGate: input.implementationEntryGate }
+      : {}),
     ...(runtimeContext ? { runtimeContext } : {}),
   };
   const initialSurface = resolveMainAgentOrchestrationSurface({

@@ -408,16 +408,18 @@ function runHostJourney(
     if (!instruction && (options.recordId || options.requirementSetId)) {
       const packetPath = path.join(smokeOutputRoot, 'host-matrix-smoke.packet.json');
       const packetId = `host-matrix-smoke-${Date.now()}`;
+      const requirementArtifactId =
+        options.requirementSetId ?? options.recordId ?? 'host-matrix-codex-smoke';
       const packet = {
         packetId,
-        parentSessionId: options.requirementSetId ?? options.recordId ?? 'host-matrix-codex-smoke',
+        parentSessionId: requirementArtifactId,
         sourceRecommendationPacketId: null,
         flow: 'standalone_tasks',
         phase: 'implement',
         taskType: 'implement',
         role: 'implementation-worker',
         inputArtifacts: [
-          '_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/requirement-record.json',
+          `_bmad-output/runtime/requirement-records/${requirementArtifactId}/requirement-record.json`,
         ],
         allowedWriteScope: ['_bmad-output/runtime/host-matrix-codex-smoke/**'],
         expectedDelta: 'write bounded Codex host smoke proof only',
@@ -462,7 +464,12 @@ function runHostJourney(
         allowPolicyFailureForSmoke: !options.recordId && !options.requirementSetId,
         smokeTargetPath:
           smokeRoot === smokeOutputRoot
-            ? `src/codex/${instruction.packetId}.md`
+            ? [
+                '_bmad-output/runtime/requirement-records',
+                instruction.sessionId,
+                'artifacts/codex',
+                `${instruction.packetId}.md`,
+              ].join('/')
             : normalizePathForScope(
                 path.relative(smokeRoot, path.join(smokeOutputRoot, `${instruction.packetId}.md`))
               ),

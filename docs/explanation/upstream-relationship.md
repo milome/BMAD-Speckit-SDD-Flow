@@ -1,6 +1,6 @@
 # Upstream Dependencies & Sync Strategy
 
-> **Current path**: upstream sync preserves governed host-runner customizations, Active Requirement Resolver wiring, and requirement-scoped `ResolvedRuntimeContext` semantics.
+> **Current path**: upstream sync preserves governed host-runner customizations, `runAuditorHost` post-audit close-out, Active Requirement Resolver wiring, and requirement-scoped `ResolvedRuntimeContext` semantics.
 > **Legacy path**: treating old `sync-runtime-context-from-sprint` / `ensure-run-runtime-context` post-audit command wiring as canonical control input.
 >
 > **Retired context note**: 本文保留 E15 旧 runtime context 接线的历史同步策略。目标态不得把旧 context / registry / sync 命令作为主控、恢复、门禁或 closeout 输入；目标态运行时上下文只能由 Active Requirement Resolver 从 RequirementRecord、requirement index、runtime policy snapshot、recovery context 和 workflow projection 解析为只读 `ResolvedRuntimeContext`。

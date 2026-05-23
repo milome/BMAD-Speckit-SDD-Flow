@@ -14,9 +14,19 @@ import { resolveBmadHelpRuntimePolicy } from './bmad-config';
 import type { StageName } from './bmad-config';
 import {
   buildImplementationEntryIndexKey,
+  readRuntimeContextRegistry,
   recordImplementationEntryGate,
+  resolveContextPathFromActiveScope,
+  runtimeContextRegistryPath,
+  type RuntimeContextRegistry,
 } from './runtime-context-registry';
 import {
+  readRuntimeContext,
+  type RuntimeContextFile,
+} from './runtime-context';
+import {
+  requirementRecordIndexPath,
+  requirementRecordsRoot,
   resolveActiveRequirement,
   resolvedRuntimeContextToRuntimeContext,
   type ResolvedRuntimeContext,
@@ -82,6 +92,7 @@ export function loadPolicyContextFromRegistry(root: string, options?: {
   runId?: string;
   artifactRoot?: string;
 } {
+  ensureRegistryBackedRequirementRecordBridge(root, options);
   const resolvedRuntimeContext = resolveActiveRequirement({
     root,
     recordId: options?.recordId,
@@ -108,6 +119,209 @@ function pickRoot(args: Record<string, string | undefined>): string {
   const fromArg = args.cwd?.trim();
   if (fromArg) return path.resolve(fromArg);
   return process.cwd();
+}
+
+function hasNonBridgeRequirementRecordCandidate(root: string): boolean {
+  const recordsRoot = requirementRecordsRoot(root);
+  if (!fs.existsSync(recordsRoot)) return false;
+  for (const entry of fs.readdirSync(recordsRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const recordPath = path.join(recordsRoot, entry.name, 'requirement-record.json');
+    if (!fs.existsSync(recordPath)) continue;
+    try {
+      const parsed = JSON.parse(fs.readFileSync(recordPath, 'utf8')) as { runtimeRegistryBridge?: unknown };
+      if (!parsed.runtimeRegistryBridge) {
+        return true;
+      }
+    } catch {
+      return true;
+    }
+  }
+  return false;
+}
+
+function safeRequirementSegment(...values: Array<string | undefined>): string {
+  const raw = values.find((value) => value?.trim())?.trim() || 'runtime-registry';
+  return raw.replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'runtime-registry';
+}
+
+function toRootRelative(root: string, filePath: string): string {
+  const absolute = path.isAbsolute(filePath) ? filePath : path.resolve(root, filePath);
+  return path.relative(root, absolute).replace(/\\/g, '/');
+}
+
+function writeJsonUtf8(filePath: string, payload: unknown): void {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+}
+
+function implementationEntryGateFromRegistry(
+  registry: RuntimeContextRegistry,
+  context: RuntimeContextFile
+): unknown {
+  const flow = context.flow;
+  if (flow !== 'story' && flow !== 'bugfix' && flow !== 'standalone_tasks') {
+    return undefined;
+  }
+  try {
+    const key = buildImplementationEntryIndexKey({
+      flow,
+      runId: context.runId,
+      artifactRoot: context.artifactRoot,
+      artifactDocPath: context.artifactPath,
+      storyId: context.storyId,
+    });
+    const flowIndex = registry.implementationEntryIndex[flow] ?? {};
+    return flowIndex[key] ?? (context.runId ? flowIndex[context.runId] : undefined);
+  } catch {
+    return undefined;
+  }
+}
+
+function ensureRegistryBackedRequirementRecordBridge(
+  root: string,
+  options?: { recordId?: string; requirementSetId?: string; runId?: string }
+): void {
+  if (options?.recordId || options?.requirementSetId || hasNonBridgeRequirementRecordCandidate(root)) {
+    return;
+  }
+  const registryPath = runtimeContextRegistryPath(root);
+  if (!fs.existsSync(registryPath)) {
+    return;
+  }
+
+  let registry: RuntimeContextRegistry;
+  let contextPath: string;
+  let context: RuntimeContextFile;
+  try {
+    registry = readRuntimeContextRegistry(root);
+    contextPath = resolveContextPathFromActiveScope(registry, registry.activeScope);
+    context = readRuntimeContext(root, contextPath);
+  } catch {
+    return;
+  }
+  if (options?.runId && context.runId !== options.runId) {
+    return;
+  }
+
+  const segment = safeRequirementSegment(
+    context.runId,
+    context.storyId,
+    context.artifactPath,
+    `${context.flow}-${context.stage}`
+  );
+  const requirementSetId = `REQSET-${segment}`;
+  const recordId = `REQ-${segment}`;
+  const recordRoot = path.join(requirementRecordsRoot(root), requirementSetId);
+  const recoveryRoot = path.join(recordRoot, 'recovery');
+  const recordPath = path.join(recordRoot, 'requirement-record.json');
+  const snapshotPath = path.join(recoveryRoot, 'runtime-policy-snapshot.json');
+  const recoveryContextPath = path.join(recoveryRoot, 'recovery-context.json');
+  const now = new Date().toISOString();
+  const bridgeProvenance = {
+    eventType: 'requirement_record_materialized_from_runtime_registry',
+    sourceRegistryPath: toRootRelative(root, registryPath),
+    sourceContextPath: toRootRelative(root, contextPath),
+    activeScope: registry.activeScope,
+    materializedAt: now,
+  };
+  const gate = implementationEntryGateFromRegistry(registry, context);
+
+  writeJsonUtf8(snapshotPath, {
+    kind: 'runtime-policy-snapshot',
+    schemaVersion: 'runtime-policy-snapshot/v1',
+    flow: context.flow,
+    stage: context.stage,
+    policy: {
+      flow: context.flow,
+      stage: context.stage,
+    },
+    provenance: bridgeProvenance,
+  });
+  writeJsonUtf8(recoveryContextPath, {
+    kind: 'recovery-context',
+    provenance: bridgeProvenance,
+  });
+  writeJsonUtf8(recordPath, {
+    recordId,
+    requirementSetId,
+    status: 'user_confirmed',
+    flow: context.flow,
+    stage: context.stage,
+    entryFlow: context.flow,
+    entryFlowClass:
+      context.flow === 'standalone_tasks'
+        ? 'task_packet_entry'
+        : context.flow === 'story'
+          ? 'full_story_entry'
+          : `${context.flow}_entry`,
+    workflowAdapter: context.sourceMode === 'standalone_story' ? 'direct' : 'bmad',
+    sourceMode: context.sourceMode,
+    templateId: context.templateId,
+    epicId: context.epicId,
+    storyId: context.storyId,
+    storySlug: context.storySlug,
+    runId: context.runId,
+    artifactRoot: context.artifactRoot,
+    artifactPath: context.artifactPath ?? context.artifactRoot,
+    sourcePath: context.artifactPath ?? context.artifactRoot ?? toRootRelative(root, contextPath),
+    updatedAt: context.updatedAt || now,
+    architectureConfirmationState: {
+      status: 'active',
+      currentArchitectureConfirmationRunId: `registry-bridge-${segment}`,
+      currentArchitectureConfirmationHash:
+        'sha256:0000000000000000000000000000000000000000000000000000000000000000',
+      lastEventType: 'requirement_record_materialized_from_runtime_registry',
+      updatedAt: now,
+    },
+    runtimePolicySnapshotRef: {
+      path: toRootRelative(root, snapshotPath),
+    },
+    recoveryContextRef: {
+      path: toRootRelative(root, recoveryContextPath),
+    },
+    runtimeRegistryBridge: bridgeProvenance,
+    ...(context.latestReviewerCloseout || registry.latestReviewerCloseout
+      ? { latestReviewerCloseout: context.latestReviewerCloseout ?? registry.latestReviewerCloseout }
+      : {}),
+    ...(gate ? { implementationEntryGate: gate } : {}),
+  });
+  writeJsonUtf8(requirementRecordIndexPath(root), {
+    version: 1,
+    active: {
+      recordId,
+      requirementSetId,
+      ...(context.runId ? { runId: context.runId } : {}),
+    },
+    records: [
+      {
+        recordId,
+        requirementSetId,
+        ...(context.runId ? { runId: context.runId } : {}),
+        recordPath: toRootRelative(root, recordPath),
+      },
+    ],
+    provenance: bridgeProvenance,
+  });
+}
+
+function validateActiveRuntimeContextBeforeBridge(
+  root: string,
+  options?: { recordId?: string; requirementSetId?: string; runId?: string }
+): void {
+  if (options?.recordId || options?.requirementSetId) {
+    return;
+  }
+  const registryPath = runtimeContextRegistryPath(root);
+  if (!fs.existsSync(registryPath)) {
+    return;
+  }
+  const registry = readRuntimeContextRegistry(root);
+  const contextPath = resolveContextPathFromActiveScope(registry, registry.activeScope);
+  const context = readRuntimeContext(root, contextPath);
+  if (options?.runId && context.runId !== options.runId) {
+    throw new Error(`runtime-context.runId does not match requested runId: ${options.runId}`);
+  }
 }
 
 function normalizeArtifactPathForStandaloneAutoRepair(root: string, artifactPath: string): string {
@@ -238,6 +452,18 @@ export function mainEmitRuntimePolicy(argv: string[]): number {
   }
 
   try {
+    try {
+      validateActiveRuntimeContextBeforeBridge(root, {
+        recordId: args.recordId,
+        requirementSetId: args.requirementSetId,
+        runId: args.runId,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`emit-runtime-policy: ${msg}`);
+      return 1;
+    }
+
     let loaded: ReturnType<typeof loadPolicyContextFromRegistry>;
     try {
       loaded = loadPolicyContextFromRegistry(root, {
@@ -261,7 +487,7 @@ export function mainEmitRuntimePolicy(argv: string[]): number {
 
     if (flow === 'story' && stage === 'implement' && !contextProvided) {
       console.error(
-        'emit-runtime-policy: story/implement requires storyId or runId in ResolvedRuntimeContext.'
+        'emit-runtime-policy: story/implement requires storyId or runId in runtime context (registry-backed).'
       );
       return 1;
     }

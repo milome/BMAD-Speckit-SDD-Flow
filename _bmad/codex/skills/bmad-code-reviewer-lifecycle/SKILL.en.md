@@ -59,7 +59,7 @@ This skill uses `runAuditorHost` to close the “audit → host close-out” loo
 
 ## Main Agent Orchestration Surface
 
-Consumer users activate governance through `$bmad-speckit`, `/bmad-speckit`, or `bmad-speckit` in the active AI host session. Do not present `npm run main-agent-orchestration` or `npx bmad-speckit main-agent-orchestration ...` as the default consumer-user step; those commands are install validation, CI, debug, or no-skill fallback only.
+Consumer users activate governance through `$bmad-speckit`, `/bmad-speckit`, or `bmad-speckit` in the active AI host session. Do not present package-script main-agent orchestration commands or bmad-speckit main-agent-orchestration commands as the default consumer-user step; those commands are install validation, CI, debug, or no-skill fallback only.
 
 In interactive main-agent mode, before starting, continuing, or closing this flow, the main Agent must internally run or equivalently consume the Main Agent control plane:
 
@@ -68,7 +68,7 @@ main-agent-orchestration --action inspect --host <codex|cursor|claude>
 main-agent-orchestration --action dispatch-plan --host <codex|cursor|claude>
 ```
 
-Global branching can only be derived from `requirement-record.json`, `currentMentalModel`, and the six mental model chain: requirement confirmation, architecture confirmation, implementation readiness, execution closure, audit review, and delivery confirmation. `bmad-help`, dashboard, score, SFT, legacy reports, `orchestrationState`, `pendingPacket`, `continueDecision`, `mainAgentNextAction`, and `mainAgentReady` are projections, compatibility hints, or evidence only; after any subagent result, host closeout, rerun, or blocking event, re-run inspect before choosing the next global branch.
+Global branching can only be derived from `requirement-record.json`, `currentMentalModel`, and the six mental model chain: requirement confirmation, architecture confirmation, implementation readiness, execution closure, audit review, and delivery confirmation. `bmad-help`, dashboard, score, SFT, legacy reports, `orchestrationState`, `pendingPacket`, `pendingPacketStatus`, `continueDecision`, `mainAgentNextAction`, and `mainAgentReady` are projections, compatibility hints, or evidence only; after any subagent result, host closeout, rerun, or blocking event, re-run inspect before choosing the next global branch.
 
 Hard prohibitions:
 - Do not ask normal consumer users to activate governance through npm or npx.
@@ -83,5 +83,3 @@ After the tasks-stage audit passes and before calling the unified auditor host r
 1. **Report contains parseable blocks**: The report must end with “总体评级: [A|B|C|D]” and “维度评分: 维度名: XX/100” blocks; otherwise parsing fails and the dashboard shows no rating. See `audit-prompts.md §4.1`, `audit-prompts-critical-auditor-appendix.md §7`.
 2. **Line-by-line format**: If the report uses table + conclusions, append the parseable blocks after the conclusions.
 3. **Paths**: You may pass `--reportPath` for any report path; the convention is `AUDIT_tasks-E{epic}-S{story}.md`; historical filename variants (e.g. a line-by-line audit suffix in the name) still work via `--reportPath`.
-
-

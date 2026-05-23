@@ -61,8 +61,8 @@ Do not route through `bmads-auto`. `bmads-auto` is quarantined as a deprecated i
 Required internal Main Agent path:
 
 1. Inspect the current control surface.
-2. If the current control record allows dispatch and no usable packet exists, materialize a bounded dispatch plan.
-3. Continue through the main-agent run loop for the active requirement.
+2. If the current control record allows dispatch and no usable packet exists, materialize a bounded dispatch plan with `main-agent-orchestration --action dispatch-plan`.
+3. Continue through the main-agent run loop for the active requirement with `main-agent-orchestration --action run-loop`.
 4. Re-read inspect after every child result, host closeout, rerun, or blocking event before deciding the next global branch.
 5. Treat `mainAgentNextAction`, `mainAgentReady`, and old handoff summaries as compatibility hints only.
 6. Require controlled ingest for TaskReport, execution evidence, audit evidence, gate checks, requirement closures, and closeout attempts.
@@ -73,3 +73,4 @@ Expected current-stage behavior:
 - If architecture confirmation is required or stale, block implementation until active requirement-scoped architecture confirmation exists.
 - If implementation readiness is stale or missing, block implementation dispatch until the controlled readiness gate passes.
 - If execution, audit, or delivery evidence is incomplete, continue through `execution_closure`, `audit_review`, and `delivery_confirmation` without downgrading the six-model chain.
+- Keep governed delivery gates named `main-agent:release-gate` and `main-agent:delivery-truth-gate`; these labels are current Main Agent gates, not deprecated `bmads-auto` surfaces.

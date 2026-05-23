@@ -4,13 +4,16 @@ import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import type { RecommendationPacket } from '../../scripts/orchestration-dispatch-contract';
 import {
+  buildMainAgentDispatchInstruction,
   claimMainAgentPendingPacket,
   completeMainAgentPendingPacket,
   invalidateMainAgentPendingPacket,
   mainMainAgentOrchestration,
   runMainAgentControlledReadinessAudit,
+  runMainAgentAutomaticLoop,
   markMainAgentPacketDispatched,
   resolveMainAgentOrchestrationSurface,
+  writeMainAgentRunLoopTaskReport,
 } from '../../scripts/main-agent-orchestration';
 import { mainImplementationReadinessGate } from '../../scripts/main-agent-implementation-readiness-gate';
 import {
@@ -856,6 +859,76 @@ describe('main-agent orchestration consumer', () => {
         implementationEntryGate: null,
       });
       expect(after.pendingPacketStatus).toBe('none');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps runtime-registry bridge remediation packets authoritative for post-audit run-loop', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-bridge-post-audit-'));
+    try {
+      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+      writeRuntimeContext(
+        root,
+        defaultRuntimeContextFile({
+          flow: 'story',
+          stage: 'post_audit',
+          sourceMode: 'full_bmad',
+          contextScope: 'story',
+          storyId: 'bridge-post-audit',
+          runId: 'bridge-post-audit-run',
+          artifactRoot: '_bmad-output/implementation-artifacts/bridge/post-audit',
+          updatedAt: new Date().toISOString(),
+        })
+      );
+
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'story',
+        stage: 'post_audit',
+        implementationEntryGate: {
+          gateName: 'implementation-readiness',
+          requestedFlow: 'story',
+          recommendedFlow: 'story',
+          decision: 'block',
+          readinessStatus: 'missing',
+          blockerCodes: ['missing_post_audit_evidence'],
+          blockerSummary: ['post-audit evidence must be remediated before closeout'],
+          rerouteRequired: false,
+          rerouteReason: null,
+          evidenceSources: {
+            readinessReportPath: null,
+            remediationArtifactPath: null,
+            executionRecordPath: null,
+            authoritativeAuditReportPath: null,
+          },
+          semanticFingerprint: 'bridge-post-audit-run',
+          evaluatedAt: '2026-05-23T00:00:00.000Z',
+        },
+        hydratePacket: true,
+      });
+      expect(instruction).not.toBeNull();
+      expect(instruction?.taskType).toBe('remediate');
+
+      const loop = runMainAgentAutomaticLoop({
+        projectRoot: root,
+        flow: 'story',
+        stage: 'post_audit',
+        executor: ({ projectRoot, instruction, args }) => {
+          const reportPath = writeMainAgentRunLoopTaskReport(projectRoot, instruction, {
+            ...args,
+            reportEvidence: 'bridge-post-audit-remediation',
+            validationsRun: 'bridge-post-audit-regression',
+          });
+          return JSON.parse(readFileSync(reportPath, 'utf8'));
+        },
+      });
+
+      expect(loop.status).toBe('completed');
+      expect(loop.dispatchInstruction?.packetId).toBe(instruction?.packetId);
+      expect(loop.finalSurface.pendingPacketStatus).toBe('completed');
+      expect(loop.finalSurface.mainAgentNextAction).toBe('rerun_gate');
+      expect(loop.taskReport?.evidence).toContain('bridge-post-audit-remediation');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

@@ -31,7 +31,7 @@ Before executing any stage task of this skill in each round, there must be a gov
 
 ## Main Agent Orchestration Surface
 
-Consumer users activate governance through `$bmad-speckit`, `/bmad-speckit`, or `bmad-speckit` in the active AI host session. Do not present `npm run main-agent-orchestration` or `npx bmad-speckit main-agent-orchestration ...` as the default consumer-user step; those commands are install validation, CI, debug, or no-skill fallback only.
+Consumer users activate governance through `$bmad-speckit`, `/bmad-speckit`, or `bmad-speckit` in the active AI host session. Do not present package-script main-agent orchestration commands or bmad-speckit main-agent-orchestration commands as the default consumer-user step; those commands are install validation, CI, debug, or no-skill fallback only.
 
 In interactive main-agent mode, before starting, continuing, or closing this flow, the main Agent must internally run or equivalently consume the Main Agent control plane:
 
@@ -626,5 +626,4 @@ Each "iteration" is: **Call code-review skills according to the convention in §
 | Post-implementation audit rules (strict) | [references/audit-post-impl-rules.md](references/audit-post-impl-rules.md) |
 | audit_convergence configuration | [references/audit-config-schema.md](references/audit-config-schema.md); Validation script `_bmad/speckit/scripts/powershell/validate-audit-config.ps1` |
 | **Speckit Command Index** | See §8 |
-
 

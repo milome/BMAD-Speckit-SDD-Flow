@@ -33,6 +33,7 @@ export interface ResolvedScoringPolicy {
 export interface ResolveScoringPolicyOptions {
   root?: string;
   contractPath?: string;
+  ruleRoot?: string;
 }
 
 function normalizePath(value: string): string {
@@ -89,7 +90,8 @@ function relativeFromRoot(root: string, file: string): string {
 }
 
 function resolvePolicyPath(root: string, file: string): string {
-  return path.isAbsolute(file) ? file : path.resolve(root, file);
+  if (path.isAbsolute(file)) return file;
+  return path.resolve(root, file);
 }
 
 function validateLevelRanges(value: unknown): Array<{ level: string; min: number; max: number }> {
@@ -104,7 +106,7 @@ function validateLevelRanges(value: unknown): Array<{ level: string; min: number
   });
 }
 
-function resolveRuleRefs(root: string, contract: JsonObject): ScoringPolicyRuleRef[] {
+function resolveRuleRefs(root: string, ruleRoot: string, contract: JsonObject): ScoringPolicyRuleRef[] {
   const refs = Array.isArray(contract.stageRuleRefs) ? contract.stageRuleRefs : [];
   if (refs.length === 0) throw new Error('scoring policy stageRuleRefs missing');
   return refs.map((item, index) => {
@@ -113,7 +115,7 @@ function resolveRuleRefs(root: string, contract: JsonObject): ScoringPolicyRuleR
     const kind = typeof ref.kind === 'string' ? ref.kind.trim() : '';
     const refPath = typeof ref.path === 'string' ? ref.path.trim() : '';
     if (!stage || !kind || !refPath) throw new Error(`invalid scoring policy stageRuleRefs[${index}]`);
-    const absolute = resolvePolicyPath(root, refPath);
+    const absolute = resolvePolicyPath(ruleRoot, refPath);
     if (!fs.existsSync(absolute)) throw new Error(`scoring policy rule fragment missing: ${refPath}`);
     return {
       stage,
@@ -126,6 +128,7 @@ function resolveRuleRefs(root: string, contract: JsonObject): ScoringPolicyRuleR
 
 export function resolveScoringPolicy(options?: ResolveScoringPolicyOptions): ResolvedScoringPolicy {
   const root = path.resolve(options?.root ?? process.cwd());
+  const ruleRoot = path.resolve(options?.ruleRoot ?? root);
   const contractAbsolute = resolveContractPath(root, options?.contractPath);
   if (!fs.existsSync(contractAbsolute)) {
     throw new Error(`scoring policy contract missing: ${relativeFromRoot(root, contractAbsolute)}`);
@@ -149,7 +152,7 @@ export function resolveScoringPolicy(options?: ResolveScoringPolicyOptions): Res
     dimensionVetoPolicy: asObject(contract.dimensionVetoPolicy, 'dimensionVetoPolicy'),
     iterationPenaltyPolicy: asObject(contract.iterationPenaltyPolicy, 'iterationPenaltyPolicy'),
     severityOverridePolicy: asObject(contract.severityOverridePolicy, 'severityOverridePolicy'),
-    stageRuleRefs: resolveRuleRefs(root, contract),
+    stageRuleRefs: resolveRuleRefs(root, ruleRoot, contract),
     requiredScoreArtifactKinds: asStringArray(contract.requiredScoreArtifactKinds, 'requiredScoreArtifactKinds'),
   };
   return {

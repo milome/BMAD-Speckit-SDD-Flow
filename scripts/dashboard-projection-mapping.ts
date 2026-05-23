@@ -13,6 +13,7 @@ import {
 
 interface ParsedArgs {
   outDir?: string;
+  recordId?: string;
   generatedBy?: string;
   json?: boolean;
   help?: boolean;
@@ -46,7 +47,11 @@ function writeJson(file: string, value: unknown): void {
   fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
 
-function fixtureInput(): {
+function recordScopedPath(recordId: string, relativePath: string): string {
+  return `_bmad-output/runtime/requirement-records/${recordId}/${relativePath.replace(/^\/+/u, '')}`;
+}
+
+function fixtureInput(recordId: string): {
   runtimeContext: DashboardRuntimeContextPanel;
   executionState: DashboardExecutionStateSummary;
   stageTimeline: DashboardStageTimelineEntry[];
@@ -72,8 +77,8 @@ function fixtureInput(): {
         runner: 'runAuditorHost',
         profile: 'implement_audit',
         stage: 'implement',
-        artifact_path: '_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/dashboard/audit.md',
-        report_path: '_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/dashboard/report.md',
+        artifact_path: recordScopedPath(recordId, 'dashboard/audit.md'),
+        report_path: recordScopedPath(recordId, 'dashboard/report.md'),
         audit_status: 'PASS',
         closeout_approved: false,
         result_code: 'blocked',
@@ -95,7 +100,7 @@ function fixtureInput(): {
       dispatched_host: 'codex',
       fallback_used: false,
       last_rerun_gate_status: 'pass',
-      artifact_path: '_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/dashboard/projection.json',
+      artifact_path: recordScopedPath(recordId, 'dashboard/projection.json'),
       packet_paths: {},
       last_dispatch_error: null,
       reviewer_route_explainability: null,
@@ -127,7 +132,7 @@ function fixtureInput(): {
           veto_triggered: false,
           tier_coefficient: 1,
           check_item_count: 3,
-          source_path: '_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/dashboard/report.md',
+          source_path: recordScopedPath(recordId, 'dashboard/report.md'),
           findings: [],
         },
       ],
@@ -167,8 +172,8 @@ function fixtureInput(): {
           phase_score: 96,
           findings_count: 0,
           sft_status: 'ready',
-          source_path: '_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/dashboard/story.md',
-          artifact_doc_path: '_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/dashboard/story.md',
+          source_path: recordScopedPath(recordId, 'dashboard/story.md'),
+          artifact_doc_path: recordScopedPath(recordId, 'dashboard/story.md'),
           last_updated_at: '2026-05-20T18:00:00.000Z',
         },
         {
@@ -188,8 +193,8 @@ function fixtureInput(): {
           phase_score: null,
           findings_count: 0,
           sft_status: 'none',
-          source_path: '_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/dashboard/task.md',
-          artifact_doc_path: '_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/dashboard/task.md',
+          source_path: recordScopedPath(recordId, 'dashboard/task.md'),
+          artifact_doc_path: recordScopedPath(recordId, 'dashboard/task.md'),
           last_updated_at: '2026-05-20T18:00:00.000Z',
         },
         {
@@ -209,8 +214,8 @@ function fixtureInput(): {
           phase_score: null,
           findings_count: 1,
           sft_status: 'none',
-          source_path: '_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/dashboard/bugfix.md',
-          artifact_doc_path: '_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/dashboard/bugfix.md',
+          source_path: recordScopedPath(recordId, 'dashboard/bugfix.md'),
+          artifact_doc_path: recordScopedPath(recordId, 'dashboard/bugfix.md'),
           last_updated_at: '2026-05-20T18:00:00.000Z',
         },
       ],
@@ -269,11 +274,14 @@ function collectValidationIssues(projection: ReturnType<typeof buildSixMentalMod
 export function mainDashboardProjectionMapping(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: dashboard-projection-mapping --out-dir <dir> [--json]');
+    console.log('Usage: dashboard-projection-mapping --record-id <id> [--out-dir <dir>] [--json]');
     return 0;
   }
-  const outDir = path.resolve(args.outDir ?? '_bmad-output/runtime/requirement-records/REQ-CLOSED-LOOP-DESIGN/evidence/TRACE-032/dashboard');
-  const input = fixtureInput();
+  if (!args.recordId) {
+    throw new Error('dashboard-projection-mapping requires --record-id');
+  }
+  const outDir = path.resolve(args.outDir ?? recordScopedPath(args.recordId, 'evidence/TRACE-032/dashboard'));
+  const input = fixtureInput(args.recordId);
   const projection = buildSixMentalModelProjection(input);
   const issues = collectValidationIssues(projection);
   const projectionPath = path.join(outDir, 'dashboard-read-model-projection.json');

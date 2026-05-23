@@ -513,6 +513,23 @@ function normalizeHookReconciliation(value: unknown): JsonObject | undefined {
   };
 }
 
+function normalizeImplementationEntryGate(value: unknown): JsonObject | undefined {
+  const gate = nested(value);
+  if (Object.keys(gate).length === 0) return undefined;
+  const rawDecision = text(gate.decision);
+  const decision =
+    rawDecision === 'pass' || rawDecision === 'reroute'
+      ? rawDecision
+      : rawDecision === 'block' || rawDecision === 'blocked' || rawDecision === 'fail'
+        ? 'block'
+        : 'block';
+  return {
+    ...gate,
+    gateName: 'implementation-readiness',
+    decision,
+  };
+}
+
 export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
   const recordId = text(record.recordId);
   const requirementSetId = text(record.requirementSetId) || recordId;
@@ -559,6 +576,7 @@ export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
     'rerunLoops',
     'closeout',
     'readinessBaselineActivation',
+    'readinessBaselineActivationEventType',
     'readinessAuditRequests',
     'readinessAuditResults',
     'readinessScoringRecords',
@@ -587,6 +605,9 @@ export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
   out.sourcePath = text(out.sourcePath) || 'docs/design/unknown.md';
   out.sourceDocumentHash = text(out.sourceDocumentHash);
   out.implementationConfirmationHash = text(out.implementationConfirmationHash);
+  const implementationEntryGate = normalizeImplementationEntryGate(out.implementationEntryGate);
+  if (implementationEntryGate) out.implementationEntryGate = implementationEntryGate;
+  else delete out.implementationEntryGate;
   if (out.runtimePolicySnapshotRef) {
     out.runtimePolicySnapshotRef = normalizeArtifactRef(nested(out.runtimePolicySnapshotRef), recordId, requirementSetId);
   }
