@@ -3,8 +3,8 @@
 Date: 2026-05-24
 Status: Draft
 Source request: 将 Main Agent 六心智模型控制面补齐为可确认、可追踪、可验证的需求契约源文档。
-Checkpoint: 5 - sequenceViews, flowViews, edgeCaseViews, and boundaryViews
-Checkpoint status: ID-bound views drafted; artifact plan, commands, and closeout preview pending
+Checkpoint: 6 - artifactAutomationPlan, requiredCommands, suggestedCommands, and closeoutReadinessPreview
+Checkpoint status: artifact plan and command plan drafted; conditional modules and human-readable closeout sections pending
 
 ## 1. 结论
 
@@ -92,11 +92,13 @@ Checkpoint 4 已继续填充 `failurePaths`、`edgeCases` 和 `traceRows` 数组
 
 Checkpoint 5 已继续填充 `sequenceViews`、`flowViews`、`edgeCaseViews` 和 `boundaryViews`，并把本 checkpoint 中引用的 `SEQ-*`、`FLOW-*`、`EDGEVIEW-*` 和 `BOUNDARY-*` 补齐为可渲染视图。
 
-Checkpoint 6 必须继续填充 `artifactAutomationPlan`、`requiredCommands`、`suggestedCommands` 和 `closeoutReadinessPreview`，并把当前 evidence、traceRows 和 views 中引用的 `ART-*` 与 `CMD-*` 补齐为可执行计划。
+Checkpoint 6 已继续填充 `artifactAutomationPlan`、`requiredCommands`、`suggestedCommands` 和 `closeoutReadinessPreview`，并把当前 evidence、traceRows 和 views 中引用的 `ART-*` 与 `CMD-*` 补齐为可执行计划。
+
+Checkpoint 7 必须继续填充 `applicability.*.applies=true` 对应的条件模块，尤其是 governance event registry、controlled ingest writer registry、runtime recovery registry、active requirement resolution、scoring/dashboard/SFT boundary、current-target map、scripts/hooks registry。
 
 ## 3. implementationConfirmation Core Draft
 
-This checkpoint now includes the confirmation block shell, identity, rendering placeholders, applicability declarations, drafted `MUST-*`, `NEG-*`, `OUT-*`, and `EVD-*` rows, `FAIL-*`, `EDGE-*`, and `TRACE-*` mappings, plus ID-bound sequence, flow, edge-case, and boundary views. It deliberately leaves `CMD-*`, artifact automation rows, conditional modules, and final human-readable Mermaid diagrams for later checkpoints.
+This checkpoint now includes the confirmation block shell, identity, rendering placeholders, applicability declarations, drafted `MUST-*`, `NEG-*`, `OUT-*`, and `EVD-*` rows, `FAIL-*`, `EDGE-*`, and `TRACE-*` mappings, ID-bound sequence, flow, edge-case, and boundary views, plus artifact automation and command plans. It deliberately leaves conditional modules, final human-readable Mermaid diagrams, Reverse Audit Report, Definition of Done, and rendered confirmation HTML for later checkpoints.
 
 ```yaml
 implementationConfirmation:
@@ -894,18 +896,503 @@ implementationConfirmation:
       inScope: ["checkpoint commits", "inline implementationConfirmation", "future HTML confirmation", "controlled confirmation ingest"]
       outOfScope: ["sidecar authoritative contract", "checkpoint equals readiness", "HTML render before language selection", "silent semantic drift"]
       summary: Checkpoint commits preserve authoring progress only; confirmation and readiness require later controlled steps.
-  artifactAutomationPlan: []
-  requiredCommands: []
-  suggestedCommands: []
+  artifactAutomationPlan:
+    - id: ART-SOURCE-001
+      title: Inline implementation source document
+      producer: requirements_contract_authoring_checkpoint_flow
+      consumer: ["confirmation_renderer", "reverse_audit", "main_agent_readiness_prompt"]
+      path: docs/requirements/2026-05-24-main-agent-six-mental-model-control-plane-completion.md
+      ownerModel: requirement_confirmation
+      sourceOfTruthRole: implementation_source_document
+      inputArtifacts: []
+      outputArtifacts: ["implementationConfirmation", "confirmation_html_after_later_checkpoint"]
+      recordEventTypes: []
+      canAffectControlFlow: false
+      controlFlowPolicy: Scope semantics become actionable only after rendered HTML confirmation and controlled confirm-scope ingest.
+      retentionRule: Keep under docs/requirements and force-add while ignored until final index cleanup.
+      cleanupRule: Do not delete during checkpoint authoring; later final commit may move index state but not content.
+      orphanRisk: high_if_sidecar_contract_or_conversation_prompt_is_treated_as_authority
+      linkedEvidenceIds: ["EVD-001"]
+    - id: ART-INSPECT-001
+      title: Inspect authority-order evidence
+      producer: main-agent-orchestration --action inspect
+      consumer: ["User", "MainAgentInspect", "readiness_gate"]
+      path: _bmad-output/runtime/requirement-records/<requirement-set-id>/inspect/inspect-authority-order-<run-id>.json
+      ownerModel: requirement_confirmation
+      sourceOfTruthRole: evidence_projection
+      inputArtifacts: ["ART-RECORD-001", "ART-SCORE-001"]
+      outputArtifacts: ["inspect_authority_order_report"]
+      recordEventTypes: []
+      canAffectControlFlow: false
+      controlFlowPolicy: Inspect output explains the decision but does not mutate RequirementRecord.
+      retentionRule: Retain per run until requirement record closure evidence is archived.
+      cleanupRule: Old inspect outputs may be pruned only after current attempt evidence is preserved in artifactIndex.
+      orphanRisk: medium_if_latest_inspect_output_is_read_without_matching_record_hash
+      linkedEvidenceIds: ["EVD-002"]
+    - id: ART-RECORD-001
+      title: Controlled RequirementRecord with currentMentalModel
+      producer: requirement-record-control-store
+      consumer: ["MainAgentInspect", "MentalModelGate", "BlockerIntake", "DeliveryCloseoutGate"]
+      path: _bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json
+      ownerModel: governance_control_plane
+      sourceOfTruthRole: authoritative_control_record
+      inputArtifacts: ["ART-EVENT-001", "ART-BLOCKER-001", "ART-RECONFIRM-001"]
+      outputArtifacts: ["currentMentalModel", "mentalModelTransitions", "sixModelVerdicts", "failureRecords"]
+      recordEventTypes: ["mental_model_transition_recorded", "controlled_blocker_recorded"]
+      canAffectControlFlow: true
+      controlFlowPolicy: Only registered controlled writers may mutate protected fields with before/after hashes.
+      retentionRule: Retain as the durable control record for the requirement set.
+      cleanupRule: Never prune or rewrite outside controlled store APIs.
+      orphanRisk: critical_if_any_runtime_uses_context_surface_or_latest_file_heuristic_instead
+      linkedEvidenceIds: ["EVD-003", "EVD-006"]
+    - id: ART-EVENT-001
+      title: Mental model transition event log
+      producer: controlled_mental_model_transition_writer
+      consumer: ["RequirementRecordReducer", "MainAgentInspect", "audit_review"]
+      path: _bmad-output/runtime/requirement-records/<requirement-set-id>/events/mental-model-transitions.jsonl
+      ownerModel: governance_control_plane
+      sourceOfTruthRole: control_event_log
+      inputArtifacts: ["ART-RECORD-001", "ART-GATE-001"]
+      outputArtifacts: ["mentalModelTransitions"]
+      recordEventTypes: ["mental_model_transition_requested", "mental_model_transition_recorded", "mental_model_transition_rejected"]
+      canAffectControlFlow: true
+      controlFlowPolicy: Event reducer must reject missing sourceRefs, missing reasonCode, or missing before/after hashes.
+      retentionRule: Append-only for the lifetime of the requirement.
+      cleanupRule: Do not compact until a hash-preserving archive manifest exists.
+      orphanRisk: high_if_transition_event_is_not_reduced_into_requirement_record
+      linkedEvidenceIds: ["EVD-003"]
+    - id: ART-GATE-001
+      title: Six-model verdict control fields
+      producer: main-agent-mental-model-gate
+      consumer: ["MainAgentInspect", "MainAgentDispatch", "DeliveryCloseoutGate"]
+      path: "_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json#sixModelVerdicts"
+      ownerModel: governance_control_plane
+      sourceOfTruthRole: controlled_gate_decision
+      inputArtifacts: ["ART-RECORD-001", "ART-READINESS-001", "ART-EXECUTION-001", "ART-AUDIT-001"]
+      outputArtifacts: ["sixModelVerdicts", "nextRecommendedModel", "nextAction"]
+      recordEventTypes: ["six_model_verdicts_evaluated", "mental_model_transition_recorded"]
+      canAffectControlFlow: true
+      controlFlowPolicy: Only the current model with status pass may recommend next-model progression.
+      retentionRule: Persist latest verdict set and append event history.
+      cleanupRule: Stale verdicts must be marked stale instead of deleted.
+      orphanRisk: high_if_dashboard_six_model_projection_is_used_instead
+      linkedEvidenceIds: ["EVD-004"]
+    - id: ART-AUDIT-001
+      title: audit_review verdict and audit review report
+      producer: main-agent-orchestration --action audit-review
+      consumer: ["MentalModelGate", "DeliveryCloseoutGate", "DashboardProjection"]
+      path: _bmad-output/runtime/requirement-records/<requirement-set-id>/audit/audit-review-<run-id>.json
+      ownerModel: audit_review
+      sourceOfTruthRole: controlled_model_verdict
+      inputArtifacts: ["ART-READINESS-001", "ART-SCORE-001", "ART-EXECUTION-001", "ART-BLOCKER-001"]
+      outputArtifacts: ["audit_review_verdict", "audit_findings_for_intake"]
+      recordEventTypes: ["audit_review_evaluated", "controlled_blocker_recorded"]
+      canAffectControlFlow: true
+      controlFlowPolicy: Audit verdict affects control flow only after controlled write into RequirementRecord.
+      retentionRule: Retain current-attempt report and source hash binding.
+      cleanupRule: Archive stale audit reports but keep artifactIndex references.
+      orphanRisk: high_if_score_green_is_treated_as_audit_pass
+      linkedEvidenceIds: ["EVD-012"]
+    - id: ART-SCORE-001
+      title: RunScoreRecord and dashboard six-model read-model projection
+      producer: scoring_dashboard_and_score_writers
+      consumer: ["AuditReview", "Dashboard", "User"]
+      path: packages/scoring/data/<requirement-id>-*.json and packages/scoring/dashboard/six-model-projection.ts
+      ownerModel: audit_review
+      sourceOfTruthRole: read_model_or_evidence_only
+      inputArtifacts: ["ART-AUDIT-001", "ART-RECORD-001"]
+      outputArtifacts: ["RunScoreRecord", "dashboard_six_model_projection"]
+      recordEventTypes: []
+      canAffectControlFlow: false
+      controlFlowPolicy: Score and dashboard outputs can be consumed as provenance but cannot write decisions or advance models.
+      retentionRule: Retain according to scoring data retention and artifactIndex references.
+      cleanupRule: Stale score projections must be ignored for delivery readiness.
+      orphanRisk: critical_if_dashboard_or_score_green_is_treated_as_control_authority
+      linkedEvidenceIds: ["EVD-012"]
+    - id: ART-SUBAGENT-001
+      title: TaskReport and SubagentEvidenceEnvelope candidate evidence
+      producer: subagent_runtime_and_evidence_envelope_writer
+      consumer: ["ControlledBlockerIntake", "ExecutionClosure", "AuditReview"]
+      path: _bmad-output/runtime/requirement-records/<requirement-set-id>/subagents/<run-id>/*.json
+      ownerModel: execution_closure
+      sourceOfTruthRole: candidate_evidence
+      inputArtifacts: []
+      outputArtifacts: ["TaskReport", "SubagentEvidenceEnvelope", "failureRecords_candidate"]
+      recordEventTypes: []
+      canAffectControlFlow: false
+      controlFlowPolicy: Candidate evidence must be normalized before it can block or support a control decision.
+      retentionRule: Retain current attempt envelope and raw signal refs.
+      cleanupRule: Older envelopes may be archived only after dedupeKey and artifactIndex capture.
+      orphanRisk: high_if_taskreport_done_advances_currentMentalModel_directly
+      linkedEvidenceIds: ["EVD-005"]
+    - id: ART-BLOCKER-001
+      title: NormalizedBlockerSignal and authoritative failureRecords
+      producer: main-agent-orchestration --action controlled-blocker-intake
+      consumer: ["MainAgentInspect", "MentalModelGate", "DeliveryCloseoutGate"]
+      path: _bmad-output/runtime/requirement-records/<requirement-set-id>/blockers/blocker-intake-<run-id>.json
+      ownerModel: governance_control_plane
+      sourceOfTruthRole: controlled_blocker_record
+      inputArtifacts: ["ART-SUBAGENT-001", "ART-INSPECT-001", "ART-GATE-002"]
+      outputArtifacts: ["NormalizedBlockerSignal", "failureRecords", "rerunLoops", "gateChecks"]
+      recordEventTypes: ["blocker_signal_normalized", "controlled_blocker_recorded", "blocker_unknown_recorded"]
+      canAffectControlFlow: true
+      controlFlowPolicy: Blocking signals halt downstream models until resolved or superseded by controlled revalidation.
+      retentionRule: Retain normalized runs and rawSignalRefs for audit.
+      cleanupRule: Do not delete unresolved or fatal blockers.
+      orphanRisk: critical_if_raw_signal_is_dropped_or_bypasses_intake
+      linkedEvidenceIds: ["EVD-006"]
+    - id: ART-BLOCKER-002
+      title: Pending blocker intake and transition blocker state
+      producer: blocker_intake_scheduler_and_model_transition_guard
+      consumer: ["MentalModelGate", "DeliveryCloseoutGate", "MainAgentInspect"]
+      path: "_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json#pendingBlockerIntake"
+      ownerModel: governance_control_plane
+      sourceOfTruthRole: controlled_transition_blocker
+      inputArtifacts: ["ART-BLOCKER-001", "ART-GATE-002"]
+      outputArtifacts: ["pendingBlockerIntake", "blockerIntakeRuns", "transitionBlockers"]
+      recordEventTypes: ["blocker_intake_enqueued", "blocker_intake_completed", "model_transition_blocked"]
+      canAffectControlFlow: true
+      controlFlowPolicy: Pending or blocking intake prevents transition, dispatch, delivery confirmation, and record close.
+      retentionRule: Retain run status until all linked blockers are resolved or superseded.
+      cleanupRule: Completed non-blocking intake runs may be archived after artifactIndex records hashes.
+      orphanRisk: high_if_pending_intake_is_not_checked_before_transition
+      linkedEvidenceIds: ["EVD-007"]
+    - id: ART-GATE-002
+      title: Transition and closeout blocker gate receipt
+      producer: mental_model_transition_guard_and_closeout_precheck
+      consumer: ["MentalModelGate", "DeliveryCloseoutGate", "AuditReview"]
+      path: _bmad-output/runtime/requirement-records/<requirement-set-id>/gates/transition-closeout-blockers-<run-id>.json
+      ownerModel: governance_control_plane
+      sourceOfTruthRole: controlled_gate_receipt
+      inputArtifacts: ["ART-BLOCKER-001", "ART-BLOCKER-002", "ART-RECONFIRM-001", "ART-READINESS-001"]
+      outputArtifacts: ["transition_gate_receipt", "closeout_blocker_receipt"]
+      recordEventTypes: ["model_transition_blocked", "delivery_confirmation_blocked"]
+      canAffectControlFlow: true
+      controlFlowPolicy: Gate receipt must fail closed on pending blocker intake, unresolved blockers, stale evidence, or open reconfirmation.
+      retentionRule: Retain per current attempt.
+      cleanupRule: Stale receipts must not satisfy current attempt closeout.
+      orphanRisk: high_if_closeout_reads_old_gate_receipt
+      linkedEvidenceIds: ["EVD-007", "EVD-013"]
+    - id: ART-RECONFIRM-001
+      title: Blocking reconfirmationRequests
+      producer: controlled-reconfirmation-router
+      consumer: ["RequirementConfirmation", "ArchitectureConfirmation", "MentalModelGate", "MainAgentInspect"]
+      path: "_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json#reconfirmationRequests"
+      ownerModel: requirement_confirmation
+      sourceOfTruthRole: controlled_reconfirmation_blocker
+      inputArtifacts: ["ART-SOURCE-001", "ART-ARCH-001", "ART-EXECUTION-001", "ART-AUDIT-001"]
+      outputArtifacts: ["reconfirmationRequests", "currentMentalModel_rollback"]
+      recordEventTypes: ["reconfirmation_requested", "mental_model_transition_recorded", "downstream_model_blocked"]
+      canAffectControlFlow: true
+      controlFlowPolicy: Any open blocking reconfirmation request forces fail-closed downstream behavior.
+      retentionRule: Retain until exact reconfirmation closes the request.
+      cleanupRule: Do not silently resolve because a rerun passed.
+      orphanRisk: critical_if_semantic_drift_is_treated_as_rerun_only
+      linkedEvidenceIds: ["EVD-008"]
+    - id: ART-ARCH-001
+      title: architectureConfirmationState
+      producer: main-agent-orchestration --action architecture-confirmation-ingest
+      consumer: ["ArchitectureConfirmationModel", "ImplementationReadiness", "ReconfirmationRouter"]
+      path: "_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json#architectureConfirmationState"
+      ownerModel: architecture_confirmation
+      sourceOfTruthRole: controlled_architecture_state
+      inputArtifacts: ["ART-SOURCE-001", "ART-EVENT-002"]
+      outputArtifacts: ["architectureConfirmationState", "architecture_confirmation_verdict_input"]
+      recordEventTypes: ["architecture_confirmation_state_checked", "architecture_confirmation_recorded"]
+      canAffectControlFlow: true
+      controlFlowPolicy: Architecture state affects readiness only through main-agent action switch and controlled record write.
+      retentionRule: Retain current architecture hash, target paths, impact scan, and confirmation receipt.
+      cleanupRule: Stale architecture confirmations must route to reconfirmation instead of being overwritten.
+      orphanRisk: high_if_ingest_architecture_confirmation_remains_isolated
+      linkedEvidenceIds: ["EVD-009"]
+    - id: ART-EVENT-002
+      title: Architecture confirmation controlled event chain
+      producer: architecture_confirmation_ingest_writer
+      consumer: ["RequirementRecordReducer", "ArchitectureConfirmationModel", "AuditReview"]
+      path: _bmad-output/runtime/requirement-records/<requirement-set-id>/events/architecture-confirmation.jsonl
+      ownerModel: architecture_confirmation
+      sourceOfTruthRole: control_event_log
+      inputArtifacts: ["ART-ARCH-001", "ART-SOURCE-001"]
+      outputArtifacts: ["architectureConfirmationState"]
+      recordEventTypes: ["architecture_confirmation_state_checked", "architecture_confirmation_recorded", "architecture_confirmation_rejected"]
+      canAffectControlFlow: true
+      controlFlowPolicy: Only registered architecture ingest writer may emit architecture confirmation control events.
+      retentionRule: Append-only with artifact hashes.
+      cleanupRule: Do not compact until archived with hash manifest.
+      orphanRisk: high_if_architecture_state_is_written_without_event_chain
+      linkedEvidenceIds: ["EVD-009"]
+    - id: ART-READINESS-001
+      title: implementation_readiness model verdict
+      producer: main-agent-implementation-readiness-gate
+      consumer: ["MainAgentDispatch", "MentalModelGate", "DeliveryCloseoutGate"]
+      path: _bmad-output/runtime/requirement-records/<requirement-set-id>/gates/implementation-readiness-<run-id>.json
+      ownerModel: implementation_readiness
+      sourceOfTruthRole: controlled_model_verdict
+      inputArtifacts: ["ART-RECORD-001", "ART-ARCH-001", "ART-BLOCKER-002", "ART-RECONFIRM-001"]
+      outputArtifacts: ["implementation_readiness_verdict", "readiness_blocking_reasons"]
+      recordEventTypes: ["implementation_readiness_evaluated", "model_transition_blocked"]
+      canAffectControlFlow: true
+      controlFlowPolicy: Dispatch requires implementation_readiness pass on current hashes and no open blocking state.
+      retentionRule: Retain current readiness report and stale baseline metadata.
+      cleanupRule: Stale readiness evidence must remain visible but cannot satisfy current attempt.
+      orphanRisk: high_if_readiness_pass_is_reused_after_scope_or_hash_change
+      linkedEvidenceIds: ["EVD-010"]
+    - id: ART-EXECUTION-001
+      title: execution_closure model verdict
+      producer: main-agent-orchestration --action execution-closure
+      consumer: ["MainAgentInspect", "AuditReview", "DeliveryCloseoutGate"]
+      path: _bmad-output/runtime/requirement-records/<requirement-set-id>/execution/execution-closure-<run-id>.json
+      ownerModel: execution_closure
+      sourceOfTruthRole: controlled_model_verdict
+      inputArtifacts: ["ART-SUBAGENT-001", "ART-BLOCKER-001", "ART-READINESS-001"]
+      outputArtifacts: ["execution_closure_verdict", "traceRows_status", "commandRunRefs", "artifactIndex_refs"]
+      recordEventTypes: ["execution_closure_evaluated", "execution_closure_blocked"]
+      canAffectControlFlow: true
+      controlFlowPolicy: execution_closure may unlock audit_review but cannot replace delivery closeout.
+      retentionRule: Retain per current attempt with command and artifact hashes.
+      cleanupRule: Do not reuse prior attempt closure as current pass.
+      orphanRisk: critical_if_execution_closure_pass_marks_delivery_complete
+      linkedEvidenceIds: ["EVD-011"]
+    - id: ART-CLOSEOUT-001
+      title: Delivery closeout and delivery truth gate report
+      producer: main-agent-delivery-closeout-gate and main-agent-delivery-truth-gate
+      consumer: ["DeliveryConfirmationModel", "RequirementRecordReducer", "User"]
+      path: _bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/delivery-closeout-<run-id>.json
+      ownerModel: delivery_confirmation
+      sourceOfTruthRole: terminal_delivery_gate_receipt
+      inputArtifacts: ["ART-EXECUTION-001", "ART-AUDIT-001", "ART-BLOCKER-002", "ART-RECONFIRM-001"]
+      outputArtifacts: ["delivery_confirmation_verdict", "delivery_truth_gate_receipt"]
+      recordEventTypes: ["delivery_confirmation_evaluated", "delivery_confirmation_blocked", "record_close_requested"]
+      canAffectControlFlow: true
+      controlFlowPolicy: record_closed requires current closeout, delivery truth, no blockers, no open reconfirmation, and current attempt evidence.
+      retentionRule: Retain terminal attempt report and all current evidence hashes.
+      cleanupRule: Older closeout reports are historical only and must not satisfy current closeout.
+      orphanRisk: critical_if_closeout_reads_stale_attempt_or_read_model_green
+      linkedEvidenceIds: ["EVD-013"]
+    - id: ART-RECORD-002
+      title: record_closed and requirement closure event
+      producer: controlled_record_close_writer
+      consumer: ["MainAgentInspect", "DashboardProjection", "User"]
+      path: "_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json#requirementClosures"
+      ownerModel: delivery_confirmation
+      sourceOfTruthRole: terminal_control_record
+      inputArtifacts: ["ART-CLOSEOUT-001", "ART-RECORD-001", "ART-GATE-002"]
+      outputArtifacts: ["record_closed", "requirementClosures", "closedAt", "closedBy"]
+      recordEventTypes: ["record_close_requested", "record_closed", "record_close_rejected"]
+      canAffectControlFlow: true
+      controlFlowPolicy: Only delivery_confirmation pass with current evidence may write record_closed.
+      retentionRule: Retain forever as terminal requirement state.
+      cleanupRule: Never delete or rewrite; corrections require new controlled event.
+      orphanRisk: critical_if_record_closed_written_without_closeout_truth
+      linkedEvidenceIds: ["EVD-013"]
+    - id: ART-INSPECT-002
+      title: User-visible inspect explanation
+      producer: main-agent-orchestration --action inspect
+      consumer: ["User", "Support", "AuditReview"]
+      path: _bmad-output/runtime/requirement-records/<requirement-set-id>/inspect/user-visible-inspect-<run-id>.md
+      ownerModel: requirement_confirmation
+      sourceOfTruthRole: user_explanation_projection
+      inputArtifacts: ["ART-RECORD-001", "ART-BLOCKER-002", "ART-RECONFIRM-001", "ART-GATE-001"]
+      outputArtifacts: ["current_model_summary", "blocking_reasons", "next_safe_action", "forbidden_shortcuts"]
+      recordEventTypes: []
+      canAffectControlFlow: false
+      controlFlowPolicy: Human-readable inspect output explains but never writes control state.
+      retentionRule: Retain current inspect explanation and artifact hash while requirement is active.
+      cleanupRule: Stale inspect explanations may be archived after a newer current-hash report exists.
+      orphanRisk: medium_if_user_reads_stale_inspect_without_record_hash_context
+      linkedEvidenceIds: ["EVD-014"]
+  requiredCommands:
+    - id: CMD-CONTRACT-001
+      phase: contract_validation
+      command: node _bmad/skills/requirements-contract-authoring/scripts/reverse_audit_contract.js docs/requirements/2026-05-24-main-agent-six-mental-model-control-plane-completion.md
+      expectedExitCodeAfterCheckpoint6: nonzero_until_confirmation_render_reverse_audit_and_dod_are_added
+      expectedExitCodeForCloseout: 0
+      proves: Source document contains implementationConfirmation, ID-bound views, artifact plan rows, trace rows, and later confirmation render metadata.
+      evidenceRefs: ["EVD-001"]
+      artifactRefs: ["ART-SOURCE-001"]
+      traceRows: ["TRACE-001", "TRACE-013"]
+      requiredBefore: render_confirmation
+    - id: CMD-DELIVERY-001
+      phase: delivery_evidence
+      command: npx vitest run tests/acceptance/main-agent-orchestration-consumer.test.ts tests/acceptance/main-agent-unified-ingress-e2e.test.ts
+      expectedExitCodeForCloseout: 0
+      proves: Inspect resolves active RequirementRecord and orders authoritative record state before read-model projections.
+      evidenceRefs: ["EVD-002"]
+      artifactRefs: ["ART-INSPECT-001", "ART-RECORD-001"]
+      traceRows: ["TRACE-001"]
+      requiredBefore: implementation_readiness_pass
+    - id: CMD-DELIVERY-002
+      phase: delivery_evidence
+      command: npx vitest run tests/acceptance/requirement-record-control-store-enforcement.test.ts tests/acceptance/requirement-record-schema.test.ts
+      expectedExitCodeForCloseout: 0
+      proves: Protected RequirementRecord fields and currentMentalModel transitions are enforced by the control store with before/after hashes.
+      evidenceRefs: ["EVD-003"]
+      artifactRefs: ["ART-RECORD-001", "ART-EVENT-001"]
+      traceRows: ["TRACE-002"]
+      requiredBefore: architecture_confirmation_pass
+    - id: CMD-DELIVERY-003
+      phase: delivery_evidence
+      command: npx vitest run tests/unit/main-agent-implementation-readiness-gate.test.ts tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts packages/scoring/dashboard/__tests__/compute.test.ts
+      expectedExitCodeForCloseout: 0
+      proves: The six-model gate and readiness-related gate logic refuse next-model progression unless the current model is pass.
+      evidenceRefs: ["EVD-004"]
+      artifactRefs: ["ART-GATE-001"]
+      traceRows: ["TRACE-003"]
+      requiredBefore: model_transition
+    - id: CMD-DELIVERY-004
+      phase: delivery_evidence
+      command: npx vitest run tests/acceptance/subagent-evidence-envelope.test.ts tests/acceptance/subagent-current-attempt-revalidation.test.ts
+      expectedExitCodeForCloseout: 0
+      proves: TaskReport and SubagentEvidenceEnvelope remain candidate evidence until processed by controlled blocker intake and current-attempt validation.
+      evidenceRefs: ["EVD-005"]
+      artifactRefs: ["ART-SUBAGENT-001"]
+      traceRows: ["TRACE-004"]
+      requiredBefore: execution_closure_pass
+    - id: CMD-DELIVERY-005
+      phase: delivery_evidence
+      command: npx vitest run tests/acceptance/main-agent-gates-loop-e2e.test.ts tests/acceptance/requirement-record-control-store-enforcement.test.ts
+      expectedExitCodeForCloseout: 0
+      proves: controlled-blocker-intake normalizes raw signals into authoritative blockers and rejects unknown or unproven signals fail-closed.
+      evidenceRefs: ["EVD-006"]
+      artifactRefs: ["ART-BLOCKER-001"]
+      traceRows: ["TRACE-002", "TRACE-004", "TRACE-005"]
+      requiredBefore: any_model_transition
+    - id: CMD-DELIVERY-006
+      phase: delivery_evidence
+      command: npx vitest run tests/acceptance/main-agent-functional-resume-check.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/strict-closeout-proof-gate.test.ts
+      expectedExitCodeForCloseout: 0
+      proves: Pending blocker intake, unresolved blockers, and stale current-attempt proof block model transition and closeout.
+      evidenceRefs: ["EVD-007"]
+      artifactRefs: ["ART-BLOCKER-002", "ART-GATE-002"]
+      traceRows: ["TRACE-005", "TRACE-008"]
+      requiredBefore: delivery_confirmation_pass
+    - id: CMD-DELIVERY-007
+      phase: delivery_evidence
+      command: npx vitest run tests/acceptance/readiness-drift-closeout-proof.test.ts tests/unit/readiness-drift.test.ts tests/acceptance/architecture-drift-guard.test.ts
+      expectedExitCodeForCloseout: 0
+      proves: controlled-reconfirmation-router writes blocking reconfirmationRequests and rolls currentMentalModel back on source, implementation, architecture, scope, or evidence drift.
+      evidenceRefs: ["EVD-008"]
+      artifactRefs: ["ART-RECONFIRM-001"]
+      traceRows: ["TRACE-006"]
+      requiredBefore: downstream_model_progression
+    - id: CMD-DELIVERY-008
+      phase: delivery_evidence
+      command: npx vitest run tests/acceptance/architecture-confirmation-ingest.test.ts tests/acceptance/prepare-architecture-confirmation-page.test.ts tests/acceptance/generate-architecture-confirmation-artifact.test.ts
+      expectedExitCodeForCloseout: 0
+      proves: Architecture confirmation ingest and state check are exposed through main-agent orchestration and controlled event chain.
+      evidenceRefs: ["EVD-009"]
+      artifactRefs: ["ART-ARCH-001", "ART-EVENT-002"]
+      traceRows: ["TRACE-007"]
+      requiredBefore: implementation_readiness_pass
+    - id: CMD-DELIVERY-009
+      phase: delivery_evidence
+      command: npx vitest run tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts tests/acceptance/main-agent-functional-resume-check.test.ts
+      expectedExitCodeForCloseout: 0
+      proves: implementation_readiness blocks dispatch when confirmation, architecture, blockers, reconfirmation, stale evidence, or readiness evidence are missing.
+      evidenceRefs: ["EVD-010"]
+      artifactRefs: ["ART-READINESS-001"]
+      traceRows: ["TRACE-008"]
+      requiredBefore: dispatch_plan
+    - id: CMD-DELIVERY-010
+      phase: delivery_evidence
+      command: npx vitest run tests/acceptance/main-agent-execution-audit-ledger.test.ts tests/acceptance/main-agent-delivery-evidence-run.test.ts tests/acceptance/subagent-current-attempt-revalidation.test.ts
+      expectedExitCodeForCloseout: 0
+      proves: execution_closure summarizes packet, traceRows, commandRunRefs, artifactIndex, envelope, rerun loops, current attempt, and failures before closeout.
+      evidenceRefs: ["EVD-011"]
+      artifactRefs: ["ART-EXECUTION-001"]
+      traceRows: ["TRACE-009"]
+      requiredBefore: audit_review_pass
+    - id: CMD-DELIVERY-011
+      phase: delivery_evidence
+      command: npx vitest run tests/acceptance/main-agent-scoring-gates-check.test.ts tests/unit/readiness-score-writer-boundary.test.ts packages/scoring/__tests__/integration/dashboard-governance-routing.test.ts
+      expectedExitCodeForCloseout: 0
+      proves: audit_review consumes audit and score provenance while preserving dashboard and score as read-model-only evidence.
+      evidenceRefs: ["EVD-012"]
+      artifactRefs: ["ART-AUDIT-001", "ART-SCORE-001"]
+      traceRows: ["TRACE-003", "TRACE-010"]
+      requiredBefore: delivery_confirmation_pass
+    - id: CMD-DELIVERY-012
+      phase: delivery_evidence
+      command: npx vitest run tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/main-agent-delivery-truth-gate.test.ts tests/acceptance/strict-closeout-proof-gate.test.ts tests/acceptance/readiness-drift-closeout-proof.test.ts
+      expectedExitCodeForCloseout: 0
+      proves: delivery_confirmation and record_closed require current closeout, delivery truth, no blockers, no reruns, no reconfirmation, and current attempt proof.
+      evidenceRefs: ["EVD-013"]
+      artifactRefs: ["ART-CLOSEOUT-001", "ART-RECORD-002"]
+      traceRows: ["TRACE-005", "TRACE-009", "TRACE-011"]
+      requiredBefore: record_closed
+    - id: CMD-DELIVERY-013
+      phase: delivery_evidence
+      command: npx vitest run tests/acceptance/main-agent-orchestration-consumer.test.ts tests/acceptance/main-agent-unified-ingress-e2e.test.ts tests/acceptance/main-agent-doc-surfaces.test.ts
+      expectedExitCodeForCloseout: 0
+      proves: User-visible inspect output exposes current model, blockers, sources, pending intake, reconfirmation, next action, and forbidden shortcuts.
+      evidenceRefs: ["EVD-014"]
+      artifactRefs: ["ART-INSPECT-002"]
+      traceRows: ["TRACE-012"]
+      requiredBefore: user_visible_completion_claim
+  suggestedCommands:
+    - id: CMD-SUGGESTED-001
+      phase: quality_sanity
+      command: npm run format:check
+      reason: Catch broad TypeScript and script formatting drift after implementation.
+      requiredForCloseout: false
+    - id: CMD-SUGGESTED-002
+      phase: quality_sanity
+      command: npm run lint
+      reason: Catch style, unused code, and unsafe TypeScript/JavaScript patterns after implementation.
+      requiredForCloseout: false
+    - id: CMD-SUGGESTED-003
+      phase: governance_fixture_sanity
+      command: npm run test:governance-fixtures
+      reason: Verify governance fixtures still exist before running larger Main Agent suites.
+      requiredForCloseout: false
+    - id: CMD-SUGGESTED-004
+      phase: full_regression
+      command: npm run test:ci:codex
+      reason: Optional broad host and Main Agent regression after targeted commands pass.
+      requiredForCloseout: false
   closeoutReadinessPreview:
-    requiredCommands: []
-    orphanPolicy: 待 Checkpoint 6 定义；read models and orphan artifacts must not drive control flow.
-    currentAttemptPolicy: 待 Checkpoint 6 定义；delivery evidence must bind current attempt and current hashes.
+    deliveryReady: false
+    readinessState: draft_blocked
+    requiredCommands: ["CMD-CONTRACT-001", "CMD-DELIVERY-001", "CMD-DELIVERY-002", "CMD-DELIVERY-003", "CMD-DELIVERY-004", "CMD-DELIVERY-005", "CMD-DELIVERY-006", "CMD-DELIVERY-007", "CMD-DELIVERY-008", "CMD-DELIVERY-009", "CMD-DELIVERY-010", "CMD-DELIVERY-011", "CMD-DELIVERY-012", "CMD-DELIVERY-013"]
+    suggestedCommands: ["CMD-SUGGESTED-001", "CMD-SUGGESTED-002", "CMD-SUGGESTED-003", "CMD-SUGGESTED-004"]
+    blockingReasons:
+      - implementationConfirmation.status is draft.
+      - confirmationLanguage has not been selected by the user.
+      - confirmationRender htmlPath, reportPath, and htmlHash are not populated.
+      - applicability domains with applies=true have not yet been expanded into conditional registries.
+      - traceRows remain PENDING and have no current-pass commandRunRefs.
+      - no controlled RequirementRecord exists for this new requirement scope yet.
+      - current attempt evidence does not exist because implementation has not started.
+      - Reverse Audit Report and Definition of Done are not yet written.
+    orphanPolicy: Read-model, score, dashboard, hook, report, old inspect, old closeout, and orphan command artifacts are evidence or projections only; they must not drive control flow unless their hashes are bound into the current RequirementRecord by a registered controlled writer.
+    currentAttemptPolicy: Delivery evidence must bind requirementSetId, runId, sourceDocumentHash, implementationConfirmationHash, commandRunRefs, artifact hashes, and current attempt id; previous attempt evidence may be displayed but cannot satisfy current closeout.
+    staleEvidencePolicy: Any stale source, implementation, architecture, target path, impact scan, score, audit, readiness, execution, or closeout hash blocks delivery confirmation and routes through blocker intake or reconfirmation.
+    readModelPolicy: Dashboard green, score green, SFT/report/summary output, hook receipt, stdout PASS, HTTP 200, page render, and mock calls are forbidden completion signals unless backed by the required controlled record and command evidence.
+    closeoutEntryCriteria:
+      - all required commands have current-pass commandRunRefs for the current hashes.
+      - all TRACE rows are current_pass.
+      - controlled-blocker-intake has no pending or unresolved blocking signals.
+      - reconfirmationRequests has no open blocking request.
+      - currentMentalModel is delivery_confirmation with pass verdict before record close.
+      - execution_closure and audit_review verdicts are pass for the current attempt.
+      - delivery closeout gate and delivery truth gate pass for current attempt evidence.
+      - controlled record close writer writes record_closed with before/after hash evidence.
+    forbiddenCloseoutShortcuts:
+      - dashboard_green
+      - score_green
+      - taskreport_done
+      - stdout_pass
+      - http_200
+      - page_render
+      - mock_call_only
+      - fixture_replay_only
+      - checkpoint_commit_only
+      - execution_closure_pass_without_delivery_truth
   requiredContractChecks: []
   reconfirmationRequest: null
 ```
 
-Checkpoint 3 must populate the empty `must`, `notDone`, `mustNot`, and `evidence` arrays. Until those arrays are populated, this source document is not confirmation-ready and must not be rendered as final scope confirmation.
+Checkpoint 7 must populate the conditional modules required by the `applicability.*.applies=true` declarations. Until those modules, the human-readable closeout sections, Reverse Audit Report, Definition of Done, confirmation language, rendered HTML, and controlled confirmation ingest exist, this source document is not confirmation-ready and must not be used as implementation-ready scope.
 
 ## 4. 背景与当前遗漏
 
