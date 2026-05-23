@@ -15,6 +15,14 @@ const SCRIPT = path.join(
   'scripts',
   'generate_prompt.py'
 );
+const NODE_SCRIPT = path.join(
+  ROOT,
+  '_bmad',
+  'skills',
+  'req-trace-matrix-prompt-generator',
+  'scripts',
+  'generate_prompt.js'
+);
 
 let tempDir: string;
 
@@ -138,9 +146,26 @@ function writeRequirementRecord(
   return recordPath;
 }
 
-function run(args: string[]): { stdout: string; status: number } {
+function run(
+  args: string[],
+  options: { env?: NodeJS.ProcessEnv } = {}
+): { stdout: string; status: number } {
   try {
     const stdout = execFileSync('python', [SCRIPT, ...args], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      env: options.env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    return { stdout, status: 0 };
+  } catch (error: any) {
+    return { stdout: String(error.stdout ?? ''), status: error.status ?? 1 };
+  }
+}
+
+function runNodePrompt(args: string[]): { stdout: string; status: number } {
+  try {
+    const stdout = execFileSync(process.execPath, [NODE_SCRIPT, ...args], {
       cwd: ROOT,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -206,6 +231,38 @@ describe('req trace generator confirmation block gate', () => {
     expect(result.stdout).toContain('TRACE-001');
     expect(result.stdout).toContain('PASS requires evidence for covered must, notDone, and evidence IDs');
     expect(result.stdout).not.toContain('$requirements-contract-authoring');
+  });
+
+  it('keeps the legacy Python entrypoint working without PyYAML by delegating to Node js-yaml', () => {
+    const source = writeSource(validSource());
+    const record = writeRequirementRecord(source);
+    const noYamlPath = path.join(tempDir, 'no-pyyaml');
+    fs.mkdirSync(noYamlPath, { recursive: true });
+    fs.writeFileSync(
+      path.join(noYamlPath, 'yaml.py'),
+      'raise ImportError("forced no PyYAML for shim compatibility test")\n',
+      'utf8'
+    );
+    const result = run(['--source-document', source, '--requirement-record', record], {
+      env: {
+        ...process.env,
+        PYTHONPATH: noYamlPath,
+      },
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('$executing-plans $verification-before-completion');
+    expect(result.stdout).toContain('TRACE-001');
+  });
+
+  it('supports the Node js-yaml entrypoint directly', () => {
+    const source = writeSource(validSource());
+    const record = writeRequirementRecord(source);
+    const result = runNodePrompt(['--source-document', source, '--requirement-record', record]);
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('$executing-plans $verification-before-completion');
+    expect(result.stdout).toContain('TRACE-001');
   });
 
   it('blocks confirmed source documents without a requirement record', () => {

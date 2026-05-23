@@ -45,7 +45,15 @@ Generated prompts must keep runtime closure in the controlled requirement record
 
 ## Script Usage
 
-Prefer the bundled script for local source documents:
+Prefer the bundled Node/js-yaml generator for local source documents:
+
+```bash
+node <skill-dir>/scripts/generate_prompt.js \
+  --source-document docs/prd.md \
+  --requirement-record _bmad-output/runtime/requirement-records/<recordId>/requirement-record.json
+```
+
+The legacy Python path is kept only as a backward-compatible launcher. It delegates to the Node/js-yaml implementation and must not parse YAML itself:
 
 ```bash
 python <skill-dir>/scripts/generate_prompt.py \
