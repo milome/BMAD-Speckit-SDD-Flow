@@ -1988,7 +1988,8 @@ functionalResumeFailureCaseRegistry:
 \`\`\`mermaid
 flowchart TD
   A[Start ingest [MUST-001][EVD-001]] --> B{Launch gate [NEG-001]}
-  B --> C(Write manifest/stats/evidence [TRACE-001])
+  B -->|needs semantic proof [EVD-002]| C(Write manifest/stats/evidence [TRACE-001])
+  C -->|"already quoted edge"| D[Done [MUST-001]]
 \`\`\`
 `,
       'utf8'
@@ -2015,7 +2016,10 @@ flowchart TD
     expect(html).toContain('data-mermaid-normalized="true"');
     expect(html).toContain('A[&quot;Start ingest MUST-001 EVD-001&quot;]');
     expect(html).toContain('B{&quot;Launch gate NEG-001&quot;}');
+    expect(html).toContain('--&gt;|&quot;needs semantic proof EVD-002&quot;|');
     expect(html).toContain('C(&quot;Write manifest/stats/evidence TRACE-001&quot;)');
+    expect(html).toContain('--&gt;|&quot;already quoted edge&quot;|');
+    expect(html).toContain('D[&quot;Done MUST-001&quot;]');
     expect(html).toContain('A[Start ingest [MUST-001][EVD-001]]');
   });
 

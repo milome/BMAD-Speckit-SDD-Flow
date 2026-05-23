@@ -163,12 +163,17 @@ implementationConfirmation:
   openQuestions: []
   traceRows:
     - id: TRACE-039
-      covers: ["MUST-050", "MUST-051", "MUST-052", "NEG-039", "NEG-040", "OUT-001"]
+      covers: ["MUST-050", "MUST-051", "MUST-052", "NEG-039", "NEG-040"]
       taskRefs: ["TASK-CONFIRMATION-PROJECTION-HASH-POLICY"]
       evidenceRefs: ["EVD-049", "EVD-050", "EVD-051"]
+      boundaryViewRefs: ["BOUNDARY-001"]
       contractValidationCommandRefs: ["CMD-RENDER-CONFIRMATION"]
       deliveryEvidenceCommandRefs: ["CMD-CONFIRMATION-PROJECTION-HASH-POLICY"]
       status: PENDING
+  boundaryViews:
+    - id: BOUNDARY-001
+      title: "Projection refresh boundary"
+      covers: ["OUT-001"]
 `,
     'utf8'
   );

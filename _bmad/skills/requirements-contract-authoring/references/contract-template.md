@@ -125,12 +125,13 @@ implementationConfirmation:
 
   traceRows:
     - id: TRACE-001
-      covers: ["MUST-001", "NEG-001", "OUT-001"]
+      covers: ["MUST-001", "NEG-001"]
       taskRefs: ["TASK-001"]
       evidenceRefs: ["EVD-001", "EVD-002"]
       contractValidationCommandRefs: ["CMD-CONTRACT-001"]
       deliveryEvidenceCommandRefs: ["CMD-DELIVERY-001", "CMD-DELIVERY-002"]
       sequenceViewRefs: ["SEQ-001", "SEQ-002"]
+      boundaryViewRefs: ["BOUNDARY-001"]
       artifactRefs: ["ART-001", "ART-EVD-001", "ART-EVD-002"]
       status: PENDING
       blockingReason: null

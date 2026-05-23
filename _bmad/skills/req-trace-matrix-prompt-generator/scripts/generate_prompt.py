@@ -327,7 +327,7 @@ def validate_confirmation(parsed: dict[str, Any]) -> dict[str, Any]:
     not_done_ids = ids(confirmation.get("notDone") or [])
     evidence_ids = ids(confirmation.get("evidence") or [])
     must_not_ids = ids(confirmation.get("mustNot") or [])
-    allowed_cover_ids = must_ids | not_done_ids | must_not_ids
+    allowed_cover_ids = must_ids | not_done_ids
     trace_rows = confirmation.get("traceRows") or []
     if not trace_rows:
         raise BlockedInput("BLOCK: TRACE_REFERENCE_INVALID", "implementationConfirmation.traceRows is missing or empty.")
@@ -342,7 +342,10 @@ def validate_confirmation(parsed: dict[str, Any]) -> dict[str, Any]:
         evidence_refs = row.get("evidenceRefs") or []
         for cover_id in covers:
             if cover_id not in allowed_cover_ids:
-                invalid.append(f"{row_id}.covers:{cover_id}")
+                if cover_id in must_not_ids or str(cover_id).startswith("OUT-"):
+                    invalid.append(f"{row_id}.covers:{cover_id} (mustNot boundary IDs belong in boundaryViews or boundaryRefs)")
+                else:
+                    invalid.append(f"{row_id}.covers:{cover_id}")
         for evidence_ref in evidence_refs:
             if evidence_ref not in evidence_ids:
                 invalid.append(f"{row_id}.evidenceRefs:{evidence_ref}")

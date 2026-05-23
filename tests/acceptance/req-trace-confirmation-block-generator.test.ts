@@ -182,10 +182,15 @@ implementationConfirmation:
   openQuestions: []
   traceRows:
     - id: TRACE-001
-      covers: ["MUST-001", "NEG-001", "OUT-001"]
+      covers: ["MUST-001", "NEG-001"]
       taskRefs: []
       evidenceRefs: ["EVD-001", "EVD-002"]
+      boundaryViewRefs: ["BOUNDARY-001"]
       status: PENDING
+  boundaryViews:
+    - id: BOUNDARY-001
+      title: "Upload scope boundary"
+      covers: ["OUT-001"]
 ${overrides}`;
 }
 

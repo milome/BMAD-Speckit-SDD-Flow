@@ -920,6 +920,24 @@ function sanitizeMermaidNodeLabels(line) {
     });
 }
 
+function safeMermaidEdgeLabel(label) {
+  const text = String(label ?? '').trim();
+  if (/^["'].*["']$/u.test(text)) return text;
+  return quoteMermaidLabel(
+    text
+      .replace(/\[([A-Z]+-\d+[A-Z]*)\]/gu, ' $1 ')
+      .replace(/[{}]/gu, ' ')
+      .replace(/\s+/gu, ' ')
+      .trim()
+  );
+}
+
+function sanitizeMermaidEdgeLabels(line) {
+  return String(line ?? '').replace(/(\s(?:-->|--|->)\s*)\|([^|\r\n]+)\|/gu, (_match, prefix, label) => {
+    return `${prefix}|${safeMermaidEdgeLabel(label)}|`;
+  });
+}
+
 function sanitizeMermaidTransitionLabel(label) {
   return String(label ?? '')
     .replace(/\[([A-Z]+-\d+[A-Z]*)\]/gu, '$1')
@@ -956,7 +974,7 @@ function mermaidRenderSource(source) {
       if (/^\s*(stateDiagram|stateDiagram-v2)\b/iu.test(line)) return line;
       if (/^\s*(flowchart|graph)\b/iu.test(line)) return line;
       if (/^\s*(note|classDef|class|style|linkStyle|click|subgraph|end)\b/iu.test(line)) return line;
-      const nodeSafe = sanitizeMermaidNodeLabels(line);
+      const nodeSafe = sanitizeMermaidEdgeLabels(sanitizeMermaidNodeLabels(line));
       return /^\s*(?:\[\*\]|\w[\w-]*)\s*(?:-->|->|--)/u.test(nodeSafe)
         ? sanitizeMermaidStateLine(nodeSafe)
         : nodeSafe;
