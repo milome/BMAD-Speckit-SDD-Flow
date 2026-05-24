@@ -911,3 +911,9 @@ Validated scope: header, background, scope, non-goals, and frozen decisions are 
 Status: passed
 
 Validated scope: `implementationConfirmation` core fields and applicability declarations are present. Conditional expansion remains bounded to the domains declared in the source.
+
+### cp-03-must-neg-out-evidence
+
+Status: passed
+
+Validated scope: `must`, `notDone`, `mustNot`, and `evidence` sections are present and ID-bound for pre-render checks.
