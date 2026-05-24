@@ -1,0 +1,17 @@
+{
+  "receiptType": "control_event_committed",
+  "eventId": "implementation_evidence_ingested:2026-05-24T18:17:07.496Z:0156087cfffc",
+  "eventHash": "sha256:10c70726b3acf2a9067c74e5506dc1c08fe763039ac1ca5278851275fa18b9f2",
+  "eventType": "implementation_evidence_ingested",
+  "writerId": "implementation-evidence-ingest",
+  "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+  "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+  "eventLogPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/events/control-events.jsonl",
+  "beforeRecordHash": "sha256:0bb6f0ccec999d66ba820c39639296953d38a44d9bc7b08e1bf35bedd43ada64",
+  "afterRecordHash": "sha256:95d07ba3579c9fea383d7f387aac60230c4ac05f8d15e46b91fcb8ac770f6c56",
+  "schemaGate": {
+    "ok": true,
+    "errorCount": 0
+  },
+  "committedAt": "2026-05-24T18:17:07.496Z"
+}
