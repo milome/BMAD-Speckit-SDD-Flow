@@ -175,7 +175,7 @@
   ],
   "confirmationProjectionHistory": [],
   "lastEventType": "execution_iteration_recorded",
-  "updatedAt": "2026-05-24T18:19:05.397Z",
+  "updatedAt": "2026-05-24T18:19:53.058Z",
   "architectureConfirmations": [],
   "architectureConfirmationStateChecks": [],
   "executionIterations": [
@@ -3871,6 +3871,201 @@
       "implementationConfirmationHash": "sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
       "architectureConfirmationHash": "sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
       "recordedAt": "2026-05-24T18:19:05.397Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "execution_iteration_recorded",
+      "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+      "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+      "executionIterationId": "execution-TRACE-016-run-TRACE-016-20260524T181946Z",
+      "runId": "run-TRACE-016-20260524T181946Z",
+      "status": "done",
+      "traceRows": [
+        "TRACE-016"
+      ],
+      "taskRefs": [
+        "TASK-016"
+      ],
+      "evidenceRefs": [
+        "EVD-017"
+      ],
+      "filesChanged": [
+        "scripts/run-confirmed-trace-slice.js"
+      ],
+      "diffSummary": "Recorded current-attempt runtime closure evidence for TRACE-016 from confirmed implementationConfirmation IDs.",
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-CONTRACT-001",
+          "command": "node _bmad/skills/requirements-contract-authoring/scripts/reverse_audit_contract.js docs/requirements/2026-05-24-main-agent-six-mental-model-control-plane-completion.md",
+          "runId": "run-TRACE-016-20260524T181946Z",
+          "closeoutAttemptId": "attempt-TRACE-016-20260524T181946Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-24T18:19:46.290Z",
+          "completedAt": "2026-05-24T18:19:46.444Z",
+          "outputSummary": "COMMAND_ID: CMD-CONTRACT-001 | COMMAND: node _bmad/skills/requirements-contract-authoring/scripts/reverse_audit_contract.js docs/requirements/2026-05-24-main-agent-six-mental-model-control-plane-completion.md | RUN_ID: run-TRACE-016-20260524T181946Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-016-20260524T181946Z | STARTED_AT: 2026-05-24T18:19:46.290Z | COMPLETED_AT: 2026-05-24T18:19:46.444Z | EXIT_CODE: 0 | STDOUT: | { |   \"verdict\": \"PASS\", |   \"target\": \"D:/Dev/BMAD-Speckit-SDD-Flow/docs/requirements/2026-05-24-main-agent-six-mental-model-control-plane-completion.md\", |   \"renderReportPath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/confirmation/confirmation-render-report.json\", |   \"mode\": \"implementation\", |   \"rendererAuthority\": { |     \"confirmability\": \"confirmable\", |     \"blockingIssueCount\": 0, |     \"deliveryReadiness\": { |       \"ready\": false, |       \"status\": \"delivery_not_ready\", |       \"label\": \"delivery_ready=false\", |       \"reasons\": [ |         \"缺少受控记录\", |         \"存在缺失当前证据: 46\", |         \"traceRows 尚未全部 current_pass: 0/18\" |       ], |       \"currentAttemptStatus\": \"missing_controlled_record\", |       \"currentPassTraceRows\": 0, |       \"totalTraceRows\": 18, |       \"missingEvidenceCount\": 46, |       \"staleProofCount\": 0, |       \"nonCurrentPassTraceRows\": [ |         \"TRACE-001\", |         \"TRACE-002\", |         \"TRACE-003\", |         \"TRACE-004\", |         \"TRACE-005\", |         \"TRACE-006\", |         \"TRACE-007\", |         \"TRACE-008\", |         \"TRACE-009\", |         \"TRACE-010\", |         \"TRACE-011\", |         \"TRACE-012\", |         \"TRACE-013\", |         \"TRACE-014\", |         \"TRACE-015\", |         \"TRACE-016\", |         \"TRACE-017\", |         \"TRACE-018\" |       ] |     } |   }, |   \"grillReport\": null, |   \"currentHashes\": { |     \"sourceDocumentHash\": \"sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f\", |     \"implementationConfirmationHash\": \"sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3\", |     \"reportSourceDocumentHash\": \"sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f\", |     \"reportImplementationConfirmationHash\": \"sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3\", |     \"reportConfirmationPageHash\": \"sha256:960a54e000dd874501f3ab064aabda849049e164b39e180e6ac93a14efe91a17\" |   }, |   \"reverseAuditChecks\": { |     \"hasImplementationConfirmation\": true, |     \"hasUserConfirmed\": true, |     \"hasContractAuthoringRequired\": true, |     \"hasConfirmationRender\": true, |     \"hasReverseAuditReport\": true, |     \"hasDefinitionOfDone\": true, |     \"diagramBlockCount\": 9, |     \"diagramIdCount\": 46, |     \"missingDiagramCoverage\": [] |   }, |   \"definitionDrilldown\": { |     \"verdict\": \"pass\", |     \"maxIterations\": 3, |     \"iterationPolicy\": \"deterministic_fingerprint_until_fixed_point_then_decision_packet; do_not_increase_rounds_for_repeated_findings\", |     \"stopReason\": \"no_blocking_definition_questions\", |     \"questions\": [ |       { |         \"id\": \"DQ-EDGE-006\", |         \"severity\": \"warning\", |         \"category\": \"ambiguous_language\", |         \"refs\": [ |           \"EDGE-006\" |         ], |         \"question\": \"Clarify vague terms (later) in EDGE-006.\", |         \"recommendedAnswer\": \"Replace fuzzy adjectives with measurable behavior, threshold, owner, or explicit out-of-scope boundary.\", |         \"fingerprint\": \"fp:baf7b93b7ea1f5ba\", |         \"clusterId\": \"cluster:AMBIGUOUS-LANGUAGE:b5e60bd947\", |         \"clusterCategory\": \"ambiguous_language\", |         \"clusterRefs\": [ |           \"EDGE-006\" |         ] |       } |     ], |     \"blockers\": [], |     \"warnings\": [ |       { |         \"code\": \"definition_ambiguous_language\", |         \"message\": \"Clarify vague terms (later) in EDGE-006.\", |         \"refs\": [ |           \"EDGE-006\" |         ], |         \"severity\": \"warning\", |         \"source\": \"definition_drilldown\", |         \"fingerprint\": \"fp:baf7b93b7ea1f5ba\", |         \"category\": \"ambiguous_language\", |         \"clusterId\": \"cluster:AMBIGUOUS-LANGUAGE:b5e60bd947\", |         \"clusterCategory\": \"ambiguous_language\", |         \"clusterRefs\": [ |           \"EDGE-006\" |         ], |         \"recommendedAnswer\": \"Replace fuzzy adjectives with measurable behavior, threshold, owner, or explicit out-of-scope boundary.\", |         \"status\": \"open\", |         \"summary\": \"Clarify vague terms (later) in EDGE-006.\", |         \"requirementIds\": [ |           \"EDGE-006\" |         ] |       } |     ], |     \"clusters\": [ |       { |         \"id\": \"cluster:AMBIGUOUS-LANGUAGE:b5e60bd947\", |         \"category\": \"ambiguous_language\", |         \"refs\": [ |           \"EDGE-006\" |         ], |         \"severity\": \"warning\", |         \"fingerprints\": [ |           \"fp:baf7b93b7ea1f5ba\" |         ], |         \"findingCodes\": [ |           \"definition_ambiguous_language\" |         ], |         \"questions\": [ |         ...<truncated>"
+        },
+        {
+          "commandId": "CMD-DELIVERY-016",
+          "command": "npx vitest run tests/acceptance/requirement-record-schema.test.ts tests/acceptance/requirement-record-control-store-enforcement.test.ts tests/acceptance/main-agent-orchestration-consumer.test.ts",
+          "runId": "run-TRACE-016-20260524T181946Z",
+          "closeoutAttemptId": "attempt-TRACE-016-20260524T181946Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-24T18:19:46.445Z",
+          "completedAt": "2026-05-24T18:19:52.170Z",
+          "outputSummary": "COMMAND_ID: CMD-DELIVERY-016 | COMMAND: npx vitest run tests/acceptance/requirement-record-schema.test.ts tests/acceptance/requirement-record-control-store-enforcement.test.ts tests/acceptance/main-agent-orchestration-consumer.test.ts | RUN_ID: run-TRACE-016-20260524T181946Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-016-20260524T181946Z | STARTED_AT: 2026-05-24T18:19:46.445Z | COMPLETED_AT: 2026-05-24T18:19:52.170Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirement-record-schema.test.ts \u001b[2m(\u001b[22m\u001b[2m16 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 741\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirement-record-control-store-enforcement.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 3\u001b[2mms\u001b[22m\u001b[39m | { |   \"ok\": true, |   \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-QQfcMG/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/implementation-readiness-report.json\", |   \"decision\": \"pass\", |   \"blockingReasons\": [], |   \"controlEventId\": \"implementation_readiness_check_recorded:2026-05-20T00:00:01.000Z:f7c5c03c6ec6\", |   \"controlEventHash\": \"sha256:753924736846a0b780e7cf9aed7cbe85a854f2ed55b309461a1cecf59f8d3976\", |   \"eventLogPath\": \"C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-QQfcMG/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/events/control-events.jsonl\", |   \"receiptPath\": \"C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-QQfcMG/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/events/receipts/implementation_readiness_check_recorded_2026-05-20T00_00_01.000Z_f7c5c03c6ec6.json\", |   \"readinessBaselineActivation\": { |     \"status\": \"audit_required\", |     \"controlEventId\": \"readiness_baseline_activation_requested:2026-05-20T00:00:01.000Z:3100e96f00cb\", |     \"controlEventHash\": \"sha256:59525e7773138d78ef290821ef6fb5384c8ab7eef42903f0ccd3a8c709c5852a\", |     \"receiptPath\": \"C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-QQfcMG/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/events/receipts/readiness_baseline_activation_requested_2026-05-20T00_00_01.000Z_3100e96f00cb.json\" |   } | } | { |   \"version\": 1, |   \"sessionId\": \"story-14.5\", |   \"host\": \"cursor\", |   \"flow\": \"story\", |   \"currentPhase\": \"implement\", |   \"nextAction\": \"dispatch_remediation\", |   \"pendingPacket\": { |     \"packetId\": \"pkt-cli-01\", |     \"packetPath\": \"C:\\\\Users\\\\milom\\\\AppData\\\\Local\\\\Temp\\\\main-agent-cli-surface-o5qHns\\\\_bmad-output\\\\runtime\\\\governance\\\\packets\\\\story-14.5\\\\pkt-cli-01.json\", |     \"packetKind\": \"recommendation\", |     \"status\": \"claimed_by_main_agent\", |     \"createdAt\": \"2026-05-24T18:19:51.470Z\", |     \"claimOwner\": \"main-agent\" |   }, |   \"originalExecutionPacketId\": null, |   \"gatesLoop\": { |     \"retryCount\": 0, |     \"maxRetries\": 3, |     \"noProgressCount\": 0, |     \"circuitOpen\": false, |     \"rerunGate\": null, |     \"activePacketId\": null, |     \"lastResult\": null |   }, |   \"closeout\": { |     \"invoked\": false, |     \"approved\": false, |     \"scoreWriteResult\": null, |     \"handoffPersisted\": false, |     \"resultCode\": null |   }, |   \"lastTaskReport\": null | } | { |   \"version\": 1, |   \"sessionId\": \"story-14.5\", |   \"host\": \"cursor\", |   \"flow\": \"story\", |   \"currentPhase\": \"implement\", |   \"nextAction\": \"dispatch_remediation\", |   \"pendingPacket\": { |     \"packetId\": \"pkt-cli-01\", |     \"packetPath\": \"C:\\\\Users\\\\milom\\\\AppData\\\\Local\\\\Temp\\\\main-agent-cli-surface-o5qHns\\\\_bmad-output\\\\runtime\\\\governance\\\\packets\\\\story-14.5\\\\pkt-cli-01.json\", |     \"packetKind\": \"recommendation\", |     \"status\": \"dispatched\", |     \"createdAt\": \"2026-05-24T18:19:51.470Z\", |     \"claimOwner\": \"main-agent\" |   }, |   \"originalExecutionPacketId\": null, |   \"gatesLoop\": { |     \"retryCount\": 0, |     \"maxRetries\": 3, |     \"noProgressCount\": 0, |     \"circuitOpen\": false, |     \"rerunGate\": null, |     \"activePacketId\": null, |     \"lastResult\": null |   }, |   \"closeout\": { |     \"invoked\": false, |     \"approved\": false, |     \"scoreWriteResult\": null, |     \"handoffPersisted\": false, |     \"resultCode\": null |   }, |   \"lastTaskReport\": null | } | null | {\"updated\":true,\"auditIndex\":{\"bugfix\":{},\"standalone_tasks\":{}}} \u001b[32m✓\u001b[39m tests/acceptance/main-agent-orchestration-consumer.test.ts \u001b[2m(\u001b[22m\u001b[2m11 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 1201\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs controlled readiness audit through scoring bridge and records current baseline metadata \u001b[33m 438\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m3 passed\u001b[39m\u001b[22m\u001b[90m (3)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m29 passed\u001b[39m\u001b[22m\u001b[90m (29)\u001b[39m | \u001b[2m   Start at \u001b[22m 02:19:48 | \u001b[2m   Duration \u001b[22m 3.69s\u001b[2m (transform 899ms, setup 0ms, import 2.54s, tests 1.94s, environment 0ms)\u001b[22m | STDERR:"
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/CMD-CONTRACT-001.output.txt",
+          "contentHash": "sha256:c73573a95d931ec9d71d8e06caa21c756c9a22381abb5372379f2398904e40bf",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-CONTRACT-001 covering TRACE-016",
+          "relatedRequirementIds": [
+            "CMD-CONTRACT-001",
+            "TRACE-016",
+            "MUST-015",
+            "EVD-017"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+          "outputVersion": "cmd-contract-001-trace-016-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-016"
+          ],
+          "evidenceRefs": [
+            "EVD-017"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/CMD-DELIVERY-016.output.txt",
+          "contentHash": "sha256:4c6bfeaaa15b1c20364b8ca1b00c7ae84c056bf2ebbdfb06fc82a0e6c9c560a6",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-DELIVERY-016 covering TRACE-016",
+          "relatedRequirementIds": [
+            "CMD-DELIVERY-016",
+            "TRACE-016",
+            "MUST-015",
+            "EVD-017"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+          "outputVersion": "cmd-delivery-016-trace-016-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-016"
+          ],
+          "evidenceRefs": [
+            "EVD-017"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/trace-016-command-receipt.json",
+          "contentHash": "sha256:f9f2a7a2ae4d2b030a15832dcd5c3de083e8e41c58465ce5fba83f59966a67a2",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt command receipt bundle for TRACE-016",
+          "relatedRequirementIds": [
+            "TRACE-016",
+            "MUST-015",
+            "EVD-017"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+          "outputVersion": "trace-016-command-receipt-v1",
+          "traceRows": [
+            "TRACE-016"
+          ],
+          "evidenceRefs": [
+            "EVD-017"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "completion_evidence_packet",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/trace-016-completion-evidence-packet.json",
+          "contentHash": "sha256:31005f959fb201dda48d113c119a4ab394795fc35c1750de3d5aa4f6a9e92c46",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt completion evidence packet for TRACE-016",
+          "relatedRequirementIds": [
+            "TRACE-016",
+            "MUST-015",
+            "EVD-017"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+          "outputVersion": "trace-016-completion-evidence-packet-v1",
+          "traceRows": [
+            "TRACE-016"
+          ],
+          "evidenceRefs": [
+            "EVD-017"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/trace-016-diff-summary.md",
+          "contentHash": "sha256:33b59e975b295953ad76e89939be6b8efec4e06b06d84c018ef228d477e2feea",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "runtime closure diff summary for TRACE-016",
+          "relatedRequirementIds": [
+            "TRACE-016",
+            "MUST-015",
+            "EVD-017"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+          "outputVersion": "trace-016-diff-summary-v1",
+          "traceRows": [
+            "TRACE-016"
+          ],
+          "evidenceRefs": [
+            "EVD-017"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-016"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-017"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-CONTRACT-001"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-DELIVERY-016"
+        }
+      ],
+      "sourceDocumentHash": "sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f",
+      "implementationConfirmationHash": "sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+      "architectureConfirmationHash": "sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+      "recordedAt": "2026-05-24T18:19:53.058Z",
       "recordedBy": "codex"
     }
   ],
@@ -22176,6 +22371,558 @@
       ],
       "recordedAt": "2026-05-24T18:19:05.397Z",
       "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+      "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+      "requirementId": "TRACE-016",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-016"
+      ],
+      "evidenceRefs": [
+        "EVD-017"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-CONTRACT-001",
+          "command": "node _bmad/skills/requirements-contract-authoring/scripts/reverse_audit_contract.js docs/requirements/2026-05-24-main-agent-six-mental-model-control-plane-completion.md",
+          "runId": "run-TRACE-016-20260524T181946Z",
+          "closeoutAttemptId": "attempt-TRACE-016-20260524T181946Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-24T18:19:46.290Z",
+          "completedAt": "2026-05-24T18:19:46.444Z",
+          "outputSummary": "COMMAND_ID: CMD-CONTRACT-001 | COMMAND: node _bmad/skills/requirements-contract-authoring/scripts/reverse_audit_contract.js docs/requirements/2026-05-24-main-agent-six-mental-model-control-plane-completion.md | RUN_ID: run-TRACE-016-20260524T181946Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-016-20260524T181946Z | STARTED_AT: 2026-05-24T18:19:46.290Z | COMPLETED_AT: 2026-05-24T18:19:46.444Z | EXIT_CODE: 0 | STDOUT: | { |   \"verdict\": \"PASS\", |   \"target\": \"D:/Dev/BMAD-Speckit-SDD-Flow/docs/requirements/2026-05-24-main-agent-six-mental-model-control-plane-completion.md\", |   \"renderReportPath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/confirmation/confirmation-render-report.json\", |   \"mode\": \"implementation\", |   \"rendererAuthority\": { |     \"confirmability\": \"confirmable\", |     \"blockingIssueCount\": 0, |     \"deliveryReadiness\": { |       \"ready\": false, |       \"status\": \"delivery_not_ready\", |       \"label\": \"delivery_ready=false\", |       \"reasons\": [ |         \"缺少受控记录\", |         \"存在缺失当前证据: 46\", |         \"traceRows 尚未全部 current_pass: 0/18\" |       ], |       \"currentAttemptStatus\": \"missing_controlled_record\", |       \"currentPassTraceRows\": 0, |       \"totalTraceRows\": 18, |       \"missingEvidenceCount\": 46, |       \"staleProofCount\": 0, |       \"nonCurrentPassTraceRows\": [ |         \"TRACE-001\", |         \"TRACE-002\", |         \"TRACE-003\", |         \"TRACE-004\", |         \"TRACE-005\", |         \"TRACE-006\", |         \"TRACE-007\", |         \"TRACE-008\", |         \"TRACE-009\", |         \"TRACE-010\", |         \"TRACE-011\", |         \"TRACE-012\", |         \"TRACE-013\", |         \"TRACE-014\", |         \"TRACE-015\", |         \"TRACE-016\", |         \"TRACE-017\", |         \"TRACE-018\" |       ] |     } |   }, |   \"grillReport\": null, |   \"currentHashes\": { |     \"sourceDocumentHash\": \"sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f\", |     \"implementationConfirmationHash\": \"sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3\", |     \"reportSourceDocumentHash\": \"sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f\", |     \"reportImplementationConfirmationHash\": \"sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3\", |     \"reportConfirmationPageHash\": \"sha256:960a54e000dd874501f3ab064aabda849049e164b39e180e6ac93a14efe91a17\" |   }, |   \"reverseAuditChecks\": { |     \"hasImplementationConfirmation\": true, |     \"hasUserConfirmed\": true, |     \"hasContractAuthoringRequired\": true, |     \"hasConfirmationRender\": true, |     \"hasReverseAuditReport\": true, |     \"hasDefinitionOfDone\": true, |     \"diagramBlockCount\": 9, |     \"diagramIdCount\": 46, |     \"missingDiagramCoverage\": [] |   }, |   \"definitionDrilldown\": { |     \"verdict\": \"pass\", |     \"maxIterations\": 3, |     \"iterationPolicy\": \"deterministic_fingerprint_until_fixed_point_then_decision_packet; do_not_increase_rounds_for_repeated_findings\", |     \"stopReason\": \"no_blocking_definition_questions\", |     \"questions\": [ |       { |         \"id\": \"DQ-EDGE-006\", |         \"severity\": \"warning\", |         \"category\": \"ambiguous_language\", |         \"refs\": [ |           \"EDGE-006\" |         ], |         \"question\": \"Clarify vague terms (later) in EDGE-006.\", |         \"recommendedAnswer\": \"Replace fuzzy adjectives with measurable behavior, threshold, owner, or explicit out-of-scope boundary.\", |         \"fingerprint\": \"fp:baf7b93b7ea1f5ba\", |         \"clusterId\": \"cluster:AMBIGUOUS-LANGUAGE:b5e60bd947\", |         \"clusterCategory\": \"ambiguous_language\", |         \"clusterRefs\": [ |           \"EDGE-006\" |         ] |       } |     ], |     \"blockers\": [], |     \"warnings\": [ |       { |         \"code\": \"definition_ambiguous_language\", |         \"message\": \"Clarify vague terms (later) in EDGE-006.\", |         \"refs\": [ |           \"EDGE-006\" |         ], |         \"severity\": \"warning\", |         \"source\": \"definition_drilldown\", |         \"fingerprint\": \"fp:baf7b93b7ea1f5ba\", |         \"category\": \"ambiguous_language\", |         \"clusterId\": \"cluster:AMBIGUOUS-LANGUAGE:b5e60bd947\", |         \"clusterCategory\": \"ambiguous_language\", |         \"clusterRefs\": [ |           \"EDGE-006\" |         ], |         \"recommendedAnswer\": \"Replace fuzzy adjectives with measurable behavior, threshold, owner, or explicit out-of-scope boundary.\", |         \"status\": \"open\", |         \"summary\": \"Clarify vague terms (later) in EDGE-006.\", |         \"requirementIds\": [ |           \"EDGE-006\" |         ] |       } |     ], |     \"clusters\": [ |       { |         \"id\": \"cluster:AMBIGUOUS-LANGUAGE:b5e60bd947\", |         \"category\": \"ambiguous_language\", |         \"refs\": [ |           \"EDGE-006\" |         ], |         \"severity\": \"warning\", |         \"fingerprints\": [ |           \"fp:baf7b93b7ea1f5ba\" |         ], |         \"findingCodes\": [ |           \"definition_ambiguous_language\" |         ], |         \"questions\": [ |         ...<truncated>"
+        },
+        {
+          "commandId": "CMD-DELIVERY-016",
+          "command": "npx vitest run tests/acceptance/requirement-record-schema.test.ts tests/acceptance/requirement-record-control-store-enforcement.test.ts tests/acceptance/main-agent-orchestration-consumer.test.ts",
+          "runId": "run-TRACE-016-20260524T181946Z",
+          "closeoutAttemptId": "attempt-TRACE-016-20260524T181946Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-24T18:19:46.445Z",
+          "completedAt": "2026-05-24T18:19:52.170Z",
+          "outputSummary": "COMMAND_ID: CMD-DELIVERY-016 | COMMAND: npx vitest run tests/acceptance/requirement-record-schema.test.ts tests/acceptance/requirement-record-control-store-enforcement.test.ts tests/acceptance/main-agent-orchestration-consumer.test.ts | RUN_ID: run-TRACE-016-20260524T181946Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-016-20260524T181946Z | STARTED_AT: 2026-05-24T18:19:46.445Z | COMPLETED_AT: 2026-05-24T18:19:52.170Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirement-record-schema.test.ts \u001b[2m(\u001b[22m\u001b[2m16 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 741\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirement-record-control-store-enforcement.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 3\u001b[2mms\u001b[22m\u001b[39m | { |   \"ok\": true, |   \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-QQfcMG/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/implementation-readiness-report.json\", |   \"decision\": \"pass\", |   \"blockingReasons\": [], |   \"controlEventId\": \"implementation_readiness_check_recorded:2026-05-20T00:00:01.000Z:f7c5c03c6ec6\", |   \"controlEventHash\": \"sha256:753924736846a0b780e7cf9aed7cbe85a854f2ed55b309461a1cecf59f8d3976\", |   \"eventLogPath\": \"C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-QQfcMG/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/events/control-events.jsonl\", |   \"receiptPath\": \"C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-QQfcMG/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/events/receipts/implementation_readiness_check_recorded_2026-05-20T00_00_01.000Z_f7c5c03c6ec6.json\", |   \"readinessBaselineActivation\": { |     \"status\": \"audit_required\", |     \"controlEventId\": \"readiness_baseline_activation_requested:2026-05-20T00:00:01.000Z:3100e96f00cb\", |     \"controlEventHash\": \"sha256:59525e7773138d78ef290821ef6fb5384c8ab7eef42903f0ccd3a8c709c5852a\", |     \"receiptPath\": \"C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-QQfcMG/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/events/receipts/readiness_baseline_activation_requested_2026-05-20T00_00_01.000Z_3100e96f00cb.json\" |   } | } | { |   \"version\": 1, |   \"sessionId\": \"story-14.5\", |   \"host\": \"cursor\", |   \"flow\": \"story\", |   \"currentPhase\": \"implement\", |   \"nextAction\": \"dispatch_remediation\", |   \"pendingPacket\": { |     \"packetId\": \"pkt-cli-01\", |     \"packetPath\": \"C:\\\\Users\\\\milom\\\\AppData\\\\Local\\\\Temp\\\\main-agent-cli-surface-o5qHns\\\\_bmad-output\\\\runtime\\\\governance\\\\packets\\\\story-14.5\\\\pkt-cli-01.json\", |     \"packetKind\": \"recommendation\", |     \"status\": \"claimed_by_main_agent\", |     \"createdAt\": \"2026-05-24T18:19:51.470Z\", |     \"claimOwner\": \"main-agent\" |   }, |   \"originalExecutionPacketId\": null, |   \"gatesLoop\": { |     \"retryCount\": 0, |     \"maxRetries\": 3, |     \"noProgressCount\": 0, |     \"circuitOpen\": false, |     \"rerunGate\": null, |     \"activePacketId\": null, |     \"lastResult\": null |   }, |   \"closeout\": { |     \"invoked\": false, |     \"approved\": false, |     \"scoreWriteResult\": null, |     \"handoffPersisted\": false, |     \"resultCode\": null |   }, |   \"lastTaskReport\": null | } | { |   \"version\": 1, |   \"sessionId\": \"story-14.5\", |   \"host\": \"cursor\", |   \"flow\": \"story\", |   \"currentPhase\": \"implement\", |   \"nextAction\": \"dispatch_remediation\", |   \"pendingPacket\": { |     \"packetId\": \"pkt-cli-01\", |     \"packetPath\": \"C:\\\\Users\\\\milom\\\\AppData\\\\Local\\\\Temp\\\\main-agent-cli-surface-o5qHns\\\\_bmad-output\\\\runtime\\\\governance\\\\packets\\\\story-14.5\\\\pkt-cli-01.json\", |     \"packetKind\": \"recommendation\", |     \"status\": \"dispatched\", |     \"createdAt\": \"2026-05-24T18:19:51.470Z\", |     \"claimOwner\": \"main-agent\" |   }, |   \"originalExecutionPacketId\": null, |   \"gatesLoop\": { |     \"retryCount\": 0, |     \"maxRetries\": 3, |     \"noProgressCount\": 0, |     \"circuitOpen\": false, |     \"rerunGate\": null, |     \"activePacketId\": null, |     \"lastResult\": null |   }, |   \"closeout\": { |     \"invoked\": false, |     \"approved\": false, |     \"scoreWriteResult\": null, |     \"handoffPersisted\": false, |     \"resultCode\": null |   }, |   \"lastTaskReport\": null | } | null | {\"updated\":true,\"auditIndex\":{\"bugfix\":{},\"standalone_tasks\":{}}} \u001b[32m✓\u001b[39m tests/acceptance/main-agent-orchestration-consumer.test.ts \u001b[2m(\u001b[22m\u001b[2m11 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 1201\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs controlled readiness audit through scoring bridge and records current baseline metadata \u001b[33m 438\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m3 passed\u001b[39m\u001b[22m\u001b[90m (3)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m29 passed\u001b[39m\u001b[22m\u001b[90m (29)\u001b[39m | \u001b[2m   Start at \u001b[22m 02:19:48 | \u001b[2m   Duration \u001b[22m 3.69s\u001b[2m (transform 899ms, setup 0ms, import 2.54s, tests 1.94s, environment 0ms)\u001b[22m | STDERR:"
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/CMD-CONTRACT-001.output.txt",
+          "contentHash": "sha256:c73573a95d931ec9d71d8e06caa21c756c9a22381abb5372379f2398904e40bf",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-CONTRACT-001 covering TRACE-016",
+          "relatedRequirementIds": [
+            "CMD-CONTRACT-001",
+            "TRACE-016",
+            "MUST-015",
+            "EVD-017"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+          "outputVersion": "cmd-contract-001-trace-016-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-016"
+          ],
+          "evidenceRefs": [
+            "EVD-017"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/CMD-DELIVERY-016.output.txt",
+          "contentHash": "sha256:4c6bfeaaa15b1c20364b8ca1b00c7ae84c056bf2ebbdfb06fc82a0e6c9c560a6",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-DELIVERY-016 covering TRACE-016",
+          "relatedRequirementIds": [
+            "CMD-DELIVERY-016",
+            "TRACE-016",
+            "MUST-015",
+            "EVD-017"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+          "outputVersion": "cmd-delivery-016-trace-016-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-016"
+          ],
+          "evidenceRefs": [
+            "EVD-017"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/trace-016-command-receipt.json",
+          "contentHash": "sha256:f9f2a7a2ae4d2b030a15832dcd5c3de083e8e41c58465ce5fba83f59966a67a2",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt command receipt bundle for TRACE-016",
+          "relatedRequirementIds": [
+            "TRACE-016",
+            "MUST-015",
+            "EVD-017"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+          "outputVersion": "trace-016-command-receipt-v1",
+          "traceRows": [
+            "TRACE-016"
+          ],
+          "evidenceRefs": [
+            "EVD-017"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "completion_evidence_packet",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/trace-016-completion-evidence-packet.json",
+          "contentHash": "sha256:31005f959fb201dda48d113c119a4ab394795fc35c1750de3d5aa4f6a9e92c46",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt completion evidence packet for TRACE-016",
+          "relatedRequirementIds": [
+            "TRACE-016",
+            "MUST-015",
+            "EVD-017"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+          "outputVersion": "trace-016-completion-evidence-packet-v1",
+          "traceRows": [
+            "TRACE-016"
+          ],
+          "evidenceRefs": [
+            "EVD-017"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/trace-016-diff-summary.md",
+          "contentHash": "sha256:33b59e975b295953ad76e89939be6b8efec4e06b06d84c018ef228d477e2feea",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "runtime closure diff summary for TRACE-016",
+          "relatedRequirementIds": [
+            "TRACE-016",
+            "MUST-015",
+            "EVD-017"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+          "outputVersion": "trace-016-diff-summary-v1",
+          "traceRows": [
+            "TRACE-016"
+          ],
+          "evidenceRefs": [
+            "EVD-017"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-016"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-017"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-CONTRACT-001"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-DELIVERY-016"
+        }
+      ],
+      "recordedAt": "2026-05-24T18:19:53.058Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+      "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+      "requirementId": "MUST-015",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-016"
+      ],
+      "evidenceRefs": [
+        "EVD-017"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-CONTRACT-001",
+          "command": "node _bmad/skills/requirements-contract-authoring/scripts/reverse_audit_contract.js docs/requirements/2026-05-24-main-agent-six-mental-model-control-plane-completion.md",
+          "runId": "run-TRACE-016-20260524T181946Z",
+          "closeoutAttemptId": "attempt-TRACE-016-20260524T181946Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-24T18:19:46.290Z",
+          "completedAt": "2026-05-24T18:19:46.444Z",
+          "outputSummary": "COMMAND_ID: CMD-CONTRACT-001 | COMMAND: node _bmad/skills/requirements-contract-authoring/scripts/reverse_audit_contract.js docs/requirements/2026-05-24-main-agent-six-mental-model-control-plane-completion.md | RUN_ID: run-TRACE-016-20260524T181946Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-016-20260524T181946Z | STARTED_AT: 2026-05-24T18:19:46.290Z | COMPLETED_AT: 2026-05-24T18:19:46.444Z | EXIT_CODE: 0 | STDOUT: | { |   \"verdict\": \"PASS\", |   \"target\": \"D:/Dev/BMAD-Speckit-SDD-Flow/docs/requirements/2026-05-24-main-agent-six-mental-model-control-plane-completion.md\", |   \"renderReportPath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/confirmation/confirmation-render-report.json\", |   \"mode\": \"implementation\", |   \"rendererAuthority\": { |     \"confirmability\": \"confirmable\", |     \"blockingIssueCount\": 0, |     \"deliveryReadiness\": { |       \"ready\": false, |       \"status\": \"delivery_not_ready\", |       \"label\": \"delivery_ready=false\", |       \"reasons\": [ |         \"缺少受控记录\", |         \"存在缺失当前证据: 46\", |         \"traceRows 尚未全部 current_pass: 0/18\" |       ], |       \"currentAttemptStatus\": \"missing_controlled_record\", |       \"currentPassTraceRows\": 0, |       \"totalTraceRows\": 18, |       \"missingEvidenceCount\": 46, |       \"staleProofCount\": 0, |       \"nonCurrentPassTraceRows\": [ |         \"TRACE-001\", |         \"TRACE-002\", |         \"TRACE-003\", |         \"TRACE-004\", |         \"TRACE-005\", |         \"TRACE-006\", |         \"TRACE-007\", |         \"TRACE-008\", |         \"TRACE-009\", |         \"TRACE-010\", |         \"TRACE-011\", |         \"TRACE-012\", |         \"TRACE-013\", |         \"TRACE-014\", |         \"TRACE-015\", |         \"TRACE-016\", |         \"TRACE-017\", |         \"TRACE-018\" |       ] |     } |   }, |   \"grillReport\": null, |   \"currentHashes\": { |     \"sourceDocumentHash\": \"sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f\", |     \"implementationConfirmationHash\": \"sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3\", |     \"reportSourceDocumentHash\": \"sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f\", |     \"reportImplementationConfirmationHash\": \"sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3\", |     \"reportConfirmationPageHash\": \"sha256:960a54e000dd874501f3ab064aabda849049e164b39e180e6ac93a14efe91a17\" |   }, |   \"reverseAuditChecks\": { |     \"hasImplementationConfirmation\": true, |     \"hasUserConfirmed\": true, |     \"hasContractAuthoringRequired\": true, |     \"hasConfirmationRender\": true, |     \"hasReverseAuditReport\": true, |     \"hasDefinitionOfDone\": true, |     \"diagramBlockCount\": 9, |     \"diagramIdCount\": 46, |     \"missingDiagramCoverage\": [] |   }, |   \"definitionDrilldown\": { |     \"verdict\": \"pass\", |     \"maxIterations\": 3, |     \"iterationPolicy\": \"deterministic_fingerprint_until_fixed_point_then_decision_packet; do_not_increase_rounds_for_repeated_findings\", |     \"stopReason\": \"no_blocking_definition_questions\", |     \"questions\": [ |       { |         \"id\": \"DQ-EDGE-006\", |         \"severity\": \"warning\", |         \"category\": \"ambiguous_language\", |         \"refs\": [ |           \"EDGE-006\" |         ], |         \"question\": \"Clarify vague terms (later) in EDGE-006.\", |         \"recommendedAnswer\": \"Replace fuzzy adjectives with measurable behavior, threshold, owner, or explicit out-of-scope boundary.\", |         \"fingerprint\": \"fp:baf7b93b7ea1f5ba\", |         \"clusterId\": \"cluster:AMBIGUOUS-LANGUAGE:b5e60bd947\", |         \"clusterCategory\": \"ambiguous_language\", |         \"clusterRefs\": [ |           \"EDGE-006\" |         ] |       } |     ], |     \"blockers\": [], |     \"warnings\": [ |       { |         \"code\": \"definition_ambiguous_language\", |         \"message\": \"Clarify vague terms (later) in EDGE-006.\", |         \"refs\": [ |           \"EDGE-006\" |         ], |         \"severity\": \"warning\", |         \"source\": \"definition_drilldown\", |         \"fingerprint\": \"fp:baf7b93b7ea1f5ba\", |         \"category\": \"ambiguous_language\", |         \"clusterId\": \"cluster:AMBIGUOUS-LANGUAGE:b5e60bd947\", |         \"clusterCategory\": \"ambiguous_language\", |         \"clusterRefs\": [ |           \"EDGE-006\" |         ], |         \"recommendedAnswer\": \"Replace fuzzy adjectives with measurable behavior, threshold, owner, or explicit out-of-scope boundary.\", |         \"status\": \"open\", |         \"summary\": \"Clarify vague terms (later) in EDGE-006.\", |         \"requirementIds\": [ |           \"EDGE-006\" |         ] |       } |     ], |     \"clusters\": [ |       { |         \"id\": \"cluster:AMBIGUOUS-LANGUAGE:b5e60bd947\", |         \"category\": \"ambiguous_language\", |         \"refs\": [ |           \"EDGE-006\" |         ], |         \"severity\": \"warning\", |         \"fingerprints\": [ |           \"fp:baf7b93b7ea1f5ba\" |         ], |         \"findingCodes\": [ |           \"definition_ambiguous_language\" |         ], |         \"questions\": [ |         ...<truncated>"
+        },
+        {
+          "commandId": "CMD-DELIVERY-016",
+          "command": "npx vitest run tests/acceptance/requirement-record-schema.test.ts tests/acceptance/requirement-record-control-store-enforcement.test.ts tests/acceptance/main-agent-orchestration-consumer.test.ts",
+          "runId": "run-TRACE-016-20260524T181946Z",
+          "closeoutAttemptId": "attempt-TRACE-016-20260524T181946Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-24T18:19:46.445Z",
+          "completedAt": "2026-05-24T18:19:52.170Z",
+          "outputSummary": "COMMAND_ID: CMD-DELIVERY-016 | COMMAND: npx vitest run tests/acceptance/requirement-record-schema.test.ts tests/acceptance/requirement-record-control-store-enforcement.test.ts tests/acceptance/main-agent-orchestration-consumer.test.ts | RUN_ID: run-TRACE-016-20260524T181946Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-016-20260524T181946Z | STARTED_AT: 2026-05-24T18:19:46.445Z | COMPLETED_AT: 2026-05-24T18:19:52.170Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirement-record-schema.test.ts \u001b[2m(\u001b[22m\u001b[2m16 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 741\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirement-record-control-store-enforcement.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 3\u001b[2mms\u001b[22m\u001b[39m | { |   \"ok\": true, |   \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-QQfcMG/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/implementation-readiness-report.json\", |   \"decision\": \"pass\", |   \"blockingReasons\": [], |   \"controlEventId\": \"implementation_readiness_check_recorded:2026-05-20T00:00:01.000Z:f7c5c03c6ec6\", |   \"controlEventHash\": \"sha256:753924736846a0b780e7cf9aed7cbe85a854f2ed55b309461a1cecf59f8d3976\", |   \"eventLogPath\": \"C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-QQfcMG/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/events/control-events.jsonl\", |   \"receiptPath\": \"C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-QQfcMG/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/events/receipts/implementation_readiness_check_recorded_2026-05-20T00_00_01.000Z_f7c5c03c6ec6.json\", |   \"readinessBaselineActivation\": { |     \"status\": \"audit_required\", |     \"controlEventId\": \"readiness_baseline_activation_requested:2026-05-20T00:00:01.000Z:3100e96f00cb\", |     \"controlEventHash\": \"sha256:59525e7773138d78ef290821ef6fb5384c8ab7eef42903f0ccd3a8c709c5852a\", |     \"receiptPath\": \"C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-QQfcMG/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/events/receipts/readiness_baseline_activation_requested_2026-05-20T00_00_01.000Z_3100e96f00cb.json\" |   } | } | { |   \"version\": 1, |   \"sessionId\": \"story-14.5\", |   \"host\": \"cursor\", |   \"flow\": \"story\", |   \"currentPhase\": \"implement\", |   \"nextAction\": \"dispatch_remediation\", |   \"pendingPacket\": { |     \"packetId\": \"pkt-cli-01\", |     \"packetPath\": \"C:\\\\Users\\\\milom\\\\AppData\\\\Local\\\\Temp\\\\main-agent-cli-surface-o5qHns\\\\_bmad-output\\\\runtime\\\\governance\\\\packets\\\\story-14.5\\\\pkt-cli-01.json\", |     \"packetKind\": \"recommendation\", |     \"status\": \"claimed_by_main_agent\", |     \"createdAt\": \"2026-05-24T18:19:51.470Z\", |     \"claimOwner\": \"main-agent\" |   }, |   \"originalExecutionPacketId\": null, |   \"gatesLoop\": { |     \"retryCount\": 0, |     \"maxRetries\": 3, |     \"noProgressCount\": 0, |     \"circuitOpen\": false, |     \"rerunGate\": null, |     \"activePacketId\": null, |     \"lastResult\": null |   }, |   \"closeout\": { |     \"invoked\": false, |     \"approved\": false, |     \"scoreWriteResult\": null, |     \"handoffPersisted\": false, |     \"resultCode\": null |   }, |   \"lastTaskReport\": null | } | { |   \"version\": 1, |   \"sessionId\": \"story-14.5\", |   \"host\": \"cursor\", |   \"flow\": \"story\", |   \"currentPhase\": \"implement\", |   \"nextAction\": \"dispatch_remediation\", |   \"pendingPacket\": { |     \"packetId\": \"pkt-cli-01\", |     \"packetPath\": \"C:\\\\Users\\\\milom\\\\AppData\\\\Local\\\\Temp\\\\main-agent-cli-surface-o5qHns\\\\_bmad-output\\\\runtime\\\\governance\\\\packets\\\\story-14.5\\\\pkt-cli-01.json\", |     \"packetKind\": \"recommendation\", |     \"status\": \"dispatched\", |     \"createdAt\": \"2026-05-24T18:19:51.470Z\", |     \"claimOwner\": \"main-agent\" |   }, |   \"originalExecutionPacketId\": null, |   \"gatesLoop\": { |     \"retryCount\": 0, |     \"maxRetries\": 3, |     \"noProgressCount\": 0, |     \"circuitOpen\": false, |     \"rerunGate\": null, |     \"activePacketId\": null, |     \"lastResult\": null |   }, |   \"closeout\": { |     \"invoked\": false, |     \"approved\": false, |     \"scoreWriteResult\": null, |     \"handoffPersisted\": false, |     \"resultCode\": null |   }, |   \"lastTaskReport\": null | } | null | {\"updated\":true,\"auditIndex\":{\"bugfix\":{},\"standalone_tasks\":{}}} \u001b[32m✓\u001b[39m tests/acceptance/main-agent-orchestration-consumer.test.ts \u001b[2m(\u001b[22m\u001b[2m11 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 1201\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs controlled readiness audit through scoring bridge and records current baseline metadata \u001b[33m 438\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m3 passed\u001b[39m\u001b[22m\u001b[90m (3)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m29 passed\u001b[39m\u001b[22m\u001b[90m (29)\u001b[39m | \u001b[2m   Start at \u001b[22m 02:19:48 | \u001b[2m   Duration \u001b[22m 3.69s\u001b[2m (transform 899ms, setup 0ms, import 2.54s, tests 1.94s, environment 0ms)\u001b[22m | STDERR:"
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/CMD-CONTRACT-001.output.txt",
+          "contentHash": "sha256:c73573a95d931ec9d71d8e06caa21c756c9a22381abb5372379f2398904e40bf",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-CONTRACT-001 covering TRACE-016",
+          "relatedRequirementIds": [
+            "CMD-CONTRACT-001",
+            "TRACE-016",
+            "MUST-015",
+            "EVD-017"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+          "outputVersion": "cmd-contract-001-trace-016-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-016"
+          ],
+          "evidenceRefs": [
+            "EVD-017"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/CMD-DELIVERY-016.output.txt",
+          "contentHash": "sha256:4c6bfeaaa15b1c20364b8ca1b00c7ae84c056bf2ebbdfb06fc82a0e6c9c560a6",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-DELIVERY-016 covering TRACE-016",
+          "relatedRequirementIds": [
+            "CMD-DELIVERY-016",
+            "TRACE-016",
+            "MUST-015",
+            "EVD-017"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+          "outputVersion": "cmd-delivery-016-trace-016-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-016"
+          ],
+          "evidenceRefs": [
+            "EVD-017"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/trace-016-command-receipt.json",
+          "contentHash": "sha256:f9f2a7a2ae4d2b030a15832dcd5c3de083e8e41c58465ce5fba83f59966a67a2",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt command receipt bundle for TRACE-016",
+          "relatedRequirementIds": [
+            "TRACE-016",
+            "MUST-015",
+            "EVD-017"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+          "outputVersion": "trace-016-command-receipt-v1",
+          "traceRows": [
+            "TRACE-016"
+          ],
+          "evidenceRefs": [
+            "EVD-017"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "completion_evidence_packet",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/trace-016-completion-evidence-packet.json",
+          "contentHash": "sha256:31005f959fb201dda48d113c119a4ab394795fc35c1750de3d5aa4f6a9e92c46",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt completion evidence packet for TRACE-016",
+          "relatedRequirementIds": [
+            "TRACE-016",
+            "MUST-015",
+            "EVD-017"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+          "outputVersion": "trace-016-completion-evidence-packet-v1",
+          "traceRows": [
+            "TRACE-016"
+          ],
+          "evidenceRefs": [
+            "EVD-017"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/trace-016-diff-summary.md",
+          "contentHash": "sha256:33b59e975b295953ad76e89939be6b8efec4e06b06d84c018ef228d477e2feea",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "runtime closure diff summary for TRACE-016",
+          "relatedRequirementIds": [
+            "TRACE-016",
+            "MUST-015",
+            "EVD-017"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+          "outputVersion": "trace-016-diff-summary-v1",
+          "traceRows": [
+            "TRACE-016"
+          ],
+          "evidenceRefs": [
+            "EVD-017"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-016"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-017"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-CONTRACT-001"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-DELIVERY-016"
+        }
+      ],
+      "recordedAt": "2026-05-24T18:19:53.058Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+      "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+      "requirementId": "EVD-017",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-016"
+      ],
+      "evidenceRefs": [
+        "EVD-017"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-CONTRACT-001",
+          "command": "node _bmad/skills/requirements-contract-authoring/scripts/reverse_audit_contract.js docs/requirements/2026-05-24-main-agent-six-mental-model-control-plane-completion.md",
+          "runId": "run-TRACE-016-20260524T181946Z",
+          "closeoutAttemptId": "attempt-TRACE-016-20260524T181946Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-24T18:19:46.290Z",
+          "completedAt": "2026-05-24T18:19:46.444Z",
+          "outputSummary": "COMMAND_ID: CMD-CONTRACT-001 | COMMAND: node _bmad/skills/requirements-contract-authoring/scripts/reverse_audit_contract.js docs/requirements/2026-05-24-main-agent-six-mental-model-control-plane-completion.md | RUN_ID: run-TRACE-016-20260524T181946Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-016-20260524T181946Z | STARTED_AT: 2026-05-24T18:19:46.290Z | COMPLETED_AT: 2026-05-24T18:19:46.444Z | EXIT_CODE: 0 | STDOUT: | { |   \"verdict\": \"PASS\", |   \"target\": \"D:/Dev/BMAD-Speckit-SDD-Flow/docs/requirements/2026-05-24-main-agent-six-mental-model-control-plane-completion.md\", |   \"renderReportPath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/confirmation/confirmation-render-report.json\", |   \"mode\": \"implementation\", |   \"rendererAuthority\": { |     \"confirmability\": \"confirmable\", |     \"blockingIssueCount\": 0, |     \"deliveryReadiness\": { |       \"ready\": false, |       \"status\": \"delivery_not_ready\", |       \"label\": \"delivery_ready=false\", |       \"reasons\": [ |         \"缺少受控记录\", |         \"存在缺失当前证据: 46\", |         \"traceRows 尚未全部 current_pass: 0/18\" |       ], |       \"currentAttemptStatus\": \"missing_controlled_record\", |       \"currentPassTraceRows\": 0, |       \"totalTraceRows\": 18, |       \"missingEvidenceCount\": 46, |       \"staleProofCount\": 0, |       \"nonCurrentPassTraceRows\": [ |         \"TRACE-001\", |         \"TRACE-002\", |         \"TRACE-003\", |         \"TRACE-004\", |         \"TRACE-005\", |         \"TRACE-006\", |         \"TRACE-007\", |         \"TRACE-008\", |         \"TRACE-009\", |         \"TRACE-010\", |         \"TRACE-011\", |         \"TRACE-012\", |         \"TRACE-013\", |         \"TRACE-014\", |         \"TRACE-015\", |         \"TRACE-016\", |         \"TRACE-017\", |         \"TRACE-018\" |       ] |     } |   }, |   \"grillReport\": null, |   \"currentHashes\": { |     \"sourceDocumentHash\": \"sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f\", |     \"implementationConfirmationHash\": \"sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3\", |     \"reportSourceDocumentHash\": \"sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f\", |     \"reportImplementationConfirmationHash\": \"sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3\", |     \"reportConfirmationPageHash\": \"sha256:960a54e000dd874501f3ab064aabda849049e164b39e180e6ac93a14efe91a17\" |   }, |   \"reverseAuditChecks\": { |     \"hasImplementationConfirmation\": true, |     \"hasUserConfirmed\": true, |     \"hasContractAuthoringRequired\": true, |     \"hasConfirmationRender\": true, |     \"hasReverseAuditReport\": true, |     \"hasDefinitionOfDone\": true, |     \"diagramBlockCount\": 9, |     \"diagramIdCount\": 46, |     \"missingDiagramCoverage\": [] |   }, |   \"definitionDrilldown\": { |     \"verdict\": \"pass\", |     \"maxIterations\": 3, |     \"iterationPolicy\": \"deterministic_fingerprint_until_fixed_point_then_decision_packet; do_not_increase_rounds_for_repeated_findings\", |     \"stopReason\": \"no_blocking_definition_questions\", |     \"questions\": [ |       { |         \"id\": \"DQ-EDGE-006\", |         \"severity\": \"warning\", |         \"category\": \"ambiguous_language\", |         \"refs\": [ |           \"EDGE-006\" |         ], |         \"question\": \"Clarify vague terms (later) in EDGE-006.\", |         \"recommendedAnswer\": \"Replace fuzzy adjectives with measurable behavior, threshold, owner, or explicit out-of-scope boundary.\", |         \"fingerprint\": \"fp:baf7b93b7ea1f5ba\", |         \"clusterId\": \"cluster:AMBIGUOUS-LANGUAGE:b5e60bd947\", |         \"clusterCategory\": \"ambiguous_language\", |         \"clusterRefs\": [ |           \"EDGE-006\" |         ] |       } |     ], |     \"blockers\": [], |     \"warnings\": [ |       { |         \"code\": \"definition_ambiguous_language\", |         \"message\": \"Clarify vague terms (later) in EDGE-006.\", |         \"refs\": [ |           \"EDGE-006\" |         ], |         \"severity\": \"warning\", |         \"source\": \"definition_drilldown\", |         \"fingerprint\": \"fp:baf7b93b7ea1f5ba\", |         \"category\": \"ambiguous_language\", |         \"clusterId\": \"cluster:AMBIGUOUS-LANGUAGE:b5e60bd947\", |         \"clusterCategory\": \"ambiguous_language\", |         \"clusterRefs\": [ |           \"EDGE-006\" |         ], |         \"recommendedAnswer\": \"Replace fuzzy adjectives with measurable behavior, threshold, owner, or explicit out-of-scope boundary.\", |         \"status\": \"open\", |         \"summary\": \"Clarify vague terms (later) in EDGE-006.\", |         \"requirementIds\": [ |           \"EDGE-006\" |         ] |       } |     ], |     \"clusters\": [ |       { |         \"id\": \"cluster:AMBIGUOUS-LANGUAGE:b5e60bd947\", |         \"category\": \"ambiguous_language\", |         \"refs\": [ |           \"EDGE-006\" |         ], |         \"severity\": \"warning\", |         \"fingerprints\": [ |           \"fp:baf7b93b7ea1f5ba\" |         ], |         \"findingCodes\": [ |           \"definition_ambiguous_language\" |         ], |         \"questions\": [ |         ...<truncated>"
+        },
+        {
+          "commandId": "CMD-DELIVERY-016",
+          "command": "npx vitest run tests/acceptance/requirement-record-schema.test.ts tests/acceptance/requirement-record-control-store-enforcement.test.ts tests/acceptance/main-agent-orchestration-consumer.test.ts",
+          "runId": "run-TRACE-016-20260524T181946Z",
+          "closeoutAttemptId": "attempt-TRACE-016-20260524T181946Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-24T18:19:46.445Z",
+          "completedAt": "2026-05-24T18:19:52.170Z",
+          "outputSummary": "COMMAND_ID: CMD-DELIVERY-016 | COMMAND: npx vitest run tests/acceptance/requirement-record-schema.test.ts tests/acceptance/requirement-record-control-store-enforcement.test.ts tests/acceptance/main-agent-orchestration-consumer.test.ts | RUN_ID: run-TRACE-016-20260524T181946Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-016-20260524T181946Z | STARTED_AT: 2026-05-24T18:19:46.445Z | COMPLETED_AT: 2026-05-24T18:19:52.170Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirement-record-schema.test.ts \u001b[2m(\u001b[22m\u001b[2m16 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 741\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirement-record-control-store-enforcement.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 3\u001b[2mms\u001b[22m\u001b[39m | { |   \"ok\": true, |   \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-QQfcMG/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/implementation-readiness-report.json\", |   \"decision\": \"pass\", |   \"blockingReasons\": [], |   \"controlEventId\": \"implementation_readiness_check_recorded:2026-05-20T00:00:01.000Z:f7c5c03c6ec6\", |   \"controlEventHash\": \"sha256:753924736846a0b780e7cf9aed7cbe85a854f2ed55b309461a1cecf59f8d3976\", |   \"eventLogPath\": \"C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-QQfcMG/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/events/control-events.jsonl\", |   \"receiptPath\": \"C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-QQfcMG/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/events/receipts/implementation_readiness_check_recorded_2026-05-20T00_00_01.000Z_f7c5c03c6ec6.json\", |   \"readinessBaselineActivation\": { |     \"status\": \"audit_required\", |     \"controlEventId\": \"readiness_baseline_activation_requested:2026-05-20T00:00:01.000Z:3100e96f00cb\", |     \"controlEventHash\": \"sha256:59525e7773138d78ef290821ef6fb5384c8ab7eef42903f0ccd3a8c709c5852a\", |     \"receiptPath\": \"C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-QQfcMG/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/events/receipts/readiness_baseline_activation_requested_2026-05-20T00_00_01.000Z_3100e96f00cb.json\" |   } | } | { |   \"version\": 1, |   \"sessionId\": \"story-14.5\", |   \"host\": \"cursor\", |   \"flow\": \"story\", |   \"currentPhase\": \"implement\", |   \"nextAction\": \"dispatch_remediation\", |   \"pendingPacket\": { |     \"packetId\": \"pkt-cli-01\", |     \"packetPath\": \"C:\\\\Users\\\\milom\\\\AppData\\\\Local\\\\Temp\\\\main-agent-cli-surface-o5qHns\\\\_bmad-output\\\\runtime\\\\governance\\\\packets\\\\story-14.5\\\\pkt-cli-01.json\", |     \"packetKind\": \"recommendation\", |     \"status\": \"claimed_by_main_agent\", |     \"createdAt\": \"2026-05-24T18:19:51.470Z\", |     \"claimOwner\": \"main-agent\" |   }, |   \"originalExecutionPacketId\": null, |   \"gatesLoop\": { |     \"retryCount\": 0, |     \"maxRetries\": 3, |     \"noProgressCount\": 0, |     \"circuitOpen\": false, |     \"rerunGate\": null, |     \"activePacketId\": null, |     \"lastResult\": null |   }, |   \"closeout\": { |     \"invoked\": false, |     \"approved\": false, |     \"scoreWriteResult\": null, |     \"handoffPersisted\": false, |     \"resultCode\": null |   }, |   \"lastTaskReport\": null | } | { |   \"version\": 1, |   \"sessionId\": \"story-14.5\", |   \"host\": \"cursor\", |   \"flow\": \"story\", |   \"currentPhase\": \"implement\", |   \"nextAction\": \"dispatch_remediation\", |   \"pendingPacket\": { |     \"packetId\": \"pkt-cli-01\", |     \"packetPath\": \"C:\\\\Users\\\\milom\\\\AppData\\\\Local\\\\Temp\\\\main-agent-cli-surface-o5qHns\\\\_bmad-output\\\\runtime\\\\governance\\\\packets\\\\story-14.5\\\\pkt-cli-01.json\", |     \"packetKind\": \"recommendation\", |     \"status\": \"dispatched\", |     \"createdAt\": \"2026-05-24T18:19:51.470Z\", |     \"claimOwner\": \"main-agent\" |   }, |   \"originalExecutionPacketId\": null, |   \"gatesLoop\": { |     \"retryCount\": 0, |     \"maxRetries\": 3, |     \"noProgressCount\": 0, |     \"circuitOpen\": false, |     \"rerunGate\": null, |     \"activePacketId\": null, |     \"lastResult\": null |   }, |   \"closeout\": { |     \"invoked\": false, |     \"approved\": false, |     \"scoreWriteResult\": null, |     \"handoffPersisted\": false, |     \"resultCode\": null |   }, |   \"lastTaskReport\": null | } | null | {\"updated\":true,\"auditIndex\":{\"bugfix\":{},\"standalone_tasks\":{}}} \u001b[32m✓\u001b[39m tests/acceptance/main-agent-orchestration-consumer.test.ts \u001b[2m(\u001b[22m\u001b[2m11 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 1201\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs controlled readiness audit through scoring bridge and records current baseline metadata \u001b[33m 438\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m3 passed\u001b[39m\u001b[22m\u001b[90m (3)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m29 passed\u001b[39m\u001b[22m\u001b[90m (29)\u001b[39m | \u001b[2m   Start at \u001b[22m 02:19:48 | \u001b[2m   Duration \u001b[22m 3.69s\u001b[2m (transform 899ms, setup 0ms, import 2.54s, tests 1.94s, environment 0ms)\u001b[22m | STDERR:"
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/CMD-CONTRACT-001.output.txt",
+          "contentHash": "sha256:c73573a95d931ec9d71d8e06caa21c756c9a22381abb5372379f2398904e40bf",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-CONTRACT-001 covering TRACE-016",
+          "relatedRequirementIds": [
+            "CMD-CONTRACT-001",
+            "TRACE-016",
+            "MUST-015",
+            "EVD-017"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+          "outputVersion": "cmd-contract-001-trace-016-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-016"
+          ],
+          "evidenceRefs": [
+            "EVD-017"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/CMD-DELIVERY-016.output.txt",
+          "contentHash": "sha256:4c6bfeaaa15b1c20364b8ca1b00c7ae84c056bf2ebbdfb06fc82a0e6c9c560a6",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-DELIVERY-016 covering TRACE-016",
+          "relatedRequirementIds": [
+            "CMD-DELIVERY-016",
+            "TRACE-016",
+            "MUST-015",
+            "EVD-017"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+          "outputVersion": "cmd-delivery-016-trace-016-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-016"
+          ],
+          "evidenceRefs": [
+            "EVD-017"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/trace-016-command-receipt.json",
+          "contentHash": "sha256:f9f2a7a2ae4d2b030a15832dcd5c3de083e8e41c58465ce5fba83f59966a67a2",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt command receipt bundle for TRACE-016",
+          "relatedRequirementIds": [
+            "TRACE-016",
+            "MUST-015",
+            "EVD-017"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+          "outputVersion": "trace-016-command-receipt-v1",
+          "traceRows": [
+            "TRACE-016"
+          ],
+          "evidenceRefs": [
+            "EVD-017"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "completion_evidence_packet",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/trace-016-completion-evidence-packet.json",
+          "contentHash": "sha256:31005f959fb201dda48d113c119a4ab394795fc35c1750de3d5aa4f6a9e92c46",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt completion evidence packet for TRACE-016",
+          "relatedRequirementIds": [
+            "TRACE-016",
+            "MUST-015",
+            "EVD-017"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+          "outputVersion": "trace-016-completion-evidence-packet-v1",
+          "traceRows": [
+            "TRACE-016"
+          ],
+          "evidenceRefs": [
+            "EVD-017"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+          "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/trace-016-diff-summary.md",
+          "contentHash": "sha256:33b59e975b295953ad76e89939be6b8efec4e06b06d84c018ef228d477e2feea",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "runtime closure diff summary for TRACE-016",
+          "relatedRequirementIds": [
+            "TRACE-016",
+            "MUST-015",
+            "EVD-017"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+          "outputVersion": "trace-016-diff-summary-v1",
+          "traceRows": [
+            "TRACE-016"
+          ],
+          "evidenceRefs": [
+            "EVD-017"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-016"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-017"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-CONTRACT-001"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-DELIVERY-016"
+        }
+      ],
+      "recordedAt": "2026-05-24T18:19:53.058Z",
+      "recordedBy": "codex"
     }
   ],
   "gateChecks": [
@@ -24022,6 +24769,56 @@
       ],
       "recordedAt": "2026-05-24T18:19:05.397Z",
       "recordedBy": "codex"
+    },
+    {
+      "eventType": "gate_check_recorded",
+      "checkId": "TRACE-016:CMD-DELIVERY-016:run-TRACE-016-20260524T181946Z",
+      "gate": "CMD-DELIVERY-016",
+      "decision": "pass",
+      "blockingReasons": [],
+      "checks": [],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-016"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-017"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-CONTRACT-001"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-DELIVERY-016"
+        }
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-CONTRACT-001",
+          "command": "node _bmad/skills/requirements-contract-authoring/scripts/reverse_audit_contract.js docs/requirements/2026-05-24-main-agent-six-mental-model-control-plane-completion.md",
+          "runId": "run-TRACE-016-20260524T181946Z",
+          "closeoutAttemptId": "attempt-TRACE-016-20260524T181946Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-24T18:19:46.290Z",
+          "completedAt": "2026-05-24T18:19:46.444Z",
+          "outputSummary": "COMMAND_ID: CMD-CONTRACT-001 | COMMAND: node _bmad/skills/requirements-contract-authoring/scripts/reverse_audit_contract.js docs/requirements/2026-05-24-main-agent-six-mental-model-control-plane-completion.md | RUN_ID: run-TRACE-016-20260524T181946Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-016-20260524T181946Z | STARTED_AT: 2026-05-24T18:19:46.290Z | COMPLETED_AT: 2026-05-24T18:19:46.444Z | EXIT_CODE: 0 | STDOUT: | { |   \"verdict\": \"PASS\", |   \"target\": \"D:/Dev/BMAD-Speckit-SDD-Flow/docs/requirements/2026-05-24-main-agent-six-mental-model-control-plane-completion.md\", |   \"renderReportPath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/confirmation/confirmation-render-report.json\", |   \"mode\": \"implementation\", |   \"rendererAuthority\": { |     \"confirmability\": \"confirmable\", |     \"blockingIssueCount\": 0, |     \"deliveryReadiness\": { |       \"ready\": false, |       \"status\": \"delivery_not_ready\", |       \"label\": \"delivery_ready=false\", |       \"reasons\": [ |         \"缺少受控记录\", |         \"存在缺失当前证据: 46\", |         \"traceRows 尚未全部 current_pass: 0/18\" |       ], |       \"currentAttemptStatus\": \"missing_controlled_record\", |       \"currentPassTraceRows\": 0, |       \"totalTraceRows\": 18, |       \"missingEvidenceCount\": 46, |       \"staleProofCount\": 0, |       \"nonCurrentPassTraceRows\": [ |         \"TRACE-001\", |         \"TRACE-002\", |         \"TRACE-003\", |         \"TRACE-004\", |         \"TRACE-005\", |         \"TRACE-006\", |         \"TRACE-007\", |         \"TRACE-008\", |         \"TRACE-009\", |         \"TRACE-010\", |         \"TRACE-011\", |         \"TRACE-012\", |         \"TRACE-013\", |         \"TRACE-014\", |         \"TRACE-015\", |         \"TRACE-016\", |         \"TRACE-017\", |         \"TRACE-018\" |       ] |     } |   }, |   \"grillReport\": null, |   \"currentHashes\": { |     \"sourceDocumentHash\": \"sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f\", |     \"implementationConfirmationHash\": \"sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3\", |     \"reportSourceDocumentHash\": \"sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f\", |     \"reportImplementationConfirmationHash\": \"sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3\", |     \"reportConfirmationPageHash\": \"sha256:960a54e000dd874501f3ab064aabda849049e164b39e180e6ac93a14efe91a17\" |   }, |   \"reverseAuditChecks\": { |     \"hasImplementationConfirmation\": true, |     \"hasUserConfirmed\": true, |     \"hasContractAuthoringRequired\": true, |     \"hasConfirmationRender\": true, |     \"hasReverseAuditReport\": true, |     \"hasDefinitionOfDone\": true, |     \"diagramBlockCount\": 9, |     \"diagramIdCount\": 46, |     \"missingDiagramCoverage\": [] |   }, |   \"definitionDrilldown\": { |     \"verdict\": \"pass\", |     \"maxIterations\": 3, |     \"iterationPolicy\": \"deterministic_fingerprint_until_fixed_point_then_decision_packet; do_not_increase_rounds_for_repeated_findings\", |     \"stopReason\": \"no_blocking_definition_questions\", |     \"questions\": [ |       { |         \"id\": \"DQ-EDGE-006\", |         \"severity\": \"warning\", |         \"category\": \"ambiguous_language\", |         \"refs\": [ |           \"EDGE-006\" |         ], |         \"question\": \"Clarify vague terms (later) in EDGE-006.\", |         \"recommendedAnswer\": \"Replace fuzzy adjectives with measurable behavior, threshold, owner, or explicit out-of-scope boundary.\", |         \"fingerprint\": \"fp:baf7b93b7ea1f5ba\", |         \"clusterId\": \"cluster:AMBIGUOUS-LANGUAGE:b5e60bd947\", |         \"clusterCategory\": \"ambiguous_language\", |         \"clusterRefs\": [ |           \"EDGE-006\" |         ] |       } |     ], |     \"blockers\": [], |     \"warnings\": [ |       { |         \"code\": \"definition_ambiguous_language\", |         \"message\": \"Clarify vague terms (later) in EDGE-006.\", |         \"refs\": [ |           \"EDGE-006\" |         ], |         \"severity\": \"warning\", |         \"source\": \"definition_drilldown\", |         \"fingerprint\": \"fp:baf7b93b7ea1f5ba\", |         \"category\": \"ambiguous_language\", |         \"clusterId\": \"cluster:AMBIGUOUS-LANGUAGE:b5e60bd947\", |         \"clusterCategory\": \"ambiguous_language\", |         \"clusterRefs\": [ |           \"EDGE-006\" |         ], |         \"recommendedAnswer\": \"Replace fuzzy adjectives with measurable behavior, threshold, owner, or explicit out-of-scope boundary.\", |         \"status\": \"open\", |         \"summary\": \"Clarify vague terms (later) in EDGE-006.\", |         \"requirementIds\": [ |           \"EDGE-006\" |         ] |       } |     ], |     \"clusters\": [ |       { |         \"id\": \"cluster:AMBIGUOUS-LANGUAGE:b5e60bd947\", |         \"category\": \"ambiguous_language\", |         \"refs\": [ |           \"EDGE-006\" |         ], |         \"severity\": \"warning\", |         \"fingerprints\": [ |           \"fp:baf7b93b7ea1f5ba\" |         ], |         \"findingCodes\": [ |           \"definition_ambiguous_language\" |         ], |         \"questions\": [ |         ...<truncated>"
+        },
+        {
+          "commandId": "CMD-DELIVERY-016",
+          "command": "npx vitest run tests/acceptance/requirement-record-schema.test.ts tests/acceptance/requirement-record-control-store-enforcement.test.ts tests/acceptance/main-agent-orchestration-consumer.test.ts",
+          "runId": "run-TRACE-016-20260524T181946Z",
+          "closeoutAttemptId": "attempt-TRACE-016-20260524T181946Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-24T18:19:46.445Z",
+          "completedAt": "2026-05-24T18:19:52.170Z",
+          "outputSummary": "COMMAND_ID: CMD-DELIVERY-016 | COMMAND: npx vitest run tests/acceptance/requirement-record-schema.test.ts tests/acceptance/requirement-record-control-store-enforcement.test.ts tests/acceptance/main-agent-orchestration-consumer.test.ts | RUN_ID: run-TRACE-016-20260524T181946Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-016-20260524T181946Z | STARTED_AT: 2026-05-24T18:19:46.445Z | COMPLETED_AT: 2026-05-24T18:19:52.170Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirement-record-schema.test.ts \u001b[2m(\u001b[22m\u001b[2m16 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 741\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirement-record-control-store-enforcement.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 3\u001b[2mms\u001b[22m\u001b[39m | { |   \"ok\": true, |   \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-QQfcMG/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/implementation-readiness-report.json\", |   \"decision\": \"pass\", |   \"blockingReasons\": [], |   \"controlEventId\": \"implementation_readiness_check_recorded:2026-05-20T00:00:01.000Z:f7c5c03c6ec6\", |   \"controlEventHash\": \"sha256:753924736846a0b780e7cf9aed7cbe85a854f2ed55b309461a1cecf59f8d3976\", |   \"eventLogPath\": \"C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-QQfcMG/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/events/control-events.jsonl\", |   \"receiptPath\": \"C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-QQfcMG/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/events/receipts/implementation_readiness_check_recorded_2026-05-20T00_00_01.000Z_f7c5c03c6ec6.json\", |   \"readinessBaselineActivation\": { |     \"status\": \"audit_required\", |     \"controlEventId\": \"readiness_baseline_activation_requested:2026-05-20T00:00:01.000Z:3100e96f00cb\", |     \"controlEventHash\": \"sha256:59525e7773138d78ef290821ef6fb5384c8ab7eef42903f0ccd3a8c709c5852a\", |     \"receiptPath\": \"C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-QQfcMG/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/events/receipts/readiness_baseline_activation_requested_2026-05-20T00_00_01.000Z_3100e96f00cb.json\" |   } | } | { |   \"version\": 1, |   \"sessionId\": \"story-14.5\", |   \"host\": \"cursor\", |   \"flow\": \"story\", |   \"currentPhase\": \"implement\", |   \"nextAction\": \"dispatch_remediation\", |   \"pendingPacket\": { |     \"packetId\": \"pkt-cli-01\", |     \"packetPath\": \"C:\\\\Users\\\\milom\\\\AppData\\\\Local\\\\Temp\\\\main-agent-cli-surface-o5qHns\\\\_bmad-output\\\\runtime\\\\governance\\\\packets\\\\story-14.5\\\\pkt-cli-01.json\", |     \"packetKind\": \"recommendation\", |     \"status\": \"claimed_by_main_agent\", |     \"createdAt\": \"2026-05-24T18:19:51.470Z\", |     \"claimOwner\": \"main-agent\" |   }, |   \"originalExecutionPacketId\": null, |   \"gatesLoop\": { |     \"retryCount\": 0, |     \"maxRetries\": 3, |     \"noProgressCount\": 0, |     \"circuitOpen\": false, |     \"rerunGate\": null, |     \"activePacketId\": null, |     \"lastResult\": null |   }, |   \"closeout\": { |     \"invoked\": false, |     \"approved\": false, |     \"scoreWriteResult\": null, |     \"handoffPersisted\": false, |     \"resultCode\": null |   }, |   \"lastTaskReport\": null | } | { |   \"version\": 1, |   \"sessionId\": \"story-14.5\", |   \"host\": \"cursor\", |   \"flow\": \"story\", |   \"currentPhase\": \"implement\", |   \"nextAction\": \"dispatch_remediation\", |   \"pendingPacket\": { |     \"packetId\": \"pkt-cli-01\", |     \"packetPath\": \"C:\\\\Users\\\\milom\\\\AppData\\\\Local\\\\Temp\\\\main-agent-cli-surface-o5qHns\\\\_bmad-output\\\\runtime\\\\governance\\\\packets\\\\story-14.5\\\\pkt-cli-01.json\", |     \"packetKind\": \"recommendation\", |     \"status\": \"dispatched\", |     \"createdAt\": \"2026-05-24T18:19:51.470Z\", |     \"claimOwner\": \"main-agent\" |   }, |   \"originalExecutionPacketId\": null, |   \"gatesLoop\": { |     \"retryCount\": 0, |     \"maxRetries\": 3, |     \"noProgressCount\": 0, |     \"circuitOpen\": false, |     \"rerunGate\": null, |     \"activePacketId\": null, |     \"lastResult\": null |   }, |   \"closeout\": { |     \"invoked\": false, |     \"approved\": false, |     \"scoreWriteResult\": null, |     \"handoffPersisted\": false, |     \"resultCode\": null |   }, |   \"lastTaskReport\": null | } | null | {\"updated\":true,\"auditIndex\":{\"bugfix\":{},\"standalone_tasks\":{}}} \u001b[32m✓\u001b[39m tests/acceptance/main-agent-orchestration-consumer.test.ts \u001b[2m(\u001b[22m\u001b[2m11 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 1201\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs controlled readiness audit through scoring bridge and records current baseline metadata \u001b[33m 438\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m3 passed\u001b[39m\u001b[22m\u001b[90m (3)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m29 passed\u001b[39m\u001b[22m\u001b[90m (29)\u001b[39m | \u001b[2m   Start at \u001b[22m 02:19:48 | \u001b[2m   Duration \u001b[22m 3.69s\u001b[2m (transform 899ms, setup 0ms, import 2.54s, tests 1.94s, environment 0ms)\u001b[22m | STDERR:"
+        }
+      ],
+      "recordedAt": "2026-05-24T18:19:53.058Z",
+      "recordedBy": "codex"
     }
   ],
   "contractChecks": [
@@ -24509,6 +25306,32 @@
         }
       ],
       "recordedAt": "2026-05-24T18:19:05.397Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "contract_check_recorded",
+      "checkId": "TRACE-016:CMD-CONTRACT-001:run-TRACE-016-20260524T181946Z",
+      "contract": "CMD-CONTRACT-001",
+      "decision": "pass",
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-016"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-017"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-CONTRACT-001"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-DELIVERY-016"
+        }
+      ],
+      "recordedAt": "2026-05-24T18:19:53.058Z",
       "recordedBy": "codex"
     }
   ],
@@ -26970,6 +27793,133 @@
         "EVD-016",
         "EVD-014"
       ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "command_run_output",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+      "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+      "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/CMD-CONTRACT-001.output.txt",
+      "contentHash": "sha256:c73573a95d931ec9d71d8e06caa21c756c9a22381abb5372379f2398904e40bf",
+      "producer": "run-confirmed-trace-slice",
+      "purpose": "fresh current-attempt output for CMD-CONTRACT-001 covering TRACE-016",
+      "relatedRequirementIds": [
+        "CMD-CONTRACT-001",
+        "TRACE-016",
+        "MUST-015",
+        "EVD-017"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+      "outputVersion": "cmd-contract-001-trace-016-current-attempt-output-v1",
+      "traceRows": [
+        "TRACE-016"
+      ],
+      "evidenceRefs": [
+        "EVD-017"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "command_run_output",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+      "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+      "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/CMD-DELIVERY-016.output.txt",
+      "contentHash": "sha256:4c6bfeaaa15b1c20364b8ca1b00c7ae84c056bf2ebbdfb06fc82a0e6c9c560a6",
+      "producer": "run-confirmed-trace-slice",
+      "purpose": "fresh current-attempt output for CMD-DELIVERY-016 covering TRACE-016",
+      "relatedRequirementIds": [
+        "CMD-DELIVERY-016",
+        "TRACE-016",
+        "MUST-015",
+        "EVD-017"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+      "outputVersion": "cmd-delivery-016-trace-016-current-attempt-output-v1",
+      "traceRows": [
+        "TRACE-016"
+      ],
+      "evidenceRefs": [
+        "EVD-017"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "command_run_receipt",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+      "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+      "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/trace-016-command-receipt.json",
+      "contentHash": "sha256:f9f2a7a2ae4d2b030a15832dcd5c3de083e8e41c58465ce5fba83f59966a67a2",
+      "producer": "run-confirmed-trace-slice",
+      "purpose": "current-attempt command receipt bundle for TRACE-016",
+      "relatedRequirementIds": [
+        "TRACE-016",
+        "MUST-015",
+        "EVD-017"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+      "outputVersion": "trace-016-command-receipt-v1",
+      "traceRows": [
+        "TRACE-016"
+      ],
+      "evidenceRefs": [
+        "EVD-017"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "completion_evidence_packet",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+      "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+      "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/trace-016-completion-evidence-packet.json",
+      "contentHash": "sha256:31005f959fb201dda48d113c119a4ab394795fc35c1750de3d5aa4f6a9e92c46",
+      "producer": "run-confirmed-trace-slice",
+      "purpose": "current-attempt completion evidence packet for TRACE-016",
+      "relatedRequirementIds": [
+        "TRACE-016",
+        "MUST-015",
+        "EVD-017"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+      "outputVersion": "trace-016-completion-evidence-packet-v1",
+      "traceRows": [
+        "TRACE-016"
+      ],
+      "evidenceRefs": [
+        "EVD-017"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "diff_summary",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+      "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+      "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/trace-016-diff-summary.md",
+      "contentHash": "sha256:33b59e975b295953ad76e89939be6b8efec4e06b06d84c018ef228d477e2feea",
+      "producer": "run-confirmed-trace-slice",
+      "purpose": "runtime closure diff summary for TRACE-016",
+      "relatedRequirementIds": [
+        "TRACE-016",
+        "MUST-015",
+        "EVD-017"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+      "outputVersion": "trace-016-diff-summary-v1",
+      "traceRows": [
+        "TRACE-016"
+      ],
+      "evidenceRefs": [
+        "EVD-017"
+      ]
     }
   ],
   "extensionRefs": [],
@@ -26981,18 +27931,17 @@
         "commandType": "contract",
         "blockingIfMissing": true,
         "negativeOrRegression": false,
-        "closeoutAttemptId": "attempt-TRACE-015-20260524T181841Z",
+        "closeoutAttemptId": "attempt-TRACE-016-20260524T181946Z",
         "lastRunRef": {
           "commandId": "CMD-CONTRACT-001",
-          "runId": "run-TRACE-015-20260524T181841Z",
-          "closeoutAttemptId": "attempt-TRACE-015-20260524T181841Z"
+          "runId": "run-TRACE-016-20260524T181946Z",
+          "closeoutAttemptId": "attempt-TRACE-016-20260524T181946Z"
         },
         "traceRows": [
-          "TRACE-015"
+          "TRACE-016"
         ],
         "evidenceRefs": [
-          "EVD-016",
-          "EVD-014"
+          "EVD-017"
         ],
         "artifactRefs": [
           {
@@ -27001,21 +27950,19 @@
             "sourceOfTruthRole": "evidence",
             "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
             "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
-            "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-015/run-TRACE-015-20260524T181841Z/CMD-CONTRACT-001.output.txt",
-            "contentHash": "sha256:4e3b7fd93e7e42f2e13598cc5700e3213e7d239360f52c9e0a4997a5ec64bdfc",
+            "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/CMD-CONTRACT-001.output.txt",
+            "contentHash": "sha256:c73573a95d931ec9d71d8e06caa21c756c9a22381abb5372379f2398904e40bf",
             "producer": "run-confirmed-trace-slice",
-            "purpose": "fresh current-attempt output for CMD-CONTRACT-001 covering TRACE-015",
+            "purpose": "fresh current-attempt output for CMD-CONTRACT-001 covering TRACE-016",
             "relatedRequirementIds": [
               "CMD-CONTRACT-001",
-              "TRACE-015",
-              "MUST-014",
-              "NEG-011",
-              "EVD-016",
-              "EVD-014"
+              "TRACE-016",
+              "MUST-015",
+              "EVD-017"
             ],
             "status": "active",
             "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
-            "outputVersion": "cmd-contract-001-trace-015-current-attempt-output-v1",
+            "outputVersion": "cmd-contract-001-trace-016-current-attempt-output-v1",
             "traceRows": [],
             "evidenceRefs": []
           }
@@ -27719,6 +28666,49 @@
             "evidenceRefs": []
           }
         ]
+      },
+      {
+        "commandId": "CMD-DELIVERY-016",
+        "command": "npx vitest run tests/acceptance/requirement-record-schema.test.ts tests/acceptance/requirement-record-control-store-enforcement.test.ts tests/acceptance/main-agent-orchestration-consumer.test.ts",
+        "commandType": "delivery_evidence",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "closeoutAttemptId": "attempt-TRACE-016-20260524T181946Z",
+        "lastRunRef": {
+          "commandId": "CMD-DELIVERY-016",
+          "runId": "run-TRACE-016-20260524T181946Z",
+          "closeoutAttemptId": "attempt-TRACE-016-20260524T181946Z"
+        },
+        "traceRows": [
+          "TRACE-016"
+        ],
+        "evidenceRefs": [
+          "EVD-017"
+        ],
+        "artifactRefs": [
+          {
+            "eventType": "artifact_indexed",
+            "artifactType": "command_run_output",
+            "sourceOfTruthRole": "evidence",
+            "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+            "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+            "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-016/run-TRACE-016-20260524T181946Z/CMD-DELIVERY-016.output.txt",
+            "contentHash": "sha256:4c6bfeaaa15b1c20364b8ca1b00c7ae84c056bf2ebbdfb06fc82a0e6c9c560a6",
+            "producer": "run-confirmed-trace-slice",
+            "purpose": "fresh current-attempt output for CMD-DELIVERY-016 covering TRACE-016",
+            "relatedRequirementIds": [
+              "CMD-DELIVERY-016",
+              "TRACE-016",
+              "MUST-015",
+              "EVD-017"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+            "outputVersion": "cmd-delivery-016-trace-016-current-attempt-output-v1",
+            "traceRows": [],
+            "evidenceRefs": []
+          }
+        ]
       }
     ],
     "historicalRunRefs": [
@@ -27926,20 +28916,30 @@
         "commandId": "CMD-DELIVERY-013",
         "runId": "run-TRACE-015-20260524T181841Z",
         "closeoutAttemptId": "attempt-TRACE-015-20260524T181841Z"
+      },
+      {
+        "commandId": "CMD-CONTRACT-001",
+        "runId": "run-TRACE-016-20260524T181946Z",
+        "closeoutAttemptId": "attempt-TRACE-016-20260524T181946Z"
+      },
+      {
+        "commandId": "CMD-DELIVERY-016",
+        "runId": "run-TRACE-016-20260524T181946Z",
+        "closeoutAttemptId": "attempt-TRACE-016-20260524T181946Z"
       }
     ]
   },
   "schemaVersion": "requirement-record/v1",
-  "recordHash": "sha256:9358aa97a57ababd614116e0ad3a22da9c1dda04db7257db0bbc7d4184a40e30",
-  "lastAppliedEventId": "implementation_evidence_ingested:2026-05-24T18:19:05.397Z:6cc5810b2b7f",
-  "lastAppliedEventHash": "sha256:c905187c43e2803d064a0572f8be274964591c226f098a53907ba54113fe5e30",
-  "eventChainHead": "sha256:c905187c43e2803d064a0572f8be274964591c226f098a53907ba54113fe5e30",
-  "eventCount": 15,
+  "recordHash": "sha256:6f9f85bf4cbf2849c84f3b3b093e4d3e09c907e4d0cd2235d01d49c178d67755",
+  "lastAppliedEventId": "implementation_evidence_ingested:2026-05-24T18:19:53.058Z:ae9be647cbab",
+  "lastAppliedEventHash": "sha256:0c039937bed71c8d954a7b1245a939b48010c59995209e6ca30865d55278f6ce",
+  "eventChainHead": "sha256:0c039937bed71c8d954a7b1245a939b48010c59995209e6ca30865d55278f6ce",
+  "eventCount": 16,
   "controlStore": {
     "schemaVersion": "control-store/v1",
     "eventLogPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/events/control-events.jsonl",
-    "lastEventId": "implementation_evidence_ingested:2026-05-24T18:19:05.397Z:6cc5810b2b7f",
-    "lastEventHash": "sha256:c905187c43e2803d064a0572f8be274964591c226f098a53907ba54113fe5e30",
+    "lastEventId": "implementation_evidence_ingested:2026-05-24T18:19:53.058Z:ae9be647cbab",
+    "lastEventHash": "sha256:0c039937bed71c8d954a7b1245a939b48010c59995209e6ca30865d55278f6ce",
     "reducer": "canonical-requirement-record-reducer/v1",
     "atomicCommitter": "requirement-record-control-store/v1"
   }
