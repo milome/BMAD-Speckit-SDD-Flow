@@ -102,6 +102,8 @@ Checkpoint 9 必须先让用户显式选择确认页语言；只有用户选择 
 
 Checkpoint 8A 已澄清 `record_closed` 边界：`currentMentalModel` 只允许六个评估模型值；`record_closed` 必须由 `status=closed`、`lastEventType=record_closed`、`requirementClosures` 或 terminal close event 派生表达，不得成为 `currentMentalModel` 的值，也不得要求新增顶层 `recordLifecycleState` 字段。
 
+Checkpoint 8B 已补充 post-close defect 管理规则：`record_closed` 后发现真实实现缺陷时，原 record 保持 closed，并通过 linked bugfix requirement record 或新 requirement/version 承载后续工作；只有 closeout、gate、evidence、hash 或 provenance 本身有缺陷时，才进入 closure_integrity_incident，不走普通 reconfirm router，也不得自动 dispatch。
+
 ## 3. implementationConfirmation Core Draft
 
 This checkpoint now includes the confirmation block shell, identity, rendering placeholders, applicability declarations, drafted `MUST-*`, `NEG-*`, `OUT-*`, and `EVD-*` rows, `FAIL-*`, `EDGE-*`, and `TRACE-*` mappings, ID-bound sequence, flow, edge-case, and boundary views, artifact automation and command plans, conditional governance/runtime/scoring/current-target/scripts modules, and human-readable confirmation views. It deliberately leaves confirmation language selection, rendered confirmation HTML, exact user confirmation, and controlled confirmation ingest for later checkpoints.
@@ -260,6 +262,16 @@ implementationConfirmation:
       coveredByTraceRows: ["TRACE-012"]
       coveredBySequenceViews: ["SEQ-010"]
       riskLevel: high
+    - id: MUST-013
+      text: >-
+        record_closed 后发现的问题必须进入 post_close_defect_intake 分类：原确认范围内实现缺陷必须创建 linked bugfix
+        requirement record；原需求未覆盖的新能力或漏项必须创建新的 requirement record/version；架构假设失效必须创建新
+        record/version 并重新进入 architecture_confirmation 或更早确认；closeout、gate、evidence、hash 或 provenance 本身错误必须创建
+        closure_integrity_incident。
+      evidenceRefs: ["EVD-015"]
+      coveredByTraceRows: ["TRACE-014"]
+      coveredBySequenceViews: ["SEQ-011"]
+      riskLevel: critical
   notDone:
     - id: NEG-001
       text: Dashboard green、score green、SFT/report/summary/hook receipt 或 dashboard six-model projection 不得直接推进模型、写 gate decision、写 closeout 或关闭 record。
@@ -315,6 +327,12 @@ implementationConfirmation:
       whyItBlocksCompletion: Requirement semantics must remain in this source document and later inline implementationConfirmation block.
       negativeAssertionRequired: true
       coveredByFailurePath: ["FAIL-009"]
+    - id: NEG-010
+      text: record_closed 后的缺陷、遗漏、架构变化或后续回归不得自动 reopen 原 record、不得将 currentMentalModel 回滚到确认模型、不得从 closed record 继续 dispatch，也不得把新缺陷修复完成状态写回原 record 当作重新完成证据。
+      evidenceRefs: ["EVD-015", "EVD-013"]
+      whyItBlocksCompletion: Closed records must remain immutable historical authority; post-close work needs a new execution carrier or a closure integrity incident.
+      negativeAssertionRequired: true
+      coveredByFailurePath: ["FAIL-010"]
   mustNot:
     - id: OUT-001
       text: 本需求不把 dashboard projection、score、SFT、report、summary 或 hook receipt 改成控制源。
@@ -351,6 +369,11 @@ implementationConfirmation:
       scopeBoundary: checkpoint commits preserve authoring progress only.
       userApprovalRequiredIfChanged: true
       coveredByBoundaryView: ["BOUNDARY-004"]
+    - id: OUT-008
+      text: 本需求不把 post-close defect、missing scope、architecture drift 或 regression 当作原 closed record 的普通 reconfirmation 或自动 reopen。
+      scopeBoundary: post-close work is carried by a linked bugfix record, new requirement/version, or closure_integrity_incident.
+      userApprovalRequiredIfChanged: true
+      coveredByBoundaryView: ["BOUNDARY-005"]
   evidence:
     - id: EVD-001
       text: Source document remains the single implementation source document and contains no sidecar authoritative contract.
@@ -450,6 +473,13 @@ implementationConfirmation:
       requiredCommandRefs: ["CMD-DELIVERY-013"]
       artifactRefs: ["ART-INSPECT-002"]
       acceptanceType: acceptance_e2e
+    - id: EVD-015
+      text: Post-close problems are classified into bugfix record, new requirement/version, architecture reconfirmation through a new record/version, or closure_integrity_incident without reopening the closed record by default.
+      gate: post_close_defect_intake_acceptance
+      oracle: tests show closed records do not dispatch, post-close defects create linked bugfix records or new requirement records, and closure proof defects create closure_integrity_incident before any new execution.
+      requiredCommandRefs: ["CMD-DELIVERY-014"]
+      artifactRefs: ["ART-POSTCLOSE-001", "ART-RECORD-002"]
+      acceptanceType: adversarial_integration
   openQuestions:
     - id: Q-001
       text: 用户尚未为本源文档选择确认页语言；渲染 confirmation HTML 前必须显式选择 zh-CN、en-US 或 bilingual。
@@ -555,6 +585,18 @@ implementationConfirmation:
       requiredAssertions:
         - no separate authoritative contract file is used for implementation readiness
         - prompts and generated views reference IDs from this source document
+    - id: FAIL-010
+      title: Post-close issue mutates or reuses closed record
+      trigger: A defect, missing scope, architecture drift, regression, or closure proof issue is discovered after record_closed.
+      expectedBehavior: Classify through post_close_defect_intake and create a linked bugfix record, new requirement/version, architecture reconfirmation path, or closure_integrity_incident.
+      forbiddenBehavior: Do not automatically reopen the closed record, roll currentMentalModel back, dispatch from the closed record, or write the new fix completion back as the original record completion.
+      blocksCompletionWhenViolated: true
+      linkedNegIds: ["NEG-010"]
+      linkedEvidenceIds: ["EVD-015", "EVD-013"]
+      requiredAssertions:
+        - closed record remains terminal and non-dispatchable
+        - post-close implementation defects produce linked bugfix requirement records
+        - closeout proof defects produce closure_integrity_incident before any new execution
   edgeCases:
     - id: EDGE-001
       category: stale_hash
@@ -619,6 +661,14 @@ implementationConfirmation:
       forbiddenBehavior: Do not treat checkpoint commit as implementation readiness or confirmed scope.
       linkedFailurePathIds: ["FAIL-009"]
       linkedEvidenceIds: ["EVD-001"]
+      blocksImplementation: false
+    - id: EDGE-009
+      category: post_close_problem
+      condition: A real defect, missing feature, architecture assumption failure, production regression, or closeout proof defect is reported after record_closed.
+      expectedBehavior: Classify through post_close_defect_intake and route to linked bugfix record, new requirement/version, architecture reconfirmation in the new record/version, or closure_integrity_incident.
+      forbiddenBehavior: Do not treat post-close defects as ordinary reconfirmation on the closed record or continue dispatch from the closed record.
+      linkedFailurePathIds: ["FAIL-010"]
+      linkedEvidenceIds: ["EVD-015"]
       blocksImplementation: false
   traceRows:
     - id: TRACE-001
@@ -764,6 +814,17 @@ implementationConfirmation:
       artifactRefs: ["ART-SOURCE-001"]
       status: PENDING
       blockingReason: source_boundary_review_pending
+    - id: TRACE-014
+      covers: ["MUST-013", "NEG-010"]
+      taskRefs: ["TASK-014"]
+      evidenceRefs: ["EVD-015", "EVD-013"]
+      contractValidationCommandRefs: ["CMD-CONTRACT-001"]
+      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-014"]
+      sequenceViewRefs: ["SEQ-011"]
+      boundaryViewRefs: ["BOUNDARY-005"]
+      artifactRefs: ["ART-POSTCLOSE-001", "ART-RECORD-002"]
+      status: PENDING
+      blockingReason: post_close_defect_intake_tests_pending
   requirementBoundary:
     business:
       description: 用户通过主控入口触发 inspect 后，系统给出可信下一步、阻断原因、恢复路径或完成态，并防止 read-model/smoke-only 信号误导为完成。
@@ -772,9 +833,9 @@ implementationConfirmation:
       diagramRefs: ["SEQ-001", "FLOW-001", "EDGEVIEW-001", "BOUNDARY-001"]
     governance:
       description: Main Agent 控制面内部的受控状态链、事件写入、blocker 归一化、reconfirmation router、模型 verdict、execution closure、audit review、delivery confirmation 和 record close。
-      requirementIds: ["MUST-002", "MUST-003", "MUST-004", "MUST-005", "MUST-006", "MUST-007", "MUST-008", "MUST-009", "MUST-010", "MUST-011", "NEG-003", "NEG-005", "NEG-006", "NEG-007", "NEG-008", "NEG-009", "OUT-002", "OUT-003", "OUT-004", "OUT-005", "OUT-006"]
-      viewRefs: ["SEQ-002", "SEQ-003", "SEQ-004", "SEQ-005", "SEQ-006", "SEQ-007", "SEQ-008", "SEQ-009", "FLOW-002", "FLOW-003", "EDGEVIEW-002", "EDGEVIEW-003", "BOUNDARY-002", "BOUNDARY-003", "BOUNDARY-004"]
-      diagramRefs: ["SEQ-002", "SEQ-003", "SEQ-004", "SEQ-005", "SEQ-006", "SEQ-007", "SEQ-008", "SEQ-009", "FLOW-002", "FLOW-003", "EDGEVIEW-002", "BOUNDARY-003"]
+      requirementIds: ["MUST-002", "MUST-003", "MUST-004", "MUST-005", "MUST-006", "MUST-007", "MUST-008", "MUST-009", "MUST-010", "MUST-011", "MUST-013", "NEG-003", "NEG-005", "NEG-006", "NEG-007", "NEG-008", "NEG-009", "NEG-010", "OUT-002", "OUT-003", "OUT-004", "OUT-005", "OUT-006", "OUT-008"]
+      viewRefs: ["SEQ-002", "SEQ-003", "SEQ-004", "SEQ-005", "SEQ-006", "SEQ-007", "SEQ-008", "SEQ-009", "SEQ-011", "FLOW-002", "FLOW-003", "FLOW-004", "EDGEVIEW-002", "EDGEVIEW-003", "BOUNDARY-002", "BOUNDARY-003", "BOUNDARY-004", "BOUNDARY-005"]
+      diagramRefs: ["SEQ-002", "SEQ-003", "SEQ-004", "SEQ-005", "SEQ-006", "SEQ-007", "SEQ-008", "SEQ-009", "SEQ-011", "FLOW-002", "FLOW-003", "FLOW-004", "EDGEVIEW-002", "BOUNDARY-003", "BOUNDARY-005"]
   sequenceViews:
     - id: SEQ-001
       title: Inspect authority order and source-document boundary
@@ -836,6 +897,12 @@ implementationConfirmation:
       covers: ["MUST-012", "EVD-014", "OUT-007"]
       participants: ["User", "MainAgentInspect", "RequirementRecord", "Diagnostics"]
       summary: Inspect output shows current model state, blockers, authoritative sources, next safe action, and forbidden shortcuts.
+    - id: SEQ-011
+      title: Post-close defect intake and new execution carrier
+      scope: governance
+      covers: ["MUST-013", "NEG-010", "OUT-008", "EVD-015"]
+      participants: ["PostCloseSignal", "PostCloseDefectIntake", "ClosedRequirementRecord", "LinkedBugfixRecord", "ClosureIntegrityIncident"]
+      summary: Problems discovered after record_closed are classified without reopening or dispatching from the closed record by default.
   flowViews:
     - id: FLOW-001
       title: Business-facing inspect decision flow
@@ -855,6 +922,12 @@ implementationConfirmation:
       covers: ["MUST-004", "MUST-005", "MUST-006", "NEG-004", "NEG-005", "NEG-006", "EVD-006", "EVD-007", "EVD-008"]
       states: ["raw_signal", "normalized_blocker_signal", "authoritative_record_write", "rerun_or_remediate_or_reconfirm", "inspect_reread_record"]
       summary: Raw signals become authoritative blockers or reconfirmation requests before any downstream decision can proceed.
+    - id: FLOW-004
+      title: Post-close defect classification
+      scope: governance
+      covers: ["MUST-013", "NEG-010", "OUT-008", "EVD-015"]
+      states: ["post_close_signal", "post_close_defect_intake", "bugfix_record_or_new_requirement_or_closure_incident", "new_confirmation_chain", "original_record_stays_closed"]
+      summary: Closed records remain terminal; subsequent defects or scope changes get a new carrier, while closeout proof defects become incidents.
   edgeCaseViews:
     - id: EDGEVIEW-001
       title: Business-facing false completion edge cases
@@ -903,6 +976,13 @@ implementationConfirmation:
       inScope: ["checkpoint commits", "inline implementationConfirmation", "future HTML confirmation", "controlled confirmation ingest"]
       outOfScope: ["sidecar authoritative contract", "checkpoint equals readiness", "HTML render before language selection", "silent semantic drift"]
       summary: Checkpoint commits preserve authoring progress only; confirmation and readiness require later controlled steps.
+    - id: BOUNDARY-005
+      title: Post-close work boundary
+      scope: governance
+      covers: ["MUST-013", "NEG-010", "OUT-008", "EVD-015"]
+      inScope: ["post_close_defect_intake", "linked bugfix requirement record", "new requirement/version", "closure_integrity_incident", "trace link to original closed record"]
+      outOfScope: ["automatic reopen of original record", "ordinary reconfirmation on closed record", "dispatch from closed record", "writing new fix completion into original record"]
+      summary: Closed records are historical authority; post-close work requires a new execution carrier or a closure integrity incident.
   artifactAutomationPlan:
     - id: ART-SOURCE-001
       title: Inline implementation source document
@@ -1192,6 +1272,22 @@ implementationConfirmation:
       cleanupRule: Never delete or rewrite; corrections require new controlled event.
       orphanRisk: critical_if_record_closed_written_without_closeout_truth
       linkedEvidenceIds: ["EVD-013"]
+    - id: ART-POSTCLOSE-001
+      title: Post-close defect intake and linked work carrier
+      producer: main-agent-orchestration --action post-close-defect-intake
+      consumer: ["MainAgentInspect", "BugfixRequirementRecordCreator", "ClosureIntegrityIncidentRCA", "User"]
+      path: _bmad-output/runtime/requirement-records/<requirement-set-id>/post-close/post-close-defect-intake-<run-id>.json
+      ownerModel: delivery_confirmation
+      sourceOfTruthRole: post_close_governance_record
+      inputArtifacts: ["ART-RECORD-002", "ART-CLOSEOUT-001", "ART-INSPECT-002"]
+      outputArtifacts: ["post_close_classification", "linked_bugfix_record_ref", "new_requirement_record_ref", "closure_integrity_incident_ref"]
+      recordEventTypes: ["post_close_defect_intake_recorded", "bugfix_requirement_record_requested", "closure_integrity_incident_recorded"]
+      canAffectControlFlow: true
+      controlFlowPolicy: Post-close intake may create a new work carrier or incident but must not reopen or dispatch from the closed record by default.
+      retentionRule: Retain with the closed original record and the linked new record or incident forever.
+      cleanupRule: Never delete while original record, linked bugfix, or closure integrity incident exists.
+      orphanRisk: critical_if_post_close_defect_mutates_or_reuses_closed_record
+      linkedEvidenceIds: ["EVD-015"]
     - id: ART-INSPECT-002
       title: User-visible inspect explanation
       producer: main-agent-orchestration --action inspect
@@ -1336,6 +1432,15 @@ implementationConfirmation:
       artifactRefs: ["ART-INSPECT-002"]
       traceRows: ["TRACE-012"]
       requiredBefore: user_visible_completion_claim
+    - id: CMD-DELIVERY-014
+      phase: delivery_evidence
+      command: npx vitest run tests/acceptance/main-agent-orchestration-consumer.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/requirement-record-schema.test.ts
+      expectedExitCodeForCloseout: 0
+      proves: Closed records remain non-dispatchable, post-close defects create linked work carriers, and closeout proof defects route to closure_integrity_incident.
+      evidenceRefs: ["EVD-015"]
+      artifactRefs: ["ART-POSTCLOSE-001", "ART-RECORD-002"]
+      traceRows: ["TRACE-014"]
+      requiredBefore: post_close_defect_management_claim
   suggestedCommands:
     - id: CMD-SUGGESTED-001
       phase: quality_sanity
@@ -1360,7 +1465,7 @@ implementationConfirmation:
   closeoutReadinessPreview:
     deliveryReady: false
     readinessState: draft_blocked
-    requiredCommands: ["CMD-CONTRACT-001", "CMD-DELIVERY-001", "CMD-DELIVERY-002", "CMD-DELIVERY-003", "CMD-DELIVERY-004", "CMD-DELIVERY-005", "CMD-DELIVERY-006", "CMD-DELIVERY-007", "CMD-DELIVERY-008", "CMD-DELIVERY-009", "CMD-DELIVERY-010", "CMD-DELIVERY-011", "CMD-DELIVERY-012", "CMD-DELIVERY-013"]
+    requiredCommands: ["CMD-CONTRACT-001", "CMD-DELIVERY-001", "CMD-DELIVERY-002", "CMD-DELIVERY-003", "CMD-DELIVERY-004", "CMD-DELIVERY-005", "CMD-DELIVERY-006", "CMD-DELIVERY-007", "CMD-DELIVERY-008", "CMD-DELIVERY-009", "CMD-DELIVERY-010", "CMD-DELIVERY-011", "CMD-DELIVERY-012", "CMD-DELIVERY-013", "CMD-DELIVERY-014"]
     suggestedCommands: ["CMD-SUGGESTED-001", "CMD-SUGGESTED-002", "CMD-SUGGESTED-003", "CMD-SUGGESTED-004"]
     blockingReasons:
       - implementationConfirmation.status is draft.
@@ -1397,9 +1502,10 @@ implementationConfirmation:
       - fixture_replay_only
       - checkpoint_commit_only
       - execution_closure_pass_without_delivery_truth
+      - post_close_bugfix_reuses_closed_record
   governanceEventTypeRegistryPolicy:
     policyId: GOV-EVENT-POLICY-001
-    appliesTo: ["MUST-002", "MUST-004", "MUST-005", "MUST-006", "MUST-007", "MUST-008", "MUST-009", "MUST-010", "MUST-011", "NEG-003", "NEG-004", "NEG-005", "NEG-006", "NEG-007", "NEG-008"]
+    appliesTo: ["MUST-002", "MUST-004", "MUST-005", "MUST-006", "MUST-007", "MUST-008", "MUST-009", "MUST-010", "MUST-011", "MUST-013", "NEG-003", "NEG-004", "NEG-005", "NEG-006", "NEG-007", "NEG-008", "NEG-010"]
     controlFieldVocabulary:
       - currentMentalModel
       - mentalModelTransitions
@@ -1436,6 +1542,10 @@ implementationConfirmation:
         requiredFields: ["deliveryConfirmationVerdict", "deliveryTruthGate", "currentAttemptId", "commandRunRefs", "artifactRefs", "recordHashBefore", "recordHashAfter"]
         forbiddenFields: ["executionClosureOnlyClose", "staleAttemptClose", "readModelClose"]
         linkedEvidenceIds: ["EVD-013"]
+      - kind: post_close_defect_intake
+        requiredFields: ["originRecordId", "originRequirementSetId", "classification", "relationship", "affectedRequirementIds", "affectedTraceRows", "defectCategory", "severity", "reproductionEvidence", "sourceRefs", "targetCarrierRef", "recordHashBefore", "recordHashAfter"]
+        forbiddenFields: ["reopenOriginalRecord", "rollbackCurrentMentalModel", "dispatchFromClosedRecord", "writeBugfixCompletionToOrigin"]
+        linkedEvidenceIds: ["EVD-015"]
     controlWriteModePolicies:
       - mode: append_only_event_then_reduce
         allowedFor: ["mentalModelTransitions", "failureRecords", "reconfirmationRequests", "requirementClosures"]
@@ -1495,6 +1605,21 @@ implementationConfirmation:
         writesControlFields: ["status", "lastEventType", "requirementClosures"]
         requiresCurrentModelPass: true
         failClosedWhen: ["deliveryConfirmationNotPass", "recordHashMismatch", "unregisteredWriter"]
+      - eventType: post_close_defect_intake_recorded
+        payloadKind: post_close_defect_intake
+        writesControlFields: ["failureRecords", "artifactIndex"]
+        requiresCurrentModelPass: false
+        failClosedWhen: ["originRecordNotClosed", "missingClassification", "targetCarrierMissing", "attemptsToMutateClosedRecord"]
+      - eventType: bugfix_requirement_record_requested
+        payloadKind: post_close_defect_intake
+        writesControlFields: ["failureRecords", "artifactIndex"]
+        requiresCurrentModelPass: false
+        failClosedWhen: ["originRecordNotClosed", "bugfixLinkMissing", "affectedTraceRowsMissing", "dispatchFromClosedRecord"]
+      - eventType: closure_integrity_incident_recorded
+        payloadKind: post_close_defect_intake
+        writesControlFields: ["failureRecords", "artifactIndex"]
+        requiresCurrentModelPass: false
+        failClosedWhen: ["originRecordNotClosed", "closureProofSourceRefsMissing", "incidentRcaMissing", "automaticDispatchRequested"]
   governanceEventTypeRegistry:
     - eventType: mental_model_transition_recorded
       payloadKind: transition
@@ -1577,6 +1702,33 @@ implementationConfirmation:
       linkedRequirementIds: ["MUST-011", "NEG-004", "NEG-008"]
       linkedEvidenceIds: ["EVD-013"]
       linkedArtifactIds: ["ART-RECORD-002", "ART-EVENT-001"]
+    - eventType: post_close_defect_intake_recorded
+      payloadKind: post_close_defect_intake
+      payloadContractRef: payloadKindContracts.post_close_defect_intake
+      ownerModel: delivery_confirmation
+      writesControlFields: ["failureRecords", "artifactIndex"]
+      allowedWriterRefs: ["WRITER-MAIN-AGENT-ORCHESTRATION"]
+      linkedRequirementIds: ["MUST-013", "NEG-010", "OUT-008"]
+      linkedEvidenceIds: ["EVD-015", "EVD-013"]
+      linkedArtifactIds: ["ART-POSTCLOSE-001", "ART-RECORD-002"]
+    - eventType: bugfix_requirement_record_requested
+      payloadKind: post_close_defect_intake
+      payloadContractRef: payloadKindContracts.post_close_defect_intake
+      ownerModel: delivery_confirmation
+      writesControlFields: ["failureRecords", "artifactIndex"]
+      allowedWriterRefs: ["WRITER-MAIN-AGENT-ORCHESTRATION"]
+      linkedRequirementIds: ["MUST-013", "NEG-010", "OUT-008"]
+      linkedEvidenceIds: ["EVD-015"]
+      linkedArtifactIds: ["ART-POSTCLOSE-001"]
+    - eventType: closure_integrity_incident_recorded
+      payloadKind: post_close_defect_intake
+      payloadContractRef: payloadKindContracts.post_close_defect_intake
+      ownerModel: delivery_confirmation
+      writesControlFields: ["failureRecords", "artifactIndex"]
+      allowedWriterRefs: ["WRITER-MAIN-AGENT-ORCHESTRATION"]
+      linkedRequirementIds: ["MUST-013", "NEG-010", "OUT-008"]
+      linkedEvidenceIds: ["EVD-015", "EVD-013"]
+      linkedArtifactIds: ["ART-POSTCLOSE-001", "ART-CLOSEOUT-001"]
   controlledIngestWriterRegistry:
     - writerId: WRITER-MAIN-AGENT-ORCHESTRATION
       scriptPath: scripts/main-agent-orchestration.ts
@@ -1584,8 +1736,8 @@ implementationConfirmation:
       scriptContentHashStatus: current_repository_hash_before_checkpoint7_target_implementation
       allowedWriteApis: ["requirement-record-control-store.appendEvent", "requirement-record-control-store.reduceEvent", "requirement-record-control-store.writeControlledPatch"]
       allowedPaths: ["_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json", "_bmad-output/runtime/requirement-records/<requirement-set-id>/events/*.jsonl", "_bmad-output/runtime/requirement-records/<requirement-set-id>/**"]
-      allowedEventTypes: ["mental_model_transition_recorded", "controlled_blocker_recorded", "reconfirmation_requested", "architecture_confirmation_recorded", "implementation_readiness_evaluated", "execution_closure_evaluated", "audit_review_evaluated", "delivery_confirmation_evaluated", "record_closed"]
-      payloadContractRefs: ["payloadKindContracts.transition", "payloadKindContracts.blocker", "payloadKindContracts.reconfirmation", "payloadKindContracts.model_verdict", "payloadKindContracts.terminal_closeout"]
+      allowedEventTypes: ["mental_model_transition_recorded", "controlled_blocker_recorded", "reconfirmation_requested", "architecture_confirmation_recorded", "implementation_readiness_evaluated", "execution_closure_evaluated", "audit_review_evaluated", "delivery_confirmation_evaluated", "record_closed", "post_close_defect_intake_recorded", "bugfix_requirement_record_requested", "closure_integrity_incident_recorded"]
+      payloadContractRefs: ["payloadKindContracts.transition", "payloadKindContracts.blocker", "payloadKindContracts.reconfirmation", "payloadKindContracts.model_verdict", "payloadKindContracts.terminal_closeout", "payloadKindContracts.post_close_defect_intake"]
       writesControlFields: ["currentMentalModel", "mentalModelTransitions", "sixModelVerdicts", "failureRecords", "rerunLoops", "gateChecks", "artifactIndex", "reconfirmationRequests", "architectureConfirmationState", "readinessBaselineMetadata", "commandRunRefs", "status", "lastEventType", "requirementClosures", "pendingBlockerIntake", "blockerIntakeRuns"]
       receiptPath: _bmad-output/runtime/requirement-records/<requirement-set-id>/receipts/main-agent-orchestration-<run-id>.json
       beforeAfterHashRequired: true
@@ -1593,7 +1745,7 @@ implementationConfirmation:
       registryHash: pending_registry_hash_after_checkpoint7_confirmation_render
       architectureConfirmationHash: pending_architecture_confirmation_hash_until_confirmed
       failClosedOnUnownedEventType: true
-      linkedArtifactIds: ["ART-RECORD-001", "ART-EVENT-001", "ART-BLOCKER-001", "ART-RECONFIRM-001", "ART-CLOSEOUT-001"]
+      linkedArtifactIds: ["ART-RECORD-001", "ART-EVENT-001", "ART-BLOCKER-001", "ART-RECONFIRM-001", "ART-CLOSEOUT-001", "ART-POSTCLOSE-001"]
     - writerId: WRITER-REQUIREMENT-RECORD-CONTROL-STORE
       scriptPath: scripts/requirement-record-control-store.ts
       scriptContentHash: AD9409CF8301428CD19ACA6C393714851E2E688CAAB147C8AAACE46F5FB88559
@@ -1783,6 +1935,11 @@ implementationConfirmation:
         currentState: Execution evidence, audit/scoring, and closeout can be evaluated by separate scripts and projections.
         targetState: execution_closure, audit_review, and delivery_confirmation are controlled model verdicts, with closeout and delivery truth as terminal proof.
         linkedIds: ["MUST-009", "MUST-010", "MUST-011", "NEG-008", "EVD-011", "EVD-012", "EVD-013"]
+      - rowId: CTM-007
+        topic: post-close defect handling
+        currentState: Problems found after close can be confused with ordinary reconfirmation, reopen, or dispatch from the closed record.
+        targetState: post_close_defect_intake classifies the signal and creates a linked bugfix record, new requirement/version, or closure_integrity_incident while the original record remains closed.
+        linkedIds: ["MUST-013", "NEG-010", "OUT-008", "EVD-015", "TRACE-014"]
   scriptsAndHooksRegistry:
     - id: SCRIPT-001
       path: scripts/resolve-active-requirement.ts
@@ -1799,13 +1956,13 @@ implementationConfirmation:
       path: scripts/main-agent-orchestration.ts
       ownerModel: governance_control_plane
       role: main_action_switch
-      inputArtifacts: ["ART-RECORD-001", "ART-BLOCKER-001", "ART-RECONFIRM-001", "ART-ARCH-001"]
-      outputArtifacts: ["ART-INSPECT-001", "ART-INSPECT-002", "ART-GATE-001", "ART-CLOSEOUT-001"]
-      eventTypes: ["mental_model_transition_recorded", "controlled_blocker_recorded", "reconfirmation_requested", "architecture_confirmation_recorded", "implementation_readiness_evaluated", "execution_closure_evaluated", "audit_review_evaluated", "delivery_confirmation_evaluated", "record_closed"]
+      inputArtifacts: ["ART-RECORD-001", "ART-BLOCKER-001", "ART-RECONFIRM-001", "ART-ARCH-001", "ART-CLOSEOUT-001"]
+      outputArtifacts: ["ART-INSPECT-001", "ART-INSPECT-002", "ART-GATE-001", "ART-CLOSEOUT-001", "ART-POSTCLOSE-001"]
+      eventTypes: ["mental_model_transition_recorded", "controlled_blocker_recorded", "reconfirmation_requested", "architecture_confirmation_recorded", "implementation_readiness_evaluated", "execution_closure_evaluated", "audit_review_evaluated", "delivery_confirmation_evaluated", "record_closed", "post_close_defect_intake_recorded", "bugfix_requirement_record_requested", "closure_integrity_incident_recorded"]
       fallbackPolicy: fail_closed_on_missing_active_record_or_unowned_event_type
       controlOrEvidenceRole: registered_control_writer
       canAffectControlFlow: true
-      linkedEvidenceIds: ["EVD-002", "EVD-004", "EVD-006", "EVD-008", "EVD-013"]
+      linkedEvidenceIds: ["EVD-002", "EVD-004", "EVD-006", "EVD-008", "EVD-013", "EVD-015"]
     - id: SCRIPT-003
       path: scripts/requirement-record-control-store.ts
       ownerModel: governance_control_plane
@@ -1970,6 +2127,30 @@ flowchart TD
 
 Execution closure is a pre-closeout summary only; it cannot replace delivery closeout or delivery truth [NEG-008][OUT-003]. The final close requires controlled evidence for the current attempt [EVD-013].
 
+### Post-Close Defect Management View
+
+```mermaid
+flowchart TD
+  Signal["Post-close signal after record_closed [EDGE-009]"]
+  Intake["post_close_defect_intake classification [MUST-013][EVD-015]"]
+  Closed["Original record stays closed and non-dispatchable [NEG-010]"]
+  Bugfix["Linked bugfix requirement record [MUST-013]"]
+  NewReq["New requirement record or version [OUT-008]"]
+  Incident["closure_integrity_incident [FAIL-010]"]
+  Carrier["New carrier enters confirmation/readiness chain [SEQ-011][FLOW-004]"]
+
+  Signal --> Intake
+  Intake --> Closed
+  Intake -->|original confirmed scope defect| Bugfix
+  Intake -->|missing or new scope| NewReq
+  Intake -->|closeout proof defect| Incident
+  Bugfix --> Carrier
+  NewReq --> Carrier
+  Incident -->|after RCA and human decision| Carrier
+```
+
+Post-close management is not ordinary reconfirmation on the closed record. The original record remains historical authority; any implementation work must use a linked bugfix record, a new requirement/version, or an incident-driven follow-up carrier [MUST-013][NEG-010][OUT-008].
+
 ### Evidence Overview
 
 | Evidence ID | Purpose | Required command refs | Artifact refs | Completion meaning |
@@ -1988,17 +2169,18 @@ Execution closure is a pre-closeout summary only; it cannot replace delivery clo
 | EVD-012 | audit_review preserves read-model boundary. | CMD-DELIVERY-011 | ART-AUDIT-001, ART-SCORE-001 | Supports audit review without score/dashboard reverse control. |
 | EVD-013 | delivery_confirmation and record_closed require current closeout proof. | CMD-DELIVERY-012 | ART-CLOSEOUT-001, ART-RECORD-002 | Supports terminal delivery proof. |
 | EVD-014 | User-visible inspect explains state, blockers, sources, and shortcuts. | CMD-DELIVERY-013 | ART-INSPECT-002 | Supports user-facing explanation. |
+| EVD-015 | Post-close problems are classified without reopening the closed record. | CMD-DELIVERY-014 | ART-POSTCLOSE-001, ART-RECORD-002 | Supports linked bugfix/new requirement/closure integrity routing. |
 
 No evidence item above permits completion from exit code only, stdout PASS, HTTP 200, page render, mock calls, dashboard green, score green, TaskReport done, or fixture-only replay [NEG-001][NEG-002][OUT-007].
 
 ### E2E Acceptance Overview
 
-The E2E acceptance path is intentionally staged. It starts with contract validation [TRACE-001][TRACE-013], then validates controlled record transitions [TRACE-002][TRACE-003], then candidate evidence and blocker intake [TRACE-004][TRACE-005], then reconfirmation and architecture confirmation [TRACE-006][TRACE-007], then readiness, execution, audit, and delivery closeout [TRACE-008][TRACE-009][TRACE-010][TRACE-011], and finally user-visible inspect output [TRACE-012].
+The E2E acceptance path is intentionally staged. It starts with contract validation [TRACE-001][TRACE-013], then validates controlled record transitions [TRACE-002][TRACE-003], then candidate evidence and blocker intake [TRACE-004][TRACE-005], then reconfirmation and architecture confirmation [TRACE-006][TRACE-007], then readiness, execution, audit, and delivery closeout [TRACE-008][TRACE-009][TRACE-010][TRACE-011], then user-visible inspect output [TRACE-012], and finally post-close defect routing [TRACE-014].
 
 The delivery evidence command chain is:
 
 1. Run CMD-CONTRACT-001 before confirmation rendering.
-2. Run CMD-DELIVERY-001 through CMD-DELIVERY-013 after implementation exists and current attempt evidence can be produced.
+2. Run CMD-DELIVERY-001 through CMD-DELIVERY-014 after implementation exists and current attempt evidence can be produced.
 3. Treat every required command result as insufficient unless it is bound to current source hash, implementationConfirmation hash, requirementSetId, runId, commandRunRefs, artifact hashes, and current attempt id.
 4. Keep every TRACE row PENDING until its required evidence is current_pass for the current attempt.
 5. Do not use dashboard green, score green, TaskReport done, stdout PASS, HTTP 200, page render, mock calls, or fixture-only replay as E2E acceptance evidence [NEG-001][NEG-002][FAIL-002].
@@ -2014,6 +2196,7 @@ The artifact plan separates control records from projections and candidate evide
 | Gate and blocker state | ART-GATE-001, ART-BLOCKER-001, ART-BLOCKER-002, ART-GATE-002 | Can block or permit progression only after controlled writes. |
 | Reconfirmation and architecture state | ART-RECONFIRM-001, ART-ARCH-001, ART-EVENT-002 | Can reroute currentMentalModel and block downstream models. |
 | Readiness, execution, audit, and closeout reports | ART-READINESS-001, ART-EXECUTION-001, ART-AUDIT-001, ART-CLOSEOUT-001 | Can affect control only when reduced into RequirementRecord by registered writers. |
+| Post-close defect routing | ART-POSTCLOSE-001 | Can create a linked work carrier or closure integrity incident; cannot reopen or dispatch from the closed record by default. |
 | Subagent, inspect, score, and dashboard projections | ART-SUBAGENT-001, ART-INSPECT-001, ART-INSPECT-002, ART-SCORE-001 | Candidate evidence or read-model only; cannot directly advance or close. |
 
 Any orphan artifact not present in the current artifactIndex with current hashes is diagnostic context only and cannot satisfy delivery readiness [NEG-004][EVD-013].
@@ -2049,7 +2232,7 @@ Source-document confirmation readiness requires all of the following before impl
 - [ ] User has confirmed the exact phrase with current source and HTML hashes.
 - [ ] Controlled confirm-scope ingest has written confirmation evidence to the RequirementRecord.
 - [ ] Reverse audit passes after confirmation render and controlled ingest.
-- [ ] Implementation evidence commands CMD-DELIVERY-001 through CMD-DELIVERY-013 pass against current attempt evidence.
+- [ ] Implementation evidence commands CMD-DELIVERY-001 through CMD-DELIVERY-014 pass against current attempt evidence.
 - [ ] Delivery readiness is true only after all TRACE rows are current_pass and no blockers, stale evidence, unresolved reruns, or open reconfirmation requests remain.
 
 ## 4. 背景与当前遗漏
@@ -2245,7 +2428,7 @@ type CurrentMentalModelState = {
 
 1. `currentMentalModel` 只允许六个 `MentalModel` 值，不允许写入 `record_closed`。
 2. `record_closed` 只能由 `status=closed`、`lastEventType=record_closed`、`requirementClosures` 或 terminal close event 派生表达；不得新增顶层 `recordLifecycleState` 字段来表达。
-3. `record_closed` 之后不能自动回退；如需变更，必须产生 reconfirm 或 reopen 类型的明确受控事件。
+3. `record_closed` 之后不能自动回退；如需后续修复或变更，必须通过 `post_close_defect_intake` 创建 linked bugfix record、新 requirement/version 或 `closure_integrity_incident`。
 4. `currentMentalModel` 不能从 dashboard、score、stdout、HTTP 200 或 TaskReport done 直接推导。
 
 ### 6.2 `mentalModelTransitions`
@@ -2773,9 +2956,69 @@ lastEventType: record_closed
 4. final closeout summary。
 5. final record hash。
 
-## 14. 主控 action 清单
+## 14. Post-Close Defect Intake
 
-### 14.1 必须新增或标准化的 actions
+### 14.1 核心原则
+
+`record_closed` 后，原 record 默认不可作为新的执行载体。它只保留为历史权威、审计证据和追溯来源。
+
+关闭后发现的问题必须先进入 `post_close_defect_intake`，不得直接走普通 `controlled-reconfirmation-router`，不得自动 reopen 原 record，不得把 `currentMentalModel` 切回确认模型，也不得继续从 closed record dispatch implementation packet。
+
+### 14.2 分类规则
+
+post-close signal 必须被分类为以下之一：
+
+1. 原确认范围内的实现缺陷：创建新的 `bugfix` requirement record，并链接原 record。
+2. 原需求未覆盖的新能力或漏项：创建新的 requirement record 或 requirement version，并从 `requirement_confirmation` 重新开始。
+3. 架构假设失效或架构绑定变化：创建新的 requirement record/version，并从 `architecture_confirmation` 或更早阶段重新确认。
+4. closeout、gate、evidence、hash 或 provenance 本身错误：创建 `closure_integrity_incident`，执行 RCA 和显式治理事件。
+5. 生产环境或后续测试发现回归：若违反原契约，创建 bugfix record；若暴露新需求，创建新 requirement/version。
+
+### 14.3 新 record 最小字段
+
+linked bugfix 或新 requirement record 至少必须包含：
+
+```text
+originRecordId
+originRequirementSetId
+affectedRequirementIds
+affectedTraceRows
+defectCategory
+severity
+reproductionEvidence
+sourceRefs
+relationship: bugfix_of | supersedes | follows_up | closure_integrity_incident_of
+```
+
+### 14.4 禁止行为
+
+1. 不允许 ordinary drift router 自动 reopen closed record。
+2. 不允许关闭后缺陷把原 record 的 `currentMentalModel` 切回 `requirement_confirmation` 或 `architecture_confirmation`。
+3. 不允许在原 closed record 上继续 dispatch。
+4. 不允许把 bugfix 完成状态写回原 record 当作原需求重新完成证据。
+5. 不允许用 TaskReport、stdout PASS、dashboard green、score green、HTTP 200 或页面渲染覆盖原 closeout 结论。
+
+### 14.5 标准流转
+
+```text
+post-close signal
+-> post_close_defect_intake
+-> classify defect / missing scope / architecture drift / closure integrity incident
+-> create linked bugfix or new requirement record, or closure_integrity_incident
+-> run confirmation / architecture / readiness as needed on the new carrier
+-> implement and close the new record
+-> keep original record closed
+```
+
+### 14.6 closure_integrity_incident
+
+只有当 closeout 真实性本身被证明有问题时，才允许创建 `closure_integrity_incident`。包括但不限于错误证据、错误 gate、伪通过、hash/provenance 损坏或 terminal close event 链不可信。
+
+`closure_integrity_incident` 不得自动 dispatch。系统必须先写入 incident、RCA 和受控治理事件，再由人工确认是否需要新 bugfix record、重新确认需求，或标记原 closeout 为审计异常。
+
+## 15. 主控 action 清单
+
+### 15.1 必须新增或标准化的 actions
 
 ```text
 inspect
@@ -2790,9 +3033,10 @@ execution-closure
 audit-review
 delivery-confirmation
 record-close
+post-close-defect-intake
 ```
 
-### 14.2 action 职责
+### 15.2 action 职责
 
 | Action | 职责 | 是否可写控制记录 |
 |---|---|---|
@@ -2808,8 +3052,9 @@ record-close
 | `audit-review` | 汇总审计复核 verdict | 是 |
 | `delivery-confirmation` | 交付确认 verdict | 是 |
 | `record-close` | 关闭 record | 是 |
+| `post-close-defect-intake` | 对 record_closed 后的问题分类，并创建 linked bugfix/new requirement/closure_integrity_incident 载体 | 是，但不得 reopen 或 dispatch 原 closed record |
 
-## 15. 用户可见 inspect 输出
+## 16. 用户可见 inspect 输出
 
 inspect 输出必须包含：
 
@@ -2845,7 +3090,7 @@ blocked_delivery_confirmation_failed
 manual_resolution_required
 ```
 
-## 16. 非目标
+## 17. 非目标
 
 本需求不做以下事项：
 
@@ -2857,8 +3102,9 @@ manual_resolution_required
 6. 不重写整个 scoring framework。
 7. 不改变 delivery closeout gate 的最终判定地位。
 8. 不用 mock-only、fixture-only 或 smoke-only 结果作为验收证据。
+9. 不把 post-close 缺陷、遗漏、架构变化或回归当作原 closed record 的普通 reconfirmation 或自动 reopen。
 
-## 17. 最优实施顺序
+## 18. 最优实施顺序
 
 1. 定义 record 契约字段：`currentMentalModel`、`mentalModelTransitions`、`sixModelVerdicts`、`pendingBlockerIntake`、`blockerIntakeRuns`、`reconfirmationRequests`。
 2. 实现 `controlled-blocker-intake` normalizer，覆盖 TaskReport、Envelope、inspect、resolver、gate、drift、audit、closeout。
@@ -2869,10 +3115,11 @@ manual_resolution_required
 7. 增加 `execution_closure` verdict。
 8. 增加 `audit_review` verdict。
 9. 增加 `delivery_confirmation` verdict 和 `record_closed` 生命周期终态关闭。
-10. 保持 dashboard 只读，用它展示控制面结果，而不是参与控制流。
-11. 更新 README、reference docs、dashboard docs，使图示表达实际控制态，而不是仅展示目标态。
+10. 增加 `post-close-defect-intake`，覆盖 bugfix record、新 requirement/version、architecture drift 和 closure_integrity_incident。
+11. 保持 dashboard 只读，用它展示控制面结果，而不是参与控制流。
+12. 更新 README、reference docs、dashboard docs，使图示表达实际控制态，而不是仅展示目标态。
 
-## 18. 功能需求
+## 19. 功能需求
 
 ### FR-001 `currentMentalModel` 受控维护
 
@@ -2956,7 +3203,13 @@ Dashboard six-model projection 可以展示模型状态，但不得影响 contro
 
 score、dashboard、SFT、report、summary、hook receipt、stdout、HTTP 200、page render 都不能直接写 `currentMentalModel`、`sixModelVerdicts`、`closeout`、`requirementClosures` 或 terminal decision。
 
-## 19. 验收标准
+### FR-013 Post-Close Defect Intake
+
+`record_closed` 后发现真实实现缺陷、功能漏项、架构假设失效、生产回归或 closeout 证明缺陷时，系统必须通过 `post-close-defect-intake` 分类。
+
+分类后必须创建 linked bugfix requirement record、新 requirement/version，或 `closure_integrity_incident`。原 closed record 必须保持 closed，不能自动 reopen，不能继续 dispatch。
+
+## 20. 验收标准
 
 ### AC-001 `currentMentalModel` 受控维护
 
@@ -3044,7 +3297,17 @@ WHEN 归一化运行完成
 THEN 必须写入 `blocker_unknown`  
 AND 阻断模型推进直到人工或修复流程解决。
 
-## 20. 测试要求
+### AC-013 Post-Close Defect Intake
+
+GIVEN 原 requirement record 已经 `record_closed`
+WHEN 关闭后发现原确认范围内实现缺陷、功能漏项、架构假设失效、生产回归或 closeout proof defect
+THEN 系统必须进入 `post_close_defect_intake` 并分类
+AND 原 record 保持 closed 且不得继续 dispatch
+AND 实现缺陷必须创建 linked bugfix requirement record
+AND 新能力或漏项必须创建新 requirement record/version
+AND closeout proof defect 必须创建 `closure_integrity_incident`。
+
+## 21. 测试要求
 
 必须新增或更新测试覆盖：
 
@@ -3068,9 +3331,13 @@ AND 阻断模型推进直到人工或修复流程解决。
 18. delivery confirmation pass 后才能 record close。
 19. unknown failure 映射为 `blocker_unknown`。
 20. stale attempt evidence 不能作为 current evidence。
-21. encoding integrity scan pass。
+21. post-close implementation defect 创建 linked bugfix requirement record。
+22. post-close missing scope 创建新 requirement/version。
+23. post-close closeout proof defect 创建 `closure_integrity_incident`。
+24. closed record 不会因 post-close defect 自动 reopen、回滚 currentMentalModel 或 dispatch。
+25. encoding integrity scan pass。
 
-## 21. Rollout Gate
+## 22. Rollout Gate
 
 没有以下 evidence，不得宣称本需求完成：
 
@@ -3083,10 +3350,11 @@ AND 阻断模型推进直到人工或修复流程解决。
 7. Acceptance tests for audit review verdict。
 8. Acceptance tests proving dashboard/score/read model cannot affect control flow。
 9. Acceptance tests for delivery confirmation and record close。
-10. Encoding integrity scan pass。
-11. No unrelated source changes in implementation path。
+10. Acceptance tests for post-close defect intake and linked bugfix/new requirement/closure integrity incident routing。
+11. Encoding integrity scan pass。
+12. No unrelated source changes in implementation path。
 
-## 22. Must Not Count As Completion
+## 23. Must Not Count As Completion
 
 以下信号不得作为完成证据：
 
@@ -3101,8 +3369,9 @@ AND 阻断模型推进直到人工或修复流程解决。
 9. fixture-only replay。
 10. artifact exists but hash/attempt/provenance missing。
 11. closeout report exists but requirement record 未写 terminal control state。
+12. post-close bugfix pass 被写回原 closed record 当作原需求重新完成。
 
-## 23. 预期最终用户体验
+## 24. 预期最终用户体验
 
 完成后，用户运行 `$bmad-speckit` 或等价主控入口时，输出应类似：
 
@@ -3128,7 +3397,18 @@ Next safe action: none
 Status: completed_record_closed
 ```
 
-## 24. 最终效果
+关闭后发现缺陷时，输出应类似：
+
+```text
+Original requirement: REQ-...
+Record lifecycle: record_closed
+Post-close classification: bugfix_of
+New work carrier: REQ-BUGFIX-...
+Original record action: keep_closed_no_dispatch
+Next safe action: confirm bugfix scope
+```
+
+## 25. 最终效果
 
 完成后，README 图、6 心智模型、16 子系统、RequirementRecord、closeout gate、audit/scoring、reconfirmation、inspect 行为会统一到同一个 Main Agent 控制面。
 
