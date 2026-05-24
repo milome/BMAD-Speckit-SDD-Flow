@@ -929,3 +929,9 @@ Validated scope: `failurePaths`, `edgeCases`, and `traceRows` are present, with 
 Status: passed
 
 Validated scope: `sequenceViews`, `flowViews`, `edgeCaseViews`, and `boundaryViews` are present and preserve business/governance separation for the renderer.
+
+### cp-06-artifacts-commands-closeout
+
+Status: passed
+
+Validated scope: `artifactAutomationPlan`, `requiredCommands`, `suggestedCommands`, and `closeoutReadinessPreview` are present before render.
