@@ -1,0 +1,21 @@
+COMMAND_ID: CMD-DELIVERY-005
+COMMAND: npx vitest run tests/acceptance/main-agent-gates-loop-e2e.test.ts tests/acceptance/requirement-record-control-store-enforcement.test.ts
+RUN_ID: run-TRACE-002-20260524T180742Z
+CLOSEOUT_ATTEMPT_ID: attempt-TRACE-002-20260524T180742Z
+STARTED_AT: 2026-05-24T18:07:45.217Z
+COMPLETED_AT: 2026-05-24T18:07:49.542Z
+EXIT_CODE: 0
+STDOUT:
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mD:/Dev/BMAD-Speckit-SDD-Flow[39m
+
+ [32m✓[39m tests/acceptance/requirement-record-control-store-enforcement.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/acceptance/main-agent-gates-loop-e2e.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 38[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m3 passed[39m[22m[90m (3)[39m
+[2m   Start at [22m 02:07:47
+[2m   Duration [22m 2.18s[2m (transform 730ms, setup 0ms, import 2.04s, tests 41ms, environment 0ms)[22m
+
+
+STDERR:
