@@ -1,49 +1,37 @@
-# Runtime Context（显式 scoped 输入）
+# Retired Context Surface（旧 runtime-context 路径说明）
 
-> **Current path**: `registry + activeScope + scoped context file`
-> **Legacy path**: 项目根共享 `.bmad/runtime-context.json` / `.speckit-state.yaml` 回退
+> **Status**: superseded as a control source
+> **Current control source**: `requirement-record.json` + `index.json` + requirement-scoped `runtimePolicySnapshot` / `recoveryContext`
+> **Current path**: Active Requirement Resolver reads governed requirement records and produces read-only `ResolvedRuntimeContext`.
+> **Legacy path**: registry + activeScope + scoped context file, including `.speckit-state.yaml`, are historical compatibility surfaces only.
 
-Hook 与 `emit-runtime-policy` 不再把项目根 `.bmad/runtime-context.json` 作为默认真相源。运行时上下文必须来自 **registry + activeScope + scoped context file**，或来自 CLI/env 显式提供的 `flow`/`stage`。若缺失所需上下文，则直接失败。
+旧 `_bmad-output/runtime/context/project.json` 只属于历史 context surface，不再作为主控、恢复、确认或 closeout 的真相源。六个心智模型全链路现在只允许通过 Active Requirement Resolver 生成只读 `ResolvedRuntimeContext`，其数据来源只能是 RequirementRecord、Requirement 当前索引、runtimePolicySnapshot、recoveryContext 和 bmad workflow projection。
 
-## 输入规则
+`story-scoped 模式` 与 `story-scoped 运行上下文` 仍作为历史迁移术语保留在本文中，表示旧 registry/activeScope 时代曾经通过 story/run 作用域绑定 workflow entry point。当前实现不得把该术语解释为继续读取 `_bmad-output/runtime/context/**` 的控制依据。
 
-当未通过 CLI/env 提供 `flow`/`stage` 时，`emit-runtime-policy` 必须：
+`.speckit-state.yaml` 已完全移除，不应创建、分发或复制该文件作为运行时治理依赖；主控、hook、恢复和 closeout 不允许再回退到该模板或旧 runtime context surface。
 
-1. 读取 runtime context registry
-2. 解析 `activeScope`
-3. 定位对应 scoped context file
-4. 读取该 context 并求值
+## 旧 schema 的历史含义
 
-若 registry、`activeScope` 或对应 context 缺失，则直接 fail loud；**不允许再回退到** 任何旧共享 context。`.speckit-state.yaml` 已完全移除，不再作为 runtime context 输入。
+`runtime-context.schema.json` 曾表达项目级 `flow / stage / languagePolicy / runId / artifactRoot` 等信息，但这些信息在新设计中已经拆分为：
 
-## 字段
+- `RequirementRecord.entryFlow`
+- `RequirementRecord.currentRunId`
+- `RequirementRecord.currentMentalModel`
+- `runtimePolicySnapshot.locale`
+- `runtimePolicySnapshot.hostMode`
+- `recoveryContext`
+- `bmadWorkflowProjection`
 
-| 字段           | 必填 | 说明                                                             |
-| -------------- | ---- | ---------------------------------------------------------------- |
-| `version`      | 是   | 固定 `1`                                                         |
-| `flow`         | 是   | `story` \| `bugfix` \| `standalone_tasks` \| `epic` \| `unknown` |
-| `stage`        | 是   | Speckit/BMAD 阶段名，见 JSON Schema 枚举                         |
-| `templateId`   | 否   | 传入 `resolveRuntimePolicy` 的模板 id                            |
-| `epicId`       | 否   | 当前 story-scoped 运行上下文所属 Epic 标识                       |
-| `storyId`      | 否   | 当前 story-scoped 运行上下文所属 Story 标识                      |
-| `storySlug`    | 否   | Story 目录 slug，用于 artifact 与日志可读性                      |
-| `runId`        | 否   | 当前执行轮次的唯一运行身份                                       |
-| `artifactRoot` | 否   | 当前 story 产物根目录                                            |
-| `contextScope` | 否   | `project` \| `story`；正式运行时推荐使用 `story`                 |
-| `updatedAt`    | 是   | ISO-8601 时间戳（写入责任方更新）                                |
+## 当前建议
 
-## 写入责任
-
-- **统一 helper 入口（当前推荐）**：
-  - `detectRuntimeSourceMode(...)`
-  - `ensureProjectRuntimeContext(...)`
-  - `ensureStoryRuntimeContext(...)`
-  - `ensureRunRuntimeContext(...)`
-- **生成 context file**：维护方仍可通过 `node scripts/write-runtime-context.js <targetFile> [flow] [stage] [templateId] [epicId] [storyId] [storySlug] [runId] [artifactRoot] [contextScope]` 生成 scoped runtime context 文件，供 registry `activeScope` 或显式读取路径消费；正式 emit / hooks 不再把单独的 context-file 环境变量作为主入口。
-- **阶段切换**：真实入口应调用统一 helper 自动刷新 context / registry，而不是要求用户记住何时手工补上下文。
-- **story-scoped 模式**：当 `contextScope=story` 或当前 story/implement/post_audit 运行依赖 story 身份时，必须通过 context + registry 提供上下文；缺失时直接失败，禁止再依赖共享根 context。
-- **消费者**：若需要样板，可从 [`../../_bmad/runtime-context.example.json`](../../_bmad/runtime-context.example.json) 复制并生成独立 context file。
+- 不要再把 `project.json` 当作必需输入。
+- 不要在新脚本或 hook 中读取 `_bmad-output/runtime/context/**` 作为控制依据。
+- 如果需要语言偏好、hostMode、hookTrust、stage、strictness、mandatoryGates，改读 `runtimePolicySnapshot`。
+- 如果需要恢复点，改读 `recoveryContext` 与 `traceRows checkpoint`。
+- 如果需要当前 active requirement，改读 `_bmad-output/runtime/requirement-records/index.json` 和对应 `requirement-record.json`。
 
 ## 机器校验
 
 - JSON Schema：[`runtime-context.schema.json`](./runtime-context.schema.json)
+- 该 schema 仅作为历史参考，不应再作为新 runtime control contract；目标态只允许使用 `ResolvedRuntimeContext`。

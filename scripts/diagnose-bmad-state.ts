@@ -3,8 +3,13 @@ import * as fs from 'fs';
 import * as yaml from 'js-yaml';
 import * as path from 'path';
 import { loadPolicyContextFromRegistry } from './emit-runtime-policy';
-import { resolveBmadHelpRuntimePolicy } from './bmad-config';
-import type { ReviewerContractProjection } from './reviewer-registry';
+import { resolveBmadHelpRuntimePolicy, type StageName } from './bmad-config';
+import {
+  buildReviewerRouteExplainability,
+  mapFlowStageToReviewerAuditEntryStage,
+  type ReviewerContractProjection,
+} from './reviewer-registry';
+import type { RuntimeFlowId } from './runtime-governance';
 import { loadAndDedupeRecords } from '../packages/scoring/query/loader';
 import { buildReadinessDriftProjection } from '../packages/scoring/governance/readiness-drift';
 
@@ -36,8 +41,8 @@ export function collectReviewerProjectionDiagnosis(root: string): ReviewerProjec
     const loaded = loadPolicyContextFromRegistry(root);
     const policy = resolveBmadHelpRuntimePolicy({
       projectRoot: root,
-      flow: loaded.flow,
-      stage: loaded.stage,
+      flow: loaded.flow as RuntimeFlowId,
+      stage: loaded.stage as StageName,
       runtimeContext: loaded.runtimeContext,
       runtimeContextPath: loaded.resolvedContextPath,
       epicId: loaded.epicId,
@@ -48,6 +53,11 @@ export function collectReviewerProjectionDiagnosis(root: string): ReviewerProjec
     });
     const reviewerContract = policy.reviewerContract;
     const activeConsumer = reviewerContract.activeAuditConsumer;
+    const auditEntryStage = mapFlowStageToReviewerAuditEntryStage(loaded.flow, loaded.stage);
+    const reviewerRouteExplainability = auditEntryStage
+      ? [buildReviewerRouteExplainability({ auditEntryStage })]
+      : [];
+    const primaryRoute = reviewerRouteExplainability[0];
 
     return {
       reviewerContract,
@@ -58,15 +68,15 @@ export function collectReviewerProjectionDiagnosis(root: string): ReviewerProjec
         activeConsumer
           ? `   active consumer: ${activeConsumer.entryStage} -> ${activeConsumer.profile} -> ${activeConsumer.auditorScript} -> ${reviewerContract.closeoutRunner}`
           : '   active consumer: (none)',
-        `   cursor carrier: ${policy.reviewerRouteExplainability?.[0]?.hosts.cursor.carrierSourcePath ?? '_bmad/cursor/agents/code-reviewer.md'} -> ${policy.reviewerRouteExplainability?.[0]?.hosts.cursor.runtimeTargetPath ?? '.cursor/agents/code-reviewer.md'}`,
+        `   cursor carrier: ${primaryRoute?.hosts.cursor.carrierSourcePath ?? '_bmad/cursor/agents/code-reviewer.md'} -> ${primaryRoute?.hosts.cursor.runtimeTargetPath ?? '.cursor/agents/code-reviewer.md'}`,
         `   cursor route: preferred=cursor-task/code-reviewer fallback=mcp_task/generalPurpose`,
-        `   claude carrier: ${policy.reviewerRouteExplainability?.[0]?.hosts.claude.carrierSourcePath ?? '_bmad/claude/agents/code-reviewer.md'} -> ${policy.reviewerRouteExplainability?.[0]?.hosts.claude.runtimeTargetPath ?? '.claude/agents/code-reviewer.md'}`,
+        `   claude carrier: ${primaryRoute?.hosts.claude.carrierSourcePath ?? '_bmad/claude/agents/code-reviewer.md'} -> ${primaryRoute?.hosts.claude.runtimeTargetPath ?? '.claude/agents/code-reviewer.md'}`,
         `   claude route: preferred=Agent/code-reviewer fallback=Agent/general-purpose`,
-        `   route reason: ${policy.reviewerRouteExplainability?.[0]?.routeReasonSummary ?? '(none)'}`,
-        `   fallback status: ${policy.reviewerRouteExplainability?.[0]?.fallbackStatus ?? '(none)'}`,
-        `   maturity: ${policy.reviewerRouteExplainability?.[0]?.isomorphismMaturity ?? '(none)'}`,
-        `   complexity: ${policy.reviewerRouteExplainability?.[0]?.complexitySource ?? '(none)'}`,
-        `   blocker: ${policy.reviewerRouteExplainability?.[0]?.remainingBlocker ?? '(none)'}`,
+        `   route reason: ${primaryRoute?.routeReasonSummary ?? '(none)'}`,
+        `   fallback status: ${primaryRoute?.fallbackStatus ?? '(none)'}`,
+        `   maturity: ${primaryRoute?.isomorphismMaturity ?? '(none)'}`,
+        `   complexity: ${primaryRoute?.complexitySource ?? '(none)'}`,
+        `   blocker: ${primaryRoute?.remainingBlocker ?? '(none)'}`,
         `   rollout gate: ${policy.reviewerContract.rolloutGate.status} -> ${policy.reviewerContract.rolloutGate.summary}`,
         loaded.runtimeContext.latestReviewerCloseout
           ? `   latest closeout: ${loaded.runtimeContext.latestReviewerCloseout.closeoutEnvelope.resultCode} / ${loaded.runtimeContext.latestReviewerCloseout.closeoutEnvelope.packetExecutionClosureStatus} / approved=${loaded.runtimeContext.latestReviewerCloseout.closeoutApproved ? 'yes' : 'no'}`

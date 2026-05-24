@@ -116,6 +116,7 @@ export function runDevelopmentJourneyMatrix(input: {
     const branchRoot = prepareHostBranchRoot(projectRoot, hostKind);
     const ingress = runUnifiedIngress({
       projectRoot: branchRoot,
+      recordId: `REQ-JOURNEY-MATRIX-${hostKind.toUpperCase()}`,
       hostKind,
       flow: 'story',
       stage: 'implement',

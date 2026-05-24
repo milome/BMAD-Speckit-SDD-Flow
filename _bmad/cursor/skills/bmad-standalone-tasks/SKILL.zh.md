@@ -8,19 +8,22 @@ description: |
 
 ## 主 Agent 编排面（强制）
 
-交互模式下，在主 Agent 启动、恢复或收口 `standalone_tasks` 执行链之前，必须先读取：
+消费项目用户通过 `$bmad-speckit`、`/bmad-speckit` 或 `bmad-speckit` 在当前 AI 宿主会话中激活主控。不得把 `npm run main-agent-orchestration` 或 `npx bmad-speckit main-agent-orchestration ...` 写成普通消费用户默认步骤；这些命令只允许用于安装验证、CI、debug 或 no-skill fallback。
 
-```bash
-npm run main-agent-orchestration -- --cwd {project-root} --action inspect
+在 interactive main-agent 模式下，主 Agent 在发起、继续或收口本链路前，必须内部运行或等价消费 Main Agent control plane：
+
+```text
+main-agent-orchestration --action inspect --host <codex|cursor|claude>
+main-agent-orchestration --action dispatch-plan --host <codex|cursor|claude>
 ```
 
-如需生成正式派发计划，则读取：
+全局分支只能由 `requirement-record.json`、`currentMentalModel` 和六个心智模型链路决定：需求确认、架构确认、实施准备、执行闭合、审计复核、交付确认。`bmad-help`、Dashboard、score、SFT、legacy report、`orchestrationState`、`pendingPacket`、`continueDecision`、`mainAgentNextAction` 和 `mainAgentReady` 只能作为 projection / compatibility hint / evidence；子代理返回、host closeout、rerun 或阻断事件后必须重新 inspect，再决定下一条全局分支。
 
-```bash
-npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan
-```
-
-`mainAgentNextAction / mainAgentReady` 仅为 compatibility summary；真正权威状态始终是 `orchestrationState + pendingPacket + continueDecision`。
+硬禁止事项：
+- 禁止要求普通消费用户通过 npm / npx 激活主控。
+- 禁止仅根据 `PASS`、reviewer prose、host summary、`runAuditorHost closeout approved`、handoff summary 或旧 runtime 文件继续派发。
+- interactive mode 下禁止手写 packet 文件或默认写 worker-consumable queue item。
+- 禁止让子代理决定下一条全局执行链；子代理只执行 bounded packet，下一步永远由主 Agent 回读受控记录后决定。
 
 Execute unfinished work from a **single TASKS or BUGFIX document** in a single session. Implementation and code edits are **only** done by subagents; the main Agent orchestrates and audits.
 

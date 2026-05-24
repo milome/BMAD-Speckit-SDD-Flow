@@ -133,6 +133,7 @@ describe('dashboard runtime snapshot integration', () => {
         sft_summary: {
           total_candidates: number;
           accepted: number;
+          rejected: number;
           redaction_status_counts: { clean: number; redacted: number; blocked: number };
           target_availability: Record<string, { compatible: number; incompatible: number }>;
           redaction_preview: Array<{ sample_id: string; status: string; run_id: string }>;

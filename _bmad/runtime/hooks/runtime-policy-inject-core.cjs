@@ -1466,6 +1466,47 @@ function buildPreToolUseHardStop(errText, stopReason) {
   };
 }
 
+function isMissingRequirementRecordIndexRuntimePolicyError(res) {
+  const text = `${res?.stderr || ''}\n${res?.stdout || ''}`;
+  return (
+    text.includes('emit-runtime-policy: requirement-record index missing') ||
+    text.includes('emit-runtime-policy: blocked_missing_active_requirement')
+  );
+}
+
+function buildMissingRequirementRecordIndexHardStop(errText, mode) {
+  const systemMessage = [
+    'Implementation Entry Gate blocked the current execution.',
+    'Main Agent must initialize, select, or repair the active requirement record before dispatch.',
+    'orchestration_state: `unavailable_missing_requirement_record_index`',
+    'pending_packet: `unavailable_missing_requirement_record_index`',
+    errText,
+  ]
+    .filter(Boolean)
+    .join('\n');
+  if (mode === 'subagent') {
+    return {
+      exitCode: 0,
+      output: JSON.stringify({
+        hookSpecificOutput: {
+          hookEventName: 'SubagentStart',
+          additionalContext: systemMessage,
+        },
+      }),
+      stderr: '',
+    };
+  }
+  return {
+    exitCode: 0,
+    output: JSON.stringify({
+      continue: false,
+      stopReason: 'Implementation Entry Gate blocked: missing requirement-record index.',
+      systemMessage,
+    }),
+    stderr: '',
+  };
+}
+
 function derivePartyModeIntensityStopReason(errText) {
   if (String(errText || '').includes('user-selected intensity was detected in free text')) {
     return 'Party-Mode 已检测到用户已选档位，但当前 payload 未结构化；请沿用同一档位立即重试一次。';
@@ -1814,6 +1855,9 @@ async function runtimePolicyInjectCore({ host }) {
     }
 
     const errText = buildRuntimeErrorMessage({ stderr: res.stderr, stdout: res.stdout });
+    if (isMissingRequirementRecordIndexRuntimePolicyError(res)) {
+      return buildMissingRequirementRecordIndexHardStop(errText, mode);
+    }
     if (mode === 'subagent') {
       return {
         exitCode: 1,

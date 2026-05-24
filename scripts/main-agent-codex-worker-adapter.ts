@@ -14,6 +14,19 @@ import type { StageName } from './bmad-config';
 import { loadPolicyContextFromRegistry } from './emit-runtime-policy';
 import type { RuntimeFlowId } from './runtime-governance';
 import { stableStringifyPolicy } from './stable-runtime-policy-json';
+import {
+  governanceEventTypeRegistryPolicyHash,
+  governanceEventTypeRegistryHash,
+  validateGovernanceTransportEnvelope,
+  type GovernanceTransportEnvelope,
+} from './governance-transport-envelope';
+import {
+  artifactRefForPath,
+  buildSubagentEvidenceEnvelopeFromTaskReport,
+  sha256Object,
+  validateSubagentEvidenceEnvelope,
+  type SubagentEvidenceEnvelopeValidation,
+} from './subagent-evidence-envelope';
 
 type Packet = ExecutionPacket | RecommendationPacket | ResumePacket;
 
@@ -36,6 +49,15 @@ export interface CodexWorkerAdapterReport {
   runtimeGovernanceStatus: 'resolved' | 'blocked';
   runtimeGovernanceError: string | null;
   actualFilesChanged: string[];
+  transportEnvelope: GovernanceTransportEnvelope | null;
+  transportEnvelopeValidation: {
+    ok: boolean;
+    mismatches: string[];
+    registryHash?: string | null;
+    registryPolicyHash?: string | null;
+  };
+  subagentEvidenceEnvelope: Record<string, unknown> | null;
+  subagentEvidenceEnvelopeValidation: SubagentEvidenceEnvelopeValidation;
 }
 
 interface RuntimeGovernanceResolution {
@@ -89,11 +111,27 @@ function readPacket(packetPath: string): Packet {
 }
 
 function packetExpectedDelta(packet: Packet): string {
-  return 'expectedDelta' in packet ? packet.expectedDelta : packet.expectedDelta;
+  return packet.expectedDelta;
 }
 
 function packetAllowedWriteScope(packet: Packet): string[] {
   return Array.isArray(packet.allowedWriteScope) ? packet.allowedWriteScope : [];
+}
+
+function safePathSegment(value: string): string {
+  return value.replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'unscoped';
+}
+
+function defaultSmokeTargetPath(input: {
+  recordId?: string;
+  requirementSetId?: string;
+  packet: Packet;
+}): string {
+  const requirementId = safePathSegment(
+    input.recordId ?? input.requirementSetId ?? input.packet.parentSessionId
+  );
+  const packetId = safePathSegment(input.packet.packetId);
+  return `_bmad-output/runtime/requirement-records/${requirementId}/artifacts/codex/${packetId}.md`;
 }
 
 function packetRole(packet: Packet): string {
@@ -138,9 +176,12 @@ function resolveCodexAgentSpec(
   return null;
 }
 
-function resolveRuntimeGovernanceBlock(projectRoot: string): RuntimeGovernanceResolution {
+function resolveRuntimeGovernanceBlock(
+  projectRoot: string,
+  options?: { recordId?: string; requirementSetId?: string; runId?: string }
+): RuntimeGovernanceResolution {
   try {
-    const loaded = loadPolicyContextFromRegistry(projectRoot);
+    const loaded = loadPolicyContextFromRegistry(projectRoot, options);
     const policy = resolveBmadHelpRuntimePolicy({
       flow: loaded.flow as RuntimeFlowId,
       stage: loaded.stage as StageName,
@@ -156,10 +197,10 @@ function resolveRuntimeGovernanceBlock(projectRoot: string): RuntimeGovernanceRe
     return {
       status: 'resolved',
       content: stableStringifyPolicy({
+        ...policy,
         flow: loaded.runtimeContext.flow,
         stage: loaded.runtimeContext.stage,
         runtimeContextPath: loaded.resolvedContextPath,
-        ...policy,
       }),
       error: null,
     };
@@ -303,6 +344,48 @@ function validateTaskReport(report: TaskReport, packet: Packet, scopes: string[]
   return errors;
 }
 
+function taskReportStatusToEnvelopeStatus(status: TaskReport['status']): string {
+  if (status === 'done') return 'done';
+  if (status === 'partial') return 'partial';
+  return 'blocked';
+}
+
+function buildNoHookTransportEnvelope(input: {
+  recordId?: string;
+  requirementSetId?: string;
+  runId?: string;
+  packet: Packet;
+  taskReport: TaskReport;
+}): GovernanceTransportEnvelope {
+  return {
+    hostKind: 'codex',
+    hostMode: 'no_hook',
+    entry: 'main-agent-codex-worker-adapter',
+    runId: input.runId ?? input.packet.parentSessionId,
+    recordId: input.recordId ?? input.packet.parentSessionId,
+    requirementSetId: input.requirementSetId ?? input.recordId ?? input.packet.parentSessionId,
+    stage: input.packet.phase,
+    packetId: input.packet.packetId,
+    eventType: 'execution_iteration_recorded',
+    payloadKind: 'status',
+    status: taskReportStatusToEnvelopeStatus(input.taskReport.status),
+    sourceRefs: [{ sourceType: 'execution_packet', id: input.packet.packetId }],
+    artifactRefs: input.taskReport.evidence.map((item) => ({
+      artifactType: 'task_report_evidence',
+      sourceOfTruthRole: 'evidence',
+      path: item,
+    })),
+    payload: {
+      packetId: input.packet.packetId,
+      filesChanged: input.taskReport.filesChanged,
+      validationsRun: input.taskReport.validationsRun,
+      evidence: input.taskReport.evidence,
+      downstreamContext: input.taskReport.downstreamContext,
+      driftFlags: input.taskReport.driftFlags ?? [],
+    },
+  };
+}
+
 function listGitVisibleFiles(projectRoot: string): string[] {
   const result = spawnSync(
     'git',
@@ -385,6 +468,87 @@ function writeTaskReport(taskReportPath: string, report: TaskReport): void {
   fs.writeFileSync(taskReportPath, JSON.stringify(report, null, 2) + '\n', 'utf8');
 }
 
+function readRequirementRecord(projectRoot: string, recordId?: string): Record<string, unknown> | null {
+  if (!recordId) return null;
+  const recordPath = path.join(
+    projectRoot,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    recordId,
+    'requirement-record.json'
+  );
+  if (!fs.existsSync(recordPath)) return null;
+  const parsed = JSON.parse(fs.readFileSync(recordPath, 'utf8')) as unknown;
+  return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+    ? (parsed as Record<string, unknown>)
+    : null;
+}
+
+function text(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function recordArchitectureHash(record: Record<string, unknown> | null): string {
+  const state =
+    record?.architectureConfirmationState &&
+    typeof record.architectureConfirmationState === 'object' &&
+    !Array.isArray(record.architectureConfirmationState)
+      ? (record.architectureConfirmationState as Record<string, unknown>)
+      : {};
+  return text(state.currentArchitectureConfirmationHash);
+}
+
+function recordCloseoutAttemptId(record: Record<string, unknown> | null): string {
+  const closeout =
+    record?.closeout && typeof record.closeout === 'object' && !Array.isArray(record.closeout)
+      ? (record.closeout as Record<string, unknown>)
+      : {};
+  return text(closeout.currentAttemptId);
+}
+
+function gitHead(projectRoot: string): string {
+  const result = spawnSync('git', ['rev-parse', 'HEAD'], {
+    cwd: projectRoot,
+    encoding: 'utf8',
+    shell: process.platform === 'win32',
+  });
+  return (result.stdout || '').trim() || 'unknown';
+}
+
+function evidencePathFromTaskReportItem(item: string): string | null {
+  const codexSmokePrefix = 'codex-smoke:';
+  if (item.startsWith(codexSmokePrefix)) return item.slice(codexSmokePrefix.length);
+  if (/^[A-Za-z]:[\\/]/u.test(item) || item.startsWith('/') || item.includes('/') || item.includes('\\')) {
+    return item;
+  }
+  return null;
+}
+
+function taskReportArtifactRefs(input: {
+  projectRoot: string;
+  taskReport: TaskReport;
+  fallbackRequirementIds: string[];
+}): Record<string, unknown>[] {
+  return input.taskReport.evidence
+    .map(evidencePathFromTaskReportItem)
+    .filter((item): item is string => Boolean(item))
+    .map((artifactPath) =>
+      artifactRefForPath({
+        projectRoot: input.projectRoot,
+        artifactPath,
+        artifactType: 'subagent_task_report_evidence',
+        producer: 'main-agent-codex-worker-adapter',
+        purpose: 'TaskReport evidence promoted into subagentEvidenceEnvelope artifactRefs',
+        relatedRequirementIds: input.fallbackRequirementIds.length
+          ? input.fallbackRequirementIds
+          : ['subagent_evidence_envelope'],
+        inputVersion: 'task-report-v1',
+        outputVersion: 'subagent-evidence-envelope-v1',
+      })
+    );
+}
+
 function resolveCodexWritableTaskReportPath(projectRoot: string, taskReportPath: string): string {
   const root = path.resolve(projectRoot);
   const requested = path.resolve(taskReportPath);
@@ -412,17 +576,43 @@ function copyTaskReportIfNeeded(sourcePath: string, targetPath: string): void {
 
 export function runCodexWorkerAdapter(input: {
   projectRoot: string;
+  recordId?: string;
+  requirementSetId?: string;
+  runId?: string;
+  parentCloseoutAttemptId?: string;
+  sourceDocumentHash?: string;
+  implementationConfirmationHash?: string;
   packetPath: string;
   taskReportPath?: string;
   smoke?: boolean;
   smokeTargetPath?: string;
   timeoutMs?: number;
   allowPolicyFailureForSmoke?: boolean;
+  allowPolicyFailureForDeterministicShim?: boolean;
   codexBinary?: string;
+  governanceEventTypeRegistryPolicy?: unknown;
+  governanceEventTypeRegistryPolicyHash?: string;
+  governanceEventTypeRegistry?: unknown;
+  governanceEventTypeRegistryHash?: string;
+  architectureConfirmationHash?: string;
+  traceRows?: string[];
+  coveredRequirementIds?: string[];
+  taskRefs?: string[];
 }): CodexWorkerAdapterReport {
   const projectRoot = path.resolve(input.projectRoot);
   const packetPath = path.resolve(input.packetPath);
   const packet = readPacket(packetPath);
+  const requirementRecord = readRequirementRecord(projectRoot, input.requirementSetId ?? input.recordId);
+  const sourceDocumentHash = input.sourceDocumentHash ?? text(requirementRecord?.sourceDocumentHash);
+  const implementationConfirmationHash =
+    input.implementationConfirmationHash ?? text(requirementRecord?.implementationConfirmationHash);
+  const architectureConfirmationHash = input.architectureConfirmationHash ?? recordArchitectureHash(requirementRecord);
+  const parentCloseoutAttemptId =
+    input.parentCloseoutAttemptId ||
+    recordCloseoutAttemptId(requirementRecord) ||
+    `${input.runId ?? packet.parentSessionId}:current-attempt`;
+  const commitBefore = gitHead(projectRoot);
+  const adapterStartedAt = new Date().toISOString();
   const scopes = packetAllowedWriteScope(packet);
   const agentRole = packetRole(packet);
   const agentSpec = resolveCodexAgentSpec(projectRoot, agentRole);
@@ -441,7 +631,8 @@ export function runCodexWorkerAdapter(input: {
     projectRoot,
     taskReportPath
   );
-  const smokeTargetPath = input.smokeTargetPath ?? `src/codex/${packet.packetId}.md`;
+  const smokeTargetPath = input.smokeTargetPath ?? defaultSmokeTargetPath({ ...input, packet });
+  const validationScopes = input.smoke ? Array.from(new Set([...scopes, smokeTargetPath])) : scopes;
   if (!agentSpec) {
     const blockedReport: TaskReport = {
       packetId: packet.packetId,
@@ -472,12 +663,27 @@ export function runCodexWorkerAdapter(input: {
       runtimeGovernanceStatus: 'blocked',
       runtimeGovernanceError: 'codex agent spec missing',
       actualFilesChanged: [],
+      transportEnvelope: null,
+      transportEnvelopeValidation: { ok: false, mismatches: ['codex_agent_spec_missing'] },
+      subagentEvidenceEnvelope: null,
+      subagentEvidenceEnvelopeValidation: {
+        ok: false,
+        status: 'blocked',
+        mismatches: ['codex_agent_spec_missing'],
+        sourceRefs: [],
+        evidenceArtifactRefs: [],
+      },
     };
   }
-  const runtimeGovernance = resolveRuntimeGovernanceBlock(projectRoot);
+  const runtimeGovernance = resolveRuntimeGovernanceBlock(projectRoot, {
+    recordId: input.recordId,
+    requirementSetId: input.requirementSetId,
+    runId: input.runId,
+  });
   if (
     runtimeGovernance.status === 'blocked' &&
-    !(input.smoke && input.allowPolicyFailureForSmoke)
+    !(input.smoke && input.allowPolicyFailureForSmoke) &&
+    !input.allowPolicyFailureForDeterministicShim
   ) {
     const blockedReport: TaskReport = {
       packetId: packet.packetId,
@@ -508,6 +714,16 @@ export function runCodexWorkerAdapter(input: {
       runtimeGovernanceStatus: runtimeGovernance.status,
       runtimeGovernanceError: runtimeGovernance.error,
       actualFilesChanged: [],
+      transportEnvelope: null,
+      transportEnvelopeValidation: { ok: false, mismatches: ['runtime_governance_blocked'] },
+      subagentEvidenceEnvelope: null,
+      subagentEvidenceEnvelopeValidation: {
+        ok: false,
+        status: 'blocked',
+        mismatches: ['runtime_governance_blocked'],
+        sourceRefs: [],
+        evidenceArtifactRefs: [],
+      },
     };
   }
   const prompt = buildPrompt({
@@ -560,6 +776,16 @@ export function runCodexWorkerAdapter(input: {
       runtimeGovernanceStatus: runtimeGovernance.status,
       runtimeGovernanceError: runtimeGovernance.error,
       actualFilesChanged: [],
+      transportEnvelope: null,
+      transportEnvelopeValidation: { ok: false, mismatches: ['codex_binary_override_denied'] },
+      subagentEvidenceEnvelope: null,
+      subagentEvidenceEnvelopeValidation: {
+        ok: false,
+        status: 'blocked',
+        mismatches: ['codex_binary_override_denied'],
+        sourceRefs: [],
+        evidenceArtifactRefs: [],
+      },
     };
   }
   const codexCommand = input.smoke
@@ -609,7 +835,7 @@ export function runCodexWorkerAdapter(input: {
 
   copyTaskReportIfNeeded(codexWritableTaskReportPath, taskReportPath);
   let taskReportStrictJsonError: string | null = null;
-  const taskReport = fs.existsSync(taskReportPath)
+  const taskReport: TaskReport = fs.existsSync(taskReportPath)
     ? (() => {
         try {
           return readTaskReport(taskReportPath);
@@ -628,7 +854,7 @@ export function runCodexWorkerAdapter(input: {
       })()
     : {
         packetId: packet.packetId,
-        status: 'blocked',
+        status: 'blocked' as const,
         filesChanged: [],
         validationsRun: ['codex-worker-adapter'],
         evidence: ['codex did not produce task report'],
@@ -656,9 +882,9 @@ export function runCodexWorkerAdapter(input: {
     ...(taskReportStrictJsonError
       ? [`TaskReport strict JSON validation failed: ${taskReportStrictJsonError}`]
       : []),
-    ...validateTaskReport(taskReport, packet, scopes),
+    ...validateTaskReport(taskReport, packet, validationScopes),
     ...actualFilesChanged
-      .filter((changed) => !pathMatchesScope(changed, scopes))
+      .filter((changed) => !pathMatchesScope(changed, validationScopes))
       .map((changed) => `actual file outside allowedWriteScope: ${changed}`),
   ];
   const scopePassed = validationErrors.length === 0;
@@ -671,6 +897,89 @@ export function runCodexWorkerAdapter(input: {
     taskReport.evidence = [...taskReport.evidence, ...validationErrors];
     writeTaskReport(taskReportPath, taskReport);
   }
+  const transportEnvelope = buildNoHookTransportEnvelope({
+    recordId: input.recordId,
+    requirementSetId: input.requirementSetId,
+    runId: input.runId,
+    packet,
+    taskReport,
+  });
+  const transportEnvelopeValidation = validateGovernanceTransportEnvelope(transportEnvelope, {
+    governanceEventTypeRegistryPolicy: input.governanceEventTypeRegistryPolicy,
+    registryPolicyHash:
+      input.governanceEventTypeRegistryPolicyHash ??
+      (input.governanceEventTypeRegistryPolicy
+        ? governanceEventTypeRegistryPolicyHash(input.governanceEventTypeRegistryPolicy)
+        : undefined),
+    governanceEventTypeRegistry: input.governanceEventTypeRegistry,
+    registryHash:
+      input.governanceEventTypeRegistryHash ??
+      (input.governanceEventTypeRegistry ? governanceEventTypeRegistryHash(input.governanceEventTypeRegistry) : undefined),
+    architectureConfirmationHash,
+  });
+  const traceRows = input.traceRows ?? [];
+  const coveredRequirementIds = input.coveredRequirementIds ?? [];
+  const taskRefs = input.taskRefs ?? [];
+  const subagentArtifactRefs = taskReportArtifactRefs({
+    projectRoot,
+    taskReport,
+    fallbackRequirementIds: coveredRequirementIds,
+  });
+  const commandRun = {
+    commandId: input.smoke ? 'CMD-CODEX-WORKER-ADAPTER-SMOKE' : 'CMD-CODEX-WORKER-ADAPTER',
+    command: codexCommand.join(' '),
+    exitCode,
+    startedAt: adapterStartedAt,
+    completedAt: new Date().toISOString(),
+    outputSummary:
+      taskReport.evidence.join('; ').slice(0, 240) || `TaskReport status ${taskReport.status}`,
+    artifactRefs: subagentArtifactRefs,
+    closeoutAttemptId: parentCloseoutAttemptId,
+  };
+  const subagentEvidenceEnvelope =
+    sourceDocumentHash && implementationConfirmationHash && architectureConfirmationHash
+      ? buildSubagentEvidenceEnvelopeFromTaskReport({
+          packet,
+          taskReport,
+          recordId: input.recordId ?? input.requirementSetId ?? packet.parentSessionId,
+          requirementSetId: input.requirementSetId ?? input.recordId ?? packet.parentSessionId,
+          parentRunId: input.runId ?? packet.parentSessionId,
+          parentCloseoutAttemptId,
+          executorKind: 'codex_worker_adapter',
+          executorRole: agentRole,
+          sourceDocumentHash,
+          implementationConfirmationHash,
+          architectureConfirmationHash,
+          traceRows,
+          coveredRequirementIds,
+          taskRefs,
+          actualFilesChanged,
+          diffHash: sha256Object(actualFilesChanged),
+          workspaceRef: {
+            kind: 'main_workspace',
+            path: projectRoot,
+            commitBefore,
+            commitAfter: gitHead(projectRoot),
+          },
+          commandRuns: [commandRun],
+          artifactRefs: subagentArtifactRefs,
+          transportRefs: transportEnvelope ? [{ eventType: transportEnvelope.eventType, packetId: transportEnvelope.packetId }] : [],
+        })
+      : null;
+  const subagentEvidenceEnvelopeValidation = subagentEvidenceEnvelope
+    ? validateSubagentEvidenceEnvelope(subagentEvidenceEnvelope, {
+        record: requirementRecord ?? undefined,
+        projectRoot,
+        indexedArtifactRefs: subagentArtifactRefs,
+        expectedParentCloseoutAttemptId: parentCloseoutAttemptId,
+      })
+    : {
+        ok: false,
+        status: 'blocked' as const,
+        mismatches: ['subagent_evidence_envelope_hash_context_missing'],
+        sourceRefs: [],
+        evidenceArtifactRefs: [],
+      };
 
   return {
     reportType: 'main_agent_codex_worker_adapter',
@@ -691,6 +1000,10 @@ export function runCodexWorkerAdapter(input: {
     runtimeGovernanceStatus: runtimeGovernance.status,
     runtimeGovernanceError: runtimeGovernance.error,
     actualFilesChanged,
+    transportEnvelope,
+    transportEnvelopeValidation,
+    subagentEvidenceEnvelope,
+    subagentEvidenceEnvelopeValidation,
   };
 }
 
@@ -702,12 +1015,32 @@ export function main(argv: string[]): number {
   }
   const report = runCodexWorkerAdapter({
     projectRoot: path.resolve(args.cwd ?? process.cwd()),
+    recordId: args.recordId,
+    requirementSetId: args.requirementSetId,
+    runId: args.runId,
+    parentCloseoutAttemptId: args.parentCloseoutAttemptId,
+    sourceDocumentHash: args.sourceDocumentHash,
+    implementationConfirmationHash: args.implementationConfirmationHash,
     packetPath: path.resolve(args.packetPath),
     taskReportPath: args.taskReportPath ? path.resolve(args.taskReportPath) : undefined,
     smoke: args.smoke === 'true',
     smokeTargetPath: args.smokeTargetPath,
     timeoutMs: Number(args.timeoutMs) > 0 ? Number(args.timeoutMs) : undefined,
     codexBinary: args.codexBinary,
+    governanceEventTypeRegistry: args.governanceEventTypeRegistryPath
+      ? JSON.parse(fs.readFileSync(path.resolve(args.governanceEventTypeRegistryPath), 'utf8'))
+      : undefined,
+    governanceEventTypeRegistryPolicy: args.governanceEventTypeRegistryPolicyPath
+      ? JSON.parse(fs.readFileSync(path.resolve(args.governanceEventTypeRegistryPolicyPath), 'utf8'))
+      : undefined,
+    governanceEventTypeRegistryPolicyHash: args.governanceEventTypeRegistryPolicyHash,
+    governanceEventTypeRegistryHash: args.governanceEventTypeRegistryHash,
+    architectureConfirmationHash: args.architectureConfirmationHash,
+    traceRows: args.traceRows ? args.traceRows.split(',').map((item) => item.trim()).filter(Boolean) : undefined,
+    coveredRequirementIds: args.coveredRequirementIds
+      ? args.coveredRequirementIds.split(',').map((item) => item.trim()).filter(Boolean)
+      : undefined,
+    taskRefs: args.taskRefs ? args.taskRefs.split(',').map((item) => item.trim()).filter(Boolean) : undefined,
   });
   const reportPath = path.resolve(
     args.reportPath ??

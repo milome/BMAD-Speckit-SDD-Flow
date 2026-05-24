@@ -4,11 +4,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildMainAgentDispatchInstruction } from '../../scripts/main-agent-orchestration';
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
 import {
   writeUserStoryMappingIndex,
   type UserStoryMappingIndex,
 } from '../../scripts/user-story-mapping';
+import { writeMinimalRequirementRecordContext } from '../helpers/runtime-registry-fixture';
 
 function bootstrapProject(root: string, index: UserStoryMappingIndex): void {
   const contractPath = path.join(
@@ -67,7 +67,7 @@ describe('main-agent churn routing score', () => {
       bootstrapProject(root, {
         version: 1,
         updatedAt: new Date().toISOString(),
-        source: '_bmad-output/runtime/governance/user_story_mapping.json',
+        source: '_bmad-output/runtime/requirement-records/index.json',
         items: [
           {
             requirementId: 'REQ-A',
@@ -142,41 +142,40 @@ describe('main-agent churn routing score', () => {
     }
   });
 
-  it('hydrates dispatch packets with allowedWriteScope from user_story_mapping instead of fallback scope', () => {
+  it('hydrates dispatch packets with allowedWriteScope from requirement taskBindings instead of fallback scope', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-route-scope-'));
     try {
       bootstrapProject(root, {
         version: 1,
         updatedAt: new Date().toISOString(),
-        source: '_bmad-output/runtime/governance/user_story_mapping.json',
-        items: [
-          {
-            requirementId: 'REQ-PAYMENTS-02',
-            sourceType: 'churn_in',
-            epicId: 'epic-payments',
-            storyId: 'story-payments',
-            flow: 'story',
-            sprintId: 'SPRINT-1',
-            allowedWriteScope: ['src/payments/**', 'tests/payments/**'],
-            status: 'planned',
-            updatedAt: new Date().toISOString(),
-          },
-        ],
+        source: '_bmad-output/runtime/requirement-records/index.json',
+        items: [],
       });
-      writeRuntimeContext(
-        root,
-        defaultRuntimeContextFile({
-          flow: 'story',
-          stage: 'implement',
+      const recordPath = writeMinimalRequirementRecordContext(root, {
+        flow: 'story',
+        stage: 'implement',
+        epicId: 'epic-payments',
+        storyId: 'story-payments',
+        runId: 'run-payments-scope',
+        artifactRoot: '_bmad-output/implementation-artifacts/epic-payments/story-payments',
+      });
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      record.taskBindings = [
+        {
           epicId: 'epic-payments',
           storyId: 'story-payments',
-          artifactRoot: '_bmad-output/implementation-artifacts/epic-payments/story-payments',
-          updatedAt: new Date().toISOString(),
-        })
-      );
+          sprintId: 'SPRINT-1',
+          allowedWriteScope: ['src/payments/**', 'tests/payments/**'],
+          status: 'planned',
+        },
+      ];
+      writeFileSync(recordPath, JSON.stringify(record, null, 2) + '\n', 'utf8');
 
       const instruction = buildMainAgentDispatchInstruction({
         projectRoot: root,
+        recordId: record.recordId,
+        requirementSetId: record.requirementSetId,
+        runId: record.runId,
         flow: 'story',
         stage: 'implement',
         hydratePacket: true,
@@ -198,7 +197,7 @@ describe('main-agent churn routing score', () => {
       bootstrapProject(root, {
         version: 1,
         updatedAt: new Date().toISOString(),
-        source: '_bmad-output/runtime/governance/user_story_mapping.json',
+        source: '_bmad-output/runtime/requirement-records/index.json',
         items: [
           {
             requirementId: 'REQ-REROUTE-02',

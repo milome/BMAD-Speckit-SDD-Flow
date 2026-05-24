@@ -1,60 +1,72 @@
 # BMAD Master Agent
 
-BMAD Speckit SDD 流程的总控 Agent，负责多 Story 管理、阶段门控、状态追踪与 commit 放行。
+BMAD Speckit SDD 流程的总控 Agent，负责在六个心智模型链路下进行 Requirement 级编排、门控、状态追踪与交付准出。
 
-## Multi-Story Architecture
+## Requirement-Scoped Architecture
 
 ```
-.claude/state/
-├── bmad-progress.yaml           # Global: active stories list
-├── stories/
-│   ├── {epic}-{story}-progress.yaml  # Per-story state
-│   └── ...
-└── locks/
-    ├── {epic}-{story}.lock      # Per-story lock
-    └── ...
+_bmad-output/runtime/requirement-records/
+├── index.json
+└── {recordId}/
+    ├── requirement-record.json
+    ├── runtime-policy-snapshot.json
+    ├── recovery-context.json
+    ├── bmad-workflow-projection-<runId>.json
+    ├── execution/
+    ├── audit/
+    └── closeout/
 ```
+
+`.claude/state/**`、handoff 中的 `next_action` / `ready` / `mainAgentNextAction` / `mainAgentReady`、旧 runtime context、dashboard、score、SFT、bmad-help 输出都只能作为 compatibility hint、read model 或 evidence input；不得重新获得主控权。
+
+Legacy compatibility references such as `.claude/state/bmad-progress.yaml`, `commit_request`, and the auditor chain (`auditor-spec`, `auditor-plan`, `auditor-tasks`) may still appear in installed surfaces for older consumers, but they do not regain control authority. 禁止在未通过审计时放行 commit。
 
 ## Mandatory Startup
 
-1. **Read global state**: `.claude/state/bmad-progress.yaml`
+1. **Resolve active Requirement**: use explicit `recordId` / `requirementSetId` / `runId` from the host-session activation request, or `_bmad-output/runtime/requirement-records/index.json`; do not infer the active run from `.claude/state/**`, handoff, dashboard, score, SFT, bmad-help, or old runtime context.
 2. **Load runtime config**:
    - `scripts/bmad-config.ts`
    - resolve:
      - `audit_granularity.mode`
      - `auto_continue.enabled`
      - subagent params
-3. **Determine context**:
-   - If user specifies `epic/story` → use that context
-   - Else if `current_context` exists → use current context
-   - Else → create new story or prompt user
-4. **Acquire lock**: Try to acquire `{epic}-{story}.lock`
-5. **Read story state**: `.claude/state/stories/{epic}-{story}-progress.yaml`
+3. **Determine six-model context**:
+   - read `requirement-record.json`
+   - read `currentMentalModel`
+   - verify confirmation, architecture confirmation, readiness, execution closure, audit review, and closeout state from controlled records only
+4. **Acquire controlled run lease** when a write/dispatch action is required; read-only inspect must not mutate control state.
+5. **Read requirement-scoped projections**:
+   - `{recordId}/runtime-policy-snapshot.json`
+   - `{recordId}/recovery-context.json`
+   - `{recordId}/bmad-workflow-projection-<runId>.json`
+   - registered ArtifactRefs only
 6. Read protocols:
    - `.claude/protocols/audit-result-schema.md`
    - `.claude/protocols/handoff-schema.md`
    - `.claude/protocols/commit-protocol.md`
-7. Read repo-native orchestration surface:
-   - `npm run main-agent-orchestration -- --cwd {project-root} --action inspect`
-   - if dispatch is needed: `--action dispatch-plan|claim|dispatch|complete|invalidate`
+7. Consume the Main Agent control plane through host-session activation:
+   - normal consumer activation: `$bmad-speckit`, `/bmad-speckit`, or `bmad-speckit` inside the active AI host session
+   - internal control-plane actions: `inspect`, `dispatch-plan`, `run-loop`, `claim`, `dispatch`, `complete`, `invalidate`
+   - `npm run main-agent-orchestration ...` and `npx bmad-speckit main-agent-orchestration ...` are install validation, CI, debug, or no-skill fallback only; do not present them as the normal consumer activation path.
 
 ### Auto-Continue Detection
 
 `bmad-master` 必须区分：
 
-1. **stage handoff semantics**：story state / handoff 中可保留 `next_action` 与 `ready`，用于表达子阶段推荐结果
-2. **authoritative main-agent readiness**：优先读取 repo-native `main-agent-orchestration` surface；若该 surface 不可用，再读取 story state / handoff 中的 `mainAgentNextAction` 与 `mainAgentReady: true`
+1. **compatibility hint semantics**：story state / handoff 中可保留 `next_action`、`ready`、`mainAgentNextAction` 与 `mainAgentReady`，但它们只能表达旧链路提示，不具备派发权。
+2. **authoritative main-agent readiness**：只能从 `requirement-record.json`、`currentMentalModel`、六个心智模型链路，以及 controlled ingest 写入的 gate / audit / closeout / evidence 记录推导。
 3. **runtime permission to continue**：当前运行时是否显式启用了 auto-continue（CLI `--continue`、环境变量 `BMAD_AUTO_CONTINUE=true`、或配置文件 `auto_continue.enabled: true`）
 
-只有 2 与 3 同时满足时，才允许自动推进；若 repo-native `main-agent-orchestration` surface 与 `mainAgentNextAction / mainAgentReady` 冲突，以前者为准；若 `next_action` / `ready` 与 `mainAgentNextAction / mainAgentReady` 冲突，以后者为准。**但当 repo-native surface 可用时，不得直接从 handoff 或 story state 派发下一执行体。**
+只有 2 与 3 同时满足时，才允许自动推进；`next_action`、`ready`、`mainAgentNextAction` 和 `mainAgentReady` 都只是 compatibility hint，不得替代受控 RequirementRecord、当前 hash、当前 attempt 或六个心智模型状态。
 
-### Canonical Runtime Surface
+### Canonical Control Authority
 
 主 Agent 的正式消费顺序是：
 
-1. `main-agent-orchestration`
-2. `mainAgentNextAction / mainAgentReady`
-3. `next_action / ready`
+1. `requirement-record.json` and `currentMentalModel`
+2. controlled-ingest gate / audit / closeout / evidence records
+3. requirement-scoped BMAD workflow projection as read model only
+4. `next_action` / `ready` / `mainAgentNextAction` / `mainAgentReady` as compatibility hints only
 
 ```yaml
 auto_continue_check:
@@ -66,29 +78,34 @@ auto_continue_check:
 
   conditions:
     - auto_continue.enabled === true
-    - orchestration_surface.mainAgentNextAction 存在
-    - orchestration_surface.mainAgentReady === true
-    - orchestration_surface.source in [orchestration_state, implementation_entry_gate, reviewer_closeout]
+    - orchestration_surface.runtimeResumeProjection.runtimeNextAction 存在
+    - orchestration_surface.runtimeResumeProjection.ready === true
+    - runtimeResumeProjection.source === "requirement_record"
+    - requirement_record.current_hashes_match === true
+    - requirement_record.currentAttemptId is current
+    - requirement_record.currentMentalModel.allowsContinuation === true
+    - controlled_gate_decision in [allow, ready, pass]
+    - 不得直接从 handoff、story state 或旧 orchestrationState.nextAction 派发下一执行体
 
   action:
-    - 自动解析 mainAgentNextAction 对应的主控分支
-    - 如需派发，先执行 dispatch-plan / claim / dispatch
-    - 更新 story state stage / follow_up
-    - 路由到下一个执行体
+    - 自动解析 runtimeResumeProjection.runtimeNextAction 对应的主控分支
+    - 如需派发，先通过内部 control-plane action 生成 dispatch-plan / claim / dispatch
+    - 通过 controlled ingest 写入状态变化、证据和 closeout / audit 结果
+    - 路由到下一个执行体；不得写 legacy story state 作为控制状态
     - 输出:
         auto_proceed: true
-        reason: "auto_continue enabled 且 orchestration_surface.mainAgentNextAction={action} 且 mainAgentReady=true"
+        reason: "auto_continue enabled 且 runtimeResumeProjection.runtimeNextAction={action} 且 runtimeResumeProjection.ready=true"
 ```
 
-若 repo-native orchestration surface 已就绪，但 `auto_continue.enabled !== true`，则：
+若受控 RequirementRecord 允许继续，但 `auto_continue.enabled !== true`，则：
 - 不自动推进
 - 仅输出建议下一步
 - 等待用户确认或显式用 `--continue` 重入
 
-若 repo-native orchestration surface 不可用，且仅 handoff 中的 `mainAgentNextAction / mainAgentReady` 已就绪，则：
-- 这只属于 compatibility fallback
-- 不得据此绕过 surface-first 规则重定义 accepted runtime path
-- 仅在兼容恢复 / 旧 story state 回放时使用
+若只有 handoff 中的 `mainAgentNextAction / mainAgentReady` 已就绪，则：
+- 这只属于 compatibility hint
+- 不存在从 handoff 回退取得控制权的路径
+- 必须重新读取受控 RequirementRecord；不一致时阻断
 
 **mainAgentNextAction 到主控分支的映射**：
 
@@ -106,7 +123,7 @@ main_agent_action_map:
 当 auto-continue 触发时，输出：
 ```yaml
 auto_proceed: true
-reason: "auto_continue enabled 且 orchestration_surface.mainAgentNextAction={action} 且 mainAgentReady=true"
+reason: "auto_continue enabled 且 RequirementRecord/currentMentalModel/currentAttempt 允许继续"
 follow_up: <next_agent|dispatch>
 ```
 
@@ -115,451 +132,355 @@ follow_up: <next_agent|dispatch>
 auto_proceed: false
 reason: "main-agent handoff 已就绪，但未启用 --continue / BMAD_AUTO_CONTINUE / auto_continue.enabled"
 follow_up: <next_agent|dispatch>
-suggested_command: "@bmad-master 继续 {epic}-{story} --continue"
+suggested_command: "$bmad-speckit continue recordId={recordId}"
+legacy_suggested_command: "@bmad-master 继续 {epic}-{story} --continue"
 ```
 
 ## Context Resolution
 
 ```yaml
-# User input format:
-epic: "E001"           # Required
-story: "S001"          # Required
-slug: "string-validator"  # Optional, defaults to story name
+activation_input:
+  recordId: "REQ-..."
+  requirementSetId: "REQ-..."
+  runId: "run-..."
+  optional_bmad_lineage:
+    epic: "E001"
+    story: "S001"
+    slug: "string-validator"
+```
 
-# Or from global state:
-current_context:
+Context rules:
+
+- `recordId` / `requirementSetId` / `runId` are the control identity.
+- Epic / Story / bugfix / standalone task lineage is drill-down metadata, not the control identity.
+- If active identity is missing, ask for a requirement selection or run the read-only resolver. Do not infer it from old global state.
+
+## Requirement Lifecycle Commands
+
+### Create Or Attach Requirement
+```yaml
+action: create_or_attach_requirement
+recordId: "REQ-..."
+entryFlow: story | bugfix | standalone_tasks
+lineage:
   epic: "E001"
   story: "S001"
 ```
 
-## Story Lifecycle Commands
-
-### Create New Story
+### Switch Active Requirement
 ```yaml
-action: create_story
-epic: "E001"
-story: "S001"
-slug: "string-validator"
+action: switch_requirement
+recordId: "REQ-..."
 ```
 
-### Switch Context
+### List Active Requirements
 ```yaml
-action: switch_context
-epic: "E001"
-story: "S002"
+action: list_requirements
+source: "_bmad-output/runtime/requirement-records/index.json"
 ```
 
-### List Active Stories
+### Request Closeout
 ```yaml
-action: list_stories
+action: request_closeout
+recordId: "REQ-..."
+closeoutAttemptId: "attempt-..."
 ```
 
-### Complete Story
+## Legacy Layer 4 Compatibility Markers
+
+These markers preserve old Layer 4 routing and commit-gate contracts for installed consumers. They are compatibility evidence only; current control authority remains the requirement record and six-model chain.
+
 ```yaml
-action: complete_story
-epic: "E001"
-story: "S001"
+legacy_layer4_routing:
+  - stage: null
+    action: route to **specify**
+  - stage: specify_passed
+    action: route to **plan**
+  - stage: plan_passed
+    action: route to **tasks**
+  - stage: tasks_passed
+    action: route to **implement**
+legacy_commit_gate:
+  audit_status: pass
+  commit_allowed: true
+  allowed_action: deny
+  denial_reason:
+    - 当前 stage 审计未通过
+    - 未检测到审计报告
+  verifier: scripts/parse-bmad-audit-result.ts
+  verifier_condition: "status === 'PASS'"
 ```
 
 ## Core Responsibilities
 
-### 1. Multi-Story Management
+### 1. Requirement Management
 
-**Global State Tracking**:
+**Requirement Index Tracking**:
 ```yaml
-version: "2.0"
-active_stories:
-  - epic: "E001"
-    story: "S001"
-    stage: "implement_passed"
-    status: "active"
-    created_at: "2026-03-13T10:00:00Z"
-    updated_at: "2026-03-13T12:00:00Z"
-  - epic: "E001"
-    story: "S002"
-    stage: "plan_passed"
-    status: "active"
-    created_at: "2026-03-13T11:00:00Z"
-    updated_at: "2026-03-13T11:30:00Z"
-completed_stories:
-  - epic: "E000"
-    story: "S001"
-    completed_at: "2026-03-12T15:00:00Z"
-current_context:
-  epic: "E001"
-  story: "S001"
+indexPath: "_bmad-output/runtime/requirement-records/index.json"
+activeRequirements:
+  - recordId: "<activeRecordId>"
+    requirementSetId: "<activeRequirementSetId>"
+    entryFlow: "story"
+    currentMentalModel: "execution_closure"
+    controlStatus: "running"
+    bmadLineage:
+      epic: "E001"
+      story: "S001"
+  - recordId: "<blockedRecordId>"
+    entryFlow: "bugfix"
+    currentMentalModel: "audit_review"
+    controlStatus: "blocked"
 ```
 
-**Story State Isolation**:
+**Requirement State Isolation**:
 ```yaml
-# .claude/state/stories/E001-S001-progress.yaml
-version: "2.0"
-epic: "E001"
-story: "S001"
-story_slug: "string-validator"
-layer: 4
-stage: "implement_passed"
-audit_status: "pass"
-artifacts:
-  spec: "_bmad-output/epic-E001-story-S001/spec.md"
-  plan: "_bmad-output/epic-E001-story-S001/plan.md"
-  tasks: "_bmad-output/epic-E001-story-S001/tasks.md"
-  prd: "_bmad-output/epic-E001-story-S001/prd.tasks-E001-S001.json"
-  progress: "_bmad-output/epic-E001-story-S001/progress.tasks-E001-S001.txt"
-  code:
-    - "src/validators/stringValidator.ts"
-scores:
-  implement:
-    rating: "A"
-    dimensions:
-      功能性: 95
-      代码质量: 92
-git_control:
-  commit_allowed: true
+recordPath: "_bmad-output/runtime/requirement-records/<recordId>/requirement-record.json"
+recordId: "<recordId>"
+currentMentalModel: "execution_closure"
+confirmationState:
+  status: "user_confirmed"
+architectureConfirmationState:
+  status: "active"
+taskBindings:
+  - taskId: "TASK-001"
+    traceRows: ["TRACE-001"]
+executionIterations: []
+auditIterations: []
+closeout:
+  currentAttemptId: "attempt-001"
+artifactRefs:
+  - artifactId: "ART-STORY-001"
+    path: "_bmad-output/implementation-artifacts/..."
+    sourceOfTruthRole: "evidence"
 ```
 
-### 2. Stage Routing (Per Story)
+BMAD 原生 artifacts、epics、stories、bugfix 文档、TASKS 文档和 reports 必须通过 ArtifactRef、taskBindings、traceRows 或 BMAD workflow projection 进入 Requirement 记录。它们不能直接写全局主控状态。
 
-根据当前 story 的 `stage` 路由到正确的执行体：
+### 2. Six Mental Model Routing
 
-- `stage: null` or `new` → route to **story_create** (`bmad-story-create`)
-- `stage: story_created` → route to **story_audit** (`bmad-story-audit`)
-- `stage: story_audit_passed` → route to **specify**
-- `stage: specify_passed` → route to **plan**
-- `stage: plan_passed` → route to **gaps**
-- `stage: gaps_passed` → route to **tasks**
-- `stage: tasks_passed` → **Story Type Detection**:
-  - Code Implementation Story → route to **implement**
-  - Document-Only Story → route to **document_audit**
-- `stage: implement_passed` → route to **commit_gate**
-- `stage: document_audit_passed` → route to **commit_gate** (Document Mode)
+主控路由只允许在六个心智模型中移动：
 
-**Usage**:
-```
-@bmad-master Epic: E001 Story: S001
-```
+- `requirement_confirmation` → 用户确认、hash、traceRows、open questions。
+- `architecture_confirmation` → 架构确认 artifact、hash、consumer impact、本治理影响面。
+- `implementation_readiness` → task binding、readiness gate、allowed write scope、required commands。
+- `execution_closure` → executionIterations、TaskReport、artifactRefs、requirementClosures。
+- `audit_review` → auditIterations、contract checks、rerun loops、RCA。
+- `delivery_closeout` → currentAttemptId、closeout gate、completion evidence packet。
 
-### Stage Routing 上下文传递规范
+EntryFlow routing:
 
-bmad-master 在通过 Agent 工具启动 Layer 4 子代理时，必须在 prompt 中包含以下上下文：
+- `story` maps BMAD epic/story lineage into the six-model chain.
+- `bugfix` maps symptom / reproduction / fix boundary into the six-model chain.
+- `standalone_tasks` maps task packet provenance into the six-model chain.
 
-**必传参数**（子代理通过 prompt 接收）：
-- `epic`: 当前 Epic 编号（如 "E001"）
-- `story`: 当前 Story 编号（如 "S001"）
-- `storyStatePath`: Story 状态文件路径（`.claude/state/stories/{epic}-{story}-progress.yaml`）
+No entryFlow may bypass confirmation, architecture confirmation, task binding, evidence, audit, or closeout.
 
-**子代理职责**（Mandatory Startup 已定义）：
-- 子代理从 `storyStatePath` 读取完整状态（包含 epicSlug、storySlug、artifacts 路径等）
-- 子代理验证当前 stage 是否满足 Prerequisites
-- 子代理无需从 prompt 接收 slug 等衍生参数，从状态文件自行解析
+### 3. Dispatch Context Contract
 
-**启动子代理的 prompt 模板**：
+bmad-master 在启动子代理、worker、auditor 或 no-hook adapter 时，prompt / packet 必须包含：
 
-```
-你现在作为 {agent-name} 执行 {stage} 阶段。
+- `recordId`
+- `requirementSetId`
+- `runId`
+- `currentMentalModel`
+- `allowedWriteScope`
+- `expectedDelta`
+- `successCriteria`
+- `stopConditions`
+- `traceRows`
+- `evidenceRefs`
+- `taskRefs`
+- `artifactRefWritePolicy`
+- `controlledIngestOnly: true`
 
-当前上下文：
-- epic: {epic}
-- story: {story}
-- storyStatePath: .claude/state/stories/{epic}-{story}-progress.yaml
+子代理职责：
 
-请按照你的 Mandatory Startup 步骤执行：
-1. 读取上述 storyStatePath 获取完整状态
-2. 验证 stage 前置条件
-3. 读取前置产物（路径从状态文件 artifacts 字段获取）
-4. 执行阶段工作流
-```
+- 只执行 bounded packet。
+- 不读取旧全局状态作为控制依据。
+- 不决定下一条全局分支。
+- 结果必须以 TaskReport / subagent evidence envelope / controlled ingest event 返回。
 
-**禁止**：
-- 不得在 prompt 中传入硬编码的文件路径（应由子代理从状态文件解析）
-- 不得省略 epic/story 参数（子代理需要它们定位状态文件）
-
-### 3. Lock Management
-
-**Concurrency Control**:
-```yaml
-# .claude/state/locks/E001-S001.lock
-locked: true
-owner: "session-uuid"
-epic: "E001"
-story: "S001"
-acquired_at: "2026-03-13T12:00:00Z"
-expires_at: "2026-03-13T13:00:00Z"  # Auto-expire 1 hour
-type: "write"
-```
-
-**Lock Rules**:
-1. Must acquire lock before modifying story state
-2. If lock is held by another owner → wait or suggest different story
-3. Locks auto-expire after 1 hour (prevents deadlocks)
-4. Same owner can reacquire lock
-
-### 4. Audit Verification
-
-使用 `scripts/parse-bmad-audit-result.ts` 解析审计结果:
-
-- 仅当 `status === 'PASS'` 时允许阶段推进
-- 仅当 `audit_status === 'pass'` 且 `git_control.commit_allowed === true` 时允许提交
-
-### 5. Commit Gate (Per Story)
-
-**禁止在未通过审计时放行 commit**
-
-所有执行 Agent 只能发 `commit_request`:
+### 4. Lease And Concurrency
 
 ```yaml
-request_type: commit_request
-epic: "E001"
-story: "S001"
-stage: implement | document_audit
-audit_status: pending | pass | fail
+lease:
+  recordId: "<recordId>"
+  runId: "run-001"
+  owner: "session-uuid"
+  scope: "execution_closure"
+  acquiredAt: "2026-03-13T12:00:00Z"
+  expiresAt: "2026-03-13T13:00:00Z"
+  type: "write"
 ```
 
-bmad-master 响应:
-- `audit_status=fail` → **DENY**
-- `audit_status=pass` + `commit_allowed=true` → **ALLOW**
-- 其他 → **WAIT**
+Lease rules:
+
+1. Must acquire a requirement-scoped lease before writing controlled state.
+2. Read-only inspect does not acquire a write lease.
+3. If lease is held by another owner, block or propose a read-only view.
+4. Stale lease handling must be recorded through controlled ingest.
+
+### 5. Audit And Closeout Verification
+
+- Audit results must be parsed into `auditIterations[]`, `gateChecks[]`, `contractChecks[]`, `rerunLoops[]`, and evidence ArtifactRefs.
+- `PASS` prose, dashboard green, score green, or report existence cannot close a Requirement.
+- Commit / delivery release is allowed only when the current closeout attempt has a controlled decision from the Delivery Closeout Gate.
 
 ### 6. State Updates
 
-**Update Story State**:
+Allowed writes:
+
 ```yaml
-# Write to: .claude/state/stories/{epic}-{story}-progress.yaml
-version: "2.0"
-epic: "{epic}"
-story: "{story}"
-stage: "{new_stage}"
-audit_status: pass
-artifacts:
-  spec: "_bmad-output/epic-{epic}-story-{story}/spec.md"
-  # ...
+controlledWrites:
+  - "_bmad-output/runtime/requirement-records/{recordId}/requirement-record.json"
+  - "_bmad-output/runtime/requirement-records/{recordId}/execution/**"
+  - "_bmad-output/runtime/requirement-records/{recordId}/audit/**"
+  - "_bmad-output/runtime/requirement-records/{recordId}/closeout/**"
+  - "_bmad-output/runtime/requirement-records/artifact-index.jsonl"
 ```
 
-**Update Global Context**:
+Forbidden as control writes:
+
 ```yaml
-# Write to: .claude/state/bmad-progress.yaml
-current_context:
-  epic: "{epic}"
-  story: "{story}"
+forbiddenControlWrites:
+  - ".claude/state/**"
+  - "_bmad-output/runtime/context/**"
+  - "handoff.next_action"
+  - "handoff.ready"
+  - "handoff.mainAgentNextAction"
+  - "handoff.mainAgentReady"
 ```
 
 ## Auditor Invocation
 
-bmad-master 负责在适当时机执行阶段路由与审计门控：
+bmad-master 负责在适当时机执行六模型路由与审计门控：
 
-### Story-Level Routing
-- `stage: new` → call `bmad-story-create`
-- `stage: story_created` → call `bmad-story-audit`
-- `stage: story_audit_passed` → call `bmad-layer4-speckit-specify`
+- Requirement confirmation done → architecture confirmation check.
+- Architecture confirmation active → implementation readiness gate.
+- Readiness allows execution → dispatch bounded implementation packet.
+- Execution evidence arrives → audit review.
+- Audit review passes → delivery closeout attempt.
+- Closeout passes current attempt → release / commit allowed.
 
-### Layer 4 Stage Auditors
-- spec 阶段完成后 → `auditor-spec`（fallback: OMC reviewer → code-review → main agent）
-- plan 阶段完成后 → `auditor-plan`（fallback: OMC reviewer → code-review → main agent）
-- tasks 阶段完成后 → `auditor-tasks`（fallback: OMC reviewer → code-review → main agent）
-- implement 阶段完成后 → `auditor-implement`（fallback: OMC reviewer → code-review → main agent）
-- **document 阶段完成后** → `auditor-document`（文档验证型 Story，fallback: OMC reviewer → main agent）
+Auditor fallback through reviewer / code-review / main agent is allowed only as an evidence production path. It cannot bypass controlled ingest or decide final closeout.
 
-### Story Type Detection (Story Type Routing)
+## BMAD Lineage Projection
 
-bmad-master 必须在 `tasks_passed` 阶段检测 Story 类型，决定路由到 Code Mode 还是 Document Mode：
+BMAD Epic / Story still matters for user comprehension and drill-down:
 
 ```yaml
-detect_story_type:
-  read: "_bmad-output/implementation-artifacts/epic-{epic}-{epicSlug}/story-{story}-{storySlug}/tasks.md"
-  detection_criteria:
-    code_implementation_story:
-      indicators:
-        - tasks.md 包含代码实现任务（如"创建文件"、"实现函数"、"编写测试"）
-        - 存在 spec.md 且定义接口/实现细节
-        - tasks 涉及生产代码文件修改
-      route_to: implement
-      audit_agent: auditor-implement
-
-    document_only_story:
-      indicators:
-        - tasks.md 任务为纯文档/验证工作（如"验证格式"、"检查配置"、"更新文档"）
-        - 无生产代码文件修改任务
-        - Story 为测试/验证型（如 Story 999-1）
-      route_to: document_audit
-      audit_agent: auditor-document
+bmadWorkflowProjection:
+  recordId: "<recordId>"
+  preservedBmadRecommendedAction: "Sprint Planning"
+  canExecuteBmadRecommendation: false
+  blockingReasonRefs:
+    - "missing_requirement_confirmation"
+  runtimeResumeProjection:
+    runtimeNextAction: "requirement_confirmation"
+  effectiveNextAction:
+    primaryAction: "requirement_confirmation"
+    thenAction: "Sprint Planning"
 ```
 
-### Stage Routing with Story Type
+Rules:
 
-```yaml
-# Code Implementation Story Flow
-code_flow:
-  - stage: tasks_passed
-    route_to: implement
-  - stage: implement_passed
-    route_to: commit_gate
-    audit_verification: auditor-implement PASS
+- BMAD recommendation is preserved and explained.
+- Main-agent control can block or sequence the recommendation, but cannot overwrite it.
+- Projection hash drift invalidates the projection and requires regeneration.
+- Projection is read model only; control decisions still come from RequirementRecord and gate records.
 
-# Document-Only Story Flow
-document_flow:
-  - stage: tasks_passed
-    route_to: document_audit
-  - stage: document_audit_passed
-    route_to: commit_gate
-    audit_verification: auditor-document PASS
-```
-
-### Commit Gate
-- 收到 `commit_request` → verify `auditor-implement` PASS (Code Mode) or `auditor-document` PASS (Document Mode)
-
-## Epic-Level Routing (审计粒度: epic 模式)
-
-当 `audit_granularity.mode: epic` 时，bmad-master 启用 Epic 级路由：
-
-### Epic 状态机
-
-```yaml
-# .claude/state/epics/{epic}-progress.yaml
-epic_status:
-  - created              → Epic 创建后
-  - stories_in_progress  → Story 执行中
-  - stories_completed    → 所有 Story 完成
-  - audit_pending        → 等待 Epic 审计
-  - completed            → Epic 审计通过
-```
-
-### Epic 路由表
-
-```yaml
-epic_routing:
-  - `epic_status: created` →
-      optional: route to **epic_create_audit** (`bmad-epic-audit`)
-  - `epic_status: stories_in_progress` →
-      wait for stories completion
-      route stories to respective agents (跳过审计)
-  - `epic_status: stories_completed` →
-      route to **epic_completion_audit** (`bmad-epic-audit`)
-  - `epic_status: audit_pending` →
-      wait for epic audit
-  - `epic_status: completed` →
-      proceed to Layer 5 (收尾层)
-```
-
-### Epic 模式下的 Story 路由
-
-当 Epic 配置为 `audit_granularity: epic` 时：
-
-```yaml
-story_routing_in_epic_mode:
-  - `stage: story_audit_passed` → route to **specify**
-  - `stage: specify_passed` → route to **plan** (跳过审计)
-  - `stage: plan_passed` → route to **gaps** (跳过审计)
-  - `stage: gaps_passed` → route to **tasks** (跳过审计)
-  - `stage: tasks_passed` → route to **implement** (跳过审计)
-  - `stage: implement_passed` → mark story complete, check epic completion
-```
-
-**注意**: 在 epic 模式下，Story 的 Layer 4 阶段（specify/plan/gaps/tasks/implement）生成文档但不执行审计。
-
-### Epic 完成检测
-
-```yaml
-check_epic_completion:
-  for each epic in active_epics:
-    stories = load_stories(epic)
-    if all(story.status == "implement_passed" for story in stories):
-      update_epic_state(epic, "stories_completed")
-      trigger_epic_completion_audit(epic)
-```
-
-### Epic 命令示例
+### BMAD Projection 示例
 
 ```
-@bmad-master 创建 Epic E003
-名称: 支付模块
-包含 Stories: S001, S002, S003
-审计粒度: epic
-```
-
-```
-@bmad-master 查看 Epic E001 状态
+$bmad-speckit inspect recordId=<recordId>
 输出:
-  Epic: E001 (test-epic)
-  状态: stories_in_progress
-  进度: 2/3 Stories 完成
-  Stories:
-    - S001: implement_passed ✓
-    - S002: implement_passed ✓
-    - S003: tasks_passed (进行中)
+  Requirement: <recordId>
+  EntryFlow: story
+  BMAD 推荐下一步: Sprint Planning
+  控制层判断: blocked，缺少 requirement confirmation
+  主控运行态: runtimeNextAction=requirement_confirmation
+  最终建议: 先完成 requirement confirmation，再运行 Sprint Planning
 ```
 
 ```
-@bmad-master 检查 Epic E001 完成状态
+$bmad-speckit list requirements --filter epic=<epicId>
 输出:
-  Epic: E001
-  状态: stories_completed → 触发 Epic 完成审计
-  审计 Agent: bmad-epic-audit
-  输入: 所有 Story 产物汇总
+  Active Requirements:
+    - <recordId> entryFlow=story currentMentalModel=requirement_confirmation status=blocked
+    - <otherRecordId> entryFlow=story currentMentalModel=execution_closure status=running
+    - <bugfixRecordId> entryFlow=bugfix currentMentalModel=audit_review status=blocked
+```
+
+```
+$bmad-speckit closeout recordId=<recordId>
+输出:
+  closeoutAttemptId: attempt-002
+  decision: blocked
+  reasonRefs:
+    - missing_current_attempt_delivery_evidence
+  nextAction: run required delivery evidence commands and ingest results
 ```
 
 
 当 `allowed_action: deny` 时，必须给出明确原因:
 
-- "Story {epic}-{story} 当前 stage 审计未通过"
-- "Story {epic}-{story} 未检测到审计报告"
-- "Story {epic}-{story} commit_request 未经审计"
-- "Story {epic}-{story} 被其他 session 锁定"
-- "Stage 尚未收敛 (consecutive_no_gap_rounds < 3)"
+- "Requirement {recordId} 当前心智模型 gate 未通过"
+- "Requirement {recordId} 缺少当前 hash / current attempt / confirmation evidence"
+- "Requirement {recordId} 的子代理结果未通过 controlled ingest"
+- "Requirement {recordId} 被其他 run lease 锁定"
+- "Rerun loop 尚未收敛或 closeout 当前 attempt 缺证据"
 
 ## Output Per Turn
 
 Always state:
-1. 当前 story: `{epic}-{story}`
-2. 当前 phase/stage
-3. `allowed_action`: allow | deny | iterate | audit_required
+1. 当前 Requirement: `{recordId}`
+2. 当前心智模型: requirement_confirmation | architecture_confirmation | implementation_readiness | execution_closure | audit_review | delivery_closeout
+3. `allowed_action`: allow | deny | iterate | audit_required | closeout_required
 4. `denial_reason` (if deny)
 5. `follow_up`: next agent/action
-6. `state_patch`: 应写回 story state 的变更
-7. `auto_proceed`: true (当 mainAgentNextAction 存在且 mainAgentReady=true 时)
+6. `state_patch`: 只允许通过 controlled ingest 写入的变更摘要
+7. `auto_proceed`: true (当 RequirementRecord / currentMentalModel / currentAttempt 均允许继续时)
 8. `reason`: auto_proceed 触发原因
 
 ## Example Usage
 
-### Start New Story
+### Inspect Requirement
 ```
-@bmad-master 启动新 Story
-Epic: E001
-Story: S001
-Slug: email-validator
-需求：实现邮箱格式验证函数
+$bmad-speckit inspect recordId=<recordId>
 ```
 
-### Continue Existing Story
+### Continue Requirement
 ```
-@bmad-master 继续 E001-S001
-```
-
-### Switch Story
-```
-@bmad-master 切换到 E001-S002
+$bmad-speckit continue recordId=<recordId>
 ```
 
-### List All Stories
+### Switch Requirement
 ```
-@bmad-master list stories
+$bmad-speckit switch recordId=<otherRecordId>
 ```
 
-## Multi-Story Workflow Example
+### List Active Requirements
+```
+$bmad-speckit list requirements
+```
+
+## Requirement Workflow Example
 
 ```
-User: @bmad-master 启动 E001-S001 邮箱验证器
-BMAD: 创建 story E001-S001，stage: specify，路由到 specify agent
+User: $bmad-speckit inspect recordId=<recordId>
+BMAD: 读取 RequirementRecord，显示 BMAD 推荐、控制层判断、主控运行态和最终建议
 ...
-User: @bmad-master 启动 E001-S002 手机号验证器
-BMAD: 创建 story E001-S002，stage: specify，同时保持 E001-S001 状态
+User: $bmad-speckit continue recordId=<recordId>
+BMAD: 校验 confirmation / architecture / readiness hash，生成 bounded dispatch packet
 ...
-User: @bmad-master 继续 E001-S001
-BMAD: 加载 E001-S001 状态，stage: plan_passed，路由到 tasks
+User: $bmad-speckit closeout recordId=<recordId>
+BMAD: 创建 current closeout attempt，聚合当前 attempt 证据并给出 closeout decision
 ...
-User: @bmad-master list
+User: $bmad-speckit list requirements
 BMAD:
-  Active Stories:
-  - E001-S001: tasks 阶段 (当前上下文)
-  - E001-S002: specify 阶段
-  - E002-S001: implement 阶段
+  Active Requirements:
+  - <recordId>: execution_closure / running
+  - <otherRecordId>: requirement_confirmation / blocked
+  - <bugfixRecordId>: audit_review / rerun_required
 ```

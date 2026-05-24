@@ -1,0 +1,498 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import Ajv2020 from 'ajv/dist/2020';
+import addFormats from 'ajv-formats';
+import { describe, expect, it } from 'vitest';
+import { resolveArchitectureConfirmationHashRecipe } from '../../scripts/architecture-confirmation-hash-recipe';
+
+const repoRoot = process.cwd();
+const schemaPath = path.join(repoRoot, '_bmad', '_schemas', 'requirement-record.schema.json');
+
+const globalContractTraceabilityPolicy = {
+  schemaVersion: 'global-contract-traceability-policy/v1',
+  appliesToEntryFlows: ['bugfix', 'standalone_tasks', 'story'],
+  contractAuthoringRequired: true,
+  taskBindingRequired: true,
+  taskBindingDimensions: ['MUST', 'NEG', 'OUT', 'EVD', 'TRACE'],
+  missingBindingBehavior: 'fail_closed',
+  sourceDocumentHashRequired: true,
+  implementationConfirmationHashRequired: true,
+  reconfirmOnTraceSemanticChange: true,
+  allowUnboundImplementationTask: false,
+  taskRegistryField: 'implementationTasks',
+  traceTaskRefsMustResolveTo: 'implementationTasks[].id',
+  readinessFailureWhenUnresolved: true,
+  closeoutFailureWhenUnresolved: true,
+};
+
+const traceStatusPolicy = {
+  schemaVersion: 'trace-status-policy/v1',
+  allowedStatuses: [
+    'PENDING',
+    'PASS',
+    'FAIL',
+    'BLOCKED',
+    'LINKED_DOWNSTREAM',
+    'USER_APPROVED_DEFERRED',
+    'USER_APPROVED_OUT_OF_SCOPE',
+  ],
+  terminalFullCloseoutStatuses: ['PASS', 'FAIL', 'BLOCKED'],
+  linkedDownstreamRequiredFields: [
+    'downstreamRecordId',
+    'downstreamStoryRef',
+    'downstreamSourceDocumentPath',
+    'downstreamSourceDocumentHash',
+    'downstreamScopeSummary',
+    'downstreamRequirementIds',
+    'downstreamAuditEvidenceRefs',
+  ],
+  userApprovedDeferredRequiredFields: [
+    'userApprovalRef',
+    'approvedAt',
+    'approvedBy',
+    'impactSummary',
+    'followUpRecordId',
+    'followUpDueCondition',
+  ],
+  userApprovedOutOfScopeRequiredFields: [
+    'userApprovalRef',
+    'approvedAt',
+    'approvedBy',
+    'impactSummary',
+    'confirmationDeltaRef',
+  ],
+  bareDeferredForbidden: true,
+  bareOutOfScopeForbidden: true,
+  fullCloseoutForUserScopedStatusesForbidden: true,
+};
+
+function loadValidator() {
+  const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8')) as object;
+  const ajv = new Ajv2020({ allErrors: true, strict: false });
+  addFormats(ajv);
+  return ajv.compile(schema);
+}
+
+function validRecord() {
+  const recipe = resolveArchitectureConfirmationHashRecipe();
+  return {
+    recordId: 'REQ-SCHEMA-001',
+    requirementSetId: 'REQ-SCHEMA-001',
+    sourcePath: 'docs/design/example.md',
+    status: 'user_confirmed',
+    entryFlow: 'story',
+    entryFlowClass: 'full_story_entry',
+    workflowAdapter: 'bmad',
+    contractAuthoringRequired: true,
+    globalContractTraceabilityPolicy,
+    traceStatusPolicy,
+    sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+    implementationConfirmationHash:
+      'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+    confirmationPageHash: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+    confirmationHistory: [
+      {
+        eventType: 'confirmation_recorded',
+        recordId: 'REQ-SCHEMA-001',
+        requirementSetId: 'REQ-SCHEMA-001',
+        confirmedAt: '2026-05-19T00:00:00.000Z',
+        confirmedBy: 'user',
+        sourcePath: 'docs/design/example.md',
+        sourceDocumentHash:
+          'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        sourceDocumentHashScope: 'semantic_source_excluding_confirmation_bookkeeping',
+        implementationConfirmationHash:
+          'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+        implementationConfirmationHashScope:
+          'semantic_implementation_confirmation_excluding_bookkeeping',
+        confirmationPageHash:
+          'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+        confirmationText:
+          '确认以上范围进入下一阶段 sourceDocumentHash=sha256:1111111111111111111111111111111111111111111111111111111111111111 implementationConfirmationHash=sha256:2222222222222222222222222222222222222222222222222222222222222222 confirmationPageHash=sha256:3333333333333333333333333333333333333333333333333333333333333333',
+        renderReportPath: '_bmad-output/runtime/requirement-records/REQ-SCHEMA-001/confirmation/confirmation-render-report.json',
+        htmlPath: '_bmad-output/runtime/requirement-records/REQ-SCHEMA-001/confirmation/confirmation.html',
+        entryFlow: 'story',
+        entryFlowClass: 'full_story_entry',
+        workflowAdapter: 'bmad',
+        contractAuthoringRequired: true,
+        globalContractTraceabilityPolicy,
+        traceStatusPolicy,
+      },
+    ],
+    architectureConfirmationState: {
+      status: 'active',
+      currentArchitectureConfirmationRunId: 'arch-001',
+      currentArchitectureConfirmationHash:
+        'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+      currentArchitectureConfirmationPath:
+        '_bmad-output/runtime/requirement-records/REQ-SCHEMA-001/architecture/architecture-confirmation-arch-001.json',
+      resolvedRecipeHash: recipe.resolvedRecipeHash,
+      staleInputs: {
+        sourceDocumentHash:
+          'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        implementationConfirmationHash:
+          'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+        currentArtifactHash:
+          'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+        resolvedRecipeHash: recipe.resolvedRecipeHash,
+      },
+      lastEventType: 'architecture_confirmation_recorded',
+      updatedAt: '2026-05-19T00:00:00.000Z',
+    },
+    architectureConfirmations: [
+      {
+        eventType: 'architecture_confirmation_recorded',
+        recordId: 'REQ-SCHEMA-001',
+        requirementSetId: 'REQ-SCHEMA-001',
+        runId: 'arch-001',
+        decision: 'full_architecture_confirmed',
+        sourceDocumentHash:
+          'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        implementationConfirmationHash:
+          'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+        resolvedRecipeHash: recipe.resolvedRecipeHash,
+        architectureConfirmationHashRecipe: recipe,
+        architectureConfirmationArtifactHash:
+          'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+        architectureConfirmationPath:
+          '_bmad-output/runtime/requirement-records/REQ-SCHEMA-001/architecture/architecture-confirmation-arch-001.json',
+        confirmationText: 'confirmed architecture hashes',
+        confirmedAt: '2026-05-19T00:00:00.000Z',
+        confirmedBy: 'user',
+      },
+    ],
+    architectureConfirmationStateChecks: [
+      {
+        eventType: 'architecture_confirmation_state_checked',
+        recordId: 'REQ-SCHEMA-001',
+        requirementSetId: 'REQ-SCHEMA-001',
+        checkId: 'architecture-state:2026-05-19T00:00:00.500Z',
+        decision: 'pass',
+        resolvedRecipeHash: recipe.resolvedRecipeHash,
+        stateTransition: {
+          fromStatus: 'active',
+          toStatus: 'active',
+          reasonCode: 'hash_match',
+          previousHashes: {
+            sourceDocumentHash:
+              'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+            implementationConfirmationHash:
+              'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+            currentArtifactHash:
+              'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+            resolvedRecipeHash: recipe.resolvedRecipeHash,
+          },
+          currentHashes: {
+            sourceDocumentHash:
+              'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+            implementationConfirmationHash:
+              'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+            currentArtifactHash:
+              'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+            resolvedRecipeHash: recipe.resolvedRecipeHash,
+          },
+          mismatchFields: [],
+          recipeVersion: recipe.recipeVersion,
+        },
+        checkedAt: '2026-05-19T00:00:00.500Z',
+        checkedBy: 'codex',
+      },
+    ],
+    gateChecks: [
+      {
+        eventType: 'gate_check_recorded',
+        checkId: 'gate-001',
+        gate: 'Implementation Readiness Gate',
+        decision: 'pass',
+        recordedAt: '2026-05-19T00:00:00.000Z',
+        recordedBy: 'codex',
+      },
+    ],
+    contractChecks: [
+      {
+        eventType: 'contract_check_recorded',
+        checkId: 'contract-001',
+        contract: 'requirement_confirmation',
+        decision: 'pass',
+        recordedAt: '2026-05-19T00:00:00.000Z',
+        recordedBy: 'codex',
+      },
+    ],
+    artifactIndex: [
+      {
+        eventType: 'artifact_indexed',
+        artifactType: 'confirmation_view',
+        sourceOfTruthRole: 'projection',
+        recordId: 'REQ-SCHEMA-001',
+        requirementSetId: 'REQ-SCHEMA-001',
+        path: '_bmad-output/runtime/requirement-records/REQ-SCHEMA-001/confirmation/confirmation.html',
+        contentHash: 'sha256:5555555555555555555555555555555555555555555555555555555555555555',
+        producer: 'render-requirements-confirmation-html',
+        purpose: 'render confirmed requirement scope for human review',
+        relatedRequirementIds: ['MUST-001'],
+        status: 'active',
+        inputVersion: 'source-v1',
+        outputVersion: 'confirmation-v1',
+      },
+    ],
+    extensionRefs: [
+      {
+        eventType: 'artifact_indexed',
+        artifactType: 'observability_extension',
+        sourceOfTruthRole: 'evidence',
+        recordId: 'REQ-SCHEMA-001',
+        requirementSetId: 'REQ-SCHEMA-001',
+        path: '_bmad-output/runtime/requirement-records/REQ-SCHEMA-001/extensions/observability-extension.json',
+        contentHash: 'sha256:6666666666666666666666666666666666666666666666666666666666666666',
+        producer: 'main-agent-production-loop-ready-check',
+        purpose: 'capture production observability plan and subsystem readiness proof',
+        relatedRequirementIds: ['MUST-011', 'MUST-017', 'EVD-010'],
+        status: 'active',
+        inputVersion: 'trace-007',
+        outputVersion: 'observability-extension-v1',
+      },
+    ],
+    hookReconciliation: {
+      schemaVersion: 'hook-reconciliation/v1',
+      hostKind: 'codex',
+      hostMode: 'hooks_enabled',
+      hookTrust: 'degraded',
+      fallbackMode: 'bounded_replay',
+      closeoutReconciled: true,
+      sequenceLedger: {
+        status: 'reconciled',
+        expectedNextSequence: 4,
+        observedSequences: [1, 2, 3],
+      },
+      missingReceipts: [],
+      hashMismatches: [],
+      noHookFallbackRefs: [{ sourceType: 'execution_iteration', id: 'exec-fallback-001' }],
+    },
+    failureRecords: [
+      {
+        eventType: 'failure_recorded',
+        failureId: 'failure-001',
+        type: 'delivery_closeout_blocked',
+        status: 'open',
+        closeoutAttemptId: 'closeout-001',
+        blockingReasons: ['pending_rerun_exists'],
+        sourceRefs: [{ sourceType: 'closeout_attempt', id: 'closeout-001' }],
+        recordedAt: '2026-05-19T00:00:00.000Z',
+        recordedBy: 'codex',
+      },
+    ],
+    rcaRecords: [
+      {
+        eventType: 'rca_created',
+        rcaId: 'rca-001',
+        type: 'closeout_blocker',
+        status: 'open',
+        sourceRefs: [{ sourceType: 'failure_record', id: 'failure-001' }],
+      },
+    ],
+    rerunLoops: [
+      {
+        rerunLoopId: 'rerun-001',
+        status: 'open',
+        sourceRefs: [{ sourceType: 'gate_check', id: 'gate-001' }],
+      },
+    ],
+    updatedAt: '2026-05-19T00:00:00.000Z',
+  };
+}
+
+describe('requirement-record.schema.json', () => {
+  it('accepts a confirmed requirement record with confirmation history and decision-based checks', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+
+    expect(validate(record), JSON.stringify(validate.errors, null, 2)).toBe(true);
+  });
+
+  it('accepts missing architecture confirmation state before first architecture confirmation is recorded', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+    record.architectureConfirmationState = {
+      status: 'missing',
+      resolvedRecipeHash: resolveArchitectureConfirmationHashRecipe().resolvedRecipeHash,
+      lastEventType: 'architecture_confirmation_state_checked',
+      updatedAt: '2026-05-19T00:00:00.000Z',
+    } as typeof record.architectureConfirmationState;
+    record.architectureConfirmationStateChecks[0] = {
+      ...record.architectureConfirmationStateChecks[0],
+      decision: 'blocked',
+      stateTransition: {
+        ...record.architectureConfirmationStateChecks[0].stateTransition,
+        fromStatus: 'missing',
+        toStatus: 'missing',
+        reasonCode: 'current_confirmation_missing',
+        previousHashes:
+          {} as typeof record.architectureConfirmationStateChecks[0]['stateTransition']['previousHashes'],
+        currentHashes: {
+          sourceDocumentHash: record.sourceDocumentHash,
+          implementationConfirmationHash: record.implementationConfirmationHash,
+          resolvedRecipeHash: resolveArchitectureConfirmationHashRecipe().resolvedRecipeHash,
+        } as typeof record.architectureConfirmationStateChecks[0]['stateTransition']['currentHashes'],
+        mismatchFields: [],
+      },
+    };
+
+    expect(validate(record), JSON.stringify(validate.errors, null, 2)).toBe(true);
+  });
+
+  it('rejects result as a canonical control field on gate and contract checks', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+    record.gateChecks[0] = { ...record.gateChecks[0], result: 'pass' } as never;
+    record.contractChecks[0] = { ...record.contractChecks[0], result: 'pass' } as never;
+
+    expect(validate(record)).toBe(false);
+    expect(JSON.stringify(validate.errors)).toContain('result');
+  });
+
+  it('rejects gateChecks result even when decision is present', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+    record.gateChecks[0] = { ...record.gateChecks[0], decision: 'pass', result: 'pass' } as never;
+
+    expect(validate(record)).toBe(false);
+    expect(JSON.stringify(validate.errors)).toContain('result');
+  });
+
+  it('rejects contractChecks result even when decision is present', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+    record.contractChecks[0] = { ...record.contractChecks[0], decision: 'pass', result: 'pass' } as never;
+
+    expect(validate(record)).toBe(false);
+    expect(JSON.stringify(validate.errors)).toContain('result');
+  });
+
+  it('rejects dashboard, score, and report fields as requirement-record control sources', () => {
+    const validate = loadValidator();
+    const record = {
+      ...validRecord(),
+      dashboard: { status: 'green' },
+      score: { written: true },
+      report: { decision: 'pass' },
+    };
+
+    expect(validate(record)).toBe(false);
+    expect(JSON.stringify(validate.errors)).toContain('not');
+  });
+
+  it('requires explicit confirmation history instead of inferred confirmation state', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+    record.confirmationHistory = [];
+
+    expect(validate(record)).toBe(false);
+    expect(JSON.stringify(validate.errors)).toContain('minItems');
+  });
+
+  it('rejects forbidden top-level entry flows and missing contract authoring requirement', () => {
+    const validate = loadValidator();
+    const record = {
+      ...validRecord(),
+      entryFlow: 'speckit_tasks',
+      contractAuthoringRequired: false,
+    };
+
+    expect(validate(record)).toBe(false);
+    expect(JSON.stringify(validate.errors)).toContain('entryFlow');
+    expect(JSON.stringify(validate.errors)).toContain('contractAuthoringRequired');
+  });
+
+  it('rejects traceability policies that allow unbound implementation tasks', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+    record.globalContractTraceabilityPolicy = {
+      ...globalContractTraceabilityPolicy,
+      allowUnboundImplementationTask: true,
+    } as never;
+
+    expect(validate(record)).toBe(false);
+    expect(JSON.stringify(validate.errors)).toContain('allowUnboundImplementationTask');
+  });
+
+  it('rejects trace status policies that allow user-scoped statuses to prove full closeout', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+    record.traceStatusPolicy = {
+      ...traceStatusPolicy,
+      terminalFullCloseoutStatuses: ['PASS', 'FAIL', 'BLOCKED', 'USER_APPROVED_DEFERRED'],
+    } as never;
+
+    expect(validate(record)).toBe(false);
+    expect(JSON.stringify(validate.errors)).toContain('terminalFullCloseoutStatuses');
+  });
+
+  it('rejects artifact refs that cannot be used for pass-grade evidence', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+    delete (record.artifactIndex[0] as Record<string, unknown>).purpose;
+    (record.artifactIndex[0] as Record<string, unknown>).relatedRequirementIds = [];
+
+    expect(validate(record)).toBe(false);
+    expect(JSON.stringify(validate.errors)).toContain('relatedRequirementIds');
+  });
+
+  it('accepts extension refs as pass-grade evidence artifact pointers', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+
+    expect(validate(record), JSON.stringify(validate.errors, null, 2)).toBe(true);
+    expect(record.extensionRefs[0]).toMatchObject({
+      artifactType: 'observability_extension',
+      sourceOfTruthRole: 'evidence',
+    });
+  });
+
+  it('rejects result and decision on failure, RCA, and rerun lifecycle records', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+    record.failureRecords[0] = { ...record.failureRecords[0], result: 'fail' } as never;
+    record.rcaRecords[0] = { ...record.rcaRecords[0], decision: 'blocked' } as never;
+    record.rerunLoops[0] = { ...record.rerunLoops[0], result: 'failed' } as never;
+
+    expect(validate(record)).toBe(false);
+    expect(JSON.stringify(validate.errors)).toContain('result');
+    expect(JSON.stringify(validate.errors)).toContain('decision');
+  });
+
+  it('rejects rerun loops whose sourceRefs are not controlled authority records', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+    record.rerunLoops[0] = {
+      ...record.rerunLoops[0],
+      sourceRefs: [{ sourceType: 'artifact_ref', id: 'score.json' }],
+    } as never;
+
+    expect(validate(record)).toBe(false);
+    expect(JSON.stringify(validate.errors)).toContain('sourceType');
+  });
+
+  it('rejects hook reconciliation that claims closeout without fallback evidence', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+    record.hookReconciliation = {
+      ...record.hookReconciliation,
+      noHookFallbackRefs: [],
+    } as never;
+
+    expect(validate(record)).toBe(false);
+    expect(JSON.stringify(validate.errors)).toContain('noHookFallbackRefs');
+  });
+
+  it('rejects hook reconciliation result as a legacy control field', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+    record.hookReconciliation = {
+      ...record.hookReconciliation,
+      result: 'ok',
+    } as never;
+
+    expect(validate(record)).toBe(false);
+    expect(JSON.stringify(validate.errors)).toContain('result');
+  });
+});

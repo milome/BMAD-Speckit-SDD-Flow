@@ -117,13 +117,14 @@ function loadLayerDefinitions(projectRoot: string): LayerDefinition[] {
     const stages = (rawLayers[id]?.stages ?? []) as StageName[];
     const executableStages = Array.from(
       new Set(
-        stages.map((stage) =>
-          stage === 'story'
+        stages.map((stage) => {
+          const rawStage = stage as string;
+          return rawStage === 'story'
             ? ('story_create' as StageName)
-            : stage === 'post_impl'
-              ? 'post_audit'
-              : stage
-        )
+            : rawStage === 'post_impl'
+              ? ('post_audit' as StageName)
+              : stage;
+        })
       )
     );
     return {
@@ -483,6 +484,7 @@ function runLayerStage(input: {
     projectRoot: stageRoot,
     flow: input.layer.flow,
     stage: input.stage,
+    implementationEntryGate: helpPolicy.implementationEntryGate,
     args: {
       reportEvidence: `bmad-help-five-layer:${input.layer.id}:${input.stage}`,
       validationsRun: 'bmad-help-five-layer-matrix',

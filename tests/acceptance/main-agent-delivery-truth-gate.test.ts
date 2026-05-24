@@ -84,21 +84,10 @@ function passingSprintAudit() {
 }
 
 describe('main-agent delivery truth gate', () => {
-  it('blocks completion language for mock journey and short soak evidence', () => {
+  it('blocks completion language for missing delivery evidence without requiring long-run evidence', () => {
     const report = evaluateDeliveryTruthGate({
       releaseGate: { critical_failures: 0, blocked_sprint_status_update: false },
       hostMatrix: hostMatrix('mock'),
-      soak: {
-        mode: 'wall_clock',
-        run_kind: 'heartbeat_only',
-        target_duration_ms: 30,
-        observed_duration_ms: 30,
-        tick_count: 1,
-        manual_restarts: 0,
-        silent_hangs: 0,
-        false_completions: 0,
-        recovery_success_rate: 1,
-      },
       prTopology: closedPrTopology(),
       sprintAudit: { storyKey: 'S1', status: 'done', authorized: true },
     });
@@ -106,49 +95,13 @@ describe('main-agent delivery truth gate', () => {
     expect(report.completionAllowed).toBe(false);
     expect(report.completionLanguage).toBe('partial_only');
     expect(report.failedEvidence.join('\n')).toContain('multi-host-host-matrix');
-    expect(report.failedEvidence.join('\n')).toContain('wall-clock-8h-soak');
+    expect(report.checks.map((check) => check.id)).not.toContain('long-run-soak-observation');
   });
 
-  it('allows completion language only with real 8h and closed PR evidence', () => {
+  it('allows completion language with real delivery evidence even without long-run soak', () => {
     const report = evaluateDeliveryTruthGate({
       releaseGate: passingReleaseGate(),
       hostMatrix: hostMatrix('real'),
-      soak: {
-        mode: 'wall_clock',
-        run_kind: 'development_run_loop',
-        target_duration_ms: 8 * 60 * 60 * 1000,
-        observed_duration_ms: 8 * 60 * 60 * 1000,
-        tick_count: 1,
-        manual_restarts: 0,
-        silent_hangs: 0,
-        false_completions: 0,
-        recovery_success_rate: 1,
-        developmentRun: {
-          tick_count: 1,
-          completed_ticks: 1,
-          blocked_ticks: 0,
-          runLoopInvocations: [
-            {
-              tick: 1,
-              runId: 'main-agent-run-loop-1',
-              status: 'completed',
-              packetId: 'packet-1',
-              taskReportStatus: 'done',
-              evidence: ['soak-tick-1'],
-              finalNextAction: 'dispatch_review',
-              tickCommand: {
-                command: 'main-agent run-loop',
-                exitCode: 0,
-                stdoutPath: 'stdout.log',
-                stderrPath: 'stderr.log',
-                diffHashBefore: 'before-hash',
-                diffHashAfter: 'after-hash',
-              },
-            },
-          ],
-        },
-        evidence_provenance: evidenceProvenance,
-      },
       prTopology: closedPrTopology(),
       sprintAudit: passingSprintAudit(),
       qualityGate: { critical_failures: 0, evidence_provenance: evidenceProvenance },
@@ -158,31 +111,6 @@ describe('main-agent delivery truth gate', () => {
     expect(report.completionAllowed).toBe(true);
     expect(report.deliveryStatus).toBe('complete');
     expect(report.completionLanguage).toBe('complete_allowed');
-  });
-
-  it('rejects heartbeat-only 8h evidence because real development run-loop proof is required', () => {
-    const report = evaluateDeliveryTruthGate({
-      releaseGate: { critical_failures: 0, blocked_sprint_status_update: false },
-      hostMatrix: hostMatrix('real'),
-      soak: {
-        mode: 'wall_clock',
-        run_kind: 'heartbeat_only',
-        target_duration_ms: 8 * 60 * 60 * 1000,
-        observed_duration_ms: 8 * 60 * 60 * 1000,
-        tick_count: 960,
-        manual_restarts: 0,
-        silent_hangs: 0,
-        false_completions: 0,
-        recovery_success_rate: 1,
-      },
-      prTopology: closedPrTopology(),
-      sprintAudit: passingSprintAudit(),
-      qualityGate: { critical_failures: 0, evidence_provenance: evidenceProvenance },
-      env: {},
-    });
-
-    expect(report.completionAllowed).toBe(false);
-    expect(report.failedEvidence.join('\n')).toContain('run_kind=heartbeat_only');
   });
 
   it('emits a blocked report when required evidence files are missing', async () => {

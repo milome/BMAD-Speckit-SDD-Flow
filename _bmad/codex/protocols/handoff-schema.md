@@ -13,19 +13,13 @@ This protocol defines stage-to-stage handoff data for Codex no-hooks and other B
 - `mainAgentNextAction`: compatibility summary for main-agent consumers.
 - `mainAgentReady`: compatibility readiness flag for main-agent consumers.
 
-## Preferred Main-Agent Surface
+## Main-Agent Control Boundary
 
-Interactive hosts should prefer the repo-native orchestration surface before consuming legacy handoff summaries:
+Consumer users activate governance through `$bmad-speckit`, `/bmad-speckit`, or `bmad-speckit` in the active AI host session. `main-agent-orchestration inspect / dispatch-plan` is an internal control-plane action; npm / npx access is install validation, CI, debug, or no-skill fallback only.
 
-```bash
-npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action inspect
-```
+Handoff fields are not a control source. Before choosing the next global branch, the main Agent must re-read controlled records and derive authority only from `requirement-record.json`, `currentMentalModel`, the six mental model chain, and controlled-ingest gate / audit / closeout / evidence records.
 
-When dispatch is required, use:
-
-```bash
-npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action dispatch-plan
-```
+`orchestrationState`, `pendingPacket`, `continueDecision`, `mainAgentNextAction`, and `mainAgentReady` are projection, compatibility hint, or evidence only. They cannot bypass current hashes, current attempt checks, RequirementRecord authority, or the six mental model chain.
 
 ## Transition Rules
 

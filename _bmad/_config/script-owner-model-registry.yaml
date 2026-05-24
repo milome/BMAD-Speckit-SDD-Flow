@@ -1,0 +1,1186 @@
+version: 1
+registry_id: script-owner-model-registry
+owner: main-agent-orchestration
+status: frozen
+updated_at: "2026-05-16T20:34:15+08:00"
+freeze_scope:
+  - final_paths
+  - retained_scripts
+  - target_new_scripts
+  - owner_models
+  - input_artifacts
+  - output_artifacts
+  - record_event_types
+description: >
+  Canonical registry mapping retained scripts/configs to exactly one primary six-model owner.
+  Scripts may emit evidence for secondary models, but only the primary owner controls the
+  requirement-record event type written by ingest.
+shared_required_fields:
+  - scriptId
+  - path
+  - ownerModel
+  - stage
+  - producer
+  - inputArtifacts
+  - outputArtifacts
+  - recordEventTypes
+  - writesRuntimeState
+  - writesRequirementEvidence
+  - hookParityRequired
+  - completionAuthority
+completion_authority_values:
+  none: May not claim completion.
+  evidence_only: May produce evidence but not advance final state.
+  main_agent_only: May request Main Agent state transition.
+  delivery_closeout_gate_only: Only Delivery Closeout Gate may close delivery.
+field_defaults:
+  writesRuntimeState: false
+  writesRequirementEvidence: false
+  hookParityRequired: false
+scripts:
+  - scriptId: main_agent_orchestration
+    path: scripts/main-agent-orchestration.ts
+    ownerModel: execution_closure
+    secondaryModels:
+      - delivery_confirmation
+    stage: runtime_orchestration
+    producer: main_agent
+    inputArtifacts:
+      - ResolvedRuntimeContext
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/runtime-policy-snapshot.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/recovery-context.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/orchestration/orchestration-state/*.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/prompts/prompt-packets/**
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/orchestration/orchestration-state/*.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/prompts/prompt-packets/**
+    recordEventTypes:
+      - execution_iteration_recorded
+      - recovery_context_updated
+    completionAuthority: main_agent_only
+    writesRuntimeState: true
+    writesRequirementEvidence: true
+    hookParityRequired: true
+  - scriptId: main_agent_unified_ingress
+    path: scripts/main-agent-unified-ingress.ts
+    ownerModel: execution_closure
+    secondaryModels: []
+    stage: ingress
+    producer: main_agent
+    inputArtifacts:
+      - host_event
+      - cli_invocation
+    outputArtifacts:
+      - >-
+        _bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/unified-ingress-<run-id>.json
+    recordEventTypes:
+      - execution_iteration_recorded
+      - recovery_context_updated
+    completionAuthority: evidence_only
+    writesRuntimeState: true
+    writesRequirementEvidence: true
+    hookParityRequired: true
+  - scriptId: orchestration_state
+    path: scripts/orchestration-state.ts
+    ownerModel: execution_closure
+    secondaryModels: []
+    stage: runtime_state
+    producer: main_agent
+    inputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/orchestration/orchestration-state/*.json
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/orchestration/orchestration-state/*.json
+    recordEventTypes:
+      - recovery_context_updated
+    completionAuthority: evidence_only
+    writesRuntimeState: true
+    writesRequirementEvidence: false
+    hookParityRequired: false
+  - scriptId: orchestration_dispatch_contract
+    path: scripts/orchestration-dispatch-contract.ts
+    ownerModel: execution_closure
+    secondaryModels: []
+    stage: dispatch_contract
+    producer: main_agent
+    inputArtifacts:
+      - requirement_record
+      - runtime_policy
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/prompts/prompt-packets/<packet-id>.md
+    recordEventTypes:
+      - execution_iteration_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: main_agent_codex_worker_adapter
+    path: scripts/main-agent-codex-worker-adapter.ts
+    ownerModel: execution_closure
+    secondaryModels: []
+    stage: worker_execution
+    producer: codex_worker_adapter
+    inputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/prompts/prompt-packets/<packet-id>.md
+      - ResolvedRuntimeContext
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/runtime-policy-snapshot.json
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/prompts/worker-io/<packet-id>.stdin.prompt.txt
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/executions/worker-logs/<packet-id>.stdout.log
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/executions/worker-logs/<packet-id>.stderr.log
+      - task_report
+    recordEventTypes:
+      - task_report_ingested
+      - execution_iteration_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: true
+  - scriptId: runtime_governance
+    path: scripts/runtime-governance.ts
+    ownerModel: implementation_readiness
+    secondaryModels:
+      - architecture_confirmation
+      - audit_review
+    stage: readiness_policy
+    producer: runtime_governance
+    inputArtifacts:
+      - _bmad/_config/runtime-mandatory-gates.yaml
+      - _bmad/_config/continue-gate-routing.yaml
+      - _bmad/_config/speckit-governance.yaml
+    outputArtifacts:
+      - runtime_policy
+      - implementation_entry_gate
+    recordEventTypes:
+      - readiness_check_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: true
+  - scriptId: runtime_governance_template_schema
+    path: scripts/runtime-governance-template-schema.ts
+    ownerModel: architecture_confirmation
+    secondaryModels: []
+    stage: schema_validation
+    producer: runtime_governance
+    inputArtifacts:
+      - _bmad/_config/runtime-policy-templates.yaml
+    outputArtifacts:
+      - schema_validation_result
+    recordEventTypes:
+      - schema_check_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: false
+    hookParityRequired: false
+  - scriptId: runtime_governance_registry
+    path: scripts/runtime-governance-registry.ts
+    ownerModel: architecture_confirmation
+    secondaryModels: []
+    stage: policy_extension
+    producer: runtime_governance
+    inputArtifacts:
+      - runtime_policy
+    outputArtifacts:
+      - augmented_runtime_policy
+    recordEventTypes:
+      - architecture_confirmation_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: false
+    hookParityRequired: false
+  - scriptId: resolve_active_requirement
+    path: scripts/resolve-active-requirement.ts
+    ownerModel: execution_closure
+    secondaryModels: []
+    stage: active_requirement_resolution
+    producer: active_requirement_resolver
+    inputArtifacts:
+      - _bmad-output/runtime/requirement-records/index.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/runtime-policy-snapshot.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/recovery-context.json
+    outputArtifacts:
+      - ResolvedRuntimeContext
+    recordEventTypes:
+      - recovery_context_updated
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: false
+    hookParityRequired: false
+  - scriptId: active_requirement_locator
+    path: scripts/active-requirement-locator.ts
+    ownerModel: execution_closure
+    secondaryModels:
+      - audit_review
+    stage: active_requirement_location
+    producer: active_requirement_resolver
+    inputArtifacts:
+      - _bmad-output/runtime/requirement-records/index.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json
+    outputArtifacts:
+      - ResolvedRuntimeContext
+    recordEventTypes:
+      - recovery_context_updated
+      - audit_iteration_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: true
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: write_runtime_policy_snapshot_and_recovery_context
+    path: scripts/write-runtime-policy-snapshot-and-recovery-context.cjs
+    ownerModel: execution_closure
+    secondaryModels: []
+    stage: runtime_policy_snapshot_and_recovery_context
+    producer: active_requirement_resolver
+    inputArtifacts:
+      - runtime_policy_snapshot_payload
+      - recovery_context_payload
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/runtime-policy-snapshot.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/recovery-context.json
+    recordEventTypes:
+      - recovery_context_updated
+    completionAuthority: evidence_only
+    writesRuntimeState: true
+    writesRequirementEvidence: false
+    hookParityRequired: false
+  - scriptId: emit_runtime_policy
+    path: scripts/emit-runtime-policy.ts
+    ownerModel: implementation_readiness
+    secondaryModels:
+      - architecture_confirmation
+    stage: runtime_policy_emit
+    producer: runtime_governance
+    inputArtifacts:
+      - _bmad/_config/runtime-mandatory-gates.yaml
+      - _bmad/_config/continue-gate-routing.yaml
+    outputArtifacts:
+      - runtime_policy_payload
+    recordEventTypes:
+      - readiness_check_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: true
+  - scriptId: assert_implementation_entry
+    path: scripts/assert-implementation-entry.ts
+    ownerModel: implementation_readiness
+    secondaryModels: []
+    stage: implementation_entry_assertion
+    producer: runtime_governance
+    inputArtifacts:
+      - _bmad-output/runtime/requirement-records/context/runtime-registry.json
+      - runtime_policy_payload
+      - implementation_entry_gate
+    outputArtifacts:
+      - implementation_entry_gate_assertion
+    recordEventTypes:
+      - readiness_check_recorded
+      - readiness_passed
+      - readiness_blocked
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: true
+  - scriptId: user_story_mapping
+    path: scripts/user-story-mapping.ts
+    ownerModel: requirement_confirmation
+    secondaryModels:
+      - execution_closure
+    stage: requirement_mapping
+    producer: adaptive_intake
+    inputArtifacts:
+      - requirement_contract
+      - story_document
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/task-bindings.jsonl
+    recordEventTypes:
+      - contract_summary_recorded
+      - requirement_closure_updated
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: orchestration_governance_contract
+    path: scripts/orchestration-governance-contract.ts
+    ownerModel: requirement_confirmation
+    secondaryModels:
+      - architecture_confirmation
+    stage: governance_contract
+    producer: adaptive_intake
+    inputArtifacts:
+      - _bmad/_config/orchestration-governance.contract.yaml
+    outputArtifacts:
+      - orchestration_governance_contract
+    recordEventTypes:
+      - contract_summary_recorded
+      - architecture_confirmation_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: adaptive_intake_governance_gate
+    path: scripts/adaptive-intake-governance-gate.ts
+    ownerModel: requirement_confirmation
+    secondaryModels:
+      - implementation_readiness
+    stage: adaptive_intake
+    producer: adaptive_intake
+    inputArtifacts:
+      - requirement_contract
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/task-bindings.jsonl
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/intake/queue-sync/**
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/intake/drafts/**
+    recordEventTypes:
+      - contract_summary_recorded
+      - readiness_check_recorded
+      - requirement_gap_blocked
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: adaptive_intake_proof_gate
+    path: scripts/adaptive-intake-proof-gate.ts
+    ownerModel: audit_review
+    secondaryModels:
+      - requirement_confirmation
+    stage: adaptive_intake_audit
+    producer: adaptive_intake
+    inputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/task-bindings.jsonl
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/intake/queue-sync/**
+    outputArtifacts:
+      - adaptive_intake_proof_report
+    recordEventTypes:
+      - audit_iteration_recorded
+      - requirement_gap_blocked
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: governance_runtime_queue
+    path: scripts/governance-runtime-queue.ts
+    ownerModel: execution_closure
+    secondaryModels:
+      - audit_review
+    stage: governance_queue
+    producer: governance_queue
+    inputArtifacts:
+      - queue_item
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/events/ingest-events.jsonl
+    recordEventTypes:
+      - execution_iteration_recorded
+      - rerun_required
+    completionAuthority: evidence_only
+    writesRuntimeState: true
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: governance_stage_event_emitter
+    path: scripts/governance-stage-event-emitter.ts
+    ownerModel: audit_review
+    secondaryModels:
+      - execution_closure
+    stage: governance_event
+    producer: governance_queue
+    inputArtifacts:
+      - stage_result
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/events/pending-events.jsonl
+    recordEventTypes:
+      - audit_iteration_recorded
+      - rerun_required
+    completionAuthority: evidence_only
+    writesRuntimeState: true
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: governance_remediation_runner
+    path: scripts/governance-remediation-runner.ts
+    ownerModel: audit_review
+    secondaryModels:
+      - execution_closure
+    stage: remediation
+    producer: governance_remediation
+    inputArtifacts:
+      - gate_failure
+      - ResolvedRuntimeContext
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/runtime-policy-snapshot.json
+      - provider_hints
+    outputArtifacts:
+      - remediation_artifact
+      - runner_summary
+    recordEventTypes:
+      - rca_created
+      - rerun_required
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: governance_remediation_artifact
+    path: scripts/governance-remediation-artifact.ts
+    ownerModel: audit_review
+    secondaryModels: []
+    stage: remediation
+    producer: governance_remediation
+    inputArtifacts:
+      - remediation_decision
+    outputArtifacts:
+      - remediation_markdown
+    recordEventTypes:
+      - improvement_action_recorded
+      - rerun_required
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: governance_remediation_config
+    path: scripts/governance-remediation-config.ts
+    ownerModel: audit_review
+    secondaryModels:
+      - execution_closure
+    stage: remediation_policy
+    producer: governance_remediation
+    inputArtifacts:
+      - _bmad/_config/governance-remediation.yaml
+    outputArtifacts:
+      - remediation_config
+    recordEventTypes:
+      - audit_iteration_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: governance_packet_execution_store
+    path: scripts/governance-packet-execution-store.ts
+    ownerModel: execution_closure
+    secondaryModels:
+      - audit_review
+    stage: execution_store
+    producer: governance_execution
+    inputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/executions/**
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/executions/**
+    recordEventTypes:
+      - execution_iteration_recorded
+      - recovery_context_updated
+    completionAuthority: evidence_only
+    writesRuntimeState: true
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: governance_packet_dispatch_worker
+    path: scripts/governance-packet-dispatch-worker.ts
+    ownerModel: execution_closure
+    secondaryModels: []
+    stage: packet_dispatch
+    producer: governance_execution
+    inputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/executions/**
+    outputArtifacts:
+      - execution_record_launch_info
+    recordEventTypes:
+      - execution_iteration_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: true
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: governance_host_dispatch_adapter
+    path: scripts/governance-host-dispatch-adapter.ts
+    ownerModel: execution_closure
+    secondaryModels: []
+    stage: host_dispatch
+    producer: governance_execution
+    inputArtifacts:
+      - execution_record
+    outputArtifacts:
+      - externalRunId
+      - dispatch_outcome
+    recordEventTypes:
+      - execution_iteration_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: true
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: governance_execution_result_ingestor
+    path: scripts/governance-execution-result-ingestor.ts
+    ownerModel: execution_closure
+    secondaryModels:
+      - audit_review
+    stage: execution_result_ingest
+    producer: governance_execution
+    inputArtifacts:
+      - execution_result
+      - rerun_gate_result
+    outputArtifacts:
+      - execution_result_projection
+      - rerun_gate_projection
+    recordEventTypes:
+      - task_report_ingested
+      - rerun_required
+      - audit_iteration_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: true
+    writesRequirementEvidence: true
+    hookParityRequired: true
+  - scriptId: governance_packet_reconciler
+    path: scripts/governance-packet-reconciler.ts
+    ownerModel: execution_closure
+    secondaryModels:
+      - audit_review
+    stage: reconciliation
+    producer: governance_execution
+    inputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/executions/**
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/prompts/prompt-packets/**
+    outputArtifacts:
+      - reconciliation_report
+    recordEventTypes:
+      - recovery_context_updated
+      - audit_iteration_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: true
+    writesRequirementEvidence: true
+    hookParityRequired: true
+  - scriptId: prompt_routing_governance
+    path: scripts/prompt-routing-governance.ts
+    ownerModel: audit_review
+    secondaryModels: []
+    stage: model_governance
+    producer: model_governance
+    inputArtifacts:
+      - PromptRoutingHints
+      - model_hints
+    outputArtifacts:
+      - prompt_hint_usage
+      - execution_intent_decision
+    recordEventTypes:
+      - audit_iteration_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: model_governance_hint_resolver
+    path: scripts/model-governance-hint-resolver.ts
+    ownerModel: audit_review
+    secondaryModels: []
+    stage: model_governance
+    producer: model_governance
+    inputArtifacts:
+      - model_governance_request
+    outputArtifacts:
+      - model_hint_candidate
+    recordEventTypes:
+      - audit_iteration_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: model_governance_policy_filter
+    path: scripts/model-governance-policy-filter.ts
+    ownerModel: audit_review
+    secondaryModels: []
+    stage: model_governance
+    producer: model_governance
+    inputArtifacts:
+      - model_hint_candidate
+    outputArtifacts:
+      - filtered_model_hints
+    recordEventTypes:
+      - audit_iteration_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: governance_provider_adapter
+    path: scripts/governance-provider-adapter.ts
+    ownerModel: audit_review
+    secondaryModels: []
+    stage: model_governance
+    producer: model_governance
+    inputArtifacts:
+      - provider_request
+    outputArtifacts:
+      - provider_recommendation
+    recordEventTypes:
+      - audit_iteration_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: reviewer_registry
+    path: scripts/reviewer-registry.ts
+    ownerModel: audit_review
+    secondaryModels:
+      - delivery_confirmation
+    stage: reviewer_registry
+    producer: reviewer
+    inputArtifacts:
+      - reviewer_route
+      - closeout
+      - audit_entry
+    outputArtifacts:
+      - reviewer_projection
+    recordEventTypes:
+      - audit_iteration_recorded
+      - closeout_check_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: reviewer_rollout_gate
+    path: scripts/reviewer-rollout-gate.ts
+    ownerModel: audit_review
+    secondaryModels: []
+    stage: reviewer_rollout
+    producer: reviewer
+    inputArtifacts:
+      - reviewer_rollout_proof
+    outputArtifacts:
+      - reviewer_rollout_gate_report
+    recordEventTypes:
+      - audit_iteration_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: run_auditor_host
+    path: scripts/run-auditor-host.ts
+    ownerModel: audit_review
+    secondaryModels:
+      - implementation_readiness
+      - delivery_confirmation
+    stage: authoritative_audit_closeout
+    producer: reviewer
+    inputArtifacts:
+      - audit_report
+      - contract_document
+      - score_record
+      - version_lock_record
+    outputArtifacts:
+      - audit_closeout
+      - reviewer_closeout_envelope
+      - recovery_context_update_request
+    recordEventTypes:
+      - audit_iteration_recorded
+      - audit_finding_recorded
+      - readiness_rerun_required
+      - closeout_check_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: true
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: party_mode_runtime
+    path: scripts/party-mode-runtime.ts
+    ownerModel: audit_review
+    secondaryModels:
+      - requirement_confirmation
+      - architecture_confirmation
+    stage: party_mode
+    producer: party_mode
+    inputArtifacts:
+      - party_mode_session_input
+    outputArtifacts:
+      - _bmad-output/party-mode/runtime/current-session.json
+      - _bmad-output/party-mode/sessions/**
+    recordEventTypes:
+      - audit_iteration_recorded
+      - contract_summary_recorded
+      - architecture_confirmation_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: party_mode_gate_check
+    path: scripts/party-mode-gate-check.ts
+    ownerModel: audit_review
+    secondaryModels: []
+    stage: party_mode
+    producer: party_mode
+    inputArtifacts:
+      - party_mode_session_artifacts
+    outputArtifacts:
+      - party_mode_gate_result
+    recordEventTypes:
+      - audit_iteration_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: main_agent_quality_gate
+    path: scripts/main-agent-quality-gate.ts
+    ownerModel: delivery_confirmation
+    secondaryModels: []
+    stage: quality_check
+    producer: delivery_gate
+    inputArtifacts:
+      - _bmad/_config/main-agent-quality-gate.thresholds.json
+      - runtime_evidence
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/gates/quality-gate-report.json
+    recordEventTypes:
+      - closeout_check_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: main_agent_release_gate
+    path: scripts/main-agent-release-gate.ts
+    ownerModel: delivery_confirmation
+    secondaryModels: []
+    stage: release_check
+    producer: delivery_gate
+    inputArtifacts:
+      - quality_gate_report
+      - pr_topology
+      - sprint_status_token
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/gates/release-gate-report.json
+    recordEventTypes:
+      - closeout_check_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: main_agent_delivery_truth_gate
+    path: scripts/main-agent-delivery-truth-gate.ts
+    ownerModel: delivery_confirmation
+    secondaryModels: []
+    stage: delivery_truth_check
+    producer: delivery_gate
+    inputArtifacts:
+      - release_gate_report
+      - host_matrix_report
+      - soak_report
+      - sprint_status_audit
+      - completion_intent
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/gates/delivery-truth-gate-report.json
+    recordEventTypes:
+      - closeout_check_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: main_agent_delivery_evidence_run
+    path: scripts/main-agent-delivery-evidence-run.ts
+    ownerModel: delivery_confirmation
+    secondaryModels: []
+    stage: delivery_evidence_collection
+    producer: delivery_gate
+    inputArtifacts:
+      - delivery_gate_commands
+    outputArtifacts:
+      - delivery_evidence_run_summary
+    recordEventTypes:
+      - closeout_check_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: main_agent_soak_runner
+    path: scripts/main-agent-soak-runner.ts
+    ownerModel: delivery_confirmation
+    secondaryModels: []
+    stage: soak
+    producer: delivery_gate
+    inputArtifacts:
+      - runtime_orchestration
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/soak/main-agent-soak-report.json
+    recordEventTypes:
+      - closeout_check_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: main_agent_host_matrix_pr_orchestrator
+    path: scripts/main-agent-host-matrix-pr-orchestrator.ts
+    ownerModel: delivery_confirmation
+    secondaryModels: []
+    stage: host_matrix
+    producer: delivery_gate
+    inputArtifacts:
+      - pr_topology
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/e2e/multi-host-pr-orchestration-report.json
+    recordEventTypes:
+      - closeout_check_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: main_agent_dual_host_pr_orchestrator
+    path: scripts/main-agent-dual-host-pr-orchestrator.ts
+    ownerModel: delivery_confirmation
+    secondaryModels: []
+    stage: host_matrix_validation
+    producer: delivery_gate
+    inputArtifacts:
+      - pr_topology
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/e2e/dual-host-pr-orchestration-report.json
+    recordEventTypes:
+      - closeout_check_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: main_agent_chaos_scenarios
+    path: scripts/main-agent-chaos-scenarios.ts
+    ownerModel: delivery_confirmation
+    secondaryModels: []
+    stage: chaos_validation
+    producer: delivery_gate
+    inputArtifacts:
+      - runtime_orchestration
+    outputArtifacts:
+      - chaos_report
+    recordEventTypes:
+      - closeout_check_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: live_smoke_main_agent_runtime
+    path: scripts/live-smoke-main-agent-runtime.ts
+    ownerModel: delivery_confirmation
+    secondaryModels: []
+    stage: live_smoke
+    producer: delivery_gate
+    inputArtifacts:
+      - runtime_orchestration
+    outputArtifacts:
+      - smoke_report
+    recordEventTypes:
+      - closeout_check_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: verify_hooks_no_ts_node
+    path: scripts/verify-hooks-no-ts-node.js
+    ownerModel: audit_review
+    secondaryModels: []
+    stage: hook_verification
+    producer: hook_quality
+    inputArtifacts:
+      - .claude/hooks/**
+      - .cursor/hooks/**
+      - _bmad/runtime/hooks/**
+    outputArtifacts:
+      - hook_verification_report
+    recordEventTypes:
+      - audit_iteration_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: true
+  - scriptId: dashboard_generate
+    path: scripts/dashboard-generate.ts
+    ownerModel: delivery_confirmation
+    secondaryModels:
+      - audit_review
+    stage: dashboard_projection
+    producer: dashboard
+    inputArtifacts:
+      - _bmad-output/runtime/requirement-records/index.json
+      - _bmad-output/runtime/requirement-records/artifact-index.json
+      - _bmad-output/runtime/requirement-records/context/runtime-registry.json
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/dashboard/<dashboard-id>/dashboard.md
+      - _bmad-output/runtime/requirement-records/dashboard/<dashboard-id>/runtime-dashboard.json
+    recordEventTypes:
+      - closeout_check_recorded
+    completionAuthority: none
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: scoring_candidate_builder
+    path: packages/scoring/analytics/candidate-builder.ts
+    ownerModel: audit_review
+    secondaryModels:
+      - execution_closure
+    stage: governed_sample_candidate_build
+    producer: scoring_analytics
+    inputArtifacts:
+      - _bmad-output/runtime/requirement-records/index.json
+      - _bmad-output/runtime/requirement-records/artifact-index.json
+      - mentor_event
+      - sample_route
+      - governed_source_artifacts
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/sft/canonical-samples.jsonl
+      - candidate_build_summary
+    recordEventTypes:
+      - audit_iteration_recorded
+    completionAuthority: none
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: scoring_canonical_sample
+    path: packages/scoring/analytics/canonical-sample.ts
+    ownerModel: audit_review
+    secondaryModels: []
+    stage: canonical_sample_normalization
+    producer: scoring_analytics
+    inputArtifacts:
+      - sample_route
+      - governed_source_artifacts
+    outputArtifacts:
+      - canonical_sft_sample
+    recordEventTypes:
+      - audit_iteration_recorded
+    completionAuthority: none
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: scoring_bundle_writer
+    path: packages/scoring/analytics/bundle-writer.ts
+    ownerModel: audit_review
+    secondaryModels:
+      - delivery_confirmation
+    stage: dataset_manifest_projection
+    producer: scoring_analytics
+    inputArtifacts:
+      - canonical_sft_sample
+      - split_policy
+      - redaction_report
+      - dedup_report
+      - contamination_report
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/sft/dataset-manifest.json
+      - _bmad-output/datasets/<dataset-id>/dataset-manifest.json
+      - dataset_card
+      - validation_report
+    recordEventTypes:
+      - audit_iteration_recorded
+      - closeout_check_recorded
+    completionAuthority: none
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+  - scriptId: sft_extract
+    path: scripts/sft-extract.ts
+    ownerModel: audit_review
+    secondaryModels:
+      - delivery_confirmation
+    stage: governed_sft_export
+    producer: scoring_analytics
+    inputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/sft/sample-routes.jsonl
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/sft/canonical-samples.jsonl
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/sft/redaction-report.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/sft/contamination-report.json
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/sft/export-manifest.json
+      - _bmad-output/runtime/datasets/<dataset-id>/<dataset-version>/exports/openai-chat.jsonl
+      - _bmad-output/runtime/datasets/<dataset-id>/<dataset-version>/exports/hf-instruction.jsonl
+    recordEventTypes:
+      - audit_iteration_recorded
+      - artifact_indexed
+    completionAuthority: none
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+    migrationRequired:
+      removeOldInputs:
+        - run_score_records
+      removeOldOutputs:
+        - scoring_data_sft_dataset_jsonl
+      keepCapability: true
+      replacementBehavior: Export only governed canonical samples that passed sample routing, redaction, contamination, and split checks.
+  - scriptId: analytics_sft_extract
+    path: scripts/analytics-sft-extract.ts
+    ownerModel: audit_review
+    secondaryModels: []
+    stage: governed_sft_analytics_export
+    producer: scoring_analytics
+    inputArtifacts:
+      - _bmad-output/runtime/requirement-records/index.json
+      - _bmad-output/runtime/requirement-records/artifact-index.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/sft/sample-routes.jsonl
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/sft/canonical-samples.jsonl
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/sft/quality-report.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/sft/export-manifest.json
+    recordEventTypes:
+      - audit_iteration_recorded
+      - artifact_indexed
+    completionAuthority: none
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+    migrationRequired:
+      removeOldInputs:
+        - run_score_records
+      removeOldOutputs:
+        - scoring_data_sft_dataset_jsonl
+      keepCapability: true
+      replacementBehavior: Build analytics reports from requirement records and governed canonical samples, not raw score records.
+  - scriptId: parse_and_write_score
+    path: scripts/parse-and-write-score.ts
+    ownerModel: audit_review
+    secondaryModels:
+      - delivery_confirmation
+    stage: score_materialization
+    producer: scoring
+    inputArtifacts:
+      - audit_report
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/scoring/resolved-scoring-policy.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/scoring/score-input-manifest.json
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/scoring/score-record.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/gates/score-materialization-report.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/gates/score-evaluation-report.json
+    recordEventTypes:
+      - score_materialization_recorded
+      - score_evaluation_recorded
+      - artifact_indexed
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: false
+    migrationRequired:
+      removeOldInputs:
+        - scattered_score_report_only
+        - direct_trigger_rules
+      removeOldOutputs:
+        - run_score_records_as_control_source
+      keepCapability: true
+      replacementBehavior: Materialize scores through ResolvedScoringPolicy and write controlled score gates into requirement records.
+target_new_scripts:
+  - scriptId: resolve_active_requirement
+    path: scripts/resolve-active-requirement.ts
+    ownerModel: implementation_readiness
+    secondaryModels:
+      - execution_closure
+      - delivery_confirmation
+    stage: active_requirement_resolution
+    producer: main_agent
+    inputArtifacts:
+      - cli_invocation
+      - GovernanceTransportEnvelope
+      - _bmad-output/runtime/requirement-records/index.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/runtime-policy-snapshot.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/recovery-context.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/bmad-workflow-routing-<run-id>.json
+    outputArtifacts:
+      - ResolvedRuntimeContext
+    recordEventTypes: []
+    completionAuthority: none
+    writesRuntimeState: false
+    writesRequirementEvidence: false
+    hookParityRequired: true
+  - scriptId: update_requirement_index
+    path: scripts/update-requirement-index.ts
+    ownerModel: execution_closure
+    stage: requirement_index_projection
+    producer: controlled_ingest
+    inputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json
+      - requirement_record_event
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/index.json
+      - _bmad-output/runtime/requirement-records/index.jsonl
+    recordEventTypes:
+      - requirement_index_updated
+    completionAuthority: none
+    writesRuntimeState: false
+    writesRequirementEvidence: false
+    hookParityRequired: true
+  - scriptId: validate_resolved_context
+    path: scripts/validate-resolved-context.ts
+    ownerModel: implementation_readiness
+    secondaryModels:
+      - delivery_confirmation
+    stage: resolved_context_validation
+    producer: runtime_governance
+    inputArtifacts:
+      - ResolvedRuntimeContext
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/runtime-policy-snapshot.json
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/recovery-context.json
+    outputArtifacts:
+      - ResolvedRuntimeContextValidationReport
+    recordEventTypes:
+      - readiness_check_recorded
+      - gate_check_recorded
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: true
+  - scriptId: requirement_record_ingest
+    path: scripts/requirement-record-ingest.ts
+    ownerModel: execution_closure
+    stage: requirement_record_ingest
+    producer: main_agent
+    inputArtifacts:
+      - GovernanceTransportEnvelope
+      - source_artifact
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json
+      - _bmad-output/runtime/requirement-records/index.jsonl
+      - _bmad-output/runtime/requirement-records/artifact-index.jsonl
+    recordEventTypes:
+      - record_created
+      - contract_summary_recorded
+      - confirmation_recorded
+      - readiness_check_recorded
+      - execution_iteration_recorded
+      - audit_iteration_recorded
+      - closeout_check_recorded
+      - rca_created
+      - rerun_required
+    completionAuthority: evidence_only
+    writesRuntimeState: false
+    writesRequirementEvidence: true
+    hookParityRequired: true
+  - scriptId: main_agent_delivery_closeout_gate
+    path: scripts/main-agent-delivery-closeout-gate.ts
+    ownerModel: delivery_confirmation
+    stage: delivery_closeout
+    producer: delivery_gate
+    inputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json
+      - _bmad-output/runtime/requirement-records/artifact-index.json
+      - _bmad-output/runtime/requirement-records/index.json
+      - completion_evidence_packet
+      - audit_closeout
+      - quality_gate_report
+      - release_gate_report
+      - delivery_truth_report
+    outputArtifacts:
+      - _bmad-output/runtime/requirement-records/<requirement-set-id>/delivery-closeout-report.json
+    recordEventTypes:
+      - closeout_requested
+      - closeout_check_recorded
+      - delivery_closeout_passed
+      - delivery_closeout_blocked
+      - closeout_recorded
+      - record_closed
+    completionAuthority: delivery_closeout_gate_only
+    writesRuntimeState: true
+    writesRequirementEvidence: true
+    hookParityRequired: false
+registry_rules:
+  unregistered_script_policy: may_run_but_not_count_for_requirement_pass
+  multi_model_rule: secondaryModels may receive projections; primary ownerModel controls recordEventTypes.
+  completion_rule: No script except target main_agent_delivery_closeout_gate may close delivery.
+  migration_rule: Useful scripts are retained as capability owners; old inputs, old outputs, and direct-control semantics are removed.
+  active_requirement_resolution_rule: scripts must use explicit record args or resolve_active_requirement; no script may read _bmad-output/runtime/context/** as a control, fallback, or locator input.
+  requirement_index_rule: _bmad-output/runtime/requirement-records/index.json is locator projection only; control state must be reloaded and verified from requirement-record.json.
+script_behaviors_to_remove:
+  - behaviorId: run_score_record_driven_sft_positive_samples
+    affectedScripts:
+      - scripts/sft-extract.ts
+      - scripts/analytics-sft-extract.ts
+    replacement: requirement-record sample routing plus canonical samples.
+  - behaviorId: run_score_record_as_score_control_source
+    affectedScripts:
+      - scripts/parse-and-write-score.ts
+    replacement: score materialization and score evaluation gateChecks under ResolvedScoringPolicy.

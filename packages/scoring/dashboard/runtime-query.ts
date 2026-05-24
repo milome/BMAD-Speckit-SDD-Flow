@@ -52,6 +52,10 @@ import {
   type ReadinessDriftProjection,
 } from '../governance/readiness-drift';
 import { buildVetoItemIds } from '../veto';
+import {
+  buildSixMentalModelProjection,
+  type SixMentalModelProjection,
+} from './six-model-projection';
 
 type SelectionSource = 'runtime' | 'scores' | 'none';
 type RuntimeStatusLike = RuntimeRunStatus | 'unknown';
@@ -329,6 +333,7 @@ function normalizeRedactionPreviewStatus(
 export interface RuntimeDashboardSnapshot {
   generated_at: string;
   selection: RuntimeDashboardSelection;
+  six_model_projection: SixMentalModelProjection;
   overview: DashboardOverviewPanel;
   runtime_context: DashboardRuntimeContextPanel;
   execution_state: DashboardExecutionStateSummary;
@@ -1789,9 +1794,28 @@ export function buildRuntimeDashboardModel(input: {
     allRecords: scoreRecords,
   });
 
+  const stageTimeline = buildStageTimeline(selectedProjection, scoreDetailRecords, activeWorkItem);
+  const sftSummary = buildSftSummary(
+    selectedScoreRecords,
+    root,
+    activeWorkItem,
+    workboard.active_board_group_id ?? null
+  );
+
   return {
     generated_at: new Date().toISOString(),
     selection,
+    six_model_projection: buildSixMentalModelProjection({
+      runtimeContext,
+      executionState,
+      stageTimeline,
+      scoreDetail: {
+        run_id: selectedRunId,
+        records: scoreDetailRecords,
+        findings: scoreFindings,
+      },
+      workboard,
+    }),
     overview: {
       status: runtimeContext.status,
       health_score:
@@ -1814,19 +1838,14 @@ export function buildRuntimeDashboardModel(input: {
     },
     runtime_context: runtimeContext,
     execution_state: executionState,
-    stage_timeline: buildStageTimeline(selectedProjection, scoreDetailRecords, activeWorkItem),
+    stage_timeline: stageTimeline,
     score_detail: {
       run_id: selectedRunId,
       records: scoreDetailRecords,
       findings: scoreFindings,
     },
     readiness_projection: readinessProjection,
-    sft_summary: buildSftSummary(
-      selectedScoreRecords,
-      root,
-      activeWorkItem,
-      workboard.active_board_group_id ?? null
-    ),
+    sft_summary: sftSummary,
     workboard,
   };
 }

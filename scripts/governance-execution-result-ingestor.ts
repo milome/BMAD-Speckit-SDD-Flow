@@ -6,6 +6,11 @@ import {
   updateGovernancePacketExecutionRecord,
 } from './governance-packet-execution-store';
 import type { GovernanceRerunGateResult } from './governance-remediation-runner';
+import {
+  assertGovernanceTransportEnvelope,
+  type GovernanceTransportEnvelope,
+  type GovernanceTransportValidationOptions,
+} from './governance-transport-envelope';
 
 export interface GovernanceExecutionResultIngestInput {
   loopStateId: string;
@@ -26,6 +31,31 @@ type GovernanceExecutionResultIngestPayload = GovernanceExecutionResultIngestInp
 type GovernanceRerunGateResultIngestPayload = GovernanceRerunGateResultIngestInput & {
   projectRoot: string;
 };
+
+export type GovernanceExecutionResultEnvelope = GovernanceTransportEnvelope & {
+  eventType: 'execution_iteration_recorded';
+    payloadKind: 'status';
+    payload: {
+      loopStateId: string;
+      attemptNumber: number;
+      execution: GovernanceExecutionResultProjection;
+    };
+  };
+
+export type GovernanceRerunGateResultEnvelope = GovernanceTransportEnvelope & {
+  eventType: 'gate_check_recorded';
+  payloadKind: 'decision';
+  payload: {
+    loopStateId: string;
+    attemptNumber?: number;
+    rerunGate: GovernanceRerunGateResult;
+  };
+};
+
+const SUPPORTED_INGEST_ENVELOPE_EVENT_TYPES = new Set([
+  'execution_iteration_recorded',
+  'gate_check_recorded',
+]);
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -114,6 +144,33 @@ export function ingestGovernanceExecutionResult(
       };
     }
   );
+}
+
+export function ingestGovernanceTransportEnvelope(
+  projectRoot: string,
+  envelope: GovernanceExecutionResultEnvelope | GovernanceRerunGateResultEnvelope,
+  validationOptions: GovernanceTransportValidationOptions = {}
+): GovernancePacketExecutionRecord | null {
+  assertGovernanceTransportEnvelope(envelope, validationOptions);
+  if (!SUPPORTED_INGEST_ENVELOPE_EVENT_TYPES.has(envelope.eventType)) {
+    throw new Error(`unsupported governance-execution-result-ingestor eventType: ${envelope.eventType}`);
+  }
+  if (envelope.eventType === 'execution_iteration_recorded') {
+    const payload = envelope.payload;
+    return ingestGovernanceExecutionResult({
+      projectRoot,
+      loopStateId: payload.loopStateId,
+      attemptNumber: payload.attemptNumber,
+      result: payload.execution,
+    });
+  }
+  const payload = envelope.payload;
+  return ingestGovernanceRerunGateResult({
+    projectRoot,
+    loopStateId: payload.loopStateId,
+    attemptNumber: payload.attemptNumber,
+    rerunGateResult: payload.rerunGate,
+  });
 }
 
 export function ingestGovernanceRerunGateResult(
@@ -209,12 +266,15 @@ function main(): void {
 
   const payload = JSON.parse(payloadArg) as
     | ({ kind: 'execution'; projectRoot: string } & GovernanceExecutionResultIngestInput)
-    | ({ kind: 'rerunGate'; projectRoot: string } & GovernanceRerunGateResultIngestInput);
+    | ({ kind: 'rerunGate'; projectRoot: string } & GovernanceRerunGateResultIngestInput)
+    | ({ kind: 'envelope'; projectRoot: string; envelope: GovernanceExecutionResultEnvelope | GovernanceRerunGateResultEnvelope });
 
   const result =
-    payload.kind === 'execution'
-      ? ingestGovernanceExecutionResult(payload.projectRoot, payload)
-      : ingestGovernanceRerunGateResult(payload.projectRoot, payload);
+    payload.kind === 'envelope'
+      ? ingestGovernanceTransportEnvelope(payload.projectRoot, payload.envelope)
+      : payload.kind === 'execution'
+        ? ingestGovernanceExecutionResult(payload.projectRoot, payload)
+        : ingestGovernanceRerunGateResult(payload.projectRoot, payload);
   process.stdout.write(JSON.stringify(result, null, 2));
 }
 

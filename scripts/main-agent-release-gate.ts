@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020';
+import type { AnySchema } from 'ajv';
 import addFormats from 'ajv-formats';
 import { buildEvidenceProvenance, sameRunSummary } from './evidence-provenance';
 import { validatePrTopologyForReleaseGate, type PrTopology } from './parallel-mission-control';
@@ -45,6 +46,8 @@ interface ReleaseGateCliOptions {
   hostMatrixPath?: string;
   prTopologyPath?: string;
   qualityGatePath?: string;
+  recordId?: string;
+  requirementSetId?: string;
   runId?: string;
   evidenceBundleId?: string;
   singleSourceCommand?: string;
@@ -90,6 +93,10 @@ function parseArgs(argv: string[]): ReleaseGateCliOptions {
     if (token === '--ledgerPath' && argv[index + 1]) {
       out.ledgerPath = argv[index + 1];
       index += 1;
+    } else if (token === '--record-id' && argv[index + 1]) {
+      out.recordId = argv[++index];
+    } else if (token === '--requirement-set-id' && argv[index + 1]) {
+      out.requirementSetId = argv[++index];
     } else if (token.startsWith('--') && argv[index + 1]) {
       out[token.slice(2) as keyof ReleaseGateCliOptions] = argv[index + 1];
       index += 1;
@@ -217,13 +224,30 @@ function validateEvidenceProvenance(
   };
 }
 
-function appendScriptProvenanceArgs(command: string, provenance: EvidenceProvenance): string {
+function appendScriptProvenanceArgs(
+  command: string,
+  provenance: EvidenceProvenance,
+  options: { recordId?: string; requirementSetId?: string } = {}
+): string {
   const quoted = {
     runId: JSON.stringify(provenance.runId),
     storyKey: JSON.stringify(provenance.storyKey),
     evidenceBundleId: JSON.stringify(provenance.evidenceBundleId),
+    recordId: normalizeText(options.recordId) ? JSON.stringify(normalizeText(options.recordId)) : null,
+    requirementSetId: normalizeText(options.requirementSetId)
+      ? JSON.stringify(normalizeText(options.requirementSetId))
+      : null,
   };
-  return `${command} --runId ${quoted.runId} --storyKey ${quoted.storyKey} --evidenceBundleId ${quoted.evidenceBundleId}`;
+  return [
+    command,
+    `--runId ${quoted.runId}`,
+    `--storyKey ${quoted.storyKey}`,
+    `--evidenceBundleId ${quoted.evidenceBundleId}`,
+    quoted.recordId ? `--record-id ${quoted.recordId}` : '',
+    quoted.requirementSetId ? `--requirement-set-id ${quoted.requirementSetId}` : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 }
 
 function commandSupportsScriptProvenance(command: string): boolean {
@@ -300,15 +324,22 @@ function runReleaseQualityProofAdapter(input: {
   proofDir: string;
   packetPath: string;
   taskReportPath: string;
+  recordId?: string;
+  requirementSetId?: string;
+  runId?: string;
 }): { report: ReturnType<typeof runCodexWorkerAdapter>; proofMode: 'deterministic_release_shim' | 'live_codex_cli' } {
   if (process.env.MAIN_AGENT_RELEASE_GATE_CODEX_PROOF_MODE === 'live') {
     return {
       proofMode: 'live_codex_cli',
       report: runCodexWorkerAdapter({
         projectRoot: input.root,
+        recordId: input.recordId,
+        requirementSetId: input.requirementSetId,
+        runId: input.recordId || input.requirementSetId ? input.runId : undefined,
         packetPath: input.packetPath,
         taskReportPath: input.taskReportPath,
         timeoutMs: 120_000,
+        allowPolicyFailureForDeterministicShim: !input.recordId && !input.requirementSetId,
       }),
     };
   }
@@ -320,9 +351,13 @@ function runReleaseQualityProofAdapter(input: {
       proofMode: 'deterministic_release_shim',
       report: runCodexWorkerAdapter({
         projectRoot: input.root,
+        recordId: input.recordId,
+        requirementSetId: input.requirementSetId,
+        runId: input.recordId || input.requirementSetId ? input.runId : undefined,
         packetPath: input.packetPath,
         taskReportPath: input.taskReportPath,
         timeoutMs: 120_000,
+        allowPolicyFailureForDeterministicShim: !input.recordId && !input.requirementSetId,
         codexBinary: writeReleaseQualityProofCodexShim(input.proofDir),
       }),
     };
@@ -335,7 +370,11 @@ function runReleaseQualityProofAdapter(input: {
   }
 }
 
-function writeRunScopedCodexQualityProof(root: string, provenance: EvidenceProvenance): string | null {
+function writeRunScopedCodexQualityProof(
+  root: string,
+  provenance: EvidenceProvenance,
+  options: { recordId?: string; requirementSetId?: string } = {}
+): string | null {
   const proofDir = path.join(root, '_bmad-output', 'runtime', 'gates', 'codex-quality-proof');
   const packetPath = path.join(proofDir, `${provenance.runId}.packet.json`);
   const taskReportPath = path.join(proofDir, `${provenance.runId}.task-report.json`);
@@ -375,6 +414,9 @@ function writeRunScopedCodexQualityProof(root: string, provenance: EvidenceProve
     proofDir,
     packetPath,
     taskReportPath,
+    recordId: options.recordId,
+    requirementSetId: options.requirementSetId,
+    runId: provenance.runId,
   });
   fs.writeFileSync(adapterReportPath, `${JSON.stringify(adapter, null, 2)}\n`, 'utf8');
   if (!adapter.scopePassed || adapter.taskReport.status !== 'done') {
@@ -450,7 +492,7 @@ function validateExecutionAuditLedger(
 
   const ajv = new Ajv2020({ allErrors: true, strict: false });
   addFormats(ajv);
-  const validate = ajv.compile(schema);
+  const validate = ajv.compile(schema as AnySchema);
   if (!validate(ledger)) {
     const details = (validate.errors ?? [])
       .map((item) => `${item.instancePath || '/'} ${item.message || 'invalid'}`)
@@ -556,7 +598,10 @@ function main(argv: string[]): number {
     prefix: 'release-gate',
   });
   if (!args.qualityGatePath && !process.env.MAIN_AGENT_RELEASE_GATE_SKIP_QUALITY_PRODUCER) {
-    const codexProofPath = writeRunScopedCodexQualityProof(root, expectedProvenance);
+    const codexProofPath = writeRunScopedCodexQualityProof(root, expectedProvenance, {
+      recordId: args.recordId,
+      requirementSetId: args.requirementSetId,
+    });
     const qualityCommand = appendScriptProvenanceArgs(
       'node node_modules/ts-node/dist/bin.js --project tsconfig.node.json --transpile-only scripts/main-agent-quality-gate.ts',
       expectedProvenance
@@ -568,7 +613,10 @@ function main(argv: string[]): number {
     );
   }
   const e2eCommandWithProvenance = commandSupportsScriptProvenance(e2eCommand)
-    ? appendScriptProvenanceArgs(e2eCommand, expectedProvenance)
+    ? appendScriptProvenanceArgs(e2eCommand, expectedProvenance, {
+        recordId: args.recordId,
+        requirementSetId: args.requirementSetId,
+      })
     : e2eCommand;
   const useExplicitHostMatrixArtifact = Boolean(args.hostMatrixPath && fs.existsSync(hostMatrixPath));
   const e2eResult = useExplicitHostMatrixArtifact

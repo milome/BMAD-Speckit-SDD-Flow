@@ -7,10 +7,18 @@ import {
 } from './main-agent-orchestration';
 import { updateOrchestrationState } from './orchestration-state';
 import type { RuntimeFlowId } from './runtime-governance';
+import {
+  governanceEventTypeRegistryPolicyHash,
+  governanceEventTypeRegistryHash,
+  validateGovernanceTransportEnvelope,
+  type GovernanceTransportEnvelope,
+  type GovernanceTransportValidation,
+} from './governance-transport-envelope';
 
 export type MainAgentHostMode = 'hooks_enabled' | 'no_hooks';
 export type MainAgentHostKind = 'cursor' | 'claude' | 'codex';
 export type MainAgentOrchestrationEntry = 'hook_ingress' | 'cli_ingress';
+export type MainAgentHookTrust = 'trusted' | 'degraded' | 'untrusted' | 'not_applicable';
 export type MainAgentDegradationLevel =
   | 'none'
   | 'hook_lost'
@@ -76,6 +84,8 @@ export interface UnifiedIngressReceipt {
   reportType: 'main_agent_unified_ingress';
   generatedAt: string;
   projectRoot: string;
+  recordId: string;
+  requirementSetId: string;
   hostKind: MainAgentHostKind;
   hostMode: MainAgentHostMode;
   orchestrationEntry: MainAgentOrchestrationEntry;
@@ -84,6 +94,8 @@ export interface UnifiedIngressReceipt {
   degradationReason: MainAgentDegradationReason | null;
   hostRecovery: MainAgentHostRecovery;
   controlPlane: 'main-agent-orchestration';
+  hookTrust: MainAgentHookTrust;
+  hookTrustEnvelopeValidation: GovernanceTransportValidation | null;
   flow: RuntimeFlowId;
   stage: string;
   runLoop: {
@@ -113,21 +125,76 @@ function hookPathFor(root: string, hostKind: MainAgentHostKind): string | null {
   if (hostKind === 'cursor') return path.join(root, '.cursor', 'hooks.json');
   if (hostKind === 'claude')
     return path.join(root, '_bmad', 'claude', 'hooks', 'runtime-policy-inject.cjs');
-  return null;
+  return path.join(root, '.codex', 'hooks', 'hooks.json');
+}
+
+function normalizeRecordId(value: string | undefined, fieldName: string): string {
+  const trimmed = value?.trim();
+  if (!trimmed) throw new Error(`${fieldName} is required for requirement-scoped unified ingress output`);
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/u.test(trimmed)) {
+    throw new Error(`${fieldName} contains unsupported path characters`);
+  }
+  return trimmed;
+}
+
+function requirementScopedIngressDir(root: string, recordId: string): string {
+  return path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    recordId,
+    'artifacts',
+    'ingress'
+  );
 }
 
 function resolveEntry(input: {
   projectRoot: string;
   hostKind: MainAgentHostKind;
+  codexHookTrustEnvelope?: GovernanceTransportEnvelope | null;
+  governanceEventTypeRegistryPolicy?: unknown;
+  governanceEventTypeRegistryPolicyHash?: string;
+  governanceEventTypeRegistry?: unknown;
+  governanceEventTypeRegistryHash?: string;
+  architectureConfirmationHash?: string;
   forceNoHooks?: boolean;
   forceHostPartial?: boolean;
   forceTransportDegraded?: boolean;
 }): Pick<
   UnifiedIngressReceipt,
-  'hostMode' | 'orchestrationEntry' | 'hookAvailable' | 'degradationLevel' | 'degradationReason'
+  | 'hostMode'
+  | 'orchestrationEntry'
+  | 'hookAvailable'
+  | 'degradationLevel'
+  | 'degradationReason'
+  | 'hookTrust'
+  | 'hookTrustEnvelopeValidation'
 > {
   const hookPath = hookPathFor(input.projectRoot, input.hostKind);
-  const hookAvailable = hookPath != null && fs.existsSync(hookPath);
+  const registryHash =
+    input.governanceEventTypeRegistryHash ??
+    (input.governanceEventTypeRegistry ? governanceEventTypeRegistryHash(input.governanceEventTypeRegistry) : undefined);
+  const registryPolicyHash =
+    input.governanceEventTypeRegistryPolicyHash ??
+    (input.governanceEventTypeRegistryPolicy
+      ? governanceEventTypeRegistryPolicyHash(input.governanceEventTypeRegistryPolicy)
+      : undefined);
+  const codexHookTrustValidation =
+    input.hostKind === 'codex' && input.codexHookTrustEnvelope
+      ? validateGovernanceTransportEnvelope(input.codexHookTrustEnvelope, {
+          governanceEventTypeRegistryPolicy: input.governanceEventTypeRegistryPolicy,
+          registryPolicyHash,
+          governanceEventTypeRegistry: input.governanceEventTypeRegistry,
+          registryHash,
+          architectureConfirmationHash: input.architectureConfirmationHash,
+        })
+      : null;
+  const codexHookTrustAccepted =
+    input.hostKind === 'codex' &&
+    codexHookTrustValidation?.ok === true &&
+    input.codexHookTrustEnvelope?.hostMode === 'hooks_enabled';
+  const hookAvailable = hookPath != null && (fs.existsSync(hookPath) || codexHookTrustAccepted);
   const detectedAt = new Date().toISOString();
   if (input.forceTransportDegraded) {
     return {
@@ -135,6 +202,8 @@ function resolveEntry(input: {
       orchestrationEntry: 'cli_ingress',
       hookAvailable,
       degradationLevel: 'transport_degraded',
+      hookTrust: 'degraded',
+      hookTrustEnvelopeValidation: null,
       degradationReason: {
         code: 'transport_degraded',
         hostKind: input.hostKind,
@@ -154,6 +223,8 @@ function resolveEntry(input: {
       orchestrationEntry: input.hostKind === 'codex' || !hookAvailable ? 'cli_ingress' : 'hook_ingress',
       hookAvailable,
       degradationLevel: 'host_partial',
+      hookTrust: input.hostKind === 'codex' ? 'untrusted' : 'degraded',
+      hookTrustEnvelopeValidation: null,
       degradationReason: {
         code: 'host_partial',
         hostKind: input.hostKind,
@@ -168,12 +239,37 @@ function resolveEntry(input: {
     };
   }
   if (input.hostKind === 'codex') {
+    if (codexHookTrustAccepted) {
+      return {
+        hostMode: 'hooks_enabled',
+        orchestrationEntry: 'hook_ingress',
+        hookAvailable,
+        degradationLevel: 'none',
+        hookTrust: 'trusted',
+        hookTrustEnvelopeValidation: codexHookTrustValidation,
+        degradationReason: null,
+      };
+    }
     return {
       hostMode: 'no_hooks',
       orchestrationEntry: 'cli_ingress',
       hookAvailable,
-      degradationLevel: 'none',
-      degradationReason: null,
+      degradationLevel: input.codexHookTrustEnvelope ? 'host_partial' : 'none',
+      hookTrust: input.codexHookTrustEnvelope ? 'untrusted' : 'not_applicable',
+      hookTrustEnvelopeValidation: codexHookTrustValidation,
+      degradationReason: input.codexHookTrustEnvelope
+        ? {
+            code: 'codex_hook_trust_unverified',
+            hostKind: input.hostKind,
+            hookPath,
+            reason: `Codex hook trust envelope rejected: ${codexHookTrustValidation?.mismatches.join(', ') || 'missing validation'}`,
+            detected_at: detectedAt,
+            failed_capability: 'host_capability',
+            fallback_entry: 'cli_ingress',
+            expected_behavior_change:
+              'Codex remains on no-hook CLI ingress until capability probe, SessionStart smoke, config hash, runtime policy hash, and trust receipt all pass.',
+          }
+        : null,
     };
   }
   if (input.forceNoHooks) {
@@ -182,6 +278,8 @@ function resolveEntry(input: {
       orchestrationEntry: 'cli_ingress',
       hookAvailable,
       degradationLevel: 'cli_forced',
+      hookTrust: hookAvailable ? 'degraded' : 'not_applicable',
+      hookTrustEnvelopeValidation: null,
       degradationReason: {
         code: 'forced_no_hooks',
         hostKind: input.hostKind,
@@ -201,6 +299,8 @@ function resolveEntry(input: {
       orchestrationEntry: 'hook_ingress',
       hookAvailable,
       degradationLevel: 'none',
+      hookTrust: 'trusted',
+      hookTrustEnvelopeValidation: null,
       degradationReason: null,
     };
   }
@@ -209,6 +309,8 @@ function resolveEntry(input: {
     orchestrationEntry: 'cli_ingress',
     hookAvailable,
     degradationLevel: 'hook_lost',
+    hookTrust: 'not_applicable',
+    hookTrustEnvelopeValidation: null,
     degradationReason: {
       code: 'hook_unavailable',
       hostKind: input.hostKind,
@@ -225,6 +327,8 @@ function resolveEntry(input: {
 
 function probeHostRecovery(input: {
   projectRoot: string;
+  recordId: string;
+  requirementSetId: string;
   hostKind: MainAgentHostKind;
   flow: RuntimeFlowId;
   stage: string;
@@ -314,6 +418,8 @@ function probeHostRecovery(input: {
   const afterRunLoop = recovered
     ? runMainAgentAutomaticLoop({
         projectRoot: input.projectRoot,
+        recordId: input.recordId,
+        requirementSetId: input.requirementSetId,
         flow: input.flow,
         stage: input.stage,
         host: input.hostKind,
@@ -362,10 +468,7 @@ function probeHostRecovery(input: {
     recovery_log_path: null,
   };
   const logPath = path.join(
-    input.projectRoot,
-    '_bmad-output',
-    'runtime',
-    'ingress',
+    requirementScopedIngressDir(input.projectRoot, input.recordId),
     'recovery',
     `${input.hostKind}-${input.entry.degradationLevel}-${Date.now()}.json`
   );
@@ -397,9 +500,17 @@ function probeHostRecovery(input: {
 
 export function runUnifiedIngress(input: {
   projectRoot: string;
+  recordId: string;
+  requirementSetId?: string;
   hostKind: MainAgentHostKind;
   flow: RuntimeFlowId;
   stage: string;
+  codexHookTrustEnvelope?: GovernanceTransportEnvelope | null;
+  governanceEventTypeRegistryPolicy?: unknown;
+  governanceEventTypeRegistryPolicyHash?: string;
+  governanceEventTypeRegistry?: unknown;
+  governanceEventTypeRegistryHash?: string;
+  architectureConfirmationHash?: string;
   forceNoHooks?: boolean;
   forceHostPartial?: boolean;
   forceTransportDegraded?: boolean;
@@ -407,15 +518,25 @@ export function runUnifiedIngress(input: {
   recoveryInspectHostOverride?: MainAgentHostKind;
 }): UnifiedIngressReceipt {
   const projectRoot = path.resolve(input.projectRoot);
+  const recordId = normalizeRecordId(input.recordId, 'recordId');
+  const requirementSetId = normalizeRecordId(input.requirementSetId ?? input.recordId, 'requirementSetId');
   const entry = resolveEntry({
     projectRoot,
     hostKind: input.hostKind,
+    codexHookTrustEnvelope: input.codexHookTrustEnvelope,
+    governanceEventTypeRegistryPolicy: input.governanceEventTypeRegistryPolicy,
+    governanceEventTypeRegistryPolicyHash: input.governanceEventTypeRegistryPolicyHash,
+    governanceEventTypeRegistry: input.governanceEventTypeRegistry,
+    governanceEventTypeRegistryHash: input.governanceEventTypeRegistryHash,
+    architectureConfirmationHash: input.architectureConfirmationHash,
     forceNoHooks: input.forceNoHooks,
     forceHostPartial: input.forceHostPartial,
     forceTransportDegraded: input.forceTransportDegraded,
   });
   const runLoop = runMainAgentAutomaticLoop({
     projectRoot,
+    recordId,
+    requirementSetId,
     flow: input.flow,
     stage: input.stage,
     host: input.hostKind,
@@ -432,6 +553,8 @@ export function runUnifiedIngress(input: {
   });
   const hostRecovery = probeHostRecovery({
     projectRoot,
+    recordId,
+    requirementSetId,
     hostKind: input.hostKind,
     flow: input.flow,
     stage: input.stage,
@@ -476,6 +599,8 @@ export function runUnifiedIngress(input: {
     reportType: 'main_agent_unified_ingress',
     generatedAt: new Date().toISOString(),
     projectRoot,
+    recordId,
+    requirementSetId,
     hostKind: input.hostKind,
     ...entry,
     hostRecovery,
@@ -499,11 +624,28 @@ export function main(argv: string[]): number {
   const args = parseArgs(argv);
   const hostKind: MainAgentHostKind =
     args.hostKind === 'claude' || args.hostKind === 'codex' ? args.hostKind : 'cursor';
+  const projectRoot = path.resolve(args.cwd ?? process.cwd());
+  const recordId = normalizeRecordId(args.recordId, 'recordId');
+  const requirementSetId = normalizeRecordId(args.requirementSetId ?? args.recordId, 'requirementSetId');
   const receipt = runUnifiedIngress({
-    projectRoot: path.resolve(args.cwd ?? process.cwd()),
+    projectRoot,
+    recordId,
+    requirementSetId,
     hostKind,
     flow: (args.flow as RuntimeFlowId | undefined) ?? 'story',
     stage: args.stage ?? 'implement',
+    codexHookTrustEnvelope: args.codexHookTrustEnvelopePath
+      ? (JSON.parse(fs.readFileSync(path.resolve(projectRoot, args.codexHookTrustEnvelopePath), 'utf8')) as GovernanceTransportEnvelope)
+      : null,
+    governanceEventTypeRegistry: args.governanceEventTypeRegistryPath
+      ? JSON.parse(fs.readFileSync(path.resolve(projectRoot, args.governanceEventTypeRegistryPath), 'utf8'))
+      : undefined,
+    governanceEventTypeRegistryPolicy: args.governanceEventTypeRegistryPolicyPath
+      ? JSON.parse(fs.readFileSync(path.resolve(projectRoot, args.governanceEventTypeRegistryPolicyPath), 'utf8'))
+      : undefined,
+    governanceEventTypeRegistryPolicyHash: args.governanceEventTypeRegistryPolicyHash,
+    governanceEventTypeRegistryHash: args.governanceEventTypeRegistryHash,
+    architectureConfirmationHash: args.architectureConfirmationHash,
     forceNoHooks: args.forceNoHooks === 'true',
     forceHostPartial: args.forceHostPartial === 'true',
     forceTransportDegraded: args.forceTransportDegraded === 'true',
@@ -512,10 +654,7 @@ export function main(argv: string[]): number {
   const reportPath = path.resolve(
     args.reportPath ??
       path.join(
-        receipt.projectRoot,
-        '_bmad-output',
-        'runtime',
-        'ingress',
+        requirementScopedIngressDir(receipt.projectRoot, receipt.recordId),
         `${hostKind}-${receipt.orchestrationEntry}.json`
       )
   );

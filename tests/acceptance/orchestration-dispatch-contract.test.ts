@@ -1,3 +1,5 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
@@ -128,5 +130,32 @@ describe('orchestration dispatch contract', () => {
     expect(executionPacket.sourceRecommendationPacketId).toBe('pkt-rec-01');
     expect(resumePacket.originalExecutionPacketId).toBe(executionPacket.packetId);
     expect(resumePacket.resumeReason).toContain('readiness gate passed');
+  });
+
+  it('writes packet artifacts to requirement-scoped prompt packet path when a record exists', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'dispatch-contract-req-'));
+    try {
+      const recordDir = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQSET-PACKET');
+      mkdirSync(recordDir, { recursive: true });
+      writeFileSync(
+        path.join(recordDir, 'requirement-record.json'),
+        JSON.stringify({ recordId: 'REQ-PACKET', requirementSetId: 'REQSET-PACKET', runId: 'run-packet' }) + '\n',
+        'utf8'
+      );
+
+      expect(packetArtifactPath(root, 'run-packet', 'packet-001')).toContain(
+        path.join(
+          '_bmad-output',
+          'runtime',
+          'requirement-records',
+          'REQSET-PACKET',
+          'prompts',
+          'prompt-packets',
+          'packet-001.json'
+        )
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

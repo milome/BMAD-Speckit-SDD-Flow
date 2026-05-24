@@ -23,21 +23,25 @@ description: |
 
 ## Main Agent Orchestration Surface
 
-在 interactive main-agent 模式下，主 Agent 在发起、继续或收口 `bugfix` 链路前，必须优先读取：
+Consumer users activate governance through `$bmad-speckit`, `/bmad-speckit`, or `bmad-speckit` in the active AI host session. Do not present `npm run main-agent-orchestration` or `npx bmad-speckit main-agent-orchestration ...` as the default consumer-user step; those commands are install validation, CI, debug, or no-skill fallback only.
 
-```bash
-npm run main-agent-orchestration -- --cwd {project-root} --action inspect
+In interactive main-agent mode, before starting, continuing, or closing this flow, the main Agent must internally run or equivalently consume the Main Agent control plane:
+
+```text
+main-agent-orchestration --action inspect --host <codex|cursor|claude>
+main-agent-orchestration --action dispatch-plan --host <codex|cursor|claude>
 ```
 
-如需生成正式派发计划，则读取：
+Global branching can only be derived from `requirement-record.json`, `currentMentalModel`, and the six mental model chain: requirement confirmation, architecture confirmation, implementation readiness, execution closure, audit review, and delivery confirmation. `bmad-help`, dashboard, score, SFT, legacy reports, `orchestrationState`, `pendingPacket`, `continueDecision`, `mainAgentNextAction`, and `mainAgentReady` are projections, compatibility hints, or evidence only; after any subagent result, host closeout, rerun, or blocking event, re-run inspect before choosing the next global branch.
 
-```bash
-npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan
-```
-
-`mainAgentNextAction / mainAgentReady` 仍保留为 handoff compatibility 字段，但不再是唯一 runtime truth。
+Hard prohibitions:
+- Do not ask normal consumer users to activate governance through npm or npx.
+- Do not continue dispatch from `PASS`, reviewer prose, host summary, `runAuditorHost closeout approved`, handoff summary, or old runtime files alone.
+- Do not hand-write packet files or default to worker-consumable queue items in interactive mode.
+- Do not let subagents choose the next global branch; subagents execute bounded packets only, and the main Agent chooses the next step after re-reading controlled records.
 
 > **【必读】使用本 skill 前，必须先读取并遵守 `{project-root}/.cursor/rules/bmad-bug-assistant.mdc` 中的自检规则。**发起 mcp_task 或 party-mode 子任务前，须完成该阶段「发起前自检清单」全部项并输出自检结果，否则不得发起。
+
 > **Party-mode source of truth（Cursor）**：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。所有 party-mode 的 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 不得定义第二套 gate 语义。
 
 ## Party-Mode 主 Agent 编排约束（Cursor）

@@ -17,13 +17,14 @@ Do **not** use this skill as the default proof surface for current runtime succe
 
 The accepted path is now:
 
-1. hook writes `orchestration_state` and `pending_packet`
-2. main Agent runs `npm run main-agent-orchestration -- --cwd {project-root} --action inspect`
-3. main Agent runs `dispatch-plan` when packet materialization is needed
-4. main Agent dispatches bounded child work
-5. main Agent re-reads state and decides the next step
-6. `runAuditorHost` remains post-audit close-out only
-7. `fallbackAutonomousMode=false`
+1. Consumer users activate governance in the active host session with `$bmad-speckit`, `/bmad-speckit`, or `bmad-speckit`.
+2. The main Agent internally resolves the active Requirement from explicit IDs or `_bmad-output/runtime/requirement-records/index.json`.
+3. The main Agent reloads `_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json`.
+4. The main Agent drives only the six mental model chain: requirement confirmation, architecture confirmation, implementation readiness, execution closure, audit review, and delivery confirmation.
+5. Bounded child work, TaskReport evidence, audit evidence, gate checks, requirement closures, and closeout attempts are written through controlled ingest.
+6. `bmad-help`, dashboard, score, SFT, hooks, and legacy reports are projections or evidence only; none of them is a control source.
+7. CLI access to `main-agent-orchestration` is install validation, CI, debug, or no-skill fallback only.
+8. `fallbackAutonomousMode=false`.
 
 ## When To Read This Skill
 

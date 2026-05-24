@@ -42,8 +42,8 @@
 
 | 层级                  | 字段 / 标签                                               | 角色                   | 权威来源                                     | 是否直接面向用户   |
 | --------------------- | --------------------------------------------------------- | ---------------------- | -------------------------------------------- | ------------------ |
-| runtime authoritative | `flow`                                                    | 工作类型维度           | runtime / helper state                       | 是                 |
-| runtime authoritative | `sourceMode`                                              | 内部来源语义           | runtime context schema / registry            | 否，默认不首屏展示 |
+| runtime authoritative | `flow`                                                    | 工作类型维度           | `ResolvedRuntimeContext` + RequirementRecord | 是                 |
+| runtime authoritative | `sourceMode`                                              | 内部来源语义           | `bmadWorkflowProjection` / source evidence   | 否，默认不首屏展示 |
 | help-layer derived    | `contextMaturity`                                         | 用户可见成熟度维度     | 显式证据派生                                 | 是                 |
 | help-layer derived    | `implementationReadinessStatus`                           | 实施型推荐的 gate 输入 | readiness / remediation / execution evidence | 是                 |
 | user-visible output   | `recommended` / `blocked` + `rerouteRequired`            | 推荐标签与升轨信号     | routing result                               | 是                 |
@@ -51,7 +51,7 @@
 固定边界：
 
 1. `sourceMode` 不在第一阶段改义，也不写回为成熟度字段。
-2. `contextMaturity` 是派生字段，不写回 canonical runtime context 真相源。
+2. `contextMaturity` 是派生字段，不写回 `ResolvedRuntimeContext` 或 RequirementRecord 真相源。
 3. `implementationReadinessStatus` 是帮助层读取和解释治理证据后的结果，不替代底层 gate。
 
 ---
@@ -113,12 +113,13 @@
 
 帮助层读取 `implementationReadinessStatus` 时，固定按以下顺序消费证据：
 
-1. `runtime context / activeScope`：先确定当前 flow / scope / artifact hint，禁止跨 scope 猜测
-2. `auditIndex` 中与当前 orphan artifact 对齐的 authoritative document-audit closeout
-3. 最新 readiness report
-4. 最新 remediation artifact
-5. execution record / rerun gate 结果
-6. deferred gaps tracking
+1. `ResolvedRuntimeContext`：先确定当前 flow / scope / artifact hint，禁止跨 scope 猜测
+2. runtime context / activeScope：仅作为旧兼容投影读取顺序说明；目标态由 `ResolvedRuntimeContext` 和 RequirementRecord 承接
+3. `auditIndex` 中与当前 orphan artifact 对齐的 authoritative document-audit closeout
+4. 最新 readiness report
+5. 最新 remediation artifact
+6. execution record / rerun gate 结果
+7. deferred gaps tracking
 
 ### 5.3 冲突处理
 
@@ -536,7 +537,7 @@ README 不重复维护字段细节，字段细节仍以本文为准。
 
 以下内容不在本文定义范围内：
 
-1. 把 `contextMaturity` 写回 runtime context schema
+1. 把 `contextMaturity` 写回 `ResolvedRuntimeContext`、runtime policy snapshot 或 RequirementRecord
 2. 在 runtime kernel 中合并成单一 gate 实现
 3. 修改 rerun / packet / execution record 状态机本体
 4. 提前为 Provider sidecar 打开 authoritative 判定权

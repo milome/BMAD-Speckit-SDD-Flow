@@ -705,13 +705,21 @@ export function shouldAutoContinue(
         ready?: boolean;
         mainAgentNextAction?: string;
         mainAgentReady?: boolean;
+        runtimeResumeProjection?: {
+          runtimeNextAction?: string | null;
+          ready?: boolean;
+          source?: string;
+        };
+        source?: string;
       }
     | undefined,
   config?: RuntimeConfig
 ): boolean {
   const cfg = config || loadConfig();
-  const effectiveNextAction = handoff?.mainAgentNextAction ?? handoff?.next_action;
-  const effectiveReady = handoff?.mainAgentReady ?? handoff?.ready;
+  const resumeProjection = handoff?.runtimeResumeProjection;
+  const projectionBacked = resumeProjection?.source === 'requirement_record';
+  const effectiveNextAction = projectionBacked ? resumeProjection?.runtimeNextAction : undefined;
+  const effectiveReady = projectionBacked ? resumeProjection?.ready : undefined;
 
   if (!cfg.auto_continue.enabled) {
     return false;

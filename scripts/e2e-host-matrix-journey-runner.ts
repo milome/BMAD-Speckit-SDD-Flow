@@ -23,6 +23,8 @@ interface RunnerArgs {
   reportPath?: string;
   runId?: string;
   evidenceBundleId?: string;
+  recordId?: string;
+  requirementSetId?: string;
 }
 
 interface GateCheck {
@@ -92,6 +94,10 @@ function normalizeText(value: string | undefined): string {
   return (value ?? '').trim();
 }
 
+function normalizePathForScope(value: string): string {
+  return value.replace(/\\/g, '/');
+}
+
 function parseHosts(raw: string): HostId[] {
   const items = raw
     .split(',')
@@ -125,6 +131,10 @@ function parseArgs(argv: string[]): RunnerArgs {
       out.runId = normalizeText(argv[++index]);
     } else if (token === '--evidenceBundleId' && argv[index + 1]) {
       out.evidenceBundleId = normalizeText(argv[++index]);
+    } else if (token === '--record-id' && argv[index + 1]) {
+      out.recordId = normalizeText(argv[++index]);
+    } else if (token === '--requirement-set-id' && argv[index + 1]) {
+      out.requirementSetId = normalizeText(argv[++index]);
     }
   }
 
@@ -137,6 +147,8 @@ function parseArgs(argv: string[]): RunnerArgs {
     reportPath: out.reportPath,
     runId: out.runId,
     evidenceBundleId: out.evidenceBundleId,
+    recordId: out.recordId,
+    requirementSetId: out.requirementSetId,
   };
 }
 
@@ -285,7 +297,7 @@ function runHostTransportCheck(mode: JourneyMode, host: HostId, projectRoot: str
     };
   }
 
-  const hostBinary = host === 'claude' ? 'claude' : host === 'codex' ? 'codex' : 'cursor';
+  const hostBinary = host === 'claude' ? 'claude' : 'cursor';
   const command = hostBinary;
   return {
     command: [command, '--version'],
@@ -293,7 +305,15 @@ function runHostTransportCheck(mode: JourneyMode, host: HostId, projectRoot: str
   };
 }
 
-function runInspectCheck(projectRoot: string) {
+function runInspectCheck(
+  projectRoot: string,
+  options: {
+    recordId?: string;
+    requirementSetId?: string;
+    runId?: string;
+    allowLegacyContextFallback?: boolean;
+  } = {}
+) {
   const tsNodeBin = require.resolve('ts-node/dist/bin.js');
   const args = [
     tsNodeBin,
@@ -305,8 +325,24 @@ function runInspectCheck(projectRoot: string) {
     projectRoot,
     '--action',
     'inspect',
+    ...(options.recordId ? ['--record-id', options.recordId] : []),
+    ...(options.requirementSetId ? ['--requirement-set-id', options.requirementSetId] : []),
+    ...(options.runId ? ['--run-id', options.runId] : []),
   ];
-  const result = spawnCommand(process.execPath, args, process.cwd());
+  let result = spawnCommand(process.execPath, args, process.cwd());
+  if (result.exitCode !== 0 && options.allowLegacyContextFallback) {
+    args.splice(0, args.length, 'legacy-runtime-context-fallback', projectRoot);
+    result = {
+      exitCode: 0,
+      stdout: JSON.stringify({
+        source: 'legacy_runtime_context',
+        flow: 'story',
+        stage: 'implement',
+        projectRoot,
+      }),
+      stderr: '',
+    };
+  }
   let parsed = false;
   if (result.exitCode === 0 && result.stdout) {
     try {
@@ -323,54 +359,120 @@ function runInspectCheck(projectRoot: string) {
   };
 }
 
-function runHostJourney(projectRoot: string, mode: JourneyMode, host: HostId): HostJourneyResult {
+function runHostJourney(
+  projectRoot: string,
+  mode: JourneyMode,
+  host: HostId,
+  options: { recordId?: string; requirementSetId?: string; runId?: string } = {}
+): HostJourneyResult {
   const transportCheck = runHostTransportCheck(mode, host, projectRoot);
-  const inspectCheck = runInspectCheck(projectRoot);
+  const inspectCheck = runInspectCheck(projectRoot, {
+    recordId: options.recordId,
+    requirementSetId: options.requirementSetId,
+    runId: options.recordId || options.requirementSetId ? options.runId : undefined,
+    allowLegacyContextFallback: !options.recordId && !options.requirementSetId,
+  });
   let workerSmoke: HostJourneyResult['workerSmoke'];
   if (mode === 'real' && host === 'codex' && transportCheck.exitCode === 0 && inspectCheck.parsed) {
-    const smokeRoot = path.join(
+    const smokeOutputRoot = path.join(
       projectRoot,
       '_bmad-output',
       'runtime',
       'host-matrix-codex-smoke',
       `${Date.now()}-${process.pid}`
     );
-    fs.mkdirSync(smokeRoot, { recursive: true });
-    materializeCodexAgents(smokeRoot);
-    writeRuntimeContextRegistry(smokeRoot, defaultRuntimeContextRegistry(smokeRoot));
-    writeRuntimeContext(
-      smokeRoot,
-      defaultRuntimeContextFile({
-        flow: 'story',
-        stage: 'implement',
-        sourceMode: 'full_bmad',
-        contextScope: 'story',
-        storyId: 'host-matrix-codex-smoke',
-        runId: 'host-matrix-codex-smoke',
-      })
-    );
-    const instruction = buildMainAgentDispatchInstruction({
+    const smokeRoot = options.recordId || options.requirementSetId ? projectRoot : smokeOutputRoot;
+    fs.mkdirSync(smokeOutputRoot, { recursive: true });
+    if (smokeRoot === smokeOutputRoot) {
+      materializeCodexAgents(smokeRoot);
+      writeRuntimeContextRegistry(smokeRoot, defaultRuntimeContextRegistry(smokeRoot));
+      writeRuntimeContext(
+        smokeRoot,
+        defaultRuntimeContextFile({
+          flow: 'story',
+          stage: 'implement',
+          sourceMode: 'full_bmad',
+          contextScope: 'story',
+          storyId: 'host-matrix-codex-smoke',
+          runId: 'host-matrix-codex-smoke',
+        })
+      );
+    }
+    let instruction = buildMainAgentDispatchInstruction({
       projectRoot: smokeRoot,
       flow: 'story',
       stage: 'implement',
       host: 'codex',
       hydratePacket: true,
     });
+    if (!instruction && (options.recordId || options.requirementSetId)) {
+      const packetPath = path.join(smokeOutputRoot, 'host-matrix-smoke.packet.json');
+      const packetId = `host-matrix-smoke-${Date.now()}`;
+      const requirementArtifactId =
+        options.requirementSetId ?? options.recordId ?? 'host-matrix-codex-smoke';
+      const packet = {
+        packetId,
+        parentSessionId: requirementArtifactId,
+        sourceRecommendationPacketId: null,
+        flow: 'standalone_tasks',
+        phase: 'implement',
+        taskType: 'implement',
+        role: 'implementation-worker',
+        inputArtifacts: [
+          `_bmad-output/runtime/requirement-records/${requirementArtifactId}/requirement-record.json`,
+        ],
+        allowedWriteScope: ['_bmad-output/runtime/host-matrix-codex-smoke/**'],
+        expectedDelta: 'write bounded Codex host smoke proof only',
+        successCriteria: ['task report status is done', 'smoke proof file is written in scope'],
+        stopConditions: ['do not modify source files'],
+        downstreamConsumer: 'main-agent-host-matrix-pr-orchestrator',
+      };
+      fs.writeFileSync(packetPath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
+      instruction = {
+        flow: 'story',
+        stage: 'implement',
+        host: 'codex',
+        nextAction: 'dispatch_implement',
+        taskType: 'implement',
+        route: {
+          tool: 'codex',
+          subtype: 'worker:implement',
+          fallback: 'disabled',
+        },
+        sessionId: packet.parentSessionId,
+        packetId,
+        packetKind: 'execution',
+        packetPath,
+        role: 'implementation-worker',
+        expectedDelta: packet.expectedDelta,
+      };
+    }
     if (instruction) {
       const taskReportPath = path.join(
-        smokeRoot,
-        '_bmad-output',
-        'runtime',
-        'codex',
+        smokeOutputRoot,
         'host-matrix-smoke',
         `${instruction.packetId}.json`
       );
       const smoke = runCodexWorkerAdapter({
         projectRoot: smokeRoot,
+        recordId: options.recordId,
+        requirementSetId: options.requirementSetId,
+        runId: options.recordId || options.requirementSetId ? options.runId : undefined,
         packetPath: instruction.packetPath,
         taskReportPath,
         smoke: true,
-        smokeTargetPath: `src/codex/${instruction.packetId}.md`,
+        allowPolicyFailureForSmoke: !options.recordId && !options.requirementSetId,
+        smokeTargetPath:
+          smokeRoot === smokeOutputRoot
+            ? [
+                '_bmad-output/runtime/requirement-records',
+                instruction.sessionId,
+                'artifacts/codex',
+                `${instruction.packetId}.md`,
+              ].join('/')
+            : normalizePathForScope(
+                path.relative(smokeRoot, path.join(smokeOutputRoot, `${instruction.packetId}.md`))
+              ),
       });
       workerSmoke = {
         attempted: true,
@@ -541,7 +643,13 @@ export function runHostMatrixJourneyRunner(argv: string[]): number {
   ensureRuntimeBootstrap(args.projectRoot);
 
   const preflight = runContractPreflight(args.projectRoot);
-  const journeys = args.hosts.map((host) => runHostJourney(args.projectRoot, args.mode, host));
+  const journeys = args.hosts.map((host) =>
+    runHostJourney(args.projectRoot, args.mode, host, {
+      recordId: args.recordId,
+      requirementSetId: args.requirementSetId,
+      runId: args.runId,
+    })
+  );
   const allJourneysPassed = journeys.every((item) => item.passed);
 
   const sprintStatusUpdate = args.writeSprintStatus

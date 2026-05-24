@@ -28,24 +28,22 @@ description: |
 
 ## 主 Agent 编排面（强制）
 
-交互模式下，本 skill 必须以仓库原生 `main-agent-orchestration` 作为**唯一**编排权威。`runAuditorHost` 只负责审计后的 host 收口，**不能**替代主 Agent 的下一步分支决策。
+消费项目用户通过 `$bmad-speckit`、`/bmad-speckit` 或 `bmad-speckit` 在当前 AI 宿主会话中激活主控。不得把 package-script 主控编排命令或 bmad-speckit 主控编排命令写成普通消费用户默认步骤；这些命令只允许用于安装验证、CI、debug 或 no-skill fallback。
 
-在派发任何 implement / audit / remediate / document 执行体之前，主 Agent **必须**：
+在 interactive main-agent 模式下，主 Agent 在发起、继续或收口本链路前，必须内部运行或等价消费 Main Agent control plane：
 
-1. 执行 `npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action inspect`
-2. 读取 `orchestrationState`、`pendingPacketStatus`、`pendingPacket`、`continueDecision`、`mainAgentNextAction`、`mainAgentReady`
-3. 若下一分支可派发但 `pendingPacketStatus` 为 `none` 或 `missing_packet_file`，执行 `npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action dispatch-plan`
-4. 只依据返回的 packet / instruction 派发，不得仅凭审计报告文本或 reviewer prose 手工拼 prompt
-5. 按 `claim` → 子代理 bounded execution → `dispatch` → 子结果回读 / `complete` / `invalidate` 的顺序驱动 packet 生命周期
-6. 每次子结果返回后，以及每次 `runAuditorHost` 收口后，都必须再次执行 `npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action inspect`，再决定下一全局分支
+```text
+main-agent-orchestration --action inspect --host <codex|cursor|claude>
+main-agent-orchestration --action dispatch-plan --host <codex|cursor|claude>
+```
 
-兼容规则：
-- `mainAgentNextAction` 与 `mainAgentReady` 只是兼容汇总字段；真正权威状态始终是 `orchestrationState + pendingPacket + continueDecision`。
+全局分支只能由 `requirement-record.json`、`currentMentalModel` 和六个心智模型链路决定：需求确认、架构确认、实施准备、执行闭合、审计复核、交付确认。`bmad-help`、Dashboard、score、SFT、legacy report、`orchestrationState`、`pendingPacket`、`continueDecision`、`mainAgentNextAction` 和 `mainAgentReady` 只能作为 projection / compatibility hint / evidence；子代理返回、host closeout、rerun 或阻断事件后必须重新 inspect，再决定下一条全局分支。
 
 硬禁止事项：
-- 未重新读取 `main-agent-orchestration` 前，禁止仅根据 `PASS`、reviewer prose、host summary 直接继续派发。
+- 禁止要求普通消费用户通过 npm / npx 激活主控。
+- 禁止仅根据 `PASS`、reviewer prose、host summary、`runAuditorHost closeout approved`、handoff summary 或旧 runtime 文件继续派发。
 - interactive mode 下禁止手写 packet 文件或默认写 worker-consumable queue item。
-- 禁止让子代理决定下一条全局执行链；子代理只执行 bounded packet，下一步永远由主 Agent 回读 state 后决定。
+- 禁止让子代理决定下一条全局执行链；子代理只执行 bounded packet，下一步永远由主 Agent 回读受控记录后决定。
 
 ## 快速决策指引
 
@@ -393,10 +391,11 @@ Batch N: Task ... → 执行 → code-review审计 → 通过
 ### 5.1 执行流程
 
 在本阶段开始执行 tasks 或拉起任何执行体前，主 Agent 必须先：
-- 执行 `npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action inspect`，消费当前 `orchestrationState` 与 `pendingPacket`
-- 当 `mainAgentNextAction` 可派发但尚无可用 packet 时，执行 `npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action dispatch-plan`
-- 通过 `main-agent-orchestration` 生命周期动作 claim / dispatch packet，而不是绕过 state 直接派发
-- 每次 bounded 子结果返回后，以及每次 `runAuditorHost` 调用后，都再次 `inspect`，再进入下一批任务或下一审计分支
+- 确认用户已通过 `$bmad-speckit`、`/bmad-speckit` 或 `bmad-speckit` 激活主控，或当前宿主已进入等价 main-agent 模式。
+- 内部运行或等价消费 `main-agent-orchestration --action inspect --host <codex|cursor|claude>`，并从 `requirement-record.json`、`currentMentalModel` 和六个心智模型读取权威状态。
+- 需要正式派发计划时，内部运行或等价消费 `main-agent-orchestration --action dispatch-plan --host <codex|cursor|claude>`。
+- 通过受控 packet lifecycle claim / dispatch / complete / invalidate 推进，不得绕过受控记录直接派发。
+- 每次 bounded 子结果返回后，以及每次 `runAuditorHost` 调用后，都再次 inspect，再进入下一批任务或下一审计分支
 
 1. **读取 tasks.md**（或 tasks-v*.md），识别所有未完成任务（`[ ]` 复选框）。
 2. **【ralph-method 强制前置】创建 prd 与 progress 追踪文件**：

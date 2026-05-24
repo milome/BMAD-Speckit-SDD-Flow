@@ -10,35 +10,22 @@
 - `auditReportPath`: string — 审计报告路径
 - `next_action`: string — 推荐下一步动作
 - `ready`: boolean — 是否准备好自动继续 (可选，默认 false)
+- `pendingPacketStatus`: string — 兼容投影字段，用于描述旧 packet 是否存在；不得作为主控事实源
 - `mainAgentNextAction`: string — 主 Agent 兼容摘要字段，供旧 handoff consumer 读取
 - `mainAgentReady`: boolean — 主 Agent 兼容摘要字段，供旧 handoff consumer 读取
 
-## Preferred Main-Agent Surface
+## Main-Agent Control Boundary
 
-interactive 模式下，主 Agent 的权威编排面不是 handoff 字段本身，而是 repo-native `main-agent-orchestration` surface。
+interactive 模式下，普通消费用户只能通过 `$bmad-speckit`、`/bmad-speckit` 或 `bmad-speckit` 在当前 AI 宿主会话中激活主控。`main-agent-orchestration inspect / dispatch-plan` 是主控内部动作；npm / npx 入口只允许用于安装验证、CI、debug 或 no-skill fallback。
 
-主 Agent 在决定下一步前，必须优先执行：
+handoff 字段本身不是控制事实源。主 Agent 在决定下一步前，必须重新读取受控记录，并只从以下事实推导全局分支：
 
-```bash
-npm run main-agent-orchestration -- --cwd {project-root} --action inspect
-```
+- `requirement-record.json`
+- `currentMentalModel`
+- 六个心智模型链路：需求确认、架构确认、实施准备、执行闭合、审计复核、交付确认
+- controlled ingest 写入的 gate / audit / closeout / evidence 记录
 
-必要时再执行：
-
-```bash
-npm run main-agent-orchestration -- --cwd {project-root} --action dispatch-plan
-```
-
-主 Agent 应优先消费以下字段：
-
-- `orchestrationState`
-- `pendingPacketStatus`
-- `pendingPacket`
-- `continueDecision`
-- `mainAgentNextAction`
-- `mainAgentReady`
-
-其中 `mainAgentNextAction` / `mainAgentReady` 在 handoff 中仅作为 compatibility summary；真正权威状态始终是 `orchestrationState + pendingPacket + continueDecision`。
+`orchestrationState`、`pendingPacket`、`continueDecision`、`mainAgentNextAction` 和 `mainAgentReady` 只能作为 projection、compatibility hint 或 evidence。即使 handoff 中显示 ready，也不得绕过 RequirementRecord、当前 hash、当前 attempt 和六个心智模型状态。
 
 ## Example
 
@@ -49,6 +36,7 @@ artifactDocPath: specs/epic-1/story-1/spec.md
 auditReportPath: reports/spec-audit.md
 next_action: proceed_to_plan
 ready: true
+pendingPacketStatus: none
 mainAgentNextAction: dispatch_implement
 mainAgentReady: true
 ```
@@ -63,7 +51,6 @@ mainAgentReady: true
 ## Main Agent Rule
 
 - `next_action` / `ready` 仍可保留为阶段产出语义
-- interactive 模式下必须先读取 `main-agent-orchestration` surface，再决定全局分支
 - handoff 里的 `mainAgentNextAction` / `mainAgentReady` 只作为 compatibility summary
-- 若 repo-native orchestration surface 可用，则以该 surface 为准
-- 仅当 repo-native orchestration surface 不可用时，才回退到 handoff 中的 `mainAgentNextAction` / `mainAgentReady`
+- interactive 模式下必须通过受控 RequirementRecord、`currentMentalModel` 和六个心智模型链路决定全局分支
+- 不存在从 handoff 字段回退取得控制权的路径；handoff 缺失或不一致时，应重新 inspect 受控记录或阻断

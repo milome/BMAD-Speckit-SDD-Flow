@@ -45,6 +45,10 @@ import {
   type MainAgentOrchestrationSurface,
 } from './main-agent-orchestration';
 import { validateLayer1PrdCompletionMarker } from './bmad-help-five-layer-progress-marker';
+import {
+  resolveActiveRequirement,
+  resolvedRuntimeContextToRuntimeContext,
+} from './resolve-active-requirement';
 
 const READINESS_REPORT_PATTERN = /^implementation-readiness-report-\d{4}-\d{2}-\d{2}\.md$/i;
 const IMPLEMENTATION_GATE_NAME = 'implementation-readiness' as const;
@@ -122,6 +126,8 @@ export interface ResolveBmadHelpRoutingStateInput {
   storySlug?: string;
   runId?: string;
   artifactRoot?: string;
+  requirementSetId?: string;
+  recordId?: string;
   contextSource?: string;
 }
 
@@ -653,11 +659,23 @@ function resolveContinueStateSummary(input: {
   runtimeContext: Partial<RuntimeContextFile> | null;
 }): ContinueStateSummary {
   const contextCloseout = input.runtimeContext?.latestReviewerCloseout;
-  if (contextCloseout && typeof contextCloseout.canMainAgentContinue === 'boolean') {
+  const contextCloseoutWithCompat = contextCloseout as
+    | {
+        canMainAgentContinue?: unknown;
+        mainAgentCanContinue?: unknown;
+      }
+    | undefined;
+  const contextCanContinue =
+    typeof contextCloseoutWithCompat?.canMainAgentContinue === 'boolean'
+      ? contextCloseoutWithCompat.canMainAgentContinue
+      : typeof contextCloseoutWithCompat?.mainAgentCanContinue === 'boolean'
+        ? contextCloseoutWithCompat.mainAgentCanContinue
+        : null;
+  if (contextCloseout && contextCanContinue !== null) {
     return {
-      mainAgentCanContinue: contextCloseout.canMainAgentContinue,
+      mainAgentCanContinue: contextCanContinue,
       source: 'runtimeContext',
-      continueDecision: contextCloseout.canMainAgentContinue
+      continueDecision: contextCanContinue
         ? 'continue'
         : contextCloseout.closeoutEnvelope?.rerunDecision &&
             contextCloseout.closeoutEnvelope.rerunDecision !== 'none'
@@ -667,7 +685,7 @@ function resolveContinueStateSummary(input: {
   }
 
   if (!input.projectRoot) {
-    return { mainAgentCanContinue: null, source: 'none' };
+    return { mainAgentCanContinue: null, source: 'none', continueDecision: null };
   }
 
   const registry = readRegistryOrDefault(input.projectRoot);
@@ -788,6 +806,17 @@ function mergeRuntimeContext(
     return null;
   }
   try {
+    const resolved = resolveActiveRequirement({
+      root: input.projectRoot,
+      recordId: input.recordId,
+      requirementSetId: input.requirementSetId,
+      runId: input.runId,
+    });
+    return resolvedRuntimeContextToRuntimeContext(resolved);
+  } catch {
+    // Fall back to the legacy context reader only when no active requirement can be resolved.
+  }
+  try {
     return readRuntimeContext(input.projectRoot, input.runtimeContextPath);
   } catch {
     return null;
@@ -868,6 +897,40 @@ function inferComplexityFactors(input: {
 
 function toImplementationEntryFlowId(flow: RuntimeFlowId): ImplementationEntryFlowId | null {
   return flow === 'story' || flow === 'bugfix' || flow === 'standalone_tasks' ? flow : null;
+}
+
+function resolveRequirementRecordImplementationEntryGate(
+  runtimeContext: Partial<RuntimeContextFile> | null
+): ImplementationEntryGate | null {
+  const candidate = (
+    runtimeContext as
+      | {
+          resolvedRuntimeContext?: { kind?: string };
+          implementationEntryGate?: ImplementationEntryGate;
+        }
+      | null
+  )?.implementationEntryGate;
+  const resolvedKind = (
+    runtimeContext as { resolvedRuntimeContext?: { kind?: string } } | null
+  )?.resolvedRuntimeContext?.kind;
+  if (resolvedKind !== 'ResolvedRuntimeContext' || !candidate) {
+    return null;
+  }
+
+  const evidence = candidate.evidenceSources;
+  const hasEvidenceSource = Boolean(
+    evidence?.readinessReportPath ||
+      evidence?.remediationArtifactPath ||
+      evidence?.executionRecordPath ||
+      evidence?.authoritativeAuditReportPath
+  );
+  const emptyMissingGate =
+    candidate.decision === 'block' &&
+    candidate.readinessStatus === 'missing' &&
+    candidate.blockerCodes.length === 1 &&
+    candidate.blockerCodes[0] === 'missing_readiness_evidence' &&
+    !hasEvidenceSource;
+  return emptyMissingGate ? null : candidate;
 }
 
 function buildImplementationEntryBlockers(input: {
@@ -951,10 +1014,15 @@ export function resolveBmadHelpRoutingState(
     auditFact,
     overrides: input.implementationReadinessEvidence,
   });
-  const implementationReadinessStatus = deriveImplementationReadinessStatus(
+  const derivedImplementationReadinessStatus = deriveImplementationReadinessStatus(
     input.flow,
     implementationEvidence
   );
+  const requirementRecordImplementationEntryGate =
+    resolveRequirementRecordImplementationEntryGate(runtimeContext);
+  const implementationReadinessStatus =
+    requirementRecordImplementationEntryGate?.readinessStatus ??
+    derivedImplementationReadinessStatus;
   const contextEvidence = inferContextMaturityEvidence({
     runtimeContext,
     implementationReadinessStatus,
@@ -1001,7 +1069,7 @@ export function resolveBmadHelpRoutingState(
     authoritativeAuditReportPath: auditFact.reportPath ?? null,
   };
   const semanticFingerprint = normalizeText(runtimeContext?.artifactPath) || null;
-  const implementationEntryGate =
+  const derivedImplementationEntryGate =
     implementationEntryFlow != null
       ? resolveImplementationEntryGate({
           requestedFlow: implementationEntryFlow,
@@ -1027,6 +1095,8 @@ export function resolveBmadHelpRoutingState(
           semanticFingerprint,
           evaluatedAt: new Date().toISOString(),
         };
+  const implementationEntryGate =
+    requirementRecordImplementationEntryGate ?? derivedImplementationEntryGate;
   const recommendedFlow: RuntimeFlowId = implementationEntryGate.recommendedFlow;
   const recommendationLabel: BmadHelpRoutingState['recommendationLabel'] =
     implementationEntryGate.decision === 'pass' ? 'recommended' : 'blocked';
@@ -1038,21 +1108,25 @@ export function resolveBmadHelpRoutingState(
     stage: input.stage,
     implementationEntryGate,
   });
-  const mainAgentAction =
-    mainAgentOrchestration.mainAgentNextAction != null ||
-    mainAgentOrchestration.mainAgentReady != null
-      ? {
-          nextAction: mainAgentOrchestration.mainAgentNextAction,
-          ready: mainAgentOrchestration.mainAgentReady,
-        }
-      : deriveMainAgentNextAction({
-          stage: input.stage,
-          continueDecision: continueState.continueDecision,
-          implementationEntryDecision: implementationEntryGate.decision,
-        });
+  const resumeProjection =
+    'runtimeResumeProjection' in mainAgentOrchestration
+      ? mainAgentOrchestration.runtimeResumeProjection
+      : undefined;
+  const mainAgentAction = resumeProjection
+    ? {
+        nextAction: resumeProjection.runtimeNextAction,
+        ready: resumeProjection.ready,
+      }
+    : deriveMainAgentNextAction({
+        stage: input.stage,
+        continueDecision: continueState.continueDecision,
+        implementationEntryDecision: implementationEntryGate.decision,
+      });
   const effectiveContinueState =
-    mainAgentOrchestration.continueDecision != null ||
-    mainAgentOrchestration.mainAgentCanContinue != null
+    continueState.source === 'runtimeContext'
+      ? continueState
+      : mainAgentOrchestration.continueDecision != null ||
+          mainAgentOrchestration.mainAgentCanContinue != null
       ? {
           mainAgentCanContinue: mainAgentOrchestration.mainAgentCanContinue,
           source:
@@ -1129,6 +1203,8 @@ export function resolveBmadHelpRuntimePolicy(
     storySlug: input.storySlug,
     runId: input.runId,
     artifactRoot: input.artifactRoot,
+    requirementSetId: input.requirementSetId,
+    recordId: input.recordId,
     contextSource: input.contextSource,
   });
 

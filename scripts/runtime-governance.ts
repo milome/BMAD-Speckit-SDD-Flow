@@ -19,12 +19,12 @@ import { loadConfig, getAuditConvergence, getStageConfig } from './bmad-config';
 import { scoringEnabledForTriggerStage } from '../packages/scoring/trigger/trigger-loader';
 import { parseRuntimePolicyTemplatesYaml } from './runtime-governance-template-schema';
 import { applyRegisteredAugmenters } from './runtime-governance-registry';
-import {
-  deriveContextMaturity,
-  type ContextMaturity,
-  type ContextMaturityEvidence,
-  type RuntimeSourceMode,
-} from '../packages/runtime-context/src/context';
+import { deriveContextMaturity } from '../packages/runtime-context/src/context';
+import type {
+  ContextMaturity,
+  ContextMaturityEvidence,
+  RuntimeSourceMode,
+} from '../packages/runtime-context/src/types';
 
 /** 流程类型（扩展时可与 orchestrator 枚举对齐） */
 export type RuntimeFlowId = 'story' | 'bugfix' | 'standalone_tasks' | 'epic' | 'unknown';
@@ -382,6 +382,8 @@ export interface ResolveRuntimePolicyInput {
   storySlug?: string;
   runId?: string;
   artifactRoot?: string;
+  recordId?: string;
+  requirementSetId?: string;
   contextSource?: string;
   /** Default `real_dev` */
   scenario?: 'real_dev' | 'eval_question';

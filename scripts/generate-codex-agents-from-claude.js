@@ -58,8 +58,16 @@ function descriptionFromMarkdown(markdown, name) {
     : `BMAD Codex custom agent ${name}.`;
 }
 
-function codexizeMarkdown(markdown) {
-  return markdown
+const REQUIREMENT_RECORD_INDEX = '`_bmad-output/runtime/requirement-records/index.json`';
+const REQUIREMENT_RECORD_PATH =
+  '`_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json`';
+const BMAD_WORKFLOW_PROJECTION_PATH =
+  '`_bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/bmad-workflow-routing-<run-id>.json`';
+const ACTIVE_REQUIREMENT_RECORD_REF =
+  `active RequirementRecord via explicit IDs or ${REQUIREMENT_RECORD_INDEX}`;
+
+function codexizeMarkdown(markdown, relativePath = '') {
+  let output = markdown
     .replace(/\.claude\/state\/stories\/\{epic\}-\{story\}-progress\.yaml/gu, '_bmad-output/runtime/context/stories/{epic}/{story}.json')
     .replace(/\.claude\/state\/bmad-progress\.yaml/gu, '_bmad-output/runtime/context/project.json')
     .replace(/\.claude\/state/gu, '_bmad-output/runtime/context')
@@ -104,9 +112,68 @@ function codexizeMarkdown(markdown) {
     .replace(/閫氳繃 Agent 宸ュ叿璋冪敤/gu, '閫氳繃 Codex worker adapter 璋冪敤')
     .replace(/閫氳繃 Agent 宸ュ叿鍚姩/gu, '閫氳繃 Codex worker adapter 鍚姩')
     .replace(/@"party-mode-facilitator \(agent\)"/gu, 'party-mode-facilitator');
+  if (toPortable(relativePath).startsWith('layers/')) {
+    output = modernizeLayerRuntimeControl(output);
+  }
+  return output;
+}
+
+function modernizeLayerRuntimeControl(markdown) {
+  return markdown
+    .replace(/`_bmad-output\/runtime\/context\/project\.json`/gu, ACTIVE_REQUIREMENT_RECORD_REF)
+    .replace(/`_bmad-output\/runtime\/context\/stories\/\{epic\}\/\{story\}\.json`/gu, BMAD_WORKFLOW_PROJECTION_PATH)
+    .replace(/_bmad-output\/runtime\/context\/project\.json/gu, '_bmad-output/runtime/requirement-records/index.json')
+    .replace(
+      /_bmad-output\/runtime\/context\/stories\/\{epic\}\/\{story\}\.json/gu,
+      '_bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/bmad-workflow-routing-<run-id>.json'
+    )
+    .replace(/状态更新 (_bmad-output\/runtime\/requirement-records\/<requirement-set-id>\/artifacts\/bmad-workflow-routing-<run-id>\.json)/gu, '状态投影 $1')
+    .replace(/五层架构状态控制(?: \(Layer 1-5\))?/gu, 'BMAD workflow projection')
+    .replace(/Read `_bmad-output\/runtime\/requirement-records\/index\.json` \(获取 current_context\)/gu, `Resolve active RequirementRecord via explicit IDs or ${REQUIREMENT_RECORD_INDEX}`)
+    .replace(/Read story state/gu, 'Read story projection')
+    .replace(/更新 story state/gu, '更新 story projection')
+    .replace(/从 `_bmad-output\/runtime\/requirement-records\/index\.json` 读取:/gu, '从受控 RequirementRecord 与 BMAD workflow projection 读取:')
+    .replace(
+      /读取并更新`_bmad-output\/runtime\/requirement-records\/<requirement-set-id>\/artifacts\/bmad-workflow-routing-<run-id>\.json`:/gu,
+      '读取受控 RequirementRecord，并只通过受控 ingest 更新 requirement-scoped projection:'
+    )
+    .replace(
+      /\*\*更新 story projection\*\*: `_bmad-output\/runtime\/requirement-records\/<requirement-set-id>\/artifacts\/bmad-workflow-routing-<run-id>\.json`/gu,
+      `**更新 story projection**: ${BMAD_WORKFLOW_PROJECTION_PATH} via controlled ingest only`
+    )
+    .replace(
+      /\| active RequirementRecord via explicit IDs or `_bmad-output\/runtime\/requirement-records\/index\.json` \| \*\*BMAD workflow projection\*\*( \(Layer 1-5\))? \|/gu,
+      `| ${BMAD_WORKFLOW_PROJECTION_PATH} | BMAD workflow projection$1 |`
+    )
+    .replace(
+      /\| active RequirementRecord via explicit IDs or `_bmad-output\/runtime\/requirement-records\/index\.json` \| BMAD workflow projection\|/gu,
+      `| ${BMAD_WORKFLOW_PROJECTION_PATH} | BMAD workflow projection|`
+    )
+    .replace(
+      /Read active RequirementRecord via explicit IDs or `_bmad-output\/runtime\/requirement-records\/index\.json`(?: \(获取 current_context\))?/gu,
+      `Resolve active RequirementRecord via explicit IDs or ${REQUIREMENT_RECORD_INDEX}`
+    )
+    .replace(
+      /从 active RequirementRecord via explicit IDs or `_bmad-output\/runtime\/requirement-records\/index\.json` 读取:/gu,
+      '从受控 RequirementRecord 与 BMAD workflow projection 读取:'
+    )
+    .replace(
+      /\*\*更新全局状态\*\* active RequirementRecord via explicit IDs or `_bmad-output\/runtime\/requirement-records\/index\.json`:/gu,
+      `**更新受控记录** ${REQUIREMENT_RECORD_PATH} via controlled ingest only:`
+    )
+    .replace(
+      /\*\*更新全局状态\*\*: active RequirementRecord via explicit IDs or `_bmad-output\/runtime\/requirement-records\/index\.json`/gu,
+      `**更新受控记录**: ${REQUIREMENT_RECORD_PATH} via controlled ingest only`
+    )
+    .replace(/\*\*更新全局状态\*\* `_bmad-output\/runtime\/requirement-records\/index\.json`:/gu, `**更新受控记录** ${REQUIREMENT_RECORD_PATH} via controlled ingest only:`)
+    .replace(/\*\*更新全局状态\*\*: `_bmad-output\/runtime\/requirement-records\/index\.json`/gu, `**更新受控记录**: ${REQUIREMENT_RECORD_PATH} via controlled ingest only`)
+    .replace(/`_bmad-output\/runtime\/requirement-records\/index\.json`/gu, REQUIREMENT_RECORD_INDEX);
 }
 
 function sandboxMode(name, markdown) {
+  if (name === 'bmad-master' || name === 'general-purpose') {
+    return 'workspace-write';
+  }
   const lowered = `${name}\n${markdown.slice(0, 1200)}`.toLowerCase();
   if (
     lowered.includes('auditor') ||
@@ -124,7 +191,7 @@ function sandboxMode(name, markdown) {
 function renderToml(relativePath, markdown) {
   const name = agentNameFromRelative(relativePath);
   const sourcePath = toPortable(path.join('_bmad', 'claude', 'agents', relativePath));
-  const codexMarkdown = codexizeMarkdown(markdown);
+  const codexMarkdown = codexizeMarkdown(markdown, relativePath);
   const body = [
     'You are running as a BMAD Codex custom agent on the no-hooks worker adapter.',
     '',
@@ -134,7 +201,12 @@ function renderToml(relativePath, markdown) {
     `Source behavior contract: ${sourcePath}`,
     '',
     'Preserve the same responsibilities, constraints, output contracts, and verification discipline.',
-    'Use Codex runtime surfaces: .codex/agents, .codex/skills, and _bmad-output/runtime/context. Do not write legacy host state.',
+    'Use Codex runtime surfaces: .codex/agents, .codex/skills, and _bmad-output/runtime/requirement-records. Do not read or write _bmad-output/runtime/context as control state; legacy context files are retired projections only.',
+    ...(relativePath === 'bmad-master.md'
+      ? [
+          'Consumer activation must happen through the host-session `$bmad-speckit`, `/bmad-speckit`, or `bmad-speckit` entrypoint; npm/npx main-agent-orchestration commands are install validation, CI, debug, or no-skill fallback only.',
+        ]
+      : []),
     'When used by BMAD main-agent dispatch, obey the dispatch packet allowedWriteScope, expectedDelta, successCriteria, stopConditions, and TaskReport path.',
     'If these instructions conflict with a narrower dispatch packet, the dispatch packet wins.',
     '',
@@ -230,7 +302,7 @@ function collectMissingDependencies(generated) {
 
 function renderAliasToml(name, relativePath, markdown, description) {
   const sourcePath = toPortable(path.join('_bmad', 'claude', 'agents', relativePath));
-  const codexMarkdown = codexizeMarkdown(markdown);
+  const codexMarkdown = codexizeMarkdown(markdown, relativePath);
   const body = [
     'You are running as a BMAD Codex custom agent alias on the no-hooks worker adapter.',
     '',

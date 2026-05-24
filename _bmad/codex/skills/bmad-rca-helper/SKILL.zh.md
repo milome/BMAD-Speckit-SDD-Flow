@@ -16,17 +16,22 @@ description: |
 
 ## 主 Agent 编排面（强制）
 
-交互模式下，本 skill 必须以 repo-native `main-agent-orchestration` 作为唯一编排权威。`runAuditorHost` 只负责审计后的 close-out，不能替代主 Agent 的下一步分支决策。
+消费项目用户通过 `$bmad-speckit`、`/bmad-speckit` 或 `bmad-speckit` 在当前 AI 宿主会话中激活主控。不得把 package-script 主控编排命令或 bmad-speckit 主控编排命令写成普通消费用户默认步骤；这些命令只允许用于安装验证、CI、debug 或 no-skill fallback。
 
-在发起任何审计子任务、实施子任务或其他 bounded execution 前，主 Agent 必须：
+在 interactive main-agent 模式下，主 Agent 在发起、继续或收口本链路前，必须内部运行或等价消费 Main Agent control plane：
 
-1. 执行 `npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action inspect`
-2. 读取 `orchestrationState`、`pendingPacketStatus`、`pendingPacket`、`continueDecision`、`mainAgentNextAction`、`mainAgentReady`
-3. 若下一分支可派发但尚无可用 packet，执行 `npx --no-install bmad-speckit main-agent-orchestration --cwd {project-root} --action dispatch-plan`
-4. 仅依据返回的 packet / instruction 派发子代理，不得只凭 party-mode prose、RCA prose 或 handoff 摘要继续推进
-5. 每次子代理返回后，以及每次 `runAuditorHost` 收口后，都再次 `inspect`，再决定下一全局分支
+```text
+main-agent-orchestration --action inspect --host <codex|cursor|claude>
+main-agent-orchestration --action dispatch-plan --host <codex|cursor|claude>
+```
 
-`mainAgentNextAction / mainAgentReady` 仅为 compatibility summary；真正权威状态始终是 `orchestrationState + pendingPacket + continueDecision`。
+全局分支只能由 `requirement-record.json`、`currentMentalModel` 和六个心智模型链路决定：需求确认、架构确认、实施准备、执行闭合、审计复核、交付确认。`bmad-help`、Dashboard、score、SFT、legacy report、`orchestrationState`、`pendingPacket`、`continueDecision`、`mainAgentNextAction` 和 `mainAgentReady` 只能作为 projection / compatibility hint / evidence；子代理返回、host closeout、rerun 或阻断事件后必须重新 inspect，再决定下一条全局分支。
+
+硬禁止事项：
+- 禁止要求普通消费用户通过 npm / npx 激活主控。
+- 禁止仅根据 `PASS`、reviewer prose、host summary、`runAuditorHost closeout approved`、handoff summary 或旧 runtime 文件继续派发。
+- interactive mode 下禁止手写 packet 文件或默认写 worker-consumable queue item。
+- 禁止让子代理决定下一条全局执行链；子代理只执行 bounded packet，下一步永远由主 Agent 回读受控记录后决定。
 
 > Party-mode 规则源（Codex）：`{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`
 > 说明：轮次分级、`designated_challenger_id`、`challenger_ratio > 0.60`、session/meta/snapshot/evidence、恢复与退出门禁都以 core step-02 为准。本技能不得自定义第二套 party-mode gate 语义。

@@ -9,12 +9,19 @@ import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
 } from '../../scripts/runtime-context-registry';
+import { writeMinimalRequirementRecordContext } from '../helpers/runtime-registry-fixture';
 
 describe('main-agent drift surface E2E', () => {
   it('keeps raw drift signals visible to the main-agent surface after closeout blocks', async () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-drift-e2e-'));
     try {
       writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+      writeMinimalRequirementRecordContext(root, {
+        flow: 'story',
+        stage: 'post_audit',
+        storyId: '15.3',
+        runId: 'run-15-3',
+      });
       writeRuntimeContext(
         root,
         defaultRuntimeContextFile({

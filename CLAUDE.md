@@ -239,6 +239,22 @@ Located in `scripts/accept-*.test.ts`:
 
 ---
 
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues for `milome/BMAD-Speckit-SDD-Flow`; use the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the default five-label vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context repo; read global project instructions and existing design/reference/plans docs when `CONTEXT.md` or `docs/adr/` are absent. See `docs/agents/domain.md`.
+
+---
+
 ## Skills
 
 ### Core Skills

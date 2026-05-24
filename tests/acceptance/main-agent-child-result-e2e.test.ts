@@ -53,6 +53,7 @@ describe('main-agent child result E2E', () => {
         filesChanged: ['src/foo.ts'],
         validationsRun: ['npm test'],
         evidence: ['report.md'],
+        downstreamContext: [],
       });
 
       expect(state.pendingPacket?.status).toBe('completed');

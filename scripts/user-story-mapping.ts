@@ -29,15 +29,114 @@ export interface UserStoryMappingIndex {
 }
 
 export function userStoryMappingIndexPath(projectRoot: string): string {
-  return path.join(projectRoot, '_bmad-output', 'runtime', 'governance', 'user_story_mapping.json');
+  return path.join(projectRoot, '_bmad-output', 'runtime', 'requirement-records', 'index.json');
 }
 
 export function defaultUserStoryMappingIndex(): UserStoryMappingIndex {
   return {
     version: 1,
     updatedAt: new Date().toISOString(),
-    source: '_bmad-output/runtime/governance/user_story_mapping.json',
+    source: '_bmad-output/runtime/requirement-records/index.json',
     items: [],
+  };
+}
+
+function text(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function object(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function normalizePathForRecord(value: string): string {
+  return value.replace(/\\/g, '/');
+}
+
+function mappingFromRequirementRecord(
+  projectRoot: string,
+  recordEntry: Record<string, unknown>
+): UserStoryMappingItem | null {
+  const recordPath = text(recordEntry.recordPath ?? recordEntry.path ?? recordEntry.controlRecordPath);
+  const requirementSetId = text(recordEntry.requirementSetId ?? recordEntry.recordId);
+  const absoluteRecordPath = recordPath
+    ? path.resolve(projectRoot, normalizePathForRecord(recordPath))
+    : requirementSetId
+      ? path.join(projectRoot, '_bmad-output', 'runtime', 'requirement-records', requirementSetId, 'requirement-record.json')
+      : '';
+  if (!absoluteRecordPath || !fs.existsSync(absoluteRecordPath)) return null;
+  try {
+    const record = JSON.parse(fs.readFileSync(absoluteRecordPath, 'utf8')) as Record<string, unknown>;
+    const flow = text(record.flow ?? record.entryFlow);
+    if (flow !== 'story' && flow !== 'bugfix' && flow !== 'standalone_tasks') return null;
+    const bindings = Array.isArray(record.taskBindings)
+      ? record.taskBindings.filter((item): item is Record<string, unknown> => Boolean(object(item)))
+      : [];
+    const activeBinding =
+      bindings.find((item) => ['planned', 'in_progress'].includes(text(item.status))) ??
+      bindings[0] ??
+      {};
+    const artifactRoot = text(record.artifactRoot ?? record.artifactPath ?? record.sourcePath);
+    return {
+      requirementId: text(record.recordId) || requirementSetId,
+      sourceType: flow === 'bugfix' ? 'bugfix' : flow === 'standalone_tasks' ? 'standalone' : 'prd',
+      epicId: text(activeBinding.epicId ?? record.epicId) || 'unscoped',
+      storyId: text(activeBinding.storyId ?? record.storyId) || text(record.recordId) || requirementSetId || 'unscoped',
+      flow,
+      sprintId: text(activeBinding.sprintId ?? record.sprintId) || 'unscoped',
+      allowedWriteScope:
+        Array.isArray(activeBinding.allowedWriteScope) &&
+        activeBinding.allowedWriteScope.every((item) => typeof item === 'string')
+          ? (activeBinding.allowedWriteScope as string[])
+          : artifactRoot
+            ? [normalizePathForRecord(artifactRoot), `${normalizePathForRecord(artifactRoot)}/**`]
+            : [],
+      status: (['planned', 'in_progress', 'blocked', 'done'].includes(text(activeBinding.status))
+        ? text(activeBinding.status)
+        : text(record.status) === 'closed'
+          ? 'done'
+          : text(record.status) === 'blocked'
+            ? 'blocked'
+            : 'planned') as UserStoryMappingStatus,
+      acceptanceRefs: Array.isArray(activeBinding.acceptanceRefs)
+        ? activeBinding.acceptanceRefs.map(text).filter(Boolean)
+        : [],
+      lastPacketId: text(activeBinding.lastPacketId) || null,
+      updatedAt: text(record.updatedAt),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function entriesFromRequirementRecordIndex(index: Record<string, unknown>): Record<string, unknown>[] {
+  const records = index.records;
+  if (Array.isArray(records)) {
+    return records.filter((item): item is Record<string, unknown> => Boolean(object(item)));
+  }
+  if (records && typeof records === 'object') {
+    return Object.entries(records as Record<string, unknown>).map(([id, value]) =>
+      typeof value === 'string' ? { requirementSetId: id, recordPath: value } : { requirementSetId: id, ...(object(value) ?? {}) }
+    );
+  }
+  return [];
+}
+
+function readRequirementRecordBackedIndex(
+  projectRoot: string,
+  indexPath: string,
+  parsed: Record<string, unknown>
+): UserStoryMappingIndex {
+  const items = entriesFromRequirementRecordIndex(parsed)
+    .map((entry) => mappingFromRequirementRecord(projectRoot, entry))
+    .filter((item): item is UserStoryMappingItem => item !== null);
+  return {
+    version: 1,
+    updatedAt: text(parsed.updatedAt) || new Date().toISOString(),
+    source: path.relative(projectRoot, indexPath).replace(/\\/g, '/'),
+    items,
   };
 }
 
@@ -46,11 +145,15 @@ export function readUserStoryMappingIndexOrDefault(projectRoot: string): UserSto
   if (!fs.existsSync(file)) {
     return defaultUserStoryMappingIndex();
   }
-  const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as UserStoryMappingIndex;
+  const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as UserStoryMappingIndex & Record<string, unknown>;
+  if (!Array.isArray(parsed.items)) {
+    return readRequirementRecordBackedIndex(projectRoot, file, parsed);
+  }
   return {
     ...defaultUserStoryMappingIndex(),
     ...parsed,
     items: Array.isArray(parsed.items) ? parsed.items : [],
+    source: '_bmad-output/runtime/requirement-records/index.json',
   };
 }
 
@@ -64,7 +167,7 @@ export function writeUserStoryMappingIndex(
     ...index,
     version: 1,
     updatedAt: new Date().toISOString(),
-    source: '_bmad-output/runtime/governance/user_story_mapping.json',
+    source: '_bmad-output/runtime/requirement-records/index.json',
   };
   fs.writeFileSync(file, JSON.stringify(payload, null, 2) + '\n', 'utf8');
 }

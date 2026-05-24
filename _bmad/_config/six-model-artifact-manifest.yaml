@@ -1,0 +1,796 @@
+version: 1
+manifest_id: six-model-artifact-manifest
+owner: main-agent-orchestration
+status: frozen
+updated_at: "2026-05-16T20:34:15+08:00"
+freeze_scope:
+  - final_paths
+  - fields
+  - owner_models
+  - input_artifacts
+  - output_artifacts
+  - record_event_types
+
+description: >
+  Canonical artifact manifest for the six user-facing mental models.
+  Useful runtime producers must write requirement-scoped target paths directly.
+  Old scattered runtime roots are forbidden as new output targets and must be
+  removed after producer migration.
+
+global_paths:
+  requirement_record_root: "_bmad-output/runtime/requirement-records/<requirement-set-id>/"
+  requirement_record: "_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json"
+  requirement_artifacts: "_bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/"
+  requirement_rca: "_bmad-output/runtime/requirement-records/<requirement-set-id>/rca/"
+  requirement_iterations: "_bmad-output/runtime/requirement-records/<requirement-set-id>/iterations/"
+  requirement_audits: "_bmad-output/runtime/requirement-records/<requirement-set-id>/audits/"
+  requirement_sft: "_bmad-output/runtime/requirement-records/<requirement-set-id>/sft/"
+  requirement_recovery: "_bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/"
+  requirements_index: "_bmad-output/runtime/requirement-records/index.json"
+  requirements_events: "_bmad-output/runtime/requirement-records/index.jsonl"
+  artifact_index: "_bmad-output/runtime/requirement-records/artifact-index.json"
+  artifact_events: "_bmad-output/runtime/requirement-records/artifact-index.jsonl"
+  runtime_policy_snapshot: "_bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/runtime-policy-snapshot.json"
+  recovery_context: "_bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/recovery-context.json"
+  bmad_workflow_projection: "_bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/bmad-workflow-routing-<run-id>.json"
+
+allowed_owner_models:
+  - requirement_confirmation
+  - architecture_confirmation
+  - implementation_readiness
+  - execution_closure
+  - audit_review
+  - delivery_confirmation
+
+requirement_record_required_fields:
+  - schemaVersion
+  - recordId
+  - requirementSetId
+  - entryFlow
+  - entryFlowClass
+  - workflowAdapter
+  - currentRunId
+  - currentMentalModel
+  - currentTraceCheckpointId
+  - runtimePolicySnapshotRef
+  - recoveryContextRef
+  - bmadWorkflowProjectionRef
+  - status
+  - createdAt
+  - updatedAt
+  - sourceRoot
+  - contractSummary
+  - confirmationHistory
+  - gateChecks
+  - contractChecks
+  - executionIterations
+  - auditIterations
+  - requirementClosures
+  - rerunLoops
+  - failureRecords
+  - rcaRecords
+  - artifactIndex
+  - eventLog
+  - recoveryContext
+  - closeout
+  - extensionRefs
+  - globalIndexProjection
+
+active_requirement_index_required_fields:
+  - schemaVersion
+  - generatedAt
+  - indexHash
+  - activeRequirementSetId
+  - activeRecordId
+  - activeRunId
+  - activeCloseoutAttemptId
+  - records
+
+active_requirement_index_record_required_fields:
+  - recordId
+  - requirementSetId
+  - recordPath
+  - recordHash
+  - status
+  - entryFlow
+  - currentMentalModel
+  - currentStage
+  - lastEventId
+  - lastEventType
+  - updatedAt
+
+active_requirement_resolver_rules:
+  explicit_args_precedence:
+    - --record-id
+    - --requirement-set-id
+    - --run-id
+  implicit_locator: "_bmad-output/runtime/requirement-records/index.json"
+  forbidden_inputs:
+    - "_bmad-output/runtime/context/**"
+  no_directory_guessing: true
+  no_legacy_fallback: true
+  index_is_projection_only: true
+  resolver_output: ResolvedRuntimeContext
+  resolver_output_may_write_control_state: false
+  fail_closed_when:
+    - missing_explicit_args_and_missing_index
+    - invalid_index_schema
+    - multiple_active_records
+    - active_record_missing
+    - active_record_hash_mismatch
+    - runtime_policy_snapshot_missing_or_mismatch
+    - recovery_context_missing_or_mismatch
+    - trace_checkpoint_missing
+    - current_run_references_retired_context_surface
+
+record_event_required_fields:
+  - eventId
+  - eventType
+  - timestamp
+  - actor
+  - stage
+  - previousRecordHash
+  - currentRecordHash
+  - sourceRefs
+  - artifactRefs
+  - requirementIds
+  - summary
+  - decision
+  - supersedes
+
+shared_required_artifact_fields:
+  - artifactId
+  - recordId
+  - requirementSetId
+  - artifactType
+  - path
+  - hash
+  - producer
+  - ownerModel
+  - stage
+  - purpose
+  - relatedRequirementIds
+  - privacyTags
+  - sourceOfTruthRole
+  - status
+
+shared_allowed_artifact_statuses:
+  - active
+  - superseded
+  - orphan
+  - excluded
+
+shared_source_of_truth_roles:
+  - contract_source
+  - evidence
+  - projection
+  - context
+  - schema
+  - derived
+
+record_event_types:
+  requirement_confirmation:
+    - record_created
+    - contract_summary_registered
+    - contract_summary_recorded
+    - confirmation_recorded
+    - confirmation_superseded
+    - requirement_gap_blocked
+  architecture_confirmation:
+    - architecture_confirmation_recorded
+    - shared_contract_check_recorded
+    - schema_check_recorded
+    - architecture_risk_recorded
+    - contract_check_recorded
+  implementation_readiness:
+    - gate_check_recorded
+    - readiness_check_recorded
+    - readiness_passed
+    - readiness_blocked
+    - readiness_rerun_required
+  execution_closure:
+    - execution_iteration_recorded
+    - task_report_ingested
+    - diff_summary_recorded
+    - requirement_closure_updated
+    - recovery_context_updated
+    - artifact_indexed
+  audit_review:
+    - audit_iteration_recorded
+    - audit_finding_recorded
+    - rca_created
+    - rerun_required
+    - rerun_attempted
+    - rerun_loop_recorded
+    - improvement_action_recorded
+  delivery_confirmation:
+    - closeout_requested
+    - gate_check_recorded
+    - closeout_check_recorded
+    - delivery_closeout_passed
+    - delivery_closeout_blocked
+    - closeout_recorded
+    - record_closed
+
+dual_gates:
+  implementation_readiness_gate:
+    gateName: Implementation Readiness Gate
+    ownerModel: implementation_readiness
+    authority: unique_implementation_entry_gate
+    scriptRegistryIds:
+      - runtime_governance
+      - emit_runtime_policy
+      - assert_implementation_entry
+    reportPaths:
+      - "_bmad-output/planning-artifacts/<branch>/implementation-readiness-report-YYYY-MM-DD.md"
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/implementation-readiness-report.json"
+    inputArtifacts:
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json"
+      - contract_document
+      - confirmation_snapshot
+      - task_binding
+      - proof_requirements
+      - runtime_policy
+    outputArtifacts:
+      - implementation_readiness_report
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/implementation-readiness-report.json"
+      - gateChecks
+      - failureRecords
+      - rcaRecords
+    requiredFields:
+      - checkId
+      - checkType
+      - gateName
+      - stage
+      - trigger
+      - timestamp
+      - inputArtifacts
+      - configSources
+      - command
+      - result
+      - blockingReasons
+      - warnings
+      - outputArtifacts
+      - evidenceRefs
+      - requiresRerun
+      - requiresRca
+    recordEventTypes:
+      - readiness_check_recorded
+      - readiness_passed
+      - readiness_blocked
+      - readiness_rerun_required
+  delivery_closeout_gate:
+    gateName: Delivery Closeout Gate
+    ownerModel: delivery_confirmation
+    authority: unique_delivery_exit_gate
+    scriptRegistryIds:
+      - main_agent_delivery_closeout_gate
+    reportPaths:
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/delivery-closeout-report.json"
+    inputArtifacts:
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json"
+      - "_bmad-output/runtime/requirement-records/artifact-index.json"
+      - "_bmad-output/runtime/requirement-records/index.json"
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/completion-evidence-packet.json"
+      - audit_closeout
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/gates/quality-gate-report.json"
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/gates/release-gate-report.json"
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/gates/delivery-truth-gate-report.json"
+      - orphan_artifact_report
+    outputArtifacts:
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/delivery-closeout-report.json"
+      - closeout
+      - requirementClosures
+      - gateChecks
+      - rcaRecords
+    requiredFields:
+      - reportType
+      - generatedAt
+      - recordId
+      - requirementSetId
+      - requirementRecordHash
+      - artifactIndexHash
+      - globalIndexHash
+      - completionAllowed
+      - deliveryStatus
+      - completionLanguage
+      - requirementsTotal
+      - requirementsPassed
+      - requirementsDeferred
+      - requirementsBlocked
+      - openBlockerCount
+      - openRcaCount
+      - pendingRerunCount
+      - orphanArtifactCount
+      - missingEvidence
+      - failedEvidence
+      - evidencePaths
+      - checks
+      - decision
+      - blockingReasons
+      - outputArtifacts
+    recordEventTypes:
+      - closeout_requested
+      - closeout_check_recorded
+      - delivery_closeout_passed
+      - delivery_closeout_blocked
+      - closeout_recorded
+      - record_closed
+
+models:
+  requirement_confirmation:
+    display_name: "需求确认"
+    question: "到底做什么、不做什么、怎么证明完成"
+    primary_record_fields:
+      - contractSummary
+      - confirmationHistory
+      - contractChecks
+      - requirementClosures
+      - artifactIndex
+    canonical_artifacts:
+      - id: contract_document
+        artifactType: contract_document
+        paths:
+          - "_bmad-output/planning-artifacts/<branch>/prd.md"
+          - "_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/{epic}-{story}-{story-slug}.md"
+          - "_bmad-output/implementation-artifacts/_orphan/**"
+        sourceOfTruthRole: contract_source
+        requiredFields:
+          - contractDocumentPath
+          - contractDocumentHash
+          - contractVersion
+          - requirementIds
+          - mustDo
+          - mustNotDo
+          - acceptanceProofRequired
+          - evidenceChainRequired
+          - openQuestions
+          - provenanceMap
+      - id: confirmation_snapshot
+        artifactType: confirmation_snapshot
+        paths:
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/confirmation-<confirmation-id>.json"
+        sourceOfTruthRole: evidence
+        requiredFields:
+          - confirmationId
+          - timestamp
+          - actor
+          - confirmedDocumentPath
+          - confirmedDocumentHash
+          - confirmedItems
+          - rejectedItems
+          - modifiedItems
+          - openQuestions
+          - confirmationText
+          - effect
+    recordEventTypes:
+      - record_created
+      - contract_summary_recorded
+      - confirmation_recorded
+      - confirmation_superseded
+      - requirement_gap_blocked
+
+  architecture_confirmation:
+    display_name: "架构确认"
+    question: "方案边界、模块影响、共享契约、风险是否明确"
+    primary_record_fields:
+      - architectureConfirmations
+      - artifactIndex
+      - gateChecks
+      - contractChecks
+    canonical_artifacts:
+      - id: architecture_document
+        artifactType: architecture_document
+        paths:
+          - "_bmad-output/planning-artifacts/<branch>/architecture.md"
+        sourceOfTruthRole: contract_source
+        requiredFields:
+          - architectureDocumentPath
+          - architectureDocumentHash
+          - affectedModules
+          - sharedContracts
+          - schemaChanges
+          - migrationPlan
+          - rollbackPlan
+          - securityRisks
+          - performanceRisks
+          - observabilityPlan
+      - id: architecture_check
+        artifactType: architecture_check
+        paths:
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/architecture-check-<check-id>.json"
+          - "_bmad-output/planning-artifacts/<branch>/architecture-check-*.json"
+        sourceOfTruthRole: evidence
+        requiredFields:
+          - checkId
+          - stage
+          - inputArtifacts
+          - configSources
+          - result
+          - blockingReasons
+          - outputArtifacts
+          - evidenceRefs
+    recordEventTypes:
+      - architecture_confirmation_recorded
+      - shared_contract_check_recorded
+      - schema_check_recorded
+      - architecture_risk_recorded
+
+  implementation_readiness:
+    display_name: "实施准备"
+    question: "是否允许进入实现"
+    primary_record_fields:
+      - gateChecks
+      - contractSummary
+      - confirmationHistory
+      - requirementClosures
+      - failureRecords
+      - recoveryContext
+    canonical_artifacts:
+      - id: implementation_readiness_report
+        artifactType: implementation_readiness_report
+        paths:
+          - "_bmad-output/planning-artifacts/<branch>/implementation-readiness-report-YYYY-MM-DD.md"
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/implementation-readiness-report.json"
+        sourceOfTruthRole: evidence
+        requiredFields:
+          - checkId
+          - gateName
+          - stage
+          - trigger
+          - inputArtifacts
+          - configSources
+          - command
+          - result
+          - blockingReasons
+          - warnings
+          - outputArtifacts
+          - evidenceRefs
+          - requiresRerun
+          - requiresRca
+      - id: readiness_remediation
+        artifactType: remediation_report
+        paths:
+          - "_bmad-output/planning-artifacts/<branch>/implementation-readiness-remediation-YYYY-MM-DD.md"
+        sourceOfTruthRole: evidence
+        requiredFields:
+          - failureId
+          - affectedRequirements
+          - severity
+          - reason
+          - nextAction
+          - owner
+          - evidenceRefs
+    recordEventTypes:
+      - readiness_check_recorded
+      - readiness_passed
+      - readiness_blocked
+      - readiness_rerun_required
+
+  execution_closure:
+    display_name: "执行闭合"
+    question: "实际做了什么，是否按允许范围写回"
+    primary_record_fields:
+      - executionIterations
+      - requirementClosures
+      - artifactIndex
+      - recoveryContext
+    canonical_artifacts:
+      - id: governance_packet
+        artifactType: governance_packet
+        paths:
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/prompts/prompt-packets/<packet-id>.md"
+        sourceOfTruthRole: evidence
+        requiredFields:
+          - packetId
+          - role
+          - expectedDelta
+          - allowedWriteScope
+          - requirementIds
+          - inputArtifacts
+      - id: task_report
+        artifactType: task_report
+        paths:
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/executions/<execution-id>.json"
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/executions/worker-logs/<packet-id>.stdout.log"
+        sourceOfTruthRole: evidence
+        requiredFields:
+          - iterationId
+          - packetId
+          - executor
+          - startAt
+          - endAt
+          - status
+          - allowedWriteScope
+          - requirementsTargeted
+          - tasksTargeted
+          - filesChanged
+          - diffSummary
+          - validationsRun
+          - evidenceProduced
+          - taskReportPath
+      - id: tool_trace
+        artifactType: tool_trace
+        paths:
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/executions/tool-traces/<run-id>/**"
+        sourceOfTruthRole: evidence
+        requiredFields:
+          - traceId
+          - runId
+          - requirementIds
+          - toolCalls
+          - artifactRefs
+          - redactionStatus
+    recordEventTypes:
+      - execution_iteration_recorded
+      - task_report_ingested
+      - diff_summary_recorded
+      - requirement_closure_updated
+      - recovery_context_updated
+
+  audit_review:
+    display_name: "审计复核"
+    question: "是否漏做、漂移、证据不足、需返工"
+    primary_record_fields:
+      - auditIterations
+      - failureRecords
+      - rcaRecords
+      - rerunLoops
+      - improvementActions
+    canonical_artifacts:
+      - id: audit_report
+        artifactType: audit_report
+        paths:
+          - "_bmad-output/implementation-artifacts/.../AUDIT_*.md"
+          - "_bmad-output/epic-{epic}-{epic-slug}/AUDIT_*.md"
+        sourceOfTruthRole: evidence
+        requiredFields:
+          - auditId
+          - auditor
+          - stage
+          - inputArtifacts
+          - requirementsCovered
+          - requirementsMissing
+          - findings
+          - decision
+          - rerunRequired
+          - evidenceRefs
+      - id: rca_record
+        artifactType: rca_record
+        paths:
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/rca/<rca-id>.json"
+        sourceOfTruthRole: evidence
+        requiredFields:
+          - rcaId
+          - failureRefs
+          - affectedRequirements
+          - rootCause
+          - correctiveActions
+          - preventiveActions
+          - owner
+          - dueAt
+          - status
+    recordEventTypes:
+      - audit_iteration_recorded
+      - audit_finding_recorded
+      - rca_created
+      - rerun_required
+      - improvement_action_recorded
+
+  delivery_confirmation:
+    display_name: "交付确认"
+    question: "是否允许说完成、可发布、可关闭"
+    primary_record_fields:
+      - closeout
+      - requirementClosures
+      - gateChecks
+      - artifactIndex
+      - globalIndexProjection
+    canonical_artifacts:
+      - id: delivery_closeout_report
+        artifactType: delivery_closeout_report
+        paths:
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/delivery-closeout-report.json"
+        sourceOfTruthRole: evidence
+        requiredFields:
+          - reportType
+          - generatedAt
+          - recordId
+          - requirementSetId
+          - completionAllowed
+          - deliveryStatus
+          - completionLanguage
+          - requirementsPassed
+          - requirementsDeferred
+          - requirementsBlocked
+          - missingEvidence
+          - failedEvidence
+          - evidencePaths
+          - checks
+          - decision
+      - id: quality_gate_report
+        artifactType: quality_gate_report
+        paths:
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/gates/quality-gate-report.json"
+        sourceOfTruthRole: evidence
+        requiredFields:
+          - checkId
+          - decision
+          - critical_failures
+          - evidence_provenance
+      - id: release_gate_report
+        artifactType: release_gate_report
+        paths:
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/gates/release-gate-report.json"
+        sourceOfTruthRole: evidence
+        requiredFields:
+          - checkId
+          - decision
+          - critical_failures
+          - completion_intent
+          - evidence_provenance
+      - id: delivery_truth_report
+        artifactType: delivery_truth_report
+        paths:
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/closeout/gates/delivery-truth-gate-report.json"
+        sourceOfTruthRole: evidence
+        requiredFields:
+          - reportType
+          - completionAllowed
+          - deliveryStatus
+          - decision
+          - missingEvidence
+          - failedEvidence
+          - evidencePaths
+          - checks
+      - id: completion_evidence_packet
+        artifactType: completion_evidence_packet
+        paths:
+          - "_bmad-output/runtime/requirement-records/<requirement-set-id>/completion-evidence-packet.json"
+        sourceOfTruthRole: evidence
+        requiredFields:
+          - packetId
+          - recordId
+          - requirementSetId
+          - requirementClosureRefs
+          - artifactRefs
+          - auditRefs
+          - gateRefs
+    recordEventTypes:
+      - closeout_requested
+      - closeout_check_recorded
+      - delivery_closeout_passed
+      - delivery_closeout_blocked
+      - closeout_recorded
+      - record_closed
+
+data_product_artifacts:
+  mentor_event:
+    ownerModel: audit_review
+    artifactType: mentor_event
+    paths:
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/sft/mentor-events.jsonl"
+    sourceOfTruthRole: derived
+    requiredFields:
+      - eventId
+      - recordId
+      - requirementSetId
+      - requirementIds
+      - task_type
+      - entry_flow
+      - quality
+      - failure_label
+      - risk
+      - privacy
+      - trainability
+      - evidenceRefs
+      - artifactRefs
+      - createdAt
+  sample_route:
+    ownerModel: audit_review
+    artifactType: sample_route
+    paths:
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/sft/sample-routes.jsonl"
+    sourceOfTruthRole: derived
+    requiredFields:
+      - routeId
+      - mentorEventId
+      - recordId
+      - requirementSetId
+      - sample_route
+      - sample_role
+      - routeReason
+      - split
+      - contamination
+      - lifecycle
+      - blockingReasons
+      - evidenceRefs
+  canonical_sft_sample:
+    ownerModel: audit_review
+    artifactType: canonical_sft_sample
+    paths:
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/sft/canonical-samples.jsonl"
+    sourceOfTruthRole: derived
+    requiredFields:
+      - sampleId
+      - recordId
+      - requirementSetId
+      - routeId
+      - formatFamily
+      - trainerTarget
+      - messages
+      - prompt
+      - completion
+      - chosen
+      - rejected
+      - tools
+      - lossMask
+      - chatTemplate
+      - tokenizer
+      - truncation
+      - provenance
+      - license
+      - privacy
+      - split
+      - dedup
+      - contamination
+      - lifecycle
+  dataset_manifest:
+    ownerModel: audit_review
+    artifactType: dataset_manifest
+    paths:
+      - "_bmad-output/runtime/requirement-records/<requirement-set-id>/sft/dataset-manifest.json"
+      - "_bmad-output/datasets/<dataset-id>/dataset-manifest.json"
+    sourceOfTruthRole: derived
+    requiredFields:
+      - manifestId
+      - datasetId
+      - version
+      - generatedAt
+      - dataFiles
+      - splits
+      - rowCounts
+      - features
+      - checksums
+      - sourceRequirementRecordHashes
+      - exportArtifactHashes
+      - validatorVersions
+      - datasetCardPath
+      - licenseSummary
+      - redactionReport
+      - dedupReport
+      - contaminationReport
+      - revokedSamples
+
+dashboard_projection:
+  ownerModel: delivery_confirmation
+  paths:
+    - "_bmad-output/runtime/requirement-records/dashboard/<dashboard-id>/dashboard.md"
+    - "_bmad-output/runtime/requirement-records/dashboard/<dashboard-id>/runtime-dashboard.json"
+  inputArtifacts:
+    - "_bmad-output/runtime/requirement-records/index.json"
+    - "_bmad-output/runtime/requirement-records/artifact-index.json"
+    - "_bmad-output/runtime/requirement-records/context/runtime-registry.json"
+  outputArtifacts:
+    - six_model_status_projection
+  requiredFields:
+    - generatedAt
+    - sourceRequirementIndexHash
+    - sourceArtifactIndexHash
+    - models
+    - requirement_confirmation
+    - architecture_confirmation
+    - implementation_readiness
+    - execution_closure
+    - audit_review
+    - delivery_confirmation
+  rule: "Projection only; dashboard status cannot close a requirement or replace Delivery Closeout Gate."
+
+forbidden_completion_sources:
+  - task_report_done_only
+  - smoke_passed_only
+  - quality_gate_passed_only
+  - release_gate_passed_only
+  - delivery_truth_passed_only
+  - dashboard_health_score
+  - agent_summary

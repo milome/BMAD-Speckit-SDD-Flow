@@ -1,0 +1,55 @@
+{
+  "run_id": "REQ-MAIN-AGENT-INSPECT-READINESS-BASELINE-SELF-HEALING-readiness-20260523T010900Z",
+  "scenario": "real_dev",
+  "stage": "implementation_readiness",
+  "phase_score": 100,
+  "phase_weight": 0.2,
+  "check_items": [
+    {
+      "item_id": "readiness_overall",
+      "passed": true,
+      "score_delta": 0,
+      "note": "问题清单为空"
+    }
+  ],
+  "timestamp": "2026-05-23T01:08:25.772Z",
+  "iteration_count": 0,
+  "iteration_records": [],
+  "first_pass": true,
+  "dimension_scores": [
+    {
+      "dimension": "P0 Journey Coverage",
+      "weight": 25,
+      "score": 100
+    },
+    {
+      "dimension": "Smoke E2E Readiness",
+      "weight": 25,
+      "score": 100
+    },
+    {
+      "dimension": "Evidence Proof Chain",
+      "weight": 25,
+      "score": 100
+    },
+    {
+      "dimension": "Cross-Document Traceability",
+      "weight": 25,
+      "score": 100
+    }
+  ],
+  "tool_trace_ref": "sha256:a4a86cc146918f212a071a1e5372e2c5b07880363f1a9dd1cfb8adb1a590fe03",
+  "tool_trace_path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-INSPECT-READINESS-BASELINE-SELF-HEALING/readiness-audit/readiness-audit_REQ-MAIN-AGENT-INSPECT-READINESS-BASELINE-SELF-HEALING_2026-05-23T01_08_25.670Z.tool-trace.json",
+  "raw_phase_score": 100,
+  "veto_triggered": false,
+  "tier_coefficient": 1,
+  "readiness_baseline_run_id": "REQ-ARCH-SOURCE-DOC-INGEST-readiness-baseline-20260522T083336Z",
+  "base_commit_hash": "b5faa459",
+  "content_hash": "10aa9678192313c2a7223187c743a12344aadf0ff4908502717bc2463bd8b57b",
+  "source_hash": "492c02ae529eb7b7b59d07af997d2df3acdfa5e4fa0fc93de2c1f872b829d64a",
+  "patch_ref": "sha256:634ab781172229caaf5182180f1d6764e290c68f0e9cdc77047dc141221879ea",
+  "patch_snapshot_path": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\packages\\scoring\\data\\_patch-snapshots\\REQ-MAIN-AGENT-INSPECT-READINESS-BASELINE-SELF-HEALING-readiness-20260523T010900Z-implementation_readiness-634ab7811722.patch",
+  "source_path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-INSPECT-READINESS-BASELINE-SELF-HEALING/readiness-audit/readiness-audit_REQ-MAIN-AGENT-INSPECT-READINESS-BASELINE-SELF-HEALING_2026-05-23T01_08_25.670Z.md",
+  "trigger_stage": "controlled_readiness_audit",
+  "path_type": "full"
+}

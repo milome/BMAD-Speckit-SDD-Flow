@@ -1,7 +1,9 @@
 # Upstream Dependencies & Sync Strategy
 
-> **Current path**: upstream sync preserves runtime governance、scoped context 与 `runAuditorHost` wiring customizations
-> **Legacy path**: sync 覆盖 host-runner / governance wiring，或把旧 post-audit 命令链视为 canonical
+> **Current path**: upstream sync preserves governed host-runner customizations, `runAuditorHost` post-audit close-out, Active Requirement Resolver wiring, and requirement-scoped `ResolvedRuntimeContext` semantics.
+> **Legacy path**: treating old `sync-runtime-context-from-sprint` / `ensure-run-runtime-context` post-audit command wiring as canonical control input.
+>
+> **Retired context note**: 本文保留 E15 旧 runtime context 接线的历史同步策略。目标态不得把旧 context / registry / sync 命令作为主控、恢复、门禁或 closeout 输入；目标态运行时上下文只能由 Active Requirement Resolver 从 RequirementRecord、requirement index、runtime policy snapshot、recovery context 和 workflow projection 解析为只读 `ResolvedRuntimeContext`。
 
 本文档说明 BMAD-Speckit-SDD-Flow 对上游的依赖、定制范围与同步策略。可参考 [BMAD-METHOD v6 Gaps 与同步建议](BMAD/BMAD-METHOD-v6-Gaps与同步建议.md)。
 
@@ -62,7 +64,7 @@
 | bmm 定制 | `_bmad/bmm/module-help.csv`、`_bmad/bmm/workflows/4-implementation/bmad-code-review/`、`_bmad/bmm/workflows/4-implementation/create-story/`、`_bmad/bmm/workflows/bmad-quick-flow/bmad-quick-dev-new-preview/` |
 | core/skills/commands | `_bmad/core/tasks/help.md`、`_bmad/skills/bmad-help/`、`_bmad/commands/bmad-agent-bmm-tech-writer.md`、`_bmad/commands/bmad-bmm-create-story.md`、`_bmad/commands/bmad-sft-extract.md` |
 | bmad-help OFFICIAL vs legacy commands | `_bmad/commands/bmad-bmm-dev-story.md`、`_bmad/commands/bmad-bmm-quick-dev.md`、`_bmad/commands/bmad-bmm-quick-spec.md`、`_bmad/commands/bmad-agent-bmm-quick-flow-solo-dev.md`（Speckit-SDD-Flow 头部注记指向 **bmad-story-assistant** / **bmad-standalone-tasks**；同步时不覆盖） |
-| Runtime Governance（E15） | `bmad-speckit sync-runtime-context-from-sprint` / `ensure-run-runtime-context` 接线涉及的 workflow、step、agent、SKILL：**完整路径见 §4.4**；`scripts/bmad-sync-from-v6.ps1` 中 `$EXCLUDE_PATTERNS` 与 `$BACKUP_ITEMS` 与本节对齐 |
+| Runtime Governance（legacy E15 retired wiring） | 旧 `bmad-speckit sync-runtime-context-from-sprint` / `ensure-run-runtime-context` 接线涉及的 workflow、step、agent、SKILL：**完整历史路径见 §4.4**；这些路径只作为旧接线审计与上游同步保护参考，不是目标态控制输入。`scripts/bmad-sync-from-v6.ps1` 中 `$EXCLUDE_PATTERNS` 与 `$BACKUP_ITEMS` 与本节历史记录对齐 |
 
 ### 4.2 需定期 Merge 的排除项（持续跟进上游）
 
@@ -102,22 +104,22 @@ pwsh scripts/bmad-sync-from-v6.ps1 -Phase all          # 全阶段
 - **禁止覆盖项**：以本文档 §4.1 为准；脚本内置 `$EXCLUDE_PATTERNS` 与其一致（见脚本注释）
 - **需定期 Merge 项**：见 §4.2，建议在重大上游更新时对比合并
 - **默认 V6Ref**：脚本默认 `-V6Ref 21c2a48`（SHA）；同步最新内容时请显式传入 `-V6Ref main`
-- **Runtime Governance 保护项**：见 §4.4；Phase 2 复制前 `$BACKUP_ITEMS` 含这些路径；同步结束后若需撤销，使用控制台输出的 **Rollback commands** 将备份拷回 `$ProjectRoot`
+- **Runtime Governance legacy 保护项**：见 §4.4；Phase 2 复制前 `$BACKUP_ITEMS` 含这些历史接线路径；同步结束后若需撤销，使用控制台输出的 **Rollback commands** 将备份拷回 `$ProjectRoot`。这些保护项不代表目标态仍以旧 context 命令驱动控制流。
 
-### 4.4 Runtime Governance（E15）— instructions / workflows 定制（同步时不覆盖）
+### 4.4 Runtime Governance（legacy E15）— retired instructions / workflows wiring（历史同步保护）
 
-以下路径由本项目写入 `bmad-speckit sync-runtime-context-from-sprint`、`ensure-run-runtime-context` 等接线；从 BMAD-METHOD 执行 Phase 2 时**不得被上游文件覆盖**。`scripts/bmad-sync-from-v6.ps1` 已将对应片段列入 `$EXCLUDE_PATTERNS`，并在每次运行开始时按 `$BACKUP_ITEMS` 备份，便于对比与回滚。
+以下路径曾由本项目写入旧 `bmad-speckit sync-runtime-context-from-sprint`、`ensure-run-runtime-context` 等接线；本文只保留历史同步保护和审计说明。从 BMAD-METHOD 执行 Phase 2 时，这些旧接线若仍存在，不应被上游文件静默覆盖；但目标态不得继续把它们作为控制层、恢复、门禁或 closeout 输入。`scripts/bmad-sync-from-v6.ps1` 已将对应片段列入 `$EXCLUDE_PATTERNS`，并在每次运行开始时按 `$BACKUP_ITEMS` 备份，便于对比与回滚。
 
 | 路径 | 说明 |
 |------|------|
-| `_bmad/bmm/workflows/4-implementation/sprint-planning/` | sprint-planning `instructions.md` 内 sync |
-| `_bmad/bmm/workflows/4-implementation/sprint-status/` | sprint-status `instructions.md` 内 sync |
-| `_bmad/bmm/workflows/3-solutioning/create-epics-and-stories/steps/step-04-final-validation.md` | create-epics Step 4 内 sync 与前置说明 |
-| `_bmad/bmm/workflows/4-implementation/create-story/` | create-story 内 `--story-key` sync（与 §4.1「create-story」排除项同一目录） |
-| `_bmad/bmm/workflows/4-implementation/dev-story/` | dev-story `instructions.xml` 内 ensure-run |
-| `_bmad/claude/agents/bmad-story-audit.md` | story audit agent 内 S10 sync |
-| `_bmad/cursor/skills/bmad-story-assistant/` | Story 助手 SKILL 内 S10、S11（与 §4.1「bmad-story-assistant」排除项同一目录） |
-| `_bmad/claude/skills/bmad-story-assistant/` | Claude 侧 Story 助手 SKILL 内 S11 post-audit |
+| `_bmad/bmm/workflows/4-implementation/sprint-planning/` | 历史 sprint-planning `instructions.md` 内 sync 接线 |
+| `_bmad/bmm/workflows/4-implementation/sprint-status/` | 历史 sprint-status `instructions.md` corrections 写回后 sync 接线 |
+| `_bmad/bmm/workflows/3-solutioning/create-epics-and-stories/steps/step-04-final-validation.md` | 历史 create-epics Step 4 sync 与前置说明 |
+| `_bmad/bmm/workflows/4-implementation/create-story/` | 历史 create-story 内 `--story-key` sync（与 §4.1「create-story」排除项同一目录） |
+| `_bmad/bmm/workflows/4-implementation/dev-story/` | 历史 dev-story `instructions.xml` 内 ensure-run |
+| `_bmad/claude/agents/bmad-story-audit.md` | 历史 story audit agent 内 S10 sync |
+| `_bmad/cursor/skills/bmad-story-assistant/` | 历史 Story 助手 SKILL 内 S10、S11（与 §4.1「bmad-story-assistant」排除项同一目录） |
+| `_bmad/claude/skills/bmad-story-assistant/` | 历史 Claude 侧 Story 助手 SKILL 内 S11 post-audit |
 
 **恢复步骤**：同步完成后若发现定制丢失，在当次运行输出的 **Rollback commands** 中查找对应 `Copy-Item`；备份根目录为运行开始时打印的 `$BackupDir`（默认 `_bmad-output/bmad-sync-backups/<timestamp>-<rand>`）。
 

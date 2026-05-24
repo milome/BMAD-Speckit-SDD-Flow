@@ -7,7 +7,30 @@ import {
 } from '../dataset-analytics';
 import type { CanonicalSftSample } from '../types';
 
-function makeSample(id: string, overrides: Partial<CanonicalSftSample> = {}): CanonicalSftSample {
+type SampleOverrides = Omit<
+  Partial<CanonicalSftSample>,
+  'source' | 'metadata' | 'quality' | 'provenance' | 'split' | 'redaction' | 'export_compatibility'
+> & {
+  source?: Partial<CanonicalSftSample['source']>;
+  metadata?: Partial<CanonicalSftSample['metadata']>;
+  quality?: Partial<CanonicalSftSample['quality']>;
+  provenance?: Partial<CanonicalSftSample['provenance']>;
+  split?: Partial<CanonicalSftSample['split']>;
+  redaction?: Partial<CanonicalSftSample['redaction']>;
+  export_compatibility?: Partial<CanonicalSftSample['export_compatibility']>;
+};
+
+function makeSample(id: string, overrides: SampleOverrides = {}): CanonicalSftSample {
+  const {
+    source,
+    metadata,
+    quality,
+    provenance,
+    split,
+    redaction,
+    export_compatibility,
+    ...topLevelOverrides
+  } = overrides;
   return {
     sample_id: id,
     sample_version: 'v1',
@@ -17,7 +40,7 @@ function makeSample(id: string, overrides: Partial<CanonicalSftSample> = {}): Ca
       flow: 'story',
       event_ids: [`evt-${id}`],
       artifact_refs: [{ path: 'docs/plans/sample.md', content_hash: `sha256:${id}` }],
-      ...(overrides.source || {}),
+      ...(source || {}),
     },
     messages: [
       { role: 'system', content: 'You are a coding agent.' },
@@ -28,7 +51,7 @@ function makeSample(id: string, overrides: Partial<CanonicalSftSample> = {}): Ca
       schema_targets: ['openai_chat'],
       sample_kind: 'implementation',
       host_kind: 'cursor',
-      ...(overrides.metadata || {}),
+      ...(metadata || {}),
     },
     quality: {
       acceptance_decision: 'accepted',
@@ -45,7 +68,7 @@ function makeSample(id: string, overrides: Partial<CanonicalSftSample> = {}): Ca
       safety_flags: [],
       rejection_reasons: [],
       warnings: [],
-      ...(overrides.quality || {}),
+      ...(quality || {}),
     },
     provenance: {
       base_commit_hash: 'abc',
@@ -55,28 +78,29 @@ function makeSample(id: string, overrides: Partial<CanonicalSftSample> = {}): Ca
       patch_ref: null,
       lineage: [`run-${id}`],
       generated_at: '2026-04-09T00:00:00.000Z',
-      ...(overrides.provenance || {}),
+      ...(provenance || {}),
     },
     split: {
       assignment: 'train',
       seed: 42,
       strategy: 'story_hash_v1',
       group_key: 'story-1',
-      ...(overrides.split || {}),
+      ...(split || {}),
     },
     redaction: {
       status: 'clean',
       applied_rules: [],
       findings: [],
       redacted_fields: [],
-      ...(overrides.redaction || {}),
+      ...(redaction || {}),
     },
     export_compatibility: {
       openai_chat: { compatible: true, reasons: [], warnings: [] },
       hf_conversational: { compatible: true, reasons: [], warnings: [] },
       hf_tool_calling: { compatible: false, reasons: ['target_incompatible_hf_tool_calling'], warnings: [] },
-      ...(overrides.export_compatibility || {}),
+      ...(export_compatibility || {}),
     },
+    ...topLevelOverrides,
   };
 }
 

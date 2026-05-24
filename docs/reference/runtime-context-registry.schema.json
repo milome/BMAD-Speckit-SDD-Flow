@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "runtime-context-registry.schema.json",
-  "title": "Runtime Context Registry",
+  "$id": "retired-context-registry.schema.json",
+  "title": "Retired Context Registry (legacy)",
   "type": "object",
   "required": [
     "version",

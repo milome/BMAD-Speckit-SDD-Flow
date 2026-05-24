@@ -72,6 +72,10 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.storyKey = argv[++index];
     } else if (token === '--evidenceBundleId' && argv[index + 1]) {
       out.evidenceBundleId = argv[++index];
+    } else if (token === '--record-id' && argv[index + 1]) {
+      out.recordId = argv[++index];
+    } else if (token === '--requirement-set-id' && argv[index + 1]) {
+      out.requirementSetId = argv[++index];
     } else if (!token.startsWith('--')) {
       positional.push(token);
     }
@@ -329,6 +333,8 @@ export function runHostMatrixPrOrchestration(input: {
   runId?: string;
   storyKey?: string;
   evidenceBundleId?: string;
+  recordId?: string;
+  requirementSetId?: string;
 }): HostMatrixPrOrchestrationReport {
   const providerChecks = providerPreflight(input.provider, input.checkCommand);
   const providerOk = providerChecks.every((check) => check.passed);
@@ -364,10 +370,16 @@ export function runHostMatrixPrOrchestration(input: {
           evidence_provenance.storyKey,
           '--evidenceBundleId',
           evidence_provenance.evidenceBundleId,
+          ...(input.recordId ? ['--record-id', input.recordId] : []),
+          ...(input.requirementSetId ? ['--requirement-set-id', input.requirementSetId] : []),
         ])
       : 1;
 
-  const journeyReport = fs.existsSync(journeyReportPath)
+  const journeyReport: {
+    mode: 'mock' | 'real';
+    journeys: Array<{ host: 'cursor' | 'claude' | 'codex'; passed: boolean }>;
+    finalPassed: boolean;
+  } = fs.existsSync(journeyReportPath)
     ? (JSON.parse(fs.readFileSync(journeyReportPath, 'utf8')) as {
         mode: 'mock' | 'real';
         journeys: Array<{ host: 'cursor' | 'claude' | 'codex'; passed: boolean }>;
@@ -445,7 +457,7 @@ export function runHostMatrixPrOrchestration(input: {
     githubPrApi.passed &&
     prGate.passed;
 
-  const report = {
+  const report: HostMatrixPrOrchestrationReport = {
     reportType: 'main_agent_host_matrix_pr_orchestration',
     evidence_provenance,
     provider: input.provider,
@@ -488,6 +500,8 @@ export function main(argv: string[]): number {
     runId: args.runId,
     storyKey: args.storyKey,
     evidenceBundleId: args.evidenceBundleId,
+    recordId: args.recordId,
+    requirementSetId: args.requirementSetId,
   });
   const reportPath = path.resolve(
     args.reportPath ??
@@ -524,4 +538,3 @@ export function main(argv: string[]): number {
 if (require.main === module) {
   process.exitCode = main(process.argv.slice(2));
 }
-

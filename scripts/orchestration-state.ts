@@ -132,12 +132,115 @@ export interface CreateOrchestrationStateInput {
   pendingPacket?: PendingPacketPointer | null;
 }
 
+function text(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function object(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function normalizePathForRuntime(value: string): string {
+  return value.replace(/\\/g, '/');
+}
+
+function resolveActiveRequirementRecordPath(projectRoot: string): string | null {
+  const indexPath = path.join(projectRoot, '_bmad-output', 'runtime', 'requirement-records', 'index.json');
+  if (!fs.existsSync(indexPath)) return null;
+  try {
+    const index = JSON.parse(fs.readFileSync(indexPath, 'utf8')) as Record<string, unknown>;
+    const active = object(index.active) ?? object(index.currentRequirementRef) ?? object(index.currentRequirement);
+    const records = Array.isArray(index.records)
+      ? index.records.filter((item): item is Record<string, unknown> => Boolean(object(item)))
+      : [];
+    const activeRequirementSetId = text(active?.requirementSetId ?? active?.recordId);
+    const activeRecordId = text(active?.recordId);
+    const directPath = text(active?.recordPath ?? active?.path ?? active?.controlRecordPath);
+    const matched = records.find((record) => {
+      const requirementSetId = text(record.requirementSetId ?? record.recordId);
+      const recordId = text(record.recordId);
+      return (
+        (activeRequirementSetId && requirementSetId === activeRequirementSetId) ||
+        (activeRecordId && recordId === activeRecordId)
+      );
+    });
+    const recordPath = directPath || text(matched?.recordPath ?? matched?.path ?? matched?.controlRecordPath);
+    if (recordPath) return path.resolve(projectRoot, normalizePathForRuntime(recordPath));
+    if (activeRequirementSetId) {
+      return path.join(projectRoot, '_bmad-output', 'runtime', 'requirement-records', activeRequirementSetId, 'requirement-record.json');
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export function orchestrationStateDir(projectRoot: string): string {
+  const recordPath = resolveActiveRequirementRecordPath(projectRoot);
+  if (recordPath) {
+    return path.join(path.dirname(recordPath), 'orchestration', 'orchestration-state');
+  }
   return path.join(projectRoot, '_bmad-output', 'runtime', 'governance', 'orchestration-state');
+}
+
+export function orchestrationStateDirForRecordPath(
+  projectRoot: string,
+  recordPath?: string | null
+): string {
+  const normalized = text(recordPath);
+  if (!normalized) {
+    return orchestrationStateDir(projectRoot);
+  }
+  const resolved = path.isAbsolute(normalized)
+    ? normalized
+    : path.resolve(projectRoot, normalizePathForRuntime(normalized));
+  return path.join(path.dirname(resolved), 'orchestration', 'orchestration-state');
 }
 
 export function orchestrationStatePath(projectRoot: string, sessionId: string): string {
   return path.join(orchestrationStateDir(projectRoot), `${sessionId}.json`);
+}
+
+function requirementScopedStateCandidates(projectRoot: string, sessionId: string): string[] {
+  const recordsRoot = path.join(projectRoot, '_bmad-output', 'runtime', 'requirement-records');
+  if (!fs.existsSync(recordsRoot)) {
+    return [];
+  }
+  return fs
+    .readdirSync(recordsRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) =>
+      path.join(recordsRoot, entry.name, 'orchestration', 'orchestration-state', `${sessionId}.json`)
+    );
+}
+
+function existingOrchestrationStatePath(projectRoot: string, sessionId: string): string | null {
+  const candidates = [
+    orchestrationStatePath(projectRoot, sessionId),
+    ...requirementScopedStateCandidates(projectRoot, sessionId),
+    path.join(
+      projectRoot,
+      '_bmad-output',
+      'runtime',
+      'governance',
+      'orchestration-state',
+      `${sessionId}.json`
+    ),
+  ];
+  const seen = new Set<string>();
+  for (const candidate of candidates) {
+    const normalized = path.resolve(candidate);
+    if (seen.has(normalized)) {
+      continue;
+    }
+    seen.add(normalized);
+    if (fs.existsSync(normalized)) {
+      return normalized;
+    }
+  }
+  return null;
 }
 
 export function createDefaultOrchestrationState(
@@ -176,8 +279,15 @@ export function readOrchestrationState(
   projectRoot: string,
   sessionId: string
 ): OrchestrationState | null {
-  const file = orchestrationStatePath(projectRoot, sessionId);
-  if (!fs.existsSync(file)) {
+  const file = existingOrchestrationStatePath(projectRoot, sessionId);
+  if (!file || !fs.existsSync(file)) {
+    return null;
+  }
+  return readOrchestrationStateAtPath(file);
+}
+
+export function readOrchestrationStateAtPath(file: string): OrchestrationState | null {
+  if (!file || !fs.existsSync(file)) {
     return null;
   }
   try {
@@ -188,7 +298,23 @@ export function readOrchestrationState(
 }
 
 export function writeOrchestrationState(projectRoot: string, state: OrchestrationState): void {
-  const file = orchestrationStatePath(projectRoot, state.sessionId);
+  const file = existingOrchestrationStatePath(projectRoot, state.sessionId) ??
+    orchestrationStatePath(projectRoot, state.sessionId);
+  writeOrchestrationStateAtPath(file, state);
+  const legacyProjectionPath = path.join(
+    projectRoot,
+    '_bmad-output',
+    'runtime',
+    'governance',
+    'orchestration-state',
+    `${state.sessionId}.json`
+  );
+  if (path.resolve(file) !== path.resolve(legacyProjectionPath)) {
+    writeOrchestrationStateAtPath(legacyProjectionPath, state);
+  }
+}
+
+export function writeOrchestrationStateAtPath(file: string, state: OrchestrationState): void {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const tempFile = `${file}.tmp`;
   fs.writeFileSync(tempFile, JSON.stringify(state, null, 2) + '\n', 'utf8');

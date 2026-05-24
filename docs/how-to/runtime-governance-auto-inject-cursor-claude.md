@@ -1,5 +1,7 @@
 # Runtime Governance 自动注入（Cursor / Claude Code）
 
+> Legacy note: 本页记录旧 runtime context / registry 自动注入链路。目标态不再把 `_bmad-output/runtime/context/**`、`.bmad/runtime-context.json` 或旧 registry 作为控制输入；当前主路径是 Active Requirement Resolver 输出只读 `ResolvedRuntimeContext`，再由 `emit-runtime-policy` 消费。
+
 ## 目标
 
 在 **Agent / 子代理**路径上，由 hook 调用 **`emit-runtime-policy`**，将 `resolveRuntimePolicy` 的 JSON 注入模型上下文。**禁止**第二套 policy 求值逻辑。
@@ -13,8 +15,8 @@
 1. 运行 `npx bmad-speckit init .`（`--ai claude` / `cursor-agent` 或逗号多选）或 `node scripts/init-to-root.js`（`--agent cursor` / `claude-code`）。
 2. 完成后应存在：
    - **Claude**：`.claude/hooks/emit-runtime-policy-cli.js`、`.claude/hooks/runtime-policy-inject.js`、`.claude/hooks/resolve-for-session.cjs`（与 emit 同目录部署），且 `.claude/settings.json` 含 policy hooks。
-   - **Cursor**：`.cursor/hooks/emit-runtime-policy-cli.js`、`.cursor/hooks/runtime-policy-inject.js`、`.cursor/hooks/emit-runtime-policy.cjs`、`.cursor/hooks/resolve-for-session.cjs`（i18n 合并）、`.cursor/hooks/write-runtime-context.js`，且 **`.cursor/hooks.json` 已生成**。
-3. **runtime context / registry bootstrap**：init 现在会自动生成基础 project context 与最小 registry；正式运行时，story/run 级上下文应由真实入口通过统一 helper 自动刷新，而不是依赖用户记住手工补上下文。
+   - **Cursor**：`.cursor/hooks/emit-runtime-policy-cli.js`、`.cursor/hooks/runtime-policy-inject.js`、`.cursor/hooks/emit-runtime-policy.cjs`、`.cursor/hooks/resolve-for-session.cjs`（i18n 合并）、目标态 `.cursor/hooks/resolve-active-requirement.js`，且 **`.cursor/hooks.json` 已生成**。历史 `.cursor/hooks/write-runtime-context.js` 只属于 retired context surface。
+3. **ResolvedRuntimeContext bootstrap**：目标态必须通过显式 record 参数或 `_bmad-output/runtime/requirement-records/index.json` 定位 active Requirement，再生成只读 `ResolvedRuntimeContext`；不得依赖用户手工补旧 project context / registry。
 4. **预构建 CJS**：由 workspace 包 **`@bmad-speckit/runtime-emit`** 构建 `emit-runtime-policy.cjs` 与 **`resolve-for-session.cjs`**，init 时复制到各 host 的 `hooks/` 目录；CLI 亦可通过 `require.resolve('@bmad-speckit/runtime-emit/dist/*.cjs', { paths: [项目根] })` 解析。**消费者无需**在项目根保留 `scripts/` 下的 TS 入口即可运行 emit 与 inject（含语言策略合并）。
 
 ## Cursor Native Hooks
@@ -78,7 +80,7 @@ node .claude/hooks/emit-runtime-policy-cli.js
 node .cursor/hooks/emit-runtime-policy-cli.js
 ```
 
-应打印一行 JSON policy。若缺少上下文且无 CLI 参数与 registry-backed context，应 **exit 非 0** 且 stderr 有说明。
+应打印一行 JSON policy。若缺少 `ResolvedRuntimeContext` 且无法通过显式 record 参数或 requirement index 定位 active Requirement，应 **exit 非 0** 且 stderr 有说明。
 
 ```bash
 npm run test:runtime-policy-inject
@@ -94,7 +96,7 @@ npx vitest run tests/acceptance/cursor-hooks-json-generation.test.ts tests/accep
 
 | 现象 | 处理 |
 |------|------|
-| 缺少 registry-backed runtime context | 先确保 `activeScope` 指向存在的 scoped context file，且其中 `flow`/`stage`/identity 合法；**不得**用环境变量替代 registry 中的上述字段 |
+| 缺少 `ResolvedRuntimeContext` | 先确保显式 record 参数或 `_bmad-output/runtime/requirement-records/index.json` 能定位 active Requirement，且 `requirement-record.json`、runtime policy snapshot、recovery context hash 可校验；**不得**用环境变量替代这些字段 |
 | emit 失败 / hook exit 1 | 读 stderr；模型侧只能见错误信息，**不能**出现伪 policy |
 | Cursor 无生效 hooks | 先检查 `.cursor/hooks.json` 是否存在、事件是否注册、command 路径是否正确 |
 | 路径错误 | 确认项目根含 `_bmad/` 且 hook command 指向正确文件 |
@@ -123,6 +125,6 @@ npx vitest run tests/acceptance/cursor-hooks-json-generation.test.ts tests/accep
 ## 参考
 
 - [`../reference/runtime-policy-emit-schema.md`](../reference/runtime-policy-emit-schema.md)
-- [`../reference/runtime-context.schema.json`](../reference/runtime-context.schema.json)
+- [`../reference/runtime-context.md`](../reference/runtime-context.md)（历史 retired context surface 说明）
 - [`../reference/cursor-runtime-governance-hooks.md`](../reference/cursor-runtime-governance-hooks.md)
 - [`../reference/governance-remediation-provider-config.md`](../reference/governance-remediation-provider-config.md)

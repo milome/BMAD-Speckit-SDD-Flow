@@ -138,6 +138,8 @@ describe('bmad-help and BMADS runtime boundary', () => {
       expect(text).toContain('## Upstream BMAD Artifacts');
       expect(text).toContain('Product briefs: missing');
       expect(text).toContain('Governance source: orchestration-governance.contract.yaml');
+      expect(text).toContain('bmad-speckit confirm-scope');
+      expect(text).toContain('bmad-speckit main-agent:confirm-scope');
       expect(text).toContain('bmad-speckit main-agent-orchestration --action inspect');
       expect(text).toContain('Run bmad-help for full BMAD Method workflow guidance');
       expect(JSON.stringify(output)).toContain('"artifacts"');
@@ -147,6 +149,15 @@ describe('bmad-help and BMADS runtime boundary', () => {
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
+  });
+
+  it('exposes confirm-scope as a package-level command and keeps the main-agent alias', () => {
+    const cli = fs.readFileSync(path.resolve('packages', 'bmad-speckit', 'bin', 'bmad-speckit.js'), 'utf8');
+
+    expect(cli).toContain(".command('confirm-scope')");
+    expect(cli).toContain(".command('main-agent:confirm-scope')");
+    expect(cli).toContain("'--action', 'confirm-scope'");
+    expect(cli).toContain("runRepoScript('main-agent-orchestration.ts'");
   });
 
   it('keeps layer_3 story creation behind epics planning and readiness instead of direct development', () => {
