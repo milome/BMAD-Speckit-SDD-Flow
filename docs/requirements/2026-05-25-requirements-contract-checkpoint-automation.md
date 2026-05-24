@@ -935,3 +935,9 @@ Validated scope: `sequenceViews`, `flowViews`, `edgeCaseViews`, and `boundaryVie
 Status: passed
 
 Validated scope: `artifactAutomationPlan`, `requiredCommands`, `suggestedCommands`, and `closeoutReadinessPreview` are present before render.
+
+### cp-07-conditional-modules
+
+Status: passed
+
+Validated scope: conditional module declarations are present for scripts and hooks, while non-applicable governance/runtime/scoring/current-target domains remain explicitly bounded.
