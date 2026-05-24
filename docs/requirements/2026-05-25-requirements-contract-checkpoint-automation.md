@@ -923,3 +923,9 @@ Validated scope: `must`, `notDone`, `mustNot`, and `evidence` sections are prese
 Status: passed
 
 Validated scope: `failurePaths`, `edgeCases`, and `traceRows` are present, with failure behavior and trace references available before HTML render.
+
+### cp-05-views
+
+Status: passed
+
+Validated scope: `sequenceViews`, `flowViews`, `edgeCaseViews`, and `boundaryViews` are present and preserve business/governance separation for the renderer.
