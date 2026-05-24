@@ -917,3 +917,9 @@ Validated scope: `implementationConfirmation` core fields and applicability decl
 Status: passed
 
 Validated scope: `must`, `notDone`, `mustNot`, and `evidence` sections are present and ID-bound for pre-render checks.
+
+### cp-04-failure-edge-trace
+
+Status: passed
+
+Validated scope: `failurePaths`, `edgeCases`, and `traceRows` are present, with failure behavior and trace references available before HTML render.
