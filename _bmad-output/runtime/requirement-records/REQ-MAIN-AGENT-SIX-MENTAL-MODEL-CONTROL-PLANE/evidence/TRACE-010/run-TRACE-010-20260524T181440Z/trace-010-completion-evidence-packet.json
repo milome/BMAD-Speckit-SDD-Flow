@@ -1,0 +1,74 @@
+{
+  "packetType": "completion_evidence_packet",
+  "schemaVersion": "completion-evidence-packet/v1",
+  "recordId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+  "requirementSetId": "REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE",
+  "generatedAt": "2026-05-24T18:14:45.297Z",
+  "traceId": "TRACE-010",
+  "closedIds": [
+    "TRACE-010",
+    "MUST-010",
+    "NEG-001",
+    "EVD-012"
+  ],
+  "openIds": [],
+  "commandResults": [
+    {
+      "commandId": "CMD-CONTRACT-001",
+      "command": "node _bmad/skills/requirements-contract-authoring/scripts/reverse_audit_contract.js docs/requirements/2026-05-24-main-agent-six-mental-model-control-plane-completion.md",
+      "exitCode": 0,
+      "outputPath": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-010/run-TRACE-010-20260524T181440Z/CMD-CONTRACT-001.output.txt",
+      "outputSummary": "COMMAND_ID: CMD-CONTRACT-001 | COMMAND: node _bmad/skills/requirements-contract-authoring/scripts/reverse_audit_contract.js docs/requirements/2026-05-24-main-agent-six-mental-model-control-plane-completion.md | RUN_ID: run-TRACE-010-20260524T181440Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-010-20260524T181440Z | STARTED_AT: 2026-05-24T18:14:40.645Z | COMPLETED_AT: 2026-05-24T18:14:40.808Z | EXIT_CODE: 0 | STDOUT: | { |   \"verdict\": \"PASS\", |   \"target\": \"D:/Dev/BMAD-Speckit-SDD-Flow/docs/requirements/2026-05-24-main-agent-six-mental-model-control-plane-completion.md\", |   \"renderReportPath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/confirmation/confirmation-render-report.json\", |   \"mode\": \"implementation\", |   \"rendererAuthority\": { |     \"confirmability\": \"confirmable\", |     \"blockingIssueCount\": 0, |     \"deliveryReadiness\": { |       \"ready\": false, |       \"status\": \"delivery_not_ready\", |       \"label\": \"delivery_ready=false\", |       \"reasons\": [ |         \"缺少受控记录\", |         \"存在缺失当前证据: 46\", |         \"traceRows 尚未全部 current_pass: 0/18\" |       ], |       \"currentAttemptStatus\": \"missing_controlled_record\", |       \"currentPassTraceRows\": 0, |       \"totalTraceRows\": 18, |       \"missingEvidenceCount\": 46, |       \"staleProofCount\": 0, |       \"nonCurrentPassTraceRows\": [ |         \"TRACE-001\", |         \"TRACE-002\", |         \"TRACE-003\", |         \"TRACE-004\", |         \"TRACE-005\", |         \"TRACE-006\", |         \"TRACE-007\", |         \"TRACE-008\", |         \"TRACE-009\", |         \"TRACE-010\", |         \"TRACE-011\", |         \"TRACE-012\", |         \"TRACE-013\", |         \"TRACE-014\", |         \"TRACE-015\", |         \"TRACE-016\", |         \"TRACE-017\", |         \"TRACE-018\" |       ] |     } |   }, |   \"grillReport\": null, |   \"currentHashes\": { |     \"sourceDocumentHash\": \"sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f\", |     \"implementationConfirmationHash\": \"sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3\", |     \"reportSourceDocumentHash\": \"sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f\", |     \"reportImplementationConfirmationHash\": \"sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3\", |     \"reportConfirmationPageHash\": \"sha256:960a54e000dd874501f3ab064aabda849049e164b39e180e6ac93a14efe91a17\" |   }, |   \"reverseAuditChecks\": { |     \"hasImplementationConfirmation\": true, |     \"hasUserConfirmed\": true, |     \"hasContractAuthoringRequired\": true, |     \"hasConfirmationRender\": true, |     \"hasReverseAuditReport\": true, |     \"hasDefinitionOfDone\": true, |     \"diagramBlockCount\": 9, |     \"diagramIdCount\": 46, |     \"missingDiagramCoverage\": [] |   }, |   \"definitionDrilldown\": { |     \"verdict\": \"pass\", |     \"maxIterations\": 3, |     \"iterationPolicy\": \"deterministic_fingerprint_until_fixed_point_then_decision_packet; do_not_increase_rounds_for_repeated_findings\", |     \"stopReason\": \"no_blocking_definition_questions\", |     \"questions\": [ |       { |         \"id\": \"DQ-EDGE-006\", |         \"severity\": \"warning\", |         \"category\": \"ambiguous_language\", |         \"refs\": [ |           \"EDGE-006\" |         ], |         \"question\": \"Clarify vague terms (later) in EDGE-006.\", |         \"recommendedAnswer\": \"Replace fuzzy adjectives with measurable behavior, threshold, owner, or explicit out-of-scope boundary.\", |         \"fingerprint\": \"fp:baf7b93b7ea1f5ba\", |         \"clusterId\": \"cluster:AMBIGUOUS-LANGUAGE:b5e60bd947\", |         \"clusterCategory\": \"ambiguous_language\", |         \"clusterRefs\": [ |           \"EDGE-006\" |         ] |       } |     ], |     \"blockers\": [], |     \"warnings\": [ |       { |         \"code\": \"definition_ambiguous_language\", |         \"message\": \"Clarify vague terms (later) in EDGE-006.\", |         \"refs\": [ |           \"EDGE-006\" |         ], |         \"severity\": \"warning\", |         \"source\": \"definition_drilldown\", |         \"fingerprint\": \"fp:baf7b93b7ea1f5ba\", |         \"category\": \"ambiguous_language\", |         \"clusterId\": \"cluster:AMBIGUOUS-LANGUAGE:b5e60bd947\", |         \"clusterCategory\": \"ambiguous_language\", |         \"clusterRefs\": [ |           \"EDGE-006\" |         ], |         \"recommendedAnswer\": \"Replace fuzzy adjectives with measurable behavior, threshold, owner, or explicit out-of-scope boundary.\", |         \"status\": \"open\", |         \"summary\": \"Clarify vague terms (later) in EDGE-006.\", |         \"requirementIds\": [ |           \"EDGE-006\" |         ] |       } |     ], |     \"clusters\": [ |       { |         \"id\": \"cluster:AMBIGUOUS-LANGUAGE:b5e60bd947\", |         \"category\": \"ambiguous_language\", |         \"refs\": [ |           \"EDGE-006\" |         ], |         \"severity\": \"warning\", |         \"fingerprints\": [ |           \"fp:baf7b93b7ea1f5ba\" |         ], |         \"findingCodes\": [ |           \"definition_ambiguous_language\" |         ], |         \"questions\": [ |         ...<truncated>"
+    },
+    {
+      "commandId": "CMD-DELIVERY-011",
+      "command": "npx vitest run tests/acceptance/main-agent-scoring-gates-check.test.ts tests/unit/readiness-score-writer-boundary.test.ts packages/scoring/__tests__/integration/dashboard-governance-routing.test.ts",
+      "exitCode": 0,
+      "outputPath": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-010/run-TRACE-010-20260524T181440Z/CMD-DELIVERY-011.output.txt",
+      "outputSummary": "COMMAND_ID: CMD-DELIVERY-011 | COMMAND: npx vitest run tests/acceptance/main-agent-scoring-gates-check.test.ts tests/unit/readiness-score-writer-boundary.test.ts packages/scoring/__tests__/integration/dashboard-governance-routing.test.ts | RUN_ID: run-TRACE-010-20260524T181440Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-010-20260524T181440Z | STARTED_AT: 2026-05-24T18:14:40.809Z | COMPLETED_AT: 2026-05-24T18:14:45.288Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m | { |   \"ok\": true, |   \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/scoring-gates-pass-D9foj6/_bmad-output/runtime/requirement-records/REQ-SCORING-GATES/scoring-gates-report.json\", |   \"decision\": \"pass\", |   \"blockingReasons\": [] | } | { |   \"ok\": true, |   \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/scoring-gates-missing-04HQan/_bmad-output/runtime/requirement-records/REQ-SCORING-GATES/scoring-gates-report.json\", |   \"decision\": \"blocked\", |   \"blockingReasons\": [ |     \"score_materialization_gate_missing\", |     \"score_evaluation_gate_missing\" |   ] | } | { |   \"ok\": true, |   \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/scoring-gates-no-policy-1NVIuq/_bmad-output/runtime/requirement-records/REQ-SCORING-GATES/scoring-gates-report.json\", |   \"decision\": \"blocked\", |   \"blockingReasons\": [ |     \"runtime_snapshot_resolved_scoring_policy_missing\" |   ] | } | { |   \"ok\": true, |   \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/scoring-gates-policy-mismatch-mlh5T8/_bmad-output/runtime/requirement-records/REQ-SCORING-GATES/scoring-gates-report.json\", |   \"decision\": \"blocked\", |   \"blockingReasons\": [ |     \"score_policy_hash_mismatch\" |   ] | } | { |   \"ok\": true, |   \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/scoring-gates-write-fail-eiDwZd/_bmad-output/runtime/requirement-records/REQ-SCORING-GATES/scoring-gates-report.json\", |   \"decision\": \"blocked\", |   \"blockingReasons\": [ |     \"score_write_failed_failure_record_missing\", |     \"score_materialization_gate_failed\", |     \"score_evaluation_gate_missing\" |   ] | } | { |   \"ok\": true, |   \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/scoring-gates-eval-fail-oNz5LG/_bmad-output/runtime/requirement-records/REQ-SCORING-GATES/scoring-gates-report.json\", |   \"decision\": \"blocked\", |   \"blockingReasons\": [ |     \"score_evaluation_gate_failed\", |     \"open_score_failure_record_exists\" |   ] | } | execution_iteration_recorded=exec-score-failed-001 | { |   \"ok\": true, |   \"reportPath\": \"C:/Users/milom/AppData/Local/Temp/scoring-gates-closeout-zgW7oa/_bmad-output/runtime/requirement-records/REQ-SCORING-GATES/delivery-closeout-report.json\", |   \"decision\": \"blocked\", |   \"blockingReasons\": [ |     \"architecture_hash_recipe_unresolved\", |     \"architecture_confirmation_resolved_recipe_hash_not_current\", |     \"architecture_confirmation_state_check_not_current\", |     \"deliveryEvidence.requiredCommands_current_attempt_missing\", |     \"score_gate_failure_unresolved\", |     \"delivery_truth_gate_not_passed\", |     \"delivery_truth_gate_report_missing\", |     \"failure_case_coverage_artifact_missing\", |     \"production_subsystem_extension_ref_missing\", |     \"production_loop_ready_report_artifact_missing\", |     \"dataset_manifest_missing\", |     \"dataset_release_report_missing\", |     \"negative_or_regression_command_missing\", |     \"open_failure_record_exists\" |   ], |   \"controlEventId\": \"closeout_recorded:2026-05-24T18:14:44.269Z:fd230d6ada6c\", |   \"controlEventHash\": \"sha256:2cc980aa149b41938f931982dc2640ef34a086e59b587d954e061c6a435e54ac\", |   \"eventLogPath\": \"C:/Users/milom/AppData/Local/Temp/scoring-gates-closeout-zgW7oa/_bmad-output/runtime/requirement-records/REQ-SCORING-GATES/events/control-events.jsonl\", |   \"receiptPath\": \"C:/Users/milom/AppData/Local/Temp/scoring-gates-closeout-zgW7oa/_bmad-output/runtime/requirement-records/REQ-SCORING-GATES/events/receipts/closeout_recorded_2026-05-24T18_14_44.269Z_fd230d6ada6c.json\" | } |  \u001b[32m✓\u001b[39m tests/acceptance/main-agent-scoring-gates-check.test.ts \u001b[2m(\u001b[22m\u001b[2m8 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 747\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m tests/unit/readiness-score-writer-boundary.test.ts \u001b[2m(\u001b[22m\u001b[2m1 test\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 3\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m packages/scoring/__tests__/integration/dashboard-governance-routing.test.ts \u001b[2m(\u001b[22m\u001b[2m1 test\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 2158\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m CLI dashboard output uses governance routing summary from scoring records instead of runtime current-run \u001b[33m 2157\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m3 passed\u001b[39m\u001b[22m\u001b[90m (3)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m10 passed\u001b[39m\u001b[22m\u001b[90m (10)\u001b[39m | \u001b[2m   Start at \u001b[22m 02:14:42 | \u001b[2m   Duration \u001b[22m 2.36s\u001b[2m (transform 366ms, setup 0ms, import 709ms, tests 2.91s, environment 0ms)\u001b[22m | STDERR:"
+    }
+  ],
+  "e2eEvidence": [
+    {
+      "artifactType": "command_run_output",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-010/run-TRACE-010-20260524T181440Z/CMD-CONTRACT-001.output.txt",
+      "hash": "sha256:be1789d039f18dc50c68852fcad815b0ce942f8182edcab3671a9d5bc972e9fb",
+      "producer": "run-confirmed-trace-slice",
+      "purpose": "fresh current-attempt output for CMD-CONTRACT-001 covering TRACE-010",
+      "relatedRequirementIds": [
+        "CMD-CONTRACT-001",
+        "TRACE-010",
+        "MUST-010",
+        "NEG-001",
+        "EVD-012"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+      "outputVersion": "cmd-contract-001-trace-010-current-attempt-output-v1"
+    },
+    {
+      "artifactType": "command_run_output",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/evidence/TRACE-010/run-TRACE-010-20260524T181440Z/CMD-DELIVERY-011.output.txt",
+      "hash": "sha256:b912f1b9a5f7461d2cfe6a8642b7092ac15a057835785df57ef7de21394c6498",
+      "producer": "run-confirmed-trace-slice",
+      "purpose": "fresh current-attempt output for CMD-DELIVERY-011 covering TRACE-010",
+      "relatedRequirementIds": [
+        "CMD-DELIVERY-011",
+        "TRACE-010",
+        "MUST-010",
+        "NEG-001",
+        "EVD-012"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:95b3e798839f38e0fb02c06d811ce026fcdb0f893f256793c094c569a1015c7f;implementation=sha256:e5d081626631fdf121c04a37bd947c87ea2dd9a6c68903f702d950d55cefddc3",
+      "outputVersion": "cmd-delivery-011-trace-010-current-attempt-output-v1"
+    }
+  ],
+  "auditEvidence": [
+    "CMD-CONTRACT-001"
+  ],
+  "residualRisks": [],
+  "scopeChanges": []
+}
