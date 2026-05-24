@@ -905,3 +905,9 @@ This section records automated checkpoint execution before HTML render. It does 
 Status: passed
 
 Validated scope: header, background, scope, non-goals, and frozen decisions are present in this source document. HTML render remains intentionally not run.
+
+### cp-02-confirmation-core-applicability
+
+Status: passed
+
+Validated scope: `implementationConfirmation` core fields and applicability declarations are present. Conditional expansion remains bounded to the domains declared in the source.
