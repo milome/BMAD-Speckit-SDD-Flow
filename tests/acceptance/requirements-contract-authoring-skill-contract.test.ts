@@ -81,4 +81,73 @@ describe('requirements-contract-authoring published contract', () => {
     expect(rendererSpec).toContain('bmad-speckit confirm-scope');
     expect(rendererSpec).toContain('bmad-speckit main-agent:confirm-scope');
   });
+
+  it('defaults contract generation to confirmation-ready source authoring without collapsing later gates', () => {
+    const skill = readSkillFile('SKILL.md');
+
+    expect(skill).toContain('Default to `author-confirmation-ready-source`');
+    expect(skill).toContain('Do not collapse these modes into one long execution chain');
+    expect(skill).toContain('"Generate requirements contract document" means author the confirmation-ready source document');
+    expect(skill).toContain('The target is not a loose draft');
+    expect(skill).toContain('ready to render a confirmation page with minimal or no renderer repair');
+  });
+
+  it('requires authority-first fact collection and ID matrix design before authoring prose', () => {
+    const skill = readSkillFile('SKILL.md');
+
+    expect(skill).toContain('Use authority-first, expand-on-signal fact collection');
+    expect(skill).toContain('Do not run broad repository searches before authoring');
+    expect(skill).toContain('Before writing the source document body, build the ID matrix');
+    expect(skill).toContain('Every `MUST-*` and `NEG-*` must have evidence, trace coverage, and at least one view');
+    expect(skill).toContain('`OUT-*` must not appear in `traceRows[].covers`');
+  });
+
+  it('documents pre-render completeness checks that prevent renderer churn', () => {
+    const skill = readSkillFile('SKILL.md');
+
+    expect(skill).toContain('### 4a. Pre-Render Completeness Check');
+    expect(skill).toContain('pre_render_definition_drilldown.js');
+    expect(skill).toContain('deterministic automation equivalent of a `grill-with-docs` pass');
+    expect(skill).toContain('direct contradiction matrix findings');
+    expect(skill).toContain('external side effects that lack timeout/failure/idempotency/recovery/evidence semantics');
+    expect(skill).toContain('Core arrays are present and non-empty');
+    expect(skill).toContain('Governance event types that write control fields have controlled writers');
+    expect(skill).toContain('Mermaid diagrams reference only declared IDs and use renderer-compatible labels');
+    expect(skill).toContain('repair renderer blocking issues until the page is confirmable or a real blocker is found');
+  });
+
+  it('documents convergent pre-render drilldown instead of unbounded question loops', () => {
+    const skill = readSkillFile('SKILL.md');
+    const reverseAuditGate = readSkillFile(path.join('references', 'reverse-audit-gate.md'));
+
+    for (const content of [skill, reverseAuditGate]) {
+      expect(content).toContain('--previous-report');
+      expect(content).toContain('--resolutions');
+      expect(content).toContain('--changed-only');
+      expect(content).toContain('--max-new-blockers');
+      expect(content).toContain('--emit-decision-packet');
+      expect(content).toContain('fingerprint');
+      expect(content).toContain('clusterId');
+      expect(content).toContain('resolved');
+      expect(content).toContain('waived');
+      expect(content).toContain('converted_to_open_question');
+      expect(content).toContain('converted_to_out_boundary');
+      expect(content).toContain('no_new_blockers');
+      expect(content).toContain('remainingBlockingClusters');
+    }
+  });
+
+  it('documents scale assessment and semantic checkpoint runner before render', () => {
+    const skill = readSkillFile('SKILL.md');
+    const reverseAuditGate = readSkillFile(path.join('references', 'reverse-audit-gate.md'));
+
+    for (const content of [skill, reverseAuditGate]) {
+      expect(content).toContain('assess_contract_authoring_scale.js');
+      expect(content).toContain('run_semantic_checkpoints.js');
+      expect(content).toContain('checkpoint_required');
+      expect(content).toContain('single-file');
+      expect(content).toContain('--mode plan|status|run|resume');
+      expect(content).toContain('--until pre-render-ready');
+    }
+  });
 });
