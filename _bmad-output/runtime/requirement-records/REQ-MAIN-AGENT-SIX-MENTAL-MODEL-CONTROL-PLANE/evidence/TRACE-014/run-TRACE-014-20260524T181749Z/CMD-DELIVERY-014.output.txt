@@ -1,0 +1,152 @@
+COMMAND_ID: CMD-DELIVERY-014
+COMMAND: npx vitest run tests/acceptance/main-agent-orchestration-consumer.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts tests/acceptance/requirement-record-schema.test.ts
+RUN_ID: run-TRACE-014-20260524T181749Z
+CLOSEOUT_ATTEMPT_ID: attempt-TRACE-014-20260524T181749Z
+STARTED_AT: 2026-05-24T18:17:49.847Z
+COMPLETED_AT: 2026-05-24T18:17:56.252Z
+EXIT_CODE: 0
+STDOUT:
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mD:/Dev/BMAD-Speckit-SDD-Flow[39m
+
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/delivery-closeout-missing-FAYhWQ/_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/delivery-closeout-report.json",
+  "decision": "blocked",
+  "blockingReasons": [
+    "deliveryEvidence.requiredCommands_missing",
+    "negative_or_regression_command_missing"
+  ],
+  "controlEventId": "closeout_recorded:2026-05-19T00:00:00.000Z:bf2243ce5239",
+  "controlEventHash": "sha256:09b10b5f2645d3f4cfd2cc48e44af67396561ec92e852dfee519fd110bfa8387",
+  "eventLogPath": "C:/Users/milom/AppData/Local/Temp/delivery-closeout-missing-FAYhWQ/_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/events/control-events.jsonl",
+  "receiptPath": "C:/Users/milom/AppData/Local/Temp/delivery-closeout-missing-FAYhWQ/_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/events/receipts/closeout_recorded_2026-05-19T00_00_00.000Z_bf2243ce5239.json"
+}
+delivery_closeout=pass
+delivery_closeout=blocked
+delivery_closeout=pass
+delivery_closeout=blocked
+delivery_closeout=pass
+delivery_closeout=blocked
+delivery_closeout=blocked
+delivery_closeout=blocked
+delivery_closeout=blocked
+delivery_closeout=blocked
+delivery_closeout=blocked
+delivery_closeout=blocked
+delivery_closeout=blocked
+delivery_closeout=blocked
+delivery_closeout=pass
+delivery_closeout=blocked
+delivery_closeout=blocked
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-Xqkllr/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/implementation-readiness-report.json",
+  "decision": "pass",
+  "blockingReasons": [],
+  "controlEventId": "implementation_readiness_check_recorded:2026-05-20T00:00:01.000Z:ed620e12485f",
+  "controlEventHash": "sha256:746920abfebc600fe836e0e247666c6325cea0304bf296af2ba66ac7d5a2e810",
+  "eventLogPath": "C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-Xqkllr/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/events/control-events.jsonl",
+  "receiptPath": "C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-Xqkllr/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/events/receipts/implementation_readiness_check_recorded_2026-05-20T00_00_01.000Z_ed620e12485f.json",
+  "readinessBaselineActivation": {
+    "status": "audit_required",
+    "controlEventId": "readiness_baseline_activation_requested:2026-05-20T00:00:01.000Z:e37ec40bcec4",
+    "controlEventHash": "sha256:b3805cf3df79e727722f30a612877b421ef42156a6a7cda947aab811ecd39604",
+    "receiptPath": "C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-Xqkllr/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/events/receipts/readiness_baseline_activation_requested_2026-05-20T00_00_01.000Z_e37ec40bcec4.json"
+  }
+}
+delivery_closeout=blocked
+delivery_closeout=pass
+delivery_closeout=pass
+delivery_closeout=blocked
+delivery_closeout=blocked
+delivery_closeout=pass
+{
+  "version": 1,
+  "sessionId": "story-14.5",
+  "host": "cursor",
+  "flow": "story",
+  "currentPhase": "implement",
+  "nextAction": "dispatch_remediation",
+  "pendingPacket": {
+    "packetId": "pkt-cli-01",
+    "packetPath": "C:\\Users\\milom\\AppData\\Local\\Temp\\main-agent-cli-surface-AzqwLp\\_bmad-output\\runtime\\governance\\packets\\story-14.5\\pkt-cli-01.json",
+    "packetKind": "recommendation",
+    "status": "claimed_by_main_agent",
+    "createdAt": "2026-05-24T18:17:54.970Z",
+    "claimOwner": "main-agent"
+  },
+  "originalExecutionPacketId": null,
+  "gatesLoop": {
+    "retryCount": 0,
+    "maxRetries": 3,
+    "noProgressCount": 0,
+    "circuitOpen": false,
+    "rerunGate": null,
+    "activePacketId": null,
+    "lastResult": null
+  },
+  "closeout": {
+    "invoked": false,
+    "approved": false,
+    "scoreWriteResult": null,
+    "handoffPersisted": false,
+    "resultCode": null
+  },
+  "lastTaskReport": null
+}
+{
+  "version": 1,
+  "sessionId": "story-14.5",
+  "host": "cursor",
+  "flow": "story",
+  "currentPhase": "implement",
+  "nextAction": "dispatch_remediation",
+  "pendingPacket": {
+    "packetId": "pkt-cli-01",
+    "packetPath": "C:\\Users\\milom\\AppData\\Local\\Temp\\main-agent-cli-surface-AzqwLp\\_bmad-output\\runtime\\governance\\packets\\story-14.5\\pkt-cli-01.json",
+    "packetKind": "recommendation",
+    "status": "dispatched",
+    "createdAt": "2026-05-24T18:17:54.970Z",
+    "claimOwner": "main-agent"
+  },
+  "originalExecutionPacketId": null,
+  "gatesLoop": {
+    "retryCount": 0,
+    "maxRetries": 3,
+    "noProgressCount": 0,
+    "circuitOpen": false,
+    "rerunGate": null,
+    "activePacketId": null,
+    "lastResult": null
+  },
+  "closeout": {
+    "invoked": false,
+    "approved": false,
+    "scoreWriteResult": null,
+    "handoffPersisted": false,
+    "resultCode": null
+  },
+  "lastTaskReport": null
+}
+null
+delivery_closeout=blocked
+delivery_closeout=blocked
+delivery_closeout=pass
+ [32m✓[39m tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts [2m([22m[2m28 tests[22m[2m)[22m[33m 2998[2mms[22m[39m
+{"updated":true,"auditIndex":{"bugfix":{},"standalone_tasks":{}}} [32m✓[39m tests/acceptance/main-agent-orchestration-consumer.test.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 1212[2mms[22m[39m
+     [33m[2m✓[22m[39m runs controlled readiness audit through scoring bridge and records current baseline metadata [33m 493[2mms[22m[39m
+ [32m✓[39m tests/acceptance/requirement-record-schema.test.ts [2m([22m[2m16 tests[22m[2m)[22m[33m 599[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m3 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[32m55 passed[39m[22m[90m (55)[39m
+[2m   Start at [22m 02:17:51
+[2m   Duration [22m 4.30s[2m (transform 974ms, setup 0ms, import 2.74s, tests 4.81s, environment 0ms)[22m
+
+
+STDERR:
+[90mstderr[2m | tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts[2m > [22m[2mrequirement-scoped delivery closeout gate[2m > [22m[2mrejects attempts that would overwrite an existing closeout attempt
+[22m[39m{
+  "ok": false,
+  "error": "closeout attempt already exists: closeout-001"
+}
