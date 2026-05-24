@@ -1,0 +1,111 @@
+COMMAND_ID: CMD-DELIVERY-001
+COMMAND: npx vitest run tests/acceptance/main-agent-orchestration-consumer.test.ts tests/acceptance/main-agent-unified-ingress-e2e.test.ts
+RUN_ID: run-FINAL-REQUIRED-COMMANDS-20260524T182425Z
+CLOSEOUT_ATTEMPT_ID: attempt-FINAL-REQUIRED-COMMANDS-20260524T182425Z
+STARTED_AT: 2026-05-24T18:24:25.717Z
+COMPLETED_AT: 2026-05-24T18:24:32.763Z
+EXIT_CODE: 0
+STDOUT:
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mD:/Dev/BMAD-Speckit-SDD-Flow[39m
+
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-BiNYEw/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/implementation-readiness-report.json",
+  "decision": "pass",
+  "blockingReasons": [],
+  "controlEventId": "implementation_readiness_check_recorded:2026-05-20T00:00:01.000Z:26f9e4d7eea3",
+  "controlEventHash": "sha256:089d0a5996f339cd4c2ddcf999705bc9c76327cd7efc882f14db4a21400c1e9f",
+  "eventLogPath": "C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-BiNYEw/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/events/control-events.jsonl",
+  "receiptPath": "C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-BiNYEw/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/events/receipts/implementation_readiness_check_recorded_2026-05-20T00_00_01.000Z_26f9e4d7eea3.json",
+  "readinessBaselineActivation": {
+    "status": "audit_required",
+    "controlEventId": "readiness_baseline_activation_requested:2026-05-20T00:00:01.000Z:b1bc26c7e2e0",
+    "controlEventHash": "sha256:2f2f730254c528e315195d9b665bc7c0e64c22dddabfd7f5b68907c3d1e5fced",
+    "receiptPath": "C:/Users/milom/AppData/Local/Temp/main-agent-readiness-bridge-BiNYEw/_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/events/receipts/readiness_baseline_activation_requested_2026-05-20T00_00_01.000Z_b1bc26c7e2e0.json"
+  }
+}
+{
+  "version": 1,
+  "sessionId": "story-14.5",
+  "host": "cursor",
+  "flow": "story",
+  "currentPhase": "implement",
+  "nextAction": "dispatch_remediation",
+  "pendingPacket": {
+    "packetId": "pkt-cli-01",
+    "packetPath": "C:\\Users\\milom\\AppData\\Local\\Temp\\main-agent-cli-surface-8ecIAR\\_bmad-output\\runtime\\governance\\packets\\story-14.5\\pkt-cli-01.json",
+    "packetKind": "recommendation",
+    "status": "claimed_by_main_agent",
+    "createdAt": "2026-05-24T18:24:30.735Z",
+    "claimOwner": "main-agent"
+  },
+  "originalExecutionPacketId": null,
+  "gatesLoop": {
+    "retryCount": 0,
+    "maxRetries": 3,
+    "noProgressCount": 0,
+    "circuitOpen": false,
+    "rerunGate": null,
+    "activePacketId": null,
+    "lastResult": null
+  },
+  "closeout": {
+    "invoked": false,
+    "approved": false,
+    "scoreWriteResult": null,
+    "handoffPersisted": false,
+    "resultCode": null
+  },
+  "lastTaskReport": null
+}
+{
+  "version": 1,
+  "sessionId": "story-14.5",
+  "host": "cursor",
+  "flow": "story",
+  "currentPhase": "implement",
+  "nextAction": "dispatch_remediation",
+  "pendingPacket": {
+    "packetId": "pkt-cli-01",
+    "packetPath": "C:\\Users\\milom\\AppData\\Local\\Temp\\main-agent-cli-surface-8ecIAR\\_bmad-output\\runtime\\governance\\packets\\story-14.5\\pkt-cli-01.json",
+    "packetKind": "recommendation",
+    "status": "dispatched",
+    "createdAt": "2026-05-24T18:24:30.735Z",
+    "claimOwner": "main-agent"
+  },
+  "originalExecutionPacketId": null,
+  "gatesLoop": {
+    "retryCount": 0,
+    "maxRetries": 3,
+    "noProgressCount": 0,
+    "circuitOpen": false,
+    "rerunGate": null,
+    "activePacketId": null,
+    "lastResult": null
+  },
+  "closeout": {
+    "invoked": false,
+    "approved": false,
+    "scoreWriteResult": null,
+    "handoffPersisted": false,
+    "resultCode": null
+  },
+  "lastTaskReport": null
+}
+null
+{"updated":true,"auditIndex":{"bugfix":{},"standalone_tasks":{}}} [32m✓[39m tests/acceptance/main-agent-orchestration-consumer.test.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 1137[2mms[22m[39m
+     [33m[2m✓[22m[39m runs controlled readiness audit through scoring bridge and records current baseline metadata [33m 465[2mms[22m[39m
+ [32m✓[39m tests/acceptance/main-agent-unified-ingress-e2e.test.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 2742[2mms[22m[39m
+     [33m[2m✓[22m[39m emits host_partial and transport_degraded degradation branches [33m 683[2mms[22m[39m
+     [33m[2m✓[22m[39m supports codex as a native no-hooks cli_ingress branch with non-smoke worker execution [33m 382[2mms[22m[39m
+     [33m[2m✓[22m[39m allows codex hooks_enabled only with a validated hook trust envelope [33m 337[2mms[22m[39m
+     [33m[2m✓[22m[39m degrades codex hook claims to no_hooks when trust proof is incomplete [33m 311[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m22 passed[39m[22m[90m (22)[39m
+[2m   Start at [22m 02:24:27
+[2m   Duration [22m 4.97s[2m (transform 1.29s, setup 0ms, import 4.33s, tests 3.88s, environment 0ms)[22m
+
+
+STDERR:

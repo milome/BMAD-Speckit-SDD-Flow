@@ -1,0 +1,57 @@
+COMMAND_ID: CMD-DELIVERY-003
+COMMAND: npx vitest run tests/unit/main-agent-implementation-readiness-gate.test.ts tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts packages/scoring/dashboard/__tests__/compute.test.ts
+RUN_ID: run-FINAL-REQUIRED-COMMANDS-20260524T182425Z
+CLOSEOUT_ATTEMPT_ID: attempt-FINAL-REQUIRED-COMMANDS-20260524T182425Z
+STARTED_AT: 2026-05-24T18:24:35.736Z
+COMPLETED_AT: 2026-05-24T18:24:38.951Z
+EXIT_CODE: 0
+STDOUT:
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mD:/Dev/BMAD-Speckit-SDD-Flow[39m
+
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/implementation-readiness-pass-d1ieIP/_bmad-output/runtime/requirement-records/REQ-READINESS/implementation-readiness-report.json",
+  "decision": "pass",
+  "blockingReasons": [],
+  "controlEventId": "implementation_readiness_check_recorded:2026-05-19T00:00:01.000Z:25469fe168fb",
+  "controlEventHash": "sha256:47b87387d7a862d647b52554bf343c549fe6d9468d50ab15382233b4bb899107",
+  "eventLogPath": "C:/Users/milom/AppData/Local/Temp/implementation-readiness-pass-d1ieIP/_bmad-output/runtime/requirement-records/REQ-READINESS/events/control-events.jsonl",
+  "receiptPath": "C:/Users/milom/AppData/Local/Temp/implementation-readiness-pass-d1ieIP/_bmad-output/runtime/requirement-records/REQ-READINESS/events/receipts/implementation_readiness_check_recorded_2026-05-19T00_00_01.000Z_25469fe168fb.json",
+  "readinessBaselineActivation": {
+    "status": "audit_required",
+    "controlEventId": "readiness_baseline_activation_requested:2026-05-19T00:00:01.000Z:9fd46a9ce434",
+    "controlEventHash": "sha256:6f768a8cc2e8a3e2929fc7be9bddc928e8d9f1f6035d288f7ffbd3fd790eaacd",
+    "receiptPath": "C:/Users/milom/AppData/Local/Temp/implementation-readiness-pass-d1ieIP/_bmad-output/runtime/requirement-records/REQ-READINESS/events/receipts/readiness_baseline_activation_requested_2026-05-19T00_00_01.000Z_9fd46a9ce434.json"
+  }
+}
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/readiness-gate-unit-6G2Ob5/_bmad-output/runtime/requirement-records/REQ-READINESS/implementation-readiness-report.json",
+  "decision": "pass",
+  "blockingReasons": [],
+  "controlEventId": "implementation_readiness_check_recorded:2026-05-20T00:00:00.000Z:016c1126af49",
+  "controlEventHash": "sha256:56cc19dfbad57c1f73d06e7a9ed8e2452f0113fa21c359b41c6eacd652356164",
+  "eventLogPath": "C:/Users/milom/AppData/Local/Temp/readiness-gate-unit-6G2Ob5/_bmad-output/runtime/requirement-records/REQ-READINESS/events/control-events.jsonl",
+  "receiptPath": "C:/Users/milom/AppData/Local/Temp/readiness-gate-unit-6G2Ob5/_bmad-output/runtime/requirement-records/REQ-READINESS/events/receipts/implementation_readiness_check_recorded_2026-05-20T00_00_00.000Z_016c1126af49.json",
+  "readinessBaselineActivation": {
+    "status": "audit_required",
+    "controlEventId": "readiness_baseline_activation_requested:2026-05-20T00:00:00.000Z:b9593c56f88d",
+    "controlEventHash": "sha256:66419348552ba8471678b14f50be34a13ac92153ebcb967a5aaeffb3817117ab",
+    "receiptPath": "C:/Users/milom/AppData/Local/Temp/readiness-gate-unit-6G2Ob5/_bmad-output/runtime/requirement-records/REQ-READINESS/events/receipts/readiness_baseline_activation_requested_2026-05-20T00_00_00.000Z_b9593c56f88d.json"
+  }
+}
+ [32m✓[39m tests/unit/main-agent-implementation-readiness-gate.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 203[2mms[22m[39m
+implementation_readiness=blocked
+implementation_readiness=blocked
+implementation_readiness=blocked
+ [32m✓[39m tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 411[2mms[22m[39m
+ [32m✓[39m packages/scoring/dashboard/__tests__/compute.test.ts [2m([22m[2m32 tests[22m[2m)[22m[32m 56[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m3 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[32m37 passed[39m[22m[90m (37)[39m
+[2m   Start at [22m 02:24:37
+[2m   Duration [22m 1.11s[2m (transform 263ms, setup 0ms, import 846ms, tests 670ms, environment 0ms)[22m
+
+
+STDERR:

@@ -1,0 +1,99 @@
+COMMAND_ID: CMD-DELIVERY-011
+COMMAND: npx vitest run tests/acceptance/main-agent-scoring-gates-check.test.ts tests/unit/readiness-score-writer-boundary.test.ts packages/scoring/__tests__/integration/dashboard-governance-routing.test.ts
+RUN_ID: run-FINAL-REQUIRED-COMMANDS-20260524T182425Z
+CLOSEOUT_ATTEMPT_ID: attempt-FINAL-REQUIRED-COMMANDS-20260524T182425Z
+STARTED_AT: 2026-05-24T18:25:06.784Z
+COMPLETED_AT: 2026-05-24T18:25:11.194Z
+EXIT_CODE: 0
+STDOUT:
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mD:/Dev/BMAD-Speckit-SDD-Flow[39m
+
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/scoring-gates-pass-E4TWZR/_bmad-output/runtime/requirement-records/REQ-SCORING-GATES/scoring-gates-report.json",
+  "decision": "pass",
+  "blockingReasons": []
+}
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/scoring-gates-missing-qxCdEt/_bmad-output/runtime/requirement-records/REQ-SCORING-GATES/scoring-gates-report.json",
+  "decision": "blocked",
+  "blockingReasons": [
+    "score_materialization_gate_missing",
+    "score_evaluation_gate_missing"
+  ]
+}
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/scoring-gates-no-policy-DOK28W/_bmad-output/runtime/requirement-records/REQ-SCORING-GATES/scoring-gates-report.json",
+  "decision": "blocked",
+  "blockingReasons": [
+    "runtime_snapshot_resolved_scoring_policy_missing"
+  ]
+}
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/scoring-gates-policy-mismatch-TJ1uZL/_bmad-output/runtime/requirement-records/REQ-SCORING-GATES/scoring-gates-report.json",
+  "decision": "blocked",
+  "blockingReasons": [
+    "score_policy_hash_mismatch"
+  ]
+}
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/scoring-gates-write-fail-0w5MLu/_bmad-output/runtime/requirement-records/REQ-SCORING-GATES/scoring-gates-report.json",
+  "decision": "blocked",
+  "blockingReasons": [
+    "score_write_failed_failure_record_missing",
+    "score_materialization_gate_failed",
+    "score_evaluation_gate_missing"
+  ]
+}
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/scoring-gates-eval-fail-PoUpmm/_bmad-output/runtime/requirement-records/REQ-SCORING-GATES/scoring-gates-report.json",
+  "decision": "blocked",
+  "blockingReasons": [
+    "score_evaluation_gate_failed",
+    "open_score_failure_record_exists"
+  ]
+}
+execution_iteration_recorded=exec-score-failed-001
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/scoring-gates-closeout-uo4Nzk/_bmad-output/runtime/requirement-records/REQ-SCORING-GATES/delivery-closeout-report.json",
+  "decision": "blocked",
+  "blockingReasons": [
+    "architecture_hash_recipe_unresolved",
+    "architecture_confirmation_resolved_recipe_hash_not_current",
+    "architecture_confirmation_state_check_not_current",
+    "deliveryEvidence.requiredCommands_current_attempt_missing",
+    "score_gate_failure_unresolved",
+    "delivery_truth_gate_not_passed",
+    "delivery_truth_gate_report_missing",
+    "failure_case_coverage_artifact_missing",
+    "production_subsystem_extension_ref_missing",
+    "production_loop_ready_report_artifact_missing",
+    "dataset_manifest_missing",
+    "dataset_release_report_missing",
+    "negative_or_regression_command_missing",
+    "open_failure_record_exists"
+  ],
+  "controlEventId": "closeout_recorded:2026-05-24T18:25:09.992Z:6921105c3175",
+  "controlEventHash": "sha256:638109c2976711c84855f8f21b0be100146227526f2cf5f81101c07c5e4eb3c6",
+  "eventLogPath": "C:/Users/milom/AppData/Local/Temp/scoring-gates-closeout-uo4Nzk/_bmad-output/runtime/requirement-records/REQ-SCORING-GATES/events/control-events.jsonl",
+  "receiptPath": "C:/Users/milom/AppData/Local/Temp/scoring-gates-closeout-uo4Nzk/_bmad-output/runtime/requirement-records/REQ-SCORING-GATES/events/receipts/closeout_recorded_2026-05-24T18_25_09.992Z_6921105c3175.json"
+}
+ [32m✓[39m tests/acceptance/main-agent-scoring-gates-check.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 694[2mms[22m[39m
+ [32m✓[39m tests/unit/readiness-score-writer-boundary.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m packages/scoring/__tests__/integration/dashboard-governance-routing.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 2107[2mms[22m[39m
+     [33m[2m✓[22m[39m CLI dashboard output uses governance routing summary from scoring records instead of runtime current-run [33m 2107[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m3 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[32m10 passed[39m[22m[90m (10)[39m
+[2m   Start at [22m 02:25:08
+[2m   Duration [22m 2.32s[2m (transform 222ms, setup 0ms, import 559ms, tests 2.80s, environment 0ms)[22m
+
+
+STDERR:
