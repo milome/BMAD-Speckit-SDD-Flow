@@ -100,7 +100,7 @@ Checkpoint 8 已继续补充 human-readable Mermaid views、evidence overview、
 
 Checkpoint 9 必须先让用户显式选择确认页语言；只有用户选择 zh-CN、en-US 或 bilingual 后，才能调用 skill-local confirmation HTML renderer。
 
-Checkpoint 8A 已澄清 `record_closed` 边界：`currentMentalModel` 只允许六个评估模型值；`record_closed` 必须作为 `recordLifecycleState`、`requirementClosures`、`status=closed` 或 terminal close event 表达，不得成为 `currentMentalModel` 的值。
+Checkpoint 8A 已澄清 `record_closed` 边界：`currentMentalModel` 只允许六个评估模型值；`record_closed` 必须由 `status=closed`、`lastEventType=record_closed`、`requirementClosures` 或 terminal close event 派生表达，不得成为 `currentMentalModel` 的值，也不得要求新增顶层 `recordLifecycleState` 字段。
 
 ## 3. implementationConfirmation Core Draft
 
@@ -847,7 +847,7 @@ implementationConfirmation:
       title: Six-model governance chain plus terminal lifecycle
       scope: governance
       covers: ["MUST-002", "MUST-003", "MUST-008", "MUST-009", "MUST-010", "MUST-011", "EVD-003", "EVD-004", "EVD-010", "EVD-011", "EVD-012", "EVD-013"]
-      states: ["requirement_confirmation", "architecture_confirmation", "implementation_readiness", "execution_closure", "audit_review", "delivery_confirmation", "record_lifecycle:record_closed"]
+      states: ["requirement_confirmation", "architecture_confirmation", "implementation_readiness", "execution_closure", "audit_review", "delivery_confirmation", "derived_record_lifecycle:record_closed"]
       summary: Only the current model can advance across the six-model chain; record_closed is a terminal record lifecycle state written after delivery confirmation.
     - id: FLOW-003
       title: Blocker and reconfirmation fail-closed loop
@@ -1326,7 +1326,7 @@ implementationConfirmation:
       evidenceRefs: ["EVD-013"]
       artifactRefs: ["ART-CLOSEOUT-001", "ART-RECORD-002"]
       traceRows: ["TRACE-005", "TRACE-009", "TRACE-011"]
-      requiredBefore: record_lifecycle_closed
+      requiredBefore: derived_record_lifecycle_closed
     - id: CMD-DELIVERY-013
       phase: delivery_evidence
       command: npx vitest run tests/acceptance/main-agent-orchestration-consumer.test.ts tests/acceptance/main-agent-unified-ingress-e2e.test.ts tests/acceptance/main-agent-doc-surfaces.test.ts
@@ -1382,7 +1382,7 @@ implementationConfirmation:
       - controlled-blocker-intake has no pending or unresolved blocking signals.
       - reconfirmationRequests has no open blocking request.
       - currentMentalModel is delivery_confirmation with pass verdict before record close.
-      - recordLifecycleState or requirementClosures records record_closed; currentMentalModel remains delivery_confirmation.
+      - status=closed, lastEventType=record_closed, requirementClosures, or terminal close event derives record_closed; currentMentalModel remains delivery_confirmation.
       - execution_closure and audit_review verdicts are pass for the current attempt.
       - delivery closeout gate and delivery truth gate pass for current attempt evidence.
       - controlled record close writer writes record_closed lifecycle state with before/after hash evidence.
@@ -1412,7 +1412,6 @@ implementationConfirmation:
       - architectureConfirmationState
       - readinessBaselineMetadata
       - commandRunRefs
-      - recordLifecycleState
       - requirementClosures
       - pendingBlockerIntake
       - blockerIntakeRuns
@@ -1493,7 +1492,7 @@ implementationConfirmation:
         failClosedWhen: ["missingDeliveryTruth", "openBlocker", "openReconfirmation", "staleAttempt"]
       - eventType: record_closed
         payloadKind: terminal_closeout
-        writesControlFields: ["recordLifecycleState", "requirementClosures"]
+        writesControlFields: ["status", "lastEventType", "requirementClosures"]
         requiresCurrentModelPass: true
         failClosedWhen: ["deliveryConfirmationNotPass", "recordHashMismatch", "unregisteredWriter"]
   governanceEventTypeRegistry:
@@ -1573,7 +1572,7 @@ implementationConfirmation:
       payloadKind: terminal_closeout
       payloadContractRef: payloadKindContracts.terminal_closeout
       ownerModel: delivery_confirmation
-      writesControlFields: ["recordLifecycleState", "requirementClosures"]
+      writesControlFields: ["status", "lastEventType", "requirementClosures"]
       allowedWriterRefs: ["WRITER-MAIN-AGENT-ORCHESTRATION", "WRITER-REQUIREMENT-RECORD-CONTROL-STORE"]
       linkedRequirementIds: ["MUST-011", "NEG-004", "NEG-008"]
       linkedEvidenceIds: ["EVD-013"]
@@ -1587,7 +1586,7 @@ implementationConfirmation:
       allowedPaths: ["_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json", "_bmad-output/runtime/requirement-records/<requirement-set-id>/events/*.jsonl", "_bmad-output/runtime/requirement-records/<requirement-set-id>/**"]
       allowedEventTypes: ["mental_model_transition_recorded", "controlled_blocker_recorded", "reconfirmation_requested", "architecture_confirmation_recorded", "implementation_readiness_evaluated", "execution_closure_evaluated", "audit_review_evaluated", "delivery_confirmation_evaluated", "record_closed"]
       payloadContractRefs: ["payloadKindContracts.transition", "payloadKindContracts.blocker", "payloadKindContracts.reconfirmation", "payloadKindContracts.model_verdict", "payloadKindContracts.terminal_closeout"]
-      writesControlFields: ["currentMentalModel", "mentalModelTransitions", "sixModelVerdicts", "failureRecords", "rerunLoops", "gateChecks", "artifactIndex", "reconfirmationRequests", "architectureConfirmationState", "readinessBaselineMetadata", "commandRunRefs", "recordLifecycleState", "requirementClosures", "pendingBlockerIntake", "blockerIntakeRuns"]
+      writesControlFields: ["currentMentalModel", "mentalModelTransitions", "sixModelVerdicts", "failureRecords", "rerunLoops", "gateChecks", "artifactIndex", "reconfirmationRequests", "architectureConfirmationState", "readinessBaselineMetadata", "commandRunRefs", "status", "lastEventType", "requirementClosures", "pendingBlockerIntake", "blockerIntakeRuns"]
       receiptPath: _bmad-output/runtime/requirement-records/<requirement-set-id>/receipts/main-agent-orchestration-<run-id>.json
       beforeAfterHashRequired: true
       canModifyWriterRegistry: false
@@ -1603,7 +1602,7 @@ implementationConfirmation:
       allowedPaths: ["_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json", "_bmad-output/runtime/requirement-records/<requirement-set-id>/events/*.jsonl"]
       allowedEventTypes: ["mental_model_transition_recorded", "controlled_blocker_recorded", "reconfirmation_requested", "record_closed"]
       payloadContractRefs: ["payloadKindContracts.transition", "payloadKindContracts.blocker", "payloadKindContracts.reconfirmation", "payloadKindContracts.terminal_closeout"]
-      writesControlFields: ["currentMentalModel", "mentalModelTransitions", "failureRecords", "rerunLoops", "gateChecks", "reconfirmationRequests", "recordLifecycleState", "requirementClosures", "pendingBlockerIntake", "blockerIntakeRuns"]
+      writesControlFields: ["currentMentalModel", "mentalModelTransitions", "failureRecords", "rerunLoops", "gateChecks", "reconfirmationRequests", "status", "lastEventType", "requirementClosures", "pendingBlockerIntake", "blockerIntakeRuns"]
       receiptPath: _bmad-output/runtime/requirement-records/<requirement-set-id>/receipts/control-store-<run-id>.json
       beforeAfterHashRequired: true
       canModifyWriterRegistry: false
@@ -2077,7 +2076,7 @@ requirement_confirmation
 -> execution_closure
 -> audit_review
 -> delivery_confirmation
--> recordLifecycleState: record_closed
+-> derived record lifecycle: record_closed
 ```
 
 各阶段靠独立 action 和 gate 拼接，容易出现某个 gate 已 pass，但模型状态没有迁移的不一致；record close 还容易被误建模成第七个 mental model。
@@ -2187,7 +2186,7 @@ requirement_confirmation
 -> execution_closure
 -> audit_review
 -> delivery_confirmation
--> recordLifecycleState: record_closed
+-> derived record lifecycle: record_closed
 ```
 
 ### 5.3 异常闭环
@@ -2232,12 +2231,9 @@ type MentalModel =
   | 'audit_review'
   | 'delivery_confirmation';
 
-type RecordLifecycleState = 'active' | 'blocked' | 'record_closed';
-
 type CurrentMentalModelState = {
   currentMentalModel: MentalModel;
   modelStatus: 'pending' | 'blocked' | 'pass' | 'skipped';
-  recordLifecycleState: RecordLifecycleState;
   reasonCode: string;
   sourceRefs: SourceRef[];
   updatedAt: string;
@@ -2248,7 +2244,7 @@ type CurrentMentalModelState = {
 规则：
 
 1. `currentMentalModel` 只允许六个 `MentalModel` 值，不允许写入 `record_closed`。
-2. `record_closed` 只能作为 `recordLifecycleState`、`requirementClosures`、`status=closed` 或 terminal close event 表达。
+2. `record_closed` 只能由 `status=closed`、`lastEventType=record_closed`、`requirementClosures` 或 terminal close event 派生表达；不得新增顶层 `recordLifecycleState` 字段来表达。
 3. `record_closed` 之后不能自动回退；如需变更，必须产生 reconfirm 或 reopen 类型的明确受控事件。
 4. `currentMentalModel` 不能从 dashboard、score、stdout、HTTP 200 或 TaskReport done 直接推导。
 
@@ -2765,12 +2761,13 @@ architecture-state-check
 
 ```text
 currentMentalModel: delivery_confirmation
-recordLifecycleState: record_closed
+status: closed
+lastEventType: record_closed
 ```
 
 终态关闭必须写入：
 
-1. `recordLifecycleState=record_closed` 或等价 terminal close event。
+1. `status=closed` 与 `lastEventType=record_closed`，或等价 terminal close event。
 2. `currentMentalModel` 保持 `delivery_confirmation`。
 3. terminal requirement closure。
 4. final closeout summary。
@@ -2949,7 +2946,7 @@ Dashboard six-model projection 可以展示模型状态，但不得影响 contro
 
 ### FR-010 Delivery Confirmation 与 record close
 
-系统必须新增 `delivery_confirmation` verdict。只有 delivery confirmation pass 后，Main Agent 才能写入 `recordLifecycleState=record_closed` 或等价 terminal close event。
+系统必须新增 `delivery_confirmation` verdict。只有 delivery confirmation pass 后，Main Agent 才能写入 `status=closed`、`lastEventType=record_closed` 或等价 terminal close event。
 
 ### FR-011 stale/missing/ambiguous 统一 fail closed
 
@@ -3030,7 +3027,7 @@ AND 控制权威仍为 requirement record。
 GIVEN execution closure 与 audit review 均 pass  
 WHEN delivery closeout gate 与 delivery truth gate pass  
 THEN delivery confirmation verdict 为 pass  
-AND Main Agent 可写入 `recordLifecycleState=record_closed` 或等价 terminal close event
+AND Main Agent 可写入 `status=closed`、`lastEventType=record_closed` 或等价 terminal close event
 AND `currentMentalModel` 仍为 `delivery_confirmation`。
 
 ### AC-011 stale evidence 阻断推进

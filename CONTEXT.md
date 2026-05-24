@@ -17,20 +17,21 @@ The terminal lifecycle state of a requirement record after delivery confirmation
 _Avoid_: current mental model, seventh mental model
 
 **Record Lifecycle State**:
-The independent lifecycle state of a requirement record, separate from the current mental model.
-_Avoid_: model status, dashboard status
+A derived lifecycle meaning of a requirement record, separate from the current mental model.
+_Avoid_: top-level recordLifecycleState field, model status, dashboard status
 
 ## Relationships
 
 - A **Current Mental Model** is exactly one member of the **Six Mental Models**.
 - **Record Closed** is a **Record Lifecycle State**, not a **Current Mental Model**.
+- **Record Lifecycle State** is derived from `status`, `lastEventType`, `requirementClosures`, and terminal close events; it is not a required top-level field.
 - **Delivery Confirmation** can lead to **Record Closed** only through a controlled terminal close event.
 
 ## Example Dialogue
 
 > **Dev:** "Should inspect put a closed requirement into the Current Mental Model field?"
-> **Domain expert:** "No. It should show the **Current Mental Model** as delivery confirmation and the **Record Lifecycle State** as record closed."
+> **Domain expert:** "No. It should show the **Current Mental Model** as delivery confirmation and derive the **Record Lifecycle State** as record closed."
 
 ## Flagged Ambiguities
 
-- "record_closed" was previously used as if it could be a **Current Mental Model**; resolved: it is only a **Record Lifecycle State** or terminal close event.
+- "record_closed" was previously used as if it could be a **Current Mental Model**; resolved: it is only a derived **Record Lifecycle State** or terminal close event.
