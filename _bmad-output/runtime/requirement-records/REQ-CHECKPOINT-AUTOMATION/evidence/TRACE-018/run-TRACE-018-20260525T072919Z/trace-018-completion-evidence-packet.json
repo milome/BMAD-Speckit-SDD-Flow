@@ -1,0 +1,69 @@
+{
+  "packetType": "completion_evidence_packet",
+  "schemaVersion": "completion-evidence-packet/v1",
+  "recordId": "REQ-CHECKPOINT-AUTOMATION",
+  "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+  "generatedAt": "2026-05-25T07:29:51.630Z",
+  "traceId": "TRACE-018",
+  "closedIds": [
+    "TRACE-018",
+    "MUST-018",
+    "EVD-018"
+  ],
+  "openIds": [],
+  "commandResults": [
+    {
+      "commandId": "CMD-SEMANTIC-KERNEL-001",
+      "command": "npx vitest run tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+      "exitCode": 0,
+      "outputPath": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-018/run-TRACE-018-20260525T072919Z/CMD-SEMANTIC-KERNEL-001.output.txt",
+      "outputSummary": "COMMAND_ID: CMD-SEMANTIC-KERNEL-001 | COMMAND: npx vitest run tests/acceptance/requirements-contract-checkpoint-automation.test.ts | RUN_ID: run-TRACE-018-20260525T072919Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-018-20260525T072919Z | STARTED_AT: 2026-05-25T07:29:19.802Z | COMPLETED_AT: 2026-05-25T07:29:35.650Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirements-contract-checkpoint-automation.test.ts \u001b[2m(\u001b[22m\u001b[2m14 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 13730\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails closed when unrelated staged files exist before checkpoint commit \u001b[33m 359\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m creates a single-file checkpoint commit and progress record \u001b[33m 663\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m blocks pre-render readiness when checkpoint logs exist but global consistency is missing \u001b[33m 4056\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs all pre-render checkpoints as separate commits and reports ready only after global consistency passes \u001b[33m 3833\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m resumes from progress next checkpoint and runs remaining checkpoints separately \u001b[33m 4019\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m14 passed\u001b[39m\u001b[22m\u001b[90m (14)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:29:21 | \u001b[2m   Duration \u001b[22m 13.97s\u001b[2m (transform 58ms, setup 0ms, import 105ms, tests 13.73s, environment 0ms)\u001b[22m | STDERR:"
+    },
+    {
+      "commandId": "CMD-SEMANTIC-KERNEL-001",
+      "command": "npx vitest run tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+      "exitCode": 0,
+      "outputPath": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-018/run-TRACE-018-20260525T072919Z/CMD-SEMANTIC-KERNEL-001.output.txt",
+      "outputSummary": "COMMAND_ID: CMD-SEMANTIC-KERNEL-001 | COMMAND: npx vitest run tests/acceptance/requirements-contract-checkpoint-automation.test.ts | RUN_ID: run-TRACE-018-20260525T072919Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-018-20260525T072919Z | STARTED_AT: 2026-05-25T07:29:35.652Z | COMPLETED_AT: 2026-05-25T07:29:51.622Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirements-contract-checkpoint-automation.test.ts \u001b[2m(\u001b[22m\u001b[2m14 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 13941\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails closed when unrelated staged files exist before checkpoint commit \u001b[33m 318\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m creates a single-file checkpoint commit and progress record \u001b[33m 645\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m blocks pre-render readiness when checkpoint logs exist but global consistency is missing \u001b[33m 4099\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs all pre-render checkpoints as separate commits and reports ready only after global consistency passes \u001b[33m 3938\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m resumes from progress next checkpoint and runs remaining checkpoints separately \u001b[33m 4142\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m14 passed\u001b[39m\u001b[22m\u001b[90m (14)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:29:37 | \u001b[2m   Duration \u001b[22m 14.16s\u001b[2m (transform 44ms, setup 0ms, import 76ms, tests 13.94s, environment 0ms)\u001b[22m | STDERR:"
+    }
+  ],
+  "e2eEvidence": [
+    {
+      "artifactType": "command_run_output",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-018/run-TRACE-018-20260525T072919Z/CMD-SEMANTIC-KERNEL-001.output.txt",
+      "hash": "sha256:977da415731c983daed6cc3ada38e0008169ca3b7b49814ea56488f693d18c82",
+      "producer": "run-confirmed-trace-slice",
+      "purpose": "fresh current-attempt output for CMD-SEMANTIC-KERNEL-001 covering TRACE-018",
+      "relatedRequirementIds": [
+        "CMD-SEMANTIC-KERNEL-001",
+        "TRACE-018",
+        "MUST-018",
+        "EVD-018"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+      "outputVersion": "cmd-semantic-kernel-001-trace-018-current-attempt-output-v1"
+    },
+    {
+      "artifactType": "command_run_output",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-018/run-TRACE-018-20260525T072919Z/CMD-SEMANTIC-KERNEL-001.output.txt",
+      "hash": "sha256:977da415731c983daed6cc3ada38e0008169ca3b7b49814ea56488f693d18c82",
+      "producer": "run-confirmed-trace-slice",
+      "purpose": "fresh current-attempt output for CMD-SEMANTIC-KERNEL-001 covering TRACE-018",
+      "relatedRequirementIds": [
+        "CMD-SEMANTIC-KERNEL-001",
+        "TRACE-018",
+        "MUST-018",
+        "EVD-018"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+      "outputVersion": "cmd-semantic-kernel-001-trace-018-current-attempt-output-v1"
+    }
+  ],
+  "auditEvidence": [],
+  "residualRisks": [],
+  "scopeChanges": []
+}
