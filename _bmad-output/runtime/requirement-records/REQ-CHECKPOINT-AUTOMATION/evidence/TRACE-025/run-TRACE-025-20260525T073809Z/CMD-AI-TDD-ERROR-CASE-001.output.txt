@@ -1,0 +1,40 @@
+COMMAND_ID: CMD-AI-TDD-ERROR-CASE-001
+COMMAND: npx vitest run tests/acceptance/ai-tdd-contract-gate.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts
+RUN_ID: run-TRACE-025-20260525T073809Z
+CLOSEOUT_ATTEMPT_ID: attempt-TRACE-025-20260525T073809Z
+STARTED_AT: 2026-05-25T07:38:25.262Z
+COMPLETED_AT: 2026-05-25T07:38:40.996Z
+EXIT_CODE: 0
+STDOUT:
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mD:/Dev/BMAD-Speckit-SDD-Flow[39m
+
+{
+  "ok": true,
+  "reportPath": "C:/Users/milom/AppData/Local/Temp/ai-tdd-cli-c0SD6R/report.json",
+  "decision": "blocked",
+  "blockingReasons": [
+    "requirement_pre_implementation_missing_plan",
+    "trace_acceptance_binding_missing",
+    "pre_implementation_red_proof_missing",
+    "pre_implementation_valid_expected_red_missing"
+  ],
+  "contractComplete": true,
+  "preImplementationReady": false,
+  "closeoutReady": false
+}
+ [32m✓[39m tests/acceptance/ai-tdd-contract-gate.test.ts [2m([22m[2m13 tests[22m[2m)[22m[33m 1303[2mms[22m[39m
+ [32m✓[39m tests/acceptance/requirements-contract-checkpoint-automation.test.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 13615[2mms[22m[39m
+     [33m[2m✓[22m[39m fails closed when unrelated staged files exist before checkpoint commit [33m 396[2mms[22m[39m
+     [33m[2m✓[22m[39m creates a single-file checkpoint commit and progress record [33m 716[2mms[22m[39m
+     [33m[2m✓[22m[39m blocks pre-render readiness when checkpoint logs exist but global consistency is missing [33m 4033[2mms[22m[39m
+     [33m[2m✓[22m[39m runs all pre-render checkpoints as separate commits and reports ready only after global consistency passes [33m 3788[2mms[22m[39m
+     [33m[2m✓[22m[39m resumes from progress next checkpoint and runs remaining checkpoints separately [33m 3876[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m27 passed[39m[22m[90m (27)[39m
+[2m   Start at [22m 15:38:27
+[2m   Duration [22m 13.87s[2m (transform 214ms, setup 0ms, import 458ms, tests 14.92s, environment 0ms)[22m
+
+
+STDERR:

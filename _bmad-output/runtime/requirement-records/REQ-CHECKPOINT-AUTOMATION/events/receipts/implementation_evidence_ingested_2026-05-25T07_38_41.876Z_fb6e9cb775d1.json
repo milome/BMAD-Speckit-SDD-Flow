@@ -1,0 +1,17 @@
+{
+  "receiptType": "control_event_committed",
+  "eventId": "implementation_evidence_ingested:2026-05-25T07:38:41.876Z:fb6e9cb775d1",
+  "eventHash": "sha256:70e83749c6e83cb1d9df6cba549f727d54eafec9c12acd83c86aeee21d2e78ae",
+  "eventType": "implementation_evidence_ingested",
+  "writerId": "implementation-evidence-ingest",
+  "recordId": "REQ-CHECKPOINT-AUTOMATION",
+  "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+  "eventLogPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/events/control-events.jsonl",
+  "beforeRecordHash": "sha256:63ee76d92117611e456d917304c13b794f6a691e778f6b1497eeb780d554d760",
+  "afterRecordHash": "sha256:6fda38ff33d83f33d5a585adf61f60377d693e7f4454cacda445b18f9c2bfa93",
+  "schemaGate": {
+    "ok": true,
+    "errorCount": 0
+  },
+  "committedAt": "2026-05-25T07:38:41.876Z"
+}
