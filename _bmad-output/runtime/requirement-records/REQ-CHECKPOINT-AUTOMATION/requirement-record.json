@@ -175,7 +175,7 @@
   ],
   "confirmationProjectionHistory": [],
   "lastEventType": "execution_iteration_recorded",
-  "updatedAt": "2026-05-25T07:35:45.296Z",
+  "updatedAt": "2026-05-25T07:36:43.201Z",
   "architectureConfirmations": [],
   "architectureConfirmationStateChecks": [],
   "executionIterations": [
@@ -4552,6 +4552,211 @@
       "implementationConfirmationHash": "sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
       "architectureConfirmationHash": "sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
       "recordedAt": "2026-05-25T07:35:45.296Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "execution_iteration_recorded",
+      "recordId": "REQ-CHECKPOINT-AUTOMATION",
+      "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+      "executionIterationId": "execution-TRACE-023-run-TRACE-023-20260525T073610Z",
+      "runId": "run-TRACE-023-20260525T073610Z",
+      "status": "done",
+      "traceRows": [
+        "TRACE-023"
+      ],
+      "taskRefs": [
+        "TASK-023"
+      ],
+      "evidenceRefs": [
+        "EVD-023"
+      ],
+      "filesChanged": [
+        "scripts/run-confirmed-trace-slice.js"
+      ],
+      "diffSummary": "Recorded current-attempt runtime closure evidence for TRACE-023 from confirmed implementationConfirmation IDs.",
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-AUDIT-STAGE-REGRESSION-001",
+          "command": "npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+          "runId": "run-TRACE-023-20260525T073610Z",
+          "closeoutAttemptId": "attempt-TRACE-023-20260525T073610Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:36:10.161Z",
+          "completedAt": "2026-05-25T07:36:26.153Z",
+          "outputSummary": "COMMAND_ID: CMD-AUDIT-STAGE-REGRESSION-001 | COMMAND: npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts | RUN_ID: run-TRACE-023-20260525T073610Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-023-20260525T073610Z | STARTED_AT: 2026-05-25T07:36:10.161Z | COMPLETED_AT: 2026-05-25T07:36:26.153Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/reverse-audit-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m20 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 4019\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails delivery readiness only in readiness mode \u001b[33m 313\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirements-contract-checkpoint-automation.test.ts \u001b[2m(\u001b[22m\u001b[2m14 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 13890\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails closed when unrelated staged files exist before checkpoint commit \u001b[33m 492\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m creates a single-file checkpoint commit and progress record \u001b[33m 726\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m blocks pre-render readiness when checkpoint logs exist but global consistency is missing \u001b[33m 4354\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs all pre-render checkpoints as separate commits and reports ready only after global consistency passes \u001b[33m 3768\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m resumes from progress next checkpoint and runs remaining checkpoints separately \u001b[33m 3730\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m34 passed\u001b[39m\u001b[22m\u001b[90m (34)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:36:11 | \u001b[2m   Duration \u001b[22m 14.13s\u001b[2m (transform 113ms, setup 0ms, import 190ms, tests 17.91s, environment 0ms)\u001b[22m | STDERR:"
+        },
+        {
+          "commandId": "CMD-AUDIT-STAGE-REGRESSION-001",
+          "command": "npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+          "runId": "run-TRACE-023-20260525T073610Z",
+          "closeoutAttemptId": "attempt-TRACE-023-20260525T073610Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:36:26.155Z",
+          "completedAt": "2026-05-25T07:36:42.283Z",
+          "outputSummary": "COMMAND_ID: CMD-AUDIT-STAGE-REGRESSION-001 | COMMAND: npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts | RUN_ID: run-TRACE-023-20260525T073610Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-023-20260525T073610Z | STARTED_AT: 2026-05-25T07:36:26.155Z | COMPLETED_AT: 2026-05-25T07:36:42.283Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/reverse-audit-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m20 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 4025\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails delivery readiness only in readiness mode \u001b[33m 309\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirements-contract-checkpoint-automation.test.ts \u001b[2m(\u001b[22m\u001b[2m14 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 14047\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails closed when unrelated staged files exist before checkpoint commit \u001b[33m 417\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m creates a single-file checkpoint commit and progress record \u001b[33m 726\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m blocks pre-render readiness when checkpoint logs exist but global consistency is missing \u001b[33m 4419\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs all pre-render checkpoints as separate commits and reports ready only after global consistency passes \u001b[33m 3743\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m resumes from progress next checkpoint and runs remaining checkpoints separately \u001b[33m 3935\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m34 passed\u001b[39m\u001b[22m\u001b[90m (34)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:36:27 | \u001b[2m   Duration \u001b[22m 14.29s\u001b[2m (transform 109ms, setup 0ms, import 187ms, tests 18.07s, environment 0ms)\u001b[22m | STDERR:"
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/CMD-AUDIT-STAGE-REGRESSION-001.output.txt",
+          "contentHash": "sha256:6e54b7990522a73d6ea5d8b8c7d6e19af298a13a80aabe93e74190224f75d093",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-AUDIT-STAGE-REGRESSION-001 covering TRACE-023",
+          "relatedRequirementIds": [
+            "CMD-AUDIT-STAGE-REGRESSION-001",
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "cmd-audit-stage-regression-001-trace-023-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/CMD-AUDIT-STAGE-REGRESSION-001.output.txt",
+          "contentHash": "sha256:6e54b7990522a73d6ea5d8b8c7d6e19af298a13a80aabe93e74190224f75d093",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-AUDIT-STAGE-REGRESSION-001 covering TRACE-023",
+          "relatedRequirementIds": [
+            "CMD-AUDIT-STAGE-REGRESSION-001",
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "cmd-audit-stage-regression-001-trace-023-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/trace-023-command-receipt.json",
+          "contentHash": "sha256:5454b996647366e7f93c1a9c3f85a0b060312c8d33e7ec1f083e644fc52200da",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt command receipt bundle for TRACE-023",
+          "relatedRequirementIds": [
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-023-command-receipt-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "completion_evidence_packet",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/trace-023-completion-evidence-packet.json",
+          "contentHash": "sha256:f96c5efb0047e40a7438b8869883f1effa6ce461ec10102c5e73d6555ff68d79",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt completion evidence packet for TRACE-023",
+          "relatedRequirementIds": [
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-023-completion-evidence-packet-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/trace-023-diff-summary.md",
+          "contentHash": "sha256:f21baa3e12e490b680e697d6241c8c6713897e5bc9b1ed81048110f1c125dfb5",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "runtime closure diff summary for TRACE-023",
+          "relatedRequirementIds": [
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-023-diff-summary-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-023"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-023"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-AUDIT-STAGE-REGRESSION-001"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-AUDIT-STAGE-REGRESSION-001"
+        }
+      ],
+      "sourceDocumentHash": "sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad",
+      "implementationConfirmationHash": "sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+      "architectureConfirmationHash": "sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+      "recordedAt": "2026-05-25T07:36:43.201Z",
       "recordedBy": "codex"
     }
   ],
@@ -20187,6 +20392,976 @@
       ],
       "recordedAt": "2026-05-25T07:35:45.296Z",
       "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CHECKPOINT-AUTOMATION",
+      "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+      "requirementId": "TRACE-023",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-023"
+      ],
+      "evidenceRefs": [
+        "EVD-023"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-AUDIT-STAGE-REGRESSION-001",
+          "command": "npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+          "runId": "run-TRACE-023-20260525T073610Z",
+          "closeoutAttemptId": "attempt-TRACE-023-20260525T073610Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:36:10.161Z",
+          "completedAt": "2026-05-25T07:36:26.153Z",
+          "outputSummary": "COMMAND_ID: CMD-AUDIT-STAGE-REGRESSION-001 | COMMAND: npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts | RUN_ID: run-TRACE-023-20260525T073610Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-023-20260525T073610Z | STARTED_AT: 2026-05-25T07:36:10.161Z | COMPLETED_AT: 2026-05-25T07:36:26.153Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/reverse-audit-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m20 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 4019\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails delivery readiness only in readiness mode \u001b[33m 313\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirements-contract-checkpoint-automation.test.ts \u001b[2m(\u001b[22m\u001b[2m14 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 13890\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails closed when unrelated staged files exist before checkpoint commit \u001b[33m 492\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m creates a single-file checkpoint commit and progress record \u001b[33m 726\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m blocks pre-render readiness when checkpoint logs exist but global consistency is missing \u001b[33m 4354\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs all pre-render checkpoints as separate commits and reports ready only after global consistency passes \u001b[33m 3768\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m resumes from progress next checkpoint and runs remaining checkpoints separately \u001b[33m 3730\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m34 passed\u001b[39m\u001b[22m\u001b[90m (34)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:36:11 | \u001b[2m   Duration \u001b[22m 14.13s\u001b[2m (transform 113ms, setup 0ms, import 190ms, tests 17.91s, environment 0ms)\u001b[22m | STDERR:"
+        },
+        {
+          "commandId": "CMD-AUDIT-STAGE-REGRESSION-001",
+          "command": "npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+          "runId": "run-TRACE-023-20260525T073610Z",
+          "closeoutAttemptId": "attempt-TRACE-023-20260525T073610Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:36:26.155Z",
+          "completedAt": "2026-05-25T07:36:42.283Z",
+          "outputSummary": "COMMAND_ID: CMD-AUDIT-STAGE-REGRESSION-001 | COMMAND: npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts | RUN_ID: run-TRACE-023-20260525T073610Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-023-20260525T073610Z | STARTED_AT: 2026-05-25T07:36:26.155Z | COMPLETED_AT: 2026-05-25T07:36:42.283Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/reverse-audit-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m20 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 4025\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails delivery readiness only in readiness mode \u001b[33m 309\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirements-contract-checkpoint-automation.test.ts \u001b[2m(\u001b[22m\u001b[2m14 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 14047\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails closed when unrelated staged files exist before checkpoint commit \u001b[33m 417\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m creates a single-file checkpoint commit and progress record \u001b[33m 726\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m blocks pre-render readiness when checkpoint logs exist but global consistency is missing \u001b[33m 4419\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs all pre-render checkpoints as separate commits and reports ready only after global consistency passes \u001b[33m 3743\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m resumes from progress next checkpoint and runs remaining checkpoints separately \u001b[33m 3935\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m34 passed\u001b[39m\u001b[22m\u001b[90m (34)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:36:27 | \u001b[2m   Duration \u001b[22m 14.29s\u001b[2m (transform 109ms, setup 0ms, import 187ms, tests 18.07s, environment 0ms)\u001b[22m | STDERR:"
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/CMD-AUDIT-STAGE-REGRESSION-001.output.txt",
+          "contentHash": "sha256:6e54b7990522a73d6ea5d8b8c7d6e19af298a13a80aabe93e74190224f75d093",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-AUDIT-STAGE-REGRESSION-001 covering TRACE-023",
+          "relatedRequirementIds": [
+            "CMD-AUDIT-STAGE-REGRESSION-001",
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "cmd-audit-stage-regression-001-trace-023-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/CMD-AUDIT-STAGE-REGRESSION-001.output.txt",
+          "contentHash": "sha256:6e54b7990522a73d6ea5d8b8c7d6e19af298a13a80aabe93e74190224f75d093",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-AUDIT-STAGE-REGRESSION-001 covering TRACE-023",
+          "relatedRequirementIds": [
+            "CMD-AUDIT-STAGE-REGRESSION-001",
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "cmd-audit-stage-regression-001-trace-023-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/trace-023-command-receipt.json",
+          "contentHash": "sha256:5454b996647366e7f93c1a9c3f85a0b060312c8d33e7ec1f083e644fc52200da",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt command receipt bundle for TRACE-023",
+          "relatedRequirementIds": [
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-023-command-receipt-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "completion_evidence_packet",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/trace-023-completion-evidence-packet.json",
+          "contentHash": "sha256:f96c5efb0047e40a7438b8869883f1effa6ce461ec10102c5e73d6555ff68d79",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt completion evidence packet for TRACE-023",
+          "relatedRequirementIds": [
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-023-completion-evidence-packet-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/trace-023-diff-summary.md",
+          "contentHash": "sha256:f21baa3e12e490b680e697d6241c8c6713897e5bc9b1ed81048110f1c125dfb5",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "runtime closure diff summary for TRACE-023",
+          "relatedRequirementIds": [
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-023-diff-summary-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-023"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-023"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-AUDIT-STAGE-REGRESSION-001"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-AUDIT-STAGE-REGRESSION-001"
+        }
+      ],
+      "recordedAt": "2026-05-25T07:36:43.201Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CHECKPOINT-AUTOMATION",
+      "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+      "requirementId": "MUST-023",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-023"
+      ],
+      "evidenceRefs": [
+        "EVD-023"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-AUDIT-STAGE-REGRESSION-001",
+          "command": "npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+          "runId": "run-TRACE-023-20260525T073610Z",
+          "closeoutAttemptId": "attempt-TRACE-023-20260525T073610Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:36:10.161Z",
+          "completedAt": "2026-05-25T07:36:26.153Z",
+          "outputSummary": "COMMAND_ID: CMD-AUDIT-STAGE-REGRESSION-001 | COMMAND: npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts | RUN_ID: run-TRACE-023-20260525T073610Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-023-20260525T073610Z | STARTED_AT: 2026-05-25T07:36:10.161Z | COMPLETED_AT: 2026-05-25T07:36:26.153Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/reverse-audit-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m20 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 4019\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails delivery readiness only in readiness mode \u001b[33m 313\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirements-contract-checkpoint-automation.test.ts \u001b[2m(\u001b[22m\u001b[2m14 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 13890\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails closed when unrelated staged files exist before checkpoint commit \u001b[33m 492\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m creates a single-file checkpoint commit and progress record \u001b[33m 726\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m blocks pre-render readiness when checkpoint logs exist but global consistency is missing \u001b[33m 4354\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs all pre-render checkpoints as separate commits and reports ready only after global consistency passes \u001b[33m 3768\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m resumes from progress next checkpoint and runs remaining checkpoints separately \u001b[33m 3730\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m34 passed\u001b[39m\u001b[22m\u001b[90m (34)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:36:11 | \u001b[2m   Duration \u001b[22m 14.13s\u001b[2m (transform 113ms, setup 0ms, import 190ms, tests 17.91s, environment 0ms)\u001b[22m | STDERR:"
+        },
+        {
+          "commandId": "CMD-AUDIT-STAGE-REGRESSION-001",
+          "command": "npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+          "runId": "run-TRACE-023-20260525T073610Z",
+          "closeoutAttemptId": "attempt-TRACE-023-20260525T073610Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:36:26.155Z",
+          "completedAt": "2026-05-25T07:36:42.283Z",
+          "outputSummary": "COMMAND_ID: CMD-AUDIT-STAGE-REGRESSION-001 | COMMAND: npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts | RUN_ID: run-TRACE-023-20260525T073610Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-023-20260525T073610Z | STARTED_AT: 2026-05-25T07:36:26.155Z | COMPLETED_AT: 2026-05-25T07:36:42.283Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/reverse-audit-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m20 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 4025\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails delivery readiness only in readiness mode \u001b[33m 309\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirements-contract-checkpoint-automation.test.ts \u001b[2m(\u001b[22m\u001b[2m14 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 14047\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails closed when unrelated staged files exist before checkpoint commit \u001b[33m 417\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m creates a single-file checkpoint commit and progress record \u001b[33m 726\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m blocks pre-render readiness when checkpoint logs exist but global consistency is missing \u001b[33m 4419\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs all pre-render checkpoints as separate commits and reports ready only after global consistency passes \u001b[33m 3743\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m resumes from progress next checkpoint and runs remaining checkpoints separately \u001b[33m 3935\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m34 passed\u001b[39m\u001b[22m\u001b[90m (34)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:36:27 | \u001b[2m   Duration \u001b[22m 14.29s\u001b[2m (transform 109ms, setup 0ms, import 187ms, tests 18.07s, environment 0ms)\u001b[22m | STDERR:"
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/CMD-AUDIT-STAGE-REGRESSION-001.output.txt",
+          "contentHash": "sha256:6e54b7990522a73d6ea5d8b8c7d6e19af298a13a80aabe93e74190224f75d093",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-AUDIT-STAGE-REGRESSION-001 covering TRACE-023",
+          "relatedRequirementIds": [
+            "CMD-AUDIT-STAGE-REGRESSION-001",
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "cmd-audit-stage-regression-001-trace-023-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/CMD-AUDIT-STAGE-REGRESSION-001.output.txt",
+          "contentHash": "sha256:6e54b7990522a73d6ea5d8b8c7d6e19af298a13a80aabe93e74190224f75d093",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-AUDIT-STAGE-REGRESSION-001 covering TRACE-023",
+          "relatedRequirementIds": [
+            "CMD-AUDIT-STAGE-REGRESSION-001",
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "cmd-audit-stage-regression-001-trace-023-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/trace-023-command-receipt.json",
+          "contentHash": "sha256:5454b996647366e7f93c1a9c3f85a0b060312c8d33e7ec1f083e644fc52200da",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt command receipt bundle for TRACE-023",
+          "relatedRequirementIds": [
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-023-command-receipt-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "completion_evidence_packet",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/trace-023-completion-evidence-packet.json",
+          "contentHash": "sha256:f96c5efb0047e40a7438b8869883f1effa6ce461ec10102c5e73d6555ff68d79",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt completion evidence packet for TRACE-023",
+          "relatedRequirementIds": [
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-023-completion-evidence-packet-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/trace-023-diff-summary.md",
+          "contentHash": "sha256:f21baa3e12e490b680e697d6241c8c6713897e5bc9b1ed81048110f1c125dfb5",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "runtime closure diff summary for TRACE-023",
+          "relatedRequirementIds": [
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-023-diff-summary-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-023"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-023"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-AUDIT-STAGE-REGRESSION-001"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-AUDIT-STAGE-REGRESSION-001"
+        }
+      ],
+      "recordedAt": "2026-05-25T07:36:43.201Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CHECKPOINT-AUTOMATION",
+      "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+      "requirementId": "NEG-013",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-023"
+      ],
+      "evidenceRefs": [
+        "EVD-023"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-AUDIT-STAGE-REGRESSION-001",
+          "command": "npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+          "runId": "run-TRACE-023-20260525T073610Z",
+          "closeoutAttemptId": "attempt-TRACE-023-20260525T073610Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:36:10.161Z",
+          "completedAt": "2026-05-25T07:36:26.153Z",
+          "outputSummary": "COMMAND_ID: CMD-AUDIT-STAGE-REGRESSION-001 | COMMAND: npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts | RUN_ID: run-TRACE-023-20260525T073610Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-023-20260525T073610Z | STARTED_AT: 2026-05-25T07:36:10.161Z | COMPLETED_AT: 2026-05-25T07:36:26.153Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/reverse-audit-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m20 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 4019\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails delivery readiness only in readiness mode \u001b[33m 313\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirements-contract-checkpoint-automation.test.ts \u001b[2m(\u001b[22m\u001b[2m14 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 13890\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails closed when unrelated staged files exist before checkpoint commit \u001b[33m 492\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m creates a single-file checkpoint commit and progress record \u001b[33m 726\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m blocks pre-render readiness when checkpoint logs exist but global consistency is missing \u001b[33m 4354\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs all pre-render checkpoints as separate commits and reports ready only after global consistency passes \u001b[33m 3768\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m resumes from progress next checkpoint and runs remaining checkpoints separately \u001b[33m 3730\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m34 passed\u001b[39m\u001b[22m\u001b[90m (34)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:36:11 | \u001b[2m   Duration \u001b[22m 14.13s\u001b[2m (transform 113ms, setup 0ms, import 190ms, tests 17.91s, environment 0ms)\u001b[22m | STDERR:"
+        },
+        {
+          "commandId": "CMD-AUDIT-STAGE-REGRESSION-001",
+          "command": "npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+          "runId": "run-TRACE-023-20260525T073610Z",
+          "closeoutAttemptId": "attempt-TRACE-023-20260525T073610Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:36:26.155Z",
+          "completedAt": "2026-05-25T07:36:42.283Z",
+          "outputSummary": "COMMAND_ID: CMD-AUDIT-STAGE-REGRESSION-001 | COMMAND: npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts | RUN_ID: run-TRACE-023-20260525T073610Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-023-20260525T073610Z | STARTED_AT: 2026-05-25T07:36:26.155Z | COMPLETED_AT: 2026-05-25T07:36:42.283Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/reverse-audit-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m20 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 4025\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails delivery readiness only in readiness mode \u001b[33m 309\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirements-contract-checkpoint-automation.test.ts \u001b[2m(\u001b[22m\u001b[2m14 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 14047\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails closed when unrelated staged files exist before checkpoint commit \u001b[33m 417\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m creates a single-file checkpoint commit and progress record \u001b[33m 726\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m blocks pre-render readiness when checkpoint logs exist but global consistency is missing \u001b[33m 4419\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs all pre-render checkpoints as separate commits and reports ready only after global consistency passes \u001b[33m 3743\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m resumes from progress next checkpoint and runs remaining checkpoints separately \u001b[33m 3935\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m34 passed\u001b[39m\u001b[22m\u001b[90m (34)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:36:27 | \u001b[2m   Duration \u001b[22m 14.29s\u001b[2m (transform 109ms, setup 0ms, import 187ms, tests 18.07s, environment 0ms)\u001b[22m | STDERR:"
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/CMD-AUDIT-STAGE-REGRESSION-001.output.txt",
+          "contentHash": "sha256:6e54b7990522a73d6ea5d8b8c7d6e19af298a13a80aabe93e74190224f75d093",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-AUDIT-STAGE-REGRESSION-001 covering TRACE-023",
+          "relatedRequirementIds": [
+            "CMD-AUDIT-STAGE-REGRESSION-001",
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "cmd-audit-stage-regression-001-trace-023-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/CMD-AUDIT-STAGE-REGRESSION-001.output.txt",
+          "contentHash": "sha256:6e54b7990522a73d6ea5d8b8c7d6e19af298a13a80aabe93e74190224f75d093",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-AUDIT-STAGE-REGRESSION-001 covering TRACE-023",
+          "relatedRequirementIds": [
+            "CMD-AUDIT-STAGE-REGRESSION-001",
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "cmd-audit-stage-regression-001-trace-023-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/trace-023-command-receipt.json",
+          "contentHash": "sha256:5454b996647366e7f93c1a9c3f85a0b060312c8d33e7ec1f083e644fc52200da",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt command receipt bundle for TRACE-023",
+          "relatedRequirementIds": [
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-023-command-receipt-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "completion_evidence_packet",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/trace-023-completion-evidence-packet.json",
+          "contentHash": "sha256:f96c5efb0047e40a7438b8869883f1effa6ce461ec10102c5e73d6555ff68d79",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt completion evidence packet for TRACE-023",
+          "relatedRequirementIds": [
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-023-completion-evidence-packet-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/trace-023-diff-summary.md",
+          "contentHash": "sha256:f21baa3e12e490b680e697d6241c8c6713897e5bc9b1ed81048110f1c125dfb5",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "runtime closure diff summary for TRACE-023",
+          "relatedRequirementIds": [
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-023-diff-summary-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-023"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-023"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-AUDIT-STAGE-REGRESSION-001"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-AUDIT-STAGE-REGRESSION-001"
+        }
+      ],
+      "recordedAt": "2026-05-25T07:36:43.201Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CHECKPOINT-AUTOMATION",
+      "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+      "requirementId": "NEG-014",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-023"
+      ],
+      "evidenceRefs": [
+        "EVD-023"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-AUDIT-STAGE-REGRESSION-001",
+          "command": "npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+          "runId": "run-TRACE-023-20260525T073610Z",
+          "closeoutAttemptId": "attempt-TRACE-023-20260525T073610Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:36:10.161Z",
+          "completedAt": "2026-05-25T07:36:26.153Z",
+          "outputSummary": "COMMAND_ID: CMD-AUDIT-STAGE-REGRESSION-001 | COMMAND: npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts | RUN_ID: run-TRACE-023-20260525T073610Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-023-20260525T073610Z | STARTED_AT: 2026-05-25T07:36:10.161Z | COMPLETED_AT: 2026-05-25T07:36:26.153Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/reverse-audit-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m20 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 4019\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails delivery readiness only in readiness mode \u001b[33m 313\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirements-contract-checkpoint-automation.test.ts \u001b[2m(\u001b[22m\u001b[2m14 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 13890\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails closed when unrelated staged files exist before checkpoint commit \u001b[33m 492\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m creates a single-file checkpoint commit and progress record \u001b[33m 726\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m blocks pre-render readiness when checkpoint logs exist but global consistency is missing \u001b[33m 4354\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs all pre-render checkpoints as separate commits and reports ready only after global consistency passes \u001b[33m 3768\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m resumes from progress next checkpoint and runs remaining checkpoints separately \u001b[33m 3730\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m34 passed\u001b[39m\u001b[22m\u001b[90m (34)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:36:11 | \u001b[2m   Duration \u001b[22m 14.13s\u001b[2m (transform 113ms, setup 0ms, import 190ms, tests 17.91s, environment 0ms)\u001b[22m | STDERR:"
+        },
+        {
+          "commandId": "CMD-AUDIT-STAGE-REGRESSION-001",
+          "command": "npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+          "runId": "run-TRACE-023-20260525T073610Z",
+          "closeoutAttemptId": "attempt-TRACE-023-20260525T073610Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:36:26.155Z",
+          "completedAt": "2026-05-25T07:36:42.283Z",
+          "outputSummary": "COMMAND_ID: CMD-AUDIT-STAGE-REGRESSION-001 | COMMAND: npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts | RUN_ID: run-TRACE-023-20260525T073610Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-023-20260525T073610Z | STARTED_AT: 2026-05-25T07:36:26.155Z | COMPLETED_AT: 2026-05-25T07:36:42.283Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/reverse-audit-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m20 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 4025\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails delivery readiness only in readiness mode \u001b[33m 309\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirements-contract-checkpoint-automation.test.ts \u001b[2m(\u001b[22m\u001b[2m14 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 14047\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails closed when unrelated staged files exist before checkpoint commit \u001b[33m 417\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m creates a single-file checkpoint commit and progress record \u001b[33m 726\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m blocks pre-render readiness when checkpoint logs exist but global consistency is missing \u001b[33m 4419\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs all pre-render checkpoints as separate commits and reports ready only after global consistency passes \u001b[33m 3743\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m resumes from progress next checkpoint and runs remaining checkpoints separately \u001b[33m 3935\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m34 passed\u001b[39m\u001b[22m\u001b[90m (34)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:36:27 | \u001b[2m   Duration \u001b[22m 14.29s\u001b[2m (transform 109ms, setup 0ms, import 187ms, tests 18.07s, environment 0ms)\u001b[22m | STDERR:"
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/CMD-AUDIT-STAGE-REGRESSION-001.output.txt",
+          "contentHash": "sha256:6e54b7990522a73d6ea5d8b8c7d6e19af298a13a80aabe93e74190224f75d093",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-AUDIT-STAGE-REGRESSION-001 covering TRACE-023",
+          "relatedRequirementIds": [
+            "CMD-AUDIT-STAGE-REGRESSION-001",
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "cmd-audit-stage-regression-001-trace-023-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/CMD-AUDIT-STAGE-REGRESSION-001.output.txt",
+          "contentHash": "sha256:6e54b7990522a73d6ea5d8b8c7d6e19af298a13a80aabe93e74190224f75d093",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-AUDIT-STAGE-REGRESSION-001 covering TRACE-023",
+          "relatedRequirementIds": [
+            "CMD-AUDIT-STAGE-REGRESSION-001",
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "cmd-audit-stage-regression-001-trace-023-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/trace-023-command-receipt.json",
+          "contentHash": "sha256:5454b996647366e7f93c1a9c3f85a0b060312c8d33e7ec1f083e644fc52200da",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt command receipt bundle for TRACE-023",
+          "relatedRequirementIds": [
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-023-command-receipt-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "completion_evidence_packet",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/trace-023-completion-evidence-packet.json",
+          "contentHash": "sha256:f96c5efb0047e40a7438b8869883f1effa6ce461ec10102c5e73d6555ff68d79",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt completion evidence packet for TRACE-023",
+          "relatedRequirementIds": [
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-023-completion-evidence-packet-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/trace-023-diff-summary.md",
+          "contentHash": "sha256:f21baa3e12e490b680e697d6241c8c6713897e5bc9b1ed81048110f1c125dfb5",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "runtime closure diff summary for TRACE-023",
+          "relatedRequirementIds": [
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-023-diff-summary-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-023"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-023"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-AUDIT-STAGE-REGRESSION-001"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-AUDIT-STAGE-REGRESSION-001"
+        }
+      ],
+      "recordedAt": "2026-05-25T07:36:43.201Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CHECKPOINT-AUTOMATION",
+      "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+      "requirementId": "EVD-023",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-023"
+      ],
+      "evidenceRefs": [
+        "EVD-023"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-AUDIT-STAGE-REGRESSION-001",
+          "command": "npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+          "runId": "run-TRACE-023-20260525T073610Z",
+          "closeoutAttemptId": "attempt-TRACE-023-20260525T073610Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:36:10.161Z",
+          "completedAt": "2026-05-25T07:36:26.153Z",
+          "outputSummary": "COMMAND_ID: CMD-AUDIT-STAGE-REGRESSION-001 | COMMAND: npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts | RUN_ID: run-TRACE-023-20260525T073610Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-023-20260525T073610Z | STARTED_AT: 2026-05-25T07:36:10.161Z | COMPLETED_AT: 2026-05-25T07:36:26.153Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/reverse-audit-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m20 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 4019\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails delivery readiness only in readiness mode \u001b[33m 313\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirements-contract-checkpoint-automation.test.ts \u001b[2m(\u001b[22m\u001b[2m14 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 13890\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails closed when unrelated staged files exist before checkpoint commit \u001b[33m 492\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m creates a single-file checkpoint commit and progress record \u001b[33m 726\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m blocks pre-render readiness when checkpoint logs exist but global consistency is missing \u001b[33m 4354\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs all pre-render checkpoints as separate commits and reports ready only after global consistency passes \u001b[33m 3768\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m resumes from progress next checkpoint and runs remaining checkpoints separately \u001b[33m 3730\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m34 passed\u001b[39m\u001b[22m\u001b[90m (34)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:36:11 | \u001b[2m   Duration \u001b[22m 14.13s\u001b[2m (transform 113ms, setup 0ms, import 190ms, tests 17.91s, environment 0ms)\u001b[22m | STDERR:"
+        },
+        {
+          "commandId": "CMD-AUDIT-STAGE-REGRESSION-001",
+          "command": "npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+          "runId": "run-TRACE-023-20260525T073610Z",
+          "closeoutAttemptId": "attempt-TRACE-023-20260525T073610Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:36:26.155Z",
+          "completedAt": "2026-05-25T07:36:42.283Z",
+          "outputSummary": "COMMAND_ID: CMD-AUDIT-STAGE-REGRESSION-001 | COMMAND: npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts | RUN_ID: run-TRACE-023-20260525T073610Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-023-20260525T073610Z | STARTED_AT: 2026-05-25T07:36:26.155Z | COMPLETED_AT: 2026-05-25T07:36:42.283Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/reverse-audit-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m20 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 4025\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails delivery readiness only in readiness mode \u001b[33m 309\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirements-contract-checkpoint-automation.test.ts \u001b[2m(\u001b[22m\u001b[2m14 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 14047\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails closed when unrelated staged files exist before checkpoint commit \u001b[33m 417\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m creates a single-file checkpoint commit and progress record \u001b[33m 726\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m blocks pre-render readiness when checkpoint logs exist but global consistency is missing \u001b[33m 4419\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs all pre-render checkpoints as separate commits and reports ready only after global consistency passes \u001b[33m 3743\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m resumes from progress next checkpoint and runs remaining checkpoints separately \u001b[33m 3935\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m34 passed\u001b[39m\u001b[22m\u001b[90m (34)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:36:27 | \u001b[2m   Duration \u001b[22m 14.29s\u001b[2m (transform 109ms, setup 0ms, import 187ms, tests 18.07s, environment 0ms)\u001b[22m | STDERR:"
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/CMD-AUDIT-STAGE-REGRESSION-001.output.txt",
+          "contentHash": "sha256:6e54b7990522a73d6ea5d8b8c7d6e19af298a13a80aabe93e74190224f75d093",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-AUDIT-STAGE-REGRESSION-001 covering TRACE-023",
+          "relatedRequirementIds": [
+            "CMD-AUDIT-STAGE-REGRESSION-001",
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "cmd-audit-stage-regression-001-trace-023-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/CMD-AUDIT-STAGE-REGRESSION-001.output.txt",
+          "contentHash": "sha256:6e54b7990522a73d6ea5d8b8c7d6e19af298a13a80aabe93e74190224f75d093",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-AUDIT-STAGE-REGRESSION-001 covering TRACE-023",
+          "relatedRequirementIds": [
+            "CMD-AUDIT-STAGE-REGRESSION-001",
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "cmd-audit-stage-regression-001-trace-023-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/trace-023-command-receipt.json",
+          "contentHash": "sha256:5454b996647366e7f93c1a9c3f85a0b060312c8d33e7ec1f083e644fc52200da",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt command receipt bundle for TRACE-023",
+          "relatedRequirementIds": [
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-023-command-receipt-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "completion_evidence_packet",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/trace-023-completion-evidence-packet.json",
+          "contentHash": "sha256:f96c5efb0047e40a7438b8869883f1effa6ce461ec10102c5e73d6555ff68d79",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt completion evidence packet for TRACE-023",
+          "relatedRequirementIds": [
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-023-completion-evidence-packet-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/trace-023-diff-summary.md",
+          "contentHash": "sha256:f21baa3e12e490b680e697d6241c8c6713897e5bc9b1ed81048110f1c125dfb5",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "runtime closure diff summary for TRACE-023",
+          "relatedRequirementIds": [
+            "TRACE-023",
+            "MUST-023",
+            "NEG-013",
+            "NEG-014",
+            "EVD-023"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-023-diff-summary-v1",
+          "traceRows": [
+            "TRACE-023"
+          ],
+          "evidenceRefs": [
+            "EVD-023"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-023"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-023"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-AUDIT-STAGE-REGRESSION-001"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-AUDIT-STAGE-REGRESSION-001"
+        }
+      ],
+      "recordedAt": "2026-05-25T07:36:43.201Z",
+      "recordedBy": "codex"
     }
   ],
   "gateChecks": [
@@ -22388,6 +23563,106 @@
         }
       ],
       "recordedAt": "2026-05-25T07:35:45.296Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "gate_check_recorded",
+      "checkId": "TRACE-023:CMD-AUDIT-STAGE-REGRESSION-001:run-TRACE-023-20260525T073610Z",
+      "gate": "CMD-AUDIT-STAGE-REGRESSION-001",
+      "decision": "pass",
+      "blockingReasons": [],
+      "checks": [],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-023"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-023"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-AUDIT-STAGE-REGRESSION-001"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-AUDIT-STAGE-REGRESSION-001"
+        }
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-AUDIT-STAGE-REGRESSION-001",
+          "command": "npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+          "runId": "run-TRACE-023-20260525T073610Z",
+          "closeoutAttemptId": "attempt-TRACE-023-20260525T073610Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:36:10.161Z",
+          "completedAt": "2026-05-25T07:36:26.153Z",
+          "outputSummary": "COMMAND_ID: CMD-AUDIT-STAGE-REGRESSION-001 | COMMAND: npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts | RUN_ID: run-TRACE-023-20260525T073610Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-023-20260525T073610Z | STARTED_AT: 2026-05-25T07:36:10.161Z | COMPLETED_AT: 2026-05-25T07:36:26.153Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/reverse-audit-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m20 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 4019\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails delivery readiness only in readiness mode \u001b[33m 313\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirements-contract-checkpoint-automation.test.ts \u001b[2m(\u001b[22m\u001b[2m14 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 13890\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails closed when unrelated staged files exist before checkpoint commit \u001b[33m 492\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m creates a single-file checkpoint commit and progress record \u001b[33m 726\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m blocks pre-render readiness when checkpoint logs exist but global consistency is missing \u001b[33m 4354\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs all pre-render checkpoints as separate commits and reports ready only after global consistency passes \u001b[33m 3768\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m resumes from progress next checkpoint and runs remaining checkpoints separately \u001b[33m 3730\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m34 passed\u001b[39m\u001b[22m\u001b[90m (34)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:36:11 | \u001b[2m   Duration \u001b[22m 14.13s\u001b[2m (transform 113ms, setup 0ms, import 190ms, tests 17.91s, environment 0ms)\u001b[22m | STDERR:"
+        },
+        {
+          "commandId": "CMD-AUDIT-STAGE-REGRESSION-001",
+          "command": "npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+          "runId": "run-TRACE-023-20260525T073610Z",
+          "closeoutAttemptId": "attempt-TRACE-023-20260525T073610Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:36:26.155Z",
+          "completedAt": "2026-05-25T07:36:42.283Z",
+          "outputSummary": "COMMAND_ID: CMD-AUDIT-STAGE-REGRESSION-001 | COMMAND: npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts | RUN_ID: run-TRACE-023-20260525T073610Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-023-20260525T073610Z | STARTED_AT: 2026-05-25T07:36:26.155Z | COMPLETED_AT: 2026-05-25T07:36:42.283Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/reverse-audit-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m20 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 4025\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails delivery readiness only in readiness mode \u001b[33m 309\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirements-contract-checkpoint-automation.test.ts \u001b[2m(\u001b[22m\u001b[2m14 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 14047\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails closed when unrelated staged files exist before checkpoint commit \u001b[33m 417\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m creates a single-file checkpoint commit and progress record \u001b[33m 726\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m blocks pre-render readiness when checkpoint logs exist but global consistency is missing \u001b[33m 4419\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs all pre-render checkpoints as separate commits and reports ready only after global consistency passes \u001b[33m 3743\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m resumes from progress next checkpoint and runs remaining checkpoints separately \u001b[33m 3935\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m34 passed\u001b[39m\u001b[22m\u001b[90m (34)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:36:27 | \u001b[2m   Duration \u001b[22m 14.29s\u001b[2m (transform 109ms, setup 0ms, import 187ms, tests 18.07s, environment 0ms)\u001b[22m | STDERR:"
+        }
+      ],
+      "recordedAt": "2026-05-25T07:36:43.201Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "gate_check_recorded",
+      "checkId": "TRACE-023:CMD-AUDIT-STAGE-REGRESSION-001:run-TRACE-023-20260525T073610Z",
+      "gate": "CMD-AUDIT-STAGE-REGRESSION-001",
+      "decision": "pass",
+      "blockingReasons": [],
+      "checks": [],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-023"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-023"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-AUDIT-STAGE-REGRESSION-001"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-AUDIT-STAGE-REGRESSION-001"
+        }
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-AUDIT-STAGE-REGRESSION-001",
+          "command": "npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+          "runId": "run-TRACE-023-20260525T073610Z",
+          "closeoutAttemptId": "attempt-TRACE-023-20260525T073610Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:36:10.161Z",
+          "completedAt": "2026-05-25T07:36:26.153Z",
+          "outputSummary": "COMMAND_ID: CMD-AUDIT-STAGE-REGRESSION-001 | COMMAND: npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts | RUN_ID: run-TRACE-023-20260525T073610Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-023-20260525T073610Z | STARTED_AT: 2026-05-25T07:36:10.161Z | COMPLETED_AT: 2026-05-25T07:36:26.153Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/reverse-audit-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m20 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 4019\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails delivery readiness only in readiness mode \u001b[33m 313\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirements-contract-checkpoint-automation.test.ts \u001b[2m(\u001b[22m\u001b[2m14 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 13890\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails closed when unrelated staged files exist before checkpoint commit \u001b[33m 492\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m creates a single-file checkpoint commit and progress record \u001b[33m 726\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m blocks pre-render readiness when checkpoint logs exist but global consistency is missing \u001b[33m 4354\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs all pre-render checkpoints as separate commits and reports ready only after global consistency passes \u001b[33m 3768\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m resumes from progress next checkpoint and runs remaining checkpoints separately \u001b[33m 3730\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m34 passed\u001b[39m\u001b[22m\u001b[90m (34)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:36:11 | \u001b[2m   Duration \u001b[22m 14.13s\u001b[2m (transform 113ms, setup 0ms, import 190ms, tests 17.91s, environment 0ms)\u001b[22m | STDERR:"
+        },
+        {
+          "commandId": "CMD-AUDIT-STAGE-REGRESSION-001",
+          "command": "npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+          "runId": "run-TRACE-023-20260525T073610Z",
+          "closeoutAttemptId": "attempt-TRACE-023-20260525T073610Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:36:26.155Z",
+          "completedAt": "2026-05-25T07:36:42.283Z",
+          "outputSummary": "COMMAND_ID: CMD-AUDIT-STAGE-REGRESSION-001 | COMMAND: npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts | RUN_ID: run-TRACE-023-20260525T073610Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-023-20260525T073610Z | STARTED_AT: 2026-05-25T07:36:26.155Z | COMPLETED_AT: 2026-05-25T07:36:42.283Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/reverse-audit-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m20 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 4025\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails delivery readiness only in readiness mode \u001b[33m 309\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirements-contract-checkpoint-automation.test.ts \u001b[2m(\u001b[22m\u001b[2m14 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 14047\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails closed when unrelated staged files exist before checkpoint commit \u001b[33m 417\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m creates a single-file checkpoint commit and progress record \u001b[33m 726\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m blocks pre-render readiness when checkpoint logs exist but global consistency is missing \u001b[33m 4419\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs all pre-render checkpoints as separate commits and reports ready only after global consistency passes \u001b[33m 3743\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m resumes from progress next checkpoint and runs remaining checkpoints separately \u001b[33m 3935\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m34 passed\u001b[39m\u001b[22m\u001b[90m (34)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:36:27 | \u001b[2m   Duration \u001b[22m 14.29s\u001b[2m (transform 109ms, setup 0ms, import 187ms, tests 18.07s, environment 0ms)\u001b[22m | STDERR:"
+        }
+      ],
+      "recordedAt": "2026-05-25T07:36:43.201Z",
       "recordedBy": "codex"
     }
   ],
@@ -25274,6 +26549,143 @@
       "evidenceRefs": [
         "EVD-022"
       ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "command_run_output",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CHECKPOINT-AUTOMATION",
+      "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/CMD-AUDIT-STAGE-REGRESSION-001.output.txt",
+      "contentHash": "sha256:6e54b7990522a73d6ea5d8b8c7d6e19af298a13a80aabe93e74190224f75d093",
+      "producer": "run-confirmed-trace-slice",
+      "purpose": "fresh current-attempt output for CMD-AUDIT-STAGE-REGRESSION-001 covering TRACE-023",
+      "relatedRequirementIds": [
+        "CMD-AUDIT-STAGE-REGRESSION-001",
+        "TRACE-023",
+        "MUST-023",
+        "NEG-013",
+        "NEG-014",
+        "EVD-023"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+      "outputVersion": "cmd-audit-stage-regression-001-trace-023-current-attempt-output-v1",
+      "traceRows": [
+        "TRACE-023"
+      ],
+      "evidenceRefs": [
+        "EVD-023"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "command_run_output",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CHECKPOINT-AUTOMATION",
+      "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/CMD-AUDIT-STAGE-REGRESSION-001.output.txt",
+      "contentHash": "sha256:6e54b7990522a73d6ea5d8b8c7d6e19af298a13a80aabe93e74190224f75d093",
+      "producer": "run-confirmed-trace-slice",
+      "purpose": "fresh current-attempt output for CMD-AUDIT-STAGE-REGRESSION-001 covering TRACE-023",
+      "relatedRequirementIds": [
+        "CMD-AUDIT-STAGE-REGRESSION-001",
+        "TRACE-023",
+        "MUST-023",
+        "NEG-013",
+        "NEG-014",
+        "EVD-023"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+      "outputVersion": "cmd-audit-stage-regression-001-trace-023-current-attempt-output-v1",
+      "traceRows": [
+        "TRACE-023"
+      ],
+      "evidenceRefs": [
+        "EVD-023"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "command_run_receipt",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CHECKPOINT-AUTOMATION",
+      "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/trace-023-command-receipt.json",
+      "contentHash": "sha256:5454b996647366e7f93c1a9c3f85a0b060312c8d33e7ec1f083e644fc52200da",
+      "producer": "run-confirmed-trace-slice",
+      "purpose": "current-attempt command receipt bundle for TRACE-023",
+      "relatedRequirementIds": [
+        "TRACE-023",
+        "MUST-023",
+        "NEG-013",
+        "NEG-014",
+        "EVD-023"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+      "outputVersion": "trace-023-command-receipt-v1",
+      "traceRows": [
+        "TRACE-023"
+      ],
+      "evidenceRefs": [
+        "EVD-023"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "completion_evidence_packet",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CHECKPOINT-AUTOMATION",
+      "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/trace-023-completion-evidence-packet.json",
+      "contentHash": "sha256:f96c5efb0047e40a7438b8869883f1effa6ce461ec10102c5e73d6555ff68d79",
+      "producer": "run-confirmed-trace-slice",
+      "purpose": "current-attempt completion evidence packet for TRACE-023",
+      "relatedRequirementIds": [
+        "TRACE-023",
+        "MUST-023",
+        "NEG-013",
+        "NEG-014",
+        "EVD-023"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+      "outputVersion": "trace-023-completion-evidence-packet-v1",
+      "traceRows": [
+        "TRACE-023"
+      ],
+      "evidenceRefs": [
+        "EVD-023"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "diff_summary",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CHECKPOINT-AUTOMATION",
+      "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/trace-023-diff-summary.md",
+      "contentHash": "sha256:f21baa3e12e490b680e697d6241c8c6713897e5bc9b1ed81048110f1c125dfb5",
+      "producer": "run-confirmed-trace-slice",
+      "purpose": "runtime closure diff summary for TRACE-023",
+      "relatedRequirementIds": [
+        "TRACE-023",
+        "MUST-023",
+        "NEG-013",
+        "NEG-014",
+        "EVD-023"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+      "outputVersion": "trace-023-diff-summary-v1",
+      "traceRows": [
+        "TRACE-023"
+      ],
+      "evidenceRefs": [
+        "EVD-023"
+      ]
     }
   ],
   "extensionRefs": [],
@@ -26366,6 +27778,75 @@
             "evidenceRefs": []
           }
         ]
+      },
+      {
+        "commandId": "CMD-AUDIT-STAGE-REGRESSION-001",
+        "command": "npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+        "commandType": "delivery_evidence",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "closeoutAttemptId": "attempt-TRACE-023-20260525T073610Z",
+        "lastRunRef": {
+          "commandId": "CMD-AUDIT-STAGE-REGRESSION-001",
+          "runId": "run-TRACE-023-20260525T073610Z",
+          "closeoutAttemptId": "attempt-TRACE-023-20260525T073610Z"
+        },
+        "traceRows": [
+          "TRACE-023"
+        ],
+        "evidenceRefs": [
+          "EVD-023"
+        ],
+        "artifactRefs": [
+          {
+            "eventType": "artifact_indexed",
+            "artifactType": "command_run_output",
+            "sourceOfTruthRole": "evidence",
+            "recordId": "REQ-CHECKPOINT-AUTOMATION",
+            "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/CMD-AUDIT-STAGE-REGRESSION-001.output.txt",
+            "contentHash": "sha256:6e54b7990522a73d6ea5d8b8c7d6e19af298a13a80aabe93e74190224f75d093",
+            "producer": "run-confirmed-trace-slice",
+            "purpose": "fresh current-attempt output for CMD-AUDIT-STAGE-REGRESSION-001 covering TRACE-023",
+            "relatedRequirementIds": [
+              "CMD-AUDIT-STAGE-REGRESSION-001",
+              "TRACE-023",
+              "MUST-023",
+              "NEG-013",
+              "NEG-014",
+              "EVD-023"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+            "outputVersion": "cmd-audit-stage-regression-001-trace-023-current-attempt-output-v1",
+            "traceRows": [],
+            "evidenceRefs": []
+          },
+          {
+            "eventType": "artifact_indexed",
+            "artifactType": "command_run_output",
+            "sourceOfTruthRole": "evidence",
+            "recordId": "REQ-CHECKPOINT-AUTOMATION",
+            "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-023/run-TRACE-023-20260525T073610Z/CMD-AUDIT-STAGE-REGRESSION-001.output.txt",
+            "contentHash": "sha256:6e54b7990522a73d6ea5d8b8c7d6e19af298a13a80aabe93e74190224f75d093",
+            "producer": "run-confirmed-trace-slice",
+            "purpose": "fresh current-attempt output for CMD-AUDIT-STAGE-REGRESSION-001 covering TRACE-023",
+            "relatedRequirementIds": [
+              "CMD-AUDIT-STAGE-REGRESSION-001",
+              "TRACE-023",
+              "MUST-023",
+              "NEG-013",
+              "NEG-014",
+              "EVD-023"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+            "outputVersion": "cmd-audit-stage-regression-001-trace-023-current-attempt-output-v1",
+            "traceRows": [],
+            "evidenceRefs": []
+          }
+        ]
       }
     ],
     "historicalRunRefs": [
@@ -26588,20 +28069,30 @@
         "commandId": "CMD-AUDIT-WRAPPER-001",
         "runId": "run-TRACE-022-20260525T073512Z",
         "closeoutAttemptId": "attempt-TRACE-022-20260525T073512Z"
+      },
+      {
+        "commandId": "CMD-AUDIT-STAGE-REGRESSION-001",
+        "runId": "run-TRACE-023-20260525T073610Z",
+        "closeoutAttemptId": "attempt-TRACE-023-20260525T073610Z"
+      },
+      {
+        "commandId": "CMD-AUDIT-STAGE-REGRESSION-001",
+        "runId": "run-TRACE-023-20260525T073610Z",
+        "closeoutAttemptId": "attempt-TRACE-023-20260525T073610Z"
       }
     ]
   },
   "schemaVersion": "requirement-record/v1",
-  "recordHash": "sha256:dbb39d232db9514a01f8b6b3f04c01fdae82eb214c9ab0e0b0c4852fb6dd9dad",
-  "lastAppliedEventId": "implementation_evidence_ingested:2026-05-25T07:35:45.296Z:78dc4901de8e",
-  "lastAppliedEventHash": "sha256:6dc63588314ebcf3869f698b83b8bf3140a3839e3670db08b1614560ffd745d5",
-  "eventChainHead": "sha256:6dc63588314ebcf3869f698b83b8bf3140a3839e3670db08b1614560ffd745d5",
-  "eventCount": 22,
+  "recordHash": "sha256:e7c00b580ff2cc67d52d3b354a82648a6bf5f78cb91a09740750bccfac0cd99c",
+  "lastAppliedEventId": "implementation_evidence_ingested:2026-05-25T07:36:43.201Z:e41902f7584c",
+  "lastAppliedEventHash": "sha256:fafe8dbb702a7579e6db771b7b8171977028a11ed77c5e8505c65caf8381adc7",
+  "eventChainHead": "sha256:fafe8dbb702a7579e6db771b7b8171977028a11ed77c5e8505c65caf8381adc7",
+  "eventCount": 23,
   "controlStore": {
     "schemaVersion": "control-store/v1",
     "eventLogPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/events/control-events.jsonl",
-    "lastEventId": "implementation_evidence_ingested:2026-05-25T07:35:45.296Z:78dc4901de8e",
-    "lastEventHash": "sha256:6dc63588314ebcf3869f698b83b8bf3140a3839e3670db08b1614560ffd745d5",
+    "lastEventId": "implementation_evidence_ingested:2026-05-25T07:36:43.201Z:e41902f7584c",
+    "lastEventHash": "sha256:fafe8dbb702a7579e6db771b7b8171977028a11ed77c5e8505c65caf8381adc7",
     "reducer": "canonical-requirement-record-reducer/v1",
     "atomicCommitter": "requirement-record-control-store/v1"
   }
