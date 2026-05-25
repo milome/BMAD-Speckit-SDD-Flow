@@ -1,0 +1,295 @@
+$executing-plans $verification-before-completion
+
+continue nonstop
+
+任务：严格执行 docs/requirements/2026-05-25-requirements-contract-checkpoint-automation.md#implementationConfirmation 的 confirmed traceRows，直到闭环验收完成。
+
+Source of authority:
+Only docs/requirements/2026-05-25-requirements-contract-checkpoint-automation.md#implementationConfirmation is authoritative.
+Do not implement prose, diagrams, or conversation content unless it is referenced by implementationConfirmation IDs.
+
+Trace order:
+TRACE-001 -> TRACE-002 -> TRACE-003 -> TRACE-004 -> TRACE-005 -> TRACE-006 -> TRACE-007 -> TRACE-008 -> TRACE-009 -> TRACE-010 -> TRACE-011 -> TRACE-012 -> TRACE-013 -> TRACE-014 -> TRACE-015 -> TRACE-016 -> TRACE-017 -> TRACE-018 -> TRACE-019 -> TRACE-020 -> TRACE-021 -> TRACE-022 -> TRACE-023 -> TRACE-024 -> TRACE-025
+
+Trace closure authority:
+confirmed source traceRows are contract projection only.
+Runtime closure authority is the requirement-record/control store: record closure evidence through executionIterations, requirementClosures, gateChecks, contractChecks, deliveryEvidence.requiredCommands, artifactIndex, or project-equivalent governed fields.
+The executor must not rewrite confirmed source traceRows.status or source evidence fields to represent runtime PASS/MISSING_EVIDENCE.
+
+范围与意图锁定：
+1. 只能实施 implementationConfirmation 中的 must/notDone/evidence/traceRows IDs，禁止实现未被确认块引用的 prose、diagram 或会话内容。
+2. 禁止缩减范围、替换范围、改变原始需求、禁止把原始需求解释成更小交付。
+3. 禁止 MVP downgrade、stub、mock-only、happy-path-only、representative-only coverage、later-batch coverage、seed-only coverage 或局部样例冒充完整交付。
+
+执行切片:
+TRACE-001
+covers: MUST-001
+evidenceRefs: EVD-001
+taskRefs: TASK-001
+contract gates: CMD-TEST-001
+delivery gates: CMD-TEST-001
+
+TRACE-002
+covers: MUST-002
+evidenceRefs: EVD-002
+taskRefs: TASK-002
+contract gates: CMD-TEST-001
+delivery gates: CMD-TEST-001
+
+TRACE-003
+covers: MUST-003, NEG-002
+evidenceRefs: EVD-003
+taskRefs: TASK-003
+contract gates: CMD-TEST-001
+delivery gates: CMD-TEST-001
+
+TRACE-004
+covers: MUST-004, NEG-003
+evidenceRefs: EVD-004
+taskRefs: TASK-004
+contract gates: CMD-TEST-001
+delivery gates: CMD-TEST-001
+
+TRACE-005
+covers: MUST-005, NEG-001
+evidenceRefs: EVD-005
+taskRefs: TASK-005
+contract gates: CMD-TEST-002
+delivery gates: CMD-TEST-002
+
+TRACE-006
+covers: MUST-006
+evidenceRefs: EVD-006
+taskRefs: TASK-006
+contract gates: CMD-TEST-001
+delivery gates: CMD-TEST-001
+
+TRACE-007
+covers: MUST-007, NEG-004
+evidenceRefs: EVD-007
+taskRefs: TASK-007
+contract gates: CMD-TEST-001
+delivery gates: CMD-TEST-001
+
+TRACE-008
+covers: MUST-008, NEG-005
+evidenceRefs: EVD-008
+taskRefs: TASK-008
+contract gates: CMD-REVERSE-STAGE-001
+delivery gates: CMD-DELIVERY-SEAL-001
+
+TRACE-009
+covers: MUST-009, NEG-006
+evidenceRefs: EVD-009
+taskRefs: TASK-009
+contract gates: CMD-PROOF-MATRIX-001
+delivery gates: CMD-DELIVERY-SEAL-001
+
+TRACE-010
+covers: MUST-010
+evidenceRefs: EVD-010
+taskRefs: TASK-010
+contract gates: CMD-CURRENT-TARGET-001
+delivery gates: CMD-DELIVERY-SEAL-001
+
+TRACE-011
+covers: MUST-011, NEG-005, NEG-006
+evidenceRefs: EVD-011
+taskRefs: TASK-011
+contract gates: CMD-DELIVERY-SEAL-001
+delivery gates: CMD-CLOSEOUT-INTEGRITY-001
+
+TRACE-012
+covers: MUST-012, NEG-007
+evidenceRefs: EVD-012
+taskRefs: TASK-012
+contract gates: CMD-COMMAND-TARGET-001
+delivery gates: CMD-COMMAND-TARGET-001
+
+TRACE-013
+covers: MUST-013, NEG-008
+evidenceRefs: EVD-013
+taskRefs: TASK-013
+contract gates: CMD-TRACE-CLOSURE-001
+delivery gates: CMD-TRACE-CLOSURE-001
+
+TRACE-014
+covers: MUST-014
+evidenceRefs: EVD-014
+taskRefs: TASK-014
+contract gates: CMD-CANONICAL-SURFACE-001
+delivery gates: CMD-CANONICAL-SURFACE-001
+
+TRACE-015
+covers: MUST-015, NEG-009
+evidenceRefs: EVD-015
+taskRefs: TASK-015
+contract gates: CMD-LEGACY-DENIAL-001
+delivery gates: CMD-LEGACY-DENIAL-001
+
+TRACE-016
+covers: MUST-016, NEG-010
+evidenceRefs: EVD-016
+taskRefs: TASK-016
+contract gates: CMD-RECORD-CLOSED-001
+delivery gates: CMD-RECORD-CLOSED-001
+
+TRACE-017
+covers: MUST-017
+evidenceRefs: EVD-017
+taskRefs: TASK-017
+contract gates: CMD-EVIDENCE-TRUST-001
+delivery gates: CMD-EVIDENCE-TRUST-001
+
+TRACE-018
+covers: MUST-018
+evidenceRefs: EVD-018
+taskRefs: TASK-018
+contract gates: CMD-SEMANTIC-KERNEL-001
+delivery gates: CMD-SEMANTIC-KERNEL-001
+
+TRACE-019
+covers: MUST-019, NEG-011
+evidenceRefs: EVD-019
+taskRefs: TASK-019
+contract gates: CMD-KERNEL-DRIFT-001
+delivery gates: CMD-KERNEL-DRIFT-001
+
+TRACE-020
+covers: MUST-020, NEG-011, NEG-012
+evidenceRefs: EVD-020
+taskRefs: TASK-020
+contract gates: CMD-FULL-RECONCILIATION-001
+delivery gates: CMD-FULL-RECONCILIATION-001
+
+TRACE-021
+covers: MUST-021, NEG-013
+evidenceRefs: EVD-021
+taskRefs: TASK-021
+contract gates: CMD-AUDIT-STAGE-CLI-001
+delivery gates: CMD-AUDIT-STAGE-CLI-001
+
+TRACE-022
+covers: MUST-022, NEG-014
+evidenceRefs: EVD-022
+taskRefs: TASK-022
+contract gates: CMD-AUDIT-WRAPPER-001
+delivery gates: CMD-AUDIT-WRAPPER-001
+
+TRACE-023
+covers: MUST-023, NEG-013, NEG-014
+evidenceRefs: EVD-023
+taskRefs: TASK-023
+contract gates: CMD-AUDIT-STAGE-REGRESSION-001
+delivery gates: CMD-AUDIT-STAGE-REGRESSION-001
+
+TRACE-024
+covers: MUST-024
+evidenceRefs: EVD-024
+taskRefs: TASK-024
+contract gates: CMD-TARGET-MODIFICATION-PATHS-001
+delivery gates: CMD-TARGET-MODIFICATION-PATHS-001
+
+TRACE-025
+covers: MUST-025, NEG-015
+evidenceRefs: EVD-025
+taskRefs: TASK-025
+contract gates: CMD-AI-TDD-ERROR-CASE-001
+delivery gates: CMD-AI-TDD-ERROR-CASE-001
+
+Required commands:
+CMD-TEST-001:
+npx vitest run tests/acceptance/requirements-contract-checkpoint-automation.test.ts
+
+CMD-TEST-002:
+npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts
+
+CMD-ENCODING-001:
+node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js
+
+CMD-REVERSE-STAGE-001:
+npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-authoring-skill-contract.test.ts
+
+CMD-PROOF-MATRIX-001:
+npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts
+
+CMD-CURRENT-TARGET-001:
+npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts tests/acceptance/reverse-audit-contract.test.ts
+
+CMD-DELIVERY-SEAL-001:
+npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts
+
+CMD-CLOSEOUT-INTEGRITY-001:
+npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts
+
+CMD-COMMAND-TARGET-001:
+npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts
+
+CMD-TRACE-CLOSURE-001:
+npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts
+
+CMD-CANONICAL-SURFACE-001:
+npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts
+
+CMD-LEGACY-DENIAL-001:
+npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts
+
+CMD-RECORD-CLOSED-001:
+npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts
+
+CMD-EVIDENCE-TRUST-001:
+npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts
+
+CMD-SEMANTIC-KERNEL-001:
+npx vitest run tests/acceptance/requirements-contract-checkpoint-automation.test.ts
+
+CMD-KERNEL-DRIFT-001:
+npx vitest run tests/acceptance/requirements-contract-checkpoint-automation.test.ts
+
+CMD-FULL-RECONCILIATION-001:
+npx vitest run tests/acceptance/requirements-contract-checkpoint-automation.test.ts
+
+CMD-AUDIT-STAGE-CLI-001:
+npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts
+
+CMD-AUDIT-WRAPPER-001:
+npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts
+
+CMD-AUDIT-STAGE-REGRESSION-001:
+npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts
+
+CMD-TARGET-MODIFICATION-PATHS-001:
+npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts
+
+CMD-AI-TDD-ERROR-CASE-001:
+npx vitest run tests/acceptance/ai-tdd-contract-gate.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts
+
+Suggested smoke only, not acceptance by itself:
+node _bmad/skills/requirements-contract-authoring/scripts/pre_render_definition_drilldown.js --source <source-document.md> --json
+node _bmad/skills/requirements-contract-authoring/scripts/run_semantic_checkpoints.js --source <source-document.md> --progress <semantic-checkpoint-progress.json> --mode pre-render-gate --json
+
+强制执行规则：
+1. 以 traceRows 为唯一主执行切片，按 TRACE-001 -> TRACE-002 -> TRACE-003 -> TRACE-004 -> TRACE-005 -> TRACE-006 -> TRACE-007 -> TRACE-008 -> TRACE-009 -> TRACE-010 -> TRACE-011 -> TRACE-012 -> TRACE-013 -> TRACE-014 -> TRACE-015 -> TRACE-016 -> TRACE-017 -> TRACE-018 -> TRACE-019 -> TRACE-020 -> TRACE-021 -> TRACE-022 -> TRACE-023 -> TRACE-024 -> TRACE-025 顺序推进。
+2. 每个 TRACE 切片只能关闭其 covers/evidenceRefs 引用的 confirmed IDs。
+3. taskRefs 完成不等于 requirement PASS。
+4. PASS requires evidence for covered must, notDone, and evidence IDs.
+5. 每完成一个 TRACE 切片，必须通过受控 runtime/control-store 记录 closure evidence；confirmed source traceRows.status 不得作为运行时 PASS/MISSING_EVIDENCE 回写目标。
+6. 改为 PASS 后立即本地提交一次，禁止 push。若源文档或用户指定 commit message 格式，严格使用该格式；否则使用仓库提交规范。
+7. 没有证据时 runtime closure 必须保持 open/PENDING 或记录 MISSING_EVIDENCE。
+8. 严禁虚构验证结果、证据路径或 PASS 状态。
+9. 如果需要改变 must/notDone/mustNot/evidence/traceRows 语义，必须把源文档状态改为 reconfirm_required 并停止。
+10. 遇到测试失败、构建失败、审计失败、E2E 失败或 gate 失败时，自动使用 systematic-debugging 思路定位并修复；不要立刻停止询问。
+11. 仅在真实阻塞时停止：缺少用户决策、需要语义变更、需要改 shared contract/schema/根配置且超出确认块、依赖无法安装或运行、外部约束与确认块冲突、或连续系统化修复后仍无法定位根因。
+12. 每个 TRACE 切片结束必须运行该切片对应 gate。
+13. 最终必须运行并记录结果：
+    - npx vitest run tests/acceptance/requirements-contract-checkpoint-automation.test.ts
+    - npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts
+    - node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js
+    - npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-authoring-skill-contract.test.ts
+    - npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts tests/acceptance/reverse-audit-contract.test.ts
+    - npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts
+    - npx vitest run tests/acceptance/ai-tdd-contract-gate.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts
+    - npx vitest run tests/acceptance/requirements-contract-checkpoint-automation.test.ts tests/acceptance/reverse-audit-contract.test.ts
+14. 全部完成后输出 Completion Evidence Packet，至少包含关闭 IDs、开放 IDs、命令结果、E2E 证据、审计证据、残留风险和 scope changes。
+
+现在开始执行，不要等待中途确认，直到最终验收闭环或触发真实阻塞条件。

@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "pre-render-global-consistency-gate/v1",
+  "target": "D:/Dev/BMAD-Speckit-SDD-Flow/docs/requirements/2026-05-25-requirements-contract-checkpoint-automation.md",
+  "progressPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/authoring/checkpoint-automation-validation-progress.json",
+  "reportPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/authoring/pre-render-global-consistency-report.json",
+  "verdict": "PASS",
+  "sourceDocumentHash": "sha256:3e1e9b55df13d026eb1aa96a5008fe1b34506af382e80dff3aa3b701f068e1c7",
+  "implementationConfirmationHash": "sha256:f06bc947aa488e99dccf4b97e6391ac6749efafaa51a97baf8cd2105a3d4e07c",
+  "issueCount": 0,
+  "failedChecks": [],
+  "issues": []
+}
