@@ -1,0 +1,33 @@
+COMMAND_ID: CMD-CURRENT-TARGET-001
+COMMAND: npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts tests/acceptance/reverse-audit-contract.test.ts
+RUN_ID: run-TRACE-010-20260525T072057Z
+CLOSEOUT_ATTEMPT_ID: attempt-TRACE-010-20260525T072057Z
+STARTED_AT: 2026-05-25T07:20:57.715Z
+COMPLETED_AT: 2026-05-25T07:21:17.864Z
+EXIT_CODE: 0
+STDOUT:
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mD:/Dev/BMAD-Speckit-SDD-Flow[39m
+
+ [32m✓[39m tests/acceptance/render-requirements-confirmation-html.test.ts [2m([22m[2m46 tests[22m[2m)[22m[33m 14195[2mms[22m[39m
+     [33m[2m✓[22m[39m renders current controlled execution state only when hashes and current attempt match [33m 374[2mms[22m[39m
+     [33m[2m✓[22m[39m does not require architecture hash or OUT evidence for non-architecture delivery readiness [33m 312[2mms[22m[39m
+     [33m[2m✓[22m[39m preserves id-badge mini as trusted HTML inside requirement boundary tables [33m 2246[2mms[22m[39m
+     [33m[2m✓[22m[39m renders target modification paths and blocks when the explicit list is missing for implementation changes [33m 359[2mms[22m[39m
+     [33m[2m✓[22m[39m uses the skill-bundled Mermaid runtime by default without requiring consumer project dependencies [33m 2093[2mms[22m[39m
+     [33m[2m✓[22m[39m can explicitly open fallback structure diagrams alongside the skill-bundled native Mermaid runtime [33m 2098[2mms[22m[39m
+ [32m✓[39m tests/acceptance/requirements-contract-checkpoint-automation.test.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 14225[2mms[22m[39m
+     [33m[2m✓[22m[39m fails closed when unrelated staged files exist before checkpoint commit [33m 367[2mms[22m[39m
+     [33m[2m✓[22m[39m creates a single-file checkpoint commit and progress record [33m 656[2mms[22m[39m
+     [33m[2m✓[22m[39m blocks pre-render readiness when checkpoint logs exist but global consistency is missing [33m 4387[2mms[22m[39m
+     [33m[2m✓[22m[39m runs all pre-render checkpoints as separate commits and reports ready only after global consistency passes [33m 4226[2mms[22m[39m
+     [33m[2m✓[22m[39m resumes from progress next checkpoint and runs remaining checkpoints separately [33m 3765[2mms[22m[39m
+ [32m✓[39m tests/acceptance/reverse-audit-contract.test.ts [2m([22m[2m20 tests[22m[2m)[22m[33m 3651[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m3 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[32m80 passed[39m[22m[90m (80)[39m
+[2m   Start at [22m 15:20:59
+[2m   Duration [22m 18.26s[2m (transform 155ms, setup 0ms, import 264ms, tests 32.07s, environment 0ms)[22m
+
+
+STDERR:
